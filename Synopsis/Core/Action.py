@@ -1,4 +1,4 @@
-# $Id: Action.py,v 1.3 2002/04/26 01:21:13 chalky Exp $
+# $Id: Action.py,v 1.4 2002/11/19 03:44:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Action.py,v $
+# Revision 1.4  2002/11/19 03:44:08  chalky
+# Changed SourcePath to SourceRule, included an Exclude rule
+#
 # Revision 1.3  2002/04/26 01:21:13  chalky
 # Bugs and cleanups
 #
@@ -74,24 +77,58 @@ class ActionVisitor:
     def visitCacher(self, action): pass
     def visitFormat(self, action): pass
 
-class SourcePath:
-    """Struct for a source path"""
+class SourceRule:
+    """Base class for a source path"""
     def __init__(self, pathtype, dir, glob=None):
 	if pathtype not in ('Simple', 'Dir', 'Base'):
 	    raise ValueError, 'pathtype not valid'
 	self.type = pathtype
 	self.dir = dir
 	self.glob = glob
+    def clone(self):
+	"""Returns a clone of this sourcepath."""
+	pass
+
+class SimpleSourceRule (SourceRule):
+    def __init__(self, files):
+	"""Creates a Simple source rule with a copy of the files list, which
+	is a list of filenames to include"""
+	self.type = 'Simple'
+	self.files = list(files)
+    def clone(self):
+	return SimpleSourceRule(self.files)
+
+class GlobSourceRule (SourceRule):
+    def __init__(self, dirs, glob, recursive):
+	"""Creates a Glob source rule with a copy of the dirs list which is a
+	list of base directories. The glob is a glob expression (string) for
+	files to match in each directory. If the boolean recursive is set,
+	then subdirectories are also searched."""
+	self.type = 'Glob'
+	self.dirs = list(dirs)
+	self.glob = glob
+	self.recursive = recursive
+    def clone(self):
+	return GlobSourceRule(self.dirs, self.glob, self.recursive)
+
+class ExcludeSourceRule (SourceRule):
+    def __init__(self, glob):
+	"""Creates an Exclude source rule with the given glob expression.
+	Existing filenames which match the glob will be removed."""
+	self.type = 'Exclude'
+	self.glob = glob
+    def clone(self):
+	return ExcludeSourceRule(self.glob)
 
 class SourceAction (Action):
     """A Synopsis Action that loads source files"""
     def __init__(self, x, y, name):
 	Action.__init__(self, x, y, name)
-	self.__paths = []
-    def paths(self):
-	"""Returns a list of paths. Each path is a SourcePath object with a path or
-	dir+glob combination of the source files to load."""
-	return self.__paths
+	self.__rules = []
+    def rules(self):
+	"""Returns a list of rules. Each rule is a subclass of a SourceRule
+	object with at least a 'type' attribute to determine the type of rule"""
+	return self.__rules
     def accept(self, visitor): return visitor.visitSource(self)
 
 class ParserAction (Action):
