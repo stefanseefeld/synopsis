@@ -31,6 +31,7 @@ linker = Linker(SSComments(),       # filter out any non-'//' comments
                 Grouper1(),         # group declarations according to '@group' tags
                 Previous(),         # attach '//<' comments
                 CommentStripper(),  # strip any 'suspicious' comments
+                Summarizer(),       # separate summary (first phrase) from detail (everything)
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 html = HTML.Formatter(views = [FramesIndex(),
