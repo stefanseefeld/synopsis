@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.12 2003/11/18 16:45:25 stefan Exp $
+# $Id: Formatter.py,v 1.13 2003/11/22 21:45:59 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -69,7 +69,7 @@ class Formatter(Processor):
       self.class_tree = ClassTree()
       # Create the File Tree (TODO: only if needed...)
       self.file_tree = FileTree()
-      self.file_tree.set_ast(ast)
+      self.file_tree.set_ast(self.ast)
 
       self.xref = CrossReferencer()
 
@@ -85,7 +85,7 @@ class Formatter(Processor):
       self.index_page = None
       self.using_module_index = False
       
-      declarations = ast.declarations()
+      declarations = self.ast.declarations()
 
       # Build class tree
       for d in declarations:
