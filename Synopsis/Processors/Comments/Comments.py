@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.26 2003/11/11 06:03:59 stefan Exp $
+# $Id: Comments.py,v 1.27 2003/12/02 05:46:56 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -8,9 +8,9 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Util
+from Synopsis import AST
 
-import sys, string, re, types
+import string, re
 
 class CommentProcessor(Processor, AST.Visitor):
    """Base class for comment processors.
@@ -41,6 +41,10 @@ class CommentProcessor(Processor, AST.Visitor):
    def visitDeclaration(self, decl):
       self.visit_comments(decl)
 
+   def visitBuiltin(self, decl):
+      if decl.type() == 'EOS': # treat it if it is an 'end of scope' marker
+         self.visit_comments(decl)
+        
 class SSDComments(CommentProcessor):
    """A class that selects only //. comments."""
 
@@ -231,44 +235,7 @@ class Transformer (CommentProcessor):
 
       return self.__currscope
         
-class Dummies (Transformer):
-   """A class that deals with dummy declarations and their comments. This
-   class just removes them."""
-
-   def visitDeclaration(self, decl):
-      """Checks for dummy declarations"""
-
-      if decl.type() == "dummy": return
-      self.add(decl)
-
-   def visitScope(self, scope):
-      """Visits all children of the scope in a new scope. The value of
-      currscope() at the end of the list is used to replace scope's list of
-      declarations - hence you can remove (or insert) declarations from the
-      list. Such as dummy declarations :)"""
-
-      self.push()
-      for decl in scope.declarations(): decl.accept(self)
-      scope.declarations()[:] = self.currscope()
-      self.pop(scope)
-
-   def visitEnum(self, enum):
-      """Does the same as visitScope, but for the enum's list of
-      enumerators"""
-
-      self.push()
-      for enumor in enum.enumerators(): enumor.accept(self)
-      enum.enumerators()[:] = self.currscope()
-      self.pop(enum)
-
-   def visitEnumerator(self, enumor):
-      """Removes dummy enumerators"""
-
-      if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
-      if not len(enumor.name()): return # workaround.
-      self.add(enumor)
-
-class Previous(Dummies):
+class Previous(CommentProcessor):
    """A class that maps comments that begin with '<' to the previous
    declaration"""
 
@@ -283,35 +250,30 @@ class Previous(Dummies):
       for decl in ast.declarations():
          decl.accept(self)
          self.last = decl
-      ast.declarations()[:] = self.currscope()
 
       return self.output_and_return_ast()
 
    def push(self):
       """decorates push() to also push 'last' onto 'laststack'"""
 
-      Dummies.push(self)
       self.__laststack.append(self.last)
       self.last = None
 
-   def pop(self, decl):
+   def pop(self):
       """decorates pop() to also pop 'last' from 'laststack'"""
 
-      Dummies.pop(self, decl)
       self.last = self.__laststack.pop()
 
    def visitScope(self, scope):
       """overrides visitScope() to set 'last' after each declaration"""
 
-      self.removeSuspect(scope)
       self.push()
       for decl in scope.declarations():
          decl.accept(self)
          self.last = decl
-      scope.declarations()[:] = self.currscope()
-      self.pop(scope)
+      self.pop()
 
-   def checkPrevious(self, decl):
+   def visit_comments(self, decl):
       """Checks a decl to see if the comment should be moved. If the comment
       begins with a less-than sign, then it is moved to the 'last'
       declaration"""
@@ -319,43 +281,26 @@ class Previous(Dummies):
       if len(decl.comments()) and self.last:
          first = decl.comments()[0]
          if len(first.text()) and first.text()[0] == "<" and self.last:
+            if self.debug:
+               print 'found comment for previous in', decl.name()
             first.set_suspect(0) # Remove suspect flag
             first.set_text(first.text()[1:]) # Remove '<'
             self.last.comments().append(first)
             del decl.comments()[0]
 
-   def removeSuspect(self, decl):
-      """Removes any suspect comments from the declaration"""
-
-      non_suspect = lambda decl: not decl.is_suspect()
-      comments = decl.comments()
-      comments[:] = filter(non_suspect, comments)
-
-   def visitDeclaration(self, decl):
-      """Calls checkPrevious on the declaration and removes dummies"""
-
-      self.checkPrevious(decl)
-      self.removeSuspect(decl)
-      if decl.type() != "dummy":
-         self.add(decl)
-
    def visitEnum(self, enum):
       """Does the same as visitScope but for enum and enumerators"""
 
-      self.removeSuspect(enum)
       self.push()
       for enumor in enum.enumerators():
          enumor.accept(self)
          self.last = enumor
-      enum.enumerators()[:] = self.currscope()
-      self.pop(enum)
+      self.pop()
 
    def visitEnumerator(self, enumor):
       """Checks previous comment and removes dummies"""
 
-      self.removeSuspect(enumor)
-      self.checkPrevious(enumor)
-      if len(enumor.name()): self.add(enumor)
+      self.visit_comments(enumor)
 
 class Grouper (Transformer):
    """A class that detects grouping tags and moves the enclosed nodes
@@ -382,7 +327,7 @@ class Grouper (Transformer):
       """replace the AST with the newly created one"""
 
       self.strip_dangling_groups()
-      super(Transformer, self).finalize()
+      super(Grouper, self).finalize()
 
    def push(self):
       """starts a new group stack to be able to validate group scopes"""
@@ -435,7 +380,7 @@ class Grouper (Transformer):
       """Visits all children of the scope in a new scope. The value of
       currscope() at the end of the list is used to replace scope's list of
       declarations - hence you can remove (or insert) declarations from the
-      list. Such as dummy declarations :)"""
+      list."""
 
       self.visit_comments(scope)
       self.push()
@@ -484,6 +429,10 @@ class Grouper1(Grouper):
             comments.append(c)
             continue
          elif tag.group('open'):
+
+            if self.debug:
+               print 'found group open tag in', decl.name()
+
             # Open group. Name is remainder of line
             label = tag.group('name') or 'unnamed'
             # The comment before the open marker becomes the group comment
@@ -494,8 +443,14 @@ class Grouper1(Grouper):
             group.comments()[:] = comments
             comments = []
             self.push_group(group)
+
          elif tag.group('close'):
+
+            if self.debug:
+               print 'found group close tag in', decl.name()
+
             self.pop_group(decl)
+
       decl.comments()[:] = comments
 
 class Grouper2(Grouper):
@@ -523,6 +478,10 @@ class Grouper2(Grouper):
             comments.append(c)
             continue
          elif tag.group('open'):
+
+            if self.debug:
+               print 'found group open tag in', decl.name()
+
             # Open group. Name is remainder of line
             label = tag.group('name') or 'unnamed'
             # The comment before the open marker becomes the group comment
@@ -537,7 +496,12 @@ class Grouper2(Grouper):
                decl.comments().insert(0, AST.Comment(tag.group('remainder'), c.file(), c.line()))
             self.push_group(group)
          elif tag.group('close'):
+
+            if self.debug:
+               print 'found group close tag in', decl.name()
+
             self.pop_group(decl)
+
          # The comment before the close marker is ignored...? maybe post-comment?
          # The comment after the close marker becomes the next comment to process
          remainder = string.join([tag.group('remainder'), c.text()[tag.end():]], '')
@@ -626,7 +590,6 @@ processors = {
     'ss' : SSComments,
     'java': JavaComments,
     'qt': QtComments,
-    'dummy': Dummies,
     'prev': Previous,
     'group': Grouper1,
     'group2': Grouper2,
@@ -634,31 +597,3 @@ processors = {
     'summary' : Summarizer,
     'javatags' : JavaTags,
 }
-
-#class Comments(Operation):
-
-#   def __init__(self):
-#      """Constructor, parses the config object"""
-
-#      self.processor_list = []
-
-#      if hasattr(config, 'comment_processors'):
-#         for proc in config.comment_processors:
-#            if type(proc) == types.StringType:
-#               if processors.has_key(proc):
-#                  self.processor_list.append(processors[proc]())
-#               else:
-#                  raise ImportError, 'No such processor: %s'%(proc,)
-#            elif type(proc) == types.TupleType:
-#               mod = Util._import(proc[0])
-#               clas = getattr(mod, proc[1])
-#               self.processor_list.append(clas())
-
-#   def execute(self, ast):
-
-#      declarations = ast.declarations()
-#      for processor in self.processor_list:
-#         processor.process(ast, **kwds)
-
-#linkerOperation = Comments
-
