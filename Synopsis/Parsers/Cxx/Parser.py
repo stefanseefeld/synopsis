@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.4 2003/11/11 06:01:45 stefan Exp $
+# $Id: Parser.py,v 1.5 2003/11/18 07:25:58 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -20,7 +20,7 @@ import occ
 class Parser(Processor):
 
    preprocessor = Parameter(None, 'the preprocessor to use (defaults to internal)')
-   emulate_compiler = Parameter(None, 'a compiler to emulate (defaults to \'c++\')')
+   emulate_compiler = Parameter('c++', 'a compiler to emulate (defaults to \'c++\')')
    cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
    main_file_only = Parameter(True, 'should only main file be processed')
    base_path = Parameter('', 'path prefix to strip off of the file names')
