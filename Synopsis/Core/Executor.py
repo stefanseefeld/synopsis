@@ -12,6 +12,9 @@ from Action import ActionVisitor
 from Synopsis.Core import Util
 import AST
 
+try: import gc
+except ImportError: gc = None
+
 
 class Executor:
     """Base class for executor classes, defining the common interface between
@@ -22,6 +25,14 @@ class Executor:
 	retrieve the AST objects, and the timestamp may be used for build
 	control."""
 	pass
+
+    def prepare_output(self, name, keep):
+	"""Prepares an AST object for returning. For most objects, this does
+	nothing. In the case of a cacher, this causes it to process each input
+	in turn and store the results to disk. This is as opposed to keeping
+	each previous input in memory while the next is parsed!
+	Returns the AST if keep is set, else None."""
+	if keep: return get_output(name)
 
     def get_output(self, name):
 	"""Returns the AST object for the given name. Name must one returned
@@ -187,6 +198,13 @@ class LinkerExecutor (Executor):
 
     def get_output(self, name):
 	# Get input AST(s), probably from a cacher, source or other linker
+	# Prepare the inputs
+	for input in self.__action.inputs():
+	    exec_obj = self.__inputs[input]
+	    names = self.__names[input]
+	    for name, timestamp in names:
+		exec_obj.prepare_output(name, 0)
+	# Merge the inputs into one AST
 	ast = AST.AST()
 	for input in self.__action.inputs():
 	    exec_obj = self.__inputs[input]
@@ -241,25 +259,36 @@ class CacherExecutor (Executor):
 		self.__input_map[name] = exec_obj
 		self.__timestamps[name] = timestamp
 	return names
-    def get_output(self, name):
-	action = self.__action
-	if action.file:
-	    return AST.load(action.file)
-	# Check timestamp on cache
+    def _get_cache_filename(self, name):
+	"""Returns the filename of the cache for the input with the given
+	name"""
 	jname = str(name)
 	if jname[0] == '/': jname = jname[1:]
-	cache_filename = os.path.join(action.dir, jname)
+	cache_filename = os.path.join(self.__action.dir, jname)
 	if cache_filename[-4:] != ".syn":
 	    cache_filename = cache_filename + ".syn"
+	return cache_filename
+    def _get_timestamp(self, filename):
+	"""Returns the timestamp of the given file, or 0 if not found"""
 	try:
-	    stats = os.stat(cache_filename)
-	    cache_ts = stats[stat.ST_MTIME]
-	    if cache_ts >= self.__timestamps[name]:
-		# Cache is up to date, load from cache
-		return AST.load(cache_filename)
+	    stats = os.stat(filename)
+	    return stats[stat.ST_MTIME]
 	except OSError:
-	    # TODO: decide what the error was
-	    pass
+	    # NB: will catch any type of error caused by the stat call, not
+	    # just Not Found
+	    return 0
+    def prepare_output(self, name, keep):
+	"""Prepares the output, which means that it parses it, saves it to
+	disk, and forgets about it. If keep is set, return the AST anyway"""
+	action = self.__action
+	# Check if is a single-file loader (not cache)
+	if action.file: return
+	cache_filename = self._get_cache_filename(name)
+	# Check timestamp on cache
+	cache_ts = self._get_timestamp(cache_filename)
+	if cache_ts > 0 and cache_ts >= self.__timestamps[name]:
+	    # Cache is up to date
+	    return
 	# Need to regenerate. Find input
 	exec_obj = self.__input_map[name]
 	ast = exec_obj.get_output(name)
@@ -274,8 +303,23 @@ class CacherExecutor (Executor):
 	except:
 	    exc, msg = sys.exc_info()[0:2]
 	    print "Warning: %s: %s"%(exc, msg)
-	return ast
+	if keep: return ast
+	elif gc:
+	    # Try to free up mem
+	    gc.collect()
 
+    def get_output(self, name):
+	"""Gets the output"""
+	action = self.__action
+	# Check if is a single-file loader (not cache)
+	if action.file:
+	    return AST.load(action.file)
+	# Double-check preparedness (may generate output)
+	ast = self.prepare_output(name, 1)
+	if ast: return ast
+	# Should now be able to just load from cache file
+	return AST.load(self._get_cache_filename(name))
+	
 class FormatExecutor (Executor):
     """Formats the input AST given by its single input"""
     def __init__(self, executor, action):
@@ -289,7 +333,10 @@ class FormatExecutor (Executor):
 	if len(inputs) != 1:
 	    raise 'Error', 'Formatter takes exactly one input AST'
 	self.__input_exec = self.__executor.create(inputs[0])
-	return self.__input_exec.get_output_names()
+	names = self.__input_exec.get_output_names()
+	if len(names) != 1:
+	    raise 'Error', 'Formatter takes exactly one input AST'
+	return names
 
     def get_output(self, name):
 	# Get input AST, probably from a cache or linker
