@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.7 2002/10/29 06:56:52 chalky Exp $
+# $Id: emul.py,v 1.8 2002/10/29 07:15:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.8  2002/10/29 07:15:35  chalky
+# Define __STRICT_ANSI__ for gcc 2.x to avoid parse errors
+#
 # Revision 1.7  2002/10/29 06:56:52  chalky
 # Fixes to work on cygwin
 #
@@ -319,80 +322,17 @@ def find_compiler_info(compiler):
 		paths.append(line.strip())
 	
     if not paths or not macros:
-      print "Failed"
-      return None
+        print "Failed"
+        return None
     print "Found"
+
+    # Per-compiler adjustments
+    for name, value in tuple(macros):
+        if name == '__GNUC__' and value == '2':
+            # gcc 2.x needs this or it uses nonstandard syntax in the headers
+            macros.append(('__STRICT_ANSI__', ''))
+    
     timestamp = get_compiler_timestamp(compiler)
     return CompilerInfo(compiler, 0, timestamp, paths, macros)
 
-    
-def old_find_compiler_info(compiler):
-    print "Finding info for '%s'"%compiler
-
-    # Run the compiler with -v and get first line to stderr (assumes gcc!!!)
-    cin, out,err = os.popen3(compiler + " -v")
-    version = err.readline().rstrip()
-    cin.close()
-    out.close()
-    err.close()
-
-    # Parse the first line for the 'specs' path - all the info we need is in
-    # the path
-    mo = re_specs.match(version)
-    if not mo:
-	print "Warning: unrecognised version string '%s'"%version
-	return None
-    prefix, hosttype, version = mo.groups()
-
-    # Construct a list of include paths
-    paths = []
-    # The version-specific dir
-    paths.append('%slib/gcc-lib/%s/%s/include'%(prefix, hosttype, version))
-    # For some reason (Debian?) has 2.x as g++-3 and 3.x as g++-v3
-    if version[0] == '3':
-	paths.append(prefix + 'include/g++-v3')
-	paths.append(prefix + 'include/g++-v3/' + hosttype)
-    else:
-	paths.append(prefix + 'include/g++-3')
-	paths.append(prefix + 'include/g++-3/' + hosttype)
-    # The prefix include
-    paths.append(prefix + 'include')
-    # The /usr/include if different
-    if prefix != '/usr/':
-	paths.append('/usr/include')
-
-    # As for macros, these are somewhat contrived as I don't have many
-    # compilers/architectures to test with ;) However, I did derive them from
-    # the gcc sources (CVS mid sep '02).
-    # Defines to the empty string are just defines
-    # Defines to None are undefines (removes previous definition)
-    macros = []
-
-    v1, v2, v3 = re_version.match(version).groups()
-    macros.append( ('__GNUC__', str(v1)) )
-    macros.append( ('__GNUC_MINOR__', str(v2)) )
-    macros.append( ('__GNUC_PATCHLEVEL__', str(v3)) )
-    # UCPP already defines these next two, and not the same as GCC does (ucpp
-    # sets version to C99 value)
-    # macros.append( ('__STDC__', '1') )
-    # macros.append( ('__STDC_VERSION__', '199409L') )
-    macros.append( ('__GNUG__', str(v1)) )
-    macros.append( ('__cplusplus__', '1') ) # STD says '199711L', but gcc isn't fully compliant...
-    macros.append( ('__VERSION__', version) )
-    macros.append( ('system', 'posix') )
-    if hosttype[-6:] == 'cygwin':
-	# These last three are architecture dependant:
-	macros.append( ('__CYGWIN__', '') )
-	macros.append( ('__cygwin__', '') )
-	macros.append( ('__i386__', '') )
-	macros.append( ('__cdecl', '') ) # Removes parse errors due to this keyword
-	macros.append( ('__declspec(x)', '') ) # Removes parse errors due to this keyword
-    else: 
-	# These last three are architecture dependant:
-	macros.append( ('__ELF__', '') )
-	macros.append( ('linux', '') )
-	macros.append( ('unix', '') )
-
-    timestamp = get_compiler_timestamp(compiler)
-    return CompilerInfo(compiler, 0, timestamp, paths, macros)
-    
+   
