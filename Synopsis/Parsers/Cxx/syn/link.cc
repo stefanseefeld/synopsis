@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.6 2001/05/06 20:15:03 stefan Exp $
+ * $Id: link.cc,v 1.7 2001/06/05 02:09:05 stefan Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.7  2001/06/05 02:09:05  stefan
+ * some std C++ fixes and a better way to deal with python versions
+ *
  * Revision 1.6  2001/05/06 20:15:03  stefan
  * fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
  *
@@ -49,8 +52,8 @@
  * other HTML except the actual output and the links.
  */
 
-#include <iostream.h>
-#include <fstream.h>
+#include <iostream>
+#include <fstream>
 #include <vector>
 #include <set>
 #include <map>
@@ -63,7 +66,7 @@ namespace {
     //. start and end so that spans can be nested properly
     struct Link {
 	//. A scoped name type
-	typedef vector<string> Name;
+	typedef std::vector<std::string> Name;
 	//. The line and column of the link
 	int line, col;
 	//. Enumeration of the type of link. These should be in order of
@@ -90,14 +93,14 @@ namespace {
 	    }
 	};
 	//. Set of links sorted by column
-	typedef set<Link*, lt_col> Line;
+	typedef std::set<Link*, lt_col> Line;
 	//. Map of Lines keyed by line number
-	typedef map<int, Line> Map;
+	typedef std::map<int, Line> Map;
 	//. Write link to the output stream for debugging
-	ostream& write(ostream& o);
+	std::ostream &write(std::ostream &o);
     };
     //. Debugging output operator for members of the Link Map
-    ostream& operator << (ostream& o, const Link::Map::value_type& linepair) {
+    std::ostream &operator << (std::ostream &o, const Link::Map::value_type& linepair) {
 	const Link::Line& line = linepair.second;
 	o << "Line " << (*line.begin())->line << "\n";
 	Link::Line::const_iterator iter = line.begin();
@@ -106,7 +109,7 @@ namespace {
 	return o;
     }
     //. Debugging output method for Links
-    ostream& Link::write(ostream& o) {
+    std::ostream &Link::write(std::ostream &o) {
 	o << " " << col << " (" << type << ") ";
 	Link::Name::const_iterator iter = name.begin();
 	if (iter == name.end()) {
@@ -118,13 +121,13 @@ namespace {
 	return o;
     }
     //. Filename of the input source file
-    const char* input_filename = NULL;
+    const char* input_filename = 0;
     //. Filename of the output HTML file
-    const char* output_filename = NULL;
+    const char* output_filename = 0;
     //. Filename of the links file
-    const char* links_filename = NULL;
+    const char* links_filename = 0;
     //. A list of TOC's to load
-    vector<const char*> toc_filenames;
+    std::vector<const char*> toc_filenames;
     //. True if should append to output file. Note that this only works if the
     //. process previously using the file has flushed things to disk!
     bool links_append = false;
@@ -132,7 +135,7 @@ namespace {
     Link::Map links;
     
     //. Type of the TableOfContents
-    typedef map<string, string> TOC;
+    typedef std::map<std::string, std::string> TOC;
     //. The TOC used for looking up hrefs 
     TOC toc;
 
@@ -142,29 +145,29 @@ namespace {
     {
 	for (int i = 1; i < argc; i++) {
 	    if (!strcmp(argv[i], "-i")) {
-		if (++i >= argc) { cerr << "-i needs argument" << endl; exit(1); }
+		if (++i >= argc) { std::cerr << "-i needs argument" << std::endl; exit(1); }
 		input_filename = argv[i];
 	    } else if (!strcmp(argv[i], "-o")) {
-		if (++i >= argc) { cerr << "-o needs argument" << endl; exit(1); }
+		if (++i >= argc) { std::cerr << "-o needs argument" << std::endl; exit(1); }
 		output_filename = argv[i];
 	    } else if (!strcmp(argv[i], "-l")) {
-		if (++i >= argc) { cerr << "-l needs argument" << endl; exit(1); }
+		if (++i >= argc) { std::cerr << "-l needs argument" << std::endl; exit(1); }
 		links_filename = argv[i];
 	    } else if (!strcmp(argv[i], "-a")) {
 		links_append = true;
 	    } else if (!strcmp(argv[i], "-t")) {
-		if (++i >= argc) { cerr << "-t needs argument" << endl; exit(1); }
+		if (++i >= argc) { std::cerr << "-t needs argument" << std::endl; exit(1); }
 		toc_filenames.push_back(argv[i]);
 	    } else {
-		cerr << "Unknown option: " << argv[i] << endl;
+		std::cerr << "Unknown option: " << argv[i] << std::endl;
 		exit(1);
 	    }
 	}
 	if (!input_filename || !output_filename || !links_filename) {
-	    cerr << "Usage:\n";
-	    cerr << " link -i input.cc -o output.html -l links.file [ -a ]\n";
-	    cerr << " -i   in\n -o   out\n -l   links\n -a   append to out\n";
-	    cerr << endl;
+	    std::cerr << "Usage:\n";
+	    std::cerr << " link -i input.cc -o output.html -l links.file [ -a ]\n";
+	    std::cerr << " -i   in\n -o   out\n -l   links\n -a   append to out\n";
+	    std::cerr << std::endl;
 	    exit(1);
 	}
     }
@@ -173,7 +176,7 @@ namespace {
     //. confused by HTML, such as < and >. All spaces are replaced with
     //. non-breaking spaces, and tabs are expanded to 8-col tabstops (hence the
     //. col argument)
-    void write(ostream& out, int col, char* buf, int len)
+    void write(std::ostream &out, int col, char* buf, int len)
     {
 	char* ptr = buf, *end = buf+len;
 	while (ptr != end && *ptr) {
@@ -195,7 +198,7 @@ namespace {
     }
 
     //. Writes the line number to the output
-    void write_lineno(ostream& out, int line)
+    void write_lineno(std::ostream &out, int line)
     {
 	// out << setw(4) << line << "| "; <-- but with &nbsp;'s
 	out << "<span class=\"file-linenum\">";
@@ -212,7 +215,7 @@ namespace {
 
     //. Writes whatever indent there is in the buf to the output using the
     //. special span. 'col' is modified to the first non-indent character.
-    void write_indent(ostream&out, char* buf, int& col)
+    void write_indent(std::ostream &out, char* buf, int& col)
     {
 	int len = 0;
 	char* ptr = buf;
@@ -225,13 +228,13 @@ namespace {
     }
 
     //. Reads the links file into the 'links' map.
-    void read_links() throw (string)
+    void read_links() throw (std::string)
     {
-	ifstream in(links_filename);
+	std::ifstream in(links_filename);
 	if (!in) { return; } // this is okay -- just means the file wont be linked
-	string word;
+	std::string word;
 	int line, len;
-	string type;
+	std::string type;
 	while (in) {
 	    if (!(in >> line)) break;
 	    Link* link = new Link;
@@ -244,7 +247,7 @@ namespace {
 		while (in && in.get() != '\n') {
 		    in >> word;
 		    // Replace '160's with spaces
-		    for (string::size_type pos = word.find(160); pos != string::npos; pos = word.find(160, pos)) {
+		    for (std::string::size_type pos = word.find(160); pos != std::string::npos; pos = word.find(160, pos)) {
 			word[pos] = ' ';
 		    }
 		    link->name.push_back(word);
@@ -271,19 +274,19 @@ namespace {
     //. Debugging method to dump all links to cout.
     void dump_links()
     {
-	copy(links.begin(), links.end(), ostream_iterator<Link::Map::value_type>(cout, "\n"));
+	std::copy(links.begin(), links.end(), std::ostream_iterator<Link::Map::value_type>(std::cout, "\n"));
     }
 
     //. Reads in the TOC files. The filenames are taken from the toc_filenames
     //. array and store in the 'toc' map.
-    void read_tocs() throw (string)
+    void read_tocs() throw (std::string)
     {
 	char buf[3][4096];
-	vector<const char*>::iterator iter = toc_filenames.begin();
+	std::vector<const char*>::iterator iter = toc_filenames.begin();
 	while (iter != toc_filenames.end()) {
 	    const char* toc_filename = *iter++;
-	    ifstream in(toc_filename);
-	    if (!in) { throw string("Error opening toc file: ")+toc_filename; }
+	    std::ifstream in(toc_filename);
+	    if (!in) { throw std::string("Error opening toc file: ")+toc_filename; }
 	    while (in) {
 		// Get line
 		if (!in.getline(buf[0], 4096, ',')) break;
@@ -305,12 +308,12 @@ namespace {
     //. Reads the input file, inserts links, and writes the result to the
     //. output. It uses the 'links' line map to iterate through the file
     //. sequentially.
-    void link_file() throw (string)
+    void link_file() throw (std::string)
     {
-	ifstream in(input_filename);
-	if (!in) { throw string("Error opening input file: ")+input_filename; }
-	ofstream out(output_filename);
-	if (!out) { throw string("Error opening output file: ")+output_filename; }
+	std::ifstream in(input_filename);
+	if (!in) { throw std::string("Error opening input file: ")+input_filename; }
+	std::ofstream out(output_filename);
+	if (!out) { throw std::string("Error opening output file: ")+output_filename; }
 	char buf[4096];
 	int line = 1;
 	Link::Map::iterator iter = links.begin(), end = links.end();
@@ -337,7 +340,7 @@ namespace {
 			case Link::LINK_START: 
 			case Link::REF_START:
 			    {
-				string name;
+				std::string name;
 				Link::Name::iterator name_iter = link->name.begin();
 				if (name_iter != link->name.end()) name = *name_iter++;
 				while (name_iter != link->name.end())
@@ -346,7 +349,7 @@ namespace {
 				if (toc_iter == toc.end()) {
 				    out << "<a href=\"#" << name;
 				} else {
-				    string href = toc_iter->second;
+				    std::string href = toc_iter->second;
 				    if (link->type == Link::LINK_START)
 					out << "<a class=\"file-def\" name=\""<<name<<"\"";
 				    else
@@ -404,8 +407,8 @@ int main(int argc, char** argv)
 	read_tocs();
 
 	link_file();
-    } catch (string err) {
-	cerr << "Error: " << err << endl;
+    } catch (std::string err) {
+	std::cerr << "Error: " << err << std::endl;
 	return 1;
     }
 
@@ -414,22 +417,7 @@ int main(int argc, char** argv)
 
 #else
 
-// Python module
-#if PYTHON_MAJOR == 2
-#  if PYTHON_MINOR == 0
-#    include <python2.0/Python.h>
-#  else
-#    error "this python version is not supported yet"
-#  endif
-#elif PYTHON_MAJOR == 1
-#  if PYTHON_MINOR == 6
-#    include <python1.6/Python.h>
-#  elif PYTHON_MINOR == 5
-#    include <python1.5/Python.h>
-#  else
-#    error "this python version is not supported yet"
-#  endif
-#endif
+#include PYTHON_INCLUDE
 
 extern "C" {
     static PyObject* linkError;
