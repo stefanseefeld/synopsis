@@ -323,7 +323,9 @@
 linker = ...
 formatter = ...
 ast = AST()
-formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;])), output=&#39;html&#39;)</programlisting>
+ast = parser.process(ast, input=[&#39;source.hh&#39;])
+ast = linker.process(ast)
+ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
 
       <para>And, to be a little bit more scalable, and to allow the use of
       dependency tracking build tools such as make, the intermediate asts can
@@ -392,40 +394,6 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
         uses a stylesheet for convenient display), or it can be analyzed
         with some special tools using xpath expressions.</para>
       <para>It is used right now for all unit tests.</para>
-      <para>Here are the available parameters</para>
-      <variablelist>
-        <varlistentry>
-          <term>show_ids</term>
-          <listitem>
-            <para>output object ids as attributes 
-              (these can vary between different executions)</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>show_declarations</term>
-          <listitem>
-            <para>output declarations</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>show_types</term>
-          <listitem>
-            <para>output types</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>show_files</term>
-          <listitem>
-            <para>output files</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>stylesheet</term>
-          <listitem>
-            <para>the stylesheet to refer to</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
     </section>
     <section id="ascii-formatter">
       <title>ASCII Formatter</title>
@@ -466,5 +434,13 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
       This is a listing of all processors with their respective parameters
       that can be set as described in <xref linkend="parameters" />.
     </para>
+    <xi:include href="Synopsis.Parsers.Python.Parser.xml"/>
+    <xi:include href="Synopsis.Parsers.IDL.Parser.xml"/>
+    <xi:include href="Synopsis.Parsers.Cxx.Parser.xml"/>
+    <xi:include href="Synopsis.Processors.Linker.xml"/>
+    <xi:include href="Synopsis.Formatters.Dump.Formatter.xml"/>
+    <xi:include href="Synopsis.Formatters.Docbook.Formatter.xml"/>
+    <xi:include href="Synopsis.Formatters.Texinfo.Formatter.xml"/>
+    <xi:include href="Synopsis.Formatters.HTML.Formatter.xml"/>
   </appendix>
 </book>
