@@ -18,6 +18,9 @@ namespace SymbolLookup
 class Table
 {
 public:
+  //.
+  enum Language { C99 = 0x01, CXX = 0x02};
+
   //. A Guard provides RAII - like protection for the scope stack
   struct Guard
   {
@@ -28,7 +31,9 @@ public:
     Table *table;
   };
 
-  Table();
+  //. Create a symbol lookup table for the given language.
+  //. Right now only CXX is supported.
+  Table(Language = CXX);
 
   Table &enter_scope();
   Table &enter_namespace(const PTree::NamespaceSpec *);
