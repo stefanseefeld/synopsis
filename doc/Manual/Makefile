@@ -3,7 +3,7 @@
 sinclude ../../local.mk
 
 topdir		:= ../..
-synopsis	:= $(topdir)/synopsis -c config.py
+synopsis	:= $(topdir)/bin/synopsis -c config.py
 sdir		:= syn
 cxxdir		:= Synopsis/Parser/C++
 cxxsdir		:= syn/Parser/C++
