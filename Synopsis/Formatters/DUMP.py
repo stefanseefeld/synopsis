@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.11 2001/07/19 04:00:39 chalky Exp $
+# $Id: DUMP.py,v 1.12 2002/04/26 01:21:13 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.12  2002/04/26 01:21:13  chalky
+# Bugs and cleanups
+#
 # Revision 1.11  2001/07/19 04:00:39  chalky
 # New .syn file format. Added -d, -t and -f flags
 #
@@ -100,6 +103,8 @@ class Dumper:
 	    return
 	if self.handlers.has_key(t):
 	    self.handlers[t](obj)
+	else:
+	    self.write("Unknown type %s for object: '%s'"%(t,obj))
 
     def visitNone(self, obj):
         self.write(obj)
@@ -195,6 +200,7 @@ class Dumper:
 	))
 	    
     def visitInstance(self, obj):
+	global show_forwards
 	if isinstance(obj, AST.Forward) and not show_forwards: return
 	self.visited[id(obj)] = None
         self.write("[1m%s.%s[m = "%(

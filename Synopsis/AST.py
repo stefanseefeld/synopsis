@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.18 2001/11/07 05:58:21 chalky Exp $
+# $Id: AST.py,v 1.19 2002/04/26 01:21:13 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.19  2002/04/26 01:21:13  chalky
+# Bugs and cleanups
+#
 # Revision 1.18  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -225,7 +228,7 @@ class Group (Declaration):
 	"""The list of declarations in this group"""
 	return self.__declarations
     def accept(self, visitor):
-        print "group accept", visitor
+        #print "group accept", visitor
         visitor.visitGroup(self)
 
 class Scope (Group):

@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.16 2001/06/28 07:22:18 stefan Exp $
+# $Id: Formatter.py,v 1.17 2002/04/26 01:21:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.17  2002/04/26 01:21:14  chalky
+# Bugs and cleanups
+#
 # Revision 1.16  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -134,7 +137,7 @@ class SSDFormatter (CommentFormatter):
 
 class JavaFormatter (CommentFormatter):
     """A class that formats java /** style comments"""
-    __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>\n[ \t]*\*.*)*?(\n[ \t]*)?\*/"
+    __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>(\n[ \t]*\*.*)*?)(\n[ \t]*)?\*/"
     __re_line = r"\n[ \t]*\*[ \t]*(?P<text>.*)"
     def __init__(self):
 	self.re_java = re.compile(JavaFormatter.__re_java)

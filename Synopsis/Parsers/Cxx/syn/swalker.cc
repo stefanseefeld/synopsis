@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.52 2002/03/07 14:12:44 chalky Exp $
+// $Id: swalker.cc,v 1.53 2002/04/26 01:21:14 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.53  2002/04/26 01:21:14  chalky
+// Bugs and cleanups
+//
 // Revision 1.52  2002/03/07 14:12:44  chalky
 // Better parsing of complex sources like boost
 //
@@ -170,17 +173,48 @@ void SWalker::update_line_number(Ptree* ptree)
 // Adds the given comments to the given declaration. If m_links is set,
 // then syntax highlighting information is also stored.
 void
-SWalker::add_comments(AST::Declaration* decl, Ptree* comments)
+SWalker::add_comments(AST::Declaration* decl, Ptree* node)
 {
-    while (comments) {
-        if (comments->First()) {
-            if (decl) decl->comments().push_back(new AST::Comment("", 0, comments->First()->ToString()));
-            if (m_links) m_links->long_span(comments->First(), "file-comment");
-            // Set comments to nil so we dont accidentally do them twice (eg:
-            // when parsing expressions)
-            comments->SetCar(nil);
+  for (Ptree* next = node->Rest(); node && !node->IsLeaf(); next = node->Rest())
+    {
+      Ptree* first = node->First();
+      if (!first || !first->IsLeaf())
+        {
+          node = next;
+          continue;
         }
-        comments = comments->Rest();
+
+      // Check if comment is continued, eg: consecutive C++ comments
+      while (next && next->First() && next->First()->IsLeaf())
+        {
+          if (strncmp(next->First()->GetPosition(), "//", 2))
+            break;
+          char* next_pos = next->First()->GetPosition();
+          char* start_pos = node->First()->GetPosition();
+          char* curr_pos = start_pos + node->First()->GetLength();
+          // Must only be whitespace between current comment and next
+          // and only one newline
+          int newlines = 0;
+          while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
+            if (*curr_pos == '\n' && newlines > 0)
+              break;
+            else if (*curr_pos++ == '\n')
+              ++newlines;
+          if (curr_pos < next_pos)
+            break;
+          // Current comment stretches to end of next
+          int len = int(next_pos - start_pos + next->First()->GetLength());
+          node->SetCar(first = new Leaf(start_pos, len));
+          // Skip the combined comment
+          next = next->Rest();
+        }
+
+      if (decl) decl->comments().push_back(new AST::Comment("", 0, first->ToString()));
+      if (m_links) m_links->long_span(first, "file-comment");
+      // Set first to nil so we dont accidentally do them twice (eg:
+      // when parsing expressions)
+      node->SetCar(nil);
+      node = next;
     }
 }
 
@@ -367,6 +401,14 @@ Ptree* SWalker::TranslatePtree(Ptree* node)
       Types::Type::Mods pre, post; pre.push_back("const"); post.push_back("*");
       m_type = new Types::Modifier(m_type, pre, post);
     }
+  else if (*str == '/' && !node->IsLeaf())
+    {
+      // Assume comment. Must be a list of comments!
+      AST::Declaration* decl;
+      decl = m_builder->add_tail_comment(m_lineno);
+      add_comments(decl, node);
+
+   }
   else
     {
       cout << "Warning: Unknown Ptree "<<node->What(); node->Display2(cout);

@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.3 2001/11/07 05:58:21 chalky Exp $
+# $Id: Project.py,v 1.4 2002/04/26 01:21:13 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.4  2002/04/26 01:21:13  chalky
+# Bugs and cleanups
+#
 # Revision 1.3  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -115,14 +118,26 @@ class ProjectActions:
 	self.__actions.remove(action)
 	del self.__action_names[action.name()]
 	self.fire('action_removed', action)
+
     def rename_action(self, action, newname):
+	"""Renames the given action to the given name"""
 	del self.__action_names[action.name()]
 	action.set_name(newname)
 	self.__action_names[newname] = action
+
     def add_channel(self, source, dest):
+	"""Adds a "channel" between two actions. Causes the output of the
+	first to be connected to the input of the second. The event
+	'channel_added' is fired."""
+	if dest in source.outputs() and source in dest.inputs(): return
 	source.outputs().append(dest)
 	dest.inputs().append(source)
 	self.fire('channel_added', source, dest)
+
+    def action_changed(self, action):
+	"""Indicates that the given action has changed, so that listeners can
+	update themselves"""
+	self.fire('action_changed', action)
 
     def check_name(self, action):
 	"Checks the name, and renames if necessary"
@@ -161,6 +176,21 @@ class ProjectWriter (Util.PyWriter):
 	    action.x(), action.y(), action.name(),
 	    self.long(action.paths()) ))
     
+    def write_ParserAction(self, action):
+	self.write_list(('ParserAction',
+	    action.x(), action.y(), action.name(),
+	    self.flatten_struct(action.config()) ))
+    
+    def write_LinkerAction(self, action):
+	self.write_list(('LinkerAction',
+	    action.x(), action.y(), action.name(),
+	    self.flatten_struct(action.config()) ))
+    
+    def write_FormatAction(self, action):
+	self.write_list(('FormatAction',
+	    action.x(), action.y(), action.name(),
+	    self.flatten_struct(action.config()) ))
+    
     def write_CacherAction(self, action):
 	self.write_list(('CacherAction',
 	    action.x(), action.y(), action.name(),
@@ -188,12 +218,11 @@ class ProjectReader:
 	if hasattr(proj_obj, 'data_dir'): project.set_name(proj_obj.data_dir)
 	self.read_ProjectActions(proj_obj)
     def read_ProjectActions(self, project_obj):
-	# action_obj should be a list
 	for action in project_obj.actions:
 	    t = action[0]
-	    if t == 'SourceAction': self.read_SourceAction(action)
-	    elif t == 'CacherAction': self.read_CacherAction(action)
-	    elif t == 'FormatAction': self.read_FormatAction(action)
+	    if t in ('SourceAction', 'CacherAction', 'FormatAction',
+		    'ParserAction', 'LinkerAction'):
+		getattr(self, 'read_'+t)(action)
 	    else:
 		raise Exception, 'Unknown action type: %s'%action[0]
 	if hasattr(project_obj, 'channels'):
@@ -208,6 +237,24 @@ class ProjectReader:
 	self.action = SourceAction(x, y, name) 
 	self.project.actions().add_action(self.action)
 	for path in paths: self.read_SourcePath(path)
+
+    def read_ParserAction(self, action):
+	type, x, y, name, config = action
+	self.action = ParserAction(x, y, name) 
+	self.project.actions().add_action(self.action)
+	self.action.set_config(config)
+
+    def read_LinkerAction(self, action):
+	type, x, y, name, config = action
+	self.action = LinkerAction(x, y, name) 
+	self.project.actions().add_action(self.action)
+	self.action.set_config(config)
+
+    def read_FormatAction(self, action):
+	type, x, y, name, config = action
+	self.action = FormatAction(x, y, name) 
+	self.project.actions().add_action(self.action)
+	self.action.set_config(config)
 
     def read_SourcePath(self, path):
 	type, dir, glob = path

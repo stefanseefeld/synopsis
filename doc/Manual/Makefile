@@ -21,9 +21,9 @@ PYSOURCES	:= $(PYSOURCES) $(wildcard $(topdir)/Synopsis/*/*/*.py)
 #PY_PPSOURCES	:= $(wildcard $(topdir)/Synopsis/Parser/*/*.py)
 #PYSOURCES	:= $(PY_SSOURCES) $(PY_CSOURCES) $(PY_LSOURCES) $(PY_FSOURCES) $(PY_HTMLSOURCES) $(PY_PSOURCES) $(PY_PPSOURCES)
 CXXCCSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.cc)
-#CXXCCSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.cc) $(CXXCCSOURCES)
+CXXCCSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.cc) $(CXXCCSOURCES)
 CXXHHSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.hh)
-#CXXHHSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.hh) $(CXXHHSOURCES)
+CXXHSOURCES     := $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.h)
 
 
 #S_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(S_PYFILES))
@@ -33,6 +33,7 @@ CXXHHSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.hh)
 #P_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(P_PYFILES) $(PP_PYFILES))
 #PYSYNS		:= $(S_PYSYNS) $(F_PYSYNS) $(C_PYSYNS) $(L_PYSYNS) $(P_PYSYNS)
 PYSYNS		:= $(patsubst $(topdir)/%.py, $(sdir)/%.syn, $(PYSOURCES))
+CXXHSYNS	:= $(patsubst $(topdir)/%.h, $(sdir)/%.h.syn, $(CXXHSOURCES))
 CXXHHSYNS	:= $(patsubst $(topdir)/%.hh, $(sdir)/%.hh.syn, $(CXXHHSOURCES))
 CXXCCSYNS	:= $(patsubst $(topdir)/%.cc, $(sdir)/%.cc.syn, $(CXXCCSOURCES))
 
@@ -52,7 +53,7 @@ html-doxygen:   all.syn
 	@echo formatting $@
 	@$(synopsis) -Wc,formatter=Doxygen -o html-doxygen $^
 
-c++.syn:	$(CXXHHSYNS) $(CXXCCSYNS)
+c++.syn:	$(CXXHHSYNS) $(CXXCCSYNS) $(CXXHSYNS)
 	@echo linking C++ files together
 	@$(synopsis) -Wc,linker=C++Final -o c++.syn $^
 
@@ -156,6 +157,13 @@ $(sdir)/synopsis.syn: $(topdir)/synopsis
 
 # Compile C++ .hh files
 $(CXXHHSYNS): $(sdir)/%.hh.syn: $(topdir)/%.hh
+	@echo parsing $^
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
+	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) -o $@ $?
+#
+# Compile C++ .h files
+$(CXXHSYNS): $(sdir)/%.h.syn: $(topdir)/%.h
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \

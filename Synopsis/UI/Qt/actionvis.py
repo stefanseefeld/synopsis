@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.4 2001/11/09 08:06:59 chalky Exp $
+# $Id: actionvis.py,v 1.5 2002/04/26 01:21:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.5  2002/04/26 01:21:14  chalky
+# Bugs and cleanups
+#
 # Revision 1.4  2001/11/09 08:06:59  chalky
 # More GUI fixes and stuff. Double click on Source Actions for a dialog.
 #
@@ -42,7 +45,7 @@ from Synopsis.Core.Project import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
 from Synopsis.Formatter.ClassTree import ClassTree
 
-from actionwiz import AddWizard, SourceDialog
+import actionwiz
 
 class CanvasStrategy:
     "An interface for a strategy to handle mouse events"
@@ -104,7 +107,9 @@ class SelectionStrategy (CanvasStrategy):
 	if action:
 	    print action.name()
 	    if isinstance(action, SourceAction):
-		SourceDialog(self.view, action, self.canvas.project)
+		actionwiz.ActionDialog(actionwiz.SourcePage, self.view, action, self.canvas.project)
+	    elif isinstance(action, ParserAction):
+		actionwiz.ActionDialog(actionwiz.ParserPage, self.view, action, self.canvas.project)
     
     def key(self, event):
 	"Override default set-mode-to-select behaviour"
@@ -168,7 +173,7 @@ class AddActionStrategy (CanvasStrategy):
 			     self.view.last_pos.y()-16, "New action")
 	try:
 	    # Run the wizard to set the type of the action
-	    wizard = AddWizard(self.view, self.action, self.canvas.project)
+	    wizard = actionwiz.AddWizard(self.view, self.action, self.canvas.project)
 	    if wizard.exec_loop() == QDialog.Rejected:
 		# Abort adding
 		self.action = None
@@ -342,6 +347,13 @@ class ActionCanvas (QCanvas):
 	self._action_lines[dest].append(line)
 	self.update()
 
+    def action_changed(self, action):
+	"Callback from ProjectActions. Indicates changes, including rename"
+	icon = self._action_to_icon_map[action]
+	icon.text.setText(action.name())
+	icon.update_pos()
+	self.update()
+
 
 class CanvasView (QCanvasView):
     def __init__(self, canvas, parent):
@@ -429,7 +441,7 @@ class CanvasWindow (QVBox):
 
 	self.show()
 
-	self.connect(parent, SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
+	self.connect(parent.parentWidget(), SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
 
 	self.setMode('select')
 	self.activate()

@@ -142,6 +142,11 @@ bool Parser::rProgram(Ptree*& def)
 	    SkipTo(';');
 	    lex->GetToken(tk);	// ignore ';'
 	}
+
+    // Retrieve trailing comments
+    def = lex->GetComments();
+    if (def)
+	return TRUE;
     return FALSE;
 }
 
@@ -187,7 +192,9 @@ bool Parser::rDefinition(Ptree*& p)
 	return TRUE;
     }
 
-    lex->GetComments();
+    // Leftover comments.. is this needed?
+    /* Ptree* c = */lex->GetComments();
+    //if (c) c->Display();
     return res;
 }
 

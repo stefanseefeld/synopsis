@@ -1,4 +1,4 @@
-# $Id: actionwiz.py,v 1.2 2001/11/09 08:06:59 chalky Exp $
+# $Id: actionwiz.py,v 1.3 2002/04/26 01:21:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionwiz.py,v $
+# Revision 1.3  2002/04/26 01:21:14  chalky
+# Bugs and cleanups
+#
 # Revision 1.2  2001/11/09 08:06:59  chalky
 # More GUI fixes and stuff. Double click on Source Actions for a dialog.
 #
@@ -30,12 +33,15 @@
 
 import sys, pickle, Synopsis, cStringIO
 from qt import *
+from Synopsis import Config
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
 from Synopsis.Formatter.ClassTree import ClassTree
 
 class SourcePage (QVBox):
+    """The Page (portion of dialog) that displays config options for Source
+    Actions"""
     def __init__(self, parent, action_container):
 	QVBox.__init__(self, parent)
 	self.__ac = action_container
@@ -173,9 +179,78 @@ class SourcePage (QVBox):
 	vbox.addWidget(button)
 	dialog.exec_loop()
 	
+class ParserPage (QVBox):
+    """The Page (portion of dialog) that displays options for a Parser
+    Action"""
+    def __init__(self, parent, action_container):
+	QVBox.__init__(self, parent)
+	self.__ac = action_container
+	self._make_layout()
+    def action(self):
+	return self.__ac.action
+    def set_action(self, action):
+	self.__ac.action = action
+    def _make_layout(self):
+	self.setSpacing(4)
+	label = QLabel("<p>Parser actions take a list of source files from "+
+	       "connected Source actions, and pass them through a parser "+
+	       "by one.", self)
 
-class SourceDialog (QDialog):
-    def __init__(self, parent, action, project):
+	# Make action name field
+	hbox = QHBox(self)
+	label = QLabel("Action &name:", hbox)
+	self.source_name = QLineEdit(hbox)
+	QToolTip.add(self.source_name, "A unique name for this Action")
+	label.setBuddy(self.source_name)
+	self.connect(self.source_name, SIGNAL('textChanged(const QString&)'), self.onActionName)
+	hbox.setSpacing(4)
+
+	# Make module type area
+	label = QLabel("Select a &Parser module to use:", self)
+	self.module_list = QListBox(self)
+	label.setBuddy(self.module_list)
+	self.module_items = {}
+	for name in ['C++', 'Python', 'IDL']:
+	    # Listbox item is automatically added to the list
+	    item = QListBoxText(self.module_list, name)
+	    self.module_items[name] = item
+	self.connect(self.module_list, SIGNAL('highlighted(const QString&)'), self.onModuleSelected)
+
+    def pre_show(self):
+	self.source_name.setText(self.action().name())
+	config = self.action().config()
+	if config and self.module_items.has_key(config.name):
+	    self.module_list.setCurrentItem(self.module_items[config.name])
+
+    def showEvent(self, ev):
+	QVBox.showEvent(self, ev)
+	# Focus name field
+	self.source_name.setFocus()
+	self.source_name.selectAll()
+
+    def onActionName(self, name):
+	self.action().set_name(str(name))
+
+    def onModuleSelected(self, module):
+	module = str(module) #un-QString-ify it
+	print module,"selected"
+	action = self.action()
+	config = action.config()
+	if config is None:
+	    # New action, copy example config for this module
+	    action.set_config(Config.Base.Parser.modules[module])
+	else:
+	    # Changing module for existing action - copy attributes from
+	    # example config if they're not already set
+	    config.name = module
+	    copy = Config.Base.Parser.modules[module]
+	    for attr, value in copy.__dict__.items():
+		if not hasattr(config, attr):
+		    setattr(config, attr, value)
+
+
+class ActionDialog (QDialog):
+    def __init__(self, page_class, parent, action, project):
 	QDialog.__init__(self, parent, 'Action Properties', 1, 
 	    Qt.WStyle_Customize | Qt.WStyle_NormalBorder | Qt.WStyle_Title)
 	self.setCaption('Action Properties')
@@ -185,11 +260,11 @@ class SourceDialog (QDialog):
 	self.vbox = QVBoxLayout(self)
 	self.vbox.setMargin(4)
 	self.vbox.setSpacing(4)
-	self.source_page = SourcePage(self, self)
-	self.source_page.pre_show()
+	self.inner_page = page_class(self, self)
+	self.inner_page.pre_show()
 	frame = QFrame(self)
 	frame.setFrameStyle(QFrame.HLine | QFrame.Sunken)
-	self.vbox.addWidget(self.source_page)
+	self.vbox.addWidget(self.inner_page)
 	self.vbox.addWidget(frame)
 	#self.vbox.addWidget(self.hbox)
 	self.hbox = QHBoxLayout(self.vbox)
@@ -201,6 +276,8 @@ class SourceDialog (QDialog):
 	self.connect(self.ok, SIGNAL('clicked()'), self.accept)
 	self.connect(self.cancel, SIGNAL('clicked()'), self.reject)
 	self.exec_loop()
+	# TODO: handle okay/cancel
+	self.project.actions().action_changed(self.action)
 
 
 
@@ -209,6 +286,7 @@ class AddWizard (QWizard):
 	QWizard.__init__(self, parent, 'AddWizard', 1)
 	self.setMinimumSize(600,400)
 	self.action = action
+	self.project = project
 
 	self.title_font = QFont('Helvetica', 20, QFont.Bold)
 	self.title_palette = QPalette(self.palette())
@@ -223,6 +301,7 @@ class AddWizard (QWizard):
 
 	self._makeStartPage()
 	self._makeSourcePage()
+	self._makeParserPage()
 	self._makeFinishPage()
 
     def _makeStartPage(self):
@@ -259,6 +338,7 @@ class AddWizard (QWizard):
 	    self.setAppropriate(self.source, 1)
 	elif t == 'parser':
 	    self.action = ParserAction(x, y, name)
+	    self.setAppropriate(self.parser, 1)
 	elif t == 'linker':
 	    self.action = LinkerAction(x, y, name)
 	elif t == 'cacher':
@@ -276,6 +356,13 @@ class AddWizard (QWizard):
 	self.setHelpEnabled(page, 0)
 	self.setAppropriate(page, 0)
 	self.source = page
+
+    def _makeParserPage(self):
+	page = ParserPage(self, self)
+	self.addPage(page, "Parser action config")
+	self.setHelpEnabled(page, 0)
+	self.setAppropriate(page, 0)
+	self.parser = page
 
     def onActionName(self, name):
 	self.action.set_name(name)

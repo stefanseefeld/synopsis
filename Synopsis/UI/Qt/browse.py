@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.7 2002/01/13 09:45:52 chalky Exp $
+# $Id: browse.py,v 1.8 2002/04/26 01:21:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.8  2002/04/26 01:21:14  chalky
+# Bugs and cleanups
+#
 # Revision 1.7  2002/01/13 09:45:52  chalky
 # Show formatted source code (only works with refmanual..)
 #
@@ -568,5 +571,6 @@ class GraphBrowser (Browser.SelectionListener):
 	if not self.__window.graph_display.isVisible():
 	    # Not visible, so ignore
 	    return
+	if decl is None: return
 	self.__window.graph_display.set_class(decl.name())
 

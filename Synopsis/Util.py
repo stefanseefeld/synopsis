@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.15 2001/11/05 06:52:11 chalky Exp $
+# $Id: Util.py,v 1.16 2002/04/26 01:21:13 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.16  2002/04/26 01:21:13  chalky
+# Bugs and cleanups
+#
 # Revision 1.15  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
@@ -267,6 +270,7 @@ class PyWriter:
 	self.__prepend = ''
 	self.__class_funcs = {}
 	self.__long_lists = {}
+	self.__done_struct = 0
     def indent(self):
 	self.__indent = self.__indent+'  '
     def outdent(self):
@@ -276,6 +280,10 @@ class PyWriter:
 	if self.imports.has_key(key): return
 	self.imports[key] = None
 	self.os.write('from %s import %s\n'%(module, names))
+    def ensure_struct(self):
+	if self.__done_struct == 1: return
+	self.os.write('class struct:\n def __init__(self,**args):\n  for k,v in args.items(): setattr(self, k, v)\n\n')
+	self.__done_struct = 1
     def write(self, str):
 	# Get cached '\n' if any
 	prefix = self.__prepend
@@ -353,3 +361,31 @@ class PyWriter:
 	self.write(name + ' = ')
 	self.write_item(value)
 	self.write('\n')
+    def flatten_struct(self, struct):
+	"""Flattens a struct into a (possibly nested) list. A struct is an
+	object with only the following members: numbers, strings, sub-structs,
+	lists and tuples."""
+	t = type(struct)
+	if t is types.TupleType:
+	    return tuple(map(self.flatten_struct, struct))
+	if t is types.ListType:
+	    return map(self.flatten_struct, struct)
+	if t in (types.ClassType, types.InstanceType):
+	    self.ensure_struct()
+	    flatten_item = lambda kv, self=self: (kv[0], self.flatten_struct(kv[1]))
+	    items = lambda kv: kv[0] not in ('__init__', '__doc__', '__module__')
+	    return PyWriterStruct(map(flatten_item, filter(items, struct.__dict__.items()) ))
+	return struct
+    def write_PyWriterStruct(self, struct):
+	if not len(struct.dict): return self.write('struct()')
+	self.write('struct(\n')
+	self.indent()
+	keyval = lambda kv:'%s=%s'%(kv[0],repr(kv[1]))
+	self.write(string.join(map(keyval, struct.dict), ',\n'))
+	self.outdent()
+	self.write(')')
+	
+class PyWriterStruct:
+    """A utility class that PyWriter uses to dump class objects. Dict is the
+    dictionary of the class being dumped."""
+    def __init__(self, dict): self.dict = dict
