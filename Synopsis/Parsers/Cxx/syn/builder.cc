@@ -35,9 +35,9 @@ Builder::Scope::~Scope()
 // Struct Builder::Private
 //
 
-typedef map<AST::Scope*, Builder::Scope*> ScopeMap;
 struct Builder::Private {
-    ScopeMap map;
+  typedef map<AST::Scope*, Builder::Scope*> ScopeMap;
+  ScopeMap map;
 };
 
 //
@@ -79,10 +79,10 @@ Builder::~Builder()
 //. Finds or creates a cached Scope
 Builder::Scope* Builder::findScope(AST::Scope* decl)
 {
-    ScopeMap::iterator iter = m->map.find(decl);
+    Private::ScopeMap::iterator iter = m->map.find(decl);
     if (iter == m->map.end()) {
 	Scope* scope = new Scope(decl);
-	m->map.insert(ScopeMap::value_type(decl, scope));
+	m->map.insert(Private::ScopeMap::value_type(decl, scope));
 	return scope;
     }
     return iter->second;
