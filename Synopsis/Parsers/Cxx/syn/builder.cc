@@ -61,6 +61,27 @@ void Builder::endClass()
     m_scope_stack.pop();
 }
 
+//. Add an operation
+AST::Operation* Builder::addOperation(int line, string name, vector<string> premod, Type::Type* ret, string realname)
+{
+    // Generate the name
+    AST::Name scope = m_scope->name();
+    scope.push_back(name);
+    AST::Operation* oper = new AST::Operation(m_filename, line, "method", scope, premod, ret, realname);
+    add(oper);
+    return oper;
+}
+
+//. Add a variable
+AST::Variable* Builder::addVariable(int line, string name, Type::Type* vtype, bool constr)
+{
+    // Generate the name
+    AST::Name scope = m_scope->name();
+    scope.push_back(name);
+    AST::Variable* var = new AST::Variable(m_filename, line, "variable", scope, vtype, constr);
+    add(var);
+    return var;
+}
 
 //
 // Type Methods

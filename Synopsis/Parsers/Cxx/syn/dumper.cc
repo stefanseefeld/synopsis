@@ -68,3 +68,9 @@ void Dumper::visitClass(AST::Class* clas)
     undent();
     cout << m_indent_string << "};" << endl;
 }
+
+void Dumper::visitOperation(AST::Operation* oper)
+{
+    cout << m_indent_string << oper->realname() << "(";
+    cout << ")" << endl;
+}

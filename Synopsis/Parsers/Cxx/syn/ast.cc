@@ -252,7 +252,7 @@ void Operation::accept(Visitor* visitor)
 // AST::Parameter
 //
 
-Parameter::Parameter(Mods& pre, Type::Type* t, Mods& post, string name, string value)
+Parameter::Parameter(Mods pre, Type::Type* t, Mods post, string name, string value)
     : m_pre(pre), m_post(post), m_type(t), m_name(name), m_value(value)
 {
 }

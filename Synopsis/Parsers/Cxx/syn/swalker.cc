@@ -370,7 +370,7 @@ void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type*
 	bool first = true;
 	// Append type names to realname
 	while (iter <= tend) {
-	    Type::Type* type = m_decoder->decodeType();
+	    /*Type::Type* type = */m_decoder->decodeType();
 	    if (!first) realname+=","; else first=false;
 	    realname += "type"; //type->ToString();
 	}
