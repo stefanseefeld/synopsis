@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.8 2001/03/29 14:03:36 chalky Exp $
+# $Id: Util.py,v 1.9 2001/04/05 09:54:00 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.9  2001/04/05 09:54:00  chalky
+# More robust _import()
+#
 # Revision 1.8  2001/03/29 14:03:36  chalky
 # Cache current working dir, and use it for file imports in _import()
 #
@@ -140,6 +143,7 @@ def _import(name):
     """import either a module, or a file."""
     # if name contains slashes, interpret it as a file
     as_file = string.find(name, "/") != -1
+    as_file = as_file or name[-3:] == '.py'
     if not as_file:
         components = string.split(name, ".")
         # if one of the components is empty, name is interpreted as a file ('.foo' for example)
@@ -150,24 +154,37 @@ def _import(name):
     mod = None
     # try as module
     if not as_file:
-        try:
-            mod = __import__(name)
-            for comp in components[1:]:
-                mod = getattr(mod, comp)
-            return mod
-        except ImportError, msg:
-            pass
-	    #if msg == "No module named %s"%components[0]: pass
-            #raise ImportError, msg
+	import_name = list(components)
+	while len(import_name):
+	    try:
+		mod = __import__(string.join(import_name, '.'))
+		for comp in components[1:]:
+		    try:
+			mod = getattr(mod, comp)
+		    except AttributeError, msg:
+			print "Error: Unable to find %s in:\n%s"%(
+			    comp,repr(mod))
+			sys.exit(1)
+		return mod
+	    except ImportError, msg:
+		# Remove last component and try again
+		del import_name[-1]
+	    except SystemExit, msg: raise
+	    except:
+		print "Unknown error occurred importing",name
+		import traceback
+		traceback.print_exc()
+		sys.exit(1)
+
     # try as file
     try:
-	if not name[0] == '/': name = _workdir+'/'+name
+	if not name[0] == '/': name = _workdir+os.sep+name
 	if not os.access(name, os.R_OK): raise ImportError, "Cannot access file %s"%name
         dir = os.path.abspath(os.path.dirname(name))
         name = os.path.basename(name)
         modname = name[:]
         if modname[-3:] == ".py": modname = modname[0:-3]
-        sys.path.insert(0, dir)
+        if dir not in sys.path: sys.path.insert(0, dir)
         mod = __import__(modname)
     except ImportError, msg:
         sys.path = sys.path[1:]
