@@ -39,6 +39,7 @@
 #endif
 
 #include <vector>    // STL
+#include <string>
 
 #include <iostream>
 
@@ -65,7 +66,7 @@ class cgNode
     void prolog_print(ostream& out) const;
 
     Symbol        *name;        // function name
-    char          *filename;    // defined in this file.
+    std::string    filename;    // defined in this file.
 
     bool           defined;
     bool           used;

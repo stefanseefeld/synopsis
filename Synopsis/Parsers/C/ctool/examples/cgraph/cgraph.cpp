@@ -134,7 +134,6 @@ char *stdc[] =
 cgNode::cgNode( Symbol *nme /* = NULL */ )
 {
     name = nme;
-    filename = NULL;
 
     defined = false;
     used    = false;

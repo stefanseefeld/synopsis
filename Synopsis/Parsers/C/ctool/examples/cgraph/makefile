@@ -28,6 +28,11 @@ CPP_PATH =/usr/ccs/lib/cpp
 #CT_TARG = cgraph.exe
 #CPP_PATH =/usr/local/bin/cpp.exe
 
+# MacOs X needs these changes
+CC		= cc
+CPLUS	= c++
+CPP_PATH =/usr/bin/cpp
+
 LIBS = -lct
 LIBSLOC= -L../../src
 
