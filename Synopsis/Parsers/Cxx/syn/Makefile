@@ -175,3 +175,4 @@ clean :
 	../occ.so ../link.so ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga \
 	../ucpp/*.ao ../occ/*.o ../occ/*.go
 
+distclean: clean
