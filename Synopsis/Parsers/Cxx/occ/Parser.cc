@@ -501,7 +501,7 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
   if(my_lexer.look_ahead(0) == '{')
   {
     my_symbols.declare(spec);
-    SymbolLookup::Table::Guard guard(my_symbols.enter_namespace(spec));
+    SymbolLookup::Table::Guard guard(&my_symbols.enter_namespace(spec));
     if(!linkage_body(body)) return false;
   }
   else if(!definition(body)) return false;
@@ -1071,8 +1071,8 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
       {
   	statement = new PTree::Declaration(head,
   					   PTree::list(integral, decl->car()));
- 	SymbolLookup::Table::Guard guard(my_symbols.enter_function(statement));
-	PTree::Node *body;
+ 	SymbolLookup::Table::Guard guard(&my_symbols.enter_function(statement));
+	PTree::Block *body;
 	if(!function_body(body)) return false;
 	if(PTree::length(decl) != 1) return false;
 
@@ -1164,7 +1164,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
   }
   else
   {
-    PTree::Node *body;
+    PTree::Block *body;
     if(!function_body(body))
       return false;
 
@@ -2689,7 +2689,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   spec->set_encoded_name(encode);
   if (!my_in_template_decl) my_symbols.declare(spec);
 
-  SymbolLookup::Table::Guard guard(my_symbols.enter_class(spec));
+  SymbolLookup::Table::Guard guard(&my_symbols.enter_class(spec));
 
   if(!class_body(body)) return false;
 
@@ -3838,7 +3838,7 @@ bool Parser::primary_expr(PTree::Node *&exp)
 bool Parser::userdef_statement(PTree::Node *&st)
 {
   Token tk, tk2, tk3, tk4;
-  PTree::Node *keyword, *exp, *body, *exp2, *exp3;
+  PTree::Node *keyword, *exp, *exp2, *exp3;
   PTree::Encoding dummy_encode;
 
   int t = my_lexer.get_token(tk);
@@ -3854,11 +3854,15 @@ bool Parser::userdef_statement(PTree::Node *&st)
       keyword = new PTree::AtomUserKeyword2(tk);
       if(!arg_decl_list(exp, dummy_encode)) return false;
     rest:
+    {
       if(my_lexer.get_token(tk3) != ')') return false;
+      PTree::Block *body;
       if(!compound_statement(body)) return false;
       st = PTree::list(keyword, new PTree::Atom(tk2), exp, new PTree::Atom(tk3), body);
       return true;
+    }
     case Token::UserKeyword3 :
+    {
       if(!expr_statement(exp)) return false;
 
       if(my_lexer.look_ahead(0) == ';') exp2 = 0;
@@ -3867,11 +3871,13 @@ bool Parser::userdef_statement(PTree::Node *&st)
       if(my_lexer.look_ahead(0) == ')') exp3 = 0;
       else if(!comma_expression(exp3)) return false;
       if(my_lexer.get_token(tk4) != ')') return false;
+      PTree::Block *body;
       if(!compound_statement(body)) return false;
 
       st = PTree::list(new PTree::Atom(tk), new PTree::Atom(tk2), exp, exp2,
 		       new PTree::Atom(tk3), exp3, new PTree::Atom(tk4), body);
       return true;
+    }
     default :
       return false;
   }
@@ -4110,7 +4116,7 @@ bool Parser::condition(PTree::Node *&exp)
 /*
   function.body  : compound.statement
 */
-bool Parser::function_body(PTree::Node *&body)
+bool Parser::function_body(PTree::Block *&body)
 {
   Trace trace("Parser::function_body");
   return compound_statement(body);
@@ -4120,15 +4126,20 @@ bool Parser::function_body(PTree::Node *&body)
   compound.statement
   : '{' (statement)* '}'
 */
-bool Parser::compound_statement(PTree::Node *&body)
+bool Parser::compound_statement(PTree::Block *&body, bool create_scope)
 {
   Trace trace("Parser::compound_statement");
-  Token ob, cb;
-  PTree::Node *ob_comments, *cb_comments;
 
+  Token ob;
   if(my_lexer.get_token(ob) != '{') return false;
 
-  ob_comments = wrap_comments(my_lexer.get_comments());
+  PTree::Node *ob_comments = wrap_comments(my_lexer.get_comments());
+  body = new PTree::Block(new PTree::CommentedAtom(ob, ob_comments), 0);
+
+  SymbolLookup::Table::Guard guard(create_scope ? 
+				   &my_symbols.enter_block(body) :
+				   0);
+
   PTree::Node *sts = 0;
   while(my_lexer.look_ahead(0) != '}')
   {
@@ -4137,18 +4148,19 @@ bool Parser::compound_statement(PTree::Node *&body)
     {
       if(!mark_error()) return false; // too many errors
       skip_to('}');
+      Token cb;
       my_lexer.get_token(cb);
-      body = PTree::list(new PTree::Atom(ob), 0, new PTree::Atom(cb));
+      body = new PTree::Block(new PTree::Atom(ob), 0, new PTree::Atom(cb));
       return true;	// error recovery
     }
 
     sts = PTree::snoc(sts, st);
   }
+  Token cb;
   if(my_lexer.get_token(cb) != '}') return false;
 
-  cb_comments = wrap_comments(my_lexer.get_comments());
-  body = new PTree::Block(new PTree::CommentedAtom(ob, ob_comments), sts, 
-			  new PTree::CommentedAtom(cb, cb_comments));
+  PTree::Node *cb_comments = wrap_comments(my_lexer.get_comments());
+  body = PTree::nconc(body, PTree::list(sts, new PTree::CommentedAtom(cb, cb_comments)));
   return true;
 }
 
@@ -4186,8 +4198,12 @@ bool Parser::statement(PTree::Node *&st)
   switch(k = my_lexer.look_ahead(0))
   {
     case '{' :
-      if (!compound_statement(st)) return false;
+    {
+      PTree::Block *block;
+      if (!compound_statement(block, true)) return false;
+      st = block;
       break;
+    }
     case Token::USING :
       if (!using_(st)) return false;
       break;
@@ -4429,9 +4445,9 @@ bool Parser::try_statement(PTree::Node *&st)
 {
   Trace trace("Parser::try_statement");
   Token tk, op, cp;
-  PTree::Node *body, *handler;
 
   if(my_lexer.get_token(tk) != Token::TRY) return false;
+  PTree::Block *body;
   if(!compound_statement(body)) return false;
 
   st = new PTree::TryStatement(new PTree::Reserved(tk), PTree::list(body));
@@ -4440,6 +4456,7 @@ bool Parser::try_statement(PTree::Node *&st)
   {
     if(my_lexer.get_token(tk) != Token::CATCH) return false;
     if(my_lexer.get_token(op) != '(') return false;
+    PTree::Node *handler;
     if(my_lexer.look_ahead(0) == Token::Ellipsis)
     {
       my_lexer.get_token(cp);
@@ -4451,6 +4468,7 @@ bool Parser::try_statement(PTree::Node *&st)
       if(!arg_declaration(handler, encode)) return false;
     }
     if(my_lexer.get_token(cp) != ')') return false;
+    PTree::Block *body;
     if(!compound_statement(body)) return false;
 
     st = PTree::snoc(st, PTree::list(new PTree::Reserved(tk),

@@ -161,8 +161,8 @@ private:
   bool var_name_core(PTree::Node *&, PTree::Encoding&);
   bool is_template_args();
   
-  bool function_body(PTree::Node *&);
-  bool compound_statement(PTree::Node *&);
+  bool function_body(PTree::Block *&);
+  bool compound_statement(PTree::Block *&, bool create_scope = false);
   bool statement(PTree::Node *&);
   bool if_statement(PTree::Node *&);
   bool switch_statement(PTree::Node *&);

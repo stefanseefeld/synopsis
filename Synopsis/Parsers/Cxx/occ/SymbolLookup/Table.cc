@@ -56,6 +56,15 @@ Table &Table::enter_function(const PTree::Declaration *decl)
   return *this;
 }
 
+Table &Table::enter_block(const PTree::List *block)
+{
+  Trace trace("Table::enter_block");
+  LocalScope *scope = new LocalScope(block, my_scopes.top());
+  my_scopes.top()->declare_scope(block, scope);
+  my_scopes.push(scope);
+  return *this;
+}
+
 void Table::leave_scope()
 {
   Trace trace("Table::leave_scope");
