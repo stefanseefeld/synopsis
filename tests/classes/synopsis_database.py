@@ -56,6 +56,9 @@ class Database(database.Database):
       elif id == 'OpenCxx.Parser':
          parameters['src'] = os.path.normpath('%s/OpenCxx/src/Parser.cc'%self.srcdir)
          parameters['exe'] = os.path.normpath('OpenCxx/bin/Parser')
+      elif id == 'OpenCxx.Scope':
+         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Scope.cc'%self.srcdir)
+         parameters['exe'] = os.path.normpath('OpenCxx/bin/Scope')
       elif id == 'OpenCxx.ConstEvaluator':
          parameters['src'] = os.path.normpath('%s/OpenCxx/src/ConstEvaluator.cc'%self.srcdir)
          parameters['exe'] = os.path.normpath('OpenCxx/bin/ConstEvaluator')
@@ -278,6 +281,9 @@ class Database(database.Database):
       elif id.startswith('OpenCxx.Parser'):
          parameters['resources'] = ['OpenCxx.Parser']
          parameters['applet'] = 'OpenCxx/bin/Parser'
+      elif id.startswith('OpenCxx.Scope'):
+         parameters['resources'] = ['OpenCxx.Scope']
+         parameters['applet'] = 'OpenCxx/bin/Scope'
       elif id.startswith('OpenCxx.ConstEvaluator'):
          parameters['resources'] = ['OpenCxx.ConstEvaluator']
          parameters['applet'] = 'OpenCxx/bin/ConstEvaluator'
