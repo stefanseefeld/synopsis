@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.8 2001/01/25 18:27:47 stefan Exp $
+# $Id: AST.py,v 1.9 2001/02/07 09:56:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.9  2001/02/07 09:56:59  chalky
+# Support for "previous comments" in C++ parser and Comments linker.
+#
 # Revision 1.8  2001/01/25 18:27:47  stefan
 # added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
 #
@@ -114,8 +117,8 @@ class Declaration:
 	"""A list of Comment objects"""
 	return self.__comments
     def accept(self, visitor):
-	"""Visit the given visitor. For Declaration it does nothing."""
-	pass
+	"""Visit the given visitor"""
+	visitor.visitDeclaration(self)
     def accessibility(self):
 	"""One of the accessibility constants.
 	This may be one of DEFAULT, PUBLIC, PROTECTED or PRIVATE, which are
@@ -381,6 +384,9 @@ class Comment :
     def text(self):
 	"""The text of the comment"""
 	return self.__text
+    def set_text(self, text):
+	"""Changes the text"""
+	self.__text = text
     def __str__(self):
 	"""Returns the text of the comment"""
 	return self.__text

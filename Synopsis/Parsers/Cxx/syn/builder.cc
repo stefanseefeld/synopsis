@@ -314,7 +314,14 @@ AST::Enum* Builder::addEnum(int line, string name, const vector<AST::Enumerator*
     return theEnum;
 }
 
-
+//. Add tail comment
+AST::Declaration* Builder::addTailComment(int line)
+{
+    AST::Name name; name.push_back("dummy");
+    AST::Declaration* decl = new AST::Declaration(m_filename, line, "dummy", name);
+    add(decl);
+    return decl;
+}
 
 //
 // Type Methods

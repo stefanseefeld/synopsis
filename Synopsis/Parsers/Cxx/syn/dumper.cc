@@ -205,6 +205,8 @@ string Dumper::format(AST::Parameter* param)
 
 void Dumper::visitDeclaration(AST::Declaration* decl)
 {
+    visit(decl->comments());
+    if (decl->type() == "dummy") return;
     cout << m_indent_string << "DECL " << decl->name() << endl;
 }
 

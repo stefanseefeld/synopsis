@@ -36,7 +36,7 @@ void *LoadSoLib(char *) { return 0;}
 void *LookupSymbol(void *, char *) { return 0;}
 
 // If true then everything but what's in the main file will be stripped
-bool syn_main_only;
+bool syn_main_only, syn_extract_tails;
 
 // If set then this is stripped from the start of all filenames
 const char* syn_basename = "";
@@ -60,6 +60,7 @@ void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *
   doPreprocess = true;
   sharedLibraryName = 0;
   syn_main_only = false;
+  syn_extract_tails = false;
   
   size_t argsize = PyList_Size(args);
   for (size_t i = 0; i != argsize; ++i)
@@ -70,6 +71,7 @@ void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *
       else if (strcmp(argument, "-m") == 0) syn_main_only = true;
       else if (strcmp(argument, "-b") == 0)
 	syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
+      else if (strcmp(argument, "-t") == 0) syn_extract_tails = true;
 
     }
 }
@@ -145,21 +147,24 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   
   Builder builder(syn_basename);
   SWalker swalker(&parse, &builder);
+  swalker.setExtractTails(syn_extract_tails);
   Ptree *def;
-  while(parse.rProgram(def))
-    swalker.Translate(def);
 #ifdef DEBUG
   swalker.setExtractTails(true);
+  while(parse.rProgram(def))
+    swalker.Translate(def);
   // Test Synopsis
-  //Synopsis synopsis(src, declarations, types);
-  //if (syn_main_only) synopsis.onlyTranslateMain();
-  //synopsis.translate(builder.scope());
+  Synopsis synopsis(src, declarations, types);
+  if (syn_main_only) synopsis.onlyTranslateMain();
+  synopsis.translate(builder.scope());
   
   // Test Dumper
   Dumper dumper;
   if (syn_main_only) dumper.onlyShow(src);
   dumper.visitScope(builder.scope());
 #else
+  while(parse.rProgram(def))
+    swalker.Translate(def);
   string source(src);
   if (source.compare(string(syn_basename), 0, strlen(syn_basename)) == 0)
     source.erase(0, strlen(syn_basename));

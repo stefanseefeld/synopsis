@@ -87,6 +87,9 @@ public:
     //. Add an enum
     AST::Enum* addEnum(int, string name, const vector<AST::Enumerator*>&);
 
+    //. Add a tail comment. This will be a dummy declaration with an empty
+    //. and type "dummy"
+    AST::Declaration* addTailComment(int line);
 
     //
     // Type Methods

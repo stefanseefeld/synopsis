@@ -281,6 +281,13 @@ Ptree* SWalker::TranslateBlock(Ptree* block) {
 	Translate(rest->Car());
 	rest = rest->Cdr();
     }
+    if (m_extract_tails) {
+	Ptree* close = Ptree::Third(block);
+	AST::Declaration* decl;
+	decl = m_builder->addTailComment(m_lineno);
+	addComments(decl, dynamic_cast<CommentedLeaf*>(close));
+    }
+
     return 0;
 }
 

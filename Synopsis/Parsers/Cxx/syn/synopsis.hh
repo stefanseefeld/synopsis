@@ -68,6 +68,7 @@ public:
     //
     // types from the Synopsis.AST module
     //
+    PyObject *Declaration(AST::Declaration*);
     PyObject *Forward(AST::Forward*);
     PyObject *Scope(AST::Scope*);
     PyObject *Namespace(AST::Namespace*);
@@ -86,7 +87,7 @@ public:
     //
     // AST::Visitor methods
     //
-    //void visitDeclaration(AST::Declaration*);
+    void visitDeclaration(AST::Declaration*);
     void visitScope(AST::Scope*);
     void visitNamespace(AST::Namespace*);
     void visitClass(AST::Class*);

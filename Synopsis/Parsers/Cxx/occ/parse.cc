@@ -2353,8 +2353,10 @@ bool Parser::rEnumSpec(Ptree*& spec, Encoding& encode)
     if(lex->GetToken(tk2) != '}')
 	return FALSE;
 
-    spec = Ptree::Snoc(spec, new PtreeBrace(new Leaf(tk), body,
-					    new Leaf(tk2)));
+    spec = Ptree::Snoc(spec, 
+	    new PtreeBrace(
+		new Leaf(tk), body,
+		new CommentedLeaf(tk2, lex->GetComments())));
     return TRUE;
 }
 
@@ -2564,7 +2566,8 @@ bool Parser::rClassBody(Ptree*& body)
     }
 
     lex->GetToken(tk);
-    body = new PtreeClassBody(ob, mems, new Leaf(tk));
+    body = new PtreeClassBody(ob, mems, 
+	    new CommentedLeaf(tk, lex->GetComments()));
     return TRUE;
 }
 

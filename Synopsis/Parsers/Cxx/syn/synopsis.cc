@@ -362,6 +362,18 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
     PyObject_CallMethod(pydecl, "set_accessability", "i", int(cdecl->access()));
 }
 
+PyObject *Synopsis::Declaration(AST::Declaration* decl)
+{
+    Trace trace("Synopsis::addDeclaration");
+    PyObject *pydecl = PyObject_CallMethod(m_ast, "Declaration", "OiOOO",
+	m->py(decl->filename()), decl->line(), m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name())
+    );
+    assertObject(pydecl);
+    addComments(pydecl, decl);
+    return pydecl;
+}
+
 PyObject *Synopsis::Forward(AST::Forward* decl)
 {
     Trace trace("Synopsis::addForward");
@@ -611,9 +623,10 @@ void Synopsis::Declaration(Declaration* type)
 //
 // AST::Visitor methods
 //
-/*void Synopsis::visitDeclaration(AST::Declaration* decl) {
-    m->add(decl, this->Declaration(decl));
-}*/
+void Synopsis::visitDeclaration(AST::Declaration* decl) {
+    // Assume this is a dummy declaration
+    m->add(decl, Declaration(decl));
+}
 void Synopsis::visitScope(AST::Scope* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Scope(decl));

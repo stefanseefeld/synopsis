@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.1 2001/02/06 06:55:18 chalky Exp $
+# $Id: Comments.py,v 1.2 2001/02/07 09:57:00 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.2  2001/02/07 09:57:00  chalky
+# Support for "previous comments" in C++ parser and Comments linker.
+#
 # Revision 1.1  2001/02/06 06:55:18  chalky
 # Initial commit. Support SSD and Java comments. Selection of comments only
 # (same as ssd,java formatters in HTML)
@@ -36,6 +39,9 @@ import sys, string, re, getopt
 from Synopsis.Core import AST, Util
 
 class CommentProcessor (AST.Visitor):
+    def processAll(self, declarations):
+	for decl in declarations:
+	    decl.accept(self)
     def process(self, decl):
 	"""Process comments for the given declaration"""
     def visitDeclaration(self, decl):
@@ -85,12 +91,96 @@ class JavaComments (CommentProcessor):
 	text = string.join(text_list,'\n')
 	decl.comments()[:] = [AST.Comment(text,'',-1)]
 
+class Dummies (CommentProcessor):
+    """A class that deals with dummy declarations and their comments. This
+    class just removes them. Since it has to modify the AST, it creates a new
+    AST which can then be copied over the old."""
+    def processAll(self, declarations):
+	self.__scopestack = []
+	self.__currscope = []
+	for decl in declarations: decl.accept(self)
+	declarations[:] = self.__currscope
+    def push(self):
+	self.__scopestack.append(self.__currscope)
+	self.__currscope = []
+    def pop(self, decl):
+	self.__currscope = self.__scopestack.pop()
+	self.__currscope.append(decl)
+    def add(self, decl):
+	self.__currscope.append(decl)
+    def currscope(self): return self.__currscope
+	
+    def visitDeclaration(self, decl):
+	if decl.type() == "dummy": return
+	self.add(decl)
+    def visitScope(self, scope):
+	self.push()
+	for decl in scope.declarations(): decl.accept(self)
+	scope.declarations()[:] = self.__currscope
+	self.pop(scope)
+    def visitEnum(self, enum):
+	self.push()
+	for enumor in enum.enumerators(): enumor.accept(self)
+	enum.enumerators()[:] = self.__currscope
+	self.pop(enum)
+    def visitEnumerator(self, enumor):
+	if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
+	if not len(enumor.name()): return # workaround.
+	self.add(enumor)
+
+class Previous (Dummies):
+    """A class that maps comments that begin with '<' to the previous
+    declaration"""
+    def processAll(self, declarations):
+	self.last = None
+	self.__laststack = []
+	Dummies.processAll(self, declarations)
+    def push(self):
+	Dummies.push(self)
+	self.__laststack.append(self.last)
+	self.last = None
+    def pop(self, decl):
+	Dummies.pop(self, decl)
+	self.last = self.__laststack.pop()
+    def visitScope(self, scope):
+	self.push()
+	for decl in scope.declarations():
+	    decl.accept(self)
+	    self.last = decl
+	scope.declarations()[:] = self.currscope()
+	self.pop(scope)
+    def checkPrevious(self, decl):
+	if len(decl.comments()):
+	    if decl.comments()[0].text()[0] == "<" and self.last:
+		first = decl.comments()[0]
+		first.set_text(first.text()[1:]) # Remove '<'
+		self.last.comments().extend(decl.comments())
+		decl.comments()[:] = []
+    def visitDeclaration(self, decl):
+	self.checkPrevious(decl)
+	if decl.type() != "dummy": self.add(decl)
+    def visitEnum(self, enum):
+	self.push()
+	for enumor in enum.enumerators():
+	    enumor.accept(self)
+	    self.last = enumor
+	enum.enumerators()[:] = self.currscope()
+	self.pop(enum)
+    def visitEnumerator(self, enumor):
+	self.checkPrevious(enumor)
+	if len(enumor.name()): self.add(enumor)
+
+	    
+
 processors = {
     'ssd': SSDComments,
     'java': JavaComments,
+    'dummy': Dummies,
+    'prev': Previous,
 }
 def __parseArgs(args):
-    global processor
+    global processor_list
+    processor_list = []
     languagize = None
 
     try:
@@ -102,14 +192,12 @@ def __parseArgs(args):
     for o,a in opts:
 	if o == '-p':
 	    if processors.has_key(a):
-		processor = processors[a]()
+		processor_list.append(processors[a]())
 	    else:
 		print "Available processors:",string.join(processors.keys())
 		sys.exit(2)
 
 def process(declarations, types, args):
-    global processor
     __parseArgs(args)
-    if processor is not None:
-	for decl in declarations:
-	    decl.accept(processor)
+    for processor in processor_list:
+	processor.processAll(declarations)
