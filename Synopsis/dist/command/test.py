@@ -33,6 +33,7 @@ class test(build_ext):
     def run(self):
 
         cwd = os.getcwd()
+        os.environ['QMTEST_CLASS_PATH'] = os.path.join(cwd, 'tests', 'qmtest', 'classes')
         test_dir = os.path.join(self.build_temp, 'tests')
         os.chdir(test_dir)
         
