@@ -259,7 +259,7 @@ class ModuleInfo(SuiteInfoBase, SuiteFuncInfo):
         if tree:
             found, vars = match(DOCSTRING_STMT_PATTERN, tree[1])
             if found:
-                self._docstring = vars["docstring"]
+                self._docstring = eval(vars["docstring"])
 
 
 from types import ListType, TupleType
