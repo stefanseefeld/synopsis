@@ -1,4 +1,4 @@
-Synopsis 0.4
+Synopsis 0.5
 ~~~~~~~~~~~~
  
 ** Introduction
@@ -23,6 +23,9 @@ GraphViz needs the FreeType library:
 
     http://www.freetype.org/
 
+To parse CORBA IDL files you will need OmniORB's idl parser installed,
+omniidl, since it is used to parse the files.
+
 ** Supported platforms
 
 Linux - This is the main development platform, and so is pretty well
@@ -34,7 +37,7 @@ probably need to specify --disable-gc to configure.
 ** Building
 
 * if the sources are checked out from cvs, run autoconf to generate the configure script
-* run configure (with parameters, if appropriate)
+* run ./configure (with parameters, if appropriate)
 * run make
 
 ** Installing
@@ -132,11 +135,11 @@ Synopsis is hosted at Sourceforge:
  synopsis-devel@lists.sourceforge.net
 
 
-** Epilogue
+** Authors
 
 Synopsis is developed by:
- - Stefan Seefeld (seefeld@sympatico.ca)
  - Stephen Davies (chalky@ieee.org)
+ - Stefan Seefeld (seefeld@sympatico.ca)
 
 Synopsis is released under the GPL.
 
@@ -144,3 +147,8 @@ The C++ parser uses parts of OpenC++ by Shigeru Chiba, who owns copyright on
 his source code. The relevant parts of OpenC++ are included for convenience.
 Some of this code has been modified to fix bugs and/or implement features
 needed for Synopsis.
+
+The garbage collector used by OpenC++ is by Hans Boehm, who owns copyright on
+his source code. The GC distribution is included verbatim, but is not
+installed with Synopsis since libgc.a is statically linked into the C++ parser
+module.
