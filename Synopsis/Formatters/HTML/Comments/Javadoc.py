@@ -1,4 +1,4 @@
-# $Id: Javadoc.py,v 1.1 2003/12/04 21:04:28 stefan Exp $
+# $Id: Javadoc.py,v 1.2 2003/12/05 22:40:44 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,8 +7,10 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import AST, Type
+from Synopsis.Formatters.HTML.Tags import *
 from Formatter import Formatter
-import re
+import string, re
 
 class Javadoc(Formatter):
    """A formatter that formats comments similar to Javadoc @tags"""
