@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.10 2003/11/16 22:23:24 stefan Exp $
+# $Id: ScopeSorter.py,v 1.11 2003/12/05 21:23:29 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -75,6 +75,7 @@ class ScopeSorter(Parametrized):
       scopename = scope.name()
       for decl in scope.declarations():
          if isinstance(decl, AST.Forward): continue
+         if isinstance(decl, AST.Builtin): continue
          if isinstance(decl, AST.Group) and decl.__class__.__name__ == 'Group':
             self._handle_group(decl)
             continue
