@@ -11,6 +11,9 @@ from Synopsis.Formatters.HTML.Pages import *
 # this is actually only here as a hack for backward compatibility.
 import glob
 extra_input = glob.glob('boost/boost/python/*.hpp')
+extra_input += glob.glob('boost/boost/python/object/*.hpp')
+extra_input += glob.glob('boost/boost/python/converter/*.hpp')
+extra_input += glob.glob('boost/boost/python/detail/*.hpp')
 
 # the python include path can be obtained from distutils.sysconfig,
 # assuming that the python version used to run synopsis is the same
@@ -53,4 +56,5 @@ formatter = HTML.Formatter(stylesheet_file = '../../html.css',
 process(parse = Composite(parser, linker),
         xref = xref,
         link = linker,
+        dump = Dump.Formatter(),
         format = formatter)
