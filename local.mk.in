@@ -1,5 +1,5 @@
 # @configure_input@
-# $Id: local.mk.in,v 1.1 2001/01/10 16:12:02 stefan Exp $
+# $Id: local.mk.in,v 1.2 2001/01/26 22:29:45 stefan Exp $
 #
 # This source file is a part of the Berlin Project.
 # Copyright (C) 1999, 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -35,23 +35,9 @@ includedir	:= @includedir@
 oldincludedir	:= @oldincludedir@
 infodir		:= @infodir@
 mandir		:= @mandir@
+packagedir	:= @packagedir@
 
 PYTHON_MAJOR	:= @PYTHON_MAJOR@
 PYTHON_MINOR	:= @PYTHON_MINOR@
 PYTHON_PREFIX	:= @PYTHON_PREFIX@
-ifeq ($(PYTHON_MAJOR), 2)
-ifeq ($(PYTHON_MINOR), 0)
-packagedir	:= $(libdir)/python2.0/site-packages
-PYTHON_LIB	:= -L$(PYTHON_PREFIX)/lib/python2.0/config -lpython2.0
-endif
-endif
-ifeq ($(PYTHON_MAJOR), 1)
-ifeq ($(PYTHON_MINOR), 6)
-packagedir	:= $(libdir)/python1.6/site-packages
-PYTHON_LIB	:= -L$(PYTHON_PREFIX)/lib/python1.6/config -lpython1.6
-endif
-ifeq ($(PYTHON_MINOR), 5)
-packagedir	:= $(libdir)/python1.5/site-packages
-PYTHON_LIB	:= -L$(PYTHON_PREFIX)/lib/python1.5/config -lpython1.5
-endif
-endif
+PYTHON_LIB	:= @PYTHON_LIB@
