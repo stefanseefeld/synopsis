@@ -1,4 +1,5 @@
-synopsis := python synopsis.py
+script	:= synopsis.py
+synopsis := python $(script)
 
 topdir	:= ../..
 
