@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.73 2002/12/09 08:27:22 chalky Exp $
+// $Id: swalker.cc,v 1.74 2002/12/23 13:47:36 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.74  2002/12/23 13:47:36  chalky
+// Reset namespace filenames for each namespace declaration.
+//
 // Revision 1.73  2002/12/09 08:27:22  chalky
 // Ensure tail comments have the right file/line set.
 //
@@ -238,6 +241,8 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
     if (node == NULL)
         return;
 
+    AST::Comment::vector comments_to_add;
+
     // First, make sure that node is a list of comments
     if (node->What() == ntDeclaration)
         node = static_cast<PtreeDeclaration*>(node)->GetComments();
@@ -257,6 +262,9 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
         if (decl && (m_file != decl->file()))
         {
             node = next;
+	    // Empty list of comments to add: an #include in the middle is not
+	    // allowed!
+	    comments_to_add.clear();
             continue;
         }
 
@@ -320,7 +328,8 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
         {
             //AST::Comment* comment = new AST::Comment("", 0, first->ToString(), suspect);
             AST::Comment* comment = make_Comment(m_file, 0, first, suspect);
-            decl->comments().push_back(comment);
+            //decl->comments().push_back(comment);
+	    comments_to_add.push_back(comment);
         }
         if (m_links)
             m_links->long_span(first, "file-comment");
@@ -328,6 +337,14 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
         // when parsing expressions)
         node->SetCar(nil);
         node = next;
+    }
+
+    // Now add the comments, if applicable
+    if (decl && comments_to_add.size())
+    {
+	AST::Comment::vector::iterator i_comment = comments_to_add.begin();
+	while (i_comment != comments_to_add.end())
+	    decl->comments().push_back(*i_comment++);
     }
 }
 
@@ -594,7 +611,10 @@ SWalker::TranslateNamespaceSpec(Ptree* def)
     // Start the namespace
     AST::Namespace* ns;
     if (pIdentifier)
+    {
         ns = m_builder->start_namespace(parse_name(pIdentifier), NamespaceNamed);
+	ns->set_file(m_file);
+    }
     else
         ns = m_builder->start_namespace(m_file->filename(), NamespaceAnon);
 
