@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.6 2001/02/05 07:58:39 chalky Exp $
+# $Id: core.py,v 1.7 2001/02/06 05:13:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.7  2001/02/06 05:13:05  chalky
+# Fixes
+#
 # Revision 1.6  2001/02/05 07:58:39  chalky
 # Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
 #
@@ -218,7 +221,7 @@ class FileTree(AST.Visitor):
 	    decl.accept(self)
     def visitDeclaration(self, decl):
 	file = decl.file()
-	if not file: print "Decl",decl,"has no file."
+	if not file: return #print "Decl",decl,"has no file."
 	if not self.__files.has_key(file):
 	    self.__files[file] = {}
 	self.__files[file][decl.name()] = decl
@@ -304,7 +307,13 @@ class PageManager:
 	page that shouldn't be linked. Only root pages of 'visibility' or
 	above are included."""
 	roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
-	roots = map(lambda x,f=from_name: x.name==f and f or x.link, roots)
+	other = lambda x, span=span: span('root-other', x)
+	current = lambda x, span=span: span('root-current', x)
+	roots = map(
+	    lambda x,f=from_name, other=other, current=current:
+		x.name==f and current(f) or other(x.link),
+	    roots
+	)
 	return string.join(roots, ' | ')
 
     def process(self, root):
@@ -328,7 +337,8 @@ def defaultPageset(manager):
     manager.addPage(stdPage('ModuleListingJS'))
     #manager.addPage(stdPage('ModuleListing'))
     manager.addPage(stdPage('ModuleIndexer'))
-    manager.addPage(stdPage('FileTree'))
+    #manager.addPage(stdPage('FileTree'))
+    manager.addPage(stdPage('FileTreeJS'))
     manager.addPage(stdPage('InheritanceTree'))
     manager.addPage(stdPage('InheritanceGraph'))
     # This goes last so others can set default pages
