@@ -1205,7 +1205,7 @@ enum Foo {
       type is the type of the modules used to extend the declarations into the
       given scope.</para><para>For example, the Synopsis RefManual uses this
       option to move all the C++ declarations into the Synopsis.Parser.C++
-      python package with this option:</para><para> map_declaration_names =
+      python package with this option:</para><para>map_declaration_names =
       &#39;Synopsis::Parser::C++&#39;, &#39;Package&#39;</para><para>Package
       is used as the type since the Python AST has Packages for Synopsis,
       Parser and C++. (Note they are AST.Module objects, with type() set to
@@ -1312,8 +1312,8 @@ enum Foo {
       <section>
         <title>FramesIndex</title>
 
-        <para>This page should always go first, if you want frames. There are
-        no options to set.</para>
+        <para>This page should always go first if you want frames, else it
+        should not be included at all. There are no options to set.</para>
       </section>
 
       <section>
@@ -1332,25 +1332,23 @@ enum Foo {
         each type of declaration. It also provides methods for referencing
         other declarations with correct URLs, and things like formatting Types
         for display (with URLs for any names in the type). Each part has a
-        list of FormatStrategies which it calls in turn for each declaration,
-        to generate the output HTML for that declaration.</para>
+        list of FormatStrategies which it calls in turn for each declaration
+        it processes, to generate the output HTML for that declaration.</para>
 
-        <para>The Heading part only processes the scope itself, and provides
-        things like a page title, inheritance graph, and comments for the
-        class or module.</para>
-
-        <para>The Summary part processes all the children of the scope, using
-        a set of FormatStrategies to put them in a table with summary
-        comments. Section headings are displayed for each type of declaration
-        (methods, variables, etc).</para>
-
-        <para>The Inheritance part displays the methods inherited from base
-        classes, taking care to hide overridden methods.</para>
-
-        <para>The Detail part processes all the children which have detailed
-        information, using a set of FormatStrategies to list them sequentially
-        with full comments and more detailed info (e.g.: for enums and long
-        typedefs, exception specifications, etc).</para>
+        <para>The difference between the four Parts is what declarations they
+        process (pass to the formatters) on each page:<itemizedlist><listitem><para>The
+        Heading part only processes the scope itself, and provides things like
+        a page title, inheritance graph, and comments for the class or module.</para></listitem><listitem><para>The
+        Summary part processes all the children of the scope, using a set of
+        FormatStrategies to put them in a table with summary comments. Section
+        headings are displayed for each type of declaration (methods,
+        variables, etc).</para></listitem><listitem><para>The Inheritance part
+        displays the methods inherited from base classes, taking care to hide
+        overridden methods.</para></listitem><listitem><para>The Detail part
+        processes all the children which have detailed information, using a
+        set of FormatStrategies to list them sequentially with full comments
+        and more detailed info (e.g.: for enums and long typedefs, exception
+        specifications, etc).</para></listitem></itemizedlist></para>
 
         <para>You can control the output by changing the FormatStrategies used
         by each part, writing your own FormatStrategies, or even your own
@@ -1393,10 +1391,44 @@ enum Foo {
         Page, so make sure you include that if you want to use this
         FormatStrategy, and vice versa.</para></listitem></varlistentry></variablelist></para>
 
-        <para>The default lists of strategies are:<variablelist><varlistentry><term>Heading</term><listitem><para>Heading,
+        <para>The default lists of strategies for each &#34;Part&#34; are:<variablelist><varlistentry><term>Heading</term><listitem><para>Heading,
         ClassHierarchyGraph, DetailCommenter</para></listitem></varlistentry><varlistentry><term>Summary</term><listitem><para>SummaryAST,
         SummaryCommenter</para></listitem></varlistentry><varlistentry><term>Inheritance</term><listitem><para>Inheritance</para></listitem></varlistentry><varlistentry><term>Detail</term><listitem><para>DetailAST,
         DetailCommenter</para></listitem></varlistentry></variablelist></para>
+
+        <section>
+          <title>ScopePages Options</title>
+
+          <para>The ScopePages Page is the most complex to configure, since
+          its layout is so flexible. Options are set in the sub-object
+          &#34;ScopePages&#34; inside the HTML config object.</para>
+
+          <para>The following options are available:<variablelist><varlistentry><term>parts</term><listitem><para>A
+          list of Part objects to use on each page. Each list item is an
+          import specification with the base package
+          &#34;Synopsis.Formatter.HTML.ASTFormatter.&#34;, giving the
+          following default parts:<programlisting>parts = [&#39;Heading&#39;, &#39;Summary&#39;, &#39;Inheritance&#39;, &#39;Detail&#39;]</programlisting></para></listitem></varlistentry><varlistentry><term>heading_formatters</term><listitem><para>A
+          list of formatters to use in the Heading Part. Each list item is an
+          import specification with the base package
+          &#39;Synopsis.Formatter.HTML.FormatStrategy.&#39;, allowing you to
+          specify any of the FormatStrategies listed earlier.</para><para>The
+          default is:<programlisting>heading_formatters = [&#39;Heading&#39;, &#39;ClassHierarchyGraph&#39;, &#39;DetailCommenter&#39;]</programlisting></para></listitem></varlistentry><varlistentry><term>summary_formatters</term><listitem><para>A
+          list of formatters to use in the Summary Part. Each list item is an
+          import specification with the base package
+          &#39;Synopsis.Formatter.HTML.FormatStrategy.&#39;, allowing you to
+          specify any of the FormatStrategies listed earlier.</para><para>The
+          default is:<programlisting>summary_formatters = [&#39;SummaryAST&#39;, &#39;SummaryCommenter&#39;]</programlisting></para></listitem></varlistentry><varlistentry><term>inheritance_formatters</term><listitem><para>A
+          list of formatters to use in the Inheritance Part. Each list item is
+          an import specification with the base package
+          &#39;Synopsis.Formatter.HTML.FormatStrategy.&#39;, allowing you to
+          specify any of the FormatStrategies listed earlier.</para><para>The
+          default is:<programlisting>inheritance_formatters = [&#39;Inheritance&#39;]</programlisting></para></listitem></varlistentry><varlistentry><term>detail_formatters</term><listitem><para>A
+          list of formatters to use in the Detail Part. Each list item is an
+          import specification with the base package
+          &#39;Synopsis.Formatter.HTML.FormatStrategy.&#39;, allowing you to
+          specify any of the FormatStrategies listed earlier.</para><para>The
+          default is:<programlisting>detail_formatters = [&#39;DetailAST&#39;, &#39;DetailCommenter&#39;]</programlisting></para></listitem></varlistentry></variablelist></para>
+        </section>
       </section>
 
       <section>
@@ -1532,13 +1564,17 @@ class HTML (Base.Formatter.HTML):
       <section>
         <title>InheritanceTree</title>
 
-        <para></para>
+        <para>Creates a single page with the entire object hierarchy in a tree
+        structure. This page is a text-only alternative to the
+        InheritanceGraph page, but both can be used without problems.</para>
       </section>
 
       <section>
         <title>NameIndex</title>
 
-        <para></para>
+        <para>Creates a single page with an index of all class, variable,
+        function/method and namespace/module names. The names are sorted
+        alphabetically.</para>
       </section>
     </section>
 
