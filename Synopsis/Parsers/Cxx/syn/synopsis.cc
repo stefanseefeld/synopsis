@@ -138,6 +138,8 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
 	    cout << "Fatal: Still not PyObject after converting." << endl;
 	    throw "Synopsis::Private::py(AST::Declaration*)";
 	}
+	// Add the Declared for this declaration
+	PyObject_SetItem(m_syn->m_dictionary, Tuple(decl->name()), py(decl->declared()));
     }
     PyObject* obj = iter->second;
     Py_INCREF(obj);
