@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.8 2001/01/31 06:51:24 stefan Exp $
+# $Id: DUMP.py,v 1.9 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.9  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.8  2001/01/31 06:51:24  stefan
 # add support for '-v' to all modules; modified toc lookup to use additional url as prefix
 #
@@ -35,6 +38,7 @@
 Verbose attribute-oriented dump of AST. Pipe into less -r
 """
 
+# THIS-IS-A-FORMATTER
 import sys, getopt, os, os.path, string, types
 from Synopsis.Core import Type, AST
 
@@ -213,7 +217,7 @@ def __parseArgs(args):
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
 
-def format(types, declarations, args):
+def format(types, declarations, args, config_obj):
     global output
     __parseArgs(args)
     #formatter = ASCIIFormatter(output)

@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.3 2001/02/01 15:28:43 chalky Exp $
+# $Id: __init__.py,v 1.4 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: __init__.py,v $
+# Revision 1.4  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.3  2001/02/01 15:28:43  chalky
 # Imported usage so it works.
 #
@@ -39,10 +42,12 @@
 try:
     import core
 
-    from core import format, usage
+    from core import usage
 
 except:
     print "An error occurred loading the HTML module:"
     import traceback
     traceback.print_exc()
     raise
+
+# THIS-IS-A-FORMATTER

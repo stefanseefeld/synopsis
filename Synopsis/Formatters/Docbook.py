@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.4 2001/02/11 19:33:32 stefan Exp $
+#  $Id: Docbook.py,v 1.5 2001/02/13 06:55:23 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.5  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.4  2001/02/11 19:33:32  stefan
 # made the C++ parser formally accept the config object; synopsis now correctly formats if a formatter is present, and only dumps a syn file otherwise; some minor fixes to DocBook
 #
@@ -33,6 +36,7 @@
 #
 #
 """a DocBook formatter (producing Docbook 4.2 XML output"""
+# THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string
 from Synopsis.Core import AST, Type, Util

@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.11 2001/02/06 16:54:15 chalky Exp $
+# $Id: Dot.py,v 1.12 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.12  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.11  2001/02/06 16:54:15  chalky
 # Added -n to Dot which stops those nested classes
 #
@@ -57,6 +60,7 @@
 """
 Uses 'dot' from graphviz to generate various graphs.
 """
+# THIS-IS-A-FORMATTER
 
 import sys, tempfile, getopt, os, os.path, string, types, errno
 from Synopsis.Core import AST, Type, Util
@@ -353,7 +357,7 @@ def _format_html(input, output):
     os.remove(output + ".map")
     html.write("</map>\n")
 
-def format(types, declarations, args):
+def format(types, declarations, args, config_obj):
     global output, title, type, oformat, verbose, toc, toc_in
     __parseArgs(args)
 

@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.23 2001/02/13 06:35:20 chalky Exp $
+# $Id: ASCII.py,v 1.24 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.24  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.23  2001/02/13 06:35:20  chalky
 # Added config_obj to format() args to prevent exception.
 #
@@ -42,6 +45,7 @@
 Outputs the AST in plain ascii format similar to input.
 """
 
+# THIS-IS-A-FORMATTER
 import sys, getopt, os, os.path, string
 from Synopsis.Core import Type, AST, Util
 
