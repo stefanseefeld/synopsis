@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.12 2002/09/28 06:15:51 chalky Exp $
+# $Id: FileLayout.py,v 1.13 2002/09/28 06:32:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.13  2002/09/28 06:32:08  chalky
+# Ooops, removing print
+#
 # Revision 1.12  2002/09/28 06:15:51  chalky
 # Quote filenames to prevent angle brackets being used
 #
@@ -160,7 +163,6 @@ class FileLayout (TOC.Linker):
 	deal with the directory layout."""
 	if isinstance(decl, AST.Scope):
 	    # This is a class or module, so it has its own file
-	    print "Linked",decl.name(),"to", self.nameOfScope(decl.name())
 	    return self.nameOfScope(decl.name())
 	# Assume parent scope is class or module, and this is a <A> name in it
 	filename = self.nameOfScope(decl.name()[:-1])
