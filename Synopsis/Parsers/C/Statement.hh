@@ -31,21 +31,20 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef    STEMNT_H
-#define    STEMNT_H
+#ifndef _Statement_hh
+#define _Statement_hh
+
+#include <Symbol.hh>
+#include <Expression.hh>
+#include <Declaration.hh>
+#include <Callback.hh>
+#include <Location.hh>
+#include <Dup.hh>
+#include <Traversal.hh>
 
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
-#include <ctool/symbol.h>
-#include <ctool/express.h>
-#include <ctool/decl.h>
-#include <ctool/callback.h>
-#include <ctool/location.h>
-#include <ctool/dup.h>
-
-#include <ctool/Traversal.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum StatementType
@@ -479,5 +478,5 @@ char *nameOfLabelType( LabelType type );
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-#endif  /* STEMNT_H */
+#endif
 

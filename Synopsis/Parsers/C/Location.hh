@@ -31,8 +31,8 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef CT_LOCATION_H
-#define CT_LOCATION_H
+#ifndef _Location_hh
+#define _Location_hh
 
 #include <string>
 

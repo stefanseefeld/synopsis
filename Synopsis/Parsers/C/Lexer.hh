@@ -25,9 +25,9 @@
 
 #include <cstdio>
 
-#include <ctool/config.h>
-#include <ctool/decl.h>
-#include <ctool/express.h>
+#include <config.hh>
+#include <Declaration.hh>
+#include <Expression.hh>
 
 /**************************************************************************/
 

@@ -30,17 +30,16 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
+#include <config.hh>
+#include <Expression.hh>
+#include <Declaration.hh>
+#include "Grammar.hh"
+#include <Token.hh>
+
 #include <cstdio>
 #include <cstring>
 #include <cassert>
 #include <stdlib.h>
-
-#include <ctool/config.h>
-#include <ctool/express.h>
-#include <ctool/decl.h>
-
-#include "gram.h"
-#include <ctool/token.h>
 
 //#define SHOW_TYPES
 

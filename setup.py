@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.20 2003/12/18 01:50:59 stefan Exp $
+# $Id: setup.py,v 1.21 2003/12/30 03:47:37 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -26,7 +26,7 @@ import os, sys, re, glob
 
 module_ext = sysconfig.get_config_var('SO')
 
-def prefix(list, pref): return map(lambda x, p=pref: p + x, list)
+def prefix(list, pref): return map(lambda x: pref + x, list)
 
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
@@ -46,9 +46,8 @@ py_packages = ["Synopsis",
 
 
 ext_modules = [('Synopsis/Parsers/Cxx', 'occ' + module_ext),
-               ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
-
-#('Synopsis/Parsers/C', 'ctool' + module_ext),
+               ('Synopsis/Parsers/Cxx', 'link' + module_ext),
+               ('Synopsis/Parsers/C', 'ctool' + module_ext)]
 
 scripts = ['synopsis']
 

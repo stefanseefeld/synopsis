@@ -35,12 +35,10 @@
 #include <cassert>
 #include <fstream>
 
-#include <ctool/project.h>
-
-#include <ctool/express.h>
-#include <ctool/stemnt.h>
-
-#include <ctool/token.h>
+#include <Project.hh>
+#include <Expression.hh>
+#include <Statement.hh>
+#include <Token.hh>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 

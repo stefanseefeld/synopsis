@@ -32,7 +32,7 @@
 
 #include <iostream>
 
-#include <ctool/location.h>
+#include <Location.hh>
 
 Location NoLocation(0,0,"");
 

@@ -1,6 +1,6 @@
-# $Id: Makefile.in,v 1.5 2003/09/08 00:20:23 stefan Exp $
+# $Id: Makefile.in,v 1.6 2003/12/30 03:47:37 stefan Exp $
 #
-# This source file is a part of the ctool Project.
+# This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
 #
 # This library is free software; you can redistribute it and/or
@@ -18,86 +18,62 @@
 # Free Software Foundation, Inc., 675 Mass Ave, Cambridge,
 # MA 02139, USA.
 
-SHELL		:= /bin/sh
+SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
 
-include ../local.mk
+PYTHON	:= @PYTHON@
 
-CPP_PATH:=/usr/bin/cpp
+CC	:= @CC@
+CXX	:= @CXX@
+MAKEDEP	:= $(CXX) -M
+YACC	:= @YACC@
+LEX	:= @LEX@
+CPPFLAGS:= @CPPFLAGS@ -I . -I $(srcdir) -I @PYTHON_INCLUDE@
+CFLAGS	:= @CFLAGS@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= @LIBS@ -lpthread
+LIBRARY_EXT := @LIBEXT@
 
-CTOOLFLAGS:= -D USE_GCC_4_CPP -D DEBUG
+CTOOL_SO:= ctool$(LIBRARY_EXT)
 
-CPPFLAGS+= -I. -D LIB_CPP=\"$(CPP_PATH)\" $(CTOOLFLAGS)
-CXXFLAGS+= -g -Wall
+SRC	:= Lexer.cc Grammar.cc Context.cc Declaration.cc Expression.cc ParseEnv.cc \
+           Project.cc Statement.cc Symbol.cc Token.cc Location.cc \
+           PrintTraversal.cc
+HDR	:= $(patsubst $(srcdir)/include/%, %, $(wildcard $(abs_top_srcdir)/*.hh))
+OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
-SRC	:= lexer.cpp gram.cpp context.cpp decl.cpp express.cpp parseenv.cpp \
-           project.cpp stemnt.cpp symbol.cpp token.cpp location.cpp \
-           PrintTraversal.cpp
-HDR	:= $(patsubst $(srcdir)/include/%, %, $(wildcard $(abs_top_srcdir)/include/ctool/*.h))
-OBJ	:= $(patsubst %.cpp, %.o, $(SRC))
-DEP	:= $(patsubst %.cpp, %.d, $(SRC))
+TARGET	:= $(CTOOL_SO)
 
-vpath %.h  $(top_abs_builddir)/include $(top_abs_srcdir)/include
-vpath %.cpp  $(srcdir)
+vpath %.hh  $(srcdir)
+vpath %.cc  $(srcdir)
+vpath %.y  $(srcdir)
+vpath %.l  $(srcdir)
 
-.FORCE:
-.PHONY: depend install clean distclean maintainer-clean dist
+all: $(TARGET)
 
-all: ../lib/libctool.a ../lib/libctool.so
-
-../lib/libctool.a: $(OBJ)
-	@echo creating $(@F)
-	$(AR) cr $@ $(OBJ)
-	$(RANLIB) $@
-
-../lib/libctool.so: $(OBJ)
-	@echo linking $(@F)
-	$(CXX) $(SOFLAGS) -o $@ $(OBJ) $(LIBS)
-
-depend:	$(DEP)
-
-install: all
-	$(INSTALL) ../lib/libctool.a $(DESTDIR)$(libdir)
-	$(INSTALL) ../lib/libctool.so $(DESTDIR)$(libdir)
-	$(INSTALL) -d $(DESTDIR)$(includedir)/ctool
-	for header in $(HDR); do \
-          $(INSTALL) $$header $(DESTDIR)$(includedir)/ctool; \
-        done
-
-uninstall:
+$(CTOOL_SO): $(OBJ)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
-	rm -rf ../lib/libctool.a ../lib/libctool.so
-	rm -f lexer.cpp gram.cpp gram.h $(OBJ) $(DEP)
+	rm -rf $(CTOOL_SO)
+	rm -f Lexer.cc Grammar.cc Grammar.h $(OBJ) $(DEP)
 
-distclean:	clean
-	rm -f Makefile
-
-maintainer-clean: distclean
-
-%.o:	%.cpp
-	@echo compiling $(@F)
+%.o:	%.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.d:	%.cpp %.h
-	@echo generating dependencies for $(<F)
+%.d:	%.cc %.hh
 	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
 
-lexer.cpp: $(srcdir)/lexer.l gram.h
-	@echo generating lexer.cpp
+Lexer.cc: Lexer.l Grammar.hh
 	$(LEX) $<
-	mv lex.yy.c lexer.cpp
+	mv lex.yy.c Lexer.cc
 
-gram.cpp gram.h: $(srcdir)/gram.y
-	@echo generating gram.cpp
-	$(YACC) -d -b gram -o gram.cpp $<
-	mv gram.hpp gram.h
+Grammar.cc Grammar.hh: Grammar.y
+	$(YACC) -d -b Grammar -o Grammar.cc $<
 
-ifneq (,$(findstring depend, $(MAKECMDGOALS)))
-$(DEP): %.d:	.FORCE
-endif
-
-ifeq (,$(filter $(MAKECMDGOALS), depend doc clean distclean maintainer-clean))
+ifeq (,$(filter $(MAKECMDGOALS), clean))
 -include $(DEP)
 endif

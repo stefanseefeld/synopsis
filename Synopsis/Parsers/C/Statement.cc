@@ -33,12 +33,12 @@
 #include <cstring>
 #include <cassert>
 
-#include <ctool/stemnt.h>
-#include <ctool/symbol.h>
-#include <ctool/decl.h>
-#include <ctool/project.h>
+#include <Statement.hh>
+#include <Symbol.hh>
+#include <Declaration.hh>
+#include <Project.hh>
 
-#include "gram.h"
+#include "Grammar.hh"
 
 //#define PRINT_LOCATION
 

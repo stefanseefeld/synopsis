@@ -33,271 +33,258 @@
 #include <cassert>
 #include <cstring>
 
-#include <ctool/decl.h>
-#include <ctool/express.h>
-#include <ctool/stemnt.h>
+#include <Declaration.hh>
+#include <Expression.hh>
+#include <Statement.hh>
+#include <Token.hh>
+#include "Grammar.hh"
+#include <Project.hh>
 
-#include <ctool/token.h>
-#include "gram.h"
-#include <ctool/project.h>
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static
-void
-printStorage( std::ostream& out, StorageType storage )
+static void
+printStorage( std::ostream& out, StorageType storage)
 {
-    switch (storage)
-    {
-        case ST_None:
-            break;
+  switch (storage)
+  {
+    case ST_None:
+      break;
+      
+    case ST_Typedef:
+      out << "typedef ";
+      break;
 
-        case ST_Typedef:
-            out << "typedef ";
-            break;
+    case ST_Auto:
+      out << "auto ";
+      break;
 
-        case ST_Auto:
-            out << "auto ";
-            break;
+    case ST_Register:
+      out << "register ";
+      break;
 
-        case ST_Register:
-            out << "register ";
-            break;
+    case ST_Static:
+      out << "static ";
+      break;
 
-        case ST_Static:
-            out << "static ";
-            break;
-
-        case ST_Extern:
-            out << "extern ";
-            break;
-    }
+    case ST_Extern:
+      out << "extern ";
+      break;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static
-void
-printQual( std::ostream& out, TypeQual qualifier )
+static void
+printQual(std::ostream& out, TypeQual qualifier)
 {
-    if (qualifier & TQ_Const)
-        out << "const ";
+  if (qualifier & TQ_Const)
+    out << "const ";
 
-    if (qualifier & TQ_Volatile)
-        out << "volatile ";
+  if (qualifier & TQ_Volatile)
+    out << "volatile ";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type::Type(TypeType _type /* =TT_Base */)
 {
-    type      = _type;
-    storage  = ST_None;
+  type      = _type;
+  storage  = ST_None;
 
-    // Add us into the global list for destruction later.
-    link = gProject->typeList;
-    gProject->typeList = this;
+  // Add us into the global list for destruction later.
+  link = gProject->typeList;
+  gProject->typeList = this;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type::~Type()
 {
-    // assert(false);
+  // assert(false);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Type::DeleteTypeList(Type* typeList)
 {
-    Type    *prev = NULL;
-    Type    *curr = typeList;
+  Type    *prev = NULL;
+  Type    *curr = typeList;
 
-    while (curr != NULL)
-    {
-	if(prev!=NULL) delete prev;
-        prev = curr;
-        curr = curr->link;
-    }
+  while (curr != NULL)
+  {
+    if(prev != NULL) delete prev;
+    prev = curr;
+    curr = curr->link;
+  }
 
-    if(prev!=NULL) delete prev;
+  if(prev != NULL) delete prev;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-Type::printType( std::ostream& out, Symbol *name, bool showBase, int level ) const
+Type::printType(std::ostream& out, Symbol *name, bool showBase, int level) const
 {
-    if (showBase)
-	{
-        printBase(out,level);
+  if (showBase)
+  {
+    printBase(out,level);
 
-		if (name != NULL)
-			out << " ";
-	}
+    if (name != NULL)
+      out << " ";
+  }
 
-    printBefore(out,name,level);
-    printAfter(out);
+  printBefore(out,name,level);
+  printAfter(out);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-BaseType::BaseType( BaseTypeSpec bt /* =BT_NoType */ )
-        : Type(TT_Base)
+BaseType::BaseType(BaseTypeSpec bt /* =BT_NoType */)
+  : Type(TT_Base)
 {
-    typemask = bt;
-    qualifier = TQ_None;
+  typemask = bt;
+  qualifier = TQ_None;
 
-    tag  = NULL;
-    typeName = NULL;
-    stDefn = NULL;
-    enDefn = NULL;
+  tag  = NULL;
+  typeName = NULL;
+  stDefn = NULL;
+  enDefn = NULL;
 }
 
 BaseType::BaseType( StructDef *sd )
-         : Type(TT_Base)
+  : Type(TT_Base)
 {
-    typemask = (sd->isUnion()) ? BT_Union : BT_Struct;
-    qualifier = TQ_None;
+  typemask = (sd->isUnion()) ? BT_Union : BT_Struct;
+  qualifier = TQ_None;
 
-    tag  = sd->tag->dup();
+  tag  = sd->tag->dup();
     
-    typeName = NULL;
-    stDefn = sd;
-    enDefn = NULL;
+  typeName = NULL;
+  stDefn = sd;
+  enDefn = NULL;
 }
 
 BaseType::BaseType( EnumDef *ed )
-         : Type(TT_Base)
+  : Type(TT_Base)
 {
-    typemask = BT_Enum;
-    qualifier = TQ_None;
+  typemask = BT_Enum;
+  qualifier = TQ_None;
 
-    tag  = ed->tag->dup();
-    typeName = NULL;
-    stDefn = NULL;
-    enDefn = ed;
+  tag  = ed->tag->dup();
+  typeName = NULL;
+  stDefn = NULL;
+  enDefn = ed;
 }
 
 BaseType::~BaseType()
 {
-    delete tag;
-    delete typeName;
-    delete stDefn;
-    delete enDefn;
+  delete tag;
+  delete typeName;
+  delete stDefn;
+  delete enDefn;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 BaseType::dup0() const
 {
-    BaseType *ret = new BaseType();
+  BaseType *ret = new BaseType();
 
-    ret->storage = storage; 
-    ret->qualifier = qualifier; 
-    ret->typemask = typemask; 
+  ret->storage = storage; 
+  ret->qualifier = qualifier; 
+  ret->typemask = typemask; 
 
-    ret->tag = tag->dup();
-    ret->typeName = typeName->dup();
-    ret->stDefn = stDefn->dup();
-    ret->enDefn = enDefn->dup();
+  ret->tag = tag->dup();
+  ret->typeName = typeName->dup();
+  ret->stDefn = stDefn->dup();
+  ret->enDefn = enDefn->dup();
     
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BaseType::printBase(std::ostream& out, int level) const
 {
-    printQual(out,qualifier);
+  printQual(out,qualifier);
 
-    if (typemask & BT_UnSigned)
-        out << "unsigned ";
-    else if (typemask & BT_Signed)
-        out << "signed ";
-
-    if (typemask & BT_Void)
-        out << "void ";
-    else if (typemask & BT_Bool)
-        out << "_Bool ";
-    else if (typemask & BT_Char)
-        out << "char ";
-    else if (typemask & BT_Int8)
-        out << "__int8 ";
-    else if (typemask & BT_Int16)
-        out << "__int16 ";
-    else if (typemask & BT_Int32)
-        out << "__int32 ";
-    else if (typemask & BT_Int64)
-        out << "__int64 ";
-    else if (typemask & BT_Short)
-        out << "short ";
-    else if (typemask & BT_LongLong)
-        out << "long long ";
-    else if (typemask & BT_Float)
-        out << "float ";
-    else if ((typemask & BT_Double) && (typemask & BT_Long))
-        out << "long double ";
-    else if (typemask & BT_Double)
-        out << "double ";
-    else if (typemask & BT_Ellipsis)
-        out << "...";
-    else if (typemask & BT_Long)
-        out << "long ";
-    else if (typemask & BT_Struct)
+  if (typemask & BT_UnSigned)
+    out << "unsigned ";
+  else if (typemask & BT_Signed)
+    out << "signed ";
+  
+  if (typemask & BT_Void)
+    out << "void ";
+  else if (typemask & BT_Bool)
+    out << "_Bool ";
+  else if (typemask & BT_Char)
+    out << "char ";
+  else if (typemask & BT_Int8)
+    out << "__int8 ";
+  else if (typemask & BT_Int16)
+    out << "__int16 ";
+  else if (typemask & BT_Int32)
+    out << "__int32 ";
+  else if (typemask & BT_Int64)
+    out << "__int64 ";
+  else if (typemask & BT_Short)
+    out << "short ";
+  else if (typemask & BT_LongLong)
+    out << "long long ";
+  else if (typemask & BT_Float)
+    out << "float ";
+  else if ((typemask & BT_Double) && (typemask & BT_Long))
+    out << "long double ";
+  else if (typemask & BT_Double)
+    out << "double ";
+  else if (typemask & BT_Ellipsis)
+    out << "...";
+  else if (typemask & BT_Long)
+    out << "long ";
+  else if (typemask & BT_Struct)
+  {
+    if (stDefn != NULL)
     {
-        if (stDefn != NULL)
-        {
-            stDefn->print(out, NULL, level);
-        }
-        else
-        {
-            out << "struct ";
-
-            if (tag)
-                out << *tag << " ";
-        }
-    }
-    else if (typemask & BT_Union)
-    {
-        if (stDefn != NULL)
-        {
-            stDefn->print(out, NULL, level);
-        }
-        else
-        {
-            out << "union ";
-
-            if (tag)
-                out << *tag << " ";
-        }
-    }
-    else if (typemask & BT_Enum)
-    {
-        out << "enum ";
-        if (enDefn != NULL)
-        {
-            enDefn->print(out, NULL, level);
-        }
-        else
-        {
-            if (tag)
-                out << *tag << " ";
-        }
-    }
-    else if (typemask & BT_UserType)
-    {
-        if (typeName)
-            out << *typeName << " ";
+      stDefn->print(out, NULL, level);
     }
     else
     {
-        out << "int ";        // Default
+      out << "struct ";
+      
+      if (tag)
+	out << *tag << " ";
     }
+  }
+  else if (typemask & BT_Union)
+  {
+    if (stDefn != NULL)
+    {
+      stDefn->print(out, NULL, level);
+    }
+    else
+    {
+      out << "union ";
+      
+      if (tag)
+	out << *tag << " ";
+    }
+  }
+  else if (typemask & BT_Enum)
+  {
+    out << "enum ";
+    if (enDefn != NULL)
+    {
+      enDefn->print(out, NULL, level);
+    }
+    else
+    {
+      if (tag)
+	out << *tag << " ";
+    }
+  }
+  else if (typemask & BT_UserType)
+  {
+    if (typeName)
+      out << *typeName << " ";
+  }
+  else
+  {
+    out << "int ";        // Default
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BaseType::printBefore(std::ostream& out, Symbol *name, int level ) const
 {
-    if (name)
-    {
-        out << *name;
-    }
+  if (name)
+  {
+    out << *name;
+  }
 }
 
 void
@@ -308,304 +295,250 @@ BaseType::printAfter( std::ostream& out ) const
 void
 BaseType::printForm(std::ostream& out) const
 {
-    out << "-Base";
-    if (qualifier != TQ_None)
-    {
-        out << ":";
-        printQual(out,qualifier);
-    }
+  out << "-Base";
+  if (qualifier != TQ_None)
+  {
+    out << ":";
+    printQual(out,qualifier);
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BaseType::registerComponents()
 {
-    if ((typemask & BT_Struct) | (typemask & BT_Union))
-    {
-        stDefn->registerComponents();
-    }
+  if ((typemask & BT_Struct) | (typemask & BT_Union))
+  {
+    stDefn->registerComponents();
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
 BaseType::lookup( Symbol* sym ) const
 {
-    if ((typemask & BT_Struct)
-        || (typemask & BT_Union))
+  if ((typemask & BT_Struct)
+      || (typemask & BT_Union))
+  {
+    if (stDefn != NULL)
     {
-        if (stDefn != NULL)
-        {
-            return stDefn->lookup(sym);
-        }
+      return stDefn->lookup(sym);
     }
-    else if (typemask & BT_UserType)
+  }
+  else if (typemask & BT_UserType)
+  {
+    if (typeName)
     {
-        if (typeName)
-        {
-            SymEntry *typeEntry = typeName->entry;
-
-            if (typeEntry)
-            {
-                return typeEntry->uVarDecl->lookup(sym);
-            }
-        }
+      SymEntry *typeEntry = typeName->entry;
+      
+      if (typeEntry)
+      {
+	return typeEntry->uVarDecl->lookup(sym);
+      }
     }
-
-    return false;
+  }
+  
+  return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 PtrType::dup0() const
 {
-    PtrType *ret = new PtrType(qualifier);
+  PtrType *ret = new PtrType(qualifier);
+  
+  ret->subType = subType->dup();
+  ret->storage = storage; 
     
-    ret->subType = subType->dup();
-    ret->storage = storage; 
-    
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 PtrType::extend(Type* extension)
 {
-    if (subType)
-        return subType->extend(extension);
+  if (subType) return subType->extend(extension);
         
-    subType = extension;      
-    return this;
+  subType = extension;      
+  return this;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 PtrType::printBase( std::ostream& out, int level) const
 {
-    if (subType)
-        subType->printBase(out,level);
+  if (subType) subType->printBase(out,level);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 PtrType::printBefore( std::ostream& out, Symbol *name, int level ) const
 {
-    if (subType)
-    {
-        subType->printBefore(out,NULL,level);
-        
-        bool paren = ! (subType->isPointer() || subType->isBaseType());
-        
-        if (paren)
-            out << "(" ;
-            
-        out << "*" ;
-        printQual(out,qualifier);
-        
-    }
-
-    if (name)
-    {
-        out << *name;
-    }
+  if (subType)
+  {
+    subType->printBefore(out,NULL,level);
+    
+    bool paren = ! (subType->isPointer() || subType->isBaseType());
+    
+    if (paren) out << "(" ;
+    
+    out << "*" ;
+    printQual(out,qualifier);
+    
+  }
+  
+  if (name)
+  {
+    out << *name;
+  }
 }
 
 void
 PtrType::printAfter( std::ostream& out ) const
 {
-    if (subType)
-    {
-        bool paren = ! (subType->isPointer() || subType->isBaseType());
-        
-        if (paren)
-            out << ")" ;
-
-        subType->printAfter(out);
-    }
+  if (subType)
+  {
+    bool paren = ! (subType->isPointer() || subType->isBaseType());
+    
+    if (paren) out << ")" ;
+    
+    subType->printAfter(out);
+  }
 }
 
 void
 PtrType::printForm(std::ostream& out) const
 {
-    out << "-Ptr";
-    if (qualifier != TQ_None)
-    {
-        out << ":";
-        printQual(out,qualifier);
-    }
-    if (subType)
-        subType->printForm(out);
+  out << "-Ptr";
+  if (qualifier != TQ_None)
+  {
+    out << ":";
+    printQual(out,qualifier);
+  }
+  if (subType) subType->printForm(out);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-PtrType::findExpr( fnExprCallback cb )
+PtrType::findExpr(fnExprCallback cb)
 {
-    if (subType)
-        subType->findExpr(cb);
+  if (subType) subType->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
 PtrType::lookup( Symbol* sym ) const
 {
-    if (subType)
-        return subType->lookup(sym);
-    else
-        return false;
+  if (subType) return subType->lookup(sym);
+  else return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 ArrayType::~ArrayType()
 {
-    // Handled by deleting the global type list
-    // delete subType;
-    delete size;
+  // Handled by deleting the global type list
+  // delete subType;
+  delete size;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 ArrayType::dup0() const
 {
-    ArrayType *ret  = new ArrayType(size->dup());
+  ArrayType *ret  = new ArrayType(size->dup());
 
-    ret->subType = subType->dup();
-    ret->storage = storage;
-     
-    return ret;
+  ret->subType = subType->dup();
+  ret->storage = storage;
+  
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 ArrayType::extend(Type *extension)
 {
-    if (subType)
-        return subType->extend(extension);
-    subType = extension;
-    return this ;
+  if (subType) return subType->extend(extension);
+  subType = extension;
+  return this ;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 ArrayType::printBase( std::ostream& out, int level) const
 {
-    if (subType)
-        subType->printBase(out,level);
+  if (subType) subType->printBase(out,level);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 ArrayType::printBefore( std::ostream& out, Symbol *name, int level ) const
 {
-    if (subType)
-        subType->printBefore(out,name,level);
+  if (subType) subType->printBefore(out,name,level);
 }
 
 void
 ArrayType::printAfter( std::ostream& out ) const
 {
-    out << "[";
-
-    if (size)
-        size->print(out);
-
-    out << "]";
-    
-    if (subType)
-        subType->printAfter(out);
+  out << "[";
+  if (size) size->print(out);
+  out << "]";
+  
+  if (subType) subType->printAfter(out);
 }
 
 void
 ArrayType::printForm(std::ostream& out) const
 {
-    out << "-Array[";
-    if (size)
-        size->print(out);
-    out << "]";
-    if (subType)
-        subType->printForm(out);
+  out << "-Array[";
+  if (size) size->print(out);
+  out << "]";
+  if (subType) subType->printForm(out);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-ArrayType::findExpr( fnExprCallback cb )
+ArrayType::findExpr(fnExprCallback cb)
 {
-    if (subType)
-        subType->findExpr(cb);
-
-    if (size)
-        size->findExpr(cb);
+  if (subType) subType->findExpr(cb);
+  if (size) size->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
 ArrayType::lookup( Symbol* sym ) const
 {
-    if (subType)
-        return subType->lookup(sym);
-    else
-        return false;
+  if (subType) return subType->lookup(sym);
+  else return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BitFieldType::~BitFieldType()
 {
-    // Handled by deleting the global type list
-    // delete subType;
-    delete size;
+  // Handled by deleting the global type list
+  // delete subType;
+  delete size;
 }
 
 Type *
 BitFieldType::extend(Type *extension)
 {
-    if (subType)
-        return subType->extend(extension);
-    
-    subType = extension;
-    return this;
+  if (subType) return subType->extend(extension);
+  
+  subType = extension;
+  return this;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 BitFieldType::dup0() const
 {
-    BitFieldType *ret = new BitFieldType(size->dup());
-    ret->storage = storage; 
+  BitFieldType *ret = new BitFieldType(size->dup());
+  ret->storage = storage; 
     
-    ret->subType = subType->dup();
+  ret->subType = subType->dup();
     
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-BitFieldType::printBase( std::ostream& out, int level) const
+BitFieldType::printBase(std::ostream& out, int level) const
 {
-    if (subType)
-    {
-        subType->printBase(out,level);
-    }
+  if (subType) subType->printBase(out,level);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BitFieldType::printBefore( std::ostream& out, Symbol *name, int level ) const
 {
-    if (subType)
-    {
-        subType->printBefore(out,NULL,level);
-    }
+  if (subType) subType->printBefore(out, 0, level);
 
-    if (name)
-    {
-        out << *name;
-    }
+  if (name) out << *name;
+  
+  out << ":";
 
-    out << ":";
-
-    if (size)
-    {
-        size->print(out);
-    }
+  if (size) size->print(out);
 }
 
 void
@@ -616,774 +549,662 @@ BitFieldType::printAfter( std::ostream& out ) const
 void
 BitFieldType::printForm(std::ostream& out) const
 {
-    out << "-BitField";
-    if (subType)
-        subType->printForm(out);
+  out << "-BitField";
+  if (subType) subType->printForm(out);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BitFieldType::findExpr( fnExprCallback cb )
 {
-    if (size)
-        size->findExpr(cb);
+  if (size) size->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
 BitFieldType::lookup( Symbol* sym ) const
 {
-    if (subType)
-        return subType->lookup(sym);
-    else
-        return false;
+  if (subType) return subType->lookup(sym);
+  else return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 FunctionType::FunctionType(Decl *args_list /* = NULL */ )
-  : Type(TT_Function), KnR_decl(false), nArgs(0), size(0), args(NULL), subType(NULL)
+  : Type(TT_Function), KnR_decl(false), nArgs(0), size(0), args(0), subType(0)
 {
-   addArgs (args_list);
+  addArgs (args_list);
 }
         
 FunctionType::~FunctionType()
 {
-    for (int j=0; j < nArgs; j++)
-    {
-        delete args[j];
-    }
+  for (int j=0; j < nArgs; j++)
+    delete args[j];
 
-    delete [] args;
+  delete [] args;
 
-    // Handled by deleting the global type list
-    // delete subType;
+  // Handled by deleting the global type list
+  // delete subType;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 FunctionType::dup0() const
 {
-    FunctionType *ret = new FunctionType();
-    ret->storage = storage; 
-    ret->size    = size;
-    ret->args = new Decl* [size];
-    ret->KnR_decl = KnR_decl;
+  FunctionType *ret = new FunctionType();
+  ret->storage = storage; 
+  ret->size    = size;
+  ret->args = new Decl* [size];
+  ret->KnR_decl = KnR_decl;
 
-    for (int j=0; j < nArgs; j++)
-        ret->addArg(args[j]->dup());
-
-    ret->subType = subType->dup();
+  for (int j=0; j < nArgs; j++)
+    ret->addArg(args[j]->dup());
+  
+  ret->subType = subType->dup();
     
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 FunctionType::extend(Type *extension)
 {
-    if (subType)
-        return subType->extend(extension);
+  if (subType) return subType->extend(extension);
     
-    subType = extension;
-    return this;
+  subType = extension;
+  return this;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionType::printBase( std::ostream& out, int level) const
 {
-    if (subType)
-    {
-        subType->printBase(out,level);
-    }
+  if (subType) subType->printBase(out,level);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionType::printBefore( std::ostream& out, Symbol *name, int level ) const
 {
-    if (subType)
-    {
-        subType->printBefore(out,name,level);
-    }
-    else if (name)
-    {
-        out << *name;
-    }
+  if (subType) subType->printBefore(out,name,level);
+  else if(name) out << *name;
 }
 
 void
 FunctionType::printAfter( std::ostream& out ) const
 {
-    if (KnR_decl)
-    {
-        out << "(";
+  if (KnR_decl)
+  {
+    out << "(";
 
-        if (nArgs > 0)
-        {
-            out << *(args[0]->name);
-            for (int j=1; j < nArgs; j++)
-            {
-                out << ", ";
-                out << *(args[j]->name);
-            }
-        }
-    
-        out << ")\n";
-
-        for (int j=0; j < nArgs; j++)
-        {
-            args[j]->print(out,true);
-            out << ";\n";
-        }
-    }
-    else
+    if (nArgs > 0)
     {
-        out << "(";
-    
-        if (nArgs > 0)
-        {
-            args[0]->print(out,true);
-            for (int j=1; j < nArgs; j++)
-            {
-                out << ", ";
-                args[j]->print(out,true);
-            }
-        }
-    
-        out << ")";
+      out << *(args[0]->name);
+      for (int j=1; j < nArgs; j++)
+	out << ", " << *(args[j]->name);
     }
+    
+    out << ")\n";
 
-    if (subType)
+    for (int j=0; j < nArgs; j++)
     {
-        subType->printAfter(out);
+      args[j]->print(out,true);
+      out << ";\n";
     }
+  }
+  else
+  {
+    out << "(";
+    
+    if (nArgs > 0)
+    {
+      args[0]->print(out,true);
+      for (int j=1; j < nArgs; j++)
+      {
+	out << ", ";
+	args[j]->print(out,true);
+      }
+    }
+    
+    out << ")";
+  }
+  
+  if (subType) subType->printAfter(out);
 }
 
 void
 FunctionType::printForm(std::ostream& out) const
 {
-    out << "-Function";
-    if (subType)
-        subType->printForm(out);
+  out << "-Function";
+  if (subType) subType->printForm(out);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionType::addArg(Decl *arg)
 {
-    if (size == nArgs)
-    {
-        if (size == 0)
-            size = 4;
-        else
-            size += size;
+  if (size == nArgs)
+  {
+    if (size == 0) size = 4;
+    else size += size;
 
-        Decl   **oldArgs = args;
+    Decl   **oldArgs = args;
 
-        args = new Decl* [size];
+    args = new Decl* [size];
 
-        for (int j=0; j < nArgs; j++)
-        {
-            args[j] = oldArgs[j];
-        }
+    for (int j=0; j < nArgs; j++)
+      args[j] = oldArgs[j];
 
-        delete [] oldArgs;
-    }
+    delete [] oldArgs;
+  }
 
-    args[nArgs] = arg;
-    nArgs++;
+  args[nArgs] = arg;
+  nArgs++;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionType::addArgs(Decl *args)
 {
-    Decl *arg = args;
+  Decl *arg = args;
 
-    while (args != NULL)
-    {
-        args = args->next;
-        arg->next = NULL;
-        addArg(arg);
-        arg = args;
-    }
+  while (args != NULL)
+  {
+    args = args->next;
+    arg->next = NULL;
+    addArg(arg);
+    arg = args;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionType::findExpr( fnExprCallback cb )
 {
-    if (subType)
-        subType->findExpr(cb);
-
-    for (int j=0; j < nArgs; j++)
-    {
-        args[j]->findExpr(cb);
-    }
+  if (subType) subType->findExpr(cb);
+  for (int j=0; j < nArgs; j++)
+    args[j]->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
 FunctionType::lookup( Symbol* sym ) const
 {
-    if (subType)
-        return subType->lookup(sym);
-    else
-        return false;
+  if (subType) return subType->lookup(sym);
+  else return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 StructDef::StructDef( bool _is_union /* =false */ )
 {
-    _isUnion = _is_union;
-    tag = NULL;
-    size = 0;
-    nComponents = 0;
+  _isUnion = _is_union;
+  tag = NULL;
+  size = 0;
+  nComponents = 0;
 
-    components = NULL;
+  components = NULL;
 }
 
 StructDef::~StructDef()
 {
-    delete tag;
+  delete tag;
+  
+  for (int j=0; j < nComponents; j++)
+    delete components[j];
 
-    for (int j=0; j < nComponents; j++)
-    {
-        delete components[j];
-    }
-
-    delete [] components;
+  delete [] components;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Decl*
 StructDef::lastDecl()
 {
-    return components[nComponents-1];
+  return components[nComponents-1];
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 StructDef*
 StructDef::dup() const
 {
-    StructDef *ret = this ? dup0() : NULL;
-    return ret;
+  StructDef *ret = this ? dup0() : NULL;
+  return ret;
 }
 
 StructDef*
 StructDef::dup0() const
 {
-    StructDef *ret = new StructDef();
-    ret->size    = size;
-    ret->_isUnion = _isUnion;
-    ret->components = new Decl* [size];
+  StructDef *ret = new StructDef();
+  ret->size    = size;
+  ret->_isUnion = _isUnion;
+  ret->components = new Decl* [size];
 
-    for (int j=0; j < nComponents; j++)
-        ret->addComponent(components[j]->dup());
+  for (int j=0; j < nComponents; j++)
+    ret->addComponent(components[j]->dup());
 
-    ret->tag = tag->dup();
-    
-    return ret;
+  ret->tag = tag->dup();
+  
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 StructDef::print(std::ostream& out, Symbol *name, int level) const
 {
-    if (isUnion())
-        out << "union ";
-    else
-        out << "struct ";
+  if (isUnion()) out << "union ";
+  else out << "struct ";
 
-    if (tag)
-        out << *tag << " ";
+  if (tag) out << *tag << " ";
 
-    out << "{\n"; 
+  out << "{\n"; 
 
-    for (int j=0; j < nComponents; j++)
+  for (int j=0; j < nComponents; j++)
+  {
+    indent(out,level+1);
+    components[j]->print(out,true,level+1);
+
+    Decl *decl = components[j]->next;
+    while (decl != NULL)
     {
-        indent(out,level+1);
-        components[j]->print(out,true,level+1);
-
-        Decl *decl = components[j]->next;
-        while (decl != NULL)
-        {
-            out << ", ";
-            decl->print(out,false,level+1);
-            decl = decl->next;
-        }
-
-        out << ";\n";
+      out << ", ";
+      decl->print(out,false,level+1);
+      decl = decl->next;
     }
 
-    indent(out,level);
-    out << "}"; 
+    out << ";\n";
+  }
 
-    if (name)
-        out << " " << *name;
+  indent(out,level);
+  out << "}"; 
+
+  if (name) out << " " << *name;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 StructDef::findExpr( fnExprCallback cb )
 {
-    for (int j=0; j < nComponents; j++)
-    {
-        components[j]->findExpr(cb);
-    }
+  for (int j=0; j < nComponents; j++)
+    components[j]->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 StructDef::addComponent(Decl *comp)
 {
-    if (size == nComponents)
+  if (size == nComponents)
+  {
+    if (size == 0) size = 4;
+    else size += size;
+
+    Decl **oldComps = components;
+
+    components = new Decl* [size];
+
+    for (int j=0; j < nComponents; j++)
+      components[j] = oldComps[j];
+
+    delete [] oldComps;
+  }
+
+  components[nComponents] = comp;
+  nComponents++;
+
+  do
+  {
+    // Hook this component's symtable entry back to here.
+    if ((comp->name != NULL) && (comp->name->entry != NULL))
     {
-        if (size == 0)
-            size = 4;
-        else
-            size += size;
-
-        Decl **oldComps = components;
-
-        components = new Decl* [size];
-
-        for (int j=0; j < nComponents; j++)
-        {
-            components[j] = oldComps[j];
-        }
-
-        delete [] oldComps;
+      comp->name->entry->uComponent = comp;
+      comp->name->entry->u2Container = this;
+      // The entry was inserted by gram.y as a ComponentEntry.
+      assert (comp->name->entry->IsComponentDecl());
     }
-
-    components[nComponents] = comp;
-    nComponents++;
-
-    do
-    {
-        // Hook this component's symtable entry back to here.
-        if ((comp->name != NULL) && (comp->name->entry != NULL))
-        {
-            comp->name->entry->uComponent = comp;
-            comp->name->entry->u2Container = this;
-            // The entry was inserted by gram.y as a ComponentEntry.
-            assert (comp->name->entry->IsComponentDecl()) ;
-        }
-        comp = comp->next ;
-    } while (comp) ;
+    comp = comp->next;
+  } while (comp);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 StructDef::registerComponents()
 {
-    int    j;
-
-    for (j=0; j < nComponents; j++)
+  for (int j = 0; j < nComponents; j++)
+  {
+    Decl *decl = components[j];
+    while (decl != NULL)
     {
-        Decl    *decl = components[j];
+      Symbol *ident = decl->name;
+      if (ident != NULL)
+      {
+	ident->entry = gProject->Parse_TOS->transUnit->contxt.syms
+	  ->Insert(mk_component(ident->name,decl,this));
+      }
 
-        while (decl != NULL)
-        {
-            Symbol *ident = decl->name;
+      // Register any sub-components also.
+      decl->form->registerComponents();
 
-            if (ident != NULL)
-            {
-               ident->entry = gProject->Parse_TOS->transUnit->contxt.syms
-                    ->Insert(mk_component(ident->name,decl,this));
-            }
-
-            // Register any sub-components also.
-            decl->form->registerComponents();
-
-            decl = decl->next;
-        }
+      decl = decl->next;
     }
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-bool
-StructDef::lookup( Symbol* sym ) const
+bool StructDef::lookup( Symbol* sym ) const
 {
-    int    j;
-
-    for (j=0; j < nComponents; j++)
+  for (int j = 0; j < nComponents; j++)
+  {
+    Decl *decl = components[j];
+    while (decl)
     {
-        Decl    *decl = components[j];
-
-        while (decl != NULL)
-        {
-            Symbol *ident = decl->name;
-
-            if (ident != NULL &&
-                ident->name == sym->name)
-            {
-                sym->entry = ident->entry;
-
-                return true;
-            }
-
-            decl = decl->next;
-        }
+      Symbol *ident = decl->name;
+      if (ident && ident->name == sym->name)
+      {
+	sym->entry = ident->entry;
+	return true;
+      }   
+      decl = decl->next;
     }
-
-    return false;
+  }
+  return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 EnumDef::EnumDef()
 {
-    tag = NULL;
-    size = 0;
-    nElements = 0;
+  tag = NULL;
+  size = 0;
+  nElements = 0;
 
-    names = NULL;
-    values = NULL;
+  names = NULL;
+  values = NULL;
 }
 
 EnumDef::~EnumDef()
 {
-    delete tag;
+  delete tag;
 
-    for (int j=0; j < nElements; j++)
-    {
-        delete names[j];
-        delete values[j];
-    }
+  for (int j=0; j < nElements; j++)
+  {
+    delete names[j];
+    delete values[j];
+  }
 
-    delete [] names;
-    delete [] values;
+  delete [] names;
+  delete [] values;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 EnumDef::addElement(Symbol *nme, Expression *val /* =NULL */ )
 {
-    if (size == nElements)
+  if (size == nElements)
+  {
+    if (size == 0) size = 4;
+    else size += size;
+
+    Symbol     **oldNames = names;
+    Expression **oldVals = values;
+
+    names  = new Symbol* [size];
+    values = new Expression* [size];
+    
+    for (int j=0; j < nElements; j++)
     {
-        if (size == 0)
-            size = 4;
-        else
-            size += size;
-
-        Symbol     **oldNames = names;
-        Expression **oldVals = values;
-
-        names  = new Symbol* [size];
-        values = new Expression* [size];
-
-        for (int j=0; j < nElements; j++)
-        {
-            names[j]  = oldNames[j];
-            values[j] = oldVals[j];
-        }
-
-        delete [] oldNames;
-        delete [] oldVals;
+      names[j]  = oldNames[j];
+      values[j] = oldVals[j];
     }
 
-    names[nElements]  = nme;
-    values[nElements] = val;
-    nElements++;
+    delete [] oldNames;
+    delete [] oldVals;
+  }
 
-    if ((nme->entry != NULL) && (nme->entry->type == EnumConstEntry))
-    {
-        assert(nme->entry->type == EnumConstEntry);
-        nme->entry->uEnumValue = val;
-        nme->entry->u2EnumDef = this;
-    }
+  names[nElements]  = nme;
+  values[nElements] = val;
+  nElements++;
+  
+  if ((nme->entry != NULL) && (nme->entry->type == EnumConstEntry))
+  {
+    assert(nme->entry->type == EnumConstEntry);
+    nme->entry->uEnumValue = val;
+    nme->entry->u2EnumDef = this;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 EnumDef::addElement( EnumConstant* ec )
 {
-    addElement(ec->name, ec->value);
+  addElement(ec->name, ec->value);
+  
+  ec->name = NULL;
+  ec->value = NULL;
 
-    ec->name = NULL;
-    ec->value = NULL;
-
-    delete ec;
+  delete ec;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 EnumDef*
 EnumDef::dup() const
 {
-    EnumDef *ret = this ? dup0() : NULL;
-    return ret;
+  EnumDef *ret = this ? dup0() : NULL;
+  return ret;
 }
 
 EnumDef*
 EnumDef::dup0() const
 {
-    EnumDef *ret = new EnumDef();
-    ret->size  = size;
-    ret->names = new Symbol* [size];
-    ret->values = new Expression* [size];
+  EnumDef *ret = new EnumDef();
+  ret->size  = size;
+  ret->names = new Symbol* [size];
+  ret->values = new Expression* [size];
 
-    for (int j=0; j < nElements; j++)
-    {
-        Expression *val = values[j]->dup();
-        ret->addElement(names[j]->dup(),val);
-    }
+  for (int j=0; j < nElements; j++)
+  {
+    Expression *val = values[j]->dup();
+    ret->addElement(names[j]->dup(),val);
+  }
 
-    ret->tag = tag->dup();
+  ret->tag = tag->dup();
     
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 EnumDef::print(std::ostream& out, Symbol*, int level) const
 {
-    if (tag)
-	{
-        out << *tag << " ";
-	}
+  if (tag) out << *tag << " ";
 
-   	out << "{ "; 
+  out << "{ "; 
 
-    if (nElements > 0)
+  if (nElements > 0)
+  {
+    out << *names[0];
+    if (values[0])
     {
-        out << *names[0];
-
-        if (values[0])
-        {
-            out << " = ";
-            values[0]->print(out);
-        }
-
-        for (int j=1; j < nElements; j++)
-        {
-            out << ", ";
-            out << *names[j];
-
-            if (values[j])
-            {
-                out << " = ";
-                values[j]->print(out);
-            }
-        }
+      out << " = ";
+      values[0]->print(out);
     }
 
-    out << " }"; 
+    for (int j=1; j < nElements; j++)
+    {
+      out << ", " << *names[j];
+
+      if (values[j])
+      {
+	out << " = ";
+	values[j]->print(out);
+      }
+    }
+  }
+
+  out << " }"; 
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 EnumDef::findExpr( fnExprCallback cb )
 {
-    for (int j=0; j < nElements; j++)
-    {
-        if (values[j] != NULL)
-            values[j]->findExpr(cb);
-    }
+  for (int j=0; j < nElements; j++)
+  {
+    if (values[j] != NULL)
+      values[j]->findExpr(cb);
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 GccAttrib::GccAttrib( GccAttribType gccType )
 {
-    type = gccType;
-    value = 0;
-    mode = NULL;
+  type = gccType;
+  value = 0;
+  mode = NULL;
 }
 
 GccAttrib::~GccAttrib()
 {
-    delete mode;
+  delete mode;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 GccAttrib::print( std::ostream& out ) const
 {
-    out << " __attribute__ ((";
+  out << " __attribute__ ((";
 
-    switch (type)
-    {
-        case GCC_Aligned:
-            out << "aligned (" << value << ")";
-            break;
+  switch (type)
+  {
+    case GCC_Aligned:
+      out << "aligned (" << value << ")";
+      break;
 
-        case GCC_Packed:
-            out << "packed";
-            break;
+    case GCC_Packed:
+      out << "packed";
+      break;
 
-        case GCC_CDecl:
-            out << "__cdecl__";
-            break;
+    case GCC_CDecl:
+      out << "__cdecl__";
+      break;
 
-        case GCC_Mode:
-            out << "__mode__ (" << *mode << ")";
-            break;
+    case GCC_Mode:
+      out << "__mode__ (" << *mode << ")";
+      break;
    
-        case GCC_Format:
-            out << "format (" << *mode << "," << strIdx << "," << first << ")";
-            break;
+    case GCC_Format:
+      out << "format (" << *mode << "," << strIdx << "," << first << ")";
+      break;
 
-        case GCC_Const:
-            out << "__const__";
-            break;
+    case GCC_Const:
+      out << "__const__";
+      break;
 
-        case GCC_NoReturn:
-            out << "__noreturn__";
-            break;
+    case GCC_NoReturn:
+      out << "__noreturn__";
+      break;
 
-        case GCC_Malloc:
-            out << "__malloc__";
-            break;
+    case GCC_Malloc:
+      out << "__malloc__";
+      break;
 
-        case GCC_Unsupported:
-        default:
-            out << "<unsupported gcc attribute>";
-            break;
-    }
+    case GCC_Unsupported:
+  default:
+    out << "<unsupported gcc attribute>";
+    break;
+  }
 
-    out << "))";
+  out << "))";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 GccAttrib*
 GccAttrib::dup() const
 {
-    GccAttrib *ret = this ? dup0() : NULL;
-    return ret;
+  GccAttrib *ret = this ? dup0() : NULL;
+  return ret;
 }
 
 GccAttrib*
 GccAttrib::dup0() const
 {
-    GccAttrib    *ret = new GccAttrib(type);
-    ret->value = value;
-    ret->mode = mode->dup();
+  GccAttrib    *ret = new GccAttrib(type);
+  ret->value = value;
+  ret->mode = mode->dup();
       
     return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Decl::Decl( Symbol* sym /* =NULL */ )
 {
-    clear();
-
-    name = sym;
+  clear();
+  name = sym;
 }
 
 Decl::Decl( Type* type )
 {
-    clear();
+  clear();
 
-    form = type;
-    storage = type->storage;
+  form = type;
+  storage = type->storage;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Decl::~Decl()
 {
-    // Handled by deleting the global type list
-    // delete form;
-    delete attrib;
-    delete initializer;
+  // Handled by deleting the global type list
+  // delete form;
+  delete attrib;
+  delete initializer;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Decl::clear()
 {
-    storage    = ST_None;
+  storage    = ST_None;
 
-    name        = NULL;
-    form        = NULL;
-    attrib      = NULL;
-    initializer = NULL;
-    next        = NULL;
+  name        = NULL;
+  form        = NULL;
+  attrib      = NULL;
+  initializer = NULL;
+  next        = NULL;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 Decl::extend( Type* type )
 {
-    if (storage == ST_None)
-        storage = type->storage;
+  if (storage == ST_None)
+    storage = type->storage;
     
-    if (form != NULL)
-        return form->extend(type);
-    
-    form = type;
-    return NULL;
+  if (form != NULL)
+    return form->extend(type);
+  
+  form = type;
+  return NULL;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Decl*
 Decl::dup() const
 {
-    Decl *ret = this ? dup0() : NULL;
-    return ret;
+  Decl *ret = this ? dup0() : NULL;
+  return ret;
 }
 
 Decl*
 Decl::dup0() const
 {
-    Decl *ret = new Decl();
-    ret->storage    = storage;
-    ret->form = form;
-
-    ret->name     = name->dup();
-    ret->attrib = attrib->dup();
-    ret->initializer = initializer->dup();
-    ret->next = next->dup(); 
-    
-    return ret;
+  Decl *ret = new Decl();
+  ret->storage    = storage;
+  ret->form = form;
+  
+  ret->name     = name->dup();
+  ret->attrib = attrib->dup();
+  ret->initializer = initializer->dup();
+  ret->next = next->dup(); 
+  
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Decl::copy(const Decl& decl)
 {
-    storage     = decl.storage;
-    name        = decl.name;
-    form        = decl.form;
-    attrib      = decl.attrib;
-    initializer = decl.initializer;
+  storage     = decl.storage;
+  name        = decl.name;
+  form        = decl.form;
+  attrib      = decl.attrib;
+  initializer = decl.initializer;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Decl::print(std::ostream& out, bool showBase, int level) const
 {
-    assert(this != NULL);
+  assert(this != NULL);
 
-    if (showBase)
-    {
-        printStorage(out,storage);
-
-        // Hack to fix K&R non-declarations
-        if (form == NULL)
-        {
-            out << "int ";
-        }
+  if (showBase)
+  {
+    printStorage(out,storage);
+    
+    // Hack to fix K&R non-declarations
+    if (form == NULL)
+      out << "int ";
     }
 
-    if (form)
-    {
-        form->printType(out,name,showBase,level);
-    }
-    else if (name)
-    {
-        out << *name;
-    }
+    if (form) form->printType(out,name,showBase,level);
+    else if (name) out << *name;
 
-    if (attrib)
-    {
-        attrib->print(out);
-    }
+    if (attrib) attrib->print(out);
 
     if (initializer)
     {
-        out << " = ";
-
-        initializer->print(out);
+      out << " = ";
+      initializer->print(out);
     }
 
     /*
@@ -1396,44 +1217,35 @@ Decl::print(std::ostream& out, bool showBase, int level) const
     */
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Decl::findExpr( fnExprCallback cb )
 {
-    if (form)
-        form->findExpr(cb);
+  if (form) form->findExpr(cb);
 
-    if (initializer != NULL)
-        initializer->findExpr(cb);
+  if (initializer) initializer->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
 Decl::lookup( Symbol* sym ) const
 {
-    if (form)
-        return form->lookup(sym);
-    else
-        return false;
+  if (form) return form->lookup(sym);
+  else return false;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Decl*
-ReverseList( Decl* dList )
+ReverseList(Decl *dList)
 {
-    Decl*    head = NULL;
+  Decl*    head = NULL;
 
-    while (dList != NULL)
-    {
-        Decl*    dcl = dList;
+  while (dList != NULL)
+  {
+    Decl*    dcl = dList;
+    
+    dList = dList->next;
 
-        dList = dList->next;
+    dcl->next = head;
+    head = dcl;
+  }
 
-        dcl->next = head;
-        head = dcl;
-    }
-
-    return head; 
+  return head; 
 }
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

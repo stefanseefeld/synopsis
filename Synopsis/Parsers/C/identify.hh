@@ -27,12 +27,12 @@
 /
 / ********************************************************************/
 
-#ifndef    IDENTIFY_H
-#define    IDENTIFY_H
+#ifndef _identify_hh
+#define _identify_hh
 
 #include <sys/types.h>
 
-#include <ctool/config.h>
+#include <config.hh>
 
 /* HPUX -  */
 

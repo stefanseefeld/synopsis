@@ -30,10 +30,10 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
+#include <ParseEnv.hh>
+#include <Project.hh>
 #include <iostream>
 
-#include <ctool/parseenv.h>
-#include <ctool/project.h>
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 
 extern int yyparse(void);
