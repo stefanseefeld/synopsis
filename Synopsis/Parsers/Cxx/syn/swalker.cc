@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.40 2001/06/11 10:37:30 chalky Exp $
+// $Id: swalker.cc,v 1.41 2001/07/03 11:32:40 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.41  2001/07/03 11:32:40  chalky
+// Fix phantom parameter identifier bug
+//
 // Revision 1.40  2001/06/11 10:37:30  chalky
 // Operators! Arrays! (and probably more that I forget)
 //
@@ -950,9 +953,12 @@ void SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>&
 	    }
 	    // Find name
 	    if (Ptree* pname = param->Nth(type_ix+1)) {
-	        if (!pname->IsLeaf() && pname->Last()) {
+	        if (!pname->IsLeaf() && pname->Last() && pname->Last()->Car()) {
 		    // * and & modifiers are stored with the name so we must skip them
-		    name = pname->Last()->ToString();
+		    Ptree* last = pname->Last()->Car();
+		    if (!last->Eq('*') && !last->Eq('&'))
+			// The last node is the name:
+			name = last->ToString();
 	      	}
 	    }
 	    // Find value
