@@ -12,7 +12,7 @@ Graphic:	Graphic.idl
 		$(synopsis) -o Graphic $?
 
 Input:		Input.idl
-		$(synopsis) -o Input $?
+		../../synopsis -p IDL -I. -Wp,-K -f DocBook -o Input.xml $?
 
 clean:
 		rm -fr *~ *.html *.syn CosNaming Types Graphic Input

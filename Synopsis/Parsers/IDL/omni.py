@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.22 2001/01/29 20:22:00 stefan Exp $
+# $Id: omni.py,v 1.23 2001/01/31 06:51:24 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.23  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.22  2001/01/29 20:22:00  stefan
 # fixed getopt bug
 #
@@ -42,6 +45,8 @@ from omniidl import idlast, idltype, idlvisitor, idlutil
 import _omniidl
 import sys, getopt, os, os.path, string
 from Synopsis.Core import Type, AST, Util
+
+verbose = 0
 
 # A dummy function that doesn't modify filename. use -b to change it
 def strip(filename): return filename
@@ -404,13 +409,13 @@ def usage():
   -b <basename>                        Strip the basename from all filenames"""
 
 def __parseArgs(args):
-    global preprocessor_args, mainfile_only, basename, strip
+    global preprocessor_args, mainfile_only, basename, strip, verbose
 
     preprocessor_args = []
     mainfile_only = 0
     basename = ""
     try:
-        opts,remainder = Util.getopt_spec(args, "I:b:mkK")
+        opts,remainder = Util.getopt_spec(args, "I:b:mkKv")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -431,6 +436,7 @@ def __parseArgs(args):
 	elif o == "-b":
 	    basename = a
 	    strip = strip_filename
+	elif o == "-v": verbose = 1
 
 def parse(file, args, typedict, astdict):
     global preprocessor_args, mainfile_only
