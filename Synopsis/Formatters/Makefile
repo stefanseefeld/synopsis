@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.14 2001/06/15 18:31:31 stefan Exp $
+# $Id: Makefile,v 1.15 2002/03/04 14:46:13 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -51,5 +51,5 @@ distclean:
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Formatter
-	install -m666 $(PY) $(packagedir)/Synopsis/Formatter
+	install -m 666 $(PY) $(packagedir)/Synopsis/Formatter
 	$(MAKE) action="install"

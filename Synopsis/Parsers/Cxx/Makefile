@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.10 2001/07/28 02:40:02 chalky Exp $
+# $Id: Makefile,v 1.11 2002/03/04 14:46:12 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -29,7 +29,11 @@ endif
 SRC	:= __init__.py __init__.pyc occ.so link.so
 
 # Note ucpp and occ are both handled inside syn/Makefile
-subdirs	= gc syn
+ifeq '$(use_gc)' 'yes'
+subdirs	:= gc syn
+else
+subdirs	:= syn
+endif
 
 all:
 	@for dir in ${subdirs}; do \
@@ -53,4 +57,4 @@ distclean: clean
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Parser/C++
-	install -m666 $(SRC) $(packagedir)/Synopsis/Parser/C++
+	install -m 666 $(SRC) $(packagedir)/Synopsis/Parser/C++

@@ -1,5 +1,5 @@
 # @configure_input@
-# $Id: local.mk.in,v 1.5 2001/07/11 04:08:46 stefan Exp $
+# $Id: local.mk.in,v 1.6 2002/03/04 14:46:12 stefan Exp $
 #
 # This source file is a part of the Berlin Project.
 # Copyright (C) 1999, 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -45,3 +45,5 @@ packagedir	:= $(prefix)/lib/python$(python_version)/site-packages
 
 CC		:= @CC@
 CXX		:= @CXX@
+use_gc		:= @use_gc@
+LIBS		:= @python_lib@ @LIBS@ -ldl -lpthread

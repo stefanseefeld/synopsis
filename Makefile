@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.26 2001/07/19 04:26:09 stefan Exp $
+# $Id: Makefile,v 1.27 2002/03/04 14:46:12 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -35,7 +35,9 @@ action	:= all
 .PHONY: all $(subdirs) docs
 
 all:	$(subdirs)
+ifeq '$(action)' 'all'
 	python -c "import compileall; compileall.compile_dir('Synopsis')"
+endif
 
 $(subdirs):
 	@echo making $(action) in $@
@@ -57,7 +59,7 @@ distclean:
 install:
 	$(MAKE) action="install"
 	mkdir -p $(bindir)
-	install -m755 synopsis $(bindir)
+	install -m 755 synopsis $(bindir)
 	mkdir -p $(datadir)/synopsis
-	install -m755 share/*.png share/*.jpg $(datadir)/synopsis
+	install -m 755 share/*.png share/*.jpg $(datadir)/synopsis
 #	$(MAKE) -C docs/RefManual install
