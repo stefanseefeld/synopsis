@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 2001/07/03 01:58:44 chalky Exp $
+# $Id: Makefile,v 1.6 2001/07/10 07:44:35 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,7 +26,7 @@ include ../local.mk
 endif
 endif
 
-SRC	:= __init__
+SRC	:= __init__ Config
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
 subdirs	:= Core Parser Linker Formatter
