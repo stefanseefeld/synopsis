@@ -11,7 +11,7 @@ from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import os
+import os, urllib
 
 link = None
 try:
@@ -116,4 +116,4 @@ class Source(View):
       return e and self.rel_url + e.link or ''
 
    def external_ref(self, name):
-      return self.base_url + '/' + '::'.join(name)
+      return self.external_url + urllib.quote('::'.join(name))

@@ -303,7 +303,5 @@ class Formatter(Processor):
       """Returns information about a registered file, as a (view,scope)
       pair. Will return None if the filename isn't registered."""
 
-      filename = str(filename)
-      if not self.__files.has_key(filename): return None
-      return self.__files[filename]
+      return self.__files.get(filename)
 
