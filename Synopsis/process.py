@@ -1,4 +1,4 @@
-# $Id: process.py,v 1.3 2003/11/11 06:17:57 stefan Exp $
+# $Id: process.py,v 1.4 2003/11/22 21:44:06 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -85,10 +85,8 @@ to pass this as a string, please use %s="'%s'" """%(name, value, name, value))
             props[name] = None
       args = args[1:]
 
-   # remaining arguments are mapped to the 'input' value,
-   # if that is not yet defined
-   if args and 'input' not in props:
-      props['input'] = args
+   # remaining arguments are mapped to the 'input' value
+   if args: props['input'] = args
 
    if command in commands:
       ast = AST.AST()
