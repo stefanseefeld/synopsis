@@ -17,6 +17,11 @@ AC_ARG_WITH(python,
 
 AC_PROG_CXX
 
+SYN_CPP="`PKG_CONFIG_PATH=../src pkg-config --define-variable=includedir=${srcdir}/../src --cflags Synopsis`"
+SYN_LIBS="`PKG_CONFIG_PATH=../src pkg-config --define-variable=prefix=${srcdir}/../src --libs Synopsis`"
+CPPFLAGS="$CPPFLAGS $SYN_CPP"
+LIBS="$LIBS $SYN_LIBS"
+
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
   AC_CHECK_FILE($PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
 else

@@ -12,8 +12,7 @@ builddir:= @builddir@
 
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ 
-CPPFLAGS+= -I $(srcdir)/../../src/Synopsis/gc/include
+CPPFLAGS:= @CPPFLAGS@
 CPPFLAGS+= -I $(builddir)/../../src/ -I $(srcdir)/../../src/ 
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@

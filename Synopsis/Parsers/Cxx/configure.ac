@@ -22,6 +22,11 @@ AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 
+SYN_CPP="`PKG_CONFIG_PATH=../../../src pkg-config --define-variable=includedir=${srcdir}/../../../src --cflags Synopsis`"
+SYN_LIBS="`PKG_CONFIG_PATH=../../../src pkg-config --define-variable=prefix=${srcdir}/../../../src --libs Synopsis`"
+AC_SUBST(SYN_CPP)
+AC_SUBST(SYN_LIBS)
+
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
   AC_CHECK_FILE($PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
 else
@@ -72,8 +77,7 @@ topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../..')"`
 AC_SUBST(topdir)
 
 AC_CONFIG_FILES([Makefile 
-                 synopsis.py 
-                 OpenCxx.pc])
+                 synopsis.py])
 
 mkdir -p occ
 mkdir -p syn
