@@ -400,11 +400,15 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 {
   static char dest[1024];
   strcpy(dest, "/tmp/synopsis-XXXXXX");
-  if (mkstemp(dest) == -1)
+  int temp_fd = mkstemp(dest);
+  if (temp_fd == -1)
   {
     perror("RunPreprocessor");
     exit(1);
   }
+  // Not interested in the open file, just the unique filename
+  close(temp_fd);
+
   if (syn_use_gcc)
   {
     // Release Python's global interpreter lock
@@ -560,7 +564,7 @@ void makedirs(const char* path)
   }
 }
 
-char *RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations, PyObject* filenames)
+void RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations, PyObject* filenames)
 {
   Trace trace("RunOpencxx");
   std::set_unexpected(unexpected);
@@ -570,14 +574,6 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   sigaction(SIGSEGV, &newa, &olda);
   sigaction(SIGBUS, &newa, &olda);
   sigaction(SIGABRT, &newa, &olda);
-  static char dest[1024];
-  strcpy(dest, "/tmp/synopsis-XXXXXX");
-  //tmpnam(dest);
-  if (mkstemp(dest) == -1)
-  {
-    perror("RunOpencxx");
-    exit(1);
-  }
 
   std::ifstream ifs(file);
   if(!ifs)
@@ -692,10 +688,10 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   {
     PyObject_CallMethod(filenames, "append", "s", source.c_str());
   }
+  ifs.close();
   sigaction(SIGABRT, &olda, 0);
   sigaction(SIGBUS, &olda, 0);
   sigaction(SIGSEGV, &olda, 0);
-  return dest;
 }
 
 PyObject *occParse(PyObject *self, PyObject *args)
@@ -732,9 +728,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
 #undef assertObject
 
   char *cppfile = RunPreprocessor(src, cppargs);
-  char *occfile = RunOpencxx(src, cppfile, occargs, types, declarations, filenames);
+  RunOpencxx(src, cppfile, occargs, types, declarations, filenames);
   unlink(cppfile);
-  unlink(occfile);
 
   Py_DECREF(ast_module);
   Py_DECREF(declarations);
@@ -840,9 +835,8 @@ int main(int argc, char **argv)
   PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
   PyObject* decls = PyList_New(0);
   char *cppfile = RunPreprocessor(src, cppargs);
-  char *occfile = RunOpencxx(src, cppfile, occargs, types, decls, NULL);
+  RunOpencxx(src, cppfile, occargs, types, decls, NULL);
   unlink(cppfile);
-  unlink(occfile);
 #ifdef SYN_TEST_REFCOUNT
   Py_DECREF(pylist);
   Py_DECREF(type);
