@@ -7,7 +7,6 @@
 
 import os, sys, string
 
-from distutils.core import setup
 from distutils.command.build_ext import build_ext
 from distutils.util import get_platform
 from distutils.dir_util import mkpath
@@ -45,6 +44,7 @@ class config(build_ext):
 
     def config_extensions(self):
 
+        self.config_extension('Cxx-API')
         for ext in self.extensions:
             self.config_extension(ext)
         if not self.disable_gc:

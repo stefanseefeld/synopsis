@@ -42,7 +42,6 @@ class build_syn_ext(build_ext):
         files = []
         for ext in self.extensions:
             os.path.walk(ext[0], collect, files)
-            print files
         return files
 
     def get_outputs(self):
