@@ -12,6 +12,6 @@ boostdemo:
 
 clean:
 		rm -rf *~ *.html *.ps *.syn core *.aux *.fn *.cp *.tp *.vr *.log *.ky *.pg \
-		       *.fns *.tps *.vrs *.pdf BoostPython BoostFiles BoostLinks
+		       *.fns *.tps *.vrs *.pdf BoostPython BoostFiles BoostLinks BoostXRef
 
 distclean:	clean
