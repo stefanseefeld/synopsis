@@ -368,7 +368,7 @@ PyObject *Synopsis::Forward(AST::Forward* decl)
 PyObject *Synopsis::Comment(AST::Comment* decl)
 {
     Trace trace("Synopsis::addComment");
-    PyObject *text = PyString_FromStringAndSize(decl->text().data(), decl->text().size());
+    PyObject *text = PyString_FromStringAndSize((decl->text()+"\n").data(), decl->text().size()+1);
     PyObject *comment = PyObject_CallMethod(m_ast, "Comment", "OOi", 
 	text, m->py(decl->filename()), decl->line()
     );

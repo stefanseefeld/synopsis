@@ -1,4 +1,4 @@
-/*$Id: Graphic.idl,v 1.1 2000/08/01 03:28:26 stefan Exp $
+/*$Id: Graphic.idl,v 1.2 2001/01/21 05:34:26 chalky Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999, 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -46,6 +46,16 @@ interface Graphic
 //. within the scene graph. Graphics have a size and an origin for the purposes 
 //. of layout. The Graphic interface provides operations for geometry management,
 //. drawing, picking, and a directed-acyclic structure (not strictly hierarchical).
+//.
+//. @see Graphic
+//.
+//. @see GraphicIterator
+//.
+//. @see GraphicIterator.next
+//.
+//. @see GraphicIterator.next()
+//.
+//. @see C++/Berlin.Graphic
 {
   struct Requirement
     //. If the defined flag is true, a requirement specifies
