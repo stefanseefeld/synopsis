@@ -21,112 +21,15 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 // 02111-1307, USA.
 
+#include <Synopsis/Python/Module.hh>
+#include <Synopsis/Trace.hh>
+#include <Synopsis/Path.hh>
 #include "filter.hh"
 #include <map>
 #include <iostream>
 #include <stdexcept>
 
-#ifdef __WIN32__
-# include <windows.h>
-#endif
-
-namespace
-{
-//. return portably the current working directory
-const std::string &get_cwd()
-{
-  static std::string path;
-  if (path.empty())
-#ifdef __WIN32__
-  {
-    DWORD size;
-    if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
-    {
-      throw std::runtime_error("error accessing current working directory");
-    }
-    char *buf = new char[size];
-    if (::GetCurrentDirectoryA(size, buf) == 0)
-    {
-      delete [] buf;
-      throw std::runtime_error("error accessing current working directory");
-    }
-    path = buf;
-    delete [] buf;
-  }
-#else
-    for (long path_max = 32;; path_max *= 2)
-    {
-      char *buf = new char[path_max];
-      if (::getcwd(buf, path_max) == 0)
-      {
-	if (errno != ERANGE)
-	{
-	  delete [] buf;
-	  throw std::runtime_error(strerror(errno));
-	}
-      }
-      else
-      {
-	path = buf;
-	delete [] buf;
-	return path;
-      }
-      delete [] buf;
-    }
-#endif
-  return path;
-}
-
-// normalize and absolutize the given path path
-std::string normalize_path(std::string filename)
-{
-#ifdef __WIN32__
-  char separator = '\\';
-  const char *pat1 = "\\.\\";
-  const char *pat2 = "\\..\\";
-#else
-  char separator = '/';
-  const char *pat1 = "/./";
-  const char *pat2 = "/../";
-#endif
-  if (filename[0] != separator)
-    filename.insert(0, get_cwd() + separator);
-
-  // nothing to do...
-  if (filename.find(pat1) == std::string::npos &&
-      filename.find(pat2) == std::string::npos) return filename;
-  
-  // for the rest we'll operate on a decomposition of the filename...
-  typedef std::vector<std::string> Path;
-  Path path;
-
-  std::string::size_type b = 0;
-  while (b < filename.size())
-  {
-    std::string::size_type e = filename.find(separator, b);
-    path.push_back(std::string(filename, b, e-b));
-    b = e == std::string::npos ? std::string::npos : e + 1;
-  }
-
-  // remove all '.' and '' components
-  path.erase(std::remove(path.begin(), path.end(), "."), path.end());
-  path.erase(std::remove(path.begin(), path.end(), ""), path.end());
-  // now collapse '..' components with the preceding one
-  while (true)
-  {
-    Path::iterator i = std::find(path.begin(), path.end(), "..");
-    if (i == path.end()) break;
-    if (i == path.begin()) throw std::invalid_argument("invalid path");
-    path.erase(i - 1, i + 1); // remove two components
-  }
-
-  // now rebuild the path as a string
-  std::string retn = '/' + path.front();
-  for (Path::iterator i = path.begin() + 1; i != path.end(); ++i)
-    retn += '/' + *i;
-  return retn;
-}
-}
+using namespace Synopsis;
 
 struct FileFilter::Private
 {
@@ -267,10 +170,12 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
     else
         filename.assign(filename_ptr);
     
-    filename = normalize_path(filename);
-
+    Path path = Path(filename).abs();
+    std::string long_filename = path.str();
+    path.strip(m->base_path);
+    std::string short_filename = path.str();
     // Look in map
-    Private::file_map_t::iterator iter = m->file_map.find(filename);
+    Private::file_map_t::iterator iter = m->file_map.find(long_filename);
     if (iter != m->file_map.end())
         // Found
         return iter->second;
@@ -278,12 +183,12 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
     // Not found, create a new SourceFile. Note filename in the object is
     // stripped of the basename
     AST::SourceFile* file = import_source_file(m->ast,
-					       strip_base_path(filename),
-					       filename, 
-					       is_main(filename));
+					       short_filename,
+					       long_filename, 
+					       is_main(long_filename));
 
     // Add to the map
-    m->file_map[filename] = file;
+    m->file_map[long_filename] = file;
 
     return file;
 }

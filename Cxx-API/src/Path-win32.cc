@@ -43,9 +43,9 @@ std::string Path::normalize(const std::string &filename)
   char separator = '\\';
   const char *pat1 = "\\.\\";
   const char *pat2 = "\\..\\";
-  if (value[0] != separator)
+  if (value[0] != separator &&
+      value.size() > 2 && value[1] != ':' && value[2] != '\\')
     value.insert(0, cwd() + separator);
-
   // nothing to do...
   if (value.find(pat1) == std::string::npos &&
       value.find(pat2) == std::string::npos) return value;
