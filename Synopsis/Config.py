@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.19 2003/01/20 07:08:40 chalky Exp $
+#  $Id: Config.py,v 1.20 2003/02/01 05:33:02 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -133,15 +133,19 @@ class Base:
             files. This attribute is set by __init__ always
             @attr basename A file path to strip from the start of all
             filenames before storing. Setting this option for example will
-            remove any redundant parent directories in the HTML FileTree page.
+            remove any redundant parent directories in the HTML FileListing
+            page.
             @attr include_path A list of strings, each specifying a path to
             add to the include path. For example: ['/usr/local/corba/']
             @attr defines A list of strings, each specifying a define to pass
             to the preprocessor. For example: ['FOO', 'BAR=true']
             @attr preprocessor Which preprocessor to use. Not setting this
             causes the builtin ucpp to be used, which can track macro
-            expansions when doing SXR stuff. Setting it to 'gcc' will cause
-            gcc (well, really g++) to be used instead.
+            expansions when doing SXR stuff and extract macro definitions for
+            the documentation. Setting it to 'gcc' will cause
+            gcc (well, really g++) to be used instead, for use only in cases
+            when ucpp can't parse your standard libraries (usually because of
+            compiler specific syntax).
             @attr extract_tails If set to true, then the parser will look for
             trailing comments before close braces. If it finds them, it will
             create dummy declarations to hold the comments. If you set this,
@@ -152,11 +156,38 @@ class Base:
             more carefully at the input file, so that it can generate the
             links from inside blocks of code (otherwise it skips over them).
             Note that you usually set this from the command-line with your
-            Makefile via "-Wp,-s,$@.links" or something.
+            Makefile via "-Wp,-s,$@.links" or something. (deprecated)
+            @attr syntax_prefix If set, must be a string which defines a
+            prefix to store syntax info into. The source filenames are
+            appended to the prefix to create the output filename, so it should
+            be a directory name to avoid clashes (there is no suffix!). For
+            example, if your file is "src/foo.cc" and prefix is "syn/" then
+            the syntax information will be stored in "syn/src/foo.cc".
+            @attr xref_prefix If set, must be a string which defines a prefix
+            to store xref info into. See syntax_prefix.
+            @attr syntax_file If set, must be a string with the file to store
+            syntax info into. Note that the syntax info can only hold syntax
+            information about one source file, so this option is of limited
+            use.
+            @attr xref_file If set, must be a string with the file to store
+            xref info into. Note that the xref info can only hold xref
+            information about one source file, so this option is of limited
+            yse.
             @attr fake_std If set, this causes the parser to construct a fake
             using directive from the std namespace to the global namespace. In
             effect, this fixes problems seen with using the stdc++ headers for
             gcc 2.95.x where most things dont get placed in the std namespace.
+            @attr multiple_files If set to true then the parser handles
+            multiple files included from the main file at the same time. This
+            option can only be used with the Project file. If syntax_prefix or
+            xref_prefix is set then the extra files will get syntax and xref
+            info recorded into the appropriate files. Only one AST is output,
+            but it is as if the ASTs for the individual files were already
+            linked. To use this option, your Project file must have a single
+            SourceAction connected to this ParserAction. The SourceAction
+            should have a Simple rule first which is the main sourcefile, and
+            any number of other rules to select other files to record the AST
+            for.
             @see Synopsis.Parser.C++.__init__
             """
             name = 'C++'
@@ -170,9 +201,10 @@ class Base:
             @attr name Name of this config object: 'Python'
             @attr verbose Verbosity flag. This attribute is set by __init__(),
             but only if 'verbose' was passed as a config option.
-            @attr main_file Flag that selects if should only store the AST
-            generated from the file(s) being processed, and not included
-            files. This attribute is set by __init__ always
+            @attr basename A file path to strip from the start of all
+            filenames before storing. Setting this option for example will
+            remove any redundant parent directories in the HTML FileListing
+            page.
             @see Synopsis.Parser.Python
             """
             name = 'Python'
@@ -223,6 +255,20 @@ class Base:
             default is ['Unduplicator', 'Stripper', 'NameMapper', 'Comments',
             'EmptyNS', 'AccessRestrictor']. Others include 'LanguageMapper'
             and 'XRefCompiler'.
+            @attr comment_processors a list of processors to use which use
+            declaration comments to perform actions. The default is an empty
+            list, but an example minimum you would use is ['ssd', 'summary'].
+            The processors are: (note that any you do use should be in this
+            order!): ssd: removes any comment not in the "//." style and
+            removes the prefix. ss: removes any comment not in the "//" style
+            and removes the prefix. java: removes any comment not in Java's
+            "/** */" style and removes the prefix. dummy: removes dummy
+            declarations from the C++ parser. prev: extends dummy to move
+            comments that belong to the previous declaration (comments that
+            begin with "<") summary: extracts a summary from comments, needed
+            for normal documentation. javatags: extracts JavaDoc-style tags
+            from comments, needed to display things like @param and @return
+            properly.
             """
             name = 'Linker'
             verbose = 0
@@ -231,7 +277,7 @@ class Base:
             max_access = None
             map_declaration_names = None
             map_declaration_type = 'Language'
-	    comment_formatters = ['summary']
+            comment_processors = []
             operations = [
                 'Unduplicator', 'Stripper', 'NameMapper',
                 'Comments', 'EmptyNS', 'AccessRestrictor'
@@ -274,10 +320,11 @@ class Base:
             @attr name The name of the module, ie: 'HTML'
             @attr stylesheet The filename of the stylesheet file linked to by all
             generated pages.
-            @attr stylesheet_file If this attribute is set, then it specifies
-            a file which is read and written over the stylesheet file in the
-            output directory. It is only copied if it has a newer timestamp
-            than the existing stylesheet file.
+            @attr stylesheet_file Specifies a file which is read and written
+            over the stylesheet file in the output directory. It is only
+            copied if it has a newer timestamp than the existing stylesheet
+            file. The default is the file html.css installed in Synopsis'
+            share directory.
             @attr pages Lists the names of page modules to load and process in
             order. Each module generates a different type of output, and some
             register names to be shown as a link at the top of every page. For
@@ -320,14 +367,15 @@ class Base:
             # Defaults
             datadir = prefix + '/share/synopsis'
             stylesheet = 'style.css'
+            stylesheet_file = datadir + '/html.css'
             file_layout = 'Synopsis.Formatter.HTML.FileLayout.FileLayout'
             pages = ['FramesIndex',
                               'ScopePages',
                               'ModuleListing',
                               'ModuleIndexer',
                               'FileListing',
-			      'FileIndexer',
-			      'FileDetails',
+                              'FileIndexer',
+                              'FileDetails',
                               'InheritanceTree',
                               'InheritanceGraph',
                               'NameIndex',
@@ -366,8 +414,8 @@ class Base:
                 links_path = './%s-links'
                 toc_files = []
                 scope = ''
-	    # Old name for FileSource:
-	    FilePages = FileSource
+            # Old name for FileSource:
+            FilePages = FileSource
             class FileTree:
                 """Config object for the FileTree module.
                 FileTree creates a page with a tree of filenames, for use in
