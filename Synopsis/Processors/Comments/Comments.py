@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.16 2002/10/11 05:57:17 chalky Exp $
+# $Id: Comments.py,v 1.17 2002/10/11 11:07:53 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.17  2002/10/11 11:07:53  chalky
+# Added missing parent __init__ call in Group
+#
 # Revision 1.16  2002/10/11 05:57:17  chalky
 # Support suspect comments
 #
@@ -341,6 +344,7 @@ class Grouper (Transformer):
     __re_open = r'^[ \t]*{ ?(.*)$'
     __re_close = r'^[ \t]*} ?(.*)$'
     def __init__(self):
+	Transformer.__init__(self)
 	self.re_open = re.compile(Grouper.__re_open, re.M)
 	self.re_close = re.compile(Grouper.__re_close, re.M)
         self.__groups = []
