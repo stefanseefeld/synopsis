@@ -1,4 +1,4 @@
-# $Id: NameMapper.py,v 1.1 2002/08/23 04:37:26 chalky Exp $
+# $Id: NameMapper.py,v 1.2 2002/10/20 02:22:38 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameMapper.py,v $
+# Revision 1.2  2002/10/20 02:22:38  chalky
+# Fix reference to verbose flag
+#
 # Revision 1.1  2002/08/23 04:37:26  chalky
 # Huge refactoring of Linker to make it modular, and use a config system similar
 # to the HTML package
@@ -47,7 +50,7 @@ class NameMapper (Operation, AST.Visitor):
 	    type.set_name(newname)
 	    config.types[newname] = type
 	except KeyError, msg:
-	    if verbose: print "Warning: Unable to map name of type:",msg
+	    if config.verbose: print "Warning: Unable to map name of type:",msg
     def visitGroup(self, node):
 	"""Recursively visits declarations under this group/scope/etc"""
 	self.visitDeclaration(node)
