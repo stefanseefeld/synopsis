@@ -136,10 +136,10 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="function">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="function">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="function&lt;R()(int,int)&gt;">

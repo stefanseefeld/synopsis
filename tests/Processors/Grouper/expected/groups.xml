@@ -110,6 +110,20 @@ and not a group either
   </instance>
  </declarations>
  <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Grouper/input/groups.cc" language="C++" line="31" name="EOS" type="EOS"/>
+   </declaration>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="bar">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="f">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="foo">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="test1">
    <declaration/>
   </instance>
@@ -122,25 +136,11 @@ and not a group either
   <instance class="Synopsis.Type.Declared" language="C++" name="test4">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="bar">
+  <instance class="Synopsis.Type.Declared" language="C++" name="test5">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="test6">
    <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="test5">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="foo">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="f">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
-   <declaration>
-    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Grouper/input/groups.cc" language="C++" line="31" name="EOS" type="EOS"/>
-   </declaration>
   </instance>
  </types>
  <files>

@@ -56,16 +56,16 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func(const char*)">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="func(char)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func(int)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(const char*)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="func(double)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(int)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="test()">

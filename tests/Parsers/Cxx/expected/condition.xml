@@ -37,19 +37,19 @@
   </instance>
  </declarations>
  <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="X">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="X.(bool)()const">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="X.Y.(bool)()const">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="X.Y">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="X.Y.(bool)()const">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="foo()">

@@ -90,31 +90,31 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Enum">
    <declaration/>
   </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Foo.first">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="TWO">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="ONE">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Foo.second">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Foo.third">
    <declaration/>
   </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="ONE">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="THREE">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="TWO">
    <declaration/>
   </instance>
  </types>

@@ -104,19 +104,19 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.bit_count">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.value_type">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.bit_count">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.masking_type">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.value_type">
    <declaration/>
   </instance>
  </types>

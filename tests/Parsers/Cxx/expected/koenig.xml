@@ -48,19 +48,19 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="NS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="NS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="NS.operator+(A,A)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func(int)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(NS::A)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func(NS::A)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(int)">
    <declaration/>
   </instance>
  </types>

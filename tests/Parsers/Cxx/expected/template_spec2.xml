@@ -136,25 +136,25 @@
   </instance>
  </declarations>
  <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;.size()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list.size()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int,I&gt;.size()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;.list(void*,int)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.list(T*,int)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="list.size()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;.list(void*,int)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;.size()">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int,I&gt;">
@@ -163,7 +163,7 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int,I&gt;.list(int*,int)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;">
+  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int,I&gt;.size()">
    <declaration/>
   </instance>
  </types>

@@ -27,25 +27,25 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func4()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.x">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func2()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func()">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
    <declaration/>
   </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.x">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func2()">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="func3()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func4()">
    <declaration/>
   </instance>
  </types>

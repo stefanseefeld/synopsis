@@ -158,6 +158,9 @@
   </instance>
  </declarations>
  <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="insert(void*(*)(PyObject*),bool)">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="insert(void*(*)(PyObject*,int),bool)">
    <declaration/>
   </instance>
@@ -165,9 +168,6 @@
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="main()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="insert(void*(*)(PyObject*),bool)">
    <declaration/>
   </instance>
  </types>
