@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.18 2002/08/23 04:37:26 chalky Exp $
+# $Id: Util.py,v 1.19 2002/09/20 10:35:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.19  2002/09/20 10:35:32  chalky
+# Allow writing a comment to top of file
+#
 # Revision 1.18  2002/08/23 04:37:26  chalky
 # Huge refactoring of Linker to make it modular, and use a config system similar
 # to the HTML package
@@ -330,6 +333,9 @@ class PyWriter:
 	if self.__done_struct == 1: return
 	self.os.write('class struct:\n def __init__(self,**args):\n  for k,v in args.items(): setattr(self, k, v)\n\n')
 	self.__done_struct = 1
+    def write_top(self, str):
+	"""Writes a string to the top of the file"""
+	self.os.write(str)
     def write(self, str):
 	# Get cached '\n' if any
 	prefix = self.__prepend
