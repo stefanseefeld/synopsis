@@ -6,8 +6,14 @@
 #include "ast.hh"
 #include <stack.h>
 
-// Forward declaration of Type::Name
-namespace Type { typedef vector<string> Name; }
+// Forward declare some Type::Types
+namespace Type {
+    class Type;
+    class Forward;
+    class Template;
+}
+
+typedef vector<string> Name;
 
 //. AST Builder.
 //. This class manages the building of an AST, including queries on the
@@ -19,6 +25,10 @@ public:
     Builder();
     //. Destructor. Recursively destroys all AST objects
     ~Builder();
+
+    //
+    // AST Methods
+    //
 
     //. Returns the current scope
     AST::Scope* scope() { return m_scope; }
@@ -41,6 +51,22 @@ public:
 
     //. End the current class and pop the previous Scope off the stack
     void endClass();
+
+    //. Add an operation
+    AST::Operation* addOperation(int, string name, vector<string> premod, Type::Type* ret, string realname);
+
+    //. Add a variable
+    AST::Variable* addVariable(int, string name, Type::Type* vtype, bool constr);
+
+    //
+    // Type Methods
+    //
+
+    //. Create a Forward type for the given name in the current scope
+    Type::Forward* Forward(string name);
+
+    //. Create a Template type for the given name in the current scope
+    Type::Template* Template(string name, const vector<Type::Type*>&); 
 
 private:
     //. Current filename

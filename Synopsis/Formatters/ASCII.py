@@ -55,6 +55,10 @@ class ASCIIFormatter:
 	params = map(self.formatType, type.parameters())
 	self.__type = "%s(%s)(%s)"%(ret,string.join(type.premod(),''),string.join(params,", "))
 
+    def visitTemplate(self, type):
+	self.visitDeclared(type)
+	self.__type = "template<"+string.join(type.parameters(),",")+">"+self.__type
+	
     ### AST visitor
 
     def visitDeclaration(self, decl):
@@ -201,6 +205,7 @@ class ASCIIFormatter:
 	ctype = self.formatType(const.ctype())
 	self.indent()
 	self.__os.write("%s %s = %s;\n"%(ctype,const.name()[-1],const.value()))
+
 
 def __parseArgs(args):
     global output

@@ -40,7 +40,7 @@ OCC_OBJ		:= buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
 
 SYN_OBJ		:= synopsis.o occ.o
 SYN_DEBUG_OBJ	:= synopsis.o occ.o swalker.o ast.o builder.o type.o dict.o \
-		   dumper.o
+		   dumper.o decoder.o
 
 SYN_GOBJ	= $(patsubst %.o, %.go, $(SYN_DEBUG_OBJ))
 

@@ -4,11 +4,21 @@
 #ifndef H_SYNOPSIS_CPP_DECODER
 #define H_SYNOPSIS_CPP_DECODER
 
+#include <string>
+#include <vector>
+
+using std::string;
+using std::vector;
+
 // Forward decl of Type::Type
 namespace Type { class Type; }
 
-// Forward decl of Type::Name
-namespace Type { typedef vector<string> Name; }
+// bad duplicate typedef.. hmm
+typedef vector<string> Name;
+
+// Forward decl of Builder
+class Builder;
+
 
 //. A string type for the encoded names and types
 typedef basic_string<unsigned char> code;
@@ -20,7 +30,7 @@ typedef code::iterator code_iter;
 class Decoder {
 public:
     //. Constructor
-    Decoder();
+    Decoder(Builder*);
 
     //. Convert a char* to a 'code' type
     static code toCode(char*);
@@ -33,7 +43,16 @@ public:
 
     //. Return a Type object from the encoded type.
     //. @preconditions You must call init() first.
-    Type* decodeType();
+    Type::Type* decodeType();
+
+    //. Decodes a Qualified type. iter must be just after the Q
+    Type::Type* decodeQualType();
+
+    //. Decodes a Template type. iter must be just after the T
+    Type::Type* decodeTemplate();
+
+    //. Decodes a FuncPtr type. iter must be just after the F
+    Type::Type* decodeFuncPtr();
 
     //. Decode a name
     string decodeName();
@@ -46,11 +65,17 @@ public:
     //. string since this is a simple method.
     string decodeName(code_iter);
 
+    //. Decode a name starting from the given char*
+    string decodeName(char*);
+
 private:
     //. The encoded type string currently being decoded
     code m_string;
     //. The current position in m_enc_iter
     code_iter m_iter;
+
+    //. The builder
+    Builder* m_builder;
 
 };
 
