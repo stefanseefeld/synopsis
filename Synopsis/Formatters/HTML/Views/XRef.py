@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.3 2002/10/29 12:43:56 chalky Exp $
+# $Id: XRef.py,v 1.4 2002/10/29 15:00:16 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.4  2002/10/29 15:00:16  chalky
+# Don't show fully scoped name for child declarations
+#
 # Revision 1.3  2002/10/29 12:43:56  chalky
 # Added flexible TOC support to link to things other than ScopePages
 #
@@ -182,10 +185,10 @@ class XRefPages (Page.Page):
 		entry = config.toc[cname]
 		type = self.describe_decl(child)
 		if entry:
-		    link = href(entry.link, Util.ccolonName(cname))
+		    link = href(entry.link, Util.ccolonName(cname, name))
 		    self.write(entity('li', file_href + type + link))
 		else:
-		    self.write(entity('li', file_href + type + Util.ccolonName(cname)))
+		    self.write(entity('li', file_href + type + Util.ccolonName(cname, name)))
 	    self.write('</ul></li>\n')
 	self.write('</ul><hr>\n')
 
