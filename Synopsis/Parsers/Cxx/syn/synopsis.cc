@@ -149,7 +149,24 @@ PyObject *Synopsis::lookupType(const string &name, PyObject *scopes)
       PyList_SetItem(slist, i, item);
     }
   PyList_SetItem(slist, size, V2L(scopedName(string())));
-  return PyObject_CallMethod(dictionary, "lookup", "OO", Py_BuildValue("[s]", name.c_str()), slist);
+  PyObject *pyname = Py_BuildValue("[s]", name.c_str());
+  if (!pyname) {PyErr_Print(); return 0; }
+  PyObject *type = PyObject_CallMethod(dictionary, "lookup", "OO", pyname, slist);
+  if (!type) { PyErr_Print(); return 0; }
+  return type;
+}
+
+PyObject *Synopsis::lookupType(const string &name)
+{
+  Trace trace("Synopsis::lookupType(name)");
+  PyObject *pyname = Py_BuildValue("[s]", name.c_str());
+  if (!pyname) {PyErr_Print(); return 0; }
+  PyObject *slist = PyList_New(1);
+  PyObject *sname = PyObject_CallMethod(scopes.top(), "name", 0);
+  PyList_SetItem(slist, 0, sname);
+  PyObject *type = PyObject_CallMethod(dictionary, "lookup", "OO", pyname, slist);
+  if (!type) { PyErr_Print(); return 0; }
+  return type;
 }
 
 PyObject *Synopsis::Inheritance(PyObject *parent, const vector<string> &attributes)
@@ -206,7 +223,8 @@ PyObject *Synopsis::addVariable(size_t line, bool main, PyObject *type, bool con
 PyObject *Synopsis::addConst(size_t line, bool main, PyObject *type, const string &name, const string &value)
 {
   Trace trace("Synopsis::addConst");
-  PyObject *cons = PyObject_CallMethod(ast, "Const", "siissOss", file, line, main, "C++", "const", type, name.c_str(), name.c_str());
+  PyObject *cons = PyObject_CallMethod(ast, "Const", "siissOss", file,
+    line, main, "C++", "const", type, name.c_str(), name.c_str());
   PyObject_CallMethod(scopes.top(), "append", "O", cons);
   return cons;
 }
@@ -239,6 +257,9 @@ PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &p
   PyObject *pyparams = V2L(params);
   PyObject *operation = PyObject_CallMethod(ast, "Operation", "siissOOO", 
     file, line, main, "C++", "function", V2L(pre), type, pyname);
+  if (!operation) {
+    PyErr_Print(); return operation;
+  }
   PyObject_CallMethod(scopes.top(), "append", "O", operation);
   PyObject* parameters = PyObject_CallMethod(operation, "parameters", "");
   PyObject_CallMethod(parameters, "extend", "O", pyparams);
@@ -248,11 +269,11 @@ PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &p
 
 vector<string> Synopsis::scopedName(const string &name)
 {
-  //Trace trace("Synopsis::scopedName");
+  Trace trace("Synopsis::scopedName("+name+")");
   PyObject *current = scopes.top();
   PyObject *sname = PyObject_CallMethod(current, "name", 0);
   assertObject(sname);
-  PyList_Check(sname);
+  //PyList_Check(sname); // warning: Statement with no effect (???)
   size_t size = PyList_Size(sname);
   vector<string> scope(size);
   for (size_t i = 0; i != size; ++i)
@@ -265,14 +286,14 @@ vector<string> Synopsis::scopedName(const string &name)
 void Synopsis::pushNamespace(size_t line, bool main, const string &name)
 {
   PyObject *module = addModule(-1, true, name);
-  PyObject *type = addDeclared(name, module);
+  /* PyObject *type = */ addDeclared(name, module);
   pushScope(module);
 }
 
 void Synopsis::pushClass(size_t line, bool main, const string &meta, const string &name)
 {
   PyObject *clas = addClass(-1, true, meta, name);
-  PyObject *type = addDeclared(name, clas);
+  /* PyObject *type = */ addDeclared(name, clas);
   pushScope(clas);
 }
 
@@ -306,7 +327,7 @@ PyObject *Synopsis::N2L(const string &name)
 
 PyObject *Synopsis::V2L(const vector<string> &strings)
 {
-  //Trace trace("Synopsis::V2L");
+  Trace trace("Synopsis::V2L(vector<string>)");
   PyObject *pylist = PyList_New(strings.size());
   for (size_t i = 0; i != strings.size(); ++i)
     PyList_SetItem(pylist, i, PyString_FromString(strings[i].c_str()));
@@ -315,7 +336,7 @@ PyObject *Synopsis::V2L(const vector<string> &strings)
 
 PyObject *Synopsis::V2L(const vector<PyObject *> &objs)
 {
-  //Trace trace("Synopsis::V2L");
+  Trace trace("Synopsis::V2L(vector<PyObject*>)");
   PyObject *pylist = PyList_New(objs.size());
   for (size_t i = 0; i != objs.size(); ++i)
     PyList_SetItem(pylist, i, objs[i]);
