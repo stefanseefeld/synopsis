@@ -86,7 +86,7 @@ SWalker::parse_name(Ptree *node) const
   // STrace trace("SWalker::parse_name");
   if (node && node->IsLeaf())
     return std::string(node->GetPosition(), node->GetLength());
-  return node->ToString();
+  return node->string();
 }
 
 void
@@ -124,7 +124,7 @@ void SWalker::update_line_number(Ptree* ptree)
 AST::Comment *
 make_Comment(SourceFile* file, int line, Ptree* first, bool suspect=false)
 {
-  return new AST::Comment(file, line, first->ToString(), suspect);
+  return new AST::Comment(file, line, first->string(), suspect);
 }
 
 Leaf* make_Leaf(char* pos, int len)
@@ -358,7 +358,8 @@ SWalker::Translate(Ptree* node)
 Ptree* SWalker::TranslatePtree(Ptree* node)
 {
   // Determine type of node
-  char* str = node->ToString();
+  std::string s = node->string();
+  const char *str = s.c_str();
   if (*str >= '0' && *str <= '9' || *str == '.')
   {
     // Assume whole node is a number
@@ -1042,7 +1043,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
   Ptree* p = Ptree::First(my_declaration);
   while (p)
   {
-    premod.push_back(p->Car()->ToString());
+    premod.push_back(p->Car()->string());
     p = Ptree::Rest(p);
   }
 
@@ -1261,11 +1262,11 @@ SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& para
           Ptree* last = pname->Last()->Car();
           if (!last->Eq('*') && !last->Eq('&'))
             // The last node is the name:
-            name = last->ToString();
+            name = last->string();
         }
       }
       // Find value
-      if (value_ix >= 0) value = param->Nth(value_ix)->ToString();
+      if (value_ix >= 0) value = param->Nth(value_ix)->string();
     }
     // Add the AST.Parameter type to the list
     params.push_back(new AST::Parameter(premods, type, postmods, name, value));
@@ -1489,7 +1490,7 @@ SWalker::TranslateEnumSpec(Ptree *spec)
   {
     return 0; /* anonymous enum */
   }
-  std::string name = spec->Second()->ToString();
+  std::string name = spec->Second()->string();
 
   update_line_number(spec);
   int enum_lineno = my_lineno;
@@ -1504,16 +1505,16 @@ SWalker::TranslateEnumSpec(Ptree *spec)
     if (penumor->IsLeaf())
     {
       // Just a name
-      enumor = my_builder->add_enumerator(my_lineno, penumor->ToString(), "");
+      enumor = my_builder->add_enumerator(my_lineno, penumor->string(), "");
       add_comments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
       if (my_links) my_links->link(penumor, enumor);
     }
     else
     {
       // Name = Value
-      std::string name = penumor->First()->ToString(), value;
+      std::string name = penumor->First()->string(), value;
       if (penumor->Length() == 3)
-        value = penumor->Third()->ToString();
+        value = penumor->Third()->string();
       enumor = my_builder->add_enumerator(my_lineno, name, value);
       add_comments(enumor, dynamic_cast<CommentedLeaf*>(penumor->First()));
       if (my_links) my_links->link(penumor->First(), enumor);

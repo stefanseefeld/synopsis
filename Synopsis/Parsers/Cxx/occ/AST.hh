@@ -21,44 +21,11 @@
 
 class Encoding;
 
-class Leaf : public Ptree {
-public:
-    Leaf(char*, int);
-    Leaf(Token&);
-    bool IsLeaf();
-
-    void Print(std::ostream&, int, int);
-    int Write(std::ostream&, int);
-    void WritePS(StringBuffer &);
-};
-
-class CommentedLeaf : public Leaf {
-public:
-    CommentedLeaf(Token& tk, Ptree* c = 0) : Leaf(tk) { comments = c; }
-    CommentedLeaf(char* p, int l, Ptree* c = 0) : Leaf(p, l) { comments = c; }
-    Ptree* GetComments() { return comments; }
-    void SetComments(Ptree* c) { comments = c; }
-
-private:
-    Ptree* comments;
-};
-
 class LeafName : public CommentedLeaf {
 public:
     LeafName(Token&);
     Ptree* Translate(Walker*);
     void Typeof(Walker*, TypeInfo&);
-};
-
-// class DupLeaf is used by Ptree::Make() and QuoteClass (qMake()).
-// The string given to the constructors are duplicated.
-
-class DupLeaf : public CommentedLeaf {
-public:
-    DupLeaf(char*, int);
-    DupLeaf(char*, int, char*, int);
-
-    void Print(std::ostream&, int, int);
 };
 
 class LeafReserved : public CommentedLeaf {
@@ -113,20 +80,6 @@ ResearvedWordDecl(VOLATILE);
 ResearvedWordDecl(UserKeyword2);
 
 #undef ResearvedWordDecl
-
-class NonLeaf : public Ptree {
-public:
-    NonLeaf(Ptree*, Ptree*);
-    bool IsLeaf();
-
-    void Print(std::ostream&, int, int);
-    int Write(std::ostream&, int);
-    void PrintWithEncodeds(std::ostream&, int, int);
-    void WritePS(StringBuffer&);
-
-protected:
-    bool TooDeep(std::ostream&, int);
-};
 
 class PtreeBrace : public NonLeaf {
 public:
