@@ -971,6 +971,11 @@ int substitute_macro(struct lexer_state *ls, struct macro *m,
 	int ltwds, ntwds, ltwws;
 	int pragma_op = 0;
 
+	/* WARNING: I am not sure if this is correct, however it allows
+	 * parsing of boost's horrible preprocessor abusage   -Chalky
+	 */
+	if (reject_nested == 0) reject_nested = 10;
+
 	/*
 	 * Reject the replacement, if we are already inside the macro.
 	 */
@@ -1116,6 +1121,20 @@ collect_args:
 		}
 		ls->flags = save_flags;
 	}
+#if 0
+	// Dumps the macro with arguments
+	fprintf(stderr, "%d /^^%s: Expanding '%s", ls->line, m->name, m->name);
+	if (m->narg > 0) {
+	    int i, j;
+	    for (i = 0; i < m->narg; i++) {
+		fprintf(stderr, i == 0 ? "(" : ", ");
+		for (j = 0; j < atl[i].nt; j++)
+		    fputs(token_name(atl[i].t + j), stderr);
+	    }
+	    fprintf(stderr, ")");
+	}
+	fputs("'\n", stderr);
+#endif
 
 	/*
 	 * If the macro is _Pragma, and we got here, then we have
@@ -1222,7 +1241,7 @@ collect_args:
 		if ((t).type == NAME) { \
 			struct macro *zlm = getHT(macros, &((t).name)); \
 			if (zlm && zlm->nest > reject_nested) \
-				(t).line = -1 - (t).line; \
+				(t).line = /*-1 -*/ (t).line; \
 		} \
 	} while (0)
 
@@ -1234,7 +1253,7 @@ collect_args:
 	m->val.art = 0;
 #endif
 	etl.art = etl.nt = 0;
-	m->nest = reject_nested + 1;
+	m->nest = m->nest + 1; /* See note above --Chalky.  was: reject_nested + 1; */
 	ltwds = ntwds = 0;
 #ifdef LOW_MEM
 	while (m->cval.rp < m->cval.length) {
@@ -1497,6 +1516,17 @@ collect_args:
 	m->cval.rp = save_art;
 #else
 	m->val.art = save_art;
+#endif
+
+#if 0
+	// Dumps the expanded macro
+	fprintf(stderr, "%d \\__%s: to '", ls->line, m->name);
+	{
+	    int art = etl.art, nt = etl.nt;
+	    while (art < nt)
+		fputs(token_name(etl.t + (art++)), stderr);
+	}
+	fputs("'\n", stderr);
 #endif
 
 
