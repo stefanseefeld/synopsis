@@ -36,6 +36,7 @@
 #include "ptree-core.h"
 
 #if USE_DLOADER
+#include <iostream>
 #include <cstdio>
 #include <fstream>
 #include <cstring>
@@ -200,7 +201,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
     if(verboseMode)
 	std::cerr << "Produce " << fname << " ..\n";
 
-    ofstream src_file(fname);
+    std::ofstream src_file(fname);
     if(!src_file){
         perror(fname);
 	exit(1);
