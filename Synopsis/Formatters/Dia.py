@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.10 2001/05/25 13:45:49 stefan Exp $
+# $Id: Dia.py,v 1.11 2001/07/17 22:27:28 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.11  2001/07/17 22:27:28  chalky
+# Fixed regression in import line
+#
 # Revision 1.10  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -45,7 +48,7 @@
 # THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string, re
-from Synopsis.Core import Type, AST, Util, Visitor
+from Synopsis.Core import Type, AST, Util
 
 verbose = 0
 
