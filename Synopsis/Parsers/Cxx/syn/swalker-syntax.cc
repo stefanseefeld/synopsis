@@ -10,7 +10,7 @@
 #include <string>
 #include <typeinfo>
 
-#include <occ/AST.hh>
+#include <occ/PTree.hh>
 #include <occ/Parser.hh>
 #undef Scope
 
@@ -24,8 +24,8 @@
 #include "type.hh"
 #include "ast.hh"
 
-Ptree*
-SWalker::TranslateReturn(Ptree* spec)
+PTree::Node *
+SWalker::TranslateReturn(PTree::Node *spec)
 {
   STrace trace("SWalker::TranslateReturn");
   if (!my_links) return 0;
@@ -38,8 +38,8 @@ SWalker::TranslateReturn(Ptree* spec)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateInfix(Ptree* node)
+PTree::Node *
+SWalker::TranslateInfix(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateInfix");
   // [left op right]
@@ -66,15 +66,15 @@ SWalker::TranslateInfix(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateVariable(Ptree* spec)
+PTree::Node *
+SWalker::TranslateVariable(PTree::Node *spec)
 {
   // REVISIT: Figure out why this is so long!!!
   STrace trace("SWalker::TranslateVariable");
   if (my_links) find_comments(spec);
   try
   {
-    Ptree* name_spec = spec;
+    PTree::Node *name_spec = spec;
     Types::Named* type;
     ScopedName scoped_name;
     if (!spec->IsLeaf())
@@ -200,23 +200,23 @@ SWalker::TranslateVariable(Ptree* spec)
 }
 
 void
-SWalker::TranslateFunctionArgs(Ptree* args)
+SWalker::TranslateFunctionArgs(PTree::Node *args)
 {
   // args: [ arg (, arg)* ]
   while (args->Length())
   {
-    Ptree* arg = args->First();
+    PTree::Node *arg = args->First();
     // Translate this arg, TODO: my_params would be better as a vector<Type*>
     my_type = 0;
     Translate(arg);
     my_params.push_back(my_type);
     // Skip over arg and comma
-    args = Ptree::Rest(Ptree::Rest(args));
+    args = PTree::Node::Rest(PTree::Node::Rest(args));
   }
 }
 
-Ptree*
-SWalker::TranslateFuncall(Ptree* node) 	// and fstyle cast
+PTree::Node *
+SWalker::TranslateFuncall(PTree::Node *node) 	// and fstyle cast
 {
   STrace trace("SWalker::TranslateFuncall");
   // TODO: figure out how to deal with fstyle casts.. does it only apply to
@@ -262,16 +262,16 @@ SWalker::TranslateFuncall(Ptree* node) 	// and fstyle cast
   return 0;
 }
 
-Ptree*
-SWalker::TranslateExprStatement(Ptree* node)
+PTree::Node *
+SWalker::TranslateExprStatement(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateExprStatement");
   Translate(node->First());
   return 0;
 }
 
-Ptree*
-SWalker::TranslateUnary(Ptree* node)
+PTree::Node *
+SWalker::TranslateUnary(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateUnary");
   // [op expr]
@@ -281,8 +281,8 @@ SWalker::TranslateUnary(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateAssign(Ptree* node)
+PTree::Node *
+SWalker::TranslateAssign(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateAssign");
   // [left = right]
@@ -347,8 +347,8 @@ protected:
   Types::Type* my_type; //.< The type to return
 };
 
-Ptree*
-SWalker::TranslateArrowMember(Ptree* node)
+PTree::Node *
+SWalker::TranslateArrowMember(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateArrowMember");
   // [ postfix -> name ]
@@ -377,8 +377,8 @@ SWalker::TranslateArrowMember(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateDotMember(Ptree* node)
+PTree::Node *
+SWalker::TranslateDotMember(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateDotMember");
   // [ postfix . name ]
@@ -411,8 +411,8 @@ SWalker::TranslateDotMember(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateIf(Ptree* node)
+PTree::Node *
+SWalker::TranslateIf(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateIf");
   // [ if ( expr ) statement (else statement)? ]
@@ -425,7 +425,7 @@ SWalker::TranslateIf(Ptree* node)
   // Store a copy of any declarations for use in the else block
   std::vector<AST::Declaration*> decls = my_builder->scope()->declarations();
   // Translate then-statement. If a block then we avoid starting a new ns
-  Ptree* stmt = node->Nth(4);
+  PTree::Node *stmt = node->Nth(4);
   if (stmt && stmt->First() && stmt->First()->Eq('{')) TranslateBrace(stmt);
   else Translate(stmt);
   // End the block and check for else
@@ -444,8 +444,8 @@ SWalker::TranslateIf(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateSwitch(Ptree* node)
+PTree::Node *
+SWalker::TranslateSwitch(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateSwitch");
   // [ switch ( expr ) statement ]
@@ -455,7 +455,7 @@ SWalker::TranslateSwitch(Ptree* node)
   // Parse expression
   Translate(node->Third());
   // Translate statement. If a block then we avoid starting a new ns
-  Ptree* stmt = node->Nth(4);
+  PTree::Node *stmt = node->Nth(4);
   if (stmt && stmt->First() && stmt->First()->Eq('{')) TranslateBrace(stmt);
   else Translate(stmt);
   // End the block and check for else
@@ -463,8 +463,8 @@ SWalker::TranslateSwitch(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateCase(Ptree* node)
+PTree::Node *
+SWalker::TranslateCase(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateCase");
   // [ case expr : [expr] ]
@@ -475,8 +475,8 @@ SWalker::TranslateCase(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateDefault(Ptree* node)
+PTree::Node *
+SWalker::TranslateDefault(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateDefault");
   // [ default : [expr] ]
@@ -486,8 +486,8 @@ SWalker::TranslateDefault(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateBreak(Ptree* node)
+PTree::Node *
+SWalker::TranslateBreak(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateBreak");
   // [ break ; ]
@@ -496,8 +496,8 @@ SWalker::TranslateBreak(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateFor(Ptree* node)
+PTree::Node *
+SWalker::TranslateFor(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateFor");
   // [ for ( stmt expr ; expr ) statement ]
@@ -509,7 +509,7 @@ SWalker::TranslateFor(Ptree* node)
   Translate(node->Nth(3));
   Translate(node->Nth(5));
   // Translate statement. If a block then we avoid starting a new ns
-  Ptree* stmt = node->Nth(7);
+  PTree::Node *stmt = node->Nth(7);
   if (stmt && stmt->First() && stmt->First()->Eq('{'))
     TranslateBrace(stmt);
   else Translate(stmt);
@@ -518,8 +518,8 @@ SWalker::TranslateFor(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateWhile(Ptree* node)
+PTree::Node *
+SWalker::TranslateWhile(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateWhile");
   // [ while ( expr ) statement ]
@@ -529,7 +529,7 @@ SWalker::TranslateWhile(Ptree* node)
   // Parse expression
   Translate(node->Third());
   // Translate statement. If a block then we avoid starting a new ns
-  Ptree* stmt = node->Nth(4);
+  PTree::Node *stmt = node->Nth(4);
   if (stmt && stmt->First() && stmt->First()->Eq('{')) TranslateBrace(stmt);
   else Translate(stmt);
   // End the block and check for else
@@ -537,8 +537,8 @@ SWalker::TranslateWhile(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslatePostfix(Ptree* node)
+PTree::Node *
+SWalker::TranslatePostfix(PTree::Node *node)
 {
   STrace trace("SWalker::TranslatePostfix");
   // [ expr ++ ]
@@ -546,8 +546,8 @@ SWalker::TranslatePostfix(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateParen(Ptree* node)
+PTree::Node *
+SWalker::TranslateParen(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateParen");
   // [ ( expr ) ]
@@ -556,13 +556,13 @@ SWalker::TranslateParen(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateCast(Ptree* node)
+PTree::Node *
+SWalker::TranslateCast(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateCast");
   // ( type-expr ) expr   ..type-expr is type encoded
   if (my_links) find_comments(node);
-  Ptree* type_expr = node->Second();
+  PTree::Node *type_expr = node->Second();
   //Translate(type_expr->First());
   if (type_expr->Second()->GetEncodedType())
   {
@@ -577,8 +577,8 @@ SWalker::TranslateCast(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateTry(Ptree* node)
+PTree::Node *
+SWalker::TranslateTry(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateTry");
   // [ try [{}] [catch ( arg ) [{}] ]* ]
@@ -590,10 +590,10 @@ SWalker::TranslateTry(Ptree* node)
   for (int n = 2; n < node->Length(); n++)
   {
     // [ catch ( arg ) [{}] ]
-    Ptree* catch_node = node->Nth(n);
+    PTree::Node *catch_node = node->Nth(n);
     if (my_links) my_links->span(catch_node->First(), "file-keyword");
     my_builder->start_namespace("catch", NamespaceUnique);
-    Ptree* arg = catch_node->Third();
+    PTree::Node *arg = catch_node->Third();
     if (arg->Length() == 2)
     {
       // Get the arg type
@@ -616,8 +616,8 @@ SWalker::TranslateTry(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateArray(Ptree* node)
+PTree::Node *
+SWalker::TranslateArray(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateArray");
   // <postfix> \[ <expr> \]
@@ -654,8 +654,8 @@ SWalker::TranslateArray(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateCond(Ptree* node)
+PTree::Node *
+SWalker::TranslateCond(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateCond");
   Translate(node->Nth(0));
@@ -664,8 +664,8 @@ SWalker::TranslateCond(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateThis(Ptree* node)
+PTree::Node *
+SWalker::TranslateThis(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateThis");
   if (my_links) find_comments(node);
@@ -676,42 +676,42 @@ SWalker::TranslateThis(Ptree* node)
 }
 
 
-Ptree*
-SWalker::TranslateTemplateInstantiation(Ptree*)
+PTree::Node *
+SWalker::TranslateTemplateInstantiation(PTree::Node *)
 {
   STrace trace("SWalker::TranslateTemplateInstantiation NYI");
   return 0;
 }
-Ptree*
-SWalker::TranslateExternTemplate(Ptree*)
+PTree::Node *
+SWalker::TranslateExternTemplate(PTree::Node *)
 {
   STrace trace("SWalker::TranslateExternTemplate NYI");
   return 0;
 }
-Ptree*
-SWalker::TranslateMetaclassDecl(Ptree*)
+PTree::Node *
+SWalker::TranslateMetaclassDecl(PTree::Node *)
 {
   STrace trace("SWalker::TranslateMetaclassDecl NYI");
   return 0;
 }
 
-Ptree*
-SWalker::TranslateStorageSpecifiers(Ptree*)
+PTree::Node *
+SWalker::TranslateStorageSpecifiers(PTree::Node *)
 {
   STrace trace("SWalker::TranslateStorageSpecifiers NYI");
   return 0;
 }
-Ptree*
-SWalker::TranslateFunctionBody(Ptree*)
+PTree::Node *
+SWalker::TranslateFunctionBody(PTree::Node *)
 {
   STrace trace("SWalker::TranslateFunctionBody NYI");
   return 0;
 }
 
-//Ptree* SWalker::TranslateEnumSpec(Ptree*) { STrace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
+//PTree::Node *SWalker::TranslateEnumSpec(PTree::Node *) { STrace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
 
-Ptree*
-SWalker::TranslateAccessDecl(Ptree* node)
+PTree::Node *
+SWalker::TranslateAccessDecl(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateAccessDecl NYI");
   if (my_links) find_comments(node);
@@ -723,8 +723,8 @@ SWalker::TranslateAccessDecl(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateUserAccessSpec(Ptree* node)
+PTree::Node *
+SWalker::TranslateUserAccessSpec(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateUserAccessSpec NYI");
   if (my_links) find_comments(node);
@@ -737,8 +737,8 @@ SWalker::TranslateUserAccessSpec(Ptree* node)
 }
 
 
-Ptree*
-SWalker::TranslateDo(Ptree* node)
+PTree::Node *
+SWalker::TranslateDo(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateDo NYI");
   // [ do [{ ... }] while ( [...] ) ; ]
@@ -751,7 +751,7 @@ SWalker::TranslateDo(Ptree* node)
   // Translate block
   my_builder->start_namespace("do", NamespaceUnique);
   // Translate statement. If a block then we avoid starting a new ns
-  Ptree* stmt = node->Second();
+  PTree::Node *stmt = node->Second();
   if (stmt && stmt->First() && stmt->First()->Eq('{')) TranslateBrace(stmt);
   else Translate(stmt);
   // End the block and check for else
@@ -761,8 +761,8 @@ SWalker::TranslateDo(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateContinue(Ptree* node)
+PTree::Node *
+SWalker::TranslateContinue(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateContinue NYI");
   if (my_links) find_comments(node);
@@ -770,8 +770,8 @@ SWalker::TranslateContinue(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateGoto(Ptree* node)
+PTree::Node *
+SWalker::TranslateGoto(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateGoto NYI");
   if (my_links) find_comments(node);
@@ -783,8 +783,8 @@ SWalker::TranslateGoto(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateLabel(Ptree* node)
+PTree::Node *
+SWalker::TranslateLabel(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateLabel NYI");
   if (my_links) find_comments(node);
@@ -797,8 +797,8 @@ SWalker::TranslateLabel(Ptree* node)
 }
 
 
-Ptree*
-SWalker::TranslateComma(Ptree* node)
+PTree::Node *
+SWalker::TranslateComma(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateComma");
   // [ expr , expr (, expr)* ]
@@ -811,8 +811,8 @@ SWalker::TranslateComma(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslatePm(Ptree* node)
+PTree::Node *
+SWalker::TranslatePm(PTree::Node *node)
 {
   STrace trace("SWalker::TranslatePm NYI");
 #ifdef DEBUG
@@ -823,8 +823,8 @@ SWalker::TranslatePm(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateThrow(Ptree* node)
+PTree::Node *
+SWalker::TranslateThrow(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateThrow");
   // [ throw [expr] ]
@@ -834,8 +834,8 @@ SWalker::TranslateThrow(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateSizeof(Ptree* node)
+PTree::Node *
+SWalker::TranslateSizeof(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateSizeof");
   // [ sizeof ( [type [???] ] ) ]
@@ -846,8 +846,8 @@ SWalker::TranslateSizeof(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateNew(Ptree* node)
+PTree::Node *
+SWalker::TranslateNew(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateNew NYI");
   if (my_links) find_comments(node);
@@ -859,8 +859,8 @@ SWalker::TranslateNew(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateNew3(Ptree* node)
+PTree::Node *
+SWalker::TranslateNew3(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateNew3 NYI");
   if (my_links) find_comments(node);
@@ -872,8 +872,8 @@ SWalker::TranslateNew3(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateDelete(Ptree* node)
+PTree::Node *
+SWalker::TranslateDelete(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateDelete");
   // [ delete [expr] ]
@@ -883,8 +883,8 @@ SWalker::TranslateDelete(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateFstyleCast(Ptree* node)
+PTree::Node *
+SWalker::TranslateFstyleCast(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateFstyleCast NYI");
   if (my_links) find_comments(node);
@@ -897,8 +897,8 @@ SWalker::TranslateFstyleCast(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateUserStatement(Ptree* node)
+PTree::Node *
+SWalker::TranslateUserStatement(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateUserStatement NYI");
 #ifdef DEBUG
@@ -909,8 +909,8 @@ SWalker::TranslateUserStatement(Ptree* node)
   return 0;
 }
 
-Ptree*
-SWalker::TranslateStaticUserStatement(Ptree* node)
+PTree::Node *
+SWalker::TranslateStaticUserStatement(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateStaticUserStatement NYI");
 #ifdef DEBUG

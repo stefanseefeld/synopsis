@@ -16,7 +16,7 @@
 #define _Environment_hh
 
 #include "types.h"
-#include "Ptree.hh"
+#include "PTree.hh"
 
 class Class;
 class HashTable;
@@ -40,13 +40,13 @@ public:
     Walker* GetWalker() { return walker; }
     void SetWalker(Walker* w) { walker = w; }
 
-    Class* LookupClassMetaobject(Ptree* name);
+    Class* LookupClassMetaobject(PTree::Node *name);
     bool LookupType(const char* name, int len, Bind*& t);
 
-    bool Lookup(Ptree* name, bool& is_type_name, TypeInfo& t);
-    bool Lookup(Ptree* name, TypeInfo& t);
-    bool Lookup(Ptree*, Bind*&);
-    bool LookupTop(Ptree*, Bind*&);
+    bool Lookup(PTree::Node *name, bool& is_type_name, TypeInfo& t);
+    bool Lookup(PTree::Node *name, TypeInfo& t);
+  bool Lookup(PTree::Node *, Bind*&);
+  bool LookupTop(PTree::Node *, Bind*&);
 
     bool LookupTop(const char* name, int len, Bind*& t);
     bool LookupAll(const char* name, int len, Bind*& t);
@@ -57,29 +57,29 @@ public:
     int AddEntry(char*, int, Bind*);
     int AddDupEntry(char*, int, Bind*);
 
-    void RecordNamespace(Ptree*);
+  void RecordNamespace(PTree::Node *);
     bool LookupNamespace(char*, int);
-    void RecordTypedefName(Ptree*);
-    void RecordEnumName(Ptree*);
+  void RecordTypedefName(PTree::Node *);
+  void RecordEnumName(PTree::Node *);
     void RecordClassName(char*, Class*);
-    void RecordTemplateClass(Ptree*, Class*);
-    Environment* RecordTemplateFunction(Ptree*, Ptree*);
-    Environment* RecordDeclarator(Ptree*);
-    Environment* DontRecordDeclarator(Ptree*);
-    void RecordMetaclassName(Ptree*);
-    Ptree* LookupMetaclass(Ptree*);
+  void RecordTemplateClass(PTree::Node *, Class*);
+  Environment* RecordTemplateFunction(PTree::Node *, PTree::Node *);
+  Environment* RecordDeclarator(PTree::Node *);
+  Environment* DontRecordDeclarator(PTree::Node *);
+  void RecordMetaclassName(PTree::Node *);
+  PTree::Node *LookupMetaclass(PTree::Node *);
     static bool RecordClasskeyword(char*, char*);
-    static Ptree* LookupClasskeyword(Ptree*);
+  static PTree::Node *LookupClasskeyword(PTree::Node *);
 
     void SetMetaobject(Class* m) { metaobject = m; }
     Class* IsClassEnvironment() { return metaobject; }
     Class* LookupThis();
-    Environment* IsMember(Ptree*);
+  Environment* IsMember(PTree::Node *);
 
     void Dump();
     void Dump(int);
 
-//     Ptree* GetLineNumber(Ptree*, int&);
+//     PTree::Node *GetLineNumber(Ptree*, int&);
 
 public:
     class OCXXMOP Array : public LightObject {
@@ -94,14 +94,14 @@ public:
     };
 
 private:
-    Environment*	next;
-    HashTable*		htable;
-    Class*		metaobject;
-    Walker*		walker;
-    PtreeArray		metaclasses;
-    static PtreeArray*	classkeywords;
-    Array		baseclasses;
-    static HashTable*	namespace_table;
+  Environment*	next;
+  HashTable*		htable;
+  Class*		metaobject;
+  Walker*		walker;
+  PTree::Array	metaclasses;
+  static PTree::Array* classkeywords;
+  Array		baseclasses;
+  static HashTable*	namespace_table;
 };
 
 // class Bind and its subclasses
@@ -157,14 +157,14 @@ private:
 
 class BindEnumName : public Bind {
 public:
-    BindEnumName(char*, Ptree*);
+  BindEnumName(char*, PTree::Node *);
     Kind What();
     void GetType(TypeInfo&, Environment*);
-    Ptree* GetSpecification() { return specification; }
+    PTree::Node *GetSpecification() { return specification; }
 
 private:
     char* type;
-    Ptree* specification;
+    PTree::Node *specification;
 };
 
 class BindTemplateClass : public Bind {
@@ -181,13 +181,13 @@ private:
 
 class BindTemplateFunction : public Bind {
 public:
-    BindTemplateFunction(Ptree* d) { decl = d; }
+    BindTemplateFunction(PTree::Node *d) { decl = d; }
     Kind What();
     void GetType(TypeInfo&, Environment*);
     bool IsType();
 
 private:
-    Ptree* decl;
+    PTree::Node *decl;
 };
 
 #endif

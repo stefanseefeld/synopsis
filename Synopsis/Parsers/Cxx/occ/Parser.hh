@@ -20,7 +20,7 @@
 class Lexer;
 class Token;
 class Environment;
-class Ptree;
+namespace PTree {class Node;}
 class Encoding;
 
 /*
@@ -35,15 +35,15 @@ class Parser : public Object
 {
 public:
   Parser(Lexer*);
-  bool ErrorMessage(const char*, Ptree* = 0, Ptree* = 0);
-  void WarningMessage(const char*, Ptree* = 0, Ptree* = 0);
+  bool ErrorMessage(const char*, PTree::Node * = 0, PTree::Node * = 0);
+  void WarningMessage(const char*, PTree::Node * = 0, PTree::Node * = 0);
   int NumOfErrors() { return nerrors; }
 
   //. Return the origin of the given pointer
   //. (filename and line number)
   unsigned long origin(const char *, std::string &) const;
 
-  bool rProgram(Ptree*&);
+  bool rProgram(PTree::Node *&);
 
 protected:
   enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
@@ -53,121 +53,121 @@ protected:
   bool SyntaxError();
   void ShowMessageHead(char*);
 
-  bool rDefinition(Ptree*&);
-  bool rNullDeclaration(Ptree*&);
-  bool rTypedef(Ptree*&);
-  bool rTypeSpecifier(Ptree*&, bool, Encoding&);
+  bool rDefinition(PTree::Node *&);
+  bool rNullDeclaration(PTree::Node *&);
+  bool rTypedef(PTree::Node *&);
+  bool rTypeSpecifier(PTree::Node *&, bool, Encoding&);
   bool isTypeSpecifier();
-  bool rMetaclassDecl(Ptree*&);
-  bool rMetaArguments(Ptree*&);
-  bool rLinkageSpec(Ptree*&);
-  bool rNamespaceSpec(Ptree*&);
-  bool rNamespaceAlias(Ptree*&);
-  bool rUsing(Ptree*&);
-  bool rLinkageBody(Ptree*&);
-  bool rTemplateDecl(Ptree*&);
-  bool rTemplateDecl2(Ptree*&, TemplateDeclKind &kind);
-  bool rTempArgList(Ptree*&);
-  bool rTempArgDeclaration(Ptree*&);
-  bool rExternTemplateDecl(Ptree*&);
+  bool rMetaclassDecl(PTree::Node *&);
+  bool rMetaArguments(PTree::Node *&);
+  bool rLinkageSpec(PTree::Node *&);
+  bool rNamespaceSpec(PTree::Node *&);
+  bool rNamespaceAlias(PTree::Node *&);
+  bool rUsing(PTree::Node *&);
+  bool rLinkageBody(PTree::Node *&);
+  bool rTemplateDecl(PTree::Node *&);
+  bool rTemplateDecl2(PTree::Node *&, TemplateDeclKind &kind);
+  bool rTempArgList(PTree::Node *&);
+  bool rTempArgDeclaration(PTree::Node *&);
+  bool rExternTemplateDecl(PTree::Node *&);
 
-  bool rDeclaration(Ptree*&);
-  bool rIntegralDeclaration(Ptree*&, Encoding&, Ptree*, Ptree*, Ptree*);
-  bool rConstDeclaration(Ptree*&, Encoding&, Ptree*, Ptree*);
-  bool rOtherDeclaration(Ptree*&, Encoding&, Ptree*, Ptree*, Ptree*);
-  bool rCondition(Ptree*&);
-  bool rSimpleDeclaration(Ptree*&);
+  bool rDeclaration(PTree::Node *&);
+  bool rIntegralDeclaration(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool rConstDeclaration(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *);
+  bool rOtherDeclaration(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool rCondition(PTree::Node *&);
+  bool rSimpleDeclaration(PTree::Node *&);
 
   bool isConstructorDecl();
   bool isPtrToMember(int);
-  bool optMemberSpec(Ptree*&);
-  bool optStorageSpec(Ptree*&);
-  bool optCvQualify(Ptree*&);
-  bool optIntegralTypeOrClassSpec(Ptree*&, Encoding&);
-  bool rConstructorDecl(Ptree*&, Encoding&);
-  bool optThrowDecl(Ptree*&);
+  bool optMemberSpec(PTree::Node *&);
+  bool optStorageSpec(PTree::Node *&);
+  bool optCvQualify(PTree::Node *&);
+  bool optIntegralTypeOrClassSpec(PTree::Node *&, Encoding&);
+  bool rConstructorDecl(PTree::Node *&, Encoding&);
+  bool optThrowDecl(PTree::Node *&);
   
-  bool rDeclarators(Ptree*&, Encoding&, bool, bool = false);
-  bool rDeclaratorWithInit(Ptree*&, Encoding&, bool, bool);
-  bool rDeclarator(Ptree*&, DeclKind, bool, Encoding&, Encoding&, bool,
+  bool rDeclarators(PTree::Node *&, Encoding&, bool, bool = false);
+  bool rDeclaratorWithInit(PTree::Node *&, Encoding&, bool, bool);
+  bool rDeclarator(PTree::Node *&, DeclKind, bool, Encoding&, Encoding&, bool,
 		   bool = false);
-  bool rDeclarator2(Ptree*&, DeclKind, bool, Encoding&, Encoding&, bool,
-		    bool, Ptree**);
-  bool optPtrOperator(Ptree*&, Encoding&);
-  bool rMemberInitializers(Ptree*&);
-  bool rMemberInit(Ptree*&);
+  bool rDeclarator2(PTree::Node *&, DeclKind, bool, Encoding&, Encoding&, bool,
+		    bool, PTree::Node **);
+  bool optPtrOperator(PTree::Node *&, Encoding&);
+  bool rMemberInitializers(PTree::Node *&);
+  bool rMemberInit(PTree::Node *&);
   
-  bool rName(Ptree*&, Encoding&);
-  bool rOperatorName(Ptree*&, Encoding&);
-  bool rCastOperatorName(Ptree*&, Encoding&);
-  bool rPtrToMember(Ptree*&, Encoding&);
-  bool rTemplateArgs(Ptree*&, Encoding&);
+  bool rName(PTree::Node *&, Encoding&);
+  bool rOperatorName(PTree::Node *&, Encoding&);
+  bool rCastOperatorName(PTree::Node *&, Encoding&);
+  bool rPtrToMember(PTree::Node *&, Encoding&);
+  bool rTemplateArgs(PTree::Node *&, Encoding&);
   
-  bool rArgDeclListOrInit(Ptree*&, bool&, Encoding&, bool);
-  bool rArgDeclList(Ptree*&, Encoding&);
-  bool rArgDeclaration(Ptree*&, Encoding&);
+  bool rArgDeclListOrInit(PTree::Node *&, bool&, Encoding&, bool);
+  bool rArgDeclList(PTree::Node *&, Encoding&);
+  bool rArgDeclaration(PTree::Node *&, Encoding&);
   
-  bool rFunctionArguments(Ptree*&);
-  bool rInitializeExpr(Ptree*&);
+  bool rFunctionArguments(PTree::Node *&);
+  bool rInitializeExpr(PTree::Node *&);
   
-  bool rEnumSpec(Ptree*&, Encoding&);
-  bool rEnumBody(Ptree*&);
-  bool rClassSpec(Ptree*&, Encoding&);
-  bool rBaseSpecifiers(Ptree*&);
-  bool rClassBody(Ptree*&);
-  bool rClassMember(Ptree*&);
-  bool rAccessDecl(Ptree*&);
-  bool rUserAccessSpec(Ptree*&);
+  bool rEnumSpec(PTree::Node *&, Encoding&);
+  bool rEnumBody(PTree::Node *&);
+  bool rClassSpec(PTree::Node *&, Encoding&);
+  bool rBaseSpecifiers(PTree::Node *&);
+  bool rClassBody(PTree::Node *&);
+  bool rClassMember(PTree::Node *&);
+  bool rAccessDecl(PTree::Node *&);
+  bool rUserAccessSpec(PTree::Node *&);
   
-  bool rCommaExpression(Ptree*&);
+  bool rCommaExpression(PTree::Node *&);
   
-  bool rExpression(Ptree*&);
-  bool rConditionalExpr(Ptree*&, bool);
-  bool rLogicalOrExpr(Ptree*&, bool);
-  bool rLogicalAndExpr(Ptree*&, bool);
-  bool rInclusiveOrExpr(Ptree*&, bool);
-  bool rExclusiveOrExpr(Ptree*&, bool);
-  bool rAndExpr(Ptree*&, bool);
-  bool rEqualityExpr(Ptree*&, bool);
-  bool rRelationalExpr(Ptree*&, bool);
-  bool rShiftExpr(Ptree*&);
-  bool rAdditiveExpr(Ptree*&);
-  bool rMultiplyExpr(Ptree*&);
-  bool rPmExpr(Ptree*&);
-  bool rCastExpr(Ptree*&);
-  bool rTypeName(Ptree*&);
-  bool rTypeName(Ptree*&, Encoding&);
-  bool rUnaryExpr(Ptree*&);
-  bool rThrowExpr(Ptree*&);
-  bool rSizeofExpr(Ptree*&);
-  bool rTypeidExpr(Ptree*&);
+  bool rExpression(PTree::Node *&);
+  bool rConditionalExpr(PTree::Node *&, bool);
+  bool rLogicalOrExpr(PTree::Node *&, bool);
+  bool rLogicalAndExpr(PTree::Node *&, bool);
+  bool rInclusiveOrExpr(PTree::Node *&, bool);
+  bool rExclusiveOrExpr(PTree::Node *&, bool);
+  bool rAndExpr(PTree::Node *&, bool);
+  bool rEqualityExpr(PTree::Node *&, bool);
+  bool rRelationalExpr(PTree::Node *&, bool);
+  bool rShiftExpr(PTree::Node *&);
+  bool rAdditiveExpr(PTree::Node *&);
+  bool rMultiplyExpr(PTree::Node *&);
+  bool rPmExpr(PTree::Node *&);
+  bool rCastExpr(PTree::Node *&);
+  bool rTypeName(PTree::Node *&);
+  bool rTypeName(PTree::Node *&, Encoding&);
+  bool rUnaryExpr(PTree::Node *&);
+  bool rThrowExpr(PTree::Node *&);
+  bool rSizeofExpr(PTree::Node *&);
+  bool rTypeidExpr(PTree::Node *&);
   bool isAllocateExpr(int);
-  bool rAllocateExpr(Ptree*&);
-  bool rUserdefKeyword(Ptree*&);
-  bool rAllocateType(Ptree*&);
-  bool rNewDeclarator(Ptree*&, Encoding&);
-  bool rAllocateInitializer(Ptree*&);
-  bool rPostfixExpr(Ptree*&);
-  bool rPrimaryExpr(Ptree*&);
-  bool rUserdefStatement(Ptree*&);
-  bool rVarName(Ptree*&);
-  bool rVarNameCore(Ptree*&, Encoding&);
+  bool rAllocateExpr(PTree::Node *&);
+  bool rUserdefKeyword(PTree::Node *&);
+  bool rAllocateType(PTree::Node *&);
+  bool rNewDeclarator(PTree::Node *&, Encoding&);
+  bool rAllocateInitializer(PTree::Node *&);
+  bool rPostfixExpr(PTree::Node *&);
+  bool rPrimaryExpr(PTree::Node *&);
+  bool rUserdefStatement(PTree::Node *&);
+  bool rVarName(PTree::Node *&);
+  bool rVarNameCore(PTree::Node *&, Encoding&);
   bool isTemplateArgs();
   
-  bool rFunctionBody(Ptree*&);
-  bool rCompoundStatement(Ptree*&);
-  bool rStatement(Ptree*&);
-  bool rIfStatement(Ptree*&);
-  bool rSwitchStatement(Ptree*&);
-  bool rWhileStatement(Ptree*&);
-  bool rDoStatement(Ptree*&);
-  bool rForStatement(Ptree*&);
-  bool rTryStatement(Ptree*&);
+  bool rFunctionBody(PTree::Node *&);
+  bool rCompoundStatement(PTree::Node *&);
+  bool rStatement(PTree::Node *&);
+  bool rIfStatement(PTree::Node *&);
+  bool rSwitchStatement(PTree::Node *&);
+  bool rWhileStatement(PTree::Node *&);
+  bool rDoStatement(PTree::Node *&);
+  bool rForStatement(PTree::Node *&);
+  bool rTryStatement(PTree::Node *&);
   
-  bool rExprStatement(Ptree*&);
-  bool rDeclarationStatement(Ptree*&);
-  bool rIntegralDeclStatement(Ptree*&, Encoding&, Ptree*, Ptree*, Ptree*);
-  bool rOtherDeclStatement(Ptree*&, Encoding&, Ptree*, Ptree*);
+  bool rExprStatement(PTree::Node *&);
+  bool rDeclarationStatement(PTree::Node *&);
+  bool rIntegralDeclStatement(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool rOtherDeclStatement(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *);
   
   bool MaybeTypeNameOrClassTemplate(Token&);
   void SkipTo(int token);
@@ -178,7 +178,7 @@ private:
 private:
   Lexer *lex;
   int nerrors;
-  Ptree* comments;
+  PTree::Node *comments;
 };
 
 #endif

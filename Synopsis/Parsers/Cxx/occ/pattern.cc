@@ -39,7 +39,7 @@
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #endif
-#include "AST.hh"
+#include "PTree.hh"
 #include "Lexer.hh"
 #include "Class.hh"
 
@@ -51,22 +51,22 @@ extern "C" {
 
 const int MAX = 32;
 
-static Ptree** resultsArgs[MAX];
+static PTree::Node **resultsArgs[MAX];
 static int resultsIndex;
 
 static int CountArgs(char* pat);
 static char* SkipSpaces(char* pat);
 
-bool Ptree::Match(Ptree* list, char* pattern, ...)
+bool PTree::Node::Match(PTree::Node *list, char* pattern, ...)
 {
     va_list args;
     int n = CountArgs(pattern);
     if(n >= MAX)
-	MopErrorMessage("Ptree::Match()", "bomb! too many arguments");
+	MopErrorMessage("PTree::Node::Match()", "bomb! too many arguments");
 
     va_start(args, pattern);
     for(int i = 0; i < n; ++i)
-	resultsArgs[i] = va_arg(args, Ptree**);
+      resultsArgs[i] = va_arg(args, PTree::Node **);
 
     va_end(args);
 
@@ -81,7 +81,7 @@ bool Ptree::Match(Ptree* list, char* pattern, ...)
 	if(*pat == '\0')
 	    return true;
 	else{
-	    MopWarningMessage("Ptree::Match()", "[ ] are forgot?");
+	    MopWarningMessage("PTree::Node::Match()", "[ ] are forgot?");
 	    MopMoreWarningMessage(pattern);
 	    return false;
 	}
@@ -102,7 +102,7 @@ static int CountArgs(char* pat)
     return n;
 }
 
-char* Ptree::MatchPat(Ptree* list, char* pat)
+char* PTree::Node::MatchPat(PTree::Node *list, char* pat)
 {
     switch(*pat){
     case '[' :		/* [] means 0 */
@@ -131,7 +131,7 @@ char* Ptree::MatchPat(Ptree* list, char* pat)
 	return 0;
 }
 
-char* Ptree::MatchList(Ptree* list, char* pat)
+char* PTree::Node::MatchList(PTree::Node *list, char* pat)
 {
     char c, d;
     pat = SkipSpaces(pat);
@@ -162,11 +162,11 @@ char* Ptree::MatchList(Ptree* list, char* pat)
 	pat = SkipSpaces(pat);
     }
 
-    MopErrorMessage("Ptree::Match()", "unmatched bracket");
+    MopErrorMessage("PTree::Node::Match()", "unmatched bracket");
     return 0;
 }
 
-char* Ptree::MatchWord(Ptree* list, char* pat)
+char* PTree::Node::MatchWord(PTree::Node *list, char* pat)
 {
     char* str = list->GetPosition();
     int str_len = list->GetLength();
@@ -215,7 +215,7 @@ static char* SkipSpaces(char* pat)
     return pat;
 }
 
-Ptree* Ptree::GenSym()
+PTree::Node *PTree::Node::GenSym()
 {
     static char head[] = "_sym";
     static int seed = 1;
@@ -241,12 +241,12 @@ Ptree* Ptree::GenSym()
     name[sizeof(head) - 1 + len2] = '_';
     num = IntegerToString(seed++, len1);
     memmove(&name[sizeof(head) - 1 + len2 + 1], num, len1);
-    return new Leaf(name, size);
+    return new PTree::Atom(name, size);
 }
 
 // If you edit Make(), you should also edit MakeStatement().
 
-Ptree* Ptree::Make(const char* pat, ...)
+PTree::Node *PTree::Node::Make(const char* pat, ...)
 {
     va_list args;
     const int N = 4096;
@@ -254,10 +254,10 @@ Ptree* Ptree::Make(const char* pat, ...)
     char c;
     int len;
     char* ptr;
-    Ptree* p;
-    Ptree* q;
+    PTree::Node *p;
+    PTree::Node *q;
     int i = 0, j = 0;
-    Ptree* result = 0;
+    PTree::Node *result = 0;
 
     va_start(args, pat);
     while((c = pat[i++]) != '\0')
@@ -279,7 +279,7 @@ Ptree* Ptree::Make(const char* pat, ...)
 	    else if(c == 'c')
 		buf[j++] = va_arg(args, int);
 	    else if(c == 'p'){
-		p = va_arg(args, Ptree*);
+	      p = va_arg(args, PTree::Node *);
 		if(p == 0)
 		    /* ignore */;
 		else if(p->IsLeaf()){
@@ -288,7 +288,7 @@ Ptree* Ptree::Make(const char* pat, ...)
 		}
 		else{   
 		    if(j > 0)
-			q = List(new DupLeaf(buf, j), p);
+			q = List(new PTree::DupAtom(buf, j), p);
 		    else
 			q = List(p);
 
@@ -297,7 +297,7 @@ Ptree* Ptree::Make(const char* pat, ...)
 		}
 	    }
 	    else
-		MopErrorMessage("Ptree::Make()", "invalid format");
+		MopErrorMessage("PTree::Node::Make()", "invalid format");
 	}
 	else
 	    buf[j++] = c;
@@ -306,9 +306,9 @@ Ptree* Ptree::Make(const char* pat, ...)
 
     if(j > 0)
 	if(result == 0)
-	    result = new DupLeaf(buf, j);
+	    result = new PTree::DupAtom(buf, j);
 	else
-	    result = Snoc(result, new DupLeaf(buf, j));
+	    result = Snoc(result, new PTree::DupAtom(buf, j));
 
     return result;
 }
@@ -321,7 +321,7 @@ Ptree* Ptree::Make(const char* pat, ...)
 
   Note: this version is perfectly identical to Make(). 97/3/26
 */
-Ptree* Ptree::MakeStatement(const char* pat, ...)
+PTree::Node *PTree::Node::MakeStatement(const char* pat, ...)
 {
     va_list args;
     const int N = 4096;
@@ -329,14 +329,14 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
     char c;
     int len;
     char* ptr;
-    Ptree* p;
-    Ptree* q;
+    PTree::Node *p;
+    PTree::Node *q;
     int i = 0, j = 0;
-    Ptree* result = 0;
+    PTree::Node *result = 0;
 
     va_start(args, pat);
 
-    Class::WarnObsoleteness("Ptree::MakeStatement()", "Ptree::Make()");
+    Class::WarnObsoleteness("PTree::Node::MakeStatement()", "PTree::Node::Make()");
 
     while((c = pat[i++]) != '\0')
 	if(c == '%'){
@@ -357,7 +357,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 	    else if(c == 'c')
 		buf[j++] = va_arg(args, int);
 	    else if(c == 'p'){
-		p = va_arg(args, Ptree*);
+	      p = va_arg(args, PTree::Node *);
 		if(p == 0)
 		    /* ignore */;
 		else if(p->IsLeaf()){
@@ -366,7 +366,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 		}
 		else{   
 		    if(j > 0)
-			q = new DupLeaf(buf, j);
+			q = new PTree::DupAtom(buf, j);
 		    else
 			q = 0;
 
@@ -375,7 +375,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 		}
 	    }
 	    else
-		MopErrorMessage("Ptree::MakeStatement()", "invalid format");
+		MopErrorMessage("PTree::Node::MakeStatement()", "invalid format");
 	}
 	else
 	    buf[j++] = c;
@@ -384,14 +384,14 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 
     if(j > 0)
 	if(result == 0)
-	    result = new DupLeaf(buf, j);
+	    result = new PTree::DupAtom(buf, j);
 	else
-	    result = Snoc(result, new DupLeaf(buf, j));
+	    result = Snoc(result, new PTree::DupAtom(buf, j));
 
     return result;
 }
 
-bool Ptree::Reify(unsigned int& value)
+bool PTree::Node::Reify(unsigned int& value)
 {
   if(!IsLeaf()) return false;
 
@@ -425,7 +425,7 @@ bool Ptree::Reify(unsigned int& value)
   else return false;
 }
 
-bool Ptree::Reify(char*& str)
+bool PTree::Node::Reify(char*& str)
 {
   if(!IsLeaf()) return false;
   char* p = GetPosition();
@@ -447,7 +447,7 @@ bool Ptree::Reify(char*& str)
   }
 }
 
-char* Ptree::IntegerToString(sint num, int& length)
+char* PTree::Node::IntegerToString(sint num, int& length)
 {
     const int N = 16;
     static char buf[N];
@@ -481,29 +481,29 @@ char* Ptree::IntegerToString(sint num, int& length)
     }
 }
 
-Ptree* Ptree::qMake(char*)
+PTree::Node *PTree::Node::qMake(char*)
 {
-    MopErrorMessage("Ptree::qMake()",
+    MopErrorMessage("PTree::Node::qMake()",
 		    "the metaclass must be compiled by OpenC++.");
     return 0;
 }
 
-Ptree* Ptree::qMakeStatement(char*)
+PTree::Node *PTree::Node::qMakeStatement(char*)
 {
-    MopErrorMessage("Ptree::qMakeStatement()",
+    MopErrorMessage("PTree::Node::qMakeStatement()",
 		    "the metaclass must be compiled by OpenC++.");
     return 0;
 }
 
-// class PtreeHead	--- this is used to implement Ptree::qMake().
+// class PtreeHead	--- this is used to implement PTree::Node::qMake().
 
-PtreeHead& PtreeHead::operator + (Ptree* p)
+PTree::Head &PTree::Head::operator + (PTree::Node *p)
 {
     ptree = Append(ptree, p);
     return *this;
 }
 
-PtreeHead& PtreeHead::operator + (const char* str)
+PTree::Head &PTree::Head::operator + (const char* str)
 {
     if(*str != '\0')
 	ptree =  Append(ptree, (char*)str, strlen(str));
@@ -511,7 +511,7 @@ PtreeHead& PtreeHead::operator + (const char* str)
     return *this;
 }
 
-PtreeHead& PtreeHead::operator + (char* str)
+PTree::Head &PTree::Head::operator + (char* str)
 {
     if(*str != '\0')
 	ptree =  Append(ptree, str, strlen(str));
@@ -519,25 +519,25 @@ PtreeHead& PtreeHead::operator + (char* str)
     return *this;
 }
 
-PtreeHead& PtreeHead::operator + (char c)
+PTree::Head &PTree::Head::operator + (char c)
 {
     ptree =  Append(ptree, &c, 1);
     return *this;
 }
 
-PtreeHead& PtreeHead::operator + (int n)
+PTree::Head &PTree::Head::operator + (int n)
 {
     int len;
-    char* str = Ptree::IntegerToString(n, len);
+    char* str = PTree::Node::IntegerToString(n, len);
     ptree =  Append(ptree, str, len);
     return *this;
 }
 
-Ptree* PtreeHead::Append(Ptree* lst, Ptree* tail)
+PTree::Node *PTree::Head::Append(PTree::Node *lst, PTree::Node *tail)
 {
-    Ptree* last;
-    Ptree* p;
-    Ptree* q;
+    PTree::Node *last;
+    PTree::Node *p;
+    PTree::Node *q;
 
     if(tail == 0)
 	return lst;
@@ -549,11 +549,11 @@ Ptree* PtreeHead::Append(Ptree* lst, Ptree* tail)
     }
 
     if(tail->IsLeaf() && lst != 0){
-	last = Ptree::Last(lst);
+	last = PTree::Node::Last(lst);
 	if(last != 0){
 	    p = last->Car();
 	    if(p != 0 && p->IsLeaf()){
-		q = new DupLeaf(p->GetPosition(), p->GetLength(),
+		q = new PTree::DupAtom(p->GetPosition(), p->GetLength(),
 				 tail->GetPosition(), tail->GetLength());
 		last->SetCar(q);
 		return lst;
@@ -561,21 +561,21 @@ Ptree* PtreeHead::Append(Ptree* lst, Ptree* tail)
 	}
     }
 
-    return Ptree::Snoc(lst, tail);
+    return PTree::Node::Snoc(lst, tail);
 }
 
-Ptree* PtreeHead::Append(Ptree* lst, char* str, int len)
+PTree::Node *PTree::Head::Append(PTree::Node *lst, char* str, int len)
 {
-    Ptree* last;
-    Ptree* p;
-    Ptree* q;
+    PTree::Node *last;
+    PTree::Node *p;
+    PTree::Node *q;
 
     if(lst != 0){
-	last = Ptree::Last(lst);
+	last = PTree::Node::Last(lst);
 	if(last != 0){
 	    p = last->Car();
 	    if(p != 0 && p->IsLeaf()){
-		q = new DupLeaf(p->GetPosition(), p->GetLength(),
+		q = new PTree::DupAtom(p->GetPosition(), p->GetLength(),
 				 str, len);
 		last->SetCar(q);
 		return lst;
@@ -583,5 +583,5 @@ Ptree* PtreeHead::Append(Ptree* lst, char* str, int len)
 	}
     }
 
-    return Ptree::Snoc(lst, new DupLeaf(str, len));
+    return PTree::Node::Snoc(lst, new DupAtom(str, len));
 }

@@ -17,7 +17,7 @@
 
 #include "types.h"
 
-class Ptree;
+namespace PTree { class Node;}
 class Class;
 class Environment;
 class Bind;
@@ -51,7 +51,7 @@ public:
     void Set(Class*);
     void SetVoid();
     void SetInt();
-    void SetMember(Ptree*);
+  void SetMember(PTree::Node *);
 
     TypeInfoId WhatIs();
 
@@ -71,7 +71,7 @@ public:
     Class* ClassMetaobject();
     bool IsClass(Class*&);
     bool IsEnum();
-    bool IsEnum(Ptree*& spec);
+  bool IsEnum(PTree::Node *&spec);
 
     void Dereference() { --refcount; }
     void Dereference(TypeInfo&);
@@ -81,12 +81,12 @@ public:
     int NumOfArguments();
     bool NthTemplateArgument(int, TypeInfo&);
 
-    Ptree* FullTypeName();
-    Ptree* MakePtree(Ptree* = 0);
+  PTree::Node *FullTypeName();
+  PTree::Node *MakePtree(PTree::Node * = 0);
 
 private:
-    static Ptree* GetQualifiedName(Environment*, Ptree*);
-    static Ptree* GetQualifiedName2(Class*);
+  static PTree::Node *GetQualifiedName(Environment*, PTree::Node *);
+  static PTree::Node *GetQualifiedName2(Class*);
     void Normalize();
     bool ResolveTypedef(Environment*&, char*&, bool);
 

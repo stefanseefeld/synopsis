@@ -62,82 +62,82 @@
 #include <iostream>
 #include "Encoding.hh"
 #include "Lexer.hh"
-#include "AST.hh"
+#include "PTree.hh"
 #include "Environment.hh"
 #include "Class.hh"
 #include "TypeInfo.hh"
 
-Ptree* Encoding::bool_t = 0;
-Ptree* Encoding::char_t = 0;
-Ptree* Encoding::wchar_t_t = 0;
-Ptree* Encoding::int_t = 0;
-Ptree* Encoding::short_t = 0;
-Ptree* Encoding::long_t = 0;
-Ptree* Encoding::float_t = 0;
-Ptree* Encoding::double_t = 0;
-Ptree* Encoding::void_t = 0;
+PTree::Node *Encoding::bool_t = 0;
+PTree::Node *Encoding::char_t = 0;
+PTree::Node *Encoding::wchar_t_t = 0;
+PTree::Node *Encoding::int_t = 0;
+PTree::Node *Encoding::short_t = 0;
+PTree::Node *Encoding::long_t = 0;
+PTree::Node *Encoding::float_t = 0;
+PTree::Node *Encoding::double_t = 0;
+PTree::Node *Encoding::void_t = 0;
 
-Ptree* Encoding::signed_t = 0;
-Ptree* Encoding::unsigned_t = 0;
-Ptree* Encoding::const_t = 0;
-Ptree* Encoding::volatile_t = 0;
+PTree::Node *Encoding::signed_t = 0;
+PTree::Node *Encoding::unsigned_t = 0;
+PTree::Node *Encoding::const_t = 0;
+PTree::Node *Encoding::volatile_t = 0;
 
-Ptree* Encoding::operator_name = 0;
-Ptree* Encoding::new_operator = 0;
-Ptree* Encoding::anew_operator = 0;
-Ptree* Encoding::delete_operator = 0;
-Ptree* Encoding::adelete_operator = 0;
+PTree::Node *Encoding::operator_name = 0;
+PTree::Node *Encoding::new_operator = 0;
+PTree::Node *Encoding::anew_operator = 0;
+PTree::Node *Encoding::delete_operator = 0;
+PTree::Node *Encoding::adelete_operator = 0;
 
-Ptree* Encoding::star = 0;
-Ptree* Encoding::ampersand = 0;
-Ptree* Encoding::comma = 0;
-Ptree* Encoding::dots = 0;
-Ptree* Encoding::scope = 0;
-Ptree* Encoding::tilder = 0;
-Ptree* Encoding::left_paren = 0;
-Ptree* Encoding::right_paren = 0;
-Ptree* Encoding::left_bracket = 0;
-Ptree* Encoding::right_bracket = 0;
-Ptree* Encoding::left_angle = 0;
-Ptree* Encoding::right_angle = 0;
+PTree::Node *Encoding::star = 0;
+PTree::Node *Encoding::ampersand = 0;
+PTree::Node *Encoding::comma = 0;
+PTree::Node *Encoding::dots = 0;
+PTree::Node *Encoding::scope = 0;
+PTree::Node *Encoding::tilder = 0;
+PTree::Node *Encoding::left_paren = 0;
+PTree::Node *Encoding::right_paren = 0;
+PTree::Node *Encoding::left_bracket = 0;
+PTree::Node *Encoding::right_bracket = 0;
+PTree::Node *Encoding::left_angle = 0;
+PTree::Node *Encoding::right_angle = 0;
 
 const int DigitOffset = 0x80;
 
 void Encoding::do_init_static()
 {
-    Encoding::bool_t = new LeafBOOLEAN("bool", 4);
-    Encoding::char_t = new LeafCHAR("char", 4);
-    Encoding::wchar_t_t = new LeafCHAR("wchar_t", 7);
-    Encoding::int_t = new LeafINT("int", 3);
-    Encoding::short_t = new LeafSHORT("short", 5);
-    Encoding::long_t = new LeafLONG("long", 4);
-    Encoding::float_t = new LeafFLOAT("float", 5);
-    Encoding::double_t = new LeafDOUBLE("double", 6);
-    Encoding::void_t = new LeafVOID("void", 4);
+  Encoding::bool_t = new PTree::AtomBOOLEAN("bool", 4);
+    Encoding::char_t = new PTree::AtomCHAR("char", 4);
+    Encoding::wchar_t_t = new PTree::AtomCHAR("wchar_t", 7);
+    Encoding::int_t = new PTree::AtomINT("int", 3);
+    Encoding::short_t = new PTree::AtomSHORT("short", 5);
+    Encoding::long_t = new PTree::AtomLONG("long", 4);
+    Encoding::float_t = new PTree::AtomFLOAT("float", 5);
+    Encoding::double_t = new PTree::AtomDOUBLE("double", 6);
+    Encoding::void_t = new PTree::AtomVOID("void", 4);
 
-    Encoding::signed_t = new LeafSIGNED("signed", 6);
-    Encoding::unsigned_t = new LeafUNSIGNED("unsigned", 8);
-    Encoding::const_t = new LeafCONST("const", 5);
-    Encoding::volatile_t = new LeafVOLATILE("volatile", 8);
+    Encoding::signed_t = new PTree::AtomSIGNED("signed", 6);
+    Encoding::unsigned_t = new PTree::AtomUNSIGNED("unsigned", 8);
+    Encoding::const_t = new PTree::AtomCONST("const", 5);
+    Encoding::volatile_t = new PTree::AtomVOLATILE("volatile", 8);
 
-    Encoding::operator_name = new LeafReserved("operator", 8);
-    Encoding::new_operator = new LeafReserved("new", 3);
-    Encoding::anew_operator = new LeafReserved("new[]", 5);
-    Encoding::delete_operator = new LeafReserved("delete", 6);
-    Encoding::adelete_operator = new LeafReserved("delete[]", 8);
+    Encoding::operator_name = new PTree::Reserved("operator", 8);
+    Encoding::new_operator = new PTree::Reserved("new", 3);
+    Encoding::anew_operator = new PTree::Reserved("new[]", 5);
+    Encoding::delete_operator = new PTree::Reserved("delete", 6);
+    Encoding::adelete_operator = new PTree::Reserved("delete[]", 8);
 
-    Encoding::star = new Leaf("*", 1);
-    Encoding::ampersand = new Leaf("&", 1);
-    Encoding::comma = new Leaf(",", 1);
-    Encoding::dots = new Leaf("...", 3);
-    Encoding::scope = new Leaf("::", 2);
-    Encoding::tilder = new Leaf("~", 1);
-    Encoding::left_paren = new Leaf("(", 1);
-    Encoding::right_paren = new Leaf(")", 1);
-    Encoding::left_bracket = new Leaf("[", 1);
-    Encoding::right_bracket = new Leaf("]", 1);
-    Encoding::left_angle = new Leaf("<", 1);
-    Encoding::right_angle = new Leaf(">", 1);
+    Encoding::star = new PTree::Atom("*", 1);
+    Encoding::ampersand = new PTree::Atom("&", 1);
+    Encoding::comma = new PTree::Atom(",", 1);
+    Encoding::dots = new PTree::Atom("...", 3);
+    Encoding::scope = new PTree::Atom("::", 2);
+    Encoding::tilder = new PTree::Atom("~", 1);
+    Encoding::left_paren = new PTree::Atom("(", 1);
+    Encoding::right_paren = new PTree::Atom(")", 1);
+    Encoding::left_bracket = new PTree::Atom("[", 1);
+    Encoding::right_bracket = new PTree::Atom("]", 1);
+    Encoding::left_angle = new PTree::Atom("<", 1);
+    Encoding::right_angle = new PTree::Atom(">", 1);
 
 }
 
@@ -294,7 +294,7 @@ unsigned char* Encoding::GetTemplateArguments(unsigned char* name, int& len)
     }
 }
 
-void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
+void Encoding::CvQualify(PTree::Node *cv1, PTree::Node *cv2)
 {
     bool c = false, v = false;
     if(cv1 != 0 && !cv1->IsLeaf())
@@ -331,7 +331,7 @@ void Encoding::GlobalScope()
 
 // SimpleName() is also used for operator names
 
-void Encoding::SimpleName(Ptree* id)
+void Encoding::SimpleName(PTree::Node *id)
 {
     AppendWithLen(id->GetPosition(), id->GetLength());
 }
@@ -351,7 +351,7 @@ void Encoding::NoName()
     AppendWithLen((char*)name, 5);
 }
 
-void Encoding::Template(Ptree* name, Encoding& args)
+void Encoding::Template(PTree::Node *name, Encoding& args)
 {
     Append('T');
     SimpleName(name);
@@ -370,7 +370,7 @@ void Encoding::Qualified(int n)
     name[1] = (unsigned char)(DigitOffset + n);
 }
 
-void Encoding::Destructor(Ptree* class_name)
+void Encoding::Destructor(PTree::Node *class_name)
 {
     int len = class_name->GetLength();
     Append((unsigned char)(DigitOffset + len + 1));
@@ -462,124 +462,124 @@ void Encoding::AppendWithLen(char* str, int n)
     len += n;
 }
 
-Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
+PTree::Node *Encoding::MakePtree(unsigned char*& encoded, PTree::Node *decl)
 {
-    Ptree* cv;
-    Ptree* typespec = 0;
+    PTree::Node *cv;
+    PTree::Node *typespec = 0;
     if(decl != 0)
-	decl = Ptree::List(decl);
+      decl = PTree::Node::List(decl);
 
     for(;;){
 	cv = 0;
 	switch(*encoded++){
 	case 'b' :
-	    typespec = Ptree::Snoc(typespec, bool_t);
+	  typespec = PTree::Node::Snoc(typespec, bool_t);
 	    goto finish;
 	case 'c' :
-	    typespec = Ptree::Snoc(typespec, char_t);
+	    typespec = PTree::Node::Snoc(typespec, char_t);
 	    goto finish;
 	case 'w' :
-	    typespec = Ptree::Snoc(typespec, wchar_t_t);
+	    typespec = PTree::Node::Snoc(typespec, wchar_t_t);
 	    goto finish;
 	case 'i' :
-	    typespec = Ptree::Snoc(typespec, int_t);
+	    typespec = PTree::Node::Snoc(typespec, int_t);
 	    goto finish;
 	case 's' :
-	    typespec = Ptree::Snoc(typespec, short_t);
+	    typespec = PTree::Node::Snoc(typespec, short_t);
 	    goto finish;
 	case 'l' :
-	    typespec = Ptree::Snoc(typespec, long_t);
+	    typespec = PTree::Node::Snoc(typespec, long_t);
 	    goto finish;
 	    break;
 	case 'j' :
-	    typespec = Ptree::Nconc(typespec, Ptree::List(long_t, long_t));
+	    typespec = PTree::Node::Nconc(typespec, PTree::Node::List(long_t, long_t));
 	    goto finish;
 	    break;
 	case 'f' :
-	    typespec = Ptree::Snoc(typespec, float_t);
+	    typespec = PTree::Node::Snoc(typespec, float_t);
 	    goto finish;
 	    break;
 	case 'd' :
-	    typespec = Ptree::Snoc(typespec, double_t);
+	    typespec = PTree::Node::Snoc(typespec, double_t);
 	    goto finish;
 	    break;
 	case 'r' :
-	    typespec = Ptree::Nconc(typespec, Ptree::List(long_t, double_t));
+	    typespec = PTree::Node::Nconc(typespec, PTree::Node::List(long_t, double_t));
 	    goto finish;
 	case 'v' :
-	    typespec = Ptree::Snoc(typespec, void_t);
+	    typespec = PTree::Node::Snoc(typespec, void_t);
 	    goto finish;
 	case 'e' :
 	    return dots;
 	case '?' :
 	    goto finish;
 	case 'Q' :
-	    typespec = Ptree::Snoc(typespec, MakeQname(encoded));
+	    typespec = PTree::Node::Snoc(typespec, MakeQname(encoded));
 	    goto finish;
 	case 'S' :
-	    typespec = Ptree::Snoc(typespec, signed_t);
+	    typespec = PTree::Node::Snoc(typespec, signed_t);
 	    break;
 	case 'U' :
-	    typespec = Ptree::Snoc(typespec, unsigned_t);
+	    typespec = PTree::Node::Snoc(typespec, unsigned_t);
 	    break;
 	case 'C' :
 	    if(*encoded == 'V'){
 		++encoded;
-		cv = Ptree::List(const_t, volatile_t);
+		cv = PTree::Node::List(const_t, volatile_t);
 	    }
 	    else
-		cv = Ptree::List(const_t);
+		cv = PTree::Node::List(const_t);
 
 	    goto const_or_volatile;
 	case 'V' :
-	    cv = Ptree::List(volatile_t);
+	    cv = PTree::Node::List(volatile_t);
 	const_or_volatile :
 	    switch(*encoded) {
 	    case 'M' :
 	    case 'P' :
 	    case 'R' :
-		decl = Ptree::Nconc(cv, decl);
+		decl = PTree::Node::Nconc(cv, decl);
 		break;
 	    case 'F' :
 		++encoded;
 		goto cv_function;
 	    default :
-		typespec = Ptree::Nconc(cv, typespec);
+		typespec = PTree::Node::Nconc(cv, typespec);
 		break;
 	    }
 	    break;
 	case 'M' :
 	    {
-		Ptree* ptr;
+		PTree::Node *ptr;
 		if(*encoded == 'Q')
 		    ptr = MakeQname(++encoded);
 		else
 		    ptr = MakeLeaf(encoded);
 
-		ptr = Ptree::List(ptr, scope, star);
-		decl = Ptree::Cons(ptr, decl);
+		ptr = PTree::Node::List(ptr, scope, star);
+		decl = PTree::Node::Cons(ptr, decl);
 	    }
 
 	    goto pointer_or_reference;
 	case 'P' :
-	    decl = Ptree::Cons(star, decl);
+	    decl = PTree::Node::Cons(star, decl);
 	    goto pointer_or_reference;
 	case 'R' :
-	    decl = Ptree::Cons(ampersand, decl);
+	    decl = PTree::Node::Cons(ampersand, decl);
 	pointer_or_reference :
 	    if(*encoded == 'A' || *encoded == 'F')
-		decl = Ptree::List(Ptree::List(left_paren, decl,
+		decl = PTree::Node::List(PTree::Node::List(left_paren, decl,
 					       right_paren));
 
 	    break;
 	case 'A' :
-	    decl = Ptree::Nconc(decl, Ptree::List(left_bracket,
+	    decl = PTree::Node::Nconc(decl, PTree::Node::List(left_bracket,
 						  right_bracket));
 	    break;
 	case 'F' :
 	cv_function :
 	    {
-		Ptree* args = 0;
+		PTree::Node *args = 0;
 		while(*encoded != '\0'){
 		    if(*encoded == '_'){
 			++encoded;
@@ -591,35 +591,35 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 		    }
 
 		    if(args != 0)
-			args = Ptree::Snoc(args, comma);
+			args = PTree::Node::Snoc(args, comma);
 
-		    args = Ptree::Snoc(args, MakePtree(encoded, 0));
+		    args = PTree::Node::Snoc(args, MakePtree(encoded, 0));
 		}
 
-		decl = Ptree::Nconc(decl, Ptree::List(left_paren, args,
+		decl = PTree::Node::Nconc(decl, PTree::Node::List(left_paren, args,
 						      right_paren));
 		if(cv != 0)
-		    decl = Ptree::Nconc(decl, cv);
+		    decl = PTree::Node::Nconc(decl, cv);
 	    }
 	    break;
 	case '\0' :
 	    goto finish;
 	case 'T' :
 	    {
-    		Ptree* tlabel = MakeLeaf(encoded);      
-	    	Ptree* args = 0;
+    		PTree::Node *tlabel = MakeLeaf(encoded);      
+	    	PTree::Node *args = 0;
 	    	int n = *encoded++ - DigitOffset;
 		unsigned char* stop = encoded + n;
 		while(encoded < stop){
 		    if(args != 0)
-			args = Ptree::Snoc(args, comma);
+			args = PTree::Node::Snoc(args, comma);
 
-		    args = Ptree::Snoc(args, MakePtree(encoded, 0));
+		    args = PTree::Node::Snoc(args, MakePtree(encoded, 0));
 		}
 
-		tlabel = Ptree::List(tlabel,
-				Ptree::List(left_angle, args, right_angle));
-		typespec = Ptree::Nconc(typespec, tlabel);
+		tlabel = PTree::Node::List(tlabel,
+				PTree::Node::List(left_angle, args, right_angle));
+		typespec = PTree::Node::Nconc(typespec, tlabel);
 		goto finish;
 	    }
 	case '*' :
@@ -629,7 +629,7 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 		if(typespec == 0)
 		    typespec = MakeLeaf(encoded);
 		else
-		    typespec = Ptree::Snoc(typespec, MakeLeaf(encoded));
+		    typespec = PTree::Node::Snoc(typespec, MakeLeaf(encoded));
 
 		goto finish;
 	    }
@@ -641,31 +641,31 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
     }
 
 finish :
-    return Ptree::List(typespec, decl);
+    return PTree::Node::List(typespec, decl);
 }
 
-Ptree* Encoding::MakeQname(unsigned char*& encoded)
+PTree::Node *Encoding::MakeQname(unsigned char*& encoded)
 {
     int n = *encoded++ - DigitOffset;
-    Ptree* qname = 0;
+    PTree::Node *qname = 0;
     while(n-- > 0){
-	Ptree* leaf = MakeLeaf(encoded);
+	PTree::Node *leaf = MakeLeaf(encoded);
 	if(leaf != 0)
-	    qname = Ptree::Snoc(qname, leaf);
+	    qname = PTree::Node::Snoc(qname, leaf);
 
 	if(n > 0)
-	    qname = Ptree::Snoc(qname, scope);
+	    qname = PTree::Node::Snoc(qname, scope);
     }
 
     return qname;
 }
 
-Ptree* Encoding::MakeLeaf(unsigned char*& encoded)
+PTree::Node *Encoding::MakeLeaf(unsigned char*& encoded)
 {
-    Ptree* leaf;
+    PTree::Node *leaf;
     int len = *encoded++ - DigitOffset;
     if(len > 0)
-	leaf = new Leaf((char*)encoded, len);
+	leaf = new PTree::Atom((char*)encoded, len);
     else
 	leaf = 0;
 
@@ -678,33 +678,33 @@ bool Encoding::IsSimpleName(unsigned char* p)
     return *p >= DigitOffset;
 }
 
-Ptree* Encoding::NameToPtree(char* name, int len)
+PTree::Node *Encoding::NameToPtree(char* name, int len)
 {
     if(name == 0)
 	return 0;
 
     if(name[0] == 'n'){
 	if(len == 5 && strncmp(name, "new[]", 5) == 0)
-	    return Ptree::List(operator_name, anew_operator);
+	    return PTree::Node::List(operator_name, anew_operator);
 	else if(len == 3 && strncmp(name, "new", 3) == 0)
-	    return Ptree::List(operator_name, new_operator);
+	    return PTree::Node::List(operator_name, new_operator);
     }
     else if(name[0] == 'd'){
 	if(len == 8 && strncmp(name, "delete[]", 8) == 0)
-	    return Ptree::List(operator_name, adelete_operator);
+	    return PTree::Node::List(operator_name, adelete_operator);
 	else if(len == 6 && strncmp(name, "delete", 6) == 0)
-	    return Ptree::List(operator_name, delete_operator);
+	    return PTree::Node::List(operator_name, delete_operator);
     }
     else if(name[0] == '~')
-	return Ptree::List(tilder, new Leaf(&name[1], len - 1));
+	return PTree::Node::List(tilder, new PTree::Atom(&name[1], len - 1));
     else if(name[0] == '@'){		// cast operator
 	unsigned char* encoded = (unsigned char*)&name[1];
-	return Ptree::List(operator_name, MakePtree(encoded, 0));
+	return PTree::Node::List(operator_name, MakePtree(encoded, 0));
     }
 
     if(is_letter(name[0]))
-	return new Leaf(name, len);
+	return new PTree::Atom(name, len);
     else
-	return Ptree::List(operator_name, new Leaf(name, len));
+	return PTree::Node::List(operator_name, new PTree::Atom(name, len));
 }
 

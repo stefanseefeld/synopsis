@@ -6,7 +6,8 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include "AST.hh"
+#include "PTree/Node.hh"
+#include "PTree/List.hh"
 #include "Lexer.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
@@ -22,14 +23,16 @@
 #include <stdlib.h>		// for exit()
 #endif
 
-bool Ptree::show_encoded = false;
+using namespace PTree;
 
-const char *Ptree::begin() const
+bool Node::show_encoded = false;
+
+const char *Node::begin() const
 {
   if (IsLeaf()) return GetPosition();
   else
   {
-    for (const Ptree *p = this; p; p = p->Cdr())
+    for (const Node *p = this; p; p = p->Cdr())
     {
       const char *b = p->Car() ? p->Car()->begin() : 0;
       if (b) return b;
@@ -38,7 +41,7 @@ const char *Ptree::begin() const
   }
 }
 
-const char *Ptree::end() const
+const char *Node::end() const
 {
   if (IsLeaf()) return GetPosition() + GetLength();
   else
@@ -53,14 +56,14 @@ const char *Ptree::end() const
   }
 }
 
-std::string Ptree::string() const
+std::string Node::string() const
 {
   std::ostringstream oss;
   write(oss);
   return oss.str();
 };
 
-void Ptree::print(std::ostream &os) const
+void Node::print(std::ostream &os) const
 {
   print(os, 0, 0);
   os.put('\n');
@@ -99,9 +102,9 @@ void MopMoreWarningMessage(char* msg1, char* msg2)
     std::cerr << '\n';
 }
 
-// class Ptree
+// class Node
 
-int Ptree::Write(std::ostream& s)
+int Node::Write(std::ostream& s)
 {
     if(this == 0)
 	return 0;
@@ -109,14 +112,14 @@ int Ptree::Write(std::ostream& s)
 	return Write(s, 0);
 }
 
-bool Ptree::Eq(char c)
+bool Node::Eq(char c)
 {
   if(this == 0) return false;
   else
     return(IsLeaf() && GetLength() == 1 && *GetPosition() == c);
 }
 
-bool Ptree::Eq(char* str)
+bool Node::Eq(char* str)
 {
     if(this == 0)
 	return false;
@@ -134,7 +137,7 @@ bool Ptree::Eq(char* str)
 	return false;
 }
 
-bool Ptree::Eq(char* str, int len)
+bool Node::Eq(char* str, int len)
 {
     if(this != 0 && IsLeaf()){
 	char* p = GetPosition();
@@ -152,21 +155,21 @@ bool Ptree::Eq(char* str, int len)
     return false;
 }
 
-Ptree* Ptree::Ca_ar()		// compute Caa..ar
+Node *Node::Ca_ar()		// compute Caa..ar
 {
-    Ptree* p = this;
+    Node *p = this;
     while(p != 0 && !p->IsLeaf())
 	p = p->Car();
 
     return p;
 }
 
-int Ptree::What()
+int Node::What()
 {
   return Token::BadToken;
 }
 
-bool Ptree::IsA(int kind)
+bool Node::IsA(int kind)
 {
     if(this == 0)
 	return false;
@@ -174,7 +177,7 @@ bool Ptree::IsA(int kind)
 	return bool(What() == kind);
 }
 
-bool Ptree::IsA(int kind1, int kind2)
+bool Node::IsA(int kind1, int kind2)
 {
     if(this == 0)
 	return false;
@@ -184,7 +187,7 @@ bool Ptree::IsA(int kind1, int kind2)
     }
 }
 
-bool Ptree::IsA(int kind1, int kind2, int kind3)
+bool Node::IsA(int kind1, int kind2, int kind3)
 {
     if(this == 0)
 	return false;
@@ -194,22 +197,22 @@ bool Ptree::IsA(int kind1, int kind2, int kind3)
     }
 }
 
-Ptree* Ptree::Translate(Walker* w)
+Node *Node::Translate(Walker* w)
 {
     return w->TranslatePtree(this);
 }
 
-void Ptree::Typeof(Walker* w, TypeInfo& t)
+void Node::Typeof(Walker* w, TypeInfo& t)
 {
     w->TypeofPtree(this, t);
 }
 
-char* Ptree::GetEncodedType() const
+char* Node::GetEncodedType() const
 {
     return 0;
 }
 
-char* Ptree::GetEncodedName() const
+char* Node::GetEncodedName() const
 {
     return 0;
 }
@@ -217,22 +220,22 @@ char* Ptree::GetEncodedName() const
 
 // static members
 
-bool Ptree::Eq(Ptree* p, char c)
+bool Node::Eq(Node *p, char c)
 {
     return p->Eq(c);
 }
 
-bool Ptree::Eq(Ptree* p, char* str)
+bool Node::Eq(Node *p, char* str)
 {
     return p->Eq(str);
 }
 
-bool Ptree::Eq(Ptree* p, char* str, int len)
+bool Node::Eq(Node *p, char* str, int len)
 {
     return p->Eq(str, len);
 }
 
-bool Ptree::Eq(Ptree* p, Ptree* q)
+bool Node::Eq(Node *p, Node *q)
 {
     if(p == q)
 	return true;
@@ -259,7 +262,7 @@ bool Ptree::Eq(Ptree* p, Ptree* q)
   Equiv() returns true even if p and q are lists and all the elements
   are equal respectively.
 */
-bool Ptree::Equiv(Ptree* p, Ptree* q)
+bool Node::Equiv(Node *p, Node *q)
 {
     if(p == q)
 	return true;
@@ -280,7 +283,7 @@ bool Ptree::Equiv(Ptree* p, Ptree* q)
     }
 }
 
-bool Ptree::Equal(Ptree* p, Ptree* q)
+bool Node::Equal(Node *p, Node *q)
 {
     if(p == q)
 	return true;
@@ -292,18 +295,18 @@ bool Ptree::Equal(Ptree* p, Ptree* q)
 	return Equal(p->Car(), q->Car()) && Equal(p->Cdr(), q->Cdr());
 }
 
-const Ptree *Ptree::Last(const Ptree *p)	// return the last cons cell.
+const Node *Node::Last(const Node *p)	// return the last cons cell.
 {
-  const Ptree *next;
+  const Node *next;
   if(!p) return 0;
 
   while((next = p->Cdr())) p = next;
   return p;
 }
 
-Ptree* Ptree::Last(Ptree* p)	// return the last cons cell.
+Node *Node::Last(Node *p)	// return the last cons cell.
 {
-    Ptree* next;
+    Node *next;
     if(p == 0)
 	return 0;
 
@@ -313,12 +316,12 @@ Ptree* Ptree::Last(Ptree* p)	// return the last cons cell.
     return p;
 }
 
-const Ptree *Ptree::First(const Ptree *p)
+const Node *Node::First(const Node *p)
 {
   return p ? p->Car() : 0;
 }
 
-Ptree* Ptree::First(Ptree* p)
+Node *Node::First(Node *p)
 {
     if(p != 0)
 	return p->Car();
@@ -326,12 +329,12 @@ Ptree* Ptree::First(Ptree* p)
 	return p;
 }
 
-const Ptree *Ptree::Rest(const Ptree *p)
+const Node *Node::Rest(const Node *p)
 {
   return p ? p->Cdr() : 0;
 }
 
-Ptree* Ptree::Rest(Ptree* p)
+Node *Node::Rest(Node *p)
 {
     if(p != 0)
 	return p->Cdr();
@@ -339,7 +342,7 @@ Ptree* Ptree::Rest(Ptree* p)
 	return p;
 }
 
-const Ptree *Ptree::Second(const Ptree *p)
+const Node *Node::Second(const Node *p)
 {
   if(p)
   {
@@ -350,7 +353,7 @@ const Ptree *Ptree::Second(const Ptree *p)
   return 0;
 }
 
-Ptree* Ptree::Second(Ptree* p)
+Node *Node::Second(Node *p)
 {
     if(p != 0){
 	p = p->Cdr();
@@ -361,7 +364,7 @@ Ptree* Ptree::Second(Ptree* p)
     return p;
 }
 
-const Ptree *Ptree::Third(const Ptree *p)
+const Node *Node::Third(const Node *p)
 {
   if(p)
   {
@@ -376,7 +379,7 @@ const Ptree *Ptree::Third(const Ptree *p)
   return p;
 }
 
-Ptree* Ptree::Third(Ptree* p)
+Node *Node::Third(Node *p)
 {
     if(p != 0){
 	p = p->Cdr();
@@ -393,13 +396,13 @@ Ptree* Ptree::Third(Ptree* p)
 /*
   Nth(lst, 0) is equivalent to First(lst).
 */
-const Ptree *Ptree::Nth(const Ptree *p, int n)
+const Node *Node::Nth(const Node *p, int n)
 {
   while(p && n-- > 0) p = p->Cdr();
   return p ? p->Car() : 0;
 }
 
-Ptree* Ptree::Nth(Ptree* p, int n)
+Node *Node::Nth(Node *p, int n)
 {
     while(p != 0 && n-- > 0)
 	p = p->Cdr();
@@ -413,7 +416,7 @@ Ptree* Ptree::Nth(Ptree* p, int n)
 /*
   Length() returns a negative number if p is not a list.
 */
-int Ptree::Length(const Ptree* p)
+int Node::Length(const Node *p)
 {
     int i = 0;
 
@@ -431,7 +434,7 @@ int Ptree::Length(const Ptree* p)
     return i;
 }
 
-Ptree* Ptree::ListTail(Ptree* p, int k)
+Node *Node::ListTail(Node *p, int k)
 {
     while(p != 0 && k-- > 0)
 	p = p->Cdr();
@@ -439,69 +442,69 @@ Ptree* Ptree::ListTail(Ptree* p, int k)
     return p;
 }
 
-Ptree* Ptree::Cons(Ptree* p, Ptree* q)
+Node *Node::Cons(Node *p, Node *q)
 {
-    return new NonLeaf(p, q);
+  return new PTree::List(p, q);
 }
 
-Ptree* Ptree::List(Ptree* p)
+Node *Node::List(Node *p)
 {
-    return new NonLeaf(p, 0);
+    return new PTree::List(p, 0);
 }
 
-Ptree* Ptree::List()
+Node *Node::List()
 {
     return 0;
 }
 
-Ptree* Ptree::List(Ptree* p, Ptree* q)
+Node *Node::List(Node *p, Node *q)
 {
-    return new NonLeaf(p, new NonLeaf(q, 0));
+    return new PTree::List(p, new PTree::List(q, 0));
 }
 
-Ptree* Ptree::List(Ptree* p1, Ptree* p2, Ptree* p3)
+Node *Node::List(Node *p1, Node *p2, Node *p3)
 {
-    return new NonLeaf(p1, new NonLeaf(p2, new NonLeaf(p3, 0)));
+    return new PTree::List(p1, new PTree::List(p2, new PTree::List(p3, 0)));
 }
 
-Ptree* Ptree::List(Ptree* p1, Ptree* p2, Ptree* p3, Ptree* p4)
+Node *Node::List(Node *p1, Node *p2, Node *p3, Node *p4)
 {
-    return new NonLeaf(p1, List(p2, p3, p4));
+    return new PTree::List(p1, List(p2, p3, p4));
 }
 
-Ptree* Ptree::List(Ptree* p1, Ptree* p2, Ptree* p3, Ptree* p4, Ptree* p5)
+Node *Node::List(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5)
 {
     return Nconc(List(p1, p2), List(p3, p4, p5));
 }
 
-Ptree* Ptree::List(Ptree* p1, Ptree* p2, Ptree* p3, Ptree* p4, Ptree* p5,
-		   Ptree* p6)
+Node *Node::List(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
+		   Node *p6)
 {
     return Nconc(List(p1, p2, p3), List(p4, p5, p6));
 }
 
-Ptree* Ptree::List(Ptree* p1, Ptree* p2, Ptree* p3, Ptree* p4, Ptree* p5,
-		   Ptree* p6, Ptree* p7)
+Node *Node::List(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
+		   Node *p6, Node *p7)
 {
     return Nconc(List(p1, p2, p3), List(p4, p5, p6, p7));
 }
 
-Ptree* Ptree::List(Ptree* p1, Ptree* p2, Ptree* p3, Ptree* p4, Ptree* p5,
-		   Ptree* p6, Ptree* p7, Ptree* p8)
+Node *Node::List(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
+		   Node *p6, Node *p7, Node *p8)
 {
     return Nconc(List(p1, p2, p3, p4), List(p5, p6, p7, p8));
 }
 
-Ptree* Ptree::CopyList(Ptree* p)
+Node *Node::CopyList(Node *p)
 {
     return Append(p, 0);
 }
 
 //   q may be a leaf
 //
-Ptree* Ptree::Append(Ptree* p, Ptree* q)
+Node *Node::Append(Node *p, Node *q)
 {
-    Ptree *result, *tail;
+    Node *result, *tail;
 
     if(p == 0)
 	if(q->IsLeaf())
@@ -512,7 +515,7 @@ Ptree* Ptree::Append(Ptree* p, Ptree* q)
     result = tail = Cons(p->Car(), 0);
     p = p->Cdr();
     while(p != 0){
-	Ptree* cell = Cons(p->Car(), 0);
+	Node *cell = Cons(p->Car(), 0);
 	tail->SetCdr(cell);
 	tail = cell;
 	p = p->Cdr();
@@ -530,19 +533,19 @@ Ptree* Ptree::Append(Ptree* p, Ptree* q)
   ReplaceAll() substitutes SUBST for all occurences of ORIG in LIST.
   It recursively searches LIST for ORIG.
 */
-Ptree* Ptree::ReplaceAll(Ptree* list, Ptree* orig, Ptree* subst)
+Node *Node::ReplaceAll(Node *list, Node *orig, Node *subst)
 {
     if(Eq(list, orig))
 	return subst;
     else if(list == 0 || list->IsLeaf())
 	return list;
     else{
-	PtreeArray newlist;
+	Array newlist;
 	bool changed = false;
-	Ptree* rest = list;
+	Node *rest = list;
 	while(rest != 0){
-	    Ptree* p = rest->Car();
-	    Ptree* q = ReplaceAll(p, orig, subst);
+	    Node *p = rest->Car();
+	    Node *q = ReplaceAll(p, orig, subst);
 	    newlist.Append(q);
 	    if(p != q)
 		changed = true;
@@ -557,17 +560,17 @@ Ptree* Ptree::ReplaceAll(Ptree* list, Ptree* orig, Ptree* subst)
     }
 }
 
-Ptree* Ptree::Subst(Ptree* newone, Ptree* old, Ptree* tree)
+Node *Node::Subst(Node *newone, Node *old, Node *tree)
 {
     if(old == tree)
 	return newone;
     else if(tree== 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree* head = tree->Car();
-	Ptree* head2 = Subst(newone, old, head);
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 = (tail == 0) ? tail : Subst(newone, old, tail);
+	Node *head = tree->Car();
+	Node *head2 = Subst(newone, old, head);
+	Node *tail = tree->Cdr();
+	Node *tail2 = (tail == 0) ? tail : Subst(newone, old, tail);
 	if(head == head2 && tail == tail2)
 	    return tree;
 	else
@@ -575,8 +578,8 @@ Ptree* Ptree::Subst(Ptree* newone, Ptree* old, Ptree* tree)
     }
 }
 
-Ptree* Ptree::Subst(Ptree* newone1, Ptree* old1, Ptree* newone2, Ptree* old2,
-		    Ptree* tree)
+Node *Node::Subst(Node *newone1, Node *old1, Node *newone2, Node *old2,
+		    Node *tree)
 {
     if(old1 == tree)
 	return newone1;
@@ -585,10 +588,10 @@ Ptree* Ptree::Subst(Ptree* newone1, Ptree* old1, Ptree* newone2, Ptree* old2,
     else if(tree == 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree* head = tree->Car();
-	Ptree* head2 = Subst(newone1, old1, newone2, old2, head);
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 = (tail == 0) ? tail
+	Node *head = tree->Car();
+	Node *head2 = Subst(newone1, old1, newone2, old2, head);
+	Node *tail = tree->Cdr();
+	Node *tail2 = (tail == 0) ? tail
 			: Subst(newone1, old1, newone2, old2, tail);
 	if(head == head2 && tail == tail2)
 	    return tree;
@@ -597,8 +600,8 @@ Ptree* Ptree::Subst(Ptree* newone1, Ptree* old1, Ptree* newone2, Ptree* old2,
     }
 }
 
-Ptree* Ptree::Subst(Ptree* newone1, Ptree* old1, Ptree* newone2, Ptree* old2,
-		    Ptree* newone3, Ptree* old3, Ptree* tree)
+Node *Node::Subst(Node *newone1, Node *old1, Node *newone2, Node *old2,
+		    Node *newone3, Node *old3, Node *tree)
 {
     if(old1 == tree)
 	return newone1;
@@ -609,11 +612,11 @@ Ptree* Ptree::Subst(Ptree* newone1, Ptree* old1, Ptree* newone2, Ptree* old2,
     else if(tree == 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree* head = tree->Car();
-	Ptree* head2 = Subst(newone1, old1, newone2, old2,
+	Node *head = tree->Car();
+	Node *head2 = Subst(newone1, old1, newone2, old2,
 			     newone3, old3, head);
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 = (tail == 0) ? tail :
+	Node *tail = tree->Cdr();
+	Node *tail2 = (tail == 0) ? tail :
 			Subst(newone1, old1, newone2, old2,
 			      newone3, old3, tail);
 	if(head == head2 && tail == tail2)
@@ -625,22 +628,22 @@ Ptree* Ptree::Subst(Ptree* newone1, Ptree* old1, Ptree* newone2, Ptree* old2,
 
 // ShallowSubst() doesn't recursively apply substitution to a subtree.
 
-Ptree* Ptree::ShallowSubst(Ptree* newone, Ptree* old, Ptree* tree)
+Node *Node::ShallowSubst(Node *newone, Node *old, Node *tree)
 {
     if(old == tree)
 	return newone;
     else if(tree== 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree *head, *head2;
+	Node *head, *head2;
 	head = tree->Car();
 	if(old == head)
 	    head2 = newone;
 	else
 	    head2 = head;
 
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 = (tail == 0) ? tail : ShallowSubst(newone, old, tail);
+	Node *tail = tree->Cdr();
+	Node *tail2 = (tail == 0) ? tail : ShallowSubst(newone, old, tail);
 	if(head == head2 && tail == tail2)
 	    return tree;
 	else
@@ -648,8 +651,8 @@ Ptree* Ptree::ShallowSubst(Ptree* newone, Ptree* old, Ptree* tree)
     }
 }
 
-Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
-			   Ptree* newone2, Ptree* old2, Ptree* tree)
+Node *Node::ShallowSubst(Node *newone1, Node *old1,
+			   Node *newone2, Node *old2, Node *tree)
 {
     if(old1 == tree)
 	return newone1;
@@ -658,7 +661,7 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
     else if(tree == 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree *head, *head2;
+	Node *head, *head2;
 	head = tree->Car();
 	if(old1 == head)
 	    head2 = newone1;
@@ -667,8 +670,8 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
 	else
 	    head2 = head;
 
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 = (tail == 0) ? tail :
+	Node *tail = tree->Cdr();
+	Node *tail2 = (tail == 0) ? tail :
 			ShallowSubst(newone1, old1, newone2, old2, tail);
 	if(head == head2 && tail == tail2)
 	    return tree;
@@ -677,9 +680,9 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
     }
 }
 
-Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
-			   Ptree* newone2, Ptree* old2,
-			   Ptree* newone3, Ptree* old3, Ptree* tree)
+Node *Node::ShallowSubst(Node *newone1, Node *old1,
+			   Node *newone2, Node *old2,
+			   Node *newone3, Node *old3, Node *tree)
 {
     if(old1 == tree)
 	return newone1;
@@ -690,7 +693,7 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
     else if(tree == 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree *head, *head2;
+	Node *head, *head2;
 	head = tree->Car();
 	if(old1 == head)
 	    head2 = newone1;
@@ -701,8 +704,8 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
 	else
 	    head2 = head;
 
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 = (tail == 0) ? tail :
+	Node *tail = tree->Cdr();
+	Node *tail2 = (tail == 0) ? tail :
 			ShallowSubst(newone1, old1, newone2, old2,
 				     newone3, old3, tail);
 	if(head == head2 && tail == tail2)
@@ -712,10 +715,10 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
     }
 }
 
-Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
-			   Ptree* newone2, Ptree* old2,
-			   Ptree* newone3, Ptree* old3,
-			   Ptree* newone4, Ptree* old4, Ptree* tree)
+Node *Node::ShallowSubst(Node *newone1, Node *old1,
+			   Node *newone2, Node *old2,
+			   Node *newone3, Node *old3,
+			   Node *newone4, Node *old4, Node *tree)
 {
     if(old1 == tree)
 	return newone1;
@@ -728,7 +731,7 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
     else if(tree == 0 || tree->IsLeaf())
 	return tree;
     else{
-	Ptree *head, *head2;
+	Node *head, *head2;
 	head = tree->Car();
 	if(old1 == head)
 	    head2 = newone1;
@@ -741,8 +744,8 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
 	else
 	    head2 = head;
 
-	Ptree* tail = tree->Cdr();
-	Ptree* tail2 =  (tail == 0) ? tail :
+	Node *tail = tree->Cdr();
+	Node *tail2 =  (tail == 0) ? tail :
 			ShallowSubst(newone1, old1, newone2, old2,
 				     newone3, old3, newone4, old4, tail);
 	if(head == head2 && tail == tail2)
@@ -752,7 +755,7 @@ Ptree* Ptree::ShallowSubst(Ptree* newone1, Ptree* old1,
     }
 }
 
-Ptree* Ptree::SubstSublist(Ptree* newsub, Ptree* oldsub, Ptree* lst)
+Node *Node::SubstSublist(Node *newsub, Node *oldsub, Node *lst)
 {
     if(lst == oldsub)
 	return newsub;
@@ -760,14 +763,14 @@ Ptree* Ptree::SubstSublist(Ptree* newsub, Ptree* oldsub, Ptree* lst)
 	return Cons(lst->Car(), SubstSublist(newsub, oldsub, lst->Cdr()));
 }
 
-Ptree* Ptree::Snoc(Ptree* p, Ptree* q)
+Node *Node::Snoc(Node *p, Node *q)
 {
     return Nconc(p, Cons(q, 0));
 }
 
 /* Nconc is desctructive append */
 
-Ptree* Ptree::Nconc(Ptree* p, Ptree* q)
+Node *Node::Nconc(Node *p, Node *q)
 {
     if(p == 0)
 	return q;
@@ -777,273 +780,79 @@ Ptree* Ptree::Nconc(Ptree* p, Ptree* q)
     }
 }
 
-Ptree* Ptree::Nconc(Ptree* p, Ptree* q, Ptree* r)
+Node *Node::Nconc(Node *p, Node *q, Node *r)
 {
     return Nconc(p, Nconc(q, r));
 }
 
-void Ptree::print_indent(std::ostream &os, size_t indent)
+void Node::print_indent(std::ostream &os, size_t indent)
 {
   os.put('\n');
   for(size_t i = 0; i != indent; ++i) os.put(' ');
 }
 
-// class PtreeIter
-
-Ptree* PtreeIter::Pop()
+Node *Iterator::Pop()
 {
-    if(ptree == 0)
-	return 0;
-    else{
-	Ptree* p = ptree->Car();
-	ptree = ptree->Cdr();
-	return p;
-    }
-}
-
-bool PtreeIter::Next(Ptree*& car)
-{
-    if(ptree == 0)
-	return false;
-    else{
-	car = ptree->Car();
-	ptree = ptree->Cdr();
-	return true;
-    }
-}
-
-Ptree* PtreeIter::This()
-{
-    if(ptree == 0)
-	return 0;
-    else
-	return ptree->Car();
-}
-
-// class PtreeArray
-
-PtreeArray::PtreeArray(int s)
-{
-    num = 0;
-    if(s > 8){
-	size = s;
-	array = new (GC) Ptree*[s];
-    }
-    else{
-	size = 8;
-	array = default_buf;
-    }
-}
-
-void PtreeArray::Append(Ptree* p)
-{
-    if(num >= size){
-	size += 8;
-	Ptree** a = new (GC) Ptree*[size];
-	memmove(a, array, size_t(num * sizeof(Ptree*)));
-	array = a;
-    }
-
-    array[num++] = p;
-}
-
-Ptree*& PtreeArray::Ref(uint i)
-{
-    if(i < num)
-	return array[i];
-    else{
-	MopErrorMessage("PtreeArray", "out of range");
-	return array[0];
-    }
-}
-
-Ptree* PtreeArray::All()
-{
-    Ptree* lst = 0;
-
-    for(sint i = Number() - 1; i >= 0; --i)
-	lst = Ptree::Cons(Ref(i), lst);
-
-    return lst;
-}
-
-Leaf::Leaf(char *ptr, int len)
-{
-  data.leaf.position = ptr;
-  data.leaf.length = len;
-}
-
-Leaf::Leaf(const Token &tk)
-{
-  data.leaf.position = const_cast<char *>(tk.ptr);
-  data.leaf.length = tk.length;
-}
-
-void Leaf::write(std::ostream &os) const
-{
-  assert(this);
-  os.write(data.leaf.position, data.leaf.length);
-}
-
-void Leaf::print(std::ostream &os, size_t, size_t) const
-{
-  const char *p = data.leaf.position;
-  int n = data.leaf.length;
-
-  // Recall that [, ], and @ are special characters.
-
-  if(n < 1) return;
-  else if(n == 1 && *p == '@')
+  if(!ptree) return 0;
+  else
   {
-    os << "\\@";
-    return;
-  }
-
-  char c = *p++;
-  if(c == '[' || c == ']') os << '\\' << c; // [ and ] at the beginning are escaped.
-  else os << c;
-  while(--n > 0) os << *p++;
-}
-
-int Leaf::Write(std::ostream& out, int indent)
-{
-  int n = 0;
-  char* ptr = data.leaf.position;
-  int len = data.leaf.length;
-  while(len-- > 0)
-  {
-    char c = *ptr++;
-    if(c == '\n')
-    {
-      print_indent(out, indent);
-      ++n;
-    }
-    else out << c;
-  }
-  return n;
-}
-
-NonLeaf::NonLeaf(Ptree* p, Ptree* q)
-{
-  data.nonleaf.child = p;
-  data.nonleaf.next = q;
-}
-
-void NonLeaf::write(std::ostream &os) const
-{
-  assert(this);
-  for (const Ptree *p = this; p; p = const_cast<const Ptree *>(const_cast<Ptree *>(p)->Cdr()))
-  {
-    const Ptree *data = const_cast<const Ptree *>(const_cast<Ptree *>(p)->Car());
-    if (data) data->write(os);
-    else if(p->IsLeaf()) throw std::logic_error("NonLeaf::write(): not list");
+    Node *p = ptree->Car();
+    ptree = ptree->Cdr();
+    return p;
   }
 }
 
-void NonLeaf::print(std::ostream &os, size_t indent, size_t depth) const
+bool Iterator::Next(Node *& car)
 {
-  if(too_deep(os, depth)) return;
-
-  const Ptree *rest = this;
-  os << '[';
-  while(rest != 0)
+  if(!ptree) return false;
+  else
   {
-    if(rest->IsLeaf())
-    {
-      os << "@ ";
-      rest->print(os, indent, depth + 1);
-      rest = 0;
-    }
-    else
-    {
-      const Ptree *head = rest->data.nonleaf.child;
-      if(head == 0) os << "nil";
-      else head->print(os, indent, depth + 1);
-      rest = rest->data.nonleaf.next;
-      if(rest != 0) os << ' ';
-    }
-  }
-  os << ']';
-}
-
-void NonLeaf::print_encoded(std::ostream &os, size_t indent, size_t depth) const
-{
-  if (show_encoded)
-  {
-    const char *encode = GetEncodedType();
-    if(encode)
-    {
-      os << '#';
-      Encoding::print(os, encode);
-    }
-    encode = GetEncodedName();
-    if(encode)
-    {
-      os << '@';
-      Encoding::print(os, encode);
-    }
-  }
-  NonLeaf::print(os, indent, depth);
-}
-
-bool NonLeaf::too_deep(std::ostream& s, size_t depth) const
-{
-  if(depth >= 32)
-  {
-    s << " ** too many nestings ** ";
+    car = ptree->Car();
+    ptree = ptree->Cdr();
     return true;
   }
-  else return false;
 }
 
-int NonLeaf::Write(std::ostream& out, int indent)
+Array::Array(int s)
 {
-  int n = 0;
-  Ptree* p = this;
-  while(true)
+  num = 0;
+  if(s > 8)
   {
-    Ptree* head = p->Car();
-    if(head != 0) n += head->Write(out, indent);
-
-    p = p->Cdr();
-    if(p == 0) break;
-    else if(p->IsLeaf())
-    {
-      MopErrorMessage("NonLeaf::Write()", "not list");
-      break;
-    }
-    else out << ' ';
+    size = s;
+    array = new (GC) Node *[s];
   }
-  return n;
-}
-
-DupLeaf::DupLeaf(const char* str, int len) : CommentedLeaf(new (GC) char[len], len)
-{
-  memmove(data.leaf.position, str, len);
-}
-
-DupLeaf::DupLeaf(char* str1, int len1, char* str2, int len2)
-: CommentedLeaf(new (GC) char[len1 + len2], len1 + len2)
-{
-  memmove(data.leaf.position, str1, len1);
-  memmove(&data.leaf.position[len1], str2, len2);
-}
-
-void DupLeaf::print(std::ostream &os, size_t, size_t) const
-{
-  const char *pos = data.leaf.position;
-  int j = data.leaf.length;
-
-  if(j == 1 && *pos == '@')
+  else
   {
-    os << "\\@";
-    return;
+    size = 8;
+    array = default_buf;
   }
+}
 
-  os << '`';
-  for(int i = 0; i < j; ++i)
-    if(pos[i] == '[' || pos[i] == ']') os << '\\' << pos[i];
-    else os << pos[i];
-  os << '`';
+void Array::Append(Node *p)
+{
+  if(num >= size)
+  {
+    size += 8;
+    Node ** a = new (GC) Node *[size];
+    memmove(a, array, size_t(num * sizeof(Node *)));
+    array = a;
+  }
+  array[num++] = p;
+}
+
+Node *&Array::Ref(uint i)
+{
+  if(i < num) return array[i];
+  else throw std::range_error("Array: out of range");
+}
+
+Node *Array::All()
+{
+  Node *lst = 0;
+
+  for(sint i = Number() - 1; i >= 0; --i)
+    lst = Node::Cons(Ref(i), lst);
+
+  return lst;
 }
 

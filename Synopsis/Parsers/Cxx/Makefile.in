@@ -39,7 +39,9 @@ endif
 OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
-OCC_FILES := Buffer HashTable Lexer Ptree AST Encoding Environment \
+OCC_FILES := Buffer HashTable Lexer \
+             PTree/Node PTree/Atom PTree/List PTree/Atoms PTree/Lists \
+             Encoding Environment \
              pattern Walker TypeInfo Parser Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
@@ -51,15 +53,16 @@ HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.h))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
 
 # Generate sources, objs and debug-objs from the FILES
-OCC_SOURCES := $(patsubst %, occ/%.cc, $(OCC_FILES))
-OCC_OBJ	    := $(patsubst %, occ/%.o, $(OCC_FILES))
-SYN_SOURCES := $(patsubst %, syn/%.cc, $(SYN_FILES))
-SYN_OBJ	    := $(patsubst %, syn/%.o, $(SYN_FILES))
-CC_SYN      := $(patsubst %, %.syn, $(OCC_SOURCES) $(SYN_SOURCES))
-HDR_SYN     := $(patsubst %, %.syn, $(HDR))
-DEP	    := $(patsubst %.cc, %.d, $(OCC_SOURCES) $(SYN_SOURCES))
+SRC 	:= $(patsubst %, occ/%.cc, $(OCC_FILES))
+SRC	+= $(patsubst %, syn/%.cc, $(SYN_FILES))
+OCC_OBJ := $(patsubst %, occ/%.o, $(OCC_FILES))
+SYN_OBJ	:= $(patsubst %, syn/%.o, $(SYN_FILES))
+OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+CC_SYN	:= $(patsubst %, %.syn, $(SRC))
+HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
+DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
-TARGETS		:= $(OCC_SO) $(LINK_SO)
+TARGETS	:= $(OCC_SO) $(LINK_SO)
 
 vpath %.cc $(srcdir)
 vpath %.c $(srcdir)
@@ -79,19 +82,13 @@ occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(synopsis) link_cxx --output=$@ $^
 
-%.d:	%.cc %.hh
+%.d: %.cc
 	@echo generating dependencies for $(<F)
-	$(SHELL) -ec '$(MAKEDEP) $(DEPFLAGS) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
 
-# This compiles the OCC files in the parent dir
-$(OCC_OBJ): %.o : %.cc
+%.o: %.cc
 	@echo compiling $(@F)
-	$(CXX)  $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
-
-# This compiles the parser files with optimisation
-$(SYN_OBJ): %.o : %.cc
-	@echo compiling $(@F)
-	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include $(SYN_FLAGS) $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
 
 # Compile C++ .hh files
 $(HDR_SYN): %.syn: %
@@ -106,7 +103,7 @@ $(CC_SYN): %.cc.syn: %.cc
 	$(synopsis) cxx --output=$@ $?
 
 link-synopsis:	$(srcdir)/syn/link.cc
-	$(CXX) $(CPPFLAGS) -DSTANDALONE $(CXXFLAGS) $(DEBUG) $(SYN_FLAGS) -o link-synopsis link.cc
+	$(CXX) $(CPPFLAGS) -DSTANDALONE $(CXXFLAGS) $(DEBUG) -o link-synopsis link.cc
 
 # This calls make in the gc dir to create the gc.a file
 $(GC_LIB):
@@ -118,7 +115,7 @@ $(OCC_SO): $(SYN_OBJ) opencxx.a
 
 # This creates the final link python module
 $(LINK_SO): $(srcdir)/syn/link.cc
-	$(CXX) -shared $(CPPFLAGS) $(SYN_FLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -shared $(CPPFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # Compile an archive of the OCC files
 opencxx.a : $(GC_LIB) $(OCC_OBJ)

@@ -23,7 +23,7 @@
 #include <iomanip>
 #include <map>
 
-#include <occ/AST.hh>
+#include <occ/PTree.hh>
 #include <occ/Parser.hh>
 #include <occ/Buffer.hh>
 
@@ -130,7 +130,7 @@ int LinkStore::find_col(AST::SourceFile *file, int line, const char* ptr)
     return file->macro_calls().map(line, col);
 }
 
-void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
+void LinkStore::link(PTree::Node *node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
 {
     AST::SourceFile* file = m->walker->current_file();
 
@@ -158,11 +158,11 @@ class TypeStorer : public Types::Visitor
 {
     // Variables to pass to link()
     LinkStore* links;
-    Ptree* node;
+  PTree::Node *node;
     LinkStore::Context context;
 public:
     //. Constructor
-    TypeStorer(LinkStore* ls, Ptree* n, LinkStore::Context c)
+  TypeStorer(LinkStore* ls, PTree::Node *n, LinkStore::Context c)
             : links(ls), node(n), context(c)
     { }
 
@@ -303,7 +303,7 @@ std::ostream& operator <<(std::ostream& out, const LinkStore::encode_name& enc)
 }
 
 // Store if type is named
-void LinkStore::link(Ptree* node, Types::Type* type, Context context)
+void LinkStore::link(PTree::Node *node, Types::Type* type, Context context)
 {
     AST::SourceFile* file = m->walker->current_file();
     if (!type || !m->filter->should_link(file))
@@ -312,7 +312,7 @@ void LinkStore::link(Ptree* node, Types::Type* type, Context context)
     type->accept(&storer);
 }
 
-void LinkStore::link(Ptree* node, const AST::Declaration* decl)
+void LinkStore::link(PTree::Node *node, const AST::Declaration* decl)
 {
     AST::SourceFile* file = m->walker->current_file();
     if (!decl || !m->filter->should_link(file))
@@ -331,7 +331,7 @@ void LinkStore::span(int line, int col, int len, const char* desc)
     out << context_names[Span] << FS << encode(desc) << RS;
 }
 
-void LinkStore::span(Ptree* node, const char* desc)
+void LinkStore::span(PTree::Node *node, const char* desc)
 {
     int line = m->walker->line_of_ptree(node);
     AST::SourceFile* file = m->walker->current_file();
@@ -345,7 +345,7 @@ void LinkStore::span(Ptree* node, const char* desc)
     span(line, col, len, desc);
 }
 
-void LinkStore::long_span(Ptree* node, const char* desc)
+void LinkStore::long_span(PTree::Node *node, const char* desc)
 {
     // Find left edge
     int left_line = m->walker->line_of_ptree(node);

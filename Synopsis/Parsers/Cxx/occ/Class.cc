@@ -18,7 +18,7 @@
 #include "Lexer.hh"
 #include "Class.hh"
 #include "Environment.hh"
-#include "AST.hh"
+#include "PTree.hh"
 #include "Walker.hh"
 #include "ClassWalker.hh"
 #include "TypeInfo.hh"
@@ -31,20 +31,20 @@ char* Class::cmd_options[];
 char* Class::metaclass_for_c_functions = 0;
 Class* Class::for_c_functions = 0;
 
-Ptree* Class::class_t = 0;
-Ptree* Class::empty_block_t = 0;
-Ptree* Class::public_t = 0;
-Ptree* Class::protected_t = 0;
-Ptree* Class::private_t = 0;
-Ptree* Class::virtual_t = 0;
-Ptree* Class::colon_t = 0;
-Ptree* Class::comma_t = 0;
-Ptree* Class::semicolon_t = 0;
+PTree::Node *Class::class_t = 0;
+PTree::Node *Class::empty_block_t = 0;
+PTree::Node *Class::public_t = 0;
+PTree::Node *Class::protected_t = 0;
+PTree::Node *Class::private_t = 0;
+PTree::Node *Class::virtual_t = 0;
+PTree::Node *Class::colon_t = 0;
+PTree::Node *Class::comma_t = 0;
+PTree::Node *Class::semicolon_t = 0;
 
 static opcxx_ListOfMetaclass* classCreator = 0;
 static opcxx_ListOfMetaclass* templateCreator = 0;
-static Class* CreateClass(Ptree* def, Ptree* marg);
-static Class* CreateTemplateClass(Ptree* def, Ptree* marg);
+static Class* CreateClass(PTree::Node *def, PTree::Node *marg);
+static Class* CreateTemplateClass(PTree::Node *def, PTree::Node *marg);
 
 void Class::do_init_static()
 {
@@ -53,17 +53,17 @@ void Class::do_init_static()
     if (done_init) return;
     done_init = true;
 
-    class_t = new LeafReserved("class", 5);
-    empty_block_t = new PtreeClassBody(new Leaf("{", 1),
-          			     0,
-          			     new Leaf("}", 1));
-    public_t = new LeafPUBLIC("public", 6);
-    protected_t = new LeafPROTECTED("protected", 9);
-    private_t = new LeafPRIVATE("private", 7);
-    virtual_t = new LeafVIRTUAL("virtual", 7);
-    colon_t = new Leaf(":", 1);
-    comma_t = new Leaf(",", 1);
-    semicolon_t = new Leaf(";", 1);
+    class_t = new PTree::Reserved("class", 5);
+    empty_block_t = new PTree::ClassBody(new PTree::Atom("{", 1),
+					 0,
+					 new PTree::Atom("}", 1));
+    public_t = new PTree::AtomPUBLIC("public", 6);
+    protected_t = new PTree::AtomPROTECTED("protected", 9);
+    private_t = new PTree::AtomPRIVATE("private", 7);
+    virtual_t = new PTree::AtomVIRTUAL("virtual", 7);
+    colon_t = new PTree::Atom(":", 1);
+    comma_t = new PTree::Atom(",", 1);
+    semicolon_t = new PTree::Atom(";", 1);
 
     classCreator = new opcxx_ListOfMetaclass(
 	    "Class", CreateClass, Class::Initialize, 0);
@@ -75,14 +75,14 @@ void Class::do_init_static()
 
 // class Class
 
-void Class::Construct(Environment* e, Ptree* name)
+void Class::Construct(Environment* e, PTree::Node *name)
 {
-    Ptree* def;
+    PTree::Node *def;
     Encoding encode;
 
     encode.SimpleName(name);
-    def = Ptree::List(name, 0, empty_block_t);
-    def = new PtreeClassSpec(class_t, def, 0, encode.Get());
+    def = PTree::Node::List(name, 0, empty_block_t);
+    def = new PTree::ClassSpec(class_t, def, 0, encode.Get());
 
     full_definition = def;
     definition = def;
@@ -99,7 +99,7 @@ void Class::Construct(Environment* e, Ptree* name)
     SetEnvironment(new Environment(e));
 }
 
-void Class::InitializeInstance(Ptree* def, Ptree*)
+void Class::InitializeInstance(PTree::Node *def, PTree::Node *)
 {
     full_definition = def;
     if(def->Car()->IsLeaf())
@@ -134,35 +134,35 @@ char* Class::MetaclassName()
     return "Class";
 }
 
-Ptree* Class::Comments()
+PTree::Node *Class::Comments()
 {
   if (definition->IsA(Token::ntClassSpec))
-	return ((PtreeClassSpec*)definition)->GetComments();
+	return ((PTree::ClassSpec*)definition)->GetComments();
     return 0;
 }
 
-Ptree* Class::Name()
+PTree::Node *Class::Name()
 {
     return definition->Second();
 }
 
-Ptree* Class::BaseClasses()
+PTree::Node *Class::BaseClasses()
 {
     return definition->Third();
 }
 
-Ptree* Class::Members()
+PTree::Node *Class::Members()
 {
     return definition->Nth(3)->Second();
 }
 
 Class* Class::NthBaseClass(int n)
 {
-    Ptree* bases = definition->Third();
+    PTree::Node *bases = definition->Third();
     while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	if(n-- == 0){
-	    Ptree* base_class = bases->Car()->Last()->Car();
+	    PTree::Node *base_class = bases->Car()->Last()->Car();
 	    return class_environment->LookupClassMetaobject(base_class);
 	}
 
@@ -172,12 +172,12 @@ Class* Class::NthBaseClass(int n)
     return 0;
 }
 
-bool Class::IsSubclassOf(Ptree* name)
+bool Class::IsSubclassOf(PTree::Node *name)
 {
-    Ptree* bases = definition->Third();
+    PTree::Node *bases = definition->Third();
     while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
-	Ptree* base_class = bases->Car()->Last()->Car();
+	PTree::Node *base_class = bases->Car()->Last()->Car();
 	if(base_class->Eq(name))
 	    return true;
 	else{
@@ -193,12 +193,12 @@ bool Class::IsSubclassOf(Ptree* name)
     return false;
 }
 
-bool Class::IsImmediateSubclassOf(Ptree* name)
+bool Class::IsImmediateSubclassOf(PTree::Node *name)
 {
-    Ptree* bases = definition->Third();
+    PTree::Node *bases = definition->Third();
     while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
-	Ptree* base_class = bases->Car()->Last()->Car();
+	PTree::Node *base_class = bases->Car()->Last()->Car();
 	if(base_class->Eq(name))
 	    return true;
 
@@ -208,9 +208,9 @@ bool Class::IsImmediateSubclassOf(Ptree* name)
     return false;
 }
 
-Ptree* Class::NthBaseClassName(int n)
+PTree::Node *Class::NthBaseClassName(int n)
 {
-    Ptree* bases = definition->Third();
+    PTree::Node *bases = definition->Third();
     while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	if(n-- == 0)
@@ -232,13 +232,13 @@ bool Class::NthMember(int nth, Member& mem)
     return true;
 }
 
-bool Class::LookupMember(Ptree* name)
+bool Class::LookupMember(PTree::Node *name)
 {
     Member m;
     return LookupMember(name, m);
 }
 
-bool Class::LookupMember(Ptree* name, Member& mem, int index)
+bool Class::LookupMember(PTree::Node *name, Member& mem, int index)
 {
     MemberList* mlist = GetMemberList();
     if(mlist == 0)
@@ -292,7 +292,7 @@ int Class::Subclasses(ClassArray& subclasses)
     return Subclasses(Name(), subclasses);
 }
 
-int Class::Subclasses(Ptree* name, ClassArray& subclasses)
+int Class::Subclasses(PTree::Node *name, ClassArray& subclasses)
 {
     subclasses.Clear();
     if(class_list == 0)
@@ -313,7 +313,7 @@ int Class::ImmediateSubclasses(ClassArray& subclasses)
     return ImmediateSubclasses(Name(), subclasses);
 }
 
-int Class::ImmediateSubclasses(Ptree* name, ClassArray& subclasses)
+int Class::ImmediateSubclasses(PTree::Node *name, ClassArray& subclasses)
 {
     subclasses.Clear();
     if(class_list == 0)
@@ -345,7 +345,7 @@ int Class::InstancesOf(char* name, ClassArray& classes)
     return classes.Number();
 }
 
-Ptree* Class::NthMemberName(int nth)
+PTree::Node *Class::NthMemberName(int nth)
 {
     Member m;
 
@@ -355,7 +355,7 @@ Ptree* Class::NthMemberName(int nth)
 	return 0;
 }
 
-int Class::IsMember(Ptree* name)
+int Class::IsMember(PTree::Node *name)
 {
     Member mem;
     if(LookupMember(name, mem, 0))
@@ -364,7 +364,7 @@ int Class::IsMember(Ptree* name)
 	return -1;
 }
 
-bool Class::LookupMemberType(Ptree* name, TypeInfo& mem_type)
+bool Class::LookupMemberType(PTree::Node *name, TypeInfo& mem_type)
 {
     return class_environment->Lookup(name, mem_type);
 }
@@ -382,21 +382,21 @@ void Class::TranslateClass(Environment* e)
   e.g.
       class __declspec(dllexport) X { ... };
 */
-void Class::AddClassSpecifier(Ptree* spec)
+void Class::AddClassSpecifier(PTree::Node *spec)
 {
     new_class_specifier = spec;
 }
 
-void Class::ChangeName(Ptree* name)
+void Class::ChangeName(PTree::Node *name)
 {
     new_class_name = name;
 }
 
-void Class::ChangeBaseClasses(Ptree* list)
+void Class::ChangeBaseClasses(PTree::Node *list)
 {
     CheckValidity("ChangeBaseClasses()");
     if(list->IsLeaf())
-	list = Ptree::List(list);
+      list = PTree::Node::List(list);
 
     new_base_classes = list;	// list should include ':'
 }
@@ -414,14 +414,14 @@ void Class::AppendBaseClass(Class* c, int specifier, bool is_virtual)
 
 void Class::AppendBaseClass(char* name, int specifier, bool is_virtual)
 {
-    AppendBaseClass(new Leaf(name, strlen(name)), specifier, is_virtual);
+    AppendBaseClass(new PTree::Atom(name, strlen(name)), specifier, is_virtual);
 }
 
-void Class::AppendBaseClass(Ptree* name, int specifier, bool is_virtual)
+void Class::AppendBaseClass(PTree::Node *name, int specifier, bool is_virtual)
 {
     CheckValidity("AppendBaseClass()");
 
-    Ptree* lf;
+    PTree::Node *lf;
     switch(specifier){
     case Public :
 	lf = public_t;
@@ -438,16 +438,16 @@ void Class::AppendBaseClass(Ptree* name, int specifier, bool is_virtual)
 	break;
     }
 
-    Ptree* super = Ptree::List(lf, name);
+    PTree::Node *super = PTree::Node::List(lf, name);
 
     if(is_virtual)
-	super = Ptree::Cons(virtual_t, super);
+      super = PTree::Node::Cons(virtual_t, super);
 
     if(new_base_classes == 0)
-	new_base_classes = Ptree::List(colon_t, super);
+      new_base_classes = PTree::Node::List(colon_t, super);
     else
-	new_base_classes = Ptree::Append(new_base_classes,
-					 Ptree::List(comma_t, super));
+      new_base_classes = PTree::Node::Append(new_base_classes,
+					     PTree::Node::List(comma_t, super));
 }
 
 void Class::ChangeMember(Member& m)
@@ -469,10 +469,10 @@ void Class::AppendMember(Member& m, int access)
     appended_member_list->Append(&m, access);
 }
 
-void Class::AppendMember(Ptree* p)
+void Class::AppendMember(PTree::Node *p)
 {
     CheckValidity("AppendMember()");
-    appended_code = Ptree::Snoc(appended_code, p);
+    appended_code = PTree::Node::Snoc(appended_code, p);
 }
 
 void Class::RemoveMember(Member& m)
@@ -495,7 +495,7 @@ void Class::TranslateMemberFunction(Environment*, Member& m)
 {
 }
 
-ChangedMemberList::Cmem* Class::GetChangedMember(Ptree* decl)
+ChangedMemberList::Cmem* Class::GetChangedMember(PTree::Node *decl)
 {
     if(changed_member_list == 0)
 	return 0;
@@ -508,141 +508,141 @@ ChangedMemberList::Cmem* Class::GetChangedMember(Ptree* decl)
 /*
   init is either "= <expression>" or "( <expression> )".
 */
-Ptree* Class::TranslateInitializer(Environment* env, Ptree*,
-				   Ptree* init)
+PTree::Node *Class::TranslateInitializer(Environment* env, PTree::Node *,
+				   PTree::Node *init)
 {
     if(init->Car()->Eq('('))
 	return TranslateArguments(env, init);
     else{
-	Ptree* exp = init->Second();
-	Ptree* exp2 = TranslateExpression(env, exp);
+	PTree::Node *exp = init->Second();
+	PTree::Node *exp2 = TranslateExpression(env, exp);
 	if(exp == exp2)
 	    return init;
 	else
-	    return Ptree::List(init->Car(), exp2);
+	    return PTree::Node::List(init->Car(), exp2);
     }
 }
 
-Ptree* Class::TranslateNew(Environment* env, Ptree* header,
-			   Ptree* op, Ptree* placement, Ptree* tname,
-			   Ptree* arglist)
+PTree::Node *Class::TranslateNew(Environment* env, PTree::Node *header,
+			   PTree::Node *op, PTree::Node *placement, PTree::Node *tname,
+			   PTree::Node *arglist)
 {
-    Ptree* exp2;
+    PTree::Node *exp2;
 
     if(header != 0 && !header->Eq("::"))
 	ErrorMessage(env, "unsupported user keyword: ", header, op);
 
-    Ptree* tname2 = TranslateNewType(env, tname);
+    PTree::Node *tname2 = TranslateNewType(env, tname);
     if(arglist == 0)
-	exp2 = Ptree::List(TranslateArguments(env, placement), tname2);
+	exp2 = PTree::Node::List(TranslateArguments(env, placement), tname2);
     else
-	exp2 = Ptree::List(TranslateArguments(env, placement), tname2,
+	exp2 = PTree::Node::List(TranslateArguments(env, placement), tname2,
 			   TranslateArguments(env, arglist));
 
     if(header == 0)
-	return new PtreeNewExpr(op, exp2);
+	return new PTree::NewExpr(op, exp2);
     else
-	return new PtreeNewExpr(header, Ptree::Cons(op, exp2));
+	return new PTree::NewExpr(header, PTree::Node::Cons(op, exp2));
 }
 
-Ptree* Class::TranslateDelete(Environment* env, Ptree* op, Ptree* obj)
+PTree::Node *Class::TranslateDelete(Environment* env, PTree::Node *op, PTree::Node *obj)
 {
-    Ptree* obj2 = TranslateExpression(env, obj);
-    return new PtreeDeleteExpr(op, Ptree::List(obj2));
+    PTree::Node *obj2 = TranslateExpression(env, obj);
+    return new PTree::DeleteExpr(op, PTree::Node::List(obj2));
 }
 
-Ptree* Class::TranslateAssign(Environment* env, Ptree* left, Ptree* op,
-			      Ptree* right)
+PTree::Node *Class::TranslateAssign(Environment* env, PTree::Node *left, PTree::Node *op,
+			      PTree::Node *right)
 {
-    Ptree* left2 = TranslateExpression(env, left);
-    Ptree* right2 = TranslateExpression(env, right);
-    return new PtreeAssignExpr(left2, Ptree::List(op, right2));
+    PTree::Node *left2 = TranslateExpression(env, left);
+    PTree::Node *right2 = TranslateExpression(env, right);
+    return new PTree::AssignExpr(left2, PTree::Node::List(op, right2));
 }
 
-Ptree* Class::TranslateBinary(Environment* env, Ptree* lexpr, Ptree* op,
-			      Ptree* rexpr)
+PTree::Node *Class::TranslateBinary(Environment* env, PTree::Node *lexpr, PTree::Node *op,
+			      PTree::Node *rexpr)
 {
-    return new PtreeInfixExpr(TranslateExpression(env, lexpr),
-			Ptree::List(op, TranslateExpression(env, rexpr)));
+    return new PTree::InfixExpr(TranslateExpression(env, lexpr),
+			PTree::Node::List(op, TranslateExpression(env, rexpr)));
 }
 
-Ptree* Class::TranslateUnary(Environment* env, Ptree* op, Ptree* object)
+PTree::Node *Class::TranslateUnary(Environment* env, PTree::Node *op, PTree::Node *object)
 {
-    return new PtreeUnaryExpr(op, Ptree::List(TranslateExpression(env,
+    return new PTree::UnaryExpr(op, PTree::Node::List(TranslateExpression(env,
 								  object)));
 }
 
-Ptree* Class::TranslateSubscript(Environment* env, Ptree* object,
-				 Ptree* index)
+PTree::Node *Class::TranslateSubscript(Environment* env, PTree::Node *object,
+				 PTree::Node *index)
 {
-    Ptree* object2 = TranslateExpression(env, object);
-    Ptree* exp = index->Second();
-    Ptree* exp2 = TranslateExpression(env, exp);
+    PTree::Node *object2 = TranslateExpression(env, object);
+    PTree::Node *exp = index->Second();
+    PTree::Node *exp2 = TranslateExpression(env, exp);
     if(exp == exp2)
-	return new PtreeArrayExpr(object2, index);
+	return new PTree::ArrayExpr(object2, index);
     else
-	return new PtreeArrayExpr(object2,
-				  Ptree::ShallowSubst(exp2, exp, index));
+	return new PTree::ArrayExpr(object2,
+				  PTree::Node::ShallowSubst(exp2, exp, index));
 }
 
-Ptree* Class::TranslatePostfix(Environment* env, Ptree* object,
-			       Ptree* op)
+PTree::Node *Class::TranslatePostfix(Environment* env, PTree::Node *object,
+			       PTree::Node *op)
 {
-    return new PtreePostfixExpr(TranslateExpression(env, object),
-				Ptree::List(op));
+    return new PTree::PostfixExpr(TranslateExpression(env, object),
+				PTree::Node::List(op));
 }
 
 /*
    TranslateFunctionCall() is for the overloaded function call operator ().
 */
-Ptree* Class::TranslateFunctionCall(Environment* env, Ptree* object,
-				    Ptree* arglist)
+PTree::Node *Class::TranslateFunctionCall(Environment* env, PTree::Node *object,
+				    PTree::Node *arglist)
 {
-    return new PtreeFuncallExpr(TranslateExpression(env, object),
+    return new PTree::FuncallExpr(TranslateExpression(env, object),
 				TranslateArguments(env, arglist));
 }
 
-Ptree* Class::TranslateMemberCall(Environment* env, Ptree* object,
-				  Ptree* op, Ptree* member, Ptree* arglist)
+PTree::Node *Class::TranslateMemberCall(Environment* env, PTree::Node *object,
+				  PTree::Node *op, PTree::Node *member, PTree::Node *arglist)
 {
-    Ptree* func;
+    PTree::Node *func;
 
     object = TranslateExpression(env, object);
-    func = Ptree::List(op, member);
+    func = PTree::Node::List(op, member);
     if(op->Eq('.'))
-	func = new PtreeDotMemberExpr(object, func);
+	func = new PTree::DotMemberExpr(object, func);
     else
-	func = new PtreeArrowMemberExpr(object, func);
+	func = new PTree::ArrowMemberExpr(object, func);
 
     arglist = TranslateArguments(env, arglist);
-    return new PtreeFuncallExpr(func, arglist);
+    return new PTree::FuncallExpr(func, arglist);
 }
 
-Ptree* Class::TranslateMemberCall(Environment* env,
-				  Ptree* member, Ptree* arglist)
+PTree::Node *Class::TranslateMemberCall(Environment* env,
+				  PTree::Node *member, PTree::Node *arglist)
 {
-    return new PtreeFuncallExpr(member, TranslateArguments(env, arglist));
+    return new PTree::FuncallExpr(member, TranslateArguments(env, arglist));
 }
 
-Ptree* Class::TranslateMemberRead(Environment* env, Ptree* object,
-				  Ptree* op, Ptree* member)
+PTree::Node *Class::TranslateMemberRead(Environment* env, PTree::Node *object,
+				  PTree::Node *op, PTree::Node *member)
 {
     object = TranslateExpression(env, object);
-    Ptree* rest = Ptree::List(op, member);
+    PTree::Node *rest = PTree::Node::List(op, member);
     if(op->Eq('.'))
-	return new PtreeDotMemberExpr(object, rest);
+	return new PTree::DotMemberExpr(object, rest);
     else
-	return new PtreeArrowMemberExpr(object, rest);
+	return new PTree::ArrowMemberExpr(object, rest);
 }
 
-Ptree* Class::TranslateMemberRead(Environment*, Ptree* member)
+PTree::Node *Class::TranslateMemberRead(Environment*, PTree::Node *member)
 {
     return member;
 }
 
-Ptree* Class::TranslateMemberWrite(Environment* env, Ptree* object,
-				   Ptree* op, Ptree* member, Ptree* assign_op,
-				   Ptree* expr)
+PTree::Node *Class::TranslateMemberWrite(Environment* env, PTree::Node *object,
+				   PTree::Node *op, PTree::Node *member, PTree::Node *assign_op,
+				   PTree::Node *expr)
 {
     // Note: If this function is invoked, TranslateAssign() on the
     // member does not work.  Suppose that the expression is p->m = 3.
@@ -650,100 +650,100 @@ Ptree* Class::TranslateMemberWrite(Environment* env, Ptree* object,
     // TranslateAssign() is not invoked on m's class.  This is a sort
     // of bug, but I don't know how to fix.
 
-    Ptree* left;
+    PTree::Node *left;
     object = TranslateExpression(env, object),
-    left = Ptree::List(op, member);
+    left = PTree::Node::List(op, member);
     if(op->Eq('.'))
-	left = new PtreeDotMemberExpr(object, left);
+	left = new PTree::DotMemberExpr(object, left);
     else
-	left = new PtreeArrowMemberExpr(object, left);
+	left = new PTree::ArrowMemberExpr(object, left);
 
     expr = TranslateExpression(env, expr);
-    return new PtreeAssignExpr(left, Ptree::List(assign_op, expr));
+    return new PTree::AssignExpr(left, PTree::Node::List(assign_op, expr));
 }
 
-Ptree* Class::TranslateMemberWrite(Environment* env, Ptree* member,
-				   Ptree* assign_op, Ptree* expr)
+PTree::Node *Class::TranslateMemberWrite(Environment* env, PTree::Node *member,
+				   PTree::Node *assign_op, PTree::Node *expr)
 {
-    return new PtreeAssignExpr(member,
-			       Ptree::List(assign_op,
+    return new PTree::AssignExpr(member,
+			       PTree::Node::List(assign_op,
 					   TranslateExpression(env, expr)));
 }
 
-Ptree* Class::TranslateUnaryOnMember(Environment* env, Ptree* unary_op,
-				     Ptree* object, Ptree* access_op,
-				     Ptree* member_name)
+PTree::Node *Class::TranslateUnaryOnMember(Environment* env, PTree::Node *unary_op,
+				     PTree::Node *object, PTree::Node *access_op,
+				     PTree::Node *member_name)
 {
-    Ptree* right;
+    PTree::Node *right;
     object = TranslateExpression(env, object),
-    right = Ptree::List(access_op, member_name);
+    right = PTree::Node::List(access_op, member_name);
     if(access_op->Eq('.'))
-	right = new PtreeDotMemberExpr(object, right);
+	right = new PTree::DotMemberExpr(object, right);
     else
-	right = new PtreeArrowMemberExpr(object, right);
+	right = new PTree::ArrowMemberExpr(object, right);
 
-    return new PtreeUnaryExpr(unary_op, Ptree::List(right));
+    return new PTree::UnaryExpr(unary_op, PTree::Node::List(right));
 }
 
-Ptree* Class::TranslateUnaryOnMember(Environment*, Ptree* unary_op,
-				     Ptree* member_name)
+PTree::Node *Class::TranslateUnaryOnMember(Environment*, PTree::Node *unary_op,
+				     PTree::Node *member_name)
 {
-    return new PtreeUnaryExpr(unary_op, Ptree::List(member_name));
+    return new PTree::UnaryExpr(unary_op, PTree::Node::List(member_name));
 }
 
-Ptree* Class::TranslatePostfixOnMember(Environment* env,
-				       Ptree* object, Ptree* access_op,
-				       Ptree* member_name, Ptree* postfix_op)
+PTree::Node *Class::TranslatePostfixOnMember(Environment* env,
+				       PTree::Node *object, PTree::Node *access_op,
+				       PTree::Node *member_name, PTree::Node *postfix_op)
 {
-    Ptree* left;
+    PTree::Node *left;
     object = TranslateExpression(env, object),
-    left = Ptree::List(access_op, member_name);
+    left = PTree::Node::List(access_op, member_name);
     if(access_op->Eq('.'))
-	left = new PtreeDotMemberExpr(object, left);
+	left = new PTree::DotMemberExpr(object, left);
     else
-	left = new PtreeArrowMemberExpr(object, left);
+	left = new PTree::ArrowMemberExpr(object, left);
 
-    return new PtreePostfixExpr(left, Ptree::List(postfix_op));
+    return new PTree::PostfixExpr(left, PTree::Node::List(postfix_op));
 }
 
-Ptree* Class::TranslatePostfixOnMember(Environment*,
-				       Ptree* member_name, Ptree* postfix_op)
+PTree::Node *Class::TranslatePostfixOnMember(Environment*,
+				       PTree::Node *member_name, PTree::Node *postfix_op)
 {
-    return new PtreePostfixExpr(member_name, Ptree::List(postfix_op));
+    return new PTree::PostfixExpr(member_name, PTree::Node::List(postfix_op));
 }
 
-Ptree* Class::TranslatePointer(Environment*, Ptree* var_name)
+PTree::Node *Class::TranslatePointer(Environment*, PTree::Node *var_name)
 {
     return var_name;
 }
 
-Ptree* Class::TranslateUserStatement(Environment* env, Ptree*,
-				     Ptree*,
-				     Ptree* keyword, Ptree*)
+PTree::Node *Class::TranslateUserStatement(Environment* env, PTree::Node *,
+					   PTree::Node *,
+					   PTree::Node *keyword, PTree::Node *)
 {
     ErrorMessage(env, "unsupported user statement: ", keyword, keyword);
     return 0;
 }
 
-Ptree* Class::TranslateStaticUserStatement(Environment* env,
-					   Ptree* keyword, Ptree*)
+PTree::Node *Class::TranslateStaticUserStatement(Environment* env,
+						 PTree::Node *keyword, PTree::Node *)
 {
     ErrorMessage(env, "unsupported user statement: ", keyword, keyword);
     return 0;
 }
 
-Ptree* Class::StripClassQualifier(Ptree* qualified_name)
+PTree::Node *Class::StripClassQualifier(PTree::Node *qualified_name)
 {
     if(qualified_name->IsLeaf())
 	return qualified_name;
     else
-	return Ptree::First(Ptree::Last(qualified_name));
+	return PTree::Node::First(PTree::Node::Last(qualified_name));
 }
 
 
 // utilities for translation
 
-Ptree* Class::TranslateExpression(Environment* env, Ptree* exp)
+PTree::Node *Class::TranslateExpression(Environment* env, PTree::Node *exp)
 {
     if(exp == 0)
 	return exp;
@@ -751,7 +751,7 @@ Ptree* Class::TranslateExpression(Environment* env, Ptree* exp)
 	return env->GetWalker()->Translate(exp);
 }
 
-Ptree* Class::TranslateExpression(Environment* env, Ptree* exp,
+PTree::Node *Class::TranslateExpression(Environment* env, PTree::Node *exp,
 				  TypeInfo& type)
 {
     if(exp == 0){
@@ -764,24 +764,24 @@ Ptree* Class::TranslateExpression(Environment* env, Ptree* exp,
     }
 }
 
-Ptree* Class::TranslateStatement(Environment* env, Ptree* exp)
+PTree::Node *Class::TranslateStatement(Environment* env, PTree::Node *exp)
 {
     WarnObsoleteness("Class::TranslateStatement()",
 		    "Class::TranslateExpression()");
     return TranslateExpression(env, exp);
 }
 
-Ptree* Class::TranslateNewType(Environment* env, Ptree* type)
+PTree::Node *Class::TranslateNewType(Environment* env, PTree::Node *type)
 {
     return env->GetWalker()->TranslateNew3(type);
 }
 
-Ptree* Class::TranslateArguments(Environment* env, Ptree* arglist)
+PTree::Node *Class::TranslateArguments(Environment* env, PTree::Node *arglist)
 {
     return env->GetWalker()->TranslateArguments(arglist);
 }
 
-Ptree* Class::TranslateFunctionBody(Environment* env, Member& m, Ptree* body)
+PTree::Node *Class::TranslateFunctionBody(Environment* env, Member& m, PTree::Node *body)
 {
     Walker* w = env->GetWalker();
     return w->RecordArgsAndTranslateFbody(this, m.ArgumentList(), body);
@@ -822,7 +822,7 @@ void Class::FinalizeAll(std::ostream& out)
     for(int i = 0; i < n; ++i){
 	Class* c = class_list->Ref(i);
 	if(c != 0){
-	    Ptree* p = c->FinalizeInstance();
+	    PTree::Node *p = c->FinalizeInstance();
 	    if(p != 0){
 		p->Write(out);
 		out << '\n';
@@ -831,7 +831,7 @@ void Class::FinalizeAll(std::ostream& out)
     }
 }
 
-Ptree* Class::FinalizeInstance()
+PTree::Node *Class::FinalizeInstance()
 {
     return Finalize();
 }
@@ -843,12 +843,12 @@ Ptree* Class::FinalizeInstance()
   code is appended to the resulting file.  Note that Initialize()
   is called on each metaclass although Finalize() is on each metaobject.
 */
-Ptree* Class::Finalize()
+PTree::Node *Class::Finalize()
 {
     return 0;
 }
 
-Ptree* Class::FinalizeClass()
+PTree::Node *Class::FinalizeClass()
 {
     return 0;
 }
@@ -922,7 +922,7 @@ void Class::SetMetaclassForFunctions(char* name)
     metaclass_for_c_functions = name;
 }
 
-void Class::InsertBeforeStatement(Environment* env, Ptree* p)
+void Class::InsertBeforeStatement(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
     if(w->IsClassWalker())
@@ -932,7 +932,7 @@ void Class::InsertBeforeStatement(Environment* env, Ptree* p)
 			  "cannot insert");
 }
 
-void Class::AppendAfterStatement(Environment* env, Ptree* p)
+void Class::AppendAfterStatement(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
     if(w->IsClassWalker())
@@ -965,7 +965,7 @@ void Class::InsertBeforeToplevel(Environment* env, Member& mem)
 			  "cannot insert");
 }
 
-void Class::InsertBeforeToplevel(Environment* env, Ptree* p)
+void Class::InsertBeforeToplevel(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
     if(w->IsClassWalker())
@@ -998,7 +998,7 @@ void Class::AppendAfterToplevel(Environment* env, Member& mem)
 			  "cannot insert");
 }
 
-void Class::AppendAfterToplevel(Environment* env, Ptree* p)
+void Class::AppendAfterToplevel(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
     if(w->IsClassWalker())
@@ -1008,13 +1008,13 @@ void Class::AppendAfterToplevel(Environment* env, Ptree* p)
 			  "cannot append");
 }
 
-bool Class::InsertDeclaration(Environment* env, Ptree* decl)
+bool Class::InsertDeclaration(Environment* env, PTree::Node *decl)
 {
     return InsertDeclaration(env, decl, 0, 0);
 }
 
-bool Class::InsertDeclaration(Environment* env, Ptree* decl,
-			      Ptree* key, void* client_data)
+bool Class::InsertDeclaration(Environment* env, PTree::Node *decl,
+			      PTree::Node *key, void* client_data)
 {
     Walker* w = env->GetWalker();
     if(w->IsClassWalker())
@@ -1027,7 +1027,7 @@ bool Class::InsertDeclaration(Environment* env, Ptree* decl,
     }
 }
 
-void* Class::LookupClientData(Environment* env, Ptree* key)
+void* Class::LookupClientData(Environment* env, PTree::Node *key)
 {
     Walker* w = env->GetWalker();
     if(w->IsClassWalker())
@@ -1040,23 +1040,23 @@ void* Class::LookupClientData(Environment* env, Ptree* key)
 }
 
 void Class::ErrorMessage(Environment* env, char* msg,
-			 Ptree* name, Ptree* where)
+			 PTree::Node *name, PTree::Node *where)
 {
     env->GetWalker()->ErrorMessage(msg, name, where);
 }
 
 void Class::WarningMessage(Environment* env, char* msg,
-			   Ptree* name, Ptree* where)
+			   PTree::Node *name, PTree::Node *where)
 {
     env->GetWalker()->WarningMessage(msg, name, where);
 }
 
-void Class::ErrorMessage(char* msg, Ptree* name, Ptree* where)
+void Class::ErrorMessage(char* msg, PTree::Node *name, PTree::Node *where)
 {
     Walker::InaccurateErrorMessage(msg, name, where);
 }
 
-void Class::WarningMessage(char* msg, Ptree* name, Ptree* where)
+void Class::WarningMessage(char* msg, PTree::Node *name, PTree::Node *where)
 {
     Walker::InaccurateWarningMessage(msg, name, where);
 }
@@ -1098,7 +1098,7 @@ void Class::WarnObsoleteness(char* func, char* alt)
 
 // class TemplateClass
 
-void TemplateClass::InitializeInstance(Ptree* def, Ptree* margs)
+void TemplateClass::InitializeInstance(PTree::Node *def, PTree::Node *margs)
 {
     Class::InitializeInstance(GetClassInTemplate(def), margs);
     template_definition = def;
@@ -1107,13 +1107,13 @@ void TemplateClass::InitializeInstance(Ptree* def, Ptree* margs)
 /*
   This is needed because TemplateClass may be instantiated for a class.
 */
-Ptree* TemplateClass::GetClassInTemplate(Ptree* def)
+PTree::Node *TemplateClass::GetClassInTemplate(PTree::Node *def)
 {
-    Ptree* decl = def->Ptree::Nth(4);
+    PTree::Node *decl = def->PTree::Node::Nth(4);
     if(decl == 0)
 	return def;
 
-    Ptree* cdef = Walker::GetClassTemplateSpec(decl);
+    PTree::Node *cdef = Walker::GetClassTemplateSpec(decl);
     if(cdef == 0)
 	return def;
     else
@@ -1130,7 +1130,7 @@ char* TemplateClass::MetaclassName()
     return "TemplateClass";
 }
 
-Ptree* TemplateClass::TemplateArguments()
+PTree::Node *TemplateClass::TemplateArguments()
 {
     return template_definition->Third();
 }
@@ -1143,7 +1143,7 @@ bool TemplateClass::AcceptTemplate()
 /*
   Translate a template instantiation.
 */
-Ptree* TemplateClass::TranslateInstantiation(Environment*, Ptree* spec)
+PTree::Node *TemplateClass::TranslateInstantiation(Environment*, PTree::Node *spec)
 {
     return spec;
 }
@@ -1189,7 +1189,7 @@ Class*& ClassArray::Ref(uint i)
 
 opcxx_ListOfMetaclass* opcxx_ListOfMetaclass::head = 0;
 
-static Class* CreateClass(Ptree* def, Ptree* marg)
+static Class* CreateClass(PTree::Node *def, PTree::Node *marg)
 {
     Class* metaobject = new Class;
     metaobject->InitializeInstance(def, marg);
@@ -1202,7 +1202,7 @@ opcxx_ListOfMetaclass* opcxx_init_Class()
 				     0);
 }
 
-static Class* CreateTemplateClass(Ptree* def, Ptree* marg)
+static Class* CreateTemplateClass(PTree::Node *def, PTree::Node *marg)
 {
     Class* metaobject = new TemplateClass;
     metaobject->InitializeInstance(def, marg);
@@ -1218,7 +1218,7 @@ opcxx_ListOfMetaclass* opcxx_init_TemplateClass()
 opcxx_ListOfMetaclass::opcxx_ListOfMetaclass(char* n,
 					     opcxx_MetaclassCreator c,
 					     bool (*initialize)(),
-					     Ptree* (*fin)())
+					     PTree::Node *(*fin)())
 {
     proc = c;
     name = n;
@@ -1234,7 +1234,7 @@ opcxx_ListOfMetaclass::opcxx_ListOfMetaclass(char* n,
     }
 }
 
-Class* opcxx_ListOfMetaclass::New(Ptree* name, Ptree* def, Ptree* marg)
+Class* opcxx_ListOfMetaclass::New(PTree::Node *name, PTree::Node *def, PTree::Node *marg)
 {
     if(name != 0){
 	opcxx_ListOfMetaclass* p = head;
@@ -1249,7 +1249,7 @@ Class* opcxx_ListOfMetaclass::New(Ptree* name, Ptree* def, Ptree* marg)
     return 0;		// the metaclass is not loaded.
 }
 
-Class* opcxx_ListOfMetaclass::New(char* name, Ptree* def, Ptree* marg)
+Class* opcxx_ListOfMetaclass::New(char* name, PTree::Node *def, PTree::Node *marg)
 {
     if(name != 0){
 	opcxx_ListOfMetaclass* p = head;
@@ -1270,7 +1270,7 @@ void opcxx_ListOfMetaclass::FinalizeAll(std::ostream& out)
 {
     for(opcxx_ListOfMetaclass* p = head; p != 0; p = p->next)
 	if(p->finalizer != 0){
-	    Ptree* code = (*p->finalizer)();
+	    PTree::Node *code = (*p->finalizer)();
 	    if(code != 0){
 		code->Write(out);
 		out << '\n';
@@ -1287,7 +1287,7 @@ bool opcxx_ListOfMetaclass::AlreadyRecorded(char* name)
     return false;
 }
 
-bool opcxx_ListOfMetaclass::AlreadyRecorded(Ptree* name)
+bool opcxx_ListOfMetaclass::AlreadyRecorded(PTree::Node *name)
 {
     for(opcxx_ListOfMetaclass* p = head; p != 0; p = p->next)
 	if(name->Eq(p->name))

@@ -17,7 +17,7 @@
 
 #include <iosfwd>
 #include "types.h"
-#include "Ptree.hh"
+#include "PTree.hh"
 #include "Environment.hh"
 #include "TypeInfo.hh"
 #include "Member.hh"
@@ -31,29 +31,29 @@ struct ChangedMemberList::Cmem;
 class OCXXMOP Class : public Object {
 public:
     Class() {}
-    Class(Environment* e, char* name) { Construct(e, Ptree::Make(name)); }
-    Class(Environment* e, Ptree* name) { Construct(e, name); }
+    Class(Environment* e, char* name) { Construct(e, PTree::Node::Make(name)); }
+    Class(Environment* e, PTree::Node *name) { Construct(e, name); }
 
-    virtual void InitializeInstance(Ptree* def, Ptree* margs);
+    virtual void InitializeInstance(PTree::Node *def, PTree::Node *margs);
     virtual ~Class();
 
 // introspection
 
-    Ptree* Comments();
-    Ptree* Name();
-    Ptree* BaseClasses();
-    Ptree* Members();
-    Ptree* Definition() { return definition; }
+    PTree::Node *Comments();
+    PTree::Node *Name();
+    PTree::Node *BaseClasses();
+    PTree::Node *Members();
+    PTree::Node *Definition() { return definition; }
     virtual char* MetaclassName();	// automaticallly implemented
 					// by Metaclass
     Class* NthBaseClass(int nth);
-    Ptree* NthBaseClassName(int nth);
-    bool IsSubclassOf(Ptree* name);
-    bool IsImmediateSubclassOf(Ptree* name);
+    PTree::Node *NthBaseClassName(int nth);
+    bool IsSubclassOf(PTree::Node *name);
+    bool IsImmediateSubclassOf(PTree::Node *name);
 
     bool NthMember(int nth, Member& member);
-    bool LookupMember(Ptree* name);
-    bool LookupMember(Ptree* name, Member& member, int index = 0);
+    bool LookupMember(PTree::Node *name);
+    bool LookupMember(PTree::Node *name, Member& member, int index = 0);
     bool LookupMember(char* name);
     bool LookupMember(char* name, Member& member, int index = 0);
     MemberList* GetMemberList();
@@ -61,15 +61,15 @@ public:
     // These are available only within Finalize()
     static ClassArray& AllClasses();
     int Subclasses(ClassArray& subclasses);
-    static int Subclasses(Ptree* name, ClassArray& subclasses);
+    static int Subclasses(PTree::Node *name, ClassArray& subclasses);
     int ImmediateSubclasses(ClassArray& subclasses);
-    static int ImmediateSubclasses(Ptree* name, ClassArray& subclasses);
+    static int ImmediateSubclasses(PTree::Node *name, ClassArray& subclasses);
     static int InstancesOf(char* metaclass_name, ClassArray& classes);
 
     // obsolete
-    Ptree* NthMemberName(int);
-    int IsMember(Ptree*);
-    bool LookupMemberType(Ptree*, TypeInfo&);
+    PTree::Node *NthMemberName(int);
+  int IsMember(PTree::Node *);
+  bool LookupMemberType(PTree::Node *, TypeInfo&);
 
 // translation
 
@@ -78,89 +78,89 @@ public:
 
     virtual void TranslateClass(Environment*);
     void RemoveClass() { removed = true; }
-    void AddClassSpecifier(Ptree* spec);	// only for MSVC++
-    void ChangeName(Ptree* name);
-    void ChangeBaseClasses(Ptree*);
+    void AddClassSpecifier(PTree::Node *spec);	// only for MSVC++
+    void ChangeName(PTree::Node *name);
+  void ChangeBaseClasses(PTree::Node *);
     void RemoveBaseClasses();
     void AppendBaseClass(Class* c, int specifier = Public,
 			 bool is_virtual = false);
     void AppendBaseClass(char* class_name, int specifier = Public,
 			 bool is_virtual = false);
-    void AppendBaseClass(Ptree* class_name, int specifier = Public,
+    void AppendBaseClass(PTree::Node *class_name, int specifier = Public,
 			 bool is_virtual = false);
 
     void ChangeMember(Member& changed_member);
     void AppendMember(Member& added_member, int specifier = Public);
-    void AppendMember(Ptree* added_member);
+    void AppendMember(PTree::Node *added_member);
     void RemoveMember(Member&);
 
     virtual void TranslateMemberFunction(Environment*, Member&);
 
-    virtual Ptree* TranslateInitializer(Environment*, Ptree* var_name,
-					Ptree* initializer);
+    virtual PTree::Node *TranslateInitializer(Environment*, PTree::Node *var_name,
+					PTree::Node *initializer);
 
-    virtual Ptree* TranslateNew(Environment*,
-				Ptree* header, Ptree* new_operator,
-				Ptree* placement, Ptree* type_name,
-				Ptree* arglist);
-    virtual Ptree* TranslateDelete(Environment*, Ptree* op, Ptree* obj);
-    virtual Ptree* TranslateAssign(Environment*, Ptree* left,
-				   Ptree* assign_op, Ptree* right);
-    virtual Ptree* TranslateBinary(Environment*, Ptree* left,
-				   Ptree* binary_op, Ptree* right);
-    virtual Ptree* TranslateUnary(Environment*,
-				  Ptree* unary_op, Ptree* object);
-    virtual Ptree* TranslateSubscript(Environment*,
-				      Ptree* object, Ptree* index);
-    virtual Ptree* TranslatePostfix(Environment*,
-				    Ptree* object, Ptree* postfix_op);
-    virtual Ptree* TranslateFunctionCall(Environment*,
-					 Ptree* object, Ptree* arglist);
-    virtual Ptree* TranslateMemberCall(Environment*,
-				       Ptree* object, Ptree* access_op,
-				       Ptree* member_name,
-				       Ptree* arglist);
-    virtual Ptree* TranslateMemberCall(Environment*,
-				       Ptree* member_name, Ptree* arglist);
-    virtual Ptree* TranslateMemberRead(Environment*,
-				       Ptree* object, Ptree* access_op,
-				       Ptree* member_name);
-    virtual Ptree* TranslateMemberRead(Environment*, Ptree* member_name);
-    virtual Ptree* TranslateMemberWrite(Environment*,
-					Ptree* object, Ptree* access_op,
-					Ptree* member_name,
-					Ptree* assign_op, Ptree* expr);
-    virtual Ptree* TranslateMemberWrite(Environment*,
-					Ptree* member_name,
-					Ptree* assign_op, Ptree* expr);
-    virtual Ptree* TranslateUnaryOnMember(Environment*, Ptree* unary_op,
-					  Ptree* object, Ptree* access_op,
-					  Ptree* member_name);
-    virtual Ptree* TranslateUnaryOnMember(Environment*, Ptree* unary_op,
-					  Ptree* member_name);
-    virtual Ptree* TranslatePostfixOnMember(Environment*,
-					    Ptree* object, Ptree* access_op,
-					    Ptree* member_name,
-					    Ptree* postfix_op);
-    virtual Ptree* TranslatePostfixOnMember(Environment*,
-					    Ptree* member_name,
-					    Ptree* postfix_op);
-    virtual Ptree* TranslatePointer(Environment*, Ptree* var_name);
+    virtual PTree::Node *TranslateNew(Environment*,
+				PTree::Node *header, PTree::Node *new_operator,
+				PTree::Node *placement, PTree::Node *type_name,
+				PTree::Node *arglist);
+    virtual PTree::Node *TranslateDelete(Environment*, PTree::Node *op, PTree::Node *obj);
+    virtual PTree::Node *TranslateAssign(Environment*, PTree::Node *left,
+				   PTree::Node *assign_op, PTree::Node *right);
+    virtual PTree::Node *TranslateBinary(Environment*, PTree::Node *left,
+				   PTree::Node *binary_op, PTree::Node *right);
+    virtual PTree::Node *TranslateUnary(Environment*,
+				  PTree::Node *unary_op, PTree::Node *object);
+    virtual PTree::Node *TranslateSubscript(Environment*,
+				      PTree::Node *object, PTree::Node *index);
+    virtual PTree::Node *TranslatePostfix(Environment*,
+				    PTree::Node *object, PTree::Node *postfix_op);
+    virtual PTree::Node *TranslateFunctionCall(Environment*,
+					 PTree::Node *object, PTree::Node *arglist);
+    virtual PTree::Node *TranslateMemberCall(Environment*,
+				       PTree::Node *object, PTree::Node *access_op,
+				       PTree::Node *member_name,
+				       PTree::Node *arglist);
+    virtual PTree::Node *TranslateMemberCall(Environment*,
+				       PTree::Node *member_name, PTree::Node *arglist);
+    virtual PTree::Node *TranslateMemberRead(Environment*,
+				       PTree::Node *object, PTree::Node *access_op,
+				       PTree::Node *member_name);
+    virtual PTree::Node *TranslateMemberRead(Environment*, PTree::Node *member_name);
+    virtual PTree::Node *TranslateMemberWrite(Environment*,
+					PTree::Node *object, PTree::Node *access_op,
+					PTree::Node *member_name,
+					PTree::Node *assign_op, PTree::Node *expr);
+    virtual PTree::Node *TranslateMemberWrite(Environment*,
+					PTree::Node *member_name,
+					PTree::Node *assign_op, PTree::Node *expr);
+    virtual PTree::Node *TranslateUnaryOnMember(Environment*, PTree::Node *unary_op,
+					  PTree::Node *object, PTree::Node *access_op,
+					  PTree::Node *member_name);
+    virtual PTree::Node *TranslateUnaryOnMember(Environment*, PTree::Node *unary_op,
+					  PTree::Node *member_name);
+    virtual PTree::Node *TranslatePostfixOnMember(Environment*,
+					    PTree::Node *object, PTree::Node *access_op,
+					    PTree::Node *member_name,
+					    PTree::Node *postfix_op);
+    virtual PTree::Node *TranslatePostfixOnMember(Environment*,
+					    PTree::Node *member_name,
+					    PTree::Node *postfix_op);
+    virtual PTree::Node *TranslatePointer(Environment*, PTree::Node *var_name);
 
-    virtual Ptree* TranslateUserStatement(Environment*,
-					  Ptree* object, Ptree* access_op,
-					  Ptree* keyword, Ptree* rest);
-    virtual Ptree* TranslateStaticUserStatement(Environment*,
-						Ptree* keyword, Ptree* rest);
+    virtual PTree::Node *TranslateUserStatement(Environment*,
+					  PTree::Node *object, PTree::Node *access_op,
+					  PTree::Node *keyword, PTree::Node *rest);
+    virtual PTree::Node *TranslateStaticUserStatement(Environment*,
+						PTree::Node *keyword, PTree::Node *rest);
 
-    static Ptree* StripClassQualifier(Ptree* qualified_name);
+    static PTree::Node *StripClassQualifier(PTree::Node *qualified_name);
 
-    Ptree* TranslateExpression(Environment*, Ptree* expr);
-    Ptree* TranslateExpression(Environment*, Ptree* expr, TypeInfo& type);
-    Ptree* TranslateStatement(Environment* env, Ptree* expr);	// obsolete
-    Ptree* TranslateNewType(Environment* env, Ptree* type);
-    Ptree* TranslateArguments(Environment*, Ptree* arglist);
-    Ptree* TranslateFunctionBody(Environment*, Member& m, Ptree* body);
+    PTree::Node *TranslateExpression(Environment*, PTree::Node *expr);
+    PTree::Node *TranslateExpression(Environment*, PTree::Node *expr, TypeInfo& type);
+    PTree::Node *TranslateStatement(Environment* env, PTree::Node *expr);	// obsolete
+    PTree::Node *TranslateNewType(Environment* env, PTree::Node *type);
+    PTree::Node *TranslateArguments(Environment*, PTree::Node *arglist);
+    PTree::Node *TranslateFunctionBody(Environment*, Member& m, PTree::Node *body);
 
 // others
 
@@ -168,9 +168,9 @@ public:
     virtual bool AcceptTemplate();
     static bool Initialize();
     static void FinalizeAll(std::ostream& out);
-    virtual Ptree* FinalizeInstance();
-    virtual Ptree* Finalize();		// obsolete
-    static Ptree* FinalizeClass();
+    virtual PTree::Node *FinalizeInstance();
+    virtual PTree::Node *Finalize();		// obsolete
+    static PTree::Node *FinalizeClass();
 
     static void RegisterNewModifier(char* keyword);
     static void RegisterNewAccessSpecifier(char* keyword);
@@ -183,25 +183,25 @@ public:
     static void ChangeDefaultMetaclass(char* name);
     static void SetMetaclassForFunctions(char* name);
 
-    static void InsertBeforeStatement(Environment*, Ptree*);
-    static void AppendAfterStatement(Environment*, Ptree*);
+    static void InsertBeforeStatement(Environment*, PTree::Node *);
+    static void AppendAfterStatement(Environment*, PTree::Node *);
     static void InsertBeforeToplevel(Environment*, Class*);
     static void InsertBeforeToplevel(Environment*, Member&);
-    static void InsertBeforeToplevel(Environment*, Ptree*);
+    static void InsertBeforeToplevel(Environment*, PTree::Node *);
     static void AppendAfterToplevel(Environment*, Class*);
     static void AppendAfterToplevel(Environment*, Member&);
-    static void AppendAfterToplevel(Environment*, Ptree*);
-    bool InsertDeclaration(Environment*, Ptree* declaration);
-    bool InsertDeclaration(Environment*, Ptree* declaration,
-			   Ptree* key, void* client_data);
-    void* LookupClientData(Environment*, Ptree* key);
+    static void AppendAfterToplevel(Environment*, PTree::Node *);
+    bool InsertDeclaration(Environment*, PTree::Node *declaration);
+    bool InsertDeclaration(Environment*, PTree::Node *declaration,
+			   PTree::Node *key, void* client_data);
+    void* LookupClientData(Environment*, PTree::Node *key);
 
-    void ErrorMessage(Environment*, char* message, Ptree* name,
-		      Ptree* where);
-    void WarningMessage(Environment*, char* message, Ptree* name,
-			Ptree* where);
-    void ErrorMessage(char* message, Ptree* name, Ptree* where);
-    void WarningMessage(char* message, Ptree* name, Ptree* where);
+    void ErrorMessage(Environment*, char* message, PTree::Node *name,
+		      PTree::Node *where);
+    void WarningMessage(Environment*, char* message, PTree::Node *name,
+			PTree::Node *where);
+    void ErrorMessage(char* message, PTree::Node *name, PTree::Node *where);
+    void WarningMessage(char* message, PTree::Node *name, PTree::Node *where);
 
     static bool RecordCmdLineOption(char* key, char* value);
     static bool LookupCmdLineOption(char* key);
@@ -211,21 +211,21 @@ public:
     static void do_init_static();
 
 private:
-    void Construct(Environment*, Ptree*);
+    void Construct(Environment*, PTree::Node *);
 
     void SetEnvironment(Environment*);
-    Ptree* GetClassSpecifier() { return new_class_specifier; }
-    Ptree* GetNewName() { return new_class_name; }
-    Ptree* GetBaseClasses() { return new_base_classes; }
-    ChangedMemberList::Cmem* GetChangedMember(Ptree*);
+    PTree::Node *GetClassSpecifier() { return new_class_specifier; }
+    PTree::Node *GetNewName() { return new_class_name; }
+    PTree::Node *GetBaseClasses() { return new_base_classes; }
+    ChangedMemberList::Cmem* GetChangedMember(PTree::Node *);
     ChangedMemberList* GetAppendedMembers() { return appended_member_list; }
-    Ptree* GetAppendedCode() { return appended_code; }
+    PTree::Node *GetAppendedCode() { return appended_code; }
     void TranslateClassHasFinished() { done_decl_translation = true; }
     void CheckValidity(char*);
 
 private:
-    Ptree* definition;
-    Ptree* full_definition;	// including a user keyword
+    PTree::Node *definition;
+    PTree::Node *full_definition;	// including a user keyword
     Environment* class_environment;
     MemberList* member_list;
 
@@ -233,10 +233,10 @@ private:
     bool removed;
     ChangedMemberList* changed_member_list;
     ChangedMemberList* appended_member_list;
-    Ptree* appended_code;
-    Ptree* new_base_classes;
-    Ptree* new_class_specifier;
-    Ptree* new_class_name;
+    PTree::Node *appended_code;
+    PTree::Node *new_base_classes;
+    PTree::Node *new_class_specifier;
+    PTree::Node *new_class_name;
 
     static ClassArray* class_list;
 
@@ -247,15 +247,15 @@ private:
     static char* metaclass_for_c_functions;
     static Class* for_c_functions;
 
-    static Ptree* class_t;
-    static Ptree* empty_block_t;
-    static Ptree* public_t;
-    static Ptree* protected_t;
-    static Ptree* private_t;
-    static Ptree* virtual_t;
-    static Ptree* colon_t;
-    static Ptree* comma_t;
-    static Ptree* semicolon_t;
+    static PTree::Node *class_t;
+    static PTree::Node *empty_block_t;
+    static PTree::Node *public_t;
+    static PTree::Node *protected_t;
+    static PTree::Node *private_t;
+    static PTree::Node *virtual_t;
+    static PTree::Node *colon_t;
+    static PTree::Node *comma_t;
+    static PTree::Node *semicolon_t;
 
 friend class Walker;
 friend class ClassWalker;
@@ -265,19 +265,19 @@ friend class Member;
 
 class OCXXMOP TemplateClass : public Class {
 public:
-    void InitializeInstance(Ptree* def, Ptree* margs);
+    void InitializeInstance(PTree::Node *def, PTree::Node *margs);
     static bool Initialize();
     char* MetaclassName();
 
-    Ptree* TemplateDefinition() { return template_definition; }
-    Ptree* TemplateArguments();
+    PTree::Node *TemplateDefinition() { return template_definition; }
+    PTree::Node *TemplateArguments();
     bool AcceptTemplate();
-    virtual Ptree* TranslateInstantiation(Environment*, Ptree*);
+    virtual PTree::Node *TranslateInstantiation(Environment*, PTree::Node *);
 
 private:
-    static Ptree* GetClassInTemplate(Ptree* def);
+    static PTree::Node *GetClassInTemplate(PTree::Node *def);
 
-    Ptree* template_definition;
+    PTree::Node *template_definition;
 };
 
 class OCXXMOP ClassArray : public LightObject {
@@ -297,24 +297,24 @@ private:
 
 // not documented class --- internal use only
 
-typedef Class* (*opcxx_MetaclassCreator)(Ptree*, Ptree*);
+typedef Class* (*opcxx_MetaclassCreator)(PTree::Node *, PTree::Node *);
 
 class OCXXMOP opcxx_ListOfMetaclass {
 public:
     opcxx_ListOfMetaclass(char*, opcxx_MetaclassCreator,
-			  bool (*)(), Ptree* (*)());
-    static Class* New(Ptree*, Ptree*, Ptree*);
-    static Class* New(char*, Ptree*, Ptree*);
+			  bool (*)(), PTree::Node *(*)());
+    static Class* New(PTree::Node *, PTree::Node *, PTree::Node *);
+    static Class* New(char*, PTree::Node *, PTree::Node *);
     static void FinalizeAll(std::ostream&);
     static bool AlreadyRecorded(char*);
-    static bool AlreadyRecorded(Ptree*);
+    static bool AlreadyRecorded(PTree::Node *);
     static void PrintAllMetaclasses();
 
 private:
     opcxx_ListOfMetaclass* next;
     char* name;
     opcxx_MetaclassCreator proc;
-    Ptree* (*finalizer)();	// pointer to FinalizeClass()
+    PTree::Node *(*finalizer)();	// pointer to FinalizeClass()
     static opcxx_ListOfMetaclass* head;
 };
 

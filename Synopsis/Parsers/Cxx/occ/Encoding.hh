@@ -18,7 +18,7 @@
 #include <iosfwd>
 #include "types.h"
 
-class Ptree;
+namespace PTree { class Node;}
 class Environment;
 class Bind;
 
@@ -34,14 +34,14 @@ public:
     char* Get();
     bool IsEmpty() { return len == 0; }
 
-    void CvQualify(Ptree*, Ptree* = 0);
+  void CvQualify(PTree::Node *, PTree::Node * = 0);
     void SimpleConst() { Append("Ci", 2); }
     void GlobalScope();				// ::Type
-    void SimpleName(Ptree*);
+  void SimpleName(PTree::Node *);
     void NoName();
-    void Template(Ptree*, Encoding&);
+  void Template(PTree::Node *, Encoding&);
     void Qualified(int);
-    void Destructor(Ptree*);
+  void Destructor(PTree::Node *);
     void PtrOperator(int);
     void PtrToMember(Encoding&, int);
     void CastOperator(Encoding&);
@@ -65,12 +65,12 @@ public:
 
     static void print(std::ostream &, const char *);
     static char* GetBaseName(char*, int&, Environment*&);
-    static Ptree* MakePtree(unsigned char*&, Ptree*);
+  static PTree::Node *MakePtree(unsigned char*&, PTree::Node *);
 
-    static Ptree* MakeQname(unsigned char*&);
-    static Ptree* MakeLeaf(unsigned char*&);
+  static PTree::Node *MakeQname(unsigned char*&);
+  static PTree::Node *MakeLeaf(unsigned char*&);
     static bool IsSimpleName(unsigned char*);
-    static Ptree* NameToPtree(char*, int);
+  static PTree::Node *NameToPtree(char*, int);
 
     static unsigned char* GetTemplateArguments(unsigned char*, int&);
 
@@ -83,15 +83,15 @@ private:
     int len;
 
 public:
-    static Ptree *bool_t, *char_t, *wchar_t_t, *int_t, *short_t, *long_t,
+  static PTree::Node *bool_t, *char_t, *wchar_t_t, *int_t, *short_t, *long_t,
 		 *float_t, *double_t, *void_t;
 
-    static Ptree *signed_t, *unsigned_t, *const_t, *volatile_t;
+  static PTree::Node *signed_t, *unsigned_t, *const_t, *volatile_t;
 
-    static Ptree *operator_name, *new_operator, *anew_operator,
+  static PTree::Node *operator_name, *new_operator, *anew_operator,
 		 *delete_operator, *adelete_operator;
 
-    static Ptree *star, *ampersand, *comma, *dots, *scope, *tilder,
+  static PTree::Node *star, *ampersand, *comma, *dots, *scope, *tilder,
 		 *left_paren, *right_paren, *left_bracket, *right_bracket,
 		 *left_angle, *right_angle;
 };

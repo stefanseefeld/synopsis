@@ -46,16 +46,16 @@ public:
   char* MetaclassName();
 
   void TranslateClass(Environment*);
-  Ptree* GetFinalizer();
+  PTree::Node *GetFinalizer();
   void CheckObsoleteness();
-  void ProduceInitFile(Ptree* class_name);
-  static bool IsBuiltinMetaclass(Ptree*);
+  void ProduceInitFile(PTree::Node * class_name);
+  static bool IsBuiltinMetaclass(PTree::Node *);
   void InsertInitialize();
   int FindFirstNotInlinedVirtualFunction();
   void TranslateMemberFunction(Environment* env, Member& m);
-  void AppendHousekeepingCode(Environment* env, Ptree* class_name,
-			      Ptree* creator_name, Ptree* finalizer);
-  static void Load(Ptree* metaclass_name);
+  void AppendHousekeepingCode(Environment* env, PTree::Node * class_name,
+			      PTree::Node * creator_name, PTree::Node *finalizer);
+  static void Load(PTree::Node *metaclass_name);
   static void Load(char* metaclass_name, int len);
   static void* LoadSoLib(char* file_name);
   static void* LookupSymbol(void* handle, char* symbol);
@@ -63,7 +63,7 @@ public:
   static void do_init_static();
 
 private:
-  Ptree* new_function_name;
+  PTree::Node *new_function_name;
   int    first_not_inlined_vf;
 };
 

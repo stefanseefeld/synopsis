@@ -17,8 +17,11 @@
 
 #include "types.h"
 
-class Ptree;
-class PtreeArray;
+namespace PTree 
+{
+  class Node;
+  class Array;
+}
 class Class;
 class Environment;
 class TypeInfo;
@@ -27,12 +30,12 @@ class OCXXMOP Member : public LightObject {
 public:
     Member();
     Member(const Member&);
-    Member(Class*, Ptree*);
-    void Set(Class*, Ptree*, int);
+    Member(Class*, PTree::Node *);
+    void Set(Class*, PTree::Node *, int);
 
     void Signature(TypeInfo& t) const;
-    Ptree* Name();
-    Ptree* Comments();
+    PTree::Node *Name();
+    PTree::Node *Comments();
     int Nth();
     Class* Supplier();
     bool IsConstructor();
@@ -47,34 +50,34 @@ public:
     bool IsVirtual();
     bool IsPureVirtual();
 
-    Ptree* GetUserMemberModifier();
-    Ptree* GetUserAccessSpecifier();
-    bool GetUserArgumentModifiers(PtreeArray& result);
+    PTree::Node *GetUserMemberModifier();
+    PTree::Node *GetUserAccessSpecifier();
+  bool GetUserArgumentModifiers(PTree::Array& result);
 
     void Remove() { removed = true; }
-    void SetName(Ptree*);
-    void SetQualifiedName(Ptree*);
-    Ptree* NewName() { return new_name; }
-    Ptree* ArgumentList();
-    void SetArgumentList(Ptree*);
-    Ptree* NewArgumentList() { return new_args; }
-    Ptree* MemberInitializers();
-    void SetMemberInitializers(Ptree*);
-    Ptree* NewMemberInitializers() { return new_init; }
-    Ptree* FunctionBody();
-    void SetFunctionBody(Ptree*);
-    Ptree* NewFunctionBody() { return new_body; }
+    void SetName(PTree::Node *);
+    void SetQualifiedName(PTree::Node *);
+    PTree::Node *NewName() { return new_name; }
+    PTree::Node *ArgumentList();
+    void SetArgumentList(PTree::Node *);
+    PTree::Node *NewArgumentList() { return new_args; }
+    PTree::Node *MemberInitializers();
+    void SetMemberInitializers(PTree::Node *);
+    PTree::Node *NewMemberInitializers() { return new_init; }
+    PTree::Node *FunctionBody();
+    void SetFunctionBody(PTree::Node *);
+    PTree::Node *NewFunctionBody() { return new_body; }
 
-    Ptree* Arguments();
+    PTree::Node *Arguments();
 
     static void Copy(Member*, void* /* ChangedMemberList::Cmem* */);
 
 protected:
     bool IsInlineFuncImpl();
-    void SetName(Ptree*, Ptree*);
-    Ptree* ArgumentList(Ptree* decl);
-    Ptree* Arguments(Ptree*, int);
-    Ptree* MemberInitializers(Ptree* decl);
+    void SetName(PTree::Node *, PTree::Node *);
+    PTree::Node *ArgumentList(PTree::Node *decl);
+    PTree::Node *Arguments(PTree::Node *, int);
+    PTree::Node *MemberInitializers(PTree::Node *decl);
 
 private:
     char* Name(int&);
@@ -87,19 +90,19 @@ protected:
     // the following variables are effective.
 
     bool IsFunctionImplementation() { return bool(implementation != 0);}
-    Ptree *implementation;
-    Ptree* original_decl;
+  PTree::Node *implementation;
+    PTree::Node *original_decl;
 
 private:
     bool removed;
-    Ptree* new_name;
-    Ptree* new_args;
-    Ptree* new_init;
-    Ptree* new_body;
+    PTree::Node *new_name;
+    PTree::Node *new_args;
+    PTree::Node *new_init;
+    PTree::Node *new_body;
     bool arg_name_filled;
 
     Class* metaobject;
-    Ptree* declarator;
+    PTree::Node *declarator;
     int nth;
 
 friend class ChangedMemberList;
@@ -107,22 +110,22 @@ friend class ChangedMemberList;
 
 class OCXXMOP MemberFunction : public Member {
 public:
-    MemberFunction(Class*, Ptree*, Ptree*);
+    MemberFunction(Class*, PTree::Node *, PTree::Node *);
 };
 
 class OCXXMOP MemberList : public LightObject {
 public:
     struct Mem {
 	Class* supplying;
-	Ptree* definition;
-	Ptree* declarator;
+	PTree::Node *definition;
+	PTree::Node *declarator;
 	char* name;
 	char* signature;
 	bool is_constructor, is_destructor;
 	bool is_virtual, is_static, is_mutable, is_inline;
 	int  access;
-	Ptree* user_access;
-	Ptree* user_mod;
+	PTree::Node *user_access;
+	PTree::Node *user_mod;
     };
 
     MemberList();
@@ -131,14 +134,14 @@ public:
     int Number() { return num; }
     Mem* Lookup(char*, char*);
     int Lookup(char*, int, char*);
-    int Lookup(Environment*, Ptree*, int);
+    int Lookup(Environment*, PTree::Node *, int);
     int Lookup(Environment*, char*, int);
 
 private:
     void AppendThisClass(Class*);
-    void Append(Ptree*, Ptree*, int, Ptree*);
-    void AppendBaseClass(Environment*, Ptree*);
-    void CheckHeader(Ptree*, Mem*);
+    void Append(PTree::Node *, PTree::Node *, int, PTree::Node *);
+    void AppendBaseClass(Environment*, PTree::Node *);
+    void CheckHeader(PTree::Node *, Mem*);
 
     Class* this_class;
     int num;
@@ -150,13 +153,13 @@ private:
 class ChangedMemberList : public LightObject {
 public:
     struct Cmem {
-	Ptree* declarator;
+	PTree::Node *declarator;
 	bool removed;
-	Ptree* name;
-	Ptree* args;
-	Ptree* init;
-	Ptree* body;
-	Ptree* def;
+	PTree::Node *name;
+	PTree::Node *args;
+	PTree::Node *init;
+	PTree::Node *body;
+	PTree::Node *def;
 	int    access;		// used only by Classs::appended_member_list
 	bool arg_name_filled;
     };
@@ -164,7 +167,7 @@ public:
     ChangedMemberList();
     void Append(Member*, int access);
     static void Copy(Member* src, Cmem* dest, int access);
-    Cmem* Lookup(Ptree* decl);
+    Cmem* Lookup(PTree::Node *decl);
     Cmem* Get(int);
 
 private:

@@ -32,7 +32,7 @@
 #include <exception>
 #include <list>
 
-class Ptree;
+namespace PTree { class Node;}
 
 #if 1 && defined(DEBUG)
 #define DO_TRACE
@@ -85,7 +85,7 @@ public:
         return std::cout;
     }
     //. Insertion operator. Logs a Ptree
-    std::ostream& operator<<(Ptree* p); // defined in swalker.cc
+  std::ostream& operator<<(PTree::Node *p); // defined in swalker.cc
     //. Creates a new stringstream for use in buffering output
     std::ostringstream& new_stream()
     {
@@ -128,10 +128,10 @@ public:
     //. The message
     std::string message;
     //. The node that was being translated
-    mutable Ptree* node;
+  mutable PTree::Node *node;
 
     //. Constructor. Extracts the error message from the STracer (set by ERROR macros)
-    TranslateError(STrace& trace, Ptree* p = 0)
+  TranslateError(STrace& trace, PTree::Node *p = 0)
             : node(p)
     {
         message = trace.get_stream_str();
@@ -156,7 +156,7 @@ public:
         return message;
     }
     //. Sets a node for the error, if not already set.
-    void set_node(Ptree* p) const
+  void set_node(PTree::Node *p) const
     {
         if (!node)
             node = p;
@@ -192,7 +192,7 @@ public:
     {
         return "TranslateError";
     }
-    void set_node(Ptree*) const
+  void set_node(PTree::Node *) const
     { }
 };
 #define ERROR(message) TranslateError()

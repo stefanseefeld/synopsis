@@ -14,7 +14,7 @@
 
 #include "TypeInfo.hh"
 #include "Encoding.hh"
-#include "Ptree.hh"
+#include "PTree.hh"
 #include "Environment.hh"
 #include "Class.hh"
 
@@ -66,7 +66,7 @@ void TypeInfo::SetInt()
     env = 0;
 }
 
-void TypeInfo::SetMember(Ptree* member)
+void TypeInfo::SetMember(PTree::Node *member)
 {
     Class* c = ClassMetaobject();
     if(c == 0)
@@ -303,11 +303,11 @@ bool TypeInfo::IsClass(Class*& c)
 
 bool TypeInfo::IsEnum()
 {
-    Ptree* spec;
+    PTree::Node *spec;
     return IsEnum(spec);
 }
 
-bool TypeInfo::IsEnum(Ptree*& spec)
+bool TypeInfo::IsEnum(PTree::Node *&spec)
 {
     spec = 0;
     Normalize();
@@ -426,9 +426,9 @@ bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
     return true;
 }
 
-Ptree* TypeInfo::FullTypeName()
+PTree::Node *TypeInfo::FullTypeName()
 {
-    Ptree *qname, *head;
+  PTree::Node *qname, *head;
 
     Normalize();
     if(metaobject != 0){
@@ -437,7 +437,7 @@ Ptree* TypeInfo::FullTypeName()
 	if(head == 0)
 	    return qname;
 	else
-	    return Ptree::Snoc(head, qname);
+	  return PTree::Node::Snoc(head, qname);
     }
 
     Environment* e = env;
@@ -455,7 +455,7 @@ Ptree* TypeInfo::FullTypeName()
 	if(head == 0)
 	    return qname;
 	else
-	    return Ptree::Snoc(head, qname);
+	  return PTree::Node::Snoc(head, qname);
     }
     else if(*name == 'Q'){
 	qname = Encoding::MakeQname(++name);
@@ -463,7 +463,7 @@ Ptree* TypeInfo::FullTypeName()
 	if(head == 0)
 	    return qname;
 	else
-	    return Ptree::Nconc(head, qname);
+	  return PTree::Node::Nconc(head, qname);
     }
     else if(Encoding::IsSimpleName(name)){
 	qname = Encoding::MakeLeaf(name);
@@ -471,13 +471,13 @@ Ptree* TypeInfo::FullTypeName()
 	if(head == 0)
 	    return qname;
 	else
-	    return Ptree::Snoc(head, qname);
+	  return PTree::Node::Snoc(head, qname);
     }
     else
 	return 0;
 }
 
-Ptree* TypeInfo::GetQualifiedName(Environment* e, Ptree* tname)
+PTree::Node *TypeInfo::GetQualifiedName(Environment* e, PTree::Node *tname)
 {
     Class* c = e->LookupClassMetaobject(tname);
     if(c == 0)
@@ -486,9 +486,9 @@ Ptree* TypeInfo::GetQualifiedName(Environment* e, Ptree* tname)
 	return GetQualifiedName2(c);
 }
 
-Ptree* TypeInfo::GetQualifiedName2(Class* c)
+PTree::Node *TypeInfo::GetQualifiedName2(Class* c)
 {
-    Ptree* qname = 0;
+    PTree::Node *qname = 0;
     Environment* e = c->GetEnvironment();
     if(e != 0)
 	e = e->GetOuterEnvironment();
@@ -496,24 +496,24 @@ Ptree* TypeInfo::GetQualifiedName2(Class* c)
     for(; e != 0; e = e->GetOuterEnvironment()){
 	c = e->IsClassEnvironment();
 	if(c != 0)
-	    qname = Ptree::Cons(c->Name(),
-				Ptree::Cons(Encoding::scope, qname));
+	  qname = PTree::Node::Cons(c->Name(),
+				    PTree::Node::Cons(Encoding::scope, qname));
     }
 
     return qname;
 }
 
-Ptree* TypeInfo::MakePtree(Ptree* name)
+PTree::Node *TypeInfo::MakePtree(PTree::Node *name)
 {
     Normalize();
     if(metaobject != 0){
-	Ptree* decl;
+	PTree::Node *decl;
 	if(name == 0)
 	    decl = 0;
 	else
-	    decl = Ptree::List(name);
+	  decl = PTree::Node::List(name);
 
-	return Ptree::List(FullTypeName(), decl);
+	return PTree::Node::List(FullTypeName(), decl);
     }
     else if(encode != 0){
 	unsigned char* ptr = (unsigned char*)encode;

@@ -33,7 +33,7 @@
 */
 
 #include "MetaClass.hh"
-#include "Ptree.hh"
+#include "PTree.hh"
 
 #if USE_DLOADER
 #include <iostream>
@@ -71,7 +71,7 @@ extern bool makeSharedLibrary;
 static opcxx_ListOfMetaclass* QuoteClassCreator;
 static opcxx_ListOfMetaclass* metaclassCreator;
 
-static Class* CreateQuoteClass(Ptree* def, Ptree* marg)
+static Class* CreateQuoteClass(PTree::Node *def, PTree::Node *marg)
 {
     Class* metaobject = new QuoteClass;
     metaobject->InitializeInstance(def, marg);
@@ -84,7 +84,7 @@ opcxx_ListOfMetaclass* opcxx_init_QuoteClass()
 				     QuoteClass::Initialize, 0);
 }
 
-static Class* CreateMetaclass(Ptree* def, Ptree* marg)
+static Class* CreateMetaclass(PTree::Node *def, PTree::Node *marg)
 {
     Class* metaobject = new Metaclass;
     metaobject->InitializeInstance(def, marg);
@@ -137,23 +137,23 @@ char* Metaclass::MetaclassName()
 
 void Metaclass::TranslateClass(Environment* env)
 {
-    Ptree* name = Name();
+    PTree::Node *name = Name();
 
     if(!IsBuiltinMetaclass(name)){
 	CheckObsoleteness();
 	InsertInitialize();
 #if defined(_MSC_VER) || defined(PARSE_MSVC)
-	AddClassSpecifier(Ptree::Make("__declspec(dllexport)"));
+	AddClassSpecifier(PTree::Node::Make("__declspec(dllexport)"));
 #endif
-	AppendMember(Ptree::Make("public: char* MetaclassName() {\n"
+	AppendMember(PTree::Node::Make("public: char* MetaclassName() {\n"
 				 "    return \"%p\"; }\n",
 				 Name()));
 
-	Ptree* tmpname = Ptree::GenSym();
-	Ptree* tmpname2 = Ptree::GenSym();
-	Ptree* finalizer = GetFinalizer();
-	AppendAfterToplevel(env, Ptree::Make(
-		"static Class* %p(Ptree* def, Ptree* marg){\n"
+	PTree::Node *tmpname = PTree::Node::GenSym();
+	PTree::Node *tmpname2 = PTree::Node::GenSym();
+	PTree::Node *finalizer = GetFinalizer();
+	AppendAfterToplevel(env, PTree::Node::Make(
+		"static Class* %p(PTree::Node *def, PTree::Node *marg){\n"
 		"    Class* c = new %p;\n"
 		"    c->InitializeInstance(def, marg);\n"
 		"    return c; }\n"
@@ -173,7 +173,7 @@ void Metaclass::TranslateClass(Environment* env)
     Class::TranslateClass(env);
 }
 
-Ptree* Metaclass::GetFinalizer()
+PTree::Node *Metaclass::GetFinalizer()
 {
     Member m;
     if(LookupMember("FinalizeClass", m) && m.Supplier() == this){
@@ -181,10 +181,10 @@ Ptree* Metaclass::GetFinalizer()
 	    ErrorMessage("FinalizeClass() must be static in ", Name(),
 			 Definition());
 
-	return Ptree::Make("%p::FinalizeClass", Name());
+	return PTree::Node::Make("%p::FinalizeClass", Name());
     }
     else
-	return Ptree::Make("0");
+      return PTree::Node::Make("0");
 }
 
 void Metaclass::CheckObsoleteness()
@@ -197,11 +197,11 @@ void Metaclass::CheckObsoleteness()
 		       Definition());
 }
 
-void Metaclass::ProduceInitFile(Ptree* class_name)
+void Metaclass::ProduceInitFile(PTree::Node *class_name)
 {
 #if USE_DLOADER
 #if USE_SO
-    const char* fname = Ptree::Make("%p-init.cc", class_name)->ToString();
+  const char* fname = PTree::Node::Make("%p-init.cc", class_name)->ToString();
     if(verboseMode)
 	std::cerr << "Produce " << fname << " ..\n";
 
@@ -214,7 +214,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
     src_file << "extern void LoadMetaclass(char*);\n";
     src_file << "char* opcxx_Init_" << class_name << "(){\n";
 
-    Ptree* base_name;
+    PTree::Node *base_name;
     for(int i = 0; (base_name = NthBaseClassName(i)) != 0; ++i)
 	if(!base_name->Eq("Class"))
 	    src_file << "  LoadMetaclass(\"" << base_name << "\");\n";
@@ -226,7 +226,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
     RunSoCompiler(fname);
 #else
     // Push base class names forward to RunCompiler
-    Ptree* base_name;
+    PTree::Node *base_name;
     for (int i = 0; (base_name = NthBaseClassName(i)) != 0; ++i)
 	if (!base_name->Eq("Class") && !base_name->Eq("TemplateClass"))
 	    BaseClassUsed(base_name->GetPosition(), base_name->GetLength());
@@ -234,7 +234,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
 #endif /* USE_DLOADER */
 }
 
-bool Metaclass::IsBuiltinMetaclass(Ptree* name)
+bool Metaclass::IsBuiltinMetaclass(PTree::Node *name)
 {
     return bool(name->Eq("Class") || name->Eq("Metaclass")
 		|| name->Eq("TemplateClass")
@@ -246,10 +246,10 @@ void Metaclass::InsertInitialize()
     Member m;
     if(!LookupMember("Initialize", m) || m.Supplier() != this){
 #if !defined(_MSC_VER) || (_MSC_VER >= 1100)
-	AppendMember(Ptree::Make(
+      AppendMember(PTree::Node::Make(
 		"public: static bool Initialize() { return 1; }\n"));
 #else
-	AppendMember(Ptree::Make(
+      AppendMember(PTree::Node::Make(
 		"public: static int Initialize() { return 1; }\n"));
 #endif
     }
@@ -286,12 +286,12 @@ void Metaclass::TranslateMemberFunction(Environment* env, Member& m)
 			   GetFinalizer());
 }
 
-void Metaclass::AppendHousekeepingCode(Environment* env, Ptree* class_name,
-				       Ptree* creator_name,
-				       Ptree* finalizer)
+void Metaclass::AppendHousekeepingCode(Environment* env, PTree::Node *class_name,
+				       PTree::Node *creator_name,
+				       PTree::Node *finalizer)
 {
 #if !defined(_MSC_VER)
-    AppendAfterToplevel(env, Ptree::Make(
+  AppendAfterToplevel(env, PTree::Node::Make(
 		"opcxx_ListOfMetaclass* opcxx_init_%p(){\n"
 		"    return new opcxx_ListOfMetaclass(\"%p\", %p,\n"
 		"                   %p::Initialize, %p); }\n",
@@ -309,7 +309,7 @@ void LoadMetaclass(char* metaclass_name)
 #endif
 }
 
-void Metaclass::Load(Ptree* metaclass_name)
+void Metaclass::Load(PTree::Node *metaclass_name)
 {
 #if USE_DLOADER
     if(opcxx_ListOfMetaclass::AlreadyRecorded(metaclass_name))
