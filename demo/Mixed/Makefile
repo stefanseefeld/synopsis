@@ -1,7 +1,8 @@
 omniidl		:= omniidl -nf -bcxx
 synopsis	:= ../../synopsis
 
-CPPFLAGS	:= -I. -I/home/stefan/omni/include -Wp,-D__x86__
+#CPPFLAGS	:= -I. -I/home/stefan/omni/include -Wp,-D__x86__
+CPPFLAGS	:= -I. -I/home/chalky/src/omni/include -Wp,-D__x86__
 
 all:	interface implementation
 

@@ -705,7 +705,10 @@ void Synopsis::visitDeclared(Type::Declared* type) {
 	m->add(type, Declared(type));
 }
 void Synopsis::visitTemplateType(Type::Template* type) {
-    m->add(type, Template(type));
+    if (!m->m_main(type->declaration()))
+	m->add(type, Unknown(type));
+    else
+	m->add(type, Template(type));
 }
 void Synopsis::visitParameterized(Type::Parameterized* type) {
     m->add(type, Parameterized(type));
