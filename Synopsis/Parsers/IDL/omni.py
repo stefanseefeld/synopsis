@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.19 2001/01/25 18:27:47 stefan Exp $
+# $Id: omni.py,v 1.20 2001/01/26 17:25:19 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.20  2001/01/26 17:25:19  stefan
+# represent array sizes as strings, not ints (to be elaborated...)
+#
 # Revision 1.19  2001/01/25 18:27:47  stefan
 # added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
 #
@@ -206,7 +209,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
             # a single typedef declaration can have a different type. *sigh*
             dtype = type
             if d.sizes():
-                array = Type.Array("IDL", self.getType(type), d.sizes())
+                array = Type.Array("IDL", self.getType(type), map(lambda s:str(s), d.sizes()))
                 dtype = map(None, type[:-1])
                 dtype.append(type[-1] + string.join(map(lambda s:"["+ str(s) +"]", d.sizes()),''))
                 self.addType(dtype, array)
@@ -234,7 +237,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
             # a single typedef declaration can have a different type. *sigh*
             dtype = type
             if d.sizes():
-                array = Type.Array("IDL", self.getType(type), node.sizes())
+                array = Type.Array("IDL", self.getType(type), map(lambda s:str(s), node.sizes()))
                 dtype = type[:-1]
                 dtype.append(type[-1] + string.join(map(lambda s:"["+s+"]", d.sizes()),''))
                 self.addType(dtype, array)
@@ -283,7 +286,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         type = self.__types.internalize(node.caseType())
         declarator = node.declarator()
         if declarator.sizes():
-            array = Type.Array("IDL", self.getType(type), declarator.sizes())
+            array = Type.Array("IDL", self.getType(type), map(lambda s:str(s), declarator.sizes()))
             type = type[:-1]
             type.append(type[-1] + string.join(map(lambda s:"["+s+"]",node.sizes()),''))
             self.addType(type, array)
