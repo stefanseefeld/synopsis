@@ -139,6 +139,13 @@ def get_opt(argv):
          usage()
       sys.exit(0)
 
+   # quick hack: if the parser is Cpp, rename the 'cppflags'
+   # options to just 'flags'
+   if parser and parser.__module__ == 'Synopsis.Parsers.Cpp.Parser':
+      if parser_opts['cppflags']:
+         parser_opts['flags'] = parser_opts['cppflags']
+         del parser_opts['cppflags']
+
    options['input'] = args
 
    #now instantiate the processor
