@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.21 2003/11/16 21:09:45 stefan Exp $
+# $Id: View.py,v 1.22 2003/11/18 07:30:33 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -17,7 +17,7 @@ from Tags import *
 
 import os.path, cStringIO
 
-class PageFormat(Parametrized):
+class Format(Parametrized):
    """Default and base class for formatting a page layout. The PageFormat
    class basically defines the HTML used at the start and end of the page.
    The default creates an XHTML compliant header and footer with a proper
@@ -57,29 +57,29 @@ class PageFormat(Parametrized):
 
       os.write("\n%s\n</html>\n"%body)
 
-class TemplatePageFormat(PageFormat):
+class Template(Format):
    """PageFormat subclass that uses a template file to define the HTML header
    and footer for each page."""
 
+   template = Parameter('', 'the html template file')
    copy_files = Parameter([], 'a list of files to be copied into the output dir')
    
    def init(self, processor, prefix):
       
-      PageFormat.init(self, processor, prefix)
-      self.__file = ''
+      Format.init(self, processor, prefix)
       self.__re_body = re.compile('<body(?P<params>([ \t\n]+[-a-zA-Z0-9]+=("[^"]*"|\'[^\']*\'|[^ \t\n>]*))*)>', re.I)
       self.__re_closebody = re.compile('</body>', re.I)
       self.__re_closehead = re.compile('</head>', re.I)
       self.__title_tag = '@TITLE@'
       self.__content_tag = '@CONTENT@'
       for file in self.copy_files:
-         processor.file_layout.copy_file(file[0], file[1])
+         processor.file_layout.copy_file(file, file)
       self.load_file()
 
    def load_file(self):
       """Loads and parses the template file"""
 
-      f = open(self.__file, 'rt')
+      f = open(self.template, 'rt')
       text = f.read(1024*64) # arbitrary max limit of 64kb
       f.close()
       # Find the content tag
@@ -130,7 +130,7 @@ class TemplatePageFormat(PageFormat):
    def page_header(self, os, title, body, headextra, page):
       """Formats the header using the template file"""
 
-      if not body: return PageFormat.page_header(self, os, title, body, headextra)
+      if not body: return Format.page_header(self, os, title, body, headextra)
       header = self.__header
       index = 0
       if self.__title_index != -1:
@@ -153,7 +153,7 @@ class TemplatePageFormat(PageFormat):
    def page_footer(self, os, body):
       """Formats the footer using the template file"""
 
-      if not body: return PageFormat.page_footer(self, os, body)
+      if not body: return Format.page_footer(self, os, body)
       footer = self.__footer
       self.write(os, footer[:self.__closebody_index])
       self.write(os, body)
@@ -165,10 +165,10 @@ class Page(Parametrized):
    the page formatting to a strategy class.
    @see PageFormat"""
 
-   template = Parameter(PageFormat(), 'the object that provides the html template for the page')
+   template = Parameter(Format(), 'the object that provides the html template for the page')
    
    def register(self, processor):
-      """Registers this Page class with the PageManager."""
+      """Registers this Page class with the processor."""
 
       self.processor = processor
       self.__os = None
@@ -201,8 +201,8 @@ class Page(Parametrized):
 
    def get_toc(self, start):
       """Retrieves the TOC for this page. This method assumes that the page
-      generates info for the the whole AST, which could be the ScopePages,
-      the FilePages (source code) or the XRefPages (cross reference info).
+      generates info for the the whole AST, which could be the Scope,
+      the FileSource (source code) or the XRef (cross reference info).
       The default implementation returns None. Start is the declaration to
       start processing from, which could be the global namespace."""
 
