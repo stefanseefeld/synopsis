@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.30 2002/11/01 03:39:20 chalky Exp $
+# $Id: Part.py,v 1.31 2002/11/01 07:21:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.31  2002/11/01 07:21:15  chalky
+# More HTML formatting fixes eg: ampersands and stuff
+#
 # Revision 1.30  2002/11/01 03:39:20  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -300,8 +303,11 @@ class Part(Type.Visitor, AST.Visitor):
     def visitModifier(self, type):
 	"Adds modifiers to the formatted label of the modifier's alias"
         alias = self.formatType(type.alias())
-	pre = string.join(map(lambda x:x+"&nbsp;", type.premod()), '')
-	post = string.join(type.postmod(), '')
+	def amp(x):
+	    if x == '&': return '&amp;'
+	    return x
+	pre = string.join(map(lambda x:x+"&nbsp;", map(amp, type.premod())), '')
+	post = string.join(map(amp, type.postmod()), '')
         self.__type_label = "%s%s%s"%(pre,alias,post)
             
     def visitParametrized(self, type):

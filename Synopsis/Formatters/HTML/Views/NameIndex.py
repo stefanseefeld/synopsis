@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.9 2002/11/01 03:39:21 chalky Exp $
+# $Id: NameIndex.py,v 1.10 2002/11/01 07:21:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.10  2002/11/01 07:21:15  chalky
+# More HTML formatting fixes eg: ampersands and stuff
+#
 # Revision 1.9  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -140,11 +143,11 @@ class NameIndex (Page.Page):
 	name = type.name()
 	decl = type.declaration() # non-declared types are filtered out
 	if isinstance(decl, AST.Function):
-	    realname = decl.realname()[-1] + '()'
+	    realname = anglebrackets(decl.realname()[-1]) + '()'
 	else:
 	    realname = anglebrackets(name[-1])
 	self.write('\n')
-	title = string.join(name, '::')
+	title = anglebrackets(string.join(name, '::'))
 	type = decl.type()
 	name = self.reference(name, (), realname, title=title)+' '+type
 	self.write(div('nameindex-item', name))

@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.17 2002/10/29 12:43:56 chalky Exp $
+# $Id: Scope.py,v 1.18 2002/11/01 07:21:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.18  2002/11/01 07:21:15  chalky
+# More HTML formatting fixes eg: ampersands and stuff
+#
 # Revision 1.17  2002/10/29 12:43:56  chalky
 # Added flexible TOC support to link to things other than ScopePages
 #
@@ -178,7 +181,7 @@ class ScopePages (Page.Page):
 	# Open file and setup scopes
         self.__scope = ns.name()
 	self.__filename = config.files.nameOfScope(self.__scope)
-	self.__title = string.join(self.__scope)
+	self.__title = anglebrackets(string.join(self.__scope))
 	self.start_file()
 	
 	# Write heading
