@@ -31,6 +31,7 @@ class Config (Base):
 
     class Formatter (Base.Formatter):
 	class HTML (Base.Formatter.HTML):
+            datadir = '../../share'
 	    toc_out = 'links.toc'
 	    stylesheet_file = '../../demo/html.css'
 	    pages = [

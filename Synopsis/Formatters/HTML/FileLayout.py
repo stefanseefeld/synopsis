@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.7 2001/06/16 01:29:42 stefan Exp $
+# $Id: FileLayout.py,v 1.8 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.8  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.7  2001/06/16 01:29:42  stefan
 # change the HTML formatter to not use chdir, as this triggers a but in python's import implementation
 #
@@ -41,7 +47,7 @@
 #
 
 """
-FileNamer module. This is the base class for the FileNamer interface. The
+FileLayout module. This is the base class for the FileLayout interface. The
 default implementation stores everything in the same directory.
 """
 
@@ -49,7 +55,7 @@ default implementation stores everything in the same directory.
 import os, sys, stat, string
 
 # Synopsis modules
-from Synopsis.Core import AST
+from Synopsis.Core import Util, AST
 from Synopsis.Formatter import TOC
 
 # HTML modules
@@ -71,7 +77,7 @@ class FileLayout (TOC.Linker):
 	    sys.exit(1)
 	import os.path
 	if not os.path.exists(basename):
-	    print "Warning: Output directory does not exist. Creating."
+            if config.verbose: print "Warning: Output directory does not exist. Creating."
 	    try:
 		os.makedirs(basename, 0755)
 	    except EnvironmentError, reason:
@@ -79,7 +85,7 @@ class FileLayout (TOC.Linker):
 		sys.exit(2)
 	if stylesheet_file:
 	    # Copy stylesheet in
-	    self.copyFile(stylesheet_file, '%s/%s'%(basename, stylesheet))
+	    self.copyFile(stylesheet_file, os.path.join(basename, stylesheet))
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
 	    sys.exit(1)
@@ -91,7 +97,7 @@ class FileLayout (TOC.Linker):
 	    if not os.path.exists(new_name) or \
 		filetime > os.stat(new_name)[stat.ST_MTIME]:
 		fin = open(orig_name,'r')
-		fout = open(new_name, 'w')
+		fout = Util.open(new_name)
 		fout.write(fin.read())
 		fin.close()
 		fout.close()
@@ -106,32 +112,32 @@ class FileLayout (TOC.Linker):
 	The default implementation is to join the names with '-' and append
 	".html" """
 	if not len(scope): return self.nameOfSpecial('global')
-	return config.basename + '/' + string.join(scope,'-') + ".html"
+	return string.join(scope,'-') + ".html"
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
 	tuple (generally it is processed this way beforehand so this is okay).
 	Default implementation is to join the path with '-', prepend "_file-"
 	and append ".html" """
-	return config.basename + '/' + "_file-"+string.join(filetuple,'-')+".html"
+	return "_file-"+string.join(filetuple,'-')+".html"
     def nameOfIndex(self):
 	"""Return the name of the main index file. Default is index.html"""
-	return config.basename + '/' + "index.html"
+	return "index.html"
     def nameOfSpecial(self, name):
 	"""Return the name of a special file (tree, etc). Default is
 	_name.html"""
-	return config.basename + '/' + "_" + name + ".html"
+	return "_" + name + ".html"
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file. Default is to join
 	the scope with '-' and prepend '-'+name"""
-	return config.basename + '/' + "_%s-%s%s"%(name, string.join(scope, '-'), ext)
+	return "_%s-%s%s"%(name, string.join(scope, '-'), ext)
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index. Default is
 	_modules.html"""
-	return config.basename + '/' + "_modules.html"
+	return "_modules.html"
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module. Default is to
 	join the name with '-', prepend "_module_" and append ".html" """
-	return config.basename + '/' + "_module_" + string.join(scope, '-') + ".html"
+	return "_module_" + string.join(scope, '-') + ".html"
     def link(self, decl):
 	"""Create a link to the named declaration. This method may have to
 	deal with the directory layout."""
@@ -142,4 +148,44 @@ class FileLayout (TOC.Linker):
 	filename = self.nameOfScope(decl.name()[:-1])
 	return filename + "#" + decl.name()[-1]
 
+class NestedFileLayout (FileLayout):
+    """generates a structured file system instead of a flat one"""
+    def __init__(self):
+        FileLayout.__init__(self)
 
+    def nameOfScope(self, scope):
+	"""Return the filename of a scoped name (class or module).
+	One subdirectory per scope"""
+        prefix = 'Scopes'
+	if not len(scope): return os.path.join(prefix, 'global') + '.html'
+        else: return reduce(os.path.join, scope, prefix) + '.html'
+
+    def nameOfFile(self, filetuple):
+	"""Return the filename of an input file. The file is specified as a
+	tuple (generally it is processed this way beforehand so this is okay).
+	The path is prefixed with 'Files', and suffixed with '.html'"""
+        return reduce(os.path.join, filetuple, 'Files') + '.html'
+
+    def nameOfIndex(self):
+	"""Return the name of the main index file. Default is index.html"""
+	return "index.html"
+
+    def nameOfSpecial(self, name):
+	"""Return the name of a special file (tree, etc). Default is
+	_name.html"""
+	return "_" + name + ".html"
+    
+    def nameOfScopedSpecial(self, name, scope, ext=".html"):
+	"""Return the name of a special type of scope file. Default is to join
+	the scope with '-' and prepend '-'+name"""
+	return "_%s-%s%s"%(name, string.join(scope, '-'), ext)
+
+    def nameOfModuleTree(self):
+	"""Return the name of the module tree index. Default is
+	_modules.html"""
+	return "_modules.html"
+
+    def nameOfModuleIndex(self, scope):
+	"""Return the name of the index of the given module. Default is to
+	join the name with '-', prepend "_module_" and append ".html" """
+	return "_module_" + string.join(scope, '-') + ".html"

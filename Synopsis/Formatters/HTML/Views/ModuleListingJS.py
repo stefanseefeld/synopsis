@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.6 2001/04/18 04:08:03 chalky Exp $
+# $Id: ModuleListingJS.py,v 1.7 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.7  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.6  2001/04/18 04:08:03  chalky
 # Sort modules so that packages come first
 #
@@ -66,18 +72,21 @@ class ModuleListingJS(JSTree.JSTree):
 
     def _init_page(self):
 	"Sets _filename and registers the page with the manager"
-	self._filename = config.files.nameOfSpecial('module_listing')
-	link = href(self._filename, 'Modules', target="contents")
+	filename = config.files.nameOfSpecial('module_listing')
+	config.set_contents_page(filename)
+	link = href(filename, 'Modules', target="contents")
+	self._filename = os.path.join(config.basename, filename)
 	self.manager.addRootPage('Modules', link, 2)
-	config.set_contents_page(self._filename)
 	self._link_target = 'index'
 
     def process(self, start):
 	"""Create a page with an index of all modules"""
 	# Init tree
-	share = os.path.split(AST.__file__)[0]+"/../share" #hack..
-	self.js_init(share+'/syn-down.png', share+'/syn-right.png',
-		     share+'/syn-dot.png', 'tree_%s.png', 0)
+	share = config.datadir
+	self.js_init(os.path.join(share, 'syn-down.png'),
+                     os.path.join(share, 'syn-right.png'),
+		     os.path.join(share, '/syn-dot.png'),
+                     'tree_%s.png', 0)
 	self.__share = share
 	# Creare the file
 	self.startFile(self._filename, "Module Index")

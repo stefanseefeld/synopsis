@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.5 2001/06/11 10:37:49 chalky Exp $
+# $Id: ScopeSorter.py,v 1.6 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.6  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.5  2001/06/11 10:37:49  chalky
 # Better grouping support
 #
@@ -89,7 +95,6 @@ class ScopeSorter:
     def _set_section_names(self, sections): self.__sections = sections
     def _handle_group(self, group):
 	"""Handles a group"""
-	print "Handling group",group.name()
 	section = group.name()[-1]
 	self._add_decl(group, group.name(), section)
 	for decl in group.declarations():

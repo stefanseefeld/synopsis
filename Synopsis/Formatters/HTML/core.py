@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.16 2001/06/16 01:29:42 stefan Exp $
+# $Id: core.py,v 1.17 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,12 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.17  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.16  2001/06/16 01:29:42  stefan
 # change the HTML formatter to not use chdir, as this triggers a but in python's import implementation
 #
@@ -126,6 +132,7 @@ class Config:
 	self.toc_out = ""
 	self.toc_in = []
 	self.basename = None
+	self.datadir = None
 	self.stylesheet = ""
 	self.stylesheet_file = None
 	self.sorter = None
@@ -155,7 +162,7 @@ class Config:
 	itself is also stored as config.obj"""
 	# obj.pages is a list of module names
 	self.obj = obj
-	options = ('pages', 'sorter', 'stylesheet', 'stylesheet_file',
+	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter')
 	for option in options:
 	    if hasattr(obj, option):
@@ -172,6 +179,10 @@ class Config:
     def _config_sorter(self, sorter):
 	if self.verbose: print "Using sorter:",sorter
 	self.sorter = import_object(sorter)()
+
+    def _config_datadir(self, datadir):
+	if self.verbose: print "Using datadir:", datadir
+	self.datadir = datadir
 
     def _config_stylesheet(self, stylesheet):
 	if self.verbose: print "Using stylesheet:", stylesheet
@@ -494,7 +505,7 @@ def __parseArgs(args, config_obj):
 
     # Convert the arguments to a list with custom getopt
     try:
-        opts,remainder = Util.getopt_spec(args, "hvo:s:n:c:C:S:t:r:")
+        opts,remainder = Util.getopt_spec(args, "hvo:s:n:c:C:S:t:r:d:")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -513,6 +524,8 @@ def __parseArgs(args, config_obj):
         o,a = opt
         if o == "-o":
             config.basename = a #open(a, "w")
+        elif o == "-d":
+            config.datadir = a
         elif o == "-s":
             config.stylesheet = a
 	elif o == "-S":

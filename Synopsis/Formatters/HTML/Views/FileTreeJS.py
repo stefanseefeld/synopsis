@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.3 2001/04/17 13:36:10 chalky Exp $
+# $Id: FileTreeJS.py,v 1.4 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.4  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.3  2001/04/17 13:36:10  chalky
 # Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
 #
@@ -52,16 +58,20 @@ from Tags import *
 class FileTree(JSTree.JSTree):
     def __init__(self, manager):
 	JSTree.JSTree.__init__(self, manager)
-	self.__filename = config.files.nameOfSpecial('file_tree')
-	link = href(self.__filename, 'File Tree', target="contents")
+	filename = config.files.nameOfSpecial('file_tree')
+	link = href(filename, 'File Tree', target="contents")
+	self.__filename = os.path.join(config.basename, filename)
 	self.manager.addRootPage('File Tree', link, 2)
 	myconfig = config.obj.FileTree
 	self._link_pages = myconfig.link_to_pages
    
     def process(self, start):
 	# Init tree
-	share = os.path.split(AST.__file__)[0]+"/../share" #hack..
-	self.js_init(share+'/syn-down.png', share+'/syn-right.png', share+'/syn-dot.png', 'tree_%s.png', 0)
+	share = config.datadir
+	self.js_init(os.path.join(share, 'syn-down.png'),
+                     os.path.join(share, 'syn-right.png'),
+                     os.path.join(share, 'syn-dot.png'),
+                     'tree_%s.png', 0)
 	# Start the file
 	self.startFile(self.__filename, "File Tree")
 	self.write(self.manager.formatRoots('File Tree', 2)+'<hr>')
@@ -81,7 +91,7 @@ class FileTree(JSTree.JSTree):
     def processFileTreeNode(self, node):
 	if hasattr(node, 'decls'):
 	    # Leaf node
-	    text = href(config.files.nameOfFile(node.path),node.path[-1],target='index')
+	    text = href(config.files.nameOfFile(node.path), node.path[-1], target='index')
 	    self.writeLeaf(text)
 	    return
 	# Non-leaf node
@@ -103,7 +113,7 @@ class FileTree(JSTree.JSTree):
 	if not hasattr(node, 'decls'): return
 
 	toc = config.toc
-	fname = config.files.nameOfFile(node.path)
+	fname = os.path.join(config.basename, config.files.nameOfFile(node.path))
 	name = list(node.path)
 	while len(name) and name[0] == '..': del name[0]
 	self.startFile(fname, string.join(name, os.sep))

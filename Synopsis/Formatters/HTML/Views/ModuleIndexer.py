@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.3 2001/02/01 18:36:55 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.4 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.4  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.3  2001/02/01 18:36:55  chalky
 # Moved TOC out to Formatter/TOC.py
 #
@@ -28,10 +34,9 @@
 #
 #
 
-# Synopsis Modules
+import os
 from Synopsis.Core import AST, Util
 
-# HTML Modules
 import core, Page
 from core import config
 from Tags import *
@@ -59,7 +64,7 @@ class ModuleIndexer(Page.Page):
 
 	# Create file
 	name = Util.ccolonName(ns.name()) or "Global Namespace"
-	fname = config.files.nameOfModuleIndex(ns.name())
+	fname = os.path.join(config.basename, config.files.nameOfModuleIndex(ns.name()))
 	self.startFile(fname, name+" Index")
 	link = href(config.files.nameOfScope(ns.name()), name, target='main')
 	self.write(entity('b', link+" Index"))
@@ -88,7 +93,7 @@ class ModuleIndexer(Page.Page):
 		    self.write(heading)
 		    heading = None
 		if isinstance(child, AST.Module):
-		    script = link_script%(config.files.nameOfModuleIndex(child.name()),config.files.nameOfScope(child.name()))
+		    script = link_script%(config.files.nameOfModuleIndex(child.name()), config.files.nameOfScope(child.name()))
 		    self.write(core.reference(child.name(), ns.name(), target='main', onClick=script))
 		else:
 		    self.write(core.reference(child.name(), ns.name(), target='main'))

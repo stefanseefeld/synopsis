@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.1 2001/06/16 01:34:47 stefan Exp $
+#  $Id: Config.py,v 1.2 2001/06/26 04:32:15 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -63,6 +63,7 @@ own something like ('mymodules.py', 'ScopeSorter')
 
 import sys
 
+prefix = '@prefix@'
 
 class Base:
     """The base class for configuration objects. 
@@ -77,7 +78,6 @@ class Base:
     @see Base.__init__()
     """
     name = 'synopsis'
-    prefix = '@prefix@'
     parser = None
     linker = None
     formatter = None
@@ -230,6 +230,7 @@ class Base:
 	    """
             name = 'HTML'
 	    # Defaults
+            datadir = prefix + '/share/synopsis'
 	    stylesheet = 'style.css'
             pages = ['ScopePages',
                               'ModuleListing',
@@ -244,7 +245,7 @@ class Base:
 	    class FilePages:
 		"""This is the config object for the FilePages module.
 		FilePages creates html pages that contain the actual source
-		code for the program, which depending on the languge may be
+		code for the program, which depending on the language may be
 		highlighted and hyperlinked. Currently only the C++ parser
 		provides this - other languages are displayed without
 		formatting.

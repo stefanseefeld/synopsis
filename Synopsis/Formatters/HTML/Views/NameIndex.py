@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.1 2001/02/13 02:54:15 chalky Exp $
+# $Id: NameIndex.py,v 1.2 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,11 +20,18 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.2  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.1  2001/02/13 02:54:15  chalky
 # Added Name Index page
 #
 #
 
+import os
 from Synopsis.Core import AST, Type
 from Synopsis.Formatter.HTML import core, Tags, Page
 from Tags import *
@@ -34,8 +41,9 @@ class NameIndex (Page.Page):
     """Creates an index of all names on one page in alphabetical order"""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.__filename = config.files.nameOfSpecial('name_index')
-	link = href(self.__filename, 'Name Index', target='main')
+	filename = config.files.nameOfSpecial('name_index')
+	link = href(filename, 'Name Index', target='main')
+	self.__filename = os.path.join(config.basename, filename)
 	manager.addRootPage('Name Index', link, 1)
 
     def process(self, start):

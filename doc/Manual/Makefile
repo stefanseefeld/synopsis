@@ -97,7 +97,7 @@ all.syn:	$(PYSYNS) c++.syn
 
 install: all
 	mkdir -p $(datadir)/synopsis
-	install -m644 html $(datadir)/synopsis
+	cp -pr html $(datadir)/synopsis
 	install -m644 Manual.pdf $(datadir)/synopsis
 
 clean:

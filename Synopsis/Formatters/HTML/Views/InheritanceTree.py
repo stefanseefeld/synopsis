@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.5 2001/02/06 05:13:05 chalky Exp $
+# $Id: InheritanceTree.py,v 1.6 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.6  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.5  2001/02/06 05:13:05  chalky
 # Fixes
 #
@@ -34,6 +40,7 @@
 #
 #
 
+import os
 from Synopsis.Core import Util
 
 import core, Page
@@ -43,8 +50,9 @@ from Tags import *
 class InheritanceTree(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.__filename = config.files.nameOfSpecial('tree')
-	link = href(self.__filename, 'Inheritance Tree', target='main')
+	filename = config.files.nameOfSpecial('tree')
+	link = href(filename, 'Inheritance Tree', target='main')
+	self.__filename = os.path.join(config.basename, filename)
 	manager.addRootPage('Inheritance Tree', link, 1)
  
     def process(self, start):

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.11 2001/06/11 10:37:49 chalky Exp $
+# $Id: Part.py,v 1.12 2001/06/26 04:32:15 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.12  2001/06/26 04:32:15  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.11  2001/06/11 10:37:49  chalky
 # Better grouping support
 #
@@ -186,8 +192,6 @@ class BaseASTFormatter(ASTFormatter):
 
     def formatForward(self, decl): return self.formatDeclaration(decl)
     def formatGroup(self, decl):
-        print "format group !"
-        #return self.formatDeclaration(decl)
 	return '',''
     def formatScope(self, decl):
 	"""Scopes have their own pages, so return a reference to it"""
@@ -350,9 +354,8 @@ class DetailASTFormatter (BaseASTFormatter):
 	    templ = ''
 
 	# Print filename
-	file = string.split(clas.file(), os.sep)
-	files = "Files: "+href(config.files.nameOfFile(file),clas.file(),target='index')+"<br>"
-
+        file = config.files.nameOfFile(string.split(clas.file(), os.sep))
+	files = "Files: "+href(file, clas.file(), target='index') + "<br>"
 	return '', '%s%s%s'%(name, templ, files)
 
     def formatOperationExceptions(self, oper):
@@ -431,20 +434,21 @@ class ClassHierarchyGraph (ClassHierarchySimple):
 	    if len(super) == 0 and len(sub) == 0:
 		# Skip classes with a boring graph
 		return '', ''
-        tmp = tempfile.mktemp("synopsis")
         label = config.files.nameOfScopedSpecial('inheritance', clas.name())
+        tmp = os.path.join(config.basename, label)
         dot_args = ["-o", tmp, "-f", "html", "-s", "-t", label]
         #if core.verbose: args.append("-v")
         Dot.toc = config.toc
         Dot.nodes = {}
         Dot.format(config.types, [clas], dot_args, None)
         text = ''
-        input = open(tmp + ".html", "r+")
+        input = open(tmp, "r+")
         line = input.readline()
         while line:
             text = text + line
             line = input.readline()
         input.close()
+        os.unlink(tmp)
 	return '', text
 
 class BaseFormatter(Type.Visitor, AST.Visitor):
@@ -646,7 +650,7 @@ class DetailFormatter(BaseFormatter):
 	try:
 	    for formatter in config.obj.ScopePages.detail_formatters:
 		clas = core.import_object(formatter, basePackage=base)
-		if config.verbose: print "Using summary formatter:",clas
+		if config.verbose: print "Using detail formatter:",clas
 		self.addFormatter(clas)
 	except AttributeError:
 	    self.addFormatter( DetailASTFormatter )
