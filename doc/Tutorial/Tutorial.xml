@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Synopsis Tutorial</title>
+
+    <releaseinfo>Version 0.1</releaseinfo>
+
+    <author>
+      <firstname>Stefan</firstname>
+
+      <surname>Seefeld</surname>
+    </author>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <section>
+      <title>Inspecting code</title>
+      <!-- Talk about the problem domain:
+         code documentation, software metrics, etc. -->
+      <para></para>
+    </section>
+
+    <section>
+      <title>The Abstract Syntax Tree</title>
+      <!-- Talk about source code and its representation
+         inside synopsis -->
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>The synopsis processing pipeline</title>
+      <!-- Talk about AST manipulation as done 
+         in synopsis -->
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>The synopsis executable</title>
+      <!-- Talk about the simplest frontend, the
+         synopsis executable: basic usage, options, etc. -->
+
+      <para></para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>Writing a processing pipeline</title>
+      <!-- When the synopsis executable isn't
+           powerful enough... -->
+
+    <para></para>
+
+    <section>
+      <title>The Processor class</title>
+      <!-- Talk about the Processor class design -->
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>Parameters and the order of initialization</title>
+      <!-- Talk about the Parameter setting for processors and
+           other 'Parametrized' -->
+
+      <para></para>
+    </section>
+
+    <section>
+      <title></title>
+
+      <para></para>
+    </section>
+  </chapter>
+</book>

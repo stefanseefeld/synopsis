@@ -26,15 +26,15 @@ TEXI		:= ast.texi type.texi util.texi \
             formatters-dia.texi formatters-db.texi formatters-dot.texi \
             formatters-html-simple.texi formatters-texi.texi
 
-all: html pdf info
-
-pdf: Manual.pdf
-
 vpath %.py $(topdir)
 vpath %.cc $(topdir)
 vpath %.h $(topdir)
 vpath %.hh $(topdir)
 vpath Manual.texi $(srcdir)
+
+all: html pdf info
+
+pdf: Manual.pdf
 
 html: all.syn
 	@echo formatting $@
