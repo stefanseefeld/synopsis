@@ -81,7 +81,7 @@ public:
 
   //. find the encoded name declared in this scope and 
   //. return a set of matching symbols.
-  SymbolSet find(PTree::Encoding const &) const throw();
+  SymbolSet find(PTree::Encoding const &, bool scope = false) const throw();
 
   //. look up the encoded name and return a set of matching symbols.
   SymbolSet lookup(PTree::Encoding const &) const;
@@ -98,7 +98,8 @@ public:
   //. as in this case a set of possibly overloaded functions is returned.
   FunctionNameSet lookup_function(PTree::Encoding const &name) const throw(TypeError);
 
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const = 0;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &,
+				       bool scope) const = 0;
   SymbolSet qualified_lookup(PTree::Encoding const &) const;
 
   //. recursively dump the content of the symbol table to a stream (for debugging).

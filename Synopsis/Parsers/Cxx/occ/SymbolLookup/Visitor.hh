@@ -25,6 +25,7 @@ public:
   using PTree::Visitor::visit;
   virtual void visit(PTree::List *);
   virtual void visit(PTree::NamespaceSpec *);
+  virtual void visit(PTree::Declaration *);
   virtual void visit(PTree::ClassSpec *);
 
 protected:

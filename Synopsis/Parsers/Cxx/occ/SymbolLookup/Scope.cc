@@ -37,12 +37,24 @@ void Scope::declare(const Encoding &name, const Symbol *s)
   my_symbols.insert(std::make_pair(name, s));
 }
 
-SymbolSet Scope::find(const Encoding &name) const throw()
+SymbolSet Scope::find(const Encoding &name, bool scope) const throw()
 {
   SymbolTable::const_iterator l = my_symbols.lower_bound(name);
   SymbolTable::const_iterator u = my_symbols.upper_bound(name);
   SymbolSet symbols;
-  for (; l != u; ++l) symbols.insert(l->second);
+  // [basic.lookup.qual]
+  // During the lookup for a name preceding the :: scope resolution operator, 
+  // object, function, and enumerator names are ignored.
+  if (scope)
+    for (; l != u; ++l)
+    {
+      if ((!dynamic_cast<VariableName const *>(l->second)) &&
+	  (!dynamic_cast<ConstName const *>(l->second)) &&
+	  (!dynamic_cast<FunctionName const *>(l->second)))
+	symbols.insert(l->second);
+    }
+  else
+    for (; l != u; ++l) symbols.insert(l->second);
   return symbols;
 }
 
@@ -50,7 +62,7 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
 {
   // If the name is qualified, start a qualified lookup.
   if (!name.is_qualified())
-    return unqualified_lookup(name);
+    return unqualified_lookup(name, false);
 
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();
@@ -61,7 +73,7 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
 
   // Else do an unqualified lookup for the scope, followed by a
   // qualified lookup of the remainder in that scope.
-  SymbolSet symbols = unqualified_lookup(symbol_name);
+  SymbolSet symbols = unqualified_lookup(symbol_name, true);
   if (symbols.empty())
     throw Undefined(symbol_name);
   else if (symbols.size() > 1)
@@ -74,6 +86,9 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
   // within its scope.
   Symbol const *symbol = *symbols.begin();
   Scope const *scope = symbol->scope()->find_scope(symbol->ptree());
+  if (!scope) 
+    throw InternalError("undeclared scope !");
+
   // Now do a qualified lookup of the remainder in the given scope.
   return scope->qualified_lookup(remainder);
 }
