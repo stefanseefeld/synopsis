@@ -7,13 +7,13 @@
 // see the file COPYING for details.
 //
 
+#include "synopsis.hh"
 #include <map>
 #include <set>
 
 #include <iostream>
 #include <signal.h>
 
-#include "synopsis.hh"
 #include "filter.hh"
 
 #ifdef DO_TRACE
@@ -751,10 +751,19 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
 PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
 {
   Trace trace("Synopsis::addEnumerator");
-  PyObject *enumor, *file, *name;
-  enumor = PyObject_CallMethod(m_ast_module, "Enumerator", "OiOOs",
-                               file = m->py(decl->file()), decl->line(), m->cxx(),
-                               name = m->Tuple(decl->name()), decl->value().c_str());
+  PyObject *enumor, *file, *name, *type;
+  if (decl->type() == "dummy") // work around a hack with another hack ;-)
+  {
+     std::vector<std::string> eos;
+     eos.push_back("EOS");
+     enumor = PyObject_CallMethod(m_ast_module, "Builtin", "OiOOO",
+                                  file = m->py(decl->file()), decl->line(), m->cxx(),
+                                  type = m->py("EOS"), name = m->Tuple(eos));
+  }
+  else
+     enumor = PyObject_CallMethod(m_ast_module, "Enumerator", "OiOOs",
+                                  file = m->py(decl->file()), decl->line(), m->cxx(),
+                                  name = m->Tuple(decl->name()), decl->value().c_str());
   addComments(enumor, decl);
   Py_DECREF(file);
   Py_DECREF(name);

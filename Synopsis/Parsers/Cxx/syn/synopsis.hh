@@ -10,12 +10,12 @@
 #ifndef H_SYNOPSIS_CPP_SYNOPSIS
 #define H_SYNOPSIS_CPP_SYNOPSIS
 
+#include <Python.h>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <list>
 #include <stack>
-#include <Python.h>
 #include "ast.hh"
 #include "type.hh"
 
