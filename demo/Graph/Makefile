@@ -1,27 +1,34 @@
-synopsis	:= ../../bin/synopsis -p C++ -f Dot
+synopsis := python synopsis.py
 
 all: class# collaboration
 
-class:	class.ps class.png class.map class.html
-collaboration: col.ps
+class:	class.ps class.html
+collaboration: collaboration.ps collaboration.html
 
-class.dot: demo.hh
-	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,dot -o $@ $<
-class.ps: demo.hh
-	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,ps -o $@ $<
-class.png: demo.hh
-	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,png -o $@ $<
-class.map: demo.hh
-	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,map -o $@ $<
-demo: demo.hh
-	../../bin/synopsis -Wc,parser=C++,formatter=HTML -Wf,-t,demo.toc,-S,../html.css -o $@ $<
-	touch demo
-class.html: demo.hh demo
-	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,html,-r,"demo.toc|demo" -o $@ $<
-col.ps: demo.hh
-	$(synopsis) -Wf,-c -Wf,-t,"collaboration graph" -o $@ $<
+class.dot: demo.syn
+	$(synopsis) dot --type='inheritance' --format='dot' \
+               --title='inheritance graph' --output=$@ $<
+class.ps: demo.syn
+	$(synopsis) dot --type='inheritance' \
+               --title='inheritance graph' --output=$@ $<
+
+class.html: demo.syn
+	$(synopsis) dot --type='inheritance' --format='html' \
+               --title='inheritance graph' --output=$@ $<
+
+collaboration.ps: demo.syn
+	$(synopsis) dot --type='collaboration' \
+               --title='inheritance graph' --output=$@ $<
+
+collaboration.html: demo.syn
+	$(synopsis) dot --type='collaboration' --format='html' \
+               --title='inheritance graph' --output=$@ $<
+
+demo.syn: demo.hh
+	$(synopsis) parse --output=$@ $?
 
 clean:
-		rm -fr *~ *.ps *.png *.map *.html *.dot *.toc *.syn demo *.pyc *.pyo
+	rm -rf demo.syn
 
 distclean:	clean
+		rm -fr *~ *.ps *.png *.map *.html *.dot *.toc *.syn demo
