@@ -1112,7 +1112,12 @@ declaration_list:  declaration SEMICOLON
                 |  declaration SEMICOLON declaration_list
         {
             $$ = $1;
-            $1->next = $3;
+
+			Decl*	appendDecl = $1;
+			while (appendDecl->next != NULL)
+				appendDecl = appendDecl->next;
+
+            appendDecl->next = $3;
             delete $2;
         }
         ;
