@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.5 2003/11/18 21:56:27 stefan Exp $
+# $Id: Parser.py,v 1.6 2003/11/20 22:01:13 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -20,6 +20,6 @@ class Parser(Processor):
       self.set_parameters(kwds)
       self.ast = ast
       for file in input:
-         ast.merge(parse(file, 0, {}, None))
+         ast.merge(parse(file, 0, self.verbose, self.basename))
 
       return self.output_and_return_ast()
