@@ -9,8 +9,9 @@ sxr:	GapBuffer.syn GapBuffer.xref
 	$(synopsis) sxr --output=$@ $<
 
 texi:	GapBuffer.texi
+pdf: Manual.pdf
 
-pdf:	texi
+Manual.pdf:	GapBuffer.texi
 	texi2pdf Manual.texi
 
 GapBuffer.syn xref/GapBuffer.hh links/GapBuffer.hh: GapBuffer.hh
