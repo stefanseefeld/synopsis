@@ -1,6 +1,6 @@
 # Makefile for Synopsis RefManual
 
-synopsis	:= ../../synopsis
+synopsis	:= ../../synopsis -c config.py
 bpath		:= ../../..
 spath		:= syn
 cxxpath		:= ../../../Synopsis/Parser/C++/occ/src/occ
@@ -29,28 +29,31 @@ CXXSYNS		:= $(patsubst $(bpath)/%.hh,$(spath)/%.csyn,$(CXXSOURCES))
 all:	manual
 
 manual:   all.syn
-	$(synopsis) -c config.py -Wc,formatter=HTML,style=synopsis -o Manual $^
+	$(synopsis) -Wc,formatter=HTML -o Manual $^
+
+manual-doxygen:   all.syn
+	$(synopsis) -Wc,formatter=Doxygen -o ManualD $^
 
 all.syn:	$(PYSYNS) $(CXXSYNS)
-	$(synopsis) -c config.py -Wl,-l -o all.syn $^
+	$(synopsis) -Wc,linker=All -o all.syn $^
 
 # Compile Python files
 $(spath)/%.syn:	$(bpath)/%.py
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
+	$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
 
 # Compile main 'synopsis' file
 $(spath)/Synopsis/synopsis.syn: $(bpath)/Synopsis/synopsis
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
+	$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
 
 # Compile C++ files
 $(spath)/%.csyn: $(bpath)/%.hh
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -Wl,-p,ssd -o $@ $?
+	$(synopsis) -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
 
 clean:
 	rm -rf $(spath)
 
 distclean:  clean
-	rm -rf Manual
+	rm -rf Manual syn

@@ -1,5 +1,30 @@
 from Synopsis.Config import Base
 class Config (Base):
+    class Parser (Base.Parser):
+	class CXX (Base.Parser.CXX):
+	    main_file = 1
+	    basename = '../../../'
+	class Python (Base.Parser.Python):
+	    basename = '../../../'
+	modules = {
+	    'C++':CXX,
+	    'Py':Python
+	}
+
+    class Linker (Base.Linker):
+	class Cxx (Base.Linker.Linker):
+	    comment_processors = ['ssd']
+	class Py (Base.Linker.Linker):
+	    pass
+	class All (Base.Linker.Linker):
+	    # For linking all the .syn files together
+	    languagize = 1
+	modules = {
+	    'C++':Cxx,
+	    'Py':Py,
+	    'All':All
+	}
+
     class Formatter (Base.Formatter):
 	class HTML (Base.Formatter.HTML):
 	    toc_output = 'links.toc'
