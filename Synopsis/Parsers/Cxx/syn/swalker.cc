@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.54 2002/08/23 08:30:08 chalky Exp $
+// $Id: swalker.cc,v 1.55 2002/09/20 09:51:13 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.55  2002/09/20 09:51:13  chalky
+// Don't keep comments originating from different file than declaration
+// Work around bug in g++ 3.2 ? (*iter++ thing)
+//
 // Revision 1.54  2002/08/23 08:30:08  chalky
 // Add ability to parse typeid constructs, for boost.
 //
@@ -182,6 +186,13 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
     {
       Ptree* first = node->First();
       if (!first || !first->IsLeaf())
+        {
+          node = next;
+          continue;
+        }
+
+      update_line_number(node);
+      if (decl && m_filename != decl->filename())
         {
           node = next;
           continue;
@@ -1111,6 +1122,7 @@ SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& para
 
 void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType)
 {
+  STrace trace("SWalker::TranslateFunctionName");
   if (m_decoder->isName(encname))
     {
       if (encname[1] == '@')
@@ -1140,7 +1152,8 @@ void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types:
       m_decoder->init(encname);
       code_iter& iter = ++m_decoder->iter();
       realname = m_decoder->decodeName()+"<";
-      code_iter tend = iter + *iter++ - 0x80;
+      code_iter tend = iter + (*iter - 0x80u);
+      iter++; // For some reason, putting this in prev line causes error with 3.2
       bool first = true;
       // Append type names to realname
       while (iter <= tend)
