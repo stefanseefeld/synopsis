@@ -1,4 +1,3 @@
-# $Id: Parser.py,v 1.8 2003/11/27 03:38:38 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -21,7 +20,7 @@ import parser, exparse, sys, os, string, getopt
 
 class Parser(Processor):
 
-   basename = Parameter('', 'basename to strip off of the parsed modules')
+   base_path = Parameter('', 'path prefix to strip off of the file names')
     
    def process(self, ast, **kwds):
 
@@ -45,8 +44,8 @@ class Parser(Processor):
 
       # Split the filename into a scoped tuple name
       name = file
-      if file[:len(self.basename)] == self.basename:
-         name = filename = file[len(self.basename):]
+      if file[:len(self.base_path)] == self.base_path:
+         name = filename = file[len(self.base_path):]
       name = string.split(os.path.splitext(name)[0], os.sep)
       exparse.packagepath = string.join(string.split(file, os.sep)[:-1], os.sep)
       exparse.packagename = name[:-1]

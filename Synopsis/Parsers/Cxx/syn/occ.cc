@@ -218,8 +218,6 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
                         &syn_xref_prefix))
     return 0;
 
-  std::cout << "running occ on " << src << ' ' << syn_base_path << std::endl;
-
   Py_INCREF(ast);
 
   if (verbose) ::verbose = true;
