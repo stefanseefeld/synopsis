@@ -9,6 +9,7 @@
 #define _Synopsis_Path_hh
 
 #include <string>
+#include <stdexcept>
 
 namespace Synopsis
 {
@@ -38,6 +39,10 @@ private:
   static std::string normalize(const std::string &);
   std::string my_impl;
 };
+
+//. create directory, makes all intermediate-level directories 
+//. needed to contain the leaf directory.
+void makedirs(const Path &) throw(std::runtime_error);
 
 }
 
