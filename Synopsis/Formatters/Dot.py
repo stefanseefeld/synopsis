@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.41 2003/12/05 17:50:58 stefan Exp $
+# $Id: Dot.py,v 1.42 2003/12/09 05:58:22 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -484,10 +484,10 @@ class Formatter(Processor):
          os.rename(tmpfile, self.output)
       elif format == "png":
          _format_png(tmpfile, self.output)
-         #os.remove(tmpfile)
+         os.remove(tmpfile)
       elif format == "html":
          _format_html(tmpfile, self.output, self.base_url)
-         #os.remove(tmpfile)
+         os.remove(tmpfile)
       else:
          _format(tmpfile, self.output, format)
          os.remove(tmpfile)
