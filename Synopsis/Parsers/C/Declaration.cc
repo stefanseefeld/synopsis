@@ -117,11 +117,12 @@ Type::printType(std::ostream& out, Symbol *name, bool showBase, int level) const
   if (showBase)
   {
     printBase(out,level);
-
+    // FIXME: why do we need a space here ?
+    // 'out' was once 'cout' due to a typo, and it appears the regression test
+    // output was generated with that, so keep it that way for now.
     if (name != NULL)
       out << " ";
   }
-
   printBefore(out,name,level);
   printAfter(out);
 }
@@ -1069,6 +1070,14 @@ GccAttrib::print( std::ostream& out ) const
       out << "__const__";
       break;
 
+    case GCC_TransparentUnion:
+      out << "__transparent_union__";
+      break;
+
+    case GCC_Pure:
+      out << "__pure__";
+      break;
+
     case GCC_NoReturn:
       out << "__noreturn__";
       break;
@@ -1194,27 +1203,27 @@ Decl::print(std::ostream& out, bool showBase, int level) const
     // Hack to fix K&R non-declarations
     if (form == NULL)
       out << "int ";
-    }
+  }
 
-    if (form) form->printType(out,name,showBase,level);
-    else if (name) out << *name;
+  if (form) form->printType(out,name,showBase,level);
+  else if (name) out << *name;
 
-    if (attrib) attrib->print(out);
+  if (attrib) attrib->print(out);
 
-    if (initializer)
-    {
-      out << " = ";
-      initializer->print(out);
-    }
+  if (initializer)
+  {
+    out << " = ";
+    initializer->print(out);
+  }
 
-    /*
-    if (!form->isBaseType())
-    {
-        out << "  [FORM: ";
-        form->printForm(out);
-        out << " ]";
-    }
-    */
+  /*
+  if (!form->isBaseType())
+  {
+    out << "  [FORM: ";
+    form->printForm(out);
+    out << " ]";
+  }
+  */
 }
 
 void
