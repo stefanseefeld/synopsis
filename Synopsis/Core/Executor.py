@@ -120,7 +120,7 @@ class SourceExecutor (Executor):
 			print "Warning:",e
 	    elif rule.type == 'Glob':
 		glob = self.compile_glob(rule.glob)
-		dirs = map(os.path.abspath, rule.dirs)
+		dirs = list(rule.dirs)
 		while len(dirs):
 		    dir = dirs.pop(0)
 		    # Get list of files in this dir
@@ -135,6 +135,15 @@ class SourceExecutor (Executor):
 			    # Check if matches glob
 			    if glob.match(file):
 				names.append((filepath, stats[stat.ST_MTIME]))
+	    elif rule.type == 'Exclude':
+		glob = self.compile_glob(rule.glob)
+		old_names = names
+		names = []
+		for name in old_names:
+		    # Only re-add ones that don't match
+		    if not glob.match(name[0]):
+		    names.append(name)
+	   
 	return names
     def get_output(self, name):
 	"""Raises an exception, since the SourceAction is only used to
