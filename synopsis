@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.1 2000/03/06 03:56:58 stefan Exp $
+# $Id: synopsis,v 1.2 2000/03/07 05:27:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -21,6 +21,7 @@
 #  02111-1307, USA.
 
 import sys, getopt, os, os.path, string
+import pickle
 
 def version(): print "synopsis version 0.1"
 cmdname = os.path.basename(sys.argv[0])
@@ -29,22 +30,24 @@ def usage():
     print """
 The supported flags are:
 
-  -p<parser>          Select a parser
-  -Wp<arg>[,<arg>...] Send args to the parser
-  -f<formatter>       Select a formatter
-  -Wf<arg>[,<arg>...] Send args to the formatter
-  -v                  Print version info then exit
-  -h                  Print this usage message and exit"""
+  -p <parser>          Select a parser
+  -Wp <arg>[,<arg>...] Send args to the parser
+  -f <formatter>       Select a formatter
+  -Wf <arg>[,<arg>...] Send args to the formatter
+  -o <file>            Write output <file>
+  -v                   Print version info then exit
+  -h                   Print this usage message and exit"""
 
 parser_cmd = ""
 parser_args = []
 formatter_cmd = ""
 formatter_args = []
+output = ""
 
 def parseArgs(args):
-    global parser_cmd, parser_args, formatter_cmd, formatter_args
+    global parser_cmd, parser_args, formatter_cmd, formatter_args, output
     try:
-        opts,files = getopt.getopt(args, "p:f:W:vh")
+        opts,files = getopt.getopt(args, "p:f:W:o:vh")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.stderr.write("Use " + cmdname + " -h for help\n")
@@ -69,6 +72,9 @@ def parseArgs(args):
                 sys.stderr.write("Use " + cmdname + " -h for help\n")
                 sys.exit(1)
 
+        elif o == "-o":
+            output = a
+
         elif o == "-v":
             version()
             sys.exit(0)
@@ -76,14 +82,6 @@ def parseArgs(args):
         elif o == "-h" or o == "-h":
             usage()
             sys.exit(0)
-
-    if len(parser_cmd) == 0:
-        sys.stderr.write("No parser specified\n")
-        sys.exit(1)
-
-    if len(formatter_cmd) == 0:
-        sys.stderr.write("No formatter specified\n")
-        sys.exit(1)
 
     return files
 
@@ -107,31 +105,48 @@ def main(argv=None):
         sys.stderr.write(cmdname + ": No files specified\n")
         sys.exit(1)
 
-    #
-    # try importing the parser
-    #
-    try:
-        parser = my_import("Parser." + parser_cmd)
-    except ImportError:
-        sys.stderr.write(cmdname + ": Could not import parser `" + parser_cmd + "'\n")
-        sys.exit(1)
-            
-    #
-    # try importing the formatter
-    #
-    try:
-        formatter = my_import("Formatter." + formatter_cmd)
-    except ImportError:
-        sys.stderr.write(cmdname + ": Could not import formatter `" + formatter_cmd + "'\n")
-        sys.exit(1)
-
     dictionary = []
+    if parser_cmd != "":
+        try:
+            parser = my_import("Parser." + parser_cmd)
+        except ImportError:
+            sys.stderr.write(cmdname + ": Could not import parser `" + parser_cmd + "'\n")
+            sys.exit(1)
+
+    #
+    # read files, either from picled data base or from parser
+    #
     for file in files:
         if file != "-" and not os.path.isfile(file):
             sys.stderr.write(cmdname + ": `" + file + "' does not exist\n")
             sys.exit(1)
 
-        dictionary.extend(parser.parse(file, parser_args))
+        if parser_cmd == "":
+            unpickler = pickle.Unpickler(open(file, "r"))
+            x = unpickler.load()
+            dictionary.append(x)
+
+        else:
+            dictionary.extend(parser.parse(file, parser_args))
+
+    #
+    # resolve symbols here...
+    #
+
+    #
+    # generate output, either with picler or with a formatter
+    #
+    if formatter_cmd == "":
+        pickler = pickle.Pickler(open(output, "w"))
+        for x in dictionary: pickler.dump(x)
+
+    else:
+        try:
+            formatter = my_import("Formatter." + formatter_cmd)
+        except ImportError:
+            sys.stderr.write(cmdname + ": Could not import formatter `" + formatter_cmd + "'\n")
+            sys.exit(1)
+
         formatter.format(dictionary, formatter_args)
 
 if __name__ == '__main__':

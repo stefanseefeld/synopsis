@@ -100,10 +100,41 @@ class Translator (idlvisitor.AstVisitor):
 
     def visitForward(self, node):      return
     def visitConst(self, node):        return
-    def visitDeclarator(self, node):   return
-    def visitTypedef(self, node):      return
-    def visitMember(self, node):       return
-    def visitStruct(self, node):       return
+    def visitDeclarator(self, node): return
+    def visitTypedef(self, node):
+        type = Types.Typedef(node.file(),
+                             node.line(),
+                             "IDL",
+                             "typedef",
+                             self.__names.lookup(node.aliasType()),
+                             [],
+                             node.declarators()[0].identifier())
+        if len(self.__current): self.__current[-1].types().append(type)
+        else: self.__rootnode.append(type)
+
+    def visitMember(self, node):
+        self.__current[-1].attributes().append(Types.Variable(node.file(),
+                                                              node.line(),
+                                                              "IDL",
+                                                              "member",
+                                                              self.__names.lookup(node.memberType()),
+                                                              [],
+                                                              node.declarators()[0].identifier(),
+                                                              ""))
+    def visitStruct(self, node):
+        self.__current.append(Types.Class(node.file(),
+                                          node.line(),
+                                          "IDL",
+                                          "struct",
+                                          node.identifier(),
+                                          node.scopedName()))
+        for member in node.members(): member.accept(self)
+        if len(self.__current) == 1:
+            self.__rootNodes.append(self.__current[0])
+        else:
+            self.__current[-2].types().append(self.__current[-1])
+        self.__current.pop()
+        
     def visitException(self, node):    return
     def visitCaseLabel(self, node):    return
     def visitUnionCase(self, node):    return
@@ -119,7 +150,7 @@ class Translator (idlvisitor.AstVisitor):
                                                       "IDL",
                                                       "attribute",
                                                       pre,
-                                                      node.attrType(),
+                                                      self.__names.lookup(node.attrType()),
                                                       node.identifiers()[0],
                                                       self.__current[-1].scope(),
                                                       []))
