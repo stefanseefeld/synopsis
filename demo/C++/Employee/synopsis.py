@@ -6,9 +6,7 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Processors import *
 from Synopsis.Formatters import HTML
 
-linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
-                NameMapper(),       # apply name mapping if any (prefix adding, etc.)
-                JavaComments(),     # only keep javadoc-like comments
+linker = Linker(JavaComments(),     # only keep javadoc-like comments
                 JavaTags(),         # process javadoc-like tags
                 Summarizer(),       
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations

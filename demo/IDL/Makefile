@@ -4,6 +4,7 @@ all: CosNaming Types Graphic Input html
 
 html: tmp.syn
 	$(synopsis) format --output=$@ $?
+	touch $@
 
 tmp.syn:	CosNaming.syn Types.syn Graphic.syn Input.syn
 	$(synopsis) link --output=$@ $?
@@ -13,6 +14,7 @@ tmp.syn:	CosNaming.syn Types.syn Graphic.syn Input.syn
 
 %: %.syn
 	$(synopsis) format --output=$@ $?
+	touch $@
 
 clean:
 	rm -fr *.syn *~

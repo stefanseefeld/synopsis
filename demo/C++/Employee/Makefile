@@ -4,6 +4,7 @@ all:	html
 
 html: Employee-linked.syn
 	$(synopsis) format --output=$@ $?
+	touch $@
 
 Employee-linked.syn: Employee.syn
 	$(synopsis) link --output=$@ $?
