@@ -2,7 +2,12 @@ synopsis := python synopsis.py
 
 topdir	:= ../..
 
-py_src		:= $(shell find $(topdir)/Synopsis -name '*.py' -print)
+py_src		:= $(wildcard $(topdir)/Synopsis/*.py)
+py_src		+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
+py_src		+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
+py_src		+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
+# don't include dist yet, synopsis can't deal with dynamic type overrides yet
+# don't include UI yet, as it isn't up to date with the rest
 py_syn		:= $(patsubst $(topdir)/%.py, %.syn, $(py_src))
 cxx_hh  	:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/syn/*.hh)
 cxx_hh_syn	:= $(patsubst $(topdir)/%.hh, %.hh.syn, $(cxx_hh))
@@ -160,7 +165,7 @@ install: all
 	install -m644 Manual.pdf $(datadir)/Synopsis
 
 clean:
-	rm -rf Synopsis link xref *.syn links.toc $(TEXI) \
+	rm -rf Synopsis links xref *.syn links.toc $(TEXI) \
      $(addprefix Manual., $(texi-help))
 
 distclean:  clean
