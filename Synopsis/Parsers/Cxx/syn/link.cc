@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.22 2002/11/01 07:15:56 chalky Exp $
+ * $Id: link.cc,v 1.23 2002/11/01 08:15:31 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.23  2002/11/01 08:15:31  chalky
+ * Remove debug cout
+ *
  * Revision 1.22  2002/11/01 07:15:56  chalky
  * Reject duplicate links
  *
@@ -336,7 +339,6 @@ namespace
         // Couldn't match by name for this column
         return false;
     }
-    std::cout << "Found dupe at line " << link->line << " : " << link->name.back() << std::endl;
     // name matched at both ends
     return true;
   }
