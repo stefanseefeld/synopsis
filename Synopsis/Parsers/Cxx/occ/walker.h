@@ -54,6 +54,7 @@ public:
     virtual Ptree* TranslateMetaclassDecl(Ptree*);
     virtual Ptree* TranslateLinkageSpec(Ptree*);
     virtual Ptree* TranslateNamespaceSpec(Ptree*);
+    virtual Ptree* TranslateNamespaceAlias(Ptree*);
     virtual Ptree* TranslateUsing(Ptree*);
     virtual Ptree* TranslateDeclaration(Ptree*);
     virtual Ptree* TranslateStorageSpecifiers(Ptree*);

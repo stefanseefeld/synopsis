@@ -327,6 +327,11 @@ Ptree* Walker::TranslateNamespaceSpec(Ptree* def)
 						  body2));
 }
 
+Ptree* Walker::TranslateNamespaceAlias(Ptree* def)
+{
+  return def;
+}
+
 Ptree* Walker::TranslateUsing(Ptree* def)
 {
     return def;

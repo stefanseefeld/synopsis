@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2001 Shigeru Chiba, Tokyo Institute of Technology.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -11,6 +11,7 @@
   software for any purpose.  It is provided "as is" without express or
   implied warranty.
 */
+
 /*
   Copyright (c) 1995, 1996 Xerox Corporation.
   All Rights Reserved.
@@ -170,145 +171,152 @@ inline bool is_float_suffix(char c){
 
 // tokens
 
-#define	Identifier	258
-#define	Constant	262
-#define	CharConst	263
-#define	StringL		264
-#define	AssignOp	267
-#define	EqualOp		268
-#define	RelOp		269
-#define	ShiftOp		270
-#define	LogOrOp		271
-#define	LogAndOp	272
-#define	IncOp		273
-#define	Scope		274
-#define	Ellipsis	275
-#define	PmOp		276
-#define	ArrowOp		277
-#define	BadToken	278
-#define	AUTO		281
-#define	CHAR		282
-#define	CLASS		283
-#define	CONST		284
-#define	DELETE		285
-#define	DOUBLE		286
-#define	ENUM		287
-#define	EXTERN		288
-#define	FLOAT		289
-#define	FRIEND		290
-#define	INLINE		291
-#define	INT		292
-#define	LONG		293
-#define	NEW		294
-#define	OPERATOR	295
-#define	PRIVATE		296	/* must be consistent with Class::Private */
-#define	PROTECTED	297	/* must be consistent with Class::Protected */
-#define	PUBLIC		298	/* must be consistent with Class::Public */
-#define	REGISTER	299
-#define	SHORT		300
-#define	SIGNED		301
-#define	STATIC		302
-#define	STRUCT		303
-#define	TYPEDEF		304
-#define	UNION		305
-#define	UNSIGNED	306
-#define	VIRTUAL		307
-#define	VOID		308
-#define	VOLATILE	309
-#define	TEMPLATE	310
-#define	MUTABLE		311
-#define	BREAK		312
-#define	CASE		313
-#define	CONTINUE	314
-#define	DEFAULT		315
-#define	DO		316
-#define	ELSE		317
-#define	FOR		318
-#define	GOTO		319
-#define	IF		320
-#define	RETURN		321
-#define	SIZEOF		322
-#define	SWITCH		323
-#define	THIS		324
-#define	WHILE		325
-#define	ATTRIBUTE	326		// g++
-#define	METACLASS	327
-#define	UserKeyword	328
-#define	UserKeyword2	329
-#define	UserKeyword3	330
-#define	UserKeyword4	331
-#define BOOLEAN		332
-#define EXTENSION	333		// g++
-#define TRY		334
-#define CATCH		335
-#define THROW		336
-#define UserKeyword5	337
-#define NAMESPACE	338
-#define USING		339
-#define TYPEID		340
-#define TYPEOF		341
+enum {
 
-// non terminals
+Identifier=	258,
+Constant=	262,
+CharConst=	263,
+StringL	=	264,
+AssignOp=	267,
+EqualOp	=	268,
+RelOp	=	269,
+ShiftOp	=	270,
+LogOrOp	=	271,
+LogAndOp=	272,
+IncOp	=	273,
+Scope	=	274,
+Ellipsis=	275,
+PmOp	=	276,
+ArrowOp	=	277,
+BadToken=	278,
+AUTO	=	281,
+CHAR	=	282,
+CLASS	=	283,
+CONST	=	284,
+DELETE	=	285,
+DOUBLE	=	286,
+ENUM	=	287,
+EXTERN	=	288,
+FLOAT	=	289,
+FRIEND	=	290,
+INLINE	=	291,
+INT	=	292,
+LONG	=	293,
+NEW	=	294,
+OPERATOR=	295,
+PRIVATE	=	296	/*=must be consistent with Class::Private */,
+PROTECTED=	297	/*=must be consistent with Class::Protected */,
+PUBLIC	=	298	/*=must be consistent with Class::Public */,
+REGISTER=	299,
+SHORT	=	300,
+SIGNED	=	301,
+STATIC	=	302,
+STRUCT	=	303,
+TYPEDEF	=	304,
+UNION	=	305,
+UNSIGNED=	306,
+VIRTUAL	=	307,
+VOID	=	308,
+VOLATILE=	309,
+TEMPLATE=	310,
+MUTABLE	=	311,
+BREAK	=	312,
+CASE	=	313,
+CONTINUE=	314,
+DEFAULT	=	315,
+DO	=	316,
+ELSE	=	317,
+FOR	=	318,
+GOTO	=	319,
+IF	=	320,
+RETURN	=	321,
+SIZEOF	=	322,
+SWITCH	=	323,
+THIS	=	324,
+WHILE	=	325,
+ATTRIBUTE=	326,		//=g++,
+METACLASS=	327,
+UserKeyword=	328,
+UserKeyword2=	329,
+UserKeyword3=	330,
+UserKeyword4=	331,
+BOOLEAN	=	332,
+EXTENSION=	333,		//=g++,
+TRY	=	334,
+CATCH	=	335,
+THROW	=	336,
+UserKeyword5=	337,
+NAMESPACE=	338,
+USING	=	339,
+TYPEID=         340,
+TYPEOF=         341,
+WideStringL =   342,
+WideCharConst = 343,
+WCHAR =         344,
+    
+//=non terminals,
 
-#define ntDeclarator	400
-#define ntName		401
-#define ntFstyleCast	402
-#define ntClassSpec	403
-#define ntEnumSpec	404
-#define ntDeclaration	405
-#define ntTypedef	406
-#define ntTemplateDecl	407
-#define ntMetaclassDecl	408
-#define ntLinkageSpec	409
-#define ntAccessSpec	410
-#define ntUserAccessSpec 411
-#define ntUserdefKeyword 412
-#define ntExternTemplate 413
-#define ntAccessDecl	414
-#define ntNamespaceSpec	415
-#define ntUsing		416
-#define ntTemplateInstantiation	417
+ntDeclarator	=400,
+ntName		=401,
+ntFstyleCast	=402,
+ntClassSpec	=403,
+ntEnumSpec	=404,
+ntDeclaration	=405,
+ntTypedef	=406,
+ntTemplateDecl	=407,
+ntMetaclassDecl	=408,
+ntLinkageSpec	=409,
+ntAccessSpec	=410,
+ntUserAccessSpec=411,
+ntUserdefKeyword=412,
+ntExternTemplate=413,
+ntAccessDecl	=414,
+ntNamespaceSpec	=415,
+ntUsing		=416,
+ntTemplateInstantiation=	417,
+ntNamespaceAlias=418,
 
-#define ntIfStatement		420
-#define ntSwitchStatement	421
-#define ntWhileStatement	422
-#define ntDoStatement		423
-#define ntForStatement		424
-#define ntBreakStatement	425
-#define ntContinueStatement	426
-#define ntReturnStatement	427
-#define ntGotoStatement		428
-#define ntCaseStatement		429
-#define ntDefaultStatement	430
-#define ntLabelStatement	431
-#define ntExprStatement		432
-#define ntTryStatement		433
+ntIfStatement	=	420,
+ntSwitchStatement=	421,
+ntWhileStatement=	422,
+ntDoStatement	=	423,
+ntForStatement	=	424,
+ntBreakStatement=	425,
+ntContinueStatement=	426,
+ntReturnStatement=	427,
+ntGotoStatement	=	428,
+ntCaseStatement	=	429,
+ntDefaultStatement=	430,
+ntLabelStatement=	431,
+ntExprStatement	=	432,
+ntTryStatement	=	433,
 
-#define ntCommaExpr		450
-#define ntAssignExpr		451
-#define ntCondExpr		452
-#define ntInfixExpr		453
-#define ntPmExpr		454
-#define ntCastExpr		455
-#define ntUnaryExpr		456
-#define ntSizeofExpr		457
-#define ntNewExpr		458
-#define ntDeleteExpr		459
-#define ntArrayExpr		460
-#define ntFuncallExpr		461
-#define ntPostfixExpr		462
-#define ntUserStatementExpr	463
-#define ntDotMemberExpr		464
-#define ntArrowMemberExpr	465
-#define ntParenExpr		466
-#define ntStaticUserStatementExpr 467
-#define ntThrowExpr		468
-#define ntTypeidExpr		469
-#define ntTypeofExpr		470
+ntCommaExpr	=	450,
+ntAssignExpr	=	451,
+ntCondExpr	=	452,
+ntInfixExpr	=	453,
+ntPmExpr	=	454,
+ntCastExpr	=	455,
+ntUnaryExpr	=	456,
+ntSizeofExpr	=	457,
+ntNewExpr	=	458,
+ntDeleteExpr	=	459,
+ntArrayExpr	=	460,
+ntFuncallExpr	=	461,
+ntPostfixExpr	=	462,
+ntUserStatementExpr=	463,
+ntDotMemberExpr	=	464,
+ntArrowMemberExpr=	465,
+ntParenExpr	=	466,
+ntStaticUserStatementExpr=467,
+ntThrowExpr	=	468,
+ntTypeidExpr=           469,
+ntTypeofExpr=           470,
 
-#define Ignore		500
-#define ASM		501
-#define DECLSPEC        502
-#define INT64		503
+Ignore	=	500,
+ASM	=	501,
+DECLSPEC=       502,
+INT64	=	503
+};
 
 #endif /* _token_h */
