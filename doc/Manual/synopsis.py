@@ -29,7 +29,6 @@ cxx = Cxx.Parser(base_path = topdir,
                  xref_prefix='xref')
 
 cxx_processor = Linker(EmptyNS(),
-                       Dummies(),
                        SSDComments(),
                        JavaTags(),
                        Summarizer(),

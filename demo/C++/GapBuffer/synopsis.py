@@ -17,8 +17,7 @@ linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper
                 SSDComments(),      # filter out any non-'//.' comments
                 Grouper1(),         # group declarations according to '@group' tags
                 CommentStripper(),  # strip any 'suspicious' comments
-                Previous(),         # attach '//<-' comments
-                Dummies(),          # drop 'dummy' declarations
+                Previous(),         # attach '//<' comments
                 EmptyNS(),          # skip empty namespaces
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
 "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
-<book>
+<book xmlns:xi="http://www.w3.org/2003/XInclude">
   <bookinfo>
     <title>Synopsis Tutorial</title>
 
@@ -56,6 +56,21 @@
 
       <para></para>
     </section>
+
+    <section>
+      <title>Parsing source code</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>Using comments for documentation</title>
+
+      <para>
+        <programlisting>
+          <xi:include href="examples/example1/example.h" parse="text"/>
+        </programlisting></para>
+      </section>
   </chapter>
 
   <chapter>
