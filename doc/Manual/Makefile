@@ -10,12 +10,16 @@ py_src		+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
 py_src		+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
 # don't include UI yet, as it isn't up to date with the rest
 py_syn		:= $(patsubst $(topdir)/%.py, %.syn, $(py_src))
+api_hh		:= $(shell find $(topdir)/include -name '*.hh' -print)
+api_hh_syn	:= $(patsubst $(topdir)/%.hh, %.hh.syn, $(api_hh))
 cxx_hh  	:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/syn/*.hh)
 cxx_hh_syn	:= $(patsubst $(topdir)/%.hh, %.hh.syn, $(cxx_hh))
 cxx_h		:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/occ/*.h)
 cxx_h_syn	:= $(patsubst $(topdir)/%.h, %.h.syn, $(cxx_h))
-cxx_cc		:= $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.cc)
-cxx_cc		+= $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.cc)
+cxx_cc		:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/syn/*.cc)
+cxx_cc		+= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/occ/*.cc)
+cxx_cc_syn	:= $(patsubst $(topdir)/%.cc, %.cc.syn, $(cxx_cc))
+
 texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
 
 
@@ -51,6 +55,12 @@ $(py_syn): %.syn: %.py
 	$(synopsis) python --output=$@ $^
 
 # Compile C++ .hh files
+$(api_hh_syn): %.hh.syn: $(topdir)/%.hh
+	@echo parsing $^
+	mkdir -p $(dir $@)
+	$(synopsis) cxx --output=$@ $?
+
+# Compile C++ .hh files
 $(cxx_hh_syn): %.hh.syn: $(topdir)/%.hh
 	@echo parsing $^
 	mkdir -p $(dir $@)
@@ -73,13 +83,19 @@ py.syn:	$(py_syn)
 	@echo linking Python files together
 	$(synopsis) link_python --output=$@ $^
 
+# Link C++ API files together
+api.syn: $(api_hh_syn)
+	@echo $(api_hh_syn)
+	@echo linking C++ API files together
+	$(synopsis) link_cxx --output=$@ $^
+
 # Link C++ files together
 cxx.syn: $(cxx_hh_syn) $(cxx_h_syn) $(cxx_cc_syn)
 	@echo linking C++ files together
 	$(synopsis) link_cxx --output=$@ $^
 
 # Link all files together
-all.syn: py.syn cxx.syn
+all.syn: py.syn api.syn cxx.syn
 	@echo linking all files together
 	$(synopsis) link --output=$@ $^
 
