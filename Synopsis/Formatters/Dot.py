@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.30 2002/10/28 16:27:22 chalky Exp $
+# $Id: Dot.py,v 1.31 2002/10/29 15:01:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.31  2002/10/29 15:01:21  chalky
+# Better display of template types, and support names with spaces
+#
 # Revision 1.30  2002/10/28 16:27:22  chalky
 # Support horizontal inheritance graphs
 #
@@ -220,10 +223,19 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
 	return Util.ccolonName(node.name(), base)
 
     #################### Type Visitor ###########################################
+    def visitModifier(self, type):
+	self.formatType(type.alias())
+	self.__type_label = string.join(type.premod()) + self.__type_label
+	self.__type_label = self.__type_label + string.join(type.postmod())
+
     def visitUnknown(self, type):
         self.__type_ref = toc[type.link()]
         self.__type_label = Util.ccolonName(type.name(), self.scope())
         
+    def visitBase(self, type):
+        self.__type_ref = None
+        self.__type_label = type.name()[-1]
+
     def visitDependent(self, type):
         self.__type_ref = None
         self.__type_label = type.name()[-1]
