@@ -16,7 +16,7 @@ from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 import occ
 
-import os, os.path
+import os, os.path, tempfile
 
 class Parser(Processor):
 
@@ -50,7 +50,11 @@ class Parser(Processor):
          ii_file = file
          if self.preprocess:
 
-            ii_file = os.path.splitext(self.output)[0] + '.ii'
+            if self.output:
+               ii_file = os.path.splitext(self.output)[0] + '.ii'
+            else:
+               ii_file = os.path.join(tempfile.gettempdir(),
+                                      'synopsis-%s.ii'%os.getpid())
             self.ast = cpp.process(self.ast,
                                    cpp_output = ii_file,
                                    input = [file],

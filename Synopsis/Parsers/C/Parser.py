@@ -12,7 +12,7 @@ from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 import ctool
 
-import os, os.path
+import os, os.path, tempfile
 
 class Parser(Processor):
 
@@ -44,7 +44,11 @@ class Parser(Processor):
          i_file = file
          if self.preprocess:
 
-            i_file = os.path.splitext(self.output)[0] + '.i'
+            if self.output:
+               i_file = os.path.splitext(self.output)[0] + '.i'
+            else:
+               i_file = os.path.join(tempfile.gettempdir(),
+                                     'synopsis-%s.i'%os.getpid())
             self.ast = cpp.process(self.ast,
                                    cpp_output = i_file,
                                    input = [file])
@@ -82,7 +86,11 @@ class Parser(Processor):
          i_file = file
          if preprocess:
 
-            i_file = os.path.splitext(output)[0] + '.i'
+            if self.output:
+               i_file = os.path.splitext(self.output)[0] + '.i'
+            else:
+               i_file = os.path.join(tempfile.gettempdir(),
+                                     'synopsis-%s.i'%os.getpid())
             self.ast = cpp.process(AST.AST(),
                                    cpp_output = i_file,
                                    input = [file])
