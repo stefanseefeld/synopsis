@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.36 2001/06/06 04:56:59 uid20151 Exp $
+// $Id: swalker.cc,v 1.37 2001/06/06 07:51:45 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.37  2001/06/06 07:51:45  chalky
+// Fixes and moving towards SXR
+//
 // Revision 1.36  2001/06/06 04:56:59  uid20151
 // small optimisation (dont translate non-main func impls)
 //
@@ -890,7 +893,8 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 
 	// TODO: implement sizes support
 	std::vector<size_t> sizes;
-	AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false);
+	std::string var_type = m_builder->scope()->type() + " variable";
+	AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false, var_type);
 	//if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
 	//if (decl->GetComments()) addComments(var, decl->GetComments());
 	addComments(var, m_declaration);
@@ -1106,7 +1110,7 @@ void SWalker::TranslateFuncImplCache(const FuncImplCache& cache)
 	end = cache.params.end();
 	while (iter != end) {
 	    AST::Parameter* param = *iter++;
-	    m_builder->addVariable(m_lineno, param->name(), param->type(), false);
+	    m_builder->addVariable(m_lineno, param->name(), param->type(), false, "parameter");
 	}
 	// Add 'this' if method
 	m_builder->addThisVariable();

@@ -103,7 +103,7 @@ Builder::Builder(const std::string &basename)
     m_unique = 1;
     m = new Private;
     AST::Name name;
-    m_scope = m_global = new AST::Scope("", 0, "file", name);
+    m_scope = m_global = new AST::Scope("", 0, "global", name);
     Scope* global = findScope(m_global);
     m_scope = m_global;
     m_scopes.push(global);
@@ -180,11 +180,12 @@ void Builder::add(Type::Named* type)
 
 AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nstype)
 {
-    std::string name = n;
+    std::string name = n, type_str;
     AST::Namespace* ns = 0;
     bool generated = false;
     switch (nstype) {
 	case NamespaceNamed:
+	    type_str = "namespace";
 	    // Check if namespace already exists
 	    try {
 		if (m_scopes.top()->dict->has_key(name)) {
@@ -195,10 +196,12 @@ AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nsty
 	    catch (const Type::wrong_type_cast &) {}
 	    break;
 	case NamespaceAnon:
+	    type_str = "module";
 	    // name is the filename. Wrap it in {}'s
 	    name = "{"+name+"}";
 	    break;
 	case NamespaceUnique:
+	    type_str = "local";
 	    { // name is empty or the type. Encode it with a unique number
 		if (!name.size()) name = "ns";
 		std::ostrstream x; x << '`' << name << m_unique++ << std::ends;
@@ -212,7 +215,7 @@ AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nsty
 	// Generate the name
 	AST::Name ns_name = extend(m_scope->name(), name);
 	// Create the Namespace
-	ns = new AST::Namespace(m_filename, 0, "namespace", ns_name);
+	ns = new AST::Namespace(m_filename, 0, type_str, ns_name);
 	add(ns);
     }
     // Create Builder::Scope object. Search is this NS plus enclosing NS's search
@@ -359,7 +362,7 @@ void Builder::startFunctionImpl(const std::vector<std::string>& name)
 	cout << endl;
     }*/
     // Create the Namespace
-    AST::Namespace* ns = new AST::Namespace(m_filename, 0, "namespace", name);
+    AST::Namespace* ns = new AST::Namespace(m_filename, 0, "function", name);
     Scope* ns_scope = findScope(ns);
     Builder::Scope* scope_scope;
     if (name.size() > 1) {
@@ -407,12 +410,12 @@ AST::Operation* Builder::addOperation(int line, const std::string &name, const s
 }
 
 //. Add a variable
-AST::Variable* Builder::addVariable(int line, const std::string &name, Type::Type* vtype, bool constr)
+AST::Variable* Builder::addVariable(int line, const std::string &name, Type::Type* vtype, bool constr, const std::string& type)
 {
     // Generate the name
     AST::Name scope = m_scope->name();
     scope.push_back(name);
-    AST::Variable* var = new AST::Variable(m_filename, line, "variable", scope, vtype, constr);
+    AST::Variable* var = new AST::Variable(m_filename, line, type, scope, vtype, constr);
     add(var);
     return var;
 }
@@ -437,7 +440,7 @@ void Builder::addThisVariable()
     Type::Type::Mods pre, post;
     post.push_back("*");
     Type::Modifier* t_this = new Type::Modifier(clas->declared(), pre, post);
-    addVariable(-1, "this", t_this, false);
+    addVariable(-1, "this", t_this, false, "this");
 }
 
 //. Add a typedef
