@@ -6,7 +6,8 @@ from Synopsis.Processor import *
 from Synopsis.Processors import *
 from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML.CommentFormatter import *
+from Synopsis.Formatters.HTML import *
+from Synopsis.Formatters.HTML import Comments
 
 import re, string
 
@@ -123,12 +124,12 @@ linker = Linker(Stripper(),
                 AccessRestrictor())
 
 html = HTML.Formatter(stylesheet_file = '../html.css',
-                      comment_formatters = [JavadocFormatter(),
-                                            SectionFormatter()])
+                      comment_formatters = [Comments.Javadoc(),
+                                            Comments.Section()])
 
 doxygen = HTML.Formatter(stylesheet_file = '../doxygen.css',
-                         comment_formatters = [JavadocFormatter(),
-                                               SectionFormatter()])
+                         comment_formatters = [Comments.Javadoc(),
+                                               Comments.Section()])
 
 process(parse = Cxx.Parser(),
         link = linker,
