@@ -17,6 +17,7 @@ all:	manual
 
 manual:	$(PYSYNS)
 	$(synopsis) -f HTML -Wf,-s,style.css -o Manual $^
+	cp style.css Manual
 
 $(spath)/%.syn:	$(bpath)/%.py
 	@if [ ! -d $(spath) ]; then mkdir $(spath); fi
