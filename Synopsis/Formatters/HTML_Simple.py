@@ -47,7 +47,7 @@ class TableOfContents(Visitor.AstVisitor):
             declaration.accept(self)
 
     def visitTypedef(self, typedef):
-        for d in typedef.declarators(): d.accept(self)
+	self.insert(typedef.name())
     def visitEnumerator(self, enumerator):
         self.insert(enumerator.name())
     def visitEnum(self, enum):
@@ -55,7 +55,7 @@ class TableOfContents(Visitor.AstVisitor):
         for e in enum.enumerators(): e.accept(self)
         
     def visitVariable(self, variable):
-        for d in variable.declarators(): d.accept(self)
+	self.insert(variable.name())
     def visitConst(self, const):
         self.insert(const.name())
     def visitParameter(self, parameter): pass
@@ -67,7 +67,7 @@ class TableOfContents(Visitor.AstVisitor):
         for parameter in operation.parameters(): parameter.accept(self)
     
 
-class HTMLFormatter:
+class HTMLFormatter (Visitor.AstVisitor):
     """
     The type visitors should generate names relative to the current scope.
     The generated references however are fully scoped names
@@ -85,7 +85,7 @@ class HTMLFormatter:
         and the label (used to actually write it)"""
         location = self.__toc.lookup(ref)
         if location != "": return href("#" + location, label)
-        else: return span("type", label)
+        else: return span("type", str(label))
         
     def label(self, ref):
         location = self.__toc.lookup(Util.ccolonName(ref))
@@ -96,8 +96,8 @@ class HTMLFormatter:
     #################### Type Visitor ###########################################
 
     def visitBaseType(self, type):
-        self.__type_ref = type.name()
-        self.__type_label = type.name()
+        self.__type_ref = Util.ccolonName(type.name())
+        self.__type_label = Util.ccolonName(type.name())
         
     def visitForward(self, type):
         self.__type_ref = Util.ccolonName(type.name())
@@ -109,8 +109,8 @@ class HTMLFormatter:
         
     def visitModifier(self, type):
         type.alias().accept(self)
-        self.__type_ref = type.premod() + " " + self.__type_ref + " " + type.postmod()
-        self.__type_label = type.premod() + " " + self.__type_label + " " + type.postmod()
+        self.__type_ref = string.join(type.premod()) + " " + self.__type_ref + " " + string.join(type.postmod())
+        self.__type_label = string.join(type.premod()) + " " + self.__type_label + " " + string.join(type.postmod())
             
     def visitParametrized(self, type):
         type.template().accept(self)
@@ -125,6 +125,12 @@ class HTMLFormatter:
         self.__type_ref = type_ref + string.join(parameters_ref, ", ") + "&gt;"
         self.__type_label = type_label + string.join(parameters_label, ", ") + "&gt;"
 
+    def visitFunctionType(self, type):
+	# TODO: this needs to be implemented
+	self.__type_ref = 'function_type'
+	self.__type_label = 'function_type'
+
+
     #################### AST Visitor ############################################
             
     def visitDeclarator(self, node):
@@ -137,24 +143,24 @@ class HTMLFormatter:
         typedef.alias().accept(self)
         self.write(self.reference(self.__type_ref, self.__type_label) + " ")
         declarators = []
-        for i in typedef.declarators():
-            i.accept(self)
-            declarators.append(self.label(self.__declarator))
+        i = typedef.declarator()
+	i.accept(self)
+	declarators.append(self.label(self.__declarator))
         self.write(string.join(declarators, ", "))
-        for i in typedef.declarators():
-            if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
+        i = typedef.declarator()
+        if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
         if len(typedef.comments()): self.write("\n" + desc(typedef.comments()) + "\n")            
 
     def visitVariable(self, variable):
         variable.vtype().accept(self)
         self.write(self.reference(self.__type_ref, self.__type_label) + " ")
         declarators = []
-        for i in variable.declarators():
-            i.accept(self)
-            declarators.append(self.label(self.__declarator))
+        i = variable.declarator()
+	i.accept(self)
+	declarators.append(self.label(self.__declarator))
         self.write(string.join(declarators, ", "))
-        for i in variable.declarators():
-            if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
+        i = variable.declarator()
+	if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
         if len(variable.comments()): self.write("\n" + desc(variable.comments()) + "\n")            
 
     def visitConst(self, const):
@@ -234,8 +240,9 @@ class HTMLFormatter:
 
     def visitOperation(self, operation):
         for modifier in operation.premodifier(): self.write(span("keyword", modifier) + " ")
-        operation.returnType().accept(self)
-        self.write(self.reference(self.__type_ref, self.__type_label) + " ")
+        if operation.returnType():
+	    operation.returnType().accept(self)
+	    self.write(self.reference(self.__type_ref, self.__type_label) + " ")
         if operation.language() == "IDL" and operation.type() == "attribute":
             self.write(span("keyword", "attribute") + " ")
         self.write(self.label(operation.name()) + "(")
