@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.9 2001/01/10 19:55:45 stefan Exp $
+# $Id: Makefile,v 1.10 2001/01/22 20:04:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
-# Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
+# Copyright (C) 2000 Stefan Seefeld
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -22,7 +22,7 @@ SHELL	:= /bin/sh
 
 include local.mk
 
-SRC	:= __init__.py
+SRC	:= __init__.py __init__.pyc
 
 subdirs	:= Core Parser Linker Formatter demo/IDL demo/C++
 # doc
@@ -50,6 +50,7 @@ distclean:
 # to be elaborated further...
 install:
 	install -m755 synopsis $(bindir)
+	python -c "import compileall; compileall.compile_dir('.')"
 	mkdir -p $(packagedir)/Synopsis
 	install $(SRC) $(packagedir)/Synopsis
 	@for dir in ${subdirs}; do \

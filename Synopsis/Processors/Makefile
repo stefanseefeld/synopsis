@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.2 2001/01/10 16:12:02 stefan Exp $
+# $Id: Makefile,v 1.3 2001/01/22 20:04:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
-# Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
+# Copyright (C) 2000 Stefan Seefeld
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -22,7 +22,7 @@ SHELL	= /bin/sh
 
 include ../local.mk
 
-SRC	:= __init__.py Linker.py
+SRC	:= __init__.py __init__.pyc Linker.py Linker.pyc
 
 all:
 clean:
