@@ -11,7 +11,6 @@
 
 #include <Synopsis/Object.hh>
 #include <Synopsis/AST/Visitor.hh>
-#include <Synopsis/AST/SourceFile.hh>
 #include <Synopsis/AST/Type.hh>
 
 namespace Synopsis
@@ -27,6 +26,43 @@ enum Access
   PRIVATE = 3
 };
 
+class Declaration;
+typedef TypedList<Declaration> Declarations;
+
+class SourceFile : public Object
+{
+public:
+  SourceFile() {}
+  SourceFile(const Object &o) : Object(o) {}
+  std::string name() const { return narrow<std::string>(attr("filename")());}
+  std::string long_name() const { return narrow<std::string>(attr("full_filename")());}
+  bool is_main() const { return narrow<bool>(attr("is_main")());}
+  void is_main(bool flag) { attr("set_is_main")(Tuple(flag));}
+  List includes() { return attr("includes")();}
+  Dict macro_calls() { return attr("macro_calls")();}
+  Declarations declarations();
+};
+
+//. Encapsulation of one Comment, which may span multiple lines.
+//. Each comment encapsulates one /* */ block or a block of // comments on
+//. adjacent lines. If extract_tails is set, then comments will be added
+//. even when they are not adjacent to a declaration - these comments will be
+//. marked as "suspect". Most of these will be discarded by the Linker, unless
+//. they have appropriate markings such as "//.< comment for previous decl"
+class Comment : public Object
+{
+public:
+  Comment() {}
+  Comment(const Object &o, bool check = true)
+    : Object(o) { if (check) assert_type("Synopsis.AST", "Comment");}
+
+  SourceFile file() const { return narrow<SourceFile>(attr("file")());}
+  long line() const { return narrow<long>(attr("line")());}
+  std::string text() const { return narrow<std::string>(attr("text")());}
+  void suspect(bool flag) { attr("set_suspect")(Tuple(flag));}
+  bool suspect() const { return narrow<bool>(attr("is_suspect")());}
+};
+
 class Declaration : public Object
 {
 public:
@@ -40,11 +76,18 @@ public:
   std::string type() const { return narrow<std::string>(attr("type")());}
   ScopedName name() const { return attr("name")();}
   List comments() { return attr("comments")();}
+  Access accessibility() const 
+  { return static_cast<Access>(narrow<long>(attr("accessibility")()));}
+  void accessibility(Access a) const 
+  { attr("accessibility")(Tuple(static_cast<long>(a)));}
 
   virtual void accept(Visitor *v) { v->visit_declaration(this);}
 
   void assert_type(const char *type) { Object::assert_type("Synopsis.AST", type);}
 };
+
+inline Declarations SourceFile::declarations()
+{ return narrow<Declarations>(attr("declarations")());}
 
 //. A Builtin is a node to be used internally.
 //. Right now it's being used to capture comments
@@ -194,6 +237,8 @@ public:
   virtual void accept(Visitor *v) { v->visit_enumerator(this);}
 };
 
+typedef TypedList<Enumerator> Enumerators;
+
 //. Enum declaration. An enum contains multiple enumerators.
 class Enum : public Declaration
 {
@@ -265,6 +310,8 @@ public:
 class Function : public Declaration
 {
 public:
+  typedef TypedList<Parameter> Parameters;
+
   Function() {}
   Function(const Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Function");}
@@ -273,13 +320,13 @@ public:
 //   typedef std::vector<std::string> Mods;
 
   //. Returns the return Type
-  Type return_type() { return attr("returnType")();}
+  Type return_type() const { return attr("returnType")();}
 
   //. Returns the real name of this function
-  ScopedName real_name() { return attr("realname")();}
+  ScopedName real_name() const { return attr("realname")();}
 
   //. Returns the vector of parameters
-  //   Parameter::vector& parameters()
+  Parameters parameters() const { return attr("parameters")();}
 
   //. Returns the Template object if this is a template
 //   Types::Template* template_type()
@@ -295,6 +342,17 @@ public:
 
   //. Accept the given visitor
   virtual void accept(Visitor *v) { v->visit_function(this);}
+};
+
+//. Operations are similar to functions but Not Quite Right
+class Operation : public Function
+{
+public:
+  Operation() {}
+  Operation(const Object &o, bool check = true)
+    : Function(o, false) { if (check) assert_type("Operation");}
+
+  virtual void accept(Visitor *v) { v->visit_operation(this);}
 };
 
 }

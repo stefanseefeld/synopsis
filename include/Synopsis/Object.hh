@@ -99,6 +99,8 @@ class Tuple : public Object
 public:
   Tuple() : Object(PyTuple_New(0)) {}
   explicit Tuple(PyObject *);
+  size_t size() const { return PyTuple_GET_SIZE(my_impl);}
+  bool empty() const { return !size();}
   Tuple(Object);
   Tuple(Object, Object);
   Tuple(Object, Object, Object);
@@ -106,6 +108,7 @@ public:
   Tuple(Object, Object, Object, Object, Object);
   Tuple(Object, Object, Object, Object, Object, Object);
   Tuple(Object, Object, Object, Object, Object, Object, Object);
+  Tuple(Object, Object, Object, Object, Object, Object, Object, Object);
   Object get(size_t i) const { return PyTuple_GetItem(my_impl, i); }
 };
 
@@ -113,20 +116,29 @@ class List : public Object
 {
 public:
   class iterator;
+  class reverse_iterator;
 
   List(size_t i = 0) : Object(PyList_New(i)) {}
   List(Object) throw(TypeError);
   Tuple tuple() const { return Tuple(PyList_AsTuple(my_impl));}
   size_t size() const { return PyList_GET_SIZE(my_impl);}
+  bool empty() const { return !size();}
   void set(int i, Object o);
   Object get(int i) const;
   void append(Object o) { PyList_Append(my_impl, o.my_impl);}
   void insert(int i, Object o) { PyList_Insert(my_impl, i, o.my_impl);}
+  void extend(List l);
+  void del(int i) { PySequence_DelItem(my_impl, i);}
 
-  iterator begin();
-  iterator end();
+  iterator begin() const;
+  iterator end() const;
+  iterator erase(iterator);
+
+  reverse_iterator rbegin() const;
+  reverse_iterator rend() const;
 
   List get_slice(int low, int high) const;
+  List copy() const { return get_slice(0, -1);}
   bool sort() { return PyList_Sort(my_impl) == 0;}
   bool reverse() { return PyList_Reverse(my_impl) == 0;}
 private:
@@ -147,11 +159,47 @@ public:
   const Object *operator ->() { return &(operator *());}
   iterator operator ++(int) { incr(); return *this;}
   iterator operator ++() { iterator tmp = *this; incr(); return tmp;}
+  iterator operator +(int i);
+  iterator operator --(int) { decr(); return *this;}
+  iterator operator --() { iterator tmp = *this; decr(); return tmp;}
+  iterator operator -(int i);
 
 private:
   iterator(List l, int i) : my_list(l), my_pos(i) 
   { if (my_pos >= 0) my_current = my_list.get(my_pos);}
   void incr();
+  void decr();
+
+  List my_list;
+  int my_pos;
+
+  Object my_current;
+};
+
+class List::reverse_iterator
+{
+  friend class List;
+public:
+  reverse_iterator(const reverse_iterator &i) : my_list(i.my_list), my_pos(i.my_pos) {}
+  reverse_iterator &operator = (const reverse_iterator &);
+
+  bool operator == (reverse_iterator i);
+  bool operator != (reverse_iterator i) { return !operator==(i);}
+
+  const Object &operator *() { return my_current;}
+  const Object *operator ->() { return &(operator *());}
+  reverse_iterator operator ++(int) { incr(); return *this;}
+  reverse_iterator operator ++() { reverse_iterator tmp = *this; incr(); return tmp;}
+  reverse_iterator operator +(int i);
+  reverse_iterator operator --(int) { decr(); return *this;}
+  reverse_iterator operator --() { reverse_iterator tmp = *this; decr(); return tmp;}
+  reverse_iterator operator -(int i);
+
+private:
+  reverse_iterator(List l, int i) : my_list(l), my_pos(i) 
+  { if (my_pos >= 0) my_current = my_list.get(my_pos);}
+  void incr();
+  void decr();
 
   List my_list;
   int my_pos;
@@ -173,8 +221,8 @@ public:
   bool has_key(Object k) const;
   bool del(Object k);
 
-  iterator begin();
-  iterator end();
+  iterator begin() const;
+  iterator end() const;
    
   void clear() { PyDict_Clear(my_impl);}
   Dict copy() const { return Object(PyDict_Copy(my_impl));}
@@ -449,6 +497,29 @@ inline Tuple::Tuple(Object o1, Object o2, Object o3,
    Py_INCREF(o7.my_impl);
 }
 
+inline Tuple::Tuple(Object o1, Object o2, Object o3,
+		    Object o4, Object o5, Object o6,
+		    Object o7, Object o8)
+  : Object(PyTuple_New(8))
+{
+   PyTuple_SET_ITEM(my_impl, 0, o1.my_impl);
+   Py_INCREF(o1.my_impl);
+   PyTuple_SET_ITEM(my_impl, 1, o2.my_impl);
+   Py_INCREF(o2.my_impl);
+   PyTuple_SET_ITEM(my_impl, 2, o3.my_impl);
+   Py_INCREF(o3.my_impl);
+   PyTuple_SET_ITEM(my_impl, 3, o4.my_impl);
+   Py_INCREF(o4.my_impl);
+   PyTuple_SET_ITEM(my_impl, 4, o5.my_impl);
+   Py_INCREF(o5.my_impl);
+   PyTuple_SET_ITEM(my_impl, 5, o6.my_impl);
+   Py_INCREF(o6.my_impl);
+   PyTuple_SET_ITEM(my_impl, 6, o7.my_impl);
+   Py_INCREF(o7.my_impl);
+   PyTuple_SET_ITEM(my_impl, 7, o8.my_impl);
+   Py_INCREF(o8.my_impl);
+}
+
 inline List::List(Object o) throw(TypeError)
   : Object(o)
 {
@@ -479,14 +550,38 @@ inline Object List::get(int i) const
   return Object(retn);
 }
 
-inline List::iterator List::begin()
+inline void List::extend(List l) 
+{
+  for (List::iterator i = l.begin(); i != l.end(); ++i)
+    append(*i);
+}
+
+inline List::iterator List::begin() const
 {
   return iterator(*this, 0);
 }
 
-inline List::iterator List::end()
+inline List::iterator List::end() const
 {
   return iterator(*this, -1);
+}
+
+inline List::iterator List::erase(List::iterator i)
+{
+  if (i.my_pos >= 0) del(i.my_pos);
+  if (i.my_pos >= size()) // if the erased element was the last...
+    --i.my_pos;           // ... decrement the iterator by one
+  return i;
+}
+
+inline List::reverse_iterator List::rbegin() const
+{
+  return reverse_iterator(*this, size() - 1);
+}
+
+inline List::reverse_iterator List::rend() const
+{
+  return reverse_iterator(*this, -1);
 }
 
 inline List List::get_slice(int low, int high) const 
@@ -506,12 +601,64 @@ inline bool List::iterator::operator == (List::iterator i)
   return i.my_list.impl() == my_list.impl() && i.my_pos == my_pos;
 }
 
+inline List::iterator List::iterator::operator + (int i)
+{
+  my_pos += i;
+  if (my_pos < my_list.size())
+    my_current = my_list.get(my_pos);
+  else
+    my_pos = -1;
+  return *this;
+}
+
+inline List::iterator List::iterator::operator - (int i)
+{
+  my_pos -= i;
+  if (my_pos > -1)
+    my_current = my_list.get(my_pos);
+  else
+    my_pos = -1;
+  return *this;
+}
+
 inline void List::iterator::incr() 
 {
-  if (++my_pos < my_list.size())
+  operator + (1);
+}
+
+inline void List::iterator::decr() 
+{
+  operator - (1);
+}
+
+inline List::reverse_iterator List::reverse_iterator::operator + (int i)
+{
+  my_pos -= i;
+  if (my_pos > -1)
     my_current = my_list.get(my_pos);
-  else 
+  else
     my_pos = -1;
+  return *this;
+}
+
+inline List::reverse_iterator List::reverse_iterator::operator - (int i)
+{
+  my_pos += i;
+  if (my_pos < my_list.size())
+    my_current = my_list.get(my_pos);
+  else
+    my_pos = -1;
+  return *this;
+}
+
+inline void List::reverse_iterator::incr() 
+{
+  operator + (1);
+}
+
+inline void List::reverse_iterator::decr() 
+{
+  operator - (1);
 }
 
 inline void Dict::set(Object k, Object v)
@@ -536,12 +683,12 @@ inline bool Dict::del(Object k)
   return PyDict_DelItem(my_impl, k.my_impl) == 0;
 }
 
-inline Dict::iterator Dict::begin()
+inline Dict::iterator Dict::begin() const
 {
   return iterator(*this, 0);
 }
 
-inline Dict::iterator Dict::end()
+inline Dict::iterator Dict::end() const
 {
   return iterator(*this, -1);
 }

@@ -6,15 +6,17 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/AST/ASTModule.hh>
+#include <Synopsis/AST/ASTKit.hh>
 #include <vector>
-#include <map>
-#include <set>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <cstring>
 #include <cstdio>
+#include <memory>
+
+using namespace Synopsis::AST; // import all AST objects...
+namespace Python = Synopsis; // ...and the others into 'Python'
 
 namespace
 {
@@ -23,9 +25,9 @@ int verbose = 0;
 int debug = 0;
 const char *language;
 const char *prefix = 0;
-Synopsis::ASTModule ast_module;
-Synopsis::AST ast;
-Synopsis::SourceFile source_file;
+ASTKit *kit;
+AST *ast;
+SourceFile *source_file;
 const char *input = 0;
 
 const char *strip_prefix(const char *filename, const char *prefix)
@@ -39,22 +41,20 @@ const char *strip_prefix(const char *filename, const char *prefix)
 }
 
 //. creates new SourceFile object
-Synopsis::SourceFile create_source_file(const char *filename, bool is_main)
+SourceFile create_source_file(const char *filename, bool is_main)
 {
-  Synopsis::SourceFile sf = ast_module.create_source_file(strip_prefix(filename,
-								       prefix),
-							  filename,
-							  language);
+  SourceFile sf = kit->create_source_file(strip_prefix(filename, prefix),
+					  filename, language);
   sf.is_main(true);
   return sf;
 }
 
 //. creates new or returns existing SourceFile object
 //. with the given filename
-Synopsis::SourceFile lookup_source_file(const char *filename)
+SourceFile lookup_source_file(const char *filename)
 {
-  Synopsis::Dict files = ast.files();
-  Synopsis::SourceFile sf = files.get(strip_prefix(filename, prefix));
+  Python::Dict files = ast->files();
+  SourceFile sf = files.get(strip_prefix(filename, prefix));
   return sf ? sf : create_source_file(filename, false);
 }
 
@@ -63,32 +63,27 @@ void create_macro(const char *filename, int line,
 		  const char *macro_name, int num_args, const char **args,
 		  int vaarg, const char *text)
 {
-  Synopsis::Tuple name(macro_name);
-  Synopsis::SourceFile sf = lookup_source_file(filename);
-  std::vector<std::string> params;
+  Python::Tuple name(macro_name);
+  SourceFile sf = lookup_source_file(filename);
+  Python::List params;
   if (args)
   {
-    params.resize(vaarg ? num_args + 1 : num_args);
-    for (int i = 0; i < num_args; ++i)
-      params[i] = args[i];
-    if (vaarg)
-      params[num_args] = "...";
+    for (int i = 0; i < num_args; ++i) params.append(args[i]);
+    if (vaarg) params.append("...");
   }
-  Synopsis::Macro macro = ast_module.create_macro(sf, line, language,
-						  "macro", name,
-						  params, text);
+  Macro macro = kit->create_macro(sf, line, language, name, params, text);
 
-  Synopsis::List declarations = ast.declarations();
+  Python::List declarations = ast->declarations();
   declarations.append(macro);
 }
 
 bool extract(PyObject *py_flags, std::vector<const char *> &out)
 {
   Py_INCREF(py_flags);
-  Synopsis::List list = Synopsis::Object(py_flags);
+  Python::List list = Python::Object(py_flags);
   for (size_t i = 0; i != list.size(); ++i)
   {
-    const char *value = Synopsis::Object::narrow<const char *>(list.get(i));
+    const char *value = Python::Object::narrow<const char *>(list.get(i));
     if (!value) return false;
     out.push_back(value);
   }
@@ -123,10 +118,19 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       return 0;
     
     Py_INCREF(py_ast);
-    ast = Synopsis::AST(py_ast);
-    ast_module = Synopsis::ASTModule();
-    source_file = create_source_file(input, true);
-    
+
+    // since everything in this file is accessed only during the execution
+    // of ucpp_parse, we can safely manage these objects in this scope yet
+    // reference them globally (for convenience)
+    std::auto_ptr<AST> ast_ptr(new AST(py_ast));
+    ast = ast_ptr.get();
+
+    std::auto_ptr<ASTKit> kit_ptr(new ASTKit());
+    kit = kit_ptr.get();
+
+    std::auto_ptr<SourceFile> sf_ptr(new SourceFile(create_source_file(input, true)));
+    source_file = sf_ptr.get();
+
     flags.insert(flags.begin(), "ucpp");
     flags.push_back("-C"); // keep comments
     flags.push_back("-lg"); // gcc-like line numbers
@@ -154,9 +158,9 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     if (status != 0)
       std::cerr << "ucpp returned error flag. ignoring error." << std::endl;
 
-    Synopsis::Dict files = ast.files();
-    files.set(input, source_file);
-    return ast.ref();
+    Python::Dict files = ast->files();
+    files.set(input, *source_file);
+    return ast->ref();
   }
   catch (const std::exception &e)
   {
@@ -176,9 +180,9 @@ extern "C"
       std::cout << "macro : " << name << ' ' << line_num << ' '
 		<< start << ' ' << end << ' ' << diff << std::endl;
     
-    Synopsis::Dict mmap = source_file.macro_calls();
-    Synopsis::List line = mmap.get(line_num, Synopsis::List());
-    line.append(ast_module.create_macro_call(name, start, end, diff));
+    Python::Dict mmap = source_file->macro_calls();
+    Python::List line = mmap.get(line_num, Python::List());
+    line.append(kit->create_macro_call(name, start, end, diff));
     mmap.set(line_num, line);
   }
 
@@ -191,10 +195,10 @@ extern "C"
 		<< is_macro << ' ' << is_next << std::endl;
 
     if (strcmp(input, source) != 0) return;
-    Synopsis::SourceFile target_file = lookup_source_file(target);
+    SourceFile target_file = lookup_source_file(target);
 
-    Synopsis::Include include = ast_module.create_include(target_file, is_macro, is_next);
-    Synopsis::List includes = source_file.includes();
+    Include include = kit->create_include(target_file, is_macro, is_next);
+    Python::List includes = source_file->includes();
     includes.append(include);
   }
 

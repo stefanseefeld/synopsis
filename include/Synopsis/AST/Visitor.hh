@@ -9,8 +9,6 @@
 #ifndef _Synopsis_AST_Visitor_hh
 #define _Synopsis_AST_Visitor_hh
 
-#include <Synopsis/AST/Declaration.hh>
-
 namespace Synopsis
 {
 namespace AST
@@ -31,6 +29,7 @@ class Enumerator;
 class Enum;
 class Parameter;
 class Function;
+class Operation;
 
 //. The Visitor for the AST hierarchy. This class is just an interface
 //. really. It is abstract, and you must reimplement any methods you want.
@@ -41,23 +40,54 @@ class Visitor
 {
 public:
   // Abstract destructor makes the class abstract
-  virtual ~Visitor() = 0;
-  virtual void visit_declaration(Declaration*);
-  virtual void visit_builtin(Builtin*);
-  virtual void visit_macro(Macro*);
-  virtual void visit_scope(Scope*);
-  virtual void visit_module(Module*);
-  virtual void visit_class(Class*);
-  virtual void visit_inheritance(Inheritance*);
-  virtual void visit_forward(Forward*);
-  virtual void visit_typedef(Typedef*);
-  virtual void visit_variable(Variable*);
-  virtual void visit_const(Const*);
-  virtual void visit_enum(Enum*);
-  virtual void visit_enumerator(Enumerator*);
-  virtual void visit_parameter(Parameter*);
-  virtual void visit_function(Function*);
-//   virtual void visit_operation(Operation*);
+  virtual ~Visitor() {}
+  virtual void visit_declaration(const Declaration*) = 0;
+  virtual void visit_builtin(const Builtin*) = 0;
+  virtual void visit_macro(const Macro*) = 0;
+  virtual void visit_scope(const Scope*) = 0;
+  virtual void visit_module(const Module*) = 0;
+  virtual void visit_class(const Class*) = 0;
+  virtual void visit_inheritance(const Inheritance*) = 0;
+  virtual void visit_forward(const Forward*) = 0;
+  virtual void visit_typedef(const Typedef*) = 0;
+  virtual void visit_variable(const Variable*) = 0;
+  virtual void visit_const(const Const*) = 0;
+  virtual void visit_enum(const Enum*) = 0;
+  virtual void visit_enumerator(const Enumerator*) = 0;
+  virtual void visit_parameter(const Parameter*) = 0;
+  virtual void visit_function(const Function*) = 0;
+  virtual void visit_operation(const Operation*) = 0;
+};
+
+class Type;
+class Unknown;
+class Modifier;
+class Array;
+class Named;
+class Base;
+class Dependent;
+class Declared;
+class Template;
+class Parametrized;
+class FunctionPtr;
+
+//. The Type Visitor base class
+class TypeVisitor
+{
+public:
+  // Virtual destructor makes abstract
+  virtual ~TypeVisitor() {}
+  virtual void visit_type(const Type*) = 0;
+  virtual void visit_named(const Named*) = 0;
+  virtual void visit_base(const Base*) = 0;
+  virtual void visit_dependent(const Dependent*) = 0;
+  virtual void visit_unknown(const Unknown*) = 0;
+  virtual void visit_modifier(const Modifier*) = 0;
+  virtual void visit_array(const Array*) = 0;
+  virtual void visit_declared(const Declared*) = 0;
+  virtual void visit_template(const Template*) = 0;
+  virtual void visit_parametrized(const Parametrized*) = 0;
+  virtual void visit_function_ptr(const FunctionPtr*) = 0;
 };
 
 }

@@ -23,6 +23,7 @@ public:
   TypedList(size_t i = 0) : List(i) {}
   TypedList(Object o) : List(o) {} // should we typecheck here all items ?
   void set(int i, const T &s) { List::set(i, s);}
+  T get(int i) const { return narrow<T>(List::get(i));}
   void append(const T &s) { List::append(s);}
   void insert(int i, const T &s) { List::insert(i, s);}
 };
