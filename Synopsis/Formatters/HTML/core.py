@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.27 2002/01/09 11:43:41 chalky Exp $
+# $Id: core.py,v 1.28 2002/01/13 09:44:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.28  2002/01/13 09:44:51  chalky
+# Allow formatted source in GUI
+#
 # Revision 1.27  2002/01/09 11:43:41  chalky
 # Inheritance pics
 #
@@ -160,6 +163,7 @@ class Config:
     This class holds references to the current formatters, tocs, etc."""
     def __init__(self):
 	"""Constructor - initialise objects to None."""
+	self.ast = None
 	self.commentFormatter = None
 	self.commentFormatterList = []
 	self.types = None # Filled in first thing in format()
@@ -653,6 +657,8 @@ def format(args, ast, config_obj):
 
 def configure_for_gui(ast):
     global manager
+
+    if config.ast is ast: return
 
     config_obj = Base.Formatter.HTML
     __parseArgs(["-o","/tmp"], config_obj)
