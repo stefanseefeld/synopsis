@@ -195,7 +195,7 @@ int main( int argc, char **argv )
 
         if (unit) 
         {
-            /* Show the parse tree. */
+            // Show the parse tree.
             std::cout << *unit << std::endl;
         } else {
           std::cout << " translation unit for " << file_list[i] << " is NULL." << std::endl;

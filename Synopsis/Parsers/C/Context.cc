@@ -379,8 +379,10 @@ void ParseCtxt::Mk_declarator(Decl* decl)
  
 			if (! decl->form || (decl->form->type != TT_Function))
 				yyerr ("Duplicate function name: ", ident->name);
+			/*
 			else
 				yywarn ("TO DO: checking prototype consistency and eventually delete the new fct symbol");
+			*/
 
 			curCtxt->possibleDuplication = NULL;
 		}  
@@ -417,8 +419,10 @@ void ParseCtxt::Mk_func_declarator(Decl* decl)
 
 			if (curCtxt->possibleDuplication->u2FunctionDef)
 				yyerr ("Duplicate function name: ", ident->name);
+			/*
 			else
 				yywarn("TO DO: checking prototype consistency and eventually delete the new fct symbol");
+			*/
 
 			curCtxt->possibleDuplication = NULL;
 		}

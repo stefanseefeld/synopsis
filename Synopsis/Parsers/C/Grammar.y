@@ -73,7 +73,7 @@ extern int err_top_level;
 %token <typeQual>   CONST VOLATILE
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF
 %token <base>       VOID CHAR SHORT INT LONG FLOAT DOUBLE SGNED UNSGNED
-%token <typeSpec>       ENUM STRUCT UNION 
+%token <typeSpec>   ENUM STRUCT UNION 
 
 %token <loc>        BREAK CASE CONT DEFLT DO ELSE
 %token <loc>        IF
@@ -277,6 +277,9 @@ top_level_decl: decl_stemnt
             $$ = $1;
         }
               | PP_LINE
+		{
+            $$ = $1;
+		}
               | error SEMICOLON
         {
             $$ = (Statement*) NULL;

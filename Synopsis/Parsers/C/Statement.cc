@@ -40,7 +40,7 @@
 
 #include "gram.h"
 
-#define PRINT_LOCATION
+//#define PRINT_LOCATION
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //  indent - 2 spaces per level.

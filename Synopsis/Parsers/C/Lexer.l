@@ -462,10 +462,11 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>{pp_strt}{digit} { BEGIN(PPLN); yyless(1); }
 <INITIAL>{pp_strt} { BEGIN_PP(); }
 
-<PPLN>[^\n]* { 
+<PPLN>[^\n]*	{ 
                        BEGIN_PP();
-                       get_lineno(file_ppln,yytext,&(lvalp->stemnt));
-                     }
+                       if (get_lineno(file_ppln,yytext,&(lvalp->stemnt)))
+							return (err_tok = PP_LINE);
+                }
 
 <PP>\\(\n)             {  /* Preprocessor continuation line */
                          gProject->Parse_TOS->yylineno++;
@@ -1006,14 +1007,14 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                         
                 int entered_or_exited;
                 if (sscanf(pnt_end+1,"%d", &entered_or_exited) < 1)
-                    entered_or_exited=-1;
-                  
-                switch (entered_or_exited) {
-                
+                    entered_or_exited = -1;
+               
+                switch (entered_or_exited)
+				{
                   case 2:
                       // new line number into the previous included file
                       gProject->Parse_TOS->yylineno = oldyylineno;
-                       *stement = new EndInclStemnt(HERE);
+                      *stement = new EndInclStemnt(HERE);
                       if (! file_ppln)
                           gProject->Parse_TOS->yylineno = ln - 1;
                       gProject->Parse_TOS->filename = txt;
@@ -1022,11 +1023,10 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                   case 1:
                       // new line number into a new include file
                       gProject->Parse_TOS->yylineno = oldyylineno;
-                       *stement = new InclStemnt(gProject->Parse_TOS->filename, 
-                                                 HERE);
                       if (! file_ppln)
                           gProject->Parse_TOS->yylineno = ln - 1;
                       gProject->Parse_TOS->filename = txt;
+                      *stement = new InclStemnt(gProject->Parse_TOS->filename, HERE);
                       return (*stement != NULL);
                     
                   case 3:
@@ -1045,15 +1045,12 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                   case -1:
                       // new line number into the same file
                       gProject->Parse_TOS->yylineno = oldyylineno;
-                       *stement = new FileLineStemnt(gProject->Parse_TOS->filename, ln, 
-                                                     HERE);
                       gProject->Parse_TOS->filename = txt;
+                      *stement = new FileLineStemnt(gProject->Parse_TOS->filename, ln, HERE);
                       if (! file_ppln)
                           gProject->Parse_TOS->yylineno = ln - 1;
                       return (*stement != NULL);
-                    
                   }
-
               }
           }
 
