@@ -29,7 +29,8 @@ if type(res) == float:
     print res
 
 elif type(res) == list: #node set
-    if len(res) == 1: print '1 match :'
+    if len(res) == 0: print '1 match'
+    elif len(res) == 1: print '1 match :'
     else: print '%d matches :'%len(res)
 
     for r in res:
