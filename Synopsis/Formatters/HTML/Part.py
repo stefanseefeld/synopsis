@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.28 2002/10/28 06:13:49 chalky Exp $
+# $Id: Part.py,v 1.29 2002/10/28 08:16:52 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.29  2002/10/28 08:16:52  chalky
+# Undo previous table change. Put non-breaking spaces in first column instead
+#
 # Revision 1.28  2002/10/28 06:13:49  chalky
 # Fix summary display: templates use special div, use nested table to fix
 # formatting of first column
@@ -401,13 +404,11 @@ class Summary(Part):
 	"""Starts a table entity. The heading is placed in a row in a td with
 	the class 'heading'."""
 	self.write('<table width="100%%">\n')
-	self.write('<tr><td class="heading">' + heading + '</td></tr>\n')
-
-	self.write('<tr><td><table class="summary">\n')
+	self.write('<col><col width="100%%">')
+	self.write('<tr><td class="heading" colspan="2">' + heading + '</td></tr>\n')
 
     def writeSectionEnd(self, heading):
 	"""Closes the table entity and adds a break."""
-	self.write('</table></td></tr>')
 	self.write('</table>\n<br>\n')
 
     def writeSectionItem(self, text):
