@@ -1413,8 +1413,8 @@ init_decl_list_reentrance: init_decl
         }
               | init_decl_list_reentrance COMMA init_decl        %prec COMMA_OP
         {
-            $$ = $3;
-            $$->next = $1;
+            $$ = $1;
+            $$->next = $3;
             delete $2;
         }
         ;
@@ -1971,10 +1971,14 @@ direct_declarator_reentrance:  ident
         |  direct_declarator_reentrance LPAREN RPAREN
         {
             $$ = $1;
-            FunctionType * ft = new FunctionType();
-            Type * extended = $$->extend(ft);
-            if (extended && ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
+
+			if ($$ != NULL)
+			{
+				FunctionType* ft = new FunctionType();
+				Type* extended = $$->extend(ft);
+				if (extended && ! extended->isPointer())
+           	 	    yyerr ("Wrong type combination") ;
+			}
             
             delete $2 ;
             delete $3 ;
