@@ -38,7 +38,7 @@
 
 /*  ###############################################################  */
 
-#if	defined(DJGPP) || defined(WINDOWS) || defined(MACOSX) || defined(CYGWIN)
+#ifndef	HAVE_UNSIGNED_TYPES
     typedef unsigned char uchar;
     typedef unsigned int  uint;
     typedef unsigned long ulong;

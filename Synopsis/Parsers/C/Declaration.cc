@@ -367,14 +367,14 @@ PtrType::dup0() const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Type *
-PtrType::extend(Type *extension)
+Type*
+PtrType::extend(Type* extension)
 {
     if (subType)
         return subType->extend(extension);
         
     subType = extension;      
-    return this ;
+    return this;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

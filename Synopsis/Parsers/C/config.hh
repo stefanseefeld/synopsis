@@ -49,4 +49,9 @@
 
 /**************************************************************************/
 
+// Define this if your compilation system already defines: uchar, ushort, ulong for you
+//#define	 HAVE_UNSIGNED_TYPES
+
+/**************************************************************************/
+
 #endif /* CONFIG_H */
