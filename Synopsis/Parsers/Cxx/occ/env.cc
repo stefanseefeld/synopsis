@@ -28,7 +28,12 @@
 // class Environment
 
 PtreeArray* Environment::classkeywords = nil;
-HashTable* Environment::namespace_table = new HashTable;
+HashTable* Environment::namespace_table = nil;
+
+void Environment::do_init_static()
+{
+    namespace_table = new HashTable;
+}
 
 Environment::Environment(Walker* w)
 : baseclasses(0)

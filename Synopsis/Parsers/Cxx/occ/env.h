@@ -32,6 +32,7 @@ public:
     Environment(Walker* w);
     Environment(Environment* e);
     Environment(Environment* e, Walker* w);
+    static void do_init_static();
     bool IsEmpty();
     Environment* GetOuterEnvironment() { return next; }
     Environment* GetBottom();

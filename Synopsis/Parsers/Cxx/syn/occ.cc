@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.83 2002/12/23 07:50:10 chalky Exp $
+// $Id: occ.cc,v 1.84 2003/01/15 12:10:26 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.84  2003/01/15 12:10:26  chalky
+// Removed more global constructors
+//
 // Revision 1.83  2002/12/23 07:50:10  chalky
 // Get rid of statically initialised objects due to non-deterministic
 // initialisation order (particularly, the GC may not be available).
@@ -66,6 +69,8 @@
 #include <occ/encoding.h>
 #include <occ/mop.h>
 #include <occ/metaclass.h>
+#include <occ/env.h>
+#include <occ/encoding.h>
 
 // Stupid macro
 #undef Scope
@@ -188,6 +193,8 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags,
     syn_multi_files = false;
     Class::do_init_static();
     Metaclass::do_init_static();
+    Environment::do_init_static();
+    Encoding::do_init_static();
 
 #define IsType(obj, type) (Py##type##_Check(obj))
 

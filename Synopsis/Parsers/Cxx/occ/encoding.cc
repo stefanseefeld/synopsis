@@ -66,40 +66,77 @@
 #include "mop.h"
 #include "typeinfo.h"
 
-Ptree* Encoding::bool_t = new LeafBOOLEAN("bool", 4);
-Ptree* Encoding::char_t = new LeafCHAR("char", 4);
-Ptree* Encoding::int_t = new LeafINT("int", 3);
-Ptree* Encoding::short_t = new LeafSHORT("short", 5);
-Ptree* Encoding::long_t = new LeafLONG("long", 4);
-Ptree* Encoding::float_t = new LeafFLOAT("float", 5);
-Ptree* Encoding::double_t = new LeafDOUBLE("double", 6);
-Ptree* Encoding::void_t = new LeafVOID("void", 4);
+Ptree* Encoding::bool_t = nil;
+Ptree* Encoding::char_t = nil;
+Ptree* Encoding::int_t = nil;
+Ptree* Encoding::short_t = nil;
+Ptree* Encoding::long_t = nil;
+Ptree* Encoding::float_t = nil;
+Ptree* Encoding::double_t = nil;
+Ptree* Encoding::void_t = nil;
 
-Ptree* Encoding::signed_t = new LeafSIGNED("signed", 6);
-Ptree* Encoding::unsigned_t = new LeafUNSIGNED("unsigned", 8);
-Ptree* Encoding::const_t = new LeafCONST("const", 5);
-Ptree* Encoding::volatile_t = new LeafVOLATILE("volatile", 8);
+Ptree* Encoding::signed_t = nil;
+Ptree* Encoding::unsigned_t = nil;
+Ptree* Encoding::const_t = nil;
+Ptree* Encoding::volatile_t = nil;
 
-Ptree* Encoding::operator_name = new LeafReserved("operator", 8);
-Ptree* Encoding::new_operator = new LeafReserved("new", 3);
-Ptree* Encoding::anew_operator = new LeafReserved("new[]", 5);
-Ptree* Encoding::delete_operator = new LeafReserved("delete", 6);
-Ptree* Encoding::adelete_operator = new LeafReserved("delete[]", 8);
+Ptree* Encoding::operator_name = nil;
+Ptree* Encoding::new_operator = nil;
+Ptree* Encoding::anew_operator = nil;
+Ptree* Encoding::delete_operator = nil;
+Ptree* Encoding::adelete_operator = nil;
 
-Ptree* Encoding::star = new Leaf("*", 1);
-Ptree* Encoding::ampersand = new Leaf("&", 1);
-Ptree* Encoding::comma = new Leaf(",", 1);
-Ptree* Encoding::dots = new Leaf("...", 3);
-Ptree* Encoding::scope = new Leaf("::", 2);
-Ptree* Encoding::tilder = new Leaf("~", 1);
-Ptree* Encoding::left_paren = new Leaf("(", 1);
-Ptree* Encoding::right_paren = new Leaf(")", 1);
-Ptree* Encoding::left_bracket = new Leaf("[", 1);
-Ptree* Encoding::right_bracket = new Leaf("]", 1);
-Ptree* Encoding::left_angle = new Leaf("<", 1);
-Ptree* Encoding::right_angle = new Leaf(">", 1);
+Ptree* Encoding::star = nil;
+Ptree* Encoding::ampersand = nil;
+Ptree* Encoding::comma = nil;
+Ptree* Encoding::dots = nil;
+Ptree* Encoding::scope = nil;
+Ptree* Encoding::tilder = nil;
+Ptree* Encoding::left_paren = nil;
+Ptree* Encoding::right_paren = nil;
+Ptree* Encoding::left_bracket = nil;
+Ptree* Encoding::right_bracket = nil;
+Ptree* Encoding::left_angle = nil;
+Ptree* Encoding::right_angle = nil;
 
 const int DigitOffset = 0x80;
+
+void Encoding::do_init_static()
+{
+    Encoding::bool_t = new LeafBOOLEAN("bool", 4);
+    Encoding::char_t = new LeafCHAR("char", 4);
+    Encoding::int_t = new LeafINT("int", 3);
+    Encoding::short_t = new LeafSHORT("short", 5);
+    Encoding::long_t = new LeafLONG("long", 4);
+    Encoding::float_t = new LeafFLOAT("float", 5);
+    Encoding::double_t = new LeafDOUBLE("double", 6);
+    Encoding::void_t = new LeafVOID("void", 4);
+
+    Encoding::signed_t = new LeafSIGNED("signed", 6);
+    Encoding::unsigned_t = new LeafUNSIGNED("unsigned", 8);
+    Encoding::const_t = new LeafCONST("const", 5);
+    Encoding::volatile_t = new LeafVOLATILE("volatile", 8);
+
+    Encoding::operator_name = new LeafReserved("operator", 8);
+    Encoding::new_operator = new LeafReserved("new", 3);
+    Encoding::anew_operator = new LeafReserved("new[]", 5);
+    Encoding::delete_operator = new LeafReserved("delete", 6);
+    Encoding::adelete_operator = new LeafReserved("delete[]", 8);
+
+    Encoding::star = new Leaf("*", 1);
+    Encoding::ampersand = new Leaf("&", 1);
+    Encoding::comma = new Leaf(",", 1);
+    Encoding::dots = new Leaf("...", 3);
+    Encoding::scope = new Leaf("::", 2);
+    Encoding::tilder = new Leaf("~", 1);
+    Encoding::left_paren = new Leaf("(", 1);
+    Encoding::right_paren = new Leaf(")", 1);
+    Encoding::left_bracket = new Leaf("[", 1);
+    Encoding::right_bracket = new Leaf("]", 1);
+    Encoding::left_angle = new Leaf("<", 1);
+    Encoding::right_angle = new Leaf(">", 1);
+
+}
 
 void Encoding::Reset(Encoding& e)
 {
