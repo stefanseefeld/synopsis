@@ -546,7 +546,7 @@ PyObject *Translator::SourceFile(AST::SourceFile* file)
   Trace trace("Translator::SourceFile");
   PyObject *files = PyObject_CallMethod(m_ast, "files", "");
   assertObject(files);
-  PyObject *pyfile = PyDict_GetItemString(files, file->filename().c_str());
+  PyObject *pyfile = PyDict_GetItemString(files, const_cast<char *>(file->filename().c_str()));
   if (!pyfile) // the file wasn't found, create it now
   {
     PyObject *filename, *full_filename;

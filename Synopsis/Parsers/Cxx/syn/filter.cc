@@ -80,7 +80,7 @@ AST::SourceFile *import_source_file(PyObject *ast,
 
   PyObject *files = PyObject_CallMethod(ast, "files", "");
   assert(files);
-  PyObject *py_source_file = PyDict_GetItemString(files, name.c_str());
+  PyObject *py_source_file = PyDict_GetItemString(files, const_cast<char *>(name.c_str()));
   Py_DECREF(files);
   if (!py_source_file) return sourcefile; // the given file wasn't preprocessed into the AST
 
