@@ -1,4 +1,4 @@
-// $Id: link_map.hh,v 1.1 2001/03/16 04:42:00 chalky Exp $
+// $Id: link_map.hh,v 1.2 2002/10/25 08:57:47 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: link_map.hh,v $
+// Revision 1.2  2002/10/25 08:57:47  chalky
+// Clear the link map (stores where expanded macros are for syntax highlighted
+// files) after parsing
+//
 // Revision 1.1  2001/03/16 04:42:00  chalky
 // SXR parses expressions, handles differences from macro expansions. Some work
 // on function call resolution.
@@ -48,6 +52,11 @@ public:
     //. the various macros are applied in turn, and the final column position is
     //. returned. Returns -1 if col is inside a macro
     int map(int line, int col);
+
+    //. Clears the map. Should be called at the very start of processing,
+    //. since the map is stored statically and hence potentially across parser
+    //. invocations.
+    void clear();
 
 private:
     //. Compiler firewall

@@ -25,6 +25,7 @@
 #include "swalker.hh"
 #include "builder.hh"
 #include "dumper.hh"
+#include "link_map.hh"
 
 // Define to test refcounting
 //#define SYN_TEST_REFCOUNT
@@ -742,6 +743,9 @@ PyObject *occParse(PyObject *self, PyObject *args)
 
   // Delete all the AST:: and Types:: objects we created
   FakeGC::delete_all();
+
+  // Clear the link map
+  link_map::instance().clear();
 
   return ast;
 }
