@@ -7,7 +7,7 @@ from Synopsis.Processors import *
 from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML import View
 from Synopsis.Formatters.HTML.Views import *
-from Synopsis.Formatters import TexInfo
+from Synopsis.Formatters import Texinfo
 
 parser = Cxx.Parser(syntax_prefix = 'links',
                     xref_prefix = 'xref')
@@ -54,7 +54,7 @@ sxr = HTML.Formatter(stylesheet_file = '../../html.css',
                                    link_to_scope = True,
                                    template = template)])
 
-texinfo = TexInfo.Formatter()
+texinfo = Texinfo.Formatter()
 
 process(parse = Composite(parser, linker),
         xref = xref,
