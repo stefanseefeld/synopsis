@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.9 2001/02/07 09:56:59 chalky Exp $
+# $Id: AST.py,v 1.10 2001/04/11 04:27:47 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.10  2001/04/11 04:27:47  stefan
+# start working on a Group class
+#
 # Revision 1.9  2001/02/07 09:56:59  chalky
 # Support for "previous comments" in C++ parser and Comments linker.
 #
@@ -135,15 +138,27 @@ class Forward (Declaration):
         Declaration.__init__(self, file, line, language, type, name)
     def accept(self, visitor): visitor.visitForward(self)
 
-class Scope (Declaration):
-    """Base class for scopes with contained declarations."""
+class Group (Declaration):
+    """Base class for groups which contain declarations.
+    This class doesn't correspond to any language construct.
+    Rather, it may be used with comment-embedded grouping tags
+    to regroup declarations that are to appear together in the
+    manual."""
 
     def __init__(self, file, line, language, type, name):
         Declaration.__init__(self, file, line, language, type, name)
         self.__declarations = []
     def declarations(self):
-	"""The list of declarations in this scope"""
+	"""The list of declarations in this group"""
 	return self.__declarations
+    def accept(self, visitor): visitor.visitGroup(self)
+
+class Scope (Group):
+    """Base class for scopes (named groups)."""
+
+    def __init__(self, file, line, language, type, name):
+        Group.__init__(self, file, line, language, type, name)
+    def accept(self, visitor): visitor.visitScope(self)
 
 class Module (Scope):
     """Module class"""
@@ -403,9 +418,10 @@ class Visitor :
         for declaration in node.declarations(): declaration.accept(self)
     def visitDeclaration(self, node): return
     def visitForward(self, node): self.visitDeclaration(node)
-    def visitScope(self, node):
+    def visitGroup(self, node):
 	self.visitDeclaration(node)
         for declaration in node.declarations(): declaration.accept(self)
+    def visitScope(self, node): self.visitGroup(node)
     def visitModule(self, node): self.visitScope(node)
     def visitMetaModule(self, node): self.visitModule(node)
     def visitClass(self, node): self.visitScope(node)
