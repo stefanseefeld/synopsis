@@ -869,6 +869,7 @@ class Paginator:
 		# Check if need to add to detail list
 		has_detail = comments[child].detail is not comments[child].summary
 		has_detail = has_detail or isinstance(child, AST.Enum)
+		has_detail = has_detail or (isinstance(child, AST.Function) and len(child.exceptions()))
 		if has_detail and not isinstance(child, AST.Scope):
 		    if not details.has_key(section):
 			details[section] = []

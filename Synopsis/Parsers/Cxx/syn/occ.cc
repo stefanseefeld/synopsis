@@ -583,8 +583,8 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
     //Trace trace("PyWalker::TranslateClassSpec");
     updateLineNumber(node);
 
-    cout <<"Class: " << Ptree::Length(node)<<" "<<node->Second()->IsLeaf()<<endl;
-    node->Display(); cout << endl << endl;
+    //cout <<"Class: " << Ptree::Length(node)<<" "<<node->Second()->IsLeaf()<<endl;
+    //node->Display(); cout << endl << endl;
     // TODO: Handle nested classes properly (see ThreadData.hh)
     if(Ptree::Length(node) == 4 /* && node->Second()->IsLeaf()*/)
     {
