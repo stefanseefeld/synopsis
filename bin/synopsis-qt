@@ -7,6 +7,7 @@
 
 from Synopsis.UI.Qt.main import *
 from Synopsis.Formatter import ASCII
+from Synopsis.Core import Project
 
 if __name__ == "__main__":
     # This is usually set in ASCII's parse_args function.. but we can set it to
@@ -33,7 +34,10 @@ if __name__ == "__main__":
     main.show()
 
     if load_file:
-	main.do_open_file(load_file)
+	if Project.is_project_file(load_file):
+	    main.do_open_project(load_file)
+	else:
+	    main.do_open_file(load_file)
 
     app.exec_loop()
 
