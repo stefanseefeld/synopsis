@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.48 2003/11/11 06:01:13 stefan Exp $
+# $Id: core.py,v 1.49 2003/11/12 16:42:05 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.49  2003/11/12 16:42:05  stefan
+# more refactoring
+#
 # Revision 1.48  2003/11/11 06:01:13  stefan
 # adjust to directory/package layout changes
 #
@@ -299,8 +302,15 @@ class Config:
 	    raise TypeError, "HTML.pages must be a list."
 	if self.verbose > 1: print "Using pages:",pages
 	self.pages = pages
-	if 'FramesIndex' in pages: self.using_frames = 1
-	else: self.using_frames = 0
+        from FramesIndex import FramesIndex
+        # determine wether any of the pages is of type 'FramesIndex'
+	self.using_frames = reduce(lambda x, y: x or y,
+                              map(lambda x: isinstance(x, FramesIndex),
+                                  self.pages))
+                              
+	#if 'FramesIndex' in pages: self.using_frames = 1
+	#else:
+        #self.using_frames = 1
 
     def _config_sorter(self, sorter):
 	if self.verbose > 1: print "Using sorter:",sorter
@@ -505,12 +515,16 @@ class PageManager:
 	self.__roots = [] #pages with roots, list of Structs
 	self.__global = None # The global scope
 	self.__files = {} # map from filename to (page,scope)
-	self.__page_objects = {} # map of pages by name
-	self._loadPages()
+	#self.__page_objects = {} # map of pages by name
+	#self._loadPages()
+        for p in config.pages:
+            p.register(self)
+            self.__pages.append(p)
 
-    def getPage(self, name):
-	"""Returns the Page with the given name"""
-	return self.__page_objects[name]
+    def get_toc(self, start):
+	"""Returns the table of content to link into from the outside"""
+        ### FIXME : how should this work ? We need to point to one of the pages...
+	return self.__pages[1].get_toc(start)
 	
     def globalScope(self):
 	"Return the global scope"
@@ -731,7 +745,7 @@ def format(args, ast, config_obj):
 
     # Create table of contents index
     start = manager.calculateStart(root)
-    config.toc = manager.getPage(config.default_toc).get_toc(start)
+    config.toc = manager.get_toc(start)
     if verbose: print "HTML Formatter: Initialising TOC"
 
     # Add all declarations to the namespace tree

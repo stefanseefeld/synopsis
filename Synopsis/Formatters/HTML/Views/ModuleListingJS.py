@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.10 2003/11/11 06:01:13 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.11 2003/11/12 16:42:05 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.11  2003/11/12 16:42:05  stefan
+# more refactoring
+#
 # Revision 1.10  2003/11/11 06:01:13  stefan
 # adjust to directory/package layout changes
 #
@@ -139,6 +142,4 @@ class ModuleListingJS(JSTree.JSTree):
 	    for child in children:
 		self.indexModule(child, my_scope)
 	    self.writeNodeEnd()
-
-htmlPageClass = ModuleListingJS
 
