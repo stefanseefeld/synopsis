@@ -5,6 +5,7 @@
 
 #include "ast.hh"
 #include <stack>
+#include <map>
 
 // Forward declare some Type::Types
 namespace Type {
@@ -184,6 +185,9 @@ private:
 	Search search;
 	//. Current accessability
 	AST::Access access;
+	//. Counts of named sub-namespaces
+	std::map<std::string, int> nscounts;
+	int getCount(const std::string& name);
     };
     //. The stack of Builder::Scopes
     std::stack<Scope*> m_scopes;

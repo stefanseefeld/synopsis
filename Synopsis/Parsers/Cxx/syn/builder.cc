@@ -36,6 +36,11 @@ Builder::Scope::~Scope()
     delete dict;
 }
 
+int Builder::Scope::getCount(const std::string& name)
+{
+    return ++nscounts[name];
+}
+
 namespace {
 //     std::ostream& operator << (std::ostream& out, const Builder::Scope& scope)
 //     {
@@ -209,8 +214,10 @@ AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nsty
 	    type_str = "local";
 	    { // name is empty or the type. Encode it with a unique number
 		if (!name.size()) name = "ns";
-		std::ostrstream x; x << '`' << name << m_unique++ << std::ends;
-		name = x.str();
+		std::ostrstream x; x << '`' << name;
+		int count = m_scopes.top()->getCount(name);
+		if (count > 1) x << count;
+		x << std::ends; name = x.str();
 	    }
 	    break;
     }
@@ -775,7 +782,8 @@ Type::Named* Builder::resolveType(Type::Named* type)
 	LOG("resolveType failed! multiple:" << e.types.size());
 	std::vector<Type::Named*>::iterator iter = e.types.begin();
 	while (iter != e.types.end()) {
-	    LOG(" +" << (*iter++)->name());
+	    LOG(" +" << (*iter)->name());
+	    iter++;
 	}
     }
     catch (...) {

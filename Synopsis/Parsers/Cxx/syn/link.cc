@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.9 2001/06/06 13:28:50 chalky Exp $
+ * $Id: link.cc,v 1.10 2001/06/10 00:31:39 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.10  2001/06/10 00:31:39  chalky
+ * Refactored link storage, better comments, better parsing
+ *
  * Revision 1.9  2001/06/06 13:28:50  chalky
  * Support the C++ files in the RefManual, highlighted, linked, documented and
  * all!
@@ -80,17 +83,19 @@ namespace {
 	//. priority, so nested types should be nested in this list:
 	//. <a><b>foo</b></a> means enum ordering: A_START,B_START,B_END,A_END
 	enum Type {
-	    LINK_START, //< Start of a label link
-	    REF_START, //< Start of reference link
+	    LINK_START, //.< Start of a label link
+	    REF_START, //.< Start of reference link
 	    SPAN_START,
 	    SPAN_END,
 	    REF_END, 
-	    LINK_END //< End of a link
+	    LINK_END //.< End of a link
 	};
 	//. The type of this link
 	Type type;
 	//. The scoped name of this link
 	Name name;
+	//. The description of this link
+	std::string desc;
 
 	//. Less-than functor that compares column and type
 	struct lt_col {
@@ -240,6 +245,7 @@ namespace {
     void read_links() throw (std::string)
     {
 	std::ifstream in(links_filename);
+	char buf[4096];
 	if (!in) { return; } // this is okay -- just means the file wont be linked
 	std::string word;
 	int line, len;
@@ -253,16 +259,24 @@ namespace {
 	    if (type == "DEF" || type == "REF") {
 		if (type == "DEF") link->type = Link::LINK_START;
 		else link->type = Link::REF_START;
-		while (in && in.get() != '\n') {
+		int c = -1;
+		// Use up field sep ' '
+		in.get();
+		// Loop over scoped name till next ' '
+		do {
 		    in >> word;
 		    // Replace '160's with spaces
 		    for (std::string::size_type pos = word.find(160); pos != std::string::npos; pos = word.find(160, pos)) {
 			word[pos] = ' ';
 		    }
 		    link->name.push_back(word);
-		}
+		} while (in && (c = in.get()) != '\n' && c != ' ');
+		// Read description
+		if (!in.getline(buf, 4096)) break;
+		link->desc = buf;
 	    } else  {
 		link->type = Link::SPAN_START;
+		in >> type;
 		link->name.push_back(type);
 	    }
 	    links[line].insert(link);
@@ -378,7 +392,7 @@ namespace {
 					out << "<a class=\"file-ref\"";
 				    out << " href=\"" << href;
 				}
-				out << "\" title=\"" << name << "\">";
+				out << "\" title=\"" << link->desc <<" "<< name << "\">";
 				break;
 			    }
 			case Link::REF_END:
