@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.4 2001/06/26 04:32:16 stefan Exp $
+# $Id: FileTreeJS.py,v 1.5 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.5  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.4  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -58,10 +61,8 @@ from Tags import *
 class FileTree(JSTree.JSTree):
     def __init__(self, manager):
 	JSTree.JSTree.__init__(self, manager)
-	filename = config.files.nameOfSpecial('file_tree')
-	link = href(filename, 'File Tree', target="contents")
-	self.__filename = os.path.join(config.basename, filename)
-	self.manager.addRootPage('File Tree', link, 2)
+	filename = config.files.nameOfSpecial('FileTree')
+	self.manager.addRootPage(filename, 'File Tree', 'contents', 2)
 	myconfig = config.obj.FileTree
 	self._link_pages = myconfig.link_to_pages
    
@@ -73,8 +74,9 @@ class FileTree(JSTree.JSTree):
                      os.path.join(share, 'syn-dot.png'),
                      'tree_%s.png', 0)
 	# Start the file
-	self.startFile(self.__filename, "File Tree")
-	self.write(self.manager.formatRoots('File Tree', 2)+'<hr>')
+	filename = config.files.nameOfSpecial('FileTree')
+	self.startFile(filename, 'File Tree')
+	self.write(self.manager.formatHeader(filename, 2))
 	# recursively visit all nodes
 	self.processFileTreeNode(config.fileTree.root())
 	self.endFile()
@@ -113,10 +115,10 @@ class FileTree(JSTree.JSTree):
 	if not hasattr(node, 'decls'): return
 
 	toc = config.toc
-	fname = os.path.join(config.basename, config.files.nameOfFile(node.path))
 	name = list(node.path)
 	while len(name) and name[0] == '..': del name[0]
-	self.startFile(fname, string.join(name, os.sep))
+	filename = config.files.nameOfFile(node.path)
+	self.startFile(filename, string.join(name, os.sep))
 	self.write(entity('b', string.join(name, os.sep))+'<br>')
 	if self._link_pages:
 	    link = config.files.nameOfScopedSpecial('page', name)

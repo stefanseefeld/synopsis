@@ -85,10 +85,9 @@ class ConfScope (HTML.ModuleListing.ModuleListing):
     under Config.py."""
     def _init_page(self):
 	"""Initialise with the special Config name"""
-	filename = config.files.nameOfSpecial('config_scopes')
-	link = href(filename, 'Config', target="index")
-	self._filename = os.path.join(config.basename, filename)
-	self.manager.addRootPage('Config', link, 1)
+	filename = config.files.nameOfSpecial('ConfScopes')
+	#self._filename = os.path.join(config.basename, filename)
+	self.manager.addRootPage(filename, 'Config', 'index', 1)
 	self._link_target = 'main'
 	#config.set_index_page(self.__filename)
     def _link_href(self, ns):

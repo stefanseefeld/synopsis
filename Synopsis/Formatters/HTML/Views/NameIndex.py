@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.2 2001/06/26 04:32:16 stefan Exp $
+# $Id: NameIndex.py,v 1.3 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.3  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.2  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -41,17 +44,16 @@ class NameIndex (Page.Page):
     """Creates an index of all names on one page in alphabetical order"""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	filename = config.files.nameOfSpecial('name_index')
-	link = href(filename, 'Name Index', target='main')
-	self.__filename = os.path.join(config.basename, filename)
-	manager.addRootPage('Name Index', link, 1)
+	filename = config.files.nameOfSpecial('NameIndex')
+	manager.addRootPage(filename, 'Name Index', 'main', 1)
 
     def process(self, start):
 	"""Creates the page. It is created as a list of tables, one for each
 	letter. The tables have a number of columns, which is 2 by default.
 	_processItem is called for each item in the dictionary."""
-	self.startFile(self.__filename, "Synopsis - Name Index")
-	self.write(self.manager.formatRoots('Name Index')+'<hr>')
+	filename = config.files.nameOfSpecial('NameIndex')
+	self.startFile(filename, "Synopsis - Name Index")
+	self.write(self.manager.formatHeader(filename))
 	self.write(entity('h1', "Name Index"))
 	self.write('<i>Hold the mouse over a link to see the scope of each name</i>')
 

@@ -43,56 +43,79 @@ TEXI		:= core-ast.texi core-type.texi core-util.texi \
 all:	html Manual.pdf
 
 html:   all.syn
+	@echo formatting $@
 	$(synopsis) -Wc,formatter=HTML -o html $^
 
 html-doxygen:   all.syn
+	@echo formatting $@
 	$(synopsis) -Wc,formatter=Doxygen -o html-doxygen $^
 
 c++.syn:	$(CXXHHSYNS) $(CXXCCSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=C++Final -o c++.syn $^
 
 core-ast.syn:	$(S_PYSYNS) $(C_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Core::AST' -o $@ $^
 core-type.syn:	$(S_PYSYNS) $(C_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Core::Type' -o $@ $^
 core-util.syn:	$(S_PYSYNS) $(C_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Core::Util' -o $@ $^
 parser-c++-py.syn:	$(P_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Parser::C++' -o $@ $^
 parser-c++-cpp.syn:	c++.syn
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -o $@ $^
 parser-c++.syn:	parser-c++-py.syn parser-c++-cpp.syn
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -o $@ $^
 parser-idl.syn:	$(P_PYSYNS) c++.syn
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Parser::IDL' -o $@ $^
 parser-py.syn:	$(P_PYSYNS) c++.syn
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Parser::Python' -o $@ $^
 linker.syn:	$(L_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Linker' -o $@ $^
 formatter-ascii.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::ASCII' -o $@ $^
 formatter-html.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::HTML' -o $@ $^
 formatter-dump.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::DUMP' -o $@ $^
 formatter-dia.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Dia' -o $@ $^
 formatter-db.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::DocBook' -o $@ $^
 formatter-dot.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Dot' -o $@ $^
 formatter-html-simple.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::HTML_Simple' -o $@ $^
 formatter-texi.syn:	$(F_PYSYNS)
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::TexInfo' -o $@ $^
 
 %.texi:   %.syn
+	@echo formatting $@
 	$(synopsis) -Wc,formatter=TexInfo -o $@ $^
 
 Manual.pdf:	$(TEXI) Manual.texi
-		texi2pdf Manual.texi
+	@echo generating $@
+	texi2pdf Manual.texi
 
 all.syn:	$(PYSYNS) c++.syn
+	@echo linking $@
 	$(synopsis) -Wc,linker=All -o all.syn $^
 
 install: all
@@ -109,22 +132,26 @@ distclean:  clean
 
 # Compile Python files
 $(PYSYNS): $(sdir)/%.syn:	$(topdir)/%.py
+	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
 
 # Compile main 'synopsis' file
 $(sdir)/synopsis.syn: $(topdir)/synopsis
+	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
 
 # Compile C++ .hh files
 $(CXXHHSYNS): $(sdir)/%.csyn: $(topdir)/%.hh
+	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)" \
 	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) -o $@ $?
 
 # Compile C++ .cc files
 $(CXXCCSYNS): $(sdir)/%.ccsyn: $(topdir)/%.cc
+	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -I$(topdir)/$(cxxdir)/.. -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)" \
 	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) -o $@ $?

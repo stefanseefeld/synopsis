@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.17 2001/06/26 04:32:16 stefan Exp $
+# $Id: core.py,v 1.18 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.18  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.17  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -377,9 +380,6 @@ def import_object(spec, defaultAttr = None, basePackage = ''):
     else:
 	raise TypeError, "Import spec must be a string or tuple of two strings."
 
-
-
-
 class PageManager:
     """This class manages and coordinates the various pages. The user adds
     pages by passing their class object to the addPage method. Pages should be
@@ -430,32 +430,33 @@ class PageManager:
 	page = pageClass(self)
 	self.__pages.append(page)
     
-    def addRootPage(self, name, link, visibility):
+    def addRootPage(self, file, label, target, visibility):
 	"""Adds a named link to the list of root pages. Called from the
 	constructors of Page objects. The root pages are displayed at the top
 	of every page, depending on their visibility (higher = more visible).
-	@param name	    a string you can use to avoid linking to yourself
-	@param link	    a string with the full <a></a> tag (you may want to
-			    put a target= in it, for example)
+	@param file	    the filename, to be used when generating the link
+	@param label	    the label of the page
+        @param target       target frame
 	@param visibility   should be a number such as 1 or 2. Visibility 2 is
 			    shown on all pages, 1 only on pages with lots of
 			    room. For example, pages for the top-left frame
 			    only show visibility 2 pages."""
-	self.__roots.append(Struct(name=name,link=link,visibility=visibility))
+	self.__roots.append(Struct(file=file, label=label, target=target, visibility=visibility))
 
-    def formatRoots(self, from_name, visibility=1):
-	"""Formats the list of root pages to HTML. The from_name specifies the
-	page that shouldn't be linked. Only root pages of 'visibility' or
+    def formatHeader(self, origin, visibility=1):
+	"""Formats the list of root pages to HTML. The origin specifies the
+	generated page itself (which shouldn't be linked), such that the relative
+        links can be generated. Only root pages of 'visibility' or
 	above are included."""
+        #filter out roots that are visible
 	roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
-	other = lambda x, span=span: span('root-other', x)
-	current = lambda x, span=span: span('root-current', x)
-	roots = map(
-	    lambda x,f=from_name, other=other, current=current:
-		x.name==f and current(f) or other(x.link),
-	    roots
-	)
-	return string.join(roots, ' | ')
+        #a function generating a link
+	other = lambda x, o=origin, span=span: span('root-other', href(rel(o, x.file), x.label, target=x.target))
+        #a function simply printing label
+	current = lambda x, span=span: span('root-current', x.label)
+        # generate the header
+	roots = map(lambda x, o=origin, other=other, current=current: x.file==o and current(x) or other(x), roots)
+	return string.join(roots, ' | \n')+'\n<hr>\n'
 
     def process(self, root):
 	"""Create all pages from the start Scope, derived from the root Scope"""

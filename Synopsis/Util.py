@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.11 2001/06/26 04:32:15 stefan Exp $
+# $Id: Util.py,v 1.12 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.12  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.11  2001/06/26 04:32:15  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -219,7 +222,7 @@ def open(filename):
     import __builtin__
     dir, file = os.path.split(filename)
     if dir and not os.path.isdir(dir): os.makedirs(dir)
-    return __builtin__.open(filename, 'w')
+    return __builtin__.open(filename, 'w+')
 
 def getopt_spec(args, options, long_options=[]):
     """Transparently add --spec=file support to getopt"""

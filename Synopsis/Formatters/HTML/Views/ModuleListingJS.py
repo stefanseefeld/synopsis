@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.7 2001/06/26 04:32:16 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.8 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.8  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.7  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -72,11 +75,9 @@ class ModuleListingJS(JSTree.JSTree):
 
     def _init_page(self):
 	"Sets _filename and registers the page with the manager"
-	filename = config.files.nameOfSpecial('module_listing')
+	filename = config.files.nameOfSpecial('ModuleTree')
 	config.set_contents_page(filename)
-	link = href(filename, 'Modules', target="contents")
-	self._filename = os.path.join(config.basename, filename)
-	self.manager.addRootPage('Modules', link, 2)
+	self.manager.addRootPage(filename, 'Modules', 'contents', 2)
 	self._link_target = 'index'
 
     def process(self, start):
@@ -89,9 +90,9 @@ class ModuleListingJS(JSTree.JSTree):
                      'tree_%s.png', 0)
 	self.__share = share
 	# Creare the file
-	self.startFile(self._filename, "Module Index")
-	self.write(self.manager.formatRoots('Modules', 2))
-	self.write('<hr>')
+	filename = config.files.nameOfSpecial('ModuleTree')
+	self.startFile(filename, "Module Tree")
+	self.write(self.manager.formatHeader(filename, 2))
 	self.indexModule(start, start.name())
 	self.endFile()
 

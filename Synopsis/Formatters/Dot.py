@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.18 2001/06/26 04:32:15 stefan Exp $
+# $Id: Dot.py,v 1.19 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.19  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.18  2001/06/26 04:32:15  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -413,7 +416,7 @@ def _format_html(input, output):
     _format_png(input, output + ".png")
     _format(input, output + ".map", "imap")
     prefix, reference = os.path.split(output + ".png")
-    html = open(output + ".html", "w+")
+    html = Util.open(output + ".html")
     html.write('<img src="' + reference + '" hspace="8" vspace="8" border="0" usemap="#')
     html.write(reference + "_map\">\n")
     html.write("<map name=\"" + reference + "_map\">")
@@ -433,7 +436,7 @@ def format(types, declarations, args, config_obj):
 
     tmpfile = output + ".dot"
     if verbose: print "Dot Formatter: Writing dot file..."
-    dotfile = open(tmpfile, 'w+')
+    dotfile = Util.open(tmpfile)
     dotfile.write("digraph \"%s\" {\n"%(title))
     dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4, color=black]\n")
     if type == "inheritance":

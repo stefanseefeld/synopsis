@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.12 2001/06/26 04:32:15 stefan Exp $
+# $Id: Part.py,v 1.13 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.13  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.12  2001/06/26 04:32:15  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -98,7 +101,7 @@ class ASTFormatter (Type.Visitor):
 	reference() and label() calls. Local references to the formatter's
 	reference and label methods are stored in self for more efficient use
 	of them."""
-	self.format = formatter
+#	self.format = formatter
 	self.label = formatter.label
 	self.reference = formatter.reference
 
@@ -329,7 +332,7 @@ class DetailASTFormatter (BaseASTFormatter):
 	    scope.append(name)
 	    text.append(self.reference(scope))
 	text.append(node.name()[-1])
-	return string.join(text, "::")
+	return string.join(text, "::\n") + '\n'
 
     def formatModule(self, module):
 	"""Formats the module by linking to each parent scope in the name"""
@@ -476,6 +479,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     
     def scope(self): return self.__scope
     def write(self, text): self.__os.write(text)
+    def set_origin(self, origin): self.__origin = origin
     def set_scope(self, scope): self.__scope = list(scope)
     def set_ostream(self, os): self.__os = os
     def addFormatter(self, formatterClass):
@@ -506,7 +510,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	optional keys are appended as attributes to the A tag."""
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = config.toc[name]
-	if entry: return apply(href, (entry.link, label), keys)
+	if entry: return apply(href, (rel(self.__origin, entry.link), label), keys)
 	return label or ''
 
     def label(self, name, label=None):
@@ -618,26 +622,21 @@ class SummaryFormatter(BaseFormatter):
     def writeSectionStart(self, heading):
 	"""Starts a table entity. The heading is placed in a row in a td with
 	the class 'heading'."""
-	str = '<table width="100%%">'\
-	'<col width="100px"><col width="100%%">'\
-	'<tr><td colspan="2" class="heading">%s</td></tr>'
-	self.write(str%heading)
+	self.write('<table width="100%%">\n')
+	self.write('<col width="100px"><col width="100%%">\n')
+	self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
 
     def writeSectionEnd(self, heading):
 	"""Closes the table entity and adds a break."""
-	str = '</table><br>'
-	self.write(str)
+	self.write('</table>\n<br>\n')
 
     def writeSectionItem(self, type, name):
 	"""Adds a table row with one or two data elements. If type is None
 	then there is only one td with a colspan of 2."""
 	if not len(type):
-	    str = '<tr><td colspan="2">%s</td></tr>'
-	    self.write(str%name)
+	    self.write('<tr><td colspan="2">' + name + '</td></tr>\n')
 	else:
-	    str = '<tr><td valign="top">%s</td><td>%s</td></tr>'
-	    self.write(str%(type,name))
-
+	    self.write('<tr><td valign="top">' + type + '</td><td>' + name + '</td></tr>\n')
 
 class DetailFormatter(BaseFormatter):
     def __init__(self):
@@ -666,13 +665,12 @@ class DetailFormatter(BaseFormatter):
     def writeSectionStart(self, heading):
 	"""Creates a table with one row. The row has a td of class 'heading'
 	containing the heading string"""
-	str = '<table width="100%%">'\
-	'<tr><td colspan="2" class="heading">%s</td></tr></table>'
-	self.write(str%heading)
+	self.write('<table width="100%%">\n')
+        self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
+        self.write('</table>')
 
     def writeSectionItem(self, text1, text2):
 	"""Joins text1 and text2 and follows with a horizontal rule"""
-	str = '%s %s<hr>'
-	self.write(str%(text1, text2))
+	self.write(text1 + text2 + '\n<hr>\n')
 
 

@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.6 2001/06/26 04:32:16 stefan Exp $
+# $Id: InheritanceTree.py,v 1.7 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.7  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.6  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -50,17 +53,15 @@ from Tags import *
 class InheritanceTree(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	filename = config.files.nameOfSpecial('tree')
-	link = href(filename, 'Inheritance Tree', target='main')
-	self.__filename = os.path.join(config.basename, filename)
-	manager.addRootPage('Inheritance Tree', link, 1)
+	filename = config.files.nameOfSpecial('InheritanceTree')
+	manager.addRootPage(filename, 'Inheritance Tree', 'main', 1)
  
     def process(self, start):
 	"""Creates a file with the inheritance tree"""
 	roots = config.classTree.roots()
-
-	self.startFile(self.__filename, "Synopsis - Class Hierarchy")
-	self.write(self.manager.formatRoots('Inheritance Tree')+'<hr>')
+	filename = config.files.nameOfSpecial('InheritanceTree')
+	self.startFile(filename, "Synopsis - Class Hierarchy")
+	self.write(self.manager.formatHeader(filename))
 	self.write(entity('h1', "Inheritance Tree"))
 	self.write('<ul>')
 	map(self.processClassInheritance, map(lambda a,b=start.name():(a,b), roots))
