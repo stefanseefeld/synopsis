@@ -847,6 +847,8 @@ Types::Named* Lookup::lookupType(const std::vector<std::string>& names, bool fun
             {
                 type = Types::type_cast<Types::Named>(tdef->alias());
             }
+	    // FIXME: type can be a Types::Dependent (i.e. a template parameter)
+	    //        in which case this will throw a wrong_type_cast !!!
             // Find cached scope from 'type'
             scope = find_info( Types::declared_cast<AST::Scope>(type) );
         }

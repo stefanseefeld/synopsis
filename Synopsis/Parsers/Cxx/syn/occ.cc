@@ -134,13 +134,13 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
 
   Builder builder(sourcefile);
   SWalker swalker(filter, &parse, &builder, &buffer);
-  if (syn_fake_std)
-  {
-    // Fake a using from "std" to global
-    builder.start_namespace("std", NamespaceNamed);
-    builder.add_using_namespace(builder.global()->declared());
-    builder.end_namespace();
-  }
+//   if (syn_fake_std)
+//   {
+//     // Fake a using from "std" to global
+//     builder.start_namespace("std", NamespaceNamed);
+//     builder.add_using_namespace(builder.global()->declared());
+//     builder.end_namespace();
+//   }
 
   if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
     swalker.set_store_links(new LinkStore(filter, &swalker));
@@ -148,7 +148,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   {
     PTree::Node *def;
     while(parse.rProgram(def))
-      swalker.Translate(def);
+      swalker.translate(def);
   }
   catch (const std::exception &e)
   {

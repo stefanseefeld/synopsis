@@ -24,28 +24,24 @@
 #include "type.hh"
 #include "ast.hh"
 
-PTree::Node *
-SWalker::TranslateReturn(PTree::Node *spec)
+void SWalker::visit(PTree::ReturnStatement *node)
 {
-  STrace trace("SWalker::TranslateReturn");
-  if (!my_links) return 0;
+  STrace trace("SWalker::visit(PTree::ReturnStatement*)");
+  if (!my_links) return;
 
   // Link 'return' keyword
-  my_links->span(PTree::first(spec), "file-keyword");
+  my_links->span(PTree::first(node), "file-keyword");
 
   // Translate the body of the return, if present
-  if (PTree::length(spec) == 3) Translate(PTree::second(spec));
-  return 0;
+  if (PTree::length(node) == 3) translate(PTree::second(node));
 }
 
-PTree::Node *
-SWalker::TranslateInfix(PTree::Node *node)
+void SWalker::visit(PTree::InfixExpr *node)
 {
-  STrace trace("SWalker::TranslateInfix");
-  // [left op right]
-  Translate(PTree::first(node));
+  STrace trace("SWalker::visit(PTree::Infix*)");
+  translate(PTree::first(node));
   Types::Type* left_type = my_type;
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   Types::Type* right_type = my_type;
   std::string oper = parse_name(PTree::second(node));
   TypeFormatter tf;
@@ -54,7 +50,7 @@ SWalker::TranslateInfix(PTree::Node *node)
   if (!left_type || !right_type)
   {
     my_type = 0;
-    return 0;
+    return;
   }
   // Lookup an appropriate operator
   AST::Function* func = my_lookup->lookupOperator(oper, left_type, right_type);
@@ -63,11 +59,10 @@ SWalker::TranslateInfix(PTree::Node *node)
     my_type = func->return_type();
     if (my_links) my_links->link(PTree::second(node), func->declared());
   }
-  return 0;
+  return;
 }
 
-PTree::Node *
-SWalker::TranslateVariable(PTree::Node *spec)
+void SWalker::translate_variable(PTree::Node *spec)
 {
   // REVISIT: Figure out why this is so long!!!
   STrace trace("SWalker::TranslateVariable");
@@ -196,11 +191,9 @@ SWalker::TranslateVariable(PTree::Node *spec)
     throw nodeERROR(spec, "unknown error in TranslateVariable!");
   }
   my_scope = 0;
-  return 0;
 }
 
-void
-SWalker::TranslateFunctionArgs(PTree::Node *args)
+void SWalker::translate_function_args(PTree::Node *args)
 {
   // args: [ arg (, arg)* ]
   while (PTree::length(args))
@@ -208,23 +201,21 @@ SWalker::TranslateFunctionArgs(PTree::Node *args)
     PTree::Node *arg = PTree::first(args);
     // Translate this arg, TODO: my_params would be better as a vector<Type*>
     my_type = 0;
-    Translate(arg);
+    translate(arg);
     my_params.push_back(my_type);
     // Skip over arg and comma
     args = PTree::rest(PTree::rest(args));
   }
 }
 
-PTree::Node *
-SWalker::TranslateFuncall(PTree::Node *node) 	// and fstyle cast
+void SWalker::visit(PTree::FuncallExpr *node) 	// and fstyle cast
 {
-  STrace trace("SWalker::TranslateFuncall");
+  STrace trace("SWalker::visit(PTree::FuncallExpr*)");
   // TODO: figure out how to deal with fstyle casts.. does it only apply to
   // base types? eg: int(4.0) ?
   // This is similar to TranslateVariable, except we have to check params..
   // doh! That means more my_type nastiness
   //
-  // [ postfix ( args ) ]
   LOG(node);
   // In translating the postfix the last var should be looked up as a
   // function. This means we have to find the args first, and store them in
@@ -233,7 +224,7 @@ SWalker::TranslateFuncall(PTree::Node *node) 	// and fstyle cast
   my_params.clear();
   try
   {
-    TranslateFunctionArgs(PTree::third(node));
+    translate_function_args(PTree::third(node));
   }
   catch (...)
   {
@@ -246,7 +237,7 @@ SWalker::TranslateFuncall(PTree::Node *node) 	// and fstyle cast
   try
   {
     my_postfix_flag = Postfix_Func;
-    Translate(PTree::first(node));
+    translate(PTree::first(node));
   }
   catch (...)
   {
@@ -259,40 +250,31 @@ SWalker::TranslateFuncall(PTree::Node *node) 	// and fstyle cast
   // Restore my_params since we're done with it now
   my_params = save_params;
   my_postfix_flag = save_flag;
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateExprStatement(PTree::Node *node)
+void SWalker::visit(PTree::ExprStatement *node)
 {
-  STrace trace("SWalker::TranslateExprStatement");
-  Translate(PTree::first(node));
-  return 0;
+  STrace trace("SWalker::visit(ExprStatement*)");
+  translate(PTree::first(node));
 }
 
-PTree::Node *
-SWalker::TranslateUnary(PTree::Node *node)
+void SWalker::visit(PTree::UnaryExpr *node)
 {
-  STrace trace("SWalker::TranslateUnary");
-  // [op expr]
+  STrace trace("SWalker::visit(UnaryExpr*)");
   if (my_links) find_comments(node);
   // TODO: lookup unary operator
-  Translate(PTree::second(node));
-  return 0;
+  translate(PTree::second(node));
 }
 
-PTree::Node *
-SWalker::TranslateAssign(PTree::Node *node)
+void SWalker::visit(PTree::AssignExpr *node)
 {
-  STrace trace("SWalker::TranslateAssign");
-  // [left = right]
+  STrace trace("SWalker::visit(AssignExpr*)");
   // TODO: lookup = operator
   my_type = 0;
-  Translate(PTree::first(node));
+  translate(PTree::first(node));
   Types::Type* ret_type = my_type;
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   my_type = ret_type;
-  return 0;
 }
 
 //. Resolves the final type of any given Type. For example, it traverses
@@ -347,16 +329,14 @@ protected:
   Types::Type* my_type; //.< The type to return
 };
 
-PTree::Node *
-SWalker::TranslateArrowMember(PTree::Node *node)
+void SWalker::visit(PTree::ArrowMemberExpr *node)
 {
-  STrace trace("SWalker::TranslateArrowMember");
-  // [ postfix -> name ]
+  STrace trace("SWalker::visit(ArrowMember*)");
   my_type = 0;
   my_scope = 0;
   Postfix_Flag save_flag = my_postfix_flag;
   my_postfix_flag = Postfix_Var;
-  Translate(PTree::first(node));
+  translate(PTree::first(node));
   my_postfix_flag = save_flag;
   // my_type should be a modifier to a declared to a class. Throw bad_cast if not
   if (!my_type)
@@ -372,21 +352,18 @@ SWalker::TranslateArrowMember(PTree::Node *node)
     throw nodeERROR(node, "LHS of -> was not a scope!");
   }
   // Find member, my_type becomes the var type or func returnType
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   my_scope = 0;
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateDotMember(PTree::Node *node)
+void SWalker::visit(PTree::DotMemberExpr *node)
 {
-  STrace trace("SWalker::TranslateDotMember");
-  // [ postfix . name ]
+  STrace trace("SWalker::visit(DotMember*)");
   my_type = 0;
   my_scope = 0;
   Postfix_Flag save_flag = my_postfix_flag;
   my_postfix_flag = Postfix_Var;
-  Translate(PTree::first(node));
+  translate(PTree::first(node));
   my_postfix_flag = save_flag;
   LOG(parse_name(PTree::first(node)) << " resolved to " << my_type_formatter->format(my_type));
   // my_type should be a declared to a class
@@ -406,28 +383,25 @@ SWalker::TranslateDotMember(PTree::Node *node)
   }
   // Find member, my_type becomes the var type or func returnType
   LOG("translating third");
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   my_scope = 0;
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateIf(PTree::Node *node)
+void SWalker::visit(PTree::IfStatement *node)
 {
-  STrace trace("SWalker::TranslateIf");
-  // [ if ( expr ) statement (else statement)? ]
+  STrace trace("SWalker::visit(IfStatement*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   // Start a temporary namespace, in case expr is a declaration
   my_builder->start_namespace("if", NamespaceUnique);
   // Parse expression
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   // Store a copy of any declarations for use in the else block
   std::vector<AST::Declaration*> decls = my_builder->scope()->declarations();
   // Translate then-statement. If a block then we avoid starting a new ns
   PTree::Node *stmt = PTree::nth(node, 4);
-  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') TranslateBrace(stmt);
-  else Translate(stmt);
+  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') visit((PTree::Brace *)stmt);
+  else translate(stmt);
   // End the block and check for else
   my_builder->end_namespace();
   if (PTree::length(node) == 7)
@@ -437,130 +411,104 @@ SWalker::TranslateIf(PTree::Node *node)
     ns->declarations().insert(ns->declarations().begin(), decls.begin(), decls.end());
     // Translate else statement, same deal as above
     stmt = PTree::nth(node, 6);
-    if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') TranslateBrace(stmt);
-    else Translate(stmt);
+    if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') visit((PTree::Brace*)stmt);
+    else translate(stmt);
     my_builder->end_namespace();
   }
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateSwitch(PTree::Node *node)
+void SWalker::visit(PTree::SwitchStatement *node)
 {
-  STrace trace("SWalker::TranslateSwitch");
-  // [ switch ( expr ) statement ]
+  STrace trace("SWalker::visit(SwitchStatement*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   my_builder->start_namespace("switch", NamespaceUnique);
   // Parse expression
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   // Translate statement. If a block then we avoid starting a new ns
   PTree::Node *stmt = PTree::nth(node, 4);
-  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') TranslateBrace(stmt);
-  else Translate(stmt);
+  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') visit((PTree::Brace *)stmt);
+  else translate(stmt);
   // End the block and check for else
   my_builder->end_namespace();
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateCase(PTree::Node *node)
+void SWalker::visit(PTree::CaseStatement *node)
 {
-  STrace trace("SWalker::TranslateCase");
-  // [ case expr : [expr] ]
+  STrace trace("SWalker::visit(Case*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  Translate(PTree::second(node));
-  Translate(PTree::nth(node, 3));
-  return 0;
+  translate(PTree::second(node));
+  translate(PTree::nth(node, 3));
 }
 
-PTree::Node *
-SWalker::TranslateDefault(PTree::Node *node)
+void SWalker::visit(PTree::DefaultStatement *node)
 {
-  STrace trace("SWalker::TranslateDefault");
-  // [ default : [expr] ]
+  STrace trace("SWalker::visit(DefaultStatement*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  Translate(PTree::third(node));
-  return 0;
+  translate(PTree::third(node));
 }
 
-PTree::Node *
-SWalker::TranslateBreak(PTree::Node *node)
+void SWalker::visit(PTree::BreakStatement *node)
 {
-  STrace trace("SWalker::TranslateBreak");
-  // [ break ; ]
+  STrace trace("SWalker::visit(Break*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateFor(PTree::Node *node)
+void SWalker::visit(PTree::ForStatement *node)
 {
-  STrace trace("SWalker::TranslateFor");
-  // [ for ( stmt expr ; expr ) statement ]
+  STrace trace("SWalker::visit(For*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   my_builder->start_namespace("for", NamespaceUnique);
   // Parse expressions
-  Translate(PTree::third(node));
-  Translate(PTree::nth(node, 3));
-  Translate(PTree::nth(node, 5));
+  translate(PTree::third(node));
+  translate(PTree::nth(node, 3));
+  translate(PTree::nth(node, 5));
   // Translate statement. If a block then we avoid starting a new ns
   PTree::Node *stmt = PTree::nth(node, 7);
   if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{')
-    TranslateBrace(stmt);
-  else Translate(stmt);
+    visit((PTree::Brace *)stmt);
+  else translate(stmt);
   // End the block
   my_builder->end_namespace();
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateWhile(PTree::Node *node)
+void SWalker::visit(PTree::WhileStatement *node)
 {
-  STrace trace("SWalker::TranslateWhile");
-  // [ while ( expr ) statement ]
+  STrace trace("SWalker::visit(While*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   my_builder->start_namespace("while", NamespaceUnique);
   // Parse expression
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   // Translate statement. If a block then we avoid starting a new ns
   PTree::Node *stmt = PTree::nth(node, 4);
-  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') TranslateBrace(stmt);
-  else Translate(stmt);
+  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{')
+    visit((PTree::Brace *)stmt);
+  else translate(stmt);
   // End the block and check for else
   my_builder->end_namespace();
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslatePostfix(PTree::Node *node)
+void SWalker::visit(PTree::PostfixExpr *node)
 {
-  STrace trace("SWalker::TranslatePostfix");
-  // [ expr ++ ]
-  Translate(PTree::first(node));
-  return 0;
+  STrace trace("SWalker::visit(Postfix*)");
+  translate(PTree::first(node));
 }
 
-PTree::Node *
-SWalker::TranslateParen(PTree::Node *node)
+void SWalker::visit(PTree::ParenExpr *node)
 {
-  STrace trace("SWalker::TranslateParen");
-  // [ ( expr ) ]
+  STrace trace("SWalker::visit(Paren*)");
   if (my_links) find_comments(node);
-  Translate(PTree::second(node));
-  return 0;
+  translate(PTree::second(node));
 }
 
-PTree::Node *
-SWalker::TranslateCast(PTree::Node *node)
+void SWalker::visit(PTree::CastExpr *node)
 {
-  STrace trace("SWalker::TranslateCast");
-  // ( type-expr ) expr   ..type-expr is type encoded
+  STrace trace("SWalker::visit(Cast*)");
   if (my_links) find_comments(node);
   PTree::Node *type_expr = PTree::second(node);
   //Translate(type_expr->First());
@@ -574,19 +522,16 @@ SWalker::TranslateCast(PTree::Node *node)
       my_links->link(PTree::first(type_expr), my_type);
   }
   else my_type = 0;
-  Translate(PTree::nth(node, 3));
-  return 0;
+  translate(PTree::nth(node, 3));
 }
 
-PTree::Node *
-SWalker::TranslateTry(PTree::Node *node)
+void SWalker::visit(PTree::TryStatement *node)
 {
-  STrace trace("SWalker::TranslateTry");
-  // [ try [{}] [catch ( arg ) [{}] ]* ]
+  STrace trace("SWalker::visit(Try*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   my_builder->start_namespace("try", NamespaceUnique);
-  Translate(PTree::second(node));
+  translate(PTree::second(node));
   my_builder->end_namespace();
   for (int n = 2; n < PTree::length(node); n++)
   {
@@ -615,27 +560,24 @@ SWalker::TranslateTry(PTree::Node *node)
       }
     }
     // Translate contents of 'catch' block
-    Translate(PTree::nth(catch_node, 4));
+    translate(PTree::nth(catch_node, 4));
     my_builder->end_namespace();
   }
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateArray(PTree::Node *node)
+void SWalker::visit(PTree::ArrayExpr *node)
 {
-  STrace trace("SWalker::TranslateArray");
-  // <postfix> \[ <expr> \]
-  Translate(PTree::first(node));
+  STrace trace("SWalker::visit(ArrayExpr*)");
+  translate(PTree::first(node));
   Types::Type* object = my_type;
   
-  Translate(PTree::third(node));
+  translate(PTree::third(node));
   Types::Type* arg = my_type;
   
   if (!object || !arg)
   {
     my_type = 0;
-    return 0;
+    return;
   }
   // Resolve final type
   try
@@ -656,97 +598,75 @@ SWalker::TranslateArray(PTree::Node *node)
     e.set_node(node);
     throw;
   }
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateCond(PTree::Node *node)
+void SWalker::visit(PTree::CondExpr *node)
 {
-  STrace trace("SWalker::TranslateCond");
-  Translate(PTree::nth(node, 0));
-  Translate(PTree::nth(node, 2));
-  Translate(PTree::nth(node, 4));
-  return 0;
+  STrace trace("SWalker::visit(Cond*)");
+  translate(PTree::nth(node, 0));
+  translate(PTree::nth(node, 2));
+  translate(PTree::nth(node, 4));
 }
 
-PTree::Node *
-SWalker::TranslateThis(PTree::Node *node)
+void SWalker::visit(PTree::This *node)
 {
-  STrace trace("SWalker::TranslateThis");
+  STrace trace("SWalker::visit(This*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(node, "file-keyword");
   // Set my_type to type of 'this', stored in the name lookup for this func
   my_type = my_lookup->lookupType("this");
+}
+
+void SWalker::visit(PTree::TemplateInstantiation *)
+{
+  STrace trace("SWalker::visit(TemplateInstantiation*) NYI");
+}
+
+void SWalker::visit(PTree::ExternTemplate *)
+{
+  STrace trace("SWalker::visit(ExternTemplate*) NYI");
+}
+
+void SWalker::visit(PTree::MetaclassDecl *)
+{
+  STrace trace("SWalker::visit(MetaclassDecl*) NYI");
+}
+
+PTree::Node *SWalker::translate_storage_specifiers(PTree::Node *)
+{
+  STrace trace("SWalker::translate_storage_specifiers NYI");
   return 0;
 }
 
-
-PTree::Node *
-SWalker::TranslateTemplateInstantiation(PTree::Node *)
+PTree::Node *SWalker::translate_function_body(PTree::Node *)
 {
-  STrace trace("SWalker::TranslateTemplateInstantiation NYI");
-  return 0;
-}
-PTree::Node *
-SWalker::TranslateExternTemplate(PTree::Node *)
-{
-  STrace trace("SWalker::TranslateExternTemplate NYI");
-  return 0;
-}
-PTree::Node *
-SWalker::TranslateMetaclassDecl(PTree::Node *)
-{
-  STrace trace("SWalker::TranslateMetaclassDecl NYI");
-  return 0;
-}
-
-PTree::Node *
-SWalker::TranslateStorageSpecifiers(PTree::Node *)
-{
-  STrace trace("SWalker::TranslateStorageSpecifiers NYI");
-  return 0;
-}
-PTree::Node *
-SWalker::TranslateFunctionBody(PTree::Node *)
-{
-  STrace trace("SWalker::TranslateFunctionBody NYI");
+  STrace trace("SWalker::translate_function_body NYI");
   return 0;
 }
 
 //PTree::Node *SWalker::TranslateEnumSpec(PTree::Node *) { STrace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
 
-PTree::Node *
-SWalker::TranslateAccessDecl(PTree::Node *node)
+void SWalker::visit(PTree::AccessDecl *node)
 {
-  STrace trace("SWalker::TranslateAccessDecl NYI");
+  STrace trace("SWalker::visit(AccessDecl*) NYI");
   if (my_links) find_comments(node);
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateUserAccessSpec(PTree::Node *node)
+void SWalker::visit(PTree::UserAccessSpec *node)
 {
-  STrace trace("SWalker::TranslateUserAccessSpec NYI");
+  STrace trace("SWalker::visist(UserAccessSpec*) NYI");
   if (my_links) find_comments(node);
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-
-PTree::Node *
-SWalker::TranslateDo(PTree::Node *node)
+void SWalker::visit(PTree::DoStatement *node)
 {
-  STrace trace("SWalker::TranslateDo NYI");
-  // [ do [{ ... }] while ( [...] ) ; ]
+  STrace trace("SWalker::visit(Do*) NYI");
   if (my_links)
   {
     find_comments(node);
@@ -757,171 +677,127 @@ SWalker::TranslateDo(PTree::Node *node)
   my_builder->start_namespace("do", NamespaceUnique);
   // Translate statement. If a block then we avoid starting a new ns
   PTree::Node *stmt = PTree::second(node);
-  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{') TranslateBrace(stmt);
-  else Translate(stmt);
+  if (stmt && PTree::first(stmt) && *PTree::first(stmt) == '{')
+    visit((PTree::Brace*)stmt);
+  else translate(stmt);
   // End the block and check for else
   my_builder->end_namespace();
   // Translate the while condition
-  Translate(PTree::nth(node, 4));
-  return 0;
+  translate(PTree::nth(node, 4));
 }
 
-PTree::Node *
-SWalker::TranslateContinue(PTree::Node *node)
+void SWalker::visit(PTree::ContinueStatement *node)
 {
-  STrace trace("SWalker::TranslateContinue NYI");
+  STrace trace("SWalker::visit(Continue*) NYI");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateGoto(PTree::Node *node)
+void SWalker::visit(PTree::GotoStatement *node)
 {
-  STrace trace("SWalker::TranslateGoto NYI");
+  STrace trace("SWalker::visist(Goto*) NYI");
   if (my_links) find_comments(node);
-#ifdef DEBUG
-  
+#ifdef DEBUG  
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateLabel(PTree::Node *node)
+void SWalker::visit(PTree::LabelStatement *node)
 {
-  STrace trace("SWalker::TranslateLabel NYI");
+  STrace trace("SWalker::visit(Label*) NYI");
   if (my_links) find_comments(node);
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-
-PTree::Node *
-SWalker::TranslateComma(PTree::Node *node)
+void SWalker::visit(PTree::CommaExpr *node)
 {
-  STrace trace("SWalker::TranslateComma");
-  // [ expr , expr (, expr)* ]
-  while (node)
+  STrace trace("SWalker::visit(Comma*)");
+  PTree::Node *node2 = node;
+  while (node2)
   {
-    Translate(PTree::first(node));
-    node = PTree::rest(node);
-    if (node) node = PTree::rest(node);
+    translate(PTree::first(node2));
+    node2 = PTree::rest(node2);
+    if (node2) node2 = PTree::rest(node2);
   }
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslatePm(PTree::Node *node)
+void SWalker::visit(PTree::PmExpr *node)
 {
-  STrace trace("SWalker::TranslatePm NYI");
+  STrace trace("SWalker::visit(Pm*) NYI");
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateThrow(PTree::Node *node)
+void SWalker::visit(PTree::ThrowExpr *node)
 {
-  STrace trace("SWalker::TranslateThrow");
-  // [ throw [expr] ]
+  STrace trace("SWalker::visit(Throw*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  Translate(PTree::second(node));
-  return 0;
+  translate(PTree::second(node));
 }
 
-PTree::Node *
-SWalker::TranslateSizeof(PTree::Node *node)
+void SWalker::visit(PTree::SizeofExpr *node)
 {
-  STrace trace("SWalker::TranslateSizeof");
-  // [ sizeof ( [type [???] ] ) ]
+  STrace trace("SWalker::visit(Sizeof*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   // TODO: find the type for highlighting, and figure out what the ??? is
   my_type = my_lookup->lookupType("int");
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateNew(PTree::Node *node)
+void SWalker::visit(PTree::NewExpr *node)
 {
-  STrace trace("SWalker::TranslateNew NYI");
+  STrace trace("SWalker::visit(New*) NYI");
   if (my_links) find_comments(node);
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateNew3(PTree::Node *node)
+PTree::Node *SWalker::translate_new3(PTree::Node *node)
 {
-  STrace trace("SWalker::TranslateNew3 NYI");
+  STrace trace("SWalker::translate_new3 NYI");
   if (my_links) find_comments(node);
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
   return 0;
 }
 
-PTree::Node *
-SWalker::TranslateDelete(PTree::Node *node)
+void SWalker::visit(PTree::DeleteExpr *node)
 {
-  STrace trace("SWalker::TranslateDelete");
-  // [ delete [expr] ]
+  STrace trace("SWalker::visit(DeleteExpr*)");
   if (my_links) find_comments(node);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  Translate(PTree::second(node));
-  return 0;
+  translate(PTree::second(node));
 }
 
-PTree::Node *
-SWalker::TranslateFstyleCast(PTree::Node *node)
+void SWalker::visit(PTree::FstyleCastExpr *node)
 {
-  STrace trace("SWalker::TranslateFstyleCast NYI");
+  STrace trace("SWalker::visit(FstyleCast*) NYI");
   if (my_links) find_comments(node);
-  // [ [type] ( [expr] ) ]
   my_type = 0;
   //Translate(node->Third()); <-- unknown ptree???? FIXME
   my_decoder->init(node->encoded_type());
   my_type = my_decoder->decodeType();
   // TODO: Figure out if should have called a function for this
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateUserStatement(PTree::Node *node)
+void SWalker::visit(PTree::UserStatementExpr *node)
 {
-  STrace trace("SWalker::TranslateUserStatement NYI");
+  STrace trace("SWalker::visit(UserStatement*) NYI");
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }
 
-PTree::Node *
-SWalker::TranslateStaticUserStatement(PTree::Node *node)
+void SWalker::visit(PTree::StaticUserStatementExpr *node)
 {
-  STrace trace("SWalker::TranslateStaticUserStatement NYI");
+  STrace trace("SWalker::visit(StaticUserStatement*) NYI");
 #ifdef DEBUG
-
   node->print(std::cout);
 #endif
-
-  return 0;
 }

@@ -31,8 +31,8 @@ OCC_FILES := Buffer HashTable Lexer \
              PTree/Node PTree/Encoding PTree/operations \
              PTree/Atoms PTree/Lists PTree/generation \
              PTree/Visitor PTree/Display PTree/Writer \
-             Environment \
-             Walker TypeInfo Parser Class ClassWalker \
+             Environment TypeInfo TypeInfoVisitor \
+             Walker Parser Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
 SYN_FILES := Translator occ swalker ast builder type dict \

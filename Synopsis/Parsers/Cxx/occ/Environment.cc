@@ -82,7 +82,7 @@ Class* Environment::LookupClassMetaobject(PTree::Node *name)
       if(bind)
       {
 	bind->GetType(tinfo, this);
-	return tinfo.ClassMetaobject();
+	return tinfo.class_metaobject();
       }
     return 0;
   }
@@ -95,7 +95,7 @@ Class* Environment::LookupClassMetaobject(PTree::Node *name)
 	if(bind)
 	{
 	  bind->GetType(tinfo, this);
-	  return tinfo.ClassMetaobject();
+	  return tinfo.class_metaobject();
 	}
     return 0;
   }
@@ -136,7 +136,7 @@ bool Environment::Lookup(PTree::Node *name, TypeInfo& t)
 	return true;
     }
     else{
-	t.Unknown();
+	t.unknown();
 	return false;
     }
 }
@@ -151,7 +151,7 @@ bool Environment::Lookup(PTree::Node *name, bool& is_type_name, TypeInfo& t)
 	return true;
     }
     else{
-	t.Unknown();
+	t.unknown();
 	return false;
     }
 }
@@ -530,12 +530,12 @@ Bind::Kind BindVarName::What()
 
 void BindVarName::GetType(TypeInfo& t, Environment* e)
 {
-  t.Set(my_type, e);
+  t.set(my_type, e);
 }
 
 bool BindVarName::IsType()
 {
-    return false;
+  return false;
 }
 
 Bind::Kind BindTypedefName::What()
@@ -545,7 +545,7 @@ Bind::Kind BindTypedefName::What()
 
 void BindTypedefName::GetType(TypeInfo& t, Environment* e)
 {
-  t.Set(my_type, e);
+  t.set(my_type, e);
 }
 
 Bind::Kind BindClassName::What()
@@ -555,7 +555,7 @@ Bind::Kind BindClassName::What()
 
 void BindClassName::GetType(TypeInfo& t, Environment*)
 {
-    t.Set(metaobject);
+  t.set(metaobject);
 }
 
 Class* BindClassName::ClassMetaobject()
@@ -581,7 +581,7 @@ Bind::Kind BindEnumName::What()
 
 void BindEnumName::GetType(TypeInfo& t, Environment* e)
 {
-    t.Set(my_type, e);
+  t.set(my_type, e);
 }
 
 Bind::Kind BindTemplateClass::What()
@@ -591,7 +591,7 @@ Bind::Kind BindTemplateClass::What()
 
 void BindTemplateClass::GetType(TypeInfo& t, Environment*)
 {
-    t.Set(metaobject);
+  t.set(metaobject);
 }
 
 Class* BindTemplateClass::ClassMetaobject()
@@ -611,7 +611,7 @@ Bind::Kind BindTemplateFunction::What()
 
 void BindTemplateFunction::GetType(TypeInfo& t, Environment*)
 {
-    t.Unknown();
+    t.unknown();
 }
 
 bool BindTemplateFunction::IsType()

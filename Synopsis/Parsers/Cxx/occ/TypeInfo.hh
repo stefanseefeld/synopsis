@@ -1,16 +1,10 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
+//
+// Copyright (C) 1997 Shigeru Chiba
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 
 #ifndef _TypeInfo_hh
 #define _TypeInfo_hh
@@ -42,51 +36,52 @@ enum {
   TypeInfo interprets an encoded type name.  For details of the encoded
   type name, see class PTree::Encoding.
 */
-class TypeInfo : public PTree::LightObject {
+class TypeInfo : public PTree::LightObject 
+{
 public:
   TypeInfo();
-  void Unknown();
-  void Set(const PTree::Encoding &, Environment*);
-  void Set(Class*);
-  void SetVoid();
-  void SetInt();
-  void SetMember(PTree::Node *);
+  void unknown();
+  void set(const PTree::Encoding &, Environment*);
+  void set(Class*);
+  void set_void();
+  void set_int();
+  void set_member(PTree::Node *);
 
-  TypeInfoId WhatIs();
+  TypeInfoId id();
 
-  bool IsNoReturnType();
+  bool is_no_return_type();
 
-  bool IsConst();
-  bool IsVolatile();
+  bool is_const();
+  bool is_volatile();
   
-  uint IsBuiltInType();
-  bool IsFunction();
-  bool IsEllipsis();
-  bool IsPointerType();
-  bool IsReferenceType();
-  bool IsArray();
-  bool IsPointerToMember();
-  bool IsTemplateClass();
-  Class* ClassMetaobject();
-  bool IsClass(Class*&);
-  bool IsEnum();
-  bool IsEnum(PTree::Node *&spec);
+  uint is_builtin_type();
+  bool is_function();
+  bool is_ellipsis();
+  bool is_pointer_type();
+  bool is_reference_type();
+  bool is_array();
+  bool is_pointer_to_member();
+  bool is_template_class();
+  Class *class_metaobject();
+  bool is_class(Class*&);
+  bool is_enum();
+  bool is_enum(PTree::Node *&spec);
   
-  void Dereference() { --refcount; }
-  void Dereference(TypeInfo&);
-  void Reference() { ++refcount; }
-  void Reference(TypeInfo&);
-  bool NthArgument(int, TypeInfo&);
-  int NumOfArguments();
-  bool NthTemplateArgument(int, TypeInfo&);
+  void dereference() { --refcount;}
+  void dereference(TypeInfo&);
+  void reference() { ++refcount;}
+  void reference(TypeInfo&);
+  bool nth_argument(int, TypeInfo&);
+  int num_of_arguments();
+  bool nth_template_argument(int, TypeInfo&);
   
-  PTree::Node *FullTypeName();
-  PTree::Node *MakePtree(PTree::Node * = 0);
+  PTree::Node *full_type_name();
+  PTree::Node *make_ptree(PTree::Node * = 0);
 
 private:
-  static PTree::Node *GetQualifiedName(Environment*, PTree::Node *);
-  static PTree::Node *GetQualifiedName2(Class*);
-  void Normalize();
+  static PTree::Node *get_qualified_name(Environment*, PTree::Node *);
+  static PTree::Node *get_qualified_name2(Class*);
+  void normalize();
   bool resolve_typedef(Environment *&, PTree::Encoding &, bool);
   
   static PTree::Encoding skip_cv(const PTree::Encoding &, Environment*&);

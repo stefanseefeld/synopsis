@@ -245,8 +245,8 @@ Encoding Encoding::get_template_arguments()
 Environment *Encoding::resolve_typedef_name(iterator i, size_t s, Environment *env)
 {
   TypeInfo tinfo;
-  Bind* bind;
-  Class* c = 0;
+  Bind *bind;
+  Class *c = 0;
 
   if(env)
     if (env->LookupType((const char *)&*i, s, bind) && bind)
@@ -257,7 +257,7 @@ Environment *Encoding::resolve_typedef_name(iterator i, size_t s, Environment *e
 	  break;
         case Bind::isTypedefName :
 	  bind->GetType(tinfo, env);
-	  c = tinfo.ClassMetaobject();
+	  c = tinfo.class_metaobject();
 	  /* if (c == 0) */
 	  env = 0;
 	  break;

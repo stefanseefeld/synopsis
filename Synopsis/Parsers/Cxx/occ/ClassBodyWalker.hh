@@ -17,28 +17,22 @@
 
 #include "ClassWalker.hh"
 
-// ClassBodyWalker is only used by ClassWalker::TranslateClassSpec.
-
+//. ClassBodyWalker is only used by ClassWalker::TranslateClassSpec.
 class ClassBodyWalker : public ClassWalker 
 {
 public:
-  ClassBodyWalker(Walker* w, PTree::Array* tlist) : ClassWalker(w) 
-  {
-    tspec_list = tlist;
-  }
-  PTree::Node *TranslateClassBody(PTree::Node *block, PTree::Node *bases, Class*);
-  void AppendNewMembers(Class*, PTree::Array&, bool&);
-  PTree::Node *TranslateTypespecifier(PTree::Node *tspec);
-  PTree::Node *TranslateTypedef(PTree::Node *def);
-  PTree::Node *TranslateMetaclassDecl(PTree::Node *decl);
-  PTree::Node *TranslateDeclarators(PTree::Node *decls);
-  PTree::Node *TranslateAssignInitializer(PTree::Declarator* decl, PTree::Node *init);
-  PTree::Node *TranslateInitializeArgs(PTree::Declarator* decl, PTree::Node *init);
-  PTree::Node *TranslateDeclarator(bool record, PTree::Declarator* decl);
-  PTree::Node *TranslateDeclarator(bool record, PTree::Declarator* decl,
-				   bool append_body);
-  PTree::Node *TranslateFunctionImplementation(PTree::Node *impl);
-
+  ClassBodyWalker(Walker *, PTree::Array *);
+  void append_new_members(Class*, PTree::Array&, bool&);
+  void visit(PTree::Typedef *);
+  void visit(PTree::MetaclassDecl *);
+  PTree::Node *translate_class_body(PTree::Node *block, PTree::Node *bases, Class*);
+  PTree::Node *translate_type_specifier(PTree::Node *);  
+  PTree::Node *translate_declarators(PTree::Node *);
+  PTree::Node *translate_assign_initializer(PTree::Declarator*, PTree::Node *);
+  PTree::Node *translate_initialize_args(PTree::Declarator*, PTree::Node *);
+  PTree::Node *translate_declarator(bool, PTree::Declarator*);
+  PTree::Node *translate_declarator(bool, PTree::Declarator*, bool);
+  PTree::Node *translate_function_implementation(PTree::Node *);
 private:
   PTree::Array* tspec_list;
 };

@@ -6,12 +6,10 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include "PTree/Node.hh"
-#include "PTree/Encoding.hh"
-#include "PTree/operations.hh"
-#include "Walker.hh"
-#include "TypeInfo.hh"
-#include "Buffer.hh"
+#include <PTree/Node.hh>
+#include <PTree/Encoding.hh>
+#include <PTree/operations.hh>
+#include <Buffer.hh>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -96,16 +94,6 @@ void MopMoreWarningMessage(const char* msg1, const char* msg2)
 	std::cerr << msg2;
 
     std::cerr << '\n';
-}
-
-Node *Node::Translate(Walker* w)
-{
-    return w->TranslatePtree(this);
-}
-
-void Node::Typeof(Walker* w, TypeInfo& t)
-{
-    w->TypeofPtree(this, t);
 }
 
 Node *Iterator::pop()
