@@ -1,4 +1,4 @@
-# $Id: MANIFEST.in,v 1.4 2003/11/19 19:45:37 stefan Exp $
+# $Id: MANIFEST.in,v 1.5 2003/11/26 15:06:32 stefan Exp $
 #
 # MANIFEST template for source distribution generation
 #
@@ -12,11 +12,11 @@ recursive-include   Synopsis *.py
 recursive-include   Synopsis/Parsers/C *
 recursive-include   Synopsis/Parsers/Cxx *
 
-# data files
-include             share/Synopsis/*
+# data files (compiled documentation etc.)
+recursive-include   share *
 
-# documentation
-recursive-include   docs *
+# documentation (source)
+recursive-include   doc *
 recursive-include   demo *
 
 # scripts
