@@ -517,6 +517,14 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <title>IDL Parser</title>
       <para>The IDL parser parses CORBA IDL.</para>
     </section>
+    <section id="cpp-parser">
+      <title>Cpp Parser</title>
+      <para>The Cpp parser preprocesses C and C++ files.</para>
+    </section>
+    <section id="cc-parser">
+      <title>C Parser</title>
+      <para>The C parser parses C.</para>
+    </section>
     <section id="cxx-parser">
       <title>Cxx Parser</title>
       <para>The Cxx parser parses C++.</para>
@@ -600,6 +608,12 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     </xi:include>
     <xi:include href="Synopsis.Parsers.IDL.Parser.xml">
       <xi:fallback>The IDL parser reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Parsers.Cpp.Parser.xml">
+      <xi:fallback>The Cpp parser reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Parsers.C.Parser.xml">
+      <xi:fallback>The C parser reference...</xi:fallback>
     </xi:include>
     <xi:include href="Synopsis.Parsers.Cxx.Parser.xml">
       <xi:fallback>The Cxx parser reference...</xi:fallback>

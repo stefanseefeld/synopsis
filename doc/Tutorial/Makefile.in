@@ -11,6 +11,8 @@ srcdir	:= @srcdir@
 
 processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Parsers.IDL.Parser \
+              Synopsis.Parsers.Cpp.Parser \
+              Synopsis.Parsers.C.Parser \
               Synopsis.Parsers.Cxx.Parser \
               Synopsis.Processors.Linker \
               Synopsis.Formatters.Dump.Formatter \
@@ -18,7 +20,8 @@ processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Formatters.Texinfo.Formatter \
               Synopsis.Formatters.HTML.Formatter
 
-appendix	:= $(patsubst %, %.xml, $(processors))
+appendix:= $(patsubst %, %.xml, $(processors))
+examples:= $(shell cd $(srcdir) && find examples -path '*/.svn' -prune -o -print)
 
 vpath Tutorial.xml $(srcdir)
 
@@ -30,7 +33,12 @@ html: Tutorial.xml $(appendix)
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
-	cp -r $(srcdir)/examples .
+	for file in $(examples); do \
+          if ! cmp -s $(srcdir)/$$file $$file 2>/dev/null; then \
+            mkdir -p `dirname $$file`;\
+            cp -p $(srcdir)/$$file $$file;\
+          fi\
+        done
 
 pdf: Tutorial.pdf
 

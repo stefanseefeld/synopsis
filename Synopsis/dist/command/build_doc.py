@@ -102,13 +102,9 @@ class build_doc(build.build):
       make = os.environ.get('MAKE', 'make')
 
       if self.html:
-         #spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-         #       'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'html'])
          spawn([make, '-C', tempdir, 'html'])
       if self.printable:
          spawn([make, '-C', tempdir, 'pdf'])
-         #spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-         #       'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'pdf'])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
@@ -135,9 +131,11 @@ class build_doc(build.build):
       copy_file(os.path.join(tempdir, 'all.xref'),
                 os.path.join(builddir, 'xref_db'))
       if self.printable:
-         mkpath(os.path.join(builddir, 'print'), 0777, self.verbose, self.dry_run)
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/Synopsis/print'))
+         mkpath(builddir, 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Manual.pdf'),
-                   os.path.join(builddir, 'print', 'Manual.pdf'))
+                   os.path.join(builddir, 'Manual.pdf'))
 
    def build_tutorial(self):
       """Build the tutorial."""
@@ -152,22 +150,27 @@ class build_doc(build.build):
       make = os.environ.get('MAKE', 'make')
 
       if self.html:
-         spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-                'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'html'])
+         spawn([make, '-C', tempdir, 'html'])
       if self.printable:
-         spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-                'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'pdf'])
+         spawn([make, '-C', tempdir, 'pdf'])
 
-      builddir = os.path.abspath(os.path.join(self.build_lib,
-                                              'share/doc/Synopsis'))
       if self.html:
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/Synopsis'))
          if os.path.isdir(os.path.join(builddir, 'html', 'Tutorial')):
             rmtree(os.path.join(builddir, 'html', 'Tutorial'), 1)
-         mkpath(os.path.join(builddir, 'html'), 0777, self.verbose, self.dry_run)
          copy_tree(os.path.join(tempdir, 'html'),
                    os.path.join(builddir, 'html', 'Tutorial'))
+
+         if os.path.isdir(os.path.join(builddir, 'examples')):
+            rmtree(os.path.join(builddir, 'examples'), 1)
+         copy_tree(os.path.join(tempdir, 'examples'),
+                   os.path.join(builddir, 'examples'))
+
       if self.printable:
-         mkpath(os.path.join(builddir, 'print'), 0777, self.verbose, self.dry_run)
+         builddir = os.path.abspath(os.path.join(self.build_lib,
+                                                 'share/doc/Synopsis/print'))
+         mkpath(builddir, 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Tutorial.pdf'),
-                   os.path.join(builddir, 'print', 'Tutorial.pdf'))
+                   os.path.join(builddir, 'Tutorial.pdf'))
 
