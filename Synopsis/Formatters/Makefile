@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.5 2001/01/10 16:12:02 stefan Exp $
+# $Id: Makefile,v 1.6 2001/01/22 20:04:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
-# Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
+# Copyright (C) 2000 Stefan Seefeld
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -22,7 +22,7 @@ SHELL	= /bin/sh
 
 include ../local.mk
 
-SRC	:= __init__.py DUMP.py ASCII.py HTML.py HTML_Simple.py
+SRC	:= __init__.py __init__.pyc DUMP.py DUMP.pyc ASCII.py ASCII.pyc HTML.py HTML.pyc HTML_Simple.py HTML_Simple.pyc
 
 all:
 clean:

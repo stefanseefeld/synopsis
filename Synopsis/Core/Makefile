@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.5 2001/01/22 19:54:41 stefan Exp $
+# $Id: Makefile,v 1.6 2001/01/22 20:04:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
-# Copyright (C) 2000 Stefan Seefeld <seefeld@sympatico.ca> 
+# Copyright (C) 2000 Stefan Seefeld
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -22,7 +22,7 @@ SHELL	:= /bin/sh
 
 include ../local.mk
 
-SRC	:= __init__.py Type.py AST.py Util.py 
+SRC	:= __init__.py __init__.pyc Type.py Type.pyc AST.py AST.pyc Util.py Util.pyc 
 
 all:
 clean:
