@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.1 2001/01/10 16:12:02 stefan Exp $
+dnl $Id: configure.in,v 1.2 2001/01/29 14:37:53 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2001 Stefan Seefeld <seefeld@sympatico.ca> 
@@ -24,9 +24,9 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.12)
-AC_REVISION($Revision: 1.1 $)
+AC_REVISION($Revision: 1.2 $)
 
-AC_INIT(README)
+AC_INIT(synopsis.spec.in)
 AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_CXX
@@ -63,8 +63,30 @@ AC_CHECK_HEADER(python2.0/Python.h,
 	])
 ])
 CPPFLAGS="$save_CPPFLAGS"
+if test $PYTHON_MAJOR -eq 2 ; then
+	if test $PYTHON_MINOR -eq 0 ; then
+		packagedir="${PYTHON_PREFIX}/lib/python2.0/site-packages"
+		PYTHON_LIB="-L${PYTHON_PREFIX}/lib/python2.0/config -lpython2.0"
+	fi
+fi
+if test $PYTHON_MAJOR -eq 1 ; then
+	if test $PYTHON_MINOR -eq 6 ; then
+		packagedir="${PYTHON_PREFIX}/lib/python1.6/site-packages"
+		PYTHON_LIB="-L${PYTHON_PREFIX}/lib/python1.6/config -lpython1.6"
+	fi
+	if test $PYTHON_MINOR -eq 5 ; then
+		packagedir="${PYTHON_PREFIX}/lib/python1.5/site-packages"
+		PYTHON_LIB="-L${PYTHON_PREFIX}/lib/python1.5/config -lpython2.0"
+	fi
+fi
+
 AC_SUBST(PYTHON_MAJOR)
 AC_SUBST(PYTHON_MINOR)
 AC_SUBST(PYTHON_PREFIX)
+AC_SUBST(PYTHON_LIB)
+AC_SUBST(packagedir)
 
-AC_OUTPUT(local.mk:local.mk.in)
+AC_OUTPUT([
+	local.mk:local.mk.in
+	synopsis.spec:synopsis.spec.in
+])
