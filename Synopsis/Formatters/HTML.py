@@ -117,6 +117,7 @@ class ScopeSorter:
 	self.__child_dict = {}
 	scopename = scope.name()
 	for decl in scope.declarations():
+	    if isinstance(decl, AST.Forward): continue
 	    name, section = decl.name(), self._section_of(decl)
 	    if name[:-1] != scopename: continue
 	    if not self.__section_dict.has_key(section):
@@ -200,6 +201,7 @@ class JavaFormatter:
 	self.re_java = re.compile(JavaFormatter.__re_java)
 	self.re_line = re.compile(JavaFormatter.__re_line)
     def parse(self, comm):
+	if comm.detail is None: return
 	text_list = []
 	mo = self.re_java.search(comm.detail)
 	while mo:
@@ -220,6 +222,9 @@ class SummarySplitter:
     def parse(self, comm):
 	mo = self.re_summary.match(comm.detail)
 	if mo: comm.summary = mo.group(1)
+	else:
+	    comm.summary = comm.detail
+	    comm.detail = None
 
 class JavadocFormatter:
     """A formatter that formats comments similar to Javadoc @tags"""
@@ -248,6 +253,7 @@ class JavadocFormatter:
 	return str, ret
 
     def parse_see(self, str):
+	if str is None: return str
 	str, see = self.extract(self.re_see_line, str)
 	mo = self.re_see.search(str)
 	while mo:
@@ -284,6 +290,7 @@ class SectionFormatter:
     def parse(self, comm):
 	comm.detail = self.parse_break(comm.detail)
     def parse_break(self, str):
+	if str is None: return str
 	mo = self.re_break.search(str)
 	while mo:
 	    start, end = mo.start(), mo.end()
@@ -404,6 +411,8 @@ class TableOfContents(AST.Visitor):
     def visitDeclaration(self, decl):
 	entry = TocEntry(decl.name(), linker(decl), decl.language(), "decl")
 	self.insert(entry)
+    def visitForward(self, decl):
+	pass
     def visitScope(self, scope):
 	self.visitDeclaration(scope)
 	for decl in scope.declarations():
@@ -466,6 +475,9 @@ class FileTree(AST.Visitor):
 	if not self.__files.has_key(file):
 	    self.__files[file] = {}
 	self.__files[file][decl.name()] = decl
+    def visitForward(self, decl):
+	# Don't include (excluded) forward decls in file listing
+	pass
     def visitClass(self, scope):
 	self.visitDeclaration(scope)
 	# Only nested classes may be in different files
@@ -825,7 +837,7 @@ class DetailFormatter(BaseFormatter):
 	self.write(entity('h1', "%s %s"%(type, name)))
 
 	# Print any comments for this module
-	comment = comments[module].detail
+	comment = comments[module].detail or comments[module].summary
 	if comment: self.write(div('desc',comment)+'<br><br>')
 
     def visitClass(self, clas):
@@ -846,7 +858,7 @@ class DetailFormatter(BaseFormatter):
 	self.write("Defined in: "+href(filer.nameOfFile(string.split(clas.file(),os.sep)),file,target='contents')+"<br>")
 
 	# Print any comments for this class
-	comment = comments[clas].detail
+	comment = comments[clas].detail or comments[clas].summary
 	if comment: self.write(div('desc',comment)+'<br><br>')
 
 	# Print out a list of the parents
@@ -1047,6 +1059,7 @@ class Paginator:
 	    for child in children:
 		# Check if need to add to detail list
 		has_detail = comments[child].detail is not comments[child].summary
+		has_detail = has_detail and comments[child].detail is not None
 		has_detail = has_detail or isinstance(child, AST.Enum)
 		has_detail = has_detail or (isinstance(child, AST.Function) and len(child.exceptions()))
 		if has_detail and not isinstance(child, AST.Scope):
