@@ -357,8 +357,8 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 PyObject *Synopsis::Forward(AST::Forward* decl)
 {
     Trace trace("Synopsis::addForward");
-    PyObject *forward = PyObject_CallMethod(m_ast, "Forward", "OiiOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *forward = PyObject_CallMethod(m_ast, "Forward", "OiOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name())
     );
     addComments(forward, decl);
@@ -378,8 +378,8 @@ PyObject *Synopsis::Comment(AST::Comment* decl)
 PyObject *Synopsis::Scope(AST::Scope* decl)
 {
     Trace trace("Synopsis::addScope");
-    PyObject *scope = PyObject_CallMethod(m_ast, "Scope", "OiiOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *scope = PyObject_CallMethod(m_ast, "Scope", "OiOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name())
     );
     PyObject *decls = PyObject_CallMethod(scope, "declarations", NULL);
@@ -391,8 +391,8 @@ PyObject *Synopsis::Scope(AST::Scope* decl)
 PyObject *Synopsis::Namespace(AST::Namespace* decl)
 {
     Trace trace("Synopsis::addNamespace");
-    PyObject *module = PyObject_CallMethod(m_ast, "Module", "OiiOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *module = PyObject_CallMethod(m_ast, "Module", "OiOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name())
     );
     PyObject *decls = PyObject_CallMethod(module, "declarations", NULL);
@@ -413,8 +413,8 @@ PyObject *Synopsis::Inheritance(AST::Inheritance* decl)
 PyObject *Synopsis::Class(AST::Class* decl)
 {
     Trace trace("Synopsis::addClass");
-    PyObject *clas = PyObject_CallMethod(m_ast, "Class", "OiiOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *clas = PyObject_CallMethod(m_ast, "Class", "OiOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name())
     );
     // This is necessary to prevent inf. loops in several places
@@ -434,8 +434,8 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
 {
     Trace trace("Synopsis::addTypedef");
     // FIXME: what to do about the declarator?
-    PyObject *tdef = PyObject_CallMethod(m_ast, "Typedef", "OiiOOOOiO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *tdef = PyObject_CallMethod(m_ast, "Typedef", "OiOOOOiO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name()),
 	m->py(decl->alias()), decl->constructed(), m->py((AST::Declaration*)NULL)
     );
@@ -446,8 +446,8 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
 PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
 {
     Trace trace("Synopsis::addEnumerator");
-    PyObject *enumor = PyObject_CallMethod(m_ast, "Enumerator", "OiiOOs", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *enumor = PyObject_CallMethod(m_ast, "Enumerator", "OiOOs", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->Tuple(decl->name()), decl->value().c_str()
     );
     addComments(enumor, decl);
@@ -457,8 +457,8 @@ PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
 PyObject *Synopsis::Enum(AST::Enum* decl)
 {
     Trace trace("Synopsis::addEnum");
-    PyObject *enumor = PyObject_CallMethod(m_ast, "Enum", "OiiOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *enumor = PyObject_CallMethod(m_ast, "Enum", "OiOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->Tuple(decl->name()), m->List(decl->enumerators())
     );
     addComments(enumor, decl);
@@ -468,8 +468,8 @@ PyObject *Synopsis::Enum(AST::Enum* decl)
 PyObject *Synopsis::Variable(AST::Variable* decl)
 {
     Trace trace("Synopsis::addVariable");
-    PyObject *var = PyObject_CallMethod(m_ast, "Variable", "OiiOOOOiO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *var = PyObject_CallMethod(m_ast, "Variable", "OiOOOOiO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name()),
 	m->py(decl->vtype()), decl->constructed(), m->py((AST::Declaration*)NULL)
     );
@@ -480,8 +480,8 @@ PyObject *Synopsis::Variable(AST::Variable* decl)
 PyObject *Synopsis::Const(AST::Const* decl)
 {
     Trace trace("Synopsis::addConst");
-    PyObject *cons = PyObject_CallMethod(m_ast, "Const", "OiiOOOOOs", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *cons = PyObject_CallMethod(m_ast, "Const", "OiOOOOOs", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()),
 	m->py(decl->ctype()), m->Tuple(decl->name()), decl->value().c_str()
     );
@@ -504,8 +504,8 @@ PyObject *Synopsis::Function(AST::Function* decl)
     Trace trace("Synopsis::addFunction");
     AST::Name realname = decl->name();
     realname.back() = decl->realname();
-    PyObject *func = PyObject_CallMethod(m_ast, "Function", "OiiOOOOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *func = PyObject_CallMethod(m_ast, "Function", "OiOOOOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
 	m->Tuple(decl->name()), m->Tuple(realname)
     );
@@ -520,8 +520,8 @@ PyObject *Synopsis::Operation(AST::Operation* decl)
     Trace trace("Synopsis::addOperation");
     AST::Name realname = decl->name();
     realname.back() = decl->realname();
-    PyObject *oper = PyObject_CallMethod(m_ast, "Operation", "OiiOOOOOO", 
-	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+    PyObject *oper = PyObject_CallMethod(m_ast, "Operation", "OiOOOOOO", 
+	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
 	m->Tuple(decl->name()), m->Tuple(realname)
     );

@@ -1160,7 +1160,7 @@ def format(types, declarations, args):
     if debug: print "HTML Formatter: Writing Pages..."
     # Create the pages
     # TODO: have synopsis pass an AST with a "root" node to formatters.
-    root = AST.Module('',-1,1,"C++","Global",())
+    root = AST.Module('',-1,"C++","Global",())
     root.declarations()[:] = declarations
     Paginator(root).process()
     if debug: print "HTML Formatter: Done!"
