@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.1 2001/02/16 02:29:55 chalky Exp $
+ * $Id: link.cc,v 1.2 2001/02/16 04:57:50 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.2  2001/02/16 04:57:50  chalky
+ * SXR: func parameters, namespaces, comments. Unlink temp file. a class=ref/def
+ *
  * Revision 1.1  2001/02/16 02:29:55  chalky
  * Initial work on SXR and HTML integration
  *
@@ -58,7 +61,11 @@ namespace {
 	//. priority, so nested types should be nested in this list:
 	//. <a><b>foo</b></a> means enum ordering: A_START,B_START,B_END,A_END
 	enum Type {
-	    LINK_START, //< Start of a link
+	    LINK_START, //< Start of a label link
+	    REF_START, //< Start of reference link
+	    SPAN_START,
+	    SPAN_END,
+	    REF_END, 
 	    LINK_END //< End of a link
 	};
 	//. The type of this link
@@ -221,15 +228,21 @@ namespace {
 	    Link* link = new Link;
 	    link->line = line;
 	    in >> link->col >> len >> type;
-	    if (type == "DEF") link->type = Link::LINK_START;
 	    link->col--; // we count at zero, file counts at one
-	    while (in && in.get() != '\n') {
-		in >> word;
-		// Replace '160's with spaces
-		for (string::size_type pos = word.find(160); pos != string::npos; pos = word.find(160, pos)) {
-		    word[pos] = ' ';
+	    if (type == "DEF" || type == "REF") {
+		if (type == "DEF") link->type = Link::LINK_START;
+		else link->type = Link::REF_START;
+		while (in && in.get() != '\n') {
+		    in >> word;
+		    // Replace '160's with spaces
+		    for (string::size_type pos = word.find(160); pos != string::npos; pos = word.find(160, pos)) {
+			word[pos] = ' ';
+		    }
+		    link->name.push_back(word);
 		}
-		link->name.push_back(word);
+	    } else  {
+		link->type = Link::SPAN_START;
+		link->name.push_back(type);
 	    }
 	    links[line].insert(link);
 	    // Add link end
@@ -237,8 +250,9 @@ namespace {
 	    end->line = line;
 	    end->col = link->col + len;
 	    switch (link->type) {
-		case Link::LINK_START:
-		    end->type = Link::LINK_END; break;
+		case Link::LINK_START: end->type = Link::LINK_END; break;
+		case Link::REF_START: end->type = Link::REF_END; break;
+		case Link::SPAN_START: end->type = Link::SPAN_END; break;
 		default: ; // throw some error
 	    }
 	    links[line].insert(end);
@@ -312,6 +326,7 @@ namespace {
 		    }
 		    switch (link->type) {
 			case Link::LINK_START: 
+			case Link::REF_START:
 			    {
 				string name;
 				Link::Name::iterator name_iter = link->name.begin();
@@ -319,8 +334,9 @@ namespace {
 				while (name_iter != link->name.end())
 				    name += "::" + *name_iter++;
 				TOC::iterator href = toc.find(name);
+				const char* aclass = (link->type == Link::LINK_START) ? "file-def" : "file-ref";
 				if (href != toc.end()) {
-				    out << "<a href=\"" << href->second << "\" ";
+				    out << "<a class=\""<<aclass<<"\" href=\"" << href->second << "\" ";
 				    out << "title=\"" << name << "\">";
 				} else {
 				    cerr << "link: didn't find " << name << endl;
@@ -328,8 +344,14 @@ namespace {
 				}
 				break;
 			    }
+			case Link::REF_END:
 			case Link::LINK_END:
 			    out << "</a>"; break;
+			case Link::SPAN_START:
+			    out << "<span class=\"" << link->name[0] << "\">";
+			    break;
+			case Link::SPAN_END:
+			    out << "</span>"; break;
 		    }
 		}
 		// Write any left-over buffer
