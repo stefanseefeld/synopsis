@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.17 2001/06/06 04:44:54 uid20151 Exp $
+# $Id: Dot.py,v 1.18 2001/06/26 04:32:15 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,12 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.18  2001/06/26 04:32:15  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.17  2001/06/06 04:44:54  uid20151
 # Prune names of each class to the base which is the most common of its parents.
 # Makes for simpler graphs with short names :)
@@ -371,6 +377,8 @@ def __parseArgs(args):
 	elif o == "-n": no_descend = 1
 
 def _convert_map(input, output):
+    """convert map generated from Dot to a html region map.
+    input and output are (open) streams"""
     line = input.readline()
     while line:
         line = line[:-1]
@@ -397,14 +405,18 @@ def _format_png(input, output):
     os.rename(tmpout[:-4] + ".png", output)
 
 def _format_html(input, output):
+    """generate (active) image for html.
+    input and output are file names. If output ends
+    in '.html', its stem is used with an '.png' suffix for the
+    actual image."""
     if output[-5:] == ".html": output = output[:-5]
-    label = string.join(string.split(title), "_")
-    _format_png(input, label + ".png")
+    _format_png(input, output + ".png")
     _format(input, output + ".map", "imap")
+    prefix, reference = os.path.split(output + ".png")
     html = open(output + ".html", "w+")
-    html.write('<img src="' + label + '.png" hspace="8" vspace="8" border="0" usemap="#')
-    html.write(label + "_map\">\n")
-    html.write("<map name=\"" + label + "_map\">")
+    html.write('<img src="' + reference + '" hspace="8" vspace="8" border="0" usemap="#')
+    html.write(reference + "_map\">\n")
+    html.write("<map name=\"" + reference + "_map\">")
     dotmap = open(output + ".map", "r+")
     _convert_map(dotmap, html)
     dotmap.close()

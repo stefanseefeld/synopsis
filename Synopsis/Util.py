@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.10 2001/06/21 01:17:27 chalky Exp $
+# $Id: Util.py,v 1.11 2001/06/26 04:32:15 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.11  2001/06/26 04:32:15  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.10  2001/06/21 01:17:27  chalky
 # Fixed some paths for the new dir structure
 #
@@ -207,6 +213,13 @@ def splitAndStrip(line):
     """Splits a line at the first space, then strips the second argument"""
     pair = string.split(line, ' ', 1)
     return pair[0], string.strip(pair[1])
+
+def open(filename):
+    """open a file, generating all intermediate directories if needed"""
+    import __builtin__
+    dir, file = os.path.split(filename)
+    if dir and not os.path.isdir(dir): os.makedirs(dir)
+    return __builtin__.open(filename, 'w')
 
 def getopt_spec(args, options, long_options=[]):
     """Transparently add --spec=file support to getopt"""

@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.3 2001/02/05 05:26:24 chalky Exp $
+# $Id: View.py,v 1.4 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.4  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.3  2001/02/05 05:26:24  chalky
 # Graphs are separated. Misc changes
 #
@@ -32,7 +38,8 @@
 A module with Page so you can import it for derivation
 """
 
-# HTML modules
+from Synopsis.Core import Util
+
 import core
 from core import config
 from Tags import *
@@ -56,7 +63,6 @@ class Page:
 	"""Process the given Scope recursively. This is the method which is
 	called to actually create the files, so you probably want to override
 	it ;)"""
-	print "Processing",start
 	
     def startFile(self, filename, title, body='<body>', headextra=''):
 	"""Start a new file with given filename, title and body. This method
@@ -67,7 +73,7 @@ class Page:
 	though in which case that's the place to do it. The opened file is
 	stored and can be accessed using the os() method."""
 	self.__filename = filename
-	self.__os = open(self.__filename, "w")
+	self.__os = Util.open(self.__filename)
 	self.write("<html><head>\n")
 	self.write(entity('title','Synopsis - '+title))
 	if len(config.stylesheet):

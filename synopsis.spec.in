@@ -28,6 +28,7 @@ rm -rf ${RPM_BUILD_ROOT}
 autoconf
 ./configure --prefix=%{prefix} --with-python-version=@python_version@ --with-python-prefix=@python_prefix@
 make
+export PYTHONPATH=`pwd`
 make docs
 %install
 rm -rf $RPM_BUILD_ROOT

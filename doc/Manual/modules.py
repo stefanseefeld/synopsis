@@ -1,6 +1,6 @@
 # Custom modules for the Reference Manual
 
-import re
+import re, os, os.path
 
 import Synopsis.Formatter.HTML.CommentFormatter
 import Synopsis.Formatter.HTML.ScopePages
@@ -85,8 +85,9 @@ class ConfScope (HTML.ModuleListing.ModuleListing):
     under Config.py."""
     def _init_page(self):
 	"""Initialise with the special Config name"""
-	self._filename = config.files.nameOfSpecial('config_scopes')
-	link = href(self._filename, 'Config', target="index")
+	filename = config.files.nameOfSpecial('config_scopes')
+	link = href(filename, 'Config', target="index")
+	self._filename = os.path.join(config.basename, filename)
 	self.manager.addRootPage('Config', link, 1)
 	self._link_target = 'main'
 	#config.set_index_page(self.__filename)

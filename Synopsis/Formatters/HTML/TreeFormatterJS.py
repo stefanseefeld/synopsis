@@ -1,4 +1,4 @@
-# $Id: TreeFormatterJS.py,v 1.2 2001/06/21 01:17:27 chalky Exp $
+# $Id: TreeFormatterJS.py,v 1.3 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: TreeFormatterJS.py,v $
+# Revision 1.3  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.2  2001/06/21 01:17:27  chalky
 # Fixed some paths for the new dir structure
 #
@@ -133,10 +139,11 @@ class TreeFormatterJS (TreeFormatter):
 	self.__close_img = ''
 	self.__leaf_img = ''
 
-	# TODO: load from config
-	share = os.path.split(AST.__file__)[0]+"/../../share" #hack..
-	self.js_init(share+'/syn-down.png', share+'/syn-right.png',
-		     share+'/syn-dot.png', 'tree_%s.png', 0)
+	share = config.datadir
+	self.js_init(os.path.join(share, 'syn-down.png'),
+                     os.path.join(share, 'syn-right.png'),
+                     os.path.join(share, 'syn-dot.png'),
+                     'tree_%s.png', 0)
 	
     def getId(self):
 	self.__id = self.__id + 1
@@ -158,9 +165,9 @@ class TreeFormatterJS (TreeFormatter):
 	self.__base_close = base%'close'
 	self.__base_leaf = base%'leaf'
 	# Copy images across
-	config.files.copyFile(open_img, self.__base_open)
-	config.files.copyFile(close_img, self.__base_close)
-	config.files.copyFile(leaf_img, self.__base_leaf)
+	config.files.copyFile(open_img, config.basename + '/' + self.__base_open)
+	config.files.copyFile(close_img, config.basename + '/' + self.__base_close)
+	config.files.copyFile(leaf_img, config.basename + '/' + self.__base_leaf)
 
     def startTree(self):
 	"""Writes the javascript"""

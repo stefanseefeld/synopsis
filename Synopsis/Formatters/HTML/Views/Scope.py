@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.7 2001/06/21 01:17:27 chalky Exp $
+# $Id: Scope.py,v 1.8 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.8  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.7  2001/06/21 01:17:27  chalky
 # Fixed some paths for the new dir structure
 #
@@ -76,10 +82,9 @@ class ScopePages (Page.Page):
 	except AttributeError:
 	    if config.verbose: print "Detailer config failed. Abort"
 	    raise
-	# Hack to find share dir..
-	share = os.path.split(AST.__file__)[0]+"/../../share"
+	share = config.datadir
 	self.syn_logo = 'synopsis200.jpg'
-	config.files.copyFile(share+'/synopsis200.jpg', self.syn_logo)
+	config.files.copyFile(share+'/synopsis200.jpg', config.basename + '/' + self.syn_logo)
 
     def process(self, start):
 	"""Creates a page for every Scope"""
@@ -163,7 +168,7 @@ class ScopePages (Page.Page):
  
     def startFileScope(self, scope):
 	"Start a new file from the given scope"
-	fname = config.files.nameOfScope(scope)
+	fname = os.path.join(config.basename, config.files.nameOfScope(scope))
 	title = string.join(scope)
 	self.startFile(fname, title)
 	self.summarizer.set_ostream(self.os())

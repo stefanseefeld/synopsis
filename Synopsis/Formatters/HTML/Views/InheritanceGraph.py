@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.9 2001/06/06 04:44:11 uid20151 Exp $
+# $Id: InheritanceGraph.py,v 1.10 2001/06/26 04:32:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.10  2001/06/26 04:32:16  stefan
+# A whole slew of changes mostly to fix the HTML formatter's output generation,
+# i.e. to make the output more robust towards changes in the layout of files.
+#
+# the rpm script now works, i.e. it generates source and binary packages.
+#
 # Revision 1.9  2001/06/06 04:44:11  uid20151
 # Only create TOC once instead of for every graph
 #
@@ -89,8 +95,9 @@ class ToDecl (Type.Visitor):
 class InheritanceGraph(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.__filename = config.files.nameOfSpecial('classgraph')
-	link = href(self.__filename, 'Inheritance Graph', target='main')
+	filename = config.files.nameOfSpecial('classgraph')
+	link = href(filename, 'Inheritance Graph', target='main')
+	self.__filename = os.path.join(config.basename, filename)
 	manager.addRootPage('Inheritance Graph', link, 1)
 	self.__todecl = ToDecl()
  
