@@ -1,0 +1,117 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cxx/input/concat.cc" language="C++" line="5" name="CAT" text="a ## b" type="macro">
+   <parameters>
+    a
+    b
+   </parameters>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/concat.cc" language="C++" line="6" name="Foo" type="class">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/concat.cc
+     </file>
+     <text>
+      // According to spec, the ## operator must produce a valid PP token.
+// Unfortunately, no compilers known to man enforce this rule except UCPP, so
+// this test is to make sure it is 'fixed' to ignore the error.
+
+     </text>
+    </instance>
+   </comments>
+   <declarations>
+    <instance accessibility="3" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/concat.cc" language="C++" line="1" name="dummy" type="dummy"/>
+   </declarations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/concat.cc" language="C++" line="7" name="operator+(const Foo&amp;,const Foo&amp;)" realname="operator+" type="function">
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="" value="">
+     <type>
+      <instance class="Synopsis.Type.Modifier" language="C++">
+       <alias>
+        <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
+         <declaration/>
+        </instance>
+       </alias>
+       <postmod>
+        &amp;
+       </postmod>
+       <premod>
+        const
+       </premod>
+      </instance>
+     </type>
+    </instance>
+    <instance class="Synopsis.AST.Parameter" identifier="" value="">
+     <type>
+      <instance class="Synopsis.Type.Modifier" language="C++">
+       <alias/>
+       <postmod>
+        &amp;
+       </postmod>
+       <premod>
+        const
+       </premod>
+      </instance>
+     </type>
+    </instance>
+   </parameters>
+   <returnType>
+    <instance class="Synopsis.Type.Base" language="C++" name="void"/>
+   </returnType>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/concat.cc" language="C++" line="8" name="operator+=(const Foo&amp;,const Foo&amp;)" realname="operator+=" type="function">
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="" value="">
+     <type>
+      <instance class="Synopsis.Type.Modifier" language="C++">
+       <alias/>
+       <postmod>
+        &amp;
+       </postmod>
+       <premod>
+        const
+       </premod>
+      </instance>
+     </type>
+    </instance>
+    <instance class="Synopsis.AST.Parameter" identifier="" value="">
+     <type>
+      <instance class="Synopsis.Type.Modifier" language="C++">
+       <alias/>
+       <postmod>
+        &amp;
+       </postmod>
+       <premod>
+        const
+       </premod>
+      </instance>
+     </type>
+    </instance>
+   </parameters>
+   <returnType/>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="CAT">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const Foo&amp;,const Foo&amp;)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="operator+=(const Foo&amp;,const Foo&amp;)">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/concat.cc
+  </file>
+ </files>
+</ast>

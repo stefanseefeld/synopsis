@@ -1,0 +1,219 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="5" name="func1(A)" realname="func1" type="function">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/func_template.cc
+     </file>
+     <text>
+      // Test function templates
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/func_template.cc
+     </file>
+     <text>
+      // Test template arg
+
+     </text>
+    </instance>
+   </comments>
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="a" value="">
+     <type>
+      <instance class="Synopsis.Type.Dependent" language="C++" name="A"/>
+     </type>
+    </instance>
+   </parameters>
+   <returnType>
+    <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+   </returnType>
+   <template>
+    <instance class="Synopsis.Type.Template" language="C++" name="func1(A)">
+     <declaration/>
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+     </parameters>
+    </instance>
+   </template>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="9" name="func2(int)" realname="func2" type="function">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/func_template.cc
+     </file>
+     <text>
+      // Test template return
+
+     </text>
+    </instance>
+   </comments>
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="i" value="">
+     <type/>
+    </instance>
+   </parameters>
+   <returnType>
+    <instance class="Synopsis.Type.Dependent" language="C++" name="A"/>
+   </returnType>
+   <template>
+    <instance class="Synopsis.Type.Template" language="C++" name="func2(int)">
+     <declaration/>
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+     </parameters>
+    </instance>
+   </template>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="13" name="func2(A)" realname="func2" type="function">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/func_template.cc
+     </file>
+     <text>
+      // Test template arg and return
+
+     </text>
+    </instance>
+   </comments>
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="a" value="">
+     <type>
+      <instance class="Synopsis.Type.Dependent" language="C++" name="A"/>
+     </type>
+    </instance>
+   </parameters>
+   <returnType/>
+   <template>
+    <instance class="Synopsis.Type.Template" language="C++" name="func2(A)">
+     <declaration/>
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+     </parameters>
+    </instance>
+   </template>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="17" name="func2(A)" realname="func2" type="function">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/func_template.cc
+     </file>
+     <text>
+      // Test template arg and return w/ different types
+
+     </text>
+    </instance>
+   </comments>
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="a" value="">
+     <type>
+      <instance class="Synopsis.Type.Dependent" language="C++" name="A"/>
+     </type>
+    </instance>
+   </parameters>
+   <returnType>
+    <instance class="Synopsis.Type.Dependent" language="C++" name="B"/>
+   </returnType>
+   <template>
+    <instance class="Synopsis.Type.Template" language="C++" name="func2(A)">
+     <declaration/>
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+     </parameters>
+    </instance>
+   </template>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="21" name="func2(A)" realname="func2" type="function">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/func_template.cc
+     </file>
+     <text>
+      // Test template arg and return w/ different types. Function declaration
+
+     </text>
+    </instance>
+   </comments>
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="a" value="">
+     <type>
+      <instance class="Synopsis.Type.Dependent" language="C++" name="A"/>
+     </type>
+    </instance>
+   </parameters>
+   <returnType>
+    <instance class="Synopsis.Type.Dependent" language="C++" name="B"/>
+   </returnType>
+   <template>
+    <instance class="Synopsis.Type.Template" language="C++" name="func2(A)">
+     <declaration/>
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <premodifier>
+        class
+       </premodifier>
+       <type/>
+      </instance>
+     </parameters>
+    </instance>
+   </template>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func1(A)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func2(A)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func2(int)">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/func_template.cc
+  </file>
+ </files>
+</ast>

@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/comments.cc" language="C++" line="1" name="dummy" type="dummy">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      // 1. Comments Test: One line cpp test
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      // 2. Two line cpp test
+// Second line of test
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      /* 3. One line c test */
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      /* 4. Another c test */
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      /* 5. Two on one */
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      /* 6. line */
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/comments.cc
+     </file>
+     <text>
+      /* 7. Multi
+ * line
+ */
+
+     </text>
+    </instance>
+   </comments>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/comments.cc
+  </file>
+ </files>
+</ast>

@@ -1,0 +1,73 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/koenig.cc" language="C++" line="0" name="NS" type="namespace">
+   <declarations>
+    <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/koenig.cc" language="C++" line="3" name="NS.A" type="struct">
+     <declarations>
+      <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/koenig.cc" language="C++" line="3" name="dummy" type="dummy"/>
+     </declarations>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/koenig.cc" language="C++" line="4" name="NS.operator+(A,A)" realname="operator+" type="function">
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <type>
+        <instance class="Synopsis.Type.Declared" language="C++" name="NS.A">
+         <declaration/>
+        </instance>
+       </type>
+      </instance>
+      <instance class="Synopsis.AST.Parameter" identifier="" value="">
+       <type/>
+      </instance>
+     </parameters>
+     <returnType>
+      <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+     </returnType>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/koenig.cc" language="C++" line="4" name="dummy" type="dummy"/>
+   </declarations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/koenig.cc" language="C++" line="7" name="func(int)" realname="func" type="function">
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="" value="">
+     <type/>
+    </instance>
+   </parameters>
+   <returnType>
+    <instance class="Synopsis.Type.Base" language="C++" name="void"/>
+   </returnType>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/koenig.cc" language="C++" line="8" name="func(NS::A)" realname="func" type="function">
+   <parameters>
+    <instance class="Synopsis.AST.Parameter" identifier="" value="">
+     <type/>
+    </instance>
+   </parameters>
+   <returnType/>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="NS">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="NS.operator+(A,A)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(int)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(NS::A)">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/koenig.cc
+  </file>
+ </files>
+</ast>
