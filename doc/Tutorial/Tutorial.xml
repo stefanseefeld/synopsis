@@ -523,6 +523,14 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
         it will generate a file suitable as input for a C or C++ parser, i.e. it 
         processes include and macro statements. However, it will store the encountered
         preprocessor directives in the AST for further analysis.</para>
+      <para>As the list of included files may grow rather large, there exist two mechanisms
+        to restrict the number of files for which information is retained. The <type>main_file_only</type>
+        parameter is used to indicate that only the top-level file being parsed should be included.
+        The <type>base_path</type> parameter, on the other hand, will restrict the number files if
+        <type>main_file_only</type> is set to <type>False</type>. In this case, the <type>base_path</type>
+        is used as a prefix, and only those file whose name starts with that prefix are marked as 
+        <type>main</type>.
+      </para>
       <para>For each included file, a <type>SourceFile</type> object is created and added
         to the parent's <type>Include</type> list. Further, all macro declarations, as well
         as macro calls, are recorded.</para>
@@ -537,7 +545,14 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     </section>
     <section id="cxx-parser">
       <title>Cxx Parser</title>
-      <para>The Cxx parser parses C++.</para>
+      <para>The Cxx parser parses C++. If the <type>preprocess</type> parameter is set, it will
+        call the preprocessor (see <xref linkend="cpp-parser"/>). Its main purpose is to generate
+        an AST containing all declarations. However, it can store more detailed information about
+        the source code to be used in conjunction with the HTML parser to generate a cross-referenced
+        view of the code. The <type>syntax_prefix</type> and <type>xref_prefix</type> parameters are
+        used to indicate directories within which to store information about the source files being
+        parsed. For a view of the processing pipeline to generate cross-referenced code see
+        <xref linkend="cross-referencing"/>.</para>
     </section>
     <section id="linker">
       <title>Linker</title>
@@ -599,7 +614,9 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <title>HTML Formatter</title>
       <para>The HTML formatter generates html output. It is designed 
         in a modular way, to let users customize in much detail how
-        to format the AST.</para>
+        to format the AST. It formats the AST into a number of views, which highlight
+        different aspects of the AST. Some views show the file / directory layout,
+        others group declarations by scopes, or provide an annotated source view.</para>
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
@@ -609,7 +626,105 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
           <imagedata fileref="images/html-classes.png" format="PNG" />
         </imageobject>
       </mediaobject>
-      <para></para>
+      <para>The <type>views</type> parameter is used to specify the list of View objects to be
+        used by the formatter. Each is a <type>Parametrized</type>, so you can pass parameters to
+        the views, too. Here are the most important <type>View</type> types:</para>
+      <variablelist>
+        <varlistentry>
+          <term>FramesIndex</term>
+          <listitem>
+            <para>While arguably not really a view in itself, this is right now the master view, organizing other views in frames.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>FileDetails</term>
+          <listitem>
+            <para>Shows details about a given file, such as what other files are included, what declarations it contains, etc.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>DirBrowse</term>
+          <listitem>
+            <para>Presents a directory (of source files).</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>FileTreeJS</term>
+          <listitem>
+            <para>A tree view containing source files.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>InheritanceGraph</term>
+          <listitem>
+            <para>A UML-like inheritance diagram for all classes.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>ModuleIndexer</term>
+          <listitem>
+            <para>A tree containing all modules.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>NameIndex</term>
+          <listitem>
+            <para>A global index of all declared names (macros, variables, types, ...)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Scope</term>
+          <listitem>
+            <para>The content of a given scope.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Source</term>
+          <listitem>
+            <para>A cross-referenced view of a source file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>XRef</term>
+          <listitem>
+            <para>A listing of symbols with links to their documentation, definition, and reference.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <section id="scope-formatter">
+        <title>The Scope View</title>
+        <para>
+          The most important view for documentation purposes is doubtless the <type>Scope</type>view. It presents all declaration 
+          in a given scope, together with a number of references to other views if appropriate. The <type>Scope</type>
+          view is subdivided into <type>Parts</type>, which are (for flexibility's sake) further subdivided into 
+          <type>Fragments</type>.
+        </para>
+      </section>
+      <section id="cross-referencing">
+        <title>SourceCode Cross Referencing</title>
+        <para>
+          A particularly interesting feature of the C++ parser and the HTML formatter is the ability to
+          generate a cross-referenced view on the entire source code. Since the AST itself only stores
+          declarations, the two processors need to share some other external data containing all the
+          remaining details about the code, i.e. where the various types and variables are declared and
+          where they are referenced from.
+        </para>
+        <para>
+          Here is a diagram for the data flow used to generate these views:
+        </para>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/xref.svg" format="SVG" scale="80" />
+          </imageobject>
+          <imageobject>
+            <imagedata fileref="images/xref.png" format="PNG" />
+          </imageobject>
+        </mediaobject>
+        <para>
+          Use the <type>syntax_prefix</type> and <type>xref_prefix</type> parameters in both, the C++ parser
+          as well as the XRef and Source views to specify the files to pass source file detail information.
+        </para>
+      </section>
     </section>
     <section id="sxr-formatter">
       <title>SXR Formatter</title>
