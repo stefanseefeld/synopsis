@@ -212,7 +212,7 @@ class Constant : public Expression
 class IntConstant : public Constant
 {
   public:
-    IntConstant( long val, bool _L, const Location& l );
+    IntConstant( long val, bool b, const Location& l );
     virtual ~IntConstant();
  
     Expression *dup0() const;
@@ -226,7 +226,7 @@ class IntConstant : public Constant
 class UIntConstant : public Constant
 {
   public:
-    UIntConstant( ulong val, bool _L, const Location& l );
+    UIntConstant( ulong val, bool b, const Location& l );
     virtual ~UIntConstant();
  
     Expression *dup0() const;
