@@ -227,10 +227,10 @@ Types::Type* Decoder::decodeTemplate()
     Types::Declared* declared = dynamic_cast<Types::Declared*>(type);
     Types::Template* templ = NULL;
     if (declared) {
-	AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration());
-	if (t_class) {
+	if (AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration()))
 	    templ = t_class->template_type();
-	}
+	if (AST::Forward* t_forward = dynamic_cast<AST::Forward*>(declared->declaration()))
+	    templ = t_forward->template_type();
     }
     return new Types::Parameterized(templ, types);
 } 

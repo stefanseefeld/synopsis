@@ -13,10 +13,19 @@
 
 TypeFormatter::TypeFormatter()
 {
+    m_scope_stack.push_back(ScopedName());
 }
 
-void TypeFormatter::setScope(const ScopedName& scope) {
+void TypeFormatter::push_scope(const ScopedName& scope)
+{
+    m_scope_stack.push_back(m_scope);
     m_scope = scope;
+}
+
+void TypeFormatter::pop_scope()
+{
+    m_scope = m_scope_stack.back();
+    m_scope_stack.pop_back();
 }
 
 std::string TypeFormatter::colonate(const ScopedName& name)
@@ -200,13 +209,16 @@ void Dumper::visit(const std::vector<AST::Comment*>& comms)
 // Format a Parameter
 std::string Dumper::formatParam(AST::Parameter* param)
 {
-    std::string str = param->premodifier();
-    if (str.size()) str += " ";
-    str += format(param->type());
+    std::string str;
+    AST::Parameter::Mods::iterator imod = param->premodifier().begin();
+    while (imod != param->premodifier().end())
+	str += " " + *imod++;
+    if (param->type()) str += " " + format(param->type());
     if (param->name().size()) str += " " + param->name();
     if (param->value().size()) str += " = " + param->value();
-    if (param->postmodifier().size()) str += " ";
-    str += param->postmodifier();
+    imod = param->postmodifier().begin();
+    while (imod != param->postmodifier().end())
+	str += " " + *imod++;
     return str;
 }
 
@@ -234,6 +246,28 @@ void Dumper::visit_namespace(AST::Namespace* ns)
     undent();
     std::cout << m_indent_string << "}" << std::endl;
 }
+
+void Dumper::visit_forward(AST::Forward* forward)
+{
+    visit(forward->comments());
+    if (forward->template_type()) {
+	m_scope.push_back(forward->name().back());
+	Types::Template* templ = forward->template_type();
+	std::cout << m_indent_string << "template<";
+	std::vector<std::string> names;
+	AST::Parameter::vector::iterator iter = templ->parameters().begin();
+	while (iter != templ->parameters().end())
+	    names.push_back(formatParam(*iter++));
+	std::cout << join(names, ", ") << ">" << std::endl;
+	m_scope.pop_back();
+	if (forward->type().substr(0, 9) == "template ")
+	    std::cout << m_indent_string << (forward->type().c_str()+9) << " " << forward->name();
+	else
+	    std::cout << m_indent_string << forward->type() << " " << forward->name() << ";" << std::endl;
+    } else
+	std::cout << m_indent_string << forward->name() << ";" << std::endl;
+}
+
 
 void Dumper::visit_class(AST::Class* clas)
 {
