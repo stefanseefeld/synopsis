@@ -36,9 +36,13 @@ all: html pdf info
 
 pdf: Manual.pdf
 
-html: all.syn
+html: all.syn all.xref
 	@echo formatting $@
-	$(synopsis) html --output=$@ $^
+	$(synopsis) html --output=$@ $<
+
+all.xref: all.syn 
+	@echo generating $@
+	$(synopsis) xref --output=$@ $^
 
 # Compile Python files
 $(py_syn): %.syn: %.py
