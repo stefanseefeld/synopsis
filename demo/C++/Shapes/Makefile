@@ -4,7 +4,7 @@ all:	uml
 
 uml:	Shapes.ps Shapes.html
 
-Shapes.html:	main.syn
+Shapes.png Shapes.html:	main.syn
 	$(synopsis) uml --title='Shapes' --format='html' --output=$@ $?
 
 Shapes.ps:	main.syn
@@ -17,4 +17,4 @@ clean:
 	rm -rf main.syn *~ 
 
 distclean: clean
-	rm -rf Shapes.ps
+	rm -rf Shapes.ps Shapes.html Shapes.png
