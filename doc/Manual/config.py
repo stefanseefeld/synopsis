@@ -33,6 +33,7 @@ class Config (Base):
     class Formatter (Base.Formatter):
 	class HTML (Base.Formatter.HTML):
             datadir = '../../share'
+	    output_dir = 'html'
 	    toc_out = 'links.toc'
 	    stylesheet_file = '../../demo/html.css'
 	    file_layout = 'Synopsis.Formatter.HTML.FileLayout.NestedFileLayout'
@@ -79,6 +80,7 @@ class Config (Base):
 	    ]
 	    synopsis_pages = pages
 	class HTML_Doxygen (Base.Formatter.HTML_Doxygen):
+	    output_dir = 'html-doxygen'
 	    stylesheet_file = '../../demo/html-doxy.css'
 	    class ScopePages (Base.Formatter.HTML_Doxygen.ScopePages):
 		summary_formatters = Base.Formatter.HTML_Doxygen.ScopePages.summary_formatters
