@@ -221,8 +221,8 @@ void PrintTraversal::traverse_call(FunctionCall *node)
   if (!node->args.empty())
   {
     ExprVector::const_iterator i = node->args.begin();
-    if (((*i)->etype == ET_BinaryExpr)
-	&& ((static_cast<BinaryExpr*>(*i))->op() == BO_Comma))
+    if (((*i)->etype == Expression::BinaryExpr)
+	&& ((static_cast<BinaryExpr*>(*i))->binary_op == BO_Comma))
         {
 	  out << "(";
 	  (*i)->accept(this);
@@ -235,8 +235,8 @@ void PrintTraversal::traverse_call(FunctionCall *node)
     {
       out << ",";
 
-      if (((*i)->etype == ET_BinaryExpr)
-	  && ((static_cast<BinaryExpr*>(*i))->op() == BO_Comma))
+      if (((*i)->etype == Expression::BinaryExpr)
+	  && ((static_cast<BinaryExpr*>(*i))->binary_op == BO_Comma))
       {
 	out << "(";
 	(*i)->accept(this);
@@ -275,31 +275,31 @@ void PrintTraversal::traverse_trinary(TrinaryExpr *node)
 
 void PrintTraversal::traverse_assign(AssignExpr *node)
 {
-  if (node->lValue()->precedence() < node->precedence())
+  if (node->left->precedence() < node->precedence())
   {
     out << "(";
-    node->lValue()->accept(this);
+    node->left->accept(this);
     out << ")";
   }
-  else node->lValue()->accept(this);
+  else node->left->accept(this);
 
   out << " ";
-  assign_op(node->aOp);
+  assign_op(node->assign_op);
   out << " ";
 
-  if (node->rValue()->precedence() < node->precedence())
+  if (node->right->precedence() < node->precedence())
   {
     out << "(";
-    node->rValue()->accept(this);
+    node->right->accept(this);
     out << ")";
   }
-  else node->rValue()->accept(this);
+  else node->right->accept(this);
 
 #ifdef    SHOW_TYPES
   if (node->type)
   {
     out << "/* ";
-    node->type->printType(out, NULL, true, 0);
+    node->type->printType(out, 0, true, 0);
     out << " */";
   }
 #endif
@@ -307,31 +307,31 @@ void PrintTraversal::traverse_assign(AssignExpr *node)
 
 void PrintTraversal::traverse_rel(RelExpr *node)
 {
-  if (node->leftExpr()->precedence() <= node->precedence())
+  if (node->left->precedence() <= node->precedence())
   {
     out << "(";
-    node->leftExpr()->accept(this);
+    node->left->accept(this);
     out << ")";
   }
-  else node->leftExpr()->accept(this);
+  else node->left->accept(this);
 
   out << " ";
-  rel_op(node->rOp);
+  rel_op(node->relational_op);
   out << " ";
 
-  if (node->rightExpr()->precedence() <= node->precedence())
+  if (node->right->precedence() <= node->precedence())
   {
     out << "(";
-    node->rightExpr()->accept(this);
+    node->right->accept(this);
     out << ")";
   }
-  else node->rightExpr()->accept(this);
+  else node->right->accept(this);
 
 #ifdef    SHOW_TYPES
   if (node->type)
   {
     out << "/* ";
-    node->type->printType(out, NULL, true, 0);
+    node->type->printType(out, 0, true, 0);
     out << " */";
   }
 #endif
@@ -340,7 +340,7 @@ void PrintTraversal::traverse_rel(RelExpr *node)
 void PrintTraversal::traverse_cast(CastExpr *node)
 {
   out << "(";
-  node->castTo->printType(out, NULL, true, 0); 
+  node->castTo->printType(out, 0, true, 0); 
   out << ") ";
 
   out << "(";
@@ -351,7 +351,7 @@ void PrintTraversal::traverse_cast(CastExpr *node)
   if (node->type)
   {
     out << "/* ";
-    node->type->printType(out, NULL, true, 0);
+    node->type->printType(out, 0, true, 0);
     out << " */";
   }
 #endif
@@ -361,7 +361,7 @@ void PrintTraversal::traverse_sizeof(SizeofExpr *node)
 {
   out << "sizeof(";
   if (node->sizeofType)
-    node->sizeofType->printType(out, NULL, true, 0); 
+    node->sizeofType->printType(out, 0, true, 0); 
   else node->expr->accept(this);
   out << ") ";
 
@@ -369,7 +369,7 @@ void PrintTraversal::traverse_sizeof(SizeofExpr *node)
   if (node->type)
   {
     out << "/* ";
-    node->type->printType(out, NULL, true, 0);
+    node->type->printType(out, 0, true, 0);
     out << " */";
   }
 #endif
@@ -393,7 +393,7 @@ void PrintTraversal::traverse_index(IndexExpr *node)
   if (node->type)
   {
     out << "/* ";
-    node->type->printType(out, NULL, true, 0);
+    node->type->printType(out, 0, true, 0);
     out << " */";
   }
 #endif
@@ -407,21 +407,21 @@ void PrintTraversal::traverse_label(Label *node)
 
   switch (node->type)
   {
-    case LT_None:
+    case Label::None:
       assert(0);
       break;
 
-    case LT_Default:
+    case Label::Default:
       out << "default";
       break;
 
-    case LT_Case:
+    case Label::Case:
       assert(node->begin);
       out << "case ";
       node->begin->accept(this);
       break;
 
-    case LT_CaseRange:
+    case Label::CaseRange:
       assert(node->begin);
       assert(node->end);
       out << "case ";
@@ -430,7 +430,7 @@ void PrintTraversal::traverse_label(Label *node)
       node->end->accept(this);
       break;
 
-    case LT_Goto:
+    case Label::Goto:
       assert(node->name);
       traverse_symbol(node->name);
       break;

@@ -522,7 +522,7 @@ labeled_stemnt: label COLON stemnt_reentrance
               if(yyerr("Can't have a label at the end of a block! "))
                 YYERROR;
                 
-              $$ = new Statement(ST_NullStemnt,*$2);
+              $$ = new Statement(Statement::NullStemnt,*$2);
             }
             $$->addHeadLabel($1);
             delete $2;
@@ -549,7 +549,7 @@ switch_stemnt: SWITCH LPAREN expr RPAREN stemnt_reentrance
 
 break_stemnt: BREAK SEMICOLON
         {
-            $$ = new Statement(ST_BreakStemnt,*$1);
+            $$ = new Statement(Statement::BreakStemnt,*$1);
             delete $1;
             delete $2;
         }
@@ -557,7 +557,7 @@ break_stemnt: BREAK SEMICOLON
 
 continue_stemnt: CONT SEMICOLON
         {
-            $$ = new Statement(ST_ContinueStemnt,*$1);
+            $$ = new Statement(Statement::ContinueStemnt,*$1);
             delete $1;
             delete $2;
         }
@@ -581,7 +581,7 @@ goto_stemnt:  GOTO LABEL_NAME SEMICOLON
 
 null_stemnt:  SEMICOLON
         {
-            $$ = new Statement(ST_NullStemnt,*$1);
+            $$ = new Statement(Statement::NullStemnt,*$1);
             delete $1;
         }
         ;
@@ -665,7 +665,7 @@ case_label:  CASE const_expr
 
 deflt_label:  DEFLT
         {
-            $$ = new Label(LT_Default);
+            $$ = new Label(Label::Default);
             delete $1;
         }
         ;
@@ -963,7 +963,7 @@ direct_comp_select: postfix_expr DOT field_ident
 
             // Lookup the component in its struct
             // if possible.
-            if ($1->etype == ET_Variable)
+            if ($1->etype == Expression::Variable)
             {
                 Variable  *var = (Variable*) $1;
                 Symbol    *varName = var->name;
@@ -986,7 +986,7 @@ indirect_comp_select: postfix_expr ARROW field_ident
 
             // Lookup the component in its struct
             // if possible.
-            if ($1->etype == ET_Variable)
+            if ($1->etype == Expression::Variable)
             {
                 Variable  *var = (Variable*) $1;
                 Symbol    *varName = var->name;
@@ -1344,7 +1344,7 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
             /*
             std::cout << "In decl_spec: ";
             $$->printBase(std::cout,0);
-            if ($$->storage == ST_Typedef)
+            if ($$->storage == Statement::Typedef)
                 std::cout << "(is a typedef)";
             std::cout << std::endl;
             */
@@ -2338,29 +2338,29 @@ gcc_attrib:    ATTRIBUTE LPAREN LPAREN gcc_inner RPAREN RPAREN
 gcc_inner:  /* Nothing */
             {
                 /* The lexer ate some unsupported option. */
-                $$ = new GccAttrib( GCC_Unsupported);
+                $$ = new GccAttrib(GCC_Unsupported);
             }
          |   PACKED
             {
-                $$ = new GccAttrib( GCC_Packed );
+                $$ = new GccAttrib(GCC_Packed);
             }
          |   CDECL
             {
-                $$ = new GccAttrib( GCC_CDecl );
+                $$ = new GccAttrib(GCC_CDecl);
             }
          |   CONST
             {
-                $$ = new GccAttrib( GCC_Const );
+                $$ = new GccAttrib(GCC_Const);
             }
          |   NORETURN
             {
-                $$ = new GccAttrib( GCC_NoReturn );
+                $$ = new GccAttrib(GCC_NoReturn);
             }
          |   ALIGNED LPAREN INUM RPAREN
             {
-                $$ = new GccAttrib( GCC_Aligned );
+                $$ = new GccAttrib(GCC_Aligned);
 
-                if ($3->ctype == CT_Int)
+                if ($3->ctype == Constant::Int)
                 {
                     IntConstant    *iCons = (IntConstant*) $3;
 
@@ -2372,7 +2372,7 @@ gcc_inner:  /* Nothing */
             }
          |   MODE LPAREN ident RPAREN
             {
-                $$ = new GccAttrib( GCC_Mode );
+                $$ = new GccAttrib(GCC_Mode);
 
                 $$->mode = $3;
 
@@ -2381,18 +2381,18 @@ gcc_inner:  /* Nothing */
             }
          |   FORMAT LPAREN ident COMMA INUM COMMA INUM RPAREN
             {
-                $$ = new GccAttrib( GCC_Format );
+                $$ = new GccAttrib(GCC_Format);
     
                 $$->mode = $3;
 
-                if ($5->ctype == CT_Int)
+                if ($5->ctype == Constant::Int)
                 {
                     IntConstant    *iCons = (IntConstant*) $5;
 
                     $$->strIdx = iCons->lng;
                 }
 
-                if ($7->ctype == CT_Int)
+                if ($7->ctype == Constant::Int)
                 {
                     IntConstant    *iCons = (IntConstant*) $7;
 
@@ -2404,7 +2404,7 @@ gcc_inner:  /* Nothing */
             }
          |   MALLOC
             {
-                $$ = new GccAttrib( GCC_Malloc );
+                $$ = new GccAttrib(GCC_Malloc);
             }
             ;
 
