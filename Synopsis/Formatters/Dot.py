@@ -40,43 +40,16 @@ def system(command):
    if (ret>>8) != 0:
       raise SystemError(ret, command)
 
-class InheritanceGenerator(AST.Visitor, Type.Visitor):
-   """A Formatter that generates an inheritance graph"""
-   def __init__(self, os, direction, operations, attributes,
-                toc, prefix, no_descend):
+class DotFileGenerator:
+   """A class that encapsulates the dot file generation"""
+   def __init__(self, os, direction):
 
       self.__os = os
-      self.__direction = direction
-      if operations: self.__operations = []
-      else: self.__operations = None
-      if attributes: self.__attributes = []
-      else: self.__attributes = None
-      self.toc = toc
-      self.__scope = []
-      if prefix: self.__scope = string.split(prefix, '::')
-      self.__type_ref = None
-      self.__type_label = ''
-      self.__no_descend = no_descend
+      self.direction = direction
       self.nodes = {}
 
-   def scope(self): return self.__scope
    def write(self, text): self.__os.write(text)
-   def type_ref(self): return self.__type_ref
-   def type_label(self): return self.__type_label
-   def parameter(self): return self.__parameter
 
-   def format_type(self, typeObj):
-      "Returns a reference string for the given type object"
-
-      if typeObj is None: return "(unknown)"
-      typeObj.accept(self)
-      return self.type_label()
-
-   def clear_type(self):
-
-      self.__type_ref = None
-      self.__type_label = ''
-      
    def write_node(self, ref, name, label, **attr):
       """helper method to generate output for a given node"""
 
@@ -96,12 +69,50 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
       if ref: self.write(", URL=\"" + ref + "\"")
       self.write("];\n")
 
-   def write_edge(self, parent, child, label, **attr):
+   def write_edge(self, parent, child, **attr):
 
       self.write("Node" + str(self.nodes[parent]) + " -> ")
       self.write("Node" + str(self.nodes[child]))
-      self.write("[ color=\"black\", fontsize=10, dir=back, arrowtail=empty, " + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
+      self.write("[ color=\"black\", fontsize=10, dir=back" + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
 
+class InheritanceGenerator(DotFileGenerator, AST.Visitor, Type.Visitor):
+   """A Formatter that generates an inheritance graph. If the 'toc' argument is not None,
+   it is used to generate URLs. If no reference could be found in the toc, the node will
+   be grayed out."""
+   def __init__(self, os, direction, operations, attributes, aggregation,
+                toc, prefix, no_descend):
+      
+      DotFileGenerator.__init__(self, os, direction)
+      if operations: self.__operations = []
+      else: self.__operations = None
+      if attributes: self.__attributes = []
+      else: self.__attributes = None
+      self.aggregation = aggregation
+      self.toc = toc
+      self.__scope = []
+      if prefix: self.__scope = string.split(prefix, '::')
+      self.__type_ref = None
+      self.__type_label = ''
+      self.__no_descend = no_descend
+      self.nodes = {}
+
+   def scope(self): return self.__scope
+   def type_ref(self): return self.__type_ref
+   def type_label(self): return self.__type_label
+   def parameter(self): return self.__parameter
+
+   def format_type(self, typeObj):
+      "Returns a reference string for the given type object"
+
+      if typeObj is None: return "(unknown)"
+      typeObj.accept(self)
+      return self.type_label()
+
+   def clear_type(self):
+
+      self.__type_ref = None
+      self.__type_label = ''
+      
    def get_class_name(self, node):
       """Returns the name of the given class node, relative to all its
       parents. This makes the graph simpler by making the names shorter"""
@@ -131,7 +142,7 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
 
    def visitUnknown(self, type):
 
-      self.__type_ref = self.toc[type.link()]
+      self.__type_ref = self.toc and self.toc[type.link()] or None
       self.__type_label = Util.ccolonName(type.name(), self.scope())
         
    def visitBase(self, type):
@@ -146,7 +157,7 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
         
    def visitDeclared(self, type):
 
-      self.__type_ref = self.toc[type.declaration().name()]
+      self.__type_ref = self.toc and self.toc[type.declaration().name()] or None
       if isinstance(type.declaration(), AST.Class):
          self.__type_label = self.get_class_name(type.declaration())
       else:
@@ -155,7 +166,7 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
    def visitParametrized(self, type):
 
       if type.template():
-         type_ref = self.toc[type.template().name()]
+         type_ref = self.toc and self.toc[type.template().name()] or None
          type_label = Util.ccolonName(type.template().name(), self.scope())
       else:
          type_ref = None
@@ -180,39 +191,56 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
       self.format_type(node.parent())
       if self.type_ref():
          self.write_node(self.type_ref().link, self.type_label(), self.type_label())
-      else:
+      elif self.toc:
          self.write_node('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
+      else:
+         self.write_node('', self.type_label(), self.type_label())
         
    def visitClass(self, node):
 
       if self.__operations is not None: self.__operations.append([])
       if self.__attributes is not None: self.__attributes.append([])
       name = self.get_class_name(node)
-      ref = self.toc[node.name()]
+      ref = self.toc and self.toc[node.name()] or None
       for d in node.declarations(): d.accept(self)
       # NB: old version of dot needed the label surrounded in {}'s (?)
       label = name
       if node.template():
-         if self.__direction == 'vertical':
+         if self.direction == 'vertical':
             label = self.format_type(node.template()) + '\\n' + label
          else:
             label = self.format_type(node.template()) + ' ' + label
       if self.__operations or self.__attributes:
          label = label + '\\n'
          if self.__operations:
-            label = label + '|' + string.join(map(lambda x:x[-1] + '()\\l', self.__operations[-1]))
+            label += '|' + string.join(map(lambda x:x[-1] + '()\\l', self.__operations[-1]), '')
          if self.__attributes:
-            label = label + '|' + string.join(map(lambda x:x[-1] + '\\l', self.__attributes[-1]))
+            label += '|' + string.join(map(lambda x:x[-1] + '\\l', self.__attributes[-1]), '')
       if ref:
          self.write_node(ref.link, name, label)
-      else:
+      elif self.toc:
          self.write_node('', name, label, color='gray75', fontcolor='gray75')
+      else:
+         self.write_node('', name, label)
+
+      if self.aggregation:
+         #FIXME: we shouldn't only be looking for variables of the exact type,
+         #       but also derived types such as pointers, references, STL containers, etc.
+         #
+         # find attributes of type 'Class' so we can link to it
+         for a in filter(lambda a:isinstance(a, AST.Variable), node.declarations()):
+            if isinstance(a.vtype(), Type.Declared):
+               d = a.vtype().declaration()
+               if isinstance(d, AST.Class) and self.nodes.has_key(self.get_class_name(d)):
+                  self.write_edge(self.get_class_name(node), self.get_class_name(d),
+                                  arrowtail='ediamond')
+
       for inheritance in node.parents():
          inheritance.accept(self)
-         self.write_edge(self.type_label(), name, None)
+         self.write_edge(self.type_label(), name, arrowtail='empty')
       if self.__no_descend: return
-      if self.__operations: self.__operations = self.__operations[:-1]
-      if self.__attributes: self.__attributes = self.__attributes[:-1]
+      if self.__operations: self.__operations.pop()
+      if self.__attributes: self.__attributes.pop()
 
    def visitOperation(self, operation):
 
@@ -231,7 +259,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
    def __init__(self, os, direction, operations, attributes, levels, types,
                 toc, prefix, no_descend):
-      InheritanceGenerator.__init__(self, os, direction, operations, attributes,
+      InheritanceGenerator.__init__(self, os, direction, operations, attributes, False,
                                     toc, prefix, no_descend)
       self.__levels = levels
       self.__types = types
@@ -256,8 +284,10 @@ class SingleInheritanceGenerator(InheritanceGenerator):
       if self.type_label():
          if self.type_ref():
             self.write_node(self.type_ref().link, self.type_label(), self.type_label())
-         else:
+         elif self.toc:
             self.write_node('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
+         else:
+            self.write_node('', self.type_label(), self.type_label())
         
    def visitClass(self, node):
 
@@ -269,15 +299,18 @@ class SingleInheritanceGenerator(InheritanceGenerator):
       if self.__current == 1:
          self.write_node('', name, name, style='filled', color='lightgrey')
       else:
-         ref = self.toc[node.name()]
+         ref = self.toc and self.toc[node.name()] or None
          if ref:
             self.write_node(ref.link, name, name)
-         else:
+         elif self.toc:
             self.write_node('', name, name, color='gray75', fontcolor='gray75')
+         else:
+            self.write_node('', name, name)
+
       for inheritance in node.parents():
          inheritance.accept(self)
          if self.nodes.has_key(self.type_label()):
-            self.write_edge(self.type_label(), name, None)
+            self.write_edge(self.type_label(), name, arrowtail='empty')
       # if this is the main class and if there is a type dictionary,
       # look for classes that are derived from this class
 
@@ -295,64 +328,30 @@ class SingleInheritanceGenerator(InheritanceGenerator):
                      if self.type_ref():
                         if self.type_ref().name == node.name():
                            child_label = self.get_class_name(child)
-                           ref = self.toc[child.name()]
+                           ref = self.toc and self.toc[child.name()] or None
                            if ref:
                               self.write_node(ref.link, child_label, child_label)
-                           else:
+                           elif self.toc:
                               self.write_node('', child_label, child_label, color='gray75', fontcolor='gray75')
-                           self.write_edge(name, child_label, None)
+                           else:
+                              self.write_node('', child_label, child_label)
 
-class CollaborationGenerator(AST.Visitor, Type.Visitor):
-   """A Formatter that generates a collaboration graph"""
+                           self.write_edge(name, child_label, arrowtail='empty')
 
-   def __init__(self, output):
-      self.__output = output
+class FileDependencyGenerator(DotFileGenerator, AST.Visitor, Type.Visitor):
+   """A Formatter that generates a file dependency graph"""
 
-   def write(self, text): self.__output.write(text)
-   def visitClass(self, node):
-
-      name = node.name()
-      for inheritance in node.parents():
-         parent = inheritance.parent()
-         if hasattr(parent, 'name'):
-            self.write(parent.name()[-1] + " -> " + name[-1] + ";\n")
-      for d in node.declarations(): d.accept(self)
-
-   def visitVariable(self, node):
-
-      node.vtype().accept(self)
-      print node.name(), self.__type_label
-
-   def visitBaseType(self, type):
-
-      self.__type_label = type.name()
-
-   def visitUnknown(self, type):
-
-      self.__type_label = type.name()
-
-   def visitDeclared(self, type):
-
-      self.__type_label = type.name()
-
-   def visitModifier(self, type):
-
-      alias = type.alias()
-      pre = string.join(map(lambda x:x+"&nbsp;", type.premod()), '')
-      post = string.join(type.postmod(), '')
-      self.__type_label = "%s%s%s"%(pre,alias,post)
-
-   def visitTemplate(self, type):
-
-      self.__type_label = "<template>"
-
-   def visitParametrized(self, type):
-
-      self.__type_label = "<parametrized>"
-
-   def visitFunctionType(self, type):
-
-      self.__type_label = "<function>"
+   def visit_file(self, file):
+      if file.is_main():
+         self.write_node('', file.filename(), file.filename())
+      for i in file.includes():
+         target = i.target()
+         if target.is_main():
+            self.write_node('', target.filename(), target.filename())
+            name = i.name()
+            name = name.replace('"', '\\"')
+            self.write_edge(target.filename(), file.filename(),
+                            label=name, style='dashed')
 
 def _rel(frm, to):
    "Find link to to relative to frm"
@@ -413,9 +412,10 @@ class Formatter(Processor):
    the various InheritanceGenerators"""
 
    title = Parameter('Inheritance Graph', 'the title of the graph')
-   type = Parameter('inheritance', 'type of graph (one of \'inheritance\', \'single\', \'collaboration\'')
+   type = Parameter('class', 'type of graph (one of \'file\', \'class\', \'single\'')
    hide_operations = Parameter(True, 'hide operations')
    hide_attributes = Parameter(True, 'hide attributes')
+   show_aggregation = Parameter(False, 'show aggregation')
    format = Parameter('ps', "Generate output in format 'dot', 'ps', 'png', 'gif', 'map', 'html'")
    layout = Parameter('vertical', 'Direction of graph')
    prefix = Parameter(None, 'Prefix to strip from all class names')
@@ -444,9 +444,13 @@ class Formatter(Processor):
          print string.join(formats.keys(), ', ')
          return self.ast
 
-      if not getattr(self, 'toc', None):
-         self.toc = TOC.TOC(TOC.Linker())
-      for t in self.toc_in: self.toc.load(t)
+      # we only need the toc if format=='html'
+      if format == 'html':
+         # beware: HTML.Fragments.ClassHierarchyGraph sets self.toc !!
+         toc = getattr(self, 'toc', TOC.TOC(TOC.Linker()))
+         for t in self.toc_in: toc.load(t)
+      else:
+         toc = None
 
       head, tail = os.path.split(self.output)
       tmpfile = os.path.join(head, Util.quote(tail)) + ".dot"
@@ -462,20 +466,24 @@ class Formatter(Processor):
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
                                                 -1, self.ast.types(),
-                                                self.toc, self.prefix, False)
-      elif self.type == 'inheritance':
+                                                toc, self.prefix, False)
+      elif self.type == 'class':
          generator = InheritanceGenerator(dotfile, self.layout,
                                           not self.hide_operations,
                                           not self.hide_attributes,
-                                          self.toc, self.prefix, False)
-      elif self.type == 'collaboration':
-         sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
-         return self.ast
-         #generator = CollaborationGenerator(dotfile)
+                                          self.show_aggregation,
+                                          toc, self.prefix, False)
+      elif self.type == 'file':
+         generator = FileDependencyGenerator(dotfile, self.layout)
       else:
          sys.stderr.write("Dot: unknown type\n");
          
-      for d in self.ast.declarations():
+
+      if self.type == 'file':
+         for f in self.ast.files().values():
+            generator.visit_file(f)
+      else:
+         for d in self.ast.declarations():
             d.accept(generator)
       dotfile.write("}\n")
       dotfile.close()
