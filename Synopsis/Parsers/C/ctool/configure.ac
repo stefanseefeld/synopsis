@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.1 2003/08/10 01:53:17 stefan Exp $
+dnl $Id: configure.ac,v 1.2 2003/08/19 04:52:58 stefan Exp $
 dnl
 dnl This source file is a part of the ctool Project.
 dnl Copyright (C) 2003 Stefan Seefeld
@@ -24,7 +24,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.53)
-AC_REVISION($Revision: 1.1 $)
+AC_REVISION($Revision: 1.2 $)
 AC_INIT(CTool, 2.11, ctool-develop@lists.sourceforge.net)
 AC_CONFIG_SRCDIR(COPYING)
 dnl AC_CONFIG_AUX_DIR(config)
@@ -34,6 +34,7 @@ AC_CANONICAL_HOST
 AC_PROG_MAKE_SET
 AC_PROG_LEX
 AC_PROG_YACC
+AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
@@ -61,7 +62,8 @@ dnl ------------------------------------------------------------------
 dnl Output substitution
 dnl ------------------------------------------------------------------
 
-AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([local.mk])
+AC_CONFIG_FILES([Makefile src/Makefile examples/Makefile examples/ctdemo/Makefile])
 
 mkdir -p lib
 mkdir -p bin
