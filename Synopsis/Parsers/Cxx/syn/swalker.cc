@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.51 2002/03/07 04:43:54 chalky Exp $
+// $Id: swalker.cc,v 1.52 2002/03/07 14:12:44 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.52  2002/03/07 14:12:44  chalky
+// Better parsing of complex sources like boost
+//
 // Revision 1.51  2002/03/07 04:43:54  chalky
 // Preliminary template specialization support.
 //
@@ -552,6 +555,7 @@ Ptree*
 SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 {
   STrace trace("SWalker::TranslateTemplateClass");
+  nodeLOG(def);
   if (Ptree::Length(node) == 4)
     {
       // if Class definition (not just declaration)
@@ -622,7 +626,7 @@ SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
               LOG("non-type template parameter! approximating..");
               nodeLOG(param);
               Ptree* p = param->Second();
-              while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+              while (p && p->Car() && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
               Types::Base* base = m_builder->create_base(parse_name(p));
               templ_params.push_back(base);
             }
@@ -928,6 +932,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
 Ptree*
 SWalker::TranslateVariableDeclarator(Ptree* decl, bool is_const) 
 {
+  STrace trace("TranslateVariableDeclarator");
   // Variable declaration. Restart decoding
   char* encname = decl->GetEncodedName();
   char* enctype = decl->GetEncodedType();
