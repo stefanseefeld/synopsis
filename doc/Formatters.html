@@ -19,13 +19,16 @@
 	</p>
 
 	<a name="ascii"><h2>ASCII Formatter</h2>
+	<div class="section">
 	<p>The ASCII formatter attempts to output the AST in a format that is
 	suitable for recompilation, or close to. You can use this to check
 	that your code and comments are getting parsed correctly, or out of
 	interest to see the structure of the AST after Linking. Like the DUMP
 	formatter, this is mostly of use for debugging.</p>
+	</div>
 
 	<a name="Dia"><h2>Dia Formatter</h2>
+	<div class="section">
 	<p>The Dia formatter generates a Dia file with the filename specified
 	in the -o option. This file contains all classes in the AST, with
 	inheritance relationships linked as generalizations. At your option,
@@ -37,13 +40,18 @@
 	future we may utilise constraint-solvers to arrange the objects - if
 	you would like to help in this effort please get in touch.</p>
 	<h3>Dia Options</h3>
+	<div class="section">
 	<table border=0>
-	    <tr><td width="100px">-m</td><td>-- hide operations</td></tr>
-	    <tr><td width="100px">-a</td><td>-- hide attributes</td></tr>
+	    <col width="100px">
+	    <tr><td valign="top">-m</td><td>-- hide operations</td></tr>
+	    <tr><td valign="top">-a</td><td>-- hide attributes</td></tr>
 	</table>
+	</div>
+	</div>
 
 	<a name="DUMP"><h2>DUMP Formatter</h2>
-	<p>The DUMP formatter is another useful only for debugging. It takes
+	<div class="section">
+	<p>The DUMP formatter is useful only for debugging. It takes
 	the AST and dumps it to screen in a nested attribute-oriented format.
 	Several optimisations are made eg. for lists of strings which are
 	displayed in Scoped::Name format. It also dumps the type-dictionary,
@@ -55,8 +63,10 @@
 	<p>This formatter has no options, but I recommend that you pipe its
 	output into "less -r". Names are displayed in bold, and the output is
 	*very* verbose.</p>
+	</div>
 
 	<a name="HTML"><h2>HTML Formatter</h2>
+	<div class="section">
 	<p>This is the most highly developed formatter, for obvious reasons.
 	It is designed in a modular fashion, although for now there are no
 	options to manipulate that apart from the comment formatters. In
@@ -87,11 +97,11 @@
 	comment formatters that the user may select to format thier comments.
 	These are specified by multiple -c options to the formatter:
 	<ul>
-	    <li>ssd - Slash-Slash-Dot. This formatter will filter and strip so
+	    <li><b>ssd</b> - Slash-Slash-Dot. This formatter will filter and strip so
 	    that only comments begginning with "//." are parsed as
 	    documentation comments. This formatter should be the first in the
 	    list.</li>
-	    <li>java - Java-style comments. This formatter will filter and
+	    <li><b>java</b> - Java-style comments. This formatter will filter and
 	    strip so that only comments of the style:
 		<pre>
     /**
@@ -102,7 +112,7 @@
 	    first in the list. Only one of "ssd" and "java" should be used.
 	    You may also use neither if, for example in the case of the Python
 	    Parser, your comments come with no comment-markers.</li>
-	    <li>summary - Summarizer. This formatter will look for comments
+	    <li><b>summary</b> - Summarizer. This formatter will look for comments
 	    with a "first sentence". This first sentence is copied into the
 	    "summary" section of a comment and displayed with the declaration
 	    in the "summary" section of the page. The rest of the comment,
@@ -115,13 +125,13 @@
 	    whitespace (space, newline, tab). This is to allow you to use
 	    periods in the first sentence such as "Set the name using
 	    AST.Name".</li>
-	    <li>javadoc - Javadoc @tag formatter. This formatter looks for
+	    <li><b>javadoc</b> - Javadoc @tag formatter. This formatter looks for
 	    Javadoc-style @tags and attempts to format them in a similar
 	    manner. Currently it only supports @see tags, but support for the
 	    others is intended for future versions. For an example see
 	    demo/C++/employee.cc and the "make employee_html" target in that
 	    directory.</li>
-	    <li>section - Experimental section formatter. This formatter was
+	    <li><b>section</b> - Experimental section formatter. This formatter was
 	    originally a test for the multiple comment formatter feature, but
 	    is quite useful anyway. It translates empty lines into paragraph
 	    breaks, and in the future may expand to allow other formatting
@@ -129,24 +139,25 @@
 	</ul>
 
 	<h3>HTML Options</h3>
+	<div class="section">
 	<table border=0>
-	    <tr><td width="100px">-s <i>stylesheet</i></td><td>-- link to the
+	    <tr><td width="100px" valign="top">-s <i>stylesheet</i></td><td>link to the
 	    specified stylesheet in the HTML pages. You may use a http:// link
 	    here instead of a filename.</td></tr>
-	    <tr><td width="100px">-S <i>stylesheet</i></td><td>-- copy the
+	    <tr><td width="100px" valign="top">-S <i>stylesheet</i></td><td>copy the
 	    named stylesheet file to the target directory if there isn't
 	    already one, or the specified one is newer.</td></tr>
-	    <tr><td width="100px">-c <i>formatter</i></td><td>-- appends the
+	    <tr><td width="100px" valign="top">-c <i>formatter</i></td><td>appends the
 	    named formatter to the list of formatters to apply to declaration
 	    comments in order. You may choose from the the list
 	    above. You may use this option multiple times to create a list of
 	    formatters.</td></tr>
-	    <tr><td width="100px">-n <i>namespace</i></td><td>-- only generate
+	    <tr><td width="100px" valign="top">-n <i>namespace</i></td><td>only generate
 	    output for the given namespace. You may separate nested namespaces
 	    with the "::" scope resolution operator.</td></tr>
-	    <tr><td width="100px">-t <i>toc-file</i></td><td>-- output the
+	    <tr><td width="100px" valign="top">-t <i>toc-file</i></td><td>output the
 	    generated TOC (table of contents) to the specified file.</td></tr>
-	    <tr><td width="100px">-r <i>toc-file</i></td><td>-- read the
+	    <tr><td width="100px" valign="top">-r <i>toc-file</i></td><td>read the
 	    specified toc-file to use for linking names. For example of
 	    linking between languages with this feature, see the demo/Mixed/
 	    directory.</td></tr>
@@ -155,11 +166,15 @@
 	headers:<br>
 	<pre>synopsis -f HTML -Wf,-s,style.css,-S,../../style.css,-c,ssd,-c,summary,-c,javadoc -o Manual all.syn</pre>
 	</p>
+	</div>
+	</div>
 
 	<a name="htmls"><h2>HTML Simple Formatter</h2>
+	<div class="section">
 	<p>This is the original HTML formatter included with version 0.1. It
 	outputs the whole AST to one file, specified via the -o option.  It
 	also allows stylesheet support.</p>
+	</div>
 
     </body>
-</html>
+</html><!-- vim: set sts=2 ts=8 sw=2: -->
