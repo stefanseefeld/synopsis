@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.33 2002/10/11 06:02:33 chalky Exp $
+# $Id: core.py,v 1.34 2002/10/27 12:05:44 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.34  2002/10/27 12:05:44  chalky
+# Add 2 verbose levels, make default (1) less verbose
+#
 # Revision 1.33  2002/10/11 06:02:33  chalky
 # Allow GUi to pass config object
 #
@@ -221,43 +224,44 @@ class Config:
 	itself is also stored as config.obj"""
 	# obj.pages is a list of module names
 	self.obj = obj
+	if hasattr(obj, 'verbose'): self.verbose = obj.verbose
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
 	    'file_layout', 'output_dir')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
-	    elif self.verbose: print "Option",option,"not found in config."
+	    elif self.verbose > 1: print "Option",option,"not found in config."
 
     def _config_pages(self, pages):
 	"Configures from the given list of pages"
 	if type(pages) != types.ListType:
 	    raise TypeError, "HTML.pages must be a list."
-	if self.verbose: print "Using pages:",pages
+	if self.verbose > 1: print "Using pages:",pages
 	self.pages = pages
 
     def _config_sorter(self, sorter):
-	if self.verbose: print "Using sorter:",sorter
+	if self.verbose > 1: print "Using sorter:",sorter
 	self.sorter = import_object(sorter)()
 
     def _config_datadir(self, datadir):
-	if self.verbose: print "Using datadir:", datadir
+	if self.verbose > 1: print "Using datadir:", datadir
 	self.datadir = datadir
 
     def _config_output_dir(self, output_dir):
-	if self.verbose: print "Using output_dir:", output_dir
+	if self.verbose > 1: print "Using output_dir:", output_dir
 	self.basename = output_dir
 
     def _config_stylesheet(self, stylesheet):
-	if self.verbose: print "Using stylesheet:", stylesheet
+	if self.verbose > 1: print "Using stylesheet:", stylesheet
 	self.stylesheet = stylesheet
 
     def _config_stylesheet_file(self, stylesheet_file):
-	if self.verbose: print "Using stylesheet file:", stylesheet_file
+	if self.verbose > 1: print "Using stylesheet file:", stylesheet_file
 	self.stylesheet_file = stylesheet_file
 
     def _config_comment_formatters(self, comment_formatters):
-	if self.verbose: print "Using comment formatters:", comment_formatters
+	if self.verbose > 1: print "Using comment formatters:", comment_formatters
 	basePackage = 'Synopsis.Formatter.HTML.CommentFormatter.'
 	for formatter in comment_formatters:
 	    if type(formatter) == types.StringType:
@@ -272,20 +276,20 @@ class Config:
 		self.commentFormatterList.append(clas())
     
     def _config_toc_in(self, toc_in):
-	if self.verbose: print "Will read toc(s) from",toc_in
+	if self.verbose > 1: print "Will read toc(s) from",toc_in
 	self.toc_in = toc_in
 
     def _config_toc_out(self, toc_out):
-	if self.verbose: print "Will save toc to",toc_out
+	if self.verbose > 1: print "Will save toc to",toc_out
 	self.toc_out = toc_out
 
     def _config_tree_formatter(self, tree_class):
-	if self.verbose: print "Using tree class",tree_class
+	if self.verbose > 1: print "Using tree class",tree_class
 	clas = import_object(tree_class, basePackage='Synopsis.Formatter.HTML.')
 	self.treeFormatterClass = clas
     
     def _config_file_layout(self, layout):
-	if self.verbose: print "Using file layout",layout
+	if self.verbose > 1: print "Using file layout",layout
 	self.files_class = import_object(layout)
     
     def set_contents_page(self, page):
