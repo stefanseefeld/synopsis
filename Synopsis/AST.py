@@ -37,7 +37,7 @@ def ccmp(a,b):
 def load(filename):
    """Loads an AST object from the given filename"""
    try:
-      file = open(filename, "r")
+      file = open(filename, 'rb')
       unpickler = cPickle.Unpickler(file)
       version = unpickler.load()
       if version is not FILE_VERSION:
@@ -59,7 +59,7 @@ def load_deps(filename):
    dependencies object stored before the actual AST. The object returned is a
    list of (filename, timestamp) pairs."""
    try:
-      file = open(filename, "r")
+      file = open(filename, 'rb')
       unpickler = cPickle.Unpickler(file)
       version = unpickler.load()
       if version is not FILE_VERSION:
@@ -79,7 +79,7 @@ def save(filename, ast):
    """Saves an AST object to the given filename"""
    try:
       deps = make_deps(ast)
-      file = open(filename, "w")
+      file = open(filename, 'wb')
       pickler = cPickle.Pickler(file, 1)
       pickler.dump(FILE_VERSION)
       pickler.dump(deps)
