@@ -10,6 +10,7 @@
 
 #include "PTree/operations.hh"
 #include "PTree/Encoding.hh"
+#include "PTree/Symbol.hh"
 
 namespace PTree
 {
@@ -33,9 +34,16 @@ public:
 class ClassBody : public Brace 
 {
 public:
-  ClassBody(Node *p, Node *q) : Brace(p, q) {}
-  ClassBody(Node *ob, Node *bdy, Node *cb) : Brace(ob, bdy, cb) {}
+  ClassBody(Node *p, Node *q, Scope *s)
+    : Brace(p, q), my_scope(s->ref()) {}
+  ClassBody(Node *ob, Node *bdy, Node *cb, Scope *s)
+    : Brace(ob, bdy, cb), my_scope(s->ref()) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Scope *scope() { return my_scope;}
+
+private:
+  Scope *my_scope;
 };
 
 class Typedef : public List

@@ -55,9 +55,13 @@ void Class::do_init_static()
     done_init = true;
 
     class_t = new PTree::Reserved("class", 5);
+    // create dummy scope, since ClassBody expects one
+    PTree::Scope *scope = new PTree::Scope();
     empty_block_t = new PTree::ClassBody(new PTree::Atom("{", 1),
 					 0,
-					 new PTree::Atom("}", 1));
+					 new PTree::Atom("}", 1),
+					 scope);
+    scope->unref();
     public_t = new PTree::AtomPUBLIC("public", 6);
     protected_t = new PTree::AtomPROTECTED("protected", 9);
     private_t = new PTree::AtomPRIVATE("private", 7);

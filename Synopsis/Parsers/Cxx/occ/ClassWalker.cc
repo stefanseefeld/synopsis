@@ -135,9 +135,9 @@ PTree::Node *ClassWalker::translate_class_spec(PTree::Node *spec, PTree::Node *u
     if(metaobject->removed) return 0;
 
     ClassBodyWalker w(this, tspec_list);
-    PTree::Node *body = PTree::nth(class_def, 3);
-    PTree::Node *body2 = w.translate_class_body(body, PTree::third(class_def),
-						metaobject);
+    PTree::ClassBody *body = static_cast<PTree::ClassBody *>(PTree::nth(class_def, 3));
+    PTree::ClassBody *body2 = w.translate_class_body(body, PTree::third(class_def),
+						     metaobject);
     PTree::Node *bases2 = metaobject->GetBaseClasses();
     PTree::Node *cspec = metaobject->GetClassSpecifier();
     PTree::Node *name2 = metaobject->GetNewName();
@@ -185,8 +185,8 @@ PTree::Node *ClassWalker::ConstructClass(Class* metaobject)
 
     metaobject->TranslateClassHasFinished();
     ClassBodyWalker w(this, 0);
-    PTree::Node *body = PTree::nth(def, 3);
-    PTree::Node *body2 = w.translate_class_body(body, 0, metaobject);
+    PTree::ClassBody *body = static_cast<PTree::ClassBody *>(PTree::nth(def, 3));
+    PTree::ClassBody *body2 = w.translate_class_body(body, 0, metaobject);
     PTree::Node *bases2 = metaobject->GetBaseClasses();
     PTree::Node *cspec2 = metaobject->GetClassSpecifier();
     PTree::Node *name2 = metaobject->GetNewName();

@@ -24,11 +24,12 @@ ClassBodyWalker::ClassBodyWalker(Walker* w, PTree::Array* tlist)
 {
 }
 
-PTree::Node *ClassBodyWalker::translate_class_body(PTree::Node *block,
-						   PTree::Node *,
-						   Class *metaobject)
+PTree::ClassBody *
+ClassBodyWalker::translate_class_body(PTree::ClassBody *block,
+				      PTree::Node *,
+				      Class *metaobject)
 {
-  PTree::Node *block2;
+  PTree::ClassBody *block2;
   Environment *fenv = metaobject->GetEnvironment();
   if(!fenv) fenv = env; // should not reach here.
   NameScope old_env = change_scope(fenv);
@@ -60,7 +61,7 @@ PTree::Node *ClassBodyWalker::translate_class_body(PTree::Node *block,
 
   if(changed)
     block2 = new PTree::ClassBody(PTree::first(block), array.all(),
-				  PTree::third(block));
+				  PTree::third(block), block->scope());
   else
     block2 = block;
 

@@ -122,7 +122,7 @@ public:
   virtual PTree::Node *record_args_and_translate_fbody(Class*, PTree::Node *args,
 						       PTree::Node *body);
   virtual PTree::Node *translate_function_body(PTree::Node *);
-  virtual PTree::Node *translate_class_body(PTree::Node *, PTree::Node *, Class *);
+  virtual PTree::ClassBody *translate_class_body(PTree::ClassBody *, PTree::Node *, Class *);
   virtual PTree::Node *translate_type_specifier(PTree::Node *);  
   virtual PTree::Node *translate_new2(PTree::Node *, PTree::Node *, PTree::Node *, PTree::Node *,
 				      PTree::Node *, PTree::Node *, PTree::Node *);

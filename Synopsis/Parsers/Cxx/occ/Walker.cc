@@ -661,17 +661,19 @@ void Walker::visit(PTree::ClassBody *node)
   if(changed)
     my_result = new PTree::ClassBody(PTree::first(node),
 				     array.all(),
-				     PTree::third(node));
+				     PTree::third(node),
+				     node->scope());
   else
     my_result = node;
 
   exit_scope();
 }
 
-PTree::Node *Walker::translate_class_body(PTree::Node *node, PTree::Node *bases,
-					  Class* metaobject)
+PTree::ClassBody *Walker::translate_class_body(PTree::ClassBody *node,
+					       PTree::Node *bases,
+					       Class* metaobject)
 {
-  PTree::Node *block2;
+  PTree::ClassBody *block2;
 
   new_scope(metaobject);
   RecordBaseclassEnv(bases);
@@ -690,7 +692,7 @@ PTree::Node *Walker::translate_class_body(PTree::Node *node, PTree::Node *bases,
   }
   if(changed)
     block2 = new PTree::ClassBody(PTree::first(node), array.all(),
-				  PTree::third(node));
+				  PTree::third(node), node->scope());
   else
     block2 = node;
 
@@ -846,9 +848,10 @@ PTree::ClassSpec *Walker::translate_class_spec(PTree::ClassSpec *spec,
   else
   {
     // a class body is specified.
-    PTree::Node *body = PTree::nth(class_def, 3);
-    PTree::Node *body2 = translate_class_body(body, PTree::third(class_def),
-					      metaobject);
+    PTree::ClassBody *body = static_cast<PTree::ClassBody *>(PTree::nth(class_def, 3));
+    PTree::ClassBody *body2 = translate_class_body(body,
+						   PTree::third(class_def),
+						   metaobject);
     if(body == body2)
       return spec;
     else
