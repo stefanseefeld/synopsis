@@ -7,7 +7,7 @@ int Trace::level = 0;
 #define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
 
 Synopsis::Synopsis(const char *f, PyObject *decl, PyObject *dict)
-        : file(f), declarations(decl), dictionary(dict)
+        : file(f), mainfile(f), declarations(decl), dictionary(dict)
 {
     Trace trace("Synopsis::Synopsis");
     ast  = PyImport_ImportModule("Synopsis.AST");
@@ -125,6 +125,7 @@ PyObject *Synopsis::addComment(PyObject* decl, const char* text)
 PyObject *Synopsis::addDeclarator(size_t line, bool main, const string &name, const vector<size_t> &sizes)
 {
     Trace trace("Synopsis::addDeclarator");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *declarator = PyObject_CallMethod(ast, "Declarator", "siisOO", file.c_str(), line, main, "C++", pyname, V2L(sizes));
     //PyObject_CallMethod(scopes.back(), "append", "O", declarator);
@@ -134,6 +135,7 @@ PyObject *Synopsis::addDeclarator(size_t line, bool main, const string &name, co
 PyObject *Synopsis::addScope(size_t line, bool main, const string &type, const string &name)
 {
     Trace trace("Synopsis::addScope");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
     //PyObject_CallMethod(scopes.back(), "append", "O", scope);
@@ -144,6 +146,7 @@ PyObject *Synopsis::addScope(size_t line, bool main, const string &type, const s
 PyObject *Synopsis::addModule(size_t line, bool main, const string &name)
 {
     Trace trace("Synopsis::addModule");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *module = PyObject_CallMethod(ast, "Module", "siissO", file.c_str(), line, main, "C++", "namespace", pyname);
     //PyObject_CallMethod(scopes.back(), "append", "O", module);
@@ -182,20 +185,31 @@ void Synopsis::pushClass(PyObject* clas)
  */
 void Synopsis::pushClassBases(PyObject* clas)
 {
-    PyObject* parents = PyObject_CallMethod(clas, "parents", 0);
-    if (!parents) { PyErr_Print(); return; }
+    PyObject* name = PyObject_CallMethod(clas, "name", 0);
+    if (!name) { cout << "Warning: pushClassBases, clas.name failed:\n         ";
+	PyObject_Print(clas, stdout,0);cout<<endl;PyErr_Print(); return; }
+
+    PyObject* parents;
+    while (!(parents = PyObject_CallMethod(clas, "parents", 0))) {
+	// Not a class, but might be a typedef to a class..
+	PyObject* alias = PyObject_CallMethod(clas, "alias", 0);
+	if (!alias) { PyErr_Print(); return; }
+	clas = PyObject_CallMethod(alias, "declaration", 0);
+	if (!clas) { PyErr_Print(); return; }
+    }
 
     size_t size = PyList_Size(parents);
     for (size_t i = size; i > 0;) {
 	i--;
 	PyObject* declared = PyObject_CallMethod(PyList_GetItem(parents, i), "parent", 0);
-	PyObject* baseclass = PyObject_CallMethod(declared, "declaration", 0);
+	PyObject* baseclass;
+	while (!(baseclass = PyObject_CallMethod(declared, "declaration", 0))) {
+	    declared = PyObject_CallMethod(declared, "alias", 0);
+	    if (!declared) { PyErr_Print(); return; }
+	}
 	pushClassBases(baseclass);
     }
 	    
-    PyObject* name = PyObject_CallMethod(clas, "name", 0);
-    if (!name) { cout << "Warning: pushClassBases, clas.name failed:\n         ";
-	PyObject_Print(clas, stdout,0);cout<<endl;PyErr_Print(); return; }
     lookup_scopes.push_front(name);
 }
 
@@ -307,6 +321,7 @@ PyObject *Synopsis::Inheritance(PyObject *parent, const vector<string> &attribut
 PyObject *Synopsis::addClass(size_t line, bool main, const string &type, const string &name)
 {
     Trace trace("Synopsis::addClass");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *clas = PyObject_CallMethod(ast, "Class", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
     //PyObject *clas = PyObject_CallMethod(ast, "Class", "siisss", file.c_str(), line, main, "C++", type.c_str(), name.c_str());
@@ -320,6 +335,7 @@ PyObject *Synopsis::addClass(size_t line, bool main, const string &type, const s
 PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const string& name, PyObject *alias, bool constr, PyObject* declarator)
 {
     Trace trace("Synopsis::addTypedef");
+    main = (file == mainfile);
     PyObject *typed = PyObject_CallMethod( ast, "Typedef", "siissOOiO", 
 	file.c_str(), line, main, "C++", type.c_str(), V2L(scopedName(name)),
 	alias, constr, declarator
@@ -332,6 +348,7 @@ PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const
 PyObject *Synopsis::Enumerator(size_t line, bool main, const string &name, const string &value)
 {
     Trace trace("Synopsis::addEnumerator");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *enumerator = PyObject_CallMethod(ast, "Enumerator", "siisOs", file.c_str(), line, main, "C++", pyname, value.c_str());
     return enumerator;
@@ -340,6 +357,7 @@ PyObject *Synopsis::Enumerator(size_t line, bool main, const string &name, const
 PyObject *Synopsis::addEnum(size_t line, bool main, const string &name, const vector<PyObject *> &enumerators)
 {
     Trace trace("Synopsis::addEnum");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *enu = PyObject_CallMethod(ast, "Enum", "siisOO", file.c_str(), line, main, "C++", pyname, V2L(enumerators));
     addDeclaration(enu);
@@ -349,6 +367,7 @@ PyObject *Synopsis::addEnum(size_t line, bool main, const string &name, const ve
 PyObject *Synopsis::addVariable(size_t line, bool main, const string& name, PyObject *type, bool constr, PyObject* declarator)
 {
     Trace trace("Synopsis::addVariable");
+    main = (file == mainfile);
     PyObject *var = PyObject_CallMethod(ast, "Variable", "siissOOiO",
 	file.c_str(), line, main, "C++", "variable", 
 	V2L(scopedName(name)), type, constr, declarator
@@ -360,6 +379,7 @@ PyObject *Synopsis::addVariable(size_t line, bool main, const string& name, PyOb
 PyObject *Synopsis::addConst(size_t line, bool main, PyObject *type, const string &name, const string &value)
 {
     Trace trace("Synopsis::addConst");
+    main = (file == mainfile);
     PyObject *cons = PyObject_CallMethod(ast, "Const", "siissOss", file.c_str(),
                                          line, main, "C++", "const", type, name.c_str(), name.c_str());
     PyObject_CallMethod(scopes.back(), "append", "O", cons);
@@ -381,6 +401,7 @@ PyObject *Synopsis::Parameter(const string &pre, PyObject *type, const string &p
 PyObject *Synopsis::addFunction(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name)
 {
     Trace trace("Synopsis::addFunction");
+    main = (file == mainfile);
     PyObject *function = PyObject_CallMethod(ast, "Function", "siissOOs", file.c_str(), line, main, "C++", "function", V2L(pre),
                          type, name.c_str());
     PyObject_CallMethod(scopes.back(), "append", "O", function);
@@ -390,6 +411,7 @@ PyObject *Synopsis::addFunction(size_t line, bool main, const vector<string> &pr
 PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name, const string& realname, const vector<PyObject*>& params)
 {
     Trace trace("Synopsis::addOperation");
+    main = (file == mainfile);
     PyObject *pyname = V2L(scopedName(name));
     PyObject *pyrname = V2L(scopedName(realname));
     PyObject *pyparams = V2L(params);

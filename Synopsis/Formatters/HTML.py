@@ -992,7 +992,7 @@ class Paginator:
 	    if not entry: print "no entry for",name
 	    else:
 		# Print link to declaration's page
-		self.write(href(entry.link,Util.ccolonName(name),target='main'))
+		self.write(div('href',href(entry.link,Util.ccolonName(name),target='main')))
 		# Print comment
 		self.write(self.summarizer.getSummary(node.decls[name]))
 	    

@@ -3929,6 +3929,8 @@ bool Parser::rStatement(Ptree*& st)
     switch(k = lex->LookAhead(0)){
     case '{' :
 	return rCompoundStatement(st);
+    case USING :
+	return rUsing(st);
     case TYPEDEF :
 	return rTypedef(st);
     case IF :

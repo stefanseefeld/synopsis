@@ -100,6 +100,7 @@ private:
     PyObject* resolveDeclared(PyObject*);
     void addDeclaration(PyObject *);
     string file;
+    string mainfile;
     PyObject *ast;
     PyObject *type;
     PyObject *declarations;
