@@ -1,4 +1,3 @@
-# $Id: TreeFormatter.py,v 1.5 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld

@@ -1,4 +1,3 @@
-# $Id: FileDetails.py,v 1.9 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -68,11 +67,11 @@ class FileDetails(View):
 
       self.start_file()
       self.write(self.processor.navigation_bar(self.filename()))
-      self.write(entity('h1', string.join(name, os.sep))+'<br>')
+      self.write(entity('h1', string.join(name, os.sep))+'<br/>')
       if self.__link_source:
          link = rel(self.filename(),
                     self.processor.file_layout.file_source(filename))
-         self.write(href(link, '[File Source]', target="main")+'<br>')
+         self.write(href(link, '[File Source]', target="main")+'<br/>')
 
       # Print list of includes
       try:
@@ -82,14 +81,14 @@ class FileDetails(View):
          includes = filter(lambda x: x.target().is_main(), includes)
          self.write('<h2>Includes from this file:</h2>')
          if not len(includes):
-            self.write('No includes.<br>')
+            self.write('No includes.<br/>')
          for include in includes:
             target_filename = include.target().filename()
             if include.is_next(): idesc = 'include_next '
             else: idesc = 'include '
             if include.is_macro(): idesc = idesc + 'from macro '
             link = rel(self.filename(), self.processor.file_layout.file_details(target_filename))
-            self.write(idesc + href(link, target_filename)+'<br>')
+            self.write(idesc + href(link, target_filename)+'<br/>')
       except:
          pass
 
@@ -107,23 +106,23 @@ class FileDetails(View):
          # declaration, thereby forming sections of scope and type
          decl_scope = name[:-1]
          if decl_scope != curr_scope or decl_type != curr_type:
-            curr_scope = decl_scope
-            curr_type = decl_type
             if curr_scope is not None:
                self.write('\n</div>')
+            curr_scope = decl_scope
+            curr_type = decl_type
             if len(curr_type) and curr_type[-1] == 's': plural = 'es'
             else: plural = 's'
             if len(curr_scope):
                self.write('<h3>%s%s in %s</h3>\n<div>'%(
                   curr_type.capitalize(), plural,
-                  anglebrackets(Util.ccolonName(curr_scope))))
+                  escape(Util.ccolonName(curr_scope))))
             else:
                self.write('<h3>%s%s</h3>\n<div>'%(curr_type.capitalize(),plural))
             comma = 0
             
          # Format this declaration
          entry = self.processor.toc[name]
-         label = anglebrackets(Util.ccolonName(name, curr_scope))
+         label = escape(Util.ccolonName(name, curr_scope))
          label = replace_spaces(label)
          if entry:
             link = rel(self.filename(), entry.link)

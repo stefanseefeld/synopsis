@@ -1,4 +1,3 @@
-# $Id: RawFile.py,v 1.13 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -100,7 +99,7 @@ class RawFile(View):
          elif len(lines) > 10: wid = 2
          spec = '%%0%dd | %%s'%wid
          for i in range(1, len(lines)):
-            lines[i] = spec%(i, anglebrackets(lines[i]))
+            lines[i] = spec%(i, escape(lines[i]))
          self.write('<pre>')
          self.write(string.join(lines, ''))
          self.write('</pre>')

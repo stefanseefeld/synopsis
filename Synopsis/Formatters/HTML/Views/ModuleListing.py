@@ -1,4 +1,3 @@
-# $Id: ModuleListing.py,v 1.18 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -83,7 +82,7 @@ class ModuleListing(View):
       children.sort(lambda a,b,g=self._get_children:
                     cmp(len(g(b)),len(g(a))))
       # Print link to this module
-      name = Util.ccolonName(my_scope, rel_scope) or "Global&nbsp;Namespace"
+      name = Util.ccolonName(my_scope, rel_scope) or "Global&#160;Namespace"
       link = self._link_href(ns)
       text = href(link, name, target=self._link_target)
       if not len(children):

@@ -1,4 +1,3 @@
-# $Id: TreeFormatterJS.py,v 1.8 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -15,7 +14,7 @@ from TreeFormatter import TreeFormatter
 import os
 
 #The javascript that goes up the top
-top_js = """<script language="JavaScript1.2"><!--
+top_js = """<script type="text/javascript" language="JavaScript1.2"><!--
 var isNav4 = false, isIE4 = false;
 if (parseInt(navigator.appVersion.charAt(0)) == 4) {
     isNav4 = (navigator.appName == "Netscape") ? true : false;
@@ -144,7 +143,7 @@ class TreeFormatterJS(TreeFormatter):
 
       # todo: resolve directory path
       id = id and 'id="%s" '%id or ''
-      return '<img %sborder=0 src="%s" alt="%s">'%(id, filename, alt_text)
+      return '<img %sborder="0" src="%s" alt="%s" />'%(id, filename, alt_text)
 
    def write_leaf(self, item_text):
       """Write a leaf node to the output at the current tree level."""
@@ -180,7 +179,7 @@ class TreeFormatterJS(TreeFormatter):
    def end_tree(self):
       """Writes the end of the tree."""
 
-      js_end = """<script language="JavaScript1.2"><!--
+      js_end = """<script type="text/javascript" language="JavaScript1.2"><!--
       tree_max_node = %d; // --></script>"""
 
       self.write(js_end%self.__id)

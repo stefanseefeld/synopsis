@@ -1,4 +1,3 @@
-# $Id: InheritanceGraph.py,v 1.30 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -138,7 +137,7 @@ class InheritanceGraph(View):
             type = types.get(scoped_name, None)
             if isinstance(type, Type.Declared):
                type_str = type.declaration().type() + ' '
-            self.write('Graphs in '+type_str+name+':<br>')
+            self.write('Graphs in '+type_str+name+':<br/>')
          for graph in graphs:
             try:
                if self.processor.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))

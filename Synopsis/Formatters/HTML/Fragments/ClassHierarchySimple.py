@@ -1,4 +1,3 @@
-# $Id: ClassHierarchySimple.py,v 1.1 2003/12/05 22:31:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld

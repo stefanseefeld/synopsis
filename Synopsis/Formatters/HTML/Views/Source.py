@@ -59,7 +59,7 @@ class Source(View):
       for file in self.processor.ast.files().values():
          if file.is_main():
             filename = file.filename()
-            filename = os.path.join(self.processor.output, filename)
+            #filename = os.path.join(self.processor.output, filename)
             filename = self.processor.file_layout.file_source(filename)
             self.processor.register_filename(filename, self, file)
 	     
@@ -68,9 +68,7 @@ class Source(View):
 
       # Start view
       filename = file.filename()
-      filename = os.path.join(self.processor.output, filename)
       self.__filename = self.processor.file_layout.file_source(filename)
-
       self.rel_url = rel(self.filename(), '')
 
       source = file.filename()
@@ -88,7 +86,7 @@ class Source(View):
          except IOError, e:
             self.write("An error occurred:"+ str(e))
       else:
-         self.write('<br><div class="file-all">\n')
+         self.write('<br/><div class="file-all">\n')
 
          # Call link module
          f_out = os.path.join(self.processor.output, self.__filename) + '-temp'

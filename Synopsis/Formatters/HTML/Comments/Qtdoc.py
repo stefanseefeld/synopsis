@@ -1,4 +1,3 @@
-# $Id: Qtdoc.py,v 1.1 2003/12/04 21:04:28 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld

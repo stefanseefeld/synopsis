@@ -1,4 +1,3 @@
-# $Id: Detail.py,v 1.3 2003/12/05 22:30:29 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -30,7 +29,7 @@ class Detail(Part):
    def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
 
-      self.write(text + '\n<hr>\n')
+      self.write(text + '\n<hr/>\n')
 
    def process(self, decl):
       "Print out the details for the children of the given decl"

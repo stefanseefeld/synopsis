@@ -1,4 +1,3 @@
-# $Id: XRef.py,v 1.20 2003/12/09 21:03:44 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -41,7 +40,7 @@ class XRef(View):
       for name in xref.get_all_names():
          view = xref.get_page_for(name)
          file = self.processor.file_layout.special('xref%d'%view)
-         file = file + '#' + Util.quote(string.join(name,'::'))
+         file = file + '#' + Util.quote('::'.join(name))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
       return self.__toc
 
@@ -64,12 +63,12 @@ class XRef(View):
       if not page_info: return
       for i in range(len(page_info)):
          self.__filename = self.processor.file_layout.xref(i)
-         self.__title = 'Cross Reference view #%d'%i
+         self.__title = 'Cross Reference page #%d'%i
 
          self.start_file()
          self.write(self.processor.navigation_bar(self.filename()))
          self.write(entity('h1', self.__title))
-         self.write('<hr>')
+         self.write('<hr/>')
          for name in page_info[i]:
             self.process_name(name)
          self.end_file()
@@ -87,8 +86,7 @@ class XRef(View):
       """Outputs the info for one link"""
 
       # Make a link to the highlighted source
-      realfile = os.path.join(self.processor.output, file)
-      file_link = self.processor.file_layout.file_source(realfile)
+      file_link = self.processor.file_layout.file_source(file)
       file_link = rel(self.filename(), file_link) + "#%d"%line
       # Try and make a descriptive
       desc = ''
@@ -96,10 +94,10 @@ class XRef(View):
       if isinstance(type, Type.Declared):
          desc = ' ' + type.declaration().type()
       # Try and find a link to the scope
-      scope_text = string.join(scope, '::')
+      scope_text = '::'.join(scope)
       entry = self.processor.toc[scope]
       if entry:
-         scope_text = href(rel(self.filename(), entry.link), scope_text)
+         scope_text = href(rel(self.filename(), entry.link), escape(scope_text))
       # Output list element
       self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
          file_link, file, line, desc, scope_text))
@@ -123,15 +121,15 @@ class XRef(View):
       target_data = self.processor.xref.get_info(name)
       if not target_data: return
 
-      jname = string.join(name, '::')
-      self.write(entity('a', '', name=Util.quote(jname)))
+      jname = '::'.join(name)
+      self.write(entity('a', '', name=Util.quote(escape(jname))))
       desc = ''
       decl = None
       type = self.processor.ast.types().get(name)
       if isinstance(type, Type.Declared):
          decl = type.declaration()
          desc = self.describe_decl(decl)
-      self.write(entity('h2', desc + jname) + '<ul>\n')
+      self.write(entity('h2', desc + escape(jname)) + '<ul>\n')
 	
       if self.link_to_scope:
          type = self.processor.ast.types().get(name, None)
@@ -157,17 +155,16 @@ class XRef(View):
          self.write('<li>Declarations:<ul>\n')
          for child in decl.declarations():
             file, line = child.file().filename(), child.line()
-            realfile = os.path.join(self.processor.output, file)
-            file_link = self.processor.file_layout.file_source(realfile)
-            file_link = '%s#%d'%(file_link,line)
+            file_link = self.processor.file_layout.file_source(file)
+            file_link = rel(self.filename(),file_link) + '#%d'%line
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
             cname = child.name()
             entry = self.processor.toc[cname]
             type = self.describe_decl(child)
             if entry:
-               link = href(entry.link, Util.ccolonName(cname, name))
+               link = href(rel(self.filename(), entry.link), escape(Util.ccolonName(cname, name)))
                self.write(entity('li', file_href + type + link))
             else:
                self.write(entity('li', file_href + type + Util.ccolonName(cname, name)))
          self.write('</ul></li>\n')
-      self.write('</ul><hr>\n')
+      self.write('</ul><hr/>\n')

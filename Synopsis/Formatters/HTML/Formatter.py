@@ -1,4 +1,3 @@
-# $Id: Formatter.py,v 1.18 2003/12/09 06:34:14 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -289,7 +288,7 @@ class Formatter(Processor):
       current = lambda x, span=span: span('root-current', x.label)
       # generate the header
       roots = map(lambda x, o=origin, other=other, current=current: x.file==o and current(x) or other(x), roots)
-      return string.join(roots, ' | \n')+'\n<hr>\n'
+      return string.join(roots, ' | \n')+'\n<hr/>\n'
 
    def register_filename(self, filename, view, scope):
       """Registers a file for later production. The first view to register

@@ -1,4 +1,3 @@
-# $Id: ModuleIndexer.py,v 1.19 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -52,7 +51,7 @@ class ModuleIndexer(View):
       links = []
       for depth in range(0, len(name)):
          url = self.processor.file_layout.module_index(name[:depth+1])
-         label = anglebrackets(name[depth])
+         label = escape(name[depth])
          links.append(href(rel(self.__filename, url), label))
       return entity('b', string.join(links, '\n::') + ' Index')
 
@@ -90,7 +89,7 @@ class ModuleIndexer(View):
       for section in sorter.sections():
          if section[-1] == 's': heading = section+'es'
          else: heading = section+'s'
-         heading = '<br>'+entity('i', heading)+'<br>'
+         heading = '<br/>'+entity('i', heading)+'<br/>'
          # Get a list of children of this type
          for child in sorter.children(section):
             # Print out summary for the child
@@ -100,7 +99,7 @@ class ModuleIndexer(View):
                self.write(heading)
                heading = None
             label = Util.ccolonName(child.name(), ns.name())
-            label = anglebrackets(label)
+            label = escape(label)
             label = replace_spaces(label)
             if isinstance(child, AST.Module):
                index_url = rel(self.__filename,
@@ -113,7 +112,7 @@ class ModuleIndexer(View):
                   self.write(href(url, label, target='main'))
                else:
                   self.write(label)
-            self.write('<br>')
+            self.write('<br/>')
       self.end_file()
 
       # Queue child namespaces
