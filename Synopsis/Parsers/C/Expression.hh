@@ -205,6 +205,8 @@ class Constant : public Expression
     virtual void print(std::ostream& out) const = 0;
 
     ConstantType    ctype;   
+    
+    std::string original_rep;
 };
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class IntConstant : public Constant
