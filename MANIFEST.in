@@ -1,4 +1,4 @@
-# $Id: MANIFEST.in,v 1.1 2003/09/18 14:50:55 stefan Exp $
+# $Id: MANIFEST.in,v 1.2 2003/09/18 20:28:58 stefan Exp $
 #
 # MANIFEST template for source distribution generation
 #
@@ -13,12 +13,14 @@ recursive-include   Synopsis/Parser/C *
 recursive-include   Synopsis/Parser/C++ *
 
 # data files
-include             share *
+include             share/*
 
 # documentation
 recursive-include   docs *
 recursive-include   demo *
 
 # scripts
-include             bin *
+include             bin/*
 
+# suppress CVS bookkeeping stuff
+global-exclude */CVS/*
