@@ -238,6 +238,28 @@ TransUnit::insert(Statement *stemnt, Statement *after /* =NULL */)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool
+TransUnit::insertBefore(Statement *stemnt, Statement *before)
+{
+	if (!stemnt)
+		return false;
+
+	Statement *sp;
+
+	for(Statement **spp = &head; (sp = *spp) != 0; spp = &sp->next)
+	{
+		if (sp == before)
+		{
+			stemnt->next = before;
+			*spp = stemnt;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::ostream&
 operator<<(std::ostream& out, const TransUnit& tu)
 {
