@@ -167,8 +167,6 @@
       demos for each parser, and some other feature demos, such as the Boost
       demo which documents Boost.Python and the Perceps demo which shows how
       to extend Synopsis to deal with &#34;strange&#34; commenting rules.</para>
-
-      <para>Makefiles, stages, flags.</para>
     </section>
 
     <section>
@@ -603,13 +601,232 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
     <section>
       <title>The hard way: create from scratch</title>
 
-      <para>Allows flexibility. Mention deriving from Config.Base</para>
+      <para>An alternative to copying from a demo is to create your Makefile
+      and config.py file from scratch. You have the freedom to generate the
+      Makefile and/or config.py file from a configure script if you want - for
+      an example of this see the Fresco project.</para>
+
+      <para>TODO: Write tutorial. See the earlier tutorial in the mean time.</para>
     </section>
 
     <section>
-      <title>The powerful way: new config format</title>
+      <title>The powerful way: new project file format</title>
 
-      <para>Replace make. used by GUI. hard to read/write.</para>
+      <para>The Project file provides a more powerful, more integrated method
+      of driving Synopsis than a Makefile. However, it is harder to work with.
+      The intended usage is from a GUI, however a GUI is still forthcoming
+      (see the next section).</para>
+
+      <para>The project file is still a Python script, but does away with the
+      methods and nested classes, instead being one class called Project which
+      has a number of attributes. Some of these attributes are quite complex,
+      but are stored in a readable &#39;repr&#39; type format. Configuration
+      for modules is stored as an object instance rather than as a class, and
+      is represented in the file as an object instantiation, like so:</para>
+
+      <example>
+        <title>How object instantiation works</title>
+
+        <programlisting>
+# The &#39;struct&#39; class is included at the top of the config file. It
+# basically stores attributes given to the constructor
+class struct:
+  def __init__(self, **args):
+    for key, value in args.items:
+      setattr(self, key, value)
+
+class Project:
+  some_object = struct(
+    name = &#34;hi&#34;, 
+    some_list = [1, 2, 3],
+    nested_object = struct(
+      type = &#34;foo&#34;,
+      fred = &#34;baz&#34;
+    )
+  )
+      </programlisting>
+      </example>
+
+      <para>The new Project structure defines not only configuration for the
+      individual modules, but the relationships between different stages of
+      the document generation process. The process is split into
+      &#34;Actions&#34;, each of which generally has inputs and outputs, with
+      some exceptions:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>SourceAction</term>
+
+          <listitem>
+            <para>Selects the source files to use in the project. It has no
+            input, and its output is just the names of the individual files.
+            The SourceAction has a number of rules which it follows in turn to
+            decide which files to use. The rules are set by the configuration,
+            and can select simple file names, use recursive searches and glob
+            expressions, or exclude previously selected files. The exclude is
+            useful to not include temporary, backup, or cvs-related files in
+            the documentation. See the next section for details on the
+            available rules.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>ParserAction</term>
+
+          <listitem>
+            <para>Takes a list of files from one or more SourceActions at
+            input, and applies a Parser to each one in turn. The output is a
+            number of AST&#39;s, one for each input file. The ParserAction
+            contains a config object with options for the parser.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>CacherAction</term>
+
+          <listitem>
+            <para>Can take as input any number of ASTs (from eg: ParserAction,
+            LinkerAction). Outputs the same ASTs, but stores the ASTs on disk
+            so that they don&#39;t need to be regenerated each time if the
+            timestamps have not changed. There is a limitation in that the
+            timestamps are only checked on the input source files themselves,
+            not on their dependencies. This will be fixed in a later version.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>LinkerAction</term>
+
+          <listitem>
+            <para>Can take one or more ASTs as input, and outputs a single
+            AST. The name comes from the process of linking a number of ASTs,
+            typically from different source files, into a single cohesive AST.
+            The Linker is more powerful than that however, allowing complex
+            manipulations of the AST. These manipulations can be based on
+            configuration only, or rely on comments extracted from the source
+            files. The LinkerAction contains a config object to contain all
+            the linker options available.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>FormatAction</term>
+
+          <listitem>
+            <para>The FormatAction is the tail end of the chain, and takes a
+            single AST which it converts into some output format. A number of
+            output formats are supported, with varying degrees of completeness
+            and usefulness. The HTML formatter is the most developed, having
+            an immense range of configuration options.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para>The configuration options for the config objects in the Parser,
+      Linker and Formatter objects are described later in this manual, and are
+      the same as the old config format just with a different syntax.</para>
+
+      <para>As mentioned, the main element of the config file is the
+      &#34;class Project&#34;. It has a number of attributes, including a
+      string name, verbose flag, a list of actions, a list of channels, and a
+      default formatter to use if none is specified. The channels are the
+      connections between actions, and are simply tuple pairs of names of
+      actions.</para>
+
+      <section id="sourceaction-rules">
+        <title>SourceAction Rules</title>
+
+        <para>The rules used to selection files in the SourceAction are stored
+        in a list, where each rule is a tuple. The first element of the tuple
+        is a string denoting the type of rule, and the rest depends on the
+        type. Available types of SourceAction rules are:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Simple</term>
+
+            <listitem>
+              <para>A &#39;simple&#39; rule that contains a list of filenames
+              as the second tuple element. The filenames may be absolute or
+              relative. For backwards compatibility, a single filename may be
+              used instead of a list.</para>
+
+              <programlisting>
+(&#39;Simple&#39;, [&#39;fred.py&#39;, &#39;baz.py&#39;])
+          </programlisting>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Glob</term>
+
+            <listitem>
+              <para>Allows easy selection of a number of files in a project or
+              subdirectory, without having to update the config when extra
+              files are added or removed. There are three extra tuple
+              elements: a list of directories, a glob string, and an integer
+              recursion flag. The directory names are just strings, and may be
+              absolute or relative. The glob string is a glob expression as
+              used by unix shells: the special characters are &#39;*&#39;
+              which matches to 0 or more characters, and ? which matches any
+              one character. The recursion flag can be 0 or 1. If 1, then
+              subdirectories of the listed directories are also searched.</para>
+
+              <programlisting>
+(&#39;Glob&#39;, [&#39;src/&#39;, &#39;tools/&#39;], &#39;*.cc&#39;, 1)
+          </programlisting>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Exclude</term>
+
+            <listitem>
+              <para>Allows files matched by previous rules to be excluded from
+              the list. Remember that the rules are processed in order, so
+              later rules can add more files again. There is only one extra
+              field which is a glob expression to match the whole pathname. In
+              order to make matching directories easier, the filenames are
+              always considered to have a &#39;/&#39; prepended before
+              comparing to the glob expression. This means that if a CVS
+              directory is in the current directory and its files&#39;
+              relative pathnames resemble &#39;CVS/Root&#39;, you can still
+              match it with &#39;/CVS/&#39;.</para>
+
+              <programlisting>
+(&#39;Exclude&#39;, &#39;/CVS/&#39;)
+          </programlisting>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Dir</term>
+
+            <listitem>
+              <para>Backwards compatibility for an old version of
+              non-recursive Glob: Has a single directory and a glob
+              expression.</para>
+
+              <programlisting>
+(&#39;Dir&#39;, &#39;src/&#39;, &#39;*.cc&#39;)
+          </programlisting>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Base</term>
+
+            <listitem>
+              <para>Backwards compatibility for an old version of recursive
+              Glob: Has a single directory and a glob expression.</para>
+
+              <programlisting>
+(&#39;Base&#39;, &#39;src/&#39;, &#39;*.cc&#39;)
+          </programlisting>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </section>
     </section>
 
     <section>
@@ -618,7 +835,9 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
       <para>In some future release there will be a GUI to allow easy
       configuration of Synopsis.</para>
 
-      <para></para>
+      <para>You can preview the GUI by running bin/synopsis-qt in the source
+      distribution, but be warned: it is pre-alpha, and not all features are
+      supported yet, meaning you still have to edit the project file by hand.</para>
     </section>
   </chapter>
 
@@ -694,11 +913,13 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
         <para>Both of these features need to be coordinated with both the C++
         parser and the HTML formatter.</para>
 
-        <para>For SXR you need: C++ Parser: syntax_prefix, blah. HTML
-        Formatter: The pages option must include &#39;FileSource&#39;.</para>
+        <para>For SXR you need: C++ Parser: syntax_prefix. HTML Formatter: The
+        pages option must include &#39;FileSource&#39;.</para>
 
-        <para>For XREF you need: C++ Parser: xref_prefix, blah. HTML
-        Formatter: The pages option must include &#39;XRefPages&#39;.</para>
+        <para>For XREF you need: C++ Parser: xref_prefix. Linker: The
+        operations list must include &#39;XRefCompiler&#39;, and XRefCompiler
+        must be configured. HTML Formatter: The pages option must include
+        &#39;XRefPages&#39;, and XRefPages must be configured.</para>
 
         <para>Note that in the current release there are some limitations with
         respect to expressions that are understood, and template
@@ -804,7 +1025,7 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
       <section>
         <title>Options</title>
 
-        <para></para>
+        <para>The following options are available.</para>
 
         <variablelist>
           <varlistentry>
@@ -1169,7 +1390,7 @@ enum Foo {
       <para>The format of the output xref file, should you want to use it for
       a CGI script or some such, is as follows:</para>
 
-      <para> file = (data, index) data = dict&#60;scoped targetname,
+      <para>file = (data, index) data = dict&#60;scoped targetname,
       target_data&#62; index = dict&#60;name, list&#60;scoped
       targetname&#62;&#62; target_data = (definitions :
       list&#60;target_info&#62;, func calls : list&#60;target_info&#62;,
@@ -2078,21 +2299,70 @@ class HTML (Base.Formatter.HTML):
   <chapter>
     <title>Other Formatters</title>
 
-    <para>HTML</para>
+    <para>Synopsis has other formatters than the HTML formatter, although they
+    are far less developed.</para>
 
-    <para>HTML_Simple</para>
+    <section>
+      <title>HTML_Simple</title>
 
-    <para>DocBook</para>
+      <para>This formatter simply writes one output file containing the whole
+      AST, marked up in HTML.</para>
+    </section>
 
-    <para>PDF</para>
+    <section>
+      <title>DocBook</title>
 
-    <para>Dia</para>
+      <para>This formatter attempts to format the output as DocBook format.
+      Unfortunately the elements available in DocBook do not cover all the C++
+      types.</para>
+    </section>
 
-    <para>Dot</para>
+    <section>
+      <title>BoostBook</title>
 
-    <para>ASCII</para>
+      <para>This formatter attempts to format the output as BoostBook format.
+      BoostBook is a derivative of DocBook with full support of C++
+      constructs, developed by the Boost project for documenting their
+      libraries.</para>
+    </section>
 
-    <para>DUMP (for debugging your config)</para>
+    <section>
+      <title>PDF</title>
+
+      <para>This formatter attempts to output PDF.</para>
+    </section>
+
+    <section>
+      <title>Dot</title>
+
+      <para>This formatter uses the &#39;dot&#39; tool, a part of GraphViz, to
+      generate graphs of the AST. It is mostly used by the HTML formatter for
+      generating inheritance graphs, but can also be used as a stand-alone
+      formatter.</para>
+    </section>
+
+    <section>
+      <title>ASCII</title>
+
+      <para>This formatter attempts to output the AST in a format resembling
+      C++.</para>
+    </section>
+
+    <section>
+      <title>DUMP</title>
+
+      <para>This formatter outputs the AST in a format useful for debugging
+      Synopsis or your config. It displayes the AST hierarchy using a generic
+      object dumper. It also shows the types dictionary and the listing of
+      sourcefiles.</para>
+    </section>
+
+    <section>
+      <title>Dia</title>
+
+      <para>This formatter attempts to output the AST as a Dia graph. The Dia
+      format is not public, however, and changes between versions.</para>
+    </section>
   </chapter>
 
   <chapter>
