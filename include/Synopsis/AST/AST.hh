@@ -1,4 +1,3 @@
-// $Id: AST.hh,v 1.3 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -24,6 +23,7 @@ public:
   AST(const Object &o) throw(TypeError) : Object(o) { assert_type();}
 
   Dict files() { return Dict(attr("files")());}
+  Object types() { return attr("types")();}
   List declarations() { return List(attr("declarations")());}
   void assert_type() throw(TypeError) { Object::assert_type("Synopsis.AST", "AST");}
 };
