@@ -44,7 +44,7 @@ class ExecutorCreator (ActionVisitor):
     """Creates Executor instances for Action objects"""
     def __init__(self, project, verbose=0):
 	self.__project = project
-	self.verbose = verbose
+	self.verbose = verbose or project.verbose()
 
     def project(self):
 	"""Returns the project for this creator"""
@@ -201,21 +201,21 @@ class LinkerExecutor (Executor):
 	return [ (myname, ts) ]
 
     def get_output(self, name):
-	if self.__executor.verbose: print self.__action.name()+": Linking "+name
 	# Get input AST(s), probably from a cacher, source or other linker
 	# Prepare the inputs
 	for input in self.__action.inputs():
 	    exec_obj = self.__inputs[input]
 	    names = self.__names[input]
-	    for name, timestamp in names:
-		exec_obj.prepare_output(name, 0)
+	    for iname, timestamp in names:
+		exec_obj.prepare_output(iname, 0)
 	# Merge the inputs into one AST
+	if self.__executor.verbose: print self.__action.name()+": Linking "+name
 	ast = AST.AST()
 	for input in self.__action.inputs():
 	    exec_obj = self.__inputs[input]
 	    names = self.__names[input]
-	    for name, timestamp in names:
-		input_ast = exec_obj.get_output(name)
+	    for iname, timestamp in names:
+		input_ast = exec_obj.get_output(iname)
 		ast.merge(input_ast)
 	# Pass merged AST to linker
 	module = self.get_linker()
@@ -346,11 +346,11 @@ class FormatExecutor (Executor):
 	return names
 
     def get_output(self, name):
-	if self.__executor.verbose: print self.__action.name()+": Formatting "+name
 	# Get input AST, probably from a cache or linker
 	ast = self.__input_exec.get_output(name)
 	module = self.__action.config().name
 	# Pass AST to formatter
+	if self.__executor.verbose: print self.__action.name()+": Formatting "+name
 	try:
 	    formatter = Util._import("Synopsis.Formatter." + module)
 	except ImportError:
