@@ -7,13 +7,15 @@ class struct:
 class Project:
   name = 'Boost Python'
   data_dir = './'
+  verbose = 1
   actions = [
     ['FormatAction', 327, 237, 'HTML Formatter', struct(
       stylesheet='style.css',
       stylesheet_file='../html.css',
       pages=['ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'NameIndex', 'FramesIndex'],
       InheritanceGraph=struct(
-        min_size=5
+        min_size=3,
+	min_group_size=10
       ),
       ScopePages=struct(
         parts=['Heading', 'Summary', 'Inheritance', 'Detail'],
@@ -35,6 +37,7 @@ class Project:
         link_to_pages=1
       ),
       name='HTML',
+      verbose=1,
       output_dir='BoostPython/',
       ModuleListing=struct()
     )],
@@ -42,29 +45,30 @@ class Project:
       ['Base', 'boost/boost/python/', '*.hpp']
     ]],
     ['ParserAction', 151, 57, 'C++ Parser', struct(
-      defines=['PYTHON_INCLUDE=<python2.2/Python.h>', 'BOOST_PYTHON_V2', 'BOOST_PYTHON_SYNOPSIS'],
+      defines=['PYTHON_INCLUDE=<python2.2/Python.h>', 'BOOST_PYTHON_SYNOPSIS'],
       name='C++',
       include_path=['boost', '/usr/include/python2.2'],
       main_file=1,
-      verbose=1,
+      verbose=0,
       emulate_compiler='g++-3.2',
       syntax_prefix='BoostLinks/'
     )],
     ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
     ['SourceAction', 50, 126, 'Test Source', [
-      ['Simple', 'boost/boost/python/dict.hpp', None]
+      ['Simple', 'boost/boost/python/object_core.hpp', None]
     ]],
-    ['LinkerAction', 326, 58, 'New linker action', struct(
+    ['LinkerAction', 326, 58, 'Combined AST', struct(
       comment_processors=['dummy', 'ss'],
       name='Linker'
     )],
-    ['CacherAction', 327, 145, 'Combined Cache', 'BoostFiles', '']
+    ['CacherAction', 327, 145, 'Combined AST Cache', 'BoostFiles', '']
   ]
   channels = [
     ('Boost Sources', 'C++ Parser'),
+    #('Test Source', 'C++ Parser'),
     ('C++ Parser', 'File Cacher'),
-    ('File Cacher', 'New linker action'),
-    ('New linker action', 'Combined Cache'),
-    ('Combined Cache', 'HTML Formatter')
+    ('File Cacher', 'Combined AST'),
+    ('Combined AST', 'Combined AST Cache'),
+    ('Combined AST Cache', 'HTML Formatter')
   ]
   default_formatter = 'HTML Formatter'
