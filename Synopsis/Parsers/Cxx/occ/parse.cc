@@ -3920,28 +3920,42 @@ bool Parser::rCompoundStatement(Ptree*& body)
 bool Parser::rStatement(Ptree*& st)
 {
     Token tk1, tk2, tk3;
-    Ptree *st2, *exp;
+    Ptree *st2, *exp, *comments;
     int k;
 
+    // Get the comments - if we dont make it past the switch then it is a
+    // parse error anyway!
+    comments = lex->GetComments();
+
+    // Whichever case we get, it must succeed
     switch(k = lex->LookAhead(0)){
     case '{' :
-	return rCompoundStatement(st);
+	if (!rCompoundStatement(st)) return FALSE;
+	break;
     case USING :
-	return rUsing(st);
+	if (!rUsing(st)) return FALSE;
+	break;
     case TYPEDEF :
-	return rTypedef(st);
+	if (!rTypedef(st)) return FALSE;
+	break;
     case IF :
-	return rIfStatement(st);
+	if (!rIfStatement(st)) return FALSE;
+	break;
     case SWITCH :
-	return rSwitchStatement(st);
+	if (!rSwitchStatement(st)) return FALSE;
+	break;
     case WHILE :
-	return rWhileStatement(st);
+	if (!rWhileStatement(st)) return FALSE;
+	break;
     case DO :
-	return rDoStatement(st);
+	if (!rDoStatement(st)) return FALSE;
+	break;
     case FOR :
-	return rForStatement(st);
+	if (!rForStatement(st)) return FALSE;
+	break;
     case TRY :
-	return rTryStatement(st);
+	if (!rTryStatement(st)) return FALSE;
+	break;
     case BREAK :
     case CONTINUE :
 	lex->GetToken(tk1);
@@ -3954,16 +3968,14 @@ bool Parser::rStatement(Ptree*& st)
 	else
 	    st = new PtreeContinueStatement(new LeafReserved(tk1),
 					    Ptree::List(new Leaf(tk2)));
-	return TRUE;
+	break;
     case RETURN :
 	lex->GetToken(tk1);
 	if(lex->LookAhead(0) == ';'){
 	    lex->GetToken(tk2);
 	    st = new PtreeReturnStatement(new LeafReserved(tk1),
 					  Ptree::List(new Leaf(tk2)));
-	    return TRUE;
-	}
-	else{
+	} else {
 	    if(!rCommaExpression(exp))
 		return FALSE;
 
@@ -3972,8 +3984,8 @@ bool Parser::rStatement(Ptree*& st)
 
 	    st = new PtreeReturnStatement(new LeafReserved(tk1),
 					  Ptree::List(exp, new Leaf(tk2)));
-	    return TRUE;
 	}
+	break;
     case GOTO :
 	lex->GetToken(tk1);
 	if(lex->GetToken(tk2) != Identifier)
@@ -3984,7 +3996,7 @@ bool Parser::rStatement(Ptree*& st)
 
 	st = new PtreeGotoStatement(new LeafReserved(tk1),
 				    Ptree::List(new Leaf(tk2), new Leaf(tk3)));
-	return TRUE;
+	break;
     case CASE :
 	lex->GetToken(tk1);
 	if(!rExpression(exp))
@@ -3998,7 +4010,7 @@ bool Parser::rStatement(Ptree*& st)
 
 	st = new PtreeCaseStatement(new LeafReserved(tk1),
 				    Ptree::List(exp, new Leaf(tk2), st2));
-	return TRUE;
+	break;
     case DEFAULT :
 	lex->GetToken(tk1);
 	if(lex->GetToken(tk2) != ':')
@@ -4009,7 +4021,7 @@ bool Parser::rStatement(Ptree*& st)
 
 	st = new PtreeDefaultStatement(new LeafReserved(tk1),
 				       Ptree::List(new Leaf(tk2), st2));
-	return TRUE;
+	break;
     case Identifier :
 	if(lex->LookAhead(1) == ':'){	// label statement
 	    lex->GetToken(tk1);
@@ -4023,8 +4035,12 @@ bool Parser::rStatement(Ptree*& st)
 	}
 	// don't break here!
     default :
-	return rExprStatement(st);
+	if (!rExprStatement(st)) return FALSE;
     }
+
+    // No parse error, attach comment to whatever was returned
+    Walker::SetLeafComments(st, comments);
+    return TRUE;
 }
 
 /*

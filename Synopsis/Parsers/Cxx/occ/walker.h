@@ -177,6 +177,8 @@ public:
     static Ptree* GetClassTemplateSpec(Ptree*);
     static Ptree* StripCvFromIntegralType(Ptree*);
     static void SetDeclaratorComments(Ptree*, Ptree*);
+    static Ptree* FindLeftLeaf(Ptree* node, Ptree*& parent);
+    static void SetLeafComments(Ptree*, Ptree*);
     static Ptree* NthDeclarator(Ptree*, int&);
     static Ptree* FindDeclarator(Ptree*, char*, int, char*, int&,
 				 Environment*);
