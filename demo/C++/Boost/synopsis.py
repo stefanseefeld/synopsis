@@ -22,7 +22,6 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python2.2/Python.h>',
                     main_file_only = True,
                     syntax_prefix = 'links/',
                     xref_prefix = 'xref/',
-                    extract_tails = True,
                     emulate_compiler = 'g++',
                     # 'extra_files' will go away shortly
                     extra_files = extra_input)
@@ -30,18 +29,15 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python2.2/Python.h>',
 xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
 
 
-linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
-                NameMapper(),       # apply name mapping if any (prefix adding, etc.)
-                SSComments(),       # filter out any non-'//' comments
+linker = Linker(SSComments(),       # filter out any non-'//' comments
                 Grouper2(),         # group declarations according to '@group' tags
-                CommentStripper(),  # strip any 'suspicious' comments
                 Previous(),         # attach '//<' comments
+                CommentStripper(),  # strip any 'suspicious' comments
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 formatter = HTML.Formatter(stylesheet_file = '../../html.css')
 
-process(parse2 = parser,
-        parse = Composite(parser, linker),
+process(parse = Composite(parser, linker),
         xref = xref,
         link = linker,
         format = formatter)
