@@ -1,4 +1,4 @@
-// $Id: SourceFile.hh,v 1.3 2004/01/13 07:42:09 stefan Exp $
+// $Id: SourceFile.hh,v 1.4 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -10,10 +10,10 @@
 #define _Synopsis_AST_SourceFile_hh
 
 #include <Synopsis/Object.hh>
-#include <Synopsis/Tuple.hh>
-#include <Synopsis/Callable.hh>
 
 namespace Synopsis
+{
+namespace AST
 {
 
 class SourceFile : public Object
@@ -21,21 +21,21 @@ class SourceFile : public Object
 public:
   SourceFile() {}
   SourceFile(const Object &o) : Object(o) {}
-  std::string name() { return narrow<std::string>(Callable(attr("filename")).call());}
-  std::string long_name() { return narrow<std::string>(Callable(attr("full_filename")).call());}
-  bool is_main() { return narrow<bool>(Callable(attr("is_main")).call());}
-  void is_main(bool flag) { Callable c(attr("set_is_main")); c.call(Tuple(flag));}
-  List includes() { return List(Callable(attr("includes")).call());}
-  Dict macro_calls() { return Dict(Callable(attr("macro_calls")).call());}
+  std::string name() const { return narrow<std::string>(attr("filename")());}
+  std::string long_name() const { return narrow<std::string>(attr("full_filename")());}
+  bool is_main() const { return narrow<bool>(attr("is_main")());}
+  void is_main(bool flag) { attr("set_is_main")(Tuple(flag));}
+  List includes() { return attr("includes")();}
+  Dict macro_calls() { return attr("macro_calls")();}
 };
 
 class Include : public Object
 {
 public:
   Include(const Object &o) throw(TypeError) : Object(o) { assert_type();}
-  SourceFile target() const { return narrow<SourceFile>(Callable(attr("target")).call());}
-  bool is_macro() const { return narrow<bool>(Callable(attr("is_macro")).call());}
-  bool is_next() const { return narrow<bool>(Callable(attr("is_next")).call());}
+  SourceFile target() const { return narrow<SourceFile>(attr("target")());}
+  bool is_macro() const { return narrow<bool>(attr("is_macro")());}
+  bool is_next() const { return narrow<bool>(attr("is_next")());}
   void assert_type() throw(TypeError) { Object::assert_type("Synopsis.AST", "Include");}
 };
 
@@ -50,6 +50,7 @@ public:
   int diff() { return narrow<int>(attr("diff"));}
 };
 
+}
 }
 
 #endif
