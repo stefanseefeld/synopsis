@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
+# $Id: browse.py,v 1.3 2001/11/09 08:06:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.3  2001/11/09 08:06:59  chalky
+# More GUI fixes and stuff. Double click on Source Actions for a dialog.
+#
 # Revision 1.2  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -144,15 +147,26 @@ class Browser:
 	"""Show a given declaration (by item)"""
 	decl = self.listfiller.map[item]
 	self.decl = decl
-	self.setGraphEnabled(isinstance(decl, AST.Class))
-	# Here we use ASCIIFormatter to quickly get us *something* to display
-	# :)
-	os = cStringIO.StringIO()
-	os.write('<pre>')
-	formatter = ASCIIFormatter(os)
-	formatter.set_scope(decl.name())
-	decl.accept(formatter)
-	self.window.doco_display.setText(os.getvalue())
+	if self.window.graph_display.isVisible():
+	    if isinstance(decl, AST.Class):
+		#self.setGraphEnabled(isinstance(decl, AST.Class))
+		self.window.graph_display.set_class(self.decl.name())
+	    else:
+		self.window.graph_display.set_class(None)
+	if self.window.doco_display.isVisible():
+	    # Here we use ASCIIFormatter to quickly get us *something* to display
+	    # :)
+	    os = cStringIO.StringIO()
+	    os.write('<pre>')
+	    formatter = ASCIIFormatter(os)
+	    formatter.set_scope(decl.name())
+	    decl.accept(formatter)
+	    self.window.doco_display.setText(os.getvalue())
+	if self.window.source_display.isVisible():
+	    file, line = decl.file(), decl.line()
+	    print file
+	    text = open(file).read()
+	    self.window.source_display.setText(text)
 
     def selfishExpansion(self, item):
 	"""Selfishly makes item the only expanded node"""
