@@ -17,7 +17,8 @@ using Synopsis::Trace;
 using namespace PTree;
 using namespace SymbolLookup;
 
-Table::Table(Language /* ignore for now */)
+Table::Table(Language l)
+  : my_language(l)
 {
   // define the global scope
   my_scopes.push(new Scope());
@@ -26,6 +27,7 @@ Table::Table(Language /* ignore for now */)
 Table &Table::enter_scope()
 {
   Trace trace("Table::enter_scope");
+  if (my_language == NONE) return *this;
   my_scopes.push(new Scope());
   return *this;
 }
@@ -33,6 +35,7 @@ Table &Table::enter_scope()
 Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
 {
   Trace trace("Table::enter_namespace");
+  if (my_language == NONE) return *this;
   Namespace *ns = new Namespace(spec, my_scopes.top());
   my_scopes.top()->declare_scope(spec, ns);
   my_scopes.push(ns);
@@ -42,6 +45,7 @@ Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
 Table &Table::enter_class(const PTree::ClassSpec *spec)
 {
   Trace trace("Table::enter_class");
+  if (my_language == NONE) return *this;
   Class *cl = new Class(spec, my_scopes.top());
   my_scopes.top()->declare_scope(spec, cl);
   my_scopes.push(cl);
@@ -51,6 +55,7 @@ Table &Table::enter_class(const PTree::ClassSpec *spec)
 Table &Table::enter_function(const PTree::Declaration *decl)
 {
   Trace trace("Table::enter_function");
+  if (my_language == NONE) return *this;
   FunctionScope *func = new FunctionScope(decl, my_scopes.top());
   my_scopes.top()->declare_scope(decl, func);
   my_scopes.push(func);
@@ -60,6 +65,7 @@ Table &Table::enter_function(const PTree::Declaration *decl)
 Table &Table::enter_block(const PTree::List *block)
 {
   Trace trace("Table::enter_block");
+  if (my_language == NONE) return *this;
   LocalScope *scope = new LocalScope(block, my_scopes.top());
   my_scopes.top()->declare_scope(block, scope);
   my_scopes.push(scope);
@@ -69,6 +75,7 @@ Table &Table::enter_block(const PTree::List *block)
 void Table::leave_scope()
 {
   Trace trace("Table::leave_scope");
+  if (my_language == NONE) return;
   Scope *top = my_scopes.top();
   my_scopes.pop();
   top->unref();
@@ -82,11 +89,21 @@ Scope &Table::current_scope()
 void Table::declare(Declaration *d)
 {
   Trace trace("Table::declare(Declaration *)");
+  if (my_language == NONE) return;
   Node *decls = third(d);
   if(is_a(decls, Token::ntDeclarator))
   {
-    // function definition
+    // function definition,
+    // declare it only once (but allow overloading)
+
     PTree::Encoding name = decls->encoded_name();
+
+    // see whether it was previously declared
+    std::set<FunctionName const *> fs = my_scopes.top()->lookup_function(name);
+    // If name is qualified the function has to be declared already
+    // so we only need to find it to report an error if it was not.
+    
+
     PTree::Encoding type = decls->encoded_type();
 
     // if the name is qualified, it has to be
@@ -129,6 +146,7 @@ void Table::declare(Declaration *d)
 void Table::declare(Typedef *td)
 {
   Trace trace("Table::declare(Typedef *)");
+  if (my_language == NONE) return;
   Node *declarations = third(td);
   while(declarations)
   {
@@ -146,6 +164,7 @@ void Table::declare(Typedef *td)
 void Table::declare(EnumSpec *spec)
 {
   Trace trace("Table::declare(EnumSpec *)");
+  if (my_language == NONE) return;
   Node *tag = second(spec);
   const Encoding &name = spec->encoded_name();
   const Encoding &type = spec->encoded_type();
@@ -190,6 +209,7 @@ void Table::declare(EnumSpec *spec)
 void Table::declare(NamespaceSpec *spec)
 {
   Trace trace("Table::declare(NamespaceSpec *)");
+  if (my_language == NONE) return;
   const Node *name = second(spec);
   Encoding enc = Encoding::simple_name(static_cast<Atom const *>(name));
   // FIXME: do we need a 'type' here ?
@@ -199,6 +219,7 @@ void Table::declare(NamespaceSpec *spec)
 void Table::declare(ClassSpec *spec)
 {
   Trace trace("Table::declare(ClassSpec *)");
+  if (my_language == NONE) return;
   const Encoding &name = spec->encoded_name();
   my_scopes.top()->declare(name, new TypeName(spec->encoded_type(), spec));
 }
@@ -206,6 +227,7 @@ void Table::declare(ClassSpec *spec)
 void Table::declare(TemplateDecl *tdecl)
 {
   Trace trace("Table::declare(TemplateDecl *)");
+  if (my_language == NONE) return;
   PTree::Node *body = PTree::nth(tdecl, 4);
   PTree::ClassSpec *class_spec = Table::get_class_template_spec(body);
   if (class_spec)
@@ -223,6 +245,7 @@ void Table::declare(TemplateDecl *tdecl)
 
 std::set<Symbol const *> Table::lookup(PTree::Encoding const &name) const
 {
+  if (my_language == NONE) return std::set<Symbol const *>();
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();
 

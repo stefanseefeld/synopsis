@@ -155,7 +155,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   }
   Buffer buffer(ifs.rdbuf(), file);
   Lexer lexer(&buffer, tokenset);
-  SymbolLookup::Table symbols;
+  SymbolLookup::Table symbols(SymbolLookup::Table::NONE);
   Parser parser(lexer, symbols, ruleset);
 
   FileFilter* filter = FileFilter::instance();

@@ -19,7 +19,7 @@ class Table
 {
 public:
   //.
-  enum Language { C99 = 0x01, CXX = 0x02};
+  enum Language { NONE = 0x00, C99 = 0x01, CXX = 0x02};
 
   //. A Guard provides RAII - like protection for the scope stack
   struct Guard
@@ -68,13 +68,15 @@ private:
   static PTree::ClassSpec *get_class_template_spec(PTree::Node *);
   static PTree::Node *strip_cv_from_integral_type(PTree::Node *);
 
-  Scopes my_scopes;
+  Language my_language;
+  Scopes   my_scopes;
 };
 
 inline Table::Guard::~Guard() { if (table) table->leave_scope();}
 
 inline bool Table::evaluate_const(const PTree::Node *node, long &value)
 {
+  if (my_language == NONE) return false;
   if (!node) return false;
   ConstEvaluator e(*my_scopes.top());
   return e.evaluate(const_cast<PTree::Node *>(node), value);
