@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.12 2002/10/20 15:38:10 chalky Exp $
+// $Id: linkstore.cc,v 1.13 2002/10/28 16:25:02 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.13  2002/10/28 16:25:02  chalky
+// Fix crash if using xref output but not syntax output
+//
 // Revision 1.12  2002/10/20 15:38:10  chalky
 // Much improved template support, including Function Templates.
 //
@@ -286,6 +289,7 @@ void LinkStore::link(Ptree* node, const AST::Declaration* decl)
 
 void LinkStore::span(int line, int col, int len, const char* desc)
 {
+  if (!m_syntax_stream) return;
   std::ostream& out = *m_syntax_stream;
   out << line << FS << col << FS << len << FS;
   out << m_context_names[Span] << FS << encode(desc) << RS;
