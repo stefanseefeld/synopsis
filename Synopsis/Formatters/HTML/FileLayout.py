@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.14 2002/10/20 02:21:25 chalky Exp $
+# $Id: FileLayout.py,v 1.15 2002/10/25 03:43:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.15  2002/10/25 03:43:10  chalky
+# Don't put spaces in url anchors
+#
 # Revision 1.14  2002/10/20 02:21:25  chalky
 # Move quote function to Core.Util
 #
@@ -161,7 +164,8 @@ class FileLayout (TOC.Linker):
 	    return self.nameOfScope(decl.name())
 	# Assume parent scope is class or module, and this is a <A> name in it
 	filename = self.nameOfScope(decl.name()[:-1])
-	return filename + "#" + decl.name()[-1]
+	anchor = decl.name()[-1].replace(' ','-')
+	return filename + "#" + anchor
 
 class NestedFileLayout (FileLayout):
     """generates a structured file system instead of a flat one"""
