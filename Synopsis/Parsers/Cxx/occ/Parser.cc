@@ -917,7 +917,10 @@ bool Parser::rDeclaration(Ptree*& statement)
 				    mem_s, cv_q, head);
     }
     if (res && statement && (statement->What() == ntDeclaration))
-	static_cast<PtreeDeclaration*>(statement)->SetComments(comments);
+    {
+      static_cast<PtreeDeclaration*>(statement)->SetComments(comments);
+      comments = 0;
+    }
     return res;
 }
 
@@ -2629,8 +2632,8 @@ bool Parser::rClassSpec(Ptree*& spec, Encoding& encode)
 	return false;
 
     spec = new PtreeClassSpec(new LeafReserved(tk), 0, comments);
-    if(head != 0)
-	spec = new PtreeClassSpec(head, spec, comments);
+    comments = 0;
+    if(head != 0) spec = new PtreeClassSpec(head, spec, 0);
 
     if(lex->LookAhead(0) == '{'){
 	encode.NoName();

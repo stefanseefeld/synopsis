@@ -89,7 +89,7 @@ class ModuleIndexer(View):
       for section in sorter.sections():
          if section[-1] == 's': heading = section+'es'
          else: heading = section+'s'
-         heading = '<br/>'+entity('i', heading)+'<br/>'
+         heading = '<br/>\n'+entity('i', escape(heading))+'<br/>\n'
          # Get a list of children of this type
          for child in sorter.children(section):
             # Print out summary for the child
@@ -112,7 +112,7 @@ class ModuleIndexer(View):
                   self.write(href(url, label, target='main'))
                else:
                   self.write(label)
-            self.write('<br/>')
+            self.write('<br/>\n')
       self.end_file()
 
       # Queue child namespaces
