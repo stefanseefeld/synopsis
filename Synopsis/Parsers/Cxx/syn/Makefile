@@ -24,7 +24,7 @@ RANLIB		:=
 
 # FIXME - the i686 will need to be $configured
 OPTIMISE	:= -O6 -march=i686
-DEBUG		:= -O6 -march=i686 -ggdb -pg -DDEBUG 
+DEBUG		:= -O1 -march=i686 -ggdb -pg -DDEBUG 
 #DEBUG		:= -O6 -DDEBUG
 
 CFLAGS		:= 
@@ -38,7 +38,9 @@ OCC_OBJ		:= buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
 		   pattern.o walker.o typeinfo.o parse.o mop.o classwalk.o\
 		   metaclass.o quote-class.o member.o cbodywalk.o
 
-SYN_OBJ		:= synopsis.o occ.o
+SYN_OBJ		:= synopsis.o occ.o swalker.o ast.o builder.o type.o dict.o \
+		   decoder.o
+
 SYN_DEBUG_OBJ	:= synopsis.o occ.o swalker.o ast.o builder.o type.o dict.o \
 		   dumper.o decoder.o
 

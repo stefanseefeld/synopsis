@@ -48,7 +48,7 @@ Type::Type* Decoder::decodeType()
     Type::Type *baseType = NULL;
 
     // Loop forever until broken
-    while (m_iter != end && !name.length()) {
+    while (m_iter != end && !name.length() && !baseType) {
         int c = *m_iter++;
 	switch (c) {
         case 'P': postmod.insert(postmod.begin(), "*"); break;
@@ -86,8 +86,10 @@ Type::Type* Decoder::decodeType()
 		 << (m_iter - m_string.begin()) << endl;
 	} // switch
     } // while
-    if (!baseType && !name.length())
+    if (!baseType && !name.length()) {
+	cout << "no type or name found decoding " << m_string << endl;
 	return NULL;
+    }
     if (!baseType)
         baseType = m_builder->lookupType(name);
     if (premod.empty() && postmod.empty())
@@ -121,6 +123,9 @@ Type::Type* Decoder::decodeQualType()
     }
     // Ask for qualified lookup
     Type::Type* baseType = m_builder->lookupType(names);
+    if (!baseType) {
+	cout << "lookupType(names) returned NULL!" << endl;
+    }
     return baseType;
 }
 

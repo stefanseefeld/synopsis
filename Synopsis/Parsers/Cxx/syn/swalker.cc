@@ -22,14 +22,14 @@ using std::string;
 class Trace
 {
 public:
-    Trace(const string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++level; }
-    ~Trace() { --level; cout << indent() << "leaving  " << scope << endl; }
+    Trace(const string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++slevel; }
+    ~Trace() { --slevel; cout << indent() << "leaving  " << scope << endl; }
 private:
-    string indent() { return string(level, ' '); }
-    static int level;
+    string indent() { return string(slevel, ' '); }
+    static int slevel;
     string scope;
 };
-int Trace::level = 0;
+int Trace::slevel = 0;
 #else
 class Trace
 {
@@ -68,7 +68,7 @@ void SWalker::updateLineNumber(Ptree* ptree)
     if (fname != m_filename_ptr) {
 	m_filename_ptr = fname;
 	m_filename.assign(fname, fname_len);
-	cout << "### fname changed to "<<m_filename<<" at "<<m_lineno<<endl;
+	//cout << "### fname changed to "<<m_filename<<" at "<<m_lineno<<endl;
 	m_builder->setFilename(m_filename);
     }
 }
@@ -448,7 +448,10 @@ void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
 	Ptree* param = p_params->First();
 	// The type is stored in the encoded type string already
 	Type::Type* type = m_decoder->decodeType();
-	if (!type) break; // NULL means end of encoding
+	if (!type) {
+	    cout << "Premature end of decoding!" << endl;
+	    break; // NULL means end of encoding
+	}
 	// Find name and value
 	// FIXME: this doesnt account for anon but initialised params!
 	if (param->Length() > 1) {

@@ -19,7 +19,10 @@
 #  endif
 #endif
 
-#if 0
+#include "ast.hh"
+#include "type.hh"
+
+#if DEBUG
 #define DO_TRACE
 class Trace
 {
@@ -40,96 +43,110 @@ public:
 };
 #endif
 
-class Synopsis
-{
+//. The Synopsis class maps from C++ objects to Python objects
+class Synopsis : public AST::Visitor, public Type::Visitor {
 public:
-    //. Access specifiers. @see Python/Synopsis.AST for official definition
-    enum Accessability {
-	Default=0, Public, Protected, Private
-    };
 
-    Synopsis(const char *, PyObject *, PyObject *);
+    Synopsis(string mainfile, PyObject *decls, PyObject *types);
     ~Synopsis();
-    //.
-    //. types from the Synopsis.Type module
-    //.
-    PyObject *addBase(const string &);
-    PyObject *addForward(const string &);
-    PyObject *addDeclared(const string &, PyObject *);
-    PyObject *addTemplate(const string &, PyObject *, PyObject *);
-    PyObject *addModifier(PyObject *, const vector<string> &, const vector<string> &);
-    PyObject *addParametrized(PyObject *, const vector<PyObject *> &);
-    PyObject *addFunctionType(PyObject *, const vector<string>&, const vector<PyObject *> &);
 
-    //.
-    //. types from the Synopsis.AST module
-    //.
-    PyObject *addForward(size_t, bool, const string &, const string &);
-    PyObject *addDeclarator(size_t, bool, const string &, const vector<size_t> &);
-    PyObject *addScope(size_t, bool, const string &, const string &);
-    PyObject *addModule(size_t, bool, const string &);
-    PyObject *Inheritance(PyObject *, const vector<string> &);
-    PyObject *addClass(size_t, bool, const string &, const string &);
-    PyObject *addTypedef(size_t, bool, const string &, const string&, PyObject *, bool, PyObject*);
-    PyObject *Enumerator(size_t, bool, const string &, const string &);
-    PyObject *addEnum(size_t, bool, const string &, const vector<PyObject *> &);
-    PyObject *addVariable(size_t, bool, const string&, PyObject *, bool, PyObject*);
-    PyObject *addConst(size_t, bool, PyObject *, const string &, const string &);
-    PyObject *Parameter(const string &, PyObject *, const string &, const string & = string(), const string & = string());
-    PyObject *addFunction(size_t, bool, const vector<string> &, PyObject *, const string &);
-    PyObject *addOperation(size_t, bool, const vector<string> &, PyObject *, const string &, const string&, const vector<PyObject*>&);
+    void onlyTranslateMain();
+    void translate(AST::Scope* global);
+
+    //
+    // types from the Synopsis.Type module
+    //
+    PyObject *Base(Type::Base*);
+    PyObject *Forward(Type::Forward*);
+    PyObject *Declared(Type::Declared*);
+    PyObject *Template(Type::Template*);
+    PyObject *Modifier(Type::Modifier*);
+    PyObject *Parameterized(Type::Parameterized*);
+    PyObject *FuncPtr(Type::FuncPtr*);
+
+    //
+    // types from the Synopsis.AST module
+    //
+    PyObject *Forward(AST::Forward*);
+    PyObject *Scope(AST::Scope*);
+    PyObject *Namespace(AST::Namespace*);
+    PyObject *Inheritance(AST::Inheritance*);
+    PyObject *Class(AST::Class*);
+    PyObject *Typedef(AST::Typedef*);
+    PyObject *Enumerator(AST::Enumerator*);
+    PyObject *Enum(AST::Enum*);
+    PyObject *Variable(AST::Variable*);
+    PyObject *Const(AST::Const*);
+    PyObject *Parameter(AST::Parameter*);
+    PyObject *Function(AST::Function*);
+    PyObject *Operation(AST::Operation*);
+    PyObject *Comment(AST::Comment*);
+
+    //
+    // AST::Visitor methods
+    //
+    //void visitDeclaration(AST::Declaration*);
+    void visitScope(AST::Scope*);
+    void visitNamespace(AST::Namespace*);
+    void visitClass(AST::Class*);
+    void visitInheritance(AST::Inheritance*);
+    void visitForward(AST::Forward*);
+    void visitTypedef(AST::Typedef*);
+    void visitVariable(AST::Variable*);
+    void visitConst(AST::Const*);
+    void visitEnum(AST::Enum*);
+    void visitEnumerator(AST::Enumerator*);
+    void visitFunction(AST::Function*);
+    void visitOperation(AST::Operation*);
+    void visitParameter(AST::Parameter*);
+    void visitComment(AST::Comment*);
+
+    //
+    // Type::Visitor methods
+    //
+    //void visitType(Type::Type*);
+    void visitForward(Type::Forward*);
+    void visitModifier(Type::Modifier*);
+    //void visitNamed(Type::Named*);
+    void visitBase(Type::Base*);
+    void visitDeclared(Type::Declared*);
+    void visitTemplateType(Type::Template*);
+    void visitParameterized(Type::Parameterized*);
+    void visitFuncPtr(Type::FuncPtr*);
+
+private:
+    //. Compiler Firewalled private data
+    struct Private;
+    Private* m;
 
     //.
     //. helper methods
     //.
-    vector<string> scopedName(const string &);
-    void pushScope(PyObject *scope);
-    void popScope();
-    void pushClass(PyObject *clas);
-    //void pushNamespace(size_t, bool, const string &);
-    //void pushClass(size_t, bool, const string &, const string &);
-    //void pushClass(size_t l, bool m, const string &n) { pushClass(l, m, "class", n);}
-    //void pushStruct(size_t l, bool m, const string &n) { pushClass(l, m, "struct", n);}
+    void addComments(PyObject* pydecl, AST::Declaration* cdecl);
 
-    void setAccessability(Accessability);
-    void pushAccess(Accessability);
-    void popAccess();
+    ///////// EVERYTHING BELOW HERE SUBJECT TO REVIEW AND DELETION
 
-    PyObject *addComment(PyObject* decl, const char* text);
-    void setAccessability(PyObject* decl, Accessability xs);
 
+    /*
     PyObject *lookupType(const string &, PyObject *);
     PyObject *lookupType(const string &);
     PyObject *lookupType(const vector<string>& qualified);
-
-    void set_filename(string& fn) { if (file != fn) file = fn; }
 
     static void addInheritance(PyObject *, const vector<PyObject *> &);
     static PyObject *N2L(const string &);
     static PyObject *V2L(const vector<string> &);
     static PyObject *V2L(const vector<PyObject *> &);
     static PyObject *V2L(const vector<size_t> &);
-private:
     void pushClassBases(PyObject* clas);
     PyObject* resolveDeclared(PyObject*);
     void addDeclaration(PyObject *);
-    string file;
-    string mainfile;
-    PyObject *ast;
-    PyObject *type;
-    PyObject *declarations;
-    PyObject *dictionary;
-    vector<PyObject *> scopes;
+    */
+private:
+    PyObject *m_ast;
+    PyObject *m_type;
+    PyObject *m_declarations;
+    PyObject *m_dictionary;
+    string m_mainfile;
 
-    //. A list of scope names for name lookup
-    list<PyObject *> lookup_scopes;
-
-    //. A stack of old lookup_scopes
-    stack<list<PyObject*> > lookup_scope_stack;
-
-    //. Current accessability of declarations
-    Synopsis::Accessability m_accessability;
-
-    //. Stack of current accessabilities for nested classes
-    stack<Synopsis::Accessability> m_access_stack;
+    string m_onlymain;
 };

@@ -1,480 +1,514 @@
 #include "synopsis.hh"
 
+#include <map>
+using std::map;
+
 #ifdef DO_TRACE
 int Trace::level = 0;
 #endif
 
 #define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
 
-Synopsis::Synopsis(const char *f, PyObject *decl, PyObject *dict)
-        : file(f), mainfile(f), declarations(decl), dictionary(dict)
+// This func is called so you can breakpoint on it
+void nullObj() {
+    cout << "Null ptr." << endl;
+    int* i = 0;
+    *i = 1;
+}
+
+// The compiler firewalled private stuff
+struct Synopsis::Private {
+    //. Constructor
+    Private(Synopsis* s) : m_syn(s) {
+	m_cxx = PyString_InternFromString("C++");
+	Py_INCREF(Py_None);
+	add((AST::Declaration*)NULL, Py_None);
+	Py_INCREF(Py_None);
+	add((Type::Type*)NULL, Py_None);
+    }
+    //. Reference to parent synopsis object
+    Synopsis* m_syn;
+    //. Interned string for "C++"
+    PyObject* m_cxx;
+    //. Returns the string for "C++"
+    PyObject* cxx() { Py_INCREF(m_cxx); return m_cxx; }
+    // Sugar
+    typedef map<void*, PyObject*> ObjMap;
+    // Maps from C++ objects to PyObjects
+    ObjMap obj_map;
+
+    // Note that these methods always succeed
+    
+    //. Return the PyObject for the given AST::Declaration
+    PyObject* py(AST::Declaration*);
+    //. Return the PyObject for the given AST::Inheritance
+    PyObject* py(AST::Inheritance*);
+    //. Return the PyObject for the given AST::Parameter
+    PyObject* py(AST::Parameter*);
+    //. Return the PyObject for the given AST::Comment
+    PyObject* py(AST::Comment*);
+    //. Return the PyObject for the given Type::Type
+    PyObject* py(Type::Type*);
+    //. Return the PyObject for the given string
+    PyObject* py(const string&);
+
+    //. Add the given pair
+    void add(void* cobj, PyObject* pyobj) {
+	if (!pyobj) { nullObj(); }
+	obj_map.insert(ObjMap::value_type(cobj, pyobj));
+    }
+
+    // Convert a vector to a List
+    template <class T>
+    PyObject* List(const vector<T*>& vec) {
+	PyObject* list = PyList_New(vec.size());
+	int index = 0;
+	vector<T*>::const_iterator iter = vec.begin();
+	while (iter != vec.end())
+	    PyList_SET_ITEM(list, index++, py(*iter++));
+	return list;
+    }
+
+    // Convert a vector to a Tuple
+    template <class T>
+    PyObject* Tuple(const vector<T*>& vec) {
+	PyObject* tuple = PyTuple_New(vec.size());
+	int index = 0;
+	vector<T*>::const_iterator iter = vec.begin();
+	while (iter != vec.end())
+	    PyTuple_SET_ITEM(tuple, index++, py(*iter++));
+	return tuple;
+    }
+
+    // Convert a string vector to a List
+    PyObject* List(const vector<string>& vec) {
+	PyObject* list = PyList_New(vec.size());
+	int index = 0;
+	vector<string>::const_iterator iter = vec.begin();
+	while (iter != vec.end())
+	    PyList_SET_ITEM(list, index++, py(*iter++));
+	return list;
+    }
+    
+    // Convert a string vector to a Tuple
+    PyObject* Tuple(const vector<string>& vec) {
+	PyObject* tuple = PyTuple_New(vec.size());
+	int index = 0;
+	vector<string>::const_iterator iter = vec.begin();
+	while (iter != vec.end())
+	    PyTuple_SET_ITEM(tuple, index++, py(*iter++));
+	return tuple;
+    }
+    
+};
+
+PyObject* Synopsis::Private::py(AST::Declaration* decl)
+{
+    ObjMap::iterator iter = obj_map.find(decl);
+    if (iter == obj_map.end()) {
+	// Need to convert object first
+	decl->accept(m_syn);
+	iter = obj_map.find(decl);
+	if (iter == obj_map.end()) {
+	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    throw "Synopsis::Private::py(AST::Declaration*)";
+	}
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
+
+PyObject* Synopsis::Private::py(AST::Inheritance* decl)
+{
+    ObjMap::iterator iter = obj_map.find(decl);
+    if (iter == obj_map.end()) {
+	// Need to convert object first
+	decl->accept(m_syn);
+	iter = obj_map.find(decl);
+	if (iter == obj_map.end()) {
+	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    throw "Synopsis::Private::py(AST::Inheritance*)";
+	}
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
+PyObject* Synopsis::Private::py(AST::Parameter* decl)
+{
+    ObjMap::iterator iter = obj_map.find(decl);
+    if (iter == obj_map.end()) {
+	// Need to convert object first
+	decl->accept(m_syn);
+	iter = obj_map.find(decl);
+	if (iter == obj_map.end()) {
+	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    throw "Synopsis::Private::py(AST::Parameter*)";
+	}
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
+
+PyObject* Synopsis::Private::py(AST::Comment* decl)
+{
+    ObjMap::iterator iter = obj_map.find(decl);
+    if (iter == obj_map.end()) {
+	// Need to convert object first
+	m_syn->visitComment(decl);
+	iter = obj_map.find(decl);
+	if (iter == obj_map.end()) {
+	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    throw "Synopsis::Private::py(AST::Comment*)";
+	}
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
+
+
+PyObject* Synopsis::Private::py(Type::Type* type)
+{
+    ObjMap::iterator iter = obj_map.find(type);
+    if (iter == obj_map.end()) {
+	// Need to convert object first
+	type->accept(m_syn);
+	iter = obj_map.find(type);
+	if (iter == obj_map.end()) {
+	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    throw "Synopsis::Private::py(Type::Type*)";
+	}
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
+
+PyObject* Synopsis::Private::py(const string& str)
+{
+    PyObject* pystr = PyString_FromStringAndSize(str.data(), str.size());
+    PyString_InternInPlace(&pystr);
+    return pystr;
+}
+
+
+
+
+
+
+//
+// Class Synopsis
+//
+
+Synopsis::Synopsis(string mainfile, PyObject *decl, PyObject *dict)
+        : m_declarations(decl), m_dictionary(dict), m_mainfile(mainfile)
 {
     Trace trace("Synopsis::Synopsis");
-    ast  = PyImport_ImportModule("Synopsis.Core.AST");
-    assertObject(ast);
-    type = PyImport_ImportModule("Synopsis.Core.Type");
-    assertObject(type);
-    addBase("char");
-    addBase("wchar_t");
-    addBase("bool");
-    addBase("short");
-    addBase("int");
-    addBase("long");
-    addBase("signed");
-    addBase("unsigned");
-    addBase("float");
-    addBase("double");
-    addBase("void");
-    addBase("...");
-    //. well...
-    addBase("exception");
-    PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file.c_str(), -1, 1, "C++", "file", PyList_New(0));
-    pushScope(scope);
-    m_accessability = Default;
+    m_ast  = PyImport_ImportModule("Synopsis.Core.AST");
+    assertObject(m_ast);
+    m_type = PyImport_ImportModule("Synopsis.Core.Type");
+    assertObject(m_type);
+
+    m_onlymain = false;
+    m = new Private(this);
 }
 
 Synopsis::~Synopsis()
 {
     Trace trace("Synopsis::~Synopsis");
+    /*
     PyObject *file = PyObject_CallMethod(scopes.back(), "declarations", 0);
     size_t size = PyList_Size(file);
     for (size_t i = 0; i != size; i++)
         PyObject_CallMethod(declarations, "append", "O", PyList_GetItem(file, i));
-    Py_DECREF(file);
-    Py_DECREF(type);
-    Py_DECREF(ast);
+    */
+    Py_DECREF(m_type);
+    Py_DECREF(m_ast);
+    delete m;
 }
 
-PyObject *Synopsis::addBase(const string &name)
+void Synopsis::onlyTranslateMain()
+{
+    m_onlymain = true;
+}
+
+void Synopsis::translate(AST::Scope* scope)
+{
+    PyObject_CallMethod(m_declarations, "extend", "O",
+	m->List(scope->declarations())
+    );
+}
+
+//
+// Type object factories
+//
+
+PyObject *Synopsis::Base(Type::Base* type)
 {
     Trace trace("Synopsis::addBase");
-    PyObject *pyname = Py_BuildValue("(s)", name.c_str());
-    PyObject *base = PyObject_CallMethod(type, "Base", "sO", "C++", pyname);
-    PyObject_SetItem(dictionary, pyname, base);
+    PyObject *name, *base = PyObject_CallMethod(m_type, "Base", "OO",
+	m->cxx(), name = m->Tuple(type->name())
+    );
+    PyObject_SetItem(m_dictionary, name, base);
     return base;
 }
 
-PyObject *Synopsis::addForward(const string &name)
+PyObject *Synopsis::Forward(Type::Forward* type)
 {
     Trace trace("Synopsis::addForward");
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *forward = PyObject_CallMethod(type, "Forward", "sO", "C++", pyname);
-    PyObject_SetItem(dictionary, pyname, forward);
+    PyObject *name, *forward = PyObject_CallMethod(m_type, "Base", "OO",
+	m->cxx(), name = m->Tuple(type->name())
+    );
+    PyObject_SetItem(m_dictionary, name, forward);
     return forward;
 }
 
-PyObject *Synopsis::addDeclared(const string &name, PyObject *declaration)
+PyObject *Synopsis::Declared(Type::Declared* type)
 {
     Trace trace("Synopsis::addDeclared");
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *declared = PyObject_CallMethod(type, "Declared", "sOO", "C++", pyname, declaration);
-    PyObject_SetItem(dictionary, pyname, declared);
+    PyObject *name, *declared = PyObject_CallMethod(m_type, "Declared", "OOO", 
+	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration())
+    );
+    PyObject_SetItem(m_dictionary, name, declared);
     return declared;
 }
 
-PyObject *Synopsis::addTemplate(const string &name, PyObject *declaration, PyObject *parameters)
+PyObject *Synopsis::Template(Type::Template* type)
 {
     Trace trace("Synopsis::addTemplate");
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *templ = PyObject_CallMethod(type, "Template", "sOOO", "C++", pyname, declaration, parameters);
-    PyObject_SetItem(dictionary, pyname, templ);
+    PyObject *name, *templ = PyObject_CallMethod(m_type, "Template", "OOOO",
+	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration()),
+	m->List(type->parameters())
+    );
+    PyObject_SetItem(m_dictionary, name, templ);
     return templ;
 }
 
-PyObject *Synopsis::addModifier(PyObject *alias, const vector<string> &pre, const vector<string> &post)
+PyObject *Synopsis::Modifier(Type::Modifier* type)
 {
     Trace trace("Synopsis::addModifier");
-    PyObject *modifier = PyObject_CallMethod(type, "Modifier", "sOOO", "C++", alias, V2L(pre), V2L(post));
+    PyObject *modifier = PyObject_CallMethod(m_type, "Modifier", "OOOO",
+	m->cxx(), m->py(type->alias()), m->List(type->pre()), m->List(type->post())
+    );
     return modifier;
 }
 
-PyObject *Synopsis::addParametrized(PyObject *templ, const vector<PyObject *> &parameters)
+PyObject *Synopsis::Parameterized(Type::Parameterized* type)
 {
     Trace trace("Synopsis::addParametrized");
-    PyObject *parametrized = PyObject_CallMethod(type, "Parametrized", "sOO", "C++", templ, V2L(parameters));
+    PyObject *parametrized = PyObject_CallMethod(m_type, "Parametrized", "OOO",
+	m->cxx(), m->py(type->templateType()), m->List(type->parameters())
+    );
     return parametrized;
 }
 
-PyObject *Synopsis::addFunctionType(PyObject *ret, const vector<string>& pre, const vector<PyObject *> & params)
+PyObject *Synopsis::FuncPtr(Type::FuncPtr* type)
 {
     Trace trace("Synopsis::addFunctionType");
-    PyObject *func = PyObject_CallMethod(type, "Function", "sOOO", "C++", ret, V2L(pre), V2L(params));
+    PyObject *func = PyObject_CallMethod(m_type, "Function", "OOOO",
+	m->cxx(), m->py(type->returnType()), m->List(type->pre()),
+	m->List(type->parameters())
+    );
     return func;
 }
 
-PyObject *Synopsis::addForward(size_t line, bool main, const string &type, const string &name)
+
+//
+// AST object factories
+//
+
+void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
+{
+    PyObject* comments = PyObject_CallMethod(pydecl, "comments", NULL);
+    PyObject_CallMethod(comments, "extend", "O", m->List(cdecl->comments()));
+}
+
+PyObject *Synopsis::Forward(AST::Forward* decl)
 {
     Trace trace("Synopsis::addForward");
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *forward = PyObject_CallMethod(ast, "Forward", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
-    //PyObject_CallMethod(scopes.back(), "append", "O", forward);
-    addDeclaration(forward);
+    PyObject *forward = PyObject_CallMethod(m_ast, "Forward", "OiiOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name())
+    );
+    addComments(forward, decl);
     return forward;
 }
 
-PyObject *Synopsis::addComment(PyObject* decl, const char* text)
+PyObject *Synopsis::Comment(AST::Comment* decl)
 {
     Trace trace("Synopsis::addComment");
-    PyObject *pytext = PyString_FromString(text);
-    PyObject *comment = PyObject_CallMethod(ast, "Comment", "Osi", pytext, file.c_str(), -1);
-    PyObject *comments = PyObject_CallMethod(decl, "comments", 0);
-    PyObject_CallMethod(comments, "append", "O", comment);
+    PyObject *text = PyString_FromStringAndSize(decl->text().data(), decl->text().size());
+    PyObject *comment = PyObject_CallMethod(m_ast, "Comment", "OOi", 
+	text, m->py(decl->filename()), decl->line()
+    );
     return comment;
 }
 
-PyObject *Synopsis::addDeclarator(size_t line, bool main, const string &name, const vector<size_t> &sizes)
-{
-    Trace trace("Synopsis::addDeclarator");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *declarator = PyObject_CallMethod(ast, "Declarator", "siisOO", file.c_str(), line, main, "C++", pyname, V2L(sizes));
-    //PyObject_CallMethod(scopes.back(), "append", "O", declarator);
-    return declarator;
-}
-
-PyObject *Synopsis::addScope(size_t line, bool main, const string &type, const string &name)
+PyObject *Synopsis::Scope(AST::Scope* decl)
 {
     Trace trace("Synopsis::addScope");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
-    //PyObject_CallMethod(scopes.back(), "append", "O", scope);
-    addDeclaration(scope);
+    PyObject *scope = PyObject_CallMethod(m_ast, "Scope", "OiiOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name())
+    );
+    PyObject *decls = PyObject_CallMethod(scope, "declarations", NULL);
+    PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
+    addComments(scope, decl);
     return scope;
 }
 
-PyObject *Synopsis::addModule(size_t line, bool main, const string &name)
+PyObject *Synopsis::Namespace(AST::Namespace* decl)
 {
-    Trace trace("Synopsis::addModule");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *module = PyObject_CallMethod(ast, "Module", "siissO", file.c_str(), line, main, "C++", "namespace", pyname);
-    //PyObject_CallMethod(scopes.back(), "append", "O", module);
-    addDeclaration(module);
+    Trace trace("Synopsis::addNamespace");
+    PyObject *module = PyObject_CallMethod(m_ast, "Module", "OiiOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name())
+    );
+    PyObject *decls = PyObject_CallMethod(module, "declarations", NULL);
+    PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
+    addComments(module, decl);
     return module;
 }
 
-void Synopsis::popScope()
-{
-    scopes.pop_back();
-    lookup_scopes = lookup_scope_stack.top();
-    lookup_scope_stack.pop();
-}
-
-void Synopsis::pushScope(PyObject* scope)
-{
-    scopes.push_back(scope);
-    PyObject* name = PyObject_CallMethod(scope, "name", 0);
-    if (!name) { cout << "Warning: pushScope: scope.name failed.\n         ";
-	PyErr_Print(); return; }
-    lookup_scope_stack.push(lookup_scopes);
-    lookup_scopes.push_front(name);
-}
-
-void Synopsis::pushClass(PyObject* clas)
-{
-    scopes.push_back(clas);
-    lookup_scope_stack.push(lookup_scopes);
-    pushClassBases(clas);
-}
-
-/* This is a post-order recursive algorithm, since the base classes must be inserted
- * in reverse order: 
- *  class A; class B; class C: A; class D: B, C;
- * Final order for D must be: D, B, C, A
- */
-void Synopsis::pushClassBases(PyObject* clas)
-{
-    PyObject* name = PyObject_CallMethod(clas, "name", 0);
-    if (!name) { cout << "Warning: pushClassBases, clas.name failed:\n         ";
-	PyObject_Print(clas, stdout,0);cout<<endl;PyErr_Print(); return; }
-
-    PyObject* parents;
-    while (!(parents = PyObject_CallMethod(clas, "parents", 0))) {
-	// Not a class, but might be a typedef to a class..
-	PyObject* alias = PyObject_CallMethod(clas, "alias", 0);
-	if (!alias) { PyErr_Print(); return; }
-	clas = PyObject_CallMethod(alias, "declaration", 0);
-	if (!clas) { PyErr_Print(); return; }
-    }
-
-    size_t size = PyList_Size(parents);
-    for (size_t i = size; i > 0;) {
-	i--;
-	PyObject* declared = PyObject_CallMethod(PyList_GetItem(parents, i), "parent", 0);
-	PyObject* baseclass;
-	while (!(baseclass = PyObject_CallMethod(declared, "declaration", 0))) {
-	    declared = PyObject_CallMethod(declared, "alias", 0);
-	    if (!declared) { PyErr_Print(); return; }
-	}
-	pushClassBases(baseclass);
-    }
-	    
-    lookup_scopes.push_front(name);
-}
-
-PyObject *Synopsis::lookupType(const string &name, PyObject *scopes)
-{
-    Trace trace("Synopsis::lookupType");
-    size_t size = PyList_Size(scopes);
-    PyObject *slist = PyList_New(size + 1);
-    for (size_t i = 0; i != size; ++i)
-    {
-        PyObject *item = PyList_GetItem(scopes, i);
-        Py_INCREF(item);
-        PyList_SetItem(slist, i, item);
-    }
-    PyList_SetItem(slist, size, V2L(scopedName(string())));
-    PyObject *pyname = Py_BuildValue("[s]", name.c_str());
-    if (!pyname) {PyErr_Print(); return 0; }
-    PyObject *type = PyObject_CallMethod(dictionary, "lookup", "OO", pyname, slist);
-    if (!type) { PyErr_Print(); return 0; }
-    return type;
-}
-
-PyObject *Synopsis::lookupType(const string &name)
-{
-    Trace trace("Synopsis::lookupType(name)");
-    // TODO: This should only need doing once per pushScope
-    PyObject* slist = PyList_New(lookup_scopes.size());
-    int index = 0;
-    list<PyObject*>::iterator iter = lookup_scopes.begin();
-    while (iter != lookup_scopes.end()) {
-	PyObject* item = *iter++;
-	Py_INCREF(item);
-	PyList_SetItem(slist, index, item);
-	index++;
-    }
-    PyObject *pyname = Py_BuildValue("[s]", name.c_str());
-    PyObject *type = PyObject_CallMethod(dictionary, "lookup", "OO", pyname, slist);
-    return type;
-}
-
-/* Resolve typedefs */
-PyObject* Synopsis::resolveDeclared(PyObject* ptype)
-{
-    //cout << "*** ResolveDeclared: ";PyObject_Print(ptype,stdout,0);cout<<endl;
-    if (ptype == Py_None) return NULL;
-    PyObject* ptype_class = PyObject_GetAttrString(ptype, "__class__");
-    if (ptype_class != PyObject_GetAttrString(type, "Declared"))
-	return NULL;
-    // Declared type:
-    PyObject* name = PyObject_CallMethod(ptype, "name", 0);
-    return name;
-}
-
-/* Lookup a qualified name.
- * To do this, the first name in the vector is looked up to find a base scope,
- * and then the rest of the names are appended for the final name.
- * This is wrong: each name should be looked up in terms of the
- * so-far-determined scope, but we don't store that scope information (yet).
- */
-PyObject *Synopsis::lookupType(const vector<string>& qualified)
-{
-    //cout << "Qualified lookup.." << endl;
-    if (!qualified.front().empty()) {
-	PyObject* type = lookupType(qualified.front());
-	PyObject* name = resolveDeclared(type);
-	if (!name) return NULL;
-	PyObject* pyname = PyList_New(PyList_Size(name)+qualified.size()-1);
-	int ix = 0;
-	for (; ix < PyList_Size(name); ix++)
-	    PyList_SetItem(pyname, ix, PyList_GetItem(name, ix));
-	vector<string>::const_iterator iter = qualified.begin()+1;
-	while (iter != qualified.end()) {
-	    PyList_SetItem(pyname, ix, PyString_FromString(iter->c_str()));
-	    iter++; ix++;
-	}
-	PyObject* obj = PyObject_CallMethod(dictionary, "__getitem__", "O", pyname);
-	if (!obj) {
-	    // cout<<"Warning: Constructed Qualified name not found!\n         ";
-	    // cout<<"Name: ";PyObject_Print(pyname,stdout,0);cout<<"\n         ";
-	    // cout<<"First Type: ";PyObject_Print(type,stdout,0);cout<<endl;
-	    return NULL;}
-	return obj;
-    } else {
-	PyObject* pyname = PyList_New(qualified.size()-1);
-	int ix = 0;
-	vector<string>::const_iterator iter = qualified.begin()+1;
-	while (iter != qualified.end()) {
-	    PyList_SetItem(pyname, ix, PyString_FromString(iter->c_str()));
-	    iter++; ix++;
-	}
-	PyObject* obj = PyObject_CallMethod(dictionary, "__getitem__", "O", pyname);
-	if (!obj) {
-	    // cout<<"Warning: Constructed Qualified name not found!\n         ";
-	    // cout<<"Name: ";PyObject_Print(pyname,stdout,0);cout<<endl;
-	    return NULL;}
-	return obj;
-    }
-    return NULL;
-}
-
-PyObject *Synopsis::Inheritance(PyObject *parent, const vector<string> &attributes)
+PyObject *Synopsis::Inheritance(AST::Inheritance* decl)
 {
     Trace trace("Synopsis::Inheritance");
-    PyObject *inheritance = PyObject_CallMethod(ast, "Inheritance", "sOO", "inherits", parent, V2L(attributes));
-    PyObject_CallMethod(scopes.back(), "append", "O", inheritance);
+    PyObject *inheritance = PyObject_CallMethod(m_ast, "Inheritance", "sOO", 
+	"inherits", m->py(decl->parent()), m->List(decl->attributes())
+    );
     return inheritance;
 }
 
-PyObject *Synopsis::addClass(size_t line, bool main, const string &type, const string &name)
+PyObject *Synopsis::Class(AST::Class* decl)
 {
     Trace trace("Synopsis::addClass");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *clas = PyObject_CallMethod(ast, "Class", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
-    //PyObject *clas = PyObject_CallMethod(ast, "Class", "siisss", file.c_str(), line, main, "C++", type.c_str(), name.c_str());
-    //if (!PyObject_CallMethod(scopes.back(), "append", "O", clas)) {
-    //  cout << "addClass:: scopes.back().append(clas) "; PyErr_Print();
-    //}
-    addDeclaration(clas);
+    PyObject *clas = PyObject_CallMethod(m_ast, "Class", "OiiOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name())
+    );
+    // This is necessary to prevent inf. loops in several places
+    m->add(decl, clas);
+    PyObject *decls = PyObject_CallMethod(clas, "declarations", NULL);
+    PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
+    PyObject *parents = PyObject_CallMethod(clas, "parents", NULL);
+    PyObject_CallMethod(parents, "extend", "O", m->List(decl->parents()));
+    if (decl->templateType()) {
+	PyObject_CallMethod(clas, "set_template", "O", m->py(decl->templateType()));
+    }
+    addComments(clas, decl);
     return clas;
 }
 
-PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const string& name, PyObject *alias, bool constr, PyObject* declarator)
+PyObject *Synopsis::Typedef(AST::Typedef* decl)
 {
     Trace trace("Synopsis::addTypedef");
-    main = (file == mainfile);
-    PyObject *typed = PyObject_CallMethod( ast, "Typedef", "siissOOiO", 
-	file.c_str(), line, main, "C++", type.c_str(), V2L(scopedName(name)),
-	alias, constr, declarator
+    // FIXME: what to do about the declarator?
+    PyObject *tdef = PyObject_CallMethod(m_ast, "Typedef", "OiiOOOOiO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name()),
+	m->py(decl->alias()), decl->constructed(), m->py((AST::Declaration*)NULL)
     );
-    PyObject_CallMethod(scopes.back(), "append", "O", typed);
-    addDeclaration(typed);
-    return typed;
+    addComments(tdef, decl);
+    return tdef;
 }
 
-PyObject *Synopsis::Enumerator(size_t line, bool main, const string &name, const string &value)
+PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
 {
     Trace trace("Synopsis::addEnumerator");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *enumerator = PyObject_CallMethod(ast, "Enumerator", "siisOs", file.c_str(), line, main, "C++", pyname, value.c_str());
-    return enumerator;
+    PyObject *enumor = PyObject_CallMethod(m_ast, "Enumerator", "OiiOOs", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->Tuple(decl->name()), decl->value().c_str()
+    );
+    addComments(enumor, decl);
+    return enumor;
 }
 
-PyObject *Synopsis::addEnum(size_t line, bool main, const string &name, const vector<PyObject *> &enumerators)
+PyObject *Synopsis::Enum(AST::Enum* decl)
 {
     Trace trace("Synopsis::addEnum");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *enu = PyObject_CallMethod(ast, "Enum", "siisOO", file.c_str(), line, main, "C++", pyname, V2L(enumerators));
-    addDeclaration(enu);
-    return enu;
+    PyObject *enumor = PyObject_CallMethod(m_ast, "Enum", "OiiOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->Tuple(decl->name()), m->List(decl->enumerators())
+    );
+    addComments(enumor, decl);
+    return enumor;
 }
 
-PyObject *Synopsis::addVariable(size_t line, bool main, const string& name, PyObject *type, bool constr, PyObject* declarator)
+PyObject *Synopsis::Variable(AST::Variable* decl)
 {
     Trace trace("Synopsis::addVariable");
-    main = (file == mainfile);
-    PyObject *var = PyObject_CallMethod(ast, "Variable", "siissOOiO",
-	file.c_str(), line, main, "C++", "variable", 
-	V2L(scopedName(name)), type, constr, declarator
+    PyObject *var = PyObject_CallMethod(m_ast, "Variable", "OiiOOOOiO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->Tuple(decl->name()),
+	m->py(decl->vtype()), decl->constructed(), m->py((AST::Declaration*)NULL)
     );
-    addDeclaration(var);
+    addComments(var, decl);
     return var;
 }
 
-PyObject *Synopsis::addConst(size_t line, bool main, PyObject *type, const string &name, const string &value)
+PyObject *Synopsis::Const(AST::Const* decl)
 {
     Trace trace("Synopsis::addConst");
-    main = (file == mainfile);
-    PyObject *cons = PyObject_CallMethod(ast, "Const", "siissOss", file.c_str(),
-                                         line, main, "C++", "const", type, name.c_str(), name.c_str());
-    PyObject_CallMethod(scopes.back(), "append", "O", cons);
+    PyObject *cons = PyObject_CallMethod(m_ast, "Const", "OiiOOOOOs", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()),
+	m->py(decl->ctype()), m->Tuple(decl->name()), decl->value().c_str()
+    );
+    addComments(cons, decl);
     return cons;
 }
 
-PyObject *Synopsis::Parameter(const string &pre, PyObject *type, const string &post, const string &name, const string &value)
+PyObject *Synopsis::Parameter(AST::Parameter* decl)
 {
     Trace trace("Synopsis::Parameter");
-    PyObject *param = 0;
-    if (value.empty() && name.empty())
-        param = PyObject_CallMethod(ast, "Parameter", "sOs", pre.c_str(), type, post.c_str());
-    else if (value.empty())
-        param = PyObject_CallMethod(ast, "Parameter", "sOss", pre.c_str(), type, post.c_str(), name.c_str());
-    else param = PyObject_CallMethod(ast, "Parameter", "sOsss", pre.c_str(), type, post.c_str(), name.c_str(), value.c_str());
+    PyObject *param = PyObject_CallMethod(m_ast, "Parameter", "OOOOO", 
+	m->py(decl->premodifier()), m->py(decl->type()), m->py(decl->postmodifier()),
+	m->py(decl->name()), m->py(decl->value())
+    );
     return param;
 }
 
-PyObject *Synopsis::addFunction(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name)
+PyObject *Synopsis::Function(AST::Function* decl)
 {
     Trace trace("Synopsis::addFunction");
-    main = (file == mainfile);
-    PyObject *function = PyObject_CallMethod(ast, "Function", "siissOOs", file.c_str(), line, main, "C++", "function", V2L(pre),
-                         type, name.c_str());
-    PyObject_CallMethod(scopes.back(), "append", "O", function);
-    return function;
+    AST::Name realname = decl->name();
+    realname.back() = decl->realname();
+    PyObject *func = PyObject_CallMethod(m_ast, "Function", "OiiOOOOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
+	m->Tuple(decl->name()), m->Tuple(realname)
+    );
+    PyObject* params = PyObject_CallMethod(func, "parameters", NULL);
+    PyObject_CallMethod(params, "extend", "O", m->List(decl->parameters()));
+    addComments(func, decl);
+    return func;
 }
 
-PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name, const string& realname, const vector<PyObject*>& params)
+PyObject *Synopsis::Operation(AST::Operation* decl)
 {
     Trace trace("Synopsis::addOperation");
-    main = (file == mainfile);
-    PyObject *pyname = V2L(scopedName(name));
-    PyObject *pyrname = V2L(scopedName(realname));
-    PyObject *pyparams = V2L(params);
-    PyObject *operation = PyObject_CallMethod(ast, "Operation", "siissOOOO",
-                          file.c_str(), line, main, "C++", "function", V2L(pre), type, pyname, pyrname);
-    if (!operation) {
-        PyErr_Print(); return operation;
-    }
-    PyObject_CallMethod(scopes.back(), "append", "O", operation);
-    PyObject* parameters = PyObject_CallMethod(operation, "parameters", "");
-    PyObject_CallMethod(parameters, "extend", "O", pyparams);
-    addDeclaration(operation);
-    return operation;
+    AST::Name realname = decl->name();
+    realname.back() = decl->realname();
+    PyObject *oper = PyObject_CallMethod(m_ast, "Operation", "OiiOOOOOO", 
+	m->py(decl->filename()), decl->line(), decl->filename() == m_mainfile, m->cxx(),
+	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
+	m->Tuple(decl->name()), m->Tuple(realname)
+    );
+    PyObject* params = PyObject_CallMethod(oper, "parameters", NULL);
+    PyObject_CallMethod(params, "extend", "O", m->List(decl->parameters()));
+    addComments(oper, decl);
+    return oper;
 }
 
-vector<string> Synopsis::scopedName(const string &name)
-{
-    Trace trace("Synopsis::scopedName("+name+")");
-    PyObject *current = scopes.back();
-    PyObject *sname = PyObject_CallMethod(current, "name", 0);
-    assertObject(sname);
-    //PyList_Check(sname); // warning: Statement with no effect (???)
-    size_t size = PyTuple_Size(sname);
-    vector<string> scope(size);
-    for (size_t i = 0; i != size; ++i)
-        scope[i] = PyString_AsString(PyTuple_GetItem(sname, i));
-    if (!name.empty()) scope.push_back(name);
-    Py_DECREF(sname);
-    return scope;
-}
 
-// void Synopsis::pushNamespace(size_t line, bool main, const string &name)
-// {
-//     PyObject *module = addModule(-1, true, name);
-//     /* PyObject *type = */ addDeclared(name, module);
-//     pushScope(module);
-// }
-// 
-// void Synopsis::pushClass(size_t line, bool main, const string &meta, const string &name)
-// {
-//     PyObject *clas = addClass(-1, true, meta, name);
-//     /* PyObject *type = */ addDeclared(name, clas);
-//     pushScope(clas);
-// }
 
-void Synopsis::setAccessability(Accessability axs)
-{
-    m_accessability = axs;
-}
+////////////////MISC CRAP
 
-void Synopsis::pushAccess(Accessability axs)
-{
-    m_access_stack.push(m_accessability);
-    m_accessability = axs;
-}
-
-void Synopsis::popAccess()
-{
-    m_accessability = m_access_stack.top();
-    m_access_stack.pop();
-}
-
-void Synopsis::addInheritance(PyObject *clas, const vector<PyObject *> &parents)
+/*
+void Synopsis::Inheritance(Inheritance* type)
 {
     PyObject *to = PyObject_CallMethod(clas, "parents", 0);
     PyObject *from = V2L(parents);
@@ -529,10 +563,93 @@ PyObject *Synopsis::V2L(const vector<size_t> &sizes)
     return pylist;
 }
 
-void Synopsis::addDeclaration(PyObject *declaration)
+void Synopsis::Declaration(Declaration* type)
 {
     PyObject *scope = scopes.back();
     PyObject *declarations = PyObject_CallMethod(scope, "declarations", 0);
     PyObject_CallMethod(declarations, "append", "O", declaration);
     PyObject_CallMethod(declaration, "set_accessability", "i", m_accessability);
 }
+*/
+
+//
+// AST::Visitor methods
+//
+/*void Synopsis::visitDeclaration(AST::Declaration* decl) {
+    m->add(decl, this->Declaration(decl));
+}*/
+void Synopsis::visitScope(AST::Scope* decl) {
+    m->add(decl, Scope(decl));
+}
+void Synopsis::visitNamespace(AST::Namespace* decl) {
+    m->add(decl, Namespace(decl));
+}
+void Synopsis::visitClass(AST::Class* decl) {
+    m->add(decl, Class(decl));
+}
+void Synopsis::visitInheritance(AST::Inheritance* decl) {
+    m->add(decl, Inheritance(decl));
+}
+void Synopsis::visitForward(AST::Forward* decl) {
+    m->add(decl, Forward(decl));
+}
+void Synopsis::visitTypedef(AST::Typedef* decl) {
+    m->add(decl, Typedef(decl));
+}
+void Synopsis::visitVariable(AST::Variable* decl) {
+    m->add(decl, Variable(decl));
+}
+void Synopsis::visitConst(AST::Const* decl) {
+    m->add(decl, Const(decl));
+}
+void Synopsis::visitEnum(AST::Enum* decl) {
+    m->add(decl, Enum(decl));
+}
+void Synopsis::visitEnumerator(AST::Enumerator* decl) {
+    m->add(decl, Enumerator(decl));
+}
+void Synopsis::visitFunction(AST::Function* decl) {
+    m->add(decl, Function(decl));
+}
+void Synopsis::visitOperation(AST::Operation* decl) {
+    m->add(decl, Operation(decl));
+}
+void Synopsis::visitParameter(AST::Parameter* decl) {
+    m->add(decl, Parameter(decl));
+}
+void Synopsis::visitComment(AST::Comment* decl) {
+    m->add(decl, Comment(decl));
+}
+
+//
+// Type::Visitor methods
+//
+/*void Synopsis::visitType(Type::Type* type) {
+    m->add(type, this->Type(type));
+}*/
+void Synopsis::visitForward(Type::Forward* type) {
+    m->add(type, Forward(type));
+}
+void Synopsis::visitModifier(Type::Modifier* type) {
+    m->add(type, Modifier(type));
+}
+/*void Synopsis::visitNamed(Type::Named* type) {
+    m->add(type, Named(type));
+}*/
+void Synopsis::visitBase(Type::Base* type) {
+    m->add(type, Base(type));
+}
+void Synopsis::visitDeclared(Type::Declared* type) {
+    m->add(type, Declared(type));
+}
+void Synopsis::visitTemplateType(Type::Template* type) {
+    m->add(type, Template(type));
+}
+void Synopsis::visitParameterized(Type::Parameterized* type) {
+    m->add(type, Parameterized(type));
+}
+void Synopsis::visitFuncPtr(Type::FuncPtr* type) {
+    m->add(type, FuncPtr(type));
+}
+
+

@@ -52,11 +52,11 @@ public:
     //. Add a declaration to the dictionary. The name() is extracted from the
     //. declaration and its last string used as the key. The declaration is
     //. stored as a Type::Declared which is created inside this method.
-    void insert(AST::Declaration*);
+    void insert(AST::Declaration* decl);
 
     //. Add a named type to the dictionary. The name() is extracted from the
     //. type and its last string used as they key.
-    void insert(Type::Named*);
+    void insert(Type::Named* named);
 
 
 private:
