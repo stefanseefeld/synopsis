@@ -63,7 +63,7 @@ protected:
   bool using_(PTree::Node *&);
   bool linkage_body(PTree::Node *&);
   bool template_decl(PTree::Node *&);
-  bool template_decl2(PTree::Node *&, TemplateDeclKind &kind);
+  bool template_decl2(PTree::TemplateDecl *&, TemplateDeclKind &kind);
   bool template_arg_list(PTree::Node *&);
   bool template_arg_declaration(PTree::Node *&);
   bool extern_template_decl(PTree::Node *&);
@@ -180,6 +180,7 @@ private:
   Scopes       my_scopes;
   int          my_nerrors;
   PTree::Node *my_comments;
+  bool         my_in_template_decl;
 };
 
 #endif

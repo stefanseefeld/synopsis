@@ -50,6 +50,20 @@ public:
   TypeName(const Encoding &type, Node *ptree) : Symbol(type, ptree) {}
 };
 
+class ClassTemplateName : public Symbol
+{
+public:
+  ClassTemplateName(const Encoding &type, Node *ptree)
+    : Symbol(type, ptree) {}
+};
+
+class FunctionTemplateName : public Symbol
+{
+public:
+  FunctionTemplateName(const Encoding &type, Node *ptree)
+    : Symbol(type, ptree) {}
+};
+
 //. A Scope contains symbol definitions.
 class Scope
 {
@@ -72,8 +86,7 @@ public:
   void declare(EnumSpec *);
   //. declare the class as a new TYPE
   void declare(ClassSpec *);
-  void declare(TemplateDecl *, ClassSpec *);
-  void declare(TemplateDecl *, Node *);
+  void declare(TemplateDecl *);
 
   //. look up the encoded name and return the associated symbol, if found.
   virtual const Symbol *lookup(const Encoding &) const throw();
@@ -104,6 +117,9 @@ private:
 
   static int get_base_name_if_template(Encoding::iterator i, const Scope *&);
   static const Scope *lookup_typedef_name(Encoding::iterator, size_t, const Scope *);
+
+  static PTree::ClassSpec *get_class_template_spec(PTree::Node *);
+  static PTree::Node *strip_cv_from_integral_type(PTree::Node *);
 
   //. declare the given symbol in the local scope 
   //. using the given encoded name.
