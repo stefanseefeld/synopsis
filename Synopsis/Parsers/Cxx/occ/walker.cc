@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-99 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -197,9 +197,8 @@ Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
 	return temp_def;
     else
 	return new PtreeTemplateDecl(temp_def->Car(),
-				     Ptree::ShallowSubst(class_spec2,
-							 class_spec,
-							 temp_def->Cdr()));
+				     Ptree::Subst(class_spec2, class_spec,
+						  temp_def->Cdr()));
 }
 
 Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
@@ -1493,7 +1492,7 @@ void Walker::TypeofStaticUserStatement(Ptree*, TypeInfo& t)
 
 Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
 {
-    Ptree* decl2;
+    Ptree* decl2 = decl;
     Ptree* p = decl;
     while(p != nil){
 	Ptree* head = p->Car();
