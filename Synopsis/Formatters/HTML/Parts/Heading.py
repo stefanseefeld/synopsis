@@ -1,4 +1,4 @@
-# $Id: Heading.py,v 1.4 2003/12/04 22:22:41 stefan Exp $
+# $Id: Heading.py,v 1.5 2003/12/05 22:30:29 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,24 +9,24 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.Part import Part
-from Synopsis.Formatters.HTML import FormatStrategy
+from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
 
 class Heading(Part):
    """Heading page part. Displays a header for the page -- its strategies are
    only passed the object that the page is for; ie a Class or Module"""
 
-   formatters = Parameter([FormatStrategy.Heading(),
-                           FormatStrategy.ClassHierarchyGraph(),
-                           FormatStrategy.DetailCommenter()],
-                          '')
+   fragments = Parameter([HeadingFormatter(),
+                          ClassHierarchyGraph(),
+                          DetailCommenter()],
+                         '')
 
    def register(self, page):
 
       if page.processor.has_page('XRef'):
-         self.formatters.append(FormatStrategy.XRefLinker())
+         self.fragments.append(XRefLinker())
       if page.processor.has_page('FileSource'):
-         self.formatters.append(FormatStrategy.SourceLinker())
+         self.fragments.append(SourceLinker())
 
       Part.register(self, page)
 

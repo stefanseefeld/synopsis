@@ -1,4 +1,4 @@
-# $Id: Detail.py,v 1.2 2003/11/16 21:09:45 stefan Exp $
+# $Id: Detail.py,v 1.3 2003/12/05 22:30:29 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,15 +9,15 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.Part import Part
-from Synopsis.Formatters.HTML import FormatStrategy
+from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.DeclarationStyle import *
 
 class Detail(Part):
 
-   formatters = Parameter([FormatStrategy.DetailAST(),
-                           FormatStrategy.DetailCommenter()],
-                          '')
+   fragments = Parameter([DetailFormatter(),
+                          DetailCommenter()],
+                         '')
 
    def write_section_start(self, heading):
       """Creates a table with one row. The row has a td of class 'heading'

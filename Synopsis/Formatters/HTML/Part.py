@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.38 2003/11/16 21:09:45 stefan Exp $
+# $Id: Part.py,v 1.39 2003/12/05 22:30:29 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -17,7 +17,7 @@ and are defined in the FormatStrategy module.
 
 from Synopsis.Processor import Parametrized, Parameter
 from Synopsis import AST, Type, Util
-import FormatStrategy
+from Fragment import Fragment
 import Tags # need both because otherwise 'Tags.name' would be ambiguous
 from Tags import *
 
@@ -37,13 +37,13 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
    methods, which myst be implemented in a subclass.
    """
 
-   formatters = Parameter([], "list of FormatStrategies (yes, that's an aweful name)")
+   fragments = Parameter([], "list of Fragments")
 
    def register(self, page):
 
       self.processor = page.processor
       self.__page = page
-      self.__formatters = []
+      self.__fragments = []
       self.__id_holder = None
       # Lists of format methods for each AST type
       self.__formatdict = {'format_declaration':[],
@@ -62,12 +62,12 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
       # Why not just apply all formatters ? is this an optimization ?
       # ask chalky...
-      for formatter in self.formatters:
-         formatter.register(self)
+      for fragment in self.fragments:
+         fragment.register(self)
          for method in self.__formatdict.keys():
-            no_func = getattr(FormatStrategy.Strategy, method).im_func
-            method_obj = getattr(formatter, method)
-            # If it was overridden in formatter
+            no_func = getattr(Fragment, method).im_func
+            method_obj = getattr(fragment, method)
+            # If it was overridden in fragment
             if method_obj.im_func is not no_func:
                # Add to the dictionary
                self.__formatdict[method].append(method_obj)
@@ -116,7 +116,7 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
 
    def format_declaration(self, decl, method):
-      """Format decl using named method of each formatter. Each formatter
+      """Format decl using named method of each fragment. Each fragment
       returns two strings - type and name. All the types are joined and all
       the names are joined separately. The consolidated type and name
       strings are then passed to write_section_item."""
