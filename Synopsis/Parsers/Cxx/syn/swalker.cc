@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.56 2002/10/11 05:58:21 chalky Exp $
+// $Id: swalker.cc,v 1.57 2002/10/11 07:37:29 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.57  2002/10/11 07:37:29  chalky
+// Fixed problem with comments and setting a basename
+//
 // Revision 1.56  2002/10/11 05:58:21  chalky
 // Better memory management. Better comment proximity detection.
 //
@@ -109,7 +112,7 @@ SWalker *SWalker::g_swalker = 0;
 
 // ------------------------------------
 // SWalker Constructor
-SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Program* program)
+SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Program* program, const std::string& basename)
 : Walker(parser),
   m_parser(parser),
   m_program(program),
@@ -119,6 +122,7 @@ SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Pr
   m_filename_ptr(0),
   m_lineno(0),
   m_source(source),
+  m_basename(basename),
   m_extract_tails(false),
   m_links(0),
   m_store_decl(false),
@@ -211,89 +215,101 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
 
   // Loop over all comments in the list
   for (Ptree* next = node->Rest(); node && !node->IsLeaf(); next = node->Rest())
+  {
+    Ptree* first = node->First();
+    if (!first || !first->IsLeaf())
     {
-      Ptree* first = node->First();
-      if (!first || !first->IsLeaf())
-        {
-          node = next;
-          continue;
-        }
+      node = next;
+      continue;
+    }
 
-      update_line_number(node);
-      if (decl && m_filename != decl->filename())
-        {
-          node = next;
-          continue;
-        }
+    update_line_number(node);
+    if (decl)
+    {
+      size_t bs = m_basename.size(); 
+      bool wrong_file;
+      // Must take care of the basename, since decl->filename wont have it
+      // NB: g++ < 3.0 doesn't support the 5 argument string.compare
+      if (bs && strncmp(m_filename_ptr, m_basename.c_str(), bs) == 0)
+        // This works since m_filename_ptr still points to comment's filename
+        wrong_file = (strncmp(m_filename_ptr + bs, decl->filename().c_str(), decl->filename().size()) != 0);
+      else
+        wrong_file = (m_filename != decl->filename());
+      if (wrong_file)
+      {
+        node = next;
+        continue;
+      }
+    }
 
-      // Check if comment is continued, eg: consecutive C++ comments
-      while (next && next->First() && next->First()->IsLeaf())
-        {
-          if (strncmp(next->First()->GetPosition(), "//", 2))
-            break;
-          char* next_pos = next->First()->GetPosition();
-          char* start_pos = node->First()->GetPosition();
-          char* curr_pos = start_pos + node->First()->GetLength();
-          // Must only be whitespace between current comment and next
-          // and only one newline
-          int newlines = 0;
-          while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
-            if (*curr_pos == '\n' && newlines > 0)
-              break;
-            else if (*curr_pos++ == '\n')
-              ++newlines;
-          if (curr_pos < next_pos)
-            break;
-          // Current comment stretches to end of next
-          int len = int(next_pos - start_pos + next->First()->GetLength());
-          //node->SetCar(first = new Leaf(start_pos, len));
-          node->SetCar(first = make_Leaf(start_pos, len));
-          // Skip the combined comment
-          next = next->Rest();
-        }
+    // Check if comment is continued, eg: consecutive C++ comments
+    while (next && next->First() && next->First()->IsLeaf())
+    {
+      if (strncmp(next->First()->GetPosition(), "//", 2))
+        break;
+      char* next_pos = next->First()->GetPosition();
+      char* start_pos = node->First()->GetPosition();
+      char* curr_pos = start_pos + node->First()->GetLength();
+      // Must only be whitespace between current comment and next
+      // and only one newline
+      int newlines = 0;
+      while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
+        if (*curr_pos == '\n' && newlines > 0)
+          break;
+        else if (*curr_pos++ == '\n')
+          ++newlines;
+      if (curr_pos < next_pos)
+        break;
+      // Current comment stretches to end of next
+      int len = int(next_pos - start_pos + next->First()->GetLength());
+      //node->SetCar(first = new Leaf(start_pos, len));
+      node->SetCar(first = make_Leaf(start_pos, len));
+      // Skip the combined comment
+      next = next->Rest();
+    }
 
-      // Ensure that there is no more than one newline between the comment and
-      // the declaration. We assume that the declaration is the next
-      // non-comment thing (which could be a bad assumption..)
-      // If extract_tails is set, then comments separated by a space are still
-      // included, but are marked as suspect for the Linker to deal with
-      bool suspect = false;
-      char* pos = first->GetPosition() + first->GetLength();
+    // Ensure that there is no more than one newline between the comment and
+    // the declaration. We assume that the declaration is the next
+    // non-comment thing (which could be a bad assumption..)
+    // If extract_tails is set, then comments separated by a space are still
+    // included, but are marked as suspect for the Linker to deal with
+    bool suspect = false;
+    char* pos = first->GetPosition() + first->GetLength();
+    while (*pos && strchr(" \t\r", *pos))
+      ++pos;
+    if (*pos == '\n')
+    {
+      ++pos;
+      // Found only allowed \n
       while (*pos && strchr(" \t\r", *pos))
         ++pos;
-      if (*pos == '\n')
+      if (*pos == '\n' || !strncmp(pos, "/*", 2))
       {
-        ++pos;
-        // Found only allowed \n
-        while (*pos && strchr(" \t\r", *pos))
-          ++pos;
-        if (*pos == '\n' || !strncmp(pos, "/*", 2))
+        // 1. More than one newline.. skip entire comment and move onto next.
+        // 2. This comment is followed by a /*, so ignore this one
+        // If extract_tails is set, we keep it anyway but mark as suspect
+        if (!m_extract_tails)
         {
-          // 1. More than one newline.. skip entire comment and move onto next.
-          // 2. This comment is followed by a /*, so ignore this one
-          // If extract_tails is set, we keep it anyway but mark as suspect
-          if (!m_extract_tails)
-          {
-            node = next;
-            continue;
-          }
-          else
-            suspect = true;
+          node = next;
+          continue;
         }
+        else
+          suspect = true;
       }
-
-      if (decl)
-      {
-        //AST::Comment* comment = new AST::Comment("", 0, first->ToString(), suspect);
-        AST::Comment* comment = make_Comment("", 0, first, suspect);
-        decl->comments().push_back(comment);
-      }
-      if (m_links) m_links->long_span(first, "file-comment");
-      // Set first to nil so we dont accidentally do them twice (eg:
-      // when parsing expressions)
-      node->SetCar(nil);
-      node = next;
     }
+
+    if (decl)
+    {
+      //AST::Comment* comment = new AST::Comment("", 0, first->ToString(), suspect);
+      AST::Comment* comment = make_Comment("", 0, first, suspect);
+      decl->comments().push_back(comment);
+    }
+    if (m_links) m_links->long_span(first, "file-comment");
+    // Set first to nil so we dont accidentally do them twice (eg:
+    // when parsing expressions)
+    node->SetCar(nil);
+    node = next;
+  }
 }
 
 // -- These methods implement add_comments for various node types that store
@@ -489,9 +505,11 @@ Ptree* SWalker::TranslatePtree(Ptree* node)
    }
   else
     {
-      cout << "Warning: Unknown Ptree "<<node->What(); node->Display2(cout);
 #ifdef DEBUG
-      *((char*)0) = 1; // force breakpoint, or core dump :)
+      STrace trace("SWalker::TranslatePtree");
+      LOG("Warning: Unknown Ptree "<<node->What());
+      nodeLOG(node);
+      //*((char*)0) = 1; // force breakpoint, or core dump :)
 #endif
     }
   return 0;
