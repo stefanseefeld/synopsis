@@ -1,4 +1,4 @@
-# $Id: XRefLinker.py,v 1.3 2003/12/09 06:30:56 stefan Exp $
+# $Id: XRefLinker.py,v 1.4 2003/12/09 21:03:44 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -24,8 +24,8 @@ class XRefLinker(Default):
       info = self.xref.get_info(decl.name())
       if not info:
          return ''
-      view = self.xref.get_view_for(decl.name())
-      filename = self.processor.file_layout.xref(view)
+      page = self.xref.get_page_for(decl.name())
+      filename = self.processor.file_layout.xref(page)
       filename = filename + "#" + Util.quote(string.join(decl.name(), '::'))
       return href(rel(self.formatter.filename(), filename), "[xref]")
 
