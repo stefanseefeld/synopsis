@@ -205,15 +205,68 @@
         AST it generates from a parsed source file consists of declarations
         only. Let's thus in the following consider how synopsis parses
         C++ header files.</para>
-      <para></para>
+      <para>Let's assume a simple header file, containing some declarations:</para>
+      <para>
+        <programlisting><xi:include href="examples/Paths/Path.h" parse="text"/>
+        </programlisting>
+      </para>
+      <para>Process this with
+        <programlisting>synopsis -p Cxx -f HTML -o Paths Path.h</programlisting>
+        to generate an html document. As you will note, all declarations appear
+        in the document, each associated with the comment(s) preceding it in the
+        code. We used here a C++ header (and the associated <type>Cxx</type>
+        parser), but we could equally well have chosen another supported language.
+      </para>
+      <para>While this one-line command is convenient, it is usually better
+        (and more clear) to separate the individual processing steps. We will now
+        fine-tune the processing, demonstrating the flexibility of the processers.
+      </para>
     </section>
 
     <section id="comments">
       <title>Using comments for documentation</title>
 
-      <para>
-        <programlisting><xi:include href="examples/example1/Shape.h" parse="text"/>
+      <para>The <filename>Path.h</filename> header contains different kinds of comments,
+        not all of which are intended to be used as documentation. Here we want
+        to preserve only those comments starting with '//.'. That's done with the
+        <type>SSDComments</type>(read: 'slash slash dot') processor. Further, the
+        members of the <type>Vertex</type> strcture are commented <emphasis>after</emphasis>
+        the declaration, with comments using the prefix '//.&lt;'. These are dealt
+        with by the <type>Previous</type> processor.</para>
+      <para>The result of
+        <programlisting>synopsis -p Cxx -l SSDComments,Previous -o Path.syn Path.h
+synopsis -f HTML -o Paths Path.syn
         </programlisting>
+        looks already much better.
+      </para>
+      <para>Let us now add more input files:
+        <programlisting><xi:include href="examples/Paths/Polyline.h" parse="text"/>
+        </programlisting>
+        This header uses a different comment convention. Here relevant comments
+        start with '//', so we will use the <type>SSComments</type> Processor.
+        Additionally, it uses special tags to group declarations together. As there
+        is more than one possible grouping syntax, we will use the <type>Grouper1</type>
+        processor (and discuss the others in <xref linkend="scripting"/>): 
+        <programlisting>synopsis -p Cxx -l SSComments,Grouper1 -o Polyline.syn Polyline.h
+synopsis -f HTML -o Paths Path.syn Polyline.syn
+        </programlisting>
+      </para>
+      <para>Finally, let us look at a header file that is written in javadoc style,
+        i.e. with java-style comments, and containing special tags:
+        <programlisting><xi:include href="examples/Paths/Nurbs.h" parse="text"/>
+        </programlisting>
+        Here, we filter out undesired comments with the <type>JavaComments</type>
+        processor, and then parse the comments for @tags with <type>JavaTags</type>:
+        <programlisting>synopsis -p Cxx -l JavaComments,JavaTags -o Nurbs.syn Nurbs.h
+        </programlisting>
+        Finally, we generate the documentation with all the headers together, with the
+        additional <option>--javadoc</option> flag that tells the HTML formatter to
+        include a <type>Javadoc</type> comment processor to generate appropriate links
+        and other formatting.
+        <programlisting>synopsis -f HTML --javadoc -o Paths Path.syn Polyline.syn Bezier.syn Nurbs.syn
+        </programlisting>
+      </para>
+      <para>The full code together with the Makefile can be found <ulink url="examples/Paths">here</ulink>
       </para>
     </section>
   </chapter>
