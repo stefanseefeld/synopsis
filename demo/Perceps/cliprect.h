@@ -1,5 +1,5 @@
 /*
-	$Id: cliprect.h,v 1.1 2001/04/05 15:25:46 chalky Exp $
+	$Id: cliprect.h,v 1.2 2001/04/05 16:07:59 chalky Exp $
 
 	------------------------------------------------------------------------
 	ClanLib, the platform independent game SDK.
@@ -17,7 +17,6 @@
 #ifndef header_cliprect
 #define header_cliprect
 
-class CL_ClipRect
 //: Clipping rectangle class in ClanLib.
 // This class is used to define clipping regions when drawing graphics to the
 // backbufffer. This is useful if it is too expensive to update the entire
@@ -28,6 +27,7 @@ class CL_ClipRect
 // in CL_Display and CL_DisplayCard.
 //!also: CL_Display - The DisplayCard wrapper class.
 //!also: CL_DisplayCard - The DisplayCard class.
+class CL_ClipRect
 {
 public:
 	int m_x1;
