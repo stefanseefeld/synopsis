@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.33 2001/06/05 17:59:25 stefan Exp $
+// $Id: swalker.cc,v 1.34 2001/06/06 01:18:13 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.34  2001/06/06 01:18:13  chalky
+// Rewrote parameter parsing to test for different combos of name, value and
+// keywords
+//
 // Revision 1.33  2001/06/05 17:59:25  stefan
 // output some diagnostics when catching a segfault
 //
@@ -875,47 +879,58 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 // Fills the vector of Parameter types by parsing p_params.
 void SWalker::TranslateParameters(Ptree* p_params, std::vector<Parameter*>& params)
 {
-  while (p_params)
+    while (p_params)
     {
-      // A parameter has a type, possibly a name and possibly a value
-      std::string name, value;
-      if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
-      Ptree* param = p_params->First();
-      // The type is stored in the encoded type string already
-      Type::Type* type = m_decoder->decodeType();
-      if (!type)
+	// A parameter has a type, possibly a name and possibly a value
+	std::string name, value, premods;
+	if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
+	Ptree* param = p_params->First();
+	// The type is stored in the encoded type string already
+	Type::Type* type = m_decoder->decodeType();
+	if (!type)
 	{
-	  std::cout << "Premature end of decoding!" << std::endl;
-	  break; // NULL means end of encoding
+	    std::cout << "Premature end of decoding!" << std::endl;
+	    break; // NULL means end of encoding
 	}
-      // Link type
-      if (m_store_links && !param->IsLeaf() && param->First()) 
-	storeLink(param->First(), false, type);
-      // Find name and value
-      // FIXME: this doesnt account for anon but initialised params!
-      // Skip keywords (eg: register) which are Leaves
-      string premods;
-      while (param && param->Car() && param->Car()->IsLeaf()) {
-	if (premods.size() > 0) premods.append(" ");
-	premods.append(param->Car()->GetPosition(), param->Car()->GetLength());
-	param = param->Rest();
-      }
-      if (param->Length() > 1)
-	{
-	  Ptree* pname = param->Second();
-	  if (pname && pname->Car())
-	    {
-	      // * and & modifiers are stored with the name so we must skip them
-	      while (pname && (pname->Car()->Eq('*') || pname->Car()->Eq('&'))) pname = pname->Cdr();
-	      // Extract name
-	      if (pname) name = pname->Car()->ToString();
+        // Discover contents. Ptree may look like:
+        //[register iostate [* a] = [0 + 2]]
+        //[register iostate [nil] = 0]
+        //[register iostate [nil]]
+        //[iostate [nil] = 0]
+        //[iostate [nil]]   etc
+        if (param->Length() > 1) {
+	    // There is a parameter
+	    int type_ix, value_ix = -1, len = param->Length();
+	    if (len >= 4 && param->Nth(len-2)->Eq('=')) {
+		// There is an =, which must be followed by the value
+		value_ix = len-1;
+		type_ix = len-4;
+	    } else {
+		// No =, so last is name and second last is type
+		type_ix = len-2;
 	    }
-	  // If there are three cells, they are 1:name 2:= 3:value
-	  if (param->Length() > 2) value = param->Nth(3)->ToString();
-	}
-      // Add the AST.Parameter type to the list
-      params.push_back(new AST::Parameter(premods, type, "", name, value));
-      p_params = Ptree::Rest(p_params);
+	    // Link type
+	    if (m_store_links && !param->IsLeaf() && param->Nth(type_ix)) 
+		storeLink(param->Nth(type_ix), false, type);
+	    // Skip keywords (eg: register) which are Leaves
+	    for (int ix = 0; ix < type_ix && param->Nth(ix)->IsLeaf(); ix++) {
+		Ptree* leaf = param->Nth(ix);
+		if (premods.size() > 0) premods.append(" ");
+		premods.append(leaf->GetPosition(), leaf->GetLength());
+	    }
+	    // Find name
+	    if (Ptree* pname = param->Nth(type_ix+1)) {
+	        if (!pname->IsLeaf() && pname->Last()) {
+		    // * and & modifiers are stored with the name so we must skip them
+		    name = pname->Last()->ToString();
+	      	}
+	    }
+	    // Find value
+	    if (value_ix >= 0) value = param->Nth(value_ix)->ToString();
+        }
+        // Add the AST.Parameter type to the list
+        params.push_back(new AST::Parameter(premods, type, "", name, value));
+        p_params = Ptree::Rest(p_params);
     }
 }
 
