@@ -46,12 +46,14 @@ class ASCIIFormatter:
         self.__type = "%s%s%s"%(string.join(premod,''), aliasStr, string.join(type.postmod(),''))
             
     def visitParametrized(self, type):
-        type.template().accept(self)
-        type_save = self.__type
-        parameters = []
-        for p in type.parameters():
-            parameters.append(self.formatType(p))
-        self.__type = "%s<%s>"%(type_save,string.join(parameters, ", "))
+	temp = self.formatType(type.template())
+	params = map(self.formatType, type.parameters())
+        self.__type = "%s<%s>"%(temp,string.join(params, ", "))
+
+    def visitFunctionType(self, type):
+	ret = self.formatType(type.returnType())
+	params = map(self.formatType, type.parameters())
+	self.__type = "%s(%s)(%s)"%(ret,string.join(type.premod(),''),string.join(params,", "))
 
     ### AST visitor
 

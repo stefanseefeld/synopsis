@@ -95,6 +95,13 @@ PyObject *Synopsis::addParametrized(PyObject *templ, const vector<PyObject *> &p
     return parametrized;
 }
 
+PyObject *Synopsis::addFunctionType(PyObject *ret, const vector<string>& pre, const vector<PyObject *> & params)
+{
+    Trace trace("Synopsis::addFunctionType");
+    PyObject *func = PyObject_CallMethod(type, "Function", "sOOO", "C++", ret, V2L(pre), V2L(params));
+    return func;
+}
+
 PyObject *Synopsis::addForward(size_t line, bool main, const string &type, const string &name)
 {
     Trace trace("Synopsis::addForward");
