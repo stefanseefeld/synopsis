@@ -21,6 +21,8 @@ Parser* Walker::default_parser = 0;
 const char* Walker::argument_name = "_arg_%d_";
 const char* Walker::default_metaclass = 0;
 
+using PTree::GC;
+
 Walker::Walker(Parser* p)
   : my_result(0)
 {
