@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.1 2002/10/28 17:38:57 chalky Exp $
+# $Id: XRef.py,v 1.2 2002/10/29 12:43:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.2  2002/10/29 12:43:55  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.1  2002/10/28 17:38:57  chalky
 # Created module to handle xref data
 #
@@ -85,4 +88,8 @@ class CrossReferencer:
 	page. This method is intended to be used by whatever generates the
 	files..."""
 	return self.__file_info
+
+    def get_all_names(self):
+	"""Returns a list of all names"""
+	return self.__data.keys()
     

@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.9 2002/07/04 06:43:18 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.10 2002/10/29 12:43:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.10  2002/10/29 12:43:56  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.9  2002/07/04 06:43:18  chalky
 # Improved support for absolute references - pages known their full path.
 #
@@ -103,18 +106,20 @@ class ModuleIndexer(Page.Page):
         self.__title = self.__title + ' Index'
 	# Create file
 	self.start_file()
-	target = rel(self.__filename, config.files.nameOfScope(ns.name()))
-	link = href(target, self.__title, target='main')
+	#target = rel(self.__filename, config.files.nameOfScope(ns.name()))
+	#link = href(target, self.__title, target='main')
 	self.write(self._makePageHeading(ns))
 
 	# Make script to switch main frame upon load
 	link_script = "javascript:return go('%s','%s');"
-	load_script = '<!--\nwindow.parent.frames["main"].location="%s";\n'\
-	    'function go(index,main) {\n'\
+	load_script = '<!--\n'
+	if config.toc[ns.name()]:
+	    target = rel(self.__filename, config.toc[ns.name()].link)
+	    load_script = load_script + 'window.parent.frames["main"].location="%s";\n'%target
+	load_script = load_script + 'function go(index,main) {\n'\
 	    'window.parent.frames["index"].location=index;\n'\
 	    'window.parent.frames["main"].location=main;\n'\
 	    'return false;}\n-->'
-	load_script = load_script%target
 	self.write(entity('script', load_script, language='Javascript'))
 
 	# Loop throught all the types of children
@@ -132,13 +137,18 @@ class ModuleIndexer(Page.Page):
 		    heading = None
 		if isinstance(child, AST.Module):
 		    index_url = rel(self.__filename, config.files.nameOfModuleIndex(child.name()))
-		    scope_url = rel(self.__filename, config.files.nameOfScope(child.name()))
-		    script = link_script%(index_url, scope_url)
-		    self.write(self.reference(child.name(), ns.name(), target='main', onClick=script))
+		    #scope_url = rel(self.__filename, config.files.nameOfScope(child.name()))
+		    #script = link_script%(index_url, scope_url)
+		    #self.write(self.reference(child.name(), ns.name(), target='index', onClick=script))
+		    self.write(self.reference(child.name(), ns.name(), href=index_url))
 		else:
-		    url = rel(self.__filename, config.files.nameOfScope(child.name()))
 		    label = anglebrackets(Util.ccolonName(child.name(), ns.name()))
-		    self.write(href(url, label, target='main'))
+		    entry = config.toc[child.name()]
+		    if entry:
+			url = rel(self.__filename, entry.link)
+			self.write(href(url, label, target='main'))
+		    else:
+			self.write(label)
 		self.write('<br>')
 	self.end_file()
 

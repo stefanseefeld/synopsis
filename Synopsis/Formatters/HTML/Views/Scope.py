@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.16 2002/01/09 10:16:35 chalky Exp $
+# $Id: Scope.py,v 1.17 2002/10/29 12:43:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.17  2002/10/29 12:43:56  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.16  2002/01/09 10:16:35  chalky
 # Centralized navigation, clicking links in (html) docs works.
 #
@@ -79,6 +82,9 @@ import time, os
 # Synopsis modules
 from Synopsis.Core import AST
 
+# Formatter modules
+from Synopsis.Formatter import TOC
+
 # HTML modules
 import Page
 import core
@@ -104,6 +110,7 @@ class ScopePages (Page.Page):
 	self.__parts = []
 	self._get_parts()
 	self.__namespaces = []
+	self.__toc = None
 
     def _get_parts(self):
 	"Loads the list of parts from config"
@@ -115,6 +122,13 @@ class ScopePages (Page.Page):
 	for part in parts:
 	    obj = core.import_object(part, basePackage=base)(self)
 	    self.__parts.append(obj)
+    
+    def get_toc(self, start):
+	"""Returns the TOC for the whole AST starting at start"""
+	if self.__toc: return self.__toc
+	self.__toc = TOC.TableOfContents(config.files)
+	start.accept(self.__toc)
+	return self.__toc
 
     def filename(self):
         """since ScopePages generates a whole file hierarchy, this method returns the current filename,

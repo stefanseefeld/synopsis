@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.2 2002/10/29 01:35:58 chalky Exp $
+# $Id: XRef.py,v 1.3 2002/10/29 12:43:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.3  2002/10/29 12:43:56  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.2  2002/10/29 01:35:58  chalky
 # Add descriptive comment and link to docs for scope in xref pages
 #
@@ -32,10 +35,19 @@ import os
 # Synopsis modules
 from Synopsis.Core import AST, Type, Util
 
+# Formatter modules
+from Synopsis.Formatter import TOC
+
 # HTML modules
 import Page
 from core import config
 from Tags import *
+
+class XRefLinker (TOC.Linker):
+    def __init__(self, xref):
+	self.xref = xref
+    def link(self, name):
+	return file
 
 class XRefPages (Page.Page):
     """A module for creating pages full of xref infos"""
@@ -44,9 +56,22 @@ class XRefPages (Page.Page):
 	self.xref = config.xref
 	self.__filename = None
 	self.__title = None
+	self.__toc = None
 	if hasattr(config.obj, 'XRefPages'):
 	    if hasattr(config.obj.XRefPages, 'xref_file'):
 		self.xref.load(config.obj.XRefPages.xref_file)
+
+    def get_toc(self, start):
+	"""Returns the toc for XRefPages"""
+	if self.__toc: return self.__toc
+	self.__toc = TOC.TableOfContents(None)
+	# Add an entry for every xref
+	for name in self.xref.get_all_names():
+	    page = self.xref.get_page_for(name)
+	    file = config.files.nameOfSpecial('xref%d'%page)
+	    file = file + '#' + Util.quote(string.join(name,'::'))
+	    self.__toc.insert(TOC.TocEntry(name, file, 'C++', 'xref'))
+	return self.__toc
 
     def filename(self):
         """Returns the current filename,
@@ -100,7 +125,19 @@ class XRefPages (Page.Page):
 	# Output list element
 	self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
 	    file_link, file, line, desc, scope_text))
-     
+    
+    def describe_decl(self, decl):
+	"""Returns a description of the declaration. Detects constructors and
+	destructors"""
+	name = decl.name()
+	if isinstance(decl, AST.Function) and len(name) > 1:
+	    real = decl.realname()[-1]
+	    if name[-2] == real:
+		return 'Constructor '
+	    elif real[0] == '~' and name[-2] == real[1:]:
+		return 'Destructor '
+	return decl.type().capitalize() + ' '
+
     def process_name(self, name):
 	"""Outputs the info for a given name"""
 
@@ -109,7 +146,14 @@ class XRefPages (Page.Page):
 
 	jname = string.join(name, '::')
 	self.write('<a name="%s">'%Util.quote(jname))
-	self.write(entity('h2', jname) + '<ul>\n')
+	desc = ''
+	decl = None
+	if config.types.has_key(name):
+	    type = config.types[name]
+	    if isinstance(type, Type.Declared):
+		decl = type.declaration()
+		desc = self.describe_decl(decl)
+	self.write(entity('h2', desc + jname) + '<ul>\n')
 	
 	if target_data[0]:
 	    self.write('<li>Defined at:<ul>\n')
@@ -126,7 +170,23 @@ class XRefPages (Page.Page):
 	    for file, line, scope in target_data[2]:
 		self.process_link(file, line, scope)
 	    self.write('</ul></li>\n')
-	
+	if isinstance(decl, AST.Scope):
+	    self.write('<li>Declarations:<ul>\n')
+	    for child in decl.declarations():
+		file, line = child.file(), child.line()
+		file_scope = string.split(file, os.sep)
+		file_link = config.files.nameOfScopedSpecial('page', file_scope)
+		file_link = '%s#%d'%(file_link,line)
+		file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
+		cname = child.name()
+		entry = config.toc[cname]
+		type = self.describe_decl(child)
+		if entry:
+		    link = href(entry.link, Util.ccolonName(cname))
+		    self.write(entity('li', file_href + type + link))
+		else:
+		    self.write(entity('li', file_href + type + Util.ccolonName(cname)))
+	    self.write('</ul></li>\n')
 	self.write('</ul><hr>\n')
 
 htmlPageClass = XRefPages
