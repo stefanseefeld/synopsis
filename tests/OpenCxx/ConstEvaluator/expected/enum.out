@@ -1,0 +1,14 @@
+enumerator : RED, value : 1
+enumerator : GREEN, value : 2
+enumerator : BLUE, value : 4
+enumerator : WHITE, value : 7
+enumerator : ZERO, value : 0
+enumerator : ONE, value : 1
+enumerator : TWO, value : 2
+enumerator : THREE, value : 3
+enumerator : NO, value : 0
+enumerator : YES, value : 1
+enumerator : OFF, value : 0
+enumerator : ON, value : 1
+enumerator : FALSE, value : 0
+enumerator : TRUE, value : 1

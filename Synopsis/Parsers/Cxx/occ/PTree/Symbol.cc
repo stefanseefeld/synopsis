@@ -7,6 +7,7 @@
 #include <PTree/Display.hh>
 #include <PTree/Writer.hh>
 #include <PTree/Symbol.hh>
+#include <PTree/ConstEvaluator.hh>
 #include <cassert>
 
 using namespace PTree;
@@ -15,9 +16,9 @@ Scope::~Scope()
 {
 }
 
-void Scope::declare(const Encoding &id, const Symbol &s)
+void Scope::declare(const Encoding &name, const Symbol *s)
 {
-  my_symbols[id] = s;
+  my_symbols[name] = s;
 }
 
 void Scope::declare(Declaration *d)
@@ -57,27 +58,41 @@ void Scope::declare(Typedef *td)
 void Scope::declare(EnumSpec *spec)
 {
   Node *tag = second(spec);
-  Encoding encoding = spec->encoded_name();
-  if(tag && tag->is_atom()) declare(encoding, Symbol(Symbol::TYPE, spec));
+  const Encoding &name = spec->encoded_name();
+  const Encoding &type = spec->encoded_type();
+  if(tag && tag->is_atom()) declare(name, new TypeName(type, spec));
   // else it's an anonymous enum
 
   Node *body = third(spec);
-  display(body, std::cout, true);
+  // The numeric value of an enumerator is either specified
+  // by an explicit initializer or it is determined by incrementing
+  // by one the value of the previous enumerator.
+  // The default value for the first enumerator is 0
+  long value = -1;
   for (Node *e = second(body); e; e = rest(rest(e)))
   {
     Node *enumerator = e->car();
-    if (!enumerator->is_atom()) // 'identifier = initializer'
+    if (enumerator->is_atom()) ++value;
+    else  // [identifier = initializer]
+    {
+      Node *initializer = third(enumerator);
       enumerator = enumerator->car();
+      if (!evaluate_const(initializer, *this, value))
+      {
+	std::cerr << "Error in evaluating enum initializer :\n"
+		  << "Expression doesn't evaluate to a constant integral value" << std::endl;
+      }
+    }
     assert(enumerator->is_atom());
     declare(Encoding(enumerator->position(), enumerator->length()),
-	    Symbol(Symbol::CONST, enumerator));
+	    new ConstName(type, value, enumerator));
   }
 }
 
 void Scope::declare(ClassSpec *spec)
 {
-  Encoding encoding = spec->encoded_name();
-  declare(encoding, Symbol(Symbol::TYPE, spec));
+  const Encoding &name = spec->encoded_name();
+  declare(name, new TypeName(spec->encoded_type(), spec));
 }
 
 void Scope::declare(TemplateDecl *, ClassSpec *)
@@ -88,33 +103,24 @@ void Scope::declare(TemplateDecl *, Node *)
 {
 }
 
-Symbol::Type Scope::lookup(const Encoding &id, Symbol &s) const
+const Symbol *Scope::lookup(const Encoding &id) const throw()
 {
   SymbolTable::const_iterator i = my_symbols.find(id);
-  if (i != my_symbols.end())
-  {
-    s = i->second;
-    return s.type;
-  }
-  else return Symbol::NONE;
+  return i == my_symbols.end() ? 0 : i->second;
 }
 
 void Scope::dump(std::ostream &os) const
 {
   for (SymbolTable::const_iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
   {
-    switch (i->second.type)
-    {
-      case Symbol::VARIABLE:
-	os << "Variable : " << reify(i->second.ptree);
-	break;
-      case Symbol::CONST:
-	os << "Const    : " << reify(i->second.ptree);
-	break;
-      case Symbol::TYPE:
-	os << "Type     : " << reify(i->second.ptree);
-	break;
-    }
+    if (const VariableName *variable = dynamic_cast<const VariableName *>(i->second))
+      os << "Variable: " << i->first << ' ' << variable->type() << std::endl;
+    else if (const ConstName *const_ = dynamic_cast<const ConstName *>(i->second))
+      os << "Const:    " << i->first << ' ' << const_->type() << " (" << const_->value() << '"' << std::endl;
+    else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
+      os << "Type: " << i->first << ' ' << type->type() << std::endl;
+    else // shouldn't get here
+      os << "Symbol: " << i->first << ' ' << i->second->type() << std::endl;
   }  
 }
 
@@ -162,12 +168,12 @@ int Scope::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
   int m = *i - 0x80;
   if(m <= 0) return *(i+1) - 0x80 + 2;
 
-  Symbol symbol;
-  if(scope != 0 && 
-     scope->lookup(Encoding((const char*)&*(i + 1), m), symbol) != Symbol::NONE)
+  if(scope)
+  {
+    const Symbol *symbol = scope->lookup(Encoding((const char*)&*(i + 1), m));
     // FIXME !! (see Environment)
-    return m + (*(i + m + 1) - 0x80) + 2;
-
+    if (symbol) return m + (*(i + m + 1) - 0x80) + 2;
+  }
   // the template name was not found.
   scope = 0;
   return m + (*(i + m + 1) - 0x80) + 2;
@@ -210,10 +216,10 @@ const Scope *Scope::lookup_typedef_name(Encoding::iterator i, size_t s,
   return 0;
 }
 
-Symbol::Type NestedScope::lookup(const Encoding &id, Symbol &s) const
+const Symbol *NestedScope::lookup(const Encoding &name) const throw()
 {
-  if (!Scope::lookup(id, s)) return my_outer->lookup(id, s);
-  else return s.type;
+  const Symbol *symbol = Scope::lookup(name);
+  return symbol ? symbol : my_outer->lookup(name);
 }
 
 void NestedScope::dump(std::ostream &os) const

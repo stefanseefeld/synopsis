@@ -20,21 +20,24 @@ namespace PTree
 class ConstEvaluator : public Visitor
 {
 public:
-  ConstEvaluator() : my_type(Symbol::NONE) {}
-  bool evaluate(Node *node, unsigned long &value);
+  ConstEvaluator(const Scope &s) : my_valid(false), my_symbols(s) {}
+  bool evaluate(Node *node, long &value);
 
 private:
   virtual void visit(Literal *);
+  virtual void visit(Identifier *);
   virtual void visit(InfixExpr *);
   
-  Symbol::Type  my_type;
-  unsigned long my_value;
+  bool         my_valid;
+  long         my_value;
+  const Scope &my_symbols;
 };
   
-inline bool evaluate_const(const Node *node, unsigned long &value)
+inline bool evaluate_const(const Node *node, const Scope &symbols,
+			   long &value)
 {
   if (!node) return false;
-  ConstEvaluator e;
+  ConstEvaluator e(symbols);
   return e.evaluate(const_cast<Node *>(node), value);
 }
 
