@@ -1,4 +1,4 @@
-# $Id: ClassTree.py,v 1.3 2001/07/04 08:18:04 uid20151 Exp $
+# $Id: ClassTree.py,v 1.4 2002/01/09 11:43:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ClassTree.py,v $
+# Revision 1.4  2002/01/09 11:43:41  chalky
+# Inheritance pics
+#
 # Revision 1.3  2001/07/04 08:18:04  uid20151
 # Comments
 #
@@ -156,8 +159,8 @@ class ClassTree(AST.Visitor):
 	self.add_class(name)
 	for inheritance in clas.parents():
 	    parent = inheritance.parent()
-	    if hasattr(parent, 'name'):	
-		self.add_inheritance(parent.name(), name)
+	    if hasattr(parent, 'declaration'):	
+		self.add_inheritance(parent.declaration().name(), name)
 	    elif isinstance(parent, Type.Parametrized):
 		self.add_inheritance(parent.template().name(), name)
 	for decl in clas.declarations():

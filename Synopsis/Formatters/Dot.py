@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.22 2001/07/19 04:03:05 chalky Exp $
+# $Id: Dot.py,v 1.23 2002/01/09 11:43:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.23  2002/01/09 11:43:41  chalky
+# Inheritance pics
+#
 # Revision 1.22  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -183,11 +186,11 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         self.__type_label = Util.ccolonName(type.name(), self.scope())
         
     def visitDeclared(self, type):
-        self.__type_ref = toc[type.name()]
+        self.__type_ref = toc[type.declaration().name()]
 	if isinstance(type.declaration(), AST.Class):
 	    self.__type_label = self.getClassName(type.declaration())
 	else:
-	    self.__type_label = Util.ccolonName(type.name(), self.scope())
+	    self.__type_label = Util.ccolonName(type.declaration().name(), self.scope())
 
     def visitParametrized(self, type):
 	if type.template():
