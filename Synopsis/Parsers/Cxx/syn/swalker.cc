@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.35 2001/06/06 03:28:49 chalky Exp $
+// $Id: swalker.cc,v 1.36 2001/06/06 04:56:59 uid20151 Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.36  2001/06/06 04:56:59  uid20151
+// small optimisation (dont translate non-main func impls)
+//
 // Revision 1.35  2001/06/06 03:28:49  chalky
 // Support anon structs
 //
@@ -1071,7 +1074,8 @@ Ptree* SWalker::TranslateFunctionImplementation(Ptree* node)
     STrace trace("SWalker::TranslateFunctionImplementation");
     m_operation = 0; m_params.clear();
     TranslateDeclarator(node->Third());
-    if (!m_store_links) return 0;
+    if (!m_store_links) return 0; // Dont translate if not storing links
+    if (m_filename != m_source) return 0; // Dont translate if not main file
     if (!m_operation) { cerr << "Warning: operation was null!" << endl; return 0; }
     FuncImplCache cache;
     cache.oper = m_operation;
