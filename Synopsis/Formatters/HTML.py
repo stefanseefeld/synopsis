@@ -1164,8 +1164,8 @@ def __parseArgs(args):
     commentParser = "default"
     commentFormatterList = []
     try:
-        opts,remainder = getopt.getopt(args, "ho:s:n:c:S:")
-    except getopt.error, e:
+        opts,remainder = Util.getopt_spec(args, "ho:s:n:c:S:")
+    except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
 

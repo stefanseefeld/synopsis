@@ -1,4 +1,4 @@
-/*$Id: Graphic.idl,v 1.2 2001/01/21 05:34:26 chalky Exp $
+/*$Id: Graphic.idl,v 1.3 2001/01/21 06:22:52 chalky Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999, 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -43,7 +43,8 @@ interface GraphicIterator
 
 interface Graphic
 //. The Graphic interface defines the common operations for all objects
-//. within the scene graph. Graphics have a size and an origin for the purposes 
+//. within the scene graph.
+//. Graphics have a size and an origin for the purposes 
 //. of layout. The Graphic interface provides operations for geometry management,
 //. drawing, picking, and a directed-acyclic structure (not strictly hierarchical).
 //.
