@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.25 2001/05/25 13:45:49 stefan Exp $
+# $Id: ASCII.py,v 1.26 2001/07/19 04:00:17 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.26  2001/07/19 04:00:17  chalky
+# New .syn file format. Added -b, -c flags
+#
 # Revision 1.25  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -121,9 +124,13 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	    self.write(self.__axs_string[axs])
 	    self.__axs = axs
 	for comment in decl.comments():
-	    self.indent()
-	    self.write(comment.text())
-	    self.write("\n")
+	    text = comment.text()
+	    if not text: continue
+	    lines = string.split(text, "\n")
+	    for line in lines:
+		self.indent()
+		self.write(comment_str%line)
+	    #self.write("\n")
 
     def visitTypedef(self, typedef):
 	self.visitDeclaration(typedef)
@@ -218,8 +225,8 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	    if operation.language() == "C++" and len(name)>1 and name[-1] in [name[-2],"~"+name[-2]]:
 		self.write("%s("%name[-1])
 	    else:
-		self.write(retStr)
-		self.write(" %s("%name[-1])
+		if retStr: self.write(retStr+" ")
+		self.write("%s("%name[-1])
 	    self.__params = []
 	    for parameter in operation.parameters(): parameter.accept(self)
 	    params = string.join(self.__params, ", ")
@@ -265,13 +272,18 @@ def usage():
     """Print usage to stdout"""
     print \
 """
-  -o <file>                            Output file"""
+  -o <file>                            Output file
+  -b                                   Bold comments
+  -c <colour>                          Coloured comments, colour = 0 to 15 
+"""
 
 def __parseArgs(args):
-    global output, verbose
+    global output, verbose, show_bold, show_colour, comment_str
     output = sys.stdout
+    show_bold = 0
+    show_colour = None
     try:
-        opts,remainder = getopt.getopt(args, "o:v")
+        opts,remainder = getopt.getopt(args, "o:vbc:")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -281,6 +293,17 @@ def __parseArgs(args):
 
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
+	elif o == "-b": show_bold = 1
+	elif o == "-c": show_colour = int(a)
+
+    if show_colour is not None: 
+	comment_str = "\033[3%d%sm// %%s\033[m\n"%(
+	    show_colour % 8, 
+	    (show_colour >= 8) and ";1" or "")
+    elif show_bold:
+	comment_str = "\033[1m// %s\033[m\n"
+    else:
+	comment_str = "// %s\n"
 
 def print_types(types):
     keys = types.keys()
@@ -296,12 +319,12 @@ def print_types(types):
 	    print "name ==",name
 	    raise
 
-def format(types, declarations, args, config_obj):
+def format(args, ast, config_obj):
     __parseArgs(args)
     formatter = ASCIIFormatter(output)
     #for type in types:
     #    type.output(formatter)
-    for declaration in declarations:
+    for declaration in ast.declarations():
 	declaration.accept(formatter)
 
     # print_types(types)
