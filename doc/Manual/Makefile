@@ -10,7 +10,7 @@ cxxsdir		:= syn/Parser/C++
 
 texi-help	:= aux cp fn fns ky log pg toc tp tps vr vrs
 
-S_PYFILES	:= Synopsis/Config
+S_PYFILES	:= Synopsis/Config Synopsis/__init__
 F_HTML_PYFILES	:= $(patsubst $(topdir)/%.py, %, $(wildcard $(topdir)/Synopsis/Formatter/HTML/*.py))
 F_PYFILES	:= $(patsubst $(topdir)/%.py, %, $(wildcard $(topdir)/Synopsis/Formatter/*.py))
 C_PYFILES	:= $(patsubst $(topdir)/%.py, %, $(wildcard $(topdir)/Synopsis/Core/*.py))
