@@ -17,12 +17,13 @@ import time, os, stat, os.path, string
 class RawFile(View):
    """A module for creating a view for each file with hyperlinked source"""
 
+   src_dir = Parameter('', 'starting point for directory listing')
+   base_path = Parameter('', 'path prefix to strip off of the file names')
    exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
 
    def register(self, processor):
 
       View.register(self, processor)
-      self.__start = self.__base = processor.output
       self.__files = None
 
    def filename(self):
@@ -42,7 +43,7 @@ class RawFile(View):
 
       if self.__files is not None: return self.__files
       self.__files = []
-      dirs = [self.__start]
+      dirs = [self.src_dir]
       while dirs:
          dir = dirs.pop(0)
          for entry in os.listdir(os.path.abspath(dir)):
@@ -53,14 +54,16 @@ class RawFile(View):
             #      exclude = 1
             #if exclude:
             #   continue
-            #entry_path = os.path.join(dir, entry)
-            #info = os.stat(entry_path)
-            #if stat.S_ISDIR(info[stat.ST_MODE]):
-            #   dirs.append(entry_path)
-            #else:
-            #   filename = self.processor.file_layout.file_source(entry_path)
-            #   self.__files.append( (entry_path, filename) )
-            pass
+            entry_path = os.path.join(dir, entry)
+            info = os.stat(entry_path)
+            if stat.S_ISDIR(info[stat.ST_MODE]):
+               dirs.append(entry_path)
+            else:
+               # strip of base_path
+               path = entry_path[len(self.base_path):]
+               if path[0] == '/': path = path[1:]
+               filename = self.processor.file_layout.file_source(path)
+               self.__files.append((entry_path, filename))
       return self.__files
 
    def process(self, start):

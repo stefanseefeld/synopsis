@@ -1,4 +1,3 @@
-# $Id: DirBrowse.py,v 1.15 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -18,6 +17,8 @@ class DirBrowse(View):
    """A view that shows the entire contents of directories, in a form similar
    to LXR."""
 
+   src_dir = Parameter('', 'starting point for directory listing')
+   base_path = Parameter('', 'path prefix to strip off of the file names')
    exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
 
    def filename(self):
@@ -35,9 +36,9 @@ class DirBrowse(View):
    def filename_for_dir(self, dir):
       """Returns the output filename for the given input directory"""
 
-      if dir is self.__start:
+      if dir is self.src_dir:
          return self.processor.file_layout.special('dir')
-      scope = string.split(rel(self.__start, dir), os.sep)
+      scope = string.split(rel(self.src_dir, dir), os.sep)
       return self.processor.file_layout.scoped_special('dir', scope)
 
    def register(self, processor):
@@ -46,14 +47,20 @@ class DirBrowse(View):
       View.register(self, processor)
 
       self.__filename = self.processor.file_layout.special('dir')
+      
       self.__title = 'Directory Listing'
-      self.__start = self.__base = processor.output
       processor.set_main_view(self.__filename)
-      self.processor.add_root_view(self.__filename, 'Files', 'main', 2)
+      # FIXME: file_layout.special() will return two distinct values,
+      #        depending on whether this is the main view or not
+      #        but because __filename is used to *define* the main view,
+      #        we are in a catch 22...
+      self.processor.add_root_view(self.processor.file_layout.special('dir'),
+                                   self.title(), 'main', 2)
 
    def register_filenames(self, start):
       """Registers a view for every directory"""
-      dirs = [self.__start]
+
+      dirs = [self.src_dir]
       while dirs:
          dir = dirs.pop(0)
          for entry in os.listdir(os.path.abspath(dir)):
@@ -65,18 +72,17 @@ class DirBrowse(View):
             #if exclude:
             #   continue
             entry_path = os.path.join(dir, entry)
-            info = os.stat(entry_path)
-            if not stat.S_ISDIR(info[stat.ST_MODE]):
-               continue
-            filename = self.filename_for_dir(dir)
-            self.processor.register_filename(filename, self, entry_path)
+            if os.path.isdir(entry_path):
+               filename = self.filename_for_dir(dir)
+               self.processor.register_filename(filename, self, entry_path)
+               dirs.append(entry_path)
    
    def process(self, start):
       """Recursively visit each directory below the base path given in the
       config."""
 
       #if not self.__base: return
-      self.process_dir(self.__start)
+      self.process_dir(self.src_dir)
     
    def process_dir(self, path):
       """Process a directory, producing an output view for it"""
@@ -84,25 +90,26 @@ class DirBrowse(View):
       file_layout = self.processor.file_layout
 
       # Find the filename
-      filename = self.filename_for_dir(path)
-      self.__filename = filename
+      self.__filename = self.filename_for_dir(path)
 
       # Start the file
       self.start_file()
       self.write(self.processor.navigation_bar(self.filename(), 1))
       # Write intro stuff
-      root = rel(self.__base, self.__start)
+      root = rel(self.base_path, self.src_dir)
       if not len(root) or root[-1] != '/': root = root + '/'
-      if path is self.__start:
+      if path is self.src_dir:
          self.write('<h1> '+root)
       else:
          self.write('<h1>'+href(file_layout.special('dir'), root + ' '))
          dirscope = []
-         scope = string.split(rel(self.__start, path), os.sep)
+         scope = string.split(rel(self.src_dir, path), os.sep)
+         
          for dir in scope[:-1]:
             dirscope.append(dir)
             dirlink = file_layout.scoped_special('dir', dirscope)
             dirlink = rel(self.filename(), dirlink)
+            
             self.write(href(dirlink, dir+'/ '))
          if len(scope) > 0:
             self.write(scope[-1]+'/')
@@ -129,7 +136,7 @@ class DirBrowse(View):
          info = os.stat(entry_path)
          if stat.S_ISDIR(info[stat.ST_MODE]):
             # A directory, process now
-            scope = string.split(rel(self.__start, entry_path), os.sep)
+            scope = string.split(rel(self.src_dir, entry_path), os.sep)
             linkpath = file_layout.scoped_special('dir', scope)
             linkpath = rel(self.filename(), linkpath)
             self.write('<tr><td>%s</td><td></td><td align="right">%s</td></tr>\n'%(
@@ -138,9 +145,13 @@ class DirBrowse(View):
             dirs.append(entry_path)
          else:
             files.append((entry_path, entry, info))
+
       for path, entry, info in files:
          size = info[stat.ST_SIZE]
          timestr = time.asctime(time.gmtime(info[stat.ST_MTIME]))
+         # strip of base_path
+         path = path[len(self.base_path):]
+         if path[0] == '/': path = path[1:]
          linkpath = file_layout.file_source(path)
          rego = self.processor.filename_info(linkpath)
          if rego:
