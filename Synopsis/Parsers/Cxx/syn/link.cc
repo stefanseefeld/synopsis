@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.2 2001/02/16 04:57:50 chalky Exp $
+ * $Id: link.cc,v 1.3 2001/02/16 06:33:35 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.3  2001/02/16 06:33:35  chalky
+ * parameterized types, return types, variable types, modifiers, etc.
+ *
  * Revision 1.2  2001/02/16 04:57:50  chalky
  * SXR: func parameters, namespaces, comments. Unlink temp file. a class=ref/def
  *
@@ -339,7 +342,7 @@ namespace {
 				    out << "<a class=\""<<aclass<<"\" href=\"" << href->second << "\" ";
 				    out << "title=\"" << name << "\">";
 				} else {
-				    cerr << "link: didn't find " << name << endl;
+				    //cerr << "link: didn't find " << name << endl;
 				    out << "<a>"; break;
 				}
 				break;

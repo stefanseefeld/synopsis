@@ -167,6 +167,8 @@ private:
     bool m_store_links;
     //. Storage for links
     ostream* m_storage;
+    //. True if this TranslateDeclarator should try to store the decl type
+    bool m_store_decl;
 
     //. A dummy name used for tail comments
     vector<string> m_dummyname;

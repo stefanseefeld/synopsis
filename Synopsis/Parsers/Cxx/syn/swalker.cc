@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.19 2001/02/16 04:57:50 chalky Exp $
+// $Id: swalker.cc,v 1.20 2001/02/16 06:33:35 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.20  2001/02/16 06:33:35  chalky
+// parameterized types, return types, variable types, modifiers, etc.
+//
 // Revision 1.19  2001/02/16 04:57:50  chalky
 // SXR: func parameters, namespaces, comments. Unlink temp file. a class=ref/def
 //
@@ -132,7 +135,34 @@ void SWalker::storeLink(Ptree* node, bool def, Type::Type* type)
     Type::Named* named = dynamic_cast<Type::Named*>(type);
     if (named) { storeLink(node, def, named->name()); return; }
     Type::Modifier* mod = dynamic_cast<Type::Modifier*>(type);
-    if (mod) { storeLink(node, def, mod->alias()); return; }
+    if (mod) {
+	// If mod is a "const" premod, then we have to skip the "const" bit:
+	if (mod->pre().size() && mod->pre().front() == "const") {
+	    node = node->Last()->First();
+	}
+	storeLink(node, def, mod->alias());
+	return;
+    }
+    Type::Parameterized* param = dynamic_cast<Type::Parameterized*>(type);
+    if (param) {
+	// Do template
+	storeLink(node->First(), false, param->templateType());
+	// Do params
+	node = node->Second();
+	Type::Type::vector_t::iterator iter = param->parameters().begin();
+	while (node) {
+	    // Skip '<' or ','
+	    if (!(node = node->Rest())) break;
+	    if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
+		storeLink(node->Car()->Car()->Car(), false, *iter++);
+	    node->Display2(cout);
+	    if (iter == param->parameters().end()) break;
+	    node = node->Rest();
+	}
+	return;
+    }
+
+    //cout << "Unknown type for storage: "; node->Display2(cout);
 }
 
 //. Store a span at the given node
@@ -468,6 +498,7 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
     updateLineNumber(def);
 
     m_declaration = dynamic_cast<PtreeDeclaration*>(def);
+    m_store_decl = true;
     Ptree* decls = Ptree::Third(def);
     if (decls->IsA(ntDeclarator))	// if it is a function
 	TranslateFunctionImplementation(def);
@@ -487,8 +518,7 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
 Ptree* SWalker::TranslateDeclarators(Ptree* decls) 
 {
     Trace trace("SWalker::TranslateDeclarators");
-    Ptree* rest = decls, /* *exp,*/ *p;
-    //int len;
+    Ptree* rest = decls, *p;
     while (rest != nil) {
 	p = rest->Car();
 	if (p->IsA(ntDeclarator)) {
@@ -507,6 +537,7 @@ Ptree* SWalker::TranslateDeclarators(Ptree* decls)
 	    */
 
 	    TranslateDeclarator(p);
+	    m_store_decl = false;
 	} // if. There is no else..?
 	rest = rest->Cdr();
 	// Skip comma
@@ -589,6 +620,11 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 
 	// if storing links, find name
 	if (m_store_links) {
+	    // Do decl type first
+	    if (m_store_decl) {
+		if (m_declaration->Second()) storeLink(m_declaration->Second(), false, returnType);
+	    }
+
 	    p = decl;
 	    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
 	    if (p) {
@@ -621,6 +657,11 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	
 	// if storing links, find name
 	if (m_store_links) {
+	    // Do decl type first
+	    if (m_store_decl) {
+		if (m_declaration->Second()) storeLink(m_declaration->Second(), false, type);
+	    }
+
 	    Ptree* p = decl;
 	    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
 	    if (p) {
@@ -722,6 +763,8 @@ Ptree* SWalker::TranslateTypedef(Ptree* node)
 {
     Trace trace("SWalker::TranslateTypedef");
     // /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
+    m_declaration = static_cast<PtreeDeclaration*>(node); // this may be bad, but we only use as ptree anyway
+    m_store_decl = true;
     for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
         TranslateTypedefDeclarator(declarator->Car());
     return 0; 
@@ -747,6 +790,9 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
     
     // if storing links, find name
     if (m_store_links) {
+	if (m_store_decl) {
+	    if (m_declaration->Second()) storeLink(m_declaration->Second(), false, type);
+	}
 	Ptree* p = node;
 	while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
 	if (p) {
