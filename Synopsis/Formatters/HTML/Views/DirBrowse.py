@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.5 2002/11/13 02:29:24 chalky Exp $
+# $Id: DirBrowse.py,v 1.6 2002/11/13 03:17:19 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: DirBrowse.py,v $
+# Revision 1.6  2002/11/13 03:17:19  chalky
+# Fix directory heading links when using Nested layout
+#
 # Revision 1.5  2002/11/13 02:29:24  chalky
 # Support exclude_glob option to exclude files from listings. Remove debug info.
 #
@@ -130,7 +133,9 @@ class DirBrowse(Page.Page):
 	    scope = string.split(rel(self.__start, path), os.sep)
 	    for dir in scope[:-1]:
 		dirscope.append(dir)
-		self.write(href(config.files.nameOfScopedSpecial('dir', dirscope), dir+'/ '))
+		dirlink = config.files.nameOfScopedSpecial('dir', dirscope)
+		dirlink = rel(self.filename(), dirlink)
+		self.write(href(dirlink, dir+'/ '))
 	    if len(scope) > 0:
 		self.write(scope[-1]+'/')
 	self.write(' - Directory listing</h1>')
