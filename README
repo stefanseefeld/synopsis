@@ -1,6 +1,16 @@
 Installation guide
 ==================
  
+Requirements
+------------
+
+Synopsis uses features found in Python 2.2 and up.
+The build system requires a posix environment with GNU make and GNU
+autoconf installed.
+However, it is possible to build Synopsis for a native windows
+platform, running with the win32 python installation and emulating
+a MSVC compiler.
+
 Building
 --------
 
@@ -69,3 +79,7 @@ Using Synopsis
 
 * Read the tutorial to learn how to get started using synopsis.
 
+Reporting Bugs
+--------------
+
+Please report bugs to http://synopsis.fresco.org/issues
