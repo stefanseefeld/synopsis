@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.11 2001/06/11 10:37:49 chalky Exp $
+# $Id: Comments.py,v 1.12 2002/04/25 23:54:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.12  2002/04/25 23:54:09  chalky
+# Fixed bug caused by new re module in python 2.1 handling groups differently
+#
 # Revision 1.11  2001/06/11 10:37:49  chalky
 # Better grouping support
 #
@@ -111,7 +114,7 @@ class SSDComments (CommentProcessor):
 
 class JavaComments (CommentProcessor):
     """A class that formats java /** style comments"""
-    __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>\n[ \t]*\*.*)*?(\n[ \t]*)?\*/"
+    __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>(\n[ \t]*\*.*)*?)(\n[ \t]*)?\*/"
     __re_line = r"\n[ \t]*\*[ \t]*(?P<text>.*)"
     def __init__(self):
 	"Compiles the regular expressions"
