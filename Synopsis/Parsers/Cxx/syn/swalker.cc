@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.34 2001/06/06 01:18:13 chalky Exp $
+// $Id: swalker.cc,v 1.35 2001/06/06 03:28:49 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.35  2001/06/06 03:28:49  chalky
+// Support anon structs
+//
 // Revision 1.34  2001/06/06 01:18:13  chalky
 // Rewrote parameter parsing to test for different combos of name, value and
 // keywords
@@ -534,6 +537,45 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	    PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
 	    addComments(NULL, cspec->GetComments());
 	}
+    } else if (Ptree::Length(node) == 3) {
+	// Most likely anonymous struct
+	// [ struct [nil nil] [{ ... }] ]
+	if (node->Second()->IsLeaf() || node->Second()->First() != 0) return 0;
+
+	if (m_store_links) storeSpan(node->First(), "file-keyword");
+	else updateLineNumber(node);
+	
+	// Create AST.Class object
+	AST::Class *clas;
+        std::string type = getName(node->First());
+	char* encname = node->GetEncodedName();
+	m_decoder->init(encname);
+	if (encname[0] == 'Q') {
+	    std::vector<std::string> names;
+	    m_decoder->decodeQualName(names);
+	    clas = m_builder->startClass(m_lineno, type, names);
+	} else {
+	    std::string name = m_decoder->decodeName();
+	    clas = m_builder->startClass(m_lineno, type, name);
+	}
+
+	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	addComments(clas, cspec->GetComments());
+
+	// Push the impl stack for a cache of func impls
+	m_func_impl_stack.push_back(FuncImplVec());
+
+        // Translate the body of the class
+	TranslateBlock(node->Third());
+
+	// Translate any func impls inlined in the class
+	FuncImplVec& vec = m_func_impl_stack.back();
+	FuncImplVec::iterator iter = vec.begin();
+	while (iter != vec.end())
+	    TranslateFuncImplCache(*iter++);
+	m_func_impl_stack.pop_back();
+	    
+	m_builder->endClass();
     } /* else {
 	cout << "class spec not length 4:" << endl;
 	node->Display2(cout);
@@ -984,7 +1026,7 @@ Ptree* SWalker::TranslateTypespecifier(Ptree* tspec)
 Ptree* SWalker::TranslateTypedef(Ptree* node) 
 {
     STrace trace("SWalker::TranslateTypedef");
-    // /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
+    /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
     m_declaration = static_cast<PtreeDeclaration*>(node); // this may be bad, but we only use as ptree anyway
     m_store_decl = true;
     for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
