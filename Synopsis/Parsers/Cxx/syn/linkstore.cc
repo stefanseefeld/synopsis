@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.14 2002/10/29 02:39:57 chalky Exp $
+// $Id: linkstore.cc,v 1.15 2002/11/02 06:37:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.15  2002/11/02 06:37:37  chalky
+// Allow non-frames output, some refactoring of page layout, new modules.
+//
 // Revision 1.14  2002/10/29 02:39:57  chalky
 // Changes to compile with g++-3.2
 //
@@ -92,10 +95,11 @@ const char* LinkStore::m_context_names[] = {
   "CALL"
 };
 
-LinkStore::LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker)
+LinkStore::LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker, const std::string& basename)
 : m_syntax_stream(syntax_stream),
   m_xref_stream(xref_stream),
-  m_walker(swalker)
+  m_walker(swalker),
+  m_basename(basename)
 {
   m_buffer_start = swalker->program()->Read(0);
   m_parser = swalker->parser();
@@ -383,10 +387,14 @@ void LinkStore::store_xref_record(const AST::Declaration* decl, const std::strin
 {
   if (!m_xref_stream)
     return;
+  // Strip the basename from the filename
+  std::string filename = file;
+  if (filename.substr(0, m_basename.size()) == m_basename)
+    filename.assign(file, m_basename.size(), std::string::npos);
   AST::Scope* container = m_walker->builder()->scope();
   //m->refs[decl->name()].push_back(AST::Reference(file, line, container->name(), context));
   std::string container_str = join(container->name(), "\t");
   if (!container_str.size()) container_str = "\t";
-  (*m_xref_stream) << encode_name(decl->name()) << FS << file << FS << line << FS
+  (*m_xref_stream) << encode_name(decl->name()) << FS << filename << FS << line << FS
     << encode(container_str) << FS << m_context_names[context] << RS;
 }

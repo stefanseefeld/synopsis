@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.37 2002/10/29 12:43:56 chalky Exp $
+# $Id: core.py,v 1.38 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.38  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.37  2002/10/29 12:43:56  chalky
 # Added flexible TOC support to link to things other than ScopePages
 #
@@ -214,9 +217,14 @@ class Config:
 	self.sorter = None
 	self.classTree = None
 	self.structs_as_classes = 0
+	self.using_frames = 1
+	self.using_module_index = 0
+        self.base_dir = ''
+        self.start_dir = ''
 	self.treeFormatterClass = TreeFormatter.TreeFormatter
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
+	self.page_main = "" # page for main index.html page
 	self.pages = [
 	    'ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree',
 	    'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'
@@ -239,7 +247,8 @@ class Config:
 	if hasattr(obj, 'verbose'): self.verbose = obj.verbose
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
-	    'file_layout', 'output_dir', 'structs_as_classes', 'default_toc')
+	    'file_layout', 'output_dir', 'structs_as_classes', 'default_toc',
+            'base_dir', 'start_dir')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -251,6 +260,8 @@ class Config:
 	    raise TypeError, "HTML.pages must be a list."
 	if self.verbose > 1: print "Using pages:",pages
 	self.pages = pages
+	if 'FramesIndex' in pages: self.using_frames = 1
+	else: self.using_frames = 0
 
     def _config_sorter(self, sorter):
 	if self.verbose > 1: print "Using sorter:",sorter
@@ -308,6 +319,14 @@ class Config:
 	if self.verbose > 1: print "Using file layout",layout
 	self.files_class = import_object(layout)
 
+    def _config_base_dir(self, dir):
+	if self.verbose > 1: print "Using base dir",dir
+	self.base_dir = str(dir)
+
+    def _config_start_dir(self, dir):
+	if self.verbose > 1: print "Using start dir",dir
+	self.start_dir = str(dir)
+
     def _config_structs_as_classes(self, yesno):
 	if self.verbose > 1: print "Using structs as classes:",yesno
 	self.structs_as_classes = yesno
@@ -323,6 +342,17 @@ class Config:
 	-- whatever module the user puts first in the list that sets this is
 	it. This is the frame on the left if you use the default frameset."""
 	if not self.page_index: self.page_index = page
+    
+    def set_main_page(self, page):
+	"""Call this method to set the main index.html page. First come first served
+	-- whatever module the user puts first in the list that sets this is
+	it."""
+	if not self.page_main: self.page_main = page
+
+    def set_using_module_index(self):
+	"""Sets the using_module_index flag. This will cause the an
+	intermediate level of links intended to go in the left frame."""
+	self.using_module_index = 1
 
 # Create a globally accessible Config. After this point the HTML modules may
 # import it into their namespace for ease of use
@@ -529,6 +559,10 @@ class PageManager:
 	"""Create all pages from the start Scope, derived from the root Scope"""
 	self.__global = root
 	start = self.calculateStart(root)
+        if config.verbose: print "Registering filenames...",
+	for page in self.__pages:
+	    page.register_filenames(start)
+        if config.verbose: print "Done."
 	for page in self.__pages:
 	    if config.verbose: start_time = time.time()
 	    page.process(start)
@@ -547,13 +581,18 @@ class PageManager:
 	    self.__page_objects[page] = obj
     
     def register_filename(self, filename, page, scope):
-	"""Registers a file for later production"""
-	self.__files[str(filename)] = (page, scope)
+	"""Registers a file for later production. The first page to register
+	the filename gets to keep it."""
+	filename = str(filename)
+	if not self.__files.has_key(filename):
+	    self.__files[filename] = (page, scope)
 
     def filename_info(self, filename):
 	"""Returns information about a registered file, as a (page,scope)
-	pair. May throw a KeyError if the filename isn't registered."""
-	return self.__files[str(filename)]
+	pair. Will return None if the filename isn't registered."""
+	filename = str(filename)
+        if not self.__files.has_key(filename): return None
+	return self.__files[filename]
 
 def usage():
     """Print usage to stdout"""
@@ -632,7 +671,7 @@ def __parseArgs(args, config_obj):
     config.fillDefaults()
 
 def format(args, ast, config_obj):
-    global toc_out, toc_in
+    global toc_out, toc_in, manager
     __parseArgs(args, config_obj)
     config.ast = ast
     config.types = ast.types()

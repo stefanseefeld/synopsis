@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.7 2002/11/01 03:39:21 chalky Exp $
+# $Id: FramesIndex.py,v 1.8 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FramesIndex.py,v $
+# Revision 1.8  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.7  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -59,6 +62,9 @@ class FramesIndex (Page.Page):
 
     def filename(self): return config.files.nameOfIndex()
     def title(self): return 'Synopsis - Generated Documentation'
+
+    def register(self):
+        config.set_main_page(self.filename())
 
     def process(self, start):
 	"""Creates a frames index file"""

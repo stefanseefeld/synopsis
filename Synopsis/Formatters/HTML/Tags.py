@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.9 2002/11/01 07:20:22 chalky Exp $
+# $Id: Tags.py,v 1.10 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.10  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.9  2002/11/01 07:20:22  chalky
 # Enhanced anglebrackets()
 #
@@ -52,6 +55,8 @@ You will probably find it easiest to import * from this module."""
 # System modules
 import string, re
 
+# HTML modules
+import core
 
 def k2a(keys):
     "Convert a name/value dict to a string of attributes"
@@ -68,6 +73,9 @@ def rel(frm, to):
     return string.join(to,'/')
 def href(_ref, _label, **keys):
     "Return a href to 'ref' with name 'label' and attributes"
+    # Remove target if not using frames
+    if keys.has_key('target') and not core.config.using_frames:
+	del keys['target']
     return '<a href="%s"%s>%s</a>'%(_ref,k2a(keys),_label)
 def name(ref, label):
     "Return a name anchor with given reference and label"

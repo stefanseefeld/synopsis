@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.10 2002/11/01 07:21:15 chalky Exp $
+# $Id: ModuleListing.py,v 1.11 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.11  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.10  2002/11/01 07:21:15  chalky
 # More HTML formatting fixes eg: ampersands and stuff
 #
@@ -93,15 +96,20 @@ class ModuleListing(Page.Page):
 	Page.Page.__init__(self, manager)
 	self.child_types = None
 	self._children_cache = {}
+        self.__short_title = 'Modules'
+        if hasattr(config.obj, 'ModuleListing'):
+            myconfig = config.obj.ModuleListing
+            if hasattr(myconfig, 'short_title'):
+                self.__short_title = myconfig.short_title
 
-    def filename(self): return config.files.nameOfSpecial('ModuleTree')
-    def title(self): return 'Module Tree'
+    def filename(self): return config.files.nameOfSpecial('ModuleListing')
+    def title(self): return self.__short_title + ' Listing'
 
     def register(self):
 	"registers the page with the manager for the 'contents' (top left) frame"
 	filename = self.filename()
 	config.set_contents_page(filename)
-	self.manager.addRootPage(filename, 'Modules', 'contents', 2)
+	self.manager.addRootPage(filename, self.__short_title, 'contents', 2)
 	self._link_target = 'index'
 
     def process(self, start):

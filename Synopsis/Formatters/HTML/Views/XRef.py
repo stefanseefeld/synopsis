@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.5 2002/11/01 03:39:21 chalky Exp $
+# $Id: XRef.py,v 1.6 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.6  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.5  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -110,12 +113,12 @@ class XRefPages (Page.Page):
 	if not page_info: return
 	for i in range(len(page_info)):
 	    filename = config.files.nameOfSpecial('xref%d'%i)
-	    self.mananger.register_filename(filename, self, i)
+	    self.manager.register_filename(filename, self, i)
     
     def process_link(self, file, line, scope):
 	"""Outputs the info for one link"""
 	# Make a link to the highlighted source
-	file_link = config.files.nameOfScopedSpecial('page', string.split(file, os.sep))
+	file_link = config.files.nameOfFileSource(file)
 	file_link = file_link + "#%d"%line
 	# Try and make a descriptive
 	desc = ''
@@ -180,8 +183,7 @@ class XRefPages (Page.Page):
 	    self.write('<li>Declarations:<ul>\n')
 	    for child in decl.declarations():
 		file, line = child.file(), child.line()
-		file_scope = string.split(file, os.sep)
-		file_link = config.files.nameOfScopedSpecial('page', file_scope)
+		file_link = config.files.nameOfFileSource(file)
 		file_link = '%s#%d'%(file_link,line)
 		file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
 		cname = child.name()

@@ -12,7 +12,7 @@ class Project:
     ['FormatAction', 327, 237, 'HTML Formatter', struct(
       stylesheet='style.css',
       stylesheet_file='../html.css',
-      pages=['ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'NameIndex', 'FramesIndex', 'XRefPages'],
+      pages=['FramesIndex', 'ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'NameIndex', 'XRefPages'],
       InheritanceGraph=struct(
         min_size=3,
 	min_group_size=5,
@@ -46,7 +46,52 @@ class Project:
       output_dir='BoostPython/',
       ModuleListing=struct()
     )],
+    ['FormatAction', 327, 237, 'HTML Formatter - No Frames', struct(
+      stylesheet='style.css',
+      stylesheet_file='../html.css',
+      pages=['DirBrowse', 'ScopePages', 'ModuleListing', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'RawFilePages', 'NameIndex', 'XRefPages'],
+      default_toc='ScopePages',
+      base_dir='boost/',
+      start_dir='boost/boost/',
+      ModuleListing=struct(
+	short_title='Namespaces'
+      ),
+      InheritanceGraph=struct(
+        min_size=3,
+	min_group_size=5,
+	direction='horizontal'
+      ),
+      ScopePages=struct(
+        parts=['Heading', 'Summary', 'Inheritance', 'Detail'],
+        heading_formatters=['Heading', 'ClassHierarchyGraph', 'DetailCommenter', 'SourceLinker', 'XRefLinker'],
+        summary_formatters=['SummaryAST', 'SummaryCommenter', 'SourceLinker', 'XRefLinker'],
+        detail_formatters=['DetailAST', 'DetailCommenter', 'SourceLinker', 'XRefLinker']
+      ),
+      datadir='/usr/local/share/synopsis',
+      file_layout='Synopsis.Formatter.HTML.FileLayout.FileLayout',
+      tree_formatter='TreeFormatter.TreeFormatter',
+      comment_formatters=['quotehtml', 'summary', 'section'],
+      FilePages=struct(
+        toc_files=[],
+        file_path='%s',
+        scope='',
+        links_path='BoostLinks/%s'
+      ),
+      FileTree=struct(
+        link_to_pages=1
+      ),
+      XRefPages=struct(
+	xref_file='BoostXRef/compiled.xref'
+      ),
+      name='HTML',
+      verbose=1,
+      structs_as_classes=1,
+      output_dir='BoostPythonNF/'
+    )],
     ['SourceAction', 47, 41, 'Boost Sources', [
+      ['Base', 'boost/boost/', '*.hpp']
+    ]],
+    ['SourceAction', 47, 41, 'Boost Python Sources', [
       ['Base', 'boost/boost/python/', '*.hpp']
     ]],
     ['ParserAction', 151, 57, 'C++ Parser', struct(
@@ -75,11 +120,13 @@ class Project:
     ['CacherAction', 327, 145, 'Combined AST Cache', 'BoostFiles', '']
   ]
   channels = [
-    ('Boost Sources', 'C++ Parser'),
+    #('Boost Sources', 'C++ Parser'),
+    ('Boost Python Sources', 'C++ Parser'),
     #('Test Source', 'C++ Parser'),
     ('C++ Parser', 'File Cacher'),
     ('File Cacher', 'Combined AST'),
     ('Combined AST', 'Combined AST Cache'),
-    ('Combined AST Cache', 'HTML Formatter')
+    ('Combined AST Cache', 'HTML Formatter'),
+    ('Combined AST Cache', 'HTML Formatter - No Frames')
   ]
   default_formatter = 'HTML Formatter'

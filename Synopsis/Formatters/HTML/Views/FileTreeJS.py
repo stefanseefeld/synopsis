@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.6 2001/07/05 05:39:58 stefan Exp $
+# $Id: FileTreeJS.py,v 1.7 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.7  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.6  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -108,7 +111,7 @@ class FileTree(JSTree.JSTree):
     def processFileTreeNode(self, node):
 	if hasattr(node, 'decls'):
 	    # Leaf node
-	    text = href(config.files.nameOfFile(node.path), node.path[-1], target='index')
+	    text = href(config.files.nameOfFileIndex(string.join(node.path, os.sep)), node.path[-1], target='index')
 	    self.writeLeaf(text)
 	    return
 	# Non-leaf node
@@ -131,7 +134,7 @@ class FileTree(JSTree.JSTree):
 
 	toc = config.toc
         # set up filename and title for the current page
-	self.__filename = config.files.nameOfFile(node.path)
+	self.__filename = config.files.nameOfFileIndex(string.join(node.path, os.sep))
 	name = list(node.path)
 	while len(name) and name[0] == '..': del name[0]
         self.__title = string.join(name, os.sep)
