@@ -100,7 +100,7 @@ class XRef(View):
          scope_text = href(rel(self.filename(), entry.link), escape(scope_text))
       # Output list element
       self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
-         file_link, file, line, desc, scope_text))
+         file_link, file, line, desc, escape(scope_text)))
     
    def describe_decl(self, decl):
       """Returns a description of the declaration. Detects constructors and
