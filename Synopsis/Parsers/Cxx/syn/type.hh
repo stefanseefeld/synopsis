@@ -101,12 +101,29 @@ namespace Types
   };
 
 
+  //. Template parameter dependant types have a possibly scoped name, but no
+  //. known type. Member types of template-parameters will be scoped, eg:
+  //. 
+  //. template<class T> class A { T::B b; }
+  //.
+  //. Here T::B is a depandant type, and so is T.
+  class Dependant : public Named
+  {
+  public:
+    //. Constructor
+    Dependant(const ScopedName& name);
+    //. Accept the given visitor
+    virtual void
+    accept(Visitor*);
+  };
+
+
   //. Declared types have a name and a reference to their declaration
   class Declared : public Named
   {
   public:
     //. Constructor
-    Declared(const ScopedName& name , AST::Declaration* decl);
+    Declared(const ScopedName& name, AST::Declaration* decl);
     //. Accept the given visitor
     virtual void
     accept(Visitor*);
@@ -136,6 +153,9 @@ namespace Types
   class Template : public Declared
   {
   public:
+    //. A vector of Types::Template objects
+    typedef std::vector<Types::Template*> vector;
+
     //. Constructor
     Template(const ScopedName& name , AST::Declaration* decl, const Type::vector& params);
 
@@ -155,9 +175,21 @@ namespace Types
     Type::vector&
     parameters() { return m_params; }
 
+    //. Constant version of specializations()
+    const Template::vector&
+    specializations() const { return m_specs; }
+
+    //. Returns the vector of specializations for this template.
+    //. If this template is a specialization, the vector must be empty
+    Template::vector&
+    specializations() { return m_specs; }
+
   private:
     //. The parameters
     Type::vector m_params;
+
+    //. The vector of specializations for this template
+    Template::vector m_specs;
   };
 
   //. Type Modifier. This type has a nested type, and wraps it with
@@ -314,6 +346,7 @@ namespace Types
     virtual void visit_array(Array*);
     virtual void visit_named(Named*);
     virtual void visit_base(Base*);
+    virtual void visit_dependant(Dependant*);
     virtual void visit_declared(Declared*);
     virtual void visit_template_type(Template*);
     virtual void visit_parameterized(Parameterized*);

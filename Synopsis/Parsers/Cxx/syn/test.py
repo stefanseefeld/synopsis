@@ -300,16 +300,40 @@ public:
     list(T*, int size);
 };
 
-template <void>
-class list {
+template <>
+class list<void> {
 public:
     list(void*, int size) {}
 };
 
-template <int>
-class list {
+template <>
+class list<int> {
 public:
     list(int*, int size) {}
+};
+"""
+
+class TemplateSpecTest2 (Test):
+    test = """// Test template specializations #2
+template <typename T, int I = 4>
+class list {
+public:
+    list(T*, int size);
+    int size() { return I; }
+};
+
+template <typename T>
+class list<T,0> {
+public:
+    list(void*, int size) {}
+    int size() { return 0; }
+};
+
+template <int I>
+class list<int, I> {
+public:
+    list(int*, int size) {}
+    int size() { return I; }
 };
 """
 
@@ -343,6 +367,10 @@ class Synopsis (Test):
 class AST (Test):
     def run(self):
 	return self.do_run("ast.hh", "ast", gcc_include + python_include)
+
+class TestTemplate (Test):
+    def run(self):
+	return self.do_run("test-template.cc", "test-template", gcc_include)
 
 if __name__ == "__main__":
     tests = {}
