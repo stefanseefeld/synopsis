@@ -94,6 +94,7 @@ class Node:
 	    self.__scopeinfo.has_detail = 0
 
     def name(self): return self.__name
+    def set_name(self, name): self.__name = name
     def type(self): return self.__type
     def scope_info(self): return self.__scopeinfo
     def comment(self): return self.__comment
@@ -190,6 +191,16 @@ class NamespaceBuilder(Visitor.AstVisitor):
 	    declaration.accept(self)
 	self.leaveNamespace()
 	self.leaveScope()
+    def visitMetaModule(self, module):
+	print "metamodule name:",module.name()
+	name = module.name()[-1]
+	self.enterScope(name)
+	ns = self.current().get_or_create(self.scope(), module.module_declarations(), Namespace)
+	self.enterNamespace(ns)
+	for declaration in module.declarations():
+	    declaration.accept(self)
+	self.leaveNamespace()
+	self.leaveScope()
     def visitClass(self, clas):
 	toc.add_class(clas.name())
 	name = clas.name()[-1]
@@ -211,6 +222,9 @@ class NamespaceBuilder(Visitor.AstVisitor):
 	child = Node(oper.name(), oper)
 	if oper.type() == 'attribute':
 	    child.forceTypeTo('Attribute')
+	while self.current().has_child(child.name()):
+	    print "overloading",child.name()
+	    child.set_name(child.name()[:-1]+(child.name()[-1]+" ov",))
 	self.current().add_child(child)
     def visitEnum(self, enum):
 	self.current().add_child(Node(enum.name(), enum))
@@ -315,7 +329,11 @@ class BaseFormatter:
         """reference takes two strings, a reference (used to look up the symbol and generated the reference),
         and the label (used to actually write it)"""
 	if ref is None: return label
-        info = toc.lookup(ref)
+	try:
+	    info = toc.lookup(ref)
+	except:
+	    print "*******\n*** ref is",ref
+	    raise
 	if info is None: return span('type', label)
         return apply(href, (info.link, label), keys)
 
@@ -326,15 +344,16 @@ class BaseFormatter:
 	    label = Util.ccolonName(name, self.scope()) or "Global Namespace"
 	return apply(self.reference, (ref, label), keys)
 
-    def label(self, ref):
+    def label(self, ref, label=None):
 	"""Create a label for the given scoped reference name"""
+	if label is None: label = ref
         scopeinfo = toc.lookup(Util.ccolonName(ref))
-	if scopeinfo is None: return Util.ccolonName(ref)
+	if scopeinfo is None: return Util.ccolonName(label)
 	location = scopeinfo.link
-        ref = Util.ccolonName(ref, self.scope())
+        label = Util.ccolonName(label, self.scope())
 	index = string.find(location, '#')
 	if index >= 0: location = location[index+1:]
-        return location and name(location, ref) or Util.ccolonName(ref)
+        return location and name(location, label) or label
 
     def formatModifiers(self, modifiers):
 	"Returns a HTML string from the given list of modifiers"
@@ -368,8 +387,8 @@ class BaseFormatter:
     #################### Type Visitor ###########################################
 
     def visitBaseType(self, type):
-        self.__type_ref = type.name()
-        self.__type_label = type.name()
+        self.__type_ref = Util.ccolonName(type.name())
+        self.__type_label = Util.ccolonName(type.name())
         
     def visitForward(self, type):
         self.__type_ref = Util.ccolonName(type.name())
@@ -392,10 +411,10 @@ class BaseFormatter:
         parameters_ref = []
         parameters_label = []
         for p in type.parameters():
-            p.accept(self)
-            parameters_ref.append(self.__type_ref)
-            parameters_label.append(self.reference(self.__type_ref, self.__type_label))
-        self.__type_ref = type_ref + "&lt;" + string.join(parameters_ref, ", ") + "&gt;"
+            #p.accept(self)
+            #parameters_ref.append(self.__type_ref)
+            parameters_label.append(self.formatType(p))
+        self.__type_ref = None #type_ref + "&lt;" + string.join(parameters_ref, ", ") + "&gt;"
         self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
 
     #################### AST Visitor ############################################
@@ -443,9 +462,9 @@ class BaseFormatter:
 	premod = self.formatModifiers(oper.premodifier())
 	type = self.formatType(oper.returnType())
 	if oper.language() == 'C++':
-	    if oper.name()[-1] == oper.name()[-2]: type = '<i>constructor</i>'
-	    elif oper.name()[-1] == "~ "+oper.name()[-2]: type = '<i>destructor</i>'
-	name = self.label(oper.name())
+	    if oper.realname()[-1] == oper.realname()[-2]: type = '<i>constructor</i>'
+	    elif oper.realname()[-1] == "~"+oper.realname()[-2]: type = '<i>destructor</i>'
+	name = self.label(oper.name(), oper.realname())
 	params = self.formatParameters(oper.parameters())
 	postmod = self.formatModifiers(oper.postmodifier())
 	raises = self.formatOperationExceptions(oper)
@@ -470,11 +489,12 @@ class SummaryFormatter(BaseFormatter):
     def __init__(self, toc):
 	BaseFormatter.__init__(self, toc)
 
-    def label(self, ref):
+    def label(self, ref, label=None):
+	if label is None: label = ref
         scopeinfo = toc.lookup(Util.ccolonName(ref))
 	if scopeinfo and scopeinfo.has_detail:
-	    return self.referenceName(ref)
-	return BaseFormatter.label(self, ref)
+	    return self.referenceName(ref, Util.ccolonName(label, self.scope()))
+	return BaseFormatter.label(self, ref, label)
 	
     def getSummary(self, node):
 	name = node.name()
@@ -652,6 +672,7 @@ class Paginator:
 		    continue
 	    # Don't continue if scope traversal failed!
 	    print "Fatal: Couldn't find child scope",scope
+	    print "Child keys of %s:"%(self.__start.name(),),children.keys()
 	    raise NameError, "I-cant-be-stuffed-making-my-own-exception"
 
     def scope(self): return self.__scope

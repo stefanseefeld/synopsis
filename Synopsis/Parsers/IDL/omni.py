@@ -36,13 +36,13 @@ class TypeTranslator (idlvisitor.TypeVisitor):
     def get(self, name): return self.types[name]
 
     def visitBaseType(self, idltype):
-        type = Type.Base("IDL", self.__basetypes[idltype.kind()])
+        type = Type.Base("IDL", (self.__basetypes[idltype.kind()],))
         self.types[(type.name(),)] = type
         self.__result = (type.name(),)
 
     def visitStringType(self, idltype):
         if not self.types.has_key(["string"]):
-            self.types[["string"]] = Type.Base("IDL", "string")
+            self.types[["string"]] = Type.Base("IDL", ("string",))
         self.__result = ["string"]
         #if idltype.bound() == 0:
         #    self.__result_type = "string"
@@ -51,7 +51,7 @@ class TypeTranslator (idlvisitor.TypeVisitor):
 
     def visitWStringType(self, idltype):
         if not self.types.has_key(["wstring"]):
-            self.types[["wstring"]] = Type.Base("IDL", "wstring")
+            self.types[["wstring"]] = Type.Base("IDL", ("wstring",))
         self.__result = ["wstring"]
         #if type.bound() == 0:
         #    self.__result_type = "wstring"
@@ -60,7 +60,7 @@ class TypeTranslator (idlvisitor.TypeVisitor):
 
     def visitSequenceType(self, idltype):
         if not self.types.has_key(["sequence"]):
-            self.types[["sequence"]] = Type.Base("IDL", "sequence")
+            self.types[["sequence"]] = Type.Base("IDL", ("sequence",))
         idltype.seqType().accept(self)
         ptype = self.types[self.__result]
         #if type.bound() == 0:
@@ -231,7 +231,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         name = self.scope()[:]
         name.append(self.__result_declarator.name()[-1])
         self.__scope[-1].declarations().append(AST.Operation(node.file(), node.line(), node.mainFile(), "IDL", "case",
-                                                             [], self.__types.get(type), name))
+                                                             [], self.__types.get(type), name, list(name)))
     def visitUnion(self, node):
         name = self.scope()[:]
         name.append(node.identifier())
@@ -269,7 +269,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         name = self.scope()[:]
         name.append(node.identifiers()[0])
         attr = AST.Operation(node.file(), node.line(), node.mainFile(), "IDL", "attribute",
-                             pre, self.__types.get(type), name)
+                             pre, self.__types.get(type), name, list(name))
         self.__scope[-1].declarations().append(attr)
         for c in node.comments():
             attr.comments().append(AST.Comment(c.text(), c.file(), c.line()))
@@ -290,7 +290,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         returnType = self.__types.internalize(node.returnType())
         name = self.scope()[:]
         name.append(node.identifier())
-        self.__operation = AST.Operation(node.file(), node.line(), 1, "IDL", "operation", pre, self.__types.get(returnType), name)
+        self.__operation = AST.Operation(node.file(), node.line(), 1, "IDL", "operation", pre, self.__types.get(returnType), name, list(name))
         for c in node.comments():
             self.__operation.comments().append(AST.Comment(c.text(), c.file(), c.line()))
         for p in node.parameters(): p.accept(self)

@@ -56,7 +56,7 @@ public:
   PyObject *addConst(size_t, bool, PyObject *, const string &, const string &);
   PyObject *Parameter(const string &, PyObject *, const string &, const string & = string(), const string & = string());
   PyObject *addFunction(size_t, bool, const vector<string> &, PyObject *, const string &);
-  PyObject *addOperation(size_t, bool, const vector<string> &, PyObject *, const string &, const vector<PyObject*>&);
+  PyObject *addOperation(size_t, bool, const vector<string> &, PyObject *, const string &, const string&, const vector<PyObject*>&);
 
   //.
   //. helper methods

@@ -155,8 +155,7 @@ def format(types, declarations, args):
     #for type in dictionary:
     #    type.output(formatter)
     dumper = Dumper()
-    print "*** Types:"
-    dumper.visit(types)
-    print "\n\n\n*** Declarations:"
-    dumper.clear()
+    print "*** Declarations:"
     dumper.visit(declarations)
+    print "\n\n\n*** Types:"
+    dumper.visit(types)

@@ -229,8 +229,11 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	PyObject* returnType = decodeType();
 
 	// Find name:
-	for (p = decl; p->Car()->Eq('*') || p->Car()->Eq('&'); p = p->Cdr());
-	string name = p ? p->Car()->ToString() : "";
+	//for (p = decl; p->Car()->Eq('*') || p->Car()->Eq('&'); p = p->Cdr());
+	string name = string(encname+1)+"@"+enctype;
+	for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
+	    if (*ptr < 0) (*ptr) += '0'-0x80;
+	string realname = encname+1;
     
 	// cout << "\n\e[1m"<<name<<"\e[m - ";decl->Display();
 
@@ -241,8 +244,7 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	    premod.push_back(p->ToString());
 	    p = Ptree::Rest(p);
 	}
-	PyObject* oper = synopsis->addOperation(-1, true, premod, returnType, name, params);
-	synopsis->addDeclared(name, oper);
+	synopsis->addOperation(-1, true, premod, returnType, name, realname, params);
     }
     return decl;
 }
@@ -278,6 +280,7 @@ PyObject* PyWalker::decodeType()
 	else if (c == 'C') { premod.push_back("const"); }
 	else if (c == 'V') { premod.push_back("volatile"); }
 	else if (c == 'A') { premod.push_back("[]"); }
+	else if (c == '*') { name = "..."; }
 	else if (c == 'i') { name = "int"; }
 	else if (c == 'v') { name = "void"; }
 	else if (c == 'b') { name = "bool"; }
@@ -348,7 +351,7 @@ PyObject* PyWalker::decodeType()
 	    iter += length;
 	    string::iterator end = iter + int((unsigned char)*iter++) - DigitOffset;
 	    vector<PyObject*> types;
-	    while (iter < end)
+	    while (iter <= end)
 		types.push_back(decodeType());
 	    PyObject* templ = synopsis->lookupType(name);
 	    baseType = synopsis->addParametrized(templ, types);

@@ -47,8 +47,8 @@ Synopsis::~Synopsis()
 PyObject *Synopsis::addBase(const string &name)
 {
   Trace trace("Synopsis::addBase");
-  PyObject *pyname = Py_BuildValue("[O]", PyString_FromString(name.c_str()));
-  PyObject *base = PyObject_CallMethod(type, "Base", "ss", "C++", name.c_str());
+  PyObject *pyname = Py_BuildValue("(s)", name.c_str());
+  PyObject *base = PyObject_CallMethod(type, "Base", "sO", "C++", pyname);
   PyObject_SetItem(dictionary, pyname, base);
   return base;
 }
@@ -250,13 +250,14 @@ PyObject *Synopsis::addFunction(size_t line, bool main, const vector<string> &pr
   return function;
 }
 
-PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name, const vector<PyObject*>& params)
+PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name, const string& realname, const vector<PyObject*>& params)
 {
   Trace trace("Synopsis::addOperation");
   PyObject *pyname = V2L(scopedName(name));
+  PyObject *pyrname = V2L(scopedName(realname));
   PyObject *pyparams = V2L(params);
-  PyObject *operation = PyObject_CallMethod(ast, "Operation", "siissOOO", 
-    file, line, main, "C++", "function", V2L(pre), type, pyname);
+  PyObject *operation = PyObject_CallMethod(ast, "Operation", "siissOOOO", 
+    file, line, main, "C++", "function", V2L(pre), type, pyname, pyrname);
   if (!operation) {
     PyErr_Print(); return operation;
   }
