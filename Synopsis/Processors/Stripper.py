@@ -1,4 +1,4 @@
-# $Id: Stripper.py,v 1.3 2002/10/28 16:30:05 chalky Exp $
+# $Id: Stripper.py,v 1.4 2002/10/29 06:56:52 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Stripper.py,v $
+# Revision 1.4  2002/10/29 06:56:52  chalky
+# Fixes to work on cygwin
+#
 # Revision 1.3  2002/10/28 16:30:05  chalky
 # Trying to fix some bugs in the unduplication/stripping stages. Needs more work
 #
@@ -57,6 +60,8 @@ class Stripper(Operation, AST.Visitor):
         self.__in = 0
 
     def execute(self, ast):
+        if not self.__strip: return
+
         # strip prefixes and remove non-matching declarations
         self.stripDeclarations(ast.declarations())
 
