@@ -1,4 +1,4 @@
-# $Id: NameMapper.py,v 1.5 2003/11/11 06:03:59 stefan Exp $
+# $Id: NameMapper.py,v 1.6 2003/11/19 16:22:38 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -65,5 +65,3 @@ class NameMapper (Processor, AST.Visitor):
          declarations[:] = [module]
 
       return self.output_and_return_ast()
-
-linkerOperation = NameMapper
