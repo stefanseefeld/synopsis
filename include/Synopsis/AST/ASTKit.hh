@@ -1,4 +1,3 @@
-// $Id: ASTKit.hh,v 1.1 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.

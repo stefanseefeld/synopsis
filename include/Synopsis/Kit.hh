@@ -1,4 +1,3 @@
-// $Id: Kit.hh,v 1.1 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -17,7 +16,7 @@ namespace Synopsis
 class Kit : public Module
 {
 public:
-  Kit(const std::string &name) : Module(name) {}
+  Kit(const std::string &name) : Module(Module::import(name)) {}
 
   template <typename T>
   T create(const char *name, const Tuple &t = Tuple(), const Dict &d = Dict())
