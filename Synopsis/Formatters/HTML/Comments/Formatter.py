@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: Formatter.py,v 1.3 2001/02/01 16:47:48 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.3  2001/02/01 16:47:48  chalky
+# Added CommentFormatter as base of the Comment Formatters ...
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -63,7 +66,7 @@ class CommentFormatter:
 	"""Parse the comment struct"""
 	pass
 
-class SSDFormatter:
+class SSDFormatter (CommentFormatter):
     """A class that strips //.'s from the start of lines in detail"""
     __re_star = r'/\*(.*?)\*/'
     __re_ssd = r'^[ \t]*//\. ?(.*)$'
@@ -82,7 +85,7 @@ class SSDFormatter:
     def parse_ssd(self, str):
 	return string.join(self.re_ssd.findall(str),'\n')
 
-class JavaFormatter:
+class JavaFormatter (CommentFormatter):
     """A class that formats java /** style comments"""
     __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>\n[ \t]*\*.*)*?(\n[ \t]*)?\*/"
     __re_line = r"\n[ \t]*\*[ \t]*(?P<text>.*)"
@@ -104,7 +107,7 @@ class JavaFormatter:
 	    mo = self.re_java.search(comm.detail, mo.end())
 	comm.detail = string.join(text_list,'\n')
 
-class SummarySplitter:
+class SummarySplitter (CommentFormatter):
     """A formatter that splits comments into summary and detail"""
     __re_summary = r"[ \t\n]*(.*?\.)([ \t\n]|$)"
     def __init__(self):
@@ -143,7 +146,7 @@ class SummarySplitter:
 	# Store:
 	comm.has_detail = has_detail
 
-class JavadocFormatter:
+class JavadocFormatter (CommentFormatter):
     """A formatter that formats comments similar to Javadoc @tags"""
     # @see IDL/Foo.Bar
     __re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
@@ -198,7 +201,7 @@ class JavadocFormatter:
 	    str = str + seestr + string.join(seelist,'')
 	return str
 
-class SectionFormatter:
+class SectionFormatter (CommentFormatter):
     """A test formatter"""
     __re_break = '\n[ \t]*\n'
 
