@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis_test.py,v 1.1 2003/11/29 22:57:06 stefan Exp $
+# $Id: synopsis_test.py,v 1.2 2003/12/03 05:43:55 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -37,12 +37,14 @@ class ProcessorTest(Test):
                                                   string.join(self.input, ' '))
       script = RedirectedExecutable(60) # 1 minute ought to be enough...
       status = script.Run(string.split(command))
-      return self.output
+      if status != 0:
+         result.Fail("unable to run '%s'"%command)
+      return status == 0
 
    def Run(self, context, result):
 
-      self.run_processor(context, result)
-      expected = open(self.expected).readlines()
-      output = open(self.output).readlines()
-      if expected != output:
-         result.Fail("output mismatch")
+      if self.run_processor(context, result):
+         expected = open(self.expected).readlines()
+         output = open(self.output).readlines()
+         if expected != output:
+            result.Fail("output mismatch")
