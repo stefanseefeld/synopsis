@@ -1,20 +1,20 @@
-synopsis	:= ../../bin/synopsis -c config.py -I. -Wc,parser=IDL,linker=Linker,formatter=HTML
+synopsis := python synopsis.py
 
-all: CosNaming Types Graphic Input
+#-Wc,parser=IDL,linker=Linker,formatter=HTML
 
-CosNaming:	CosNaming.idl
-		$(synopsis) -o CosNaming $?
+all: html
 
-Types:		Types.idl
-		$(synopsis) -o Types $?
+html: tmp.syn
+	$(synopsis) format --output=$@ $?
 
-Graphic:	Graphic.idl
-		$(synopsis) -o Graphic $?
+tmp.syn:	CosNaming.syn Types.syn Graphic.syn Input.syn
+	$(synopsis) link --output=$@ $?
 
-Input:		Input.idl
-		../../bin/synopsis -c config.py -Wc,parser=IDL,linker=Linker,formatter=DocBook -o Input.xml $?
+%.syn: %.idl
+	$(synopsis) parse --output=$@ $?
 
 clean:
-		rm -fr *~ *.html *.syn CosNaming Types Graphic Input *.pyc *.pyo
+	rm -fr *.syn *~
 
 distclean:	clean
+	rm -rf html
