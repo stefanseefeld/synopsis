@@ -52,7 +52,7 @@ public:
   { return create<Modifier>("Modifier", Tuple(lang, alias, pre, post));}
 
   Array create_array(const std::string &lang, const Type &alias,
-		     const TypedList<size_t> &sizes)
+		     const TypedList<int> &sizes)
   { return create<Array>("Array", Tuple(lang, alias, sizes));}
 
   Parametrized create_parametrized(const std::string &lang, const Template &t,
