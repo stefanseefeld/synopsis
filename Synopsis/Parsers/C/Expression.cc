@@ -33,6 +33,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <stdlib.h>
 
 #include "config.h"
 #include "express.h"
@@ -446,10 +447,10 @@ UIntConstant::print(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-FloatConstant::FloatConstant(double val, const Location& l )
+FloatConstant::FloatConstant(const std::string& val, const Location& l )
               : Constant (CT_Float, l)
 {
-    doub = val;
+    value = val;
     type = new BaseType(BT_Float);
 }
 
@@ -462,8 +463,8 @@ FloatConstant::~FloatConstant()
 Expression*
 FloatConstant::dup0() const
 {
-    FloatConstant *ret = new FloatConstant(doub, location);
-    ret->type = type;    
+    FloatConstant *ret = new FloatConstant(value, location);
+    ret->type = type;
     return ret;
 }
 
@@ -471,7 +472,7 @@ FloatConstant::dup0() const
 void
 FloatConstant::print(std::ostream& out) const
 {
-    out << doub;
+    out << value;
 
 #ifdef    SHOW_TYPES
     if (type != NULL)

@@ -240,13 +240,13 @@ class UIntConstant : public Constant
 class FloatConstant : public Constant
 {
   public:
-    FloatConstant(double val, const Location& l );
+    FloatConstant(const std::string& val, const Location& l );
     virtual ~FloatConstant();
  
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
-    double  doub;
+    std::string value;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
