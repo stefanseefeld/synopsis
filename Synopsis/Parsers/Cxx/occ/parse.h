@@ -133,6 +133,7 @@ protected:
     bool rUnaryExpr(Ptree*&);
     bool rThrowExpr(Ptree*&);
     bool rSizeofExpr(Ptree*&);
+    bool rTypeidExpr(Ptree*&);
     bool isAllocateExpr(int);
     bool rAllocateExpr(Ptree*&);
     bool rUserdefKeyword(Ptree*&);

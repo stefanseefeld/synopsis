@@ -245,6 +245,7 @@ inline bool is_float_suffix(char c){
 #define UserKeyword5	337
 #define NAMESPACE	338
 #define USING		339
+#define TYPEID		340
 
 // non terminals
 
@@ -301,6 +302,7 @@ inline bool is_float_suffix(char c){
 #define ntParenExpr		466
 #define ntStaticUserStatementExpr 467
 #define ntThrowExpr		468
+#define ntTypeidExpr		469
 
 #define Ignore		500
 #define ASM		501
