@@ -1,4 +1,4 @@
-# $Id: XRefCompiler.py,v 1.2 2002/10/29 12:43:25 chalky Exp $
+# $Id: XRefCompiler.py,v 1.3 2002/11/03 06:08:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRefCompiler.py,v $
+# Revision 1.3  2002/11/03 06:08:56  chalky
+# Tolerate file not found errors
+#
 # Revision 1.2  2002/10/29 12:43:25  chalky
 # Added no_locals support which is on by default, and strips local variables
 # from cross reference tables
@@ -44,7 +47,12 @@ def do_compile(input_files, output_file, no_locals):
     # Read input files
     for file in input_files:
 	if config.verbose: print "XRefCompiler: Reading",file
-	f = open(file, 'rt')
+	try:
+	    f = open(file, 'rt')
+	except IOError, e:
+	    print "Error opening %s: %s"%(file, e)
+	    continue
+
 	lines = f.readlines()
 	f.close()
 
