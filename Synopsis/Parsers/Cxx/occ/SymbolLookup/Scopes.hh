@@ -14,6 +14,8 @@
 namespace SymbolLookup
 {
 
+class Namespace;
+
 class TemplateParameterScope : public Scope
 {
 public:
@@ -27,6 +29,7 @@ class LocalScope : public Scope
 public:
   LocalScope(PTree::List const *node, Scope const *outer)
     : my_node(node), my_outer(outer->ref()) {}
+
   virtual Scope const *global() const { return my_outer->global();}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
@@ -44,6 +47,8 @@ class FunctionScope : public Scope
 public:
   FunctionScope(PTree::Declaration const *decl, Scope const *outer)
     : my_decl(decl), my_outer(outer->ref()) {}
+
+  virtual void use(PTree::Using const *);
   virtual Scope const *global() const { return my_outer->global();}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
@@ -55,15 +60,19 @@ protected:
   ~FunctionScope() { my_outer->unref();}
 
 private:
+  typedef std::list<Namespace const *> Using;
+
   PTree::Declaration     const *my_decl;
   Scope                  const *my_outer;
   TemplateParameterScope const *my_parameters;
+  Using                         my_using;
 };
 
 class PrototypeScope : public Scope
 {
 public:
   PrototypeScope(Scope const *outer) : my_outer(outer->ref()) {}
+
   virtual Scope const *global() const { return my_outer->global();}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
@@ -82,6 +91,7 @@ public:
     : my_spec(spec), my_outer(outer->ref())
   {
   }
+
   virtual Scope const *global() const { return my_outer->global();}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 

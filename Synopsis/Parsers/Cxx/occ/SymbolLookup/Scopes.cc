@@ -32,11 +32,42 @@ void LocalScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
+void FunctionScope::use(PTree::Using const *udecl)
+{
+  if (*PTree::second(udecl) == "namespace") // using.dir
+  {
+    PTree::Encoding name = PTree::third(udecl)->encoded_name();
+    SymbolSet symbols = lookup(name);
+    // now get the namespace associated with that symbol:
+    Symbol const *symbol = *symbols.begin();
+    // FIXME: may this symbol-to-scope conversion be implemented
+    //        by the appropriate Symbol subclass(es) ?
+    Scope const *scope = symbol->scope()->find_scope(name, symbol);
+    Namespace const *ns = dynamic_cast<Namespace const *>(scope);
+    if (ns) my_using.push_back(ns);
+  }
+  else
+  {
+    std::cout << "sorry, using declaration not supported yet" << std::endl;
+  }
+}
+
 SymbolSet FunctionScope::unqualified_lookup(Encoding const &name,
 					    bool scope) const
 {
   SymbolSet symbols = find(name, scope);
-  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
+  if (symbols.size()) return symbols;
+
+  // see 7.3.4 [namespace.udir]
+  Using::const_iterator i = my_using.begin();
+  while (symbols.empty() && i != my_using.end())
+  {
+    symbols = (*i)->unqualified_lookup(name, scope);
+  }
+  if (symbols.size() || !my_outer)
+    return symbols;
+  else
+    return my_outer->unqualified_lookup(name, scope);
 }
 
 void FunctionScope::dump(std::ostream &os, size_t in) const

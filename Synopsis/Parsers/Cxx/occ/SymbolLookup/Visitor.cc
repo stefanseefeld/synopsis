@@ -12,8 +12,8 @@ using namespace SymbolLookup;
 
 void Visitor::visit(PTree::List *node)
 {
-  for (PTree::Node *i = node; i; i = i->cdr())
-    if (i->car()) i->car()->accept(this);
+  if (node->car()) node->car()->accept(this);
+  if (node->cdr()) node->cdr()->accept(this);
 }
 
 void Visitor::visit(PTree::NamespaceSpec *spec)
@@ -28,12 +28,13 @@ void Visitor::visit(PTree::Declaration *decl)
   PTree::Node *decls = PTree::third(decl);
   if(PTree::is_a(decls, Token::ntDeclarator)) // function definition
   {
+    visit(static_cast<PTree::Declarator *>(decls)); // visit the declarator
     my_table.enter_function(decl);
-    visit(static_cast<PTree::List *>(decl));
+    visit(static_cast<PTree::Block *>(PTree::nth(decl, 3))); // visit the body
     my_table.leave_scope();
   }
   else
-    decls->accept(this);
+    visit(static_cast<PTree::List *>(decl));
 }
 
 void Visitor::visit(PTree::ClassSpec *spec)
