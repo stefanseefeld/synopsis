@@ -50,10 +50,7 @@ int main(int argc, char **argv)
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-    {
-      std::cerr << i->filename << ':' << i->line << ": Error before '" 
-		<< i->context << '\'' << std::endl;
-    }
+      (*i)->write(std::cerr);
 
     if (!node) return -1;
     if (translate)

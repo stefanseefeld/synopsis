@@ -169,10 +169,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     PTree::Node *def = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-    {
-      std::cerr << i->filename << ':' << i->line << ": Error before '" 
-		<< i->context << '\'' << std::endl;
-    }
+      (*i)->write(std::cerr);
     swalker.translate(def);
   }
   catch (const std::exception &e)

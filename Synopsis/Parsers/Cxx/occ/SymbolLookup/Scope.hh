@@ -23,10 +23,13 @@ struct TypeError : public std::exception
 
 struct MultiplyDefined : public std::exception
 {
-  MultiplyDefined(PTree::Encoding const &n) : name(n) {}
+  MultiplyDefined(PTree::Encoding const &n, const PTree::Node *decl, const PTree::Node *orig)
+    : name(n), declaration(decl), original(orig) {}
   virtual ~MultiplyDefined() throw() {}
   virtual char const * what() const throw() { return "MultiplyDefined";}
   PTree::Encoding name;
+  PTree::Node const * declaration;
+  PTree::Node const * original;
 };
 
 //. A Scope contains symbol definitions.
