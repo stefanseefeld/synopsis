@@ -37,8 +37,8 @@ class TypeTranslator (idlvisitor.TypeVisitor):
 
     def visitBaseType(self, idltype):
         type = Type.Base("IDL", (self.__basetypes[idltype.kind()],))
-        self.types[(type.name(),)] = type
-        self.__result = (type.name(),)
+        self.types[type.name()] = type
+        self.__result = type.name()
 
     def visitStringType(self, idltype):
         if not self.types.has_key(["string"]):
@@ -90,9 +90,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
 	if self.__types.types.has_key(name):
 	    if isinstance(self.__types.get(name), Type.Forward):
 		self.__types.add(name, type)
-		#print "Replaced",self.__types.get(name),"with",type
 	    else:
-		#print "Refusing to replace",self.__types.get(name),"with",type
 		pass
 	    return
 	self.__types.add(name, type)
@@ -108,7 +106,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
             self.declarations.append(d)
 
     def visitModule(self, node):
-        name = self.scope()[:]
+	name = self.scope()[:]
         name.append(node.identifier())
         module = AST.Module(node.file(), node.line(), node.mainFile(), "IDL", "module", name)
         self.addDeclaration(module)
@@ -159,7 +157,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         name = self.scope()[:]
         name.append(node.identifier())
         self.__result_declarator = AST.Declarator(node.file(), node.line(), node.mainFile(), "IDL", name, node.sizes())
-        self.addType(self.__result_declarator.name(), Type.Declared("IDL", self.__result_declarator.name(), self.__result_declarator))
+        #self.addType(self.__result_declarator.name(), Type.Declared("IDL", self.__result_declarator.name(), self.__result_declarator))
         for c in node.comments():
             self.__result_declarator.comments().append(AST.Comment(c.text(), c.file(), c.line()))
         
@@ -169,16 +167,17 @@ class ASTTranslator (idlvisitor.AstVisitor):
         if node.constrType():
             node.memberType().decl().accept(self)
         name = self.__types.internalize(node.aliasType())
-        decll = []
+	comments = []
+        for c in node.comments():
+            comments.append(AST.Comment(c.text(), c.file(), c.line()))
         for d in node.declarators():
             d.accept(self)
-            decll.append(self.__result_declarator)
-
-        typedef = AST.Typedef(node.file(), node.line(), node.mainFile(), "IDL", "typedef",
-                              self.__types.get(name), node.constrType(), decll)
-        self.addDeclaration(typedef)
-        for c in node.comments():
-            typedef.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+            decl = self.__result_declarator
+	    typedef = AST.Typedef(node.file(), node.line(), node.mainFile(), "IDL", "typedef",
+				  decl.name(), self.__types.get(name), node.constrType(), [decl])
+	    typedef.comments().extend(comments + decl.comments())
+	    self.addType(typedef.name(), Type.Declared("IDL", typedef.name(), typedef))
+	    self.addDeclaration(typedef)
 
     def visitMember(self, node):
         # if this is an inline constructed type, it is a 'Declared' type
@@ -186,15 +185,17 @@ class ASTTranslator (idlvisitor.AstVisitor):
         if node.constrType():
             node.memberType().decl().accept(self)
         name = self.__types.internalize(node.memberType())
-        decll = []
+	comments = []
+        for c in node.comments():
+            comments.append(AST.Comment(c.text(), c.file(), c.line()))
         for d in node.declarators():
             d.accept(self)
-            decll.append(self.__result_declarator)
-        member = AST.Variable(node.file(), node.line(), node.mainFile(), "IDL", "variable",
-                              self.__types.get(name), node.constrType(), decll)
-        self.addDeclaration(member)
-        for c in node.comments():
-            member.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+	    decl = self.__result_declarator
+	    member = AST.Variable(node.file(), node.line(), node.mainFile(), "IDL", "variable",
+				  decl.name(), self.__types.get(name), node.constrType(), [decl])
+	    member.comments().extend(comments + decl.comments())
+	    self.addType(member.name(), Type.Declared("IDL", member.name(), member))
+	    self.addDeclaration(member)
 
     def visitStruct(self, node):
         name = self.scope()[:]
