@@ -150,6 +150,13 @@ public:
   void no_return_type() { append('?');}
   void value_temp_param() { append('*');}
 
+  //. if this Encoding represents a qualified name,
+  //. return the name of the outer scope
+  Encoding get_scope();
+  //. if this Encoding represents a qualified name,
+  //. return the name of the symbol inside the outer scope,
+  //. else return the unmodified name
+  Encoding get_symbol();
   Encoding get_template_arguments();
 
   PTree::Node *make_name();

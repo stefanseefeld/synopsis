@@ -16,6 +16,12 @@ public:
   EncodingFinder(std::ostream &os) : my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
+  virtual void visit(PTree::List *node)
+  {
+    for (PTree::Node *i = node; i; i = i->cdr())
+      if (i->car()) i->car()->accept(this);
+  }
+
 //   virtual void visit(PTree::Typedef *node)
 //   {
 //     my_os << "Typedef : " << std::endl;
@@ -95,9 +101,10 @@ int main(int argc, char **argv)
   {
     std::ofstream ofs(argv[1]);
     std::ifstream ifs(argv[2]);
-    Buffer buffer(ifs.rdbuf());
+    Buffer buffer(ifs.rdbuf(), argv[2]);
     Lexer lexer(&buffer);
-    Parser parser(&lexer);
+    SymbolLookup::Table symbols;
+    Parser parser(lexer, symbols);
     EncodingFinder finder(ofs);
     PTree::Node *node = parser.parse();
     finder.find(node);
