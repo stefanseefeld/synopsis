@@ -791,6 +791,9 @@ bool Parser::rDeclaration(Ptree*& statement)
     Encoding type_encode;
     int res;
 
+    lex->LookAhead(0);
+    Ptree *comments = lex->GetComments();
+
     if(!optMemberSpec(mem_s) || !optStorageSpec(storage_s))
 	return FALSE;
 
@@ -811,8 +814,6 @@ bool Parser::rDeclaration(Ptree*& statement)
     if(!optCvQualify(cv_q)
        || !optIntegralTypeOrClassSpec(integral, type_encode))
 	return FALSE;
-
-    Ptree *comments = lex->GetComments();
 
     if(integral != nil)
 	res = rIntegralDeclaration(statement, type_encode,
@@ -2375,8 +2376,10 @@ bool Parser::rEnumBody(Ptree*& body)
 	if(lex->GetToken(tk) != Identifier)
 	    return FALSE;
 
+	Ptree* comments = lex->GetComments();
+
 	if(lex->LookAhead(0, tk2) != '=')
-	    name = new Leaf(tk);
+	    name = new CommentedLeaf(tk, comments);
 	else{
 	    lex->GetToken(tk2);
 	    if(!rExpression(exp)){
@@ -2388,7 +2391,7 @@ bool Parser::rEnumBody(Ptree*& body)
 		return TRUE;		// error recovery
 	    }
 
-	    name = Ptree::List(new Leaf(tk), new Leaf(tk2), exp);
+	    name = Ptree::List(new CommentedLeaf(tk, comments), new Leaf(tk2), exp);
 	}
 
 	if(lex->LookAhead(0) != ','){
@@ -2629,7 +2632,7 @@ bool Parser::rClassMember(Ptree*& mem)
 	    Ptree* comments = lex->GetComments();
 	    if (comments) {
 		//cout << "Warning: rClassMember setting comments to ";
-		comments->Display();
+		//comments->Display();
 		Walker::SetDeclaratorComments(mem, comments);
 	    }
 	    return TRUE;

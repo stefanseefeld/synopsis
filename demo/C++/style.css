@@ -2,12 +2,12 @@ body
   {
     margin-left: 5%;
     margin-right: 5%;
-    color: #000000;
+    color: #003030;
     background: #ffffff;
   }
 :link { color: #bb0000; text-decoration: none;}
-:visited { color: #bb0000;}
-:active { color: #bb0000;}
+:visited { color: #bb0000; text-decoration: none;}
+:active { color: #400000; text-decoration: none;}
 span.keyword { font-weight: bold;}
 span.variable { font-style: italic;}
 div.module { padding: 1.0em;}
@@ -25,6 +25,12 @@ div.summary
     color: #446666;
     margin-left: 3em;
   }
+div.enumerator {
+    margin-left: 3em;
+}
+div.files {
+    margin-left: 1em;
+}
 td.heading {
     font-size: 1.5em;
     font-weight: bold;
