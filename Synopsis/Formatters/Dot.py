@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.40 2003/11/19 19:48:43 stefan Exp $
+# $Id: Dot.py,v 1.41 2003/12/05 17:50:58 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -301,7 +301,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
                               self.write_node(ref.link, child_label, child_label)
                            else:
                               self.write_node('', child_label, child_label, color='gray75', fontcolor='gray75')
-                              self.write_edge(name, child_label, None)
+                           self.write_edge(name, child_label, None)
 
 class CollaborationGenerator(AST.Visitor, Type.Visitor):
    """A Formatter that generates a collaboration graph"""
