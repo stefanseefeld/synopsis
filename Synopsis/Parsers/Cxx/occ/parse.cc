@@ -4025,6 +4025,9 @@ bool Parser::rCondition(Ptree*& exp)
 	    // Parse declarator
 	    if (!rDeclaratorWithInit(decl, type_encode, TRUE, FALSE))
 		break;
+	    // *must* be end of condition, condition is in a () pair
+	    if (lex->LookAhead(0) != ')')
+		break;
 	    exp = new PtreeDeclaration(head,
 		    Ptree::List(integral, decl));
 	} else {
@@ -4049,6 +4052,9 @@ bool Parser::rCondition(Ptree*& exp)
 	    type_encode.CvQualify(cv_q, cv_q2);
 	    // Parse declarator
 	    if (!rDeclaratorWithInit(decl, type_encode, TRUE, FALSE))
+		break;
+	    // *must* be end of condition, condition is in a () pair
+	    if (lex->LookAhead(0) != ')')
 		break;
 	    exp = new PtreeDeclaration(head,
 		    Ptree::List(type_name, decl));
