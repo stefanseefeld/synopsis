@@ -1,22 +1,24 @@
-struct fobizer{
-  int a;
+#line 1 "run/v6.c"
+
+struct fobizer {
+  int  a;
 };
 enum boolean { true, false };
-static int f()
+static int  f()
 {
   return 2;
 }
 
-int main()
+int  main()
 {
-  enum boolean t_or_f;
-  union ufobizer{
-    struct alpha{
-      int q;
-    }m;
+  enum boolean  t_or_f;
+  union ufobizer {
+    struct alpha {
+      int  q;
+    } m;
   };
-  void *fp;
-  void *x;
+  void  *fp;
+  void  *x;
 
 hello:
   fp = (void (*)()) (x);
@@ -25,180 +27,3 @@ done:
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 4  nchild: 2
-Scope Id: 1_1
-HashTab:  #entries: 4  size: 5
-[0]: Enumeration constant Name: false:
-Definition: NO definition for Enumeration constant entry!
-Container: boolean { true, false }
-
--------------
-
-[2]: Function Name: main:
-Definition: int main()
-Position: , 16, 10
-
--------------
-Function Name: f:
-Definition: static int f()
-Position: , 12, 14
-
--------------
-
-[3]: Enumeration constant Name: true:
-Definition: NO definition for Enumeration constant entry!
-Container: boolean { true, false }
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[2]: Component Name: a:
-Definition: int a
-Container: struct fobizer{
-  int a;
-}
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_2
-HashTab: NULL
-level: 4  nsyms: 3  nchild: 1
-Scope Id: 1_1_2_1
-HashTab:  #entries: 3  size: 5
-[0]: Variable Name: x:
-Definition: void *x
-
--------------
-
-[3]: Variable Name: fp:
-Definition: void *fp
-
--------------
-Variable Name: t_or_f:
-Definition: enum boolean t_or_f
-
--------------
-
-level: 5  nsyms: 1  nchild: 1
-Scope Id: 1_1_2_1_1
-HashTab:  #entries: 1  size: 5
-[4]: Component Name: m:
-Definition: struct alpha{
-  int q;
-}m
-Container: union ufobizer{
-  struct alpha{
-    int q;
-  }m;
-}
-
--------------
-
-level: 6  nsyms: 1  nchild: 0
-Scope Id: 1_1_2_1_1_1
-HashTab:  #entries: 1  size: 5
-[3]: Component Name: q:
-Definition: int q
-Container: struct alpha{
-  int q;
-}
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 1
-Scope Id: 1
-HashTab: NULL
-level: 2  nsyms: 2  nchild: 1
-Scope Id: 1_1
-HashTab:  #entries: 2  size: 5
-[2]: Tag Name: boolean:
-Definition: enum boolean { true, false }
-
--------------
-
-[4]: Tag Name: fobizer:
-Definition: struct fobizer{
-  int a;
-}
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_1
-HashTab: NULL
-level: 4  nsyms: 1  nchild: 1
-Scope Id: 1_1_1_1
-HashTab:  #entries: 1  size: 5
-[3]: Tag Name: ufobizer:
-Definition: union ufobizer{
-  struct alpha{
-    int q;
-  }m;
-}
-
--------------
-
-level: 5  nsyms: 1  nchild: 0
-Scope Id: 1_1_1_1_1
-HashTab:  #entries: 1  size: 5
-[0]: Tag Name: alpha:
-Definition: struct alpha{
-  int q;
-}
-
--------------
-
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 1
-Scope Id: 1
-HashTab: NULL
-level: 2  nsyms: 0  nchild: 1
-Scope Id: 1_1
-HashTab: NULL
-level: 3  nsyms: 2  nchild: 1
-Scope Id: 1_1_1
-HashTab:  #entries: 2  size: 5
-[4]: Label Name: done:
-Definition: done:
-Position: , 28, 3
-
--------------
-Label Name: hello:
-Definition: hello:
-Position: , 25, 22
-
--------------
-
-level: 4  nsyms: 0  nchild: 0
-Scope Id: 1_1_1_1
-HashTab: NULL
-
--------------

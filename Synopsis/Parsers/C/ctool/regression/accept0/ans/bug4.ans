@@ -1,70 +1,8 @@
-typedef int FOO;
-typedef int BAR;
+#line 1 "run/bug4.c"
+
+typedef int  FOO;
+typedef int  BAR;
 typedef struct {
-  FOO BAR;
-}whatever;
+  FOO  BAR;
+} whatever;
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 3  nchild: 1
-Scope Id: 1_1
-HashTab:  #entries: 3  size: 5
-[2]: Typedef Name: BAR:
-Definition: typedef int BAR
-
--------------
-Typedef Name: FOO:
-Definition: typedef int FOO
-
--------------
-
-[3]: Typedef Name: whatever:
-Definition: typedef struct {
-  FOO BAR;
-}whatever
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[2]: Component Name: BAR:
-Definition: FOO BAR
-Container: struct {
-  FOO BAR;
-}
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
