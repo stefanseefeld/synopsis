@@ -87,6 +87,13 @@ void Encoding::do_init_static()
   Encoding::right_angle = new PTree::Atom(">", 1);
 }
 
+Encoding Encoding::simple_name(PTree::Atom const *name)
+{
+  Encoding retn;
+  retn.append_with_length(name->position(), name->length());
+  return retn;
+}
+
 const char *Encoding::copy() const
 {
   return strcpy(new (GC) char[my_buffer.size() + 1], (const char *)my_buffer.c_str());
@@ -197,7 +204,7 @@ void Encoding::array(unsigned long s)
   prepend(str.c_str(), str.size());
 }
 
-Encoding::iterator Encoding::end_of_scope()
+Encoding::iterator Encoding::end_of_scope() const
 {
   if (!is_qualified()) return end(); // no scope
   
@@ -215,13 +222,13 @@ Encoding::iterator Encoding::end_of_scope()
   throw std::domain_error(oss.str());
 }
 
-Encoding Encoding::get_scope()
+Encoding Encoding::get_scope() const
 {
   if (!is_qualified()) return "";    // no scope
   return Encoding(begin() + 2, end_of_scope());
 }
 
-Encoding Encoding::get_symbol()
+Encoding Encoding::get_symbol() const
 {
   if (!is_qualified()) return *this; // no scope
   iterator i = ++begin();
@@ -231,7 +238,7 @@ Encoding Encoding::get_symbol()
   return retn;
 }
 
-Encoding Encoding::get_template_arguments()
+Encoding Encoding::get_template_arguments() const
 {
   int m = my_buffer[0] - 0x80;
   size_t length = my_buffer[1] - 0x80;

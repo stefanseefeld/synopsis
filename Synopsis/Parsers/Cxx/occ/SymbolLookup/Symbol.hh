@@ -48,7 +48,8 @@ private:
 class TypeName : public Symbol
 {
 public:
-  TypeName(const PTree::Encoding &type, PTree::Node *ptree) : Symbol(type, ptree) {}
+  TypeName(const PTree::Encoding &type, PTree::Node *ptree)
+    : Symbol(type, ptree) {}
 };
 
 class ClassTemplateName : public Symbol

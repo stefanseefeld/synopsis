@@ -13,15 +13,25 @@
 
 namespace SymbolLookup
 {
-struct TypeError : public std::exception
+struct TypeError : std::exception
 {
-  TypeError(PTree::Encoding const &t) : type(t) {}
+  TypeError(PTree::Encoding const &n, PTree::Encoding const &t)
+    : name(n), type(t) {}
   virtual ~TypeError() throw() {}
   virtual char const * what() const throw() { return "TypeError";}
+  PTree::Encoding name;
   PTree::Encoding type;
 };
 
-struct MultiplyDefined : public std::exception
+struct Undefined : std::exception
+{
+  Undefined(PTree::Encoding const &n) : name(n) {}
+  virtual ~Undefined() throw() {}
+  virtual char const * what() const throw() { return "Undefined";}
+  PTree::Encoding name;
+};
+
+struct MultiplyDefined : std::exception
 {
   MultiplyDefined(PTree::Encoding const &n, const PTree::Node *decl, const PTree::Node *orig)
     : name(n), declaration(decl), original(orig) {}
@@ -30,6 +40,16 @@ struct MultiplyDefined : public std::exception
   PTree::Encoding name;
   PTree::Node const * declaration;
   PTree::Node const * original;
+};
+
+class InternalError : public std::exception
+{
+public:
+  InternalError(std::string const &what) : my_what(what) {}
+  virtual ~InternalError() throw() {}
+  virtual char const * what() const throw() { return my_what.c_str();}
+private:
+  std::string my_what;
 };
 
 //. A Scope contains symbol definitions.
@@ -65,7 +85,7 @@ public:
 
   //. lookup specialization for the case where the Symbol looked for is a FunctionName,
   //. as in this case a set of possibly overloaded functions is returned.
-  std::set<FunctionName const *> Scope::lookup_function(const PTree::Encoding &name) const throw(TypeError);
+  std::set<FunctionName const *> lookup_function(const PTree::Encoding &name) const throw(TypeError);
 
   //. recursively dump the content of the symbol table to a stream (for debugging).
   virtual void dump(std::ostream &, size_t indent) const;
@@ -108,9 +128,9 @@ inline T const *Scope::lookup(const PTree::Encoding &name) const throw(TypeError
   SymbolTable::const_iterator symbol = my_symbols.lower_bound(name);
   if (symbol == my_symbols.upper_bound(name)) return 0; // no such symbol
   else if (symbol->second->type().is_function())
-    throw TypeError(symbol->second->type()); // function
+    throw TypeError(name, symbol->second->type()); // function
   T const * t = dynamic_cast<T const *>(symbol->second);
-  if (!t) throw TypeError(symbol->second->type());
+  if (!t) throw TypeError(name, symbol->second->type());
   return t;
 }
 
@@ -122,7 +142,7 @@ Scope::lookup_function(const PTree::Encoding &name) const throw(TypeError)
   for (; symbol != my_symbols.upper_bound(name); ++symbol)
   {
     FunctionName const * t = dynamic_cast<FunctionName const *>(symbol->second);
-    if (!t) throw TypeError(symbol->second->type());
+    if (!t) throw TypeError(name, symbol->second->type());
     else symbols.insert(t);
   }
   return symbols;

@@ -88,6 +88,17 @@ void Table::declare(Declaration *d)
     // function definition
     PTree::Encoding name = decls->encoded_name();
     PTree::Encoding type = decls->encoded_type();
+
+    // if the name is qualified, it has to be
+    // declared already. If it hasn't, raise an error
+    if (name.is_qualified())
+    {
+      std::set<Symbol const *> symbols = lookup(name);
+      if (symbols.empty()) throw Undefined(name);
+      return;
+    }
+    
+    // FIXME: raise an error if this function was already defined
     my_scopes.top()->declare(name, new FunctionName(type, decls));
   }
   else
@@ -180,7 +191,7 @@ void Table::declare(NamespaceSpec *spec)
 {
   Trace trace("Table::declare(NamespaceSpec *)");
   const Node *name = second(spec);
-  Encoding enc(name->position(), name->length());
+  Encoding enc = Encoding::simple_name(static_cast<Atom const *>(name));
   // FIXME: do we need a 'type' here ?
   my_scopes.top()->declare(enc, new NamespaceName(spec->encoded_type(), spec));
 }
@@ -208,6 +219,55 @@ void Table::declare(TemplateDecl *tdecl)
     PTree::Encoding name = decl->encoded_name();
     my_scopes.top()->declare(name, new FunctionTemplateName(Encoding(), decl));
   }
+}
+
+std::set<Symbol const *> Table::lookup(PTree::Encoding const &name) const
+{
+  PTree::Encoding symbol_name = name.get_scope();
+  PTree::Encoding remainder = name.get_symbol();
+
+  const Scope *scope = my_scopes.top(); // start to look here
+  if (symbol_name.is_global_scope())
+  {
+    scope = my_scopes.top()->global();
+    symbol_name = remainder.get_scope();
+    remainder = remainder.get_symbol();
+  }
+  while (!symbol_name.empty()) // look up nested scopes
+  {
+    std::set<Symbol const *> symbols = scope->lookup(symbol_name);
+    if (symbols.empty()) throw Undefined(symbol_name);
+    else if (symbols.size() > 1)
+    {
+      // can we assume here that all symbols refer to functions ?
+      scope->dump(std::cerr, 0);
+      throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+    }
+    // now make sure the symbol indeed refers to a scope
+    PTree::Node const *decl = 0;
+    if (NamespaceName const *ns = dynamic_cast<NamespaceName const *>(*symbols.begin()))
+      decl = ns->ptree();
+    else if (TypeName const *tn = dynamic_cast<TypeName const *>(*symbols.begin()))
+    {
+      decl = tn->ptree();
+      // test that 'decl' is a ClassSpec
+    }
+    // TODO: test for ClassTemplateName ...
+    if (!decl)
+    {
+      // the symbol was found but doesn't refer to a scope
+      scope->dump(std::cerr, 0);
+      throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+    }
+    // move into inner scope and start over the lookup
+    scope = scope->lookup_scope(decl);
+    if (!scope) throw InternalError("undeclared scope !");
+    symbol_name = remainder.get_scope();
+    remainder = remainder.get_symbol();
+  }
+  // now we have to look up the remainder in the innermost scope
+  std::set<Symbol const *> symbols = scope->lookup(remainder);
+  return symbols;
 }
 
 //. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
