@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.17 2003/12/08 00:39:24 stefan Exp $
+# $Id: NameIndex.py,v 1.18 2003/12/10 05:19:12 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -38,7 +38,7 @@ class NameIndex(View):
       self.write(entity('h1', "Name Index"))
       self.write('<i>Hold the mouse over a link to see the scope of each name</i>')
 
-      dict = self._makeDict()
+      dict = self.make_dictionary()
       keys = dict.keys()
       keys.sort()
       linker = lambda key: '<a href="#%s">%s</a>'%(ord(key),key)
@@ -63,12 +63,13 @@ class NameIndex(View):
 	
       self.end_file()
 
-   def _makeDict(self):
+   def make_dictionary(self):
       """Returns a dictionary of items. The keys of the dictionary are the
       headings - the first letter of the name. The values are each a sorted
       list of items with that first letter."""
 
-      decl_filter = lambda type: isinstance(type, Type.Declared)
+      decl_filter = lambda type: (isinstance(type, Type.Declared)
+                                  and not isinstance(type.declaration(), AST.Builtin))
       def name_cmp(a,b):
          a, b = a.name(), b.name()
          res = cmp(a[-1],b[-1])
