@@ -40,7 +40,7 @@ def dump(name):
 
 
 if mode == 'full':
-    name = string.split(search,'::')
+    name = tuple(string.split(search,'::'))
     found = 0
     # Check for exact match
     if data.has_key(name):
