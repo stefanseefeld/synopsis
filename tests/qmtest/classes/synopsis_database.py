@@ -176,7 +176,7 @@ class Database(database.Database):
       parameters['LDFLAGS'] = self.LDFLAGS
       parameters['LIBS'] = self.LIBS
       parameters['src'] = os.path.join(dirname, 'src', components[-1]) + '.cc'
-      parameters['exe'] = os.path.join(*id.split('.') + ['bin', components[-1]])
+      parameters['exe'] = os.path.join(*components[:-1] + ['bin', components[-1]])
       parameters['expected'] = os.path.join(dirname, 'expected',
                                             components[-1] + '.out')
       
