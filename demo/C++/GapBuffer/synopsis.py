@@ -12,16 +12,15 @@ from Synopsis.Formatters import TexInfo
 parser = Cxx.Parser(syntax_prefix = 'links',
                     xref_prefix = 'xref')
 
-linker = Composite(Unduplicator(),     # remove duplicate and forward declarations
-                   Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
-                   NameMapper(),       # apply name mapping if any (prefix adding, etc.)
-                   SSDComments(),      # filter out any non-'//' comments
-                   Grouper1(),         # group declarations according to '@group' tags
-                   CommentStripper(),  # strip any 'suspicious' comments
-                   Previous(),         # attach '//<-' comments
-                   Dummies(),          # drop 'dummy' declarations
-                   EmptyNS(),          # skip empty namespaces
-                   AccessRestrictor()) # filter out unwanted ('private', say) declarations
+linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
+                NameMapper(),       # apply name mapping if any (prefix adding, etc.)
+                SSDComments(),      # filter out any non-'//.' comments
+                Grouper1(),         # group declarations according to '@group' tags
+                CommentStripper(),  # strip any 'suspicious' comments
+                Previous(),         # attach '//<-' comments
+                Dummies(),          # drop 'dummy' declarations
+                EmptyNS(),          # skip empty namespaces
+                AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 xref = XRefCompiler(prefix = 'xref')
 

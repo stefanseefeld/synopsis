@@ -1,8 +1,6 @@
 synopsis := python synopsis.py
 
-#-Wc,parser=IDL,linker=Linker,formatter=HTML
-
-all: html
+all: CosNaming Types Graphic Input html
 
 html: tmp.syn
 	$(synopsis) format --output=$@ $?
@@ -12,6 +10,9 @@ tmp.syn:	CosNaming.syn Types.syn Graphic.syn Input.syn
 
 %.syn: %.idl
 	$(synopsis) parse --output=$@ $?
+
+%: %.syn
+	$(synopsis) format --output=$@ $?
 
 clean:
 	rm -fr *.syn *~

@@ -32,7 +32,7 @@ class Cxx2IDL(TypeMapper):
                print "mapping", string.join(name, "::"), "to", string.join(interface, "::")
 
 idl = Composite(IDL.Parser(),
-                Unduplicator(),     # remove duplicate and forward declarations
+                Linker(),           # remove duplicate and forward declarations
                 EmptyNS(),          # skip empty namespaces
                 SSDComments(),      # filter out any non-'//.' comments
                 CommentStripper())  # strip any 'suspicious' comments
@@ -40,7 +40,7 @@ idl = Composite(IDL.Parser(),
 cxx = Composite(Cxx.Parser(preprocessor = 'c++',
                            cppflags = ['-I.', '-D__x86__']),
                 Cxx2IDL(),          # map to interface to hide the skeletons
-                Unduplicator(),     # remove duplicate and forward declarations
+                Linker(),           # remove duplicate and forward declarations
                 EmptyNS(),          # skip empty namespaces
                 SSDComments(),      # filter out any non-'//.' comments
                 CommentStripper())  # strip any 'suspicious' comments
