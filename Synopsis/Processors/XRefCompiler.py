@@ -1,4 +1,4 @@
-# $Id: XRefCompiler.py,v 1.7 2003/11/17 01:26:18 stefan Exp $
+# $Id: XRefCompiler.py,v 1.8 2003/11/18 07:26:34 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -30,7 +30,7 @@ class XRefCompiler(Processor):
    dictionary.
    """
 
-   xref_prefix = Parameter('', 'where to look for xref files')
+   prefix = Parameter('', 'where to look for xref files')
    no_locals = Parameter(True, '')
 
    def process(self, ast, **kwds):
@@ -40,7 +40,7 @@ class XRefCompiler(Processor):
 
       filenames = map(lambda x: x[0], 
                       filter(lambda x: x[1].is_main(), ast.files().items()))
-      filenames = map(lambda x:os.path.join(self.xref_prefix, x), filenames)
+      filenames = map(lambda x:os.path.join(self.prefix, x), filenames)
       self.do_compile(filenames, self.output, self.no_locals)
 
       return self.ast
@@ -82,7 +82,7 @@ class XRefCompiler(Processor):
                      # Don't store local function variables
                      bad = 1
                      break
-                  if bad: continue
+               if bad: continue
 
                for i in range(len(scope)):
                   if len(scope[i]) > 0 and scope[i][0] == '`':
@@ -118,5 +118,3 @@ class XRefCompiler(Processor):
       f = open(output, 'wb')
       cPickle.dump(file_data, f)
       f.close()
-
-linkerOperation = XRefCompiler
