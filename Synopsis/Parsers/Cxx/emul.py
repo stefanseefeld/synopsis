@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.3 2002/10/11 11:09:39 chalky Exp $
+# $Id: emul.py,v 1.4 2002/10/24 23:41:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,10 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.4  2002/10/24 23:41:09  chalky
+# Cache information for the lifetime of the module about which compilers are
+# available and which are not
+#
 # Revision 1.3  2002/10/11 11:09:39  chalky
 # Add cygwin support to compiler emulations
 #
@@ -44,6 +48,14 @@ user_emulations_file = '~/.synopsis/cpp_emulations'
 default_compilers = [
     'cc', 'c++', 'gcc', 'g++', 'g++-2.95', 'g++-3.0', 'g++-3.1', 'g++-3.2'
 ]
+
+# A cache of the compiler info, loaded from the emulations file or calculated
+# by inspecting available compilers
+compiler_infos = {}
+
+# A map of failed compilers. This map is kept for the lifetype of Synopsis, so
+# you may have to restart it if a compiler is 'fixed'
+failed = {}
 
 class CompilerInfo:
     """Info about one compiler.
@@ -95,13 +107,18 @@ def get_compiler_info(compiler):
     """Returns the compiler info for the given compiler. The info is returned
     as a CompilerInfo object, or None if the compiler isn't found. 
     """
-    # Try to load the emulations file
-    infos = load_compiler_infos()
+    global failed, compiler_infos
+    # Check if this compiler has already been found to not exist
+    if failed.has_key(compiler):
+	return None
+    # See if already found it
+    if len(compiler_infos) == 0:
+	# Try to load the emulations file
+	compiler_infos = load_compiler_infos()
     # See if wanted compiler was in file
-    if infos.has_key(compiler):
-	info = infos[compiler]
-	if info.is_custom:
-	    return info
+    if compiler_infos.has_key(compiler):
+	info = compiler_infos[compiler]
+	if info.is_custom: return info
 	file_stamp = get_compiler_timestamp(compiler)
 	# If compiler hasn't changed since then, return cached info
 	if file_stamp and info.timestamp == file_stamp:
@@ -109,17 +126,17 @@ def get_compiler_info(compiler):
     else:
 	# Add compiler to map, but with a dummy value to indicate nothing is
 	# known about it
-	infos[compiler] = None
+	compiler_infos[compiler] = None
     
     # Regenerate infos
-    refresh_compiler_infos(infos)
+    refresh_compiler_infos(compiler_infos)
 
     # Cache results to disk
-    write_compiler_infos(infos)
+    write_compiler_infos(compiler_infos)
 
     # Return discovered info, if compiler was found
-    if infos.has_key(compiler):
-	return infos[compiler]
+    if compiler_infos.has_key(compiler):
+	return compiler_infos[compiler]
     else:
 	return None
 
@@ -149,12 +166,15 @@ def get_compiler_timestamp(compiler):
 def refresh_compiler_infos(infos):
     """Refreshes the list of infos, by rediscovering all non-custom compilers
     in the map. The map is modified in-place."""
-    # A map of failed compilers
-    failed = {}
+    global failed
     # Refresh each non-custom compiler in the map 
     for compiler, info in infos.items():
 	if info and info.is_custom:
 	    # Skip custom compilers
+	    continue
+	if failed.has_key(compiler):
+	    # Skip compilers that have already failed
+	    del infos[compiler]
 	    continue
 	info = find_compiler_info(compiler)
 	if info: infos[compiler] = info
