@@ -566,12 +566,12 @@ class SummaryFormatter(BaseFormatter):
 
     def label(self, ref, label=None):
 	if label is None: label = ref
-	if self.__link_detail: return self.referenceName(ref, Util.ccolonName(label, self.scope()))
+	if self.__link_detail: return span('name',self.referenceName(ref, Util.ccolonName(label, self.scope())))
 	return BaseFormatter.label(self, ref, label)
 	
     def getSummary(self, node):
 	comment = comments[node].summary
-	if len(comment): return '<br>'+div('summary', comment)
+	if len(comment): return div('summary', comment)
 	else: return ''
 
     def formatOperationExceptions(self, oper):
@@ -580,8 +580,8 @@ class SummaryFormatter(BaseFormatter):
 	return ''
 
     def writeSectionStart(self, heading):
+	#'<col width="20%%"><col width="80%%">'\
 	str = '<table width="100%%">'\
-	'<col width="20%%"><col width="80%%">'\
 	'<tr><td colspan="2" class="heading">%s</td></tr>'
 	self.write(str%heading)
 
@@ -1074,7 +1074,7 @@ def format(types, declarations, args):
 	d.accept(classTree)
 	d.accept(fileTree)
 
-    print "TOC size:",toc.size()
+    if debug: print "TOC size:",toc.size()
 
     fileTree.buildTree()
     
