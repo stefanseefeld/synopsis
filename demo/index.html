@@ -1,62 +1,104 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <html>
   <head>
-    <title>Synopsis</title>
-    <link href="../docs/style.css" rel="stylesheet" />
+    <title>Synopsis Demo</title>
+    <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type"/>
+    <link href="../docs/synopsis.css" rel="stylesheet" />
   </head>
   <body>
-    <h1>Synopsis example output</h1>
+    <h1>Synopsis - Demo</h1>
+    <table class="page">
+      <tr>
+        <td class="menu">
+          <table class="menu">
+            <tr><td class="normal1"><a href="http://synopsis.fresco.org/index.html">Home</a></td></tr>
+	    <tr><td class="normal1"><a href="http://synopsis.fresco.org/news.html">News</a></td></tr>
+	    <tr><td class="normal1"><a href="http://synopsis.fresco.org/docs.html">Docs</a></td></tr>
+            <tr><td class="normal2"><a href="http://synopsis.fresco.org/design.html">Design</a></td></tr>
+            <tr><td class="normal2"><a href="../docs/Tutorial/index.html">Tutorial</a></td></tr>
+            <tr><td class="normal2"><a href="../docs/RefManual/index.html">RefManual</a></td></tr>
+            <tr><td class="selected2"><a href="index.html">Demos</a></td></tr>
+            <tr><td class="normal1"><a href="http://synopsis.fresco.org/issues/">Issue Tracker</a></td></tr>
+            <tr><td class="normal1"><a href="http://synopsis.fresco.org/download/">Download</a></td></tr>
+            <tr><td class="normal1"><a href="http://synopsis.fresco.org/mailinglists.html">Mailing&nbsp;List</a></td></tr>
+            <tr><td class="normal1"><a href="http://synopsis.fresco.org/viewcvs/">CVS</a></td></tr>
+          </table>
+        </td>
+        <td class="content">
 
-    <p>This page contains a collection of example documents generated with the HTML formatter, using a variety of flags.
-    Some of the links may be invalid, depending on whether the modules to generate the pages were available or not.</p>
+    <p>This page contains a collection of example documents generated with the HTML formatter, using a variety of parameters.
+    Some of the links may be invalid, depending on whether the processors to generate the pages were available or not.</p>
+
+    <h2>IDL parser</h2>
+    <p class="abstract">IDL input files, processed and formatted individually with
+      <a href="IDL/synopsis.py">this</a> driver script:</p>
     <ul>
-      <li>IDL parser, one input file
-	<ul>
-	  <li><a href="IDL/CosNaming/index.html">CosNaming</a>, generated from <a href="IDL/CosNaming.idl">CosNaming.idl</a></li>
-	  <li><a href="IDL/Types/index.html">Types</a>, generated from <a href="IDL/Types.idl">Types.idl</a></li>
-	  <li><a href="IDL/Graphic/index.html">Graphic</a>, generated from <a href="IDL/Graphic.idl">Graphic.idl</a></li>
-	</ul>
-      </li>
-      <li>C++ parser, one input file
-	<ul>
-	  <li><a href="C++/html/index.html">GapBuffer</a>, generated from <a href="C++/GapBuffer.hh">GapBuffer.hh</a></li>
-	  <li><a href="C++/employee/index.html">employee</a>, generated from <a href="C++/employee.cc">employee.cc</a></li>
-	  <li><a href="C++/templates/index.html">templates</a>, generated from <a href="C++/templates.cc">templates.cc</a></li>
-	</ul>
-      </li>
-      <li>IDL and C++ parsers combined, multiple input files, crosslinked
-	<ul>
-	  <li><a href="Mixed/interface/index.html">Storage</a>, generated from <a href="Mixed/Storage.idl">Storage.idl</a></li>
-	  <li><a href="Mixed/implementation/index.html">StorableImpl, FactoryImpl</a>,
-	    generated from <a href="Mixed/StorableImpl.hh">StorableImpl.hh</a> and <a href="Mixed/FactoryImpl.hh">FactoryImpl.hh</a></li>
-	</ul>
-      </li>
-      <li>Configuration examples
-	<ul>
-	  <li><a href="Config/Synopsis/index.html">Synopsis style</a>, generated from <a href="Config/config.py">config.py</a>.</li>
-	  <li><a href="Config/Doxygen/index.html">DOxygen style</a>, generated from the same config but with DOxygen style.</li>
-	</ul>
-      </li>
-      <li>Graph example
-	<ul>
-	<li><a href="Graph/demo/index.html">Graph demo</a>, generated from <a href="Graph/demo.hh">demo.hh</a>.
-	Click on 'Inheritance Graph' to see the graph, then try clicking on any of the classes in the graph!</li>
-	</ul>
-      </li>
-      <li>Python example
-        <ul>
-          <li><a href="Python/ast/index.html">AST</a>, generated from <a href="Python/AST.py">AST.py</a></li>
-	</ul>
-      </li>
-      <li>Custom comment style example: Perceps style
-        <ul>
-          <li><a href="Perceps/Manual/index.html">Perceps</a>, generated from <a href="Perceps/display.h">display.h</a>
-            using the custom modules in <a href="Perceps/config.py">config.py</a>.
-            Note the two comment processors near the bottom, after the regular configuration object.
-          </li>
-        </ul>
-      </li>
+      <li><a href="IDL/CosNaming/index.html">CosNaming</a>, generated from <a href="IDL/CosNaming.idl">CosNaming.idl</a></li>
+      <li><a href="IDL/Types/index.html">Types</a>, generated from <a href="IDL/Types.idl">Types.idl</a></li>
+      <li><a href="IDL/Graphic/index.html">Graphic</a>, generated from <a href="IDL/Graphic.idl">Graphic.idl</a></li>
     </ul>
-    <hr/><p><i>Synopsis Documentation. Copyright (c) 2001-2003 by Stephen Davies</i></p>
+    <p class="abstract">The same IDL input files, linked and crossreferenced together:</p>
+    <ul>
+      <li><a href="IDL/html/index.html">all</a></li>
+    </ul>
+
+    <h2>Python parser</h2>
+    <p class="abstract">Python input file, processed and format with
+      <a href="Python/synopsis.py">this</a> driver script:</p>
+    <ul>
+      <li><a href="Python/html/index.html">AST</a>, generated from <a href="Python/AST.py">AST.py</a></li>
+    </ul>
+
+    <h2>C++ parser</h2>
+    <p class="abstract">C++ input files, processed and formatted individually with
+      <a href="C++/GapBuffer/synopsis.py">this</a> driver script:</p>
+    <ul>
+      <li><a href="C++/GapBuffer/html/index.html">GapBuffer</a>, generated from <a href="C++/GapBuffer/GapBuffer.hh">GapBuffer.hh</a></li>
+      <li><a href="C++/Employee/html/index.html">Employee</a>, generated from <a href="C++/Employee/Employee.cc">Employee.cc</a></li>
+    </ul>
+    <p class="abstract">C++ input file, processed and formatted with
+      <a href="C++/Shapes/synopsis.py">this</a> driver script:</p>
+    <ul>
+      <li><a href="C++/Shapes/Shapes.html">Shapes</a>, generated from <a href="C++/Shapes/main.cc">main.cc</a></li>
+    </ul>
+
+    <h2>IDL and C++ parsers combined</h2>
+    <p class="abstract">Multiple input files, crosslinked. The IDL and C++ code was parsed
+      individually, then linked together. During the link step, names were mapped according
+      to the CORBA C++ language mapping, such that the internal skeleton types are hidden.
+      Files processed with
+      <a href="Mixed/synopsis.py">this</a> driver script:</p>
+    <ul>
+      <li><a href="Mixed/interface/index.html">Storage</a>, generated from <a href="Mixed/Storage.idl">Storage.idl</a></li>
+      <li><a href="Mixed/implementation/index.html">StorableImpl, FactoryImpl</a>,
+        generated from <a href="Mixed/StorableImpl.hh">StorableImpl.hh</a> and <a href="Mixed/FactoryImpl.hh">FactoryImpl.hh</a></li>
+    </ul>
+
+    <h2>UML Class diagram example</h2>
+    <p class="abstract">Diagrams can be generated using the <a href="http://www.graphviz.org">dot</a>
+      tool.</p>
+    <ul>
+      <li><a href="Graph/class.html">class diagram</a>, generated from <a href="Graph/demo.hh">demo.hh</a>.</li>
+    </ul>
+
+    <h2>Custom comment style example: Perceps style</h2>
+    <p class="abstract">Processors can be provided by users as part of the driver script. This
+      demo shows an emulator that treats comments as perceps:</p>
+    <ul>
+      <li><a href="Perceps/Manual/index.html">Perceps</a>, generated from <a href="Perceps/display.h">display.h</a></li>
+      <li><a href="Perceps/ManualD/index.html">Perceps</a>, generated from <a href="Perceps/display.h">display.h</a></li>
+    </ul>
+<!--     <hr/><p><i>Synopsis Documentation. Copyright (c) 2001-2003 by Stephen Davies, Stefan Seefeld</i></p> -->
+        </td>
+      </tr>
+    </table>
+    <div class="modifiedby">
+      Last modified: 2003-09-22<br/>
+      by Stefan Seefeld
+    </div>
   
   </body>
 </html><!-- vim: set sts=2 ts=8 sw=2: -->
