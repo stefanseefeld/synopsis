@@ -1,4 +1,4 @@
-# $Id: FileListing.py,v 1.4 2003/11/14 14:51:09 stefan Exp $
+# $Id: FileListing.py,v 1.5 2003/11/14 17:39:04 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -11,7 +11,6 @@ from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.FileTree import FileTree
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
@@ -28,11 +27,11 @@ class FileListing(Page):
       self.__filename = self.processor.file_layout.nameOfSpecial('FileListing')
       self.__title = 'Files'
 
-      config.set_main_page(self.filename())
+      processor.set_main_page(self.filename())
       # Reset filename in case we got main page status
       self.__filename = self.processor.file_layout.nameOfSpecial('FileListing')
       self.processor.addRootPage(self.filename(), self.title(), "contents", 2)
-      config.set_contents_page(self.filename())
+      processor.set_contents_page(self.filename())
 
    def filename(self):
       """Returns the filename"""
@@ -60,7 +59,7 @@ class FileListing(Page):
       self.write(self.processor.formatHeader(self.filename(), 2))
       self.tree.start_tree()
       # recursively visit all nodes
-      self.processFileTreeNode(config.fileTree.root())
+      self.processFileTreeNode(processor.fileTree.root())
       self.tree.end_tree()
       self.end_file()
 

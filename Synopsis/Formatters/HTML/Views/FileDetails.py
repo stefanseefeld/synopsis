@@ -1,4 +1,4 @@
-# $Id: FileDetails.py,v 1.5 2003/11/14 14:51:09 stefan Exp $
+# $Id: FileDetails.py,v 1.6 2003/11/14 17:39:04 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,8 +10,8 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters.HTML.Pages.FileSource import *
 
 import os
 
@@ -26,7 +26,8 @@ class FileDetails(Page):
       Page.register(self, processor)
       self.__filename = ''
       self.__title = ''
-      self.__link_source = ('FileSource' in config.pages)
+      self.__link_source = processor.has_page(FileSource)
+      print 'link source', self.__link_source
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
