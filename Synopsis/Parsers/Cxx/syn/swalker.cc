@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.68 2002/11/02 06:37:38 chalky Exp $
+// $Id: swalker.cc,v 1.69 2002/11/03 05:22:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.69  2002/11/03 05:22:34  chalky
+// Add support for long long literals
+//
 // Revision 1.68  2002/11/02 06:37:38  chalky
 // Allow non-frames output, some refactoring of page layout, new modules.
 //
@@ -502,6 +505,7 @@ Ptree* SWalker::TranslatePtree(Ptree* node)
           else if (*str == 'l' || *str == 'L')
             {
               if (num_type == "int") num_type = "long";
+              else if (num_type == "long") num_type = "long long";
               else if (num_type == "unsigned") num_type = "unsigned long";
               else if (num_type == "float") num_type = "long double";
               else std::cout << "Unknown num type: " << num_type << std::endl;
