@@ -315,6 +315,9 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <GCC_ATTRIB>"packed"      { BEGIN(INITIAL); return(err_tok = PACKED); }
 <GCC_ATTRIB>"__packed"    { BEGIN(INITIAL); return(err_tok = PACKED); }
 <GCC_ATTRIB>"__packed__"  { BEGIN(INITIAL); return(err_tok = PACKED); }
+<GCC_ATTRIB>"cdecl"       { BEGIN(INITIAL); return(err_tok = CDECL); }
+<GCC_ATTRIB>"__cdecl"     { BEGIN(INITIAL); return(err_tok = CDECL); }
+<GCC_ATTRIB>"__cdecl__"   { BEGIN(INITIAL); return(err_tok = CDECL); }
 
 <GCC_ATTRIB>{whitespace}+ {  /* space/tab/formfeed/vertical tab (ignore) */ }
 <GCC_ATTRIB>"("           { SETPOS_TOKEN(LPAREN); return(LPAREN); }
