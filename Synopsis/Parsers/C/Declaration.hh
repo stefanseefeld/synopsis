@@ -34,7 +34,6 @@
 #ifndef    DECL_H
 #define    DECL_H
 
-#include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -55,25 +54,30 @@ typedef unsigned long BaseTypeSpec;
 
 const BaseTypeSpec BT_NoType       = 0x00000000;  // no type provided
 const BaseTypeSpec BT_Void         = 0x00000001;  // explicitly no type
-const BaseTypeSpec BT_Char         = 0x00000002;
-const BaseTypeSpec BT_Short        = 0x00000004;
-const BaseTypeSpec BT_Int          = 0x00000008;
-const BaseTypeSpec BT_Long         = 0x00000010;
-const BaseTypeSpec BT_LongLong     = 0x00000020;  // a likely C9X addition
-const BaseTypeSpec BT_Float        = 0x00000040;
-const BaseTypeSpec BT_Double       = 0x00000080;
-const BaseTypeSpec BT_Ellipsis     = 0x00000100;
+const BaseTypeSpec BT_Bool         = 0x00000002;
+const BaseTypeSpec BT_Char         = 0x00000004;
+const BaseTypeSpec BT_Short        = 0x00000008;
+const BaseTypeSpec BT_Int          = 0x00000010;
+const BaseTypeSpec BT_Int64        = 0x00000020;
+const BaseTypeSpec BT_Int32        = 0x00000040;
+const BaseTypeSpec BT_Int16        = 0x00000080;
+const BaseTypeSpec BT_Int8         = 0x00000100;
+const BaseTypeSpec BT_Long         = 0x00000200;
+const BaseTypeSpec BT_LongLong     = 0x00000400;  // a likely C9X addition
+const BaseTypeSpec BT_Float        = 0x00000800;
+const BaseTypeSpec BT_Double       = 0x00001000;
+const BaseTypeSpec BT_Ellipsis     = 0x00002000;
 
-const BaseTypeSpec BT_Struct       = 0x00000200;
-const BaseTypeSpec BT_Union        = 0x00000400;
-const BaseTypeSpec BT_Enum         = 0x00000800;
-const BaseTypeSpec BT_UserType     = 0x00001000;
-const BaseTypeSpec BT_BaseMask     = 0x00001FFF;
+const BaseTypeSpec BT_Struct       = 0x00008000;
+const BaseTypeSpec BT_Union        = 0x00010000;
+const BaseTypeSpec BT_Enum         = 0x00020000;
+const BaseTypeSpec BT_UserType     = 0x00040000;
+const BaseTypeSpec BT_BaseMask     = 0x0004FFFF;
 
 // Sign indicator
-const BaseTypeSpec BT_Signed       = 0x00010000;
-const BaseTypeSpec BT_UnSigned     = 0x00020000;
-const BaseTypeSpec BT_SignMask     = 0x00030000;
+const BaseTypeSpec BT_Signed       = 0x00100000;
+const BaseTypeSpec BT_UnSigned     = 0x00200000;
+const BaseTypeSpec BT_SignMask     = 0x00300000;
 
 const BaseTypeSpec BT_TypeError    = 0x10000000;
 
@@ -213,7 +217,7 @@ class Type : public DupableType
     virtual int     precedence() const { return 16; }
     virtual Type*   dup0() const =0;    // deep-copy
 
-    virtual Type*   extend(Type *extension) { assert(0); }
+    virtual Type*   extend(Type *extension)=0;
 
     // This function handles the complexity of printing a type.
     void    printType( std::ostream& out, Symbol *name,
@@ -260,7 +264,7 @@ class BaseType : public Type
 
     Type* dup0() const;    // deep-copy
 
-    Type* extend(Type *extension) { assert(0); }
+    Type* extend(Type *extension) { assert(0); return NULL; }
 
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;

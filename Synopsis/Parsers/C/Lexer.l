@@ -209,6 +209,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->base = new BaseType(BT_Void);
                       return(gProject->Parse_TOS->err_tok = VOID);
                     }
+<INITIAL>"_Bool"     {
+                      lvalp->base = new BaseType(BT_Bool);
+                      return(gProject->Parse_TOS->err_tok = BOOL);
+                    }
 <INITIAL>"char"     {
                       lvalp->base = new BaseType(BT_Char);
                       return(gProject->Parse_TOS->err_tok = CHAR);
@@ -220,6 +224,22 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"int"      {
                       lvalp->base = new BaseType(BT_Int);
                       return(gProject->Parse_TOS->err_tok = INT);
+                    }
+<INITIAL>"__int64"  {
+                      lvalp->base = new BaseType(BT_Int64);
+                      return(gProject->Parse_TOS->err_tok = INT64);
+                    }
+<INITIAL>"__int32"  {
+                      lvalp->base = new BaseType(BT_Int32);
+                      return(gProject->Parse_TOS->err_tok = INT32);
+                    }
+<INITIAL>"__int16"  {
+                      lvalp->base = new BaseType(BT_Int16);
+                      return(gProject->Parse_TOS->err_tok = INT16);
+                    }
+<INITIAL>"__int8"   {
+                      lvalp->base = new BaseType(BT_Int8);
+                      return(gProject->Parse_TOS->err_tok = INT8);
                     }
 <INITIAL>"long"     {
                       lvalp->base = new BaseType(BT_Long);

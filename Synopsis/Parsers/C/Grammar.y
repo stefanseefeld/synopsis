@@ -75,7 +75,7 @@ int yylex(YYSTYPE *lvalp);
 /* the reserved words */
 %token <typeQual>   CONST VOLATILE
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF
-%token <base>       VOID CHAR SHORT INT LONG FLOAT DOUBLE SGNED UNSGNED
+%token <base>       VOID BOOL CHAR SHORT INT INT8 INT16 INT32 INT64 LONG FLOAT DOUBLE SGNED UNSGNED
 %token <typeSpec>   ENUM STRUCT UNION 
 
 %token <loc>        BREAK CASE CONT DEFLT DO ELSE
@@ -1532,9 +1532,14 @@ type_spec_reentrance: enum_type_define
          |  union_tag_ref
          |  typedef_name
          |  VOID
+         |  BOOL
          |  CHAR
          |  SHORT
          |  INT
+         |  INT8
+         |  INT16
+         |  INT32
+         |  INT64
          |  LONG
          |  FLOAT
          |  DOUBLE
