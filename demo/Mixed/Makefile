@@ -1,5 +1,5 @@
 omniidl		:= omniidl -nf -bcxx
-synopsis	:= ../../synopsis
+synopsis	:= ../../synopsis -v -c config.py
 
 #
 # adapt to your environent...
@@ -12,20 +12,20 @@ Storage.hh:	Storage.idl
 		$(omniidl) $?
 
 Storage.syn:	Storage.idl
-		$(synopsis) -p IDL -o $@ $<
+		$(synopsis) -Wc,parser=IDL,linker=Linker -o $@ $<
 
 StorableImpl.syn:	StorableImpl.hh Storage.hh
-		$(synopsis) -p C++ -Wp,-m -Wl,-M,C++toIDL $(CPPFLAGS) -o $@ $<
+		$(synopsis) -Wc,parser=C++,linker=Mapping $(CPPFLAGS) -o $@ $<
 
 FactoryImpl.syn:	FactoryImpl.hh Storage.hh
-		$(synopsis) -p C++ -Wp,-m -Wl,-M,C++toIDL $(CPPFLAGS) -o $@ $<
+		$(synopsis) -Wc,parser=C++,linker=Mapping $(CPPFLAGS) -o $@ $<
 
 interface interface.toc:	Storage.syn
-		$(synopsis) -f HTML -Wf,-t,interface.toc -Wf,-s,style.css,-S,../html.css -o interface $<
+		$(synopsis) -Wc,formatter=Interface -o interface $<
 		touch $@
 
 implementation: StorableImpl.syn FactoryImpl.syn interface.toc
-		$(synopsis) -f HTML -Wf,-r,"interface.toc|../interface" -Wf,-s,style.css,-S,../html.css -o $@ StorableImpl.syn FactoryImpl.syn
+		$(synopsis) -Wc,formatter=Implementation -o $@ StorableImpl.syn FactoryImpl.syn
 		touch $@
 
 clean:
