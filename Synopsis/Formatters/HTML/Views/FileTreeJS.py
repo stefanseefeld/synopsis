@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.10 2003/11/14 14:51:09 stefan Exp $
+# $Id: FileTreeJS.py,v 1.11 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,23 +7,23 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from JSTree import JSTree
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
 class FileTree(JSTree):
 
+   link_to_pages = Parameter(False, 'some docs...')
+
    def register(self, processor):
 
       JSTree.register(self, processor)
       filename = self.processor.file_layout.nameOfSpecial('FileTree')
       self.processor.addRootPage(filename, 'File Tree', 'contents', 2)
-      myconfig = config.obj.FileTree
-      self._link_pages = myconfig.link_to_pages
    
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -50,10 +50,10 @@ class FileTree(JSTree):
       self.start_file(filename, 'File Tree')
       self.write(self.processor.formatHeader(filename, 2))
       # recursively visit all nodes
-      self.processFileTreeNode(config.fileTree.root())
+      self.processFileTreeNode(self.processor.fileTree.root())
       self.end_file()
       # recursively create all node pages
-      self.processFileTreeNodePage(config.fileTree.root())
+      self.processFileTreeNodePage(self.processor.fileTree.root())
 
    def _node_sorter(self, a, b):
       a_leaf = hasattr(a, 'decls')
@@ -99,7 +99,7 @@ class FileTree(JSTree):
 
       self.start_file()
       self.write(entity('b', string.join(name, os.sep))+'<br>')
-      if self._link_pages:
+      if self.link_to_pages:
          link = self.processor.file_layout.nameOfScopedSpecial('page', name)
          self.write(href(link, '[Source]', target="main")+'<br>')
       for name, decl in node.decls.items():

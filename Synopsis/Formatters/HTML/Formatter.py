@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.5 2003/11/14 17:39:04 stefan Exp $
+# $Id: Formatter.py,v 1.6 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -8,12 +8,15 @@
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
+from Synopsis.Formatters.TOC import TOC
+from Synopsis.Formatters.ClassTree import ClassTree
+from Synopsis.Formatters.XRef import CrossReferencer
 from FileLayout import *
 from TreeFormatter import *
 from CommentFormatter import *
 from Pages.FramesIndex import *
 from Pages.DirBrowse import *
-from Pages.ScopePages import *
+from Pages.Scope import *
 from Pages.ModuleListing import *
 from Pages.ModuleIndexer import *
 from Pages.FileListing import *
@@ -23,7 +26,7 @@ from Pages.InheritanceTree import *
 from Pages.InheritanceGraph import *
 from Pages.FileSource import *
 from Pages.NameIndex import *
-from Pages.XRefPages import *
+from Pages.XRef import *
 
 from core import *
 
@@ -44,10 +47,6 @@ class ConfigHTML:
       links_path = './%s-links'
       toc_files = []
       scope = ''
-   # Old name for FileSource:
-   FilePages = FileSource
-   class FileTree:
-      link_to_pages = 0
    class ScopePages:
       parts = ['Heading',
                'Summary',
@@ -75,7 +74,7 @@ class Formatter(Processor):
    toc_out = Parameter('', 'name of file into which to store the TOC')
 
    pages = Parameter([FramesIndex(), #DirBrowse()
-                      ScopePages(),
+                      Scope(),
                       ModuleListing(),
                       ModuleIndexer(),
                       FileListing(),
@@ -85,7 +84,7 @@ class Formatter(Processor):
                       InheritanceGraph(),
                       FileSource(),
                       NameIndex(),
-                      XRefPages()],
+                      XRef()],
                       '')
    
    #comment_formatters = ['javadoc', 'section']
@@ -122,11 +121,14 @@ class Formatter(Processor):
       self.comments = CommentFormatter(self)
 
       # Create the Class Tree (TODO: only if needed...)
-      self.classTree = ClassTree.ClassTree()
+      self.classTree = ClassTree()
 
       # Create the File Tree (TODO: only if needed...)
       self.fileTree = FileTree()
       self.fileTree.set_ast(ast)
+
+      self.xref = CrossReferencer()
+
 
       # Build class tree
       for d in declarations:
@@ -183,11 +185,12 @@ class Formatter(Processor):
 
       return self.ast
 
-   def has_page(self, page_type):
+   def has_page(self, page_name):
       """test whether the given page is part of the pages list."""
 
       return reduce(lambda x, y: x or y,
-                    map(lambda x: isinstance(x, page_type), self.pages))
+                    map(lambda x: x.__class__.__name__ = page_name,
+                        self.pages))
 
    def get_toc(self, start):
       """Returns the table of content to link into from the outside"""

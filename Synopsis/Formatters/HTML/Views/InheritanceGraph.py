@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.27 2003/11/14 14:51:09 stefan Exp $
+# $Id: InheritanceGraph.py,v 1.28 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,18 +10,22 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class ToDecl(Type.Visitor):
+class DeclarationFinder(Type.Visitor):
+   def __init__(self, types, verbose):
+
+      self.types = types
+      self.verbose = verbose
+
    def __call__(self, name):
       try:
-         typeobj = config.types[name]
+         typeobj = self.types[name]
       except KeyError:
          # Eg: Unknown parent which has been NameMapped
-         #if config.verbose: print "Warning: %s not found in types dict."%(name,)
+         if self.verbose: print "Warning: %s not found in type dict."%(name,)
          return None
       self.__decl = None
       typeobj.accept(self)
@@ -58,7 +62,7 @@ class InheritanceGraph(Page):
    def register(self, processor):
 
       Page.register(self, processor)
-      self.__todecl = ToDecl()
+      self.decl_finder = DeclarationFinder(processor.ast.types(), processor.verbose)
       self.processor.addRootPage(self.filename(), 'Inheritance Graph', 'main', 1)
 
    def filename(self): return self.processor.file_layout.nameOfSpecial('InheritanceGraph')
@@ -116,7 +120,7 @@ class InheritanceGraph(Page):
       # Create a toc file for Dot to use
       toc_file = filename + "-dot.toc"
       self.processor.toc.store(toc_file)
-      graphs = config.classTree.graphs()
+      graphs = self.processor.classTree.graphs()
       count = 0
       # Consolidate the graphs, and sort to make the largest appear first
       lensorter = lambda a, b: cmp(len(b),len(a))
@@ -130,21 +134,22 @@ class InheritanceGraph(Page):
             self.write('<div class="inheritance-group">')
             scoped_name = string.split(name,'::')
             type_str = ''
-            if core.config.types.has_key(scoped_name):
-               type = core.config.types[scoped_name]
-               if isinstance(type, Type.Declared):
-                  type_str = type.declaration().type() + ' '
+            types = self.processor.ast.types()
+            type = types.get(scoped_name, None)
+            if isinstance(type, Type.Declared):
+               type_str = type.declaration().type() + ' '
             self.write('Graphs in '+type_str+name+':<br>')
          for graph in graphs:
             try:
                if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
                # Find declarations
-               declarations = map(self.__todecl, graph)
+               declarations = map(self.decl_finder, graph)
                declarations = filter(lambda x: x is not None, declarations)
                # Call Dot formatter
-               output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
+               output = os.path.join(self.processor.output,
+                                     os.path.splitext(self.filename())[0]) + '-%s'%count
                dot = Dot.Formatter()
-               ast = AST.AST({}, declarations, config.types)
+               ast = AST.AST({}, declarations, self.processor.ast.types())
                dot.process(ast,
                            output=output,
                            format='html',

@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.16 2003/11/14 14:51:09 stefan Exp $
+# $Id: ModuleIndexer.py,v 1.17 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,6 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
@@ -24,9 +23,9 @@ class ModuleIndexer(Page):
       """Register first page as index page"""
 
       Page.register(self, processor)
-      config.set_using_module_index()
+      processor.set_using_module_index()
       self.__filename = self.processor.file_layout.nameOfModuleIndex(())
-      config.set_index_page(self.__filename)
+      processor.set_index_page(self.__filename)
 
    def filename(self): return self.__filename
 
@@ -36,7 +35,7 @@ class ModuleIndexer(Page):
       """Creates indexes for all modules"""
 
       start_file = self.processor.file_layout.nameOfModuleIndex(start.name())
-      config.set_index_page(start_file)
+      self.processor.set_index_page(start_file)
       self.__namespaces = [start]
       while self.__namespaces:
          ns = self.__namespaces.pop(0)
@@ -60,9 +59,10 @@ class ModuleIndexer(Page):
    def processNamespaceIndex(self, ns):
       "Index one module"
 
-      config.sorter.set_scope(ns)
-      config.sorter.sort_section_names()
-      config.sorter.sort_sections()
+      sorter = self.processor.sorter
+      sorter.set_scope(ns)
+      sorter.sort_section_names()
+      sorter.sort_sections()
 
       self.__filename = self.processor.file_layout.nameOfModuleIndex(ns.name())
       self.__title = Util.ccolonName(ns.name()) or 'Global Namespace'
@@ -87,12 +87,12 @@ class ModuleIndexer(Page):
       self.write(entity('script', load_script, type='text/javascript'))
 
       # Loop throught all the types of children
-      for section in config.sorter.sections():
+      for section in sorter.sections():
          if section[-1] == 's': heading = section+'es'
          else: heading = section+'s'
          heading = '<br>'+entity('i', heading)+'<br>'
          # Get a list of children of this type
-         for child in config.sorter.children(section):
+         for child in sorter.children(section):
             # Print out summary for the child
             if not isinstance(child, AST.Scope):
                continue
@@ -117,6 +117,6 @@ class ModuleIndexer(Page):
       self.end_file()
 
       # Queue child namespaces
-      for child in config.sorter.children():
+      for child in sorter.children():
          if isinstance(child, AST.Module):
             self.__namespaces.append(child)

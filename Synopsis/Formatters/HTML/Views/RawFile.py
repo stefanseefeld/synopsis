@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.9 2003/11/14 14:51:09 stefan Exp $
+# $Id: RawFile.py,v 1.10 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,23 +9,22 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Part import Page
-import ASTFormatter
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Part import Page
+from Synopsis.Formatters.HTML import ASTFormatter
+from Synopsis.Formatters.HTML.Tags import *
 
 import time, os, stat, os.path, string
 
 class RawFilePages(Page):
    """A module for creating a page for each file with hyperlinked source"""
 
+   exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
+
    def register(self, processor):
 
       Page.register(self, processor)
-      self.__base = config.base_dir
-      self.__start = config.start_dir
+      self.__start = self.__base = processor.output
       self.__files = None
-      self.__exclude_globs = config.exclude_globs
 
    def filename(self):
       """since RawFilePages generates a whole file hierarchy, this method returns the current filename,
@@ -49,19 +48,20 @@ class RawFilePages(Page):
          dir = dirs.pop(0)
          for entry in os.listdir(os.path.abspath(dir)):
             # Check if entry is in exclude list
-            exclude = 0
-            for re in self.__exclude_globs:
-               if re.match(entry):
-                  exclude = 1
-            if exclude:
-               continue
-            entry_path = os.path.join(dir, entry)
-            info = os.stat(entry_path)
-            if stat.S_ISDIR(info[stat.ST_MODE]):
-               dirs.append(entry_path)
-            else:
-               filename = self.processor.file_layout.nameOfFileSource(entry_path)
-               self.__files.append( (entry_path, filename) )
+            #exclude = 0
+            #for re in self.__exclude_globs:
+            #   if re.match(entry):
+            #      exclude = 1
+            #if exclude:
+            #   continue
+            #entry_path = os.path.join(dir, entry)
+            #info = os.stat(entry_path)
+            #if stat.S_ISDIR(info[stat.ST_MODE]):
+            #   dirs.append(entry_path)
+            #else:
+            #   filename = self.processor.file_layout.nameOfFileSource(entry_path)
+            #   self.__files.append( (entry_path, filename) )
+            pass
       return self.__files
 
    def process(self, start):

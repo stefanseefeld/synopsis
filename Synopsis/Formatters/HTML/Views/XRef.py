@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.13 2003/11/14 14:51:09 stefan Exp $
+# $Id: XRef.py,v 1.14 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -27,31 +27,30 @@ class XRefLinker(Linker):
 
       return file
 
-class XRefPages(Page):
+class XRef(Page):
    """A module for creating pages full of xref infos"""
+
+   xref_file = Parameter('', '')
+   link_to_scope = Parameter(True, '')
 
    def register(self, processor):
 
       Page.register(self, processor)
-      self.xref = config.xref
       self.__filename = None
       self.__title = None
       self.__toc = None
-      self.__link_to_scopepages = 0
-      if hasattr(config.obj, 'XRefPages'):
-         if hasattr(config.obj.XRefPages, 'xref_file'):
-            self.xref.load(config.obj.XRefPages.xref_file)
-         if hasattr(config.obj.XRefPages, 'link_to_scopepages'):
-            self.__link_to_scopepages = config.obj.XRefPages.link_to_scopepages
+      if self.xref_file:
+         processor.xref.load(self.xref_file)
 
    def get_toc(self, start):
-      """Returns the toc for XRefPages"""
+      """Returns the toc for XRef"""
 
       if self.__toc: return self.__toc
       self.__toc = TOC(None)
       # Add an entry for every xref
-      for name in self.xref.get_all_names():
-         page = self.xref.get_page_for(name)
+      xref = self.processor.xref
+      for name in xref.get_all_names():
+         page = xref.get_page_for(name)
          file = self.processor.file_layout.nameOfSpecial('xref%d'%page)
          file = file + '#' + Util.quote(string.join(name,'::'))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
@@ -72,7 +71,7 @@ class XRefPages(Page):
    def process(self, start):
       """Creates a page for every bunch of xref infos"""
 
-      page_info = self.xref.get_page_info()
+      page_info = self.processor.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
          self.__filename = self.processor.file_layout.nameOfSpecial('xref%d'%i)
@@ -89,7 +88,7 @@ class XRefPages(Page):
    def register_filenames(self, start):
       """Registers each page"""
 
-      page_info = self.xref.get_page_info()
+      page_info = self.processor.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
          filename = self.processor.file_layout.nameOfSpecial('xref%d'%i)
@@ -133,7 +132,7 @@ class XRefPages(Page):
    def process_name(self, name):
       """Outputs the info for a given name"""
       
-      target_data = self.xref.get_info(name)
+      target_data = self.processor.xref.get_info(name)
       if not target_data: return
 
       jname = string.join(name, '::')
@@ -147,12 +146,12 @@ class XRefPages(Page):
             desc = self.describe_decl(decl)
       self.write(entity('h2', desc + jname) + '<ul>\n')
 	
-      if self.__link_to_scopepages:
-         if config.types.has_key(name):
-            type = config.types[name]
-            if isinstance(type, Type.Declared):
-               link = self.processor.file_layout.link(type.declaration())
-               self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
+      if self.link_to_scope:
+         types = 
+         type = self.processor.ast.types().get(name, None)
+         if isinstance(type, Type.Declared):
+            link = self.processor.file_layout.link(type.declaration())
+            self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
       if target_data[0]:
          self.write('<li>Defined at:<ul>\n')
          for file, line, scope in target_data[0]:

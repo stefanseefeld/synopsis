@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.35 2003/11/14 14:51:09 stefan Exp $
+# $Id: Part.py,v 1.36 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -36,7 +36,11 @@ class Part(Type.Visitor, AST.Visitor):
    delegated to the writeSectionStart, writeSectionEnd, and writeSectionItem
    methods, which myst be implemented in a subclass.
    """
-   def __init__(self, page):
+
+   def __init__(self): pass
+
+   def register(self, page):
+
       self.processor = page.processor
       self.__page = page
       self.__formatters = []
@@ -270,15 +274,16 @@ class Heading(Part):
    """Heading page part. Displays a header for the page -- its strategies are
    only passed the object that the page is for; ie a Class or Module"""
 
-   def __init__(self, page):
-      Part.__init__(self, page)
+   def register(self, page):
+
+      Part.register(self, page)
       self._init_formatters('heading_formatters', 'heading')
 
    def _init_default_formatters(self):
 
-      self.addFormatter( FormatStrategy.Heading )
-      self.addFormatter( FormatStrategy.ClassHierarchyGraph )
-      self.addFormatter( FormatStrategy.DetailCommenter )
+      self.addFormatter(FormatStrategy.Heading)
+      self.addFormatter(FormatStrategy.ClassHierarchyGraph)
+      self.addFormatter(FormatStrategy.DetailCommenter)
 
    def writeSectionItem(self, text):
       """Writes text and follows with a horizontal rule"""
@@ -294,9 +299,10 @@ class Summary(Part):
    """Formatting summary visitor. This formatter displays a summary for each
    declaration, with links to the details if there is one. All of this is
    controlled by the ASTFormatters."""
-   def __init__(self, page):
 
-      Part.__init__(self, page)
+   def register(self, page):
+
+      Part.register(self, page)
       self.__link_detail = 0
       self._init_formatters('summary_formatters', 'summary')
 
@@ -377,9 +383,9 @@ class Summary(Part):
 
 class Detail(Part):
 
-   def __init__(self, page):
+   def register(self, page):
 
-      Part.__init__(self, page)
+      Part.register(self, page)
       self._init_formatters('detail_formatters', 'detail')
 
    def _init_default_formatters(self):
@@ -432,9 +438,9 @@ class Detail(Part):
      
 class Inheritance(Part):
 
-   def __init__(self, page):
+   def register(self, page):
 
-      Part.__init__(self, page)
+      Part.register(self, page)
       self._init_formatters('inheritance_formatters', 'inheritance')
       self.__start_list = 0
 

@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.12 2003/11/14 14:51:09 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.13 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,10 +7,10 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis import AST, Util
-from JSTree import JSTree
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
+from JSTree import JSTree
 
 import os
 
@@ -28,7 +28,7 @@ class ModuleListingJS(JSTree):
       "Sets _filename and registers the page with the manager"
 
       filename = self.processor.file_layout.nameOfSpecial('ModuleTree')
-      config.set_contents_page(filename)
+      self.processor.set_contents_page(filename)
       self.manager.addRootPage(filename, 'Modules', 'contents', 2)
       self._link_target = 'index'
 
@@ -62,9 +62,10 @@ class ModuleListingJS(JSTree):
 
       try: return self._children_cache[decl]
       except KeyError: pass
-      config.sorter.set_scope(decl)
-      config.sorter.sort_sections()
-      children = config.sorter.children()
+      sorter = self.processor.sorter
+      sorter.set_scope(decl)
+      sorter.sort_sections()
+      children = sorter.children()
       children = filter(self._child_filter, children)
       self._children_cache[decl] = children
       return children
