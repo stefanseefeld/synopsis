@@ -6,8 +6,8 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/Object.hh>
-#include <Synopsis/Module.hh>
+#include <Synopsis/Python/Object.hh>
+#include <Synopsis/Python/Module.hh>
 #include <iostream>
 #include <fstream>
 #include <iterator>
@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 
-namespace Python = Synopsis;
+using namespace Synopsis;
 
 //. Static namespace for link module
 namespace

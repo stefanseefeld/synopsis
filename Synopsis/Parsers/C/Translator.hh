@@ -21,7 +21,7 @@
 
 struct Translator
 {
-  Translator(Synopsis::AST::AST a, Synopsis::List s, bool v, bool d)
+  Translator(Synopsis::AST::AST a, Synopsis::Python::List s, bool v, bool d)
     : ast(a), scope(s), verbose(v), debug(d) {}
   Translator(Translator &t)
     : ast(t.ast), file(t.file), scope(t.scope), verbose(t.verbose), debug(t.debug) {}
@@ -31,7 +31,7 @@ protected:
 
   Synopsis::AST::AST        ast;
   Synopsis::AST::SourceFile file;
-  Synopsis::List            scope;
+  Synopsis::Python::List    scope;
   bool                      verbose;
   bool                      debug;
 };
@@ -85,7 +85,7 @@ struct ExpressionTranslator : ExpressionVisitor, Translator
 
 struct StatementTranslator : StatementVisitor, Translator
 {
-  StatementTranslator(Synopsis::AST::AST a, Synopsis::List s, bool v, bool d)
+  StatementTranslator(Synopsis::AST::AST a, Synopsis::Python::List s, bool v, bool d)
     : Translator(a, s, v, d) {}
   StatementTranslator(Translator &t) : Translator(t) {}
 

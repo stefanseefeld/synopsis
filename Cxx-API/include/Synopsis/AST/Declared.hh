@@ -1,4 +1,3 @@
-// $Id: Declared.hh,v 1.1 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -37,10 +36,10 @@ public:
 class Template : public Declared
 {
 public:
-  typedef TypedList<Parameter> Parameters;
+  typedef Python::TypedList<Parameter> Parameters;
 
   Template() {}
-  Template(const Object &o, bool check = true)
+  Template(const Python::Object &o, bool check = true)
     : Declared(o, false) { if (check) assert_type("Template");}
 
   Parameters parameters() { return narrow<Parameters>(attr("parameters")());}
@@ -53,7 +52,7 @@ class Parametrized : public Type
 {
 public:
   Parametrized() {}
-  Parametrized(const Object &o, bool check = true)
+  Parametrized(const Python::Object &o, bool check = true)
     : Type(o, false) { if (check) assert_type("Parametrized");}
 
   Template _template() const { return narrow<Template>(attr("template")());}  
@@ -66,13 +65,13 @@ public:
 //. safely cast to Declared, then the declaration() safely cast to
 //. the template type.
 template <typename T>
-T declared_cast(const Type &type) throw (Object::TypeError)
+T declared_cast(const Type &type) throw (Python::Object::TypeError)
 {
-  if (Declared declared = Object::try_narrow<Declared>(type))
+  if (Declared declared = Python::Object::try_narrow<Declared>(type))
     if (Declaration decl = declared.declaration())
-      if (T derived = Object::try_narrow<T>(decl))
+      if (T derived = Python::Object::try_narrow<T>(decl))
 	return derived;
-  throw Object::TypeError();
+  throw Python::Object::TypeError();
 }
 
 // //. Safely extracts typed Declarations from Type types. The type is first

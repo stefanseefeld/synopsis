@@ -8,7 +8,7 @@
 #ifndef _Synopsis_AST_AST_hh
 #define _Synopsis_AST_AST_hh
 
-#include <Synopsis/Object.hh>
+#include <Synopsis/Python/Object.hh>
 #include <Synopsis/AST/Declaration.hh>
 
 namespace Synopsis
@@ -16,16 +16,16 @@ namespace Synopsis
 namespace AST
 {
 
-class AST : public Object
+class AST : public Python::Object
 {
 public:
   AST() {}
-  AST(const Object &o) throw(TypeError) : Object(o) { assert_type();}
+  AST(const Python::Object &o) throw(TypeError) : Python::Object(o) { assert_type();}
 
-  Dict files() { return Dict(attr("files")());}
-  Object types() { return attr("types")();}
-  List declarations() { return List(attr("declarations")());}
-  void assert_type() throw(TypeError) { Object::assert_type("Synopsis.AST", "AST");}
+  Python::Dict files() { return Python::Dict(attr("files")());}
+  Python::Object types() { return attr("types")();}
+  Python::List declarations() { return Python::List(attr("declarations")());}
+  void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.AST", "AST");}
 };
 
 }

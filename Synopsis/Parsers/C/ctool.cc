@@ -20,8 +20,7 @@
 # include <windows.h>
 #endif
 
-using namespace Synopsis::AST; // import all AST objects...
-namespace Python = Synopsis; // ...and the others into 'Python'
+using namespace Synopsis;
 
 bool Trace::debug = false;
 int Trace::level = 0;
@@ -192,7 +191,7 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
                           &debug))
       return 0;
 
-    Synopsis::AST::AST ast(py_ast);
+    AST::AST ast(py_ast);
     Py_INCREF(py_ast);
 
     std::set_unexpected(unexpected);
