@@ -50,7 +50,8 @@ int yylex(YYSTYPE *lvalp);
 
 #undef HERE
 #define HERE Location(gProject->Parse_TOS->yylineno, \
-       gProject->Parse_TOS->yycolno, gProject->Parse_TOS->filename )
+                      gProject->Parse_TOS->yycolno, \
+                      gProject->Parse_TOS->filename)
 
 /*  int  yydebug = 1;  */
 
@@ -556,6 +557,7 @@ continue_stemnt: CONT SEMICOLON
             delete $1;
             delete $2;
         }
+        ;
 
 return_stemnt:  RETURN opt_expr SEMICOLON
         {
@@ -685,7 +687,7 @@ cond_expr:  log_or_expr
 assign_expr:  cond_expr
            |  unary_expr assign_op assign_expr
         {
-            $$ = new AssignExpr($2,$1,$3,NoLocation);
+            $$ = new AssignExpr($2,$1,$3,$1->location);
         }
         ;
 
@@ -775,35 +777,35 @@ cast_expr:  unary_expr
 equality_expr:  relational_expr
              |  equality_expr equality_op relational_expr
         {
-            $$ = new RelExpr($2,$1,$3,NoLocation);
+            $$ = new RelExpr($2,$1,$3,$1->location);
         }
         ;
 
 relational_expr:  shift_expr
                |  relational_expr relation_op shift_expr 
         {
-            $$ = new RelExpr($2,$1,$3,NoLocation);
+            $$ = new RelExpr($2,$1,$3,$1->location);
         }
         ;
 
 shift_expr:  additive_expr
           |  shift_expr shift_op additive_expr
         {
-            $$ = new BinaryExpr($2,$1,$3,NoLocation);
+            $$ = new BinaryExpr($2,$1,$3,$1->location);
         }
         ;
 
 additive_expr:  mult_expr
              |  additive_expr add_op mult_expr
         {
-            $$ = new BinaryExpr($2,$1,$3,NoLocation);
+            $$ = new BinaryExpr($2,$1,$3,$1->location);
         }
         ;
 
 mult_expr:  cast_expr
          |  mult_expr mult_op cast_expr
         {
-            $$ = new BinaryExpr($2,$1,$3,NoLocation);
+            $$ = new BinaryExpr($2,$1,$3,$1->location);
         }
         ;
 
@@ -888,10 +890,7 @@ prim_expr:  ident
                 yywarn("Undeclared variable");
             }
 
-            $$ = new Variable($1,
-              Location(gProject->Parse_TOS->yylineno,
-                       gProject->Parse_TOS->yycolno,
-                       gProject->Parse_TOS->filename));
+            $$ = new Variable($1, HERE);
         }
          |  paren_expr
          |  constant
