@@ -1421,7 +1421,12 @@ init_decl_list_reentrance: init_decl
               | init_decl_list_reentrance COMMA init_decl        %prec COMMA_OP
         {
             $$ = $1;
-            $$->next = $3;
+
+			Decl*	appendDecl = $1;
+			while (appendDecl->next != NULL)
+				appendDecl = appendDecl->next;
+
+            appendDecl->next = $3;
             delete $2;
         }
         ;
