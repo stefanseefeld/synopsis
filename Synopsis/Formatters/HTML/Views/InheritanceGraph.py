@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.7 2001/03/29 14:12:42 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.8 2001/04/06 06:26:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.8  2001/04/06 06:26:39  chalky
+# No more warning on bad types
+#
 # Revision 1.7  2001/03/29 14:12:42  chalky
 # Consolidate small graphs to speed up processing time (graphviz is slow)
 #
@@ -62,7 +65,7 @@ class ToDecl (Type.Visitor):
 	try:
 	    typeobj = config.types[name]
 	except KeyError:
-	    print "Warning: %s not found in types dict."%(name,)
+	    if config.verbose: print "Warning: %s not found in types dict."%(name,)
 	    return None
 	self.__decl = None
 	typeobj.accept(self)
