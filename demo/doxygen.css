@@ -82,6 +82,7 @@ div.nameindex-item {
 }
 div.file-all {
     font-size: smaller;
+    white-space: nowrap;
 }
 span.file-linenum {
     color: red;
