@@ -43,10 +43,10 @@ private:
   bool          my_encoded;
 };
 
-inline void display(Node *node, std::ostream &os, bool encoded)
+inline void display(const Node *node, std::ostream &os, bool encoded)
 {
   Display d(os, encoded);
-  d.display(node);
+  d.display(const_cast<Node *>(node));
 }
 
 }
