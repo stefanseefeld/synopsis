@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.6 2001/01/10 16:12:02 stefan Exp $
+# $Id: Makefile,v 1.7 2001/01/10 19:55:45 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -19,7 +19,9 @@
 # MA 02139, USA.
 
 SHELL	:= /bin/sh
-PREFIX	:= /usr/local/lib/python
+
+include ../local.mk
+
 SRC	:= __init__.py
 subdirs	:= IDL C++ Python
 
@@ -44,8 +46,8 @@ distclean:
 	done && test -z "$$fail"
 
 install:
-	mkdir -p $(PREFIX)/Synopsis/Parser
-	install $(SRC) $(PREFIX)/Synopsis/Parser
+	mkdir -p $(packagedir)/Synopsis/Parser
+	install $(SRC) $(packagedir)/Synopsis/Parser
 	@for dir in ${subdirs}; do \
 	   (cd $$dir && $(MAKE) install) \
 	    || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
