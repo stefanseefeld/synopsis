@@ -224,7 +224,8 @@ extern int err_top_level;
 program:  /* emtpy source file */ 
         {
             if (err_cnt == 0)
-              std::cerr <<"Warning: ANSI/ISO C forbids an empty source file.\n";
+              *gProject->Parse_TOS->yyerrstream
+              << "Warning: ANSI/ISO C forbids an empty source file.\n";
             gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
             $$ = (TransUnit*) NULL;
         }
@@ -232,7 +233,8 @@ program:  /* emtpy source file */
         {
             if (err_cnt)
             {
-                std::cerr << err_cnt << " errors found.\n";
+                *gProject->Parse_TOS->yyerrstream
+                << err_cnt << " errors found.\n";
                 gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
             } else {
                 gProject->Parse_TOS->transUnit = $$;
@@ -240,7 +242,7 @@ program:  /* emtpy source file */
         }
        | error
         {
-            std::cerr << "Errors - Aborting parse.\n";
+            *gProject->Parse_TOS->yyerrstream << "Errors - Aborting parse.\n";
             gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
             YYACCEPT;
         }
