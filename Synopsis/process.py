@@ -8,7 +8,7 @@
 
 from Processor import Processor
 import AST
-from getoptions import getoptions
+from getoptions import get_options
 
 import sys
 
