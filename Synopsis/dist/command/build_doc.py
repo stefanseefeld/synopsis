@@ -77,14 +77,18 @@ class build_doc(build.build):
          e = e[0], 'doc'
          build_ext.build_extension(e, False)
 
-         if os.path.exists(os.path.join(build_ext.build_temp, e[0], api)):
+         if (os.path.exists(os.path.join(build_ext.build_temp, e[0], api))
+             and newer(os.path.join(build_ext.build_temp, e[0], api),
+                       os.path.join(tempdir, api))):
             copy_file(os.path.join(build_ext.build_temp, e[0], api),
                       os.path.join(tempdir, api))
             copy_tree(os.path.join(build_ext.build_temp, e[0], 'links'),
                       os.path.join(tempdir, 'links'))
             copy_tree(os.path.join(build_ext.build_temp, e[0], 'xref'),
                       os.path.join(tempdir, 'xref'))
-         if os.path.exists(os.path.join(build_ext.build_temp, e[0], all)):
+         if (os.path.exists(os.path.join(build_ext.build_temp, e[0], all))
+             and newer(os.path.join(build_ext.build_temp, e[0], all),
+                       os.path.join(tempdir, all))):
             copy_file(os.path.join(build_ext.build_temp, e[0], all),
                       os.path.join(tempdir, all))
          
