@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.19 2003/12/10 19:19:57 stefan Exp $
+# $Id: setup.py,v 1.20 2003/12/18 01:50:59 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -61,6 +61,7 @@ data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
 #### add documentation
 
 def add_documentation(all, directory, files):
+   if directory[-3:] == 'CVS': return
    all.append((directory,
                filter(os.path.isfile,
                       map(lambda x:os.path.join(directory, x), files))))
