@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2003/03/16 03:22:39 chalky Exp $
+# $Id: Makefile,v 1.5 2003/08/20 03:07:25 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -27,6 +27,9 @@ endif
 endif
 
 subdirs	:= IDL C++ Python Mixed Graph Config Perceps
+ifeq ($(CTOOL), 1)
+subdirs	+= C
+endif
 
 action	:= all
 
