@@ -33,6 +33,9 @@ TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
   define(Python::Tuple(qname("..."), my_type_kit.create_base("C", qname("..."))));
   define(Python::Tuple(qname("long long"), my_type_kit.create_base("C", qname("long long"))));
   define(Python::Tuple(qname("long double"), my_type_kit.create_base("C", qname("long double"))));
+
+  // some GCC extensions...
+  define(Python::Tuple(qname("__builtin_va_list"), my_type_kit.create_base("C", qname("__builtin_va_list"))));
 }
 
 AST::Type TypeTranslator::lookup(PTree::Encoding const &name)

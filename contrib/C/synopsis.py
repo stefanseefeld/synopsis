@@ -11,7 +11,8 @@ from Parser import Parser
 from distutils import sysconfig
 import sys, os.path
 
-parser = Parser(emulate_compiler = 'gcc')
+parser = Parser(emulate_compiler = 'gcc',
+                cppflags = ['-I/usr/include/libxml2'])
 html = HTML.Formatter(title = 'Test case for C parser')
 process(parse = parser,
         html = html,

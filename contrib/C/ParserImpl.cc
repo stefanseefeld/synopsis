@@ -79,13 +79,13 @@ PyObject *parse(PyObject *self, PyObject *args)
       (*i)->write(std::cerr);
     if (ptree) 
     {
-      ASTTranslator translator(ast, verbose, debug);
+      ASTTranslator translator(src, base_path, main_file_only, ast, verbose, debug);
       translator.translate(ptree, buffer);
     }
   }
   catch (std::exception const &e)
   {
-    std::cerr << "Caught exception : " << e.what() << std::endl;
+    std::cerr << "Caught exception : " << typeid(e).name() << ' ' << e.what() << std::endl;
     PyErr_SetString(error, e.what());
     return 0;
   }
