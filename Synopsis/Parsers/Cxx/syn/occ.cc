@@ -135,7 +135,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       syn_main_only = PyObject_IsTrue(value);
     Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "verbose")) != 0)
-      verbose = true;
+      verbose = PyObject_IsTrue(value);
     Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
     {
@@ -622,7 +622,6 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   {
     strcpy(syn_buffer, syn_file_prefix);
     strcat(syn_buffer, src);
-    std::cerr << "syntax is " << syn_buffer << std::endl;
     makedirs(syn_buffer);
     of_syntax = new std::ofstream(syn_buffer);
   }
