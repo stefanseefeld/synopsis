@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.cc source file
 // Implementation of the FileFilter class
 
-// $Id: filter.cc,v 1.1 2002/12/09 04:01:00 chalky Exp $
+// $Id: filter.cc,v 1.2 2002/12/09 07:42:16 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -223,6 +223,10 @@ bool FileFilter::should_xref(AST::SourceFile* file)
 // AST.
 bool FileFilter::should_store(AST::Declaration* decl)
 {
+    // Sanity check (this can happen)
+    if (!decl)
+        return false;
+
     // Check the decl itself first, although for namespaces the SourceFile
     // referenced by file() can be any of the files that opened it
     if (decl->file()->is_main())
