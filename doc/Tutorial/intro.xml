@@ -164,5 +164,23 @@
       Todo: finish the table.
     </para>
   </section>
+  <section>
+    <title>Using Synopsis</title>
+    <para>
+      Synopsis supports both the command line and the GUI. Most configuration
+      options can be specified on the command line except for the HTML
+      formatter which is too complex. The preferred method is to store the
+      configuration options in a config file, and only use command line
+      options to specify which configuration to use.
+    </para>
+    <para>
+      A GUI is under development, however it is not yet
+      fully usable. It will allow easy configuration of Synopsis, and provide
+      a GUI environment to execute projects and evaluate the results. A
+      Project configuration was implemented to replace the previous Makefile
+      dependency, and a new configuration file format that can be both read
+      and written by Synopsis was created.
+    </para>
+  </section>
 </chapter>
 <!-- vim: set ts=8 et sts=2 sw=2: -->
