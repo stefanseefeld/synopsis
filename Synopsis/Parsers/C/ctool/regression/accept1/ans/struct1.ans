@@ -1,0 +1,118 @@
+struct list ;
+struct list ;
+struct list{
+  int a;
+  struct list *n;
+};
+struct list ;
+void f(void )
+{
+  struct list{
+    int b;
+    struct list *m;
+  };
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 1  nchild: 2
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[2]: Function Name: f:
+Definition: void f(void )
+Position: , 19, 13
+
+-------------
+
+level: 3  nsyms: 2  nchild: 0
+Scope Id: 1_1_1
+HashTab:  #entries: 2  size: 5
+[0]: Component Name: n:
+Definition: struct list *n
+Container: struct list{
+  int a;
+  struct list *n;
+}
+
+-------------
+
+[2]: Component Name: a:
+Definition: int a
+Container: struct list{
+  int a;
+  struct list *n;
+}
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_2
+HashTab: NULL
+level: 4  nsyms: 0  nchild: 1
+Scope Id: 1_1_2_1
+HashTab: NULL
+level: 5  nsyms: 2  nchild: 0
+Scope Id: 1_1_2_1_1
+HashTab:  #entries: 2  size: 5
+[3]: Component Name: b:
+Definition: int b
+Container: struct list{
+  int b;
+  struct list *m;
+}
+
+-------------
+
+[4]: Component Name: m:
+Definition: struct list *m
+Container: struct list{
+  int b;
+  struct list *m;
+}
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 1  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[3]: Tag Name: list:
+Definition: struct list{
+  int b;
+  struct list *m;
+}
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

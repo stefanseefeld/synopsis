@@ -1,0 +1,180 @@
+struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}m;
+int main()
+{
+  int r;
+
+  m.rook.a = 5;
+  return 0;
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 2  nchild: 2
+Scope Id: 1_1
+HashTab:  #entries: 2  size: 5
+[2]: Function Name: main:
+Definition: int main()
+Position: , 14, 0
+
+-------------
+
+[4]: Variable Name: m:
+Definition: struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}m
+
+-------------
+
+level: 3  nsyms: 4  nchild: 1
+Scope Id: 1_1_1
+HashTab:  #entries: 4  size: 5
+[0]: Component Name: rook:
+Definition: union myunion{
+  int a;
+  double d;
+}rook
+Container: struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}
+
+-------------
+Component Name: d:
+Definition: int d
+Container: struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}
+
+-------------
+
+[1]: Component Name: e:
+Definition: int e
+Container: struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}
+
+-------------
+
+[4]: Component Name: c:
+Definition: int c
+Container: struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}
+
+-------------
+
+level: 4  nsyms: 2  nchild: 0
+Scope Id: 1_1_1_1
+HashTab:  #entries: 2  size: 5
+[0]: Component Name: d:
+Definition: double d
+Container: union myunion{
+  int a;
+  double d;
+}
+
+-------------
+
+[2]: Component Name: a:
+Definition: int a
+Container: union myunion{
+  int a;
+  double d;
+}
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_2
+HashTab: NULL
+level: 4  nsyms: 1  nchild: 0
+Scope Id: 1_1_2_1
+HashTab:  #entries: 1  size: 5
+[4]: Variable Name: r:
+Definition: int r
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 1  nchild: 1
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[2]: Tag Name: foo:
+Definition: struct foo{
+  int c, d, e;
+  union myunion{
+    int a;
+    double d;
+  }rook;
+}
+
+-------------
+
+level: 3  nsyms: 1  nchild: 0
+Scope Id: 1_1_1
+HashTab:  #entries: 1  size: 5
+[1]: Tag Name: myunion:
+Definition: union myunion{
+  int a;
+  double d;
+}
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

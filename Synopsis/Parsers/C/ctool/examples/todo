@@ -1,0 +1,12 @@
+
+  Ideally, the entire thing should be do-able as a post-pass over
+  the generated tree; I'm thinking of doing a couple simple examples
+  of this to function as extra documentation.  Some of the possible
+  things I was considering:
+    1) Call-graph generator
+        a) Change to find all dead code.
+ 
+    2) Included file analysis (was the include necessary, etc.)
+    3) Struct-packing analysis (is there excessive packing waste
+                                for struct component alignment)
+

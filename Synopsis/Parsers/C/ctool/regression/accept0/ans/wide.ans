@@ -1,0 +1,102 @@
+typedef int ptrdiff_t;
+typedef unsigned int size_t;
+typedef long wchar_t;
+typedef unsigned int wint_t;
+int main()
+{
+  wchar_t b = L'H';
+  wchar_t *m = L"hello";
+  char a = '\003';
+  char c = '\201';
+
+  m[0] = b;
+  return 0;
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 5  nchild: 1
+Scope Id: 1_1
+HashTab:  #entries: 5  size: 5
+[1]: Typedef Name: wint_t:
+Definition: typedef unsigned int wint_t
+
+-------------
+Typedef Name: size_t:
+Definition: typedef unsigned int size_t
+
+-------------
+Typedef Name: ptrdiff_t:
+Definition: typedef int ptrdiff_t
+
+-------------
+
+[2]: Function Name: main:
+Definition: int main()
+Position: , 6, 0
+
+-------------
+
+[3]: Typedef Name: wchar_t:
+Definition: typedef long wchar_t
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_1
+HashTab: NULL
+level: 4  nsyms: 4  nchild: 0
+Scope Id: 1_1_1_1
+HashTab:  #entries: 4  size: 5
+[2]: Variable Name: a:
+Definition: char a = '\003'
+
+-------------
+
+[3]: Variable Name: b:
+Definition: wchar_t b = L'H'
+
+-------------
+
+[4]: Variable Name: c:
+Definition: char c = '\201'
+
+-------------
+Variable Name: m:
+Definition: wchar_t *m = L"hello"
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

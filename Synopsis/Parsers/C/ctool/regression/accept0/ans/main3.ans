@@ -1,0 +1,84 @@
+int main()
+{
+  int a = 0;
+  int b;
+  char *ch = "Hello";
+
+  a = 5 + 2 * 8;
+  for (a = 0; a < 5 || a > 10; a++)
+    continue;
+  for (a = 0; ; a++)
+  {
+    a = 10;
+    ch = "hi";
+    break;
+  }
+
+  return 0;
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 1  nchild: 1
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[2]: Function Name: main:
+Definition: int main()
+Position: , 2, 10
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_1
+HashTab: NULL
+level: 4  nsyms: 3  nchild: 0
+Scope Id: 1_1_1_1
+HashTab:  #entries: 3  size: 5
+[2]: Variable Name: a:
+Definition: int a = 0
+
+-------------
+
+[3]: Variable Name: b:
+Definition: int b
+
+-------------
+
+[4]: Variable Name: ch:
+Definition: char *ch = "Hello"
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

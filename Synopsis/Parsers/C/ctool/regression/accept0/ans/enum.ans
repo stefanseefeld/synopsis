@@ -1,0 +1,153 @@
+struct fob{
+  int a;
+  int b;
+  int c;
+  double d;
+};
+enum Boolean { False, True, Maybe };
+int main()
+{
+  int a = sizeof(int ) ;
+
+  for (a = 0; a < 5 || a > 10; a++)
+    continue;
+  return 0;
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 4  nchild: 2
+Scope Id: 1_1
+HashTab:  #entries: 4  size: 5
+[2]: Function Name: main:
+Definition: int main()
+Position: , 16, 10
+
+-------------
+Enumeration constant Name: False:
+Definition: NO definition for Enumeration constant entry!
+Container: Boolean { False, True, Maybe }
+
+-------------
+
+[3]: Enumeration constant Name: Maybe:
+Definition: NO definition for Enumeration constant entry!
+Container: Boolean { False, True, Maybe }
+
+-------------
+
+[4]: Enumeration constant Name: True:
+Definition: NO definition for Enumeration constant entry!
+Container: Boolean { False, True, Maybe }
+
+-------------
+
+level: 3  nsyms: 4  nchild: 0
+Scope Id: 1_1_1
+HashTab:  #entries: 4  size: 5
+[0]: Component Name: d:
+Definition: double d
+Container: struct fob{
+  int a;
+  int b;
+  int c;
+  double d;
+}
+
+-------------
+
+[2]: Component Name: a:
+Definition: int a
+Container: struct fob{
+  int a;
+  int b;
+  int c;
+  double d;
+}
+
+-------------
+
+[3]: Component Name: b:
+Definition: int b
+Container: struct fob{
+  int a;
+  int b;
+  int c;
+  double d;
+}
+
+-------------
+
+[4]: Component Name: c:
+Definition: int c
+Container: struct fob{
+  int a;
+  int b;
+  int c;
+  double d;
+}
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_2
+HashTab: NULL
+level: 4  nsyms: 1  nchild: 0
+Scope Id: 1_1_2_1
+HashTab:  #entries: 1  size: 5
+[2]: Variable Name: a:
+Definition: int a = sizeof(int ) 
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 2  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 2  size: 5
+[0]: Tag Name: Boolean:
+Definition: enum Boolean { False, True, Maybe }
+
+-------------
+
+[2]: Tag Name: fob:
+Definition: struct fob{
+  int a;
+  int b;
+  int c;
+  double d;
+}
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

@@ -1,0 +1,150 @@
+
+struct st$1_1$1_0${
+  int a$1_1_1$2_0$;
+}x$1_1$0_0$;
+int f0$1_1$2_0$(struct st$1_1$1_0$ y$1_1_2$1_0$)
+{
+  struct st$1_1$1_0$ z$1_1_2$2_0$;
+
+  z$1_1_2$2_0$.a = x$1_1$0_0$.a$1_1_1$2_0$ + y$1_1_2$1_0$.a;
+  return z$1_1_2$2_0$.a;
+}
+
+int f1$1_1$3_0$(struct st$1_1$1_0$ y$1_1_3$1_0$)
+{
+  struct st$1_1$1_0$ ;
+  struct st$1_1$1_0$ *z$1_1_3$2_0$;
+
+  return y$1_1_3$1_0$.a;
+}
+
+int f2$1_1$4_0$(struct st$1_1$1_0$ y$1_1_4$1_0$)
+{
+  struct st$1_1$1_0$ ;
+  struct st$1_1$1_0$ z$1_1_4$2_0$;
+
+  return y$1_1_4$1_0$.a;
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry
+
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry
+
+
+-------------
+
+level: 2  nsyms: 4  nchild: 4
+Scope Id: 1_1
+HashTab:  #entries: 4  size: 5
+[0]: Variable Name: x:
+Definition: struct st$1_1$1_0${
+  int a$1_1_1$2_0$;
+}x$1_1$0_0$
+
+-------------
+
+[2]: Variable Name: f0:
+Definition: int f0$1_1$2_0$(struct st$1_1$1_0$ y$1_1_2$1_0$)
+
+-------------
+
+[3]: Variable Name: f1:
+Definition: int f1$1_1$3_0$(struct st$1_1$1_0$ y$1_1_3$1_0$)
+
+-------------
+
+[4]: Variable Name: f2:
+Definition: int f2$1_1$4_0$(struct st$1_1$1_0$ y$1_1_4$1_0$)
+
+-------------
+
+level: 3  nsyms: 1  nchild: 0
+Scope Id: 1_1_1
+HashTab:  #entries: 1  size: 5
+[2]: Variable Name: a:
+Definition: int a$1_1_1$2_0$
+Container:
+struct st$1_1$1_0${
+  int a$1_1_1$2_0$;
+}
+-------------
+
+level: 3  nsyms: 2  nchild: 0
+Scope Id: 1_1_2
+HashTab:  #entries: 2  size: 5
+[1]: Parameter Name: y:
+Definition: struct st$1_1$1_0$ y$1_1_2$1_0$
+
+-------------
+
+[2]: Variable Name: z:
+Definition: struct st$1_1$1_0$ z$1_1_2$2_0$
+
+-------------
+
+level: 3  nsyms: 2  nchild: 0
+Scope Id: 1_1_3
+HashTab:  #entries: 2  size: 5
+[1]: Parameter Name: y:
+Definition: struct st$1_1$1_0$ y$1_1_3$1_0$
+
+-------------
+
+[2]: Variable Name: z:
+Definition: struct st$1_1$1_0$ *z$1_1_3$2_0$
+
+-------------
+
+level: 3  nsyms: 2  nchild: 0
+Scope Id: 1_1_4
+HashTab:  #entries: 2  size: 5
+[1]: Parameter Name: y:
+Definition: struct st$1_1$1_0$ y$1_1_4$1_0$
+
+-------------
+
+[2]: Variable Name: z:
+Definition: struct st$1_1$1_0$ z$1_1_4$2_0$
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 1  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[1]: Tag Name: st:
+Definition: struct st$1_1$1_0${
+  int a$1_1_1$2_0$;
+}
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

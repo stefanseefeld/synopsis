@@ -1,0 +1,463 @@
+#!/s/perl/bin/perl
+
+# ^C is caught to allow for cleanup
+&allow_quit;
+
+#
+# Regression tests for ctree
+#
+# This script tests a specific suite, or individual programs from that
+# suite. Call with -h (help) to see the usage.
+#
+
+# Default Options
+$mailto = '';        # Mail to this person
+$show = 0;           # Show available programs
+$report_only = 0;    # Do a summary type report only
+$debug = 0;
+$verbose = 0;
+
+#  Other global variables 
+
+$total = 0;
+$dump_core = 0;
+$different = 0;
+$create_output = 0;
+
+$max_time = 3600;        # 60 minutes to live by default
+
+$command = "../../src/ctdemo -s";    # The command to run
+
+                                 # command line options
+$options = '';
+
+open(STDERR, ">&STDOUT");       # Want to catch ALL output
+select(STDERR); $| = 1;         # Set unbuffered
+select(STDOUT); $| = 1;         # Set unbuffered
+
+chop($pwd = `pwd`);
+$suite = '';
+
+if ( $pwd =~ /\/([^\/]+)$/ ){
+    $suite = $1;
+}
+
+$rundir = 'run';        # The files to run
+$ansdir = 'ans';        # The correct answers
+$dffdir = 'diff';       # The difference (between ours and correct)
+
+$diff = 'diff -w';         # diff program to use
+
+##########################
+
+# Remove an old core file
+&core_exist;
+
+@progs = ();
+$skip = 0;
+$time = 0;
+
+foreach $item (@ARGV){
+
+    if ($skip){
+        $skip = 0;
+        if ($time){
+            $max_time = $item * 60;
+            $time = 0;
+        } else {
+            $mailto = $item;
+        }
+        next;
+    }
+
+    if (substr($item,0,1) ne '-'){
+        push(@progs,$item);
+    } elsif (($item eq '-s') || ($item eq '-S')){
+        $show = 1;
+    } elsif (($item eq '-m') || ($item eq '-M')){
+        $skip = 1;
+    } elsif (($item eq '-h') || ($item eq '-H') || ($item eq '-?')){
+        &show_usage;
+    } elsif (($item eq '-d') || ($item eq '-D')){
+        $debug = 1;
+    } elsif (($item eq '-v') || ($item eq '-V')){
+        $verbose = 1;
+    } elsif (($item eq '-r') || ($item eq '-R')){
+        $report_only = 1;
+    } elsif (($item eq '-t') || ($item eq '-T')){
+        $skip = 1;
+        $time = 1;
+    }
+}
+
+# if an empty list, get them all
+if (!@progs){
+
+    # Get all files from the run directory that end with '.c'
+    @progs = &get_dir($rundir,'/^\w+\.c$/');
+
+    # Remove the '.c' from the ends
+    chop(@progs);
+    chop(@progs);
+}
+
+if ($show){
+
+    print "\nAvailable Tests:\n";
+
+    $one = "dummy";
+    while($one ne ""){
+
+        $one = shift(@progs);
+        $two = shift(@progs);
+        $three = shift(@progs);
+        $four = shift(@progs);
+
+        printf "%-18s %-18s %-18s %-18s\n", $one, $two, $three, $four;
+    }
+
+    exit 0;
+}
+
+##########################
+
+# The next line specifies the maximum amount of time (in seconds)
+# this script is allowed to take.  After that, is will consider
+# itself to be 'hung'.  (Does NOT count time spent sleeping)
+&set_max_time($max_time);        # maximum time to live
+
+##########################
+
+# Create the answer directory if its not there
+if (! opendir(ANSDIR, "$ansdir")){
+
+    $create_output = 1;
+    if(! mkdir("$ansdir", 0777)){
+        die "Could not create directory: $pwd/$ansdir\n";
+    }
+    print "\nCreating the answer directory.\n\n";
+
+} else {
+    closedir(ANSDIR);
+}
+
+# Create the diff directory if its not there
+if (! opendir(DFFDIR, "$dffdir")){
+
+    if(! mkdir("$dffdir", 0777)){
+        die "Could not create directory: $pwd/$dffdir\n";
+    }
+    print "\nCreating the diff directory.\n\n";
+
+} else { 
+
+    # Empty the diff directory 
+    @dff_files = grep(!/^\.\.?$/, readdir(DFFDIR));
+    closedir(DFFDIR);
+
+    unlink @dff_files;
+}
+
+if ($mailto){
+
+    open( MAILTO, "| /bin/mail $mailto" ) || die "Could not run /bin/mail";
+    select(MAILTO); $| = 1;         # Set unbuffered
+
+    print MAILTO <<"EndOfHeader";
+Subject: Test Suite output from suite $suite
+
+EndOfHeader
+}
+
+print "Test Suite output from suite $suite\n\n";
+
+##########################
+
+chop($strt_date = `date`);
+print "Test started at: $strt_date\n\n";
+
+##########################
+
+# Run command on all programs 
+foreach $prog (@progs){
+
+    if (! -f "$rundir/${prog}.c"){
+        print "Program ${prog}.c does not exist.\n";
+        next;
+    }
+
+    $total++;
+    print "Testing the $prog program..." if (! $report_only);
+    if ($create_output || (! -f "$ansdir/${prog}.ans")){
+
+        print "File $ansdir/${prog}.ans non-existant - creating.\n"
+                if (! $create_output);
+
+        # Run command, place output in answer directory
+        $err = system( "$command $options $rundir/${prog}.c > $ansdir/${prog}.ans" );
+  
+        # Zero out the diff file 
+        if (open(ZERO, "> $dffdir/${prog}.diff" )) {
+            close(ZERO);
+        }
+
+        print "done.\n" if (! $report_only);
+
+     # Unfortunately, the exit value is from diff and not the command
+     # and so is not very useful.
+ 
+        if (&core_exist){
+            $dump_core++;
+            print "Program $prog caused $command to dump a core!\n";
+        }
+
+        if (open(FOO,"$ansdir/${prog}.ans")){
+            close(FOO);
+        } else {
+            print "**** Errors occurred creating $ansdir/${prog}.ans\n";
+        }
+    } else {
+
+        # Run command, place diff in diff directory 
+        $err = system( "$command $options $rundir/${prog}.c | $diff - $ansdir/${prog}.ans > $dffdir/${prog}.diff" );
+
+        if ($verbose)
+        {
+            if (open(DIFF,"$dffdir/${prog}.diff")) {
+                print <DIFF>;
+                close(DIFF);
+            }
+        }
+
+        print "done.\n" if (! $report_only);
+
+        if (&core_exist){
+            $dump_core++;
+            print "Program $prog caused $command to dump a core!\n";
+        }
+
+    } 
+}
+
+chop($end_date = `date`);
+print "\nTesting finished at: $end_date\n\n";
+alarm 0;
+
+# A little cleanup
+    &core_exist;
+
+if (! $create_output){
+    foreach $prog (@progs){
+
+        if (! (-z "$dffdir/${prog}.diff")){
+            $different++;
+            print "Ouput from $prog does not match expected output.\n" 
+                if (! $report_only);
+        }
+    }
+}
+
+print "\n";
+
+
+print "Dumped Core (ouch!): $dump_core\n" if ($dump_core);
+print "Differing Output: $different\n";
+print "Tested: $total\n\n";
+
+
+if ($total){
+    $prcnt = ($different / $total) * 100.0;
+} else {
+    $prcnt = "0%";
+}
+printf "\nPercent differing: %6.2f%%\n", $prcnt;
+printf "\nPercent successful: %6.2f%%\n", (100.0 - $prcnt);
+
+close MAILTO if ($mailto);
+
+exit 0;
+
+####################################################################
+
+sub show_usage {
+
+    print "\nUsage: run_suite [options] [list of programs]\n\n";
+    print "Runs the specified test programs in this suite.\n";
+    print "If no list is provided, all programs in the suite are run.\n\n";
+
+    print "Options:\n";
+    print "\t-h:         Show usage (this message).\n";
+    print "\t-s:         Show the programs available in this suite.\n";
+    print "\t-r:         Produce a summary-type report only.\n";
+    print "\t-v:         Verbose (copy non-empty diffs into report).\n";
+    print "\t-t <mins>:  Specify timeout in minutes.\n";
+    print "\t-m <user>:  Mail output to user.\n";
+
+    print "\n\tEx:   run_suite -m flisakow\@cs.wisc.edu types\n";
+    print "\tEx:   run_suite -r\n\n";
+
+    die "\n";
+}
+
+###############################################
+# Return true if a core exists (and remove it)
+
+sub core_exist {
+
+    if (-f 'core'){
+        unlink('core');
+        return 1;
+    }
+    return 0;
+}
+
+############################
+#
+# Return a name for lame signal numbers
+#
+
+@sig_name = (
+    'NONE',
+    'SIGHUP  - hangup',
+    'SIGINT  - interrupt',
+    'SIGQUIT - quit',
+    'SIGILL  - illegal instruction',
+    'SIGTRAP - trace trap',
+    'SIGIOT  - IOT (aka abort)',
+    'SIGEMT  - EMT instruction',
+    'SIGFPE  - floating point exception',
+    'SIGKILL - kill',
+    'SIGBUS  - bus error',
+    'SIGSEGV - segmentation violation',
+    'SIGSYS  - bad argument to system call',
+    'SIGPIPE - broken pipe',
+    'SIGALRM - alarm',
+    'SIGTERM - termination'
+);
+
+sub name_sig {
+
+    my($sig) = @_;
+
+    if ( $sig <= 15 ){
+        return $sig_name[$sig];
+    } else {
+        return "machine specific signal";
+    }
+}
+
+############################
+#
+# Do a make of these targets in the pgms directory
+#
+
+sub make {
+
+    my(@targets) = @_;
+    my($target,$ret,$err);
+
+    $ret = 1;
+
+    chdir 'pgms' || return 0;
+
+    foreach $target (@targets){
+
+        $err = system("make $target > make.err 2>&1");
+
+        if (open(MKE_ERR,'make.err')){
+            print <MKE_ERR>;
+            close MKE_ERR;
+            unlink 'make.err';
+        }
+
+        $err /= 256;
+        if ($err){
+            print "Make failed for target $target.\n";
+            $ret = 0;
+        }
+    }
+
+    chdir '..';
+    return $ret;
+}
+############################
+
+sub get_dir {
+
+   my($dir,$pattern) = @_;
+   my(@flist);
+
+   @flist = ();
+
+   # If no pattern supplied, return everything except '.' and '..'
+   $pattern = '!/^\.\.?$/' if (! $pattern);
+
+   opendir(DIR, "$dir");
+
+   eval "\@flist = grep($pattern, sort(readdir(DIR)))";
+   closedir( DIR );
+
+   return @flist;
+}
+
+############################
+#
+#
+
+sub set_max_time {
+
+    local($secs) = @_;
+
+    $SIG{'ALRM'} = 'alrm_handler';
+
+    alarm $secs;
+}
+
+############################
+
+sub alrm_handler {
+
+    print "\n\nCoral TestSuite $suite has run out of time (> $max_time) - quitting.\n\n";
+
+    # Try to clean up a little
+    
+    &core_exist;
+
+    if ((-d 'pgms') && (-f 'pgms/Makefile')){
+        chdir('pgms');
+        &make('clean');
+    }
+
+    exit 1;
+}
+
+############################
+
+sub allow_quit {
+
+     # Watch for ^C and other requests to quit.
+    $SIG{'HUP'}  = 'quit_handler';
+    $SIG{'INT'}  = 'quit_handler';
+    $SIG{'TERM'} = 'quit_handler';
+}
+
+############################
+
+sub quit_handler {
+
+    print "\n\nSignal requesting quit recieved. - quitting.\n\n";
+
+    # Try to clean up a little
+    
+    &core_exist;
+
+    if ((-d 'pgms') && (-f 'pgms/Makefile')){
+        chdir('pgms');
+        &make('clean');
+    }
+
+    exit 0;
+}
+
+############################
+
