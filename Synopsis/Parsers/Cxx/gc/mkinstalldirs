@@ -4,7 +4,7 @@
 # Created: 1993-05-16
 # Public domain
 
-# $Id: mkinstalldirs,v 1.1 2003/01/30 00:52:44 chalky Exp $
+# $Id: mkinstalldirs,v 1.2 2003/03/15 00:40:50 chalky Exp $
 
 errstatus=0
 dirmode=""

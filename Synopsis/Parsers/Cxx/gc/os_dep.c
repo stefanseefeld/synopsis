@@ -80,12 +80,15 @@
 #   define NEED_FIND_LIMIT
 # endif
 
-#ifdef NEED_FIND_LIMIT
-#   include <setjmp.h>
-#endif
-
 #if defined(FREEBSD) && defined(I386)
 #  include <machine/trap.h>
+#  if !defined(PCR)
+#    define NEED_FIND_LIMIT
+#  endif
+#endif
+
+#ifdef NEED_FIND_LIMIT
+#   include <setjmp.h>
 #endif
 
 #ifdef AMIGA
@@ -622,7 +625,8 @@ ptr_t GC_get_stack_base()
     }
 
     /* Return the first nonaddressible location > p (up) or 	*/
-    /* the smallest location q s.t. [q,p] is addressible (!up).	*/
+    /* the smallest location q s.t. [q,p) is addressable (!up).	*/
+    /* We assume that p (up) or p-1 (!up) is addressable.	*/
     ptr_t GC_find_limit(p, up)
     ptr_t p;
     GC_bool up;
@@ -1149,7 +1153,7 @@ int * etext_addr;
     	/* string constants in the text segment, but after etext.	*/
     	/* Use plan B.  Note that we now know there is a gap between	*/
     	/* text and data segments, so plan A bought us something.	*/
-    	result = (char *)GC_find_limit((ptr_t)(DATAEND) - MIN_PAGE_SIZE, FALSE);
+    	result = (char *)GC_find_limit((ptr_t)(DATAEND), FALSE);
     }
     return((ptr_t)result);
 }
@@ -1160,27 +1164,32 @@ int * etext_addr;
 /* whether it should apply to non-X86 architectures.			*/
 /* For now we don't assume that there is always an empty page after	*/
 /* etext.  But in some cases there actually seems to be slightly more.  */
-ptr_t GC_FreeBSDGetDataStart(etext_addr)
+/* This also deals with holes between read-only data and writable data.	*/
+ptr_t GC_FreeBSDGetDataStart(max_page_size, etext_addr)
 int max_page_size;
 int * etext_addr;
 {
-    VOLATILE char *result = ((word)(etext_addr) + sizeof(word) - 1)
-    		    & ~(sizeof(word) - 1);
-    	/* etext rounded to word boundary	*/
+    word text_end = ((word)(etext_addr) + sizeof(word) - 1)
+		     & ~(sizeof(word) - 1);
+	/* etext rounded to word boundary	*/
+    VOLATILE word next_page = (text_end + (word)max_page_size - 1)
+			      & ~((word)max_page_size - 1);
+    VOLATILE ptr_t result = (ptr_t)text_end;
     GC_setup_temporary_fault_handler();
     if (setjmp(GC_jmp_buf) == 0) {
-    	/* Try writing to the address.	*/
-        /* This should happen before there is another thread.	*/
-    	*result = *result;
-    	*(result + 4) = *(result + 4);
-        GC_reset_fault_handler();
+	/* Try reading at the address.				*/
+	/* This should happen before there is another thread.	*/
+	for (; next_page < (word)(DATAEND); next_page += (word)max_page_size)
+	    *(VOLATILE char *)next_page;
+	GC_reset_fault_handler();
     } else {
-        GC_reset_fault_handler();
-    	/* As above, we go to plan B */
-    	result = (char *)GC_find_limit((ptr_t)(DATAEND) - MIN_PAGE_SIZE, FALSE);
+	GC_reset_fault_handler();
+	/* As above, we go to plan B	*/
+	result = GC_find_limit((ptr_t)(DATAEND), FALSE);
     }
-    return((ptr_t)char *result);
+    return(result);
 }
+
 # endif
 
 
@@ -1320,19 +1329,28 @@ word bytes;
 ptr_t GC_unix_get_mem(bytes)
 word bytes;
 {
-    static GC_bool initialized = FALSE;
-    static int fd;
     void *result;
     static ptr_t last_addr = HEAP_START;
 
-    if (!initialized) {
-	fd = open("/dev/zero", O_RDONLY);
-	fcntl(fd, F_SETFD, FD_CLOEXEC);
-	initialized = TRUE;
-    }
+#   ifndef USE_MMAP_ANON
+      static GC_bool initialized = FALSE;
+      static int fd;
+
+      if (!initialized) {
+	  fd = open("/dev/zero", O_RDONLY);
+	  fcntl(fd, F_SETFD, FD_CLOEXEC);
+	  initialized = TRUE;
+      }
+#   endif
+
     if (bytes & (GC_page_size -1)) ABORT("Bad GET_MEM arg");
-    result = mmap(last_addr, bytes, PROT_READ | PROT_WRITE | OPT_PROT_EXEC,
-		  GC_MMAP_FLAGS, fd, 0/* offset */);
+#   ifdef USE_MMAP_ANON
+      result = mmap(last_addr, bytes, PROT_READ | PROT_WRITE | OPT_PROT_EXEC,
+		    GC_MMAP_FLAGS | MAP_ANON, -1, 0/* offset */);
+#   else
+      result = mmap(last_addr, bytes, PROT_READ | PROT_WRITE | OPT_PROT_EXEC,
+		    GC_MMAP_FLAGS, fd, 0/* offset */);
+#   endif
     if (result == MAP_FAILED) return(0);
     last_addr = (ptr_t)result + bytes + GC_page_size - 1;
     last_addr = (ptr_t)((word)last_addr & ~(GC_page_size - 1));
@@ -3251,17 +3269,6 @@ GC_bool is_ptrfree;
 /* callers.  Ignore my frame and my callers frame.			*/
 
 #ifdef LINUX
-# include <features.h>
-# if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1 || __GLIBC__ > 2
-#   define HAVE_BUILTIN_BACKTRACE
-#   ifdef IA64
-#     define BUILTIN_BACKTRACE_BROKEN
-#   endif
-# endif
-#endif
-
-#include <execinfo.h>
-#ifdef LINUX
 #   include <unistd.h>
 #endif
 
@@ -3270,7 +3277,9 @@ GC_bool is_ptrfree;
 #ifdef SAVE_CALL_CHAIN
 
 #if NARGS == 0 && NFRAMES % 2 == 0 /* No padding */ \
-    && defined(HAVE_BUILTIN_BACKTRACE)
+    && defined(GC_HAVE_BUILTIN_BACKTRACE)
+
+#include <execinfo.h>
 
 void GC_save_callers (info) 
 struct callinfo info[NFRAMES];
@@ -3383,8 +3392,7 @@ struct callinfo info[NFRAMES];
 #	  ifdef LINUX
 	    FILE *pipe;
 #	  endif
-#	  if defined(HAVE_BUILTIN_BACKTRACE) && \
-	     !defined(BUILTIN_BACKTRACE_BROKEN)
+#	  if defined(GC_HAVE_BUILTIN_BACKTRACE)
 	    char **sym_name =
 	      backtrace_symbols((void **)(&(info[i].ci_pc)), 1);
 	    char *name = sym_name[0];
@@ -3461,8 +3469,7 @@ struct callinfo info[NFRAMES];
 	    }
 #	  endif /* LINUX */
 	  GC_err_printf1("\t\t%s\n", name);
-#	  if defined(HAVE_BUILTIN_BACKTRACE) && \
-	     !defined(BUILTIN_BACKTRACE_BROKEN)
+#	  if defined(GC_HAVE_BUILTIN_BACKTRACE)
 	    free(sym_name);  /* May call GC_free; that's OK */
 #         endif
 	}

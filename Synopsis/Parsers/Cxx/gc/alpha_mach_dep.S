@@ -1,4 +1,4 @@
- # $Id: alpha_mach_dep.S,v 1.1 2003/01/30 00:52:43 chalky Exp $
+ # $Id: alpha_mach_dep.S,v 1.2 2003/03/15 00:40:49 chalky Exp $
 	.arch ev6
 
         .text
