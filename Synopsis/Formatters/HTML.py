@@ -580,7 +580,7 @@ class SummaryFormatter(BaseFormatter):
 	return ''
 
     def writeSectionStart(self, heading):
-	str = '<table border=1 width="100%%">'\
+	str = '<table width="100%%">'\
 	'<col width="20%%"><col width="80%%">'\
 	'<tr><td colspan="2" class="heading">%s</td></tr>'
 	self.write(str%heading)
@@ -636,7 +636,7 @@ class DetailFormatter(BaseFormatter):
 	    self.referenceName(inheritance.parent().name()))
 
     def writeSectionStart(self, heading):
-	str = '<table border=1 width="100%%">'\
+	str = '<table width="100%%">'\
 	'<tr><td colspan="2" class="heading">%s</td></tr></table>'
 	self.write(str%heading)
 
