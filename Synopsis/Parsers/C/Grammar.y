@@ -2400,11 +2400,11 @@ gcc_inner:  /* Nothing */
                 delete $2;
                 delete $8;
             }
-            ;
          |   MALLOC
             {
                 $$ = new GccAttrib( GCC_Malloc );
             }
+            ;
 
 %%
 
