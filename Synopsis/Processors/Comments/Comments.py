@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.14 2002/08/23 04:37:26 chalky Exp $
+# $Id: Comments.py,v 1.15 2002/09/20 10:34:52 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.15  2002/09/20 10:34:52  chalky
+# Add a comment parser for plain old // comments
+#
 # Revision 1.14  2002/08/23 04:37:26  chalky
 # Huge refactoring of Linker to make it modular, and use a config system similar
 # to the HTML package
@@ -151,6 +154,36 @@ class JavaComments (CommentProcessor):
 	    mo = self.re_java.search(text, mo.end())
 	text = string.join(text_list,'\n')
 	comment.set_text(text)
+
+class SSComments (CommentProcessor):
+    """A class that selects only // comments."""
+    __re_star = r'/\*(.*?)\*/'
+    __re_ss = r'^[ \t]*// ?(.*)$'
+    def __init__(self):
+	"Compiles the regular expressions"
+	self.re_star = re.compile(SSComments.__re_star, re.S)
+	self.re_ss = re.compile(SSComments.__re_ss, re.M)
+    def process(self, decl):
+	"Calls processComment on all comments"
+	map(self.processComment, decl.comments())
+    def processComment(self, comment):
+	"""Replaces the text in the comment. It calls strip_star() first to
+	remove all multi-line star comments, then follows with parse_ss().
+	"""
+	text = comment.text()
+	text = self.parse_ss(self.strip_star(text))
+	comment.set_text(text)
+    def strip_star(self, str):
+	"""Strips all star-format comments from the string"""
+	mo = self.re_star.search(str)
+	while mo:
+	    str = str[:mo.start()] + str[mo.end():]
+	    mo = self.re_star.search(str)
+	return str
+    def parse_ss(self, str):
+	"""Filters str and returns just the lines that start with //"""
+	return string.join(self.re_ss.findall(str),'\n')
+
 
 class QtComments (CommentProcessor):
     """A class that finds Qt style comments. These have two styles: //! ...
@@ -358,6 +391,7 @@ class Grouper (Transformer):
 
 processors = {
     'ssd': SSDComments,
+    'ss' : SSComments,
     'java': JavaComments,
     'qt': QtComments,
     'dummy': Dummies,
