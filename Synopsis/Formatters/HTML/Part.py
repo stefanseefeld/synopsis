@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.16 2001/07/10 02:55:51 chalky Exp $
+# $Id: Part.py,v 1.17 2001/07/10 05:08:28 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.17  2001/07/10 05:08:28  chalky
+# Refactored ASTFormatters into FormatStrategies, and simplified names all round
+#
 # Revision 1.16  2001/07/10 02:55:51  chalky
 # Better comments in some files, and more links work with the nested layout
 #
@@ -83,391 +86,11 @@ import types, os
 from Synopsis.Core import AST, Type, Util
 
 # HTML modules
-import Tags, core
+import Tags, core, FormatStrategy
 from core import config
 from Tags import *
 
-class ASTFormatter (Type.Visitor):
-    """This class formats the various AST elements. It includes facilities for
-    formatting types with a single call, and formatting modifiers.
-
-    The key concept of this class though is the format{AST types} methods. Any
-    class derived from ASTFormatter that overrides one of the format methods
-    will have that method called by the Summary and Detail formatters when
-    they visit that AST type. Summary and Detail maintain a list of
-    ASTFormatters, and a list for each AST type. For example, when
-    SummaryFormatter visits a Function object, it calls the formatFunction
-    method on all ASTFormatters registed with SummaryFormatter that
-    implemented that method. Each of these format methods returns a string,
-    which may contain a TD tag to create a new column.
-
-    @see BaseFormatter
-    @see SummaryFormatter
-    @see DetailFormatter
-    """
-    def __init__(self, formatter):
-	"""Store formatter as self.formatter. The formatter is either a
-	SummaryFormatter or DetailFormatter, and is used for things like
-	reference() and label() calls. Local references to the formatter's
-	reference and label methods are stored in self for more efficient use
-	of them."""
-	self.formatter = formatter
-	self.label = formatter.label
-	self.reference = formatter.reference
-
-    #
-    # Utility methods
-    #
-    def formatModifiers(self, modifiers):
-	"""Returns a HTML string from the given list of string modifiers. The
-	modifiers are enclosed in 'keyword' spans."""
-	keyword = lambda m,span=span: span("keyword", m)
-	return string.join(map(keyword, modifiers))
-
-    #
-    # Type Formatter/Visitor
-    #
-    def formatType(self, typeObj):
-	"Returns a reference string for the given type object"
-	if typeObj is None: return "(unknown)"
-        typeObj.accept(self)
-        return self.__type_label
-
-    def visitBaseType(self, type):
-        self.__type_label = self.reference(type.name())
-        
-    def visitUnknown(self, type):
-        self.__type_label = self.reference(type.link())
-        
-    def visitDeclared(self, type):
-        self.__type_label = self.reference(type.name())
-        
-    def visitModifier(self, type):
-        alias = self.formatType(type.alias())
-	pre = string.join(map(lambda x:x+"&nbsp;", type.premod()), '')
-	post = string.join(type.postmod(), '')
-        self.__type_label = "%s%s%s"%(pre,alias,post)
-            
-    def visitParametrized(self, type):
-	if type.template():
-	    type_label = self.reference(type.template().name())
-	else:
-	    type_label = "(unknown)"
-        params = map(self.formatType, type.parameters())
-        self.__type_label = "%s&lt;%s&gt;"%(type_label,string.join(params, ", "))
-
-    def visitTemplate(self, type):
-	self.__type_label = "template&lt;%s&gt;"%(
-	    string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ",")
-	)
-
-    def visitFunctionType(self, type):
-	ret = self.formatType(type.returnType())
-	params = map(self.formatType, type.parameters())
-	pre = string.join(type.premod(), '')
-	self.__type_label = "%s(%s)(%s)"%(ret,pre,string.join(params, ", "))
-
-
-    #
-    # AST Formatters
-    #
-    def formatDeclaration(self, decl):	pass
-    def formatForward(self, decl):	pass
-    def formatGroup(self, decl):	pass
-    def formatScope(self, decl):	pass
-    def formatModule(self, decl):	pass
-    def formatMetaModule(self, decl):	pass
-    def formatClass(self, decl):	pass
-    def formatTypedef(self, decl):	pass
-    def formatEnum(self, decl):		pass
-    def formatVariable(self, decl):	pass
-    def formatConst(self, decl):	pass
-    def formatFunction(self, decl):	pass
-    def formatOperation(self, decl):	pass
-
-class BaseASTFormatter(ASTFormatter):
-    """Base class for SummaryASTFormatter and DetailASTFormatter.
-    
-    The two classes SummaryASTFormatter and DetailASTFormatter are actually
-    very similar in operation, and so most of their methods are defined here.
-    Both of them print out the definition of the declarations, including type,
-    parameters, etc. Some things such as exception specifications are only
-    printed out in the detailed version.
-    """
-    col_sep = '<td class="summ-info">'
-    def formatParameters(self, parameters):
-	"Returns formatted string for the given parameter list"
-        return string.join(map(self.formatParameter, parameters), ", ")
-
-    def formatDeclaration(self, decl):
-	"""The default is to return no type and just the declarations name for
-	the name"""
-	return self.col_sep + self.label(decl.name())
-
-    def formatForward(self, decl): return self.formatDeclaration(decl)
-    def formatGroup(self, decl):
-	return self.col_sep + ''
-    def formatScope(self, decl):
-	"""Scopes have their own pages, so return a reference to it"""
-	return self.col_sep + self.reference(decl.name())
-    def formatModule(self, decl): return self.formatScope(decl)
-    def formatMetaModule(self, decl): return self.formatModule(decl)
-    def formatClass(self, decl): return self.formatScope(decl)
-
-    def formatTypedef(self, decl):
-	"(typedef type, typedef name)"
-	type = self.formatType(decl.alias())
-	return type + self.col_sep +  self.label(decl.name())
-
-    def formatEnumerator(self, decl):
-	"""This is only called by formatEnum"""
-	self.formatDeclaration(decl)
-
-    def formatEnum(self, decl):
-	"(enum name, list of enumerator names)"
-	type = self.label(decl.name())
-	name = map(lambda enumor:enumor.name()[-1], decl.enumerators())
-	name = string.join(name, ', ')
-	return type + self.col_sep + name
-
-    def formatVariable(self, decl):
-	# TODO: deal with sizes
-        type = self.formatType(decl.vtype())
-	return type + self.col_sep + self.label(decl.name())
-
-    def formatConst(self, decl):
-	"(const type, const name = const value)"
-	type = self.formatType(decl.ctype())
-        name = self.label(decl.name()) + " = " + decl.value()
-	return type + self.col_sep + name
-
-    def formatFunction(self, decl):
-	"(return type, func + params + formatFunctionExceptions)"
-	premod = self.formatModifiers(decl.premodifier())
-	type = self.formatType(decl.returnType())
-	name = self.label(decl.name(), decl.realname())
-	# Special C++ functions  TODO: maybe move to a separate AST formatter...
-	if decl.language() == 'C++' and len(decl.realname())>1:
-	    if decl.realname()[-1] == decl.realname()[-2]: type = '<i>constructor</i>'
-	    elif decl.realname()[-1] == "~"+decl.realname()[-2]: type = '<i>destructor</i>'
-	    elif decl.realname()[-1] == "(conversion)":
-		name = "(%s)"%type
-	params = self.formatParameters(decl.parameters())
-	postmod = self.formatModifiers(decl.postmodifier())
-	raises = self.formatOperationExceptions(decl)
-	type = '%s %s'%(premod,type)
-        if decl.type() == "attribute": name = '%s %s %s'%(name, postmod, raises)
-	else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
-	return type + self.col_sep + name
-
-    # Default operation is same as function, and quickest way is to assign:
-    def formatOperation(self, decl): return self.formatFunction(decl)
-
-    def formatParameter(self, parameter):
-	"""Returns one string for the given parameter"""
-	str = []
-	keyword = lambda m,span=span: span("keyword", m)
-	# Premodifiers
-	str.extend(map(keyword, parameter.premodifier()))
-	# Param Type
-	typestr = self.formatType(parameter.type())
-	if typestr: str.append(typestr)
-	# Postmodifiers
-	str.extend(map(keyword, parameter.postmodifier()))
-	# Param identifier
-        if len(parameter.identifier()) != 0:
-            str.append(span("variable", parameter.identifier()))
-	# Param value
-	if len(parameter.value()) != 0:
-	    str.append(" = " + span("value", parameter.value()))
-	return string.join(str)
-
-class SummaryASTFormatter (BaseASTFormatter):
-    """Derives from BaseASTFormatter to provide summary-specific methods.
-    Currently the only one is formatOperationExceptions"""
-    def formatOperationExceptions(self, oper):
-	"""Returns a reference to the detail if there are any exceptions."""
-        if len(oper.exceptions()):
-            return self.reference(oper.name(), " raises")
-	return ''
-
-class DefaultASTFormatter (ASTFormatter):
-    """A base AST formatter that calls formatDeclaration for all types"""
-    # All these use the same method:
-    def formatForward(self, decl): return self.formatDeclaration(decl)
-    def formatGroup(self, decl): return self.formatDeclaration(decl)
-    def formatScope(self, decl): return self.formatDeclaration(decl)
-    def formatModule(self, decl): return self.formatDeclaration(decl)
-    def formatMetaModule(self, decl): return self.formatDeclaration(decl)
-    def formatClass(self, decl): return self.formatDeclaration(decl)
-    def formatTypedef(self, decl): return self.formatDeclaration(decl)
-    def formatEnum(self, decl): return self.formatDeclaration(decl)
-    def formatVariable(self, decl): return self.formatDeclaration(decl)
-    def formatConst(self, decl): return self.formatDeclaration(decl)
-    def formatFunction(self, decl): return self.formatDeclaration(decl)
-    def formatOperation(self, decl): return self.formatDeclaration(decl)
- 
-class SummaryASTCommenter (DefaultASTFormatter):
-    """Adds summary comments to all declarations"""
-    def formatDeclaration(self, decl):
-	comm = config.comments[decl]
-	if comm.summary:
-	    return '<br>'+span('summary', comm.summary)
-	return ''
-    def formatGroup(self, decl):
-	"""Override for group to use the div version of commenting, and no
-	<br> before"""
-	comm = config.comments[decl]
-	if comm.summary:
-	    return desc(comm.summary)
-	return ''
-    
-class FilePageLinker (DefaultASTFormatter):
-    """Adds a link to the decl on the file page to all declarations"""
-    def formatDeclaration(self, decl):
-	if not decl.file(): return ''
-	filename = string.split(decl.file(), os.sep)
-	filename = config.files.nameOfScopedSpecial('page', filename)
-	name = string.join(decl.name(), '::')
-	link = filename + "#" + name
-	return href(rel(self.formatter.filename(), link), "[Source]")
-
-class DetailASTFormatter (BaseASTFormatter):
-    """Provides detail-specific AST formatting."""
-
-    col_sep = ' '
-
-    def formatNameWithParents(self, node):
-	"Formats a reference to each parent scope"
-	# Figure out the enclosing scope
-	scope, text = [], []
-	for name in node.name()[:-1]:
-	    scope.append(name)
-	    text.append(self.reference(scope))
-	text.append(node.name()[-1])
-	return string.join(text, "::\n") + '\n'
-
-    def formatModule(self, module):
-	"""Formats the module by linking to each parent scope in the name"""
-	# Module details are only printed at the top of their page
-	type = string.capitalize(module.type())
-	name = self.formatNameWithParents(module)
-	name = entity('h1', "%s %s"%(type, name))
-	return name
-
-    def formatClass(self, clas):
-	"""Formats the class by linking to each parent scope in the name"""
-	# Class details are only printed at the top of their page
-	type = string.capitalize(clas.type())
-	name = self.formatNameWithParents(clas)
-	name = entity('h1', "%s %s"%(type, name))
-
-	# Print template
-	templ = clas.template()
-	if templ:
-	    templ = entity('h2', "template &lt;%s&gt;"%string.join(map(self.formatType, templ.parameters()),", "))
-	else:
-	    templ = ''
-
-	# Print filename
-        file = config.files.nameOfFile(string.split(clas.file(), os.sep))
-	files = "Files: "+href(file, clas.file(), target='index') + "<br>"
-	return '%s%s%s'%(name, templ, files)
-
-    def formatOperationExceptions(self, oper):
-	"""Prints out the full exception spec"""
-        if len(oper.exceptions()):
-            raises = span("keyword", "raises")
-            exceptions = []
-            for exception in oper.exceptions():
-                exceptions.append(self.reference(exception.name()))
-	    exceptions = span("raises", string.join(exceptions, ", "))
-            return '%s (%s)'%(raises, exceptions)
-	return ''
-
-    def formatEnum(self, enum):
-        name = span("keyword", "enum ") + self.label(enum.name())
-        start = '<div class="enum">'
-	enumors = string.join(map(self.formatEnumerator, enum.enumerators()))
-        end = "</div>"
-	return '%s%s%s%s'%(name, start, enumors, end)
-
-    def formatEnumerator(self, enumerator):
-        text = self.label(enumerator.name())
-        if len(enumerator.value()):
-            value = " = " + span("value", enumerator.value())
-	else: value = ''
-	comm = config.comments[enumerator]
-	comments = desc(comm.summary or comm.detail or '')
-	return '<div class="enumerator">%s%s%s</div>'%(text,value,comments)
-
-class DetailASTCommenter (DefaultASTFormatter):
-    """Adds summary comments to all declarations"""
-    def formatDeclaration(self, decl):
-	comm = config.comments[decl]
-	if comm.detail is None: return ''
-	return desc(comm.detail)
-    
-
-class ClassHierarchySimple (ASTFormatter):
-    "Prints a simple text hierarchy for classes"
-    def formatInheritance(self, inheritance):
-	return '%s %s'%( self.formatModifiers(inheritance.attributes()),
-	    self.formatType(inheritance.parent()))
-
-    def formatClass(self, clas):
-	# Print out a list of the parents
-	super = sub = ''
-	if clas.parents():
-	    parents = map(self.formatInheritance, clas.parents())
-	    super = string.join(parents, ", ")
-	    super = div('superclasses', "Superclasses: "+super)
-
-	# Print subclasses
-	subs = config.classTree.subclasses(clas.name())
-	if subs:
-	    refs = map(self.reference, subs)
-	    sub = string.join(refs, ", ")
-	    sub = div('subclasses', "Known subclasses: "+sub) 
-	
-	return super + sub
-
-class ClassHierarchyGraph (ClassHierarchySimple):
-    """Prints a graphical hierarchy for classes, using the Dot formatter.
-
-    @see Formatter.Dot
-    """
-    def formatClass(self, clas):
-        try:
-            import tempfile
-            from Synopsis.Formatter import Dot
-        except:
-            print "Can't load the Dot formatter, using a text based class hierarchy instead"
-            return ClassHierarchySimple.formatClass(self, clas)
-	if 1:
-	    super = config.classTree.superclasses(clas.name())
-	    sub = config.classTree.subclasses(clas.name())
-	    if len(super) == 0 and len(sub) == 0:
-		# Skip classes with a boring graph
-		return ''
-        label = config.files.nameOfScopedSpecial('inheritance', clas.name())
-        tmp = os.path.join(config.basename, label)
-        dot_args = ["-o", tmp, "-f", "html", "-s", "-t", label]
-        #if core.verbose: args.append("-v")
-        Dot.toc = config.toc
-        Dot.nodes = {}
-        Dot.format(config.types, [clas], dot_args, None)
-        text = ''
-        input = open(tmp, "r+")
-        line = input.readline()
-        while line:
-            text = text + line
-            line = input.readline()
-        input.close()
-        os.unlink(tmp)
-	return text
-
-class BaseFormatter(Type.Visitor, AST.Visitor):
+class Base(Type.Visitor, AST.Visitor):
     """Formatting visitor base class.
     
     This class contains functionality for modularly
@@ -501,7 +124,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	self.__formatters.append(formatter)
 	# For each method name:
 	for method in self.__formatdict.keys():
-	    no_func = getattr(ASTFormatter, method).im_func
+	    no_func = getattr(FormatStrategy.Strategy, method).im_func
 	    method_obj = getattr(formatter, method)
 	    # If it was overridden in formatter
 	    if method_obj.im_func is not no_func:
@@ -587,26 +210,86 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     def visitFunction(self, decl):	self.formatDeclaration(decl, 'formatFunction')
     def visitOperation(self, decl):	self.formatDeclaration(decl, 'formatOperation')
 
+
+    #################### Type Formatter/Visitor #################################
+    def formatType(self, typeObj):
+	"Returns a reference string for the given type object"
+	if typeObj is None: return "(unknown)"
+        typeObj.accept(self)
+        return self.__type_label
+
+    def visitBaseType(self, type):
+	"Sets the label to be a reference to the type's name"
+        self.__type_label = self.reference(type.name())
+        
+    def visitUnknown(self, type):
+	"Sets the label to be a reference to the type's link"
+        self.__type_label = self.reference(type.link())
+        
+    def visitDeclared(self, type):
+	"Sets the label to be a reference to the type's name"
+        self.__type_label = self.reference(type.name())
+        
+    def visitModifier(self, type):
+	"Adds modifiers to the formatted label of the modifier's alias"
+        alias = self.formatType(type.alias())
+	pre = string.join(map(lambda x:x+"&nbsp;", type.premod()), '')
+	post = string.join(type.postmod(), '')
+        self.__type_label = "%s%s%s"%(pre,alias,post)
+            
+    def visitParametrized(self, type):
+	"Adds the parameters to the template name in angle brackets"
+	if type.template():
+	    type_label = self.reference(type.template().name())
+	else:
+	    type_label = "(unknown)"
+        params = map(self.formatType, type.parameters())
+        self.__type_label = "%s&lt;%s&gt;"%(type_label,string.join(params, ", "))
+
+    def visitTemplate(self, type):
+	"Labs the template with the parameters"
+	self.__type_label = "template&lt;%s&gt;"%(
+	    string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ",")
+	)
+
+    def visitFunctionType(self, type):
+	"Labels the function type with return type, name and parameters"
+	ret = self.formatType(type.returnType())
+	params = map(self.formatType, type.parameters())
+	pre = string.join(type.premod(), '')
+	self.__type_label = "%s(%s)(%s)"%(ret,pre,string.join(params, ", "))
+
+
+
     # These are overridden in {Summary,Detail}Formatter
-    def write_start(self): pass
-    def writeSectionStart(self, heading): pass
-    def writeSectionEnd(self, heading): pass
-    def writeSectionItem(self, text): pass
-    def write_end(self): pass
+    def write_start(self):
+	"Abstract method to start the output, eg table headings"
+	pass
+    def writeSectionStart(self, heading):
+	"Abstract method to start a section of declaration types"
+	pass
+    def writeSectionEnd(self, heading):
+	"Abstract method to end a section of declaration types"
+	pass
+    def writeSectionItem(self, text):
+	"Abstract method to write the output of one formatted declaration"
+	pass
+    def write_end(self):
+	"Abstract method to end the output, eg close the table"
+	pass
 
 
-class SummaryFormatter(BaseFormatter):
+class Summary(Base):
     """Formatting summary visitor. This formatter displays a summary for each
     declaration, with links to the details if there is one. All of this is
     controlled by the ASTFormatters."""
     def __init__(self, page):
-	BaseFormatter.__init__(self, page)
+	Base.__init__(self, page)
 	self.__link_detail = 0
 	self._init_formatters()
 
     def _init_formatters(self):
-	# TODO - load from config
-	base = 'Synopsis.Formatter.HTML.ASTFormatter.'
+	base = 'Synopsis.Formatter.HTML.FormatStrategy.'
 	try:
 	    for formatter in config.obj.ScopePages.summary_formatters:
 		clas = core.import_object(formatter, basePackage=base)
@@ -629,7 +312,7 @@ class SummaryFormatter(BaseFormatter):
 	if self.__link_detail:
 	    # Insert a reference instead
 	    return span('name',self.reference(ref, Util.ccolonName(label, self.scope())))
-	return BaseFormatter.label(self, ref, label)
+	return Base.label(self, ref, label)
 	
     def getSummary(self, node):
 	comment = config.comments[node].summary
@@ -651,20 +334,20 @@ class SummaryFormatter(BaseFormatter):
 	"""Adds a table row"""
 	self.write('<tr><td class="summ-start">' + text + '</td></tr>\n')
 
-class DetailFormatter(BaseFormatter):
+class Detail(Base):
     def __init__(self, page):
-	BaseFormatter.__init__(self, page)
+	Base.__init__(self, page)
 	self._init_formatters()
 
     def _init_formatters(self):
-	# TODO - load from config
-	base = 'Synopsis.Formatter.HTML.ASTFormatter.'
+	base = 'Synopsis.Formatter.HTML.FormatStrategy.'
 	try:
 	    for formatter in config.obj.ScopePages.detail_formatters:
 		clas = core.import_object(formatter, basePackage=base)
 		if config.verbose: print "Using detail formatter:",clas
 		self.addFormatter(clas)
 	except AttributeError:
+	    # Some defaults if config fails
 	    self.addFormatter( DetailASTFormatter )
 	    #self.addFormatter( ClassHierarchySimple )
 	    self.addFormatter( ClassHierarchyGraph )
