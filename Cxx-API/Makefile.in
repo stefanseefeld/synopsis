@@ -22,7 +22,7 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@ -lpthread
 
 HDR	:= $(shell find $(srcdir)/include -name '*.hh' -print)
-SRC	:= Path.cc ErrorHandler.cc
+SRC	:= Trace.cc Path.cc ErrorHandler.cc
 OBJ	:= $(patsubst %.cc, src/%.o, $(SRC))
 HDR_SYN	:= $(patsubst $(srcdir)/%, %.syn, $(HDR))
 CC_SYN	:= $(patsubst %, src/%.syn, $(SRC))

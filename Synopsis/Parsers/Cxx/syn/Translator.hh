@@ -18,35 +18,6 @@
 #include "ast.hh"
 #include "type.hh"
 
-#if DEBUG
-#define DO_TRACE
-class Trace
-{
-public:
-  Trace(const std::string &s) : scope(s)
-  {
-    std::cout << indent() << "entering " << scope << std::endl;
-    ++level;
-  }
-  ~Trace()
-  {
-    --level;
-    std::cout << indent() << "leaving " << scope << std::endl;
-  }
-private:
-  std::string indent() { return std::string(level, ' ');}
-  static int level;
-  std::string scope;
-};
-#else
-class Trace
-{
-public:
-  Trace(const std::string &) {}
-  ~Trace() {}
-};
-#endif
-
 class FileFilter;
 
 //. The Translator class maps from C++ objects to Python objects

@@ -24,6 +24,7 @@
    is<name>() looks ahead and returns true if the next symbol is <name>.
 */
 
+#include <Synopsis/Trace.hh>
 #include <iostream>
 #include "Parser.hh"
 #include "Lexer.hh"
@@ -32,6 +33,8 @@
 #include "Encoding.hh"
 #include "MetaClass.hh"
 #include "Walker.hh"
+
+using namespace Synopsis;
 
 #if defined(_PARSE_VCC)
 #define _MSC_VER	1100
@@ -136,20 +139,21 @@ void Parser::ShowMessageHead(char* pos)
 
 bool Parser::rProgram(Ptree*& def)
 {
-    while(lex->LookAhead(0) != '\0')
-	if(rDefinition(def)) return true;
-	else{
-	    Token tk;
-	    if(!SyntaxError()) return false;		// too many errors
-	    SkipTo(';');
-	    lex->GetToken(tk);	// ignore ';'
-	}
+  Trace trace("Parser::rProgram");
+  while(lex->LookAhead(0) != '\0')
+    if(rDefinition(def)) return true;
+    else
+    {
+      Token tk;
+      if(!SyntaxError()) return false;		// too many errors
+      SkipTo(';');
+      lex->GetToken(tk);	// ignore ';'
+    }
 
-    // Retrieve trailing comments
-    def = lex->GetComments();
-    if (def)
-	return true;
-    return false;
+  // Retrieve trailing comments
+  def = lex->GetComments();
+  if (def) return true;
+  return false;
 }
 
 /*

@@ -5,12 +5,12 @@
 // see the file COPYING for details.
 //
 
+#include <Synopsis/Trace.hh>
 #include "Translator.hh"
 #include "Debugger.hh"
 #include "Declaration.hh"
 #include "Statement.hh"
 #include "File.hh"
-#include "Trace.hh"
 
 using namespace Synopsis;
 

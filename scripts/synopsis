@@ -145,7 +145,7 @@ def get_opt(argv):
    # quick hack: if the parser is Cpp, rename the 'cppflags'
    # options to just 'flags'
    if parser and parser.__module__ == 'Synopsis.Parsers.Cpp.Parser':
-      if parser_opts['cppflags']:
+      if parser_opts.get('cppflags'):
          parser_opts['flags'] = parser_opts['cppflags']
          del parser_opts['cppflags']
 

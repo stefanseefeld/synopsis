@@ -6,6 +6,7 @@
 //
 
 #include <Synopsis/AST/ASTKit.hh>
+#include <Synopsis/Trace.hh>
 #include <Synopsis/Path.hh>
 #include <Synopsis/ErrorHandler.hh>
 #include "Translator.hh"
@@ -13,13 +14,9 @@
 #include "Printer.hh"
 #include "Statement.hh"
 #include "File.hh"
-#include "Trace.hh"
 #include <fstream>
 
 using namespace Synopsis;
-
-bool Trace::debug = false;
-int Trace::level = 0;
 
 namespace
 {

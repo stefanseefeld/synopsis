@@ -6,6 +6,8 @@
 // see the file COPYING for details.
 //
 
+#include <Python.h>
+#include <Synopsis/Trace.hh>
 #include "Translator.hh"
 #include "filter.hh"
 
@@ -14,9 +16,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#ifdef DO_TRACE
-int Trace::level = 0;
-#endif
+using namespace Synopsis;
 
 #define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
 
