@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.31 2001/06/05 05:47:02 chalky Exp $
+// $Id: swalker.cc,v 1.32 2001/06/05 15:34:11 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.32  2001/06/05 15:34:11  chalky
+// Allow keywords before function parameters, eg: register
+//
 // Revision 1.31  2001/06/05 05:47:02  chalky
 // Added global g_swalker var
 //
@@ -889,6 +892,13 @@ void SWalker::TranslateParameters(Ptree* p_params, std::vector<Parameter*>& para
 	storeLink(param->First(), false, type);
       // Find name and value
       // FIXME: this doesnt account for anon but initialised params!
+      // Skip keywords (eg: register) which are Leaves
+      string premods;
+      while (param && param->Car() && param->Car()->IsLeaf()) {
+	if (premods.size() > 0) premods.append(" ");
+	premods.append(param->Car()->GetPosition(), param->Car()->GetLength());
+	param = param->Rest();
+      }
       if (param->Length() > 1)
 	{
 	  Ptree* pname = param->Second();
@@ -903,7 +913,7 @@ void SWalker::TranslateParameters(Ptree* p_params, std::vector<Parameter*>& para
 	  if (param->Length() > 2) value = param->Nth(3)->ToString();
 	}
       // Add the AST.Parameter type to the list
-      params.push_back(new AST::Parameter("", type, "", name, value));
+      params.push_back(new AST::Parameter(premods, type, "", name, value));
       p_params = Ptree::Rest(p_params);
     }
 }
