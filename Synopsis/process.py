@@ -1,4 +1,4 @@
-# $Id: process.py,v 1.2 2003/11/11 06:05:03 stefan Exp $
+# $Id: process.py,v 1.3 2003/11/11 06:17:57 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -35,7 +35,7 @@ def process(**commands):
          error("command '%s' isn't a valid processor"%c)
 
    if len(sys.argv) < 2:
-      error("Usage : %s <command> [args] [input files]'%sys.argv[0]")
+      error("Usage : %s <command> [args] [input files]"%sys.argv[0])
 
    elif sys.argv[1] == '--help':
       print "Usage: %s --help"%sys.argv[0]
