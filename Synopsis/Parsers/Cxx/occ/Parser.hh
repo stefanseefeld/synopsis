@@ -38,6 +38,9 @@ public:
   unsigned long origin(const char *, std::string &) const;
 
   bool parse(PTree::Node *&);
+  //. return the current scope (which is the global scope if
+  //. called outside the 'parse' method)
+  const PTree::Scope *scope() const { return my_scopes.top();}
 
 protected:
   enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
