@@ -147,6 +147,24 @@ namespace Type {
 	Mods m_pre, m_post;
     };
 
+    //. Type Array. This type adds array dimensions to a primary type
+    class Array : public Type {
+    public:
+	//. Constructor
+	Array(Type* alias, const Mods &sizes);
+	//. Accept the given visitor
+	virtual void accept(Visitor*);
+	//. Returns the alias (modified) Type object
+	Type *alias() { return m_alias; }
+	//. Returns the sizes
+	Mods &sizes() { return m_sizes;}
+    private:
+	//. The alias type
+	Type* m_alias;
+	//. The sizes
+	Mods m_sizes;
+    };
+
     //. Parameterized type. A parameterized type is an instantiation of a
     //. Template type with concrete Types as parameters. 
     class Parameterized : public Type {
@@ -218,6 +236,7 @@ namespace Type {
 	virtual void visitType(Type*);
 	virtual void visitUnknown(Unknown*);
 	virtual void visitModifier(Modifier*);
+	virtual void visitArray(Array*);
 	virtual void visitNamed(Named*);
 	virtual void visitBase(Base*);
 	virtual void visitDeclared(Declared*);
