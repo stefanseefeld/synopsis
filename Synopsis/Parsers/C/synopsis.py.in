@@ -17,7 +17,7 @@ cppflags = ['-I.',
             '-I%s'%(srcdir),
             '-I%s'%(sysconfig.get_python_inc())]
 
-cxx = Cxx.Parser(base_path = topdir,
+cxx = Cxx.Parser(base_path = topdir + '/',
                  cppflags = cppflags,
                  syntax_prefix = 'links',
                  xref_prefix = 'xref')

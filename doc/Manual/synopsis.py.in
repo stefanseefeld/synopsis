@@ -15,14 +15,14 @@ from Synopsis.Formatters import Texinfo
 from Synopsis.Formatters import Dump
 
 from distutils import sysconfig
-import sys, os.path
+import sys, os, os.path
 
 topdir = '@topdir@'
-python = Composite(Python.Parser(basename = topdir + '/'),
+python = Composite(Python.Parser(basename = topdir + os.sep),
                    JavaTags(),
                    Summarizer())
 
-cxx = Cxx.Parser(base_path = topdir,
+cxx = Cxx.Parser(base_path = topdir + os.sep,
                  cppflags = ['-I%s'%(topdir + '/include'),
                              '-I%s'%(sysconfig.get_python_inc())],
                  syntax_prefix='links',
@@ -50,13 +50,24 @@ html = HTML.Formatter(toc_out = 'links.toc',
                                InheritanceGraph(),
                                NameIndex()])
 
+sxr = HTML.Formatter(file_layout = NestedFileLayout(),
+                     views = [SXRIndex(sxr_cgi = '/sxr.cgi'),
+                              DirBrowse(src_dir = '@topdir@',
+                                        base_path = '@topdir@'),
+                              Source(prefix = 'links',
+                                     external_url = '/sxr.cgi/ident?full=1&string='),
+                              RawFile(src_dir = '@topdir@',
+                                      base_path = '@topdir@')])
+
 process(python = python,
         cxx = cxx,
         link_python = Linker(),
         link_cxx = cxx_processor,
         link = Linker(),
+        archive = Processor(),
         strip = Stripper(),
         xref = XRefCompiler(prefix='xref'),
         html = html,
+        sxr = sxr,
         dump = Dump.Formatter(),
         texi = Texinfo.Formatter())

@@ -3,8 +3,9 @@ from Synopsis.Processor import Composite
 from Synopsis.Parsers import Cxx
 from Synopsis.Processors.Comments import SSComments, Grouper1
 from Synopsis.Formatters import Dump
+import os
 
-process(parse = Composite(Cxx.Parser(base_path = '@abs_top_srcdir@'),
+process(parse = Composite(Cxx.Parser(base_path = '@abs_top_srcdir@' + os.sep),
                           SSComments(),
                           Grouper1(),
                           Dump.Formatter(show_ids = False, stylesheet = None)))
