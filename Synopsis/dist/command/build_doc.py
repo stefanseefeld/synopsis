@@ -85,6 +85,9 @@ class build_doc(build.build):
                                              'share/doc/Synopsis/Tutorial'))
       cwd = os.getcwd()
       mkpath(tempdir, 0777, self.verbose, self.dry_run)
+
+      make = os.environ.get('MAKE', 'make')
+
       if self.html:
          spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
                 'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'html'])
