@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.8 2001/03/29 14:06:41 chalky Exp $
+# $Id: Part.py,v 1.9 2001/04/05 09:58:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.9  2001/04/05 09:58:14  chalky
+# More comments, and use config object exclusively with basePackage support
+#
 # Revision 1.8  2001/03/29 14:06:41  chalky
 # Skip boring graphs (ie, no sub or super classes)
 #
@@ -157,6 +160,14 @@ class ASTFormatter (Type.Visitor):
     def formatOperation(self, decl):	pass
 
 class BaseASTFormatter(ASTFormatter):
+    """Base class for SummaryASTFormatter and DetailASTFormatter.
+    
+    The two classes SummaryASTFormatter and DetailASTFormatter are actually
+    very similar in operation, and so most of their methods are defined here.
+    Both of them print out the definition of the declarations, including type,
+    parameters, etc. Some things such as exception specifications are only
+    printed out in the detailed version.
+    """
     def formatParameters(self, parameters):
 	"Returns formatted string for the given parameter list"
         return string.join(map(self.formatParameter, parameters), ", ")
@@ -277,6 +288,7 @@ class SummaryASTCommenter (DefaultASTFormatter):
 class FilePageLinker (DefaultASTFormatter):
     """Adds a link to the decl on the file page to all declarations"""
     def formatDeclaration(self, decl):
+	if not decl.file(): return '',''
 	filename = string.split(decl.file(), os.sep)
 	filename = config.files.nameOfScopedSpecial('page', filename)
 	name = string.join(decl.name(), '::')
@@ -297,6 +309,7 @@ class DetailASTFormatter (BaseASTFormatter):
 	return string.join(text, "::")
 
     def formatModule(self, module):
+	"""Formats the module by linking to each parent scope in the name"""
 	# Module details are only printed at the top of their page
 	type = string.capitalize(module.type())
 	name = self.formatNameWithParents(module)
@@ -304,6 +317,7 @@ class DetailASTFormatter (BaseASTFormatter):
 	return '', name
 
     def formatClass(self, clas):
+	"""Formats the class by linking to each parent scope in the name"""
 	# Class details are only printed at the top of their page
 	type = string.capitalize(clas.type())
 	name = self.formatNameWithParents(clas)
@@ -323,6 +337,7 @@ class DetailASTFormatter (BaseASTFormatter):
 	return '', '%s%s%s'%(name, templ, files)
 
     def formatOperationExceptions(self, oper):
+	"""Prints out the full exception spec"""
         if len(oper.exceptions()):
             raises = span("keyword", "raises")
             exceptions = []
@@ -357,7 +372,7 @@ class DetailASTCommenter (DefaultASTFormatter):
     
 
 class ClassHierarchySimple (ASTFormatter):
-    "Prints a simple hierarchy for classes"
+    "Prints a simple text hierarchy for classes"
     def formatInheritance(self, inheritance):
 	return '%s %s'%( self.formatModifiers(inheritance.attributes()),
 	    self.formatType(inheritance.parent()))
@@ -380,7 +395,10 @@ class ClassHierarchySimple (ASTFormatter):
 	return '', super + sub
 
 class ClassHierarchyGraph (ClassHierarchySimple):
-    "Prints a graphical hierarchy for classes, using the Dot formatter"
+    """Prints a graphical hierarchy for classes, using the Dot formatter.
+
+    @see Formatter.Dot
+    """
     def formatClass(self, clas):
         try:
             import tempfile
@@ -411,8 +429,9 @@ class ClassHierarchyGraph (ClassHierarchySimple):
 	return '', text
 
 class BaseFormatter(Type.Visitor, AST.Visitor):
-    """
-    Formatting visitor base. This class contains functionality for modularly
+    """Formatting visitor base class.
+    
+    This class contains functionality for modularly
     formatting an AST for display. It is typically used to contruct Summary
     and Detail formatters. ASTFormatters are added to the BaseFormatter, which
     then checks which format methods they implement. For each AST declaration
@@ -542,9 +561,10 @@ class SummaryFormatter(BaseFormatter):
 
     def _init_formatters(self):
 	# TODO - load from config
+	base = 'Synopsis.Formatter.HTML.ASTFormatter.'
 	try:
 	    for formatter in config.obj.ScopePages.summary_formatters:
-		clas = core.import_object(formatter)
+		clas = core.import_object(formatter, basePackage=base)
 		if config.verbose: print "Using summary formatter:",clas
 		self.addFormatter(clas)
 	except AttributeError:
@@ -602,9 +622,10 @@ class DetailFormatter(BaseFormatter):
 
     def _init_formatters(self):
 	# TODO - load from config
+	base = 'Synopsis.Formatter.HTML.ASTFormatter.'
 	try:
 	    for formatter in config.obj.ScopePages.detail_formatters:
-		clas = core.import_object(formatter)
+		clas = core.import_object(formatter, basePackage=base)
 		if config.verbose: print "Using summary formatter:",clas
 		self.addFormatter(clas)
 	except AttributeError:

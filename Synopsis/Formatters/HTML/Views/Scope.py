@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.5 2001/02/12 04:08:09 chalky Exp $
+# $Id: Scope.py,v 1.6 2001/04/05 09:58:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.6  2001/04/05 09:58:14  chalky
+# More comments, and use config object exclusively with basePackage support
+#
 # Revision 1.5  2001/02/12 04:08:09  chalky
 # Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
 #
@@ -48,20 +51,28 @@ from Tags import *
 
 class ScopePages (Page.Page):
     """A module for creating a page for each Scope with summaries and
-    details."""
+    details. This module is highly modular, using the classes from
+    ASTFormatter to do the actual formatting. The classes to use may be
+    controlled via the config script, resulting in a very configurable output.
+    @see ASTFormatter The ASTFormatter module
+    @see Config.Formatter.HTML.ScopePages Config for ScopePages
+    """
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
 	# use config...
+	base = "Synopsis.Formatter.HTML.ASTFormatter."
 	try:
-	    self.summarizer = core.import_object(config.obj.ScopePages.summarizer)()
+	    spec = config.obj.ScopePages.summarizer
+	    self.summarizer = core.import_object(spec, basePackage=base)()
 	except AttributeError:
-	    if config.verbose: print "Summarizer config failed. Using SummaryFormatter"
-	    self.summarizer = ASTFormatter.SummaryFormatter()
+	    if config.verbose: print "Summarizer config failed. Abort"
+	    raise
 	try:
-	    self.detailer = core.import_object(config.obj.ScopePages.detailer)()
+	    spec = config.obj.ScopePages.detailer
+	    self.detailer = core.import_object(spec, basePackage=base)()
 	except AttributeError:
-	    if config.verbose: print "Detailer config failed. Using DetailFormatter"
-	    self.detailer = ASTFormatter.DetailFormatter()
+	    if config.verbose: print "Detailer config failed. Abort"
+	    raise
 	# Hack to find share dir..
 	share = os.path.split(AST.__file__)[0]+"/../share"
 	self.syn_logo = 'synopsis200.jpg'
