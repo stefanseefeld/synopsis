@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.72 2002/12/09 04:01:01 chalky Exp $
+// $Id: swalker.cc,v 1.73 2002/12/09 08:27:22 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.73  2002/12/09 08:27:22  chalky
+// Ensure tail comments have the right file/line set.
+//
 // Revision 1.72  2002/12/09 04:01:01  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -554,6 +557,7 @@ Ptree* SWalker::TranslatePtree(Ptree* node)
     {
         // Assume comment. Must be a list of comments!
         AST::Declaration* decl;
+        update_line_number(node);
         decl = m_builder->add_tail_comment(m_lineno);
         add_comments(decl, node);
 
