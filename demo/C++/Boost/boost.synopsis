@@ -5,7 +5,7 @@ class struct:
   for k,v in args.items(): setattr(self, k, v)
 
 class Project:
-  name = './'
+  name = 'Boost Python'
   data_dir = './'
   actions = [
     ['FormatAction', 327, 237, 'HTML Formatter', struct(
@@ -27,9 +27,9 @@ class Project:
       comment_formatters=['summary', 'section'],
       FilePages=struct(
         toc_files=[],
-        file_path='./%s',
+        file_path='%s',
         scope='',
-        links_path='./%s-links'
+        links_path='BoostLinks/%s'
       ),
       FileTree=struct(
         link_to_pages=0
@@ -47,7 +47,8 @@ class Project:
       include_path=['/mnt/src/c++/boost', '/usr/include/python2.1'],
       main_file=1,
       verbose=1,
-      emulate_compiler='g++-3.2'
+      emulate_compiler='g++-3.2',
+      syntax_prefix='BoostLinks/'
     )],
     ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
     ['SourceAction', 50, 126, 'Test Source', [
@@ -76,8 +77,8 @@ class Project:
       tree_formatter='TreeFormatter.TreeFormatter',
       FilePages=struct(
         toc_files=[],
-        links_path='./%s-links',
-        file_path='./%s',
+        links_path='BoostLinks/%s',
+        file_path='%s',
         scope=''
       ),
       FileTree=struct(
