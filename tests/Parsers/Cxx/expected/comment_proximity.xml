@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="3" name="test1" type="global variable">
@@ -89,7 +88,7 @@
    </comments>
    <vtype/>
   </instance>
-  <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="24" name="dummy" type="dummy">
+  <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="24" name="EOS" type="EOS">
    <comments>
     <instance class="Synopsis.AST.Comment" line="0" suspect="1">
      <file>
@@ -104,7 +103,7 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="test1">

@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="4" name="function" type="struct">
@@ -30,7 +29,7 @@
     </instance>
    </comments>
    <declarations>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="1" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="1" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="9" name="function&lt;void()(A1,A2)&gt;" type="struct">
@@ -70,7 +69,7 @@
     </instance>
    </comments>
    <declarations>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="6" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="6" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="13" name="function&lt;R()(void)&gt;" type="struct">
@@ -101,7 +100,7 @@
     </instance>
    </comments>
    <declarations>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="11" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="11" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="17" name="function&lt;R()(int,int)&gt;" type="struct">
@@ -132,15 +131,15 @@
     </instance>
    </comments>
    <declarations>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="15" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/func_template_arg.cc" language="C++" line="15" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="function">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="function">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="function&lt;R()(int,int)&gt;">

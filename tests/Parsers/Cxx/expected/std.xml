@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="/usr/include/c++/3.2.2/bits/stl_bvector.h" language="C++" line="0" name="std" type="namespace">
@@ -1156,7 +1155,7 @@
       <instance class="Synopsis.Type.Base" language="C++" name="void"/>
      </returnType>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/std.cc" language="C++" line="5" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/std.cc" language="C++" line="5" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>
@@ -1177,7 +1176,7 @@
     std
    </link>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
  </types>

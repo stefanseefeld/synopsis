@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="2" name="CAT" text="CAT_D(a, b)" type="macro">

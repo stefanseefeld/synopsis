@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using2.cc" language="C++" line="0" name="A" type="namespace">
@@ -27,7 +26,7 @@
         <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using2.cc" language="C++" line="9" name="A.B.C.i" type="namespace variable">
          <vtype/>
         </instance>
-        <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using2.cc" language="C++" line="9" name="dummy" type="dummy"/>
+        <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using2.cc" language="C++" line="9" name="EOS" type="EOS"/>
        </declarations>
       </instance>
       <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/using2.cc" language="C++" line="12" name="A.B.f1()" realname="f1" type="function">
@@ -35,7 +34,7 @@
         <instance class="Synopsis.Type.Base" language="C++" name="void"/>
        </returnType>
       </instance>
-      <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using2.cc" language="C++" line="12" name="dummy" type="dummy"/>
+      <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using2.cc" language="C++" line="12" name="EOS" type="EOS"/>
      </declarations>
     </instance>
     <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using2.cc" language="C++" line="0" name="A.D" type="namespace">
@@ -43,13 +42,13 @@
       <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/using2.cc" language="C++" line="21" name="A.D.f2()" realname="f2" type="function">
        <returnType/>
       </instance>
-      <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using2.cc" language="C++" line="21" name="dummy" type="dummy"/>
+      <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using2.cc" language="C++" line="21" name="EOS" type="EOS"/>
      </declarations>
     </instance>
     <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/using2.cc" language="C++" line="26" name="A.f3()" realname="f3" type="function">
      <returnType/>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using2.cc" language="C++" line="26" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using2.cc" language="C++" line="26" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/using2.cc" language="C++" line="32" name="f4()" realname="f4" type="function">
@@ -58,9 +57,6 @@
  </declarations>
  <types>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.D.f2()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A">
@@ -79,6 +75,9 @@
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.f3()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.B">

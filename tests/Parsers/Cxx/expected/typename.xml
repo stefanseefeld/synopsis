@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/typename.cc" language="C++" line="2" name="crc_optimal" type="class">
@@ -100,7 +99,7 @@
       </instance>
      </vtype>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/typename.cc" language="C++" line="11" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/typename.cc" language="C++" line="11" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>
@@ -114,7 +113,7 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.masking_type">

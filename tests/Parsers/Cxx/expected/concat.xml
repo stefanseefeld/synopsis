@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cxx/input/concat.cc" language="C++" line="5" name="CAT" text="a ## b" type="macro">
@@ -23,7 +22,7 @@
     </instance>
    </comments>
    <declarations>
-    <instance accessibility="3" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/concat.cc" language="C++" line="1" name="dummy" type="dummy"/>
+    <instance accessibility="3" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/concat.cc" language="C++" line="1" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/concat.cc" language="C++" line="7" name="operator+(const Foo&amp;,const Foo&amp;)" realname="operator+" type="function">
@@ -102,7 +101,7 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const Foo&amp;,const Foo&amp;)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="operator+=(const Foo&amp;,const Foo&amp;)">
