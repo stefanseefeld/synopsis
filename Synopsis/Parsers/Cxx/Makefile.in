@@ -53,12 +53,11 @@ HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
 # Generate sources, objs and debug-objs from the FILES
 OCC_SOURCES := $(patsubst %, occ/%.cc, $(OCC_FILES))
 OCC_OBJ	    := $(patsubst %, occ/%.o, $(OCC_FILES))
-OCC_GOBJ    := $(patsubst %, occ/%.go,$(OCC_FILES))
 SYN_SOURCES := $(patsubst %, syn/%.cc, $(SYN_FILES))
 SYN_OBJ	    := $(patsubst %, syn/%.o, $(SYN_FILES))
-SYN_GOBJ    := $(patsubst %, syn/%.go,$(SYN_FILES))
 CC_SYN      := $(patsubst %, %.syn, $(OCC_SOURCES) $(SYN_SOURCES))
 HDR_SYN     := $(patsubst %, %.syn, $(HDR))
+DEP	    := $(patsubst %.cc, %.d, $(OCC_SOURCES) $(SYN_SOURCES))
 
 TARGETS		:= $(OCC_SO) $(LINK_SO)
 
@@ -80,21 +79,19 @@ occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(synopsis) link_cxx --output=$@ $^
 
+%.d:	%.cc %.hh
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(DEPFLAGS) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : %.cc
+	@echo compiling $(@F)
 	$(CXX)  $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
 
 # This compiles the parser files with optimisation
 $(SYN_OBJ): %.o : %.cc
+	@echo compiling $(@F)
 	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include $(SYN_FLAGS) $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
-
-# This compiles DEBUG versions of the OCC files in the parent dir
-$(OCC_GOBJ): %.go : %.cc
-	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(DEBUG) -c -o $@ $<
-
-# This compiles DEBUG versions of the object files with .go suffix
-$(SYN_GOBJ): %.go : %.cc
-	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include $(SYN_FLAGS) $(CXXFLAGS) $(DEBUG) -c -o $@ $<
 
 # Compile C++ .hh files
 $(HDR_SYN): %.syn: %
@@ -130,15 +127,11 @@ ifneq ($(GC_LIB),)
 endif
 	ar rcs $@ $(OCC_OBJ)
 
-# Compile a DEBUG archive of the OCC files
-opencxx.ga :  $(GC_LIB) $(OCC_GOBJ)
-ifneq ($(GC_LIB),)
-	cp $(GC_LIB) $@
-endif
-	ar rcs $@ $(OCC_GOBJ)
-
 clean :
-	rm -f *~ syn/*.o syn/*.go occ/*.o occ/*.go \
-        *.dll *.so *core opencxx.a opencxx.ga \
-        occ.gdb occ.so link.so occ.dll link.dll  \
-	occ/*.o occ/*.go *.pyc *.pyo .deps.* base_lib
+	rm -f *~ syn/*.o occ/*.o syn/*.d occ/*.d \
+        *.dll *.so *core opencxx.a \
+	*.pyc *.pyo base_lib
+
+ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
+-include $(DEP)
+endif
