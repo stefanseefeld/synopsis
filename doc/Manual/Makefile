@@ -28,6 +28,10 @@ CXXFILES	:= synopsis builder type ast dict decoder swalker dumper
 CXXSOURCES	:= $(patsubst %,$(cxxpath)/%.hh,$(CXXFILES))
 CXXSYNS		:= $(patsubst $(bpath)/%.hh,$(spath)/%.csyn,$(CXXSOURCES))
 
+CXXCCFILES	:= $(CXXFILES) occ link
+CXXCCSOURCES	:= $(patsubst %,$(cxxpath)/%.cc,$(CXXCCFILES))
+CXXCCSYNS	:= $(patsubst $(bpath)/%.cc,$(spath)/%.ccsyn,$(CXXCCSOURCES))
+
 all:	manual
 
 manual:   all.syn
@@ -39,7 +43,7 @@ manual-doxygen:   all.syn
 all.syn:	$(PYSYNS) c++.syn
 	$(synopsis) -Wc,linker=All -o all.syn $^
 
-c++.syn:	$(CXXSYNS)
+c++.syn:	$(CXXSYNS) $(CXXCCSYNS)
 	$(synopsis) -Wc,linker=C++Final -o c++.syn $^
 
 # Compile Python files
@@ -52,10 +56,17 @@ $(spath)/Synopsis/synopsis.syn: $(bpath)/Synopsis/synopsis
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
 
-# Compile C++ files
+# Compile C++ .hh files
 $(spath)/%.csyn: $(bpath)/%.hh
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -I$(PYTHON_PREFIX)/include -DPYTHON_INCLUDE="$(PYTHON_INCLUDE)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
+
+# Compile C++ .cc files
+$(spath)/%.ccsyn: $(bpath)/%.cc
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	$(synopsis) -I$(PYTHON_PREFIX)/include -DPYTHON_INCLUDE="$(PYTHON_INCLUDE)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?),-I$(cxxpath)/.. -o $@ $?
+
+# Create links (only) for C+ .cc files
 
 clean:
 	rm -rf $(spath) *.pyc *.pyo

@@ -197,8 +197,13 @@ AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nsty
 	    break;
 	case NamespaceAnon:
 	    type_str = "module";
-	    // name is the filename. Wrap it in {}'s
-	    name = "{"+name+"}";
+	    {	// name is the filename. Wrap it in {}'s
+		// only keep after last /
+		size_t slash_at = name.rfind('/');
+		if (slash_at != std::string::npos)
+		    name.erase(0, slash_at+1);
+		name = "{"+name+"}";
+	    }
 	    break;
 	case NamespaceUnique:
 	    type_str = "local";

@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.8 2001/06/06 07:51:45 chalky Exp $
+ * $Id: link.cc,v 1.9 2001/06/06 13:28:50 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,10 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.9  2001/06/06 13:28:50  chalky
+ * Support the C++ files in the RefManual, highlighted, linked, documented and
+ * all!
+ *
  * Revision 1.8  2001/06/06 07:51:45  chalky
  * Fixes and moving towards SXR
  *
@@ -129,6 +133,8 @@ namespace {
     const char* output_filename = 0;
     //. Filename of the links file
     const char* links_filename = 0;
+    //. Scope to prepend to links before to find in TOC
+    const char* links_scope = 0;
     //. A list of TOC's to load
     std::vector<const char*> toc_filenames;
     //. True if should append to output file. Note that this only works if the
@@ -289,7 +295,8 @@ namespace {
 	std::vector<const char*>::iterator iter = toc_filenames.begin();
 	while (iter != toc_filenames.end()) {
 	    const char* toc_filename = *iter++;
-	    if (char* pipe = strchr(toc_filename, '|')) {
+	    char* pipe = std::strchr(toc_filename, '|');
+	    if (pipe) {
 		strcpy(buf[2], pipe+1);
 		url_len = strlen(pipe+1);
 		*pipe = 0;
@@ -308,6 +315,12 @@ namespace {
 			memmove(s+1, s+4, strlen(s+4)+1);
 		    }
 		}
+		// We cheat here and exclude lines that dont have
+		// 'links_scope' at the start, and then chop it from the ones
+		// that do
+		if (strncmp(buf[0], links_scope, strlen(links_scope)))
+		    continue;
+		memmove(buf[0], buf[0] + strlen(links_scope), strlen(buf[0]) - strlen(links_scope) + 1);
 		// Store in toc map
 		toc[buf[0]] = buf[2];
 	    }
@@ -437,8 +450,8 @@ extern "C" {
 	PyObject *py_tocs, *py_file;
 
 	if (!PyArg_ParseTuple(
-		args, "Osss",
-		&py_tocs, &input_filename, &output_filename, &links_filename
+		args, "Ossss",
+		&py_tocs, &input_filename, &output_filename, &links_filename, &links_scope
 	    )) return NULL;
 
 	// Extract TOC array
@@ -453,6 +466,7 @@ extern "C" {
 	if (!(input_filename)) return NULL;
 	if (!(output_filename)) return NULL;
 	if (!(links_filename)) return NULL;
+	if (!(links_scope)) return NULL;
 	// Do stuff
 	try {
 	    read_links();
