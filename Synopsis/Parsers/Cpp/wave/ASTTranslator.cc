@@ -20,7 +20,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_raw_filename(filename),
     my_base_path(base_path),
     my_main_file_only(main_file_only),
-    my_active(true),
+    my_mask_counter(0),
     my_verbose(v), my_debug(d) 
 {
   Trace trace("ASTTranslator::ASTTranslator");
@@ -34,7 +34,7 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
 						  std::vector<Container> const &arguments) 
 {
   Trace trace("ASTTranslator::expand_function_like_macro");
-  if (!my_active) return;
+  if (my_mask_counter) return;
   std::cout << macrocall.get_position() << ": "
 	    << macrocall.get_value() << "(";
 
@@ -53,7 +53,7 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
 						Token const &macrocall)
 {
   Trace trace("ASTTranslator::expand_object_like_macro");
-  if (!my_active) return;
+  if (my_mask_counter) return;
   std::cout << macrocall.get_position() << ": "
 	    << macrocall.get_value() << std::endl;
 }
@@ -61,7 +61,7 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
 void ASTTranslator::expanded_macro(Container const &result)
 {
   Trace trace("ASTTranslator::expand_macro");
-  if (!my_active) return;
+  if (my_mask_counter) return;
   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
  
@@ -76,7 +76,11 @@ void ASTTranslator::opened_include_file(std::string const &filename,
 					bool is_system_include)
 {
   Trace trace("ASTTranslator::opened_include_file");
-  if (!my_active) return;
+  if (my_mask_counter)
+  {
+    ++my_mask_counter;
+    return;
+  }
   AST::SourceFile sf = lookup_source_file(filename, false);
 
   AST::Include include = my_ast_kit.create_include(sf, filename, false, false);
@@ -89,15 +93,15 @@ void ASTTranslator::opened_include_file(std::string const &filename,
   if (my_main_file_only || 
       (my_base_path.size() && 
        abs_filename.substr(0, my_base_path.size()) != my_base_path))
-    my_active = false;
+    ++my_mask_counter;
 }
 
 void ASTTranslator::returning_from_include_file()
 {
   Trace trace("ASTTranslator::returning_from_include_file");
-  my_file_stack.pop();
-  // This is correct as we keep at most one level of masked files on the stack.
-  my_active = true;
+  if (my_mask_counter < 2) my_file_stack.pop();
+  // if the file was masked, decrement the counter
+  if (my_mask_counter) --my_mask_counter;
 }
 
 AST::SourceFile ASTTranslator::lookup_source_file(std::string const &filename,
