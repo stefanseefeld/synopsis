@@ -37,9 +37,9 @@
 #include    <cstdlib>
 #include    <cassert>
 
-#include    "ctdemo.h"
-#include    "ctool.h"
-#include    "PrintTraversal.h"
+#include    <ctool/ctdemo.h>
+#include    <ctool/ctool.h>
+#include    <ctool/PrintTraversal.h>
 
 #ifdef	WINDOWS
 #include "ctool/StdAfx.h"

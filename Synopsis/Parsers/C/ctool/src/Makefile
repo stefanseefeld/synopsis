@@ -1,214 +1,94 @@
-###############################################################################
+# $Id: Makefile,v 1.5 2003/08/19 04:52:58 stefan Exp $
 #
-#	cTool Makefile
+# This source file is a part of the ctool Project.
+# Copyright (C) 2003 Stefan Seefeld
 #
-
-CC     = gcc
-CPLUS  = g++
-AR     = ar
-RANLIB = ranlib
-FLEX   = flex 
-FLEXFLAGS =
-BISON   = bison 
-#BISON_V = -v
-BISON_V =
-
-# For unix boxes, use these.
-RM = rm -f
-MV = mv
-FLEXDFLT = lex.yy.c
-#CT_TARG = ctdemo
-TG_TARG = tg
-CPP_PATH =/lib/cpp
-
-# For DOS boxes, you want these.
-#RM = del
-#MV = rename
-#FLEXDFLT = lexyy.c
-#CT_TARG = ctdemo.exe
-#TG_TARG = tg.exe
-#CPP_PATH =/usr/local/bin/cpp.exe
-
-# MacOs X needs these changes
-CC     = cc
-CPLUS  = c++
-CPP_PATH =/usr/bin/cpp
-
-CTOOLFLAGS = \
-    -DUSE_GCC_4_CPP \
-    -DDEBUG
-
-# For easy cut and paste in CTOOLFLAGS
-POSSIBLE_FLAGS = \
-    -DUSE_CPP_4_CPP \
-    -DUSE_CAT_4_CPP \
-    -DUSE_GCC_4_CPP \
-    -DDEBUG
-
-LIBS = 
-LIBSLOC=
-
-###############################################################################
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
 #
-#	Source files and directories
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Library General Public License for more details.
 #
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the
+# Free Software Foundation, Inc., 675 Mass Ave, Cambridge,
+# MA 02139, USA.
 
-#DEMO_C_MAIN = ctdemo.cpp
-#DEMO_C_OBJ = ctdemo.o
+SHELL		:= /bin/sh
 
-LIBCT_FILES = \
-    context.cpp \
-    decl.cpp \
-    express.cpp \
-    parseenv.cpp \
-    project.cpp \
-    stemnt.cpp \
-    symbol.cpp \
-    token.cpp \
-    location.cpp	
+include ../local.mk
 
-LIBCT_OBJS = \
-    context.o \
-    decl.o \
-    express.o \
-    parseenv.o \
-    project.o \
-    stemnt.o \
-    symbol.o \
-    token.o \
-    location.o
+CPP_PATH:=/usr/bin/cpp
 
-OTHER_FILES = lexer.o gram.o 
+CTOOLFLAGS:= -D USE_GCC_4_CPP -D DEBUG
 
-LEX_FILES = lexer.l
+CPPFLAGS+= -D LIB_CPP=\"$(CPP_PATH)\" $(CTOOLFLAGS)
+CXXFLAGS+= -g -Wall
 
-YACC_FILES = gram.y
+SRC	:= lexer.cpp gram.cpp context.cpp decl.cpp express.cpp parseenv.cpp \
+           project.cpp stemnt.cpp symbol.cpp token.cpp location.cpp \
+           PrintTraversal.cpp
+OBJ	:= $(patsubst %.cpp, %.o, $(SRC))
+DEP	:= $(patsubst %.cpp, %.d, $(SRC))
 
-###############################################################################
-#
-#	Object files
-#
+vpath %.h  $(top_abs_builddir)/include $(top_abs_srcdir)/include
+vpath %.cpp  $(srcdir)
 
-OBJFILES = \
-	$(LIBCT_OBJS) $(OTHER_FILES) 
+.FORCE:
+.PHONY: depend install clean distclean maintainer-clean dist
 
-ALL_OBJS = \
-	$(DEMO_C_OBJ) $(OBJFILES) 
+all: ../lib/libctool.a ../lib/libctool.so
 
-###############################################################################
-#
-#	Other variables
-#
-
-INCLUDES= -I../include
-CPPFLAGS = -DLIB_CPP=\"$(CPP_PATH)\"
-
-GCCFLAGS = -g -Wall
-#GCCFLAGS = -O -Wall
-
-DEFINES=
-CFLAGS=	$(GCCFLAGS) $(INCLUDES) $(DEBUGFLAGS) $(CTOOLFLAGS) $(CPPFLAGS)
-CPLUSFLAGS= $(CFLAGS) 
-
-
-#PURE_OPTS= -windows=no
-
-###############################################################################
-#
-# For AIX (without gcc)
-#
-# CC= xlc
-#
-# CFLAGS += -D_ALL_SOURCE
-
-###############################################################################
-#
-#	General compilation rules
-#
-
-.SUFFIXES:	.C .d .cpp
-
-.C.o:
-	$(CPLUS) -c $(CPLUSFLAGS) $<
-
-.cpp.o:
-	$(CPLUS) -c $(CPLUSFLAGS) $<
-
-.c.o:
-	$(CC) -c $(CFLAGS) $<
-
-###############################################################################
-
-.PHONY: all fresh tidy noexes clean release depend setup
-
-all: libct.a
-
-$(CT_TARG): gram.h $(ALL_OBJS)
-	$(CPLUS) $(CFLAGS) -o $(CT_TARG) $(ALL_OBJS) $(LIBSLOC) $(LIBS)
-
-libct.a: $(OBJFILES)
-	$(RM) $@
-	$(AR) cr $@ $(OBJFILES) 
+../lib/libctool.a: $(OBJ)
+	@echo creating $(@F)
+	$(AR) cr $@ $(OBJ)
 	$(RANLIB) $@
 
-trigraph.c: trigraph.l
-	$(FLEX) trigraph.l
-	$(RM) trigraph.c
-	$(MV) $(FLEXDFLT) trigraph.c
+../lib/libctool.so: $(OBJ)
+	@echo linking $(@F)
+	$(CXX) $(SOFLAGS) -o $@ $(OBJ) $(LIBS)
 
-$(TG_TARG): trigraph.c
-	$(CC) -O -o $(TG_TARG) trigraph.c -ll
+depend:	$(DEP)
 
-fresh:
-	$(MAKE) clean
-	$(MAKE) $(CT_TARG)
+install: all
 
-tidy:
-	$(RM) *.o
-	$(RM) core
+uninstall:
 
-noexes: tidy
-	$(RM) $(CT_TARG)
-	$(RM) libct.a
+clean:
+	rm -rf ../lib/libctool.a ../lib/libctool.so
+	rm lexer.cpp gram.cpp gram.h $(OBJ) $(DEP)
 
-clean: noexes
-	$(RM) lexer.cpp
-	$(RM) gram.cpp
-	$(RM) gram.h
+distclean:	clean
+	rm -f Makefile
 
-release: noexes
-	cd ../regression; $(MAKE) pack
+maintainer-clean: distclean
 
-###############################################################################
-#
-#	Special compilation rules
-#
+%.o:	%.cpp
+	@echo compiling $(@F)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.d:	%.cpp %.h
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
 
 lexer.cpp: lexer.l gram.h
-	$(FLEX) $(FLEXFLAGS) $<
-	$(RM) lexer.cpp
-	$(MV) $(FLEXDFLT) lexer.cpp
-
-lexer.o: lexer.cpp
-	$(CPLUS) -c $(CFLAGS) $<
-
-gram.o: gram.cpp
-	$(CPLUS) -c $(CFLAGS) $<
+	@echo generating lexer.cpp
+	$(LEX) $<
+	mv lex.yy.c lexer.cpp
 
 gram.cpp gram.h:	gram.y
-	$(BISON) $(BISON_V) -d -b gram -o gram.cpp $<
-	$(MV) gram.cpp.h gram.h
+	@echo generating gram.cpp
+	$(YACC) -d -b gram -o gram.cpp $<
+	mv gram.hpp gram.h
 
+ifneq (,$(findstring depend, $(MAKECMDGOALS)))
+$(DEP): %.d:	.FORCE
+endif
 
-###############################################################################
-#
-#	Dependencies
-#
-
-depend:	$(C_FILES) $(CPLUS_FILES) $(LEX_FILES) $(YACC_FILES)
-	makedepend $(DEFINES) $(INCLUDES) $^
-
-###############################################################################
-
-# DO NOT DELETE THIS LINE -- make depend depends on it.
-
+ifeq (,$(filter $(MAKECMDGOALS), depend doc clean distclean maintainer-clean))
+-include $(DEP)
+endif
