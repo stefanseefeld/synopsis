@@ -33,10 +33,10 @@
 #include <cstring>
 #include <cassert>
 
-#include "stemnt.h"
-#include "symbol.h"
-#include "decl.h"
-#include "project.h"
+#include <ctool/stemnt.h>
+#include <ctool/symbol.h>
+#include <ctool/decl.h>
+#include <ctool/project.h>
 
 #include "gram.h"
 

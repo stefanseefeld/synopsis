@@ -25,9 +25,9 @@
 
 #include <cstdio>
 
-#include "config.h"
-#include "decl.h"
-#include "express.h"
+#include <ctool/config.h>
+#include <ctool/decl.h>
+#include <ctool/express.h>
 
 /**************************************************************************/
 

@@ -35,12 +35,12 @@
 #include <errno.h>
 #include <setjmp.h>
 
-#include "lexer.h"
-#include "symbol.h"
-#include "token.h"
-#include "stemnt.h"
-#include "location.h"
-#include "project.h"
+#include <ctool/lexer.h>
+#include <ctool/symbol.h>
+#include <ctool/token.h>
+#include <ctool/stemnt.h>
+#include <ctool/location.h>
+#include <ctool/project.h>
 
 extern int errno;
 int yylex(YYSTYPE *lvalp);

@@ -38,13 +38,13 @@
 #include <vector>
 #include <cassert>
 
-#include "symbol.h"
-#include "callback.h"
-#include "location.h"
+#include <ctool/symbol.h>
+#include <ctool/callback.h>
+#include <ctool/location.h>
 
-#include "dup.h"
+#include <ctool/dup.h>
 
-#include "Traversal.h"
+#include <ctool/Traversal.h>
 
 class Constant;
 class Expression;

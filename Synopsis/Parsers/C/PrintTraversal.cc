@@ -29,13 +29,13 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#include "decl.h"
-#include "stemnt.h"
-#include "project.h"
-#include "express.h"
-#include "symbol.h"
+#include <ctool/decl.h>
+#include <ctool/stemnt.h>
+#include <ctool/project.h>
+#include <ctool/express.h>
+#include <ctool/symbol.h>
 
-#include "PrintTraversal.h"
+#include <ctool/PrintTraversal.h>
 
 void PrintTraversal::traverse_base(BaseType *type)
 {

@@ -36,8 +36,8 @@
 #include <cstdio>
 #include <string>
 
-#include "config.h"
-#include "decl.h"
+#include <ctool/config.h>
+#include <ctool/decl.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 

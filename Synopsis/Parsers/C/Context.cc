@@ -32,14 +32,14 @@
 
 #include <iostream>
 
-#include "config.h"
+#include <ctool/config.h>
 
-#include "parseenv.h"
-#include "context.h"
-#include "symbol.h"
-#include "project.h"
-#include "decl.h"
-#include "stemnt.h"
+#include <ctool/parseenv.h>
+#include <ctool/context.h>
+#include <ctool/symbol.h>
+#include <ctool/project.h>
+#include <ctool/decl.h>
+#include <ctool/stemnt.h>
 
 //#define STATISTICS
 

@@ -34,7 +34,7 @@
 #ifndef    TOKEN_H
 #define    TOKEN_H
 
-#include  "config.h"
+#include  <ctool/config.h>
 
 
 /*  ###############################################################  */

@@ -32,7 +32,7 @@
 
 #include <sys/types.h>
 
-#include "config.h"
+#include <ctool/config.h>
 
 /* HPUX -  */
 

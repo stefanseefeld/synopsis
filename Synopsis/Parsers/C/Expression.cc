@@ -35,12 +35,12 @@
 #include <cassert>
 #include <stdlib.h>
 
-#include "config.h"
-#include "express.h"
-#include "decl.h"
+#include <ctool/config.h>
+#include <ctool/express.h>
+#include <ctool/decl.h>
 
 #include "gram.h"
-#include "token.h"
+#include <ctool/token.h>
 
 //#define SHOW_TYPES
 
