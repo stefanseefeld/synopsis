@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.8 2001/05/25 13:45:49 stefan Exp $
+# $Id: Comments.py,v 1.9 2001/06/08 04:50:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.9  2001/06/08 04:50:13  stefan
+# add grouping support
+#
 # Revision 1.8  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -157,10 +160,9 @@ class QtComments (CommentProcessor):
 	    return
 	comment.set_text('')
 
-class Dummies (CommentProcessor):
-    """A class that deals with dummy declarations and their comments. This
-    class just removes them. Since it has to modify the AST, it creates a new
-    AST which can then be copied over the old."""
+class Transformer (CommentProcessor):
+    """A class that creates a new AST from an old one. This is a helper base for
+    more specialized classes that manipulate the AST based on the comments in the nodes"""
     def processAll(self, declarations):
 	"""Overrides the default processAll() to setup the stack"""
 	self.__scopestack = []
@@ -183,6 +185,9 @@ class Dummies (CommentProcessor):
 	"""Returns the current scope: a list of declarations"""
 	return self.__currscope
 	
+class Dummies (Transformer):
+    """A class that deals with dummy declarations and their comments. This
+    class just removes them."""
     def visitDeclaration(self, decl):
 	"""Checks for dummy declarations"""
 	if decl.type() == "dummy": return
@@ -194,14 +199,14 @@ class Dummies (CommentProcessor):
 	list. Such as dummy declarations :)"""
 	self.push()
 	for decl in scope.declarations(): decl.accept(self)
-	scope.declarations()[:] = self.__currscope
+	scope.declarations()[:] = self.currscope()
 	self.pop(scope)
     def visitEnum(self, enum):
 	"""Does the same as visitScope, but for the enum's list of
 	enumerators"""
 	self.push()
 	for enumor in enum.enumerators(): enumor.accept(self)
-	enum.enumerators()[:] = self.__currscope
+	enum.enumerators()[:] = self.currscope()
 	self.pop(enum)
     def visitEnumerator(self, enumor):
 	"""Removes dummy enumerators"""
@@ -261,7 +266,59 @@ class Previous (Dummies):
 	self.checkPrevious(enumor)
 	if len(enumor.name()): self.add(enumor)
 
-	    
+class Grouper (Transformer):
+    """A class that detects grouping tags and moves the enclosed nodes into a subnode (a 'Group')"""
+    __re_open = r'^[ \t]*//\.{ ?(.*)$'
+    __re_close = r'^[ \t]*//\.} ?(.*)$'
+    def __init__(self):
+	self.re_open = re.compile(Grouper.__re_open, re.M)
+	self.re_close = re.compile(Grouper.__re_close, re.M)
+        self.__groups = []
+    def visitDeclaration(self, decl):
+	"""Checks for grouping tags.
+        If an opening tag is found in the middle of a comment, a new Group is generated, the preceeding
+        comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
+        """
+        comments = []
+        for c in decl.comments():
+            if self.re_open.findall(c.text()):
+                print "opening tag found"
+                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", "blabla")
+                group.comments()[:] = comments
+                comments = []
+                self.push()
+                self.__groups.append(group)
+            elif self.re_close.findall(c.text()):
+                print "closing tag found"
+                group = self.__groups.pop()
+                group.declarations()[:] = self.currscope()
+                self.pop(group)
+            else: comments.append(c)
+        decl.comments()[:] = comments
+	self.add(decl)
+    def visitScope(self, scope):
+	"""Visits all children of the scope in a new scope. The value of
+	currscope() at the end of the list is used to replace scope's list of
+	declarations - hence you can remove (or insert) declarations from the
+	list. Such as dummy declarations :)"""
+        print "enter scope", scope.name()
+	self.push()
+	for decl in scope.declarations(): decl.accept(self)
+	scope.declarations()[:] = self.currscope()
+	self.pop(scope)
+        print "leave scope", scope.name()
+    def visitEnum(self, enum):
+	"""Does the same as visitScope, but for the enum's list of
+	enumerators"""
+	self.push()
+	for enumor in enum.enumerators(): enumor.accept(self)
+	enum.enumerators()[:] = self.currscope()
+	self.pop(enum)
+    def visitEnumerator(self, enumor):
+	"""Removes dummy enumerators"""
+	if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
+	if not len(enumor.name()): return # workaround.
+	self.add(enumor)
 
 processors = {
     'ssd': SSDComments,
@@ -269,7 +326,9 @@ processors = {
     'qt': QtComments,
     'dummy': Dummies,
     'prev': Previous,
+    'group': Grouper,
 }
+
 def __parseArgs(args, config):
     """Parses the arguments and config object"""
     global processor_list

@@ -1,4 +1,4 @@
-/*$Id: GapBuffer.hh,v 1.2 2001/06/05 05:28:34 chalky Exp $
+/*$Id: GapBuffer.hh,v 1.3 2001/06/08 04:50:13 stefan Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -76,16 +76,21 @@ class GapBuffer : private std::vector<T>
 public:
   GapBuffer() : curs(0), gapbegin(0), gapend(0) {}
   size_type size() { compact(); return gbegin() - begin();}
+  //. these are methods to control the cursor position
+  //.{
+  //. move the cursor one position forward
   void forward()
     {
       if (curs == gapbegin && gend() != end()) curs += gap();
       else if (cursor() < end()) curs++;
     }
+  //. move the cursor one position back
   void backward()
     {
       if (curs == gapend) curs -= gap();
       else if (cursor() > begin()) curs--;
     }
+  //. shift the cursor d positions
   void shift(size_type d)
     {
       size_type tmp = curs + d;
@@ -93,8 +98,11 @@ public:
       else if (d < 0) curs += d - gap();
       else curs += d + gap();
     }
+  //. return the current position
   size_type position() { return curs > gapend ? curs - gap() : curs;}
+  //. set the current position
   void position(size_type p) { shift(p - curs);}
+  //.}
   void insert(value_type u)
     {
       editing();
