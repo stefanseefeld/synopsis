@@ -24,7 +24,6 @@
 #include <map>
 
 #include <occ/PTree.hh>
-#include <occ/Parser.hh>
 #include <occ/Buffer.hh>
 
 namespace 
@@ -59,8 +58,8 @@ struct LinkStore::Private
     //. The filter
     FileFilter* filter;
 
-    //. The Parser object
-    Parser* parser;
+    //. The Buffer object
+    Buffer *buffer;
 
     //. The SWalker object
     SWalker* walker;
@@ -92,7 +91,7 @@ LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
     m->filter = filter;
     m->walker = swalker;
     m->buffer_start = swalker->buffer()->ptr();
-    m->parser = swalker->parser();
+    m->buffer = swalker->buffer();
 
     // Check size of array here to prevent later segfaults
     if (sizeof(context_names)/sizeof(context_names[0]) != NumContext)
@@ -359,7 +358,7 @@ void LinkStore::long_span(PTree::Node *node, const char* desc)
 
     // Find right edge
     std::string filename;
-    unsigned long right_line = m->parser->origin(node->end(), filename);
+    unsigned long right_line = m->buffer->origin(node->end(), filename);
 
     if (right_line == left_line)
         // Same line, so normal output

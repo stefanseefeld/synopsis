@@ -13,13 +13,13 @@
 
 class Environment;
 class Class;
-class Parser;
+class Buffer;
 
 class Walker : public PTree::Visitor
 {
 public:
-  Walker(Parser*);
-  Walker(Parser*, Environment*);
+  Walker(Buffer *);
+  Walker(Buffer *, Environment *);
   Walker(Environment*);
   Walker(Walker*);
 
@@ -147,7 +147,7 @@ protected:
   
 private:
   Class* LookupBaseMetaclass(PTree::Node *, PTree::Node *, bool);
-  
+  static void show_message_head(const char *position);
 public:
   PTree::Node *translate_new_declarator(PTree::Node *decl);
   PTree::Node *translate_new_declarator2(PTree::Node *decl);
@@ -160,8 +160,8 @@ public:
   static void SetLeafComments(PTree::Node *, PTree::Node *);
   static PTree::Node *NthDeclarator(PTree::Node *, int&);
   
-  void ErrorMessage(const char*, PTree::Node *, PTree::Node *);
-  void WarningMessage(const char*, PTree::Node *, PTree::Node *);
+  static void error_message(const char *msg, PTree::Node *name, PTree::Node *where);
+  static void warning_message(const char *msg, PTree::Node *name, PTree::Node *where);
   
   static void InaccurateErrorMessage(const char*, PTree::Node *, PTree::Node *);
   static void InaccurateWarningMessage(const char*, PTree::Node *, PTree::Node *);
@@ -169,20 +169,20 @@ public:
   static void ChangeDefaultMetaclass(const char*);
   
 public:
-  Parser* GetParser() { return parser; }
-  Environment *GetEnvironment() { return env;}
+  Buffer *buffer() { return my_buffer;}
+  Environment *environment() { return my_environment;}
   
 protected:
-  Environment* env;
-  Parser* parser;
+  Buffer      *my_buffer;
+  Environment *my_environment;
   PTree::Node *my_result;
   
 public:
-  static const char* argument_name;
+  static const char *argument_name;
   
 private:
-  static Parser* default_parser;
-  static const char* default_metaclass;
+  static Buffer     *default_buffer;
+  static const char *default_metaclass;
 };
 
 #endif

@@ -6,17 +6,17 @@
 // see the file COPYING for details.
 //
 #include <PTree.hh>
-#include <PTree/ConstEvaluator.hh>
-#include <PTree/Writer.hh>
 #include <PTree/Display.hh>
+#include <SymbolTable/Scopes.hh>
+#include <SymbolTable/ConstEvaluator.hh>
 #include "Parser.hh"
 #include "Lexer.hh"
 #include <iostream>
 
-const int MaxErrors = 10;
-
 namespace
 {
+
+const int max_errors = 10;
 
 PTree::Node *wrap_comments(const Lexer::Comments &c)
 {
@@ -125,14 +125,14 @@ void set_leaf_comments(PTree::Node *node, PTree::Node *comments)
 struct Parser::ScopeGuard
 {
   //. push a new scope onto the stack, assuming ownership
-  ScopeGuard(Scopes &s, PTree::Scope *scope) : stack(s) 
+  ScopeGuard(Scopes &s, SymbolTable::Scope *scope) : stack(s) 
   {
     stack.push(scope);
   }
   //. pop a scope from the stack
   ~ScopeGuard() 
   {
-    PTree::Scope *top = stack.top();
+    SymbolTable::Scope *top = stack.top();
     stack.pop();
     top->unref();
   }
@@ -142,79 +142,33 @@ struct Parser::ScopeGuard
 Parser::Parser(Lexer *lexer, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
-    my_nerrors(0),
     my_comments(0),
     my_in_template_decl(false)
 {
-  my_scopes.push(new PTree::Scope());
+  my_scopes.push(new SymbolTable::Scope());
 }
 
 Parser::~Parser()
 {
-  PTree::Scope *top = my_scopes.top();
+  SymbolTable::Scope *top = my_scopes.top();
   my_scopes.pop();
   top->unref();
 }
 
-bool Parser::error_message(const char* msg, PTree::Node *name, PTree::Node *where)
+bool Parser::mark_error()
 {
-  if(where != 0)
-  {
-    PTree::Node *head = PTree::ca_ar(where);
-    if(head) show_message_head(head->position());
-  }
-
-  std::cerr << msg;
-  if(name)
-  {
-    PTree::Writer writer(std::cerr);
-    writer.write(name);
-    std::cerr << '\n';
-    return ++my_nerrors < MaxErrors;
-  }
-}
-
-void Parser::warning_message(const char *msg, PTree::Node *name, PTree::Node *where)
-{
-  if(where)
-  {
-    PTree::Node *head = PTree::ca_ar(where);
-    if(head)
-      show_message_head(head->position());
-  }
-
-  std::cerr << "warning: " << msg;
-  if(name)
-  {
-    PTree::Writer writer(std::cerr);
-    writer.write(name);
-  }
-  std::cerr << '\n';
-}
-
-bool Parser::syntax_error()
-{
-  Token t, t2;
-  int i;
-
-  my_lexer->look_ahead(0, t);
+  Token t1, t2;
+  my_lexer->look_ahead(0, t1);
   my_lexer->look_ahead(1, t2);
 
-  show_message_head(t.ptr);
-  std::cerr << "parse error before `";
-  if(t.type != '\0')
-    for(i = 0; i < t.length; ++i)
-      std::cerr << t.ptr[i];
+  std::string filename;
+  unsigned long line = my_lexer->origin(t1.ptr, filename);
 
-  if(t2.type != '\0')
-  {
-    std::cerr << ' ';
-    for(i = 0; i < t2.length; ++i)
-      std::cerr << t2.ptr[i];
-  }
-
-  std::cerr << "'\n";
-  return ++my_nerrors < MaxErrors;
+  const char *end = t1.ptr;
+  if(t2.type != '\0') end = t2.ptr + t2.length;
+  else if(t1.type != '\0') end = t1.ptr + t1.length;
+  my_errors.push_back(Error(filename, line, std::string(t1.ptr, end - t1.ptr)));
+  return my_errors.size() < max_errors;
 }
 
 unsigned long Parser::origin(const char *ptr,
@@ -230,22 +184,27 @@ void Parser::show_message_head(const char *pos)
   std::cerr << filename << ':' << line << ": ";
 }
 
-bool Parser::parse(PTree::Node *&def)
+PTree::Node *Parser::parse()
 {
+  PTree::Node *statements = 0;
   while(my_lexer->look_ahead(0) != '\0')
-    if(definition(def)) return true;
+  {
+    PTree::Node *def;
+    if(definition(def))
+    {
+      statements = PTree::nconc(statements, PTree::list(def));
+    }
     else
     {
-      Token tk;
-      if(!syntax_error()) return false;		// too many errors
+      if(!mark_error()) return 0; // too many errors
       skip_to(';');
+      Token tk;
       my_lexer->get_token(tk);	// ignore ';'
     }
-
+  }
   // Retrieve trailing comments
-  def = wrap_comments(my_lexer->get_comments());
-  if (def) return true;
-  return false;
+  (void) PTree::nconc(PTree::last(statements)->car(), wrap_comments(my_lexer->get_comments()));
+  return statements;
 }
 
 /*
@@ -284,7 +243,11 @@ bool Parser::definition(PTree::Node *&p)
   else if(t == Token::NAMESPACE && my_lexer->look_ahead(2) == '=')
     res = namespace_alias(p);
   else if(t == Token::NAMESPACE)
-    res = namespace_spec(p);
+  {
+    PTree::NamespaceSpec *spec;
+    res = namespace_spec(spec);
+    p = spec;
+  }
   else if(t == Token::USING)
     res = using_(p);
   else 
@@ -525,32 +488,36 @@ bool Parser::linkage_spec(PTree::Node *&spec)
   : NAMESPACE Identifier definition
   | NAMESPACE { Identifier } linkage.body
 */
-bool Parser::namespace_spec(PTree::Node *&spec)
+bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
 {
   Token tk1, tk2;
-  PTree::Node *name;
-  PTree::Node *body;
 
   if(my_lexer->get_token(tk1) != Token::NAMESPACE) return false;
 
   PTree::Node *comments = wrap_comments(my_lexer->get_comments());
 
+  PTree::Node *name;
   if(my_lexer->look_ahead(0) == '{') name = 0;
   else
     if(my_lexer->get_token(tk2) == Token::Identifier)
       name = new PTree::Atom(tk2);
     else return false;
 
+  spec = new PTree::NamespaceSpec(new PTree::AtomNAMESPACE(tk1),
+				  PTree::list(name, 0));
+  spec->set_comments(comments);
+
+  PTree::Node *body;
   if(my_lexer->look_ahead(0) == '{')
   {
+    ScopeGuard guard(my_scopes, 
+		     new SymbolTable::Namespace(spec, my_scopes.top()));
     if(!linkage_body(body)) return false;
   }
   else if(!definition(body)) return false;
 
-  PTree::NamespaceSpec *nspec;
-  spec = nspec = new PTree::NamespaceSpec(new PTree::AtomNAMESPACE(tk1),
-					  PTree::list(name, body));
-  nspec->set_comments(comments);
+  PTree::tail(spec, 2)->set_car(body);
+
   return true;
 }
 
@@ -652,7 +619,7 @@ bool Parser::linkage_body(PTree::Node *&body)
   {
     if(!definition(def))
     {
-      if(!syntax_error())
+      if(!mark_error())
 	return false;		// too many errors
 
       skip_to('}');
@@ -1864,7 +1831,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       if (expr)
       {
 	long size;
-	if (PTree::evaluate_const(expr, *my_scopes.top(), size))
+	if (SymbolTable::evaluate_const(expr, *my_scopes.top(), size))
 	  type_encode.array(size);
 	else 
 	  type_encode.array();
@@ -2484,7 +2451,7 @@ bool Parser::initialize_expr(PTree::Node *&exp)
     {
       if(!initialize_expr(e))
       {
-	if(!syntax_error()) return false; // too many errors
+	if(!mark_error()) return false; // too many errors
 
 	skip_to('}');
 	my_lexer->get_token(tk);
@@ -2503,7 +2470,7 @@ bool Parser::initialize_expr(PTree::Node *&exp)
       }
       else
       {
-	if(!syntax_error()) return false; // too many errors
+	if(!mark_error()) return false; // too many errors
 
 	skip_to('}');
 	my_lexer->get_token(tk);
@@ -2613,7 +2580,7 @@ bool Parser::enum_body(PTree::Node *&body)
       my_lexer->get_token(tk2);
       if(!expression(exp))
       {
-	if(!syntax_error()) return false; // too many errors
+	if(!mark_error()) return false; // too many errors
 
 	skip_to('}');
 	body = 0; // empty
@@ -2664,6 +2631,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   if(my_lexer->look_ahead(0) == '{')
   {
     encode.anonymous();
+    // FIXME: why is the absense of a name marked by a list(0, 0) ?
     spec = PTree::snoc(spec, PTree::list(0, 0));
   }
   else
@@ -2687,9 +2655,12 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   spec->set_encoded_name(encode);
   if (!my_in_template_decl) my_scopes.top()->declare(spec);
 
+  ScopeGuard guard(my_scopes, new SymbolTable::Class(spec, my_scopes.top()));
+
   if(!class_body(body)) return false;
 
   spec = PTree::snoc(spec, body);
+
   return true;
 }
 
@@ -2774,15 +2745,13 @@ bool Parser::class_body(PTree::Node *&body)
 
   if(my_lexer->get_token(tk) != '{') return false;
 
-  ScopeGuard guard(my_scopes, new PTree::NestedScope(my_scopes.top()));
-
   PTree::Node *ob = new PTree::Atom(tk);
   mems = 0;
   while(my_lexer->look_ahead(0) != '}')
   {
     if(!class_member(m))
     {
-      if(!syntax_error()) return false;	// too many errors
+      if(!mark_error()) return false;	// too many errors
 
       skip_to('}');
       my_lexer->get_token(tk);
@@ -2796,8 +2765,7 @@ bool Parser::class_body(PTree::Node *&body)
 
   my_lexer->get_token(tk);
   body = new PTree::ClassBody(ob, mems, 
-			      new PTree::CommentedAtom(tk, wrap_comments(my_lexer->get_comments())),
-			      my_scopes.top());
+			      new PTree::CommentedAtom(tk, wrap_comments(my_lexer->get_comments())));
   return true;
 }
 
@@ -4095,7 +4063,7 @@ bool Parser::compound_statement(PTree::Node *&body)
     PTree::Node *st;
     if(!statement(st))
     {
-      if(!syntax_error()) return false; // too many errors
+      if(!mark_error()) return false; // too many errors
       skip_to('}');
       my_lexer->get_token(cb);
       body = PTree::list(new PTree::Atom(ob), 0, new PTree::Atom(cb));

@@ -18,7 +18,6 @@ int main(int argc, char **argv)
   Buffer buffer(ifs.rdbuf());
   Lexer lexer(&buffer);
   Parser parser(&lexer);
-  PTree::Display display(ofs, true);
-  PTree::Node *node;
-  while (parser.parse(node)) display.display(node);
+  PTree::Node *node = parser.parse();
+  PTree::display(node, ofs, true);
 }

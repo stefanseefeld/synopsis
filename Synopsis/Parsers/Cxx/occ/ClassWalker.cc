@@ -118,7 +118,7 @@ PTree::Node *ClassWalker::GetAppendedPtree()
 
 PTree::Node *ClassWalker::translate_metaclass_decl(PTree::Node *decl)
 {
-  env->RecordMetaclassName(decl);
+  my_environment->RecordMetaclassName(decl);
   return 0;
 }
 
@@ -130,7 +130,7 @@ PTree::Node *ClassWalker::translate_class_spec(PTree::Node *spec, PTree::Node *u
     // the class body is given.
     PTree::Node *bases = PTree::third(class_def);
     PTree::Array* tspec_list = RecordMembers(class_def, bases, metaobject);
-    metaobject->TranslateClass(env);
+    metaobject->TranslateClass(my_environment);
     metaobject->TranslateClassHasFinished();
     if(metaobject->removed) return 0;
 
@@ -163,19 +163,14 @@ PTree::Node *ClassWalker::translate_template_instantiation(PTree::TemplateInstan
   if (metaobject && metaobject->AcceptTemplate())
   {
     TemplateClass* tmetaobj = (TemplateClass*)metaobject;
-    class_spec2 = tmetaobj->TranslateInstantiation(env, class_spec);
-    if (class_spec != class_spec2)
-      return class_spec2;
+    class_spec2 = tmetaobj->TranslateInstantiation(my_environment, class_spec);
+    if (class_spec != class_spec2) return class_spec2;
   }
-  else
-    class_spec2 = class_spec;
+  else class_spec2 = class_spec;
 
-  if(userkey == 0)
-    return inst_spec;
-  else if (class_spec == class_spec2)
-    return inst_spec;
-  else
-    return new PTree::TemplateInstantiation(class_spec);
+  if(userkey == 0) return inst_spec;
+  else if (class_spec == class_spec2) return inst_spec;
+  else return new PTree::TemplateInstantiation(class_spec);
 }
 
 PTree::Node *ClassWalker::ConstructClass(Class* metaobject)
@@ -221,17 +216,17 @@ PTree::Array* ClassWalker::RecordMembers(PTree::Node *class_def, PTree::Node *ba
 	PTree::Node *mem = rest->car();
 	switch(PTree::type_of(mem)){
 	case Token::ntTypedef :
-	    tspec = PTree::second(mem);
-	    tspec2 = translate_type_specifier(tspec);
-	    env->RecordTypedefName(PTree::third(mem));
-	    if(tspec != tspec2){
-		tspec_list->append(tspec);
-		tspec_list->append(tspec2);
-	    }
-
-	    break;
+	  tspec = PTree::second(mem);
+	  tspec2 = translate_type_specifier(tspec);
+	  my_environment->RecordTypedefName(PTree::third(mem));
+	  if(tspec != tspec2)
+	  {
+	    tspec_list->append(tspec);
+	    tspec_list->append(tspec2);
+	  }
+	  break;
 	case Token::ntMetaclassDecl :
-	    env->RecordMetaclassName(mem);
+	  my_environment->RecordMetaclassName(mem);
 	    break;
 	case Token::ntDeclaration :
 	    RecordMemberDeclaration(mem, tspec_list);
@@ -263,25 +258,26 @@ void ClassWalker::RecordMemberDeclaration(PTree::Node *mem,
   PTree::Node *tspec, *tspec2, *decls;
 
   tspec = PTree::second(mem);
-    tspec2 = translate_type_specifier(tspec);
-    decls = PTree::third(mem);
-    if(PTree::is_a(decls, Token::ntDeclarator))	// if it is a function
-	env->RecordDeclarator(decls);
-    else if(!decls->is_atom())		// not a null declaration.
-	while(decls != 0){
-	    PTree::Node *d = decls->car();
-	    if(PTree::is_a(d, Token::ntDeclarator))
-		env->RecordDeclarator(d);
+  tspec2 = translate_type_specifier(tspec);
+  decls = PTree::third(mem);
+  if(PTree::is_a(decls, Token::ntDeclarator))	// if it is a function
+    my_environment->RecordDeclarator(decls);
+  else if(!decls->is_atom())		// not a null declaration.
+    while(decls != 0)
+    {
+      PTree::Node *d = decls->car();
+      if(PTree::is_a(d, Token::ntDeclarator))
+	my_environment->RecordDeclarator(d);
 
-	    decls = decls->cdr();
-	    if(decls != 0)
-		decls = decls->cdr();
-	}
-
-    if(tspec != tspec2){
-	tspec_list->append(tspec);
-	tspec_list->append(tspec2);
+      decls = decls->cdr();
+      if(decls) decls = decls->cdr();
     }
+
+  if(tspec != tspec2)
+  {
+    tspec_list->append(tspec);
+    tspec_list->append(tspec2);
+  }
 }
 
 PTree::Node *ClassWalker::ConstructAccessSpecifier(int access)
@@ -313,7 +309,7 @@ PTree::Node *ClassWalker::ConstructMember(void* ptr)
 	// function implementation
 	if(m->body == 0){
 	    NameScope old_env;
-	    Environment* fenv = env->DontRecordDeclarator(m->declarator);
+	    Environment* fenv = my_environment->DontRecordDeclarator(m->declarator);
 	    if(fenv != 0)
 		old_env = change_scope(fenv);
 
@@ -372,7 +368,7 @@ PTree::Node *ClassWalker::translate_storage_specifiers2(PTree::Node *rest)
 
 PTree::Node *ClassWalker::translate_template_function(PTree::Node *temp_def, PTree::Node *impl)
 {
-    Environment* fenv = env->RecordTemplateFunction(temp_def, impl);
+    Environment* fenv = my_environment->RecordTemplateFunction(temp_def, impl);
     if (fenv != 0) {
 	Class* metaobject = fenv->IsClassEnvironment();
 	if(metaobject != 0){
@@ -382,7 +378,7 @@ PTree::Node *ClassWalker::translate_template_function(PTree::Node *temp_def, PTr
 	    ChangedMemberList::Cmem m;
 	    PTree::Node *decl = PTree::third(impl);
 	    MemberFunction mem(metaobject, impl, decl);
-	    metaobject->TranslateMemberFunction(env, mem);
+	    metaobject->TranslateMemberFunction(my_environment, mem);
 	    ChangedMemberList::Copy(&mem, &m, Class::Undefined);
 	    PTree::Node *decl2
 		= MakeMemberDeclarator(true, &m, (PTree::Declarator*)decl);
@@ -413,7 +409,7 @@ PTree::Node *ClassWalker::translate_function_implementation(PTree::Node *impl)
     PTree::Node *body2;
 
     PTree::Node *tspec2 = translate_type_specifier(tspec);
-    Environment* fenv = env->RecordDeclarator(decl);
+    Environment* fenv = my_environment->RecordDeclarator(decl);
 
     if(fenv == 0){
 	// reach here if resolving the qualified name fails. error?
@@ -437,7 +433,7 @@ PTree::Node *ClassWalker::translate_function_implementation(PTree::Node *impl)
 	else{
 	    ChangedMemberList::Cmem m;
 	    MemberFunction mem(metaobject, impl, decl);
-	    metaobject->TranslateMemberFunction(env, mem);
+	    metaobject->TranslateMemberFunction(my_environment, mem);
 	    ChangedMemberList::Copy(&mem, &m, Class::Undefined);
 	    decl2 = MakeMemberDeclarator(true, &m, (PTree::Declarator*)decl);
 	    if(m.body != 0)
@@ -476,7 +472,7 @@ Class* ClassWalker::MakeMetaobjectForCfunctions() {
 		"the metaclass for C functions cannot be loaded: ",
 		Class::metaclass_for_c_functions);
 
-	metaobject->SetEnvironment(env);
+	metaobject->SetEnvironment(my_environment);
 	Class::for_c_functions = metaobject;
     }
 
@@ -499,12 +495,12 @@ PTree::Node *ClassWalker::MakeMemberDeclarator(bool record, void* ptr,
 
     if(GetArgDeclList(decl, args))
 	if(m->args == 0)
-	    args2 = translate_arg_decl_list2(record, env, true,
+	    args2 = translate_arg_decl_list2(record, my_environment, true,
 					     m->arg_name_filled, 0, args);
 	else{
 	    args2 = m->args;
 	    // we may need to record the arguments.
-	    translate_arg_decl_list2(record, env, false, false, 0, args);
+	    translate_arg_decl_list2(record, my_environment, false, false, 0, args);
 	}
     else
 	args = args2 = 0;
@@ -553,7 +549,7 @@ PTree::Node *ClassWalker::record_args_and_translate_fbody(Class* c, PTree::Node 
 	old_env = change_scope(fenv);
 
     new_scope();
-    translate_arg_decl_list2(true, env, false, false, 0, args);
+    translate_arg_decl_list2(true, my_environment, false, false, 0, args);
     PTree::Node *body2 = translate_function_body(body);
     exit_scope();
 
@@ -635,17 +631,17 @@ PTree::Node *ClassWalker::translate_arg_decl_list(bool record,
 						  PTree::Node *,
 						  PTree::Node *args)
 {
-  return translate_arg_decl_list2(record, env, true, false, 0, args);
+  return translate_arg_decl_list2(record, my_environment, true, false, 0, args);
 }
 
 PTree::Node *ClassWalker::translate_initialize_args(PTree::Declarator* decl,
 						    PTree::Node *init)
 {
   TypeInfo tinfo;
-  env->Lookup(decl, tinfo);
+  my_environment->Lookup(decl, tinfo);
   Class* metaobject = tinfo.class_metaobject();
   if(metaobject)
-    return metaobject->TranslateInitializer(env, decl->name(), init);
+    return metaobject->TranslateInitializer(my_environment, decl->name(), init);
   else
     return translate_arguments(init);
 }
@@ -654,10 +650,10 @@ PTree::Node *ClassWalker::translate_assign_initializer(PTree::Declarator* decl,
 						       PTree::Node *init)
 {
   TypeInfo tinfo;
-  env->Lookup(decl, tinfo);
+  my_environment->Lookup(decl, tinfo);
   Class* metaobject = tinfo.class_metaobject();
   if(metaobject)
-    return metaobject->TranslateInitializer(env, decl->name(), init);
+    return metaobject->TranslateInitializer(my_environment, decl->name(), init);
   else
   {
     PTree::Node *exp = PTree::second(init);
@@ -684,35 +680,35 @@ void ClassWalker::visit(PTree::AssignExpr *node)
     PTree::Node *op = PTree::second(left);
     PTree::Node *member = PTree::third(left);
     PTree::Node *assign_op = PTree::second(node);
-    type_of(object, env, type);
+    type_of(object, my_environment, type);
     if(*op != '.')
       type.dereference();
 
     metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      exp2 = metaobject->TranslateMemberWrite(env, object, op,
+      exp2 = metaobject->TranslateMemberWrite(my_environment, object, op,
 					      member, assign_op, right);
       my_result = CheckMemberEquiv(node, exp2);
     }
   }
-  else if((scope = env->IsMember(left)))
+  else if((scope = my_environment->IsMember(left)))
   {
     metaobject = scope->IsClassEnvironment();
     if(metaobject)
     {
-      exp2 = metaobject->TranslateMemberWrite(env, left, PTree::second(node),
+      exp2 = metaobject->TranslateMemberWrite(my_environment, left, PTree::second(node),
 					      right);
       my_result = CheckEquiv(node, exp2);
     }
   }
   else
   {
-    type_of(left, env, type);
+    type_of(left, my_environment, type);
     metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      exp2 = metaobject->TranslateAssign(env, left, PTree::second(node), right);
+      exp2 = metaobject->TranslateAssign(my_environment, left, PTree::second(node), right);
       my_result = CheckEquiv(node, exp2);
     }
   }
@@ -740,17 +736,18 @@ void ClassWalker::visit(PTree::InfixExpr *node)
   PTree::Node *left = PTree::first(node);
   PTree::Node *right = PTree::third(node);
   TypeInfo type;
-  type_of(right, env, type);
+  type_of(right, my_environment, type);
   Class* metaobject = get_class_metaobject(type);
   if(!metaobject)
   {
-    type_of(left, env, type);
+    type_of(left, my_environment, type);
     metaobject = get_class_metaobject(type);
   }
 
   if(metaobject)
   {
-    PTree::Node *exp2 = metaobject->TranslateBinary(env, left, PTree::second(node),
+    PTree::Node *exp2 = metaobject->TranslateBinary(my_environment,
+						    left, PTree::second(node),
 						    right);
     my_result = CheckEquiv(node, exp2);
   }
@@ -778,13 +775,13 @@ void ClassWalker::visit(PTree::UnaryExpr *node)
   {
     PTree::Node *object = PTree::first(right);
     PTree::Node *op = PTree::second(right);
-    type_of(object, env, type);
+    type_of(object, my_environment, type);
     if(*op != '.') type.dereference();
 
     metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      exp2 = metaobject->TranslateUnaryOnMember(env, unaryop, object,
+      exp2 = metaobject->TranslateUnaryOnMember(my_environment, unaryop, object,
 						op, PTree::third(right));
       if(PTree::length(exp2) == 2 && exp2->car() == unaryop
 	 && PTree::equiv(PTree::second(exp2), right))
@@ -793,21 +790,21 @@ void ClassWalker::visit(PTree::UnaryExpr *node)
 	my_result = exp2;
     }
   }    
-  else if((scope = env->IsMember(right)))
+  else if((scope = my_environment->IsMember(right)))
   {
     metaobject = scope->IsClassEnvironment();
     if(metaobject)
     {
-      exp2 = metaobject->TranslateUnaryOnMember(env, unaryop, right);
+      exp2 = metaobject->TranslateUnaryOnMember(my_environment, unaryop, right);
       my_result = CheckEquiv(node, exp2);
     }
   }
 
-  type_of(right, env, type);
+  type_of(right, my_environment, type);
   metaobject = get_class_metaobject(type);
   if(metaobject)
   {
-    PTree::Node *exp2 = metaobject->TranslateUnary(env, unaryop, right);
+    PTree::Node *exp2 = metaobject->TranslateUnary(my_environment, unaryop, right);
     my_result = CheckEquiv(node, exp2);
   }
   else
@@ -825,11 +822,12 @@ void ClassWalker::visit(PTree::ArrayExpr *node)
   TypeInfo type;
 
   PTree::Node *array = node->car();
-  type_of(array, env, type);
+  type_of(array, my_environment, type);
   Class* metaobject = get_class_metaobject(type);
   if(metaobject)
   {
-    PTree::Node *exp2 = metaobject->TranslateSubscript(env, array, node->cdr());
+    PTree::Node *exp2 = metaobject->TranslateSubscript(my_environment,
+						       array, node->cdr());
     my_result = CheckEquiv(node, exp2);
   }
   else
@@ -860,31 +858,31 @@ void ClassWalker::visit(PTree::PostfixExpr *node)
   {
     PTree::Node *object = PTree::first(left);
     PTree::Node *op = PTree::second(left);
-    type_of(object, env, type);
+    type_of(object, my_environment, type);
     if(*op != '.') type.dereference();
 
     metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      exp2 = metaobject->TranslatePostfixOnMember(env, object, op,
+      exp2 = metaobject->TranslatePostfixOnMember(my_environment, object, op,
 						  PTree::third(left), postop);
       my_result = CheckMemberEquiv(node, exp2);
     }
   }    
-  else if((scope = env->IsMember(left)))
+  else if((scope = my_environment->IsMember(left)))
   {
     metaobject = scope->IsClassEnvironment();
     if(metaobject)
     {
-      exp2 = metaobject->TranslatePostfixOnMember(env, left, postop);
+      exp2 = metaobject->TranslatePostfixOnMember(my_environment, left, postop);
       my_result = CheckEquiv(node, exp2);
     }
   }
-  type_of(left, env, type);
+  type_of(left, my_environment, type);
   metaobject = get_class_metaobject(type);
   if(metaobject)
   {
-    exp2 = metaobject->TranslatePostfix(env, left, postop);
+    exp2 = metaobject->TranslatePostfix(my_environment, left, postop);
     my_result = CheckEquiv(node, exp2);
   }
   else
@@ -911,33 +909,33 @@ void ClassWalker::visit(PTree::FuncallExpr *node)
     PTree::Node *object = PTree::first(fun);
     PTree::Node *op = PTree::second(fun);
     PTree::Node *member = PTree::third(fun);
-    type_of(object, env, type);
+    type_of(object, my_environment, type);
     if(*op != '.') type.dereference();
 
     metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      exp2 = metaobject->TranslateMemberCall(env, object, op,
+      exp2 = metaobject->TranslateMemberCall(my_environment, object, op,
 					     member, arglist);
       my_result = CheckMemberEquiv(node, exp2);
     }
   }
-  else if((scope = env->IsMember(fun)))
+  else if((scope = my_environment->IsMember(fun)))
   {
     metaobject = scope->IsClassEnvironment();
     if(metaobject)
     {
-      exp2 = metaobject->TranslateMemberCall(env, fun, arglist);
+      exp2 = metaobject->TranslateMemberCall(my_environment, fun, arglist);
       my_result = CheckEquiv(node, exp2);
     }
   }
   else
   {
-    type_of(fun, env, type);
+    type_of(fun, my_environment, type);
     metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      exp2 = metaobject->TranslateFunctionCall(env, fun, arglist);
+      exp2 = metaobject->TranslateFunctionCall(my_environment, fun, arglist);
       my_result = CheckEquiv(node, exp2);
     }
   }
@@ -955,11 +953,12 @@ void ClassWalker::visit(PTree::DotMemberExpr *node)
   TypeInfo type;
 
   PTree::Node *left = node->car();
-  type_of(left, env, type);
+  type_of(left, my_environment, type);
   Class* metaobject = get_class_metaobject(type);
   if(metaobject)
   {
-    PTree::Node *exp2 = metaobject->TranslateMemberRead(env, left, PTree::second(node),
+    PTree::Node *exp2 = metaobject->TranslateMemberRead(my_environment,
+							left, PTree::second(node),
 							PTree::third(node));
     my_result = CheckEquiv(node, exp2);
   }
@@ -978,12 +977,13 @@ void ClassWalker::visit(PTree::ArrowMemberExpr *node)
   TypeInfo type;
 
   PTree::Node *left = node->car();
-  type_of(left, env, type);
+  type_of(left, my_environment, type);
   type.dereference();
   Class* metaobject = get_class_metaobject(type);
   if(metaobject)
   {
-    PTree::Node *exp2 = metaobject->TranslateMemberRead(env, left, PTree::second(node),
+    PTree::Node *exp2 = metaobject->TranslateMemberRead(my_environment,
+							left, PTree::second(node),
 							PTree::third(node));
     my_result = CheckEquiv(node, exp2);
   }
@@ -1000,31 +1000,31 @@ void ClassWalker::visit(PTree::ArrowMemberExpr *node)
 void ClassWalker::visit(PTree::This *node)
 {
   TypeInfo type;
-  type_of(node, env, type);
+  type_of(node, my_environment, type);
   type.dereference();
   Class* metaobject = get_class_metaobject(type);
   if(metaobject)
-    my_result = metaobject->TranslatePointer(env, node);
+    my_result = metaobject->TranslatePointer(my_environment, node);
   else
     my_result = node;
 }
 
 PTree::Node *ClassWalker::translate_variable(PTree::Node *exp)
 {
-    Environment* scope = env->IsMember(exp);
+    Environment* scope = my_environment->IsMember(exp);
     if(scope != 0){
 	Class* metaobject = scope->IsClassEnvironment();
 	if(metaobject != 0)
-	    return metaobject->TranslateMemberRead(env, exp);
+	    return metaobject->TranslateMemberRead(my_environment, exp);
     }
 
     TypeInfo type;
-    type_of(exp, env, type);
+    type_of(exp, my_environment, type);
     if(type.is_pointer_type()){
 	type.dereference();
 	Class* metaobject = get_class_metaobject(type);
 	if(metaobject != 0)
-	    return metaobject->TranslatePointer(env, exp);
+	    return metaobject->TranslatePointer(my_environment, exp);
     }
 
     return exp;
@@ -1038,7 +1038,7 @@ void ClassWalker::visit(PTree::UserStatementExpr *node)
   PTree::Node *keyword = PTree::third(node);
   PTree::Node *rest = PTree::tail(node, 3);
 
-  type_of(object, env, type);
+  type_of(object, my_environment, type);
   if(*op != '.') type.dereference();
 
   Class* metaobject = get_class_metaobject(type);
@@ -1046,16 +1046,17 @@ void ClassWalker::visit(PTree::UserStatementExpr *node)
   {
     new_scope();
     if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
-      translate_arg_decl_list2(true, env, false, false, 0, PTree::second(rest));
+      translate_arg_decl_list2(true, my_environment,
+			       false, false, 0, PTree::second(rest));
 
-    PTree::Node *exp2 = metaobject->TranslateUserStatement(env, object, op,
+    PTree::Node *exp2 = metaobject->TranslateUserStatement(my_environment, object, op,
 							   keyword, rest);
     exit_scope();
     my_result = exp2;
   }
   else
   {
-    ErrorMessage("no complete class specification for: ", object, node);
+    Walker::error_message("no complete class specification for: ", object, node);
     my_result = 0;
   }
 }
@@ -1068,7 +1069,7 @@ void ClassWalker::visit(PTree::StaticUserStatementExpr *node)
   PTree::Node *keyword = PTree::third(node);
   PTree::Node *rest = PTree::tail(node, 3);
 
-  if(env->Lookup(qualifier, is_type_name, type))
+  if(my_environment->Lookup(qualifier, is_type_name, type))
     if(is_type_name)
     {
       Class* metaobject = get_class_metaobject(type);
@@ -1076,9 +1077,9 @@ void ClassWalker::visit(PTree::StaticUserStatementExpr *node)
       {
 	new_scope();
 	if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
-	  translate_arg_decl_list2(true, env, false, false, 0,
+	  translate_arg_decl_list2(true, my_environment, false, false, 0,
 				   PTree::second(rest));
-	PTree::Node *exp2 = metaobject->TranslateStaticUserStatement(env,
+	PTree::Node *exp2 = metaobject->TranslateStaticUserStatement(my_environment,
 								     keyword, rest);
 	exit_scope();
 	my_result = exp2;
@@ -1086,7 +1087,7 @@ void ClassWalker::visit(PTree::StaticUserStatementExpr *node)
       }
     }
 
-  ErrorMessage("no complete class specification for: ", qualifier, node);
+  Walker::error_message("no complete class specification for: ", qualifier, node);
   my_result = 0;
 }
 
@@ -1097,9 +1098,9 @@ PTree::Node *ClassWalker::translate_new2(PTree::Node *exp, PTree::Node *userkey,
   TypeInfo t;
 
   if(type->car() && *type->car() == '(')
-    t.set(PTree::second(PTree::second(type))->encoded_type(), env);
+    t.set(PTree::second(PTree::second(type))->encoded_type(), my_environment);
   else
-    t.set(PTree::second(type)->encoded_type(), env);
+    t.set(PTree::second(type)->encoded_type(), my_environment);
 
   Class* metaobject = get_class_metaobject(t);
   if(metaobject != 0)
@@ -1107,7 +1108,7 @@ PTree::Node *ClassWalker::translate_new2(PTree::Node *exp, PTree::Node *userkey,
     if(userkey == 0)
       userkey = scope;
     
-    PTree::Node *exp2 = metaobject->TranslateNew(env, userkey, op,
+    PTree::Node *exp2 = metaobject->TranslateNew(my_environment, userkey, op,
 						 placement, type, init);
     return CheckEquiv(exp, exp2);
   }
@@ -1128,8 +1129,7 @@ PTree::Node *ClassWalker::translate_new2(PTree::Node *exp, PTree::Node *userkey,
 						       init2, init, exp->cdr()));
       else
       {
-	ErrorMessage("no complete class specification for: ",
-		     type, exp);
+	Walker::error_message("no complete class specification for: ", type, exp);
 	exp = exp->cdr();
 	if(placement == placement2 && type == type2 && init == init2)
 	  return exp;
@@ -1150,12 +1150,12 @@ void ClassWalker::visit(PTree::DeleteExpr *node)
   PTree::Node *obj = PTree::last(node)->car();
   if(PTree::length(node) == 2)
   {	// not ::delete or delete []
-    type_of(obj, env, type);
+    type_of(obj, my_environment, type);
     type.dereference();
     Class* metaobject = get_class_metaobject(type);
     if(metaobject)
     {
-      PTree::Node *exp2 = metaobject->TranslateDelete(env, node->car(), obj);
+      PTree::Node *exp2 = metaobject->TranslateDelete(my_environment, node->car(), obj);
       my_result = CheckEquiv(node, exp2);
     }
   }

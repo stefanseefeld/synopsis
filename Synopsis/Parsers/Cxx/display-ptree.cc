@@ -49,23 +49,24 @@ int main(int argc, char **argv)
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer);
     Parser parser(&lexer);
+    PTree::Node *node = parser.parse();
+    const Parser::ErrorList &errors = parser.errors();
+    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+    {
+      std::cerr << i->filename << ':' << i->line << ": Error before '" 
+		<< i->context << '\'' << std::endl;
+    }
 
+    if (!node) return -1;
     if (translate)
     {
-      ClassWalker translator(&parser);
-      PTree::Display display(std::cout, true, typeinfo);
-      PTree::Node *node;
-      while (parser.parse(node))
-      {
-	PTree::Node *result = translator.translate(node);
-	display.display(result);
-      }
+      ClassWalker translator(&buffer);
+      PTree::Node *result = translator.translate(node);
+      PTree::display(result, std::cout, true, typeinfo);
     }
     else
     {
-      PTree::Display display(std::cout, true, typeinfo);
-      PTree::Node *node;
-      while (parser.parse(node)) display.display(node);
+      PTree::display(node, std::cout, true, typeinfo);
     }
   }
   catch (const std::exception &e)

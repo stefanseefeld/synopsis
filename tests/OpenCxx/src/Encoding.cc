@@ -99,8 +99,8 @@ int main(int argc, char **argv)
     Lexer lexer(&buffer);
     Parser parser(&lexer);
     EncodingFinder finder(ofs);
-    PTree::Node *node;
-    while (parser.parse(node)) finder.find(node);
+    PTree::Node *node = parser.parse();
+    finder.find(node);
   }
   catch (const std::exception &e)
   {

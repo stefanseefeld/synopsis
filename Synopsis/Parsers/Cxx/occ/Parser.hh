@@ -9,7 +9,9 @@
 #define _Parser_hh
 
 #include <PTree.hh>
+#include <SymbolTable.hh>
 #include <stack>
+#include <vector>
 
 class Lexer;
 class Token;
@@ -27,27 +29,39 @@ class Parser
 public:
   //. RuleSet defines non-standard optional rules that can be chosen at runtime.
   enum RuleSet { CXX = 0x01, MSVC = 0x02};
+
+  //. Error is used to cache parse errors encountered during the execution
+  //. of the parse method. For now only syntax errors are recognized.
+  struct Error
+  {
+    Error(const std::string &f, unsigned long l, const std::string &c)
+      : filename(f), line(l), context(c) {}
+    std::string   filename;
+    unsigned long line;
+    std::string   context;
+  };
+  typedef std::vector<Error> ErrorList;
+
   Parser(Lexer *, int ruleset = CXX);
   ~Parser();
-  bool error_message(const char*, PTree::Node * = 0, PTree::Node * = 0);
-  void warning_message(const char*, PTree::Node * = 0, PTree::Node * = 0);
-  size_t num_of_errors() { return my_nerrors;}
+
+  const ErrorList &errors() const { return my_errors;}
 
   //. Return the origin of the given pointer
   //. (filename and line number)
   unsigned long origin(const char *, std::string &) const;
 
-  bool parse(PTree::Node *&);
+  PTree::Node *parse();
   //. return the current scope (which is the global scope if
   //. called outside the 'parse' method)
-  const PTree::Scope *scope() const { return my_scopes.top();}
+  const SymbolTable::Scope *scope() const { return my_scopes.top();}
 
-protected:
+private:
   enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
   enum TemplateDeclKind { tdk_unknown, tdk_decl, tdk_instantiation, 
 			  tdk_specialization, num_tdks };
 
-  bool syntax_error();
+  bool mark_error();
   void show_message_head(const char*);
 
   bool definition(PTree::Node *&);
@@ -58,7 +72,7 @@ protected:
   bool metaclass_decl(PTree::Node *&);
   bool meta_arguments(PTree::Node *&);
   bool linkage_spec(PTree::Node *&);
-  bool namespace_spec(PTree::Node *&);
+  bool namespace_spec(PTree::NamespaceSpec *&);
   bool namespace_alias(PTree::Node *&);
   bool using_(PTree::Node *&);
   bool linkage_body(PTree::Node *&);
@@ -170,15 +184,15 @@ protected:
   void skip_to(Token::Type token);
   
 private:
-  typedef std::stack<PTree::Scope *> Scopes;
-  struct                             ScopeGuard;
+  typedef std::stack<SymbolTable::Scope *> Scopes;
+  struct                                   ScopeGuard;
 
   bool more_var_name();
 
   Lexer       *my_lexer;
   int          my_ruleset;
   Scopes       my_scopes;
-  int          my_nerrors;
+  ErrorList    my_errors;
   PTree::Node *my_comments;
   bool         my_in_template_decl;
 };

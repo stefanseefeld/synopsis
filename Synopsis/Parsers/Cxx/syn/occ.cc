@@ -158,22 +158,19 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   FileFilter* filter = FileFilter::instance();
 
   Builder builder(sourcefile);
-  SWalker swalker(filter, &parser, &builder, &buffer);
-//   if (syn_fake_std)
-//   {
-//     // Fake a using from "std" to global
-//     builder.start_namespace("std", NamespaceNamed);
-//     builder.add_using_namespace(builder.global()->declared());
-//     builder.end_namespace();
-//   }
-
+  SWalker swalker(filter, &builder, &buffer);
   if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
     swalker.set_store_links(new LinkStore(filter, &swalker));
   try
   {
-    PTree::Node *def;
-    while(parser.parse(def))
-      swalker.translate(def);
+    PTree::Node *def = parser.parse();
+    const Parser::ErrorList &errors = parser.errors();
+    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+    {
+      std::cerr << i->filename << ':' << i->line << ": Error before '" 
+		<< i->context << '\'' << std::endl;
+    }
+    swalker.translate(def);
   }
   catch (const std::exception &e)
   {
@@ -189,13 +186,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   translator.set_builtin_decls(builder.builtin_decls());
   // Convert!
   translator.translate(builder.scope());
-
-  if(parser.num_of_errors() != 0)
-  {
-    std::cerr << "Ignoring errors while parsing file: " << file << std::endl;
-  }
-
-  ifs.close();
 }
 
 PyObject *occ_parse(PyObject *self, PyObject *args)
@@ -281,10 +271,8 @@ PyObject *occ_print(PyObject *self, PyObject *args)
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer, tokenset);
     Parser parser(&lexer, ruleset);
-
-    PTree::Display display(std::cout, true);
-    PTree::Node *def;
-    while(parser.parse(def)) display.display(def);
+    PTree::Node *def = parser.parse();
+    PTree::display(def, std::cout, true);
   }
   catch (...)
   {
