@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.21 2002/10/20 02:21:25 chalky Exp $
+# $Id: Util.py,v 1.22 2002/10/28 06:15:26 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.22  2002/10/28 06:15:26  chalky
+# Fix double-dot problem when quoting names including an extension (eg: the
+# highlighted source files)
+#
 # Revision 1.21  2002/10/20 02:21:25  chalky
 # Move quote function to Core.Util
 #
@@ -466,8 +470,9 @@ def quote(name):
 
     original = name # save the old name
 
+    # a . is usually an extension, eg source page filename: "_page-foo.hpp" + .html
+    name = re.sub('\.','_',name) 
     # The . is arbitrary..
-    name = re.sub('\.','..',name)
     name = re.sub('<','.L',name)
     name = re.sub('>','.R',name)
     name = re.sub('\(','.l',name)
