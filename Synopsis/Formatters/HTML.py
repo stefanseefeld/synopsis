@@ -332,10 +332,12 @@ class FileTree(Visitor.AstVisitor):
 	if not self.__files.has_key(file):
 	    self.__files[file] = {}
 	self.__files[file][decl.name()] = decl
-    def visitScope(self, scope):
+    def visitClass(self, scope):
 	self.visitDeclaration(scope)
-	#for decl in scope.declarations():
-	#    decl.accept(self)
+	# Only nested classes may be in different files
+	for decl in scope.declarations():
+	    if isinstance(decl, AST.Class):
+		self.visitClass(decl)
     def visitMetaModule(self, scope):
 	for decl in scope.declarations():
 	    decl.accept(self)
