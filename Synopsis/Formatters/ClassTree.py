@@ -1,4 +1,4 @@
-# $Id: ClassTree.py,v 1.1 2001/02/05 05:53:04 chalky Exp $
+# $Id: ClassTree.py,v 1.2 2001/04/06 02:37:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: ClassTree.py,v $
+# Revision 1.2  2001/04/06 02:37:08  chalky
+# Add all superclasses to classes list, so that Unknown superclasses are in
+# graphs too (and hence, if they are roots, make sure we dont miss subgraphs!)
+#
 # Revision 1.1  2001/02/05 05:53:04  chalky
 # Moved from HTML/core.py. Added graphs()
 #
@@ -53,6 +57,7 @@ class ClassTree(AST.Visitor):
 	names of the two classes involved in the edge, and are copied before
 	being stored."""
 	supername, subname = tuple(supername), tuple(subname)
+	self.add_class(supername)
 	if not self.__subclasses.has_key(supername):
 	    subs = self.__subclasses[supername] = []
 	else:
