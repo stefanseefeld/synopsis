@@ -132,24 +132,23 @@ SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
   // find symbol locally
   SymbolSet symbols = find(symbol_name);
   if (symbols.empty()) throw Undefined(symbol_name);
-  else if (symbols.size() > 1)
-  {
-    // can we assume here that all symbols refer to functions ?
-    std::cerr << "didn't expect multiple symbols when looking for " << name << std::endl;
-    dump(std::cerr, 0);
-    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
-  }
 
   // If the remainder is empty, just return the found symbol(s).
-  if (remainder.empty()) return symbols;
+  else if (remainder.empty()) return symbols;
 
-  // Else take the found symbol to refer to a scope and look up
-  // the remainder there.
+  // Having multiple symbols implies they are all overloaded functions.
+  // That's a type error if the reminder is non-empty, as we are looking
+  // for a scope.
+  else if (symbols.size() > 1)
+    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+
+  // Find the scope the symbol refers to 
+  // and look up the remainder there.
 
   // move into inner scope and start over the lookup
   Scope const *nested = find_scope(symbol_name, *symbols.begin());
-  if (!nested)
-    throw InternalError("undeclared scope !");
+  if (!nested) throw InternalError("undeclared scope !");
+
   return nested->qualified_lookup(remainder);
 }
 
