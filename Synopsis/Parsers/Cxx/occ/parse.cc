@@ -673,13 +673,15 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
     Token tk1, tk2;
 
     int t0 = lex->LookAhead(0);
-    if(t0 == CLASS && lex->LookAhead(1) == Identifier){
+    int t1 = lex->LookAhead(1);
+    int t2 = lex->LookAhead(2);
+    if(t0 == CLASS && t1 == Identifier && (t2 == '=' || t2 == '>' || t2 == ',')) {
 	lex->GetToken(tk1);
 	lex->GetToken(tk2);
 	Ptree* name = new Leaf(tk2);
 	decl = Ptree::List(new Leaf(tk1), name);
 
-	if(lex->LookAhead(0) == '='){
+	if(t2 == '='){
 	    Ptree* default_type;
 
 	    lex->GetToken(tk1);
@@ -688,9 +690,12 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
 
 	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1),
 						  default_type));
+	    return TRUE;
 	}
+	else if (t2 == '>' || t2 == ',')
+	    return TRUE;
     }
-    else if (t0 == CLASS) {
+    else if (t0 == CLASS && (t1 == '=' || t1 == '>' || t1 == ',')) {
 	// class without the identifier
 	lex->GetToken(tk1);
 	decl = Ptree::List(new Leaf(tk1));
