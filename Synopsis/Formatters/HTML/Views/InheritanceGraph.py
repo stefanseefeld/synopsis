@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.19 2002/10/27 12:03:49 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.20 2002/10/28 06:13:07 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.20  2002/10/28 06:13:07  chalky
+# Fix typo
+#
 # Revision 1.19  2002/10/27 12:03:49  chalky
 # Rename min_size option to min_group_size, add new min_size option
 #
@@ -148,7 +151,7 @@ class InheritanceGraph(Page.Page):
 	except:
 	    if config.verbose:
 		print "Error getting InheritanceGraph.min_group_size value. Using 5."
-	    min_size = 5
+	    min_group_size = 5
 	conned = []
 	pending = []
 	while len(graphs):
