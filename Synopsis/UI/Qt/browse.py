@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.6 2002/01/09 11:43:41 chalky Exp $
+# $Id: browse.py,v 1.7 2002/01/13 09:45:52 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.7  2002/01/13 09:45:52  chalky
+# Show formatted source code (only works with refmanual..)
+#
 # Revision 1.6  2002/01/09 11:43:41  chalky
 # Inheritance pics
 #
@@ -40,12 +43,12 @@
 #
 
 
-import sys, pickle, Synopsis, cStringIO, string
+import sys, pickle, Synopsis, cStringIO, string, re
 from qt import *
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
-from Synopsis.Formatter.HTML import Page, ScopePages, core
+from Synopsis.Formatter.HTML import core, Page, ScopePages, FilePages
 from Synopsis.Formatter import Dot
 
 class Browser:
@@ -407,8 +410,74 @@ class SourceMimeFactory (QMimeSourceFactory):
 	d = self.__browser.get_mime_data(str(name))
 	return d    
 
+
+re_tag = re.compile('<(?P<close>/?)(?P<tag>[a-z]+)( class="(?P<class>[^"]*?)")?(?P<href> href="[^"]*?")?( name="[^"]*?")?[^>]*?>')
+tags = {
+    'file-default' : ('', ''),
+    'file-indent' : ('<tt>', '</tt>'),
+    'file-linenum' : ('<font color=red><tt>', '</tt></font>'),
+    'file-comment' : ('<font color=purple>', '</font>'),
+    'file-keyword' : ('<b>', '</b>'),
+    'file-string' : ('<font color=#008000>', '</font>'),
+    'file-number' : ('<font color=#000080>', '</font>'),
+}
+def format_source(text):
+    """The source relies on stylesheets, and Qt doesn't have powerful enough
+    stylesheets. This function manually converts the html..."""
+    #print '===\n%s\n==='%text
+    mo = re_tag.search(text)
+    stack = [] # stack of close tags
+    result = [] # list of strings for result text
+    pos = 0
+    while mo:
+	start, end, tag = mo.start(), mo.end(), mo.group('tag')
+	result.append(text[pos:start])
+	#if mo.group('close') != '/':
+	    #print "OPEN::",tag,mo.group()
+	if mo.group('close') == '/':
+	    # close tag
+	    result.append(stack.pop())
+	    #print "CLOSE:",tag,result[-1]
+	    #print len(stack), stack
+	elif tag == 'span':
+	    # open tag
+	    span_class = mo.group('class')
+	    if tags.has_key(span_class):
+		open, close = tags[span_class]
+		result.append(open)
+		stack.append(close)
+	    else:
+		# unknown class
+		result.append(mo.group())
+		#print "UNKNOWN:",span_class
+		stack.append('</span>')
+	elif tag == 'a':
+	    result.append(mo.group())
+	    if mo.group('href'):
+		result.append('<font color=#602000>')
+		stack.append('</font></a>')
+	    else:
+		stack.append('</a>')
+	elif tag in ('br', 'hr'):
+	    result.append(mo.group())
+	else:
+	    result.append(mo.group())
+	    stack.append('</%s>'%tag)
+	mo = re_tag.search(text, end)
+	pos = end
+    result.append(text[pos:])
+    text = string.join(result, '')
+    #print '===\n%s\n==='%text
+    return text
+
+
 class SourceBrowser (Browser.SelectionListener):
     """Browser that manages the source view"""
+    class BufferFilePages (FilePages.FilePages, Page.BufferPage):
+	def __init__(self, manager):
+	    FilePages.FilePages.__init__(self, manager)
+	    Page.BufferPage._take_control(self)
+
     def __init__(self, window, browser):
 	self.__window = window
 	self.__browser = browser
@@ -417,11 +486,33 @@ class SourceBrowser (Browser.SelectionListener):
 	self.mime_factory = SourceMimeFactory()
 	self.__window.source_display.setMimeSourceFactory(self.mime_factory)
 
+	self.__generator = None
+
 	self.__current_file = None
+
+	self.__getting_mime = 0
+
+	self.__window.connect(self.__window.source_display,
+	    SIGNAL('highlighted(const QString&)'), self.highlighted)
+
+    def highlighted(self, text):
+	print text
+
+    def generator(self):
+	if not self.__generator:
+	    fileconfig = core.config.obj.FilePages
+	    fileconfig.links_path = 'docs/RefManual/syn/%s-links'
+	    self.__generator = self.BufferFilePages(core.manager)
+	    self.__generator.register_filenames(None)
+	return self.__generator
 
     def current_decl_changed(self, decl):
 	if not self.__window.source_display.isVisible():
 	    # Not visible, so ignore
+	    return
+	if decl is None:
+	    self.__window.source_display.setText('')
+	    self.__current_file = ''
 	    return
 	file, line = decl.file(), decl.line()
 	if self.__current_file != file:
@@ -429,19 +520,43 @@ class SourceBrowser (Browser.SelectionListener):
 	    if not file:
 		self.__window.source_display.setText('')
 		return
-	    # Open the new file and give it line numbers
-	    text = open(file).read()
-	    # number the lines
-	    lines = string.split(text, '\n')
-	    for line in range(len(lines)): lines[line] = str(line+1)+'| '+lines[line]
-	    text = string.join(lines, '\n')
-	    # set text
-	    self.__window.source_display.setText(text)
+	    print "looking for", file
+	    
+	    filepath = string.split(file, os.sep)
+	    filename = core.config.files.nameOfScopedSpecial('page', filepath)
+	    page, scope = core.manager.filename_info(filename)
+	    pages = self.generator()
+	    if page is pages:
+		pages.process_scope(scope)
+		self.__text = pages.get_buffer()
+		self.__text = format_source(self.__text)
+		if self.__getting_mime: return
+		context = pages.filename()
+		self.__window.source_display.setText(self.__text, context)
+	    else:
+		# Open the new file and give it line numbers
+		text = open(file).read()
+		# number the lines
+		lines = string.split(text, '\n')
+		for line in range(len(lines)): lines[line] = str(line+1)+'| '+lines[line]
+		text = string.join(lines, '\n')
+		# set text
+		self.__window.source_display.setText(text)
 	    self.__current_file = file
 	# scroll to line
-	y = (self.__window.source_display.fontMetrics().height()+1) * line
-	self.__window.source_display.setContentsPos(0, y)
+	if type(line) != type(''): # some lines are '' for some reason..
+	    y = (self.__window.source_display.fontMetrics().height()+1) * line
+	    self.__window.source_display.setContentsPos(0, y)
 	#print line, y
+
+    def current_ast_changed(self, ast):
+	core.configure_for_gui(ast)
+
+	scope = AST.Scope('',-1,'','','')
+	scope.declarations()[:] = ast.declarations()
+	self.generator().register_filenames(scope)
+
+
 
 class GraphBrowser (Browser.SelectionListener):
     """Browser that manages the graph view"""
