@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.1 2001/03/16 04:42:00 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.2 2001/04/03 23:01:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.2  2001/04/03 23:01:37  chalky
+// Small fixes and extra comments
+//
 // Revision 1.1  2001/03/16 04:42:00  chalky
 // SXR parses expressions, handles differences from macro expansions. Some work
 // on function call resolution.
@@ -490,20 +493,26 @@ Ptree* SWalker::TranslateFunctionBody(Ptree*) { STrace trace("SWalker::Translate
 
 Ptree* SWalker::TranslateAccessDecl(Ptree* node) {
     STrace trace("SWalker::TranslateAccessDecl NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 
 Ptree* SWalker::TranslateUserAccessSpec(Ptree* node) {
     STrace trace("SWalker::TranslateUserAccessSpec NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 
 
 Ptree* SWalker::TranslateDo(Ptree* node) {
     STrace trace("SWalker::TranslateDo NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 
@@ -515,13 +524,17 @@ Ptree* SWalker::TranslateContinue(Ptree* node) {
 
 Ptree* SWalker::TranslateGoto(Ptree* node) {
     STrace trace("SWalker::TranslateGoto NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 
 Ptree* SWalker::TranslateLabel(Ptree* node) {
     STrace trace("SWalker::TranslateLabel NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 
@@ -599,13 +612,17 @@ Ptree* SWalker::TranslateFstyleCast(Ptree* node) {
 
 Ptree* SWalker::TranslateUserStatement(Ptree* node) {
     STrace trace("SWalker::TranslateUserStatement NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 
 Ptree* SWalker::TranslateStaticUserStatement(Ptree* node) {
     STrace trace("SWalker::TranslateStaticUserStatement NYI");
+#ifdef DEBUG
     node->Display2(cout);
+#endif
     return 0;
 }
 

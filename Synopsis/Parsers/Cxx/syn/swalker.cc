@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.23 2001/03/19 07:53:45 chalky Exp $
+// $Id: swalker.cc,v 1.24 2001/04/03 23:01:38 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.24  2001/04/03 23:01:38  chalky
+// Small fixes and extra comments
+//
 // Revision 1.23  2001/03/19 07:53:45  chalky
 // Small fixes.
 //
@@ -70,13 +73,24 @@
 using namespace AST;
 using std::string;
 
+// ------------------------------------------------------------------
+//                 -- CLASS STrace --
+// ------------------------------------------------------------------
+
 #ifdef DO_TRACE
+// Class variable definitions
 int STrace::slevel = 0, STrace::dlevel = 0;
 ostrstream* STrace::stream = NULL;
 STrace::list STrace::m_list;
 #endif
 
+// ------------------------------------------------------------------
+//                 -- CLASS SWalker --
+// ------------------------------------------------------------------
 
+
+// ------------------------------------
+// SWalker Constructor
 SWalker::SWalker(string source, Parser* parser, Builder* builder, Program* program)
     : Walker(parser), m_source(source)
 {
@@ -92,6 +106,9 @@ SWalker::SWalker(string source, Parser* parser, Builder* builder, Program* progr
     m_postfix_flag = Postfix_Var;
 }
 
+// The name returned is just the node's text if the node is a leaf. Otherwise,
+// the ToString method of Ptree is used, which is rather expensive since it
+// creates a temporary write buffer and reifies the node tree into it.
 string SWalker::getName(Ptree *node)
 {
     // STrace trace("SWalker::getName");
@@ -100,6 +117,9 @@ string SWalker::getName(Ptree *node)
     return node->ToString();
 }
 
+// Returns the column number of 'find', by counting backwards until a newline
+// is encountered, or 'start' (the start of the buffer). The returned column
+// number is mapped by the link_map.
 int SWalker::find_col(const char* start, const char* find)
 {
     const char* pos = find;
@@ -206,6 +226,10 @@ void SWalker::storeLongSpan(Ptree* node, const char* clas)
     }
 }
 
+// Updates the line number stored in this SWalker instance, and the filename
+// stored in the Builder instance at m_builder. The filename is only set if
+// the actual char* changed (which only happens when the preprocessor places
+// another #line directive)
 void SWalker::updateLineNumber(Ptree* ptree)
 {
     // Ask the Parser for the linenumber of the ptree. This used to be
@@ -223,6 +247,8 @@ void SWalker::updateLineNumber(Ptree* ptree)
 }
 
 
+// Adds the given comments to the given declaration. If m_store_links is set,
+// then syntax highlighting information is also stored.
 void SWalker::addComments(AST::Declaration* decl, Ptree* comments)
 {
     while (comments) {
@@ -232,6 +258,8 @@ void SWalker::addComments(AST::Declaration* decl, Ptree* comments)
     }
 }
 
+// -- These methods implement addComments for various node types that store
+// comment pointers
 void SWalker::addComments(AST::Declaration* decl, CommentedLeaf* node)
 {
     if (node && node) addComments(decl, node->GetComments());
@@ -257,7 +285,9 @@ Ptree* SWalker::TranslateAssignInitializer(PtreeDeclarator*, Ptree*) { STrace tr
 //Ptree* SWalker::TranslateClassBody(Ptree*, Ptree*, Class*) { STrace trace("SWalker::TranslateClassBody NYI"); return 0; }
 //Ptree* SWalker::TranslateTemplateInstantiation(Ptree*, Ptree*, Ptree*, Class*) { STrace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
 
-// Format the given parameters
+// Format the given parameters. m_type_formatter is used to format the given
+// list of parameters into a string, suitable for use as the name of a
+// Function object.
 string SWalker::formatParameters(vector<AST::Parameter*>& params)
 {
     // Set scope for formatter
@@ -292,8 +322,11 @@ void SWalker::Translate(Ptree* node) {
 	Walker::Translate(node);
     }
     catch (TranslateError e) {
-	string at;
+	// This error usually means that the syntax highlighting failed, and
+	// can be safely ignored (with an appropriate log message for
+	// debugging :)
 #ifdef DEBUG
+	string at;
 	if (e.node) {
 	    char* fname;
 	    int fname_len;
@@ -302,9 +335,9 @@ void SWalker::Translate(Ptree* node) {
 	    buf << at << " (" << string(fname, fname_len) << ":" << lineno << ")";
 	    at.assign(buf.str(), buf.pcount());
 	}
-#endif
 	LOG("Warning: An exception occurred:" << at);
 	LOG("- " << e.str());
+#endif
     }
     catch (std::exception e) {
 	cout << "Warning: An exception occurred: " << e.what() << endl;
@@ -360,6 +393,7 @@ Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
     return 0;
 }
 
+//. [ : (public|private|protected|nil) <name> {, ...} ]
 vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 {
     STrace trace("PyWalker::TranslateInheritanceSpec");
@@ -398,6 +432,7 @@ vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 }
 
 
+//. [ class|struct <name> <inheritance> [{ body }] ]
 Ptree* SWalker::TranslateClassSpec(Ptree* node) 
 {
     STrace trace("SWalker::TranslateClassSpec");
@@ -633,20 +668,6 @@ Ptree* SWalker::TranslateDeclarators(Ptree* decls)
     while (rest != nil) {
 	p = rest->Car();
 	if (p->IsA(ntDeclarator)) {
-	    /*
-	    len = p->Length();
-	    if (len >= 2 && p->Nth(len - 2)->Eq('=')) {
-		exp = p->ListTail(len - 2);
-		TranslateAssignInitializer((PtreeDeclarator*)p, exp);
-	    } else {
-		Ptree* last = p->Last()->Car();
-		if(last != nil && !last->IsLeaf() && last->Car()->Eq('(')){
-		    // Function style initialiser
-		    TranslateInitializeArgs((PtreeDeclarator*)p, last);
-		}
-	    }
-	    */
-
 	    TranslateDeclarator(p);
 	    m_store_decl = false;
 	} // if. There is no else..?
@@ -710,12 +731,12 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    m_decoder->decodeQualName(names);
 	    names.back() += formatParameters(params);
 	    // A qual name must already be declared, so find it:
-	    Type::Named* named_type = m_builder->lookupType(names, true);
-	    if (!named_type) return NULL;
-	    Type::Declared* decl_type = dynamic_cast<Type::Declared*>(named_type);
-	    if (!decl_type) return NULL;
-	    oper = dynamic_cast<AST::Operation*>(decl_type->declaration());
-	    if (!oper) return NULL;
+	    try {
+		Type::Named* named_type = m_builder->lookupType(names, true);
+		oper = Type::declared_cast<AST::Operation>(named_type);
+	    } catch (std::bad_cast) {
+		throw ERROR("Qualified function name wasn't a function:" << names);
+	    }
 	    // expand param info, since we now have names for them
 	    vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
 	    vector<AST::Parameter*>::iterator pend = oper->parameters().end();
@@ -804,6 +825,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
     return 0;
 }
 
+// Fills the vector of Parameter types by parsing p_params.
 void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
 {
     while (p_params) {
