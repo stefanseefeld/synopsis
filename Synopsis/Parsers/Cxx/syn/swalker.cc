@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.61 2002/10/25 03:43:37 chalky Exp $
+// $Id: swalker.cc,v 1.62 2002/10/25 05:13:57 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.62  2002/10/25 05:13:57  chalky
+// Include the 'operator' in operator names
+//
 // Revision 1.61  2002/10/25 03:43:37  chalky
 // Close templates when there's an exception
 //
@@ -1272,8 +1275,16 @@ void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types:
           realname = "("+m_type_formatter->format(returnType)+")";
         }
       else
+      {
         // simple name
         realname = m_decoder->decodeName(encname);
+        // operator names are missing the 'operator', add it back
+        char c = realname[0];
+        if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%'
+            || c == '^' || c == '&' || c == '~' || c == '!' || c == '='
+            || c == '<' || c == '>' || c == ',' || c == '(' || c == '[')
+          realname = "operator"+realname;
+      }
     }
   else if (*encname == 'Q')
     {
