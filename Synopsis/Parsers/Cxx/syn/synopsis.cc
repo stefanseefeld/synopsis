@@ -14,9 +14,14 @@ int Trace::level = 0;
 void nullObj()
 {
   std::cout << "Null ptr." << std::endl;
-  /*int* i = 0;
-  *i = 1; */
+  if (PyErr_Occurred())
+      PyErr_Print();
+#if defined(__CYGWIN__) || defined(__cygwin__)
+  int* i = 0;
+  *i = 1;
+#else
   raise(SIGINT);
+#endif
 }
 
 //. A functor that returns true if the declaration is 'main'
