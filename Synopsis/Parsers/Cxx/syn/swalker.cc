@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.18 2001/02/16 02:29:55 chalky Exp $
+// $Id: swalker.cc,v 1.19 2001/02/16 04:57:50 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.19  2001/02/16 04:57:50  chalky
+// SXR: func parameters, namespaces, comments. Unlink temp file. a class=ref/def
+//
 // Revision 1.18  2001/02/16 02:29:55  chalky
 // Initial work on SXR and HTML integration
 //
@@ -111,13 +114,7 @@ void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
     if (m_filename != m_source) return;
     int col = find_col(m_program->Read(0), node->LeftMost());
     int len = node->RightMost() - node->LeftMost();
-    if (0) {
-	cout << "Link: line " << m_lineno << ", col " << col;
-	cout << " \"" << node->ToString() << "\" -> ";
-	for (vector<string>::const_iterator iter = name.begin(); iter != name.end(); ++iter)
-	    cout << *iter << " ";
-	cout << endl;
-    }
+    
     (*m_storage) << m_lineno << " " << col << " " << len << (def ? " DEF" : " REF");
     for (vector<string>::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
 	string word = *iter;
@@ -127,6 +124,27 @@ void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
 	(*m_storage) << " " << word;
     }
     (*m_storage) << "\n";
+}
+
+// Store if type is named
+void SWalker::storeLink(Ptree* node, bool def, Type::Type* type)
+{
+    Type::Named* named = dynamic_cast<Type::Named*>(type);
+    if (named) { storeLink(node, def, named->name()); return; }
+    Type::Modifier* mod = dynamic_cast<Type::Modifier*>(type);
+    if (mod) { storeLink(node, def, mod->alias()); return; }
+}
+
+//. Store a span at the given node
+void SWalker::storeSpan(Ptree* node, const char* clas)
+{
+    if (!m_store_links) return;
+    updateLineNumber(node);
+    if (m_filename != m_source) return;
+    int col = find_col(m_program->Read(0), node->LeftMost());
+    int len = node->RightMost() - node->LeftMost();
+    
+    (*m_storage) << m_lineno<<" "<<col<<" "<<len<<" "<<clas<<"\n";
 }
 
 void SWalker::updateLineNumber(Ptree* ptree)
@@ -149,22 +167,27 @@ void SWalker::updateLineNumber(Ptree* ptree)
 void SWalker::addComments(AST::Declaration* decl, Ptree* comments)
 {
     while (comments) {
-	decl->comments().push_back(new AST::Comment("", 0, comments->First()->ToString()));
+	if (decl) decl->comments().push_back(new AST::Comment("", 0, comments->First()->ToString()));
+	if (m_store_links) storeSpan(comments->First(), "file-comment");
 	comments = comments->Rest();
     }
 }
 
 void SWalker::addComments(AST::Declaration* decl, CommentedLeaf* node)
 {
-    if (node) addComments(decl, node->GetComments());
+    if (node && node) addComments(decl, node->GetComments());
 }
 void SWalker::addComments(AST::Declaration* decl, PtreeDeclaration* node)
 {
-    if (decl) addComments(decl, node->GetComments());
+    if (decl && node) addComments(decl, node->GetComments());
 }
 void SWalker::addComments(AST::Declaration* decl, PtreeDeclarator* node)
 {
-    if (decl) addComments(decl, node->GetComments());
+    if (decl && node) addComments(decl, node->GetComments());
+}
+void SWalker::addComments(AST::Declaration* decl, PtreeNamespaceSpec* node)
+{
+    if (decl && node) addComments(decl, node->GetComments());
 }
 
 Ptree* SWalker::TranslateArgDeclList(bool, Ptree*, Ptree*) { Trace trace("SWalker::TranslateArgDeclList NYI"); return 0; }
@@ -214,14 +237,18 @@ Ptree* SWalker::TranslatePtree(Ptree*) {
 Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
     Trace trace("SWalker::TranslateNamespaceSpec");
     
-    updateLineNumber(def);
+    if (m_store_links) storeSpan(def->First(), "file-keyword");
+    else updateLineNumber(def);
+
     string name = def->Cadr() ? getName(def->Cadr()) : "{"+m_filename+"}";
-    /*Namespace* ns =*/ m_builder->startNamespace(name);
+    AST::Namespace* ns = m_builder->startNamespace(name);
+
+    addComments(ns, dynamic_cast<PtreeNamespaceSpec*>(def));
+    if (m_store_links && def->Cadr()) storeLink(def->Second(), true, ns->name());
 
     Translate(Ptree::Third(def));
 
     m_builder->endNamespace();
-
     return 0;
 }
 
@@ -234,17 +261,20 @@ vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
         node = node->Cdr();		// skip : or ,
         // the attributes
         vector<string> attributes(node->Car()->Length() - 1);
-        for (int i = 0; i != node->Car()->Length() - 1; ++i)
+        for (int i = 0; i != node->Car()->Length() - 1; ++i) {
             attributes[i] = getName(node->Car()->Nth(i));
+	    if (m_store_links) storeSpan(node->Car()->Nth(i), "file-keyword");
+	}
         // look up the parent type
 	Ptree* name = node->Car()->Last()->Car();
 	if (name->IsLeaf()) {
-	    type = m_builder->lookupType(getName(node->Car()->Last()->Car()));
+	    type = m_builder->lookupType(getName(name));
 	} else {
 	    char* encname = name->GetEncodedName();
 	    m_decoder->init(encname);
 	    type = m_decoder->decodeType();
 	}
+	if (m_store_links) storeLink(name, false, type);
 
         node = node->Cdr();
         // add it to the list
@@ -259,14 +289,14 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
     Trace trace("SWalker::TranslateClassSpec");
     if (Ptree::Length(node) == 4) {
 	// if Class definition (not just declaration)
-	updateLineNumber(node);
+
+	if (m_store_links) storeSpan(node->First(), "file-keyword");
+	else updateLineNumber(node);
 	
 	// Create AST.Class object
 	AST::Class *clas;
         string type = getName(node->First());
-        vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
 	char* encname = node->GetEncodedName();
-	//cout << "class encname: " << encname << endl;
 	if (encname[0] == 'Q') {
 	    vector<string> names;
 	    m_decoder->init(encname);
@@ -276,6 +306,10 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	    string name = getName(node->Second());
 	    clas = m_builder->startClass(m_lineno, type, name);
 	}
+	if (m_store_links) storeLink(node->Second(), true, clas->name());
+
+	// Get parents
+        vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
 	clas->parents() = parents;
 	m_builder->updateBaseSearch();
 	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
@@ -284,12 +318,14 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
         // Translate the body of the class
 	TranslateBlock(node->Nth(3));
 	m_builder->endClass();
-
-	storeLink(node->Second(), true, clas->name());
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
         string name = getName(node->Second());
 	m_builder->addUnknown(name);
+	if (m_store_links) { // highlight the comments, at least
+	    PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	    addComments(NULL, cspec->GetComments());
+	}
     } /* else {
 	cout << "class spec not length 4:" << endl;
 	node->Display2(cout);
@@ -609,6 +645,9 @@ void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
 	    cout << "Premature end of decoding!" << endl;
 	    break; // NULL means end of encoding
 	}
+	// Link type
+	if (m_store_links && !param->IsLeaf() && param->First()) 
+	    storeLink(param->First(), false, type);
 	// Find name and value
 	// FIXME: this doesnt account for anon but initialised params!
 	if (param->Length() > 1) {
@@ -734,6 +773,7 @@ Ptree* SWalker::TranslateAccessSpec(Ptree* spec)
 	case PRIVATE: axs = AST::Private; break;
     }
     m_builder->setAccess(axs);
+    if (m_store_links) storeSpan(spec->First(), "file-keyword");
     return 0;
 }
 

@@ -49,11 +49,16 @@ public:
 
     //. Store a link at the given node
     void storeLink(Ptree* node, bool def, const vector<string>& name);
+    //. Store a link at the given node, if the type is amenable to it
+    void storeLink(Ptree* node, bool def, Type::Type*);
+    //. Store a span of the given class at the given node
+    void storeSpan(Ptree* node, const char* clas);
 
     void addComments(AST::Declaration* decl, Ptree* comments);
     void addComments(AST::Declaration* decl, CommentedLeaf* node);
     void addComments(AST::Declaration* decl, PtreeDeclarator* node);
     void addComments(AST::Declaration* decl, PtreeDeclaration* decl);
+    void addComments(AST::Declaration* decl, PtreeNamespaceSpec* decl);
 
     void TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
     void TranslateFunctionName(char* encname, string& realname, Type::Type*& returnType);
