@@ -1,0 +1,152 @@
+body 
+{
+  margin: 0;
+  color: #003030;
+  background-color: #ffffff;
+}
+:link { color: #bb0000; text-decoration: none;}
+:visited { color: #770000; text-decoration: none;}
+:active { color: #ff0000; text-decoration: none;}
+   
+h1 
+{
+  background-color: white;
+
+  border-bottom: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+  text-align: center;
+  
+  font-family: "arial";
+  font-style: italic;
+  font-size: xx-large;
+  color: #770000;
+  margin: 0px;
+  padding: 10px;
+}
+
+table.page 
+{
+  border: 0px;
+  margin: 10px 0px 0px;
+  padding: 0px;
+}
+ 
+td.menu 
+{
+  width: 8em;
+  vertical-align: top;
+  padding: 10px 10px 10px;
+  margin: 0px;
+}
+
+table.menu
+{  
+  position: fixed;
+  top: 5em;
+  left: 1em;
+  background-color: #f2f5f7;
+  border: solid;
+  border-width: 1px;
+  border-color: #aaaaaa;
+  padding: 10px;
+}
+
+table.menu td.normal1
+{ 
+}
+
+table.menu td.selected1
+{ 
+  background-color: #dbdee0;
+}
+
+table.menu td.normal2
+{
+  font-size: small;
+  padding-left: 17px;
+}
+
+table.menu td.selected2
+{ 
+  font-size: small;
+  padding-left: 17px;
+  background-color: #dbdee0;
+}
+
+table.menu td.separator
+{
+  color: #808080;
+  border-top: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+}
+
+td.content 
+{
+  margin: 0px;
+  padding: 10px;
+  vertical-align: top;
+}
+
+table.subheading
+{
+  width: 100%;
+  border: none;
+  border-spacing: 1px;
+}
+
+td.content td
+{
+  background: #f2f5f7;
+  padding: 10px;
+}
+
+th
+{
+  background: #f2f5f7;
+  padding: 10px;
+  text-align: left;
+}
+
+table.heading td
+{
+  font-family: avantgarde, sans-serif;
+  font-size: 150%;
+  color: #bb0000;
+}
+
+table.subheading td
+{
+  font-family: avantgarde, sans-serif;
+  font-size: 120%;
+  color: #bb0000;
+}
+
+div.newsheader
+{
+  font-weight: bold;
+}
+
+div.modifiedby
+{
+  font-size: small;
+  margin-left: 10px;
+  color: #808080;
+  border-top: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+}
+
+p.abstract
+{
+  font-style: italic;
+  margin-left: 10px;
+}
+
+div.hostedby 
+{
+  float: right;
+  margin-right: 10px;
+}
+
