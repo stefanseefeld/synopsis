@@ -386,6 +386,7 @@ Ptree* SWalker::TranslatePtree(Ptree* node)
         else if (num_type == "long") num_type = "long long";
         else if (num_type == "unsigned") num_type = "unsigned long";
         else if (num_type == "float") num_type = "long double";
+        else if (num_type == "double") num_type = "long double";
         else
           std::cout << "Unknown num type: " << num_type << std::endl;
       }
