@@ -998,7 +998,9 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                   case 2:
                       // new line number into the previous included file
                       gProject->Parse_TOS->yylineno = oldyylineno;
+                      #if 0 // whole idea is flawed
                       *stement = new EndInclStemnt(HERE);
+                      #endif
                       if (! file_ppln)
                           gProject->Parse_TOS->yylineno = ln - 1;
                       gProject->Parse_TOS->filename = txt;
@@ -1010,7 +1012,9 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                       if (! file_ppln)
                           gProject->Parse_TOS->yylineno = ln - 1;
                       gProject->Parse_TOS->filename = txt;
+                      #if 0 // whole idea is flawed
                       *stement = new InclStemnt(gProject->Parse_TOS->filename, HERE);
+                      #endif
                       return (*stement != NULL);
                     
                   case 3:
@@ -1030,7 +1034,9 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                       // new line number into the same file
                       gProject->Parse_TOS->yylineno = oldyylineno;
                       gProject->Parse_TOS->filename = txt;
+                      #if 0 // whole idea is flawed
                       *stement = new FileLineStemnt(gProject->Parse_TOS->filename, ln, HERE);
+                      #endif
                       if (! file_ppln)
                           gProject->Parse_TOS->yylineno = ln - 1;
                       return (*stement != NULL);
