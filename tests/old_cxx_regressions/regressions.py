@@ -327,4 +327,12 @@ typedef unsigned int size_type;
 int really_big_number = static_cast<size_type>(-1);
 """
 
+class InlineConstrTest (Regression, Test):
+  test = """
+namespace std { struct type_info {}; }
+struct type_info {
+  inline type_info(std::type_info const& = typeid(void));
+};
+"""
+
 # vim: set et sts=2 ts=8 sw=2:
