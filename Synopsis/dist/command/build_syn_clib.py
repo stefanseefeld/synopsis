@@ -40,7 +40,10 @@ class build_syn_clib (Command):
 
     def build_src(self):
 
-        LIBEXT = sysconfig.get_config_var('SO')
+        if os.name == 'nt':
+            LIBEXT = '.dll'
+        else:
+            LIBEXT = sysconfig.get_config_var('SO')
         target = 'libSynopsis%s'%LIBEXT
         self.announce("building '%s'"%target)
         if os.name == 'nt': 
