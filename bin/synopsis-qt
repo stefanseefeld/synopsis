@@ -8,30 +8,25 @@
 
 import sys, pickle, Synopsis, cStringIO
 from qt import *
-import Synopsis.Core.AST
+from Synopsis.Core import AST
 from Synopsis.Formatter.ASCII import ASCIIFormatter
 
-class MainWindow (QMainWindow):
-    """The main window of the applet. It controls the whole GUI so far, and
-    has two ListFillers, one for each QListView."""
-    def __init__(self):
-	QMainWindow.__init__(self, None, "Synopsis")
 
-	# Make the menu
-	menu = self.menuBar()
-	file = QPopupMenu(self)
-	file.insertItem("&Open...", self.open)
-	file.insertItem("&Quit", qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
-	menu.insertItem("&File", file)
+class BrowseWindow (QSplitter):
+    """A window that browses a given .syn file"""
+    def __init__(self, parent, filename, global_decl):
+	QSplitter.__init__(self, parent)
+	self.filename = filename
+	self.global_decl = global_decl
+
+	self.setCaption("'%s' - Browse"%filename)
 
 	# Split up the GUI
-	split = QSplitter(self)
-	splitV = QSplitter(Qt.Vertical, split)
+	splitV = QSplitter(Qt.Vertical, self)
 
 	# Create a top-left listview for the packages
 	self.packages = QListView(splitV)
 	self.packages.setMinimumSize(150,100)
-	self.packages.setRootIsDecorated(1)
 	self.packages.addColumn("Name")
 
 	# Create a bottom-left listview for the other stuff
@@ -42,53 +37,34 @@ class MainWindow (QMainWindow):
 
 	# Create a textbrowser to show info about selected stuff
 	# This could be just QTextEdit or something I guess... :)
-	self.textview = QTextBrowser(split)
+	self.textview = QTextBrowser(self)
 	self.textview.setMinimumSize(500,350)
 	self.textview.setTextFormat(Qt.RichText)
 
-	self.setCentralWidget(split)
 
 	# Create the fillers. The first only displays a few types
 	self.packfiller = ListFiller(self, self.packages, (
-	    'Package', 'Module', 'Namespace'))
+	    'Package', 'Module', 'Namespace', 'Global'))
+	self.packfiller.auto_open = 3
 	self.listfiller = ListFiller(self, self.listview)
 	if ast: self.packfiller.visitAST(ast)
 
 	# Connect things up
 	self.connect(self.packages, SIGNAL('selectionChanged(QListViewItem*)'), self.showPackage)
 	self.connect(self.listview, SIGNAL('selectionChanged(QListViewItem*)'), self.showDecl)
+	self.connect(self.listview, SIGNAL('expanded(QListViewItem*)'), self.selfishExpansion)
 
-    def open(self):
-	"""Displays the file open dialog, and loads a file if selected"""
-	file = QFileDialog.getOpenFileName(".", "Synopsis files (*.*syn)", self, "file", "Open a Synopsis data file")
-	if file: self.openFile(str(file))
+	self.textview.setText("<i>Select a package/namespace to view from the left.")
+	self.packfiller.fillFrom(global_decl)
 
-
-    def openFile(self, filename):
-	"""Loads a given file"""
-	try:
-	    unpickler = pickle.Unpickler(open(filename, "r"))
-	    # Clear the GUI
-	    self.packfiller.clear()
-	    self.listfiller.clear()
-	    self.textview.setText("<i>Loading...")
-	    # Load the file
-	    version = unpickler.load()
-	    ast = unpickler.load()
-	    # Fill the GUI
-	    self.packfiller.visitAST(ast)
-	    self.textview.setText("<i>Select a package/namespace to view from the left.")
-	except IOError, e:
-	    # Oops..
-	    QMessageBox.critical(self, "Synopsis", 
-		"An error occurred opening:\n%s\n\n%s"%(filename, str(e)))
+	#self.show()
 
     def showPackage(self, item):
 	"""Show a given package (by item)"""
 	decl = self.packfiller.map[item]
 	# Fill the main list
 	self.listfiller.clear()
-	self.listfiller.visitAST(decl)
+	self.listfiller.fillFrom(decl)
 	# Grab the comments and put them in the text view
 	os = cStringIO.StringIO()
 	for comment in decl.comments():
@@ -103,11 +79,249 @@ class MainWindow (QMainWindow):
 	# :)
 	os = cStringIO.StringIO()
 	os.write('<pre>')
-	decl.accept(ASCIIFormatter(os))
+	formatter = ASCIIFormatter(os)
+	formatter.set_scope(decl.name())
+	decl.accept(formatter)
 	self.textview.setText(os.getvalue())
 
+    def selfishExpansion(self, item):
+	"""Selfishly makes item the only expanded node"""
+	if not item.parent(): return
+	iter = item.parent().firstChild()
+	while iter:
+	    if iter != item: self.listview.setOpen(iter, 0)
+	    iter = iter.nextSibling()
 
-class ListFiller( Synopsis.Core.AST.Visitor ):
+class CanvasStrategy:
+    "An interface for a strategy to handle mouse events"
+    def __init__(self, canvas, view):
+	self.canvas = canvas
+	self.view = view
+    def reset(self): pass
+    def set(self): pass
+    def press(self, event): pass
+    def release(self, event): pass
+    def move(self, event): pass
+
+class SelectionStrategy (CanvasStrategy):
+    def __init__(self, canvas, view):
+	CanvasStrategy.__init__(self, canvas, view)
+	self.__drag_item = None
+	self.__icon = None
+	self.__last = None
+
+    def reset(self):
+	self.__drag_item = None
+
+    def press(self, event):
+	items = self.canvas.collisions(event.pos())
+	if items and self.view._icons.has_key(items[0]):
+	    self.__icon = self.view._icons[items[0]]
+	    self.__drag_item = items[0]
+	    self.__last = event.pos()
+	    
+    def release(self, event):
+	if self.__drag_item:
+	    self.__drag_item = None
+	    
+    def move(self, event):
+	if not self.__drag_item: return
+	dx = event.x() - self.__last.x()
+	dy = event.y() - self.__last.y()
+	self.__drag_item.moveBy(dx, dy)
+	self.__last = QPoint(event.pos())
+	self.__icon.update()
+	self.canvas.update()
+
+class ConnectStrategy (CanvasStrategy):
+    def set(self): print "hello"
+    def reset(self): print "bye"
+
+class AddActionStrategy (CanvasStrategy):
+    def set(self):
+	print "add action"
+
+    def reset(self):
+	print "clean up action"
+
+    def press(self, event):
+	print "create an icon here"
+	Icon(self.canvas, event.x(), event.y(), "new action")
+	
+
+class CanvasView (QCanvasView):
+    def __init__(self, canvas, parent, icons):
+	QCanvasView.__init__(self, canvas, parent)
+	self._icons = icons
+	self.__canvas = canvas
+	self.__strategies = {
+	    'select' : SelectionStrategy(canvas, self),
+	    'connect': ConnectStrategy(canvas, self),
+	    'action' : AddActionStrategy(canvas, self)
+	}
+	
+	self.__strategy = self.__strategies['select']
+	self.connect(parent, PYSIGNAL('modeChanged(string)'), self.modeChanged)
+    def modeChanged(self, tool):
+	if self.__strategies.has_key(tool):
+	    self.__strategy.reset()
+	    self.__strategy = self.__strategies[tool]
+	    self.__strategy.set()
+    def contentsMousePressEvent(self, event):
+	self.__strategy.press(event)
+    def contentsMouseReleaseEvent(self, event):
+	self.__strategy.release(event)
+    def contentsMouseMoveEvent(self, event):
+	self.__strategy.move(event)
+	
+
+class CanvasWindow (QVBox):
+    def __init__(self, parent, main_window):
+	QVBox.__init__(self, parent)
+	self.setCaption("Canvas")
+	self.main_window = main_window
+	self.__activated = 0
+
+	# Make the menu, to be inserted in the app menu upon window activation
+	self._file_menu = QPopupMenu(main_window.menuBar())
+	self._file_menu.insertItem("New &Action", self.addAction, Qt.CTRL+Qt.Key_A)
+
+	# Make the toolbar
+	self.tool = QToolBar("Canvas", self.main_window, self)
+	pixmap = QPixmap(16,16); pixmap.fill()
+	self.tool_sel = QToolButton(pixmap, "Select", "Select actions in the display", self.setSelect, self.tool)
+	self.tool_sel.setToggleButton(1)
+
+	pixmap = QPixmap(16,16); pixmap.fill(Qt.red)
+	self.tool_con = QToolButton(pixmap, "Connect", "Connect two actions", self.setConnect, self.tool)
+	self.tool_con.setToggleButton(1)
+
+	pixmap = QPixmap(16,16); pixmap.fill(Qt.blue)
+	self.tool_add = QToolButton(pixmap, "Add Action", "Add a new action to the project", self.setAction, self.tool)
+	self.tool_add.setToggleButton(1)
+
+	self.__tools = {
+	    'select' : self.tool_sel,
+	    'connect': self.tool_con,
+	    'action' : self.tool_add
+	}
+	# Make the canvas
+	self.canvas = QCanvas(self)
+	self.canvas.resize(parent.width(), parent.height())
+	self.icons = {}
+	CanvasView(self.canvas, self, self.icons)
+	self.show()
+
+	self.connect(parent, SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
+
+	self.setMode('select')
+	self.activate()
+	
+    def setMode(self, mode):
+	self.mode = mode
+	tool = self.__tools[mode]
+	for other in self.__tools.values():
+	    if tool is not other:
+		other.setOn(0)
+	tool.setOn(1)
+
+	self.emit(PYSIGNAL('modeChanged(string)'), (self.mode,))
+
+    def windowActivated(self, widget):
+	if self.__activated:
+	    if widget is not self:
+		self.deactivate()
+	else:
+	    if widget is self:
+		self.activate()
+    
+    def activate(self):
+	self.__activated = 1
+	self._menu_id = self.main_window.menuBar().insertItem('Canvas', self._file_menu)
+
+    def deactivate(self):
+	self.__activated = 0
+	self.main_window.menuBar().removeItem(self._menu_id)
+
+    def addAction(self):
+	print "hi"
+	rect = Icon(self.canvas, 10, 10, "hello")
+	#rect.setPen( QPen( Qt.red, 3 ) )
+	#rect.show()
+	self.icons[rect.img] = rect
+	self.canvas.update()
+
+    def setSelect(self):
+	self.setMode('select')
+
+    def setConnect(self):
+	self.setMode('connect')
+
+    def setAction(self):
+	self.setMode('action')
+
+class Icon:
+    def __init__(self, canvas, x, y, string):
+	self.x = x
+	self.y = y
+	self.canvas = canvas
+	self.string = string
+	self.img = QCanvasRectangle(x, y, 32, 32, canvas)
+	self.text = QCanvasText(string, canvas)
+	self.img.show()
+	self.text.show()
+	self.update()
+    def update(self):
+	rect = self.text.boundingRect()
+	irect = self.img.boundingRect()
+	y = irect.bottom()
+	x = irect.center().x() - rect.width()/2
+	self.text.move(x, y)
+
+class MainWindow (QMainWindow):
+    """The main window of the applet. It controls the whole GUI so far, and
+    has two ListFillers, one for each QListView."""
+    def __init__(self):
+	QMainWindow.__init__(self, None, "Synopsis")
+
+	# Make the menu
+	menu = self.menuBar()
+	file = QPopupMenu(self)
+	file.insertItem("&Open...", self.open, Qt.CTRL+Qt.Key_O)
+	file.insertItem("&Canvas", self.openCanvas, Qt.CTRL+Qt.Key_C)
+	file.insertItem("&Quit", qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
+	menu.insertItem("&File", file)
+
+	self.workspace = QWorkspace(self)
+	self.setCentralWidget(self.workspace)
+
+    def open(self):
+	"""Displays the file open dialog, and loads a file if selected"""
+	file = QFileDialog.getOpenFileName(".", "Synopsis files (*.*syn)", self, "file", "Open a Synopsis data file")
+	if file: self.openFile(str(file))
+
+
+    def openFile(self, filename):
+	"""Loads a given file"""
+	try:
+	    unpickler = pickle.Unpickler(open(filename, "r"))
+	    # Load the file
+	    version = unpickler.load()
+	    ast = unpickler.load()
+	    # Fill the GUI
+	    glob = AST.Scope('', -1, '', 'Global', ('global',))
+	    glob.declarations().extend(ast.declarations())
+	    win = BrowseWindow(self.workspace, filename, glob)
+	    win.show()
+	except IOError, e:
+	    # Oops..
+	    QMessageBox.critical(self, "Synopsis", 
+		"An error occurred opening:\n%s\n\n%s"%(filename, str(e)))
+    
+    def openCanvas(self):
+	CanvasWindow(self.workspace, self).show()
+
+class ListFiller( AST.Visitor ):
     """A visitor that fills in a QListView from an AST"""
     def __init__(self, main, listview, types = None):
 	self.map = {}
@@ -115,21 +329,22 @@ class ListFiller( Synopsis.Core.AST.Visitor ):
 	self.listview = listview
 	self.stack = [self.listview]
 	self.types = types
+	self.auto_open = 1
 
     def clear(self):
 	self.listview.clear()
 	self.map = {}
 	self.stack = [self.listview]
 
+    def fillFrom(self, decl):
+	self.visitGroup(decl)
+	self.listview.setContentsPos(0,0)
+
     def visitDeclaration(self, decl):
 	if self.types and decl.type() not in self.types: return
 	item = QListViewItem(self.stack[-1], decl.name()[-1], decl.type())
 	self.map[item] = decl
 	self.__last = item
-
-    def visitAST(self, ast):
-	Synopsis.Core.AST.Visitor.visitAST(self, ast)
-	self.listview.setContentsPos(0,0)
 
     def visitGroup(self, group):
 	if self.types and group.type() not in self.types: return
@@ -138,7 +353,18 @@ class ListFiller( Synopsis.Core.AST.Visitor ):
 	self.stack.append(item)
 	for decl in group.declarations(): decl.accept(self)
 	self.stack.pop()
-	if len(self.stack) < 3: self.listview.setOpen(item, 1)
+	if len(self.stack) <= self.auto_open: self.listview.setOpen(item, 1)
+
+    def visitForward(self, fwd): pass
+
+    def visitEnum(self, enum):
+	if self.types and enum.type() not in self.types: return
+	self.visitDeclaration(enum)
+	item = self.__last
+	self.stack.append(item)
+	for decl in enum.enumerators(): decl.accept(self)
+	self.stack.pop()
+	if len(self.stack) <= self.auto_open: self.listview.setOpen(item, 1)
 
 
 if __name__ == "__main__":
@@ -147,9 +373,10 @@ if __name__ == "__main__":
     Synopsis.Formatter.ASCII.comment_str = '<font color="purple">// %s</font>\n'
 
     app = QApplication(sys.argv)
-    app.setDesktopSettingsAware(1)
+    #app.setDesktopSettingsAware(1) # doesnt work with Qt 2
     # So I prefer the windows style to motif.. shoot me :)
-    #app.setStyle(QWindowsStyle())
+    app.setStyle(QWindowsStyle())
+    #app.setStyle(QPlatinumStyle())
 
     # Parse args
     load_file = None
