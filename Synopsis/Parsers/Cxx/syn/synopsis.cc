@@ -3,6 +3,9 @@
  * C++ AST into a Python AST.
  *
  * $Log: synopsis.cc,v $
+ * Revision 1.43  2002/10/27 12:23:55  chalky
+ * Re-introduce forced addition of declarations to type dictionary
+ *
  * Revision 1.42  2002/10/25 02:49:52  chalky
  * Support templated forward class declarations
  *
@@ -188,6 +191,9 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
 	    throw "Synopsis::Private::py(AST::Declaration*)";
 	    */
 	}
+        // Force addition of type to dictionary
+        PyObject* declared = py(decl->declared());
+        Py_DECREF(declared);
     }
     PyObject* obj = iter->second;
     Py_INCREF(obj);
