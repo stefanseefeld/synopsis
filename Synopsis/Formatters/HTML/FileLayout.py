@@ -74,7 +74,7 @@ class FileLayout (TOC.Linker):
       ".html" Additionally, special characters are Util.quoted in URL-style"""
 
       if not len(scope): return self._check_main(self.special('global'))
-      return Util.quote(string.join(scope,'-')) + ".html"
+      return Util.quote(string.join(scope,'-') + '.html')
 
    def _strip_filename(self, file):
 
@@ -87,7 +87,7 @@ class FileLayout (TOC.Linker):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return "_file-"+file.replace(os.sep, '-')+".html"
+      return '_file-%s.html'%file.replace(os.sep, '-')
 
    def file_source(self, file):
       """Return the filename for the source of an input file.
@@ -114,7 +114,7 @@ class FileLayout (TOC.Linker):
       """Return the name of a special file (tree, etc). Default is
       _name.html"""
 
-      return self._check_main("_" + name + ".html")
+      return self._check_main('_%s.name'%name)
 
    def scoped_special(self, name, scope, ext=".html"):
       """Return the name of a special type of scope file. Default is to join
@@ -139,7 +139,7 @@ class FileLayout (TOC.Linker):
 
       # Prefer module index for frames
       if self.processor.using_module_index:
-         return "_module_" + Util.quote(string.join(scope, '-')) + ".html"
+         return Util.quote('_module_' + string.join(scope, '-') + '.html')
       # Fall back to the scope view
       return self.scope(scope)
 	
@@ -153,7 +153,7 @@ class FileLayout (TOC.Linker):
       # Assume parent scope is class or module, and this is a <A> name in it
       filename = self.scope(decl.name()[:-1])
       anchor = escape(decl.name()[-1].replace(' ','-'))
-      return filename + "#" + anchor
+      return filename + '#' + anchor
 
 class NestedFileLayout (FileLayout):
    """generates a structured file system instead of a flat one"""
@@ -164,8 +164,8 @@ class NestedFileLayout (FileLayout):
 
       prefix = 'Scopes'
       if not len(scope):
-         return self._check_main(os.path.join(prefix, 'global') + '.html')
-      else: return Util.quote(reduce(os.path.join, scope, prefix)) + '.html'
+         return self._check_main(prefix + '/global.html')
+      else: return Util.quote(prefix + '/' + string.join(scope, '/') + '.html')
 
    def file_index(self, file):
       """Return the filename for the index of an input file.
@@ -173,7 +173,7 @@ class NestedFileLayout (FileLayout):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return os.path.join("File", file+".html")
+      return 'File/%s.html'%file
 
    def file_source(self, file):
       """Return the filename for the source of an input file.
@@ -181,7 +181,7 @@ class NestedFileLayout (FileLayout):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return os.path.join("Source", file+".html")
+      return 'Source/%s.html'%file
 
    def file_details(self, file):
       """Return the filename for the details of an input file.
@@ -189,29 +189,29 @@ class NestedFileLayout (FileLayout):
       .html appended."""
 
       file = self._strip_filename(file)
-      return os.path.join("FileDetails", file+".html")
+      return 'FileDetails/%s.html'%file
 
    def special(self, name):
       """Return the name of a special file (tree, etc)."""
 
-      return self._check_main(name + ".html")
+      return self._check_main(name + '.html')
     
-   def scoped_special(self, name, scope, ext=".html"):
+   def scoped_special(self, name, scope, ext='.html'):
       """Return the name of a special type of scope file"""
 
-      return Util.quote(reduce(os.path.join, scope, name)) + ext
+      return Util.quote(name + '/' + string.join(scope, '/') + ext)
 
    def xref(self, page):
       """Return the name of the xref file for the given page"""
 
-      return os.path.join('XRef', 'xref%d.html'%page)
+      return 'XRef/xref%d.html'%page
 
    def module_tree(self):
       """Return the name of the module tree index"""
 
-      return "Modules.html"
+      return 'Modules.html'
 
    def module_index(self, scope):
       """Return the name of the index of the given module"""
 
-      return Util.quote(reduce(os.path.join, scope, 'Modules')) + '.html'
+      return Util.quote('Modules/%s.html'%string.join(scope, '/'))
