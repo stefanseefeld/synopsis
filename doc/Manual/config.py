@@ -15,7 +15,8 @@ class Config (Base):
     class Linker (Base.Linker):
 	class Cxx (Base.Linker.Linker):
 	    comment_processors = ['ssd']
-	    map_declaration_names = 'Synopsis::Parser::C++'
+	class CxxMap (Base.Linker.Linker):
+	    map_declaration_names = 'Synopsis::Parser::C++', 'Package'
 	class Py (Base.Linker.Linker):
 	    pass
 	class All (Base.Linker.Linker):
@@ -23,6 +24,7 @@ class Config (Base):
 	    languagize = 0
 	modules = {
 	    'C++':Cxx,
+	    'C++Final':CxxMap,
 	    'Py':Py,
 	    'All':All
 	}
@@ -64,6 +66,8 @@ class Config (Base):
 		    ('Synopsis.Formatter.HTML.ASTFormatter','SummaryASTCommenter'),
 		    ('Synopsis.Formatter.HTML.ASTFormatter','FilePageLinker'),
 		]
+	    class ModuleListing (Base.Formatter.HTML.ModuleListing):
+		child_types = ['Package']
 	class ConfigHTML (HTML):
 	    pages = [
 		('modules.py', 'ConfScope'),
