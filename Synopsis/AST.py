@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.5 2001/01/22 17:06:15 stefan Exp $
+# $Id: AST.py,v 1.6 2001/01/23 19:47:45 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.6  2001/01/23 19:47:45  stefan
+# fix Visitor class such that only desired methods need to be redefined
+#
 # Revision 1.5  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -412,21 +415,25 @@ class Comment :
 
 class Visitor :
     """Visitor for AST nodes"""
-    def visitAST(self, node): return
+    def visitAST(self, node):
+        for declaration in node.declarations(): declaration.accept(self)
     def visitDeclaration(self, node): return
     def visitForward(self, node): self.visitDeclaration(node)
     def visitDeclarator(self, node): self.visitDeclaration(node)
-    def visitScope(self, node): self.visitDeclaration(node)
+    def visitScope(self, node):
+        for declaration in node.declarations(): declaration.accept(self)
     def visitModule(self, node): self.visitScope(node)
     def visitMetaModule(self, node): self.visitModule(node)
     def visitClass(self, node): self.visitScope(node)
-    def visitTypedef(self, node): self.visitDeclaration(node)
+    def visitTypedef(self, node): return #node.declarator().accept(self)
     def visitEnumerator(self, node): self.visitDeclaration(node)
-    def visitEnum(self, node): self.visitDeclaration(node)
+    def visitEnum(self, node):
+        for enum in node.enumerators(): enum.accept(self)
     def visitVariable(self, node): self.visitDeclaration(node)
     def visitConst(self, node): self.visitDeclaration(node)
-    def visitFunction(self, node): self.visitDeclaration(node)
-    def visitOperation(self, node): self.visitDeclaration(node)
+    def visitFunction(self, node):
+        for parameter in node.parameters(): parameter.accept(self)
+    def visitOperation(self, node): self.visitFunction(node)
     def visitParameter(self, node): return
     def visitComment(self, node): return
     def visitInheritance(self, node): return
