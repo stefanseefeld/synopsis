@@ -52,7 +52,6 @@ class RawFile(View):
             exclude = 0
             for re in self._exclude:
                if re.match(entry):
-                  print entry, 'excluded'
                   exclude = 1
                   break
             if exclude:
@@ -89,10 +88,10 @@ class RawFile(View):
       if reg_view is not self: return
 
       self.__filename = filename
-      self.__title = original
+      self.__title = filename
       self.start_file()
       self.write(self.processor.navigation_bar(filename, 2))
-      self.write('<h1>'+original+'</h1>')
+      self.write('File: '+entity('b', self.__title))
       try:
          f = open(original, 'rt')
          lines = ['']+f.readlines()
@@ -101,10 +100,9 @@ class RawFile(View):
          if len(lines) > 1000: wid = 4
          elif len(lines) > 100: wid = 3
          elif len(lines) > 10: wid = 2
-         spec = '%%0%dd | %%s'%wid
          for i in range(1, len(lines)):
-            lines[i] = spec%(i, escape(lines[i]))
-         self.write('<pre>')
+            lines[i] = escape(lines[i])
+         self.write('<pre class="file-all">')
          self.write(string.join(lines, ''))
          self.write('</pre>')
       except:

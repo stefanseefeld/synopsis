@@ -12,31 +12,34 @@ from BaseHTTPServer import HTTPServer
 from CGIHTTPServer import CGIHTTPRequestHandler
 import sys, os, os.path, getopt
 
-src_dir = ''
 document_root = '.'
+url = ''
+src = ''
 
 class RequestHandler(CGIHTTPRequestHandler):
    """This little demo server emulates apache's 'Alias' and 'ScriptAlias'
    options to serve source files and data generated from sxr.cgi"""
 
    def translate_path(self, path):
-      """override this so the sxi.cgi script is used"""
 
-      if path.startswith('/sxr.cgi'):
-         return config.datadir + '/cgi-bin' + path 
+      # similar to an 'Alias <src> <document_root>' under apache...
+      if path.startswith(src): # a file request...
+         path = os.path.join(document_root, path[len(src) + 1:])
+      # hack to be able to serve absolute URLs from the document root
+      elif not path.endswith('sxr.cgi'):
+         path = os.path.join(document_root, path[1:])
 
-      elif path.startswith('/'):
-         return document_root + path
-      else:
-         return path
+      return path
 
    def is_cgi(self):
       """The path either refers to the sxr cgi or to a (source) file."""
 
-      if self.path.startswith('/sxr.cgi'):
-         self.cgi_info = '', self.path[1:]
+      if self.path.startswith(url):
+         self.cgi_info = config.datadir + '/cgi-bin', 'sxr.cgi' + self.path[len(url):]
          return True
+
       return False
+      
 
 def usage():
    print 'Usage : %s [options] <input files>'%sys.argv[0]
@@ -46,19 +49,18 @@ List of options:
   -h, --help             help
   -p, --port             port to listen for requests
   -d, --document_root    document root, i.e. top level directory (for things like stylesheets)
-  -t, --template         html template to use for all returned data
-  -s, --src_dir          source directory for source file listings
-  -x, --xref_db          xref database
+  -u, --url              base url under which to reach sxr.cgi
+  -s, --src              base url under which to reach source files
 """
 
 def run():
-   global src_dir, document_root
+   global document_root, url, src
 
    port = 8000
    env = {}
    opts, args = getopt.getopt(sys.argv[1:],
-                              'p:d:t:s:x:h',
-                              ['port=', 'document_root=', 'template=', 'src_dir=', 'xref_db', 'help'])
+                              'p:d:u:s:h',
+                              ['port=', 'document_root=', 'url=', 'src=', 'help'])
    for o, a in opts:
       if o == '-h' or o == '--help':
          usage()
@@ -66,21 +68,21 @@ def run():
       elif o == '-p' or o == '--port':
          port = int(a)
       elif o == '-d' or o == '--document_root':
+         env['SXR_ROOT_DIR'] = a
          document_root = a
-      elif o == '-t' or o == '--template':
-         env['SXR_TEMPLATE'] = a
-      elif o == '-s' or o == '--src_dir':
-         env['SXR_SRC_DIR'] = a
-         src_dir = a
-      elif o == '-x' or o == '--xref_db':
-         env['SXR_XREF_DB'] = a
+      elif o == '-u' or o == '--url':
+         env['SXR_CGI_URL'] = a
+         url = a
+      elif o == '-s' or o == '--src':
+         env['SXR_SRC_URL'] = a
+         src = a
 
    os.environ.update(env)
 
    server_address = ('', port)
 
    httpd = HTTPServer(server_address, RequestHandler)
-   print "Serving HTTP on", httpd.server_name + "/sxr.cgi", "port", httpd.server_port, "..."
+   print "Serving HTTP on", httpd.server_name + ':%d%s ...'%(httpd.server_port, url)
    httpd.serve_forever()
 
 if __name__ == '__main__':

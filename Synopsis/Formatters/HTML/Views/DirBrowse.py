@@ -79,7 +79,6 @@ class DirBrowse(View):
             exclude = 0
             for re in self._exclude:
                if re.match(entry):
-                  print entry, 'excluded'
                   exclude = 1
                   break
             if exclude:
@@ -142,7 +141,6 @@ class DirBrowse(View):
          for re in self._exclude:
             if re.match(entry):
                exclude = 1
-               print entry, 'excluded'
                break
          if exclude:
             continue

@@ -519,7 +519,17 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     </section>
     <section id="cpp-parser">
       <title>Cpp Parser</title>
-      <para>The Cpp parser preprocesses C and C++ files.</para>
+      <para>The Cpp parser preprocesses C and C++ files. As any normal preprocessor,
+        it will generate a file suitable as input for a C or C++ parser, i.e. it 
+        processes include and macro statements. However, it will store the encountered
+        preprocessor directives in the AST for further analysis.</para>
+      <para>For each included file, a <type>SourceFile</type> object is created and added
+        to the parent's <type>Include</type> list. Further, all macro declarations, as well
+        as macro calls, are recorded.</para>
+      <para>Particular care has been taken in order to emulate system compilers, as these
+        all provide their own sets of macros, include paths, etc. Thus, the Cpp parser can
+        be trained to understand these compiler-specific settings.</para>
+      <para>For details about the parameters see <xref linkend="Cpp-Parser-ref"/>.</para>
     </section>
     <section id="cc-parser">
       <title>C Parser</title>

@@ -5,15 +5,11 @@ syn	:= $(patsubst %.h, %.syn, $(src))
 
 all: Paths
 
-Paths: Paths.syn Paths.xref
-	$(synopsis) html --output=$@ $<
+Paths: Paths.syn
+	$(synopsis) sxr --output=$@ $<
 
 Paths.syn: $(syn)
 	$(synopsis) link --output=$@ $^
-
-Paths.xref: Paths.syn 
-	@echo generating $@
-	$(synopsis) xref --output=$@ $^
 
 Path.syn: ../src/Path.h
 	$(synopsis) cxx_ssd_prev --output=$@ $<
@@ -28,7 +24,7 @@ Nurbs.syn: ../src/Nurbs.h
 	$(synopsis) cxx_javadoc --output=$@ $<
 
 clean:
-	rm -rf *.syn Paths.xref links xref
+	rm -rf *.syn links xref
 
 distclean: clean
 	rm -rf Paths

@@ -21,4 +21,3 @@ from Source import Source
 from NameIndex import NameIndex
 from XRef import XRef
 from RawFile import RawFile
-from SXRIndex import SXRIndex

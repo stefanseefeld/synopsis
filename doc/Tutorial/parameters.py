@@ -8,7 +8,17 @@ from Synopsis.Processor import Parametrized
 import sys, string, types
 
 def name_of_instance(instance):
-   return '%s.%s'%(instance.__module__, instance.__class__.__name__)
+   name = string.split(instance.__module__, '.')
+   if name[-1] != instance.__class__.__name__:
+      name.append(instance.__class__.__name__)
+   
+   return '%s'%'.'.join(name)
+
+def id_of_instance(instance):
+   name = string.split(instance.__module__, '.')[-2:]
+   if name[-1] != instance.__class__.__name__:
+      name = [name[-1], instance.__class__.__name__]
+   return '%s'%'-'.join(name)
 
 if not len(sys.argv) == 3:
    print 'Usage : %s <processor> <output>'%sys.argv[0]
@@ -27,7 +37,7 @@ output = open(sys.argv[2], 'w+')
 output.write('<?xml version="1.0" encoding="UTF-8"?>\n')
 output.write('<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"\n')
 output.write('"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">\n')
-output.write('<section>\n')
+output.write('<section id="%s-ref">\n'%id_of_instance(p))
 output.write('  <title>%s</title>\n'%name_of_instance(p))
 
 output.write('  <segmentedlist>\n')

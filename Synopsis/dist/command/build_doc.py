@@ -53,7 +53,7 @@ class build_doc(build.build):
 
       self.build_lib = '.'
 
-      if self.manual: self.build_manual()
+      if self.manual or self.sxr: self.build_manual()
       if self.tutorial: self.build_tutorial()
     
    def build_manual(self):
@@ -112,28 +112,32 @@ class build_doc(build.build):
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
-      if os.path.isdir(os.path.join(builddir, 'python')):
+      if newer(os.path.join(tempdir, 'html', 'python'),
+               os.path.join(builddir, 'python')):
          rmtree(os.path.join(builddir, 'python'), 1)
-      if os.path.isdir(os.path.join(builddir, 'cxx-api')):
+         copy_tree(os.path.join(tempdir, 'html', 'python'),
+                   os.path.join(builddir, 'python'))
+      if newer(os.path.join(tempdir, 'html', 'cxx-api'),
+               os.path.join(builddir, 'cxx-api')):
          rmtree(os.path.join(builddir, 'cxx-api'), 1)
-      if os.path.isdir(os.path.join(builddir, 'ucpp')):
+         copy_tree(os.path.join(tempdir, 'html', 'cxx-api'),
+                   os.path.join(builddir, 'cxx-api'))
+      if newer(os.path.join(tempdir, 'html', 'ucpp'),
+               os.path.join(builddir, 'ucpp')):
          rmtree(os.path.join(builddir, 'ucpp'), 1)
-      if os.path.isdir(os.path.join(builddir, 'ctool')):
+         copy_tree(os.path.join(tempdir, 'html', 'ucpp'),
+                   os.path.join(builddir, 'ucpp'))
+      if newer(os.path.join(tempdir, 'html', 'ctool'),
+               os.path.join(builddir, 'ctool')):
          rmtree(os.path.join(builddir, 'ctool'), 1)
-      if os.path.isdir(os.path.join(builddir, 'occ')):
+         copy_tree(os.path.join(tempdir, 'html', 'ctool'),
+                   os.path.join(builddir, 'ctool'))
+      if newer(os.path.join(tempdir, 'html', 'occ'),
+               os.path.join(builddir, 'occ')):
          rmtree(os.path.join(builddir, 'occ'), 1)
-      copy_tree(os.path.join(tempdir, 'html', 'python'),
-                os.path.join(builddir, 'python'))
-      copy_tree(os.path.join(tempdir, 'html', 'cxx-api'),
-                os.path.join(builddir, 'cxx-api'))
-      copy_tree(os.path.join(tempdir, 'html', 'ucpp'),
-                os.path.join(builddir, 'ucpp'))
-      copy_tree(os.path.join(tempdir, 'html', 'ctool'),
-                os.path.join(builddir, 'ctool'))
-      copy_tree(os.path.join(tempdir, 'html', 'occ'),
-                os.path.join(builddir, 'occ'))
-      copy_file(os.path.join(tempdir, 'all.xref'),
-                os.path.join(builddir, 'xref_db'))
+         copy_tree(os.path.join(tempdir, 'html', 'occ'),
+                   os.path.join(builddir, 'occ'))
+
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/Synopsis/print'))

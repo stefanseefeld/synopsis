@@ -15,35 +15,38 @@ class Handler(object):
 
     def __init__(self):
 
-        try: template = open(os.environ.get('SXR_TEMPLATE')).read()
+        root_dir = os.environ.get('SXR_ROOT_DIR', '.')
+        self.src_dir = os.path.join(root_dir, 'Source')
+        self.xref_db = os.path.join(root_dir, 'xref_db')
+        try: template = open(os.path.join(root_dir, 'sxr-template.html')).read()
         except:
             template = """
 <html>
   <head><title>Synopsis Cross-Reference</title></head>
   <body>
     <h1>Synopsis Cross-Reference</h1>
-    ###sxr-content###
+    @CONTENT@
   </body>
 </html>"""
 
-        self.template = string.split(template, "###sxr-content###")
-        self.src_dir = os.environ.get('SXR_SRC_DIR', '.')
-        self.xref_db = os.environ.get('SXR_XREF_DB', None)
+        self.template = string.split(template, "@CONTENT@")
+        self.src_url = os.environ.get('SXR_SRC_URL', '.')
+        self.cgi_url = os.environ.get('SXR_CGI_URL', '.')
 
         path = string.split(os.environ.get('PATH_INFO', '/'), '/')
-        self.command = path[1]
+        self.command = len(path) > 1 and path[1] or ''
         self.path_info = string.join(path[2:], '/')
         self.form = cgi.FieldStorage()
         self.script_name = os.environ.get('SCRIPT_NAME', None)
 
     def print_ident(self, file, line, text):
-        return "<a href=\"/Source/%s.html#%s\">%s:%s: %s</a>"%(file, line,
-                                                               file, line, text)
+        return "<a href=\"%s/Source/%s.html#%s\">%s:%s: %s</a>"%(self.src_url, file, line,
+                                                          file, line, text)
 
     def print_file(self, file, name = None):
         if not name: name = file
         name = name[:-5] # strip of trailing '.html'
-        return "<a href=\"/Source/%s\">%s</a>"%(file, name)
+        return "<a href=\"%s/Source/%s\">%s</a>"%(self.src_url, file, name)
 
     def dump(self, data, name):
         if not data.has_key(name): return
@@ -72,7 +75,7 @@ class Handler(object):
         """Generate a file search listing"""
 
         print """
-<table>
+<table class="form">
   <tr>
     <td colspan="2">
       Use this field to search for files by name.
@@ -90,7 +93,7 @@ class Handler(object):
     </td>
   </tr>
 </table>
-"""%{'script': self.script_name}
+"""%{'script': self.cgi_url}
 
         if self.form.has_key('string'):
             file = self.form['string'].value
@@ -108,7 +111,7 @@ class Handler(object):
         """Generate an identifier listing"""
 
         print """
-<table>
+<table class="form">
   <tr>
     <td colspan="2">
       Use this field to find a particular function, variable, etc.
@@ -126,7 +129,7 @@ class Handler(object):
     </td>
   </tr>
 </table>
-"""%{'script' : self.script_name}
+"""%{'script' : self.cgi_url}
 
         if self.form.has_key('string'):
             ident = self.form['string']
