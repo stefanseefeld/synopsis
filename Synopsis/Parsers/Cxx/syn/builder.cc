@@ -86,24 +86,24 @@ Builder::Builder(const std::string& basename)
   m = new Private;
   ScopedName name;
   m_scope = m_global = new AST::Namespace("", 0, "global", name);
-  ScopeInfo* global = find_scope(m_global);
+  ScopeInfo* global = find_info(m_global);
   m_scopes.push_back(global);
   // Insert the global base types
   Types::Base* t_bool, *t_null;
-  global->dict->insert(Base("char"));
-  global->dict->insert(t_bool = Base("bool"));
-  global->dict->insert(Base("short"));
-  global->dict->insert(Base("int"));
-  global->dict->insert(Base("long"));
-  global->dict->insert(Base("unsigned"));
-  global->dict->insert(Base("unsigned long"));
-  global->dict->insert(Base("float"));
-  global->dict->insert(Base("double"));
-  global->dict->insert(Base("void"));
-  global->dict->insert(Base("..."));
-  global->dict->insert(Base("long long"));
-  global->dict->insert(Base("long double"));
-  global->dict->insert(t_null = Base("__null_t"));
+  global->dict->insert(create_base("char"));
+  global->dict->insert(t_bool = create_base("bool"));
+  global->dict->insert(create_base("short"));
+  global->dict->insert(create_base("int"));
+  global->dict->insert(create_base("long"));
+  global->dict->insert(create_base("unsigned"));
+  global->dict->insert(create_base("unsigned long"));
+  global->dict->insert(create_base("float"));
+  global->dict->insert(create_base("double"));
+  global->dict->insert(create_base("void"));
+  global->dict->insert(create_base("..."));
+  global->dict->insert(create_base("long long"));
+  global->dict->insert(create_base("long double"));
+  global->dict->insert(t_null = create_base("__null_t"));
   // Add variables for true and false
   name.clear(); name.push_back("true");
   add(new AST::Variable("", -1, "variable", name, t_bool, false));
@@ -124,7 +124,7 @@ Builder::~Builder()
 }
 
 //. Finds or creates a cached Scope
-ScopeInfo* Builder::find_scope(AST::Scope* decl)
+ScopeInfo* Builder::find_info(AST::Scope* decl)
 {
   Private::ScopeMap::iterator iter = m->map.find(decl);
   if (iter == m->map.end())
@@ -134,14 +134,6 @@ ScopeInfo* Builder::find_scope(AST::Scope* decl)
       return scope;
     }
   return iter->second;
-}
-
-// Returns the scope 'depth' deep. 0 means current scope, 1 means parent, etc
-AST::Scope* Builder::scope(size_t depth)
-{
-  if (depth >= m_scopes.size())
-    return global();
-  return m_scopes[m_scopes.size() - 1 - depth]->scope_decl;
 }
 
 void Builder::set_access(AST::Access axs)
@@ -156,6 +148,10 @@ void Builder::set_filename(const std::string& filename)
   else
     m_filename = filename;
 }
+
+//
+// AST Methods
+//
 
 void Builder::add(AST::Declaration* decl)
 {
@@ -173,26 +169,24 @@ void Builder::add(Types::Named* type)
   m_scopes.back()->dict->insert(type);
 }
 
-AST::Namespace* Builder::startNamespace(const std::string& n, NamespaceType nstype)
+AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nstype)
 {
   std::string name = n, type_str;
   AST::Namespace* ns = 0;
   bool generated = false;
+  // Decide what to do based on the given namespace type
   switch (nstype)
     {
     case NamespaceNamed:
       type_str = "namespace";
-      // Check if namespace already exists
-      try
-        {
-          if (m_scopes.back()->dict->has_key(name))
-            {
-              Types::Named* type = m_scopes.back()->dict->lookup(name);
-              ns = Types::declared_cast<AST::Namespace>(type);
-            }
-        }
-      catch (const Types::wrong_type_cast&)
-        { }
+      { // Check if namespace already exists
+        Dictionary* dict = scopeinfo()->dict;
+        if (dict->has_key(name))
+          try
+            { ns = Types::declared_cast<AST::Namespace>(dict->lookup(name)); }
+          catch (const Types::wrong_type_cast&)
+            { }
+      }
       break;
     case NamespaceAnon:
       type_str = "module";
@@ -207,15 +201,15 @@ AST::Namespace* Builder::startNamespace(const std::string& n, NamespaceType nsty
       type_str = "local";
       { // name is empty or the type. Encode it with a unique number
         if (!name.size()) name = "ns";
-        std::ostringstream buf; buf << '`' << name;
         int count = m_scopes.back()->getCount(name);
+        std::ostringstream buf; buf << '`' << name;
         if (count > 1) buf << count;
         name = buf.str();
       }
       break;
     }
   // Create a new namespace object unless we already found one
-  if (!ns)
+  if (ns == NULL)
     {
       generated = true;
       // Generate the name
@@ -225,298 +219,266 @@ AST::Namespace* Builder::startNamespace(const std::string& n, NamespaceType nsty
       add(ns);
     }
   // Create ScopeInfo object. Search is this NS plus enclosing NS's search
-  ScopeInfo* scope = find_scope(ns);
+  ScopeInfo* ns_info = find_info(ns);
   ScopeInfo* current = m_scopes.back();
+  // For anon namespaces, we insert the anon ns into the parent search
   if (nstype == NamespaceAnon && generated)
-    // For anon namespaces, we insert the anon ns into the parent search
-    current->search.push_back(scope);
+    current->search.push_back(ns_info);
+  // Initialize search to same as parent scope if we generated a new NS
   if (generated)
-    {
-      // Add current scope's search to new search
-      /*scope->search.insert(
-          scope->search.end(),
-          m_scopes.back()->search.begin(),
-          m_scopes.back()->search.end()
-      );*/
-      std::copy(current->search.begin(), current->search.end(),
-                std::back_inserter(scope->search));
-    }
-  //cout << "Search: ";copy(scope->search.begin(), scope->search.end(), ostream_ptr_iterator<Scope>(cout, ", ")); cout << endl;
-
-  storeReference(ns, m_filename, m_swalker->current_lineno(), 0, "definition");
+    std::copy(current->search.begin(), current->search.end(),
+              std::back_inserter(ns_info->search));
 
   // Push stack
-  m_scopes.push_back(scope);
+  m_scopes.push_back(ns_info);
   m_scope = ns;
   return ns;
 }
 
-void Builder::endNamespace()
+void Builder::end_namespace()
 {
-  // Check if it is a namespace...
+  // TODO: Check if it is a namespace...
   m_scopes.pop_back();
   m_scope = m_scopes.back()->scope_decl;
 }
 
 // Utility class to recursively add base classes to given search
-void Builder::addClassBases(AST::Class* clas, ScopeSearch& search)
+void Builder::add_class_bases(AST::Class* clas, ScopeSearch& search)
 {
-    std::vector<AST::Inheritance*>::iterator inh_iter = clas->parents().begin();
-    while (inh_iter != clas->parents().end()) {
-        AST::Inheritance* inh = *inh_iter++;
-        Types::Type* type = inh->parent();
-        Types::Declared* declared;
-        if ((declared = dynamic_cast<Types::Declared*>(type)) != NULL) {
-            AST::Class* base;
-            if ((base = dynamic_cast<AST::Class*>(declared->declaration())) != NULL) {
-                // Found a base class, so look it up
-                ScopeInfo* scope = find_scope(base);
-                search.push_back(scope);
-                // Recursively add..
-                addClassBases(base, search);
-            }
+  AST::Inheritance::vector::iterator inh_iter = clas->parents().begin();
+  while (inh_iter != clas->parents().end())
+    {
+      AST::Inheritance* inh = *inh_iter++;
+      Types::Type* type = inh->parent();
+      try
+        {
+          AST::Class* base = Types::declared_cast<AST::Class>(type);
+          // Found a base class, so look it up
+          ScopeInfo* scope = find_info(base);
+          search.push_back(scope);
+          // Recursively add..
+          add_class_bases(base, search);
         }
-        // TODO: handle typedefs and parameterized types
+      catch (const Types::wrong_type_cast&)
+        { /* TODO: handle typedefs and parameterized types */ }
     }
 }
 
-void Builder::updateBaseSearch()
+void Builder::update_class_base_search()
 {
-    ScopeInfo* scope = m_scopes.back();
-    AST::Class* clas = dynamic_cast<AST::Class*>(scope->scope_decl);
-    if (!clas) return;
-    ScopeSearch search = scope->search;
-    ScopeSearch::iterator iter = search.begin();
-    scope->search.clear();
-    // Add the scope itself
+  ScopeInfo* scope = m_scopes.back();
+  AST::Class* clas = dynamic_cast<AST::Class*>(scope->scope_decl);
+  if (!clas) return;
+  ScopeSearch search = scope->search;
+  ScopeSearch::iterator iter = search.begin();
+  scope->search.clear();
+  // Add the scope itself
+  scope->search.push_back(*iter++);
+  // Add base classes
+  add_class_bases(clas, scope->search);
+  // Add containing scopes, stored in search
+  while (iter != search.end())
     scope->search.push_back(*iter++);
-    // Add base classes
-    addClassBases(clas, scope->search);
-    // Add containing scopes, stored in search
-    while (iter != search.end())
-        scope->search.push_back(*iter++);
 }
 
-AST::Class* Builder::startClass(int lineno, const std::string& type, const std::string& name)
+AST::Class* Builder::start_class(int lineno, const std::string& type, const std::string& name)
 {
-    // Generate the name
-    ScopedName class_name = extend(m_scope->name(), name);
-    // Create the Class
-    AST::Class* ns = new AST::Class(m_filename, lineno, type, class_name);
-    add(ns);
-    // Push stack. Search is this Class plus base Classes plus enclosing NS's search
-    ScopeInfo* scope = find_scope(ns);
-    scope->access = (type == "struct" ? AST::Public : AST::Private);
-    scope->search.insert(
-        scope->search.end(),
-        m_scopes.back()->search.begin(),
-        m_scopes.back()->search.end()
-    );
-    storeReference(ns, m_filename, m_swalker->current_lineno(), 0, "definition");
-    m_scopes.push_back(scope);
-    m_scope = ns;
-    return ns;
+  // Generate the name
+  ScopedName class_name = extend(m_scope->name(), name);
+  // Create the Class
+  AST::Class* ns = new AST::Class(m_filename, lineno, type, class_name);
+  add(ns);
+  // Push stack. Search is this Class plus base Classes plus enclosing NS's search
+  ScopeInfo* ns_info = find_info(ns);
+  ns_info->access = (type == "struct" ? AST::Public : AST::Private);
+  std::copy(scopeinfo()->search.begin(), scopeinfo()->search.end(),
+      std::back_inserter(ns_info->search));
+  m_scopes.push_back(ns_info);
+  m_scope = ns;
+  return ns;
 }
 
-AST::Class* Builder::startClass(int lineno, const std::string& type, const std::vector<std::string>& names)
+// Declaration of a previously forward declared class (ie: must find and
+// replace previous forward declaration in the appropriate place)
+AST::Class* Builder::start_class(int lineno, const std::string& type, const ScopedName& names)
 {
-    // Find the forward declaration of this class
-    Types::Unknown* unknown = dynamic_cast<Types::Unknown*>(m_lookup->lookupType(names));
-    if (!unknown) {
-        std::cerr << "Fatal: Qualified class name did not reference an unknown type." << std::endl; exit(1);
-    }
-    // Create the Class
-    AST::Class* ns = new AST::Class(m_filename, lineno, type, unknown->name());
-    // Add to container scope
-    std::vector<std::string> scope_name = names;
-    scope_name.pop_back();
-    Types::Declared* scope_type = dynamic_cast<Types::Declared*>(m_lookup->lookupType(scope_name));
-    if (!scope_type) {
-        std::cerr << "Fatal: Qualified class name was not in a declaration." << std::endl; exit(1);
-    }
-    AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
-    if (!scope) {
-        std::cerr << "Fatal: Qualified class name was not in a scope." << std::endl; exit(1);
-    }
-    // Set access
-    //decl->setAccess(m_scopes.back()->access);
-    // Add declaration
-    scope->declarations().push_back(ns);
-    // Add to name dictionary
-    ScopeInfo* scope_scope = find_scope(scope);
-    scope_scope->dict->insert(ns);
-    // Push stack. Search is this Class plus enclosing scopes. bases added later
-    ScopeInfo* ns_scope = find_scope(ns);
-    ns_scope->access = (type == "struct" ? AST::Public : AST::Private);
-    ns_scope->search.insert(
-        ns_scope->search.end(),
-        scope_scope->search.begin(),
-        scope_scope->search.end()
-    );
-    storeReference(ns, m_filename, m_swalker->current_lineno(), 0, "definition");
-    m_scopes.push_back(ns_scope);
-    m_scope = ns;
-    return ns;
+  // Find the forward declaration of this class
+  Types::Unknown* unknown = dynamic_cast<Types::Unknown*>(m_lookup->lookupType(names));
+  if (!unknown) {
+      std::cerr << "Fatal: Qualified class name did not reference an unknown type." << std::endl; exit(1);
+  }
+  // Create the Class
+  AST::Class* ns = new AST::Class(m_filename, lineno, type, unknown->name());
+  // Add to container scope
+  ScopedName scope_name = names;
+  scope_name.pop_back();
+  Types::Declared* scope_type = dynamic_cast<Types::Declared*>(m_lookup->lookupType(scope_name));
+  if (!scope_type) {
+      std::cerr << "Fatal: Qualified class name was not in a declaration." << std::endl; exit(1);
+  }
+  AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
+  if (!scope) {
+      std::cerr << "Fatal: Qualified class name was not in a scope." << std::endl; exit(1);
+  }
+  // Set access
+  //decl->setAccess(m_scopes.back()->access);
+  // Add declaration
+  scope->declarations().push_back(ns);
+  // Add to name dictionary
+  ScopeInfo* scope_info = find_info(scope);
+  scope_info->dict->insert(ns);
+  // Push stack. Search is this Class plus enclosing scopes. bases added later
+  ScopeInfo* ns_info = find_info(ns);
+  ns_info->access = (type == "struct" ? AST::Public : AST::Private);
+  std::copy(scope_info->search.begin(), scope_info->search.end(),
+      std::back_inserter(ns_info->search));
+  m_scopes.push_back(ns_info);
+  m_scope = ns;
+  return ns;
 }
 
-void Builder::endClass()
+void Builder::end_class()
 {
-    // Check if it is a class...
-    m_scopes.pop_back();
-    m_scope = m_scopes.back()->scope_decl;
+  // Check if it is a class...
+  m_scopes.pop_back();
+  m_scope = m_scopes.back()->scope_decl;
 }
 
 //. Start function impl scope
-void Builder::startFunctionImpl(const std::vector<std::string>& name)
+void Builder::start_function_impl(const ScopedName& name)
 {
-    /*{ cout << "starting function with name: ";
-        Types::Name::const_iterator niter = name.begin();
-        cout << name.size() <<" "<< *niter++;
-        while (niter != name.end())
-            cout << "::" << *niter++;
-        cout << endl;
-    }*/
-    // Create the Namespace
-    AST::Namespace* ns = new AST::Namespace(m_filename, 0, "function", name);
-    ScopeInfo* ns_scope = find_scope(ns);
-    ScopeInfo* scope_scope;
-    if (name.size() > 1) {
-        // Find container scope
-        std::vector<std::string> scope_name = name;
-        scope_name.pop_back();
-        scope_name.insert(scope_name.begin(), ""); // force lookup from global, not current scope, since name is fully qualified
-        Types::Declared* scope_type = dynamic_cast<Types::Declared*>(m_lookup->lookupType(scope_name));
-        if (!scope_type) { std::cerr << "Fatal: Qualified func name was not in a declaration." << std::endl; exit(1); }
-        AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
-        if (!scope) { std::cerr << "Fatal: Qualified func name was not in a scope." << std::endl; exit(1); }
-        scope_scope = find_scope(scope);
-    } else {
-        scope_scope = find_scope(m_global);
-    }
-    // Add to name dictionary TODO: this is for debugging only!
-    scope_scope->dict->insert(ns);
-    // Push stack. Search is this Class plus enclosing scopes. bases added later
-    ns_scope->search.insert(
-        ns_scope->search.end(),
-        scope_scope->search.begin(),
-        scope_scope->search.end()
-    );
+  // Create the Namespace
+  AST::Namespace* ns = new AST::Namespace(m_filename, 0, "function", name);
+  ScopeInfo* ns_info = find_info(ns);
+  ScopeInfo* scope_info;
+  if (name.size() > 1) {
+      // Find container scope
+      std::vector<std::string> scope_name = name;
+      scope_name.pop_back();
+      scope_name.insert(scope_name.begin(), ""); // force lookup from global, not current scope, since name is fully qualified
+      Types::Declared* scope_type = dynamic_cast<Types::Declared*>(m_lookup->lookupType(scope_name));
+      if (!scope_type) { std::cerr << "Fatal: Qualified func name was not in a declaration." << std::endl; exit(1); }
+      AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
+      if (!scope) { std::cerr << "Fatal: Qualified func name was not in a scope." << std::endl; exit(1); }
+      scope_info = find_info(scope);
+  } else {
+      scope_info = find_info(m_global);
+  }
+  // Add to name dictionary TODO: this is for debugging only!
+  scope_info->dict->insert(ns);
+  // Push stack. Search is this Class plus enclosing scopes. bases added later
+  std::copy(scope_info->search.begin(), scope_info->search.end(),
+      std::back_inserter(ns_info->search));
 
-    storeReference(ns, m_filename, m_swalker->current_lineno(), 0, "implementation");
-    m_scopes.push_back(ns_scope);
-    m_scope = ns;
+  m_scopes.push_back(ns_info);
+  m_scope = ns;
 }
 
 //. End function impl scope
-void Builder::endFunctionImpl()
+void Builder::end_function_impl()
 {
-    m_scopes.pop_back();
-    m_scope = m_scopes.back()->scope_decl;
+  m_scopes.pop_back();
+  m_scope = m_scopes.back()->scope_decl;
 }
 
 //. Add an operation
-AST::Operation* Builder::addOperation(int line, const std::string& name, const std::vector<std::string>& premod, Types::Type* ret, const std::string& realname)
+AST::Operation* Builder::add_operation(int line, const std::string& name, const std::vector<std::string>& premod, Types::Type* ret, const std::string& realname)
 {
-    // Generate the name
-    ScopedName scope = m_scope->name();
-    scope.push_back(name);
-    AST::Operation* oper = new AST::Operation(m_filename, line, "method", scope, premod, ret, realname);
-    add(oper);
-    storeReference(oper, m_filename, line, 0, "declaration");
-    return oper;
+  // Generate the name
+  ScopedName scope = m_scope->name();
+  scope.push_back(name);
+  AST::Operation* oper = new AST::Operation(m_filename, line, "method", scope, premod, ret, realname);
+  add(oper);
+  return oper;
 }
 
 //. Add a variable
-AST::Variable* Builder::addVariable(int line, const std::string& name, Types::Type* vtype, bool constr, const std::string& type)
+AST::Variable* Builder::add_variable(int line, const std::string& name, Types::Type* vtype, bool constr, const std::string& type)
 {
-    // Generate the name
-    ScopedName scope = m_scope->name();
-    scope.push_back(name);
-    AST::Variable* var = new AST::Variable(m_filename, line, type, scope, vtype, constr);
-    add(var);
-    storeReference(var, m_filename, line, 0, "declaration");
-    return var;
+  // Generate the name
+  ScopedName scope = m_scope->name();
+  scope.push_back(name);
+  AST::Variable* var = new AST::Variable(m_filename, line, type, scope, vtype, constr);
+  add(var);
+  return var;
 }
 
-void Builder::addThisVariable()
+void Builder::add_this_variable()
 {
-    // First find out if we are in a method
-    AST::Scope* func_ns = m_scope;
-    ScopedName name = func_ns->name();
-    name.pop_back();
-    name.insert(name.begin(), std::string());
-    Types::Named* clas_named = m_lookup->lookupType(name, false);
-    AST::Class* clas;
-    try {
-        clas = Types::declared_cast<AST::Class>(clas_named);
-    } catch (const Types::wrong_type_cast& ) {
-        // Not in a method -- so dont add a 'this'
-        return;
-    }
+  // First find out if we are in a method
+  AST::Scope* func_ns = m_scope;
+  ScopedName name = func_ns->name();
+  name.pop_back();
+  name.insert(name.begin(), std::string());
+  Types::Named* clas_named = m_lookup->lookupType(name, false);
+  AST::Class* clas;
+  try
+    { clas = Types::declared_cast<AST::Class>(clas_named); }
+  catch (const Types::wrong_type_cast& )
+    // Not in a method -- so dont add a 'this'
+    { return; }
 
-    // clas is now the AST::Class of the enclosing class
-    Types::Type::Mods pre, post;
-    post.push_back("*");
-    Types::Modifier* t_this = new Types::Modifier(clas->declared(), pre, post);
-    addVariable(-1, "this", t_this, false, "this");
+  // clas is now the AST::Class of the enclosing class
+  Types::Type::Mods pre, post;
+  post.push_back("*");
+  Types::Modifier* t_this = new Types::Modifier(clas->declared(), pre, post);
+  add_variable(-1, "this", t_this, false, "this");
 }
 
 //. Add a typedef
-AST::Typedef* Builder::addTypedef(int line, const std::string& name, Types::Type* alias, bool constr)
+AST::Typedef* Builder::add_typedef(int line, const std::string& name, Types::Type* alias, bool constr)
 {
-    // Generate the name
-    ScopedName scoped_name = extend(m_scope->name(), name);
-    // Create the object
-    AST::Typedef* tdef = new AST::Typedef(m_filename, line, "typedef", scoped_name, alias, constr);
-    add(tdef);
-    storeReference(tdef, m_filename, line, 0, "definition");
-    return tdef;
+  // Generate the name
+  ScopedName scoped_name = extend(m_scope->name(), name);
+  // Create the object
+  AST::Typedef* tdef = new AST::Typedef(m_filename, line, "typedef", scoped_name, alias, constr);
+  add(tdef);
+  return tdef;
 }
 
 //. Add an enumerator
-AST::Enumerator* Builder::addEnumerator(int line, const std::string& name, const std::string& value)
+AST::Enumerator* Builder::add_enumerator(int line, const std::string& name, const std::string& value)
 {
-    ScopedName scoped_name = extend(m_scope->name(), name);
-    AST::Enumerator* enumor = new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
-    add(enumor->declared());
-    storeReference(enumor, m_filename, line, 0, "definition");
-    return enumor;
+  ScopedName scoped_name = extend(m_scope->name(), name);
+  AST::Enumerator* enumor = new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
+  add(enumor->declared());
+  return enumor;
 }
 
 //. Add an enum
-AST::Enum* Builder::addEnum(int line, const std::string& name, const std::vector<AST::Enumerator*>& enumors)
+AST::Enum* Builder::add_enum(int line, const std::string& name, const std::vector<AST::Enumerator*>& enumors)
 {
-    ScopedName scoped_name = extend(m_scope->name(), name);
-    AST::Enum* theEnum = new AST::Enum(m_filename, line, "enum", scoped_name);
-    theEnum->enumerators() = enumors;
-    add(theEnum);
-    storeReference(theEnum, m_filename, line, 0, "definition");
-    return theEnum;
+  ScopedName scoped_name = extend(m_scope->name(), name);
+  AST::Enum* theEnum = new AST::Enum(m_filename, line, "enum", scoped_name);
+  theEnum->enumerators() = enumors;
+  add(theEnum);
+  return theEnum;
 }
 
 //. Add tail comment
-AST::Declaration* Builder::addTailComment(int line)
+AST::Declaration* Builder::add_tail_comment(int line)
 {
-    ScopedName name; name.push_back("dummy");
-    AST::Declaration* decl = new AST::Declaration(m_filename, line, "dummy", name);
-    add(decl);
-    return decl;
+  ScopedName name; name.push_back("dummy");
+  AST::Declaration* decl = new AST::Declaration(m_filename, line, "dummy", name);
+  add(decl);
+  return decl;
 }
 
-class InheritanceAdder {
-    std::list<AST::Class*>& open_list;
+// A functor that adds only inheritances which are class objects to a given
+// list
+class InheritanceAdder
+{
+  std::list<AST::Class*>& open_list;
 public:
-    InheritanceAdder(std::list<AST::Class*>& l) : open_list(l) {}
-    InheritanceAdder(const InheritanceAdder& i) : open_list(i.open_list) {}
-    void operator() (AST::Inheritance* i) {
-        try {
-            AST::Class* parent = Types::declared_cast<AST::Class>(i->parent());
-            open_list.push_back(parent);
-        }
-        catch (const Types::wrong_type_cast&) {
-            // ?? ignore for now
-        }
-    }
+  InheritanceAdder(std::list<AST::Class*>& l) : open_list(l) {}
+  InheritanceAdder(const InheritanceAdder& i) : open_list(i.open_list) {}
+  void operator() (AST::Inheritance* i)
+  {
+    try
+      { open_list.push_back(Types::declared_cast<AST::Class>(i->parent())); }
+    catch (const Types::wrong_type_cast&)
+      { /* ?? ignore for now */ }
+  }
 };
 
 
@@ -551,7 +513,7 @@ bool Builder::mapName(const ScopedName& names, std::vector<AST::Scope*>& o_scope
     scoped_name.push_back(*iter);
     Types::Named* type = m_lookup->lookupType(scoped_name, true);
     if (!type) {
-        //find_scope(ast_scope)->dict->dump();
+        //find_info(ast_scope)->dict->dump();
         LOG("\nWarning: final type lookup wasn't found!" << *iter); return false;
     }
 
@@ -560,166 +522,144 @@ bool Builder::mapName(const ScopedName& names, std::vector<AST::Scope*>& o_scope
 }
 
 
-Types::Unknown* Builder::Unknown(const std::string& name)
+Types::Unknown* Builder::create_unknown(const std::string& name)
 {
-    // Generate the name
-    ScopedName scope = m_scope->name();
-    scope.push_back(name);
-    Types::Unknown* unknown = new Types::Unknown(scope);
-    return unknown;
+  // Generate the name
+  ScopedName u_name = extend(m_scope->name(), name);
+  Types::Unknown* unknown = new Types::Unknown(u_name);
+  return unknown;
 }
 
-Types::Unknown* Builder::addUnknown(const std::string& name)
+Types::Unknown* Builder::add_unknown(const std::string& name)
 {
-    if (m_scopes.back()->dict->has_key(name))
-        return 0;
-    Types::Unknown* unknown = Unknown(name);
-    add(unknown);
-    return 0;
+  if (m_scopes.back()->dict->has_key(name) == false)
+    add(create_unknown(name));
+  return 0;
 }
 
-Types::Base* Builder::Base(const std::string& name)
+Types::Base* Builder::create_base(const std::string& name)
 {
-    return new Types::Base(extend(m_scope->name(), name));
+  return new Types::Base(extend(m_scope->name(), name));
 }
 
-std::string Builder::dumpSearch(ScopeInfo* scope)
+std::string Builder::dump_search(ScopeInfo* scope)
 {
-    ScopeSearch& search = scope->search;
-    std::ostringstream buf;
-    buf << "Search for ";
-    if (scope->scope_decl->name().size() == 0) buf << "global";
-    else buf << m_scope->name();
-    buf << " is now: ";
-    ScopeSearch::iterator iter = search.begin();
-    while (iter != search.end()) {
-        buf << (iter==search.begin() ? "" : ", ");
-        const ScopedName& name = (*iter)->scope_decl->name();
-        if (name.size()) 
-            if ( (*iter)->is_using ) buf << "(" << name << ")";
-            else buf << name;
-        else buf << "global";
-        ++iter;
+  ScopeSearch& search = scope->search;
+  std::ostringstream buf;
+  buf << "Search for ";
+  if (scope->scope_decl->name().size() == 0) buf << "global";
+  else buf << m_scope->name();
+  buf << " is now: ";
+  ScopeSearch::iterator iter = search.begin();
+  while (iter != search.end())
+    {
+      buf << (iter==search.begin() ? "" : ", ");
+      const ScopedName& name = (*iter)->scope_decl->name();
+      if (name.size()) 
+          if ( (*iter)->is_using ) buf << "(" << name << ")";
+          else buf << name;
+      else buf << "global";
+      ++iter;
     }
-    //buf << std::ends;
-    return buf.str();
+  //buf << std::ends;
+  return buf.str();
 }
 
-class Builder::EqualScope {
-    AST::Scope* target;
+// A comparator which compares declaration pointers of ScopeInfo objects
+class Builder::EqualScope
+{
+  AST::Scope* target;
 public:
-    EqualScope(ScopeInfo* t) { target = t->scope_decl; }
-    bool operator() (ScopeInfo* s) {
-        return s->scope_decl == target;
-    }
+  EqualScope(ScopeInfo* t) { target = t->scope_decl; }
+  bool operator()(ScopeInfo* s) { return s->scope_decl == target; }
 };
 
-void Builder::addUsingNamespace(ScopeInfo* target, ScopeInfo* scope)
+void Builder::do_add_using_namespace(ScopeInfo* target, ScopeInfo* scope)
 {
-    STrace trace("Builder::addUsingNamespace");
+  STrace trace("Builder::addUsingNamespace");
 
-    // Check if 'scope' alreayd has 'target' in its using list
-    ScopeSearch& already = scope->using_scopes;
-    if (std::find_if(already.begin(), already.end(), EqualScope(target))
-        != already.end())
-        // Already using
-        return;
-    // Else add it
-    scope->using_scopes.push_back(target);
-    target->used_by.push_back(scope);
+  // Check if 'scope' already has 'target' in its using list
+  ScopeSearch& uses = scope->using_scopes;
+  if (std::find_if(uses.begin(), uses.end(), EqualScope(target)) != uses.end())
+    // Already using
+    return;
+  // Else add it
+  scope->using_scopes.push_back(target);
+  target->used_by.push_back(scope);
 
-    ScopedName& target_name = target->scope_decl->name();
+  ScopedName& target_name = target->scope_decl->name();
 
-    // Find where to insert 'scope' into top()'s search list
-    // "closest enclosing namespace that contains both using directive and
-    //  target namespace"
-    ScopeSearch& search = scope->search;
-    LOG(dumpSearch(scope));
-    ScopeSearch::iterator iter = search.end();
-    // Skip global scope.. cant check something with no name
-    --iter;
-    while (iter != search.begin()) {
-        // Move to next scope to check
-        --iter;
-        ScopedName& search_name = (*iter)->scope_decl->name();
-        if (target_name.size() < search_name.size())
-            // Search is more nested than the target
-            break;
-        if (search_name.size() < 1)
-            // Global NS..
-            continue;
-        if (target_name[search_name.size()-1] != search_name.back())
-            // Different scope path taken
-            break;
+  // Find where to insert 'scope' into top()'s search list
+  // "closest enclosing namespace that contains both using directive and
+  //  target namespace" -- C++ Standard
+  ScopeSearch& search = scope->search;
+  LOG(dump_search(scope));
+  ScopeSearch::iterator iter = search.end();
+  // Skip global scope.. cant check something with no name
+  --iter;
+  while (iter != search.begin())
+    {
+      // Move to next scope to check
+      --iter;
+      ScopedName& search_name = (*iter)->scope_decl->name();
+      if (target_name.size() < search_name.size())
+        // Search is more nested than the target
+        break;
+      if (search_name.size() < 1)
+        // Global NS..
+        continue;
+      if (target_name[search_name.size()-1] != search_name.back())
+        // Different scope path taken
+        break;
     }
-    // Move back to last which was common, so we can insert before it
-    if (*iter != search.back() && iter != search.begin())
-        iter++;
-    
-    // Create a dummy ScopeInfo which is just an alias to the original. This
-    // is needed to cumulate using namespaces in the lookups
-    ScopeInfo* new_scope = new ScopeInfo(target);
-    search.insert(iter, new_scope);
+  // Move back to last which was common, so we can insert before it
+  if (*iter != search.back() && iter != search.begin())
+    iter++;
+  
+  // Create a dummy ScopeInfo which is just an alias to the original. This
+  // is needed to cumulate using namespaces in the lookups
+  ScopeInfo* new_scope = new ScopeInfo(target);
+  search.insert(iter, new_scope);
 
-    LOG(dumpSearch(scope));
+  LOG(dump_search(scope));
 
-    // Add target to all used_by scopes
-    ScopeSearch used_by_copy = scope->used_by;
-    iter = used_by_copy.begin();
-    while (iter != used_by_copy.end())
-        addUsingNamespace(target, *iter++);
+  // Add target to all used_by scopes
+  ScopeSearch used_by_copy = scope->used_by;
+  iter = used_by_copy.begin();
+  while (iter != used_by_copy.end())
+    do_add_using_namespace(target, *iter++);
 }
 
 // Add a namespace using declaration.
-void Builder::usingNamespace(Types::Named* type)
+void Builder::add_using_namespace(Types::Named* type)
 {
-    STrace trace("Builder::usingNamespace");
-    AST::Scope* ast_scope = Types::declared_cast<AST::Scope>(type);
-    ScopeInfo* target = find_scope(ast_scope);
-    addUsingNamespace(target, m_scopes.back());
-    storeReference(ast_scope, m_filename, m_swalker->current_lineno(), 0, "using directive");
+  STrace trace("Builder::usingNamespace");
+  AST::Scope* ast_scope = Types::declared_cast<AST::Scope>(type);
+  ScopeInfo* target = find_info(ast_scope);
+  do_add_using_namespace(target, m_scopes.back());
 }
 
 
 // Add a namespace alias using declaration.
-void Builder::usingNamespace(Types::Named* type, const std::string& alias)
+void Builder::add_aliased_using_namespace(Types::Named* type, const std::string& alias)
 {
-    STrace trace("Builder::usingNamespace");
+  STrace trace("Builder::usingNamespace");
 
-    // Retrieve the 'Namespace' it points to
-    AST::Namespace* ns = Types::declared_cast<AST::Namespace>(type);
+  // Retrieve the 'Namespace' it points to
+  AST::Namespace* ns = Types::declared_cast<AST::Namespace>(type);
 
-    // Create a new declared type with a different name
-    ScopedName new_name = m_scope->name();
-    new_name.push_back(alias);
-    Types::Declared* declared = new Types::Declared(new_name, ns);
+  // Create a new declared type with a different name
+  ScopedName new_name = extend(m_scope->name(), alias);
+  Types::Declared* declared = new Types::Declared(new_name, ns);
 
-    // Add to current scope
-    add(declared);
-
-    storeReference(ns, m_filename, m_swalker->current_lineno(), 0, "using directive");
+  // Add to current scope
+  add(declared);
 }
 
 // Add a using declaration.
-void Builder::usingDeclaration(Types::Named* type)
+void Builder::add_using_declaration(Types::Named* type)
 {
-    // Add it to the current scope
-    add(type);
-
-    if (Types::Declared* declared = dynamic_cast<Types::Declared*>(type))
-      storeReference(declared->declaration(), m_filename, m_swalker->current_lineno(), 0, "using declaration");
+  // Add it to the current scope
+  add(type);
 }
 
-
-// Add a reference to the given decl to the reference DB
-void Builder::storeReference(AST::Declaration* decl, const std::string& file, int line, int depth, const std::string& context)
-{
-#ifdef DEBUG
-  // TODO: merge with LinkStorer into combined output format (with a real
-  // output format too, :)
-  AST::Scope* container = scope(depth);
-  m->refs[decl->name()].push_back(AST::Reference(file, line, container->name(), context));
-  std::cout << decl->name() << " - " << file << ":" << line;
-  std::cout << " - " << container->name() << " - " << context << std::endl;
-#endif
-}

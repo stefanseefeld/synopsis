@@ -35,7 +35,7 @@ class Test:
 	ret = os.system(command)
 	return ret >> 8
     def gdb_less(self, test_file, flags = ""):
-	return self.system("make debug && echo ./occ.gdb %s %s && ./occ.gdb %s %s | less"%(flags, test_file, flags, test_file))
+	return self.system("make debug && echo ./occ.gdb %s %s && ./occ.gdb %s %s 2>&1 | less"%(flags, test_file, flags, test_file))
     def view_page(self, file, base, flags=""):
 	f = open("/tmp/%s.top"%base, "w")
 	f.write(html_top)
@@ -312,7 +312,7 @@ class Link (Test):
 
 class Builder (Test):
     def run(self):
-	return self.do_run("builder.cc", "builder", gcc_include + python_include)
+	return self.do_run("builder.cc", "builder", gcc_include + python_include + "-I../")
 
 class Synopsis (Test):
     def run(self):
