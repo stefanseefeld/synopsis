@@ -297,13 +297,36 @@ synopsis -f HTML -o Paths Path.syn Polyline.syn
   <chapter id="scripting">
     <title>Scripting and extending synopsis</title>
 
-    <!-- When the synopsis executable isn't
-           powerful enough... -->
+    <para>Often it isn't enough to provide textual options to the synopsis tool.
+      The processors that are at the core of the synopsis framework are highly
+      configurable. They can be passed simple string / integer / boolean type
+      parameters, but some of them are also composed of objects that could be
+      passed along as parameters.</para>
+
+    <para>While synopsis provides a lot of such building blocks already, you may
+      want to extend them by subclassing your own.</para>
+    
+    <para>In all these cases scripting is a much more powerful way to let
+      synopsis do what you want. This chapter explains the basic design
+      of the framework, and demonstrates how to write scripts using the
+      built-in building blocks as well as user extensions</para>
 
     <section id="ast">
       <title>The AST</title>
 
-      <para></para>
+      <para>At the core of synopsis is a representation of
+        the source code to be analyzed called an abstract syntax
+        tree (AST). Language specific syntax gets translated into
+        and abstract tree of statements, annotated with all the necessary
+        metadata to recover the important details during further processing.</para>
+
+      <para>At this time only one particular type of statements is translated
+        into an AST: declarations. This can be declarations of types, functions,
+        variables, etc. Attached to a declaration is a set of comments that was
+        found in the source code before the declaration. It is thus possible
+        to provide other metadata (such as code documentation) as part of these
+        comments. A variety of comment processors exist to extract such metadata
+        from comments.</para>
 
       <mediaobject>
         <imageobject>
@@ -395,6 +418,10 @@ synopsis -f HTML -o Paths Path.syn Polyline.syn
         </imageobject>
       </mediaobject>
 
+      <para>A parser creates an AST, which is passed to the linker (creating 
+        a table of contents on the fly) which passes it further down to a
+        formatter.</para>
+
       <programlisting>parser = ...
 linker = ...
 formatter = ...
@@ -405,7 +432,10 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
 
       <para>And, to be a little bit more scalable, and to allow the use of
       dependency tracking build tools such as make, the intermediate asts can
-      be persistet into files:</para>
+      be persistet into files. Thus, the above pipeline is broken up into multiple
+      pipelines, where the 'output' parameter of the parser is used to 
+      point to ast stores, and the 'input' parameter of the linker/formatter 
+      pipeline then contains a list of these ast store files.</para>
 
       <mediaobject>
         <imageobject>
@@ -416,11 +446,12 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
           <imagedata fileref="images/pipelines.png" format="PNG" />
         </imageobject>
       </mediaobject>
-
+      <para>Parse <filename>source1.hh</filename> and write the ast to <filename>source1.syn</filename>:</para>
       <programlisting>parser.process(AST(), input = [&#39;source1.hh&#39;], output = &#39;source1.syn&#39;)</programlisting>
-
+      <para>Parse <filename>source2.hh</filename> and write the ast to <filename>source2.syn</filename>:</para>
       <programlisting>parser.process(AST(), input = [&#39;source2.hh&#39;], output = &#39;source2.syn&#39;)</programlisting>
-
+      <para>Read in <filename>source1.syn</filename> and <filename>source2.syn</filename>, then link and format 
+        into the <filename>html</filename> directory:</para>
       <programlisting>formatter.process(linker.process(AST(), input = [&#39;source1.syn&#39;, &#39;source2.syn&#39;]), output = &#39;html&#39;)</programlisting>
     </section>
 
