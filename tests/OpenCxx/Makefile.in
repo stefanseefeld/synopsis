@@ -16,7 +16,7 @@ CPPFLAGS:= @CPPFLAGS@
 CPPFLAGS+= -I $(builddir)/../../src/ -I $(srcdir)/../../src/ 
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= -L $(builddir)/../../src/lib -lSynopsis @LIBS@
+LIBS	:= -L$(builddir)/../../src/lib -lSynopsis @LIBS@
 
 TESTS	:= Lexer Encoding Parser ConstEvaluator TypeEvaluator SymbolLookup
 
