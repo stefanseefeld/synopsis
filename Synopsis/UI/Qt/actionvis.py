@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.8 2002/08/23 04:36:35 chalky Exp $
+# $Id: actionvis.py,v 1.9 2002/09/28 05:53:31 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.9  2002/09/28 05:53:31  chalky
+# Refactored display into separate project and browser windows. Execute projects
+# in the background
+#
 # Revision 1.8  2002/08/23 04:36:35  chalky
 # Use icons! :)
 #
@@ -48,6 +52,10 @@
 
 import sys, pickle, Synopsis, cStringIO, math
 from qt import *
+
+# In later versions of python-qt aka PyQt this is in a separate module
+if not globals().has_key('QCanvasView'):
+    from qtcanvas import *
 
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
