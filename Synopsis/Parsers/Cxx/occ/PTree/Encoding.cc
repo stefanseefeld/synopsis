@@ -197,6 +197,26 @@ void Encoding::array(unsigned long s)
   prepend(str.c_str(), str.size());
 }
 
+Encoding Encoding::get_scope()
+{
+  if (!is_qualified()) return "";    // no scope
+  iterator i = begin() + 2;          // strip 'Q' and <size>
+  size_t length = static_cast<size_t>(*i - 0x80);
+  return Encoding(i, i + length + 1);
+}
+
+Encoding Encoding::get_symbol()
+{
+  if (!is_qualified()) return *this; // no scope
+  iterator i = begin();
+  size_t size = static_cast<size_t>(*++i - 0x80);
+  size_t length = static_cast<size_t>(*++i - 0x80);
+  i += length + 1;                   // strip outer scope
+  Encoding retn(i, end());
+  if (size > 2) retn.qualified(size - 1);
+  return retn;
+}
+
 Encoding Encoding::get_template_arguments()
 {
   int m = my_buffer[0] - 0x80;
