@@ -17,16 +17,19 @@ implementation: StorableImpl.syn FactoryImpl.syn interface.toc
 	touch $@
 
 Storage.hh:	Storage.idl
-		$(omniidl) -nf -bcxx $?
+	$(omniidl) -nf -bcxx $?
 
 Storage.syn: Storage.idl
-		$(synopsis) idl --output=$@ $<
+	$(synopsis) idl --output=$@ $<
 
 StorableImpl.syn:	StorableImpl.hh Storage.hh
-		$(synopsis) cxx --output=$@ $<
+	$(synopsis) cxx --output=$@ $<
 
 FactoryImpl.syn:	FactoryImpl.hh Storage.hh
-		$(synopsis) cxx --output=$@ $<
+	$(synopsis) cxx --output=$@ $<
 
 clean:
-	rm -rf Storage.hh StorageSK.cc *.syn interface interface.toc implementation *.pyc *.pyo
+	rm -rf Storage.hh StorageSK.cc *.syn interface.toc
+
+distclean: clean
+	rm -rf interface implementation 
