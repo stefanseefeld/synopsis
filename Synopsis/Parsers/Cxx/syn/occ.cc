@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.78 2002/11/17 12:11:44 chalky Exp $
+// $Id: occ.cc,v 1.79 2002/11/22 05:59:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.79  2002/11/22 05:59:37  chalky
+// Removed free() that shouldn't be there.
+//
 // Revision 1.78  2002/11/17 12:11:44  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -249,7 +252,6 @@ Py_XDECREF(value);
         if (temp_string)
         {
             syn_use_gcc = !strcmp("gcc", temp_string);
-            free(temp_string);
         }
         // 'emulate_compiler' specifies the compiler to emulate in terms of
         // include paths and macros
