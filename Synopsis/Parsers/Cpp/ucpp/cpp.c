@@ -419,6 +419,7 @@ static void restore_lexer_state(struct lexer_state *ls,
 	ls->ebuf = lsbak->ebuf;
 	ls->pbuf = lsbak->pbuf;
 	ls->nlka = lsbak->nlka;
+	ls->macfile = lsbak->macfile;
 	ls->discard = lsbak->discard;
 	ls->line = lsbak->line;
 	ls->oline = lsbak->oline;
