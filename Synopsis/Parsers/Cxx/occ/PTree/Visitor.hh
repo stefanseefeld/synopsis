@@ -144,60 +144,104 @@ public:
   virtual void visit(AtomVIRTUAL *);
   virtual void visit(AtomVOID *);
   virtual void visit(AtomVOLATILE *);
-  // ...lists...
+  //. [ { [ <statement>* ] } ]
   virtual void visit(Brace *);
+  //. [ { [ <statement>* ] } ]
   virtual void visit(Block *);
   virtual void visit(ClassBody *);
   virtual void visit(Typedef *);
+  //. [ template < [types] > [decl] ]
   virtual void visit(TemplateDecl *);
   virtual void visit(TemplateInstantiation *);
   virtual void visit(ExternTemplate *);
   virtual void visit(MetaclassDecl *);
+  //. [ extern ["C++"] [{ body }] ]
   virtual void visit(LinkageSpec *);
+  //. [ namespace <identifier> [{ body }] ]
   virtual void visit(NamespaceSpec *);
   virtual void visit(NamespaceAlias *);
+  //. [ using Foo :: x ; ]
+  //. [ using namespace Foo ; ]
+  //. [ using namespace Foo = Bar ; ]
   virtual void visit(Using *);
+  //. either variable, typedef or function
+  //. Variables:
+  //.  [ [modifiers] name [declarators] ; ]
+  //. Function prototype:
+  //.  [ [modifiers] name [declarators] ; ]
+  //. Function impl:
+  //.  [ [modifiers] name declarator [ { ... } ] ]
+  //. Typedef:
+  //.  ?
+  //. Class definition:
+  //.  [ [modifiers] [class foo ...] [declarators]? ; ]
   virtual void visit(Declaration *);
+  //. [ [ declarator { = <expr> } ] , ... ]
   virtual void visit(Declarator *);
   virtual void visit(Name *);
+  //. [ [type] ( [expr] ) ]
   virtual void visit(FstyleCastExpr *);
   virtual void visit(ClassSpec *);
+  //. [ enum [name] [{ [name [= value] ]* }] ]
   virtual void visit(EnumSpec *);
   virtual void visit(AccessSpec *);
   virtual void visit(AccessDecl *);
   virtual void visit(UserAccessSpec *);
+  //. [ if ( expr ) statement (else statement)? ]
   virtual void visit(IfStatement *);
+  //. [ switch ( expr ) statement ]
   virtual void visit(SwitchStatement *);
+  //. [ while ( expr ) statement ]
   virtual void visit(WhileStatement *);
+  //. [ do [{ ... }] while ( [...] ) ; ]
   virtual void visit(DoStatement *);
+  //. [ for ( stmt expr ; expr ) statement ]
   virtual void visit(ForStatement *);
+  //. [ try [{}] [catch ( arg ) [{}] ]* ]
   virtual void visit(TryStatement *);
+  //. [ break ; ]
   virtual void visit(BreakStatement *);
   virtual void visit(ContinueStatement *);
   virtual void visit(ReturnStatement *);
   virtual void visit(GotoStatement *);
+  //. [ case expr : [expr] ]
   virtual void visit(CaseStatement *);
+  //. [ default : [expr] ]
   virtual void visit(DefaultStatement *);
   virtual void visit(LabelStatement *);
   virtual void visit(ExprStatement *);
+  //. [ expr , expr (, expr)* ]
   virtual void visit(CommaExpr *);
+  //. [left = right]
   virtual void visit(AssignExpr *);
   virtual void visit(CondExpr *);
+  //. [left op right]
   virtual void visit(InfixExpr *);
   virtual void visit(PmExpr *);
+  //. ( type-expr ) expr   ..type-expr is type encoded
   virtual void visit(CastExpr *);
+  //. [op expr]
   virtual void visit(UnaryExpr *);
+  //. [ throw [expr] ]
   virtual void visit(ThrowExpr *);
+  //. [ sizeof ( [type [???] ] ) ]
   virtual void visit(SizeofExpr *);
   virtual void visit(TypeidExpr *);
   virtual void visit(TypeofExpr *);
   virtual void visit(NewExpr *);
+  //. [ delete [expr] ]
   virtual void visit(DeleteExpr *);
+  //. <postfix> \[ <expr> \]
   virtual void visit(ArrayExpr *);
+  //. [ postfix ( args ) ]
   virtual void visit(FuncallExpr *);
+  //. [ expr ++ ]
   virtual void visit(PostfixExpr *);
+  //. [ postfix . name ]
   virtual void visit(DotMemberExpr *);
+  //. [ postfix -> name ]
   virtual void visit(ArrowMemberExpr *);
+  //. [ ( expr ) ]
   virtual void visit(ParenExpr *);
 };
 
