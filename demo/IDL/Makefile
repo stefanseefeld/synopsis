@@ -1,4 +1,4 @@
-synopsis	:= ../../synopsis -p IDL -Wp,-K -f HTML -Wf,-s,style.css,-c,ssd,-c,javadoc,-c,section
+synopsis	:= ../../synopsis -p IDL -Wp,-K -f HTML -Wf,--spec=html.spec
 
 all:
 
