@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.1 2001/11/05 06:52:11 chalky Exp $
+# $Id: Project.py,v 1.2 2001/11/06 08:47:11 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.2  2001/11/06 08:47:11  chalky
+# Silly bug, arrows, channels are saved
+#
 # Revision 1.1  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
@@ -37,6 +40,7 @@ class Project:
 	self.__data_dir = './'
 	self.__filename = None
 	self.__actions = ProjectActions()
+	self.__name = 'New Project'
     def filename(self):
 	"Returns the filename of this project, or None if not set yet"
 	return self.__filename
@@ -45,6 +49,9 @@ class Project:
 	self.__filename = filename
     def data_dir(self): return self.__data_dir
     def set_data_dir(self, dir): self.__data_dir = dir
+
+    def name(self): return self.__name
+    def set_name(self, name): self.__name = name
 
     def actions(self):
 	"Returns a ProjectActions object"
@@ -67,17 +74,6 @@ class Project:
 
     def load(self, filename):
 	ProjectReader(self).read(filename)
-	self.set_filename(filename)
-	exec_dict = {}
-	execfile(filename, exec_dict)
-	if not exec_dict.has_key('Project'):
-	    raise Exception, 'Project load failed: Project attribute not found'
-	project = exec_dict['Project']
-	# extract project stuff like name, base dir, etc from project here
-	try:
-	    self.__actions.read(project)
-	except:
-	    raise Exception, 'Project load failed: '+sys.exc_info()[0]+sys.exc_info()[1]
 
 class ProjectActions:
     """Manages the actions in a project"""
@@ -93,6 +89,8 @@ class ProjectActions:
 	self.__listeners = []
     def actions(self):
 	return self.__actions
+    def get_action(self, name):
+	return self.__action_names[name]
     def add_listener(self, l):
 	self.__listeners.append(l)
     def fire(self, signal, *args):
@@ -139,12 +137,18 @@ class ProjectWriter (Util.PyWriter):
 	self.write("class Project:\n")
 	self.indent()
 	# write project stuff like name, base dir, etc here
-	# ...
+	self.write_attr('name', project.name())
+	self.write_attr('data_dir', project.data_dir())
 	self.write_item(project.actions())
 	self.outdent()
 
     def write_ProjectActions(self, actions):
 	self.write_attr('actions', self.long(actions.actions()))
+	channels = []
+	for source in actions.actions():
+	    for dest in source.outputs():
+		channels.append( (source.name(), dest.name()) )
+	self.write_attr('channels', self.long(channels))
 
     def write_SourcePath(self, path):
 	self.write_list((path.type, path.dir, path.glob))
@@ -169,17 +173,25 @@ class ProjectReader:
 	# Read attributes
 	self.project.set_filename(filename)
 	self.read_Project(project)
-    def read_Project(self, project_obj):
+    def read_Project(self, proj_obj):
+	project = self.project
 	# Read project stuff like name
-	# ...
-	self.read_ProjectActions(project_obj.actions)
-    def read_ProjectActions(self, action_obj):
+	if hasattr(proj_obj, 'name'): project.set_name(proj_obj.name)
+	if hasattr(proj_obj, 'data_dir'): project.set_name(proj_obj.data_dir)
+	self.read_ProjectActions(proj_obj)
+    def read_ProjectActions(self, project_obj):
 	# action_obj should be a list
-	for action in action_obj:
+	for action in project_obj.actions:
 	    t = action[0]
 	    if t == 'SourceAction': self.read_SourceAction(action)
 	    else:
 		raise Exception, 'Unknown action type: %s'%action[0]
+	if hasattr(project_obj, 'channels'):
+	    actions = self.project.actions()
+	    for source, dest in project_obj.channels:
+		src_obj = actions.get_action(source)
+		dst_obj = actions.get_action(dest)
+		actions.add_channel(src_obj, dst_obj)
 
     def read_SourceAction(self, action):
 	type, x, y, name, paths = action

@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.1 2001/11/05 06:52:11 chalky Exp $
+# $Id: actionvis.py,v 1.2 2001/11/06 08:47:11 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,12 +20,15 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.2  2001/11/06 08:47:11  chalky
+# Silly bug, arrows, channels are saved
+#
 # Revision 1.1  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
 
 
-import sys, pickle, Synopsis, cStringIO
+import sys, pickle, Synopsis, cStringIO, math
 from qt import *
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
@@ -232,13 +235,51 @@ class Line:
 	self.dest = dest
 	self.line = QCanvasLine(canvas)
 	self.line.setPen(QPen(Qt.blue))
+	self.arrow = QCanvasPolygon(canvas)
+	self.arrow.setBrush(QBrush(Qt.blue))
 	self.update_pos()
 	self.line.show()
+	self.arrow.show()
     def update_pos(self):
 	source, dest = self.source, self.dest
-	self.line.setPoints(
-	    source.x()+16, source.y()+16,
-	    dest.x()+16, dest.y()+16)
+	x1, y1 = source.x()+16, source.y()+16
+	x2, y2 = dest.x()+16, dest.y()+16
+	dx, dy = x2 - x1, y2 - y1
+	d = math.sqrt(dx*dx + dy*dy)
+	if d < 32:
+	    self.line.setPoints(x1, y1, x2, y2)
+	    self.arrow.setPoints(QPointArray([]))
+	    return
+	dx, dy = dx / d, dy / d
+	if math.fabs(dx) < math.fabs(dy):
+	    if dy < 0:
+		# Bottom
+		x2 = x2 + 15 * dx / dy
+		y2 = y2 + 15
+	    else:
+		# Top
+		x2 = x2 - 16 * dx / dy
+		y2 = y2 - 16
+	else:
+	    if dx < 0:
+		# Left
+		y2 = y2 + 15 * dy / dx
+		x2 = x2 + 15
+	    else:
+		# Right
+		y2 = y2 - 16 * dy / dx
+		x2 = x2 - 16
+	self.line.setPoints(x1, y1, x2, y2)
+	self.arrow.setPoints(QPointArray([
+	    x2, y2,
+	    x2 - 8*dx - 5*dy, y2 - 8*dy + 5*dx,
+	    x2 - 8*dx + 5*dy, y2 - 8*dy - 5*dx]))
+	#self.arrow.setPoints(QPointArray([
+	#    x2+5,y2,x2,y2-5,x2-5,y2,x2,y2+5 ]))
+	#self.arrow.setPoints(QPointArray([
+	#    5,0,0,5,-5,0,0,-5 ]))
+	#self.arrow.setX(x2)
+	#self.arrow.setY(y2)
 
 
 class ActionCanvas (QCanvas):
