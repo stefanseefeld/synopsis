@@ -22,8 +22,7 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python%s/Python.h>'%sys.versi
                     base_path = 'boost/',
                     main_file_only = False,
                     syntax_prefix = 'links/',
-                    xref_prefix = 'xref/',
-                    emulate_compiler = 'g++')
+                    xref_prefix = 'xref/')
 
 xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
 
