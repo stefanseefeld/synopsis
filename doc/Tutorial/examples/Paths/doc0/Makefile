@@ -11,16 +11,16 @@ Paths: Paths.syn
 Paths.syn: $(syn)
 	$(synopsis) -l Grouper1 -o $@ $^
 
-Path.syn: Path.h
+Path.syn: ../src/Path.h
 	$(synopsis) -p Cxx -l SSDComments,Previous -o $@ $<
 
-Polyline.syn: Polyline.h
+Polyline.syn: ../src/Polyline.h
 	$(synopsis) -p Cxx -l SSComments -o $@ $<
 
-Bezier.syn: Bezier.h
+Bezier.syn: ../src/Bezier.h
 	$(synopsis) -p Cxx -l SSDComments -o $@ $<
 
-Nurbs.syn: Nurbs.h
+Nurbs.syn: ../src/Nurbs.h
 	$(synopsis) -p Cxx -l JavaComments,JavaTags -o $@ $<
 
 Paths.ps: Paths.syn
