@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2001/01/08 19:50:59 stefan Exp $
+# $Id: Makefile,v 1.2 2001/01/10 16:12:02 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -20,7 +20,8 @@
 
 SHELL	= /bin/sh
 
-PREFIX	:= /usr/local/lib/python
+include ../../local.mk
+
 SRC	:= __init__.py python.py exparse.py
 
 all:
@@ -31,5 +32,5 @@ distclean: clean
 	/bin/rm -f  *.pyc
 
 install:
-	mkdir -p $(PREFIX)/Synopsis/Parser/Python
-	install $(SRC) $(PREFIX)/Synopsis/Parser/Python
+	mkdir -p $(packagedir)/Synopsis/Parser/Python
+	install $(SRC) $(packagedir)/Synopsis/Parser/Python

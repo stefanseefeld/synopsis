@@ -14,39 +14,43 @@
 
 #  For Linux
 
-CCC = cc
-CXX = c++
-RANLIB =
+SHELL		:= /bin/sh
 
-OPTIMISE = -O6 -march=i686
+include ../../../../../local.mk
+
+CCC		:= cc
+CXX		:= c++
+RANLIB		:=
+
+OPTIMISE	:= -O6 -march=i686
 #DEBUG = -ggdb -pg
-DEBUG =
+DEBUG		:=
 
-CFLAGS = $(OPTIMISE) $(DEBUG)
+CFLAGS		:= $(OPTIMISE) $(DEBUG)
 #CXXFLAGS = -O2 -I..
-CXXFLAGS = $(OPTIMISE) $(DEBUG) -Wall -I..
-GCLIB = ../gc/gc.a
-LDFLAGS = $(DEBUG) # -export-dynamic	# for GNU ld
-LIB =# -ldl			# Linux
-PYLIB = -lpython1.5 -ldl -lpthread
+CPPFLAGS	:= -I.. -I$(PYTHON_PREFIX)/include -DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYTHON_MINOR=$(PYTHON_MINOR)
+CXXFLAGS	:= $(OPTIMISE) $(DEBUG) -Wall
+GCLIB		:= ../gc/gc.a
+LDFLAGS		:= $(DEBUG) # -export-dynamic	# for GNU ld
+LIB		:= $(PYTHON_LIB) -ldl -lpthread # Linux
 
-OBJ = buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
-	pattern.o walker.o typeinfo.o parse.o mop.o classwalk.o\
-	metaclass.o quote-class.o member.o cbodywalk.o
+OBJ		:= buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
+		   pattern.o walker.o typeinfo.o parse.o mop.o classwalk.o\
+		   metaclass.o quote-class.o member.o cbodywalk.o
 
 all : ../../../occ.so
 
 $(OBJ): %.o : ../%.cc
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX)  -I.. $(CXXFLAGS) -c -o $@ $<
 
 synopsis.o:	synopsis.cc synopsis.hh
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 synopsis.g.o:	synopsis.cc synopsis.hh
 	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<
 
 occ.o:	occ.cc synopsis.hh
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 occ.g.o: occ.cc synopsis.hh
 	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<

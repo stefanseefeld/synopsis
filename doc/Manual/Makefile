@@ -1,16 +1,16 @@
 # Makefile for Synopsis RefManual
 
-synopsis = synopsis
-bpath = ../..
-spath = syn
+synopsis	:= ../../synopsis
+bpath		:= ../..
+spath		:= syn
 
-PYFILES = Formatter/HTML Formatter/ASCII Formatter/DUMP \
-	Core/AST Core/Type Core/Util \
-	Parser/IDL/omni \
-	Parser/Python/exparse Parser/Python/python
+PYFILES		:= Formatter/HTML Formatter/ASCII Formatter/DUMP \
+		   Core/AST Core/Type Core/Util \
+		   Parser/IDL/omni \
+		   Parser/Python/exparse Parser/Python/python
 
-PYSOURCES = $(patsubst %,$(bpath)/%.py,$(PYFILES))
-PYSYNS = $(patsubst %,$(spath)/%.syn,$(PYFILES))
+PYSOURCES	:= $(patsubst %,$(bpath)/%.py,$(PYFILES))
+PYSYNS		:= $(patsubst %,$(spath)/%.syn,$(PYFILES))
 
 
 all:	manual

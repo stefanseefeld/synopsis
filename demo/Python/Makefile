@@ -1,4 +1,4 @@
-synopsis = ../../synopsis -p Python -f HTML -Wf,-s,style.css
+synopsis	:= ../../synopsis -p Python -f HTML -Wf,-s,style.css
 
 all:
 
