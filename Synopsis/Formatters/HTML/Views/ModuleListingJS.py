@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.4 2001/03/29 14:11:33 chalky Exp $
+# $Id: ModuleListingJS.py,v 1.5 2001/04/17 13:36:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.5  2001/04/17 13:36:10  chalky
+# Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
+#
 # Revision 1.4  2001/03/29 14:11:33  chalky
 # Refactoring for use by RefManual's own derived module
 #
@@ -69,7 +72,9 @@ class ModuleListingJS(JSTree.JSTree):
 	"""Create a page with an index of all modules"""
 	# Init tree
 	share = os.path.split(AST.__file__)[0]+"/../share" #hack..
-	self.js_init(share+'/syn-down.png', share+'/syn-right.png', 'tree_%s.png', 0)
+	self.js_init(share+'/syn-down.png', share+'/syn-right.png',
+		     share+'/syn-dot.png', 'tree_%s.png', 0)
+	self.__share = share
 	# Creare the file
 	self.startFile(self._filename, "Module Index")
 	self.write(self.manager.formatRoots('Modules', 2))
@@ -90,18 +95,24 @@ class ModuleListingJS(JSTree.JSTree):
 	children = config.sorter.children()
 	children = filter(self._child_filter, children)
 	# Print link to this module
-	button = len(children) and self.formatButton() or ""
+	#button = len(children) and self.formatButton() or '<img src="%s">'%(self.__share+'/syn-dot.png')
 	name = Util.ccolonName(my_scope, rel_scope) or "Global Namespace"
 	link = self._link_href(ns)
-	self.write(button + href(link, name, target=self._link_target) + '<br>')
-	# Add children
-	if not len(children): return
-	self.startSection()
-	for child in children:
-	    self.write('<div class="module-section">')
-	    self.indexModule(child, my_scope)
-	    self.write('</div>')
-	self.endSection()
+	#self.write(button + href(link, name, target=self._link_target) + '<br>')
+	text = href(link, name, target=self._link_target)
+	if not len(children):
+	    self.writeLeaf(text)
+	else:
+	    self.writeNodeStart(text)
+	    # Add children
+	    #if not len(children): return
+	    #self.startSection()
+	    for child in children:
+		#self.write('<div class="module-section">')
+		self.indexModule(child, my_scope)
+		#self.write('</div>')
+	    #self.endSection()
+	    self.writeNodeEnd()
 
 htmlPageClass = ModuleListingJS
 
