@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.49 2003/11/12 16:42:05 stefan Exp $
+# $Id: core.py,v 1.50 2003/11/14 14:51:09 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.50  2003/11/14 14:51:09  stefan
+# more work to eliminate the config object
+#
 # Revision 1.49  2003/11/12 16:42:05  stefan
 # more refactoring
 #
@@ -223,8 +226,7 @@ import sys, getopt, os, os.path, string, types, errno, stat, re, time
 from Synopsis.Config import Base
 from Synopsis import AST, Type, Util
 from Synopsis.FileTree import FileTree
-from Synopsis.Formatters import TOC, ClassTree, xref
-from Synopsis.Formatters.HTML import TreeFormatter
+from Synopsis.Formatters import TOC, ClassTree, XRef
 
 from Synopsis.Util import import_object
 
@@ -262,7 +264,6 @@ class Config:
         self.start_dir = ''
 	self.exclude_globs = []
 	self.page_format = ""
-	self.treeFormatterClass = TreeFormatter.TreeFormatter
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
 	self.page_main = "" # page for main index.html page
@@ -272,7 +273,7 @@ class Config:
 	    'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'
 	]
 	self.verbose = 0
-	self.xref = xref.CrossReferencer()
+	self.xref = XRef.CrossReferencer()
 
 
     def fillDefaults(self):
@@ -302,7 +303,7 @@ class Config:
 	    raise TypeError, "HTML.pages must be a list."
 	if self.verbose > 1: print "Using pages:",pages
 	self.pages = pages
-        from FramesIndex import FramesIndex
+        from Pages.FramesIndex import FramesIndex
         # determine wether any of the pages is of type 'FramesIndex'
 	self.using_frames = reduce(lambda x, y: x or y,
                               map(lambda x: isinstance(x, FramesIndex),
@@ -333,19 +334,20 @@ class Config:
 	self.stylesheet_file = stylesheet_file
 
     def _config_comment_formatters(self, comment_formatters):
-	if self.verbose > 1: print "Using comment formatters:", comment_formatters
-	basePackage = 'Synopsis.Formatters.HTML.CommentFormatter.'
-	for formatter in comment_formatters:
-	    if type(formatter) == types.StringType:
-		if CommentFormatter.commentFormatters.has_key(formatter):
-		    self.commentFormatterList.append(
-			CommentFormatter.commentFormatters[formatter]()
-		    )
-		else:
-		    raise ImportError, "No builtin comment formatter '%s'"%formatter
-	    else:
-		clas = import_object(formatter, basePackage)
-		self.commentFormatterList.append(clas())
+	#if self.verbose > 1: print "Using comment formatters:", comment_formatters
+	#basePackage = 'Synopsis.Formatters.HTML.CommentFormatter.'
+	#for formatter in comment_formatters:
+	#    if type(formatter) == types.StringType:
+	#	if CommentFormatter.commentFormatters.has_key(formatter):
+	#	    self.commentFormatterList.append(
+	#		CommentFormatter.commentFormatters[formatter]()
+	#	    )
+	#	else:
+	#	    raise ImportError, "No builtin comment formatter '%s'"%formatter
+	#    else:
+	#	clas = import_object(formatter, basePackage)
+	#	self.commentFormatterList.append(clas())
+        pass
     
     def _config_toc_in(self, toc_in):
 	if self.verbose > 1: print "Will read toc(s) from",toc_in
@@ -416,7 +418,8 @@ class Config:
 config = Config()
 
 # HTML modules
-import CommentFormatter, FileLayout, ScopeSorter, Page
+from CommentFormatter import *
+import FileLayout, ScopeSorter, Page
 from Tags import *
 
 def sort(list):
@@ -660,7 +663,7 @@ def usage():
 
 def __parseArgs(args, config_obj):
     global verbose, commentParser, toc_out, toc_in
-    commentFormatters = CommentFormatter.commentFormatters
+    commentFormatters = commentFormatters
     # Defaults
 
     # Convert the arguments to a list with custom getopt
@@ -725,7 +728,7 @@ def format(args, ast, config_obj):
 
     # Create the declaration styler and the comment formatter
     config.decl_style = DeclStyle()
-    config.comments = CommentFormatter.CommentFormatter()
+    config.comments = CommentFormatter()
 
     # Create the Class Tree (TODO: only if needed...)
     config.classTree = ClassTree.ClassTree()
@@ -773,7 +776,7 @@ def configure_for_gui(ast, config_obj):
     declarations = ast.declarations()
     config.files = config.files_class()
     config.decl_style = DeclStyle()
-    config.comments = CommentFormatter.CommentFormatter()
+    config.comments = CommentFormatter()
     config.classTree = ClassTree.ClassTree()
     FileTree()
 

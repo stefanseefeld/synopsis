@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.12 2003/11/13 20:40:09 stefan Exp $
+# $Id: XRef.py,v 1.13 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,11 +9,11 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
-from Synopsis.Formatters.TOC import TOC
-
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatters.TOC import TOC, Linker
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters.XRef import *
 
 import os
 
@@ -30,9 +30,9 @@ class XRefLinker(Linker):
 class XRefPages(Page):
    """A module for creating pages full of xref infos"""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       self.xref = config.xref
       self.__filename = None
       self.__title = None
@@ -52,7 +52,7 @@ class XRefPages(Page):
       # Add an entry for every xref
       for name in self.xref.get_all_names():
          page = self.xref.get_page_for(name)
-         file = config.files.nameOfSpecial('xref%d'%page)
+         file = self.processor.file_layout.nameOfSpecial('xref%d'%page)
          file = file + '#' + Util.quote(string.join(name,'::'))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
       return self.__toc
@@ -75,11 +75,11 @@ class XRefPages(Page):
       page_info = self.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
-         self.__filename = config.files.nameOfSpecial('xref%d'%i)
+         self.__filename = self.processor.file_layout.nameOfSpecial('xref%d'%i)
          self.__title = 'Cross Reference page #%d'%i
 
          self.start_file()
-         self.write(self.manager.formatHeader(self.filename()))
+         self.write(self.processor.formatHeader(self.filename()))
          self.write(entity('h1', self.__title))
          self.write('<hr>')
          for name in page_info[i]:
@@ -92,15 +92,15 @@ class XRefPages(Page):
       page_info = self.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
-         filename = config.files.nameOfSpecial('xref%d'%i)
-         self.manager.register_filename(filename, self, i)
+         filename = self.processor.file_layout.nameOfSpecial('xref%d'%i)
+         self.processor.register_filename(filename, self, i)
     
    def process_link(self, file, line, scope):
       """Outputs the info for one link"""
 
       # Make a link to the highlighted source
       realfile = os.path.join(config.base_dir, file)
-      file_link = config.files.nameOfFileSource(realfile)
+      file_link = self.processor.file_layout.nameOfFileSource(realfile)
       file_link = file_link + "#%d"%line
       # Try and make a descriptive
       desc = ''
@@ -110,7 +110,7 @@ class XRefPages(Page):
             desc = ' ' + type.declaration().type()
       # Try and find a link to the scope
       scope_text = string.join(scope, '::')
-      entry = config.toc[scope]
+      entry = self.processor.toc[scope]
       if entry:
          scope_text = href(entry.link, scope_text)
       # Output list element
@@ -151,7 +151,7 @@ class XRefPages(Page):
          if config.types.has_key(name):
             type = config.types[name]
             if isinstance(type, Type.Declared):
-               link = config.files.link(type.declaration())
+               link = self.processor.file_layout.link(type.declaration())
                self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
       if target_data[0]:
          self.write('<li>Defined at:<ul>\n')
@@ -173,11 +173,11 @@ class XRefPages(Page):
          for child in decl.declarations():
             file, line = child.file().filename(), child.line()
             realfile = os.path.join(config.base_dir, file)
-            file_link = config.files.nameOfFileSource(realfile)
+            file_link = self.processor.file_layout.nameOfFileSource(realfile)
             file_link = '%s#%d'%(file_link,line)
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
             cname = child.name()
-            entry = config.toc[cname]
+            entry = self.processor.toc[cname]
             type = self.describe_decl(child)
             if entry:
                link = href(entry.link, Util.ccolonName(cname, name))

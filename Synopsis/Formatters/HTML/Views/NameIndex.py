@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.12 2003/11/12 16:42:05 stefan Exp $
+# $Id: NameIndex.py,v 1.13 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,21 +10,21 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type
 from Synopsis.Formatters.HTML import core, Tags
-from Page import Page
-from Tags import *
-from core import config
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters.HTML.core import config
 
 import os
 
 class NameIndex(Page):
    """Creates an index of all names on one page in alphabetical order"""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
-      self.manager.addRootPage(self.filename(), 'Name Index', 'main', 1)
+      Page.register(self, processor)
+      self.processor.addRootPage(self.filename(), 'Name Index', 'main', 1)
 
-   def filename(self): return config.files.nameOfSpecial('NameIndex')
+   def filename(self): return self.processor.file_layout.nameOfSpecial('NameIndex')
 
    def title(self): return 'Synopsis - Name Index'
 
@@ -34,7 +34,7 @@ class NameIndex(Page):
       _processItem is called for each item in the dictionary."""
 
       self.start_file()
-      self.write(self.manager.formatHeader(self.filename()))
+      self.write(self.processor.formatHeader(self.filename()))
       self.write(entity('h1', "Name Index"))
       self.write('<i>Hold the mouse over a link to see the scope of each name</i>')
 

@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.36 2003/11/13 20:40:09 stefan Exp $
+# $Id: Dot.py,v 1.37 2003/11/14 14:51:08 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -18,8 +18,6 @@ from Synopsis.Formatters import TOC
 import sys, tempfile, getopt, os, os.path, string, types, errno, re
 
 verbose = False
-toc = None
-nodes = {}
 
 class SystemError:
    """Error thrown by the system() function. Attributes are 'retval', encoded
@@ -60,6 +58,7 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
       self.__type_ref = None
       self.__type_label = ''
       self.__no_descend = no_descend
+      self.nodes = {}
 
    def scope(self): return self.__scope
    def write(self, text): self.__os.write(text)
@@ -82,9 +81,9 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
    def writeNode(self, ref, name, label, **attr):
       """helper method to generate output for a given node"""
 
-      if nodes.has_key(name): return
-      nodes[name] = len(nodes)
-      number = nodes[name]
+      if self.nodes.has_key(name): return
+      self.nodes[name] = len(self.nodes)
+      number = self.nodes[name]
 
       # Quote to remove characters that dot can't handle
       label = re.sub('<',r'\<',label)
@@ -100,8 +99,8 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
 
    def writeEdge(self, parent, child, label, **attr):
 
-      self.write("Node" + str(nodes[parent]) + " -> ")
-      self.write("Node" + str(nodes[child]))
+      self.write("Node" + str(self.nodes[parent]) + " -> ")
+      self.write("Node" + str(self.nodes[child]))
       self.write("[ color=\"black\", fontsize=10, dir=back, arrowtail=empty, " + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
 
    def getClassName(self, node):
@@ -233,7 +232,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
 
    def __init__(self, os, direction, operations, attributes, levels, types,
                 toc, prefix, no_descend):
-      InheritanceFormatter.__init__(self, os, direction, operations, attributes,
+      InheritanceGenerator.__init__(self, os, direction, operations, attributes,
                                     toc, prefix, no_descend)
       self.__levels = levels
       self.__types = types
@@ -248,7 +247,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
          type.declaration().accept(self)
          self.__current = self.__current - 1
       # to restore the ref/label...
-      InheritanceFormatter.visitDeclared(self, type)
+      InheritanceGenerator.visitDeclared(self, type)
 
    #################### AST Visitor ###########################################
         
@@ -278,7 +277,7 @@ class SingleInheritanceGenerator(InheritanceGenerator):
             self.writeNode('', name, name, color='gray75', fontcolor='gray75')
       for inheritance in node.parents():
          inheritance.accept(self)
-         if nodes.has_key(self.type_label()):
+         if self.nodes.has_key(self.type_label()):
             self.writeEdge(self.type_label(), name, None)
       # if this is the main class and if there is a type dictionary,
       # look for classes that are derived from this class
@@ -412,7 +411,7 @@ def _format_html(input, output, base_url):
 
 class Formatter(Processor):
    """The Formatter class acts merely as a frontend to
-   the various InheritanceFormatters"""
+   the various InheritanceGenerators"""
 
    title = Parameter('Inheritance Graph', 'the title of the graph')
    inheritance = Parameter(True, 'Generate an inheritance graph')
@@ -448,8 +447,9 @@ class Formatter(Processor):
          print string.join(formats.keys(), ', ')
          return self.ast
 
-      toc = TOC.TOC(TOC.Linker())
-      for t in self.toc_in: toc.load(t)
+      if not getattr(self, 'toc', None):
+         self.toc = TOC.TOC(TOC.Linker())
+      for t in self.toc_in: self.toc.load(t)
 
       head, tail = os.path.split(self.output)
       tmpfile = os.path.join(head, Util.quote(tail)) + ".dot"
@@ -465,12 +465,12 @@ class Formatter(Processor):
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
                                                 -1, self.ast.types(),
-                                                toc, self.prefix, False)
+                                                self.toc, self.prefix, False)
       elif self.inheritance:
          generator = InheritanceGenerator(dotfile, self.layout,
                                           not self.hide_operations,
                                           not self.hide_attributes,
-                                          toc, self.prefix, False)
+                                          self.toc, self.prefix, False)
       elif self.collaboration:
          sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
          return self.ast

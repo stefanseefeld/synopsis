@@ -1,4 +1,4 @@
-# $Id: FileListing.py,v 1.3 2003/11/12 16:42:05 stefan Exp $
+# $Id: FileListing.py,v 1.4 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,11 +10,9 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.FileTree import FileTree
-
-from Page import Page
-import core
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
@@ -24,16 +22,16 @@ class FileListing(Page):
    Second a page is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
-      self.__filename = config.files.nameOfSpecial('FileListing')
+      Page.register(self, processor)
+      self.__filename = self.processor.file_layout.nameOfSpecial('FileListing')
       self.__title = 'Files'
 
       config.set_main_page(self.filename())
       # Reset filename in case we got main page status
-      self.__filename = config.files.nameOfSpecial('FileListing')
-      self.manager.addRootPage(self.filename(), self.title(), "contents", 2)
+      self.__filename = self.processor.file_layout.nameOfSpecial('FileListing')
+      self.processor.addRootPage(self.filename(), self.title(), "contents", 2)
       config.set_contents_page(self.filename())
 
    def filename(self):
@@ -49,20 +47,21 @@ class FileListing(Page):
    def register_filenames(self, start):
       """Registers a page for each file indexed"""
 
-      self.manager.register_filename(self.__filename, self, None)
+      self.processor.register_filename(self.__filename, self, None)
     
    def process(self, start):
       """Creates the listing using the recursive processFileTreeNode method"""
 
       # Init tree
-      self.tree = config.treeFormatterClass(self)
+      self.tree = self.processor.tree_formatter
+      self.tree.register(self)
       # Start the file
       self.start_file()
-      self.write(self.manager.formatHeader(self.filename(), 2))
-      self.tree.startTree()
+      self.write(self.processor.formatHeader(self.filename(), 2))
+      self.tree.start_tree()
       # recursively visit all nodes
       self.processFileTreeNode(config.fileTree.root())
-      self.tree.endTree()
+      self.tree.end_tree()
       self.end_file()
 
    def _node_sorter(self, a, b):
@@ -83,17 +82,17 @@ class FileListing(Page):
 
       if isinstance(node, FileTree.File):
          # Leaf node
-         ref = rel(self.filename(), config.files.nameOfFileIndex(node.path))
+         ref = rel(self.filename(), self.processor.file_layout.nameOfFileIndex(node.path))
          text = href(ref, node.filename, target='index')
-         self.tree.writeLeaf(text)
+         self.tree.write_leaf(text)
          return
       # Non-leaf node
       children = node.children
       children.sort(self._node_sorter)
       if len(node.path):
-         self.tree.writeNodeStart(node.filename+os.sep)
+         self.tree.write_node_start(node.filename+os.sep)
       if len(children):
          for child in children:
             self.processFileTreeNode(child)
       if len(node.path):
-         self.tree.writeNodeEnd()
+         self.tree.write_node_end()

@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.8 2003/11/13 20:40:09 stefan Exp $
+# $Id: RawFile.py,v 1.9 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -19,9 +19,9 @@ import time, os, stat, os.path, string
 class RawFilePages(Page):
    """A module for creating a page for each file with hyperlinked source"""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       self.__base = config.base_dir
       self.__start = config.start_dir
       self.__files = None
@@ -60,7 +60,7 @@ class RawFilePages(Page):
             if stat.S_ISDIR(info[stat.ST_MODE]):
                dirs.append(entry_path)
             else:
-               filename = config.files.nameOfFileSource(entry_path)
+               filename = self.processor.file_layout.nameOfFileSource(entry_path)
                self.__files.append( (entry_path, filename) )
       return self.__files
 
@@ -74,19 +74,19 @@ class RawFilePages(Page):
       """Registers a page for every file"""
 
       for path, filename in self._get_files():
-         self.manager.register_filename(filename, self, path)
+         self.processor.register_filename(filename, self, path)
 
    def process_file(self, original, filename):
       """Creates a page for the given file"""
 
       # Check that we got the rego
-      reg_page, reg_scope = self.manager.filename_info(filename)
+      reg_page, reg_scope = self.processor.filename_info(filename)
       if reg_page is not self: return
 
       self.__filename = filename
       self.__title = original
       self.start_file()
-      self.write(self.manager.formatHeader(filename, 2))
+      self.write(self.processor.formatHeader(filename, 2))
       self.write('<h1>'+original+'</h1>')
       try:
          f = open(original, 'rt')
