@@ -66,6 +66,9 @@ public:
     void Restore(char*);
     void GetOnlyClosingBracket(Token&);
 
+    Ptree* GetComments();
+    Ptree* GetComments2();
+
     uint LineNumber(char*, char*&, int&);
 
     static bool RecordKeyword(char*, int);
@@ -107,7 +110,7 @@ private:
     void SkipAttributeToken();
     int SkipExtensionToken(char*&, int&);
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(_PARSE_VCC)
     void SkipAsmToken();
     void SkipDeclspecToken();
 #endif
@@ -123,6 +126,7 @@ private:
     int Screening(char *identifier, int len);
     int ReadSeparator(char c, uint top);
     int SingleCharOp(unsigned char c);
+    int ReadComment(char c, uint top);
 
 private:
     Program* file;
@@ -132,6 +136,7 @@ private:
     int last_token;
 
     static HashTable* user_keywords;
+    static Ptree* comments;
 };
 
 // convenient functions
@@ -260,6 +265,7 @@ inline bool is_float_suffix(char c){
 #define ntAccessDecl	414
 #define ntNamespaceSpec	415
 #define ntUsing		416
+#define ntTemplateInstantiation	417
 
 #define ntIfStatement		420
 #define ntSwitchStatement	421

@@ -27,6 +27,9 @@ ClassArray* Class::class_list = nil;
 int Class::num_of_cmd_options = 0;
 char* Class::cmd_options[];
 
+char* Class::metaclass_for_c_functions = nil;
+Class* Class::for_c_functions = nil;
+
 Ptree* Class::class_t = new LeafReserved("class", 5);
 Ptree* Class::empty_block_t = new PtreeClassBody(new Leaf("{", 1),
 						 nil,
@@ -48,7 +51,7 @@ void Class::Construct(Environment* e, Ptree* name)
 
     encode.SimpleName(name);
     def = Ptree::List(name, nil, empty_block_t);
-    def = new PtreeClassSpec(class_t, def, encode.Get());
+    def = new PtreeClassSpec(class_t, def, nil, encode.Get());
 
     full_definition = def;
     definition = def;
@@ -98,6 +101,12 @@ Class::~Class() {}
 char* Class::MetaclassName()
 {
     return "Class";
+}
+
+Ptree* Class::Comments()
+{
+    if (definition->IsA(ntClassSpec))
+	return ((PtreeClassSpec*)definition)->GetComments();
 }
 
 Ptree* Class::Name()
@@ -331,7 +340,7 @@ bool Class::LookupMemberType(Ptree* name, TypeInfo& mem_type)
 
 // translation of classes
 
-void Class::TranslateClass(Environment*)
+void Class::TranslateClass(Environment* e)
 {
 }
 
@@ -450,7 +459,7 @@ void Class::CheckValidity(char* name)
 // TranslateMemberFunction() is invoked only if the function is
 // implemented out of the class declaration (not inlined.)
 
-void Class::TranslateMemberFunction(Environment*, Member&)
+void Class::TranslateMemberFunction(Environment*, Member& m)
 {
 }
 
@@ -758,7 +767,8 @@ void Class::SetEnvironment(Environment* e)
 
 bool Class::AcceptTemplate()
 {
-    return FALSE;
+    return FALSE;	// Only the subclasses of TemplateClass can
+			// return true.
 }
 
 /*
@@ -866,6 +876,11 @@ void Class::RegisterMetaclass(char* keyword, char* class_name)
 void Class::ChangeDefaultMetaclass(char* name)
 {
     Walker::ChangeDefaultMetaclass(name);
+}
+
+void Class::SetMetaclassForFunctions(char* name)
+{
+    metaclass_for_c_functions = name;
 }
 
 void Class::InsertBeforeStatement(Environment* env, Ptree* p)
@@ -1086,6 +1101,13 @@ bool TemplateClass::AcceptTemplate()
     return TRUE;
 }
 
+/*
+  Translate a template instantiation.
+*/
+Ptree* TemplateClass::TranslateInstantiation(Environment*, Ptree* spec)
+{
+    return spec;
+}
 
 // class ClassArray
 

@@ -132,8 +132,8 @@ public:
 // in pattern.cc
 public:
     static bool Match(Ptree*, char*, ...);
-    static Ptree* Make(char* pat, ...);
-    static Ptree* MakeStatement(char* pat, ...);
+    static Ptree* Make(const char* pat, ...);
+    static Ptree* MakeStatement(const char* pat, ...);
     static Ptree* GenSym();
 
     static Ptree* qMake(char*);

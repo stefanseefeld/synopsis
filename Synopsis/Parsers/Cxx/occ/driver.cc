@@ -49,7 +49,7 @@
 #include <unistd.h>
 #endif
 
-static char thisVersion[] = "2.5.8";
+static char thisVersion[] = "2.5.10";
 
 static char copyingNote[]
 	= "Copyright (c) 1997-2000 Shigeru Chiba.  All Rights Reserved.\n"
@@ -265,6 +265,10 @@ void ParseCmdOptions(int from, int argc, char** argv, char*& source_file)
 	    preprocessTwice = TRUE;
         else if (strcmp("-p", argv[i]) == 0)
 	    doTranslate = FALSE;
+	else if (strcmp("-C", argv[i]) == 0) {
+	    AddCppOption("-C");
+	    preprocessTwice = TRUE;
+	}
 	else if(strcmp("-c", argv[i]) == 0)
 	    makeExecutable = FALSE;
 	else if(strcmp("-l", argv[i]) == 0){
@@ -342,7 +346,10 @@ static void ShowHelp(char** argv)
 	 << " Preprocessor options\n"
 	 << "    -I<directory>  Add <directory> to the #include path\n"
 	 << "    -D<name>=<def> Define a macro <name> as <def>\n"
-	 << "    -d<option>     Specify a preprocessor option.\n"
+	 << "    -d<option>     Specify a preprocessor option\n"
+#if !defined(IRIX_CC) && !defined (_MSC_VER)
+	 << "    -C             Don't discard comments\n"
+#endif
 	 << "\n"
 	 << " Other options\n"
 	 << "    --regular-c++  Inhibit the extended syntax\n";

@@ -22,29 +22,10 @@
 #include "parse.h"
 #include "encoding.h"
 #include "member.h"
-#include <string>
 
 Parser* Walker::default_parser = nil;
 char* Walker::argument_name = "_arg_%d_";
 char* Walker::default_metaclass = nil;
-
-#ifdef DEBUG
-class Trace
-{
-public:
-  Trace(const string &s, Ptree *node) : scope(s) { cout << "entering " << scope << endl; node->Display();}
-  ~Trace() { cout << "leaving " << scope << endl;}
-private:
-  string scope;
-};
-#else
-class Trace
-{
-public:
-  Trace(const string &, Ptree *) {}
-  ~Trace() {}
-};
-#endif
 
 Walker::Walker(Parser* p)
 {
@@ -98,7 +79,6 @@ Environment* Walker::ExitScope()
 
 void Walker::RecordBaseclassEnv(Ptree* bases)
 {
-  Trace trace("Walker::RecordBaseclassEnv", bases);
     while(bases != nil){
 	bases = bases->Cdr();		// skip : or ,
 	Ptree* base_class = bases->Car()->Last()->Car();
@@ -164,7 +144,6 @@ void Walker::TypeofPtree(Ptree*, TypeInfo& t)
 
 Ptree* Walker::TranslateTypedef(Ptree* def)
 {
-  Trace trace("Walker::TranslateTypedef", def);
     Ptree *tspec, *tspec2;
 
     tspec = Ptree::Second(def);
@@ -180,7 +159,6 @@ Ptree* Walker::TranslateTypedef(Ptree* def)
 
 Ptree* Walker::TranslateTemplateDecl(Ptree* def)
 {
-  Trace trace("Walker::TranslateTemplateDecl", def);
     Ptree* body = Ptree::Nth(def, 4);
     Ptree* class_spec = GetClassTemplateSpec(body);
     if(class_spec->IsA(ntClassSpec))
@@ -191,13 +169,11 @@ Ptree* Walker::TranslateTemplateDecl(Ptree* def)
 
 Ptree* Walker::TranslateExternTemplate(Ptree* def)
 {
-  Trace trace("Walker::TranslateExternTemplate", def);
     return def;
 }
 
 Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
 {
-  Trace trace("Walker::TranslateTemplateClass", temp_def);
     Ptree* userkey;
     Ptree* class_def;
 
@@ -247,9 +223,76 @@ Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
 
 Ptree* Walker::TranslateTemplateFunction(Ptree* temp_def, Ptree* fun)
 {
-  Trace trace("Walker::TranslateTemplateFunction", temp_def);
     env->RecordTemplateFunction(temp_def, fun);
     return temp_def;
+}
+
+Ptree* Walker::TranslateTemplateInstantiation(Ptree *inst_spec)
+{
+    Ptree* userkey;
+    Ptree* class_spec;
+    Ptree* full_class_spec = Ptree::First(inst_spec);
+
+    if(full_class_spec->Car()->IsLeaf()){
+	userkey = nil;
+	class_spec = full_class_spec;
+    }
+    else{
+	userkey = full_class_spec->Car();
+	class_spec = full_class_spec->Cdr();
+    }
+
+    Class* metaobject = nil;
+    metaobject = MakeTemplateInstantiationMetaobject(full_class_spec,
+						     userkey, class_spec);
+    return TranslateTemplateInstantiation(inst_spec, userkey, 
+					  class_spec, metaobject);
+}
+
+Class* Walker::MakeTemplateInstantiationMetaobject(
+    Ptree* full_class_spec, Ptree* userkey, Ptree* class_spec)
+{
+    // [class [foo [< ... >]]] -> [class foo]
+    Ptree* class_name = Ptree::First(Ptree::Second(class_spec));
+    Bind* binding = nil;
+    if (!env->Lookup(class_name,binding))
+	return nil;
+
+    Class* metaobject = nil;
+    if (binding->What() != Bind::isTemplateClass) {
+	ErrorMessage("not declarated as a template class?!?",
+		     nil, full_class_spec);
+	metaobject = nil;
+    }
+    else
+	metaobject = binding->ClassMetaobject();
+
+    if (metaobject == nil)
+	metaobject = new TemplateClass;
+    else
+	if(metaobject->AcceptTemplate())
+	    return metaobject;
+	else{
+	    ErrorMessage("the specified metaclass is not for templates.",
+			 nil, full_class_spec);
+	    metaobject = new TemplateClass;
+	}
+
+    return metaobject;
+}
+
+Ptree* Walker::TranslateTemplateInstantiation(Ptree* inst_spec,
+		Ptree* userkey, Ptree* class_spec, Class* metaobject)
+{
+    if (metaobject == nil)
+	return inst_spec;
+    else {
+	Ptree *class_spec2 = TranslateClassSpec(class_spec);
+	if (class_spec == class_spec2)
+	    return inst_spec;
+	else
+	    return class_spec2;
+    }
 }
 
 Ptree* Walker::TranslateMetaclassDecl(Ptree* decl)
@@ -260,7 +303,6 @@ Ptree* Walker::TranslateMetaclassDecl(Ptree* decl)
 
 Ptree* Walker::TranslateLinkageSpec(Ptree* def)
 {
-  Trace trace("Walker::TranslateLinkageSpec", def);
     Ptree* body = Ptree::Third(def);
     Ptree* body2 = Translate(body);
     if(body == body2)
@@ -273,9 +315,9 @@ Ptree* Walker::TranslateLinkageSpec(Ptree* def)
 
 Ptree* Walker::TranslateNamespaceSpec(Ptree* def)
 {
-  Trace trace("Walker::TranslateNamespaceSpec", def);
     Ptree* body = Ptree::Third(def);
     Ptree* body2 = Translate(body);
+    env->RecordNamespace(Ptree::Second(def));
     if(body == body2)
 	return def;
     else
@@ -286,13 +328,11 @@ Ptree* Walker::TranslateNamespaceSpec(Ptree* def)
 
 Ptree* Walker::TranslateUsing(Ptree* def)
 {
-  Trace trace("Walker::TranslateUsing", def);
     return def;
 }
 
 Ptree* Walker::TranslateDeclaration(Ptree* def)
 {
-  Trace trace("Walker::TranslateDeclaration", def);
     Ptree* decls = Ptree::Third(def);
     if(decls->IsA(ntDeclarator))	// if it is a function
 	return TranslateFunctionImplementation(def);
@@ -325,13 +365,11 @@ Ptree* Walker::TranslateDeclaration(Ptree* def)
 
 Ptree* Walker::TranslateStorageSpecifiers(Ptree* spec)
 {
-  Trace trace("Walker::TranslateStorageSpecifiers", spec);
     return spec;
 }
 
 Ptree* Walker::TranslateDeclarators(Ptree* decls)
 {
-  Trace trace("Walker::TranslateDeclarators", decls);
     return TranslateDeclarators(decls, TRUE);
 }
 
@@ -407,7 +445,6 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 
 Ptree* Walker::TranslateDeclarator(bool record, PtreeDeclarator* decl)
 {
-  Trace trace("Walker::TranslateDeclarator", decl);
     // if record is true, the formal arguments are recorded in the
     // current environment.
 
@@ -427,7 +464,6 @@ Ptree* Walker::TranslateDeclarator(bool record, PtreeDeclarator* decl)
 
 bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
 {
-  Trace trace("Walker::GetArgDeclList", decl);
     Ptree* p = decl;
     while(p != nil){
 	Ptree* q = p->Car();
@@ -450,7 +486,6 @@ bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
 
 Ptree* Walker::TranslateArgDeclList(bool record, Ptree*, Ptree* args)
 {
-  Trace trace("Walker::TranslateArgDeclList", args);
     return TranslateArgDeclList2(record, env, FALSE, FALSE, 0, args);
 }
 
@@ -533,7 +568,6 @@ Ptree* Walker::FillArgumentName(Ptree* arg, Ptree* d, int arg_name)
 
 Ptree* Walker::TranslateAssignInitializer(PtreeDeclarator*, Ptree* init)
 {
-  Trace trace("Walker::TranslateAssignInitializer", init);
     Ptree* exp = init->Second();
     Ptree* exp2 = Translate(exp);
     if(exp == exp2)
@@ -544,7 +578,6 @@ Ptree* Walker::TranslateAssignInitializer(PtreeDeclarator*, Ptree* init)
 
 Ptree* Walker::TranslateInitializeArgs(PtreeDeclarator*, Ptree* init)
 {
-  Trace trace("Walker::TranslateInitializeArgs", init);
     return TranslateArguments(init);
 }
 
@@ -561,7 +594,7 @@ Ptree* Walker::TranslateFunctionImplementation(Ptree* impl)
     Ptree* tspec2 = TranslateTypespecifier(tspec);
     Environment* fenv = env->RecordDeclarator(decl);
     if(fenv == nil){
-	// shouldn't reach here.
+	// reach here if resolving the qualified name fails. error?
 	NewScope();
 	decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
 	body2 = Translate(body);
@@ -684,7 +717,6 @@ Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
 
 Ptree* Walker::TranslateClassSpec(Ptree* spec)
 {
-  Trace trace("Walker::TranslateClassSpec", spec);
     Ptree* userkey;
     Ptree* class_def;
 
@@ -713,7 +745,7 @@ Class* Walker::MakeClassMetaobject(Ptree* def, Ptree* userkey,
 	metaobject = opcxx_ListOfMetaclass::New(default_metaclass, class_def,
 						nil);
 	if(metaobject == nil)
-	    MopErrorMessage2("the default metaclass is not loaded: ",
+	    MopErrorMessage2("the default metaclass cannot be loaded: ",
 			     default_metaclass);
     }
 
@@ -774,7 +806,7 @@ Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
 	if(mclass == nil)
 	    ErrorMessage("invalid keyword: ", userkey, class_def);
 	else{
-	    metaobject = opcxx_ListOfMetaclass::New(mclass, def,
+	    metaobject = opcxx_ListOfMetaclass::New(mclass, class_def,
 						    userkey->Third());
 	    if(metaobject == nil)
 		ErrorMessage("the metaclass associated with the"
@@ -836,33 +868,29 @@ Ptree* Walker::TranslateClassSpec(Ptree* spec, Ptree*,
 	    return new PtreeClassSpec(spec->Car(),
 				      Ptree::ShallowSubst(body2, body,
 							  spec->Cdr()),
-				      spec->GetEncodedName());
+				      nil, spec->GetEncodedName());
     }
 }
 
 
 Ptree* Walker::TranslateEnumSpec(Ptree* spec)
 {
-  Trace trace("Walker::TranslateEnumSpec", spec);
     env->RecordEnumName(spec);
     return spec;
 }
 
 Ptree* Walker::TranslateAccessSpec(Ptree* p)
 {
-  Trace trace("Walker::TranslateAccessSpec", p);
     return p;
 }
 
 Ptree* Walker::TranslateAccessDecl(Ptree* p)
 {
-  Trace trace("Walker::TranslateAccessDecl", p);
     return p;
 }
 
 Ptree* Walker::TranslateUserAccessSpec(Ptree* p)
 {
-  Trace trace("Walker::TranslateUserAccessSpec", p);
     return p;
 }
 
@@ -1054,7 +1082,6 @@ Ptree* Walker::TranslateExprStatement(Ptree* s)
 
 Ptree* Walker::TranslateTypespecifier(Ptree* tspec)
 {
-  Trace trace("Walker::TranslateTypespecifier", tspec);
     Ptree *class_spec, *class_spec2;
 
     class_spec = GetClassOrEnumSpec(tspec);
@@ -1071,7 +1098,6 @@ Ptree* Walker::TranslateTypespecifier(Ptree* tspec)
 
 Ptree* Walker::GetClassOrEnumSpec(Ptree* typespec)
 {
-  Trace trace("Walker::GetClassOrEnumSpec", typespec);
     Ptree* spec = StripCvFromIntegralType(typespec);
     if(spec->IsA(ntClassSpec, ntEnumSpec))
 	return spec;
@@ -1081,7 +1107,6 @@ Ptree* Walker::GetClassOrEnumSpec(Ptree* typespec)
 
 Ptree* Walker::GetClassTemplateSpec(Ptree* body)
 {
-  Trace trace("Walker::GetClassTemplateSpec", body);
     if(Ptree::Eq(Ptree::Third(body), ';')){
 	Ptree* spec = StripCvFromIntegralType(Ptree::Second(body));
 	if(spec->IsA(ntClassSpec))
@@ -1178,7 +1203,6 @@ void Walker::TypeofInfix(Ptree* exp, TypeInfo& t)
 
 Ptree* Walker::TranslatePm(Ptree* exp)
 {
-  Trace trace("Walker::TranslatePm", exp);
     Ptree* left = exp->First();
     Ptree* left2 = Translate(left);
     Ptree* right = exp->Third();
@@ -1593,7 +1617,6 @@ Ptree* Walker::TranslateNewDeclarator2(Ptree* decl)
 
 Ptree* Walker::TranslateArguments(Ptree* arglist)
 {
-  Trace trace("Walker::TranslateArguments", arglist);
     if(arglist == nil)
 	return arglist;
 
@@ -1621,6 +1644,23 @@ Ptree* Walker::TranslateArguments(Ptree* arglist)
 	return arglist;
 }
 
+void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
+{
+    if (def == nil || !def->IsA(ntDeclaration))
+	return;
+
+    Ptree* decl;
+    int n = 0;
+    for (;;) {
+	int i = n++;
+	decl = NthDeclarator(def, i);
+	if (decl == nil)
+	    break;
+	else if (decl->IsA(ntDeclarator))
+	    ((PtreeDeclarator*)decl)->SetComments(comments);
+    }
+}
+
 Ptree* Walker::NthDeclarator(Ptree* def, int& nth)
 {
     Ptree* decls = def->Third();
@@ -1632,7 +1672,7 @@ Ptree* Walker::NthDeclarator(Ptree* def, int& nth)
 	    return decls;
     }
     else
-	while(decls != nil){
+	while(decls != nil && !decls->IsLeaf()){
 	    if(nth-- == 0)
 		return decls->Car();
 

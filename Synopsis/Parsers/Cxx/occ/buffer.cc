@@ -39,6 +39,10 @@
 #include "ptree-core.h"
 #include "mop.h"
 
+#if defined(_PARSE_VCC)
+#define _MSC_VER	1100
+#endif
+
 char Program::Get()
 {
     if(buf[index] == '\0')

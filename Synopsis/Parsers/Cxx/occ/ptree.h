@@ -161,6 +161,13 @@ public:
     Ptree* Translate(Walker*);
 };
 
+class PtreeTemplateInstantiation : public NonLeaf {
+public:
+    PtreeTemplateInstantiation(Ptree* p) : NonLeaf(p, nil) {}
+    int What();
+    Ptree* Translate(Walker*);
+};
+
 class PtreeExternTemplate : public NonLeaf {
 public:
     PtreeExternTemplate(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
@@ -219,10 +226,14 @@ public:
     Ptree* Name() { return declared_name; }
     void Print(ostream&, int, int);
 
+    Ptree* GetComments() { return comments; }
+    void SetComments(Ptree* c) { comments = c; }
+
 private:
     char* type;
     char* name;
     Ptree* declared_name;
+    Ptree* comments;
 };
 
 class PtreeName : public NonLeaf {
@@ -254,14 +265,16 @@ private:
 
 class PtreeClassSpec : public NonLeaf {
 public:
-    PtreeClassSpec(Ptree*, Ptree*);
-    PtreeClassSpec(Ptree*, Ptree*, char*);
+    PtreeClassSpec(Ptree*, Ptree*, Ptree*);
+    PtreeClassSpec(Ptree*, Ptree*, Ptree*, char*);
     int What();
     Ptree* Translate(Walker*);
     char* GetEncodedName();
+    Ptree* GetComments();
 
 private:
     char* encoded_name;
+    Ptree* comments;
 
 friend class Parser;
 };

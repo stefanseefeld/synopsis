@@ -23,10 +23,12 @@
 #include "walker.h"
 #include "typeinfo.h"
 #include "mop.h"
+#include "parse.h"
 
 // class Environment
 
 PtreeArray* Environment::classkeywords = nil;
+HashTable* Environment::namespace_table = new HashTable;
 
 Environment::Environment(Walker* w)
 : baseclasses(0)
@@ -269,6 +271,19 @@ int Environment::AddEntry(char* key, int len, Bind* b) {
 
 int Environment::AddDupEntry(char* key, int len, Bind* b) {
     return htable->AddDupEntry(key, len, b);
+}
+
+void Environment::RecordNamespace(Ptree* name)
+{
+    if (name != nil)
+	namespace_table->AddEntry(name->GetPosition(), name->GetLength(),
+				  name);
+}
+
+bool Environment::LookupNamespace(char* name, int len)
+{
+    HashValue value;
+    return namespace_table->Lookup(name, len, &value);
 }
 
 void Environment::RecordTypedefName(Ptree* decls)
@@ -514,6 +529,20 @@ void Environment::Dump(int level)
 	}
 
     e->Dump();
+}
+
+Ptree* Environment::GetLineNumber(Ptree* p, int& number)
+{
+    if (walker == nil) {
+	number = 0;
+	return nil;
+    }
+
+    char* fname;
+    int fname_len;
+    number = (int)walker->GetParser()->LineNumber(p->GetPosition(),
+						  fname, fname_len);
+    return new Leaf(fname, fname_len);
 }
 
 

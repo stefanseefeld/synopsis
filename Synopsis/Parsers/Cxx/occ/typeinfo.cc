@@ -389,6 +389,31 @@ int TypeInfo::NumOfArguments()
     }
 }
 
+bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
+{
+    Environment* e = env;
+    Normalize();
+    char* ptr = SkipCv(encode, e);
+    if(ptr == nil || *ptr != 'T'){
+	t.Unknown();
+	return FALSE;
+    }
+
+    int len;
+    ptr = (char*)Encoding::GetTemplateArguments((unsigned char*)++ptr, len);
+    char* end = ptr + len;
+    while(n-- > 0){
+	ptr = SkipType(ptr, e);
+	if(ptr == nil || ptr >= end) {
+	    t.Unknown();
+	    return FALSE;
+	}
+    }
+
+    t.Set(ptr, e);
+    return TRUE;
+}
+
 Ptree* TypeInfo::FullTypeName()
 {
     Ptree *qname, *head;
@@ -412,9 +437,13 @@ Ptree* TypeInfo::FullTypeName()
 	return Encoding::MakePtree(name, nil)->First();
 
     if(*name == 'T'){
-	MopErrorMessage("TypeInfo::FullTypeName()",
-			"sorry, not implemented");
-	return nil;
+	++name;
+	qname = Encoding::MakeLeaf(name);
+	head = GetQualifiedName(e, qname);
+	if(head == nil)
+	    return qname;
+	else
+	    return Ptree::Snoc(head, qname);
     }
     else if(*name == 'Q'){
 	qname = Encoding::MakeQname(++name);
@@ -547,8 +576,18 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
 	    c = bind->ClassMetaobject();
 	    if(c == nil)
 		Set(ptr, orig_e);
+	    else if (*name == 'T')
+		Set(ptr, c->GetEnvironment());
 	    else
 		Set(c);
+
+	    return FALSE;
+	case Bind::isTemplateClass :
+	    c = bind->ClassMetaobject();
+	    if(c == nil)
+		Set(ptr, orig_e);
+	    else
+		Set(ptr, c->GetEnvironment());
 
 	    return FALSE;
 	default :

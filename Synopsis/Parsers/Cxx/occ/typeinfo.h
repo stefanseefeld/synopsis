@@ -78,6 +78,7 @@ public:
     void Reference(TypeInfo&);
     bool NthArgument(int, TypeInfo&);
     int NumOfArguments();
+    bool NthTemplateArgument(int, TypeInfo&);
 
     Ptree* FullTypeName();
     Ptree* MakePtree(Ptree* = nil);
