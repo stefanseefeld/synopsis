@@ -1,167 +1,45 @@
-Synopsis 0.5
-~~~~~~~~~~~~
+Installation guide
+==================
  
-** Introduction
+Building
+--------
 
-Synopsis is a code documentation tool. It extracts comments from a range of
-input files and creates a range of output. Every input format has its own
-Parser, whose output is an Abstract Syntax Tree as defined by Synopsis. This
-AST is then Linked (to prevent duplicates, strip unneeded namespaces, etc) and
-finally output. At any stage the AST can be saved to or loaded from files on
-disk. Moreover, multiple files may be loaded at once to allow progressive
-compilation using 'make'. Individual formatters take the AST from memory and
-create suitable output.
+* If the sources are checked out from cvs, run ./autogen.sh the configure scripts.
+* Run python setup.py build to compile everything.
+  This will place all files that are going to be installed under build/
 
-** Prerequisites
+  If you do not want to install, but rather try synopsis out from within the
+  source directory, you may consider 'python setup.py build_ext --inplace'
+  as an alternative, which will only compile the C/C++ extensions and put
+  them right into the source tree.
 
-To get graphs in the generated output, you will need to install GraphViz which
-includes the 'dot' tool:
+Building documentation
+----------------------
 
-    http://www.graphviz.org/
+* 'python setup.py build_doc' will compile printable and html versions of
+  the Tutorial as well as the Manual, and put them under share/doc/Synopsis
 
-GraphViz needs the FreeType library:
+* All four targets require xsltproc, and the printable Tutorial requires
+  additionally fop (from http://xml.apache.org)
 
-    http://www.freetype.org/
+* If you only want to build the html versions, run 'python setup.py build_doc --html'
 
-To parse CORBA IDL files you will need OmniORB's idl parser installed,
-omniidl, since it is used to parse the files.
+* If you only want the Tutorial, run 'python setup.py build_doc --tutorial'
 
-** Supported platforms
+* etc.
 
-Linux - This is the main development platform, and so is pretty well
-supported!
+Installing
+----------
 
-Cygwin - Supported, but may be out of sync during development. You will
-probably need to specify --disable-gc to configure.
+* To install synopsis in <prefix>, run 'python setup.py install --prefix=<prefix>'
+  The default prefix is '/usr/local'.
 
-** Building
+* If documentation was built before, it will be installed into <prefix>/share/doc/Synopsis
 
-* if the sources are checked out from cvs, run autoconf to generate the configure script
-* run ./configure (with parameters, if appropriate)
-* run make
+Using Synopsis
+--------------
 
-Note that ./configure will also run configure in Synopsis/Parser/C++/gc,
-unless you specify the --disable-gc option. Configure is run with default
-options - to change these please manually run ./configure from that directory
-also.
+* Remember to set the PYTHONPATH variable if necessary.
 
-** Installing
+* Read the tutorial to learn how to get started using synopsis.
 
-Ensure you have write permissions to the install prefix directories (eg: log
-in as root in Linux/UNIX), then simply call 'make install' to install the
-synopsis executable together with the associated python package 'Synopsis'.
-
-** Using Synopsis
-
-Synopsis is a fairly complicated tool. The two best ways to get started are to
-try out the demos, and to read the documentation.
-
- * Documentation
-
-The documentation takes the form of a DocBook manual, which can be converted
-into PDF or HTML. If you downloaded a release, these should be in docs/Manual,
-else you can generate them yourself or download them from the Synopsis website
-(http://synopsis.sf.net).
-
-Reference documentation generated from the Synopsis source code is available
-in docs/RefManual, and also at the website.
-
- * Demos
-
-There are demos for IDL, C++, and Python. Step into the demo subdirectory and run
-make to build them.
-For some of them you need particular tools, such as omniidl for the IDL parser, and
-dot for the graph generator.
-If you have not installed Synopsis, then you may have to set your PYTHONPATH
-to ensure that the Synopsis directory (the one inside the main directory,
-which contains the Config.py file) can be found.
-For example, if you have unpacked the source in: /mnt/src/Synopsis-0.5
-(Config.py will be in /mnt/src/Synopsis-0.5/Synopsis/Config.py)
-then set your PYTHONPATH to include: /mnt/src/Synopsis-0.5
-Eg: export PYTHONPATH=/mnt/src/Synopsis-0.5:$PYTHONPATH
-
- * Basic Usage
-
-(More detailed instructions are in the DocBook manual.)
-
-There are three source code parsers: IDL, C++, Python
-
-The available output formatters are:
- HTML - takes a directory name for output (-o Directory)
-        Creates many pages in that directory
- HTML_Simple - one-page HTML output
- Dia - generates a Dia file with classes and generalizations
- Dot - generates various graphs, such as Inheritance
- DocBook - generates a docbook file
- BoostBook - generates a boostbook file (not complete)
- ASCII - Tries to output the AST in a way that is syntactically valid as
-         input.
- DUMP - Dumps the AST in a verbose form. This is useful only if you are
-        trying to figure out how various input is converted to AST objects.
-	Pipe into "less -r" for best results.
-
-For an example of using synopsis for progressive compilation see the
-RefManual in docs/. A separate AST is created for each input file, and only
-updated when necessary. These separate files are then compiled into a single
-AST and passed to the formatter for output:
-
- for each file: synopsis -p C++ -Wp,-m -o syn/$file.syn $file.hh
-       finally: synopsis -f HTML -o Manual syn/*.syn
-
-Note that telling the Parser to only keep main-file declarations (-m) results
-in much smaller files and much faster linking, as the standard headers are so
-large that they can cause huge time and memory requirements.
-
-Alternatively, you may use a config file - for more info check out the
-"Config" section of the RefManual. Doing so can change the above example to:
-
- for each file: synopsis -c config.py -Wc,parser=C++ -o syn/$file.syn $file.hh
-       finally: synopsis -c config.py -Wc,formatter=HTML syn/*.syn
-
-
-** Future features
-
-Currently the following features are planned:
-o. Precompiled headers. This would speed up the parsing and linking speed for
-   C++ files tremendously.
-o. Further linker features and optimisations
-o. Further output options, such as different formats (ps, pdf, latex, sgml,
-   man, info).
-
-For more information on this TODO list, see the Task Manager at Synopsis'
-Sourceforge home.
-
-
-** More info
-
-See the docs/ directory for more documentation, including a docbook manual.
-
-Synopsis is hosted at Sourceforge:
-
- Homepage:
- http://synopsis.sourceforge.net/
- 
- Project page:
- http://sourceforge.net/projects/synopsis/
-
- Mailing list (see project page to subscribe and for archives):
- synopsis-devel@lists.sourceforge.net
-
-
-** Authors
-
-Synopsis is developed by:
- - Stephen Davies (chalky@ieee.org)
- - Stefan Seefeld (seefeld@sympatico.ca)
-
-Synopsis is released under the GPL.
-
-The C++ parser uses parts of OpenC++ by Shigeru Chiba, who owns copyright on
-his source code. The relevant parts of OpenC++ are included for convenience.
-Some of this code has been modified to fix bugs and/or implement features
-needed for Synopsis.
-
-The garbage collector used by OpenC++ is by Hans Boehm, who owns copyright on
-his source code. The GC distribution is included verbatim, but is not
-installed with Synopsis since libgc.a is statically linked into the C++ parser
-module.
