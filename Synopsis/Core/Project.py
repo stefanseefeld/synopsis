@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.4 2002/04/26 01:21:13 chalky Exp $
+# $Id: Project.py,v 1.5 2002/06/12 12:58:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.5  2002/06/12 12:58:09  chalky
+# Added remove channel facility.
+#
 # Revision 1.4  2002/04/26 01:21:13  chalky
 # Bugs and cleanups
 #
@@ -84,10 +87,12 @@ class Project:
 class ProjectActions:
     """Manages the actions in a project"""
     class Listener:
+	"""The listener interface for ProjectActions events"""
 	#def action_added(self, action):
 	#def action_moved(self, action):
 	#def action_removed(self, action):
 	#def channel_added(self, source, dest):
+	#def channel_removed(self, source, dest):
 	pass
     def __init__(self):
 	self.__actions = []
@@ -133,6 +138,16 @@ class ProjectActions:
 	source.outputs().append(dest)
 	dest.inputs().append(source)
 	self.fire('channel_added', source, dest)
+
+    def remove_channel(self, source, dest):
+	"""Removes a "channel" between two actions. If the channel doesn't
+	exist, it is silently ignored. The event 'channel_removed' is
+	fired."""
+	if dest not in source.outputs() and source not in dest.inputs():
+	    return
+	source.outputs().remove(dest)
+	dest.inputs().remove(source)
+	self.fire('channel_removed', source, dest)
 
     def action_changed(self, action):
 	"""Indicates that the given action has changed, so that listeners can
