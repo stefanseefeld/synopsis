@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.24 2002/04/26 01:21:14 chalky Exp $
+# $Id: Dot.py,v 1.25 2002/07/11 02:09:34 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.25  2002/07/11 02:09:34  chalky
+# Patch from Patrick Mauritz: Use png support in latest graphviz. If dot not
+# present, don't subvert what the user asked for but instead tell them.
+#
 # Revision 1.24  2002/04/26 01:21:14  chalky
 # Bugs and cleanups
 #
@@ -431,14 +435,7 @@ def _format(input, output, format):
     system(command)
 
 def _format_png(input, output):
-    tmpout = output + ".gif"
-    _format(input, tmpout, "gif")
-    command = 'gif2png -O -d "%s"'%(tmpout)
-    command = 'gif2png -O "%s"'%(tmpout)
-    if verbose: print "Dot Formatter: running command '" + command + "'"
-    system(command)
-    if verbose: print "Dot Formatter: renaming '" + tmpout[:-4] + ".png'", "to '" + output + "'"
-    os.rename(tmpout[:-4] + ".png", output)
+    _format(input, output, "png")
 
 def _format_html(input, output):
     """generate (active) image for html.

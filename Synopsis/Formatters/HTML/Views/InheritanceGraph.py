@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.16 2002/07/04 06:43:18 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.17 2002/07/11 02:09:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.17  2002/07/11 02:09:33  chalky
+# Patch from Patrick Mauritz: Use png support in latest graphviz. If dot not
+# present, don't subvert what the user asked for but instead tell them.
+#
 # Revision 1.16  2002/07/04 06:43:18  chalky
 # Improved support for absolute references - pages known their full path.
 #
@@ -160,11 +164,15 @@ class InheritanceGraph(Page.Page):
 	self.write(self.manager.formatHeader(filename))
 	self.write(entity('h1', "Inheritance Graph"))
 
+	try:
+	    from Synopsis.Formatter import Dot
+	except:
+	    print "InheritanceGraph: Can't load the Dot formatter"
+	    self.end_file()
+	    return
 	# Create a toc file for Dot to use
 	toc_file = filename + "-dot.toc"
 	config.toc.store(toc_file)
-
-	from Synopsis.Formatter import Dot
 	graphs = config.classTree.graphs()
 	count = 0
 	lensorter = lambda a, b: cmp(len(b),len(a))
