@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.14 2001/01/05 15:18:37 stefan Exp $
+# $Id: synopsis,v 1.15 2001/01/07 16:20:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -52,6 +52,10 @@ Linker options:
                                        May be used multiple times.
 		                       Default is to link all input.
 		                       Eg: -Wl,-s,Prague,-s,Berlin::Console
+
+HTML options:
+    use -f HTML -Wf,-h  with valid input to see usage.
+
 """
 
 parser_cmd = ""
