@@ -18,6 +18,8 @@ class CommentedAtom : public Atom
 public:
   CommentedAtom(const Token &tk, Node *c = 0) : Atom(tk) { comments = c;}
   CommentedAtom(const char *p, size_t l, Node *c = 0) : Atom(p, l) { comments = c;}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
   Node *GetComments() { return comments;}
   void SetComments(Node *c) { comments = c;}
 private:
@@ -32,6 +34,7 @@ class DupAtom : public CommentedAtom
 public:
   DupAtom(const char *, size_t);
   DupAtom(const char *, size_t, const char *, size_t);
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   virtual void print(std::ostream &, size_t, size_t) const;
 };
@@ -40,6 +43,8 @@ class Identifier : public CommentedAtom
 {
 public:
   Identifier(const Token &t) : CommentedAtom(t) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
 };
@@ -49,11 +54,14 @@ class Reserved : public CommentedAtom
 public:
   Reserved(const Token &t) : CommentedAtom(t) {}
   Reserved(const char* str, int len) : CommentedAtom(str, len) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class This : public Reserved
 {
 public:
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
   This(Token& t) : Reserved(t) {}
   int What();
   Node *Translate(Walker*);
@@ -66,6 +74,8 @@ class ReservedT : public Reserved
 public:
   ReservedT(const Token &tk) : Reserved(tk) {}
   ReservedT(const char *ptr, size_t length) : Reserved(ptr, length) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(static_cast<T*>(this));}
+
   int What() { return t;}
 };
 

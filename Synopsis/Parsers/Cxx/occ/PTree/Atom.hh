@@ -21,6 +21,7 @@ public:
   Atom(const char *p, size_t l) : Node(p, l) {}
   Atom(const Token &t) : Node(t.ptr, t.length) {}
   bool is_atom() const { return true;}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
   
   virtual void write(std::ostream &) const;
   virtual void print(std::ostream &, size_t, size_t) const;
