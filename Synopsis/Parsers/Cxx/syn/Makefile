@@ -29,8 +29,8 @@ CXX		:= c++
 RANLIB		:=
 
 # Options for optimised or debug versions
-OPTIMISE	:= -O6 -fpic
-DEBUG		:= -O1 -ggdb -pg -DDEBUG 
+OPTIMISE	:= -O6 -fPIC
+DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG 
 
 # Flags
 CFLAGS		:= 
@@ -155,5 +155,5 @@ depend:
 	makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES) 2> /dev/null
 
 clean :
-	rm -f *.[o] *.go *.ii *.so *core opencxx.a ../../../occ.so ../ucpp/*.o
+	rm -f *.[o] *.go *.ii *.so *core opencxx.a ../../../occ.so ../ucpp/*.o  ../ucpp/*.a
 
