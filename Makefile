@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 2000/08/17 04:16:47 stefan Exp $
+# $Id: Makefile,v 1.6 2001/01/06 04:15:55 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -20,7 +20,7 @@
 
 SHELL	= /bin/sh
 
-subdirs	= Synopsis Parser Formatter demo/IDL
+subdirs	= Synopsis Parser Formatter demo/IDL demo/C++
 # doc
 
 all:

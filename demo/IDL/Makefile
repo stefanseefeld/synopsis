@@ -1,16 +1,17 @@
 synopsis = ../../synopsis -p IDL -Wp,-K -f HTML -Wf,-s,style.css
 
+all:
 
-CosNaming.html:	CosNaming.idl
+CosNaming:	CosNaming.idl
 		$(synopsis) -o CosNaming $?
 
-Types.html:	Types.idl
+Types:		Types.idl
 		$(synopsis) -o Types $?
 
-Graphic.html:	Graphic.idl
+Graphic:	Graphic.idl
 		$(synopsis) -o Graphic $?
 
-Input.html:	Input.idl
+Input:		Input.idl
 		$(synopsis) -o Input $?
 
 clean:
