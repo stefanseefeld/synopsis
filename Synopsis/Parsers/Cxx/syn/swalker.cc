@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.44 2001/07/29 03:28:04 chalky Exp $
+// $Id: swalker.cc,v 1.45 2001/08/09 00:56:50 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.45  2001/08/09 00:56:50  chalky
+// Moved char*<0 ugliness to Decoder::isName with proper casting
+//
 // Revision 1.44  2001/07/29 03:28:04  chalky
 // More fixes for directory restructure, and fake_std -f flag for C++ parser.
 //
@@ -896,7 +899,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    // Get type
 	    Type::Type* type = m_decoder->decodeType();
 	    std::string name;
-	    if (*encname < 0) name = m_decoder->decodeName(encname);
+	    if (m_decoder->isName(encname)) name = m_decoder->decodeName(encname);
 	    else if (*encname == 'Q') {
 		cout << "Scoped name in variable decl!" << endl;
 		return 0;
@@ -1007,7 +1010,7 @@ void SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>&
 
 void SWalker::TranslateFunctionName(char* encname, std::string& realname, Type::Type*& returnType)
 {
-   if (*encname < 0) {
+   if (m_decoder->isName(encname)) {
 	if (encname[1] == '@') {
 	    // conversion operator
 	    m_decoder->init(encname);
