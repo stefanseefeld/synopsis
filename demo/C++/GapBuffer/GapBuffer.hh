@@ -1,4 +1,4 @@
-/*$Id: GapBuffer.hh,v 1.3 2001/06/08 04:50:13 stefan Exp $
+/*$Id: GapBuffer.hh,v 1.4 2001/06/08 21:05:59 stefan Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -77,7 +77,7 @@ public:
   GapBuffer() : curs(0), gapbegin(0), gapend(0) {}
   size_type size() { compact(); return gbegin() - begin();}
   //. these are methods to control the cursor position
-  //.{
+  //.{ Group1
   //. move the cursor one position forward
   void forward()
     {
