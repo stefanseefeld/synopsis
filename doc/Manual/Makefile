@@ -8,7 +8,7 @@ sdir		:= syn
 cxxdir		:= Synopsis/Parser/C++/occ/src/occ
 cxxsdir		:= syn/Parser/C++
 
-texi-help	:= aux cp fn fns ky log pg toc tp tps vr vrs
+texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
 
 S_PYFILES	:= Synopsis/Config Synopsis/__init__
 F_HTML_PYFILES	:= $(patsubst $(topdir)/%.py, %, $(wildcard $(topdir)/Synopsis/Formatter/HTML/*.py))
