@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.54 2001/01/24 13:06:48 chalky Exp $
+# $Id: HTML.py,v 1.55 2001/01/24 18:05:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.55  2001/01/24 18:05:16  stefan
+# extended the HTML submodule loading to allow for external formatters
+#
 # Revision 1.54  2001/01/24 13:06:48  chalky
 # Fixed bug related to /**/ causing following //. to be on same line
 #
@@ -211,7 +214,7 @@ class Struct:
 class CommentParser:
     """A class that takes a Declaration and sorts its comments out."""
     def __init__(self):
-	self._formatters = map(lambda n,c=commentFormatters: c[n](), commentFormatterList)
+	self._formatters = commentFormatterList
     def parse(self, decl):
 	"""Parses the comments of the given AST.Declaration.
 	Returns a struct with vars:
@@ -693,7 +696,8 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
         self.__type_label = self.referenceName(type.name())
         
     def visitUnknown(self, type):
-        self.__type_label = self.referenceName(type.name())
+        label = Util.ccolonName(type.name(), self.scope())
+        self.__type_label = self.referenceName(type.link(), label)
         #self.__type_label = Util.ccolonName(type.name(), self.scope())
         
     def visitDeclared(self, type):
@@ -1286,12 +1290,13 @@ def usage():
                                        If this is newer than the one in the output directory then it
 		                       is copied over it.
   -n <namespace>                       Namespace to output
-  -c <formatter>                       Comment formatter to use
+  -c <formatter>                       add external Comment formatter
+  -C <formatter>                       add std Comment formatter (part of the HTML module) to use
                                        - default Nothing
 		                       - ssd     Filters for and strips //. comments
 		                       - javadoc @tag style comments
                                        - section test section breaks.
-		                       You may use multiple -f options
+		                       You may use multiple -c options
   -t <filename>                        Generate a table of content and write it to <filename>
   -r <filename>                        merge in table of content from <filename> and use it to resolve external symbols"""
 
@@ -1307,7 +1312,7 @@ def __parseArgs(args):
     toc_in = []
     commentFormatterList = []
     try:
-        opts,remainder = Util.getopt_spec(args, "ho:s:n:c:S:t:r:")
+        opts,remainder = Util.getopt_spec(args, "ho:s:n:c:C:S:t:r:")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1322,11 +1327,11 @@ def __parseArgs(args):
 	    stylesheet_file = a
 	elif o == "-n":
 	    namespace = a
-	elif o == "-c":
-	    if commentFormatters.has_key(a):
-		commentFormatterList.append(a)
+	elif o == "-c": commentFormatterList.append(Util._import(a))
+	elif o == "-C":
+	    if commentFormatters.has_key(a): commentFormatterList.append(commentFormatters[a]())
 	    else:
-		print "Available comment formatters:",string.join(commentFormatters.keys(), ', ')
+		print "Error: Unknown formatter. Available comment formatters are:",string.join(commentFormatters.keys(), ', ')
 		sys.exit(1)
         elif o == "-t":
             toc_out = a
