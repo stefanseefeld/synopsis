@@ -1,4 +1,4 @@
-synopsis:= ../../../../bin/synopsis
+synopsis:= synopsis
 
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
 syn	:= $(patsubst %.h, %.syn, $(src))
