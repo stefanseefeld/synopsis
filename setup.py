@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.9 2003/11/11 06:00:34 stefan Exp $
+# $Id: setup.py,v 1.10 2003/11/18 14:38:11 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -33,7 +33,9 @@ py_packages = ["Synopsis",
                "Synopsis.Parsers.C", "Synopsis.Parsers.Cxx",
                "Synopsis.Processors",
                "Synopsis.Formatters",
-               "Synopsis.Formatters.HTML"]
+               "Synopsis.Formatters.HTML",
+               "Synopsis.Formatters.HTML.Pages",
+               "Synopsis.Formatters.HTML.Parts"]
 
 #"Synopsis.Core",
 #"Synopsis.UI",
@@ -72,4 +74,4 @@ setup(cmdclass={'config':config,
       packages=py_packages,
       ext_modules=ext_modules,
       scripts=prefix(scripts, "bin/"),
-      data_files=[('share/Synopsis', prefix(data_files, "share/"))])
+      data_files=[('share/Synopsis', prefix(data_files, "share/Synopsis/"))])
