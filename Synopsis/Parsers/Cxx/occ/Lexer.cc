@@ -830,7 +830,6 @@ static struct rw_table {
     { "inline",		token(INLINE) },
     { "int",		token(INT) },
     { "long",		token(LONG) },
-    { "__metaclass",	token(METACLASS) },	// OpenC++
     { "mutable",	token(MUTABLE) },
     { "namespace",	token(NAMESPACE) },
     { "new",		token(NEW) },
