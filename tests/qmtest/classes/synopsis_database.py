@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis_database.py,v 1.2 2003/11/30 00:43:58 stefan Exp $
+# $Id: synopsis_database.py,v 1.3 2003/12/02 16:34:30 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -30,21 +30,32 @@ class Database(database.Database):
               and os.path.isdir(path)):
          raise NoSuchSuiteError, id
       
-      test_ids = []
-      suite_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
-                         dircache.listdir(path))
-      if 'input' in suite_ids:
-         test_ids = map(lambda x: os.path.splitext(x)[0],
-                        dircache.listdir(os.path.join(path, 'input')))
-         if 'CVS' in test_ids: test_ids.remove('CVS')
-         suite_ids.remove('input')
-         if 'expected' in suite_ids: suite_ids.remove('expected')
-      if 'CVS' in suite_ids: suite_ids.remove('CVS')
+      if id.startswith('Processors.Linker'):
+         # tests in the Linker suite are treated differently because
+         # input files in 'input' are processed together in a single test
+         child_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
+                            dircache.listdir(path))
+         # if there is a subdir 'input', we consider this a test
+         # else it's a suite
+         test_ids = filter(lambda x: os.path.isdir(os.path.join(path, x, 'input')),
+                           dircache.listdir(path))
+         suite_ids = []
+
+      else:
+         test_ids = []
+         suite_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
+                            dircache.listdir(path))
+         if 'input' in suite_ids:
+            test_ids = map(lambda x: os.path.splitext(x)[0],
+                           dircache.listdir(os.path.join(path, 'input')))
+            if 'CVS' in test_ids: test_ids.remove('CVS')
+            suite_ids.remove('input')
+            if 'expected' in suite_ids: suite_ids.remove('expected')
+         if 'CVS' in suite_ids: suite_ids.remove('CVS')
 
       if id:
          test_ids = map(lambda x: string.join([id, x], '.'), test_ids)
          suite_ids = map(lambda x: string.join([id, x], '.'), suite_ids)
-
       return Suite(self, id, 0, test_ids, suite_ids)
         
    def GetTest(self, id):
@@ -53,20 +64,55 @@ class Database(database.Database):
       if not id:
          raise NoSuchTestError, id
          
+      if id.startswith('Processors.Linker'):
+         return self.make_linker_test(id)
+      else:
+         return self.make_test(id)
+
+   def make_test(self, id):
+
       components = id.split('.')
       dirname = os.path.join(*components[:-1])
-      input = os.path.join(dirname, 'input', components[-1])
-      if components[:-1] == ['Parsers', 'IDL']: input += '.idl'
-      elif components[:-1] == ['Parsers', 'Cxx']: input += '.cc'
-      elif components[:-1] == ['Parsers', 'Python']: input += '.py'
-      if not os.path.isfile(input):
+
+      input = [os.path.join(dirname, 'input', components[-1])]
+         
+      if components[:-1] == ['Parsers', 'IDL']:
+         input = map(lambda x: x + '.idl', input)
+      elif components[:-1] == ['Parsers', 'Python']:
+         input = map(lambda x: x + '.py', input)
+      else:  # all other tests use C++ input
+         input = map(lambda x: x + '.cc', input)
+      if reduce(lambda x, y: x + y, # sum all non-files
+                filter(lambda x: not os.path.isfile(x), input), 0):
          raise NoSuchTestError, id
+
+      output = os.path.join(dirname, 'output', components[-1] + '.xml')
+      expected = os.path.join(dirname, 'expected', components[-1] + '.xml')
+      synopsis = os.path.join(dirname, 'synopsis.py')
 
       parameters = {}
       parameters['srcdir'] = '.'
-      parameters['input'] = [input]
-      parameters['output'] = os.path.join(dirname, 'output', components[-1] + '.xml')
-      parameters['expected'] = os.path.join(dirname, 'expected', components[-1] + '.xml')
+      parameters['input'] = input
+      parameters['output'] = output
+      parameters['expected'] = expected
       parameters['synopsis'] = os.path.join(dirname, 'synopsis.py')
+      
       return TestDescriptor(self, id, 'synopsis_test.ProcessorTest', parameters)
 
+   def make_linker_test(self, id):
+
+      if not os.path.isdir(id.replace('.', os.sep)):
+         raise NoSuchTestError, id
+
+      components = id.split('.')
+      dirname = os.path.join(*components + ['input'])
+
+      parameters = {}
+      parameters['srcdir'] = '.'
+      parameters['input'] = map(lambda x: os.path.join(dirname, x),
+                                dircache.listdir(dirname))
+      parameters['output'] = os.path.join(*components + ['output.xml'])
+      parameters['expected'] = os.path.join(*components + ['expected.xml'])
+      parameters['synopsis'] = os.path.join(*components + ['synopsis.py'])
+      
+      return TestDescriptor(self, id, 'synopsis_test.ProcessorTest', parameters)
