@@ -80,20 +80,26 @@ class ConfScopePage (HTML.ScopePages.ScopePages):
 		self.__namespaces.append(child)
  
 class ConfScopeJS (HTML.ModuleListingJS.ModuleListingJS):
+    """Creates a page with a Tree of Config classes. This code is based on the
+    ModuleListingJS page, via a few template methods. It is to aide the
+    process of finding config information by only showing the tree that exists
+    under Config.py."""
     def _init_page(self):
-	self._filename = config.files.nameOfSpecial('scope_listing')
+	"""Initialise with the special Config name"""
+	self._filename = config.files.nameOfSpecial('config_scopes')
 	link = href(self._filename, 'Config', target="index")
 	self.manager.addRootPage('Config', link, 1)
 	self._link_target = 'main'
 	#config.set_index_page(self.__filename)
-	print "ConfScopeJS initialised"
     def _link_href(self, ns):
+	"""Template method to return the href of a link"""
 	return config.files.nameOfScope(ns.name())
     def process(self, start):
-	print start.name()
+	"""Decorate the process() method to set the start"""
 	config.sorter.set_scope(start)
 	start = config.sorter.child(('Python Namespace',))
 	start = self.manager._calculateStart(start, "Synopsis::Config")
 	HTML.ModuleListingJS.ModuleListingJS.process(self, start)
     def _child_filter(self, child):
+	"""Override template method to display all scopes (not just modules)"""
 	return isinstance(child, AST.Scope)
