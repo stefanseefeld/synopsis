@@ -68,14 +68,13 @@ int MacroCallDict::map(int linenum, int pos)
   if (i == my_lines.end()) return pos;
   Line &line = i->second;
   Line::iterator j = line.begin(), end = line.end();
-  int diff = 0;
   while (j != end && j->start < pos)
   {
     const MacroCall &call = *j++;
     if (pos < call.end) return -1;
-    diff = call.diff;
+    pos += call.diff;
   }
-  return pos + diff;
+  return pos;
 }
 
 //
