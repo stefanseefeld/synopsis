@@ -1,4 +1,4 @@
-// $Id: strace.hh,v 1.5 2001/06/11 10:37:30 chalky Exp $
+// $Id: strace.hh,v 1.6 2001/07/23 15:29:35 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: strace.hh,v $
+// Revision 1.6  2001/07/23 15:29:35  chalky
+// Fixed some regressions and other mis-features
+//
 // Revision 1.5  2001/06/11 10:37:30  chalky
 // Operators! Arrays! (and probably more that I forget)
 //
@@ -43,7 +46,7 @@
 
 #include <string>
 #include <iostream>
-#include <strstream>
+#include <sstream>
 #include <exception>
 #include <list>
 
@@ -78,21 +81,21 @@ public:
     }
     std::ostream& operator <<(Ptree* p); // defined in swalker.cc
     std::string scope;
-    std::ostrstream& new_stream() {
+    std::ostringstream& new_stream() {
 	if (stream) delete stream;
-	stream = new std::ostrstream;
+	stream = new std::ostringstream;
 	*stream << scope << ": ";
 	return *stream;
     }
     std::string get_stream_str() {
-	if (stream) return std::string(stream->str(), stream->pcount());
+	if (stream) return stream->str();
 	return "";
     }
     
 private:
     std::string indent() { return std::string(slevel, ' '); }
     static int slevel, dlevel;
-    static std::ostrstream* stream;
+    static std::ostringstream* stream;
     static list m_list;
 };
 class TranslateError : public std::exception {

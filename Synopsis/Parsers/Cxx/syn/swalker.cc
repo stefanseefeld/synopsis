@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.42 2001/07/19 13:50:52 chalky Exp $
+// $Id: swalker.cc,v 1.43 2001/07/23 15:29:35 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.43  2001/07/23 15:29:35  chalky
+// Fixed some regressions and other mis-features
+//
 // Revision 1.42  2001/07/19 13:50:52  chalky
 // Support 'using' somewhat, L"const" literals, and better Qual.Templ. names
 //
@@ -137,7 +140,7 @@ using namespace AST;
 #ifdef DO_TRACE
 // Class variable definitions
 int STrace::slevel = 0, STrace::dlevel = 0;
-std::ostrstream* STrace::stream = 0;
+std::ostringstream* STrace::stream = 0;
 STrace::list STrace::m_list;
 std::ostream& STrace::operator <<(Ptree* p)
 {
@@ -341,23 +344,37 @@ void SWalker::Translate(Ptree* node) {
 	// can be safely ignored (with an appropriate log message for
 	// debugging :)
 #ifdef DEBUG
-	std::string at;
 	if (e.node) node = e.node;
 	char* fname;
 	int fname_len;
 	int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
-	std::ostrstream buf;
-	buf << at << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
-	at.assign(buf.str(), buf.pcount());
-	LOG("Warning: An exception occurred:" << at);
+	std::ostringstream buf;
+	buf << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
+	LOG("Warning: An exception occurred:" << buf.str());
 	LOG("- " << e.str());
 #endif
     }
     catch (std::exception e) {
-	cout << "Warning: An exception occurred: " << e.what() << endl;
+#ifdef DEBUG
+	LOG("Warning: An exception occurred: " << e.what());
+	nodeLOG(node);
+#else
+	std::cout << "Warning: An exception occurred: " << e.what() << std::endl;
+#endif
     }
     catch (...) {
-	cout << "Warning: An exception occurred (unknown)" << endl;
+#ifdef DEBUG
+	LOG("Warning: An exception occurred (unknown) at:");
+	nodeLOG(node);
+#else
+	std::cout << "Warning: An exception occurred (unknown)" << std::endl;
+	char* fname;
+	int fname_len;
+	int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
+	std::ostringstream buf;
+	buf << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
+	std::cout << "At: " << buf.str() << std::endl;
+#endif
     }
 }
 
@@ -1219,11 +1236,15 @@ Ptree* SWalker::TranslateUsing(Ptree* node) {
 	is_namespace = true;
     }
     // Find name that we are looking up, and make a new ptree list for linking it
-    Ptree *p_name = nil;
-    p_name = Ptree::Snoc(p_name, p->Car());
+    Ptree *p_name = Ptree::Snoc(nil, p->Car());
     AST::Name name;
-    name.push_back(getName(p->First()));
-    p = p->Rest(); 
+    if (p->First()->Eq("::")) {
+	// Eg; "using ::memcpy;" Indicate global scope with empty first
+	name.push_back("");
+    } else {
+	name.push_back(getName(p->First()));
+	p = p->Rest(); 
+    }
     while (p->First()->Eq("::")) {
 	p_name = Ptree::Snoc(p_name, p->Car()); // Add '::' to p_name
 	p = p->Rest();
@@ -1232,21 +1253,23 @@ Ptree* SWalker::TranslateUsing(Ptree* node) {
 	p = p->Rest();
     }
     // Resolve and link name
-    Type::Named* type = m_builder->lookupType(name);
-    if (m_links) m_links->link(p_name, type);
-    if (is_namespace) {
-	// Check for '=' alias
-	if (p->First()->Eq("=")) {
-	    p = p->Rest();
-	    std::string alias = getName(p->First());
-	    m_builder->usingNamespace(type, alias);
+    try {
+	Type::Named* type = m_builder->lookupType(name);
+	if (m_links) m_links->link(p_name, type);
+	if (is_namespace) {
+	    // Check for '=' alias
+	    if (p->First()->Eq("=")) {
+		p = p->Rest();
+		std::string alias = getName(p->First());
+		m_builder->usingNamespace(type, alias);
+	    } else {
+		m_builder->usingNamespace(type);
+	    }
 	} else {
-	    m_builder->usingNamespace(type);
+	    // Let builder do all the work
+	    m_builder->usingDeclaration(type);
 	}
-    } else {
-	// Let builder do all the work
-	m_builder->usingDeclaration(type);
-    }
+    } catch (TranslateError e) { LOG("Oops!"); e.set_node(node); throw; }
     return 0;
 }
 

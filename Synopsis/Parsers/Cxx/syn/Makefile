@@ -72,7 +72,7 @@ UCPP_AOBJ	:= $(patsubst %,../ucpp/%.ao,$(UCPP_FILES))
 
 TARGETS		= $(OCC_SO) $(LINK_SO)
 
-all : $(TARGETS)
+all : depend $(TARGETS)
 
 debug:		occ.gdb link-synopsis ucpp
 
@@ -145,13 +145,17 @@ $(UCPP_LIB):	$(UCPP_OBJ)
 $(UCPP_GLIB):	$(UCPP_GOBJ)
 	ar rcs $@ $^
 
-depend:
-	touch .deps.ao
-	touch .deps.go
-	touch .deps.o
-	makedepend -Y -I.. -DDEBUG -f.deps.ao -o.ao $(UCPP_SOURCES) 2> /dev/null
-	makedepend -Y -I.. -DDEBUG -f.deps.go -o.go $(UCPP_SOURCES) $(SYN_SOURCES) $(OCC_SOURCES) 2> /dev/null
-	makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES) 2> /dev/null
+depend: .deps.o
+
+.deps.o:	$(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES)
+	@echo -n Updating dependencies... 
+	@touch .deps.ao
+	@touch .deps.go
+	@touch .deps.o
+	@makedepend -Y -I.. -DDEBUG -f.deps.ao -o.ao $(UCPP_SOURCES) 2> /dev/null
+	@makedepend -Y -I.. -DDEBUG -f.deps.go -o.go $(UCPP_SOURCES) $(SYN_SOURCES) $(OCC_SOURCES) 2> /dev/null
+	@makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES) 2> /dev/null
+	@echo Done.
 
 clean :
 	rm -f *~ *.o *.go *.ii *.so *core opencxx.a opencxx.ga occ.gdb \

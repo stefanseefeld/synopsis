@@ -2,7 +2,7 @@
 
 #include <map>
 #include <typeinfo>
-#include <strstream>
+#include <sstream>
 #include <algorithm>
 
 #include "builder.hh"
@@ -236,10 +236,10 @@ AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nsty
 	    type_str = "local";
 	    { // name is empty or the type. Encode it with a unique number
 		if (!name.size()) name = "ns";
-		std::ostrstream x; x << '`' << name;
+		std::ostringstream x; x << '`' << name;
 		int count = m_scopes.top()->getCount(name);
 		if (count > 1) x << count;
-		x << std::ends; name = x.str();
+		name = x.str();
 	    }
 	    break;
     }
@@ -660,12 +660,12 @@ public:
 	    , trace("FunctionHeuristic")
     {
 	TypeFormatter tf;
-	std::ostrstream buf;
+	std::ostringstream buf;
 	for (size_t index = 0; index < v.size(); index++) {
 	    if (index) buf << ", ";
 	    buf << tf.format(v[index]);
 	}
-	buf << std::ends;
+	//buf << std::ends;
 	LOG("Function arguments: " << buf.str());
 #else
     {
@@ -779,6 +779,7 @@ AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, co
 // Operator lookup
 AST::Function* Builder::lookupOperator(const std::string& oper, Type::Type* left_type, Type::Type* right_type)
 {
+    STrace trace("Builder::lookupOperator("+oper+",left,right)");
     // Find some info about the two types
     TypeInfo left(left_type), right(right_type);
     bool left_user = !!dynamic_cast<Type::Declared*>(left_type) && !left.deref;
@@ -791,6 +792,7 @@ AST::Function* Builder::lookupOperator(const std::string& oper, Type::Type* left
     std::vector<Type::Type*> args;
     AST::Function* best_method = NULL, *best_func = NULL;
     int best_method_cost, best_func_cost;
+
     // Member methods of left_type
     try {
 	AST::Class* clas = Type::declared_cast<AST::Class>(left.type);
@@ -832,15 +834,19 @@ AST::Function* Builder::lookupOperator(const std::string& oper, Type::Type* left
     if (left_user) try {
 	AST::Name enclosing_name = Type::type_cast<Type::Named>(left.type)->name();
 	enclosing_name.pop_back();
-	Scope* scope = findScope( Type::declared_cast<AST::Scope>(lookupType(enclosing_name, false, m_global)) );
-	findFunctions(oper, scope, functions);
+	if (enclosing_name.size()) {
+	    Scope* scope = findScope( Type::declared_cast<AST::Scope>(lookupType(enclosing_name, false, m_global)) );
+	    findFunctions(oper, scope, functions);
+	}
     } catch (const Type::wrong_type_cast& e) {}
 
     if (right_user) try {
 	AST::Name enclosing_name = Type::type_cast<Type::Named>(right.type)->name();
 	enclosing_name.pop_back();
-	Scope* scope = findScope( Type::declared_cast<AST::Scope>(lookupType(enclosing_name, false, m_global)) );
-	findFunctions(oper, scope, functions);
+	if (enclosing_name.size()) {
+	    Scope* scope = findScope( Type::declared_cast<AST::Scope>(lookupType(enclosing_name, false, m_global)) );
+	    findFunctions(oper, scope, functions);
+	}
     } catch (const Type::wrong_type_cast& e) {}
 
     // Add builtin operators to aide in best-function resolution
@@ -875,13 +881,15 @@ void Builder::findFunctions(const std::string& name, Scope* scope, std::vector<A
     STrace trace("Builder::findFunctions");
 
     // Get the matching names from the dictionary
-    v_Named types = scope->dict->lookupMultiple(name);
-    
-    // Put only the AST::Functions into 'functions'
-    for (vi_Named iter = types.begin(); iter != types.end();)
-	try {
-	    functions.push_back( Type::declared_cast<AST::Function>(*iter++) );
-	} catch (const Type::wrong_type_cast &) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
+    try {
+	v_Named types = scope->dict->lookupMultiple(name);
+	
+	// Put only the AST::Functions into 'functions'
+	for (vi_Named iter = types.begin(); iter != types.end();)
+	    try {
+		functions.push_back( Type::declared_cast<AST::Function>(*iter++) );
+	    } catch (const Type::wrong_type_cast &) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
+    } catch (Dictionary::KeyError) {}
 }
 
 AST::Function* Builder::bestFunction(const std::vector<AST::Function*>& functions, const std::vector<Type::Type*>& args, int& cost)
@@ -1025,7 +1033,28 @@ Type::Named* Builder::lookupQual(const std::string& name, const Scope* scope, bo
 	    return NULL;
 	}
 	// FIXME: figure out what to do about multiple
-	return results[0];
+	Type::Named* best = NULL;
+	int best_score = -1;
+	for (std::vector<Type::Named*>::iterator iter = results.begin();
+		iter != results.end(); iter++) {
+	    // Fixme.. create a Score visitor
+	    int score = 0;
+	    Type::Named* type = *iter;
+	    if (Type::Declared* declared = dynamic_cast<Type::Declared*>(type)) {
+		score++;
+		if (AST::Declaration* decl = declared->declaration()) {
+		    score++;
+		    if (dynamic_cast<AST::Forward*>(decl))
+			score--;
+		}
+	    }
+	    if (score > best_score) {
+		best_score = score;
+		best = type;
+	    }
+	}
+	    
+	return best;
     }
     // Not class or NS - which is illegal for a qualified (but coulda been
     // template etc?:)
@@ -1183,10 +1212,11 @@ Type::Named* Builder::resolveType(Type::Named* type)
     STrace trace("Builder::resolveType(named)");
     try {
 	Type::Name& name = type->name();
+	LOG("Resolving " << name);
 	
 	Type::Name::iterator iter = name.begin(), end = name.end() - 1;
 	AST::Scope* scope = m_global;
-	while (iter < end) {
+	while (iter != end) {
 	    // Find *iter in scope
 	    Type::Named* scope_type = findScope(scope)->dict->lookup(*iter++);
 	    scope = Type::declared_cast<AST::Scope>(scope_type);
@@ -1241,7 +1271,7 @@ Type::Base* Builder::Base(const std::string &name)
 std::string Builder::dumpSearch(Scope* scope)
 {
     Scope::Search& search = scope->search;
-    std::ostrstream buf;
+    std::ostringstream buf;
     buf << "Search for ";
     if (scope->scope_decl->name().size() == 0) buf << "global";
     else buf << m_scope->name();
@@ -1256,7 +1286,7 @@ std::string Builder::dumpSearch(Scope* scope)
 	else buf << "global";
 	++iter;
     }
-    buf << std::ends;
+    //buf << std::ends;
     return buf.str();
 }
 
