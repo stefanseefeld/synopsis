@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.5 2002/04/26 01:21:14 chalky Exp $
+# $Id: actionvis.py,v 1.6 2002/06/12 12:58:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.6  2002/06/12 12:58:33  chalky
+# Updates to display - hilite items and right click menus
+#
 # Revision 1.5  2002/04/26 01:21:14  chalky
 # Bugs and cleanups
 #
@@ -65,11 +68,26 @@ class CanvasStrategy:
 	    event.ignore()
 
 class SelectionStrategy (CanvasStrategy):
+    """The normal CanvasStrategy to handle mouse actions."""
+
+    class MenuHandler:
+	"""Wraps menu callbacks with an action"""
+	def __init__(self, sel, action):
+	    self.sel = sel
+	    self.action = action
+	def on_properties(self):
+	    self.sel.on_properties(self.action)
+	def on_delete_action(self):
+	    self.sel.on_delete_action(self.action)
+	def on_delete_line(self):
+	    self.sel.on_delete_line(self.action)
+
     def __init__(self, canvas, view):
 	CanvasStrategy.__init__(self, canvas, view)
 	self.__drag_action = None
 	self.__icon = None
 	self.__last = None
+	self.__hilite = None # the action or line to hilight
 	self.__normal_cursor = QCursor(ArrowCursor)
 	self.__moving_cursor = QCursor(BlankCursor)
 	self.__hint_cursor = QCursor(SizeAllCursor)
@@ -79,10 +97,29 @@ class SelectionStrategy (CanvasStrategy):
 
     def press(self, event):
 	action = self.canvas.get_action_at(event.x(), event.y())
-	if action:
+	if action and event.button() == Qt.LeftButton:
+	    # Drag the action if left button pressed
 	    self.__drag_action = action
 	    self.__last = QPoint(event.pos())
 	    self.view.setCursor(self.__moving_cursor)
+	    return
+	if event.button() == Qt.RightButton:
+	    if action and event.button() == Qt.RightButton:
+		# Show a menu for the right button
+		handler = self.MenuHandler(self, action)
+		menu = QPopupMenu(self.view)
+		menu.insertItem("Delete Action", handler.on_delete_action)
+		menu.insertItem("Properties...", handler.on_properties)
+		menu.exec_loop(QCursor.pos())
+		return
+	    line = self.canvas.get_line_at(event.x(), event.y())
+	    if line:
+		# Show a menu for the right button
+		handler = self.MenuHandler(self, line)
+		menu = QPopupMenu(self.view)
+		menu.insertItem("Delete Channel", handler.on_delete_line)
+		menu.exec_loop(QCursor.pos())
+		return
 	    
     def release(self, event):
 	if self.__drag_action:
@@ -90,30 +127,61 @@ class SelectionStrategy (CanvasStrategy):
 	    self.view.setCursor(self.__hint_cursor)
 	    
     def move(self, event):
+	# Drag an action if we're dragging
 	if self.__drag_action:
 	    # Move the dragging action
 	    dx = event.x() - self.__last.x()
 	    dy = event.y() - self.__last.y()
 	    self.view.actions.move_action_by(self.__drag_action, dx, dy)
 	    self.__last = QPoint(event.pos())
-	else:
-	    if self.canvas.get_action_at(event.x(), event.y()):
-		self.view.setCursor(self.__hint_cursor)
-	    else:
-		self.view.setCursor(self.__normal_cursor)
-    
-    def doubleClick(self, event):
+	    return
+	# Hilite an action if mouse is over one
 	action = self.canvas.get_action_at(event.x(), event.y())
 	if action:
-	    print action.name()
-	    if isinstance(action, SourceAction):
-		actionwiz.ActionDialog(actionwiz.SourcePage, self.view, action, self.canvas.project)
-	    elif isinstance(action, ParserAction):
-		actionwiz.ActionDialog(actionwiz.ParserPage, self.view, action, self.canvas.project)
+	    self.view.setCursor(self.__hint_cursor)
+	    self.hilite(self.canvas.get_icon_for(action))
+	    return
+	# Hilite a line if mouse is over one
+	line = self.canvas.get_line_at(event.x(), event.y())
+	if line:
+	    self.hilite(line)
+	elif self.__hilite:
+	    # Not doing anything..
+	    self.hilite(None)
+	    self.view.setCursor(self.__normal_cursor)
+    
+    def hilite(self, obj):
+	"""Sets the currently hilited object. The object may be None, an Icon
+	or a Line"""
+	if obj is self.__hilite:
+	    return
+	if self.__hilite:
+	    self.__hilite.set_hilite(0)
+	self.__hilite = obj
+	if obj:
+	    obj.set_hilite(1)
+	self.canvas.update()
+   
+    def doubleClick(self, event):
+	action = self.canvas.get_action_at(event.x(), event.y())
+	if action: self.on_properties(action)
     
     def key(self, event):
 	"Override default set-mode-to-select behaviour"
 	event.ignore()
+
+    def on_delete_line(self, action):
+	pass
+
+    def on_delete_action(self, action):
+	pass
+
+    def on_properties(self, action):
+	print action.name()
+	if isinstance(action, SourceAction):
+	    actionwiz.ActionDialog(actionwiz.SourcePage, self.view, action, self.canvas.project)
+	elif isinstance(action, ParserAction):
+	    actionwiz.ActionDialog(actionwiz.ParserPage, self.view, action, self.canvas.project)
 
 class ConnectStrategy (CanvasStrategy):
     def __init__(self, canvas, view):
@@ -225,13 +293,24 @@ class Icon:
 	self.action = action
 	self.canvas = canvas
 	self.img = QCanvasRectangle(action.x(), action.y(), 32, 32, canvas)
-	self.img.setBrush(QBrush(ActionColorizer(action).color))
+	self.brush = QBrush(ActionColorizer(action).color)
+	self.img.setBrush(self.brush)
 	self.img.setZ(1)
 	self.text = QCanvasText(action.name(), canvas)
 	self.text.setZ(1)
 	self.img.show()
 	self.text.show()
+	self.hilite = 0
 	self.update_pos()
+    def set_hilite(self, yesno):
+	self.hilite = yesno
+	if yesno:
+	    colour = self.brush.color()
+	    brush = QBrush(QColor(colour.red()*3/4, colour.green()*3/4,
+		colour.blue()*3/4))
+	else:
+	    brush = self.brush
+	self.img.setBrush(brush)
     def update_pos(self):
 	self.img.move(self.action.x(), self.action.y())
 	rect = self.text.boundingRect()
@@ -246,6 +325,7 @@ class Line:
 	self.canvas = canvas
 	self.source = source
 	self.dest = dest
+	self.hilite = 0
 	self.line = QCanvasLine(canvas)
 	self.line.setPen(QPen(Qt.blue))
 	self.arrow = QCanvasPolygon(canvas)
@@ -253,6 +333,15 @@ class Line:
 	self.update_pos()
 	self.line.show()
 	self.arrow.show()
+    def set_hilite(self, yesno):
+	self.hilite = yesno
+	if yesno:
+	    pen = QPen(Qt.blue, 2)
+	else:
+	    pen = QPen(Qt.blue)
+	self.line.setPen(pen)
+	self.arrow.setPen(pen)
+	self.update_pos()
     def update_pos(self):
 	source, dest = self.source, self.dest
 	x1, y1 = source.x()+16, source.y()+16
@@ -283,10 +372,12 @@ class Line:
 		y2 = y2 - 16 * dy / dx
 		x2 = x2 - 16
 	self.line.setPoints(x1, y1, x2, y2)
+	alen = 8 + self.hilite
+	awid = 5 + self.hilite
 	self.arrow.setPoints(QPointArray([
-	    x2, y2,
-	    x2 - 8*dx - 5*dy, y2 - 8*dy + 5*dx,
-	    x2 - 8*dx + 5*dy, y2 - 8*dy - 5*dx]))
+	    x2 + self.hilite*dx, y2 + self.hilite*dy,
+	    x2 - alen*dx - awid*dy, y2 - alen*dy + awid*dx,
+	    x2 - alen*dx + awid*dy, y2 - alen*dy - awid*dx]))
 	#self.arrow.setPoints(QPointArray([
 	#    x2+5,y2,x2,y2-5,x2-5,y2,x2,y2+5 ]))
 	#self.arrow.setPoints(QPointArray([
@@ -305,6 +396,7 @@ class ActionCanvas (QCanvas):
 	self._item_to_action_map = {}
 	self._action_to_icon_map = {}
 	self._action_lines = {}
+	self._item_to_line_map = {}
 
 	self.actions.add_listener(self)
 
@@ -313,6 +405,16 @@ class ActionCanvas (QCanvas):
 	items = self.collisions(QPoint(x, y))
 	if items and self._item_to_action_map.has_key(items[0]):
 	    return self._item_to_action_map[items[0]]
+    
+    def get_line_at(self, x, y):
+	"""Returns the Actions forming a line which crosses x,y, as a
+	line object"""
+	items = self.collisions(QPoint(x, y))
+	if items and self._item_to_line_map.has_key(items[0]):
+	    return self._item_to_line_map[items[0]]
+    
+    def get_icon_for(self, action):
+	return self._action_to_icon_map[action]
 
     def action_added(self, action):
 	"Callback from ActionManager. Adds an Icon for the new Action"
@@ -339,12 +441,27 @@ class ActionCanvas (QCanvas):
     def channel_added(self, source, dest):
 	"Callback from ActionManager. Adds a channel between the given actions"
 	line = Line(self, source, dest)
-	if not self._action_lines.has_key(source):
-	    self._action_lines[source] = []
-	if not self._action_lines.has_key(dest):
-	    self._action_lines[dest] = []
-	self._action_lines[source].append(line)
-	self._action_lines[dest].append(line)
+	self._action_lines.setdefault(source, []).append(line)
+	self._action_lines.setdefault(dest, []).append(line)
+	self._item_to_line_map[line.line] = line
+	self.update()
+
+    def channel_removed(self, source, dest):
+	"Callback from ActionManager. Adds a channel between the given actions"
+	# NB: check source and dest separately to handle inconsistancies
+	# better, should they arise
+	if self._action_lines[source]:
+	    for line in self._action_lines[source]:
+		if line.dest is dest:
+		    self._action_lines[source].remove(line)
+		    if self._item_to_line_map.has_key(line.line):
+			del self._item_to_line_map[line.line]
+	if self._action_lines[dest]:
+	    for line in self._action_lines[dest]:
+		if line.source is source:
+		    self._action_lines[dest].remove(line)
+		    if self._item_to_line_map.has_key(line.line):
+			del self._item_to_line_map[line.line]
 	self.update()
 
     def action_changed(self, action):
