@@ -82,86 +82,88 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 #define IsType(obj, type) (!PyObject_Compare(PyObject_Type(obj), (PyObject*)&Py##type##_Type))
     
     // Check config object first
-    PyObject* value;
-    if ((value = PyObject_GetAttrString(config, "main_file")) != 0)
-      syn_main_only = PyObject_IsTrue(value);
-    if ((value = PyObject_GetAttrString(config, "verbose")) != 0) {}	// ignore
-    if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
-      {
-	if (!IsType(value, List))
+    if (config) {
+	PyObject* value;
+	if ((value = PyObject_GetAttrString(config, "main_file")) != 0)
+	  syn_main_only = PyObject_IsTrue(value);
+	if ((value = PyObject_GetAttrString(config, "verbose")) != 0) {}	// ignore
+	if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
 	  {
-	    std::cerr << "Error: include_path must be a list of strings." << std::endl;
-	    exit(1);
-	  }
-	// Loop through the include paths
-	for (int i=0, end=PyList_Size(value); i < end; i++)
-	  {
-	    PyObject* item = PyList_GetItem(value, i);
-	    if (!item || !IsType(item, String))
+	    if (!IsType(value, List))
 	      {
 		std::cerr << "Error: include_path must be a list of strings." << std::endl;
 		exit(1);
 	      }
-	    // mem leak.. how to fix?
-	    char* buf = new char[PyString_Size(item)+3];
-	    strcpy(buf, "-I");
-	    strcat(buf, PyString_AsString(item));
-	    cppflags.push_back(buf);
-	  } // for
-      }
-    if ((value = PyObject_GetAttrString(config, "defines")) != 0)
-      {
-	if (!IsType(value, List))
-	  {
-	    std::cerr << "Error: defines must be a list of strings." << std::endl;
-	    exit(1);
+	    // Loop through the include paths
+	    for (int i=0, end=PyList_Size(value); i < end; i++)
+	      {
+		PyObject* item = PyList_GetItem(value, i);
+		if (!item || !IsType(item, String))
+		  {
+		    std::cerr << "Error: include_path must be a list of strings." << std::endl;
+		    exit(1);
+		  }
+		// mem leak.. how to fix?
+		char* buf = new char[PyString_Size(item)+3];
+		strcpy(buf, "-I");
+		strcat(buf, PyString_AsString(item));
+		cppflags.push_back(buf);
+	      } // for
 	  }
-	// Loop through the include paths
-	for (int i=0, end=PyList_Size(value); i < end; i++)
+	if ((value = PyObject_GetAttrString(config, "defines")) != 0)
 	  {
-	    PyObject* item = PyList_GetItem(value, i);
-	    if (!item || !IsType(item, String))
+	    if (!IsType(value, List))
 	      {
 		std::cerr << "Error: defines must be a list of strings." << std::endl;
 		exit(1);
 	      }
-	    // mem leak.. how to fix?
-	    char* buf = new char[PyString_Size(item)+3];
-	    strcpy(buf, "-D");
-	    strcat(buf, PyString_AsString(item));
-	    cppflags.push_back(buf);
-	  } // for
-      }
-    if ((value = PyObject_GetAttrString(config, "basename")) != 0)
-      {
-	if (!IsType(value, String))
-	  {
-	    std::cerr << "Error: basename must be a string." << std::endl;
-	    exit(1);
+	    // Loop through the include paths
+	    for (int i=0, end=PyList_Size(value); i < end; i++)
+	      {
+		PyObject* item = PyList_GetItem(value, i);
+		if (!item || !IsType(item, String))
+		  {
+		    std::cerr << "Error: defines must be a list of strings." << std::endl;
+		    exit(1);
+		  }
+		// mem leak.. how to fix?
+		char* buf = new char[PyString_Size(item)+3];
+		strcpy(buf, "-D");
+		strcat(buf, PyString_AsString(item));
+		cppflags.push_back(buf);
+	      } // for
 	  }
-	syn_basename = PyString_AsString(value);
-      }
-    if ((value = PyObject_GetAttrString(config, "extract_tails")) != 0)
-      syn_extract_tails = PyObject_IsTrue(value);
-    if ((value = PyObject_GetAttrString(config, "storage")) != 0)
-      {
-	if (!IsType(value, String))
+	if ((value = PyObject_GetAttrString(config, "basename")) != 0)
 	  {
-	    std::cerr << "Error: storage must be a string." << std::endl;
-	    exit(1);
+	    if (!IsType(value, String))
+	      {
+		std::cerr << "Error: basename must be a string." << std::endl;
+		exit(1);
+	      }
+	    syn_basename = PyString_AsString(value);
 	  }
-	syn_storage = PyString_AsString(value);
-      }
-    if ((value = PyObject_GetAttrString(config, "preprocessor")) != 0)
-      {
-	if (PyObject_Compare(PyObject_Type(value), (PyObject*)&PyString_Type))
+	if ((value = PyObject_GetAttrString(config, "extract_tails")) != 0)
+	  syn_extract_tails = PyObject_IsTrue(value);
+	if ((value = PyObject_GetAttrString(config, "storage")) != 0)
 	  {
-	    std::cerr << "Error: preprocessor must be a string." << std::endl;
-	    exit(1);
+	    if (!IsType(value, String))
+	      {
+		std::cerr << "Error: storage must be a string." << std::endl;
+		exit(1);
+	      }
+	    syn_storage = PyString_AsString(value);
 	  }
-	// This will be a generic preprocessor at some point
-	syn_use_gcc = !strcmp("gcc", PyString_AsString(value));
-      }
+	if ((value = PyObject_GetAttrString(config, "preprocessor")) != 0)
+	  {
+	    if (PyObject_Compare(PyObject_Type(value), (PyObject*)&PyString_Type))
+	      {
+		std::cerr << "Error: preprocessor must be a string." << std::endl;
+		exit(1);
+	      }
+	    // This will be a generic preprocessor at some point
+	    syn_use_gcc = !strcmp("gcc", PyString_AsString(value));
+	  }
+    } // if config
 #undef IsType
     
     // Now check command line args
@@ -406,7 +408,7 @@ int main(int argc, char **argv)
     for (i = 1, py_i = 0; i != argc; ++i)
 	if (argv[i][0] != '-') src = argv[i];
 	else PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
-    getopts(pylist, cppargs, occargs);
+    getopts(pylist, cppargs, occargs, NULL);
     if (!src || *src == '\0') {
 	std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
 	exit(-1);

@@ -1,4 +1,5 @@
 #include "synopsis.hh"
+#include <iostream>
 
 #include <map>
 
