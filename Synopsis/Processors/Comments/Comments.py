@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.4 2001/02/07 17:00:43 chalky Exp $
+# $Id: Comments.py,v 1.5 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.5  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.4  2001/02/07 17:00:43  chalky
 # Added Qt-style comments support
 #
@@ -212,10 +215,17 @@ processors = {
     'dummy': Dummies,
     'prev': Previous,
 }
-def __parseArgs(args):
+def __parseArgs(args, config):
     global processor_list
     processor_list = []
     languagize = None
+
+    if hasattr(config, 'comment_processors'):
+	for proc in config.comment_processors:
+	    if processors.has_key(proc):
+		processor_list.append(processors[proc]())
+	    else:
+		raise ImportError, 'No such processor: %s'%proc
 
     try:
         opts, remainder = getopt.getopt(args, "p:")
@@ -231,7 +241,7 @@ def __parseArgs(args):
 		print "Available processors:",string.join(processors.keys())
 		sys.exit(2)
 
-def process(declarations, types, args):
-    __parseArgs(args)
+def process(declarations, types, args, config):
+    __parseArgs(args, config)
     for processor in processor_list:
 	processor.processAll(declarations)

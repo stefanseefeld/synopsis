@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.4 2001/02/06 15:00:42 stefan Exp $
+# $Id: Scope.py,v 1.5 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.5  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.4  2001/02/06 15:00:42  stefan
 # Dot.py now references the template, not the last parameter, when displaying a Parametrized; replaced logo with a simple link
 #
@@ -48,9 +51,17 @@ class ScopePages (Page.Page):
     details."""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	#TODO use config...
-	self.summarizer = ASTFormatter.SummaryFormatter()
-	self.detailer = ASTFormatter.DetailFormatter()
+	# use config...
+	try:
+	    self.summarizer = core.import_object(config.obj.ScopePages.summarizer)()
+	except AttributeError:
+	    if config.verbose: print "Summarizer config failed. Using SummaryFormatter"
+	    self.summarizer = ASTFormatter.SummaryFormatter()
+	try:
+	    self.detailer = core.import_object(config.obj.ScopePages.detailer)()
+	except AttributeError:
+	    if config.verbose: print "Detailer config failed. Using DetailFormatter"
+	    self.detailer = ASTFormatter.DetailFormatter()
 	# Hack to find share dir..
 	share = os.path.split(AST.__file__)[0]+"/../share"
 	self.syn_logo = 'synopsis200.jpg'
@@ -94,6 +105,8 @@ class ScopePages (Page.Page):
     def printScopeSummaries(self, ns, details, sections):
 	"Print out the summaries from the given ns and note detailed items"
 	comments = config.comments
+	config.link_detail = 0
+	self.summarizer.writeStart()
 	for section in config.sorter.sections():
 	    # Write a header for this section
 	    if section[-1] == 's': heading = section+'es Summary:'
@@ -108,16 +121,20 @@ class ScopePages (Page.Page):
 			details[section] = []
 			sections.append(section)
 		    details[section].append(child)
+		    config.link_detail = 1
 		    self.summarizer.set_link_detail(1)
 		# Print out summary for the child
 		child.accept(self.summarizer)
+		config.link_detail = 0
 		self.summarizer.set_link_detail(0)
 	    # Finish off this section
 	    self.summarizer.writeSectionEnd(heading)
+	self.summarizer.writeEnd()
 
     def printScopeDetails(self, details, sections):
 	"Print out the details from the given dict of lists"
 	# Iterate through the sections with details
+	self.detailer.writeStart()
 	for section in sections:
 	    # Write a heading
 	    heading = section+' Details:'
@@ -127,6 +144,7 @@ class ScopePages (Page.Page):
 		child.accept(self.detailer)
 	    # Finish the section
 	    self.detailer.writeSectionEnd(heading)
+	self.detailer.writeEnd()
 
  
     def startFileScope(self, scope):

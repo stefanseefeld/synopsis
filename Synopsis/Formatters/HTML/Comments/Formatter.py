@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.6 2001/02/07 17:00:43 chalky Exp $
+# $Id: Formatter.py,v 1.7 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.7  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.6  2001/02/07 17:00:43  chalky
 # Added Qt-style comments support
 #
@@ -237,26 +240,26 @@ class JavadocFormatter (CommentFormatter):
     def format_params(self, param_tags):
 	"""Formats a list of (param, description) tags"""
 	if not len(param_tags): return ''
-	return "%s<ul>%s</ul>"%(
-	    div('tag-param-header',"Parameters:"),
-	    string.join(
-		map(lambda p:"<li><b>%s</b> - %s</li>"%(p[0],p[1]), param_tags)
+	return div('tag-heading',"Parameters:") + \
+		div('tag-section', string.join(
+		    map(lambda p:"<b>%s</b> - %s"%(p[0],p[1]), param_tags),
+		    '<br>'
+		)
 	    )
-	)
     def format_return(self, return_tag):
 	"""Formats a since description string"""
 	if not return_tag: return ''
-	return "%s<ul><li>%s</li></ul>"%(div('tag-return-header',"Return:"),return_tag)
+	return div('tag-heading',"Return:")+div('tag-section',return_tag)
     def format_see(self, see_tags, decl):
 	"""Formats a list of (ref,description) tags"""
 	if not len(see_tags): return ''
-	seestr = div('tag-see-header', "See Also:")
+	seestr = div('tag-heading', "See Also:")
 	seelist = []
 	for see in see_tags:
 	    ref,desc = see[0], len(see)>1 and see[1] or ''
 	    tag = self.find_link(ref, decl)
-	    seelist.append(div('tag-see', tag+desc))
-	return seestr + string.join(seelist,'')
+	    seelist.append(tag+desc)
+	return seestr + div('tag-section', string.join(seelist,'<br>'))
     def find_link(self, ref, decl):
 	"""Given a "reference" and a declaration, returns a HTML link. Various
 	methods are tried to resolve the reference."""
@@ -278,7 +281,11 @@ class JavadocFormatter (CommentFormatter):
 	"""Tries to find a TOC entry for a method adjacent to decl. The
 	enclosing scope is found using the types dictionary, and the
 	realname()'s of all the functions compared to ref."""
-	scope = config.types[decl.name()[:-1]]
+	try:
+	    scope = config.types[decl.name()[:-1]]
+	except KeyError:
+	    #print "No parent scope:",decl.name()[:-1]
+	    return None
 	if not scope: return None
 	if not isinstance(scope, Type.Declared): return None
 	scope = scope.declaration()

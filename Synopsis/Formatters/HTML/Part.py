@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.4 2001/02/02 02:01:01 stefan Exp $
+# $Id: Part.py,v 1.5 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.5  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.4  2001/02/02 02:01:01  stefan
 # synopsis now supports inlined inheritance tree generation
 #
@@ -40,7 +43,7 @@ import types, os
 from Synopsis.Core import AST, Type, Util
 
 # HTML modules
-import Tags
+import Tags, core
 from core import config
 from Tags import *
 
@@ -209,7 +212,7 @@ class BaseASTFormatter(ASTFormatter):
 	return type, name
 
     # Default operation is same as function, and quickest way is to assign:
-    formatOperation = formatFunction
+    def formatOperation(self, decl): return self.formatFunction(decl)
 
     def formatParameter(self, parameter):
 	"""Returns one string for the given parameter"""
@@ -239,23 +242,26 @@ class SummaryASTFormatter (BaseASTFormatter):
             return self.reference(oper.name(), " raises")
 	return ''
 
-class SummaryASTCommenter (ASTFormatter):
+class DefaultASTFormatter (ASTFormatter):
+    """A base AST formatter that calls formatDeclaration for all types"""
+    # All these use the same method:
+    def formatForward(self, decl): return self.formatDeclaration(decl)
+    def formatScope(self, decl): return self.formatDeclaration(decl)
+    def formatModule(self, decl): return self.formatDeclaration(decl)
+    def formatMetaModule(self, decl): return self.formatDeclaration(decl)
+    def formatClass(self, decl): return self.formatDeclaration(decl)
+    def formatTypedef(self, decl): return self.formatDeclaration(decl)
+    def formatEnum(self, decl): return self.formatDeclaration(decl)
+    def formatVariable(self, decl): return self.formatDeclaration(decl)
+    def formatConst(self, decl): return self.formatDeclaration(decl)
+    def formatFunction(self, decl): return self.formatDeclaration(decl)
+    def formatOperation(self, decl): return self.formatDeclaration(decl)
+ 
+class SummaryASTCommenter (DefaultASTFormatter):
     """Adds summary comments to all declarations"""
     def formatDeclaration(self, decl):
 	comm = config.comments[decl]
 	return '', div('summary', comm.summary)
-    # All these use the same method:
-    formatForward = formatDeclaration
-    formatScope = formatDeclaration
-    formatModule = formatDeclaration
-    formatMetaModule = formatDeclaration
-    formatClass = formatDeclaration
-    formatTypedef = formatDeclaration
-    formatEnum = formatDeclaration
-    formatVariable = formatDeclaration
-    formatConst = formatDeclaration
-    formatFunction = formatDeclaration
-    formatOperation = formatDeclaration
     
 
 class DetailASTFormatter (BaseASTFormatter):
@@ -323,24 +329,12 @@ class DetailASTFormatter (BaseASTFormatter):
 	comments = desc(comm.summary or comm.detail or '')
 	return '<div class="enumerator">%s%s%s</div>'%(text,value,comments)
 
-class DetailASTCommenter (ASTFormatter):
+class DetailASTCommenter (DefaultASTFormatter):
     """Adds summary comments to all declarations"""
     def formatDeclaration(self, decl):
 	comm = config.comments[decl]
 	if comm.detail is None: return '',''
 	return '', desc(comm.detail)
-    # All these use the same method:
-    formatForward = formatDeclaration
-    formatScope = formatDeclaration
-    formatModule = formatDeclaration
-    formatMetaModule = formatDeclaration
-    formatClass = formatDeclaration
-    formatTypedef = formatDeclaration
-    formatEnum = formatDeclaration
-    formatVariable = formatDeclaration
-    formatConst = formatDeclaration
-    formatFunction = formatDeclaration
-    formatOperation = formatDeclaration
     
 
 class ClassHierarchySimple (ASTFormatter):
@@ -505,9 +499,12 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     def visitOperation(self, decl):	self.formatDeclaration(decl, 'formatOperation')
 
     # These are overridden in {Summary,Detail}Formatter
+    def writeStart(self): pass
     def writeSectionStart(self, heading): pass
     def writeSectionEnd(self, heading): pass
     def writeSectionItem(self, type, name): pass
+    def writeEnd(self): pass
+
 
 class SummaryFormatter(BaseFormatter):
     """Formatting summary visitor. This formatter displays a summary for each
@@ -516,9 +513,19 @@ class SummaryFormatter(BaseFormatter):
     def __init__(self):
 	BaseFormatter.__init__(self)
 	self.__link_detail = 0
+	self._init_formatters()
+
+    def _init_formatters(self):
 	# TODO - load from config
-	self.addFormatter( SummaryASTFormatter )
-	self.addFormatter( SummaryASTCommenter )
+	try:
+	    for formatter in config.obj.ScopePages.summary_formatters:
+		clas = core.import_object(formatter)
+		if config.verbose: print "Using summary formatter:",clas
+		self.addFormatter(clas)
+	except AttributeError:
+	    if config.verbose: print "Summary config failed. Using defaults."
+	    self.addFormatter( SummaryASTFormatter )
+	    self.addFormatter( SummaryASTCommenter )
 
     def set_link_detail(self, boolean):
 	"""Sets link_detail flag to given value.
@@ -566,11 +573,20 @@ class SummaryFormatter(BaseFormatter):
 class DetailFormatter(BaseFormatter):
     def __init__(self):
 	BaseFormatter.__init__(self)
+	self._init_formatters()
+
+    def _init_formatters(self):
 	# TODO - load from config
-	self.addFormatter( DetailASTFormatter )
-	#self.addFormatter( ClassHierarchySimple )
-	self.addFormatter( ClassHierarchyGraph )
-	self.addFormatter( DetailASTCommenter )
+	try:
+	    for formatter in config.obj.ScopePages.detail_formatters:
+		clas = core.import_object(formatter)
+		if config.verbose: print "Using summary formatter:",clas
+		self.addFormatter(clas)
+	except AttributeError:
+	    self.addFormatter( DetailASTFormatter )
+	    #self.addFormatter( ClassHierarchySimple )
+	    self.addFormatter( ClassHierarchyGraph )
+	    self.addFormatter( DetailASTCommenter )
 
     def getDetail(self, node):
 	comment = config.comments[node].detail
@@ -588,6 +604,5 @@ class DetailFormatter(BaseFormatter):
 	"""Joins text1 and text2 and follows with a horizontal rule"""
 	str = '%s %s<hr>'
 	self.write(str%(text1, text2))
-
 
 

@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.8 2001/02/07 14:13:51 chalky Exp $
+# $Id: core.py,v 1.9 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.9  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.8  2001/02/07 14:13:51  chalky
 # Small fixes.
 #
@@ -109,12 +112,63 @@ class Config:
 	self.classTree = None
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
+	self.pages = [
+	    'ScopePages', 'ModuleListingJS', 'ModuleIndexer', 'FileTreeJS',
+	    'InheritanceTree', 'InheritanceGraph', 'FramesIndex'
+	]
+	self.verbose = 0
+
 
     def fillDefaults(self):
 	"""Fill in empty options with defaults"""
 	if not self.sorter:
 	    import ScopeSorter
 	    self.sorter = ScopeSorter.ScopeSorter()
+    
+    def use_config(self, obj):
+	"""Extracts useful attributes from 'obj' and stores them. The object
+	itself is also stored as config.obj"""
+	# obj.pages is a list of module names
+	self.obj = obj
+	options = ('pages', 'sorter', 'stylesheet', 'stylesheet_file',
+	    'comment_formatters')
+	for option in options:
+	    if hasattr(obj, option):
+		getattr(self, '_config_'+option)(getattr(obj, option))
+
+    def _config_pages(self, pages):
+	"Configures from the given list of pages"
+	if type(pages) != types.ListType:
+	    raise TypeError, "HTML.pages must be a list."
+	if self.verbose: print "Using pages:",pages
+	self.pages = pages
+
+    def _config_sorter(self, sorter):
+	if self.verbose: print "Using sorter:",sorter
+	self.sorter = import_object(sorter)()
+
+    def _config_stylesheet(self, stylesheet):
+	if self.verbose: print "Using stylesheet:", stylesheet
+	self.stylesheet = stylesheet
+
+    def _config_stylesheet_file(self, stylesheet_file):
+	if self.verbose: print "Using stylesheet file:", stylesheet_file
+	self.stylesheet_file = stylesheet_file
+
+    def _config_comment_formatters(self, comment_formatters):
+	if self.verbose: print "Using comment formatters:", comment_formatters
+	basePackage = 'Synopsis.Formatter.HTML.CommentFormatter.'
+	for formatter in comment_formatters:
+	    if type(formatter) == types.StringType:
+		if CommentFormatter.commentFormatters.has_key(formatter):
+		    self.commentFormatterList.append(
+			CommentFormatter.commentFormatters[formatter]()
+		    )
+		else:
+		    raise ImportError, "No builtin comment formatter '%s'"%formatter
+	    else:
+		clas = import_object(formatter, basePackage)
+		self.commentFormatterList.append(clas())
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served
@@ -241,6 +295,38 @@ class FileTree(AST.Visitor):
 	for decl in scope.declarations():
 	    decl.accept(self)
 	
+def import_object(spec, defaultAttr = None, basePackage = ''):
+    """Imports an object according to 'spec'. spec must be either a
+    string or a tuple of two strings. A tuple of two strings means load the
+    module from the first string, and look for an attribute using the second
+    string. One string is interpreted according to the optional arguments. The
+    default is just to load the named module. 'defaultAttr' means to look for
+    the named attribute in the module and return that. 'basePackage' means to
+    prepend the named string to the spec before importing. Note that you may
+    pass a list instead of a tuple, and it will have the same effect."""
+    if type(spec) == types.ListType: spec = tuple(spec)
+    if type(spec) == types.TupleType:
+	# Tuple means (module-name, attribute-name)
+	if len(spec) != 2:
+	    raise TypeError, "Import tuple must have two strings"
+	name, attr = spec
+	if type(name) != types.StringType or type(attr) != types.StringType:
+	    raise TypeError, "Import tuple must have two strings"
+	module = Util._import(name)
+	if not hasattr(module, attr):
+	    raise ImportError, "Module %s has no %s attribute."%spec
+	return getattr(module, attr)
+    elif type(spec) == types.StringType:
+	# String means HTML module with htmlPageClass attribute
+	module = Util._import(basePackage+spec)
+	if defaultAttr is not None:
+	    if not hasattr(module, defaultAttr):
+		raise ImportError, "Module %s has no %s attribute."%(spec, defaultAttr)
+	    return getattr(module, defaultAttr)
+	return module
+    else:
+	raise TypeError, "Import spec must be a string or tuple of two strings."
+
 
 
 
@@ -256,6 +342,7 @@ class PageManager:
 	self.__pages = [] #all pages
 	self.__roots = [] #pages with roots, list of Structs
 	self.__global = None # The global scope
+	self._loadPages()
 
     def globalScope(self):
 	"Return the global scope"
@@ -326,26 +413,16 @@ class PageManager:
 	for page in self.__pages:
 	    page.process(start)
 
-def stdPage(name):
-    module = Util._import('Synopsis.Formatter.HTML.'+name)
-    if not hasattr(module, 'htmlPageClass'):
-	print module.__dict__
-    return module.htmlPageClass
-
-def defaultPageset(manager):
-    """The default pageset function. This is the default, which creates a
-    reasonable set of pages. If you provide your own, you need to call
-    manager.addPage() for all the pages you want."""
-    manager.addPage(stdPage('ScopePages'))
-    manager.addPage(stdPage('ModuleListingJS'))
-    #manager.addPage(stdPage('ModuleListing'))
-    manager.addPage(stdPage('ModuleIndexer'))
-    #manager.addPage(stdPage('FileTree'))
-    manager.addPage(stdPage('FileTreeJS'))
-    manager.addPage(stdPage('InheritanceTree'))
-    manager.addPage(stdPage('InheritanceGraph'))
-    # This goes last so others can set default pages
-    manager.addPage(stdPage('FramesIndex'))
+    def _loadPages(self):
+	"""Loads the page objects from the config.pages list. Each element is
+	either a string or a tuple of two strings. One string means load the named
+	module and look for a 'htmlPageClass' attribute in it. A tuple of two
+	strings means load the module from the first string, and look for an
+	attribute using the second string."""
+	defaultAttr = 'htmlPageClass'
+	basePackage = 'Synopsis.Formatter.HTML.'
+	for page in config.pages:
+	    self.addPage(import_object(page, defaultAttr, basePackage))
 
 def usage():
     """Print usage to stdout"""
@@ -368,20 +445,27 @@ def usage():
   -r <filename> ['|'<url>|<directory>] merge in table of content from <filename>, possibly prefixing entries with the
                                        given url or directory, to resolve external symbols"""
 
-def __parseArgs(args):
+def __parseArgs(args, config_obj):
     global verbose, commentParser, toc_out, toc_in
-    global commentFormatterList
     commentFormatters = CommentFormatter.commentFormatters
     # Defaults
     toc_out = ""
     toc_in = []
-    config.pageset = defaultPageset
+
     # Convert the arguments to a list with custom getopt
     try:
         opts,remainder = Util.getopt_spec(args, "hvo:s:n:c:C:S:t:r:")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
+
+    # Check for verbose first so config loading can use it
+    for o, a in opts: 
+	if o == '-v': 
+	    config.verbose = verbose = 1
+
+    # Use config object if present
+    if config_obj: config.use_config(config_obj)
 
     # Parse the list of arguments
     for opt in opts:
@@ -410,13 +494,14 @@ def __parseArgs(args):
 	    sys.exit(1)
 	elif o == "-v":
 	    verbose=1
+	    config.verbose = 1
 
     # Fill in any unspecified defaults
     config.fillDefaults()
 
-def format(types, declarations, args):
+def format(types, declarations, args, config_obj):
     global toc_out, toc_in
-    __parseArgs(args)
+    __parseArgs(args, config_obj)
     config.types = types
 
     # Create the file namer
@@ -457,7 +542,6 @@ def format(types, declarations, args):
     root = AST.Module('',-1,"C++","Global",())
     root.declarations()[:] = declarations
     manager = PageManager()
-    config.pageset(manager)
     manager.process(root)
 
     config.files.chdirRestore()
