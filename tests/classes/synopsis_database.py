@@ -155,6 +155,7 @@ class Database(database.Database):
                  'OpenCxx.Parser',
                  'OpenCxx.Encoding',
                  'OpenCxx.ConstEvaluator',
+                 'OpenCxx.TypeEvaluator',
                  'OpenCxx.SymbolLookup']
       else:
          return []
@@ -178,7 +179,7 @@ class Database(database.Database):
 
       suite = id.split('.', 1)[1]
       if suite not in ['Lexer', 'Parser', 'Encoding',
-                       'ConstEvaluator', 'SymbolLookup']:
+                       'ConstEvaluator', 'TypeEvaluator', 'SymbolLookup']:
          raise NoSuchResourceError(id)
       
       parameters['src'] = os.path.normpath('%s/OpenCxx/src/%s.cc'%(self.srcdir, suite))
