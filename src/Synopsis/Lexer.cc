@@ -49,7 +49,6 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   my_keywords["unsigned"] = Token::UNSIGNED;
   my_keywords["void"] = Token::VOID;
   my_keywords["volatile"] = Token::VOLATILE;
-  my_keywords["wchar_t"] = Token::WCHAR;
   my_keywords["while"] = Token::WHILE;
   if (tokenset & CXX)
   {
@@ -75,6 +74,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["typename"] = Token::CLASS; // FIXME !!
     my_keywords["using"] = Token::USING;
     my_keywords["virtual"] = Token::VIRTUAL;
+    my_keywords["wchar_t"] = Token::WCHAR;
   }
   if (tokenset & GNU)
   {
