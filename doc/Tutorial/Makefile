@@ -21,7 +21,8 @@ config.xml:	../../Synopsis/Config.py
 # The following rules use xsltproc (specifically the xmlto wrapper)
 
 html/index.html:	$(XMLFILES)
-	xmlto --skip-validation -o html -m synopsis-html.xsl html synopsis.xml && cp synopsis-html.css html/synopsis-html.css
+	xmlto --skip-validation -o html -m synopsis-html.xsl html synopsis.xml && \
+	    cp synopsis-html.css bg.png html/
 
 #synopsis.pdf:	$(XMLFILES)
 #	xmlto pdf synopsis.xml

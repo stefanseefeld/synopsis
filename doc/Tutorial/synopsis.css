@@ -4,6 +4,7 @@ body {
     margin-top: 0;
     color: #003030;
     background: #ffffff;
+    background-image: url("bg.png");
 }
 :link { color: #770000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
@@ -16,11 +17,13 @@ div.page-heading {
     border-style:solid;
     text-align:center;
     padding:10px 40px;
-    background-color:lightgrey;
+    background-color:#ffffff;
+    font-family: "arial";
+    font-style: italic;
     font-size:xx-large;
     color:darkred;
 }
-p, dl { margin-left: 30px; }
+p, dl, ul, ol { margin-left: 30px; }
 pre { margin-left: 50px; background-color:#efefef; padding:5px;}
-h2, h3 { margin-left: 10px; }
+h2, h3 { margin-left: 10px; background-color:#efefef; padding:3px;}
 dt { font-weight:bold; }
