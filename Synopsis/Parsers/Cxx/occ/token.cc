@@ -78,6 +78,10 @@ Lex::Lex(Program* prog) : fifo(this)
     tokenp = 0;
     token_len = 0;
 
+    // Re-init incase used multiple times by Synopsis
+    comments = nil;
+    user_keywords = nil;
+
     InitializeOtherKeywords();
 }
 
