@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.1 2003/01/16 12:46:46 chalky Exp $
+# $Id: Source.py,v 1.2 2003/02/01 23:59:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Source.py,v $
+# Revision 1.2  2003/02/01 23:59:32  chalky
+# Use full_filename() for file source so don't need file_path any more to
+# find the original source files.
+#
 # Revision 1.1  2003/01/16 12:46:46  chalky
 # Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
 # (used to be part of FileTree) and FileDetails.
@@ -85,7 +89,6 @@ class FileSource (Page.Page):
 	# Try old name first for backwards compatibility
 	if hasattr(config.obj, 'FilePages'): myconfig = config.obj.FilePages
 	else: myconfig = config.obj.FileSource
-	self.__filepath = myconfig.file_path
 	self.__linkpath = myconfig.links_path
 	self.__toclist = myconfig.toc_files
 	self.__scope = myconfig.scope
@@ -160,14 +163,14 @@ class FileSource (Page.Page):
 	    # No link module..
 	    self.write('link module for highlighting source unavailable')
 	    try:
-		self.write(open(self.__filepath%source,'r').read())
+		self.write(open(file.full_filename(),'r').read())
 	    except IOError, e:
 		self.write("An error occurred:"+ str(e))
 	else:
 	    self.write('<br><div class="file-all">\n')
 	    # Call link module
 	    f_out = os.path.join(config.basename, self.__filename) + '-temp'
-	    f_in = self.__filepath%source
+	    f_in = file.full_filename()
 	    f_link = self.__linkpath%source
 	    #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)
 	    try:
