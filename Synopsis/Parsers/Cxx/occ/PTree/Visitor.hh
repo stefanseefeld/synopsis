@@ -113,92 +113,92 @@ public:
   virtual void visit(Atom *) {}
   virtual void visit(List *) {}
   // atoms...
-  virtual void visit(CommentedAtom *) {}
-  virtual void visit(DupAtom *) {}
-  virtual void visit(Identifier *) {}
-  virtual void visit(Reserved *) {}
-  virtual void visit(This *) {}
-  virtual void visit(AtomAUTO *) {}
-  virtual void visit(AtomBOOLEAN *) {}
-  virtual void visit(AtomCHAR *) {}
-  virtual void visit(AtomWCHAR *) {}
-  virtual void visit(AtomCONST *) {}
-  virtual void visit(AtomDOUBLE *) {}
-  virtual void visit(AtomEXTERN *) {}
-  virtual void visit(AtomFLOAT *) {}
-  virtual void visit(AtomFRIEND *) {}
-  virtual void visit(AtomINLINE *) {}
-  virtual void visit(AtomINT *) {}
-  virtual void visit(AtomLONG *) {}
-  virtual void visit(AtomMUTABLE *) {}
-  virtual void visit(AtomNAMESPACE *) {}
-  virtual void visit(AtomPRIVATE *) {}
-  virtual void visit(AtomPROTECTED *) {}
-  virtual void visit(AtomPUBLIC *) {}
-  virtual void visit(AtomREGISTER *) {}
-  virtual void visit(AtomSHORT *) {}
-  virtual void visit(AtomSIGNED *) {}
-  virtual void visit(AtomSTATIC *) {}
-  virtual void visit(AtomUNSIGNED *) {}
-  virtual void visit(AtomUSING *) {}
-  virtual void visit(AtomVIRTUAL *) {}
-  virtual void visit(AtomVOID *) {}
-  virtual void visit(AtomVOLATILE *) {}
+  virtual void visit(CommentedAtom *);
+  virtual void visit(DupAtom *);
+  virtual void visit(Identifier *);
+  virtual void visit(Reserved *);
+  virtual void visit(This *);
+  virtual void visit(AtomAUTO *);
+  virtual void visit(AtomBOOLEAN *);
+  virtual void visit(AtomCHAR *);
+  virtual void visit(AtomWCHAR *);
+  virtual void visit(AtomCONST *);
+  virtual void visit(AtomDOUBLE *);
+  virtual void visit(AtomEXTERN *);
+  virtual void visit(AtomFLOAT *);
+  virtual void visit(AtomFRIEND *);
+  virtual void visit(AtomINLINE *);
+  virtual void visit(AtomINT *);
+  virtual void visit(AtomLONG *);
+  virtual void visit(AtomMUTABLE *);
+  virtual void visit(AtomNAMESPACE *);
+  virtual void visit(AtomPRIVATE *);
+  virtual void visit(AtomPROTECTED *);
+  virtual void visit(AtomPUBLIC *);
+  virtual void visit(AtomREGISTER *);
+  virtual void visit(AtomSHORT *);
+  virtual void visit(AtomSIGNED *);
+  virtual void visit(AtomSTATIC *);
+  virtual void visit(AtomUNSIGNED *);
+  virtual void visit(AtomUSING *);
+  virtual void visit(AtomVIRTUAL *);
+  virtual void visit(AtomVOID *);
+  virtual void visit(AtomVOLATILE *);
   // ...lists...
-  virtual void visit(Brace *) {}
-  virtual void visit(Block *) {}
-  virtual void visit(ClassBody *) {}
-  virtual void visit(Typedef *) {}
-  virtual void visit(TemplateDecl *) {}
-  virtual void visit(TemplateInstantiation *) {}
-  virtual void visit(ExternTemplate *) {}
-  virtual void visit(MetaclassDecl *) {}
-  virtual void visit(LinkageSpec *) {}
-  virtual void visit(NamespaceSpec *) {}
-  virtual void visit(NamespaceAlias *) {}
-  virtual void visit(Using *) {}
-  virtual void visit(Declaration *) {}
-  virtual void visit(Declarator *) {}
-  virtual void visit(Name *) {}
-  virtual void visit(FstyleCastExpr *) {}
-  virtual void visit(ClassSpec *) {}
-  virtual void visit(EnumSpec *) {}
-  virtual void visit(AccessSpec *) {}
-  virtual void visit(AccessDecl *) {}
-  virtual void visit(UserAccessSpec *) {}
-  virtual void visit(IfStatement *) {}
-  virtual void visit(SwitchStatement *) {}
-  virtual void visit(WhileStatement *) {}
-  virtual void visit(DoStatement *) {}
-  virtual void visit(ForStatement *) {}
-  virtual void visit(TryStatement *) {}
-  virtual void visit(BreakStatement *) {}
-  virtual void visit(ContinueStatement *) {}
-  virtual void visit(ReturnStatement *) {}
-  virtual void visit(GotoStatement *) {}
-  virtual void visit(CaseStatement *) {}
-  virtual void visit(DefaultStatement *) {}
-  virtual void visit(LabelStatement *) {}
-  virtual void visit(ExprStatement *) {}
-  virtual void visit(CommaExpr *) {}
-  virtual void visit(AssignExpr *) {}
-  virtual void visit(CondExpr *) {}
-  virtual void visit(InfixExpr *) {}
-  virtual void visit(PmExpr *) {}
-  virtual void visit(CastExpr *) {}
-  virtual void visit(UnaryExpr *) {}
-  virtual void visit(ThrowExpr *) {}
-  virtual void visit(SizeofExpr *) {}
-  virtual void visit(TypeidExpr *) {}
-  virtual void visit(TypeofExpr *) {}
-  virtual void visit(NewExpr *) {}
-  virtual void visit(DeleteExpr *) {}
-  virtual void visit(ArrayExpr *) {}
-  virtual void visit(FuncallExpr *) {}
-  virtual void visit(PostfixExpr *) {}
-  virtual void visit(DotMemberExpr *) {}
-  virtual void visit(ArrowMemberExpr *) {}
-  virtual void visit(ParenExpr *) {}
+  virtual void visit(Brace *);
+  virtual void visit(Block *);
+  virtual void visit(ClassBody *);
+  virtual void visit(Typedef *);
+  virtual void visit(TemplateDecl *);
+  virtual void visit(TemplateInstantiation *);
+  virtual void visit(ExternTemplate *);
+  virtual void visit(MetaclassDecl *);
+  virtual void visit(LinkageSpec *);
+  virtual void visit(NamespaceSpec *);
+  virtual void visit(NamespaceAlias *);
+  virtual void visit(Using *);
+  virtual void visit(Declaration *);
+  virtual void visit(Declarator *);
+  virtual void visit(Name *);
+  virtual void visit(FstyleCastExpr *);
+  virtual void visit(ClassSpec *);
+  virtual void visit(EnumSpec *);
+  virtual void visit(AccessSpec *);
+  virtual void visit(AccessDecl *);
+  virtual void visit(UserAccessSpec *);
+  virtual void visit(IfStatement *);
+  virtual void visit(SwitchStatement *);
+  virtual void visit(WhileStatement *);
+  virtual void visit(DoStatement *);
+  virtual void visit(ForStatement *);
+  virtual void visit(TryStatement *);
+  virtual void visit(BreakStatement *);
+  virtual void visit(ContinueStatement *);
+  virtual void visit(ReturnStatement *);
+  virtual void visit(GotoStatement *);
+  virtual void visit(CaseStatement *);
+  virtual void visit(DefaultStatement *);
+  virtual void visit(LabelStatement *);
+  virtual void visit(ExprStatement *);
+  virtual void visit(CommaExpr *);
+  virtual void visit(AssignExpr *);
+  virtual void visit(CondExpr *);
+  virtual void visit(InfixExpr *);
+  virtual void visit(PmExpr *);
+  virtual void visit(CastExpr *);
+  virtual void visit(UnaryExpr *);
+  virtual void visit(ThrowExpr *);
+  virtual void visit(SizeofExpr *);
+  virtual void visit(TypeidExpr *);
+  virtual void visit(TypeofExpr *);
+  virtual void visit(NewExpr *);
+  virtual void visit(DeleteExpr *);
+  virtual void visit(ArrayExpr *);
+  virtual void visit(FuncallExpr *);
+  virtual void visit(PostfixExpr *);
+  virtual void visit(DotMemberExpr *);
+  virtual void visit(ArrowMemberExpr *);
+  virtual void visit(ParenExpr *);
 };
 
 }

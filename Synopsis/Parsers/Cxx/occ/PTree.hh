@@ -9,8 +9,6 @@
 
 #include <PTree/Node.hh>
 #include <PTree/operations.hh>
-#include <PTree/Atom.hh>
-#include <PTree/List.hh>
 #include <PTree/Atoms.hh>
 #include <PTree/Lists.hh>
 #include <PTree/generation.hh>

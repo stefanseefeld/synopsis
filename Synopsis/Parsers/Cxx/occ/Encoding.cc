@@ -164,8 +164,8 @@ void Encoding::print(std::ostream &os, const char *p)
 {
   for (const unsigned char *ptr = reinterpret_cast<const unsigned char*>(p);
        *ptr != '\0'; ++ptr)
-    if(*ptr < 0x80) os << reinterpret_cast<const char *>(*ptr);
-    else os << reinterpret_cast<const char *>(*ptr - 0x80 + '0');
+    if(*ptr < 0x80) os << static_cast<char>(*ptr);
+    else os << static_cast<char>(*ptr - 0x80 + '0');
 }
 
 // GetBaseName() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.

@@ -16,6 +16,7 @@
 #include <cstring>
 #include "Environment.hh"
 #include "PTree.hh"
+#include <PTree/Display.hh>
 #include "Walker.hh"
 #include "TypeInfo.hh"
 #include "Class.hh"
@@ -1721,9 +1722,13 @@ void Walker::SetLeafComments(PTree::Node *node, PTree::Node *comments)
     leaf = FindLeftLeaf(node, parent);
 
     // Sanity
-    if (!leaf) { std::cerr << "Warning: Failed to find leaf when trying to add comments." << std::endl;
-	parent->print(std::cout);
-	return; }
+    if (!leaf)
+    {
+      std::cerr << "Warning: Failed to find leaf when trying to add comments." << std::endl;
+      PTree::Display display(std::cerr, false);
+      display.display(parent);
+      return; 
+    }
 
     if (!(cleaf = dynamic_cast<PTree::CommentedAtom *>(leaf))) {
 	// Must change first child of parent to be a commented leaf

@@ -8,7 +8,6 @@
 //
 
 #include "PTree/operations.hh"
-#include "PTree/List.hh"
 
 namespace PTree
 {

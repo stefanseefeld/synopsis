@@ -5,73 +5,13 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <cstring>
-#include <iostream>
-#include "Lexer.hh"
 #include "PTree/Lists.hh"
 #include "PTree/operations.hh"
 #include "Encoding.hh"
 #include "Walker.hh"
+#include <iostream>
 
 using namespace PTree;
-
-void Brace::print(std::ostream &os, size_t indent, size_t depth) const
-{
-  if(too_deep(os, depth)) return;
-
-  size_t indent2 = indent + 1;
-  os << "[{";
-  const Node *body = second(this);
-  if(!body)
-  {
-    print_indent(os, indent2);
-    os << "nil";
-  }
-  else
-    while(body)
-    {
-      print_indent(os, indent2);
-      if(body->is_atom())
-      {
-	os << "@ ";
-	body->print(os, indent + 1, depth + 1);
-      }
-      else
-      {
-	const Node *head = body->car();
-	if(!head) os << "nil";
-	else head->print(os, indent + 1, depth + 1);
-      }
-      body = body->cdr();
-    }
-  print_indent(os, indent);
-  os << "}]";
-}
-
-int Brace::Write(std::ostream& out, int indent)
-{
-    int n = 0;
-
-    out << '{';
-    Node *p = cadr(this);
-    while(p != 0){
-	if(p->is_atom())
-	  throw std::runtime_error("Brace::Write(): non list");
-	else{
-	    print_indent(out, indent + 1);
-	    ++n;
-	    Node *q = p->car();
-	    p = p->cdr();
-	    if(q != 0)
-		n += q->Write(out, indent + 1);
-	}
-    }
-
-    print_indent(out, indent);
-    ++n;
-    out << '}';
-    return n;
-}
 
 Node *Brace::Translate(Walker* w)
 {
@@ -242,11 +182,6 @@ Declarator::Declarator(Declarator *decl, Node *p, Node *q)
 {
 }
 
-void Declarator::print(std::ostream &os, size_t indent, size_t depth) const
-{
-  print_encoded(os, indent, depth);
-}
-
 int Declarator::What()
 {
   return Token::ntDeclarator;
@@ -266,11 +201,6 @@ Name::Name(Node *p, Encoding &e)
   : List(p->car(), p->cdr()),
     my_name(e.Get())
 {
-}
-
-void Name::print(std::ostream &os, size_t indent, size_t depth) const
-{
-  print_encoded(os, indent, depth);
 }
 
 int Name::What()
@@ -303,11 +233,6 @@ FstyleCastExpr::FstyleCastExpr(const char *e, Node *p, Node *q)
   : List(p, q),
     my_type(e)
 {
-}
-
-void FstyleCastExpr::print(std::ostream &os, size_t indent, size_t depth) const
-{
-  print_encoded(os, indent, depth);
 }
 
 int FstyleCastExpr::What()

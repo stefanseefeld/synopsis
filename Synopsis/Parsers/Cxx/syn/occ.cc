@@ -16,6 +16,7 @@
 #include "filter.hh"
 #include "linkstore.hh"
 
+#include <occ/PTree/Display.hh>
 #include <occ/Buffer.hh>
 #include <occ/Lexer.hh>
 #include <occ/Parser.hh>
@@ -258,20 +259,20 @@ PyObject *occ_print(PyObject *self, PyObject *args)
     perror(src);
     exit(1);
   }
-  Buffer buffer(ifs.rdbuf());
-  Lexer lexer(&buffer);
-  Parser parse(&lexer);
-
   try
   {
+    Buffer buffer(ifs.rdbuf());
+    Lexer lexer(&buffer);
+    Parser parse(&lexer);
+
+    PTree::Display display(std::cout, true);
     PTree::Node *def;
-    while(parse.rProgram(def)) def->print(std::cout);
+    while(parse.rProgram(def)) display.display(def);
   }
   catch (...)
   {
     std::cerr << "Warning: an uncaught exception occurred when translating the parse tree" << std::endl;
   }
-
   Py_INCREF(Py_None);
   return Py_None;
 }
