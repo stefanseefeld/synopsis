@@ -1,21 +1,23 @@
-synopsis	:= ../../bin/synopsis -P boost.synopsis
+synopsis := python synopsis.py
 
 all:
 		@echo "The boost demo is not run by default. If you have the boost sources,"
 		@echo "you must create a symlink to the boost root directory as 'boost' here"
-		@echo "eg: ln -s ~/boost"
-		@echo "Then you can run 'make boostdemo' for the frames version"
-		@echo "  or you can run 'make boostdemo2' for the no-frames version"
+		@echo "eg: ln -s ~/boost boost"
+		@echo "Then you can run 'make bpl'"
 
-boostdemo:	
-		$(synopsis)
+bpl: bpl.syn bpl.xref
+	$(synopsis) format --output=$@ $<
 
-boostdemo2:	
-		$(synopsis) "-Wc,formatter=HTML Formatter - No Frames"
+bpl.syn xref/boost/python.hpp links/boost/python.hpp: boost/boost/python.hpp
+	$(synopsis) parse --output=$@ $?
+
+bpl.xref: bpl.syn xref/boost/python.hpp
+	$(synopsis) xref --output=$@ $<
 
 
 clean:
-		rm -rf *~ *.html *.ps *.syn core *.aux *.fn *.cp *.tp *.vr *.log *.ky *.pg \
-		       *.fns *.tps *.vrs *.pdf BoostPython BoostFiles BoostLinks BoostXRef
+	rm -rf *~ xref links bpl.syn bpl.xref
 
 distclean:	clean
+	rm -rf bpl

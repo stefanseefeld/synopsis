@@ -17,12 +17,15 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python2.2/Python.h>',
                                 '-I/usr/include/python2.2'],
                     base_path = 'boost/',
                     main_file_only = True,
-                    syntax_prefix = 'BoostLinks/',
-                    xref_prefix = 'BoostXRef/',
+                    syntax_prefix = 'links/',
+                    xref_prefix = 'xref/',
                     extract_tails = True,
                     emulate_compiler = 'g++',
                     # 'extra_files' will go away shortly
                     extra_files = extra_input)
+
+xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
+
 
 linker = Composite(Unduplicator(),     # remove duplicate and forward declarations
                    Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
@@ -33,18 +36,11 @@ linker = Composite(Unduplicator(),     # remove duplicate and forward declaratio
                    Previous(),         # attach '//<-' comments
                    Dummies(),          # drop 'dummy' declarations
                    EmptyNS(),          # skip empty namespaces
-                   XRefCompiler(xref_prefix='BoostXRef/',
-                                output='all.xref'),     # compile xref dictionary
                    AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
-dump = Dump.Formatter(show_declarations = True,
-                      show_types = True,
-                      show_files = True)
+formatter = HTML.Formatter(stylesheet_file = '../../html.css')
 
-formatter = HTML.Formatter()
-
-process(parse=parser,
-        link=linker,
-        format=formatter,
-        dump=dump,
-        all=Composite(parser, linker, formatter))
+process(parse = Composite(parser, linker),
+        xref = xref,
+        link = linker,
+        format = formatter)
