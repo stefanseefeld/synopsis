@@ -1,5 +1,5 @@
 import sys, getopt, os, os.path, string
-from Synopsis.Core import Type, Util, Visitor
+from Synopsis.Core import Type, Util
 
 def entity(type, body): return "<" + type + "> " + body + "</" + type + ">"
 def href(ref, label): return "<a href=" + ref + ">" + label + "</a>"
@@ -12,7 +12,7 @@ def desc(text):
     block = map(lambda s: s.text()[3:], block)
     return "<div class=\"desc\">" + string.join(block, '\n') + "</div>"
 
-class TableOfContents(Visitor.AstVisitor):
+class TableOfContents(AST.Visitor):
     """
     generate a dictionary of all declarations which can be looked up to create
     cross references. Names are fully scoped."""
@@ -67,7 +67,7 @@ class TableOfContents(Visitor.AstVisitor):
         for parameter in operation.parameters(): parameter.accept(self)
     
 
-class HTMLFormatter (Visitor.AstVisitor):
+class HTMLFormatter (Type.Visitor, AST.Visitor):
     """
     The type visitors should generate names relative to the current scope.
     The generated references however are fully scoped names
@@ -99,7 +99,7 @@ class HTMLFormatter (Visitor.AstVisitor):
         self.__type_ref = Util.ccolonName(type.name())
         self.__type_label = Util.ccolonName(type.name())
         
-    def visitForward(self, type):
+    def visitUnknown(self, type):
         self.__type_ref = Util.ccolonName(type.name())
         self.__type_label = Util.ccolonName(type.name(), self.scope())
         

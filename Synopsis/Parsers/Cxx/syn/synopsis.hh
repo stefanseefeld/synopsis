@@ -57,7 +57,7 @@ public:
     // types from the Synopsis.Type module
     //
     PyObject *Base(Type::Base*);
-    PyObject *Forward(Type::Forward*);
+    PyObject *Unknown(Type::Unknown*);
     PyObject *Declared(Type::Declared*);
     PyObject *Template(Type::Template*);
     PyObject *Modifier(Type::Modifier*);
@@ -105,7 +105,7 @@ public:
     // Type::Visitor methods
     //
     //void visitType(Type::Type*);
-    void visitForward(Type::Forward*);
+    void visitUnknown(Type::Unknown*);
     void visitModifier(Type::Modifier*);
     //void visitNamed(Type::Named*);
     void visitBase(Type::Base*);

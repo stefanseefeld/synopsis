@@ -10,7 +10,7 @@
 # . Unite Nodes/NamespaceBuilder into TOC
 
 import sys, getopt, os, os.path, string, types, errno, stat, re
-from Synopsis.Core import AST, Type, Util, Visitor
+from Synopsis.Core import AST, Type, Util
 
 # Set this to true if your name is Chalky :)
 debug=0
@@ -352,7 +352,7 @@ class Linker:
 	return filename + "#" + decl.name()[-1]
     __call__ = link
 
-class TableOfContents(Visitor.AstVisitor):
+class TableOfContents(AST.Visitor):
     """
     Maintains a dictionary of all declarations which can be looked up to create
     cross references. Names are fully scoped.
@@ -383,13 +383,13 @@ class TableOfContents(Visitor.AstVisitor):
             scopedname = string.join(name, "::")
             lang = self.__toc[tuple(name)].lang
             link = os.path.join(basename, self.__toc[tuple(name)].link)
-            fout.write(scopedname + " " + lang + " " + link + "\n")
+            fout.write(scopedname + "," + lang + "," + link + "\n")
             
     def load(self, file):
         fin = open(os.path.join("..", file), 'r')
         line = fin.readline()
         while line:
-            scopedname, lang, link = string.split(line)
+            scopedname, lang, link = string.split(line, ",")
             name = string.split(scopedname, "::")
             entry = TocEntry(name, os.path.join("..", link), lang, "decl")
             self.insert(entry)
@@ -413,7 +413,7 @@ class TableOfContents(Visitor.AstVisitor):
 	for enumor in enum.enumerators():
 	    enumor.accept(self)
 
-class FileTree(Visitor.AstVisitor):
+class FileTree(AST.Visitor):
     """Maintains a tree of directories and files"""
     def __init__(self):
 	global fileTree
@@ -478,7 +478,7 @@ class FileTree(Visitor.AstVisitor):
 	
 
 
-class ClassTree(Visitor.AstVisitor):
+class ClassTree(AST.Visitor):
     """Maintains a tree of classes directed by inheritance"""
     def __init__(self):
 	global classTree
@@ -535,9 +535,7 @@ class ClassTree(Visitor.AstVisitor):
 	for decl in clas.declarations():
 	    decl.accept(self)
 
-
-
-class BaseFormatter(Visitor.AstVisitor):
+class BaseFormatter(Type.Visitor, AST.Visitor):
     """
     A Formatter with common base functionality between summary and detail
     sections.
@@ -576,7 +574,7 @@ class BaseFormatter(Visitor.AstVisitor):
 	"""Same as reference but takes a tuple name"""
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = toc[name]
-        if not entry: print "lookup failed for", name
+        #if not entry: print "lookup failed for", name
 	if entry: return apply(href, (entry.link, label), keys)
 	return label and span('type', label) or ''
 
@@ -626,7 +624,7 @@ class BaseFormatter(Visitor.AstVisitor):
     def visitBaseType(self, type):
         self.__type_label = self.referenceName(type.name())
         
-    def visitForwardType(self, type):
+    def visitUnknown(self, type):
         self.__type_label = self.referenceName(type.name())
         #self.__type_label = Util.ccolonName(type.name(), self.scope())
         

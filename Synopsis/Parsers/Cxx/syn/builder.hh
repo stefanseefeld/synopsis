@@ -11,7 +11,7 @@ namespace Type {
     class Type;
     class Base;
     class Named;
-    class Forward;
+    class Unknown;
     class Template;
 }
 
@@ -101,14 +101,14 @@ public:
     //. Create a Base type for the given name in the current scope
     Type::Base* Base(string name);
 
-    //. Create a Forward type for the given name in the current scope
-    Type::Forward* Forward(string name);
+    //. Create an Unknown type for the given name in the current scope
+    Type::Unknown* Unknown(string name);
 
     //. Create a Template type for the given name in the current scope
     Type::Template* Template(string name, const vector<Type::Type*>&); 
 
-    //. Add a forward decl for given name if it doesnt already exist
-    Type::Forward* addForward(string name);
+    //. Add an Unknown decl for given name if it doesnt already exist
+    Type::Unknown* addUnknown(string name);
 
 private:
     //. Current filename

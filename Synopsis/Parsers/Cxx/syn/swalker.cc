@@ -192,7 +192,7 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
         string name = getName(node->Second());
-	m_builder->addForward(name);
+	m_builder->addUnknown(name);
     } /* else {
 	cout << "class spec not length 4:" << endl;
 	node->Display2(cout);
@@ -257,7 +257,7 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
         string name = getName(node->Second());
-	m_builder->addForward(name);
+	m_builder->addUnknown(name);
     }
     return 0; 
 }

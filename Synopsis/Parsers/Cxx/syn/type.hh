@@ -68,11 +68,11 @@ namespace Type {
 	virtual void accept(Visitor*);
     };
 
-    //. Forward declared type
-    class Forward : public Named {
+    //. Unknown type
+    class Unknown : public Named {
     public:
 	//. Constructor
-	Forward(Name);
+	Unknown(Name);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
     };
@@ -216,7 +216,7 @@ namespace Type {
 	// Virtual destructor makes abstract
 	virtual ~Visitor() = 0;
 	virtual void visitType(Type*);
-	virtual void visitForward(Forward*);
+	virtual void visitUnknown(Unknown*);
 	virtual void visitModifier(Modifier*);
 	virtual void visitNamed(Named*);
 	virtual void visitBase(Base*);

@@ -5,7 +5,7 @@
 /*
 using Type::Named;
 using Type::Base;
-using Type::Forward;
+using Type::Unknown;
 using Type::Declared;
 using Type::Template;
 using Type::Modifier;
@@ -44,15 +44,15 @@ void Base::accept(Visitor* visitor)
     visitor->visitBase(this);
 }
 
-Forward::Forward(Name n)
+Unknown::Unknown(Name n)
     : Named(n)
 {
 }
 
 
-void Forward::accept(Visitor* visitor)
+void Unknown::accept(Visitor* visitor)
 {
-    visitor->visitForward(this);
+    visitor->visitUnknown(this);
 }
 
 Declared::Declared(Name n, AST::Declaration* decl)
@@ -117,7 +117,7 @@ void FuncPtr::accept(Visitor* visitor)
 //Visitor::Visitor() {}
 Visitor::~Visitor() {}
 void Visitor::visitType(Type*) {}
-void Visitor::visitForward(Forward *t) { visitType(t); }
+void Visitor::visitUnknown(Unknown *t) { visitType(t); }
 void Visitor::visitBase(Base *t) { visitNamed(t); }
 void Visitor::visitDeclared(Declared *t) { visitNamed(t); }
 void Visitor::visitModifier(Modifier *t) { visitType(t); }

@@ -19,7 +19,7 @@ public:
     //
     string format(Type::Type*);
     virtual void visitType(Type::Type*);
-    virtual void visitForward(Type::Forward*);
+    virtual void visitUnknown(Type::Unknown*);
     virtual void visitModifier(Type::Modifier*);
     virtual void visitNamed(Type::Named*);
     virtual void visitBase(Type::Base*);
