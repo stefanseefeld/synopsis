@@ -47,6 +47,8 @@ static opcxx_ListOfMetaclass* templateCreator = 0;
 static Class* CreateClass(PTree::Node *def, PTree::Node *marg);
 static Class* CreateTemplateClass(PTree::Node *def, PTree::Node *marg);
 
+using PTree::GC;
+
 void Class::do_init_static()
 {
     // Only do this once

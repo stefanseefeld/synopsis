@@ -55,7 +55,6 @@ if test "$ac_cv_enable_gc" == "yes"; then
   fi
 else
   GC_BRIDGE=$srcdir/occ/PTree/GC-disabled.hh
-  CPPFLAGS+="$CPPFLAGS -DDONT_GC"
 fi
 
 AC_SUBST_FILE(GC_BRIDGE)

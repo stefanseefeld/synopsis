@@ -19,6 +19,8 @@
 #include "Environment.hh"
 #include "Walker.hh"
 
+using PTree::GC;
+
 // class Member
 
 Member::Member()

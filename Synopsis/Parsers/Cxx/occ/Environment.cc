@@ -19,6 +19,8 @@
 
 // class Environment
 
+using PTree::GC;
+
 PTree::Array* Environment::classkeywords = 0;
 HashTable* Environment::namespace_table = 0;
 
