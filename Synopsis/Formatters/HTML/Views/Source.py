@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.9 2003/11/16 21:09:45 stefan Exp $
+# $Id: Source.py,v 1.10 2003/11/18 07:29:35 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -23,7 +23,7 @@ except ImportError:
 class FileSource(Page):
    """A module for creating a page for each file with hyperlinked source"""
 
-   links_path = Parameter('./%s-links', '')
+   prefix = Parameter('', 'prefix to the syntax files')
    scope = Parameter('', '')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
 
@@ -107,7 +107,7 @@ class FileSource(Page):
          # Call link module
          f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
          f_in = file.full_filename()
-         f_link = self.links_path%source
+         f_link = os.path.join(self.prefix, source)
          #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)
          try:
             link.link(toclist, f_in, f_out, f_link, self.scope)
