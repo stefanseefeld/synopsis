@@ -39,9 +39,20 @@ Unknown::Unknown(const ScopedName& n)
 { }
 
 
-void Unknown::accept(Visitor* visitor)
+void
+Unknown::accept(Visitor* visitor)
 {
   visitor->visit_unknown(this);
+}
+
+Dependant::Dependant(const ScopedName& n)
+: Named(n)
+{ }
+
+void
+Dependant::accept(Visitor* visitor)
+{
+  visitor->visit_dependant(this);
 }
 
 Declared::Declared(const ScopedName& n, AST::Declaration* decl)
@@ -113,15 +124,16 @@ FuncPtr::accept(Visitor* visitor)
 //Visitor::Visitor() {}
 Visitor::~Visitor() {}
 void Visitor::visit_type(Type*) {}
-void Visitor::visit_unknown(Unknown *t) { visit_type(t); }
-void Visitor::visit_base(Base *t) { visit_named(t); }
-void Visitor::visit_declared(Declared *t) { visit_named(t); }
-void Visitor::visit_modifier(Modifier *t) { visit_type(t); }
-void Visitor::visit_array(Array *t) { visit_type(t); }
-void Visitor::visit_named(Named *t) { visit_type(t); }
-void Visitor::visit_template_type(Template *t) { visit_declared(t); }
-void Visitor::visit_parameterized(Parameterized *t) { visit_type(t); }
-void Visitor::visit_func_ptr(FuncPtr *t) { visit_type(t); }
+void Visitor::visit_unknown(Unknown* t) { visit_type(t); }
+void Visitor::visit_base(Base* t) { visit_named(t); }
+void Visitor::visit_dependant(Dependant* t) { visit_named(t); }
+void Visitor::visit_declared(Declared* t) { visit_named(t); }
+void Visitor::visit_modifier(Modifier* t) { visit_type(t); }
+void Visitor::visit_array(Array* t) { visit_type(t); }
+void Visitor::visit_named(Named* t) { visit_type(t); }
+void Visitor::visit_template_type(Template* t) { visit_declared(t); }
+void Visitor::visit_parameterized(Parameterized* t) { visit_type(t); }
+void Visitor::visit_func_ptr(FuncPtr* t) { visit_type(t); }
 
 // exception wrong_type_cast
 const char* wrong_type_cast::what() const throw()

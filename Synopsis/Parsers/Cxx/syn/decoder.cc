@@ -8,12 +8,17 @@
 #include "lookup.hh"
 #include <iostream>
 
-std::ostream& operator <<(std::ostream&o, code& s) {
-    code_iter i = s.begin();
+std::ostream& operator <<(std::ostream&o, const code& s) {
+    code::const_iterator i = s.begin();
     for(; i != s.end(); i++)
 	if (*i < 0x80) o << (char)(*i);
-	else o << "\e[1m[" << (int)(*i - 0x80) << "]\e[m";
+	else o << "[" << (int)(*i - 0x80) << "]";
     return o;
+}
+
+code Decoder::toCode(char* str)
+{
+   return code(reinterpret_cast<unsigned char*>(str));
 }
 
 Decoder::Decoder(Builder* builder)

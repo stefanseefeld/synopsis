@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.50 2002/02/13 11:17:21 chalky Exp $
+// $Id: swalker.cc,v 1.51 2002/03/07 04:43:54 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.51  2002/03/07 04:43:54  chalky
+// Preliminary template specialization support.
+//
 // Revision 1.50  2002/02/13 11:17:21  chalky
 // Slightly better ambiguous function resolution
 //
@@ -47,6 +50,7 @@
 #include <string>
 #include <typeinfo>
 #include <strstream>
+#include <algorithm>
 
 #include <occ/ptree.h>
 #include <occ/parse.h>
@@ -568,8 +572,15 @@ SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
         }
       else if (encname[0] == 'T')
         {
-          // Specialisation.. ignore for now. FIXME
-          return 0;
+          // Specialization.. for now just make class with encoded name. FIXME
+          LOG("Specialization!");
+          nodeLOG(def);
+          //return 0;
+          std::string spacey_name = parse_name(node->Second()), name;
+          std::remove_copy(
+              spacey_name.begin(), spacey_name.end(),
+              std::back_inserter(name), ' ');
+          clas = m_builder->start_class(m_lineno, type, name);
         }
       else
         {
@@ -582,6 +593,7 @@ SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
       add_comments(clas, cspec->GetComments());
 
       // Create Template type
+      // FIXME: this needs to be done before base classes!!!
       Types::Type::vector templ_params;
       Ptree* params = def->Third();
       while (params)
@@ -595,10 +607,24 @@ SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
               m_builder->add(base);
               templ_params.push_back(base);
             }
+          else if (param->First()->Eq("template"))
+            {
+              // A non-type parameter that is templatized
+              // eg: template< class A, template<class T> class B = foo > C;
+              // FIXME.
+              LOG("templated non-type template parameter!");
+              nodeLOG(param);
+            }
           else
             {
               // This parameter specifies a value or something
               // TODO: read spec and figure out wtf this is.
+              LOG("non-type template parameter! approximating..");
+              nodeLOG(param);
+              Ptree* p = param->Second();
+              while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+              Types::Base* base = m_builder->create_base(parse_name(p));
+              templ_params.push_back(base);
             }
           params = Ptree::Rest(params->Rest());
       }
@@ -912,12 +938,14 @@ SWalker::TranslateVariableDeclarator(Ptree* decl, bool is_const)
   if (m_decoder->isName(encname)) name = m_decoder->decodeName(encname);
   else if (*encname == 'Q')
     {
-      cout << "Scoped name in variable decl!" << endl;
+      LOG("Scoped name in variable decl!");
+      nodeLOG(decl);
       return 0;
     }
   else
     {
-      cout << "Unknown name in variable decl!" << endl;
+      LOG("Unknown name in variable decl!");
+      nodeLOG(decl);
       return 0;
     }
 

@@ -285,7 +285,7 @@ void Dumper::visit_operation(AST::Operation* oper)
 {
     visit(oper->comments());
     std::cout << m_indent_string;
-    if (!isStructor(oper)) std::cout << format(oper->return_type()) + " ";
+    if (!isStructor(oper) && oper->return_type()) std::cout << format(oper->return_type()) + " ";
     std::cout << oper->realname() << "(";
     if (oper->parameters().size()) {
 	std::cout << formatParam(oper->parameters().front());
