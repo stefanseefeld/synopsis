@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2003/12/12 15:07:12 stefan Exp $
+# $Id: Makefile.in,v 1.7 2003/12/12 19:00:52 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -34,9 +34,15 @@ LIBS	      := @LIBS@ -lpthread
 LIBRARY_EXT := @LIBEXT@
 
 USE_GC	   := @USE_GC@
+GC_PREFIX	:= @GC_PREFIX@
 
-ifeq ($(USE_GC), yes)
+ifeq ($(USE_GC), yes) # should we compile with gc ?
+ifneq ($(GC_PREFIX),)  # should we use the internal gc ?
+CPPFLAGS		+= -I $(GC_PREFIX)/include/gc
+LIBS			+= -L $(GC_PREFIX)/lib -lgc
+else
 GC_LIB	   := gc/.libs/libgc.a
+endif
 else
 CPPFLAGS    += -DDONT_GC
 endif
@@ -131,14 +137,14 @@ occ.gdb: $(UCPP_GLIB) opencxx.ga $(SYN_GOBJ)
 
 # Compile an archive of the OCC files
 opencxx.a : $(GC_LIB) $(OCC_OBJ)
-ifeq ($(USE_GC), yes)
+ifneq ($(GC_LIB),)
 	cp $(GC_LIB) $@
 endif
 	ar rcs $@ $(OCC_OBJ)
 
 # Compile a DEBUG archive of the OCC files
 opencxx.ga :  $(GC_LIB) $(OCC_GOBJ)
-ifeq ($(USE_GC), yes)
+ifneq ($(GC_LIB),)
 	cp $(GC_LIB) $@
 endif
 	ar rcs $@ $(OCC_GOBJ)

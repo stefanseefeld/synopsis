@@ -14,12 +14,15 @@ class config(build_ext):
 
     user_options = build_ext.user_options[:] + [
         ('disable-gc', None,
-         "whether or not to build the C++ parser with the garbage collector")]
+         "whether or not to build the C++ parser with the garbage collector"),
+        ('with-gc-prefix=', None,
+         "the prefix to the garbage collector.")]
     boolean_options = build_ext.boolean_options[:] + ['disable-gc']
 
     def initialize_options (self):
         build_ext.initialize_options(self)
         self.disable_gc = 0
+        self.with_gc_prefix = ''
 
     def finalize_options (self):
         build_ext.finalize_options(self)
@@ -67,8 +70,11 @@ class config(build_ext):
             python = sys.executable
 
         command = "%s --with-python=%s"%(configure, python)
-        if ext == 'Synopsis/Parsers/Cxx' and self.disable_gc:
-            command += ' --disable-gc'
+        if ext == 'Synopsis/Parsers/Cxx':
+            if self.disable_gc:
+                command += ' --disable-gc'
+            elif self.with_gc_prefix:
+                command += ' --with-gc-prefix=%s'%self.with_gc_prefix
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)
