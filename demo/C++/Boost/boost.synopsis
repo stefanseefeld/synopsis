@@ -39,12 +39,12 @@ class Project:
       ModuleListing=struct()
     )],
     ['SourceAction', 47, 41, 'Boost Sources', [
-      ['Base', '/mnt/src/c++/boost/boost/python/', '*.hpp']
+      ['Base', 'boost/boost/python/', '*.hpp']
     ]],
     ['ParserAction', 151, 57, 'C++ Parser', struct(
-      defines=['PYTHON_INCLUDE=<python2.1/Python.h>'],
+      defines=['PYTHON_INCLUDE=<python2.2/Python.h>', 'BOOST_PYTHON_V2', 'BOOST_PYTHON_SYNOPSIS'],
       name='C++',
-      include_path=['/mnt/src/c++/boost', '/usr/include/python2.1'],
+      include_path=['boost', '/usr/include/python2.2'],
       main_file=1,
       verbose=1,
       emulate_compiler='g++-3.2',
