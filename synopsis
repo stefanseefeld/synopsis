@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.23 2001/01/23 19:49:22 stefan Exp $
+#  $Id: synopsis,v 1.24 2001/01/23 21:31:36 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -45,7 +45,8 @@ The supported flags are:
   -o <filename>                        Write output to <filename>
   -v,   --verbose                      Print debugging info
   -V,   --version                      Print version info then exit
-  -h,   --help                         Print this usage message and exit"""
+  -h,   --help                         Print this usage message and exit
+  -l    --list                         List all available modules and exit"""
 
 help = 0
 parser_cmd = ""
@@ -57,10 +58,43 @@ formatter_args = []
 output = ""
 verbose = 0
 
+def importParser(name):
+    try:
+        parser = Util._import("Synopsis.Parser." + name)
+    except ImportError:
+        sys.stderr.write(cmdname + ": Could not import parser `" + name + "'\n")
+        sys.exit(1)
+    return parser
+
+def importLinker(name):
+    try:
+        linker = Util._import("Synopsis.Linker." + name)
+    except ImportError:
+        sys.stderr.write(cmdname + ": Could not import linker `" + name + "'\n")
+        sys.exit(1)
+    return linker
+
+def importFormatter(name):
+    try:
+        formatter = Util._import("Synopsis.Formatter." + name)
+    except ImportError:
+        sys.stderr.write(cmdname + ": Could not import formatter `" + name + "'\n")
+        sys.exit(1)
+    return formatter
+
+def listModules():
+    from Synopsis.Parser import Python
+    parser = Python
+    module = Util._import("Synopsis.Parser")
+    moddir = module.__path__[0]
+    print "looking for installed parsers in ", moddir
+    print "sorry, not implemented yet"
+    sys.exit(-1)
+        
 def parseArgs(args):
     global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose, help
     try:
-        opts,files = Util.getopt_spec(args, "p:f:W:I:o:Vvh", ["parser=", "formatter=", "version", "help"])
+        opts,files = Util.getopt_spec(args, "p:f:W:I:o:Vvhl", ["parser=", "formatter=", "version", "help", "list"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.stderr.write("Use `" + cmdname + " -h' for help\n")
@@ -100,32 +134,11 @@ def parseArgs(args):
             sys.exit(0)
         elif o == "-h" or o == "--help":
             help = 1
+        elif o == "-l" or o == "--list":
+            listModules()
+            sys.exit(0)
 
     return files
-
-def importParser(name):
-    try:
-        parser = Util._import("Synopsis.Parser." + name)
-    except ImportError:
-        sys.stderr.write(cmdname + ": Could not import parser `" + name + "'\n")
-        sys.exit(1)
-    return parser
-
-def importLinker(name):
-    try:
-        linker = Util._import("Synopsis.Linker." + name)
-    except ImportError:
-        sys.stderr.write(cmdname + ": Could not import linker `" + name + "'\n")
-        sys.exit(1)
-    return linker
-
-def importFormatter(name):
-    try:
-        formatter = Util._import("Synopsis.Formatter." + name)
-    except ImportError:
-        sys.stderr.write(cmdname + ": Could not import formatter `" + name + "'\n")
-        sys.exit(1)
-    return formatter
 
 def main(argv=None):
     global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, help

@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.11 2001/01/23 19:49:22 stefan Exp $
+# $Id: Makefile,v 1.12 2001/01/23 21:31:36 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -37,10 +37,10 @@ $(subdirs):
 	$(MAKE) -C $@ $(action)
 
 clean:
-	$(Make) action="clean"
+	$(MAKE) action="clean"
 
 distclean:
-	$(Make) action="distclean"
+	$(MAKE) action="distclean"
 	/bin/rm -f *~ local.mk config.cache config.log config.status configure
 
 # to be elaborated further...
