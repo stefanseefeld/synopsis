@@ -207,6 +207,10 @@ class FunctionInfo(SuiteInfoBase, SuiteFuncInfo):
 			del args[0]
 			self._params.append('**'+stringify(args[0]))
 			self._param_defaults.append('')
+		    elif args[0][0] == token.STAR:
+			del args[0]
+			self._params.append('*'+stringify(args[0]))
+			self._param_defaults.append('')
 		    else:
 			print "Unknown symbol:",args[0]
 		    del args[0]
