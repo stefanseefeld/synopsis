@@ -1,2 +1,1 @@
-# this file is intentionally left empty
-# -stefan
+__version__ = "0.3"
