@@ -14,6 +14,7 @@ namespace PTree
 
 typedef gc LightObject;
 typedef gc_cleanup Object;
+inline void cleanup_gc() { GC_gcollect();}
 
 }
 
