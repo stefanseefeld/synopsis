@@ -47,7 +47,7 @@ class OCXXMOP TypeInfo : public LightObject {
 public:
     TypeInfo();
     void Unknown();
-    void Set(char*, Environment*);
+    void Set(const char*, Environment*);
     void Set(Class*);
     void SetVoid();
     void SetInt();
@@ -88,16 +88,16 @@ private:
   static PTree::Node *GetQualifiedName(Environment*, PTree::Node *);
   static PTree::Node *GetQualifiedName2(Class*);
     void Normalize();
-    bool ResolveTypedef(Environment*&, char*&, bool);
+    bool ResolveTypedef(Environment*&, const char*&, bool);
 
-    static char* SkipCv(char*, Environment*&);
-    static char* SkipName(char*, Environment*);
-    static char* GetReturnType(char*, Environment*);
-    static char* SkipType(char*, Environment*);
+    static const char* SkipCv(const char*, Environment*&);
+    static const char* SkipName(const char*, Environment*);
+    static const char* GetReturnType(const char*, Environment*);
+    static const char* SkipType(const char*, Environment*);
 
 private:
     int refcount;
-    char* encode;
+    const char* encode;
     Class* metaobject;
     Environment* env;
 };

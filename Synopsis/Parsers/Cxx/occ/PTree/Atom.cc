@@ -4,34 +4,21 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <Lexer.hh>
 #include <PTree/Atom.hh>
 #include <cassert>
 
 using namespace PTree;
 
-Atom::Atom(const char *ptr, size_t len)
-{
-  data.leaf.position = const_cast<char *>(ptr);
-  data.leaf.length = len;
-}
-
-Atom::Atom(const Token &tk)
-{
-  data.leaf.position = const_cast<char *>(tk.ptr);
-  data.leaf.length = tk.length;
-}
-
 void Atom::write(std::ostream &os) const
 {
   assert(this);
-  os.write(data.leaf.position, data.leaf.length);
+  os.write(position(), length());
 }
 
 void Atom::print(std::ostream &os, size_t, size_t) const
 {
-  const char *p = data.leaf.position;
-  int n = data.leaf.length;
+  const char *p = position();
+  size_t n = length();
 
   // Recall that [, ], and @ are special characters.
 
@@ -51,8 +38,8 @@ void Atom::print(std::ostream &os, size_t, size_t) const
 int Atom::Write(std::ostream& out, int indent)
 {
   int n = 0;
-  const char *ptr = data.leaf.position;
-  size_t len = data.leaf.length;
+  const char *ptr = position();
+  size_t len = length();
   while(len-- > 0)
   {
     char c = *ptr++;

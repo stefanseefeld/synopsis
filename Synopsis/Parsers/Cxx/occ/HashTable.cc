@@ -42,7 +42,7 @@
 #endif
 
 struct HashTableEntry {
-    char*	key;		// 0: unused, -1: deleted
+    const char*	key;		// 0: unused, -1: deleted
     HashValue	value;
 };
 
@@ -89,32 +89,32 @@ void HashTable::Dump(std::ostream& out)
     out << '}';
 }
 
-char* HashTable::KeyString(char* key) {
+char* HashTable::KeyString(const char* key) {
     char* str = new (GC) char[strlen(key) + 1];
     strcpy(str, key);
     return str;
 }
 
-char* HashTable::KeyString(char* key, int len) {
+char* HashTable::KeyString(const char* key, int len) {
     char* str = new (GC) char[len + 1];
     memmove(str, key, len);
     str[len] = '\0';
     return str;
 }
 
-bool HashTable::Lookup(char* key, HashValue* value)
+bool HashTable::Lookup(const char* key, HashValue* value)
 {
     int i;
     return Lookup2(key, value, &i);
 }
 
-bool HashTable::Lookup(char* key, int len, HashValue* value)
+bool HashTable::Lookup(const char* key, int len, HashValue* value)
 {
     int i;
     return Lookup2(key, len, value, &i);
 }
 
-bool HashTable::Lookup2(char* key, HashValue* value, int* index)
+bool HashTable::Lookup2(const char* key, HashValue* value, int* index)
 {
     unsigned int p = StringToInt(key);
     for(int i = 0; i < Size; ++i){
@@ -133,7 +133,7 @@ bool HashTable::Lookup2(char* key, HashValue* value, int* index)
     return false;
 }
 
-bool HashTable::Lookup2(char* key, int len, HashValue* value, int* index)
+bool HashTable::Lookup2(const char* key, int len, HashValue* value, int* index)
 {
     unsigned int p = StringToInt(key, len);
     for(int i = 0; i < Size; ++i){
@@ -159,7 +159,7 @@ bool HashTable::Lookup2(char* key, int len, HashValue* value, int* index)
   After this function completes, nth is increamented for the next try.
   The next entry can be found if nth is passed to LookupEntries() as is.
 */
-bool HashTable::LookupEntries(char* key, int len, HashValue* value,
+bool HashTable::LookupEntries(const char* key, int len, HashValue* value,
 			      int& nth)
 {
     unsigned int p = StringToInt(key, len);
@@ -216,7 +216,7 @@ bool HashTable::GrowTable(int increment)
 {
     HashTable bigger(0);
 
-    MopWarningMessage2("The hash table is full.  ", "Expanded...");
+//     MopWarningMessage2("The hash table is full.  ", "Expanded...");
 
     bigger.Prime2 = (int)NextPrimeNumber(Prime2 + increment);
     bigger.Size = (int)NextPrimeNumber(2 * bigger.Prime2);
@@ -224,7 +224,7 @@ bool HashTable::GrowTable(int increment)
     
     bool done = true;
     for(int i = 0; done && i < Size; ++i) {
-        char *key = this->entries[i].key;
+        const char *key = this->entries[i].key;
         if (key != 0 && key != (char*)-1)
 	    done = bool(bigger.AddDupEntry(key, strlen(key), entries[i].value)
 			>= 0);
@@ -243,7 +243,7 @@ bool HashTable::GrowTable(int increment)
 // If succeeding, this returns an index of the added entry, otherwise -1.
 // Because `key' is duplicated, you can delete `key' later on.
 
-int HashTable::AddEntry(char* key, HashValue value, int* index)
+int HashTable::AddEntry(const char* key, HashValue value, int* index)
 {
     unsigned int p = StringToInt(key);
     for(int i = 0; i < Size; ++i){
@@ -275,7 +275,7 @@ int HashTable::AddEntry(char* key, HashValue value, int* index)
 }
 
 int HashTable::AddEntry(bool check_duplication,
-			char* key, int len, HashValue value, int* index)
+			const char* key, int len, HashValue value, int* index)
 {
     int i;
     unsigned int p = StringToInt(key, len);
@@ -326,7 +326,7 @@ void HashTable::ReplaceValue(int index, HashValue val)
 	std::cerr << "HashTable: invalid index (" << index << ")\n";
 }
 
-bool HashTable::RemoveEntry(char* key)
+bool HashTable::RemoveEntry(const char* key)
 {
     HashValue	u;
     int		index;
@@ -339,7 +339,7 @@ bool HashTable::RemoveEntry(char* key)
     }
 }
 
-bool HashTable::RemoveEntry(char* key, int len)
+bool HashTable::RemoveEntry(const char* key, int len)
 {
     HashValue	u;
     int		index;
@@ -347,12 +347,12 @@ bool HashTable::RemoveEntry(char* key, int len)
     if(!Lookup2(key, len, &u, &index))
 	return false;		// not found
     else{
-	entries[index].key = (char*)-1;
+	entries[index].key = (const char*)-1;
 	return true;
     }
 }
 
-unsigned int HashTable::StringToInt(char* key)
+unsigned int HashTable::StringToInt(const char* key)
 {
     if(key == 0)
 	return 0;
@@ -369,7 +369,7 @@ unsigned int HashTable::StringToInt(char* key)
     return p;
 }
 
-unsigned int HashTable::StringToInt(char* key, int len)
+unsigned int HashTable::StringToInt(const char* key, int len)
 {
     if(key == 0)
 	return 0;

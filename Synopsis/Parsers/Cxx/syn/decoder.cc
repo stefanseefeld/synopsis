@@ -75,9 +75,9 @@ std::string Decoder::decodeName(code_iter iter)
     return name;
 }
 
-std::string Decoder::decodeName(char* iter)
+std::string Decoder::decodeName(const char *iter)
 {
-    size_t length = *reinterpret_cast<unsigned char*>(iter++) - 0x80;
+    size_t length = *reinterpret_cast<const unsigned char*>(iter++) - 0x80;
     std::string name(iter, length);
     return name;
 }
@@ -121,10 +121,10 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
     }
 }
 
-void Decoder::init(char* string)
+void Decoder::init(const char *string)
 {
-    m_string = reinterpret_cast<unsigned char*>(string);
-    m_iter = m_string.begin();
+  m_string = reinterpret_cast<const unsigned char*>(string);
+  m_iter = m_string.begin();
 }
 
 Types::Type* Decoder::decodeType()

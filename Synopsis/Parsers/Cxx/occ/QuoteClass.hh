@@ -41,11 +41,11 @@ class QuoteClass : public Class
 {
 public:
   static bool Initialize();
-  char* MetaclassName();
+  const char* MetaclassName();
   PTree::Node *TranslateMemberCall(Environment*, PTree::Node *, PTree::Node *);
 
 private:
-  PTree::Node *ProcessBackQuote(Environment*, char*, PTree::Node *, PTree::Node *);
+  PTree::Node *ProcessBackQuote(Environment*, const char*, PTree::Node *, PTree::Node *);
 };
 
 #endif

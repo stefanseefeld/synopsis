@@ -189,18 +189,18 @@ public:
   static PTree::Node *FindLeftLeaf(PTree::Node *node, PTree::Node *& parent);
   static void SetLeafComments(PTree::Node *, PTree::Node *);
   static PTree::Node *NthDeclarator(PTree::Node *, int&);
-  static PTree::Node *FindDeclarator(PTree::Node *, char*, int, char*, int&,
+  static PTree::Node *FindDeclarator(PTree::Node *, const char*, int, const char*, int&,
 			       Environment*);
-  static bool MatchedDeclarator(PTree::Node *, char*, int, char*, Environment*);
+  static bool MatchedDeclarator(PTree::Node *, const char*, int, const char*, Environment*);
   static bool WhichDeclarator(PTree::Node *, PTree::Node *, int&, Environment*);
   
-  void ErrorMessage(char*, PTree::Node *, PTree::Node *);
-  void WarningMessage(char*, PTree::Node *, PTree::Node *);
+  void ErrorMessage(const char*, PTree::Node *, PTree::Node *);
+  void WarningMessage(const char*, PTree::Node *, PTree::Node *);
   
-  static void InaccurateErrorMessage(char*, PTree::Node *, PTree::Node *);
-  static void InaccurateWarningMessage(char*, PTree::Node *, PTree::Node *);
+  static void InaccurateErrorMessage(const char*, PTree::Node *, PTree::Node *);
+  static void InaccurateWarningMessage(const char*, PTree::Node *, PTree::Node *);
   
-  static void ChangeDefaultMetaclass(char*);
+  static void ChangeDefaultMetaclass(const char*);
   
 public:
   Parser* GetParser() { return parser; }
@@ -210,11 +210,11 @@ protected:
   Parser* parser;
   
 public:
-  static char* argument_name;
+  static const char* argument_name;
   
 private:
   static Parser* default_parser;
-  static char* default_metaclass;
+  static const char* default_metaclass;
 };
 
 #endif

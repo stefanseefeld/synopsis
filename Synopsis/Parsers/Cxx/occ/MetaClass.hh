@@ -43,7 +43,7 @@ public:
   Metaclass();
 
   static bool Initialize();
-  char* MetaclassName();
+  const char* MetaclassName();
 
   void TranslateClass(Environment*);
   PTree::Node *GetFinalizer();
@@ -56,9 +56,9 @@ public:
   void AppendHousekeepingCode(Environment* env, PTree::Node * class_name,
 			      PTree::Node * creator_name, PTree::Node *finalizer);
   static void Load(PTree::Node *metaclass_name);
-  static void Load(char* metaclass_name, int len);
-  static void* LoadSoLib(char* file_name);
-  static void* LookupSymbol(void* handle, char* symbol);
+  static void Load(const char* metaclass_name, int len);
+  static void* LoadSoLib(const char* file_name);
+  static void* LookupSymbol(void* handle, const char* symbol);
 
   static void do_init_static();
 
@@ -67,6 +67,6 @@ private:
   int    first_not_inlined_vf;
 };
 
-extern void LoadMetaclass(char*);
+extern void LoadMetaclass(const char*);
 
 #endif

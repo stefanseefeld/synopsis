@@ -48,7 +48,7 @@ PTree::Node *wrap_comments(const Lexer::Comments &c)
 {
   PTree::Node *head = 0;
   for (Lexer::Comments::const_iterator i = c.begin(); i != c.end(); ++i)
-    head = PTree::Node::Snoc(head, new PTree::Atom(*i));
+    head = PTree::snoc(head, new PTree::Atom(*i));
   return head;
 }
 
@@ -64,9 +64,9 @@ Parser::Parser(Lexer *l)
 bool Parser::ErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
     if(where != 0){
-	PTree::Node *head = where->Ca_ar();
+	PTree::Node *head = PTree::ca_ar(where);
 	if(head != 0)
-	    ShowMessageHead(head->GetPosition());
+	    ShowMessageHead(head->position());
     }
 
     std::cerr << msg;
@@ -80,9 +80,9 @@ bool Parser::ErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where
 void Parser::WarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
     if(where != 0){
-	PTree::Node *head = where->Ca_ar();
+	PTree::Node *head = PTree::ca_ar(where);
 	if(head != 0)
-	    ShowMessageHead(head->GetPosition());
+	    ShowMessageHead(head->position());
     }
 
     std::cerr << "warning: " << msg;
@@ -100,7 +100,7 @@ bool Parser::SyntaxError()
     lex->look_ahead(0, t);
     lex->look_ahead(1, t2);
 
-    ShowMessageHead(const_cast<char *>(t.ptr));
+    ShowMessageHead(t.ptr);
     std::cerr << "parse error before `";
     if(t.type != '\0')
 	for(i = 0; i < t.length; ++i)
@@ -122,7 +122,7 @@ unsigned long Parser::origin(const char *ptr,
   return lex->origin(ptr, filename);
 }
 
-void Parser::ShowMessageHead(char* pos)
+void Parser::ShowMessageHead(const char* pos)
 {
     std::string filename;
     unsigned long line = origin(pos, filename);
@@ -210,7 +210,7 @@ bool Parser::rNullDeclaration(PTree::Node *&decl)
     if(lex->get_token(tk) != ';')
 	return false;
 
-    decl = new PTree::Declaration(0, PTree::Node::List(0, new PTree::Atom(tk)));
+    decl = new PTree::Declaration(0, PTree::list(0, new PTree::Atom(tk)));
     return true;
 }
 
@@ -231,14 +231,14 @@ bool Parser::rTypedef(PTree::Node *&def)
     if(!rTypeSpecifier(type_name, false, type_encode))
 	return false;
 
-    def = PTree::Node::Snoc(def, type_name);
+    def = PTree::snoc(def, type_name);
     if(!rDeclarators(decl, type_encode, true))
 	return false;
 
     if(lex->get_token(tk) != ';')
 	return false;
 
-    def = PTree::Node::Nconc(def, PTree::Node::List(decl, new PTree::Atom(tk)));
+    def = PTree::nconc(def, PTree::list(decl, new PTree::Atom(tk)));
     return true;
 }
 
@@ -269,12 +269,12 @@ bool Parser::rTypeSpecifier(PTree::Node *&tspec, bool check, Encoding& encode)
 	return false;
 
     if(cv_q != 0){
-	tspec = PTree::Node::Snoc(cv_q, tspec);
+	tspec = PTree::snoc(cv_q, tspec);
 	if(cv_q2 != 0)
-	    tspec = PTree::Node::Nconc(tspec, cv_q2);
+	    tspec = PTree::nconc(tspec, cv_q2);
     }
     else if(cv_q2 != 0)
-	tspec = PTree::Node::Cons(tspec, cv_q2);
+	tspec = PTree::cons(tspec, cv_q2);
 
     encode.CvQualify(cv_q, cv_q2);
     return true;
@@ -327,7 +327,7 @@ bool Parser::rMetaclassDecl(PTree::Node *&decl)
     if(t == Token::Identifier){
 	metaclass_name = new PTree::Atom(tk2);
 	decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
-				      PTree::Node::List(metaclass_name,
+				      PTree::list(metaclass_name,
 						  new PTree::Atom(tk3)));
     }
     else if(t == ':'){
@@ -336,13 +336,13 @@ bool Parser::rMetaclassDecl(PTree::Node *&decl)
 
 	metaclass_name = new PTree::Atom(tk4);
 	decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
-				      PTree::Node::List(metaclass_name,
+				      PTree::list(metaclass_name,
 						  new PTree::Atom(tk2)));
     }
     else if(t == ';'){
 	metaclass_name = new PTree::Atom(tk2);
 	decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
-				      PTree::Node::List(metaclass_name, 0,
+				      PTree::list(metaclass_name, 0,
 						  new PTree::Atom(tk3)));
 	Metaclass::Load(metaclass_name);
 	return true;
@@ -359,13 +359,13 @@ bool Parser::rMetaclassDecl(PTree::Node *&decl)
 	if(lex->get_token(tk2) != ')')
 	    return false;
 
-	decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(tk1), args,
+	decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1), args,
 					      new PTree::Atom(tk2)));
 	t = lex->get_token(tk1);
     }
 
     if(t == ';'){
-	decl = PTree::Node::Snoc(decl, new PTree::Atom(tk1));
+	decl = PTree::snoc(decl, new PTree::Atom(tk1));
 	Metaclass::Load(metaclass_name);
 	return true;
     }
@@ -394,7 +394,7 @@ bool Parser::rMetaArguments(PTree::Node *&args)
 		return true;
 
 	lex->get_token(tk);
-	args = PTree::Node::Snoc(args, new PTree::Atom(tk));
+	args = PTree::snoc(args, new PTree::Atom(tk));
     }
 }
 
@@ -415,7 +415,7 @@ bool Parser::rLinkageSpec(PTree::Node *&spec)
 	return false;
 
     spec = new PTree::LinkageSpec(new PTree::AtomEXTERN(tk1),
-				PTree::Node::List(new PTree::Atom(tk2)));
+				PTree::list(new PTree::Atom(tk2)));
     if(lex->look_ahead(0) == '{'){
 	if(!rLinkageBody(body))
 	    return false;
@@ -424,7 +424,7 @@ bool Parser::rLinkageSpec(PTree::Node *&spec)
 	if(!rDefinition(body))
 	    return false;
 
-    spec = PTree::Node::Snoc(spec, body);
+    spec = PTree::snoc(spec, body);
     return true;
 }
 
@@ -462,7 +462,7 @@ bool Parser::rNamespaceSpec(PTree::Node *&spec)
 
     PTree::NamespaceSpec *nspec;
     spec = nspec = new PTree::NamespaceSpec(
-	new PTree::AtomNAMESPACE(tk1), PTree::Node::List(name, body));
+	new PTree::AtomNAMESPACE(tk1), PTree::list(name, body));
     
     nspec->SetComments(comments);
     return true;
@@ -490,7 +490,7 @@ bool Parser::rNamespaceAlias(PTree::Node *&exp)
   if(lex->look_ahead(0) == Token::Scope)
   {
     lex->get_token(tk);
-    name = PTree::Node::List(new PTree::Atom(tk));
+    name = PTree::list(new PTree::Atom(tk));
     encode.GlobalScope();
     ++length;
   }
@@ -506,12 +506,12 @@ bool Parser::rNamespaceAlias(PTree::Node *&exp)
     if(lex->look_ahead(0) == Token::Scope)
     {
       lex->get_token(tk);
-      name = PTree::Node::Nconc(name, PTree::Node::List(n, new PTree::Atom(tk)));
+      name = PTree::nconc(name, PTree::list(n, new PTree::Atom(tk)));
     }
     else
     {
       if(name == 0) name = n;
-      else name = PTree::Node::Snoc(name, n);
+      else name = PTree::snoc(name, n);
 
       if(length > 1) encode.Qualified(length);
 
@@ -521,7 +521,7 @@ bool Parser::rNamespaceAlias(PTree::Node *&exp)
 
   if (lex->get_token(tk) != ';') return false;
 
-  exp = new PTree::NamespaceAlias(ns, PTree::Node::List(alias, eq, name, new PTree::Atom(tk)));
+  exp = new PTree::NamespaceAlias(ns, PTree::list(alias, eq, name, new PTree::Atom(tk)));
   return true;
 }
 
@@ -538,7 +538,7 @@ bool Parser::rUsing(PTree::Node *&decl)
     decl = new PTree::Using(new PTree::AtomUSING(tk));
     do {
 	lex->get_token(tk);
-	decl = PTree::Node::Snoc(decl, new PTree::Atom(tk));
+	decl = PTree::snoc(decl, new PTree::Atom(tk));
     } while(tk.type != ';' && tk.type != '\0');
 
     return true;
@@ -566,11 +566,11 @@ bool Parser::rLinkageBody(PTree::Node *&body)
 
 	    SkipTo('}');
 	    lex->get_token(cp);
-	    body = PTree::Node::List(new PTree::Atom(op), 0, new PTree::Atom(cp));
+	    body = PTree::list(new PTree::Atom(op), 0, new PTree::Atom(cp));
 	    return true;		// error recovery
 	}
 
-	body = PTree::Node::Snoc(body, def);
+	body = PTree::snoc(body, def);
     }
 
     lex->get_token(cp);
@@ -615,23 +615,15 @@ bool Parser::rTemplateDecl(PTree::Node *&decl)
 	// Repackage the decl as a PtreeTemplateInstantiation
 	decl = body;
 	// assumes that decl has the form: [0 [class ...] ;]
-	if (PTree::Node::Length(decl) != 3)
-	    return false;
-
-	if (PTree::Node::First(decl) != 0)
-	    return false;
-
-	if (PTree::Node::Second(decl)->What() != Token::ntClassSpec)
-	    return false;
-
-	if (!PTree::Node::Eq(PTree::Node::Third(decl), ';'))
-	    return false;
-
-	decl = new PTree::TemplateInstantiation(PTree::Node::Second(decl));
+	if (PTree::length(decl) != 3) return false;
+	if (PTree::first(decl) != 0) return false;
+	if (PTree::second(decl)->What() != Token::ntClassSpec) return false;
+	if (*PTree::third(decl) != ';') return false;
+	decl = new PTree::TemplateInstantiation(PTree::second(decl));
 	break;
     case tdk_decl:
     case tdk_specialization:
-	decl = PTree::Node::Snoc(decl, body);
+	decl = PTree::snoc(decl, body);
 	break;
     default:
 	MopErrorMessage("rTemplateDecl()", "fatal");
@@ -660,14 +652,14 @@ bool Parser::rTemplateDecl2(PTree::Node *&decl, TemplateDeclKind &kind)
     if(lex->get_token(tk) != '<')
 	return false;
 
-    decl = PTree::Node::Snoc(decl, new PTree::Atom(tk));
+    decl = PTree::snoc(decl, new PTree::Atom(tk));
     if(!rTempArgList(args))
 	return false;
 
     if(lex->get_token(tk) != '>')
 	return false;
 
-    decl = PTree::Node::Nconc(decl, PTree::Node::List(args, new PTree::Atom(tk)));
+    decl = PTree::nconc(decl, PTree::list(args, new PTree::Atom(tk)));
 
     // ignore nested TEMPLATE
     while (lex->look_ahead(0) == Token::TEMPLATE) {
@@ -711,14 +703,14 @@ bool Parser::rTempArgList(PTree::Node *&args)
     if(!rTempArgDeclaration(a))
 	return false;
 
-    args = PTree::Node::List(a);
+    args = PTree::list(a);
     while(lex->look_ahead(0) == ','){
 	lex->get_token(tk);
-	args = PTree::Node::Snoc(args, new PTree::Atom(tk));
+	args = PTree::snoc(args, new PTree::Atom(tk));
 	if(!rTempArgDeclaration(a))
 	    return false;
 
-	args = PTree::Node::Snoc(args, a);
+	args = PTree::snoc(args, a);
     }
 
     return true;
@@ -741,7 +733,7 @@ bool Parser::rTempArgDeclaration(PTree::Node *&decl)
 	lex->get_token(tk1);
 	lex->get_token(tk2);
 	PTree::Node *name = new PTree::Atom(tk2);
-	decl = PTree::Node::List(new PTree::Atom(tk1), name);
+	decl = PTree::list(new PTree::Atom(tk1), name);
 
 	if(t2 == '='){
 	    PTree::Node *default_type;
@@ -750,7 +742,7 @@ bool Parser::rTempArgDeclaration(PTree::Node *&decl)
 	    if(!rTypeName(default_type))
 		return false;
 
-	    decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(tk1),
+	    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1),
 						  default_type));
 	    return true;
 	}
@@ -760,7 +752,7 @@ bool Parser::rTempArgDeclaration(PTree::Node *&decl)
     else if (t0 == Token::CLASS && (t1 == '=' || t1 == '>' || t1 == ',')) {
 	// class without the identifier
 	lex->get_token(tk1);
-	decl = PTree::Node::List(new PTree::Atom(tk1));
+	decl = PTree::list(new PTree::Atom(tk1));
 
 	if(lex->look_ahead(0) == '='){
 	    PTree::Node *default_type;
@@ -769,7 +761,7 @@ bool Parser::rTempArgDeclaration(PTree::Node *&decl)
 	    if(!rTypeName(default_type))
 		return false;
 
-	    decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(tk1),
+	    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1),
 						  default_type));
 	}
     }
@@ -782,16 +774,16 @@ bool Parser::rTempArgDeclaration(PTree::Node *&decl)
 	    return false;
 
 	PTree::Node *cspec = new PTree::ClassSpec(new PTree::Reserved(tk1),
-					  PTree::Node::Cons(new PTree::Atom(tk2),0),
+					  PTree::cons(new PTree::Atom(tk2),0),
 					  0);
-	decl = PTree::Node::Snoc(decl, cspec);
+	decl = PTree::snoc(decl, cspec);
 	if(lex->look_ahead(0) == '='){
             PTree::Node *default_type;
 	    lex->get_token(tk1);
 	    if(!rTypeName(default_type))
 		return false;
 
-	    decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(tk1),
+	    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1),
 						  default_type));
 	}
     }
@@ -805,14 +797,14 @@ bool Parser::rTempArgDeclaration(PTree::Node *&decl)
 			true))
 	    return false;
 
-	decl = PTree::Node::List(type_name, arg);
+	decl = PTree::list(type_name, arg);
 	if(lex->look_ahead(0) == '='){
 	    PTree::Node *exp;
 	    lex->get_token(tk1);
 	    if(!rAdditiveExpr(exp))
 		return false;
 
-	    decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(tk1), exp));
+	    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1), exp));
 	}
     }
 
@@ -838,7 +830,7 @@ bool Parser::rExternTemplateDecl(PTree::Node *&decl)
 	return false;
 
     decl = new PTree::ExternTemplate(new PTree::Atom(tk1),
-				   PTree::Node::List(new PTree::Atom(tk2), body));
+				   PTree::list(new PTree::Atom(tk2), body));
     return true;
 }
 
@@ -889,11 +881,11 @@ bool Parser::rDeclaration(PTree::Node *&statement)
 	head = mem_s;	// mem_s is a list.
 
     if(storage_s != 0)
-	head = PTree::Node::Snoc(head, storage_s);
+	head = PTree::snoc(head, storage_s);
 
     if(mem_s == 0)
 	if(optMemberSpec(mem_s))
-	    head = PTree::Node::Nconc(head, mem_s);
+	    head = PTree::nconc(head, mem_s);
 	else
 	    return false;
 
@@ -944,7 +936,7 @@ bool Parser::rSimpleDeclaration(PTree::Node *&statement)
         return false;
 
     if (cv_q != 0 && integral != 0)
-        integral = PTree::Node::Snoc(cv_q, integral);
+        integral = PTree::snoc(cv_q, integral);
     else if (cv_q != 0 && integral == 0)
         integral = cv_q, cv_q = 0;
 
@@ -967,10 +959,10 @@ bool Parser::rSimpleDeclaration(PTree::Node *&statement)
     if(!rExpression(e))
         return false;
 
-    PTree::Node::Nconc(d, PTree::Node::List(new PTree::Atom(eqs), e));
+    PTree::nconc(d, PTree::list(new PTree::Atom(eqs), e));
 
-    statement = new PTree::Declaration(0, PTree::Node::List(integral,
-                                                    PTree::Node::List(d)));
+    statement = new PTree::Declaration(0, PTree::list(integral,
+                                                    PTree::list(d)));
     return true;
 }
 
@@ -985,17 +977,17 @@ bool Parser::rIntegralDeclaration(PTree::Node *&statement, Encoding& type_encode
 
     if(cv_q != 0)
 	if(cv_q2 == 0)
-	    integral = PTree::Node::Snoc(cv_q, integral);
+	    integral = PTree::snoc(cv_q, integral);
 	else
-	    integral = PTree::Node::Nconc(cv_q, PTree::Node::Cons(integral, cv_q2));
+	    integral = PTree::nconc(cv_q, PTree::cons(integral, cv_q2));
     else if(cv_q2 != 0)
-	integral = PTree::Node::Cons(integral, cv_q2);
+	integral = PTree::cons(integral, cv_q2);
 
     type_encode.CvQualify(cv_q, cv_q2);
     switch(lex->look_ahead(0)){
     case ';' :
 	lex->get_token(tk);
-	statement = new PTree::Declaration(head, PTree::Node::List(integral,
+	statement = new PTree::Declaration(head, PTree::list(integral,
 							   new PTree::Atom(tk)));
 	return true;
     case ':' :	// bit field
@@ -1003,11 +995,11 @@ bool Parser::rIntegralDeclaration(PTree::Node *&statement, Encoding& type_encode
 	if(!rExpression(decl))
 	    return false;
 
-	decl = PTree::Node::List(PTree::Node::List(new PTree::Atom(tk), decl));
+	decl = PTree::list(PTree::list(new PTree::Atom(tk), decl));
 	if(lex->get_token(tk) != ';')
 	    return false;
 
-	statement = new PTree::Declaration(head, PTree::Node::List(integral, decl,
+	statement = new PTree::Declaration(head, PTree::list(integral, decl,
 							   new PTree::Atom(tk)));
 	return true;
     default :
@@ -1016,7 +1008,7 @@ bool Parser::rIntegralDeclaration(PTree::Node *&statement, Encoding& type_encode
 
 	if(lex->look_ahead(0) == ';'){
 	    lex->get_token(tk);
-	    statement = new PTree::Declaration(head, PTree::Node::List(integral, decl,
+	    statement = new PTree::Declaration(head, PTree::list(integral, decl,
 							       new PTree::Atom(tk)));
 	    return true;
 	}
@@ -1025,12 +1017,12 @@ bool Parser::rIntegralDeclaration(PTree::Node *&statement, Encoding& type_encode
 	    if(!rFunctionBody(body))
 		return false;
 
-	    if(PTree::Node::Length(decl) != 1)
+	    if(PTree::length(decl) != 1)
 		return false;
 
 	    statement = new PTree::Declaration(head,
-					     PTree::Node::List(integral,
-							 decl->Car(), body));
+					     PTree::list(integral,
+							 decl->car(), body));
 	    return true;
 	}
     }
@@ -1051,7 +1043,7 @@ bool Parser::rConstDeclaration(PTree::Node *&statement, Encoding&,
 	return false;
 
     lex->get_token(tk);
-    statement = new PTree::Declaration(head, PTree::Node::List(cv_q, decl,
+    statement = new PTree::Declaration(head, PTree::list(cv_q, decl,
 						       new PTree::Atom(tk)));
     return true;
 }
@@ -1070,16 +1062,16 @@ bool Parser::rOtherDeclaration(PTree::Node *&statement, Encoding& type_encode,
 	if(!rConstructorDecl(decl, ftype_encode))
 	    return false;
 
-	decl = PTree::Node::List(new PTree::Declarator(type_name, decl,
+	decl = PTree::list(new PTree::Declarator(type_name, decl,
 					       ftype_encode, type_encode,
 					       type_name));
 	type_name = 0;
     }
     else if(mem_s != 0 && lex->look_ahead(0) == ';'){
 	// FRIEND name ';'
-	if(PTree::Node::Length(mem_s) == 1 && mem_s->Car()->What() == Token::FRIEND){
+	if(PTree::length(mem_s) == 1 && mem_s->car()->What() == Token::FRIEND){
 	    lex->get_token(tk);
-	    statement = new PTree::Declaration(head, PTree::Node::List(type_name,
+	    statement = new PTree::Declaration(head, PTree::list(type_name,
 							       new PTree::Atom(tk)));
 	    return true;
 	}
@@ -1092,11 +1084,11 @@ bool Parser::rOtherDeclaration(PTree::Node *&statement, Encoding& type_encode,
 
 	if(cv_q != 0)
 	    if(cv_q2 == 0)
-		type_name = PTree::Node::Snoc(cv_q, type_name);
+		type_name = PTree::snoc(cv_q, type_name);
 	    else
-		type_name = PTree::Node::Nconc(cv_q, PTree::Node::Cons(type_name, cv_q2));
+		type_name = PTree::nconc(cv_q, PTree::cons(type_name, cv_q2));
 	else if(cv_q2 != 0)
-	    type_name = PTree::Node::Cons(type_name, cv_q2);
+	    type_name = PTree::cons(type_name, cv_q2);
 
 	type_encode.CvQualify(cv_q, cv_q2);
 	if(!rDeclarators(decl, type_encode, false))
@@ -1105,7 +1097,7 @@ bool Parser::rOtherDeclaration(PTree::Node *&statement, Encoding& type_encode,
 
     if(lex->look_ahead(0) == ';'){
 	lex->get_token(tk);
-	statement = new PTree::Declaration(head, PTree::Node::List(type_name, decl,
+	statement = new PTree::Declaration(head, PTree::list(type_name, decl,
 							   new PTree::Atom(tk)));
     }
     else{
@@ -1113,11 +1105,11 @@ bool Parser::rOtherDeclaration(PTree::Node *&statement, Encoding& type_encode,
 	if(!rFunctionBody(body))
 	    return false;
 
-	if(PTree::Node::Length(decl) != 1)
+	if(PTree::length(decl) != 1)
 	    return false;
 
-	statement = new PTree::Declaration(head, PTree::Node::List(type_name,
-							   decl->Car(), body));
+	statement = new PTree::Declaration(head, PTree::list(type_name,
+							   decl->car(), body));
     }
 
     return true;
@@ -1224,7 +1216,7 @@ bool Parser::optMemberSpec(PTree::Node *&p)
 		lf = new PTree::AtomFRIEND(tk);
 	}
 
-	p = PTree::Node::Snoc(p, lf);
+	p = PTree::snoc(p, lf);
 	t = lex->look_ahead(0);
     }
 
@@ -1281,10 +1273,10 @@ bool Parser::optCvQualify(PTree::Node *&cv)
 	    lex->get_token(tk);
 	    switch(t){
 	    case Token::CONST :
-		p = PTree::Node::Snoc(p, new PTree::AtomCONST(tk));
+		p = PTree::snoc(p, new PTree::AtomCONST(tk));
 		break;
 	    case Token::VOLATILE :
-		p = PTree::Node::Snoc(p, new PTree::AtomVOLATILE(tk));
+		p = PTree::snoc(p, new PTree::AtomVOLATILE(tk));
 		break;
 	    default :
 		MopErrorMessage("optCvQualify()", "fatal");
@@ -1394,7 +1386,7 @@ bool Parser::optIntegralTypeOrClassSpec(PTree::Node *&p, Encoding& encode)
 		break;
 	    }
 
-	    p = PTree::Node::Snoc(p, kw);
+	    p = PTree::snoc(p, kw);
 	    is_integral = true;
 	}
 	else
@@ -1449,18 +1441,18 @@ bool Parser::rConstructorDecl(PTree::Node *&constructor, Encoding& encode)
 	    return false;
 
     lex->get_token(cp);
-    constructor = PTree::Node::List(new PTree::Atom(op), args, new PTree::Atom(cp));
+    constructor = PTree::list(new PTree::Atom(op), args, new PTree::Atom(cp));
     optCvQualify(cv);
     if(cv != 0){
 	encode.CvQualify(cv);
-	constructor = PTree::Node::Nconc(constructor, cv);
+	constructor = PTree::nconc(constructor, cv);
     }
 
     optThrowDecl(throw_decl);	// ignore in this version
 
     if(lex->look_ahead(0) == ':')
 	if(rMemberInitializers(mi))
-	    constructor = PTree::Node::Snoc(constructor, mi);
+	    constructor = PTree::snoc(constructor, mi);
 	else
 	    return false;
 
@@ -1470,8 +1462,8 @@ bool Parser::rConstructorDecl(PTree::Node *&constructor, Encoding& encode)
 	if(lex->get_token(zero) != Token::Constant)
 	    return false;
 
-	constructor = PTree::Node::Nconc(constructor,
-				   PTree::Node::List(new PTree::Atom(eq), new PTree::Atom(zero)));
+	constructor = PTree::nconc(constructor,
+				   PTree::list(new PTree::Atom(eq), new PTree::Atom(zero)));
     }
 
     encode.NoReturnType();
@@ -1489,12 +1481,12 @@ bool Parser::optThrowDecl(PTree::Node *&throw_decl)
 
     if(lex->look_ahead(0) == Token::THROW){
 	lex->get_token(tk);
-	p = PTree::Node::Snoc(p, new PTree::Reserved(tk));
+	p = PTree::snoc(p, new PTree::Reserved(tk));
 
 	if(lex->get_token(tk) != '(')
 	    return false;
 
-	p = PTree::Node::Snoc(p, new PTree::Atom(tk));
+	p = PTree::snoc(p, new PTree::Atom(tk));
 
 	for(;;){
 	    PTree::Node *q;
@@ -1509,17 +1501,17 @@ bool Parser::optThrowDecl(PTree::Node *&throw_decl)
 	    else if(t == Token::Ellipsis)
 	    {
 	      lex->get_token(tk);
-	      p = PTree::Node::Snoc(p, new PTree::Atom(tk));
+	      p = PTree::snoc(p, new PTree::Atom(tk));
 	    }
 #endif
 	    else if(rName(q, encode))
-		p = PTree::Node::Snoc(p, q);
+		p = PTree::snoc(p, q);
 	    else
 		return false;
 
 	    if(lex->look_ahead(0) == ','){
 		lex->get_token(tk);
-		p = PTree::Node::Snoc(p, new PTree::Atom(tk));
+		p = PTree::snoc(p, new PTree::Atom(tk));
 	    }
 	    else
 		break;
@@ -1528,7 +1520,7 @@ bool Parser::optThrowDecl(PTree::Node *&throw_decl)
 	if(lex->get_token(tk) != ')')
 	    return false;
 
-	p = PTree::Node::Snoc(p, new PTree::Atom(tk));
+	p = PTree::snoc(p, new PTree::Atom(tk));
     }
 
     throw_decl = p;
@@ -1560,10 +1552,10 @@ bool Parser::rDeclarators(PTree::Node *&decls, Encoding& type_encode,
 	if (d && (d->What() == Token::ntDeclarator))
 	    static_cast<PTree::Declarator*>(d)->SetComments(comments);
 
-	decls = PTree::Node::Snoc(decls, d);
+	decls = PTree::snoc(decls, d);
 	if(lex->look_ahead(0) == ','){
 	    lex->get_token(tk);
-	    decls = PTree::Node::Snoc(decls, new PTree::Atom(tk));
+	    decls = PTree::snoc(decls, new PTree::Atom(tk));
 	}
 	else
 	    return true;
@@ -1588,7 +1580,7 @@ bool Parser::rDeclaratorWithInit(PTree::Node *&dw, Encoding& type_encode,
 	if(!rExpression(e))
 	    return false;
 
-	dw = PTree::Node::List(new PTree::Atom(tk), e);
+	dw = PTree::list(new PTree::Atom(tk), e);
 	return true;
     }
     else{
@@ -1602,7 +1594,7 @@ bool Parser::rDeclaratorWithInit(PTree::Node *&dw, Encoding& type_encode,
 	    if(!rInitializeExpr(e))
 		return false;
 
-	    dw = PTree::Node::Nconc(d, PTree::Node::List(new PTree::Atom(tk), e));
+	    dw = PTree::nconc(d, PTree::list(new PTree::Atom(tk), e));
 	    return true;
 	}
 	else if(t == ':'){		// bit field
@@ -1610,7 +1602,7 @@ bool Parser::rDeclaratorWithInit(PTree::Node *&dw, Encoding& type_encode,
 	    if(!rExpression(e))
 		return false;
 
-	    dw = PTree::Node::Nconc(d, PTree::Node::List(new PTree::Atom(tk), e));
+	    dw = PTree::nconc(d, PTree::list(new PTree::Atom(tk), e));
 	    return true;
 	}
 	else{
@@ -1695,7 +1687,7 @@ bool Parser::rDeclarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 			return false;
 		}
 
-	    d = PTree::Node::Snoc(d, PTree::Node::List(new PTree::Atom(op), decl2, new PTree::Atom(cp)));
+	    d = PTree::snoc(d, PTree::list(new PTree::Atom(op), decl2, new PTree::Atom(cp)));
 	}
     }
     else if(kind != kCastDeclarator){
@@ -1709,7 +1701,7 @@ bool Parser::rDeclarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 	    // if this is an argument declarator, "int (*)()" is valid.
 	    PTree::Node *name;
 	    if(rName(name, name_encode))
-		d = PTree::Node::Snoc(d, name);
+		d = PTree::snoc(d, name);
 	    else
 		return false;
 
@@ -1743,16 +1735,16 @@ bool Parser::rDeclarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 		return false;
 
 	    if(is_args){
-		d = PTree::Node::Nconc(d, PTree::Node::List(new PTree::Atom(op), args,
+		d = PTree::nconc(d, PTree::list(new PTree::Atom(op), args,
 						new PTree::Atom(cp)));
 		optCvQualify(cv);
 		if(cv != 0){
 		    args_encode.CvQualify(cv);
-		    d = PTree::Node::Nconc(d, cv);
+		    d = PTree::nconc(d, cv);
 		}
 	    }
 	    else
-		d = PTree::Node::Snoc(d, PTree::Node::List(new PTree::Atom(op), args,
+		d = PTree::snoc(d, PTree::list(new PTree::Atom(op), args,
 					       new PTree::Atom(cp)));
 
 	    if(!args_encode.IsEmpty())
@@ -1762,7 +1754,7 @@ bool Parser::rDeclarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 
 	    if(lex->look_ahead(0) == ':')
 		if(rMemberInitializers(mi))
-		    d = PTree::Node::Snoc(d, mi);
+		    d = PTree::snoc(d, mi);
 		else
 		    return false;
 
@@ -1782,7 +1774,7 @@ bool Parser::rDeclarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 		return false;
 
 	    type_encode.Array();
-	    d = PTree::Node::Nconc(d, PTree::Node::List(new PTree::Atom(ob), expr,
+	    d = PTree::nconc(d, PTree::list(new PTree::Atom(ob), expr,
 					    new PTree::Atom(cb)));
 	}
 	else
@@ -1828,10 +1820,10 @@ bool Parser::optPtrOperator(PTree::Node *&ptrs, Encoding& encode)
 		if(!rPtrToMember(op, encode))
 		    return false;
 
-	    ptrs = PTree::Node::Snoc(ptrs, op);
+	    ptrs = PTree::snoc(ptrs, op);
 	    optCvQualify(cv);
 	    if(cv != 0){
-		ptrs = PTree::Node::Nconc(ptrs, cv);
+		ptrs = PTree::nconc(ptrs, cv);
 		encode.CvQualify(cv);
 	    }
 	}
@@ -1852,18 +1844,18 @@ bool Parser::rMemberInitializers(PTree::Node *&init)
     if(lex->get_token(tk) != ':')
 	return false;
 
-    init = PTree::Node::List(new PTree::Atom(tk));
+    init = PTree::list(new PTree::Atom(tk));
     if(!rMemberInit(m))
 	return false;
 
-    init = PTree::Node::Snoc(init, m);
+    init = PTree::snoc(init, m);
     while(lex->look_ahead(0) == ','){
 	lex->get_token(tk);
-	init = PTree::Node::Snoc(init, new PTree::Atom(tk));
+	init = PTree::snoc(init, new PTree::Atom(tk));
 	if(!rMemberInit(m))
 	    return false;
 
-	init = PTree::Node::Snoc(init, m);
+	init = PTree::snoc(init, m);
     }
 
     return true;
@@ -1882,7 +1874,7 @@ bool Parser::rMemberInit(PTree::Node *&init)
     if(!rName(name, encode))
 	return false;
 
-    if(!name->IsLeaf())
+    if(!name->is_atom())
 	name = new PTree::Name(name, encode);
 
     if(lex->get_token(tk1) != '(')
@@ -1894,7 +1886,7 @@ bool Parser::rMemberInit(PTree::Node *&init)
     if(lex->get_token(tk2) != ')')
 	return false;
 
-    init = PTree::Node::List(name, new PTree::Atom(tk1), args, new PTree::Atom(tk2));
+    init = PTree::list(name, new PTree::Atom(tk1), args, new PTree::Atom(tk2));
     return true;
 }
 
@@ -1917,7 +1909,7 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 
     if(lex->look_ahead(0) == Token::Scope){
 	lex->get_token(tk);
-	name = PTree::Node::List(new PTree::Atom(tk));
+	name = PTree::list(new PTree::Atom(tk));
 	encode.GlobalScope();
 	++length;
     }
@@ -1930,18 +1922,18 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 	    t = lex->get_token(tk);
 	    if ((t = lex->get_token(tk2)) != '(')
 		return false;
-	    PTree::Node *type = PTree::Node::List(new PTree::Atom(tk2));
+	    PTree::Node *type = PTree::list(new PTree::Atom(tk2));
 	    Encoding name_encode;
 	    if (!rName(name, name_encode))
 		return false;
-	    if (!name->IsLeaf())
+	    if (!name->is_atom())
 		name = new PTree::Name(name, name_encode);
 	    else
-		name = new PTree::Name(PTree::Node::List(name), name_encode);
-	    type = PTree::Node::Snoc(type, name);
+		name = new PTree::Name(PTree::list(name), name_encode);
+	    type = PTree::snoc(type, name);
 	    if ((t = lex->get_token(tk2)) != ')')
 		return false;
-	    type = PTree::Node::Snoc(type, new PTree::Atom(tk2));
+	    type = PTree::snoc(type, new PTree::Atom(tk2));
 	    name = new PTree::TypeofExpr(new PTree::Atom(tk), type);
 	    return true;
 	}
@@ -1965,7 +1957,7 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 
 		encode.Template(n, args_encode);
 		++length;
-		n = PTree::Node::List(n, args);
+		n = PTree::list(n, args);
 		t = lex->look_ahead(0);
 	    }
 	    else{
@@ -1975,13 +1967,13 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 
 	    if(t == Token::Scope){
 		lex->get_token(tk);
-		name = PTree::Node::Nconc(name, PTree::Node::List(n, new PTree::Atom(tk)));
+		name = PTree::nconc(name, PTree::list(n, new PTree::Atom(tk)));
 	    }
 	    else{
 		if(name == 0)
 		    name = n;
 		else
-		    name = PTree::Node::Snoc(name, n);
+		    name = PTree::snoc(name, n);
 
 		if(length > 1)
 		    encode.Qualified(length);
@@ -1995,11 +1987,11 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 
 	    lex->get_token(tk2);
 	    PTree::Node *class_name = new PTree::Atom(tk2);
-	    PTree::Node *dt = PTree::Node::List(new PTree::Atom(tk), class_name);
+	    PTree::Node *dt = PTree::list(new PTree::Atom(tk), class_name);
 	    if(name == 0)
 		name = dt;
 	    else
-		name = PTree::Node::Snoc(name, dt);
+		name = PTree::snoc(name, dt);
 
 	    encode.Destructor(class_name);
 	    if(length > 0)
@@ -2015,7 +2007,7 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 
 	    t = lex->look_ahead(0);
 	    if(t != '<')
-		opf = PTree::Node::List(new PTree::Reserved(tk), op);
+		opf = PTree::list(new PTree::Reserved(tk), op);
 	    else {
 		PTree::Node *args;
 		Encoding args_encode;
@@ -2025,13 +2017,13 @@ bool Parser::rName(PTree::Node *&name, Encoding& encode)
 		// here, I must merge args_encode into encode.
 		// I'll do it in future. :p
 
-		opf = PTree::Node::List(new PTree::Reserved(tk), op, args);
+		opf = PTree::list(new PTree::Reserved(tk), op, args);
 	    }
 
 	    if(name == 0)
 		name = opf;
 	    else
-		name = PTree::Node::Snoc(name, opf);
+		name = PTree::snoc(name, opf);
 
 	    if(length > 0)
 		encode.Qualified(length + 1);
@@ -2077,13 +2069,13 @@ bool Parser::rOperatorName(PTree::Node *&name, Encoding& encode)
 	    return true;
 	}
 	else{
-	    name = PTree::Node::List(new PTree::Reserved(tk));
+	    name = PTree::list(new PTree::Reserved(tk));
 	    lex->get_token(tk);
-	    name = PTree::Node::Snoc(name, new PTree::Atom(tk));
+	    name = PTree::snoc(name, new PTree::Atom(tk));
 	    if(lex->get_token(tk) != ']')
 		return false;
 
-	    name = PTree::Node::Snoc(name, new PTree::Atom(tk));
+	    name = PTree::snoc(name, new PTree::Atom(tk));
 	    if(t == Token::NEW)
 		encode.AppendWithLen("new[]", 5);
 	    else
@@ -2094,22 +2086,22 @@ bool Parser::rOperatorName(PTree::Node *&name, Encoding& encode)
     }
     else if(t == '('){
 	lex->get_token(tk);
-	name = PTree::Node::List(new PTree::Atom(tk));
+	name = PTree::list(new PTree::Atom(tk));
 	if(lex->get_token(tk) != ')')
 	    return false;
 
 	encode.AppendWithLen("()", 2);
-	name = PTree::Node::Snoc(name, new PTree::Atom(tk));
+	name = PTree::snoc(name, new PTree::Atom(tk));
 	return true;
     }
     else if(t == '['){
 	lex->get_token(tk);
-	name = PTree::Node::List(new PTree::Atom(tk));
+	name = PTree::list(new PTree::Atom(tk));
 	if(lex->get_token(tk) != ']')
 	    return false;
 
 	encode.AppendWithLen("[]", 2);
-	name = PTree::Node::Snoc(name, new PTree::Atom(tk));
+	name = PTree::snoc(name, new PTree::Atom(tk));
 	return true;
     }
     else
@@ -2143,11 +2135,11 @@ bool Parser::rCastOperatorName(PTree::Node *&name, Encoding& encode)
 
     if(cv1 != 0)
 	if(cv2 == 0)
-	    type_name = PTree::Node::Snoc(cv1, type_name);
+	    type_name = PTree::snoc(cv1, type_name);
 	else
-	    type_name = PTree::Node::Nconc(cv1, PTree::Node::Cons(type_name, cv2));
+	    type_name = PTree::nconc(cv1, PTree::cons(type_name, cv2));
     else if(cv2 != 0)
-	type_name = PTree::Node::Cons(type_name, cv2);
+	type_name = PTree::cons(type_name, cv2);
 
     type_encode.CvQualify(cv1, cv2);
 
@@ -2160,7 +2152,7 @@ bool Parser::rCastOperatorName(PTree::Node *&name, Encoding& encode)
 	return true;
     }
     else{
-	name = PTree::Node::List(type_name, ptr);
+	name = PTree::list(type_name, ptr);
 	return true;
     }
 }
@@ -2178,7 +2170,7 @@ bool Parser::rPtrToMember(PTree::Node *&ptr_to_mem, Encoding& encode)
 
     if(lex->look_ahead(0) == Token::Scope){
 	lex->get_token(tk);
-	p = PTree::Node::List(new PTree::Atom(tk));
+	p = PTree::list(new PTree::Atom(tk));
 	pm_encode.GlobalScope();
 	++length;
     }
@@ -2200,7 +2192,7 @@ bool Parser::rPtrToMember(PTree::Node *&ptr_to_mem, Encoding& encode)
 
 	    pm_encode.Template(n, args_encode);
 	    ++length;
-	    n = PTree::Node::List(n, args);
+	    n = PTree::list(n, args);
 	    t = lex->look_ahead(0);
 	}
 	else{
@@ -2211,10 +2203,10 @@ bool Parser::rPtrToMember(PTree::Node *&ptr_to_mem, Encoding& encode)
 	if(lex->get_token(tk) != Token::Scope)
 	    return false;
 
-	p = PTree::Node::Nconc(p, PTree::Node::List(n, new PTree::Atom(tk)));
+	p = PTree::nconc(p, PTree::list(n, new PTree::Atom(tk)));
 	if(lex->look_ahead(0) == '*'){
 	    lex->get_token(tk);
-	    p = PTree::Node::Snoc(p, new PTree::Atom(tk));
+	    p = PTree::snoc(p, new PTree::Atom(tk));
 	    break;
 	}
     }
@@ -2244,7 +2236,7 @@ bool Parser::rTemplateArgs(PTree::Node *&temp_args, Encoding& encode)
     // in case of Foo<>
     if(lex->look_ahead(0) == '>') {
 	lex->get_token(tk2);
-	temp_args = PTree::Node::List(new PTree::Atom(tk1), new PTree::Atom(tk2));
+	temp_args = PTree::list(new PTree::Atom(tk1), new PTree::Atom(tk2));
 	return true;
     }
 
@@ -2265,13 +2257,13 @@ bool Parser::rTemplateArgs(PTree::Node *&temp_args, Encoding& encode)
 	    encode.ValueTempParam();
 	}
 
-	args = PTree::Node::Snoc(args, a);
+	args = PTree::snoc(args, a);
 	switch(lex->get_token(tk2)){
 	case '>' :
-	    temp_args = PTree::Node::List(new PTree::Atom(tk1), args, new PTree::Atom(tk2));
+	    temp_args = PTree::list(new PTree::Atom(tk1), args, new PTree::Atom(tk2));
 	    return true;
 	case ',' :
-	    args = PTree::Node::Snoc(args, new PTree::Atom(tk2));
+	    args = PTree::snoc(args, new PTree::Atom(tk2));
 	    break;
 	case Token::ShiftOp :
 	  // parse error !
@@ -2350,16 +2342,16 @@ bool Parser::rArgDeclList(PTree::Node *&arglist, Encoding& encode)
 	else if(t == Token::Ellipsis){
 	    lex->get_token(tk);
 	    encode.EllipsisArg();
-	    arglist = PTree::Node::Snoc(list, new PTree::Atom(tk));
+	    arglist = PTree::snoc(list, new PTree::Atom(tk));
 	    break;
 	}
 	else if(rArgDeclaration(d, arg_encode)){
 	    encode.Append(arg_encode);
-	    list = PTree::Node::Snoc(list, d);
+	    list = PTree::snoc(list, d);
 	    t = lex->look_ahead(0);
 	    if(t == ','){
 		lex->get_token(tk);
-		list = PTree::Node::Snoc(list, new PTree::Atom(tk));
+		list = PTree::snoc(list, new PTree::Atom(tk));
 	    }
 	    else if(t != ')' && t != Token::Ellipsis)
 		return false;
@@ -2406,9 +2398,9 @@ bool Parser::rArgDeclaration(PTree::Node *&decl, Encoding& encode)
 	return false;
 
     if(header == 0)
-	decl = PTree::Node::List(type_name, arg);
+	decl = PTree::list(type_name, arg);
     else
-	decl = PTree::Node::List(header, type_name, arg);
+	decl = PTree::list(header, type_name, arg);
 
     int t = lex->look_ahead(0);
     if(t == '='){
@@ -2416,7 +2408,7 @@ bool Parser::rArgDeclaration(PTree::Node *&decl, Encoding& encode)
 	if(!rInitializeExpr(e))
 	    return false;
 
-	decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(tk), e));
+	decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), e));
     }
 
     return true;
@@ -2446,17 +2438,17 @@ bool Parser::rInitializeExpr(PTree::Node *&exp)
 
 		SkipTo('}');
 		lex->get_token(tk);
-		exp = PTree::Node::List(ob, 0, new PTree::Atom(tk));
+		exp = PTree::list(ob, 0, new PTree::Atom(tk));
 		return true;		// error recovery
 	    }
 
-	    elist = PTree::Node::Snoc(elist, e);
+	    elist = PTree::snoc(elist, e);
 	    t = lex->look_ahead(0);
 	    if(t == '}')
 		break;
 	    else if(t == ','){
 		lex->get_token(tk);
-		elist = PTree::Node::Snoc(elist, new PTree::Atom(tk));
+		elist = PTree::snoc(elist, new PTree::Atom(tk));
 		t = lex->look_ahead(0);
 	    }
 	    else{
@@ -2465,7 +2457,7 @@ bool Parser::rInitializeExpr(PTree::Node *&exp)
 
 		SkipTo('}');
 		lex->get_token(tk);
-		exp = PTree::Node::List(ob, 0, new PTree::Atom(tk));
+		exp = PTree::list(ob, 0, new PTree::Atom(tk));
 		return true;		// error recovery
 	    }
 	}
@@ -2496,12 +2488,12 @@ bool Parser::rFunctionArguments(PTree::Node *&args)
 	if(!rExpression(exp))
 	    return false;
 
-	args = PTree::Node::Snoc(args, exp);
+	args = PTree::snoc(args, exp);
 	if(lex->look_ahead(0) != ',')
 	    return true;
 	else{
 	    lex->get_token(tk);
-	    args = PTree::Node::Snoc(args, new PTree::Atom(tk));
+	    args = PTree::snoc(args, new PTree::Atom(tk));
 	}
     }
 }
@@ -2524,8 +2516,8 @@ bool Parser::rEnumSpec(PTree::Node *&spec, Encoding& encode)
     if(t == Token::Identifier){
 	PTree::Node *name = new PTree::Atom(tk);
 	encode.SimpleName(name);
-	((PTree::EnumSpec*)spec)->encoded_name = encode.Get();
-	spec = PTree::Node::Snoc(spec, name);
+	((PTree::EnumSpec*)spec)->set_encoded_name(encode.Get());
+	spec = PTree::snoc(spec, name);
 	if(lex->look_ahead(0) == '{')
 	    t = lex->get_token(tk);
 	else
@@ -2533,8 +2525,8 @@ bool Parser::rEnumSpec(PTree::Node *&spec, Encoding& encode)
     }
     else{
 	encode.NoName();
-	((PTree::EnumSpec*)spec)->encoded_name = encode.Get();
-	spec = PTree::Node::Snoc(spec, 0);
+	((PTree::EnumSpec*)spec)->set_encoded_name(encode.Get());
+	spec = PTree::snoc(spec, 0);
     }
 
     if(t != '{')
@@ -2549,7 +2541,7 @@ bool Parser::rEnumSpec(PTree::Node *&spec, Encoding& encode)
     if(lex->get_token(tk2) != '}')
 	return false;
 
-    spec = PTree::Node::Snoc(spec, 
+    spec = PTree::snoc(spec, 
 	    new PTree::Brace(
 		new PTree::Atom(tk), body,
 		new PTree::CommentedAtom(tk2, wrap_comments(lex->get_comments()))));
@@ -2588,16 +2580,16 @@ bool Parser::rEnumBody(PTree::Node *&body)
 		return true;		// error recovery
 	    }
 
-	    name = PTree::Node::List(new PTree::CommentedAtom(tk, comments), new PTree::Atom(tk2), exp);
+	    name = PTree::list(new PTree::CommentedAtom(tk, comments), new PTree::Atom(tk2), exp);
 	}
 
 	if(lex->look_ahead(0) != ','){
-	    body = PTree::Node::Snoc(body, name);
+	    body = PTree::snoc(body, name);
 	    return true;
 	}
 	else{
 	    lex->get_token(tk);
-	    body = PTree::Node::Nconc(body, PTree::Node::List(name, new PTree::Atom(tk)));
+	    body = PTree::nconc(body, PTree::list(name, new PTree::Atom(tk)));
 	}
     }
 }
@@ -2631,33 +2623,33 @@ bool Parser::rClassSpec(PTree::Node *&spec, Encoding& encode)
 
     if(lex->look_ahead(0) == '{'){
 	encode.NoName();
-	spec = PTree::Node::Snoc(spec, PTree::Node::List(0, 0));
+	spec = PTree::snoc(spec, PTree::list(0, 0));
     }
     else{
 	if(!rName(name, encode))
 	    return false;
 
-	spec = PTree::Node::Snoc(spec, name);
+	spec = PTree::snoc(spec, name);
 	t = lex->look_ahead(0);
 	if(t == ':'){
 	    if(!rBaseSpecifiers(bases))
 		return false;
 
-	    spec = PTree::Node::Snoc(spec, bases);
+	    spec = PTree::snoc(spec, bases);
 	}
 	else if(t == '{')
-	    spec = PTree::Node::Snoc(spec, 0);
+	    spec = PTree::snoc(spec, 0);
 	else{
-	    ((PTree::ClassSpec*)spec)->encoded_name = encode.Get();
+	  ((PTree::ClassSpec*)spec)->set_encoded_name(encode.Get());
 	    return true;	// class.key Identifier
 	}
     }
 
-    ((PTree::ClassSpec*)spec)->encoded_name = encode.Get();
+    ((PTree::ClassSpec*)spec)->set_encoded_name(encode.Get());
     if(!rClassBody(body))
 	return false;
 
-    spec = PTree::Node::Snoc(spec, body);
+    spec = PTree::snoc(spec, body);
     return true;
 }
 
@@ -2678,13 +2670,13 @@ bool Parser::rBaseSpecifiers(PTree::Node *&bases)
     if(lex->get_token(tk) != ':')
 	return false;
 
-    bases = PTree::Node::List(new PTree::Atom(tk));
+    bases = PTree::list(new PTree::Atom(tk));
     for(;;){
 	PTree::Node *super = 0;
 	t = lex->look_ahead(0);
 	if(t == Token::VIRTUAL){
 	    lex->get_token(tk);
-	    super = PTree::Node::Snoc(super, new PTree::AtomVIRTUAL(tk));
+	    super = PTree::snoc(super, new PTree::AtomVIRTUAL(tk));
 	    t = lex->look_ahead(0);
 	}
 
@@ -2706,29 +2698,29 @@ bool Parser::rBaseSpecifiers(PTree::Node *&bases)
 		break;
 	    }
 
-	    super = PTree::Node::Snoc(super, lf);
+	    super = PTree::snoc(super, lf);
 	    t = lex->look_ahead(0);
 	}
 
 	if(t == Token::VIRTUAL){
 	    lex->get_token(tk);
-	    super = PTree::Node::Snoc(super, new PTree::AtomVIRTUAL(tk));
+	    super = PTree::snoc(super, new PTree::AtomVIRTUAL(tk));
 	}
 
 	encode.Clear();
 	if(!rName(name, encode))
 	    return false;
 
-	if(!name->IsLeaf())
+	if(!name->is_atom())
 	    name = new PTree::Name(name, encode);
 
-	super = PTree::Node::Snoc(super, name);
-	bases = PTree::Node::Snoc(bases, super);
+	super = PTree::snoc(super, name);
+	bases = PTree::snoc(bases, super);
 	if(lex->look_ahead(0) != ',')
 	    return true;
 	else{
 	    lex->get_token(tk);
-	    bases = PTree::Node::Snoc(bases, new PTree::Atom(tk));
+	    bases = PTree::snoc(bases, new PTree::Atom(tk));
 	}
     }
 }
@@ -2753,12 +2745,12 @@ bool Parser::rClassBody(PTree::Node *&body)
 
 	    SkipTo('}');
 	    lex->get_token(tk);
-	    body = PTree::Node::List(ob, 0, new PTree::Atom(tk));
+	    body = PTree::list(ob, 0, new PTree::Atom(tk));
 	    return true;	// error recovery
 	}
 
 	lex->get_comments();
-	mems = PTree::Node::Snoc(mems, m);
+	mems = PTree::snoc(mems, m);
     }
 
     lex->get_token(tk);
@@ -2808,7 +2800,7 @@ bool Parser::rClassMember(PTree::Node *&mem)
 	if(lex->get_token(tk2) != ':')
 	    return false;
 
-	mem = new PTree::AccessSpec(lf, PTree::Node::List(new PTree::Atom(tk2)));
+	mem = new PTree::AccessSpec(lf, PTree::list(new PTree::Atom(tk2)));
 	return true;
     }
     else if(t == Token::UserKeyword4)
@@ -2855,7 +2847,7 @@ bool Parser::rAccessDecl(PTree::Node *&mem)
 	return false;
 
     mem = new PTree::AccessDecl(new PTree::Name(name, encode),
-			       PTree::Node::List(new PTree::Atom(tk)));
+			       PTree::list(new PTree::Atom(tk)));
     return true;
 }
 
@@ -2875,7 +2867,7 @@ bool Parser::rUserAccessSpec(PTree::Node *&mem)
     int t = lex->get_token(tk2);
     if(t == ':'){
 	mem = new PTree::UserAccessSpec(new PTree::Atom(tk1),
-				      PTree::Node::List(new PTree::Atom(tk2)));
+				      PTree::list(new PTree::Atom(tk2)));
 	return true;
     }
     else if(t == '('){
@@ -2889,7 +2881,7 @@ bool Parser::rUserAccessSpec(PTree::Node *&mem)
 	    return false;
 
 	mem = new PTree::UserAccessSpec(new PTree::Atom(tk1),
-				      PTree::Node::List(new PTree::Atom(tk2), args,
+				      PTree::list(new PTree::Atom(tk2), args,
 						  new PTree::Atom(tk3),
 						  new PTree::Atom(tk4)));
 	return true;
@@ -2916,7 +2908,7 @@ bool Parser::rCommaExpression(PTree::Node *&exp)
 	if(!rExpression(right))
 	    return false;
 
-	exp = new PTree::CommaExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::CommaExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -2942,7 +2934,7 @@ bool Parser::rExpression(PTree::Node *&exp)
 	if(!rExpression(right))
 	    return false;
 
-	exp = new PTree::AssignExpr(left, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::AssignExpr(left, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -2971,7 +2963,7 @@ bool Parser::rConditionalExpr(PTree::Node *&exp, bool temp_args)
 	if(!rConditionalExpr(otherwise, temp_args))
 	    return false;
 
-	exp = new PTree::CondExpr(exp, PTree::Node::List(new PTree::Atom(tk1), then,
+	exp = new PTree::CondExpr(exp, PTree::list(new PTree::Atom(tk1), then,
 						 new PTree::Atom(tk2), otherwise));
     }
 
@@ -2996,7 +2988,7 @@ bool Parser::rLogicalOrExpr(PTree::Node *&exp, bool temp_args)
 	if(!rLogicalAndExpr(right, temp_args))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3020,7 +3012,7 @@ bool Parser::rLogicalAndExpr(PTree::Node *&exp, bool temp_args)
 	if(!rInclusiveOrExpr(right, temp_args))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3044,7 +3036,7 @@ bool Parser::rInclusiveOrExpr(PTree::Node *&exp, bool temp_args)
 	if(!rExclusiveOrExpr(right, temp_args))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3068,7 +3060,7 @@ bool Parser::rExclusiveOrExpr(PTree::Node *&exp, bool temp_args)
 	if(!rAndExpr(right, temp_args))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3092,7 +3084,7 @@ bool Parser::rAndExpr(PTree::Node *&exp, bool temp_args)
 	if(!rEqualityExpr(right, temp_args))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3116,7 +3108,7 @@ bool Parser::rEqualityExpr(PTree::Node *&exp, bool temp_args)
 	if(!rRelationalExpr(right, temp_args))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3142,7 +3134,7 @@ bool Parser::rRelationalExpr(PTree::Node *&exp, bool temp_args)
 	if(!rShiftExpr(right))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3166,7 +3158,7 @@ bool Parser::rShiftExpr(PTree::Node *&exp)
 	if(!rAdditiveExpr(right))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3191,7 +3183,7 @@ bool Parser::rAdditiveExpr(PTree::Node *&exp)
 	if(!rMultiplyExpr(right))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3216,7 +3208,7 @@ bool Parser::rMultiplyExpr(PTree::Node *&exp)
 	if(!rPmExpr(right))
 	    return false;
 
-	exp = new PTree::InfixExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3240,7 +3232,7 @@ bool Parser::rPmExpr(PTree::Node *&exp)
 	if(!rCastExpr(right))
 	    return false;
 
-	exp = new PTree::PmExpr(exp, PTree::Node::List(new PTree::Atom(tk), right));
+	exp = new PTree::PmExpr(exp, PTree::list(new PTree::Atom(tk), right));
     }
 
     return true;
@@ -3264,7 +3256,7 @@ bool Parser::rCastExpr(PTree::Node *&exp)
 	    if(lex->get_token(tk2) == ')')
 		if(rCastExpr(exp)){
 		    exp = new PTree::CastExpr(new PTree::Atom(tk1),
-					    PTree::Node::List(tname, new PTree::Atom(tk2),
+					    PTree::list(tname, new PTree::Atom(tk2),
 							exp));
 		    return true;
 		}
@@ -3296,7 +3288,7 @@ bool Parser::rTypeName(PTree::Node *&tname, Encoding& type_encode)
 		    false))
 	return false;
 
-    tname = PTree::Node::List(type_name, arg);
+    tname = PTree::list(type_name, arg);
     return true;
 }
 
@@ -3320,7 +3312,7 @@ bool Parser::rUnaryExpr(PTree::Node *&exp)
 	if(!rCastExpr(right))
 	    return false;
 
-	exp = new PTree::UnaryExpr(new PTree::Atom(tk), PTree::Node::List(right));
+	exp = new PTree::UnaryExpr(new PTree::Atom(tk), PTree::list(right));
 	return true;
     }
     else if(t == Token::SIZEOF)
@@ -3352,7 +3344,7 @@ bool Parser::rThrowExpr(PTree::Node *&exp)
 	if(!rExpression(e))
 	    return false;
 
-    exp = new PTree::ThrowExpr(new PTree::Reserved(tk), PTree::Node::List(e));
+    exp = new PTree::ThrowExpr(new PTree::Reserved(tk), PTree::list(e));
     return true;
 }
 
@@ -3378,7 +3370,7 @@ bool Parser::rSizeofExpr(PTree::Node *&exp)
 	if(rTypeName(tname))
 	    if(lex->get_token(cp) == ')'){
 		exp = new PTree::SizeofExpr(new PTree::Atom(tk),
-					  PTree::Node::List(new PTree::Atom(op), tname,
+					  PTree::list(new PTree::Atom(op), tname,
 						      new PTree::Atom(cp)));
 		return true;
 	    }
@@ -3389,7 +3381,7 @@ bool Parser::rSizeofExpr(PTree::Node *&exp)
     if(!rUnaryExpr(unary))
 	return false;
 
-    exp = new PTree::SizeofExpr(new PTree::Atom(tk), PTree::Node::List(unary));
+    exp = new PTree::SizeofExpr(new PTree::Atom(tk), PTree::list(unary));
     return true;
 }
 
@@ -3415,7 +3407,7 @@ bool Parser::rTypeidExpr(PTree::Node *&exp)
 	if(rTypeName(tname))
 	    if(lex->get_token(cp) == ')'){
 		exp = new PTree::TypeidExpr(new PTree::Atom(tk),
-					  PTree::Node::List(new PTree::Atom(op), tname,
+					  PTree::list(new PTree::Atom(op), tname,
 						      new PTree::Atom(cp)));
 		return true;
 	    }
@@ -3426,7 +3418,7 @@ bool Parser::rTypeidExpr(PTree::Node *&exp)
     if(!rUnaryExpr(unary))
 	return false;
 
-    exp = new PTree::TypeidExpr(new PTree::Atom(tk), PTree::Node::List(unary));
+    exp = new PTree::TypeidExpr(new PTree::Atom(tk), PTree::list(unary));
     return true;
 }
 
@@ -3478,21 +3470,21 @@ bool Parser::rAllocateExpr(PTree::Node *&exp)
 	    exp = new PTree::DeleteExpr(new PTree::Reserved(tk), 0);
 	else
 	    exp = new PTree::DeleteExpr(head,
-				      PTree::Node::List(new PTree::Reserved(tk)));
+				      PTree::list(new PTree::Reserved(tk)));
 
 	if(lex->look_ahead(0) == '['){
 	    lex->get_token(tk);
-	    exp = PTree::Node::Snoc(exp, new PTree::Atom(tk));
+	    exp = PTree::snoc(exp, new PTree::Atom(tk));
 	    if(lex->get_token(tk) != ']')
 		return false;
 
-	    exp = PTree::Node::Snoc(exp, new PTree::Atom(tk));
+	    exp = PTree::snoc(exp, new PTree::Atom(tk));
 	}
 
 	if(!rCastExpr(obj))
 	    return false;
 
-	exp = PTree::Node::Snoc(exp, obj);
+	exp = PTree::snoc(exp, obj);
 	return true;
     }
     else if(t == Token::NEW){
@@ -3500,12 +3492,12 @@ bool Parser::rAllocateExpr(PTree::Node *&exp)
 	if(head == 0)
 	    exp = new PTree::NewExpr(new PTree::Reserved(tk), 0);
 	else
-	    exp = new PTree::NewExpr(head, PTree::Node::List(new PTree::Reserved(tk)));
+	    exp = new PTree::NewExpr(head, PTree::list(new PTree::Reserved(tk)));
 
 	if(!rAllocateType(atype))
 	    return false;
 
-	exp = PTree::Node::Nconc(exp, atype);
+	exp = PTree::nconc(exp, atype);
 	return true;
     }
     else
@@ -3537,7 +3529,7 @@ bool Parser::rUserdefKeyword(PTree::Node *&ukey)
 	    return false;
 
 	ukey = new PTree::UserdefKeyword(new PTree::Atom(tk),
-			PTree::Node::List(new PTree::Atom(op), args, new PTree::Atom(cp)));
+			PTree::list(new PTree::Atom(op), args, new PTree::Atom(cp)));
     }
 
     return true;
@@ -3555,7 +3547,7 @@ bool Parser::rAllocateType(PTree::Node *&atype)
     PTree::Node *tname, *init, *exp;
 
     if(lex->look_ahead(0) != '(')
-	atype = PTree::Node::List(0);
+	atype = PTree::list(0);
     else{
 	lex->get_token(op);
 
@@ -3563,14 +3555,14 @@ bool Parser::rAllocateType(PTree::Node *&atype)
 	if(rTypeName(tname))
 	    if(lex->get_token(cp) == ')')
 		if(lex->look_ahead(0) != '('){
-		    atype = PTree::Node::List(0, PTree::Node::List(new PTree::Atom(op), tname,
+		    atype = PTree::list(0, PTree::list(new PTree::Atom(op), tname,
 							 new PTree::Atom(cp)));
 		    if(!isTypeSpecifier())
 			return true;
 		}
 		else if(rAllocateInitializer(init)){
-		    atype = PTree::Node::List(0,
-					PTree::Node::List(new PTree::Atom(op), tname,
+		    atype = PTree::list(0,
+					PTree::list(new PTree::Atom(op), tname,
 						    new PTree::Atom(cp)),
 					init);
 		    // the next token cannot be '('
@@ -3586,7 +3578,7 @@ bool Parser::rAllocateType(PTree::Node *&atype)
 	if(lex->get_token(cp) != ')')
 	    return false;
 
-	atype = PTree::Node::List(PTree::Node::List(new PTree::Atom(op), exp, new PTree::Atom(cp)));
+	atype = PTree::list(PTree::list(new PTree::Atom(op), exp, new PTree::Atom(cp)));
     }
 
     if(lex->look_ahead(0) == '('){
@@ -3597,7 +3589,7 @@ bool Parser::rAllocateType(PTree::Node *&atype)
 	if(lex->get_token(cp) != ')')
 	    return false;
 
-	atype = PTree::Node::Snoc(atype, PTree::Node::List(new PTree::Atom(op), tname,
+	atype = PTree::snoc(atype, PTree::list(new PTree::Atom(op), tname,
 					       new PTree::Atom(cp)));
     }
     else{
@@ -3609,14 +3601,14 @@ bool Parser::rAllocateType(PTree::Node *&atype)
 	if(!rNewDeclarator(decl, type_encode))
 	    return false;
 
-	atype = PTree::Node::Snoc(atype, PTree::Node::List(tname, decl));
+	atype = PTree::snoc(atype, PTree::list(tname, decl));
     }
 
     if(lex->look_ahead(0) == '('){
 	if(!rAllocateInitializer(init))
 	    return false;
 
-	atype = PTree::Node::Snoc(atype, init);
+	atype = PTree::snoc(atype, init);
     }
 
     return true;
@@ -3646,7 +3638,7 @@ bool Parser::rNewDeclarator(PTree::Node *&decl, Encoding& encode)
 	    return false;
 
 	encode.Array();
-	decl = PTree::Node::Nconc(decl, PTree::Node::List(new PTree::Atom(ob), exp,
+	decl = PTree::nconc(decl, PTree::list(new PTree::Atom(ob), exp,
 					      new PTree::Atom(cb)));
     }
 
@@ -3671,7 +3663,7 @@ bool Parser::rAllocateInitializer(PTree::Node *&init)
 
     if(lex->look_ahead(0) == ')'){
 	lex->get_token(cp);
-	init = PTree::Node::List(new PTree::Atom(op), 0, new PTree::Atom(cp));
+	init = PTree::list(new PTree::Atom(op), 0, new PTree::Atom(cp));
 	return true;
     }
 
@@ -3681,18 +3673,18 @@ bool Parser::rAllocateInitializer(PTree::Node *&init)
 	if(!rInitializeExpr(exp))
 	    return false;
 
-	init = PTree::Node::Snoc(init, exp);
+	init = PTree::snoc(init, exp);
 	if(lex->look_ahead(0) != ',')
 	    break;
 	else{
 	    Token tk;
 	    lex->get_token(tk);
-	    init = PTree::Node::Snoc(init, new PTree::Atom(tk));
+	    init = PTree::snoc(init, new PTree::Atom(tk));
 	}
     }
 
     lex->get_token(cp);
-    init = PTree::Node::List(new PTree::Atom(op), init, new PTree::Atom(cp));
+    init = PTree::list(new PTree::Atom(op), init, new PTree::Atom(cp));
     return true;
 }
 
@@ -3731,7 +3723,7 @@ bool Parser::rPostfixExpr(PTree::Node *&exp)
 	    if(lex->get_token(cp) != ']')
 		return false;
 
-	    exp = new PTree::ArrayExpr(exp, PTree::Node::List(new PTree::Atom(op),
+	    exp = new PTree::ArrayExpr(exp, PTree::list(new PTree::Atom(op),
 						      e, new PTree::Atom(cp)));
 	    break;
 	case '(' :
@@ -3742,12 +3734,12 @@ bool Parser::rPostfixExpr(PTree::Node *&exp)
 	    if(lex->get_token(cp) != ')')
 		return false;
 
-	    exp = new PTree::FuncallExpr(exp, PTree::Node::List(new PTree::Atom(op),
+	    exp = new PTree::FuncallExpr(exp, PTree::list(new PTree::Atom(op),
 							e, new PTree::Atom(cp)));
 	    break;
 	case Token::IncOp :
 	    lex->get_token(op);
-	    exp = new PTree::PostfixExpr(exp, PTree::Node::List(new PTree::Atom(op)));
+	    exp = new PTree::PostfixExpr(exp, PTree::list(new PTree::Atom(op)));
 	    break;
 	case '.' :
 	case Token::ArrowOp :
@@ -3758,7 +3750,7 @@ bool Parser::rPostfixExpr(PTree::Node *&exp)
 		    return false;
 
 		exp = new PTree::UserStatementExpr(exp,
-						 PTree::Node::Cons(new PTree::Atom(op), e));
+						 PTree::cons(new PTree::Atom(op), e));
 		break;
 	    }
 	    else{
@@ -3767,10 +3759,10 @@ bool Parser::rPostfixExpr(PTree::Node *&exp)
 
 		if(t2 == '.')
 		    exp = new PTree::DotMemberExpr(exp,
-						 PTree::Node::List(new PTree::Atom(op), e));
+						 PTree::list(new PTree::Atom(op), e));
 		else
 		    exp = new PTree::ArrowMemberExpr(exp,
-						PTree::Node::List(new PTree::Atom(op), e));
+						PTree::list(new PTree::Atom(op), e));
 		break;
 	    }
 	default :
@@ -3826,7 +3818,7 @@ bool Parser::rPrimaryExpr(PTree::Node *&exp)
 	    return false;
 
 	exp = new PTree::ParenExpr(new PTree::Atom(tk),
-				 PTree::Node::List(exp2, new PTree::Atom(tk2)));
+				 PTree::list(exp2, new PTree::Atom(tk2)));
 	return true;
     default :
 	if(!optIntegralTypeOrClassSpec(exp, cast_type_encode))
@@ -3843,7 +3835,7 @@ bool Parser::rPrimaryExpr(PTree::Node *&exp)
 		return false;
 
 	    exp = new PTree::FstyleCastExpr(cast_type_encode, exp,
-					  PTree::Node::List(new PTree::Atom(tk), exp2,
+					  PTree::list(new PTree::Atom(tk), exp2,
 						      new PTree::Atom(tk2)));
 	    return true;
 	}
@@ -3857,7 +3849,7 @@ bool Parser::rPrimaryExpr(PTree::Node *&exp)
 		    return false;
 
 		exp = new PTree::StaticUserStatementExpr(exp,
-					PTree::Node::Cons(new PTree::Atom(tk), exp2));
+					PTree::cons(new PTree::Atom(tk), exp2));
 	    }
 
 	    return true;
@@ -3899,7 +3891,7 @@ bool Parser::rUserdefStatement(PTree::Node *&st)
 	if(!rCompoundStatement(body))
 	    return false;
 
-	st = PTree::Node::List(keyword, new PTree::Atom(tk2), exp, new PTree::Atom(tk3),
+	st = PTree::list(keyword, new PTree::Atom(tk2), exp, new PTree::Atom(tk3),
 			 body);
 	return true;
     case Token::UserKeyword3 :
@@ -3927,7 +3919,7 @@ bool Parser::rUserdefStatement(PTree::Node *&st)
 	if(!rCompoundStatement(body))
 	    return false;
 
-	st = PTree::Node::List(new PTree::Atom(tk), new PTree::Atom(tk2), exp, exp2,
+	st = PTree::list(new PTree::Atom(tk), new PTree::Atom(tk2), exp, exp2,
 			 new PTree::Atom(tk3), exp3, new PTree::Atom(tk4), body);
 	return true;
     default :
@@ -3950,7 +3942,7 @@ bool Parser::rVarName(PTree::Node *&name)
     Encoding encode;
 
     if(rVarNameCore(name, encode)){
-	if(!name->IsLeaf())
+	if(!name->is_atom())
 	    name = new PTree::Name(name, encode);
 
 	return true;
@@ -3966,7 +3958,7 @@ bool Parser::rVarNameCore(PTree::Node *&name, Encoding& encode)
 
     if(lex->look_ahead(0) == Token::Scope){
 	lex->get_token(tk);
-	name = PTree::Node::List(new PTree::Atom(tk));
+	name = PTree::list(new PTree::Atom(tk));
 	encode.GlobalScope();
 	++length;
     }
@@ -3989,7 +3981,7 @@ bool Parser::rVarNameCore(PTree::Node *&name, Encoding& encode)
 
 		encode.Template(n, args_encode);
 		++length;
-		n = PTree::Node::List(n, args);
+		n = PTree::list(n, args);
 	    }
 	    else{
 		encode.SimpleName(n);
@@ -3998,13 +3990,13 @@ bool Parser::rVarNameCore(PTree::Node *&name, Encoding& encode)
 
 	    if(moreVarName()){
 		lex->get_token(tk);
-		name = PTree::Node::Nconc(name, PTree::Node::List(n, new PTree::Atom(tk)));
+		name = PTree::nconc(name, PTree::list(n, new PTree::Atom(tk)));
 	    }
 	    else{
 		if(name == 0)
 		    name = n;
 		else
-		    name = PTree::Node::Snoc(name, n);
+		    name = PTree::snoc(name, n);
 
 		if(length > 1)
 		    encode.Qualified(length);
@@ -4019,11 +4011,11 @@ bool Parser::rVarNameCore(PTree::Node *&name, Encoding& encode)
 
 	    lex->get_token(tk2);
 	    PTree::Node *class_name = new PTree::Atom(tk2);
-	    PTree::Node *dt = PTree::Node::List(new PTree::Atom(tk), class_name);
+	    PTree::Node *dt = PTree::list(new PTree::Atom(tk), class_name);
 	    if(name == 0)
 		name = dt;
 	    else
-		name = PTree::Node::Snoc(name, dt);
+		name = PTree::snoc(name, dt);
 
 	    encode.Destructor(class_name);
 	    if(length > 0)
@@ -4036,11 +4028,11 @@ bool Parser::rVarNameCore(PTree::Node *&name, Encoding& encode)
 	    if(!rOperatorName(op, encode))
 		return false;
 
-	    PTree::Node *opf = PTree::Node::List(new PTree::Reserved(tk), op);
+	    PTree::Node *opf = PTree::list(new PTree::Reserved(tk), op);
 	    if(name == 0)
 		name = opf;
 	    else
-		name = PTree::Node::Snoc(name, opf);
+		name = PTree::snoc(name, opf);
 
 	    if(length > 0)
 		encode.Qualified(length + 1);
@@ -4141,12 +4133,12 @@ bool Parser::rCondition(PTree::Node *&exp)
 	    // Make type ptree with pre and post const ptrees
 	    if (cv_q != 0)
 		if (cv_q2 == 0)
-		    integral = PTree::Node::Snoc(cv_q, integral);
+		    integral = PTree::snoc(cv_q, integral);
 		else
-		    integral = PTree::Node::Nconc(cv_q,
-			    PTree::Node::Cons(integral, cv_q2));
+		    integral = PTree::nconc(cv_q,
+			    PTree::cons(integral, cv_q2));
 	    else if (cv_q2 != 0)
-		integral = PTree::Node::Cons(integral, cv_q2);
+		integral = PTree::cons(integral, cv_q2);
 	    // Store type of CV's
 	    type_encode.CvQualify(cv_q, cv_q2);
 	    // Parse declarator
@@ -4156,7 +4148,7 @@ bool Parser::rCondition(PTree::Node *&exp)
 	    if (lex->look_ahead(0) != ')')
 		break;
 	    exp = new PTree::Declaration(head,
-		    PTree::Node::List(integral, decl));
+		    PTree::list(integral, decl));
 	} else {
 	    // Other Declaration
 	    PTree::Node *type_name;
@@ -4169,12 +4161,12 @@ bool Parser::rCondition(PTree::Node *&exp)
 	    // Make type ptree with pre and post const ptrees
 	    if (cv_q != 0)
 		if (cv_q2 == 0)
-		    type_name = PTree::Node::Snoc(cv_q, type_name);
+		    type_name = PTree::snoc(cv_q, type_name);
 		else
-		    type_name = PTree::Node::Nconc(cv_q,
-			    PTree::Node::Cons(type_name, cv_q2));
+		    type_name = PTree::nconc(cv_q,
+			    PTree::cons(type_name, cv_q2));
 	    else if (cv_q2 != 0)
-		type_name = PTree::Node::Cons(type_name, cv_q2);
+		type_name = PTree::cons(type_name, cv_q2);
 	    // Store type of CV's
 	    type_encode.CvQualify(cv_q, cv_q2);
 	    // Parse declarator
@@ -4184,7 +4176,7 @@ bool Parser::rCondition(PTree::Node *&exp)
 	    if (lex->look_ahead(0) != ')')
 		break;
 	    exp = new PTree::Declaration(head,
-		    PTree::Node::List(type_name, decl));
+		    PTree::list(type_name, decl));
 	}
 	return true;
     } while(false);
@@ -4224,11 +4216,11 @@ bool Parser::rCompoundStatement(PTree::Node *&body)
 
 	    SkipTo('}');
 	    lex->get_token(cb);
-	    body = PTree::Node::List(new PTree::Atom(ob), 0, new PTree::Atom(cb));
+	    body = PTree::list(new PTree::Atom(ob), 0, new PTree::Atom(cb));
 	    return true;	// error recovery
 	}
 
-	sts = PTree::Node::Snoc(sts, st);
+	sts = PTree::snoc(sts, st);
     }
 
     if(lex->get_token(cb) != '}')
@@ -4306,17 +4298,17 @@ bool Parser::rStatement(PTree::Node *&st)
 
 	if(k == Token::BREAK)
 	    st = new PTree::BreakStatement(new PTree::Reserved(tk1),
-					 PTree::Node::List(new PTree::Atom(tk2)));
+					 PTree::list(new PTree::Atom(tk2)));
 	else
             st = new PTree::ContinueStatement(new PTree::Reserved(tk1),
-					    PTree::Node::List(new PTree::Atom(tk2)));
+					    PTree::list(new PTree::Atom(tk2)));
 	break;
     case Token::RETURN :
 	lex->get_token(tk1);
 	if(lex->look_ahead(0) == ';'){
 	    lex->get_token(tk2);
 	    st = new PTree::ReturnStatement(new PTree::Reserved(tk1),
-					  PTree::Node::List(new PTree::Atom(tk2)));
+					  PTree::list(new PTree::Atom(tk2)));
 	} else {
 	    if(!rCommaExpression(exp))
 		return false;
@@ -4325,7 +4317,7 @@ bool Parser::rStatement(PTree::Node *&st)
 		return false;
 
 	    st = new PTree::ReturnStatement(new PTree::Reserved(tk1),
-					  PTree::Node::List(exp, new PTree::Atom(tk2)));
+					  PTree::list(exp, new PTree::Atom(tk2)));
 	}
 	break;
     case Token::GOTO :
@@ -4337,7 +4329,7 @@ bool Parser::rStatement(PTree::Node *&st)
 	    return false;
 
 	st = new PTree::GotoStatement(new PTree::Reserved(tk1),
-				    PTree::Node::List(new PTree::Atom(tk2), new PTree::Atom(tk3)));
+				    PTree::list(new PTree::Atom(tk2), new PTree::Atom(tk3)));
 	break;
     case Token::CASE :
 	lex->get_token(tk1);
@@ -4350,7 +4342,7 @@ bool Parser::rStatement(PTree::Node *&st)
 	    return false;
 
 	st = new PTree::CaseStatement(new PTree::Reserved(tk1),
-				    PTree::Node::List(exp, new PTree::Atom(tk2), st2));
+				    PTree::list(exp, new PTree::Atom(tk2), st2));
 	break;
     case Token::DEFAULT :
 	lex->get_token(tk1);
@@ -4361,7 +4353,7 @@ bool Parser::rStatement(PTree::Node *&st)
 	    return false;
 
 	st = new PTree::DefaultStatement(new PTree::Reserved(tk1),
-				       PTree::Node::List(new PTree::Atom(tk2), st2));
+				       PTree::list(new PTree::Atom(tk2), st2));
 	break;
     case Token::Identifier :
 	if(lex->look_ahead(1) == ':'){	// label statement
@@ -4371,7 +4363,7 @@ bool Parser::rStatement(PTree::Node *&st)
 		return false;
 
 	    st = new PTree::LabelStatement(new PTree::Atom(tk1),
-					 PTree::Node::List(new PTree::Atom(tk2), st2));
+					 PTree::list(new PTree::Atom(tk2), st2));
 	    return true;
 	}
 	// don't break here!
@@ -4410,14 +4402,14 @@ bool Parser::rIfStatement(PTree::Node *&st)
 	return false;
 
     st = new PTree::IfStatement(new PTree::Reserved(tk1),
-			      PTree::Node::List(new PTree::Atom(tk2), exp, new PTree::Atom(tk3),
+			      PTree::list(new PTree::Atom(tk2), exp, new PTree::Atom(tk3),
 					  then));
     if(lex->look_ahead(0) == Token::ELSE){
 	lex->get_token(tk4);
 	if(!rStatement(otherwise))
 	    return false;
 
-	st = PTree::Node::Nconc(st, PTree::Node::List(new PTree::Atom(tk4), otherwise));
+	st = PTree::nconc(st, PTree::list(new PTree::Atom(tk4), otherwise));
     }
 
     return true;
@@ -4448,7 +4440,7 @@ bool Parser::rSwitchStatement(PTree::Node *&st)
 	return false;
 
     st = new PTree::SwitchStatement(new PTree::Reserved(tk1),
-				  PTree::Node::List(new PTree::Atom(tk2), exp,
+				  PTree::list(new PTree::Atom(tk2), exp,
 					      new PTree::Atom(tk3), body));
     return true;
 }
@@ -4478,7 +4470,7 @@ bool Parser::rWhileStatement(PTree::Node *&st)
 	return false;
 
     st = new PTree::WhileStatement(new PTree::Reserved(tk1),
-				 PTree::Node::List(new PTree::Atom(tk2), exp,
+				 PTree::list(new PTree::Atom(tk2), exp,
 					      new PTree::Atom(tk3), body));
     return true;
 }
@@ -4514,7 +4506,7 @@ bool Parser::rDoStatement(PTree::Node *&st)
 	return false;
 
     st = new PTree::DoStatement(new PTree::Reserved(tk0),
-				 PTree::Node::List(body, new PTree::Reserved(tk1),
+				 PTree::list(body, new PTree::Reserved(tk1),
 					     new PTree::Atom(tk2), exp,
 					     new PTree::Atom(tk3), new PTree::Atom(tk4)));
     return true;
@@ -4562,7 +4554,7 @@ bool Parser::rForStatement(PTree::Node *&st)
 
 
     st = new PTree::ForStatement(new PTree::Reserved(tk1),
-			       PTree::Node::List(new PTree::Atom(tk2), exp1, exp2,
+			       PTree::list(new PTree::Atom(tk2), exp1, exp2,
 					   new PTree::Atom(tk3), exp3,
 					   new PTree::Atom(tk4), body));
     return true;
@@ -4586,7 +4578,7 @@ bool Parser::rTryStatement(PTree::Node *&st)
     if(!rCompoundStatement(body))
 	return false;
 
-    st = new PTree::TryStatement(new PTree::Reserved(tk), PTree::Node::List(body));
+    st = new PTree::TryStatement(new PTree::Reserved(tk), PTree::list(body));
 
     do{
 	if(lex->get_token(tk) != Token::CATCH)
@@ -4611,7 +4603,7 @@ bool Parser::rTryStatement(PTree::Node *&st)
 	if(!rCompoundStatement(body))
 	    return false;
 
-	st = PTree::Node::Snoc(st, PTree::Node::List(new PTree::Reserved(tk),
+	st = PTree::snoc(st, PTree::list(new PTree::Reserved(tk),
 					 new PTree::Atom(op), handler, new PTree::Atom(cp),
 					 body));
     } while(lex->look_ahead(0) == Token::CATCH);
@@ -4632,7 +4624,7 @@ bool Parser::rExprStatement(PTree::Node *&st)
 
     if(lex->look_ahead(0) == ';'){
 	lex->get_token(tk);
-	st = new PTree::ExprStatement(0, PTree::Node::List(new PTree::Atom(tk)));
+	st = new PTree::ExprStatement(0, PTree::list(new PTree::Atom(tk)));
 	return true;
     }
     else{
@@ -4653,7 +4645,7 @@ bool Parser::rExprStatement(PTree::Node *&st)
 	    if(lex->get_token(tk) != ';')
 		return false;
 
-	    st = new PTree::ExprStatement(exp, PTree::Node::List(new PTree::Atom(tk)));
+	    st = new PTree::ExprStatement(exp, PTree::list(new PTree::Atom(tk)));
 	    return true;
 	}
     }
@@ -4685,7 +4677,7 @@ bool Parser::rDeclarationStatement(PTree::Node *&statement)
 
     PTree::Node *head = 0;
     if(storage_s != 0)
-	head = PTree::Node::Snoc(head, storage_s);
+	head = PTree::snoc(head, storage_s);
 
     if(integral != 0)
 	return rIntegralDeclStatement(statement, type_encode, integral,
@@ -4716,16 +4708,16 @@ bool Parser::rIntegralDeclStatement(PTree::Node *&statement, Encoding& type_enco
 
     if(cv_q != 0)
 	if(cv_q2 == 0)
-	    integral = PTree::Node::Snoc(cv_q, integral);
+	    integral = PTree::snoc(cv_q, integral);
 	else
-	    integral = PTree::Node::Nconc(cv_q, PTree::Node::Cons(integral, cv_q2));
+	    integral = PTree::nconc(cv_q, PTree::cons(integral, cv_q2));
     else if(cv_q2 != 0)
-	integral = PTree::Node::Cons(integral, cv_q2);
+	integral = PTree::cons(integral, cv_q2);
 
     type_encode.CvQualify(cv_q, cv_q2);
     if(lex->look_ahead(0) == ';'){
 	lex->get_token(tk);
-	statement = new PTree::Declaration(head, PTree::Node::List(integral,
+	statement = new PTree::Declaration(head, PTree::list(integral,
 									new PTree::Atom(tk)));
 	return true;
     }
@@ -4736,7 +4728,7 @@ bool Parser::rIntegralDeclStatement(PTree::Node *&statement, Encoding& type_enco
 	if(lex->get_token(tk) != ';')
 	    return false;
 	    
-	statement = new PTree::Declaration(head, PTree::Node::List(integral, decl,
+	statement = new PTree::Declaration(head, PTree::list(integral, decl,
 									new PTree::Atom(tk)));
 	return true;
     }
@@ -4760,11 +4752,11 @@ bool Parser::rOtherDeclStatement(PTree::Node *&statement, Encoding& type_encode,
 
     if(cv_q != 0)
 	if(cv_q2 == 0)
-	    type_name = PTree::Node::Snoc(cv_q, type_name);
+	    type_name = PTree::snoc(cv_q, type_name);
 	else
-	    type_name = PTree::Node::Nconc(cv_q, PTree::Node::Cons(type_name, cv_q2));
+	    type_name = PTree::nconc(cv_q, PTree::cons(type_name, cv_q2));
     else if(cv_q2 != 0)
-	type_name = PTree::Node::Cons(type_name, cv_q2);
+	type_name = PTree::cons(type_name, cv_q2);
 
     type_encode.CvQualify(cv_q, cv_q2);
     if(!rDeclarators(decl, type_encode, false, true))
@@ -4773,7 +4765,7 @@ bool Parser::rOtherDeclStatement(PTree::Node *&statement, Encoding& type_encode,
     if(lex->get_token(tk) != ';')
 	return false;
 
-    statement = new PTree::Declaration(head, PTree::Node::List(type_name, decl,
+    statement = new PTree::Declaration(head, PTree::list(type_name, decl,
 						       new PTree::Atom(tk)));
     return true;
 }

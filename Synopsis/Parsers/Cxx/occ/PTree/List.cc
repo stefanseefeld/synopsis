@@ -12,20 +12,14 @@
 
 using namespace PTree;
 
-List::List(Node *p, Node *q)
-{
-  data.nonleaf.child = p;
-  data.nonleaf.next = q;
-}
-
 void List::write(std::ostream &os) const
 {
   assert(this);
-  for (const Node *p = this; p; p = p->Cdr())
+  for (const Node *p = this; p; p = p->cdr())
   {
-    const Node *data = p->Car();
+    const Node *data = p->car();
     if (data) data->write(os);
-    else if(p->IsLeaf()) throw std::logic_error("List::write(): not list");
+    else if(p->is_atom()) throw std::logic_error("List::write(): not list");
   }
 }
 
@@ -37,7 +31,7 @@ void List::print(std::ostream &os, size_t indent, size_t depth) const
   os << '[';
   while(rest != 0)
   {
-    if(rest->IsLeaf())
+    if(rest->is_atom())
     {
       os << "@ ";
       rest->print(os, indent, depth + 1);
@@ -45,10 +39,10 @@ void List::print(std::ostream &os, size_t indent, size_t depth) const
     }
     else
     {
-      const Node *head = rest->data.nonleaf.child;
+      const Node *head = rest->car();
       if(head == 0) os << "nil";
       else head->print(os, indent, depth + 1);
-      rest = rest->data.nonleaf.next;
+      rest = rest->cdr();
       if(rest != 0) os << ' ';
     }
   }
@@ -59,13 +53,13 @@ void List::print_encoded(std::ostream &os, size_t indent, size_t depth) const
 {
   if (show_encoded)
   {
-    const char *encode = GetEncodedType();
+    const char *encode = encoded_type();
     if(encode)
     {
       os << '#';
       Encoding::print(os, encode);
     }
-    encode = GetEncodedName();
+    encode = encoded_name();
     if(encode)
     {
       os << '@';
@@ -91,12 +85,12 @@ int List::Write(std::ostream& out, int indent)
   Node *p = this;
   while(true)
   {
-    Node *head = p->Car();
+    Node *head = p->car();
     if(head != 0) n += head->Write(out, indent);
 
-    p = p->Cdr();
+    p = p->cdr();
     if(p == 0) break;
-    else if(p->IsLeaf())
+    else if(p->is_atom())
       throw std::runtime_error("List::Write(): not list");
     else out << ' ';
   }

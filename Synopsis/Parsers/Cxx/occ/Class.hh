@@ -31,7 +31,7 @@ struct ChangedMemberList::Cmem;
 class OCXXMOP Class : public Object {
 public:
     Class() {}
-    Class(Environment* e, char* name) { Construct(e, PTree::Node::Make(name)); }
+    Class(Environment* e, char* name) { Construct(e, PTree::make(name)); }
     Class(Environment* e, PTree::Node *name) { Construct(e, name); }
 
     virtual void InitializeInstance(PTree::Node *def, PTree::Node *margs);
@@ -44,7 +44,7 @@ public:
     PTree::Node *BaseClasses();
     PTree::Node *Members();
     PTree::Node *Definition() { return definition; }
-    virtual char* MetaclassName();	// automaticallly implemented
+    virtual const char* MetaclassName();	// automaticallly implemented
 					// by Metaclass
     Class* NthBaseClass(int nth);
     PTree::Node *NthBaseClassName(int nth);
@@ -267,7 +267,7 @@ class OCXXMOP TemplateClass : public Class {
 public:
     void InitializeInstance(PTree::Node *def, PTree::Node *margs);
     static bool Initialize();
-    char* MetaclassName();
+    const char* MetaclassName();
 
     PTree::Node *TemplateDefinition() { return template_definition; }
     PTree::Node *TemplateArguments();
@@ -301,18 +301,18 @@ typedef Class* (*opcxx_MetaclassCreator)(PTree::Node *, PTree::Node *);
 
 class OCXXMOP opcxx_ListOfMetaclass {
 public:
-    opcxx_ListOfMetaclass(char*, opcxx_MetaclassCreator,
+    opcxx_ListOfMetaclass(const char*, opcxx_MetaclassCreator,
 			  bool (*)(), PTree::Node *(*)());
     static Class* New(PTree::Node *, PTree::Node *, PTree::Node *);
-    static Class* New(char*, PTree::Node *, PTree::Node *);
+    static Class* New(const char*, PTree::Node *, PTree::Node *);
     static void FinalizeAll(std::ostream&);
-    static bool AlreadyRecorded(char*);
+    static bool AlreadyRecorded(const char*);
     static bool AlreadyRecorded(PTree::Node *);
     static void PrintAllMetaclasses();
 
 private:
     opcxx_ListOfMetaclass* next;
-    char* name;
+    const char* name;
     opcxx_MetaclassCreator proc;
     PTree::Node *(*finalizer)();	// pointer to FinalizeClass()
     static opcxx_ListOfMetaclass* head;

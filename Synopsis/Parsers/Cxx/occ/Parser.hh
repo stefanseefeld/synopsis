@@ -51,7 +51,7 @@ protected:
 			  tdk_specialization, num_tdks };
 
   bool SyntaxError();
-  void ShowMessageHead(char*);
+  void ShowMessageHead(const char*);
 
   bool rDefinition(PTree::Node *&);
   bool rNullDeclaration(PTree::Node *&);

@@ -204,49 +204,49 @@ public:
     {
         // We recurse on the mod's alias, but dont link the const bit
         if (mod->pre().size() && mod->pre().front() == "const")
-            if (!node->IsLeaf() && node->First()->Eq("const"))
+            if (!node->is_atom() && PTree::first(node) && *PTree::first(node) == "const")
             {
-                links->span(node->First(), "file-keyword");
-                node = node->Last()->First();
+                links->span(PTree::first(node), "file-keyword");
+                node = PTree::first(PTree::last(node));
             }
         mod->alias()->accept(this);
     }
     void visit_parameterized(Types::Parameterized* param)
     {
         // Sometimes there's a typename at the front..
-        if (node->First()->IsLeaf() && node->First()->Eq("typename"))
-            node = node->Second();
+        if (PTree::first(node)->is_atom() && PTree::first(node) && *PTree::first(node) == "typename")
+            node = PTree::second(node);
         // Some modifiers nest the identifier..
-        while (!node->First()->IsLeaf())
-            node = node->First();
+        while (!PTree::first(node)->is_atom())
+            node = PTree::first(node);
         // For qualified template names the ptree is:
         //  [ std :: [ vector [ < ... , ... > ] ] ]
         // If the name starts with :: (global scope), skip it
-        if (node->First() && node->First()->Eq("::"))
-            node = node->Rest();
+        if (PTree::first(node) && *PTree::first(node) == "::")
+            node = PTree::rest(node);
         // Skip the qualifieds (and just link the final name)
-        while (node->Second() && node->Second()->Eq("::"))
-            if (node->Third()->IsLeaf())
-                node = node->Rest()->Rest();
+        while (PTree::second(node) && *PTree::second(node) == "::")
+            if (PTree::third(node)->is_atom())
+                node = PTree::rest(PTree::rest(node));
             else
-                node = node->Third();
+                node = PTree::third(node);
         // Do template
-        links->link(node->First(), param->template_type());
+        links->link(PTree::first(node), param->template_type());
         // Do params
-        node = node->Second();
+        node = PTree::second(node);
         typedef Types::Type::vector::iterator iterator;
         iterator iter = param->parameters().begin();
         iterator end = param->parameters().end();
         // Could be leaf if eg: [SomeId const] node is now "const"
-        while (node && !node->IsLeaf() && iter != end)
+        while (node && !node->is_atom() && iter != end)
         {
             // Skip '<' or ','
-            if ( !(node = node->Rest()) )
+            if (!(node = PTree::rest(node)))
                 break;
-            if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
-                links->link(node->Car()->Car()->Car(), *iter);
+            if (node->car() && node->car()->car() && !node->car()->car()->is_atom() && node->car()->car()->car())
+                links->link(node->car()->car()->car(), *iter);
             ++iter;
-            node = node->Rest();
+            node = PTree::rest(node);
         }
     }
     // Other types ignored, for now
