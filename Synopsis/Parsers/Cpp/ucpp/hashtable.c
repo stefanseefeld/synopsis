@@ -92,7 +92,7 @@ static struct hash_item *del_entry(struct hash_item *blist, void *data,
 
 	while (blist) {
 		if ((*cmpdata)(data, blist->data)) {
-			(*deldata)(blist->data);
+			if (deldata) (*deldata)(blist->data);
 			if (prev) prev->next = blist->next;
 			if (save == blist) save = blist->next;
 			freemem(blist);
@@ -219,25 +219,26 @@ void killHT(struct HT *ht)
 {
 	int i;
 	struct hash_item *t, *n;
+	void (*dd)(void *) = ht->deldata;
 
 	for (i = 0; i < ht->nb_lists; i ++) for (t = ht->lists[i]; t;) {
 		n = t->next;
-		(*(ht->deldata))(t->data);
+		if (dd) (*dd)(t->data);
 		freemem(t);
 		t = n;
 	}
+	freemem(ht->lists);
 	freemem(ht);
 }
 
 /*
- * This function stores a backup of the hash table, for context stacking
+ * This function stores a backup of the hash table, for context stacking.
  */
 void saveHT(struct HT *ht, void **buffer)
 {
 	struct hash_item **b = (struct hash_item **)buffer;
-	int i;
 
-	for (i = 0; i < ht->nb_lists; i ++) b[i] = ht->lists[i];
+	mmv(b, ht->lists, ht->nb_lists * sizeof(struct hash_item *));
 }
 
 /*
@@ -261,6 +262,28 @@ void restoreHT(struct HT *ht, void **buffer)
 		}
 		ht->lists[i] = b[i];
 	}
+}
+
+/*
+ * This function is evil. It inserts a new item in a saved hash table,
+ * tweaking the save buffer and the hash table in order to keep things
+ * stable. There are no checks.
+ */
+void tweakHT(struct HT *ht, void **buffer, void *data)
+{
+	int h;
+	struct hash_item *d, *e;
+
+	h = ((*(ht->hash))(data)) % ht->nb_lists;
+	for (d = ht->lists[h]; d != buffer[h]; d = d->next);
+	d = add_entry(buffer[h], data);
+	if (buffer[h] == ht->lists[h]) {
+		buffer[h] = ht->lists[h] = d;
+		return;
+	}
+	for (e = ht->lists[h]; e->next != buffer[h]; e = e->next);
+	e->next = d;
+	buffer[h] = d;
 }
 
 /*
