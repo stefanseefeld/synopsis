@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.10 2002/11/02 06:37:37 chalky Exp $
+# $Id: Tags.py,v 1.11 2002/11/13 01:01:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.11  2002/11/13 01:01:49  chalky
+# Improvements to links when using the Nested file layout
+#
 # Revision 1.10  2002/11/02 06:37:37  chalky
 # Allow non-frames output, some refactoring of page layout, new modules.
 #
@@ -69,6 +72,10 @@ def rel(frm, to):
     for l in range(check):
         if to[0] == frm[0]: del to[0]; del frm[0]
         else: break
+    # If frm is a directory, and to is in that directory, frm[0] == to[0]
+    if len(frm) == 1 and len(to) > 1 and frm[0] == to[0]:
+	# Remove directory from to, but respect len(frm)-1 below
+	del to[0]
     if frm: to = ['..'] * (len(frm) - 1) + to
     return string.join(to,'/')
 def href(_ref, _label, **keys):

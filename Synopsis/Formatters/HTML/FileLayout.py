@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.17 2002/11/02 06:37:37 chalky Exp $
+# $Id: FileLayout.py,v 1.18 2002/11/13 01:01:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.18  2002/11/13 01:01:49  chalky
+# Improvements to links when using the Nested file layout
+#
 # Revision 1.17  2002/11/02 06:37:37  chalky
 # Allow non-frames output, some refactoring of page layout, new modules.
 #
@@ -207,7 +210,8 @@ class NestedFileLayout (FileLayout):
 	"""Return the filename of a scoped name (class or module).
 	One subdirectory per scope"""
         prefix = 'Scopes'
-	if not len(scope): return os.path.join(prefix, 'global') + '.html'
+	if not len(scope):
+	    return self._checkMain(os.path.join(prefix, 'global') + '.html')
         else: return Util.quote(reduce(os.path.join, scope, prefix)) + '.html'
 
     def nameOfFileIndex(self, file):
@@ -224,6 +228,7 @@ class NestedFileLayout (FileLayout):
 	Default implementation is to join the path with '-', prepend "_source-"
 	and append ".html" """
         file = self._stripFilename(file)
+	print "rel",config.base_dir,",",file,"=",rel(config.base_dir, file)
         return os.path.join("Source", rel(config.base_dir, file)+".html")
 
     def nameOfIndex(self):
@@ -232,7 +237,7 @@ class NestedFileLayout (FileLayout):
 
     def nameOfSpecial(self, name):
 	"""Return the name of a special file (tree, etc)."""
-	return name + ".html"
+	return self._checkMain(name + ".html")
     
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file"""
