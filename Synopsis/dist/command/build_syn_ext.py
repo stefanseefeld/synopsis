@@ -1,12 +1,21 @@
 import os, sys, string
 
-from distutils.command import build_ext
+from distutils.command.build_ext import build_ext
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.spawn import spawn, find_executable
 from shutil import *
 
-class build_ext(build_ext.build_ext):
+class build_syn_ext(build_ext):
+
+    description = "build C++ extension packages"
+
+    user_options = [('build-lib=', 'b', "directory for compiled extension modules"),
+                    ('build-temp=', 't', "directory for temporary files (build by-products)"),
+                    ('inplace', 'i', "ignore build-lib and put compiled extensions into the source " +
+                     "directory alongside your pure Python modules")]
+
+    boolean_options = ['inplace']
 
     def run(self):
 
@@ -55,7 +64,8 @@ class build_ext(build_ext.build_ext):
         #The extension may not be compiled. For now just skip it.
         if os.path.isfile(os.path.join(path, ext[1])):
             
-            build_path = os.path.join(self.build_lib, ext[0])
+            if self.inplace: build_path = ext[0]
+            else: build_path = os.path.join(self.build_lib, ext[0])            
             mkpath (build_path, 0777, self.verbose, self.dry_run)
             copy_file(os.path.join(path, ext[1]),
                       os.path.join(build_path, ext[1]),
