@@ -57,7 +57,7 @@ class ASCIIFormatter:
 
     def visitTemplate(self, type):
 	self.visitDeclared(type)
-	self.__type = "template<"+string.join(map(self.formatType, type.parameters()),",")+">"+self.__type
+	#self.__type = "template<"+string.join(map(self.formatType, type.parameters()),",")+">"+self.__type
 	
     ### AST visitor
 

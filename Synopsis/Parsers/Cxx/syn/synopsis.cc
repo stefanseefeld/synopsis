@@ -16,10 +16,33 @@ void nullObj() {
     *i = 1;
 }
 
+//. A functor that returns true if the declaration is 'main'
+struct is_main {
+    is_main(bool onlymain, string mainfile) :
+	m_onlymain(onlymain), m_mainfile(mainfile) {}
+    bool operator()(AST::Declaration* decl) {
+	return !m_onlymain || decl->filename() == m_mainfile;
+    }
+    bool m_onlymain;
+    string m_mainfile;
+};
+
+int count_main(AST::Scope* scope, is_main& func)
+{
+    int count = 0;
+    vector<AST::Declaration*>::iterator iter = scope->declarations().begin();
+    while (iter != scope->declarations().end()) {
+	AST::Scope* subscope = dynamic_cast<AST::Scope*>(*iter);
+	if (subscope) count += count_main(subscope, func);
+	count += func(*iter++);
+    }
+    return count;
+}
+
 // The compiler firewalled private stuff
 struct Synopsis::Private {
     //. Constructor
-    Private(Synopsis* s) : m_syn(s) {
+    Private(Synopsis* s) : m_syn(s), m_main(false, s->m_mainfile) {
 	m_cxx = PyString_InternFromString("C++");
 	Py_INCREF(Py_None);
 	add((AST::Declaration*)NULL, Py_None);
@@ -32,6 +55,8 @@ struct Synopsis::Private {
     PyObject* m_cxx;
     //. Returns the string for "C++"
     PyObject* cxx() { Py_INCREF(m_cxx); return m_cxx; }
+    //. is_main functor
+    is_main m_main;
     // Sugar
     typedef map<void*, PyObject*> ObjMap;
     // Maps from C++ objects to PyObjects
@@ -233,6 +258,7 @@ Synopsis::~Synopsis()
 void Synopsis::onlyTranslateMain()
 {
     m_onlymain = true;
+    m->m_main.m_onlymain = true;
 }
 
 void Synopsis::translate(AST::Scope* scope)
@@ -324,6 +350,8 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 {
     PyObject* comments = PyObject_CallMethod(pydecl, "comments", NULL);
     PyObject_CallMethod(comments, "extend", "O", m->List(cdecl->comments()));
+    // Also set the accessability..
+    PyObject_CallMethod(pydecl, "set_accessability", "i", int(cdecl->access()));
 }
 
 PyObject *Synopsis::Forward(AST::Forward* decl)
@@ -579,40 +607,71 @@ void Synopsis::Declaration(Declaration* type)
     m->add(decl, this->Declaration(decl));
 }*/
 void Synopsis::visitScope(AST::Scope* decl) {
-    m->add(decl, Scope(decl));
+    if (count_main(decl, m->m_main))
+	m->add(decl, Scope(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitNamespace(AST::Namespace* decl) {
-    m->add(decl, Namespace(decl));
+    if (count_main(decl, m->m_main))
+	m->add(decl, Namespace(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitClass(AST::Class* decl) {
-    m->add(decl, Class(decl));
-}
-void Synopsis::visitInheritance(AST::Inheritance* decl) {
-    m->add(decl, Inheritance(decl));
+    if (count_main(decl, m->m_main))
+	m->add(decl, Class(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitForward(AST::Forward* decl) {
-    m->add(decl, Forward(decl));
+    if (m->m_main(decl))
+	m->add(decl, Forward(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitTypedef(AST::Typedef* decl) {
-    m->add(decl, Typedef(decl));
+    if (m->m_main(decl))
+	m->add(decl, Typedef(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitVariable(AST::Variable* decl) {
-    m->add(decl, Variable(decl));
+    if (m->m_main(decl))
+	m->add(decl, Variable(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitConst(AST::Const* decl) {
-    m->add(decl, Const(decl));
+    if (m->m_main(decl))
+	m->add(decl, Const(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitEnum(AST::Enum* decl) {
-    m->add(decl, Enum(decl));
+    if (m->m_main(decl))
+	m->add(decl, Enum(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitEnumerator(AST::Enumerator* decl) {
     m->add(decl, Enumerator(decl));
 }
 void Synopsis::visitFunction(AST::Function* decl) {
-    m->add(decl, Function(decl));
+    if (m->m_main(decl))
+	m->add(decl, Function(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
 }
 void Synopsis::visitOperation(AST::Operation* decl) {
-    m->add(decl, Operation(decl));
+    if (m->m_main(decl))
+	m->add(decl, Operation(decl));
+    else
+	m->add(decl, Forward(new Type::Forward(decl->name())));
+}
+
+void Synopsis::visitInheritance(AST::Inheritance* decl) {
+    m->add(decl, Inheritance(decl));
 }
 void Synopsis::visitParameter(AST::Parameter* decl) {
     m->add(decl, Parameter(decl));

@@ -505,7 +505,10 @@ class BaseFormatter(Visitor.AstVisitor):
         self.__type_label = "%s%s%s"%(pre,alias,post)
             
     def visitParametrized(self, type):
-        type_label = self.formatType(type.template())
+	if type.template():
+	    type_label = self.referenceName(type.template().name())
+	else:
+	    type_label = "(unknown)"
         parameters_label = []
         for p in type.parameters():
             #p.accept(self)

@@ -23,7 +23,8 @@ CXX		:= c++
 RANLIB		:=
 
 # FIXME - the i686 will need to be $configured
-OPTIMISE	:= -O6 -march=i686
+#OPTIMISE	:= -O6 -march=i686
+OPTIMISE	:= -O1 -march=i686 -ggdb
 DEBUG		:= -O1 -march=i686 -ggdb -pg -DDEBUG 
 #DEBUG		:= -O6 -DDEBUG
 

@@ -23,6 +23,7 @@ Builder::Scope::Scope(AST::Scope* s)
     scope_decl = s;
     search.push_back(this);
     dict = new Dictionary();
+    access = AST::Default;
 }
 
 Builder::Scope::~Scope()
@@ -201,6 +202,7 @@ AST::Class* Builder::startClass(int lineno, string type, string name)
     add(ns);
     // Push stack. Search is this Class plus base Classes plus enclosing NS's search
     Scope* scope = findScope(ns);
+    scope->access = (type == "struct" ? AST::Public : AST::Private);
     scope->search.insert(
 	scope->search.end(),
 	m_scopes.top()->search.begin(),
@@ -240,6 +242,7 @@ AST::Class* Builder::startClass(int lineno, string type, const vector<string>& n
     scope_scope->dict->insert(ns);
     // Push stack. Search is this Class plus enclosing scopes. bases added later
     Scope* ns_scope = findScope(ns);
+    ns_scope->access = (type == "struct" ? AST::Public : AST::Private);
     ns_scope->search.insert(
 	ns_scope->search.end(),
 	scope_scope->search.begin(),
