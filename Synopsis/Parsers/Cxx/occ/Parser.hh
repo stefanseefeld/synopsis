@@ -68,12 +68,12 @@ protected:
   bool template_arg_declaration(PTree::Node *&);
   bool extern_template_decl(PTree::Node *&);
 
-  bool declaration(PTree::Node *&);
-  bool integral_declaration(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
-  bool const_declaration(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
-  bool other_declaration(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool declaration(PTree::Declaration *&);
+  bool integral_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool const_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
+  bool other_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
   bool condition(PTree::Node *&);
-  bool simple_declaration(PTree::Node *&);
+  bool simple_declaration(PTree::Declaration *&);
 
   bool is_constructor_decl();
   bool is_ptr_to_member(int);
@@ -162,9 +162,9 @@ protected:
   bool try_statement(PTree::Node *&);
   
   bool expr_statement(PTree::Node *&);
-  bool declaration_statement(PTree::Node *&);
-  bool integral_decl_statement(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
-  bool other_decl_statement(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
+  bool declaration_statement(PTree::Declaration *&);
+  bool integral_decl_statement(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool other_decl_statement(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
   
   bool maybe_typename_or_class_template(Token&);
   void skip_to(Token::Type token);
