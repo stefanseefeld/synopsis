@@ -34,6 +34,7 @@ public:
 
 protected:
   Table &table() { return my_table;}
+  Scope const *current_scope() { return &my_table.current_scope();}
 
 private:
   //. The symbol lookup table.

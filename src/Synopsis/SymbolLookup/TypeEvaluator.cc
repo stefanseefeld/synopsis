@@ -50,10 +50,10 @@ char const *numeric_type(char const *position, size_t length)
 
 }
 
-Type TypeEvaluator::evaluate(Node *node)
+Type TypeEvaluator::evaluate(Node const *node)
 {
   my_type.unknown();
-  if (node) node->accept(this);
+  if (node) const_cast<Node *>(node)->accept(this);
   return my_type;
 }
 

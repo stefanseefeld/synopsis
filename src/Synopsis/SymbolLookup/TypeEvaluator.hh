@@ -23,7 +23,7 @@ class TypeEvaluator : private PTree::Visitor
 {
 public:
   TypeEvaluator(Scope const *s) : my_scope(s) {}
-  Type evaluate(PTree::Node *node);
+  Type evaluate(PTree::Node const *node);
 
 private:
   virtual void visit(PTree::Literal *);
@@ -54,7 +54,7 @@ private:
   Type         my_type;
 };
   
-inline Type type_of(PTree::Node *node, Scope const *s)
+inline Type type_of(PTree::Node const *node, Scope const *s)
 {
   TypeEvaluator evaluator(s);
   return evaluator.evaluate(node);

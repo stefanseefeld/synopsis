@@ -7,6 +7,7 @@
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolLookup/Scope.hh>
+#include <Synopsis/Trace.hh>
 #include <functional>
 
 using namespace Synopsis;
@@ -19,6 +20,8 @@ Scope::~Scope()
 
 void Scope::declare(const Encoding &name, const Symbol *s)
 {
+  Trace trace("Scope::declare");
+  trace << name;
   // it is an error to declare a symbol with conflicting
   // types unless all are functions / function templates
   if (s->type().is_function())
@@ -65,6 +68,8 @@ Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) cons
 
 SymbolSet Scope::find(const Encoding &name, bool scope) const throw()
 {
+  Trace trace("Scope::find");
+  trace << name;
   SymbolTable::const_iterator l = my_symbols.lower_bound(name);
   SymbolTable::const_iterator u = my_symbols.upper_bound(name);
   SymbolSet symbols;
@@ -86,6 +91,8 @@ SymbolSet Scope::find(const Encoding &name, bool scope) const throw()
 
 SymbolSet Scope::lookup(PTree::Encoding const &name) const
 {
+  Trace trace("Scope::lookup");
+  trace << name;
   // If the name is qualified, start a qualified lookup.
   if (!name.is_qualified())
     return unqualified_lookup(name, false);
@@ -121,6 +128,8 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
 
 SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
 {
+  Trace trace("Scope::qualified_lookup");
+  trace << name;
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();
 

@@ -284,18 +284,23 @@ bool Type::is_enum(PTree::Node *&spec)
 //   }
 }
 
-void Type::dereference(Type &t)
+int Type::num_of_arguments()
 {
-  t.my_refcount = my_refcount - 1;
-  t.my_encoding = my_encoding;
-  t.my_scope = my_scope;
-}
+  Scope const *scope = my_scope;
+  normalize();
+  PTree::Encoding name = skip_cv(my_encoding, scope);
+  if(name.empty() || name.front() != 'F') return -1; // not a function
+  
+  name.pop();
+  if(name.front() == 'v') return 0; // no arguments
 
-void Type::reference(Type &t)
-{
-  t.my_refcount = my_refcount + 1;
-  t.my_encoding = my_encoding;
-  t.my_scope = my_scope;
+  size_t n = 0;
+  while(true)
+  {
+    ++n;
+    name = skip_type(name, scope);
+    if(name.empty() || name.front() == '_') return n;
+  }
 }
 
 bool Type::nth_argument(int n, Type &t)
@@ -328,25 +333,6 @@ bool Type::nth_argument(int n, Type &t)
 
   t.set(name, scope);
   return true;
-}
-
-int Type::num_of_arguments()
-{
-  Scope const *scope = my_scope;
-  normalize();
-  PTree::Encoding name = skip_cv(my_encoding, scope);
-  if(name.empty() || name.front() != 'F') return -1; // not a function
-  
-  name.pop();
-  if(name.front() == 'v') return 0; // no arguments
-
-  size_t n = 0;
-  while(true)
-  {
-    ++n;
-    name = skip_type(name, scope);
-    if(name.empty() || name.front() == '_') return n;
-  }
 }
 
 bool Type::nth_template_argument(int n, Type &t)
@@ -442,7 +428,6 @@ PTree::Node *Type::make_ptree(PTree::Node *name)
 void Type::normalize()
 {
   if(my_encoding.empty() || my_refcount > 0) return;
-
   Scope const *scope = my_scope;
   PTree::Encoding name = my_encoding;
   int r = my_refcount;
@@ -538,6 +523,7 @@ PTree::Encoding Type::skip_cv(PTree::Encoding const & name, Scope const *& scope
 PTree::Encoding Type::skip_name(PTree::Encoding const & encode, Scope const * scope)
 {
   // FIXME: TBD
+  std::cout << "skip name " << encode << std::endl;
   assert(0);
 //   if(!scope) throw std::runtime_error("Type::skip_name(): nil environment");
 

@@ -14,8 +14,8 @@ namespace Synopsis
 namespace SymbolLookup
 {
 
-//. Resolve a function call in the context of the current symbol lookup table.
-Symbol *resolve_funcall(PTree::FuncallExpr const *funcall, Table &symbols);
+//. Resolve a function call in the context of the given scope.
+Symbol const *resolve_funcall(PTree::FuncallExpr const *funcall, Scope const *);
 
 }
 }

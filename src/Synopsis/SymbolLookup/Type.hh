@@ -10,7 +10,7 @@
 #define Synopsis_SymbolLookup_Type_hh_
 
 #include <Synopsis/PTree.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolLookup/Scope.hh>
 
 namespace Synopsis
 {
@@ -67,11 +67,10 @@ public:
   bool is_enum(PTree::Node *&spec);
   
   void dereference() { --my_refcount;}
-  void dereference(Type&);
   void reference() { ++my_refcount;}
-  void reference(Type&);
-  bool nth_argument(int, Type&);
+
   int num_of_arguments();
+  bool nth_argument(int, Type&);
   bool nth_template_argument(int, Type&);
   
   PTree::Node *full_type_name();
@@ -88,7 +87,7 @@ private:
   static PTree::Encoding get_return_type(PTree::Encoding const &, Scope const *);
   static PTree::Encoding skip_type(PTree::Encoding const &, Scope const*);
   
-  size_t          my_refcount;
+  short           my_refcount;
   PTree::Encoding my_encoding;
   Scope const *   my_scope;
 };
