@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.12 2001/02/13 06:55:23 chalky Exp $
+# $Id: Dot.py,v 1.13 2001/03/19 07:53:45 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.13  2001/03/19 07:53:45  chalky
+# Small fixes.
+#
 # Revision 1.12  2001/02/13 06:55:23  chalky
 # Made synopsis -l work again
 #
@@ -69,6 +72,23 @@ from Synopsis.Formatter import TOC
 verbose = 0
 toc = None
 nodes = {}
+
+class SystemError:
+    """Error thrown by the system() function. Attributes are 'retval', encoded
+    as per os.wait(): low-byte is killing signal number, high-byte is return
+    value of command."""
+    def __init__(self, retval, command):
+	self.retval = retval
+	self.command = command
+    def __repr__(self):
+	return "SystemError: %(retval)x\"%(command)s\" failed."%self.__dict__
+
+def system(command):
+    """Run the command. If the command fails, an exception SystemError is
+    thrown."""
+    ret = os.system(command)
+    if (ret>>8) != 0:
+	raise SystemError(ret, command)
 
 class InheritanceFormatter(AST.Visitor, Type.Visitor):
     """A Formatter that generates an inheritance graph"""
@@ -129,7 +149,7 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         for p in type.parameters():
             parameters_label.append(self.formatType(p))
         self.__type_ref = type_ref
-        self.__type_label = type_label + "<" + string.join(parameters_label, ", ") + ">"
+        self.__type_label = type_label + "<" + string.join(parameters_label, ",") + ">"
 
     def visitTemplate(self, type):
         self.__type_ref = None
@@ -329,16 +349,16 @@ def _convert_map(input, output):
         line = input.readline()
 
 def _format(input, output, format):
-    command = "dot -T%s -o %s %s"%(format, output, input)
+    command = 'dot -T%s -o "%s" "%s"'%(format, output, input)
     if verbose: print "Dot Formatter: running command '" + command + "'"
-    os.system(command)
+    system(command)
 
 def _format_png(input, output):
     tmpout = output + ".gif"
     _format(input, tmpout, "gif")
-    command = "gif2png -O -d %s"%(tmpout)
+    command = 'gif2png -O -d "%s"'%(tmpout)
     if verbose: print "Dot Formatter: running command '" + command + "'"
-    os.system(command)
+    system(command)
     if verbose: print "Dot Formatter: renaming '" + tmpout[:-4] + ".png'", "to '" + output + "'"
     os.rename(tmpout[:-4] + ".png", output)
 
