@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.10 2002/07/04 06:43:18 chalky Exp $
+# $Id: FileLayout.py,v 1.11 2002/07/19 14:26:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,8 +20,8 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
-# Revision 1.10  2002/07/04 06:43:18  chalky
-# Improved support for absolute references - pages known their full path.
+# Revision 1.11  2002/07/19 14:26:32  chalky
+# Revert prefix in FileLayout but keep relative referencing elsewhere.
 #
 # Revision 1.9  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
@@ -75,7 +75,6 @@ class FileLayout (TOC.Linker):
     everything in the same directory (specified by -o)."""
     def __init__(self):
 	basename = config.basename
-	self.__basename = basename
 	stylesheet = config.stylesheet
 	stylesheet_file = config.stylesheet_file
 	if basename is None:
@@ -96,9 +95,6 @@ class FileLayout (TOC.Linker):
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
 	    sys.exit(1)
-    def prefix(self, filename):
-	"""Returns the full filename by prefixing the basename"""
-	return os.path.join(self.__basename, filename)
     def copyFile(self, orig_name, new_name):
 	"""Copies file if newer. The file named by orig_name is compared to
 	new_name, and if newer or new_name doesn't exist, it is copied."""
@@ -122,32 +118,32 @@ class FileLayout (TOC.Linker):
 	The default implementation is to join the names with '-' and append
 	".html" """
 	if not len(scope): return self.nameOfSpecial('global')
-	return self.prefix(string.join(scope,'-') + ".html")
+	return string.join(scope,'-') + ".html"
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
 	tuple (generally it is processed this way beforehand so this is okay).
 	Default implementation is to join the path with '-', prepend "_file-"
 	and append ".html" """
-	return self.prefix("_file-"+string.join(filetuple,'-')+".html")
+	return "_file-"+string.join(filetuple,'-')+".html"
     def nameOfIndex(self):
 	"""Return the name of the main index file. Default is index.html"""
-	return self.prefix("index.html")
+	return "index.html"
     def nameOfSpecial(self, name):
 	"""Return the name of a special file (tree, etc). Default is
 	_name.html"""
-	return self.prefix("_" + name + ".html")
+	return "_" + name + ".html"
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file. Default is to join
 	the scope with '-' and prepend '-'+name"""
-	return self.prefix("_%s-%s%s"%(name, string.join(scope, '-'), ext))
+	return "_%s-%s%s"%(name, string.join(scope, '-'), ext)
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index. Default is
 	_modules.html"""
-	return self.prefix("_modules.html")
+	return "_modules.html"
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module. Default is to
 	join the name with '-', prepend "_module_" and append ".html" """
-	return self.prefix("_module_" + string.join(scope, '-') + ".html")
+	return "_module_" + string.join(scope, '-') + ".html"
     def link(self, decl):
 	"""Create a link to the named declaration. This method may have to
 	deal with the directory layout."""
@@ -167,31 +163,31 @@ class NestedFileLayout (FileLayout):
 	"""Return the filename of a scoped name (class or module).
 	One subdirectory per scope"""
         prefix = 'Scopes'
-	if not len(scope): return self.prefix(os.path.join(prefix, 'global') + '.html')
-        else: return self.prefix(reduce(os.path.join, scope, prefix) + '.html')
+	if not len(scope): return os.path.join(prefix, 'global') + '.html'
+        else: return reduce(os.path.join, scope, prefix) + '.html'
 
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
 	tuple (generally it is processed this way beforehand so this is okay).
 	The path is prefixed with 'Files', and suffixed with '.html'"""
-        return self.prefix(reduce(os.path.join, filetuple, 'Files') + '.html')
+        return reduce(os.path.join, filetuple, 'Files') + '.html'
 
     def nameOfIndex(self):
 	"""Return the name of the main index file."""
-	return self.prefix("index.html")
+	return "index.html"
 
     def nameOfSpecial(self, name):
 	"""Return the name of a special file (tree, etc)."""
-	return self.prefix(name + ".html")
+	return name + ".html"
     
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file"""
-        return self.prefix(reduce(os.path.join, scope, name) + ext)
+        return reduce(os.path.join, scope, name) + ext
 
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index"""
-	return self.prefix("Modules.html")
+	return "Modules.html"
 
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module"""
-        return self.prefix(reduce(os.path.join, scope, 'Modules') + '.html')
+        return reduce(os.path.join, scope, 'Modules') + '.html'

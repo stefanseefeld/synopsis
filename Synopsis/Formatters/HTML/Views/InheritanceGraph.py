@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.17 2002/07/11 02:09:33 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.18 2002/07/19 14:26:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.18  2002/07/19 14:26:32  chalky
+# Revert prefix in FileLayout but keep relative referencing elsewhere.
+#
 # Revision 1.17  2002/07/11 02:09:33  chalky
 # Patch from Patrick Mauritz: Use png support in latest graphviz. If dot not
 # present, don't subvert what the user asked for but instead tell them.
@@ -185,7 +188,7 @@ class InheritanceGraph(Page.Page):
 		declarations = map(self.__todecl, graph)
 		declarations = filter(lambda x: x is not None, declarations)
 		# Call Dot formatter
-		output = os.path.splitext(self.filename())[0] + '-%s'%count
+		output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
 		args = ('-i','-f','html','-o',output,'-r',toc_file,'-R',self.filename(),'-t','Synopsis %s'%count,'-n')
 		temp_ast = AST.AST([''], declarations, config.types)
 		Dot.format(args, temp_ast, None)
