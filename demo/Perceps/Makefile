@@ -1,17 +1,21 @@
-# Makefile for Perceps demo
-TARGET := Manual/index.html
-TARGET_D := ManualD/index.html
-SOURCE := display.h
+synopsis := python synopsis.py
 
-all:	$(TARGET)
+all: Manual ManualD
 
-doxygen: $(TARGET_D)
+Manual: Manual.syn
+	$(synopsis) html --output=$@ $?
 
-$(TARGET): $(SOURCE) config.py
-	../../bin/synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML -o Manual display.h
+ManualD: Manual.syn
+	$(synopsis) doxygen --output=$@ $?
 
-$(TARGET_D): $(SOURCE) config.py
-	../../bin/synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML_Doxygen -o ManualD display.h
+Manual.syn: display.syn
+	$(synopsis) link --output=$@ $?
+
+display.syn: display.h
+	$(synopsis) parse --output=$@ $?
 
 clean:
-	rm -rf core *~ Manual ManualD *.pyc *.pyo
+	rm -rf *.syn *~
+
+distclean: clean
+	rm -rf Manual ManualD
