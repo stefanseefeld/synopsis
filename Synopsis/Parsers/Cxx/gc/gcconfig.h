@@ -105,6 +105,14 @@
 #   define DRSNX
 #   define mach_type_known
 # endif
+# if (defined(__sparc__) || defined (__sparc) || defined (sparc)) && defined(linux)
+#   define SPARC
+#   define mach_type_known
+# endif
+# if (defined(__sparc__) || defined (__sparc) || defined (sparc)) && defined(linux)
+#   define SPARC
+#   define mach_type_known
+# endif
 # if defined(_IBMR2)
 #   define RS6000
 #   define mach_type_known
