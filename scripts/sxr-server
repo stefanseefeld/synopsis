@@ -10,7 +10,7 @@ from Synopsis import config
 
 from BaseHTTPServer import HTTPServer
 from CGIHTTPServer import CGIHTTPRequestHandler
-import sys, os, os.path, getopt
+import sys, os, os.path, getopt, socket
 
 document_root = '.'
 url = ''
@@ -77,13 +77,21 @@ def run():
          env['SXR_SRC_URL'] = a
          src = a
 
+   if not os.path.isfile(os.path.join(document_root, 'xref_db')):
+      print 'please set the document root to a valid value !'
+      usage()
+      sys.exit(-1)
+      
+
+
    os.environ.update(env)
 
-   server_address = ('', port)
-
-   httpd = HTTPServer(server_address, RequestHandler)
-   print "Serving HTTP on", httpd.server_name + ':%d%s ...'%(httpd.server_port, url)
-   httpd.serve_forever()
+   httpd = HTTPServer(('', port), RequestHandler)
+   print 'SXR server running, please connect to http://%s:%d%s ...'%(socket.gethostname(), port, src)
+   try:
+      httpd.serve_forever()
+   except KeyboardInterrupt:
+      print 'Keyboard Interrupt: exiting'
 
 if __name__ == '__main__':
    run()
