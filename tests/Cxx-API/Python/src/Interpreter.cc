@@ -2,7 +2,6 @@
 #include <Synopsis/Interpreter.hh>
 #include <Synopsis/Callable.hh>
 #include <Synopsis/Module.hh>
-#include "Guard.hh"
 #include <string>
 #include <cstdio>
 #include <iostream>
@@ -53,17 +52,17 @@ void test3()
   Dict local;
   Object retn = interp.run_file("Command.py", Interpreter::FILE,
                                 global, local);
-  if (!retn) PyErr_Print();
-  Object o = local.get("Command");
-  if (!o) { throw std::runtime_error("missing object 'Command' in 'Command.py'");}
   Callable type = local.get("Command");
   Tuple args("first", "second", "third");
   Dict kwds;
   kwds.set("input", "foo.h");
   kwds.set("output", "foo.i");
-  type.call();
-  type.call(args);
-  type.call(args, kwds);
+  Object o = type.call();
+  o = type.call(args);
+  o = type.call(args, kwds);
+  o.call("execute");
+  Callable c(o.attr("execute"));
+  c.call();
 }
 
 int main(int, char **)
@@ -73,6 +72,10 @@ int main(int, char **)
     test1();
     test2();
     test3();
+  }
+  catch (const Interpreter::Exception &)
+  {
+    PyErr_Print();
   }
   catch (const std::exception &e)
   {
