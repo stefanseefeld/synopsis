@@ -2,7 +2,7 @@
 // Implements the link module/program that reads the stored syntax
 // highlighting info and original file, and generates the output HTML file.
 
-// $Id: link.cc,v 1.24 2002/11/17 12:11:43 chalky Exp $
+// $Id: link.cc,v 1.25 2002/12/09 13:53:50 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2001, 2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: link.cc,v $
+// Revision 1.25  2002/12/09 13:53:50  chalky
+// Fixed to not use the PyString's internal data for the toc list
+//
 // Revision 1.24  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -154,7 +157,7 @@ const char* links_filename = 0;
 //. Scope to prepend to links before to find in TOC
 const char* links_scope = 0;
 //. A list of TOC's to load
-std::vector<const char*> toc_filenames;
+std::vector<std::string> toc_filenames;
 //. True if should append to output file. Note that this only works if the
 //. process previously using the file has flushed things to disk!
 bool links_append = false;
@@ -473,18 +476,18 @@ void read_tocs() throw (std::string)
 {
     char buf[3][4096];
     int url_len = 0;
-    std::vector<const char*>::iterator iter = toc_filenames.begin();
+    std::vector<std::string>::iterator iter = toc_filenames.begin();
     while (iter != toc_filenames.end())
     {
-        const char* toc_filename = *iter++;
-        char* pipe = std::strchr(toc_filename, '|');
-        if (pipe)
+        std::string toc_filename = *iter++;
+        size_t pipe = toc_filename.find('|');
+        if (pipe != std::string::npos)
         {
-            strcpy(buf[2], pipe+1);
-            url_len = strlen(pipe+1);
-            *pipe = 0;
+            strcpy(buf[2], toc_filename.c_str() + pipe + 1);
+            url_len = toc_filename.size() - pipe - 1;
+            toc_filename = toc_filename.substr(0, pipe);
         }
-        std::ifstream in(toc_filename);
+        std::ifstream in(toc_filename.c_str());
         if (!in)
         {
             throw std::string("Error opening toc file: ")+toc_filename;
@@ -733,6 +736,7 @@ extern "C"
         {
             std::cerr << "Error: " << err << std::endl;
             PyErr_SetString(linkError, err.c_str());
+            reset();
             return NULL;
         }
 
