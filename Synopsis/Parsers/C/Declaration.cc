@@ -212,8 +212,18 @@ BaseType::printBase(std::ostream& out, int level) const
 
     if (typemask & BT_Void)
         out << "void ";
+    else if (typemask & BT_Bool)
+        out << "_Bool ";
     else if (typemask & BT_Char)
         out << "char ";
+    else if (typemask & BT_Int8)
+        out << "__int8 ";
+    else if (typemask & BT_Int16)
+        out << "__int16 ";
+    else if (typemask & BT_Int32)
+        out << "__int32 ";
+    else if (typemask & BT_Int64)
+        out << "__int64 ";
     else if (typemask & BT_Short)
         out << "short ";
     else if (typemask & BT_LongLong)
