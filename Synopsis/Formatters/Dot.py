@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.33 2002/11/01 04:26:34 chalky Exp $
+# $Id: Dot.py,v 1.34 2002/11/20 15:18:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.34  2002/11/20 15:18:41  stefan
+# don't quote dirname part of a file name
+#
 # Revision 1.33  2002/11/01 04:26:34  chalky
 # Fix wrong-ordered imagemap coords
 #
@@ -559,7 +562,8 @@ def format(args, ast, config_obj):
     if not toc: toc = TOC.TableOfContents(TOC.Linker())
     for t in toc_in: toc.load(t)
 
-    tmpfile = Util.quote(output) + ".dot"
+    head, tail = os.path.split(output)
+    tmpfile = os.path.join(head, Util.quote(tail)) + ".dot"
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = Util.open(tmpfile)
     dotfile.write("digraph \"%s\" {\n"%(title))
