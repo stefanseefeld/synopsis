@@ -16,7 +16,7 @@ class Config (Base):
 
     class Linker (Base.Linker):
 	class Cxx (Base.Linker.Linker):
-	    comment_processors = ['ssd']
+	    comment_processors = ['dummy','ssd']
 	class CxxMap (Base.Linker.Linker):
 	    map_declaration_names = 'Synopsis::Parser::C++', 'Package'
 	class Py (Base.Linker.Linker):
@@ -39,6 +39,7 @@ class Config (Base):
 	    stylesheet_file = '../../demo/html.css'
 	    file_layout = 'Synopsis.Formatter.HTML.FileLayout.NestedFileLayout'
 	    pages = [
+		'FramesIndex',
 		'FilePages',
 		'ModuleListing',
 		'ScopePages',
@@ -47,8 +48,7 @@ class Config (Base):
 		'InheritanceTree',
 		'InheritanceGraph',
 		'NameIndex',
-		('modules.py', 'ConfScope'),
-		'FramesIndex'
+		('modules.py', 'ConfScope')
 	    ]
 	    tree_formatter = 'TreeFormatterJS.TreeFormatterJS'
 
