@@ -8,7 +8,7 @@
 SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
-synopsis:= python $(srcdir)/synopsis.py
+synopsis:= python synopsis.py
 
 PYTHON	:= @PYTHON@
 
@@ -64,7 +64,7 @@ OCC_GOBJ    := $(patsubst %, occ/%.go,$(OCC_FILES))
 SYN_SOURCES := $(patsubst %, syn/%.cc, $(SYN_FILES))
 SYN_OBJ	    := $(patsubst %, syn/%.o, $(SYN_FILES))
 SYN_GOBJ    := $(patsubst %, syn/%.go,$(SYN_FILES))
-CC_SYN      := $(patsubst %.cc, %.cc.syn, $(OCC_SOURCES) $(SYN_SOURCES))
+CC_SYN      := $(patsubst %, %.syn, $(OCC_SOURCES) $(SYN_SOURCES))
 HDR_SYN     := $(patsubst %, %.syn, $(HDR))
 UCPP_SOURCES:= $(patsubst %, ucpp/%.c, $(UCPP_FILES))
 UCPP_OBJ    := $(patsubst %, ucpp/%.o, $(UCPP_FILES))
@@ -76,17 +76,18 @@ TARGETS		:= $(OCC_SO) $(LINK_SO)
 vpath %.cc $(srcdir)
 vpath %.c $(srcdir)
 vpath %.h $(srcdir)
+vpath %.hh $(srcdir)
 
 all: $(TARGETS)
 
 doc: occ.syn occ-impl.syn
 
 # Link C++ files together
-occ.syn: $(HH_SYN) $(H_SYN)
+occ.syn: $(HDR_SYN)
 	@echo linking C++ headers together
 	$(synopsis) link_cxx --output=$@ $^
 
-occ-impl.syn: $(HH_SYN) $(H_SYN) $(CC_SYN)
+occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(synopsis) link_cxx --output=$@ $^
 
