@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.7 2001/06/10 07:17:37 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.8 2001/06/11 10:37:30 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.8  2001/06/11 10:37:30  chalky
+// Operators! Arrays! (and probably more that I forget)
+//
 // Revision 1.7  2001/06/10 07:17:37  chalky
 // Comment fix, better functions, linking etc. Better link titles
 //
@@ -86,7 +89,20 @@ Ptree* SWalker::TranslateInfix(Ptree* node) {
     STrace trace("SWalker::TranslateInfix"); 
     // [left op right]
     Translate(node->First());
+    Type::Type* left_type = m_type;
     Translate(node->Third());
+    Type::Type* right_type = m_type;
+    std::string oper = getName(node->Second());
+    TypeFormatter tf;
+    LOG("BINARY-OPER: " << tf.format(left_type) << " " << oper << " " << tf.format(right_type));
+    nodeLOG(node);
+    if (!left_type || !right_type) { m_type = NULL; return 0; }
+    // Lookup an appropriate operator
+    AST::Function* func = m_builder->lookupOperator(oper, left_type, right_type);
+    if (func) {
+	m_type = func->returnType();
+	if (m_links) m_links->link(node->Second(), func->declared());
+    }
     return 0;
 }
 
@@ -186,7 +202,7 @@ void SWalker::TranslateFunctionArgs(Ptree* args)
 	// Translate this arg, TODO: m_params would be better as a vector<Type*>
 	m_type = 0;
 	Translate(arg);
-	m_params.push_back(new AST::Parameter("", m_type, "", "", ""));
+	m_params.push_back(m_type);
 	// Skip over arg and comma
 	args = Ptree::Rest(Ptree::Rest(args));
     }
@@ -203,7 +219,7 @@ Ptree* SWalker::TranslateFuncall(Ptree* node) {	// and fstyle cast
     // In translating the postfix the last var should be looked up as a
     // function. This means we have to find the args first, and store them in
     // m_params as a hint
-    std::vector<AST::Parameter*> save_params = m_params;
+    std::vector<Type::Type*> save_params = m_params;
     m_params.clear();
     try {
 	TranslateFunctionArgs(node->Third());
@@ -510,10 +526,27 @@ Ptree* SWalker::TranslateArray(Ptree* node) {
     STrace trace("SWalker::TranslateArray");
     // <postfix> \[ <expr> \]
     Translate(node->First());
-    // m_type is now type of LHS
+    Type::Type* object = m_type;
+
     Translate(node->Third());
-    // TODO: use postfix and expr type to find final type as well as
-    // operator[] used if any
+    Type::Type* arg = m_type;
+
+    if (!object || !arg) { m_type = NULL; return 0; }
+    // Resolve final type
+    try {
+	TypeFormatter tf;
+	LOG("ARRAY-OPER: " << tf.format(object) << " [] " << tf.format(arg));
+	AST::Function* func;
+	m_type = m_builder->arrayOperator(object, arg, func);
+	if (func && m_links) {
+	    // Link the [ and ] to the function operator used
+	    m_links->link(node->Nth(1), func->declared());
+	    m_links->link(node->Nth(3), func->declared());
+	}
+    } catch(TranslateError& e) {
+	e.set_node(node);
+	throw;
+    }
     return 0;
 }
 
@@ -567,10 +600,22 @@ Ptree* SWalker::TranslateUserAccessSpec(Ptree* node) {
 
 Ptree* SWalker::TranslateDo(Ptree* node) {
     STrace trace("SWalker::TranslateDo NYI");
-    if (m_links) findComments(node);
-#ifdef DEBUG
-    node->Display2(cout);
-#endif
+    // [ do [{ ... }] while ( [...] ) ; ]
+    if (m_links) {
+	findComments(node);
+	m_links->span(node->First(), "file-keyword");
+	m_links->span(node->Third(), "file-keyword");
+    }
+    // Translate block
+    m_builder->startNamespace("do", Builder::NamespaceUnique);
+    // Translate statement. If a block then we avoid starting a new ns
+    Ptree* stmt = node->Second();
+    if (stmt && stmt->First() && stmt->First()->Eq('{')) TranslateBrace(stmt);
+    else Translate(stmt);
+    // End the block and check for else
+    m_builder->endNamespace();
+    // Translate the while condition
+    Translate(node->Nth(4));
     return 0;
 }
 

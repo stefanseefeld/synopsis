@@ -208,7 +208,9 @@ private:
     //. the ones that are in the original declaration(s), but it is these names
     //. we need for referencing names inside the block, so a reference is stored
     //. here.
-    std::vector<AST::Parameter*> m_params;
+    std::vector<AST::Parameter*> m_param_cache;
+    //. The types accumulated for function parameters in function calls
+    std::vector<Type::Type*> m_params;
     //. The type returned from the expression-type translators
     Type::Type* m_type;
     //. The Scope to use for name lookups, or NULL to use enclosing default

@@ -1,4 +1,4 @@
-// $Id: strace.hh,v 1.4 2001/06/10 07:17:37 chalky Exp $
+// $Id: strace.hh,v 1.5 2001/06/11 10:37:30 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: strace.hh,v $
+// Revision 1.5  2001/06/11 10:37:30  chalky
+// Operators! Arrays! (and probably more that I forget)
+//
 // Revision 1.4  2001/06/10 07:17:37  chalky
 // Comment fix, better functions, linking etc. Better link titles
 //
@@ -107,6 +110,7 @@ public:
 #define ERROR(message) (trace.new_stream() << message, TranslateError(trace))
 #define nodeERROR(node, message) (trace.new_stream() << message, TranslateError(trace, node))
 #define LOG(message) trace << message << std::endl
+#define nodeLOG(message) trace << message;
 #else
 class STrace
 {
@@ -123,6 +127,7 @@ public:
 #define ERROR(message) TranslateError()
 #define nodeERROR(node, message) TranslateError()
 #define LOG(trash)
+#define nodeLOG(trash)
 #endif
 
 

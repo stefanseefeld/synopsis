@@ -12,6 +12,14 @@
 #include "dumper.hh"
 #include "strace.hh"
 
+//. Useful typedefs
+typedef std::vector<AST::Function*> v_Function;
+typedef v_Function::const_iterator vi_Function;
+
+typedef std::vector<Type::Named*> v_Named;
+typedef v_Named::iterator vi_Named;
+
+
 //. Utility method
 Name extend(const Name &name, const std::string &str)
 {
@@ -593,6 +601,8 @@ public:
 	for (iter = mod->post().begin(); iter != mod->post().end(); iter++)
 	    if (*iter == "*")
 		deref++;
+	    else if (*iter == "[]")
+		deref++;
 	
 	set(mod->alias());
     }
@@ -722,17 +732,14 @@ private:
 };
 
 //. Looks up the function in the given scope with the given args. 
-AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, const std::vector<AST::Parameter*>& params)
+AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, const std::vector<Type::Type*>& args)
 {
     STrace trace("Builder::lookupFunc");
     TypeFormatter tf;
-    // Change params to param_types
-    std::vector<Type::Type*> param_types;
-    for (std::vector<AST::Parameter*>::const_iterator iter = params.begin(); iter != params.end(); iter++)
-	param_types.push_back((*iter)->type());
     // First find Builder::Scope object
     Private::ScopeMap::iterator iter = m->map.find(decl);
     if (iter == m->map.end()) return NULL;
+    // Now loop over the search scopes
     const Scope::Search& search = iter->second->search;
     Scope::Search::const_iterator s_iter = search.begin();
     while (s_iter != search.end()) {
@@ -741,41 +748,138 @@ AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, co
 	if (!scope->dict->has_key(name))
 	    continue;
 
-	typedef std::vector<Type::Named*> v_Named;
-	typedef v_Named::iterator vi_Named;
 	typedef std::vector<AST::Function*> v_Function;
 	typedef v_Function::iterator vi_Function;
 
-	// Get the matching names from the dictionary
-	v_Named types = scope->dict->lookupMultiple(name);
-	
-	// Put only the AST::Functions into 'functions'
+	// Get the matching functions from the dictionary
 	v_Function functions;
-	for (vi_Named iter = types.begin(); iter != types.end();)
-	    try {
-		functions.push_back( Type::declared_cast<AST::Function>(*iter++) );
-	    } catch (const Type::wrong_type_cast &) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
+	findFunctions(name, scope, functions);
 	
 	// If no looked up names were functions, program is ill-formed (?)
 	if (!functions.size()) throw ERROR("No function found for name '"<<name<<"'!");
 
-	// Find best function using a heuristic
-	FunctionHeuristic heuristic(param_types);
-	vi_Function iter = functions.begin(), end = functions.end();
-	AST::Function* best_func = *iter++;
-	int best = heuristic(best_func);
-	while (iter != end) {
-	    AST::Function* func = *iter++;
-	    int cost = heuristic(func);
-	    if (cost < best) {
-		best = cost;
-		best_func = func;
-	    }
-	}
-	if (best < 1000) return best_func;
+	// Return best function (or throw error)
+	int cost;
+	AST::Function* func = bestFunction(functions, args, cost);
+	if (cost < 1000) return func;
 	throw ERROR("No appropriate function found.");
     }
     throw ERROR("No matching functions found.");
+}
+
+// Operator lookup
+AST::Function* Builder::lookupOperator(const std::string& oper, Type::Type* left_type, Type::Type* right_type)
+{
+    // Find some info about the two types
+    TypeInfo left(left_type), right(right_type);
+    bool left_user = !!dynamic_cast<Type::Declared*>(left_type) && !left.deref;
+    bool right_user = !!dynamic_cast<Type::Declared*>(right_type) && !right.deref;
+
+    // First check if the types are user-def or enum
+    if (!left_user && !right_user) return NULL;
+
+    std::vector<AST::Function*> functions;
+    std::vector<Type::Type*> args;
+    AST::Function* best_method = NULL, *best_func = NULL;
+    int best_method_cost, best_func_cost;
+    // Member methods of left_type
+    try {
+	AST::Class* clas = Type::declared_cast<AST::Class>(left.type);
+	// Construct the argument list
+	args.push_back(right_type);
+
+	try {
+	    findFunctions(oper, findScope(clas), functions);
+
+	    best_method = bestFunction(functions, args, best_method_cost);
+	} catch (const Dictionary::KeyError&) {
+	    best_method = NULL;
+	}
+
+	// Clear functions and args for use below
+	functions.clear();
+	args.clear();
+    } catch (const Type::wrong_type_cast&) { /* ignore: not a class */ }
+
+    // Non-member functions
+    // Loop over the search scopes
+    const Scope::Search& search = m_scopes.top()->search;
+    Scope::Search::const_iterator s_iter = search.begin();
+    while (s_iter != search.end()) {
+	Scope* scope = *s_iter++;
+	// Check if dict has any names that match
+	if (!scope->dict->has_key(oper))
+	    continue;
+
+	// Get the matching functions from the dictionary
+	findFunctions(oper, scope, functions);
+
+	// Scope rules say once you find any results: stop
+	break;
+    }
+
+    // Koenig Rule: add operators from namespaces of arguments
+
+    // Add builtin operators to aide in best-function resolution
+    // NYI
+    
+    // Puts left and right types into args
+    args.push_back(left_type);
+    args.push_back(right_type);
+    // Find best non-method function
+    best_func = bestFunction(functions, args, best_func_cost);
+    
+    // Return best method or function
+    if (best_method) {
+	if (best_func) {
+	    if (best_func_cost < best_method_cost)
+		return best_func;
+	    else
+		return best_method;
+	} else {
+	    return best_method;
+	}
+    } else {
+	if (best_func)
+	    return best_func;
+	else
+	    return NULL;
+    }
+}
+
+void Builder::findFunctions(const std::string& name, Scope* scope, std::vector<AST::Function*>& functions)
+{
+    STrace trace("Builder::findFunctions");
+
+    // Get the matching names from the dictionary
+    v_Named types = scope->dict->lookupMultiple(name);
+    
+    // Put only the AST::Functions into 'functions'
+    for (vi_Named iter = types.begin(); iter != types.end();)
+	try {
+	    functions.push_back( Type::declared_cast<AST::Function>(*iter++) );
+	} catch (const Type::wrong_type_cast &) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
+}
+
+AST::Function* Builder::bestFunction(const std::vector<AST::Function*>& functions, const std::vector<Type::Type*>& args, int& cost)
+{
+    // Quick sanity check
+    if (!functions.size()) return NULL;
+    // Find best function using a heuristic
+    FunctionHeuristic heuristic(args);
+    vi_Function iter = functions.begin(), end = functions.end();
+    AST::Function* best_func = *iter++;
+    int best = heuristic(best_func);
+    while (iter != end) {
+	AST::Function* func = *iter++;
+	int cost = heuristic(func);
+	if (cost < best) {
+	    best = cost;
+	    best_func = func;
+	}
+    }
+    cost = best;
+    return best_func;
 }
 
 // Private method to lookup a type in the specified search space
@@ -881,6 +985,59 @@ bool Builder::mapName(const AST::Name& names, std::vector<AST::Scope*>& o_scopes
 
     o_type = type;
     return true;
+}
+
+Type::Type* Builder::arrayOperator(Type::Type* object, Type::Type* arg, AST::Function*& func_oper)
+{
+    STrace trace("Builder::arrayOperator");
+    func_oper = NULL;
+    // First decide if should use derefence or methods
+    TypeInfo info(object);
+    if (info.deref) {
+	// object is of pointer type, so just deref it
+	// Check for typedef
+	try { object = Type::declared_cast<AST::Typedef>(object)->alias(); }
+	catch (const Type::wrong_type_cast&) { /* ignore -- not a typedef */ }
+	// Check for modifier
+	if (Type::Modifier* mod = dynamic_cast<Type::Modifier*>(object)) {
+	    typedef Type::Type::Mods Mods;
+	    Type::Modifier* newmod = new Type::Modifier(mod->alias(), mod->pre(), mod->post());
+	    for (Mods::iterator iter = newmod->post().begin(); iter != newmod->post().end(); iter++) {
+		if (*iter == "*" || *iter == "[]") {
+		    newmod->post().erase(iter);
+		    return newmod;
+		}
+	    }
+	    delete newmod;
+	    throw ERROR("Unable to dereference type for array operator!");
+	}
+	throw ERROR("Unknown type for array operator!");
+    }
+
+    // Hmm object type -- try for [] method
+    AST::Class* clas;
+    try { clas = Type::declared_cast<AST::Class>(info.type); }
+    catch (const Type::wrong_type_cast&) {
+	TypeFormatter tf;
+	throw ERROR("Not deref and not class type for array operator! " << tf.format(info.type) << " <-- " << tf.format(object));
+    }
+
+    v_Function functions;
+    try { findFunctions("[]", findScope(clas), functions); }
+    catch (const Dictionary::KeyError&) { throw ERROR("No array operator for class " << clas->name()); }
+    
+    // Make args list
+    std::vector<Type::Type*> args;
+    args.push_back(arg);
+
+    // Find best function
+    int cost;
+    AST::Function* func = bestFunction(functions, args, cost);
+    if (func && cost < 1000) {
+	func_oper = func;
+	return func->returnType();
+    }
+    throw ERROR("No best function found for array operator.");
 }
 
 Type::Named* Builder::resolveType(Type::Named* type)
