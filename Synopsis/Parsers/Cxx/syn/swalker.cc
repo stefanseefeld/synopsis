@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.64 2002/10/27 09:55:15 chalky Exp $
+// $Id: swalker.cc,v 1.65 2002/10/28 06:14:39 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.65  2002/10/28 06:14:39  chalky
+// Rename class/struct/union variables to "data members"
+//
 // Revision 1.64  2002/10/27 09:55:15  chalky
 // Fix parameter name recognition for function pointer parameters
 //
@@ -1217,8 +1220,14 @@ SWalker::TranslateVariableDeclarator(Ptree* decl, bool is_const)
   // TODO: implement sizes support
   std::vector<size_t> sizes;
   std::string var_type = m_builder->scope()->type();
-  if (var_type == "function") var_type = "local";
-  var_type += " variable";
+  if (var_type == "class" || var_type == "struct" || var_type == "union")
+    var_type = "data member";
+  else
+  {
+    if (var_type == "function") 
+      var_type = "local";
+    var_type += " variable";
+  }
   AST::Variable* var = m_builder->add_variable(m_lineno, name, type, false, var_type);
   //if (m_declaration->GetComments()) add_comments(var, m_declaration->GetComments());
   //if (decl->GetComments()) add_comments(var, decl->GetComments());
