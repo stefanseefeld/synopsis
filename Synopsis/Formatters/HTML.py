@@ -174,7 +174,7 @@ class CommentParser:
 	strlist = map(lambda x:str(x), decl.comments())
 	strlist = filter(self._valid, strlist)
 	strlist = map(self._strip, strlist)
-	detail = full = string.join(strlist,'\n')
+	detail = full = string.join(strlist)
 	end = string.find(full, '.')
 	if end < 0: summary = full
 	else: summary = full[:end+1]
@@ -187,9 +187,68 @@ class SSDCommentParser (CommentParser):
 	self._valid = lambda x: x[0:3] == '//.'
 	self._strip = lambda x: x[3:]
 
+class CommentFormatter:
+    """A class that takes a comment Struct and formats its contents."""
+
+    def parse(self, comm):
+	"""Parse the comment struct"""
+	pass
+
+class JavadocFormatter:
+    """A formatter that formats comments similar to Javadoc @tags"""
+    # @see IDL/Foo.Bar
+    __re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
+
+    def __init__(self):
+	"""Create regex objects for regexps"""
+	self.re_see = re.compile(JavadocFormatter.__re_see)
+    def parse(self, comm):
+	"""Parse the comm.detail for @tags"""
+	comm.detail = self.parse_see(comm.detail)
+    def parse_see(self, str):
+	mo = self.re_see.search(str)
+	while mo:
+	    groups, start, end = mo.groups(), mo.start(), mo.end()
+	    lang = groups[1] or ''
+	    name = string.split(groups[2], '.')
+	    entry = toc.lookup(name)
+	    if entry:
+		tag = "see "+href(entry.link, lang+groups[2])
+	    else:
+		tag = "see "+lang+groups[2]
+	    str = str[:start] + tag + str[end:]
+	    end = start + len(tag)
+	    mo = self.re_see.search(str, end)
+	return str
+
+class SectionFormatter:
+    """A test formatter"""
+    __re_break = '\n[ \t]*\n'
+
+    def __init__(self):
+	self.re_break = re.compile(SectionFormatter.__re_break)
+    def parse(self, comm):
+	comm.detail = self.parse_break(comm.detail)
+    def parse_break(self, str):
+	mo = self.re_break.search(str)
+	while mo:
+	    start, end = mo.start(), mo.end()
+	    text = '</p><p>'
+	    str = str[:start] + text + str[end:]
+	    end = start + len(text)
+	    mo = self.re_break.search(str, end)
+	return '<p>%s</p>'%str
+
+
+
 commentParsers = {
     'default' : CommentParser,
     'ssd' : SSDCommentParser
+}
+commentFormatters = {
+    'default' : CommentFormatter,
+    'javadoc' : JavadocFormatter,
+    'section' : SectionFormatter
 }
 
 class CommentDictionary:
@@ -200,6 +259,7 @@ class CommentDictionary:
     def __init__(self):
 	self.__dict = {}
 	self._parser = commentParsers[commentParser]()
+	self._formatters = map(lambda n,c=commentFormatters: c[n](), commentFormatterList)
 	global comments
 	comments = self
     def commentForName(self, name):
@@ -210,6 +270,7 @@ class CommentDictionary:
 	key = decl.name()
 	if self.__dict.has_key(key): return self.__dict[key]
 	self.__dict[key] = comment = self._parser.parse(decl)
+	map(lambda f,c=comment: f.parse(c), self._formatters)
 	return comment
     __getitem__ = commentFor
 
@@ -714,7 +775,7 @@ class DetailFormatter(BaseFormatter):
 	self.write("Defined in: "+href(filer.nameOfFile(string.split(clas.file(),os.sep)),file,target='contents')+"<br>")
 
 	# Print any comments for this class
-	comment = comments[clas].full
+	comment = comments[clas].detail
 	if comment: self.write(div('desc',comment)+'<br><br>')
 
 	# Print out a list of the parents
@@ -1087,18 +1148,25 @@ HTML Formatter Usage:
  -c <parser>    Comment parser to use
 		 default  All comments (including slashes)
 		 ssd      Comments begin with //.
+ -f <formatter> Comment formatter to use
+                 default Nothing
+		 javadoc @tag style comments
+		 section test section breaks.
+		You may use multiple -f options
  -h             This help
 """
 
 def __parseArgs(args):
     global basename, stylesheet, namespace, commentParser, stylesheet_file
+    global commentFormatterList
     basename = None
     stylesheet = ""
     stylesheet_file = None
     namespace = ""
     commentParser = "default"
+    commentFormatterList = []
     try:
-        opts,remainder = getopt.getopt(args, "ho:s:n:c:S:")
+        opts,remainder = getopt.getopt(args, "ho:s:n:c:S:f:")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1118,6 +1186,12 @@ def __parseArgs(args):
 		commentParser = a
 	    else:
 		print "Available comment parsers:",string.join(commentParsers.keys(), ', ')
+		sys.exit(1)
+	elif o == "-f":
+	    if commentFormatters.has_key(a):
+		commentFormatterList.append(a)
+	    else:
+		print "Available comment formatters:",string.join(commentFormatters.keys(), ', ')
 		sys.exit(1)
 	elif o == "-h":
 	    usage()
