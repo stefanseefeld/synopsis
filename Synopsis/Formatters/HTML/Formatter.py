@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.6 2003/11/15 19:01:53 stefan Exp $
+# $Id: Formatter.py,v 1.7 2003/11/15 19:55:31 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -6,6 +6,7 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 from Synopsis.Formatters.TOC import TOC
@@ -14,6 +15,7 @@ from Synopsis.Formatters.XRef import CrossReferencer
 from FileLayout import *
 from TreeFormatter import *
 from CommentFormatter import *
+from DeclarationStyle import *
 from Pages.FramesIndex import *
 from Pages.DirBrowse import *
 from Pages.Scope import *
@@ -27,8 +29,7 @@ from Pages.InheritanceGraph import *
 from Pages.FileSource import *
 from Pages.NameIndex import *
 from Pages.XRef import *
-
-from core import *
+import Tags
 
 class ConfigHTML:
    """This is a verbatim copy of the HTML class in Config.py.
@@ -67,8 +68,7 @@ class Formatter(Processor):
 
    stylesheet = Parameter('style.css', '')
    stylesheet_file = Parameter('../html.css', '')
-   # this should go away !
-   datadir = Parameter('/usr/local/share/synopsis', '')
+   datadir = Parameter('', 'alternative data directory')
    file_layout = Parameter(NestedFileLayout(), 'how to lay out the output files')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    toc_out = Parameter('', 'name of file into which to store the TOC')
@@ -100,42 +100,29 @@ class Formatter(Processor):
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
 
-      config_obj = ConfigHTML(self.verbose)
-
-      config.use_config(config_obj)
-
-      config.basename = self.output
-
-      config.fillDefaults() # <-- end of _parseArgs...
-
-      config.types = ast.types()
-      declarations = ast.declarations()
+      # if not set, use default...
+      if not self.datadir: self.datadir = config.datadir
 
       self.file_layout.init(self)
-
-      # Create the declaration styler and the comment formatter
-      config.decl_style = DeclStyle()
+      self.decl_style = Style()
       for f in self.comment_formatters:
          f.init(self)
-
       self.comments = CommentFormatter(self)
-
       # Create the Class Tree (TODO: only if needed...)
       self.classTree = ClassTree()
-
       # Create the File Tree (TODO: only if needed...)
       self.fileTree = FileTree()
       self.fileTree.set_ast(ast)
 
       self.xref = CrossReferencer()
 
+      Tags.using_frames = self.has_page('FramesIndex')
+
+      declarations = ast.declarations()
 
       # Build class tree
       for d in declarations:
-         d.accept(config.classTree)
-
-      # Create the page manager, which loads the pages
-      core.manager = self
+         d.accept(self.classTree)
 
       self.__roots = [] #pages with roots, list of Structs
       self.__global = None # The global scope
@@ -150,38 +137,35 @@ class Formatter(Processor):
       # Create table of contents index
       start = self.calculateStart(root)
       self.toc = self.get_toc(start)
-      if verbose: print "HTML Formatter: Initialising TOC"
+      if self.verbose: print "HTML Formatter: Initialising TOC"
 
       # Add all declarations to the namespace tree
       # for d in declarations:
-      #	d.accept(config.toc)
+      #	d.accept(self.toc)
 	
-      if verbose: print "TOC size:",self.toc.size()
+      if self.verbose: print "TOC size:",self.toc.size()
       if self.toc_out: self.toc.store(self.toc_out)
     
       # load external references from toc files, if any
       for t in self.toc_in: self.toc.load(t)
    
-      if verbose: print "HTML Formatter: Writing Pages..."
+      if self.verbose: print "HTML Formatter: Writing Pages..."
 
       # Create the pages
       self.__global = root
       start = self.calculateStart(root)
-      if config.verbose: print "Registering filenames...",
+      if self.verbose: print "Registering filenames...",
       for page in self.pages:
          page.register_filenames(start)
-      if config.verbose: print "Done."
+      if self.verbose: print "Done."
       for page in self.pages:
-         if config.verbose:
+         if self.verbose:
             print "Time for %s:"%page.__class__.__name__,
             sys.stdout.flush()
             start_time = time.time()
          page.process(start)
-         if config.verbose:
+         if self.verbose:
             print "%f"%(time.time() - start_time)
-
-      #core.manager.process(root)
-      #format(['-o', self.output], self.ast, config_obj)
 
       return self.ast
 
@@ -231,16 +215,16 @@ class Formatter(Processor):
 
       scope_names = string.split(namespace or config.namespace, "::")
       start = root # The running result
-      config.sorter.set_scope(root)
+      self.sorter.set_scope(root)
       scope = [] # The running name of the start
       for scope_name in scope_names:
          if not scope_name: break
          scope.append(scope_name)
          try:
-            child = config.sorter.child(tuple(scope))
+            child = self.sorter.child(tuple(scope))
             if isinstance(child, AST.Scope):
                start = child
-               config.sorter.set_scope(start)
+               self.sorter.set_scope(start)
             else:
                raise TypeError, 'calculateStart: Not a Scope'
          except:
@@ -248,7 +232,7 @@ class Formatter(Processor):
             import traceback
             traceback.print_exc()
             print "Fatal: Couldn't find child scope",scope
-            print "Children:",map(lambda x:x.name(), config.sorter.children())
+            print "Children:",map(lambda x:x.name(), self.sorter.children())
             sys.exit(3)
       return start
 
@@ -273,7 +257,7 @@ class Formatter(Processor):
       above are included."""
 
       # If not using frames, show all headings on all pages!
-      if not self.has_page(FramesIndex):
+      if not self.has_page('FramesIndex'):
          visibility = 1
       #filter out roots that are visible
       roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
