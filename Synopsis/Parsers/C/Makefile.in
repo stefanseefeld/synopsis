@@ -42,6 +42,8 @@ vpath %.l  $(srcdir)
 
 all: $(TARGET)
 
+doc: #do nothing (yet)
+
 $(CTOOL_SO): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 

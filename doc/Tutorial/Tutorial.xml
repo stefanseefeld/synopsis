@@ -580,6 +580,16 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <para></para>
     </section>
   </chapter>
+  <chapter>
+    <title>Extending synopsis with the C++ API</title>
+    <section id="cxx-api">
+      <para>The C++ API tries to get as close as possible to the python API 
+        for the AST and Type module (see <xref linkend="ast" />). Two factories,
+        an <type>ASTKit</type> and a <type>TypeKit</type> allow the creation of
+        all the AST objects.</para>
+      <para></para>
+    </section>
+  </chapter>
   <appendix><title>Listing of all Processors and their parameters</title>
     <para>
       This is a listing of all processors with their respective parameters

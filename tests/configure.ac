@@ -1,4 +1,3 @@
-dnl $Id: configure.ac,v 1.1 2004/01/12 20:24:46 stefan Exp $
 dnl
 dnl Copyright (C) 2003 Stefan Seefeld
 dnl All rights reserved.
@@ -54,7 +53,10 @@ CPPFLAGS="-I $PYTHON_INCLUDE $CPPFLAGS"
 LDFLAGS="-rdynamic $LDFLAGS"
 LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
 
-AC_CONFIG_FILES([QMTest/configuration])
+dnl find all template files and strip off the $srcdir and .in suffix
+templates=`find $srcdir -name '*.in' -print | sed -e "s,^$srcdir/,,g" -e "s,\.in$,,g"`
+
+AC_CONFIG_FILES([$templates])
 
 AC_OUTPUT
 

@@ -18,7 +18,8 @@ import os, string, dircache
 class Database(database.Database):
    """The Database stores the synopsis tests."""
 
-   arguments = [TextField(name="CXX"),
+   arguments = [TextField(name="srcdir"),
+                TextField(name="CXX"),
                 TextField(name="CPPFLAGS"),
                 TextField(name="CXXFLAGS"),
                 TextField(name="LDFLAGS"),
@@ -28,13 +29,12 @@ class Database(database.Database):
       """Construct a suite for the given id"""
 
       if not id:
-         path = '.'
+         path = self.srcdir
       else:
-         path = os.path.join(*string.split(id, '.'))
+         path = os.path.join(*[self.srcdir] + string.split(id, '.'))
 
       # make sure this is a suite
-      if not (os.path.basename(path) != '.svn'
-              and os.path.isdir(path)):
+      if not (os.path.basename(path) != '.svn' and os.path.isdir(path)):
          raise NoSuchSuiteError, id
       
       # by default every subdirectory that is not named '.svn' is a suite
@@ -61,7 +61,7 @@ class Database(database.Database):
             suite_ids = filter(is_suite, listdir(path))
 
       else:
-         if os.path.isfile(os.path.join(path, 'synopsis.py')):
+         if os.path.isfile(os.path.join(*string.split(id, '.') + ['synopsis.py'])):
             test_ids = map(lambda x: os.path.splitext(x)[0], listdir(os.path.join(path, 'input')))
          else:
             suite_ids = filter(is_suite, listdir(path))
@@ -79,72 +79,72 @@ class Database(database.Database):
                            qmtest_id = id)
         
    def GetTest(self, id):
-      """create a test for the given id."""
+      """Create a test for the given id. Tests are grouped by type,
+      i.e. specific suites contain specific test classes."""
 
-      if not id:
-         raise NoSuchTestError, id
+      if not id: raise NoSuchTestError, id
          
-      if id.startswith('Processors.Linker'):
-         return self.make_linker_test(id)
+      if id.startswith('Processors.Linker'): return self.make_linker_test(id)
+      elif id.startswith('Cxx-API'): return self.make_api_test(id)
+      else: return self.make_processor_test(id)
 
-      elif id.startswith('Cxx-API'):
-         return self.make_api_test(id)
-
-      else:
-         return self.make_test(id)
-
-   def make_test(self, id):
+   def make_processor_test(self, id):
+      """A test id 'a.b.c' corresponds to an input file
+      'a/b/input/c.<ext>. Create a ProcessorTest if that
+      input file exists, and throw NoSuchTestError otherwise."""
 
       components = id.split('.')
-      dirname = os.path.join(*components[:-1])
+      dirname = os.path.join(*[self.srcdir] + components[:-1])
 
-      input = [os.path.join(dirname, 'input', components[-1])]
+      input = os.path.join(dirname, 'input', components[-1])
          
-      if components[:-1] == ['Parsers', 'IDL']:
-         input = map(lambda x: x + '.idl', input)
-      elif components[:-1] == ['Parsers', 'Python']:
-         input = map(lambda x: x + '.py', input)
-      else:  # all other tests use C++ input
-         input = map(lambda x: x + '.cc', input)
-      if reduce(lambda x, y: x + y, # sum all non-files
-                filter(lambda x: not os.path.isfile(x), input), 0):
-         raise NoSuchTestError, id
+      if components[:-1] == ['Parsers', 'IDL']: input += '.idl'
+      elif components[:-1] == ['Parsers', 'Python']: input += '.py'
+      elif components[:-1] == ['Parsers', 'C']: input += '.c'
+      else: input += '.cc'
+      if not os.path.isfile(input): raise NoSuchTestError, id
 
-      output = os.path.join(dirname, 'output', components[-1] + '.xml')
+      output = os.path.join(*components[:-1] + ['output', components[-1] + '.xml'])
       expected = os.path.join(dirname, 'expected', components[-1] + '.xml')
-      synopsis = os.path.join(dirname, 'synopsis.py')
+      synopsis = os.path.join(*components[:-1] + ['synopsis.py'])
 
       parameters = {}
-      parameters['srcdir'] = '.'
-      parameters['input'] = input
+      parameters['srcdir'] = self.srcdir
+      parameters['input'] = [input]
       parameters['output'] = output
       parameters['expected'] = expected
-      parameters['synopsis'] = os.path.join(dirname, 'synopsis.py')
+      parameters['synopsis'] = synopsis
       
       return TestDescriptor(self, id, 'synopsis_test.ProcessorTest', parameters)
 
    def make_linker_test(self, id):
+      """A test id 'a.b.c' corresponds to an input directory
+      'a/b/c/input containing files to be linked together.
+      Create a ProcessorTest if that directory exists,
+      and throw NoSuchTestError otherwise."""
 
-      if not os.path.isdir(id.replace('.', os.sep)):
-         raise NoSuchTestError, id
+      path = os.path.join([self.srcdir] + id.split('.'))
+      if not os.path.isdir(path): raise NoSuchTestError, id
 
-      components = id.split('.')
-      dirname = os.path.join(*components + ['input'])
+      dirname = os.path.join(path, 'input')
 
       parameters = {}
-      parameters['srcdir'] = '.'
+      parameters['srcdir'] = self.srcdir
       parameters['input'] = map(lambda x: os.path.join(dirname, x),
                                 dircache.listdir(dirname))
-      parameters['output'] = os.path.join(*components + ['output.xml'])
-      parameters['expected'] = os.path.join(*components + ['expected.xml'])
-      parameters['synopsis'] = os.path.join(*components + ['synopsis.py'])
+      parameters['output'] = os.path.join(*id.split('.') + ['output.xml'])
+      parameters['expected'] = os.path.join(path, 'expected.xml')
+      parameters['synopsis'] = os.path.join(*id.split('.') + ['synopsis.py'])
       
       return TestDescriptor(self, id, 'synopsis_test.ProcessorTest', parameters)
 
    def make_api_test(self, id):
+      """A test id 'a.b.c' corresponds to an input file
+      'a/b/src/c.cc. Create an APITest if that
+      input file exists, and throw NoSuchTestError otherwise."""
 
       components = id.split('.')
-      dirname = os.path.join(*components[:-1])
+      dirname = os.path.join(*[self.srcdir] + components[:-1])
 
       if not os.path.exists(os.path.join(dirname, 'src', components[-1]) + '.cc'):
          raise NoSuchTestError, id
@@ -156,7 +156,7 @@ class Database(database.Database):
       parameters['LDFLAGS'] = self.LDFLAGS
       parameters['LIBS'] = self.LIBS
       parameters['src'] = os.path.join(dirname, 'src', components[-1]) + '.cc'
-      parameters['exe'] = os.path.join(dirname, 'bin', components[-1])
+      parameters['exe'] = os.path.join(*id.split('.') + ['bin', components[-1]])
       parameters['expected'] = os.path.join(dirname, 'expected',
                                             components[-1] + '.out')
       

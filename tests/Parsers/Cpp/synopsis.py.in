@@ -1,0 +1,8 @@
+from Synopsis.process import process
+from Synopsis.Processor import Composite
+from Synopsis.Parsers import Cpp
+from Synopsis.Formatters import Dump
+
+process(parse = Composite(Cpp.Parser(base_path = '@abs_top_srcdir@'),
+                          Dump.Formatter(show_ids = False, stylesheet = None)))
+

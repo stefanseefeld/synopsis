@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# $Id: synopsis_test.py,v 1.3 2004/01/12 20:31:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.

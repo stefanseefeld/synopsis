@@ -40,6 +40,8 @@ vpath %.h $(srcdir)
 
 all: $(TARGET)
 
+doc: #do nothing (yet)
+
 %.o : %.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 

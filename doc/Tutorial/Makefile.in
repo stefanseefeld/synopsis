@@ -1,4 +1,14 @@
-srcdir	:= .
+#
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+SHELL	:= /bin/sh
+
+srcdir	:= @srcdir@
+
 processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Parsers.IDL.Parser \
               Synopsis.Parsers.Cxx.Parser \

@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2004 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
 import os, sys, string
 
 from distutils.core import setup
@@ -46,6 +53,11 @@ class config(build_ext):
                 # set 'CC' explicitely to 'gcc -mno-cygwin'
                 os.environ['CC'] = "gcc -mno-cygwin"
             self.config_extension('Synopsis/Parsers/Cxx/gc')
+
+        # not really an extension, but as far as configuration is concerned,
+        # treated equally.
+        self.config_extension('tests')
+        self.config_extension('doc')
             
     def config_extension(self, ext):
 
