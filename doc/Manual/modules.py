@@ -99,7 +99,7 @@ class ConfScope (HTML.ModuleListing.ModuleListing):
 	"""Decorate the process() method to set the start"""
 	config.sorter.set_scope(start)
 	#start = config.sorter.child(('Python Namespace',))
-	start = self.manager._calculateStart(start, "Synopsis::Config")
+	start = self.manager.calculateStart(start, "Synopsis::Config")
 	HTML.ModuleListing.ModuleListing.process(self, start)
     def _child_filter(self, child):
 	"""Override template method to display all scopes (not just modules)"""
