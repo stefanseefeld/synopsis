@@ -31,6 +31,7 @@ private:
 
   virtual void visit(PTree::List *node);
   virtual void visit(PTree::Declarator *decl);
+  virtual void visit(PTree::Declaration *decl);
   virtual void visit(PTree::ClassSpec *class_spec);
   virtual void visit(PTree::EnumSpec *enum_spec);
   virtual void visit(PTree::Typedef *typed);
@@ -48,18 +49,19 @@ private:
 
   void declare(AST::Declaration);
 
-  AST::AST        my_ast;
-  AST::ASTKit     my_ast_kit;
-  AST::SourceFile my_file;
-  std::string     my_raw_filename;
-  std::string     my_base_path;
-  bool            my_main_file_only;
-  unsigned long   my_lineno;
-  TypeTranslator  my_types;
-  ScopeStack      my_scope;
-  bool            my_verbose;
-  bool            my_debug;
-  Buffer         *my_buffer;
+  AST::AST            my_ast;
+  AST::ASTKit         my_ast_kit;
+  AST::SourceFile     my_file;
+  std::string         my_raw_filename;
+  std::string         my_base_path;
+  bool                my_main_file_only;
+  unsigned long       my_lineno;
+  TypeTranslator      my_types;
+  ScopeStack          my_scope;
+  bool                my_verbose;
+  bool                my_debug;
+  Buffer             *my_buffer;
+  PTree::Declaration *my_declaration;
 };
 
 #endif

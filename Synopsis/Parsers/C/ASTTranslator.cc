@@ -87,6 +87,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 							qname,
 							qname.get(0));
     function.parameters().extend(parameters);
+    if (my_declaration) add_comments(function, my_declaration->get_comments());
     add_comments(function, declarator->get_comments());
     if (visible) declare(function);
   }
@@ -107,9 +108,20 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     }
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
+    if (my_declaration) add_comments(variable, my_declaration->get_comments());
     add_comments(variable, declarator->get_comments());
     if (visible) declare(variable);
   }
+}
+
+void ASTTranslator::visit(PTree::Declaration *declaration)
+{
+  Trace trace("ASTTranslator::visit(PTree::Declaration *)");
+  // Cache the declaration while traversing the individual declarators;
+  // the comments are passed through.
+  my_declaration = declaration;
+  visit(static_cast<PTree::List *>(declaration));
+  my_declaration = 0;
 }
 
 void ASTTranslator::visit(PTree::ClassSpec *class_spec)
@@ -346,7 +358,6 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
 void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
 {
   Trace trace("ASTTranslator::add_comments");
-
   if (!declarator || !c) return;
   
   Python::List comments;
@@ -403,7 +414,6 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
       while (*pos && strchr(" \t\r", *pos)) ++pos;
       if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
     }
-
     AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
 						     // FIXME: 'first' ought to be an atom,
 						     //        so we could just take the position/length
@@ -430,7 +440,12 @@ bool ASTTranslator::update_position(PTree::Node *node)
 
   if (filename != my_raw_filename)
   {
+    if (my_main_file_only)
+      // my_raw_filename remains the main file's name
+      // and all declarations from elsewhere are ignored
+      return false;
     my_raw_filename = filename;
+
     // determine canonical filenames
     Path path = Path(filename).abs();
     std::string long_filename = path.str();
@@ -445,7 +460,8 @@ bool ASTTranslator::update_position(PTree::Node *node)
       my_file = my_ast_kit.create_source_file(short_filename, long_filename);
       my_ast.files().set(short_filename, my_file);
     }
-  }  
+  }
+  return true;
 }
 
 // FIXME: AST should derive from Scope (a global scope IsA scope...)
