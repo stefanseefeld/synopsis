@@ -39,9 +39,9 @@ endif
 OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
-OCC_FILES := buffer hash token ptree ptree-core encoding env \
-             pattern walker typeinfo parse mop classwalk \
-             metaclass quote-class member cbodywalk
+OCC_FILES := Buffer HashTable Lexer ptree Ptree Encoding Environment \
+             pattern Walker TypeInfo Parser Class ClassWalker \
+             MetaClass QuoteClass Member ClassBodyWalker
 
 SYN_FILES := synopsis occ swalker ast builder type dict \
              dumper decoder swalker-syntax linkstore \

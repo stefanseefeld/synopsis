@@ -39,8 +39,8 @@
 #include <sys/time.h>
 #endif
 #include "ptree.h"
-#include "token.h"
-#include "mop.h"
+#include "Lexer.hh"
+#include "Class.hh"
 
 #if (defined(sun) && defined(SUNOS4)) || defined(SUNOS5)
 extern "C" {
@@ -392,12 +392,12 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 
 bool Ptree::Reify(unsigned int& value)
 {
-    return Lex::Reify(this, value);
+    return Lexer::Reify(this, value);
 }
 
 bool Ptree::Reify(char*& str)
 {
-    return Lex::Reify(this, str);
+    return Lexer::Reify(this, str);
 }
 
 char* Ptree::IntegerToString(sint num, int& length)

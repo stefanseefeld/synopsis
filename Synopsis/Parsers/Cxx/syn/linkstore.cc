@@ -1,65 +1,9 @@
-// Synopsis C++ Parser: linkstore.cc source file
-// Implementation of the LinkStore class
-
-// $Id: linkstore.cc,v 1.23 2003/12/17 15:07:24 stefan Exp $
 //
-// This file is a part of Synopsis.
-// Copyright (C) 2000-2002 Stephen Davies
-// Copyright (C) 2000, 2001 Stefan Seefeld
-//
-// Synopsis is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
-//
-// $Log: linkstore.cc,v $
-// Revision 1.23  2003/12/17 15:07:24  stefan
-// more work on win32 native platform
-//
-// Revision 1.22  2002/12/21 05:04:39  chalky
-// Move constants since gcc 3.2 didn't like them.
-//
-// Revision 1.21  2002/12/12 17:25:34  chalky
-// Implemented Include support for C++ parser. A few other minor fixes.
-//
-// Revision 1.20  2002/12/10 07:19:50  chalky
-// Remove debugging stuff
-//
-// Revision 1.19  2002/12/09 12:14:10  chalky
-// Ensure all files are created
-//
-// Revision 1.18  2002/12/09 04:01:00  chalky
-// Added multiple file support to parsers, changed AST datastructure to handle
-// new information, added a demo to demo/C++. AST Declarations now have a
-// reference to a SourceFile (which includes a filename) instead of a filename.
-//
-// Revision 1.17  2002/11/17 12:11:43  chalky
-// Reformatted all files with astyle --style=ansi, renamed fakegc.hh
-//
-// Revision 1.16  2002/11/03 05:41:30  chalky
-// Fix crash in visit_parameterized
-//
-// Revision 1.15  2002/11/02 06:37:37  chalky
-// Allow non-frames output, some refactoring of page layout, new modules.
-//
-// Revision 1.14  2002/10/29 02:39:57  chalky
-// Changes to compile with g++-3.2
-//
-// Revision 1.13  2002/10/28 16:25:02  chalky
-// Fix crash if using xref output but not syntax output
-//
-// Revision 1.12  2002/10/20 15:38:10  chalky
-// Much improved template support, including Function Templates.
+// Copyright (C) 2002 Stefan Seefeld
+// Copyright (C) 2002 Stephen Davies
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
 //
 
 #include <Python.h>
@@ -85,8 +29,8 @@
 #include <map>
 
 #include <occ/ptree.h>
-#include <occ/parse.h>
-#include <occ/buffer.h>
+#include <occ/Parser.hh>
+#include <occ/Buffer.hh>
 
 namespace 
 {
@@ -155,7 +99,7 @@ void makedirs(const char* path)
 
 struct LinkStore::Private
 {
-    //. The start of the program buffer
+    //. The start of the buffer
     const char* buffer_start;
 
     //. The filter
@@ -193,7 +137,7 @@ LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
     m = new Private;
     m->filter = filter;
     m->walker = swalker;
-    m->buffer_start = swalker->program()->Read(0);
+    m->buffer_start = swalker->buffer()->Read(0);
     m->parser = swalker->parser();
 
     // Check size of array here to prevent later segfaults

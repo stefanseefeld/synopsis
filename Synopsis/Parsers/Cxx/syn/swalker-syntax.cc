@@ -1,4 +1,3 @@
-// $Id: swalker-syntax.cc,v 1.19 2003/12/03 05:36:41 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -12,7 +11,7 @@
 #include <typeinfo>
 
 #include <occ/ptree.h>
-#include <occ/parse.h>
+#include <occ/Parser.hh>
 #undef Scope
 
 #include "linkstore.hh"

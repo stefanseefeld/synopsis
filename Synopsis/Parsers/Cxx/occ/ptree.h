@@ -12,12 +12,12 @@
   implied warranty.
 */
 
-#ifndef _ptree_h
-#define _ptree_h
+#ifndef _ptree_hh
+#define _ptree_hh
 
-#include "ptree-core.h"
-#include "token.h"
-#include "buffer.h"
+#include "Ptree.hh"
+#include "Lexer.hh"
+#include "Buffer.hh"
 
 class Encoding;
 
@@ -29,7 +29,7 @@ public:
 
     void Print(std::ostream&, int, int);
     int Write(std::ostream&, int);
-    void WritePS(ProgramString&);
+    void WritePS(StringBuffer &);
 };
 
 class CommentedLeaf : public Leaf {
@@ -122,7 +122,7 @@ public:
     void Print(std::ostream&, int, int);
     int Write(std::ostream&, int);
     void PrintWithEncodeds(std::ostream&, int, int);
-    void WritePS(ProgramString&);
+    void WritePS(StringBuffer&);
 
 protected:
     bool TooDeep(std::ostream&, int);
@@ -409,4 +409,4 @@ PtreeExprDecl(StaticUserStatement);
 
 #undef PtreeExprDecl
 
-#endif /* _ptree_h */
+#endif
