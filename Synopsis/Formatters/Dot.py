@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.7 2001/02/02 02:01:01 stefan Exp $
+# $Id: Dot.py,v 1.8 2001/02/02 17:42:50 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.8  2001/02/02 17:42:50  stefan
+# cleanup in the Makefiles, more work on the Dot formatter
+#
 # Revision 1.7  2001/02/02 02:01:01  stefan
 # synopsis now supports inlined inheritance tree generation
 #
@@ -77,27 +80,21 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         self.__type_ref = None
         self.__type_label = ''
         
-    def writeNode(self, ref, label):
+    def writeNode(self, ref, label, **attr):
         """helper method to generate output for a given node"""
         if nodes.has_key(label): return
         nodes[label] = len(nodes)
         number = nodes[label]
-        if ref: color = "black"
-        else: color = "gray75"
         self.write("Node" + str(number) + " [shape=\"box\", label=\"" + label + "\"")
         self.write(", fontSize = 10, height = 0.2, width = 0.4")
-        self.write(", color=\"" + color + "\"")
-        if ref: self.write(", URL=\"" + ref.link + "\"")
+        self.write(string.join(map(lambda item:', %s="%s"'%item, attr.items())))
+        if ref: self.write(", URL=\"" + ref + "\"")
         self.write("];\n")
 
-    def writeEdge(self, parent, child, label, attr):
+    def writeEdge(self, parent, child, label, **attr):
         self.write("Node" + str(nodes[parent]) + " -> ")
         self.write("Node" + str(nodes[child]))
-        self.write("[ color=\"black\", fontsize=10, style=\"")
-        #if "private" in attr: self.write("dotted")
-        #else:
-        self.write("solid")
-        self.write("\"];\n")        
+        self.write("[ color=\"black\", fontsize=10" + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
 
     #################### Type Visitor ###########################################
     def visitUnknown(self, type):
@@ -118,25 +115,31 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         parameters_label = []
         for p in type.parameters():
             parameters_label.append(self.formatType(p))
-        self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
+        self.__type_label = type_label + "<" + string.join(parameters_label, ", ") + ">"
 
     def visitTemplate(self, type):
         self.__type_ref = None
-	self.__type_label = "template&lt;%s&gt;"%(
-            string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ","))
+	self.__type_label = "template<%s>"%(string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ","))
 
     #################### AST Visitor ############################################
         
     def visitInheritance(self, node):
         self.formatType(node.parent())
-        self.writeNode(self.type_ref(), self.type_label())
+        if self.type_ref():
+            self.writeNode(self.type_ref().link, self.type_label())
+        else:
+            self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
         label = Util.ccolonName(node.name(), self.scope())
-        self.writeNode(toc[node.name()], label)
+        ref = toc[node.name()]
+        if ref:
+            self.writeNode(ref.link, label)
+        else:
+            self.writeNode('', label, color='gray75', fontcolor='gray75')
         for inheritance in node.parents():
             inheritance.accept(self)
-            self.writeEdge(self.type_label(), label, None, inheritance.attributes())
+            self.writeEdge(self.type_label(), label, None)
         for d in node.declarations(): d.accept(self)
 
 class SingleInheritanceFormatter(InheritanceFormatter):
@@ -148,48 +151,64 @@ class SingleInheritanceFormatter(InheritanceFormatter):
         InheritanceFormatter.__init__(self, os)
         self.__levels = levels
         self.__types = types
-        self.__current = 0
+        self.__current = 1
 
     #################### Type Visitor ###########################################
 
     def visitDeclared(self, type):
-        type.declaration().accept(self)
+        if self.__current < self.__levels or self.__levels == -1:
+            self.__current = self.__current + 1
+            type.declaration().accept(self)
+            self.__current = self.__current - 1
         # to restore the ref/label...
         InheritanceFormatter.visitDeclared(self, type)
     #################### AST Visitor ############################################
         
     def visitInheritance(self, node):
-        self.__current = self.__current + 1
         node.parent().accept(self)
-        self.__current = self.__current - 1
         if self.type_label():
-            self.writeNode(self.type_ref(), self.type_label())
+            if self.type_ref():
+                self.writeNode(self.type_ref().link, self.type_label())
+            else:
+                self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
         label = Util.ccolonName(node.name(), self.scope())
-        self.writeNode(toc[node.name()], label)
-        if self.__current == self.__levels or self.__levels != -1: return
+        if self.__current == 1:
+            self.writeNode('', label, style='filled', color='lightgrey')
+        else:
+            ref = toc[node.name()]
+            if ref:
+                self.writeNode(ref.link, label)
+            else:
+                self.writeNode('', label, color='gray75', fontcolor='gray75')
         for inheritance in node.parents():
             inheritance.accept(self)
             if nodes.has_key(self.type_label()):
-                self.writeEdge(self.type_label(), label, None, inheritance.attributes())
+                self.writeEdge(self.type_label(), label, None)
         # if this is the main class and if there is a type dictionary,
         # look for classes that are derived from this class
 
-        # this part doesn't work yet...
-        return
-        if not self.__current and self.__types:
+        # if this is the main class
+        if self.__current == 1 and self.__types:
+            # fool the visitDeclared method to stop walking upwards
+            self.__levels = 0
             for t in self.__types.values():
                 if isinstance(t, Type.Declared):
-                    if isinstance(t.declaration(), AST.Class):
-                        for inheritance in t.declaration().parents():
+                    child = t.declaration()
+                    if isinstance(child, AST.Class):
+                        for inheritance in child.parents():
                             type = inheritance.parent()
                             type.accept(self)
-                            if self.type_ref() == node.name():
-                                child = t.declaration()
-                                child_label = Util.ccolonName(child.name(), self.scope())
-                                self.writeNode(toc[child.name()], child_label)
-                                self.writeEdge(label, child_label, None, inheritance.attributes())
+                            if self.type_ref():
+                                if self.type_ref().name == node.name():
+                                    child_label = Util.ccolonName(child.name(), self.scope())
+                                    ref = toc[child.name()]
+                                    if ref:
+                                        self.writeNode(ref.link, child_label)
+                                    else:
+                                        self.writeNode('', child_label, color='gray75', fontcolor='gray75')
+                                    self.writeEdge(label, child_label, None)
 
 class CollaborationFormatter(AST.Visitor, Type.Visitor):
     """A Formatter that generates a collaboration graph"""
@@ -332,7 +351,7 @@ def format(types, declarations, args):
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = open(tmpfile, 'w+')
     dotfile.write("digraph \"%s\" {\n"%(title))
-    dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4, color=red]\n")
+    dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4, color=black]\n")
     if type == "inheritance":
         generator = InheritanceFormatter(dotfile)
     elif type == "single":

@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.9 2001/02/02 02:01:01 stefan Exp $
+# $Id: Makefile,v 1.10 2001/02/02 17:42:50 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,16 +26,30 @@ include ../local.mk
 endif
 endif
 
-SRC	:= __init__.py __init__.pyc DUMP.py DUMP.pyc ASCII.py ASCII.pyc HTML.py HTML.pyc \
-	   HTML_Simple.py HTML_Simple.pyc Dot.py Dot.pyc Docbook.py DocBook.pyc Dia.py Dia.pyc
+SRC	:= __init__ TOC DUMP ASCII HTML_Simple Dot DocBook Dia
+PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
-all:
+subdirs	:= HTML
+
+action	:= all
+
+.PHONY: all $(subdirs) clean distclean install
+
+all:	$(subdirs)
+
+$(subdirs):
+	@echo making $(action) in $@
+	$(MAKE) -C $@ $(action)
+
 clean:
+	$(MAKE) action="clean"
 	/bin/rm -f *~
 
-distclean:	clean
-	/bin/rm -f  *.pyc
+distclean:
+	$(MAKE) action="distclean"
+	/bin/rm -f  *~ *.pyc
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Formatter
-	install $(SRC) $(packagedir)/Synopsis/Formatter
+	install $(PY) $(packagedir)/Synopsis/Formatter
+	$(MAKE) action="install"

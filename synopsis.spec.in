@@ -42,5 +42,8 @@ rm -rf $RPM_BUILD_ROOT
 /bin/synopsis
 @packagedir@/Synopsis/*.py*
 @packagedir@/Synopsis/Parser/*.py*
+@packagedir@/Synopsis/Parser/C++/*.py*
+@packagedir@/Synopsis/Parser/C++/*.so
 @packagedir@/Synopsis/Linker/*.py*
 @packagedir@/Synopsis/Formatter/*.py*
+@packagedir@/Synopsis/Formatter/HTML/*.py*
