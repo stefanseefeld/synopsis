@@ -126,8 +126,11 @@ def get_compiler_info(language, compiler):
     # Cache results to disk
     write_compiler_infos(compiler_infos)
 
-    if not compiler and len(compiler_infos) != 0:
-        compiler = compiler_infos.keys()[0]
+    if not compiler and compiler_infos:
+        for c in compiler_infos:
+            if compiler_infos[c].language == language:
+                compiler = c
+                break
 
     # Return discovered info, if compiler was found
     if compiler_infos.has_key(compiler):
