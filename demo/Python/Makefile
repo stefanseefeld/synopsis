@@ -1,14 +1,14 @@
-synopsis	:= ../../synopsis -p Python -f HTML -Wf,-s,style.css
+synopsis	:= ../../synopsis -p Python -f HTML -Wf,-s,style.css,-S,../html.css
 
-all:
+all: ast #test
 
 ast:	    AST.py
-	    $(synopsis) -o AST $?
+	    $(synopsis) -o ast $?
 
-test:	    test.py
-	    $(synopsis) -o test $?
+#test:	    test.py
+#	    $(synopsis) -o test $?
 
 clean:
-		rm -f *~ *.html *.syn
+		rm -fr *~ *.html *.syn ast #test
 
 distclean:	clean

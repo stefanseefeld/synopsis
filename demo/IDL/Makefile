@@ -1,6 +1,6 @@
-synopsis	:= ../../synopsis -p IDL -Wp,-K -f HTML -Wf,--spec=html.spec
+synopsis	:= ../../synopsis -p IDL -I. -Wp,-K -f HTML -Wf,--spec=html.spec
 
-all:
+all: CosNaming Types Graphic Input
 
 CosNaming:	CosNaming.idl
 		$(synopsis) -o CosNaming $?
@@ -15,6 +15,6 @@ Input:		Input.idl
 		$(synopsis) -o Input $?
 
 clean:
-		rm -f *~ *.html *.syn
+		rm -fr *~ *.html *.syn CosNaming Types Graphic Input
 
 distclean:	clean
