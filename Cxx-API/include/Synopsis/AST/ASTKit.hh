@@ -28,7 +28,7 @@ public:
 
   Comment create_comment(const SourceFile &file, long line,
 			 const std::string &text, bool suspect=false)
-  { return create<Comment>("Declaration", Python::Tuple(text, file, line, suspect));}
+  { return create<Comment>("Comment", Python::Tuple(text, file, line, suspect));}
   
   Declaration create_declaration(const SourceFile &sf, long line, const std::string &lang,
 				 const char *type, const ScopedName &name)

@@ -1,0 +1,55 @@
+#
+# Copyright (C) 2005 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+SHELL	:= /bin/sh
+
+srcdir	:= @srcdir@
+builddir:= @builddir@
+
+PYTHON	:= @PYTHON@
+SYNOPSIS:= $(PYTHON) synopsis.py
+
+CXX	:= @CXX@
+MAKEDEP	:= $(CXX) -M
+CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../src -I . 
+CPPFLAGS+= -I $(srcdir) -I $(srcdir)/../../src -I $(srcdir)/../../Cxx-API/include
+CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= ../../Cxx-API/lib/Cxx-API.a @SYN_LIBS@ @LIBS@
+LIBRARY_EXT := @LIBEXT@
+
+SRC	:= TypeTranslator.cc ASTTranslator.cc ParserImpl.cc
+OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+DEP	:= $(patsubst %.cc, %.d, $(SRC))
+
+TARGET	:= ParserImpl$(LIBRARY_EXT)
+
+vpath %.hh  $(srcdir)
+vpath %.cc  $(srcdir)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean:
+	rm -f $(CTOOL_SO)
+	rm -rf $(OBJ) $(DEP)
+
+%.o:	%.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.d:	%.cc %.hh
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
+
+Makefile: $(srcdir)/Makefile.in
+	(cd .. && ./config.status --file C/Makefile)
+
+ifeq (,$(filter $(MAKECMDGOALS), clean))
+-include $(DEP)
+endif
