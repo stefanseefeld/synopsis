@@ -125,6 +125,9 @@ ifneq ($(GC_LIB),)
 endif
 	ar rcs $@ $(OCC_OBJ)
 
+#opencxx.so: libgc.so $(OCC_OBJ)
+#	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
 clean :
 	rm -f *~ syn/*.o occ/*.o occ/PTree/*.o syn/*.d occ/*.d occ/PTree/*.d \
         *.dll *.so *core opencxx.a \

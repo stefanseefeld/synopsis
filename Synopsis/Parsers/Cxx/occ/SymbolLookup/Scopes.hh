@@ -9,6 +9,7 @@
 
 #include <SymbolLookup/Scope.hh>
 #include <string>
+#include <list>
 
 namespace SymbolLookup
 {
@@ -100,32 +101,28 @@ class Namespace : public Scope
 {
 public:
   Namespace(PTree::NamespaceSpec const *spec, Scope const *outer)
-    : my_spec(spec), my_outer(outer->ref())
+    : my_spec(spec), my_outer(outer ? outer->ref() : 0)
   {
   }
-  virtual Scope const *global() const { return my_outer->global();}
+  Namespace *find_namespace(std::string const &name) const;
+
+  virtual void use(PTree::Using const *);
+  virtual Scope const *global() const { return my_outer ? my_outer->global() : this;}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   // FIXME: should that really be a string ? It may be better to be conform with
-  // Class::name, which, if the class is a template, can't be a string (or can i ?)
+  // Class::name, which, if the class is a template, can't be a string (or can it ?)
   std::string name() const;
 
   virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~Namespace() { if (my_outer) my_outer->unref();}
 private:
+  typedef std::list<Namespace const *> Using;
+
   PTree::NamespaceSpec const *my_spec;
   Scope                const *my_outer;
-};
-
-class GlobalScope : public Scope
-{
-public:
-  GlobalScope() {}
-  virtual Scope const *global() const { return this;}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
-
-  virtual void dump(std::ostream &, size_t indent) const;
+  Using                       my_using;
 };
 
 }

@@ -21,7 +21,7 @@ Table::Table(Language l)
   : my_language(l)
 {
   // define the global scope
-  my_scopes.push(new GlobalScope());
+  my_scopes.push(new Namespace(0, 0));
 }
 
 Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
@@ -31,6 +31,21 @@ Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
   Scope *scope = my_scopes.top()->find_scope(spec);
   if (!scope)
   {
+    // If the namespace was already opened before, we should add a reference
+    // to it under the current NamespaceSpec, too.
+    // However, namespaces are only valid within namespaces (and the global scope).
+    Namespace *ns = dynamic_cast<Namespace *>(my_scopes.top());
+    if (ns)
+    {
+      PTree::Node const *name = PTree::second(spec);
+      scope = ns->find_namespace(std::string(name->position(), name->length()));
+      if (scope)
+	ns->declare_scope(spec, scope);
+    }
+  }
+  if (!scope)
+  {
+    // This is a new namespace. Declare it.
     scope = new Namespace(spec, my_scopes.top());
     my_scopes.top()->declare_scope(spec, scope);
   }
@@ -225,11 +240,18 @@ void Table::declare(NamespaceSpec *spec)
 {
   Trace trace("Table::declare(NamespaceSpec *)");
   if (my_language == NONE) return;
-  Node const *name = second(spec);
-  Encoding enc = Encoding::simple_name(static_cast<Atom const *>(name));
-  // FIXME: do we need a 'type' here ?
+  // Beware anonymous namespaces !
+  Encoding name = (second(spec) ?
+		   Encoding::simple_name(static_cast<Atom const *>(second(spec))) :
+		   "<anonymous>");
   Scope *scope = my_scopes.top();
-  scope->declare(enc, new NamespaceName(spec->encoded_type(), spec, scope));
+  // Namespaces can be reopened, so only declare it if it isn't already known.
+  SymbolSet symbols = scope->find(name);
+  if (symbols.empty())
+  {
+    scope->declare(name, new NamespaceName(spec->encoded_type(), spec, scope));
+  }
+  // FIXME: assert that the found symbol really refers to a namespace !
 }
 
 void Table::declare(ClassSpec *spec)
@@ -259,6 +281,13 @@ void Table::declare(TemplateDecl *tdecl)
     PTree::Encoding name = decl->encoded_name();
     scope->declare(name, new FunctionTemplateName(Encoding(), decl, scope));
   }
+}
+
+void Table::declare(PTree::Using *ustmt)
+{
+  Trace trace("Table::declare(Using *)");
+  if (my_language == NONE) return;
+  my_scopes.top()->use(ustmt);
 }
 
 SymbolSet Table::lookup(PTree::Encoding const &name) const
