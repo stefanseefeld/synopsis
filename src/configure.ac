@@ -44,13 +44,14 @@ fi
 
 AC_SUBST_FILE(GC_BRIDGE)
 
-LIBEXT=".so"
 case `uname -s` in
 CYGWIN*)
+    LIBEXT=".dll"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     LIBS="$LIBS -lpthread"
     ;;
 *)
+    LIBEXT=".so"
     CXXFLAGS="-pthread $CXXFLAGS -fPIC"
     LDFLAGS="-pthread $LDFLAGS"
     ;;

@@ -7,6 +7,7 @@
 
 import os, string, dircache
 from distutils.core import Command
+from distutils import sysconfig
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.spawn import spawn, find_executable
@@ -39,7 +40,9 @@ class build_syn_clib (Command):
 
     def build_src(self):
 
-        self.announce("building 'libSynopsis.so'")
+        LIBEXT = sysconfig.get_config_var('SO')
+        target = 'libSynopsis%s'%LIBEXT
+        self.announce("building '%s'"%target)
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
@@ -54,8 +57,8 @@ class build_syn_clib (Command):
 
         build_path = os.path.join(self.build_clib, 'lib')
         mkpath (build_path, 0777, self.verbose, self.dry_run)
-        copy_file(os.path.join(path, os.path.join('lib', 'libSynopsis.so')),
-                  os.path.join(build_path, 'libSynopsis.so'),
+        copy_file(os.path.join(path, os.path.join('lib', target)),
+                  os.path.join(build_path, target),
                   1, 1, 0, None, self.verbose, self.dry_run)
         build_path = os.path.join(self.build_clib, 'bin')
         mkpath (build_path, 0777, self.verbose, self.dry_run)
