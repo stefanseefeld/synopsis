@@ -9,6 +9,11 @@ Dumper::Dumper()
     m_indent_string = "";
 }
 
+void Dumper::onlyShow(string fname)
+{
+    m_filename = fname;
+}
+
 void Dumper::indent()
 {
     ++m_indent;
@@ -165,7 +170,8 @@ void Dumper::visit(const vector<AST::Declaration*>& decls)
     vector<AST::Declaration*>::const_iterator iter, end;
     iter = decls.begin(), end = decls.end();
     for (; iter != end; ++iter)
-	(*iter)->accept(this);
+	if (!m_filename.size() || (*iter)->filename() == m_filename)
+	    (*iter)->accept(this);
 }
 
 ostream& operator << (ostream& os, const AST::Name& name)

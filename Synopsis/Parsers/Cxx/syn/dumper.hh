@@ -12,6 +12,8 @@ class Dumper : public AST::Visitor, public Type::Visitor {
 public:
     Dumper();
 
+    void onlyShow(string fname);
+
     //
     // Type Visitor
     //
@@ -57,6 +59,8 @@ private:
     AST::Name m_scope;
     //. Returns the given Name relative to the current scope
     string colonate(const AST::Name& name);
+    //. Only show this filename, if set
+    string m_filename;
 
 };
 

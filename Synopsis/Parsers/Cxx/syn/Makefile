@@ -24,8 +24,8 @@ RANLIB		:=
 
 # FIXME - the i686 will need to be $configured
 OPTIMISE	:= -O6 -march=i686
-#DEBUG		:= -O2 -ggdb -pg -DDEBUG 
-DEBUG		:= -O6 -DDEBUG
+DEBUG		:= -O6 -march=i686 -ggdb -pg -DDEBUG 
+#DEBUG		:= -O6 -DDEBUG
 
 CFLAGS		:= 
 CPPFLAGS	:= -I.. -I$(PYTHON_PREFIX)/include -DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYTHON_MINOR=$(PYTHON_MINOR)

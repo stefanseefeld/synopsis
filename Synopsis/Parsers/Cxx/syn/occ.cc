@@ -34,6 +34,9 @@ void RunSoCompiler(const char *) {}
 void *LoadSoLib(char *) { return 0;}
 void *LookupSymbol(void *, char *) { return 0;}
 
+// If true then everything but what's in the main file will be stripped
+bool syn_main_only;
+
 //. A class that acts like a Visitor to the Ptree
 class PyWalker : public Walker
 {
@@ -747,6 +750,7 @@ static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const
     doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
     doPreprocess = true;
     sharedLibraryName = 0;
+    syn_main_only = false;
 
     size_t argsize = PyList_Size(args);
     for (size_t i = 0; i != argsize; ++i)
@@ -754,6 +758,7 @@ static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const
         const char *argument = PyString_AsString(PyList_GetItem(args, i));
         if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
         else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
+	else if (strcmp(argument, "-m") == 0) syn_main_only = true;
     }
 }
 
@@ -834,6 +839,7 @@ static char *RunOpencxx(const char *src, const char *file, const vector<const ch
     while(parse.rProgram(def))
 	swalker.Translate(def);
     Dumper dumper;
+    if (syn_main_only) dumper.onlyShow(src);
     dumper.visitScope(builder.scope());
 #else
     PyWalker walker(&parse, &synopsis);
