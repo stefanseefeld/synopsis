@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.14 2002/11/01 03:39:21 chalky Exp $
+# $Id: View.py,v 1.15 2002/11/16 04:12:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.15  2002/11/16 04:12:33  chalky
+# Added strategies for page formatting, and added one to allow template HTML
+# files to be used.
+#
 # Revision 1.14  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -75,14 +79,175 @@ import core
 from core import config
 from Tags import *
 
+class PageFormat:
+    """Default and base class for formatting a page layout. The PageFormat
+    class basically defines the HTML used at the start and end of the page.
+    The default creates an XHTML compliant header and footer with a proper
+    title, and link to the stylesheet."""
+    def __init__(self):
+	self.__stylesheet = config.stylesheet
+	self.__prefix = ''
+
+    def set_prefix(self, prefix):
+	"""Sets the prefix to use to correctly reference files in the document
+	root directory."""
+	self.__prefix = prefix
+
+    def stylesheet(self):
+	"""Returns the relative filename of the stylesheet to use. The
+	stylesheet specified in the user's config is copied into the output
+	directory. If this page is not in the same directory, the url returned
+	from this function will have the appropriate number of '..'s added."""
+	return self.__prefix + self.__stylesheet
+
+    def prefix(self):
+	"""Returns the prefix to use to correctly reference files in the
+	document root directory. This will only ever not be '' if you are using the
+	NestedFileLayout, in which case it will be '' or '../' or '../../' etc
+	as appropraite."""
+	return self.__prefix
+
+    def page_header(self, os, title, body, headextra):
+	"""Called to output the page header to the given output stream.
+	@param os a file-like object (use os.write())
+	@param title the title of this page
+	@param body the body tag, which may contain extra parameters such as
+	onLoad scripts, and may also be empty eg: for the frames index
+	@param headextra extra html to put in the head section, such as
+	scripts
+	"""
+	os.write('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">')
+	os.write("<html>\n<head>\n")
+	os.write(entity('title','Synopsis - '+ title) + '\n')
+	ss = self.stylesheet()
+	if ss: os.write(solotag('link', type='text/css', rel='stylesheet', href=ss) + '\n')
+	os.write(headextra)
+	os.write("</head>\n%s\n"%body)
+
+    def page_footer(self, os, body):
+	"""Called to output the page footer to the given output stream.
+	@param os a file-like object (use os.write())
+	@param body the close body tag, which may be empty eg: for the frames
+	index
+	"""
+	os.write("\n%s\n</html>\n"%body)
+
+class TemplatePageFormat (PageFormat):
+    """PageFormat subclass that uses a template file to define the HTML header
+    and footer for each page."""
+    def __init__(self):
+	PageFormat.__init__(self)
+	self.__file = ''
+	self.__re_body = re.compile('<body(?P<params>([ \t\n]+[-a-zA-Z0-9]+=("[^"]*"|\'[^\']*\'|[^ \t\n>]*))*)>', re.I)
+	self.__re_closebody = re.compile('</body>', re.I)
+	self.__re_closehead = re.compile('</head>', re.I)
+	self.__title_tag = '@TITLE@'
+	self.__content_tag = '@CONTENT@'
+	if hasattr(config.obj, 'TemplatePageFormat'):
+	    myconfig = config.obj.TemplatePageFormat
+	    if hasattr(myconfig, 'file'):
+		self.__file = myconfig.file
+	    if hasattr(myconfig, 'copy_files'):
+		for file in myconfig.copy_files:
+		    dest = os.path.join(config.basename, file[1])
+		    config.files.copyFile(file[0], dest)
+	self.load_file()
+
+    def load_file(self):
+	"""Loads and parses the template file"""
+	f = open(self.__file, 'rt')
+	text = f.read(1024*64) # arbitrary max limit of 64kb
+	f.close()
+	# Find the content tag
+	content_index = text.find(self.__content_tag)
+	if content_index == -1:
+	    print "Fatal: content tag '%s' not found in template file!"%self.__content_tag
+	    raise SystemError, "Content tag not found"
+	header = text[:content_index]
+	# Find the title (doesn't matter if not found)
+	self.__title_index = text.find(self.__title_tag)
+	if self.__title_index:
+	    # Remove the title tag
+	    header = header[:self.__title_index] + \
+		     header[self.__title_index+len(self.__title_tag):]
+	# Find the close head tag
+	mo = self.__re_closehead.search(header)
+	if mo: self.__headextra_index = mo.start()
+	else: self.__headextra_index = -1
+	# Find the body tag
+	mo = self.__re_body.search(header)
+	if not mo:
+	    print "Fatal: body tag not found in template file!"
+	    print "(if you are sure there is one, this may be a bug in Synopsis)"
+	    raise SystemError, "Body tag not found"
+	if mo.group('params'): self.__body_params = mo.group('params')
+	else: self.__body_params = ''
+	self.__body_index = mo.start()
+	header = header[:mo.start()] + header[mo.end():]
+	# Store the header
+	self.__header = header
+	footer = text[content_index+len(self.__content_tag):]
+	# Find the close body tag
+	mo = self.__re_closebody.search(footer)
+	if not mo:
+	    print "Fatal: close body tag not found in template file"
+	    raise SystemError, "Close body tag not found"
+	self.__closebody_index = mo.start()
+	footer = footer[:mo.start()] + footer[mo.end():]
+	self.__footer = footer
+
+    def write(self, os, text):
+	"""Writes the text to the output stream, replaceing @PREFIX@ with the
+	prefix for this file"""
+	sections = string.split(text, '@PREFIX@')
+	os.write(string.join(sections, self.prefix()))
+
+    def page_header(self, os, title, body, headextra):
+	"""Formats the header using the template file"""
+	if not body: return PageFormat.page_header(self, os, title, body, headextra)
+	header = self.__header
+	index = 0
+	if self.__title_index != -1:
+	    self.write(os, header[:self.__title_index])
+	    self.write(os, title)
+	    index = self.__title_index
+	if self.__headextra_index != -1:
+	    self.write(os, header[index:self.__headextra_index])
+	    self.write(os, headextra)
+	    index = self.__headextra_index
+	self.write(os, header[index:self.__body_index])
+	if body:
+	    if body[-1] == '>':
+		self.write(os, body[:-1]+self.__body_params+body[-1])
+	    else:
+		# Hmmmm... Should not happen, perhaps use regex?
+		self.write(os, body)
+	self.write(os, header[self.__body_index:])
+
+    def page_footer(self, os, body):
+	"""Formats the footer using the template file"""
+	if not body: return PageFormat.page_footer(self, os, body)
+	footer = self.__footer
+	self.write(os, footer[:self.__closebody_index])
+	self.write(os, body)
+	self.write(os, footer[self.__closebody_index:])
+
 class Page:
-    """Base class for a Page"""
+    """Base class for a Page. The base class provides a common interface, and
+    also handles common operations such as opening the file, and delegating
+    the page formatting to a strategy class.
+    @see PageFormat"""
     def __init__(self, manager):
-	"Constructor"
+	"""Constructor, loads the formatting class.
+	@see PageFormat"""
 	self.manager = manager
 	self.__os = None
 	self.__filename = ''
 	self.__title = ''
+	format_class = PageFormat
+	if config.page_format:
+	    format_class = Util.import_object(config.page_format, basePackage = 'Synopsis.Formatter.HTML.Page.')
+	self.__format = format_class()
 
     def filename(self):
         "Polymorphic method returning the filename associated with the page"
@@ -151,19 +316,15 @@ class Page:
 	though in which case that's the place to do it. The opened file is
 	stored and can be accessed using the os() method."""
 	self.__os = self.open_file()
-	self.write('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">')
-	self.write("<html>\n<head>\n")
-        self.write('<!-- ' + self.filename() + ' -->\n')
-        self.write('<!-- this page was generated by ' + self.__class__.__name__ + ' -->\n')
-	self.write(entity('title','Synopsis - '+ self.title()) + '\n')
-	if len(config.stylesheet):
-	    self.write(solotag('link', type='text/css', rel='stylesheet', href=rel(self.filename(), config.stylesheet)) + '\n')
-	self.write(headextra)
-	self.write("</head>\n%s\n"%body)
+	prefix = rel(self.filename(), '')
+	self.__format.set_prefix(prefix)
+	self.__format.page_header(self.__os, self.title(), body, headextra)
     
     def end_file(self, body='</body>'):
-	"Close the file using given close body tag"
-	self.write("\n%s\n</html>\n"%body)
+	"""Close the file using given close body tag. The default is
+	just a close body tag, but if you specify '' then nothing will be
+	written (useful for a frames page)"""
+	self.__format.page_footer(self.__os, body)
 	self.close_file()
 
     def reference(self, name, scope, label=None, **keys):

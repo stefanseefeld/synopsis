@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.40 2002/11/13 02:29:24 chalky Exp $
+# $Id: core.py,v 1.41 2002/11/16 04:12:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.41  2002/11/16 04:12:33  chalky
+# Added strategies for page formatting, and added one to allow template HTML
+# files to be used.
+#
 # Revision 1.40  2002/11/13 02:29:24  chalky
 # Support exclude_glob option to exclude files from listings. Remove debug info.
 #
@@ -228,6 +232,7 @@ class Config:
         self.base_dir = ''
         self.start_dir = ''
 	self.exclude_globs = []
+	self.page_format = ""
 	self.treeFormatterClass = TreeFormatter.TreeFormatter
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
@@ -255,7 +260,7 @@ class Config:
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
 	    'file_layout', 'output_dir', 'structs_as_classes', 'default_toc',
-            'base_dir', 'start_dir', 'exclude_globs')
+            'base_dir', 'start_dir', 'exclude_globs', 'page_format')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -341,6 +346,10 @@ class Config:
     def _config_exclude_globs(self, globs):
 	if self.verbose > 1: print "Using exclude globs:",globs
 	self.exclude_globs = map(compile_glob, globs)
+
+    def _config_page_format(self, page_format):
+	if self.verbose > 1: print "Using page format class:",page_format
+	self.page_format = page_format
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served
