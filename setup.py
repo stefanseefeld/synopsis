@@ -17,6 +17,7 @@ from Synopsis.config import *
 
 from Synopsis.dist.command.config import config
 from Synopsis.dist.command.build_doc import build_doc
+from Synopsis.dist.command.build_syn_clib import build_syn_clib
 from Synopsis.dist.command.build_syn_ext import build_syn_ext
 from Synopsis.dist.command.test import test
 
@@ -35,6 +36,7 @@ def prefix(list, pref): return map(lambda x: pref + x, list)
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
                "Synopsis.Parsers.IDL", "Synopsis.Parsers.Python",
+               "Synopsis.Parsers.Cpp",
                "Synopsis.Parsers.C", "Synopsis.Parsers.Cxx",
                "Synopsis.Processors", "Synopsis.Processors.Comments",
                "Synopsis.Formatters",
@@ -76,6 +78,7 @@ data_files.extend(documentation)
 
 setup(cmdclass={'config':config,
                 'build_doc':build_doc,
+                'build_clib':build_syn_clib,
                 'build_ext':build_syn_ext,
                 'test':test},
       name="synopsis",
