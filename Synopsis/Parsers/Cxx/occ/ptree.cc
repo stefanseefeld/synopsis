@@ -35,7 +35,7 @@ Leaf::Leaf(Token& tk)
 
 bool Leaf::IsLeaf()
 {
-    return TRUE;
+    return true;
 }
 
 void Leaf::Print(std::ostream& s, int, int)
@@ -201,7 +201,7 @@ NonLeaf::NonLeaf(Ptree* p, Ptree* q)
 
 bool NonLeaf::IsLeaf()
 {
-    return FALSE;
+    return false;
 }
 
 void NonLeaf::Print(std::ostream& s, int indent, int depth)
@@ -236,10 +236,10 @@ bool NonLeaf::TooDeep(std::ostream& s, int depth)
 {
     if(depth >= 32){
 	s << " ** too many nestings ** ";
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 int NonLeaf::Write(std::ostream& out, int indent)

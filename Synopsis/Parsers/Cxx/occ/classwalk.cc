@@ -38,7 +38,7 @@ Class* ClassWalker::GetClassMetaobject(TypeInfo& tinfo)
 
 bool ClassWalker::IsClassWalker()
 {
-    return TRUE;
+    return true;
 }
 
 void ClassWalker::InsertBeforeStatement(Ptree* p)
@@ -66,9 +66,9 @@ bool ClassWalker::InsertDeclaration(Ptree* d, Class* metaobject, Ptree* key,
 {
     inserted_declarations.Append(d);
     if(metaobject == nil || key == nil)
-	return TRUE;
+	return true;
     else if(LookupClientData(metaobject, key))
-	return FALSE;
+	return false;
     else{
 	ClientDataLink* entry = new ClientDataLink;
 	entry->next = client_data;
@@ -76,7 +76,7 @@ bool ClassWalker::InsertDeclaration(Ptree* d, Class* metaobject, Ptree* key,
 	entry->key = key;
 	entry->data = data;
 	client_data = entry;
-	return TRUE;
+	return true;
     }
 }
 
@@ -328,7 +328,7 @@ Ptree* ClassWalker::ConstructMember(void* ptr)
 		old_env = ChangeScope(fenv);
 
 	    NewScope();
-	    def2 = MakeMemberDeclarator(TRUE, m,
+	    def2 = MakeMemberDeclarator(true, m,
 					(PtreeDeclarator*)m->declarator);
 	    def2 = Ptree::List(def2,
 			       TranslateFunctionBody(def->Nth(3)));
@@ -337,14 +337,14 @@ Ptree* ClassWalker::ConstructMember(void* ptr)
 		RestoreScope(old_env);
 	}
 	else{
-	    def2 = MakeMemberDeclarator(FALSE, m,
+	    def2 = MakeMemberDeclarator(false, m,
 					(PtreeDeclarator*)m->declarator);
 	    def2 = Ptree::List(def2, m->body);
 	}
     }
     else{
 	// declaration
-	def2 = MakeMemberDeclarator(FALSE, m,
+	def2 = MakeMemberDeclarator(false, m,
 				    (PtreeDeclarator*)m->declarator);
 	if(m->body == nil)
 	    def2 = Ptree::List(Ptree::List(def2), Class::semicolon_t);
@@ -396,7 +396,7 @@ Ptree* ClassWalker::TranslateTemplateFunction(Ptree* temp_def, Ptree* impl)
 	    metaobject->TranslateMemberFunction(env, mem);
 	    ChangedMemberList::Copy(&mem, &m, Class::Undefined);
 	    Ptree* decl2
-		= MakeMemberDeclarator(TRUE, &m, (PtreeDeclarator*)decl);
+		= MakeMemberDeclarator(true, &m, (PtreeDeclarator*)decl);
 
 	    ExitScope();
 	    RestoreScope(old_env);
@@ -429,7 +429,7 @@ Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
     if(fenv == nil){
 	// reach here if resolving the qualified name fails. error?
 	NewScope();
-	decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
+	decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
 	body2 = TranslateFunctionBody(body);
 	ExitScope();
     }
@@ -442,7 +442,7 @@ Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
 	    metaobject = MakeMetaobjectForCfunctions();
 
 	if(metaobject == nil){
-	    decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
+	    decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
 	    body2 = TranslateFunctionBody(body);
 	}
 	else{
@@ -450,7 +450,7 @@ Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
 	    MemberFunction mem(metaobject, impl, decl);
 	    metaobject->TranslateMemberFunction(env, mem);
 	    ChangedMemberList::Copy(&mem, &m, Class::Undefined);
-	    decl2 = MakeMemberDeclarator(TRUE, &m, (PtreeDeclarator*)decl);
+	    decl2 = MakeMemberDeclarator(true, &m, (PtreeDeclarator*)decl);
 	    if(m.body != nil)
 		body2 = m.body;
 	    else
@@ -510,12 +510,12 @@ Ptree* ClassWalker::MakeMemberDeclarator(bool record, void* ptr,
 
     if(GetArgDeclList(decl, args))
 	if(m->args == nil)
-	    args2 = TranslateArgDeclList2(record, env, TRUE,
+	    args2 = TranslateArgDeclList2(record, env, true,
 					  m->arg_name_filled, 0, args);
 	else{
 	    args2 = m->args;
 	    // we may need to record the arguments.
-	    TranslateArgDeclList2(record, env, FALSE, FALSE, 0, args);
+	    TranslateArgDeclList2(record, env, false, false, 0, args);
 	}
     else
 	args = args2 = nil;
@@ -564,7 +564,7 @@ Ptree* ClassWalker::RecordArgsAndTranslateFbody(Class* c, Ptree* args,
 	old_env = ChangeScope(fenv);
 
     NewScope();
-    TranslateArgDeclList2(TRUE, env, FALSE, FALSE, 0, args);
+    TranslateArgDeclList2(true, env, false, false, 0, args);
     Ptree* body2 = TranslateFunctionBody(body);
     ExitScope();
 
@@ -602,7 +602,7 @@ Ptree* ClassWalker::TranslateBlock(Ptree* block)
     NewScope();
 
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
     while(rest != nil){
@@ -612,18 +612,18 @@ Ptree* ClassWalker::TranslateBlock(Ptree* block)
 
 	n = before_statement.Number();
 	if(n > 0){
-	    changed = TRUE;
+	    changed = true;
 	    for(i = 0; i < n; ++i)
 		array.Append(before_statement[i]);
 	}
 
 	array.Append(q);
 	if(p != q)
-	    changed = TRUE;
+	    changed = true;
 
 	n = after_statement.Number();
 	if(n > 0){
-	    changed = TRUE;
+	    changed = true;
 	    for(i = 0; i < n; ++i)
 		array.Append(after_statement[i]);
 	}
@@ -645,7 +645,7 @@ Ptree* ClassWalker::TranslateBlock(Ptree* block)
 
 Ptree* ClassWalker::TranslateArgDeclList(bool record, Ptree*, Ptree* args)
 {
-    return TranslateArgDeclList2(record, env, TRUE, FALSE, 0, args);
+    return TranslateArgDeclList2(record, env, true, false, 0, args);
 }
 
 Ptree* ClassWalker::TranslateInitializeArgs(PtreeDeclarator* decl, Ptree* init)
@@ -1031,7 +1031,7 @@ Ptree* ClassWalker::TranslateUserStatement(Ptree* exp)
     if(metaobject != nil){
 	NewScope();
 	if(keyword->IsA(UserKeyword2))		// closure style
-	    TranslateArgDeclList2(TRUE, env, FALSE, FALSE, 0, rest->Second());
+	    TranslateArgDeclList2(true, env, false, false, 0, rest->Second());
 
 	Ptree* exp2 = metaobject->TranslateUserStatement(env, object, op,
 							 keyword, rest);
@@ -1057,7 +1057,7 @@ Ptree* ClassWalker::TranslateStaticUserStatement(Ptree* exp)
 	    if(metaobject != nil){
 		NewScope();
 		if(keyword->IsA(UserKeyword2))		// closure style
-		    TranslateArgDeclList2(TRUE, env, FALSE, FALSE, 0,
+		    TranslateArgDeclList2(true, env, false, false, 0,
 					  rest->Second());
 		Ptree* exp2 = metaobject->TranslateStaticUserStatement(env,
 							keyword, rest);

@@ -146,13 +146,13 @@ bool TypeInfo::IsVolatile()
     Normalize();
     char* ptr = encode;
     if(ptr == nil)
-	return FALSE;
+	return false;
     else if(*ptr == 'V')
-	return TRUE;
+	return true;
     else if(*ptr == 'C')
 	return(ptr[1] == 'V');
     else
-	return FALSE;
+	return false;
 }
 
 uint TypeInfo::IsBuiltInType()
@@ -217,7 +217,7 @@ bool TypeInfo::IsEllipsis()
 bool TypeInfo::IsPointerType()
 {
     if(refcount > 0)
-	return TRUE;
+	return true;
 
     Normalize();
     Environment* e = env;
@@ -227,7 +227,7 @@ bool TypeInfo::IsPointerType()
 	return c == 'P' || c == 'A' || c == 'M';
     }
 
-    return FALSE;
+    return false;
 }
 
 bool TypeInfo::IsReferenceType()
@@ -274,14 +274,14 @@ bool TypeInfo::IsClass(Class*& c)
     Normalize();
     if(metaobject != nil){
 	c = metaobject;
-	return TRUE;
+	return true;
     }
     else{
 	c = nil;
 	Environment* e = env;
 	char* encode2 = SkipCv(encode, e);
 	if(encode == encode2)
-	    return FALSE;
+	    return false;
 
 	TypeInfo tinfo;
 	tinfo.Set(encode2, e);
@@ -300,7 +300,7 @@ bool TypeInfo::IsEnum(Ptree*& spec)
     spec = nil;
     Normalize();
     if(metaobject != nil)
-	return FALSE;
+	return false;
     else{
 	Bind* bind;
 	int len;
@@ -310,13 +310,13 @@ bool TypeInfo::IsEnum(Ptree*& spec)
 	    if(e->LookupType(name, len, bind))
 		if(bind != nil && bind->What() == Bind::isEnumName){
 		    spec = ((BindEnumName*)bind)->GetSpecification();
-		    return TRUE;
+		    return true;
 		}
 
 	e = env;
 	name = SkipCv(encode, e);
 	if(name == encode)
-	    return FALSE;
+	    return false;
 
 	TypeInfo tinfo;
 	tinfo.Set(name, e);
@@ -347,25 +347,25 @@ bool TypeInfo::NthArgument(int n, TypeInfo& t)
     char* ptr = SkipCv(encode, e);
     if(ptr == nil || *ptr != 'F'){
 	t.Unknown();
-	return FALSE;
+	return false;
     }
 
     ++ptr;
     if(*ptr == 'v'){
 	t.SetVoid();
-	return FALSE;		// no arguments
+	return false;		// no arguments
     }
 
     while(n-- > 0){
 	ptr = SkipType(ptr, e);
 	if(ptr == nil || *ptr == '_'){
 	    t.Unknown();
-	    return FALSE;
+	    return false;
 	}
     }
 
     t.Set(ptr, e);
-    return TRUE;
+    return true;
 }
 
 int TypeInfo::NumOfArguments()
@@ -396,7 +396,7 @@ bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
     char* ptr = SkipCv(encode, e);
     if(ptr == nil || *ptr != 'T'){
 	t.Unknown();
-	return FALSE;
+	return false;
     }
 
     int len;
@@ -406,12 +406,12 @@ bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
 	ptr = SkipType(ptr, e);
 	if(ptr == nil || ptr >= end) {
 	    t.Unknown();
-	    return FALSE;
+	    return false;
 	}
     }
 
     t.Set(ptr, e);
-    return TRUE;
+    return true;
 }
 
 Ptree* TypeInfo::FullTypeName()
@@ -552,11 +552,11 @@ void TypeInfo::Normalize()
 	    break;
 	  }
 	default :
-	    if(!ResolveTypedef(e, ptr, TRUE))
+	    if(!ResolveTypedef(e, ptr, true))
 		return;
 	}
 
-    while(ResolveTypedef(e, ptr, FALSE))
+    while(ResolveTypedef(e, ptr, false))
 	;
 }
 
@@ -571,7 +571,7 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
 	switch(bind->What()){
 	case Bind::isTypedefName :
 	    ptr = bind->GetEncodedType();
-	    return TRUE;
+	    return true;
 	case Bind::isClassName :
 	    c = bind->ClassMetaobject();
 	    if(c == nil)
@@ -581,7 +581,7 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
 	    else
 		Set(c);
 
-	    return FALSE;
+	    return false;
 	case Bind::isTemplateClass :
 	    c = bind->ClassMetaobject();
 	    if(c == nil)
@@ -589,7 +589,7 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
 	    else
 		Set(ptr, c->GetEnvironment());
 
-	    return FALSE;
+	    return false;
 	default :
 	    break;
 	}
@@ -599,7 +599,7 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
     else
 	Set(ptr, orig_e);
 
-    return FALSE;
+    return false;
 }
 
 char* TypeInfo::SkipCv(char* ptr, Environment*& e)

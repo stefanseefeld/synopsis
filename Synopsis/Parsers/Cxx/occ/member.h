@@ -51,7 +51,7 @@ public:
     Ptree* GetUserAccessSpecifier();
     bool GetUserArgumentModifiers(PtreeArray& result);
 
-    void Remove() { removed = TRUE; }
+    void Remove() { removed = true; }
     void SetName(Ptree*);
     void SetQualifiedName(Ptree*);
     Ptree* NewName() { return new_name; }
@@ -82,7 +82,7 @@ private:
 
 protected:
 
-    // The next function is TRUE if the member is a function
+    // The next function is true if the member is a function
     // with the implementation but it is not inlined.  And if so,
     // the following variables are effective.
 

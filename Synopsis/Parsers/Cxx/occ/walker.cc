@@ -112,7 +112,7 @@ void Walker::RestoreScope(Walker::NameScope& scope)
 
 bool Walker::IsClassWalker()
 {
-    return FALSE;
+    return false;
 }
 
 Ptree* Walker::Translate(Ptree* p)
@@ -205,7 +205,7 @@ Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
 Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
 					   Ptree* class_def)
 {
-    Class* metaobject = LookupMetaclass(def, userkey, class_def, TRUE);
+    Class* metaobject = LookupMetaclass(def, userkey, class_def, true);
     if(metaobject == nil)
 	metaobject = new TemplateClass;
     else
@@ -371,13 +371,13 @@ Ptree* Walker::TranslateStorageSpecifiers(Ptree* spec)
 
 Ptree* Walker::TranslateDeclarators(Ptree* decls)
 {
-    return TranslateDeclarators(decls, TRUE);
+    return TranslateDeclarators(decls, true);
 }
 
 Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 {
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* rest = decls;
     while(rest != nil){
 	Ptree *p, *q;
@@ -403,7 +403,7 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 		}
 	    }
 
-	    q = TranslateDeclarator(FALSE, (PtreeDeclarator*)p);
+	    q = TranslateDeclarator(false, (PtreeDeclarator*)p);
 	    if(exp != exp2){
 		// exp2 should be a list, but...
 		if(exp2 != nil && exp2->IsLeaf())
@@ -420,7 +420,7 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 	}
 
 	if(q == nil){
-	    changed = TRUE;
+	    changed = true;
 	    rest = rest->Cdr();
 	    if(rest != nil)
 		rest = rest->Cdr();
@@ -428,7 +428,7 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 	else{
 	    array.Append(q);
 	    if(p != q)
-		changed = TRUE;
+		changed = true;
 
 	    rest = rest->Cdr();
 	    if(rest != nil){
@@ -472,7 +472,7 @@ bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
 	    if(q->IsLeaf()){
 		if(q->Eq('(')){
 		    args = p->Cadr();
-		    return TRUE;
+		    return true;
 		}
 	    }
 	    else if(q->Car()->Eq('('))	// e.g. int (*p)[];
@@ -482,15 +482,15 @@ bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
     }
 
     args = nil;
-    return FALSE;
+    return false;
 }
 
 Ptree* Walker::TranslateArgDeclList(bool record, Ptree*, Ptree* args)
 {
-    return TranslateArgDeclList2(record, env, FALSE, FALSE, 0, args);
+    return TranslateArgDeclList2(record, env, false, false, 0, args);
 }
 
-// If translate is TRUE, this function eliminates a user-defined keyword.
+// If translate is true, this function eliminates a user-defined keyword.
 
 Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 				     bool translate,
@@ -597,14 +597,14 @@ Ptree* Walker::TranslateFunctionImplementation(Ptree* impl)
     if(fenv == nil){
 	// reach here if resolving the qualified name fails. error?
 	NewScope();
-	decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
+	decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
 	body2 = Translate(body);
 	ExitScope();
     }
     else{
 	NameScope old_env = ChangeScope(fenv);
 	NewScope();
-	decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
+	decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
 	body2 = Translate(body);
 	ExitScope();
 	RestoreScope(old_env);
@@ -620,7 +620,7 @@ Ptree* Walker::TranslateFunctionImplementation(Ptree* impl)
 Ptree* Walker::RecordArgsAndTranslateFbody(Class*, Ptree* args, Ptree* body)
 {
     NewScope();
-    TranslateArgDeclList2(TRUE, env, FALSE, FALSE, 0, args);
+    TranslateArgDeclList2(true, env, false, false, 0, args);
     Ptree* body2 = TranslateFunctionBody(body);
     ExitScope();
     return body2;
@@ -634,7 +634,7 @@ Ptree* Walker::TranslateFunctionBody(Ptree* body)
 Ptree* Walker::TranslateBrace(Ptree* block)
 {
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
     while(rest != nil){
@@ -642,7 +642,7 @@ Ptree* Walker::TranslateBrace(Ptree* block)
 	Ptree* q = Translate(p);
 	array.Append(q);
 	if(p != q)
-	    changed = TRUE;
+	    changed = true;
 
 	rest = rest->Cdr();
     }
@@ -661,7 +661,7 @@ Ptree* Walker::TranslateBlock(Ptree* block)
     NewScope();
 
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
     while(rest != nil){
@@ -669,7 +669,7 @@ Ptree* Walker::TranslateBlock(Ptree* block)
 	Ptree* q = Translate(p);
 	array.Append(q);
 	if(p != q)
-	    changed = TRUE;
+	    changed = true;
 
 	rest = rest->Cdr();
     }
@@ -693,7 +693,7 @@ Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
     RecordBaseclassEnv(bases);
 
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
     while(rest != nil){
@@ -701,7 +701,7 @@ Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
 	Ptree* q = Translate(p);
 	array.Append(q);
 	if(p != q)
-	    changed = TRUE;
+	    changed = true;
 
 	rest = rest->Cdr();
     }
@@ -741,7 +741,7 @@ Ptree* Walker::TranslateClassSpec(Ptree* spec)
 Class* Walker::MakeClassMetaobject(Ptree* def, Ptree* userkey,
 				   Ptree* class_def)
 {
-    Class* metaobject = LookupMetaclass(def, userkey, class_def, FALSE);
+    Class* metaobject = LookupMetaclass(def, userkey, class_def, false);
     if(metaobject == nil && default_metaclass != nil){
 	metaobject = opcxx_ListOfMetaclass::New(default_metaclass, class_def,
 						nil);
@@ -984,7 +984,7 @@ Ptree* Walker::TranslateTry(Ptree* s)
 
     PtreeArray array;
     Ptree* handlers = s->Cddr();
-    bool changed = FALSE;
+    bool changed = false;
 
     while(handlers != nil){
 	Ptree* handle = handlers->Car();
@@ -994,7 +994,7 @@ Ptree* Walker::TranslateTry(Ptree* s)
 	    array.Append(handle);
 	else{
 	    array.Append(Ptree::ShallowSubst(body2, body, handle));
-	    changed = TRUE;
+	    changed = true;
 	}
 
 	handlers = handlers->Cdr();
@@ -1662,7 +1662,7 @@ Ptree* Walker::TranslateArguments(Ptree* arglist)
 	return arglist;
 
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* body = Ptree::Second(arglist);
     Ptree* args = body;
     while(args != nil){
@@ -1670,7 +1670,7 @@ Ptree* Walker::TranslateArguments(Ptree* arglist)
 	Ptree* q = Translate(p);
 	array.Append(q);
 	if(p != q)
-	    changed = TRUE;
+	    changed = true;
 
 	args = args->Cdr();
 	if(args != nil){
@@ -1814,7 +1814,7 @@ bool Walker::MatchedDeclarator(Ptree* decl, char* name, int len,
     str = decl->GetEncodedName();
     sig = decl->GetEncodedType();
     if(str == nil || sig == nil)
-	return FALSE;
+	return false;
 
     str = Encoding::GetBaseName(str, strlen, e);
     return bool(len == strlen && memcmp(name, str, len) == 0
@@ -1829,14 +1829,14 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
     Environment* e;
     Ptree* decls = def->Third();
     if(decls == nil || decls->IsLeaf())
-	return FALSE;
+	return false;
 
     if(decls->IsA(ntDeclarator)){	// if it is a function
 	str = decls->GetEncodedName();
 	e = env;
 	str = Encoding::GetBaseName(str, len, e);
 	if(name->Eq(str, len))
-	    return TRUE;
+	    return true;
 
 	++nth;
     }
@@ -1846,14 +1846,14 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
 	    e = env;
 	    str = Encoding::GetBaseName(str, len, e);
 	    if(name->Eq(str, len))
-		return TRUE;
+		return true;
 
 	    ++nth;
 	    if((decls = decls->Cdr()) != nil)
 		decls = decls->Cdr();
 	}
 
-    return FALSE;
+    return false;
 }
 
 void Walker::ErrorMessage(char* msg, Ptree* name, Ptree* where)

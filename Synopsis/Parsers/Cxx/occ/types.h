@@ -39,11 +39,6 @@
 #define nil		0
 #endif
 
-#ifndef TRUE
-#define TRUE		1
-#define FALSE		0
-#endif
-
 // #define IRIX_CC	// If compiled under SGI Irix with CC (not g++)
 
 #if defined(_MSC_VER) && (_MSC_VER <= 1020)	// If MSVC version <= 4.2
@@ -51,7 +46,6 @@
 typedef int bool;
 #endif
 
-typedef bool		BOOL;
 typedef int		sint;
 typedef unsigned int	uint;
 

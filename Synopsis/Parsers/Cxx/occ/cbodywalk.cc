@@ -30,7 +30,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
     NameScope old_env = ChangeScope(fenv);
 
     PtreeArray array;
-    bool changed = FALSE;
+    bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
     while(rest != nil){
@@ -38,7 +38,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
 	Ptree* q = Translate(p);
 	array.Append(q);
 	if(p != q)
-	    changed = TRUE;
+	    changed = true;
 
 	rest = rest->Cdr();
     }
@@ -47,7 +47,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
 
     Ptree* appended = metaobject->GetAppendedCode();
     if(appended != nil){
-	changed = TRUE;
+	changed = true;
 	while(appended != nil){
 	    array.Append(appended->Car());
 	    appended = appended->Cdr();
@@ -75,7 +75,7 @@ void ClassBodyWalker::AppendNewMembers(Class* metaobject, PtreeArray& array,
     int i = 0;
     while((m = appended_list->Get(i++)) != nil)
 	if(m->def != nil){
-	    changed = TRUE;
+	    changed = true;
 	    ClassWalker w(this);
 	    array.Append(w.ConstructAccessSpecifier(m->access));
 	    array.Append(w.ConstructMember(m));
@@ -117,7 +117,7 @@ Ptree* ClassBodyWalker::TranslateMetaclassDecl(Ptree*)
 
 Ptree* ClassBodyWalker::TranslateDeclarators(Ptree* decls)
 {
-    return ClassWalker::TranslateDeclarators(decls, FALSE);
+    return ClassWalker::TranslateDeclarators(decls, false);
 }
 
 Ptree* ClassBodyWalker::TranslateAssignInitializer(PtreeDeclarator* decl,
@@ -139,7 +139,7 @@ Ptree* ClassBodyWalker::TranslateInitializeArgs(PtreeDeclarator* decl,
 Ptree* ClassBodyWalker::TranslateDeclarator(bool record,
 					    PtreeDeclarator* decl)
 {
-    return TranslateDeclarator(record, decl, TRUE);
+    return TranslateDeclarator(record, decl, true);
 }
 
 Ptree* ClassBodyWalker::TranslateDeclarator(bool record,
@@ -180,7 +180,7 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
 	// shouldn't reach here.
 	NewScope();
 	ClassWalker w(this);	// this should be after NewScope().
-	decl2 = w.TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
+	decl2 = w.TranslateDeclarator(true, (PtreeDeclarator*)decl);
 	body2 = w.TranslateFunctionBody(body);
 	ExitScope();
     }
@@ -191,11 +191,11 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
 	ClassWalker w(this);
 	if(is_nested_class){
 	    // if it's a member function of a nested class
-	    decl2 = w.TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
+	    decl2 = w.TranslateDeclarator(true, (PtreeDeclarator*)decl);
 	    body2 = w.TranslateFunctionBody(body);
 	}
 	else{
-	    decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl, FALSE);
+	    decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl, false);
 	    Class* metaobject = fenv->IsClassEnvironment();
 	    ChangedMemberList::Cmem* m = nil;
 	    if(metaobject != nil)

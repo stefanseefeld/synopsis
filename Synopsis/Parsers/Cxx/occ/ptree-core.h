@@ -150,7 +150,7 @@ private:
     static char* MatchWord(Ptree*, char*);
 
 public:
-    // if this is TRUE, Print() shows an encoded type and name.
+    // if this is true, Print() shows an encoded type and name.
     static bool show_encoded;
 
 protected:

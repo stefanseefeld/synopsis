@@ -226,16 +226,16 @@ static int ParseOpencxx(Program* prog)
 static char* ParseOptions(int argc, char** argv)
 {
     char* source_file = nil;
-    showProgram = FALSE;
-    doCompile = TRUE;
-    verboseMode = FALSE;
-    makeExecutable = TRUE;
-    doPreprocess = TRUE;
-    doTranslate = TRUE;
-    regularCpp = FALSE;
-    makeSharedLibrary = FALSE;
+    showProgram = false;
+    doCompile = true;
+    verboseMode = false;
+    makeExecutable = true;
+    doPreprocess = true;
+    doTranslate = true;
+    regularCpp = false;
+    makeSharedLibrary = false;
     sharedLibraryName = nil;
-    preprocessTwice = FALSE;
+    preprocessTwice = false;
 
     AddCppOption(compilerName);
     AddCcOption(compilerName);
@@ -252,25 +252,25 @@ void ParseCmdOptions(int from, int argc, char** argv, char*& source_file)
 	if(strcmp("--", argv[i]) == 0)
 	    break;
 	else if(strcmp("-E", argv[i]) == 0)
-	    doCompile = FALSE;
+	    doCompile = false;
 	else if(strcmp("-g", argv[i]) == 0)
 	    AddCcOption(argv[i]);
 	else if (strcmp("-n", argv[i]) == 0)
-	    doPreprocess = FALSE;
+	    doPreprocess = false;
 	else if(*argv[i] == '-' && argv[i][1] == 'm'){
-	    makeSharedLibrary = TRUE;
+	    makeSharedLibrary = true;
 	    sharedLibraryName = &argv[i][2];
 	}
 	else if (strcmp("-P", argv[i]) == 0)
-	    preprocessTwice = TRUE;
+	    preprocessTwice = true;
         else if (strcmp("-p", argv[i]) == 0)
-	    doTranslate = FALSE;
+	    doTranslate = false;
 	else if (strcmp("-C", argv[i]) == 0) {
 	    AddCppOption("-C");
-	    preprocessTwice = TRUE;
+	    preprocessTwice = true;
 	}
 	else if(strcmp("-c", argv[i]) == 0)
-	    makeExecutable = FALSE;
+	    makeExecutable = false;
 	else if(strcmp("-l", argv[i]) == 0){
 	    cout << "[Loaded metaclasses...]\n";
 	    opcxx_ListOfMetaclass::PrintAllMetaclasses();
@@ -279,15 +279,15 @@ void ParseCmdOptions(int from, int argc, char** argv, char*& source_file)
 	else if(*argv[i] == '-' && argv[i][1] == 'S')
 	    LoadMetaclass(&argv[i][2]);
 	else if(strcmp("-s", argv[i]) == 0)
-	    showProgram = TRUE;
+	    showProgram = true;
 	else if(strcmp("-v", argv[i]) == 0)
-	    verboseMode = TRUE;
+	    verboseMode = true;
 	else if(strcmp("-V", argv[i]) == 0){
 	    ShowVersion();
 	    exit(1);
 	}
 	else if (strcmp("--regular-c++", argv[i]) == 0)
-	    regularCpp = TRUE;
+	    regularCpp = true;
 	else if(*argv[i] == '-'
 		&& (argv[i][1] == 'D' || argv[i][1] == 'I'))
 	    AddCppOption(argv[i]);
@@ -308,7 +308,7 @@ void ParseCmdOptions(int from, int argc, char** argv, char*& source_file)
 	    ParseCcOptions(argv[i], source_file);
 
     if(!doTranslate)
-	doCompile = FALSE;
+	doCompile = false;
 }
 
 static void ShowVersion()
@@ -445,7 +445,7 @@ bool IsCxxSource(char* fname)
 {
     char* ext = strrchr(fname, '.');
     if(ext == nil)
-	return FALSE;
+	return false;
 
     if(strcmp(ext,    ".cc") == 0
        || strcmp(ext, ".C") == 0
@@ -456,9 +456,9 @@ bool IsCxxSource(char* fname)
        || strcmp(ext, ".ii") == 0
        || strcmp(ext, ".i") == 0
        || strcmp(ext, ".occ") == 0)
-	return TRUE;
+	return true;
 
-    return FALSE;
+    return false;
 }
 
 void ShowCommandLine(const char*, const char** args)

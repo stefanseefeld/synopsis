@@ -100,7 +100,7 @@ opcxx_ListOfMetaclass* opcxx_init_Metaclass()
 
 bool QuoteClass::Initialize()
 {
-    return TRUE;
+    return true;
 }
 
 char* QuoteClass::MetaclassName()
@@ -127,7 +127,7 @@ Metaclass::Metaclass()
 
 bool Metaclass::Initialize()
 {
-    return TRUE;
+    return true;
 }
 
 char* Metaclass::MetaclassName()

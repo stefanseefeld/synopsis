@@ -127,16 +127,16 @@ bool Environment::LookupType(const char* name, int len, Bind*& t)
 		case Bind::isTemplateFunction :
 		    break;
 		default :
-		    return TRUE;
+		    return true;
 		}
 
 	uint n = p->baseclasses.Number();
 	for(uint i = 0; i < n; ++i)
 	    if(p->baseclasses.Ref(i)->LookupType(name, len, t))
-		return TRUE;
+		return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 bool Environment::Lookup(Ptree* name, TypeInfo& t)
@@ -145,11 +145,11 @@ bool Environment::Lookup(Ptree* name, TypeInfo& t)
 
     if(Lookup(name, bind) && bind != nil){
 	bind->GetType(t, this);
-	return TRUE;
+	return true;
     }
     else{
 	t.Unknown();
-	return FALSE;
+	return false;
     }
 }
 
@@ -160,11 +160,11 @@ bool Environment::Lookup(Ptree* name, bool& is_type_name, TypeInfo& t)
     if(Lookup(name, bind) && bind != nil){
 	is_type_name = bind->IsType();
 	bind->GetType(t, this);
-	return TRUE;
+	return true;
     }
     else{
 	t.Unknown();
-	return FALSE;
+	return false;
     }
 }
 
@@ -173,17 +173,17 @@ bool Environment::Lookup(Ptree* name, Bind*& bind)
     bind = nil;
     if(this == nil){
 	MopErrorMessage("Environment::Lookup()", "nil enviornment");
-	return FALSE;
+	return false;
     }
 
     if(name == nil)
-	return FALSE;
+	return false;
     else if(name->IsLeaf())
 	return LookupAll(name->GetPosition(), name->GetLength(), bind);
     else{
 	char* encode = name->GetEncodedName();
 	if(encode == nil)
-	    return FALSE;
+	    return false;
 	else{
 	    int len;
 	    Environment* e = this;
@@ -191,7 +191,7 @@ bool Environment::Lookup(Ptree* name, Bind*& bind)
 	    if(base != nil && e != nil)
 		return e->LookupAll(base, len, bind);
 	    else
-		return FALSE;
+		return false;
 	}
     }
 }
@@ -201,17 +201,17 @@ bool Environment::LookupTop(Ptree* name, Bind*& bind)
     bind = nil;
     if(this == nil){
 	MopErrorMessage("Environment::LookupTop()", "nil enviornment");
-	return FALSE;
+	return false;
     }
 
     if(name == nil)
-	return FALSE;
+	return false;
     else if(name->IsLeaf())
 	return LookupTop(name->GetPosition(), name->GetLength(), bind);
     else{
 	char* encode = name->GetEncodedName();
 	if(encode == nil)
-	    return FALSE;
+	    return false;
 	else{
 	    int len;
 	    Environment* e = this;
@@ -219,7 +219,7 @@ bool Environment::LookupTop(Ptree* name, Bind*& bind)
 	    if(base != nil && e != nil)
 		return e->LookupTop(base, len, bind);
 	    else
-		return FALSE;
+		return false;
 	}
     }
 }
@@ -227,14 +227,14 @@ bool Environment::LookupTop(Ptree* name, Bind*& bind)
 bool Environment::LookupTop(const char* name, int len, Bind*& t)
 {
     if(htable->Lookup((char*)name, len, (HashValue*)&t))
-	return TRUE;
+	return true;
     else{
 	uint n = baseclasses.Number();
 	for(uint i = 0; i < n; ++i)
 	    if(baseclasses.Ref(i)->LookupTop(name, len, t))
-		return TRUE;
+		return true;
 
-	return FALSE;
+	return false;
     }
 }
 
@@ -244,15 +244,15 @@ bool Environment::LookupAll(const char* name, int len, Bind*& t)
 
     for(p = this; p != nil; p = p->next)
 	if(p->htable->Lookup((char*)name, len, (HashValue*)&t))
-	    return TRUE;
+	    return true;
 	else{
 	    uint n = p->baseclasses.Number();
 	    for(uint i = 0; i < n; ++i)
 		if(p->baseclasses.Ref(i)->LookupAll(name, len, t))
-		    return TRUE;
+		    return true;
 	}
 
-    return FALSE;
+    return false;
 }
 
 bool Environment::RecordVariable(char* name, Class* c)
@@ -452,10 +452,10 @@ bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
     if(LookupClasskeyword(keywordp) == nil){
 	classkeywords->Append(keywordp);
 	classkeywords->Append(metaclassp);
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 Ptree* Environment::LookupClasskeyword(Ptree* keyword)
@@ -594,7 +594,7 @@ char* Bind::GetEncodedType()
 
 bool Bind::IsType()
 {
-    return TRUE;
+    return true;
 }
 
 Class* Bind::ClassMetaobject()
@@ -621,7 +621,7 @@ char* BindVarName::GetEncodedType()
 
 bool BindVarName::IsType()
 {
-    return FALSE;
+    return false;
 }
 
 Bind::Kind BindTypedefName::What()
@@ -707,5 +707,5 @@ void BindTemplateFunction::GetType(TypeInfo& t, Environment*)
 
 bool BindTemplateFunction::IsType()
 {
-    return FALSE;
+    return false;
 }

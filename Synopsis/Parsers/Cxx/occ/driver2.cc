@@ -113,7 +113,7 @@ static char* MakeTempFilename(const char* src, const char* suffix);
 
 bool ParseTargetSpecificOptions(char*, char*&)
 {
-    return FALSE;
+    return false;
 }
 
 void RunLinker()

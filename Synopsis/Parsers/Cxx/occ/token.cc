@@ -48,7 +48,7 @@
 #include <assert.h>		// for assert in InitializeOtherKeywords
 #endif
 
-extern BOOL regularCpp;		// defined in main.cc
+extern bool regularCpp;		// defined in main.cc
 static void InitializeOtherKeywords();
 
 #ifdef TEST
@@ -153,7 +153,7 @@ bool Lex::RecordKeyword(char* keyword, int token)
     char* str;
 
     if(keyword == nil)
-	return FALSE;
+	return false;
 
     str = new(GC) char[strlen(keyword) + 1];
     strcpy(str, keyword);
@@ -162,7 +162,7 @@ bool Lex::RecordKeyword(char* keyword, int token)
 	user_keywords = new HashTable;
 
     if(user_keywords->AddEntry(str, (HashValue)token, &index) >= 0)
-	return TRUE;
+	return true;
     else
 	return bool(user_keywords->Peek(index) == (HashValue)token);
 }
@@ -170,7 +170,7 @@ bool Lex::RecordKeyword(char* keyword, int token)
 bool Lex::Reify(Ptree* t, unsigned int& value)
 {
     if(t == nil || !t->IsLeaf())
-	return FALSE;
+	return false;
 
     char* p = t->GetPosition();
     int len = t->GetLength();
@@ -187,10 +187,10 @@ bool Lex::Reify(Ptree* t, unsigned int& value)
 	    else if(is_int_suffix(c))
 		break;
 	    else
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
     }
     else if(len > 0 && is_digit(*p)){
 	for(int i = 0; i < len; ++i){
@@ -200,13 +200,13 @@ bool Lex::Reify(Ptree* t, unsigned int& value)
 	    else if(is_int_suffix(c))
 		break;
 	    else
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 // Reify() doesn't interpret an escape character.
@@ -214,12 +214,12 @@ bool Lex::Reify(Ptree* t, unsigned int& value)
 bool Lex::Reify(Ptree* t, char*& str)
 {
     if(t == nil || !t->IsLeaf())
-	return FALSE;
+	return false;
 
     char* p = t->GetPosition();
     int length = t->GetLength();
     if(*p != '"')
-	return FALSE;
+	return false;
     else{
 	str = new(GC) char[length];
 	char* sp = str;
@@ -234,7 +234,7 @@ bool Lex::Reify(Ptree* t, char*& str)
 		    ;
 
 	*sp = '\0';
-	return TRUE;
+	return true;
     }
 }
 
@@ -605,14 +605,14 @@ bool Lex::ReadCharConst(uint top)
 	if(c == '\\'){
 	    c = file->Get();
 	    if(c == '\0')
-		return FALSE;
+		return false;
 	}
 	else if(c == '\''){
 	    token_len = int(file->GetCurPos() - top + 1);
-	    return TRUE;
+	    return true;
 	}
 	else if(c == '\n' || c == '\0')
-	    return FALSE;
+	    return false;
     }
 }
 
@@ -634,7 +634,7 @@ bool Lex::ReadStrConst(uint top)
 	if(c == '\\'){
 	    c = file->Get();
 	    if(c == '\0')
-		return FALSE;
+		return false;
 	}
 	else if(c == '"'){
 	    uint pos = file->GetCurPos() + 1;
@@ -650,11 +650,11 @@ bool Lex::ReadStrConst(uint top)
 	    else{
 		token_len = int(pos - top);
 		file->Rewind(pos);
-		return TRUE;
+		return true;
 	    }
 	}
 	else if(c == '\n' || c == '\0')
-	    return FALSE;
+	    return false;
     }
 }
 
@@ -743,7 +743,7 @@ bool Lex::ReadLineDirective()
     do{
 	c = file->Get();
     }while(c != '\n' && c != '\0');
-    return TRUE;
+    return true;
 }
 
 int Lex::ReadIdentifier(uint top)
@@ -848,12 +848,12 @@ static struct rw_table {
 
 static void InitializeOtherKeywords()
 {
-    static BOOL done = FALSE;
+    static bool done = false;
 
     if(done)
 	return;
     else
-	done = TRUE;
+	done = true;
 
     if(regularCpp)
 	for(unsigned int i = 0; i < sizeof(table) / sizeof(table[0]); ++i)

@@ -54,12 +54,12 @@ public:
     int AddEntry(bool, char* key, int len, HashValue value, int* index = 0);
 
     int AddEntry(char* key, int len, HashValue value, int* index = 0) {
-	return AddEntry(TRUE, key, len, value, index);
+	return AddEntry(true, key, len, value, index);
     }
 
     // allow a duplicated entry to be inserted
     int AddDupEntry(char* key, int len, HashValue value, int* index = 0) {
-	return AddEntry(FALSE, key, len, value, index);
+	return AddEntry(false, key, len, value, index);
     }
 
     bool Lookup(char* key, HashValue* value);

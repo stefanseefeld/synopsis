@@ -295,15 +295,15 @@ unsigned char* Encoding::GetTemplateArguments(unsigned char* name, int& len)
 
 void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
 {
-    bool c = FALSE, v = FALSE;
+    bool c = false, v = false;
     if(cv1 != nil && !cv1->IsLeaf())
 	while(cv1 != nil){
 	    int kind = cv1->Car()->What();
 	    cv1 = cv1->Cdr();
 	    if(kind == CONST)
-		c = TRUE;
+		c = true;
 	    else if(kind == VOLATILE)
-		v = TRUE;
+		v = true;
 	}
 
     if(cv2 != nil && !cv2->IsLeaf())
@@ -311,9 +311,9 @@ void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
 	    int kind = cv2->Car()->What();
 	    cv2 = cv2->Cdr();
 	    if(kind == CONST)
-		c = TRUE;
+		c = true;
 	    else if(kind == VOLATILE)
-		v = TRUE;
+		v = true;
 	}
 
     if(v)

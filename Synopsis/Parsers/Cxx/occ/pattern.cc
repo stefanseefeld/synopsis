@@ -74,15 +74,15 @@ bool Ptree::Match(Ptree* list, char* pattern, ...)
     pat = SkipSpaces(pat);
     pat = MatchPat(list, pat);
     if(pat == nil)
-	return FALSE;
+	return false;
     else{
 	pat = SkipSpaces(pat);
 	if(*pat == '\0')
-	    return TRUE;
+	    return true;
 	else{
 	    MopWarningMessage("Ptree::Match()", "[ ] are forgot?");
 	    MopMoreWarningMessage(pattern);
-	    return FALSE;
+	    return false;
 	}
     }
 }
@@ -410,9 +410,9 @@ char* Ptree::IntegerToString(sint num, int& length)
 
     int i = N - 1;
     if(num >= 0)
-	minus = FALSE;
+	minus = false;
     else{
-	minus = TRUE;
+	minus = true;
 	num = -num;
     }
 
