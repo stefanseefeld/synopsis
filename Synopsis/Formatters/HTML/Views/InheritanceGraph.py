@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.23 2002/12/09 04:00:59 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.24 2003/02/01 05:35:45 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.24  2003/02/01 05:35:45  chalky
+# Remove warning
+#
 # Revision 1.23  2002/12/09 04:00:59  chalky
 # Added multiple file support to parsers, changed AST datastructure to handle
 # new information, added a demo to demo/C++. AST Declarations now have a
@@ -119,7 +122,8 @@ class ToDecl (Type.Visitor):
 	try:
 	    typeobj = config.types[name]
 	except KeyError:
-	    if config.verbose: print "Warning: %s not found in types dict."%(name,)
+	    # Eg: Unknown parent which has been NameMapped
+	    #if config.verbose: print "Warning: %s not found in types dict."%(name,)
 	    return None
 	self.__decl = None
 	typeobj.accept(self)
