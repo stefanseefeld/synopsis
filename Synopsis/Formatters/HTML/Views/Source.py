@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.2 2003/02/01 23:59:32 chalky Exp $
+# $Id: Source.py,v 1.3 2003/11/11 04:54:22 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Source.py,v $
+# Revision 1.3  2003/11/11 04:54:22  stefan
+# the C++ parser is now spelled Parser.Cxx...
+#
 # Revision 1.2  2003/02/01 23:59:32  chalky
 # Use full_filename() for file source so don't need file_path any more to
 # find the original source files.
@@ -78,7 +81,7 @@ from Tags import *
 # Link module
 link = None
 try:
-    link = Util._import("Synopsis.Parser.C++.link")
+    link = Util._import("Synopsis.Parser.Cxx.link")
 except ImportError:
     print "Warning: unable to import link module. Continuing..."
 
