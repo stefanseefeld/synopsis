@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.2 2001/06/26 04:32:15 stefan Exp $
+#  $Id: Config.py,v 1.3 2001/07/10 05:38:23 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -52,18 +52,33 @@ wish.
 
 <heading>Modules</heading>
 In many places modules or lists of modules can be specified to perform tasks.
-These may be selected from a list of built-in defaults for that task as a
-simple string, or from anywhere via a tuple of two strings: (module,
-class-name). For example, to use the provided DOxygen Scope Sorter, you
-specify ('Synopsis.Formatter.HTML.doxygen', 'DOScopeSorter') or to use your
-own something like ('mymodules.py', 'ScopeSorter')
+These may be selected in one of four ways: 
+    
+1. From a list of built-in defaults for that task as a simple string (depends
+on attribute), 
+
+2. As a member of a module or package as a simple string (depends on
+attribute),
+
+3. From anywhere via a tuple of two strings: (module, class-name); for
+example, to use the provided DOxygen Scope Sorter, you specify
+('Synopsis.Formatter.HTML.doxygen', 'DOScopeSorter') or to use your own
+something like ('mymodules.py', 'ScopeSorter') - Note that ending the first
+string in '.py' forces it to be loaded from a file, something which cannot be
+achieved using the next method:
+
+4. From anywhere via an absolute dotted reference, eg:
+    'Synopsis.Formatter.HTML.doxygen.DOScopeSorter'.
+
+Of these methods, 1 or 2 are preferable for brevity and 4 for absolute
+references, unless a filename is needed in which case you need 3.
 
 @see Synopsis.Config.Base
 """
 
 import sys
 
-prefix = '@prefix@'
+prefix = @prefix@
 
 class Base:
     """The base class for configuration objects. 
@@ -225,6 +240,9 @@ class Base:
 	    on Scope Pages. You may set this to override the default sorting,
 	    for example using ('Synopsis.Formatter.HTML.doxygen',
 	    'DOScopeSorter')
+	    @attr file_layout Specifies the file layout to use. This must be a
+	    class that implements the FileLayout interface defined in the
+	    HTML.FileLayout module.
 	    @see Synopsis.Formatter.HTML The HTML Formatter
 	    @see Synopsis.Formatter.HTML.core The main HTML module
 	    """
@@ -232,6 +250,7 @@ class Base:
 	    # Defaults
             datadir = prefix + '/share/synopsis'
 	    stylesheet = 'style.css'
+	    file_layout = 'Synopsis.Formatter.HTML.FileLayout.FileLayout'
             pages = ['ScopePages',
                               'ModuleListing',
                               'ModuleIndexer',
@@ -296,11 +315,11 @@ class Base:
 		'DetailFormatter' (from ASTFormatter)
 
 		@param summary_formatters list of modules for SummaryFormatter
-		to use. The default is ['SummaryASTFormatter', 'SummaryASTCommenter']
+		to use. The default is ['SummaryAST', 'SummaryCommenter']
 
 		@param detail_formatters list of modules for DetailFormatter
-		to use. The default is ['DetailASTFormatter',
-		'ClassHierarchyGraph', 'DetailASTCommenter']. Note that it is
+		to use. The default is ['DetailAST',
+		'ClassHierarchyGraph', 'DetailCommenter']. Note that it is
 		these modules that are used to display the top of the class
 		and module pages (hence the ClassHierarchyGraph module, which
 		shows class hierarchies at the top of class pages).
@@ -308,16 +327,16 @@ class Base:
 		@see Synopsis.Formatter.HTML.ScopePages
 		@see Synopsis.Formatter.HTML.ASTFormatter
 		"""
-		summarizer = 'SummaryFormatter'
-		detailer = 'DetailFormatter'
+		summarizer = 'Summary'
+		detailer = 'Detail'
 		summary_formatters = [
-		    'SummaryASTFormatter',
-		    'SummaryASTCommenter'
+		    'SummaryAST',
+		    'SummaryCommenter'
 		]
 		detail_formatters = [
-		    'DetailASTFormatter',
+		    'DetailAST',
 		    'ClassHierarchyGraph',
-		    'DetailASTCommenter'
+		    'DetailCommenter'
 		]
 	    class InheritanceGraph:
 		"""Config for InheritanceGraph module.
