@@ -4,7 +4,7 @@
 #include <stack>
 #include <python1.5/Python.h>
 
-#if 1
+#if 0
 #define DO_TRACE
 class Trace
 {
@@ -70,6 +70,7 @@ public:
   void pushStruct(size_t l, bool m, const string &n) { pushClass(l, m, "struct", n);}
 
   PyObject *lookupType(const string &, PyObject *);
+  PyObject *lookupType(const string &);
 
   static void addInheritance(PyObject *, const vector<PyObject *> &);
   static PyObject *N2L(const string &);

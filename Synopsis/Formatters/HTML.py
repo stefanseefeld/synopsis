@@ -13,7 +13,7 @@ import sys, getopt, os, os.path, string, types
 from Synopsis import Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
-debug=0
+debug=1
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
@@ -342,6 +342,7 @@ class BaseFormatter:
 
     def formatType(self, typeObj):
 	"Returns a reference string for the given type object"
+	if typeObj is None: return "(unknown)"
         typeObj.accept(self)
         return self.reference(self.type_ref(), self.type_label())
 
@@ -421,8 +422,7 @@ class BaseFormatter:
 	str = []
 	keyword = lambda m,span=span: span("keyword", m)
 	str.extend(map(keyword, parameter.premodifier()))
-        parameter.type().accept(self)
-	str.append(self.reference(self.__type_ref, self.__type_label))
+	str.append(self.formatType(parameter.type()))
 	str.extend(map(keyword, parameter.postmodifier()))
         if len(parameter.identifier()) != 0:
             str.append(span("variable", parameter.identifier()))
@@ -631,6 +631,23 @@ class Paginator:
 	self.detailer = DetailFormatter(toc)
 	self.__os = None
 	self.__scope = []
+	
+	# Resolve start namespace using global namespace var
+	self.__start = self.__global
+	scope_names = string.split(namespace, "::")
+	scope = []
+	for scope_name in scope_names:
+	    if not scope_name: break
+	    scope.append(scope_name)
+	    children = self.__start.children()
+	    if children.has_key(tuple(scope)):
+		child = children[tuple(scope)]
+		if isinstance(child, Namespace):
+		    self.__start = children[tuple(scope)]
+		    continue
+	    # Don't continue if scope traversal failed!
+	    print "Fatal: Couldn't find child scope",scope
+	    raise NameError, "I-cant-be-stuffed-making-my-own-exception"
 
     def scope(self): return self.__scope
     def write(self, text): self.__os.write(text)
@@ -653,7 +670,7 @@ class Paginator:
 
     def createNamespacePages(self):
 	"""Creates a page for every Namespace"""
-	self.__namespaces = [self.__global]
+	self.__namespaces = [self.__start]
 	while self.__namespaces:
 	    ns = self.__namespaces.pop(0)
 	    self.processNamespacePage(ns)
@@ -663,12 +680,12 @@ class Paginator:
 	self.startFile(self.getModuleIndexFilename(), "Module Index")
 	tree = href(basename+"_tree.html", 'Tree', target='main')
 	self.write(entity('b', "Module Index")+' | %s<br>'%tree)
-	self.indexModule(self.__global)
+	self.indexModule(self.__start)
 	self.endFile()
 
     def createModuleIndexes(self):
 	"""Creates indexes for all modules"""
-	self.__namespaces = [self.__global]
+	self.__namespaces = [self.__start]
 	while self.__namespaces:
 	    ns = self.__namespaces.pop(0)
 	    self.processNamespaceIndex(ns)
@@ -677,7 +694,7 @@ class Paginator:
 	"""Create a frames index file"""
 	self.startFile(basename+"_frames.html", "Synopsis - Generated Documentation", body='')
 	findex = self.getModuleIndexFilename()
-	fmindex = self.getIndexFilename(self.__global)
+	fmindex = self.getIndexFilename(self.__start)
 	fglobal = filename(basename, self.__global.name())
 	frame1 = solotag('frame', name='index', src=findex)
 	frame2 = solotag('frame', name='module_index', src=fmindex)
@@ -691,11 +708,19 @@ class Paginator:
 	"""Creates a file with the inheritance tree"""
 	classes = toc.classes()
 	classes.sort()
-	roots = []
-	root = lambda name, toc=toc, Util=Util:\
-	    not toc.lookup(Util.ccolonName(name)).node.declarations()[0].parents()
-	roots = filter(root, classes)
-
+	def root(name, toc=toc, Util=Util):
+	    try:
+		return not toc.lookup(Util.ccolonName(name)).node.declarations()[0].parents()
+	    except:
+		print "Filtering",Util.ccolonName(name),"failed:"
+		print toc.lookup(Util.ccolonName(name)).node.declarations()[0].__dict__
+		return 0
+	try:
+	    roots = filter(root, classes)
+	except AttributeError:
+	    # for some reason I get a declaration that has no parents() attribute
+	    print "Failed."
+	    return
 	self.detailer.set_scope([])
 
 	self.startFile(basename+"_tree.html", "Synopsis - Class Hierarchy")
@@ -851,11 +876,12 @@ class Paginator:
 	self.__os.close()
 
 def __parseArgs(args):
-    global basename, stylesheet
+    global basename, stylesheet, namespace
     basename = None
     stylesheet = ""
+    namespace = ""
     try:
-        opts,remainder = getopt.getopt(args, "o:s:")
+        opts,remainder = getopt.getopt(args, "o:s:n:")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -866,6 +892,8 @@ def __parseArgs(args):
             basename = a #open(a, "w")
         elif o == "-s":
             stylesheet = a
+	elif o == "-n":
+	    namespace = a
 
 def format(types, declarations, args):
     global basename, stylesheet, toc

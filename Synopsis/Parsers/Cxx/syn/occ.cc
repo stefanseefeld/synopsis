@@ -40,7 +40,7 @@ class PyWalker : public Walker
 {
 public:
   PyWalker(Parser *, Synopsis *);
-  ~PyWalker();
+  virtual ~PyWalker();
   virtual Ptree *TranslateDeclaration(Ptree *);
 //   virtual Ptree *TranslateTemplateDecl(Ptree *);
   virtual Ptree *TranslateDeclarator(bool, PtreeDeclarator*);
@@ -114,24 +114,31 @@ string PyWalker::getName(Ptree *node)
 
 PyObject *PyWalker::lookupType(Ptree *node, PyObject *scopes)
 {
-  if (node->IsLeaf()) return synopsis->lookupType(getName(node), scopes);
-//   else if (node->Length() == 2) //template
-//     {
-      
-//     }
-  else
-    {
-      cerr << "occ internal error in 'PyWalker::lookupType' : node is ";
-      node->Display();
-      exit(-1);
-      return 0;
+    if (node->IsLeaf())
+	return synopsis->lookupType(getName(node), scopes);
+    else if (node->Length() == 2) {
+	//template
+	// Ignore template for now and just return the name
+	// FIXME: obviously this is not the right thing to do ;)
+	return synopsis->lookupType(getName(node->First()), scopes);
+    } else if (node->Length() > 2 && node->Second()->Eq("::")) {
+	// Scoped name.. Join for now.
+	Ptree* name = Ptree::Make(node->ToString());
+	return synopsis->lookupType(getName(name), scopes);
+    } else {
+	cerr << "occ internal error in 'PyWalker::lookupType' : node is ";
+	node->Display();
+	exit(-1);
+	return 0;
     }
 }
 
 Ptree *PyWalker::TranslateDeclaration(Ptree *declaration)
 {
     Trace trace("PyWalker::TranslateDeclaration");
+#ifdef DO_TRACE
     declaration->Display();
+#endif
     m_declaration = declaration;
     Walker::TranslateDeclaration(declaration);
     return declaration;
@@ -146,10 +153,12 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
     char* enctype = decl->GetEncodedType();
     if (!encname || !enctype) return decl;
     if (enctype[0] == 'F') {
+#if 0
 	cout << "FUNCTION: "; decl->Display();
 	cout << "encoding '";
 	Encoding::Print(cout, enctype); cout << "' '";
 	Encoding::Print(cout, encname); cout << '\'' << endl;
+#endif
 	// Figure out parameter types:
 	string enctype_s(enctype);
 	string::iterator iter = enctype_s.begin()+1;
@@ -202,6 +211,7 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	    p = Ptree::Rest(p);
 	}
 	PyObject* oper = synopsis->addOperation(-1, true, premod, returnType, name, params);
+	synopsis->addDeclared(name, oper);
     }
     return decl;
 }
@@ -215,29 +225,34 @@ PyObject* PyWalker::parseEncodedType(string enctype, string::iterator &iter)
     const int DigitOffset = 0x80;
 
     string::iterator end = enctype.end();
-    PyObject* obj = 0;
+    // PyObject* obj = 0;
     for (;iter != end; ++iter) {
 	int c = int((unsigned char)*iter);
-	if (c == 'P') {
-	    //cout << "Pointer to ";
-	} else if (c == 'R') {
-	    //cout << "Reference to ";
-	} else if (c == 'i') {
-	    ++iter;
-	    return synopsis->addBase("int");
-	} else if (c == 'v') {
-	    ++iter;
-	    return synopsis->addBase("void");
-	} else if (c == '?') {
+	if (c == 'P') { /* cout << "Pointer to "; */ }
+	else if (c == 'R') { /*cout << "Reference to "; */ }
+	else if (c == 'S') { /*cout << "Signed "; */ }
+	else if (c == 'U') { /*cout << "Unsigned "; */ }
+	else if (c == 'C') { /*cout << "Const"; */ }
+	else if (c == 'i') { ++iter; return synopsis->lookupType("int"); }
+	else if (c == 'v') { ++iter; return synopsis->lookupType("void"); }
+	else if (c == 'b') { ++iter; return synopsis->lookupType("bool"); }
+	else if (c == 's') { ++iter; return synopsis->lookupType("short"); }
+	else if (c == 'c') { ++iter; return synopsis->lookupType("char"); }
+	else if (c == 'l') { ++iter; return synopsis->lookupType("long"); }
+	else if (c == 'j') { ++iter; return synopsis->lookupType("long long"); }
+	else if (c == 'f') { ++iter; return synopsis->lookupType("float"); }
+	else if (c == 'd') { ++iter; return synopsis->lookupType("double"); }
+	else if (c == 'r') { ++iter; return synopsis->lookupType("long double"); }
+	else if (c == '?') {
 	    ++iter;
 	    // Constructor/Destructor has no type FIXME
-	    return synopsis->addBase("");
+	    return synopsis->lookupType("?");
 	} else if (c > DigitOffset) {
 	    int count = c - DigitOffset;
 	    string name(count, '\0');
 	    copy_n(iter+1, count, name.begin());
 	    iter += count;
-	    return synopsis->addBase(name);
+	    return synopsis->lookupType(name);
 	} else if (c == '_') {
 	    return NULL;
 	} else {
@@ -251,14 +266,18 @@ PyObject* PyWalker::parseEncodedType(string enctype, string::iterator &iter)
 Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
 {
   Trace trace("PyWalker::TranslateDeclarator");
-  declarator->Display();
+#ifdef DO_TRACE
+    declarator->Display();
+#endif
   if (declarator->What() != ntDeclarator) return declarator;
   char* encname = declarator->GetEncodedName();
   char* enctype = declarator->GetEncodedType();
   if (!encname || !enctype) return declarator;
+#ifdef DO_TRACE
    cout << "encoding '";
    Encoding::Print(cout, enctype); cout << "' '";
    Encoding::Print(cout, encname); cout << '\'' << endl;
+#endif
   ///...
   return declarator;
 }
@@ -277,10 +296,11 @@ Ptree *PyWalker::TranslateTypedef(Ptree *node)
 {
   Trace trace("PyWalker::TranslateTypedef");
   _declarators.clear();
-  Ptree *tspec = TranslateTypespecifier(node->Second());
+  /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
   for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
     TranslateDeclarator(declarator->Car());
   //. now traverse the declarators list and insert them into the AST...
+  return node;
 }
 
 /*
@@ -295,6 +315,7 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
   synopsis->pushNamespace(-1, 1, getName(node->Cadr()));
   Translate(Ptree::Third(node));
   synopsis->popScope();
+  return node;
 }
 
 /*
@@ -367,14 +388,15 @@ vector<PyObject *> PyWalker::TranslateInheritanceSpec(Ptree *node)
       node = node->Cdr();		// skip : or ,
       //. the attributes
       vector<string> attributes(node->Car()->Length() - 1);
-      for (size_t i = 0; i != node->Car()->Length() - 1; ++i)
+      for (int i = 0; i != node->Car()->Length() - 1; ++i)
 	attributes[i] = getName(node->Car()->Nth(i));
       //. look up the parent class
       PyObject *pdecl = lookupType(node->Car()->Last()->Car(), Py_BuildValue("[]"));
+      node = node->Cdr();
+      if (pdecl == Py_None) continue;
 //       assertObject(pdecl);
       //. add it to the list
       ispec.push_back(synopsis->Inheritance(pdecl, attributes));
-      node = node->Cdr();
     }
   return ispec;
 }
