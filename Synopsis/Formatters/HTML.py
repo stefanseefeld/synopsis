@@ -9,7 +9,7 @@
 #   o NOTE: TOC also stores types for some reason. investigate.
 # . Unite Nodes/NamespaceBuilder into TOC
 
-import sys, getopt, os, os.path, string, types
+import sys, getopt, os, os.path, string, types, errno
 from Synopsis import AST, Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
@@ -53,7 +53,10 @@ class FileNamer:
 	    print "Warning: Output directory does not exist. Creating."
 	    try:
 		os.makedirs(basename, 0755)
-	    except os.error, reason:
+	    except OSError, reason:
+		print "ERROR: Creating directory:",reason
+		sys.exit(2)
+	    except IOError, reason:
 		print "ERROR: Creating directory:",reason
 		sys.exit(2)
 	    try:
@@ -65,9 +68,12 @@ class FileNamer:
 		    fout.writelines(fin.readlines())
 		    fin.close()
 		    fout.close()
-	    except os.error, reason:
-		print "ERROR: Copying file:", reason
-		sys.exit(2)
+	    except IOError, reason:
+		if reason.errno == errno.ENOENT:
+		    print "Warning: Stylesheet file '%s' does not exist."%stylesheet
+		else:
+		    print "ERROR: Copying file:", reason
+		    sys.exit(2)
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
 	    sys.exit(1)
