@@ -1,4 +1,4 @@
-synopsis	:= ../../synopsis -p Python -f HTML -Wf,-s,style.css,-S,../html.css
+synopsis	:= ../../synopsis -Wc,parser=Python,formatter=HTML -Wf,-s,style.css,-S,../html.css
 
 all: ast #test
 
