@@ -935,7 +935,7 @@ static inline char *stringify_string(char *x)
 {
 	size_t l;
 	int i, inside_str = 0, inside_cc = 0, must_quote, has_quoted = 0;
-	char *y, *d;
+	char *y, *d = 0;
 
 	for (i = 0; i < 2; i ++) {
 		if (i) d[0] = '"';
@@ -1030,10 +1030,10 @@ char compile_time[12], compile_date[24];
 int substitute_macro(struct lexer_state *ls, struct macro *m,
 	struct token_fifo *tfi, int penury, int reject_nested, long l)
 {
-	struct token_fifo *atl, etl;
+	struct token_fifo *atl = 0, etl;
 	struct token t, *ct;
 	int i, save_nest = m->nest;
-	size_t save_art, save_tfi, etl_limit;
+	size_t save_art, save_tfi = 0, etl_limit;
 	int ltwds, ntwds, ltwws;
 	int pragma_op = 0;
 #if DEBUG_MACROS

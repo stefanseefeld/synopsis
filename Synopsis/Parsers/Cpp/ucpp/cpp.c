@@ -1213,7 +1213,7 @@ error1:
 static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 {
 	int c, string_fname = 0;
-	char *fname;
+	char *fname = 0;
 	unsigned char *fname2;
 	size_t fname_ptr = 0;
 	long l = ls->line;
