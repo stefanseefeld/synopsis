@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.16 2001/05/25 13:45:49 stefan Exp $
+# $Id: Dot.py,v 1.17 2001/06/06 04:44:54 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.17  2001/06/06 04:44:54  uid20151
+# Prune names of each class to the base which is the most common of its parents.
+# Makes for simpler graphs with short names :)
+#
 # Revision 1.16  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -138,6 +142,23 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         self.write("Node" + str(nodes[child]))
         self.write("[ color=\"black\", fontsize=10" + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
 
+    def getClassName(self, node):
+	"""Returns the name of the given class node, relative to all its
+	parents. This makes the graph simpler by making the names shorter"""
+	base = Util.pruneScope(node.name(), self.scope())
+	for i in node.parents():
+	    try:
+		parent = i.parent()
+		pname = Util.pruneScope(parent.name(), self.scope())
+		for j in range(len(base)):
+		    if j > len(pname) or pname[j] != base[j]:
+			# Base is longer than parent name, or found a difference
+			base[j:] = []
+			break
+	    except: pass # typedefs etc may cause errors here.. ignore
+	if not node.parents(): base = []
+	return Util.ccolonName(node.name(), base)
+
     #################### Type Visitor ###########################################
     def visitUnknown(self, type):
         self.__type_ref = toc[type.link()]
@@ -145,7 +166,10 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         
     def visitDeclared(self, type):
         self.__type_ref = toc[type.name()]
-        self.__type_label = Util.ccolonName(type.name(), self.scope())
+	if isinstance(type.declaration(), AST.Class):
+	    self.__type_label = self.getClassName(type.declaration())
+	else:
+	    self.__type_label = Util.ccolonName(type.name(), self.scope())
 
     def visitParametrized(self, type):
 	if type.template():
@@ -174,7 +198,7 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
             self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
-        label = Util.ccolonName(node.name(), self.scope())
+        label = self.getClassName(node)
         ref = toc[node.name()]
         if ref:
             self.writeNode(ref.link, label)
@@ -217,7 +241,7 @@ class SingleInheritanceFormatter(InheritanceFormatter):
                 self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
-        label = Util.ccolonName(node.name(), self.scope())
+        label = self.getClassName(node)
         if self.__current == 1:
             self.writeNode('', label, style='filled', color='lightgrey')
         else:
@@ -246,7 +270,7 @@ class SingleInheritanceFormatter(InheritanceFormatter):
                             type.accept(self)
                             if self.type_ref():
                                 if self.type_ref().name == node.name():
-                                    child_label = Util.ccolonName(child.name(), self.scope())
+                                    child_label = self.getClassName(child)
                                     ref = toc[child.name()]
                                     if ref:
                                         self.writeNode(ref.link, child_label)
