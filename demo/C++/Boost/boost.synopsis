@@ -12,7 +12,7 @@ class Project:
     ['FormatAction', 327, 237, 'HTML Formatter', struct(
       stylesheet='style.css',
       stylesheet_file='../html.css',
-      pages=['FramesIndex', 'ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'NameIndex', 'XRefPages'],
+      pages=['FramesIndex', 'ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileListing', 'FileIndexer', 'FileDetails', 'InheritanceTree', 'InheritanceGraph', 'FileSource', 'NameIndex', 'XRefPages'],
       InheritanceGraph=struct(
         min_size=3,
 	min_group_size=5,
@@ -28,14 +28,11 @@ class Project:
       file_layout='Synopsis.Formatter.HTML.FileLayout.FileLayout',
       tree_formatter='TreeFormatter.TreeFormatter',
       comment_formatters=['quotehtml', 'summary', 'section'],
-      FilePages=struct(
+      FileSource=struct(
         toc_files=[],
         file_path='boost/%s',
         scope='',
         links_path='BoostLinks/%s'
-      ),
-      FileTree=struct(
-        link_to_pages=1
       ),
       XRefPages=struct(
 	xref_file='BoostXRef/compiled.xref'
