@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.14 2001/04/05 14:03:21 chalky Exp $
+# $Id: Formatter.py,v 1.15 2001/04/17 13:35:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.15  2001/04/17 13:35:37  chalky
+# Slightly more robust
+#
 # Revision 1.14  2001/04/05 14:03:21  chalky
 # Very small change
 #
@@ -114,6 +117,7 @@ class SSDFormatter (CommentFormatter):
 	comm.detail = self.parse_ssd(self.strip_star(comm.detail))
     def strip_star(self, str):
 	"""Strips all star-format comments from the docstring"""
+	str = str or ''
 	mo = self.re_star.search(str)
 	while mo:
 	    str = str[:mo.start()] + str[mo.end():]
