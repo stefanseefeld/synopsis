@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 
 # ^C is caught to allow for cleanup
 &allow_quit;
@@ -26,10 +26,10 @@ $create_output = 0;
 
 $max_time = 3600;        # 60 minutes to live by default
 
-$command = "../../src/ctdemo ";    # The command to run
+$command = "../../bin/ctdemo ";    # The command to run
 
                                  # command line options
-$options = '';
+$options = "-cppcmmd \"gcc -E %s > %s\"";
 
 open(STDERR, ">&STDOUT");       # Want to catch ALL output
 select(STDERR); $| = 1;         # Set unbuffered
@@ -44,6 +44,7 @@ if ( $pwd =~ /\/([^\/]+)$/ ){
 
 $rundir = 'run';        # The files to run
 $ansdir = 'ans';        # The correct answers
+$outdir = 'out';        # The given answers
 $dffdir = 'diff';       # The difference (between ours and correct)
 
 $diff = 'diff -w';         # diff program to use
@@ -141,6 +142,18 @@ if (! opendir(ANSDIR, "$ansdir")){
     closedir(ANSDIR);
 }
 
+# Create the output directory if its not there
+if (! opendir(OUTDIR, "$outdir")){
+
+    if(! mkdir("$outdir", 0777)){
+        die "Could not create directory: $pwd/$outdir\n";
+    }
+    print "\nCreating the output directory.\n\n";
+
+} else {
+    closedir(OUTDIR);
+}
+
 # Create the diff directory if its not there
 if (! opendir(DFFDIR, "$dffdir")){
 
@@ -219,7 +232,8 @@ foreach $prog (@progs){
     } else {
 
         # Run command, place diff in diff directory 
-        $err = system( "$command $options $rundir/${prog}.c | $diff - $ansdir/${prog}.ans > $dffdir/${prog}.diff" );
+        $err = system( "$command $options $rundir/${prog}.c > $outdir/${prog}.out" );
+        $err = system( "$diff $outdir/${prog}.out $ansdir/${prog}.ans > $dffdir/${prog}.diff" );
 
         if ($verbose)
         {
