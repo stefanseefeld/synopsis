@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdarg>
+#include <stdexcept>
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #endif
@@ -392,12 +393,58 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 
 bool Ptree::Reify(unsigned int& value)
 {
-    return Lexer::Reify(this, value);
+  if(!IsLeaf()) return false;
+
+  const char* p = GetPosition();
+  int len = GetLength();
+  value = 0;
+  if(len > 2 && *p == '0' && is_xletter(p[1]))
+  {
+    for(int i = 2; i < len; ++i)
+    {
+      char c = p[i];
+      if(is_digit(c)) value = value * 0x10 + (c - '0');
+      else if('A' <= c && c <= 'F') value = value * 0x10 + (c - 'A' + 10);
+      else if('a' <= c && c <= 'f') value = value * 0x10 + (c - 'a' + 10);
+      else if(is_int_suffix(c)) break;
+      else return false;
+    }
+    return true;
+  }
+  else if(len > 0 && is_digit(*p))
+  {
+    for(int i = 0; i < len; ++i)
+    {
+      char c = p[i];
+      if(is_digit(c)) value = value * 10 + c - '0';
+      else if(is_int_suffix(c)) break;
+      else return false;
+    }
+    return true;
+  }
+  else return false;
 }
 
 bool Ptree::Reify(char*& str)
 {
-    return Lexer::Reify(this, str);
+  if(!IsLeaf()) return false;
+  char* p = GetPosition();
+  int length = GetLength();
+  if(*p != '"') return false;
+  else
+  {
+    str = new(GC) char[length];
+    char* sp = str;
+    for(int i = 1; i < length; ++i)
+      if(p[i] != '"')
+      {
+	*sp++ = p[i];
+	if(p[i] == '\\' && i + 1 < length) *sp++ = p[++i];
+      }
+      else while(++i < length && p[i] != '"');
+    *sp = '\0';
+    return true;
+  }
 }
 
 char* Ptree::IntegerToString(sint num, int& length)

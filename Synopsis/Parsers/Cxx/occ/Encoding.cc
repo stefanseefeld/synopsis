@@ -301,9 +301,9 @@ void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
 	while(cv1 != 0){
 	    int kind = cv1->Car()->What();
 	    cv1 = cv1->Cdr();
-	    if(kind == CONST)
+	    if(kind == Token::CONST)
 		c = true;
-	    else if(kind == VOLATILE)
+	    else if(kind == Token::VOLATILE)
 		v = true;
 	}
 
@@ -311,9 +311,9 @@ void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
 	while(cv2 != 0){
 	    int kind = cv2->Car()->What();
 	    cv2 = cv2->Cdr();
-	    if(kind == CONST)
+	    if(kind == Token::CONST)
 		c = true;
-	    else if(kind == VOLATILE)
+	    else if(kind == Token::VOLATILE)
 		v = true;
 	}
 

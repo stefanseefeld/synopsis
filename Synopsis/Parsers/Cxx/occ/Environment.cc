@@ -295,7 +295,7 @@ void Environment::RecordTypedefName(Ptree* decls)
 {
     while(decls != 0){
 	Ptree* d = decls->Car();
-	if(d->What() == ntDeclarator){
+	if(d->What() == Token::ntDeclarator){
 	    char* name = d->GetEncodedName();
 	    char* type = d->GetEncodedType();
 	    if(name != 0 && type != 0){
@@ -375,7 +375,7 @@ Environment* Environment::RecordTemplateFunction(Ptree* def, Ptree* body)
 {
     int n;
     Ptree* decl = Ptree::Third(body);
-    if(decl->IsA(ntDeclarator)){
+    if(decl->IsA(Token::ntDeclarator)){
 	char* name = decl->GetEncodedName();
 	if(name != 0){
 	    Environment* e = this;
@@ -392,7 +392,7 @@ Environment* Environment::RecordTemplateFunction(Ptree* def, Ptree* body)
 
 Environment* Environment::RecordDeclarator(Ptree* decl)
 {
-    if(decl->What() == ntDeclarator){
+    if(decl->What() == Token::ntDeclarator){
 	char* name = decl->GetEncodedName();
 	char* type = decl->GetEncodedType();
 	if(name != 0 && type != 0){
@@ -413,7 +413,7 @@ Environment* Environment::RecordDeclarator(Ptree* decl)
 
 Environment* Environment::DontRecordDeclarator(Ptree* decl)
 {
-    if(decl->What() == ntDeclarator){
+    if(decl->What() == Token::ntDeclarator){
 	char* name = decl->GetEncodedName();
 	if(name != 0){
 	    int len;

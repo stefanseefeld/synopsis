@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <stdexcept>
 #include "Lexer.hh"
 #include "Class.hh"
 #include "Environment.hh"
@@ -135,7 +136,7 @@ char* Class::MetaclassName()
 
 Ptree* Class::Comments()
 {
-    if (definition->IsA(ntClassSpec))
+  if (definition->IsA(Token::ntClassSpec))
 	return ((PtreeClassSpec*)definition)->GetComments();
     return 0;
 }
@@ -854,54 +855,61 @@ Ptree* Class::FinalizeClass()
 
 void Class::RegisterNewModifier(char* str)
 {
-    if(!Lexer::RecordKeyword(str, UserKeyword))
-	MopErrorMessage("Class::RegisterNewModifier()",
-			"the keyword is already used.");
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(!Lexer::RecordKeyword(str, UserKeyword))
+// 	MopErrorMessage("Class::RegisterNewModifier()",
+// 			"the keyword is already used.");
 }
 
 void Class::RegisterNewAccessSpecifier(char* str)
 {
-    if(!Lexer::RecordKeyword(str, UserKeyword4))
-	MopErrorMessage("Class::RegisterNewAccessSpecifier()",
-			"the keyword is already used.");
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(!Lexer::RecordKeyword(str, UserKeyword4))
+// 	MopErrorMessage("Class::RegisterNewAccessSpecifier()",
+// 			"the keyword is already used.");
 }
 
 void Class::RegisterNewMemberModifier(char* str)
 {
-    if(!Lexer::RecordKeyword(str, UserKeyword5))
-	MopErrorMessage("Class::RegisterNewMemberModifier()",
-			"the keyword is already used.");
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(!Lexer::RecordKeyword(str, UserKeyword5))
+// 	MopErrorMessage("Class::RegisterNewMemberModifier()",
+// 			"the keyword is already used.");
 }
 
 void Class::RegisterNewWhileStatement(char* str)
 {
-    if(!Lexer::RecordKeyword(str, UserKeyword))
-	MopErrorMessage("Class::RegisterNewWhileStatement()",
-			"the keyword is already used.");
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(!Lexer::RecordKeyword(str, UserKeyword))
+// 	MopErrorMessage("Class::RegisterNewWhileStatement()",
+// 			"the keyword is already used.");
 }
 
 void Class::RegisterNewForStatement(char* str)
 {
-    if(!Lexer::RecordKeyword(str, UserKeyword3))
-	MopErrorMessage("Class::RegisterNewForStatement()",
-			"the keyword is already used.");
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(!Lexer::RecordKeyword(str, UserKeyword3))
+// 	MopErrorMessage("Class::RegisterNewForStatement()",
+// 			"the keyword is already used.");
 }
 
 void Class::RegisterNewClosureStatement(char* str)
 {
-    if(!Lexer::RecordKeyword(str, UserKeyword2))
-	MopErrorMessage("Class::RegisterNewClosureStatement()",
-			"the keyword is already used.");
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(!Lexer::RecordKeyword(str, UserKeyword2))
+// 	MopErrorMessage("Class::RegisterNewClosureStatement()",
+// 			"the keyword is already used.");
 }
 
 void Class::RegisterMetaclass(char* keyword, char* class_name)
 {
-    if(Lexer::RecordKeyword(keyword, UserKeyword))
-	if(Environment::RecordClasskeyword(keyword, class_name))
-	    return;
+  throw std::runtime_error("sorry, registering new modifiers is not implemented");
+//     if(Lexer::RecordKeyword(keyword, UserKeyword))
+// 	if(Environment::RecordClasskeyword(keyword, class_name))
+// 	    return;
 
-    MopErrorMessage("Class::RegisterMetaclass()",
-		    "the keyword is already used.");
+//     MopErrorMessage("Class::RegisterMetaclass()",
+// 		    "the keyword is already used.");
 }
 
 void Class::ChangeDefaultMetaclass(char* name)

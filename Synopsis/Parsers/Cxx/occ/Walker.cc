@@ -162,7 +162,7 @@ Ptree* Walker::TranslateTemplateDecl(Ptree* def)
 {
     Ptree* body = Ptree::Nth(def, 4);
     Ptree* class_spec = GetClassTemplateSpec(body);
-    if(class_spec->IsA(ntClassSpec))
+    if(class_spec->IsA(Token::ntClassSpec))
 	return TranslateTemplateClass(def, class_spec);
     else
 	return TranslateTemplateFunction(def, body);
@@ -340,7 +340,7 @@ Ptree* Walker::TranslateUsing(Ptree* def)
 Ptree* Walker::TranslateDeclaration(Ptree* def)
 {
     Ptree* decls = Ptree::Third(def);
-    if(decls->IsA(ntDeclarator))	// if it is a function
+    if(decls->IsA(Token::ntDeclarator))	// if it is a function
 	return TranslateFunctionImplementation(def);
     else{
 	// if it is a function prototype or a variable declaration.
@@ -388,7 +388,7 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 	Ptree *p, *q;
 	int len;
 	p = q = rest->Car();
-	if(p->IsA(ntDeclarator)){
+	if(p->IsA(Token::ntDeclarator)){
 	    Ptree *exp, *exp2;
 
 	    if(record)
@@ -525,7 +525,7 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 	bool is_ellipsis = a->IsLeaf();		// a may be "..."
 	if(is_ellipsis)
 	    /* do nothing */;
-	else if(a->Car()->IsA(ntUserdefKeyword)){
+	else if(a->Car()->IsA(Token::ntUserdefKeyword)){
 	    if(record)
 		e->RecordDeclarator(a->Third());
 
@@ -535,7 +535,7 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 		    a2 = FillArgumentName(a2, a2->Second(), arg_name);
 	    }
 	}
-	else if(a->Car()->IsA(REGISTER)){
+	else if(a->Car()->IsA(Token::REGISTER)){
 	    if(record)
 		e->RecordDeclarator(a->Third());
 
@@ -1105,7 +1105,7 @@ Ptree* Walker::TranslateTypespecifier(Ptree* tspec)
 Ptree* Walker::GetClassOrEnumSpec(Ptree* typespec)
 {
     Ptree* spec = StripCvFromIntegralType(typespec);
-    if(spec->IsA(ntClassSpec, ntEnumSpec))
+    if(spec->IsA(Token::ntClassSpec, Token::ntEnumSpec))
 	return spec;
 
     return 0;
@@ -1115,7 +1115,7 @@ Ptree* Walker::GetClassTemplateSpec(Ptree* body)
 {
     if(Ptree::Eq(Ptree::Third(body), ';')){
 	Ptree* spec = StripCvFromIntegralType(Ptree::Second(body));
-	if(spec->IsA(ntClassSpec))
+	if(spec->IsA(Token::ntClassSpec))
 	    return spec;
     }
 
@@ -1128,9 +1128,9 @@ Ptree* Walker::StripCvFromIntegralType(Ptree* integral)
 	return 0;
 
     if(!integral->IsLeaf())
-	if(integral->Car()->IsA(CONST, VOLATILE))
+	if(integral->Car()->IsA(Token::CONST, Token::VOLATILE))
 	    return Ptree::Second(integral);
-	else if(Ptree::Second(integral)->IsA(CONST, VOLATILE))
+	else if(Ptree::Second(integral)->IsA(Token::CONST, Token::VOLATILE))
 	    return integral->Car();
 
     return integral;
@@ -1634,7 +1634,7 @@ Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
 
     if(p == 0)
 	return decl;
-    else if(decl->IsA(ntDeclarator))
+    else if(decl->IsA(Token::ntDeclarator))
 	return new PtreeDeclarator((PtreeDeclarator*)decl,
 				   decl2->Car(), decl2->Cdr());
     else
@@ -1731,9 +1731,7 @@ void Walker::SetLeafComments(Ptree* node, Ptree* comments)
 
     if (!(cleaf = dynamic_cast<CommentedLeaf*>(leaf))) {
 	// Must change first child of parent to be a commented leaf
-	Token tk;
-	tk.ptr = leaf->GetPosition();
-	tk.len = leaf->GetLength();
+        Token tk(leaf->GetPosition(), leaf->GetLength(), Token::Comment);
 	cleaf = new (GC) CommentedLeaf(tk, comments);
 	parent->SetCar(cleaf);
     } else {
@@ -1745,7 +1743,7 @@ void Walker::SetLeafComments(Ptree* node, Ptree* comments)
 
 void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
 {
-    if (def == 0 || !def->IsA(ntDeclaration))
+    if (def == 0 || !def->IsA(Token::ntDeclaration))
 	return;
 
     Ptree* decl;
@@ -1755,7 +1753,7 @@ void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
 	decl = NthDeclarator(def, i);
 	if (decl == 0)
 	    break;
-	else if (decl->IsA(ntDeclarator))
+	else if (decl->IsA(Token::ntDeclarator))
 	    ((PtreeDeclarator*)decl)->SetComments(comments);
     }
 }
@@ -1766,7 +1764,7 @@ Ptree* Walker::NthDeclarator(Ptree* def, int& nth)
     if(decls == 0 || decls->IsLeaf())
 	return 0;
 
-    if(decls->IsA(ntDeclarator)){	// if it is a function
+    if(decls->IsA(Token::ntDeclarator)){	// if it is a function
 	if(nth-- == 0)
 	    return decls;
     }
@@ -1789,7 +1787,7 @@ Ptree* Walker::FindDeclarator(Ptree* def, char* name, int len,
     if(decls == 0 || decls->IsLeaf())
 	return 0;
 
-    if(decls->IsA(ntDeclarator)){	// if it is a function
+    if(decls->IsA(Token::ntDeclarator)){	// if it is a function
 	if(MatchedDeclarator(decls, name, len, signature, e))
 	    return decls;
 
@@ -1836,7 +1834,7 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
     if(decls == 0 || decls->IsLeaf())
 	return false;
 
-    if(decls->IsA(ntDeclarator)){	// if it is a function
+    if(decls->IsA(Token::ntDeclarator)){	// if it is a function
 	str = decls->GetEncodedName();
 	e = env;
 	str = Encoding::GetBaseName(str, len, e);
