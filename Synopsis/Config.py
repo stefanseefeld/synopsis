@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.18 2003/01/20 07:00:27 chalky Exp $
+#  $Id: Config.py,v 1.19 2003/01/20 07:08:40 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -231,6 +231,7 @@ class Base:
             max_access = None
             map_declaration_names = None
             map_declaration_type = 'Language'
+	    comment_formatters = ['summary']
             operations = [
                 'Unduplicator', 'Stripper', 'NameMapper',
                 'Comments', 'EmptyNS', 'AccessRestrictor'
