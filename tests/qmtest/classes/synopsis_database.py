@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis_database.py,v 1.1 2003/11/29 22:57:06 stefan Exp $
+# $Id: synopsis_database.py,v 1.2 2003/11/30 00:43:58 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -65,8 +65,8 @@ class Database(database.Database):
       parameters = {}
       parameters['srcdir'] = '.'
       parameters['input'] = [input]
-      parameters['output'] = os.path.join(dirname, 'output', components[-1])
-      parameters['expected'] = os.path.join(dirname, 'expected', components[-1])
+      parameters['output'] = os.path.join(dirname, 'output', components[-1] + '.xml')
+      parameters['expected'] = os.path.join(dirname, 'expected', components[-1] + '.xml')
       parameters['synopsis'] = os.path.join(dirname, 'synopsis.py')
       return TestDescriptor(self, id, 'synopsis_test.ProcessorTest', parameters)
 
