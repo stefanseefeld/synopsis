@@ -68,17 +68,25 @@ class build_doc(build.build):
       build_ext.ensure_finalized()
 
       for e in self.extensions:
-         # replace 'foo.so' by 'foo.syn' as the new target
-         e = e[0], os.path.splitext(e[1])[0] + '.syn'
+
+         # replace <name>.so by <name>.syn
+         api = os.path.splitext(e[1])[0] + '.syn'
+         all = os.path.splitext(e[1])[0] + '-impl.syn'
+
+         # build the 'doc' target
+         e = e[0], 'doc'
          build_ext.build_extension(e, False)
 
-         if os.path.exists(os.path.join(build_ext.build_temp, e[0], e[1])):
-            copy_file(os.path.join(build_ext.build_temp, e[0], e[1]),
-                      os.path.join(tempdir, e[1]))
+         if os.path.exists(os.path.join(build_ext.build_temp, e[0], api)):
+            copy_file(os.path.join(build_ext.build_temp, e[0], api),
+                      os.path.join(tempdir, api))
             copy_tree(os.path.join(build_ext.build_temp, e[0], 'links'),
                       os.path.join(tempdir, 'links'))
             copy_tree(os.path.join(build_ext.build_temp, e[0], 'xref'),
                       os.path.join(tempdir, 'xref'))
+         if os.path.exists(os.path.join(build_ext.build_temp, e[0], all)):
+            copy_file(os.path.join(build_ext.build_temp, e[0], all),
+                      os.path.join(tempdir, all))
          
       # now run make inside doc/Manual to do the rest
 
