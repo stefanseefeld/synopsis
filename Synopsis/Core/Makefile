@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.3 2001/01/21 03:46:29 stefan Exp $
+# $Id: Makefile,v 1.4 2001/01/22 17:06:15 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
-# Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
+# Copyright (C) 2000 Stefan Seefeld <seefeld@sympatico.ca> 
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -22,31 +22,13 @@ SHELL	:= /bin/sh
 
 include ../local.mk
 
-#SRC	:= __init__.py Type.py AST.py Util.py Visitor.py 
+SRC	:= __init__.py Type.py AST.py Util.py Visitor.py 
 
-CXX		:= c++
-CPPFLAGS	:= -I. -I$(PYTHON_PREFIX)/include -DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYTHON_MINOR=$(PYTHON_MINOR)
-CXXFLAGS	:= -Wall
-LDFLAGS		:= 
-LIB		:= $(PYTHON_LIB) -ldl -lpthread # Linux
-
-SRC		:= Python.cc
-OBJ		:= $(patsubst %.cc, %.o, $(SRC))
-
-TARGET		:= Python.so
-
-all: $(TARGET)
-
-$(OBJ):	$(SRC)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
-
-$(TARGET):	$(OBJ)
-	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
-
+all:
 clean:
 	/bin/rm -f *~
 
-distclean:	clean
+distclean:      clean
 	/bin/rm -f *.pyc
 
 install:

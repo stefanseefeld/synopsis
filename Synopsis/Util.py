@@ -1,33 +1,28 @@
-# -*- python -*-
-#                           Package   : omniidl
-# idlutil.py                Created on: 1999/10/27
-#			    Author    : Duncan Grisby (dpg1)
+# $Id: Util.py,v 1.5 2001/01/22 17:06:15 stefan Exp $
 #
-#    Copyright (C) 1999 AT&T Laboratories Cambridge
+# This file is a part of Synopsis.
+# Copyright (C) 2000, 2001 Stefan Seefeld
+# Copyright (C) 2000, 2001 Stephen Davies
 #
-#  This file is part of omniidl.
+# Synopsis is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
-#  omniidl is free software; you can redistribute it and/or modify it
-#  under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
 #
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA.
 #
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-#  02111-1307, USA.
-#
-# Description:
-#   
-#   Utility functions
-
-# $Id: Util.py,v 1.4 2001/01/22 06:04:25 stefan Exp $
 # $Log: Util.py,v $
+# Revision 1.5  2001/01/22 17:06:15  stefan
+# added copyright notice, and switched on logging
+#
 # Revision 1.4  2001/01/22 06:04:25  stefan
 # some advances on cross referencing
 #
