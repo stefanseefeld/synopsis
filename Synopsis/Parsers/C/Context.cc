@@ -318,7 +318,6 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 	}
 	else
 	{
-		assert(err_top_level || ! isFieldId);
 		assert(err_top_level || ! IsTypedefDeclCtxt());
 
 		if (curCtxt->isKnR && curCtxt->varParam == 1)
