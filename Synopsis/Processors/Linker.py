@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.1 2002/08/23 04:37:26 chalky Exp $
+# $Id: Linker.py,v 1.2 2002/09/20 10:35:12 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Linker.py,v $
+# Revision 1.2  2002/09/20 10:35:12  chalky
+# Better handling of namespaces with repeated comments
+#
 # Revision 1.1  2002/08/23 04:37:26  chalky
 # Huge refactoring of Linker to make it modular, and use a config system similar
 # to the HTML package
@@ -136,12 +139,21 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 	    metamodule = AST.MetaModule(module.language(), module.type(),module.name())
 	    self.append(metamodule)
 	metamodule.module_declarations().append(module)
-	metamodule.comments().extend(module.comments())
+	self.merge_comments(metamodule.comments(), module.comments())
 	self.push(metamodule)
 	decls = tuple(module.declarations())
 	del module.declarations()[:]
         for decl in decls: decl.accept(self)
 	self.pop()
+
+    def merge_comments(self, dest, src):
+	"""Merges the src comments into dest. Merge is just an append, unless
+	src already exists inside dest!"""
+	texter = lambda x: x.text()
+	dest_str = map(texter, dest)
+	src_str = map(texter, src)
+	if dest_str[-len(src):] == src_str: return
+	dest.extend(src)
 
     def visitMetaModule(self, module):        
         #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
