@@ -22,7 +22,12 @@ struct is_main
 {
   is_main(bool onlymain, const std::string &mainfile)
     : m_onlymain(onlymain), m_mainfile(mainfile) {}
-  bool operator()(AST::Declaration* decl) { return !m_onlymain || decl->filename() == m_mainfile;}
+  bool operator()(AST::Declaration* decl) {
+      // returns true if:
+      return !m_onlymain // only_main not set
+	  || decl->filename() == m_mainfile // filename is the main file
+	  || (dynamic_cast<AST::Namespace*>(decl) != 0); // decl is a namespace
+  }
   bool m_onlymain;
   std::string m_mainfile;
 };
@@ -634,10 +639,9 @@ void Synopsis::visitScope(AST::Scope* decl) {
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitNamespace(AST::Namespace* decl) {
-    if (count_main(decl, m->m_main))
-	m->add(decl, Namespace(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    // Namespaces are always included, because the Linker knows to combine
+    // them always
+    m->add(decl, Namespace(decl));
 }
 void Synopsis::visitClass(AST::Class* decl) {
     if (count_main(decl, m->m_main))
