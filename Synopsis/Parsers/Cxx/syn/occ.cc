@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.91 2003/11/11 06:01:45 stefan Exp $
+// $Id: occ.cc,v 1.92 2003/12/03 03:43:27 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.92  2003/12/03 03:43:27  stefan
+// suppress obsolete extract_tails parameter
+//
 // Revision 1.91  2003/11/11 06:01:45  stefan
 // adjust to directory/package layout changes
 //
@@ -159,7 +162,7 @@ bool verbose;
 
 // If true then everything but what's in the main file will be stripped
 bool syn_main_only;
-bool syn_extract_tails, syn_use_gcc, syn_fake_std;
+bool syn_use_gcc, syn_fake_std;
 bool syn_multi_files;
 
 // If set then this is stripped from the start of all filenames
@@ -456,7 +459,6 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     if (syn_macro_defines)
 	builder.add_macros(*syn_macro_defines);
     SWalker swalker(filter, &parse, &builder, &prog);
-    swalker.set_extract_tails(syn_extract_tails);
     Ptree *def;
     if (syn_fake_std)
     {
@@ -467,7 +469,6 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
         builder.end_namespace();
     }
 #ifdef DEBUG
-    swalker.set_extract_tails(syn_extract_tails);
     while(parse.rProgram(def))
         swalker.Translate(def);
 
@@ -607,7 +608,6 @@ PyObject *occParse(PyObject *self, PyObject *args)
     char *preprocessor;
     PyObject *py_cppflags;
     std::vector<const char *> cppflags;
-    int extract_tails;
     if (!PyArg_ParseTuple(args, "OsO!iizzO!izzz",
                           &ast,
                           &src,
@@ -617,7 +617,6 @@ PyObject *occParse(PyObject *self, PyObject *args)
                           &syn_base_path,
                           &preprocessor,
                           &PyList_Type, &py_cppflags,
-                          &extract_tails,
                           &syn_syntax_prefix,
                           &syn_xref_prefix,
                           &syn_emulate_compiler)
@@ -629,7 +628,6 @@ PyObject *occParse(PyObject *self, PyObject *args)
 
     if (verbose) ::verbose = true;
     if (main_file_only) syn_main_only = true;
-    if (extract_tails) syn_extract_tails = true;
     if (preprocessor) syn_use_gcc = true;
 
     for (std::vector<const char *>::iterator i = extra_files.begin();

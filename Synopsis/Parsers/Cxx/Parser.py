@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.5 2003/11/18 07:25:58 stefan Exp $
+# $Id: Parser.py,v 1.6 2003/12/03 03:43:26 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -24,7 +24,6 @@ class Parser(Processor):
    cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
    main_file_only = Parameter(True, 'should only main file be processed')
    base_path = Parameter('', 'path prefix to strip off of the file names')
-   extract_tails = Parameter(True, 'consider comments at the end of declarations')
    syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
 
@@ -43,7 +42,6 @@ class Parser(Processor):
                               self.base_path,
                               self.preprocessor,
                               self.cppflags,
-                              self.extract_tails,
                               self.syntax_prefix,
                               self.xref_prefix,
                               self.emulate_compiler)
