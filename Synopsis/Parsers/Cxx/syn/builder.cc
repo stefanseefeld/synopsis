@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: builder.cc source file
 // Implementation of the Builder class
 
-// $Id: builder.cc,v 1.40 2002/12/09 04:01:00 chalky Exp $
+// $Id: builder.cc,v 1.41 2002/12/09 08:27:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: builder.cc,v $
+// Revision 1.41  2002/12/09 08:27:34  chalky
+// initialise m_file
+//
 // Revision 1.40  2002/12/09 04:01:00  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -128,6 +131,7 @@ struct Builder::Private
 
 Builder::Builder(AST::SourceFile* file)
 {
+    m_file = NULL;
     m_unique = 1;
     m = new Private;
     ScopedName name;
