@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.25 2002/10/26 04:20:35 chalky Exp $
+# $Id: Part.py,v 1.26 2002/10/27 08:40:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.26  2002/10/27 08:40:36  chalky
+# Oops, broke the templates on their own line thing
+#
 # Revision 1.25  2002/10/26 04:20:35  chalky
 # Oops, limit constructor detection to functions
 #
@@ -389,7 +392,7 @@ class Summary(Part):
 
     def writeSectionItem(self, text):
 	"""Adds a table row"""
-	if text[:3] == '<td':
+	if text[:22] == '<td class="summ-start"':
 	    # text provided its own TD element
 	    self.write('<tr>' + text + '</td></tr>\n')
 	else:
