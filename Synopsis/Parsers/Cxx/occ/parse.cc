@@ -505,7 +505,8 @@ bool Parser::rLinkageBody(Ptree*& body)
     }
 
     lex->GetToken(cp);
-    body = new PtreeBrace(new Leaf(op), body, new Leaf(cp));
+    body = new PtreeBrace(new Leaf(op), body,
+	    new CommentedLeaf(cp, lex->GetComments()));
     return TRUE;
 }
 
