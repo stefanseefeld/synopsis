@@ -1,4 +1,4 @@
-# $Id: doxygen.py,v 1.1 2001/02/12 04:55:45 chalky Exp $
+# $Id: doxygen.py,v 1.2 2001/04/05 09:57:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: doxygen.py,v $
+# Revision 1.2  2001/04/05 09:57:49  chalky
+# Add pre and post summary div, so the [Source] link can go inside it
+#
 # Revision 1.1  2001/02/12 04:55:45  chalky
 # Initial commit
 #
@@ -83,7 +86,7 @@ class DOSummaryASTCommenter (SummaryASTCommenter):
     def formatDeclaration(self, decl):
 	comm = config.comments[decl]
 	more = config.link_detail and ' '+self.reference(decl.name(), 'More...') or ''
-	return '', div('summary', span('summary', comm.summary) + more)
+	return '', span('summary', comm.summary) + more
 
 class DODetailASTFormatter (DetailASTFormatter):
     def formatFunction(self, decl):
@@ -115,6 +118,14 @@ class PreDivFormatter (DefaultASTFormatter):
 	return '<div class="preformat">',''
 
 class PostDivFormatter (DefaultASTFormatter):
+    def formatDeclaration(self, decl):
+	return '', '</div>'
+
+class PreSummaryDiv (DefaultASTFormatter):
+    def formatDeclaration(self, decl):
+	return '', '<div class="summary">'
+
+class PostSummaryDiv (DefaultASTFormatter):
     def formatDeclaration(self, decl):
 	return '', '</div>'
 
