@@ -1,5 +1,7 @@
 # Makefile for Synopsis RefManual
 
+include ../../local.mk
+
 synopsis	:= ../../synopsis -c config.py
 bpath		:= ../../..
 spath		:= syn
@@ -50,7 +52,7 @@ $(spath)/Synopsis/synopsis.syn: $(bpath)/Synopsis/synopsis
 # Compile C++ files
 $(spath)/%.csyn: $(bpath)/%.hh
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
+	$(synopsis) -I$(PYTHON_PREFIX)/include -DPYTHON_INCLUDE="$(PYTHON_INCLUDE)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
 
 clean:
 	rm -rf $(spath) *.pyc *.pyo

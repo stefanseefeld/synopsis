@@ -3,22 +3,7 @@
 #include <vector>
 #include <list>
 #include <stack>
-#if PYTHON_MAJOR == 2
-#  if PYTHON_MINOR == 0
-#    include <python2.0/Python.h>
-#  else
-#    error "this python version is not supported yet"
-#  endif
-#elif PYTHON_MAJOR == 1
-#  if PYTHON_MINOR == 6
-#    include <python1.6/Python.h>
-#  elif PYTHON_MINOR == 5
-#    include <python1.5/Python.h>
-#  else
-#    error "this python version is not supported yet"
-#  endif
-#endif
-
+#include PYTHON_INCLUDE
 #include "ast.hh"
 #include "type.hh"
 
