@@ -1,4 +1,4 @@
-# $Id: ClassTree.py,v 1.5 2002/09/20 10:37:07 chalky Exp $
+# $Id: ClassTree.py,v 1.6 2003/02/01 05:38:17 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: ClassTree.py,v $
+# Revision 1.6  2003/02/01 05:38:17  chalky
+# Include Unknown parents in the class tree, so they appear in the inheritance
+# graphs
+#
 # Revision 1.5  2002/09/20 10:37:07  chalky
 # Fix a crash bug
 #
@@ -166,6 +170,8 @@ class ClassTree(AST.Visitor):
 		self.add_inheritance(parent.declaration().name(), name)
 	    elif isinstance(parent, Type.Parametrized) and parent.template():
 		self.add_inheritance(parent.template().name(), name)
+	    elif isinstance(parent, Type.Unknown):
+		self.add_inheritance(parent.link(), name)
 	for decl in clas.declarations():
 	    decl.accept(self)
 
