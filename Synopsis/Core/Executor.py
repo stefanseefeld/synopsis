@@ -151,7 +151,9 @@ class ParserExecutor (Executor):
 	return names
 
     def get_output(self, name):
-	if self.__executor.verbose: print self.__action.name()+": Parsing "+name
+	if self.__executor.verbose:
+	    print self.__action.name()+": Parsing "+name
+	    sys.stdout.flush()
 	config = self.__action.config()
 	parser = self.get_parser()
 	# Do the parse
@@ -209,7 +211,9 @@ class LinkerExecutor (Executor):
 	    for iname, timestamp in names:
 		exec_obj.prepare_output(iname, 0)
 	# Merge the inputs into one AST
-	if self.__executor.verbose: print self.__action.name()+": Linking "+name
+	if self.__executor.verbose:
+	    print self.__action.name()+": Linking "+name
+	    sys.stdout.flush()
 	ast = AST.AST()
 	for input in self.__action.inputs():
 	    exec_obj = self.__inputs[input]
@@ -350,7 +354,9 @@ class FormatExecutor (Executor):
 	ast = self.__input_exec.get_output(name)
 	module = self.__action.config().name
 	# Pass AST to formatter
-	if self.__executor.verbose: print self.__action.name()+": Formatting "+name
+	if self.__executor.verbose:
+	    print self.__action.name()+": Formatting "+name
+	    sys.stdout.flush()
 	try:
 	    formatter = Util._import("Synopsis.Formatter." + module)
 	except ImportError:
