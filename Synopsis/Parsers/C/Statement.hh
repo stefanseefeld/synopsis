@@ -113,7 +113,7 @@ class Statement : public Dup<Statement>
   virtual void print(std::ostream &out, int level) const;
 
   virtual void findExpr(fnExprCallback cb);
-  virtual void findStemnt(fnStemntCallback cb ) { (cb)(this);}
+  virtual void find_statement(fnStemntCallback cb ) { (cb)(this);}
 
   static bool verbose;
   static bool debug;
@@ -204,7 +204,7 @@ public:
   void print(std::ostream& out, int level) const;
 
   void findExpr( fnExprCallback cb);
-  void findStemnt( fnStemntCallback cb);
+  void find_statement( fnStemntCallback cb);
 
   Expression    *cond;
 
@@ -227,7 +227,7 @@ public:
   void print(std::ostream& out, int level) const;
 
   void findExpr(fnExprCallback cb);
-  void findStemnt(fnStemntCallback cb);
+  void find_statement(fnStemntCallback cb);
 
   Expression    *cond;
   Statement     *block;
@@ -248,7 +248,7 @@ class ForStemnt : public Statement
   void print(std::ostream& out, int level) const;
 
   void findExpr(fnExprCallback cb);
-    void findStemnt(fnStemntCallback cb);
+    void find_statement(fnStemntCallback cb);
 
   Expression    *init;
   Expression    *cond;
@@ -272,7 +272,7 @@ public:
   void print(std::ostream& out, int level) const;
 
   void findExpr(fnExprCallback cb);
-  void findStemnt(fnStemntCallback cb);
+  void find_statement(fnStemntCallback cb);
 
   Expression    *cond;
   Statement     *block;
@@ -291,7 +291,7 @@ public:
   void print(std::ostream& out, int level) const;
 
   void findExpr(fnExprCallback cb);
-  void findStemnt(fnStemntCallback cb);
+  void find_statement(fnStemntCallback cb);
 
   Expression    *cond;
   Statement     *block;
@@ -387,7 +387,7 @@ public:
   virtual void print(std::ostream &out, int level) const;
 
   virtual void findExpr(fnExprCallback cb);
-  void findStemnt(fnStemntCallback cb);
+  void find_statement(fnStemntCallback cb);
 
   void insert(Statement *stemnt, Statement *after = 0);
 

@@ -5,9 +5,8 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/AST/ASTKit.hh>
-#include "File.hh"
 #include "Translator.hh"
+#include "File.hh"
 #include "Trace.hh"
 #include <signal.h>
 #include <sys/wait.h>
@@ -16,14 +15,11 @@
 using namespace Synopsis::AST; // import all AST objects...
 namespace Python = Synopsis; // ...and the others into 'Python'
 
+bool Trace::debug = false;
+int Trace::level = 0;
+
 namespace
 {
-
-int verbose = 0;
-int debug = 0;
-const char *prefix = 0;
-ASTKit *kit;
-AST *ast;
 
 //. Override unexpected() to print a message before we abort
 void unexpected()
@@ -60,25 +56,27 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
   try
   {
     char *input;
+    char *filename;
+    char *base_path;
+    char *syntax_prefix;
+    char *xref_prefix;
+    int verbose = 0;
+    int debug = 0;
+
     PyObject *py_ast;
-    if (!PyArg_ParseTuple(args, "Oszii",
+    if (!PyArg_ParseTuple(args, "Osszzzii",
                           &py_ast,
                           &input,
-                          &prefix,
+			  &filename,
+                          &base_path,
+			  &syntax_prefix,
+			  &xref_prefix,
                           &verbose,
                           &debug))
       return 0;
 
     Py_INCREF(py_ast);
-
-    // since everything in this file is accessed only during the execution
-    // of ucpp_parse, we can safely manage these objects in this scope yet
-    // reference them globally (for convenience)
-    std::auto_ptr<AST> ast_ptr(new AST(py_ast));
-    ast = ast_ptr.get();
-
-    std::auto_ptr<ASTKit> kit_ptr(new ASTKit());
-    kit = kit_ptr.get();
+    
 
     std::set_unexpected(unexpected);
     struct sigaction olda;
@@ -88,15 +86,22 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
     sigaction(SIGBUS, &newa, &olda);
     sigaction(SIGABRT, &newa, &olda);
     
-    File *file = File::parse(input);
-    //   TransUnit *unit = prj->parse(file_list[i], use_cpp, cpp_dir,
-    // 			       keep_cpp_file, cpp_file, cpp_cmmd, cd_cmmd);
-    
+    if (debug) Trace::enable_debug();
+    try
+    {
+      File *file = File::parse(input, filename);
+      Translator translator(py_ast, verbose == 1, debug == 1);
+      translator.traverse_file(file);
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "internal error : " << e.what() << std::endl;
+    }
     sigaction(SIGABRT, &olda, 0);
     sigaction(SIGBUS, &olda, 0);
     sigaction(SIGSEGV, &olda, 0);
 
-    return ast->ref();
+    return py_ast;
   }
   catch (const std::exception &e)
   {

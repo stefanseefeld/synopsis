@@ -1,32 +1,15 @@
-// $Id: Translator.hh,v 1.1 2003/08/20 02:16:37 stefan Exp $
 //
-// This file is a part of Synopsis.
-// Copyright (C) 2003 Stefan Seefeld
-//
-// Synopsis is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-// 02111-1307, USA.
-//
-// $Log: Translator.hh,v $
-// Revision 1.1  2003/08/20 02:16:37  stefan
-// first steps towards a C parser backend (based on the ctool)
-//
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
 //
 
 #ifndef _Translator_hh
 #define _Translator_hh
 
+#include <Synopsis/AST/ASTKit.hh>
+#include <Synopsis/AST/TypeKit.hh>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -36,7 +19,7 @@
 class Translator : public Traversal
 {
 public:
-  Translator();
+  Translator(PyObject *ast, bool verbose, bool debug);
   virtual ~Translator();
   virtual void traverse_base(BaseType *);
   virtual void traverse_ptr(PtrType *);
@@ -84,8 +67,16 @@ public:
   virtual void traverse_typedef(TypedefStemnt *);
   virtual void traverse_block(Block *);
   virtual void traverse_function_definition(FunctionDef *);
-  virtual void traverse_unit(File *);  
+  virtual void traverse_file(File *);  
 private:
+  Synopsis::AST::ASTKit     my_kit;
+  Synopsis::AST::AST        my_ast;
+  Synopsis::AST::SourceFile my_file;
+  bool                      my_verbose;
+  bool                      my_debug;
+
+  std::string               my_current_symbol;
+  Synopsis::AST::Type       my_current_type;
 };
 
 #endif

@@ -32,7 +32,8 @@
 #ifndef _PrintTraversal_hh
 #define _PrintTraversal_hh
 
-#include <Traversal.hh>
+#include "Traversal.hh"
+#include "Expression.hh"
 #include <iostream>
 
 class PrintTraversal : public Traversal
@@ -85,7 +86,7 @@ public:
   virtual void traverse_typedef(TypedefStemnt *);
   virtual void traverse_block(Block *);
   virtual void traverse_function_definition(FunctionDef *);
-  virtual void traverse_unit(File *);
+  virtual void traverse_file(File *);
 private:
   void indent() { for(int i = 0; i != level; ++i) out << ' ';}
   void incr_indent() { ++level;}
