@@ -1,0 +1,151 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Grouper/input/groups.cc" language="C++" line="8" name="first group " type="group">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Processors/Grouper/input/groups.cc
+     </file>
+     <text>
+      group documentation
+
+     </text>
+    </instance>
+   </comments>
+   <declarations>
+    <instance accessibility="0" class="Synopsis.AST.Class" file="Processors/Grouper/input/groups.cc" language="C++" line="8" name="foo" type="struct">
+     <comments>
+      <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+       <file>
+        Processors/Grouper/input/groups.cc
+       </file>
+       <text>
+        some comment
+extending over multiple lines
+       </text>
+      </instance>
+      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+       <file>
+        Processors/Grouper/input/groups.cc
+       </file>
+       <text>
+        another comment
+       </text>
+      </instance>
+     </comments>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="11" name="test1" type="global variable">
+     <vtype>
+      <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+     </vtype>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="12" name="test2" type="global variable">
+     <vtype/>
+    </instance>
+   </declarations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="14" name="bar" type="global variable">
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Grouper/input/groups.cc" language="C++" line="17" name="tests " type="group">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Processors/Grouper/input/groups.cc
+     </file>
+     <text>
+      another group
+
+     </text>
+    </instance>
+   </comments>
+   <declarations>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="17" name="test3" type="global variable">
+     <vtype/>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="18" name="test4" type="global variable">
+     <vtype/>
+    </instance>
+   </declarations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Grouper/input/groups.cc" language="C++" line="24" name="outer " type="group">
+   <declarations>
+    <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Grouper/input/groups.cc" language="C++" line="24" name="inner " type="group">
+     <declarations>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="24" name="f" type="global variable">
+       <vtype/>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="26" name="test5" type="global variable">
+       <comments>
+        <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+         <file>
+          Processors/Grouper/input/groups.cc
+         </file>
+         <text>
+          @group xxx { not a group
+         </text>
+        </instance>
+       </comments>
+       <vtype/>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="30" name="test6" type="global variable">
+       <comments>
+        <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+         <file>
+          Processors/Grouper/input/groups.cc
+         </file>
+         <text>
+          } and not a group end
+}
+and not a group either
+         </text>
+        </instance>
+       </comments>
+       <vtype/>
+      </instance>
+     </declarations>
+    </instance>
+   </declarations>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test1">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test2">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test3">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test4">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="bar">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test6">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test5">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="foo">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="f">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Grouper/input/groups.cc" language="C++" line="31" name="EOS" type="EOS"/>
+   </declaration>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Processors/Grouper/input/groups.cc
+  </file>
+ </files>
+</ast>
