@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.1 2003/09/18 02:54:14 stefan Exp $
+dnl $Id: configure.ac,v 1.2 2003/09/18 04:10:05 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2003 Stefan Seefeld <stefan@fresco.org> 
@@ -25,7 +25,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.1 $)
+AC_REVISION($Revision: 1.2 $)
 AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
@@ -48,10 +48,36 @@ PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)
 
+AC_ARG_ENABLE([gc], 
+    [  --disable-gc            don't use garbage collector in C++ parser (default is enabled)],
+    [USE_GC=no],[USE_GC=yes])
+
+AC_SUBST(USE_GC)
+
+dnl check for libdl
+AC_CHECK_LIB(dl, dlopen, [LIBS="-ldl $LIBS"])
+
+dnl Check host for things like -fPIC and library extension
+AC_MSG_CHECKING([for library file extension])
+cpp_profile=""
+case `uname -s` in
+CYGWIN*)
+    LIBEXT=dll
+    ;;
+*)
+    CXXFLAGS="$CXXFLAGS -fPIC"
+    LIBEXT=so
+    ;;
+esac
+AC_MSG_RESULT([$LIBEXT])
+
+AC_SUBST(LIBEXT)
+
 AC_CONFIG_FILES([Makefile])
 
 #temporary hack until the file layout can be reworked a bit...
-mkdir -p ../occ
-mkdir -p ../ucpp
+mkdir -p ucpp
+mkdir -p occ
+mkdir -p syn
 
 AC_OUTPUT
