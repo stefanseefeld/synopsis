@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.26 2002/10/27 08:40:36 chalky Exp $
+# $Id: Part.py,v 1.27 2002/10/27 12:05:17 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.27  2002/10/27 12:05:17  chalky
+# Support putting the identifier in the right place in funcptr parameters.
+#
 # Revision 1.26  2002/10/27 08:40:36  chalky
 # Oops, broke the templates on their own line thing
 #
@@ -137,6 +140,7 @@ class Part(Type.Visitor, AST.Visitor):
     def __init__(self, page):
         self.__page = page
 	self.__formatters = []
+	self.__id_holder = None
 	# Lists of format methods for each AST type
 	self.__formatdict = {
 	    'formatDeclaration':[], 'formatForward':[], 'formatGroup':[], 'formatScope':[],
@@ -159,7 +163,7 @@ class Part(Type.Visitor, AST.Visitor):
 		raise TypeError, "ScopePages.%s must be a list or tuple of modules"%config_option
 	    for formatter in config_obj:
 		clas = core.import_object(formatter, basePackage=base)
-		if config.verbose: print "Using %s formatter:"%type_msg,clas
+		if config.verbose > 1: print "Using %s formatter:"%type_msg,clas
 		self.addFormatter(clas)
 	except AttributeError:
 	    # Some defaults if config fails
@@ -256,10 +260,15 @@ class Part(Type.Visitor, AST.Visitor):
 
 
     #################### Type Formatter/Visitor #################################
-    def formatType(self, typeObj):
+    def formatType(self, typeObj, id_holder = None):
 	"Returns a reference string for the given type object"
 	if typeObj is None: return "(unknown)"
+	if id_holder:
+	    save_id = self.__id_holder
+	    self.__id_holder = id_holder
         typeObj.accept(self)
+	if id_holder:
+	    self.__id_holder = save_id
         return self.__type_label
 
     def visitBaseType(self, type):
@@ -305,7 +314,12 @@ class Part(Type.Visitor, AST.Visitor):
 	ret = self.formatType(type.returnType())
 	params = map(self.formatType, type.parameters())
 	pre = string.join(type.premod(), '')
-	self.__type_label = "%s(%s)(%s)"%(ret,pre,string.join(params, ", "))
+	if self.__id_holder:
+	    ident = self.__id_holder[0]
+	    del self.__id_holder[0]
+	else:
+	    ident = ''
+	self.__type_label = "%s(%s%s)(%s)"%(ret,pre,ident,string.join(params,", "))
 
 
 
