@@ -8,5 +8,6 @@ use by python.
 # configure for the parser you want here...
 #
 from occ import parse, usage
+import emul
 
 # THIS-IS-A-PARSER
