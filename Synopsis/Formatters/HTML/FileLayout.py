@@ -74,7 +74,7 @@ class FileLayout (TOC.Linker):
       ".html" Additionally, special characters are Util.quoted in URL-style"""
 
       if not len(scope): return self._check_main(self.special('global'))
-      return Util.quote(string.join(scope,'-') + '.html')
+      return Util.quote(string.join(scope,'-')) + '.html'
 
    def _strip_filename(self, file):
 
@@ -114,7 +114,7 @@ class FileLayout (TOC.Linker):
       """Return the name of a special file (tree, etc). Default is
       _name.html"""
 
-      return self._check_main('_%s.name'%name)
+      return self._check_main('_%s.html'%name)
 
    def scoped_special(self, name, scope, ext=".html"):
       """Return the name of a special type of scope file. Default is to join
@@ -139,7 +139,7 @@ class FileLayout (TOC.Linker):
 
       # Prefer module index for frames
       if self.processor.using_module_index:
-         return Util.quote('_module_' + string.join(scope, '-') + '.html')
+         return Util.quote('_module_' + string.join(scope, '-')) + '.html'
       # Fall back to the scope view
       return self.scope(scope)
 	
@@ -165,7 +165,7 @@ class NestedFileLayout (FileLayout):
       prefix = 'Scopes'
       if not len(scope):
          return self._check_main(prefix + '/global.html')
-      else: return Util.quote(prefix + '/' + string.join(scope, '/') + '.html')
+      else: return Util.quote(prefix + '/' + string.join(scope, '/')) + '.html'
 
    def file_index(self, file):
       """Return the filename for the index of an input file.
@@ -199,7 +199,7 @@ class NestedFileLayout (FileLayout):
    def scoped_special(self, name, scope, ext='.html'):
       """Return the name of a special type of scope file"""
 
-      return Util.quote(name + '/' + string.join(scope, '/') + ext)
+      return Util.quote(name + '/' + string.join(scope, '/')) + ext
 
    def xref(self, page):
       """Return the name of the xref file for the given page"""
