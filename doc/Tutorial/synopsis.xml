@@ -132,7 +132,8 @@
       hyperlink to the documentation of the Graphic interface at the Fresco
       website. Neat huh? The Fresco documentation itself uses this feature to
       generate the documentation for each library separately, using .toc files
-      to link to documentation of the libraries each library uses.</para>
+      to link to documentation of the libraries each library uses. See the
+      HTML formatter section for more information.</para>
     </section>
 
     <section>
@@ -266,14 +267,12 @@ void func()
     <section>
       <title>Running Synopsis</title>
 
-      <para>Several demos are included with the source distribution, and are
-      designed to be run without installing. However, if Synopsis is not
-      installed then you will need to set your PYTHONPATH to include the
-      Synopsis directory (the one with &#34;configure&#34;) and the
-      &#34;share&#34; data (i.e.: icons) will not be accessible. There are
-      demos for each parser, and some other feature demos, such as the Boost
-      demo which documents Boost.Python and the Perceps demo which shows how
-      to extend Synopsis to deal with &#34;strange&#34; commenting rules.</para>
+      <para>Several demos are included with the source distribution, but it is
+      best to install Synopsis before trying them since they need the share
+      data (icons, stylesheets etc) to work properly. There are demos for each
+      parser, and some other feature demos, such as the Boost demo which
+      documents Boost.Python and the Perceps demo which shows how to extend
+      Synopsis to deal with &#34;strange&#34; commenting rules.</para>
     </section>
 
     <section>
@@ -413,6 +412,10 @@ $(COMBINED): $(SYN_FILES)
             </listitem>
           </varlistentry>
         </variablelist>
+
+        <para>Note that although there is only one Linker module, you can have
+        different configurations for it to do different things such as
+        different commenting styles or stages of processing.</para>
 
         <para>Finally, a rule to format the combined AST into the HTML output.
         This step and the previous one can be done in one go, but this way you
@@ -578,20 +581,15 @@ class Config (Base):
 
         <para>There is just one thing missing here: how does Synopsis actually
         know to use the C++ parser for this config? Surely it doesn&#39;t go
-        by the name... The answer lies in the fact that we derived from the
-        default configuration class Base.Parser.CXX. Looking in the Config.py
-        file shows (amongst other things):<programlisting>class CXX:
+        by the name of the class... The answer lies in the fact that we
+        derived from the default configuration class Base.Parser.CXX. Looking
+        in the Config.py file shows (amongst other things):<programlisting>class CXX:
     name = &#39;C++&#39;</programlisting></para>
 
-        <para>Synopsis uses the name, along with the fact that the
-        configuration was in the Parser section, to make the module name
-        &#34;Synopsis.Parser.C++&#34;, load the module and look for a
-        &#34;parse&#34; function. It turns out that C++ is a valid name for a
-        package in Python, but only if you use the import() function (rather
-        than an import statement). If you look in the site-packages directory
-        (e.g. /usr/lib/python2.2/site-packages) you will see the file
-        Synopsis/Parser/C++/__init__.py, which is the module actually loaded
-        to get the C++ parser.</para>
+        <para>Synopsis appends this &#34;name&#34; attribute to
+        &#34;Synopsis.Parser.&#34; to make the module name
+        &#34;Synopsis.Parser.C++&#34;. This means that all parsers must be in
+        the Synopsis.Parser package, for now.</para>
 
         <para>To use a parser for a different language, the easiest thing to
         do is derive from one of Base.Parser.IDL or Base.Parser.Python, as
@@ -774,10 +772,10 @@ class Project:
             The SourceAction has a number of rules which it follows in turn to
             decide which files to use. The rules are set by the configuration,
             and can select simple file names, use recursive searches and glob
-            expressions, or exclude previously selected files. The exclude is
-            useful to not include temporary, backup, or cvs-related files in
-            the documentation. See the next section for details on the
-            available rules.</para>
+            expressions, or exclude previously selected files. The ability to
+            exclude certain files is useful for avoiding the appearance of
+            temporary, backup, or cvs-related files in the documentation. See
+            the next section for details on the available rules.</para>
           </listitem>
         </varlistentry>
 
@@ -904,10 +902,10 @@ class Project:
       <section id="sourceaction-rules">
         <title>SourceAction Rules</title>
 
-        <para>The rules used to selection files in the SourceAction are stored
-        in a list, where each rule is a tuple. The first element of the tuple
-        is a string denoting the type of rule, and the rest depends on the
-        type. Available types of SourceAction rules are:</para>
+        <para>The rules used to select files in the SourceAction are stored in
+        a list, where each rule is a tuple. The first element of the tuple is
+        a string denoting the type of rule, and the rest depends on the type.
+        Available types of SourceAction rules are:</para>
 
         <variablelist>
           <varlistentry>
@@ -954,7 +952,7 @@ class Project:
               the list. Remember that the rules are processed in order, so
               later rules can add more files again. There is only one extra
               field which is a glob expression to match the whole pathname. In
-              order to make matching directories easier, the filenames are
+              order to make matching subdirectories easier, the filenames are
               always considered to have a &#39;/&#39; prepended before
               comparing to the glob expression. This means that if a CVS
               directory is in the current directory and its files&#39;
@@ -1058,7 +1056,8 @@ class Project:
       used to generate a &#34;parse-tree&#34; from the preprocessed source
       code. The parse-tree is a data structure that directly represents the
       syntax of the source code. OCC uses Hans Boehm&#39;s garbage collector,
-      but this can be disabled by passing --disable-gc to configure.</para></listitem><listitem><para>Code
+      but this can be disabled by passing --disable-gc to configure on
+      platforms like Cygwin where it causes problems.</para></listitem><listitem><para>Code
       to &#34;walk&#34; the parse-tree and build an Abstract Syntax Tree. A
       symbol table is also maintained which is used to correctly resolve all
       types according to the C++ standard.</para></listitem><listitem><para>Code
@@ -1110,7 +1109,7 @@ class Project:
         or class is used (useful for refactoring!)</para>
 
         <para>Both of these features need to be coordinated with both the C++
-        parser and the HTML formatter.</para>
+        parser and the HTML formatter. </para>
 
         <para>For SXR you need: C++ Parser: syntax_prefix. HTML Formatter: The
         pages option must include &#39;FileSource&#39;.</para>
@@ -1119,6 +1118,9 @@ class Project:
         operations list must include &#39;XRefCompiler&#39;, and XRefCompiler
         must be configured. HTML Formatter: The pages option must include
         &#39;XRefPages&#39;, and XRefPages must be configured.</para>
+
+        <para>See the respective sections for details of these configuration
+        options.</para>
 
         <para>Note that in the current release there are some limitations with
         respect to expressions that are understood, and template
@@ -1136,10 +1138,13 @@ class Project:
         attribute is set by the constructor, but only if &#39;verbose&#39; was
         passed as a config option.</para><para>Can be set to true from the
         command line with &#34;-Wp,-v&#34;</para></listitem></varlistentry><varlistentry><term>main_file
-        (boolean)</term><listitem><para>Flag that selects if should only store
-        the AST generated from the file(s) being processed, and not included
-        files. The default is 1 (true).</para><para>Can be set to true from
-        the command line with &#34;-Wp,-m&#34;</para></listitem></varlistentry><varlistentry><term>basename
+        (boolean)</term><listitem><para>Flag that selects whether Synopsis
+        should only store the AST generated from the file being processed, and
+        not from any #included files. If you are using the multiple_files
+        option then the AST generated from each of the named files is stored,
+        but not from any other #included files.</para><para>The default is 1
+        (true).</para><para>Can be set to true from the command line with
+        &#34;-Wp,-m&#34;</para></listitem></varlistentry><varlistentry><term>basename
         (string)</term><listitem><para>A file path to strip from the start of
         all filenames before storing. Setting this option for example will
         remove any redundant parent directories in the HTML FileListing page.</para><para>Can
@@ -1168,12 +1173,8 @@ class Project:
         comment processors in the Linker options otherwise you will see the
         Dummy declarations in your documentation.</para><para>Can be set to
         true from the command line with &#34;-Wp,-t&#34;</para></listitem></varlistentry><varlistentry><term>storage
-        (string)</term><listitem><para>If set, this must be a string which
-        defines the file to store links into. Setting this also causes the
-        parser to look more carefully at the input file, so that it can
-        generate the links from inside blocks of code (otherwise it skips over
-        them). Note that you usually set this from the command-line with your
-        Makefile via &#34;-Wp,-s,$@.links&#34; or something. (deprecated)</para></listitem></varlistentry><varlistentry><term>syntax_prefix
+        (string)</term><listitem><para>Deprecated, see syntax_file which is
+        the same thing.</para></listitem></varlistentry><varlistentry><term>syntax_prefix
         (string)</term><listitem><para>If set, must be a string which defines
         a prefix to store syntax info into. The source filenames are appended
         to the prefix to create the output filename, so it should be a
@@ -1183,31 +1184,45 @@ class Project:
         (string)</term><listitem><para>If set, must be a string which defines
         a prefix to store xref info into. See syntax_prefix.</para></listitem></varlistentry><varlistentry><term>syntax_file
         (string)</term><listitem><para>If set, must be a string with the file
-        to store syntax info into. Note that the syntax info can only hold
-        syntax information about one source file, so this option is of limited
-        use in a config file.</para><para>Can be set from the command line
-        with, e.g: &#34;-Wp,-s,syn/&#34;</para></listitem></varlistentry><varlistentry><term>xref_file
+        to store syntax info into. Setting this also causes the parser to look
+        more carefully at the input file, so that it can generate the links
+        from inside blocks of code (otherwise it skips over them). Note that
+        the syntax info can only hold syntax information about one source
+        file, so this option is of limited use in a config file unless you
+        only have one file.</para><para>Can be set from the command line with,
+        e.g: &#34;-Wp,-s,syn/&#34;. You might use it in your Makefile as
+        &#34;-Wp,-s,$&#60;.links&#34; ($&#60; is the first dependency, usually
+        the source file being parsed).</para></listitem></varlistentry><varlistentry><term>xref_file
         (string)</term><listitem><para>If set, must be a string with the file
-        to store xref info into. Note that the xref info can only hold xref
-        information about one source file, so this option is of limited use in
-        a config file.</para><para>Can be set from the command line with,
-        e.g.: &#34;-Wp,-x,xref/&#34;</para></listitem></varlistentry><varlistentry><term>fake_std
+        to store xref info into. Setting this also causes the parser to look
+        more carefully at the input file, so that it can generate the links
+        from inside blocks of code (otherwise it skips over them). Note that
+        the xref info can only hold xref information about one source file, so
+        this option is of limited use in a config file unless you only have
+        one file.</para><para>Can be set from the command line with, e.g.:
+        &#34;-Wp,-x,xref/&#34;. You might use it in your Makefile as
+        &#34;-Wp,-x,$&#60;.xref&#34; ($&#60; is the first dependency, usually
+        the source file being parsed).</para></listitem></varlistentry><varlistentry><term>fake_std
         (boolean)</term><listitem><para>If set, this causes the parser to
         construct a fake using directive from the std namespace to the global
         namespace. In effect, this fixes problems seen with using the stdc++
         headers for gcc 2.95.x where most things dont get placed in the std
         namespace.</para><para>Can be set to true from the command line with
         &#34;-Wp,-f&#34;</para></listitem></varlistentry><varlistentry><term>multiple_files
-        (boolean)</term><listitem><para>If set to true then the parser handles
-        multiple files included from the main file at the same time. This
-        option can only be used with the Project file. If syntax_prefix or
-        xref_prefix is set then the extra files will get syntax and xref nfo
-        recorded into the appropriate files. Only one AST is output, but it is
-        as if the ASTs for the individual files were already linked.</para><para>To
-        use this option, your Project file must have a single SourceAction
-        connected to this ParserAction. The SourceAction should have a Simple
-        rule first which is the main sourcefile, and any number of other rules
-        to select other files to record the AST for.</para></listitem></varlistentry></variablelist></para>
+        (boolean)</term><listitem><para>This option can only be used with the
+        Project file format. If set to true then the parser accepts a list of
+        files, and stores the generated AST for all of them in the one output.
+        Only one file is parsed, so the others must be included by the main
+        file (or by one of the files it includes, etc.). If syntax_prefix
+        and/or xref_prefix is set then the extra files will get syntax and/or
+        xref info recorded into the appropriate files. Only one AST is output,
+        but it is as if the ASTs for the individual files were already linked.
+        That, and the fact that system headers will only be parsed once, can
+        lead to huge time savings!</para><para>To use this option, your
+        Project file must have a single SourceAction connected to this
+        ParserAction. The SourceAction should have a Simple rule first which
+        is the main sourcefile, and any number of other rules to select other
+        files to record the AST for.</para></listitem></varlistentry></variablelist></para>
       </section>
     </section>
 
@@ -1369,13 +1384,13 @@ class Project:
 
       <para>The unduplicator is responsible for cleaning up the mess from
       merging multiple ASTs. The problem is that each AST has its own copy of
-      any duplicate classes and functions, and the types are generally wrong
-      even if there were no duplicate declarations. The unduplicator walks the
-      whole AST ensuring that each declaration only occurs once, that the
-      types dictionary refers to the one correct declaration, and that every
-      &#34;declared&#34; type refers to the correct declaration. It takes
-      special care to handle &#34;Modules&#34; (eg: C++ namespace and IDL
-      modules) by combining them into MetaModule AST nodes. Nested classes
+      any duplicate classes and functions, and many types (e.g.: parameter
+      types, return types, variable types) will be pointing to the wrong copy.
+      The unduplicator walks the whole AST ensuring that each declaration only
+      occurs once, that the types dictionary refers to the one correct
+      declaration, and that every type refers to the correct declaration. It
+      takes special care to handle &#34;Modules&#34; (eg: C++ namespace and
+      IDL modules) by combining them into MetaModule AST nodes. Nested classes
       declared outside the original class are also taken care of.</para>
 
       <para>There are no options for the Unduplicator, but you will always
@@ -1571,7 +1586,7 @@ enum Foo {
       <title>XRefCompiler</title>
 
       <para>This operation doesn&#39;t act on the AST, but performs a
-      peripheral operation that takes place at the same time as linking. It
+      peripheral operation that takes place as part of the linker process. It
       does use the AST, but only to find a list of source filenames.</para>
 
       <para>The XRefCompiler should only be used once in a build: it reads
@@ -2745,7 +2760,7 @@ class HTML (Base.Formatter.HTML):
     <section>
       <title>Importing Objects and Import Specifications</title>
 
-      <para>Several places in this manual talk about import specifications,
+      <para>Several config options in this manual use import specifications
       for importing custom objects at various places. Synopsis has a utility
       function called import_object which can import an object from a file or
       from an import path.</para>
@@ -2761,7 +2776,7 @@ class HTML (Base.Formatter.HTML):
 
       <variablelist>
         <varlistentry>
-          <term>spec is a tuple (or list) of two strings</term>
+          <term>if spec is a tuple (or list) of two strings</term>
 
           <listitem>
             <para>A tuple of two strings means load the module from the first
@@ -2776,7 +2791,7 @@ class HTML (Base.Formatter.HTML):
         </varlistentry>
 
         <varlistentry>
-          <term>spec is a string</term>
+          <term>if spec is a string</term>
 
           <listitem>
             <para>One string is interpreted according to the optional
@@ -2784,7 +2799,7 @@ class HTML (Base.Formatter.HTML):
 
             <variablelist>
               <varlistentry>
-                <term>default attribute given</term>
+                <term>if default attribute given</term>
 
                 <listitem>
                   <para>Load the module and look for the default attribute in
@@ -2797,7 +2812,7 @@ class HTML (Base.Formatter.HTML):
               </varlistentry>
 
               <varlistentry>
-                <term>base package given</term>
+                <term>if base package given</term>
 
                 <listitem>
                   <para>Prepend the base package and then import the module
@@ -2813,7 +2828,7 @@ class HTML (Base.Formatter.HTML):
               </varlistentry>
 
               <varlistentry>
-                <term>both base package and default attribute given</term>
+                <term>if both base package and default attribute given</term>
 
                 <listitem>
                   <para>Prepend the base package and import the module, then
@@ -2861,33 +2876,38 @@ htmlPageClass = XRefPages</programlisting></para>
       formatter with similar output structure to what you want, and modify the
       output to fit your particular format.</para>
 
-      <para>One point to note is the way that types are formatted. Types are
-      used to store things like function parameters, return types, variable
-      types, typedef types, and class parents. (A Type is used for class
-      parents since the base class type might be a parameterized instance of a
-      template class). Types have their own class and node hierarchy, though
-      it is simpler than the AST hierarchy! Consider the type &#34;const
-      char*&#34; - this is represented as a &#34;Modifier&#34; type for the
-      &#34;const&#34; and &#34;*&#34;, which points to a &#34;Base&#34; type
-      for the &#34;char&#34;. The Base type could instead be a Declared type,
-      if the complete type was &#34;const string*&#34;, for example.</para>
+      <para>One point to note is the way that Type objects are formatted. Type
+      objects (defined in Synopsis/Core/Type.py) are used to store things like
+      function parameters, return types, variable types, typedef types, and
+      class parents. (A Type is used for class parents since the base class
+      might be a parameterized instance of a class template). Types have their
+      own class and node hierarchy, though it is simpler than the AST
+      hierarchy. Consider the type &#34;const char*&#34; - this is represented
+      as a &#34;Modifier&#34; Type containing the &#34;const&#34; and
+      &#34;*&#34;, which points to a &#34;Base&#34; Type for the
+      &#34;char&#34;. The Base type could instead be a Declared type, if the
+      complete type was &#34;const string*&#34;, for example.</para>
 
       <para>The best way to figure out how a program is represented as an AST
       is to use the DUMP formatter. I&#39;ve had to use it so many times
       myself that I lost count years ago! The DUMP formatter will show both
       the AST heirarchy, and also how any types you are using are represented.</para>
 
-      <para>The existing formatters generally format types by having a
-      &#34;formatType(type)&#34; method, or just calling
-      &#34;type.accept(self)&#34;. They then have a series of
-      &#34;visitType&#34; methods, each of which helps build a label (or
-      sometimes reference) string. In the above example, the visitModifier
-      method recursively formats the aliased type (e.g: char or string), then
-      sticks a &#34;const&#34; on the front and a &#34;*&#34; on the end of
-      the label string. The difference between label and reference is that
-      reference might contain hyperlinks, or actually be a URL. The reference
-      is not really used by most of the formatters, so don&#39;t get confused
-      if it doesn&#39;t make sense because it&#39;s probably broken!</para>
+      <para>The existing formatters generally format types by implementing a
+      Visitor for the Type hierarchy. Each Type object has an
+      &#34;accept(self, visitor)&#34; method which simply calls the
+      appropriate method of the visitor object. For example, the Modifier
+      Type&#39;s accept method calls &#34;visitor.visitModifier(self)&#34;.</para>
+
+      <para>The formatters have a series of &#34;visit&#34; methods, one for
+      each Type class, each of which helps build a label string. In the above
+      Modifier example, the visitModifier method recursively formats the
+      aliased type (e.g: a Base Type if it was a char or a Declared Type if it
+      was a string), then sticks a &#34;const&#34; on the front and a
+      &#34;*&#34; on the end of the label string.</para>
+
+      <para>The Synopsis Reference Manual contains graphs and class details
+      for the AST and Type hierarchies.</para>
     </section>
 
     <section>
