@@ -1,4 +1,3 @@
-# $Id: Dot.py,v 1.42 2003/12/09 05:58:22 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -377,7 +376,7 @@ def _convert_map(input, output, base_url):
          x1, y1 = string.split(x1y1, ",")
          x2, y2 = string.split(x2y2, ",")
          output.write('<area alt="'+url+'" href="' + _rel(base_url, url) + '" shape="rect" coords="')
-         output.write(str(x1) + ", " + str(y1) + ", " + str(x2) + ", " + str(y2) + '">\n')
+         output.write(str(x1) + ", " + str(y1) + ", " + str(x2) + ", " + str(y2) + '" />\n')
       line = input.readline()
 
 def _format(input, output, format):
@@ -401,7 +400,7 @@ def _format_html(input, output, base_url):
    reference = name + ".png"
    html = Util.open(output + ".html")
    html.write('<img alt="'+name+'" src="' + reference + '" hspace="8" vspace="8" border="0" usemap="#')
-   html.write(name + "_map\">\n")
+   html.write(name + "_map\" />\n")
    html.write("<map name=\"" + name + "_map\">")
    dotmap = open(output + ".map", "r+")
    _convert_map(dotmap, html, base_url)
