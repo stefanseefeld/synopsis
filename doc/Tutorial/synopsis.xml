@@ -2541,6 +2541,239 @@ class HTML (Base.Formatter.HTML):
   <chapter>
     <title>Customising Synopsis</title>
 
-    <para>formatter modules, load AST manually, etc.</para>
+    <para>Synopsis is by design highly modular. At the top level, you can add
+    new parsers and formatters. At the middle level you can add or modify
+    existing linker operations or HTML pages. At the low level you can set a
+    multitude of options for almost all modules. This chapter lists some of
+    the more common modifications.</para>
+
+    <section>
+      <title>Importing Objects and Import Specifications</title>
+
+      <para>Several places in this manual talk about import specifications,
+      for importing custom objects at various places. Synopsis has a utility
+      function called import_object which can import an object from a file or
+      from an import path.</para>
+
+      <para>To do this you write a &#39;spec&#39;, instead of just a module
+      name. The import_object function decides what to do with the spec,
+      depending on extra parameters given to it (base package and default
+      attribute). Wherever you see mention of an import specification in this
+      manual, it will also say whether a base package or default attribute is
+      given to the import_object function. </para>
+
+      <para>&#39;spec&#39; must be either a string or a tuple of two strings:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>spec is a tuple (or list) of two strings</term>
+
+          <listitem>
+            <para>A tuple of two strings means load the module from the first
+            string, and look for an attribute using the second string. The
+            default attribute and base package specifications make no
+            difference in this case.</para>
+
+            <para>E.g.: spec is (&#39;config.py&#39;, &#39;MyModule&#39;),
+            import_module loads the &#39;config.py&#39; file, then looks for
+            the MyModule object inside that and returns it.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>spec is a string</term>
+
+          <listitem>
+            <para>One string is interpreted according to the optional
+            arguments.</para>
+
+            <variablelist>
+              <varlistentry>
+                <term>default attribute given</term>
+
+                <listitem>
+                  <para>Load the module and look for the default attribute in
+                  the module and return that.</para>
+
+                  <para>E.g.: default attribute is &#39;htmlPageClass&#39;,
+                  spec is &#39;MyPage.py&#39;, import_object loads MyPage.py
+                  and then looks for an htmlPageClass attribute in the file.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>base package given</term>
+
+                <listitem>
+                  <para>Prepend the base package and then import the module
+                  and return that.</para>
+
+                  <para>E.g.: base package is
+                  &#39;Synopsis.Formatter.HTML.&#39;, spec is
+                  &#39;XRefPages.XRefPages&#39;, import_object loads
+                  &#39;Synopsis.Formatter.HTML.XRefPages&#39; and returns the
+                  class XRefPages inside the XRefPages module as the loaded
+                  object.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>both base package and default attribute given</term>
+
+                <listitem>
+                  <para>Prepend the base package and import the module, then
+                  look for the default attribute in the module and return
+                  that. Note that the last element in the spec doesn&#39;t
+                  have to be a module... it could be a class or any object, as
+                  long as it has the default attribute in it.</para>
+
+                  <para>E.g.: base package is
+                  &#39;Synopsis.Formatter.HTML.&#39;, default attribute is
+                  &#39;htmlPageClass&#39;, spec is &#39;XRefPages&#39;.
+                  import_object loads
+                  &#39;Synopsis.Formatter.HTML.XRefPages&#39;, looks for the
+                  htmlPageClass attribute in the loaded module, and returns
+                  that. In this example the htmlPageClass attribute is
+                  actually an alias to the XRefPages class inside the module,
+                  allowing us to easily get the class object without giving
+                  all the classes the same name, i.e.:<programlisting>class XRefPages:
+    # .. stuff ..
+
+htmlPageClass = XRefPages</programlisting></para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+
+    <section>
+      <title>New output format</title>
+
+      <para>Making a new output formatter for Synopsis is easy. There are two
+      structural approaches: create a new formatter and put it in the
+      Formatter directory (for now, you cannot specify a path with the
+      formatter), or create a stand-alone formatter that reads an AST file.
+      The former is more integrated, but the latter doesn&#39;t require you to
+      put the file in the Synopsis/Formatter directory.</para>
+
+      <para>Most formatters follow the pattern of taking the AST, and visiting
+      its nodes in turn while writing output. This is done via the Visitor
+      pattern, which basically means that you create an object with one method
+      for each type of AST node, such as classes, modules, operations
+      (methods), typedefs, etc. You may find it easiest to take an existing
+      formatter with similar output structure to what you want, and modify the
+      output to fit your particular format.</para>
+
+      <para>One point to note is the way that types are formatted. Types are
+      used to store things like function parameters, return types, variable
+      types, typedef types, and class parents. (A Type is used for class
+      parents since the base class type might be a parameterized instance of a
+      template class). Types have their own class and node hierarchy, though
+      it is simpler than the AST hierarchy! Consider the type &#34;const
+      char*&#34; - this is represented as a &#34;Modifier&#34; type for the
+      &#34;const&#34; and &#34;*&#34;, which points to a &#34;Base&#34; type
+      for the &#34;char&#34;. The Base type could instead be a Declared type,
+      if the complete type was &#34;const string*&#34;, for example.</para>
+
+      <para>The best way to figure out how a program is represented as an AST
+      is to use the DUMP formatter. I&#39;ve had to use it so many times
+      myself that I lost count years ago! The DUMP formatter will show both
+      the AST heirarchy, and also how any types you are using are represented.</para>
+
+      <para>The existing formatters generally format types by having a
+      &#34;formatType(type)&#34; method, or just calling
+      &#34;type.accept(self)&#34;. They then have a series of
+      &#34;visitType&#34; methods, each of which helps build a label (or
+      sometimes reference) string. In the above example, the visitModifier
+      method recursively formats the aliased type (e.g: char or string), then
+      sticks a &#34;const&#34; on the front and a &#34;*&#34; on the end of
+      the label string. The difference between label and reference is that
+      reference might contain hyperlinks, or actually be a URL. The reference
+      is not really used by most of the formatters, so don&#39;t get confused
+      if it doesn&#39;t make sense because it&#39;s probably broken!</para>
+    </section>
+
+    <section>
+      <title>New parser (new language)</title>
+
+      <para>Making a new parser is not so simple. A parser is a complex beast!
+      However, you might be able to find an existing parser, and retrofit it
+      to produce a Synopsis AST. It is unlikely (but possible!) though that
+      you will be able to fit all the language features into the Synopsis AST
+      hierarchy. In that case, modifying the AST is definately an option,
+      though not a simple one.</para>
+    </section>
+
+    <section>
+      <title>New linker operation</title>
+
+      <para>Making a new linker option is much easier. You can even use the
+      import facility to put your new operation in any file you want (e.g.:
+      your config.py file).</para>
+
+      <para>The operation interface is very simple; it has one method:
+      execute(self, ast) which returns nothing (the AST is modified in-place).
+      Within your execute method, you can do whatever you like to the AST. For
+      example you can rename methods or classes, simplify function parameter
+      types, check the comments and perform actions based on those, etc.</para>
+    </section>
+
+    <section>
+      <title>New HTML Page</title>
+
+      <para>You can add a new type of HTML output to an existing HTML setup by
+      creating or modifying a Page object. Like Linker Operations, the HTML
+      Pages are specified with import specifications, allowing you to easily
+      write your own. See the Page class for a list of the interface methods
+      you can implement, and the base methods you can use. The mundane stuff
+      like opening files and creating headers is all done for you, so you only
+      have to take the AST and make the interesting bits!</para>
+
+      <para>A lot of the customizability of the HTML formatter is managed
+      automatically, by having the Pages register themselves for various
+      things:<variablelist><varlistentry><term>Page.register(self)</term><listitem><para>Override
+      this method to do the registration</para></listitem></varlistentry><varlistentry><term>config.set_contents_page(self,
+      page)</term><listitem><para>Call this with the name of your main page
+      (string ending in &#34;.html&#34;) to register for the contents page,
+      which is the top-left frame. If you are the first page to call this
+      method, you will get to be the contents page - and keep it.</para></listitem></varlistentry><varlistentry><term>config.set_index_page(self,
+      page)</term><listitem><para>Call this with the name of your main page
+      (string ending in &#34;.html&#34;) to register for the index page, which
+      is the left frame. If you are the first page to call this method, you
+      will get to be the index page - and keep it.</para></listitem></varlistentry><varlistentry><term>config.set_main_page(self,
+      page)</term><listitem><para>Call this with the name of your main page
+      (string ending in &#34;.html&#34;) to register for the main page, which
+      is the main frame, or start page if you&#39;re not using frames. If you
+      are the first page to call this method, you will get to be the main page
+      - and keep it. Note that if you get to be the main page, the FileLayout
+      will return &#34;index.html&#34; for your main page (the one you gave to
+      this method) for most methods of FileLayout.</para></listitem></varlistentry><varlistentry><term>PageManager.addRootPage(self,
+      file, label, target, visibility)</term><listitem><para>Call this to add
+      your page to the list of main pages at the top of every generated page.
+      file is the filename to be linked to, label is the text to show, target
+      is the frame to display in (&#34;contents&#34;, &#34;index&#34;,
+      &#34;main&#34;, or &#34;_top&#34; for a new window). visibility is 1 for
+      just the main pages, 2 for all pages (including the smaller ones like
+      ModuleListing).</para></listitem></varlistentry><varlistentry><term>Page.register_filenames(self,
+      start)</term><listitem><para>Override this method to register filenames
+      based on the target AST. &#34;start&#34; is the start node of the AST;
+      typically the global namespace, but may be some other scope based on
+      configuration and command line options.</para></listitem></varlistentry><varlistentry><term>PageManager.register_filename(self,
+      filename, page, scope)</term><listitem><para>Call this for each file you
+      can generate to register yourself for generating that file. This
+      function is used by the FileSource and RawFilePages pages to compete for
+      who gets to generate the output for that file. Use the filename_info()
+      method to check if you got it or not. &#34;scope&#34; is any data you
+      need to find out what makes that filename. It is called &#34;scope&#34;
+      for the general case of it being an AST node (of which only Scopes
+      usually have pages!). This facility is also used by the GUI to generate
+      files on the fly when the user clicks a link! You should only call this
+      method from the register_filenames() method of your Page class, not from
+      the register() method!</para></listitem></varlistentry></variablelist></para>
+
+      <para>The best way to figure this out is to study the existing Pages.</para>
+    </section>
   </chapter>
 </book>
