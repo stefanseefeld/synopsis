@@ -1,35 +1,15 @@
-# $Id: Makefile,v 1.5 2003/08/20 03:07:25 stefan Exp $
+# $Id: Makefile,v 1.6 2003/11/19 04:56:52 stefan Exp $
 #
-# This source file is a part of the Synopsis Project
-# Copyright (C) 2000 Stefan Seefeld
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Library General Public
-# License as published by the Free Software Foundation; either
-# version 2 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Library General Public License for more details.
-#
-# You should have received a copy of the GNU Library General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 675 Mass Ave, Cambridge,
-# MA 02139, USA.
 
 SHELL	:= /bin/sh
 
-ifeq (,$(findstring $(MAKECMDGOALS), clean distclean))
-ifeq (,$(findstring $(action), clean distclean))
-include ../local.mk
-endif
-endif
-
-subdirs	:= IDL C++ Python Mixed Graph Config Perceps
-ifeq ($(CTOOL), 1)
-subdirs	+= C
-endif
+subdirs	:= IDL C++/Employee C++/Shapes C++/GapBuffer \
+           Python Perceps Mixed Graph
 
 action	:= all
 
@@ -43,4 +23,7 @@ $(subdirs):
 
 clean:
 	$(MAKE) action="clean"
+
+distclean:
+	$(MAKE) action="distclean"
 
