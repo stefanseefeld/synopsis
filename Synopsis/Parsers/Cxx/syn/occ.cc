@@ -80,7 +80,10 @@ bool syn_main_only, syn_extract_tails, syn_use_gcc, syn_fake_std;
 const char* syn_basename = "";
 
 // If set then this is the prefix for the filename to store links to
-const char* syn_file_prefix = 0;
+const char* syn_syntax_prefix = 0;
+
+// If set then this is the prefix for the filename to store xref info to
+const char* syn_xref_prefix = 0;
 
 // If set then this is the filename to store links to
 const char* syn_file_syntax = 0;
@@ -217,7 +220,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
         std::cerr << "Error: syntax_prefix must be a string." << std::endl;
         exit(1);
       }
-      syn_file_prefix = PyString_AsString(value);
+      syn_syntax_prefix = PyString_AsString(value);
     }
     Py_XDECREF(value);
     // 'syntax_file' defines the filename to write syntax hilite info to
@@ -231,7 +234,18 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       syn_file_syntax = PyString_AsString(value);
     }
     Py_XDECREF(value);
-    // 'xref_file' defines the filename to write syntax hilite info to
+    // 'xref_prefix' defines the prefix for the xrefname to write syntax hilite info to
+    if ((value = PyObject_GetAttrString(config, "xref_prefix")) != 0)
+    {
+      if (!IsType(value, String))
+      {
+        std::cerr << "Error: xref_prefix must be a string." << std::endl;
+        exit(1);
+      }
+      syn_xref_prefix = PyString_AsString(value);
+    }
+    Py_XDECREF(value);
+     // 'xref_file' defines the filename to write syntax hilite info to
     if ((value = PyObject_GetAttrString(config, "xref_file")) != 0)
     {
       if (!IsType(value, String))
@@ -618,15 +632,22 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   char syn_buffer[1024];
   if (syn_file_syntax)
     of_syntax = new std::ofstream(syn_file_syntax);
-  else if (syn_file_prefix)
+  else if (syn_syntax_prefix)
   {
-    strcpy(syn_buffer, syn_file_prefix);
+    strcpy(syn_buffer, syn_syntax_prefix);
     strcat(syn_buffer, src);
     makedirs(syn_buffer);
     of_syntax = new std::ofstream(syn_buffer);
   }
   if (syn_file_xref)
     of_xref = new std::ofstream(syn_file_xref);
+  else if (syn_xref_prefix)
+  {
+    strcpy(syn_buffer, syn_xref_prefix);
+    strcat(syn_buffer, src);
+    makedirs(syn_buffer);
+    of_xref = new std::ofstream(syn_buffer);
+  }
   if (of_syntax || of_xref)
     swalker.set_store_links(true, of_syntax, of_xref);
   try
