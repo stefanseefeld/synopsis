@@ -98,6 +98,8 @@ class SourceExecutor (Executor):
 	# 'glob'
 	def path_to_tuple(path_obj):
 	    if path_obj.type == 'Simple':
+		if path_obj.dir.find('/') == -1:
+		    return (0, '.', path_obj.dir)
 		return (0,)+os.path.split(path_obj.dir)
 	    elif path_obj.type == 'Dir':
 		return (0, path_obj.dir, path_obj.glob)
