@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.15 2002/11/02 06:37:37 chalky Exp $
+// $Id: linkstore.cc,v 1.16 2002/11/03 05:41:30 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.16  2002/11/03 05:41:30  chalky
+// Fix crash in visit_parameterized
+//
 // Revision 1.15  2002/11/02 06:37:37  chalky
 // Allow non-frames output, some refactoring of page layout, new modules.
 //
@@ -222,15 +225,16 @@ public:
     typedef Types::Type::vector::iterator iterator;
     iterator iter = param->parameters().begin();
     iterator end = param->parameters().end();
-    while (node && iter != end)
-      {
-        // Skip '<' or ','
-        if ( !(node = node->Rest()) ) break;
-        if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
-          links->link(node->Car()->Car()->Car(), *iter);
-        ++iter;
-        node = node->Rest();
-      }
+    // Could be leaf if eg: [SomeId const] node is now "const"
+    while (node && !node->IsLeaf() && iter != end)
+    {
+      // Skip '<' or ','
+      if ( !(node = node->Rest()) ) break;
+      if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
+        links->link(node->Car()->Car()->Car(), *iter);
+      ++iter;
+      node = node->Rest();
+    }
   }
   // Other types ignored, for now
 };
