@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis,v 1.2 2003/11/27 06:02:02 stefan Exp $
+# $Id: synopsis,v 1.3 2003/12/05 19:43:53 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -9,7 +9,7 @@
 
 from Synopsis import config
 from Synopsis import AST
-from Synopsis.Processor import Processor
+from Synopsis.Processor import Processor, Composite
 
 import sys, os, os.path, string, getopt
 
@@ -47,27 +47,40 @@ def usage():
    print """
 List of options:
 
-  -p, --parser           Select a parser
-  -f, --formatter        Select a formatter
-  -l, --linker           Link
-  -o, --output           output file / directory
-      --verbose          operate verbosely
   -h, --help             help
+  -V, --version          print version info and exit
+  -v  --verbose          operate verbosely
+  -d  --debug            operate in debug mode
+  -o, --output           output file / directory
+  -p, --parser           Select a parser
+  -Wp,<arg>[,<arg>...]   Send args to the parser
+  -l, --linker           Link
+  -Wl,<arg>[,<arg>...]   Send args to the linker
+  -f, --formatter        Select a formatter
+  -Wf,<arg>[,<arg>...]   Send args to the formatter
+  -I <path>              Specify include path
+  -D <macro>             Specify macro for the parser
 """
    
-def get_opt():
+def get_opt(argv):
    """Parse command line options and translate them to
    processor commands and arguments."""
 
-   opts, args = getopt.getopt(sys.argv[1:],
-                              'o:p:l:f:vh',
+   parser = None
+   parser_opts = {}
+   linker = None
+   linker_opts = {}
+   formatter = None
+   formatter_opts = {}
+   options = {}
+   help = False
+
+   opts, args = getopt.getopt(argv,
+                              'o:p:l:f:I:D:W:vhVd',
                               ['output=',
                                'parser=', 'linker=', 'formatter=',
                                'version', 'help', 'verbose'])
-   processor = None
-   options = {}
-   processor_name = ''
-   help = False
+
    for o, a in opts:
       if o == '-v' or o == '--version':
          print 'synopsis version %s'%config.version
@@ -80,50 +93,71 @@ def get_opt():
          options['output'] = a
 
       elif o == '-p' or o == '--parser':
-         processor_name = a
-         processor = _import('Synopsis.Parsers', a, 'Parser',
-                             'verbose' in options)
-
-      elif o == '-f' or o == '--formatter':
-         processor_name = a
-         processor = _import('Synopsis.Formatters', a, 'Formatter',
-                             'verbose' in options)
+         parser = _import('Synopsis.Parsers', a, 'Parser',
+                          'verbose' in options)
 
       elif o == '-l' or o == '--linker':
-         processor_name = 'Linker'
-         processor = _import('Synopsis.Processors', 'Linker',
-                             verbose = 'verbose' in options)
-         processors = string.split(a, ',')
+         linker = _import('Synopsis.Processors', 'Linker',
+                          'verbose' in options)
+         print 'a', a
+         if a:
+            linker_opts['processors'] = map(lambda x: _import('Synopsis.Processors', x, x,
+                                                              'verbose' in options)(),
+                                            string.split(a, ','))
+
+      elif o == '-f' or o == '--formatter':
+         formatter = _import('Synopsis.Formatters', a, 'Formatter',
+                             'verbose' in options)
+
+      elif o == '-I':
+         if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
+         parser_opts['cppflags'].append('-I%s'%a)
+
+      elif o == '-D':
+         if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
+         parser_opts['cppflags'].append('-D%s'%a)
+
+      elif o == '-W':
+         if a[0] == "p":
+            parser_opts.extend(string.split(a[2:], ","))
+         elif a[0] == "l":
+            linker_opts.extend(string.split(a[2:], ","))
+         elif a[0] == "f":
+            formatter_opts.extend(string.split(a[2:], ","))
 
       elif o == '-h' or o == '--help':
          help = True
 
    if help:
-      if processor:
-         p = processor()
-         print "Parameters for processor '%s':"%processor_name
-         parameters = p.get_parameters()
+      for p in parser, linker, formatter:
+         if not p: continue
+         processor = p()
+         print "Parameters for processor '%s':"%p.__module__
+         parameters = processor.get_parameters()
          tab = max(map(lambda x:len(x), parameters.keys()))
          for p in parameters:
             print "   %-*s     %s"%(tab, p, parameters[p].doc)
-      else:
+      if not (parser or linker or formatter):
          usage()
       sys.exit(0)
 
-   if processor_name == 'Linker':
-      options['processors'] = map(lambda x: _import('Synopsis.Processors', x)(),
-                                  processors)
    options['input'] = args
 
-   return processor, options
+   #now instantiate the processor
+   processors = []
+   if parser:
+      processors.append(parser(**parser_opts))
+   if linker:
+      processors.append(linker(**linker_opts))
+   if formatter:
+      processors.append(formatter(**formatter_opts))
+   processor = Composite(*processors, **options)
+
+   return processor
 
 def main():
-   processor, options = get_opt()
-   if processor:
-      ast = AST.AST()
-      processor(**options).process(ast)
-   else:
-      print 'Usage : %s [options] <input files>'%sys.argv[0]
+   processor = get_opt(sys.argv[1:])
+   processor.process(AST.AST())
 
 if __name__ == '__main__':
    main()
