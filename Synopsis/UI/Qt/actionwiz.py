@@ -1,4 +1,4 @@
-# $Id: actionwiz.py,v 1.5 2002/07/04 06:44:41 chalky Exp $
+# $Id: actionwiz.py,v 1.6 2002/07/11 09:30:16 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionwiz.py,v $
+# Revision 1.6  2002/07/11 09:30:16  chalky
+# Added page for configuring the cacher action
+#
 # Revision 1.5  2002/07/04 06:44:41  chalky
 # Can now edit define list for C++ Parser.
 #
@@ -199,6 +202,119 @@ class SourcePage (QVBox):
 	vbox.addWidget(listbox)
 	vbox.addWidget(button)
 	dialog.exec_loop()
+
+class CacherPage (QVBox):
+    """The Page (portion of dialog) that displays options for a Cacher
+    Action"""
+    def __init__(self, parent, action_container):
+	QVBox.__init__(self, parent)
+	self.__ac = action_container
+	self._make_layout()
+    def title(self):
+	return "Cache"
+    def action(self):
+	return self.__ac.action
+    def set_action(self, action):
+	self.__ac.action = action
+    def _make_layout(self):
+	self.setSpacing(4)
+	label = QLabel("<p>Cacher actions can load a stored AST from disk, "+
+	"or cache generated AST's between other actions (eg: parsing and "+
+	"linking, or linking and formatting).", self)
+
+	# Make action name field
+	hbox = QHBox(self)
+	label = QLabel("Action &name:", hbox)
+	self.action_name = QLineEdit(hbox)
+	QToolTip.add(self.action_name, "A unique name for this Action")
+	label.setBuddy(self.action_name)
+	self.connect(self.action_name, SIGNAL('textChanged(const QString&)'), self.onActionName)
+	hbox.setSpacing(4)
+
+	# Make options
+	bgroup = QVButtonGroup("Type of Cacher:", self)
+	self.bfile = QRadioButton("Load a single AST file", bgroup)
+	self.bdir = QRadioButton("Cache inputs to many files below a directory", bgroup)
+
+	label = QLabel("Select the file to load:", self)
+	hbox = QHBox(self)
+	self.line_file = QLineEdit('', hbox)
+	self.brfile = QPushButton('Browse', hbox)
+	label = QLabel("Select the directory to cache files in:", self)
+	hbox = QHBox(self)
+	self.line_dir = QLineEdit('', hbox)
+	self.brdir = QPushButton('Browse', hbox)
+
+	self.connect(self.bfile, SIGNAL('clicked()'), self.onButtonFile)
+	self.connect(self.bdir, SIGNAL('clicked()'), self.onButtonDir)
+	self.connect(self.line_file, SIGNAL('textChanged(const QString&)'), self.onFileChanged)
+	self.connect(self.line_dir, SIGNAL('textChanged(const QString&)'), self.onDirChanged)
+	self.connect(self.brfile, SIGNAL('clicked()'), self.onBrowseFile)
+	self.connect(self.brdir, SIGNAL('clicked()'), self.onBrowseDir)
+
+    def pre_show(self):
+	action = self.action()
+	self.action_name.setText(action.name())
+	self.line_file.setText(str(action.file or ''))
+	self.line_dir.setText(str(action.dir or ''))
+
+	if not action.file:
+	    self.line_file.setEnabled(0)
+	    self.brfile.setEnabled(0)
+	elif not action.dir:
+	    self.line_dir.setEnabled(0)
+	    self.brdir.setEnabled(0)
+	if action.file:
+	    self.bfile.setOn(1)
+	elif action.dir:
+	    self.bdir.setOn(1)
+
+    def showEvent(self, ev):
+	QVBox.showEvent(self, ev)
+	# Focus name field
+	self.action_name.setFocus()
+	self.action_name.selectAll()
+
+    def onActionName(self, name):
+	self.action().set_name(str(name))
+
+    def onButtonFile(self):
+	self.action().dir = ''
+	self.line_file.setEnabled(1)
+	self.brfile.setEnabled(1)
+	self.line_dir.setEnabled(0)
+	self.brdir.setEnabled(0)
+
+    def onButtonDir(self):
+	self.action().file = ''
+	self.line_dir.setEnabled(1)
+	self.brdir.setEnabled(1)
+	self.line_file.setEnabled(0)
+	self.brfile.setEnabled(0)
+
+    def onFileChanged(self, text):
+	text = str(text)
+	print "file =",text
+	self.action().file = text
+
+    def onDirChanged(self, text):
+	text = str(text)
+	print "dir =",text
+	self.action().dir = text
+
+    def onBrowseFile(self):
+	result = QFileDialog.getOpenFileName(str(self.action().file or ''), '*.syn',
+	    self, 'open', 'Select an AST file to load from')
+	result = str(result)
+	if result:
+	    self.line_file.setText(result)
+
+    def onBrowseDir(self):
+	result = QFileDialog.getExistingDirectory(str(self.action().dir or ''),
+	    self, 'open', 'Select an AST file to load from')
+	result = str(result)
+	if result:
+	    self.line_dir.setText(result)
 
 class ParserPage (QVBox):
     """The Page (portion of dialog) that displays options for a Parser
@@ -524,6 +640,8 @@ class ActionDialog (QTabDialog):
 	    return [ParserPage, CppParserPage, DetailsPage]
 	elif isinstance(self.action, FormatAction):
 	    return [FormatterPage, DetailsPage]
+	elif isinstance(self.action, CacherAction):
+	    return [CacherPage]
 	return None
 
 
@@ -549,6 +667,7 @@ class AddWizard (QWizard):
 	self._makeStartPage()
 	self._makeSourcePage()
 	self._makeParserPage()
+	self._makeCacherPage()
 	self._makeFormatterPage()
 	self._makeFormatPropPage()
 	# Finish page goes last
@@ -590,7 +709,7 @@ class AddWizard (QWizard):
 	    if o == 'source': self.setAppropriate(self.source, 0)
 	    elif o == 'parser': self.setAppropriate(self.parser, 0)
 	    elif o == 'linker': pass
-	    elif o == 'cacher': pass
+	    elif o == 'cacher': self.setAppropriate(self.cacher, 0)
 	    elif o == 'format':
 		self.setAppropriate(self.formatter, 0)
 		self.setAppropriate(self.formatProp, 0)
@@ -613,6 +732,7 @@ class AddWizard (QWizard):
 	    self._copyAttrs(config, config_class, 1)
 	elif t == 'cacher':
 	    self.action = CacherAction(x, y, name)
+	    self.setAppropriate(self.cacher, 1)
 	elif t == 'format':
 	    self.action = FormatAction(x, y, name)
 	    self.setAppropriate(self.formatter, 1)
@@ -634,6 +754,13 @@ class AddWizard (QWizard):
 	self.setHelpEnabled(page, 0)
 	self.setAppropriate(page, 0)
 	self.parser = page
+
+    def _makeCacherPage(self):
+	page = CacherPage(self, self)
+	self.addPage(page, "Cacher action config")
+	self.setHelpEnabled(page, 0)
+	self.setAppropriate(page, 0)
+	self.cacher = page
 
     def _makeFormatterPage(self):
 	vbox = QVBox(self)
