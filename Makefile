@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.24 2001/06/28 07:22:18 stefan Exp $
+# $Id: Makefile,v 1.25 2001/07/10 06:26:19 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -58,4 +58,6 @@ install:
 	$(MAKE) action="install"
 	mkdir -p $(bindir)
 	install -m755 synopsis $(bindir)
+	mkdir -p $(datadir)/synopsis
+	install -m755 share/*.png share/*.jpg $(datadir)/synopsis
 	$(MAKE) -C docs/RefManual install
