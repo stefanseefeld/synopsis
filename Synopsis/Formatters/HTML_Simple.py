@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-#
-#  $Id: HTML_Simple.py,v 1.10 2001/02/13 06:55:23 chalky Exp $
+#  $Id: HTML_Simple.py,v 1.11 2001/05/13 02:46:41 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -21,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.11  2001/05/13 02:46:41  stefan
+# more fixes from oxygene
+#
 # Revision 1.10  2001/02/13 06:55:23  chalky
 # Made synopsis -l work again
 #
