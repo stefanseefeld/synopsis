@@ -1,4 +1,3 @@
-// $Id: synopsis.cc,v 1.51 2003/12/03 06:43:43 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -541,19 +540,29 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
   Py_DECREF(new_comments);
 }
 
+//. merge the file with an existing (python) object if it exists
 PyObject *Synopsis::SourceFile(AST::SourceFile* file)
 {
+  // don't construct, but instead find existing python object !
   Trace trace("Synopsis::SourceFile");
-  PyObject *pyfile, *filename, *full_filename;
-  //std::cout << " Creating SourceFile for " << file->filename() << std::endl;
-  pyfile = PyObject_CallMethod(m_ast_module, "SourceFile", "OOO",
-                               filename = m->py(file->filename()),
-                               full_filename = m->py(file->full_filename()),
-                               m->cxx());
-  assertObject(pyfile);
-  PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
-  Py_DECREF(filename);
-  Py_DECREF(full_filename);
+  PyObject *files = PyObject_CallMethod(m_ast, "files", "");
+  assertObject(files);
+  PyObject *pyfile = PyDict_GetItemString(files, file->filename().c_str());
+  if (!pyfile) // the file wasn't found, create it now
+  {
+    PyObject *filename, *full_filename;
+    pyfile = PyObject_CallMethod(m_ast_module, "SourceFile", "OOO",
+				 filename = m->py(file->filename()),
+				 full_filename = m->py(file->full_filename()),
+				 m->cxx());
+    assertObject(pyfile);
+    PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
+    Py_DECREF(filename);
+    Py_DECREF(full_filename);
+  }
+  else Py_INCREF(pyfile);
+
+  Py_DECREF(files);
   return pyfile;
 }
 

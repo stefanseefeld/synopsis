@@ -29,10 +29,6 @@
 #include <vector>
 #include "ast.hh"
 
-//. Declared in link_map.cc just because all the ucpp->synopsis hooks are
-//. there for now.
-extern std::vector<AST::Macro*>* syn_macro_defines;
-
 //. LinkMap is a map from preprocessed file positions to input file positions
 class LinkMap
 {
@@ -58,7 +54,6 @@ public:
     //. since the map is stored statically and hence potentially across parser
     //. invocations.
     void clear();
-
 private:
     //. Compiler firewall
     struct Private;
