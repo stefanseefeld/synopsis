@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.7 2003/11/30 01:28:57 stefan Exp $
+# $Id: Dump.py,v 1.8 2003/12/02 05:45:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -127,6 +127,7 @@ class Formatter(Processor):
          self.pop()
 
    def visit_instance(self, obj):
+
       if isinstance(obj, AST.SourceFile): # just write down the filename
          self.add_text(obj.filename())
          return
