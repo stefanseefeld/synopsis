@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: InheritanceTree.py,v 1.3 2001/02/01 18:36:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.3  2001/02/01 18:36:55  chalky
+# Moved TOC out to Formatter/TOC.py
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -27,7 +30,7 @@
 
 from Synopsis.Core import Util
 
-import Page
+import core, Page
 from core import config
 from Tags import *
 
@@ -54,7 +57,7 @@ class InheritanceTree(Page.Page):
     def processClassInheritance(self, args):
 	name, rel_name = args
 	self.write('<li>')
-	self.write(config.toc.referenceName(name, rel_name))
+	self.write(core.reference(name, rel_name))
 	parents = config.classTree.superclasses(name)
 	if parents:
 	    self.write(' <i>(%s)</i>'%string.join(map(Util.ccolonName, parents), ", "))

@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.4 2001/02/01 18:08:26 chalky Exp $
+# $Id: FileLayout.py,v 1.5 2001/02/01 18:36:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.5  2001/02/01 18:36:55  chalky
+# Moved TOC out to Formatter/TOC.py
+#
 # Revision 1.4  2001/02/01 18:08:26  chalky
 # Added ext=".html" argument to nameOfScopedSpecial
 #
@@ -41,12 +44,13 @@ import os, stat, string
 
 # Synopsis modules
 from Synopsis.Core import AST
+from Synopsis.Formatter import TOC
 
 # HTML modules
 import core
 from core import config
 
-class FileLayout:
+class FileLayout (TOC.Linker):
     """Base class for naming files.
     You may derive from this class an
     reimplement any methods you like. The default implementation stores

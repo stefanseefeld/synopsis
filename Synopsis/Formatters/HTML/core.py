@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: core.py,v 1.3 2001/02/01 18:36:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.3  2001/02/01 18:36:55  chalky
+# Moved TOC out to Formatter/TOC.py
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -66,6 +69,7 @@ import sys, getopt, os, os.path, string, types, errno, stat, re
 
 # Synopsis modules
 from Synopsis.Core import AST, Type, Util
+from Synopsis.Formatter import TOC
 
 verbose=0
 
@@ -121,6 +125,15 @@ def sort(list):
     list.sort()
     return list
 
+def reference(name, scope, label=None, **keys):
+    """Utility method to insert a reference to a name.
+    @see ASTFormatter.BaseFormatter.reference()
+    """
+    if not label: label = Util.ccolonName(name, scope)
+    entry = config.toc[name]
+    if entry: return apply(href, (entry.link, label), keys)
+    return label or ''
+
 class Struct:
     "Dummy class. Initialise with keyword args."
     def __init__(self, **keys):
@@ -145,89 +158,6 @@ class CommentDictionary:
 	self.__dict[key] = comment = self._parser.parse(decl)
 	return comment
     __getitem__ = commentFor
-
-class TocEntry:
-    """Struct for an entry in the table of contents.
-    Vars: link, lang, type (all strings)
-    Also: name (scoped)"""
-    def __init__(self, name, link, lang, type):
-	self.name = name
-	self.link = link
-	self.lang = lang
-	self.type = type
-
-class TableOfContents(AST.Visitor):
-    """
-    Maintains a dictionary of all declarations which can be looked up to create
-    cross references. Names are fully scoped.
-    """
-    def __init__(self):
-	"Install self in config object as 'toc'"
-	config.toc = self
-	self.__toc = {}
-    
-    def lookup(self, name):
-	name = tuple(name)
-        if self.__toc.has_key(name): return self.__toc[name]
-	if verbose and len(name) > 1:
-	    print "Warning: TOC lookup of",name,"failed!"
-        return None
-
-    def referenceName(self, name, scope, label=None, **keys):
-	"""Same as reference but takes a tuple name"""
-	if not label: label = Util.ccolonName(name, scope)
-	entry = self[name]
-	if entry: return apply(href, (entry.link, label), keys)
-	return label or ''
-
-
-    def size(self): return len(self.__toc)
-    
-    __getitem__ = lookup
-    
-    def insert(self, entry): self.__toc[tuple(entry.name)] = entry
-    
-    def store(self, file):
-        """store the table of contents into a file, such that it can be used later when cross referencing"""
-        fout = open(file, 'w')
-        for name in self.__toc.keys():
-            scopedname = string.join(name, "::")
-            lang = self.__toc[tuple(name)].lang
-	    link = self.__toc[tuple(name)].link
-            fout.write(scopedname + "," + lang + "," + link + "\n")
-            
-    def load(self, resource):
-        args = string.split(resource, "|")
-        file = args[0]
-        if len(args) > 1: url = args[1]
-        else: url = ""
-        fin = open(file, 'r')
-        line = fin.readline()
-        while line:
-            if line[-1] == '\n': line = line[:-1]
-            scopedname, lang, link = string.split(line, ",")
-            name = string.split(scopedname, "::")
-            if len(url): link = string.join([url, link], "/")
-            entry = TocEntry(name, link, lang, "decl")
-            self.insert(entry)
-            line = fin.readline()
-    
-    def visitAST(self, ast):
-	for decl in ast.declarations():
-	    decl.accept(self)
-    def visitDeclaration(self, decl):
-	entry = TocEntry(decl.name(), config.files.link(decl), decl.language(), "decl")
-	self.insert(entry)
-    def visitForward(self, decl):
-	pass
-    #def visitScope(self, scope):
-    #	self.visitDeclaration(scope)
-    #	for decl in scope.declarations():
-    #	    decl.accept(self)
-    #def visitEnum(self, enum):
-    #	self.visitDeclaration(enum)
-    #	for enumor in enum.enumerators():
-    #	    enumor.accept(self)
 
 class FileTree(AST.Visitor):
     """Maintains a tree of directories and files"""
@@ -533,7 +463,7 @@ def format(types, declarations, args):
     FileTree()
 
     # Create table of contents index
-    TableOfContents()
+    config.toc = TOC.TableOfContents(config.files)
     if verbose: print "HTML Formatter: Initialising TOC"
 
     # Add all declarations to the namespace tree
