@@ -20,6 +20,7 @@ html: Tutorial.xml $(appendix)
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
+	cp -r $(srcdir)/examples .
 
 pdf: Tutorial.pdf
 
