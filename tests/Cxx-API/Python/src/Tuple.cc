@@ -1,5 +1,4 @@
-#include <Synopsis/Tuple.hh>
-#include <Synopsis/List.hh>
+#include <Synopsis/Object.hh>
 #include "Guard.hh"
 #include <string>
 #include <iostream>

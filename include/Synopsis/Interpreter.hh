@@ -1,4 +1,4 @@
-// $Id: Interpreter.hh,v 1.2 2004/01/11 19:46:29 stefan Exp $
+// $Id: Interpreter.hh,v 1.3 2004/01/24 04:44:07 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -48,6 +48,7 @@ inline Object Interpreter::run_file(const std::string &script,
                                     Mode m, Object globals, Object locals)
 {
   ::FILE *file = fopen(script.c_str(), "r");
+  if (!file) throw std::invalid_argument(script + " : no such file");
   PyObject *retn = PyRun_File(file, const_cast<char *>(script.c_str()),
 			      m, globals.my_impl, locals.my_impl);
   fclose(file);
