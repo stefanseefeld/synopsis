@@ -414,6 +414,7 @@ Token::Type Lexer::read_line()
 	{
 	  if (read_char_const(top+1))
 	  {
+	    ++my_token.length;
 	    return Token::WideCharConst;
 	  }
 	} 
@@ -421,6 +422,7 @@ Token::Type Lexer::read_line()
 	{
 	  if(read_str_const(top+1))
 	  {
+	    ++my_token.length;
 	    return Token::WideStringL;
 	  }
 	}
