@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.20 2002/06/22 06:54:53 chalky Exp $
+# $Id: AST.py,v 1.21 2002/07/11 09:28:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.21  2002/07/11 09:28:23  chalky
+# Fixes. Implement Cache Executor
+#
 # Revision 1.20  2002/06/22 06:54:53  chalky
 # Fixed default-value bug
 #
@@ -103,23 +106,29 @@ def ccmp(a,b):
 def load(filename):
     """Loads an AST object from the given filename"""
     try:
-	unpickler = cPickle.Unpickler(open(filename, "r"))
+	file = open(filename, "r")
+	unpickler = cPickle.Unpickler(file)
 	version = unpickler.load()
 	if version is FILE_VERSION:
-	    return unpickler.load()
-	    raise Exception, 'Wrong file version'
+	    ast = unpickler.load()
+	    file.close()
+	    return ast
+	file.close()
+	raise Exception, 'Wrong file version'
     except:
 	exc, msg = sys.exc_info()[0:2]
 	if exc is Exception:
 	    raise Exception, "Loading '%s': %s"%(filename, msg)
 	raise Exception, "Loading '%s', %s: %s"%(filename, exc, msg)
 
-def save(filename):
+def save(filename, ast):
     """Saves an AST object to the given filename"""
     try:
-	pickler = cPickle.Pickler(open(output, "w"), 1)
+	file = open(filename, "w")
+	pickler = cPickle.Pickler(file, 1)
 	pickler.dump(FILE_VERSION)
 	pickler.dump(ast)
+	file.close()
     except:
 	exc, msg = sys.exc_info()[0:2]
 	raise Exception, "Saving '%s', %s: %s"%(filename, exc, msg)
