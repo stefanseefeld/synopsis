@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.37 2003/11/14 14:51:08 stefan Exp $
+# $Id: Dot.py,v 1.38 2003/11/19 17:15:06 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -414,9 +414,7 @@ class Formatter(Processor):
    the various InheritanceGenerators"""
 
    title = Parameter('Inheritance Graph', 'the title of the graph')
-   inheritance = Parameter(True, 'Generate an inheritance graph')
-   single = Parameter(False, 'Generate an inheritance graph for a single class')
-   collaboration = Parameter(False, 'Generate a collaboration graph')
+   type = Parameter('inheritance', 'type of graph (one of \'inheritance\', \'single\', \'collaboration\'')
    hide_operations = Parameter(True, 'hide operations')
    hide_attributes = Parameter(True, 'hide attributes')
    format = Parameter('ps', "Generate output in format 'dot', 'ps', 'png', 'gif', 'map', 'html'")
@@ -441,7 +439,7 @@ class Formatter(Processor):
                  'map' : 'imap',
                  'html' : 'html'}
 
-      if formats.has_key(self.format): oformat = formats[self.format]
+      if formats.has_key(self.format): format = formats[self.format]
       else:
          print "Error: Unknown format. Available formats are:",
          print string.join(formats.keys(), ', ')
@@ -460,35 +458,38 @@ class Formatter(Processor):
          dotfile.write('rankdir="LR";\n')
          dotfile.write('ranksep="1.0";\n')
       dotfile.write("node[shape=record, fontsize=10, height=0.2, width=0.4, color=black]\n")
-      if self.single:
+      if self.type == 'single':
          generator = SingleInheritanceGenerator(dotfile, self.layout,
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
                                                 -1, self.ast.types(),
                                                 self.toc, self.prefix, False)
-      elif self.inheritance:
+      elif self.type == 'inheritance':
          generator = InheritanceGenerator(dotfile, self.layout,
                                           not self.hide_operations,
                                           not self.hide_attributes,
                                           self.toc, self.prefix, False)
-      elif self.collaboration:
+      elif self.type == 'collaboration':
          sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
          return self.ast
          #generator = CollaborationGenerator(dotfile)
+      else:
+         sys.stderr.write("Dot: unknown type\n");
+         
       for d in self.ast.declarations():
             d.accept(generator)
       dotfile.write("}\n")
       dotfile.close()
-      if oformat == "dot":
+      if format == "dot":
          os.rename(tmpfile, self.output)
-      elif oformat == "png":
+      elif format == "png":
          _format_png(tmpfile, self.output)
          #os.remove(tmpfile)
-      elif oformat == "html":
+      elif format == "html":
          _format_html(tmpfile, self.output, self.base_url)
          #os.remove(tmpfile)
       else:
-         _format(tmpfile, self.output, oformat)
+         _format(tmpfile, self.output, format)
          os.remove(tmpfile)
 
       return self.ast
