@@ -117,7 +117,10 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       if not self.types.has_key(type.name()):
          return
       declared = self.types[type.name()]
-      if not isinstance(declared, Type.Declared):
+      if isinstance(declared, Type.Unknown):
+         #the type was declared in a file for which no AST is retained
+         return
+      elif not isinstance(declared, Type.Declared):
          print "Warning: template declaration was not a declaration:",type.name(),declared.__class__.__name__
          return
       decl = declared.declaration()
