@@ -1,4 +1,4 @@
-# $Id: Texinfo.py,v 1.7 2003/11/18 07:25:04 stefan Exp $
+# $Id: Texinfo.py,v 1.8 2003/11/21 21:17:55 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -453,7 +453,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       else:
          ret_label = '{}'
       #self.write('@node ' + self.decl_label(function.realname()) + '\n')
-      self.write('@deftypefn ' + function.type() + ' ' + ret_label + ' ' + self.decl_label(function.realname()) + '(')
+      self.write('@deftypefn ' + function.type() + ' ' + ret_label + ' ' + self.decl_label(function.realname()) + ' (')
       first = 1
       for parameter in function.parameters():
          if not first: self.write(', ')
@@ -475,7 +475,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
          ret_label = '{}'
       try:
          #self.write('@node ' + self.decl_label(operation.name()) + '\n')
-         self.write('@deftypeop ' + operation.type() + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.realname()) + '(')
+         self.write('@deftypeop ' + operation.type() + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.realname()) + ' (')
       except:
          print operation.realname()
          sys.exit(0)
