@@ -1,4 +1,4 @@
-# $Id: Inheritance.py,v 1.1 2003/11/15 19:54:05 stefan Exp $
+# $Id: Inheritance.py,v 1.2 2003/11/16 01:45:27 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,7 @@
 from Synopsis.Formatters.HTML.Part import Part
 
 from Synopsis.Formatters.HTML import FormatStrategy
-from from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters.HTML.Tags import *
 
 class Inheritance(Part):
 
