@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.17 2002/04/26 01:21:14 chalky Exp $
+# $Id: Formatter.py,v 1.18 2002/11/01 07:18:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.18  2002/11/01 07:18:15  chalky
+# Added the QuoteHTML formatter
+#
 # Revision 1.17  2002/04/26 01:21:14  chalky
 # Bugs and cleanups
 #
@@ -156,6 +159,20 @@ class JavaFormatter (CommentFormatter):
 		    mol = self.re_line.search(lines, mol.end())
 	    mo = self.re_java.search(comm.detail, mo.end())
 	comm.detail = string.join(text_list,'\n')
+
+class QuoteHTML (CommentFormatter):
+    """A formatter that quotes HTML characters like the angle brackets and the
+    ampersand."""
+    def parse(self, comm):
+	if comm.summary: comm.summary = self._quote(comm.summary)
+	if comm.detail: comm.detail = self._quote(comm.detail)
+
+    def _quote(self, text):
+	"""Replace angle brackets with HTML codes"""
+	text = text.replace('&', '&amp;')
+	text = text.replace('<', '&lt;')
+	text = text.replace('>', '&gt;')
+	return text
 
 class SummarySplitter (CommentFormatter):
     """A formatter that splits comments into summary and detail"""
@@ -454,6 +471,7 @@ commentFormatters = {
     'none' : CommentFormatter,
     'ssd' : SSDFormatter,
     'java' : JavaFormatter,
+    'quotehtml' : QuoteHTML,
     'summary' : SummarySplitter,
     'javadoc' : JavadocFormatter,
     'qtdoc' : QtDocFormatter,
