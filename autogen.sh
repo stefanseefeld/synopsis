@@ -10,7 +10,8 @@ conf()
 }
 
 conf Cxx-API
-conf Synopsis/Parsers/Cpp
+conf Synopsis/Parsers/Cpp/ucpp
+conf Synopsis/Parsers/Cpp/wave
 conf Synopsis/Parsers/C
 conf Synopsis/Parsers/Cxx
 conf Synopsis/Parsers/Cxx/gc

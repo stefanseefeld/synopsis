@@ -51,7 +51,8 @@ py_packages = ["Synopsis",
 #"Synopsis.UI.Qt"] 
 
 
-ext_modules = [('Synopsis/Parsers/Cpp', 'ucpp' + module_ext),
+ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
+               ('Synopsis/Parsers/Cpp/wave', 'wave' + module_ext),
                ('Synopsis/Parsers/C', 'ctool' + module_ext),
                ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
                ('Synopsis/Parsers/Cxx', 'link' + module_ext)]

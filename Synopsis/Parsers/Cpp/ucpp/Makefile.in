@@ -15,27 +15,25 @@ PYTHON	:= @PYTHON@
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../Cxx-API/include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../../Cxx-API/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../Cxx-API/lib/libSynopsis.a @LIBS@
+LIBS	:= ../../../../Cxx-API/lib/libSynopsis.a @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 UCPP_FLAGS:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 
-UCPP_SO	:= ucpp$(LIBRARY_EXT)
-
 UCPP_FILES	:= mem hashtable cpp lexer assert macro eval
 
-HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/ucpp/*.h))
-SRC	:= $(patsubst %, ucpp/%.c, $(UCPP_FILES))
-SRC	+= cpp.cc
+HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/*.h))
+SRC	:= $(patsubst %, %.c, $(UCPP_FILES)) ucpp.cc
 OBJ	:= $(patsubst %, %.o, $(basename $(SRC)))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
+DEP	:= $(patsubst %.o, %.d, $(OBJ))
 
-TARGET	:= $(UCPP_SO)
+TARGET	:= ucpp$(LIBRARY_EXT)
 
 vpath %.c $(srcdir)
 vpath %.h $(srcdir)
@@ -54,11 +52,24 @@ ucpp-impl.syn: $(HDR_SYN) $(C_SYN)
 	@echo linking all C++ files together
 	$(synopsis) link_cxx --output=$@ $^
 
+%.d: %.cc
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+
+%.d: %.c
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+
 %.o : %.cc
+	@echo compiling $(@F)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o : %.c
+	@echo compiling $(@F)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+
+Makefile: $(srcdir)/Makefile.in
+	./config.status --file Makefile
 
 # Compile C++ .h files
 $(HDR_SYN): %.syn: %
@@ -72,13 +83,12 @@ $(CC_SYN): %.syn: %
 	mkdir -p $(dir $@)
 	$(synopsis) cxx --output=$@ $?
 
-ucpp:		$(AOBJ)
-	$(CC) -o $@ $^
-
-$(UCPP_SO): $(OBJ)
+ucpp$(LIBRARY_EXT): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
-	rm -f *~ ucpp/*.o ucpp/*.go ucpp/*.a ucpp/*.ga \
-        $(UCPP_SO) ucpp/*.ao occ/*.o occ/*.go ucpp/*.syn \
-        *.pyc *.pyo .deps.* base_lib
+	rm -f *~ *.o ucpp$(LIBRARY_EXT) *.syn *.d *.pyc *.pyo base_lib
+
+ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
+-include $(DEP)
+endif

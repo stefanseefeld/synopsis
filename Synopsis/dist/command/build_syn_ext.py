@@ -49,8 +49,13 @@ class build_syn_ext(build_ext):
 
         output = []
         for ext in self.extensions:
+            # FIXME: this ugly hack is needed since the ucpp module
+            # should be installed in the Cpp package, not Cpp.ucpp
+            if ext[1][:4] in ['ucpp', 'wave']:
+                path = os.path.join(self.build_temp, os.path.dirname(ext[0]), ext[1])
+            else:
+                path = os.path.join(self.build_temp, ext[0], ext[1])
             #only append the files that actually could be built
-            path = os.path.join(self.build_temp, ext[0], ext[1])
             if os.path.isfile(path):
                 output.append(os.path.join(self.build_lib, ext[0], ext[1]))
 
@@ -60,22 +65,32 @@ class build_syn_ext(build_ext):
 
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
 
+        # FIXME: this ugly hack is needed since the ucpp module
+        # should be installed in the Cpp package, not Cpp.ucpp
+        if ext[1][:4] in ['ucpp', 'wave']:
+            target = os.path.dirname(ext[0])
+        else:
+            target = ext[0]
+            
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
             path = string.replace(self.build_temp, '\\', '/') + '/' + ext[0]
+            temp_target = string.replace(self.build_temp, '\\', '/') + '/' + target
         else:
             path = os.path.join(self.build_temp, ext[0])
+            temp_target = os.path.join(self.build_temp, target)
         
         make = os.environ.get('MAKE', 'make')
 
         command = "%s -C %s %s"%(make, path, ext[1])
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
+
         #The extension may not be compiled. For now just skip it.
-        if copy and os.path.isfile(os.path.join(path, ext[1])):
+        if copy and os.path.isfile(os.path.join(temp_target, ext[1])):
             
-            if self.inplace: build_path = ext[0]
-            else: build_path = os.path.join(self.build_lib, ext[0])            
+            if self.inplace: build_path = target
+            else: build_path = os.path.join(self.build_lib, target)            
             mkpath (build_path, 0777, self.verbose, self.dry_run)
             copy_file(os.path.join(path, ext[1]),
                       os.path.join(build_path, ext[1]),
