@@ -8,7 +8,7 @@
 #
 
 from Synopsis import config
-from Synopsis.getoptions import getoptions
+from Synopsis.getoptions import get_options
 from Synopsis import AST
 from Synopsis.Processor import Processor, Composite
 
@@ -112,13 +112,13 @@ def get_opt(argv):
 
       elif o == '-W':
          if a[0] == "p":
-            for o,a in getoptions(a[2:].split(',')):
+            for o,a in get_options(a[2:].split(',')):
                parser_opts[o] = a
          elif a[0] == "l":
-            for o,a in getoptions(a[2:].split(',')):
+            for o,a in get_options(a[2:].split(',')):
                linker_opts[o] = a
          elif a[0] == "f":
-            for o,a in getoptions(a[2:].split(',')):
+            for o,a in get_options(a[2:].split(',')):
                formatter_opts[o] = a
 
       elif o == '-h' or o == '--help':
