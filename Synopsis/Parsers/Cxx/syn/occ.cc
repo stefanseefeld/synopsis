@@ -584,13 +584,17 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
   ProgramFile prog(ifs);
   Lex lex(&prog);
   Parser parse(&lex);
+  // Make sure basename ends in a '/'
+  std::string basename = syn_basename;
+  if (basename.size() > 0 && basename[basename.size()-1] != '/')
+    basename.append("/");
   // Calculate source filename
   std::string source(src);
-  if (source.substr(0, strlen(syn_basename)) == syn_basename)
-    source.erase(0, strlen(syn_basename));
+  if (source.substr(0, basename.size()) == basename)
+    source.erase(0, basename.size());
 
-  Builder builder(syn_basename);
-  SWalker swalker(src, &parse, &builder, &prog, syn_basename);
+  Builder builder(basename.c_str());
+  SWalker swalker(src, &parse, &builder, &prog, basename.c_str());
   swalker.set_extract_tails(syn_extract_tails);
   Ptree *def;
   if (syn_fake_std)
@@ -626,13 +630,13 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
   std::ofstream* of_syntax = 0;
   std::ofstream* of_xref = 0;
   char syn_buffer[1024];
-  size_t baselen = strlen(syn_basename);
+  size_t baselen = basename.size();
   if (syn_file_syntax)
     of_syntax = new std::ofstream(syn_file_syntax);
   else if (syn_syntax_prefix)
   {
     strcpy(syn_buffer, syn_syntax_prefix);
-    if (!strncmp(syn_basename, src, baselen))
+    if (!strncmp(basename.c_str(), src, baselen))
       strcat(syn_buffer, src + baselen);
     else
       strcat(syn_buffer, src);
@@ -644,7 +648,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
   else if (syn_xref_prefix)
   {
     strcpy(syn_buffer, syn_xref_prefix);
-    if (!strncmp(syn_basename, src, baselen))
+    if (!strncmp(basename.c_str(), src, baselen))
       strcat(syn_buffer, src + baselen);
     else
       strcat(syn_buffer, src);
