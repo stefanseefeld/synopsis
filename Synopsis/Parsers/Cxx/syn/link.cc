@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.18 2002/10/28 17:29:09 chalky Exp $
+ * $Id: link.cc,v 1.19 2002/10/28 17:38:17 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.19  2002/10/28 17:38:17  chalky
+ * Ooops, get rid of #
+ *
  * Revision 1.18  2002/10/28 17:29:09  chalky
  * Add anchor link with line number to each line
  *
@@ -238,7 +241,7 @@ namespace
   void write_lineno(std::ostream& out, int line)
   {
     // out << setw(4) << line << "| "; <-- but with& nbsp;'s
-    out << "<a name=\"#" << line << "\">";
+    out << "<a name=\"" << line << "\">";
     out << "<span class=\"file-linenum\">";
     int mag = 10000;
     while (mag > 1)
