@@ -23,11 +23,6 @@ include ../../../../../../local.mk
 endif
 endif
 
-# Options (should be in local.mk?)
-CCC		:= cc
-CXX		:= c++
-RANLIB		:=
-
 # Options for optimised or debug versions
 OPTIMISE	:= -O6 -fPIC
 DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG -fno-inline
@@ -91,7 +86,7 @@ $(SYN_OBJ): %.o : %.cc
 
 # This compiles the UCPP files from ../ucpp
 $(UCPP_OBJ): %.o : %.c
-	$(CCC) $(OPTIMISE) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+	$(CC) $(OPTIMISE) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
 
 # This compiles DEBUG versions of the OCC files in the parent dir
 $(OCC_GOBJ): %.go : ../%.cc
@@ -103,17 +98,17 @@ $(SYN_GOBJ): %.go : %.cc
 
 # This compiles DEBUG versions of the UCPP files
 $(UCPP_GOBJ): %.go : %.c
-	$(CCC) $(DEBUG) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+	$(CC) $(DEBUG) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
 
 # This compiles STANDALONE versions of the UCPP files
 $(UCPP_AOBJ): %.ao : %.c
-	$(CCC) $(DEBUG) $(CFLAGS) $(UCPP_AFLAGS) -c -o $@ $<
+	$(CC) $(DEBUG) $(CFLAGS) $(UCPP_AFLAGS) -c -o $@ $<
 
 link-synopsis:	link.cc
 	$(CXX) -DSTANDALONE $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -o link-synopsis link.cc
 
 ucpp:		$(UCPP_AOBJ)
-	$(CCC) -o $@ $^
+	$(CC) -o $@ $^
 
 # Include deps if they exist. 
 -include .deps.ao
