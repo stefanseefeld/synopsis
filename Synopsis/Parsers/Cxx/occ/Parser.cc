@@ -490,6 +490,7 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
   PTree::Node *body;
   if(my_lexer.look_ahead(0) == '{')
   {
+    my_symbols.declare(spec);
     SymbolLookup::Table::Guard guard(my_symbols.enter_namespace(spec));
     if(!linkage_body(body)) return false;
   }

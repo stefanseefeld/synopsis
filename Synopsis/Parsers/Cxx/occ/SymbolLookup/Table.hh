@@ -41,6 +41,8 @@ public:
   void declare(PTree::Typedef *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
   void declare(PTree::EnumSpec *);
+  //. declare the namespace as a new NAMESPACE
+  void declare(PTree::NamespaceSpec *);
   //. declare the class as a new TYPE
   void declare(PTree::ClassSpec *);
   void declare(PTree::TemplateDecl *);

@@ -47,6 +47,8 @@ void Scope::dump(std::ostream &os, size_t in) const
       if (const_->defined()) os << " (" << const_->value() << ')';
       os << std::endl;
     }
+    else if (const NamespaceName *module = dynamic_cast<const NamespaceName *>(i->second))
+      indent(os, in) << "Namespace: " << i->first << ' ' << module->type() << std::endl;
     else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
       indent(os, in) << "Type: " << i->first << ' ' << type->type() << std::endl;
     else if (const ClassTemplateName *type = dynamic_cast<const ClassTemplateName *>(i->second))

@@ -27,13 +27,17 @@ Table &Table::enter_scope()
 
 Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
 {
-  my_scopes.push(new Namespace(spec, my_scopes.top()));
+  Namespace *ns = new Namespace(spec, my_scopes.top());
+  my_scopes.top()->declare_scope(spec, ns);
+  my_scopes.push(ns);
   return *this;
 }
 
 Table &Table::enter_class(const PTree::ClassSpec *spec)
 {
-  my_scopes.push(new Class(spec, my_scopes.top()));
+  Class *cl = new Class(spec, my_scopes.top());
+  my_scopes.top()->declare_scope(spec, cl);
+  my_scopes.push(cl);
   return *this;
 }
 
@@ -135,6 +139,14 @@ void Table::declare(EnumSpec *spec)
     else
       my_scopes.top()->declare(name, new ConstName(type, enumerator));
   }
+}
+
+void Table::declare(NamespaceSpec *spec)
+{
+  const Node *name = second(spec);
+  Encoding enc(name->position(), name->length());
+  // FIXME: do we need a 'type' here ?
+  my_scopes.top()->declare(enc, new NamespaceName(spec->encoded_type(), spec));
 }
 
 void Table::declare(ClassSpec *spec)
