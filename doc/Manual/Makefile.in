@@ -10,7 +10,7 @@ SHELL	:= /bin/sh
 srcdir	:= @srcdir@
 topdir	:= @topdir@
 
-synopsis := python $(srcdir)/synopsis.py
+synopsis := python synopsis.py
 
 py_src		:= $(wildcard $(topdir)/Synopsis/*.py)
 py_src		+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
@@ -55,7 +55,7 @@ occ: occ.syn all.xref
 	@echo formatting $@
 	$(synopsis) html --output=html/occ $<
 
-all.xref: py.syn api.syn occ.syn occ.impl.syn
+all.xref: py.syn api.syn occ-impl.syn
 	@echo generating $@
 	$(synopsis) xref --output=$@ $^
 
