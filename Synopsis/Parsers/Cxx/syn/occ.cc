@@ -7,6 +7,14 @@
 // see the file COPYING for details.
 //
 
+#include "synopsis.hh"
+#include "swalker.hh"
+#include "builder.hh"
+#include "dumper.hh"
+#include "link_map.hh"
+#include "filter.hh"
+#include "linkstore.hh"
+
 #include <cstdio>
 #include <iostream>
 #include <string>
@@ -29,17 +37,6 @@
 #include <occ/metaclass.h>
 #include <occ/env.h>
 #include <occ/encoding.h>
-
-// Stupid macro
-#undef Scope
-
-#include "synopsis.hh"
-#include "swalker.hh"
-#include "builder.hh"
-#include "dumper.hh"
-#include "link_map.hh"
-#include "filter.hh"
-#include "linkstore.hh"
 
 // Define this to test refcounting
 //#define SYN_TEST_REFCOUNT
