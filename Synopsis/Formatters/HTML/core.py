@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.9 2001/02/12 04:08:09 chalky Exp $
+# $Id: core.py,v 1.10 2001/02/13 02:54:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.10  2001/02/13 02:54:15  chalky
+# Added Name Index page
+#
 # Revision 1.9  2001/02/12 04:08:09  chalky
 # Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
 #
@@ -114,7 +117,7 @@ class Config:
 	self.page_index = "" # page for index frame (left)
 	self.pages = [
 	    'ScopePages', 'ModuleListingJS', 'ModuleIndexer', 'FileTreeJS',
-	    'InheritanceTree', 'InheritanceGraph', 'FramesIndex'
+	    'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'
 	]
 	self.verbose = 0
 
