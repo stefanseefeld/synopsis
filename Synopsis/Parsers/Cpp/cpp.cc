@@ -6,6 +6,7 @@
 //
 
 #include <Synopsis/AST/ASTKit.hh>
+#include <Synopsis/AST/TypeKit.hh>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -25,6 +26,7 @@ int debug = 0;
 const char *language;
 const char *prefix = 0;
 ASTKit *kit;
+TypeKit *types;
 AST *ast;
 SourceFile *source_file;
 const char *input = 0;
@@ -39,11 +41,13 @@ const char *strip_prefix(const char *filename, const char *prefix)
   return filename;
 }
 
-//. creates new SourceFile object
+//. creates new SourceFile object and store it into ast
 SourceFile create_source_file(const char *filename, bool is_main)
 {
-  SourceFile sf = kit->create_source_file(strip_prefix(filename, prefix),
-					  filename, language);
+  const char *name = strip_prefix(filename, prefix);
+  SourceFile sf = kit->create_source_file(name, filename, language);
+  Python::Dict files = ast->files();
+  files.set(name, sf);
   sf.is_main(true);
   return sf;
 }
@@ -71,9 +75,15 @@ void create_macro(const char *filename, int line,
     if (vaarg) params.append("...");
   }
   Macro macro = kit->create_macro(sf, line, language, name, params, text);
+  Declared declared = types->create_declared(language, name, macro);
 
   Python::List declarations = ast->declarations();
   declarations.append(macro);
+
+  // FIXME: the 'types' attribute is not (yet) a dict type
+  // so we have to do the call conversions manually...
+  Python::Object types = ast->types();
+  types.attr("__setitem__")(Python::Tuple(name, declared));
 }
 
 bool extract(PyObject *py_flags, std::vector<const char *> &out)
@@ -127,6 +137,9 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     std::auto_ptr<ASTKit> kit_ptr(new ASTKit());
     kit = kit_ptr.get();
 
+    std::auto_ptr<TypeKit> types_ptr(new TypeKit());
+    types = types_ptr.get();
+
     std::auto_ptr<SourceFile> sf_ptr(new SourceFile(create_source_file(input, true)));
     source_file = sf_ptr.get();
 
@@ -158,7 +171,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       std::cerr << "ucpp returned error flag. ignoring error." << std::endl;
 
     Python::Dict files = ast->files();
-    files.set(input, *source_file);
+    files.set(strip_prefix(input, prefix), *source_file);
     return ast->ref();
   }
   catch (const std::exception &e)
