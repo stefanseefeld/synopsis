@@ -335,18 +335,24 @@ extern "C"
 
   //. This function is a callback from the ucpp code to store includes
   void synopsis_include_hook(const char *source, const char *target,
+			     const char *fname, int is_system,
 			     int is_macro, int is_next)
   {
     if (!active) return;
+
+    std::string name = fname;
+    if (is_system) name = '"' + name + '"';
+    else name = '<' + name + '>';
+
     if (debug) 
-      std::cout << "include : " << source << ' ' << target << ' ' 
+      std::cout << "include : " << source << ' ' << target << ' ' << name << ' '
 		<< is_macro << ' ' << is_next << std::endl;
 
     std::string abs_target = normalize_path(target);
 
     SourceFile target_file = lookup_source_file(abs_target.c_str(), false);
 
-    Include include = kit->create_include(target_file, is_macro, is_next);
+    Include include = kit->create_include(target_file, name, is_macro, is_next);
     Python::List includes = source_file->includes();
     includes.append(include);
   }
