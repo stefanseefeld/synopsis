@@ -51,6 +51,7 @@ struct HT *copyHT(struct HT *);
 void killHT(struct HT *);
 void saveHT(struct HT *, void **);
 void restoreHT(struct HT *, void **);
+void tweakHT(struct HT *, void **, void *);
 void scanHT(struct HT *, void (*)(void *));
 int hash_struct(void *);
 int cmp_struct(void *, void *);
