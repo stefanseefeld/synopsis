@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.13 2001/01/05 03:25:12 chalky Exp $
+# $Id: synopsis,v 1.14 2001/01/05 15:18:37 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -41,12 +41,14 @@ The supported flags are:
   -f,   --formatter <formatter>        Select a formatter
   -Wf,<arg>[,<arg>...]                 Send args to the formatter
   -I<path>                             Specify include path
+  -D<macro>                            Specify macro for the parser
   -o <file>                            Write output <file>
-  -v,   --version                      Print version info then exit
+  -v,   --verbose                      Print debugging info
+  -V,   --version                      Print version info then exit
   -h,   --help                         Print this usage message and exit
 
 Linker options:
- -s <Scope>                            Link only the named scope.
+  -s <Scope>                            Link only the named scope.
                                        May be used multiple times.
 		                       Default is to link all input.
 		                       Eg: -Wl,-s,Prague,-s,Berlin::Console
@@ -59,9 +61,10 @@ linker_args = []
 formatter_cmd = ""
 formatter_args = []
 output = ""
+verbose = 0
 
 def parseArgs(args):
-    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output
+    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose
     try:
         opts,files = getopt.getopt(args, "p:f:W:I:o:vh", ["parser=", "formatter=", "version", "help"])
     except getopt.error, e:
@@ -92,12 +95,15 @@ def parseArgs(args):
 
         elif o == "-I":
             parser_args.append("-I" + a)
+        elif o == "-D":
+            parser_args.append("-D" + a)
         elif o == "-o":
             output = a
-        elif o == "-v" or o == "--version":
+        elif o == "-v" or o == "--verbose":
+            verbose = 1
+        elif o == "-V" or o == "--version":
             version()
             sys.exit(0)
-
         elif o == "-h" or o == "--help":
             usage()
             sys.exit(0)
@@ -143,7 +149,7 @@ def main(argv=None):
             sys.exit(1)
 
         if parser_cmd == "":
-	    print "Loading pickled data from",file
+            if verbose: print "Loading pickled data from",file
             unpickler = pickle.Unpickler(open(file, "r"))
             try:
                 t = unpickler.load()
@@ -154,12 +160,12 @@ def main(argv=None):
             declarations.extend(d)
 
         else:
-	    print "*** Synopsis: Parsing"
+            if verbose: print "*** Synopsis: Parsing"
             parser.parse(file, parser_args, types, declarations)
 
     #
     # resolve symbols here...
-    print "*** Synopsis: Linking"
+    if verbose: print "*** Synopsis: Linking"
     linker = my_import("Linker." + linker_cmd)
     linker.resolve(linker_args, types, declarations)
 
@@ -167,7 +173,7 @@ def main(argv=None):
     # generate output, either with pickler or with a formatter
     #
     if formatter_cmd == "":
-	print "*** Synopsis: Writing file"
+        if (verbose): print "*** Synopsis: Writing file"
         if output == "":
             sys.stderr.write(cmdname + ": no output file specified\n")
             sys.exit(1)
