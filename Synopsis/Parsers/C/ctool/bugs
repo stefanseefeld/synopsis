@@ -132,6 +132,14 @@ Num    Date     Status   Description
 ---  11/05/2000          CTool Version 2.09.
                            Bugfixes and other changes from Patrick Baudin.
 
+---  08/26/2001          CTool Version 2.10. Switched to GPL license.
+
+055  03/31/2002 FIXED    Trouble with bitfield definitions.
+056  03/31/2002 FIXED    Function pointers in structs having problem with
+                         prototype parameters.
+
+---  03/31/2002          CTool Version 2.11.
+
 
 OPEN  = problem/bug exists and needs to be addressed.
 FIXED = bug fixed.
