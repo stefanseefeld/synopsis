@@ -1,4 +1,3 @@
-// $Id: Object.hh,v 1.5 2004/01/24 04:44:07 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -85,10 +84,10 @@ public:
   //. more relaxed form of downcast, return None on failure
   template <typename T>
   static T try_narrow(Object);
-  static Object import(const char *name);
+  static Object import(const std::string &name);
 
-  Object attr(const char *name) const;
-
+  Object attr(const std::string &) const;
+  bool set_attr(const std::string &, Object);
   PyObject *ref() { Py_INCREF(my_impl); return my_impl;}
 private:
    PyObject *my_impl;
@@ -120,6 +119,8 @@ public:
 
   List(size_t i = 0) : Object(PyList_New(i)) {}
   List(Object) throw(TypeError);
+  template <typename I>
+  List(I begin, I end);
   Tuple tuple() const { return Tuple(PyList_AsTuple(my_impl));}
   size_t size() const { return PyList_GET_SIZE(my_impl);}
   bool empty() const { return !size();}
@@ -302,18 +303,26 @@ inline void Object::assert_type(const char *module_name,
   }
 }
 
-inline Object Object::import(const char *name)
+inline Object Object::import(const std::string &name)
 {
-  PyObject *retn = PyImport_ImportModule(const_cast<char *>(name));
+  PyObject *retn = PyImport_ImportModule(const_cast<char *>(name.c_str()));
   if (!retn) throw ImportError(name);
   else return Object(retn);
 }
 
-inline Object Object::attr(const char *name) const
+inline Object Object::attr(const std::string &name) const
 {
-  PyObject *retn = PyObject_GetAttrString(my_impl, const_cast<char *>(name));
-  if (!retn) throw AttributeError(name);
+  PyObject *retn = PyObject_GetAttrString(my_impl, const_cast<char *>(name.c_str()));
+  if (!retn) throw AttributeError(name.c_str());
   else return Object(retn);
+}
+
+inline bool Object::set_attr(const std::string &name, Object value)
+{
+  int retn = PyObject_SetAttrString(my_impl,
+				    const_cast<char *>(name.c_str()),
+				    value.ref());
+  return retn != -1;
 }
 
 template <typename T>
@@ -539,6 +548,13 @@ inline List::List(Object o) throw(TypeError)
     }
   }
   else if (!PyList_Check(o.my_impl)) throw TypeError("object not a list");
+}
+
+template <typename I>
+List::List(I begin, I end)
+  : Object(PyList_New(0))
+{
+  for (I i = begin; i != end; ++i) append(*i);
 }
 
 inline void List::set(int i, Object o)

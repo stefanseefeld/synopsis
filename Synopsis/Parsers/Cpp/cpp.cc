@@ -1,4 +1,3 @@
-// $Id: cpp.cc,v 1.5 2004/01/13 17:08:25 stefan Exp $
 //
 // Copyright (C) 2003 Stefan Seefeld
 // All rights reserved.
@@ -218,12 +217,12 @@ extern "C"
   }
 };
 
-PyMethodDef ucpp_methods[] = {{(char*)"parse", ucpp_parse, METH_VARARGS},
-                             {0, 0}};
+PyMethodDef methods[] = {{(char*)"parse", ucpp_parse, METH_VARARGS},
+			 {0, 0}};
 };
 
 extern "C" void initucpp()
 {
-  PyObject* m = Py_InitModule((char*)"ucpp", ucpp_methods);
-  PyObject_SetAttrString(m, (char*)"version", PyString_FromString("0.1"));
+  Python::Module module = Python::Module::define("ucpp", methods);
+  module.set_attr("version", "0.1");
 }
