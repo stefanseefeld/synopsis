@@ -269,6 +269,29 @@ synopsis -f HTML -o Paths Path.syn Polyline.syn
       <para>The full code together with the Makefile can be found <ulink url="examples/Paths">here</ulink>
       </para>
     </section>
+    <section id="misc">
+      <title>Miscellaneous</title>
+      <para>As discussed earlier, there is a variety of processors available in the
+        Synopsis distribution. There are a number of parsers (for IDL, Python, and C++,
+        a C parser is in development), some formatters (HTML is probably the most popular
+        one, but others such as ASCII, Texinfo, Docbook, or Dot may be useful, too),
+        and a number of linker processors.</para>
+      <para>To find out about the available options of each of them, use the <option>--help</option>
+        option. For example
+        <programlisting>synopsis -f Dot --help</programlisting>
+        will tell us how to use the Dot formatter. To pass these options to the Dot formatter,
+        simply append them via the <option>-Wf</option> option, and they will be forwarded.
+      </para>
+      <para>If we want to generate a (UML) class diagram, we could for example run 
+        <programlisting>synopsis -f Dot -Wf,--title="class diagram" -Wf,--format=ps \
+          -Wf,hide_operations=False,hide_attributes=False \
+          -o Paths.ps Paths.syn</programlisting>
+      </para>
+      <para>But passing options via the command line has its limits, both, in terms of
+        usability, as well as for the robustness of the interface (all data have to be
+        passed as strings !). Therefor, for any tasks demanding more flexibility a
+        scripting interface is provided, which will be discussed in the next chapter.</para>
+    </section>
   </chapter>
 
   <chapter id="scripting">

@@ -3,6 +3,8 @@ synopsis:= ../../../../bin/synopsis
 src	:= Path.h Polyline.h Bezier.h Nurbs.h
 syn	:= $(patsubst %.h, %.syn, $(src))
 
+all: Paths Paths.ps
+
 Paths: Paths.syn
 	$(synopsis) -f HTML --javadoc -o $@ $<
 
@@ -21,8 +23,13 @@ Bezier.syn: Bezier.h
 Nurbs.syn: Nurbs.h
 	$(synopsis) -p Cxx -l JavaComments,JavaTags -o $@ $<
 
+Paths.ps: Paths.syn
+	$(synopsis) -f Dot -Wf,--title="class diagram" -Wf,--format=ps \
+          -Wf,hide_operations=False,hide_attributes=False \
+          -o $@ $<
+
 clean:
 	rm -rf *.syn
 
 distclean: clean
-	rm -rf Paths
+	rm -rf Paths Paths.ps
