@@ -1,42 +1,3 @@
-# $Id: AST.py,v 1.9 2001/02/07 09:56:59 chalky Exp $
-#
-# This file is a part of Synopsis.
-# Copyright (C) 2000, 2001 Stefan Seefeld
-# Copyright (C) 2000, 2001 Stephen Davies
-#
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-#
-# $Log: AST.py,v $
-# Revision 1.9  2001/02/07 09:56:59  chalky
-# Support for "previous comments" in C++ parser and Comments linker.
-#
-# Revision 1.8  2001/01/25 18:27:47  stefan
-# added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
-#
-# Revision 1.7  2001/01/24 12:47:28  chalky
-# Reapplied old behaviour of Visitor of passing the call up to visitDeclaration
-# so that all the places that broke work again.
-#
-# Revision 1.6  2001/01/23 19:47:45  stefan
-# fix Visitor class such that only desired methods need to be redefined
-#
-# Revision 1.5  2001/01/22 17:06:15  stefan
-# added copyright notice, and switched on logging
-#
-
 """Abstract Syntax Tree classes.
 
 This file contains classes which encapsulate nodes in the AST. The base class
@@ -52,7 +13,7 @@ PRIVATE.
 import string
 import Util
 
-# Accessibility constants
+# Accessability constants
 DEFAULT = 0
 PUBLIC = 1
 PROTECTED = 2
@@ -87,23 +48,27 @@ class AST:
 
 class Declaration:
     """Declaration base class. Every declaration has a name, comments,
-    accessibility and type. The default accessibility is DEFAULT except for
+    accessability and type. The default accessability is DEFAULT except for
     C++ where the Parser always sets it to one of the other three. """
 
-    def __init__(self, file, line, language, type, name):
+    def __init__(self, file, line, main, language, type, name):
         self.__file  = file
         self.__line  = line
+        self.__main  = main
         self.__language = language
 	self.__name = tuple(name)
         self.__type = type
         self.__comments = []
-	self.__accessibility = DEFAULT
+	self.__accessability = DEFAULT
     def file(self):
 	"""The file this declaration appeared in"""
 	return self.__file
     def line(self):
 	"""The line of the file this declaration started at"""
 	return self.__line
+    def mainfile(self):
+	"""True if this declaration is in the main file"""
+	return self.__main
     def language(self):
 	"""The language this declaration is in"""
 	return self.__language
@@ -117,49 +82,72 @@ class Declaration:
 	"""A list of Comment objects"""
 	return self.__comments
     def accept(self, visitor):
-	"""Visit the given visitor"""
-	visitor.visitDeclaration(self)
-    def accessibility(self):
-	"""One of the accessibility constants.
+	"""Visit the given visitor. For Declaration it does nothing."""
+	pass
+    def accessability(self):
+	"""One of the accessability constants.
 	This may be one of DEFAULT, PUBLIC, PROTECTED or PRIVATE, which are
 	defined at module scope (Synopsis.AST)"""
-	return self.__accessibility
-    def set_accessibility(self, axs):
-	"""Change the accessibility"""
-	self.__accessibility = axs
+	return self.__accessability
+    def set_accessability(self, axs):
+	"""Change the accessability"""
+	self.__accessability = axs
 
 class Forward (Declaration):
     """Forward declaration"""
 
-    def __init__(self, file, line, language, type, name):
-        Declaration.__init__(self, file, line, language, type, name)
+    def __init__(self, file, line, main, language, type, name):
+        Declaration.__init__(self, file, line, main, language, type, name)
     def accept(self, visitor): visitor.visitForward(self)
+
+class Declarator (Declaration):
+    """Declarator. This is a class, soon to be phased out, that holds
+    information about each declaration for variables and typedefs. Currently
+    there is only one declarator per variable or typedef declaration (they
+    used to be many-to-one) which is why they will disappear."""
+
+
+    def __init__(self, file, line, main, language, name, sizes):
+        Declaration.__init__(self, file, line, main, language, "", name)
+        self.__sizes = sizes
+    def _setAlias(self, alias):
+	"""Change the alias type. This is used only by the Linker"""
+	self.__alias = alias
+
+    def sizes(self):
+	"""List of array sizes, or None"""
+	return self.__sizes
+    def alias(self):
+	"""Type object if this is a typedef declarator, or None"""
+	return self.__alias
+    def accept(self, visitor):
+	"""Accept the given visitor"""
+	visitor.visitDeclarator(self)
 
 class Scope (Declaration):
     """Base class for scopes with contained declarations."""
 
-    def __init__(self, file, line, language, type, name):
-        Declaration.__init__(self, file, line, language, type, name)
+    def __init__(self, file, line, main, language, type, name):
+        Declaration.__init__(self, file, line, main, language, type, name)
         self.__declarations = []
     def declarations(self):
 	"""The list of declarations in this scope"""
 	return self.__declarations
 
 class Module (Scope):
-    """Module class"""
-    def __init__(self, file, line, language, type, name):
-        Scope.__init__(self, file, line, language, type, name)
+    """Module class.
+    """
+    def __init__(self, file, line, main, language, type, name):
+        Scope.__init__(self, file, line, main, language, type, name)
     def accept(self, visitor): visitor.visitModule(self)
 
 class MetaModule (Module):
     """Module Class that references all places where this Module occurs"""
-    def __init__(self, lang, type, name):
-        Scope.__init__(self, "", "", lang, type, name)
+    def __init__(self, type, name):
+        Scope.__init__(self, "", "", 1, "", type, name)
 	self.__module_declarations = []
-    def module_declarations(self):
-        """The module declarations this metamodule subsumes"""
-        return self.__module_declarations
     def accept(self, visitor): visitor.visitMetaModule(self)
+    def module_declarations(self): return self.__module_declarations
 
 
 class Inheritance:
@@ -186,8 +174,8 @@ class Inheritance:
 class Class (Scope):
     """Class class."""
 
-    def __init__(self, file, line, language, type, name):
-        Scope.__init__(self, file, line, language, type, name)
+    def __init__(self, file, line, main, language, type, name):
+        Scope.__init__(self, file, line, main, language, type, name)
         self.__parents = []
 	self.__template = None
     def parents(self):
@@ -204,11 +192,13 @@ class Typedef (Declaration):
     """Typedef class.
 
   alias()           -- the type object referenced by this alias
-  constr()          -- boolean: true if the alias type was constructed within this typedef declaration."""
-    def __init__(self, file, line, language, type, name, alias, constr):
-        Declaration.__init__(self, file, line, language, type, name)
+  constr()          -- boolean: true if the alias type was constructed within this typedef declaration.
+  declarator()      -- the new type being declared"""
+    def __init__(self, file, line, main, language, type, name, alias, constr, declarator):
+        Declaration.__init__(self, file, line, main, language, type, name)
         self.__alias = alias
         self.__constr = constr
+        self.__declarator = declarator
     def alias(self):
 	"""The Type object aliased by this typedef"""
 	return self.__alias
@@ -216,6 +206,8 @@ class Typedef (Declaration):
 	"""True if alias type was constructed here.
 	For example, typedef struct _Foo {} Foo;"""
 	return self.__constr
+    def declarator(self):
+	return self.__declarator
     def accept(self, visitor): visitor.visitTypedef(self)
 
     def set_alias(self, type): self.__alias = type
@@ -224,8 +216,8 @@ class Enumerator (Declaration):
     """Enumerator of an Enum. Enumerators represent the individual names and
     values in an enum."""
 
-    def __init__(self, file, line, language, name, value):
-        Declaration.__init__(self, file, line, language, "enumerator", name)
+    def __init__(self, file, line, main, language, name, value):
+        Declaration.__init__(self, file, line, main, language, "enumerator", name)
         self.__value = value
     def value(self):
 	"""The string value of this enumerator"""
@@ -236,8 +228,8 @@ class Enum (Declaration):
     """Enum declaration. The actual names and values are encapsulated by
     Enumerator objects."""
 
-    def __init__(self, file, line, language, name, enumerators):
-        Declaration.__init__(self, file, line, language, "enum", name)
+    def __init__(self, file, line, main, language, name, enumerators):
+        Declaration.__init__(self, file, line, main, language, "enum", name)
         self.__enumerators = enumerators
     def enumerators(self):
 	"""List of Enumerator objects"""
@@ -247,10 +239,11 @@ class Enum (Declaration):
 class Variable (Declaration):
     """Variable definition"""
 
-    def __init__(self, file, line, language, type, name, vtype, constr):
-        Declaration.__init__(self, file, line, language, type, name)
+    def __init__(self, file, line, main, language, type, name, vtype, constr, declarator):
+        Declaration.__init__(self, file, line, main, language, type, name)
         self.__vtype  = vtype
         self.__constr  = constr
+        self.__declarator = declarator
 
     def vtype(self):
 	"""The Type object for this variable"""
@@ -259,6 +252,7 @@ class Variable (Declaration):
 	"""True if the type was constructed here.
 	For example: struct Foo {} myFoo;"""
 	return self.__constr
+    def declarator(self): return self.__declarator
     def accept(self, visitor): visitor.visitVariable(self)
 
     def set_vtype(self, vtype): self.__vtype = vtype
@@ -267,8 +261,8 @@ class Variable (Declaration):
 class Const (Declaration):
     """Constant declaration. A constant is a name with a type and value."""
 
-    def __init__(self, file, line, language, type, ctype, name, value):
-        Declaration.__init__(self, file, line, language, type, name)
+    def __init__(self, file, line, main, language, type, ctype, name, value):
+        Declaration.__init__(self, file, line, main, language, type, name)
         self.__ctype  = ctype
         self.__value = value
 
@@ -323,8 +317,8 @@ class Function (Declaration):
     Note that function names are stored in mangled form to allow overriding.
     Formatters should use the realname() method to extract the unmangled name."""
 
-    def __init__(self, file, line, language, type, premod, returnType, name, realname):
-        Declaration.__init__(self, file, line, language, type, name)
+    def __init__(self, file, line, main, language, type, premod, returnType, name, realname):
+        Declaration.__init__(self, file, line, main, language, type, name)
 	self.__realname = realname
         self.__premodifier = premod
         self.__returnType = returnType
@@ -367,8 +361,8 @@ class Operation (Function):
     """Operation class. An operation is related to a Function and is currently
     identical.
     """
-    def __init__(self, file, line, language, type, premod, returnType, name, realname):
-        Function.__init__(self, file, line, language, type, premod, returnType, name, realname)
+    def __init__(self, file, line, main, language, type, premod, returnType, name, realname):
+        Function.__init__(self, file, line, main, language, type, premod, returnType, name, realname)
     def accept(self, visitor): visitor.visitOperation(self)
 
 class Comment :
@@ -384,9 +378,6 @@ class Comment :
     def text(self):
 	"""The text of the comment"""
 	return self.__text
-    def set_text(self, text):
-	"""Changes the text"""
-	self.__text = text
     def __str__(self):
 	"""Returns the text of the comment"""
 	return self.__text
@@ -396,30 +387,3 @@ class Comment :
     def line(self):
 	"""The line it was defined at"""
 	return self.__line
-
-class Visitor :
-    """Visitor for AST nodes"""
-    def visitAST(self, node):
-        for declaration in node.declarations(): declaration.accept(self)
-    def visitDeclaration(self, node): return
-    def visitForward(self, node): self.visitDeclaration(node)
-    def visitScope(self, node):
-	self.visitDeclaration(node)
-        for declaration in node.declarations(): declaration.accept(self)
-    def visitModule(self, node): self.visitScope(node)
-    def visitMetaModule(self, node): self.visitModule(node)
-    def visitClass(self, node): self.visitScope(node)
-    def visitTypedef(self, node): self.visitDeclaration(node)
-    def visitEnumerator(self, node): self.visitDeclaration(node)
-    def visitEnum(self, node):
-	self.visitDeclaration(node)
-        for enum in node.enumerators(): enum.accept(self)
-    def visitVariable(self, node): self.visitDeclaration(node)
-    def visitConst(self, node): self.visitDeclaration(node)
-    def visitFunction(self, node):
-	self.visitDeclaration(node)
-        for parameter in node.parameters(): parameter.accept(self)
-    def visitOperation(self, node): self.visitFunction(node)
-    def visitParameter(self, node): return
-    def visitComment(self, node): return
-    def visitInheritance(self, node): return

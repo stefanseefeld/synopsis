@@ -1,11 +1,11 @@
 # Makefile for Synopsis RefManual
 
-synopsis = ../../synopsis
+synopsis = synopsis
 bpath = ../..
 spath = syn
 
 PYFILES = Formatter/HTML Formatter/ASCII Formatter/DUMP \
-	Synopsis/AST Synopsis/Type Synopsis/Util \
+	Core/AST Core/Type Core/Util \
 	Parser/IDL/omni \
 	Parser/Python/exparse Parser/Python/python
 

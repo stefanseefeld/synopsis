@@ -26,11 +26,8 @@
 #   
 #   Utility functions
 
-# $Id: Util.py,v 1.2 2001/01/21 06:22:51 chalky Exp $
+# $Id: Util.py,v 1.1 2001/01/08 19:48:41 stefan Exp $
 # $Log: Util.py,v $
-# Revision 1.2  2001/01/21 06:22:51  chalky
-# Added Util.getopt_spec for --spec=file.spec support
-#
 # Revision 1.1  2001/01/08 19:48:41  stefan
 # changes to allow synopsis to be installed
 #
@@ -66,10 +63,9 @@ escapifyString() -- return a string with non-printing characters escaped.
 slashName()      -- format a scoped name with '/' separating components.
 dotName()        -- format a scoped name with '.' separating components.
 ccolonName()     -- format a scoped name with '::' separating components.
-pruneScope()     -- remove common prefix from a scoped name.
-getopt_spec(args,options,longlist) -- version of getopt that adds transparent --spec= suppport"""
+pruneScope()     -- remove common prefix from a scoped name."""
 
-import string, getopt
+import string
 
 def slashName(scopedName, our_scope=[]):
     """slashName(list, [list]) -> string
@@ -129,23 +125,3 @@ Return the given string with any non-printing characters escaped."""
         if l[i] not in vis:
             l[i] = "\\%03o" % ord(l[i])
     return string.join(l, "")
-
-def splitAndStrip(line):
-    """Splits a line at the first space, then strips the second argument"""
-    pair = string.split(line, ' ', 1)
-    return pair[0], string.strip(pair[1])
-
-def getopt_spec(args, options, long_options=[]):
-    """Transparently add --spec=file support to getopt"""
-    long_options.append('spec=')
-    opts, remainder = getopt.getopt(args, options, long_options)
-    ret = []
-    for pair in opts:
-	if pair[0] == '--spec':
-	    f = open(pair[1], 'rt')
-	    spec_opts = map(splitAndStrip, f.readlines())
-	    f.close()
-	    ret.extend(spec_opts)
-	else:
-	    ret.append(pair)
-    return ret, remainder

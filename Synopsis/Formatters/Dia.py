@@ -4,7 +4,7 @@ unpositioned.
 """
 
 import sys, getopt, os, os.path, string
-from Synopsis import Type, AST, Util, Visitor
+from Synopsis.Core import Type, AST, Util, Visitor
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"

@@ -10,7 +10,7 @@
 # . Unite Nodes/NamespaceBuilder into TOC
 
 import sys, getopt, os, os.path, string, types, errno, stat, re
-from Synopsis import AST, Type, Util, Visitor
+from Synopsis.Core import AST, Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
 debug=0

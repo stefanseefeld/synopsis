@@ -1,0 +1,33 @@
+Random Thoughts
+--------------
+
+FIXED:
+~~~~~
+o. Prague/Sys/Time.hh has operator overloads which are incorrectly parsed.
+o. Add filename support to all parsers
+o. Add indexes by filename. Eg: TopLeft window can switch between namespaces
+   and directories.
+o. Change namespace index to only show Scopes.
+
+
+NYI:
+~~~
+o. Write different comment parsers
+
+o. Write different ScopeSorters
+
+. Add command line option for only showing public/protected.
+
+o. Make the modules/files indices modular so that they can be omitted as
+desired
+
+o. Make the C++ parser accept -I directives and strip filenames according to
+them
+
+. Make the HTML formatter allow to set a level to separate directories into
+multiple indexes for the top-left frame
+
+. Make an index page with a-z and links to all types with those names
+
+. Make an option for HTML to put exception specs (raises (blah,blah)) in a
+div like comment summaries are, or linked to details.

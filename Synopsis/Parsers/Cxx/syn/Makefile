@@ -34,7 +34,7 @@ OBJ = buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
 	pattern.o walker.o typeinfo.o parse.o mop.o classwalk.o\
 	metaclass.o quote-class.o member.o cbodywalk.o
 
-all : ../../occ.so
+all : ../../../occ.so
 
 $(OBJ): %.o : ../%.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -51,7 +51,7 @@ occ.o:	occ.cc synopsis.hh
 occ.g.o: occ.cc synopsis.hh
 	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<
 
-../../occ.so : opencxx.a synopsis.o occ.o
+../../../occ.so : opencxx.a synopsis.o occ.o
 	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ occ.o synopsis.o opencxx.a $(LIB)
 
 occ.gdb:	opencxx.a synopsis.g.o occ.g.o
@@ -63,4 +63,4 @@ opencxx.a : $(OBJ) $(GCLIB)
 #	$(RANLIB) $@
 
 clean :
-	rm -f *.[o] *.ii *.so *core opencxx.a ../../occ.so
+	rm -f *.[o] *.ii *.so *core opencxx.a ../../../occ.so

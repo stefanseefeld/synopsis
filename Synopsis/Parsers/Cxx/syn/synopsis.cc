@@ -10,9 +10,9 @@ Synopsis::Synopsis(const char *f, PyObject *decl, PyObject *dict)
         : file(f), mainfile(f), declarations(decl), dictionary(dict)
 {
     Trace trace("Synopsis::Synopsis");
-    ast  = PyImport_ImportModule("Synopsis.AST");
+    ast  = PyImport_ImportModule("Synopsis.Core.AST");
     assertObject(ast);
-    type = PyImport_ImportModule("Synopsis.Type");
+    type = PyImport_ImportModule("Synopsis.Core.Type");
     assertObject(type);
     addBase("char");
     addBase("wchar_t");

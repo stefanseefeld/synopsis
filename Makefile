@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.6 2001/01/06 04:15:55 chalky Exp $
+# $Id: Makefile,v 1.7 2001/01/08 19:48:41 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -18,9 +18,11 @@
 # Free Software Foundation, Inc., 675 Mass Ave, Cambridge,
 # MA 02139, USA.
 
-SHELL	= /bin/sh
+SHELL	:= /bin/sh
+PREFIX	:= /usr/local/lib/python
+SRC	:= __init__.py
 
-subdirs	= Synopsis Parser Formatter demo/IDL demo/C++
+subdirs	:= Core Parser Linker Formatter demo/IDL demo/C++
 # doc
 
 all:
@@ -39,5 +41,15 @@ clean:
 distclean:
 	@for dir in ${subdirs}; do \
 	  (cd $$dir && $(MAKE) distclean) \
+	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+# to be elaborated further...
+install:
+	install -m755 synopsis /usr/local/bin
+	mkdir -p $(PREFIX)/Synopsis
+	install $(SRC) $(PREFIX)/Synopsis
+	@for dir in ${subdirs}; do \
+	  (cd $$dir && $(MAKE) install) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
