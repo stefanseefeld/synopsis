@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.16 2003/10/03 14:47:54 stefan Exp $
+# $Id: DUMP.py,v 1.17 2003/10/03 15:00:32 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.17  2003/10/03 15:00:32  stefan
+# bug fix
+#
 # Revision 1.16  2003/10/03 14:47:54  stefan
 # let DUMP finally respect the '-o' option
 #
@@ -113,13 +116,13 @@ class Dumper:
 	i,t = id(obj), type(obj)
 	if self.visited.has_key(i):
 	    if t == types.InstanceType: t = obj.__class__.__name__+" instance"
+	    i = self.identify and '( %d ) '%i or ''
 	    if hasattr(obj, 'name'):
-		ident = self.identify and '( %d ) '%i or ''
-		self.write("<already visited %s %s'%s'>"%(t,ident,string.join(obj.name(),"::")))
+		self.write("<already visited %s %s'%s'>"%(t,i,string.join(obj.name(),"::")))
 	    elif hasattr(obj, 'filename'):
-		self.write("<already visited %s %s'%s'>"%(t,ident,obj.filename()))
+		self.write("<already visited %s %s'%s'>"%(t,i,obj.filename()))
 	    else:
-		self.write("<already visited %s %s>"%(t,ident))
+		self.write("<already visited %s %s>"%(t,i))
 	    return
 	if self.handlers.has_key(t):
 	    self.handlers[t](obj)
