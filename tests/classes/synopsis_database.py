@@ -25,13 +25,128 @@ class Database(database.Database):
                 TextField(name="LDFLAGS"),
                 TextField(name="LIBS")]
 
-   def __init__(self, *args, **kwrds):
-      database.Database.__init__(self, *args, **kwrds)
+   def __init__(self, path, arguments):
+
+      arguments["modifiable"] = "false"
+      database.Database.__init__(self, path, arguments)
       if os.name == 'nt':
          self.srcdir = os.popen('cygpath -w "%s"'%self.srcdir).read()[:-1]
 
-   def get_src_path(self, id) : return self.srcdir + os.sep + id.replace('.', os.sep)
-   def get_build_path(self, id) : return id.replace('.', os.sep)
+   def get_src_path(self, id):
+      return self.srcdir + os.sep + id.replace('.', os.sep)
+
+   def get_build_path(self, id):
+      return id.replace('.', os.sep)
+
+   def GetTestIds(self, suite = "", scan_subdirs = 0):
+      """Return all test IDs that are part of the given suite."""
+
+      def get_file_tests(path, ext = ''):
+         """tests are file names without extension"""
+         return [t[0] for t in map(lambda x:os.path.splitext(x), dircache.listdir(path)) 
+                 if t[0] != '' and not ext or t[1] == ext] # splitext('.svn') == ('','svn') !!
+
+      def get_dir_tests(id, script):
+         """tests are directories if <script> exists"""
+         return [t for t in dircache.listdir(self.get_src_path(id))
+                 if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
+
+      if not os.path.isdir(self.get_src_path(suite)):
+         raise NoSuchSuiteError, suite
+
+      tests = []
+
+      if suite.startswith('Processors.Linker'):
+
+         # just make sure this isn't a test itself...
+         if os.path.exists(os.path.join(self.get_build_path(suite), 'synopsis.py')):
+            raise NoSuchSuiteError, suite
+
+         tests = get_dir_tests(suite, 'synopsis.py')
+
+      elif suite.startswith('Cxx-API'):
+         # if 'src' exists, it contains the tests
+         path = os.path.join(self.get_src_path(suite), 'src')
+         if os.path.isdir(path):
+            tests = get_file_tests(path, '.cc')
+
+      elif suite.startswith('CTool'):
+         if os.path.isfile(os.path.join(self.get_build_path(suite), 'ctool.py')):
+            tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'), '.c')
+
+      elif suite.startswith('OpenCxx'):
+         if os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
+            tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'), '.cc')
+
+      else:
+         if os.path.isfile(os.path.join(self.get_build_path(suite), 'synopsis.py')):
+            tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'))
+
+      # ignore accidental inclusion of false tests / suites
+      if '.svn' in tests: tests.remove('.svn')
+
+      if suite:
+         tests = ['%s.%s'%(suite, t) for t in tests]
+      return tests
+   
+   def GetSuiteIds(self, suite = "", scan_subdirs = 0):
+      """Return all suite IDs that are part of the given suite."""
+
+      def get_dir_tests(id, script):
+         """tests are directories if <script> exists"""
+         return [t for t in dircache.listdir(self.get_src_path(id))
+                 if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
+
+      def get_dir_suites(id):
+         """by default all directories are suites"""
+         path = self.get_src_path(id)
+         return filter(lambda x: os.path.isdir(os.path.join(path, x)),
+                       dircache.listdir(path))
+
+      if not os.path.isdir(self.get_src_path(suite)):
+         raise NoSuchSuiteError, suite
+
+      suites = []
+
+      if not suite:
+
+         suites = ['OpenCxx', 'CTool', 'Parsers', 'Processors']
+
+      elif suite.startswith('Processors.Linker'):
+
+         # just make sure this isn't a test itself...
+         if os.path.exists(os.path.join(self.get_build_path(suite), 'synopsis.py')):
+            raise NoSuchSuiteError, suite
+
+         tests = get_dir_tests(suite, 'synopsis.py')
+         suites = [s for s in get_dir_suites(suite) if s not in tests]
+
+      elif suite.startswith('Cxx-API'):
+         # if 'src' exists, it contains the tests
+         path = os.path.join(self.get_src_path(suite), 'src')
+         if not os.path.isdir(path):
+            suites = get_dir_suites(suite)
+
+      elif suite.startswith('CTool'):
+         if not os.path.isfile(os.path.join(self.get_build_path(suite), 'ctool.py')):
+            suites = get_dir_suites(suite)
+
+      elif suite.startswith('OpenCxx'):
+         if not os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
+            suites = get_dir_suites(suite)
+            suites.remove('src')
+
+      else:
+         if not os.path.isfile(os.path.join(self.get_build_path(suite), 'synopsis.py')):
+            suites = get_dir_suites(suite)
+
+      # ignore accidental inclusion of false tests / suites
+      if '.svn' in suites: suites.remove('.svn')
+      if 'autom4te.cache' in suites: suites.remove('autom4te.cache')
+
+      if suite:
+         suites = ['%s.%s'%(suite, s) for s in suites]
+      return suites
 
    def GetResource(self, id):
       """Construct a resource for the given id.
@@ -66,70 +181,8 @@ class Database(database.Database):
       replace the period by os.sep to get the path in the build tree,
       and prefix that with self.srcdir to get the path in the source tree."""
 
-      def get_dir_suites(id):
-         """by default all directories are suites"""
-         path = self.get_src_path(id)
-         return filter(lambda x: os.path.isdir(os.path.join(path, x)),
-                       dircache.listdir(path))
-
-      def get_file_tests(path, ext = ''):
-         """tests are file names without extension"""
-         return [t[0] for t in map(lambda x:os.path.splitext(x), dircache.listdir(path)) 
-                 if t[0] != '' and not ext or t[1] == ext] # splitext('.svn') == ('','svn') !!
-
-      def get_dir_tests(id, script):
-         """tests are directories if <script> exists"""
-         return [t for t in dircache.listdir(self.get_src_path(id))
-                 if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
-
-      if not os.path.isdir(self.get_src_path(id)): raise NoSuchSuiteError, id
-
-      test_ids = []
-      suite_ids = []
-
-      if id.startswith('Processors.Linker'):
-
-         # just make sure this isn't a test itself...
-         if os.path.exists(os.path.join(self.get_build_path(id), 'synopsis.py')):
-            raise NoSuchSuiteError, id
-
-         test_ids = get_dir_tests(id, 'synopsis.py')
-         suite_ids = [s for s in get_dir_suites(id) if s not in test_ids]
-
-      elif id.startswith('Cxx-API'):
-         # if 'src' exists, it contains the tests
-         path = os.path.join(self.get_src_path(id), 'src')
-         if os.path.isdir(path):
-            test_ids = get_file_tests(path, '.cc')
-         else:
-            suite_ids = get_dir_suites(id)
-
-      elif id.startswith('CTool'):
-         if os.path.isfile(os.path.join(self.get_build_path(id), 'ctool.py')):
-            test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'), '.c')
-         else:
-            suite_ids = get_dir_suites(id)
-
-      elif id.startswith('OpenCxx'):
-         if os.path.isdir(os.path.join(self.get_src_path(id), 'input')):
-            test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'), '.cc')
-         else:
-            suite_ids = get_dir_suites(id)
-
-      else:
-         if os.path.isfile(os.path.join(self.get_build_path(id), 'synopsis.py')):
-            test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'))
-         else:
-            suite_ids = get_dir_suites(id)
-
-      # ignore accidental inclusion of false tests / suites
-      if '.svn' in test_ids: test_ids.remove('.svn')
-      if '.svn' in suite_ids: suite_ids.remove('.svn')
-      if 'autom4te.cache' in suite_ids: suite_ids.remove('autom4te.cache')
-
-      if id:
-         test_ids = ['%s.%s'%(id, t) for t in test_ids]
-         suite_ids = ['%s.%s'%(id, s) for s in suite_ids]
+      test_ids = self.GetTestIds(id)
+      suite_ids = self.GetSuiteIds(id)
 
       arguments = {'test_ids' : test_ids, 'suite_ids' : suite_ids}
 
