@@ -183,7 +183,7 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
     }
 #endif
 #if defined(_MSC_VER)
-    if(t == ASM)
+    if(t == Token::ASM)
     {
       skip_asm();
       continue;

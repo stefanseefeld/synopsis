@@ -118,8 +118,8 @@ bool Environment::LookupType(const char* name, int len, Bind*& t)
 		    return true;
 		}
 
-	uint n = p->baseclasses.Number();
-	for(uint i = 0; i < n; ++i)
+	size_t n = p->baseclasses.Number();
+	for(size_t i = 0; i < n; ++i)
 	    if(p->baseclasses.Ref(i)->LookupType(name, len, t))
 		return true;
     }
@@ -203,8 +203,8 @@ bool Environment::LookupTop(const char* name, int len, Bind*& t)
     if(htable->Lookup((char*)name, len, (HashValue*)&t))
 	return true;
     else{
-	uint n = baseclasses.Number();
-	for(uint i = 0; i < n; ++i)
+	size_t n = baseclasses.Number();
+	for(size_t i = 0; i < n; ++i)
 	    if(baseclasses.Ref(i)->LookupTop(name, len, t))
 		return true;
 
@@ -220,8 +220,8 @@ bool Environment::LookupAll(const char* name, int len, Bind*& t)
 	if(p->htable->Lookup((char*)name, len, (HashValue*)&t))
 	    return true;
 	else{
-	    uint n = p->baseclasses.Number();
-	    for(uint i = 0; i < n; ++i)
+	    size_t n = p->baseclasses.Number();
+	    for(size_t i = 0; i < n; ++i)
 		if(p->baseclasses.Ref(i)->LookupAll(name, len, t))
 		    return true;
 	}
@@ -484,7 +484,7 @@ void Environment::Dump(int level)
     e->Dump();
 }
 
-Environment::Array::Array(int s)
+Environment::Array::Array(size_t s)
 {
   num = 0;
   size = s;
@@ -505,7 +505,7 @@ void Environment::Array::Append(Environment* p)
   array[num++] = p;
 }
 
-Environment* Environment::Array::Ref(uint i)
+Environment* Environment::Array::Ref(size_t i)
 {
   if(i < num) return array[i];
   else return 0;

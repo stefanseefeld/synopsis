@@ -292,8 +292,8 @@ int Class::Subclasses(PTree::Node *name, ClassArray& subclasses)
     if(class_list == 0)
 	return 0;
 
-    uint n = class_list->Number();
-    for(uint i = 0; i < n; ++i){
+    size_t n = class_list->Number();
+    for(size_t i = 0; i < n; ++i){
 	Class* c = class_list->Ref(i);
 	if(c->IsSubclassOf(name))
 	    subclasses.Append(c);
@@ -313,8 +313,8 @@ int Class::ImmediateSubclasses(PTree::Node *name, ClassArray& subclasses)
     if(class_list == 0)
 	return 0;
 
-    uint n = class_list->Number();
-    for(uint i = 0; i < n; ++i){
+    size_t n = class_list->Number();
+    for(size_t i = 0; i < n; ++i){
 	Class* c = class_list->Ref(i);
 	if(c->IsImmediateSubclassOf(name))
 	    subclasses.Append(c);
@@ -329,8 +329,8 @@ int Class::InstancesOf(char* name, ClassArray& classes)
     if(class_list == 0)
 	return 0;
 
-    uint n = class_list->Number();
-    for(uint i = 0; i < n; ++i){
+    size_t n = class_list->Number();
+    for(size_t i = 0; i < n; ++i){
 	Class* c = class_list->Ref(i);
 	if(strcmp(name, c->MetaclassName()) == 0)
 	    classes.Append(c);
@@ -1136,7 +1136,7 @@ PTree::Node *TemplateClass::TranslateInstantiation(Environment*, PTree::Node *sp
 
 // class ClassArray
 
-ClassArray::ClassArray(int s)
+ClassArray::ClassArray(size_t s)
 {
     num = 0;
     if(s < 1)
@@ -1158,7 +1158,7 @@ void ClassArray::Append(Class* p)
     array[num++] = p;
 }
 
-Class*& ClassArray::Ref(uint i)
+Class*& ClassArray::Ref(size_t i)
 {
     if(i < num)
 	return array[i];

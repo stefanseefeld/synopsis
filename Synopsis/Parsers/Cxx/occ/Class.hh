@@ -281,15 +281,15 @@ private:
 
 class ClassArray : public PTree::LightObject {
 public:
-    ClassArray(int = 16);
-    uint Number() { return num; }
-    Class*& operator [] (uint index) { return Ref(index); }
-    Class*& Ref(uint index);
+    ClassArray(size_t = 16);
+    size_t Number() { return num; }
+    Class*& operator [] (size_t index) { return Ref(index); }
+    Class*& Ref(size_t index);
     void Append(Class*);
     void Clear() { num = 0; }
 
 private:
-    uint num, size;
+    size_t num, size;
     Class** array;
 };
 

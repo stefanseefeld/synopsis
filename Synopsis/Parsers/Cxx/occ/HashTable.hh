@@ -76,7 +76,7 @@ protected:
 
     bool Lookup2(const char* key, HashValue* val, int* index);
     bool Lookup2(const char* key, int len, HashValue* val, int* index);
-    static uint NextPrimeNumber(uint number);
+    static size_t NextPrimeNumber(size_t number);
     bool GrowTable(int increment);
     unsigned int StringToInt(const char*);
     unsigned int StringToInt(const char*, int);

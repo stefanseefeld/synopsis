@@ -140,14 +140,14 @@ bool TypeInfo::is_volatile()
   else return false;
 }
 
-uint TypeInfo::is_builtin_type()
+size_t TypeInfo::is_builtin_type()
 {
   normalize();
   Environment *e = env;
   PTree::Encoding ptr = skip_cv(encode, e);
   if(ptr.empty()) return 0;
 
-  uint result = 0;
+  size_t result = 0;
   for(PTree::Encoding::iterator i = ptr.begin(); i != ptr.end(); ++i)
   {
     switch(*i)
