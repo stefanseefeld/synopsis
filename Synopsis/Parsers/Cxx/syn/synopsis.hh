@@ -61,6 +61,7 @@ public:
     PyObject *Declared(Type::Declared*);
     PyObject *Template(Type::Template*);
     PyObject *Modifier(Type::Modifier*);
+    PyObject *Array(Type::Array*);
     PyObject *Parameterized(Type::Parameterized*);
     PyObject *FuncPtr(Type::FuncPtr*);
 
@@ -107,6 +108,7 @@ public:
     //void visitType(Type::Type*);
     void visitUnknown(Type::Unknown*);
     void visitModifier(Type::Modifier*);
+    void visitArray(Type::Array*);
     //void visitNamed(Type::Named*);
     void visitBase(Type::Base*);
     void visitDeclared(Type::Declared*);

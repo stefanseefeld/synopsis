@@ -274,7 +274,7 @@ void Synopsis::translate(AST::Scope* scope)
 
 PyObject *Synopsis::Base(Type::Base* type)
 {
-    Trace trace("Synopsis::addBase");
+    Trace trace("Synopsis::Base");
     PyObject *name, *base = PyObject_CallMethod(m_type, "Base", "OO",
 	m->cxx(), name = m->Tuple(type->name())
     );
@@ -284,7 +284,7 @@ PyObject *Synopsis::Base(Type::Base* type)
 
 PyObject *Synopsis::Unknown(Type::Named* type)
 {
-    Trace trace("Synopsis::addUnknown");
+    Trace trace("Synopsis::Unknown");
     PyObject *name, *unknown = PyObject_CallMethod(m_type, "Unknown", "OO",
 	m->cxx(), name = m->Tuple(type->name())
     );
@@ -294,7 +294,7 @@ PyObject *Synopsis::Unknown(Type::Named* type)
 
 PyObject *Synopsis::Declared(Type::Declared* type)
 {
-    Trace trace("Synopsis::addDeclared");
+    Trace trace("Synopsis::Declared");
     PyObject *name, *declared = PyObject_CallMethod(m_type, "Declared", "OOO", 
 	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration())
     );
@@ -304,7 +304,7 @@ PyObject *Synopsis::Declared(Type::Declared* type)
 
 PyObject *Synopsis::Template(Type::Template* type)
 {
-    Trace trace("Synopsis::addTemplate");
+    Trace trace("Synopsis::Template");
     PyObject *name, *templ = PyObject_CallMethod(m_type, "Template", "OOOO",
 	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration()),
 	m->List(type->parameters())
@@ -315,16 +315,22 @@ PyObject *Synopsis::Template(Type::Template* type)
 
 PyObject *Synopsis::Modifier(Type::Modifier* type)
 {
-    Trace trace("Synopsis::addModifier");
+    Trace trace("Synopsis::Modifier");
     PyObject *modifier = PyObject_CallMethod(m_type, "Modifier", "OOOO",
 	m->cxx(), m->py(type->alias()), m->List(type->pre()), m->List(type->post())
     );
     return modifier;
 }
 
+PyObject *Synopsis::Array(Type::Array *type)
+{
+    Trace trace("Synopsis::Array");
+    return PyObject_CallMethod(m_type, "Array", "OOO", m->cxx(), m->py(type->alias()), m->List(type->sizes()));
+}
+
 PyObject *Synopsis::Parameterized(Type::Parameterized* type)
 {
-    Trace trace("Synopsis::addParametrized");
+    Trace trace("Synopsis::Parametrized");
     PyObject *parametrized = PyObject_CallMethod(m_type, "Parametrized", "OOO",
 	m->cxx(), m->py(type->templateType()), m->List(type->parameters())
     );
@@ -333,7 +339,7 @@ PyObject *Synopsis::Parameterized(Type::Parameterized* type)
 
 PyObject *Synopsis::FuncPtr(Type::FuncPtr* type)
 {
-    Trace trace("Synopsis::addFunctionType");
+    Trace trace("Synopsis::FuncType");
     PyObject *func = PyObject_CallMethod(m_type, "Function", "OOOO",
 	m->cxx(), m->py(type->returnType()), m->List(type->pre()),
 	m->List(type->parameters())
@@ -434,10 +440,10 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
 {
     Trace trace("Synopsis::addTypedef");
     // FIXME: what to do about the declarator?
-    PyObject *tdef = PyObject_CallMethod(m_ast, "Typedef", "OiOOOOiO", 
+    PyObject *tdef = PyObject_CallMethod(m_ast, "Typedef", "OiOOOOi", 
 	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name()),
-	m->py(decl->alias()), decl->constructed(), m->py((AST::Declaration*)NULL)
+	m->py(decl->alias()), decl->constructed()
     );
     addComments(tdef, decl);
     return tdef;
@@ -468,10 +474,10 @@ PyObject *Synopsis::Enum(AST::Enum* decl)
 PyObject *Synopsis::Variable(AST::Variable* decl)
 {
     Trace trace("Synopsis::addVariable");
-    PyObject *var = PyObject_CallMethod(m_ast, "Variable", "OiOOOOiO", 
+    PyObject *var = PyObject_CallMethod(m_ast, "Variable", "OiOOOOi", 
 	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->Tuple(decl->name()),
-	m->py(decl->vtype()), decl->constructed(), m->py((AST::Declaration*)NULL)
+	m->py(decl->vtype()), decl->constructed()
     );
     addComments(var, decl);
     return var;
@@ -692,6 +698,7 @@ void Synopsis::visitUnknown(Type::Unknown* type) {
 void Synopsis::visitModifier(Type::Modifier* type) {
     m->add(type, Modifier(type));
 }
+void Synopsis::visitArray(Type::Array *type) { m->add(type, Array(type));}
 /*void Synopsis::visitNamed(Type::Named* type) {
     m->add(type, Named(type));
 }*/

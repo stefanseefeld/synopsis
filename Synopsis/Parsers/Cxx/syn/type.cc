@@ -88,6 +88,9 @@ void Modifier::accept(Visitor* visitor)
     visitor->visitModifier(this);
 }
 
+Array::Array(Type* alias, const Mods &sizes) : m_alias(alias), m_sizes(sizes) {}
+void Array::accept(Visitor* visitor) { visitor->visitArray(this);}
+
 Parameterized::Parameterized(Template* t, Type::vector_t& params)
     : m_template(t), m_params(params)
 {
@@ -121,6 +124,7 @@ void Visitor::visitUnknown(Unknown *t) { visitType(t); }
 void Visitor::visitBase(Base *t) { visitNamed(t); }
 void Visitor::visitDeclared(Declared *t) { visitNamed(t); }
 void Visitor::visitModifier(Modifier *t) { visitType(t); }
+void Visitor::visitArray(Array *t) { visitType(t); }
 void Visitor::visitNamed(Named *t) { visitType(t); }
 void Visitor::visitTemplateType(Template *t) { visitDeclared(t); }
 void Visitor::visitParameterized(Parameterized *t) { visitType(t); }
