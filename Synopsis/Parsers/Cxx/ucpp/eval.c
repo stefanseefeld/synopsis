@@ -1077,6 +1077,12 @@ unsigned long eval_expr(struct token_fifo *tf, int *ret, int ew)
 	if (tf->art < tf->nt) {
 		error(eval_line, "trailing garbage in constant integral "
 			"expression");
+		for (sart; sart < tf->art; sart++)
+		    fprintf(stderr, "%s ", token_name(tf->t + sart));
+		fputs("---> ", stderr);
+		for (sart = tf->art; sart < tf->nt; sart++)
+		    fprintf(stderr, "%s ", token_name(tf->t + sart));
+		fputs("\n", stderr);
 		goto eval_err;
 	}
 	*ret = 0;
