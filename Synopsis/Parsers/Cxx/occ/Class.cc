@@ -47,8 +47,6 @@ static opcxx_ListOfMetaclass* templateCreator = 0;
 static Class* CreateClass(PTree::Node *def, PTree::Node *marg);
 static Class* CreateTemplateClass(PTree::Node *def, PTree::Node *marg);
 
-using PTree::GC;
-
 void Class::do_init_static()
 {
     // Only do this once
@@ -1145,14 +1143,14 @@ ClassArray::ClassArray(size_t s)
 	s = 1;
 
     size = s;
-    array = new (GC) Class*[s];
+    array = new (PTree::GC) Class*[s];
 }
 
 void ClassArray::Append(Class* p)
 {
     if(num >= size){
 	size += 16;
-	Class** a = new (GC) Class*[size];
+	Class** a = new (PTree::GC) Class*[size];
 	memmove(a, array, size_t(num * sizeof(Class*)));
 	array = a;
     }

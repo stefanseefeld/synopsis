@@ -19,8 +19,6 @@
 #include "Environment.hh"
 #include "Walker.hh"
 
-using PTree::GC;
-
 // class Member
 
 Member::Member()
@@ -495,7 +493,7 @@ MemberList::Mem* MemberList::Ref(int i)
     if(i >= size){
 	int old_size = size;
 	size = ((unsigned int)i + unit) & ~(unit - 1);
-	Mem* a = new (GC) Mem[size];
+	Mem* a = new (PTree::GC) Mem[size];
 	if(old_size > 0)
 	    memmove(a, array, old_size * sizeof(Mem));
 
@@ -772,7 +770,7 @@ ChangedMemberList::Cmem* ChangedMemberList::Ref(int i)
     if(i >= size){
 	int old_size = size;
 	size = ((unsigned int)i + unit) & ~(unit - 1);
-	Cmem* a = new (GC) Cmem[size];
+	Cmem* a = new (PTree::GC) Cmem[size];
 	if(old_size > 0)
 	    memmove(a, array, old_size * sizeof(Cmem));
 
