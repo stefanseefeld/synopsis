@@ -77,6 +77,7 @@ class TransUnit
 
     void add( Statement *stemnt );
     void insert(Statement *stemnt, Statement *after=NULL);
+	bool insertBefore(Statement *stemnt, Statement *before);
 
     const std::string  filename;   // The file we parsed this from.
 
