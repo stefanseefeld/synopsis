@@ -1,355 +1,301 @@
-# $Id: ASCII.py,v 1.33 2003/11/11 12:50:56 stefan Exp $
+# $Id: ASCII.py,v 1.34 2003/11/13 17:21:03 stefan Exp $
 #
-# This file is a part of Synopsis.
-# Copyright (C) 2000, 2001 Stefan Seefeld
-# Copyright (C) 2000, 2001 Stephen Davies
+# Copyright (C) 2000 Stefan Seefeld
+# Copyright (C) 2000 Stephen Davies
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-#
-# $Log: ASCII.py,v $
-# Revision 1.33  2003/11/11 12:50:56  stefan
-# remove 'Core' module
-#
-# Revision 1.32  2003/01/27 06:53:36  chalky
-# Added macro support for C++.
-#
-# Revision 1.31  2002/10/27 12:06:11  chalky
-# Fix funcptr parameters
-#
-# Revision 1.30  2002/10/26 04:15:53  chalky
-# Fix typo in method name
-#
-# Revision 1.29  2002/10/20 15:38:07  chalky
-# Much improved template support, including Function Templates.
-#
-# Revision 1.28  2001/08/02 03:25:09  chalky
-# Reworked handling of enumerators for use in synopsis-qt GUI
-#
-# Revision 1.27  2001/07/28 02:41:34  chalky
-# Minor sanity fix
-#
-# Revision 1.26  2001/07/19 04:00:17  chalky
-# New .syn file format. Added -b, -c flags
-#
-# Revision 1.25  2001/05/25 13:45:49  stefan
-# fix problem with getopt error reporting
-#
-# Revision 1.24  2001/02/13 06:55:23  chalky
-# Made synopsis -l work again
-#
-# Revision 1.23  2001/02/13 06:35:20  chalky
-# Added config_obj to format() args to prevent exception.
-#
-# Revision 1.22  2001/02/06 16:02:23  chalky
-# Fixes
-#
-# Revision 1.21  2001/01/31 06:51:24  stefan
-# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
-#
-# Revision 1.20  2001/01/24 01:38:36  chalky
-# Added docstrings to all modules
-#
-# Revision 1.19  2001/01/22 19:54:41  stefan
-# better support for help message
-#
-# Revision 1.18  2001/01/22 17:06:15  stefan
-# added copyright notice, and switched on logging
-#
+
 """
 Outputs the AST in plain ascii format similar to input.
 """
 
-# THIS-IS-A-FORMATTER
-import sys, getopt, os, os.path, string
+from Synopsis.Processor import Processor, Parameter
 from Synopsis import Type, AST, Util
 
-verbose = 0
-comment_str = "// %s\n"
+import sys, getopt, os, os.path, string
 
-class ASCIIFormatter(AST.Visitor, Type.Visitor):
-    """
-    outputs as ascii. This is to test for features
-    still missing. The output should be compatible
-    with the input...
-    """
-    def __init__(self, os):
-        self.__indent = 0
-        self.__istring = "  "
-        self.__os = os
-	self.__scope = []
-	self.__axs = AST.DEFAULT
-	self.__axs_stack = []
-	self.__axs_string = ('default:\n','public:\n','protected:\n','private:\n')
-	self.__enumers = []
-	self.__id_holder = None
-    def indent(self):
-        self.__os.write(self.__istring * self.__indent)
-    def incr(self): self.__indent = self.__indent + 1
-    def decr(self): self.__indent = self.__indent - 1
-    def scope(self): return self.__scope
-    def set_scope(self, name): self.__scope = list(name)
-    def enterScope(self, name): self.__scope.append(name),self.incr()
-    def leaveScope(self): self.__scope.pop(),self.decr()
-    def write(self, text): self.__os.write(text)
+class Formatter(Processor, AST.Visitor, Type.Visitor):
+   """
+   outputs as ascii. This is to test for features
+   still missing. The output should be compatible
+   with the input...
+   """
 
-    def formatType(self, type, id_holder = None):
-	if type is None: return '(unknown)'
-	if id_holder: self.__id_holder = id_holder
-	type.accept(self)
-	if id_holder: self.__id_holder = None
-	return self.__type
+   bold_comments = Parameter(False, 'Bold comments')
+   comment_color = Parameter(None, 'Colored comments, color = 0 to 15')
+
+   def process(self, ast, **kwds):
+
+      self.set_parameters(kwds)
+      self.ast = self.merge_input(ast)
+      self.__os = open(self.output, "w")
+      self.__indent = 0
+      self.__istring = "  "
+      self.__scope = []
+      self.__axs = AST.DEFAULT
+      self.__axs_stack = []
+      self.__axs_string = ('default:\n','public:\n','protected:\n','private:\n')
+      self.__enumers = []
+      self.__id_holder = None
+      self.__os.write('hi there')
+      if self.comment_color is not None: 
+         self.comment_str = "\033[3%d%sm// %%s\033[m\n"%(
+            self.comment_color % 8,
+            (self.comment_color >= 8) and ";1" or "")
+      elif self.bold_comments:
+         self.comment_str = "\033[1m// %s\033[m\n"
+      else:
+         self.comment_str = "// %s\n"
+
+      for declaration in self.ast.declarations():
+         declaration.accept(self)
+      self.__os.close()
+      
+      return self.ast
+
+   def indent(self): self.__os.write(self.__istring * self.__indent)
+   def incr(self): self.__indent = self.__indent + 1
+   def decr(self): self.__indent = self.__indent - 1
+   def scope(self): return self.__scope
+   def set_scope(self, name): self.__scope = list(name)
+   def enter_scope(self, name): self.__scope.append(name),self.incr()
+   def leave_scope(self): self.__scope.pop(),self.decr()
+   def write(self, text): self.__os.write(text)
+
+   def format_type(self, type, id_holder = None):
+
+      if type is None: return '(unknown)'
+      if id_holder: self.__id_holder = id_holder
+      type.accept(self)
+      if id_holder: self.__id_holder = None
+      return self.__type
     
-    #################### Type Visitor ###########################################
+   #################### Type Visitor ##########################################
 
-    def visitBaseType(self, type):
-        self.__type = Util.ccolonName(type.name())
+   def visitBaseType(self, type):
+
+      self.__type = Util.ccolonName(type.name())
         
-    def visitDependent(self, type):
-        self.__type = type.name()[-1]
+   def visitDependent(self, type):
+
+      self.__type = type.name()[-1]
         
-    def visitUnknown(self, type):
-        self.__type = Util.ccolonName(type.name(), self.scope())
+   def visitUnknown(self, type):
+
+      self.__type = Util.ccolonName(type.name(), self.scope())
         
-    def visitDeclared(self, type):
-        self.__type = Util.ccolonName(type.name(), self.scope())
+   def visitDeclared(self, type):
+
+      self.__type = Util.ccolonName(type.name(), self.scope())
         
-    def visitModifier(self, type):
-        aliasStr = self.formatType(type.alias())
-	premod = map(lambda x:x+" ", type.premod())
-        self.__type = "%s%s%s"%(string.join(premod,''), aliasStr, string.join(type.postmod(),''))
+   def visitModifier(self, type):
+
+      aliasStr = self.format_type(type.alias())
+      premod = map(lambda x:x+" ", type.premod())
+      self.__type = "%s%s%s"%(string.join(premod,''), aliasStr,
+                              string.join(type.postmod(),''))
             
-    def visitParametrized(self, type):
-	temp = self.formatType(type.template())
-	params = map(self.formatType, type.parameters())
-        self.__type = "%s<%s>"%(temp,string.join(params, ", "))
+   def visitParametrized(self, type):
 
-    def visitFunctionType(self, type):
-	ret = self.formatType(type.returnType())
-	params = map(self.formatType, type.parameters())
-	premod = string.join(type.premod(),'')
-	if self.__id_holder:
-	    ident = self.__id_holder[0]
-	    del self.__id_holder[0]
-	else:
-	    ident = ''
-	self.__type = "%s(%s%s)(%s)"%(ret,premod,ident,string.join(params,", "))
+      temp = self.format_type(type.template())
+      params = map(self.format_type, type.parameters())
+      self.__type = "%s<%s>"%(temp,string.join(params, ", "))
 
-    def visitTemplate(self, type):
-	self.visitDeclared(type)
-	#self.__type = "template<"+string.join(map(self.formatType, type.parameters()),",")+">"+self.__type
+   def visitFunctionType(self, type):
+
+      ret = self.format_type(type.returnType())
+      params = map(self.format_type, type.parameters())
+      premod = string.join(type.premod(),'')
+      if self.__id_holder:
+         ident = self.__id_holder[0]
+         del self.__id_holder[0]
+      else:
+         ident = ''
+      self.__type = "%s(%s%s)(%s)"%(ret,premod,ident,string.join(params,", "))
+
+   def visitTemplate(self, type):
+
+      self.visitDeclared(type)
+      #self.__type = "template<"+string.join(map(self.format_type, type.parameters()),",")+">"+self.__type
 	
-    ### AST visitor
+   ### AST visitor
 
-    def visitDeclaration(self, decl):
-	axs = decl.accessibility()
-	if axs != self.__axs:
-	    self.decr(); self.indent(); self.incr()
-	    self.write(self.__axs_string[axs])
-	    self.__axs = axs
-	self.writeComments(decl.comments())
+   def visitDeclaration(self, decl):
 
-    def visitMacro(self, macro):
-	self.visitDeclaration(macro)
-	self.indent()
-	params = ''
-	if macro.parameters() is not None:
-	    params = '(' + string.join(macro.parameters(), ', ') + ')'
-	self.write("#define %s%s %s\n"%(macro.name()[-1], params, macro.text()))
+      axs = decl.accessibility()
+      if axs != self.__axs:
+         self.decr(); self.indent(); self.incr()
+         self.write(self.__axs_string[axs])
+         self.__axs = axs
+      self.writeComments(decl.comments())
+
+   def visitMacro(self, macro):
+
+      self.visitDeclaration(macro)
+      self.indent()
+      params = ''
+      if macro.parameters() is not None:
+         params = '(' + string.join(macro.parameters(), ', ') + ')'
+      self.write("#define %s%s %s\n"%(macro.name()[-1], params, macro.text()))
     
-    def writeComments(self, comments):
-	for comment in comments:
-	    text = comment.text()
-	    if not text: continue
-	    lines = string.split(text, "\n")
-	    for line in lines:
-		self.indent()
-		self.write(comment_str%line)
+   def writeComments(self, comments):
 
-    def visitTypedef(self, typedef):
-	self.visitDeclaration(typedef)
-        self.indent()
-	dstr = ""
-	# Figure out the type:
-	alias = self.formatType(typedef.alias())
-	# Figure out the declarators:
-	# for declarator in typedef.declarators():
-	#     dstr = dstr + declarator.name()[-1]
-	#     if declarator.sizes() is None: continue
-	#     for size in declarator.sizes():
-	# 	dstr = dstr + "[%d]"%size
-        self.write("typedef %s %s;\n"%(
-	    alias, typedef.name()[-1]
-	))
+      for comment in comments:
+         text = comment.text()
+         if not text: continue
+         lines = string.split(text, "\n")
+         for line in lines:
+            self.indent()
+            self.write(self.comment_str%line)
 
-    def visitModule(self, module):
-	self.visitDeclaration(module)
-        self.indent()
-	self.write("%s %s {\n"%(module.type(),module.name()[-1]))
-        self.enterScope(module.name()[-1])
-        #for type in module.types(): type.output(self)
-	for declaration in module.declarations():
-	    declaration.accept(self)
-        self.leaveScope()
-	self.indent()
-	self.write("}\n")
+   def visitTypedef(self, typedef):
 
-    def visitMetaModule(self, module):
-	self.visitDeclaration(module)
-	for decl in module.module_declarations():
-	    self.visitDeclaration(decl)
-	# since no comments:
-	self.visitModule(module)
+      self.visitDeclaration(typedef)
+      self.indent()
+      dstr = ""
+      # Figure out the type:
+      alias = self.format_type(typedef.alias())
+      # Figure out the declarators:
+      # for declarator in typedef.declarators():
+      #     dstr = dstr + declarator.name()[-1]
+      #     if declarator.sizes() is None: continue
+      #     for size in declarator.sizes():
+      # 	dstr = dstr + "[%d]"%size
+      self.write("typedef %s %s;\n"%(alias, typedef.name()[-1]))
 
-    def visitClass(self, clas):
-	self.visitDeclaration(clas)
-        self.indent()
-	self.write("%s %s"%(clas.type(),clas.name()[-1]))
-        if len(clas.parents()):
-            self.write(": ")
-	    p = []
-            for parent in clas.parents():
-		p.append(self.formatType(parent.parent()))
-                #p.append("%s"%(Util.ccolonName(parent.parent().name(),clas.name()),))
-	    self.write(string.join(p, ", "))
-	self.write(" {\n")
-        self.enterScope(clas.name()[-1])
-	self.__axs_stack.append(self.__axs)
-	if clas.type() == 'struct': self.__axs = AST.PUBLIC
-	elif clas.type() == 'class': self.__axs = AST.PRIVATE
-	else: self.__axs = AST.DEFAULT
-        #for type in clas.types(): type.output(self)
-        #for operation in clas.operations(): operation.output(self)
-	for declaration in clas.declarations():
-	    declaration.accept(self)
-	self.__axs = self.__axs_stack.pop()
-        self.leaveScope()
-	self.indent()
-	self.write("};\n")
+   def visitModule(self, module):
 
-    def visitInheritance(self, inheritance):
-        for attribute in inheritance.attributes(): self.write(attribute + " ")
-        self.write(inheritance.parent().identifier())
+      self.visitDeclaration(module)
+      self.indent()
+      self.write("%s %s {\n"%(module.type(),module.name()[-1]))
+      self.enter_scope(module.name()[-1])
+      #for type in module.types(): type.output(self)
+      for declaration in module.declarations():
+         declaration.accept(self)
+      self.leave_scope()
+      self.indent()
+      self.write("}\n")
 
-    def visitParameter(self, parameter):
-	spacer = lambda x: str(x)+" "
-	premod = string.join(map(spacer,parameter.premodifier()),'')
-	id_holder = [parameter.identifier()]
-	type = self.formatType(parameter.type(), id_holder)
-	postmod = string.join(map(spacer,parameter.postmodifier()),'')
-	name = ""
-	value = ""
-        if id_holder and len(parameter.identifier()) != 0:
-            name = " " + parameter.identifier()
-	if len(parameter.value()) != 0:
-	    value = " = %s"%parameter.value()
-	self.__params.append(premod + type + postmod + name + value)
+   def visitMetaModule(self, module):
 
-    def visitFunction(self, function):
-	self.visitOperation(function)
+      self.visitDeclaration(module)
+      for decl in module.module_declarations():
+         self.visitDeclaration(decl)
+      # since no comments:
+      self.visitModule(module)
 
-    def visitOperation(self, operation):
-	self.visitDeclaration(operation)
-	self.indent()
-        for modifier in operation.premodifier(): self.write(modifier + " ")
-	retStr = self.formatType(operation.returnType())
-	name = operation.realname()
-        if operation.language() == "IDL" and operation.type() == "attribute":
-            self.write("attribute %s %s"%(retStr,name[-1]))
-	else:
-	    if operation.language() == "C++" and len(name)>1 and name[-1] in [name[-2],"~"+name[-2]]:
-		self.write("%s("%name[-1])
-	    else:
-		if retStr: self.write(retStr+" ")
-		self.write("%s("%name[-1])
-	    self.__params = []
-	    for parameter in operation.parameters(): parameter.accept(self)
-	    params = string.join(self.__params, ", ")
-	    self.write(params + ")")
-        for modifier in operation.postmodifier(): self.write(modifier + " ")
-        self.write(";\n")
+   def visitClass(self, clas):
 
-    def visitVariable(self, var):
-	self.visitDeclaration(var)
-	name = var.name
-	self.indent()
-	self.write("%s %s;\n"%(self.formatType(var.vtype()),var.name()[-1]))
+      self.visitDeclaration(clas)
+      self.indent()
+      self.write("%s %s"%(clas.type(),clas.name()[-1]))
+      if len(clas.parents()):
+         self.write(": ")
+         p = []
+         for parent in clas.parents():
+            p.append(self.format_type(parent.parent()))
+            #p.append("%s"%(Util.ccolonName(parent.parent().name(),clas.name()),))
+         self.write(string.join(p, ", "))
+      self.write(" {\n")
+      self.enter_scope(clas.name()[-1])
+      self.__axs_stack.append(self.__axs)
+      if clas.type() == 'struct': self.__axs = AST.PUBLIC
+      elif clas.type() == 'class': self.__axs = AST.PRIVATE
+      else: self.__axs = AST.DEFAULT
+      #for type in clas.types(): type.output(self)
+      #for operation in clas.operations(): operation.output(self)
+      for declaration in clas.declarations():
+         declaration.accept(self)
+      self.__axs = self.__axs_stack.pop()
+      self.leave_scope()
+      self.indent()
+      self.write("};\n")
 
-    def visitEnum(self, enum):
-	self.visitDeclaration(enum)
-	self.indent()
-	istr = self.__istring * (self.__indent+1)
-	self.write("enum %s {"%enum.name()[-1])
-	self.__enumers = []
-	comma = ''
-	for enumer in enum.enumerators():
-	    self.write(comma+'\n'+istr)
-	    enumer.accept(self)
-	    comma = ','
-	self.write("\n")
-	self.indent()
-	self.write("}\n")
+   def visitInheritance(self, inheritance):
 
-    def visitEnumerator(self, enumer):
-	self.writeComments(enumer.comments())
-	if enumer.value() == "":
-	    self.write("%s"%enumer.name()[-1])
-	else:
-	    self.write("%s = %s"%(enumer.name()[-1], enumer.value()))
+      for attribute in inheritance.attributes(): self.write(attribute + " ")
+      self.write(inheritance.parent().identifier())
+
+   def visitParameter(self, parameter):
+
+      spacer = lambda x: str(x)+" "
+      premod = string.join(map(spacer,parameter.premodifier()),'')
+      id_holder = [parameter.identifier()]
+      type = self.format_type(parameter.type(), id_holder)
+      postmod = string.join(map(spacer,parameter.postmodifier()),'')
+      name = ""
+      value = ""
+      if id_holder and len(parameter.identifier()) != 0:
+         name = " " + parameter.identifier()
+      if len(parameter.value()) != 0:
+         value = " = %s"%parameter.value()
+      self.__params.append(premod + type + postmod + name + value)
+
+   def visitFunction(self, function):
+
+      self.visitOperation(function)
+
+   def visitOperation(self, operation):
+
+      self.visitDeclaration(operation)
+      self.indent()
+      for modifier in operation.premodifier(): self.write(modifier + " ")
+      retStr = self.format_type(operation.returnType())
+      name = operation.realname()
+      if operation.language() == "IDL" and operation.type() == "attribute":
+         self.write("attribute %s %s"%(retStr,name[-1]))
+      else:
+         if operation.language() == "C++" and len(name)>1 and name[-1] in [name[-2],"~"+name[-2]]:
+            self.write("%s("%name[-1])
+         else:
+            if retStr: self.write(retStr+" ")
+            self.write("%s("%name[-1])
+         self.__params = []
+         for parameter in operation.parameters(): parameter.accept(self)
+         params = string.join(self.__params, ", ")
+         self.write(params + ")")
+      for modifier in operation.postmodifier(): self.write(modifier + " ")
+      self.write(";\n")
+
+   def visitVariable(self, var):
+
+      self.visitDeclaration(var)
+      name = var.name
+      self.indent()
+      self.write("%s %s;\n"%(self.format_type(var.vtype()),var.name()[-1]))
+
+   def visitEnum(self, enum):
+
+      self.visitDeclaration(enum)
+      self.indent()
+      istr = self.__istring * (self.__indent+1)
+      self.write("enum %s {"%enum.name()[-1])
+      self.__enumers = []
+      comma = ''
+      for enumer in enum.enumerators():
+         self.write(comma+'\n'+istr)
+         enumer.accept(self)
+         comma = ','
+      self.write("\n")
+      self.indent()
+      self.write("}\n")
+
+   def visitEnumerator(self, enumer):
+
+      self.writeComments(enumer.comments())
+      if enumer.value() == "":
+         self.write("%s"%enumer.name()[-1])
+      else:
+         self.write("%s = %s"%(enumer.name()[-1], enumer.value()))
     
-    def visitConst(self, const):
-	self.visitDeclaration(const)
-	ctype = self.formatType(const.ctype())
-	self.indent()
-	self.__os.write("%s %s = %s;\n"%(ctype,const.name()[-1],const.value()))
+   def visitConst(self, const):
 
-
-def usage():
-    """Print usage to stdout"""
-    print \
-"""
-  -o <file>                            Output file
-  -b                                   Bold comments
-  -c <colour>                          Coloured comments, colour = 0 to 15 
-"""
-
-def __parseArgs(args):
-    global output, verbose, show_bold, show_colour, comment_str
-    output = sys.stdout
-    show_bold = 0
-    show_colour = None
-    try:
-        opts,remainder = getopt.getopt(args, "o:vbc:")
-    except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + str(e) + "\n")
-        sys.exit(1)
-
-    for opt in opts:
-        o,a = opt
-
-        if o == "-o": output = open(a, "w")
-        elif o == "-v": verbose = 1
-	elif o == "-b": show_bold = 1
-	elif o == "-c": show_colour = int(a)
-
-    if show_colour is not None: 
-	comment_str = "\033[3%d%sm// %%s\033[m\n"%(
-	    show_colour % 8, 
-	    (show_colour >= 8) and ";1" or "")
-    elif show_bold:
-	comment_str = "\033[1m// %s\033[m\n"
+      self.visitDeclaration(const)
+      ctype = self.format_type(const.ctype())
+      self.indent()
+      self.__os.write("%s %s = %s;\n"%(ctype,const.name()[-1],const.value()))
 
 def print_types(types):
     keys = types.keys()
@@ -365,12 +311,3 @@ def print_types(types):
 	    print "name ==",name
 	    raise
 
-def format(args, ast, config_obj):
-    __parseArgs(args)
-    formatter = ASCIIFormatter(output)
-    #for type in types:
-    #    type.output(formatter)
-    for declaration in ast.declarations():
-	declaration.accept(formatter)
-
-    # print_types(types)
