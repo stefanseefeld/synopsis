@@ -10,64 +10,18 @@
 #include <iostream>
 #include <cassert>
 
-#if defined(PARSE_MSVC)
-#define _MSC_VER	1100
-#endif
-
-Lexer::Lexer(Buffer *buffer)
+Lexer::Lexer(Buffer *buffer, int tokenset)
   : my_buffer(buffer),
     my_token(my_buffer->ptr(), 0, '\n')
 {
-#if defined(__GNUG__) || defined(_GNUG_SYNTAX)
-  my_keywords["__alignof__"] = Token::SIZEOF;
-  my_keywords["__asm__"] = Token::ATTRIBUTE;
-  my_keywords["__attribute__"] = Token::ATTRIBUTE;
-  my_keywords["__complex__"] = Token::Ignore;
-  my_keywords["__const"] = Token::CONST;
-  my_keywords["__extension__"] = Token::EXTENSION;
-  my_keywords["__imag__"] = Token::Ignore;
-  my_keywords["__inline"] = Token::INLINE;
-  my_keywords["__inline__"] = Token::INLINE;
-  my_keywords["__real__"] = Token::Ignore;
-  my_keywords["__restrict"] = Token::Ignore;
-  my_keywords["__restrict__"] = Token::Ignore;
-  my_keywords["__signed"] = Token::SIGNED;
-  my_keywords["__signed__"] = Token::SIGNED;
-  my_keywords["__typeof"] = Token::TYPEOF;
-  my_keywords["__typeof__"] = Token::TYPEOF;
-#endif
-#if defined(_MSC_VER)
-  my_keywords["cdecl"] = Token::Ignore;
-  my_keywords["_cdecl"] = Token::Ignore;
-  my_keywords["__cdecl"] = Token::Ignore;
-  my_keywords["_fastcall"] = Token::Ignore;
-  my_keywords["__fastcall"] = Token::Ignore;
-  my_keywords["_based"] = Token::Ignore;
-  my_keywords["__based"] = Token::Ignore;
-  my_keywords["_asm"] = Token::ASM;
-  my_keywords["__asm"] = Token::ASM;
-  my_keywords["_inline"] = Token::INLINE;
-  my_keywords["__inline"] = Token::INLINE;
-  my_keywords["_stdcall"] = Token::Ignore;
-  my_keywords["__stdcall"] = Token::Ignore;
-  my_keywords["__declspec"] = Token::DECLSPEC;
-  my_keywords["__int8"] = Token::CHAR;
-  my_keywords["__int16"] = Token::SHORT;
-  my_keywords["__int32"] = Token::INT;
-  my_keywords["__int64"] = Token::INT64;
-#endif
   my_keywords["asm"] = Token::ATTRIBUTE;
   my_keywords["auto"] = Token::AUTO;
-  my_keywords["bool"] = Token::BOOLEAN;
   my_keywords["break"] = Token::BREAK;
   my_keywords["case"] = Token::CASE;
-  my_keywords["catch"] = Token::CATCH;
   my_keywords["char"] = Token::CHAR;
-  my_keywords["class"] = Token::CLASS;
   my_keywords["const"] = Token::CONST;
   my_keywords["continue"] = Token::CONTINUE;
   my_keywords["default"] = Token::DEFAULT;
-  my_keywords["delete"] = Token::DELETE;
   my_keywords["do"] = Token::DO;
   my_keywords["double"] = Token::DOUBLE;
   my_keywords["else"] = Token::ELSE;
@@ -75,19 +29,11 @@ Lexer::Lexer(Buffer *buffer)
   my_keywords["extern"] = Token::EXTERN;
   my_keywords["float"] = Token::FLOAT;
   my_keywords["for"] = Token::FOR;
-  my_keywords["friend"] = Token::FRIEND;
   my_keywords["goto"] = Token::GOTO;
   my_keywords["if"] = Token::IF;
   my_keywords["inline"] = Token::INLINE;
   my_keywords["int"] = Token::INT;
   my_keywords["long"] = Token::LONG;
-  my_keywords["mutable"] = Token::MUTABLE;
-  my_keywords["namespace"] = Token::NAMESPACE;
-  my_keywords["new"] = Token::NEW;
-  my_keywords["operator"] = Token::OPERATOR;
-  my_keywords["private"] = Token::PRIVATE;
-  my_keywords["protected"] = Token::PROTECTED;
-  my_keywords["public"] = Token::PUBLIC;
   my_keywords["register"] = Token::REGISTER;
   my_keywords["return"] = Token::RETURN;
   my_keywords["short"] = Token::SHORT;
@@ -96,21 +42,76 @@ Lexer::Lexer(Buffer *buffer)
   my_keywords["static"] = Token::STATIC;
   my_keywords["struct"] = Token::STRUCT;
   my_keywords["switch"] = Token::SWITCH;
-  my_keywords["template"] = Token::TEMPLATE;
-  my_keywords["this"] = Token::THIS;
-  my_keywords["throw"] = Token::THROW;
-  my_keywords["try"] = Token::TRY;
   my_keywords["typedef"] = Token::TYPEDEF;
-  my_keywords["typeid"] = Token::TYPEID;
-  my_keywords["typename"] = Token::CLASS; // FIXME !!
   my_keywords["union"] = Token::UNION;
   my_keywords["unsigned"] = Token::UNSIGNED;
-  my_keywords["using"] = Token::USING;
-  my_keywords["virtual"] = Token::VIRTUAL;
   my_keywords["void"] = Token::VOID;
   my_keywords["volatile"] = Token::VOLATILE;
   my_keywords["wchar_t"] = Token::WCHAR;
   my_keywords["while"] = Token::WHILE;
+  if (tokenset & CXX)
+  {
+    my_keywords["bool"] = Token::BOOLEAN;
+    my_keywords["catch"] = Token::CATCH;
+    my_keywords["class"] = Token::CLASS;
+    my_keywords["delete"] = Token::DELETE;
+    my_keywords["friend"] = Token::FRIEND;
+    my_keywords["mutable"] = Token::MUTABLE;
+    my_keywords["namespace"] = Token::NAMESPACE;
+    my_keywords["new"] = Token::NEW;
+    my_keywords["operator"] = Token::OPERATOR;
+    my_keywords["private"] = Token::PRIVATE;
+    my_keywords["protected"] = Token::PROTECTED;
+    my_keywords["public"] = Token::PUBLIC;
+    my_keywords["template"] = Token::TEMPLATE;
+    my_keywords["this"] = Token::THIS;
+    my_keywords["throw"] = Token::THROW;
+    my_keywords["try"] = Token::TRY;
+    my_keywords["typeid"] = Token::TYPEID;
+    my_keywords["typename"] = Token::CLASS; // FIXME !!
+    my_keywords["using"] = Token::USING;
+    my_keywords["virtual"] = Token::VIRTUAL;
+  }
+  if (tokenset & GNU)
+  {
+    my_keywords["__alignof__"] = Token::SIZEOF;
+    my_keywords["__asm__"] = Token::ATTRIBUTE;
+    my_keywords["__attribute__"] = Token::ATTRIBUTE;
+    my_keywords["__complex__"] = Token::Ignore;
+    my_keywords["__const"] = Token::CONST;
+    my_keywords["__extension__"] = Token::EXTENSION;
+    my_keywords["__imag__"] = Token::Ignore;
+    my_keywords["__inline"] = Token::INLINE;
+    my_keywords["__inline__"] = Token::INLINE;
+    my_keywords["__real__"] = Token::Ignore;
+    my_keywords["__restrict"] = Token::Ignore;
+    my_keywords["__restrict__"] = Token::Ignore;
+    my_keywords["__signed"] = Token::SIGNED;
+    my_keywords["__signed__"] = Token::SIGNED;
+    my_keywords["__typeof"] = Token::TYPEOF;
+    my_keywords["__typeof__"] = Token::TYPEOF;
+  }
+  if (tokenset & MSVC)
+  {
+    my_keywords["cdecl"] = Token::Ignore;
+    my_keywords["_cdecl"] = Token::Ignore;
+    my_keywords["__cdecl"] = Token::Ignore;
+    my_keywords["_fastcall"] = Token::Ignore;
+    my_keywords["__fastcall"] = Token::Ignore;
+    my_keywords["_based"] = Token::Ignore;
+    my_keywords["__based"] = Token::Ignore;
+    my_keywords["_asm"] = Token::ASM;
+    my_keywords["__asm"] = Token::ASM;
+    my_keywords["_inline"] = Token::INLINE;
+    my_keywords["__inline"] = Token::INLINE;
+    my_keywords["_stdcall"] = Token::Ignore;
+    my_keywords["__stdcall"] = Token::Ignore;
+    my_keywords["__declspec"] = Token::DECLSPEC;
+    my_keywords["__int8"] = Token::CHAR;
+    my_keywords["__int16"] = Token::SHORT;
+    my_keywords["__int32"] = Token::INT;
+    my_keywords["__int64"] = Token::INT64;
+  }
 }
 
 Token::Type Lexer::get_token(Token &t)
@@ -169,7 +170,6 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
     if(t == Token::Ignore) continue;
     my_token.type = t;
 
-#if defined(__GNUG__) || defined(_GNUG_SYNTAX)
     if(t == Token::ATTRIBUTE)
     {
       skip_attribute();
@@ -181,9 +181,7 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
       if(t == Token::Ignore) continue;
       else return t;
     }
-#endif
-#if defined(_MSC_VER)
-    if(t == Token::ASM)
+    else if(t == Token::ASM)
     {
       skip_asm();
       continue;
@@ -193,7 +191,6 @@ Token::Type Lexer::read_token(const char *&ptr, size_t &length)
       skip_declspec();
       continue;
     }
-#endif
     if(t != '\n') break;
   }
 
