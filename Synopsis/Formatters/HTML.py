@@ -592,8 +592,8 @@ class SummaryFormatter(BaseFormatter):
 	return ''
 
     def writeSectionStart(self, heading):
-	#'<col width="20%%"><col width="80%%">'\
 	str = '<table width="100%%">'\
+	'<col width="100px"><col width="100%%">'\
 	'<tr><td colspan="2" class="heading">%s</td></tr>'
 	self.write(str%heading)
 

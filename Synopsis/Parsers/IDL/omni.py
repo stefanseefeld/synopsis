@@ -267,13 +267,16 @@ class ASTTranslator (idlvisitor.AstVisitor):
         pre = []
         if node.readonly(): pre.append("readonly")
         type = self.__types.internalize(node.attrType())
-        name = list(self.scope())
-        name.append(node.identifiers()[0])
-        attr = AST.Operation(node.file(), node.line(), node.mainFile(), "IDL", "attribute",
-                             pre, self.__types.get(type), name, list(name))
-        self.__scope[-1].declarations().append(attr)
-        for c in node.comments():
-            attr.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+	comments = []
+	for c in node.comments():
+	    comments.append(AST.Comment(c.text(), c.file(), c.line()))
+        scopename = list(self.scope())
+	for id in node.identifiers():
+	    name = scopename + [id]
+	    attr = AST.Operation(node.file(), node.line(), node.mainFile(), "IDL", "attribute",
+				 pre, self.__types.get(type), name, list(name))
+	    attr.comments().extend(comments)
+	    self.addDeclaration(attr)
 
     def visitParameter(self, node):
         operation = self.__operation
