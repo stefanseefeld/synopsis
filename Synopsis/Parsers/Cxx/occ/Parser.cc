@@ -10,9 +10,6 @@
 #include <PTree/Display.hh>
 #include "Parser.hh"
 #include "Lexer.hh"
-#include "Environment.hh"
-#include "MetaClass.hh"
-#include "Walker.hh"
 #include <iostream>
 
 const int MaxErrors = 10;
@@ -26,6 +23,100 @@ PTree::Node *wrap_comments(const Lexer::Comments &c)
   for (Lexer::Comments::const_iterator i = c.begin(); i != c.end(); ++i)
     head = PTree::snoc(head, new PTree::Atom(*i));
   return head;
+}
+
+PTree::Node *nth_declarator(PTree::Node *decl, size_t n)
+{
+  decl = PTree::third(decl);
+  if(!decl || decl->is_atom()) return 0;
+
+  if(PTree::is_a(decl, Token::ntDeclarator))
+  {	// if it is a function
+    if(n-- == 0) return decl;
+  }
+  else
+    while(decl && !decl->is_atom())
+    {
+      if(n-- == 0) return decl->car();
+      if((decl = decl->cdr())) decl = decl->cdr(); // skip ,
+    }
+  return 0;
+}
+
+void set_declarator_comments(PTree::Node *decl, PTree::Node *comments)
+{
+  if (decl == 0 || !PTree::is_a(decl, Token::ntDeclaration)) return;
+
+  PTree::Node *declarator;
+  size_t n = 0;
+  while (true)
+  {
+    size_t i = n++;
+    declarator = nth_declarator(decl, i);
+    if (!declarator) break;
+    else if (PTree::is_a(declarator, Token::ntDeclarator))
+      ((PTree::Declarator*)declarator)->set_comments(comments);
+  }
+}
+
+//. Helper function to recursively find the first left-most leaf node
+PTree::Node *leftmost_leaf(PTree::Node *node, PTree::Node *& parent)
+{
+  if (!node || node->is_atom()) return node;
+  // Non-leaf node. So find first leafy child
+  PTree::Node *leaf;
+  while (node)
+  {
+    if (node->car())
+    {
+      // There is a child here..
+      if (node->car()->is_atom())
+      {
+	// And this child is a leaf! return it and set parent
+	parent = node;
+	return node->car();
+      }
+      if ((leaf = leftmost_leaf(node->car(), parent)))
+	// Not a leaf so try recursing on it
+	return leaf;
+    }
+    // No leaves from car of this node, so try next cdr
+    node = node->cdr();
+  }
+  return 0;
+}
+
+//. Node is never the leaf. Instead we traverse the left side of the tree
+//. until we find a leaf, and change the leaf to be a CommentedLeaf.
+void set_leaf_comments(PTree::Node *node, PTree::Node *comments)
+{
+  PTree::Node *parent, *leaf;
+  PTree::CommentedAtom* cleaf;
+
+  // Find leaf
+  leaf = leftmost_leaf(node, parent);
+
+  // Sanity
+  if (!leaf)
+  {
+    std::cerr << "Warning: Failed to find leaf when trying to add comments." << std::endl;
+    PTree::display(parent, std::cerr, false);
+    return; 
+  }
+
+  if (!(cleaf = dynamic_cast<PTree::CommentedAtom *>(leaf)))
+  {
+    // Must change first child of parent to be a commented leaf
+    Token tk(leaf->position(), leaf->length(), Token::Comment);
+    cleaf = new (PTree::GC) PTree::CommentedAtom(tk, comments);
+    parent->set_car(cleaf);
+  }
+  else
+  {
+    // Already is a commented leaf, so add the comments to it
+    comments = PTree::snoc(cleaf->get_comments(), comments);
+    cleaf->set_comments(comments);
+  }
 }
 
 }
@@ -198,7 +289,7 @@ bool Parser::definition(PTree::Node *&p)
   {
     if (!declaration(p)) return false;
     PTree::Node *c = wrap_comments(my_lexer->get_comments());
-    if (c) Walker::SetDeclaratorComments(p, c);
+    if (c) set_declarator_comments(p, c);
     return true;
   }
   my_lexer->get_comments();
@@ -343,7 +434,6 @@ bool Parser::metaclass_decl(PTree::Node *&decl)
     decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
 				    PTree::list(metaclass_name, 0,
 						new PTree::Atom(tk3)));
-    Metaclass::Load(metaclass_name);
     return true;
   }
   else
@@ -367,7 +457,6 @@ bool Parser::metaclass_decl(PTree::Node *&decl)
   if(t == ';')
   {
     decl = PTree::snoc(decl, new PTree::Atom(tk1));
-    Metaclass::Load(metaclass_name);
     return true;
   }
   else
@@ -2797,7 +2886,7 @@ bool Parser::class_member(PTree::Node *&mem)
       PTree::Node *comments = wrap_comments(my_lexer->get_comments());
       if (comments)
       {
-	Walker::SetDeclaratorComments(mem, comments);
+	set_declarator_comments(mem, comments);
       }
       return true;
     }
@@ -4179,7 +4268,7 @@ bool Parser::statement(PTree::Node *&st)
   }
 
   // No parse error, attach comment to whatever was returned
-  Walker::SetLeafComments(st, comments);
+  set_leaf_comments(st, comments);
   return true;
 }
 
