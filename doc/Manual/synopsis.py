@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from Synopsis import config
 from Synopsis.process import process
 from Synopsis.Processor import *
 from Synopsis.Processors import *
@@ -14,28 +15,29 @@ from Synopsis.Formatters import TexInfo
 from Synopsis.Formatters import Dump
 
 from distutils import sysconfig
+import sys, os.path
 
-topdir = '../../'
+topdir = os.path.abspath(sys.argv[0] + '/../../..')
 
 python = Composite(Python.Parser(basename = topdir),
                    JavaTags(),
                    Summarizer())
 
-cxx = Composite(Cxx.Parser(base_path = topdir,
-                           cppflags = ['-I%s'%(topdir + 'Synopsis/Parsers/Cxx'),
-                                       '-I%s'%(sysconfig.get_python_inc())],
-                           syntax_prefix='links',
-                           xref_prefix='xref'),
-                EmptyNS(),
-                Dummies(),
-                SSDComments(),
-                JavaTags(),
-                Summarizer())
+cxx = Cxx.Parser(base_path = topdir,
+                 cppflags = ['-I%s'%(topdir + '/Synopsis/Parsers/Cxx'),
+                             '-I%s'%(sysconfig.get_python_inc())],
+                 syntax_prefix='links',
+                 xref_prefix='xref')
 
-cxx_processor = Linker(NamePrefixer(prefix = ['Synopsis','Parsers','Cxx', 'Parser'],
+cxx_processor = Linker(EmptyNS(),
+                       Dummies(),
+                       SSDComments(),
+                       JavaTags(),
+                       Summarizer(),
+                       NamePrefixer(prefix = ['Synopsis', 'Parsers', 'Cxx', 'Parser'],
                                     type = 'Package'))
 
-html = HTML.Formatter(stylesheet_file = '../../demo/html.css',
+html = HTML.Formatter(stylesheet_file = os.path.join(config.datadir, 'html.css'),
                       toc_out = 'links.toc',
                       file_layout = NestedFileLayout(),
                       tree_formatter = TreeFormatterJS(),
