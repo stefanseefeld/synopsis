@@ -103,6 +103,7 @@ public:
   Encoding() {}
   Encoding(const Code &b) : my_buffer(b) {}
   Encoding(const char *b) : my_buffer(b, b + strlen(b)) {}
+  Encoding(const char *b, size_t s) : my_buffer(b, b + s) {}
   Encoding(iterator b, iterator e) : my_buffer(b, e) {}
 
   void clear() { my_buffer.clear();}
@@ -164,6 +165,7 @@ public:
   bool is_simple_name() const { return front() >= 0x80;}
   PTree::Node *name_to_ptree();
 
+  friend bool operator < (const Encoding &, const Encoding &);
   friend std::ostream &operator << (std::ostream &, const Encoding &);
 
 private:
@@ -185,6 +187,11 @@ public:
 		 *left_paren, *right_paren, *left_bracket, *right_bracket,
 		 *left_angle, *right_angle;
 };
+
+inline bool operator < (const Encoding &e1, const Encoding &e2) 
+{
+  return e1.my_buffer < e2.my_buffer;
+}
 
 inline std::ostream &operator << (std::ostream &os, const Encoding &e)
 {
