@@ -5,7 +5,7 @@ body
     color: #000000;
     background: #ffffff;
   }
-:link { color: #bb0000;}
+:link { color: #bb0000; text-decoration: none;}
 :visited { color: #bb0000;}
 :active { color: #bb0000;}
 span.keyword { font-weight: bold;}
@@ -15,7 +15,19 @@ div.declarations { padding: 1.0em;}
 div.desc
   {
     border: none;
-    padding: 1.0em;
     font-style: italic;
-    background: #eeeeee;
+    color: #446666;
   }
+div.summary
+  {
+    border: none;
+    font-style: italic;
+    color: #446666;
+    margin-left: 3em;
+  }
+td.heading {
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 0.1em;
+    background: #aacccc;
+}

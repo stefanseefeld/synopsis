@@ -1,5 +1,5 @@
 import sys, getopt, os, os.path, string
-from Synopsis import Type, AST
+from Synopsis import Type, AST, Util
 
 class ASCIIFormatter:
     """
@@ -9,84 +9,150 @@ class ASCIIFormatter:
     """
     def __init__(self, os):
         self.__indent = 0
-        self.__istring = " "
+        self.__istring = "  "
         self.__os = os
+	self.__scope = []
     def indent(self):
         self.__os.write(self.__istring * self.__indent)
     def incr(self): self.__indent = self.__indent + 1
     def decr(self): self.__indent = self.__indent - 1
-    def formatBaseType(self, base):
-        self.indent()
-        self.__os.write(base.type())
-        self.__os.write(" ")
-        self.__os.write(base.identifier())
-        self.__os.write("\n")
+    def scope(self): return self.__scope
+    def enterScope(self, name): self.__scope.append(name),self.incr()
+    def leaveScope(self): self.__scope.pop(),self.decr()
+    #################### Type Visitor ###########################################
 
-    def formatTypedef(self, typedef):
-        self.indent()
-        self.__os.write(typedef.type())
-        self.__os.write(" ")
-        self.__os.write(typedef.identifier())
-        self.__os.write("\n")
+    def visitBaseType(self, type):
+        self.__type = type.name()
+        
+    def visitForward(self, type):
+        self.__type = Util.ccolonName(type.name(), self.scope())
+        
+    def visitDeclared(self, type):
+        self.__type = Util.ccolonName(type.name(), self.scope())
+        
+    def visitModifier(self, type):
+        type.alias().accept(self)
+        self.__type = "%s %s %s"%(type.premod(), self.__type, type.postmod())
+            
+    def visitParametrized(self, type):
+        type.template().accept(self)
+        type_save = self.__type
+        parameters = []
+        for p in type.parameters():
+            p.accept(self)
+            parameters.append(self.__type)
+        self.__type = "%s<%s>"%(type_save,string.join(parameters, ", "))
 
-    def formatModule(self, module):
+    def visitTypedef(self, typedef):
         self.indent()
-        self.__os.write(module.type())
-        self.__os.write(" ")
-        self.__os.write(module.identifier())
-        self.__os.write("\n")
-        self.incr()
-        for type in module.types(): type.output(self)
-        self.decr()
+	dstr = ""
+	# Figure out the type:
+	typedef.alias().accept(self)
+        tstr = self.__type
+	# Figure out the declarators:
+	for declarator in typedef.declarators():
+	    dstr = dstr + declarator.name()[-1]
+	    if declarator.sizes() is None: continue
+	    for size in declarator.sizes():
+		dstr = dstr + "[%d]"%size
+        self.__os.write("typedef %s %s;\n"%(
+	    tstr, dstr
+	))
 
-    def formatClass(self, clas):
+    def visitModule(self, module):
         self.indent()
-        self.__os.write(clas.type())
-        self.__os.write(" ")
-        self.__os.write(clas.identifier())
-        self.__os.write("\n")
-        self.incr()
+	self.__os.write("%s %s {\n"%(module.type(),module.name()[-1]))
+        self.enterScope(module.name()[-1])
+        #for type in module.types(): type.output(self)
+	for declaration in module.declarations():
+	    declaration.accept(self)
+        self.leaveScope()
+	self.indent()
+	self.__os.write("}\n")
+
+    def visitClass(self, clas):
+        self.indent()
+	self.__os.write("%s %s"%(clas.type(),clas.name()[-1]))
         if len(clas.parents()):
-            self.indent()
-            self.__os.write("parents:\n")
-            self.incr()
+            self.__os.write(": ")
+	    p = []
             for parent in clas.parents():
-                self.indent()
-                parent.output(self)
-                self.__os.write("\n")
-            self.decr()
-        for type in clas.types(): type.output(self)
-        for operation in clas.operations(): operation.output(self)
-        self.decr()
+                p.append("%s"%(Util.ccolonName(parent.parent().name(),clas.name()),))
+	    self.__os.write(string.join(p, ", "))
+	self.__os.write(" {\n")
+        self.enterScope(clas.name()[-1])
+        #for type in clas.types(): type.output(self)
+        #for operation in clas.operations(): operation.output(self)
+	for declaration in clas.declarations():
+	    declaration.accept(self)
+        self.leaveScope()
+	self.indent()
+	self.__os.write("};\n")
 
-    def formatInheritance(self, inheritance):
+    def visitInheritance(self, inheritance):
         for attribute in inheritance.attributes(): self.__os.write(attribute + " ")
         self.__os.write(inheritance.parent().identifier())
 
-    def formatParameter(self, parameter):
-        for m in parameter.premodifier(): self.__os.write(m + " ")
-        self.__os.write(parameter.type() + " ")
-        for m in parameter.postmodifier(): self.__os.write(m + " ")
+    def visitParameter(self, parameter):
+	spacer = lambda x: str(x)+" "
+	premod = string.join(map(spacer,parameter.premodifier()),'')
+	parameter.type().accept(self)
+	type = self.__type
+	postmod = string.join(map(spacer,parameter.postmodifier()),'')
+	name = ""
+	value = ""
         if len(parameter.identifier()) != 0:
-            self.__os.write(parameter.identifier())
+            name = " " + parameter.identifier()
             if len(parameter.value()) != 0:
-                self.__os.write(" = " + parameter.value())
+                value = " = %s"%parameter.value()
+	self.__params.append(premod + type + postmod + name + value)
 
-    def formatFunction(self, function):
+    def visitFunction(self, function):
         self.__os.write(function.identifier() + "(")
         for parameter in function.parameters(): parameter.output(self)
         self.__os.write(")\n")
 
-    def formatOperation(self, operation):
+    def visitOperation(self, operation):
+	self.indent()
         for modifier in operation.premodifier(): self.__os.write(modifier + " ")
-        #self.__os.write(operation.returnType())
+	operation.returnType().accept(self)
         if operation.language() == "IDL" and operation.type() == "attribute":
-            self.__os.write("attribute ")
-        self.__os.write(operation.identifier() + "(")
-        for parameter in operation.parameters(): parameter.output(self)
-        self.__os.write(")")
+            self.__os.write("attribute %s %s"%(self.__type,operation.name()[-1]))
+	else:
+	    self.__os.write(self.__type)
+	    self.__os.write(" %s("%operation.name()[-1])
+	    self.__params = []
+	    for parameter in operation.parameters(): parameter.accept(self)
+	    params = string.join(self.__params, ", ")
+	    self.__os.write(params + ")")
         for modifier in operation.postmodifier(): self.__os.write(modifier + " ")
-        self.__os.write("\n")
+        self.__os.write(";\n")
+
+    def visitVariable(self, var):
+	var.vtype().accept(self)
+	vtype = self.__type
+	names = map(lambda x: x.name()[-1], var.declarators())
+	names = string.join(names, ", ")
+	self.indent()
+	self.__os.write("%s %s;\n"%(vtype,names))
+
+    def visitEnum(self, enum):
+	self.indent()
+	istr = self.__istring * (self.__indent+1)
+	self.__os.write("enum %s {\n%s"%(enum.name()[-1],istr))
+	self.__enumers = []
+	for enumer in enum.enumerators():
+	    enumer.accept(self)
+	self.__os.write(string.join(self.__enumers, ",\n%s"%istr))
+	self.__os.write("\n")
+	self.indent()
+	self.__os.write("}\n")
+
+    def visitEnumerator(self, enumer):
+	if enumer.value() == "":
+	    self.__enumers.append("%s"%enumer.name()[-1])
+	else:
+	    self.__enumers.append("%s = %s"%(enumer.name()[-1], enumer.value()))
 
 def __parseArgs(args):
     global output
@@ -103,8 +169,10 @@ def __parseArgs(args):
         if o == "-o":
             output = open(a, "w")
 
-def format(dictionary, args):
+def format(types, declarations, args):
     __parseArgs(args)
     formatter = ASCIIFormatter(output)
-    for type in dictionary:
-        type.output(formatter)
+    #for type in types:
+    #    type.output(formatter)
+    for declaration in declarations:
+	declaration.accept(formatter)

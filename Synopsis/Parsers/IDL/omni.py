@@ -37,8 +37,8 @@ class TypeTranslator (idlvisitor.TypeVisitor):
 
     def visitBaseType(self, idltype):
         type = Type.Base("IDL", self.__basetypes[idltype.kind()])
-        self.types[type.name()] = type
-        self.__result = type.name()
+        self.types[(type.name(),)] = type
+        self.__result = (type.name(),)
 
     def visitStringType(self, idltype):
         if not self.types.has_key(["string"]):
@@ -86,7 +86,16 @@ class ASTTranslator (idlvisitor.AstVisitor):
         
     def scope(self): return self.__scope[-1].name()
     def addDeclaration(self, declaration): self.__scope[-1].declarations().append(declaration)
-    def addType(self, name, type): self.__types.add(name, type)
+    def addType(self, name, type):
+	if self.__types.types.has_key(name):
+	    if isinstance(self.__types.get(name), Type.Forward):
+		self.__types.add(name, type)
+		#print "Replaced",self.__types.get(name),"with",type
+	    else:
+		#print "Refusing to replace",self.__types.get(name),"with",type
+		pass
+	    return
+	self.__types.add(name, type)
     def visitAST(self, node):
         self.__scope.append(AST.Scope(node.file(), 0, 1, "IDL", "file", []))
         # add an 'Object' Type to the Type Dictionary. Don't declare it in the AST since

@@ -4,13 +4,16 @@
 #include <stack>
 #include <python1.5/Python.h>
 
-#if 0
+#if 1
+#define DO_TRACE
 class Trace
 {
 public:
-  Trace(const string &s) : scope(s) { cout << "entering " << scope << endl;}
-  ~Trace() { cout << "leaving " << scope << endl;}
+  Trace(const string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++level; }
+  ~Trace() { --level; cout << indent() << "leaving " << scope << endl; }
 private:
+  string indent() { return string(level, ' '); }
+  static int level;
   string scope;
 };
 #else
@@ -53,7 +56,7 @@ public:
   PyObject *addConst(size_t, bool, PyObject *, const string &, const string &);
   PyObject *Parameter(const string &, PyObject *, const string &, const string & = string(), const string & = string());
   PyObject *addFunction(size_t, bool, const vector<string> &, PyObject *, const string &);
-  PyObject *addOperation(size_t, bool, const vector<string> &, PyObject *, const string &);
+  PyObject *addOperation(size_t, bool, const vector<string> &, PyObject *, const string &, const vector<PyObject*>&);
 
   //.
   //. helper methods
