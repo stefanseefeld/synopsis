@@ -65,8 +65,8 @@ struct Synopsis::Private {
     Synopsis* m_syn;
     //. Interned string for "C++"
     PyObject* m_cxx;
-    //. Returns the string for "C++"
-    PyObject* cxx() { Py_INCREF(m_cxx); return m_cxx; }
+    //. Returns the string for "C++" as a borrowed reference
+    PyObject* cxx() { return m_cxx; }
     //. is_main functor
     is_main m_main;
     // Sugar
@@ -175,8 +175,6 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
 	    throw "Synopsis::Private::py(AST::Declaration*)";
 	    */
 	}
-	// Force Declared creation (and inclusion into dictionary)
-	py(decl->declared());
     }
     PyObject* obj = iter->second;
     Py_INCREF(obj);
@@ -254,7 +252,7 @@ PyObject* Synopsis::Private::py(Types::Type* type)
 PyObject* Synopsis::Private::py(const std::string &str)
 {
     PyObject* pystr = PyString_FromStringAndSize(str.data(), str.size());
-    PyString_InternInPlace(&pystr);
+    //PyString_InternInPlace(&pystr);
     return pystr;
 }
 
@@ -291,6 +289,21 @@ Synopsis::~Synopsis()
     */
     Py_DECREF(m_type);
     Py_DECREF(m_ast);
+
+    // Deref the objects we created
+    Private::ObjMap::iterator iter = m->obj_map.begin();
+    Private::ObjMap::iterator end = m->obj_map.end();
+    while (iter != end)
+    {
+	PyObject* obj = iter->second;
+	PyObject* repr = PyObject_Repr(obj);
+	//std::cout << (obj->ob_refcnt-1) << " " << PyString_AsString(repr) << std::endl; 
+	Py_DECREF(repr);
+	Py_DECREF(obj);
+	iter->second = NULL;
+	++iter;
+    }
+    //std::cout << "Total: " << m->obj_map.size()<<" objects." << std::endl;
     delete m;
 }
 
@@ -310,9 +323,11 @@ void Synopsis::translate(AST::Scope* scope)
 	if (m->builtin_decl_set.find(*it) == m->builtin_decl_set.end())
 	    globals.push_back(*it);
 
+    PyObject* list;
     PyObject_CallMethod(m_declarations, "extend", "O",
-	m->List(globals)
+	list = m->List(globals)
     );
+    Py_DECREF(list);
 }
 
 void Synopsis::set_builtin_decls(const AST::Declaration::vector& builtin_decls)
@@ -330,77 +345,105 @@ void Synopsis::set_builtin_decls(const AST::Declaration::vector& builtin_decls)
 PyObject *Synopsis::Base(Types::Base* type)
 {
     Trace trace("Synopsis::Base");
-    PyObject *name, *base = PyObject_CallMethod(m_type, "Base", "OO",
+    PyObject *name, *base;
+    base = PyObject_CallMethod(m_type, "Base", "OO",
 	m->cxx(), name = m->Tuple(type->name())
     );
     PyObject_SetItem(m_dictionary, name, base);
+    Py_DECREF(name);
     return base;
 }
 
 PyObject *Synopsis::Unknown(Types::Named* type)
 {
     Trace trace("Synopsis::Unknown");
-    PyObject *name, *unknown = PyObject_CallMethod(m_type, "Unknown", "OO",
+    PyObject *name, *unknown;
+    unknown = PyObject_CallMethod(m_type, "Unknown", "OO",
 	m->cxx(), name = m->Tuple(type->name())
     );
     PyObject_SetItem(m_dictionary, name, unknown);
+    Py_DECREF(name);
     return unknown;
 }
 
 PyObject *Synopsis::Declared(Types::Declared* type)
 {
     Trace trace("Synopsis::Declared");
-    PyObject *name, *declared = PyObject_CallMethod(m_type, "Declared", "OOO", 
-	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration())
+    PyObject *name, *declared, *decl;
+    declared = PyObject_CallMethod(m_type, "Declared", "OOO", 
+	m->cxx(), name = m->Tuple(type->name()), decl = m->py(type->declaration())
     );
     // Skip zero-length names (eg: dummy declarators/enumerators)
     if (type->name().size())
 	PyObject_SetItem(m_dictionary, name, declared);
+    Py_DECREF(name);
+    Py_DECREF(decl);
     return declared;
 }
 
 PyObject *Synopsis::Template(Types::Template* type)
 {
     Trace trace("Synopsis::Template");
-    PyObject *name, *templ = PyObject_CallMethod(m_type, "Template", "OOOO",
-	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration()),
-	m->List(type->parameters())
+    PyObject *name, *templ, *decl, *params;
+    templ = PyObject_CallMethod(m_type, "Template", "OOOO",
+	m->cxx(), name = m->Tuple(type->name()), decl = m->py(type->declaration()),
+	params = m->List(type->parameters())
     );
     PyObject_SetItem(m_dictionary, name, templ);
+    Py_DECREF(name);
+    Py_DECREF(decl);
+    Py_DECREF(params);
     return templ;
 }
 
 PyObject *Synopsis::Modifier(Types::Modifier* type)
 {
     Trace trace("Synopsis::Modifier");
-    PyObject *modifier = PyObject_CallMethod(m_type, "Modifier", "OOOO",
-	m->cxx(), m->py(type->alias()), m->List(type->pre()), m->List(type->post())
+    PyObject *modifier, *alias, *pre, *post;
+    modifier = PyObject_CallMethod(m_type, "Modifier", "OOOO",
+	m->cxx(), alias = m->py(type->alias()), 
+	pre = m->List(type->pre()), post = m->List(type->post())
     );
+    Py_DECREF(alias);
+    Py_DECREF(pre);
+    Py_DECREF(post);
     return modifier;
 }
 
 PyObject *Synopsis::Array(Types::Array *type)
 {
     Trace trace("Synopsis::Array");
-    return PyObject_CallMethod(m_type, "Array", "OOO", m->cxx(), m->py(type->alias()), m->List(type->sizes()));
+    PyObject *array, *alias, *sizes;
+    array = PyObject_CallMethod(m_type, "Array", "OOO", 
+	m->cxx(), alias = m->py(type->alias()), sizes = m->List(type->sizes()));
+    Py_DECREF(alias);
+    Py_DECREF(sizes);
+    return array;
 }
 
 PyObject *Synopsis::Parameterized(Types::Parameterized* type)
 {
     Trace trace("Synopsis::Parametrized");
-    PyObject *parametrized = PyObject_CallMethod(m_type, "Parametrized", "OOO",
-	m->cxx(), m->py(type->template_type()), m->List(type->parameters())
+    PyObject *parametrized, *templ, *params;
+    parametrized = PyObject_CallMethod(m_type, "Parametrized", "OOO",
+	m->cxx(), templ = m->py(type->template_type()), params = m->List(type->parameters())
     );
+    Py_DECREF(templ);
+    Py_DECREF(params);
     return parametrized;
 }
 
 PyObject *Synopsis::FuncPtr(Types::FuncPtr* type)
 {
     Trace trace("Synopsis::FuncType");
-    PyObject *func = PyObject_CallMethod(m_type, "Function", "OOOO",
-	m->cxx(), m->py(type->returnType()), m->List(type->pre()),
-	m->List(type->parameters())
+    PyObject *func, *ret, *pre, *params;
+    func = PyObject_CallMethod(m_type, "Function", "OOOO",
+	m->cxx(), ret = m->py(type->returnType()), pre = m->List(type->pre()),
+	params = m->List(type->parameters())
     );
+    Py_DECREF(ret);
+    Py_DECREF(pre);
+    Py_DECREF(params);
     return func;
 }
 
@@ -411,97 +454,138 @@ PyObject *Synopsis::FuncPtr(Types::FuncPtr* type)
 
 void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 {
-    PyObject* comments = PyObject_CallMethod(pydecl, "comments", NULL);
-    PyObject_CallMethod(comments, "extend", "O", m->List(cdecl->comments()));
+    PyObject *comments, *new_comments;
+    comments = PyObject_CallMethod(pydecl, "comments", NULL);
+    PyObject_CallMethod(comments, "extend", "O", new_comments = m->List(cdecl->comments()));
     // Also set the accessability..
     PyObject_CallMethod(pydecl, "set_accessibility", "i", int(cdecl->access()));
+    Py_DECREF(comments);
+    Py_DECREF(new_comments);
 }
 
 PyObject *Synopsis::Declaration(AST::Declaration* decl)
 {
     Trace trace("Synopsis::addDeclaration");
-    PyObject *pydecl = PyObject_CallMethod(m_ast, "Declaration", "OiOOO",
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name())
+    PyObject *pydecl, *file, *type, *name;
+    pydecl = PyObject_CallMethod(m_ast, "Declaration", "OiOOO",
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name())
     );
     assertObject(pydecl);
     addComments(pydecl, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
     return pydecl;
 }
 
 PyObject *Synopsis::Forward(AST::Forward* decl)
 {
     Trace trace("Synopsis::addForward");
-    PyObject *forward = PyObject_CallMethod(m_ast, "Forward", "OiOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name())
+    PyObject *forward, *file, *type, *name;
+    forward = PyObject_CallMethod(m_ast, "Forward", "OiOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name())
     );
     addComments(forward, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
     return forward;
 }
 
 PyObject *Synopsis::Comment(AST::Comment* decl)
 {
     Trace trace("Synopsis::addComment");
-    PyObject *text = PyString_FromStringAndSize((decl->text()+"\n").data(), decl->text().size()+1);
-    PyObject *comment = PyObject_CallMethod(m_ast, "Comment", "OOi", 
-	text, m->py(decl->filename()), decl->line()
+    std::string text_str = decl->text()+"\n";
+    PyObject *text = PyString_FromStringAndSize(text_str.data(), text_str.size());
+    PyObject *comment, *file;
+    comment = PyObject_CallMethod(m_ast, "Comment", "OOii", 
+	text, file = m->py(decl->filename()), decl->line(), decl->is_suspect() ? 1 : 0
     );
+    Py_DECREF(text);
+    Py_DECREF(file);
     return comment;
 }
 
 PyObject *Synopsis::Scope(AST::Scope* decl)
 {
     Trace trace("Synopsis::addScope");
-    PyObject *scope = PyObject_CallMethod(m_ast, "Scope", "OiOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name())
+    PyObject *scope, *file, *type, *name;
+    scope = PyObject_CallMethod(m_ast, "Scope", "OiOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name())
     );
     PyObject *decls = PyObject_CallMethod(scope, "declarations", NULL);
     PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
     addComments(scope, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(decls);
     return scope;
 }
 
 PyObject *Synopsis::Namespace(AST::Namespace* decl)
 {
     Trace trace("Synopsis::addNamespace");
-    PyObject *module = PyObject_CallMethod(m_ast, "Module", "OiOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name())
+    PyObject *module, *file, *type, *name;
+    module = PyObject_CallMethod(m_ast, "Module", "OiOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name())
     );
     PyObject *decls = PyObject_CallMethod(module, "declarations", NULL);
-    PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
+    PyObject *new_decls = m->List(decl->declarations());
+    PyObject_CallMethod(decls, "extend", "O", new_decls);
     addComments(module, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(decls);
+    Py_DECREF(new_decls);
     return module;
 }
 
 PyObject *Synopsis::Inheritance(AST::Inheritance* decl)
 {
     Trace trace("Synopsis::Inheritance");
-    PyObject *inheritance = PyObject_CallMethod(m_ast, "Inheritance", "sOO", 
-	"inherits", m->py(decl->parent()), m->List(decl->attributes())
+    PyObject *inheritance, *parent, *attrs;
+    inheritance = PyObject_CallMethod(m_ast, "Inheritance", "sOO", 
+	"inherits", parent = m->py(decl->parent()), attrs = m->List(decl->attributes())
     );
+    Py_DECREF(parent);
+    Py_DECREF(attrs);
     return inheritance;
 }
 
 PyObject *Synopsis::Class(AST::Class* decl)
 {
     Trace trace("Synopsis::addClass");
-    PyObject *clas = PyObject_CallMethod(m_ast, "Class", "OiOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name())
+    PyObject *clas, *file, *type, *name;
+    clas = PyObject_CallMethod(m_ast, "Class", "OiOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name())
     );
     // This is necessary to prevent inf. loops in several places
     m->add(decl, clas);
+    PyObject *new_decls, *new_parents;
     PyObject *decls = PyObject_CallMethod(clas, "declarations", NULL);
-    PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
+    PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
     PyObject *parents = PyObject_CallMethod(clas, "parents", NULL);
-    PyObject_CallMethod(parents, "extend", "O", m->List(decl->parents()));
+    PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
     if (decl->template_type()) {
-	PyObject_CallMethod(clas, "set_template", "O", m->py(decl->template_type()));
+	PyObject* ttype;
+	PyObject_CallMethod(clas, "set_template", "O", ttype = m->py(decl->template_type()));
+	Py_DECREF(ttype);
     }
     addComments(clas, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(decls);
+    Py_DECREF(parents);
+    Py_DECREF(new_decls);
+    Py_DECREF(new_parents);
     return clas;
 }
 
@@ -509,96 +593,146 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
 {
     Trace trace("Synopsis::addTypedef");
     // FIXME: what to do about the declarator?
-    PyObject *tdef = PyObject_CallMethod(m_ast, "Typedef", "OiOOOOi", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name()),
-	m->py(decl->alias()), decl->constructed()
+    PyObject *tdef, *file, *type, *name, *alias;
+    tdef = PyObject_CallMethod(m_ast, "Typedef", "OiOOOOi", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name()),
+	alias = m->py(decl->alias()), decl->constructed()
     );
     addComments(tdef, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(alias);
     return tdef;
 }
 
 PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
 {
     Trace trace("Synopsis::addEnumerator");
-    PyObject *enumor = PyObject_CallMethod(m_ast, "Enumerator", "OiOOs", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->Tuple(decl->name()), decl->value().c_str()
+    PyObject *enumor, *file, *name;
+    enumor = PyObject_CallMethod(m_ast, "Enumerator", "OiOOs", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	name = m->Tuple(decl->name()), decl->value().c_str()
     );
     addComments(enumor, decl);
+    Py_DECREF(file);
+    Py_DECREF(name);
     return enumor;
 }
 
 PyObject *Synopsis::Enum(AST::Enum* decl)
 {
     Trace trace("Synopsis::addEnum");
-    PyObject *enumor = PyObject_CallMethod(m_ast, "Enum", "OiOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->Tuple(decl->name()), m->List(decl->enumerators())
+    PyObject *enumor, *file, *enums, *name;
+    enumor = PyObject_CallMethod(m_ast, "Enum", "OiOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	name = m->Tuple(decl->name()), enums = m->List(decl->enumerators())
     );
     addComments(enumor, decl);
+    Py_DECREF(file);
+    Py_DECREF(enums);
+    Py_DECREF(name);
     return enumor;
 }
 
 PyObject *Synopsis::Variable(AST::Variable* decl)
 {
     Trace trace("Synopsis::addVariable");
-    PyObject *var = PyObject_CallMethod(m_ast, "Variable", "OiOOOOi", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->Tuple(decl->name()),
-	m->py(decl->vtype()), decl->constructed()
+    PyObject *var, *file, *type, *name, *vtype;
+    var = PyObject_CallMethod(m_ast, "Variable", "OiOOOOi", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), name = m->Tuple(decl->name()),
+	vtype = m->py(decl->vtype()), decl->constructed()
     );
     addComments(var, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(vtype);
+    Py_DECREF(name);
     return var;
 }
 
 PyObject *Synopsis::Const(AST::Const* decl)
 {
     Trace trace("Synopsis::addConst");
-    PyObject *cons = PyObject_CallMethod(m_ast, "Const", "OiOOOOOs", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()),
-	m->py(decl->ctype()), m->Tuple(decl->name()), decl->value().c_str()
+    PyObject *cons, *file, *type, *name, *ctype;
+    cons = PyObject_CallMethod(m_ast, "Const", "OiOOOOOs", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), ctype = m->py(decl->ctype()), 
+	name = m->Tuple(decl->name()), decl->value().c_str()
     );
     addComments(cons, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(ctype);
+    Py_DECREF(name);
     return cons;
 }
 
 PyObject *Synopsis::Parameter(AST::Parameter* decl)
 {
     Trace trace("Synopsis::Parameter");
-    PyObject *param = PyObject_CallMethod(m_ast, "Parameter", "OOOOO", 
-	m->py(decl->premodifier()), m->py(decl->type()), m->py(decl->postmodifier()),
-	m->py(decl->name()), m->py(decl->value())
+    PyObject *param, *pre, *post, *type, *value, *name;
+    param = PyObject_CallMethod(m_ast, "Parameter", "OOOOO", 
+	pre = m->py(decl->premodifier()), type = m->py(decl->type()), post = m->py(decl->postmodifier()),
+	name = m->py(decl->name()), value = m->py(decl->value())
     );
+    Py_DECREF(pre);
+    Py_DECREF(post);
+    Py_DECREF(type);
+    Py_DECREF(value);
+    Py_DECREF(name);
     return param;
 }
 
 PyObject *Synopsis::Function(AST::Function* decl)
 {
     Trace trace("Synopsis::addFunction");
-    PyObject *func = PyObject_CallMethod(m_ast, "Function", "OiOOOOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->return_type()),
-	m->Tuple(decl->name()), m->py(decl->realname())
+    PyObject *func, *file, *type, *name, *pre, *ret, *realname;
+    func = PyObject_CallMethod(m_ast, "Function", "OiOOOOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), pre = m->List(decl->premodifier()), 
+	ret = m->py(decl->return_type()),
+	name = m->Tuple(decl->name()), realname = m->py(decl->realname())
     );
+    PyObject* new_params;
     PyObject* params = PyObject_CallMethod(func, "parameters", NULL);
-    PyObject_CallMethod(params, "extend", "O", m->List(decl->parameters()));
+    PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
     addComments(func, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(pre);
+    Py_DECREF(ret);
+    Py_DECREF(realname);
+    Py_DECREF(params);
+    Py_DECREF(new_params);
     return func;
 }
 
 PyObject *Synopsis::Operation(AST::Operation* decl)
 {
     Trace trace("Synopsis::addOperation");
-    PyObject *oper = PyObject_CallMethod(m_ast, "Operation", "OiOOOOOO", 
-	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->return_type()),
-	m->Tuple(decl->name()), m->py(decl->realname())
+    PyObject *oper, *file, *type, *name, *pre, *ret, *realname;
+    oper = PyObject_CallMethod(m_ast, "Operation", "OiOOOOOO", 
+	file = m->py(decl->filename()), decl->line(), m->cxx(),
+	type = m->py(decl->type()), pre = m->List(decl->premodifier()), 
+	ret = m->py(decl->return_type()),
+	name = m->Tuple(decl->name()), realname = m->py(decl->realname())
     );
+    PyObject* new_params;
     PyObject* params = PyObject_CallMethod(oper, "parameters", NULL);
-    PyObject_CallMethod(params, "extend", "O", m->List(decl->parameters()));
+    PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
     addComments(oper, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(pre);
+    Py_DECREF(ret);
+    Py_DECREF(realname);
+    Py_DECREF(params);
+    Py_DECREF(new_params);
     return oper;
 }
 

@@ -33,7 +33,7 @@ class SWalker : public Walker {
 public:
     //. Constructor
     SWalker(const std::string &source, Parser*, Builder*, Program*);
-    virtual ~SWalker() {}
+    virtual ~SWalker();
 
     //. Sets extract tails to true.
     //. This will cause the parser to create dummy declarations for comments
@@ -182,7 +182,7 @@ private:
     Decoder* m_decoder;
     Lookup* m_lookup;
 
-    PtreeDeclaration* m_declaration;
+    Ptree* m_declaration;
     //. This pointer is used as a comparison to avoid creating new strings
     char* m_filename_ptr;
     //. The current filename as string. This way refcounting will be used

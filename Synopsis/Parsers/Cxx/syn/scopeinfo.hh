@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "common.hh"
 
 class Dictionary;
 
@@ -31,7 +32,8 @@ typedef std::vector<ScopeInfo*> ScopeSearch;
 //. scopeinfos are inserted into the ScopeSearch of a containing namespace,
 //. which the algorithms recognize. (TODO: consider a wrapper(?) a.la
 //. AST::Inheritance)
-struct ScopeInfo {
+struct ScopeInfo : public cleanup
+{
   //. Constructor
   ScopeInfo(AST::Scope* s);
 

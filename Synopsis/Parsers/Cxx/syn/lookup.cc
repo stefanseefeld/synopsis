@@ -44,8 +44,8 @@ ScopeInfo::ScopeInfo(ScopeInfo* s)
 
 ScopeInfo::~ScopeInfo()
 {
-  if (is_using == false)
-    delete dict;
+  //if (is_using == false)
+  //  delete dict;
 }
 
 int
@@ -776,7 +776,7 @@ Types::Type* Lookup::arrayOperator(Types::Type* object, Types::Type* arg, AST::F
                     return newmod;
                 }
             }
-            delete newmod;
+            //delete newmod;
             throw ERROR("Unable to dereference type for array operator!");
         }
         throw ERROR("Unknown type for array operator!");

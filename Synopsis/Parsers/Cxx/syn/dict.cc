@@ -27,7 +27,8 @@ Dictionary::Dictionary()
 }
 
 //. Destructor
-Dictionary::~Dictionary() {
+Dictionary::~Dictionary()
+{
   delete m;
 }
 

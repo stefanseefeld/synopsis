@@ -4,8 +4,9 @@
 #ifndef H_SYNOPSIS_CPP_BUILDER
 #define H_SYNOPSIS_CPP_BUILDER
 
-#include "ast.hh"
 #include <map>
+#include "ast.hh"
+#include "common.hh"
 
 // Forward declare some Types::Types
 namespace Types

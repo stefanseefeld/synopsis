@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include "common.hh"
 
 // Forward declaration of Type::Named
 namespace Types
@@ -19,7 +20,7 @@ namespace AST
 //. This class maintains a dictionary of names, which index types,
 //. supposedly declared in the scope that has this dictionary. There may be
 //. only one declaration per name, except in the case of function names.
-class Dictionary
+class Dictionary : public cleanup
 {
 public:
   //. Constructor

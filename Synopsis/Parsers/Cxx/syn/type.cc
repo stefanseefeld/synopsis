@@ -6,7 +6,9 @@
 using namespace Types;
 
 Type::Type() { }
-Type::~Type() { }
+Type::~Type()
+{
+}
 
 void
 Type::accept(Visitor* visitor)
@@ -17,6 +19,10 @@ Type::accept(Visitor* visitor)
 Named::Named(const ScopedName& n)
 : m_name(n)
 { }
+
+Named::~Named()
+{
+}
 
 void Named::accept(Visitor* visitor)
 {
@@ -81,6 +87,9 @@ Modifier::Modifier(Type* alias, const Mods& pre, const Mods& post)
 : m_alias(alias), m_pre(pre), m_post(post)
 { }
 
+Modifier::~Modifier()
+{
+}
 
 void
 Modifier::accept(Visitor* visitor)
@@ -89,6 +98,11 @@ Modifier::accept(Visitor* visitor)
 }
 
 Array::Array(Type* alias, const Mods& sizes) : m_alias(alias), m_sizes(sizes) {}
+
+Array::~Array()
+{
+}
+
 void
 Array::accept(Visitor* visitor)
 {
@@ -99,6 +113,9 @@ Parameterized::Parameterized(Template* t, const Type::vector& params)
 : m_template(t), m_params(params)
 { }
 
+Parameterized::~Parameterized()
+{
+}
 
 void
 Parameterized::accept(Visitor* visitor)
@@ -110,6 +127,9 @@ FuncPtr::FuncPtr(Type::Type* ret, const Mods& premods, const Type::vector& param
 : m_return(ret), m_premod(premods), m_params(params)
 { }
 
+FuncPtr::~FuncPtr()
+{
+}
 
 void
 FuncPtr::accept(Visitor* visitor)

@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.10 2002/01/30 11:53:15 chalky Exp $
+// $Id: linkstore.cc,v 1.11 2002/10/11 05:58:21 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.11  2002/10/11 05:58:21  chalky
+// Better memory management. Better comment proximity detection.
+//
 // Revision 1.10  2002/01/30 11:53:15  chalky
 // Couple bug fixes, some cleaning up.
 //
@@ -184,10 +187,12 @@ public:
   {
     // For qualified template names the ptree is:
     //  [ std :: [ vector [ < ... , ... > ] ] ]
+    // If the name starts with :: (global scope), skip it
+    if (node->First() && node->First()->Eq("::"))
+      node = node->Rest();
     // Skip the qualifieds (and just link the final name)
-    while (node->Second() && node->Second()->Eq("::")) {
-        node = node->Third();
-    }
+    while (node->Second() && node->Second()->Eq("::"))
+      node = node->Third();
     // Do template
     links->link(node->First(), param->template_type());
     // Do params

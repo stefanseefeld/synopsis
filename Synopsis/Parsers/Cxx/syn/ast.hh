@@ -57,15 +57,20 @@ namespace AST
     }
   };
 
-  //. Encapsulation of one Comment, which may span multiple lines
-  class Comment
+  //. Encapsulation of one Comment, which may span multiple lines.
+  //. Each comment encapsulates one /* */ block or a block of // comments on
+  //. adjacent lines. If extract_tails is set, then comments will be added
+  //. even when they are not adjacent to a declaration - these comments will be
+  //. marked as "suspect". Most of these will be discarded by the Linker, unless
+  //. they have appropriate markings such as "//.< comment for previous decl"
+  class Comment : public cleanup
   {
   public:
     //. A vector of Comments
     typedef std::vector<Comment*> vector;
 
     //. Constructor
-    Comment(const std::string& file, int line, const std::string& text);
+    Comment(const std::string& file, int line, const std::string& text, bool suspect=false);
 
     //
     // Attributes
@@ -83,6 +88,12 @@ namespace AST
     const std::string&
     text() const { return m_text; }
 
+    //. Sets whether this comment is suspicious
+    void set_suspect(bool suspect) { m_suspect = suspect; }
+    
+    //. Returns whether this comment is suspicious
+    bool is_suspect() const { return m_suspect; }
+
   private:
     //. The filename
     std::string m_filename;
@@ -90,6 +101,9 @@ namespace AST
     int         m_line;
     //. The text
     std::string m_text;
+    //. True if this comment is probably not needed. The exception is comments
+    //. which will be used as "tails", eg: //.< comment for previous decl
+    bool        m_suspect;
   }; // class Comment
 
 
@@ -99,7 +113,7 @@ namespace AST
   //. will reference the same data, saving both memory and cpu time. For this
   //. to work however, you must be careful to use the same strings for
   //. constructing the names from, for example from a dictionary.
-  class Declaration
+  class Declaration : public cleanup
   {
   public:
     //. A vector of Declaration objects
@@ -357,6 +371,9 @@ namespace AST
     //. Constructor
     Typedef(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr);
 
+    //. Destructor
+    ~Typedef();
+
     //. Accepts the given AST::Visitor
     virtual void
     accept(Visitor*);
@@ -390,6 +407,9 @@ namespace AST
 
     //. Constructor
     Variable(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr);
+
+    //. Destructor
+    ~Variable();
 
     //. Accepts the given AST::Visitor
     virtual void
@@ -512,7 +532,8 @@ namespace AST
 
 
   //. Parameter encapsulates one parameter to a function
-  class Parameter {
+  class Parameter : public cleanup
+  {
   public:
     //. The type of modifiers such as 'in', 'out'
     typedef std::string Mods;
@@ -522,6 +543,9 @@ namespace AST
 
     //. Constructor
     Parameter(const Mods& pre, Types::Type* type, const Mods& post, const std::string& name, const std::string& value);
+
+    //. Destructor
+    ~Parameter();
 
     //. Accept the given AST::Visitor. Note this is not derived from
     //. Declaration so it is not a virtual method.
