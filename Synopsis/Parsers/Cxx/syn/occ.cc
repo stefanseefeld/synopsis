@@ -38,6 +38,9 @@ void *LookupSymbol(void *, char *) { return 0;}
 // If true then everything but what's in the main file will be stripped
 bool syn_main_only;
 
+// If set then this is stripped from the start of all filenames
+const char* syn_basename = "";
+
 
 #ifdef DEBUG
 // For use in gdb, since decl->Display() doesn't work too well..
@@ -65,6 +68,9 @@ void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *
       if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
       else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
       else if (strcmp(argument, "-m") == 0) syn_main_only = true;
+      else if (strcmp(argument, "-b") == 0)
+	syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
+
     }
 }
   
@@ -137,7 +143,7 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   Lex lex(&prog);
   Parser parse(&lex);
   
-  Builder builder;
+  Builder builder(syn_basename);
   SWalker swalker(&parse, &builder);
   Ptree *def;
   while(parse.rProgram(def))
@@ -153,7 +159,10 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   if (syn_main_only) dumper.onlyShow(src);
   dumper.visitScope(builder.scope());
 #else
-  Synopsis synopsis(src, declarations, types);
+  string source(src);
+  if (source.compare(string(syn_basename), 0, strlen(syn_basename)) == 0)
+    source.erase(0, strlen(syn_basename));
+  Synopsis synopsis(source, declarations, types);
   if (syn_main_only) synopsis.onlyTranslateMain();
   synopsis.translate(builder.scope());
 #endif
@@ -197,7 +206,8 @@ PyObject *occUsage(PyObject *self, PyObject *)
   cout << "
   -I<path>                             Specify include path to be used by the preprocessor
   -D<macro>                            Specify macro to be used by the preprocessor
-  -m                                   Unly keep declarations from the main file" << endl;                           
+  -m                                   Unly keep declarations from the main file
+  -b basepath                          Strip basepath from start of filenames" << endl;                           
   Py_INCREF(Py_None);
   return Py_None;
 }

@@ -44,8 +44,9 @@ struct Builder::Private {
 // Class Builder
 //
 
-Builder::Builder()
+Builder::Builder(string basename)
 {
+    m_basename = basename;
     m = new Private;
     AST::Name name;
     m_scope = m_global = new AST::Scope("", 0, "file", name);
@@ -95,7 +96,10 @@ void Builder::setAccess(AST::Access axs)
 
 void Builder::setFilename(string filename)
 {
-    m_filename = filename;
+    if (filename.compare(m_basename, 0, m_basename.size()) == 0)
+	m_filename.assign(filename, m_basename.size(), string::npos);
+    else
+	m_filename = filename;
 }
 
 void Builder::add(AST::Declaration* decl)
