@@ -10,47 +10,51 @@ cxx_h		:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/occ/*.h)
 cxx_h_syn	:= $(patsubst $(topdir)/%.h, %.h.syn, $(cxx_h))
 cxx_cc		:= $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.cc)
 cxx_cc		+= $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.cc)
-
-TEXI		:= core-ast.texi core-type.texi core-util.texi \
-		   parser-c++.texi parser-idl.texi parser-py.texi \
-		   linker.texi \
-		   formatter-ascii.texi formatter-html.texi formatter-dump.texi formatter-dia.texi \
-		   formatter-db.texi formatter-dot.texi formatter-html-simple.texi formatter-texi.texi
+texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
 
 
-all: py.syn
+TEXI		:= ast.texi type.texi util.texi \
+            parsers-c++.texi parsers-idl.texi parsers-py.texi \
+            processors.texi \
+            formatters-ascii.texi formatters-html.texi formatters-dump.texi \
+            formatters-dia.texi formatters-db.texi formatters-dot.texi \
+            formatters-html-simple.texi formatters-texi.texi
+
+all: html pdf info
+
+pdf: Manual.pdf
 
 vpath %.py $(topdir)
 vpath %.cc $(topdir)
 vpath %.h $(topdir)
 vpath %.hh $(topdir)
 
-html:   c++.syn
+html:   all.syn
 	@echo formatting $@
 	@$(synopsis) html --output=$@ $^
 
 # Compile Python files
 $(py_syn): %.syn: %.py
 	@echo parsing $^
-	if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	mkdir -p $(dir $@)
 	$(synopsis) python --output=$@ $^
 
 # Compile C++ .hh files
 $(cxx_hh_syn): %.hh.syn: $(topdir)/%.hh
 	@echo parsing $^
-	if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	mkdir -p $(dir $@)
 	$(synopsis) cxx --output=$@ $?
 
 # Compile C++ .h files
 $(cxx_h_syn): %.h.syn: $(topdir)/%.h
 	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	mkdir -p $(dir $@)
 	$(synopsis) cxx --output=$@ $?
 
 # Compile C++ .cc files
 $(cxx_cc_syn): %.cc.syn: $(topdir)/%.cc
 	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	mkdir -p $(dir $@)
 	$(synopsis) cxx --output=$@ $?
 
 # Link Python files together
@@ -68,67 +72,77 @@ all.syn: py.syn c++.syn
 	@echo linking all files together
 	@$(synopsis) link --output=$@ $^
 
-texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
+ast.syn:	py.syn
+	@echo linking $@
+	$(synopsis) strip --scope='Synopsis::AST' --output=$@ $^
 
-html-doxygen:   all.syn
-	@echo formatting $@
-	@$(synopsis) -Wc,formatter=Doxygen $^
+type.syn:	py.syn
+	@echo linking $@
+	$(synopsis) strip --scope='Synopsis::Type' --output=$@ $^
 
-core-ast.syn:	py.syn
+util.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Core::AST' -o $@ $^
-core-type.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Util' --output=$@ $^
+
+parsers-c++-py.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Core::Type' -o $@ $^
-core-util.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Parsers::Cxx' --output=$@ $^
+
+parsers-c++-cpp.syn:	c++.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Core::Util' -o $@ $^
-parser-c++-py.syn:	py.syn
+	$(synopsis) link --output=$@ $^
+
+parsers-c++.syn:	parsers-c++-py.syn parsers-c++-cpp.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Parser::C++' -o $@ $^
-parser-c++-cpp.syn:	c++.syn
+	$(synopsis) link --output=$@ $^
+
+parsers-idl.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -o $@ $^
-parser-c++.syn:	parser-c++-py.syn parser-c++-cpp.syn
+	$(synopsis) strip --scope='Synopsis::Parsers::IDL' --output=$@ $^
+
+parsers-py.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -o $@ $^
-parser-idl.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Parsers::Python' --output=$@ $^
+
+processors.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Parser::IDL' -o $@ $^
-parser-py.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Processors' --output=$@ $^
+
+formatters-ascii.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Parser::Python' -o $@ $^
-linker.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::ASCII' --output=$@ $^
+
+formatters-html.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Linker' -o $@ $^
-formatter-ascii.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::HTML' --output=$@ $^
+
+formatters-dump.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::ASCII' -o $@ $^
-formatter-html.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::Dump' --output=$@ $^
+
+formatters-dia.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::HTML' -o $@ $^
-formatter-dump.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::Dia' --output=$@ $^
+
+formatters-db.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::DUMP' -o $@ $^
-formatter-dia.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::DocBook' --output=$@ $^
+
+formatters-dot.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Dia' -o $@ $^
-formatter-db.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::Dot' --output=$@ $^
+
+formatters-html-simple.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::DocBook' -o $@ $^
-formatter-dot.syn:	py.syn
+	$(synopsis) strip --scope='Synopsis::Formatters::HTML_Simple' --output=$@ $^
+
+formatters-texi.syn:	py.syn
 	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Dot' -o $@ $^
-formatter-html-simple.syn:	py.syn
-	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::HTML_Simple' -o $@ $^
-formatter-texi.syn:	py.syn
-	@echo linking $@
-	@$(synopsis) -Wc,linker=All -Wl,-s,'Synopsis::Formatter::TexInfo' -o $@ $^
+	$(synopsis) strip --scope='Synopsis::Formatters::TexInfo' --output=$@ $^
 
 %.texi:   %.syn
 	@echo formatting $@
-	@$(synopsis) -Wc,formatter=TexInfo -o $@ $^
+	$(synopsis) texi --output=$@ $^
 
 Manual.pdf:	$(TEXI) Manual.texi
 	@echo generating $@
@@ -139,16 +153,16 @@ info:	$(TEXI) Manual.texi
 	makeinfo Manual.texi
 
 install: all
-	mkdir -p $(datadir)/synopsis
-	cp -pr html $(datadir)/synopsis
+	mkdir -p $(datadir)/Synopsis
+	cp -pr html $(datadir)/Synopsis
 	mkdir -p $(infodir)
 	install -m644 synopsis.info* $(infodir)
-	install -m644 Manual.pdf $(datadir)/synopsis
+	install -m644 Manual.pdf $(datadir)/Synopsis
 
 clean:
-	rm -rf $(sdir) *.pyc *.pyo *.syn $(TEXI) \
-	$(addprefix Manual., $(texi-help))
+	rm -rf Synopsis link xref *.syn links.toc $(TEXI) \
+     $(addprefix Manual., $(texi-help))
 
 distclean:  clean
-	rm -rf html html-doxygen syn links.toc Manual.pdf *.info* 
+	rm -rf html Manual.pdf *.info* 
 

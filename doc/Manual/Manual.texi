@@ -52,9 +52,9 @@ some intro here
 * Acknowledgments::             Thanks!
 * Overview::                    How does it work
 * Core::                        The backbone of the synopsis tool
-* Parser::                      Parser plugins
-* Linker::                      Linker plugins
-* Formatter::                   Formatter plugins
+* Parsers::                     Parser plugins
+* Processors::                  Processor plugins
+* Formatters::                  Formatter plugins
 @end menu
 
 @node Copying, Acknowledgments, Top, Top
@@ -77,7 +77,7 @@ is provided "as is" with no express or implied warranty.@refill
 @chapter Overview
 To be written...
 
-@node Core, Parser, Overview, Top
+@node Core, Parsers, Overview, Top
 @chapter The Core Module
 The backbone of synopsis is an Abstract Syntax Tree, together with a
 Type dictionary. Both are designed to be sufficiently abstract to support
@@ -91,50 +91,50 @@ to manipulate the data and or to generate some output from it.
 @page
 
 @menu
-* Core.AST::    AST type hierarchy                    
-* Core.Type::   Type type hierarchy                
-* Core.Util::   Common utils
+* AST::    AST type hierarchy                    
+* Type::   Type type hierarchy                
+* Util::   Common utils
 @end menu
 
-@node Core.AST, Core.Type, Core, Core
+@node AST, Type, Core, Core
 @section The AST Module
-@include core-ast.texi
+@include ast.texi
 @page
-@node Core.Type, Core.Util, Core.AST, Core
+@node Type, Util, AST, Core
 @section The Type Module
-@include core-type.texi
+@include type.texi
 @page
-@node Core.Util,  , Core.Type, Core
+@node Util,  , Type, Core
 @section The Util Module
-@include core-util.texi
+@include util.texi
 
-@node Parser, Linker, Core, Top
-@chapter The Parser Module
+@node Parsers, Processors, Core, Top
+@chapter The Parsers Module
 Synopsis provides a set of parsers that generate an Abstract Syntax Tree
 from various programming languages. They are usually part of third party
 projects, such that we only need to provide a thin wrapper to bind them
 to the synopsis core.
 @page
 @section The C++ Module
-@include parser-c++.texi
+@include parsers-c++.texi
 @page
 @section The IDL Module
-@include parser-idl.texi
+@include parsers-idl.texi
 @page
 @section The Python Module
-@include parser-py.texi
+@include parsers-py.texi
 
-@node Linker, Formatter, Parser, Top
-@chapter The Linker Module
+@node Processors, Formatters, Parsers, Top
+@chapter The Processors Module
 The linker performs some first modifications to the AST/Type dictionary
 as to resolve cross references (even across languages !), strip off
 unwanted scopes, parse the comments that are associated with the declarations
 for cross references, etc.
-@include linker.texi
+@include processors.texi
 
-@node Formatter,  , Linker, Top
+@node Formatters,  , Processors, Top
 
-@chapter The Formatter Module
+@chapter The Formatters Module
 The backbone of synopsis is an Abstract Syntax Tree, which can be
 traversed using the Visitor Pattern. One of the main uses of Visitors
 is to provide different Formatters, which traverse the AST to generate
@@ -143,48 +143,48 @@ purposes, ranging from online browsing, over graph generation, to generating
 hardcopies.
 
 @menu
-* Formatter.ASCII::             ASCII formatter            
-* Formatter.HTML::              HTML formatter
-* Formatter.DUMP::              DUMP formatter (for debugging)
-* Formatter.Dia::               Dia formatter    
-* Formatter.DocBook::           DocBook formatter
-* Formatter.Dot::               Dot formatter
-* Formatter.HTML_Simple::       small HTML formatter
-* Formatter.TexInfo::           TexInfo formatter
+* Formatters.ASCII::             ASCII formatter            
+* Formatters.HTML::              HTML formatter
+* Formatters.Dump::              Dump formatter (for debugging)
+* Formatters.Dia::               Dia formatter    
+* Formatters.DocBook::           DocBook formatter
+* Formatters.Dot::               Dot formatter
+* Formatters.HTML_Simple::       small HTML formatter
+* Formatters.TexInfo::           TexInfo formatter
 @end menu
 
 @page
-@node Formatter.ASCII, Formatter.HTML, Formatter, Formatter
+@node Formatters.ASCII, Formatters.HTML, Formatters, Formatters
 @section The ASCII Module
-@include formatter-ascii.texi
+@include formatters-ascii.texi
 @page
-@node Formatter.HTML, Formatter.DUMP, Formatter.ASCII, Formatter
+@node Formatters.HTML, Formatters.Dump, Formatters.ASCII, Formatters
 @section The HTML Module
-@include formatter-html.texi
+@include formatters-html.texi
 @page
-@node Formatter.DUMP, Formatter.Dia, Formatter.HTML, Formatter
-@section The DUMP Module
-@include formatter-dump.texi
+@node Formatters.Dump, Formatters.Dia, Formatters.HTML, Formatters
+@section The Dump Module
+@include formatters-dump.texi
 @page
-@node Formatter.Dia, Formatter.DocBook, Formatter.DUMP, Formatter
+@node Formatters.Dia, Formatters.DocBook, Formatters.Dump, Formatters
 @section The Dia Module
-@include formatter-dia.texi
+@include formatters-dia.texi
 @page
-@node Formatter.DocBook, Formatter.Dot, Formatter.Dia, Formatter
+@node Formatters.DocBook, Formatters.Dot, Formatters.Dia, Formatters
 @section The DocBook Module
-@include formatter-db.texi
+@include formatters-db.texi
 @page
-@node Formatter.Dot, Formatter.HTML_Simple, Formatter.DocBook, Formatter
+@node Formatters.Dot, Formatters.HTML_Simple, Formatters.DocBook, Formatters
 @section The Dot Module
-@include formatter-dot.texi
+@include formatters-dot.texi
 @page
-@node Formatter.HTML_Simple, Formatter.TexInfo, Formatter.Dot, Formatter
+@node Formatters.HTML_Simple, Formatters.TexInfo, Formatters.Dot, Formatters
 @section The HTML_Simple Module
-@include formatter-html-simple.texi
+@include formatters-html-simple.texi
 @page
-@node Formatter.TexInfo,  , Formatter.HTML_Simple, Formatter
+@node Formatters.TexInfo,  , Formatters.HTML_Simple, Formatters
 @section The TexInfo Module
-@include formatter-texi.texi
+@include formatters-texi.texi
 
 @unnumbered Type Index
 @printindex tp
