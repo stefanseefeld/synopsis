@@ -205,13 +205,11 @@ private:
   //. template parameters and set in the declaration. Should be 0 if not
   //. in a template.
   std::vector<AST::Parameter*>* my_template;
-  //. This pointer is used as a comparison to avoid redundant effort. Do
-  //. not use it to get the filename, since the string is a reference to the
-  //. preprocessed file in memory and is *not* null terminated!
-  char* my_filename_ptr;
+  //. this reflects the filename containing the currently processed node.
+  std::string my_filename;
+  int my_lineno;
   //. The current file, set by update_line_number
   AST::SourceFile* my_file;
-  int my_lineno;
 
   //. True if should try and extract tail comments before }'s
   bool my_extract_tails;

@@ -18,6 +18,7 @@
 #include "strace.hh"
 #include "filter.hh"
 
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <map>
@@ -90,7 +91,7 @@ LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
     m = new Private;
     m->filter = filter;
     m->walker = swalker;
-    m->buffer_start = swalker->buffer()->Read(0);
+    m->buffer_start = swalker->buffer()->ptr();
     m->parser = swalker->parser();
 
     // Check size of array here to prevent later segfaults
@@ -357,9 +358,8 @@ void LinkStore::long_span(Ptree* node, const char* desc)
     int len = node->RightMost() - node->LeftMost();
 
     // Find right edge
-    char* fname;
-    int fname_len;
-    int right_line = m->parser->LineNumber(node->RightMost(), fname, fname_len);
+    std::string filename;
+    int right_line = m->parser->LineNumber(node->RightMost(), filename);
 
     if (right_line == left_line)
         // Same line, so normal output

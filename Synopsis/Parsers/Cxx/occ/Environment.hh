@@ -79,7 +79,7 @@ public:
     void Dump();
     void Dump(int);
 
-    Ptree* GetLineNumber(Ptree*, int&);
+//     Ptree* GetLineNumber(Ptree*, int&);
 
 public:
     class OCXXMOP Array : public LightObject {
