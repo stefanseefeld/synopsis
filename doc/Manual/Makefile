@@ -28,7 +28,7 @@ CXXSYNS		:= $(patsubst $(bpath)/%.hh,$(spath)/%.csyn,$(CXXSOURCES))
 all:	manual
 
 manual:   all.syn
-	$(synopsis) -c config.py -Wc,formatter,HTML,style,synopsis -o Manual $^
+	$(synopsis) -c config.py -Wc,formatter=HTML,style=synopsis -o Manual $^
 
 all.syn:	$(PYSYNS) $(CXXSYNS)
 	$(synopsis) -c config.py -Wl,-l -o all.syn $^
