@@ -1,8 +1,10 @@
-// vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.hh,v 1.6 2002/11/02 06:37:38 chalky Exp $
+// Synopsis C++ Parser: linkstore.hh header file
+// The LinkStore class which stores syntax and xref link info
+
+// $Id: linkstore.hh,v 1.7 2002/11/17 12:11:43 chalky Exp $
 //
 // This file is a part of Synopsis.
-// Copyright (C) 2000, 2001 Stephen Davies
+// Copyright (C) 2000-2002 Stephen Davies
 // Copyright (C) 2000, 2001 Stefan Seefeld
 //
 // Synopsis is free software; you can redistribute it and/or modify it
@@ -21,6 +23,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.hh,v $
+// Revision 1.7  2002/11/17 12:11:43  chalky
+// Reformatted all files with astyle --style=ansi, renamed fakegc.hh
+//
 // Revision 1.6  2002/11/02 06:37:38  chalky
 // Allow non-frames output, some refactoring of page layout, new modules.
 //
@@ -39,10 +44,9 @@
 // Revision 1.1  2001/06/10 00:31:39  chalky
 // Refactored link storage, better comments, better parsing
 //
-//
 
-#ifndef H_LINKSTORE
-#define H_LINKSTORE
+#ifndef H_SYNOPSIS_CPP_LINKSTORE
+#define H_SYNOPSIS_CPP_LINKSTORE
 
 #include "ast.hh"
 #include <iostream>
@@ -64,96 +68,97 @@ class SWalker;
 class LinkStore
 {
 public:
-  //. Enumeration of record types
-  enum Context
-  {
-    Reference,	        //.< General name reference
-    Definition,         //.< Definition of the declaration 
-    Span,               //.< Non-declarative span of text
-    Implementation,     //.< Implementation of a declaration
-    UsingDirective,     //.< Referenced in a using directive
-    UsingDeclaration,   //.< Referenced in a using declaration
-    FunctionCall,       //.< Called as a function
-    NumContext          //.< Marker used to check size of array
-  };
-  
-  //. Constructor. Either or both of the streams may be null.
-  //. @param syntax_stream the output stream to write the syntax links to
-  //. @param xref_stream the output stream to write the xref records to
-  //. @param swalker the SWalker object we are linking for
-  //. @param basename the basename to strip from xref records
-  LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker, const std::string& basename);
+    //. Enumeration of record types
+    enum Context
+    {
+        Reference,	        //.< General name reference
+        Definition,         //.< Definition of the declaration
+        Span,               //.< Non-declarative span of text
+        Implementation,     //.< Implementation of a declaration
+        UsingDirective,     //.< Referenced in a using directive
+        UsingDeclaration,   //.< Referenced in a using declaration
+        FunctionCall,       //.< Called as a function
+        NumContext          //.< Marker used to check size of array
+    };
 
-  //. Store a link for the given Ptree node. If a decl is given, store an
-  //. xref too
-  void link(Ptree* node, Context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl = NULL);
+    //. Constructor. Either or both of the streams may be null.
+    //. @param syntax_stream the output stream to write the syntax links to
+    //. @param xref_stream the output stream to write the xref records to
+    //. @param swalker the SWalker object we are linking for
+    //. @param basename the basename to strip from xref records
+    LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker, const std::string& basename);
 
-  //. Store a Definition link for the given Ptree node using the AST node
-  void link(Ptree* node, const AST::Declaration* decl);
+    //. Store a link for the given Ptree node. If a decl is given, store an
+    //. xref too
+    void link(Ptree* node, Context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl = NULL);
 
-  //. Store a link for the given node using the given Context, which defaults
-  //. to a Reference
-  void link(Ptree* node, Types::Type*, Context = Reference);
+    //. Store a Definition link for the given Ptree node using the AST node
+    void link(Ptree* node, const AST::Declaration* decl);
 
-  //. Store a span
-  void span(int line, int col, int len, const char* desc);
+    //. Store a link for the given node using the given Context, which defaults
+    //. to a Reference
+    void link(Ptree* node, Types::Type*, Context = Reference);
 
-  //. Store a span for the given Ptree node
-  void span(Ptree* node, const char* desc);
+    //. Store a span
+    void span(int line, int col, int len, const char* desc);
 
-  //. Store a long (possibly multi-line) span
-  void long_span(Ptree* node, const char* desc);
+    //. Store a span for the given Ptree node
+    void span(Ptree* node, const char* desc);
 
-  //. Returns the SWalker
-  SWalker* swalker();
+    //. Store a long (possibly multi-line) span
+    void long_span(Ptree* node, const char* desc);
 
-  //. Encode a string to the output stream
-  //. Usage: cout << encode("some string") << endl; output--> "some%20string\n"
-  class encode;
+    //. Returns the SWalker
+    SWalker* swalker();
 
-  //. Encode a ScopedName to the output stream
-  class encode_name;
+    //. Encode a string to the output stream
+    //. Usage: cout << encode("some string") << endl; output--> "some%20string\n"
+    class encode;
+
+    //. Encode a ScopedName to the output stream
+    class encode_name;
 
 protected:
-  //. Store a link in the Syntax File
-  void store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc);
+    //. Store a link in the Syntax File
+    void store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc);
 
-  //. Store a link in the CrossRef File
-  void store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context);
+    //. Store a link in the CrossRef File
+    void store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context);
 
-  //. Calculates the column number of 'ptr'. m_buffer_start is used as a
-  //. lower bounds, since the function counts backwards until it finds a
-  //. newline. As an added bonus, the returned column number is adjusted
-  //. using the link map generated from expanding macros so it can be output
-  //. straight to the link file :) The adjustment requires the line number.
-  int find_col(int line, const char* ptr);
+    //. Calculates the column number of 'ptr'. m_buffer_start is used as a
+    //. lower bounds, since the function counts backwards until it finds a
+    //. newline. As an added bonus, the returned column number is adjusted
+    //. using the link map generated from expanding macros so it can be output
+    //. straight to the link file :) The adjustment requires the line number.
+    int find_col(int line, const char* ptr);
 
-  //. The field separator
-  static char* const FS = " ";
+    //. The field separator
+    static char* const FS = " ";
 
-  //. The record separator
-  static char* const RS = "\n";
-  
-  //. The start of the program buffer
-  const char* m_buffer_start;
+    //. The record separator
+    static char* const RS = "\n";
 
-  //. The output stream for syntax links
-  std::ostream* m_syntax_stream;
+    //. The start of the program buffer
+    const char* m_buffer_start;
 
-  //. The output stream for xref entries
-  std::ostream* m_xref_stream;
+    //. The output stream for syntax links
+    std::ostream* m_syntax_stream;
 
-  //. The Parser object
-  Parser* m_parser;
+    //. The output stream for xref entries
+    std::ostream* m_xref_stream;
 
-  //. The SWalker object
-  SWalker* m_walker;
+    //. The Parser object
+    Parser* m_parser;
 
-  //. Names for the Context enum
-  static const char* m_context_names[];
+    //. The SWalker object
+    SWalker* m_walker;
 
-  //. The basename to strip from xref records
-  std::string m_basename;
+    //. Names for the Context enum
+    static const char* m_context_names[];
+
+    //. The basename to strip from xref records
+    std::string m_basename;
 };
 
 #endif
+// vim: set ts=8 sts=4 sw=4 et:

@@ -1,3 +1,30 @@
+// Synopsis C++ Parser: synopsis.hh
+// Definition of the Synopsis class for mapping the C++ objects to Python
+// objects
+
+// $Id: synopsis.hh,v 1.29 2002/11/17 12:11:44 chalky Exp $
+//
+// This file is a part of Synopsis.
+// Copyright (C) 2002 Stephen Davies
+//
+// Synopsis is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+// 02111-1307, USA.
+
+#ifndef H_SYNOPSIS_CPP_SYNOPSIS
+#define H_SYNOPSIS_CPP_SYNOPSIS
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,10 +43,21 @@
 class Trace
 {
 public:
-    Trace(const std::string &s) : scope(s) { std::cout << indent() << "entering " << scope << std::endl; ++level; }
-    ~Trace() { --level; std::cout << indent() << "leaving " << scope << std::endl; }
+    Trace(const std::string &s) : scope(s)
+    {
+        std::cout << indent() << "entering " << scope << std::endl;
+        ++level;
+    }
+    ~Trace()
+    {
+        --level;
+        std::cout << indent() << "leaving " << scope << std::endl;
+    }
 private:
-    std::string indent() { return std::string(level, ' '); }
+    std::string indent()
+    {
+        return std::string(level, ' ');
+    }
     static int level;
     std::string scope;
 };
@@ -27,13 +65,17 @@ private:
 class Trace
 {
 public:
-    Trace(const std::string &) {}
-    ~Trace() {}
-};
+    Trace(const std::string &)
+    {}
+    ~Trace()
+    {}
+}
+;
 #endif
 
 //. The Synopsis class maps from C++ objects to Python objects
-class Synopsis : public AST::Visitor, public Types::Visitor {
+class Synopsis : public AST::Visitor, public Types::Visitor
+{
 public:
 
     Synopsis(const std::string &mainfile, PyObject *decls, PyObject *types);
@@ -146,3 +188,6 @@ private:
 
     bool m_onlymain;
 };
+
+#endif
+// vim: set ts=8 sts=4 sw=4 et:

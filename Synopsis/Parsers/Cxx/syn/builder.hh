@@ -1,5 +1,26 @@
-// vim: set ts=8 sts=2 sw=2 et:
-// File: builder.hh
+// Synopsis C++ Parser: builder.hh header file
+// The Builder class, which builds an AST. Used by the SWalker which calls the
+// appropriate Builder member functions
+
+// $Id: builder.hh,v 1.30 2002/11/17 12:11:43 chalky Exp $
+//
+// This file is a part of Synopsis.
+// Copyright (C) 2002 Stephen Davies
+//
+// Synopsis is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+// 02111-1307, USA.
 
 #ifndef H_SYNOPSIS_CPP_BUILDER
 #define H_SYNOPSIS_CPP_BUILDER
@@ -11,13 +32,13 @@
 // Forward declare some Types::Types
 namespace Types
 {
-  class Type;
-  class Base;
-  class Named;
-  class Unknown;
-  class TemplateType;
-  class FuncPtr;
-  class Dependent;
+class Type;
+class Base;
+class Named;
+class Unknown;
+class TemplateType;
+class FuncPtr;
+class Dependent;
 }
 
 // Forward declare the SWalker class
@@ -32,10 +53,10 @@ typedef std::vector<ScopeInfo*> ScopeSearch; // TODO: move to common
 //. Enumeration of namespace types for use in Builder::start_namespace()
 enum NamespaceType
 {
-  NamespaceNamed, //.< Normal, named, namespace. name is its given name
-  NamespaceAnon, //.< An anonymous namespace. name is the filename
-  NamespaceUnique, //.< A unique namespace. name is the type (for, while, etc.)
-  NamespaceTemplate, //.< A template namespace. name is empty
+    NamespaceNamed, //.< Normal, named, namespace. name is its given name
+    NamespaceAnon, //.< An anonymous namespace. name is the filename
+    NamespaceUnique, //.< A unique namespace. name is the type (for, while, etc.)
+    NamespaceTemplate, //.< A template namespace. name is empty
 };
 
 
@@ -45,212 +66,222 @@ enum NamespaceType
 //. called by SWalker as it walks the parse tree.
 class Builder
 {
-  friend class Lookup;
+    friend class Lookup;
 public:
-  //. Constructor
-  Builder(const std::string& basename);
+    //. Constructor
+    Builder(const std::string& basename);
 
-  //. Destructor. Recursively destroys all AST objects
-  ~Builder();
+    //. Destructor. Recursively destroys all AST objects
+    ~Builder();
 
-  //. Sets the swalker
-  void set_swalker(SWalker* swalker) { m_swalker = swalker; }
+    //. Sets the swalker
+    void set_swalker(SWalker* swalker)
+    {
+        m_swalker = swalker;
+    }
 
-  //. Changes the current accessability for the current scope
-  void set_access(AST::Access);
+    //. Changes the current accessability for the current scope
+    void set_access(AST::Access);
 
-  //. Returns the current filename
-  const std::string& filename() const { return m_filename; }
-  //. Changes the current filename
-  void set_filename(const std::string& filename);
+    //. Returns the current filename
+    const std::string& filename() const
+    {
+        return m_filename;
+    }
+    //. Changes the current filename
+    void set_filename(const std::string& filename);
 
-  //. Returns the list of builtin decls ("__null_t", "true", etc.)
-  const AST::Declaration::vector& builtin_decls() const;
-  
-  //
-  // State Methods
-  //
+    //. Returns the list of builtin decls ("__null_t", "true", etc.)
+    const AST::Declaration::vector& builtin_decls() const;
 
-  //. Returns the current scope
-  AST::Scope* scope() { return m_scope; }
+    //
+    // State Methods
+    //
 
-  //. Returns the current ScopeInfo for the current Scope
-  ScopeInfo* scopeinfo() { return m_scopes.back(); }
+    //. Returns the current scope
+    AST::Scope* scope()
+    {
+        return m_scope;
+    }
 
-  //. Returns the global scope
-  AST::Scope* global() { return m_global; }
+    //. Returns the current ScopeInfo for the current Scope
+    ScopeInfo* scopeinfo()
+    {
+        return m_scopes.back();
+    }
 
-  //. Returns the Lookup object for the builder
-  Lookup* lookup() { return m_lookup; }
+    //. Returns the global scope
+    AST::Scope* global()
+    {
+        return m_global;
+    }
 
-  //
-  // AST Methods
-  //
+    //. Returns the Lookup object for the builder
+    Lookup* lookup()
+    {
+        return m_lookup;
+    }
 
-  //. Add the given Declaration to the current scope. If is_template is true,
-  //. then it is added to the parent of the current scope, assuming that the
-  //. current scope is the temporary template scope
-  void add(AST::Declaration* declaration, bool is_template = false);
+    //
+    // AST Methods
+    //
 
-  //. Add the given non-declaration type to the current scope
-  void add(Types::Named* named);
+    //. Add the given Declaration to the current scope. If is_template is true,
+    //. then it is added to the parent of the current scope, assuming that the
+    //. current scope is the temporary template scope
+    void add(AST::Declaration* declaration, bool is_template = false);
 
-  //. Construct and open a new Namespace. The Namespace becomes the
-  //. current scope, and the old one is pushed onto the stack. If name is
-  //. empty then a unique name is generated of the form `ns1
-  AST::Namespace* start_namespace(const std::string& name, NamespaceType type);
+    //. Add the given non-declaration type to the current scope
+    void add(Types::Named* named);
 
-  //. End the current namespace and pop the previous Scope off the stack
-  void end_namespace();
+    //. Construct and open a new Namespace. The Namespace becomes the
+    //. current scope, and the old one is pushed onto the stack. If name is
+    //. empty then a unique name is generated of the form `ns1
+    AST::Namespace* start_namespace(const std::string& name, NamespaceType type);
 
-  //. Starts a new template namespace
-  AST::Namespace* start_template();
+    //. End the current namespace and pop the previous Scope off the stack
+    void end_namespace();
 
-  //. End the current template namespace
-  void end_template();
+    //. Starts a new template namespace
+    AST::Namespace* start_template();
 
-  //. Construct and open a new Class. The Class becomes the current scope,
-  //. and the old one is pushed onto the stack. The type argument is the
-  //. type, ie: "class" or "struct". This is tested to determine the default
-  //. accessability. If this is a template class, the templ_params vector must
-  //. be non-null pointer
-  AST::Class* start_class(int, const std::string& type, const std::string& name,
-      AST::Parameter::vector* templ_params);
+    //. End the current template namespace
+    void end_template();
 
-  //. Construct and open a new Class with a qualified name
-  AST::Class* start_class(int, const std::string& type, const ScopedName& names);
+    //. Construct and open a new Class. The Class becomes the current scope,
+    //. and the old one is pushed onto the stack. The type argument is the
+    //. type, ie: "class" or "struct". This is tested to determine the default
+    //. accessability. If this is a template class, the templ_params vector must
+    //. be non-null pointer
+    AST::Class* start_class(int, const std::string& type, const std::string& name,
+                            AST::Parameter::vector* templ_params);
 
-  //. Update the search to include base classes. Call this method after
-  //. startClass(), and after filling in the parents() vector of the returned
-  //. AST::Class object. After calling this method, name and type lookups
-  //. will correctly search the base classes of this class.
-  void update_class_base_search();
+    //. Construct and open a new Class with a qualified name
+    AST::Class* start_class(int, const std::string& type, const ScopedName& names);
 
-  //. End the current class and pop the previous Scope off the stack
-  void end_class();
+    //. Update the search to include base classes. Call this method after
+    //. startClass(), and after filling in the parents() vector of the returned
+    //. AST::Class object. After calling this method, name and type lookups
+    //. will correctly search the base classes of this class.
+    void update_class_base_search();
 
-  //. Start function impl scope
-  void start_function_impl(const ScopedName& name);
+    //. End the current class and pop the previous Scope off the stack
+    void end_class();
 
-  //. End function impl scope
-  void end_function_impl();
+    //. Start function impl scope
+    void start_function_impl(const ScopedName& name);
 
-  //. Add an function
-  AST::Function* add_function(int, const std::string& name, 
-      const std::vector<std::string>& premod, Types::Type* ret, 
-      const std::string& realname, AST::Parameter::vector* templ_params);
+    //. End function impl scope
+    void end_function_impl();
 
-  //. Add a variable
-  AST::Variable* add_variable(int, const std::string& name, Types::Type* vtype, bool constr, const std::string& type);
+    //. Add an function
+    AST::Function* add_function(int, const std::string& name,
+                                const std::vector<std::string>& premod, Types::Type* ret,
+                                const std::string& realname, AST::Parameter::vector* templ_params);
 
-  //. Add a variable to represent 'this', iff we are in a method
-  void add_this_variable();
+    //. Add a variable
+    AST::Variable* add_variable(int, const std::string& name, Types::Type* vtype, bool constr, const std::string& type);
 
-  //. Add a typedef
-  AST::Typedef* add_typedef(int, const std::string& name, Types::Type* alias, bool constr);
+    //. Add a variable to represent 'this', iff we are in a method
+    void add_this_variable();
 
-  //. Add an enumerator
-  AST::Enumerator* add_enumerator(int, const std::string& name, const std::string& value);
+    //. Add a typedef
+    AST::Typedef* add_typedef(int, const std::string& name, Types::Type* alias, bool constr);
 
-  //. Add an enum
-  AST::Enum* add_enum(int, const std::string& name, const AST::Enumerator::vector &);
+    //. Add an enumerator
+    AST::Enumerator* add_enumerator(int, const std::string& name, const std::string& value);
 
-  //. Add a tail comment. This will be a dummy declaration with an empty name
-  //. and type "dummy"
-  AST::Declaration* add_tail_comment(int line);
+    //. Add an enum
+    AST::Enum* add_enum(int, const std::string& name, const AST::Enumerator::vector &);
 
-  //
-  // Using methods
-  //
-  
-  //. Add a namespace using declaration.
-  void add_using_namespace(Types::Named* type);
+    //. Add a tail comment. This will be a dummy declaration with an empty name
+    //. and type "dummy"
+    AST::Declaration* add_tail_comment(int line);
 
-  //. Add a namespace alias using declaration.
-  void add_aliased_using_namespace(Types::Named* type, const std::string& alias);
+    //
+    // Using methods
+    //
 
-  //. Add a using declaration.
-  void add_using_declaration(Types::Named* type);
+    //. Add a namespace using declaration.
+    void add_using_namespace(Types::Named* type);
+
+    //. Add a namespace alias using declaration.
+    void add_aliased_using_namespace(Types::Named* type, const std::string& alias);
+
+    //. Add a using declaration.
+    void add_using_declaration(Types::Named* type);
 
 
-  //. Maps a scoped name into a vector of scopes and the final type. Returns
-  //. true on success.
-  bool mapName(const ScopedName& name, std::vector<AST::Scope*>&, Types::Named*&);
+    //. Maps a scoped name into a vector of scopes and the final type. Returns
+    //. true on success.
+    bool mapName(const ScopedName& name, std::vector<AST::Scope*>&, Types::Named*&);
 
-  //. Create a Base type for the given name in the current scope
-  Types::Base* create_base(const std::string& name);
+    //. Create a Base type for the given name in the current scope
+    Types::Base* create_base(const std::string& name);
 
-  //. Create a Dependent type for the given name in the current scope
-  Types::Dependent* create_dependent(const std::string& name);
+    //. Create a Dependent type for the given name in the current scope
+    Types::Dependent* create_dependent(const std::string& name);
 
-  //. Create an Unknown type for the given name in the current scope
-  Types::Unknown* create_unknown(const std::string& name);
+    //. Create an Unknown type for the given name in the current scope
+    Types::Unknown* create_unknown(const std::string& name);
 
-  //. Create a Template type for the given name in the current scope
-  Types::Template* create_template(const std::string& name, const std::vector<Types::Type*>&); 
+    //. Create a Template type for the given name in the current scope
+    Types::Template* create_template(const std::string& name, const std::vector<Types::Type*>&);
 
-  //. Add an Unknown decl for given name if it doesnt already exist
-  Types::Unknown* add_unknown(const std::string& name);
+    //. Add an Unknown decl for given name if it doesnt already exist
+    Types::Unknown* add_unknown(const std::string& name);
 
-  //. Add an Templated Forward decl for given name if it doesnt already exist
-  AST::Forward* add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params);
+    //. Add an Templated Forward decl for given name if it doesnt already exist
+    AST::Forward* add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params);
 
 private:
-  //. Base filename to strip from the start of all filenames
-  std::string m_basename;
+    //. Base filename to strip from the start of all filenames
+    std::string m_basename;
 
-  //. Current filename
-  std::string m_filename;
+    //. Current filename
+    std::string m_filename;
 
-  //. The global scope object
-  AST::Scope* m_global;
+    //. The global scope object
+    AST::Scope* m_global;
 
-  //. Current scope object
-  AST::Scope* m_scope;
+    //. Current scope object
+    AST::Scope* m_scope;
 
-  //. A counter used to generate unique namespace names
-  int m_unique;
+    //. A counter used to generate unique namespace names
+    int m_unique;
 
-  //. The stack of Builder::Scopes
-  std::vector<ScopeInfo*> m_scopes;
+    //. The stack of Builder::Scopes
+    std::vector<ScopeInfo*> m_scopes;
 
-  //. Private data which uses map
-  struct Private;
-  //. Private data which uses map instance
-  Private* m;
+    //. Private data which uses map
+    struct Private;
+    //. Private data which uses map instance
+    Private* m;
 
-  //. Return a ScopeInfo* for the given Declaration. This method first looks for
-  //. an existing Scope* in the Private map.
-  ScopeInfo* find_info(AST::Scope*);
+    //. Return a ScopeInfo* for the given Declaration. This method first looks for
+    //. an existing Scope* in the Private map.
+    ScopeInfo* find_info(AST::Scope*);
 
-  //. Utility method to recursively add base classes to given search
-  void add_class_bases(AST::Class* clas, ScopeSearch& search);
+    //. Utility method to recursively add base classes to given search
+    void add_class_bases(AST::Class* clas, ScopeSearch& search);
 
-  // Utility method to add all functions with the given name in the given
-  // Scope's dictionary to the given vector. May throw an error if the
-  // types looked up are not functions.
-  //void findFunctions(const std::string&, ScopeInfo*, std::vector<AST::Function*>&);
+    //. Formats the search of the given Scope for logging
+    std::string dump_search(ScopeInfo* scope);
 
-  // Determines the best function from the given list for the given
-  // arguments using heuristics. Returns the function and stores the cost
-  //AST::Function* bestFunction(const std::vector<AST::Function*>&, const std::vector<Types::Type*>&, int& cost);
+    //. Recursively adds 'target' as using in 'scope'
+    void do_add_using_namespace(ScopeInfo* target, ScopeInfo* scope);
 
-  //. Formats the search of the given Scope for logging
-  std::string dump_search(ScopeInfo* scope);
+    //. A class that compares Scopes
+    class EqualScope;
 
-  //. Recursively adds 'target' as using in 'scope'
-  void do_add_using_namespace(ScopeInfo* target, ScopeInfo* scope);
+    //. A pointer to the SWalker. This is set explicitly by the SWalker during
+    //. its constructor (which takes a Builder).
+    SWalker* m_swalker;
 
-  //. A class that compares Scopes
-  class EqualScope;
+    //. A pointer to the Lookup
+    Lookup* m_lookup;
 
-  //. A pointer to the SWalker. This is set explicitly by the SWalker during
-  //. its constructor (which takes a Builder).
-  SWalker* m_swalker;
-
-  //. A pointer to the Lookup
-  Lookup* m_lookup;
-
-}; // class Builder
+};
 
 #endif
+// vim: set ts=8 sts=4 sw=4 et:

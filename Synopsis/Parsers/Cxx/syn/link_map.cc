@@ -1,7 +1,10 @@
-// $Id: link_map.cc,v 1.3 2002/10/25 08:57:47 chalky Exp $
+// Synopsis C++ Parser: LinkMap.cc source file
+// Implementation of the LinkMap class
+
+// $Id: link_map.cc,v 1.4 2002/11/17 12:11:43 chalky Exp $
 //
 // This file is a part of Synopsis.
-// Copyright (C) 2000, 2001 Stephen Davies
+// Copyright (C) 2000-2002 Stephen Davies
 // Copyright (C) 2000, 2001 Stefan Seefeld
 //
 // Synopsis is free software; you can redistribute it and/or modify it
@@ -18,8 +21,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 // 02111-1307, USA.
-//
+
 // $Log: link_map.cc,v $
+// Revision 1.4  2002/11/17 12:11:43  chalky
+// Reformatted all files with astyle --style=ansi, renamed fakegc.hh
+//
 // Revision 1.3  2002/10/25 08:57:47  chalky
 // Clear the link map (stores where expanded macros are for syntax highlighted
 // files) after parsing
@@ -31,7 +37,7 @@
 // SXR parses expressions, handles differences from macro expansions. Some work
 // on function call resolution.
 //
-//
+
 
 #include "link_map.hh"
 
@@ -40,41 +46,46 @@
 #include <string>
 
 
-namespace {
-    struct Node {
-	int start;
-	int end;
-	enum Type { START, END } type;
-	int diff;
-	bool operator <(const Node& other) const {
-	    return start < other.start;
-	}
-    };
-	
-    typedef std::set<Node> Line;
-    typedef std::map<int, Line> LineMap;
+namespace
+{
+struct Node
+{
+    int start;
+    int end;
+    enum Type { START, END } type;
+    int diff;
+    bool operator <(const Node& other) const
+    {
+        return start < other.start;
+    }
+};
+
+typedef std::set<Node> Line;
+typedef std::map<int, Line> LineMap;
 };
 
 // ------------------------------------------
 // Private struct
 //
-struct link_map::Private {
+struct LinkMap::Private
+{
     LineMap lines;
 };
 
-link_map::link_map()
+LinkMap::LinkMap()
 {
     m = new Private;
 }
 
-link_map& link_map::instance()
+LinkMap& LinkMap::instance()
 {
-    static link_map* inst = 0;
-    if (!inst) inst = new link_map;
+    static LinkMap* inst = 0;
+    if (!inst)
+        inst = new LinkMap;
     return *inst;
 }
 
-void link_map::add(const char* name, int linenum, int start, int end, int diff)
+void LinkMap::add(const char* name, int linenum, int start, int end, int diff)
 {
     Line& line = m->lines[linenum];
     Node node;
@@ -85,34 +96,39 @@ void link_map::add(const char* name, int linenum, int start, int end, int diff)
     line.insert(node);
 }
 
-int link_map::map(int linenum, int pos)
+int LinkMap::map(int linenum, int pos)
 {
     LineMap::iterator line_iter = m->lines.find(linenum);
-    if (line_iter == m->lines.end()) {
-	return pos;
+    if (line_iter == m->lines.end())
+    {
+        return pos;
     }
     Line& line = line_iter->second;
     Line::iterator iter = line.begin(), end = line.end();
     int diff = 0;
-    while (iter != end && iter->start < pos) {
-	const Node& node = *iter++;
-	if (pos < node.end) return -1;
-	//cout << "link_map::map: line: "<<linenum<<" pos: "<<pos<<" start: "<<node.start<<endl;
-	diff = node.diff;
+    while (iter != end && iter->start < pos)
+    {
+        const Node& node = *iter++;
+        if (pos < node.end)
+            return -1;
+        //cout << "LinkMap::map: line: "<<linenum<<" pos: "<<pos<<" start: "<<node.start<<endl;
+        diff = node.diff;
     }
-    //cout << "link_map::map: line: "<<linenum<<" pos: "<<pos<<" diff: "<<diff<<endl;
+    //cout << "LinkMap::map: line: "<<linenum<<" pos: "<<pos<<" diff: "<<diff<<endl;
     return pos + diff;
 }
 
-void link_map::clear()
+void LinkMap::clear()
 {
     m->lines.clear();
 }
 
-extern "C" {
+extern "C"
+{
     //. This function is a callback from the ucpp code
     void synopsis_macro_hook(const char* name, int line, int start, int end, int diff)
     {
-	link_map::instance().add(name, line, start, end, diff);
+        LinkMap::instance().add(name, line, start, end, diff);
     }
 };
+// vim: set ts=8 sts=4 sw=4 et:
