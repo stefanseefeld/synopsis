@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.5 2001/02/07 16:14:40 chalky Exp $
+# $Id: Formatter.py,v 1.6 2001/02/07 17:00:43 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.6  2001/02/07 17:00:43  chalky
+# Added Qt-style comments support
+#
 # Revision 1.5  2001/02/07 16:14:40  chalky
 # Fixed @see linking to be more stubborn (still room for improv. tho)
 #
@@ -157,16 +160,16 @@ class JavadocFormatter (CommentFormatter):
     """A formatter that formats comments similar to Javadoc @tags"""
     # @see IDL/Foo.Bar
     # if a line starts with @tag then all further lines are tags
-    __re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
-    __re_tags = '(?P<text>.*?)\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
-    __re_see_line = '^[ \t]*@see[ \t]+(([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)(\([^)]*\))?([ \t]+(.*))?$'
-    __re_param = '^[ \t]*@param[ \t]+(?P<name>(A-Za-z+]+)([ \t]+(?P<desc>.*))?$'
+    _re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
+    _re_tags = '(?P<text>.*?)\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
+    _re_see_line = '^[ \t]*@see[ \t]+(([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)(\([^)]*\))?([ \t]+(.*))?$'
+    _re_param = '^[ \t]*@param[ \t]+(?P<name>(A-Za-z+]+)([ \t]+(?P<desc>.*))?$'
 
     def __init__(self):
 	"""Create regex objects for regexps"""
-	self.re_see = re.compile(self.__re_see)
-	self.re_tags = re.compile(self.__re_tags,re.M|re.S)
-	self.re_see_line = re.compile(self.__re_see_line,re.M)
+	self.re_see = re.compile(self._re_see)
+	self.re_tags = re.compile(self._re_tags,re.M|re.S)
+	self.re_see_line = re.compile(self._re_see_line,re.M)
     def parse(self, comm):
 	"""Parse the comm.detail for @tags"""
 	comm.detail = self.parseText(comm.detail, comm.decl)
@@ -183,7 +186,7 @@ class JavadocFormatter (CommentFormatter):
 	    mo = regexp.search(str, start)
 	return str, ret
 
-    def parseTags(self, str):
+    def parseTags(self, str, joiner):
 	"""Returns text, tags"""
 	# Find tags
 	mo = self.re_tags.search(str)
@@ -192,7 +195,6 @@ class JavadocFormatter (CommentFormatter):
 	# Split the tag section into lines
 	tags = map(string.strip, string.split(tags,'\n'))
 	# Join non-tag lines to the previous tag
-	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+y]
 	tags = reduce(joiner, tags, [])
 	return str, tags
 
@@ -200,7 +202,8 @@ class JavadocFormatter (CommentFormatter):
 	if str is None: return str
 	#str, see = self.extract(self.re_see_line, str)
 	see_tags, param_tags, return_tag = [], [], None
-	str, tags = self.parseTags(str)
+	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+y]
+	str, tags = self.parseTags(str, joiner)
 	# Parse each of the tags
 	for line in tags:
 	    tag, rest = string.split(line,' ',1)
@@ -286,6 +289,51 @@ class JavadocFormatter (CommentFormatter):
 		    return config.toc.lookup(decl.name())
 	return None
 
+class QtDocFormatter (JavadocFormatter):
+    """A formatter that uses Qt-style doc tags."""
+    _re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
+    _re_tags = r'((?P<text>.*?)\n)?[ \t]*(?P<tags>\\[a-zA-Z]+[ \t]+.*)'
+    _re_seealso = '[ \t]*(,|and|,[ \t]*and)[ \t]*'
+    def __init__(self):
+	JavadocFormatter.__init__(self)
+	self.re_seealso = re.compile(self._re_seealso)
+
+    def parseText(self, str, decl):
+	if str is None: return str
+	#str, see = self.extract(self.re_see_line, str)
+	see_tags, param_tags, return_tag = [], [], None
+	joiner = lambda x,y: len(y) and y[0]=='\\' and x+[y] or x[:-1]+[x[-1]+y]
+	str, tags = self.parseTags(str, joiner)
+	# Parse each of the tags
+	for line in tags:
+	    tag, rest = string.split(line,' ',1)
+	    if tag == '\\sa':
+		see_tags.extend(
+		    map(lambda x: [x,''], self.re_seealso.split(rest))
+		)
+	    elif tag == '\\param':
+		param_tags.append(string.split(rest,' ',1))
+	    elif tag == '\\return':
+		return_tag = rest
+	    else:
+		# Warning: unknown tag
+		pass
+	return "%s%s%s%s"%(
+	    self.parse_see(str, decl),
+	    self.format_params(param_tags),
+	    self.format_return(return_tag),
+	    self.format_see(see_tags, decl)
+	)
+    def format_see(self, see_tags, decl):
+	"""Formats a list of (ref,description) tags"""
+	if not len(see_tags): return ''
+	seestr = div('tag-see-header', "See Also:")
+	seelist = []
+	for see in see_tags:
+	    ref,desc = see[0], len(see)>1 and see[1] or ''
+	    tag = self.re_seealso.match(ref) and ' %s '%ref or self.find_link(ref, decl)
+	    seelist.append(span('tag-see', tag+desc))
+	return seestr + string.join(seelist,'')
 
 class SectionFormatter (CommentFormatter):
     """A test formatter"""
@@ -317,6 +365,7 @@ commentFormatters = {
     'java' : JavaFormatter,
     'summary' : SummarySplitter,
     'javadoc' : JavadocFormatter,
+    'qtdoc' : QtDocFormatter,
     'section' : SectionFormatter,
 }
 

@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.3 2001/02/07 14:13:51 chalky Exp $
+# $Id: Comments.py,v 1.4 2001/02/07 17:00:43 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.4  2001/02/07 17:00:43  chalky
+# Added Qt-style comments support
+#
 # Revision 1.3  2001/02/07 14:13:51  chalky
 # Small fixes.
 #
@@ -97,6 +100,29 @@ class JavaComments (CommentProcessor):
 	    mo = self.re_java.search(text, mo.end())
 	text = string.join(text_list,'\n')
 	comment.set_text(text)
+
+class QtComments (CommentProcessor):
+    """A class that finds Qt style comments. These have two styles: //! ...
+    and /*! ... */. The first means "brief comment" and there must only be
+    one. The second type is the detailed comment."""
+    __re_brief = r"[ \t]*//!(.*)"
+    __re_detail = r"[ \t]*/\*!(.*)\*/[ \t\n]*"
+    def __init__(self):
+	self.re_brief = re.compile(self.__re_brief)
+	self.re_detail = re.compile(self.__re_detail, re.S)
+    def process(self, decl):
+	map(self.processComment, decl.comments())
+    def processComment(self, comment):
+	text = comment.text()
+	mo = self.re_brief.match(text)
+	if mo:
+	    comment.set_text(mo.group(1))
+	    return
+	mo = self.re_detail.match(text)
+	if mo:
+	    comment.set_text(mo.group(1))
+	    return
+	comment.set_text('')
 
 class Dummies (CommentProcessor):
     """A class that deals with dummy declarations and their comments. This
@@ -182,6 +208,7 @@ class Previous (Dummies):
 processors = {
     'ssd': SSDComments,
     'java': JavaComments,
+    'qt': QtComments,
     'dummy': Dummies,
     'prev': Previous,
 }
