@@ -1879,7 +1879,7 @@ comp_declarator:  simple_comp
            $$->extend(decl);
            if (! decl)
                yyerr ("No type specifier for bit field") ;
-           else if ($$->form)
+           else if (!$$->form)
                yyerr ("Wrong type combination") ;
         }
         ;
