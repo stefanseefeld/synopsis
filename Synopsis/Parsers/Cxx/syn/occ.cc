@@ -1,4 +1,4 @@
-// $Id: occ.cc,v 1.95 2003/12/17 15:07:24 stefan Exp $
+// $Id: occ.cc,v 1.96 2003/12/18 16:26:12 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -371,8 +371,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
                         &syn_xref_prefix,
                         &syn_emulate_compiler)
       || !extract(py_extra_files, extra_files)
-      || !(preprocessor || emulate_compiler(syn_emulate_compiler, cppflags))
-      || !extract(py_cppflags, cppflags))
+      || !extract(py_cppflags, cppflags)
+      || !(preprocessor || emulate_compiler(syn_emulate_compiler, cppflags)))
     return 0;
 
   Py_INCREF(ast);
