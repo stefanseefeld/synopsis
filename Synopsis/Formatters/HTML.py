@@ -828,7 +828,7 @@ class DetailFormatter(BaseFormatter):
 	self.write(entity('h1', "%s %s"%(type, name)))
 
 	# Print any comments for this module
-	comment = comments[module].full
+	comment = comments[module].detail
 	if comment: self.write(div('desc',comment)+'<br><br>')
 
     def visitClass(self, clas):
