@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.87 2003/03/21 21:31:23 stefan Exp $
+// $Id: occ.cc,v 1.88 2003/08/01 00:23:16 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.88  2003/08/01 00:23:16  stefan
+// accept '-Wp,-I,<filename>' and '-Wp,-D,<filename>'
+//
 // Revision 1.87  2003/03/21 21:31:23  stefan
 // a fix to the fix...
 //
@@ -316,9 +319,17 @@ Py_XDECREF(value);
     {
         const char *argument = PyString_AsString(PyList_GetItem(args, i));
         if (strncmp(argument, "-I", 2) == 0)
-            cppflags.push_back(argument);
+	{
+	  cppflags.push_back(argument);
+	  if (strlen(argument) == 2)
+	    cppflags.push_back(PyString_AsString(PyList_GetItem(args, ++i)));
+	}
         else if (strncmp(argument, "-D", 2) == 0)
-            cppflags.push_back(argument);
+	{
+	  cppflags.push_back(argument);
+	  if (strlen(argument) == 2)
+	    cppflags.push_back(PyString_AsString(PyList_GetItem(args, ++i)));
+	}
         else if (strcmp(argument, "-v") == 0)
             verbose = true;
         else if (strcmp(argument, "-m") == 0)
