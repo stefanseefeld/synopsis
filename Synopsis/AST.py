@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.12 2001/06/05 10:03:35 chalky Exp $
+# $Id: AST.py,v 1.13 2001/06/08 21:04:38 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.13  2001/06/08 21:04:38  stefan
+# more work on grouping
+#
 # Revision 1.12  2001/06/05 10:03:35  chalky
 # Fixed subtle bug.. s/__type/__returnType/ !!!! bad python! bad!
 #
@@ -164,7 +167,9 @@ class Group (Declaration):
     def declarations(self):
 	"""The list of declarations in this group"""
 	return self.__declarations
-    def accept(self, visitor): visitor.visitGroup(self)
+    def accept(self, visitor):
+        print "group accept", visitor
+        visitor.visitGroup(self)
 
 class Scope (Group):
     """Base class for scopes (named groups)."""

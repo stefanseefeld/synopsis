@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.9 2001/06/08 04:50:13 stefan Exp $
+# $Id: Comments.py,v 1.10 2001/06/08 21:04:38 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.10  2001/06/08 21:04:38  stefan
+# more work on grouping
+#
 # Revision 1.9  2001/06/08 04:50:13  stefan
 # add grouping support
 #
@@ -282,14 +285,13 @@ class Grouper (Transformer):
         comments = []
         for c in decl.comments():
             if self.re_open.findall(c.text()):
-                print "opening tag found"
-                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", "blabla")
+                label = string.strip(c.text()[string.find(c.text(), '{') + 1:])
+                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
                 comments = []
                 self.push()
                 self.__groups.append(group)
             elif self.re_close.findall(c.text()):
-                print "closing tag found"
                 group = self.__groups.pop()
                 group.declarations()[:] = self.currscope()
                 self.pop(group)
@@ -301,12 +303,10 @@ class Grouper (Transformer):
 	currscope() at the end of the list is used to replace scope's list of
 	declarations - hence you can remove (or insert) declarations from the
 	list. Such as dummy declarations :)"""
-        print "enter scope", scope.name()
 	self.push()
 	for decl in scope.declarations(): decl.accept(self)
 	scope.declarations()[:] = self.currscope()
 	self.pop(scope)
-        print "leave scope", scope.name()
     def visitEnum(self, enum):
 	"""Does the same as visitScope, but for the enum's list of
 	enumerators"""

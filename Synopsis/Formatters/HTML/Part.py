@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.9 2001/04/05 09:58:14 chalky Exp $
+# $Id: Part.py,v 1.10 2001/06/08 21:04:38 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.10  2001/06/08 21:04:38  stefan
+# more work on grouping
+#
 # Revision 1.9  2001/04/05 09:58:14  chalky
 # More comments, and use config object exclusively with basePackage support
 #
@@ -148,6 +151,7 @@ class ASTFormatter (Type.Visitor):
     #
     def formatDeclaration(self, decl):	pass
     def formatForward(self, decl):	pass
+    def formatGroup(self, decl):	pass
     def formatScope(self, decl):	pass
     def formatModule(self, decl):	pass
     def formatMetaModule(self, decl):	pass
@@ -178,6 +182,9 @@ class BaseASTFormatter(ASTFormatter):
 	return '',self.label(decl.name())
 
     def formatForward(self, decl): return self.formatDeclaration(decl)
+    def formatGroup(self, decl):
+        print "format group !"
+        return self.formatDeclaration(decl)
     def formatScope(self, decl):
 	"""Scopes have their own pages, so return a reference to it"""
 	return '',self.reference(decl.name())
@@ -445,7 +452,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	self.__formatters = []
 	# Lists of format methods for each AST type
 	self.__formatdict = {
-	    'formatDeclaration':[], 'formatForward':[], 'formatScope':[],
+	    'formatDeclaration':[], 'formatForward':[], 'formatGroup':[], 'formatScope':[],
 	    'formatModule':[], 'formatMetaModule':[], 'formatClass':[],
 	    'formatTypedef':[], 'formatEnum':[], 'formatVariable':[],
 	    'formatConst':[], 'formatFunction':[], 'formatOperation':[], 
@@ -531,6 +538,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     #################### AST Visitor ############################################
     def visitDeclaration(self, decl):	self.formatDeclaration(decl, 'formatDeclaration')
     def visitForward(self, decl):	self.formatDeclaration(decl, 'formatForward')
+    def visitGroup(self, decl):         self.formatDeclaration(decl, 'formatGroup')
     def visitScope(self, decl):		self.formatDeclaration(decl, 'formatScope')
     def visitModule(self, decl):	self.formatDeclaration(decl, 'formatModule')
     def visitMetaModule(self, decl):	self.formatDeclaration(decl, 'formatMetaModule')
