@@ -73,3 +73,13 @@ class Parser(Processor):
          if self.preprocess: os.remove(ii_file)
 
       return self.output_and_return_ast()
+
+   def dump(self, **kwds):
+      """Run the occ directly without ast intervention."""
+
+      input = kwds.get('input', self.input)
+      verbose = kwds.get('verbose', self.verbose)
+      debug = kwds.get('debug', self.debug)
+
+      for file in input:
+         occ.dump(file, verbose, debug)
