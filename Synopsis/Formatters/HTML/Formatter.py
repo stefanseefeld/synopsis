@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.11 2003/11/18 07:30:13 stefan Exp $
+# $Id: Formatter.py,v 1.12 2003/11/18 16:45:25 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -34,7 +34,7 @@ class Formatter(Processor):
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    toc_out = Parameter('', 'name of file into which to store the TOC')
 
-   pages = Parameter([FramesIndex(),#FramesIndex(), #DirBrowse()
+   pages = Parameter([FramesIndex(),
                       Scope(),
                       ModuleListing(),
                       ModuleIndexer(),
@@ -43,12 +43,9 @@ class Formatter(Processor):
                       FileDetails(),
                       InheritanceTree(),
                       InheritanceGraph(),
-                      FileSource(),
-                      NameIndex(),
-                      XRef()],
+                      NameIndex()],
                       '')
    
-   #comment_formatters = ['javadoc', 'section']
    comment_formatters = Parameter([QuoteHTML(),
                                    SectionFormatter()],
                                   '')
