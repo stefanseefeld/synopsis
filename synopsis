@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.35 2001/05/25 13:45:49 stefan Exp $
+#  $Id: synopsis,v 1.36 2001/05/25 13:48:10 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -145,7 +145,7 @@ def showModuleSynopsis(file, parser):
 def parseArgs(args):
     global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, config_file, config_args, output, verbose, help
     try:
-        opts,files = Util.getopt_spec(args, "p:f:W:I:o:c:Vvhl", ["parser=", "formatter=", "config=", "version", "help", "list"])
+        opts,files = Util.getopt_spec(args, "p:f:W:I:D:o:c:Vvhl", ["parser=", "formatter=", "config=", "version", "help", "list"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.stderr.write("Use `" + cmdname + " -h' for help\n")
