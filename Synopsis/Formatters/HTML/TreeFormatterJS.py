@@ -1,4 +1,4 @@
-# $Id: TreeFormatterJS.py,v 1.1 2001/06/05 10:43:07 chalky Exp $
+# $Id: TreeFormatterJS.py,v 1.2 2001/06/21 01:17:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TreeFormatterJS.py,v $
+# Revision 1.2  2001/06/21 01:17:27  chalky
+# Fixed some paths for the new dir structure
+#
 # Revision 1.1  2001/06/05 10:43:07  chalky
 # Initial TreeFormatter and a JS version
 #
@@ -131,7 +134,7 @@ class TreeFormatterJS (TreeFormatter):
 	self.__leaf_img = ''
 
 	# TODO: load from config
-	share = os.path.split(AST.__file__)[0]+"/../share" #hack..
+	share = os.path.split(AST.__file__)[0]+"/../../share" #hack..
 	self.js_init(share+'/syn-down.png', share+'/syn-right.png',
 		     share+'/syn-dot.png', 'tree_%s.png', 0)
 	

@@ -55,7 +55,7 @@ class Config (Base):
 
 	    class FilePages:
 		"Override defaults"
-		file_path = '../../../%s'
+		file_path = '../../%s'
 		links_path = 'syn/%s-links'
 		toc_files = ['links.toc']
 		scope = 'Synopsis::Parser::C++::'

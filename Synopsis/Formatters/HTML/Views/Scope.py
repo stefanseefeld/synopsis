@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.6 2001/04/05 09:58:14 chalky Exp $
+# $Id: Scope.py,v 1.7 2001/06/21 01:17:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.7  2001/06/21 01:17:27  chalky
+# Fixed some paths for the new dir structure
+#
 # Revision 1.6  2001/04/05 09:58:14  chalky
 # More comments, and use config object exclusively with basePackage support
 #
@@ -74,7 +77,7 @@ class ScopePages (Page.Page):
 	    if config.verbose: print "Detailer config failed. Abort"
 	    raise
 	# Hack to find share dir..
-	share = os.path.split(AST.__file__)[0]+"/../share"
+	share = os.path.split(AST.__file__)[0]+"/../../share"
 	self.syn_logo = 'synopsis200.jpg'
 	config.files.copyFile(share+'/synopsis200.jpg', self.syn_logo)
 

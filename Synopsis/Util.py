@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.9 2001/04/05 09:54:00 chalky Exp $
+# $Id: Util.py,v 1.10 2001/06/21 01:17:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.10  2001/06/21 01:17:27  chalky
+# Fixed some paths for the new dir structure
+#
 # Revision 1.9  2001/04/05 09:54:00  chalky
 # More robust _import()
 #
@@ -108,7 +111,14 @@ with the components separated by '::' strings. If a second list is
 given, remove a common prefix using pruneScope()."""
     
     pscope = pruneScope(scopedName, our_scope)
-    return string.join(pscope, "::")
+    try: return string.join(pscope, "::")
+    except TypeError, e:
+	import pprint
+	pprint.pprint(scopedName)
+	pprint.pprint(our_scope)
+	if type(pscope) in (type([]), type(())):
+	    raise TypeError, str(e) + " ..not: list of " + str(type(pscope[0]))
+	raise TypeError, str(e) + " ..not: " + str(type(pscope))
 
 def pruneScope(target_scope, our_scope):
     """pruneScope(list A, list B) -> list
