@@ -1,4 +1,4 @@
-# $Id: TOC.py,v 1.2 2001/02/13 05:20:04 chalky Exp $
+# $Id: TOC.py,v 1.3 2002/11/01 04:05:06 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TOC.py,v $
+# Revision 1.3  2002/11/01 04:05:06  chalky
+# Don't let comma replacement screw up ampersands
+#
 # Revision 1.2  2001/02/13 05:20:04  chalky
 # Made C++ parser mangle functions by formatting their parameter types
 #
@@ -89,7 +92,7 @@ class TableOfContents(AST.Visitor):
     def store(self, file):
         """store the table of contents into a file, such that it can be used later when cross referencing"""
         fout = open(file, 'w')
-	nocomma = lambda str: re.sub(",","&2c;",str)
+	nocomma = lambda str: str.replace("&","&amp;").replace(",","&2c;")
         for name in self.__toc.keys():
             scopedname = nocomma(string.join(name, "::"))
             lang = self.__toc[tuple(name)].lang
