@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.9 2001/07/05 05:39:58 stefan Exp $
+# $Id: InheritanceTree.py,v 1.10 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.10  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.9  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -83,7 +86,7 @@ class InheritanceTree(Page.Page):
     def processClassInheritance(self, args):
 	name, rel_name = args
 	self.write('<li>')
-	self.write(core.reference(name, rel_name))
+	self.write(self.reference(name, rel_name))
 	parents = config.classTree.superclasses(name)
 	if parents:
 	    self.write(' <i>(%s)</i>'%string.join(map(Util.ccolonName, parents), ", "))

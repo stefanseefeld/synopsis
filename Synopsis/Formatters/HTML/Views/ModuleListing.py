@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.8 2001/07/05 05:39:58 stefan Exp $
+# $Id: ModuleListing.py,v 1.9 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.9  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.8  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -121,7 +124,7 @@ class ModuleListing(Page.Page):
 	return 1
     def _link_href(self, ns):
 	"""Returns the link to the given declaration"""
-	return config.files.nameOfModuleIndex(ns.name())
+	return rel(self.filename(), config.files.nameOfModuleIndex(ns.name()))
     def _get_children(self, decl):
 	"""Returns the children of the given declaration"""
 	try: return self._children_cache[decl]
