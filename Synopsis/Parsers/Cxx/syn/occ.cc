@@ -8,7 +8,6 @@
 
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
-#include <Synopsis/Path.hh>
 #include <Synopsis/ErrorHandler.hh>
 #include "Translator.hh"
 #include "swalker.hh"
