@@ -1,4 +1,4 @@
-/*$Id: GapBuffer.hh,v 1.1 2001/01/24 18:28:31 stefan Exp $
+/*$Id: GapBuffer.hh,v 1.2 2001/06/05 05:28:34 chalky Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -47,10 +47,10 @@
 //. 
 //.
 template <class T, short gapsize>
-class GapBuffer : private vector<T>
+class GapBuffer : private std::vector<T>
 {
-  typedef vector<T> rep_type;
-  typedef typename vector<T>::value_type value_type;
+  typedef std::vector<T> rep_type;
+  typedef typename std::vector<T>::value_type value_type;
   iterator gbegin() { return begin() + gapbegin;}
   iterator gend() { return begin() + gapend;}
   iterator cursor() { return begin() + curs;}
