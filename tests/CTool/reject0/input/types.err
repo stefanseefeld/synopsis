@@ -1,8 +1,0 @@
-"my_ctool_207/regression/accept0/run/types.c", line 21: identifier redeclared: pj
-	current : pointer to function(char, int, pointer to float) returning int
-	previous: pointer to function(char) returning int : "my_ctool_207/regression/accept0/run/types.c", line 20
-"my_ctool_207/regression/accept0/run/types.c", line 42: warning: nonportable bit-field type
-"my_ctool_207/regression/accept0/run/types.c", line 47: (struct) tag redeclared: foo4
-"my_ctool_207/regression/accept0/run/types.c", line 53: warning: nonportable bit-field type
-"my_ctool_207/regression/accept0/run/types.c", line 47: incomplete struct/union/enum foo4: b4
-cc: acomp failed for my_ctool_207/regression/accept0/run/types.c

@@ -1,8 +1,0 @@
-"my_ctool_207/regression/accept0/run/main2.c", line 32: integral constant expression expected
-"my_ctool_207/regression/accept0/run/main2.c", line 39: integral constant expression expected
-"my_ctool_207/regression/accept0/run/main2.c", line 39: duplicate case in switch: 1
-"my_ctool_207/regression/accept0/run/main2.c", line 46: integral constant expression expected
-"my_ctool_207/regression/accept0/run/main2.c", line 46: duplicate case in switch: 1
-"my_ctool_207/regression/accept0/run/main2.c", line 55: void expressions may not be arguments: arg #3
-"my_ctool_207/regression/accept0/run/main2.c", line 66: warning: statement not reached
-cc: acomp failed for my_ctool_207/regression/accept0/run/main2.c

@@ -1,7 +1,0 @@
-"my_ctool_207/regression/accept0/run/min.c", line 4: syntax error before or at: /
-"my_ctool_207/regression/accept0/run/min.c", line 4: invalid source character: '#'
-"my_ctool_207/regression/accept0/run/min.c", line 4: undefined or not a type: define
-"my_ctool_207/regression/accept0/run/min.c", line 4: syntax error before or at: This
-"my_ctool_207/regression/accept0/run/min.c", line 4: undefined or not a type: This
-"my_ctool_207/regression/accept0/run/min.c", line 4: cannot recover from previous errors
-cc: acomp failed for my_ctool_207/regression/accept0/run/min.c

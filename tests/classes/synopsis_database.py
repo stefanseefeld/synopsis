@@ -70,10 +70,6 @@ class Database(database.Database):
          if os.path.isdir(path):
             tests = get_file_tests(path, '.cc')
 
-      elif suite.startswith('CTool'):
-         if os.path.isfile(os.path.join(self.get_build_path(suite), 'ctool.py')):
-            tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'), '.c')
-
       elif suite.startswith('OpenCxx'):
          if os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
             tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'), '.cc')
@@ -110,7 +106,7 @@ class Database(database.Database):
 
       if not suite:
 
-         suites = ['OpenCxx', 'CTool', 'Parsers', 'Processors']
+         suites = ['OpenCxx', 'Parsers', 'Processors']
 
       elif suite.startswith('Processors.Linker'):
 
@@ -125,10 +121,6 @@ class Database(database.Database):
          # if 'src' exists, it contains the tests
          path = os.path.join(self.get_src_path(suite), 'src')
          if not os.path.isdir(path):
-            suites = get_dir_suites(suite)
-
-      elif suite.startswith('CTool'):
-         if not os.path.isfile(os.path.join(self.get_build_path(suite), 'ctool.py')):
             suites = get_dir_suites(suite)
 
       elif suite.startswith('OpenCxx'):
@@ -200,7 +192,6 @@ class Database(database.Database):
          
       if id.startswith('Processors.Linker'): return self.make_linker_test(id)
       elif id.startswith('Cxx-API'): return self.make_api_test(id)
-      elif id.startswith('CTool'): return self.make_ctool_test(id)
       elif id.startswith('OpenCxx'): return self.make_opencxx_test(id)
       else: return self.make_processor_test(id)
 
@@ -276,31 +267,6 @@ class Database(database.Database):
                                             components[-1] + '.out')
       
       return TestDescriptor(self, id, 'synopsis_test.APITest', parameters)
-
-   def make_ctool_test(self, id):
-      """A test id 'a.b.c' corresponds to an input file
-      'a/b/input/c.<ext>. Create a CToolTest if that
-      input file exists, and throw NoSuchTestError otherwise."""
-
-      components = id.split('.')
-      dirname = os.path.join(*[self.srcdir] + components[:-1])
-
-      input = os.path.join(dirname, 'input', components[-1]) + '.c'
-         
-      if not os.path.isfile(input): raise NoSuchTestError, id
-
-      output = os.path.join(*components[:-1] + ['output', components[-1] + '.out'])
-      expected = os.path.join(dirname, 'expected', components[-1] + '.ans')
-      ctool = os.path.join(*components[:-1] + ['ctool.py'])
-
-      parameters = {}
-      parameters['srcdir'] = self.srcdir
-      parameters['input'] = [input]
-      parameters['output'] = output
-      parameters['expected'] = expected
-      parameters['ctool'] = ctool
-      
-      return TestDescriptor(self, id, 'synopsis_test.CToolTest', parameters)
 
    def make_opencxx_test(self, id):
       """A test id 'a.b.c' corresponds to an input file
