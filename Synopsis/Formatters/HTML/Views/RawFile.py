@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.1 2002/11/02 06:37:37 chalky Exp $
+# $Id: RawFile.py,v 1.2 2002/11/11 15:04:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: RawFile.py,v $
+# Revision 1.2  2002/11/11 15:04:05  chalky
+# Fix bugs when start directory is ''
+#
 # Revision 1.1  2002/11/02 06:37:37  chalky
 # Allow non-frames output, some refactoring of page layout, new modules.
 #
@@ -65,7 +68,7 @@ class RawFilePages (Page.Page):
         dirs = [self.__start]
         while dirs:
             dir = dirs.pop(0)
-            for entry in os.listdir(dir):
+            for entry in os.listdir(os.path.abspath(dir)):
                 entry_path = os.path.join(dir, entry)
                 info = statcache.stat(entry_path)
                 if stat.S_ISDIR(info[stat.ST_MODE]):
