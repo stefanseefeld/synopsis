@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.3 2003/11/11 18:17:17 stefan Exp $
+# $Id: Processor.py,v 1.4 2003/11/14 13:59:01 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -54,7 +54,13 @@ class Parametrized(object):
 
       return instance
 
+   def __init__(self, **kwds):
+      """The constructor uses the keywords to update the parameter list."""
+      
+      self.set_parameters(kwds)
+
    def get_parameters(self):
+
       return self._parameters
 
    def set_parameters(self, kwds):
@@ -70,6 +76,7 @@ class Processor(Parametrized):
    """Processor documentation..."""
 
    verbose = Parameter(False, "operate verbosely")
+   debug = Parameter(False, "generate debug traces")
 
    def set_parameters(self, kwds):
       """Sets the given parameters to override the default values.
