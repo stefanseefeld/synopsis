@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.2 2003/11/11 06:05:03 stefan Exp $
+# $Id: Processor.py,v 1.3 2003/11/11 18:17:17 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -28,8 +28,8 @@ class Type(type):
          setattr(cls, i, dict[i].value)
       setattr(cls, '_parameters', parameters)
 
-class Processor(object):
-   """Processor documentation..."""
+class Parametrized(object):
+   """Parametrized implements handling of Parameter attributes."""
 
    __metaclass__ = Type
    
@@ -37,9 +37,9 @@ class Processor(object):
       """merge all parameter catalogs for easy access to documentation,
       then use keyword arguments to override default values."""
       instance = object.__new__(cls)
-      # iterate over all base classes, starting at the 'Processor' base class
+      # iterate over all base classes, starting at the 'Parametrized' base class
       # i.e. remove mixin classes
-      hierarchy = list(filter(lambda i:isinstance(i, Processor), cls.__mro__))
+      hierarchy = list(filter(lambda i:isinstance(i, Parametrized), cls.__mro__))
       hierarchy.reverse()
       parameters = {}
       for c in hierarchy:
@@ -54,13 +54,27 @@ class Processor(object):
 
       return instance
 
-   verbose = Parameter(False, "operate verbosely")
-
    def get_parameters(self):
       return self._parameters
 
    def set_parameters(self, kwds):
       """Sets the given parameters to override the default values."""
+      for i in kwds:
+         if i in self._parameters:
+            setattr(self, i, kwds[i])
+         else:
+            raise TypeError, "No parameter '%s' in 'Parametrized'"%(i)
+
+
+class Processor(Parametrized):
+   """Processor documentation..."""
+
+   verbose = Parameter(False, "operate verbosely")
+
+   def set_parameters(self, kwds):
+      """Sets the given parameters to override the default values.
+      Override the Parametrized version so we can handle 'input' and 'output'
+      which are not in the _parameters' catalog."""
       for i in kwds:
          if i in self._parameters:
             setattr(self, i, kwds[i])
