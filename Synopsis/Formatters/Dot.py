@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.26 2002/08/21 03:36:54 stefan Exp $
+# $Id: Dot.py,v 1.27 2002/10/20 02:21:50 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.27  2002/10/20 02:21:50  chalky
+# Fix up quoting (thanks David).
+#
 # Revision 1.26  2002/08/21 03:36:54  stefan
 # * use UML inheritance arrows
 # * display operations and attributes if requested
@@ -110,7 +113,7 @@ Uses 'dot' from graphviz to generate various graphs.
 """
 # THIS-IS-A-FORMATTER
 
-import sys, tempfile, getopt, os, os.path, string, types, errno
+import sys, tempfile, getopt, os, os.path, string, types, errno, re
 from Synopsis.Core import AST, Type, Util
 from Synopsis.Formatter import TOC
 
@@ -167,6 +170,13 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         if nodes.has_key(name): return
         nodes[name] = len(nodes)
         number = nodes[name]
+
+	# Quote to remove characters that dot can't handle
+	label = re.sub('<',r'\<',label)
+	label = re.sub('>',r'\>',label)
+	label = re.sub('{',r'\{',label)
+	label = re.sub('}',r'\}',label)
+
         self.write("Node" + str(number) + " [shape=\"record\", label=\"" + label + "\"")
         self.write(", fontSize = 10, height = 0.2, width = 0.4")
         self.write(string.join(map(lambda item:', %s="%s"'%item, attr.items())))
@@ -239,14 +249,14 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         name = self.getClassName(node)
         ref = toc[node.name()]
         for d in node.declarations(): d.accept(self)
-        label = '{' + name
+	# NB: old version of dot needed the label surrounded in {}'s (?)
+        label = name
         if self.__operations or self.__attributes:
             label = label + '\\n'
             if self.__operations:
                 label = label + '|' + string.join(map(lambda x:x[-1] + '()\\l', self.__operations[-1]))
             if self.__attributes:
                 label = label + '|' + string.join(map(lambda x:x[-1] + '\\l', self.__attributes[-1]))
-        label = label + '}'
         if ref:
             self.writeNode(ref.link, name, label)
         else:
@@ -497,7 +507,7 @@ def format(args, ast, config_obj):
     if not toc: toc = TOC.TableOfContents(TOC.Linker())
     for t in toc_in: toc.load(t)
 
-    tmpfile = output + ".dot"
+    tmpfile = Util.quote(output) + ".dot"
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = Util.open(tmpfile)
     dotfile.write("digraph \"%s\" {\n"%(title))
