@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.18 2001/01/22 17:06:15 stefan Exp $
+# $Id: ASCII.py,v 1.19 2001/01/22 19:54:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.19  2001/01/22 19:54:41  stefan
+# better support for help message
+#
 # Revision 1.18  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -233,6 +236,12 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	self.indent()
 	self.__os.write("%s %s = %s;\n"%(ctype,const.name()[-1],const.value()))
 
+
+def usage():
+    """Print usage to stdout"""
+    print \
+"""
+  -o <file>                            Output file"""
 
 def __parseArgs(args):
     global output

@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.4 2001/01/22 17:06:15 stefan Exp $
+# $Id: Dia.py,v 1.5 2001/01/22 19:54:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.5  2001/01/22 19:54:41  stefan
+# better support for help message
+#
 # Revision 1.4  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -286,6 +289,14 @@ class DiaFormatter(AST.Visitor, Type.Visitor):
 
 	for inherit in decl.parents():
 	    self.__inherits.append( (inherit.parent(), decl) )
+
+def usage():
+    """Print usage to stdout"""
+    print \
+"""
+  -o <file>                            Output file
+  -m                                   hide operations
+  -a                                   hide attributes"""
 
 def __parseArgs(args):
     global filename, hide_operations, hide_attributes

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: HTML_Simple.py,v 1.5 2001/01/22 17:06:15 stefan Exp $
+#  $Id: HTML_Simple.py,v 1.6 2001/01/22 19:54:41 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -21,12 +21,15 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.6  2001/01/22 19:54:41  stefan
+# better support for help message
+#
 # Revision 1.5  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
 
 import sys, getopt, os, os.path, string
-from Synopsis.Core import Type, Util
+from Synopsis.Core import AST, Type, Util
 
 def entity(type, body): return "<" + type + "> " + body + "</" + type + ">"
 def href(ref, label): return "<a href=" + ref + ">" + label + "</a>"
@@ -303,6 +306,13 @@ class HTMLFormatter (Type.Visitor, AST.Visitor):
             self.write("<br>\n")
         self.write("</div>\n")
         if len(enum.comments()): self.write("\n" + desc(enum.comments()) + "\n")            
+
+def usage():
+    """Print usage to stdout"""
+    print \
+"""
+  -o <filename>                        Output filename
+  -s <filename>                        Filename of stylesheet"""
 
 def __parseArgs(args):
     global output, stylesheet
