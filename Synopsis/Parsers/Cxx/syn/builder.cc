@@ -2,10 +2,16 @@
 
 #include <map>
 using std::map;
+#include <typeinfo>
+#include <strstream>
 
 #include "builder.hh"
 #include "type.hh"
 #include "dict.hh"
+
+// for debugging
+#include "dumper.hh"
+#include "strace.hh"
 
 //. Utility method
 Name extend(Name name, string str)
@@ -31,6 +37,50 @@ Builder::Scope::~Scope()
     delete dict;
 }
 
+namespace {
+    ostream& operator << (ostream& out, const Builder::Scope& scope)
+    {
+	const AST::Name& name = scope.scope_decl->name();
+	if (name.size())
+	    copy(name.begin(), name.end(), ostream_iterator<string>(out, "::"));
+	else
+	    out << "(global)";
+	return out;
+    }
+
+    //. This class is very similar to ostream_iterator, except that it works on
+    //. pointers to types
+    template <typename T>
+    class ostream_ptr_iterator {
+	ostream* out;
+	const char* sep;
+    public:
+	ostream_ptr_iterator(ostream& o, const char* s) : out(&o), sep(s) {}
+	ostream_ptr_iterator<T>& operator =(const T* value) {
+	    *out << *value;
+	    if (sep) *out << sep;
+	    return *this;
+	}
+	ostream_ptr_iterator<T>& operator *() { return *this; }
+	ostream_ptr_iterator<T>& operator ++() { return *this; }
+	ostream_ptr_iterator<T>& operator ++(int) { return *this; }
+    };
+
+    string join(const vector<string>& strs, string sep = " ")
+    {
+	vector<string>::const_iterator iter = strs.begin();
+	if (iter == strs.end()) return "";
+	string str = *iter++;
+	while (iter != strs.end())
+	    str += sep + *iter++;
+	return str;
+    }
+
+    ostream& operator <<(ostream& out, const vector<string>& vec) {
+	return out << join(vec, "::");
+    }
+}
+
 //
 // Struct Builder::Private
 //
@@ -47,6 +97,7 @@ struct Builder::Private {
 Builder::Builder(string basename)
 {
     m_basename = basename;
+    m_unique = 1;
     m = new Private;
     AST::Name name;
     m_scope = m_global = new AST::Scope("", 0, "file", name);
@@ -54,8 +105,9 @@ Builder::Builder(string basename)
     m_scope = m_global;
     m_scopes.push(global);
     // Insert the global base types
+    Type::Base* t_bool;
     global->dict->insert(Base("char"));
-    global->dict->insert(Base("bool"));
+    global->dict->insert(t_bool = Base("bool"));
     global->dict->insert(Base("short"));
     global->dict->insert(Base("int"));
     global->dict->insert(Base("long"));
@@ -67,8 +119,11 @@ Builder::Builder(string basename)
     global->dict->insert(Base("..."));
     global->dict->insert(Base("long long"));
     global->dict->insert(Base("long double"));
-    global->dict->insert(Base("true"));
-    global->dict->insert(Base("false"));
+    // Add variables for true and false
+    name.clear(); name.push_back("true");
+    add(new AST::Variable("", -1, "variable", name, t_bool, false));
+    name.clear(); name.push_back("false");
+    add(new AST::Variable("", -1, "variable", name, t_bool, false));
 }
 
 Builder::~Builder()
@@ -120,32 +175,57 @@ void Builder::add(Type::Named* type)
     m_scopes.top()->dict->insert(type);
 }
 
-AST::Namespace* Builder::startNamespace(string name)
+AST::Namespace* Builder::startNamespace(string name, NamespaceType nstype)
 {
-    // Check if namespace already exists
     AST::Namespace* ns = NULL;
-    do {
-    if (m_scopes.top()->dict->has_key(name)) {
-	Type::Named* type = m_scopes.top()->dict->lookup(name);
-	Type::Declared* declared = dynamic_cast<Type::Declared*>(type);
-	if (!declared) { cout << "Warning: redeclaring namespace with name already used!" << endl; ns=NULL;break;}
-	ns = dynamic_cast<AST::Namespace*>(declared->declaration());
-	if (!ns) { cout << "Warning: redeclaring namespace with name already used!" << endl; break;}
-    } } while(0);
+    bool generated = false;
+    switch (nstype) {
+	case NamespaceNamed:
+	    // Check if namespace already exists
+	    try {
+		if (m_scopes.top()->dict->has_key(name)) {
+		    Type::Named* type = m_scopes.top()->dict->lookup(name);
+		    ns = Type::declared_cast<AST::Namespace>(type);
+		}
+	    }
+	    catch (std::bad_cast) {}
+	    break;
+	case NamespaceAnon:
+	    // name is the filename. Wrap it in {}'s
+	    name = "{"+name+"}";
+	    break;
+	case NamespaceUnique:
+	    { // name is empty or the type. Encode it with a unique number
+		if (!name.size()) name = "ns";
+		ostrstream x; x << '`' << name << m_unique++ << ends;
+		name = x.str();
+	    }
+	    break;
+    }
+    // Create a new namespace object unless we already found one
     if (!ns) {
+	generated = true;
 	// Generate the name
 	AST::Name ns_name = extend(m_scope->name(), name);
 	// Create the Namespace
 	ns = new AST::Namespace(m_filename, 0, "namespace", ns_name);
 	add(ns);
     }
-    // Push stack. Search is this NS plus enclosing NS's search
+    // Create Builder::Scope object. Search is this NS plus enclosing NS's search
     Scope* scope = findScope(ns);
+    // For anon namespaces, we insert the anon ns into the parent scope
+    if (nstype == NamespaceAnon && generated) {
+	m_scopes.top()->search.push_back(scope);
+	//Scope::Search& search = m_scopes.top()->search;
+	//cout << "Top's: "<<*m_scopes.top()<<endl;copy(search.begin(), search.end(), ostream_ptr_iterator<Scope>(cout, "\n "));
+    }
     scope->search.insert(
 	scope->search.end(),
 	m_scopes.top()->search.begin(),
 	m_scopes.top()->search.end()
     );
+    //cout << "Search: ";copy(scope->search.begin(), scope->search.end(), ostream_ptr_iterator<Scope>(cout, ", ")); cout << endl;
+    // Push stack
     m_scopes.push(scope);
     m_scope = ns;
     return ns;
@@ -264,6 +344,53 @@ void Builder::endClass()
     m_scope = m_scopes.top()->scope_decl;
 }
 
+//. Start function impl scope
+void Builder::startFunctionImpl(const vector<string>& name)
+{
+    /*{ cout << "starting function with name: ";
+	Type::Name::const_iterator niter = name.begin();
+	cout << name.size() <<" "<< *niter++;
+	while (niter != name.end())
+	    cout << "::" << *niter++;
+	cout << endl;
+    }*/
+    // Create the Namespace
+    AST::Namespace* ns = new AST::Namespace(m_filename, 0, "namespace", name);
+    Scope* ns_scope = findScope(ns);
+    Builder::Scope* scope_scope;
+    if (name.size() > 1) {
+	// Find container scope
+	vector<string> scope_name = name;
+	scope_name.pop_back();
+	scope_name.insert(scope_name.begin(), ""); // force lookup from global, not current scope, since name is fully qualified
+	Type::Declared* scope_type = dynamic_cast<Type::Declared*>(lookupType(scope_name));
+	if (!scope_type) { cout << "Fatal: Qualified func name was not in a declaration." << endl; exit(1); }
+	AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
+	if (!scope) { cout << "Fatal: Qualified func name was not in a scope." << endl; exit(1); }
+	scope_scope = findScope(scope);
+    } else {
+	scope_scope = findScope(m_global);
+    }
+    // Add to name dictionary TODO: this is for debugging only!
+    scope_scope->dict->insert(ns);
+    // Push stack. Search is this Class plus enclosing scopes. bases added later
+    ns_scope->search.insert(
+	ns_scope->search.end(),
+	scope_scope->search.begin(),
+	scope_scope->search.end()
+    );
+
+    m_scopes.push(ns_scope);
+    m_scope = ns;
+}
+
+//. End function impl scope
+void Builder::endFunctionImpl()
+{
+    m_scopes.pop();
+    m_scope = m_scopes.top()->scope_decl;
+}
+
 //. Add an operation
 AST::Operation* Builder::addOperation(int line, string name, vector<string> premod, Type::Type* ret, string realname)
 {
@@ -286,6 +413,29 @@ AST::Variable* Builder::addVariable(int line, string name, Type::Type* vtype, bo
     return var;
 }
 
+void Builder::addThisVariable()
+{
+    // First find out if we are in a method
+    AST::Scope* func_ns = m_scope;
+    AST::Name name = func_ns->name();
+    name.pop_back();
+    name.insert(name.begin(), string());
+    Type::Named* clas_named = lookupType(name, false);
+    AST::Class* clas;
+    try {
+	clas = Type::declared_cast<AST::Class>(clas_named);
+    } catch (std::bad_cast) {
+	// Not in a method -- so dont add a 'this'
+	return;
+    }
+
+    // clas is now the AST::Class of the enclosing class
+    Type::Type::Mods pre, post;
+    post.push_back("*");
+    Type::Modifier* t_this = new Type::Modifier(clas->declared(), pre, post);
+    addVariable(-1, "this", t_this, false);
+}
+
 //. Add a typedef
 AST::Typedef* Builder::addTypedef(int line, string name, Type::Type* alias, bool constr)
 {
@@ -301,7 +451,9 @@ AST::Typedef* Builder::addTypedef(int line, string name, Type::Type* alias, bool
 AST::Enumerator* Builder::addEnumerator(int line, string name, string value)
 {
     AST::Name scoped_name = extend(m_scope->name(), name);
-    return new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
+    AST::Enumerator* enumor = new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
+    add(enumor->declared());
+    return enumor;
 }
 
 //. Add an enum
@@ -327,9 +479,36 @@ AST::Declaration* Builder::addTailComment(int line)
 // Type Methods
 //
 
+//. Predicate class that is true if the object passed to the constructor is a
+//. type, as opposed to a modifier or a parametrized, etc
+class isType : public Type::Visitor {
+    bool m_value;
+public:
+    //. constructor. Visits the given type thereby setting the value
+    isType(Type::Named* type) : m_value(false) { type->accept(this); }
+    //. bool operator, returns the value determined by visitation during
+    //. construction
+    operator bool() { return m_value; }
+    //. Okay
+    void visitBase(Type::Base*) { m_value = true; }
+    //. Okay
+    void visitUnknown(Type::Unknown*) { m_value = true; }
+    //. Okay if not a function declaration
+    void visitDeclared(Type::Declared* type) {
+	// Depends on what was declared: Everything but function is okay
+	if (dynamic_cast<AST::Function*>(type->declaration()))
+	    m_value = false;
+	else
+	    m_value = true;
+    }
+    //. Fallback: Not okay
+    void visitType(Type::Type*) { m_value = false; }
+};
+
 // Public method to lookup a type
 Type::Named* Builder::lookupType(string name)
 {
+    STrace trace("Builder::lookupType(name)");
     Type::Named* type = lookup(name);
     if (type) return type;
     // Not found, declare it unknown
@@ -340,24 +519,171 @@ Type::Named* Builder::lookupType(string name)
 // Private method to lookup a type in the current scope
 Type::Named* Builder::lookup(string name)
 {
+    STrace trace("Builder::lookup(name)");
     const Scope::Search& search = m_scopes.top()->search;
     return lookup(name, search);
 }
 
-// Private method to lookup a type in the specified search space
-Type::Named* Builder::lookup(string name, const Scope::Search& search)
+//. Looks up the name in the scope of the given scope
+Type::Named* Builder::lookupType(string name, AST::Scope* decl)
 {
+    STrace trace("Builder::lookupType(name,scope)");
+    Private::ScopeMap::iterator iter = m->map.find(decl);
+    if (iter == m->map.end()) return NULL;
+    Builder::Scope* scope = iter->second;
+    return lookup(name, scope->search);
+}
+
+class FunctionHeuristic {
+    typedef vector<Type::Type*> v_Type;
+    typedef v_Type::iterator vi_Type;
+    typedef vector<AST::Parameter*> v_Param;
+    typedef v_Param::iterator vi_Param;
+
+    v_Type m_args;
+    int cost;
+public:
+    //. Constructor - takes arguments to match functions against
+    FunctionHeuristic(const v_Type& v) : m_args(v) {}
+
+    //. Heuristic operator, returns 'cost' of given function - higher is
+    //. worse, 1000 means no match
+    int operator ()(AST::Function* func) {
+	cost = 0;
+	int num_args = m_args.size();
+	v_Param* params = &func->parameters();
+	bool func_ellipsis = hasEllipsis(params);
+	int num_params = params->size() - func_ellipsis;
+	int num_default = countDefault(params);
+
+	// Check number of params first
+	if (!func_ellipsis && num_args > num_params) return 1000;
+	if (num_args < num_params - num_default) return 1000;
+	
+	// Now calc cost of each argument in turn
+	int max_arg = num_args > num_params ? num_params : num_args;
+	for (int index = 0; index < max_arg; index++)
+	    calcCost(m_args[index], (*params)[index]->type());
+
+#ifdef DEBUG
+	cout << "--Cost is " << cost << endl;
+#endif
+	return cost;
+    }
+
+private:
+    //. Find an ellipsis as the last arg
+    bool hasEllipsis(v_Param* params) {
+	if (params->size() == 0) return false;
+	Type::Type* back = params->back()->type();
+	if (Type::Base* base = dynamic_cast<Type::Base*>(back))
+	    if (base->name().size() == 1 && base->name().front() == "...")
+		return true;
+	return false;
+    }
+
+    //. Returns the number of parameters with default values. Counts from the
+    //. back and stops when it finds one without a default.
+    int countDefault(v_Param* params) {
+	v_Param::reverse_iterator iter = params->rbegin(), end = params->rend();
+	int count = 0;
+	while (iter != end) {
+	    AST::Parameter* param = *iter++;
+	    if (!param->value().size()) break;
+	    count++;
+	}
+	return count;
+    }
+
+    //. Calculate the cost of converting 'type' into 'param_type'. The cost is
+    //. accumulated on the 'cost' member variable.
+    void calcCost(Type::Type* type, Type::Type* param_type) {
+	TypeFormatter tf;
+#ifdef DEBUG
+	cout << tf.format(type) <<","<<tf.format(param_type) << endl;
+#endif
+	if (type != param_type) cost += 1;
+    }
+};
+
+//. Looks up the function in the given scope with the given args. 
+AST::Function* Builder::lookupFunc(string name, AST::Scope* decl, const vector<AST::Parameter*>& params)
+{
+    STrace trace("Builder::lookupFunc");
+    TypeFormatter tf;
+    // Change params to param_types
+    vector<Type::Type*> param_types;
+    for (vector<AST::Parameter*>::const_iterator iter = params.begin(); iter != params.end(); iter++)
+	param_types.push_back((*iter)->type());
+    // First find Builder::Scope object
+    Private::ScopeMap::iterator iter = m->map.find(decl);
+    if (iter == m->map.end()) return NULL;
+    const Scope::Search& search = iter->second->search;
     Scope::Search::const_iterator s_iter = search.begin();
     while (s_iter != search.end()) {
 	Scope* scope = *s_iter++;
+	// Check if dict has any names that match
+	if (!scope->dict->has_key(name))
+	    continue;
+
+	typedef vector<Type::Named*> v_Named;
+	typedef v_Named::iterator vi_Named;
+	typedef vector<AST::Function*> v_Function;
+	typedef v_Function::iterator vi_Function;
+
+	// Get the matching names from the dictionary
+	v_Named types = scope->dict->lookupMultiple(name);
+	
+	// Put only the AST::Functions into 'functions'
+	v_Function functions;
+	for (vi_Named iter = types.begin(); iter != types.end();)
+	    try {
+		functions.push_back( Type::declared_cast<AST::Function>(*iter++) );
+	    } catch (std::bad_cast) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
+	
+	// If no looked up names were functions, program is ill-formed (?)
+	if (!functions.size()) return NULL;
+
+	// Find best function using a heuristic
+	FunctionHeuristic heuristic(param_types);
+	vi_Function iter = functions.begin(), end = functions.end();
+	AST::Function* best_func = *iter++;
+	int best = heuristic(best_func);
+	while (iter != end) {
+	    AST::Function* func = *iter++;
+	    int cost = heuristic(func);
+	    if (cost < best) {
+		best = cost;
+		best_func = func;
+	    }
+	}
+	if (best < 1000) return best_func;
+	throw ERROR("No appropriate function found.");
+    }
+    throw ERROR("No matching functions found.");
+}
+
+// Private method to lookup a type in the specified search space
+Type::Named* Builder::lookup(string name, const Scope::Search& search, bool func_okay) throw ()
+{
+    STrace trace("Builder::lookup(name,search,func_okay)");
+    Scope::Search::const_iterator s_iter = search.begin();
+    while (s_iter != search.end()) {
+	Scope* scope = *s_iter++;
+	
 	// Check if dict has it
 	if (!scope->dict->has_key(name))
 	    continue;
 	try { // Try to return it
-	    return scope->dict->lookup(name);
+	    Type::Named* named = scope->dict->lookup(name);
+	    if (func_okay || isType(named)) {
+		//cout << "Builder::lookup(): Found " << named->name() << endl;
+		return named;
+	    }
 	}
-	catch (Dictionary::MultipleError) {
-	    //cout << "Warning: Found multiple declarations searching for "<<name<<endl;
+	catch (Dictionary::MultipleError e) {
+	    // This is only an error if they are all not types
+	    if (!func_okay && !isType(e.types.front())) continue; // TODO: eh? check all?
 	    return NULL;
 	}
 	catch (Dictionary::KeyError) {
@@ -368,8 +694,9 @@ Type::Named* Builder::lookup(string name, const Scope::Search& search)
 }
 
 //. Public Qualified Type Lookup
-Type::Named* Builder::lookupType(const vector<string>& names)
+Type::Named* Builder::lookupType(const vector<string>& names, bool func_okay)
 {
+    STrace trace("Builder::lookupType(type::name,search,func_okay)");
     Type::Named* type = NULL;
     vector<string>::const_iterator n_iter = names.begin();
     while (n_iter != names.end()) {
@@ -384,15 +711,16 @@ Type::Named* Builder::lookupType(const vector<string>& names)
 		scope = m_scopes.top();
 	    }
 	} else {
-	    // Find cached scope
-	    Type::Declared* decl = dynamic_cast<Type::Declared*>(type);
-	    if (!decl) { type = NULL; break; }
-	    AST::Scope* scope_decl = dynamic_cast<AST::Scope*>(decl->declaration());
-	    if (!scope_decl) { type = NULL; break; }
-	    scope = findScope(scope_decl);
+	    try {
+		// Find cached scope from 'type'
+		scope = findScope( Type::declared_cast<AST::Scope>(type) );
+	    } catch (std::bad_cast) {
+		// Abort lookup
+		throw ERROR("qualified lookup found a scope that wasn't a scope finding: " << names);
+	    }
 	}
 	// Note the dynamic_cast may return NULL also!
-	type = lookup(name, scope->search);
+	type = lookup(name, scope->search, func_okay && n_iter == names.end());
 	if (!type)
 	    // Abort lookup
 	    break;
@@ -408,6 +736,42 @@ Type::Named* Builder::lookupType(const vector<string>& names)
     return type;
 }
 
+Type::Named* Builder::resolveType(Type::Named* type)
+{
+    STrace trace("Builder::resolveType(named)");
+    try {
+	Type::Name& name = type->name();
+	
+	Type::Name::iterator iter = name.begin(), end = name.end() - 1;
+	AST::Scope* scope = m_global;
+	while (iter < end) {
+	    // Find *iter in scope
+	    Type::Named* scope_type = findScope(scope)->dict->lookup(*iter++);
+	    scope = Type::declared_cast<AST::Scope>(scope_type);
+	}
+	LOG("Looking up "<<(*iter)<<" in "<<((scope==m_global)?"global":scope->name().back()));
+	// Scope is now the containing scope of the type we are checking
+	return findScope(scope)->dict->lookup(*iter);
+    }
+    catch (std::bad_cast) {
+	LOG("resolveType failed! bad cast.");
+    }
+    catch (Dictionary::KeyError e) {
+	LOG("resolveType failed! key error: '"<<e.name<<"'");
+    }
+    catch (Dictionary::MultipleError e) {
+	LOG("resolveType failed! multiple:" << e.types.size());
+	vector<Type::Named*>::iterator iter = e.types.begin();
+	while (iter != e.types.end()) {
+	    LOG(" +" << (*iter++)->name());
+	}
+    }
+    catch (...) {
+	// There shouldn't be any errors, but just in case...
+	throw ERROR("resolveType failed with unknown error!");
+    }
+    return type;
+}
 
 Type::Unknown* Builder::Unknown(string name)
 {

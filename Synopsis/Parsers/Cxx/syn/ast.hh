@@ -390,10 +390,15 @@ namespace AST {
 	Mods& postmodifier() { return m_post; }
 	//. Returns the type of the parameter
 	Type::Type* type() { return m_type; }
+	//. Const version of type()
+	const Type::Type* type() const { return m_type; }
 	//. Returns the name of the parameter
 	string name() { return m_name; }
 	//. Returns the value of the parameter
 	string value() { return m_value; }
+
+	//. Sets the name of the parameter
+	void setName(string name) { m_name = name; }
     private:
 	Mods m_pre, m_post;
 	Type::Type* m_type;

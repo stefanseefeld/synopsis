@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.4 2001/02/16 06:59:32 chalky Exp $
+ * $Id: link.cc,v 1.5 2001/03/16 04:42:00 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,10 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.5  2001/03/16 04:42:00  chalky
+ * SXR parses expressions, handles differences from macro expansions. Some work
+ * on function call resolution.
+ *
  * Revision 1.4  2001/02/16 06:59:32  chalky
  * ScopePage summaries link to source
  *
@@ -339,18 +343,18 @@ namespace {
 				if (name_iter != link->name.end()) name = *name_iter++;
 				while (name_iter != link->name.end())
 				    name += "::" + *name_iter++;
-				TOC::iterator href = toc.find(name);
-				if (href != toc.end()) {
+				TOC::iterator toc_iter = toc.find(name);
+				if (toc_iter == toc.end()) {
+				    out << "<a href=\"#" << name;
+				} else {
+				    string href = toc_iter->second;
 				    if (link->type == Link::LINK_START)
 					out << "<a class=\"file-def\" name=\""<<name<<"\"";
 				    else
 					out << "<a class=\"file-ref\"";
-				    out << " href=\"" << href->second;
-				    out << "\" title=\"" << name << "\">";
-				} else {
-				    //cerr << "link: didn't find " << name << endl;
-				    out << "<a>"; break;
+				    out << " href=\"" << href;
 				}
+				out << "\" title=\"" << name << "\">";
 				break;
 			    }
 			case Link::REF_END:

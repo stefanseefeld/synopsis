@@ -13,6 +13,7 @@ namespace Type {
     class Named;
     class Unknown;
     class Template;
+    class Function;
 }
 
 typedef vector<string> Name;
@@ -49,9 +50,17 @@ public:
     //. Add the given non-declaration type to the current scope
     void add(Type::Named*);
 
-    //. Construct and open a new Namespace. The Namespace is becomes the
-    //. current scope, and the old one is pushed onto the stack.
-    AST::Namespace* startNamespace(string name);
+    //. Enumeration of types of namespaces
+    enum NamespaceType {
+	NamespaceNamed, //.< Normal, named, namespace. name is its given name
+	NamespaceAnon, //.< An anonymous namespace. name is the filename
+	NamespaceUnique, //.< A unique namespace. name is the type (for, while, etc.)
+    };
+
+    //. Construct and open a new Namespace. The Namespace becomes the
+    //. current scope, and the old one is pushed onto the stack. If name is
+    //. empty then a unique name is generated of the form `ns1
+    AST::Namespace* startNamespace(string name, NamespaceType type);
 
     //. End the current namespace and pop the previous Scope off the stack
     void endNamespace();
@@ -72,11 +81,20 @@ public:
     //. End the current class and pop the previous Scope off the stack
     void endClass();
 
+    //. Start function impl scope
+    void startFunctionImpl(const vector<string>& name);
+
+    //. End function impl scope
+    void endFunctionImpl();
+
     //. Add an operation
     AST::Operation* addOperation(int, string name, vector<string> premod, Type::Type* ret, string realname);
 
     //. Add a variable
     AST::Variable* addVariable(int, string name, Type::Type* vtype, bool constr);
+
+    //. Add a variable to represent 'this', iff we are in a method
+    void addThisVariable();
 
     //. Add a typedef
     AST::Typedef* addTypedef(int, string name, Type::Type* alias, bool constr);
@@ -101,7 +119,19 @@ public:
 
     //. Looks up the qualified name in the current scope. This method always
     //. succeeds -- if the name is not found it forwards declares it.
-    Type::Named* lookupType(const vector<string>& names);
+    Type::Named* lookupType(const vector<string>& names, bool func_okay=false);
+
+    //. Looks up the name in the scope of the given scope. This method may
+    //. return a NULL ptr if the lookup failed.
+    Type::Named* lookupType(string name, AST::Scope* scope);
+
+    //. Looks up the function in the given scope with the given args. 
+    AST::Function* lookupFunc(string, AST::Scope*, const vector<AST::Parameter*>&);
+
+    //. Resolves the final type of the given type. If the given type is an
+    //. Unknown, it checks to see if the type has been defined yet and returns
+    //. that instead.
+    Type::Named* resolveType(Type::Named* maybe_unknown);
 
     //. Create a Base type for the given name in the current scope
     Type::Base* Base(string name);
@@ -127,6 +157,9 @@ private:
 
     //. Current scope object
     AST::Scope* m_scope;
+
+    //. A counter used to generate unique namespace names
+    int m_unique;
 
     //
     // Scope Class
@@ -158,7 +191,7 @@ private:
 
     //. Searches for name in the list of Scopes. This method may return NULL
     //. if the name is not found.
-    Type::Named* lookup(string name, const Scope::Search&);
+    Type::Named* lookup(string name, const Scope::Search&, bool func_okay = false) throw ();
 
     //. Private data which uses map
     struct Private;

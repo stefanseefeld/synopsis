@@ -95,5 +95,8 @@ void Dictionary::insert(Type::Named* type)
 
 void Dictionary::insert(AST::Declaration* decl)
 {
-    insert(new Type::Declared(decl->name(), decl));
+    Type::Declared* declared = new Type::Declared(decl->name(), decl);
+    insert(declared);
+    AST::Function* func = dynamic_cast<AST::Function*>(decl);
+    if (func) m->map.insert(name_map::value_type(func->realname(), declared));
 }

@@ -457,6 +457,11 @@ static inline void write_char(struct lexer_state *ls, unsigned char c)
 #endif
 	if (c == '\n') {
 		ls->oline ++;
+#ifdef SYNOPSIS
+		ls->output_pos = 0;
+	} else {
+		ls->output_pos++;
+#endif
 	}
 }
 
@@ -476,8 +481,16 @@ static inline int read_char(struct lexer_state *ls)
 	unsigned char c;
 
 	if (!ls->input) {
+#ifdef SYNOPSIS
+		int c = ((ls->pbuf ++) < ls->ebuf) ?
+			ls->input_string[ls->pbuf - 1] : -1;
+		if (c == '\n') ls->input_pos = 0;
+		else ls->input_pos++;
+		return c;
+#else
 		return ((ls->pbuf ++) < ls->ebuf) ?
 			ls->input_string[ls->pbuf - 1] : -1;
+#endif
 	}
 	while (1) {
 #ifndef NO_UCPP_BUF
@@ -500,6 +513,10 @@ static inline int read_char(struct lexer_state *ls)
 
 		if (x == EOF) return -1;
 		c = x;
+#endif
+#ifdef SYNOPSIS
+		if (c == '\n') ls->input_pos = 0;
+		else ls->input_pos++;
 #endif
 		if (ls->flags & COPY_LINE) {
 			if (c == '\n') {
@@ -784,7 +801,9 @@ static inline int read_token(struct lexer_state *ls)
 	int shift_state;
 	unsigned long utf8;
 	long l = ls->line;
-
+#ifdef SYNOPSIS
+	ls->ctok->pos = ls->input_pos + (ls->discard ? 1 : 0);
+#endif
 	ls->ctok->line = l;
 	if (ls->pending_token) {
 		if ((ls->ctok->type = ls->pending_token) == BUNCH) {
@@ -984,6 +1003,9 @@ static inline int read_token(struct lexer_state *ls)
 int next_token(struct lexer_state *ls)
 {
 	if (ls->flags & READ_AGAIN) {
+#if 0 && defined(SYNOPSIS)
+		printf("Reading token again at: %d\n", ls->ctok->pos);
+#endif
 		ls->flags &= ~READ_AGAIN;
 		if (!(ls->flags & LEXER)) {
 			char *c = S_TOKEN(ls->ctok->type) ?
@@ -1002,5 +1024,15 @@ int next_token(struct lexer_state *ls)
 		}
 		return 0;
 	}
+#if 1 || !defined(SYNOPSIS)
 	return read_token(ls);
+#else
+	{   int pos = ls->input_pos, ret = read_token(ls);
+	    if (ls->ctok->type == NAME)
+		printf("Read token at: (%d) %d NAME '%s'\n", pos, ls->ctok->pos, ls->ctok->name);
+	    else
+		printf("Read token at: (%d) %d '%s' \n", pos, ls->ctok->pos, operators_name[ls->ctok->type]);
+	    return ret;
+	}
+#endif
 }

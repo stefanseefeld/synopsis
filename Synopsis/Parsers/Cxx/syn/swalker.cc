@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.21 2001/02/16 06:59:32 chalky Exp $
+// $Id: swalker.cc,v 1.22 2001/03/16 04:42:00 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.22  2001/03/16 04:42:00  chalky
+// SXR parses expressions, handles differences from macro expansions. Some work
+// on function call resolution.
+//
 // Revision 1.21  2001/02/16 06:59:32  chalky
 // ScopePage summaries link to source
 //
@@ -52,35 +56,21 @@
 #include "parse.h"
 
 #include "swalker.hh"
+#include "strace.hh"
 #include "type.hh"
 #include "ast.hh"
 #include "builder.hh"
 #include "decoder.hh"
 #include "dumper.hh"
+#include "link_map.hh"
 
 using namespace AST;
 using std::string;
 
-#if 0 && defined(DEBUG)
-#define DO_TRACE
-class Trace
-{
-public:
-    Trace(const string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++slevel; }
-    ~Trace() { --slevel; cout << indent() << "leaving  " << scope << endl; }
-private:
-    string indent() { return string(slevel, ' '); }
-    static int slevel;
-    string scope;
-};
-int Trace::slevel = 0;
-#else
-class Trace
-{
-public:
-    Trace(const string &) {}
-    ~Trace() {}
-};
+#ifdef DO_TRACE
+int STrace::slevel = 0, STrace::dlevel = 0;
+ostrstream* STrace::stream = NULL;
+STrace::list STrace::m_list;
 #endif
 
 
@@ -95,21 +85,25 @@ SWalker::SWalker(string source, Parser* parser, Builder* builder, Program* progr
     m_extract_tails = false;
     m_store_links = false;
     m_type_formatter = new TypeFormatter();
+    m_scope = NULL;
+    m_postfix_flag = Postfix_Var;
 }
 
 string SWalker::getName(Ptree *node)
 {
-    // Trace trace("SWalker::getName");
+    // STrace trace("SWalker::getName");
     if (node && node->IsLeaf())
         return string(node->GetPosition(), node->GetLength());
     return node->ToString();
 }
 
-int find_col(const char* start, const char* find)
+int SWalker::find_col(const char* start, const char* find)
 {
     const char* pos = find;
     while (pos > start && *--pos != '\n');
-    return find - pos;
+    int col = find - pos;
+    // Resolve macro maps
+    return link_map::instance().map(m_lineno, col);
 }
 
 //. Store a link at the given node
@@ -119,6 +113,7 @@ void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
     updateLineNumber(node);
     if (m_filename != m_source) return;
     int col = find_col(m_program->Read(0), node->LeftMost());
+    if (col < 0) return; // inside macro
     int len = node->RightMost() - node->LeftMost();
     
     (*m_storage) << m_lineno << " " << col << " " << len << (def ? " DEF" : " REF");
@@ -135,6 +130,8 @@ void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
 // Store if type is named
 void SWalker::storeLink(Ptree* node, bool def, Type::Type* type)
 {
+    Type::Base* base = dynamic_cast<Type::Base*>(type);
+    if (base) return;
     Type::Named* named = dynamic_cast<Type::Named*>(type);
     if (named) { storeLink(node, def, named->name()); return; }
     Type::Modifier* mod = dynamic_cast<Type::Modifier*>(type);
@@ -174,9 +171,36 @@ void SWalker::storeSpan(Ptree* node, const char* clas)
     updateLineNumber(node);
     if (m_filename != m_source) return;
     int col = find_col(m_program->Read(0), node->LeftMost());
+    if (col < 0) return; // inside macro
     int len = node->RightMost() - node->LeftMost();
     
     (*m_storage) << m_lineno<<" "<<col<<" "<<len<<" "<<clas<<"\n";
+}
+
+//. Store a possibly multi-line span at the given node
+void SWalker::storeLongSpan(Ptree* node, const char* clas)
+{
+    if (!m_store_links) return;
+    // Find left edge
+    updateLineNumber(node);
+    if (m_filename != m_source) return;
+    int left_col = find_col(m_program->Read(0), node->LeftMost());
+    if (left_col < 0) return; // inside macro
+    int len = node->RightMost() - node->LeftMost();
+    // Find right edge
+    char* fname; int fname_len;
+    int right_line = m_parser->LineNumber(node->RightMost(), fname, fname_len);
+    if (right_line == m_lineno) {
+	// Same line, normal output
+	(*m_storage) << m_lineno<<" "<<left_col<<" "<<len<<" "<<clas<<"\n";
+    } else {
+	// One for each line
+	int right_col = find_col(m_program->Read(0), node->RightMost());
+	for (int line = m_lineno; line < right_line; line++, left_col = 0)
+	    (*m_storage)<<line<<" "<<left_col<<" -1 "<<clas<<"\n";
+	// Last line is a bit different
+	(*m_storage)<<right_line<<" 0 "<<right_col<<" "<<clas<<"\n";
+    }
 }
 
 void SWalker::updateLineNumber(Ptree* ptree)
@@ -200,7 +224,7 @@ void SWalker::addComments(AST::Declaration* decl, Ptree* comments)
 {
     while (comments) {
 	if (decl) decl->comments().push_back(new AST::Comment("", 0, comments->First()->ToString()));
-	if (m_store_links) storeSpan(comments->First(), "file-comment");
+	if (m_store_links) storeLongSpan(comments->First(), "file-comment");
 	comments = comments->Rest();
     }
 }
@@ -222,13 +246,13 @@ void SWalker::addComments(AST::Declaration* decl, PtreeNamespaceSpec* node)
     if (decl && node) addComments(decl, node->GetComments());
 }
 
-Ptree* SWalker::TranslateArgDeclList(bool, Ptree*, Ptree*) { Trace trace("SWalker::TranslateArgDeclList NYI"); return 0; }
-Ptree* SWalker::TranslateInitializeArgs(PtreeDeclarator*, Ptree*) { Trace trace("SWalker::TranslateInitializeArgs NYI"); return 0; }
-Ptree* SWalker::TranslateAssignInitializer(PtreeDeclarator*, Ptree*) { Trace trace("SWalker::TranslateAssignInitializer NYI"); return 0; }
-//Class* SWalker::MakeClassMetaobject(Ptree*, Ptree*, Ptree*) { Trace trace("SWalker::MakeClassMetaobject NYI"); return 0; }
-//Ptree* SWalker::TranslateClassSpec(Ptree*, Ptree*, Ptree*, Class*) { Trace trace("SWalker::TranslateClassSpec NYI"); return 0; }
-//Ptree* SWalker::TranslateClassBody(Ptree*, Ptree*, Class*) { Trace trace("SWalker::TranslateClassBody NYI"); return 0; }
-//Ptree* SWalker::TranslateTemplateInstantiation(Ptree*, Ptree*, Ptree*, Class*) { Trace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
+Ptree* SWalker::TranslateArgDeclList(bool, Ptree*, Ptree*) { STrace trace("SWalker::TranslateArgDeclList NYI"); return 0; }
+Ptree* SWalker::TranslateInitializeArgs(PtreeDeclarator*, Ptree*) { STrace trace("SWalker::TranslateInitializeArgs NYI"); return 0; }
+Ptree* SWalker::TranslateAssignInitializer(PtreeDeclarator*, Ptree*) { STrace trace("SWalker::TranslateAssignInitializer NYI"); return 0; }
+//Class* SWalker::MakeClassMetaobject(Ptree*, Ptree*, Ptree*) { STrace trace("SWalker::MakeClassMetaobject NYI"); return 0; }
+//Ptree* SWalker::TranslateClassSpec(Ptree*, Ptree*, Ptree*, Class*) { STrace trace("SWalker::TranslateClassSpec NYI"); return 0; }
+//Ptree* SWalker::TranslateClassBody(Ptree*, Ptree*, Class*) { STrace trace("SWalker::TranslateClassBody NYI"); return 0; }
+//Ptree* SWalker::TranslateTemplateInstantiation(Ptree*, Ptree*, Ptree*, Class*) { STrace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
 
 // Format the given parameters
 string SWalker::formatParameters(vector<AST::Parameter*>& params)
@@ -258,22 +282,71 @@ string SWalker::formatParameters(vector<AST::Parameter*>& params)
 // Translate Methods
 //
 
-// Default translate
-Ptree* SWalker::TranslatePtree(Ptree*) {
-    cout << "Translate Ptree" << endl;
+// Overrides Walker::Translate to catch any exceptions
+void SWalker::Translate(Ptree* node) {
+    STrace trace("Translate");
+    try {
+	Walker::Translate(node);
+    }
+    catch (TranslateError e) {
+	string at;
+#ifdef DEBUG
+	if (e.node) {
+	    char* fname;
+	    int fname_len;
+	    int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
+	    ostrstream buf;
+	    buf << at << " (" << string(fname, fname_len) << ":" << lineno << ")";
+	    at.assign(buf.str(), buf.pcount());
+	}
+#endif
+	LOG("Warning: An exception occurred:" << at);
+	LOG("- " << e.str());
+    }
+    catch (std::exception e) {
+	cout << "Warning: An exception occurred: " << e.what() << endl;
+    }
+    catch (...) {
+	cout << "Warning: An exception occurred (unknown)" << endl;
+    }
+}
+
+// Default translate, usually means a literal
+Ptree* SWalker::TranslatePtree(Ptree* node) {
+    // Determine type of node
+    char* str = node->ToString();
+    if (*str >= '0' && *str <= '9') {
+	// Assume whole node is a number
+	storeSpan(node, "file-number");
+	// TODO: decide if Long, Float, Double, etc
+	m_type = m_builder->lookupType("int");
+    } else if (*str == '\'') {
+	// Whole node is a char literal
+	storeSpan(node, "file-string");
+	m_type = m_builder->lookupType("char");
+    } else if (*str == '"') {
+	// Assume whole node is a string
+	storeSpan(node, "file-string");
+	m_type = m_builder->lookupType("char");
+	Type::Type::Mods pre, post; pre.push_back("const"); post.push_back("*");
+	m_type = new Type::Modifier(m_type, pre, post);
+    } else {
+	cout << "Warning: Unknown Ptree "; node->Display2(cout);
+    }
     return 0;
 }
 
 //. NamespaceSpec
 //. [ namespace <identifier> [{ body }] ]
 Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
-    Trace trace("SWalker::TranslateNamespaceSpec");
+    STrace trace("SWalker::TranslateNamespaceSpec");
     
     if (m_store_links) storeSpan(def->First(), "file-keyword");
     else updateLineNumber(def);
 
-    string name = def->Cadr() ? getName(def->Cadr()) : "{"+m_filename+"}";
-    AST::Namespace* ns = m_builder->startNamespace(name);
+    AST::Namespace* ns;
+    if (def->Cadr()) ns = m_builder->startNamespace(getName(def->Cadr()), Builder::NamespaceNamed);
+    else ns = m_builder->startNamespace(m_filename, Builder::NamespaceAnon);
 
     addComments(ns, dynamic_cast<PtreeNamespaceSpec*>(def));
     if (m_store_links && def->Cadr()) storeLink(def->Second(), true, ns->name());
@@ -286,7 +359,7 @@ Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
 
 vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 {
-    Trace trace("PyWalker::TranslateInheritanceSpec");
+    STrace trace("PyWalker::TranslateInheritanceSpec");
     vector<Inheritance*> ispec;
     Type::Type *type;
     while (node) {
@@ -300,7 +373,13 @@ vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
         // look up the parent type
 	Ptree* name = node->Car()->Last()->Car();
 	if (name->IsLeaf()) {
-	    type = m_builder->lookupType(getName(name));
+	    try {
+		type = m_builder->lookupType(getName(name));
+	    } catch (TranslateError) {
+		// Ignore error, and put an Unknown in, instead
+		Type::Name uname; uname.push_back(getName(name));
+		type = new Type::Unknown(uname);
+	    }
 	} else {
 	    char* encname = name->GetEncodedName();
 	    m_decoder->init(encname);
@@ -318,7 +397,7 @@ vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 
 Ptree* SWalker::TranslateClassSpec(Ptree* node) 
 {
-    Trace trace("SWalker::TranslateClassSpec");
+    STrace trace("SWalker::TranslateClassSpec");
     if (Ptree::Length(node) == 4) {
 	// if Class definition (not just declaration)
 
@@ -347,8 +426,19 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
 	addComments(clas, cspec->GetComments());
 
+	// Push the impl stack for a cache of func impls
+	m_func_impl_stack.push_back(FuncImplVec());
+
         // Translate the body of the class
 	TranslateBlock(node->Nth(3));
+
+	// Translate any func impls inlined in the class
+	FuncImplVec& vec = m_func_impl_stack.back();
+	FuncImplVec::iterator iter = vec.begin();
+	while (iter != vec.end())
+	    TranslateFuncImplCache(*iter++);
+	m_func_impl_stack.pop_back();
+	    
 	m_builder->endClass();
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
@@ -367,7 +457,7 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 
 Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 {
-    Trace trace("SWalker::TranslateTemplateClass");
+    STrace trace("SWalker::TranslateTemplateClass");
     if (Ptree::Length(node) == 4) {
 	// if Class definition (not just declaration)
 	updateLineNumber(def);
@@ -416,8 +506,19 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	clas->parents() = TranslateInheritanceSpec(node->Nth(2));
 	m_builder->updateBaseSearch();
 
+	// Push the impl stack for a cache of func impls
+	m_func_impl_stack.push_back(FuncImplVec());
+
         // Translate the body of the class
 	TranslateBlock(node->Nth(3));
+	
+	// Translate any func impls inlined in the class
+	FuncImplVec& vec = m_func_impl_stack.back();
+	FuncImplVec::iterator iter = vec.begin();
+	while (iter != vec.end())
+	    TranslateFuncImplCache(*iter++);
+	m_func_impl_stack.pop_back();
+	    
 	m_builder->endClass();
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
@@ -431,7 +532,7 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 //. [ extern ["C++"] [{ body }] ]
 Ptree* SWalker::TranslateLinkageSpec(Ptree* node)
 {
-    Trace trace("SWalker::TranslateLinkageSpec");
+    STrace trace("SWalker::TranslateLinkageSpec");
     Translate(node->Third());
     return 0;
 }
@@ -439,7 +540,7 @@ Ptree* SWalker::TranslateLinkageSpec(Ptree* node)
 //. Block
 //. [ { [ <statement>* ] } ]
 Ptree* SWalker::TranslateBlock(Ptree* block) {
-    Trace trace("SWalker::TranslateBlock");
+    STrace trace("SWalker::TranslateBlock");
     Ptree* rest = Ptree::Second(block);
     while (rest != nil) {
 	Translate(rest->Car());
@@ -459,7 +560,7 @@ Ptree* SWalker::TranslateBlock(Ptree* block) {
 //. [ { [ <statement>* ] } ]
 Ptree* SWalker::TranslateBrace(Ptree* brace) 
 {
-    Trace trace("SWalker::TranslateBrace");
+    STrace trace("SWalker::TranslateBrace");
     Ptree* rest = Ptree::Second(brace);
     while (rest != nil) {
 	Translate(rest->Car());
@@ -472,7 +573,7 @@ Ptree* SWalker::TranslateBrace(Ptree* brace)
 //. [ template < [types] > [decl] ]
 Ptree* SWalker::TranslateTemplateDecl(Ptree* def) 
 {
-    Trace trace("SWalker::TranslateTemplateDecl");
+    STrace trace("SWalker::TranslateTemplateDecl");
     Ptree* body = Ptree::Nth(def, 4);
     Ptree* class_spec = GetClassTemplateSpec(body);
     if(class_spec->IsA(ntClassSpec))
@@ -495,20 +596,22 @@ Ptree* SWalker::TranslateTemplateDecl(Ptree* def)
 //.  [ [modifiers] [class foo ...] [declarators]? ; ]
 Ptree* SWalker::TranslateDeclaration(Ptree* def) 
 {
-    Trace trace("SWalker::TranslateDeclaration");
+    STrace trace("SWalker::TranslateDeclaration");
 
     updateLineNumber(def);
 
     m_declaration = dynamic_cast<PtreeDeclaration*>(def);
     m_store_decl = true;
     Ptree* decls = Ptree::Third(def);
+    
+    // Typespecifier may be a class {} etc.
+    TranslateTypespecifier(Ptree::Second(def));
+
     if (decls->IsA(ntDeclarator))	// if it is a function
 	TranslateFunctionImplementation(def);
     else {
 	// if it is a function prototype or a variable declaration.
 	/////TranslateStorageSpecifiers(Ptree::First(def));
-	// Typespecifier may be a class {} etc.
-	TranslateTypespecifier(Ptree::Second(def));
 	if (!decls->IsLeaf())	// if it is not ";"
 	    TranslateDeclarators(decls);
     }
@@ -519,7 +622,7 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
 //. [ [ declarator { = <expr> } ] , ... ]
 Ptree* SWalker::TranslateDeclarators(Ptree* decls) 
 {
-    Trace trace("SWalker::TranslateDeclarators");
+    STrace trace("SWalker::TranslateDeclarators");
     Ptree* rest = decls, *p;
     while (rest != nil) {
 	p = rest->Car();
@@ -555,7 +658,7 @@ Ptree* SWalker::TranslateDeclarators(Ptree* decls)
 //.   [ [types] { [ { * | & }* name ] { = value } } ]
 Ptree* SWalker::TranslateDeclarator(Ptree* decl) 
 {
-    Trace trace("SWalker::TranslateDeclarator");
+    STrace trace("SWalker::TranslateDeclarator");
     // Insert code from occ.cc here
     char* encname = decl->GetEncodedName();
     char* enctype = decl->GetEncodedType();
@@ -578,6 +681,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
         vector<AST::Parameter*> params;
 	TranslateParameters(p_params->Second(), params);
+	m_params = params;
 
         // Figure out the return type:
         while (*iter++ != '_'); // in case of decoding error this is needed
@@ -600,13 +704,22 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    m_decoder->decodeQualName(names);
 	    names.back() += formatParameters(params);
 	    // A qual name must already be declared, so find it:
-	    Type::Named* named_type = m_builder->lookupType(names);
+	    Type::Named* named_type = m_builder->lookupType(names, true);
 	    if (!named_type) return NULL;
 	    Type::Declared* decl_type = dynamic_cast<Type::Declared*>(named_type);
 	    if (!decl_type) return NULL;
 	    oper = dynamic_cast<AST::Operation*>(decl_type->declaration());
 	    if (!oper) return NULL;
-	    // TODO: expand param info, eg: if we now have names for them
+	    // expand param info, since we now have names for them
+	    vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
+	    vector<AST::Parameter*>::iterator pend = oper->parameters().end();
+	    vector<AST::Parameter*>::iterator new_piter = params.begin();
+	    while (piter != pend) {
+		AST::Parameter* param = *piter++, *new_param = *new_piter++;
+		if (!param->name().size() && new_param->name().size()) {
+		    param->setName(new_param->name());
+		}
+	    }
 	} else {
 	    // Decode the function name
 	    string realname;
@@ -622,6 +735,9 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 
 	// if storing links, find name
 	if (m_store_links) {
+	    // Store for use by TranslateFunctionImplementation
+	    m_operation = oper;
+
 	    // Do decl type first
 	    if (m_store_decl) {
 		if (m_declaration->Second()) storeLink(m_declaration->Second(), false, returnType);
@@ -669,6 +785,13 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    if (p) {
 		// p should now be at the name
 		storeLink(p->Car(), true, var->name());
+
+		// Next might be '=' then expr
+		p = p->Rest();
+		if (p && p->Car() && p->Car()->Eq('=')) {
+		    p = p->Rest();
+		    if (p && p->Car()) Translate(p->Car());
+		}
 	    }
 	}
     }
@@ -755,7 +878,7 @@ void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type*
 //. Class or Enum
 Ptree* SWalker::TranslateTypespecifier(Ptree* tspec) 
 {
-    Trace trace("SWalker::TranslateTypespecifier");
+    STrace trace("SWalker::TranslateTypespecifier");
     Ptree *class_spec = GetClassOrEnumSpec(tspec);
     if (class_spec) Translate(class_spec);
     return 0;
@@ -763,7 +886,7 @@ Ptree* SWalker::TranslateTypespecifier(Ptree* tspec)
 
 Ptree* SWalker::TranslateTypedef(Ptree* node) 
 {
-    Trace trace("SWalker::TranslateTypedef");
+    STrace trace("SWalker::TranslateTypedef");
     // /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
     m_declaration = static_cast<PtreeDeclaration*>(node); // this may be bad, but we only use as ptree anyway
     m_store_decl = true;
@@ -806,14 +929,58 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
 
 Ptree* SWalker::TranslateFunctionImplementation(Ptree* node)
 {
-    Trace trace("SWalker::TranslateFunctionImplementation");
+    STrace trace("SWalker::TranslateFunctionImplementation");
+    m_operation = 0; m_params.clear();
     TranslateDeclarator(node->Third());
+    if (!m_store_links) return 0;
+    if (!m_operation) { cerr << "Warning: operation was null!" << endl; return 0; }
+    FuncImplCache cache;
+    cache.oper = m_operation;
+    cache.params = m_params;
+    cache.body = node->Nth(3);
+    if (dynamic_cast<AST::Class*>(m_builder->scope())) {
+	m_func_impl_stack.back().push_back(cache);
+    } else {
+	TranslateFuncImplCache(cache);
+    }
     return 0;
+}
+
+void SWalker::TranslateFuncImplCache(const FuncImplCache& cache)
+{
+    STrace trace("SWalker::TranslateFuncImplCache");
+    // We create a dummy namespace with the name of the function. Any
+    // declarations in the function are added to this dummy namespace. Once we
+    // are done, we remove it from the parent scope (its not much use in the
+    // documents)
+    vector<string> name = cache.oper->name();
+    name.back() = "{"+name.back()+"}";
+    m_builder->startFunctionImpl(name);
+    try {
+	// Add parameters
+	vector<AST::Parameter*>::const_iterator iter, end;
+	iter = cache.params.begin();
+	end = cache.params.end();
+	while (iter != end) {
+	    AST::Parameter* param = *iter++;
+	    m_builder->addVariable(m_lineno, param->name(), param->type(), false);
+	}
+	// Add 'this' if method
+	m_builder->addThisVariable();
+	// Translate the function body
+	TranslateBlock(cache.body);
+
+    } catch (...) {
+	LOG("Cleaning up func impl cache");
+	m_builder->endFunctionImpl();
+	throw;
+    }
+    m_builder->endFunctionImpl();
 }
 
 Ptree* SWalker::TranslateAccessSpec(Ptree* spec)
 {
-    Trace trace("SWalker::TranslateAccessSpec");
+    STrace trace("SWalker::TranslateAccessSpec");
     AST::Access axs = AST::Default;
     switch (spec->First()->What()) {
 	case PUBLIC: axs = AST::Public; break;
@@ -884,57 +1051,5 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 }
 
 
-Ptree* SWalker::TranslateTemplateInstantiation(Ptree*) { Trace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
-Ptree* SWalker::TranslateExternTemplate(Ptree*) { Trace trace("SWalker::TranslateExternTemplate NYI"); return 0; }
-Ptree* SWalker::TranslateTemplateFunction(Ptree*, Ptree*) { Trace trace("SWalker::TranslateTemplateFunction NYI"); return 0; }
-Ptree* SWalker::TranslateMetaclassDecl(Ptree*) { Trace trace("SWalker::TranslateMetaclassDecl NYI"); return 0; }
-Ptree* SWalker::TranslateUsing(Ptree*) { Trace trace("SWalker::TranslateUsing NYI"); return 0; }
-
-Ptree* SWalker::TranslateStorageSpecifiers(Ptree*) { Trace trace("SWalker::TranslateStorageSpecifiers NYI"); return 0; }
-Ptree* SWalker::TranslateFunctionBody(Ptree*) { Trace trace("SWalker::TranslateFunctionBody NYI"); return 0; }
-
-//Ptree* SWalker::TranslateEnumSpec(Ptree*) { Trace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
-
-Ptree* SWalker::TranslateAccessDecl(Ptree*) { Trace trace("SWalker::TranslateAccessDecl NYI"); return 0; }
-Ptree* SWalker::TranslateUserAccessSpec(Ptree*) { Trace trace("SWalker::TranslateUserAccessSpec NYI"); return 0; }
-
-Ptree* SWalker::TranslateIf(Ptree*) { Trace trace("SWalker::TranslateIf NYI"); return 0; }
-Ptree* SWalker::TranslateSwitch(Ptree*) { Trace trace("SWalker::TranslateSwitch NYI"); return 0; }
-Ptree* SWalker::TranslateWhile(Ptree*) { Trace trace("SWalker::TranslateWhile NYI"); return 0; }
-Ptree* SWalker::TranslateDo(Ptree*) { Trace trace("SWalker::TranslateDo NYI"); return 0; }
-Ptree* SWalker::TranslateFor(Ptree*) { Trace trace("SWalker::TranslateFor NYI"); return 0; }
-Ptree* SWalker::TranslateTry(Ptree*) { Trace trace("SWalker::TranslateTry NYI"); return 0; }
-Ptree* SWalker::TranslateBreak(Ptree*) { Trace trace("SWalker::TranslateBreak NYI"); return 0; }
-Ptree* SWalker::TranslateContinue(Ptree*) { Trace trace("SWalker::TranslateContinue NYI"); return 0; }
-Ptree* SWalker::TranslateReturn(Ptree*) { Trace trace("SWalker::TranslateReturn NYI"); return 0; }
-Ptree* SWalker::TranslateGoto(Ptree*) { Trace trace("SWalker::TranslateGoto NYI"); return 0; }
-Ptree* SWalker::TranslateCase(Ptree*) { Trace trace("SWalker::TranslateCase NYI"); return 0; }
-Ptree* SWalker::TranslateDefault(Ptree*) { Trace trace("SWalker::TranslateDefault NYI"); return 0; }
-Ptree* SWalker::TranslateLabel(Ptree*) { Trace trace("SWalker::TranslateLabel NYI"); return 0; }
-Ptree* SWalker::TranslateExprStatement(Ptree*) { Trace trace("SWalker::TranslateExprStatement NYI"); return 0; }
-
-Ptree* SWalker::TranslateComma(Ptree*) { Trace trace("SWalker::TranslateComma NYI"); return 0; }
-Ptree* SWalker::TranslateAssign(Ptree*) { Trace trace("SWalker::TranslateAssign NYI"); return 0; }
-Ptree* SWalker::TranslateCond(Ptree*) { Trace trace("SWalker::TranslateCond NYI"); return 0; }
-Ptree* SWalker::TranslateInfix(Ptree*) { Trace trace("SWalker::TranslateInfix NYI"); return 0; }
-Ptree* SWalker::TranslatePm(Ptree*) { Trace trace("SWalker::TranslatePm NYI"); return 0; }
-Ptree* SWalker::TranslateCast(Ptree*) { Trace trace("SWalker::TranslateCast NYI"); return 0; }
-Ptree* SWalker::TranslateUnary(Ptree*) { Trace trace("SWalker::TranslateUnary NYI"); return 0; }
-Ptree* SWalker::TranslateThrow(Ptree*) { Trace trace("SWalker::TranslateThrow NYI"); return 0; }
-Ptree* SWalker::TranslateSizeof(Ptree*) { Trace trace("SWalker::TranslateSizeof NYI"); return 0; }
-Ptree* SWalker::TranslateNew(Ptree*) { Trace trace("SWalker::TranslateNew NYI"); return 0; }
-Ptree* SWalker::TranslateNew3(Ptree* type) { Trace trace("SWalker::TranslateNew3 NYI"); return 0; }
-Ptree* SWalker::TranslateDelete(Ptree*) { Trace trace("SWalker::TranslateDelete NYI"); return 0; }
-Ptree* SWalker::TranslateThis(Ptree*) { Trace trace("SWalker::TranslateThis NYI"); return 0; }
-Ptree* SWalker::TranslateVariable(Ptree*) { Trace trace("SWalker::TranslateVariable NYI"); return 0; }
-Ptree* SWalker::TranslateFstyleCast(Ptree*) { Trace trace("SWalker::TranslateFstyleCast NYI"); return 0; }
-Ptree* SWalker::TranslateArray(Ptree*) { Trace trace("SWalker::TranslateArray NYI"); return 0; }
-Ptree* SWalker::TranslateFuncall(Ptree*) { Trace trace("SWalker::TranslateFuncall NYI"); return 0; }	// and fstyle cast
-Ptree* SWalker::TranslatePostfix(Ptree*) { Trace trace("SWalker::TranslatePostfix NYI"); return 0; }
-Ptree* SWalker::TranslateUserStatement(Ptree*) { Trace trace("SWalker::TranslateUserStatement NYI"); return 0; }
-Ptree* SWalker::TranslateDotMember(Ptree*) { Trace trace("SWalker::TranslateDotMember NYI"); return 0; }
-Ptree* SWalker::TranslateArrowMember(Ptree*) { Trace trace("SWalker::TranslateArrowMember NYI"); return 0; }
-Ptree* SWalker::TranslateParen(Ptree*) { Trace trace("SWalker::TranslateParen NYI"); return 0; }
-Ptree* SWalker::TranslateStaticUserStatement(Ptree*) { Trace trace("SWalker::TranslateStaticUserStatement NYI"); return 0; }
 
 

@@ -6,6 +6,7 @@
 
 #include <vector.h>
 #include <string>
+#include <typeinfo>
 using std::string;
 
 // Forward declare AST::Declaration
@@ -50,9 +51,9 @@ namespace Type {
 	//
 
 	//. Constant version of name()
-	const Name name() const { return m_name; }
+	const Name& name() const { return m_name; }
 	//. Return the scoped Name of this type
-	Name name() { return m_name; }
+	Name& name() { return m_name; }
 
     private:
 	//. The scoped Name of this type
@@ -244,6 +245,47 @@ namespace Type {
 	virtual void visitParameterized(Parameterized*);
 	virtual void visitFuncPtr(FuncPtr*);
     };
+
+    //. Casts Type::Type types to derived types safely. The cast is done using
+    //. dynamic_cast, and std::bad_cast is thrown upon failure.
+    template <class T>
+    T* type_cast(Type* x) throw (std::bad_cast) {
+	if (T* ptr = dynamic_cast<T*>(x)) return ptr;
+	throw std::bad_cast();
+    }
+
+    //. Casts Type::Named types to derived types safely. The cast is done using
+    //. dynamic_cast, and std::bad_cast is thrown upon failure.
+    template <class T>
+    T* named_cast(Named* x) throw (std::bad_cast) {
+	if (T* ptr = dynamic_cast<T*>(x)) return ptr;
+	throw std::bad_cast();
+    }
+
+    //. Safely extracts typed Declarations from Named types. The type is first
+    //. safely cast to Type::Declared, then the declaration() safely cast to
+    //. the template type.
+    template <class T>
+    T* declared_cast(Named* x) throw (std::bad_cast) {
+	if (Declared* declared = dynamic_cast<Declared*>(x))
+	    if (AST::Declaration* decl = declared->declaration())
+		if (T* ptr = dynamic_cast<T*>(decl))
+		    return ptr;
+	throw std::bad_cast();
+    }
+
+    //. Safely extracts typed Declarations from Type types. The type is first
+    //. safely cast to Type::Declared, then the declaration() safely cast to
+    //. the template type.
+    template <class T>
+    T* declared_cast(Type* x) throw (std::bad_cast) {
+	if (Declared* declared = dynamic_cast<Declared*>(x))
+	    if (AST::Declaration* decl = declared->declaration())
+		if (T* ptr = dynamic_cast<T*>(decl))
+		    return ptr;
+	throw std::bad_cast();
+    }
+
 
 } // namespace Type
 

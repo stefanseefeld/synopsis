@@ -81,6 +81,10 @@ static char *system_assertions_def[] = { STD_ASSERT, 0 };
 char *current_filename, *current_long_filename = 0;
 static int current_incdir = -1;
 
+#ifdef SYNOPSIS
+void synopsis_macro_hook(const char* name, int line, int start, int end, int diff);
+#endif
+
 #ifndef NO_UCPP_ERROR_FUNCTIONS
 /*
  * "ouch" is the name for an internal ucpp error. If AUDIT is not defined,
@@ -352,6 +356,10 @@ void init_buf_lexer_state(struct lexer_state *ls, int wb)
 #ifdef INMACRO_FLAG
 	ls->inmacro = 0;
 	ls->macro_count = 0;
+#endif
+#ifdef SYNOPSIS
+	ls->input_pos = 0;
+	ls->output_pos = 0;
 #endif
 }
 
@@ -1790,11 +1798,34 @@ int cpp(struct lexer_state *ls)
 
 			if ((m = get_macro(ls->ctok->name)) != 0) {
 				int x;
+#ifdef SYNOPSIS
+				int o_pos, o_pos2, o_diff, o_line;
+				int i_pos, i_pos2, i_diff, i_line;
+				i_pos = ls->ctok->pos;
+				i_line = ls->line;
+				o_pos = ls->output_pos;
+				o_line = ls->oline;
 
 				x = substitute_macro(ls, m, 0, 1, 0,
 					ls->ctok->line);
 				if (!(ls->flags & LEXER))
 					garbage_collect(ls->gf);
+				o_pos2 = ls->output_pos;
+				o_diff = o_pos2 - o_pos;
+				i_pos2 = ls->input_pos + (ls->discard ? 1 : 0);
+				i_diff = i_pos2 - i_pos;
+				if (ls_depth == 0) {
+				    /*printf("MACRO: INPUT(line %d: %d -> %d = +- %d) OUTPUT(line %d: %d -> %d = +- %d)\n",
+					    i_line, i_pos, i_pos2, i_diff,
+					    o_line, o_pos, o_pos2, o_diff);*/
+				    synopsis_macro_hook(m->name, i_line, o_pos, o_pos2, i_diff - o_diff);
+				}
+#else
+				x = substitute_macro(ls, m, 0, 1, 0,
+					ls->ctok->line);
+				if (!(ls->flags & LEXER))
+					garbage_collect(ls->gf);
+#endif
 				return r ? r : x;
 			}
 			if (!(ls->flags & LEXER))
