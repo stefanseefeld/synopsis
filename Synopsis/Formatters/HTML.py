@@ -567,10 +567,12 @@ class BaseFormatter(Visitor.AstVisitor):
     def visitOperation(self, oper):
 	premod = self.formatModifiers(oper.premodifier())
 	type = self.formatType(oper.returnType())
+	name = self.label(oper.name(), oper.realname())
 	if oper.language() == 'C++' and len(oper.realname())>1:
 	    if oper.realname()[-1] == oper.realname()[-2]: type = '<i>constructor</i>'
 	    elif oper.realname()[-1] == "~"+oper.realname()[-2]: type = '<i>destructor</i>'
-	name = self.label(oper.name(), oper.realname())
+	    elif oper.realname()[-1] == "(conversion)":
+		name = "(%s)"%type
 	params = self.formatParameters(oper.parameters())
 	postmod = self.formatModifiers(oper.postmodifier())
 	raises = self.formatOperationExceptions(oper)
