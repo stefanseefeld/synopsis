@@ -91,6 +91,9 @@ occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo compiling $(@F)
 	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
 
+Makefile: $(srcdir)/Makefile.in
+	./config.status --file Makefile
+
 # Compile C++ .hh files
 $(HDR_SYN): %.syn: %
 	@echo parsing $^
