@@ -174,13 +174,11 @@
     <section>
       <title>The easy way: copy a demo config + modify</title>
 
-      <para>Copy one based on language, edit paths etc.</para>
-
       <para>The easiest way to get started using Synopsis is to copy a config
       file and maybe a Makefile from one of the demos.</para>
 
-      <para>Lets say your project is called Player (it&#39;s a CD player!) has
-      the following layout:</para>
+      <para>Let&#39;s say your project is called Player (it&#39;s a CD
+      player!) has the following layout:</para>
 
       <programlisting>/src/Player/Makefile
 /src/Player/src/player.cc     # main file
@@ -564,12 +562,10 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
         Makefile, which was written above as doc/html/. Point your web browser
         at the index.html file there to view the documentation, and you will
         see three frames (using the default configuration) similar to JavaDoc
-        documentation:</para>
-
-        <para><variablelist><varlistentry><term>Top-left &#34;contents&#34;
-        frame</term><listitem><para>This frame shows a tree heirarchy of the
-        modules or files in the project. Clicking on a link opens that module
-        or file in the &#34;index&#34; frame below.</para></listitem></varlistentry><varlistentry><term>Bottom-left
+        documentation:<variablelist><varlistentry><term>Top-left
+        &#34;contents&#34; frame</term><listitem><para>This frame shows a tree
+        heirarchy of the modules or files in the project. Clicking on a link
+        opens that module or file in the &#34;index&#34; frame below.</para></listitem></varlistentry><varlistentry><term>Bottom-left
         &#34;index&#34; frame</term><listitem><para>This frame shows an index
         of the currently selected module or file, but only shows child
         classes, structs, namespaces or modules. When a module page is loaded
@@ -580,7 +576,27 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
         documentation. At the top of each page you can see a list of
         documentation areas you can visit: The Modules and Files open in the
         top-left frame, the Inheritance Graph/Tree and Name Index load in the
-        main frame.</para></listitem></varlistentry></variablelist></para>
+        main frame. For &#34;scope pages&#34; (i.e. the pages for classes and
+        namespaces, including the global namespace which is the default page)
+        the page is divided into summary and detail sections: the summary
+        shows all the declarations in this class or namespace, with a summary
+        for each. For declarations with more comments than just the summary,
+        the name of the declaration will be highlighted, and clicking on it
+        will take you to its detailed information further down the page.</para></listitem></varlistentry></variablelist></para>
+
+        <para>You can also try out the other formatters. To see which
+        formatters are available, run &#34;synopsis -l&#34;. To use a
+        particular formatter, type:<programlisting>$ synopsis -c config.py -Wc,formatter=Dia -o player.dia syn/combined.syn</programlisting></para>
+
+        <para>to use configuration from the config.py file (in our config file
+        we just inherited the default options anyway), or you can just use the
+        default options by typing:<programlisting>$ synopsis -f Dia -o player.dia syn/combined.syn</programlisting></para>
+
+        <para>You can also pass command line options to the formatter with the
+        following syntax:<programlisting>$ synopsis -f Dia -Wf,-p -o player.dia syn/combined.syn</programlisting></para>
+
+        <para>This passes the -p option to the formatter. For the Dia
+        formatter this tells it not to include parameters.</para>
       </section>
     </section>
 
@@ -613,6 +629,89 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
       <title>C++ Parser</title>
 
       <para>most advanced. SXR. XREF. UCPP, OCC</para>
+
+      <para>The C++ parser reads C++ source code and generates an AST. It is
+      the most advanced Synopsis parser, using the following components:<itemizedlist><listitem><para>A
+      modified version of UCPP by Thomas Pornin. The modifications are to
+      improve C++ standards conformance, and add features needed by Synopsis
+      such as storing information about #includes and #defines, and recording
+      the position of every macro expansion.</para></listitem><listitem><para>A
+      modified version of OpenC++ (OCC) by Shigeru Chiba and others. OCC is
+      used to generate a &#34;parse-tree&#34; from the preprocessed source
+      code. The parse-tree is a data structure that directly represents the
+      syntax of the source code. OCC uses Barry Boehm&#39;s garbage collector,
+      but this can be disabled by passing --disable-gc to configure.</para></listitem><listitem><para>Code
+      to &#34;walk&#34; the parse-tree and build an Abstract Syntax Tree. A
+      symbol table is also maintained which is used to correctly resolve all
+      types according to the C++ standard.</para></listitem><listitem><para>Code
+      to record the positions of all macro expansions, keywords, comments,
+      type and name references if SXR or XREF (see below) is enabled.</para></listitem><listitem><para>Miscellenous
+      code to convert the C++ AST to a Python data structure, maintain the
+      list of files, implement a Python module etc.</para></listitem></itemizedlist></para>
+
+      <para>Like a compiler, the C++ parser has to parse the whole translation
+      unit for each file to make sure it has the correct type references.
+      Unfortunately this means it has to wade through all the standard library
+      headers for each input file which, like with a compiler without
+      precompiled headers, can take a long time. Luckily the C++ parser is
+      written in C++ for speed and has been optimised in critical areas. If
+      you are not using SXR or XREF then it skips all method bodies which
+      speeds things up, and even if you are it only has to resolve type and
+      function call information - there is no code generation or optimisation
+      going on.</para>
+
+      <para>Fortunately you can parse multiple headers in one go if you have a
+      main header file which includes everything else (such as how
+      python2.2/Python.h includes the other 41 Python header files), and if
+      you are using a Project config file. See the multiple_files option
+      below.</para>
+
+      <section>
+        <title>SXR and XREF</title>
+
+        <para>So what are SXR and XREF?</para>
+
+        <para>SXR stands for Synopsis Cross Reference. It is a combined
+        feature of the C++ parser and the HTML formatter which displays the
+        source code but with hyperlinks for every type reference and every
+        name reference.</para>
+
+        <para>This means that if you click on a method signature in the source
+        code, you will be taken to the documentation. Each declaration in the
+        documentation will also have a link to the source code. Variable and
+        type references in the source code also have &#34;titles&#34;, which
+        show as tooltips if you hover the mouse over them, telling you what
+        they are (eg: &#34;parameter Person&#34; or &#34;member variable
+        std::string&#34;). Note that because Synopsis uses a real C++ parser
+        the links are always to the right declarations - unlike other systems
+        which use purely string based references which are often ambiguous!</para>
+
+        <para>XREF stands for Cross Reference. This feature creates an index
+        of all references to every declaration, including function and method
+        calls. This allows you to follow a call graph, or see where a method
+        or class is used (useful for refactoring!)</para>
+
+        <para>Both of these features need to be coordinated with both the C++
+        parser and the HTML formatter.</para>
+
+        <para>For SXR you need: C++ Parser: syntax_prefix, blah. HTML
+        Formatter: The pages option must include &#39;FileSource&#39;.</para>
+
+        <para>For XREF you need: C++ Parser: xref_prefix, blah. HTML
+        Formatter: The pages option must include &#39;XRefPages&#39;.</para>
+
+        <para>Note that in the current release there are some limitations with
+        respect to expressions that are understood, and template
+        instantiations are not supported very well. This means that in the
+        source code some methods will not be hyperlinked and some cross
+        references will be missing.</para>
+      </section>
+
+      <section>
+        <title>Options</title>
+
+        <para></para>
+      </section>
     </section>
 
     <section>
