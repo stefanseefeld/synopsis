@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: dict.cc source file
 // Implementation of the Dictionary class
 
-// $Id: dict.cc,v 1.12 2002/11/17 12:11:43 chalky Exp $
+// $Id: dict.cc,v 1.13 2002/12/23 07:35:09 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2001, 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: dict.cc,v $
+// Revision 1.13  2002/12/23 07:35:09  chalky
+// Clean up formatting from using astyle a while ago.
+//
 // Revision 1.12  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -86,16 +89,14 @@ Dictionary::lookup(const std::string& name)
     if (dynamic_cast<Types::Unknown*>(type))
     {
         // Skip further unknown types
-        while (iter != end && dynamic_cast<Types::Unknown*>(iter->second)
-              )
+        while (iter != end && dynamic_cast<Types::Unknown*>(iter->second))
             ++iter;
         if (iter == end)
             // No choice but to return the Unknown
             return type;
         type = (iter++)->second;
         // Any other types that aren't unknown cause error
-        while (iter != end && dynamic_cast<Types::Unknown*>
-                (iter->second))
+        while (iter != end && dynamic_cast<Types::Unknown*>(iter->second))
             ++iter;
         if (iter == end)
             // No more non-Unknown types, so return the one we found
@@ -103,8 +104,7 @@ Dictionary::lookup(const std::string& name)
     }
     // Create exception object
     MultipleError exc;
-    exc.types.push_back(type)
-    ;
+    exc.types.push_back(type);
     do
         exc.types.push_back(iter->second);
     while (++iter != end);
