@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.27 2001/02/11 05:39:33 stefan Exp $
+#  $Id: synopsis,v 1.28 2001/02/11 19:33:32 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -273,7 +273,10 @@ def main(argv=None):
     #
     # generate output, either with pickler or with a formatter
     #
-    if formatter_cmd == "" and not config or not config.formatter:
+    formatter = None
+    if formatter_cmd: formatter = importFormatter(formatter_cmd)
+    elif config and config.formatter: formatter = importFormatter(config.formatter.name)
+    else:
         if verbose: print "Synopsis: writing file..."
         if output == "":
             sys.stderr.write(cmdname + ": no output file specified\n")
@@ -285,13 +288,10 @@ def main(argv=None):
         pickler = pickle.Pickler(open(output, "w"), 1)
         pickler.dump(types)
         pickler.dump(declarations)
-
-    elif formatter_cmd: formatter = importFormatter(formatter_cmd)
-    elif config and config.formatter: formatter = importFormatter(config.formatter.name)
-    else: sys.exit(0)
-    if verbose: print "Synopsis: formatting..."
-    if output != "": formatter_args.extend(["-o",output])
-    formatter.format(types, declarations, formatter_args, config and config.formatter)
+    if formatter:
+        if verbose: print "Synopsis: formatting..."
+        if output != "": formatter_args.extend(["-o",output])
+        formatter.format(types, declarations, formatter_args, config and config.formatter)
 
 if __name__ == '__main__':
         main()

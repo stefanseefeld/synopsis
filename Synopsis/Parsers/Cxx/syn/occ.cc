@@ -188,8 +188,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
   Ptree::show_encoded = true;
 #endif
   char *src;
-  PyObject *parserargs, *types, *declarations;
-  if (!PyArg_ParseTuple(args, "sO!OO!", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations)) return 0;
+  PyObject *parserargs, *types, *declarations, *config;
+  if (!PyArg_ParseTuple(args, "sO!OO!O", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations, &config)) return 0;
   vector<const char *> cppargs;
   vector<const char *> occargs;
   getopts(parserargs, cppargs, occargs);
