@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.36 2003/01/20 06:43:02 chalky Exp $
+# $Id: omni.py,v 1.37 2003/11/11 06:02:01 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.37  2003/11/11 06:02:01  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.36  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -88,7 +91,7 @@
 from omniidl import idlast, idltype, idlvisitor, idlutil
 import _omniidl
 import sys, getopt, os, os.path, string, types
-from Synopsis.Core import Type, AST, Util
+from Synopsis import Type, AST, Util
 
 verbose = 0
 

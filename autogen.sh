@@ -9,6 +9,6 @@ conf()
   )
 }
 
-conf Synopsis/Parser/C
-conf Synopsis/Parser/Cxx
-conf Synopsis/Parser/Cxx/gc
+conf Synopsis/Parsers/C
+conf Synopsis/Parsers/Cxx
+conf Synopsis/Parsers/Cxx/gc

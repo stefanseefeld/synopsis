@@ -1,4 +1,4 @@
-# $Id: doxygen.py,v 1.5 2003/01/20 06:43:02 chalky Exp $
+# $Id: doxygen.py,v 1.6 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: doxygen.py,v $
+# Revision 1.6  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.5  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -42,11 +45,11 @@
 
 import string
 
-from Synopsis.Core import AST
-from Synopsis.Formatter.HTML import ScopeSorter, core
-from Synopsis.Formatter.HTML.core import config
-from Synopsis.Formatter.HTML.Tags import *
-from Synopsis.Formatter.HTML import ASTFormatter, FormatStrategy
+from Synopsis import AST
+from Synopsis.Formatters.HTML import ScopeSorter, core
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
+from Synopsis.Formatters.HTML import ASTFormatter, FormatStrategy
 	    
 
 class DOScopeSorter (ScopeSorter.ScopeSorter):

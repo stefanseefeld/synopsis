@@ -1,4 +1,4 @@
-# $Id: FileIndexer.py,v 1.2 2003/01/20 06:43:02 chalky Exp $
+# $Id: FileIndexer.py,v 1.3 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileIndexer.py,v $
+# Revision 1.3  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.2  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -48,7 +51,7 @@
 import os
 
 # Synopsis modules
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 # HTML modules
 import Page

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.22 2003/01/27 06:53:36 chalky Exp $
+// $Id: ast.hh,v 1.23 2003/11/11 06:01:45 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -24,7 +24,7 @@
 // vim: set ts=8 sts=2 sw=2 et:
 // File: ast.h
 // A C++ class hierarchy that more or less mirrors the AST hierarchy in
-// Python/Core.AST.
+// Python/AST.
 
 #ifndef H_SYNOPSIS_CPP_AST
 #define H_SYNOPSIS_CPP_AST

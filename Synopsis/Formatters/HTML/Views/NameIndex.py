@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.10 2002/11/01 07:21:15 chalky Exp $
+# $Id: NameIndex.py,v 1.11 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.11  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.10  2002/11/01 07:21:15  chalky
 # More HTML formatting fixes eg: ampersands and stuff
 #
@@ -60,8 +63,8 @@
 #
 
 import os
-from Synopsis.Core import AST, Type
-from Synopsis.Formatter.HTML import core, Tags, Page
+from Synopsis import AST, Type
+from Synopsis.Formatters.HTML import core, Tags, Page
 from Tags import *
 from core import config
 

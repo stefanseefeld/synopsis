@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.10 2002/07/04 06:43:18 chalky Exp $
+# $Id: InheritanceTree.py,v 1.11 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.11  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.10  2002/07/04 06:43:18  chalky
 # Improved support for absolute references - pages known their full path.
 #
@@ -56,7 +59,7 @@
 #
 
 import os
-from Synopsis.Core import Util
+from Synopsis import Util
 
 import core, Page
 from core import config

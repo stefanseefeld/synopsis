@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.19 2003/10/07 14:06:16 stefan Exp $
+# $Id: Scope.py,v 1.20 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.20  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.19  2003/10/07 14:06:16  stefan
 # refer to the new site
 #
@@ -86,10 +89,10 @@
 import time, os
 
 # Synopsis modules
-from Synopsis.Core import AST
+from Synopsis import AST
 
 # Formatter modules
-from Synopsis.Formatter import TOC
+from Synopsis.Formatters import TOC
 
 # HTML modules
 import Page
@@ -105,7 +108,7 @@ class ScopePages (Page.Page):
     ASTFormatter to do the actual formatting. The classes to use may be
     controlled via the config script, resulting in a very configurable output.
     @see ASTFormatter The ASTFormatter module
-    @see Config.Formatter.HTML.ScopePages Config for ScopePages
+    @see Config.Formatters.HTML.ScopePages Config for ScopePages
     """
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
@@ -124,7 +127,7 @@ class ScopePages (Page.Page):
 	    parts = config.obj.ScopePages.parts
 	except AttributeError:
 	    parts = ['Heading', 'Summary', 'Detail']
-	base = 'Synopsis.Formatter.HTML.ASTFormatter.'
+	base = 'Synopsis.Formatters.HTML.ASTFormatter.'
 	for part in parts:
 	    obj = core.import_object(part, basePackage=base)(self)
 	    self.__parts.append(obj)

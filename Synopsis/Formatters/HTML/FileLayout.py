@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.21 2003/01/16 12:46:46 chalky Exp $
+# $Id: FileLayout.py,v 1.22 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.22  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.21  2003/01/16 12:46:46  chalky
 # Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
 # (used to be part of FileTree) and FileDetails.
@@ -92,8 +95,8 @@ default implementation stores everything in the same directory.
 import os, sys, stat, string, re
 
 # Synopsis modules
-from Synopsis.Core import Util, AST
-from Synopsis.Formatter import TOC
+from Synopsis import Util, AST
+from Synopsis.Formatters import TOC
 
 # HTML modules
 import core

@@ -82,7 +82,7 @@ class build_doc(build.build):
                            filter(lambda f, re=py: re.match(f), names)))
         def add_cxx(arg, dirname, names):
             # only parse the C++ parser for now
-            if dirname[:19] != 'Synopsis/Parser/Cxx':
+            if dirname[:19] != 'Synopsis/Parsers/Cxx':
                 return
             arg.extend(map(lambda f, d=dirname: os.path.join(d, f),
                            filter(lambda f, re=cxx: re.match(f), names)))
@@ -106,7 +106,7 @@ class build_doc(build.build):
         py_syn = Target(self, synopsis + " -o %(output)s %(input)s", py_syns,
                         output='py.syn', input=map(lambda f:re.sub('\.py$', '.syn', f),
                                                    py_sources))
-        command = synopsis + " -I ../../Synopsis/Parser/Cxx -I ../../Synopsis/Parser/CXX/gc/include -I " + sysconfig.get_python_inc()
+        command = synopsis + " -I ../../Synopsis/Parsers/Cxx -I ../../Synopsis/Parsers/CXX/gc/include -I " + sysconfig.get_python_inc()
         command += " -Wc,parser=C++,linker=C++ -Wp,-s,syn/%s-links,%s"
         cxx_syns = map(lambda f,s=self:Target(s, command%(f[0], f[1]) + " -o %(output)s %(input)s", [],
                                               output=f[0] + ".syn",
@@ -117,39 +117,39 @@ class build_doc(build.build):
                          output='c++.syn',
                          input=map(lambda f:f + ".syn", cxx_sources))
 
-        core_ast_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Core::AST' -o %(output)s %(input)%",
-                              [py_syn], output="core-ast.syn", input=['py.syn'])
-        core_type_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Core::Type' -o %(output)s %(input)%",
-                               [py_syn], output="core-type.syn", input=['py.syn'])
-        core_util_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Core::Util' -o %(output)s %(input)%",
-                               [py_syn], output="core-util.syn", input=['py.syn'])
-        parser_cxx_py_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Parser::Cxx' -o %(output)s %(input)%",
+        ast_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::AST' -o %(output)s %(input)%",
+                         [py_syn], output="ast.syn", input=['py.syn'])
+        type_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Type' -o %(output)s %(input)%",
+                          [py_syn], output="type.syn", input=['py.syn'])
+        util_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Util' -o %(output)s %(input)%",
+                          [py_syn], output="util.syn", input=['py.syn'])
+        parser_cxx_py_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Parsers::Cxx' -o %(output)s %(input)%",
                                    [py_syn], output="parser-c++-py.syn", input=['py.syn'])
         parser_cxx_cpp_syn = Target(self, synopsis + " -Wc,linker=All -o %(output)s %(input)%",
                                     [py_syn], output="parser-c++-cpp.syn", input=['py.syn'])
         parser_cxx_syn = Target(self, synopsis + " -Wc,linker=All -o %(output)s %(input)%",
                                 [parser_cxx_py_syn, parser_cxx_cpp_syn], output="parser-c++.syn", input=['py.syn'])
-        parser_idl_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Parser::IDL' -o %(output)s %(input)%",
+        parser_idl_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Parsers::IDL' -o %(output)s %(input)%",
                                 [py_syn], output="parser-idl.syn", input=['py.syn'])
-        parser_py_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Parser::Python' -o %(output)s %(input)%",
+        parser_py_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Parsers::Python' -o %(output)s %(input)%",
                                [py_syn], output="parser-py.syn", input=['py.syn'])
-        linker_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Linker' -o %(output)s %(input)%",
+        linker_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Processors' -o %(output)s %(input)%",
                             [py_syn], output="linker.syn", input=['py.syn'])
-        formatter_ascii_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::ASCII' -o %(output)s %(input)%",
+        formatter_ascii_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::ASCII' -o %(output)s %(input)%",
                                      [py_syn], output="formatter-ascii.syn", input=['py.syn'])
-        formatter_html_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::HTML' -o %(output)s %(input)%",
+        formatter_html_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::HTML' -o %(output)s %(input)%",
                                     [py_syn], output="formatter-html.syn", input=['py.syn'])
-        formatter_dump_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::DUMP' -o %(output)s %(input)%",
+        formatter_dump_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::DUMP' -o %(output)s %(input)%",
                                     [py_syn], output="formatter-dump.syn", input=['py.syn'])
-        formatter_dia_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Dia' -o %(output)s %(input)%",
+        formatter_dia_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::Dia' -o %(output)s %(input)%",
                                    [py_syn], output="formatter-dia.syn", input=['py.syn'])
-        formatter_docbook_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Docbook' -o %(output)s %(input)%",
+        formatter_docbook_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::Docbook' -o %(output)s %(input)%",
                                        [py_syn], output="formatter-docbook.syn", input=['py.syn'])
-        formatter_dot_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::Dot' -o %(output)s %(input)%",
+        formatter_dot_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::Dot' -o %(output)s %(input)%",
                                        [py_syn], output="formatter-dot.syn", input=['py.syn'])
-        formatter_html_simple_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::HTML_Simple' -o %(output)s %(input)%",
+        formatter_html_simple_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::HTML_Simple' -o %(output)s %(input)%",
                                            [py_syn], output="formatter-html-simple.syn", input=['py.syn'])
-        formatter_texi_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatter::TexInfo' -o %(output)s %(input)%",
+        formatter_texi_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Formatters::TexInfo' -o %(output)s %(input)%",
                                     [py_syn], output="formatter-texi.syn", input=['py.syn'])
 
         all_syn = Target(self, synopsis + " -Wc,linker=All -o %(output)s %(input)s",

@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.47 2003/01/20 06:43:02 chalky Exp $
+# $Id: core.py,v 1.48 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.48  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.47  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -215,12 +218,12 @@ import sys, getopt, os, os.path, string, types, errno, stat, re, time
 
 # Synopsis modules
 from Synopsis.Config import Base
-from Synopsis.Core import AST, Type, Util
-from Synopsis.Core.FileTree import FileTree
-from Synopsis.Formatter import TOC, ClassTree, xref
-from Synopsis.Formatter.HTML import TreeFormatter
+from Synopsis import AST, Type, Util
+from Synopsis.FileTree import FileTree
+from Synopsis.Formatters import TOC, ClassTree, xref
+from Synopsis.Formatters.HTML import TreeFormatter
 
-from Synopsis.Core.Util import import_object
+from Synopsis.Util import import_object
 
 verbose=0
 
@@ -321,7 +324,7 @@ class Config:
 
     def _config_comment_formatters(self, comment_formatters):
 	if self.verbose > 1: print "Using comment formatters:", comment_formatters
-	basePackage = 'Synopsis.Formatter.HTML.CommentFormatter.'
+	basePackage = 'Synopsis.Formatters.HTML.CommentFormatter.'
 	for formatter in comment_formatters:
 	    if type(formatter) == types.StringType:
 		if CommentFormatter.commentFormatters.has_key(formatter):
@@ -348,7 +351,7 @@ class Config:
 
     def _config_tree_formatter(self, tree_class):
 	if self.verbose > 1: print "Using tree class",tree_class
-	clas = import_object(tree_class, basePackage='Synopsis.Formatter.HTML.')
+	clas = import_object(tree_class, basePackage='Synopsis.Formatters.HTML.')
 	self.treeFormatterClass = clas
     
     def _config_file_layout(self, layout):
@@ -601,7 +604,7 @@ class PageManager:
 	strings means load the module from the first string, and look for an
 	attribute using the second string."""
 	defaultAttr = 'htmlPageClass'
-	basePackage = 'Synopsis.Formatter.HTML.'
+	basePackage = 'Synopsis.Formatters.HTML.'
 	for page in list(config.pages):
 	    obj = self.addPage(import_object(page, defaultAttr, basePackage))
 	    self.__page_objects[page] = obj

@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.8 2002/10/28 06:12:31 chalky Exp $
+# $Id: ScopeSorter.py,v 1.9 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.9  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.8  2002/10/28 06:12:31  chalky
 # Add structs_as_classes option
 #
@@ -53,7 +56,7 @@ This module contains the class for sorting Scopes.
 import string
 
 # Synopsis modules
-from Synopsis.Core import AST
+from Synopsis import AST
 
 # HTML modules
 import core

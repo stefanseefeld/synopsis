@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.3 2003/11/11 04:54:22 stefan Exp $
+# $Id: Source.py,v 1.4 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Source.py,v $
+# Revision 1.4  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.3  2003/11/11 04:54:22  stefan
 # the C++ parser is now spelled Parser.Cxx...
 #
@@ -69,7 +72,7 @@
 import time, os
 
 # Synopsis modules
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 # HTML modules
 import Page
@@ -81,7 +84,7 @@ from Tags import *
 # Link module
 link = None
 try:
-    link = Util._import("Synopsis.Parser.Cxx.link")
+    link = Util._import("Synopsis.Parsers.Cxx.link")
 except ImportError:
     print "Warning: unable to import link module. Continuing..."
 

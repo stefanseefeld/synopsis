@@ -1,4 +1,4 @@
-# $Id: TreeFormatterJS.py,v 1.3 2001/06/26 04:32:16 stefan Exp $
+# $Id: TreeFormatterJS.py,v 1.4 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TreeFormatterJS.py,v $
+# Revision 1.4  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.3  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -45,7 +48,7 @@
 
 import os
 
-from Synopsis.Core import AST
+from Synopsis import AST
 import Page
 from core import config
 from Tags import *

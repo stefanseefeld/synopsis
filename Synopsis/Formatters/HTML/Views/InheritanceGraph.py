@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.24 2003/02/01 05:35:45 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.25 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.25  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.24  2003/02/01 05:35:45  chalky
 # Remove warning
 #
@@ -111,7 +114,7 @@
 
 import os
 
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 import core, Page
 from core import config
@@ -223,7 +226,7 @@ class InheritanceGraph(Page.Page):
 	self.write(entity('h1', "Inheritance Graph"))
 
 	try:
-	    from Synopsis.Formatter import Dot
+	    from Synopsis.Formatters import Dot
 	except:
 	    print "InheritanceGraph: Can't load the Dot formatter"
 	    self.end_file()

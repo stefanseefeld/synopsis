@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.8 2002/10/29 07:15:35 chalky Exp $
+# $Id: emul.py,v 1.9 2003/11/11 06:01:45 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.9  2003/11/11 06:01:45  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.8  2002/10/29 07:15:35  chalky
 # Define __STRICT_ANSI__ for gcc 2.x to avoid parse errors
 #
@@ -50,7 +53,7 @@
 #
 
 import sys, os, os.path, re, string, stat, tempfile
-from Synopsis.Core import Util
+from Synopsis import Util
 
 # The filename where infos are stored
 user_emulations_file = '~/.synopsis/cpp_emulations'
