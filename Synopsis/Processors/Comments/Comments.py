@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.2 2001/02/07 09:57:00 chalky Exp $
+# $Id: Comments.py,v 1.3 2001/02/07 14:13:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.3  2001/02/07 14:13:51  chalky
+# Small fixes.
+#
 # Revision 1.2  2001/02/07 09:57:00  chalky
 # Support for "previous comments" in C++ parser and Comments linker.
 #
@@ -55,9 +58,11 @@ class SSDComments (CommentProcessor):
 	self.re_star = re.compile(SSDComments.__re_star, re.S)
 	self.re_ssd = re.compile(SSDComments.__re_ssd, re.M)
     def process(self, decl):
-	text = string.join(map(lambda x:str(x), decl.comments()))
+	map(self.processComment, decl.comments())
+    def processComment(self, comment):
+	text = comment.text()
 	text = self.parse_ssd(self.strip_star(text))
-	decl.comments()[:] = [AST.Comment(text,'',-1)]
+	comment.set_text(text)
     def strip_star(self, str):
 	"""Strips all star-format comments from the docstring"""
 	mo = self.re_star.search(str)
@@ -76,7 +81,9 @@ class JavaComments (CommentProcessor):
 	self.re_java = re.compile(JavaComments.__re_java)
 	self.re_line = re.compile(JavaComments.__re_line)
     def process(self, decl):
-	text = string.join(map(lambda x:str(x), decl.comments()))
+	map(self.processComment, decl.comments())
+    def processComment(self, comment):
+	text = comment.text()
 	text_list = []
 	mo = self.re_java.search(text)
 	while mo:
@@ -89,7 +96,7 @@ class JavaComments (CommentProcessor):
 		    mol = self.re_line.search(lines, mol.end())
 	    mo = self.re_java.search(text, mo.end())
 	text = string.join(text_list,'\n')
-	decl.comments()[:] = [AST.Comment(text,'',-1)]
+	comment.set_text(text)
 
 class Dummies (CommentProcessor):
     """A class that deals with dummy declarations and their comments. This
@@ -151,11 +158,11 @@ class Previous (Dummies):
 	self.pop(scope)
     def checkPrevious(self, decl):
 	if len(decl.comments()):
-	    if decl.comments()[0].text()[0] == "<" and self.last:
-		first = decl.comments()[0]
+	    first = decl.comments()[0]
+	    if len(first.text()) and first.text()[0] == "<" and self.last:
 		first.set_text(first.text()[1:]) # Remove '<'
-		self.last.comments().extend(decl.comments())
-		decl.comments()[:] = []
+		self.last.comments().append(first)
+		del decl.comments()[0]
     def visitDeclaration(self, decl):
 	self.checkPrevious(decl)
 	if decl.type() != "dummy": self.add(decl)
