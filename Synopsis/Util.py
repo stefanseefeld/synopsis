@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.7 2001/01/24 18:33:38 stefan Exp $
+# $Id: Util.py,v 1.8 2001/03/29 14:03:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.8  2001/03/29 14:03:36  chalky
+# Cache current working dir, and use it for file imports in _import()
+#
 # Revision 1.7  2001/01/24 18:33:38  stefan
 # more cleanup
 #
@@ -69,6 +72,10 @@ pruneScope()     -- remove common prefix from a scoped name.
 getopt_spec(args,options,longlist) -- version of getopt that adds transparent --spec= suppport"""
 
 import string, getopt, sys, os, os.path
+
+# Store the current working directory here, since during output it is
+# sometimes changed, and imports should be relative to the current WD
+_workdir = os.getcwd()
 
 def slashName(scopedName, our_scope=[]):
     """slashName(list, [list]) -> string
@@ -154,7 +161,8 @@ def _import(name):
             #raise ImportError, msg
     # try as file
     try:
-	if not os.access(name, os.R_OK): raise ImportError
+	if not name[0] == '/': name = _workdir+'/'+name
+	if not os.access(name, os.R_OK): raise ImportError, "Cannot access file %s"%name
         dir = os.path.abspath(os.path.dirname(name))
         name = os.path.basename(name)
         modname = name[:]
@@ -163,7 +171,7 @@ def _import(name):
         mod = __import__(modname)
     except ImportError, msg:
         sys.path = sys.path[1:]
-        sys.stderr.write("Error: Could not find module " + name + "\n")
+        sys.stderr.write("Error: Could not find module %s: %s\n"%(name,msg))
         sys.stderr.flush()
         sys.exit(-1)
     return mod
