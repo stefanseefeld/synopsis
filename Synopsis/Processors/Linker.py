@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.2 2002/09/20 10:35:12 chalky Exp $
+# $Id: Linker.py,v 1.3 2002/10/27 12:23:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Linker.py,v $
+# Revision 1.3  2002/10/27 12:23:27  chalky
+# Fix crash bug
+#
 # Revision 1.2  2002/09/20 10:35:12  chalky
 # Better handling of namespaces with repeated comments
 #
@@ -271,10 +274,8 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 		    # Error
 		    return
 		decl = ltype.declaration()
-		if not decl.template():
-		    # Error
-		    return
-		type.set_template(decl.template())
+		if isinstance(decl, AST.Class):
+		    type.set_template(decl.template())
 	else:
 	    # Unknown type in class inheritance
 	    pass
