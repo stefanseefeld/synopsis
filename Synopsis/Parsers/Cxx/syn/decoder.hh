@@ -18,6 +18,7 @@ class Builder;
 
 class Lookup;
 
+#if defined(__GNUC__) && __GNUC__ >= 3 && __GNUC_MINOR__ >= 2
 namespace std {
 //. A specialization of the char_traits for unsigned char
   template<>
@@ -87,7 +88,7 @@ namespace std {
       { return (__c == eof()) ? 0 : __c; }
   };
 };
-
+#endif
 
 //. A string type for the encoded names and types
 typedef std::basic_string<unsigned char> code;
