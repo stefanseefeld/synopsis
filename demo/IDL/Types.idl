@@ -1,4 +1,4 @@
-/*$Id: Types.idl,v 1.1 2000/08/01 03:28:26 stefan Exp $
+/*$Id: Types.idl,v 1.2 2001/02/02 02:01:02 stefan Exp $
  *
  * This source file is a part of the Berlin Project.
  * Portions Copyright (C) 1999 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -31,6 +31,7 @@ typedef double Coord;
 typedef long PixelCoord;
 enum Axis { xaxis, yaxis, zaxis };
 
+typedef double matrix[4][4];
 struct Vertex 
 {
   Coord x, y, z;

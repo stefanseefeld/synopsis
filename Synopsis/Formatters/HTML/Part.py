@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.3 2001/02/01 15:23:24 chalky Exp $
+# $Id: Part.py,v 1.4 2001/02/02 02:01:01 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.4  2001/02/02 02:01:01  stefan
+# synopsis now supports inlined inheritance tree generation
+#
 # Revision 1.3  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -363,9 +366,30 @@ class ClassHierarchySimple (ASTFormatter):
 	
 	return '', super + sub
 
-
-
-
+class ClassHierarchyGraph (ClassHierarchySimple):
+    "Prints a graphical hierarchy for classes, using the Dot formatter"
+    def formatClass(self, clas):
+        try:
+            import tempfile
+            from Synopsis.Formatter import Dot
+        except:
+            print "Can't load the Dot formatter, using a text based class hierarchy instead"
+            return ClassHierarchySimple.formatClass(self, clas)
+        tmp = tempfile.mktemp("synopsis")
+        label = config.files.nameOfScopedSpecial('inheritance', clas.name())
+        dot_args = ["-o", tmp, "-f", "html", "-s", "-t", label]
+        #if core.verbose: args.append("-v")
+        Dot.toc = config.toc
+        Dot.nodes = {}
+        Dot.format(config.types, [clas], dot_args)
+        text = ''
+        input = open(tmp + ".html", "r+")
+        line = input.readline()
+        while line:
+            text = text + line
+            line = input.readline()
+        input.close()
+	return '', text
 
 class BaseFormatter(Type.Visitor, AST.Visitor):
     """
@@ -544,7 +568,8 @@ class DetailFormatter(BaseFormatter):
 	BaseFormatter.__init__(self)
 	# TODO - load from config
 	self.addFormatter( DetailASTFormatter )
-	self.addFormatter( ClassHierarchySimple )
+	#self.addFormatter( ClassHierarchySimple )
+	self.addFormatter( ClassHierarchyGraph )
 	self.addFormatter( DetailASTCommenter )
 
     def getDetail(self, node):
