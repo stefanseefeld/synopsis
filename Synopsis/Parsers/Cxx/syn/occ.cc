@@ -16,7 +16,9 @@
 #include "filter.hh"
 #include "linkstore.hh"
 
+#include <occ/PTree.hh>
 #include <occ/PTree/Display.hh>
+#include <occ/SymbolLookup.hh>
 #include <occ/Buffer.hh>
 #include <occ/Lexer.hh>
 #include <occ/Parser.hh>
@@ -153,7 +155,8 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   }
   Buffer buffer(ifs.rdbuf());
   Lexer lexer(&buffer, tokenset);
-  Parser parser(&lexer, ruleset);
+  SymbolLookup::Table symbols;
+  Parser parser(lexer, symbols, ruleset);
 
   FileFilter* filter = FileFilter::instance();
 
@@ -270,7 +273,8 @@ PyObject *occ_print(PyObject *self, PyObject *args)
   {
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer, tokenset);
-    Parser parser(&lexer, ruleset);
+    SymbolLookup::Table symbols;
+    Parser parser(lexer, symbols, ruleset);
     PTree::Node *def = parser.parse();
     PTree::display(def, std::cout, true);
   }

@@ -4,14 +4,14 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#ifndef _SymbolTable_Scopes_hh
-#define _SymbolTable_Scopes_hh
+#ifndef _SymbolLookup_Scopes_hh
+#define _SymbolLookup_Scopes_hh
 
-#include <SymbolTable/Symbol.hh>
+#include <SymbolLookup/Symbol.hh>
 #include <string>
 #include <vector>
 
-namespace SymbolTable
+namespace SymbolLookup
 {
 
 class TemplateParameterScope : public Scope

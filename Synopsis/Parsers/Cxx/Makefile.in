@@ -30,7 +30,8 @@ LINK_SO	:= link$(LIBRARY_EXT)
 OCC_FILES := PTree/Node PTree/Encoding PTree/operations \
              PTree/Atoms PTree/Lists PTree/generation \
              PTree/Visitor PTree/Display PTree/Writer \
-             SymbolTable/Symbol SymbolTable/Scopes SymbolTable/ConstEvaluator \
+             SymbolLookup/Symbol SymbolLookup/Scopes \
+             SymbolLookup/ConstEvaluator SymbolLookup/Table \
              Buffer HashTable Lexer Parser \
              Environment TypeInfo TypeInfoVisitor \
              Walker Class ClassWalker \

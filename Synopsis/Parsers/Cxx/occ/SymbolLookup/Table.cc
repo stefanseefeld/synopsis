@@ -6,23 +6,45 @@
 //
 #include <PTree/Display.hh>
 #include <PTree/Writer.hh>
-#include <SymbolTable/Symbol.hh>
-#include <SymbolTable/ConstEvaluator.hh>
+#include <SymbolLookup/Table.hh>
+#include <SymbolLookup/Scopes.hh>
+#include <SymbolLookup/ConstEvaluator.hh>
 #include <cassert>
 
 using namespace PTree;
-using namespace SymbolTable;
+using namespace SymbolLookup;
 
-Scope::~Scope()
+Table &Table::enter_scope()
 {
+  my_scopes.push(new Scope());
+  return *this;
 }
 
-void Scope::declare(const Encoding &name, const Symbol *s)
+Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
 {
-  my_symbols[name] = s;
+  my_scopes.push(new Namespace(spec, my_scopes.top()));
+  return *this;
 }
 
-void Scope::declare(Declaration *d)
+Table &Table::enter_class(const PTree::ClassSpec *spec)
+{
+  my_scopes.push(new Class(spec, my_scopes.top()));
+  return *this;
+}
+
+void Table::leave_scope()
+{
+  Scope *top = my_scopes.top();
+  my_scopes.pop();
+  top->unref();
+}
+
+Scope &Table::current_scope()
+{
+  return *my_scopes.top();
+}
+
+void Table::declare(Declaration *d)
 {
   Node *decls = third(d);
   if(is_a(decls, Token::ntDeclarator))
@@ -44,14 +66,14 @@ void Scope::declare(Declaration *d)
 	{
 	  PTree::Encoding name = decl->encoded_name();
 	  PTree::Encoding type = decl->encoded_type();
-	  declare(name, new VariableName(type, decl));
+	  my_scopes.top()->declare(name, new VariableName(type, decl));
 	}
       }
     }
   }
 }
 
-void Scope::declare(Typedef *td)
+void Table::declare(Typedef *td)
 {
   Node *declarations = third(td);
   while(declarations)
@@ -61,18 +83,19 @@ void Scope::declare(Typedef *td)
     {
       Encoding name = d->encoded_name();
       Encoding type = d->encoded_type();
-      declare(name, new TypeName(type, d));
+      my_scopes.top()->declare(name, new TypeName(type, d));
     }
     declarations = tail(declarations, 2);
   }
 }
 
-void Scope::declare(EnumSpec *spec)
+void Table::declare(EnumSpec *spec)
 {
   Node *tag = second(spec);
   const Encoding &name = spec->encoded_name();
   const Encoding &type = spec->encoded_type();
-  if(tag && tag->is_atom()) declare(name, new TypeName(type, spec));
+  if(tag && tag->is_atom()) 
+    my_scopes.top()->declare(name, new TypeName(type, spec));
   // else it's an anonymous enum
 
   Node *body = third(spec);
@@ -89,7 +112,7 @@ void Scope::declare(EnumSpec *spec)
     else  // [identifier = initializer]
     {
       Node *initializer = third(enumerator);
-      defined = evaluate_const(initializer, *this, value);
+      defined = evaluate_const(initializer, value);
       enumerator = enumerator->car();
 #ifndef NDEBUG
       if (!defined)
@@ -103,72 +126,42 @@ void Scope::declare(EnumSpec *spec)
     assert(enumerator->is_atom());
     Encoding name(enumerator->position(), enumerator->length());
     if (defined)
-      declare(name, new ConstName(type, value, enumerator));
+      my_scopes.top()->declare(name, new ConstName(type, value, enumerator));
     else
-      declare(name, new ConstName(type, enumerator));
+      my_scopes.top()->declare(name, new ConstName(type, enumerator));
   }
 }
 
-void Scope::declare(ClassSpec *spec)
+void Table::declare(ClassSpec *spec)
 {
   const Encoding &name = spec->encoded_name();
-  declare(name, new TypeName(spec->encoded_type(), spec));
+  my_scopes.top()->declare(name, new TypeName(spec->encoded_type(), spec));
 }
 
-void Scope::declare(TemplateDecl *tdecl)
+void Table::declare(TemplateDecl *tdecl)
 {
   PTree::Node *body = PTree::nth(tdecl, 4);
-  PTree::ClassSpec *class_spec = get_class_template_spec(body);
+  PTree::ClassSpec *class_spec = Table::get_class_template_spec(body);
   if (class_spec)
   {
     Encoding name = class_spec->encoded_name();
-    declare(name, new ClassTemplateName(Encoding(), tdecl));
+    my_scopes.top()->declare(name, new ClassTemplateName(Encoding(), tdecl));
   }
   else
   {
     PTree::Node *decl = PTree::third(body);
     PTree::Encoding name = decl->encoded_name();
-    declare(name, new FunctionTemplateName(Encoding(), decl));
+    my_scopes.top()->declare(name, new FunctionTemplateName(Encoding(), decl));
   }
-}
-
-const Symbol *Scope::lookup(const Encoding &id) const throw()
-{
-  SymbolTable::const_iterator i = my_symbols.find(id);
-  return i == my_symbols.end() ? 0 : i->second;
-}
-
-void Scope::dump(std::ostream &os) const
-{
-  os << "Scope::dump:" << std::endl;
-  for (SymbolTable::const_iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
-  {
-    if (const VariableName *variable = dynamic_cast<const VariableName *>(i->second))
-      os << "Variable: " << i->first << ' ' << variable->type() << std::endl;
-    else if (const ConstName *const_ = dynamic_cast<const ConstName *>(i->second))
-    {
-      os << "Const:    " << i->first << ' ' << const_->type();
-      if (const_->defined()) os << " (" << const_->value() << ')';
-      os << std::endl;
-    }
-    else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
-      os << "Type: " << i->first << ' ' << type->type() << std::endl;
-    else if (const ClassTemplateName *type = dynamic_cast<const ClassTemplateName *>(i->second))
-      os << "Class template: " << i->first << ' ' << type->type() << std::endl;
-    else if (const FunctionTemplateName *type = dynamic_cast<const FunctionTemplateName *>(i->second))
-      os << "Function template: " << i->first << ' ' << type->type() << std::endl;
-    else // shouldn't get here
-      os << "Symbol: " << i->first << ' ' << i->second->type() << std::endl;
-  }  
 }
 
 //. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
 //. If an error occurs, the function returns 0.
-Encoding Scope::get_base_name(const Encoding &enc, const Scope *&scope)
+PTree::Encoding Table::get_base_name(const PTree::Encoding &enc, const Scope *&scope)
 {
   if(enc.empty()) return enc;
   const Scope *s = scope;
-  Encoding::iterator i = enc.begin();
+  PTree::Encoding::iterator i = enc.begin();
   if(*i == 'Q')
   {
     int n = *(i + 1) - 0x80;
@@ -176,8 +169,8 @@ Encoding Scope::get_base_name(const Encoding &enc, const Scope *&scope)
     while(n-- > 1)
     {
       int m = *i++;
-      if(m == 'T') m = get_base_name_if_template(i, s);
-      else if(m < 0x80) return Encoding(); // error?
+      if(m == 'T') m = Table::get_base_name_if_template(i, s);
+      else if(m < 0x80) return PTree::Encoding(); // error?
       else
       {	 // class name
 	m -= 0x80;
@@ -195,13 +188,13 @@ Encoding Scope::get_base_name(const Encoding &enc, const Scope *&scope)
   {		// template class
     int m = *(i + 1) - 0x80;
     int n = *(i + m + 2) - 0x80;
-    return Encoding(i, i + m + n + 3);
+    return PTree::Encoding(i, i + m + n + 3);
   }
-  else if(*i < 0x80) return Encoding();
-  else return Encoding(i + 1, i + 1 + size_t(*i - 0x80));
+  else if(*i < 0x80) return PTree::Encoding();
+  else return PTree::Encoding(i + 1, i + 1 + size_t(*i - 0x80));
 }
 
-int Scope::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
+int Table::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
 {
   int m = *i - 0x80;
   if(m <= 0) return *(i+1) - 0x80 + 2;
@@ -217,7 +210,7 @@ int Scope::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
   return m + (*(i + m + 1) - 0x80) + 2;
 }
 
-const Scope *Scope::lookup_typedef_name(Encoding::iterator i, size_t s,
+const Scope *Table::lookup_typedef_name(Encoding::iterator i, size_t s,
 					const Scope *scope)
 {
 //   TypeInfo tinfo;
@@ -254,7 +247,7 @@ const Scope *Scope::lookup_typedef_name(Encoding::iterator i, size_t s,
   return 0;
 }
 
-PTree::ClassSpec *Scope::get_class_template_spec(PTree::Node *body)
+PTree::ClassSpec *Table::get_class_template_spec(PTree::Node *body)
 {
   if(*PTree::third(body) == ';')
   {
@@ -264,7 +257,7 @@ PTree::ClassSpec *Scope::get_class_template_spec(PTree::Node *body)
   return 0;
 }
 
-PTree::Node *Scope::strip_cv_from_integral_type(PTree::Node *integral)
+PTree::Node *Table::strip_cv_from_integral_type(PTree::Node *integral)
 {
   if(integral == 0) return 0;
 

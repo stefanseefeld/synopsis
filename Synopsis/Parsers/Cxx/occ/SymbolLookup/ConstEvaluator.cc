@@ -7,12 +7,12 @@
 
 #include <PTree/Writer.hh>
 #include <PTree/Display.hh>
-#include <SymbolTable/ConstEvaluator.hh>
+#include <SymbolLookup/ConstEvaluator.hh>
 #include <sstream>
 #include <iomanip>
 
 using namespace PTree;
-using namespace SymbolTable;
+using namespace SymbolLookup;
 
 namespace
 {
@@ -113,7 +113,7 @@ void ConstEvaluator::visit(Identifier *node)
       my_valid = true;
     }
   }
-  catch (const Scope::TypeError &e)
+  catch (const TypeError &e)
   {
     std::cerr << "Error in ConstName lookup: type was " << e.type << std::endl;
   }

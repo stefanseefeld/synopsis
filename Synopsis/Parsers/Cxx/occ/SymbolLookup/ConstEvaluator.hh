@@ -4,16 +4,16 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#ifndef _SymbolTable_ConstEvaluator_hh
-#define _SymbolTable_ConstEvaluator_hh
+#ifndef _SymbolLookup_ConstEvaluator_hh
+#define _SymbolLookup_ConstEvaluator_hh
 
 #include <PTree/Visitor.hh>
 #include <PTree/Atoms.hh>
 #include <PTree/Lists.hh>
-#include <SymbolTable/Symbol.hh>
+#include <SymbolLookup/Symbol.hh>
 #include <cassert>
 
-namespace SymbolTable
+namespace SymbolLookup
 {
 
 //. evaluate the value of a constant expression
@@ -38,14 +38,6 @@ private:
   const Scope &my_symbols;
 };
   
-inline bool evaluate_const(const PTree::Node *node, const Scope &symbols,
-			   long &value)
-{
-  if (!node) return false;
-  ConstEvaluator e(symbols);
-  return e.evaluate(const_cast<PTree::Node *>(node), value);
-}
-
 }
 
 #endif
