@@ -1,4 +1,5 @@
 syn
-Manual
+html
 links.toc
-all.syn
+*.syn
+*.texi
