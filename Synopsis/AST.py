@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.19 2002/04/26 01:21:13 chalky Exp $
+# $Id: AST.py,v 1.20 2002/06/22 06:54:53 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.20  2002/06/22 06:54:53  chalky
+# Fixed default-value bug
+#
 # Revision 1.19  2002/04/26 01:21:13  chalky
 # Bugs and cleanups
 #
@@ -135,7 +138,7 @@ class AST:
 	if types is None: types = Type.Dictionary()
 	elif not isinstance(types, Type.Dictionary): raise TypeError, "types must be an instance of Type.Dictionary"
         self.__filenames    = list(filenames)
-        self.__declarations = declarations
+        self.__declarations = list(declarations)
 	self.__types	    = types
     def filenames(self):
 	"""The file names of the component files"""	
