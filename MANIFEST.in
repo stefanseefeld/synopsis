@@ -26,5 +26,16 @@ include             scripts/*
 # unit tests
 recursive-include   tests *
 
-# suppress svn bookkeeping stuff
-global-exclude */.svn/*
+# suppress svn bookkeeping stuff ...
+global-exclude .svn
+global-exclude .svn/*
+global-exclude .svn/*/*
+global-exclude .svn/*/*/*
+
+# ... and other local waste
+global-exclude autom4te.cache
+global-exclude autom4te.cache/*
+global-exclude *~
+global-exclude *.pyc
+global-exclude *.so
+
