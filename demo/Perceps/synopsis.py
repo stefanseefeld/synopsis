@@ -116,13 +116,12 @@ class PercepsCommSplitter(CommentProcessor):
          # Invalid comment - set it to empty
          del decl.comments()[0]
 
-linker = Composite(Unduplicator(),
-                   Stripper(),
-                   NameMapper(),
-                   PercepsCommProcessor(),
-                   PercepsCommSplitter(),
-                   EmptyNS(),
-                   AccessRestrictor())
+linker = Linker(Stripper(),
+                NameMapper(),
+                PercepsCommProcessor(),
+                PercepsCommSplitter(),
+                EmptyNS(),
+                AccessRestrictor())
 
 html = HTML.Formatter(stylesheet_file = '../html.css',
                       comment_formatters = [JavadocFormatter(),

@@ -2,7 +2,10 @@ synopsis := python synopsis.py
 
 all:	uml
 
-uml:	Shapes.ps
+uml:	Shapes.ps Shapes.html
+
+Shapes.html:	main.syn
+	$(synopsis) uml --title='Shapes' --format='html' --output=$@ $?
 
 Shapes.ps:	main.syn
 	$(synopsis) uml --title='Shapes' --format='ps' --output=$@ $?
