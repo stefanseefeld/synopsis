@@ -1,4 +1,4 @@
-# $Id: XRefCompiler.py,v 1.1 2002/10/29 07:34:29 chalky Exp $
+# $Id: XRefCompiler.py,v 1.2 2002/10/29 12:43:25 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: XRefCompiler.py,v $
+# Revision 1.2  2002/10/29 12:43:25  chalky
+# Added no_locals support which is on by default, and strips local variables
+# from cross reference tables
+#
 # Revision 1.1  2002/10/29 07:34:29  chalky
 # New linker module, compiles xref files into data structure
 #
@@ -31,7 +35,7 @@ from Synopsis.Core import AST, Type, Util
 
 from Linker import config, Operation
 
-def do_compile(input_files, output_file):
+def do_compile(input_files, output_file, no_locals):
     # Init data structures
     data = {}
     index = {}
@@ -51,13 +55,14 @@ def do_compile(input_files, output_file):
 	    line = int(line)
 	    file = intern(file)
 
-	    bad = 0
-	    for i in range(len(target)):
-		if len(target[i]) > 0 and target[i][0] == '`':
-		    # Don't store local function variables
-		    bad = 1
-		    break
-	    if bad: continue
+	    if no_locals:
+		bad = 0
+		for i in range(len(target)):
+		    if len(target[i]) > 0 and target[i][0] == '`':
+			# Don't store local function variables
+			bad = 1
+			break
+		if bad: continue
 
 	    for i in range(len(scope)):
 		if len(scope[i]) > 0 and scope[i][0] == '`':
@@ -114,15 +119,18 @@ class XRefCompiler(Operation):
     def __init__(self):
 	self.__xref_path = './%s-xref'
 	self.__xref_file = 'compiled.xref'
+	self.__no_locals = 1
 	if hasattr(config.obj, 'XRefCompiler'):
 	    obj = config.obj.XRefCompiler
 	    if hasattr(obj, 'xref_path'):
 		self.__xref_path = obj.xref_path
 	    if hasattr(obj, 'xref_file'):
 		self.__xref_file = obj.xref_file
+	    if hasattr(obj, 'no_locals'):
+		self.__no_locals = obj.no_locals
     def execute(self, ast):
 	filenames = ast.filenames()
 	filenames = map(lambda x:self.__xref_path%x, filenames)
-	do_compile(filenames, self.__xref_file)
+	do_compile(filenames, self.__xref_file, self.__no_locals)
 
 linkerOperation = XRefCompiler
