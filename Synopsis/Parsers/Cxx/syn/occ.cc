@@ -28,6 +28,7 @@
 #include <vector>
 #include <cstring>
 #include <cstdio>
+#include <stdexcept>
 
 using namespace Synopsis;
 
@@ -147,9 +148,13 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     while(parse.rProgram(def))
       swalker.Translate(def);
   }
+  catch (const std::exception &e)
+  {
+    std::cerr << "Error : " << e.what() << std::endl;
+  }
   catch (...)
   {
-    std::cerr << "Warning: an uncaught exception occurred when translating the parse tree" << std::endl;
+    std::cerr << "Error: an uncaught exception occurred when translating the parse tree" << std::endl;
   }
 
   // Setup synopsis c++ to py convertor

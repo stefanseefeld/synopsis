@@ -250,7 +250,7 @@ class Leaf : public Ptree
 {
 public:
   Leaf(char *, int);
-  Leaf(Token &);
+  Leaf(const Token &);
   bool IsLeaf() const { return true;}
   
   virtual void write(std::ostream &) const;

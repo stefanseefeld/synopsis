@@ -140,7 +140,7 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
   AST::Comment::vector comments;
 
   // First, make sure that node is a list of comments
-  if (node->What() == ntDeclaration)
+  if (node->What() == Token::ntDeclaration)
     node = static_cast<PtreeDeclaration*>(node)->GetComments();
 
   // Loop over all comments in the list
@@ -740,7 +740,7 @@ SWalker::TranslateTemplateFunction(Ptree* def, Ptree* node)
   STrace trace("SWalker::TranslateTemplateFunction");
   nodeLOG(def);
   nodeLOG(node);
-  if (node->What() != ntDeclaration)
+  if (node->What() != Token::ntDeclaration)
   {
     LOG("Warning: Unknown node type in template");
     nodeLOG(def);
@@ -825,7 +825,7 @@ SWalker::TranslateTemplateDecl(Ptree* def)
   STrace trace("SWalker::TranslateTemplateDecl");
   Ptree* body = Ptree::Nth(def, 4);
   Ptree* class_spec = GetClassTemplateSpec(body);
-  if(class_spec->IsA(ntClassSpec))
+  if(class_spec->IsA(Token::ntClassSpec))
     TranslateTemplateClass(def, class_spec);
   else TranslateTemplateFunction(def, body);
   return 0;
@@ -868,7 +868,7 @@ Ptree* SWalker::TranslateTypeof(Ptree* spec, Ptree* declarations)
       Ptree* declarator = declarations->First();
       declarations = declarations->Rest();
       
-      if (declarator->What() == ntDeclarator)
+      if (declarator->What() == Token::ntDeclarator)
         ((PtreeDeclarator*)declarator)->SetEncodedType("PFv_v");
       else
         LOG("declarator is " << declarator->What());
@@ -908,10 +908,10 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
   // Typespecifier may be a class {} etc.
   TranslateTypespecifier(Ptree::Second(def));
   // Or it might be a typeof()
-  if (Ptree::Second(def) && Ptree::Second(def)->What() == ntTypeofExpr)
+  if (Ptree::Second(def) && Ptree::Second(def)->What() == Token::ntTypeofExpr)
     TranslateTypeof(Ptree::Second(def), decls);
 
-  if (decls->IsA(ntDeclarator))
+  if (decls->IsA(Token::ntDeclarator))
   {
     // A single declarator is probably a function impl, but could also be
     // the declarator in an if or switch condition
@@ -946,7 +946,7 @@ SWalker::TranslateDeclarators(Ptree* decls)
   while (rest != 0)
   {
     p = rest->Car();
-    if (p->IsA(ntDeclarator))
+    if (p->IsA(Token::ntDeclarator))
     {
       TranslateDeclarator(p);
       my_store_decl = false;
@@ -1352,7 +1352,7 @@ SWalker::TranslateTypedef(Ptree* node)
 
 void SWalker::TranslateTypedefDeclarator(Ptree* node)
 {
-  if (node->What() != ntDeclarator) return;
+  if (node->What() != Token::ntDeclarator) return;
   char* encname = node->GetEncodedName();
   char* enctype = node->GetEncodedType();
   if (!encname || !enctype) return;
@@ -1457,13 +1457,13 @@ SWalker::TranslateAccessSpec(Ptree* spec)
   AST::Access axs = AST::Default;
   switch (spec->First()->What())
   {
-    case PUBLIC:
+    case Token::PUBLIC:
       axs = AST::Public;
       break;
-    case PROTECTED:
+    case Token::PROTECTED:
       axs = AST::Protected;
       break;
-    case PRIVATE:
+    case Token::PRIVATE:
       axs = AST::Private;
       break;
   }

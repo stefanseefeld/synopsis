@@ -28,7 +28,7 @@ void LeafName::Typeof(Walker* w, TypeInfo& t)
 
 int LeafThis::What()
 {
-    return THIS;
+  return Token::THIS;
 }
 
 Ptree* LeafThis::Translate(Walker* w)
@@ -42,7 +42,7 @@ void LeafThis::Typeof(Walker* w, TypeInfo& t)
 }
 
 #define ResearvedWordImpl(w) \
-int Leaf##w::What() { return w; }
+  int Leaf##w::What() { return Token:: w; }
 
 ResearvedWordImpl(AUTO)
 ResearvedWordImpl(BOOLEAN)
@@ -160,7 +160,7 @@ Ptree* PtreeClassBody::Translate(Walker* w)
 
 int PtreeTypedef::What()
 {
-    return ntTypedef;
+  return Token::ntTypedef;
 }
 
 Ptree* PtreeTypedef::Translate(Walker* w)
@@ -172,7 +172,7 @@ Ptree* PtreeTypedef::Translate(Walker* w)
 
 int PtreeTemplateDecl::What()
 {
-    return ntTemplateDecl;
+    return Token::ntTemplateDecl;
 }
 
 Ptree* PtreeTemplateDecl::Translate(Walker* w)
@@ -184,7 +184,7 @@ Ptree* PtreeTemplateDecl::Translate(Walker* w)
 
 int PtreeTemplateInstantiation::What()
 {
-    return ntTemplateInstantiation;
+    return Token::ntTemplateInstantiation;
 }
 
 Ptree* PtreeTemplateInstantiation::Translate(Walker* w)
@@ -196,7 +196,7 @@ Ptree* PtreeTemplateInstantiation::Translate(Walker* w)
 
 int PtreeExternTemplate::What()
 {
-    return ntExternTemplate;
+    return Token::ntExternTemplate;
 }
 
 Ptree* PtreeExternTemplate::Translate(Walker* w)
@@ -208,7 +208,7 @@ Ptree* PtreeExternTemplate::Translate(Walker* w)
 
 int PtreeMetaclassDecl::What()
 {
-    return ntMetaclassDecl;
+    return Token::ntMetaclassDecl;
 }
 
 Ptree* PtreeMetaclassDecl::Translate(Walker* w)
@@ -220,7 +220,7 @@ Ptree* PtreeMetaclassDecl::Translate(Walker* w)
 
 int PtreeLinkageSpec::What()
 {
-    return ntLinkageSpec;
+    return Token::ntLinkageSpec;
 }
 
 Ptree* PtreeLinkageSpec::Translate(Walker* w)
@@ -232,7 +232,7 @@ Ptree* PtreeLinkageSpec::Translate(Walker* w)
 
 int PtreeNamespaceSpec::What()
 {
-    return ntNamespaceSpec;
+    return Token::ntNamespaceSpec;
 }
 
 Ptree* PtreeNamespaceSpec::Translate(Walker* w)
@@ -244,7 +244,7 @@ Ptree* PtreeNamespaceSpec::Translate(Walker* w)
 
 int PtreeNamespaceAlias::What()
 {
-    return ntNamespaceAlias;
+    return Token::ntNamespaceAlias;
 }
 
 Ptree* PtreeNamespaceAlias::Translate(Walker* w)
@@ -256,7 +256,7 @@ Ptree* PtreeNamespaceAlias::Translate(Walker* w)
 
 int PtreeUsing::What()
 {
-    return ntUsing;
+    return Token::ntUsing;
 }
 
 Ptree* PtreeUsing::Translate(Walker* w)
@@ -268,7 +268,7 @@ Ptree* PtreeUsing::Translate(Walker* w)
 
 int PtreeDeclaration::What()
 {
-    return ntDeclaration;
+    return Token::ntDeclaration;
 }
 
 Ptree* PtreeDeclaration::Translate(Walker* w)
@@ -341,7 +341,7 @@ void PtreeDeclarator::print(std::ostream &os, size_t indent, size_t depth) const
 
 int PtreeDeclarator::What()
 {
-    return ntDeclarator;
+    return Token::ntDeclarator;
 }
 
 char* PtreeDeclarator::GetEncodedType() const
@@ -369,7 +369,7 @@ void PtreeName::print(std::ostream &os, size_t indent, size_t depth) const
 
 int PtreeName::What()
 {
-    return ntName;
+    return Token::ntName;
 }
 
 char* PtreeName::GetEncodedName() const
@@ -408,7 +408,7 @@ void PtreeFstyleCastExpr::print(std::ostream &os, size_t indent, size_t depth) c
 
 int PtreeFstyleCastExpr::What()
 {
-    return ntFstyleCast;
+    return Token::ntFstyleCast;
 }
 
 char* PtreeFstyleCastExpr::GetEncodedType() const
@@ -444,7 +444,7 @@ PtreeClassSpec::PtreeClassSpec(Ptree* car, Ptree* cdr,
 
 int PtreeClassSpec::What()
 {
-    return ntClassSpec;
+    return Token::ntClassSpec;
 }
 
 Ptree* PtreeClassSpec::Translate(Walker* w)
@@ -472,7 +472,7 @@ PtreeEnumSpec::PtreeEnumSpec(Ptree* head)
 
 int PtreeEnumSpec::What()
 {
-    return ntEnumSpec;
+    return Token::ntEnumSpec;
 }
 
 Ptree* PtreeEnumSpec::Translate(Walker* w)
@@ -492,7 +492,7 @@ PtreeAccessSpec::PtreeAccessSpec(Ptree* p, Ptree* q)
 
 int PtreeAccessSpec::What()
 {
-    return ntAccessSpec;
+    return Token::ntAccessSpec;
 }
 
 Ptree* PtreeAccessSpec::Translate(Walker* w)
@@ -507,7 +507,7 @@ PtreeAccessDecl::PtreeAccessDecl(Ptree* p, Ptree* q)
 
 int PtreeAccessDecl::What()
 {
-    return ntAccessDecl;
+    return Token::ntAccessDecl;
 }
 
 Ptree* PtreeAccessDecl::Translate(Walker* w)
@@ -522,7 +522,7 @@ PtreeUserAccessSpec::PtreeUserAccessSpec(Ptree* p, Ptree* q)
 
 int PtreeUserAccessSpec::What()
 {
-    return ntUserAccessSpec;
+    return Token::ntUserAccessSpec;
 }
 
 Ptree* PtreeUserAccessSpec::Translate(Walker* w)
@@ -537,11 +537,11 @@ PtreeUserdefKeyword::PtreeUserdefKeyword(Ptree* p, Ptree* q)
 
 int PtreeUserdefKeyword::What()
 {
-    return ntUserdefKeyword;
+    return Token::ntUserdefKeyword;
 }
 
 #define PtreeStatementImpl(s)\
-int Ptree##s##Statement::What() { return nt##s##Statement; }\
+int Ptree##s##Statement::What() { return Token::nt##s##Statement; }\
 Ptree* Ptree##s##Statement::Translate(Walker* w) {\
     return w->Translate##s(this); }
 
@@ -563,7 +563,7 @@ PtreeStatementImpl(Label)
 
 int PtreeExprStatement::What()
 {
-    return ntExprStatement;
+    return Token::ntExprStatement;
 }
 
 Ptree* PtreeExprStatement::Translate(Walker* w)
@@ -572,7 +572,7 @@ Ptree* PtreeExprStatement::Translate(Walker* w)
 }
 
 #define PtreeExprImpl(n)\
-int Ptree##n##Expr::What() { return nt##n##Expr; }\
+int Ptree##n##Expr::What() { return Token::nt##n##Expr; }\
 Ptree* Ptree##n##Expr::Translate(Walker* w) {\
     return w->Translate##n(this); }\
 void Ptree##n##Expr::Typeof(Walker* w, TypeInfo& t) {\

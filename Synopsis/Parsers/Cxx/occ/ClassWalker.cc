@@ -230,7 +230,7 @@ PtreeArray* ClassWalker::RecordMembers(Ptree* class_def, Ptree* bases,
     while(rest != 0){
 	Ptree* mem = rest->Car();
 	switch(mem->What()){
-	case ntTypedef :
+	case Token::ntTypedef :
 	    tspec = mem->Second();
 	    tspec2 = TranslateTypespecifier(tspec);
 	    env->RecordTypedefName(mem->Third());
@@ -240,15 +240,15 @@ PtreeArray* ClassWalker::RecordMembers(Ptree* class_def, Ptree* bases,
 	    }
 
 	    break;
-	case ntMetaclassDecl :
+	case Token::ntMetaclassDecl :
 	    env->RecordMetaclassName(mem);
 	    break;
-	case ntDeclaration :
+	case Token::ntDeclaration :
 	    RecordMemberDeclaration(mem, tspec_list);
 	    break;
-	case ntTemplateDecl :
-	case ntTemplateInstantiation :
-	case ntUsing :
+	case Token::ntTemplateDecl :
+	case Token::ntTemplateInstantiation :
+	case Token::ntUsing :
 	default :
 	    break;
 	}
@@ -275,12 +275,12 @@ void ClassWalker::RecordMemberDeclaration(Ptree* mem,
     tspec = mem->Second();
     tspec2 = TranslateTypespecifier(tspec);
     decls = mem->Third();
-    if(decls->IsA(ntDeclarator))	// if it is a function
+    if(decls->IsA(Token::ntDeclarator))	// if it is a function
 	env->RecordDeclarator(decls);
     else if(!decls->IsLeaf())		// not a null declaration.
 	while(decls != 0){
 	    Ptree* d = decls->Car();
-	    if(d->IsA(ntDeclarator))
+	    if(d->IsA(Token::ntDeclarator))
 		env->RecordDeclarator(d);
 
 	    decls = decls->Cdr();
@@ -319,7 +319,7 @@ Ptree* ClassWalker::ConstructMember(void* ptr)
     Ptree* def = m->def;
     Ptree* def2;
 
-    if(def->Third()->IsA(ntDeclarator)){
+    if(def->Third()->IsA(Token::ntDeclarator)){
 	// function implementation
 	if(m->body == 0){
 	    NameScope old_env;
@@ -372,7 +372,7 @@ Ptree* ClassWalker::TranslateStorageSpecifiers2(Ptree* rest)
 	Ptree* h = rest->Car();
 	Ptree* t = rest->Cdr();
 	Ptree* t2 = TranslateStorageSpecifiers2(t);
-	if(h->IsA(ntUserdefKeyword))
+	if(h->IsA(Token::ntUserdefKeyword))
 	    return t2;
 	else if(t == t2)
 	    return rest;
@@ -691,7 +691,7 @@ Ptree* ClassWalker::TranslateAssign(Ptree* exp)
 
     left = exp->First();
     right = exp->Third();
-    if(left->IsA(ntDotMemberExpr, ntArrowMemberExpr)){
+    if(left->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	Ptree* object = left->First();
 	Ptree* op = left->Second();
 	Ptree* member = left->Third();
@@ -781,7 +781,7 @@ Ptree* ClassWalker::TranslateUnary(Ptree* exp)
 
     Ptree* unaryop = exp->Car();
     Ptree* right = exp->Second();
-    if(right->IsA(ntDotMemberExpr, ntArrowMemberExpr)){
+    if(right->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	Ptree* object = right->First();
 	Ptree* op = right->Second();
 	Typeof(object, type);
@@ -854,7 +854,7 @@ Ptree* ClassWalker::TranslatePostfix(Ptree* exp)
 
     Ptree* left = exp->Car();
     Ptree* postop = exp->Second();
-    if(left->IsA(ntDotMemberExpr, ntArrowMemberExpr)){
+    if(left->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	Ptree* object = left->First();
 	Ptree* op = left->Second();
 	Typeof(object, type);
@@ -900,7 +900,7 @@ Ptree* ClassWalker::TranslateFuncall(Ptree* exp)
 
     fun = exp->Car();
     arglist = exp->Cdr();
-    if(fun->IsA(ntDotMemberExpr, ntArrowMemberExpr)){
+    if(fun->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	Ptree* object = fun->First();
 	Ptree* op = fun->Second();
 	Ptree* member = fun->Third();
@@ -1030,7 +1030,7 @@ Ptree* ClassWalker::TranslateUserStatement(Ptree* exp)
     Class* metaobject = GetClassMetaobject(type);
     if(metaobject != 0){
 	NewScope();
-	if(keyword->IsA(UserKeyword2))		// closure style
+	if(keyword->IsA(Token::UserKeyword2))		// closure style
 	    TranslateArgDeclList2(true, env, false, false, 0, rest->Second());
 
 	Ptree* exp2 = metaobject->TranslateUserStatement(env, object, op,
@@ -1056,7 +1056,7 @@ Ptree* ClassWalker::TranslateStaticUserStatement(Ptree* exp)
 	    Class* metaobject = GetClassMetaobject(type);
 	    if(metaobject != 0){
 		NewScope();
-		if(keyword->IsA(UserKeyword2))		// closure style
+		if(keyword->IsA(Token::UserKeyword2))		// closure style
 		    TranslateArgDeclList2(true, env, false, false, 0,
 					  rest->Second());
 		Ptree* exp2 = metaobject->TranslateStaticUserStatement(env,

@@ -163,7 +163,7 @@ Ptree* Ptree::Ca_ar()		// compute Caa..ar
 
 int Ptree::What()
 {
-    return BadToken;
+  return Token::BadToken;
 }
 
 bool Ptree::IsA(int kind)
@@ -873,10 +873,10 @@ Leaf::Leaf(char *ptr, int len)
   data.leaf.length = len;
 }
 
-Leaf::Leaf(Token &tk)
+Leaf::Leaf(const Token &tk)
 {
-  data.leaf.position = tk.ptr;
-  data.leaf.length = tk.len;
+  data.leaf.position = const_cast<char *>(tk.ptr);
+  data.leaf.length = tk.length;
 }
 
 void Leaf::write(std::ostream &os) const
