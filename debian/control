@@ -1,13 +1,13 @@
 Source: synopsis
 Section: devel
 Priority: optional
-Maintainer: Patrick Mauritz <oxygene@gmx.net>
+Maintainer: Patrick Mauritz <oxygene@studentenbude.ath.cx>
 Build-Depends: debhelper (>> 3.0.0)
 Standards-Version: 3.5.2
 
 Package: synopsis
 Architecture: any
-Depends: ${shlibs:Depends}, python-base (>= 1.5)
+Depends: ${shlibs:Depends}, python (>= 2.1), graphviz, msttcorefonts
 Description: Sourcecode Documentation Code
  synopsis is a modular source code documentation
  tool with support for a variety of programming
