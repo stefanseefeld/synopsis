@@ -104,7 +104,7 @@ span.file-keyword {
     font-weight: bold;
 }
 span.file-comment {
-    color: purple;
+    color: green;
 }
 span.file-number {
     color: blue;
