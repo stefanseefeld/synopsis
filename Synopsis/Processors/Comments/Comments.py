@@ -162,6 +162,50 @@ class SSComments (CommentProcessor):
 
       return string.join(self.re_ss.findall(str),'\n')
 
+
+class CComments (CommentProcessor):
+   """A class that formats C /* */ style comments"""
+
+   __re_c = r"/[\*]+[ \t]*(?P<text>.*)(?P<lines>(\n[ \t]*.*)*?)(\n[ \t]*)?[\*]+/"
+   # match lines with and without asterisk.
+   # preserve space after asterisk so empty lines are formatted correctly.
+   __re_line = r"\n[ \t]*([ \t]*[\*]+(?=[ \t\n]))*(?P<text>.*)"
+
+   def __init__(self):
+      """Compiles the regular expressions"""
+
+      if self.debug:
+         print 'CComment Processor requested.\n'
+      self.re_c = re.compile(CComments.__re_c)
+      self.re_line = re.compile(CComments.__re_line)
+
+   def visit_comments(self, decl):
+      """Calls process_comment on all comments"""
+
+      map(self.process_comment, decl.comments())
+
+   def process_comment(self, comment):
+      """Finds comments in the C format. The format is  /* ... */.
+      It has to cater for all five line forms: "/* ...", " * ...", " ...",
+      " */" and the one-line "/* ... */".
+      """
+
+      text = comment.text()
+      text_list = []
+      mo = self.re_c.search(text)
+      while mo:
+         text_list.append(mo.group('text'))
+         lines = mo.group('lines')
+         if lines:
+            mol = self.re_line.search(lines)
+            while mol:
+               text_list.append(mol.group('text'))
+               mol = self.re_line.search(lines, mol.end())
+         mo = self.re_c.search(text, mo.end())
+      text = string.join(text_list,'\n')
+      comment.set_text(text)
+
+
 class QtComments (CommentProcessor):
    """A class that finds Qt style comments. These have two styles: //! ...
    and /*! ... */. The first means "brief comment" and there must only be
