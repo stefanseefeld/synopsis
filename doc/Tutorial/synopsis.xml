@@ -932,22 +932,298 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
   <chapter>
     <title>The Linker</title>
 
-    <para>only one.</para>
+    <para>The Linker is one of the more powerful features of Synopsis. It is
+    actually a slight misnomer, since it does more than just linking multiple
+    ASTs together - it can also move subtrees around, remove subtrees, map
+    declaration names or type names, and perform various operations to do with
+    comments.</para>
 
-    <para>merge ASTs</para>
+    <para>Unlike the Parsers and Formatters, there is only one Linker. It does
+    however have a number of modules to perform various operations on the AST.
+    The operation modules to use are specified in the &#34;operations&#34;
+    config option. They should generally be in the order given by the
+    following sections. See below for a list of all the Linker options.</para>
 
-    <para>transformations based on comments</para>
+    <section>
+      <title>Unduplicator</title>
 
-    <para>moving/renaming AST subtrees</para>
+      <para>The unduplicator is responsible for cleaning up the mess from
+      merging multiple ASTs. The problem is that each AST has its own copy of
+      any duplicate classes and functions, and the types are generally wrong
+      even if there were no duplicate declarations. The unduplicator walks the
+      whole AST ensuring that each declaration only occurs once, that the
+      types dictionary refers to the one correct declaration, and that every
+      &#34;declared&#34; type refers to the correct declaration. It takes
+      special care to handle &#34;Modules&#34; (eg: C++ namespace and IDL
+      modules) by combining them into MetaModule AST nodes. Nested classes
+      declared outside the original class are also taken care of.</para>
 
-    <para>mapping names (or how to link implementation to interface)</para>
+      <para>There are no options for the Unduplicator, but you will always
+      need it if you are combining multiple ASTs.</para>
+    </section>
+
+    <section>
+      <title>Stripper</title>
+
+      <para>The stripper compares every name in the AST to a list of prefixes.
+      Note that names here are scoped names, such as
+      &#34;boost::any::any_base::get_obj()&#34; or
+      &#34;Synopsis.Formatter.HTML.core.format()&#34;. If a name matches, the
+      prefix is stripped. If a name doesn&#39;t match any prefix, it is
+      removed from the AST. If no prefixes are specified then the Stripper
+      does not do anything (it doesn&#39;t even walk the tree so there is no
+      performance penalty).</para>
+
+      <para>This can be used to select parts of an AST to generate separate
+      documentation. For example, the Synopsis RefManual splits the whole
+      Synopsis AST into sections for formatting into different .info files.</para>
+    </section>
+
+    <section>
+      <title>NameMapper</title>
+
+      <para>This simple operation adds a prefix to every declaration and type
+      name in the AST. The Synopsis RefManual uses this to move the whole C++
+      AST into the Synopsis.Parser.C++ module.</para>
+    </section>
+
+    <section>
+      <title>Comments</title>
+
+      <para>This is the most complex Linker operation, since it is itself
+      composed of multiple &#34;comment processors&#34; which work on comments
+      attached to declarations. They should generally be in the following
+      order, if present. You will always need a comment-identifier processor
+      first, and the summary processor last.</para>
+
+      <section>
+        <title>ssd</title>
+
+        <para>This processor identifies comments in the //. style. Any comment
+        line not starting with //. will be removed, and the //. is stripped
+        from those that do have it.<programlisting>//. This is a comment
+//. With multiple lines</programlisting></para>
+      </section>
+
+      <section>
+        <title>ss</title>
+
+        <para>This processor identifies comments in the // style. Any comment
+        line not starting with // will be removed, and the // is stripped from
+        those that do have it.<programlisting>// This is a comment
+// With multiple lines</programlisting></para>
+      </section>
+
+      <section>
+        <title>java</title>
+
+        <para>This processor identifies comments in the /** .. */ style. Any
+        comment not beginning with /** and ending with */ will be removed, and
+        the /**, */ and any * at the start of a line are stripped from those
+        that have them.<programlisting>/** This is a comment
+ * With multiple lines */</programlisting><programlisting>/** This is a comment
+ * With multiple lines
+ */</programlisting></para>
+      </section>
+
+      <section>
+        <title>qt</title>
+
+        <para>This processor identifies comments in the Qt style. There are
+        two types of comments: brief and detail. Brief starts with //! and
+        there must be only one. Detail comments are surrounded by /*! and */.<programlisting>//! Summary of this comment
+/*! More info about the declaration
+    There can be multiple lines.
+    Must end with */</programlisting></para>
+      </section>
+
+      <section>
+        <title>group</title>
+
+        <para>Looks for sequences of declarations to group together by looking
+        for a &#39;{&#39; in a comment and a &#39;}&#39; in a following
+        comment in the same scope. The &#39;{&#39; and &#39;}&#39; must be at
+        the beginning of a line, but may have a group name after them on the
+        same line. For example:<programlisting>class Foo {
+public:
+    //. Methods for accessing attributes of
+    //. this Foo
+    //. { Accessor methods
+    //. Get a Bar
+    Bar* get_bar();
+    //. Set the Bar
+    //. @param bar the Bar to set
+    void set_bar(Bar* bar);
+    //. }
+};</programlisting></para>
+
+        <para>Note that you will need to set &#39;extract_tails&#39; in the
+        C++ parser for the above example to work, since the last comment is
+        between the last declaration and a closing brace! If you set
+        extract_tails, you will also need one of &#39;dummy&#39; or
+        &#39;prev&#39;.</para>
+      </section>
+
+      <section>
+        <title>dummy</title>
+
+        <para>Removes the dummy declarations created by setting
+        &#34;extract_tails&#34; in the C++ parser. Any comments they had are
+        lost. See the &#39;prev&#39; processor below.</para>
+      </section>
+
+      <section>
+        <title>prev</title>
+
+        <para>Checks comments to see if they start with a &#39;&#60;&#39;. If
+        so, they are moved to the previous declaration. Any dummy declarations
+        are removed once the comments have been checked. This can be used to
+        put the comments after the declarations, like so:<programlisting>void func();
+//.&#60; Some function
+
+//. My enumeration
+enum Foo {
+  One, //.&#60; The first enumerator
+  Two, //.&#60; The second
+  Three //.&#60; The third
+};</programlisting></para>
+
+        <para>Note that it does not work for function parameters. To document
+        parameters, enable the &#39;javatags&#39; processor and use
+        &#34;@param&#34; tags in your comments.</para>
+      </section>
+
+      <section>
+        <title>javatags</title>
+
+        <para>Extracts java-style @tags from the ends of comments, and stores
+        them in the tags() list of the Comment object. Each tag is a
+        CommentTag object. The tags may be inspected by the formatters or
+        other processors.</para>
+
+        <para>You will need to use this processor if you want to use
+        java-style @tags, since the HTML formatter no longer looks for them
+        itself.</para>
+      </section>
+
+      <section>
+        <title>summary</title>
+
+        <para>This processor joins all the comments together for each
+        declaration then attempts to make a summary of the comment from the
+        first sentence. The summary is stored with the comment. It is used by
+        the formatters extensively so you will almost always want this
+        processor.</para>
+      </section>
+    </section>
+
+    <section>
+      <title>EmptyNS</title>
+
+      <para>This operation walks the AST looking for empty modules/namespaces
+      and removes them. A namespace is empty even if it just has Forward
+      declarations in it. Note that any types referring to these forward
+      declarations will still have the correct name, and will probably point
+      to the correct (non-forward) declarations anyway since Unduplicator is
+      usually before EmptyNS.</para>
+    </section>
+
+    <section>
+      <title>AccessRestrictor</title>
+
+      <para>If the config option max_access is set, then this operation walks
+      the AST and removes any class members without enough accessibility.</para>
+    </section>
+
+    <section>
+      <title>LanguageMapper</title>
+
+      <para>This simple operation, which is not in the list of
+      linker_operations by default, moves all global declarations into modules
+      based on their language. This means you can mix declarations of
+      different languages (e.g: IDL and C++), and if one references the other
+      (perhaps due to NameMapper) it will look like: IDL::Fresco::WidgetKit
+      instead of just Fresco::WidgetKit. It will also prevent clashes if you
+      have both an IDL Fresco::WidgetKit and a C++ Fresco::WidgetKit.</para>
+    </section>
+
+    <section>
+      <title>Linker options</title>
+
+      <para>Rather than mix the options in with the above sections, they are
+      listed here:<variablelist><varlistentry><term>verbose (boolean)</term><listitem><para>Verbosity
+      flag. For config files, this attribute is set by the constructor, but
+      only if &#39;verbose&#39; was passed as a config option.</para><para>Can
+      be set to true from the command line with &#34;-Wl,-v&#34;</para></listitem></varlistentry><varlistentry><term>operations
+      (list of strings)</term><listitem><para>If set, overrides the default
+      list of operations to use in the Linker stage. Note that all operations
+      except LanguageMapper do nothing without other options being set, so the
+      default list is:</para><para>[ &#39;Unduplicator&#39;,
+      &#39;Stripper&#39;, &#39;NameMapper&#39;, &#39;Comments&#39;,
+      &#39;EmptyNS&#39;, &#39;AccessRestrictor&#39; ]</para><para>Note that
+      the operations are executed in order.</para></listitem></varlistentry><varlistentry><term>strip
+      (list of strings)</term><listitem><para>If set, causes the Stripper
+      operation to strip prefixes from names in the list, and remove
+      declarations which don&#39;t match any prefix. Typical usage just has
+      one prefix. Each prefix is a scoped name, with the scopes separated by
+      &#34;::&#34;.</para><para>Can be set on the command line with, e.g.:
+      &#34;-Wl,-s,Synopsis::Parser::C++&#34;</para></listitem></varlistentry><varlistentry><term>mapper_list
+      (list of: strings or 2-tuples of strings)</term><listitem><para>(This
+      feature will be moved to an actual Operation in future releases and
+      cleaned up).</para><para>mapper_list specifies a list of either builtin
+      mappers or external mappers that map the names of Unknown types. An
+      Unknown type is one that refers to a type which is not a declaration in
+      the AST. For example, if you parse your C++ CORBA object but not the
+      skeleton/stub .hh files, then any reference to a Fresco::POA_Graphic
+      type object will be Unknown (since there is no Fresco::POA_Graphic in
+      the AST). The builtin mapper &#34;C++toIDL&#34; transforms any unknown
+      type name starting with POA_ to remove the POA_ and change the type to
+      IDL, and any type name ending with _ptr to remove the _ptr and change
+      the type to IDL. See the Mixed demo for an example of this in action.</para><para>The
+      elements of the list may be a string, in which case it must be one of
+      the builtin mappers (there is only one: C++toIDL currently), or it may
+      be a 2-tuple of (&#34;module name or filename.py&#34;, &#34;object in
+      module&#34;). The object in the module must have a &#34;map&#34;
+      function or method that takes one argument: the Unknown type (see
+      Synopsis.Core.Type.Unknown). The module name must be importable, which
+      means it must be accessible from the PYTHON_PATH. A filename can be
+      anywhere but must end in &#34;.py&#34;.</para><para>Can be set on the
+      command line with, e.g.: &#34;-Wl,-m,module&#34; where module is either
+      a module name or a filename.</para><para>...or with, e.g.:
+      &#34;-Wl,-M,C++toIDL&#34; to specify a builtin module.</para></listitem></varlistentry><varlistentry><term>max_access
+      (integer)</term><listitem><para>If set, removes any declaration that
+      doesn&#39;t meet a level of visibility. This can be used to prune
+      private or protected declarations from the AST so they wont be in the
+      output. Values are:</para><para>1 : protected and private declarations
+      removed</para><para>2 : private declarations removed</para><para>These
+      actually follow the levels defined in Synopsis.Core.AST - levels higher
+      than the given are removed (default is 0, public is 1, protected is 2,
+      private is 3).</para></listitem></varlistentry><varlistentry><term>map_declaration_names
+      (2-tuple or 2-list of name, type)</term><listitem><para>If set, causes
+      all declarations to be mapped into a module of the given name and type.
+      The name must be a scoped name, with &#34;::&#34; separating scopes. The
+      type is the type of the modules used to extend the declarations into the
+      given scope.</para><para>For example, the Synopsis RefManual uses this
+      option to move all the C++ declarations into the Synopsis.Parser.C++
+      python package with this option:</para><para> map_declaration_names =
+      &#39;Synopsis::Parser::C++&#39;, &#39;Package&#39;</para><para>Package
+      is used as the type since the Python AST has Packages for Synopsis,
+      Parser and C++. (Note they are AST.Module objects, with type() set to
+      &#34;Package&#34;).</para><para>All types referring to these
+      declarations are renamed as appropriate.</para></listitem></varlistentry><varlistentry><term>comment_processors
+      (list of strings)</term><listitem><para>If set, overrides the default
+      setting of [&#39;summary&#39;]. Gives a list of comment processors to
+      apply, in order, to the AST. See the Comments section above for a list
+      of these and what they do.</para></listitem></varlistentry></variablelist></para>
+    </section>
   </chapter>
 
   <chapter>
     <title>The HTML Formatter</title>
 
     <para>The HTML formatter is so comprehensive compared to the other
-    formatters that it deserves a chapter of its own.</para>
+    formatters that it deserves a chapter of its own. See the next chapter for
+    information about the other formatters available.</para>
 
     <section>
       <title>Basics</title>
