@@ -220,7 +220,7 @@ void func()
 
         <para>The comment processors are all written in Python, and you can
         specify your own in a config file to perform custom processing, or to
-        deal with unusual comment styles. </para>
+        deal with unusual comment styles.</para>
 
         <para>See the chapter on the Linker for more information on this.</para>
       </section>
@@ -743,15 +743,19 @@ class struct:
       setattr(self, key, value)
 
 class Project:
+  # Instantiate an object:
+  my_object = struct(name = &#34;foo&#34;, magic_number = 42)
+  
+  # And another one, this time formatted nicely:
   some_object = struct(
     name = &#34;hi&#34;, 
     some_list = [1, 2, 3],
+    # Here an attribute is a nested object:
     nested_object = struct(
       type = &#34;foo&#34;,
       fred = &#34;baz&#34;
     )
-  )
-      </programlisting>
+  )</programlisting>
       </example>
 
       <para>The new Project structure defines not only configuration for the
@@ -795,9 +799,9 @@ class Project:
             <para>Can take as input any number of ASTs (from eg: ParserAction,
             LinkerAction). Outputs the same ASTs, but stores the ASTs on disk
             so that they don&#39;t need to be regenerated each time if the
-            timestamps have not changed. There is a limitation in that the
-            timestamps are only checked on the input source files themselves,
-            not on their dependencies. This will be fixed in a later version.</para>
+            timestamps have not changed. For C++ files all dependencies
+            (#included files) will have their timestamps checked. For other
+            languages only the actual source files will be checked.</para>
           </listitem>
         </varlistentry>
 
@@ -833,12 +837,69 @@ class Project:
       Linker and Formatter objects are described later in this manual, and are
       the same as the old config format just with a different syntax.</para>
 
-      <para>As mentioned, the main element of the config file is the
-      &#34;class Project&#34;. It has a number of attributes, including a
-      string name, verbose flag, a list of actions, a list of channels, and a
-      default formatter to use if none is specified. The channels are the
-      connections between actions, and are simply tuple pairs of names of
-      actions.</para>
+      <section>
+        <title>Project class</title>
+
+        <para><programlisting>class Project:
+    # attributes go here. Must be indented!
+    name = &#39;project name&#39;       # string - name of project
+    verbose = 0                 # boolean
+    data_dir = &#39;./&#39;             # string - path (currently unused)
+    default_formatter = &#39;name&#39;  # string - the name of the default formatter to
+                                # use if none is specified on the command line.
+    channels = [ &#60;list of channels&#62; ]
+    actions = [ &#60;list of actions&#62; ]</programlisting>The main element
+        of the config file is the &#34;class Project&#34;. It has a number of
+        attributes, including a string name, verbose flag, a list of actions,
+        a list of channels, and a default formatter to use if none is
+        specified. The channels are the connections between actions, and are
+        simply tuple pairs of names of actions, e.g.:<programlisting>    channels = [
+        (&#39;C++ Parser&#39;, &#39;File Cacher&#39;),
+        (&#39;File Cacher&#39;, &#39;Linker&#39;)
+    ]</programlisting></para>
+
+        <para>Be careful that the action names in the channels list match the
+        names of the actual Actions in the actions list.</para>
+      </section>
+
+      <section>
+        <title>Action object</title>
+
+        <para>An action object, part of the list of actions in Project, is a
+        list of attributes (not a struct!). The first 4 attributes are always
+        the same, but different Actions have different uses for the remaining
+        attributes (remember, a list has variable length). The following
+        example shows all action types:<programlisting>    actions = [
+        # string type, X/Y coords, string name, extra attributes...
+        [&#39;SourceAction&#39;, 100, 100, &#39;Boost Sources&#39;,  [ &#60;list of SourceAction Rules&#62; ] ],
+        [&#39;ParserAction&#39;, 200, 100, &#39;C++ Parser&#39;,     struct(key=val, key=val, ...) ],
+        [&#39;CacherAction&#39;, 300, 100, &#39;File Cacher&#39;,    &#39;directory&#39; or None, &#39;file&#39; or None ],
+        [&#39;LinkerAction&#39;, 400, 100, &#39;Linker&#39;,         struct(key=val, key=val, ...) ],
+        [&#39;FormatAction&#39;, 500, 100, &#39;HTML Formatter&#39;, struct(key=val, key=val, ...) ]
+    ]</programlisting></para>
+
+        <para>As you can see, all types use the same format for the first four
+        attributes. The first is the type of action. The 2nd and 3rd are the X
+        and Y coordinates to use to display the action in the GUI. The 4th is
+        the name of the Action.</para>
+
+        <para>For SourceActions the 5th attribute is a list of SourceAction
+        Rules (see the next section).</para>
+
+        <para>For CacherActions the 5th and 6th attributes are directory name
+        and file name respectively. One and only one of these must be set (the
+        other must be None). If directory is set, then the inputs to the
+        action will be cached in the given directory and the outputs will be
+        the same as the inputs. If the file is set, then the action will have
+        no inputs, and one output which is loaded from the given file. Note
+        that this second mode of operation is not really caching but more like
+        loading, and can be used to load an AST from a file which you
+        don&#39;t have or want to use source code for.</para>
+
+        <para>For all other Action types the 5th attribute is a Config object.
+        For information on these see the documentation for the relevant
+        chapters of this manual (Parsers, Linker and Formatters).</para>
+      </section>
 
       <section id="sourceaction-rules">
         <title>SourceAction Rules</title>
@@ -933,6 +994,39 @@ class Project:
             </listitem>
           </varlistentry>
         </variablelist>
+
+        <para>All rules are processed in the order that they appear in the
+        list. The effect of a rule is to add remove files to/from a list.
+        Therefore to explicitly exclude a file, the exclude rule should be at
+        the end.</para>
+
+        <para>Note that this is the opposite to permission type rules you
+        might be used to, since in this case we don&#39;t know what files
+        there are until a rule is processed. With permissions you know what
+        user/file you are checking permissions for so it&#39;s usually the
+        first matching rule which is used - hence exclusions are usually
+        placed first for permissions.</para>
+
+        <para>Another special case is when you are using the
+        &#39;multiple_files&#39; feature of the C++ parser - in this case the
+        first rule must be a Simple rule with the main filename (e.g.:
+        Python.h). This is documented at the end of the C++ Parser section.</para>
+      </section>
+
+      <section>
+        <title>Command Line Usage</title>
+
+        <para>To use the project file and generate output for the default
+        formatter (specified in the config), use a command line like so:<programlisting>$ synopsis -P project.synopsis</programlisting></para>
+
+        <para>You can specify a formatter to use other than the default
+        formatter like so:<programlisting>$ synopsis -P project.synopsis -Wc,formatter=MyFormatter</programlisting></para>
+
+        <para>Synopsis will ensure that all Actions connected to the formatter
+        are also executed.</para>
+
+        <para>See the Boost demo for an example of how to use the project file
+        format.</para>
       </section>
     </section>
 
@@ -953,8 +1047,6 @@ class Project:
 
     <section>
       <title>C++ Parser</title>
-
-      <para>most advanced. SXR. XREF. UCPP, OCC</para>
 
       <para>The C++ parser reads C++ source code and generates an AST. It is
       the most advanced Synopsis parser, using the following components:<itemizedlist><listitem><para>A
@@ -1831,10 +1923,6 @@ class HTML (Base.Formatter.HTML):
         called &#34;Modules&#34; that is also shown in the top-left frame. You
         can change this text using the &#34;short_title&#34; option of the
         ModuleListing subobject.</para>
-
-        <para>XXX There are two types of tree you can use: a simple HTML tree,
-        or one that uses DHTML to open/close individual nodes, with little
-        graphics for the buttons.</para>
 
         <section>
           <title>Options</title>
