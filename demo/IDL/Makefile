@@ -18,5 +18,3 @@ clean:
 		rm -f *~ *.html *.syn
 
 distclean:	clean
-
-install:
