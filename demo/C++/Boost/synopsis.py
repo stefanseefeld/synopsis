@@ -11,6 +11,9 @@ from Synopsis.Formatters import HTML
 import glob
 extra_input = glob.glob('boost/boost/python/*.hpp')
 
+# the python include path can be obtained from distutils.sysconfig,
+# assuming that the python version used to run synopsis is the same
+# boost should be compiled with
 parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python2.2/Python.h>',
                                 '-DBOOST_PYTHON_SYNOPSIS',
                                 '-Iboost',
@@ -27,16 +30,15 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python2.2/Python.h>',
 xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
 
 
-linker = Composite(Unduplicator(),     # remove duplicate and forward declarations
-                   Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
-                   NameMapper(),       # apply name mapping if any (prefix adding, etc.)
-                   SSComments(),       # filter out any non-'//' comments
-                   Grouper1(),         # group declarations according to '@group' tags
-                   CommentStripper(),  # strip any 'suspicious' comments
-                   Previous(),         # attach '//<-' comments
-                   Dummies(),          # drop 'dummy' declarations
-                   EmptyNS(),          # skip empty namespaces
-                   AccessRestrictor()) # filter out unwanted ('private', say) declarations
+linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper docs)
+                NameMapper(),       # apply name mapping if any (prefix adding, etc.)
+                SSComments(),       # filter out any non-'//' comments
+                Grouper2(),         # group declarations according to '@group' tags
+                CommentStripper(),  # strip any 'suspicious' comments
+                Previous(),         # attach '//<-' comments
+                Dummies(),          # drop 'dummy' declarations
+                EmptyNS(),          # skip empty namespaces
+                AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 formatter = HTML.Formatter(stylesheet_file = '../../html.css')
 
