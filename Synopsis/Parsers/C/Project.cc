@@ -272,6 +272,8 @@ Project::Project()
   : units()
 {
     typeList = NULL;
+    warn_variable = 1;
+    warn_cpp_comment = 1;
 }
 
 Project::~Project()

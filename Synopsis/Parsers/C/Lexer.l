@@ -192,7 +192,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                     }
 
 <INITIAL>"//"[^*].*$ { /* C++ style comment */
-                         if (cpp_comment_warn){
+                         if (gProject->warn_cpp_comment && cpp_comment_warn){
                              cpp_comment_warn = 0;
                              yywarn("C++ style comment encountered");
                          }
