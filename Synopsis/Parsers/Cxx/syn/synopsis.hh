@@ -27,18 +27,18 @@
 class Trace
 {
 public:
-    Trace(const string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++level; }
+    Trace(const std::string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++level; }
     ~Trace() { --level; cout << indent() << "leaving " << scope << endl; }
 private:
-    string indent() { return string(level, ' '); }
+    std::string indent() { return std::string(level, ' '); }
     static int level;
-    string scope;
+    std::string scope;
 };
 #else
 class Trace
 {
 public:
-    Trace(const string &) {}
+    Trace(const std::string &) {}
     ~Trace() {}
 };
 #endif
@@ -47,7 +47,7 @@ public:
 class Synopsis : public AST::Visitor, public Type::Visitor {
 public:
 
-    Synopsis(string mainfile, PyObject *decls, PyObject *types);
+    Synopsis(const std::string &mainfile, PyObject *decls, PyObject *types);
     ~Synopsis();
 
     void onlyTranslateMain();
@@ -120,7 +120,7 @@ public:
 private:
     //. Compiler Firewalled private data
     struct Private;
-    friend Private;
+    friend struct Private;
     Private* m;
 
     //.
@@ -132,15 +132,15 @@ private:
 
 
     /*
-    PyObject *lookupType(const string &, PyObject *);
-    PyObject *lookupType(const string &);
-    PyObject *lookupType(const vector<string>& qualified);
+    PyObject *lookupType(const std::string &, PyObject *);
+    PyObject *lookupType(const std::string &);
+    PyObject *lookupType(const std::vector<std::string>& qualified);
 
-    static void addInheritance(PyObject *, const vector<PyObject *> &);
-    static PyObject *N2L(const string &);
-    static PyObject *V2L(const vector<string> &);
-    static PyObject *V2L(const vector<PyObject *> &);
-    static PyObject *V2L(const vector<size_t> &);
+    static void addInheritance(PyObject *, const std::vector<PyObject *> &);
+    static PyObject *N2L(const std::string &);
+    static PyObject *V2L(const std::vector<std::string> &);
+    static PyObject *V2L(const std::vector<PyObject *> &);
+    static PyObject *V2L(const std::vector<size_t> &);
     void pushClassBases(PyObject* clas);
     PyObject* resolveDeclared(PyObject*);
     void addDeclaration(PyObject *);
@@ -150,7 +150,7 @@ private:
     PyObject *m_type;
     PyObject *m_declarations;
     PyObject *m_dictionary;
-    string m_mainfile;
+    std::string m_mainfile;
 
     bool m_onlymain;
 };

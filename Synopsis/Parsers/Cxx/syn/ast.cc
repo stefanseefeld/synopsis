@@ -6,12 +6,9 @@
 
 using namespace AST;
 
-Declaration::Declaration(string fn, int line, string type, Name name)
-    : m_name(name), m_filename(fn), m_line(line), m_type(type),
-      m_access(Default)
-{
-    m_declared = NULL;
-}
+Declaration::Declaration(const std::string &fn, int line, const std::string &type, const Name &name)
+    : m_name(name), m_filename(fn), m_line(line), m_type(type), m_access(Default), m_declared(0)
+{}
 
 Declaration::~Declaration()
 {
@@ -34,7 +31,7 @@ Type::Declared* Declaration::declared()
 // AST::Scope
 //
 
-Scope::Scope(string fn, int line, string type, Name name)
+Scope::Scope(const std::string &fn, int line, const std::string &type, const Name &name)
     : Declaration(fn, line, type, name)
 {
 }
@@ -53,7 +50,7 @@ void Scope::accept(Visitor* visitor)
 // AST::Namespace
 //
 
-Namespace::Namespace(string fn, int line, string type, Name name)
+Namespace::Namespace(const std::string &fn, int line, const std::string &type, const Name &name)
     : Scope(fn, line, type, name)
 {
 }
@@ -71,7 +68,7 @@ void Namespace::accept(Visitor* visitor)
 // AST::Class
 //
 
-Class::Class(string fn, int line, string type, Name name)
+Class::Class(const std::string &fn, int line, const std::string &type, const Name &name)
     : Scope(fn, line, type, name)
 {
     m_template = NULL;
@@ -109,7 +106,7 @@ void Inheritance::accept(Visitor* visitor)
 // AST::Forward
 //
 
-Forward::Forward(string fn, int line, string type, Name name)
+Forward::Forward(const std::string &fn, int line, const std::string &type, const Name &name)
     : Declaration(fn, line, type, name)
 {
 }
@@ -133,7 +130,7 @@ void Forward::accept(Visitor* visitor)
 // AST::Typedef
 //
 
-Typedef::Typedef(string fn, int line, string type, Name name, Type::Type* alias, bool constr)
+Typedef::Typedef(const std::string &fn, int line, const std::string &type, const Name &name, Type::Type* alias, bool constr)
     : Declaration(fn, line, type, name), m_alias(alias), m_constr(constr)
 {
 }
@@ -152,7 +149,7 @@ void Typedef::accept(Visitor* visitor)
 // AST::Variable
 //
 
-Variable::Variable(string fn, int line, string type, Name name, Type::Type* vtype, bool constr)
+Variable::Variable(const std::string &fn, int line, const std::string &type, const Name &name, Type::Type* vtype, bool constr)
     : Declaration(fn, line, type, name), m_vtype(vtype), m_constr(constr)
 {
 }
@@ -170,7 +167,7 @@ void Variable::accept(Visitor* visitor)
 // AST::Const
 //
 
-Const::Const(string fn, int line, string type, Name name, Type::Type* t, string v)
+Const::Const(const std::string &fn, int line, const std::string &type, const Name &name, Type::Type* t, const std::string &v)
     : Declaration(fn, line, type, name), m_ctype(t), m_value(v)
 {
 }
@@ -190,7 +187,7 @@ void Const::accept(Visitor* visitor)
 // AST::Enum
 //
 
-Enum::Enum(string fn, int line, string type, Name name)
+Enum::Enum(const std::string &fn, int line, const std::string &type, const Name &name)
     : Declaration(fn, line, type, name)
 {
 }
@@ -209,7 +206,7 @@ void Enum::accept(Visitor* visitor)
 // AST::Enumerator
 //
 
-Enumerator::Enumerator(string fn, int line, string type, Name name, string value)
+Enumerator::Enumerator(const std::string &fn, int line, const std::string &type, const Name &name, const std::string &value)
     : Declaration(fn, line, type, name), m_value(value)
 {
 }
@@ -228,7 +225,7 @@ void Enumerator::accept(Visitor* visitor)
 // AST::Function
 //
 
-Function::Function(string fn, int line, string type, Name name, Mods premod, Type::Type* ret, string realname)
+Function::Function(const std::string &fn, int line, const std::string &type, const Name &name, const Mods &premod, Type::Type* ret, const std::string &realname)
     : Declaration(fn, line, type, name), m_pre(premod), m_ret(ret),
       m_realname(realname)
 {
@@ -249,7 +246,7 @@ void Function::accept(Visitor* visitor)
 // AST::Operation
 //
 
-Operation::Operation(string fn, int line, string type, Name name, Mods premod, Type::Type* ret, string realname)
+Operation::Operation(const std::string &fn, int line, const std::string &type, const Name &name, const Mods &premod, Type::Type* ret, const std::string &realname)
     : Function(fn, line, type, name, premod, ret, realname)
 {
 }
@@ -268,7 +265,7 @@ void Operation::accept(Visitor* visitor)
 // AST::Parameter
 //
 
-Parameter::Parameter(Mods pre, Type::Type* t, Mods post, string name, string value)
+Parameter::Parameter(const Mods &pre, Type::Type* t, const Mods &post, const std::string &name, const std::string &value)
     : m_pre(pre), m_post(post), m_type(t), m_name(name), m_value(value)
 {
 }
@@ -283,7 +280,7 @@ void Parameter::accept(Visitor* visitor)
 }
 
 
-Comment::Comment(string file, int line, string text)
+Comment::Comment(const std::string &file, int line, const std::string &text)
     : m_filename(file), m_line(line), m_text(text)
 {
 }

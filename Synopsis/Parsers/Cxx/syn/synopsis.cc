@@ -1,7 +1,6 @@
 #include "synopsis.hh"
 
 #include <map>
-using std::map;
 
 #ifdef DO_TRACE
 int Trace::level = 0;
@@ -10,27 +9,27 @@ int Trace::level = 0;
 #define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
 
 // This func is called so you can breakpoint on it
-void nullObj() {
-    cout << "Null ptr." << endl;
-    int* i = 0;
-    *i = 1;
+void nullObj()
+{
+  std::cout << "Null ptr." << std::endl;
+  int* i = 0;
+  *i = 1;
 }
 
 //. A functor that returns true if the declaration is 'main'
-struct is_main {
-    is_main(bool onlymain, string mainfile) :
-	m_onlymain(onlymain), m_mainfile(mainfile) {}
-    bool operator()(AST::Declaration* decl) {
-	return !m_onlymain || decl->filename() == m_mainfile;
-    }
-    bool m_onlymain;
-    string m_mainfile;
+struct is_main
+{
+  is_main(bool onlymain, const std::string &mainfile)
+    : m_onlymain(onlymain), m_mainfile(mainfile) {}
+  bool operator()(AST::Declaration* decl) { return !m_onlymain || decl->filename() == m_mainfile;}
+  bool m_onlymain;
+  std::string m_mainfile;
 };
 
 int count_main(AST::Scope* scope, is_main& func)
 {
     int count = 0;
-    vector<AST::Declaration*>::iterator iter = scope->declarations().begin();
+    std::vector<AST::Declaration*>::iterator iter = scope->declarations().begin();
     while (iter != scope->declarations().end()) {
 	AST::Scope* subscope = dynamic_cast<AST::Scope*>(*iter);
 	if (subscope) count += count_main(subscope, func);
@@ -58,7 +57,7 @@ struct Synopsis::Private {
     //. is_main functor
     is_main m_main;
     // Sugar
-    typedef map<void*, PyObject*> ObjMap;
+    typedef std::map<void*, PyObject*> ObjMap;
     // Maps from C++ objects to PyObjects
     ObjMap obj_map;
 
@@ -75,7 +74,7 @@ struct Synopsis::Private {
     //. Return the PyObject for the given Type::Type
     PyObject* py(Type::Type*);
     //. Return the PyObject for the given string
-    PyObject* py(const string&);
+    PyObject* py(const std::string &);
 
     //. Add the given pair
     void add(void* cobj, PyObject* pyobj) {
@@ -106,20 +105,20 @@ struct Synopsis::Private {
     }
 
     // Convert a string vector to a List
-    PyObject* List(const vector<string>& vec) {
+    PyObject* List(const std::vector<std::string> &vec) {
 	PyObject* list = PyList_New(vec.size());
 	int index = 0;
-	vector<string>::const_iterator iter = vec.begin();
+	std::vector<std::string>::const_iterator iter = vec.begin();
 	while (iter != vec.end())
 	    PyList_SET_ITEM(list, index++, py(*iter++));
 	return list;
     }
     
     // Convert a string vector to a Tuple
-    PyObject* Tuple(const vector<string>& vec) {
+    PyObject* Tuple(const std::vector<std::string> &vec) {
 	PyObject* tuple = PyTuple_New(vec.size());
 	int index = 0;
-	vector<string>::const_iterator iter = vec.begin();
+	std::vector<std::string>::const_iterator iter = vec.begin();
 	while (iter != vec.end())
 	    PyTuple_SET_ITEM(tuple, index++, py(*iter++));
 	return tuple;
@@ -135,7 +134,7 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
 	decl->accept(m_syn);
 	iter = obj_map.find(decl);
 	if (iter == obj_map.end()) {
-	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(AST::Declaration*)";
 	}
 	// Add the Declared for this declaration
@@ -154,7 +153,7 @@ PyObject* Synopsis::Private::py(AST::Inheritance* decl)
 	decl->accept(m_syn);
 	iter = obj_map.find(decl);
 	if (iter == obj_map.end()) {
-	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(AST::Inheritance*)";
 	}
     }
@@ -170,7 +169,7 @@ PyObject* Synopsis::Private::py(AST::Parameter* decl)
 	decl->accept(m_syn);
 	iter = obj_map.find(decl);
 	if (iter == obj_map.end()) {
-	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(AST::Parameter*)";
 	}
     }
@@ -187,7 +186,7 @@ PyObject* Synopsis::Private::py(AST::Comment* decl)
 	m_syn->visitComment(decl);
 	iter = obj_map.find(decl);
 	if (iter == obj_map.end()) {
-	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(AST::Comment*)";
 	}
     }
@@ -205,7 +204,7 @@ PyObject* Synopsis::Private::py(Type::Type* type)
 	type->accept(m_syn);
 	iter = obj_map.find(type);
 	if (iter == obj_map.end()) {
-	    cout << "Fatal: Still not PyObject after converting." << endl;
+	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(Type::Type*)";
 	}
     }
@@ -214,7 +213,7 @@ PyObject* Synopsis::Private::py(Type::Type* type)
     return obj;
 }
 
-PyObject* Synopsis::Private::py(const string& str)
+PyObject* Synopsis::Private::py(const std::string &str)
 {
     PyObject* pystr = PyString_FromStringAndSize(str.data(), str.size());
     PyString_InternInPlace(&pystr);
@@ -230,7 +229,7 @@ PyObject* Synopsis::Private::py(const string& str)
 // Class Synopsis
 //
 
-Synopsis::Synopsis(string mainfile, PyObject *decl, PyObject *dict)
+Synopsis::Synopsis(const std::string &mainfile, PyObject *decl, PyObject *dict)
         : m_declarations(decl), m_dictionary(dict), m_mainfile(mainfile)
 {
     Trace trace("Synopsis::Synopsis");
@@ -567,16 +566,16 @@ void Synopsis::Inheritance(Inheritance* type)
     Py_DECREF(from);
 }
 
-PyObject *Synopsis::N2L(const string &name)
+PyObject *Synopsis::N2L(const std::string &name)
 {
     Trace trace("Synopsis::N2L");
-    vector<string> scope;
-    string::size_type b = 0;
+    std::vector<std::string> scope;
+    std::string::size_type b = 0;
     while (b < name.size())
     {
-        string::size_type e = name.find("::", b);
-        scope.push_back(name.substr(b, e == string::npos ? e : e - b));
-        b = e == string::npos ? string::npos : e + 2;
+        std::string::size_type e = name.find("::", b);
+        scope.push_back(name.substr(b, e == std::string::npos ? e : e - b));
+        b = e == string::npos ? std::string::npos : e + 2;
     }
     PyObject *pylist = PyList_New(scope.size());
     for (size_t i = 0; i != scope.size(); ++i)
@@ -584,25 +583,25 @@ PyObject *Synopsis::N2L(const string &name)
     return pylist;
 }
 
-PyObject *Synopsis::V2L(const vector<string> &strings)
+PyObject *Synopsis::V2L(const std::vector<std::string> &strings)
 {
-    Trace trace("Synopsis::V2L(vector<string>)");
+    Trace trace("Synopsis::V2L(std::vector<std::string>)");
     PyObject *pylist = PyList_New(strings.size());
     for (size_t i = 0; i != strings.size(); ++i)
         PyList_SetItem(pylist, i, PyString_FromString(strings[i].c_str()));
     return pylist;
 }
 
-PyObject *Synopsis::V2L(const vector<PyObject *> &objs)
+PyObject *Synopsis::V2L(const std::vector<PyObject *> &objs)
 {
-    Trace trace("Synopsis::V2L(vector<PyObject*>)");
+    Trace trace("Synopsis::V2L(std::vector<PyObject*>)");
     PyObject *pylist = PyList_New(objs.size());
     for (size_t i = 0; i != objs.size(); ++i)
         PyList_SetItem(pylist, i, objs[i]);
     return pylist;
 }
 
-PyObject *Synopsis::V2L(const vector<size_t> &sizes)
+PyObject *Synopsis::V2L(const std::vector<size_t> &sizes)
 {
     //Trace trace("Synopsis::V2L");
     PyObject *pylist = PyList_New(sizes.size());

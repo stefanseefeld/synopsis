@@ -19,7 +19,7 @@ public:
     // Type Visitor
     //
     //. Returns a formatter string for given type
-    string format(const Type::Type*);
+    std::string format(const Type::Type*);
     virtual void visitType(Type::Type*);
     virtual void visitUnknown(Type::Unknown*);
     virtual void visitModifier(Type::Modifier*);
@@ -32,11 +32,11 @@ public:
 
 protected:
     //. The Type String
-    string m_type;
+    std::string m_type;
     //. The current scope name
     AST::Name m_scope;
     //. Returns the given Name relative to the current scope
-    string colonate(const AST::Name& name);
+    std::string colonate(const AST::Name& name);
 };
 
 //. Dumper displays the AST to the screen
@@ -45,14 +45,14 @@ public:
     Dumper();
 
     //. Sets to only show decls with given filename
-    void onlyShow(string fname);
+    void onlyShow(const std::string &fname);
     
-    string formatParam(AST::Parameter*);
+    std::string formatParam(AST::Parameter*);
     //
     // AST Visitor
     //
-    void visit(const vector<AST::Declaration*>&);
-    void visit(const vector<AST::Comment*>&);
+    void visit(const std::vector<AST::Declaration*>&);
+    void visit(const std::vector<AST::Comment*>&);
     virtual void visitDeclaration(AST::Declaration*);
     virtual void visitScope(AST::Scope*);
     virtual void visitNamespace(AST::Namespace*);
@@ -67,13 +67,13 @@ private:
     //. The indent depth
     int m_indent;
     //. The indent string
-    string m_indent_string;
+    std::string m_indent_string;
     //. Increases indent
     void indent();
     //. Decreases indent
     void undent();
     //. Only show this filename, if set
-    string m_filename;
+    std::string m_filename;
 
 };
 

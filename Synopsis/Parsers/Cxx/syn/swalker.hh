@@ -15,7 +15,6 @@
 #undef Scope
 
 #include <vector>
-using std::vector;
 
 // Forward declarations
 class ostream;
@@ -31,7 +30,7 @@ namespace Type { class Type; }
 class SWalker : public Walker {
 public:
     //. Constructor
-    SWalker(string source, Parser*, Builder*, Program*);
+    SWalker(const std::string &source, Parser*, Builder*, Program*);
     virtual ~SWalker() {}
 
     //. Sets extract tails to true.
@@ -44,13 +43,13 @@ public:
     void setStoreLinks(bool value, ostream* storage) { m_store_links = value; m_storage = storage; }
 
     //. Get a name from the ptree
-    string getName(Ptree*);
+    std::string getName(Ptree*) const;
 
     //. Update the line number
     void updateLineNumber(Ptree*);
 
     //. Store a link at the given node
-    void storeLink(Ptree* node, bool def, const vector<string>& name);
+    void storeLink(Ptree* node, bool def, const std::vector<std::string> &name);
     //. Store a link at the given node, if the type is amenable to it
     void storeLink(Ptree* node, bool def, Type::Type*);
     //. Store a span of the given class at the given node
@@ -66,15 +65,15 @@ public:
 
     // Takes the (maybe nil) args list and puts them in m_params
     void TranslateFunctionArgs(Ptree* args);
-    void TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
-    void TranslateFunctionName(char* encname, string& realname, Type::Type*& returnType);
+    void TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& params);
+    void TranslateFunctionName(char* encname, std::string& realname, Type::Type*& returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
     void TranslateTypedefDeclarator(Ptree* node);
-    vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);
+    std::vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);
     //. Returns a formatter string of the parameters. The idea is that this
     //. string will be appended to the function name to form the 'name' of the
     //. function.
-    string formatParameters(vector<AST::Parameter*>& params);
+    std::string formatParameters(std::vector<AST::Parameter*>& params);
 
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
@@ -167,22 +166,22 @@ private:
     //. This pointer is used as a comparison to avoid creating new strings
     char* m_filename_ptr;
     //. The current filename as string. This way refcounting will be used
-    string m_filename;
+    std::string m_filename;
     int m_lineno;
     //. The source filename
-    string m_source;
+    std::string m_source;
 
     //. True if should try and extract tail comments before }'s
     bool m_extract_tails;
     //. True if should parse whole ptree and store links
     bool m_store_links;
     //. Storage for links
-    ostream* m_storage;
+    std::ostream* m_storage;
     //. True if this TranslateDeclarator should try to store the decl type
     bool m_store_decl;
 
     //. A dummy name used for tail comments
-    vector<string> m_dummyname;
+    std::vector<std::string> m_dummyname;
 
     //. An instance of TypeFormatter for formatting types
     TypeFormatter* m_type_formatter;
@@ -193,7 +192,7 @@ private:
     //. the ones that are in the original declaration(s), but it is these names
     //. we need for referencing names inside the block, so a reference is stored
     //. here.
-    vector<AST::Parameter*> m_params;
+    std::vector<AST::Parameter*> m_params;
     //. The type returned from the expression-type translators
     Type::Type* m_type;
     //. The Scope to use for name lookups, or NULL to use enclosing default
@@ -215,13 +214,13 @@ private:
     //. till the end of a class.
     struct FuncImplCache {
 	AST::Operation* oper;
-	vector<AST::Parameter*> params;
+	std::vector<AST::Parameter*> params;
 	Ptree* body;
     };
     //. A vector of function impls
-    typedef vector<FuncImplCache> FuncImplVec;
+    typedef std::vector<FuncImplCache> FuncImplVec;
     //. A stack of function impl vectors
-    typedef vector<FuncImplVec> FuncImplStack;
+    typedef std::vector<FuncImplVec> FuncImplStack;
     //. The stack of function impl vectors
     FuncImplStack m_func_impl_stack;
     void SWalker::TranslateFuncImplCache(const FuncImplCache& cache);

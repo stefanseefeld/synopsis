@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.2 2001/04/03 23:01:37 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.3 2001/05/06 20:15:03 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.3  2001/05/06 20:15:03  stefan
+// fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
+//
 // Revision 1.2  2001/04/03 23:01:37  chalky
 // Small fixes and extra comments
 //
@@ -95,7 +98,7 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		spec = spec->Second();
 	    }
 	}
-	string name = getName(spec);
+	std::string name = getName(spec);
 	if (m_postfix_flag == Postfix_Var) {
 	    // Variable lookup. m_type will be the vtype
 	    /*cout << "m_scope is " << (m_scope ? m_type_formatter->format(m_scope->declared()) : "global") << endl;*/
@@ -107,15 +110,15 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		Type::Declared& declared = dynamic_cast<Type::Declared&>(*type);
 		// The variable could be a Variable or Enumerator
 		AST::Variable* var; AST::Enumerator* enumor;
-		if ((var = dynamic_cast<AST::Variable*>(declared.declaration())) != NULL) {
+		if ((var = dynamic_cast<AST::Variable*>(declared.declaration())) != 0) {
 		    // It is a variable
 		    m_type = var->vtype();
 		    // Store a link to the variable itself (not its type)
 		    storeLink(spec, false, type);
 		    /*cout << "var type name is " << m_type_formatter->format(m_type) << endl;*/
-		} else if ((enumor = dynamic_cast<AST::Enumerator*>(declared.declaration())) != NULL) {
+		} else if ((enumor = dynamic_cast<AST::Enumerator*>(declared.declaration())) != 0) {
 		    // It is an enumerator
-		    m_type = NULL; // we have no use for enums in type code
+		    m_type = 0; // we have no use for enums in type code
 		    // But still a link is needed
 		    storeLink(spec, false, type);
 		    /*cout << "enum type name is " << m_type_formatter->format(type) << endl;*/
@@ -138,15 +141,15 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	}
     } 
     catch(TranslateError& e) {
-	m_scope = NULL;
-	m_type = NULL;
+	m_scope = 0;
+	m_type = 0;
 	e.set_node(spec);
 	throw;
     }
     catch(...) {
 	throw nodeERROR(spec, "unknown error in TranslateVariable!");
     }
-    m_scope = NULL;
+    m_scope = 0;
     return 0; 
 }
 
@@ -156,7 +159,7 @@ void SWalker::TranslateFunctionArgs(Ptree* args)
     while (args->Length()) {
 	Ptree* arg = args->First();
 	// Translate this arg, TODO: m_params would be better as a vector<Type*>
-	m_type = NULL;
+	m_type = 0;
 	Translate(arg);
 	m_params.push_back(new AST::Parameter("", m_type, "", "", ""));
 	// Skip over arg and comma
@@ -175,7 +178,7 @@ Ptree* SWalker::TranslateFuncall(Ptree* node) {	// and fstyle cast
     // In translating the postfix the last var should be looked up as a
     // function. This means we have to find the args first, and store them in
     // m_params as a hint
-    vector<AST::Parameter*> save_params = m_params;
+    std::vector<AST::Parameter*> save_params = m_params;
     m_params.empty();
     TranslateFunctionArgs(node->Third());
 
@@ -207,7 +210,7 @@ Ptree* SWalker::TranslateAssign(Ptree* node) {
     STrace trace("SWalker::TranslateAssign");
     // [left = right]
     // TODO: lookup = operator
-    m_type = NULL;
+    m_type = 0;
     Translate(node->First());
     Type::Type* ret_type = m_type;
     Translate(node->Third());
@@ -250,7 +253,7 @@ protected:
 Ptree* SWalker::TranslateArrowMember(Ptree* node) {
     STrace trace("SWalker::TranslateArrowMember");
     // [ postfix -> name ]
-    m_type = NULL; m_scope = NULL;
+    m_type = 0; m_scope = 0;
     Postfix_Flag save_flag = m_postfix_flag;
     m_postfix_flag = Postfix_Var;
     Translate(node->First());
@@ -262,14 +265,14 @@ Ptree* SWalker::TranslateArrowMember(Ptree* node) {
     } catch (std::bad_cast) { throw nodeERROR(node, "LHS of -> was not a scope!"); }
     // Find member, m_type becomes the var type or func returnType
     Translate(node->Third());
-    m_scope = NULL;
+    m_scope = 0;
     return 0;
 }
 
 Ptree* SWalker::TranslateDotMember(Ptree* node) {
     STrace trace("SWalker::TranslateDotMember");
     // [ postfix . name ]
-    m_type = NULL; m_scope = NULL;
+    m_type = 0; m_scope = 0;
     Postfix_Flag save_flag = m_postfix_flag;
     m_postfix_flag = Postfix_Var;
     Translate(node->First());
@@ -282,7 +285,7 @@ Ptree* SWalker::TranslateDotMember(Ptree* node) {
     } catch (std::bad_cast) { throw nodeERROR(node, "Warning: LHS of . was not a scope! "); }
     // Find member, m_type becomes the var type or func returnType
     Translate(node->Third());
-    m_scope = NULL;
+    m_scope = 0;
     return 0;
 }
 
@@ -295,7 +298,7 @@ Ptree* SWalker::TranslateIf(Ptree* node) {
     // Parse expression
     Translate(node->Third());
     // Store a copy of any declarations for use in the else block
-    vector<AST::Declaration*> decls = m_builder->scope()->declarations();
+    std::vector<AST::Declaration*> decls = m_builder->scope()->declarations();
     // Translate then-statement. If a block then we avoid starting a new ns
     Ptree* stmt = node->Nth(4);
     if (stmt && stmt->First() && stmt->First()->Eq('{')) TranslateBrace(stmt);
@@ -416,7 +419,7 @@ Ptree* SWalker::TranslateCast(Ptree* node) {
 	m_type = m_decoder->decodeType();
 	m_type = TypeResolver(m_builder).resolve(m_type);
 	if (m_type) storeLink(type_expr->First(), false, m_type);
-    } else m_type = NULL;
+    } else m_type = 0;
     Translate(node->Nth(3));
     return 0;
 }
@@ -442,7 +445,7 @@ Ptree* SWalker::TranslateTry(Ptree* node) {
 	    Type::Type* arg_link = TypeResolver(m_builder).resolve(arg_type);
 	    storeLink(arg->First(), false, arg_link);
 	    // Create a declaration for the argument
-	    string name = m_decoder->decodeName(arg->Second()->GetEncodedName());
+	    std::string name = m_decoder->decodeName(arg->Second()->GetEncodedName());
 	    m_builder->addVariable(m_lineno, name, arg_type, false);
 	}
 	// Translate contents of 'catch' block
@@ -602,7 +605,7 @@ Ptree* SWalker::TranslateDelete(Ptree* node) {
 Ptree* SWalker::TranslateFstyleCast(Ptree* node) {
     STrace trace("SWalker::TranslateFstyleCast NYI");
     // [ [type] ( [expr] ) ]
-    m_type = NULL;
+    m_type = 0;
     //Translate(node->Third()); <-- unknown ptree???? FIXME
     m_decoder->init(node->GetEncodedType());
     m_type = m_decoder->decodeType();

@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.5 2001/03/16 04:42:00 chalky Exp $
+ * $Id: link.cc,v 1.6 2001/05/06 20:15:03 stefan Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.6  2001/05/06 20:15:03  stefan
+ * fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
+ *
  * Revision 1.5  2001/03/16 04:42:00  chalky
  * SXR parses expressions, handles differences from macro expansions. Some work
  * on function call resolution.
@@ -52,10 +55,6 @@
 #include <set>
 #include <map>
 #include <string>
-using std::vector;
-using std::string;
-using std::set;
-using std::map;
 
 //. Static namespace for link module
 namespace {

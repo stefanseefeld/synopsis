@@ -4,10 +4,9 @@
 #ifndef H_SYNOPSIS_CPP_TYPE
 #define H_SYNOPSIS_CPP_TYPE
 
-#include <vector.h>
+#include <vector>
 #include <string>
 #include <typeinfo>
-using std::string;
 
 // Forward declare AST::Declaration
 namespace AST { class Declaration; }
@@ -16,7 +15,7 @@ namespace AST { class Declaration; }
 namespace Type {
 
     // Import Name type
-    typedef vector<string> Name;
+    typedef std::vector<std::string> Name;
 
     // Forward declaration of the Visitor class defined in this file
     class Visitor;
@@ -24,11 +23,11 @@ namespace Type {
     //. The base class of the Type hierarchy
     class Type {
     public:
-	//. A vector of Type pointers
-	typedef vector<Type*> vector_t;
+	//. A std::vector of Type pointers
+	typedef std::vector<Type*> vector_t;
 
 	//. Typedef for modifier list
-	typedef vector<string> Mods;
+	typedef std::vector<std::string> Mods;
 
 	//. Constructor
 	Type();
@@ -42,7 +41,7 @@ namespace Type {
     class Named : public Type {
     public:
 	//. Constructor
-	Named(Name);
+	Named(const Name &);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 
@@ -64,7 +63,7 @@ namespace Type {
     class Base : public Named {
     public:
 	//. Constructor
-	Base(Name);
+	Base(const Name &);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
     };
@@ -73,7 +72,7 @@ namespace Type {
     class Unknown : public Named {
     public:
 	//. Constructor
-	Unknown(Name);
+	Unknown(const Name &);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
     };
@@ -82,7 +81,7 @@ namespace Type {
     class Declared : public Named {
     public:
 	//. Constructor
-	Declared(Name, AST::Declaration*);
+	Declared(const Name &, AST::Declaration*);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 
@@ -104,7 +103,7 @@ namespace Type {
     class Template : public Declared {
     public:
 	//. Constructor
-	Template(Name, AST::Declaration*, Type::vector_t& params);
+	Template(const Name &, AST::Declaration*, const Type::vector_t& params);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 
@@ -125,7 +124,7 @@ namespace Type {
     class Modifier : public Type {
     public:
 	//. Constructor
-	Modifier(Type* alias, Mods& pre, Mods& post);
+	Modifier(Type* alias, const Mods &pre, const Mods &post);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 
@@ -137,10 +136,10 @@ namespace Type {
 	Type* alias() { return m_alias; }
 
 	//. Returns the premodifiers
-	Mods& pre() { return m_pre; }
+	Mods &pre() { return m_pre; }
 
 	//. Returns the postmodifiers
-	Mods& post() { return m_post; }
+	Mods &post() { return m_post; }
     private:
 	//. The alias type
 	Type* m_alias;
@@ -171,7 +170,7 @@ namespace Type {
     class Parameterized : public Type {
     public:
 	//. Constructor
-	Parameterized(Template*, Type::vector_t& params);
+	Parameterized(Template*, const Type::vector_t& params);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 
@@ -198,7 +197,7 @@ namespace Type {
     class FuncPtr : public Type {
     public:
 	//. Constructor
-	FuncPtr(Type* ret, Mods& premods, Type::vector_t& params);
+	FuncPtr(Type* ret, const Mods &premods, const Type::vector_t& params);
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 

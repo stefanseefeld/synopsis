@@ -4,7 +4,7 @@
 #define H_SYNOPSIS_CPP_BUILDER
 
 #include "ast.hh"
-#include <stack.h>
+#include <stack>
 
 // Forward declare some Type::Types
 namespace Type {
@@ -16,7 +16,7 @@ namespace Type {
     class Function;
 }
 
-typedef vector<string> Name;
+typedef std::vector<std::string> Name;
 
 //. AST Builder.
 //. This class manages the building of an AST, including queries on the
@@ -25,7 +25,7 @@ typedef vector<string> Name;
 class Builder {
 public:
     //. Constructor
-    Builder(string basename);
+    Builder(const std::string &basename);
     //. Destructor. Recursively destroys all AST objects
     ~Builder();
 
@@ -33,9 +33,9 @@ public:
     void setAccess(AST::Access);
 
     //. Returns the current filename
-    string filename() { return m_filename; }
+    const std::string &filename() const { return m_filename; }
     //. Changes the current filename
-    void setFilename(string filename);
+    void setFilename(const std::string &filename);
     
     //
     // AST Methods
@@ -60,7 +60,7 @@ public:
     //. Construct and open a new Namespace. The Namespace becomes the
     //. current scope, and the old one is pushed onto the stack. If name is
     //. empty then a unique name is generated of the form `ns1
-    AST::Namespace* startNamespace(string name, NamespaceType type);
+    AST::Namespace* startNamespace(const std::string &name, NamespaceType type);
 
     //. End the current namespace and pop the previous Scope off the stack
     void endNamespace();
@@ -69,9 +69,9 @@ public:
     //. and the old one is pushed onto the stack. The type argument is the
     //. type, ie: "class" or "struct". This is tested to determine the default
     //. accessability.
-    AST::Class* startClass(int, string type, string name);
+    AST::Class* startClass(int, const std::string &type, const std::string &name);
     //. Construct and open a new Class with a qualified name
-    AST::Class* startClass(int, string type, const vector<string>& names);
+    AST::Class* startClass(int, const std::string &type, const std::vector<std::string> &names);
     //. Update the search to include base classes. Call this method after
     //. startClass(), and after filling in the parents() vector of the returned
     //. AST::Class object. After calling this method, name and type lookups
@@ -82,28 +82,28 @@ public:
     void endClass();
 
     //. Start function impl scope
-    void startFunctionImpl(const vector<string>& name);
+    void startFunctionImpl(const std::vector<std::string> &name);
 
     //. End function impl scope
     void endFunctionImpl();
 
     //. Add an operation
-    AST::Operation* addOperation(int, string name, vector<string> premod, Type::Type* ret, string realname);
+    AST::Operation* addOperation(int, const std::string &name, const std::vector<std::string> &premod, Type::Type* ret, const std::string &realname);
 
     //. Add a variable
-    AST::Variable* addVariable(int, string name, Type::Type* vtype, bool constr);
+    AST::Variable* addVariable(int, const std::string &name, Type::Type* vtype, bool constr);
 
     //. Add a variable to represent 'this', iff we are in a method
     void addThisVariable();
 
     //. Add a typedef
-    AST::Typedef* addTypedef(int, string name, Type::Type* alias, bool constr);
+    AST::Typedef* addTypedef(int, const std::string &name, Type::Type* alias, bool constr);
 
     //. Add an enumerator
-    AST::Enumerator* addEnumerator(int, string name, string value);
+    AST::Enumerator* addEnumerator(int, const std::string &name, const std::string &value);
 
     //. Add an enum
-    AST::Enum* addEnum(int, string name, const vector<AST::Enumerator*>&);
+    AST::Enum* addEnum(int, const std::string &name, const std::vector<AST::Enumerator*>&);
 
     //. Add a tail comment. This will be a dummy declaration with an empty
     //. and type "dummy"
@@ -115,18 +115,18 @@ public:
 
     //. Looks up the name in the current scope. This method always succeeds --
     //. if the name is not found it forward declares it.
-    Type::Named* lookupType(string name);
+    Type::Named* lookupType(const std::string &name);
 
     //. Looks up the qualified name in the current scope. This method always
     //. succeeds -- if the name is not found it forwards declares it.
-    Type::Named* lookupType(const vector<string>& names, bool func_okay=false);
+    Type::Named* lookupType(const std::vector<std::string> &names, bool func_okay=false);
 
     //. Looks up the name in the scope of the given scope. This method may
     //. return a NULL ptr if the lookup failed.
-    Type::Named* lookupType(string name, AST::Scope* scope);
+    Type::Named* lookupType(const std::string &name, AST::Scope* scope);
 
     //. Looks up the function in the given scope with the given args. 
-    AST::Function* lookupFunc(string, AST::Scope*, const vector<AST::Parameter*>&);
+    AST::Function* lookupFunc(const std::string &, AST::Scope*, const std::vector<AST::Parameter*>&);
 
     //. Resolves the final type of the given type. If the given type is an
     //. Unknown, it checks to see if the type has been defined yet and returns
@@ -134,23 +134,23 @@ public:
     Type::Named* resolveType(Type::Named* maybe_unknown);
 
     //. Create a Base type for the given name in the current scope
-    Type::Base* Base(string name);
+    Type::Base* Base(const std::string &name);
 
     //. Create an Unknown type for the given name in the current scope
-    Type::Unknown* Unknown(string name);
+    Type::Unknown* Unknown(const std::string &name);
 
     //. Create a Template type for the given name in the current scope
-    Type::Template* Template(string name, const vector<Type::Type*>&); 
+    Type::Template* Template(const std::string &name, const std::vector<Type::Type*>&); 
 
     //. Add an Unknown decl for given name if it doesnt already exist
-    Type::Unknown* addUnknown(string name);
+    Type::Unknown* addUnknown(const std::string &name);
 
 private:
     //. Base filename to strip from the start of all filenames
-    string m_basename;
+    std::string m_basename;
 
     //. Current filename
-    string m_filename;
+    std::string m_filename;
 
     //. The global scope object
     AST::Scope* m_global;
@@ -176,22 +176,22 @@ private:
 	//. The declaration for this scope
 	AST::Scope* scope_decl;
 	//. Typedef for a Scope Search
-	typedef vector<Scope*> Search;
+	typedef std::vector<Scope*> Search;
 	//. The list of scopes to search for this scope, including this
 	Search search;
 	//. Current accessability
 	AST::Access access;
     };
     //. The stack of Builder::Scopes
-    stack<Scope*> m_scopes;
+    std::stack<Scope*> m_scopes;
 
     //. Looks up the name in the current scope. This method may fail and
     //. return a NULL ptr.
-    Type::Named* lookup(string name);
+    Type::Named* lookup(const std::string &name);
 
     //. Searches for name in the list of Scopes. This method may return NULL
     //. if the name is not found.
-    Type::Named* lookup(string name, const Scope::Search&, bool func_okay = false) throw ();
+    Type::Named* lookup(const std::string &name, const Scope::Search&, bool func_okay = false) throw ();
 
     //. Private data which uses map
     struct Private;

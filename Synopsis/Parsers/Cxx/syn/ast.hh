@@ -23,8 +23,6 @@ namespace Type { class Type; class Declared; class Template; }
 //. A namespace for the AST hierarchy
 namespace AST {
 
-    using std::vector;
-
     // Forward declaration of AST::Visitor defined in this file
     class Visitor;
 
@@ -40,7 +38,7 @@ namespace AST {
     //. A scoped name type. This typedef makes it easier to use scoped name
     //. types, and also makes it clearer than using the raw vector in your
     //. code.
-    typedef vector<std::string> Name;
+    typedef std::vector<std::string> Name;
 
     //. The base class of the Declaration hierarchy.
     //. All declarations have a scoped Name, comments, etc. The filename and
@@ -51,7 +49,7 @@ namespace AST {
     class Declaration {
     public:
 	//. Constructor
-	Declaration(string filename, int line, string type, Name);
+	Declaration(const std::string &filename, int line, const std::string &type, const Name &);
 	//. Destructor. Recursively deletes the comments for this declaration
 	virtual ~Declaration();
 
@@ -63,19 +61,19 @@ namespace AST {
 	//
 
 	//. Constant version of name()
-	const Name name() const { return m_name; }
+	const Name &name() const { return m_name;}
 	//. Returns the scoped name of this declaration
-	Name name() { return m_name; }
+	Name &name() { return m_name;}
 
 	//. Returns the filename of this declaration
-	string filename() const { return m_filename; }
+	const std::string &filename() const { return m_filename; }
 
 	//. Returns the line number of this declaration
 	int line() const { return m_line; }
 
 	// TODO: move to whatever classes need it. Not needed here!
 	//. Returns the string type name of this declaration
-	string type() const { return m_type; }
+	const std::string &type() const { return m_type; }
 	
 	//. Returns the accessability of this declaration
 	Access access() const { return m_access; }
@@ -84,11 +82,11 @@ namespace AST {
 	void setAccess(Access axs) { m_access = axs; }
 
 	//. Constant version of comments()
-	const vector<Comment*>& comments() const { return m_comments; }
+	const std::vector<Comment*>& comments() const { return m_comments; }
 	//. Returns the vector of comments. The vector returned is the private
 	//. member vector of this Declaration, so modifications will affect the
 	//. Declaration.
-	vector<Comment*>& comments() { return m_comments; }
+	std::vector<Comment*>& comments() { return m_comments; }
 	
 	//. Return a cached Type::Declared for this Declaration. It is created
 	//. on demand and returned every time you call the method on this
@@ -99,13 +97,13 @@ namespace AST {
 	//. The scoped name
 	Name m_name;
 	//. The filename
-	string m_filename;
+	std::string m_filename;
 	//. The first line number
 	int m_line;
 	//. The string type name
-	string m_type;
+	std::string m_type;
 	//. The vector of Comment objects
-	vector<Comment*> m_comments;
+	std::vector<Comment*> m_comments;
 	//. The accessability spec
 	Access m_access;
 	//. The Type::Declared cache
@@ -120,7 +118,7 @@ namespace AST {
     class Scope : public Declaration {
     public:
 	//. Constructor
-	Scope(string, int, string, Name);
+	Scope(const std::string &, int, const std::string &, const Name &);
 	//. Destructor. 
 	//. Recursively destroys contained declarations
 	virtual ~Scope();
@@ -133,22 +131,22 @@ namespace AST {
 	//
 
 	//. Constant version of declarations()
-	const vector<Declaration*>& declarations() const { return m_declarations; }
+	const std::vector<Declaration*>& declarations() const { return m_declarations; }
 	//. Returns the vector of declarations. The vector returned is the
 	//. private member vector of this Scope, so modifications will affect
 	//. the Scope.
-	vector<Declaration*>& declarations() { return m_declarations; }
+	std::vector<Declaration*>& declarations() { return m_declarations; }
 
     private:
 	//. The vector of contained declarations
-	vector<Declaration*> m_declarations;
+	std::vector<Declaration*> m_declarations;
     }; // class Scope
 
     //. Namespace class
     class Namespace : public Scope {
     public:
 	//. Constructor
-	Namespace(string, int, string, Name);
+	Namespace(const std::string &, int, const std::string &, const Name &);
 	//. Destructor
 	virtual ~Namespace();
 
@@ -163,7 +161,7 @@ namespace AST {
     class Class : public Scope {
     public:
 	//. Constructor
-	Class(string, int, string, Name);
+	Class(const std::string &, int, const std::string &, const Name &);
 	//. Destructor. Recursively destroys Inheritance objects
 	virtual ~Class();
 
@@ -175,11 +173,11 @@ namespace AST {
 	//
 
 	//. Constant version of parents()
-	const vector<Inheritance*>& parents() const { return m_parents; }
+	const std::vector<Inheritance*>& parents() const { return m_parents; }
 	//. Returns the vector of parent Inheritance objects. The vector
 	//. returned is the private member vector of this Class, so
 	//. modifications will affect the Class.
-	vector<Inheritance*>& parents() { return m_parents; }
+	std::vector<Inheritance*>& parents() { return m_parents; }
 
 	//. Returns the Template object if this is a template
 	Type::Template* templateType() { return m_template; }
@@ -187,7 +185,7 @@ namespace AST {
 	void setTemplateType(Type::Template* t) { m_template = t; }
     private:
 	//. The vector of parent Inheritance objects
-	vector<Inheritance*> m_parents;
+	std::vector<Inheritance*> m_parents;
 	//. The Template Type for this class if it's a template
 	Type::Template* m_template;
     };
@@ -199,7 +197,7 @@ namespace AST {
     class Inheritance {
     public:
 	//. A typedef of the Attributes type
-	typedef vector<string> Attrs;
+	typedef std::vector<std::string> Attrs;
 
 	//. Constructor
 	Inheritance(Type::Type*, const Attrs&);
@@ -230,7 +228,7 @@ namespace AST {
     class Forward : public Declaration {
     public:
 	//. Constructor
-	Forward(string, int, string, Name);
+	Forward(const std::string &, int, const std::string &, const Name &);
 	//. Constructor that copies an existing declaration
 	Forward(AST::Declaration*);
 
@@ -242,7 +240,7 @@ namespace AST {
     class Typedef : public Declaration {
     public:
 	//. Constructor
-	Typedef(string, int, string, Name, Type::Type* alias, bool constr);
+	Typedef(const std::string &, int, const std::string &, const Name &, Type::Type* alias, bool constr);
 
 	//. Accepts the given AST::Visitor
 	virtual void accept(Visitor*);
@@ -268,7 +266,7 @@ namespace AST {
     class Variable : public Declaration {
     public:
 	//. Constructor
-	Variable(string, int, string, Name, Type::Type* vtype, bool constr);
+	Variable(const std::string &, int, const std::string &, const Name &, Type::Type* vtype, bool constr);
 
 	//. Accepts the given AST::Visitor
 	virtual void accept(Visitor*);
@@ -284,7 +282,7 @@ namespace AST {
 	bool constructed() { return m_constr; }
 
 	//. Returns the array sizes vector
-	vector<int>& sizes() { return m_sizes; }
+	std::vector<int>& sizes() { return m_sizes; }
     private:
 	//. The variable Type
 	Type::Type* m_vtype;
@@ -293,7 +291,7 @@ namespace AST {
 	bool m_constr;
 
 	//. Vector of array sizes. zero length indicates not an array.
-	vector<int> m_sizes;
+	std::vector<int> m_sizes;
     };
 
     //. Enumerator declaration. This is a name with a value in the containing
@@ -302,7 +300,7 @@ namespace AST {
     class Enumerator : public Declaration {
     public:
 	//. Constructor
-	Enumerator(string, int, string, Name, string value);
+	Enumerator(const std::string &, int, const std::string &, const Name &, const std::string &value);
 	
 	//. Accept the given AST::Visitor
 	virtual void accept(Visitor*);
@@ -312,17 +310,17 @@ namespace AST {
 	//
 
 	//. Returns the value of this enumerator
-	string value() const { return m_value; }
+	const std::string &value() const { return m_value; }
     private:
 	//. The value of this enumerator
-	string m_value;
+        std::string m_value;
     };
 
     //. Enum declaration. An enum contains multiple enumerators.
     class Enum : public Declaration {
     public:
 	//. Constructor
-	Enum(string, int, string, Name);
+	Enum(const std::string &, int, const std::string &, const Name &);
 	//. Destructor. Recursively destroys Enumerators
 	~Enum();
 
@@ -334,17 +332,17 @@ namespace AST {
 	//
 
 	//. Returns the vector of Enumerators
-	vector<Enumerator*>& enumerators() { return m_enums; }
+	std::vector<Enumerator*>& enumerators() { return m_enums; }
     private:
 	//. The vector of Enumerators
-	vector<Enumerator*> m_enums;
+	std::vector<Enumerator*> m_enums;
     };
 
     //. A const is a name with a value and declared type.
     class Const : public Declaration {
     public:
 	//. Constructor
-	Const(string, int, string, Name, Type::Type* ctype, string value);
+	Const(const std::string &, int, const std::string &, const Name &, Type::Type* ctype, const std::string &value);
 	
 	//. Accept the given AST::Visitor
 	virtual void accept(Visitor*);
@@ -357,13 +355,13 @@ namespace AST {
 	Type::Type* ctype() { return m_ctype; }
 
 	//. Returns the value of this enumerator
-	string value() const { return m_value; }
+	const std::string &value() const { return m_value; }
     private:
 	//. The const Type
 	Type::Type* m_ctype;
 
 	//. The value of this enumerator
-	string m_value;
+        std::string m_value;
     };
 
 
@@ -371,10 +369,10 @@ namespace AST {
     class Parameter {
     public:
 	//. The type of modifiers such as 'in', 'out'
-	typedef string Mods;
+	typedef std::string Mods;
 
 	//. Constructor
-	Parameter(Mods pre, Type::Type*, Mods post, string name, string value);
+	Parameter(const Mods &pre, Type::Type*, const Mods &post, const std::string &name, const std::string &value);
 
 	//. Accept the given AST::Visitor. Note this is not derived from
 	//. Declaration so it is not a virtual method.
@@ -393,16 +391,16 @@ namespace AST {
 	//. Const version of type()
 	const Type::Type* type() const { return m_type; }
 	//. Returns the name of the parameter
-	string name() { return m_name; }
+	const std::string &name() const { return m_name; }
 	//. Returns the value of the parameter
-	string value() { return m_value; }
+	const std::string &value() const { return m_value; }
 
 	//. Sets the name of the parameter
-	void setName(string name) { m_name = name; }
+	void setName(const std::string &name) { m_name = name; }
     private:
 	Mods m_pre, m_post;
 	Type::Type* m_type;
-	string m_name, m_value;
+	std::string m_name, m_value;
     };
 
     //. Function encapsulates a function declaration. Note that names may be
@@ -411,10 +409,10 @@ namespace AST {
     class Function : public Declaration {
     public:
 	//. The type of premodifiers
-	typedef vector<string> Mods;
+	typedef std::vector<std::string> Mods;
 
 	//. Constructor
-	Function(string, int, string, Name, Mods premod, Type::Type* ret, string realname);
+	Function(const std::string &, int, const std::string &, const Name &, const Mods &premod, Type::Type* ret, const std::string &realname);
 	//. Destructor. Recursively destroys parameters
 	~Function();
 
@@ -430,26 +428,26 @@ namespace AST {
 	//. Returns the return Type
 	Type::Type* returnType() { return m_ret; }
 	//. Returns the real name of this function
-	string realname() const { return m_realname; }
+        const std::string &realname() const { return m_realname; }
 
 	//. Returns the vector of parameters
-	vector<Parameter*>& parameters() { return m_params; }
+	std::vector<Parameter*>& parameters() { return m_params; }
     private:
 	//. The premodifier vector
 	Mods m_pre;
 	//. The return type
 	Type::Type* m_ret;
 	//. The real name
-	string m_realname;
+	std::string m_realname;
 	//. The vector of parameters
-	vector<Parameter*> m_params;
+	std::vector<Parameter*> m_params;
     };
 
     //. Operations are similar to functions but Not Quite Right
     class Operation : public Function {
     public:
 	//. Constructor
-	Operation(string, int, string, Name, Mods, Type::Type*, string);
+	Operation(const std::string &, int, const std::string &, const Name &, const Mods &, Type::Type*, const std::string &);
 
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
@@ -459,24 +457,24 @@ namespace AST {
     class Comment {
     public:
 	//. Constructor
-	Comment(string file, int line, string text);
+	Comment(const std::string &file, int line, const std::string &text);
 
 	//. Returns the filename of this declaration
-	string filename() const { return m_filename; }
+	const std::string &filename() const { return m_filename; }
 
 	//. Returns the line number of this declaration
 	int line() const { return m_line; }
 
 	//. Returns the text of this comment
-	string text() const { return m_text; }
+        const std::string &text() const { return m_text; }
 
     private:
 	//. The filename
-	string m_filename;
+	std::string m_filename;
 	//. The first line number
 	int m_line;
 	//. The test
-	string m_text;
+	std::string m_text;
     };
 
     //. The Visitor for the AST hierarchy. This class is just an interface

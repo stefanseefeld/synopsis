@@ -7,21 +7,18 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
-
 // Forward decl of Type::Type
 namespace Type { class Type; }
 
 // bad duplicate typedef.. hmm
-typedef vector<string> Name;
+typedef std::vector<std::string> Name;
 
 // Forward decl of Builder
 class Builder;
 
 
 //. A string type for the encoded names and types
-typedef basic_string<unsigned char> code;
+typedef std::basic_string<unsigned char> code;
 //. A string iterator type for the encoded names and types
 typedef code::iterator code_iter;
 
@@ -55,7 +52,7 @@ public:
     Type::Type* decodeFuncPtr();
 
     //. Decode a name
-    string decodeName();
+    std::string decodeName();
 
     //. Decode a qualified name
     Name decodeQualified();
@@ -63,13 +60,13 @@ public:
     //. Decode a name starting from the given iterator.
     //. Note the iterator passed need not be from the currently decoding
     //. string since this is a simple method.
-    string decodeName(code_iter);
+    std::string decodeName(code_iter);
 
     //. Decode a name starting from the given char*
-    string decodeName(char*);
+    std::string decodeName(char*);
 
     //. Decode a qualified name with only names in it
-    void decodeQualName(vector<string>& names);
+    void decodeQualName(std::vector<std::string>& names);
 
 private:
     //. The encoded type string currently being decoded
