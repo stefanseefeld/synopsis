@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.25 2001/04/03 23:03:53 chalky Exp $
+# $Id: omni.py,v 1.26 2001/05/25 13:45:49 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.26  2001/05/25 13:45:49  stefan
+# fix problem with getopt error reporting
+#
 # Revision 1.25  2001/04/03 23:03:53  chalky
 # IDL parser now uses config objects. Changed IDL demo accordingly.
 #
@@ -462,7 +465,7 @@ def __parseArgs(args, config_obj):
     try:
         opts,remainder = Util.getopt_spec(args, "I:b:mkKv")
     except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     for opt in opts:

@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.7 2001/04/05 16:21:56 chalky Exp $
+# $Id: Comments.py,v 1.8 2001/05/25 13:45:49 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.8  2001/05/25 13:45:49  stefan
+# fix problem with getopt error reporting
+#
 # Revision 1.7  2001/04/05 16:21:56  chalky
 # Allow user-specified comment processors
 #
@@ -288,7 +291,7 @@ def __parseArgs(args, config):
     try:
         opts, remainder = getopt.getopt(args, "p:")
     except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     for o,a in opts:

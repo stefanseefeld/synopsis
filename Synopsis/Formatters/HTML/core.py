@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.13 2001/04/06 02:39:26 chalky Exp $
+# $Id: core.py,v 1.14 2001/05/25 13:45:49 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.14  2001/05/25 13:45:49  stefan
+# fix problem with getopt error reporting
+#
 # Revision 1.13  2001/04/06 02:39:26  chalky
 # Get toc in/out from config
 #
@@ -480,7 +483,7 @@ def __parseArgs(args, config_obj):
     try:
         opts,remainder = Util.getopt_spec(args, "hvo:s:n:c:C:S:t:r:")
     except Util.getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     # Check for verbose first so config loading can use it

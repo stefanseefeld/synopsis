@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.5 2001/02/13 06:55:23 chalky Exp $
+#  $Id: Docbook.py,v 1.6 2001/05/25 13:45:49 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.6  2001/05/25 13:45:49  stefan
+# fix problem with getopt error reporting
+#
 # Revision 1.5  2001/02/13 06:55:23  chalky
 # Made synopsis -l work again
 #
@@ -211,7 +214,7 @@ def __parseArgs(args):
     try:
         opts,remainder = getopt.getopt(args, "o:v")
     except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     for opt in opts:
