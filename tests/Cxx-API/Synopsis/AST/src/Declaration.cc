@@ -12,21 +12,21 @@ void test1()
   AST::TypeKit types = AST::TypeKit();
   AST::SourceFile sf = kit.create_source_file("filename", "/long/filename", "C++");
   AST::Declaration d = kit.create_declaration(sf, 2, "C--", "foo", Tuple("bar"));
-  std::cout << d << std::endl;
-  std::cout << "file='" << d.file() << "\'\n"
+  std::cout << d.attr("__class__") << std::endl;
+  std::cout << "file='" << d.file().attr("__class__") << "\'\n"
 	    << "line='" << d.line() << "\'\n"
 	    << "language='" << d.language() << "\'\n"
 	    << "type='" << d.type() << "\'\n"
 	    << "name='" << d.name() << "\'\n"
-	    << "comments='" << d.comments() << std::endl;
-  std::cout << kit.create_builtin(sf, 3, "C--", "eos", Tuple("eos")) << std::endl;
-  std::cout << kit.create_macro(sf, 4, "C--", Tuple("ZAP"), List(), "") << std::endl;
-  std::cout << kit.create_forward(sf, 5, "C--", "forward", Tuple("flip")) << std::endl;
-  std::cout << kit.create_module(sf, 6, "C--", "namespace", Tuple("flop")) << std::endl;
+	    << "comments='" << d.comments() << '\'' << std::endl;
+  std::cout << kit.create_builtin(sf, 3, "C--", "eos", Tuple("eos")).attr("__class__") << std::endl;
+  std::cout << kit.create_macro(sf, 4, "C--", Tuple("ZAP"), List(), "").attr("__class__") << std::endl;
+  std::cout << kit.create_forward(sf, 5, "C--", "forward", Tuple("flip")).attr("__class__") << std::endl;
+  std::cout << kit.create_module(sf, 6, "C--", "namespace", Tuple("flop")).attr("__class__") << std::endl;
   AST::Class c = kit.create_class(sf, 7, "C--", "class", Tuple("faz"));
-  std::cout << c << std::endl;
+  std::cout << c.attr("__class__") << std::endl;
   AST::Type t = types.create_declared("C--", Tuple("faz"), c);
-  std::cout << kit.create_typedef(sf, 7, "C--", "class", Tuple("faz"), t, false) << std::endl;
+  std::cout << kit.create_typedef(sf, 7, "C--", "class", Tuple("faz"), t, false).attr("__class__") << std::endl;
 }
 
 int main(int, char **)

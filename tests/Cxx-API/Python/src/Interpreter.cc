@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdio>
 #include <iostream>
-
+#include "Guard.hh"
 using namespace Synopsis;
 
 void print(Dict &d)
@@ -22,7 +22,7 @@ void test1()
 {
   std::cout << "=== test1 ===" << std::endl;
   Interpreter interp;
-  Module module("__main__");
+  Module module = Module::import("__main__");
   Dict global = module.dict();
   Dict local;
   Object retn = interp.run_string("print 'hello world'", Interpreter::FILE,
@@ -33,23 +33,29 @@ void test2()
 {
   std::cout << "=== test2 ===" << std::endl;
   Interpreter interp;
-  Module module("__main__");
+  Module path = Module::import("os.path");
+  std::string dir = Object::narrow<std::string>(path.attr("dirname")(Tuple(__FILE__)));
+  std::string script = Object::narrow<std::string>(path.attr("join")(Tuple(dir, "greeting.py")));
+
+  Module module = Module::import("__main__");
   Dict global = module.dict();
   Dict local;
-  Object retn = interp.run_file("script.py", Interpreter::FILE,
+  Object retn = interp.run_file(script, Interpreter::FILE,
                                 global, local);
-  print(global);
-  print(local);  
 }
 
 void test3()
 {
   std::cout << "=== test3 ===" << std::endl;
   Interpreter interp;
-  Module module("__main__");
+  Module path = Module::import("os.path");
+  std::string dir = Object::narrow<std::string>(path.attr("dirname")(Tuple(__FILE__)));
+  std::string script = Object::narrow<std::string>(path.attr("join")(Tuple(dir, "Command.py")));
+
+  Module module = Module::import("__main__");
   Dict global = module.dict();
   Dict local;
-  Object retn = interp.run_file("Command.py", Interpreter::FILE,
+  Object retn = interp.run_file(script, Interpreter::FILE,
                                 global, local);
   Object type = local.get("Command");
   Tuple args("first", "second", "third");
