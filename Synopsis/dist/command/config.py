@@ -1,32 +1,32 @@
 import os, sys, string
 
 from distutils.core import setup
-from distutils.command import build, build_ext
+from distutils.command.build import build
 from distutils.util import get_platform
 from distutils.dir_util import mkpath
 from distutils.spawn import spawn, find_executable
 from shutil import *
 
-class config(build.build):
+class config(build):
     """derive from build since we use almost all the same options"""
 
     description = "configure the package"
 
-    user_options = build.build.user_options[:] + [
+    user_options = build.user_options[:] + [
         ('disable-gc', None,
          "whether or not to build the C++ parser with the garbage collector"),
         ('enable-c', None,
          "whether or not to build the C parser")
         ]
-    boolean_options = build.build.boolean_options[:] + ['disable-gc', 'enable-c']
+    boolean_options = build.boolean_options[:] + ['disable-gc', 'enable-c']
 
     def initialize_options (self):
-        build.build.initialize_options(self)
+        build.initialize_options(self)
         self.disable_gc = 0
         self.enable_c = 0
 
     def finalize_options (self):
-        build.build.finalize_options(self)
+        build.finalize_options(self)
         # only append the path once 
         self.extensions = []
         for e in self.distribution.ext_modules:
