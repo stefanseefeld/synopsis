@@ -461,4 +461,10 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
       <para></para>
     </section>
   </chapter>
+  <appendix><title>Listing of all Processors and their parameters</title>
+    <para>
+      This is a listing of all processors with their respective parameters
+      that can be set as described in <xref linkend="parameters" />.
+    </para>
+  </appendix>
 </book>
