@@ -56,6 +56,18 @@ class FileNamer:
 	    except os.error, reason:
 		print "ERROR: Creating directory:",reason
 		sys.exit(2)
+	    try:
+		# Copy stylesheet in
+		if stylesheet:
+		    print "Warning: Copying stylesheet to output directory from current."
+		    fin = open(stylesheet,'r')
+		    fout = open(basename+"/"+stylesheet, 'w')
+		    fout.writelines(fin.readlines())
+		    fin.close()
+		    fout.close()
+	    except:
+		print "ERROR: Copying file:",reason
+		sys.exit(2)
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
 	    sys.exit(1)

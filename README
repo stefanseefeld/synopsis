@@ -1,0 +1,120 @@
+Synopsis 0.2
+~~~~~~~~~~~~
+
+** Introduction
+
+Synopsis is a code documentation tool. It extracts comments from a range of
+input files and creates a range of output. Every input format has its own
+Parser, whose output is an Abstract Syntax Tree as defined by Synopsis. This
+AST is then Linked (to prevent duplicates, strip unneeded namespaces, etc) and
+finally output. At any stage the AST can be saved to or loaded from files on
+disk. Moreover, multiple files may be loaded at once to allow progressive
+compilation using 'make'. Individual formatters take the AST from memory and
+create suitable output.
+
+
+** Building
+
+Just type 'make' from the top directory and any invidual components that need
+compilation will be compiled. Currently the only such is the C++ Parser
+module, including the garbage collector and OpenC++ parser it uses.
+
+
+** Installing
+
+Since this is only version 0.2 there is no installation target provided.
+However, to use Synopsis from elsewhere just add the top-level directory to
+your path and call "synopsis". It should find its modules just fine.
+
+
+** Demos
+
+There are demos for both IDL and C++. You will have to read the Makefiles in
+demo/C++ and demo/IDL for a list. Mostly these use headers or IDL files copied
+from Berlin's Prague and Warsaw libraries, but there is a custom test C++ file
+called "demo/C++/test.cc" which attempts to test all the features of the C++
+parser. You may use this file as an example of proper documentation style in
+your own programs.
+
+Parsers: IDL, C++
+Formatters:
+ HTML - takes a directory name for output (-o Directory)
+        Creates many pages in that directory
+	Copies specified stylesheet to new directory (-s stylesheet.css)
+ ASCII - Tries to output the AST in a way that is syntactically valid as
+         input.
+ DUMP - Dumps the AST in a verbose form. This is useful only if you are
+        trying to figure out how various input is converted to AST objects.
+	Pipe into "less -r" for best results.
+
+For an example of using synopsis for progressive compilation(??) see the
+Berlin project. A separate AST is created for each input file, and only
+updated when necessary. These separate files are then compiled into a single
+AST and passed to the formatter for output:
+
+ for each file:  synopsis -p C++ -Wl,-s,Prague -o syn/$file.syn $file.hh
+ finally: synopis -f HTML -o Manual syn/*.syn
+
+Note that telling the Linker to strip namespaces for every file results in
+smaller files and much faster linking, as the standard headers are so large
+that they can cause very large time and memory requirements.
+
+
+** Known Bugs
+
+There are a few known bugs that are not yet fixed:
+o. Linking between interface and implementation (IDL and C++) is not yet
+   supported.
+o. The HTML formatter is missing many planned features.
+o. The HTML formatter doesn't sort the sections in class/module pages very
+   well - currently it is alphabetical.
+o. Parametrized classes are not supported by the C++ parser nor the HTML
+   formatter.
+
+
+** Future features
+
+Currently the following features are planned:
+o. Precompiled headers. This would speed up the parsing and linking speed for
+   C++ files tremendously
+o. Further linker features and optimisations
+o. Further output options, such as different formats (ps, pdf, latex, sgml,
+   man, info).
+o. Further output options, such as pluggable Comment parsers, file layouts,
+   only display public interfaces etc. These are mostly refactored into
+   separate classes, there are just no alternatives written yet :)
+o. Linking between different languages, such that C++ classes are
+   automatically linked to the IDL interfaces they implement.
+o. Using the dictionary to parse and cross-reference all files in a project,
+   similar to Mozilla's LXR but properly typed (LXR doesn't understand C/C++
+   expressions properly, it just looks for names). The C++ parser already does
+   a lot of what would be needed in terms of type lookup.
+
+For more information on this TODO list, see the Task Manager at Synopsis'
+Sourceforge home.
+
+
+** More info
+
+Synopsis is hosted at Sourceforge:
+
+ Homepage:
+ http://synopsis.sourceforge.net/
+ 
+ Project page:
+ http://sourceforge.net/projects/synopsis/
+
+ Mailing list (see project page to subscribe and for archives):
+ synopsis-devel@lists.sourceforge.net
+
+
+** Epilogue
+
+Synopsis is developed by:
+ - Stefan Seefelds
+ - Stephen Davies (chalky@null.net)
+
+Synopsis is released under the GPL.
+
+The C++ parser uses parts of OpenC++ by Shigeru Chiba, who owns copyright on
+his source code. The relevant parts of OpenC++ are included for convenience.

@@ -25,10 +25,10 @@ div.summary
     border: none;
     font-style: italic;
     color: #446666;
-    margin-left: 3em;
+    margin-left: 2em;
   }
 div.enumerator {
-    margin-left: 3em;
+    margin-left: 2em;
 }
 div.files {
     margin-left: 1em;
