@@ -7,7 +7,7 @@
 #ifndef _SymbolLookup_Table_hh
 #define _SymbolLookup_Table_hh
 
-#include <SymbolLookup/Symbol.hh>
+#include <SymbolLookup/Scope.hh>
 #include <SymbolLookup/ConstEvaluator.hh>
 #include <stack>
 

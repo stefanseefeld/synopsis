@@ -7,11 +7,14 @@
 #include <PTree.hh>
 #include <PTree/Display.hh>
 #include <SymbolLookup.hh>
+#include <Synopsis/Trace.hh>
 #include <fstream>
+
+using Synopsis::Trace;
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " [-t] [-r] <input>" << std::endl;
+  std::cerr << "Usage: " << command << " [-d] [-t] [-r] <input>" << std::endl;
   return -1;
 }
 
@@ -19,28 +22,21 @@ int main(int argc, char **argv)
 {
   bool translate = false;
   bool typeinfo = false;
+  bool debug = false;
   const char *input = argv[1];
-  switch (argc)
+  if (argc == 1) return usage(argv[0]);
+  for (int i = 1; i < argc - 1; ++i)
   {
-    case 2: break;
-    case 3:
-      if (argv[1] == std::string("-t")) translate = true;
-      else if (argv[1] == std::string("-r")) typeinfo = true;
-      else return usage(argv[0]);
-      input = argv[2];
-      break;
-    case 4:
-      if (!(argv[1] == std::string("-t") && argv[2] == std::string("-r")) &&
-	  !(argv[1] == std::string("-r") && argv[2] == std::string("-t")))
-	return usage(argv[0]);
-      translate = true;
-      typeinfo = true;
-      input = argv[3];
-      break;
-    default: return usage(argv[0]);
+    if (argv[i] == std::string("-t")) translate = true;
+    else if (argv[i] == std::string("-r")) typeinfo = true;
+    else if (argv[i] == std::string("-d")) debug = true;
+    else return usage(argv[0]);
   }
+  input = argv[argc - 1];
   try
   {
+    if (debug) Trace::enable_debug();
+
     Class::do_init_static();
     Metaclass::do_init_static();
     Environment::do_init_static();

@@ -10,7 +10,10 @@
 #include <SymbolLookup.hh>
 #include "Parser.hh"
 #include "Lexer.hh"
+#include <Synopsis/Trace.hh>
 #include <iostream>
+
+using Synopsis::Trace;
 
 namespace
 {
@@ -165,6 +168,7 @@ void Parser::show_message_head(const char *pos)
 
 PTree::Node *Parser::parse()
 {
+  Trace trace("Parser::parse");
   PTree::Node *statements = 0;
   while(my_lexer.look_ahead(0) != '\0')
   {
@@ -202,6 +206,7 @@ PTree::Node *Parser::parse()
 */
 bool Parser::definition(PTree::Node *&p)
 {
+  Trace trace("Parser::definition");
   bool res;
   int t = my_lexer.look_ahead(0);
   if(t == ';')
@@ -246,6 +251,7 @@ bool Parser::definition(PTree::Node *&p)
 
 bool Parser::null_declaration(PTree::Node *&decl)
 {
+  Trace trace("Parser::null_declaration");
   Token tk;
 
   if(my_lexer.get_token(tk) != ';') return false;
@@ -259,6 +265,7 @@ bool Parser::null_declaration(PTree::Node *&decl)
 */
 bool Parser::typedef_(PTree::Typedef *&def)
 {
+  Trace trace("Parser::typedef_");
   Token tk;
   PTree::Node *type_name, *decl;
   PTree::Encoding type_encode;
@@ -283,6 +290,7 @@ bool Parser::typedef_(PTree::Typedef *&def)
 */
 bool Parser::type_specifier(PTree::Node *&tspec, bool check, PTree::Encoding &encode)
 {
+  Trace trace("Parser::type_specifier");
   PTree::Node *cv_q, *cv_q2;
 
   if(!opt_cv_qualify(cv_q) || !opt_integral_type_or_class_spec(tspec, encode))
@@ -444,6 +452,7 @@ bool Parser::meta_arguments(PTree::Node *&args)
 */
 bool Parser::linkage_spec(PTree::Node *&spec)
 {
+  Trace trace("Parser::linkage_spec");
   Token tk1, tk2;
   PTree::Node *body;
 
@@ -470,6 +479,7 @@ bool Parser::linkage_spec(PTree::Node *&spec)
 */
 bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
 {
+  Trace trace("Parser::namespace_spec");
   Token tk1, tk2;
 
   if(my_lexer.get_token(tk1) != Token::NAMESPACE) return false;
@@ -506,6 +516,7 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
 */
 bool Parser::namespace_alias(PTree::Node *&exp)
 {
+  Trace trace("Parser::namespace_alias");
   Token tk;
 
   if(my_lexer.get_token(tk) != Token::NAMESPACE) return false;
@@ -564,6 +575,7 @@ bool Parser::namespace_alias(PTree::Node *&exp)
 */
 bool Parser::using_(PTree::Node *&decl)
 {
+  Trace trace("Parser::user_");
   Token tk;
 
   if(my_lexer.get_token(tk) != Token::USING)
@@ -588,6 +600,7 @@ bool Parser::using_(PTree::Node *&decl)
 */
 bool Parser::linkage_body(PTree::Node *&body)
 {
+  Trace trace("Parser::linkage_body");
   Token op, cp;
   PTree::Node *def;
 
@@ -637,6 +650,7 @@ bool Parser::linkage_body(PTree::Node *&body)
 */
 bool Parser::template_decl(PTree::Node *&decl)
 {
+  Trace trace("Parser::template_decl");
   PTree::Declaration *body;
   PTree::TemplateDecl *tdecl;
   TemplateDeclKind kind = tdk_unknown;
@@ -681,6 +695,7 @@ bool Parser::template_decl(PTree::Node *&decl)
 
 bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 {
+  Trace trace("Parser::template_decl2");
   Token tk;
   PTree::Node *args;
 
@@ -725,6 +740,7 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 */
 bool Parser::template_arg_list(PTree::Node *&args)
 {
+  Trace trace("Parser::template_arg_list");
   Token tk;
   PTree::Node *a;
 
@@ -758,6 +774,7 @@ bool Parser::template_arg_list(PTree::Node *&args)
 */
 bool Parser::template_arg_declaration(PTree::Node *&decl)
 {
+  Trace trace("Parser::template_arg_declaration");
   Token tk1, tk2;
 
   int t0 = my_lexer.look_ahead(0);
@@ -858,6 +875,7 @@ bool Parser::template_arg_declaration(PTree::Node *&decl)
 */
 bool Parser::extern_template_decl(PTree::Node *&decl)
 {
+  Trace trace("Parser::extern_template_decl");
   Token tk1, tk2;
   PTree::Declaration *body;
 
@@ -897,10 +915,11 @@ bool Parser::extern_template_decl(PTree::Node *&decl)
 
   Note: if you modify this function, look at declaration.statement, too.
   Note: this regards a statement like "T (a);" as a constructor
-        declaration.  See isConstructorDecl().
+        declaration.  See is_constructor_decl().
 */
 bool Parser::declaration(PTree::Declaration *&statement)
 {
+  Trace trace("Parser::declaration");
   PTree::Node *mem_s, *storage_s, *cv_q, *integral, *head;
   PTree::Encoding type_encode;
   int res;
@@ -953,6 +972,7 @@ bool Parser::declaration(PTree::Declaration *&statement)
    expression of switch/while/if) */
 bool Parser::simple_declaration(PTree::Declaration *&statement)
 {
+  Trace trace("Parser::simple_declaration");
   PTree::Node *cv_q, *integral;
   PTree::Encoding type_encode, name_encode;
 
@@ -1004,6 +1024,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
 				  PTree::Node *head, PTree::Node *integral,
 				  PTree::Node *cv_q)
 {
+  Trace trace("Parser::integral_declaration");
   Token tk;
   PTree::Node *cv_q2, *decl;
 
@@ -1062,6 +1083,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
 bool Parser::const_declaration(PTree::Declaration *&statement, PTree::Encoding&,
 			       PTree::Node *head, PTree::Node *cv_q)
 {
+  Trace trace("Parser::const_declaration");
   PTree::Node *decl;
   Token tk;
   PTree::Encoding type_encode;
@@ -1083,6 +1105,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
 			       PTree::Node *mem_s, PTree::Node *cv_q,
 			       PTree::Node *head)
 {
+  Trace trace("Parser::other_declaration");
   PTree::Node *type_name, *decl, *cv_q2;
   Token tk;
 
@@ -1161,6 +1184,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
 */
 bool Parser::is_constructor_decl()
 {
+  Trace trace("Parser::is_constructor_decl");
   if(my_lexer.look_ahead(0) != '(')
     return false;
   else
@@ -1231,6 +1255,7 @@ bool Parser::is_ptr_to_member(int i)
 */
 bool Parser::opt_member_spec(PTree::Node *&p)
 {
+  Trace trace("Parser::opt_member_spec");
   Token tk;
   PTree::Node *lf;
   int t = my_lexer.look_ahead(0);
@@ -1265,6 +1290,7 @@ bool Parser::opt_member_spec(PTree::Node *&p)
 */
 bool Parser::opt_storage_spec(PTree::Node *&p)
 {
+  Trace trace("Parser::opt_storage_spec");
   int t = my_lexer.look_ahead(0);
   if(t == Token::STATIC || t == Token::EXTERN || t == Token::AUTO ||
      t == Token::REGISTER || t == Token::MUTABLE)
@@ -1302,6 +1328,7 @@ bool Parser::opt_storage_spec(PTree::Node *&p)
 */
 bool Parser::opt_cv_qualify(PTree::Node *&cv)
 {
+  Trace trace("Parser::opt_cv_qualify");
   PTree::Node *p = 0;
   while(true)
   {
@@ -1340,6 +1367,7 @@ bool Parser::opt_cv_qualify(PTree::Node *&cv)
 */
 bool Parser::opt_integral_type_or_class_spec(PTree::Node *&p, PTree::Encoding& encode)
 {
+  Trace trace("Parser::opt_integral_type_or_class_spec");
   bool is_integral;
   int t;
   char type = ' ', flag = ' ';
@@ -1458,6 +1486,7 @@ bool Parser::opt_integral_type_or_class_spec(PTree::Node *&p, PTree::Encoding& e
 */
 bool Parser::constructor_decl(PTree::Node *&constructor, PTree::Encoding& encode)
 {
+  Trace trace("Parser::constructor_decl");
   Token op, cp;
   PTree::Node *args, *cv, *throw_decl, *mi;
 
@@ -1512,6 +1541,7 @@ bool Parser::constructor_decl(PTree::Node *&constructor, PTree::Encoding& encode
 */
 bool Parser::opt_throw_decl(PTree::Node *&throw_decl)
 {
+  Trace trace("Parser::opt_throw_decl");
   Token tk;
   int t;
   PTree::Node *p = 0;
@@ -1569,6 +1599,7 @@ bool Parser::opt_throw_decl(PTree::Node *&throw_decl)
 bool Parser::declarators(PTree::Node *&decls, PTree::Encoding& type_encode,
 			 bool should_be_declarator, bool is_statement)
 {
+  Trace trace("Parser::declarators");
   PTree::Node *d;
   Token tk;
   PTree::Encoding encode;
@@ -1606,6 +1637,7 @@ bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode
 				  bool should_be_declarator,
 				  bool is_statement)
 {
+  Trace trace("Parser::declarator_with_init");
   PTree::Node *d, *e;
   Token tk;
   PTree::Encoding name_encode;
@@ -1678,6 +1710,7 @@ bool Parser::declarator(PTree::Node *&decl, DeclKind kind, bool recursive,
 			PTree::Encoding& type_encode, PTree::Encoding& name_encode,
 			bool should_be_declarator, bool is_statement)
 {
+  Trace trace("Parser::declarator");
   return declarator2(decl, kind, recursive, type_encode, name_encode,
 		     should_be_declarator, is_statement, 0);
 }
@@ -1687,6 +1720,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 			 bool should_be_declarator, bool is_statement,
 			 PTree::Node **declared_name)
 {
+  Trace trace("Parser::declarator2");
   PTree::Encoding recursive_encode;
   PTree::Node *d;
   int t;
@@ -1738,7 +1772,8 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       my_lexer.get_token(i);
       t = my_lexer.look_ahead(0);
     }
-    if (kind == kDeclarator || t == Token::Identifier || t == Token::Scope){
+    if (kind == kDeclarator || t == Token::Identifier || t == Token::Scope)
+    {
       // if this is an argument declarator, "int (*)()" is valid.
       PTree::Node *id;
       if(name(id, name_encode)) d = PTree::snoc(d, id);
@@ -1773,7 +1808,8 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       if(my_lexer.get_token(cp) != ')')
 	return false;
 
-      if(is_args){
+      if(is_args)
+      {
 	d = PTree::nconc(d, PTree::list(new PTree::Atom(op), args,
 					new PTree::Atom(cp)));
 	opt_cv_qualify(cv);
@@ -1837,6 +1873,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 */
 bool Parser::opt_ptr_operator(PTree::Node *&ptrs, PTree::Encoding& encode)
 {
+  Trace trace("Parser::opt_ptr_operator");
   ptrs = 0;
   while(true)
   {
@@ -1873,6 +1910,7 @@ bool Parser::opt_ptr_operator(PTree::Node *&ptrs, PTree::Encoding& encode)
 */
 bool Parser::member_initializers(PTree::Node *&init)
 {
+  Trace trace("Parser::member_initializer");
   Token tk;
   PTree::Node *m;
 
@@ -1902,6 +1940,7 @@ bool Parser::member_initializers(PTree::Node *&init)
 */
 bool Parser::member_init(PTree::Node *&init)
 {
+  Trace trace("Parser::member_init");
   PTree::Node *name, *args;
   Token tk1, tk2;
   PTree::Encoding encode;
@@ -1929,6 +1968,7 @@ bool Parser::member_init(PTree::Node *&init)
 */
 bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
 {
+  Trace trace("Parser::name");
   Token tk, tk2;
   int t;
   int length = 0;
@@ -2058,6 +2098,7 @@ bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
 */
 bool Parser::operator_name(PTree::Node *&name, PTree::Encoding &encode)
 {
+  Trace trace("Parser::operator_name");
     Token tk;
 
     int t = my_lexer.look_ahead(0);
@@ -2123,6 +2164,7 @@ bool Parser::operator_name(PTree::Node *&name, PTree::Encoding &encode)
 */
 bool Parser::cast_operator_name(PTree::Node *&name, PTree::Encoding &encode)
 {
+  Trace trace("Parser::cast_operator_name");
   PTree::Node *cv1, *cv2, *type_name, *ptr;
   PTree::Encoding type_encode;
 
@@ -2161,6 +2203,7 @@ bool Parser::cast_operator_name(PTree::Node *&name, PTree::Encoding &encode)
 */
 bool Parser::ptr_to_member(PTree::Node *&ptr_to_mem, PTree::Encoding &encode)
 {
+  Trace trace("Parser::ptr_to_member");
   Token tk;
   PTree::Node *p, *n;
   PTree::Encoding pm_encode;
@@ -2226,6 +2269,7 @@ bool Parser::ptr_to_member(PTree::Node *&ptr_to_mem, PTree::Encoding &encode)
 */
 bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
 {
+  Trace trace("Parser::template_args");
   Token tk1, tk2;
   PTree::Encoding type_encode;
 
@@ -2291,6 +2335,7 @@ bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
 bool Parser::arg_decl_list_or_init(PTree::Node *&arglist, bool &is_args,
 				   PTree::Encoding &encode, bool maybe_init)
 {
+  Trace trace("Parser::arg_decl_list_or_init");
   const char* pos = my_lexer.save();
   if(maybe_init)
   {
@@ -2322,6 +2367,7 @@ bool Parser::arg_decl_list_or_init(PTree::Node *&arglist, bool &is_args,
 */
 bool Parser::arg_decl_list(PTree::Node *&arglist, PTree::Encoding& encode)
 {
+  Trace trace("Parser::arg_decl_list");
   PTree::Node *list;
   PTree::Node *d;
   int t;
@@ -2376,6 +2422,7 @@ bool Parser::arg_decl_list(PTree::Node *&arglist, PTree::Encoding& encode)
 */
 bool Parser::arg_declaration(PTree::Node *&decl, PTree::Encoding &encode)
 {
+  Trace trace("Parser::arg_declaration");
   PTree::Node *header, *type_name, *arg, *e;
   Token tk;
   PTree::Encoding name_encode;
@@ -2417,6 +2464,7 @@ bool Parser::arg_declaration(PTree::Node *&decl, PTree::Encoding &encode)
 */
 bool Parser::initialize_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::initialize_expr");
   Token tk;
   PTree::Node *e, *elist;
 
@@ -2473,6 +2521,7 @@ bool Parser::initialize_expr(PTree::Node *&exp)
 */
 bool Parser::function_arguments(PTree::Node *&args)
 {
+  Trace trace("Parser::function_arguments");
   PTree::Node *exp;
   Token tk;
 
@@ -2500,6 +2549,7 @@ bool Parser::function_arguments(PTree::Node *&args)
 */
 bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
 {
+  Trace trace("Parser::enum_spec");
   Token tk, tk2;
   PTree::Node *body;
 
@@ -2542,6 +2592,7 @@ bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
 */
 bool Parser::enum_body(PTree::Node *&body)
 {
+  Trace trace("Parser::enum_body");
   Token tk, tk2;
   PTree::Node *name, *exp;
 
@@ -2594,6 +2645,7 @@ bool Parser::enum_body(PTree::Node *&body)
 */
 bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
 {
+  Trace trace("Parser::class_spec");
   PTree::Node *head, *bases, *body, *name;
   Token tk;
 
@@ -2653,6 +2705,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
 */
 bool Parser::base_specifiers(PTree::Node *&bases)
 {
+  Trace trace("Parser::base_specifiers");
   Token tk;
   int t;
   PTree::Node *name;
@@ -2720,6 +2773,7 @@ bool Parser::base_specifiers(PTree::Node *&bases)
 */
 bool Parser::class_body(PTree::Node *&body)
 {
+  Trace trace("Parser::class_body");
   Token tk;
   PTree::Node *mems, *m;
 
@@ -2766,6 +2820,7 @@ bool Parser::class_body(PTree::Node *&body)
 */
 bool Parser::class_member(PTree::Node *&mem)
 {
+  Trace trace("Parser::class_member");
   Token tk1, tk2;
 
   int t = my_lexer.look_ahead(0);
@@ -2826,6 +2881,7 @@ bool Parser::class_member(PTree::Node *&mem)
 */
 bool Parser::access_decl(PTree::Node *&mem)
 {
+  Trace trace("Parser::access_decl");
   PTree::Node *name;
   PTree::Encoding encode;
   Token tk;
@@ -2846,6 +2902,7 @@ bool Parser::access_decl(PTree::Node *&mem)
 */
 bool Parser::user_access_spec(PTree::Node *&mem)
 {
+  Trace trace("Parser::user_access_spec");
   Token tk1, tk2, tk3, tk4;
   PTree::Node *args;
 
@@ -2880,6 +2937,7 @@ bool Parser::user_access_spec(PTree::Node *&mem)
 */
 bool Parser::comma_expression(PTree::Node *&exp)
 {
+  Trace trace("Parser::comma_expression");
   Token tk;
   PTree::Node *right;
 
@@ -2901,6 +2959,7 @@ bool Parser::comma_expression(PTree::Node *&exp)
 */
 bool Parser::expression(PTree::Node *&exp)
 {
+  Trace trace("Parser::expression");
   Token tk;
   PTree::Node *left, *right;
 
@@ -2924,6 +2983,7 @@ bool Parser::expression(PTree::Node *&exp)
 */
 bool Parser::conditional_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::conditional_expr");
   Token tk1, tk2;
   PTree::Node *then, *otherwise;
 
@@ -2949,6 +3009,7 @@ bool Parser::conditional_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::logical_or_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::logical_or_expr");
   Token tk;
   PTree::Node *right;
 
@@ -2971,6 +3032,7 @@ bool Parser::logical_or_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::logical_and_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::logical_and_expr");
   Token tk;
   PTree::Node *right;
 
@@ -2993,6 +3055,7 @@ bool Parser::logical_and_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::inclusive_or_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::inclusive_or_expr");
   Token tk;
   PTree::Node *right;
 
@@ -3015,6 +3078,7 @@ bool Parser::inclusive_or_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::exclusive_or_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::exclusive_or_expr");
   Token tk;
   PTree::Node *right;
 
@@ -3037,6 +3101,7 @@ bool Parser::exclusive_or_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::and_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::and_expr");
   Token tk;
   PTree::Node *right;
 
@@ -3059,6 +3124,7 @@ bool Parser::and_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::equality_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::equality_expr");
   Token tk;
   PTree::Node *right;
 
@@ -3081,6 +3147,7 @@ bool Parser::equality_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::relational_expr(PTree::Node *&exp, bool temp_args)
 {
+  Trace trace("Parser::relational_expr");
   int t;
   Token tk;
   PTree::Node *right;
@@ -3105,6 +3172,7 @@ bool Parser::relational_expr(PTree::Node *&exp, bool temp_args)
 */
 bool Parser::shift_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::shift_expr");
   Token tk;
   PTree::Node *right;
 
@@ -3127,6 +3195,7 @@ bool Parser::shift_expr(PTree::Node *&exp)
 */
 bool Parser::additive_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::additive_expr");
   int t;
   Token tk;
   PTree::Node *right;
@@ -3150,6 +3219,7 @@ bool Parser::additive_expr(PTree::Node *&exp)
 */
 bool Parser::multiply_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::multiply_expr");
   int t;
   Token tk;
   PTree::Node *right;
@@ -3173,6 +3243,7 @@ bool Parser::multiply_expr(PTree::Node *&exp)
 */
 bool Parser::pm_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::pm_expr");
   Token tk;
   PTree::Node *right;
 
@@ -3195,6 +3266,7 @@ bool Parser::pm_expr(PTree::Node *&exp)
 */
 bool Parser::cast_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::cast_expr");
   if(my_lexer.look_ahead(0) != '(') return unary_expr(exp);
   else
   {
@@ -3222,12 +3294,14 @@ bool Parser::cast_expr(PTree::Node *&exp)
 */
 bool Parser::typename_(PTree::Node *&tname)
 {
+  Trace trace("Parser::typename_");
   PTree::Encoding type_encode;
   return typename_(tname, type_encode);
 }
 
 bool Parser::typename_(PTree::Node *&tname, PTree::Encoding &type_encode)
 {
+  Trace trace("Parser::typename_");
   PTree::Node *type_name, *arg;
   PTree::Encoding name_encode;
 
@@ -3249,6 +3323,7 @@ bool Parser::typename_(PTree::Node *&tname, PTree::Encoding &type_encode)
 */
 bool Parser::unary_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::unary_expr");
   int t = my_lexer.look_ahead(0);
   if(t == '*' || t == '&' || t == '+' || t == '-' || t == '!' || t == '~' ||
      t == Token::IncOp)
@@ -3274,6 +3349,7 @@ bool Parser::unary_expr(PTree::Node *&exp)
 */
 bool Parser::throw_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::throw_expr");
   Token tk;
   PTree::Node *e;
 
@@ -3294,6 +3370,7 @@ bool Parser::throw_expr(PTree::Node *&exp)
 */
 bool Parser::sizeof_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::sizeof_expr");
   Token tk;
   PTree::Node *unary;
 
@@ -3328,6 +3405,7 @@ bool Parser::sizeof_expr(PTree::Node *&exp)
 */
 bool Parser::typeid_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::typeid_expr");
   Token tk;
   PTree::Node *unary;
 
@@ -3374,6 +3452,7 @@ bool Parser::is_allocate_expr(int t)
 */
 bool Parser::allocate_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::allocate_expr");
   Token tk;
   PTree::Node *head = 0;
 
@@ -3463,6 +3542,7 @@ bool Parser::userdef_keyword(PTree::Node *&ukey)
 */
 bool Parser::allocate_type(PTree::Node *&atype)
 {
+  Trace trace("Parser::allocate_type");
   Token op, cp;
   PTree::Node *tname, *init, *exp;
 
@@ -3533,6 +3613,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
 */
 bool Parser::new_declarator(PTree::Node *&decl, PTree::Encoding& encode)
 {
+  Trace trace("Parser::new_declarator");
   decl = 0;
   if(my_lexer.look_ahead(0) != '[')
     if(!opt_ptr_operator(decl, encode)) return false;
@@ -3560,6 +3641,7 @@ bool Parser::new_declarator(PTree::Node *&decl, PTree::Encoding& encode)
 */
 bool Parser::allocate_initializer(PTree::Node *&init)
 {
+  Trace trace("Parser::allocate_initializer");
   Token op, cp;
 
   if(my_lexer.get_token(op) != '(') return false;
@@ -3609,6 +3691,7 @@ bool Parser::allocate_initializer(PTree::Node *&init)
 */
 bool Parser::postfix_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::postfix_expr");
   PTree::Node *e;
   Token cp, op;
   int t, t2;
@@ -3683,6 +3766,7 @@ bool Parser::postfix_expr(PTree::Node *&exp)
 */
 bool Parser::primary_expr(PTree::Node *&exp)
 {
+  Trace trace("Parser::primary_expr");
   Token tk, tk2;
   PTree::Node *exp2;
   PTree::Encoding cast_type_encode;
@@ -3803,6 +3887,7 @@ bool Parser::userdef_statement(PTree::Node *&st)
 */
 bool Parser::var_name(PTree::Node *&name)
 {
+  Trace trace("Parser::var_name");
   PTree::Encoding encode;
 
   if(var_name_core(name, encode))
@@ -3815,6 +3900,7 @@ bool Parser::var_name(PTree::Node *&name)
 
 bool Parser::var_name_core(PTree::Node *&name, PTree::Encoding &encode)
 {
+  Trace trace("Parser::var_name_core");
   Token tk;
   int length = 0;
   
@@ -3895,6 +3981,7 @@ bool Parser::var_name_core(PTree::Node *&name, PTree::Encoding &encode)
 
 bool Parser::more_var_name()
 {
+  Trace trace("Parser::more_var_name");
   if(my_lexer.look_ahead(0) == Token::Scope)
   {
     int t = my_lexer.look_ahead(1);
@@ -3951,6 +4038,7 @@ bool Parser::is_template_args()
 */
 bool Parser::condition(PTree::Node *&exp)
 {
+  Trace trace("Parser::condition");
   PTree::Encoding type_encode;
 
   // Do declarator first, otherwise "T*foo = blah" gets matched as a
@@ -4022,6 +4110,7 @@ bool Parser::condition(PTree::Node *&exp)
 */
 bool Parser::function_body(PTree::Node *&body)
 {
+  Trace trace("Parser::function_body");
   return compound_statement(body);
 }
 
@@ -4031,6 +4120,7 @@ bool Parser::function_body(PTree::Node *&body)
 */
 bool Parser::compound_statement(PTree::Node *&body)
 {
+  Trace trace("Parser::compound_statement");
   Token ob, cb;
   PTree::Node *ob_comments, *cb_comments;
 
@@ -4081,6 +4171,7 @@ bool Parser::compound_statement(PTree::Node *&body)
 */
 bool Parser::statement(PTree::Node *&st)
 {
+  Trace trace("Parser::statement");
   Token tk1, tk2, tk3;
   PTree::Node *st2, *exp, *comments;
   int k;
@@ -4204,6 +4295,7 @@ bool Parser::statement(PTree::Node *&st)
 */
 bool Parser::if_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::if_statement");
   Token tk1, tk2, tk3, tk4;
   PTree::Node *exp, *then, *otherwise;
 
@@ -4232,6 +4324,7 @@ bool Parser::if_statement(PTree::Node *&st)
 */
 bool Parser::switch_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::switch_statement");
   Token tk1, tk2, tk3;
   PTree::Node *exp, *body;
 
@@ -4253,6 +4346,7 @@ bool Parser::switch_statement(PTree::Node *&st)
 */
 bool Parser::while_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::which_statement");
   Token tk1, tk2, tk3;
   PTree::Node *exp, *body;
 
@@ -4274,6 +4368,7 @@ bool Parser::while_statement(PTree::Node *&st)
 */
 bool Parser::do_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::do_statement");
   Token tk0, tk1, tk2, tk3, tk4;
   PTree::Node *exp, *body;
 
@@ -4299,6 +4394,7 @@ bool Parser::do_statement(PTree::Node *&st)
 */
 bool Parser::for_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::for_statement");
   Token tk1, tk2, tk3, tk4;
   PTree::Node *exp1, *exp2, *exp3, *body;
 
@@ -4329,6 +4425,7 @@ bool Parser::for_statement(PTree::Node *&st)
 */
 bool Parser::try_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::try_statement");
   Token tk, op, cp;
   PTree::Node *body, *handler;
 
@@ -4371,6 +4468,7 @@ bool Parser::try_statement(PTree::Node *&st)
 */
 bool Parser::expr_statement(PTree::Node *&st)
 {
+  Trace trace("Parser::expr_statement");
   Token tk;
 
   if(my_lexer.look_ahead(0) == ';')
@@ -4422,6 +4520,7 @@ bool Parser::expr_statement(PTree::Node *&st)
 */
 bool Parser::declaration_statement(PTree::Declaration *&statement)
 {
+  Trace trace("Parser::declaration_statement");
   PTree::Node *storage_s, *cv_q, *integral;
   PTree::Encoding type_encode;
 
@@ -4453,6 +4552,7 @@ bool Parser::declaration_statement(PTree::Declaration *&statement)
 bool Parser::integral_decl_statement(PTree::Declaration *&statement, PTree::Encoding& type_encode,
 				     PTree::Node *integral, PTree::Node *cv_q, PTree::Node *head)
 {
+  Trace trace("Parser::integral_decl_statement");
   PTree::Node *cv_q2, *decl;
   Token tk;
 
@@ -4491,6 +4591,7 @@ bool Parser::other_decl_statement(PTree::Declaration *&statement,
 				  PTree::Node *cv_q,
 				  PTree::Node *head)
 {
+  Trace trace("Parser::other_decl_statement");
   PTree::Node *type_name, *cv_q2, *decl;
   Token tk;
 

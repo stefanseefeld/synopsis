@@ -4,7 +4,10 @@
 #include <PTree.hh>
 #include <PTree/Display.hh>
 #include <SymbolLookup.hh>
+#include <Synopsis/Trace.hh>
 #include <fstream>
+
+using Synopsis::Trace;
 
 int usage(const char *command)
 {
@@ -14,10 +17,20 @@ int usage(const char *command)
 
 int main(int argc, char **argv)
 {
-  if (argc != 2) return usage(argv[0]);
+  bool debug = false;
+  const char *input = argv[1];
+  if (argc == 1) return usage(argv[0]);
+  for (int i = 1; i < argc - 1; ++i)
+  {
+    if (argv[i] == std::string("-d")) debug = true;
+    else return usage(argv[0]);
+  }
+  input = argv[argc - 1];
   try
   {
-    std::ifstream ifs(argv[1]);
+    if (debug) Trace::enable_debug();
+
+    std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer);
     SymbolLookup::Table symbols;

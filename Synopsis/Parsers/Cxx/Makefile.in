@@ -30,7 +30,7 @@ LINK_SO	:= link$(LIBRARY_EXT)
 OCC_FILES := PTree/Node PTree/Encoding PTree/operations \
              PTree/Atoms PTree/Lists PTree/generation \
              PTree/Visitor PTree/Display PTree/Writer \
-             SymbolLookup/Symbol SymbolLookup/Scopes \
+             SymbolLookup/Scope SymbolLookup/Scopes \
              SymbolLookup/ConstEvaluator SymbolLookup/Table \
              Buffer HashTable Lexer Parser \
              Environment TypeInfo TypeInfoVisitor \
@@ -63,7 +63,7 @@ vpath %.c $(srcdir)
 vpath %.h $(srcdir)
 vpath %.hh $(srcdir)
 
-all: $(TARGETS)
+all: $(TARGETS) display-ptree dump-symbols
 
 display-ptree: display-ptree.o $(OCC_OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(GC_LIB) $(LIBS)
