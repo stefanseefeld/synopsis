@@ -45,7 +45,7 @@
     </section>
   </chapter>
 
-  <chapter>
+  <chapter id="using">
     <title>Using the synopsis tool</title>
     <para>In this section we are going to explore the possibilities
       to generate documentation from source code. We will demonstrate
@@ -455,13 +455,57 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <programlisting>formatter.process(linker.process(AST(), input = [&#39;source1.syn&#39;, &#39;source2.syn&#39;]), output = &#39;html&#39;)</programlisting>
     </section>
 
-    <section id="parameters">
-      <title>Parameters and the order of initialization</title>
+    <section id="script">
+      <title>Writing your own synopsis script</title>
 
-      <!-- Talk about the Parameter setting for processors and
-           other 'Parametrized' -->
-
-      <para></para>
+      <para>The synopsis framework provides a function <function>process</function> 
+        that lets you declare and expose processors as commands so they can be 
+        used per command line:
+        <programlisting><xi:include href="examples/Paths/synopsis.py" parse="text"/>
+        </programlisting>
+      </para>
+      <para>With such a script <filename>synopsis.py</filename> it is possible
+        to call
+        <programlisting>python synopsis.py cxx_ssd --output=Bezier.syn Bezier.h
+        </programlisting>
+        to do the same as in <xref linkend="using"/>, but with much more
+        flexibility. Let's have a closer look at how this script works:</para>
+       <section id="importing">
+         <title>Importing all desired processors</title>
+         <para>As every conventional python script, the first thing to do is
+           to pull in all the definitions that are used later on, in our case
+           the definition of the <function>process</function> function, together
+           with a number of predefined processors.
+         </para>
+       </section>
+       <section id="composing">
+         <title>Composing new processors</title>
+         <para>As outlined in <xref linkend="pipeline"/>, processors can be
+           composed into pipelines, which are themselfs new (composite) processors.
+           Synopsis provides a <type>Composite</type> type for convenient pipeline
+           construction. Its constructor takes a list of processors that the
+           process method will iterate over.
+         </para>
+       </section>
+       <section id="extending">
+         <title>Defining new processors</title>
+         <para>New processors can be defined by deriving from <type>Processor</type>
+           or any of its subclasses. As outlined in <xref linkend="processor"/>, 
+           it has only to respect the semantics of the <function>process</function>
+           method.</para>
+       </section>
+       <section id="process">
+         <title>Exposing the commands</title>
+         <para>With all these new processrs defined, they need to be made accessible
+           to be called per command line. That is done with the <function>process</function>
+           function. It sets up a dictionary of named processors, with which the script
+           can be invoked as
+          <programlisting>python synopsis.py joker
+          </programlisting>
+          which will invoke the joker's <function>process</function> method with
+          any argument that was provided passed as a named value (keyword).
+         </para>
+       </section>
     </section>
   </chapter>
   <chapter>
@@ -541,13 +585,29 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       This is a listing of all processors with their respective parameters
       that can be set as described in <xref linkend="parameters" />.
     </para>
-    <xi:include href="Synopsis.Parsers.Python.Parser.xml"/>
-    <xi:include href="Synopsis.Parsers.IDL.Parser.xml"/>
-    <xi:include href="Synopsis.Parsers.Cxx.Parser.xml"/>
-    <xi:include href="Synopsis.Processors.Linker.xml"/>
-    <xi:include href="Synopsis.Formatters.Dump.Formatter.xml"/>
-    <xi:include href="Synopsis.Formatters.Docbook.Formatter.xml"/>
-    <xi:include href="Synopsis.Formatters.Texinfo.Formatter.xml"/>
-    <xi:include href="Synopsis.Formatters.HTML.Formatter.xml"/>
+    <xi:include href="Synopsis.Parsers.Python.Parser.xml">
+      <xi:fallback>The Python parser reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Parsers.IDL.Parser.xml">
+      <xi:fallback>The IDL parser reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Parsers.Cxx.Parser.xml">
+      <xi:fallback>The Cxx parser reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Processors.Linker.xml">
+      <xi:fallback>The Linker reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Formatters.Dump.Formatter.xml">
+      <xi:fallback>The Dump formatter reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Formatters.Docbook.Formatter.xml">
+      <xi:fallback>The Docbook formatter reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Formatters.Texinfo.Formatter.xml">
+      <xi:fallback>The Texinfo formatter reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Formatters.HTML.Formatter.xml">
+      <xi:fallback>The HTML formatter reference...</xi:fallback>
+    </xi:include>
   </appendix>
 </book>
