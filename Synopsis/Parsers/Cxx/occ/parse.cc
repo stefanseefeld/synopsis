@@ -20,7 +20,7 @@
 
    r<name>() is the grammer rule for a non-terminal <name>.
    opt<name>() is the grammer fule for an optional non-terminal <name>.
-   is<name>() looks ahead and returns TRUE if the next symbol is <name>.
+   is<name>() looks ahead and returns true if the next symbol is <name>.
 */
 
 #include <iostream>
@@ -136,10 +136,10 @@ void Parser::ShowMessageHead(char* pos)
 bool Parser::rProgram(Ptree*& def)
 {
     while(lex->LookAhead(0) != '\0')
-	if(rDefinition(def)) return TRUE;
+	if(rDefinition(def)) return true;
 	else{
 	    Token tk;
-	    if(!SyntaxError()) return FALSE;		// too many errors
+	    if(!SyntaxError()) return false;		// too many errors
 	    SkipTo(';');
 	    lex->GetToken(tk);	// ignore ';'
 	}
@@ -147,8 +147,8 @@ bool Parser::rProgram(Ptree*& def)
     // Retrieve trailing comments
     def = lex->GetComments();
     if (def)
-	return TRUE;
-    return FALSE;
+	return true;
+    return false;
 }
 
 /*
@@ -185,12 +185,12 @@ bool Parser::rDefinition(Ptree*& p)
 	res = rUsing(p);
     else {
 	if (!rDeclaration(p))
-	    return FALSE;
+	    return false;
 	Ptree* c = lex->GetComments();
 	if (c) {
 	    Walker::SetDeclaratorComments(p, c);
 	}
-	return TRUE;
+	return true;
     }
 
     // Leftover comments.. is this needed?
@@ -204,10 +204,10 @@ bool Parser::rNullDeclaration(Ptree*& decl)
     Token tk;
 
     if(lex->GetToken(tk) != ';')
-	return FALSE;
+	return false;
 
     decl = new PtreeDeclaration(nil, Ptree::List(nil, new Leaf(tk)));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -221,21 +221,21 @@ bool Parser::rTypedef(Ptree*& def)
     Encoding type_encode;
 
     if(lex->GetToken(tk) != TYPEDEF)
-	return FALSE;
+	return false;
 
     def = new PtreeTypedef(new LeafReserved(tk));
-    if(!rTypeSpecifier(type_name, FALSE, type_encode))
-	return FALSE;
+    if(!rTypeSpecifier(type_name, false, type_encode))
+	return false;
 
     def = Ptree::Snoc(def, type_name);
-    if(!rDeclarators(decl, type_encode, TRUE))
-	return FALSE;
+    if(!rDeclarators(decl, type_encode, true))
+	return false;
 
     if(lex->GetToken(tk) != ';')
-	return FALSE;
+	return false;
 
     def = Ptree::Nconc(def, Ptree::List(decl, new Leaf(tk)));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -247,22 +247,22 @@ bool Parser::rTypeSpecifier(Ptree*& tspec, bool check, Encoding& encode)
     Ptree *cv_q, *cv_q2;
 
     if(!optCvQualify(cv_q) || !optIntegralTypeOrClassSpec(tspec, encode))
-	return FALSE;
+	return false;
 
     if(tspec == nil){
 	if(check){
 	    Token tk;
 	    lex->LookAhead(0, tk);
 	    if(!MaybeTypeNameOrClassTemplate(tk))
-		return FALSE;
+		return false;
 	}
 
 	if(!rName(tspec, encode))
-	    return FALSE;
+	    return false;
     }
 
     if(!optCvQualify(cv_q2))
-	return FALSE;
+	return false;
 
     if(cv_q != nil){
 	tspec = Ptree::Snoc(cv_q, tspec);
@@ -273,10 +273,10 @@ bool Parser::rTypeSpecifier(Ptree*& tspec, bool check, Encoding& encode)
 	tspec = Ptree::Cons(tspec, cv_q2);
 
     encode.CvQualify(cv_q, cv_q2);
-    return TRUE;
+    return true;
 }
 
-// isTypeSpecifier() returns TRUE if the next is probably a type specifier.
+// isTypeSpecifier() returns true if the next is probably a type specifier.
 
 bool Parser::isTypeSpecifier()
 {
@@ -291,9 +291,9 @@ bool Parser::isTypeSpecifier()
        || t == INT64
 #endif
        )
-	return TRUE;
+	return true;
     else
-	return FALSE;
+	return false;
 }
 
 /*
@@ -313,10 +313,10 @@ bool Parser::rMetaclassDecl(Ptree*& decl)
     Ptree* metaclass_name;
 
     if(lex->GetToken(tk1) != METACLASS)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != Identifier)
-	return FALSE;
+	return false;
 
     t = lex->GetToken(tk3);
     if(t == Identifier){
@@ -327,7 +327,7 @@ bool Parser::rMetaclassDecl(Ptree*& decl)
     }
     else if(t == ':'){
 	if(lex->GetToken(tk4) != Identifier)
-	    return FALSE;
+	    return false;
 
 	metaclass_name = new Leaf(tk4);
 	decl = new PtreeMetaclassDecl(new LeafReserved(tk1),
@@ -340,19 +340,19 @@ bool Parser::rMetaclassDecl(Ptree*& decl)
 				      Ptree::List(metaclass_name, nil,
 						  new Leaf(tk3)));
 	Metaclass::Load(metaclass_name);
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 
     t = lex->GetToken(tk1);
     if(t == '('){
 	Ptree* args;
 	if(!rMetaArguments(args))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk2) != ')')
-	    return FALSE;
+	    return false;
 
 	decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1), args,
 					      new Leaf(tk2)));
@@ -362,10 +362,10 @@ bool Parser::rMetaclassDecl(Ptree*& decl)
     if(t == ';'){
 	decl = Ptree::Snoc(decl, new Leaf(tk1));
 	Metaclass::Load(metaclass_name);
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 /*
@@ -381,12 +381,12 @@ bool Parser::rMetaArguments(Ptree*& args)
     for(;;){
 	t = lex->LookAhead(0);
 	if(t == '\0')
-	    return FALSE;
+	    return false;
 	else if(t == '(')
 	    ++n;
 	else if(t == ')')
 	    if(--n <= 0)
-		return TRUE;
+		return true;
 
 	lex->GetToken(tk);
 	args = Ptree::Snoc(args, new Leaf(tk));
@@ -404,23 +404,23 @@ bool Parser::rLinkageSpec(Ptree*& spec)
     Ptree* body;
 
     if(lex->GetToken(tk1) != EXTERN)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != StringL)
-	return FALSE;
+	return false;
 
     spec = new PtreeLinkageSpec(new LeafEXTERN(tk1),
 				Ptree::List(new Leaf(tk2)));
     if(lex->LookAhead(0) == '{'){
 	if(!rLinkageBody(body))
-	    return FALSE;
+	    return false;
     }
     else
 	if(!rDefinition(body))
-	    return FALSE;
+	    return false;
 
     spec = Ptree::Snoc(spec, body);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -435,7 +435,7 @@ bool Parser::rNamespaceSpec(Ptree*& spec)
     Ptree* body;
 
     if(lex->GetToken(tk1) != NAMESPACE)
-	return FALSE;
+	return false;
 
     Ptree* comments = lex->GetComments();
 
@@ -445,22 +445,22 @@ bool Parser::rNamespaceSpec(Ptree*& spec)
 	if(lex->GetToken(tk2) == Identifier)
 	    name = new Leaf(tk2);
 	else
-	    return FALSE;
+	    return false;
 
     if(lex->LookAhead(0) == '{'){
 	if(!rLinkageBody(body))
-	    return FALSE;
+	    return false;
     }
     else
 	if(!rDefinition(body))
-	    return FALSE;
+	    return false;
 
     PtreeNamespaceSpec *nspec;
     spec = nspec = new PtreeNamespaceSpec(
 	new LeafNAMESPACE(tk1), Ptree::List(name, body));
     
     nspec->SetComments(comments);
-    return TRUE;
+    return true;
 }
 
 
@@ -472,7 +472,7 @@ bool Parser::rUsing(Ptree*& decl)
     Token tk;
 
     if(lex->GetToken(tk) != USING)
-	return FALSE;
+	return false;
 
     decl = new PtreeUsing(new LeafUSING(tk));
     do {
@@ -480,7 +480,7 @@ bool Parser::rUsing(Ptree*& decl)
 	decl = Ptree::Snoc(decl, new Leaf(tk));
     } while(tk.kind != ';' && tk.kind != '\0');
 
-    return TRUE;
+    return true;
 }
 
 
@@ -495,18 +495,18 @@ bool Parser::rLinkageBody(Ptree*& body)
     Ptree* def;
 
     if(lex->GetToken(op) != '{')
-	return FALSE;
+	return false;
 
     body = nil;
     while(lex->LookAhead(0) != '}'){
 	if(!rDefinition(def)){
 	    if(!SyntaxError())
-		return FALSE;		// too many errors
+		return false;		// too many errors
 
 	    SkipTo('}');
 	    lex->GetToken(cp);
 	    body = Ptree::List(new Leaf(op), nil, new Leaf(cp));
-	    return TRUE;		// error recovery
+	    return true;		// error recovery
 	}
 
 	body = Ptree::Snoc(body, def);
@@ -515,7 +515,7 @@ bool Parser::rLinkageBody(Ptree*& body)
     lex->GetToken(cp);
     body = new PtreeBrace(new Leaf(op), body,
 	    new CommentedLeaf(cp, lex->GetComments()));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -542,10 +542,10 @@ bool Parser::rTemplateDecl(Ptree*& decl)
     TemplateDeclKind kind = tdk_unknown;
 
     if(!rTemplateDecl2(decl, kind))
-	return FALSE;
+	return false;
 
     if(!rDeclaration(body))
-	return FALSE;
+	return false;
 
     // Repackage the decl and body depending upon what kind of template
     // declaration was observed.
@@ -555,16 +555,16 @@ bool Parser::rTemplateDecl(Ptree*& decl)
 	decl = body;
 	// assumes that decl has the form: [nil [class ...] ;]
 	if (Ptree::Length(decl) != 3)
-	    return FALSE;
+	    return false;
 
 	if (Ptree::First(decl) != nil)
-	    return FALSE;
+	    return false;
 
 	if (Ptree::Second(decl)->What() != ntClassSpec)
-	    return FALSE;
+	    return false;
 
 	if (!Ptree::Eq(Ptree::Third(decl), ';'))
-	    return FALSE;
+	    return false;
 
 	decl = new PtreeTemplateInstantiation(Ptree::Second(decl));
 	break;
@@ -577,7 +577,7 @@ bool Parser::rTemplateDecl(Ptree*& decl)
 	break;
     }
 
-    return TRUE;
+    return true;
 }
 
 bool Parser::rTemplateDecl2(Ptree*& decl, TemplateDeclKind &kind)
@@ -586,25 +586,25 @@ bool Parser::rTemplateDecl2(Ptree*& decl, TemplateDeclKind &kind)
     Ptree *args;
 
     if(lex->GetToken(tk) != TEMPLATE)
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) != '<') {
 	// template instantiation
 	decl = nil;
 	kind = tdk_instantiation;
-	return TRUE;	// ignore TEMPLATE
+	return true;	// ignore TEMPLATE
     }
 
     decl = new PtreeTemplateDecl(new LeafReserved(tk));
     if(lex->GetToken(tk) != '<')
-	return FALSE;
+	return false;
 
     decl = Ptree::Snoc(decl, new Leaf(tk));
     if(!rTempArgList(args))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk) != '>')
-	return FALSE;
+	return false;
 
     decl = Ptree::Nconc(decl, Ptree::List(args, new Leaf(tk)));
 
@@ -616,10 +616,10 @@ bool Parser::rTemplateDecl2(Ptree*& decl, TemplateDeclKind &kind)
 
 	lex->GetToken(tk);
 	if(!rTempArgList(args))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk) != '>')
-	    return FALSE;
+	    return false;
     }
 
     if (args == nil)
@@ -629,7 +629,7 @@ bool Parser::rTemplateDecl2(Ptree*& decl, TemplateDeclKind &kind)
 	// template < ... > declaration
 	kind = tdk_decl;
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -644,23 +644,23 @@ bool Parser::rTempArgList(Ptree*& args)
 
     if(lex->LookAhead(0) == '>'){
 	args = nil;
-	return TRUE;
+	return true;
     }
 
     if(!rTempArgDeclaration(a))
-	return FALSE;
+	return false;
 
     args = Ptree::List(a);
     while(lex->LookAhead(0) == ','){
 	lex->GetToken(tk);
 	args = Ptree::Snoc(args, new Leaf(tk));
 	if(!rTempArgDeclaration(a))
-	    return FALSE;
+	    return false;
 
 	args = Ptree::Snoc(args, a);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -687,14 +687,14 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
 
 	    lex->GetToken(tk1);
 	    if(!rTypeName(default_type))
-		return FALSE;
+		return false;
 
 	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1),
 						  default_type));
-	    return TRUE;
+	    return true;
 	}
 	else if (t2 == '>' || t2 == ',')
-	    return TRUE;
+	    return true;
     }
     else if (t0 == CLASS && (t1 == '=' || t1 == '>' || t1 == ',')) {
 	// class without the identifier
@@ -706,7 +706,7 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
 
 	    lex->GetToken(tk1);
 	    if(!rTypeName(default_type))
-		return FALSE;
+		return false;
 
 	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1),
 						  default_type));
@@ -715,10 +715,10 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
     else if (t0 == TEMPLATE) {
 	TemplateDeclKind kind;
 	if(!rTemplateDecl2(decl, kind))
-	    return FALSE;
+	    return false;
 
 	if (lex->GetToken(tk1) != CLASS || lex->GetToken(tk2) != Identifier)
-	    return FALSE;
+	    return false;
 
 	Ptree* cspec = new PtreeClassSpec(new LeafReserved(tk1),
 					  Ptree::Cons(new Leaf(tk2),nil),
@@ -728,7 +728,7 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
             Ptree* default_type;
 	    lex->GetToken(tk1);
 	    if(!rTypeName(default_type))
-		return FALSE;
+		return false;
 
 	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1),
 						  default_type));
@@ -737,25 +737,25 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
     else{
 	Ptree *type_name, *arg;
 	Encoding type_encode, name_encode;
-	if(!rTypeSpecifier(type_name, TRUE, type_encode))
-	    return FALSE;
+	if(!rTypeSpecifier(type_name, true, type_encode))
+	    return false;
 
-	if(!rDeclarator(arg, kArgDeclarator, FALSE, type_encode, name_encode,
-			TRUE))
-	    return FALSE;
+	if(!rDeclarator(arg, kArgDeclarator, false, type_encode, name_encode,
+			true))
+	    return false;
 
 	decl = Ptree::List(type_name, arg);
 	if(lex->LookAhead(0) == '='){
 	    Ptree* exp;
 	    lex->GetToken(tk1);
 	    if(!rAdditiveExpr(exp))
-		return FALSE;
+		return false;
 
 	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1), exp));
 	}
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -768,17 +768,17 @@ bool Parser::rExternTemplateDecl(Ptree*& decl)
     Ptree* body;
 
     if(lex->GetToken(tk1) != EXTERN)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != TEMPLATE)
-	return FALSE;
+	return false;
 
     if(!rDeclaration(body))
-	return FALSE;
+	return false;
 
     decl = new PtreeExternTemplate(new Leaf(tk1),
 				   Ptree::List(new Leaf(tk2), body));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -820,7 +820,7 @@ bool Parser::rDeclaration(Ptree*& statement)
     comments = lex->GetComments();
 
     if(!optMemberSpec(mem_s) || !optStorageSpec(storage_s))
-	return FALSE;
+	return false;
 
     if(mem_s == nil)
 	head = nil;
@@ -834,11 +834,11 @@ bool Parser::rDeclaration(Ptree*& statement)
 	if(optMemberSpec(mem_s))
 	    head = Ptree::Nconc(head, mem_s);
 	else
-	    return FALSE;
+	    return false;
 
     if(!optCvQualify(cv_q)
        || !optIntegralTypeOrClassSpec(integral, type_encode))
-	return FALSE;
+	return false;
 
     if(integral != nil)
 	res = rIntegralDeclaration(statement, type_encode,
@@ -865,7 +865,7 @@ bool Parser::rIntegralDeclaration(Ptree*& statement, Encoding& type_encode,
     Ptree *cv_q2, *decl;
 
     if(!optCvQualify(cv_q2))
-	return FALSE;
+	return false;
 
     if(cv_q != nil)
 	if(cv_q2 == nil)
@@ -881,41 +881,41 @@ bool Parser::rIntegralDeclaration(Ptree*& statement, Encoding& type_encode,
 	lex->GetToken(tk);
 	statement = new PtreeDeclaration(head, Ptree::List(integral,
 							   new Leaf(tk)));
-	return TRUE;
+	return true;
     case ':' :	// bit field
 	lex->GetToken(tk);
 	if(!rExpression(decl))
-	    return FALSE;
+	    return false;
 
 	decl = Ptree::List(Ptree::List(new Leaf(tk), decl));
 	if(lex->GetToken(tk) != ';')
-	    return FALSE;
+	    return false;
 
 	statement = new PtreeDeclaration(head, Ptree::List(integral, decl,
 							   new Leaf(tk)));
-	return TRUE;
+	return true;
     default :
-	if(!rDeclarators(decl, type_encode, TRUE))
-	    return FALSE;
+	if(!rDeclarators(decl, type_encode, true))
+	    return false;
 
 	if(lex->LookAhead(0) == ';'){
 	    lex->GetToken(tk);
 	    statement = new PtreeDeclaration(head, Ptree::List(integral, decl,
 							       new Leaf(tk)));
-	    return TRUE;
+	    return true;
 	}
 	else{
 	    Ptree* body;
 	    if(!rFunctionBody(body))
-		return FALSE;
+		return false;
 
 	    if(Ptree::Length(decl) != 1)
-		return FALSE;
+		return false;
 
 	    statement = new PtreeDeclaration(head,
 					     Ptree::List(integral,
 							 decl->Car(), body));
-	    return TRUE;
+	    return true;
 	}
     }
 }
@@ -928,16 +928,16 @@ bool Parser::rConstDeclaration(Ptree*& statement, Encoding&,
     Encoding type_encode;
 
     type_encode.SimpleConst();
-    if(!rDeclarators(decl, type_encode, FALSE))
-	return FALSE;
+    if(!rDeclarators(decl, type_encode, false))
+	return false;
 
     if(lex->LookAhead(0) != ';')
-	return FALSE;
+	return false;
 
     lex->GetToken(tk);
     statement = new PtreeDeclaration(head, Ptree::List(cv_q, decl,
 						       new Leaf(tk)));
-    return TRUE;
+    return true;
 }
 
 bool Parser::rOtherDeclaration(Ptree*& statement, Encoding& type_encode,
@@ -947,12 +947,12 @@ bool Parser::rOtherDeclaration(Ptree*& statement, Encoding& type_encode,
     Token tk;
 
     if(!rName(type_name, type_encode))
-	return FALSE;
+	return false;
 
     if(cv_q == nil && isConstructorDecl()){
 	Encoding ftype_encode;
 	if(!rConstructorDecl(decl, ftype_encode))
-	    return FALSE;
+	    return false;
 
 	decl = Ptree::List(new PtreeDeclarator(type_name, decl,
 					       ftype_encode, type_encode,
@@ -965,14 +965,14 @@ bool Parser::rOtherDeclaration(Ptree*& statement, Encoding& type_encode,
 	    lex->GetToken(tk);
 	    statement = new PtreeDeclaration(head, Ptree::List(type_name,
 							       new Leaf(tk)));
-	    return TRUE;
+	    return true;
 	}
 	else
-	    return FALSE;
+	    return false;
     }
     else{
 	if(!optCvQualify(cv_q2))
-	    return FALSE;
+	    return false;
 
 	if(cv_q != nil)
 	    if(cv_q2 == nil)
@@ -983,8 +983,8 @@ bool Parser::rOtherDeclaration(Ptree*& statement, Encoding& type_encode,
 	    type_name = Ptree::Cons(type_name, cv_q2);
 
 	type_encode.CvQualify(cv_q, cv_q2);
-	if(!rDeclarators(decl, type_encode, FALSE))
-	    return FALSE;
+	if(!rDeclarators(decl, type_encode, false))
+	    return false;
     }
 
     if(lex->LookAhead(0) == ';'){
@@ -995,20 +995,20 @@ bool Parser::rOtherDeclaration(Ptree*& statement, Encoding& type_encode,
     else{
 	Ptree* body;
 	if(!rFunctionBody(body))
-	    return FALSE;
+	    return false;
 
 	if(Ptree::Length(decl) != 1)
-	    return FALSE;
+	    return false;
 
 	statement = new PtreeDeclaration(head, Ptree::List(type_name,
 							   decl->Car(), body));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
-  This returns TRUE for an declaration like:
+  This returns true for an declaration like:
 	T (a);
   even if a is not a type name.  This is a bug according to the ANSI
   specification, but I believe none says "T (a);" for a variable
@@ -1017,17 +1017,17 @@ bool Parser::rOtherDeclaration(Ptree*& statement, Encoding& type_encode,
 bool Parser::isConstructorDecl()
 {
     if(lex->LookAhead(0) != '(')
-	return FALSE;
+	return false;
     else{
 	int t = lex->LookAhead(1);
 	if(t == '*' || t == '&' || t == '(')
-	    return FALSE;	// declarator
+	    return false;	// declarator
 	else if(t == CONST || t == VOLATILE)
-	    return TRUE;	// constructor or declarator
+	    return true;	// constructor or declarator
 	else if(isPtrToMember(1))
-	    return FALSE;	// declarator (::*)
+	    return false;	// declarator (::*)
 	else
-	    return TRUE;	// maybe constructor
+	    return true;	// maybe constructor
     }
 }
 
@@ -1061,25 +1061,25 @@ bool Parser::isPtrToMember(int i)
 			else if(v == ')')
 			    --m;
 			else if(v == '\0' || v == ';' || v == '}')
-			    return FALSE;
+			    return false;
 		    }
 		}
 		else if(u == '\0' || u == ';' || u == '}')
-		    return FALSE;
+		    return false;
 	    }
 
 	    t = lex->LookAhead(i++);
 	}
 
 	if(t != Scope)
-	    return FALSE;
+	    return false;
 
 	t0 = lex->LookAhead(i++);
 	if(t0 == '*')
-	    return TRUE;
+	    return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /*
@@ -1096,7 +1096,7 @@ bool Parser::optMemberSpec(Ptree*& p)
     while(t == FRIEND || t == INLINE || t == VIRTUAL || t == UserKeyword5){
 	if(t == UserKeyword5){
 	    if(!rUserdefKeyword(lf))
-		return FALSE;
+		return false;
 	}
 	else{
 	    lex->GetToken(tk);
@@ -1112,7 +1112,7 @@ bool Parser::optMemberSpec(Ptree*& p)
 	t = lex->LookAhead(0);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1149,7 +1149,7 @@ bool Parser::optStorageSpec(Ptree*& p)
     else
 	p = nil;	// no storage specifier
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1180,7 +1180,7 @@ bool Parser::optCvQualify(Ptree*& cv)
     }
 
     cv = p;
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1198,7 +1198,7 @@ bool Parser::optIntegralTypeOrClassSpec(Ptree*& p, Encoding& encode)
     int t;
     char type = ' ', flag = ' ';
 
-    is_integral = FALSE;
+    is_integral = false;
     p = nil;
     for(;;){
 	t = lex->LookAhead(0);
@@ -1275,7 +1275,7 @@ bool Parser::optIntegralTypeOrClassSpec(Ptree*& p, Encoding& encode)
 	    }
 
 	    p = Ptree::Snoc(p, kw);
-	    is_integral = TRUE;
+	    is_integral = true;
 	}
 	else
 	    break;
@@ -1292,7 +1292,7 @@ bool Parser::optIntegralTypeOrClassSpec(Ptree*& p, Encoding& encode)
 	    type = 'i';		// signed, unsigned
 
 	encode.Append(type);
-	return TRUE;
+	return true;
     }
 
     if(t == CLASS || t == STRUCT || t == UNION || t == UserKeyword)
@@ -1301,7 +1301,7 @@ bool Parser::optIntegralTypeOrClassSpec(Ptree*& p, Encoding& encode)
 	return rEnumSpec(p, encode);
     else{
 	p = nil;
-	return TRUE;
+	return true;
     }
 }
 
@@ -1316,7 +1316,7 @@ bool Parser::rConstructorDecl(Ptree*& constructor, Encoding& encode)
     Ptree *args, *cv, *throw_decl, *mi;
 
     if(lex->GetToken(op) != '(')
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == ')'){
 	args = nil;
@@ -1326,7 +1326,7 @@ bool Parser::rConstructorDecl(Ptree*& constructor, Encoding& encode)
     }
     else
 	if(!rArgDeclList(args, encode))
-	    return FALSE;
+	    return false;
 
     lex->GetToken(cp);
     constructor = Ptree::List(new Leaf(op), args, new Leaf(cp));
@@ -1342,20 +1342,20 @@ bool Parser::rConstructorDecl(Ptree*& constructor, Encoding& encode)
 	if(rMemberInitializers(mi))
 	    constructor = Ptree::Snoc(constructor, mi);
 	else
-	    return FALSE;
+	    return false;
 
     if(lex->LookAhead(0) == '='){
 	Token eq, zero;
 	lex->GetToken(eq);
 	if(lex->GetToken(zero) != Constant)
-	    return FALSE;
+	    return false;
 
 	constructor = Ptree::Nconc(constructor,
 				   Ptree::List(new Leaf(eq), new Leaf(zero)));
     }
 
     encode.NoReturnType();
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1372,7 +1372,7 @@ bool Parser::optThrowDecl(Ptree*& throw_decl)
 	p = Ptree::Snoc(p, new LeafReserved(tk));
 
 	if(lex->GetToken(tk) != '(')
-	    return FALSE;
+	    return false;
 
 	p = Ptree::Snoc(p, new Leaf(tk));
 
@@ -1381,13 +1381,13 @@ bool Parser::optThrowDecl(Ptree*& throw_decl)
 	    Encoding encode;
 	    t = lex->LookAhead(0);
 	    if(t == '\0')
-		return FALSE;
+		return false;
 	    else if(t == ')')
 		break;
 	    else if(rName(q, encode))
 		p = Ptree::Snoc(p, q);
 	    else
-		return FALSE;
+		return false;
 
 	    if(lex->LookAhead(0) == ','){
 		lex->GetToken(tk);
@@ -1398,13 +1398,13 @@ bool Parser::optThrowDecl(Ptree*& throw_decl)
 	}
 
 	if(lex->GetToken(tk) != ')')
-	    return FALSE;
+	    return false;
 
 	p = Ptree::Snoc(p, new Leaf(tk));
     }
 
     throw_decl = p;
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1427,7 +1427,7 @@ bool Parser::rDeclarators(Ptree*& decls, Encoding& type_encode,
 
 	encode.Reset(type_encode);
 	if(!rDeclaratorWithInit(d, encode, should_be_declarator, is_statement))
-	    return FALSE;
+	    return false;
 	
 	if (d && (d->What() == ntDeclarator))
 	    static_cast<PtreeDeclarator*>(d)->SetComments(comments);
@@ -1438,7 +1438,7 @@ bool Parser::rDeclarators(Ptree*& decls, Encoding& type_encode,
 	    decls = Ptree::Snoc(decls, new Leaf(tk));
 	}
 	else
-	    return TRUE;
+	    return true;
     };
 }
 
@@ -1458,36 +1458,36 @@ bool Parser::rDeclaratorWithInit(Ptree*& dw, Encoding& type_encode,
     if(lex->LookAhead(0) == ':'){	// bit field
 	lex->GetToken(tk);
 	if(!rExpression(e))
-	    return FALSE;
+	    return false;
 
 	dw = Ptree::List(new Leaf(tk), e);
-	return TRUE;
+	return true;
     }
     else{
-	if(!rDeclarator(d, kDeclarator, FALSE, type_encode, name_encode,
+	if(!rDeclarator(d, kDeclarator, false, type_encode, name_encode,
 			should_be_declarator, is_statement))
-	    return FALSE;
+	    return false;
 
 	int t = lex->LookAhead(0);
 	if(t == '='){
 	    lex->GetToken(tk);
 	    if(!rInitializeExpr(e))
-		return FALSE;
+		return false;
 
 	    dw = Ptree::Nconc(d, Ptree::List(new Leaf(tk), e));
-	    return TRUE;
+	    return true;
 	}
 	else if(t == ':'){		// bit field
 	    lex->GetToken(tk);
 	    if(!rExpression(e))
-		return FALSE;
+		return false;
 
 	    dw = Ptree::Nconc(d, Ptree::List(new Leaf(tk), e));
-	    return TRUE;
+	    return true;
 	}
 	else{
 	    dw = d;
-	    return TRUE;
+	    return true;
 	}
     }
 }
@@ -1530,14 +1530,14 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
     Encoding recursive_encode;
     Ptree *d;
     int t;
-    bool recursive_decl = FALSE;
+    bool recursive_decl = false;
     Ptree *declared_name0 = nil;
 
     if(declared_name == nil)
 	declared_name = &declared_name0;
 
     if(!optPtrOperator(d, type_encode))
-	return FALSE;
+	return false;
 
     char* lex_save = lex->Save();
     t = lex->LookAhead(0);
@@ -1545,15 +1545,15 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 	Token op, cp;
 	Ptree* decl2;
 	lex->GetToken(op);
-	recursive_decl = TRUE;
-	if(!rDeclarator2(decl2, kind, TRUE, recursive_encode, name_encode,
-			 TRUE, FALSE, declared_name))
-	    return FALSE;
+	recursive_decl = true;
+	if(!rDeclarator2(decl2, kind, true, recursive_encode, name_encode,
+			 true, false, declared_name))
+	    return false;
 
 	if(lex->GetToken(cp) != ')')
 	{
 	    if (kind != kCastDeclarator) 
-		return FALSE;
+		return false;
 	    lex->Restore(lex_save);
 	    name_encode.Clear();
 	}
@@ -1564,7 +1564,7 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 		if(kind == kDeclarator && d == nil){
 		    t = lex->LookAhead(0);
 		    if(t != '[' && t != '(')
-			return FALSE;
+			return false;
 		}
 
 	    d = Ptree::Snoc(d, Ptree::List(new Leaf(op), decl2, new Leaf(cp)));
@@ -1583,7 +1583,7 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 	    if(rName(name, name_encode))
 		d = Ptree::Snoc(d, name);
 	    else
-		return FALSE;
+		return false;
 
 	    *declared_name = name;
 	}
@@ -1597,7 +1597,7 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 	    Encoding args_encode;
 	    Token op, cp;
 	    Ptree *args, *cv, *throw_decl, *mi;
-	    bool is_args = TRUE;
+	    bool is_args = true;
 
 	    lex->GetToken(op);
 	    if(lex->LookAhead(0) == ')'){
@@ -1609,10 +1609,10 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 	    else
 		if(!rArgDeclListOrInit(args, is_args, args_encode,
 				       is_statement))
-		    return FALSE;
+		    return false;
 
 	    if(lex->GetToken(cp) != ')')
-		return FALSE;
+		return false;
 
 	    if(is_args){
 		d = Ptree::Nconc(d, Ptree::List(new Leaf(op), args,
@@ -1636,7 +1636,7 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 		if(rMemberInitializers(mi))
 		    d = Ptree::Snoc(d, mi);
 		else
-		    return FALSE;
+		    return false;
 
 	    break;		// "T f(int)(char)" is invalid.
 	}
@@ -1648,10 +1648,10 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 		expr = nil;
 	    else
 		if(!rCommaExpression(expr))
-		    return FALSE;
+		    return false;
 
 	    if(lex->GetToken(cb) != ']')
-		return FALSE;
+		return false;
 
 	    type_encode.Array();
 	    d = Ptree::Nconc(d, Ptree::List(new Leaf(ob), expr,
@@ -1674,7 +1674,7 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 	    decl = new PtreeDeclarator(d, type_encode, name_encode,
 				       *declared_name);
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1698,7 +1698,7 @@ bool Parser::optPtrOperator(Ptree*& ptrs, Encoding& encode)
 	    }
 	    else
 		if(!rPtrToMember(op, encode))
-		    return FALSE;
+		    return false;
 
 	    ptrs = Ptree::Snoc(ptrs, op);
 	    optCvQualify(cv);
@@ -1709,7 +1709,7 @@ bool Parser::optPtrOperator(Ptree*& ptrs, Encoding& encode)
 	}
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1722,23 +1722,23 @@ bool Parser::rMemberInitializers(Ptree*& init)
     Ptree* m;
 
     if(lex->GetToken(tk) != ':')
-	return FALSE;
+	return false;
 
     init = Ptree::List(new Leaf(tk));
     if(!rMemberInit(m))
-	return FALSE;
+	return false;
 
     init = Ptree::Snoc(init, m);
     while(lex->LookAhead(0) == ','){
 	lex->GetToken(tk);
 	init = Ptree::Snoc(init, new Leaf(tk));
 	if(!rMemberInit(m))
-	    return FALSE;
+	    return false;
 
 	init = Ptree::Snoc(init, m);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1752,22 +1752,22 @@ bool Parser::rMemberInit(Ptree*& init)
     Encoding encode;
 
     if(!rName(name, encode))
-	return FALSE;
+	return false;
 
     if(!name->IsLeaf())
 	name = new PtreeName(name, encode);
 
     if(lex->GetToken(tk1) != '(')
-	return FALSE;
+	return false;
 
     if(!rFunctionArguments(args))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != ')')
-	return FALSE;
+	return false;
 
     init = Ptree::List(name, new Leaf(tk1), args, new Leaf(tk2));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1801,21 +1801,21 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 	if(lex->LookAhead(0) == TYPEOF){
 	    t = lex->GetToken(tk);
 	    if ((t = lex->GetToken(tk2)) != '(')
-		return FALSE;
+		return false;
 	    Ptree* type = Ptree::List(new Leaf(tk2));
 	    Encoding name_encode;
 	    if (!rName(name, name_encode))
-		return FALSE;
+		return false;
 	    if (!name->IsLeaf())
 		name = new PtreeName(name, name_encode);
 	    else
 		name = new PtreeName(Ptree::List(name), name_encode);
 	    type = Ptree::Snoc(type, name);
 	    if ((t = lex->GetToken(tk2)) != ')')
-		return FALSE;
+		return false;
 	    type = Ptree::Snoc(type, new Leaf(tk2));
 	    name = new PtreeTypeofExpr(new Leaf(tk), type);
-	    return TRUE;
+	    return true;
 	}
     }
 
@@ -1833,7 +1833,7 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 		Ptree* args;
 		Encoding args_encode;
 		if(!rTemplateArgs(args, args_encode))
-		    return FALSE;
+		    return false;
 
 		encode.Template(n, args_encode);
 		++length;
@@ -1858,12 +1858,12 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 		if(length > 1)
 		    encode.Qualified(length);
 
-		return TRUE;
+		return true;
 	    }
 	}
 	else if(t == '~'){
 	    if(lex->LookAhead(0) != Identifier)
-		return FALSE;
+		return false;
 
 	    lex->GetToken(tk2);
 	    Ptree* class_name = new Leaf(tk2);
@@ -1877,13 +1877,13 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 	    if(length > 0)
 		encode.Qualified(length + 1);
 
-	    return TRUE;
+	    return true;
 	}
 	else if(t == OPERATOR){
 	    Ptree* op;
 	    Ptree* opf;
 	    if(!rOperatorName(op, encode))
-		return FALSE;
+		return false;
 
 	    t = lex->LookAhead(0);
 	    if(t != '<')
@@ -1892,7 +1892,7 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 		Ptree* args;
 		Encoding args_encode;
 		if(!rTemplateArgs(args, args_encode))
-		    return FALSE;
+		    return false;
 
 		// here, I must merge args_encode into encode.
 		// I'll do it in future. :p
@@ -1908,10 +1908,10 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 	    if(length > 0)
 		encode.Qualified(length + 1);
 
-	    return TRUE;
+	    return true;
 	}
 	else
-	    return FALSE;
+	    return false;
     }
 }
 
@@ -1939,21 +1939,21 @@ bool Parser::rOperatorName(Ptree*& name, Encoding& encode)
 	lex->GetToken(tk);
 	name = new Leaf(tk);
 	encode.SimpleName(name);
-	return TRUE;
+	return true;
     }
     else if(t == NEW || t == DELETE){
 	lex->GetToken(tk);
 	if(lex->LookAhead(0) != '['){
 	    name = new LeafReserved(tk);
 	    encode.SimpleName(name);
-	    return TRUE;
+	    return true;
 	}
 	else{
 	    name = Ptree::List(new LeafReserved(tk));
 	    lex->GetToken(tk);
 	    name = Ptree::Snoc(name, new Leaf(tk));
 	    if(lex->GetToken(tk) != ']')
-		return FALSE;
+		return false;
 
 	    name = Ptree::Snoc(name, new Leaf(tk));
 	    if(t == NEW)
@@ -1961,28 +1961,28 @@ bool Parser::rOperatorName(Ptree*& name, Encoding& encode)
 	    else
 		encode.AppendWithLen("delete[]", 8);
 
-	    return TRUE;
+	    return true;
 	}
     }
     else if(t == '('){
 	lex->GetToken(tk);
 	name = Ptree::List(new Leaf(tk));
 	if(lex->GetToken(tk) != ')')
-	    return FALSE;
+	    return false;
 
 	encode.AppendWithLen("()", 2);
 	name = Ptree::Snoc(name, new Leaf(tk));
-	return TRUE;
+	return true;
     }
     else if(t == '['){
 	lex->GetToken(tk);
 	name = Ptree::List(new Leaf(tk));
 	if(lex->GetToken(tk) != ']')
-	    return FALSE;
+	    return false;
 
 	encode.AppendWithLen("[]", 2);
 	name = Ptree::Snoc(name, new Leaf(tk));
-	return TRUE;
+	return true;
     }
     else
 	return rCastOperatorName(name, encode);
@@ -1999,19 +1999,19 @@ bool Parser::rCastOperatorName(Ptree*& name, Encoding& encode)
     Encoding type_encode;
 
     if(!optCvQualify(cv1))
-	return FALSE;
+	return false;
 
     if(!optIntegralTypeOrClassSpec(type_name, type_encode))
-	return FALSE;
+	return false;
 
     if(type_name == nil){
 	type_encode.Clear();
 	if(!rName(type_name, type_encode))
-	    return FALSE;
+	    return false;
     }
 
     if(!optCvQualify(cv2))
-	return FALSE;
+	return false;
 
     if(cv1 != nil)
 	if(cv2 == nil)
@@ -2024,16 +2024,16 @@ bool Parser::rCastOperatorName(Ptree*& name, Encoding& encode)
     type_encode.CvQualify(cv1, cv2);
 
     if(!optPtrOperator(ptr, type_encode))
-	return FALSE;
+	return false;
 
     encode.CastOperator(type_encode);
     if(ptr == nil){
 	name = type_name;
-	return TRUE;
+	return true;
     }
     else{
 	name = Ptree::List(type_name, ptr);
-	return TRUE;
+	return true;
     }
 }
 
@@ -2061,14 +2061,14 @@ bool Parser::rPtrToMember(Ptree*& ptr_to_mem, Encoding& encode)
 	if(lex->GetToken(tk) == Identifier)
 	    n = new Leaf(tk);
 	else
-	    return FALSE;
+	    return false;
 
 	int t = lex->LookAhead(0);
 	if(t == '<'){
 	    Ptree* args;
 	    Encoding args_encode;
 	    if(!rTemplateArgs(args, args_encode))
-		return FALSE;
+		return false;
 
 	    pm_encode.Template(n, args_encode);
 	    ++length;
@@ -2081,7 +2081,7 @@ bool Parser::rPtrToMember(Ptree*& ptr_to_mem, Encoding& encode)
 	}
 
 	if(lex->GetToken(tk) != Scope)
-	    return FALSE;
+	    return false;
 
 	p = Ptree::Nconc(p, Ptree::List(n, new Leaf(tk)));
 	if(lex->LookAhead(0) == '*'){
@@ -2093,7 +2093,7 @@ bool Parser::rPtrToMember(Ptree*& ptr_to_mem, Encoding& encode)
 
     ptr_to_mem = p;
     encode.PtrToMember(pm_encode, length);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2111,13 +2111,13 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
     Encoding type_encode;
 
     if(lex->GetToken(tk1) != '<')
-	return FALSE;
+	return false;
 
     // in case of Foo<>
     if(lex->LookAhead(0) == '>') {
 	lex->GetToken(tk2);
 	temp_args = Ptree::List(new Leaf(tk1), new Leaf(tk2));
-	return TRUE;
+	return true;
     }
 
     Ptree* args = nil;
@@ -2131,8 +2131,8 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
 	    encode.Append(type_encode);
 	else {
 	    lex->Restore(pos);	
-	    if(!rLogicalOrExpr(a, TRUE))
-		return FALSE;
+	    if(!rLogicalOrExpr(a, true))
+		return false;
 
 	    encode.ValueTempParam();
 	}
@@ -2141,7 +2141,7 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
 	switch(lex->GetToken(tk2)){
 	case '>' :
 	    temp_args = Ptree::List(new Leaf(tk1), args, new Leaf(tk2));
-	    return TRUE;
+	    return true;
 	case ',' :
 	    args = Ptree::Snoc(args, new Leaf(tk2));
 	    break;
@@ -2150,11 +2150,11 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
 		lex->GetOnlyClosingBracket(tk2);
 		temp_args = Ptree::List(new Leaf(tk1), args,
 					new Leaf(tk2.ptr, 1));
-		return TRUE;
+		return true;
 	    }
 
 	default :
-	    return FALSE;
+	    return false;
 	}
     }
 }
@@ -2180,9 +2180,9 @@ bool Parser::rArgDeclListOrInit(Ptree*& arglist, bool& is_args,
     if(maybe_init) {
 	if(rFunctionArguments(arglist))
 	    if(lex->LookAhead(0) == ')') {
-		is_args = FALSE;
+		is_args = false;
 		encode.Clear();
-		return TRUE;
+		return true;
 	    }
 
 	lex->Restore(pos);
@@ -2190,7 +2190,7 @@ bool Parser::rArgDeclListOrInit(Ptree*& arglist, bool& is_args,
     }
     else
 	if(is_args = rArgDeclList(arglist, encode))
-	    return TRUE;
+	    return true;
 	else{
 	    lex->Restore(pos);
 	    encode.Clear();
@@ -2238,16 +2238,16 @@ bool Parser::rArgDeclList(Ptree*& arglist, Encoding& encode)
 		list = Ptree::Snoc(list, new Leaf(tk));
 	    }
 	    else if(t != ')' && t != Ellipsis)
-		return FALSE;
+		return false;
 	}
 	else{
 	    arglist = nil;
-	    return FALSE;
+	    return false;
 	}
     }
 
     encode.EndFuncArgs();
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2268,18 +2268,18 @@ bool Parser::rArgDeclaration(Ptree*& decl, Encoding& encode)
 	break;
     case UserKeyword :
 	if(!rUserdefKeyword(header))
-	    return FALSE;
+	    return false;
         break;
     default :
 	header = nil;
         break;
     }
 
-    if(!rTypeSpecifier(type_name, TRUE, encode))
-	return FALSE;
+    if(!rTypeSpecifier(type_name, true, encode))
+	return false;
 
-    if(!rDeclarator(arg, kArgDeclarator, FALSE, encode, name_encode, TRUE))
-	return FALSE;
+    if(!rDeclarator(arg, kArgDeclarator, false, encode, name_encode, true))
+	return false;
 
     if(header == nil)
 	decl = Ptree::List(type_name, arg);
@@ -2290,12 +2290,12 @@ bool Parser::rArgDeclaration(Ptree*& decl, Encoding& encode)
     if(t == '='){
 	lex->GetToken(tk);
 	if(!rInitializeExpr(e))
-	    return FALSE;
+	    return false;
 
 	decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk), e));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2318,12 +2318,12 @@ bool Parser::rInitializeExpr(Ptree*& exp)
 	while(t != '}'){
 	    if(!rInitializeExpr(e)){
 		if(!SyntaxError())
-		    return FALSE;	// too many errors
+		    return false;	// too many errors
 
 		SkipTo('}');
 		lex->GetToken(tk);
 		exp = Ptree::List(ob, nil, new Leaf(tk));
-		return TRUE;		// error recovery
+		return true;		// error recovery
 	    }
 
 	    elist = Ptree::Snoc(elist, e);
@@ -2337,18 +2337,18 @@ bool Parser::rInitializeExpr(Ptree*& exp)
 	    }
 	    else{
 		if(!SyntaxError())
-		    return FALSE;	// too many errors
+		    return false;	// too many errors
 
 		SkipTo('}');
 		lex->GetToken(tk);
 		exp = Ptree::List(ob, nil, new Leaf(tk));
-		return TRUE;		// error recovery
+		return true;		// error recovery
 	    }
 	}
 
 	lex->GetToken(tk);
 	exp = new PtreeBrace(ob, elist, new Leaf(tk));
-	return TRUE;
+	return true;
     }
 }
 
@@ -2366,15 +2366,15 @@ bool Parser::rFunctionArguments(Ptree*& args)
 
     args = nil;
     if(lex->LookAhead(0) == ')')
-	return TRUE;
+	return true;
 
     for(;;){
 	if(!rExpression(exp))
-	    return FALSE;
+	    return false;
 
 	args = Ptree::Snoc(args, exp);
 	if(lex->LookAhead(0) != ',')
-	    return TRUE;
+	    return true;
 	else{
 	    lex->GetToken(tk);
 	    args = Ptree::Snoc(args, new Leaf(tk));
@@ -2393,7 +2393,7 @@ bool Parser::rEnumSpec(Ptree*& spec, Encoding& encode)
     Ptree* body;
 
     if(lex->GetToken(tk) != ENUM)
-	return FALSE;
+	return false;
 
     spec = new PtreeEnumSpec(new Leaf(tk));
     int t = lex->GetToken(tk);
@@ -2405,7 +2405,7 @@ bool Parser::rEnumSpec(Ptree*& spec, Encoding& encode)
 	if(lex->LookAhead(0) == '{')
 	    t = lex->GetToken(tk);
 	else
-	    return TRUE;
+	    return true;
     }
     else{
 	encode.NoName();
@@ -2414,22 +2414,22 @@ bool Parser::rEnumSpec(Ptree*& spec, Encoding& encode)
     }
 
     if(t != '{')
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == '}')
 	body = nil;
     else
 	if(!rEnumBody(body))
-	    return FALSE;
+	    return false;
 
     if(lex->GetToken(tk2) != '}')
-	return FALSE;
+	return false;
 
     spec = Ptree::Snoc(spec, 
 	    new PtreeBrace(
 		new Leaf(tk), body,
 		new CommentedLeaf(tk2, lex->GetComments())));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2444,10 +2444,10 @@ bool Parser::rEnumBody(Ptree*& body)
     body = nil;
     for(;;){
 	if(lex->LookAhead(0) == '}')
-	    return TRUE;
+	    return true;
 
 	if(lex->GetToken(tk) != Identifier)
-	    return FALSE;
+	    return false;
 
 	Ptree* comments = lex->GetComments();
 
@@ -2457,11 +2457,11 @@ bool Parser::rEnumBody(Ptree*& body)
 	    lex->GetToken(tk2);
 	    if(!rExpression(exp)){
 		if(!SyntaxError())
-		    return FALSE;	// too many errors
+		    return false;	// too many errors
 
 		SkipTo('}');
 		body = nil;		// empty
-		return TRUE;		// error recovery
+		return true;		// error recovery
 	    }
 
 	    name = Ptree::List(new CommentedLeaf(tk, comments), new Leaf(tk2), exp);
@@ -2469,7 +2469,7 @@ bool Parser::rEnumBody(Ptree*& body)
 
 	if(lex->LookAhead(0) != ','){
 	    body = Ptree::Snoc(body, name);
-	    return TRUE;
+	    return true;
 	}
 	else{
 	    lex->GetToken(tk);
@@ -2495,11 +2495,11 @@ bool Parser::rClassSpec(Ptree*& spec, Encoding& encode)
     head = nil;
     if(lex->LookAhead(0) == UserKeyword)
 	if(!rUserdefKeyword(head))
-	    return FALSE;
+	    return false;
 
     int t = lex->GetToken(tk);
     if(t != CLASS && t != STRUCT && t != UNION)
-	return FALSE;
+	return false;
 
     spec = new PtreeClassSpec(new LeafReserved(tk), nil, comments);
     if(head != nil)
@@ -2511,13 +2511,13 @@ bool Parser::rClassSpec(Ptree*& spec, Encoding& encode)
     }
     else{
 	if(!rName(name, encode))
-	    return FALSE;
+	    return false;
 
 	spec = Ptree::Snoc(spec, name);
 	t = lex->LookAhead(0);
 	if(t == ':'){
 	    if(!rBaseSpecifiers(bases))
-		return FALSE;
+		return false;
 
 	    spec = Ptree::Snoc(spec, bases);
 	}
@@ -2525,16 +2525,16 @@ bool Parser::rClassSpec(Ptree*& spec, Encoding& encode)
 	    spec = Ptree::Snoc(spec, nil);
 	else{
 	    ((PtreeClassSpec*)spec)->encoded_name = encode.Get();
-	    return TRUE;	// class.key Identifier
+	    return true;	// class.key Identifier
 	}
     }
 
     ((PtreeClassSpec*)spec)->encoded_name = encode.Get();
     if(!rClassBody(body))
-	return FALSE;
+	return false;
 
     spec = Ptree::Snoc(spec, body);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2552,7 +2552,7 @@ bool Parser::rBaseSpecifiers(Ptree*& bases)
     Encoding encode;
 
     if(lex->GetToken(tk) != ':')
-	return FALSE;
+	return false;
 
     bases = Ptree::List(new Leaf(tk));
     for(;;){
@@ -2593,7 +2593,7 @@ bool Parser::rBaseSpecifiers(Ptree*& bases)
 
 	encode.Clear();
 	if(!rName(name, encode))
-	    return FALSE;
+	    return false;
 
 	if(!name->IsLeaf())
 	    name = new PtreeName(name, encode);
@@ -2601,7 +2601,7 @@ bool Parser::rBaseSpecifiers(Ptree*& bases)
 	super = Ptree::Snoc(super, name);
 	bases = Ptree::Snoc(bases, super);
 	if(lex->LookAhead(0) != ',')
-	    return TRUE;
+	    return true;
 	else{
 	    lex->GetToken(tk);
 	    bases = Ptree::Snoc(bases, new Leaf(tk));
@@ -2618,19 +2618,19 @@ bool Parser::rClassBody(Ptree*& body)
     Ptree *mems, *m;
 
     if(lex->GetToken(tk) != '{')
-	return FALSE;
+	return false;
 
     Ptree* ob = new Leaf(tk);
     mems = nil;
     while(lex->LookAhead(0) != '}'){
 	if(!rClassMember(m)){
 	    if(!SyntaxError())
-		return FALSE;	// too many errors
+		return false;	// too many errors
 
 	    SkipTo('}');
 	    lex->GetToken(tk);
 	    body = Ptree::List(ob, nil, new Leaf(tk));
-	    return TRUE;	// error recovery
+	    return true;	// error recovery
 	}
 
 	lex->GetComments();
@@ -2640,7 +2640,7 @@ bool Parser::rClassBody(Ptree*& body)
     lex->GetToken(tk);
     body = new PtreeClassBody(ob, mems, 
 	    new CommentedLeaf(tk, lex->GetComments()));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2682,10 +2682,10 @@ bool Parser::rClassMember(Ptree*& mem)
 	}
 
 	if(lex->GetToken(tk2) != ':')
-	    return FALSE;
+	    return false;
 
 	mem = new PtreeAccessSpec(lf, Ptree::List(new Leaf(tk2)));
-	return TRUE;
+	return true;
     }
     else if(t == UserKeyword4)
 	return rUserAccessSpec(mem);
@@ -2708,7 +2708,7 @@ bool Parser::rClassMember(Ptree*& mem)
 		//comments->Display();
 		Walker::SetDeclaratorComments(mem, comments);
 	    }
-	    return TRUE;
+	    return true;
 	}
 
 	lex->Restore(pos);
@@ -2727,14 +2727,14 @@ bool Parser::rAccessDecl(Ptree*& mem)
     Token tk;
 
     if(!rName(name, encode))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk) != ';')
-	return FALSE;
+	return false;
 
     mem = new PtreeAccessDecl(new PtreeName(name, encode),
 			       Ptree::List(new Leaf(tk)));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2748,32 +2748,32 @@ bool Parser::rUserAccessSpec(Ptree*& mem)
     Ptree* args;
 
     if(lex->GetToken(tk1) != UserKeyword4)
-	return FALSE;
+	return false;
 
     int t = lex->GetToken(tk2);
     if(t == ':'){
 	mem = new PtreeUserAccessSpec(new Leaf(tk1),
 				      Ptree::List(new Leaf(tk2)));
-	return TRUE;
+	return true;
     }
     else if(t == '('){
 	if(!rFunctionArguments(args))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk3) != ')')
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk4) != ':')
-	    return FALSE;
+	    return false;
 
 	mem = new PtreeUserAccessSpec(new Leaf(tk1),
 				      Ptree::List(new Leaf(tk2), args,
 						  new Leaf(tk3),
 						  new Leaf(tk4)));
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 /*
@@ -2787,17 +2787,17 @@ bool Parser::rCommaExpression(Ptree*& exp)
     Ptree *right;
 
     if(!rExpression(exp))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == ','){
 	lex->GetToken(tk);
 	if(!rExpression(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeCommaExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2810,7 +2810,7 @@ bool Parser::rExpression(Ptree*& exp)
     Ptree *left, *right;
 
     if(!rConditionalExpr(left))
-	return FALSE;
+	return false;
 
     int t = lex->LookAhead(0);
     if(t != '=' && t != AssignOp)
@@ -2818,12 +2818,12 @@ bool Parser::rExpression(Ptree*& exp)
     else{
 	lex->GetToken(tk);
 	if(!rExpression(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeAssignExpr(left, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2835,25 +2835,25 @@ bool Parser::rConditionalExpr(Ptree*& exp)
     Token tk1, tk2;
     Ptree *then, *otherwise;
 
-    if(!rLogicalOrExpr(exp, FALSE))
-	return FALSE;
+    if(!rLogicalOrExpr(exp, false))
+	return false;
 
     if(lex->LookAhead(0) == '?'){
 	lex->GetToken(tk1);
 	if(!rCommaExpression(then))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk2) != ':')
-	    return FALSE;
+	    return false;
 
 	if(!rConditionalExpr(otherwise))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeCondExpr(exp, Ptree::List(new Leaf(tk1), then,
 						 new Leaf(tk2), otherwise));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2867,17 +2867,17 @@ bool Parser::rLogicalOrExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rLogicalAndExpr(exp, temp_args))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == LogOrOp){
 	lex->GetToken(tk);
 	if(!rLogicalAndExpr(right, temp_args))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2891,17 +2891,17 @@ bool Parser::rLogicalAndExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rInclusiveOrExpr(exp, temp_args))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == LogAndOp){
 	lex->GetToken(tk);
 	if(!rInclusiveOrExpr(right, temp_args))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2915,17 +2915,17 @@ bool Parser::rInclusiveOrExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rExclusiveOrExpr(exp, temp_args))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == '|'){
 	lex->GetToken(tk);
 	if(!rExclusiveOrExpr(right, temp_args))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2939,17 +2939,17 @@ bool Parser::rExclusiveOrExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rAndExpr(exp, temp_args))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == '^'){
 	lex->GetToken(tk);
 	if(!rAndExpr(right, temp_args))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2963,17 +2963,17 @@ bool Parser::rAndExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rEqualityExpr(exp, temp_args))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == '&'){
 	lex->GetToken(tk);
 	if(!rEqualityExpr(right, temp_args))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -2987,17 +2987,17 @@ bool Parser::rEqualityExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rRelationalExpr(exp, temp_args))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == EqualOp){
 	lex->GetToken(tk);
 	if(!rRelationalExpr(right, temp_args))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3012,18 +3012,18 @@ bool Parser::rRelationalExpr(Ptree*& exp, bool temp_args)
     Ptree *right;
 
     if(!rShiftExpr(exp))
-	return FALSE;
+	return false;
 
     while(t = lex->LookAhead(0),
 	  (t == RelOp || t == '<' || (t == '>' && !temp_args))){
 	lex->GetToken(tk);
 	if(!rShiftExpr(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3037,17 +3037,17 @@ bool Parser::rShiftExpr(Ptree*& exp)
     Ptree *right;
 
     if(!rAdditiveExpr(exp))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == ShiftOp){
 	lex->GetToken(tk);
 	if(!rAdditiveExpr(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3062,17 +3062,17 @@ bool Parser::rAdditiveExpr(Ptree*& exp)
     Ptree *right;
 
     if(!rMultiplyExpr(exp))
-	return FALSE;
+	return false;
 
     while(t = lex->LookAhead(0), (t == '+' || t == '-')){
 	lex->GetToken(tk);
 	if(!rMultiplyExpr(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3087,17 +3087,17 @@ bool Parser::rMultiplyExpr(Ptree*& exp)
     Ptree *right;
 
     if(!rPmExpr(exp))
-	return FALSE;
+	return false;
 
     while(t = lex->LookAhead(0), (t == '*' || t == '/' || t == '%')){
 	lex->GetToken(tk);
 	if(!rPmExpr(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeInfixExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3111,17 +3111,17 @@ bool Parser::rPmExpr(Ptree*& exp)
     Ptree *right;
 
     if(!rCastExpr(exp))
-	return FALSE;
+	return false;
 
     while(lex->LookAhead(0) == PmOp){
 	lex->GetToken(tk);
 	if(!rCastExpr(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreePmExpr(exp, Ptree::List(new Leaf(tk), right));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3144,7 +3144,7 @@ bool Parser::rCastExpr(Ptree*& exp)
 		    exp = new PtreeCastExpr(new Leaf(tk1),
 					    Ptree::List(tname, new Leaf(tk2),
 							exp));
-		    return TRUE;
+		    return true;
 		}
 
 	lex->Restore(pos);
@@ -3167,15 +3167,15 @@ bool Parser::rTypeName(Ptree*& tname, Encoding& type_encode)
     Ptree *type_name, *arg;
     Encoding name_encode;
 
-    if(!rTypeSpecifier(type_name, TRUE, type_encode))
-	return FALSE;
+    if(!rTypeSpecifier(type_name, true, type_encode))
+	return false;
 
-    if(!rDeclarator(arg, kCastDeclarator, FALSE, type_encode, name_encode,
-		    FALSE))
-	return FALSE;
+    if(!rDeclarator(arg, kCastDeclarator, false, type_encode, name_encode,
+		    false))
+	return false;
 
     tname = Ptree::List(type_name, arg);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3196,10 +3196,10 @@ bool Parser::rUnaryExpr(Ptree*& exp)
 
 	lex->GetToken(tk);
 	if(!rCastExpr(right))
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeUnaryExpr(new Leaf(tk), Ptree::List(right));
-	return TRUE;
+	return true;
     }
     else if(t == SIZEOF)
 	return rSizeofExpr(exp);
@@ -3221,17 +3221,17 @@ bool Parser::rThrowExpr(Ptree*& exp)
     Ptree* e;
 
     if(lex->GetToken(tk) != THROW)
-	return FALSE;
+	return false;
 
     int t = lex->LookAhead(0);
     if(t == ':' || t == ';')
 	e = nil;
     else
 	if(!rExpression(e))
-	    return FALSE;
+	    return false;
 
     exp = new PtreeThrowExpr(new LeafReserved(tk), Ptree::List(e));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3245,7 +3245,7 @@ bool Parser::rSizeofExpr(Ptree*& exp)
     Ptree* unary;
 
     if(lex->GetToken(tk) != SIZEOF)
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == '('){
 	Ptree* tname;
@@ -3258,17 +3258,17 @@ bool Parser::rSizeofExpr(Ptree*& exp)
 		exp = new PtreeSizeofExpr(new Leaf(tk),
 					  Ptree::List(new Leaf(op), tname,
 						      new Leaf(cp)));
-		return TRUE;
+		return true;
 	    }
 
 	lex->Restore(pos);
     }
 
     if(!rUnaryExpr(unary))
-	return FALSE;
+	return false;
 
     exp = new PtreeSizeofExpr(new Leaf(tk), Ptree::List(unary));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3282,7 +3282,7 @@ bool Parser::rTypeidExpr(Ptree*& exp)
     Ptree* unary;
 
     if(lex->GetToken(tk) != TYPEID)
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == '('){
 	Ptree* tname;
@@ -3295,31 +3295,31 @@ bool Parser::rTypeidExpr(Ptree*& exp)
 		exp = new PtreeTypeidExpr(new Leaf(tk),
 					  Ptree::List(new Leaf(op), tname,
 						      new Leaf(cp)));
-		return TRUE;
+		return true;
 	    }
 
 	lex->Restore(pos);
     }
 
     if(!rUnaryExpr(unary))
-	return FALSE;
+	return false;
 
     exp = new PtreeTypeidExpr(new Leaf(tk), Ptree::List(unary));
-    return TRUE;
+    return true;
 }
 
 bool Parser::isAllocateExpr(int t)
 {
     if(t == UserKeyword)
-	return TRUE;
+	return true;
     else{
 	if(t == Scope)
 	    t = lex->LookAhead(1);
 
 	if(t == NEW || t == DELETE)
-	    return TRUE;
+	    return true;
 	else
-	    return FALSE;
+	    return false;
     }
 }
 
@@ -3333,7 +3333,7 @@ bool Parser::rAllocateExpr(Ptree*& exp)
     Token tk;
     Ptree* head = nil;
 
-    bool ukey = FALSE;
+    bool ukey = false;
     int t = lex->LookAhead(0);
     if(t == Scope){
 	lex->GetToken(tk);
@@ -3341,16 +3341,16 @@ bool Parser::rAllocateExpr(Ptree*& exp)
     }
     else if(t == UserKeyword){
 	if(!rUserdefKeyword(head))
-	    return FALSE;
+	    return false;
 
-	ukey = TRUE;
+	ukey = true;
     }
 
     t = lex->GetToken(tk);
     if(t == DELETE){
 	Ptree* obj;
 	if(ukey)
-	    return FALSE;
+	    return false;
 
 	if(head == nil)
 	    exp = new PtreeDeleteExpr(new LeafReserved(tk), nil);
@@ -3362,16 +3362,16 @@ bool Parser::rAllocateExpr(Ptree*& exp)
 	    lex->GetToken(tk);
 	    exp = Ptree::Snoc(exp, new Leaf(tk));
 	    if(lex->GetToken(tk) != ']')
-		return FALSE;
+		return false;
 
 	    exp = Ptree::Snoc(exp, new Leaf(tk));
 	}
 
 	if(!rCastExpr(obj))
-	    return FALSE;
+	    return false;
 
 	exp = Ptree::Snoc(exp, obj);
-	return TRUE;
+	return true;
     }
     else if(t == NEW){
 	Ptree *atype;
@@ -3381,13 +3381,13 @@ bool Parser::rAllocateExpr(Ptree*& exp)
 	    exp = new PtreeNewExpr(head, Ptree::List(new LeafReserved(tk)));
 
 	if(!rAllocateType(atype))
-	    return FALSE;
+	    return false;
 
 	exp = Ptree::Nconc(exp, atype);
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 /*
@@ -3400,7 +3400,7 @@ bool Parser::rUserdefKeyword(Ptree*& ukey)
 
     int t = lex->GetToken(tk);
     if(t != UserKeyword && t != UserKeyword5)
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) != '(')
 	ukey = new PtreeUserdefKeyword(new Leaf(tk), nil);
@@ -3409,16 +3409,16 @@ bool Parser::rUserdefKeyword(Ptree*& ukey)
 	Token op, cp;
 	lex->GetToken(op);
 	if(!rFunctionArguments(args))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(cp) != ')')
-	    return FALSE;
+	    return false;
 
 	ukey = new PtreeUserdefKeyword(new Leaf(tk),
 			Ptree::List(new Leaf(op), args, new Leaf(cp)));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3444,7 +3444,7 @@ bool Parser::rAllocateType(Ptree*& atype)
 		    atype = Ptree::List(nil, Ptree::List(new Leaf(op), tname,
 							 new Leaf(cp)));
 		    if(!isTypeSpecifier())
-			return TRUE;
+			return true;
 		}
 		else if(rAllocateInitializer(init)){
 		    atype = Ptree::List(nil,
@@ -3453,16 +3453,16 @@ bool Parser::rAllocateType(Ptree*& atype)
 					init);
 		    // the next token cannot be '('
 		    if(lex->LookAhead(0) != '(')
-			return TRUE;
+			return true;
 		}
 
 	// if we reach here, we have to process '(' function.arguments ')'.
 	lex->Restore(pos);
 	if(!rFunctionArguments(exp))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(cp) != ')')
-	    return FALSE;
+	    return false;
 
 	atype = Ptree::List(Ptree::List(new Leaf(op), exp, new Leaf(cp)));
     }
@@ -3470,10 +3470,10 @@ bool Parser::rAllocateType(Ptree*& atype)
     if(lex->LookAhead(0) == '('){
 	lex->GetToken(op);
 	if(!rTypeName(tname))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(cp) != ')')
-	    return FALSE;
+	    return false;
 
 	atype = Ptree::Snoc(atype, Ptree::List(new Leaf(op), tname,
 					       new Leaf(cp)));
@@ -3481,23 +3481,23 @@ bool Parser::rAllocateType(Ptree*& atype)
     else{
 	Ptree* decl;
 	Encoding type_encode;
-	if(!rTypeSpecifier(tname, FALSE, type_encode))
-	    return FALSE;
+	if(!rTypeSpecifier(tname, false, type_encode))
+	    return false;
 
 	if(!rNewDeclarator(decl, type_encode))
-	    return FALSE;
+	    return false;
 
 	atype = Ptree::Snoc(atype, Ptree::List(tname, decl));
     }
 
     if(lex->LookAhead(0) == '('){
 	if(!rAllocateInitializer(init))
-	    return FALSE;
+	    return false;
 
 	atype = Ptree::Snoc(atype, init);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3511,17 +3511,17 @@ bool Parser::rNewDeclarator(Ptree*& decl, Encoding& encode)
     decl = nil;
     if(lex->LookAhead(0) != '[')
 	if(!optPtrOperator(decl, encode))
-	    return FALSE;
+	    return false;
 
     while(lex->LookAhead(0) == '['){
 	Token ob, cb;
 	Ptree* exp;
 	lex->GetToken(ob);
 	if(!rCommaExpression(exp))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(cb) != ']')
-	    return FALSE;
+	    return false;
 
 	encode.Array();
 	decl = Ptree::Nconc(decl, Ptree::List(new Leaf(ob), exp,
@@ -3533,7 +3533,7 @@ bool Parser::rNewDeclarator(Ptree*& decl, Encoding& encode)
     else
 	decl = new PtreeDeclarator(decl, encode);
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3545,19 +3545,19 @@ bool Parser::rAllocateInitializer(Ptree*& init)
     Token op, cp;
 
     if(lex->GetToken(op) != '(')
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == ')'){
 	lex->GetToken(cp);
 	init = Ptree::List(new Leaf(op), nil, new Leaf(cp));
-	return TRUE;
+	return true;
     }
 
     init = nil;
     for(;;){
 	Ptree* exp;
 	if(!rInitializeExpr(exp))
-	    return FALSE;
+	    return false;
 
 	init = Ptree::Snoc(init, exp);
 	if(lex->LookAhead(0) != ',')
@@ -3571,7 +3571,7 @@ bool Parser::rAllocateInitializer(Ptree*& init)
 
     lex->GetToken(cp);
     init = Ptree::List(new Leaf(op), init, new Leaf(cp));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -3597,17 +3597,17 @@ bool Parser::rPostfixExpr(Ptree*& exp)
     int t, t2;
 
     if(!rPrimaryExpr(exp))
-	return FALSE;
+	return false;
 
     for(;;){
 	switch(lex->LookAhead(0)){
 	case '[' :
 	    lex->GetToken(op);
 	    if(!rCommaExpression(e))
-		return FALSE;
+		return false;
 
 	    if(lex->GetToken(cp) != ']')
-		return FALSE;
+		return false;
 
 	    exp = new PtreeArrayExpr(exp, Ptree::List(new Leaf(op),
 						      e, new Leaf(cp)));
@@ -3615,10 +3615,10 @@ bool Parser::rPostfixExpr(Ptree*& exp)
 	case '(' :
 	    lex->GetToken(op);
 	    if(!rFunctionArguments(e))
-		return FALSE;
+		return false;
 
 	    if(lex->GetToken(cp) != ')')
-		return FALSE;
+		return false;
 
 	    exp = new PtreeFuncallExpr(exp, Ptree::List(new Leaf(op),
 							e, new Leaf(cp)));
@@ -3633,7 +3633,7 @@ bool Parser::rPostfixExpr(Ptree*& exp)
 	    t = lex->LookAhead(0);
 	    if(t == UserKeyword || t == UserKeyword2 || t == UserKeyword3){
 		if(!rUserdefStatement(e))
-		    return FALSE;
+		    return false;
 
 		exp = new PtreeUserStatementExpr(exp,
 						 Ptree::Cons(new Leaf(op), e));
@@ -3641,7 +3641,7 @@ bool Parser::rPostfixExpr(Ptree*& exp)
 	    }
 	    else{
 		if(!rVarName(e))
-		    return FALSE;
+		    return false;
 
 		if(t2 == '.')
 		    exp = new PtreeDotMemberExpr(exp,
@@ -3652,7 +3652,7 @@ bool Parser::rPostfixExpr(Ptree*& exp)
 		break;
 	    }
 	default :
-	    return TRUE;
+	    return true;
 	}
     }
 }
@@ -3682,57 +3682,57 @@ bool Parser::rPrimaryExpr(Ptree*& exp)
     case Constant : case CharConst : case StringL :
 	lex->GetToken(tk);
 	exp = new Leaf(tk);
-	return TRUE;
+	return true;
     case THIS :
 	lex->GetToken(tk);
 	exp = new LeafThis(tk);
-	return TRUE;
+	return true;
     case TYPEID :
 	return rTypeidExpr(exp);
     case '(' :
 	lex->GetToken(tk);
 	if(!rCommaExpression(exp2))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk2) != ')')
-	    return FALSE;
+	    return false;
 
 	exp = new PtreeParenExpr(new Leaf(tk),
 				 Ptree::List(exp2, new Leaf(tk2)));
-	return TRUE;
+	return true;
     default :
 	if(!optIntegralTypeOrClassSpec(exp, cast_type_encode))
-	    return FALSE;
+	    return false;
 
 	if(exp != nil){		// if integral.or.class.spec
 	    if(lex->GetToken(tk) != '(')
-		return FALSE;
+		return false;
 
 	    if(!rFunctionArguments(exp2))
-		return FALSE;
+		return false;
 
 	    if(lex->GetToken(tk2) != ')')
-		return FALSE;
+		return false;
 
 	    exp = new PtreeFstyleCastExpr(cast_type_encode, exp,
 					  Ptree::List(new Leaf(tk), exp2,
 						      new Leaf(tk2)));
-	    return TRUE;
+	    return true;
 	}
 	else{
 	    if(!rVarName(exp))
-		return FALSE;
+		return false;
 
 	    if(lex->LookAhead(0) == Scope){
 		lex->GetToken(tk);
 		if(!rUserdefStatement(exp2))
-		    return FALSE;
+		    return false;
 
 		exp = new PtreeStaticUserStatementExpr(exp,
 					Ptree::Cons(new Leaf(tk), exp2));
 	    }
 
-	    return TRUE;
+	    return true;
 	}
     }
 }
@@ -3752,58 +3752,58 @@ bool Parser::rUserdefStatement(Ptree*& st)
 
     int t = lex->GetToken(tk);
     if(lex->GetToken(tk2) != '(')
-	return FALSE;
+	return false;
 
     switch(t){
     case UserKeyword :
 	keyword = new LeafReserved(tk);
 	if(!rFunctionArguments(exp))
-	    return FALSE;
+	    return false;
 	goto rest;
     case UserKeyword2 :
 	keyword = new LeafUserKeyword2(tk);
 	if(!rArgDeclList(exp, dummy_encode))
-	    return FALSE;
+	    return false;
     rest:
 	if(lex->GetToken(tk3) != ')')
-	    return FALSE;
+	    return false;
 
 	if(!rCompoundStatement(body))
-	    return FALSE;
+	    return false;
 
 	st = Ptree::List(keyword, new Leaf(tk2), exp, new Leaf(tk3),
 			 body);
-	return TRUE;
+	return true;
     case UserKeyword3 :
 	if(!rExprStatement(exp))
-	    return FALSE;
+	    return false;
 
 	if(lex->LookAhead(0) == ';')
 	    exp2 = nil;
 	else
 	    if(!rCommaExpression(exp2))
-		return FALSE;
+		return false;
 
 	if(lex->GetToken(tk3) != ';')
-	    return FALSE;
+	    return false;
 
 	if(lex->LookAhead(0) == ')')
 	    exp3 = nil;
 	else
 	    if(!rCommaExpression(exp3))
-		return FALSE;
+		return false;
 
 	if(lex->GetToken(tk4) != ')')
-	    return FALSE;
+	    return false;
 
 	if(!rCompoundStatement(body))
-	    return FALSE;
+	    return false;
 
 	st = Ptree::List(new Leaf(tk), new Leaf(tk2), exp, exp2,
 			 new Leaf(tk3), exp3, new Leaf(tk4), body);
-	return TRUE;
+	return true;
     default :
-	return FALSE;
+	return false;
     }
 }
 
@@ -3825,10 +3825,10 @@ bool Parser::rVarName(Ptree*& name)
 	if(!name->IsLeaf())
 	    name = new PtreeName(name, encode);
 
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 bool Parser::rVarNameCore(Ptree*& name, Encoding& encode)
@@ -3857,7 +3857,7 @@ bool Parser::rVarNameCore(Ptree*& name, Encoding& encode)
 		Ptree* args;
 		Encoding args_encode;
 		if(!rTemplateArgs(args, args_encode))
-		    return FALSE;
+		    return false;
 
 		encode.Template(n, args_encode);
 		++length;
@@ -3881,13 +3881,13 @@ bool Parser::rVarNameCore(Ptree*& name, Encoding& encode)
 		if(length > 1)
 		    encode.Qualified(length);
 
-		return TRUE;
+		return true;
 	    }
 	}
 	else if(t == '~'){
 	    Token tk2;
 	    if(lex->LookAhead(0) != Identifier)
-		return FALSE;
+		return false;
 
 	    lex->GetToken(tk2);
 	    Ptree* class_name = new Leaf(tk2);
@@ -3901,12 +3901,12 @@ bool Parser::rVarNameCore(Ptree*& name, Encoding& encode)
 	    if(length > 0)
 		encode.Qualified(length + 1);
 
-	    return TRUE;
+	    return true;
 	}
 	else if(t == OPERATOR){
 	    Ptree* op;
 	    if(!rOperatorName(op, encode))
-		return FALSE;
+		return false;
 
 	    Ptree* opf = Ptree::List(new LeafReserved(tk), op);
 	    if(name == nil)
@@ -3917,10 +3917,10 @@ bool Parser::rVarNameCore(Ptree*& name, Encoding& encode)
 	    if(length > 0)
 		encode.Qualified(length + 1);
 
-	    return TRUE;
+	    return true;
 	}
 	else
-	    return FALSE;
+	    return false;
     }
 }
 
@@ -3929,10 +3929,10 @@ bool Parser::moreVarName()
     if(lex->LookAhead(0) == Scope){
 	int t = lex->LookAhead(1);
 	if(t == Identifier || t == '~' || t == OPERATOR || t == TEMPLATE)
-	    return TRUE;
+	    return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /*
@@ -3961,18 +3961,18 @@ bool Parser::isTemplateArgs()
 		    else if(v == ')')
 			--m;
 		    else if(v == '\0' || v == ';' || v == '}')
-			return FALSE;
+			return false;
 		}
 	    }
 	    else if(u == '\0' || u == ';' || u == '}')
-		return FALSE;
+		return false;
 	}
 
 	t = lex->LookAhead(i);
 	return bool(t == Scope || t == '(');
     }
 
-    return FALSE;
+    return false;
 }
 
 /*
@@ -4023,7 +4023,7 @@ bool Parser::rCondition(Ptree*& exp)
 	    // Store type of CV's
 	    type_encode.CvQualify(cv_q, cv_q2);
 	    // Parse declarator
-	    if (!rDeclaratorWithInit(decl, type_encode, TRUE, FALSE))
+	    if (!rDeclaratorWithInit(decl, type_encode, true, false))
 		break;
 	    // *must* be end of condition, condition is in a () pair
 	    if (lex->LookAhead(0) != ')')
@@ -4051,7 +4051,7 @@ bool Parser::rCondition(Ptree*& exp)
 	    // Store type of CV's
 	    type_encode.CvQualify(cv_q, cv_q2);
 	    // Parse declarator
-	    if (!rDeclaratorWithInit(decl, type_encode, TRUE, FALSE))
+	    if (!rDeclaratorWithInit(decl, type_encode, true, false))
 		break;
 	    // *must* be end of condition, condition is in a () pair
 	    if (lex->LookAhead(0) != ')')
@@ -4059,7 +4059,7 @@ bool Parser::rCondition(Ptree*& exp)
 	    exp = new PtreeDeclaration(head,
 		    Ptree::List(type_name, decl));
 	}
-	return TRUE;
+	return true;
     } while(0);
 
     // Must be a comma expression
@@ -4085,7 +4085,7 @@ bool Parser::rCompoundStatement(Ptree*& body)
     Ptree *ob_comments, *cb_comments;
 
     if(lex->GetToken(ob) != '{')
-	return FALSE;
+	return false;
 
     ob_comments = lex->GetComments();
     Ptree* sts = nil;
@@ -4093,24 +4093,24 @@ bool Parser::rCompoundStatement(Ptree*& body)
 	Ptree* st;
 	if(!rStatement(st)){
 	    if(!SyntaxError())
-		return FALSE;	// too many errors
+		return false;	// too many errors
 
 	    SkipTo('}');
 	    lex->GetToken(cb);
 	    body = Ptree::List(new Leaf(ob), nil, new Leaf(cb));
-	    return TRUE;	// error recovery
+	    return true;	// error recovery
 	}
 
 	sts = Ptree::Snoc(sts, st);
     }
 
     if(lex->GetToken(cb) != '}')
-	return FALSE;
+	return false;
 
     cb_comments = lex->GetComments();
     body = new PtreeBlock(new CommentedLeaf(ob, ob_comments), sts, 
 	new CommentedLeaf(cb, cb_comments));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4145,37 +4145,37 @@ bool Parser::rStatement(Ptree*& st)
     // Whichever case we get, it must succeed
     switch(k = lex->LookAhead(0)){
     case '{' :
-	if (!rCompoundStatement(st)) return FALSE;
+	if (!rCompoundStatement(st)) return false;
 	break;
     case USING :
-	if (!rUsing(st)) return FALSE;
+	if (!rUsing(st)) return false;
 	break;
     case TYPEDEF :
-	if (!rTypedef(st)) return FALSE;
+	if (!rTypedef(st)) return false;
 	break;
     case IF :
-	if (!rIfStatement(st)) return FALSE;
+	if (!rIfStatement(st)) return false;
 	break;
     case SWITCH :
-	if (!rSwitchStatement(st)) return FALSE;
+	if (!rSwitchStatement(st)) return false;
 	break;
     case WHILE :
-	if (!rWhileStatement(st)) return FALSE;
+	if (!rWhileStatement(st)) return false;
 	break;
     case DO :
-	if (!rDoStatement(st)) return FALSE;
+	if (!rDoStatement(st)) return false;
 	break;
     case FOR :
-	if (!rForStatement(st)) return FALSE;
+	if (!rForStatement(st)) return false;
 	break;
     case TRY :
-	if (!rTryStatement(st)) return FALSE;
+	if (!rTryStatement(st)) return false;
 	break;
     case BREAK :
     case CONTINUE :
 	lex->GetToken(tk1);
 	if(lex->GetToken(tk2) != ';')
-	    return FALSE;
+	    return false;
 
 	if(k == BREAK)
 	    st = new PtreeBreakStatement(new LeafReserved(tk1),
@@ -4192,10 +4192,10 @@ bool Parser::rStatement(Ptree*& st)
 					  Ptree::List(new Leaf(tk2)));
 	} else {
 	    if(!rCommaExpression(exp))
-		return FALSE;
+		return false;
 
 	    if(lex->GetToken(tk2) != ';')
-		return FALSE;
+		return false;
 
 	    st = new PtreeReturnStatement(new LeafReserved(tk1),
 					  Ptree::List(exp, new Leaf(tk2)));
@@ -4204,10 +4204,10 @@ bool Parser::rStatement(Ptree*& st)
     case GOTO :
 	lex->GetToken(tk1);
 	if(lex->GetToken(tk2) != Identifier)
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk3) != ';')
-	    return FALSE;
+	    return false;
 
 	st = new PtreeGotoStatement(new LeafReserved(tk1),
 				    Ptree::List(new Leaf(tk2), new Leaf(tk3)));
@@ -4215,13 +4215,13 @@ bool Parser::rStatement(Ptree*& st)
     case CASE :
 	lex->GetToken(tk1);
 	if(!rExpression(exp))
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(tk2) != ':')
-	    return FALSE;
+	    return false;
 
 	if(!rStatement(st2))
-	    return FALSE;
+	    return false;
 
 	st = new PtreeCaseStatement(new LeafReserved(tk1),
 				    Ptree::List(exp, new Leaf(tk2), st2));
@@ -4229,10 +4229,10 @@ bool Parser::rStatement(Ptree*& st)
     case DEFAULT :
 	lex->GetToken(tk1);
 	if(lex->GetToken(tk2) != ':')
-	    return FALSE;
+	    return false;
 
 	if(!rStatement(st2))
-	    return FALSE;
+	    return false;
 
 	st = new PtreeDefaultStatement(new LeafReserved(tk1),
 				       Ptree::List(new Leaf(tk2), st2));
@@ -4242,20 +4242,20 @@ bool Parser::rStatement(Ptree*& st)
 	    lex->GetToken(tk1);
 	    lex->GetToken(tk2);
 	    if(!rStatement(st2))
-		return FALSE;
+		return false;
 
 	    st = new PtreeLabelStatement(new Leaf(tk1),
 					 Ptree::List(new Leaf(tk2), st2));
-	    return TRUE;
+	    return true;
 	}
 	// don't break here!
     default :
-	if (!rExprStatement(st)) return FALSE;
+	if (!rExprStatement(st)) return false;
     }
 
     // No parse error, attach comment to whatever was returned
     Walker::SetLeafComments(st, comments);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4269,19 +4269,19 @@ bool Parser::rIfStatement(Ptree*& st)
     Ptree *exp, *then, *otherwise;
 
     if(lex->GetToken(tk1) != IF)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != '(')
-	return FALSE;
+	return false;
 
     if(!rCondition(exp))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk3) != ')')
-	return FALSE;
+	return false;
 
     if(!rStatement(then))
-	return FALSE;
+	return false;
 
     st = new PtreeIfStatement(new LeafReserved(tk1),
 			      Ptree::List(new Leaf(tk2), exp, new Leaf(tk3),
@@ -4289,12 +4289,12 @@ bool Parser::rIfStatement(Ptree*& st)
     if(lex->LookAhead(0) == ELSE){
 	lex->GetToken(tk4);
 	if(!rStatement(otherwise))
-	    return FALSE;
+	    return false;
 
 	st = Ptree::Nconc(st, Ptree::List(new Leaf(tk4), otherwise));
     }
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4307,24 +4307,24 @@ bool Parser::rSwitchStatement(Ptree*& st)
     Ptree *exp, *body;
 
     if(lex->GetToken(tk1) != SWITCH)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != '(')
-	return FALSE;
+	return false;
 
     if(!rCondition(exp))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk3) != ')')
-	return FALSE;
+	return false;
 
     if(!rStatement(body))
-	return FALSE;
+	return false;
 
     st = new PtreeSwitchStatement(new LeafReserved(tk1),
 				  Ptree::List(new Leaf(tk2), exp,
 					      new Leaf(tk3), body));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4337,24 +4337,24 @@ bool Parser::rWhileStatement(Ptree*& st)
     Ptree *exp, *body;
 
     if(lex->GetToken(tk1) != WHILE)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != '(')
-	return FALSE;
+	return false;
 
     if(!rCommaExpression(exp))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk3) != ')')
-	return FALSE;
+	return false;
 
     if(!rStatement(body))
-	return FALSE;
+	return false;
 
     st = new PtreeWhileStatement(new LeafReserved(tk1),
 				 Ptree::List(new Leaf(tk2), exp,
 					      new Leaf(tk3), body));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4367,31 +4367,31 @@ bool Parser::rDoStatement(Ptree*& st)
     Ptree *exp, *body;
 
     if(lex->GetToken(tk0) != DO)
-	return FALSE;
+	return false;
 
     if(!rStatement(body))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk1) != WHILE)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != '(')
-	return FALSE;
+	return false;
 
     if(!rCommaExpression(exp))
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk3) != ')')
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk4) != ';')
-	return FALSE;
+	return false;
 
     st = new PtreeDoStatement(new LeafReserved(tk0),
 				 Ptree::List(body, new LeafReserved(tk1),
 					     new Leaf(tk2), exp,
 					     new Leaf(tk3), new Leaf(tk4)));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4405,41 +4405,41 @@ bool Parser::rForStatement(Ptree*& st)
     Ptree *exp1, *exp2, *exp3, *body;
 
     if(lex->GetToken(tk1) != FOR)
-	return FALSE;
+	return false;
 
     if(lex->GetToken(tk2) != '(')
-	return FALSE;
+	return false;
 
     if(!rExprStatement(exp1))
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == ';')
 	exp2 = nil;
     else
 	if(!rCommaExpression(exp2))
-	    return FALSE;
+	    return false;
 
     if(lex->GetToken(tk3) != ';')
-	return FALSE;
+	return false;
 
     if(lex->LookAhead(0) == ')')
 	exp3 = nil;
     else
 	if(!rCommaExpression(exp3))
-	    return FALSE;
+	    return false;
 
     if(lex->GetToken(tk4) != ')')
-	return FALSE;
+	return false;
 
     if(!rStatement(body))
-	return FALSE;
+	return false;
 
 
     st = new PtreeForStatement(new LeafReserved(tk1),
 			       Ptree::List(new Leaf(tk2), exp1, exp2,
 					   new Leaf(tk3), exp3,
 					   new Leaf(tk4), body));
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4455,19 +4455,19 @@ bool Parser::rTryStatement(Ptree*& st)
     Ptree *body, *handler;
 
     if(lex->GetToken(tk) != TRY)
-	return FALSE;
+	return false;
 
     if(!rCompoundStatement(body))
-	return FALSE;
+	return false;
 
     st = new PtreeTryStatement(new LeafReserved(tk), Ptree::List(body));
 
     do{
 	if(lex->GetToken(tk) != CATCH)
-	    return FALSE;
+	    return false;
 
 	if(lex->GetToken(op) != '(')
-	    return FALSE;
+	    return false;
 
 	if(lex->LookAhead(0) == Ellipsis){
 	    lex->GetToken(cp);
@@ -4476,20 +4476,20 @@ bool Parser::rTryStatement(Ptree*& st)
 	else{
 	    Encoding encode;
 	    if(!rArgDeclaration(handler, encode))
-		return FALSE;
+		return false;
 	}
 
 	if(lex->GetToken(cp) != ')')
-	    return FALSE;
+	    return false;
 
 	if(!rCompoundStatement(body))
-	    return FALSE;
+	    return false;
 
 	st = Ptree::Snoc(st, Ptree::List(new LeafReserved(tk),
 					 new Leaf(op), handler, new Leaf(cp),
 					 body));
     } while(lex->LookAhead(0) == CATCH);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -4507,28 +4507,28 @@ bool Parser::rExprStatement(Ptree*& st)
     if(lex->LookAhead(0) == ';'){
 	lex->GetToken(tk);
 	st = new PtreeExprStatement(nil, Ptree::List(new Leaf(tk)));
-	return TRUE;
+	return true;
     }
     else{
 	char* pos = lex->Save();
 	if(rDeclarationStatement(st))
-	    return TRUE;
+	    return true;
 	else{
 	    Ptree* exp;
 	    lex->Restore(pos);
 	    if(!rCommaExpression(exp))
-		return FALSE;
+		return false;
 
 	    if(exp->IsA(ntUserStatementExpr, ntStaticUserStatementExpr)){
 		st = exp;
-		return TRUE;
+		return true;
 	    }
 
 	    if(lex->GetToken(tk) != ';')
-		return FALSE;
+		return false;
 
 	    st = new PtreeExprStatement(exp, Ptree::List(new Leaf(tk)));
-	    return TRUE;
+	    return true;
 	}
     }
 }
@@ -4555,7 +4555,7 @@ bool Parser::rDeclarationStatement(Ptree*& statement)
     if(!optStorageSpec(storage_s)
        || !optCvQualify(cv_q)
        || !optIntegralTypeOrClassSpec(integral, type_encode))
-	return FALSE;
+	return false;
 
     Ptree* head = nil;
     if(storage_s != nil)
@@ -4586,7 +4586,7 @@ bool Parser::rIntegralDeclStatement(Ptree*& statement, Encoding& type_encode,
     Token tk;
 
     if(!optCvQualify(cv_q2))
-	return FALSE;
+	return false;
 
     if(cv_q != nil)
 	if(cv_q2 == nil)
@@ -4601,18 +4601,18 @@ bool Parser::rIntegralDeclStatement(Ptree*& statement, Encoding& type_encode,
 	lex->GetToken(tk);
 	statement = new PtreeDeclaration(head, Ptree::List(integral,
 							   new Leaf(tk)));
-	return TRUE;
+	return true;
     }
     else{
-	if(!rDeclarators(decl, type_encode, FALSE, TRUE))
-	    return FALSE;
+	if(!rDeclarators(decl, type_encode, false, true))
+	    return false;
 
 	if(lex->GetToken(tk) != ';')
-	    return FALSE;
+	    return false;
 	    
 	statement = new PtreeDeclaration(head, Ptree::List(integral, decl,
 							   new Leaf(tk)));
-	return TRUE;
+	return true;
     }
 }
 
@@ -4627,10 +4627,10 @@ bool Parser::rOtherDeclStatement(Ptree*& statement, Encoding& type_encode,
     Token tk;
 
     if(!rName(type_name, type_encode))
-	return FALSE;
+	return false;
 
     if(!optCvQualify(cv_q2))
-	return FALSE;
+	return false;
 
     if(cv_q != nil)
 	if(cv_q2 == nil)
@@ -4641,20 +4641,20 @@ bool Parser::rOtherDeclStatement(Ptree*& statement, Encoding& type_encode,
 	type_name = Ptree::Cons(type_name, cv_q2);
 
     type_encode.CvQualify(cv_q, cv_q2);
-    if(!rDeclarators(decl, type_encode, FALSE, TRUE))
-	return FALSE;
+    if(!rDeclarators(decl, type_encode, false, true))
+	return false;
 
     if(lex->GetToken(tk) != ';')
-	return FALSE;
+	return false;
 
     statement = new PtreeDeclaration(head, Ptree::List(type_name, decl,
 						       new Leaf(tk)));
-    return TRUE;
+    return true;
 }
 
 bool Parser::MaybeTypeNameOrClassTemplate(Token&)
 {
-    return TRUE;
+    return true;
 }
 
 void Parser::SkipTo(int token)

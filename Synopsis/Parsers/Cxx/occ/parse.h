@@ -80,10 +80,10 @@ protected:
     bool rConstructorDecl(Ptree*&, Encoding&);
     bool optThrowDecl(Ptree*&);
 
-    bool rDeclarators(Ptree*&, Encoding&, bool, bool = FALSE);
+    bool rDeclarators(Ptree*&, Encoding&, bool, bool = false);
     bool rDeclaratorWithInit(Ptree*&, Encoding&, bool, bool);
     bool rDeclarator(Ptree*&, DeclKind, bool, Encoding&, Encoding&, bool,
-		     bool = FALSE);
+		     bool = false);
     bool rDeclarator2(Ptree*&, DeclKind, bool, Encoding&, Encoding&, bool,
 		      bool, Ptree**);
     bool optPtrOperator(Ptree*&, Encoding&);

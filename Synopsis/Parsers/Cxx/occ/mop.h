@@ -77,7 +77,7 @@ public:
     enum { Public = 298, Protected = 297, Private = 296, Undefined = 0 };
 
     virtual void TranslateClass(Environment*);
-    void RemoveClass() { removed = TRUE; }
+    void RemoveClass() { removed = true; }
     void AddClassSpecifier(Ptree* spec);	// only for MSVC++
     void ChangeName(Ptree* name);
     void ChangeBaseClasses(Ptree*);
@@ -220,7 +220,7 @@ private:
     ChangedMemberList::Cmem* GetChangedMember(Ptree*);
     ChangedMemberList* GetAppendedMembers() { return appended_member_list; }
     Ptree* GetAppendedCode() { return appended_code; }
-    void TranslateClassHasFinished() { done_decl_translation = TRUE; }
+    void TranslateClassHasFinished() { done_decl_translation = true; }
     void CheckValidity(char*);
 
 private:

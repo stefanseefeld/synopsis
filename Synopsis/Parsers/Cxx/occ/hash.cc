@@ -73,9 +73,9 @@ bool HashTable::IsEmpty()
 {
     for(int i = 0; i < Size; ++i)
 	if(entries[i].key != nil && entries[i].key != (char*)-1)
-	    return FALSE;
+	    return false;
 
-    return TRUE;
+    return true;
 }
 
 void HashTable::Dump(std::ostream& out)
@@ -120,17 +120,17 @@ bool HashTable::Lookup2(char* key, HashValue* value, int* index)
     for(int i = 0; i < Size; ++i){
 	int j = HashFunc(p, i);
 	if(entries[j].key == nil){
-	    return FALSE;		// not found
+	    return false;		// not found
 	}
 	else if(entries[j].key != (char*)-1
 				&& strcmp(entries[j].key, key) == 0){
 	    *value = entries[j].value;
 	    *index = j;
-	    return TRUE;
+	    return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
 bool HashTable::Lookup2(char* key, int len, HashValue* value, int* index)
@@ -139,18 +139,18 @@ bool HashTable::Lookup2(char* key, int len, HashValue* value, int* index)
     for(int i = 0; i < Size; ++i){
 	int j = HashFunc(p, i);
 	if(entries[j].key == nil){
-	    return FALSE;		// not found
+	    return false;		// not found
 	}
 	else if(entries[j].key != (char*)-1
 		&& strncmp(entries[j].key, key, len) == 0
 		&& entries[j].key[len] == '\0'){
 	    *value = entries[j].value;
 	    *index = j;
-	    return TRUE;
+	    return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
 /*
@@ -166,18 +166,18 @@ bool HashTable::LookupEntries(char* key, int len, HashValue* value,
     for(int i = nth; i < Size; ++i){
 	int j = HashFunc(p, i);
 	if(entries[j].key == nil){
-	    return FALSE;		// not found
+	    return false;		// not found
 	}
 	else if(entries[j].key != (char*)-1
 		&& strncmp(entries[j].key, key, len) == 0
 		&& entries[j].key[len] == '\0'){
 	    *value = entries[j].value;
 	    nth = i + 1;
-	    return TRUE;
+	    return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
 /*
@@ -192,10 +192,10 @@ uint HashTable::NextPrimeNumber(uint number)
 
     for(;;){
         uint half = number / 2;
-        bool prime = TRUE;
+        bool prime = true;
         for(uint i = 2; i <= half && prime; ++i)
             if(number % i == 0)
-		prime = FALSE;
+		prime = false;
 
         if(prime)
 	    return number;
@@ -222,7 +222,7 @@ bool HashTable::GrowTable(int increment)
     bigger.Size = (int)NextPrimeNumber(2 * bigger.Prime2);
     bigger.MakeTable();
     
-    bool done = TRUE;
+    bool done = true;
     for(int i = 0; done && i < Size; ++i) {
         char *key = this->entries[i].key;
         if (key != nil && key != (char*)-1)
@@ -332,10 +332,10 @@ bool HashTable::RemoveEntry(char* key)
     int		index;
 
     if(!Lookup2(key, &u, &index))
-	return FALSE;		// not found
+	return false;		// not found
     else{
 	entries[index].key = (char*)-1;
-	return TRUE;
+	return true;
     }
 }
 
@@ -345,10 +345,10 @@ bool HashTable::RemoveEntry(char* key, int len)
     int		index;
 
     if(!Lookup2(key, len, &u, &index))
-	return FALSE;		// not found
+	return false;		// not found
     else{
 	entries[index].key = (char*)-1;
-	return TRUE;
+	return true;
     }
 }
 

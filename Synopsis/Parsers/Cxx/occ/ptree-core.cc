@@ -24,7 +24,7 @@
 #include <stdlib.h>		// for exit()
 #endif
 
-bool Ptree::show_encoded = FALSE;
+bool Ptree::show_encoded = false;
 
 // error messages
 
@@ -105,7 +105,7 @@ char* Ptree::ToString()
 bool Ptree::Eq(char c)
 {
     if(this == nil)
-	return FALSE;
+	return false;
     else
 	return(IsLeaf() && GetLength() == 1 && *GetPosition() == c);
 }
@@ -113,19 +113,19 @@ bool Ptree::Eq(char c)
 bool Ptree::Eq(char* str)
 {
     if(this == nil)
-	return FALSE;
+	return false;
     else if(IsLeaf()){
 	char* p = GetPosition();
 	int n = GetLength();
 	int i;
 	for(i = 0; i < n; ++i)
 	    if(p[i] != str[i] || str[i] == '\0')
-		return FALSE;
+		return false;
 
 	return bool(str[i] == '\0');
     }
     else
-	return FALSE;
+	return false;
 }
 
 bool Ptree::Eq(char* str, int len)
@@ -137,13 +137,13 @@ bool Ptree::Eq(char* str, int len)
 	    int i;
 	    for(i = 0; i < n; ++i)
 		if(p[i] != str[i])
-		    return FALSE;
+		    return false;
 
-	    return TRUE;
+	    return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
 Ptree* Ptree::Ca_ar()		// compute Caa..ar
@@ -200,7 +200,7 @@ int Ptree::What()
 bool Ptree::IsA(int kind)
 {
     if(this == nil)
-	return FALSE;
+	return false;
     else
 	return bool(What() == kind);
 }
@@ -208,7 +208,7 @@ bool Ptree::IsA(int kind)
 bool Ptree::IsA(int kind1, int kind2)
 {
     if(this == nil)
-	return FALSE;
+	return false;
     else{
 	int k = What();
 	return bool(k == kind1 || k == kind2);
@@ -218,7 +218,7 @@ bool Ptree::IsA(int kind1, int kind2)
 bool Ptree::IsA(int kind1, int kind2, int kind3)
 {
     if(this == nil)
-	return FALSE;
+	return false;
     else{
 	int k = What();
 	return bool(k == kind1 || k == kind2 || k == kind3);
@@ -266,9 +266,9 @@ bool Ptree::Eq(Ptree* p, char* str, int len)
 bool Ptree::Eq(Ptree* p, Ptree* q)
 {
     if(p == q)
-	return TRUE;
+	return true;
     else if(p == nil || q == nil)
-	return FALSE;
+	return false;
     else if(p->IsLeaf() && q->IsLeaf()){
 	int plen = p->GetLength();
 	int qlen = q->GetLength();
@@ -277,13 +277,13 @@ bool Ptree::Eq(Ptree* p, Ptree* q)
 	    char* qstr = q->GetPosition();
 	    while(--plen >= 0)
 		if(pstr[plen] != qstr[plen])
-		    return FALSE;
+		    return false;
 
-	    return TRUE;
+	    return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
 /*
@@ -293,15 +293,15 @@ bool Ptree::Eq(Ptree* p, Ptree* q)
 bool Ptree::Equiv(Ptree* p, Ptree* q)
 {
     if(p == q)
-	return TRUE;
+	return true;
     else if(p == nil || q == nil)
-	return FALSE;
+	return false;
     else if(p->IsLeaf() || q->IsLeaf())
 	return Eq(p, q);
     else{
 	while(p != nil && q != nil)
 	    if(p->Car() != q->Car())
-		return FALSE;
+		return false;
 	    else{
 		p = p->Cdr();
 		q = q->Cdr();
@@ -314,9 +314,9 @@ bool Ptree::Equiv(Ptree* p, Ptree* q)
 bool Ptree::Equal(Ptree* p, Ptree* q)
 {
     if(p == q)
-	return TRUE;
+	return true;
     else if(p == nil || q == nil)
-	return FALSE;
+	return false;
     else if(p->IsLeaf() || q->IsLeaf())
 	return Eq(p, q);
     else
@@ -518,14 +518,14 @@ Ptree* Ptree::ReplaceAll(Ptree* list, Ptree* orig, Ptree* subst)
 	return list;
     else{
 	PtreeArray newlist;
-	bool changed = FALSE;
+	bool changed = false;
 	Ptree* rest = list;
 	while(rest != nil){
 	    Ptree* p = rest->Car();
 	    Ptree* q = ReplaceAll(p, orig, subst);
 	    newlist.Append(q);
 	    if(p != q)
-		changed = TRUE;
+		changed = true;
 
 	    rest = rest->Cdr();
 	}
@@ -779,11 +779,11 @@ Ptree* PtreeIter::Pop()
 bool PtreeIter::Next(Ptree*& car)
 {
     if(ptree == nil)
-	return FALSE;
+	return false;
     else{
 	car = ptree->Car();
 	ptree = ptree->Cdr();
-	return TRUE;
+	return true;
     }
 }
 

@@ -87,8 +87,8 @@ void Class::Construct(Environment* e, Ptree* name)
     definition = def;
     class_environment = nil;
     member_list = nil;
-    done_decl_translation = FALSE;
-    removed = FALSE;
+    done_decl_translation = false;
+    removed = false;
     changed_member_list = nil;
     appended_member_list = nil;
     appended_code = nil;
@@ -114,8 +114,8 @@ void Class::InitializeInstance(Ptree* def, Ptree*)
 
     class_list->Append(this);
 
-    done_decl_translation = FALSE;
-    removed = FALSE;
+    done_decl_translation = false;
+    removed = false;
     changed_member_list = nil;
     appended_member_list = nil;
     appended_code = nil;
@@ -178,18 +178,18 @@ bool Class::IsSubclassOf(Ptree* name)
 	bases = bases->Cdr();		// skip : or ,
 	Ptree* base_class = bases->Car()->Last()->Car();
 	if(base_class->Eq(name))
-	    return TRUE;
+	    return true;
 	else{
 	    Class* metaobject
 		= class_environment->LookupClassMetaobject(base_class);
 	    if(metaobject != nil && metaobject->IsSubclassOf(name))
-		return TRUE;
+		return true;
 	}
 
 	bases = bases->Cdr();
     }
 
-    return FALSE;
+    return false;
 }
 
 bool Class::IsImmediateSubclassOf(Ptree* name)
@@ -199,12 +199,12 @@ bool Class::IsImmediateSubclassOf(Ptree* name)
 	bases = bases->Cdr();		// skip : or ,
 	Ptree* base_class = bases->Car()->Last()->Car();
 	if(base_class->Eq(name))
-	    return TRUE;
+	    return true;
 
 	bases = bases->Cdr();
     }
 
-    return FALSE;
+    return false;
 }
 
 Ptree* Class::NthBaseClassName(int n)
@@ -225,10 +225,10 @@ bool Class::NthMember(int nth, Member& mem)
 {
     MemberList* mlist = GetMemberList();
     if(mlist == nil || nth >= mlist->Number())
-	return FALSE;
+	return false;
 
     mem.Set(this, mlist->Ref(nth)->declarator, nth);
-    return TRUE;
+    return true;
 }
 
 bool Class::LookupMember(Ptree* name)
@@ -241,14 +241,14 @@ bool Class::LookupMember(Ptree* name, Member& mem, int index)
 {
     MemberList* mlist = GetMemberList();
     if(mlist == nil)
-	return FALSE;
+	return false;
 
     int nth = mlist->Lookup(class_environment, name, index);
     if(nth < 0)
-	return FALSE;
+	return false;
 
     mem.Set(this, mlist->Ref(nth)->declarator, nth);
-    return TRUE;
+    return true;
 }
 
 bool Class::LookupMember(char* name)
@@ -261,14 +261,14 @@ bool Class::LookupMember(char* name, Member& mem, int index)
 {
     MemberList* mlist = GetMemberList();
     if(mlist == nil)
-	return FALSE;
+	return false;
 
     int nth = mlist->Lookup(class_environment, name, index);
     if(nth < 0)
-	return FALSE;
+	return false;
 
     mem.Set(this, mlist->Ref(nth)->declarator, nth);
-    return TRUE;
+    return true;
 }
 
 MemberList* Class::GetMemberList()
@@ -798,18 +798,18 @@ void Class::SetEnvironment(Environment* e)
 
 bool Class::AcceptTemplate()
 {
-    return FALSE;	// Only the subclasses of TemplateClass can
+    return false;	// Only the subclasses of TemplateClass can
 			// return true.
 }
 
 /*
   At the beginning, Initialize() is once called on each metaclass.
   The subclasses of Class may define their own Initialize().
-  Initialize() returns FALSE if the initialization fails.
+  Initialize() returns false if the initialization fails.
 */
 bool Class::Initialize()
 {
-    return TRUE;
+    return true;
 }
 
 void Class::FinalizeAll(std::ostream& out)
@@ -1015,7 +1015,7 @@ bool Class::InsertDeclaration(Environment* env, Ptree* decl,
     else{
 	MopWarningMessage("Class::InsertDeclaration()",
 			  "cannot insert");
-	return FALSE;
+	return false;
     }
 }
 
@@ -1058,10 +1058,10 @@ bool Class::RecordCmdLineOption(char* key, char* value)
     if(num_of_cmd_options < MaxOptions * 2){
 	cmd_options[num_of_cmd_options++] = key;
 	cmd_options[num_of_cmd_options++] = value;
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 bool Class::LookupCmdLineOption(char* key)
@@ -1075,10 +1075,10 @@ bool Class::LookupCmdLineOption(char* key, char*& value)
     for(int i = 0; i < num_of_cmd_options; i += 2)
 	if(strcmp(key, cmd_options[i]) == 0){
 	    value = cmd_options[i + 1];
-	    return TRUE;
+	    return true;
 	}
 
-    return FALSE;
+    return false;
 }
 
 void Class::WarnObsoleteness(char* func, char* alt)
@@ -1114,7 +1114,7 @@ Ptree* TemplateClass::GetClassInTemplate(Ptree* def)
 
 bool TemplateClass::Initialize()
 {
-    return TRUE;
+    return true;
 }
 
 char* TemplateClass::MetaclassName()
@@ -1129,7 +1129,7 @@ Ptree* TemplateClass::TemplateArguments()
 
 bool TemplateClass::AcceptTemplate()
 {
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1274,18 +1274,18 @@ bool opcxx_ListOfMetaclass::AlreadyRecorded(char* name)
 {
     for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
 	if(strcmp(name, p->name) == 0)
-	   return TRUE;
+	   return true;
 
-    return FALSE;
+    return false;
 }
 
 bool opcxx_ListOfMetaclass::AlreadyRecorded(Ptree* name)
 {
     for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
 	if(name->Eq(p->name))
-	   return TRUE;
+	   return true;
 
-    return FALSE;
+    return false;
 }
 
 void opcxx_ListOfMetaclass::PrintAllMetaclasses()

@@ -131,19 +131,19 @@ bool Program::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
 {
     int what;
     if(oldtext == newtext)
-	return FALSE;
+	return false;
     else if(oldtext == nil || newtext == nil)
-	return TRUE;
+	return true;
     else if(what = newtext->What(),
 	    (what == ntExprStatement || what == ntTypedef))
-	return TRUE;
+	return true;
     else if(oldtext->IsLeaf() || newtext->IsLeaf())
-	return TRUE;
+	return true;
     else if(oldtext->Car() == nil && oldtext->Cdr() == nil)
-	return TRUE;
+	return true;
     else if(oldtext == newtext->Cdr()){
 	Insert(oldtext, newtext->Car(), nil);
-	return FALSE;
+	return false;
     }
     else if(oldtext->Car() != nil && oldtext->Car() == newtext->Second()){
 	Insert(oldtext->Car(), newtext->Car(), nil);
@@ -154,7 +154,7 @@ bool Program::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
 	    else
 		Subst(newtext, oldtext->Cdr());
 
-	return FALSE;
+	return false;
     }
     else{
 	bool dirty1 = MinimumSubst2(newtext->Car(), oldtext->Car());
@@ -163,20 +163,20 @@ bool Program::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
 	    return dirty1;
 	else if(dirty1)
 	    if(oldtext->Cdr() == nil && newtext->Cdr() == nil)
-		return TRUE;
+		return true;
 	    else if(oldtext->Car() == nil)
 		Insert(oldtext->Cdr(), newtext->Car(), nil);
 	    else
 		Subst(newtext->Car(), oldtext->Car());
 	else
 	    if(oldtext->Car() == nil && newtext->Car() == nil)
-		return TRUE;
+		return true;
 	    else if(oldtext->Cdr() == nil)
 		Insert(oldtext->Car(), nil, newtext->Cdr());
 	    else
 		Subst(newtext->Cdr(), oldtext->Cdr());
 
-	return FALSE;
+	return false;
     }
 }
 

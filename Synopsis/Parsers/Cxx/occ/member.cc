@@ -28,12 +28,12 @@ Member::Member()
     metaobject = nil;
     declarator = nil;
     nth = -1;
-    removed = FALSE;
+    removed = false;
     new_name = nil;
     new_args = nil;
     new_init = nil;
     new_body = nil;
-    arg_name_filled = FALSE;
+    arg_name_filled = false;
 
     implementation = nil;
     original_decl = nil;
@@ -60,12 +60,12 @@ Member::Member(Class* c, Ptree* decl)
     metaobject = c;
     declarator = decl;
     nth = -1;
-    removed = FALSE;
+    removed = false;
     new_name = nil;
     new_args = nil;
     new_init = nil;
     new_body = nil;
-    arg_name_filled = FALSE;
+    arg_name_filled = false;
 
     implementation = nil;
     original_decl = nil;
@@ -76,12 +76,12 @@ void Member::Set(Class* c, Ptree* decl, int n)
     metaobject = c;
     declarator = decl;
     nth = n;
-    removed = FALSE;
+    removed = false;
     new_name = nil;
     new_args = nil;
     new_init = nil;
     new_body = nil;
-    arg_name_filled = FALSE;
+    arg_name_filled = false;
 
     implementation = nil;
     original_decl = nil;
@@ -157,7 +157,7 @@ bool Member::IsConstructor()
 {
     if(declarator == nil){
 	MopErrorMessage("Member::IsConstructor()", "not initialized object.");
-	return FALSE;
+	return false;
     }
 
     char* name = declarator->GetEncodedName();
@@ -172,14 +172,14 @@ bool Member::IsConstructor()
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
 bool Member::IsDestructor()
 {
     if(declarator == nil){
 	MopErrorMessage("Member::IsDestructor()", "not initialized object.");
-	return FALSE;
+	return false;
     }
 
     char* name = declarator->GetEncodedName();
@@ -191,7 +191,7 @@ bool Member::IsDestructor()
 	    return bool(*name == '~');
     }
 
-    return FALSE;
+    return false;
 }
 
 bool Member::IsFunction()
@@ -207,7 +207,7 @@ bool Member::IsPublic()
 	return bool(metaobject->GetMemberList()->Ref(nth)->access
 		    == PUBLIC);
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsProtected()
@@ -216,7 +216,7 @@ bool Member::IsProtected()
 	return bool(metaobject->GetMemberList()->Ref(nth)->access
 		    == PROTECTED);
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsPrivate()
@@ -225,7 +225,7 @@ bool Member::IsPrivate()
 	return bool(metaobject->GetMemberList()->Ref(nth)->access
 		    == PRIVATE);
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsStatic()
@@ -233,7 +233,7 @@ bool Member::IsStatic()
     if(Find())
 	return metaobject->GetMemberList()->Ref(nth)->is_static;
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsMutable()
@@ -241,18 +241,18 @@ bool Member::IsMutable()
     if(Find())
 	return metaobject->GetMemberList()->Ref(nth)->is_mutable;
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsInline()
 {
     if(Find() && metaobject->GetMemberList()->Ref(nth)->is_inline)
-	return TRUE;
+	return true;
 
     if(IsFunctionImplementation())
 	return IsInlineFuncImpl();
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsInlineFuncImpl()
@@ -261,12 +261,12 @@ bool Member::IsInlineFuncImpl()
     while(header != nil){
 	Ptree* h = header->Car();
 	if(h->IsA(INLINE))
-	    return TRUE;
+	    return true;
 
 	header = header->Cdr();
     }
 
-    return FALSE;
+    return false;
 }
 
 bool Member::IsVirtual()
@@ -274,7 +274,7 @@ bool Member::IsVirtual()
     if(Find())
 	return metaobject->GetMemberList()->Ref(nth)->is_virtual;
     else
-	return FALSE;
+	return false;
 }
 
 bool Member::IsPureVirtual()
@@ -282,7 +282,7 @@ bool Member::IsPureVirtual()
     if(IsFunction())
 	return declarator->Last()->Car()->Eq('0');
     else
-	return FALSE;
+	return false;
 }
 
 Ptree* Member::GetUserAccessSpecifier()
@@ -299,10 +299,10 @@ bool Member::GetUserArgumentModifiers(PtreeArray& mods)
 
     mods.Clear();
     if(!Find())
-	return FALSE;
+	return false;
 
     if(!Walker::GetArgDeclList((PtreeDeclarator*)declarator, args))
-	return FALSE;
+	return false;
 
     while(args != nil){
 	Ptree* a = args->Car();
@@ -314,7 +314,7 @@ bool Member::GetUserArgumentModifiers(PtreeArray& mods)
 	args = Ptree::ListTail(args, 2);	// skip ,
     }
 
-    return TRUE;
+    return true;
 }
 
 Ptree* Member::GetUserMemberModifier()
@@ -328,9 +328,9 @@ Ptree* Member::GetUserMemberModifier()
 bool Member::Find()
 {
     if(nth >= 0)
-	return TRUE;
+	return true;
     else if(metaobject == nil || declarator == nil)
-	return FALSE;
+	return false;
 
     MemberList* mlist = metaobject->GetMemberList();
 
@@ -338,17 +338,17 @@ bool Member::Find()
     char* name = Name(len);
     char* sig = declarator->GetEncodedType();
     if(mlist == nil || name == nil || sig == nil)
-	return FALSE;
+	return false;
 
     nth = mlist->Lookup(name, len, sig);
     if(nth >= 0){
 	MemberList::Mem* m = mlist->Ref(nth);
 	metaobject = m->supplying;
 	declarator = m->declarator;
-	return TRUE;
+	return true;
     }
     else
-	return FALSE;
+	return false;
 }
 
 void Member::SetQualifiedName(Ptree* name)
@@ -479,7 +479,7 @@ Ptree* Member::Arguments(Ptree* args, int i)
     }
 
     if(p == nil){
-	arg_name_filled = TRUE;
+	arg_name_filled = true;
 	p = Ptree::Make(Walker::argument_name, i);
     }
 
@@ -708,23 +708,23 @@ int MemberList::Lookup(Environment*, char* name, int index)
 
 void MemberList::CheckHeader(Ptree* declaration, Mem* m)
 {
-    m->is_virtual = FALSE;
-    m->is_static = FALSE;
-    m->is_mutable = FALSE;
-    m->is_inline = FALSE;
+    m->is_virtual = false;
+    m->is_static = false;
+    m->is_mutable = false;
+    m->is_inline = false;
     m->user_mod = nil;
 
     Ptree* header = declaration->Car();
     while(header != nil){
 	Ptree* h = header->Car();
 	if(h->IsA(VIRTUAL))
-	    m->is_virtual = TRUE;
+	    m->is_virtual = true;
 	else if(h->IsA(STATIC))
-	    m->is_static = TRUE;
+	    m->is_static = true;
 	else if(h->IsA(MUTABLE))
-	    m->is_mutable = TRUE;
+	    m->is_mutable = true;
 	else if(h->IsA(INLINE))
-	    m->is_inline = TRUE;
+	    m->is_inline = true;
 	else if(h->IsA(ntUserdefKeyword))
 	    m->user_mod = h;
 
@@ -733,7 +733,7 @@ void MemberList::CheckHeader(Ptree* declaration, Mem* m)
 
     Ptree* d = declaration->Third();
     if(d != nil && d->IsA(ntDeclarator))
-	m->is_inline = TRUE;
+	m->is_inline = true;
 }
 
 // class ChangedMemberList
