@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.3 2001/06/05 05:28:34 chalky Exp $
+# $Id: ModuleListing.py,v 1.4 2001/06/05 10:04:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.4  2001/06/05 10:04:36  chalky
+# Can filter modules based on type, eg: 'Package'
+#
 # Revision 1.3  2001/06/05 05:28:34  chalky
 # Some old tree abstraction
 #
@@ -64,6 +67,7 @@ class ModuleListing(Page.Page):
     expand/collapse sections of the tree!"""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
+	self.child_types = None
 	self._children_cache = {}
 	self._init_page()
 
@@ -79,6 +83,9 @@ class ModuleListing(Page.Page):
 	"""Create a page with an index of all modules"""
 	# Init tree
 	self.tree = config.treeFormatterClass(self)
+	# Init list of module types to display
+	try: self.child_types = config.obj.ModuleListing.child_types
+	except AttributeError: pass
 	# Create the file
 	self.startFile(self._filename, "Module Index")
 	self.write(self.manager.formatRoots('Modules', 2))
@@ -89,7 +96,10 @@ class ModuleListing(Page.Page):
 	self.endFile()
 
     def _child_filter(self, child):
-	return isinstance(child, AST.Module)
+	if not isinstance(child, AST.Module): return 0
+	if self.child_types and child.type() not in self.child_types:
+	    return 0
+	return 1
     def _link_href(self, ns):
 	return config.files.nameOfModuleIndex(ns.name())
     def _get_children(self, decl):
