@@ -7,10 +7,8 @@ include COPYING README MANIFEST.in setup.py autogen.sh
 # python modules
 recursive-include   Synopsis *.py
 
-# C++ API
-recursive-include   include *.hh
-
 # C/C++ extensions
+recursive-include   Cxx-API *
 recursive-include   Synopsis/Parsers/Cpp *
 recursive-include   Synopsis/Parsers/C *
 recursive-include   Synopsis/Parsers/Cxx *
