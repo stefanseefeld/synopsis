@@ -1,4 +1,3 @@
-# $Id: Dump.py,v 1.9 2003/12/28 21:46:37 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -44,7 +43,6 @@ class Formatter(Processor):
                        types.DictType : self.visit_dict,
                        types.InstanceType : self.visit_instance}
       self.visited = {}
-
 
       self.os = open(self.output, "w")
       self.os.write("<?xml version='1.0' encoding='ISO-8859-1'?>\n")
@@ -128,14 +126,6 @@ class Formatter(Processor):
 
    def visit_instance(self, obj):
 
-      if isinstance(obj, AST.SourceFile): # just write down the filename
-         self.add_text(obj.filename())
-         return
-      if isinstance(obj, AST.Include):
-         self.write("Include: (macro:%d, next:%d) '%s'"%(obj.is_macro(),
-                                                         obj.is_next(),
-                                                         obj.target().filename()))
-         return
       self.visited[id(obj)] = None
       self.push("instance")
       self.node.setAttribute('class', "%s.%s"%(obj.__class__.__module__,obj.__class__.__name__))
@@ -160,6 +150,16 @@ class Formatter(Processor):
             if value:
                self.node.setAttribute('file', value.filename())
                continue
+         if name == '_Comment__file':
+            if value:
+               self.node.setAttribute('file', value.filename())
+               continue
+         # this is not really useful anyways, but has to be suppressed
+         # in the unit tests as the full path will vary between different
+         # setups
+         if name == '_SourceFile__full_filename':
+            continue
+
          if name[0] == '_':
             index = string.find(name, '__')
             if index >= 0:
@@ -184,6 +184,7 @@ class Formatter(Processor):
       del self.node
 
    def write_types(self, types):
+
       self.node = dom.createElement("types")
       values = types.values()
       values.sort()
@@ -195,11 +196,7 @@ class Formatter(Processor):
    def write_files(self, files):
 
       self.node = dom.createElement("files")
-      for f in files:
-         self.push("file")
-         self.visit(f)
-         self.pop()
-
+      for f in files: self.visit(files[f])
       self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
       self.node.unlink()
       del self.node

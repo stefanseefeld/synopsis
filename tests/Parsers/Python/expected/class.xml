@@ -9,10 +9,7 @@
        <declarations>
         <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Python/input/class.py" language="Python" line="-1" name="Parsers.Python.input.class" type="module">
          <comments>
-          <instance class="Synopsis.AST.Comment" line="-1" suspect="0">
-           <file>
-            Parsers/Python/input/class.py
-           </file>
+          <instance class="Synopsis.AST.Comment" file="Parsers/Python/input/class.py" line="-1" suspect="0">
            <text>
             module documentation
            </text>
@@ -89,8 +86,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Python/input/class.py
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Python/input/class.py" is_main="1" language="Python">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

@@ -9,10 +9,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/concat.cc" language="C++" line="6" name="Foo" type="class">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/concat.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/concat.cc" line="0" suspect="1">
      <text>
       // According to spec, the ## operator must produce a valid PP token.
 // Unfortunately, no compilers known to man enforce this rule except UCPP, so
@@ -109,8 +106,22 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/concat.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/concat.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls>
+    <key>
+     7
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="1" end="19" name="CAT" start="5"/>
+    </value>
+    <key>
+     8
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="2" end="20" name="CAT" start="14"/>
+    </value>
+   </macro_calls>
+  </instance>
  </files>
 </ast>

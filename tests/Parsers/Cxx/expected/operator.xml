@@ -137,8 +137,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/operator.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/operator.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

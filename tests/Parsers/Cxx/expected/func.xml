@@ -73,8 +73,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/func.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/func.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

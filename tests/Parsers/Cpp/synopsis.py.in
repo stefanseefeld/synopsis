@@ -4,6 +4,8 @@ from Synopsis.Parsers import Cpp
 from Synopsis.Formatters import Dump
 import os
 
-process(parse = Composite(Cpp.Parser(base_path = '@abs_top_srcdir@' + os.sep),
+process(parse = Composite(Cpp.Parser(language = 'C++',
+                                     base_path = '@abs_top_srcdir@' + os.sep,
+                                     main_file_only = False),
                           Dump.Formatter(show_ids = False, stylesheet = None)))
 

@@ -18,10 +18,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/func_template_arg.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="1">
      <text>
       // Test function pointers as template arguments
 
@@ -57,10 +54,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/func_template_arg.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="0">
      <text>
       // Test template class with function argument
 // (not really a template function)
@@ -89,10 +83,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/func_template_arg.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="0">
      <text>
       // Test return type fptr
 
@@ -120,10 +111,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/func_template_arg.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="0">
      <text>
       // Test return type fptr
 
@@ -153,8 +141,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/func_template_arg.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/func_template_arg.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

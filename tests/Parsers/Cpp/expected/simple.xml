@@ -3,8 +3,8 @@
  <declarations/>
  <types/>
  <files>
-  <file>
-   Parsers/Cpp/input/simple.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/input/simple.cc" is_main="1" language="C++">
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

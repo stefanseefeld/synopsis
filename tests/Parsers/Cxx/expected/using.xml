@@ -50,8 +50,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/using.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/using.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

@@ -3,12 +3,15 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using4.cc" language="C++" line="0" name="D" type="namespace">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/using4.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using4.cc" line="0" suspect="0">
      <text>
       // From C++WD'96 7.4.3.6 Example
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using4.cc" line="0" suspect="0">
+     <text>
+      // namespace extension
 
      </text>
     </instance>
@@ -33,17 +36,6 @@
     </instance>
     <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using4.cc" language="C++" line="5" name="EOS" type="EOS"/>
     <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using4.cc" language="C++" line="18" name="D.d2" type="namespace variable">
-     <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/using4.cc
-       </file>
-       <text>
-        // namespace extension
-
-       </text>
-      </instance>
-     </comments>
      <vtype/>
     </instance>
     <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/using4.cc" language="C++" line="20" name="D.f(int)" realname="f" type="function">
@@ -62,10 +54,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using4.cc" language="C++" line="0" name="E" type="namespace">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/using4.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using4.cc" line="0" suspect="0">
      <text>
       // ok, no conflict with D::d1
 
@@ -127,8 +116,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/using4.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/using4.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

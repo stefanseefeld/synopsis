@@ -31,10 +31,7 @@
    <declarations>
     <instance accessibility="3" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/typename.cc" language="C++" line="5" name="crc_optimal.masking_type" type="typedef">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/typename.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/typename.cc" line="0" suspect="0">
        <text>
         // Implementation type
 
@@ -52,10 +49,7 @@
     </instance>
     <instance accessibility="1" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/typename.cc" language="C++" line="9" name="crc_optimal.value_type" type="typedef">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/typename.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/typename.cc" line="0" suspect="0">
        <text>
         // Type
 
@@ -73,10 +67,7 @@
     </instance>
     <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/typename.cc" language="C++" line="12" name="crc_optimal.bit_count" type="data member">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/typename.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/typename.cc" line="0" suspect="0">
        <text>
         // Constants for the template parameters
 
@@ -99,7 +90,7 @@
       </instance>
      </vtype>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/typename.cc" language="C++" line="11" name="EOS" type="EOS"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/typename.cc" language="C++" line="12" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>
@@ -121,8 +112,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/typename.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/typename.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

@@ -3,30 +3,21 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/groups2.cc" language="C++" line="8" name="foo" type="struct">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
      <text>
       // group documentation
 // @group first group { some comment
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
      <text>
       // continued and
 // extending over multiple lines
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
      <text>
       // another comment
 
@@ -36,19 +27,13 @@
    <declarations>
     <instance accessibility="3" class="Synopsis.AST.Operation" file="Parsers/Cxx/input/groups2.cc" language="C++" line="18" name="foo.make_fn()" realname="make_fn" type="member function">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-       <file>
-        Parsers/Cxx/input/groups2.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
        <text>
         // helper functions
 
        </text>
       </instance>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-       <file>
-        Parsers/Cxx/input/groups2.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
        <text>
         // blabla
   //
@@ -56,10 +41,7 @@
 
        </text>
       </instance>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/groups2.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
        <text>
         // bla.
   // blabla
@@ -73,10 +55,7 @@
     </instance>
     <instance accessibility="3" class="Synopsis.AST.Operation" file="Parsers/Cxx/input/groups2.cc" language="C++" line="21" name="foo.make_fn(int)" realname="make_fn" type="member function">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/groups2.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
        <text>
         // bla.
   // blabla
@@ -91,12 +70,9 @@
      </parameters>
      <returnType/>
     </instance>
-    <instance accessibility="3" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/groups2.cc" language="C++" line="19" name="EOS" type="EOS">
+    <instance accessibility="3" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/groups2.cc" language="C++" line="21" name="EOS" type="EOS">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Parsers/Cxx/input/groups2.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
        <text>
         // }
   // @group } is this lost ?
@@ -115,10 +91,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups2.cc" language="C++" line="28" name="bar" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
      <text>
       // @group }
 
@@ -129,10 +102,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups2.cc" language="C++" line="31" name="test3" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
      <text>
       // another group
 // @group tests {
@@ -147,28 +117,19 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups2.cc" language="C++" line="38" name="f" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
      <text>
       // @group }
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
      <text>
       // @group outer {
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
      <text>
       // @group inner {
 
@@ -179,10 +140,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups2.cc" language="C++" line="40" name="test5" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
      <text>
       // @group xxx { not a group
 
@@ -193,10 +151,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups2.cc" language="C++" line="44" name="test6" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="0">
      <text>
       // @group } this is accepted
 // @group }
@@ -209,10 +164,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/groups2.cc" language="C++" line="45" name="EOS" type="EOS">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/groups2.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/groups2.cc" line="0" suspect="1">
      <text>
       // @group }
 
@@ -260,8 +212,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/groups2.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/groups2.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>
