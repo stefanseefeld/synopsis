@@ -1,102 +1,87 @@
-# $Id: XRef.py,v 1.3 2002/10/29 12:53:52 chalky Exp $
+# $Id: XRef.py,v 1.4 2003/11/13 20:40:09 stefan Exp $
 #
-# This file is a part of Synopsis.
-# Copyright (C) 2002 Stephen Davies
-#
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-#
-# $Log: XRef.py,v $
-# Revision 1.3  2002/10/29 12:53:52  chalky
-# More even splitting of pages
-#
-# Revision 1.2  2002/10/29 12:43:55  chalky
-# Added flexible TOC support to link to things other than ScopePages
-#
-# Revision 1.1  2002/10/28 17:38:57  chalky
-# Created module to handle xref data
-#
+# Copyright (C) 2000 Stefan Seefeld
+# Copyright (C) 2000 Stephen Davies
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
 
 import string, cPickle
 
 class CrossReferencer:
-    """Handle cross-reference files"""
-    def __init__(self):
-	self.__data = {}
-	self.__index = {}
-	self.__file_map = {}
-	self.__file_info = []
+   """Handle cross-reference files"""
 
-    def load(self, filename):
-	"""Loads data from the given filename"""
-	f = open(filename, 'rb')
-	self.__data, self.__index = cPickle.load(f)
-	f.close()
-	# Split the data into multiple files based on size
-	page = 0
-	count = 0
-	self.__file_info.append([])
-	names = self.__data.keys()
-	names.sort()
-	for name in names:
-	    if count > 200:
-		count = 0
-		page = page + 1
-		self.__file_info.append([])
-	    self.__file_info[page].append(name)
-	    self.__file_map[name] = page
-	    target_data = self.__data[name]
-	    l0, l1, l2 = len(target_data[0]), len(target_data[1]), len(target_data[2])
-	    count = count + 1 + l0 + l1 + l2
-	    if l0: count = count + 1
-	    if l1: count = count + 1
-	    if l2: count = count + 1
+   def __init__(self):
 
-    def get_info(self, name):
-	"""Retrieves the info for the give name. The info is returned as a
-	3-tuple of [list of definitions], [list of calls], [list of
-	other references]. The element of each list is another 3-tuple of
-	(file, line, scope of reference). The last element is the scope in
-	which the reference was made, which is often a function scope, denoted
-	as starting with a backtick, eg: Builder::`add_operation(std::string).
-	Returns None if there is no xref info for the given name.
-	"""
-	if not self.__data.has_key(name): return None
-	return self.__data[name]
+      self.__data = {}
+      self.__index = {}
+      self.__file_map = {}
+      self.__file_info = []
 
-    def get_possible_names(self, name):
-	"""Returns a list of possible scoped names that end with the given
-	name. These scoped names can be passed to get_info(). Returns None if
-	there is no scoped name ending with the given name."""
-	if not self.__index.has_key(name): return None
-	return self.__index[name]
+   def load(self, filename):
+      """Loads data from the given filename"""
 
-    def get_page_for(self, name):
-	"""Returns the number of the page that the xref info for the given
-	name is on, or None if not found."""
-	if not self.__file_map.has_key(name): return None
-	return self.__file_map[name]
+      f = open(filename, 'rb')
+      self.__data, self.__index = cPickle.load(f)
+      f.close()
+      # Split the data into multiple files based on size
+      page = 0
+      count = 0
+      self.__file_info.append([])
+      names = self.__data.keys()
+      names.sort()
+      for name in names:
+         if count > 200:
+            count = 0
+            page = page + 1
+            self.__file_info.append([])
+         self.__file_info[page].append(name)
+         self.__file_map[name] = page
+         target_data = self.__data[name]
+         l0, l1, l2 = len(target_data[0]), len(target_data[1]), len(target_data[2])
+         count = count + 1 + l0 + l1 + l2
+         if l0: count = count + 1
+         if l1: count = count + 1
+         if l2: count = count + 1
 
-    def get_page_info(self):
-	"""Returns a list of pages, each consisting of a list of names on that
-	page. This method is intended to be used by whatever generates the
-	files..."""
-	return self.__file_info
+   def get_info(self, name):
+      """Retrieves the info for the give name. The info is returned as a
+      3-tuple of [list of definitions], [list of calls], [list of
+      other references]. The element of each list is another 3-tuple of
+      (file, line, scope of reference). The last element is the scope in
+      which the reference was made, which is often a function scope, denoted
+      as starting with a backtick, eg: Builder::`add_operation(std::string).
+      Returns None if there is no xref info for the given name.
+      """
 
-    def get_all_names(self):
-	"""Returns a list of all names"""
-	return self.__data.keys()
+      if not self.__data.has_key(name): return None
+      return self.__data[name]
+
+   def get_possible_names(self, name):
+      """Returns a list of possible scoped names that end with the given
+      name. These scoped names can be passed to get_info(). Returns None if
+      there is no scoped name ending with the given name."""
+
+      if not self.__index.has_key(name): return None
+      return self.__index[name]
+
+   def get_page_for(self, name):
+      """Returns the number of the page that the xref info for the given
+      name is on, or None if not found."""
+
+      if not self.__file_map.has_key(name): return None
+      return self.__file_map[name]
+
+   def get_page_info(self):
+      """Returns a list of pages, each consisting of a list of names on that
+      page. This method is intended to be used by whatever generates the
+      files..."""
+
+      return self.__file_info
+
+   def get_all_names(self):
+      """Returns a list of all names"""
+
+      return self.__data.keys()
     
