@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.1 2001/11/05 06:52:11 chalky Exp $
+# $Id: browse.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.2  2001/11/07 05:58:21  chalky
+# Reorganised UI, opening a .syn file now builds a simple project to view it
+#
 # Revision 1.1  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
@@ -30,70 +33,73 @@ from qt import *
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
-from Synopsis.Formatter.ClassTree import ClassTree
 
-from igraph import IGraphWindow
+class Browser:
+    """Controls the browse widgets of the project window"""
+    def __init__(self, window):
+	#QSplitter.__init__(self, parent)
+	self.ast = None
+	self.window = window
+	self.main_window = window.main_window
 
-class BrowseWindow (QSplitter):
-    """A window that browses a given .syn file"""
-    def __init__(self, parent, main_window, filename, global_decl):
-	QSplitter.__init__(self, parent)
-	self.filename = filename
-	self.global_decl = global_decl
-	self.main_window = main_window
-
-	self.setCaption("'%s' - Browse"%filename)
+	self.glob = AST.Scope('', -1, '', 'Global', ('global',))
+	#self.glob.declarations().extend(ast.declarations())
+	#self.setCaption("'%s' - Browse"%filename)
 
 	# Split up the GUI
-	splitV = QSplitter(Qt.Vertical, self)
+	#splitV = QSplitter(Qt.Vertical, self)
 
 	# Create a top-left listview for the packages
-	self.packages = QListView(splitV)
-	self.packages.setMinimumSize(150,100)
-	self.packages.addColumn("Name")
+	#window.package_list.setMinimumSize(150,100)
+	#self.packages.addColumn("Name")
 
 	# Create a bottom-left listview for the other stuff
-	self.listview = QListView(splitV)
-	self.listview.setMinimumSize(150,300)
-	self.listview.addColumn("Name")
-	self.listview.addColumn("Type")
+	#self.listview = QListView(splitV)
+	#self.listview.setMinimumSize(150,300)
+	#self.listview.addColumn("Name")
+	#self.listview.addColumn("Type")
 
 	# Create a textbrowser to show info about selected stuff
 	# This could be just QTextEdit or something I guess... :)
-	splitter = QSplitter(Qt.Vertical, self)
-	self.textview = QTextBrowser(splitter)
-	self.textview.setMinimumSize(500,150)
-	self.textview.setTextFormat(Qt.RichText)
+	#splitter = QSplitter(Qt.Vertical, self)
+	#self.textview = QTextBrowser(splitter)
+	#self.textview.setMinimumSize(500,150)
+	window.doco_display.setTextFormat(Qt.RichText)
 
 
 	# Create the fillers. The first only displays a few types
-	self.packfiller = ListFiller(self, self.packages, (
+	self.packfiller = ListFiller(self, window.package_list, (
 	    'Package', 'Module', 'Namespace', 'Global'))
 	self.packfiller.auto_open = 3
-	self.listfiller = ListFiller(self, self.listview)
+	self.listfiller = ListFiller(self, window.class_list)
 
 	# Connect things up
-	self.connect(self.packages, SIGNAL('selectionChanged(QListViewItem*)'), self.showPackage)
-	self.connect(self.listview, SIGNAL('selectionChanged(QListViewItem*)'), self.showDecl)
-	self.connect(self.listview, SIGNAL('expanded(QListViewItem*)'), self.selfishExpansion)
+	window.connect(window.package_list, SIGNAL('selectionChanged(QListViewItem*)'), self.showPackage)
+	window.connect(window.class_list, SIGNAL('selectionChanged(QListViewItem*)'), self.showDecl)
+	window.connect(window.class_list, SIGNAL('expanded(QListViewItem*)'), self.selfishExpansion)
 
-	self.textview.setText("<i>Select a package/namespace to view from the left.")
-	self.packfiller.fillFrom(global_decl)
+	window.doco_display.setText("<i>Select a package/namespace to view from the left.")
+	#self.packfiller.fillFrom(self.glob)
 
 	# Make the menu, to be inserted in the app menu upon window activation
-	self._file_menu = QPopupMenu(self.main_window.menuBar())
+	self._file_menu = QPopupMenu(window.main_window.menuBar())
 	self._graph_id = self._file_menu.insertItem("&Graph class inheritance", self.openGraph, Qt.CTRL+Qt.Key_G)
 
 	self.__activated = 0
-	self.connect(parent, SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
+	window.connect(window.parent(), SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
 
-	self.classTree = ClassTree()
-	self.global_decl.accept(self.classTree)
+	self.classTree = window.classTree
+	#self.glob.accept(self.classTree)
 
 	self.decl = None
-	self.graph_window = IGraphWindow(splitter, self.main_window, self.classTree)
 
-	self.show()
+    def show_ast(self, ast):
+	self.ast = ast
+	self.glob.declarations()[:] = ast.declarations()
+	self.packfiller.fillFrom(self.glob)
+	self.glob.accept(self.classTree)
+	self.listfiller.clear()
+	self.listfiller.fillFrom(self.glob)
 
     def windowActivated(self, widget):
 	if self.__activated:
@@ -116,9 +122,9 @@ class BrowseWindow (QSplitter):
     def setGraphEnabled(self, enable):
 	self._file_menu.setItemEnabled(self._graph_id, enable)
 	if enable:
-	    self.graph_window.set_class(self.decl.name())
-	else:
-	    self.graph_window.hide()
+	    self.window.graph_display.set_class(self.decl.name())
+	#else:
+	#    self.window.graph_display.hide()
 
     def showPackage(self, item):
 	"""Show a given package (by item)"""
@@ -132,7 +138,7 @@ class BrowseWindow (QSplitter):
 	for comment in decl.comments():
 	    os.write(comment.text())
 	    os.write('<hr>')
-	self.textview.setText(os.getvalue())
+	self.window.doco_display.setText(os.getvalue())
 
     def showDecl(self, item):
 	"""Show a given declaration (by item)"""
@@ -146,14 +152,14 @@ class BrowseWindow (QSplitter):
 	formatter = ASCIIFormatter(os)
 	formatter.set_scope(decl.name())
 	decl.accept(formatter)
-	self.textview.setText(os.getvalue())
+	self.window.doco_display.setText(os.getvalue())
 
     def selfishExpansion(self, item):
 	"""Selfishly makes item the only expanded node"""
 	if not item.parent(): return
 	iter = item.parent().firstChild()
 	while iter:
-	    if iter != item: self.listview.setOpen(iter, 0)
+	    if iter != item: self.window.class_list.setOpen(iter, 0)
 	    iter = iter.nextSibling()
 
 class ListFiller( AST.Visitor ):

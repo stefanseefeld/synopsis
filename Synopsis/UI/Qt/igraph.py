@@ -1,4 +1,4 @@
-# $Id: igraph.py,v 1.1 2001/11/05 06:52:11 chalky Exp $
+# $Id: igraph.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: igraph.py,v $
+# Revision 1.2  2001/11/07 05:58:21  chalky
+# Reorganised UI, opening a .syn file now builds a simple project to view it
+#
 # Revision 1.1  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
@@ -142,7 +145,7 @@ class IGraphWindow (QCanvasView):
 
 	self.__canvas.update()
 
-	self.show()
+	#self.show()
 
     def organize(self):
 	# find a root

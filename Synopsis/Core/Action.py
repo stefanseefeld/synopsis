@@ -1,4 +1,4 @@
-# $Id: Action.py,v 1.1 2001/11/05 06:52:11 chalky Exp $
+# $Id: Action.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Action.py,v $
+# Revision 1.2  2001/11/07 05:58:21  chalky
+# Reorganised UI, opening a .syn file now builds a simple project to view it
+#
 # Revision 1.1  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
@@ -79,9 +82,9 @@ class SourcePath:
 
 class SourceAction (Action):
     """A Synopsis Action that loads source files"""
-    def __init__(self, x, y, name, paths = None):
+    def __init__(self, x, y, name):
 	Action.__init__(self, x, y, name)
-	self.__paths = paths or []
+	self.__paths = []
     def paths(self):
 	"""Returns a list of paths. Each path is a Path object with a path or
 	dir+glob combination of the source files to load."""
@@ -101,9 +104,12 @@ class LinkerAction (Action):
     def accept(self, visitor): return visitor.visitLinker(self)
 
 class CacherAction (Action):
-    """A Synopsis Action that caches ASTs to disk"""
+    """A Synopsis Action that caches ASTs to disk. It can optionally be used
+    to load from a .syn file on disk, by setting the file attribute."""
     def __init__(self, x, y, name):
 	Action.__init__(self, x, y, name)
+	self.dir = '.'
+	self.file = None
     def accept(self, visitor): return visitor.visitCacher(self)
 
 class FormatAction (Action):

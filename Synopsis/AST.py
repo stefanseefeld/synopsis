@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.17 2001/07/19 04:03:05 chalky Exp $
+# $Id: AST.py,v 1.18 2001/11/07 05:58:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.18  2001/11/07 05:58:21  chalky
+# Reorganised UI, opening a .syn file now builds a simple project to view it
+#
 # Revision 1.17  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -74,8 +77,12 @@ PRIVATE.
 # TODO:
 # Change AST.file to be AST.files() - a list of files
 
-import string
+import string, sys, cPickle
 import Util, Type
+
+# The version of the file format - this should be increased everytime
+# incompatible changes are made to the AST or Type classes
+FILE_VERSION = 1
 
 # Accessibility constants
 DEFAULT = 0
@@ -86,6 +93,31 @@ PRIVATE = 3
 def ccmp(a,b):
     """Compares classes of two objects"""
     return cmp(type(a),type(b)) or cmp(a.__class__,b.__class__)
+
+def load(filename):
+    """Loads an AST object from the given filename"""
+    try:
+	unpickler = cPickle.Unpickler(open(filename, "r"))
+	version = unpickler.load()
+	if version is FILE_VERSION:
+	    return unpickler.load()
+	    raise Exception, 'Wrong file version'
+    except:
+	exc, msg = sys.exc_info()[0:2]
+	if exc is Exception:
+	    raise Exception, "Loading '%s': %s"%(filename, msg)
+	raise Exception, "Loading '%s', %s: %s"%(filename, exc, msg)
+
+def save(filename):
+    """Saves an AST object to the given filename"""
+    try:
+	pickler = cPickle.Pickler(open(output, "w"), 1)
+	pickler.dump(FILE_VERSION)
+	pickler.dump(ast)
+    except:
+	exc, msg = sys.exc_info()[0:2]
+	raise Exception, "Saving '%s', %s: %s"%(filename, exc, msg)
+
 
 class AST:
     """Top-level Abstract Syntax Tree.
