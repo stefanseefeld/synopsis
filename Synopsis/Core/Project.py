@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.7 2002/09/20 10:36:40 chalky Exp $
+# $Id: Project.py,v 1.8 2002/09/28 06:17:01 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.8  2002/09/28 06:17:01  chalky
+# Added is_project
+#
 # Revision 1.7  2002/09/20 10:36:40  chalky
 # Write the comment to the top of the project file
 #
@@ -45,6 +48,12 @@
 import sys
 from Synopsis.Core import Util
 from Action import *
+
+def is_project_file(filename):
+    f = open(filename, "rt")
+    is_project = (f.readline() == '"""Synopsis Project File v1\n')
+    f.close()
+    return is_project
 
 class Project:
     """Encapsulates a single project. A project is a set of actions connected
@@ -316,7 +325,7 @@ class ProjectReader:
 	project = self.project
 	# Read project stuff like name
 	if hasattr(proj_obj, 'name'): project.set_name(proj_obj.name)
-	if hasattr(proj_obj, 'data_dir'): project.set_name(proj_obj.data_dir)
+	if hasattr(proj_obj, 'data_dir'): project.set_data_dir(proj_obj.data_dir)
 	self.read_ProjectActions(proj_obj)
 	if hasattr(proj_obj, 'default_formatter'):
 	    action = project.actions().get_action(proj_obj.default_formatter)
