@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.19 2002/09/20 10:35:32 chalky Exp $
+# $Id: Util.py,v 1.20 2002/09/28 06:16:19 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.20  2002/09/28 06:16:19  chalky
+# Don't dump file to stdout
+#
 # Revision 1.19  2002/09/20 10:35:32  chalky
 # Allow writing a comment to top of file
 #
@@ -373,7 +376,7 @@ class PyWriter:
 	# Needed to flush the cached '\n'
 	if self.__prepend: self.write('')
 	self.os.write(self.buffer.getvalue())
-	if 1: # for debugging
+	if 0: # for debugging
 	    sys.stdout.write(self.buffer.getvalue())
 	self.buffer.close()
     def long(self, list):
