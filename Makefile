@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.17 2001/03/30 14:00:49 chalky Exp $
+# $Id: Makefile,v 1.18 2001/04/18 05:44:51 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -44,6 +44,7 @@ $(subdirs):
 
 clean:
 	$(MAKE) action="clean"
+	/bin/rm -f *.pyc
 
 distclean:
 	$(MAKE) action="distclean"

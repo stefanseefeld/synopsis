@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.6 2001/03/30 14:00:49 chalky Exp $
+# $Id: Makefile,v 1.7 2001/04/18 05:44:52 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -37,14 +37,14 @@ all:
 	done && test -z "$$fail"; \
 
 clean:
-	/bin/rm -f *~
+	/bin/rm -f *~ *.pyc *.pyo
 	@for dir in ${subdirs}; do \
 	  (cd $$dir && $(MAKE) clean) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
 distclean: clean
-	/bin/rm -f *.pyc
+	/bin/rm -f *.pyc *.pyo
 	@for dir in ${subdirs}; do \
 	  (cd $$dir && $(MAKE) distclean) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \

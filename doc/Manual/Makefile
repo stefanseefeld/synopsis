@@ -53,7 +53,7 @@ $(spath)/%.csyn: $(bpath)/%.hh
 	$(synopsis) -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
 
 clean:
-	rm -rf $(spath)
+	rm -rf $(spath) *.pyc *.pyo
 
 distclean:  clean
 	rm -rf Manual syn

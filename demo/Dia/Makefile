@@ -18,6 +18,6 @@ test:		test.idl
 		$(synopsis) -o test.dia $?
 
 clean:
-		rm -f *~ *.html *.syn
+		rm -f *~ *.html *.syn *.pyc *.pyo
 
 distclean:	clean

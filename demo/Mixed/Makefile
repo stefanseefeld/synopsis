@@ -29,4 +29,4 @@ implementation: StorableImpl.syn FactoryImpl.syn interface.toc
 		touch $@
 
 clean:
-	rm -rf Storage.hh StorageSK.cc *.syn interface interface.toc implementation
+	rm -rf Storage.hh StorageSK.cc *.syn interface interface.toc implementation *.pyc *.pyo

@@ -9,6 +9,6 @@ ast:	    AST.py
 #	    $(synopsis) -o test $?
 
 clean:
-		rm -fr *~ *.html *.syn ast #test
+		rm -fr *~ *.html *.syn ast *.pyc *.pyo
 
 distclean:	clean

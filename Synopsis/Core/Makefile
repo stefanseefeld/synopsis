@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.7 2001/01/24 18:33:38 stefan Exp $
+# $Id: Makefile,v 1.8 2001/04/18 05:44:52 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -30,10 +30,10 @@ SRC	:= __init__.py __init__.pyc Type.py Type.pyc AST.py AST.pyc Util.py Util.pyc
 
 all:
 clean:
-	/bin/rm -f *~
+	/bin/rm -f *~ *.pyc *.pyo
 
 distclean:      clean
-	/bin/rm -f *.pyc
+	/bin/rm -f *.pyc *.pyo
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Core

@@ -22,6 +22,6 @@ col.ps: demo.hh
 	$(synopsis) -Wf,-c -Wf,-t,"collaboration graph" -o $@ $<
 
 clean:
-		rm -fr *~ *.ps *.png *.map *.html *.dot *.toc *.syn demo
+		rm -fr *~ *.ps *.png *.map *.html *.dot *.toc *.syn demo *.pyc *.pyo
 
 distclean:	clean

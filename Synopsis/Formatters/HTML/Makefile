@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 2001/03/30 14:00:49 chalky Exp $
+# $Id: Makefile,v 1.3 2001/04/18 05:44:52 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -38,10 +38,10 @@ action	:= all
 all: 
 
 clean:
-	/bin/rm -f *~
+	/bin/rm -f *~ *.pyc *.pyo
 
 distclean:
-	/bin/rm -f  *~ *.pyc
+	/bin/rm -f  *~ *.pyc *.pyo
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Formatter/HTML

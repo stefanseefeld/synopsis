@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.10 2001/02/02 17:42:50 stefan Exp $
+# $Id: Makefile,v 1.11 2001/04/18 05:44:52 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -43,11 +43,11 @@ $(subdirs):
 
 clean:
 	$(MAKE) action="clean"
-	/bin/rm -f *~
+	/bin/rm -f *~ *.pyc *.pyo
 
 distclean:
 	$(MAKE) action="distclean"
-	/bin/rm -f *.pyc
+	/bin/rm -f *.pyc *.pyo
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Parser
