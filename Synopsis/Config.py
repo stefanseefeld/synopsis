@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.16 2002/11/19 03:44:44 chalky Exp $
+#  $Id: Config.py,v 1.17 2003/01/16 12:46:46 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -249,7 +249,7 @@ class Base:
                 xref filename for that file. The default is './%s-xref'.
                 @attr xref_file A string with the filename of the output xref
                 file. The default is 'compiled.xref'
-                @see Synopsis.Formatter.HTML.FilePages
+                @see Synopsis.Formatter.HTML.FileSource
                 """
                 xref_path = './%s-xref'
                 xref_file = 'compiled.xref'
@@ -325,7 +325,9 @@ class Base:
                               'ScopePages',
                               'ModuleListing',
                               'ModuleIndexer',
-                              'FileTree',
+                              'FileListing',
+			      'FileIndexer',
+			      'FileDetails',
                               'InheritanceTree',
                               'InheritanceGraph',
                               'NameIndex',
@@ -333,9 +335,9 @@ class Base:
             comment_formatters = ['summary', 'javadoc', 'section']
             tree_formatter = 'TreeFormatter.TreeFormatter'
             structs_as_classes = 0
-            class FilePages:
-                """This is the config object for the FilePages module.
-                FilePages creates html pages that contain the actual source
+            class FileSource:
+                """This is the config object for the FileSource module.
+                FileSource creates html pages that contain the actual source
                 code for the program, which depending on the language may be
                 highlighted and hyperlinked. Currently only the C++ parser
                 provides this - other languages are displayed without
@@ -343,7 +345,7 @@ class Base:
                 
                 The formatting information is stored in a '.links'
                 file for each input file, and since the location is specific
-                to your project you must set this here, and FilePages is not
+                to your project you must set this here, and FileSource is not
                 in the default list of Page modules to use.
 
                 @attr file_path A string with one %s, which when replaced with the
@@ -358,12 +360,14 @@ class Base:
                 looking up in the TOC. Eg: the RefManual for Synopsis maps all
                 C++ things to Synopsis::Parser::C++::, so that string must be
                 set here and prepended to all names to look up in the TOC.
-                @see Synopsis.Formatter.HTML.FilePages
+                @see Synopsis.Formatter.HTML.FileSource
                 """
                 file_path = './%s'
                 links_path = './%s-links'
                 toc_files = []
                 scope = ''
+	    # Old name for FileSource:
+	    FilePages = FileSource
             class FileTree:
                 """Config object for the FileTree module.
                 FileTree creates a page with a tree of filenames, for use in

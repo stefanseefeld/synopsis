@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.20 2002/11/13 04:10:48 chalky Exp $
+# $Id: FileLayout.py,v 1.21 2003/01/16 12:46:46 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.21  2003/01/16 12:46:46  chalky
+# Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
+# (used to be part of FileTree) and FileDetails.
+#
 # Revision 1.20  2002/11/13 04:10:48  chalky
 # Don't kill absolute filenames
 #
@@ -171,6 +175,13 @@ class FileLayout (TOC.Linker):
 	and append ".html" """
         file = self._stripFilename(file)
         return "_source-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
+    def nameOfFileDetails(self, file):
+	"""Return the filename for the details of an input file.
+        The base_dir config option is used.
+	Default implementation is to join the path with '-', prepend
+	"_filedetail-" and append ".html" """
+        file = self._stripFilename(file)
+        return "_filedetail-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
     def nameOfIndex(self):
 	"""Return the name of the main index file. Default is index.html"""
 	return "index.html"
@@ -234,6 +245,14 @@ class NestedFileLayout (FileLayout):
 	and append ".html" """
         file = self._stripFilename(file)
         return os.path.join("Source", rel(config.base_dir, file)+".html")
+
+    def nameOfFileDetails(self, file):
+	"""Return the filename for the details of an input file.
+        The base_dir config option is used.
+	Returns the filename nested in the FileDetails directory and with
+	.html appended."""
+        file = self._stripFilename(file)
+        return os.path.join("FileDetails", rel(config.base_dir, file)+".html")
 
     def nameOfIndex(self):
 	"""Return the name of the main index file."""

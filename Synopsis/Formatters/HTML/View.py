@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.15 2002/11/16 04:12:33 chalky Exp $
+# $Id: View.py,v 1.16 2003/01/16 12:46:46 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.16  2003/01/16 12:46:46  chalky
+# Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
+# (used to be part of FileTree) and FileDetails.
+#
 # Revision 1.15  2002/11/16 04:12:33  chalky
 # Added strategies for page formatting, and added one to allow template HTML
 # files to be used.
@@ -242,8 +246,6 @@ class Page:
 	@see PageFormat"""
 	self.manager = manager
 	self.__os = None
-	self.__filename = ''
-	self.__title = ''
 	format_class = PageFormat
 	if config.page_format:
 	    format_class = Util.import_object(config.page_format, basePackage = 'Synopsis.Formatter.HTML.Page.')
