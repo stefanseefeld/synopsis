@@ -50,36 +50,36 @@ public:
     void MakeTable();
     bool IsEmpty();
     void Dump(std::ostream&);
-    int AddEntry(char* key, HashValue value, int* index = 0);
-    int AddEntry(bool, char* key, int len, HashValue value, int* index = 0);
+    int AddEntry(const char* key, HashValue value, int* index = 0);
+    int AddEntry(bool, const char* key, int len, HashValue value, int* index = 0);
 
-    int AddEntry(char* key, int len, HashValue value, int* index = 0) {
+    int AddEntry(const char* key, int len, HashValue value, int* index = 0) {
 	return AddEntry(true, key, len, value, index);
     }
 
     // allow a duplicated entry to be inserted
-    int AddDupEntry(char* key, int len, HashValue value, int* index = 0) {
+    int AddDupEntry(const char* key, int len, HashValue value, int* index = 0) {
 	return AddEntry(false, key, len, value, index);
     }
 
-    bool Lookup(char* key, HashValue* value);
-    bool Lookup(char* key, int len, HashValue* value);
-    bool LookupEntries(char* key, int len, HashValue* value, int& nth);
+    bool Lookup(const char* key, HashValue* value);
+    bool Lookup(const char* key, int len, HashValue* value);
+    bool LookupEntries(const char* key, int len, HashValue* value, int& nth);
     HashValue Peek(int index);
-    bool RemoveEntry(char* key);
-    bool RemoveEntry(char* key, int len);
+    bool RemoveEntry(const char* key);
+    bool RemoveEntry(const char* key, int len);
     void ReplaceValue(int index, HashValue value);
 
 protected:
-    char* KeyString(char* key);
-    char* KeyString(char* key, int len);
+    char* KeyString(const char* key);
+    char* KeyString(const char* key, int len);
 
-    bool Lookup2(char* key, HashValue* val, int* index);
-    bool Lookup2(char* key, int len, HashValue* val, int* index);
+    bool Lookup2(const char* key, HashValue* val, int* index);
+    bool Lookup2(const char* key, int len, HashValue* val, int* index);
     static uint NextPrimeNumber(uint number);
     bool GrowTable(int increment);
-    unsigned int StringToInt(char*);
-    unsigned int StringToInt(char*, int);
+    unsigned int StringToInt(const char*);
+    unsigned int StringToInt(const char*, int);
     int HashFunc(unsigned int p, int n);
 
 protected:

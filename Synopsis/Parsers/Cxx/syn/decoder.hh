@@ -171,7 +171,7 @@ public:
     static code toCode(char*);
 
     //. Initialise the type decoder
-    void init(char*);
+    void init(const char*);
 
     //. Returns the iterator used in decoding
     code_iter& iter()
@@ -206,7 +206,7 @@ public:
     std::string decodeName(code_iter);
 
     //. Decode a name starting from the given char*
-    std::string decodeName(char*);
+    std::string decodeName(const char*);
 
     //. Decode a qualified name with only names in it
     void decodeQualName(ScopedName& names);
@@ -214,7 +214,7 @@ public:
     //. Returns true if the char* is pointing to a name (that starts with a
     //. length). This is needed since char can be signed or unsigned, and
     //. explicitly casting to one or the other is ugly
-    bool isName(char* ptr);
+    bool isName(const char *ptr);
 
 private:
     //. The encoded type string currently being decoded
@@ -229,10 +229,10 @@ private:
     Lookup* m_lookup;
 };
 
-inline bool Decoder::isName(char* ptr)
+inline bool Decoder::isName(const char *ptr)
 {
-    code::value_type* iter = reinterpret_cast<code::value_type*>(ptr);
-    return iter && iter[0] > 0x80;
+  const code::value_type* iter = reinterpret_cast<const code::value_type*>(ptr);
+  return iter && iter[0] > 0x80;
 }
 
 #endif // header guard

@@ -85,7 +85,7 @@ private:
 
     static PTree::Node *CheckMemberEquiv(PTree::Node *, PTree::Node *);
     static PTree::Node *CheckEquiv(PTree::Node *p, PTree::Node *q) {
-      return PTree::Node::Equiv(p, q) ? p : q;
+      return PTree::equiv(p, q) ? p : q;
     }
 
 private:

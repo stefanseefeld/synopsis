@@ -94,7 +94,7 @@ void Member::Signature(TypeInfo& t) const
 	return;
     }
 
-    char* type = declarator->GetEncodedType();
+    const char* type = declarator->encoded_type();
     if(type == 0)
 	t.Unknown();
     else
@@ -104,18 +104,18 @@ void Member::Signature(TypeInfo& t) const
 PTree::Node *Member::Name()
 {
     int len;
-    char* name = Name(len);
+    const char* name = Name(len);
     return Encoding::NameToPtree(name, len);
 }
 
-char* Member::Name(int& len)
+const char* Member::Name(int& len)
 {
     if(declarator == 0){
 	MopErrorMessage("Member::Name()", "not initialized object.");
 	return 0;
     }
 
-    char* name = declarator->GetEncodedName();
+    const char* name = declarator->encoded_name();
     if(name != 0){
 	Environment* e = metaobject->GetEnvironment();
 	name = Encoding::GetBaseName(name, len, e);
@@ -160,7 +160,7 @@ bool Member::IsConstructor()
 	return false;
     }
 
-    char* name = declarator->GetEncodedName();
+    const char* name = declarator->encoded_name();
     if(name != 0){
 	int len;
 	Environment* e = metaobject->GetEnvironment();
@@ -168,7 +168,7 @@ bool Member::IsConstructor()
 	if(name != 0) {
 	    Class* sup = Supplier();
 	    if (sup != 0)
-		return sup->Name()->Eq(name, len);
+	      return sup->Name() && PTree::equal(*sup->Name(), name, len);
 	}
     }
 
@@ -182,7 +182,7 @@ bool Member::IsDestructor()
 	return false;
     }
 
-    char* name = declarator->GetEncodedName();
+    const char* name = declarator->encoded_name();
     if(name != 0){
 	int len;
 	Environment* e = metaobject->GetEnvironment();
@@ -257,13 +257,13 @@ bool Member::IsInline()
 
 bool Member::IsInlineFuncImpl()
 {
-    PTree::Node *header = implementation->Car();
+    PTree::Node *header = implementation->car();
     while(header != 0){
-	PTree::Node *h = header->Car();
+	PTree::Node *h = header->car();
 	if(h->IsA(Token::INLINE))
 	    return true;
 
-	header = header->Cdr();
+	header = header->cdr();
     }
 
     return false;
@@ -271,18 +271,14 @@ bool Member::IsInlineFuncImpl()
 
 bool Member::IsVirtual()
 {
-    if(Find())
-	return metaobject->GetMemberList()->Ref(nth)->is_virtual;
-    else
-	return false;
+  if(Find()) return metaobject->GetMemberList()->Ref(nth)->is_virtual;
+  else return false;
 }
 
 bool Member::IsPureVirtual()
 {
-    if(IsFunction())
-	return declarator->Last()->Car()->Eq('0');
-    else
-	return false;
+  if(IsFunction()) return *PTree::last(declarator)->car() == '0';
+  else return false;
 }
 
 PTree::Node *Member::GetUserAccessSpecifier()
@@ -297,7 +293,7 @@ bool Member::GetUserArgumentModifiers(PTree::Array& mods)
 {
     PTree::Node *args;
 
-    mods.Clear();
+    mods.clear();
     if(!Find())
 	return false;
 
@@ -305,13 +301,13 @@ bool Member::GetUserArgumentModifiers(PTree::Array& mods)
 	return false;
 
     while(args != 0){
-	PTree::Node *a = args->Car();
-	if(!a->IsLeaf() && a->Car()->IsA(Token::ntUserdefKeyword))
-	    mods.Append(a->Car());
+	PTree::Node *a = args->car();
+	if(!a->is_atom() && a->car()->IsA(Token::ntUserdefKeyword))
+	    mods.append(a->car());
 	else
-	    mods.Append(0);
+	    mods.append(0);
 	
-	args = PTree::Node::ListTail(args, 2);	// skip ,
+	args = PTree::tail(args, 2);	// skip ,
     }
 
     return true;
@@ -335,8 +331,8 @@ bool Member::Find()
     MemberList* mlist = metaobject->GetMemberList();
 
     int len;
-    char* name = Name(len);
-    char* sig = declarator->GetEncodedType();
+    const char* name = Name(len);
+    const char* sig = declarator->encoded_type();
     if(mlist == 0 || name == 0 || sig == 0)
 	return false;
 
@@ -371,11 +367,11 @@ void Member::SetName(PTree::Node *name, PTree::Node *decl)
 	return;
     }
 
-    char* encoded = decl->GetEncodedName();
+    const char* encoded = decl->encoded_name();
     if(encoded != 0 && *encoded == 'Q'){
 	PTree::Node *qname = ((PTree::Declarator*)decl)->Name();
-	PTree::Node *old_name = qname->Last()->First();
-	new_name = PTree::Node::ShallowSubst(name, old_name, qname);
+	PTree::Node *old_name = PTree::first(PTree::last(qname));
+	new_name = PTree::shallow_subst(name, old_name, qname);
     }
     else
 	new_name = name;
@@ -414,8 +410,8 @@ PTree::Node *Member::MemberInitializers()
 PTree::Node *Member::MemberInitializers(PTree::Node *decl)
 {
     if(IsConstructor()){
-	PTree::Node *init = decl->Last()->Car();
-	if(!init->IsLeaf() && init->Car()->Eq(':'))
+	PTree::Node *init = PTree::last(decl)->car();
+	if(!init->is_atom() && *init->car() == ':')
 	    return init;
     }
 
@@ -430,12 +426,12 @@ void Member::SetMemberInitializers(PTree::Node *init)
 PTree::Node *Member::FunctionBody()
 {
     if(IsFunctionImplementation())
-	return implementation->Nth(3);
+      return PTree::nth(implementation, 3);
     else if(Find()){
 	PTree::Node *def = metaobject->GetMemberList()->Ref(nth)->definition;
-	PTree::Node *decls = def->Third();
+	PTree::Node *decls = PTree::third(def);
 	if(decls->IsA(Token::ntDeclarator))
-	    return def->Nth(3);
+	  return PTree::nth(def, 3);
     }
 
     return 0;
@@ -458,32 +454,32 @@ PTree::Node *Member::Arguments(PTree::Node *args, int i)
     if(args == 0)
 	return args;
 
-    if(args->Cdr() == 0)
+    if(args->cdr() == 0)
 	rest = 0;
     else{
-	rest = Arguments(args->Cddr(), i + 1);	// skip ","
-	rest = PTree::Node::Cons(args->Cadr(), rest);
+	rest = Arguments(PTree::cddr(args), i + 1);	// skip ","
+	rest = PTree::cons(PTree::cadr(args), rest);
     }
 
-    PTree::Node *a = args->Car();
+    PTree::Node *a = args->car();
     PTree::Node *p;
-    if(a->IsLeaf())
+    if(a->is_atom())
 	p = a;
     else{
-	if(a->Car()->IsA(Token::ntUserdefKeyword, Token::REGISTER))
-	    p = a->Third();
+	if(a->car()->IsA(Token::ntUserdefKeyword, Token::REGISTER))
+	    p = PTree::third(a);
 	else
-	    p = a->Second();
+	    p = PTree::second(a);
 
 	p = ((PTree::Declarator*)p)->Name();
     }
 
     if(p == 0){
 	arg_name_filled = true;
-	p = PTree::Node::Make(Walker::argument_name, i);
+	p = PTree::make(Walker::argument_name, i);
     }
 
-    return PTree::Node::Cons(p, rest);
+    return PTree::cons(p, rest);
 }
 
 void Member::Copy(Member* mem, void* ptr)
@@ -543,10 +539,10 @@ void MemberList::Make(Class* metaobject)
     Environment* env = metaobject->GetEnvironment();
     PTree::Node *bases = metaobject->BaseClasses();
     while(bases != 0){
-	bases = bases->Cdr();		// skip : or ,
+	bases = bases->cdr();		// skip : or ,
 	if(bases != 0){
-	    AppendBaseClass(env, bases->Car());
-	    bases = bases->Cdr();
+	    AppendBaseClass(env, bases->car());
+	    bases = bases->cdr();
 	}
     }
 }
@@ -557,7 +553,7 @@ void MemberList::AppendThisClass(Class* metaobject)
     PTree::Node *user_access = 0;
     PTree::Node *members = metaobject->Members();
     while(members != 0){
-	PTree::Node *def = members->Car();
+	PTree::Node *def = members->car();
 	if(def->IsA(Token::ntDeclaration)){
 	    PTree::Node *decl;
 	    int nth = 0;
@@ -569,7 +565,7 @@ void MemberList::AppendThisClass(Class* metaobject)
 	    } while(decl != 0);
 	}
 	else if(def->IsA(Token::ntAccessSpec)){
-	    access = def->Car()->What();
+	    access = def->car()->What();
 	    user_access = 0;
 	}
 	else if(def->IsA(Token::ntUserAccessSpec))
@@ -577,7 +573,7 @@ void MemberList::AppendThisClass(Class* metaobject)
 	else if(def->IsA(Token::ntAccessDecl))
 	    /* not implemented */;
 
-	members = members->Cdr();
+	members = members->cdr();
     }
 }
 
@@ -586,8 +582,8 @@ void MemberList::Append(PTree::Node *declaration, PTree::Node *decl,
 {
     int len;
     Mem mem;
-    char* name = decl->GetEncodedName();
-    char* signature = decl->GetEncodedType();
+    const char* name = decl->encoded_name();
+    const char* signature = decl->encoded_type();
     Environment* e = this_class->GetEnvironment();
     name = Encoding::GetBaseName(name, len, e);
 
@@ -599,8 +595,8 @@ void MemberList::Append(PTree::Node *declaration, PTree::Node *decl,
     m->declarator = decl;
     m->name = name;
     m->signature = signature;
-    m->is_constructor = bool(this_class->Name()->Eq(name, len));
-    m->is_destructor = bool(*name == '~');
+    m->is_constructor = PTree::equal(*this_class->Name(), name, len);
+    m->is_destructor = *name == '~';
     m->is_virtual = mem.is_virtual;
     m->is_static = mem.is_static;
     m->is_mutable = mem.is_mutable;
@@ -613,15 +609,15 @@ void MemberList::Append(PTree::Node *declaration, PTree::Node *decl,
 void MemberList::AppendBaseClass(Environment* env, PTree::Node *base_class)
 {
     int access = Token::PRIVATE;
-    while(base_class->Cdr() != 0){
-	PTree::Node *p = base_class->Car();
+    while(base_class->cdr() != 0){
+	PTree::Node *p = base_class->car();
 	if(p->IsA(Token::PUBLIC, Token::PROTECTED, Token::PRIVATE))
 	    access = p->What();
 
-	base_class = base_class->Cdr();
+	base_class = base_class->cdr();
     }	
 
-    Class* metaobject = env->LookupClassMetaobject(base_class->Car());
+    Class* metaobject = env->LookupClassMetaobject(base_class->car());
     if(metaobject == 0)
 	return;
 
@@ -644,7 +640,7 @@ void MemberList::AppendBaseClass(Environment* env, PTree::Node *base_class)
     }
 }
 
-MemberList::Mem* MemberList::Lookup(char* name, char* signature)
+MemberList::Mem* MemberList::Lookup(const char* name, const char* signature)
 {
     for(int i = 0; i < num; ++i){
 	Mem* m = Ref(i);
@@ -655,7 +651,7 @@ MemberList::Mem* MemberList::Lookup(char* name, char* signature)
     return 0;
 }
 
-int MemberList::Lookup(char* name, int len, char* signature)
+int MemberList::Lookup(const char* name, int len, const char* signature)
 {
     for(int i = 0; i < num; ++i){
 	Mem* m = Ref(i);
@@ -669,17 +665,17 @@ int MemberList::Lookup(char* name, int len, char* signature)
 
 int MemberList::Lookup(Environment* env, PTree::Node *member, int index)
 {
-    char* name;
-    int len;
+  const char* name;
+  int len;
 
     if(member == 0)
 	return -1;
-    else if(member->IsLeaf()){
-	name = member->GetPosition();
-	len = member->GetLength();
+    else if(member->is_atom()){
+	name = member->position();
+	len = member->length();
     }
     else
-	name = Encoding::GetBaseName(member->GetEncodedName(), len, env);
+	name = Encoding::GetBaseName(member->encoded_name(), len, env);
 
     for(int i = 0; i < num; ++i){
 	Mem* m = Ref(i);
@@ -691,7 +687,7 @@ int MemberList::Lookup(Environment* env, PTree::Node *member, int index)
     return -1;
 }
 
-int MemberList::Lookup(Environment*, char* name, int index)
+int MemberList::Lookup(Environment*, const char* name, int index)
 {
     if(name == 0)
 	return -1;
@@ -714,9 +710,9 @@ void MemberList::CheckHeader(PTree::Node *declaration, Mem* m)
     m->is_inline = false;
     m->user_mod = 0;
 
-    PTree::Node *header = declaration->Car();
+    PTree::Node *header = declaration->car();
     while(header != 0){
-	PTree::Node *h = header->Car();
+	PTree::Node *h = header->car();
 	if(h->IsA(Token::VIRTUAL))
 	    m->is_virtual = true;
 	else if(h->IsA(Token::STATIC))
@@ -728,10 +724,10 @@ void MemberList::CheckHeader(PTree::Node *declaration, Mem* m)
 	else if(h->IsA(Token::ntUserdefKeyword))
 	    m->user_mod = h;
 
-	header = header->Cdr();
+	header = header->cdr();
     }
 
-    PTree::Node *d = declaration->Third();
+    PTree::Node *d = PTree::third(declaration);
     if(d != 0 && d->IsA(Token::ntDeclarator))
 	m->is_inline = true;
 }

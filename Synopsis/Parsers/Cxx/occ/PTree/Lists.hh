@@ -9,6 +9,7 @@
 #define _PTree_Lists_hh
 
 #include "PTree/List.hh"
+#include "PTree/operations.hh"
 
 class Encoding;
 
@@ -19,7 +20,7 @@ class Brace : public List
 {
 public:
   Brace(Node *p, Node *q) : List(p, q) {}
-  Brace(Node *ob, Node *body, Node *cb) : List(ob, Node::List(body, cb)) {}
+  Brace(Node *ob, Node *body, Node *cb) : List(ob, list(body, cb)) {}
 
   virtual void print(std::ostream &, size_t, size_t) const;
 
@@ -100,15 +101,15 @@ public:
 class NamespaceSpec : public List
 {
 public:
-  NamespaceSpec(Node *p, Node *q) : List(p, q), comments(0) {}
+  NamespaceSpec(Node *p, Node *q) : List(p, q), my_comments(0) {}
   int What();
   Node *Translate(Walker*);
   
-  Node *GetComments() { return comments; }
-  void SetComments(Node *c) { comments = c; }
+  Node *GetComments() { return my_comments;}
+  void SetComments(Node *c) { my_comments = c;}
 
 private:
-  Node *comments;
+  Node *my_comments;
 };
 
 class NamespaceAlias : public List
@@ -130,15 +131,15 @@ public:
 class Declaration : public List
 {
 public:
-  Declaration(Node *p, Node *q) : List(p, q), comments(0) {}
+  Declaration(Node *p, Node *q) : List(p, q), my_comments(0) {}
   int What();
   Node *Translate(Walker*);
 
-  Node *GetComments() { return comments; }
-  void SetComments(Node *c) { comments = c; }
+  Node *GetComments() { return my_comments;}
+  void SetComments(Node *c) { my_comments = c;}
 
 private:
-  Node *comments;
+  Node *my_comments;
 };
 
 class Declarator : public List
@@ -154,19 +155,19 @@ public:
   virtual void print(std::ostream &, size_t, size_t) const;
 
   int What();
-  char* GetEncodedType() const;
-  char* GetEncodedName() const;
-  void SetEncodedType(char* t) { type = t; }
-  Node *Name() { return declared_name; }
+  const char *encoded_type() const;
+  const char *encoded_name() const;
+  void set_encoded_type(const char *t) { my_type = t;}
+  Node *Name() { return my_declared_name;}
 
-  Node *GetComments() { return comments; }
-  void SetComments(Node *c) { comments = c; }
+  Node *GetComments() { return my_comments;}
+  void SetComments(Node *c) { my_comments = c;}
 
 private:
-  char* type;
-  char* name;
-  Node *declared_name;
-  Node *comments;
+  const char *my_type;
+  const char *my_name;
+  Node       *my_declared_name;
+  Node       *my_comments;
 };
 
 class Name : public List
@@ -177,46 +178,45 @@ public:
   void print(std::ostream &, size_t, size_t) const;
 
   int What();
-  char* GetEncodedName() const;
+  const char *encoded_name() const;
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
 
 private:
-  char *name;
+  const char *my_name;
 };
 
 class FstyleCastExpr : public List
 {
 public:
   FstyleCastExpr(Encoding&, Node *, Node *);
-  FstyleCastExpr(char*, Node *, Node *);
+  FstyleCastExpr(const char*, Node *, Node *);
 
   void print(std::ostream &, size_t, size_t) const;
 
   int What();
-  char* GetEncodedType() const;
+  const char *encoded_type() const;
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
 
 private:
-  char* type;
+  const char *my_type;
 };
 
 class ClassSpec : public List
 {
 public:
   ClassSpec(Node *, Node *, Node *);
-  ClassSpec(Node *, Node *, Node *, char*);
+  ClassSpec(Node *, Node *, Node *, const char*);
   int What();
   Node *Translate(Walker*);
-  char* GetEncodedName() const;
+  const char *encoded_name() const;
+  void set_encoded_name(const char *n) { my_name = n;}
   Node *GetComments();
 
 private:
-  char *encoded_name;
-  Node *comments;
-
-friend class Parser;
+  const char *my_name;
+  Node       *my_comments;
 };
 
 class EnumSpec : public List
@@ -225,12 +225,10 @@ public:
   EnumSpec(Node *);
   int What();
   Node *Translate(Walker*);
-  char* GetEncodedName() const;
-
+  const char *encoded_name() const;
+  void set_encoded_name(const char *n) { my_name = n;}
 private:
-  char *encoded_name;
-
-friend class Parser;
+  const char *my_name;
 };
 
 class AccessSpec : public List

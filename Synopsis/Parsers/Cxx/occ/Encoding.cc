@@ -171,60 +171,64 @@ void Encoding::print(std::ostream &os, const char *p)
 // GetBaseName() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
 // If an error occurs, the function returns 0.
 
-char* Encoding::GetBaseName(char* encode, int& len, Environment*& env)
+const char *Encoding::GetBaseName(const char *encode, int& len, Environment*& env)
 {
-    if(encode == 0){
+  if(encode == 0)
+  {
+    len = 0;
+    return 0;
+  }
+
+  Environment* e = env;
+  const unsigned char* p = (const unsigned char*)encode;
+  if(*p == 'Q')
+  {
+    int n = p[1] - 0x80;
+    p += 2;
+    while(n-- > 1)
+    {
+      int m = *p++;
+      if(m == 'T')
+	m = GetBaseNameIfTemplate(p, e);
+      else if(m < 0x80)
+      {		// error?
 	len = 0;
 	return 0;
-    }
-
-    Environment* e = env;
-    unsigned char* p = (unsigned char*)encode;
-    if(*p == 'Q'){
-	int n = p[1] - 0x80;
-	p += 2;
-	while(n-- > 1){
-	    int m = *p++;
-	    if(m == 'T')
-		m = GetBaseNameIfTemplate(p, e);
-	    else if(m < 0x80){		// error?
-		len = 0;
-		return 0;
-	    }
-	    else{			// class name
-		m -= 0x80;
-		if(m <= 0){		// if global scope (e.g. ::Foo)
-		    if(e != 0)
-			e = e->GetBottom();
-		}
-		else
-		    e = ResolveTypedefName(e, (char*)p, m);
-	    }
-
-	    p += m;
+      }
+      else
+      {			// class name
+	m -= 0x80;
+	if(m <= 0)
+	{		// if global scope (e.g. ::Foo)
+	  if(e != 0) e = e->GetBottom();
 	}
-
-	env = e;
+	else e = ResolveTypedefName(e, (const char*)p, m);
+      }
+      p += m;
     }
-
-    if(*p == 'T'){		// template class
-	int m = p[1] - 0x80;
-	int n = p[m + 2] - 0x80;
-	len = m + n + 3;
-	return (char*)p;
-    }
-    else if(*p < 0x80){		// error?
-	len = 0;
-	return 0;
-    }
-    else{
-	len = *p - 0x80;
-	return (char*)p + 1;
-    }
+    env = e;
+  }
+  if(*p == 'T')
+  {		// template class
+    int m = p[1] - 0x80;
+    int n = p[m + 2] - 0x80;
+    len = m + n + 3;
+    return (const char*)p;
+  }
+  else if(*p < 0x80)
+  {		// error?
+    len = 0;
+    return 0;
+  }
+  else
+  {
+    len = *p - 0x80;
+    return (const char*)p + 1;
+  }
 }
 
 Environment* Encoding::ResolveTypedefName(Environment* env,
-					  char* name, int len)
+					  const char* name, int len)
 {
     TypeInfo tinfo;
     Bind* bind;
@@ -260,7 +264,7 @@ Environment* Encoding::ResolveTypedefName(Environment* env,
 	return env;
 }
 
-int Encoding::GetBaseNameIfTemplate(unsigned char* name, Environment*& e)
+int Encoding::GetBaseNameIfTemplate(const unsigned char* name, Environment*& e)
 {
     int m = name[0] - 0x80;
     if(m <= 0)
@@ -281,7 +285,7 @@ int Encoding::GetBaseNameIfTemplate(unsigned char* name, Environment*& e)
     return m + (name[m + 1] - 0x80) + 2;
 }
 
-unsigned char* Encoding::GetTemplateArguments(unsigned char* name, int& len)
+const unsigned char* Encoding::GetTemplateArguments(const unsigned char* name, int& len)
 {
     int m = name[0] - 0x80;
     if(m <= 0){
@@ -297,20 +301,20 @@ unsigned char* Encoding::GetTemplateArguments(unsigned char* name, int& len)
 void Encoding::CvQualify(PTree::Node *cv1, PTree::Node *cv2)
 {
     bool c = false, v = false;
-    if(cv1 != 0 && !cv1->IsLeaf())
+    if(cv1 != 0 && !cv1->is_atom())
 	while(cv1 != 0){
-	    int kind = cv1->Car()->What();
-	    cv1 = cv1->Cdr();
+	    int kind = cv1->car()->What();
+	    cv1 = cv1->cdr();
 	    if(kind == Token::CONST)
 		c = true;
 	    else if(kind == Token::VOLATILE)
 		v = true;
 	}
 
-    if(cv2 != 0 && !cv2->IsLeaf())
+    if(cv2 != 0 && !cv2->is_atom())
 	while(cv2 != 0){
-	    int kind = cv2->Car()->What();
-	    cv2 = cv2->Cdr();
+	    int kind = cv2->car()->What();
+	    cv2 = cv2->cdr();
 	    if(kind == Token::CONST)
 		c = true;
 	    else if(kind == Token::VOLATILE)
@@ -333,7 +337,7 @@ void Encoding::GlobalScope()
 
 void Encoding::SimpleName(PTree::Node *id)
 {
-    AppendWithLen(id->GetPosition(), id->GetLength());
+  AppendWithLen(id->position(), id->length());
 }
 
 // NoName() generates a internal name for no-name enum and class
@@ -348,7 +352,7 @@ void Encoding::NoName()
     name[2] = (n / 100) % 10 + '0';
     name[3] = (n / 10) % 10 + '0';
     name[4] = n % 10 + '0';
-    AppendWithLen((char*)name, 5);
+    AppendWithLen((const char*)name, 5);
 }
 
 void Encoding::Template(PTree::Node *name, Encoding& args)
@@ -372,10 +376,10 @@ void Encoding::Qualified(int n)
 
 void Encoding::Destructor(PTree::Node *class_name)
 {
-    int len = class_name->GetLength();
-    Append((unsigned char)(DigitOffset + len + 1));
-    Append('~');
-    Append(class_name->GetPosition(), len);
+  size_t len = class_name->length();
+  Append((unsigned char)(DigitOffset + len + 1));
+  Append('~');
+  Append(class_name->position(), len);
 }
 
 void Encoding::PtrOperator(int t)
@@ -389,9 +393,9 @@ void Encoding::PtrOperator(int t)
 void Encoding::PtrToMember(Encoding& encode, int n)
 {
     if(n < 2)
-	Insert((char*)encode.name, encode.len);
+	Insert((const char *)encode.name, encode.len);
     else{
-	Insert((char*)encode.name, encode.len);
+	Insert((const char *)encode.name, encode.len);
 	Insert((unsigned char)(DigitOffset + n));
 	Insert('Q');
     }
@@ -419,7 +423,7 @@ void Encoding::Insert(unsigned char c)
     name[0] = c;
 }
 
-void Encoding::Insert(char* str, int n)
+void Encoding::Insert(const char *str, size_t n)
 {
     if(len + n >= MaxNameLen)
 	MopErrorMessage("Encoding::Insert()",
@@ -441,7 +445,7 @@ void Encoding::Append(unsigned char c)
     name[len++] = c;
 }
 
-void Encoding::Append(char* str, int n)
+void Encoding::Append(const char *str, size_t n)
 {
     if(len + n >= MaxNameLen)
 	MopErrorMessage("Encoding::Append(char*,int)",
@@ -451,7 +455,7 @@ void Encoding::Append(char* str, int n)
     len += n;
 }
 
-void Encoding::AppendWithLen(char* str, int n)
+void Encoding::AppendWithLen(const char *str, size_t n)
 {
     if(len + n + 1 >= MaxNameLen)
 	MopErrorMessage("Encoding::AppendWithLen()",
@@ -462,249 +466,226 @@ void Encoding::AppendWithLen(char* str, int n)
     len += n;
 }
 
-PTree::Node *Encoding::MakePtree(unsigned char*& encoded, PTree::Node *decl)
+PTree::Node *Encoding::MakePtree(const unsigned char*& encoded, PTree::Node *decl)
 {
-    PTree::Node *cv;
-    PTree::Node *typespec = 0;
-    if(decl != 0)
-      decl = PTree::Node::List(decl);
+  PTree::Node *cv;
+  PTree::Node *typespec = 0;
+  if(decl) decl = PTree::list(decl);
 
-    for(;;){
-	cv = 0;
-	switch(*encoded++){
-	case 'b' :
-	  typespec = PTree::Node::Snoc(typespec, bool_t);
-	    goto finish;
-	case 'c' :
-	    typespec = PTree::Node::Snoc(typespec, char_t);
-	    goto finish;
-	case 'w' :
-	    typespec = PTree::Node::Snoc(typespec, wchar_t_t);
-	    goto finish;
-	case 'i' :
-	    typespec = PTree::Node::Snoc(typespec, int_t);
-	    goto finish;
-	case 's' :
-	    typespec = PTree::Node::Snoc(typespec, short_t);
-	    goto finish;
-	case 'l' :
-	    typespec = PTree::Node::Snoc(typespec, long_t);
-	    goto finish;
-	    break;
-	case 'j' :
-	    typespec = PTree::Node::Nconc(typespec, PTree::Node::List(long_t, long_t));
-	    goto finish;
-	    break;
-	case 'f' :
-	    typespec = PTree::Node::Snoc(typespec, float_t);
-	    goto finish;
-	    break;
-	case 'd' :
-	    typespec = PTree::Node::Snoc(typespec, double_t);
-	    goto finish;
-	    break;
-	case 'r' :
-	    typespec = PTree::Node::Nconc(typespec, PTree::Node::List(long_t, double_t));
-	    goto finish;
-	case 'v' :
-	    typespec = PTree::Node::Snoc(typespec, void_t);
-	    goto finish;
-	case 'e' :
-	    return dots;
-	case '?' :
-	    goto finish;
-	case 'Q' :
-	    typespec = PTree::Node::Snoc(typespec, MakeQname(encoded));
-	    goto finish;
-	case 'S' :
-	    typespec = PTree::Node::Snoc(typespec, signed_t);
-	    break;
-	case 'U' :
-	    typespec = PTree::Node::Snoc(typespec, unsigned_t);
-	    break;
-	case 'C' :
-	    if(*encoded == 'V'){
-		++encoded;
-		cv = PTree::Node::List(const_t, volatile_t);
-	    }
-	    else
-		cv = PTree::Node::List(const_t);
-
-	    goto const_or_volatile;
-	case 'V' :
-	    cv = PTree::Node::List(volatile_t);
-	const_or_volatile :
-	    switch(*encoded) {
-	    case 'M' :
-	    case 'P' :
-	    case 'R' :
-		decl = PTree::Node::Nconc(cv, decl);
-		break;
-	    case 'F' :
-		++encoded;
-		goto cv_function;
-	    default :
-		typespec = PTree::Node::Nconc(cv, typespec);
-		break;
-	    }
-	    break;
-	case 'M' :
-	    {
-		PTree::Node *ptr;
-		if(*encoded == 'Q')
-		    ptr = MakeQname(++encoded);
-		else
-		    ptr = MakeLeaf(encoded);
-
-		ptr = PTree::Node::List(ptr, scope, star);
-		decl = PTree::Node::Cons(ptr, decl);
-	    }
-
-	    goto pointer_or_reference;
-	case 'P' :
-	    decl = PTree::Node::Cons(star, decl);
-	    goto pointer_or_reference;
-	case 'R' :
-	    decl = PTree::Node::Cons(ampersand, decl);
-	pointer_or_reference :
-	    if(*encoded == 'A' || *encoded == 'F')
-		decl = PTree::Node::List(PTree::Node::List(left_paren, decl,
-					       right_paren));
-
-	    break;
-	case 'A' :
-	    decl = PTree::Node::Nconc(decl, PTree::Node::List(left_bracket,
-						  right_bracket));
-	    break;
-	case 'F' :
-	cv_function :
-	    {
-		PTree::Node *args = 0;
-		while(*encoded != '\0'){
-		    if(*encoded == '_'){
-			++encoded;
-			break;
-		    }
-		    else if(*encoded == 'v'){
-			encoded += 2;
-			break;
-		    }
-
-		    if(args != 0)
-			args = PTree::Node::Snoc(args, comma);
-
-		    args = PTree::Node::Snoc(args, MakePtree(encoded, 0));
-		}
-
-		decl = PTree::Node::Nconc(decl, PTree::Node::List(left_paren, args,
-						      right_paren));
-		if(cv != 0)
-		    decl = PTree::Node::Nconc(decl, cv);
-	    }
-	    break;
-	case '\0' :
-	    goto finish;
-	case 'T' :
-	    {
-    		PTree::Node *tlabel = MakeLeaf(encoded);      
-	    	PTree::Node *args = 0;
-	    	int n = *encoded++ - DigitOffset;
-		unsigned char* stop = encoded + n;
-		while(encoded < stop){
-		    if(args != 0)
-			args = PTree::Node::Snoc(args, comma);
-
-		    args = PTree::Node::Snoc(args, MakePtree(encoded, 0));
-		}
-
-		tlabel = PTree::Node::List(tlabel,
-				PTree::Node::List(left_angle, args, right_angle));
-		typespec = PTree::Node::Nconc(typespec, tlabel);
-		goto finish;
-	    }
-	case '*' :
-	    goto error;
-	default :
-	    if(*--encoded >= DigitOffset){
-		if(typespec == 0)
-		    typespec = MakeLeaf(encoded);
-		else
-		    typespec = PTree::Node::Snoc(typespec, MakeLeaf(encoded));
-
-		goto finish;
-	    }
-	error :
-	    MopErrorMessage("TypeInfo::MakePtree()",
-			    "sorry, cannot handle this type");
-	    break;
+  while(true)
+  {
+    cv = 0;
+    switch(*encoded++)
+    {
+      case 'b' :
+	typespec = PTree::snoc(typespec, bool_t);
+	goto finish;
+      case 'c' :
+	typespec = PTree::snoc(typespec, char_t);
+	goto finish;
+      case 'w' :
+	typespec = PTree::snoc(typespec, wchar_t_t);
+	goto finish;
+      case 'i' :
+	typespec = PTree::snoc(typespec, int_t);
+	goto finish;
+      case 's' :
+	typespec = PTree::snoc(typespec, short_t);
+	goto finish;
+      case 'l' :
+	typespec = PTree::snoc(typespec, long_t);
+	goto finish;
+	break;
+      case 'j' :
+	typespec = PTree::nconc(typespec, PTree::list(long_t, long_t));
+	goto finish;
+	break;
+      case 'f' :
+	typespec = PTree::snoc(typespec, float_t);
+	goto finish;
+	break;
+      case 'd' :
+	typespec = PTree::snoc(typespec, double_t);
+	goto finish;
+	break;
+      case 'r' :
+	typespec = PTree::nconc(typespec, PTree::list(long_t, double_t));
+	goto finish;
+      case 'v' :
+	typespec = PTree::snoc(typespec, void_t);
+	goto finish;
+      case 'e' :
+	return dots;
+      case '?' :
+	goto finish;
+      case 'Q' :
+	typespec = PTree::snoc(typespec, MakeQname(encoded));
+	goto finish;
+      case 'S' :
+	typespec = PTree::snoc(typespec, signed_t);
+	break;
+      case 'U' :
+	typespec = PTree::snoc(typespec, unsigned_t);
+	break;
+      case 'C' :
+	if(*encoded == 'V')
+	{
+	  ++encoded;
+	  cv = PTree::list(const_t, volatile_t);
 	}
+	else cv = PTree::list(const_t);
+	goto const_or_volatile;
+      case 'V' :
+	cv = PTree::list(volatile_t);
+      const_or_volatile :
+	switch(*encoded)
+	{
+	  case 'M' :
+	  case 'P' :
+	  case 'R' :
+	    decl = PTree::nconc(cv, decl);
+	    break;
+	  case 'F' :
+	    ++encoded;
+	    goto cv_function;
+	    default :
+	      typespec = PTree::nconc(cv, typespec);
+	      break;
+	}
+	break;
+      case 'M' :
+        {
+	  PTree::Node *ptr;
+	  if(*encoded == 'Q') ptr = MakeQname(++encoded);
+	  else ptr = MakeLeaf(encoded);
+	  
+	  ptr = PTree::list(ptr, scope, star);
+	  decl = PTree::cons(ptr, decl);
+	}
+	goto pointer_or_reference;
+      case 'P' :
+	decl = PTree::cons(star, decl);
+	goto pointer_or_reference;
+      case 'R' :
+	decl = PTree::cons(ampersand, decl);
+      pointer_or_reference :
+	if(*encoded == 'A' || *encoded == 'F')
+	  decl = PTree::list(PTree::list(left_paren, decl, right_paren));
+	break;
+      case 'A' :
+	decl = PTree::nconc(decl, PTree::list(left_bracket, right_bracket));
+	break;
+      case 'F' :
+      cv_function :
+        {
+	  PTree::Node *args = 0;
+	  while(*encoded != '\0')
+	  {
+	    if(*encoded == '_')
+	    {
+	      ++encoded;
+	      break;
+	    }
+	    else if(*encoded == 'v')
+	    {
+	      encoded += 2;
+	      break;
+	    }
+	    if(args != 0) args = PTree::snoc(args, comma);
+	    args = PTree::snoc(args, MakePtree(encoded, 0));
+	  }
+	  decl = PTree::nconc(decl, PTree::list(left_paren, args, right_paren));
+	  if(cv) decl = PTree::nconc(decl, cv);
+	}
+	break;
+      case '\0' :
+	goto finish;
+      case 'T' :
+	{
+	  PTree::Node *tlabel = MakeLeaf(encoded);      
+	  PTree::Node *args = 0;
+	  int n = *encoded++ - DigitOffset;
+	  const unsigned char* stop = encoded + n;
+	  while(encoded < stop)
+	  {
+	    if(args) args = PTree::snoc(args, comma);
+	    args = PTree::snoc(args, MakePtree(encoded, 0));
+	  }
+	  tlabel = PTree::list(tlabel, PTree::list(left_angle, args, right_angle));
+	  typespec = PTree::nconc(typespec, tlabel);
+	  goto finish;
+	}
+      case '*' :
+	goto error;
+      default :
+	if(*--encoded >= DigitOffset)
+	{
+	  if(typespec == 0) typespec = MakeLeaf(encoded);
+	  else typespec = PTree::snoc(typespec, MakeLeaf(encoded));
+	  goto finish;
+	}
+      error :
+	throw std::runtime_error("Encoding::MakePtree(): sorry, cannot handle this type");
+	break;
     }
-
-finish :
-    return PTree::Node::List(typespec, decl);
+  }
+ finish :
+  return PTree::list(typespec, decl);
 }
 
-PTree::Node *Encoding::MakeQname(unsigned char*& encoded)
+PTree::Node *Encoding::MakeQname(const unsigned char*& encoded)
 {
-    int n = *encoded++ - DigitOffset;
-    PTree::Node *qname = 0;
-    while(n-- > 0){
-	PTree::Node *leaf = MakeLeaf(encoded);
-	if(leaf != 0)
-	    qname = PTree::Node::Snoc(qname, leaf);
-
-	if(n > 0)
-	    qname = PTree::Node::Snoc(qname, scope);
-    }
-
-    return qname;
+  int n = *encoded++ - DigitOffset;
+  PTree::Node *qname = 0;
+  while(n-- > 0)
+  {
+    PTree::Node *leaf = MakeLeaf(encoded);
+    if(leaf) qname = PTree::snoc(qname, leaf);
+    if(n > 0) qname = PTree::snoc(qname, scope);
+  }
+  return qname;
 }
 
-PTree::Node *Encoding::MakeLeaf(unsigned char*& encoded)
+PTree::Node *Encoding::MakeLeaf(const unsigned char*& encoded)
 {
-    PTree::Node *leaf;
-    int len = *encoded++ - DigitOffset;
-    if(len > 0)
-	leaf = new PTree::Atom((char*)encoded, len);
-    else
-	leaf = 0;
-
-    encoded += len;
-    return leaf;
+  PTree::Node *leaf;
+  int len = *encoded++ - DigitOffset;
+  if(len > 0) leaf = new PTree::Atom((const char*)encoded, len);
+  else leaf = 0;
+  encoded += len;
+  return leaf;
 }
 
-bool Encoding::IsSimpleName(unsigned char* p)
+bool Encoding::IsSimpleName(const unsigned char* p)
 {
-    return *p >= DigitOffset;
+  return *p >= DigitOffset;
 }
 
-PTree::Node *Encoding::NameToPtree(char* name, int len)
+PTree::Node *Encoding::NameToPtree(const char* name, int len)
 {
-    if(name == 0)
-	return 0;
-
-    if(name[0] == 'n'){
-	if(len == 5 && strncmp(name, "new[]", 5) == 0)
-	    return PTree::Node::List(operator_name, anew_operator);
-	else if(len == 3 && strncmp(name, "new", 3) == 0)
-	    return PTree::Node::List(operator_name, new_operator);
-    }
-    else if(name[0] == 'd'){
-	if(len == 8 && strncmp(name, "delete[]", 8) == 0)
-	    return PTree::Node::List(operator_name, adelete_operator);
-	else if(len == 6 && strncmp(name, "delete", 6) == 0)
-	    return PTree::Node::List(operator_name, delete_operator);
-    }
-    else if(name[0] == '~')
-	return PTree::Node::List(tilder, new PTree::Atom(&name[1], len - 1));
-    else if(name[0] == '@'){		// cast operator
-	unsigned char* encoded = (unsigned char*)&name[1];
-	return PTree::Node::List(operator_name, MakePtree(encoded, 0));
-    }
-
-    if(is_letter(name[0]))
-	return new PTree::Atom(name, len);
-    else
-	return PTree::Node::List(operator_name, new PTree::Atom(name, len));
+  if(!name) return 0;
+  if(name[0] == 'n')
+  {
+    if(len == 5 && strncmp(name, "new[]", 5) == 0)
+      return PTree::list(operator_name, anew_operator);
+    else if(len == 3 && strncmp(name, "new", 3) == 0)
+      return PTree::list(operator_name, new_operator);
+  }
+  else if(name[0] == 'd')
+  {
+    if(len == 8 && strncmp(name, "delete[]", 8) == 0)
+      return PTree::list(operator_name, adelete_operator);
+    else if(len == 6 && strncmp(name, "delete", 6) == 0)
+      return PTree::list(operator_name, delete_operator);
+  }
+  else if(name[0] == '~')
+    return PTree::list(tilder, new PTree::Atom(&name[1], len - 1));
+  else if(name[0] == '@')
+  {		// cast operator
+    const unsigned char* encoded = (const unsigned char*)&name[1];
+    return PTree::list(operator_name, MakePtree(encoded, 0));
+  }
+  if(is_letter(name[0])) return new PTree::Atom(name, len);
+  else return PTree::list(operator_name, new PTree::Atom(name, len));
 }
 

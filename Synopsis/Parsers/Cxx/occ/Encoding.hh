@@ -56,27 +56,27 @@ public:
     void ValueTempParam() { Append((unsigned char)'*'); }
 
     void Insert(unsigned char);
-    void Insert(char*, int);
+    void Insert(const char *, size_t);
     void Append(unsigned char);
-    void Append(char*, int);
-    void Append(Encoding& e) { Append((char*)e.name, e.len); }
-    void AppendWithLen(char*, int);
-    void AppendWithLen(Encoding& e) { AppendWithLen((char*)e.name, e.len); }
+    void Append(const char *, size_t);
+    void Append(Encoding& e) { Append((const char*)e.name, e.len); }
+    void AppendWithLen(const char *, size_t);
+    void AppendWithLen(Encoding& e) { AppendWithLen((const char*)e.name, e.len); }
 
     static void print(std::ostream &, const char *);
-    static char* GetBaseName(char*, int&, Environment*&);
-  static PTree::Node *MakePtree(unsigned char*&, PTree::Node *);
+  static const char *GetBaseName(const char *, int&, Environment*&);
+  static PTree::Node *MakePtree(const unsigned char*&, PTree::Node *);
 
-  static PTree::Node *MakeQname(unsigned char*&);
-  static PTree::Node *MakeLeaf(unsigned char*&);
-    static bool IsSimpleName(unsigned char*);
-  static PTree::Node *NameToPtree(char*, int);
+  static PTree::Node *MakeQname(const unsigned char*&);
+  static PTree::Node *MakeLeaf(const unsigned char*&);
+  static bool IsSimpleName(const unsigned char*);
+  static PTree::Node *NameToPtree(const char*, int);
 
-    static unsigned char* GetTemplateArguments(unsigned char*, int&);
+  static const unsigned char* GetTemplateArguments(const unsigned char*, int&);
 
 private:
-    static Environment* ResolveTypedefName(Environment*, char*, int);
-    static int GetBaseNameIfTemplate(unsigned char*, Environment*&);
+    static Environment* ResolveTypedefName(Environment*, const char*, int);
+    static int GetBaseNameIfTemplate(const unsigned char*, Environment*&);
 
 private:
     unsigned char name[MaxNameLen];

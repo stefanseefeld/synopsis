@@ -7,6 +7,7 @@
 #ifndef _PTree_Atom_hh
 #define _PTree_Atom_hh
 
+#include <Lexer.hh>
 #include <PTree/Node.hh>
 #include <ostream>
 #include <iterator>
@@ -17,9 +18,9 @@ namespace PTree
 class Atom : public Node
 {
 public:
-  Atom(const char *, size_t);
-  Atom(const Token &);
-  bool IsLeaf() const { return true;}
+  Atom(const char *p, size_t l) : Node(p, l) {}
+  Atom(const Token &t) : Node(t.ptr, t.length) {}
+  bool is_atom() const { return true;}
   
   virtual void write(std::ostream &) const;
   virtual void print(std::ostream &, size_t, size_t) const;

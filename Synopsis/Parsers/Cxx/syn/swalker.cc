@@ -83,8 +83,8 @@ std::string
 SWalker::parse_name(PTree::Node *node) const
 {
   // STrace trace("SWalker::parse_name");
-  if (node && node->IsLeaf())
-    return std::string(node->GetPosition(), node->GetLength());
+  if (node && node->is_atom())
+    return std::string(node->position(), node->length());
   return node->string();
 }
 
@@ -125,7 +125,7 @@ make_Comment(SourceFile* file, int line, PTree::Node *first, bool suspect=false)
   return new AST::Comment(file, line, first->string(), suspect);
 }
 
-PTree::Atom *make_Leaf(char* pos, int len)
+PTree::Atom *make_Leaf(const char *pos, size_t len)
 {
     return new PTree::Atom(pos, len);
 }
@@ -144,10 +144,10 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
     node = static_cast<PTree::Declaration*>(node)->GetComments();
 
   // Loop over all comments in the list
-  for (PTree::Node *next = node->Rest(); node && !node->IsLeaf(); next = node->Rest())
+  for (PTree::Node *next = PTree::rest(node); node && !node->is_atom(); next = PTree::rest(node))
   {
-    PTree::Node *first = node->First();
-    if (!first || !first->IsLeaf())
+    PTree::Node *first = PTree::first(node);
+    if (!first || !first->is_atom())
     {
       node = next;
       continue;
@@ -164,15 +164,15 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
     }
 
     // Check if comment is continued, eg: consecutive C++ comments
-    while (next && next->First() && next->First()->IsLeaf())
+    while (next && PTree::first(next) && PTree::first(next)->is_atom())
     {
-      if (!strncmp(first->GetPosition() + first->GetLength() - 2, "*/", 2))
+      if (!strncmp(first->position() + first->length() - 2, "*/", 2))
         break;
-      if (strncmp(next->First()->GetPosition(), "//", 2))
+      if (strncmp(PTree::first(next)->position(), "//", 2))
         break;
-      char* next_pos = next->First()->GetPosition();
-      char* start_pos = node->First()->GetPosition();
-      char* curr_pos = start_pos + node->First()->GetLength();
+      const char *next_pos = PTree::first(next)->position();
+      const char *start_pos = PTree::first(node)->position();
+      const char *curr_pos = start_pos + PTree::first(node)->length();
       // Must only be whitespace between current comment and next
       // and only one newline
       int newlines = 0;
@@ -184,18 +184,18 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
       if (curr_pos < next_pos)
         break;
       // Current comment stretches to end of next
-      int len = int(next_pos - start_pos + next->First()->GetLength());
+      int len = int(next_pos - start_pos + PTree::first(next)->length());
       //node->SetCar(first = new Leaf(start_pos, len));
-      node->SetCar(first = make_Leaf(start_pos, len));
+      node->set_car(first = make_Leaf(start_pos, len));
       // Skip the combined comment
-      next = next->Rest();
+      next = PTree::rest(next);
     }
 
     // all comments that are not immediately (i.e. separated
     // by a single new line) followed by a declaration are
     // marked as 'suspect'
     bool suspect = false;
-    char* pos = first->GetPosition() + first->GetLength();
+    const char *pos = first->position() + first->length();
     while (*pos && strchr(" \t\r", *pos)) ++pos;
     if (*pos == '\n')
     {
@@ -213,7 +213,7 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
     if (my_links) my_links->long_span(first, "file-comment");
     // Set first to 0 so we dont accidentally do them twice (eg:
     // when parsing expressions)
-    node->SetCar(0);
+    node->set_car(0);
     node = next;
   }
 
@@ -412,7 +412,7 @@ PTree::Node *SWalker::TranslatePtree(PTree::Node *node)
     post.push_back("*");
     my_type = new Types::Modifier(my_type, pre, post);
   }
-  else if (*str == '/' && !node->IsLeaf())
+  else if (*str == '/' && !node->is_atom())
   {
     // Assume comment. Must be a list of comments!
     AST::Declaration* decl;
@@ -439,9 +439,9 @@ SWalker::TranslateNamespaceSpec(PTree::Node *def)
 {
   STrace trace("SWalker::TranslateNamespaceSpec");
   
-  PTree::Node *pNamespace = def->First();
-  PTree::Node *pIdentifier = def->Second();
-  PTree::Node *pBody = def->Third();
+  PTree::Node *pNamespace = PTree::first(def);
+  PTree::Node *pIdentifier = PTree::second(def);
+  PTree::Node *pBody = PTree::third(def);
 
   if (my_links) my_links->span(pNamespace, "file-keyword");
   else update_line_number(def);
@@ -457,7 +457,7 @@ SWalker::TranslateNamespaceSpec(PTree::Node *def)
 
   // Add comments
   add_comments(ns, dynamic_cast<PTree::NamespaceSpec*>(def));
-  if (my_links && PTree::Node::First(pIdentifier)) my_links->link(pIdentifier, ns);
+  if (my_links && PTree::first(pIdentifier)) my_links->link(pIdentifier, ns);
 
   // Translate the body
   Translate(pBody);
@@ -475,17 +475,17 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(PTree::Node *node)
   Types::Type *type;
   while (node)
   {
-    node = node->Cdr(); // skip : or ,
+    node = node->cdr(); // skip : or ,
     // the attributes
-    std::vector<std::string> attributes(node->Car()->Length() - 1);
-    for (int i = 0; i != node->Car()->Length() - 1; ++i)
+    std::vector<std::string> attributes(PTree::length(node->car()) - 1);
+    for (int i = 0; i != PTree::length(node->car()) - 1; ++i)
     {
-      attributes[i] = parse_name(node->Car()->Nth(i));
-      if (my_links) my_links->span(node->Car()->Nth(i), "file-keyword");
+      attributes[i] = parse_name(PTree::nth(node->car(), i));
+      if (my_links) my_links->span(PTree::nth(node->car(), i), "file-keyword");
     }
     // look up the parent type
-    PTree::Node *name = node->Car()->Last()->Car();
-    if (name->IsLeaf())
+    PTree::Node *name = PTree::last(node->car())->car();
+    if (name->is_atom())
     {
       try
       {
@@ -501,13 +501,13 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(PTree::Node *node)
     }
     else
     {
-      char* encname = name->GetEncodedName();
+      const char *encname = name->encoded_name();
       my_decoder->init(encname);
       type = my_decoder->decodeType();
     }
     if (my_links) my_links->link(name, type);
 
-    node = node->Cdr();
+    node = node->cdr();
     // add it to the list
     ispec.push_back(new AST::Inheritance(type, attributes));
   }
@@ -524,13 +524,13 @@ SWalker::TranslateClassSpec(PTree::Node *node)
   AST::Parameter::vector* is_template = my_template;
   my_template = 0;
 
-  int size = PTree::Node::Length(node);
+  int size = PTree::length(node);
 
   if (size == SizeForwardDecl)
   {
     // Forward declaration
     // [ class|struct <name> ]
-    std::string name = parse_name(node->Second());
+    std::string name = parse_name(PTree::second(node));
     if (is_template)
       LOG("Templated class forward declaration " << name);
     my_builder->add_forward(my_lineno, name, is_template);
@@ -541,21 +541,21 @@ SWalker::TranslateClassSpec(PTree::Node *node)
     }
     return 0;
   }
-  PTree::Node *pClass = node->First();
+  PTree::Node *pClass = PTree::first(node);
   PTree::Node *pName = 0, *pInheritance = 0;
   PTree::Node *pBody = 0;
   if (size == SizeClass)
   {
     // [ class|struct <name> <inheritance> [{ body }] ]
-    pName = node->Nth(1);
-    pInheritance = node->Nth(2);
-    pBody = node->Nth(3);
+    pName = PTree::nth(node, 1);
+    pInheritance = PTree::nth(node, 2);
+    pBody = PTree::nth(node, 3);
   }
   else if (size == SizeAnonClass)
     // An anonymous struct. OpenC++ encodes us a unique
     // (may be qualified if nested) name
     // [ struct [nil nil] [{ ... }] ]
-    pBody = node->Nth(2);
+    pBody = PTree::nth(node, 2);
   else
     throw nodeERROR(node, "Class node has bad length: " << size);
 
@@ -565,7 +565,7 @@ SWalker::TranslateClassSpec(PTree::Node *node)
   // Create AST.Class object
   AST::Class *clas;
   std::string type = parse_name(pClass);
-  char* encname = node->GetEncodedName();
+  const char *encname = node->encoded_name();
   my_decoder->init(encname);
   if (encname[0] == 'T')
   {
@@ -585,7 +585,7 @@ SWalker::TranslateClassSpec(PTree::Node *node)
         if (dep->name().size() == 1 && dep->name()[0] == "*")
         {
           // Find the value of this parameter
-          std::string name = parse_name(pName->Second()->Second()->Nth(i*2));
+          std::string name = parse_name(PTree::nth(PTree::second(PTree::second(pName)), i*2));
           dep->name()[0] = name;
         }
       }
@@ -647,7 +647,7 @@ SWalker::TranslateTemplateClass(PTree::Node *def, PTree::Node *node)
   my_builder->start_template();
   try
   {
-    TranslateTemplateParams(def->Third());
+    TranslateTemplateParams(PTree::third(def));
     TranslateClassSpec(node);
   }
   catch (...)
@@ -671,30 +671,30 @@ void SWalker::TranslateTemplateParams(PTree::Node *params)
   AST::Parameter::Mods pre_mods, post_mods;
   while (params)
   {
-    PTree::Node *param = params->First();
+    PTree::Node *param = PTree::first(params);
     nodeLOG(param);
-    if (param->First()->Eq("class") || param->First()->Eq("typename"))
+    if (*PTree::first(param) == "class" || *PTree::first(param) == "typename")
     {
       // Ensure that there is an identifier (it is optional!)
-      if (param->Cdr() && param->Second())
+      if (param->cdr() && PTree::second(param))
       {
         // This parameter specifies a type, add as dependent
-        Types::Dependent* dep = my_builder->create_dependent(parse_name(param->Second()));
+        Types::Dependent* dep = my_builder->create_dependent(parse_name(PTree::second(param)));
         my_builder->add
           (dep);
         AST::Parameter::Mods paramtype;
-        paramtype.push_back(parse_name(param->First()));
+        paramtype.push_back(parse_name(PTree::first(param)));
         templ_params.push_back(new AST::Parameter(paramtype, dep, post_mods, name, value));
       }
       else
       {
         // Add a parameter, but with no name
         AST::Parameter::Mods paramtype;
-        paramtype.push_back(parse_name(param->First()));
+        paramtype.push_back(parse_name(PTree::first(param)));
         templ_params.push_back(new AST::Parameter(paramtype, 0, post_mods, name, value));
       }
     }
-    else if (param->First()->Eq("template"))
+    else if (*PTree::first(param) == "template")
     {
       // A non-type parameter that is templatized
       // eg: template< class A, template<class T> class B = foo > C;
@@ -708,19 +708,19 @@ void SWalker::TranslateTemplateParams(PTree::Node *params)
       // FIXME can do a lot more here..
       LOG("non-type template parameter! approximating..");
       nodeLOG(param);
-      PTree::Node *p = param->Second();
-      while (p && p->Car() && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&')))
-        p = PTree::Node::Rest(p);
+      PTree::Node *p = PTree::second(param);
+      while (p && p->car() && p->car()->is_atom() && (*p->car() == '*' || *p->car() == '&'))
+        p = PTree::rest(p);
       std::string name = parse_name(p);
       Types::Dependent* dep = my_builder->create_dependent(name);
       my_builder->add(dep);
       // Figure out the type of the param
-      my_decoder->init(param->Second()->GetEncodedType());
+      my_decoder->init(PTree::second(param)->encoded_type());
       Types::Type* param_type = my_decoder->decodeType();
       templ_params.push_back(new AST::Parameter(pre_mods, param_type, post_mods, name, value));
     }
     // Skip comma
-    params = PTree::Node::Rest(params->Rest());
+    params = PTree::rest(PTree::rest(params));
   }
   /*
     Types::Template* templ = new Types::Template(decl->name(), decl, templ_params);
@@ -748,14 +748,14 @@ SWalker::TranslateTemplateFunction(PTree::Node *def, PTree::Node *node)
   }
 
   LOG("What is: " << node->What());
-  LOG("Encoded name is: " << make_code(node->GetEncodedName()));
+  LOG("Encoded name is: " << make_code(node->encoded_name()));
 
   AST::Parameter::vector* old_params = my_template;
   update_line_number(def);
   my_builder->start_template();
   try
   {
-    TranslateTemplateParams(def->Third());
+    TranslateTemplateParams(PTree::third(def));
     TranslateDeclaration(node);
   }
   catch (...)
@@ -775,7 +775,7 @@ PTree::Node*
 SWalker::TranslateLinkageSpec(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateLinkageSpec");
-  Translate(node->Third());
+  Translate(PTree::third(node));
   return 0;
 }
 
@@ -785,13 +785,13 @@ PTree::Node *
 SWalker::TranslateBlock(PTree::Node *block)
 {
   STrace trace("SWalker::TranslateBlock");
-  PTree::Node *rest = PTree::Node::Second(block);
+  PTree::Node *rest = PTree::second(block);
   while (rest != 0)
   {
-    Translate(rest->Car());
-    rest = rest->Cdr();
+    Translate(rest->car());
+    rest = rest->cdr();
   }
-  PTree::Node *close = PTree::Node::Third(block);
+  PTree::Node *close = PTree::third(block);
   AST::Declaration* decl;
   decl = my_builder->add_tail_comment(my_lineno);
   add_comments(decl, dynamic_cast<PTree::CommentedAtom *>(close));
@@ -804,13 +804,13 @@ PTree::Node *
 SWalker::TranslateBrace(PTree::Node *brace)
 {
   STrace trace("SWalker::TranslateBrace");
-  PTree::Node *rest = PTree::Node::Second(brace);
+  PTree::Node *rest = PTree::second(brace);
   while (rest != 0)
   {
-    Translate(rest->Car());
-    rest = rest->Cdr();
+    Translate(rest->car());
+    rest = rest->cdr();
   }
-  PTree::Node *close = PTree::Node::Third(brace);
+  PTree::Node *close = PTree::third(brace);
   AST::Declaration* decl;
   decl = my_builder->add_tail_comment(my_lineno);
   add_comments(decl, dynamic_cast<PTree::CommentedAtom *>(close));
@@ -823,7 +823,7 @@ PTree::Node*
 SWalker::TranslateTemplateDecl(PTree::Node *def)
 {
   STrace trace("SWalker::TranslateTemplateDecl");
-  PTree::Node *body = PTree::Node::Nth(def, 4);
+  PTree::Node *body = PTree::nth(def, 4);
   PTree::Node *class_spec = GetClassTemplateSpec(body);
   if(class_spec->IsA(Token::ntClassSpec))
     TranslateTemplateClass(def, class_spec);
@@ -839,9 +839,9 @@ PTree::Node *SWalker::TranslateTypeof(PTree::Node *spec, PTree::Node *declaratio
 {
   STrace trace("SWalker::TranslateTypeof");
   nodeLOG(spec);
-  char* encname = spec->Third()->GetEncodedName();
+  const char* encname = PTree::third(spec)->encoded_name();
   LOG("The name is: " << make_code(encname));
-  LOG("The type is: " << make_code(spec->Third()->GetEncodedType()));
+  LOG("The type is: " << make_code(PTree::third(spec)->encoded_type()));
   // Find the type referred to by the expression
   if (!my_decoder->isName(encname))
   {
@@ -865,11 +865,11 @@ PTree::Node *SWalker::TranslateTypeof(PTree::Node *spec, PTree::Node *declaratio
     LOG("decl is a function.");
     while (declarations)
     {
-      PTree::Node *declarator = declarations->First();
-      declarations = declarations->Rest();
+      PTree::Node *declarator = PTree::first(declarations);
+      declarations = PTree::rest(declarations);
       
       if (declarator->What() == Token::ntDeclarator)
-        ((PTree::Declarator*)declarator)->SetEncodedType("PFv_v");
+        ((PTree::Declarator*)declarator)->set_encoded_type("PFv_v");
       else
         LOG("declarator is " << declarator->What());
     }
@@ -903,19 +903,19 @@ PTree::Node *SWalker::TranslateDeclaration(PTree::Node *def)
 
   my_declaration = def;
   my_store_decl = true;
-  PTree::Node *decls = PTree::Node::Third(def);
+  PTree::Node *decls = PTree::third(def);
 
   // Typespecifier may be a class {} etc.
-  TranslateTypespecifier(PTree::Node::Second(def));
+  TranslateTypespecifier(PTree::second(def));
   // Or it might be a typeof()
-  if (PTree::Node::Second(def) && PTree::Node::Second(def)->What() == Token::ntTypeofExpr)
-    TranslateTypeof(PTree::Node::Second(def), decls);
+  if (PTree::second(def) && PTree::second(def)->What() == Token::ntTypeofExpr)
+    TranslateTypeof(PTree::second(def), decls);
 
   if (decls->IsA(Token::ntDeclarator))
   {
     // A single declarator is probably a function impl, but could also be
     // the declarator in an if or switch condition
-    if (const char* encoded_type = decls->GetEncodedType())
+    if (const char* encoded_type = decls->encoded_type())
     {
       // A function may be const, skip the C
       while (*encoded_type == 'C') encoded_type++;
@@ -931,7 +931,7 @@ PTree::Node *SWalker::TranslateDeclaration(PTree::Node *def)
   }
   else
     // if it is a function prototype or a variable declaration.
-    if (!decls->IsLeaf())        // if it is not ";"
+    if (!decls->is_atom())        // if it is not ";"
       TranslateDeclarators(decls);
   my_declaration = 0;
   return 0;
@@ -945,15 +945,15 @@ SWalker::TranslateDeclarators(PTree::Node *decls)
   PTree::Node *rest = decls, *p;
   while (rest != 0)
   {
-    p = rest->Car();
+    p = rest->car();
     if (p->IsA(Token::ntDeclarator))
     {
       TranslateDeclarator(p);
       my_store_decl = false;
     } // if. There is no else..?
-    rest = rest->Cdr();
+    rest = rest->cdr();
     // Skip comma
-    if (rest != 0) rest = rest->Cdr();
+    if (rest != 0) rest = rest->cdr();
   }
   return 0;
 }
@@ -969,8 +969,8 @@ SWalker::TranslateDeclarator(PTree::Node *decl)
   // REVISIT: Figure out why this method is so HUGE!
   STrace trace("SWalker::TranslateDeclarator");
   // Insert code from occ.cc here
-  char* encname = decl->GetEncodedName();
-  char* enctype = decl->GetEncodedType();
+  const char *encname = decl->encoded_name();
+  const char *enctype = decl->encoded_type();
   if (!encname || !enctype)
   {
     std::cout << "encname or enctype null!" << std::endl;
@@ -1010,22 +1010,22 @@ SWalker::TranslateFunctionDeclarator(PTree::Node *decl, bool is_const)
   my_template = 0;
 
   code_iter& iter = my_decoder->iter();
-  char* encname = decl->GetEncodedName();
+  const char *encname = decl->encoded_name();
   
   // This is a function. Skip the 'F'
   ++iter;
   
   // Create parameter objects
-  PTree::Node *p_params = decl->Rest();
-  while (p_params && !p_params->Car()->Eq('('))
-    p_params = PTree::Node::Rest(p_params);
+  PTree::Node *p_params = PTree::rest(decl);
+  while (p_params && p_params->car() && *p_params->car() != '(')
+    p_params = PTree::rest(p_params);
   if (!p_params)
   {
     std::cout << "Warning: error finding params!" << std::endl;
     return 0;
   }
   std::vector<AST::Parameter*> params;
-  TranslateParameters(p_params->Second(), params);
+  TranslateParameters(PTree::second(p_params), params);
   my_param_cache = params;
   
   // Figure out the return type:
@@ -1034,11 +1034,11 @@ SWalker::TranslateFunctionDeclarator(PTree::Node *decl, bool is_const)
   
   // Figure out premodifiers
   std::vector<std::string> premod;
-  PTree::Node *p = PTree::Node::First(my_declaration);
+  PTree::Node *p = PTree::first(my_declaration);
   while (p)
   {
-    premod.push_back(p->Car()->string());
-    p = PTree::Node::Rest(p);
+    premod.push_back(p->car()->string());
+    p = PTree::rest(p);
   }
 
   AST::Function* func = 0;
@@ -1094,15 +1094,15 @@ SWalker::TranslateFunctionDeclarator(PTree::Node *decl, bool is_const)
     my_function = func;
     
     // Do decl type first
-    if (my_store_decl && my_declaration->Second())
-      my_links->link(my_declaration->Second(), returnType);
+    if (my_store_decl && PTree::second(my_declaration))
+      my_links->link(PTree::second(my_declaration), returnType);
 
     p = decl;
-    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&')))
-      p = PTree::Node::Rest(p);
+    while (p && p->car()->is_atom() && (*p->car() == '*' || *p->car() == '&'))
+      p = PTree::rest(p);
     if (p)
       // p should now be at the name
-      my_links->link(p->Car(), func);
+      my_links->link(p->car(), func);
   }
   return 0;
 }
@@ -1112,8 +1112,8 @@ SWalker::TranslateVariableDeclarator(PTree::Node *decl, bool is_const)
 {
   STrace trace("TranslateVariableDeclarator");
   // Variable declaration. Restart decoding
-  char* encname = decl->GetEncodedName();
-  char* enctype = decl->GetEncodedType();
+  const char *encname = decl->encoded_name();
+  const char *enctype = decl->encoded_type();
   my_decoder->init(enctype);
   // Get type
   Types::Type* type = my_decoder->decodeType();
@@ -1153,30 +1153,30 @@ SWalker::TranslateVariableDeclarator(PTree::Node *decl, bool is_const)
   if (my_links)
   {
     // Do decl type first
-    if (my_store_decl && my_declaration->Second())
-      my_links->link(my_declaration->Second(), type);
+    if (my_store_decl && PTree::second(my_declaration))
+      my_links->link(PTree::second(my_declaration), type);
     
     PTree::Node *p = decl;
-    while (p && p->Car()->IsLeaf() && 
-           (p->Car()->Eq('*') || p->Car()->Eq('&') || p->Car()->Eq("const")))
+    while (p && p->car()->is_atom() && 
+           (*p->car() == '*' || *p->car() == '&' || *p->car() == "const"))
     {
       // Link the const keyword
-      if (p->Car()->Eq("const"))
-        my_links->span(p->Car(), "file-keyword");
-      p = PTree::Node::Rest(p);
+      if (*p->car() == "const")
+        my_links->span(p->car(), "file-keyword");
+      p = PTree::rest(p);
     }
     if (p)
     {
       // p should now be at the name
-      my_links->link(p->Car(), var);
+      my_links->link(p->car(), var);
       
       // Next might be '=' then expr
-      p = p->Rest();
-      if (p && p->Car() && p->Car()->Eq('='))
+      p = PTree::rest(p);
+      if (p && p->car() && *p->car() == '=')
       {
-        p = p->Rest();
-        if (p && p->Car())
-          Translate(p->Car());
+        p = PTree::rest(p);
+        if (p && p->car())
+          Translate(p->car());
       }
     }
   }
@@ -1192,9 +1192,9 @@ SWalker::TranslateParameters(PTree::Node *p_params, std::vector<AST::Parameter*>
     // A parameter has a type, possibly a name and possibly a value
     std::string name, value;
     AST::Parameter::Mods premods, postmods;
-    if (p_params->Car()->Eq(','))
-      p_params = p_params->Cdr();
-    PTree::Node *param = p_params->First();
+    if (*p_params->car() == ',')
+      p_params = p_params->cdr();
+    PTree::Node *param = PTree::first(p_params);
     // The type is stored in the encoded type string already
     Types::Type* type = my_decoder->decodeType();
     if (!type)
@@ -1208,11 +1208,11 @@ SWalker::TranslateParameters(PTree::Node *p_params, std::vector<AST::Parameter*>
     //[register iostate [nil]]
     //[iostate [nil] = 0]
     //[iostate [nil]]   etc
-    if (param->Length() > 1)
+    if (PTree::length(param) > 1)
     {
       // There is a parameter
-      int type_ix, value_ix = -1, len = param->Length();
-      if (len >= 4 && param->Nth(len-2)->Eq('='))
+      int type_ix, value_ix = -1, len = PTree::length(param);
+      if (len >= 4 && *PTree::nth(param, len-2) == '=')
       {
         // There is an =, which must be followed by the value
         value_ix = len-1;
@@ -1224,51 +1224,52 @@ SWalker::TranslateParameters(PTree::Node *p_params, std::vector<AST::Parameter*>
         type_ix = len-2;
       }
       // Link type
-      if (my_links && !param->IsLeaf() && param->Nth(type_ix))
-        my_links->link(param->Nth(type_ix), type);
+      if (my_links && !param->is_atom() && PTree::nth(param, type_ix))
+        my_links->link(PTree::nth(param, type_ix), type);
       // Skip keywords (eg: register) which are Leaves
-      for (int ix = 0; ix < type_ix && param->Nth(ix)->IsLeaf(); ix++)
+      for (int ix = 0; ix < type_ix && PTree::nth(param, ix)->is_atom(); ix++)
       {
-        PTree::Node *leaf = param->Nth(ix);
+        PTree::Node *leaf = PTree::nth(param, ix);
         premods.push_back(parse_name(leaf));
       }
       // Find name
-      if (PTree::Node *pname = param->Nth(type_ix+1))
+      if (PTree::Node *pname = PTree::nth(param, type_ix+1))
       {
-        if (pname->Last() && !pname->Last()->IsLeaf() && pname->Last()->First() &&
-            pname->Last()->First()->Eq(')') && pname->Length() >= 4)
+        if (PTree::last(pname) && !PTree::last(pname)->is_atom() && 
+	    PTree::first(PTree::last(pname)) &&
+            *PTree::first(PTree::last(pname)) == ')' && PTree::length(pname) >= 4)
         {
           // Probably a function pointer type
           // pname is [* [( [* convert] )] ( [params] )]
           // set to [( [* convert] )] from example
-          pname = pname->Nth(pname->Length() - 4);
-          if (pname && !pname->IsLeaf() && pname->Length() == 3)
+          pname = PTree::nth(pname, PTree::length(pname) - 4);
+          if (pname && !pname->is_atom() && PTree::length(pname) == 3)
           {
             // set to [* convert] from example
-            pname = pname->Second();
-            if (pname && pname->Second() && pname->Second()->IsLeaf())
-              name = parse_name(pname->Second());
+            pname = PTree::second(pname);
+            if (pname && PTree::second(pname) && PTree::second(pname)->is_atom())
+              name = parse_name(PTree::second(pname));
           }
         }
-        else if (!pname->IsLeaf() && pname->Last() && pname->Last()->Car())
+        else if (!pname->is_atom() && PTree::last(pname) && PTree::last(pname)->car())
         {
           // * and & modifiers are stored with the name so we must skip them
-          PTree::Node *last = pname->Last()->Car();
-          if (!last->Eq('*') && !last->Eq('&'))
+          PTree::Node *last = PTree::last(pname)->car();
+          if (*last != '*' && *last != '&')
             // The last node is the name:
             name = last->string();
         }
       }
       // Find value
-      if (value_ix >= 0) value = param->Nth(value_ix)->string();
+      if (value_ix >= 0) value = PTree::nth(param, value_ix)->string();
     }
     // Add the AST.Parameter type to the list
     params.push_back(new AST::Parameter(premods, type, postmods, name, value));
-    p_params = PTree::Node::Rest(p_params);
+    p_params = PTree::rest(p_params);
   }
 }
 
-void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType)
+void SWalker::TranslateFunctionName(const char *encname, std::string& realname, Types::Type*& returnType)
 {
   STrace trace("SWalker::TranslateFunctionName");
   if (my_decoder->isName(encname))
@@ -1340,21 +1341,21 @@ PTree::Node*
 SWalker::TranslateTypedef(PTree::Node *node)
 {
   STrace trace("SWalker::TranslateTypedef");
-  if (my_links) my_links->span(node->First(), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "file-keyword");
   /* PTree::Node *tspec = */
-  TranslateTypespecifier(node->Second());
+  TranslateTypespecifier(PTree::second(node));
   my_declaration = node;
   my_store_decl = true;
-  for (PTree::Node *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
-    TranslateTypedefDeclarator(declarator->Car());
+  for (PTree::Node *declarator = PTree::third(node); declarator; declarator = PTree::tail(declarator, 2))
+    TranslateTypedefDeclarator(declarator->car());
   return 0;
 }
 
 void SWalker::TranslateTypedefDeclarator(PTree::Node *node)
 {
   if (node->What() != Token::ntDeclarator) return;
-  char* encname = node->GetEncodedName();
-  char* enctype = node->GetEncodedType();
+  const char *encname = node->encoded_name();
+  const char *enctype = node->encoded_type();
   if (!encname || !enctype) return;
 
   update_line_number(node);
@@ -1370,20 +1371,20 @@ void SWalker::TranslateTypedefDeclarator(PTree::Node *node)
   // if storing links, find name
   if (my_links)
   {
-    if (my_store_decl && my_declaration->Second())
-      my_links->link(my_declaration->Second(), type);
+    if (my_store_decl && PTree::second(my_declaration))
+      my_links->link(PTree::second(my_declaration), type);
 
     PTree::Node *p = node;
     // function pointer: [( [* f] )]
-    if (p && !p->Car()->IsLeaf() && p->Car()->Car()->Eq('('))
-      p = PTree::Node::Rest(p->Car())->Car();
+    if (p && !p->car()->is_atom() && *p->car()->car() == '(')
+      p = PTree::rest(p->car())->car();
 
-    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&')))
-      p = PTree::Node::Rest(p);
+    while (p && p->car()->is_atom() && (*p->car() == '*' || *p->car() == '&'))
+      p = PTree::rest(p);
 
     if (p)
       // p should now be at the name
-      my_links->link(p->Car(), tdef);
+      my_links->link(p->car(), tdef);
   }
 }
 
@@ -1393,7 +1394,7 @@ SWalker::TranslateFunctionImplementation(PTree::Node *node)
   STrace trace("SWalker::TranslateFunctionImplementation");
   my_function = 0;
   my_params.clear();
-  TranslateDeclarator(node->Third());
+  TranslateDeclarator(PTree::third(node));
   if (!my_filter->should_visit_function_impl(my_file)) return 0;
   if (!my_function)
   {
@@ -1404,7 +1405,7 @@ SWalker::TranslateFunctionImplementation(PTree::Node *node)
   FuncImplCache cache;
   cache.func = my_function;
   cache.params = my_param_cache;
-  cache.body = node->Nth(3);
+  cache.body = PTree::nth(node, 3);
 
   if (dynamic_cast<AST::Class*>(my_builder->scope()))
     my_func_impl_stack.back().push_back(cache);
@@ -1455,7 +1456,7 @@ SWalker::TranslateAccessSpec(PTree::Node *spec)
 {
   STrace trace("SWalker::TranslateAccessSpec");
   AST::Access axs = AST::Default;
-  switch (spec->First()->What())
+  switch (PTree::first(spec)->What())
   {
     case Token::PUBLIC:
       axs = AST::Public;
@@ -1468,7 +1469,7 @@ SWalker::TranslateAccessSpec(PTree::Node *spec)
       break;
   }
   my_builder->set_access(axs);
-  if (my_links) my_links->span(spec->First(), "file-keyword");
+  if (my_links) my_links->span(PTree::first(spec), "file-keyword");
   return 0;
 }
 
@@ -1479,24 +1480,24 @@ PTree::Node*
 SWalker::TranslateEnumSpec(PTree::Node *spec)
 {
   //update_line_number(spec);
-  if (my_links) my_links->span(spec->First(), "file-keyword");
-  if (!spec->Second())
+  if (my_links) my_links->span(PTree::first(spec), "file-keyword");
+  if (!PTree::second(spec))
   {
     return 0; /* anonymous enum */
   }
-  std::string name = spec->Second()->string();
+  std::string name = PTree::second(spec)->string();
 
   update_line_number(spec);
   int enum_lineno = my_lineno;
   // Parse enumerators
   std::vector<AST::Enumerator*> enumerators;
-  PTree::Node *penum = spec->Third()->Second();
+  PTree::Node *penum = PTree::second(PTree::third(spec));
   AST::Enumerator* enumor;
   while (penum)
   {
     update_line_number(penum);
-    PTree::Node *penumor = penum->First();
-    if (penumor->IsLeaf())
+    PTree::Node *penumor = PTree::first(penum);
+    if (penumor->is_atom())
     {
       // Just a name
       enumor = my_builder->add_enumerator(my_lineno, penumor->string(), "");
@@ -1506,19 +1507,19 @@ SWalker::TranslateEnumSpec(PTree::Node *spec)
     else
     {
       // Name = Value
-      std::string name = penumor->First()->string(), value;
-      if (penumor->Length() == 3)
-        value = penumor->Third()->string();
+      std::string name = PTree::first(penumor)->string(), value;
+      if (PTree::length(penumor) == 3)
+        value = PTree::third(penumor)->string();
       enumor = my_builder->add_enumerator(my_lineno, name, value);
-      add_comments(enumor, dynamic_cast<PTree::CommentedAtom *>(penumor->First()));
-      if (my_links) my_links->link(penumor->First(), enumor);
+      add_comments(enumor, dynamic_cast<PTree::CommentedAtom *>(PTree::first(penumor)));
+      if (my_links) my_links->link(PTree::first(penumor), enumor);
     }
     enumerators.push_back(enumor);
-    penum = PTree::Node::Rest(penum);
+    penum = PTree::rest(penum);
     // Skip comma
-    if (penum && penum->Car() && penum->Car()->Eq(',')) penum = PTree::Node::Rest(penum);
+    if (penum && penum->car() && *penum->car() == ',') penum = PTree::rest(penum);
   }
-  PTree::Node *close = spec->Third()->Third();
+  PTree::Node *close = PTree::third(PTree::third(spec));
   enumor = new AST::Enumerator(my_file, my_lineno, "dummy", my_dummyname, "");
   add_comments(enumor, static_cast<PTree::CommentedAtom *>(close));
   enumerators.push_back(enumor);
@@ -1532,7 +1533,7 @@ SWalker::TranslateEnumSpec(PTree::Node *spec)
     // belong to the enum. This is policy. #TODO review policy
     //my_declaration->SetComments(0); ?? typedef doesn't have comments?
   }
-  if (my_links) my_links->link(spec->Second(), theEnum);
+  if (my_links) my_links->link(PTree::second(spec), theEnum);
   return 0;
 }
 
@@ -1544,34 +1545,34 @@ SWalker::TranslateUsing(PTree::Node *node)
   // [ using Foo :: x ; ]
   // [ using namespace Foo ; ]
   // [ using namespace Foo = Bar ; ]
-  if (my_links) my_links->span(node->First(), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "file-keyword");
   bool is_namespace = false;
-  PTree::Node *p = node->Rest();
-  if (p->First()->Eq("namespace"))
+  PTree::Node *p = PTree::rest(node);
+  if (*PTree::first(p) == "namespace")
   {
-    if (my_links) my_links->span(p->First(), "file-keyword");
+    if (my_links) my_links->span(PTree::first(p), "file-keyword");
     // Find namespace to alias
-    p = p->Rest();
+    p = PTree::rest(p);
     is_namespace = true;
   }
   // Find name that we are looking up, and make a new ptree list for linking it
-  PTree::Node *p_name = PTree::Node::Snoc(0, p->Car());
+  PTree::Node *p_name = PTree::snoc(0, p->car());
   ScopedName name;
-  if (p->First()->Eq("::"))
+  if (*PTree::first(p) == "::")
     // Eg; "using ::memcpy;" Indicate global scope with empty first
     name.push_back("");
   else
   {
-    name.push_back(parse_name(p->First()));
-    p = p->Rest();
+    name.push_back(parse_name(PTree::first(p)));
+    p = PTree::rest(p);
   }
-  while (p->First()->Eq("::"))
+  while (*PTree::first(p) == "::")
   {
-    p_name = PTree::Node::Snoc(p_name, p->Car()); // Add '::' to p_name
-    p = p->Rest();
-    name.push_back(parse_name(p->First()));
-    p_name = PTree::Node::Snoc(p_name, p->Car()); // Add identifier to p_name
-    p = p->Rest();
+    p_name = PTree::snoc(p_name, p->car()); // Add '::' to p_name
+    p = PTree::rest(p);
+    name.push_back(parse_name(PTree::first(p)));
+    p_name = PTree::snoc(p_name, p->car()); // Add identifier to p_name
+    p = PTree::rest(p);
   }
   // Resolve and link name
   try
@@ -1581,10 +1582,10 @@ SWalker::TranslateUsing(PTree::Node *node)
     if (is_namespace)
     {
       // Check for '=' alias
-      if (p->First()->Eq("="))
+      if (*PTree::first(p) == "=")
       {
-        p = p->Rest();
-        std::string alias = parse_name(p->First());
+        p = PTree::rest(p);
+        std::string alias = parse_name(PTree::first(p));
         my_builder->add_aliased_using_namespace(type, alias);
       }
       else my_builder->add_using_namespace(type);

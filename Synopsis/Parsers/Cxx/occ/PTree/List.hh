@@ -15,8 +15,8 @@ namespace PTree
 class List : public Node
 {
 public:
-  List(Node *, Node *);
-  bool IsLeaf() const { return false;}
+  List(Node *p, Node *q) : Node(p, q) {}
+  bool is_atom() const { return false;}
 
   virtual void write(std::ostream &) const;
   virtual void print(std::ostream &, size_t, size_t) const;

@@ -51,24 +51,24 @@ public:
     bool LookupTop(const char* name, int len, Bind*& t);
     bool LookupAll(const char* name, int len, Bind*& t);
 
-    bool RecordVariable(char* name, Class* c);
-    bool RecordPointerVariable(char* name, Class* c);
+    bool RecordVariable(const char* name, Class* c);
+    bool RecordPointerVariable(const char* name, Class* c);
 
-    int AddEntry(char*, int, Bind*);
-    int AddDupEntry(char*, int, Bind*);
+    int AddEntry(const char*, int, Bind*);
+    int AddDupEntry(const char*, int, Bind*);
 
   void RecordNamespace(PTree::Node *);
-    bool LookupNamespace(char*, int);
+    bool LookupNamespace(const char*, int);
   void RecordTypedefName(PTree::Node *);
   void RecordEnumName(PTree::Node *);
-    void RecordClassName(char*, Class*);
+  void RecordClassName(const char*, Class*);
   void RecordTemplateClass(PTree::Node *, Class*);
   Environment* RecordTemplateFunction(PTree::Node *, PTree::Node *);
   Environment* RecordDeclarator(PTree::Node *);
   Environment* DontRecordDeclarator(PTree::Node *);
   void RecordMetaclassName(PTree::Node *);
   PTree::Node *LookupMetaclass(PTree::Node *);
-    static bool RecordClasskeyword(char*, char*);
+  static bool RecordClasskeyword(const char*, const char*);
   static PTree::Node *LookupClasskeyword(PTree::Node *);
 
     void SetMetaobject(Class* m) { metaobject = m; }
@@ -106,88 +106,90 @@ private:
 
 // class Bind and its subclasses
 
-class Bind : public LightObject {
+class Bind : public LightObject 
+{
 public:
-    enum Kind {
-	isVarName, isTypedefName, isClassName, isEnumName, isTemplateClass,
-	isTemplateFunction
-     };
-    virtual Kind What() = 0;
-    virtual void GetType(TypeInfo&, Environment*) = 0;
-    virtual char* GetEncodedType();
-    virtual bool IsType();
-    virtual Class* ClassMetaobject();
-    virtual void SetClassMetaobject(Class*);
+  enum Kind 
+  {
+    isVarName, isTypedefName, isClassName, isEnumName, isTemplateClass,
+    isTemplateFunction
+  };
+  virtual Kind What() = 0;
+  virtual void GetType(TypeInfo&, Environment*) = 0;
+  virtual const char *encoded_type();
+  virtual bool IsType();
+  virtual Class* ClassMetaobject();
+  virtual void SetClassMetaobject(Class*);
 };
 
-class BindVarName : public Bind {
+class BindVarName : public Bind 
+{
 public:
-    BindVarName(char* t) { type = t; }
-    Kind What();
-    void GetType(TypeInfo&, Environment*);
-    char* GetEncodedType();
-    bool IsType();
-
+  BindVarName(const char *t) : my_type(t) {}
+  Kind What();
+  void GetType(TypeInfo&, Environment*);
+  const char *encoded_type();
+  bool IsType();
 private:
-    char* type;
+  const char *my_type;
 };
 
-class BindTypedefName : public Bind {
+class BindTypedefName : public Bind 
+{
 public:
-    BindTypedefName(char* t) { type = t; }
-    Kind What();
-    void GetType(TypeInfo&, Environment*);
-    char* GetEncodedType();
-
+  BindTypedefName(const char* t) : my_type(t) {}
+  Kind What();
+  void GetType(TypeInfo&, Environment*);
+  const char *encoded_type();
 private:
-    char* type;
+  const char *my_type;
 };
 
-class BindClassName : public Bind {
+class BindClassName : public Bind 
+{
 public:
-    BindClassName(Class* c) { metaobject = c; }
-    Kind What();
-    void GetType(TypeInfo&, Environment*);
-    Class* ClassMetaobject();
-    void SetClassMetaobject(Class*);
-
+  BindClassName(Class* c) { metaobject = c; }
+  Kind What();
+  void GetType(TypeInfo&, Environment*);
+  Class* ClassMetaobject();
+  void SetClassMetaobject(Class*);
 private:
-    Class* metaobject;
+  Class* metaobject;
 };
 
-class BindEnumName : public Bind {
+class BindEnumName : public Bind 
+{
 public:
-  BindEnumName(char*, PTree::Node *);
-    Kind What();
-    void GetType(TypeInfo&, Environment*);
-    PTree::Node *GetSpecification() { return specification; }
-
+  BindEnumName(const char *, PTree::Node *);
+  Kind What();
+  void GetType(TypeInfo&, Environment*);
+  PTree::Node *GetSpecification() { return my_spec;}
 private:
-    char* type;
-    PTree::Node *specification;
+  const char *my_type;
+  PTree::Node *my_spec;
 };
 
-class BindTemplateClass : public Bind {
+class BindTemplateClass : public Bind 
+{
 public:
-    BindTemplateClass(Class* c) { metaobject = c; }
-    Kind What();
-    void GetType(TypeInfo&, Environment*);
-    Class* ClassMetaobject();
-    void SetClassMetaobject(Class*);
-
+  BindTemplateClass(Class* c) { metaobject = c; }
+  Kind What();
+  void GetType(TypeInfo&, Environment*);
+  Class* ClassMetaobject();
+  void SetClassMetaobject(Class*);
 private:
-    Class* metaobject;
+  Class* metaobject;
 };
 
-class BindTemplateFunction : public Bind {
+class BindTemplateFunction : public Bind 
+{
 public:
-    BindTemplateFunction(PTree::Node *d) { decl = d; }
-    Kind What();
-    void GetType(TypeInfo&, Environment*);
-    bool IsType();
-
+  BindTemplateFunction(PTree::Node *d) { decl = d; }
+  Kind What();
+  void GetType(TypeInfo&, Environment*);
+  bool IsType();
 private:
-    PTree::Node *decl;
+  PTree::Node *decl;
 };
 
 #endif

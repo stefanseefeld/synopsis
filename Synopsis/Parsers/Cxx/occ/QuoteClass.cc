@@ -44,19 +44,21 @@ PTree::Node *QuoteClass::TranslateMemberCall(Environment* env,
 				       PTree::Node *member, PTree::Node *args)
 {
     PTree::Node *name = StripClassQualifier(member);
-    char* str;
+    const char* str;
 
-    if(PTree::Node::Eq(name, "qMake")){
-	PTree::Node *arg1 = PTree::Node::First(PTree::Node::Second(args));
-	if(arg1->Reify(str) && str != 0)
+    if(name && *name == "qMake")
+    {
+	PTree::Node *arg1 = PTree::first(PTree::second(args));
+	if(PTree::reify(arg1, str) && str != 0)
 	    return ProcessBackQuote(env, str, arg1, name);
 	else
 	    ErrorMessage(env, "bad argument for qMake()", arg1, name);
     }
-    else if(PTree::Node::Eq(name, "qMakeStatement")){
+    else if(name && *name == "qMakeStatement")
+    {
 	WarnObsoleteness("PTree::Node::qMakeStatement()", "PTree::Node::qMake()");
-	PTree::Node *arg1 = PTree::Node::First(PTree::Node::Second(args));
-	if(arg1->Reify(str) && str != 0)
+	PTree::Node *arg1 = PTree::first(PTree::second(args));
+	if(PTree::reify(arg1, str) && str != 0)
 	    return ProcessBackQuote(env, str, arg1, name);
 	else
 	    ErrorMessage(env, "bad argument for qMakeStatement()", arg1, name);
@@ -66,7 +68,7 @@ PTree::Node *QuoteClass::TranslateMemberCall(Environment* env,
 }
 
 PTree::Node *QuoteClass::ProcessBackQuote(Environment* env,
-				    char* str, PTree::Node *arg, PTree::Node *exp)
+					  const char* str, PTree::Node *arg, PTree::Node *exp)
 {
     std::ostringstream oss;
 
@@ -79,7 +81,7 @@ PTree::Node *QuoteClass::ProcessBackQuote(Environment* env,
 		    oss << *str;
 		else{
 		    ErrorMessage(env,
-				 "unmatched backquote for PTree::Node::qMake(): ",
+				 "unmatched backquote for PTree::qmake(): ",
 				 arg, exp);
 		    break;
 		}

@@ -77,39 +77,41 @@ Environment* Environment::GetBottom()
 
 Class* Environment::LookupClassMetaobject(PTree::Node *name)
 {
-    TypeInfo tinfo;
-    Bind* bind = 0;
+  TypeInfo tinfo;
+  Bind* bind = 0;
 
-    if(this == 0){
-	MopErrorMessage("Environment::LookupClassMetaobject()",
-			"nil enviornment");
-	return 0;
-    }
+  if(this == 0)
+  {
+    MopErrorMessage("Environment::LookupClassMetaobject()",
+		    "nil enviornment");
+    return 0;
+  }
 
-    if(name == 0)
-	return 0;
-    else if(name->IsLeaf()){
-	if(LookupType(name->GetPosition(), name->GetLength(), bind))
-	    if(bind != 0){
-		bind->GetType(tinfo, this);
-		return tinfo.ClassMetaobject();
-	    }
-
-	return 0;
-    }
-    else{
-	int len;
-	Environment* e = this;
-	char* base = Encoding::GetBaseName(name->GetEncodedName(), len, e);
-	if(base != 0 && e != 0)
-	    if(LookupType(base, len, bind))
-		if(bind != 0){
-		    bind->GetType(tinfo, this);
-		    return tinfo.ClassMetaobject();
-		}
-
-	return 0;
-    }
+  if(name == 0) return 0;
+  else if(name->is_atom())
+  {
+    if(LookupType(name->position(), name->length(), bind))
+      if(bind)
+      {
+	bind->GetType(tinfo, this);
+	return tinfo.ClassMetaobject();
+      }
+    return 0;
+  }
+  else
+  {
+    int len;
+    Environment* e = this;
+    const char* base = Encoding::GetBaseName(name->encoded_name(), len, e);
+    if(base != 0 && e != 0)
+      if(LookupType(base, len, bind))
+	if(bind)
+	{
+	  bind->GetType(tinfo, this);
+	  return tinfo.ClassMetaobject();
+	}
+    return 0;
+  }
 }
 
 bool Environment::LookupType(const char* name, int len, Bind*& t)
@@ -169,58 +171,56 @@ bool Environment::Lookup(PTree::Node *name, bool& is_type_name, TypeInfo& t)
 
 bool Environment::Lookup(PTree::Node *name, Bind*& bind)
 {
-    bind = 0;
-    if(this == 0){
-	MopErrorMessage("Environment::Lookup()", "nil enviornment");
-	return false;
-    }
+  bind = 0;
+  if(this == 0)
+  {
+    MopErrorMessage("Environment::Lookup()", "nil enviornment");
+    return false;
+  }
 
-    if(name == 0)
-	return false;
-    else if(name->IsLeaf())
-	return LookupAll(name->GetPosition(), name->GetLength(), bind);
-    else{
-	char* encode = name->GetEncodedName();
-	if(encode == 0)
-	    return false;
-	else{
-	    int len;
-	    Environment* e = this;
-	    char* base = Encoding::GetBaseName(encode, len, e);
-	    if(base != 0 && e != 0)
-		return e->LookupAll(base, len, bind);
-	    else
-		return false;
-	}
+  if(name == 0) return false;
+  else if(name->is_atom())
+    return LookupAll(name->position(), name->length(), bind);
+  else
+  {
+    const char* encode = name->encoded_name();
+    if(encode == 0) return false;
+    else
+    {
+      int len;
+      Environment* e = this;
+      const char* base = Encoding::GetBaseName(encode, len, e);
+      if(base && e) return e->LookupAll(base, len, bind);
+      else return false;
     }
+  }
 }
 
 bool Environment::LookupTop(PTree::Node *name, Bind*& bind)
 {
-    bind = 0;
-    if(this == 0){
-	MopErrorMessage("Environment::LookupTop()", "nil enviornment");
-	return false;
-    }
+  bind = 0;
+  if(this == 0)
+  {
+    MopErrorMessage("Environment::LookupTop()", "nil enviornment");
+    return false;
+  }
 
-    if(name == 0)
-	return false;
-    else if(name->IsLeaf())
-	return LookupTop(name->GetPosition(), name->GetLength(), bind);
-    else{
-	char* encode = name->GetEncodedName();
-	if(encode == 0)
-	    return false;
-	else{
-	    int len;
-	    Environment* e = this;
-	    char* base = Encoding::GetBaseName(encode, len, e);
-	    if(base != 0 && e != 0)
-		return e->LookupTop(base, len, bind);
-	    else
-		return false;
-	}
+  if(name == 0) return false;
+  else if(name->is_atom())
+    return LookupTop(name->position(), name->length(), bind);
+  else
+  {
+    const char *encode = name->encoded_name();
+    if(encode == 0) return false;
+    else
+    {
+      int len;
+      Environment* e = this;
+      const char *base = Encoding::GetBaseName(encode, len, e);
+      if(base && e) return e->LookupTop(base, len, bind);
+      else return false;
     }
+  }
 }
 
 bool Environment::LookupTop(const char* name, int len, Bind*& t)
@@ -254,14 +254,14 @@ bool Environment::LookupAll(const char* name, int len, Bind*& t)
     return false;
 }
 
-bool Environment::RecordVariable(char* name, Class* c)
+bool Environment::RecordVariable(const char* name, Class* c)
 {
     Encoding encode;
     encode.SimpleName(c->Name());
     return htable->AddEntry(name, new BindVarName(encode.Get())) >= 0;
 }
 
-bool Environment::RecordPointerVariable(char* name, Class* c)
+bool Environment::RecordPointerVariable(const char* name, Class* c)
 {
     Encoding encode;
     encode.SimpleName(c->Name());
@@ -269,22 +269,22 @@ bool Environment::RecordPointerVariable(char* name, Class* c)
     return htable->AddEntry(name, new BindVarName(encode.Get())) >= 0;
 }
 
-int Environment::AddEntry(char* key, int len, Bind* b) {
+int Environment::AddEntry(const char* key, int len, Bind* b) {
     return htable->AddEntry(key, len, b);
 }
 
-int Environment::AddDupEntry(char* key, int len, Bind* b) {
+int Environment::AddDupEntry(const char* key, int len, Bind* b) {
     return htable->AddDupEntry(key, len, b);
 }
 
 void Environment::RecordNamespace(PTree::Node *name)
 {
     if (name != 0)
-	namespace_table->AddEntry(name->GetPosition(), name->GetLength(),
+	namespace_table->AddEntry(name->position(), name->length(),
 				  name);
 }
 
-bool Environment::LookupNamespace(char* name, int len)
+bool Environment::LookupNamespace(const char* name, int len)
 {
     HashValue value;
     return namespace_table->Lookup(name, len, &value);
@@ -292,184 +292,173 @@ bool Environment::LookupNamespace(char* name, int len)
 
 void Environment::RecordTypedefName(PTree::Node *decls)
 {
-    while(decls != 0){
-      PTree::Node *d = decls->Car();
-	if(d->What() == Token::ntDeclarator){
-	    char* name = d->GetEncodedName();
-	    char* type = d->GetEncodedType();
-	    if(name != 0 && type != 0){
-		int len;
-		Environment* e = this;
-		name = Encoding::GetBaseName(name, len, e);
-		if(name != 0)
-		    AddEntry(name, len, new BindTypedefName(type));
-	    }
-	}
-
-	decls = PTree::Node::ListTail(decls, 2);
+  while(decls)
+  {
+    PTree::Node *d = decls->car();
+    if(d->What() == Token::ntDeclarator)
+    {
+      const char *name = d->encoded_name();
+      const char *type = d->encoded_type();
+      if(name != 0 && type != 0)
+      {
+	int len;
+	Environment* e = this;
+	name = Encoding::GetBaseName(name, len, e);
+	if(name) AddEntry(name, len, new BindTypedefName(type));
+      }
     }
+    decls = PTree::tail(decls, 2);
+  }
 }
 
 void Environment::RecordEnumName(PTree::Node *spec)
 {
-  PTree::Node *tag = PTree::Node::Second(spec);
-    char* encoded_name = spec->GetEncodedName();
-    if(tag != 0 && tag->IsLeaf())
-	AddEntry(tag->GetPosition(), tag->GetLength(),
+  PTree::Node *tag = PTree::second(spec);
+  const char* encoded_name = spec->encoded_name();
+    if(tag != 0 && tag->is_atom())
+	AddEntry(tag->position(), tag->length(),
 		 new BindEnumName(encoded_name, spec));
     else{
 	int n;
 	Environment* e = this;
-	char* name = Encoding::GetBaseName(encoded_name, n, e);
+	const char* name = Encoding::GetBaseName(encoded_name, n, e);
 	if(name != 0 && e != 0)
 	    e->AddEntry(name, n, new BindEnumName(encoded_name, spec));
     }
 }
 
-void Environment::RecordClassName(char* encoded_name, Class* metaobject)
+void Environment::RecordClassName(const char* encoded_name, Class* metaobject)
 {
-    int n;
-    Environment* e;
-    Bind* bind;
+  int n;
+  Bind* bind;
 
-    e = this;
-    char* name = Encoding::GetBaseName(encoded_name, n, e);
-    if(name == 0 || e == 0)
-	return;		// error?
-
-    if(e->LookupAll(name, n, bind))
-	if(bind != 0 && bind->What() == Bind::isClassName){
-	    if(metaobject != 0)
-		bind->SetClassMetaobject(metaobject);
-
-	    return;
-	}
-
-    e->AddEntry(name, n, new BindClassName(metaobject));
+  Environment *e = this;
+  const char* name = Encoding::GetBaseName(encoded_name, n, e);
+  if(!name || !e) return; // error?
+  if(e->LookupAll(name, n, bind))
+    if(bind && bind->What() == Bind::isClassName)
+    {
+      if(metaobject) bind->SetClassMetaobject(metaobject);
+      return;
+    }
+  e->AddEntry(name, n, new BindClassName(metaobject));
 }
 
 void Environment::RecordTemplateClass(PTree::Node *spec, Class* metaobject)
 {
-    int n;
-    Environment* e;
-    Bind* bind;
+  int n;
+  Environment* e;
+  Bind* bind;
 
-    e = this;
-    char* name = Encoding::GetBaseName(spec->GetEncodedName(), n, e);
-    if(name == 0 || e == 0)
-	return;		// error?
+  e = this;
+  const char* name = Encoding::GetBaseName(spec->encoded_name(), n, e);
+  if(!name || !e) return; // error?
 
-    if(e->LookupAll(name, n, bind))
-	if(bind != 0 && bind->What() == Bind::isTemplateClass){
-	    if(metaobject != 0)
-		bind->SetClassMetaobject(metaobject);
-
-	    return;
-	}
-
-    e->AddEntry(name, n, new BindTemplateClass(metaobject));
+  if(e->LookupAll(name, n, bind))
+    if(bind && bind->What() == Bind::isTemplateClass)
+    {
+      if(metaobject) bind->SetClassMetaobject(metaobject);
+      return;
+    }
+  e->AddEntry(name, n, new BindTemplateClass(metaobject));
 }
 
 Environment* Environment::RecordTemplateFunction(PTree::Node *def, PTree::Node *body)
 {
-    int n;
-    PTree::Node *decl = PTree::Node::Third(body);
-    if(decl->IsA(Token::ntDeclarator)){
-	char* name = decl->GetEncodedName();
-	if(name != 0){
-	    Environment* e = this;
-	    name = Encoding::GetBaseName(name, n, e);
-	    if(name != 0 && e != 0)
-		e->AddEntry(name, n, new BindTemplateFunction(def));
-
-	    return e;
-	}
+  int n;
+  PTree::Node *decl = PTree::third(body);
+  if(decl->IsA(Token::ntDeclarator))
+  {
+    const char* name = decl->encoded_name();
+    if(name)
+    {
+      Environment* e = this;
+      name = Encoding::GetBaseName(name, n, e);
+      if(name != 0 && e != 0)
+	e->AddEntry(name, n, new BindTemplateFunction(def));
+      return e;
     }
-
-    return this;
+  }
+  return this;
 }
 
 Environment* Environment::RecordDeclarator(PTree::Node *decl)
 {
-    if(decl->What() == Token::ntDeclarator){
-	char* name = decl->GetEncodedName();
-	char* type = decl->GetEncodedType();
-	if(name != 0 && type != 0){
-	    int len;
-	    Environment* e = this;
-	    name = Encoding::GetBaseName(name, len, e);
+  if(decl->What() == Token::ntDeclarator)
+  {
+    const char* name = decl->encoded_name();
+    const char* type = decl->encoded_type();
+    if(name && type)
+    {
+      int len;
+      Environment* e = this;
+      name = Encoding::GetBaseName(name, len, e);
 
-	    // allow a duplicated entry because of overloaded functions
-	    if(name != 0 && e != 0)
-		e->AddDupEntry(name, len, new BindVarName(type));
-
-	    return e;
-	}
+      // allow a duplicated entry because of overloaded functions
+      if(name && e) e->AddDupEntry(name, len, new BindVarName(type));
+      return e;
     }
-
-    return this;
+  }
+  return this;
 }
 
 Environment* Environment::DontRecordDeclarator(PTree::Node *decl)
 {
-    if(decl->What() == Token::ntDeclarator){
-	char* name = decl->GetEncodedName();
-	if(name != 0){
-	    int len;
-	    Environment* e = this;
-	    Encoding::GetBaseName(name, len, e);
-	    return e;
-	}
+  if(decl->What() == Token::ntDeclarator)
+  {
+    const char* name = decl->encoded_name();
+    if(name)
+    {
+      int len;
+      Environment* e = this;
+      Encoding::GetBaseName(name, len, e);
+      return e;
     }
-
-    return this;
+  }
+  return this;
 }
 
 void Environment::RecordMetaclassName(PTree::Node *decl)
 {
-    if(decl->Third() != 0)
-	metaclasses.Append(decl);
+  if(PTree::third(decl)) metaclasses.append(decl);
 }
 
 PTree::Node *Environment::LookupMetaclass(PTree::Node *name)
 {
-    uint n = metaclasses.Number();
-    for(uint i = 0; i < n; ++i){
-      PTree::Node *d = metaclasses[i];
-	if(d->Third()->Eq(name))
-	    return d;
-    }
-
-    return 0;
+  size_t n = metaclasses.number();
+  for(size_t i = 0; i < n; ++i)
+  {
+    PTree::Node *d = metaclasses[i];
+    if(PTree::third(d) && *PTree::third(d) == *name) return d;
+  }
+  return 0;
 }
 
-bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
+bool Environment::RecordClasskeyword(const char* keyword, const char* metaclass_name)
 {
   PTree::Node *keywordp = new PTree::Atom(keyword, strlen(keyword));
   PTree::Node *metaclassp = new PTree::Atom(metaclass_name, strlen(metaclass_name));
 
-    if(LookupClasskeyword(keywordp) == 0){
-	classkeywords->Append(keywordp);
-	classkeywords->Append(metaclassp);
-	return true;
-    }
-    else
-	return false;
+  if(LookupClasskeyword(keywordp) == 0)
+  {
+    classkeywords->append(keywordp);
+    classkeywords->append(metaclassp);
+    return true;
+  }
+  else return false;
 }
 
 PTree::Node *Environment::LookupClasskeyword(PTree::Node *keyword)
 {
-    if(classkeywords == 0)
-	classkeywords = new PTree::Array;
-
-    uint n = classkeywords->Number();
-    for(uint i = 0; i < n; i += 2){
-      PTree::Node *d = classkeywords->Ref(i);
-	if(d->Eq(keyword))
-	    return classkeywords->Ref(i + 1);
-    }
-
-    return 0;
+  if(!classkeywords) classkeywords = new PTree::Array;
+  size_t n = classkeywords->number();
+  for(size_t i = 0; i < n; i += 2)
+  {
+    PTree::Node *d = classkeywords->ref(i);
+    if(d && keyword && *d == *keyword)
+      return classkeywords->ref(i + 1);
+  }
+  return 0;
 }
 
 Class* Environment::LookupThis()
@@ -487,32 +476,30 @@ Class* Environment::LookupThis()
 
 Environment* Environment::IsMember(PTree::Node *member)
 {
-    Bind* bind;
-    Environment* e;
+  Bind* bind;
+  Environment* e;
 
-    if(!member->IsLeaf()){
-	char* encode = member->GetEncodedName();
-	if(encode != 0){
-	    int len;
-	    e = this;
-	    char* base = Encoding::GetBaseName(encode, len, e);
-	    if(base != 0 && e != 0 && e->metaobject != 0)
-		return e;
-	}
+  if(!member->is_atom())
+  {
+    const char* encode = member->encoded_name();
+    if(encode != 0)
+    {
+      int len;
+      e = this;
+      const char* base = Encoding::GetBaseName(encode, len, e);
+      if(base != 0 && e != 0 && e->metaobject != 0) return e;
     }
-
-    for(e = this; e != 0; e = e->next)
-	if(e->metaobject != 0)
-	    break;
-	else if(e->LookupTop(member, bind))
-	    if(bind != 0 && !bind->IsType())
-		return 0;	// the member is overridden.
-
-    if(e != 0 && e->LookupTop(member, bind))
-       if(bind != 0 && !bind->IsType())
-	   return e;
-
-    return 0;
+  }
+  for(e = this; e != 0; e = e->next)
+    if(e->metaobject != 0)
+      break;
+    else if(e->LookupTop(member, bind))
+      if(bind != 0 && !bind->IsType())
+	return 0;	// the member is overridden.
+  if(e != 0 && e->LookupTop(member, bind))
+    if(bind != 0 && !bind->IsType())
+      return e;
+  return 0;
 }
 
 void Environment::Dump()
@@ -544,7 +531,7 @@ void Environment::Dump(int level)
 
 //     char* fname;
 //     int fname_len;
-//     number = (int)walker->GetParser()->LineNumber(p->GetPosition(),
+//     number = (int)walker->GetParser()->LineNumber(p->position(),
 // 						  fname, fname_len);
 //     return new Leaf(fname, fname_len);
 // }
@@ -586,9 +573,9 @@ Environment* Environment::Array::Ref(uint i)
 
 // class Bind
 
-char* Bind::GetEncodedType()
+const char *Bind::encoded_type()
 {
-    return 0;
+  return 0;
 }
 
 bool Bind::IsType()
@@ -610,12 +597,12 @@ Bind::Kind BindVarName::What()
 
 void BindVarName::GetType(TypeInfo& t, Environment* e)
 {
-    t.Set(type, e);
+  t.Set(my_type, e);
 }
 
-char* BindVarName::GetEncodedType()
+const char *BindVarName::encoded_type()
 {
-    return type;
+  return my_type;
 }
 
 bool BindVarName::IsType()
@@ -630,12 +617,12 @@ Bind::Kind BindTypedefName::What()
 
 void BindTypedefName::GetType(TypeInfo& t, Environment* e)
 {
-    t.Set(type, e);
+  t.Set(my_type, e);
 }
 
-char* BindTypedefName::GetEncodedType()
+const char *BindTypedefName::encoded_type()
 {
-    return type;
+  return my_type;
 }
 
 Bind::Kind BindClassName::What()
@@ -658,20 +645,20 @@ void BindClassName::SetClassMetaobject(Class* c)
     metaobject = c;
 }
 
-BindEnumName::BindEnumName(char* encoded_type, PTree::Node *spec)
+BindEnumName::BindEnumName(const char *t, PTree::Node *s)
+  : my_type(t),
+    my_spec(s)
 {
-    type = encoded_type;
-    specification = spec;
 }
 
 Bind::Kind BindEnumName::What()
 {
-    return isEnumName;
+  return isEnumName;
 }
 
 void BindEnumName::GetType(TypeInfo& t, Environment* e)
 {
-    t.Set(type, e);
+    t.Set(my_type, e);
 }
 
 Bind::Kind BindTemplateClass::What()
