@@ -1,14 +1,8 @@
-"""Parser for C using CTool for low-level parsing.
-This parser is written entirely in C++, and compiled into shared libraries for
-use by python.
-"""
 #
-# configure for the parser you want here...
+# Copyright (C) 2004 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
-try:
-    from ctool import parse, usage
-except:
-    import sys
-    print sys.exc_type, sys.exc_value
 
-# THIS-IS-A-PARSER
+from Parser import *
