@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.10 2003/11/24 22:09:11 stefan Exp $
+# $Id: Linker.py,v 1.11 2003/11/25 20:19:00 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -26,9 +26,6 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       self.__dict_map = {id(root) : global_dict}
       self.__dicts = [global_dict]
 
-      self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
-      
       self.types = self.ast.types()
       
       declarations = self.ast.declarations()
@@ -39,7 +36,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          self.visitSourceFile(file)
 
       # now deal with the sub-processors, if any
-      self.ast = Composite.process(self, self.ast)
+      self.ast = Composite.process(self, self.ast, input=[])
 
       return self.output_and_return_ast()
 
@@ -81,7 +78,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
       return self.__dicts[-1]
 
-   def linkType(self, type):
+   def link_type(self, type):
       "Returns the same or new proxy type"
 
       self.__type = type
@@ -127,38 +124,38 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
    def visitModifier(self, type):
 
-      alias = self.linkType(type.alias())
+      alias = self.link_type(type.alias())
       if alias is not type.alias():
          type.set_alias(alias)
       self.__type = type
 
    def visitArray(self, type):
 
-      alias = self.linkType(type.alias())
+      alias = self.link_type(type.alias())
       if alias is not type.alias():
          type.set_alias(alias)
       self.__type = type
 
    def visitParametrized(self, type):
 
-      templ = self.linkType(type.template())
+      templ = self.link_type(type.template())
       if templ is not type.template():
          type.set_template(templ)
       params = tuple(type.parameters())
       del type.parameters()[:]
       for param in params:
-         type.parameters().append(self.linkType(param))
+         type.parameters().append(self.link_type(param))
       self.__type = type
 
    def visitFunctionType(self, type):
 
-      ret = self.linkType(type.returnType())
+      ret = self.link_type(type.returnType())
       if ret is not type.returnType():
          type.set_returnType(ret)
       params = tuple(type.parameters())
       del type.parameters()[:]
       for param in params:
-         type.parameters().append(self.linkType(param))
+         type.parameters().append(self.link_type(param))
       self.__type = type
 
    #################### AST Visitor ############################################
@@ -224,7 +221,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       for decl in decls: decl.accept(self)
       self.pop()
 
-   def addDeclaration(self, decl):
+   def add_declaration(self, decl):
       """Adds a declaration to the current (top) scope.
       If there is already a Forward declaration, then this replaces it
       unless this is also a Forward.
@@ -249,11 +246,11 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
       name = decl.name()
       if self.lookup(decl.name()): return
-      self.addDeclaration(decl)
+      self.add_declaration(decl)
 
-   visitDeclaration = addDeclaration
-   visitForward = addDeclaration
-   visitEnum = addDeclaration
+   visitDeclaration = add_declaration
+   visitForward = add_declaration
+   visitEnum = add_declaration
 
    def visitFunction(self, func):
 
@@ -262,7 +259,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
             if not isinstance(decl, AST.Function): continue
             if func.name() == decl.name():
                return
-      ret = self.linkType(func.returnType())
+      ret = self.link_type(func.returnType())
       if ret is not func.returnType():
          func.set_returnType(ret)
       for param in func.parameters():
@@ -274,17 +271,17 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
    def visitVariable(self, var):
 
       #if not scopedNameOkay(var.name()): return
-      vt = self.linkType(var.vtype())
+      vt = self.link_type(var.vtype())
       if vt is not var.vtype():
          var.set_vtype(vt)
-      self.addDeclaration(var)
+      self.add_declaration(var)
 
    def visitTypedef(self, tdef):
 
-      alias = self.linkType(tdef.alias())
+      alias = self.link_type(tdef.alias())
       if alias is not tdef.alias():
          tdef.set_alias(alias)
-      self.addDeclaration(tdef)
+      self.add_declaration(tdef)
 
    def visitClass(self, clas):
 
@@ -309,7 +306,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
             print "Linker.visitClass: clas=%s, prev=%s"%(clas.name(), prev)
             if hasattr(prev, 'name'): print "prev.name=%s"%(prev.name())
             raise TypeError, "Previous class declaration not a class"
-      self.addDeclaration(clas)
+      self.add_declaration(clas)
       for parent in clas.parents():
          parent.accept(self)
       self.push(clas)
@@ -322,11 +319,11 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
       type = parent.parent()
       if isinstance(type, Type.Declared) or isinstance(type, Type.Unknown):
-         ltype = self.linkType(type)
+         ltype = self.link_type(type)
          if ltype is not type:
             parent.set_parent(ltype)
       elif isinstance(type, Type.Parametrized):
-         ltype = self.linkType(type.template())
+         ltype = self.link_type(type.template())
          if ltype is not type.template():
             # Must find a Type.Template from it
             if not isinstance(ltype, Type.Declared):
@@ -341,13 +338,13 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
    def visitParameter(self, param):
 
-      type = self.linkType(param.type())
+      type = self.link_type(param.type())
       if type is not param.type():
          param.set_type(type)
 
    def visitConst(self, const):
 
-      ct = self.linkType(const.ctype())
+      ct = self.link_type(const.ctype())
       if ct is not const.ctype():
          const.set_ctype(ct)
-      self.addDeclaration(const)
+      self.add_declaration(const)
