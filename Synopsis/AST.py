@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.30 2003/12/02 05:44:07 stefan Exp $
+# $Id: AST.py,v 1.31 2004/01/13 07:37:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -185,6 +185,17 @@ class Include:
    def is_next(self):
       return self.__is_next
 
+class MacroCall:
+   """A class to support mapping from positions in a preprocessed file
+   back to positions in the original file."""
+
+   def __init__(self, name, start, end, diff):
+
+      self.name = name
+      self.start = start,
+      self.end = end
+      self.diff = diff
+
 class SourceFile:
    """The information about a file that the AST was generated from.
    Contains filename, all declarations from this file (even nested ones) and
@@ -201,6 +212,7 @@ class SourceFile:
       self.__includes = []
       self.__declarations = []
       self.__is_main = 0
+      self.__macro_calls = {}
 
    def is_main(self):
       """Returns whether this was a main file. A source file is a main file
@@ -246,6 +258,9 @@ class SourceFile:
       tracking since *all* files read while parsing this file are included
       in the list (even system files)."""
       return self.__includes
+
+   def macro_calls(self):
+      return self.__macro_calls
     
 class Declaration:
    """Declaration base class. Every declaration has a name, comments,
