@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.cc source file
 // Implementation of the FileFilter class
 
-// $Id: filter.cc,v 1.5 2003/01/16 17:14:10 chalky Exp $
+// $Id: filter.cc,v 1.6 2003/11/05 17:23:01 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -150,6 +150,9 @@ void FileFilter::set_xref_filename(const char* filename)
 void FileFilter::set_syntax_prefix(const char* filename)
 {
     m->syntax_prefix = filename;
+    if (m->syntax_prefix.size() > 0
+        && m->syntax_prefix[m->syntax_prefix.size()-1] != '/')
+       m->syntax_prefix.append("/");
     m->syntax = Private::Prefix;
 }
 
@@ -157,6 +160,9 @@ void FileFilter::set_syntax_prefix(const char* filename)
 void FileFilter::set_xref_prefix(const char* filename)
 {
     m->xref_prefix = filename;
+    if (m->xref_prefix.size() > 0
+        && m->xref_prefix[m->xref_prefix.size()-1] != '/')
+       m->xref_prefix.append("/");
     m->xref = Private::Prefix;
 }
 
