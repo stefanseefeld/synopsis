@@ -52,9 +52,7 @@
 #include <map>
 #include <set>
 #include <string>
-
-//. This vector is initialised on first use (if any) by synopsis_define_hook
-std::vector<AST::Macro*>* syn_macro_defines = NULL;
+#include <iostream>
 
 namespace
 {
@@ -133,60 +131,3 @@ void LinkMap::clear()
     m->lines.clear();
 }
 
-extern "C"
-{
-    //. This function is a callback from the ucpp code to store macro
-    //. expansions
-    void synopsis_macro_hook(const char* name, int line, int start, int end, int diff)
-    {
-        LinkMap::instance()->add(name, line, start, end, diff);
-    }
-
-    //. This function is a callback from the ucpp code to store includes
-    void synopsis_include_hook(const char* source_file, const char* target_file, int is_macro, int is_next)
-    {
-	// There is not enough code here to make another class..
-	FileFilter* filter = FileFilter::instance();
-	if (!filter)
-	    return;
-
-	// Add another Include to the source's SourceFile
-	// We don't deal with duplicates here. The Linker's Unduplicator will
-	// take care of that.
-	//std::cout << "Include: " << source_file << " -> " << target_file << std::endl;
-	AST::SourceFile* file = filter->get_sourcefile(source_file);
-	AST::SourceFile* target = filter->get_sourcefile(target_file);
-	AST::Include* include = new AST::Include(target, is_macro, is_next);
-	file->includes().push_back(include);
-    }
-
-    //. This function is a callback from the ucpp code to store macro
-    //. definitions
-    void synopsis_define_hook(const char* filename, int line, const char* name, int num_args, const char** args, int vaarg, const char* text)
-    {
-	FileFilter* filter = FileFilter::instance();
-	if (!filter)
-	    return;
-	AST::SourceFile* file = filter->get_sourcefile(filename);
-	if (!file->is_main())
-	    return;
-	if (syn_macro_defines == NULL)
-	    syn_macro_defines = new std::vector<AST::Macro*>;
-	AST::Macro::Parameters* params = NULL;
-	if (args != NULL)
-	{
-	    params = new AST::Macro::Parameters;
-	    for (int i = 0; i < num_args; i++)
-		params->push_back(args[i]);
-	    if (vaarg)
-		params->push_back("...");
-	}
-	ScopedName macro_name;
-	macro_name.push_back(name);
-	AST::Macro* macro = new AST::Macro(file, line, macro_name, params, text);
-	//. Don't know global NS yet.. Will have to extract these later
-	file->declarations().push_back(macro);
-	syn_macro_defines->push_back(macro);
-    }
-};
-// vim: set ts=8 sts=4 sw=4 et:
