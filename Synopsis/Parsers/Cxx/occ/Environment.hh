@@ -74,12 +74,12 @@ public:
 public:
   class Array : public PTree::LightObject {
     public:
-	Array(int = 2);
-	uint Number() { return num; }
-	Environment* Ref(uint index);
+	Array(size_t = 2);
+	size_t Number() { return num; }
+	Environment* Ref(size_t index);
 	void Append(Environment*);
     private:
-	uint num, size;
+	size_t num, size;
 	Environment** array;
     };
 

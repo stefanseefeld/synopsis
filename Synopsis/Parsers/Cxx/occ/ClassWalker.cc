@@ -594,7 +594,7 @@ void ClassWalker::visit(PTree::Block *node)
   PTree::Node *rest = body;
   while(rest)
   {
-    uint i, n;
+    size_t i, n;
     PTree::Node *p = rest->car();
     PTree::Node *q = translate(p);
 

@@ -253,11 +253,11 @@ Node *gen_sym()
 #if !defined(_MSC_VER) && !defined(__WIN32__)
   struct timeval time;
   gettimeofday(&time, 0);
-  uint rnum = (time.tv_sec * 10 + time.tv_usec / 100) & 0xffff;
+  size_t rnum = (time.tv_sec * 10 + time.tv_usec / 100) & 0xffff;
 #else
-  static uint time = 0;
+  static size_t time = 0;
   time++;
-  uint rnum = time & 0xffff;
+  size_t rnum = time & 0xffff;
 #endif
   const char *num = integer_to_string(rnum, len2);
 

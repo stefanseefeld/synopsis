@@ -180,15 +180,15 @@ bool HashTable::LookupEntries(const char* key, int len, HashValue* value,
   This function returns the first prime number being greater
   than or equal to 'number'.
 */
-uint HashTable::NextPrimeNumber(uint number)
+size_t HashTable::NextPrimeNumber(size_t number)
 {
     if(number < 2)
 	return 2;
 
     for(;;){
-        uint half = number / 2;
+        size_t half = number / 2;
         bool prime = true;
-        for(uint i = 2; i <= half && prime; ++i)
+        for(size_t i = 2; i <= half && prime; ++i)
             if(number % i == 0)
 		prime = false;
 

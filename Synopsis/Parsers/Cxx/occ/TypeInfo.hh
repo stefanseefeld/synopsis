@@ -54,7 +54,7 @@ public:
   bool is_const();
   bool is_volatile();
   
-  uint is_builtin_type();
+  size_t is_builtin_type();
   bool is_function();
   bool is_ellipsis();
   bool is_pointer_type();
