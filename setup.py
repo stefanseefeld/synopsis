@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.11 2003/11/22 14:52:16 stefan Exp $
+# $Id: setup.py,v 1.12 2003/11/24 22:08:12 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -10,7 +10,7 @@
 from distutils.core import setup
 from distutils import sysconfig
 
-import os, sys, re
+from Synopsis import config
 
 from Synopsis.dist.command.config import config
 from Synopsis.dist.command.build_doc import build_doc
@@ -20,8 +20,10 @@ from Synopsis.dist.command.build_ext import build_ext
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
 if not hasattr(DistributionMetadata, 'classifiers'):
-    DistributionMetadata.classifiers = None
-    DistributionMetadata.download_url = None
+   DistributionMetadata.classifiers = None
+   DistributionMetadata.download_url = None
+
+import os, sys, re, glob
 
 module_ext = sysconfig.get_config_var('SO')
 
@@ -48,27 +50,26 @@ ext_modules = [('Synopsis/Parsers/C', 'ctool' + module_ext),
 
 scripts = ['synopsis', 'synopsis-qt', 'compile-xref', 'search-xref']
 
-data_files = ["dump.css",
-              "synopsis.jpg", "synopsis200.jpg",
-              "syn-down.png", "syn-right.png", "syn-dot.png"]
-from Synopsis import __version__
+data_files = []
+
+data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
 
 setup(cmdclass={'config':config,
                 'build_doc':build_doc,
                 'build_ext':build_ext,
                 'build':build},
       name="synopsis",
-      version=__version__,
-      author="Stefan Seefeld & Stephen Davies",
-      author_email="stefan@fresco.org",
-      description="source code inspection tool",
+      version=config.version,
+      maintainer="Stefan Seefeld",
+      maintainer_email="stefan@fresco.org",
+      description="source code introspection tool",
       url="http://synopsis.fresco.org",
       download_url = 'http://synopsis.fresco.org/download',
       classifiers = ['Development Status :: 5 - Production/Stable',
                      'Environment :: Console',
                      'Environment :: Web Environment',
                      'Intended Audience :: Developers',
-                     'License :: OSI Approved :: GNU General Public License (GPL)',
+                     'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
                      'Operating System :: POSIX',
                      'Programming Language :: Python',
                      'Programming Language :: C++',
@@ -76,4 +77,4 @@ setup(cmdclass={'config':config,
       packages=py_packages,
       ext_modules=ext_modules,
       scripts=prefix(scripts, "bin/"),
-      data_files=[('share/Synopsis', prefix(data_files, "share/Synopsis/"))])
+      data_files=data_files)
