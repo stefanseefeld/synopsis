@@ -14,4 +14,4 @@ $(TARGET_D): $(SOURCE) config.py
 	../../synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML_Doxygen -o ManualD display.h
 
 clean:
-	rm -rf core *~ Manual ManualD
+	rm -rf core *~ Manual ManualD *.pyc *.pyo
