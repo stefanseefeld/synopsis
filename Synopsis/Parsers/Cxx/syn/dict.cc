@@ -42,7 +42,7 @@ Dictionary::has_key(const std::string& name)
 //. TODO: the forward filtering could probably be done much simpler!
 //. TODO: The exception throwing is heavy too, besides all the vector copying!
 Types::Named*
-Dictionary::lookup(const std::string& name) throw (MultipleError, KeyError)
+Dictionary::lookup(const std::string& name)
 {
   name_map::iterator iter = m->map.lower_bound(name);
   name_map::iterator end = m->map.upper_bound(name);
