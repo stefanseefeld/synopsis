@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+# Compile XREF documents
+# Copyright (c) 2002 by Stephen Davies
+
+import sys, string, urllib, cPickle
+
+input_files = []
+output_file = None
+verbose = 0
+
+# Parse command line arguments
+i, numargs = 1, len(sys.argv)
+while i < numargs:
+    if sys.argv[i] == '-o':
+	output_file = sys.argv[i+1]
+	i = i + 2
+    elif sys.argv[i] == '-v':
+	verbose = 1
+    else:
+	input_files.append(sys.argv[i])
+	i = i + 1
+
+# Init data structures
+data = {}
+index = {}
+file_data = (data, index)
+
+# Read input files
+for file in input_files:
+    print "Reading",file
+    f = open(file, 'rt')
+    lines = f.readlines()
+    f.close()
+
+    for line in lines:
+	target, file, line, scope, context = string.split(line)
+	target = tuple(map(intern, string.split(urllib.unquote(target), '\t')))
+	scope = map(intern, string.split(urllib.unquote(scope), '\t'))
+	line = int(line)
+	file = intern(file)
+
+	bad = 0
+	for i in range(len(target)):
+	    if len(target[i]) > 0 and target[i][0] == '`':
+		# Don't store local function variables
+		bad = 1
+		break
+	if bad: continue
+
+	for i in range(len(scope)):
+	    if len(scope[i]) > 0 and scope[i][0] == '`':
+		# Function scope, truncate here
+		del scope[i+1:]
+		break
+	scope = tuple(scope)
+	
+	target_data = data.setdefault(target, [[],[],[]])
+	if context == 'DEF':
+	    target_data[0].append( (file, line, scope) )
+	elif context == 'CALL':
+	    target_data[1].append( (file, line, scope) )
+	elif context == 'REF':
+	    target_data[2].append( (file, line, scope) )
+	else:
+	    print "Warning: Unknown context:",context
+
+# Sort the data
+for target, target_data in data.items():
+    target_data[1].sort()
+    target_data[2].sort()
+
+    name = target[-1]
+    index.setdefault(name,[]).append(target)
+    # If it's a function name, also add without the parameters
+    paren = name.find('(')
+    if paren != -1:
+	index.setdefault(name[:paren],[]).append(target)
+	
+
+    if verbose:
+	print string.join(target, '::')
+	if len(target_data[1]):
+	    print "  Called from:"
+	    for file, line, scope in target_data[1]:
+		print "    %s:%s: %s"%(file, line, string.join(scope,'::'))
+	if len(target_data[2]):
+	    print "  Referenced from:"
+	    for file, line, scope in target_data[2]:
+		print "    %s:%s: %s"%(file, line, string.join(scope,'::'))
+
+if output_file:
+    print "Writing",output_file
+    f = open(output_file, 'wb')
+    cPickle.dump(file_data, f)
+    f.close()
+     
