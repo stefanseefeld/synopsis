@@ -19,9 +19,9 @@ void TemplateParameterScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in);
 }
 
-std::set<Symbol const *> LocalScope::lookup(Encoding const &name) const throw()
+SymbolSet LocalScope::unqualified_lookup(Encoding const &name) const
 {
-  std::set<Symbol const *> symbols = Scope::lookup(name);
+  SymbolSet symbols = find(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
 }
 
@@ -31,9 +31,9 @@ void LocalScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-std::set<Symbol const *> FunctionScope::lookup(Encoding const &name) const throw()
+SymbolSet FunctionScope::unqualified_lookup(Encoding const &name) const
 {
-  std::set<Symbol const *> symbols = Scope::lookup(name);
+  SymbolSet symbols = find(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
 }
 
@@ -50,9 +50,9 @@ std::string FunctionScope::name() const
   return oss.str();
 }
 
-std::set<Symbol const *> Class::lookup(Encoding const &name) const throw()
+SymbolSet Class::unqualified_lookup(Encoding const &name) const
 {
-  std::set<Symbol const *> symbols = Scope::lookup(name);
+  SymbolSet symbols = find(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
 }
 
@@ -72,9 +72,9 @@ void Class::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-std::set<Symbol const *> Namespace::lookup(Encoding const &name) const throw()
+SymbolSet Namespace::unqualified_lookup(Encoding const &name) const
 {
-  std::set<Symbol const *> symbols = Scope::lookup(name);
+  SymbolSet symbols = find(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
 }
 
@@ -87,5 +87,17 @@ std::string Namespace::name() const
 void Namespace::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "Namespace'" << this->name() << "':\n";
+  Scope::dump(os, in + 1);
+}
+
+SymbolSet GlobalScope::unqualified_lookup(Encoding const &name) const
+{
+  SymbolSet symbols = find(name);
+  return symbols;
+}
+
+void GlobalScope::dump(std::ostream &os, size_t in) const
+{
+  indent(os, in) << "GlobalScope:\n";
   Scope::dump(os, in + 1);
 }

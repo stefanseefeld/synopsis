@@ -21,19 +21,20 @@ Table::Table(Language l)
   : my_language(l)
 {
   // define the global scope
-  my_scopes.push(new Scope());
+  my_scopes.push(new GlobalScope());
 }
 
 Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
 {
   Trace trace("Table::enter_namespace");
   if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->lookup_scope(spec);
+  Scope *scope = my_scopes.top()->find_scope(spec);
   if (!scope)
   {
     scope = new Namespace(spec, my_scopes.top());
     my_scopes.top()->declare_scope(spec, scope);
   }
+  else scope->ref();
   my_scopes.push(scope);
   return *this;
 }
@@ -42,12 +43,13 @@ Table &Table::enter_class(PTree::ClassSpec const *spec)
 {
   Trace trace("Table::enter_class");
   if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->lookup_scope(spec);
+  Scope *scope = my_scopes.top()->find_scope(spec);
   if (!scope)
   {
     scope = new Class(spec, my_scopes.top());
     my_scopes.top()->declare_scope(spec, scope);
   }
+  else scope->ref();
   my_scopes.push(scope);
   return *this;
 }
@@ -56,12 +58,13 @@ Table &Table::enter_function(PTree::Declaration const *decl)
 {
   Trace trace("Table::enter_function");
   if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->lookup_scope(decl);
+  Scope *scope = my_scopes.top()->find_scope(decl);
   if (!scope)
   {
     scope = new FunctionScope(decl, my_scopes.top());
     my_scopes.top()->declare_scope(decl, scope);
   }
+  else scope->ref();
   my_scopes.push(scope);
   return *this;
 }
@@ -70,12 +73,13 @@ Table &Table::enter_block(PTree::List const *block)
 {
   Trace trace("Table::enter_block");
   if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->lookup_scope(block);
+  Scope *scope = my_scopes.top()->find_scope(block);
   if (!scope)
   {
     scope = new LocalScope(block, my_scopes.top());
     my_scopes.top()->declare_scope(block, scope);
   }
+  else scope->ref();
   my_scopes.push(scope);
   return *this;
 }
@@ -107,7 +111,7 @@ void Table::declare(Declaration *d)
     PTree::Encoding name = decls->encoded_name();
 
     // see whether it was previously declared
-    std::set<FunctionName const *> fs = my_scopes.top()->lookup_function(name);
+    FunctionNameSet fs = my_scopes.top()->lookup_function(name);
     // If name is qualified the function has to be declared already
     // so we only need to find it to report an error if it was not.
     
@@ -118,13 +122,14 @@ void Table::declare(Declaration *d)
     // declared already. If it hasn't, raise an error
     if (name.is_qualified())
     {
-      std::set<Symbol const *> symbols = lookup(name);
+      SymbolSet symbols = lookup(name);
       if (symbols.empty()) throw Undefined(name);
       return;
     }
     
     // FIXME: raise an error if this function was already defined
-    my_scopes.top()->declare(name, new FunctionName(type, decls));
+    Scope *scope = my_scopes.top();
+    scope->declare(name, new FunctionName(type, decls, scope));
   }
   else
   {
@@ -141,10 +146,11 @@ void Table::declare(Declaration *d)
 	{
 	  PTree::Encoding name = decl->encoded_name();
 	  PTree::Encoding type = decl->encoded_type();
+	  Scope *scope = my_scopes.top();
 	  if (type.is_function())
-	    my_scopes.top()->declare(name, new FunctionName(type, decl));
+	    scope->declare(name, new FunctionName(type, decl, scope));
 	  else
-	    my_scopes.top()->declare(name, new VariableName(type, decl));
+	    scope->declare(name, new VariableName(type, decl, scope));
 	}
       }
     }
@@ -163,7 +169,8 @@ void Table::declare(Typedef *td)
     {
       Encoding name = d->encoded_name();
       Encoding type = d->encoded_type();
-      my_scopes.top()->declare(name, new TypeName(type, d));
+      Scope *scope = my_scopes.top();
+      scope->declare(name, new TypeName(type, d, scope));
     }
     declarations = tail(declarations, 2);
   }
@@ -177,7 +184,7 @@ void Table::declare(EnumSpec *spec)
   Encoding const &name = spec->encoded_name();
   Encoding const &type = spec->encoded_type();
   if(tag && tag->is_atom()) 
-    my_scopes.top()->declare(name, new TypeName(type, spec));
+    my_scopes.top()->declare(name, new TypeName(type, spec, my_scopes.top()));
   // else it's an anonymous enum
 
   Node *body = third(spec);
@@ -207,10 +214,11 @@ void Table::declare(EnumSpec *spec)
     }
     assert(enumerator->is_atom());
     Encoding name(enumerator->position(), enumerator->length());
+    Scope *scope = my_scopes.top();
     if (defined)
-      my_scopes.top()->declare(name, new ConstName(type, value, enumerator));
+      scope->declare(name, new ConstName(type, value, enumerator, scope));
     else
-      my_scopes.top()->declare(name, new ConstName(type, enumerator));
+      scope->declare(name, new ConstName(type, enumerator, scope));
   }
 }
 
@@ -221,7 +229,8 @@ void Table::declare(NamespaceSpec *spec)
   Node const *name = second(spec);
   Encoding enc = Encoding::simple_name(static_cast<Atom const *>(name));
   // FIXME: do we need a 'type' here ?
-  my_scopes.top()->declare(enc, new NamespaceName(spec->encoded_type(), spec));
+  Scope *scope = my_scopes.top();
+  scope->declare(enc, new NamespaceName(spec->encoded_type(), spec, scope));
 }
 
 void Table::declare(ClassSpec *spec)
@@ -229,7 +238,8 @@ void Table::declare(ClassSpec *spec)
   Trace trace("Table::declare(ClassSpec *)");
   if (my_language == NONE) return;
   Encoding const &name = spec->encoded_name();
-  my_scopes.top()->declare(name, new TypeName(spec->encoded_type(), spec));
+  Scope *scope = my_scopes.top();
+  scope->declare(name, new TypeName(spec->encoded_type(), spec, scope));
 }
 
 void Table::declare(TemplateDecl *tdecl)
@@ -238,67 +248,24 @@ void Table::declare(TemplateDecl *tdecl)
   if (my_language == NONE) return;
   PTree::Node *body = PTree::nth(tdecl, 4);
   PTree::ClassSpec *class_spec = Table::get_class_template_spec(body);
+  Scope *scope = my_scopes.top();
   if (class_spec)
   {
     Encoding name = class_spec->encoded_name();
-    my_scopes.top()->declare(name, new ClassTemplateName(Encoding(), tdecl));
+    scope->declare(name, new ClassTemplateName(Encoding(), tdecl, scope));
   }
   else
   {
     PTree::Node *decl = PTree::third(body);
     PTree::Encoding name = decl->encoded_name();
-    my_scopes.top()->declare(name, new FunctionTemplateName(Encoding(), decl));
+    scope->declare(name, new FunctionTemplateName(Encoding(), decl, scope));
   }
 }
 
-std::set<Symbol const *> Table::lookup(PTree::Encoding const &name) const
+SymbolSet Table::lookup(PTree::Encoding const &name) const
 {
-  if (my_language == NONE) return std::set<Symbol const *>();
-  PTree::Encoding symbol_name = name.get_scope();
-  PTree::Encoding remainder = name.get_symbol();
-
-  Scope const *scope = my_scopes.top(); // start to look here
-  if (symbol_name.is_global_scope())
-  {
-    scope = my_scopes.top()->global();
-    symbol_name = remainder.get_scope();
-    remainder = remainder.get_symbol();
-  }
-  while (!symbol_name.empty()) // look up nested scopes
-  {
-    std::set<Symbol const *> symbols = scope->lookup(symbol_name);
-    if (symbols.empty()) throw Undefined(symbol_name);
-    else if (symbols.size() > 1)
-    {
-      // can we assume here that all symbols refer to functions ?
-      scope->dump(std::cerr, 0);
-      throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
-    }
-    // now make sure the symbol indeed refers to a scope
-    PTree::Node const *decl = 0;
-    if (NamespaceName const *ns = dynamic_cast<NamespaceName const *>(*symbols.begin()))
-      decl = ns->ptree();
-    else if (TypeName const *tn = dynamic_cast<TypeName const *>(*symbols.begin()))
-    {
-      decl = tn->ptree();
-      // test that 'decl' is a ClassSpec
-    }
-    // TODO: test for ClassTemplateName ...
-    if (!decl)
-    {
-      // the symbol was found but doesn't refer to a scope
-      scope->dump(std::cerr, 0);
-      throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
-    }
-    // move into inner scope and start over the lookup
-    scope = scope->lookup_scope(decl);
-    if (!scope) throw InternalError("undeclared scope !");
-    symbol_name = remainder.get_scope();
-    remainder = remainder.get_symbol();
-  }
-  // now we have to look up the remainder in the innermost scope
-  std::set<Symbol const *> symbols = scope->lookup(remainder);
-  return symbols;
+  if (my_language == NONE) return SymbolSet();
+  else return my_scopes.top()->lookup(name);
 }
 
 //. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo",
@@ -350,7 +317,7 @@ int Table::get_base_name_if_template(Encoding::iterator i,
 
   if(scope)
   {
-    std::set<Symbol const *> symbols = scope->lookup(Encoding((char const *)&*(i + 1), m));
+    SymbolSet symbols = scope->lookup(Encoding((char const *)&*(i + 1), m));
     // FIXME !! (see Environment)
     if (symbols.size()) return m + (*(i + m + 1) - 0x80) + 2;
   }
