@@ -1,8 +1,7 @@
-# $Id: XRef.py,v 1.1 2002/10/28 17:39:36 chalky Exp $
+# $Id: XRef.py,v 1.2 2002/10/29 01:35:58 chalky Exp $
 #
 # This file is a part of Synopsis.
-# Copyright (C) 2000, 2001 Stephen Davies
-# Copyright (C) 2000, 2001 Stefan Seefeld
+# Copyright (C) 2002 Stephen Davies
 #
 # Synopsis is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -20,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.2  2002/10/29 01:35:58  chalky
+# Add descriptive comment and link to docs for scope in xref pages
+#
 # Revision 1.1  2002/10/28 17:39:36  chalky
 # Cross referencing support
 #
@@ -28,7 +30,7 @@
 import os
 
 # Synopsis modules
-from Synopsis.Core import AST, Util
+from Synopsis.Core import AST, Type, Util
 
 # HTML modules
 import Page
@@ -78,6 +80,26 @@ class XRefPages (Page.Page):
 	for i in range(len(page_info)):
 	    filename = config.files.nameOfSpecial('xref%d'%i)
 	    self.mananger.register_filename(filename, self, i)
+    
+    def process_link(self, file, line, scope):
+	"""Outputs the info for one link"""
+	# Make a link to the highlighted source
+	file_link = config.files.nameOfScopedSpecial('page', string.split(file, os.sep))
+	file_link = file_link + "#%d"%line
+	# Try and make a descriptive
+	desc = ''
+	if config.types.has_key(scope):
+	    type = config.types[scope]
+	    if isinstance(type, Type.Declared):
+		desc = ' ' + type.declaration().type()
+	# Try and find a link to the scope
+	scope_text = string.join(scope, '::')
+	entry = config.toc[scope]
+	if entry:
+	    scope_text = href(entry.link, scope_text)
+	# Output list element
+	self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
+	    file_link, file, line, desc, scope_text))
      
     def process_name(self, name):
 	"""Outputs the info for a given name"""
@@ -92,23 +114,17 @@ class XRefPages (Page.Page):
 	if target_data[0]:
 	    self.write('<li>Defined at:<ul>\n')
 	    for file, line, scope in target_data[0]:
-		link = config.files.nameOfScopedSpecial('page', string.split(file, os.sep))
-		link = link + "#%d"%line
-		self.write('<li><a href="%s">%s:%s</a>: %s</li>\n'%(link, file, line, string.join(scope, '::')))
+		self.process_link(file, line, scope)
 	    self.write('</ul></li>\n')
 	if target_data[1]:
 	    self.write('<li>Called from:<ul>\n')
 	    for file, line, scope in target_data[1]:
-		link = config.files.nameOfScopedSpecial('page', string.split(file, os.sep))
-		link = link + "#%d"%line
-		self.write('<li><a href="%s">%s:%s</a>: %s</li>\n'%(link, file, line, string.join(scope, '::')))
+		self.process_link(file, line, scope)
 	    self.write('</ul></li>\n')
 	if target_data[2]:
 	    self.write('<li>Referenced from:<ul>\n')
 	    for file, line, scope in target_data[2]:
-		link = config.files.nameOfScopedSpecial('page', string.split(file, os.sep))
-		link = link + "#%d"%line
-		self.write('<li><a href="%s">%s:%s</a>: %s</li>\n'%(link, file, line, string.join(scope, '::')))
+		self.process_link(file, line, scope)
 	    self.write('</ul></li>\n')
 	
 	self.write('</ul><hr>\n')
