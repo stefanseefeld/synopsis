@@ -10,6 +10,7 @@
 #define _PTree_Node_hh
 
 #include <PTree/GC.hh>
+#include <PTree/Encoding.hh>
 #include <PTree/Visitor.hh>
 #include <Token.hh>
 #include <ostream>
@@ -17,7 +18,6 @@
 
 class Walker;
 class TypeInfo;
-class Encoding;
 
 namespace PTree
 {
@@ -44,11 +44,11 @@ public:
   void set_car(Node *p) { my_data.nonleaf.child = p;}
   void set_cdr(Node *p) { my_data.nonleaf.next = p;}
 
+  virtual Encoding encoded_type() const { return Encoding();}
+  virtual Encoding encoded_name() const { return Encoding();}
+
   virtual Node *Translate(Walker*);
   virtual void Typeof(Walker*, TypeInfo&);
-
-  virtual const char *encoded_type() const;
-  virtual const char *encoded_name() const;
 
 protected:
   //. used by Atom
@@ -71,17 +71,6 @@ private:
     } leaf;
   } my_data;
 };
-
-inline std::ostream &operator << (std::ostream &os, Node *p)
-{
-  // FIXME: this doesn't take into account any Ptree / AST modifications
-  //        i.e. it just refers to the unmodified buffer
-  //        Once we allow modifications to the tree we need to look up
-  //        overlapping buffer replacements and inject them into the stream
-  //        as appropriate
-  std::copy(p->begin(), p->end(), std::ostream_iterator<char>(os));
-  return os;
-}
 
 class Iterator : public LightObject 
 {

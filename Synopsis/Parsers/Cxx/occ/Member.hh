@@ -75,7 +75,7 @@ protected:
     PTree::Node *MemberInitializers(PTree::Node *decl);
 
 private:
-    const char* Name(int&);
+    PTree::Encoding encoded_name();
     bool Find();
 
 protected:
@@ -110,17 +110,18 @@ public:
 
 class MemberList : public PTree::LightObject {
 public:
-    struct Mem {
-	Class* supplying;
-	PTree::Node *definition;
-	PTree::Node *declarator;
-	const char* name;
-	const char* signature;
-	bool is_constructor, is_destructor;
-	bool is_virtual, is_static, is_mutable, is_inline;
-	int  access;
-	PTree::Node *user_access;
-	PTree::Node *user_mod;
+    struct Mem 
+    {
+      Class *supplying;
+      PTree::Node *definition;
+      PTree::Node *declarator;
+      PTree::Encoding name;
+      PTree::Encoding type;
+      bool is_constructor, is_destructor;
+      bool is_virtual, is_static, is_mutable, is_inline;
+      int  access;
+      PTree::Node *user_access;
+      PTree::Node *user_mod;
     };
 
     MemberList();

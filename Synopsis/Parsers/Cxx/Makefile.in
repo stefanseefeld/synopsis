@@ -28,10 +28,10 @@ OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
 OCC_FILES := Buffer HashTable Lexer \
-             PTree/Node PTree/operations \
+             PTree/Node PTree/Encoding PTree/operations \
              PTree/Atoms PTree/Lists PTree/generation \
              PTree/Visitor PTree/Display PTree/Writer \
-             Encoding Environment \
+             Environment \
              Walker TypeInfo Parser Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
@@ -62,6 +62,9 @@ vpath %.hh $(srcdir)
 
 all: $(TARGETS)
 
+display-ptree: display-ptree.o $(OCC_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(GC_LIB) $(LIBS)
+
 doc: occ.syn occ-impl.syn
 
 # Link C++ files together
@@ -79,7 +82,7 @@ occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 
 %.o: %.cc
 	@echo compiling $(@F)
-	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) -c -o $@ $<
 
 Makefile: $(srcdir)/Makefile.in
 	./config.status --file Makefile

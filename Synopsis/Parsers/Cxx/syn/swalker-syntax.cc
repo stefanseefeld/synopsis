@@ -564,9 +564,10 @@ SWalker::TranslateCast(PTree::Node *node)
   if (my_links) find_comments(node);
   PTree::Node *type_expr = PTree::second(node);
   //Translate(type_expr->First());
-  if (PTree::second(type_expr)->encoded_type())
+  PTree::Encoding enc = PTree::second(type_expr)->encoded_type();
+  if (!enc.empty())
   {
-    my_decoder->init(PTree::second(type_expr)->encoded_type());
+    my_decoder->init(enc);
     my_type = my_decoder->decodeType();
     my_type = TypeResolver(my_builder).resolve(my_type);
     if (my_type && my_links)
@@ -603,10 +604,14 @@ SWalker::TranslateTry(PTree::Node *node)
       Types::Type* arg_link = TypeResolver(my_builder).resolve(arg_type);
       if (my_links) my_links->link(PTree::first(arg), arg_link);
       // Create a declaration for the argument
-      if (PTree::second(arg) && PTree::second(arg)->encoded_name())
+      if (PTree::second(arg))
       {
-        std::string name = my_decoder->decodeName(PTree::second(arg)->encoded_name());
-        my_builder->add_variable(my_lineno, name, arg_type, false, "exception");
+	PTree::Encoding enc = PTree::second(arg)->encoded_name();
+	if (!enc.empty())
+	{
+	  std::string name = my_decoder->decodeName(enc);
+	  my_builder->add_variable(my_lineno, name, arg_type, false, "exception");
+	}
       }
     }
     // Translate contents of 'catch' block

@@ -12,18 +12,17 @@
   implied warranty.
 */
 
-#include <iostream>
-#include <cstring>
-#include "Environment.hh"
-#include "PTree.hh"
+#include <PTree.hh>
 #include <PTree/Display.hh>
+#include "Environment.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
 #include "Class.hh"
 #include "MetaClass.hh"
 #include "Parser.hh"
-#include "Encoding.hh"
 #include "Member.hh"
+#include <stdexcept>
+#include <iostream>
 
 Parser* Walker::default_parser = 0;
 const char* Walker::argument_name = "_arg_%d_";
@@ -48,8 +47,8 @@ Walker::Walker(Parser* p, Environment* e)
 Walker::Walker(Environment* e)
 {
     env = new Environment(e, this);
-    if(default_parser == 0)
-	MopErrorMessage("Walker::Walker()", "no default parser");
+    if(!default_parser)
+      throw std::runtime_error("Walker::Walker(): no default parser");
 
     parser = default_parser;
 }
@@ -563,11 +562,11 @@ PTree::Node *Walker::TranslateArgDeclList2(bool record, Environment* e,
 PTree::Node *Walker::FillArgumentName(PTree::Node *arg, PTree::Node *d, int arg_name)
 {
   PTree::Declarator* decl = (PTree::Declarator*)d;
-  if(decl->Name()) return arg;
+  if(decl->name()) return arg;
   else
   {
-    const unsigned char* type = (const unsigned char*)decl->encoded_type();
-    return Encoding::MakePtree(type, PTree::make(argument_name, arg_name));
+    PTree::Encoding type = decl->encoded_type();
+    return type.make_ptree(PTree::make(argument_name, arg_name));
   }
 }
 
@@ -868,10 +867,11 @@ PTree::Node *Walker::TranslateClassSpec(PTree::Node *spec, PTree::Node *,
 	if(body == body2)
 	    return spec;
 	else
-	    return new PTree::ClassSpec(spec->car(),
-					PTree::shallow_subst(body2, body,
-							     spec->cdr()),
-					0, spec->encoded_name());
+	  return new PTree::ClassSpec(spec->encoded_name(),
+				      spec->car(),
+				      PTree::shallow_subst(body2, body,
+							   spec->cdr()),
+				      0);
     }
 }
 
@@ -1737,8 +1737,8 @@ void Walker::SetLeafComments(PTree::Node *node, PTree::Node *comments)
 	parent->set_car(cleaf);
     } else {
 	// Already is a commented leaf, so add the comments to it
-	comments = PTree::snoc(cleaf->GetComments(), comments);
-	cleaf->SetComments(comments);
+	comments = PTree::snoc(cleaf->get_comments(), comments);
+	cleaf->set_comments(comments);
     }
 }
 
@@ -1755,7 +1755,7 @@ void Walker::SetDeclaratorComments(PTree::Node *def, PTree::Node *comments)
 	if (decl == 0)
 	    break;
 	else if (PTree::is_a(decl, Token::ntDeclarator))
-	    ((PTree::Declarator*)decl)->SetComments(comments);
+	    ((PTree::Declarator*)decl)->set_comments(comments);
     }
 }
 
@@ -1781,84 +1781,86 @@ PTree::Node *Walker::NthDeclarator(PTree::Node *def, int& nth)
     return 0;
 }
 
-PTree::Node *Walker::FindDeclarator(PTree::Node *def, const char* name, int len,
-			      const char* signature, int& nth, Environment* e)
-{
-    PTree::Node *decls = PTree::third(def);
-    if(decls == 0 || decls->is_atom())
-	return 0;
+// PTree::Node *Walker::FindDeclarator(PTree::Node *def, const char* name, int len,
+// 			      const char* signature, int& nth, Environment* e)
+// {
+//     PTree::Node *decls = PTree::third(def);
+//     if(decls == 0 || decls->is_atom())
+// 	return 0;
 
-    if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
-	if(MatchedDeclarator(decls, name, len, signature, e))
-	    return decls;
+//     if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
+// 	if(MatchedDeclarator(decls, name, len, signature, e))
+// 	    return decls;
 
-	++nth;
-    }
-    else
-	while(decls != 0){
-	    PTree::Node *d = decls->car();
-	    if(MatchedDeclarator(d, name, len, signature, e))
-		return d;
+// 	++nth;
+//     }
+//     else
+// 	while(decls != 0){
+// 	    PTree::Node *d = decls->car();
+// 	    if(MatchedDeclarator(d, name, len, signature, e))
+// 		return d;
 
-	    ++nth;
-	    if((decls = decls->cdr()) != 0)
-		decls = decls->cdr();		// skip ,
-	}
+// 	    ++nth;
+// 	    if((decls = decls->cdr()) != 0)
+// 		decls = decls->cdr();		// skip ,
+// 	}
 
-    return 0;
-}
+//     return 0;
+// }
 
-bool Walker::MatchedDeclarator(PTree::Node *decl, const char* name, int len,
-			       const char* signature, Environment* e)
-{
-    const char* str;
-    int strlen;
-    const char* sig;
+// bool Walker::MatchedDeclarator(PTree::Node *decl, const char* name, int len,
+// 			       const char* signature, Environment* e)
+// {
+//   PTree::Encoding enc = decl->encoded_name();
+//   PTree::Encoding sig = decl->encoded_type();
+//     const char* str;
+//     int strlen;
+//     const char* sig;
 
-    str = decl->encoded_name();
-    sig = decl->encoded_type();
-    if(str == 0 || sig == 0)
-	return false;
+//     str = decl->encoded_name();
+//     sig = decl->encoded_type();
+//     if(str == 0 || sig == 0)
+// 	return false;
 
-    str = Encoding::GetBaseName(str, strlen, e);
-    return bool(len == strlen && memcmp(name, str, len) == 0
-		&& strcmp(signature, sig) == 0);
-}
+//     str = PTree::Encoding::GetBaseName(str, strlen, e);
+//     return bool(len == strlen && memcmp(name, str, len) == 0
+// 		&& strcmp(signature, sig) == 0);
+// }
 
-bool Walker::WhichDeclarator(PTree::Node *def, PTree::Node *name, int& nth,
-			     Environment* env)
-{
-    const char* str;
-    int len;
-    Environment* e;
-    PTree::Node *decls = PTree::third(def);
-    if(decls == 0 || decls->is_atom())
-	return false;
+// bool Walker::WhichDeclarator(PTree::Node *def, PTree::Node *name, int& nth,
+// 			     Environment* env)
+// {
+//     const char* str;
+//     int len;
+//     Environment* e;
+//     PTree::Node *decls = PTree::third(def);
+//     if(decls == 0 || decls->is_atom())
+// 	return false;
 
-    if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
-	str = decls->encoded_name();
-	e = env;
-	str = Encoding::GetBaseName(str, len, e);
-	if(equal(*name, str, len))
-	    return true;
+//     if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
+// 	str = decls->encoded_name();
+// 	e = env;
+// 	str = PTree::Encoding::GetBaseName(str, len, e);
+// 	if(equal(*name, str, len))
+// 	    return true;
 
-	++nth;
-    }
-    else
-	while(decls != 0){
-	    str = decls->car()->encoded_name();
-	    e = env;
-	    str = Encoding::GetBaseName(str, len, e);
-	    if(equal(*name, str, len))
-		return true;
+// 	++nth;
+//     }
+//     else
+// 	while(decls != 0){
+// 	    str = decls->car()->encoded_name();
+// 	    e = env;
+// 	    str = PTree::Encoding::GetBaseName(str, len, e);
+// 	    if(equal(*name, str, len))
+// 		return true;
 
-	    ++nth;
-	    if((decls = decls->cdr()) != 0)
-		decls = decls->cdr();
-	}
+// 	    ++nth;
+// 	    if((decls = decls->cdr()) != 0)
+// 		decls = decls->cdr();
+// 	}
 
-    return false;
-}
+//     return false;
+// }
 
 void Walker::ErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
@@ -1874,18 +1876,16 @@ void Walker::WarningMessage(const char* msg, PTree::Node *name, PTree::Node *whe
 
 void Walker::InaccurateErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-    if(default_parser == 0)
-	MopErrorMessage("Walker::InaccurateErrorMessage()",
-			"no default parser");
-    else
-	default_parser->ErrorMessage(msg, name, where);
+  if(!default_parser)
+    throw std::runtime_error("Walker::InaccurateErrorMessage(): no default parser");
+  else
+    default_parser->ErrorMessage(msg, name, where);
 }
 
 void Walker::InaccurateWarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-    if(default_parser == 0)
-	MopErrorMessage("Walker::InaccurateWarningMessage()",
-			"no default parser");
+    if(!default_parser)
+      throw std::runtime_error("Walker::InaccurateWarningMessage(): no default parser");
     else
 	default_parser->WarningMessage(msg, name, where);
 }

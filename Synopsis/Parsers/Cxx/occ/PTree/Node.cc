@@ -7,10 +7,10 @@
 // see the file COPYING for details.
 //
 #include "PTree/Node.hh"
+#include "PTree/Encoding.hh"
 #include "PTree/operations.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
-#include "Encoding.hh"
 #include "Buffer.hh"
 #include <iostream>
 #include <sstream>
@@ -106,16 +106,6 @@ Node *Node::Translate(Walker* w)
 void Node::Typeof(Walker* w, TypeInfo& t)
 {
     w->TypeofPtree(this, t);
-}
-
-const char *Node::encoded_type() const
-{
-  return 0;
-}
-
-const char *Node::encoded_name() const
-{
-  return 0;
 }
 
 Node *Iterator::pop()

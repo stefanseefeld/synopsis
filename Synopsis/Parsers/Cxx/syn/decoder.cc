@@ -35,22 +35,6 @@
 #include "lookup.hh"
 #include <iostream>
 
-std::ostream& operator <<(std::ostream&o, const code& s)
-{
-    code::const_iterator i = s.begin();
-    for(; i != s.end(); i++)
-        if (*i < 0x80)
-            o << (char)(*i);
-        else
-            o << "[" << (int)(*i - 0x80) << "]";
-    return o;
-}
-
-code Decoder::toCode(char* str)
-{
-    return code(reinterpret_cast<unsigned char*>(str));
-}
-
 Decoder::Decoder(Builder* builder)
         : m_builder(builder)
 {
@@ -75,10 +59,11 @@ std::string Decoder::decodeName(code_iter iter)
     return name;
 }
 
-std::string Decoder::decodeName(const char *iter)
+std::string Decoder::decodeName(const PTree::Encoding &e)
 {
-    size_t length = *reinterpret_cast<const unsigned char*>(iter++) - 0x80;
-    std::string name(iter, length);
+    PTree::Encoding::iterator i = e.begin();
+    size_t length = (const unsigned char)(*i++) - 0x80;
+    std::string name(reinterpret_cast<const char *>(&*i), length);
     return name;
 }
 
@@ -121,9 +106,9 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
     }
 }
 
-void Decoder::init(const char *string)
+void Decoder::init(const PTree::Encoding &e)
 {
-  m_string = reinterpret_cast<const unsigned char*>(string);
+  m_string = code(e.begin(), e.end());
   m_iter = m_string.begin();
 }
 
@@ -336,6 +321,8 @@ Types::Type* Decoder::decodeFuncPtr(std::vector<std::string>& postmod)
 
 Types::Type* Decoder::decodeTemplate()
 {
+    STrace trace("Decoder::decodeTemplate()");
+
     // Template type: Name first, then size of arg field, then arg
     // types eg: T6vector54cell <-- 5 is len of 4cell
     if (*m_iter == 'T')

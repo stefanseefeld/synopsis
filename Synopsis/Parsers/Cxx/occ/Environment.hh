@@ -1,17 +1,10 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
-
+//
+// Copyright (C) 1997 Shigeru Chiba
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 #ifndef _Environment_hh
 #define _Environment_hh
 
@@ -20,13 +13,11 @@
 class Class;
 class HashTable;
 class Bind;
-class Encoding;
 class TypeInfo;
 class Walker;
 
-// class Environment
-
-class Environment : public PTree::LightObject {
+class Environment : public PTree::LightObject 
+{
 public:
     Environment(Walker* w);
     Environment(Environment* e);
@@ -60,7 +51,7 @@ public:
     bool LookupNamespace(const char*, int);
   void RecordTypedefName(PTree::Node *);
   void RecordEnumName(PTree::Node *);
-  void RecordClassName(const char*, Class*);
+  void RecordClassName(const PTree::Encoding &, Class*);
   void RecordTemplateClass(PTree::Node *, Class*);
   Environment* RecordTemplateFunction(PTree::Node *, PTree::Node *);
   Environment* RecordDeclarator(PTree::Node *);
@@ -103,8 +94,6 @@ private:
   static HashTable*	namespace_table;
 };
 
-// class Bind and its subclasses
-
 class Bind : public PTree::LightObject 
 {
 public:
@@ -115,7 +104,7 @@ public:
   };
   virtual Kind What() = 0;
   virtual void GetType(TypeInfo&, Environment*) = 0;
-  virtual const char *encoded_type();
+  virtual PTree::Encoding encoded_type() const { return PTree::Encoding();}
   virtual bool IsType();
   virtual Class* ClassMetaobject();
   virtual void SetClassMetaobject(Class*);
@@ -124,24 +113,24 @@ public:
 class BindVarName : public Bind 
 {
 public:
-  BindVarName(const char *t) : my_type(t) {}
+  BindVarName(const PTree::Encoding &t) : my_type(t) {}
   Kind What();
   void GetType(TypeInfo&, Environment*);
-  const char *encoded_type();
+  virtual PTree::Encoding encoded_type() const { return my_type;}
   bool IsType();
 private:
-  const char *my_type;
+  PTree::Encoding my_type;
 };
 
 class BindTypedefName : public Bind 
 {
 public:
-  BindTypedefName(const char* t) : my_type(t) {}
+  BindTypedefName(const PTree::Encoding &t) : my_type(t) {}
   Kind What();
   void GetType(TypeInfo&, Environment*);
-  const char *encoded_type();
+  virtual PTree::Encoding encoded_type() const { return my_type;}
 private:
-  const char *my_type;
+  PTree::Encoding my_type;
 };
 
 class BindClassName : public Bind 
@@ -159,12 +148,13 @@ private:
 class BindEnumName : public Bind 
 {
 public:
-  BindEnumName(const char *, PTree::Node *);
+  BindEnumName(const PTree::Encoding &, PTree::Node *);
   Kind What();
   void GetType(TypeInfo&, Environment*);
   PTree::Node *GetSpecification() { return my_spec;}
+  virtual PTree::Encoding encoded_type() const { return my_type;}
 private:
-  const char *my_type;
+  PTree::Encoding my_type;
   PTree::Node *my_spec;
 };
 

@@ -12,15 +12,14 @@
   implied warranty.
 */
 
-#include <iostream>
-#include "PTree.hh"
+#include <PTree.hh>
 #include "ClassWalker.hh"
 #include "ClassBodyWalker.hh"
 #include "Class.hh"
 #include "Environment.hh"
 #include "TypeInfo.hh"
 #include "Member.hh"
-#include "Encoding.hh"
+#include <iostream>
 
 Class* ClassWalker::GetClassMetaobject(TypeInfo& tinfo)
 {
@@ -152,13 +151,12 @@ PTree::Node *ClassWalker::TranslateClassSpec(PTree::Node *spec, PTree::Node *use
       if(!name2) name2 = PTree::second(class_def);
       PTree::Node *rest = PTree::list(name2, bases2, body2);
       if(cspec) rest = PTree::cons(cspec, rest);
-      return new PTree::ClassSpec(class_def->car(), rest, 0,
-				  spec->encoded_name());
+      return new PTree::ClassSpec(spec->encoded_name(), class_def->car(), rest, 0);
     }
   }
   if(!userkey) return spec;
-  else return new PTree::ClassSpec(class_def->car(), class_def->cdr(),
-				   0, spec->encoded_name());
+  else return new PTree::ClassSpec(spec->encoded_name(),
+				   class_def->car(), class_def->cdr(), 0);
 }
 
 PTree::Node *ClassWalker::TranslateTemplateInstantiation(PTree::Node *inst_spec,
@@ -204,8 +202,7 @@ PTree::Node *ClassWalker::ConstructClass(Class* metaobject)
 	if(cspec2 != 0)
 	    rest = PTree::cons(cspec2, rest);
 
-	def2 = new PTree::ClassSpec(def->car(), rest,
-				    0, def->encoded_name());
+	def2 = new PTree::ClassSpec(def->encoded_name(), def->car(), rest, 0);
     }
 
     return new PTree::Declaration(0, PTree::list(def2, Class::semicolon_t));
@@ -464,14 +461,14 @@ PTree::Node *ClassWalker::TranslateFunctionImplementation(PTree::Node *impl)
 
 Class* ClassWalker::MakeMetaobjectForCfunctions() {
     if (Class::for_c_functions == 0) {
-	Encoding encode;
+	PTree::Encoding encode;
 	PTree::Node *name = new PTree::Atom("<C>", 3);
-	encode.SimpleName(name);
+	encode.simple_name(name);
 	PTree::Node *class_def
-	    = new PTree::ClassSpec(Class::class_t,
-				   PTree::list(name, 0,
-						     Class::empty_block_t),
-				   0, encode.Get());
+	  = new PTree::ClassSpec(encode,
+				 Class::class_t,
+				 PTree::list(name, 0, Class::empty_block_t),
+				 0);
 	std::cerr << "encode: " << class_def->encoded_name();
 	Class* metaobject = opcxx_ListOfMetaclass::New(
 			Class::metaclass_for_c_functions,
@@ -514,7 +511,7 @@ PTree::Node *ClassWalker::MakeMemberDeclarator(bool record, void* ptr,
     else
 	args = args2 = 0;
 
-    name = decl->Name();
+    name = decl->name();
     if(m->name != 0)
 	name2 = m->name;
     else
@@ -649,7 +646,7 @@ PTree::Node *ClassWalker::TranslateInitializeArgs(PTree::Declarator* decl,
     env->Lookup(decl, tinfo);
     Class* metaobject = tinfo.ClassMetaobject();
     if(metaobject != 0)
-	return metaobject->TranslateInitializer(env, decl->Name(), init);
+	return metaobject->TranslateInitializer(env, decl->name(), init);
     else
 	return TranslateArguments(init);
 }
@@ -661,7 +658,7 @@ PTree::Node *ClassWalker::TranslateAssignInitializer(PTree::Declarator* decl,
     env->Lookup(decl, tinfo);
     Class* metaobject = tinfo.ClassMetaobject();
     if(metaobject != 0)
-	return metaobject->TranslateInitializer(env, decl->Name(), init);
+	return metaobject->TranslateInitializer(env, decl->name(), init);
     else{
 	PTree::Node *exp = PTree::second(init);
 	PTree::Node *exp2 = Translate(exp);
