@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker-syntax.cc,v 1.14 2002/01/28 13:17:24 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.15 2002/01/30 11:53:15 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.15  2002/01/30 11:53:15  chalky
+// Couple bug fixes, some cleaning up.
+//
 // Revision 1.14  2002/01/28 13:17:24  chalky
 // More cleaning up of code. Combined xref into LinkStore. Encoded links file.
 //
@@ -199,7 +202,7 @@ SWalker::TranslateVariable(Ptree* spec)
           m_type = func->return_type();
         }
     } 
-  catch(TranslateError& e)
+  catch(const TranslateError& e)
     {
       m_scope = 0;
       m_type = 0;
@@ -630,7 +633,7 @@ SWalker::TranslateArray(Ptree* node)
           m_links->link(node->Nth(3), func->declared());
         }
     }
-  catch(TranslateError& e)
+  catch (const TranslateError& e)
     {
       e.set_node(node);
       throw;

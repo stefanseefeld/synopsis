@@ -30,13 +30,13 @@ public:
     t->accept(this);
   }
   //. Base -- null is flagged since it is special
-  void visitBase(Types::Base* base)
+  void visit_base(Types::Base* base)
   {
     if (base->name().back() == "__null_t")
       is_null = true;
   }
   //. Modifiers -- recurse on the alias type
-  void visitModifier(Types::Modifier* mod)
+  void visit_modifier(Types::Modifier* mod)
   {
     Types::Type::Mods::const_iterator iter;
     // Check for const
@@ -55,7 +55,7 @@ public:
     set(mod->alias());
   }
   //. Declared -- check for typedef
-  void visitDeclared(Types::Declared* t)
+  void visit_declared(Types::Declared* t)
   {
     try
       {

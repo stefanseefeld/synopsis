@@ -24,6 +24,9 @@ typedef std::basic_string<unsigned char> code;
 //. A string iterator type for the encoded names and types
 typedef code::iterator code_iter;
 
+//. Insertion operator for encoded names and types
+std::ostream& operator <<(std::ostream& o, code& s);
+
 //. Decoder for OCC encodings. This class can be used to decode the names and
 //. types encoded by OCC for function and variable types and names.
 class Decoder {

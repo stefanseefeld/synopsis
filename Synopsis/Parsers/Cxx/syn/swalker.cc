@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.48 2002/01/28 13:17:24 chalky Exp $
+// $Id: swalker.cc,v 1.49 2002/01/30 11:53:15 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.49  2002/01/30 11:53:15  chalky
+// Couple bug fixes, some cleaning up.
+//
 // Revision 1.48  2002/01/28 13:17:24  chalky
 // More cleaning up of code. Combined xref into LinkStore. Encoded links file.
 //
@@ -80,7 +83,6 @@ std::ostream& STrace::operator <<(Ptree* p)
 // ------------------------------------------------------------------
 
 SWalker *SWalker::g_swalker = 0;
-
 
 // ------------------------------------
 // SWalker Constructor
@@ -371,19 +373,29 @@ Ptree*
 SWalker::TranslateNamespaceSpec(Ptree* def)
 {
   STrace trace("SWalker::TranslateNamespaceSpec");
+
+  Ptree* pNamespace = def->First();
+  Ptree* pIdentifier = def->Second();
+  Ptree* pBody = def->Third();
   
-  if (m_links) m_links->span(def->First(), "file-keyword");
+  if (m_links) m_links->span(pNamespace, "file-keyword");
   else update_line_number(def);
 
+  // Start the namespace
   AST::Namespace* ns;
-  if (def->Cadr()) ns = m_builder->start_namespace(parse_name(def->Cadr()), NamespaceNamed);
-  else ns = m_builder->start_namespace(m_filename, NamespaceAnon);
+  if (pIdentifier)
+    ns = m_builder->start_namespace(parse_name(pIdentifier), NamespaceNamed);
+  else
+    ns = m_builder->start_namespace(m_filename, NamespaceAnon);
 
+  // Add comments
   add_comments(ns, dynamic_cast<PtreeNamespaceSpec*>(def));
-  if (m_links && def->Cadr()) m_links->link(def->Second(), ns);
+  if (m_links && Ptree::First(pIdentifier)) m_links->link(pIdentifier, ns);
 
-  Translate(Ptree::Third(def));
+  // Translate the body
+  Translate(pBody);
 
+  // End the namespace
   m_builder->end_namespace();
   return 0;
 }
@@ -410,7 +422,7 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
         {
           try
             { type = m_lookup->lookupType(parse_name(name)); }
-          catch (TranslateError)
+          catch (const TranslateError)
             {
               // Ignore error, and put an Unknown in, instead
               ScopedName uname; uname.push_back(parse_name(name));
@@ -433,62 +445,19 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 }
 
 
-//. [ class|struct <name> <inheritance> [{ body }] ]
 Ptree*
 SWalker::TranslateClassSpec(Ptree* node) 
 {
   // REVISIT: figure out why this method is so long
   STrace trace("SWalker::TranslateClassSpec");
-  if (Ptree::Length(node) == 4)
-    {
-      // if Class definition (not just declaration)
+  enum { SizeForwardDecl = 2, SizeAnonClass = 3, SizeClass = 4 };
 
-      if (m_links) m_links->span(node->First(), "file-keyword");
-      else update_line_number(node);
-      
-      // Create AST.Class object
-      AST::Class *clas;
-      std::string type = parse_name(node->First());
-      char* encname = node->GetEncodedName();
-      if (encname[0] == 'Q')
-        {
-          std::vector<std::string> names;
-          m_decoder->init(encname);
-          m_decoder->decodeQualName(names);
-          clas = m_builder->start_class(m_lineno, type, names);
-        }
-      else
-        {
-          std::string name = parse_name(node->Second());
-          clas = m_builder->start_class(m_lineno, type, name);
-        }
-      if (m_links) m_links->link(node->Second(), clas);
+  int size = Ptree::Length(node);
 
-      // Get parents
-      std::vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
-      clas->parents() = parents;
-      m_builder->update_class_base_search();
-      PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
-      add_comments(clas, cspec->GetComments());
-
-      // Push the impl stack for a cache of func impls
-      m_func_impl_stack.push_back(FuncImplVec());
-
-      // Translate the body of the class
-      TranslateBlock(node->Nth(3));
-
-      // Translate any func impls inlined in the class
-      FuncImplVec& vec = m_func_impl_stack.back();
-      FuncImplVec::iterator iter = vec.begin();
-      while (iter != vec.end())
-        TranslateFuncImplCache(*iter++);
-      m_func_impl_stack.pop_back();
-          
-      m_builder->end_class();
-    }
-  else if (Ptree::Length(node) == 2)
+  if (size == SizeForwardDecl)
     {
       // Forward declaration
+      // [ class|struct <name> ]
       std::string name = parse_name(node->Second());
       m_builder->add_unknown(name);
       if (m_links)
@@ -496,51 +465,78 @@ SWalker::TranslateClassSpec(Ptree* node)
           PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
           add_comments(NULL, cspec->GetComments());
         }
+      return 0;
     }
-  else if (Ptree::Length(node) == 3)
+  Ptree* pClass = node->First();
+  Ptree* pName = NULL, *pInheritance = NULL;
+  Ptree* pBody = NULL;
+  if (size == SizeClass)
     {
-      // Most likely anonymous struct
-      // [ struct [nil nil] [{ ... }] ]
-      if (node->Second()->IsLeaf() || node->Second()->First() != 0) return 0;
-
-      if (m_links) m_links->span(node->First(), "file-keyword");
-      else update_line_number(node);
-      
-      // Create AST.Class object
-      AST::Class *clas;
-      std::string type = parse_name(node->First());
-      char* encname = node->GetEncodedName();
-      m_decoder->init(encname);
-      if (encname[0] == 'Q')
-        {
-          std::vector<std::string> names;
-          m_decoder->decodeQualName(names);
-          clas = m_builder->start_class(m_lineno, type, names);
-        }
-      else
-        {
-          std::string name = m_decoder->decodeName();
-          clas = m_builder->start_class(m_lineno, type, name);
-        }
-
-      PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
-      add_comments(clas, cspec->GetComments());
-
-      // Push the impl stack for a cache of func impls
-      m_func_impl_stack.push_back(FuncImplVec());
-
-      // Translate the body of the class
-      TranslateBlock(node->Third());
-
-      // Translate any func impls inlined in the class
-      FuncImplVec& vec = m_func_impl_stack.back();
-      FuncImplVec::iterator iter = vec.begin();
-      while (iter != vec.end())
-          TranslateFuncImplCache(*iter++);
-      m_func_impl_stack.pop_back();
-          
-      m_builder->end_class();
+      // [ class|struct <name> <inheritance> [{ body }] ]
+      pName = node->Nth(1);
+      pInheritance = node->Nth(2);
+      pBody = node->Nth(3);
     }
+  else if (size == SizeAnonClass)
+    // An anonymous struct. OpenC++ encodes us a unique
+    // (may be qualified if nested) name
+    // [ struct [nil nil] [{ ... }] ]
+    pBody = node->Nth(2);
+  else
+    throw nodeERROR(node, "Class node has bad length: " << size);
+
+  if (m_links) m_links->span(pClass, "file-keyword");
+  else update_line_number(node);
+  
+  // Create AST.Class object
+  AST::Class *clas;
+  std::string type = parse_name(pClass);
+  char* encname = node->GetEncodedName();
+  m_decoder->init(encname);
+  if (encname[0] == 'Q')
+    {
+      ScopedName names;
+      m_decoder->decodeQualName(names);
+      clas = m_builder->start_class(m_lineno, type, names);
+    }
+  else if (encname[0] == 'T')
+    // TODO: deal with this.
+    // Eg: /usr/include/g++-3/std/straits.h
+    // search: /^struct string_char_traits <char> {/
+    // encname: "T\222string_char_traits\201c"
+    return 0;
+  else
+    {
+      std::string name = m_decoder->decodeName();
+      clas = m_builder->start_class(m_lineno, type, name);
+    }
+  if (m_links && pName) m_links->link(pName, clas);
+
+  // Translate the inheritance spec, if present
+  if (pInheritance)
+    {
+      clas->parents() = TranslateInheritanceSpec(pInheritance);
+      m_builder->update_class_base_search();
+    }
+  
+  // Add comments
+  PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+  add_comments(clas, cspec->GetComments());
+
+  // Push the impl stack for a cache of func impls
+  m_func_impl_stack.push_back(FuncImplVec());
+
+  // Translate the body of the class
+  TranslateBlock(pBody);
+
+  // Translate any func impls inlined in the class
+  FuncImplVec& vec = m_func_impl_stack.back();
+  FuncImplVec::iterator iter = vec.begin();
+  while (iter != vec.end())
+    TranslateFuncImplCache(*iter++);
+  m_func_impl_stack.pop_back();
+      
+  m_builder->end_class();
   return 0;
 }
 
@@ -791,151 +787,169 @@ SWalker::TranslateDeclarator(Ptree* decl)
       bool is_const = false;
       while (*iter == 'C') { ++iter; is_const = true; }
       if (*iter == 'F')
-        {
-          // This is a function
-          ++iter;
-
-          // Create parameter objects
-          Ptree *p_params = decl->Rest();
-          while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
-          if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
-          std::vector<AST::Parameter*> params;
-          TranslateParameters(p_params->Second(), params);
-          m_param_cache = params;
-
-          // Figure out the return type:
-          while (*iter++ != '_'); // in case of decoding error this is needed
-          Types::Type* returnType = m_decoder->decodeType();
-
-          // Figure out premodifiers
-          std::vector<std::string> premod;
-          Ptree* p = Ptree::First(m_declaration);
-          while (p)
-            {
-              premod.push_back(p->ToString());
-              p = Ptree::Rest(p);
-            }
-
-          AST::Operation* oper = 0;
-          // Find name:
-          if (encname[0] == 'Q')
-            {
-              // The name is qualified, which introduces a bit of difficulty
-              std::vector<std::string> names;
-              m_decoder->init(encname);
-              m_decoder->decodeQualName(names);
-              names.back() += format_parameters(params);
-              // A qual name must already be declared, so find it:
-              try
-                {
-                  Types::Named* named_type = m_lookup->lookupType(names, true);
-                  oper = Types::declared_cast<AST::Operation>(named_type);
-                }
-              catch (const Types::wrong_type_cast &)
-                { throw ERROR("Qualified function name wasn't a function:" << names); }
-              // expand param info, since we now have names for them
-              std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
-              std::vector<AST::Parameter*>::iterator pend = oper->parameters().end();
-              std::vector<AST::Parameter*>::iterator new_piter = params.begin();
-              while (piter != pend)
-                {
-                  AST::Parameter* param = *piter++, *new_param = *new_piter++;
-                  if (!param->name().size() && new_param->name().size())
-                    param->set_name(new_param->name());
-                }
-            }
-          else
-            {
-              // Decode the function name
-              std::string realname;
-              TranslateFunctionName(encname, realname, returnType);
-              // Name is same as realname, but with parameters added
-              std::string name = realname + format_parameters(params);
-              // Append const after params if this is a const function
-              if (is_const) name += "const";
-              // Create AST::Operation object
-              oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname);
-              oper->parameters() = params;
-            }
-          add_comments(oper, m_declaration);
-          add_comments(oper, dynamic_cast<PtreeDeclarator*>(decl));
-
-          // if storing links, find name
-          if (m_links)
-            {
-              // Store for use by TranslateFunctionImplementation
-              m_operation = oper;
-
-              // Do decl type first
-              if (m_store_decl && m_declaration->Second())
-                m_links->link(m_declaration->Second(), returnType);
-
-              p = decl;
-              while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
-              if (p)
-                // p should now be at the name
-                m_links->link(p->Car(), oper);
-            }
-        }
+        return TranslateFunctionDeclarator(decl, is_const);
       else
-        {
-          // Variable declaration
-          m_decoder->init(enctype);
-          // Get type
-          Types::Type* type = m_decoder->decodeType();
-          std::string name;
-          if (m_decoder->isName(encname)) name = m_decoder->decodeName(encname);
-          else if (*encname == 'Q')
-            {
-              cout << "Scoped name in variable decl!" << endl;
-              return 0;
-            }
-          else
-            {
-              cout << "Unknown name in variable decl!" << endl;
-              return 0;
-            }
-
-          // TODO: implement sizes support
-          std::vector<size_t> sizes;
-          std::string var_type = m_builder->scope()->type();
-          if (var_type == "function") var_type = "local";
-          var_type += " variable";
-          AST::Variable* var = m_builder->add_variable(m_lineno, name, type, false, var_type);
-          //if (m_declaration->GetComments()) add_comments(var, m_declaration->GetComments());
-          //if (decl->GetComments()) add_comments(var, decl->GetComments());
-          add_comments(var, m_declaration);
-          add_comments(var, dynamic_cast<PtreeDeclarator*>(decl));
-          
-          // if storing links, find name
-          if (m_links)
-            {
-              // Do decl type first
-              if (m_store_decl && m_declaration->Second()) 
-                m_links->link(m_declaration->Second(), type);
-
-              Ptree* p = decl;
-              while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
-              if (p)
-                {
-                  // p should now be at the name
-                  m_links->link(p->Car(), var);
-
-                  // Next might be '=' then expr
-                  p = p->Rest();
-                  if (p && p->Car() && p->Car()->Eq('='))
-                    {
-                      p = p->Rest();
-                      if (p && p->Car()) Translate(p->Car());
-                    }
-                }
-            }
-        }
+        return TranslateVariableDeclarator(decl, is_const);
     }
-  catch (TranslateError e)
+  catch (const TranslateError& e)
     {
       e.set_node(decl);
       throw;
+    }
+  return 0;
+}
+
+
+Ptree*
+SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const) 
+{
+  STrace trace("SWalker::TranslateFunctionDeclarator");
+
+  code_iter& iter = m_decoder->iter();
+  char* encname = decl->GetEncodedName();
+
+  // This is a function. Skip the 'F'
+  ++iter;
+
+  // Create parameter objects
+  Ptree *p_params = decl->Rest();
+  while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
+  if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
+  std::vector<AST::Parameter*> params;
+  TranslateParameters(p_params->Second(), params);
+  m_param_cache = params;
+
+  // Figure out the return type:
+  while (*iter++ != '_'); // in case of decoding error this is needed
+  Types::Type* returnType = m_decoder->decodeType();
+
+  // Figure out premodifiers
+  std::vector<std::string> premod;
+  Ptree* p = Ptree::First(m_declaration);
+  while (p)
+    {
+      premod.push_back(p->ToString());
+      p = Ptree::Rest(p);
+    }
+
+  AST::Operation* oper = 0;
+  // Find name:
+  if (encname[0] == 'Q')
+    {
+      // The name is qualified, which introduces a bit of difficulty
+      std::vector<std::string> names;
+      m_decoder->init(encname);
+      m_decoder->decodeQualName(names);
+      names.back() += format_parameters(params);
+      // A qual name must already be declared, so find it:
+      try
+        {
+          Types::Named* named_type = m_lookup->lookupType(names, true);
+          oper = Types::declared_cast<AST::Operation>(named_type);
+        }
+      catch (const Types::wrong_type_cast &)
+        { throw ERROR("Qualified function name wasn't a function:" << names); }
+      // expand param info, since we now have names for them
+      std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
+      std::vector<AST::Parameter*>::iterator pend = oper->parameters().end();
+      std::vector<AST::Parameter*>::iterator new_piter = params.begin();
+      while (piter != pend)
+        {
+          AST::Parameter* param = *piter++, *new_param = *new_piter++;
+          if (!param->name().size() && new_param->name().size())
+            param->set_name(new_param->name());
+        }
+    }
+  else
+    {
+      // Decode the function name
+      std::string realname;
+      TranslateFunctionName(encname, realname, returnType);
+      // Name is same as realname, but with parameters added
+      std::string name = realname + format_parameters(params);
+      // Append const after params if this is a const function
+      if (is_const) name += "const";
+      // Create AST::Operation object
+      oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname);
+      oper->parameters() = params;
+    }
+  add_comments(oper, m_declaration);
+  add_comments(oper, dynamic_cast<PtreeDeclarator*>(decl));
+
+  // if storing links, find name
+  if (m_links)
+    {
+      // Store for use by TranslateFunctionImplementation
+      m_operation = oper;
+
+      // Do decl type first
+      if (m_store_decl && m_declaration->Second())
+        m_links->link(m_declaration->Second(), returnType);
+
+      p = decl;
+      while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+      if (p)
+        // p should now be at the name
+        m_links->link(p->Car(), oper);
+    }
+  return 0;
+}
+
+Ptree*
+SWalker::TranslateVariableDeclarator(Ptree* decl, bool is_const) 
+{
+  // Variable declaration. Restart decoding
+  char* encname = decl->GetEncodedName();
+  char* enctype = decl->GetEncodedType();
+  m_decoder->init(enctype);
+  // Get type
+  Types::Type* type = m_decoder->decodeType();
+  std::string name;
+  if (m_decoder->isName(encname)) name = m_decoder->decodeName(encname);
+  else if (*encname == 'Q')
+    {
+      cout << "Scoped name in variable decl!" << endl;
+      return 0;
+    }
+  else
+    {
+      cout << "Unknown name in variable decl!" << endl;
+      return 0;
+    }
+
+  // TODO: implement sizes support
+  std::vector<size_t> sizes;
+  std::string var_type = m_builder->scope()->type();
+  if (var_type == "function") var_type = "local";
+  var_type += " variable";
+  AST::Variable* var = m_builder->add_variable(m_lineno, name, type, false, var_type);
+  //if (m_declaration->GetComments()) add_comments(var, m_declaration->GetComments());
+  //if (decl->GetComments()) add_comments(var, decl->GetComments());
+  add_comments(var, m_declaration);
+  add_comments(var, dynamic_cast<PtreeDeclarator*>(decl));
+  
+  // if storing links, find name
+  if (m_links)
+    {
+      // Do decl type first
+      if (m_store_decl && m_declaration->Second()) 
+        m_links->link(m_declaration->Second(), type);
+
+      Ptree* p = decl;
+      while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+      if (p)
+        {
+          // p should now be at the name
+          m_links->link(p->Car(), var);
+
+          // Next might be '=' then expr
+          p = p->Rest();
+          if (p && p->Car() && p->Car()->Eq('='))
+            {
+              p = p->Rest();
+              if (p && p->Car()) Translate(p->Car());
+            }
+        }
     }
   return 0;
 }
@@ -1307,7 +1321,7 @@ SWalker::TranslateUsing(Ptree* node)
         // Let builder do all the work
         m_builder->add_using_declaration(type);
     }
-  catch (TranslateError e)
+  catch (const TranslateError& e)
     { LOG("Oops!"); e.set_node(node); throw; }
   return 0;
 }
