@@ -16,9 +16,8 @@
 #define _Encoding_hh
 
 #include <iosfwd>
-#include "types.h"
+#include <PTree.hh>
 
-namespace PTree { class Node;}
 class Environment;
 class Bind;
 

@@ -12,15 +12,14 @@
   implied warranty.
 */
 
-#ifndef _Parseer_hh
-#define _Parseer_hh
+#ifndef _Parser_hh
+#define _Parser_hh
 
-#include "types.h"
+#include <PTree.hh>
 
 class Lexer;
 class Token;
 class Environment;
-namespace PTree {class Node;}
 class Encoding;
 
 /*
@@ -31,7 +30,7 @@ class Encoding;
   is<name>:  is the following symbol <name>?
 */
 
-class Parser : public Object 
+class Parser
 {
 public:
   Parser(Lexer*);

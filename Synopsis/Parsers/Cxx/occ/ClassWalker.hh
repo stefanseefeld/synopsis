@@ -89,7 +89,7 @@ private:
     }
 
 private:
-    struct ClientDataLink : public LightObject {
+  struct ClientDataLink : public PTree::LightObject {
 	ClientDataLink*	next;
 	Class*		metaobject;
 	PTree::Node *  	key;

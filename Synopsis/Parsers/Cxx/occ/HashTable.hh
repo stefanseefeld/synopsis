@@ -37,13 +37,13 @@
 #ifndef _HashTable_hh
 #define _HashTable_hh
 
+#include <PTree.hh>
 #include <iosfwd>
-#include "types.h"
 
 typedef void* HashValue;
 struct HashTableEntry;
 
-class HashTable : public LightObject {
+class HashTable : public PTree::LightObject {
 public:
     HashTable();
     HashTable(int) {}
