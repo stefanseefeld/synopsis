@@ -45,7 +45,7 @@ public:
     void addComments(AST::Declaration* decl, PtreeDeclaration* decl);
 
     void TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
-    void TranslateFunctionName(char* encname, string& realname, Type::Type* returnType);
+    void TranslateFunctionName(char* encname, string& realname, Type::Type*& returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
     void TranslateTypedefDeclarator(Ptree* node);
     vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);

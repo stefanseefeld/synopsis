@@ -502,7 +502,7 @@ void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
     }
 }
 
-void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type* returnType)
+void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type*& returnType)
 {
    if (*encname < 0) {
 	if (encname[1] == '@') {
