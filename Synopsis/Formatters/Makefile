@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.17 2003/02/01 05:43:03 chalky Exp $
+# $Id: Makefile,v 1.18 2003/03/24 09:28:29 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,7 +26,8 @@ include ../../local.mk
 endif
 endif
 
-SRC	:= __init__ TOC DUMP ASCII HTML_Simple Dot DocBook Dia ClassTree xref
+SRC	:= __init__ TOC DUMP ASCII HTML_Simple Dot DocBook Dia ClassTree xref \
+	   TexInfo BoostBook
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
 subdirs	:= HTML
