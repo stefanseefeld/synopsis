@@ -38,6 +38,15 @@ void *LookupSymbol(void *, char *) { return 0;}
 // If true then everything but what's in the main file will be stripped
 bool syn_main_only;
 
+
+#ifdef DEBUG
+// For use in gdb, since decl->Display() doesn't work too well..
+void show(Ptree* p)
+{
+    p->Display();
+}
+#endif
+
 namespace
 {
 
