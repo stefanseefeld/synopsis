@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.19 2003/10/07 02:55:40 stefan Exp $
+# $Id: Comments.py,v 1.20 2003/10/07 21:15:00 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.20  2003/10/07 21:15:00  stefan
+# adjust to new default grouping syntax
+#
 # Revision 1.19  2003/10/07 02:55:40  stefan
 # make group handling more fault tolerant
 #
@@ -350,7 +353,8 @@ class Previous (Dummies):
 
 class Grouper (Transformer):
     """A class that detects grouping tags and moves the enclosed nodes into a subnode (a 'Group')"""
-    __re_group = r'^[ \t]*((?P<open>{)[ \t]*(?P<name>[a-zA-Z_]\w*)*|(?P<close>})) ?(.*)$'
+    __re_group = r'^[ \t]*((?P<open>@group[ \t]*(?P<name>.*){)|(?P<close>@group[ \t]*}))(?P<remainder>.*)$'
+    #__re_group = r'^[ \t]*((?P<open>{)[ \t]*(?P<name>[a-zA-Z_]\w*)*|(?P<close>})) ?(.*)$'
     def __init__(self):
 	Transformer.__init__(self)
 	self.re_group = re.compile(Grouper.__re_group, re.M)
@@ -405,39 +409,39 @@ class Grouper (Transformer):
                 print "Warning: no group open in current scope, ignoring."
 
     def process(self, decl):
-	"""Checks for grouping tags.
+        """Checks for grouping tags.
         If an opening tag is found in the middle of a comment, a new Group is generated, the preceeding
         comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
         """
         comments = []
-	process_comments = decl.comments()
-	while len(process_comments):
-	    c = process_comments.pop(0)
+        process_comments = decl.comments()
+        while len(process_comments):
+            c = process_comments.pop(0)
             tag = self.re_group.search(c.text())
             if not tag:
                 comments.append(c)
+                continue
             elif tag.group('open'):
-		# Open group. Name is remainder of line
+                # Open group. Name is remainder of line
                 label = tag.group('name') or 'unnamed'
-		# The comment before the { becomes the group comment
-		if tag.start() > 0:
-		    text = c.text()[:tag.start()]
-		    comments.append(AST.Comment(text, c.file(), c.line()))
+                # The comment before the open marker becomes the group comment
+                if tag.start('open') > 0:
+                    text = c.text()[:tag.start('open')]
+                    comments.append(AST.Comment(text, c.file(), c.line()))
                 group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
                 comments = []
-		# The comment after the { becomes the next comment to process
-		if tag.end() < len(c.text()):
-		    text = c.text()[tag.end()+1:]
-		    process_comments.insert(0, AST.Comment(text, c.file(), c.line()))
+                # The comment after the open marker becomes the next comment to process
+                if tag.group('remainder'):
+                    process_comments.insert(0, AST.Comment(tag.group('remainder'), c.file(), c.line()))
                 self.push_group(group)
             elif tag.group('close'):
                 self.pop_group(decl)
-		# The comment before the } is ignored...? maybe post-comment?
-		# The comment after the } becomes the next comment to process
-		if tag.end() < len(c.text()):
-		    text = c.text()[tag.end()+1:]
-		    process_comments.insert(0, AST.Comment(text, c.file(), c.line()))
+            # The comment before the close marker is ignored...? maybe post-comment?
+            # The comment after the close marker becomes the next comment to process
+            remainder = string.join([tag.group('remainder'), c.text()[tag.end():]], '')
+            if remainder:
+                process_comments.insert(0, AST.Comment(remainder, c.file(), c.line()))
         decl.comments()[:] = comments
 
     def visitDeclaration(self, decl):
