@@ -12,6 +12,10 @@ topdir	:= @topdir@
 
 synopsis := python synopsis.py
 
+# This is a default setting suitable for the sxr-server demo applet
+# use 'make sxr sxr=<URL>' to generate the sxr db for another URL
+sxr	:= http://localhost:8000/sxr.cgi
+
 py_src		:= $(wildcard $(topdir)/Synopsis/*.py)
 py_src		+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
 py_src		+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
@@ -66,7 +70,7 @@ html/ctool: ctool.syn all.xref
 
 html/sxr: sxr.syn all.xref
 	@echo formatting $@
-	$(synopsis) sxr --output=$@ $<
+	$(synopsis) sxr --url=$(sxr) --output=$@ $<
 
 sxr.syn: py.syn api.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
 	@echo generating $@

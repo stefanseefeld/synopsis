@@ -50,14 +50,32 @@ html = HTML.Formatter(toc_out = 'links.toc',
                                InheritanceGraph(),
                                NameIndex()])
 
-sxr = HTML.Formatter(file_layout = NestedFileLayout(),
-                     views = [SXRIndex(sxr_cgi = '/sxr.cgi'),
-                              DirBrowse(src_dir = '@topdir@',
-                                        base_path = '@topdir@'),
-                              Source(prefix = 'links',
-                                     external_url = '/sxr.cgi/ident?full=1&string='),
-                              RawFile(src_dir = '@topdir@',
-                                      base_path = '@topdir@')])
+class SXR(HTML.Formatter):
+    """This is a facade to the HTML.Formatter. It adds an 'url' parameter and
+    dispatches it to various 'views'."""
+
+    file_layout = Parameter(NestedFileLayout(), '')
+    url = Parameter('/sxr.cgi', 'the base url to use fpr the sxr cgi')
+
+    def process(self, ast, **kwds):
+
+        self.set_parameters(kwds)
+
+        self.views = [SXRIndex(sxr_cgi = self.url),
+                      DirBrowse(src_dir = '@topdir@',
+                                base_path = '@topdir@',
+                                exclude = ['build', 'demo', 'share',
+                                           '.svn', 'autom4te.cache',
+                                           '*.pyc']),
+                      Source(prefix = 'links',
+                             external_url = '%s/ident?full=1&string='%self.url),
+                      RawFile(src_dir = '@topdir@',
+                              base_path = '@topdir@',
+                              exclude = ['build', 'demo', 'share',
+                                         '.svn', 'autom4te.cache',
+                                         '*.pyc'])]
+
+        HTML.Formatter.process(self, ast, **kwds)
 
 process(python = python,
         cxx = cxx,
@@ -68,6 +86,6 @@ process(python = python,
         strip = Stripper(),
         xref = XRefCompiler(prefix='xref'),
         html = html,
-        sxr = sxr,
+        sxr = SXR(),
         dump = Dump.Formatter(),
         texi = Texinfo.Formatter())
