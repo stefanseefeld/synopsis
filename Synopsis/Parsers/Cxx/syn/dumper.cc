@@ -222,9 +222,11 @@ void Dumper::visit(const std::vector<AST::Comment*>& comms)
 std::string Dumper::formatParam(AST::Parameter* param)
 {
     std::string str = param->premodifier();
+    if (str.size()) str += " ";
     str += format(param->type());
     if (param->name().size()) str += " " + param->name();
     if (param->value().size()) str += " = " + param->value();
+    if (param->postmodifier().size()) str += " ";
     str += param->postmodifier();
     return str;
 }
