@@ -18,6 +18,19 @@ Building
   as an alternative, which will only compile the C/C++ extensions and put
   them right into the source tree.
 
+* If you want to use an external garbage collector for the Cxx parser
+  instead of the built in one, run 
+  'python setup.py config --with-gc-prefix=/your/gc/prefix'
+
+Testing
+-------
+
+* The tests require a cvs version of qmtest (http://www.qmtest.com)
+
+* Set the QMTEST_CLASS_PATH environment variable to include the 
+  tests/qmtest/classes/ directory, then run 'qmtest run' from inside 
+  the tests/ directory.
+
 Building documentation
 ----------------------
 
