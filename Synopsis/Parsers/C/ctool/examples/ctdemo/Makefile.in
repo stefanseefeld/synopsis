@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2003/08/19 04:52:58 stefan Exp $
+# $Id: Makefile.in,v 1.2 2003/08/19 05:23:27 stefan Exp $
 #
 # This source file is a part of the ctool Project.
 # Copyright (C) 2003 Stefan Seefeld
@@ -19,6 +19,8 @@
 # MA 02139, USA.
 
 SHELL		:= /bin/sh
+
+srcdir	:= @srcdir@
 
 include ../../local.mk
 

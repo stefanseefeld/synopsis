@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.2 2003/08/19 04:52:58 stefan Exp $
+dnl $Id: configure.ac,v 1.3 2003/08/19 05:23:27 stefan Exp $
 dnl
 dnl This source file is a part of the ctool Project.
 dnl Copyright (C) 2003 Stefan Seefeld
@@ -24,7 +24,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.53)
-AC_REVISION($Revision: 1.2 $)
+AC_REVISION($Revision: 1.3 $)
 AC_INIT(CTool, 2.11, ctool-develop@lists.sourceforge.net)
 AC_CONFIG_SRCDIR(COPYING)
 dnl AC_CONFIG_AUX_DIR(config)
@@ -38,6 +38,7 @@ AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
+AC_PROG_INSTALL
 
 dnl ------------------------------------------------------------------
 dnl Environment (this needs to go before AC_LANG(C++)
