@@ -84,9 +84,8 @@ AC_SUBST(topdir)
 
 AC_CONFIG_FILES([Makefile synopsis.py])
 
-#temporary hack until the file layout can be reworked a bit...
-mkdir -p ucpp
 mkdir -p occ
+mkdir -p occ/PTree
 mkdir -p syn
 
 AC_OUTPUT
