@@ -518,20 +518,33 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>{octnum}  |
 <INITIAL>{intnum}  |
 <INITIAL>{hexnum}   {  /* An integer */
-                         errno=0; // reset errno
 
-                         long i = strtol(yytext, (char**) NULL, 0);
+                         bool has_L=strchr(yytext, 'L') || strchr(yytext, 'l');
+                         bool has_U=strchr(yytext, 'U') || strchr(yytext, 'u');
 
-                         if (errno == ERANGE)
+                         if(has_U)
                          {
-                            ulong ui;
-                            ui = strtoul(yytext, (char**) NULL, 0);
-                            lvalp->consValue = new UIntConstant(ui,HERE);
+                              ulong ui;
+                              ui = strtoul(yytext, (char**) NULL, 0);
+                              lvalp->consValue = new UIntConstant(ui,has_L,HERE);
                          }
                          else
-                         { 
-                             lvalp->consValue = new IntConstant(i,HERE);
-                         } 
+                         {
+                           errno=0; // reset errno
+
+                           long i = strtol(yytext, (char**) NULL, 0);
+
+                           if (errno == ERANGE)
+                           {
+                              ulong ui;
+                              ui = strtoul(yytext, (char**) NULL, 0);
+                              lvalp->consValue = new UIntConstant(ui,has_L,HERE);
+                           }
+                           else
+                           { 
+                               lvalp->consValue = new IntConstant(i,has_L,HERE);
+                           } 
+                         }
 
                          return(gProject->Parse_TOS->err_tok = INUM);
                     }
