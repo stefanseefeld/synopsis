@@ -35,12 +35,16 @@ else
 CPPFLAGS	:= -I../occ -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)"
 endif
 CXXFLAGS	:= -Wall
+ifeq '$(use_gc)' 'no'
+CXXFLAGS	+= -DDONT_GC
+GCLIB		:=
+else
+GCLIB		:= ../gc/gc.a
+endif
 LDFLAGS		:=
 UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
-LIB		:= $(python_lib) -ldl -lpthread
 
-GCLIB		:= ../gc/gc.a
 UCPP_LIB	:= ../ucpp/ucpp.a
 UCPP_GLIB	:= ../ucpp/ucpp.ga
 OCC_SO		:= ../occ.so
@@ -122,24 +126,28 @@ $(GCLIB):
 
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a $(UCPP_LIB)
-	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
+	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # This creates the final link python module
 $(LINK_SO): link.cc
-	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
+	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # This creates a binary with debugging and profiling that you can run
 occ.gdb:	$(SYN_GOBJ) opencxx.ga  $(UCPP_GLIB)
-	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB) $(PYLIB)
+	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) $(PYLIB)
 
 # Compile an archive of the OCC files
 opencxx.a : $(OCC_OBJ) $(GCLIB)
+ifeq '$(use_gc)' 'yes'
 	cp $(GCLIB) $@
+endif
 	ar rcs $@ $(OCC_OBJ)
 
 # Compile a DEBUG archive of the OCC files
 opencxx.ga : $(OCC_GOBJ) $(GCLIB)
+ifeq '$(use_gc)' 'yes'
 	cp $(GCLIB) $@
+endif
 	ar rcs $@ $(OCC_GOBJ)
 
 # Compile an archive of UCPP files
