@@ -3,10 +3,10 @@ class Config (Base):
     class Parser (Base.Parser):
 	class CXX (Base.Parser.CXX):
 	    main_file = 1
-	    basename = '../../../'
+	    basename = '../../'
 	    preprocessor='gcc'
 	class Python (Base.Parser.Python):
-	    basename = '../../../'
+	    basename = '../../'
 	modules = {
 	    'C++':CXX,
 	    'Py':Python
