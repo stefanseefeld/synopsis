@@ -29,15 +29,44 @@ class BaseType (Type):
     def output(self, formatter): formatter.formatBaseType(self)
 
 class Typedef (Type):
-    def __init__(self, file, line, language, type, identifier, scope):
+    def __init__(self, file, line, language, type, identifier, scope, alias):
         Type.__init__(self, file, line, language, type, identifier, scope)
+        self.__alias = alias
+    def alias(self): return self.__alias
     def output(self, formatter): formatter.formatTypedef(self)
+
+class Variable:
+    def __init__(self, file, line, language, metatype, type, scope, identifier, value):
+        self.__file  = file
+        self.__line  = line
+        self.__language = language
+        self.__metatype = metatype
+        self.__type = type
+        self.__scope = scope
+        self.__identifier = identifier
+        self.__value = value
+    def file(self): return self.__file
+    def line(self): return self.__line
+    def language(self): return self.__language
+    def metatype(self): return self.__metatype
+    def type(self): return self.__type
+    def scope(self): return self.__scope
+    def identifier(self): return self.__identifier
+    def value(self): return self.__value
+    def output(self, formatter): formatter.formatVariable(self)
+
+class Const (Variable):
+    def __init__(self, file, line, language, metatype, type, scope, identifier, value):
+        Variable.__init__(self, file, line, language, metatype, type, scope, identifier, value)
+    def output(self, formatter): formatter.formatConst(self)
 
 class Scope (Type):
     def __init__(self, file, line, language, type, identifier, scope):
         Type.__init__(self, file, line, language, type, identifier, scope)
         self.__types = []
+        self.__attributes = []
     def types(self): return self.__types
+    def attributes(self): return self.__attributes
 
 class Module (Scope):
     def __init__(self, file, line, language, type, identifier, scope):
