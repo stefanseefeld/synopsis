@@ -1,0 +1,26 @@
+body {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    color: #003030;
+    background: #ffffff;
+}
+:link { color: #770000; text-decoration: none;}
+:visited { color: #770000; text-decoration: none;}
+:active { color: #800000; text-decoration: none;}
+
+div.page-heading {
+    position:float;
+    border-width:0 0 2px;
+    border-color:grey;
+    border-style:solid;
+    text-align:center;
+    padding:10px 40px;
+    background-color:lightgrey;
+    font-size:xx-large;
+    color:darkred;
+}
+p, dl { margin-left: 30px; }
+pre { margin-left: 50px; background-color:#efefef; padding:5px;}
+h2, h3 { margin-left: 10px; }
+dt { font-weight:bold; }
