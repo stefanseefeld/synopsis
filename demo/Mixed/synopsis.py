@@ -8,7 +8,7 @@ from Synopsis.Processors import *
 from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML import View
 from Synopsis.Formatters.HTML.Views import *
-from Synopsis.Formatters import TexInfo
+from Synopsis.Formatters import Texinfo
 
 class Cxx2IDL(TypeMapper):
     """this processor maps a C++ external reference to an IDL interface
