@@ -533,7 +533,16 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       </para>
       <para>For each included file, a <type>SourceFile</type> object is created and added
         to the parent's <type>Include</type> list. Further, all macro declarations, as well
-        as macro calls, are recorded.</para>
+        as macro calls, are recorded. While most useful in conjunction with the C and Cxx processors,
+        these data can be of use stand-alone, too. For example consider a tool that reports file
+        dependencies based on <type>#include</type> statements. The Dot formatter (see <xref linkend="dot-formatter"/>)
+        can generate a file dependency graph from the Cpp processor output alone:
+      </para>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Files.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
       <para>Particular care has been taken in order to emulate system compilers, as these
         all provide their own sets of macros, include paths, etc. Thus, the Cpp parser can
         be trained to understand these compiler-specific settings.</para>
