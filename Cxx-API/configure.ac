@@ -44,9 +44,13 @@ CYGWIN*)
       fi
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
     fi
+    CXXFLAGS="-D_REENTRANT $CXXFLAGS"
+    LDFLAGS="$LDFLAGS"
+    LIBS="$LIBS -lpthread"
     ;;
 *)
-    CXXFLAGS="$CXXFLAGS -fPIC"
+    CXXFLAGS="-pthread $CXXFLAGS -fPIC"
+    LDFLAGS="-pthread $LDFLAGS"
     ;;
 esac
 

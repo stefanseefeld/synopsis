@@ -44,13 +44,17 @@ dnl of the list.
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
     fi
+    CXXFLAGS="-D_REENTRANT $CXXFLAGS"
+    LDFLAGS="-rdynamic $LDFLAGS"
+    LIBS="$LIBS -lpthread"
     ;;
 *)
+    CXXFLAGS="-pthread $CXXFLAGS"
+    LDFLAGS="-pthread -rdynamic $LDFLAGS"
     ;;
 esac
 
 CPPFLAGS="-I $PYTHON_INCLUDE $CPPFLAGS"
-LDFLAGS="-rdynamic $LDFLAGS"
 LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
 
 dnl find all template files and strip off the $srcdir and .in suffix
