@@ -104,6 +104,7 @@ public:
   void translate(PTree::Node *);
 
   void visit(PTree::Atom *);
+  void visit(PTree::List *);
   void visit(PTree::Typedef *);
   void visit(PTree::TemplateDecl *);
   void visit(PTree::TemplateInstantiation *);
