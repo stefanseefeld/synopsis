@@ -2,6 +2,7 @@
 // AST hierarchy
 
 #include "ast.hh"
+#include "type.hh"
 
 using namespace AST;
 
@@ -9,6 +10,7 @@ Declaration::Declaration(string fn, int line, string type, Name name)
     : m_name(name), m_filename(fn), m_line(line), m_type(type),
       m_access(Default)
 {
+    m_declared = NULL;
 }
 
 Declaration::~Declaration()
@@ -18,6 +20,14 @@ Declaration::~Declaration()
 void Declaration::accept(Visitor* visitor)
 {
     visitor->visitDeclaration(this);
+}
+
+Type::Declared* Declaration::declared()
+{
+    if (!m_declared) {
+	m_declared = new Type::Declared(m_name, this);
+    }
+    return m_declared;
 }
 
 //

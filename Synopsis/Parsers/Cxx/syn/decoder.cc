@@ -89,9 +89,7 @@ Type::Type* Decoder::decodeType()
     if (!baseType && !name.length())
 	return NULL;
     if (!baseType)
-        baseType = 0; //m_builder->lookupType(name);
-    if (baseType == NULL)
-	baseType = m_builder->Forward(name);
+        baseType = m_builder->lookupType(name);
     if (premod.empty() && postmod.empty())
         return baseType;
     Type::Type* ret = new Type::Modifier(baseType, premod, postmod);
@@ -122,15 +120,7 @@ Type::Type* Decoder::decodeQualType()
 	}
     }
     // Ask for qualified lookup
-    Type::Type* baseType = 0; //m_builder->lookupType(names);
-    if (!baseType) {
-	// Not found! Add Type.Forward of scoped name
-	string name = names[0];
-	vector<string>::iterator m_iter;
-	for (m_iter = names.begin()+1; m_iter != names.end(); ++m_iter)
-	    name += "::" + *m_iter;
-	baseType = m_builder->Forward(name);
-    }
+    Type::Type* baseType = m_builder->lookupType(names);
     return baseType;
 }
 

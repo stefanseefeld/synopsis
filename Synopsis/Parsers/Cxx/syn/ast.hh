@@ -17,8 +17,8 @@
 // Forward declare Dictionary
 class Dictionary;
 
-// Forward declare Type::Type
-namespace Type { class Type; }
+// Forward declare Type::Type and Declared
+namespace Type { class Type; class Declared; }
 
 //. A namespace for the AST hierarchy
 namespace AST {
@@ -87,6 +87,10 @@ namespace AST {
 	//. Declaration.
 	vector<Comment*>& comments() { return m_comments; }
 	
+	//. Return a cached Type::Declared for this Declaration. It is created
+	//. on demand and returned every time you call the method on this
+	//. object.
+	Type::Declared* declared();
 
     private:
 	//. The scoped name
@@ -101,6 +105,8 @@ namespace AST {
 	vector<Comment*> m_comments;
 	//. The accessability spec
 	Access m_access;
+	//. The Type::Declared cache
+	Type::Declared* m_declared;
     }; // class Declaration
 
 

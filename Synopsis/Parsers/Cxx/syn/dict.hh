@@ -8,11 +8,14 @@
 using std::vector;
 using std::string;
 
+// Forward declaration of Type::Named
+namespace Type { class Named; }
+
 // Forward declaration of AST::Declaration
 namespace AST { class Declaration; }
 
 //. Dictionary of named declarations with lookup.
-//. This class maintains a dictionary of names, which index declarations,
+//. This class maintains a dictionary of names, which index types,
 //. supposedly declared in the scope that has this dictionary. There may be
 //. only one declaration per name, except in the case of function names.
 class Dictionary {
@@ -24,8 +27,8 @@ public:
 
     //. Exception thrown when multiple declarations are found when one is
     //. expected. The list of declarations is stored in the exception.
-    struct MultipleDeclarations {
-	vector<AST::Declaration*> declarations;
+    struct MultipleError {
+	vector<Type::Named*> types;
     };
 
     //. Exception thrown when a name is not found in lookup*()
@@ -39,16 +42,22 @@ public:
 
     //. Lookup a name in the dictionary. If more than one declaration has this
     //. name then an exception is thrown.
-    AST::Declaration* lookup(string name) throw (MultipleDeclarations);
+    Type::Named* lookup(string name) throw (MultipleError);
 
     //. Lookup a name in the dictionary expecting multiple decls. Use this
     //. method if you expect to find more than one declaration, eg importing
     //. names via a using statement.
-    vector<AST::Declaration*> lookupMultiple(string name);
+    vector<Type::Named*> lookupMultiple(string name);
 
     //. Add a declaration to the dictionary. The name() is extracted from the
-    //. dictionary and its last string used as the key.
+    //. declaration and its last string used as the key. The declaration is
+    //. stored as a Type::Declared which is created inside this method.
     void insert(AST::Declaration*);
+
+    //. Add a named type to the dictionary. The name() is extracted from the
+    //. type and its last string used as they key.
+    void insert(Type::Named*);
+
 
 private:
     struct Data;

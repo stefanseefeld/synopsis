@@ -3,6 +3,7 @@
 
 #include "dict.hh"
 #include "ast.hh"
+#include "type.hh"
 
 #include <map>
 #include <vector>
@@ -11,11 +12,11 @@ using std::string;
 using std::vector;
 using std::multimap;
 
-typedef multimap<string, AST::Declaration*> decl_map;
+typedef multimap<string, Type::Named*> name_map;
 
 //. Define nested class
 struct Dictionary::Data {
-    decl_map map;
+    name_map map;
 };
 
 //. Constructor
@@ -35,37 +36,48 @@ bool Dictionary::has_key(string name)
 }
 
 //. Lookup single
-AST::Declaration* Dictionary::lookup(string name) throw (MultipleDeclarations)
+Type::Named* Dictionary::lookup(string name) throw (MultipleError)
 {
-    decl_map::iterator iter = m->map.lower_bound(name);
-    decl_map::iterator end = m->map.upper_bound(name);
+    name_map::iterator iter = m->map.lower_bound(name);
+    name_map::iterator end = m->map.upper_bound(name);
     // Check for not found
     if (iter == end)
 	throw KeyError(name);
-    AST::Declaration* decl = iter->second;
+    Type::Named* type = iter->second;
     if (++iter == end)
-	return decl;
+	return type;
     // Create exception object
-    MultipleDeclarations* exc = new MultipleDeclarations;
-    exc->declarations.push_back(decl);
+    MultipleError* exc = new MultipleError;
+    exc->types.push_back(type);
     do {
-	exc->declarations.push_back(iter->second);
+	exc->types.push_back(iter->second);
     } while (++iter != end);
     throw exc;
 }
 
 //. Lookup multiple
-vector<AST::Declaration*> Dictionary::lookupMultiple(string name)
+vector<Type::Named*> Dictionary::lookupMultiple(string name)
 {
-    decl_map::iterator iter = m->map.lower_bound(name);
-    decl_map::iterator end = m->map.upper_bound(name);
+    name_map::iterator iter = m->map.lower_bound(name);
+    name_map::iterator end = m->map.upper_bound(name);
     // Check for not found
     if (iter == end)
 	throw KeyError(name);
-    // Store declaration pointers in a vector
-    vector<AST::Declaration*> decls;
+    // Store typearation pointers in a vector
+    vector<Type::Named*> types;
     do {
-	decls.push_back(iter->second);
+	types.push_back(iter->second);
     } while (++iter != end);
-    return decls;
+    return types;
+}
+
+void Dictionary::insert(Type::Named* type)
+{
+    string key = type->name().back();
+    m->map.insert(name_map::value_type(key, type));
+}
+
+void Dictionary::insert(AST::Declaration* decl)
+{
+    insert(new Type::Declared(decl->name(), decl));
 }

@@ -48,7 +48,7 @@ SWalker::SWalker(Parser* parser, Builder* builder)
 
 string SWalker::getName(Ptree *node)
 {
-    Trace trace("SWalker::getName");
+    // Trace trace("SWalker::getName");
     if (node && node->IsLeaf())
         return string(node->GetPosition(), node->GetLength());
     return node->ToString();
@@ -173,7 +173,6 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
 {
     Trace trace("SWalker::TranslateDeclaration");
     m_declaration = def;
-    def->Display(); cout << endl;
     Ptree* decls = Ptree::Third(def);
     if (decls->IsA(ntDeclarator))	// if it is a function
 	TranslateFunctionImplementation(def);
@@ -227,9 +226,8 @@ Ptree* SWalker::TranslateDeclarators(Ptree* decls)
 //.   [ [types] { [ { * | & }* name ] { = value } } ]
 Ptree* SWalker::TranslateDeclarator(Ptree* decl) 
 {
-    Trace trace("SWalker::TranslateDeclarator *** NYI");
+    Trace trace("SWalker::TranslateDeclarator");
     // Insert code from occ.cc here
-    decl->Display(); cout << endl;
     char* encname = decl->GetEncodedName();
     char* enctype = decl->GetEncodedType();
     if (!encname || !enctype) {
@@ -389,7 +387,31 @@ Ptree* SWalker::TranslateTypespecifier(Ptree* tspec)
     return 0;
 }
 
-Ptree* SWalker::TranslateTypedef(Ptree*) { Trace trace("SWalker::TranslateTypedef NYI"); return 0; }
+Ptree* SWalker::TranslateTypedef(Ptree* node) 
+{
+    Trace trace("SWalker::TranslateTypedef");
+    // /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
+    for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
+        TranslateTypedefDeclarator(declarator->Car());
+    return 0; 
+}
+
+void SWalker::TranslateTypedefDeclarator(Ptree* node)
+{
+    if (node->What() != ntDeclarator) return;
+    char* encname = node->GetEncodedName();
+    char* enctype = node->GetEncodedType();
+    if (!encname || !enctype) return;
+
+    // Get type of declarator
+    m_decoder->init(enctype);
+    Type::Type* type = m_decoder->decodeType();
+    // Get name of typedef
+    string name = m_decoder->decodeName(encname);
+    // Create typedef object
+    m_builder->addTypedef(0, name, type, false);
+}
+
 Ptree* SWalker::TranslateTemplateInstantiation(Ptree*) { Trace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
 Ptree* SWalker::TranslateExternTemplate(Ptree*) { Trace trace("SWalker::TranslateExternTemplate NYI"); return 0; }
 Ptree* SWalker::TranslateTemplateClass(Ptree*, Ptree*) { Trace trace("SWalker::TranslateTemplateClass NYI"); return 0; }
