@@ -19,7 +19,8 @@ Display::Display(std::ostream &os, bool encoded)
 
 void Display::display(Node *n)
 {
-  n->accept(this);
+  if (n) n->accept(this);
+  else my_os << "nil";
   my_os.put('\n');
 }
 

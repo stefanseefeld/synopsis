@@ -43,6 +43,12 @@ private:
   bool          my_encoded;
 };
 
+inline void display(Node *node, std::ostream &os, bool encoded)
+{
+  Display d(os, encoded);
+  d.display(node);
+}
+
 }
 
 #endif
