@@ -1,4 +1,4 @@
-// $Id: cpp-posix.cc,v 1.1 2003/12/17 15:07:24 stefan Exp $
+// $Id: cpp-posix.cc,v 1.2 2003/12/18 03:36:52 stefan Exp $
 //
 // Copyright (C) 2003 Stefan Seefeld
 // All rights reserved.
@@ -13,6 +13,7 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
+#include <cstdio>
 
 // ucpp_main is the renamed main() func of ucpp, since it is included in this
 // module
@@ -28,7 +29,7 @@ RunPreprocessor(const char *preprocessor,
   int temp_fd = mkstemp(cppfile);
   if (temp_fd == -1)
   {
-    perror("RunPreprocessor");
+    std::perror("RunPreprocessor");
     exit(1);
   }
   // Not interested in the open file, just the unique filename
@@ -74,12 +75,12 @@ RunPreprocessor(const char *preprocessor,
         }
         args.push_back(0);
         execvp(args[0], (char **)&*args.begin());
-        perror("cannot invoke compiler");
+        std::perror("cannot invoke compiler");
         exit(-1);
         break;
       }
       case -1:
-        perror("RunPreprocessor");
+        std::perror("RunPreprocessor");
         exit(-1);
         break;
       default:
