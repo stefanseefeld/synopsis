@@ -1,3 +1,10 @@
+# Include local config stuff
+ifeq (,$(findstring $(MAKECMDGOALS), clean distclean))
+ifeq (,$(findstring $(action), clean distclean))
+include ../../../../local.mk
+endif
+endif
+
 # Primary targets:
 # gc.a - builds basic library
 # libgc.a - builds library for use with g++ "-fgc-keyword" extension
