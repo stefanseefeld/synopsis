@@ -6,6 +6,7 @@
 //
 
 #include "Translator.hh"
+#include "PrintTraversal.hh"
 #include "File.hh"
 #include "Trace.hh"
 #include <signal.h>
@@ -110,7 +111,71 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
   }
 }
 
+PyObject *ctool_dump(PyObject *self, PyObject *args)
+{
+  try
+  {
+    char *input;
+    char *filename;
+    char *output;
+    int symbols = 0;
+    int debug = 0;
+
+    PyObject *py_ast;
+    if (!PyArg_ParseTuple(args, "sssii",
+                          &input,
+			  &filename,
+			  &output,
+                          &symbols,
+                          &debug))
+      return 0;
+
+    std::set_unexpected(unexpected);
+    struct sigaction olda;
+    struct sigaction newa;
+    newa.sa_handler = &sighandler;
+    sigaction(SIGSEGV, &newa, &olda);
+    sigaction(SIGBUS, &newa, &olda);
+    sigaction(SIGABRT, &newa, &olda);
+    
+    try
+    {
+      std::ofstream ofs(output);
+      File *file = File::parse(input, filename);
+      PrintTraversal printer(ofs, debug == 1);
+      printer.traverse_file(file);
+      ofs << std::endl;
+
+      if (symbols || debug)
+      {
+	ofs << "Symbols:";
+	file->my_contxt.syms->Show(ofs);
+	ofs << "Tags:";
+	file->my_contxt.tags->Show(ofs);
+	ofs << "Labels:";
+	file->my_contxt.labels->Show(ofs);
+      }
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "internal error : " << e.what() << std::endl;
+    }
+    sigaction(SIGABRT, &olda, 0);
+    sigaction(SIGBUS, &olda, 0);
+    sigaction(SIGSEGV, &olda, 0);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+  }
+  catch (const std::exception &e)
+  {
+    std::cerr << "Internal error : " << e.what() << std::endl;
+    return 0;
+  }
+}
+
 PyMethodDef methods[] = {{(char*)"parse", ctool_parse, METH_VARARGS},
+			 {(char*)"dump", ctool_dump, METH_VARARGS},
 			 {0, 0}};
 };
 

@@ -15,7 +15,7 @@
 namespace AST = Synopsis::AST;
 namespace Python = Synopsis;
 
-PrintTraversal printer(std::cout, true);
+PrintTraversal printer(std::cout, false);
 
 Translator::Translator(PyObject *ast, bool verbose, bool debug)
   : my_ast(ast), my_verbose(verbose), my_debug(debug)
