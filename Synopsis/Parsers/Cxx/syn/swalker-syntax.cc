@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.10 2001/07/23 11:51:22 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.11 2001/07/23 15:29:35 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.11  2001/07/23 15:29:35  chalky
+// Fixed some regressions and other mis-features
+//
 // Revision 1.10  2001/07/23 11:51:22  chalky
 // Better support for name lookup wrt namespaces.
 //
@@ -299,7 +302,7 @@ public:
     //. Resolves the given type object
     Type::Type* resolve(Type::Type* t) { m_type = t; t->accept(this); return m_type; }
     //. Tries to resolve the given type object to a Scope
-    AST::Scope* scope(Type::Type* t) throw (Type::wrong_type_cast) {
+    AST::Scope* scope(Type::Type* t) throw (Type::wrong_type_cast, TranslateError) {
 	return Type::declared_cast<AST::Scope>(resolve(t));
     }
     //. Looks up the unknown type for a fresh definition
@@ -353,14 +356,16 @@ Ptree* SWalker::TranslateDotMember(Ptree* node) {
     m_postfix_flag = Postfix_Var;
     Translate(node->First());
     m_postfix_flag = save_flag;
-    nodeLOG(node->First() << " resolved to " << m_type_formatter->format(m_type));
+    LOG(getName(node->First()) << " resolved to " << m_type_formatter->format(m_type));
     // m_type should be a declared to a class
     if (!m_type) { throw nodeERROR(node, "Unable to resolve type of LHS of ."); }
+    LOG("resolving type to scope");
     // Check for reference type
     try {
 	m_scope = TypeResolver(m_builder).scope(m_type);
-    } catch (const Type::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope: " << ((Type::Named*)m_type)->name()); }
+    } catch (const Type::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope: " << m_type_formatter->format(m_type)); }
     // Find member, m_type becomes the var type or func returnType
+    LOG("translating third");
     Translate(node->Third());
     m_scope = 0;
     return 0;

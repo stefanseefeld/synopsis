@@ -1,4 +1,4 @@
-// $Id: linkstore.cc,v 1.4 2001/07/23 11:51:22 chalky Exp $
+// $Id: linkstore.cc,v 1.5 2001/07/23 15:29:35 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.5  2001/07/23 15:29:35  chalky
+// Fixed some regressions and other mis-features
+//
 // Revision 1.4  2001/07/23 11:51:22  chalky
 // Better support for name lookup wrt namespaces.
 //
@@ -195,14 +198,14 @@ public:
 // Store if type is named
 void LinkStore::link(Ptree* node, ::Type::Type* type)
 {
-    if (!m_walker->isMainFile()) return;
+    if (!m_walker->isMainFile() || !type) return;
     TypeStorer storer(this, node, Reference);
     type->accept(&storer);
 }
 
 void LinkStore::link(Ptree* node, const AST::Declaration* decl)
 {
-    if (!m_walker->isMainFile()) return;
+    if (!m_walker->isMainFile() || !decl) return;
     link(node, Definition, decl->name(), decl->type());
 }
 
