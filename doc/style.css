@@ -5,8 +5,8 @@ body
     color: #003030;
     background: #ffffff;
   }
-:link { color: #603030; text-decoration: none;}
-:visited { color: #603030; text-decoration: none;}
+:link { color: #770000; text-decoration: none;}
+:visited { color: #770000; text-decoration: none;}
 :active { color: #800000; text-decoration: none;}
 span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
@@ -18,13 +18,13 @@ div.desc
   {
     border: none;
     font-style: italic;
-    color: #446666;
+    color: #003030;
   }
 div.summary
   {
     border: none;
     font-style: italic;
-    color: #446666;
+    color: #003030;
     margin-left: 2em;
   }
 div.enumerator {
@@ -37,7 +37,7 @@ td.heading {
     font-size: 1.5em;
     font-weight: bold;
     padding: 0.1em;
-    background: #aacccc;
+    background: #eeeeee;
 }
 div.section {
     margin-left: 2em;
