@@ -40,7 +40,7 @@ class Location
 {
  public:
   const int line, column;
-  const std::string& file;
+  const std::string file;
 
   Location(int l, int c, const std::string& f):line(l),column(c),file(f) {}
   ~Location() {}
