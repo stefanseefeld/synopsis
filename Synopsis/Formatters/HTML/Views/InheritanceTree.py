@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.13 2003/11/14 14:51:09 stefan Exp $
+# $Id: InheritanceTree.py,v 1.14 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,6 @@
 from Synopsis.Processor import Parameter
 from Synopsis import Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
@@ -29,7 +28,7 @@ class InheritanceTree(Page):
    def process(self, start):
       """Creates a file with the inheritance tree"""
 
-      roots = config.classTree.roots()
+      roots = self.processor.classTree.roots()
       self.start_file()
       self.write(self.processor.formatHeader(self.filename()))
       self.write(entity('h1', "Inheritance Tree"))
@@ -42,10 +41,10 @@ class InheritanceTree(Page):
       name, rel_name = args
       self.write('<li>')
       self.write(self.reference(name, rel_name))
-      parents = config.classTree.superclasses(name)
+      parents = self.processor.classTree.superclasses(name)
       if parents:
          self.write(' <i>(%s)</i>'%string.join(map(Util.ccolonName, parents), ", "))
-      subs = config.classTree.subclasses(name)
+      subs = self.processor.classTree.subclasses(name)
       if subs:
          self.write('<ul>')
          map(self.process_class_inheritance, map(lambda a,b=name:(a,b), subs))

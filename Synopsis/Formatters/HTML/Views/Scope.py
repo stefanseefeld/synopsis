@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.23 2003/11/14 14:51:09 stefan Exp $
+# $Id: Scope.py,v 1.24 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,16 +7,16 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis.Processor import Parameter
 from Synopsis import AST
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
-
+from Synopsis.Formatters.HTML.ASTFormatter import *
 import time, os
 
-class ScopePages(Page):
+class Scope(Page):
    """A module for creating a page for each Scope with summaries and
    details. This module is highly modular, using the classes from
    ASTFormatter to do the actual formatting. The classes to use may be
@@ -24,6 +24,11 @@ class ScopePages(Page):
    @see ASTFormatter The ASTFormatter module
    @see Config.Formatters.HTML.ScopePages Config for ScopePages
    """
+
+   parts = Parameter([Heading(),
+                      Summary(),
+                      Detail()],
+                     '')
    
    def register(self, processor):
 
@@ -31,24 +36,13 @@ class ScopePages(Page):
       share = config.datadir
       self.syn_logo = 'synopsis200.jpg'
       self.processor.file_layout.copyFile(os.path.join(share, 'synopsis200.jpg'),
-                                          os.path.join(config.basename, self.syn_logo))
-      self.__parts = []
-      self._get_parts()
+                                          os.path.join(processor.output, self.syn_logo))
+
+      for part in self.parts: part.register(self)
+
       self.__namespaces = []
       self.__toc = None
       
-   def _get_parts(self):
-      "Loads the list of parts from config"
-
-      try:
-         parts = config.obj.ScopePages.parts
-      except AttributeError:
-         parts = ['Heading', 'Summary', 'Detail']
-      base = 'Synopsis.Formatters.HTML.ASTFormatter.'
-      for part in parts:
-         obj = core.import_object(part, basePackage=base)(self)
-         self.__parts.append(obj)
-    
    def get_toc(self, start):
       """Returns the TOC for the whole AST starting at start"""
       

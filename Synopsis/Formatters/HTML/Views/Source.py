@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.7 2003/11/14 17:39:04 stefan Exp $
+# $Id: Source.py,v 1.8 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -110,7 +110,7 @@ class FileSource(Page):
          f_link = self.linkpath%source
          #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)
          try:
-            link.link(toclist, f_in, f_out, f_link, self.scope) #, config.types)
+            link.link(toclist, f_in, f_out, f_link, self.scope)
          except link.error, msg:
             print "An error occurred:",msg
          try:

@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.6 2003/11/14 14:51:09 stefan Exp $
+# $Id: JSTree.py,v 1.7 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -8,9 +8,8 @@
 #
 
 from Synopsis.Processor import Parameter
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatter.HTML.Page import Page
+from Synopsis.Formatter.HTML.Tags import *
 
 #The javascript that goes up the top
 top_js = """<script language="JavaScript1.2"><!--

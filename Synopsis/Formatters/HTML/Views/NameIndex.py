@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.13 2003/11/14 14:51:09 stefan Exp $
+# $Id: NameIndex.py,v 1.14 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -12,12 +12,13 @@ from Synopsis import AST, Type
 from Synopsis.Formatters.HTML import core, Tags
 from Synopsis.Formatters.HTML.Page import Page
 from Synopsis.Formatters.HTML.Tags import *
-from Synopsis.Formatters.HTML.core import config
 
 import os
 
 class NameIndex(Page):
    """Creates an index of all names on one page in alphabetical order"""
+
+   columns = Parameter(2, 'the number of columns for the listing')
 
    def register(self, processor):
 
@@ -41,20 +42,19 @@ class NameIndex(Page):
       dict = self._makeDict()
       keys = dict.keys()
       keys.sort()
-      columns = 2 # TODO set from config
       linker = lambda key: '<a href="#%s">%s</a>'%(ord(key),key)
       self.write(div('nameindex-index', string.join(map(linker, keys))))
       for key in keys:
          self.write('<a name="%s">'%ord(key)+'</a>')
          self.write(entity('h2', key))
          self.write('<table border=0 width="100%" summary="table of names">')
-         self.write('<col width="*">'*columns)
+         self.write('<col width="*">'*self.columns)
          self.write('<tr>')
          items = dict[key]
          numitems = len(items)
          start = 0
-         for column in range(columns):
-            end = numitems * (column+1) / columns
+         for column in range(self.columns):
+            end = numitems * (column + 1) / self.columns
             self.write('<td valign=top>')
             for item in items[start:end]:
                self._processItem(item)
@@ -86,7 +86,7 @@ class NameIndex(Page):
          if dict.has_key(key): dict[key].append(type)
          else: dict[key] = [type]
       # Fill the dict
-      map(hasher, filter(decl_filter, config.types.values()))
+      map(hasher, filter(decl_filter, self.processor.ast.types().values()))
       # Now sort the dict
       for items in dict.values():
          items.sort(name_cmp)

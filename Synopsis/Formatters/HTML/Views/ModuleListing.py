@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.14 2003/11/14 14:51:09 stefan Exp $
+# $Id: ModuleListing.py,v 1.15 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,6 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
@@ -19,14 +18,14 @@ class ModuleListing(Page):
    """Create an index of all modules."""
 
    short_title = Parameter('Modules', 'short title')
+   child_types = Parameter(None, 'the types of children to include')
 
    def register(self, processor):
 
       Page.register(self, processor)
-      self.child_types = None
       self._children_cache = {}
       filename = self.filename()
-      config.set_contents_page(filename)
+      processor.set_contents_page(filename)
       self.processor.addRootPage(filename, self.short_title, 'contents', 2)
       self._link_target = 'index'
 
@@ -39,9 +38,6 @@ class ModuleListing(Page):
       # Init tree
       self.tree = self.processor.tree_formatter
       self.tree.register(self)
-      # Init list of module types to display
-      try: self.child_types = config.obj.ModuleListing.child_types
-      except AttributeError: pass
       # Create the file
       self.start_file()
       self.write(self.processor.formatHeader(self.filename(), 2))
@@ -69,9 +65,11 @@ class ModuleListing(Page):
 
       try: return self._children_cache[decl]
       except KeyError: pass
-      config.sorter.set_scope(decl)
-      config.sorter.sort_sections()
-      children = config.sorter.children()
+
+      sorter = self.processor.sorter
+      sorter.set_scope(decl)
+      sorter.sort_sections()
+      children = sorter.children()
       children = filter(self._child_filter, children)
       self._children_cache[decl] = children
       return children

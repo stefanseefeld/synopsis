@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.11 2003/11/14 17:39:04 stefan Exp $
+# $Id: DirBrowse.py,v 1.12 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -48,7 +48,6 @@ class DirBrowse(Page):
       self.__filename = self.processor.file_layout.nameOfSpecial('dir')
       self.__title = 'Directory Listing'
       self.__start = self.__base = processor.output
-      #if not self.__base: return
       processor.set_main_page(self.__filename)
       self.processor.addRootPage(self.__filename, 'Files', 'main', 2)
 

@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.10 2003/11/14 14:51:09 stefan Exp $
+# $Id: FramesIndex.py,v 1.11 2003/11/15 19:01:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -8,7 +8,6 @@
 #
 
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
@@ -19,7 +18,7 @@ class FramesIndex(Page):
    def register(self, processor):
 
       Page.register(self, processor)
-      config.set_main_page(self.filename())
+      processor.set_main_page(self.filename())
 
    def filename(self): return self.processor.file_layout.nameOfIndex()
 
@@ -31,8 +30,8 @@ class FramesIndex(Page):
       me = self.filename()
       # TODO use project name..
       self.start_file(body='')
-      fcontents = rel(me, config.page_contents)
-      findex = rel(me, config.page_index)
+      fcontents = rel(me, self.processor.contents_page)
+      findex = rel(me, self.processor.index_page)
       # Find something to link to
       fglobal = findex
       decls = [start]
