@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.9 2003/11/22 21:48:05 stefan Exp $
+# $Id: Linker.py,v 1.10 2003/11/24 22:09:11 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -306,7 +306,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
             self.pop()
             return
          else:
-            print "Unduplicator.visitClass: clas=%s, prev=%s"%(clas.name(), prev)
+            print "Linker.visitClass: clas=%s, prev=%s"%(clas.name(), prev)
             if hasattr(prev, 'name'): print "prev.name=%s"%(prev.name())
             raise TypeError, "Previous class declaration not a class"
       self.addDeclaration(clas)
