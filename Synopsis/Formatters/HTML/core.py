@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.38 2002/11/02 06:37:37 chalky Exp $
+# $Id: core.py,v 1.39 2002/11/11 15:19:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.39  2002/11/11 15:19:35  chalky
+# More fixes to get demo/C++ sxr working without frames
+#
 # Revision 1.38  2002/11/02 06:37:37  chalky
 # Allow non-frames output, some refactoring of page layout, new modules.
 #
@@ -545,6 +548,8 @@ class PageManager:
 	generated page itself (which shouldn't be linked), such that the relative
         links can be generated. Only root pages of 'visibility' or
 	above are included."""
+	# If not using frames, show all headings on all pages!
+	if not config.using_frames: visibility=1
         #filter out roots that are visible
 	roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
         #a function generating a link

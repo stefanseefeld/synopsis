@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.2 2002/11/11 15:04:05 chalky Exp $
+# $Id: DirBrowse.py,v 1.3 2002/11/11 15:19:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: DirBrowse.py,v $
+# Revision 1.3  2002/11/11 15:19:33  chalky
+# More fixes to get demo/C++ sxr working without frames
+#
 # Revision 1.2  2002/11/11 15:04:05  chalky
 # Fix bugs when start directory is ''
 #
@@ -101,7 +104,7 @@ class DirBrowse(Page.Page):
 
 	# Start the file
 	self.start_file()
-	self.write(self.manager.formatHeader(self.filename(), 2))
+	self.write(self.manager.formatHeader(self.filename(), 1))
 	# Write intro stuff
 	root = rel(self.__base, self.__start)
 	if not len(root) or root[-1] != '/': root = root + '/'
