@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.22 2001/03/16 04:42:00 chalky Exp $
+// $Id: swalker.cc,v 1.23 2001/03/19 07:53:45 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.23  2001/03/19 07:53:45  chalky
+// Small fixes.
+//
 // Revision 1.22  2001/03/16 04:42:00  chalky
 // SXR parses expressions, handles differences from macro expansions. Some work
 // on function call resolution.
@@ -473,6 +476,9 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	    m_decoder->init(encname);
 	    m_decoder->decodeQualName(names);
 	    clas = m_builder->startClass(m_lineno, type, names);
+	} else if (encname[0] == 'T') {
+	    // Specialisation.. ignore for now. FIXME
+	    return 0;
 	} else {
 	    string name = getName(node->Second());
 	    clas = m_builder->startClass(m_lineno, type, name);
