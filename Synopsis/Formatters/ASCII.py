@@ -19,6 +19,7 @@ class ASCIIFormatter:
     def scope(self): return self.__scope
     def enterScope(self, name): self.__scope.append(name),self.incr()
     def leaveScope(self): self.__scope.pop(),self.decr()
+    def write(self, text): self.__os.write(text)
 
     def formatType(self, type):
 	if type is None: return '(unknown)'
@@ -60,20 +61,20 @@ class ASCIIFormatter:
 	#     if declarator.sizes() is None: continue
 	#     for size in declarator.sizes():
 	# 	dstr = dstr + "[%d]"%size
-        self.__os.write("typedef %s %s;\n"%(
+        self.write("typedef %s %s;\n"%(
 	    alias, typedef.name()[-1]
 	))
 
     def visitModule(self, module):
         self.indent()
-	self.__os.write("%s %s {\n"%(module.type(),module.name()[-1]))
+	self.write("%s %s {\n"%(module.type(),module.name()[-1]))
         self.enterScope(module.name()[-1])
         #for type in module.types(): type.output(self)
 	for declaration in module.declarations():
 	    declaration.accept(self)
         self.leaveScope()
 	self.indent()
-	self.__os.write("}\n")
+	self.write("}\n")
 
     def visitMetaModule(self, module):
 	# since no comments:
@@ -81,14 +82,14 @@ class ASCIIFormatter:
 
     def visitClass(self, clas):
         self.indent()
-	self.__os.write("%s %s"%(clas.type(),clas.name()[-1]))
+	self.write("%s %s"%(clas.type(),clas.name()[-1]))
         if len(clas.parents()):
-            self.__os.write(": ")
+            self.write(": ")
 	    p = []
             for parent in clas.parents():
                 p.append("%s"%(Util.ccolonName(parent.parent().name(),clas.name()),))
-	    self.__os.write(string.join(p, ", "))
-	self.__os.write(" {\n")
+	    self.write(string.join(p, ", "))
+	self.write(" {\n")
         self.enterScope(clas.name()[-1])
         #for type in clas.types(): type.output(self)
         #for operation in clas.operations(): operation.output(self)
@@ -96,11 +97,11 @@ class ASCIIFormatter:
 	    declaration.accept(self)
         self.leaveScope()
 	self.indent()
-	self.__os.write("};\n")
+	self.write("};\n")
 
     def visitInheritance(self, inheritance):
-        for attribute in inheritance.attributes(): self.__os.write(attribute + " ")
-        self.__os.write(inheritance.parent().identifier())
+        for attribute in inheritance.attributes(): self.write(attribute + " ")
+        self.write(inheritance.parent().identifier())
 
     def visitParameter(self, parameter):
 	spacer = lambda x: str(x)+" "
@@ -116,49 +117,46 @@ class ASCIIFormatter:
 	self.__params.append(premod + type + postmod + name + value)
 
     def visitFunction(self, function):
-        self.__os.write(function.identifier() + "(")
-        for parameter in function.parameters(): parameter.output(self)
-        self.__os.write(")\n")
+        self.write(function.name() + "(")
+        for parameter in function.parameters(): parameter.accept(self)
+        self.write(")\n")
 
     def visitOperation(self, operation):
 	self.indent()
-        for modifier in operation.premodifier(): self.__os.write(modifier + " ")
+        for modifier in operation.premodifier(): self.write(modifier + " ")
 	retStr = self.formatType(operation.returnType())
 	name = operation.realname()
         if operation.language() == "IDL" and operation.type() == "attribute":
-            self.__os.write("attribute %s %s"%(retStr,name[-1]))
+            self.write("attribute %s %s"%(retStr,name[-1]))
 	else:
 	    if operation.language() == "C++" and len(name)>1 and name[-1] in [name[-2],"~"+name[-2]]:
-		self.__os.write("%s("%name[-1])
+		self.write("%s("%name[-1])
 	    else:
-		self.__os.write(retStr)
-		self.__os.write(" %s("%name[-1])
+		self.write(retStr)
+		self.write(" %s("%name[-1])
 	    self.__params = []
 	    for parameter in operation.parameters(): parameter.accept(self)
 	    params = string.join(self.__params, ", ")
-	    self.__os.write(params + ")")
-        for modifier in operation.postmodifier(): self.__os.write(modifier + " ")
-        self.__os.write(";\n")
+	    self.write(params + ")")
+        for modifier in operation.postmodifier(): self.write(modifier + " ")
+        self.write(";\n")
 
     def visitVariable(self, var):
-	var.vtype().accept(self)
-	vtype = self.__type
-	names = map(lambda x: x.name()[-1], var.declarators())
-	names = string.join(names, ", ")
+	name = var.name
 	self.indent()
-	self.__os.write("%s %s;\n"%(vtype,names))
+	self.write("%s %s;\n"%(self.formatType(var.vtype()),var.name()[-1]))
 
     def visitEnum(self, enum):
 	self.indent()
 	istr = self.__istring * (self.__indent+1)
-	self.__os.write("enum %s {\n%s"%(enum.name()[-1],istr))
+	self.write("enum %s {\n%s"%(enum.name()[-1],istr))
 	self.__enumers = []
 	for enumer in enum.enumerators():
 	    enumer.accept(self)
-	self.__os.write(string.join(self.__enumers, ",\n%s"%istr))
-	self.__os.write("\n")
+	self.write(string.join(self.__enumers, ",\n%s"%istr))
+	self.write("\n")
 	self.indent()
-	self.__os.write("}\n")
+	self.write("}\n")
 
     def visitEnumerator(self, enumer):
 	if enumer.value() == "":
