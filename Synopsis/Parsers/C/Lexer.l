@@ -123,7 +123,7 @@ EXTERN int yylex ARGS((YYSTYPE *lvalp));
 #endif
 
 %}
-%x Start PP CMMT CC STR PPLN GCC_ELIM GCC_ATTRIB
+%x Start PP CMMT CC STR PPLN PAREN_ELIM GCC_ATTRIB MSC_ASM_ELIM
 %a 9000
 %o 9000
 /* %option nounput */
@@ -292,16 +292,22 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"switch"   { SETPOS_TOKEN(SWITCH); return(SWITCH); }
 <INITIAL>"while"    { SETPOS_TOKEN(WHILE); return(WHILE); }
 
-  /* GCC2 Extensions */
-<INITIAL>"asm"        { BEGIN(GCC_ELIM); }
-<INITIAL>"__asm"      { BEGIN(GCC_ELIM); }
-<INITIAL>"__asm__"    { BEGIN(GCC_ELIM); }
+  /* Microsoft Extensions */
+<INITIAL>"__asm"      { BEGIN(MSC_ASM_ELIM); }
+<INITIAL>"__declspec" { BEGIN(PAREN_ELIM); }
 
-<GCC_ELIM>"("[^()]*   { gProject->Parse_TOS->gcc2_paren_cnt++; }
-<GCC_ELIM>[^()]*      { /* Throw away */ }
-<GCC_ELIM>")"         { if (--gProject->Parse_TOS->gcc2_paren_cnt == 0)
+  /* GCC2 Extensions */
+<INITIAL>"asm"        { BEGIN(PAREN_ELIM); }
+<INITIAL>"__asm__"    { BEGIN(PAREN_ELIM); }
+
+<PAREN_ELIM>"("[^()]*   { gProject->Parse_TOS->gcc2_paren_cnt++; }
+<PAREN_ELIM>[^()]*      { /* Throw away */ }
+<PAREN_ELIM>")"         { if (--gProject->Parse_TOS->gcc2_paren_cnt == 0)
                           BEGIN(INITIAL);
                       }
+
+<MSC_ASM_ELIM>[^}]*   { /* Throw away */ }
+<MSC_ASM_ELIM>"}"     { BEGIN(INITIAL); }
 
 <INITIAL>"__attribute"    { BEGIN(GCC_ATTRIB); return(gProject->Parse_TOS->err_tok = ATTRIBUTE); }
 <INITIAL>"__attribute__"  { BEGIN(GCC_ATTRIB); return(gProject->Parse_TOS->err_tok = ATTRIBUTE); }
@@ -382,6 +388,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"__iterator__" { }
 <INITIAL>"__label__"    { }
 
+<INITIAL>"_cdecl"       { /* Windows only non-standard C crud */ }
 <INITIAL>"__cdecl"      { /* Windows only non-standard C crud */ }
 <INITIAL>"__stdcall"    { /* Windows only non-standard C crud */ }
 <INITIAL>"__fastcall"   { /* Windows only non-standard C crud */ }
