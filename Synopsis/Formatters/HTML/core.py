@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.32 2002/08/23 04:37:26 chalky Exp $
+# $Id: core.py,v 1.33 2002/10/11 06:02:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.33  2002/10/11 06:02:33  chalky
+# Allow GUi to pass config object
+#
 # Revision 1.32  2002/08/23 04:37:26  chalky
 # Huge refactoring of Linker to make it modular, and use a config system similar
 # to the HTML package
@@ -643,12 +646,11 @@ def format(args, ast, config_obj):
     manager = PageManager()
     manager.process(root)
 
-def configure_for_gui(ast):
+def configure_for_gui(ast, config_obj):
     global manager
 
     if config.ast is ast: return
 
-    config_obj = Base.Formatter.HTML
     __parseArgs(["-o","/tmp"], config_obj)
     config.ast = ast
     config.types = ast.types()
