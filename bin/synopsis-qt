@@ -8,16 +8,18 @@
 
 import sys, pickle, Synopsis, cStringIO
 from qt import *
-from Synopsis.Core import AST
+from Synopsis.Core import AST, Util
 from Synopsis.Formatter.ASCII import ASCIIFormatter
+from Synopsis.Formatter.ClassTree import ClassTree
 
 
 class BrowseWindow (QSplitter):
     """A window that browses a given .syn file"""
-    def __init__(self, parent, filename, global_decl):
+    def __init__(self, parent, main_window, filename, global_decl):
 	QSplitter.__init__(self, parent)
 	self.filename = filename
 	self.global_decl = global_decl
+	self.main_window = main_window
 
 	self.setCaption("'%s' - Browse"%filename)
 
@@ -47,7 +49,6 @@ class BrowseWindow (QSplitter):
 	    'Package', 'Module', 'Namespace', 'Global'))
 	self.packfiller.auto_open = 3
 	self.listfiller = ListFiller(self, self.listview)
-	if ast: self.packfiller.visitAST(ast)
 
 	# Connect things up
 	self.connect(self.packages, SIGNAL('selectionChanged(QListViewItem*)'), self.showPackage)
@@ -57,11 +58,52 @@ class BrowseWindow (QSplitter):
 	self.textview.setText("<i>Select a package/namespace to view from the left.")
 	self.packfiller.fillFrom(global_decl)
 
-	#self.show()
+	# Make the menu, to be inserted in the app menu upon window activation
+	self._file_menu = QPopupMenu(self.main_window.menuBar())
+	self._graph_id = self._file_menu.insertItem("&Graph class inheritance", self.openGraph, Qt.CTRL+Qt.Key_G)
+
+	self.__activated = 0
+	self.connect(parent, SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
+	self.show()
+
+	self.classTree = ClassTree()
+	self.global_decl.accept(self.classTree)
+
+    def windowActivated(self, widget):
+	if self.__activated:
+	    if widget is not self: self.deactivate()
+	elif widget is self: self.activate()
+    
+    def activate(self):
+	self.__activated = 1
+	self._menu_id = self.main_window.menuBar().insertItem('AST', self._file_menu)
+
+    def deactivate(self):
+	self.__activated = 0
+	self.main_window.menuBar().removeItem(self._menu_id)
+
+
+    def openGraph(self):
+	# Find the right graph
+	graphs = self.classTree.graphs()
+	classes = None
+	for graph in graphs:
+	    if self.decl.name() in graph:
+		classes = graph
+		break
+	if not classes:
+	    print "Warning: unable to find class",self.decl.name(),"in any graph"
+	    print graphs
+	    return
+	IGraphWindow(self.main_window, self.decl, classes, self.classTree)
+
+    def setGraphEnabled(self, enable):
+	self._file_menu.setItemEnabled(self._graph_id, enable)
 
     def showPackage(self, item):
 	"""Show a given package (by item)"""
 	decl = self.packfiller.map[item]
+	self.setGraphEnabled(0)
 	# Fill the main list
 	self.listfiller.clear()
 	self.listfiller.fillFrom(decl)
@@ -75,6 +117,8 @@ class BrowseWindow (QSplitter):
     def showDecl(self, item):
 	"""Show a given declaration (by item)"""
 	decl = self.listfiller.map[item]
+	self.decl = decl
+	self.setGraphEnabled(isinstance(decl, AST.Class))
 	# Here we use ASCIIFormatter to quickly get us *something* to display
 	# :)
 	os = cStringIO.StringIO()
@@ -91,6 +135,165 @@ class BrowseWindow (QSplitter):
 	while iter:
 	    if iter != item: self.listview.setOpen(iter, 0)
 	    iter = iter.nextSibling()
+
+class IGraphWindow (QCanvasView):
+    class Icon:
+	def __init__(self, canvas, classname, x, y):
+	    self.classname = classname
+	    name = Util.ccolonName(classname[-1:])
+	    self.text = QCanvasText(name, canvas)
+	    self.text.setZ(2)
+	    self.text.show()
+	    r = self.text.boundingRect()
+	    self.border = QCanvasRectangle(x , y, r.width()+4,r.height()+4, canvas)
+	    self.border.setBrush(QBrush(QColor(255,255,200)))
+	    self.border.setZ(1)
+	    self.border.show()
+	    self.subs = []
+	    self.supers = []
+	    self.sub_lines = []
+	    self.super_lines = []
+	    self.move_to(x, y)
+	def move_to(self, x, y):
+	    self.x = x
+	    self.y = y
+	    self.border.move(x, y)
+	    self.text.move(x+2,y+2)
+	    r = self.border.boundingRect()
+	    self.mid_x = (r.left() + r.right())/2
+	    self.max_x = r.right()
+	    self.top_y = r.top()
+	    self.mid_y = (r.top() + r.bottom())/2
+	    self.max_y = r.bottom()
+	    for sub in self.sub_lines: self.move_sub(sub)
+	    for super in self.super_lines: self.move_super(super)
+	def width(self):
+	    "returns the width of this icon"
+	    return self.border.boundingRect().width()
+	def mid(self):
+	    "Returns the x, y coords of the middle of this icon"
+	    return self.mid_x, self.mid_y
+	def add_sub(self, sub, line):
+	    self.subs.append(sub)
+	    self.sub_lines.append(line)
+	    self.move_sub(line)
+	def move_sub(self, line):
+	    other = line.endPoint()
+	    line.setPoints(self.mid_x, self.mid_y, other.x(), other.y())
+	def add_super(self, super, line):
+	    self.supers.append(super)
+	    self.super_lines.append(line)
+	    self.move_super(line)
+	def move_super(self, line):
+	    other = line.startPoint()
+	    line.setPoints(other.x(), other.y(), self.mid_x, self.top_y)
+
+
+    def __init__(self, main_window, start_class, classes, classTree):
+	self.__canvas = QCanvas()
+	self.main_window = main_window
+	self.classes = classes
+	self.classTree = classTree
+	parent = main_window.workspace
+	QCanvasView.__init__(self, self.__canvas, parent)
+	self.canvas().resize(parent.width(), parent.height())
+
+	# First create all icons
+	self.icons = {}
+	for clas in classes:
+	    self.icons[clas]= self.Icon(self.__canvas, clas, 0,0)
+
+	# Now connect their supers and subs lists
+	for name, icon in self.icons.items():
+	    for child in self.classTree.subclasses(name):
+		line = QCanvasLine(self.__canvas)
+		sub = self.icons[child]
+		icon.add_sub(sub, line)
+		sub.add_super(icon, line)
+		line.show()
+	
+	self.organize()
+
+	self.show()
+
+    def organize(self):
+	# find a root
+	roots = filter(lambda x: not x.supers, self.icons.values())
+	if not roots: return # this is an error
+	root = roots[0]
+	self._organized = {}
+	self._ranks = {}
+	self.rank_down(root)
+	self.sort_ranks()
+
+	self.un_offset()
+
+    def un_offset(self):
+	"""Moves the graph to the top-left corner of the display"""
+	# Find top-left of graph
+	min_x, min_y = 0, 0
+	for node in self.icons.values():
+	    if node.x < min_x: min_x = node.x
+	    if node.y < min_y: min_y = node.y
+	# Move to top-left of display
+	min_x, min_y = min_x - 10, min_y - 10
+	max_x, max_y = 0, 0
+	for node in self.icons.values():
+	    node.move_to(node.x - min_x, node.y - min_y)
+	    if node.max_x > max_x: max_x = node.max_x
+	    if node.max_y > max_y: max_y = node.max_y
+	self.__canvas.resize(max_x+10, max_y+10)
+
+    def rank_down(self, node):
+	self._organized[node] = None
+	if not self._ranks.has_key(node.y): self._ranks[node.y] = []
+	self._ranks[node.y].append(node)
+	min_y = node.y + 30
+	for sub in node.subs:
+	    if self._organized.has_key(sub) and min_y < sub.y: continue
+	    sub.move_to(sub.x, node.y + 30)
+	    self.rank_down(sub)
+
+	for super in node.supers:
+	    if self._organized.has_key(super): continue
+	    super.move_to(super.x, node.y - 30)
+	    self.rank_down(super)
+    
+    def sort_ranks(self):
+	ranks = self._ranks.keys()
+	ranks.sort()
+	for rank in ranks:
+	    nodes = self._ranks[rank]
+	    done = {}
+	    order = []
+	    rank_x = -1e6
+	    for node in nodes:
+		for super in node.supers:
+		    set = filter(lambda n, y=rank: n.y==y, super.subs)
+		    set = filter(lambda n, d=done: not d.has_key(n), set)
+		    order.extend(set)
+		    for s in set: done[s] = 1
+		    set_width = 0
+		    for s in set: set_width = set_width + s.width() + 2
+		    # Move nodes to their new order
+		    x = super.mid()[0] - set_width/2
+		    if x < rank_x: x = rank_x
+		    for s in set:
+			s.move_to(x, s.y)
+			x = x + s.width() + 2
+		    rank_x = x + 2
+		if not node.supers:
+		    # Backup: no siblings to rank with so just use rank_x
+		    if rank_x < -1e5: rank_x = 0
+		    node.move_to(rank_x, node.y)
+		    rank_x = rank_x + node.width() + 2
+		    order.append(node)
+		    done[node] = 1
+	    #print rank, map(lambda n:'%s:%d'%(n.classname[-1],n.x), order)
+
+		    
+
+	
 
 class Action:
     """A Synopsis Action, ie: parsing, linking, formatting etc"""
@@ -671,7 +874,7 @@ class MainWindow (QMainWindow):
 	    # Fill the GUI
 	    glob = AST.Scope('', -1, '', 'Global', ('global',))
 	    glob.declarations().extend(ast.declarations())
-	    win = BrowseWindow(self.workspace, filename, glob)
+	    win = BrowseWindow(self.workspace, self, filename, glob)
 	    win.show()
 	except IOError, e:
 	    # Oops..
