@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.5 2001/01/22 17:06:15 stefan Exp $
+# $Id: Util.py,v 1.6 2001/01/24 12:48:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.6  2001/01/24 12:48:10  chalky
+# Improved error reporting in _import if __import__ fails for some other reason
+# than file not found
+#
 # Revision 1.5  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -142,9 +146,12 @@ def _import(name):
                 mod = getattr(mod, comp)
             return mod
         except ImportError, msg:
-            pass
+	    if msg == "No module named %s"%components[0]: pass
+	    print "ImportError:",msg
+            raise ImportError, msg
     # try as file
     try:
+	if not os.access(name, os.R_OK): raise ImportError
         dir = os.path.abspath(os.path.dirname(name))
         name = os.path.basename(name)
         modname = name[:]
