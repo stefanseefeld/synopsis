@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.23 2002/10/20 15:38:08 chalky Exp $
+# $Id: Part.py,v 1.24 2002/10/26 04:17:58 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.24  2002/10/26 04:17:58  chalky
+# Show templates on previous line. Hide constructors in base class. Commas
+# between inherited members
+#
 # Revision 1.23  2002/10/20 15:38:08  chalky
 # Much improved template support, including Function Templates.
 #
@@ -382,7 +386,11 @@ class Summary(Part):
 
     def writeSectionItem(self, text):
 	"""Adds a table row"""
-	self.write('<tr><td class="summ-start">' + text + '</td></tr>\n')
+	if text[:3] == '<td':
+	    # text provided its own TD element
+	    self.write('<tr>' + text + '</td></tr>\n')
+	else:
+	    self.write('<tr><td class="summ-start">' + text + '</td></tr>\n')
 
     def process(self, decl):
 	"Print out the summaries from the given decl"
@@ -471,6 +479,7 @@ class Inheritance (Part):
     def __init__(self, page):
 	Part.__init__(self, page)
 	self._init_formatters('inheritance_formatters', 'inheritance')
+	self.__start_list = 0
 
     def _init_default_formatters(self):
 	self.addFormatter( FormatStrategy.Inheritance )
@@ -504,6 +513,11 @@ class Inheritance (Part):
 		# (private etc)
 		if child.accessibility() == AST.PRIVATE:
 		    continue
+		# Don't include constructors and destructors!
+		if child.language() == 'C++' and len(child.realname())>1:
+		    if child.realname()[-1] == child.realname()[-2]: continue
+		    elif child.realname()[-1] == "~"+child.realname()[-2]: continue
+		# FIXME: skip overriden declarations
 		child_names.append(child_name)
 		# Check section heading
 		if not started:
@@ -539,10 +553,15 @@ class Inheritance (Part):
 	self.write('<table width="100%%">\n')
         self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
 	self.write('<tr><td class="inherited">')
+	self.__start_list = 1
 
     def writeSectionItem(self, text):
 	"""Adds a table row"""
-	self.write(text + '\n')
+	if self.__start_list:
+	    self.write(text)
+	    self.__start_list = 0
+	else:
+	    self.write(',\n'+text)
 
     def writeSectionEnd(self, heading):
 	"""Closes the table entity and adds a break."""
