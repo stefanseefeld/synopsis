@@ -1,5 +1,5 @@
 -s style.css
--S style.css
+-S ../../demo/html.css
 -C ssd
 -C summary
 -C javadoc
