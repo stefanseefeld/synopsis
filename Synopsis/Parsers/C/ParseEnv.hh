@@ -59,7 +59,7 @@ class SymEntry;
 class ParseEnv
 {
   public:
-    ParseEnv(istream *instream, ostream *errstream, const std::string &fname);
+    ParseEnv(std::istream *instream, std::ostream *errstream, const std::string &fname);
    ~ParseEnv();
 
     TransUnit         *transUnit;   // Pointer to the parsed translation unit
@@ -68,8 +68,8 @@ class ParseEnv
     int                in_realfile;
     std::string        filename;
 
-    istream           *yyinstream;  // A pointer to an open file
-    ostream           *yyerrstream;
+    std::istream       *yyinstream;  // A pointer to an open file
+    std::ostream       *yyerrstream;
 
     int                yylineno;    // Line number
     int                yycolno;     // Column number

@@ -75,8 +75,8 @@ bool  isWide;
 
 /* Scan input from a file pointer (default) */
 
-string line, last_line;
-istream *yyinstream;
+std::string line, last_line;
+std::istream *yyinstream;
 
 #define YY_INPUT(buf,result,max_size) \
     do { \
@@ -1065,7 +1065,7 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
 
 /***********************************************************************/
 
-void print_caret(const string &s, int pos)
+void print_caret(const std::string &s, int pos)
 {
     const char *str;
     int i = 0;

@@ -39,7 +39,7 @@
 extern int yyparse(void);
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
-ParseEnv::ParseEnv(istream *instream, ostream *errstream, const std::string& fname )
+ParseEnv::ParseEnv(std::istream *instream, std::ostream *errstream, const std::string& fname )
 {
     yyinstream = instream;
     yyerrstream = errstream;
