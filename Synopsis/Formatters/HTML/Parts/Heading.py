@@ -1,4 +1,4 @@
-# $Id: Heading.py,v 1.3 2003/11/16 21:09:45 stefan Exp $
+# $Id: Heading.py,v 1.4 2003/12/04 22:22:41 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -20,6 +20,15 @@ class Heading(Part):
                            FormatStrategy.ClassHierarchyGraph(),
                            FormatStrategy.DetailCommenter()],
                           '')
+
+   def register(self, page):
+
+      if page.processor.has_page('XRef'):
+         self.formatters.append(FormatStrategy.XRefLinker())
+      if page.processor.has_page('FileSource'):
+         self.formatters.append(FormatStrategy.SourceLinker())
+
+      Part.register(self, page)
 
    def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
