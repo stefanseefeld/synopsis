@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.20 2003/02/01 05:33:02 chalky Exp $
+#  $Id: Config.py,v 1.21 2003/03/06 10:02:47 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -547,6 +547,10 @@ class Base:
             name = 'DocBook'
             def __init__(self, argv): pass
 
+        class BoostBook:
+            name = 'BoostBook'
+            def __init__(self, argv): pass
+
         class TexInfo:
             name = 'TexInfo'
             def __init__(self, argv): pass
@@ -575,7 +579,8 @@ class Base:
             'HTML': HTML, 'DocBook':DocBook, 'TexInfo':TexInfo, 'Dot':Dot,
             'HTML_Simple':HTML_Simple, 'ASCII':ASCII,
             'DUMP':DUMP, 'Dia':Dia,
-            'HTML_Doxygen':HTML_Doxygen
+            'HTML_Doxygen':HTML_Doxygen,
+	    'BoostBook':BoostBook
         }
 
     def __init__(self, argv):
