@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.1 2003/11/11 02:56:17 stefan Exp $
+# $Id: Processor.py,v 1.2 2003/11/11 06:05:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Core import AST
+import AST
 
 class Parameter(object):
    """A Parameter is a documented value, kept inside a Processor."""

@@ -1,4 +1,4 @@
-# $Id: process.py,v 1.1 2003/11/11 02:56:17 stefan Exp $
+# $Id: process.py,v 1.2 2003/11/11 06:05:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -7,7 +7,7 @@
 #
 
 from Processor import Processor
-from Core import AST
+import AST
 
 import sys
 

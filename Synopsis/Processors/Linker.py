@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.7 2003/11/11 02:57:57 stefan Exp $
+# $Id: Linker.py,v 1.8 2003/11/11 06:03:59 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -10,7 +10,7 @@
 import string
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 class Unduplicator(Processor, AST.Visitor, Type.Visitor):
    """Visitor that removes duplicate declarations"""
