@@ -326,7 +326,12 @@ bool Parser::definition(PTree::Node *&p)
     p = spec;
   }
   else if(t == Token::USING)
-    res = using_(p);
+  {
+    PTree::Using *udecl;
+    res = using_(udecl);
+    declare(udecl);
+    p = udecl;
+  }
   else 
   {
     PTree::Declaration *decl;
@@ -665,7 +670,12 @@ bool Parser::namespace_alias(PTree::Node *&exp)
 /*
   using.declaration : USING ... ';'
 */
-bool Parser::using_(PTree::Node *&decl)
+/*
+  using.declaration
+  : USING NAMESPACE name
+  | USING name
+*/
+bool Parser::using_(PTree::Using *&decl)
 {
   Trace trace("Parser::user_");
   Token tk;
@@ -674,14 +684,22 @@ bool Parser::using_(PTree::Node *&decl)
     return false;
 
   decl = new PTree::Using(new PTree::AtomUSING(tk));
-  do 
+
+  if (my_lexer.look_ahead(0) == Token::NAMESPACE) // using.dir
   {
     my_lexer.get_token(tk);
-    decl = PTree::snoc(decl, new PTree::Atom(tk));
+    decl = PTree::snoc(decl, new PTree::AtomNAMESPACE(tk));
   }
-  while(tk.type != ';' && tk.type != '\0');
-
-  return true;
+  PTree::Node *id;
+  PTree::Encoding name_encode;
+  if (!name(id, name_encode)) return false;
+  if (!id->is_atom())
+    id = new PTree::Name(id, name_encode);
+  else
+    id = new PTree::Name(PTree::list(id), name_encode);
+  decl = PTree::snoc(decl, id);
+  if (!my_lexer.look_ahead(0) == ';') return false;
+  else return true;
 }
 
 
@@ -2950,7 +2968,14 @@ bool Parser::class_member(PTree::Node *&mem)
     return result;
   }
   else if(t == Token::TEMPLATE) return template_decl(mem);
-  else if(t == Token::USING) return using_(mem);
+  else if(t == Token::USING)
+  {
+    PTree::Using *udecl;
+    bool result = using_(udecl);
+    declare(udecl);
+    mem = udecl;
+    return result;
+  }
   else if(t == Token::METACLASS) return metaclass_decl(mem);
   else
   {
@@ -4297,8 +4322,13 @@ bool Parser::statement(PTree::Node *&st)
       break;
     }
     case Token::USING :
-      if (!using_(st)) return false;
+    {
+      PTree::Using *udecl;
+      if (!using_(udecl)) return false;
+      declare(udecl);
+      st = udecl;
       break;
+    }
     case Token::TYPEDEF :
     {
       PTree::Typedef *td;

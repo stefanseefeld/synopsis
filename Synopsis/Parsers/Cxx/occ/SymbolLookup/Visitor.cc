@@ -23,17 +23,17 @@ void Visitor::visit(PTree::NamespaceSpec *spec)
   my_table.leave_scope();
 }
 
-void Visitor::visit(PTree::Declaration *decls)
+void Visitor::visit(PTree::Declaration *decl)
 {
-  PTree::Node *decl = PTree::third(decls);
-  if(PTree::is_a(decl, Token::ntDeclarator))
+  PTree::Node *decls = PTree::third(decl);
+  if(PTree::is_a(decls, Token::ntDeclarator)) // function definition
   {
-    my_table.enter_function(decls);
-    visit(static_cast<PTree::List *>(decls));
+    my_table.enter_function(decl);
+    visit(static_cast<PTree::List *>(decl));
     my_table.leave_scope();
   }
   else
-    visit(static_cast<PTree::List *>(decls));
+    decls->accept(this);
 }
 
 void Visitor::visit(PTree::ClassSpec *spec)
@@ -41,4 +41,14 @@ void Visitor::visit(PTree::ClassSpec *spec)
   my_table.enter_class(spec);
   visit(static_cast<PTree::List *>(spec));
   my_table.leave_scope();
+}
+
+void Visitor::visit(PTree::DotMemberExpr *expr)
+{
+  std::cout << "Sorry: dot member expression (<postfix>.<name>) not yet supported" << std::endl;
+}
+
+void Visitor::visit(PTree::ArrowMemberExpr *expr)
+{
+  std::cout << "Sorry: arrow member expression (<postfix>-><name>) not yet supported" << std::endl;
 }

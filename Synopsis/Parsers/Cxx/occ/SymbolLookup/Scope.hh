@@ -76,8 +76,17 @@ public:
   //. declare a nested scope
   void declare_scope(PTree::Node const *, Scope *);
 
-  //. find a nested scope by associated parse tree node
+  //. declare a 'using' statement.
+  //. The default implementation raises an exception.
+  virtual void use(PTree::Using const *);
+
+  //. find a nested scope by declaration
   Scope *find_scope(PTree::Node const *) const;
+  //. find a nested scope by symbol.
+  //. The encoded name is provided for diagnostic purposes only.
+  Scope *find_scope(PTree::Encoding const &, Symbol const *) const;
+  //. find a nested scope by name
+  //Scope *find_scope(PTree::Encoding const &) const;
 
   //. find the encoded name declared in this scope and 
   //. return a set of matching symbols.
@@ -109,10 +118,6 @@ protected:
   //. Scopes are ref counted, and thus are deleted only by 'unref()'
   virtual ~Scope();
 
-  //. little helper function used in the implementation of 'dump()'
-  static std::ostream &indent(std::ostream &os, size_t i);
-
-private:
   //. SymbolTable provides a mapping from (encoded) names to Symbols declared
   //. in this scope.
   typedef std::multimap<PTree::Encoding, Symbol const *> SymbolTable;
@@ -121,6 +126,9 @@ private:
   //. the associated parse tree. As this traversal is also done
   //. during the parsing, the scopes can not be const.
   typedef std::map<PTree::Node const *, Scope *> ScopeTable;
+
+  //. little helper function used in the implementation of 'dump()'
+  static std::ostream &indent(std::ostream &os, size_t i);
 
   SymbolTable    my_symbols;
   ScopeTable     my_scopes;

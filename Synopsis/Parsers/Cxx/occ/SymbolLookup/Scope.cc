@@ -37,6 +37,31 @@ void Scope::declare(const Encoding &name, const Symbol *s)
   my_symbols.insert(std::make_pair(name, s));
 }
 
+void Scope::use(PTree::Using const *udecl)
+{
+  throw InternalError("Invalid use of 'using' declaration.");
+}
+
+Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) const
+{
+  PTree::Node const *decl = 0;
+  if (NamespaceName const *ns = dynamic_cast<NamespaceName const *>(symbol))
+    decl = ns->ptree();
+  else if (TypeName const *tn = dynamic_cast<TypeName const *>(symbol))
+  {
+    decl = tn->ptree();
+    // test that 'decl' is a ClassSpec
+  }
+  // TODO: test for ClassTemplateName ...
+  if (!decl)
+  {
+    // the symbol was found but doesn't refer to a scope
+    std::cerr << name << " neither refers to a namespace nor a type" << std::endl;
+    throw TypeError(name, symbol->ptree()->encoded_type());
+  }
+  return find_scope(decl);
+}
+
 SymbolSet Scope::find(const Encoding &name, bool scope) const throw()
 {
   SymbolTable::const_iterator l = my_symbols.lower_bound(name);
@@ -121,25 +146,8 @@ SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
   // Else take the found symbol to refer to a scope and look up
   // the remainder there.
 
-  // now make sure the symbol indeed refers to a scope
-  PTree::Node const *decl = 0;
-  if (NamespaceName const *ns = dynamic_cast<NamespaceName const *>(*symbols.begin()))
-    decl = ns->ptree();
-  else if (TypeName const *tn = dynamic_cast<TypeName const *>(*symbols.begin()))
-  {
-    decl = tn->ptree();
-    // test that 'decl' is a ClassSpec
-  }
-  // TODO: test for ClassTemplateName ...
-  if (!decl)
-  {
-    // the symbol was found but doesn't refer to a scope
-    std::cerr << name << " neither refers to a namespace nore a type" << std::endl;
-    dump(std::cerr, 0);
-    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
-  }
   // move into inner scope and start over the lookup
-  Scope const *nested = find_scope(decl);
+  Scope const *nested = find_scope(symbol_name, *symbols.begin());
   if (!nested)
     throw InternalError("undeclared scope !");
   return nested->qualified_lookup(remainder);

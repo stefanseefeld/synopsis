@@ -27,6 +27,8 @@ public:
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::Declaration *);
   virtual void visit(PTree::ClassSpec *);
+  virtual void visit(PTree::DotMemberExpr *);
+  virtual void visit(PTree::ArrowMemberExpr *);
 
 protected:
   Table &table() { return my_table;}

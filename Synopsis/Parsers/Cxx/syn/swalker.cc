@@ -1528,6 +1528,7 @@ void SWalker::visit(PTree::Using *node)
     is_namespace = true;
   }
   // Find name that we are looking up, and make a new ptree list for linking it
+  p = p->car(); // p now points to the 'PTree::Name' child of 'PTree::Using'
   PTree::Node *p_name = PTree::snoc(0, p->car());
   ScopedName name;
   if (*PTree::first(p) == "::")
@@ -1538,7 +1539,7 @@ void SWalker::visit(PTree::Using *node)
     name.push_back(parse_name(PTree::first(p)));
     p = PTree::rest(p);
   }
-  while (*PTree::first(p) == "::")
+  while (p && *PTree::first(p) == "::")
   {
     p_name = PTree::snoc(p_name, p->car()); // Add '::' to p_name
     p = PTree::rest(p);
@@ -1555,7 +1556,8 @@ void SWalker::visit(PTree::Using *node)
     if (is_namespace)
     {
       // Check for '=' alias
-      if (*PTree::first(p) == "=")
+      // Huh ? '=' isn't valid within a 'using' directive or declaration
+      if (p && *PTree::first(p) == "=")
       {
         p = PTree::rest(p);
         std::string alias = parse_name(PTree::first(p));
