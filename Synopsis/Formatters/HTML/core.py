@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.44 2003/01/02 07:00:58 chalky Exp $
+# $Id: core.py,v 1.45 2003/01/16 12:46:46 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.45  2003/01/16 12:46:46  chalky
+# Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
+# (used to be part of FileTree) and FileDetails.
+#
 # Revision 1.44  2003/01/02 07:00:58  chalky
 # Only use Core.FileTree, refactored FileTree to be quicker and better.
 #
@@ -250,7 +254,8 @@ class Config:
 	self.page_index = "" # page for index frame (left)
 	self.page_main = "" # page for main index.html page
 	self.pages = [
-	    'ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree',
+	    'ScopePages', 'ModuleListing', 'ModuleIndexer', 
+	    'FileListing', 'FileIndexer', 'FileDetails',
 	    'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'
 	]
 	self.verbose = 0
