@@ -145,6 +145,7 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   
   Builder builder(syn_basename);
   SWalker swalker(&parse, &builder);
+  swalker.setExtractTails(true);
   Ptree *def;
   while(parse.rProgram(def))
     swalker.Translate(def);

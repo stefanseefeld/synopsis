@@ -47,6 +47,7 @@ SWalker::SWalker(Parser* parser, Builder* builder)
     m_builder = builder;
     m_decoder = new Decoder(builder);
     m_filename_ptr = 0;
+    m_extract_tails = false;
 }
 
 string SWalker::getName(Ptree *node)
@@ -633,6 +634,12 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 	// Skip comma
 	if (penum && penum->Car() && penum->Car()->Eq(','))
 	    penum = Ptree::Rest(penum);
+    }
+    if (m_extract_tails) {
+	Ptree* close = spec->Third()->Third();
+	enumor = new AST::Enumerator(m_builder->filename(), m_lineno, "dummy", m_dummyname, "");
+	addComments(enumor, static_cast<CommentedLeaf*>(close));
+	enumerators.push_back(enumor);
     }
 
     // Create AST.Enum object
