@@ -124,8 +124,10 @@ public:
     //. Decodes a Template type. iter must be just after the T
     Types::Type* decodeTemplate();
 
-    //. Decodes a FuncPtr type. iter must be just after the F
-    Types::Type* decodeFuncPtr();
+    //. Decodes a FuncPtr type. iter must be just after the F. The vector is
+    //. the postmod - if it contains a * then it will be removed and given to
+    //. the funcptr instead
+    Types::Type* decodeFuncPtr(std::vector<std::string>&);
 
     //. Decode a name
     std::string decodeName();
