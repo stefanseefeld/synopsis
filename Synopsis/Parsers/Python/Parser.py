@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.4 2003/11/11 06:02:01 stefan Exp $
+# $Id: Parser.py,v 1.5 2003/11/18 21:56:27 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -6,8 +6,8 @@
 # see the file COPYING for details.
 #
 
-from Processor import Processor, Parameter
-import AST
+from Synopsis.Processor import Processor, Parameter
+from Synopsis import AST
 from python import parse
 
 class Parser(Processor):
@@ -18,7 +18,8 @@ class Parser(Processor):
 
       input = kwds.get('input')
       self.set_parameters(kwds)
+      self.ast = ast
       for file in input:
          ast.merge(parse(file, 0, {}, None))
 
-      return output_and_return_ast(self)
+      return self.output_and_return_ast()
