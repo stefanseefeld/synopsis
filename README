@@ -1,6 +1,6 @@
 Synopsis 0.4
 ~~~~~~~~~~~~
-
+ 
 ** Introduction
 
 Synopsis is a code documentation tool. It extracts comments from a range of
@@ -75,7 +75,7 @@ o. The HTML formatter doesn't sort the sections in class/module pages very
 
 Currently the following features are planned:
 o. Precompiled headers. This would speed up the parsing and linking speed for
-   C++ files tremendously
+   C++ files tremendously.
 o. Further linker features and optimisations
 o. Further output options, such as different formats (ps, pdf, latex, sgml,
    man, info).
