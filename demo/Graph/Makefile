@@ -14,7 +14,7 @@ class.png: demo.hh
 class.map: demo.hh
 	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,map -o $@ $<
 demo: demo.hh
-	../../synopsis -p C++ -f HTML -Wf,-t,demo.toc -o $@ $<
+	../../synopsis -Wc,parser=C++,formatter=HTML -Wf,-t,demo.toc,-S,../html.css -o $@ $<
 	touch demo
 class.html: demo.hh demo
 	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,html,-r,"demo.toc|demo" -o $@ $<
