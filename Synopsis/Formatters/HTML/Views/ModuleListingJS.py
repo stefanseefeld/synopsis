@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.5 2001/04/17 13:36:10 chalky Exp $
+# $Id: ModuleListingJS.py,v 1.6 2001/04/18 04:08:03 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.6  2001/04/18 04:08:03  chalky
+# Sort modules so that packages come first
+#
 # Revision 1.5  2001/04/17 13:36:10  chalky
 # Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
 #
@@ -58,6 +61,7 @@ class ModuleListingJS(JSTree.JSTree):
     expand/collapse sections of the tree!"""
     def __init__(self, manager):
 	JSTree.JSTree.__init__(self, manager)
+	self._children_cache = {}
 	self._init_page()
 
     def _init_page(self):
@@ -86,32 +90,33 @@ class ModuleListingJS(JSTree.JSTree):
 	return isinstance(child, AST.Module)
     def _link_href(self, ns):
 	return config.files.nameOfModuleIndex(ns.name())
-    def indexModule(self, ns, rel_scope):
-	"Write a link for this module and recursively visit child modules."
-	my_scope = ns.name()
-	# Find children
-	config.sorter.set_scope(ns)
+    def get_children(self, decl):
+	try: return self._children_cache[decl]
+	except KeyError: pass
+	config.sorter.set_scope(decl)
 	config.sorter.sort_sections()
 	children = config.sorter.children()
 	children = filter(self._child_filter, children)
+	self._children_cache[decl] = children
+	return children
+    def indexModule(self, ns, rel_scope):
+	"Write a link for this module and recursively visit child modules."
+	my_scope = ns.name()
+	# Find children, and sort so that compound children (packages) go first
+	children = self.get_children(ns)
+	children.sort(lambda a,b,g=self.get_children:
+	    cmp(len(g(b)),len(g(a))))
 	# Print link to this module
-	#button = len(children) and self.formatButton() or '<img src="%s">'%(self.__share+'/syn-dot.png')
 	name = Util.ccolonName(my_scope, rel_scope) or "Global Namespace"
 	link = self._link_href(ns)
-	#self.write(button + href(link, name, target=self._link_target) + '<br>')
 	text = href(link, name, target=self._link_target)
 	if not len(children):
 	    self.writeLeaf(text)
 	else:
 	    self.writeNodeStart(text)
 	    # Add children
-	    #if not len(children): return
-	    #self.startSection()
 	    for child in children:
-		#self.write('<div class="module-section">')
 		self.indexModule(child, my_scope)
-		#self.write('</div>')
-	    #self.endSection()
 	    self.writeNodeEnd()
 
 htmlPageClass = ModuleListingJS
