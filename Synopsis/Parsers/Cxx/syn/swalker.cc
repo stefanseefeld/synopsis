@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.66 2002/10/29 02:39:57 chalky Exp $
+// $Id: swalker.cc,v 1.67 2002/10/29 14:59:27 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.67  2002/10/29 14:59:27  chalky
+// Better support for names of specialized templates with spaces in the
+// parameters
+//
 // Revision 1.66  2002/10/29 02:39:57  chalky
 // Changes to compile with g++-3.2
 //
@@ -699,11 +703,8 @@ SWalker::TranslateClassSpec(Ptree* node)
       }
 
     m_type_formatter->push_scope(m_builder->scope()->name());
-    std::string name, spacey_name = m_type_formatter->format(param);
+    std::string name = m_type_formatter->format(param);
     m_type_formatter->pop_scope();
-    std::remove_copy(
-        spacey_name.begin(), spacey_name.end(),
-        std::back_inserter(name), ' ');
     clas = m_builder->start_class(m_lineno, type, name, is_template);
     // TODO: figure out spec stuff, like what to do with vars, link to
     // original template, etc.
