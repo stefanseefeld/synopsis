@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.34 2002/10/27 12:05:44 chalky Exp $
+# $Id: core.py,v 1.35 2002/10/28 06:12:30 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.35  2002/10/28 06:12:30  chalky
+# Add structs_as_classes option
+#
 # Revision 1.34  2002/10/27 12:05:44  chalky
 # Add 2 verbose levels, make default (1) less verbose
 #
@@ -203,6 +206,7 @@ class Config:
 	self.pageset = None
 	self.sorter = None
 	self.classTree = None
+	self.structs_as_classes = 0
 	self.treeFormatterClass = TreeFormatter.TreeFormatter
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
@@ -227,7 +231,7 @@ class Config:
 	if hasattr(obj, 'verbose'): self.verbose = obj.verbose
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
-	    'file_layout', 'output_dir')
+	    'file_layout', 'output_dir', 'structs_as_classes')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -291,6 +295,10 @@ class Config:
     def _config_file_layout(self, layout):
 	if self.verbose > 1: print "Using file layout",layout
 	self.files_class = import_object(layout)
+
+    def _config_structs_as_classes(self, yesno):
+	if self.verbose > 1: print "Using structs as classes:",yesno
+	self.structs_as_classes = yesno
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served

@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.7 2001/07/15 08:28:43 chalky Exp $
+# $Id: ScopeSorter.py,v 1.8 2002/10/28 06:12:31 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.8  2002/10/28 06:12:31  chalky
+# Add structs_as_classes option
+#
 # Revision 1.7  2001/07/15 08:28:43  chalky
 # Added 'Inheritance' page Part
 #
@@ -55,6 +58,39 @@ from Synopsis.Core import AST
 # HTML modules
 import core
 
+# The names of the access types
+_axs_str = ('','Public ','Protected ','Private ')
+
+# The predefined order for section names
+_section_order = (
+    'Namespace', 'Module', 'Class', 'Typedef', 'Struct', 'Enum', 'Union',
+    'Group', 'Member function', 'Function'
+)
+
+# Compare two section names
+def compare_sections(a, b):
+    # Determine access of each name
+    ai, bi = 0, 0
+    an, bn = a, b
+    for i in range(1,4):
+	access = _axs_str[i]
+	len_access = len(access)
+	is_a = (a[:len_access] == access)
+	is_b = (b[:len_access] == access)
+	if is_a:
+	    if not is_b: return -1 # a before b
+	    # Both matched
+	    an = a[len_access:]
+	    bn = b[len_access:]
+	    break
+	if is_b:
+	    return 1 # b before a
+	# Neither matched
+    # Same access, sort by predefined order 
+    for section in _section_order:
+	if an == section: return -1 # a before b
+	if bn == section: return 1 # b before a
+    return 0
 
 class ScopeSorter:
     """A class that takes a scope and sorts its children by type. To use it
@@ -63,6 +99,7 @@ class ScopeSorter:
 	"Optional scope starts using that AST.Scope"
 	self.__scope = None
 	if scope: self.set_scope(scope)
+	self.__structs_as_classes = core.config.structs_as_classes
     def set_scope(self, scope):
 	"Sort children of given scope"
 	if scope is self.__scope: return
@@ -92,8 +129,9 @@ class ScopeSorter:
 	self.__children.append(decl)
 	self.__child_dict[tuple(name)] = decl
     def _section_of(self, decl):
-	_axs_str = ('','Public ','Protected ','Private ')
 	section = string.capitalize(decl.type())
+	if self.__structs_as_classes and section == 'Struct':
+	    section = 'Class'
 	if decl.accessibility != AST.DEFAULT:
 	    section = _axs_str[decl.accessibility()]+section
 	return section
@@ -101,7 +139,7 @@ class ScopeSorter:
     def sort_section_names(self):
 	"""Sorts sections names if they need it"""
 	if self.__sorted_secnames: return
-	core.sort(self.__sections)
+	self.__sections.sort(compare_sections)
 	self.__sorted_secnames = 1
     def _set_section_names(self, sections): self.__sections = sections
     def _handle_group(self, group):
