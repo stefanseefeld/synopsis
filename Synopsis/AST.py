@@ -473,7 +473,10 @@ class Enum (Declaration):
 
    def __init__(self, file, line, language, name, enumerators):
       Declaration.__init__(self, file, line, language, "enum", name)
-      self.__enumerators = enumerators
+      self.__enumerators = enumerators[:]
+      if isinstance(self.__enumerators[-1], Builtin):
+         self.__eos = self.__enumerators.pop()
+         
    def enumerators(self):
       """List of Enumerator objects"""
       return self.__enumerators
