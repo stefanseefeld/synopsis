@@ -44,6 +44,8 @@
 
 #include "dup.h"
 
+#include "Traversal.h"
+
 class Constant;
 class Expression;
 class EnumConstant;
@@ -214,6 +216,8 @@ class Type : public DupableType
     Type(TypeType _type=TT_Base);
     virtual ~Type();
 
+    virtual void accept(Traversal *) = 0;
+
     virtual int     precedence() const { return 16; }
     virtual Type*   dup0() const =0;    // deep-copy
 
@@ -262,6 +266,8 @@ class BaseType : public Type
     BaseType( EnumDef *ed );
     ~BaseType();
 
+    virtual void accept(Traversal *t) { t->traverse_base(this);}
+
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension) { assert(0); return NULL; }
@@ -295,6 +301,8 @@ class PtrType : public Type
         : Type(TT_Pointer), qualifier(qual), subType(NULL){};
     ~PtrType(){};
 
+    virtual void accept(Traversal *t) { t->traverse_ptr(this);}
+
     int    precedence() const { return 15; }
 
     Type* dup0() const;    // deep-copy
@@ -326,6 +334,8 @@ class ArrayType : public Type
 
     ~ArrayType();
 
+    virtual void accept(Traversal *t) { t->traverse_array(this);}
+
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension);
@@ -355,6 +365,8 @@ class BitFieldType : public Type
           : Type(TT_BitField),size(s),subType(NULL) {};
     ~BitFieldType();
 
+    virtual void accept(Traversal *t) { t->traverse_bit_field(this);}
+
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension);
@@ -382,6 +394,8 @@ class FunctionType : public Type
   public:
     FunctionType(Decl *args_list = NULL);
     ~FunctionType();
+
+    virtual void accept(Traversal *t) { t->traverse_function(this);}
 
     Type* dup0() const;    // deep-copy
 

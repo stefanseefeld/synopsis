@@ -44,6 +44,7 @@
 #include "utype.h"
 
 #include "dup.h"
+#include "Traversal.h"
 
 class Decl;
 class Type;
@@ -170,9 +171,11 @@ class Expression : public DupableExpression
     Expression( ExpressionType et, const Location& l );
     virtual ~Expression();
 
+    virtual void accept(Traversal *) = 0;
+
     virtual int precedence() const { return 16; }
 
-    virtual Expression *dup0() const;
+    virtual Expression *dup0() const = 0;
 
     virtual void print(std::ostream& out) const;
 
@@ -215,6 +218,8 @@ class IntConstant : public Constant
     IntConstant( long val, bool b, const Location& l );
     virtual ~IntConstant();
  
+    virtual void accept(Traversal *t) { t->traverse_int(this);}
+
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
@@ -229,6 +234,8 @@ class UIntConstant : public Constant
     UIntConstant( ulong val, bool b, const Location& l );
     virtual ~UIntConstant();
  
+    virtual void accept(Traversal *t) { t->traverse_uint(this);}
+
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
@@ -243,6 +250,8 @@ class FloatConstant : public Constant
     FloatConstant(const std::string& val, const Location& l );
     virtual ~FloatConstant();
  
+    virtual void accept(Traversal *t) { t->traverse_float(this);}
+
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
@@ -255,6 +264,8 @@ class CharConstant : public Constant
   public:
     CharConstant(char chr, const Location& l, bool isWide=false );
    ~CharConstant();
+
+    virtual void accept(Traversal *t) { t->traverse_char(this);}
 
     Expression *dup0() const;
     void print(std::ostream& out) const;
@@ -269,6 +280,8 @@ class StringConstant : public Constant
     StringConstant(const std::string &str, const Location& l,
                    bool isWide=false );
    ~StringConstant();
+
+    virtual void accept(Traversal *t) { t->traverse_string(this);}
 
     int length() const;
 
@@ -285,6 +298,8 @@ class ArrayConstant : public Constant
   public:
     ArrayConstant(const Location& l );
    ~ArrayConstant();
+
+    virtual void accept(Traversal *t) { t->traverse_array(this);}
 
     void addElement( Expression *expr);
 
@@ -303,6 +318,8 @@ class EnumConstant : public Constant
     EnumConstant(Symbol *nme, Expression* val, const Location& l );
    ~EnumConstant();
 
+    virtual void accept(Traversal *t) { t->traverse_enum(this);}
+
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
@@ -317,6 +334,8 @@ class Variable : public Expression
     Variable(Symbol *varname, const Location& l );
    ~Variable();
 
+    virtual void accept(Traversal *t) { t->traverse_variable(this);}
+
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
@@ -330,6 +349,8 @@ class FunctionCall : public Expression
     FunctionCall(Expression *func, const Location& l );
    ~FunctionCall();
     
+    virtual void accept(Traversal *t) { t->traverse_call(this);}
+
     int  nArgs() const { return args.size(); }
 
     void addArg( Expression *arg );
@@ -350,6 +371,8 @@ class UnaryExpr : public Expression
   public:
     UnaryExpr( UnaryOp op, Expression *expr, const Location& l );
    ~UnaryExpr();
+
+    virtual void accept(Traversal *t) { t->traverse_unary(this);}
 
     int precedence() const;
 
@@ -373,6 +396,8 @@ class BinaryExpr : public Expression
     BinaryExpr( BinaryOp op, Expression *lExpr, Expression *rExpr,
 		const Location& l );
    ~BinaryExpr();
+
+    virtual void accept(Traversal *t) { t->traverse_binary(this);}
 
     Expression *leftExpr() const { return _leftExpr; }
     Expression *rightExpr() const { return _rightExpr; }
@@ -400,6 +425,8 @@ class TrinaryExpr : public Expression
 		 const Location& l );
    ~TrinaryExpr();
 
+    virtual void accept(Traversal *t) { t->traverse_trinary(this);}
+
     Expression *condExpr() const { return _condExpr; }
     Expression *trueExpr() const { return _trueExpr; }
     Expression *falseExpr() const { return _falseExpr; }
@@ -424,6 +451,8 @@ class AssignExpr : public BinaryExpr
 		const Location& l );
    ~AssignExpr();
 
+    virtual void accept(Traversal *t) { t->traverse_assign(this);}
+
     Expression *lValue() const { return leftExpr(); }
     Expression *rValue() const { return rightExpr(); }
 
@@ -445,6 +474,8 @@ class RelExpr : public BinaryExpr
 	     const Location& l );
    ~RelExpr();
 
+    virtual void accept(Traversal *t) { t->traverse_rel(this);}
+
     int precedence() const;
 
     RelOp op() const { return rOp; }
@@ -462,6 +493,8 @@ class CastExpr : public Expression
     CastExpr( Type *typeExpr, Expression *operand,
 	      const Location& l );
    ~CastExpr();
+
+    virtual void accept(Traversal *t) { t->traverse_cast(this);}
 
     Type *castType() { return castTo; }
 
@@ -483,6 +516,8 @@ class SizeofExpr : public Expression
     SizeofExpr( Expression *operand, const Location& l );
     SizeofExpr( Type *operand, const Location& l );
    ~SizeofExpr();
+
+    virtual void accept(Traversal *t) { t->traverse_sizeof(this);}
 
     int precedence() const { return 15; }
 
@@ -506,6 +541,8 @@ class IndexExpr : public Expression
                const Location& l );
    ~IndexExpr();
     
+    virtual void accept(Traversal *t) { t->traverse_index(this);}
+
     //addSubscript( Expression *sub );
     Expression *subscript(int i);
 
