@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.15 2001/04/06 02:38:14 chalky Exp $
+# $Id: Dot.py,v 1.16 2001/05/25 13:45:49 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.16  2001/05/25 13:45:49  stefan
+# fix problem with getopt error reporting
+#
 # Revision 1.15  2001/04/06 02:38:14  chalky
 # Dont reset toc
 #
@@ -321,7 +324,7 @@ def __parseArgs(args):
     try:
         opts,remainder = Util.getopt_spec(args, "o:t:f:r:icsvn")
     except Util.getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     for opt in opts:

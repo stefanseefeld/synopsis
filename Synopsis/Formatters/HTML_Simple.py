@@ -1,4 +1,4 @@
-#  $Id: HTML_Simple.py,v 1.11 2001/05/13 02:46:41 stefan Exp $
+#  $Id: HTML_Simple.py,v 1.12 2001/05/25 13:45:49 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.12  2001/05/25 13:45:49  stefan
+# fix problem with getopt error reporting
+#
 # Revision 1.11  2001/05/13 02:46:41  stefan
 # more fixes from oxygene
 #
@@ -328,7 +331,7 @@ def __parseArgs(args):
     try:
         opts,remainder = getopt.getopt(args, "o:s:v")
     except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     for opt in opts:

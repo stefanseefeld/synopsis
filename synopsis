@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.34 2001/04/03 23:03:53 chalky Exp $
+#  $Id: synopsis,v 1.35 2001/05/25 13:45:49 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -147,7 +147,7 @@ def parseArgs(args):
     try:
         opts,files = Util.getopt_spec(args, "p:f:W:I:o:c:Vvhl", ["parser=", "formatter=", "config=", "version", "help", "list"])
     except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.stderr.write("Use `" + cmdname + " -h' for help\n")
         sys.exit(1)
 
