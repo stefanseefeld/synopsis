@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.36 2002/10/28 17:39:37 chalky Exp $
+# $Id: core.py,v 1.37 2002/10/29 12:43:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.37  2002/10/29 12:43:56  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.36  2002/10/28 17:39:37  chalky
 # Cross referencing support
 #
@@ -198,6 +201,7 @@ class Config:
 	self.toc = None
 	self.toc_out = ""
 	self.toc_in = []
+	self.default_toc = 'ScopePages'
 	self.basename = None
 	self.datadir = None
 	self.stylesheet = ""
@@ -235,7 +239,7 @@ class Config:
 	if hasattr(obj, 'verbose'): self.verbose = obj.verbose
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
-	    'file_layout', 'output_dir', 'structs_as_classes')
+	    'file_layout', 'output_dir', 'structs_as_classes', 'default_toc')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -286,6 +290,10 @@ class Config:
     def _config_toc_in(self, toc_in):
 	if self.verbose > 1: print "Will read toc(s) from",toc_in
 	self.toc_in = toc_in
+
+    def _config_default_toc(self, page):
+	if self.verbose > 1: print "Will use page %s for generating default TOC"%page
+	self.default_toc = page
 
     def _config_toc_out(self, toc_out):
 	if self.verbose > 1: print "Will save toc to",toc_out
@@ -444,13 +452,18 @@ class PageManager:
 	self.__roots = [] #pages with roots, list of Structs
 	self.__global = None # The global scope
 	self.__files = {} # map from filename to (page,scope)
+	self.__page_objects = {} # map of pages by name
 	self._loadPages()
 
+    def getPage(self, name):
+	"""Returns the Page with the given name"""
+	return self.__page_objects[name]
+	
     def globalScope(self):
 	"Return the global scope"
 	return self.__global
 
-    def _calculateStart(self, root, namespace=None):
+    def calculateStart(self, root, namespace=None):
 	"Calculates the start scope using the 'namespace' config var"
 	scope_names = string.split(namespace or config.namespace, "::")
 	start = root # The running result
@@ -482,6 +495,7 @@ class PageManager:
 	page = pageClass(self)
 	self.__pages.append(page)
 	page.register()
+	return page
     
     def addRootPage(self, file, label, target, visibility):
 	"""Adds a named link to the list of root pages. Called from the
@@ -514,7 +528,7 @@ class PageManager:
     def process(self, root):
 	"""Create all pages from the start Scope, derived from the root Scope"""
 	self.__global = root
-	start = self._calculateStart(root)
+	start = self.calculateStart(root)
 	for page in self.__pages:
 	    if config.verbose: start_time = time.time()
 	    page.process(start)
@@ -529,7 +543,8 @@ class PageManager:
 	defaultAttr = 'htmlPageClass'
 	basePackage = 'Synopsis.Formatter.HTML.'
 	for page in config.pages:
-	    self.addPage(import_object(page, defaultAttr, basePackage))
+	    obj = self.addPage(import_object(page, defaultAttr, basePackage))
+	    self.__page_objects[page] = obj
     
     def register_filename(self, filename, page, scope):
 	"""Registers a file for later production"""
@@ -635,31 +650,35 @@ def format(args, ast, config_obj):
     # Create the File Tree (TODO: only if needed...)
     FileTree()
 
-    # Create table of contents index
-    config.toc = TOC.TableOfContents(config.files)
-    if verbose: print "HTML Formatter: Initialising TOC"
-
-    # Add all declarations to the namespace tree
-    for d in declarations:
-	d.accept(config.toc)
-    if verbose: print "TOC size:",config.toc.size()
-    if len(config.toc_out): config.toc.store(config.toc_out)
-    
-    # load external references from toc files, if any
-    for t in config.toc_in: config.toc.load(t)
-
+    # Build class and file trees
     for d in declarations:
 	d.accept(config.classTree)
 	d.accept(config.fileTree)
 
     config.fileTree.buildTree()
-    
-    if verbose: print "HTML Formatter: Writing Pages..."
-    # Create the pages
-    # Create a dummy Module for the global namespace to simplify things
+ 
+    # Create the page manager, which loads the pages
+    manager = PageManager()
     root = AST.Module('',-1,"C++","Global",())
     root.declarations()[:] = declarations
-    manager = PageManager()
+
+    # Create table of contents index
+    start = manager.calculateStart(root)
+    config.toc = manager.getPage(config.default_toc).get_toc(start)
+    if verbose: print "HTML Formatter: Initialising TOC"
+
+    # Add all declarations to the namespace tree
+    #for d in declarations:
+    #	d.accept(config.toc)
+	
+    if verbose: print "TOC size:",config.toc.size()
+    if len(config.toc_out): config.toc.store(config.toc_out)
+    
+    # load external references from toc files, if any
+    for t in config.toc_in: config.toc.load(t)
+   
+    if verbose: print "HTML Formatter: Writing Pages..."
+    # Create the pages
     manager.process(root)
 
 def configure_for_gui(ast, config_obj):
@@ -676,6 +695,13 @@ def configure_for_gui(ast, config_obj):
     config.classTree = ClassTree.ClassTree()
     FileTree()
 
+    # Build class and file trees
+    for d in declarations:
+	d.accept(config.classTree)
+	d.accept(config.fileTree)
+
+    config.fileTree.buildTree()
+
     # Create table of contents index
     config.toc = TOC.TableOfContents(config.files)
 
@@ -686,12 +712,6 @@ def configure_for_gui(ast, config_obj):
     
     # load external references from toc files, if any
     for t in config.toc_in: config.toc.load(t)
-
-    for d in declarations:
-	d.accept(config.classTree)
-	d.accept(config.fileTree)
-
-    config.fileTree.buildTree()
     
     # Create the pages
     # Create a dummy Module for the global namespace to simplify things

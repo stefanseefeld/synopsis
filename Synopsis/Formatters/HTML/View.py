@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.12 2002/07/19 14:26:33 chalky Exp $
+# $Id: View.py,v 1.13 2002/10/29 12:43:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.13  2002/10/29 12:43:56  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.12  2002/07/19 14:26:33  chalky
 # Revert prefix in FileLayout but keep relative referencing elsewhere.
 #
@@ -103,6 +106,14 @@ class Page:
     def register_filenames(self, start):
 	"""Registers filenames for each file this Page will generate, given
 	the starting Scope."""
+	pass
+
+    def get_toc(self, start):
+	"""Retrieves the TOC for this page. This method assumes that the page
+	generates info for the the whole AST, which could be the ScopePages,
+	the FilePages (source code) or the XRefPages (cross reference info).
+	The default implementation returns None. Start is the declaration to
+	start processing from, which could be the global namespace."""
 	pass
        
     def process(self, start):

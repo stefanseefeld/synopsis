@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.5 2001/07/05 05:39:58 stefan Exp $
+# $Id: FramesIndex.py,v 1.6 2002/10/29 12:43:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FramesIndex.py,v $
+# Revision 1.6  2002/10/29 12:43:56  chalky
+# Added flexible TOC support to link to things other than ScopePages
+#
 # Revision 1.5  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -61,7 +64,18 @@ class FramesIndex (Page.Page):
 	self.start_file(body='')
 	fcontents = rel(me, config.page_contents)
 	findex = rel(me, config.page_index)
-	fglobal = rel(me, config.files.nameOfScope(start.name()))
+	# Find something to link to
+	fglobal = findex
+	decls = [start]
+	while decls:
+	    decl = decls.pop(0)
+	    entry = config.toc[decl.name()]
+	    if entry:
+		fglobal = rel(me, entry.link)
+		break
+	    if hasattr(decl, 'declarations'):
+		# Depth-first search
+		decls = decl.declarations() + decls
 	frame1 = solotag('frame', name='contents', src=fcontents)
 	frame2 = solotag('frame', name='index', src=findex)
 	frame3 = solotag('frame', name='main', src=fglobal)
