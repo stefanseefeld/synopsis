@@ -1137,7 +1137,6 @@ SWalker::TranslateVariableDeclarator(Ptree* decl, bool is_const)
     nodeLOG(decl);
     return 0;
   }
-
   // TODO: implement sizes support
   std::vector<size_t> sizes;
   std::string var_type = my_builder->scope()->type();
@@ -1373,15 +1372,20 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
   // Create typedef object
   AST::Typedef* tdef = my_builder->add_typedef(my_lineno, name, type, false);
   add_comments(tdef, dynamic_cast<PtreeDeclarator*>(node));
-
   // if storing links, find name
   if (my_links)
   {
     if (my_store_decl && my_declaration->Second())
       my_links->link(my_declaration->Second(), type);
+
     Ptree* p = node;
+    // function pointer: [( [* f] )]
+    if (p && !p->Car()->IsLeaf() && p->Car()->Car()->Eq('('))
+      p = Ptree::Rest(p->Car())->Car();
+
     while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&')))
       p = Ptree::Rest(p);
+
     if (p)
       // p should now be at the name
       my_links->link(p->Car(), tdef);
