@@ -338,7 +338,7 @@ std::string scoped_name_to_attribute(const Python::List &o)
   if (o.empty()) return name;
   for (Python::List::iterator i = o.begin(); i != o.end() - 1; ++i)
   {
-    name = Python::Object::narrow<std::string>(*i) + "::";
+    name = string_to_attribute(Python::Object::narrow<std::string>(*i)) + "::";
   }
   name += string_to_attribute(Python::Object::narrow<std::string>(*o.rbegin()));
   return name;

@@ -423,7 +423,7 @@ Ptree* SWalker::TranslatePtree(Ptree* node)
     AST::Declaration* decl;
     update_line_number(node);
     decl = my_builder->add_tail_comment(my_lineno);
-    add_comments(decl, node);
+    add_comments(decl, dynamic_cast<CommentedLeaf*>(node));
   }
   else
   {
