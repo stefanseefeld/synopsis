@@ -21,7 +21,7 @@ CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= -L../../../src/lib -lSynopsis ../../../Cxx-API/lib/Cxx-API.a @LIBS@
+LIBS	:= ../../../Cxx-API/lib/Cxx-API.a @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 OCC_SO	:= occ$(LIBRARY_EXT)
