@@ -2,5 +2,7 @@ syn
 html
 links.toc
 *.syn
-*.texi
-Manual.*
+core-*.texi
+parser-*.texi
+linker.texi
+formatter-*.texi
