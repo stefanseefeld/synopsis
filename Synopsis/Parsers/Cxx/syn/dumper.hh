@@ -21,8 +21,12 @@ public:
   //
   // Type Visitor
   //
-  //. Returns a formatter string for given type
-  std::string format(const Types::Type*);
+  //. Returns a formatter string for given type.
+  //. The option string pointer refers to the parameter name (where
+  //. applicable) so that it can be put in the right place for function pointer
+  //. types. The pointed to pointer will be set to NULL if the identifier is
+  //. used
+  std::string format(const Types::Type*, const std::string** id = NULL);
   virtual void visit_type(Types::Type*);
   virtual void visit_unknown(Types::Unknown*);
   virtual void visit_modifier(Types::Modifier*);
@@ -42,6 +46,8 @@ protected:
   std::string colonate(const ScopedName& name);
   //. A stack of previous scopes
   std::vector<ScopedName> m_scope_stack;
+  //. A pointer to the identifier for function pointers
+  const std::string** m_fptr_id;
 };
 
 //. Dumper displays the AST to the screen
@@ -63,7 +69,7 @@ public:
   virtual void visit_namespace(AST::Namespace*);
   virtual void visit_forward(AST::Forward*);
   virtual void visit_class(AST::Class*);
-  virtual void visit_operation(AST::Operation*);
+  virtual void visit_function(AST::Function*);
   virtual void visit_variable(AST::Variable*);
   virtual void visit_typedef(AST::Typedef*);
   virtual void visit_enum(AST::Enum*);

@@ -12,6 +12,7 @@
 //
 
 TypeFormatter::TypeFormatter()
+: m_fptr_id(NULL)
 {
     m_scope_stack.push_back(ScopedName());
 }
@@ -51,10 +52,18 @@ std::string TypeFormatter::colonate(const ScopedName& name)
 // Type Visitor
 //
 
-std::string TypeFormatter::format(const Types::Type* type)
+std::string TypeFormatter::format(const Types::Type* type, const std::string** id)
 {
     if (!type) return "(unknown)";
+    const std::string** save = NULL;
+    if (id)
+    { 
+	save = m_fptr_id; 
+	m_fptr_id = id;
+    }
     const_cast<Types::Type*>(type)->accept(this);
+    if (id) 
+	m_fptr_id = save;
     return m_type;
 }
 
@@ -122,6 +131,15 @@ void TypeFormatter::visit_parameterized(Types::Parameterized* type)
 void TypeFormatter::visit_func_ptr(Types::FuncPtr* type)
 {
     std::string str = format(type->returnType()) + "(";
+    Types::Type::Mods::iterator i_pre = type->pre().begin();
+    while (i_pre != type->pre().end())
+	str += *i_pre++;
+    if (m_fptr_id)
+    {
+	str += **m_fptr_id;
+	*m_fptr_id = NULL;
+    }
+    str += ")(";
     if (type->parameters().size()) {
 	str += format(type->parameters().front());
 	Types::Type::vector::iterator iter = type->parameters().begin();
@@ -213,8 +231,9 @@ std::string Dumper::formatParam(AST::Parameter* param)
     AST::Parameter::Mods::iterator imod = param->premodifier().begin();
     while (imod != param->premodifier().end())
 	str += " " + *imod++;
-    if (param->type()) str += " " + format(param->type());
-    if (param->name().size()) str += " " + param->name();
+    const std::string* name = &param->name();
+    if (param->type()) str += " " + format(param->type(), &name);
+    if (name && param->name().size()) str += " " + param->name();
     if (param->value().size()) str += " = " + param->value();
     imod = param->postmodifier().begin();
     while (imod != param->postmodifier().end())
@@ -319,13 +338,13 @@ bool isStructor(const AST::Function* func)
     return (realname == *second_last);
 }
 
-void Dumper::visit_operation(AST::Operation* oper)
+void Dumper::visit_function(AST::Function* func)
 {
-    visit(oper->comments());
+    visit(func->comments());
     std::cout << m_indent_string;
-    if (oper->template_type()) {
-	m_scope.push_back(oper->name().back());
-	Types::Template* templ = oper->template_type();
+    if (func->template_type()) {
+	m_scope.push_back(func->name().back());
+	Types::Template* templ = func->template_type();
 	std::cout << m_indent_string << "template<";
 	std::vector<std::string> names;
 	AST::Parameter::vector::iterator iter = templ->parameters().begin();
@@ -334,12 +353,12 @@ void Dumper::visit_operation(AST::Operation* oper)
 	std::cout << join(names, ", ") << ">" << std::endl;
 	m_scope.pop_back();
     }
-    if (!isStructor(oper) && oper->return_type()) std::cout << format(oper->return_type()) + " ";
-    std::cout << oper->realname() << "(";
-    if (oper->parameters().size()) {
-	std::cout << formatParam(oper->parameters().front());
-	std::vector<AST::Parameter*>::iterator iter = oper->parameters().begin();
-	while (++iter != oper->parameters().end())
+    if (!isStructor(func) && func->return_type()) std::cout << format(func->return_type()) + " ";
+    std::cout << func->realname() << "(";
+    if (func->parameters().size()) {
+	std::cout << formatParam(func->parameters().front());
+	std::vector<AST::Parameter*>::iterator iter = func->parameters().begin();
+	while (++iter != func->parameters().end())
 	    std::cout << "," << formatParam(*iter);
     }
     std::cout << ");" << std::endl;
