@@ -309,6 +309,8 @@ class CacherExecutor (Executor):
 	if keep: return ast
 	elif gc:
 	    # Try to free up mem
+	    ast = None
+	    #gc.set_debug(gc.DEBUG_STATS)
 	    gc.collect()
 
     def get_output(self, name):
