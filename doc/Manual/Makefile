@@ -36,8 +36,11 @@ manual:   all.syn
 manual-doxygen:   all.syn
 	$(synopsis) -Wc,formatter=Doxygen -o ManualD $^
 
-all.syn:	$(PYSYNS) $(CXXSYNS)
+all.syn:	$(PYSYNS) c++.syn
 	$(synopsis) -Wc,linker=All -o all.syn $^
+
+c++.syn:	$(CXXSYNS)
+	$(synopsis) -Wc,linker=C++Final -o c++.syn $^
 
 # Compile Python files
 $(spath)/%.syn:	$(bpath)/%.py
