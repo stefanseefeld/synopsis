@@ -15,6 +15,7 @@ srcdir = '@srcdir@'
 cppflags = ['-I%s'%(topdir + '/Cxx-API/include'),
             '-I%s'%(srcdir + '/gc/include'),
             '-I%s'%(srcdir),
+            '-I%s'%(srcdir) + '/occ',
             '-I%s'%(sysconfig.get_python_inc())]
 
 cxx = Cxx.Parser(base_path = topdir + os.sep,
