@@ -33,8 +33,9 @@ if test "$ac_cv_enable_gc" == "yes"; then
     CPPFLAGS="$CPPFLAGS -I$ac_cv_with_gc_prefix/include/gc"
     LIBS="-L$ac_cv_with_gc_prefix/lib -lgc $LIBS"
   else
-    CPPFLAGS="$CPPFLAGS -I$srcdir/Synopsis/gc/include"
+    GC_CPP="-I\${includedir}/Synopsis/gc/include"
     GC_LIB="Synopsis/gc/.libs/libgc.a"
+    AC_SUBST(GC_CPP)
     AC_SUBST(GC_LIB)
   fi
 else

@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: OpenCxx
+Name: Synopsis
 Description: C/C++ source code introspection tool
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir}
-Cflags: -I${includedir} @CPPFLAGS@
+Libs: -L${libdir} -lSynopsis
+Cflags: -I${includedir} @GC_CPP@ @CPPFLAGS@
