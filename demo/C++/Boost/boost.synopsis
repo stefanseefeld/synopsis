@@ -27,7 +27,7 @@ class Project:
       datadir='/usr/local/share/synopsis',
       file_layout='Synopsis.Formatter.HTML.FileLayout.FileLayout',
       tree_formatter='TreeFormatter.TreeFormatter',
-      comment_formatters=['summary', 'section'],
+      comment_formatters=['quotehtml', 'summary', 'section'],
       FilePages=struct(
         toc_files=[],
         file_path='%s',
