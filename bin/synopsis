@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# $Id: synopsis,v 1.6 2003/12/11 04:38:59 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -27,7 +26,7 @@ def __import__(name, verbose):
          print 'Unable to import %s'%name
          print 'Reason :', msg
       else:
-         print 'Error : no processor \'%s\'', name.split('.')[-1]
+         print 'Error : no processor \'%s\''%'.'.join(name.split('.')[-2:])
       sys.exit(-1)
 
 def usage():
