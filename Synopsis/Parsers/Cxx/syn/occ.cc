@@ -43,14 +43,18 @@ using namespace Synopsis;
 #if defined(__GNUG__) || defined(_GNUG_SYNTAX)
 # if defined(PARSE_MSVC)
 const int tokenset = Lexer::CXX | Lexer::GNU | Lexer::MSVC;
+const int ruleset = Parser::CXX | Parser::MSVC;
 # else
 const int tokenset = Lexer::CXX | Lexer::GNU;
+const int ruleset = Parser::CXX;
 # endif
 #else
 # if defined(PARSE_MSVC)
 const int tokenset = Lexer::CXX | Lexer::MSVC;
+const int ruleset = Parser::CXX | Parser::MSVC;
 # else
 const int tokenset = Lexer::CXX;
+const int ruleset = Parser::CXX;
 # endif
 #endif
 
@@ -149,12 +153,12 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   }
   Buffer buffer(ifs.rdbuf());
   Lexer lexer(&buffer, tokenset);
-  Parser parse(&lexer);
+  Parser parser(&lexer, ruleset);
 
   FileFilter* filter = FileFilter::instance();
 
   Builder builder(sourcefile);
-  SWalker swalker(filter, &parse, &builder, &buffer);
+  SWalker swalker(filter, &parser, &builder, &buffer);
 //   if (syn_fake_std)
 //   {
 //     // Fake a using from "std" to global
@@ -168,7 +172,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   try
   {
     PTree::Node *def;
-    while(parse.rProgram(def))
+    while(parser.parse(def))
       swalker.translate(def);
   }
   catch (const std::exception &e)
@@ -186,7 +190,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   // Convert!
   translator.translate(builder.scope());
 
-  if(parse.NumOfErrors() != 0)
+  if(parser.num_of_errors() != 0)
   {
     std::cerr << "Ignoring errors while parsing file: " << file << std::endl;
   }
@@ -283,11 +287,11 @@ PyObject *occ_print(PyObject *self, PyObject *args)
   {
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer, tokenset);
-    Parser parse(&lexer);
+    Parser parser(&lexer, ruleset);
 
     PTree::Display display(std::cout, true);
     PTree::Node *def;
-    while(parse.rProgram(def)) display.display(def);
+    while(parser.parse(def)) display.display(def);
   }
   catch (...)
   {
