@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.22 2003/10/14 00:28:54 stefan Exp $
+# $Id: Comments.py,v 1.23 2003/10/15 03:44:01 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.23  2003/10/15 03:44:01  stefan
+# add new Grouper 'group2' to match '@group {' and '@group }'
+#
 # Revision 1.22  2003/10/14 00:28:54  stefan
 # * separate the 'Grouper' class into base and derived
 #   such that the derived class provides the 'process' method
@@ -489,6 +492,49 @@ class Grouper1(Grouper):
                 self.pop_group(decl)
         decl.comments()[:] = comments
 
+class Grouper2(Grouper):
+    """Grouper that detects ' @group {' and ' @group }' group markup"""
+    __re_group = r'^[ \t]*((?P<open>@group[ \t]*(?P<name>.*){)|(?P<close>@group[ \t]*}))(?P<remainder>.*)$'
+    def __init__(self):
+	Grouper.__init__(self)
+	self.re_group = re.compile(Grouper2.__re_group, re.M)
+
+    def process(self, decl):
+        """Checks for grouping tags.
+        If an opening tag is found in the middle of a comment, a new Group is generated, the preceeding
+        comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
+        """
+        comments = []
+        process_comments = decl.comments()
+        while len(process_comments):
+            c = process_comments.pop(0)
+            tag = self.re_group.search(c.text())
+            if not tag:
+                comments.append(c)
+                continue
+            elif tag.group('open'):
+                # Open group. Name is remainder of line
+                label = tag.group('name') or 'unnamed'
+                # The comment before the open marker becomes the group comment
+                if tag.start('open') > 0:
+                    text = c.text()[:tag.start('open')]
+                    comments.append(AST.Comment(text, c.file(), c.line()))
+                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
+                group.comments()[:] = comments
+                comments = []
+                # The comment after the open marker becomes the next comment to process
+                if tag.group('remainder'):
+                    process_comments.insert(0, AST.Comment(tag.group('remainder'), c.file(), c.line()))
+                self.push_group(group)
+            elif tag.group('close'):
+                self.pop_group(decl)
+            # The comment before the close marker is ignored...? maybe post-comment?
+            # The comment after the close marker becomes the next comment to process
+            remainder = string.join([tag.group('remainder'), c.text()[tag.end():]], '')
+            if remainder:
+                process_comments.insert(0, AST.Comment(remainder, c.file(), c.line()))
+        decl.comments()[:] = comments
+
 class Stripper(CommentProcessor):
     """Strip off all but the last comment."""
     def process(self, decl):
@@ -561,6 +607,7 @@ processors = {
     'dummy': Dummies,
     'prev': Previous,
     'group': Grouper1,
+    'group2': Grouper2,
     'stripper': Stripper,
     'summary' : Summarizer,
     'javatags' : JavaTags,
