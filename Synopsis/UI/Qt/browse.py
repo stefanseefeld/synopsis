@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.9 2002/08/23 04:35:56 chalky Exp $
+# $Id: browse.py,v 1.10 2002/09/28 05:53:31 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.10  2002/09/28 05:53:31  chalky
+# Refactored display into separate project and browser windows. Execute projects
+# in the background
+#
 # Revision 1.9  2002/08/23 04:35:56  chalky
 # Use png images w/ Dot. Only show classes in Classes list
 #
@@ -56,9 +60,15 @@ from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
 from Synopsis.Formatter.HTML import core, Page, ScopePages, FilePages
 from Synopsis.Formatter import Dot
+from Synopsis.Formatter import ClassTree
+from Synopsis.Formatter.HTML.core import FileTree
+from igraph import IGraphWindow
 
-class Browser:
-    """Controls the browse widgets of the project window"""
+class BrowserWindow (QSplitter):
+    """The browser window displays an AST in the familiar (from JavaDoc)
+    three-pane view. In addition to JavaDoc, the right pane can display
+    documentation, source or a class hierarchy graph. The bottom-left pane can
+    also display classes or files."""
 
     class SelectionListener:
 	"""Defines the interface for an object that listens to the browser
@@ -76,44 +86,90 @@ class Browser:
 	    updated first"""
 	    pass
     
-    def __init__(self, window):
-	"""Initialises the browser widgets"""
-	#QSplitter.__init__(self, parent)
-	self.window = window
-	self.main_window = window.main_window
-	self.__ast = None
-	self.__package = None
-	self.__decl = None
-	self.__listeners = []
+    def __init__(self, main_window, filename, project_window):
+	QSplitter.__init__(self, main_window.workspace)
+	self.main_window = main_window
+	self.project_window = project_window
+	self.filename = filename
+	self.setCaption('Output Window')
+
+	self.classTree = ClassTree.ClassTree()
+	self.fileTree = None #FileTree()
+	#self.tabs = QTabWidget(self)
+	#self.listView = QListView(self)
+	self._make_left()
+	self._make_right()
+
+	#CanvasWindow(parent, main_window, self.project)
+	
+	self.setSizes([30,70])
+	#self.showMaximized()
+	#self.show()
+
+	self.__ast = None     # The current AST
+	self.__package = None # The current package
+	self.__decl = None    # The current decl
+	self.__listeners = [] # Listeners for changes in current selection
 
 	self.glob = AST.Scope('', -1, '', 'Global', ('global',))
 
-	window.doco_display.setTextFormat(Qt.RichText)
-
 	# Connect things up
-	window.connect(window.right_tab, SIGNAL('currentChanged(QWidget*)'), self.tabChanged)
-
-	window.doco_display.setText("<i>Select a package/namespace to view from the left.")
+	self.connect(self.right_tab, SIGNAL('currentChanged(QWidget*)'), self.tabChanged)
 
 	# Make the menu, to be inserted in the app menu upon window activation
-	self._file_menu = QPopupMenu(window.main_window.menuBar())
+	self._file_menu = QPopupMenu(self.main_window.menuBar())
 	self._graph_id = self._file_menu.insertItem("&Graph class inheritance", self.openGraph, Qt.CTRL+Qt.Key_G)
 
 	self.__activated = 0
-	window.connect(window.parent(), SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
+	self.connect(self.parent(), SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
 
-	self.classTree = window.classTree
 	#self.glob.accept(self.classTree)
 
 	self.browsers = (
-	    PackageBrowser(window, self),
-	    ClassBrowser(window, self),
-	    DocoBrowser(window, self),
-	    SourceBrowser(window, self),
-	    GraphBrowser(window, self)
+	    PackageBrowser(self),
+	    ClassBrowser(self),
+	    DocoBrowser(self),
+	    SourceBrowser(self),
+	    GraphBrowser(self)
 	)
 
-	self.decl = None
+	if filename:
+	    self.load_file()
+	    self.setCaption(filename+' : Output Window')
+	
+	main_window.add_window(self)
+
+
+    def _make_left(self):
+	self.left_split = QSplitter(Qt.Vertical, self)
+	self.package_list = QListView(self.left_split)
+	self.package_list.addColumn('Package')
+	self.left_tab = QTabWidget(self.left_split)
+	self.class_list = QListView(self.left_tab)
+	self.class_list.addColumn('Class')
+	self.file_list = QListView(self.left_tab)
+	self.file_list.addColumn('File')
+	self.left_tab.addTab(self.class_list, "Classes")
+	self.left_tab.addTab(self.file_list, "Files")
+	self.left_split.setSizes([30,70])
+
+    def _make_right(self):
+	self.right_tab = QTabWidget(self)
+	self.doco_display = QTextBrowser(self.right_tab)
+	self.doco_display.setTextFormat(Qt.RichText)
+	self.doco_display.setText("<i>Select a package/namespace to view from the left.")
+	self.source_display = QTextBrowser(self.right_tab)
+	self.graph_display = IGraphWindow(self.right_tab, self.main_window, self.classTree)
+	self.right_tab.addTab(self.doco_display, "Documentation")
+	self.right_tab.addTab(self.source_display, "Source")
+	self.right_tab.addTab(self.graph_display, "Graph")
+
+    def add_listener(self, listener):
+	"""Adds a listener for changes. The listener must implement the
+	SelectionListener interface"""
+	if not isinstance(listener, BrowserWindow.SelectionListener):
+	    raise TypeError, 'Not an implementation of SelectionListener'
+	self.__listeners.append(listener)
 
     def current_decl(self):
 	"""Returns the current declaration being viewed by the project"""
@@ -138,13 +194,6 @@ class Browser:
 
 	for listener in self.__listeners:
 	    listener.current_package_changed(package)
-
-    def add_listener(self, listener):
-	"""Adds a listener for changes. The listener must implement the
-	SelectionListener interface"""
-	if not isinstance(listener, Browser.SelectionListener):
-	    raise TypeError, 'Not an implementation of SelectionListener'
-	self.__listeners.append(listener)
 
     def set_current_ast(self, ast):
 	self.__ast = ast
@@ -178,22 +227,19 @@ class Browser:
     def setGraphEnabled(self, enable):
 	self._file_menu.setItemEnabled(self._graph_id, enable)
 	if enable:
-	    self.window.graph_display.set_class(self.decl.name())
+	    self.graph_display.set_class(self.decl.name())
 	#else:
 	#    self.window.graph_display.hide()
 
-    def showDecl(self, decl):
-	self.decl = decl
-	# todo: split these up.. mvc, events etc
-	if self.window.graph_display.isVisible():
-	    if isinstance(decl, AST.Class):
-		#self.setGraphEnabled(isinstance(decl, AST.Class))
-		self.window.graph_display.set_class(self.decl.name())
-	    else:
-		self.window.graph_display.set_class(None)
-   
     def tabChanged(self, widget):
 	self.set_current_decl(self.current_decl())
+
+    def load_file(self):
+	"""Loads the AST from disk."""
+	try:
+	    self.set_current_ast(AST.load(self.filename))
+	except Exception, e:
+	    print e
 
 class ListFiller( AST.Visitor ):
     """A visitor that fills in a QListView from an AST"""
@@ -250,19 +296,18 @@ class ListFiller( AST.Visitor ):
 	self.stack.pop()
 	if len(self.stack) <= self.auto_open: self.listview.setOpen(item, 1)
 
-class PackageBrowser (Browser.SelectionListener):
+class PackageBrowser (BrowserWindow.SelectionListener):
     """Browser that manages the package view"""
-    def __init__(self, window, browser):
-	self.__window = window
+    def __init__(self, browser):
 	self.__browser = browser
 	browser.add_listener(self)
 
 	# Create the filler. It only displays a few types
-	self.filler = ListFiller(self, window.package_list, (
+	self.filler = ListFiller(self, browser.package_list, (
 	    'package', 'module', 'namespace', 'global'))
 	self.filler.auto_open = 3
 
-	window.connect(window.package_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_package_item)
+	browser.connect(browser.package_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_package_item)
 
     def select_package_item(self, item):
 	"""Show a given package (by item)"""
@@ -277,25 +322,24 @@ class PackageBrowser (Browser.SelectionListener):
 	for comment in decl.comments():
 	    os.write(comment.text())
 	    os.write('<hr>')
-	self.window.doco_display.setText(os.getvalue())
+	self.__browser.doco_display.setText(os.getvalue())
 
     def current_ast_changed(self, ast):
 	self.filler.fillFrom(self.__browser.glob)
 
-class ClassBrowser (Browser.SelectionListener):
-    """Browser that manages the class view"""
-    def __init__(self, window, browser):
-	self.__window = window
+class ClassBrowser (BrowserWindow.SelectionListener):
+    """Browser display that manages the class view"""
+    def __init__(self, browser):
 	self.__browser = browser
 	self.__glob = AST.Scope('', -1, '', 'Global Classes', ('global',))
 	browser.add_listener(self)
 
 	# Create the filler
-	self.filler = ListFiller(self, window.class_list, None, (
+	self.filler = ListFiller(self, browser.class_list, None, (
 	    'Package', 'Module', 'Namespace', 'Global'))
 
-	window.connect(window.class_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_decl_item)
-	window.connect(window.class_list, SIGNAL('expanded(QListViewItem*)'), self.selfish_expansion)
+	browser.connect(browser.class_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_decl_item)
+	browser.connect(browser.class_list, SIGNAL('expanded(QListViewItem*)'), self.selfish_expansion)
 
     def select_decl_item(self, item):
 	"""Show a given declaration (by item)"""
@@ -312,33 +356,31 @@ class ClassBrowser (Browser.SelectionListener):
 	if not item.parent(): return
 	iter = item.parent().firstChild()
 	while iter:
-	    if iter != item: self.__window.class_list.setOpen(iter, 0)
+	    if iter != item: self.__browser.class_list.setOpen(iter, 0)
 	    iter = iter.nextSibling()
 
     def current_ast_changed(self, ast):
 	self.filler.clear()
 	glob_all = self.__browser.glob.declarations()
 	classes = lambda decl: decl.type() == 'class'
-	print map(lambda x:x.type(), glob_all)
 	glob_cls = filter(classes, glob_all)
 	self.__glob.declarations()[:] = glob_cls
 	self.filler.fillFrom(self.__glob)
 
-class DocoBrowser (Browser.SelectionListener):
+class DocoBrowser (BrowserWindow.SelectionListener):
     """Browser that manages the documentation view"""
     class BufferScopePages (ScopePages.ScopePages, Page.BufferPage):
 	def __init__(self, manager):
 	    ScopePages.ScopePages.__init__(self, manager)
 	    Page.BufferPage._take_control(self)
 
-    def __init__(self, window, browser):
-	self.__window = window
+    def __init__(self, browser):
 	self.__browser = browser
 	browser.add_listener(self)
 
 	self.mime_factory = SourceMimeFactory()
 	self.mime_factory.set_browser(self)
-	self.__window.doco_display.setMimeSourceFactory(self.mime_factory)
+	self.__browser.doco_display.setMimeSourceFactory(self.mime_factory)
 
 	self.__generator = None
 
@@ -350,7 +392,7 @@ class DocoBrowser (Browser.SelectionListener):
 	return self.__generator
 
     def current_decl_changed(self, decl):
-	if not self.__window.doco_display.isVisible():
+	if not self.__browser.doco_display.isVisible():
 	    # Not visible, so ignore
 	    return
 	if isinstance(decl, AST.Scope):
@@ -360,7 +402,7 @@ class DocoBrowser (Browser.SelectionListener):
 	    self.__text = pages.get_buffer()
 	    if self.__getting_mime: return
 	    context = pages.filename()
-	    self.__window.doco_display.setText(self.__text, context)
+	    self.__browser.doco_display.setText(self.__text, context)
 	elif decl:
 	    # Need more work to use HTML on this.. use ASCIIFormatter for now
 	    os = cStringIO.StringIO()
@@ -368,7 +410,7 @@ class DocoBrowser (Browser.SelectionListener):
 	    formatter = ASCIIFormatter(os)
 	    formatter.set_scope(decl.name())
 	    decl.accept(formatter)
-	    self.__window.doco_display.setText(os.getvalue())
+	    self.__browser.doco_display.setText(os.getvalue())
     
     def current_ast_changed(self, ast):
 	core.configure_for_gui(ast)
@@ -410,7 +452,7 @@ class DocoBrowser (Browser.SelectionListener):
 		self.__getting_mime = 1
 		self.__browser.set_current_decl(scope)
 		self.__getting_mime = 0
-		return QTextDrag(self.__text, self.__window.doco_display, '')
+		return QTextDrag(self.__text, self.__browser.doco_display, '')
 	except KeyError:
 	    pass
 	return None
@@ -483,20 +525,20 @@ def format_source(text):
     return text
 
 
-class SourceBrowser (Browser.SelectionListener):
+class SourceBrowser (BrowserWindow.SelectionListener):
     """Browser that manages the source view"""
     class BufferFilePages (FilePages.FilePages, Page.BufferPage):
 	def __init__(self, manager):
 	    FilePages.FilePages.__init__(self, manager)
 	    Page.BufferPage._take_control(self)
 
-    def __init__(self, window, browser):
-	self.__window = window
+    def __init__(self, browser):
 	self.__browser = browser
 	browser.add_listener(self)
 
 	self.mime_factory = SourceMimeFactory()
-	self.__window.source_display.setMimeSourceFactory(self.mime_factory)
+	self.mime_factory.set_browser(self)
+	self.__browser.source_display.setMimeSourceFactory(self.mime_factory)
 
 	self.__generator = None
 
@@ -504,7 +546,7 @@ class SourceBrowser (Browser.SelectionListener):
 
 	self.__getting_mime = 0
 
-	self.__window.connect(self.__window.source_display,
+	self.__browser.connect(self.__browser.source_display,
 	    SIGNAL('highlighted(const QString&)'), self.highlighted)
 
     def highlighted(self, text):
@@ -519,18 +561,18 @@ class SourceBrowser (Browser.SelectionListener):
 	return self.__generator
 
     def current_decl_changed(self, decl):
-	if not self.__window.source_display.isVisible():
+	if not self.__browser.source_display.isVisible():
 	    # Not visible, so ignore
 	    return
 	if decl is None:
-	    self.__window.source_display.setText('')
+	    self.__browser.source_display.setText('')
 	    self.__current_file = ''
 	    return
 	file, line = decl.file(), decl.line()
 	if self.__current_file != file:
 	    # Check for empty file
 	    if not file:
-		self.__window.source_display.setText('')
+		self.__browser.source_display.setText('')
 		return
 	    print "looking for", file
 	    
@@ -544,7 +586,7 @@ class SourceBrowser (Browser.SelectionListener):
 		self.__text = format_source(self.__text)
 		if self.__getting_mime: return
 		context = pages.filename()
-		self.__window.source_display.setText(self.__text, context)
+		self.__browser.source_display.setText(self.__text, context)
 	    else:
 		# Open the new file and give it line numbers
 		text = open(file).read()
@@ -553,12 +595,12 @@ class SourceBrowser (Browser.SelectionListener):
 		for line in range(len(lines)): lines[line] = str(line+1)+'| '+lines[line]
 		text = string.join(lines, '\n')
 		# set text
-		self.__window.source_display.setText(text)
+		self.__browser.source_display.setText(text)
 	    self.__current_file = file
 	# scroll to line
 	if type(line) != type(''): # some lines are '' for some reason..
-	    y = (self.__window.source_display.fontMetrics().height()+1) * line
-	    self.__window.source_display.setContentsPos(0, y)
+	    y = (self.__browser.source_display.fontMetrics().height()+1) * line
+	    self.__browser.source_display.setContentsPos(0, y)
 	#print line, y
 
     def current_ast_changed(self, ast):
@@ -570,16 +612,15 @@ class SourceBrowser (Browser.SelectionListener):
 
 
 
-class GraphBrowser (Browser.SelectionListener):
+class GraphBrowser (BrowserWindow.SelectionListener):
     """Browser that manages the graph view"""
-    def __init__(self, window, browser):
-	self.__window = window
+    def __init__(self, browser):
 	self.__browser = browser
 	browser.add_listener(self)
     def current_decl_changed(self, decl):
-	if not self.__window.graph_display.isVisible():
+	if not self.__browser.graph_display.isVisible():
 	    # Not visible, so ignore
 	    return
 	if decl is None: return
-	self.__window.graph_display.set_class(decl.name())
+	self.__browser.graph_display.set_class(decl.name())
 

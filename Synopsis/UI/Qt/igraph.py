@@ -1,4 +1,4 @@
-# $Id: igraph.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
+# $Id: igraph.py,v 1.3 2002/09/28 05:53:31 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: igraph.py,v $
+# Revision 1.3  2002/09/28 05:53:31  chalky
+# Refactored display into separate project and browser windows. Execute projects
+# in the background
+#
 # Revision 1.2  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -30,6 +34,11 @@
 
 import sys, pickle, Synopsis, cStringIO
 from qt import *
+
+# In later versions of python-qt aka PyQt this is in a separate module
+if not globals().has_key('QCanvasView'):
+    from qtcanvas import *
+
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
