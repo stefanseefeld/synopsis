@@ -20,7 +20,7 @@ import sys, os, os.path
 
 srcdir = '@srcdir@'
 topdir = '@topdir@'
-python = Composite(Python.Parser(basename = topdir + os.sep),
+python = Composite(Python.Parser(base_path = topdir + os.sep),
                    JavaTags(),
                    Summarizer())
 
