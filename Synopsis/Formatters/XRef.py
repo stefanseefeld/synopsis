@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.4 2003/11/13 20:40:09 stefan Exp $
+# $Id: XRef.py,v 1.5 2003/12/08 03:31:08 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -26,7 +26,7 @@ class CrossReferencer:
       self.__data, self.__index = cPickle.load(f)
       f.close()
       # Split the data into multiple files based on size
-      page = 0
+      view = 0
       count = 0
       self.__file_info.append([])
       names = self.__data.keys()
@@ -34,10 +34,10 @@ class CrossReferencer:
       for name in names:
          if count > 200:
             count = 0
-            page = page + 1
+            view = view + 1
             self.__file_info.append([])
-         self.__file_info[page].append(name)
-         self.__file_map[name] = page
+         self.__file_info[view].append(name)
+         self.__file_map[name] = view
          target_data = self.__data[name]
          l0, l1, l2 = len(target_data[0]), len(target_data[1]), len(target_data[2])
          count = count + 1 + l0 + l1 + l2
@@ -66,16 +66,16 @@ class CrossReferencer:
       if not self.__index.has_key(name): return None
       return self.__index[name]
 
-   def get_page_for(self, name):
-      """Returns the number of the page that the xref info for the given
+   def get_view_for(self, name):
+      """Returns the number of the view that the xref info for the given
       name is on, or None if not found."""
 
       if not self.__file_map.has_key(name): return None
       return self.__file_map[name]
 
-   def get_page_info(self):
-      """Returns a list of pages, each consisting of a list of names on that
-      page. This method is intended to be used by whatever generates the
+   def get_view_info(self):
+      """Returns a list of views, each consisting of a list of names on that
+      view. This method is intended to be used by whatever generates the
       files..."""
 
       return self.__file_info
