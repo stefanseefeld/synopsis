@@ -21,9 +21,11 @@ public:
   //. A Guard provides RAII - like protection for the scope stack
   struct Guard
   {
-    Guard(Table &t) : table(t) {}
+    //. Construct a guard for the given table.
+    //. If the pointer is 0 there is no cleanup to do
+    Guard(Table *t) : table(t) {}
     ~Guard();
-    Table &table;
+    Table *table;
   };
 
   Table();
@@ -32,6 +34,7 @@ public:
   Table &enter_namespace(const PTree::NamespaceSpec *);
   Table &enter_class(const PTree::ClassSpec *);
   Table &enter_function(const PTree::Declaration *);
+  Table &enter_block(const PTree::List *);
   void leave_scope();
 
   Scope &current_scope();
@@ -60,7 +63,7 @@ private:
   Scopes my_scopes;
 };
 
-inline Table::Guard::~Guard() { table.leave_scope();}
+inline Table::Guard::~Guard() { if (table) table->leave_scope();}
 
 inline bool Table::evaluate_const(const PTree::Node *node, long &value)
 {

@@ -24,7 +24,8 @@ public:
 class LocalScope : public Scope
 {
 public:
-  LocalScope(Scope *outer) : my_outer(outer->ref()) {}
+  LocalScope(const PTree::List *node, Scope *outer)
+    : my_node(node), my_outer(outer->ref()) {}
   virtual const Scope *global() const { return my_outer->global();}
   virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
 
@@ -33,7 +34,8 @@ protected:
   ~LocalScope() { my_outer->unref();}
 
 private:
-  Scope *my_outer;
+  const PTree::List *my_node;
+  Scope             *my_outer;
 };
 
 class FunctionScope : public Scope
