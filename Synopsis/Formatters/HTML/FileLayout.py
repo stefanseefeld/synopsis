@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.13 2002/09/28 06:32:08 chalky Exp $
+# $Id: FileLayout.py,v 1.14 2002/10/20 02:21:25 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.14  2002/10/20 02:21:25  chalky
+# Move quote function to Core.Util
+#
 # Revision 1.13  2002/09/28 06:32:08  chalky
 # Ooops, removing print
 #
@@ -74,14 +77,6 @@ from Synopsis.Formatter import TOC
 import core
 from core import config
 
-def quote(name):
-    """Quotes a filename to remove angle brackets"""
-    # The . is arbitrary..
-    name = re.sub('\.','..',name)
-    name = re.sub('<','.L',name)
-    name = re.sub('>','.R',name)
-    return name
-
 class FileLayout (TOC.Linker):
     """Base class for naming files.
     You may derive from this class an
@@ -130,9 +125,9 @@ class FileLayout (TOC.Linker):
     def nameOfScope(self, scope):
 	"""Return the filename of a scoped name (class or module).
 	The default implementation is to join the names with '-' and append
-	".html" Additionally, special characters are quoted in URL-style"""
+	".html" Additionally, special characters are Util.quoted in URL-style"""
 	if not len(scope): return self.nameOfSpecial('global')
-	return quote(string.join(scope,'-')) + ".html"
+	return Util.quote(string.join(scope,'-')) + ".html"
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
 	tuple (generally it is processed this way beforehand so this is okay).
@@ -149,7 +144,7 @@ class FileLayout (TOC.Linker):
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file. Default is to join
 	the scope with '-' and prepend '-'+name"""
-	return "_%s-%s%s"%(name, quote(string.join(scope, '-')), ext)
+	return "_%s-%s%s"%(name, Util.quote(string.join(scope, '-')), ext)
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index. Default is
 	_modules.html"""
@@ -157,7 +152,7 @@ class FileLayout (TOC.Linker):
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module. Default is to
 	join the name with '-', prepend "_module_" and append ".html" """
-	return "_module_" + quote(string.join(scope, '-')) + ".html"
+	return "_module_" + Util.quote(string.join(scope, '-')) + ".html"
     def link(self, decl):
 	"""Create a link to the named declaration. This method may have to
 	deal with the directory layout."""
@@ -178,7 +173,7 @@ class NestedFileLayout (FileLayout):
 	One subdirectory per scope"""
         prefix = 'Scopes'
 	if not len(scope): return os.path.join(prefix, 'global') + '.html'
-        else: return quote(reduce(os.path.join, scope, prefix)) + '.html'
+        else: return Util.quote(reduce(os.path.join, scope, prefix)) + '.html'
 
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
@@ -196,7 +191,7 @@ class NestedFileLayout (FileLayout):
     
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file"""
-        return quote(reduce(os.path.join, scope, name)) + ext
+        return Util.quote(reduce(os.path.join, scope, name)) + ext
 
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index"""
@@ -204,4 +199,4 @@ class NestedFileLayout (FileLayout):
 
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module"""
-        return quote(reduce(os.path.join, scope, 'Modules')) + '.html'
+        return Util.quote(reduce(os.path.join, scope, 'Modules')) + '.html'
