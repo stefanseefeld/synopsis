@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.5 2000/03/09 05:15:38 stefan Exp $
+# $Id: synopsis,v 1.6 2000/08/01 03:28:26 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -23,6 +23,8 @@
 import sys, getopt, os, os.path, string
 import pickle
 
+from Synopsis import Type, AST
+
 def version(): print "synopsis version 0.1"
 cmdname = os.path.basename(sys.argv[0])
 def usage():
@@ -31,9 +33,9 @@ def usage():
 The supported flags are:
 
   -p,   --parser <parser>              Select a parser
-  -Wp <arg>[,<arg>...]                 Send args to the parser
+  -Wp,<arg>[,<arg>...]                 Send args to the parser
   -f,   --formatter <formatter>        Select a formatter
-  -Wf <arg>[,<arg>...]                 Send args to the formatter
+  -Wf,<arg>[,<arg>...]                 Send args to the formatter
   -I<path>                             Specify include path
   -o <file>                            Write output <file>
   -v,   --version                      Print version info then exit
@@ -65,9 +67,9 @@ def parseArgs(args):
 
         elif o == "-W":
             if a[0] == "p":
-                parser_args.extend(string.split(a[1:], ","))
+                parser_args.extend(string.split(a[2:], ","))
             elif a[0] == "f":
-                formatter_args.extend(string.split(a[1:], ","))
+                formatter_args.extend(string.split(a[2:], ","))
             else:
                 sys.stderr.write("Error in arguments: option " + o + " not recognized\n")
                 sys.stderr.write("Use " + cmdname + " -h for help\n")
@@ -107,7 +109,9 @@ def main(argv=None):
         sys.stderr.write(cmdname + ": No files specified\n")
         sys.exit(1)
 
-    dictionary = []
+    types = Type.Dictionary()
+    declarations = []#AST.Dictionary()
+
     if parser_cmd != "":
         try:
             parser = my_import("Parser." + parser_cmd)
@@ -125,15 +129,16 @@ def main(argv=None):
 
         if parser_cmd == "":
             unpickler = pickle.Unpickler(open(file, "r"))
-            while (1):
-                try:
-                    x = unpickler.load()
-                except EOFError, e:
-                    break
-                dictionary.append(x)
+            try:
+                t = unpickler.load()
+                d = unpickler.load()
+            except EOFError, e:
+                break
+            types.merge(t)
+            declarations.extend(d)
 
         else:
-            dictionary.extend(parser.parse(file, parser_args))
+            parser.parse(file, parser_args, types, declarations)
 
     #
     # resolve symbols here...
@@ -147,7 +152,8 @@ def main(argv=None):
             sys.stderr.write(cmdname + ": no output file specified\n")
             sys.exit(1)
         pickler = pickle.Pickler(open(output, "w"))
-        for x in dictionary: pickler.dump(x)
+        pickler.dump(types)
+        pickler.dump(declarations)
 
     else:
         try:
@@ -157,7 +163,7 @@ def main(argv=None):
             sys.exit(1)
 
         if output != "": formatter_args.extend(["-o",output])
-        formatter.format(dictionary, formatter_args)
+        formatter.format(types, declarations, formatter_args)
 
 if __name__ == '__main__':
         main()

@@ -1,5 +1,5 @@
 import sys, getopt, os, os.path, string
-from Synopsis import Types
+from Synopsis import Type, AST
 
 class ASCIIFormatter:
     """
@@ -9,7 +9,7 @@ class ASCIIFormatter:
     """
     def __init__(self, os):
         self.__indent = 0
-        self.__istring = "  "
+        self.__istring = " "
         self.__os = os
     def indent(self):
         self.__os.write(self.__istring * self.__indent)

@@ -1,0 +1,13 @@
+module foo
+{
+  enum Discriminator { telltale, key, button, positional, valuation};
+  union Payload switch (Discriminator)
+  //. the data associated with these attributes
+  {
+  case telltale: double state;
+  case key: double kselection;
+  case button: double bselection;
+  case positional: double location;
+  case valuation: double val;
+  };
+};

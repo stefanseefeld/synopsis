@@ -1,16 +1,13 @@
-# NameLookup provides the fully scoped name of a given type
-#
-# Translator creates a Synopsis tree out of an omniidl AST
-# 
-
 from omniidl import idlast, idltype, idlvisitor, idlutil
 import _omniidl
 import sys, getopt, os, os.path, string
-from Synopsis import Types
+from Synopsis import Type, AST, Util
 
-class NameLookup (idlvisitor.TypeVisitor):
-    def __init__(self):
-        self.__result_type = ""
+class TypeTranslator (idlvisitor.TypeVisitor):
+    """maps idltype objects to Synopsis.Type objects in a Type.Dictionary"""
+    def __init__(self, types):
+        self.types = types
+        self.__result = None
         self.__basetypes = {
             idltype.tk_void:       "void",
             idltype.tk_short:      "short",
@@ -30,180 +27,286 @@ class NameLookup (idlvisitor.TypeVisitor):
             idltype.tk_longdouble: "long double",
             idltype.tk_wchar:      "wchar"
             }
-    def visitBaseType(self, type):
-        self.__result_type = self.__basetypes[type.kind()]
-    def visitStringType(self, type):
-        if type.bound() == 0:
-            self.__result_type = "string"
-        else:
-            self.__result_type = "string<" + str(type.bound()) + ">"
-    def visitWStringType(self, type):
-        if type.bound() == 0:
-            self.__result_type = "wstring"
-        else:
-            self.__result_type = "wstring<" + str(type.bound()) + ">"
-    def visitSequenceType(self, type):
-        type.seqType().accept(self)
-        if type.bound() == 0:
-            self.__result_type = "sequence<" + self.__result_type + ">"
-        else:
-            self.__result_type = "sequence<" + self.__result_type + ", " +\
-                                  str(type.bound()) + ">"
-    def visitFixedType(self, type):
-        self.__result_type = "fixed <" + str(type.digits()) + ", " +\
-                              str(type.scale()) + ">"
-    def visitDeclaredType(self, type):
-        self.__result_type = "::" + \
-                              idlutil.ccolonName(type.decl().scopedName())
-    def lookup(self, type):
-        type.accept(self)
-        return self.__result_type
 
-class Translator (idlvisitor.AstVisitor):
-    def __init__(self):
-        self.__names = NameLookup()
-        self.__rootNodes = []
-        self.__current = []
-    def nodes(self): return self.__rootNodes
+    def internalize(self, idltype):
+        idltype.accept(self)
+        return self.__result
+
+    def add(self, name, type): self.types[name] = type
+    def get(self, name): return self.types[name]
+
+    def visitBaseType(self, idltype):
+        type = Type.Base("IDL", self.__basetypes[idltype.kind()])
+        self.types[type.name()] = type
+        self.__result = type.name()
+
+    def visitStringType(self, idltype):
+        if not self.types.has_key(["string"]):
+            self.types[["string"]] = Type.Base("IDL", "string")
+        self.__result = ["string"]
+        #if idltype.bound() == 0:
+        #    self.__result_type = "string"
+        #else:
+        #    self.__result_type = "string<" + str(type.bound()) + ">"
+
+    def visitWStringType(self, idltype):
+        if not self.types.has_key(["wstring"]):
+            self.types[["wstring"]] = Type.Base("IDL", "wstring")
+        self.__result = ["wstring"]
+        #if type.bound() == 0:
+        #    self.__result_type = "wstring"
+        #else:
+        #    self.__result_type = "wstring<" + str(type.bound()) + ">"
+
+    def visitSequenceType(self, idltype):
+        if not self.types.has_key(["sequence"]):
+            self.types[["sequence"]] = Type.Base("IDL", "sequence")
+        idltype.seqType().accept(self)
+        ptype = self.types[self.__result]
+        #if type.bound() == 0:
+        #    self.__result_type = "sequence<" + self.__result_type + ">"
+        #else:
+        #    self.__result_type = "sequence<" + self.__result_type + ", " +\
+        #                         str(type.bound()) + ">"
+        type = Type.Parametrized("IDL", self.types[["sequence"]], [ptype])
+        name  = ["sequence<" + Util.ccolonName(ptype.name()) + ">"]
+        self.types[name] = type
+        self.__result = name
+        
+    def visitDeclaredType(self, idltype):
+        self.__result = idltype.decl().scopedName()
+
+class ASTTranslator (idlvisitor.AstVisitor):
+    def __init__(self, declarations, types):
+        self.declarations = declarations
+        self.__types = types
+        self.__scope = []
+        self.__operation = None
+        self.__enum = None
+        
+    def scope(self): return self.__scope[-1].name()
+    def declare(self, declaration): self.__scope[-1].declarations().append(declaration)
     def visitAST(self, node):
+        self.__scope.append(AST.Scope(node.file(), 0, 1, "IDL", "file", []))
+        # add an 'Object' Type to the Type Dictionary. Don't declare it in the AST since
+        # there is no corresponding declaration
+        object = AST.Class("<built in>", 0, 0, "IDL", "interface", ["CORBA", "Object"])
+        type = Type.Declared("IDL", ["CORBA", "Object"], object)
+        self.__types.add(["CORBA", "Object"], type)
         for n in node.declarations():
             n.accept(self)
+        for d in self.__scope[-1].declarations():
+            self.declarations.append(d)
 
     def visitModule(self, node):
-        if node.mainFile() != 1: return
-        self.__current.append(Types.Module(node.file(),
-                                           node.line(),
-                                           "IDL",
-                                           "module",
-                                           node.identifier(),
-                                           node.scopedName()))
+        name = self.scope()[:]
+        name.append(node.identifier())
+        module = AST.Module(node.file(), node.line(), node.mainFile(), "IDL", "module", name)
+        self.declare(module)
+        self.__scope.append(module)
+        self.__types.add(name, Type.Declared("IDL", name, module))
+        for c in node.comments():
+            module.comments().append(AST.Comment(c.text(), c.file(), c.line()))
         for n in node.definitions():
             n.accept(self)
-        if len(self.__current) == 1:
-            self.__rootNodes.append(self.__current[0])
-        else:
-            self.__current[-2].types().append(self.__current[-1])
-        self.__current.pop()
-
+        self.__scope.pop()
+        
     def visitInterface(self, node):
-        if node.mainFile() != 1: return
-        self.__current.append(Types.Class(node.file(),
-                                          node.line(),
-                                          "IDL",
-                                          "interface",
-                                          node.identifier(),
-                                          node.scopedName())) 
-        for i in node.inherits(): self.__current[-1].parents().append(Types.Inheritance("", i, []))
+        name = self.scope()[:]
+        name.append(node.identifier())
+        clas = AST.Class(node.file(), node.line(), node.mainFile(), "IDL", "interface", name)
+        self.declare(clas)
+        self.__scope.append(clas)
+        self.__types.add(name, Type.Declared("IDL", name, clas))
+        for c in node.comments():
+            clas.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+        for i in node.inherits():
+            parent = self.__types.get(i.scopedName())
+            clas.parents().append(AST.Inheritance("", parent.declaration(), []))
         for c in node.contents(): c.accept(self)
-        if len(self.__current) == 1:
-            self.__rootNodes.append(self.__current[0])
+        self.__scope.pop()
+        
+    def visitForward(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        self.__result_declarator = AST.Forward(node.file(), node.line(), node.mainFile(), "IDL", "interface", name)
+        self.__types.add(name, Type.Forward("IDL", name))
+        
+    def visitConst(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        type = self.__types.internalize(node.constType())
+        if node.constType().kind() == idltype.tk_enum:
+            value = "::" + idlutil.ccolonName(node.value().scopedName())
         else:
-            self.__current[-2].declarations().append(self.__current[-1])
-        self.__current.pop()
-
-    def visitForward(self, node):      return
-    def visitConst(self, node):        return
-    def visitDeclarator(self, node): return
+            value = str(node.value())
+        const = AST.Const(node.file(), node.line(), node.mainFile(), "IDL", "const",
+                          self.__types.get(type), name, value)
+        self.declare(const)
+        for c in node.comments():
+            const.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+        
+    def visitDeclarator(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        self.__result_declarator = AST.Declarator(node.file(), node.line(), node.mainFile(), "IDL", name, node.sizes())
+        self.__types.add(self.__result_declarator.name(),
+                         Type.Declared("IDL", self.__result_declarator.name(), self.__result_declarator))
+        
     def visitTypedef(self, node):
-        if node.mainFile() != 1: return
-        identifiers = []
-        for d in node.declarators(): identifiers.append(d.identifier())
-        type = Types.Typedef(node.file(),
-                             node.line(),
-                             "IDL",
-                             self.__names.lookup(node.aliasType()),
-                             [],
-                             identifiers)
-        if len(self.__current): self.__current[-1].declarations().append(type)
-        else: self.__rootNodes.append(type)
+        # if this is an inline constructed type, it is a 'Declared' type
+        # and we need to visit the declaration first
+        if node.constrType():
+            node.memberType().decl().accept(self)
+        name = self.__types.internalize(node.aliasType())
+        decll = []
+        for d in node.declarators():
+            d.accept(self)
+            decll.append(self.__result_declarator)
+
+        typedef = AST.Typedef(node.file(), node.line(), node.mainFile(), "IDL", "typedef",
+                              self.__types.get(name), node.constrType(), decll)
+        self.declare(typedef)
+        for c in node.comments():
+            typedef.comments().append(AST.Comment(c.text(), c.file(), c.line()))
 
     def visitMember(self, node):
-        identifiers = []
-        for d in node.declarators(): identifiers.append(d.identifier())
-        self.__current[-1].declarations().append(Types.Variable(node.file(),
-                                                                node.line(),
-                                                                "IDL",
-                                                                "member",
-                                                                self.__names.lookup(node.memberType()),
-                                                                [],
-                                                                identifiers,
-                                                                ""))
+        # if this is an inline constructed type, it is a 'Declared' type
+        # and we need to visit the declaration first
+        if node.constrType():
+            node.memberType().decl().accept(self)
+        name = self.__types.internalize(node.memberType())
+        decll = []
+        for d in node.declarators():
+            d.accept(self)
+            decll.append(self.__result_declarator)
+        member = AST.Variable(node.file(), node.line(), node.mainFile(), "IDL", "variable",
+                              self.__types.get(name), node.constrType(), decll)
+        self.declare(member)
+        for c in node.comments():
+            member.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+
     def visitStruct(self, node):
-        if node.mainFile() != 1: return
-        self.__current.append(Types.Class(node.file(),
-                                          node.line(),
-                                          "IDL",
-                                          "struct",
-                                          node.identifier(),
-                                          node.scopedName()))
+        name = self.scope()[:]
+        name.append(node.identifier())
+        struct = AST.Class(node.file(), node.line(), node.mainFile(), "IDL", "struct", name)
+        self.declare(struct)
+        self.__types.add(name, Type.Declared("IDL", name, struct))
+        for c in node.comments():
+            struct.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+        self.__scope.append(struct)
         for member in node.members(): member.accept(self)
-        if len(self.__current) == 1:
-            self.__rootNodes.append(self.__current[0])
-        else:
-            self.__current[-2].declarations().append(self.__current[-1])
-        self.__current.pop()
+        self.__scope.pop()
         
-    def visitException(self, node):    return
-    def visitCaseLabel(self, node):    return
-    def visitUnionCase(self, node):    return
-    def visitUnion(self, node):        return
-    def visitEnumerator(self, node):   return
-    def visitEnum(self, node):         return
+    def visitException(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        exc = AST.Class(node.file(), node.line(), node.mainFile(), "IDL", "exception", name)
+        self.declare(exc)
+        self.__types.add(name, Type.Declared("IDL", name, exc))
+        self.__scope.append(exc)
+        for c in node.comments():
+            exc.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+        for member in node.members(): member.accept(self)
+        self.__scope.pop()
+    
+    #    def visitCaseLabel(self, node):    return
+    def visitUnionCase(self, node):
+        # if this is an inline constructed type, it is a 'Declared' type
+        # and we need to visit the declaration first
+        if node.constrType():
+            node.caseType().decl().accept(self)
+        type = self.__types.internalize(node.caseType())
+        node.declarator().accept(self)
+        name = self.scope()[:]
+        name.append(self.__result_declarator.name()[-1])
+        self.__scope[-1].declarations().append(AST.Operation(node.file(), node.line(), node.mainFile(), "IDL", "case",
+                                                             [], self.__types.get(type), name))
+    def visitUnion(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        clas = AST.Class(node.file(), node.line(), node.mainFile(), "IDL", "union", name)
+        self.declare(clas)
+        self.__scope.append(clas)
+        self.__types.add(name, Type.Declared("IDL", name, clas))
+        for c in node.comments():
+            clas.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+        for c in node.cases(): c.accept(self)
+        self.__scope.pop()
+        
+    def visitEnumerator(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        enum = AST.Enumerator(node.file(), node.line(), node.mainFile(), "IDL", name, "")
+        type = Type.Declared("IDL", name, enum)
+        self.__types.add(type.name(), type)
+        self.__enum.enumerators().append(enum)
+
+    def visitEnum(self, node):
+        name = self.scope()[:]
+        name.append(node.identifier())
+        self.__enum = AST.Enum(node.file(), node.line(), node.mainFile(), "IDL", name, [])
+        self.declare(self.__enum)
+        type = Type.Declared("IDL", name, self.__enum)
+        self.__types.add(type.name(), type)
+        for c in node.comments():
+            self.__enum.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+        for enumerator in node.enumerators(): enumerator.accept(self)
+        self.__enum = None
+        
     def visitAttribute(self, node):
         pre = []
         if node.readonly(): pre.append("readonly")
-        interface = self.__current[-1]
-        interface.operations().append(Types.Operation(node.file(),
-                                                      node.line(),
-                                                      "IDL",
-                                                      "attribute",
-                                                      pre,
-                                                      self.__names.lookup(node.attrType()),
-                                                      node.identifiers()[0],
-                                                      self.__current[-1].scope(),
-                                                      []))
+        type = self.__types.internalize(node.attrType())
+        name = self.scope()[:]
+        name.append(node.identifiers()[0])
+        attr = AST.Operation(node.file(), node.line(), node.mainFile(), "IDL", "attribute",
+                             pre, self.__types.get(type), name)
+        self.__scope[-1].declarations().append(attr)
+        for c in node.comments():
+            attr.comments().append(AST.Comment(c.text(), c.file(), c.line()))
+
     def visitParameter(self, node):
-        interface = self.__current[-1]
-        operation = interface.operations()[-1]
+        operation = self.__operation
         pre = []
         if node.direction() == 0: pre.append("in")
         elif node.direction() == 1: pre.append("out")
         else: pre.append("inout")
         post = []
-        operation.parameters().append(Types.Parameter(pre,
-                                                      self.__names.lookup(node.paramType()),
-                                                      post,
-                                                      node.identifier()))
-
+        name = self.__types.internalize(node.paramType())
+        operation.parameters().append(AST.Parameter(pre, self.__types.get(name), post, node.identifier()))
+    
     def visitOperation(self, node):
         pre = []
         if node.oneway(): pre.append("oneway")
-        interface = self.__current[-1]
-        interface.operations().append(Types.Operation(node.file(),
-                                                      node.line(),
-                                                      "IDL",
-                                                      "operation",
-                                                      pre,
-                                                      self.__names.lookup(node.returnType()),
-                                                      node.identifier(),
-                                                      self.__current[-1].scope(),
-                                                      []))
+        returnType = self.__types.internalize(node.returnType())
+        name = self.scope()[:]
+        name.append(node.identifier())
+        self.__operation = AST.Operation(node.file(), node.line(), 1, "IDL", "operation", pre, self.__types.get(returnType), name)
+        for c in node.comments():
+            self.__operation.comments().append(AST.Comment(c.text(), c.file(), c.line()))
         for p in node.parameters(): p.accept(self)
-
-    def visitNative(self, node):       return
-    def visitStateMember(self, node):  return
-    def visitFactory(self, node):      return
-    def visitValueForward(self, node): return
-    def visitValueBox(self, node):     return
-    def visitValueAbs(self, node):     return
-    def visitValue(self, node):        return
+        for e in node.raises():
+            exception = self.__types.get(e.scopedName())
+            self.__operation.exceptions().append(exception)
+            
+        self.declare(self.__operation)
+        self.__operation = None
+        
+#    def visitNative(self, node):       return
+#    def visitStateMember(self, node):  return
+#    def visitFactory(self, node):      return
+#    def visitValueForward(self, node): return
+#    def visitValueBox(self, node):     return
+#    def visitValueAbs(self, node):     return
+#    def visitValue(self, node):        return
 
 def __parseArgs(args):
     global preprocessor_args
 
     preprocessor_args = []
     try:
-        opts,remainder = getopt.getopt(args, "I:")
+        opts,remainder = getopt.getopt(args, "I:kK")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -213,23 +316,31 @@ def __parseArgs(args):
 
         if o == "-I":
             preprocessor_args.append("-I" + a)
+        elif o == "-k":
+            preprocessor_args.append("-C")
+            _omniidl.keepComments(0)
+        elif o == "-K":
+            preprocessor_args.append("-C")
+            _omniidl.keepComments(1)
 
-def parse(file, args):
+def parse(file, args, typedict, astdict):
     global preprocessor_args
     __parseArgs(args)
     if hasattr(_omniidl, "__file__"):
         preprocessor_path = os.path.dirname(_omniidl.__file__)
     else:
         preprocessor_path = os.path.dirname(sys.argv[0])
-    preprocessor      = os.path.join(preprocessor_path, "omni-cpp")
+    preprocessor      = os.path.join(preprocessor_path, "omnicpp")
     preprocessor_cmd  = preprocessor + " -lang-c++ -undef -D__OMNIIDL__=" + _omniidl.version
     preprocessor_cmd = preprocessor_cmd + " " + string.join(preprocessor_args, " ") + " " + file
     fd = os.popen(preprocessor_cmd, "r")
 
+    _omniidl.noForwardWarning()
     tree = _omniidl.compile(fd)
     if tree == None:
         sys.stderr.write("omni: Error parsing " + file + "\n")
         sys.exit(1)
-    translator = Translator()
-    tree.accept(translator)
-    return translator.nodes()
+    types = TypeTranslator(typedict)
+    ast = ASTTranslator(astdict, types)
+    tree.accept(ast)
+    return ast.declarations, types.types
