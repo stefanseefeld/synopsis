@@ -23,7 +23,7 @@ private:
   virtual void visit(PTree::Identifier *iden)
   {
     PTree::Encoding name = PTree::Encoding::simple_name(iden);
-    std::cout << "Identifier : " << name << std::endl;
+    my_os << "Identifier : " << name << std::endl;
     lookup(name);
   }
 
@@ -31,7 +31,7 @@ private:
   {
     // We need to figure out how to reproduce the (encoded) name of
     // the type being aliased.
-    std::cout << "Type : " << "<not implemented yet>" << std::endl;
+    my_os << "Type : " << "<not implemented yet>" << std::endl;
 //     lookup(name);
     PTree::third(typed)->accept(this);
   }
@@ -40,7 +40,7 @@ private:
   {
     PTree::Encoding name = decl->encoded_name();
     PTree::Encoding type = decl->encoded_type();
-    std::cout << "Declarator : " << name << std::endl;
+    my_os << "Declarator : " << name << std::endl;
     lookup(name);
     // Visit the initializer, if there is any.
     if (type.is_function()) return;
@@ -61,7 +61,7 @@ private:
   virtual void visit(PTree::Name *n)
   {
     PTree::Encoding name = n->encoded_name();
-    std::cout << "Name : " << name << std::endl;
+    my_os << "Name : " << name << std::endl;
     lookup(name);
   }
   
@@ -71,16 +71,8 @@ private:
     PTree::Encoding name;
     if (function->is_atom()) name.simple_name(function);
     else name = function->encoded_name(); // function is a 'PTree::Name'
-    std::cout << "Function : " << name << ' ' << std::endl;
-    Symbol const *symbol = resolve_funcall(node, current_scope());
-    if (symbol)
-    {
-      std::string filename;
-      unsigned long line_number = my_buffer.origin(symbol->ptree()->begin(), filename);
-      std::cout << "declared at line " << line_number << " in " << filename << std::endl;
-    }
-    else
-      std::cout << "undeclared ! " << std::endl;
+    my_os << "Function : " << name << ' ' << std::endl;
+    lookup(name);
   }
 
   void lookup(PTree::Encoding const &name)
@@ -88,13 +80,15 @@ private:
     SymbolSet symbols = current_scope()->lookup(name);
     if (!symbols.empty())
     {
-      Symbol const *first = *symbols.begin();
-      std::string filename;
-      unsigned long line_number = my_buffer.origin(first->ptree()->begin(), filename);
-      std::cout << "declared at line " << line_number << " in " << filename << std::endl;
+      for (SymbolSet::iterator s = symbols.begin(); s != symbols.end(); ++s)
+      {
+	std::string filename;
+	unsigned long line_number = my_buffer.origin((*s)->ptree()->begin(), filename);
+	my_os << "declared at line " << line_number << " in " << filename << std::endl;
+      }
     }
     else
-      std::cout << "undeclared ! " << std::endl;
+      my_os << "undeclared ! " << std::endl;
   }
 
   Buffer const &my_buffer;

@@ -76,7 +76,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["virtual"] = Token::VIRTUAL;
     my_keywords["wchar_t"] = Token::WCHAR;
   }
-  if (tokenset & GNU)
+  if (tokenset & GCC)
   {
     my_keywords["__alignof__"] = Token::SIZEOF;
     my_keywords["__asm__"] = Token::ATTRIBUTE;

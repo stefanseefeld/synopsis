@@ -44,8 +44,8 @@ void Visitor::visit(AtomVIRTUAL *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(AtomVOID *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(AtomVOLATILE *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(Brace *l) { visit(static_cast<List *>(l));}
-void Visitor::visit(Block *l) { visit(static_cast<List *>(l));}
-void Visitor::visit(ClassBody *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(Block *l) { visit(static_cast<Brace *>(l));}
+void Visitor::visit(ClassBody *l) { visit(static_cast<Brace *>(l));}
 void Visitor::visit(Typedef *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TemplateDecl *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TemplateInstantiation *l) { visit(static_cast<List *>(l));}

@@ -11,6 +11,9 @@
 #include <sstream>
 #include <iomanip>
 
+#undef TRUE
+#undef FALSE
+
 using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;

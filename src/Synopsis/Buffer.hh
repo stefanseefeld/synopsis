@@ -41,27 +41,29 @@ public:
   //. report the pointer at position p
   const char *ptr(unsigned long p = 0) const { return my_buffer.c_str() + p;}
 
-  //. substitute the text between from and to by the text between
-  //. begin and end
-  void substitute(const char *from, const char *to,
-		  const char *begin, unsigned long end);
+  //. replace the text between from and to by the text between
+  //. begin and begin + length
+  void replace(const char *from, const char *to,
+	       const char *begin, unsigned long length);
 
   //. Return the origin of the given pointer (filename and line number)
   unsigned long origin(const char *, std::string &) const;
   //. Write the buffer into the given output stream
   //. The first line contains a line directive issuing the input file name;
   //. if filename is non-empty, use this to fake another one.
-  void write(std::ostream &, const std::string &);
+  void write(std::ostream &, const std::string &) const;
 
 private:
   struct Replacement
   {
     Replacement(const char *from, const char *to,
-		const char *begin, unsigned long end);
+		const char *begin, unsigned long length);
+    static bool smaller(Replacement const &r1, Replacement const &r2)
+    { return r1.from < r2.from;}
     const char   *from;
     const char   *to;
     const char   *begin;
-    unsigned long end;
+    unsigned long length;
   };
   typedef std::vector<Replacement> Replacements;
 

@@ -38,16 +38,16 @@ using namespace Synopsis;
 
 //
 // for now occ remains the 'C++ parser backend' for synopsis,
-// and GNU extension and MSVC tokens are activated in compatibility
+// and GCC extension and MSVC tokens are activated in compatibility
 // mode.
 // Later this may become an option for the python frontend, too.
 //
 #if defined(__GNUG__) || defined(_GNUG_SYNTAX)
 # if defined(PARSE_MSVC)
-const int tokenset = Lexer::CXX | Lexer::GNU | Lexer::MSVC;
+const int tokenset = Lexer::CXX | Lexer::GCC | Lexer::MSVC;
 const int ruleset = Parser::CXX | Parser::MSVC;
 # else
-const int tokenset = Lexer::CXX | Lexer::GNU;
+const int tokenset = Lexer::CXX | Lexer::GCC;
 const int ruleset = Parser::CXX;
 # endif
 #else

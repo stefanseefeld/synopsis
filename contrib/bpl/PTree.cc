@@ -5,12 +5,7 @@
 // see the file COPYING for details.
 //
 #include <Synopsis/PTree.hh>
-#include <Synopsis/Buffer.hh>
-#include <Synopsis/Lexer.hh>
-#include <Synopsis/Parser.hh>
 #include <boost/python.hpp>
-#include <boost/shared_ptr.hpp>
-#include <fstream>
 
 namespace bpl = boost::python;
 using namespace Synopsis;
@@ -223,6 +218,12 @@ void accept(Node *n, Visitor *v) { n->accept(v);}
 std::string atom_value(Atom *a) { return std::string(a->position(), a->length());}
 Node *car(List *l) { return l->car();}
 Node *cdr(List *l) { return l->cdr();}
+Node *first_(List *l) { return PTree::first(l);}
+Node *second_(List *l) { return PTree::second(l);}
+Node *third_(List *l) { return PTree::third(l);}
+Node *nth_(List *l, size_t k) { return PTree::nth(l, k);}
+Node *rest_(List *l) { return PTree::rest(l);}
+Node *tail_(List *l, size_t k) { return PTree::tail(l, k);}
 
 }
 
@@ -230,6 +231,11 @@ BOOST_PYTHON_MODULE(PTree)
 {
   bpl::class_<Encoding> encoding("Encoding");
   encoding.def("__str__", as_string);
+  encoding.add_property("is_simple_name", &Encoding::is_simple_name);
+  encoding.add_property("is_global_scope", &Encoding::is_global_scope);
+  encoding.add_property("is_qualified", &Encoding::is_qualified);
+  encoding.add_property("is_function", &Encoding::is_function);
+  encoding.add_property("is_template", &Encoding::is_template);
 
   bpl::class_<Visitor, boost::noncopyable, VisitorWrapper> visitor("Visitor");
   visitor.def("visit_node", &VisitorWrapper::visit_node);
@@ -335,6 +341,12 @@ BOOST_PYTHON_MODULE(PTree)
   // at least for now.
   list.def("car", car, bpl::return_value_policy<bpl::reference_existing_object>());
   list.def("cdr", cdr, bpl::return_value_policy<bpl::reference_existing_object>());
+  list.def("first", first_, bpl::return_value_policy<bpl::reference_existing_object>());
+  list.def("second", second_, bpl::return_value_policy<bpl::reference_existing_object>());
+  list.def("third", third_, bpl::return_value_policy<bpl::reference_existing_object>());
+  list.def("nth", nth_, bpl::return_value_policy<bpl::reference_existing_object>());
+  list.def("rest", rest_, bpl::return_value_policy<bpl::reference_existing_object>());
+  list.def("tail", tail_, bpl::return_value_policy<bpl::reference_existing_object>());
   list.add_property("name", &List::encoded_name);
   list.add_property("type", &List::encoded_type);
 
