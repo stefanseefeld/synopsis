@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.21 2002/11/01 04:04:29 chalky Exp $
+ * $Id: link.cc,v 1.22 2002/11/01 07:15:56 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.22  2002/11/01 07:15:56  chalky
+ * Reject duplicate links
+ *
  * Revision 1.21  2002/11/01 04:04:29  chalky
  * Clean up HTML: no empty spans, decode &2c; in URL, to-EOL comments.
  *
@@ -112,7 +115,7 @@ namespace
     //. Less-than functor that compares column and type
     struct lt_col
     {
-      bool operator() (const Link* a, const Link* b)
+      bool operator() (const Link* a, const Link* b) const
       {
         if (a->col != b->col) return a->col < b->col;
         return a->type < b->type;
@@ -302,6 +305,42 @@ namespace
       col += len;
   }
 
+  //. Returns true if the link is a duplicate.
+  bool is_duplicate(Link* link, int len)
+  {
+    Link::Line& line = links[link->line];
+    Link::Line::iterator iter = line.find(link);
+    if (iter == line.end())
+      return false;
+
+    // iter matches by col, but try to find match by name
+    while ((*iter)->name != link->name)
+    {
+      ++iter;
+      if (iter == line.end() || (*iter)->col != link->col)
+        // Couldn't match by name for this column
+        return false;
+    }
+
+    // Matched start by name.. try and find end too
+    link->col += len;
+    iter = line.find(link);
+    if (iter == line.end())
+      return false;
+
+    // iter matches by col, but try to find match by name
+    while ((*iter)->name != link->name)
+    {
+      ++iter;
+      if (iter == line.end() || (*iter)->col != link->col)
+        // Couldn't match by name for this column
+        return false;
+    }
+    std::cout << "Found dupe at line " << link->line << " : " << link->name.back() << std::endl;
+    // name matched at both ends
+    return true;
+  }
+
   //. Reads the links file into the 'links' map.
   void read_links() throw (std::string)
   {
@@ -340,10 +379,10 @@ namespace
                 size_t start = 0, end;
                 while ((end = word.find('\t', start)) != std::string::npos)
                 {
-                  link->name.push_back(word.substr(start, end));
+                  link->name.push_back(word.substr(start, end-start));
                   start = end + 1;
                 }
-                link->name.push_back(word.substr(start, end));
+                link->name.push_back(word.substr(start, end-start));
             } while (in && (c = in.get()) != '\n' && c != ' ');
             // Read description
             if (!in.getline(buf, 4096)) break;
@@ -355,6 +394,9 @@ namespace
             in >> type;
             link->name.push_back(decode(type));
           }
+        // Skip to next line if duplicate link
+        if (is_duplicate(link, len))
+          continue;
         links[line].insert(link);
         // Add link end
         Link* end = new Link;
