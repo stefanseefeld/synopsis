@@ -1,4 +1,4 @@
-// $Id: Object.hh,v 1.1 2004/01/09 20:03:26 stefan Exp $
+// $Id: Object.hh,v 1.2 2004/01/10 22:50:34 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -31,17 +31,17 @@ class Object
 public:
   struct TypeError : std::invalid_argument
   {
-    TypeError(const char *msg = "") : std::invalid_argument(msg) {}
+    TypeError(const std::string &msg = "") : std::invalid_argument(msg) {}
   };
 
   struct AttributeError : std::invalid_argument
   {
-    AttributeError(const char *msg = "") : std::invalid_argument(msg) {}
+    AttributeError(const std::string &msg = "") : std::invalid_argument(msg) {}
   };
 
   struct ImportError : std::invalid_argument
   {
-    ImportError(const char *msg = "") : std::invalid_argument(msg) {}
+    ImportError(const std::string &msg = "") : std::invalid_argument(msg) {}
   };
 
   Object() : my_impl(Py_None) { Py_INCREF(Py_None);}
@@ -62,6 +62,9 @@ public:
   Object repr() const { return PyObject_Repr(my_impl);}
   Object str() const { return PyObject_Str(my_impl);}
   bool is_instance(Object) const;
+  void assert_type(const char *module,
+		   const char *type) const
+    throw(TypeError);
 
   template <typename T>
   static T narrow(Object) throw(TypeError);
@@ -124,6 +127,8 @@ public:
               Object,
               Object,
               Object);
+
+  PyObject *ref() { Py_INCREF(my_impl); return my_impl;}
 private:
    PyObject *my_impl;
 };
@@ -148,6 +153,21 @@ inline Object &Object::operator = (Object o)
 inline bool Object::is_instance(Object o) const
 {
   return PyObject_IsInstance(my_impl, o.my_impl) == 1;
+}
+
+inline void Object::assert_type(const char *module_name,
+				const char *type_name) const
+  throw(TypeError)
+{
+  Object module = Object::import(module_name);
+  if (!this->is_instance(module.attr(type_name)))
+  {
+    std::string msg = "object not a ";
+    msg += module_name;
+    msg += ".";
+    msg += type_name;
+    throw TypeError(msg);
+  }
 }
 
 inline Object Object::import(const char *name)
@@ -311,6 +331,12 @@ inline Object Object::call(const char *name,
                              o7.my_impl,
                              o8.my_impl,
                              o9.my_impl);
+}
+
+template <typename T>
+inline T Object::narrow(Object o) throw(Object::TypeError)
+{
+  return T(o.my_impl);
 }
 
 template <>

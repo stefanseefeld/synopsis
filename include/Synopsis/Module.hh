@@ -1,4 +1,4 @@
-// $Id: Module.hh,v 1.1 2004/01/09 20:03:25 stefan Exp $
+// $Id: Module.hh,v 1.2 2004/01/10 22:50:34 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -11,6 +11,7 @@
 
 #include <Synopsis/Object.hh>
 #include <Synopsis/Dict.hh>
+#include <Synopsis/Callable.hh>
 
 namespace Synopsis
 {
@@ -34,9 +35,8 @@ inline Dict Module::dict() const
 {
   PyObject *d = PyModule_GetDict(my_impl);
   Py_INCREF(d);
-  return d;
+  return Object(d);
 }
-
 
 }
 
