@@ -328,6 +328,7 @@ SWalker::translate(PTree::Node *node)
   {
       // This error usually means that the syntax highlighting failed, and
       // can be safely ignored
+    std::cout << "translate error !!" << std::endl;
   }
   catch (const std::exception& e)
   {
@@ -430,6 +431,17 @@ void SWalker::visit(PTree::Atom *node)
     //*((char*)0) = 1; // force breakpoint, or core dump :)
 #endif
   }
+}
+
+// As various nodes may through due to incomplete symbol
+// lookup support, we need an 'exception firewall' here to
+// be able to traverse the following nodes
+void SWalker::visit(PTree::List *node)
+{
+  for (PTree::Node *i = node; i; i = i->cdr())
+    if (i->car())
+      try { i->car()->accept(this);}
+      catch (const TranslateError &) {}
 }
 
 //. NamespaceSpec
