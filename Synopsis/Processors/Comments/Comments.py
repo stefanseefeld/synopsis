@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.18 2003/01/20 06:43:02 chalky Exp $
+# $Id: Comments.py,v 1.19 2003/10/07 02:55:40 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.19  2003/10/07 02:55:40  stefan
+# make group handling more fault tolerant
+#
 # Revision 1.18  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -96,12 +99,17 @@ class CommentProcessor (AST.Visitor):
     method.
     """
     def processAll(self, declarations):
-	for decl in declarations:
-	    decl.accept(self)
+        for decl in declarations:
+            decl.accept(self)
+        self.finalize(declarations)
     def process(self, decl):
-	"""Process comments for the given declaration"""
+        """Process comments for the given declaration"""
+        pass
+    def finalize(self, declarations):
+        """Do any finalization steps that may be necessary."""
+        pass
     def visitDeclaration(self, decl):
-	self.process(decl)
+        self.process(decl)
 
 class SSDComments (CommentProcessor):
     """A class that selects only //. comments."""
@@ -226,9 +234,8 @@ class Transformer (CommentProcessor):
 	"""Constructor"""
 	self.__scopestack = []
 	self.__currscope = []
-    def processAll(self, declarations):
-	"""Overrides the default processAll() to setup the stack"""
-	for decl in declarations: decl.accept(self)
+    def finalize(self, declarations):
+	"""replace the AST with the newly created one"""
 	declarations[:] = self.__currscope
     def push(self):
 	"""Pushes the current scope onto the stack and starts a new one"""
@@ -343,14 +350,61 @@ class Previous (Dummies):
 
 class Grouper (Transformer):
     """A class that detects grouping tags and moves the enclosed nodes into a subnode (a 'Group')"""
-    __re_open = r'^[ \t]*{ ?(.*)$'
-    __re_close = r'^[ \t]*} ?(.*)$'
+    __re_group = r'^[ \t]*((?P<open>{)[ \t]*(?P<name>[a-zA-Z_]\w*)*|(?P<close>})) ?(.*)$'
     def __init__(self):
 	Transformer.__init__(self)
-	self.re_open = re.compile(Grouper.__re_open, re.M)
-	self.re_close = re.compile(Grouper.__re_close, re.M)
-        self.__groups = []
-    def visitDeclaration(self, decl):
+	self.re_group = re.compile(Grouper.__re_group, re.M)
+        self.__group_stack = [[]]
+
+    def strip_dangling_groups(self):
+        """As groups must not overlap with 'real' scopes,
+        make sure all groups created in the current scope are closed
+        when leaving the scope."""
+        if self.__group_stack[-1]:
+            print 'Warning: group stack is non-empty !'
+            while (self.__group_stack[-1]):
+                group = self.__group_stack[-1][-1]
+                print 'forcing closing of group %s (opened near %s:%d)'%(group.name(), group.file().filename(), group.line())
+                self.pop_group()
+
+    def finalize(self, declarations):
+        """replace the AST with the newly created one"""
+        self.strip_dangling_groups()
+        Transformer.finalize(self, declarations)
+
+    def push(self):
+        """starts a new group stack to be able to validate group scopes"""
+        Transformer.push(self)
+        self.__group_stack.append([])
+
+    def pop(self, decl):
+        """Make sure the current group stack is empty."""
+        self.strip_dangling_groups()
+        self.__group_stack.pop()
+        Transformer.pop(self, decl)
+
+    def push_group(self, group):
+        """Push new group scope to the stack."""
+        self.__group_stack[-1].append(group)
+        Transformer.push(self)
+
+    def pop_group(self, decl=None):
+        """Pop a group scope from the stack.
+
+        decl -- an optional declaration from which to extract the context,
+        used for the error message if needed.
+        """
+        if self.__group_stack[-1]:
+            group = self.__group_stack[-1].pop()
+            group.declarations()[:] = self.currscope()
+            Transformer.pop(self, group)
+        else:
+            if decl:
+                print "Warning: no group open in current scope (near %s:%d), ignoring."%(decl.file().filename(), decl.line())
+            else:
+                print "Warning: no group open in current scope, ignoring."
+
+    def process(self, decl):
 	"""Checks for grouping tags.
         If an opening tag is found in the middle of a comment, a new Group is generated, the preceeding
         comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
@@ -359,55 +413,57 @@ class Grouper (Transformer):
 	process_comments = decl.comments()
 	while len(process_comments):
 	    c = process_comments.pop(0)
-	    open_mo = self.re_open.search(c.text())
-	    if open_mo:
+            tag = self.re_group.search(c.text())
+            if not tag:
+                comments.append(c)
+            elif tag.group('open'):
 		# Open group. Name is remainder of line
-                label = open_mo.group(1)
+                label = tag.group('name') or 'unnamed'
 		# The comment before the { becomes the group comment
-		if open_mo.start() > 0:
-		    text = c.text()[:open_mo.start()]
+		if tag.start() > 0:
+		    text = c.text()[:tag.start()]
 		    comments.append(AST.Comment(text, c.file(), c.line()))
                 group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
                 comments = []
 		# The comment after the { becomes the next comment to process
-		if open_mo.end() < len(c.text()):
-		    text = c.text()[open_mo.end()+1:]
+		if tag.end() < len(c.text()):
+		    text = c.text()[tag.end()+1:]
 		    process_comments.insert(0, AST.Comment(text, c.file(), c.line()))
-                self.push()
-                self.__groups.append(group)
-		continue
-	    close_mo = self.re_close.search(c.text())
-            if close_mo:
-		# Fixme: the close group doesn't handle things as well as open
-		# does!
-                group = self.__groups.pop()
-                group.declarations()[:] = self.currscope()
-                self.pop(group)
+                self.push_group(group)
+            elif tag.group('close'):
+                self.pop_group(decl)
 		# The comment before the } is ignored...? maybe post-comment?
 		# The comment after the } becomes the next comment to process
-		if close_mo.end() < len(c.text()):
-		    text = c.text()[close_mo.end()+1:]
+		if tag.end() < len(c.text()):
+		    text = c.text()[tag.end()+1:]
 		    process_comments.insert(0, AST.Comment(text, c.file(), c.line()))
-            else: comments.append(c)
         decl.comments()[:] = comments
+
+    def visitDeclaration(self, decl):
+        self.process(decl)
 	self.add(decl)
+        
     def visitScope(self, scope):
 	"""Visits all children of the scope in a new scope. The value of
 	currscope() at the end of the list is used to replace scope's list of
 	declarations - hence you can remove (or insert) declarations from the
 	list. Such as dummy declarations :)"""
+        self.process(scope)
 	self.push()
 	for decl in scope.declarations(): decl.accept(self)
 	scope.declarations()[:] = self.currscope()
 	self.pop(scope)
+
     def visitEnum(self, enum):
 	"""Does the same as visitScope, but for the enum's list of
 	enumerators"""
+        self.process(enum)
 	self.push()
 	for enumor in enum.enumerators(): enumor.accept(self)
 	enum.enumerators()[:] = self.currscope()
 	self.pop(enum)
+
     def visitEnumerator(self, enumor):
 	"""Removes dummy enumerators"""
 	if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
@@ -511,3 +567,4 @@ class Comments(Operation):
 	    processor.processAll(declarations)
 
 linkerOperation = Comments
+
