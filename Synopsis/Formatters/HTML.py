@@ -9,7 +9,7 @@
 #   o NOTE: TOC also stores types for some reason. investigate.
 # . Unite Nodes/NamespaceBuilder into TOC
 
-import sys, getopt, os, os.path, string, types, errno
+import sys, getopt, os, os.path, string, types, errno, stat
 from Synopsis import AST, Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
@@ -53,27 +53,24 @@ class FileNamer:
 	    print "Warning: Output directory does not exist. Creating."
 	    try:
 		os.makedirs(basename, 0755)
-	    except OSError, reason:
+	    except EnvironmentError, reason:
 		print "ERROR: Creating directory:",reason
 		sys.exit(2)
-	    except IOError, reason:
-		print "ERROR: Creating directory:",reason
-		sys.exit(2)
+	if stylesheet_file:
 	    try:
 		# Copy stylesheet in
-		if stylesheet:
-		    print "Warning: Copying stylesheet to output directory from current."
-		    fin = open(stylesheet,'r')
-		    fout = open(basename+"/"+stylesheet, 'w')
-		    fout.writelines(fin.readlines())
+		stylesheet_new = basename+"/"+stylesheet
+		filetime = os.stat(stylesheet_file)[stat.ST_MTIME]
+		if not os.path.exists(stylesheet_new) or \
+		    filetime > os.stat(stylesheet_new)[stat.ST_MTIME]:
+		    fin = open(stylesheet_file,'r')
+		    fout = open(stylesheet_new, 'w')
+		    fout.write(fin.read())
 		    fin.close()
 		    fout.close()
-	    except IOError, reason:
-		if reason.errno == errno.ENOENT:
-		    print "Warning: Stylesheet file '%s' does not exist."%stylesheet
-		else:
-		    print "ERROR: Copying file:", reason
-		    sys.exit(2)
+	    except EnvironmentError, reason:
+		print "ERROR: ", reason
+		sys.exit(2)
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
 	    sys.exit(1)
@@ -1048,14 +1045,31 @@ class Paginator:
 	self.write("%s</html>\n"%body)
 	self.__os.close()
 
+def usage():
+    """Print usage to stdout"""
+    print """
+HTML Formatter Usage:
+ -o <dir>    Output directory, created if it doesn't exist.
+ -s <filename>  Filename of stylesheet in output directory
+ -S <filename>  Filename of stylesheet to copy
+                If this is newer than the one in the output directory then it
+		is copied over it.
+ -n <namespace> Namespace to output
+ -c <parser>    Comment parser to use
+		 default  All comments (including slashes)
+		 ssd      Comments begin with //.
+ -h             This help
+"""
+
 def __parseArgs(args):
-    global basename, stylesheet, namespace, commentParser
+    global basename, stylesheet, namespace, commentParser, stylesheet_file
     basename = None
     stylesheet = ""
+    stylesheet_file = None
     namespace = ""
     commentParser = "default"
     try:
-        opts,remainder = getopt.getopt(args, "o:s:n:c:")
+        opts,remainder = getopt.getopt(args, "ho:s:n:c:S:")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1066,6 +1080,8 @@ def __parseArgs(args):
             basename = a #open(a, "w")
         elif o == "-s":
             stylesheet = a
+	elif o == "-S":
+	    stylesheet_file = a
 	elif o == "-n":
 	    namespace = a
 	elif o == "-c":
@@ -1074,6 +1090,9 @@ def __parseArgs(args):
 	    else:
 		print "Available comment parsers:",string.join(commentParsers.keys(), ', ')
 		sys.exit(1)
+	elif o == "-h":
+	    usage()
+	    sys.exit(1)
 
 def format(types, declarations, args):
     global basename, stylesheet, toc, filer
