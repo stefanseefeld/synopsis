@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.18 2003/12/09 21:46:29 stefan Exp $
+# $Id: setup.py,v 1.19 2003/12/10 19:19:57 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -45,11 +45,14 @@ py_packages = ["Synopsis",
 #"Synopsis.UI.Qt"] 
 
 
-ext_modules = [('Synopsis/Parsers/C', 'ctool' + module_ext),
-               ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
+ext_modules = [('Synopsis/Parsers/Cxx', 'occ' + module_ext),
                ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
 
-scripts = ['synopsis', 'synopsis-qt', 'compile-xref', 'search-xref']
+#('Synopsis/Parsers/C', 'ctool' + module_ext),
+
+scripts = ['synopsis']
+
+#, 'synopsis-qt', 'compile-xref', 'search-xref']
 
 data_files = []
 

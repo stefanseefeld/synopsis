@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 2003/09/21 22:51:40 stefan Exp $
+# $Id: Makefile.in,v 1.5 2003/12/10 19:19:57 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -46,8 +46,8 @@ UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 
 UCPP_LIB	   := ucpp/ucpp.a
 UCPP_GLIB   := ucpp/ucpp.ga
-OCC_SO	   := occ.$(LIBRARY_EXT)
-LINK_SO	   := link.$(LIBRARY_EXT)
+OCC_SO	   := occ$(LIBRARY_EXT)
+LINK_SO	   := link$(LIBRARY_EXT)
 
 OCC_FILES	:= buffer hash token ptree ptree-core encoding env \
 		         pattern walker typeinfo parse mop classwalk \
