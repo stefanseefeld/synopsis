@@ -1,55 +1,9 @@
 #
-# $Id: emul.py,v 1.9 2003/11/11 06:01:45 stefan Exp $
-#
-# This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
-#
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-
-# This module contains functions for getting the info needed to emulate
-# different compilers
-
-# $Log: emul.py,v $
-# Revision 1.9  2003/11/11 06:01:45  stefan
-# adjust to directory/package layout changes
-#
-# Revision 1.8  2002/10/29 07:15:35  chalky
-# Define __STRICT_ANSI__ for gcc 2.x to avoid parse errors
-#
-# Revision 1.7  2002/10/29 06:56:52  chalky
-# Fixes to work on cygwin
-#
-# Revision 1.6  2002/10/27 07:23:29  chalky
-# Typeof support. Generate Function when appropriate. Better emulation support.
-#
-# Revision 1.5  2002/10/25 02:46:46  chalky
-# Try to fallback to gcc etc if compiler info fails, and display warning
-#
-# Revision 1.4  2002/10/24 23:41:09  chalky
-# Cache information for the lifetime of the module about which compilers are
-# available and which are not
-#
-# Revision 1.3  2002/10/11 11:09:39  chalky
-# Add cygwin support to compiler emulations
-#
-# Revision 1.2  2002/10/02 03:51:01  chalky
-# Allow more flexible gcc version (eg: 2.95.3-5 for cygwin)
-#
-# Revision 1.1  2002/09/28 05:51:06  chalky
-# Moved compiler emulation stuff to this module
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
 
 import sys, os, os.path, re, string, stat, tempfile
@@ -60,9 +14,7 @@ user_emulations_file = '~/.synopsis/cpp_emulations'
 
 # The list of default compilers. Note that the C syntax is not quite
 # supported, so including a bazillion different C compilers is futile.
-default_compilers = [
-    'cc', 'c++', 'gcc', 'g++', 'g++-2.95', 'g++-3.0', 'g++-3.1', 'g++-3.2'
-]
+default_compilers = ['cc', 'c++', 'gcc', 'g++', 'msvc6', 'msvc7', 'msvc71']
 
 # A cache of the compiler info, loaded from the emulations file or calculated
 # by inspecting available compilers
@@ -279,23 +231,86 @@ def write_compiler_infos(infos):
     writer.flush()
     file.close()
     
-    
+def find_ms_compiler_info(compiler):
+    """Try to find a compiler on the windows platform.
+    Return tuple of include path list and macro dictionary."""
 
-re_specs = re.compile('^Reading specs from (.*/)lib/gcc-lib/(.*)/([0-9]+\.[0-9]+\.[0-9]+.*)/specs')
-re_version = re.compile('([0-9]+)\.([0-9]+)\.([0-9]+)')
+    vc6 = 'SOFTWARE\\Microsoft\\DevStudio\\6.0\\Products\\Microsoft Visual C++'
+    vc7 = 'SOFTWARE\\Microsoft\\VisualStudio\\7.0'
+    vc71 = 'SOFTWARE\\Microsoft\\VisualStudio\\7.1'
 
-def find_compiler_info(compiler):
-    print "Finding info for '%s' ..."%compiler,
+    paths, macros = [], []
 
+    try:
+        import _winreg
+        if compiler == 'msvc6':
+            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, vc6)
+            path, type = _winreg.QueryValueEx(key, 'ProductDir')
+            paths.append(os.path.join(str(path), 'Include'))
+            macros.extend([('__uuidof(x)', 'IID()'),
+                           ('__int64', 'long long'),
+                           ('_MSC_VER', '1200'),
+                           ('_MSC_EXTENSIONS', ''),
+                           ('_WIN32', ''),
+                           ('_M_IX86', ''),
+                           ('_WCHAR_T_DEFINED', ''),
+                           ('_INTEGRAL_MAX_BITS', '64'),
+                           ('PASCAL', ''),
+                           ('RPC_ENTRY', ''),
+                           ('SHSTDAPI', 'HRESULT'),
+                           ('SHSTDAPI_(x)', 'x')])
+        elif compiler == 'msvc7':
+            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, vc7)
+            path, type = _winreg.QueryValueEx(key, 'InstallDir')
+            paths.append(os.path.normpath(str(path) + '/../../Vc7/Include'))
+            paths.append(os.path.normpath(str(path) + '/../../Vc7/PlatformSDK/Include'))
+            macros.extend([('__forceinline', '__inline'),
+                           ('__uuidof(x)', 'IID()'),
+                           ('__w64', ''),
+                           ('__int64', 'long long'),
+                           ('_MSC_VER', '1300'),
+                           ('_MSC_EXTENSIONS', ''),
+                           ('_WIN32', ''),
+                           ('_M_IX86', ''),
+                           ('_WCHAR_T_DEFINED', ''),
+                           ('_INTEGRAL_MAX_BITS', '64'),
+                           ('PASCAL', ''),
+                           ('RPC_ENTRY', ''),
+                           ('SHSTDAPI', 'HRESULT'),
+                           ('SHSTDAPI_(x)', 'x')])
+        elif compiler == 'msvc71':
+            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, vc71)
+            path, type = _winreg.QueryValueEx(key, 'InstallDir')
+            paths.append(os.path.normpath(str(path) + '/../../Vc7/Include'))
+            paths.append(os.path.normpath(str(path) + '/../../Vc7/PlatformSDK/Include'))
+            macros.extend([('__forceinline', '__inline'),
+                           ('__uuidof(x)', 'IID()'),
+                           ('__w64', ''),
+                           ('__int64', 'long long'),
+                           ('_MSC_VER', '1310'),
+                           ('_MSC_EXTENSIONS', ''),
+                           ('_WIN32', ''),
+                           ('_M_IX86', ''),
+                           ('_WCHAR_T_DEFINED', ''),
+                           ('_INTEGRAL_MAX_BITS', '64'),
+                           ('PASCAL', ''),
+                           ('RPC_ENTRY', ''),
+                           ('SHSTDAPI', 'HRESULT'),
+                           ('SHSTDAPI_(x)', 'x')])
+    except:
+        pass
+    return paths, macros
+
+def find_gcc_compiler_info(compiler):
     # Run the compiler with -v and get the displayed info
+
+    paths, macros = [], []
+
     cin, out,err = os.popen3(compiler + " -E -v " + get_temp_file())
     lines = err.readlines()
     cin.close()
     out.close()
     err.close()
-
-    paths = []
-    macros = []
 
     state = 0
     for line in lines:
@@ -310,9 +325,9 @@ def find_compiler_info(compiler):
 		    continue
 		if arg[1] == 'D':
 		    if arg.find('=') != -1:
-			macros.append( tuple(string.split(arg[2:], '=', 1)))
+			macros.append(tuple(string.split(arg[2:], '=', 1)))
 		    else:
-			macros.append( (arg[2:], '') )
+			macros.append((arg[2:], ''))
 		# TODO: do we need the asserts?
 	    state = 2
 	elif state == 2:
@@ -324,17 +339,30 @@ def find_compiler_info(compiler):
 	    else:
 		paths.append(line.strip())
 	
-    if not paths or not macros:
-        print "Failed"
-        return None
-    print "Found"
-
     # Per-compiler adjustments
     for name, value in tuple(macros):
         if name == '__GNUC__' and value == '2':
             # gcc 2.x needs this or it uses nonstandard syntax in the headers
             macros.append(('__STRICT_ANSI__', ''))
-    
+
+    return paths, macros
+
+def find_compiler_info(compiler):
+    print "Finding info for '%s' ..."%compiler,
+
+    paths, macros = [], []
+
+    if compiler in ['msvc6', 'msvc7', 'msvc71']:
+        paths, macros = find_ms_compiler_info(compiler)
+
+    else:
+        paths, macros = find_gcc_compiler_info(compiler)
+        
+    if not paths or not macros:
+        print "Failed"
+        return None
+    print "Found"
+
     timestamp = get_compiler_timestamp(compiler)
     return CompilerInfo(compiler, 0, timestamp, paths, macros)
 
