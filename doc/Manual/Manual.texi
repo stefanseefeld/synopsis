@@ -116,7 +116,7 @@ projects, such that we only need to provide a thin wrapper to bind them
 to the synopsis core.
 @page
 @section The C++ Module
-@include parsers-c++.texi
+@include parsers-cxx.texi
 @page
 @section The IDL Module
 @include parsers-idl.texi
