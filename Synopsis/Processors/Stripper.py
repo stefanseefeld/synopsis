@@ -1,4 +1,4 @@
-# $Id: Stripper.py,v 1.2 2002/10/11 05:57:17 chalky Exp $
+# $Id: Stripper.py,v 1.3 2002/10/28 16:30:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Stripper.py,v $
+# Revision 1.3  2002/10/28 16:30:05  chalky
+# Trying to fix some bugs in the unduplication/stripping stages. Needs more work
+#
 # Revision 1.2  2002/10/11 05:57:17  chalky
 # Support suspect comments
 #
@@ -60,6 +63,13 @@ class Stripper(Operation, AST.Visitor):
         # Remove types not in strip
         self.stripTypes(ast.types())
 
+    def _stripName(self, name):
+	for scope in self.__scopes:
+	    depth = len(scope)
+	    if name[0:depth] == scope:
+		if len(name) == depth: return None
+		return name[depth:]
+	return None
     def stripDeclarations(self, declarations):
 	for decl in declarations:
 	    decl.accept(self)
@@ -72,10 +82,11 @@ class Stripper(Operation, AST.Visitor):
 	if not prefixes: return
 	for name, type in types.items():
 	    try:
-		if not filterName(name, prefixes):
-		    type = types[name]
-		    if not isinstance(type, Type.Unknown):
-			types[name] = Type.Unknown(type.language(), name)
+		del types[name]
+		name = self._stripName(name)
+		if name:
+		    type.set_name(name)
+		    types[name] = type
 	    except:
 		print "ERROR Processing:",name,types[name]
 		raise
@@ -110,6 +121,13 @@ class Stripper(Operation, AST.Visitor):
             declaration.accept(self)
         if root: self.__in = 0
 
+    def visitClass(self, clas):
+	self.visitScope(clas)
+	templ = clas.template()
+	if templ:
+	    name = self._stripName(templ.name())
+	    if name: templ.set_name(name)
+
     def visitDeclaration(self, decl):
         if self.strip(decl) and not self.__in:
             self.__root.append(decl)
@@ -126,10 +144,18 @@ class Stripper(Operation, AST.Visitor):
 	self.visitDeclaration(function)
         for parameter in function.parameters():
             parameter.accept(self)
+	templ = function.template()
+	if templ:
+	    name = self._stripName(templ.name())
+	    if name: templ.set_name(name)
 
     def visitOperation(self, operation):
-	self.visitDeclaration(operation)
-        for parameter in operation.parameters():
-            parameter.accept(self)
+	self.visitFunction(operation)
+
+    def visitMetaModule(self, module):
+	self.visitScope(module)
+	for decl in module.module_declarations():
+	    name = self._stripName(decl.name())
+	    if name: decl.set_name(name)
 
 linkerOperation = Stripper

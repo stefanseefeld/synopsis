@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.3 2002/10/27 12:23:27 chalky Exp $
+# $Id: Linker.py,v 1.4 2002/10/28 16:30:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Linker.py,v $
+# Revision 1.4  2002/10/28 16:30:05  chalky
+# Trying to fix some bugs in the unduplication/stripping stages. Needs more work
+#
 # Revision 1.3  2002/10/27 12:23:27  chalky
 # Fix crash bug
 #
@@ -99,7 +102,21 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 	    print "Couldn't find declared type:",type.name()
 
     def visitTemplate(self, type):
-	pass
+	# Should be a Declared with the same name
+	if not config.types.has_key(type.name()):
+	    return
+	declared = config.types[type.name()]
+	if not isinstance(declared, Type.Declared):
+	    print "Warning: template declaration was not a declaration:",type.name(),declared.__class__.__name__
+	    return
+	decl = declared.declaration()
+	if not hasattr(decl, 'template'):
+	    #print "Warning: non-class/function template",type.name(), decl.__class__.__name__
+	    return
+	if decl.template():
+	    self.__type = decl.template()
+	else:
+	    print "Warning: template type disappeared:",type.name()
 
     def visitModifier(self, type):
 	alias = self.linkType(type.alias())
@@ -251,6 +268,7 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 		print "Unduplicator.visitClass: clas=%s, prev=%s"%(clas.name(), prev)
 		if hasattr(prev, 'name'): print "prev.name=%s"%(prev.name())
 		raise TypeError, "Previous class declaration not a class"
+	self.addDeclaration(clas)
 	for parent in clas.parents():
 	    parent.accept(self)
 	self.push(clas)
@@ -258,7 +276,6 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 	del clas.declarations()[:]
         for decl in decls: decl.accept(self)
 	self.pop()
-	self.addDeclaration(clas)
 
     def visitInheritance(self, parent):
 	type = parent.parent()
