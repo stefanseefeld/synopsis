@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.8 2001/02/02 17:42:50 stefan Exp $
+# $Id: Dot.py,v 1.9 2001/02/05 05:25:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.9  2001/02/05 05:25:08  chalky
+# Added hspace and vspace in _format_html
+#
 # Revision 1.8  2001/02/02 17:42:50  stefan
 # cleanup in the Makefiles, more work on the Dot formatter
 #
@@ -330,7 +333,7 @@ def _format_html(input, output):
     _format_png(input, label + ".png")
     _format(input, output + ".map", "imap")
     html = open(output + ".html", "w+")
-    html.write("<img src=\"" + label + ".png\" border=\"0\" usemap=\"#")
+    html.write('<img src="' + label + '.png" hspace="8" vspace="8" border="0" usemap="#')
     html.write(label + "_map\">\n")
     html.write("<map name=\"" + label + "_map\">")
     dotmap = open(output + ".map", "r+")
