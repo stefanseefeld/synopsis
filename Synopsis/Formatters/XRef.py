@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.2 2002/10/29 12:43:55 chalky Exp $
+# $Id: XRef.py,v 1.3 2002/10/29 12:53:52 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.3  2002/10/29 12:53:52  chalky
+# More even splitting of pages
+#
 # Revision 1.2  2002/10/29 12:43:55  chalky
 # Added flexible TOC support to link to things other than ScopePages
 #
@@ -49,14 +52,18 @@ class CrossReferencer:
 	names = self.__data.keys()
 	names.sort()
 	for name in names:
-	    if count > 1000:
+	    if count > 200:
 		count = 0
 		page = page + 1
 		self.__file_info.append([])
 	    self.__file_info[page].append(name)
 	    self.__file_map[name] = page
 	    target_data = self.__data[name]
-	    count = count + len(target_data[0]) + len(target_data[1]) + len(target_data[2])
+	    l0, l1, l2 = len(target_data[0]), len(target_data[1]), len(target_data[2])
+	    count = count + 1 + l0 + l1 + l2
+	    if l0: count = count + 1
+	    if l1: count = count + 1
+	    if l2: count = count + 1
 
     def get_info(self, name):
 	"""Retrieves the info for the give name. The info is returned as a
