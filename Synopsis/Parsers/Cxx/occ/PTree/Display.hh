@@ -44,7 +44,8 @@ private:
   bool          my_typeinfo;
 };
 
-inline void display(const Node *node, std::ostream &os, bool encoded, bool typeinfo)
+inline void display(const Node *node, std::ostream &os,
+		    bool encoded, bool typeinfo = false)
 {
   Display d(os, encoded, typeinfo);
   d.display(const_cast<Node *>(node));
