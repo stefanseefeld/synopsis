@@ -7,6 +7,8 @@
 #ifndef _PTree_GC_hh
 #define _PTree_GC_hh
 
+#include <cstring> // for size_t
+
 // define dummy replacements for GC allocator operators
 
 namespace PTree
