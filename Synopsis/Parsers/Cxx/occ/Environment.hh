@@ -31,24 +31,24 @@ public:
     void SetWalker(Walker* w) { walker = w; }
 
     Class* LookupClassMetaobject(PTree::Node *name);
-    bool LookupType(const char* name, int len, Bind*& t);
+  bool LookupType(const PTree::Encoding &, Bind*& t);
 
-    bool Lookup(PTree::Node *name, bool& is_type_name, TypeInfo& t);
-    bool Lookup(PTree::Node *name, TypeInfo& t);
+  bool Lookup(PTree::Node *name, bool& is_type_name, TypeInfo& t);
+  bool Lookup(PTree::Node *name, TypeInfo& t);
   bool Lookup(PTree::Node *, Bind*&);
   bool LookupTop(PTree::Node *, Bind*&);
 
-    bool LookupTop(const char* name, int len, Bind*& t);
-    bool LookupAll(const char* name, int len, Bind*& t);
+  bool LookupTop(const PTree::Encoding &, Bind*& t);
+  bool LookupAll(const PTree::Encoding &, Bind*& t);
 
-    bool RecordVariable(const char* name, Class* c);
-    bool RecordPointerVariable(const char* name, Class* c);
+  bool RecordVariable(const PTree::Encoding &, Class* c);
+  bool RecordPointerVariable(const PTree::Encoding &, Class* c);
 
-    int AddEntry(const char*, int, Bind*);
-    int AddDupEntry(const char*, int, Bind*);
+  int AddEntry(const PTree::Encoding &, Bind*);
+  int AddDupEntry(const PTree::Encoding &, Bind*);
 
   void RecordNamespace(PTree::Node *);
-    bool LookupNamespace(const char*, int);
+  bool LookupNamespace(const PTree::Encoding &);
   void RecordTypedefName(PTree::Node *);
   void RecordEnumName(PTree::Node *);
   void RecordClassName(const PTree::Encoding &, Class*);

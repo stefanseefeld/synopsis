@@ -13,7 +13,6 @@
 
 class Lexer;
 class Token;
-class Scope;
 
 //. C++ Parser
 //.
@@ -105,9 +104,9 @@ protected:
   bool function_arguments(PTree::Node *&);
   bool initialize_expr(PTree::Node *&);
   
-  bool enum_spec(PTree::Node *&, PTree::Encoding&);
+  bool enum_spec(PTree::EnumSpec *&, PTree::Encoding&);
   bool enum_body(PTree::Node *&);
-  bool class_spec(PTree::Node *&, PTree::Encoding&);
+  bool class_spec(PTree::ClassSpec *&, PTree::Encoding&);
   bool base_specifiers(PTree::Node *&);
   bool class_body(PTree::Node *&);
   bool class_member(PTree::Node *&);
@@ -168,8 +167,8 @@ protected:
   void skip_to(Token::Type token);
   
 private:
-  typedef std::stack<Scope *> Scopes;
-  struct                      ScopeGuard;
+  typedef std::stack<PTree::Scope *> Scopes;
+  struct                             ScopeGuard;
 
   bool more_var_name();
 
