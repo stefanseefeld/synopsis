@@ -117,6 +117,7 @@ public:
 private:
     //. Compiler Firewalled private data
     struct Private;
+    friend Private;
     Private* m;
 
     //.
@@ -148,5 +149,5 @@ private:
     PyObject *m_dictionary;
     string m_mainfile;
 
-    string m_onlymain;
+    bool m_onlymain;
 };

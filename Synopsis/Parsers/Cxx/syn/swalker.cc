@@ -170,6 +170,7 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
         string type = getName(node->First());
         vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
 	char* encname = node->GetEncodedName();
+	//cout << "class encname: " << encname << endl;
 	if (encname[0] == 'Q') {
 	    vector<string> names;
 	    m_decoder->init(encname);
@@ -207,9 +208,22 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	updateLineNumber(def);
 	
 	// Create AST.Class object
+	AST::Class *clas;
         string type = getName(node->First());
-        string name = getName(node->Second());
-        AST::Class *clas = m_builder->startClass(m_lineno, type, name);
+        vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
+	char* encname = node->GetEncodedName();
+	//cout << "class encname: " << encname << endl;
+	if (encname[0] == 'Q') {
+	    vector<string> names;
+	    m_decoder->init(encname);
+	    m_decoder->decodeQualName(names);
+	    clas = m_builder->startClass(m_lineno, type, names);
+	} else {
+	    string name = getName(node->Second());
+	    clas = m_builder->startClass(m_lineno, type, name);
+	}
+	clas->parents() = parents;
+	m_builder->updateBaseSearch();
 	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
 	addComments(clas, cspec->GetComments());
 
@@ -240,6 +254,10 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
         // Translate the body of the class
 	TranslateBlock(node->Nth(3));
 	m_builder->endClass();
+    } else if (Ptree::Length(node) == 2) {
+	// Forward declaration
+        string name = getName(node->Second());
+	m_builder->addForward(name);
     }
     return 0; 
 }

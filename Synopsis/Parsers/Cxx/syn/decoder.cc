@@ -118,6 +118,7 @@ Type::Type* Decoder::decodeQualType()
     // Qualified type: first is num of scopes, each a name.
     int scopes = *m_iter++ - 0x80;
     vector<string> names;
+    vector<Type::Type*> types; // if parameterized
     while (scopes--) {
 	// Only handle two things here: names and templates
 	if (*m_iter >= 0x80) { // Name
@@ -127,7 +128,6 @@ Type::Type* Decoder::decodeQualType()
 	    ++m_iter;
 	    string tname = decodeName();
 	    code_iter tend = m_iter + *m_iter++ - 0x80;
-	    vector<Type::Type*> types;
 	    while (m_iter < tend)
 		types.push_back(decodeType());
 	    names.push_back(tname);
@@ -140,6 +140,12 @@ Type::Type* Decoder::decodeQualType()
     Type::Type* baseType = m_builder->lookupType(names);
     if (!baseType) {
 	cout << "lookupType(names) returned NULL!" << endl;
+    }
+    Type::Declared* declared = dynamic_cast<Type::Declared*>(baseType);
+    AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : NULL;
+    Type::Template* templType = tempclas ? tempclas->templateType() : NULL;
+    if (templType && types.size()) {
+	return new Type::Parameterized(templType, types);
     }
     return baseType;
 }
