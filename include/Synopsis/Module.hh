@@ -1,4 +1,3 @@
-// $Id: Module.hh,v 1.3 2004/01/24 04:44:07 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -17,16 +16,23 @@ namespace Synopsis
 class Module : public Object
 {
 public:
+  Module(const Object &o) : Object(o) {}
   Module(const std::string &);
   std::string name() const { return PyModule_GetName(my_impl);}
   std::string filename() const { return PyModule_GetFilename(my_impl);}
   Dict dict() const;
+
+  static Module import(const std::string &name) { return Object::import(name);}
+  static Module define(const std::string &name, PyMethodDef *methods);
+private:
+  Module(PyObject *m) : Object(m) {}
 };
 
-inline Module::Module(const std::string &name)
-  : Object(PyImport_ImportModule(const_cast<char *>(name.c_str())))
+inline Module Module::define(const std::string &name, PyMethodDef *methods)
 {
-  Py_INCREF(my_impl);
+  PyObject *m = Py_InitModule(const_cast<char *>(name.c_str()), methods);
+  Py_INCREF(m);
+  return Module(m);
 }
 
 inline Dict Module::dict() const

@@ -110,12 +110,12 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
   }
 }
 
-PyMethodDef ctool_methods[] = {{(char*)"parse", ctool_parse, METH_VARARGS},
-			       {0, 0}};
+PyMethodDef methods[] = {{(char*)"parse", ctool_parse, METH_VARARGS},
+			 {0, 0}};
 };
 
 extern "C" void initctool()
 {
-  PyObject *m = Py_InitModule((char*)"ctool", ctool_methods);
-  PyObject_SetAttrString(m, (char*)"version", PyString_FromString("0.1"));
+  Python::Module module = Python::Module::define("ctool", methods);
+  module.set_attr("version", "0.1");
 }
