@@ -1,8 +1,11 @@
-// $Id: link_map.hh,v 1.2 2002/10/25 08:57:47 chalky Exp $
+// Synopsis C++ Parser: link_map.hh header file
+// The LinkMap class which maps preprocessed file positions to input file
+// positions
+
+// $Id: link_map.hh,v 1.3 2002/11/17 12:11:43 chalky Exp $
 //
 // This file is a part of Synopsis.
-// Copyright (C) 2000, 2001 Stephen Davies
-// Copyright (C) 2000, 2001 Stefan Seefeld
+// Copyright (C) 2002 Stephen Davies
 //
 // Synopsis is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by
@@ -18,29 +21,20 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 // 02111-1307, USA.
-//
-// $Log: link_map.hh,v $
-// Revision 1.2  2002/10/25 08:57:47  chalky
-// Clear the link map (stores where expanded macros are for syntax highlighted
-// files) after parsing
-//
-// Revision 1.1  2001/03/16 04:42:00  chalky
-// SXR parses expressions, handles differences from macro expansions. Some work
-// on function call resolution.
-//
-//
+
 
 #ifndef H_SYNOPSIS_CPP_LINKMAP
 #define H_SYNOPSIS_CPP_LINKMAP
 
-//. link_map is a map from preprocessed file positions to input file positions
-class link_map {
+//. LinkMap is a map from preprocessed file positions to input file positions
+class LinkMap
+{
 public:
     //. Constructor
-    link_map();
+    LinkMap();
 
     //. Returns a reference to a singleton instance of link_map
-    static link_map& instance();
+    static LinkMap& instance();
 
     //. Adds a map at the given line. out_{start,end} define the start and
     //. past-the-end markers for the macro in the output file. diff defines
