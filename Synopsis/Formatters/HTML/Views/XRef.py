@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.19 2003/12/09 06:30:20 stefan Exp $
+# $Id: XRef.py,v 1.20 2003/12/09 21:03:44 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -39,7 +39,7 @@ class XRef(View):
       # Add an entry for every xref
       xref = self.processor.xref
       for name in xref.get_all_names():
-         view = xref.get_view_for(name)
+         view = xref.get_page_for(name)
          file = self.processor.file_layout.special('xref%d'%view)
          file = file + '#' + Util.quote(string.join(name,'::'))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
@@ -60,9 +60,9 @@ class XRef(View):
    def process(self, start):
       """Creates a view for every bunch of xref infos"""
 
-      view_info = self.processor.xref.get_view_info()
-      if not view_info: return
-      for i in range(len(view_info)):
+      page_info = self.processor.xref.get_page_info()
+      if not page_info: return
+      for i in range(len(page_info)):
          self.__filename = self.processor.file_layout.xref(i)
          self.__title = 'Cross Reference view #%d'%i
 
@@ -70,16 +70,16 @@ class XRef(View):
          self.write(self.processor.navigation_bar(self.filename()))
          self.write(entity('h1', self.__title))
          self.write('<hr>')
-         for name in view_info[i]:
+         for name in page_info[i]:
             self.process_name(name)
          self.end_file()
 
    def register_filenames(self, start):
       """Registers each view"""
 
-      view_info = self.processor.xref.get_view_info()
-      if not view_info: return
-      for i in range(len(view_info)):
+      page_info = self.processor.xref.get_page_info()
+      if not page_info: return
+      for i in range(len(page_info)):
          filename = self.processor.file_layout.special('xref%d'%i)
          self.processor.register_filename(filename, self, i)
     
