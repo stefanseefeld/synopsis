@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.24 2001/04/03 23:01:38 chalky Exp $
+// $Id: swalker.cc,v 1.25 2001/04/17 15:47:26 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.25  2001/04/17 15:47:26  chalky
+// Added declaration name mapper, and changed refmanual to use it instead of the
+// old language mapping
+//
 // Revision 1.24  2001/04/03 23:01:38  chalky
 // Small fixes and extra comments
 //
@@ -697,7 +701,8 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
     // Decide if this is a function or variable
     m_decoder->init(enctype);
     code_iter& iter = m_decoder->iter();
-    while (*iter == 'C') ++iter;
+    bool is_const = false;
+    while (*iter == 'C') { ++iter; is_const = true; }
     if (*iter == 'F') {
 	// This is a function
 	++iter;
@@ -753,6 +758,8 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    TranslateFunctionName(encname, realname, returnType);
 	    // Name is same as realname, but with parameters added
 	    string name = realname+formatParameters(params);
+	    // Append const after params if this is a const function
+	    if (is_const) name += "const";
 	    // Create AST::Operation object
 	    oper = m_builder->addOperation(m_lineno, name, premod, returnType, realname);
 	    oper->parameters() = params;

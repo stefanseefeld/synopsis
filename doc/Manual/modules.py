@@ -97,7 +97,7 @@ class ConfScopeJS (HTML.ModuleListingJS.ModuleListingJS):
     def process(self, start):
 	"""Decorate the process() method to set the start"""
 	config.sorter.set_scope(start)
-	start = config.sorter.child(('Python Namespace',))
+	#start = config.sorter.child(('Python Namespace',))
 	start = self.manager._calculateStart(start, "Synopsis::Config")
 	HTML.ModuleListingJS.ModuleListingJS.process(self, start)
     def _child_filter(self, child):

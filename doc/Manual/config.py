@@ -14,11 +14,12 @@ class Config (Base):
     class Linker (Base.Linker):
 	class Cxx (Base.Linker.Linker):
 	    comment_processors = ['ssd']
+	    map_declaration_names = 'Synopsis::Parser::C++'
 	class Py (Base.Linker.Linker):
 	    pass
 	class All (Base.Linker.Linker):
 	    # For linking all the .syn files together
-	    languagize = 1
+	    languagize = 0
 	modules = {
 	    'C++':Cxx,
 	    'Py':Py,
@@ -77,8 +78,9 @@ class Config (Base):
 		# Import the config from HTML
 		for attr in ['toc_output','pages','comment_formatters','FilePages','FileTree']:
 		    setattr(self, attr, getattr(Config.Formatter.HTML, attr))
-	modules = {
+	modules = Base.Formatter.modules
+	modules.update({
 	    'HTML':HTML,
 	    'Doxygen':HTML_Doxygen,
 	    'ConfigHTML':ConfigHTML
-	}
+	})

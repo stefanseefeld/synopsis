@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.10 2001/04/11 04:27:47 stefan Exp $
+# $Id: AST.py,v 1.11 2001/04/17 15:47:26 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.11  2001/04/17 15:47:26  chalky
+# Added declaration name mapper, and changed refmanual to use it instead of the
+# old language mapping
+#
 # Revision 1.10  2001/04/11 04:27:47  stefan
 # start working on a Group class
 #
@@ -127,6 +131,12 @@ class Declaration:
 	This may be one of DEFAULT, PUBLIC, PROTECTED or PRIVATE, which are
 	defined at module scope (Synopsis.AST)"""
 	return self.__accessibility
+
+    def set_name(self, name):
+	"""Change the name of the declaration. If you do want to change the
+	name (and you probably don't!) then make sure you update your 'types'
+	dictionary too!"""
+	self.__name = tuple(name)
     def set_accessibility(self, axs):
 	"""Change the accessibility"""
 	self.__accessibility = axs
@@ -373,6 +383,9 @@ class Function (Declaration):
     def accept(self, visitor): visitor.visitFunction(self)
 
     def set_returnType(self, type): self.__type = type
+    def set_realname(self, name):
+	"""Sets the real name of this function"""
+	self.__realname = tuple(name)
 
     def __cmp__(self, other):
 	"Recursively compares the typespec of the function"
