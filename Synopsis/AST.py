@@ -147,17 +147,23 @@ class AST:
       Unduplicator is responsible for sorting out the mess this may cause :)"""
       self.__types.merge(other_ast.types())
       self.__declarations.extend(other_ast.declarations())
-      # Do a basic job of merging the SourceFiles, trying not to lose
-      # anything (even though duplicates are created at this stage - they
-      # will be cleaned up by the Linker)
+      #merge files
+      replacement = {}
       for filename, file in other_ast.files().items():
          if not self.__files.has_key(filename):
             self.__files[filename] = file
             continue
          myfile = self.__files[filename]
+         replacement[file] = myfile
+         # the 'main' flag dominates...
          myfile.set_is_main(myfile.is_main() or file.is_main())
          myfile.declarations().extend(file.declarations())
          myfile.includes().extend(file.includes())
+      # fix dangling inclusions of 'old' files
+      for r in replacement:
+         for f in self.__files.values():
+            for i in f.includes():
+               if i.target() == r: i.set_target(replacement[r])
 
 class Include:
    """Information about an include directive in a SourceFile.
