@@ -12,8 +12,19 @@ class Config (Base):
 		'InheritanceGraph',
 		'NameIndex',
 		'FilePages',
+		('modules.py', 'ConfScopeJS'),
 		'FramesIndex'
 	    ]
+	    synopsis_pages = pages
+
+	    # Add custom comment formatter
+	    comment_formatters = [
+		'summary', 'javadoc', 'section',
+		('modules.py', 'RefCommentFormatter')
+	    ]
+	    # Also use it when either style is specified:
+	    synopsis_comment_formatters = comment_formatters
+	    doxygen_comment_formatters = comment_formatters
 
 	    class FilePages:
 		"Override defaults"
@@ -28,4 +39,13 @@ class Config (Base):
 		    ('Synopsis.Formatter.HTML.ASTFormatter','SummaryASTCommenter'),
 		    ('Synopsis.Formatter.HTML.ASTFormatter','FilePageLinker'),
 		]
-	modules = {'HTML':HTML}
+	class ConfigHTML (HTML):
+	    pages = [
+		('modules.py', 'ConfScopeJS'),
+		('modules.py', 'ConfScopePage')
+	    ]
+	    synopsis_pages = pages
+	modules = {
+	    'HTML':HTML,
+	    'ConfigHTML':ConfigHTML
+	}
