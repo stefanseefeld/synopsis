@@ -1,4 +1,4 @@
-synopsis = ../../synopsis -p IDL -Wp,-K -f Dia
+synopsis = ../../bin/synopsis -p IDL -Wp,-K -f Dia
 
 all:
 

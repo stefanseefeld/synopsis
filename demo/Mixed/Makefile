@@ -1,5 +1,5 @@
 omniidl		:= omniidl -nf -bcxx
-synopsis	:= ../../synopsis -v -c config.py
+synopsis	:= ../../bin/synopsis -v -c config.py
 
 #
 # adapt to your environent...
