@@ -51,9 +51,6 @@ public:
   //. Returns the current scope
   AST::Scope* scope();
 
-  //. Returns the scope 'depth' deep. 0 means current scope, 1 means parent, etc
-  AST::Scope* scope(size_t depth);
-
   //. Returns the global scope
   AST::Scope* global();
 
@@ -99,13 +96,6 @@ public:
   //. that instead.
   Types::Named* resolveType(Types::Named* maybe_unknown);
 
-  //
-  // cross-reference methods (FIXME: merge to link storer)
-  //
-
-  //. Add a reference to the given decl to the reference DB
-  void storeReference(AST::Declaration* decl, const std::string& file, int line, int depth, const std::string& context);
-
 private:
   //. Looks up the name in the current scope. This method may fail and
   //. return a NULL ptr.
@@ -123,10 +113,7 @@ private:
 
   //. Return a ScopeInfo* for the given Declaration. This method first looks for
   //. an existing Scope* in the Private map.
-  ScopeInfo* find_scope(AST::Scope*);
-
-  //. Utility class to recursively add base classes to given search
-  void addClassBases(AST::Class* clas, ScopeSearch& search);
+  ScopeInfo* find_info(AST::Scope*);
 
   //. Utility class to add all functions with the given name in the given
   //. Scope's dictionary to the given vector. May throw an error if the
@@ -139,12 +126,6 @@ private:
 
   //. Formats the search of the given Scope for logging
   std::string dumpSearch(ScopeInfo* scope);
-
-  //. Recursively adds 'target' as using in 'scope'
-  void addUsingNamespace(ScopeInfo* target, ScopeInfo* scope);
-
-  //. A class that compares ScopeInfo's
-  class EqualScope;
 
   //. A pointer to the Builder.
   Builder* m_builder;

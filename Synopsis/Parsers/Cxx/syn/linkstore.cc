@@ -1,4 +1,5 @@
-// $Id: linkstore.cc,v 1.7 2002/01/25 14:24:33 chalky Exp $
+// vim: set ts=8 sts=2 sw=2 et:
+// $Id: linkstore.cc,v 1.8 2002/01/28 13:17:24 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.8  2002/01/28 13:17:24  chalky
+// More cleaning up of code. Combined xref into LinkStore. Encoded links file.
+//
 // Revision 1.7  2002/01/25 14:24:33  chalky
 // Start of refactoring and restyling effort.
 //
@@ -53,208 +57,279 @@
 #include "strace.hh"
 
 #include <strstream>
+#include <iomanip>
 
 #include <occ/ptree.h>
 #include <occ/parse.h>
 #include <occ/buffer.h>
 
 
-const char* LinkStore::m_type_names[] = {
-    "REF",
-    "DEF",
-    "SPAN"
+const char* LinkStore::m_context_names[] = {
+  "REF",
+  "DEF",
+  "SPAN",
+  "IMPL",
+  "UDIR",
+  "UDEC",
+  "CALL"
 };
 
-LinkStore::LinkStore(std::ostream& out, SWalker* swalker)
-    : m_link_file(out),
-      m_walker(swalker)
+LinkStore::LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker)
+: m_syntax_stream(syntax_stream),
+  m_xref_stream(xref_stream),
+  m_walker(swalker)
 {
-      m_buffer_start = swalker->getProgram()->Read(0);
-      m_parser = swalker->getParser();
+  m_buffer_start = swalker->program()->Read(0);
+  m_parser = swalker->parser();
+
+  // Check size of array here to prevent later segfaults
+  if (sizeof(m_context_names)/sizeof(m_context_names[0]) != NumContext)
+    {
+      std::cerr << "FATAL ERROR: Wrong number of context names in linkstore.cc" << std::endl;
+      exit(1);
+    }
 }
 
-SWalker* LinkStore::getSWalker()
+SWalker* LinkStore::swalker()
 {
-    return m_walker;
+  return m_walker;
 }
 
 int LinkStore::find_col(int line, const char* ptr)
 {
-    const char* pos = ptr;
-    while (pos > m_buffer_start && *--pos != '\n')
-	; // do nothing inside loop
-    int col = ptr - pos;
-    // Resolve macro maps
-    return link_map::instance().map(line, col);
+  const char* pos = ptr;
+  while (pos > m_buffer_start && *--pos != '\n')
+    ; // do nothing inside loop
+  int col = ptr - pos;
+  // Resolve macro maps
+  return link_map::instance().map(line, col);
 }
 
-void LinkStore::link(int line, int col, int len, Type type, const ScopedName& name, const std::string& desc)
+void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
 {
-    m_link_file << line << FS << col << FS << len << FS;
-    m_link_file << m_type_names[type] << FS;
-    for (ScopedName::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
-	std::string word = *iter;
-	for (std::string::size_type pos = word.find(' '); pos != std::string::npos; pos = word.find(' ', pos)) {
-	    word[pos] = 160; // 'unbreakable space', for want of something better
-	}
-	m_link_file << (iter == name.begin() ? "" : "\t") << word;
-    }
-    // Add the name to the description
-    std::vector<AST::Scope*> scopes;
-    Types::Named* vtype;
-    ScopedName short_name;
-    if (m_walker->getBuilder()->mapName(name, scopes, vtype)) {
-	for (size_t i = 0; i < scopes.size(); i++) {
-	    if (AST::Namespace* ns = dynamic_cast<AST::Namespace*>(scopes[i])) {
-		if (ns->type() == "function") {
-		    // Restart description at function scope
-		    short_name.clear();
-		    continue;
-		}
-	    }
-	    // Add the name to the short name
-	    short_name.push_back(scopes[i]->name().back());
-	}
-	// Add the final type name to the short name
-	short_name.push_back(vtype->name().back());
-    } else {
-	STrace trace("LinkStore::link");
-	LOG("WARNING: couldnt map name " << name);
-	short_name = name;
-    }
-    m_link_file << FS << desc << " " << short_name << RS;
+  // Dont store records for included files
+  if (!m_walker->is_main_file()) return;
+
+  // Get info for storing an xref record
+  int line = m_walker->line_of_ptree(node);
+  if (decl != NULL)
+    store_xref_record(decl, m_walker->current_file(), line, context);
+
+  // Get info for storing a syntax record
+  int col = find_col(line, node->LeftMost());
+  if (col < 0) return; // inside macro
+  int len = node->RightMost() - node->LeftMost();
+  
+  store_syntax_record(line, col, len, context, name, desc);
 }
 
-void LinkStore::link(Ptree* node, Type type, const ScopedName& name, const std::string& desc)
+//. A class which acts as a Types Visitor to store the correct link to a given
+//. type
+class TypeStorer : public Types::Visitor
 {
-    if (!m_walker->isMainFile()) return;
-    int line = m_walker->getLine(node);
-    int col = find_col(line, node->LeftMost());
-    if (col < 0) return; // inside macro
-    int len = node->RightMost() - node->LeftMost();
-    
-    link(line, col, len, type, name, desc);
-}
-
-class TypeStorer : public Types::Visitor {
-    // Variables to pass to link()
-    LinkStore* links;
-    Ptree* node;
-    LinkStore::Type link_type;
+  // Variables to pass to link()
+  LinkStore* links;
+  Ptree* node;
+  LinkStore::Context context;
 public:
-    //. Constructor
-    TypeStorer(LinkStore* ls, Ptree* n, LinkStore::Type l)
-	: links(ls), node(n), link_type(l) {}
-    //. Returns a suitable description for the given type
-    std::string describe(Types::Type* type) {
-    	std::string desc;
-	try {
-	    AST::Declaration* decl = Types::declared_cast<AST::Declaration>(type);
-	    return decl->type();
-	} catch (const Types::wrong_type_cast&) {
-	    return links->getSWalker()->getTypeFormatter()->format(type);
-	}
-    }
+  //. Constructor
+  TypeStorer(LinkStore* ls, Ptree* n, LinkStore::Context c)
+  : links(ls), node(n), context(c)
+  { }
 
-    // Visitor methods
-    void visit_base(Types::Base* base) {
-	// Not a link, but a keyword
-	links->span(node, "file-keyword");
+  //. Returns a suitable description for the given type
+  std::string describe(Types::Type* type)
+  {
+    std::string desc;
+    try
+      { return Types::declared_cast<AST::Declaration>(type)->type(); }
+    catch (const Types::wrong_type_cast&)
+      { return links->swalker()->type_formatter()->format(type); }
+  }
+
+  // Visitor methods
+  void visit_base(Types::Base* base)
+  {
+    // Not a link, but a keyword
+    links->span(node, "file-keyword");
+  }
+  void visit_named(Types::Named* named)
+  {
+    // All other nameds get stored
+    links->link(node, context, named->name(), describe(named));
+  }
+  void visit_declared(Types::Declared* declared)
+  {
+    // All other nameds get stored
+    links->link(node, context, declared->name(), describe(declared), declared->declaration());
+  }
+  void visit_modifier(Types::Modifier* mod)
+  {
+    // We recurse on the mod's alias, but dont link the const bit
+    if (mod->pre().size() && mod->pre().front() == "const")
+      if (!node->IsLeaf() && node->First()->Eq("const"))
+        {
+          links->span(node->First(), "file-keyword");
+          node = node->Last()->First();
+        }
+    mod->alias()->accept(this);
+  }
+  void visit_parameterized(Types::Parameterized* param)
+  {
+    // For qualified template names the ptree is:
+    //  [ std :: [ vector [ < ... , ... > ] ] ]
+    // Skip the qualifieds (and just link the final name)
+    while (node->Second() && node->Second()->Eq("::")) {
+        node = node->Third();
     }
-    void visit_named(Types::Named* named) {
-	// All other nameds get stored
-	links->link(node, link_type, named->name(), describe(named));
-    }
-    void visit_modifier(Types::Modifier* mod) {
-	// We recurse on the mod's alias, but dont link the const bit
-	if (mod->pre().size() && mod->pre().front() == "const") {
-	    if (!node->IsLeaf() && node->First()->Eq("const")) {
-		links->span(node->First(), "file-keyword");
-		node = node->Last()->First();
-	    }
-	}
-	mod->alias()->accept(this);
-    }
-    void visit_parameterized(Types::Parameterized* param) {
-	// For qualified template names the ptree is:
-	//  [ std :: [ vector [ < ... , ... > ] ] ]
-	// Skip the qualifieds (and just link the final name)
-	while (node->Second() && node->Second()->Eq("::")) {
-	    node = node->Third();
-	}
-	// Do template
-	links->link(node->First(), param->template_type());
-	// Do params
-	node = node->Second();
-	using Types::Type;
-	Types::Type::vector::iterator iter = param->parameters().begin();
-	Types::Type::vector::iterator end = param->parameters().end();
-	while (node && iter != end) {
-	    // Skip '<' or ','
-	    if ( !(node = node->Rest()) ) break;
-	    if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
-		links->link(node->Car()->Car()->Car(), *iter);
-	    iter++;
-	    node = node->Rest();
-	}
-    }
-    // Other types ignored, for now
+    // Do template
+    links->link(node->First(), param->template_type());
+    // Do params
+    node = node->Second();
+    typedef Types::Type::vector::iterator iterator;
+    iterator iter = param->parameters().begin();
+    iterator end = param->parameters().end();
+    while (node && iter != end)
+      {
+        // Skip '<' or ','
+        if ( !(node = node->Rest()) ) break;
+        if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
+          links->link(node->Car()->Car()->Car(), *iter);
+        ++iter;
+        node = node->Rest();
+      }
+  }
+  // Other types ignored, for now
 };
 
-// Store if type is named
-void LinkStore::link(Ptree* node, Types::Type* type)
+// A class that allows easy encoding of strings
+class LinkStore::encode
 {
-    if (!m_walker->isMainFile() || !type) return;
-    TypeStorer storer(this, node, Reference);
-    type->accept(&storer);
+public:
+  const char* str;
+  encode(const char* s) : str(s) { }
+  encode(const std::string& s) : str(s.c_str()) { }
+};
+
+// Insertion operator for encode class
+std::ostream& operator <<(std::ostream& out, const LinkStore::encode& enc)
+{
+  for (const char* s = enc.str; *s; ++s)
+    if (isalnum(*s) || *s == '`' || *s == ':')
+      out << *s;
+    else
+      out << '%' << std::hex << std::setw(2) << std::setfill('0') << int(*s) << std::dec;
+  return out;
+}
+
+// Store if type is named
+void LinkStore::link(Ptree* node, Types::Type* type, Context context)
+{
+  if (!m_walker->is_main_file() || !type) return;
+  TypeStorer storer(this, node, context);
+  type->accept(&storer);
 }
 
 void LinkStore::link(Ptree* node, const AST::Declaration* decl)
 {
-    if (!m_walker->isMainFile() || !decl) return;
-    link(node, Definition, decl->name(), decl->type());
+  if (!m_walker->is_main_file() || !decl) return;
+  link(node, Definition, decl->name(), decl->type(), decl);
 }
 
 void LinkStore::span(int line, int col, int len, const char* desc)
 {
-    m_link_file << line << FS << col << FS << len << FS;
-    m_link_file << m_type_names[Span] << FS << desc << RS;
+  std::ostream& out = *m_syntax_stream;
+  out << line << FS << col << FS << len << FS;
+  out << m_context_names[Span] << FS << encode(desc) << RS;
 }
 
 void LinkStore::span(Ptree* node, const char* desc)
 {
-    int line = m_walker->getLine(node);
-    if (!m_walker->isMainFile()) return;
-    int col = find_col(line, node->LeftMost());
-    if (col < 0) return; // inside macro
-    int len = node->RightMost() - node->LeftMost();
-    
-    span(line, col, len, desc);
+  int line = m_walker->line_of_ptree(node);
+  if (!m_walker->is_main_file()) return;
+  int col = find_col(line, node->LeftMost());
+  if (col < 0) return; // inside macro
+  int len = node->RightMost() - node->LeftMost();
+  
+  span(line, col, len, desc);
 }
 
-void LinkStore::longSpan(Ptree* node, const char* desc)
+void LinkStore::long_span(Ptree* node, const char* desc)
 {
-    // Find left edge
-    int left_line = m_walker->getLine(node);
-    if (!m_walker->isMainFile()) return;
-    int left_col = find_col(left_line, node->LeftMost());
-    if (left_col < 0) return; // inside macro
-    int len = node->RightMost() - node->LeftMost();
-    
-    // Find right edge
-    char* fname; int fname_len;
-    int right_line = m_parser->LineNumber(node->RightMost(), fname, fname_len);
-    
-    if (right_line == left_line) {
-	// Same line, so normal output
-	span(left_line, left_col, len, desc);
-    } else {
-	// Must output one for each line
-	int right_col = find_col(right_line, node->RightMost());
-	for (int line = left_line; line < right_line; line++, left_col = 0)
-	    span(line, left_col, -1, desc);
-	// Last line is a bit different
-	span(right_line, 0, right_col, desc);
+  // Find left edge
+  int left_line = m_walker->line_of_ptree(node);
+  if (!m_walker->is_main_file()) return;
+  int left_col = find_col(left_line, node->LeftMost());
+  if (left_col < 0) return; // inside macro
+  int len = node->RightMost() - node->LeftMost();
+  
+  // Find right edge
+  char* fname; int fname_len;
+  int right_line = m_parser->LineNumber(node->RightMost(), fname, fname_len);
+  
+  if (right_line == left_line)
+    // Same line, so normal output
+    span(left_line, left_col, len, desc);
+  else
+    {
+      // Must output one for each line
+      int right_col = find_col(right_line, node->RightMost());
+      for (int line = left_line; line < right_line; line++, left_col = 0)
+        span(line, left_col, -1, desc);
+      // Last line is a bit different
+      span(right_line, 0, right_col, desc);
     }
 }
-    
+
+// Store a link in the Syntax File
+void LinkStore::store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc)
+{
+  if (!m_syntax_stream)
+    return;
+  std::ostream& out = *m_syntax_stream;
+  out << line << FS << col << FS << len << FS;
+  out << m_context_names[context] << FS;
+  // Tab is used since :: is ambiguous as a scope separator unless real
+  // parsing is done, and the syntax highlighter generates links into the docs
+  // using the scope info
+  out << encode(join(name, "\t")) << FS;
+  // Add the name to the description (REVISIT: This looks too complex!)
+  std::vector<AST::Scope*> scopes;
+  Types::Named* vtype;
+  ScopedName short_name;
+  if (m_walker->builder()->mapName(name, scopes, vtype))
+    {
+      for (size_t i = 0; i < scopes.size(); i++)
+        {
+          if (AST::Namespace* ns = dynamic_cast<AST::Namespace*>(scopes[i]))
+            if (ns->type() == "function") {
+              // Restart description at function scope
+              short_name.clear();
+              continue;
+            }
+          // Add the name to the short name
+          short_name.push_back(scopes[i]->name().back());
+        }
+      // Add the final type name to the short name
+      short_name.push_back(vtype->name().back());
+    }
+  else
+    {
+      STrace trace("LinkStore::link");
+      LOG("WARNING: couldnt map name " << name);
+      short_name = name;
+    }
+  out << encode(desc + " " + join(short_name,"::")) << RS;
+}
+
+   
+// Store a link in the CrossRef File
+void LinkStore::store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context)
+{
+  if (!m_xref_stream)
+    return;
+  AST::Scope* container = m_walker->builder()->scope();
+  //m->refs[decl->name()].push_back(AST::Reference(file, line, container->name(), context));
+  (*m_xref_stream) << encode(join(decl->name(), "::")) << FS << file << FS << line << FS
+    << encode(join(container->name(), "::")) << FS << m_context_names[context] << RS;
+}

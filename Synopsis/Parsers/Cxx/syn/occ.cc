@@ -344,18 +344,18 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
 
   Builder builder(syn_basename);
   SWalker swalker(src, &parse, &builder, &prog);
-  swalker.setExtractTails(syn_extract_tails);
+  swalker.set_extract_tails(syn_extract_tails);
   Ptree *def;
   if (syn_fake_std)
     {
       // Fake a using from "std" to global
-      builder.startNamespace("std", Builder::NamespaceNamed);
-      builder.usingNamespace(builder.global()->declared());
-      builder.endNamespace();
+      builder.start_namespace("std", NamespaceNamed);
+      builder.add_using_namespace(builder.global()->declared());
+      builder.end_namespace();
     }
 #ifdef DEBUG
-  swalker.setExtractTails(true);
-  swalker.setStoreLinks(true, &std::cout);
+  swalker.set_extract_tails(true);
+  swalker.set_store_links(true, &std::cout, &std::cerr);
   while(parse.rProgram(def))
     swalker.Translate(def);
   // // Test Synopsis
@@ -372,7 +372,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     if (syn_storage)
       {
 	of = new std::ofstream(syn_storage);
-	swalker.setStoreLinks(true, of);
+	swalker.set_store_links(true, of, NULL);
       }
     try
       {

@@ -38,40 +38,40 @@ public:
     //. Sets extract tails to true.
     //. This will cause the parser to create dummy declarations for comments
     //. before close braces or the end of the file
-    void setExtractTails(bool value) { m_extract_tails = value; }
+    void set_extract_tails(bool value) { m_extract_tails = value; }
     //. Sets store links to true.
     //. This will cause the whole ptree to be traversed, and any linkable
     //. identifiers found will be stored
-    void setStoreLinks(bool value, std::ostream* storage);
+    void set_store_links(bool value, std::ostream* storage, std::ostream* xref_storage);
 
     //. Get a name from the ptree
-    std::string getName(Ptree*) const;
+    std::string parse_name(Ptree*) const;
 
     //. Get the Parser object
-    Parser* getParser();
+    Parser* parser()   { return m_parser; }
     //. Get the Program object
-    Program* getProgram();
+    Program* program() { return m_program; }
     //. Get the Builder object
-    Builder* getBuilder();
+    Builder* builder() { return m_builder; }
     //. Get the TypeFormatter object
-    TypeFormatter* getTypeFormatter();
-
-    //. Get the line number of the given Ptree node
-    int getLine(Ptree*);
+    TypeFormatter* type_formatter() { return m_type_formatter; }
     //. Returns true if the current filename from the last getLine or
     //. updateLineNumber call is equal to the main source filename
-    bool isMainFile();
-    //. Update the line number
-    void updateLineNumber(Ptree*);
+    bool is_main_file() { return (m_filename == m_source); }
 
-    void addComments(AST::Declaration* decl, Ptree* comments);
-    void addComments(AST::Declaration* decl, CommentedLeaf* node);
-    void addComments(AST::Declaration* decl, PtreeDeclarator* node);
-    void addComments(AST::Declaration* decl, PtreeDeclaration* decl);
-    void addComments(AST::Declaration* decl, PtreeNamespaceSpec* decl);
+    //. Get the line number of the given Ptree node
+    int line_of_ptree(Ptree*);
+    //. Update the line number
+    void update_line_number(Ptree*);
+
+    void add_comments(AST::Declaration* decl, Ptree* comments);
+    void add_comments(AST::Declaration* decl, CommentedLeaf* node);
+    void add_comments(AST::Declaration* decl, PtreeDeclarator* node);
+    void add_comments(AST::Declaration* decl, PtreeDeclaration* decl);
+    void add_comments(AST::Declaration* decl, PtreeNamespaceSpec* decl);
     //. Traverses left side of tree till it finds a leaf, and if that is a
     //. CommentedLeaf then it adds those comments as spans
-    void findComments(Ptree* node);
+    void find_comments(Ptree* node);
 
     // Takes the (maybe nil) args list and puts them in m_params
     void TranslateFunctionArgs(Ptree* args);
@@ -83,7 +83,7 @@ public:
     //. Returns a formatter string of the parameters. The idea is that this
     //. string will be appended to the function name to form the 'name' of the
     //. function.
-    std::string formatParameters(std::vector<AST::Parameter*>& params);
+    std::string format_parameters(std::vector<AST::Parameter*>& params);
 
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
@@ -166,7 +166,7 @@ public:
     virtual Ptree* TranslateParen(Ptree*);
     virtual Ptree* TranslateStaticUserStatement(Ptree*);
 
-    std::string current_file() const { return m_filename;}
+    const std::string& current_file() const { return m_filename;}
     int         current_lineno() const { return m_lineno;}
     std::string main_file() const { return m_source;}
     static SWalker *instance() { return g_swalker;}
