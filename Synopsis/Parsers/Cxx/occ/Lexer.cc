@@ -67,8 +67,8 @@ static void InitializeOtherKeywords();
 
 // class Lexer
 
-HashTable* Lexer::user_keywords = nil;
-Ptree* Lexer::comments = nil;
+HashTable* Lexer::user_keywords = 0;
+Ptree* Lexer::comments = 0;
 
 Lexer::Lexer(Buffer *buf) : fifo(this)
 {
@@ -79,8 +79,8 @@ Lexer::Lexer(Buffer *buf) : fifo(this)
     token_len = 0;
 
     // Re-init incase used multiple times by Synopsis
-    comments = nil;
-    user_keywords = nil;
+    comments = 0;
+    user_keywords = 0;
 
     InitializeOtherKeywords();
 }
@@ -152,13 +152,13 @@ bool Lexer::RecordKeyword(char* keyword, int token)
     int index;
     char* str;
 
-    if(keyword == nil)
+    if(keyword == 0)
 	return false;
 
     str = new(GC) char[strlen(keyword) + 1];
     strcpy(str, keyword);
 
-    if(user_keywords == nil)
+    if(user_keywords == 0)
 	user_keywords = new HashTable;
 
     if(user_keywords->AddEntry(str, (HashValue)token, &index) >= 0)
@@ -169,7 +169,7 @@ bool Lexer::RecordKeyword(char* keyword, int token)
 
 bool Lexer::Reify(Ptree* t, unsigned int& value)
 {
-    if(t == nil || !t->IsLeaf())
+    if(t == 0 || !t->IsLeaf())
 	return false;
 
     char* p = t->GetPosition();
@@ -213,7 +213,7 @@ bool Lexer::Reify(Ptree* t, unsigned int& value)
 
 bool Lexer::Reify(Ptree* t, char*& str)
 {
-    if(t == nil || !t->IsLeaf())
+    if(t == 0 || !t->IsLeaf())
 	return false;
 
     char* p = t->GetPosition();
@@ -929,7 +929,7 @@ int Lexer::Screening(char *identifier, int len)
 	    high = mid - 1;
     }
 
-    if(user_keywords == nil)
+    if(user_keywords == 0)
 	user_keywords = new HashTable;
 
     if(user_keywords->Lookup(identifier, len, (HashValue*)&token))
@@ -1078,7 +1078,7 @@ int Lexer::ReadComment(char c, uint top) {
 
 Ptree* Lexer::GetComments() {
     Ptree* c = comments;
-    comments = nil;
+    comments = 0;
     return c;
 }
 

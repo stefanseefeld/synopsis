@@ -143,7 +143,8 @@ struct Builder::Private
 
 Builder::Builder(AST::SourceFile* file)
 {
-    m_file = NULL;
+  // m_file was originally initialized to 0. Why ??
+    m_file = file;
     m_unique = 1;
     m = new Private;
     ScopedName name;
@@ -328,7 +329,7 @@ AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
         break;
     }
     // Create a new namespace object unless we already found one
-    if (ns == NULL)
+    if (ns == 0)
     {
         generated = true;
         // Create the namspace
@@ -761,7 +762,7 @@ Types::Unknown* Builder::add_unknown(const std::string& name)
 {
     if (m_scopes.back()->dict->has_key(name) == false)
         add(create_unknown(name));
-    return NULL;
+    return 0;
 }
 
 AST::Forward* Builder::add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params)
@@ -769,18 +770,18 @@ AST::Forward* Builder::add_forward(int lineno, const std::string& name, AST::Par
     if (!templ_params)
     {
         add_unknown(name);
-        return NULL;
+        return 0;
     }
     // Must find the scope above the template scope
     ScopeInfo* parent_scope = m_scopes[m_scopes.size()-2];
     ScopedName scoped_name = extend(parent_scope->scope_decl->name(), name);
     if (parent_scope->dict->has_key(name) == true)
-        return NULL;
+        return 0;
     AST::Forward* forward = new AST::Forward(m_file, lineno, "forward", scoped_name);
-    Types::Template* templ = new Types::Template(scoped_name, NULL, *templ_params);
+    Types::Template* templ = new Types::Template(scoped_name, 0, *templ_params);
     forward->set_template_type(templ);
     add(forward, true);
-    return NULL;
+    return 0;
 }
 
 Types::Base* Builder::create_base(const std::string& name)

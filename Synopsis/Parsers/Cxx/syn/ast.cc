@@ -99,7 +99,7 @@ Include::Include(SourceFile* target, bool is_macro, bool is_next)
 //
 
 Declaration::Declaration(SourceFile* file, int line, const std::string& type, const ScopedName& name)
-        : m_file(file), m_line(line), m_type(type), m_name(name), m_access(Default), m_declared(NULL)
+        : m_file(file), m_line(line), m_type(type), m_name(name), m_access(Default), m_declared(0)
 { }
 
 Declaration::~Declaration()
@@ -204,7 +204,7 @@ Namespace::accept(Visitor* visitor)
 Class::Class(SourceFile* file, int line, const std::string& type, const ScopedName& name)
         : Scope(file, line, type, name)
 {
-    m_template = NULL;
+    m_template = 0;
 }
 
 Class::~Class()
@@ -236,11 +236,11 @@ Inheritance::accept(Visitor* visitor)
 //
 
 Forward::Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name)
-        : Declaration(file, line, type, name), m_template(NULL)
+        : Declaration(file, line, type, name), m_template(0)
 { }
 
 Forward::Forward(AST::Declaration* decl)
-        : Declaration(decl->file(), decl->line(), decl->type(), decl->name()), m_template(NULL)
+        : Declaration(decl->file(), decl->line(), decl->type(), decl->name()), m_template(0)
 { }
 
 void
@@ -342,7 +342,7 @@ Function::Function(
     const Mods& premod, Types::Type* ret, const std::string& realname
 )
         : Declaration(file, line, type, name), m_pre(premod), m_ret(ret),
-        m_realname(realname), m_template(NULL)
+        m_realname(realname), m_template(0)
 {}
 
 Function::~Function()

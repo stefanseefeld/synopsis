@@ -27,8 +27,8 @@
 
 // class Environment
 
-PtreeArray* Environment::classkeywords = nil;
-HashTable* Environment::namespace_table = nil;
+PtreeArray* Environment::classkeywords = 0;
+HashTable* Environment::namespace_table = 0;
 
 void Environment::do_init_static()
 {
@@ -39,8 +39,8 @@ Environment::Environment(Walker* w)
 : baseclasses(0)
 {
     htable = new BigHashTable;		// base environment
-    next = nil;
-    metaobject = nil;
+    next = 0;
+    metaobject = 0;
     walker = w;
 }
 
@@ -49,7 +49,7 @@ Environment::Environment(Environment* e)
 {
     htable = new HashTable;
     next = e;
-    metaobject = nil;
+    metaobject = 0;
     walker = e->walker;
 }
 
@@ -58,7 +58,7 @@ Environment::Environment(Environment* e, Walker* w)
 {
     htable = new HashTable;
     next = e;
-    metaobject = nil;
+    metaobject = 0;
     walker = w;
 }
 
@@ -70,7 +70,7 @@ bool Environment::IsEmpty()
 Environment* Environment::GetBottom()
 {
     Environment* p;
-    for(p = this; p->next != nil; p = p->next)
+    for(p = this; p->next != 0; p = p->next)
 	;
 
     return p;
@@ -79,37 +79,37 @@ Environment* Environment::GetBottom()
 Class* Environment::LookupClassMetaobject(Ptree* name)
 {
     TypeInfo tinfo;
-    Bind* bind = nil;
+    Bind* bind = 0;
 
-    if(this == nil){
+    if(this == 0){
 	MopErrorMessage("Environment::LookupClassMetaobject()",
 			"nil enviornment");
-	return nil;
+	return 0;
     }
 
-    if(name == nil)
-	return nil;
+    if(name == 0)
+	return 0;
     else if(name->IsLeaf()){
 	if(LookupType(name->GetPosition(), name->GetLength(), bind))
-	    if(bind != nil){
+	    if(bind != 0){
 		bind->GetType(tinfo, this);
 		return tinfo.ClassMetaobject();
 	    }
 
-	return nil;
+	return 0;
     }
     else{
 	int len;
 	Environment* e = this;
 	char* base = Encoding::GetBaseName(name->GetEncodedName(), len, e);
-	if(base != nil && e != nil)
+	if(base != 0 && e != 0)
 	    if(LookupType(base, len, bind))
-		if(bind != nil){
+		if(bind != 0){
 		    bind->GetType(tinfo, this);
 		    return tinfo.ClassMetaobject();
 		}
 
-	return nil;
+	return 0;
     }
 }
 
@@ -117,11 +117,11 @@ bool Environment::LookupType(const char* name, int len, Bind*& t)
 {
     Environment* p;
 
-    for(p = this; p != nil; p = p->next){
+    for(p = this; p != 0; p = p->next){
 	int count = 0;
 	while(p->htable->LookupEntries((char*)name, len, (HashValue*)&t,
 				       count))
-	    if(t != nil)
+	    if(t != 0)
 		switch(t->What()){
 		case Bind::isVarName :
 		case Bind::isTemplateFunction :
@@ -143,7 +143,7 @@ bool Environment::Lookup(Ptree* name, TypeInfo& t)
 {
     Bind* bind;
 
-    if(Lookup(name, bind) && bind != nil){
+    if(Lookup(name, bind) && bind != 0){
 	bind->GetType(t, this);
 	return true;
     }
@@ -157,7 +157,7 @@ bool Environment::Lookup(Ptree* name, bool& is_type_name, TypeInfo& t)
 {
     Bind* bind;
 
-    if(Lookup(name, bind) && bind != nil){
+    if(Lookup(name, bind) && bind != 0){
 	is_type_name = bind->IsType();
 	bind->GetType(t, this);
 	return true;
@@ -170,25 +170,25 @@ bool Environment::Lookup(Ptree* name, bool& is_type_name, TypeInfo& t)
 
 bool Environment::Lookup(Ptree* name, Bind*& bind)
 {
-    bind = nil;
-    if(this == nil){
+    bind = 0;
+    if(this == 0){
 	MopErrorMessage("Environment::Lookup()", "nil enviornment");
 	return false;
     }
 
-    if(name == nil)
+    if(name == 0)
 	return false;
     else if(name->IsLeaf())
 	return LookupAll(name->GetPosition(), name->GetLength(), bind);
     else{
 	char* encode = name->GetEncodedName();
-	if(encode == nil)
+	if(encode == 0)
 	    return false;
 	else{
 	    int len;
 	    Environment* e = this;
 	    char* base = Encoding::GetBaseName(encode, len, e);
-	    if(base != nil && e != nil)
+	    if(base != 0 && e != 0)
 		return e->LookupAll(base, len, bind);
 	    else
 		return false;
@@ -198,25 +198,25 @@ bool Environment::Lookup(Ptree* name, Bind*& bind)
 
 bool Environment::LookupTop(Ptree* name, Bind*& bind)
 {
-    bind = nil;
-    if(this == nil){
+    bind = 0;
+    if(this == 0){
 	MopErrorMessage("Environment::LookupTop()", "nil enviornment");
 	return false;
     }
 
-    if(name == nil)
+    if(name == 0)
 	return false;
     else if(name->IsLeaf())
 	return LookupTop(name->GetPosition(), name->GetLength(), bind);
     else{
 	char* encode = name->GetEncodedName();
-	if(encode == nil)
+	if(encode == 0)
 	    return false;
 	else{
 	    int len;
 	    Environment* e = this;
 	    char* base = Encoding::GetBaseName(encode, len, e);
-	    if(base != nil && e != nil)
+	    if(base != 0 && e != 0)
 		return e->LookupTop(base, len, bind);
 	    else
 		return false;
@@ -242,7 +242,7 @@ bool Environment::LookupAll(const char* name, int len, Bind*& t)
 {
     Environment* p;
 
-    for(p = this; p != nil; p = p->next)
+    for(p = this; p != 0; p = p->next)
 	if(p->htable->Lookup((char*)name, len, (HashValue*)&t))
 	    return true;
 	else{
@@ -280,7 +280,7 @@ int Environment::AddDupEntry(char* key, int len, Bind* b) {
 
 void Environment::RecordNamespace(Ptree* name)
 {
-    if (name != nil)
+    if (name != 0)
 	namespace_table->AddEntry(name->GetPosition(), name->GetLength(),
 				  name);
 }
@@ -293,16 +293,16 @@ bool Environment::LookupNamespace(char* name, int len)
 
 void Environment::RecordTypedefName(Ptree* decls)
 {
-    while(decls != nil){
+    while(decls != 0){
 	Ptree* d = decls->Car();
 	if(d->What() == ntDeclarator){
 	    char* name = d->GetEncodedName();
 	    char* type = d->GetEncodedType();
-	    if(name != nil && type != nil){
+	    if(name != 0 && type != 0){
 		int len;
 		Environment* e = this;
 		name = Encoding::GetBaseName(name, len, e);
-		if(name != nil)
+		if(name != 0)
 		    AddEntry(name, len, new BindTypedefName(type));
 	    }
 	}
@@ -315,14 +315,14 @@ void Environment::RecordEnumName(Ptree* spec)
 {
     Ptree* tag = Ptree::Second(spec);
     char* encoded_name = spec->GetEncodedName();
-    if(tag != nil && tag->IsLeaf())
+    if(tag != 0 && tag->IsLeaf())
 	AddEntry(tag->GetPosition(), tag->GetLength(),
 		 new BindEnumName(encoded_name, spec));
     else{
 	int n;
 	Environment* e = this;
 	char* name = Encoding::GetBaseName(encoded_name, n, e);
-	if(name != nil && e != nil)
+	if(name != 0 && e != 0)
 	    e->AddEntry(name, n, new BindEnumName(encoded_name, spec));
     }
 }
@@ -335,12 +335,12 @@ void Environment::RecordClassName(char* encoded_name, Class* metaobject)
 
     e = this;
     char* name = Encoding::GetBaseName(encoded_name, n, e);
-    if(name == nil || e == nil)
+    if(name == 0 || e == 0)
 	return;		// error?
 
     if(e->LookupAll(name, n, bind))
-	if(bind != nil && bind->What() == Bind::isClassName){
-	    if(metaobject != nil)
+	if(bind != 0 && bind->What() == Bind::isClassName){
+	    if(metaobject != 0)
 		bind->SetClassMetaobject(metaobject);
 
 	    return;
@@ -357,12 +357,12 @@ void Environment::RecordTemplateClass(Ptree* spec, Class* metaobject)
 
     e = this;
     char* name = Encoding::GetBaseName(spec->GetEncodedName(), n, e);
-    if(name == nil || e == nil)
+    if(name == 0 || e == 0)
 	return;		// error?
 
     if(e->LookupAll(name, n, bind))
-	if(bind != nil && bind->What() == Bind::isTemplateClass){
-	    if(metaobject != nil)
+	if(bind != 0 && bind->What() == Bind::isTemplateClass){
+	    if(metaobject != 0)
 		bind->SetClassMetaobject(metaobject);
 
 	    return;
@@ -377,10 +377,10 @@ Environment* Environment::RecordTemplateFunction(Ptree* def, Ptree* body)
     Ptree* decl = Ptree::Third(body);
     if(decl->IsA(ntDeclarator)){
 	char* name = decl->GetEncodedName();
-	if(name != nil){
+	if(name != 0){
 	    Environment* e = this;
 	    name = Encoding::GetBaseName(name, n, e);
-	    if(name != nil && e != nil)
+	    if(name != 0 && e != 0)
 		e->AddEntry(name, n, new BindTemplateFunction(def));
 
 	    return e;
@@ -395,13 +395,13 @@ Environment* Environment::RecordDeclarator(Ptree* decl)
     if(decl->What() == ntDeclarator){
 	char* name = decl->GetEncodedName();
 	char* type = decl->GetEncodedType();
-	if(name != nil && type != nil){
+	if(name != 0 && type != 0){
 	    int len;
 	    Environment* e = this;
 	    name = Encoding::GetBaseName(name, len, e);
 
 	    // allow a duplicated entry because of overloaded functions
-	    if(name != nil && e != nil)
+	    if(name != 0 && e != 0)
 		e->AddDupEntry(name, len, new BindVarName(type));
 
 	    return e;
@@ -415,7 +415,7 @@ Environment* Environment::DontRecordDeclarator(Ptree* decl)
 {
     if(decl->What() == ntDeclarator){
 	char* name = decl->GetEncodedName();
-	if(name != nil){
+	if(name != 0){
 	    int len;
 	    Environment* e = this;
 	    Encoding::GetBaseName(name, len, e);
@@ -428,7 +428,7 @@ Environment* Environment::DontRecordDeclarator(Ptree* decl)
 
 void Environment::RecordMetaclassName(Ptree* decl)
 {
-    if(decl->Third() != nil)
+    if(decl->Third() != 0)
 	metaclasses.Append(decl);
 }
 
@@ -441,7 +441,7 @@ Ptree* Environment::LookupMetaclass(Ptree* name)
 	    return d;
     }
 
-    return nil;
+    return 0;
 }
 
 bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
@@ -449,7 +449,7 @@ bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
     Ptree* keywordp = new Leaf(keyword, strlen(keyword));
     Ptree* metaclassp = new Leaf(metaclass_name, strlen(metaclass_name));
 
-    if(LookupClasskeyword(keywordp) == nil){
+    if(LookupClasskeyword(keywordp) == 0){
 	classkeywords->Append(keywordp);
 	classkeywords->Append(metaclassp);
 	return true;
@@ -460,7 +460,7 @@ bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
 
 Ptree* Environment::LookupClasskeyword(Ptree* keyword)
 {
-    if(classkeywords == nil)
+    if(classkeywords == 0)
 	classkeywords = new PtreeArray;
 
     uint n = classkeywords->Number();
@@ -470,21 +470,21 @@ Ptree* Environment::LookupClasskeyword(Ptree* keyword)
 	    return classkeywords->Ref(i + 1);
     }
 
-    return nil;
+    return 0;
 }
 
 Class* Environment::LookupThis()
 {
     Environment* p;
-    for(p = this; p != nil; p = p->next)
-	if(p->metaobject != nil)
+    for(p = this; p != 0; p = p->next)
+	if(p->metaobject != 0)
 	    return p->metaobject;
 
-    return nil;
+    return 0;
 }
 
 // IsMember() returns the class environment that the member belongs to.
-// If the member is not valid, IsMember() returns nil.
+// If the member is not valid, IsMember() returns 0.
 
 Environment* Environment::IsMember(Ptree* member)
 {
@@ -493,27 +493,27 @@ Environment* Environment::IsMember(Ptree* member)
 
     if(!member->IsLeaf()){
 	char* encode = member->GetEncodedName();
-	if(encode != nil){
+	if(encode != 0){
 	    int len;
 	    e = this;
 	    char* base = Encoding::GetBaseName(encode, len, e);
-	    if(base != nil && e != nil && e->metaobject != nil)
+	    if(base != 0 && e != 0 && e->metaobject != 0)
 		return e;
 	}
     }
 
-    for(e = this; e != nil; e = e->next)
-	if(e->metaobject != nil)
+    for(e = this; e != 0; e = e->next)
+	if(e->metaobject != 0)
 	    break;
 	else if(e->LookupTop(member, bind))
-	    if(bind != nil && !bind->IsType())
-		return nil;	// the member is overridden.
+	    if(bind != 0 && !bind->IsType())
+		return 0;	// the member is overridden.
 
-    if(e != nil && e->LookupTop(member, bind))
-       if(bind != nil && !bind->IsType())
+    if(e != 0 && e->LookupTop(member, bind))
+       if(bind != 0 && !bind->IsType())
 	   return e;
 
-    return nil;
+    return 0;
 }
 
 void Environment::Dump()
@@ -526,7 +526,7 @@ void Environment::Dump(int level)
 {
     Environment* e = this;
     while(level-- > 0)
-	if(e->next != nil)
+	if(e->next != 0)
 	    e = e->next;
 	else{
 	    std::cerr << "Environment::Dump(): the bottom is reached.\n";
@@ -538,9 +538,9 @@ void Environment::Dump(int level)
 
 Ptree* Environment::GetLineNumber(Ptree* p, int& number)
 {
-    if (walker == nil) {
+    if (walker == 0) {
 	number = 0;
-	return nil;
+	return 0;
     }
 
     char* fname;
@@ -560,7 +560,7 @@ Environment::Array::Array(int s)
     if(s > 0)
 	array = new (GC) Environment*[s];
     else
-	array = nil;
+	array = 0;
 }
 
 void Environment::Array::Append(Environment* p)
@@ -581,7 +581,7 @@ Environment* Environment::Array::Ref(uint i)
     if(i < num)
 	return array[i];
     else
-	return nil;
+	return 0;
 }
 
 
@@ -589,7 +589,7 @@ Environment* Environment::Array::Ref(uint i)
 
 char* Bind::GetEncodedType()
 {
-    return nil;
+    return 0;
 }
 
 bool Bind::IsType()
@@ -599,7 +599,7 @@ bool Bind::IsType()
 
 Class* Bind::ClassMetaobject()
 {
-    return nil;
+    return 0;
 }
 
 void Bind::SetClassMetaobject(Class*) {}

@@ -23,25 +23,25 @@
 #include "TypeInfo.hh"
 #include "Encoding.hh"
 
-ClassArray* Class::class_list = nil;
+ClassArray* Class::class_list = 0;
 int Class::num_of_cmd_options = 0;
 char* Class::cmd_options[];
 
-char* Class::metaclass_for_c_functions = nil;
-Class* Class::for_c_functions = nil;
+char* Class::metaclass_for_c_functions = 0;
+Class* Class::for_c_functions = 0;
 
-Ptree* Class::class_t = nil;
-Ptree* Class::empty_block_t = nil;
-Ptree* Class::public_t = nil;
-Ptree* Class::protected_t = nil;
-Ptree* Class::private_t = nil;
-Ptree* Class::virtual_t = nil;
-Ptree* Class::colon_t = nil;
-Ptree* Class::comma_t = nil;
-Ptree* Class::semicolon_t = nil;
+Ptree* Class::class_t = 0;
+Ptree* Class::empty_block_t = 0;
+Ptree* Class::public_t = 0;
+Ptree* Class::protected_t = 0;
+Ptree* Class::private_t = 0;
+Ptree* Class::virtual_t = 0;
+Ptree* Class::colon_t = 0;
+Ptree* Class::comma_t = 0;
+Ptree* Class::semicolon_t = 0;
 
-static opcxx_ListOfMetaclass* classCreator = NULL;
-static opcxx_ListOfMetaclass* templateCreator = NULL;
+static opcxx_ListOfMetaclass* classCreator = 0;
+static opcxx_ListOfMetaclass* templateCreator = 0;
 static Class* CreateClass(Ptree* def, Ptree* marg);
 static Class* CreateTemplateClass(Ptree* def, Ptree* marg);
 
@@ -54,7 +54,7 @@ void Class::do_init_static()
 
     class_t = new LeafReserved("class", 5);
     empty_block_t = new PtreeClassBody(new Leaf("{", 1),
-          			     nil,
+          			     0,
           			     new Leaf("}", 1));
     public_t = new LeafPUBLIC("public", 6);
     protected_t = new LeafPROTECTED("protected", 9);
@@ -65,11 +65,11 @@ void Class::do_init_static()
     semicolon_t = new Leaf(";", 1);
 
     classCreator = new opcxx_ListOfMetaclass(
-	    "Class", CreateClass, Class::Initialize, nil);
+	    "Class", CreateClass, Class::Initialize, 0);
 
     templateCreator = new opcxx_ListOfMetaclass(
 	    "TemplateClass", CreateTemplateClass,
-	    TemplateClass::Initialize, nil);
+	    TemplateClass::Initialize, 0);
 }
 
 // class Class
@@ -80,20 +80,20 @@ void Class::Construct(Environment* e, Ptree* name)
     Encoding encode;
 
     encode.SimpleName(name);
-    def = Ptree::List(name, nil, empty_block_t);
-    def = new PtreeClassSpec(class_t, def, nil, encode.Get());
+    def = Ptree::List(name, 0, empty_block_t);
+    def = new PtreeClassSpec(class_t, def, 0, encode.Get());
 
     full_definition = def;
     definition = def;
-    class_environment = nil;
-    member_list = nil;
+    class_environment = 0;
+    member_list = 0;
     done_decl_translation = false;
     removed = false;
-    changed_member_list = nil;
-    appended_member_list = nil;
-    appended_code = nil;
+    changed_member_list = 0;
+    appended_member_list = 0;
+    appended_code = 0;
     new_base_classes = def->Third();
-    new_class_specifier = nil;
+    new_class_specifier = 0;
 
     SetEnvironment(new Environment(e));
 }
@@ -106,22 +106,22 @@ void Class::InitializeInstance(Ptree* def, Ptree*)
     else
 	definition = def->Cdr();	// if coming with a user keyword
 
-    class_environment = nil;
-    member_list = nil;
+    class_environment = 0;
+    member_list = 0;
 
-    if(class_list == nil)
+    if(class_list == 0)
 	class_list = new ClassArray;
 
     class_list->Append(this);
 
     done_decl_translation = false;
     removed = false;
-    changed_member_list = nil;
-    appended_member_list = nil;
-    appended_code = nil;
+    changed_member_list = 0;
+    appended_member_list = 0;
+    appended_code = 0;
     new_base_classes = definition->Third();
-    new_class_specifier = nil;
-    new_class_name = nil;
+    new_class_specifier = 0;
+    new_class_name = 0;
 }
 
 Class::~Class() {}
@@ -137,7 +137,7 @@ Ptree* Class::Comments()
 {
     if (definition->IsA(ntClassSpec))
 	return ((PtreeClassSpec*)definition)->GetComments();
-    return nil;
+    return 0;
 }
 
 Ptree* Class::Name()
@@ -158,7 +158,7 @@ Ptree* Class::Members()
 Class* Class::NthBaseClass(int n)
 {
     Ptree* bases = definition->Third();
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	if(n-- == 0){
 	    Ptree* base_class = bases->Car()->Last()->Car();
@@ -168,13 +168,13 @@ Class* Class::NthBaseClass(int n)
 	bases = bases->Cdr();
     }
 
-    return nil;
+    return 0;
 }
 
 bool Class::IsSubclassOf(Ptree* name)
 {
     Ptree* bases = definition->Third();
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	Ptree* base_class = bases->Car()->Last()->Car();
 	if(base_class->Eq(name))
@@ -182,7 +182,7 @@ bool Class::IsSubclassOf(Ptree* name)
 	else{
 	    Class* metaobject
 		= class_environment->LookupClassMetaobject(base_class);
-	    if(metaobject != nil && metaobject->IsSubclassOf(name))
+	    if(metaobject != 0 && metaobject->IsSubclassOf(name))
 		return true;
 	}
 
@@ -195,7 +195,7 @@ bool Class::IsSubclassOf(Ptree* name)
 bool Class::IsImmediateSubclassOf(Ptree* name)
 {
     Ptree* bases = definition->Third();
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	Ptree* base_class = bases->Car()->Last()->Car();
 	if(base_class->Eq(name))
@@ -210,7 +210,7 @@ bool Class::IsImmediateSubclassOf(Ptree* name)
 Ptree* Class::NthBaseClassName(int n)
 {
     Ptree* bases = definition->Third();
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	if(n-- == 0)
 	    return bases->Car()->Last()->Car();
@@ -218,13 +218,13 @@ Ptree* Class::NthBaseClassName(int n)
 	bases = bases->Cdr();
     }
 
-    return nil;
+    return 0;
 }
 
 bool Class::NthMember(int nth, Member& mem)
 {
     MemberList* mlist = GetMemberList();
-    if(mlist == nil || nth >= mlist->Number())
+    if(mlist == 0 || nth >= mlist->Number())
 	return false;
 
     mem.Set(this, mlist->Ref(nth)->declarator, nth);
@@ -240,7 +240,7 @@ bool Class::LookupMember(Ptree* name)
 bool Class::LookupMember(Ptree* name, Member& mem, int index)
 {
     MemberList* mlist = GetMemberList();
-    if(mlist == nil)
+    if(mlist == 0)
 	return false;
 
     int nth = mlist->Lookup(class_environment, name, index);
@@ -260,7 +260,7 @@ bool Class::LookupMember(char* name)
 bool Class::LookupMember(char* name, Member& mem, int index)
 {
     MemberList* mlist = GetMemberList();
-    if(mlist == nil)
+    if(mlist == 0)
 	return false;
 
     int nth = mlist->Lookup(class_environment, name, index);
@@ -273,7 +273,7 @@ bool Class::LookupMember(char* name, Member& mem, int index)
 
 MemberList* Class::GetMemberList()
 {
-    if(member_list == nil){
+    if(member_list == 0){
 	member_list = new MemberList;
 	member_list->Make(this);
     }
@@ -294,7 +294,7 @@ int Class::Subclasses(ClassArray& subclasses)
 int Class::Subclasses(Ptree* name, ClassArray& subclasses)
 {
     subclasses.Clear();
-    if(class_list == nil)
+    if(class_list == 0)
 	return 0;
 
     uint n = class_list->Number();
@@ -315,7 +315,7 @@ int Class::ImmediateSubclasses(ClassArray& subclasses)
 int Class::ImmediateSubclasses(Ptree* name, ClassArray& subclasses)
 {
     subclasses.Clear();
-    if(class_list == nil)
+    if(class_list == 0)
 	return 0;
 
     uint n = class_list->Number();
@@ -331,7 +331,7 @@ int Class::ImmediateSubclasses(Ptree* name, ClassArray& subclasses)
 int Class::InstancesOf(char* name, ClassArray& classes)
 {
     classes.Clear();
-    if(class_list == nil)
+    if(class_list == 0)
 	return 0;
 
     uint n = class_list->Number();
@@ -351,7 +351,7 @@ Ptree* Class::NthMemberName(int nth)
     if(NthMember(nth, m))
 	return m.Name();
     else
-	return nil;
+	return 0;
 }
 
 int Class::IsMember(Ptree* name)
@@ -403,7 +403,7 @@ void Class::ChangeBaseClasses(Ptree* list)
 void Class::RemoveBaseClasses()
 {
     CheckValidity("RemoveBaseClasses()");
-    new_base_classes = nil;
+    new_base_classes = 0;
 }
 
 void Class::AppendBaseClass(Class* c, int specifier, bool is_virtual)
@@ -433,7 +433,7 @@ void Class::AppendBaseClass(Ptree* name, int specifier, bool is_virtual)
 	break;
     default :
 	MopErrorMessage("Class::AppendBaseClass()", "bad specifier");
-	lf = nil;
+	lf = 0;
 	break;
     }
 
@@ -442,7 +442,7 @@ void Class::AppendBaseClass(Ptree* name, int specifier, bool is_virtual)
     if(is_virtual)
 	super = Ptree::Cons(virtual_t, super);
 
-    if(new_base_classes == nil)
+    if(new_base_classes == 0)
 	new_base_classes = Ptree::List(colon_t, super);
     else
 	new_base_classes = Ptree::Append(new_base_classes,
@@ -453,7 +453,7 @@ void Class::ChangeMember(Member& m)
 {
     CheckValidity("ChangeMember()");
 
-    if(changed_member_list == nil)
+    if(changed_member_list == 0)
 	changed_member_list = new ChangedMemberList;
 
     changed_member_list->Append(&m, Undefined);
@@ -462,7 +462,7 @@ void Class::ChangeMember(Member& m)
 void Class::AppendMember(Member& m, int access)
 {
     CheckValidity("AppendMember()");
-    if(appended_member_list == nil)
+    if(appended_member_list == 0)
 	appended_member_list = new ChangedMemberList;
 
     appended_member_list->Append(&m, access);
@@ -496,8 +496,8 @@ void Class::TranslateMemberFunction(Environment*, Member& m)
 
 ChangedMemberList::Cmem* Class::GetChangedMember(Ptree* decl)
 {
-    if(changed_member_list == nil)
-	return nil;
+    if(changed_member_list == 0)
+	return 0;
     else
 	return changed_member_list->Lookup(decl);
 }
@@ -528,17 +528,17 @@ Ptree* Class::TranslateNew(Environment* env, Ptree* header,
 {
     Ptree* exp2;
 
-    if(header != nil && !header->Eq("::"))
+    if(header != 0 && !header->Eq("::"))
 	ErrorMessage(env, "unsupported user keyword: ", header, op);
 
     Ptree* tname2 = TranslateNewType(env, tname);
-    if(arglist == nil)
+    if(arglist == 0)
 	exp2 = Ptree::List(TranslateArguments(env, placement), tname2);
     else
 	exp2 = Ptree::List(TranslateArguments(env, placement), tname2,
 			   TranslateArguments(env, arglist));
 
-    if(header == nil)
+    if(header == 0)
 	return new PtreeNewExpr(op, exp2);
     else
 	return new PtreeNewExpr(header, Ptree::Cons(op, exp2));
@@ -721,14 +721,14 @@ Ptree* Class::TranslateUserStatement(Environment* env, Ptree*,
 				     Ptree* keyword, Ptree*)
 {
     ErrorMessage(env, "unsupported user statement: ", keyword, keyword);
-    return nil;
+    return 0;
 }
 
 Ptree* Class::TranslateStaticUserStatement(Environment* env,
 					   Ptree* keyword, Ptree*)
 {
     ErrorMessage(env, "unsupported user statement: ", keyword, keyword);
-    return nil;
+    return 0;
 }
 
 Ptree* Class::StripClassQualifier(Ptree* qualified_name)
@@ -744,7 +744,7 @@ Ptree* Class::StripClassQualifier(Ptree* qualified_name)
 
 Ptree* Class::TranslateExpression(Environment* env, Ptree* exp)
 {
-    if(exp == nil)
+    if(exp == 0)
 	return exp;
     else
 	return env->GetWalker()->Translate(exp);
@@ -753,7 +753,7 @@ Ptree* Class::TranslateExpression(Environment* env, Ptree* exp)
 Ptree* Class::TranslateExpression(Environment* env, Ptree* exp,
 				  TypeInfo& type)
 {
-    if(exp == nil){
+    if(exp == 0){
 	type.Unknown();
 	return exp;
     }
@@ -814,15 +814,15 @@ bool Class::Initialize()
 
 void Class::FinalizeAll(std::ostream& out)
 {
-    if(class_list == nil)
+    if(class_list == 0)
 	return;
 
     int n = class_list->Number();
     for(int i = 0; i < n; ++i){
 	Class* c = class_list->Ref(i);
-	if(c != nil){
+	if(c != 0){
 	    Ptree* p = c->FinalizeInstance();
-	    if(p != nil){
+	    if(p != 0){
 		p->Write(out);
 		out << '\n';
 	    }
@@ -844,12 +844,12 @@ Ptree* Class::FinalizeInstance()
 */
 Ptree* Class::Finalize()
 {
-    return nil;
+    return 0;
 }
 
 Ptree* Class::FinalizeClass()
 {
-    return nil;
+    return 0;
 }
 
 void Class::RegisterNewModifier(char* str)
@@ -1002,7 +1002,7 @@ void Class::AppendAfterToplevel(Environment* env, Ptree* p)
 
 bool Class::InsertDeclaration(Environment* env, Ptree* decl)
 {
-    return InsertDeclaration(env, decl, nil, nil);
+    return InsertDeclaration(env, decl, 0, 0);
 }
 
 bool Class::InsertDeclaration(Environment* env, Ptree* decl,
@@ -1027,7 +1027,7 @@ void* Class::LookupClientData(Environment* env, Ptree* key)
     else{
 	MopWarningMessage("Class::LookupClientData()",
 			  "cannot lookup");
-	return nil;
+	return 0;
     }
 }
 
@@ -1102,11 +1102,11 @@ void TemplateClass::InitializeInstance(Ptree* def, Ptree* margs)
 Ptree* TemplateClass::GetClassInTemplate(Ptree* def)
 {
     Ptree* decl = def->Ptree::Nth(4);
-    if(decl == nil)
+    if(decl == 0)
 	return def;
 
     Ptree* cdef = Walker::GetClassTemplateSpec(decl);
-    if(cdef == nil)
+    if(cdef == 0)
 	return def;
     else
 	return cdef;
@@ -1179,7 +1179,7 @@ Class*& ClassArray::Ref(uint i)
 // class opcxx_ListOfMetaclass	--- not documented class
 //
 
-opcxx_ListOfMetaclass* opcxx_ListOfMetaclass::head = nil;
+opcxx_ListOfMetaclass* opcxx_ListOfMetaclass::head = 0;
 
 static Class* CreateClass(Ptree* def, Ptree* marg)
 {
@@ -1191,7 +1191,7 @@ static Class* CreateClass(Ptree* def, Ptree* marg)
 opcxx_ListOfMetaclass* opcxx_init_Class()
 {
     return new opcxx_ListOfMetaclass("Class", CreateClass, Class::Initialize,
-				     nil);
+				     0);
 }
 
 static Class* CreateTemplateClass(Ptree* def, Ptree* marg)
@@ -1204,7 +1204,7 @@ static Class* CreateTemplateClass(Ptree* def, Ptree* marg)
 opcxx_ListOfMetaclass* opcxx_init_TemplateClass()
 {
     return new opcxx_ListOfMetaclass("TemplateClass", CreateTemplateClass,
-				     TemplateClass::Initialize, nil);
+				     TemplateClass::Initialize, 0);
 }
 
 opcxx_ListOfMetaclass::opcxx_ListOfMetaclass(char* n,
@@ -1215,7 +1215,7 @@ opcxx_ListOfMetaclass::opcxx_ListOfMetaclass(char* n,
     proc = c;
     name = n;
     if(AlreadyRecorded(n))
-	next = nil;
+	next = 0;
     else{
 	next = head;
 	head = this;
@@ -1228,9 +1228,9 @@ opcxx_ListOfMetaclass::opcxx_ListOfMetaclass(char* n,
 
 Class* opcxx_ListOfMetaclass::New(Ptree* name, Ptree* def, Ptree* marg)
 {
-    if(name != nil){
+    if(name != 0){
 	opcxx_ListOfMetaclass* p = head;
-	while(p != nil){
+	while(p != 0){
 	    if(name->Eq(p->name))
 		return (*p->proc)(def, marg);
 	    else
@@ -1238,14 +1238,14 @@ Class* opcxx_ListOfMetaclass::New(Ptree* name, Ptree* def, Ptree* marg)
 	}
     }
 
-    return nil;		// the metaclass is not loaded.
+    return 0;		// the metaclass is not loaded.
 }
 
 Class* opcxx_ListOfMetaclass::New(char* name, Ptree* def, Ptree* marg)
 {
-    if(name != nil){
+    if(name != 0){
 	opcxx_ListOfMetaclass* p = head;
-	while(p != nil){
+	while(p != 0){
 	    if(strcmp(name, p->name) == 0)
 		return (*p->proc)(def, marg);
 	    else
@@ -1253,17 +1253,17 @@ Class* opcxx_ListOfMetaclass::New(char* name, Ptree* def, Ptree* marg)
 	}
     }
 
-    return nil;		// the metaclass is not loaded.
+    return 0;		// the metaclass is not loaded.
 }
 
 // FinalizeAll() calls all FinalizeClass()s.
 
 void opcxx_ListOfMetaclass::FinalizeAll(std::ostream& out)
 {
-    for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
-	if(p->finalizer != nil){
+    for(opcxx_ListOfMetaclass* p = head; p != 0; p = p->next)
+	if(p->finalizer != 0){
 	    Ptree* code = (*p->finalizer)();
-	    if(code != nil){
+	    if(code != 0){
 		code->Write(out);
 		out << '\n';
 	    }
@@ -1272,7 +1272,7 @@ void opcxx_ListOfMetaclass::FinalizeAll(std::ostream& out)
 
 bool opcxx_ListOfMetaclass::AlreadyRecorded(char* name)
 {
-    for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
+    for(opcxx_ListOfMetaclass* p = head; p != 0; p = p->next)
 	if(strcmp(name, p->name) == 0)
 	   return true;
 
@@ -1281,7 +1281,7 @@ bool opcxx_ListOfMetaclass::AlreadyRecorded(char* name)
 
 bool opcxx_ListOfMetaclass::AlreadyRecorded(Ptree* name)
 {
-    for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
+    for(opcxx_ListOfMetaclass* p = head; p != 0; p = p->next)
 	if(name->Eq(p->name))
 	   return true;
 
@@ -1290,6 +1290,6 @@ bool opcxx_ListOfMetaclass::AlreadyRecorded(Ptree* name)
 
 void opcxx_ListOfMetaclass::PrintAllMetaclasses()
 {
-    for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
+    for(opcxx_ListOfMetaclass* p = head; p != 0; p = p->next)
 	std::cout << p->name << '\n';
 }

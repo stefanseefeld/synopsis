@@ -87,7 +87,7 @@ public:
     void get_all_sourcefiles(AST::SourceFile::vector&);
 
     //. Returns a pointer to the Filter instance. Note that Filter is *not* a
-    //. regular singleton: instance() will return NULL if the Filter doesn't
+    //. regular singleton: instance() will return 0 if the Filter doesn't
     //. exist, and the constructor/destructor control this. The reason for
     //. this method is so the C function synopsis_include_hook can use the
     //. Filter object without having a reference to it.

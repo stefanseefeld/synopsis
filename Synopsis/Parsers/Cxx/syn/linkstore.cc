@@ -60,7 +60,7 @@ void makedirs(const char* path)
     strcpy(buf, path);
     struct stat st;
     int error;
-    char* ptr = buf, *sep = NULL;
+    char* ptr = buf, *sep = 0;
     // Skip first / if any
     if (*ptr == '/')
         ptr++;
@@ -115,7 +115,7 @@ struct LinkStore::Private
     struct Streams {
         std::ofstream* syntax;
         std::ofstream* xref;
-        Streams() : syntax(NULL), xref(NULL) {}
+        Streams() : syntax(NULL), xref(0) {}
         Streams(const Streams& o) : syntax(o.syntax), xref(o.xref) {}
         Streams& operator =(const Streams& o)
         {
@@ -186,7 +186,7 @@ void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const
 
     // Get info for storing an xref record
     int line = m->walker->line_of_ptree(node);
-    if (decl != NULL)
+    if (decl != 0)
         store_xref_record(file, decl, file->filename(), line, context);
 
     // Get info for storing a syntax record

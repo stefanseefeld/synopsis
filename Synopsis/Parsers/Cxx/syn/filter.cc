@@ -65,7 +65,7 @@ struct FileFilter::Private
 namespace
 {
     //. The FileFilter instance
-    FileFilter* filter_instance = NULL;
+    FileFilter* filter_instance = 0;
 
 //. restore the relevant parts from the python ast
 //. The returned SourceFile object is a slice of the original python object
@@ -133,7 +133,7 @@ FileFilter::FileFilter(PyObject *ast,
 FileFilter::~FileFilter()
 {
     delete m;
-    filter_instance = NULL;
+    filter_instance = 0;
 }
 
 // Return instance pointer

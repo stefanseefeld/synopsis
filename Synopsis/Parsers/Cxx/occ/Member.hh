@@ -86,7 +86,7 @@ protected:
     // with the implementation but it is not inlined.  And if so,
     // the following variables are effective.
 
-    bool IsFunctionImplementation() { return bool(implementation != nil); }
+    bool IsFunctionImplementation() { return bool(implementation != 0);}
     Ptree *implementation;
     Ptree* original_decl;
 

@@ -20,11 +20,11 @@
 
 class ClassWalker : public Walker {
 public:
-    ClassWalker(Parser* p) : Walker(p) { client_data = nil; }
+    ClassWalker(Parser* p) : Walker(p) { client_data = 0;}
     ClassWalker(Parser* p, Environment* e)
-	: Walker(p, e) { client_data = nil; }
-    ClassWalker(Environment* e) : Walker(e) { client_data = nil; }
-    ClassWalker(Walker* w) : Walker(w) { client_data = nil; }
+	: Walker(p, e) { client_data = 0;}
+    ClassWalker(Environment* e) : Walker(e) { client_data = 0;}
+    ClassWalker(Walker* w) : Walker(w) { client_data = 0;}
 
     bool IsClassWalker();
     void InsertBeforeStatement(Ptree*);

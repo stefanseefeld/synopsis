@@ -82,7 +82,7 @@ public:
     bool NthTemplateArgument(int, TypeInfo&);
 
     Ptree* FullTypeName();
-    Ptree* MakePtree(Ptree* = nil);
+    Ptree* MakePtree(Ptree* = 0);
 
 private:
     static Ptree* GetQualifiedName(Environment*, Ptree*);

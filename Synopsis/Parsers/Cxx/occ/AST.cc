@@ -212,20 +212,20 @@ void NonLeaf::Print(std::ostream& s, int indent, int depth)
 
     Ptree* rest = this;
     s << '[';
-    while(rest != nil){
+    while(rest != 0){
 	if(rest->IsLeaf()){
 	    s << "@ ";
 	    rest->Print(s, indent, depth + 1);
-	    rest = nil;
+	    rest = 0;
 	}
 	else{
 	    Ptree* head = rest->data.nonleaf.child;
-	    if(head == nil)
+	    if(head == 0)
 		s << "nil";
 	    else
 		head->Print(s, indent, depth + 1);
 	    rest = rest->data.nonleaf.next;
-	    if(rest != nil)
+	    if(rest != 0)
 		s << ' ';
 	}
     }
@@ -249,11 +249,11 @@ int NonLeaf::Write(std::ostream& out, int indent)
     Ptree* p = this;
     for(;;){
 	Ptree* head = p->Car();
-	if(head != nil)
+	if(head != 0)
 	    n += head->Write(out, indent);
 
 	p = p->Cdr();
-	if(p == nil)
+	if(p == 0)
 	    break;
 	else if(p->IsLeaf()){
 	    MopErrorMessage("NonLeaf::Write()", "not list");
@@ -269,13 +269,13 @@ int NonLeaf::Write(std::ostream& out, int indent)
 void NonLeaf::PrintWithEncodeds(std::ostream& s, int indent, int depth)
 {
     char* encode = GetEncodedType();
-    if(encode != nil){
+    if(encode != 0){
 	s << '#';
 	Encoding::Print(s, encode);
     }
 
     encode = GetEncodedName();
-    if(encode != nil){
+    if(encode != 0){
 	s << '@';
 	Encoding::Print(s, encode);
     }
@@ -288,11 +288,11 @@ void NonLeaf::WritePS(StringBuffer &out)
     Ptree* p = this;
     for(;;){
 	Ptree* head = p->Car();
-	if(head != nil)
+	if(head != 0)
 	    head->WritePS(out);
 
 	p = p->Cdr();
-	if(p == nil)
+	if(p == 0)
 	    break;
 	else if(p->IsLeaf()){
 	    MopErrorMessage("NonLeaf::WritePS()", "not list");
@@ -314,12 +314,12 @@ void PtreeBrace::Print(std::ostream& s, int indent, int depth)
     int indent2 = indent + 1;
     s << "[{";
     Ptree* body = Ptree::Second(this);
-    if(body == nil){
+    if(body == 0){
 	PrintIndent(s, indent2);
 	s << "nil";
     }
     else
-	while(body != nil){
+	while(body != 0){
 	    PrintIndent(s, indent2);
 	    if(body->IsLeaf()){
 		s << "@ ";
@@ -327,7 +327,7 @@ void PtreeBrace::Print(std::ostream& s, int indent, int depth)
 	    }
 	    else{
 		Ptree* head = body->Car();
-		if(head == nil)
+		if(head == 0)
 		    s << "nil";
 		else
 		    head->Print(s, indent + 1, depth + 1);
@@ -346,7 +346,7 @@ int PtreeBrace::Write(std::ostream& out, int indent)
 
     out << '{';
     Ptree* p = this->Cadr();
-    while(p != nil){
+    while(p != 0){
 	if(p->IsLeaf()){
 	    MopErrorMessage("PtreeBrace::Write()", "non list");
 	    break;
@@ -356,7 +356,7 @@ int PtreeBrace::Write(std::ostream& out, int indent)
 	    ++n;
 	    Ptree* q = p->Car();
 	    p = p->Cdr();
-	    if(q != nil)
+	    if(q != 0)
 		n += q->Write(out, indent + 1);
 	}
     }
@@ -383,7 +383,7 @@ Ptree* PtreeBlock::Translate(Walker* w)
 
 Ptree* PtreeClassBody::Translate(Walker* w)
 {
-    return w->TranslateClassBody(this, nil, nil);
+    return w->TranslateClassBody(this, 0, 0);
 }
 
 // class PtreeTypedef
@@ -515,16 +515,16 @@ PtreeDeclarator::PtreeDeclarator(Ptree* list, Encoding& t, Encoding& n,
     type = t.Get();
     name = n.Get();
     declared_name = dname;
-    comments = nil;
+    comments = 0;
 }
 
 PtreeDeclarator::PtreeDeclarator(Encoding& t, Encoding& n, Ptree* dname)
-: NonLeaf(nil, nil)
+: NonLeaf(0, 0)
 {
     type = t.Get();
     name = n.Get();
     declared_name = dname;
-    comments = nil;
+    comments = 0;
 }
 
 PtreeDeclarator::PtreeDeclarator(Ptree* p, Ptree* q,
@@ -534,25 +534,25 @@ PtreeDeclarator::PtreeDeclarator(Ptree* p, Ptree* q,
     type = t.Get();
     name = n.Get();
     declared_name = dname;
-    comments = nil;
+    comments = 0;
 }
 
 PtreeDeclarator::PtreeDeclarator(Ptree* list, Encoding& t)
 : NonLeaf(list->Car(), list->Cdr())
 {
     type = t.Get();
-    name = nil;
-    declared_name = nil;
-    comments = nil;
+    name = 0;
+    declared_name = 0;
+    comments = 0;
 }
 
 PtreeDeclarator::PtreeDeclarator(Encoding& t)
-: NonLeaf(nil, nil)
+: NonLeaf(0, 0)
 {
     type = t.Get();
-    name = nil;
-    declared_name = nil;
-    comments = nil;
+    name = 0;
+    declared_name = 0;
+    comments = 0;
 }
 
 PtreeDeclarator::PtreeDeclarator(PtreeDeclarator* decl, Ptree* p, Ptree* q)
@@ -561,7 +561,7 @@ PtreeDeclarator::PtreeDeclarator(PtreeDeclarator* decl, Ptree* p, Ptree* q)
     type = decl->type;
     name = decl->name;
     declared_name = decl->declared_name;
-    comments = nil;
+    comments = 0;
 }
 
 int PtreeDeclarator::What()
@@ -671,7 +671,7 @@ void PtreeFstyleCastExpr::Typeof(Walker* w, TypeInfo& t)
 PtreeClassSpec::PtreeClassSpec(Ptree* p, Ptree* q, Ptree* c)
 : NonLeaf(p, q)
 {
-    encoded_name = nil;
+    encoded_name = 0;
     comments = c;
 }
 
@@ -705,9 +705,9 @@ Ptree* PtreeClassSpec::GetComments()
 // class PtreeEnumSpec
 
 PtreeEnumSpec::PtreeEnumSpec(Ptree* head)
-: NonLeaf(head, nil)
+: NonLeaf(head, 0)
 {
-    encoded_name = nil;
+    encoded_name = 0;
 }
 
 int PtreeEnumSpec::What()

@@ -21,59 +21,59 @@
 TypeInfo::TypeInfo()
 {
     refcount = 0;
-    encode = nil;
-    metaobject = nil;
-    env = nil;
+    encode = 0;
+    metaobject = 0;
+    env = 0;
 }
 
 void TypeInfo::Unknown()
 {
     refcount = 0;
-    encode = nil;
-    metaobject = nil;
-    env = nil;
+    encode = 0;
+    metaobject = 0;
+    env = 0;
 }
 
 void TypeInfo::Set(char* type, Environment* e)
 {
     refcount = 0;
     encode = type;
-    metaobject = nil;
+    metaobject = 0;
     env = e;
 }
 
 void TypeInfo::Set(Class* m)
 {
     refcount = 0;
-    encode = nil;
+    encode = 0;
     metaobject = m;
-    env = nil;
+    env = 0;
 }
 
 void TypeInfo::SetVoid()
 {
     refcount = 0;
     encode = "v";
-    metaobject = nil;
-    env = nil;
+    metaobject = 0;
+    env = 0;
 }
 
 void TypeInfo::SetInt()
 {
     refcount = 0;
     encode = "i";
-    metaobject = nil;
-    env = nil;
+    metaobject = 0;
+    env = 0;
 }
 
 void TypeInfo::SetMember(Ptree* member)
 {
     Class* c = ClassMetaobject();
-    if(c == nil)
+    if(c == 0)
 	Unknown();
     else{
 	Environment* e = c->GetEnvironment();
-	if(e == nil)
+	if(e == 0)
 	    Unknown();
 	else
 	    e->Lookup(member, *this);
@@ -86,12 +86,12 @@ TypeInfoId TypeInfo::WhatIs()
 	return PointerType;
 
     Normalize();
-    if(metaobject != nil)
+    if(metaobject != 0)
 	return ClassType;
 
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    if(ptr == nil)
+    if(ptr == 0)
 	return UndefType;
 
     switch(*ptr){
@@ -141,21 +141,21 @@ bool TypeInfo::IsNoReturnType()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == '?');
+    return(ptr != 0 && *ptr == '?');
 }
 
 bool TypeInfo::IsConst()
 {
     Normalize();
     char* ptr = encode;
-    return(ptr != nil && *ptr == 'C');
+    return(ptr != 0 && *ptr == 'C');
 }
 
 bool TypeInfo::IsVolatile()
 {
     Normalize();
     char* ptr = encode;
-    if(ptr == nil)
+    if(ptr == 0)
 	return false;
     else if(*ptr == 'V')
 	return true;
@@ -170,7 +170,7 @@ uint TypeInfo::IsBuiltInType()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    if(ptr == nil)
+    if(ptr == 0)
 	return 0;
 
     uint result = 0;
@@ -215,7 +215,7 @@ bool TypeInfo::IsFunction()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == 'F');
+    return(ptr != 0 && *ptr == 'F');
 }
 
 bool TypeInfo::IsEllipsis()
@@ -223,7 +223,7 @@ bool TypeInfo::IsEllipsis()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == 'e');
+    return(ptr != 0 && *ptr == 'e');
 }
 
 bool TypeInfo::IsPointerType()
@@ -234,7 +234,7 @@ bool TypeInfo::IsPointerType()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    if(ptr != nil){
+    if(ptr != 0){
 	char c = *ptr;
 	return c == 'P' || c == 'A' || c == 'M';
     }
@@ -247,7 +247,7 @@ bool TypeInfo::IsReferenceType()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == 'R');
+    return(ptr != 0 && *ptr == 'R');
 }
 
 bool TypeInfo::IsArray()
@@ -255,7 +255,7 @@ bool TypeInfo::IsArray()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == 'A');
+    return(ptr != 0 && *ptr == 'A');
 }
 
 bool TypeInfo::IsPointerToMember()
@@ -263,7 +263,7 @@ bool TypeInfo::IsPointerToMember()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == 'M');
+    return(ptr != 0 && *ptr == 'M');
 }
 
 bool TypeInfo::IsTemplateClass()
@@ -271,7 +271,7 @@ bool TypeInfo::IsTemplateClass()
     Normalize();
     Environment* e = env;
     char* ptr = SkipCv(encode, e);
-    return(ptr != nil && *ptr == 'T');
+    return(ptr != 0 && *ptr == 'T');
 }
 
 Class* TypeInfo::ClassMetaobject()
@@ -284,12 +284,12 @@ Class* TypeInfo::ClassMetaobject()
 bool TypeInfo::IsClass(Class*& c)
 {
     Normalize();
-    if(metaobject != nil){
+    if(metaobject != 0){
 	c = metaobject;
 	return true;
     }
     else{
-	c = nil;
+	c = 0;
 	Environment* e = env;
 	char* encode2 = SkipCv(encode, e);
 	if(encode == encode2)
@@ -309,18 +309,18 @@ bool TypeInfo::IsEnum()
 
 bool TypeInfo::IsEnum(Ptree*& spec)
 {
-    spec = nil;
+    spec = 0;
     Normalize();
-    if(metaobject != nil)
+    if(metaobject != 0)
 	return false;
     else{
 	Bind* bind;
 	int len;
 	Environment* e = env;
 	char* name = Encoding::GetBaseName(encode, len, e);
-	if(name != nil && e != nil)
+	if(name != 0 && e != 0)
 	    if(e->LookupType(name, len, bind))
-		if(bind != nil && bind->What() == Bind::isEnumName){
+		if(bind != 0 && bind->What() == Bind::isEnumName){
 		    spec = ((BindEnumName*)bind)->GetSpecification();
 		    return true;
 		}
@@ -357,7 +357,7 @@ bool TypeInfo::NthArgument(int n, TypeInfo& t)
     Environment* e = env;
     Normalize();
     char* ptr = SkipCv(encode, e);
-    if(ptr == nil || *ptr != 'F'){
+    if(ptr == 0 || *ptr != 'F'){
 	t.Unknown();
 	return false;
     }
@@ -370,7 +370,7 @@ bool TypeInfo::NthArgument(int n, TypeInfo& t)
 
     while(n-- > 0){
 	ptr = SkipType(ptr, e);
-	if(ptr == nil || *ptr == '_'){
+	if(ptr == 0 || *ptr == '_'){
 	    t.Unknown();
 	    return false;
 	}
@@ -385,7 +385,7 @@ int TypeInfo::NumOfArguments()
     Environment* e = env;
     Normalize();
     char* ptr = SkipCv(encode, e);
-    if(ptr == nil || *ptr != 'F')
+    if(ptr == 0 || *ptr != 'F')
 	return -1;	// not a function
 
     ++ptr;
@@ -396,7 +396,7 @@ int TypeInfo::NumOfArguments()
     for(;;){
 	++n;
 	ptr = SkipType(ptr, e);
-	if(ptr == nil || *ptr == '_')
+	if(ptr == 0 || *ptr == '_')
 	    return n;
     }
 }
@@ -406,7 +406,7 @@ bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
     Environment* e = env;
     Normalize();
     char* ptr = SkipCv(encode, e);
-    if(ptr == nil || *ptr != 'T'){
+    if(ptr == 0 || *ptr != 'T'){
 	t.Unknown();
 	return false;
     }
@@ -416,7 +416,7 @@ bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
     char* end = ptr + len;
     while(n-- > 0){
 	ptr = SkipType(ptr, e);
-	if(ptr == nil || ptr >= end) {
+	if(ptr == 0 || ptr >= end) {
 	    t.Unknown();
 	    return false;
 	}
@@ -431,10 +431,10 @@ Ptree* TypeInfo::FullTypeName()
     Ptree *qname, *head;
 
     Normalize();
-    if(metaobject != nil){
+    if(metaobject != 0){
 	qname = metaobject->Name();
 	head = GetQualifiedName2(metaobject);
-	if(head == nil)
+	if(head == 0)
 	    return qname;
 	else
 	    return Ptree::Snoc(head, qname);
@@ -442,17 +442,17 @@ Ptree* TypeInfo::FullTypeName()
 
     Environment* e = env;
     unsigned char* name = (unsigned char*)SkipCv(encode, e);
-    if(name == nil)
-	return nil;
+    if(name == 0)
+	return 0;
 
     if(IsBuiltInType())
-	return Encoding::MakePtree(name, nil)->First();
+	return Encoding::MakePtree(name, 0)->First();
 
     if(*name == 'T'){
 	++name;
 	qname = Encoding::MakeLeaf(name);
 	head = GetQualifiedName(e, qname);
-	if(head == nil)
+	if(head == 0)
 	    return qname;
 	else
 	    return Ptree::Snoc(head, qname);
@@ -460,7 +460,7 @@ Ptree* TypeInfo::FullTypeName()
     else if(*name == 'Q'){
 	qname = Encoding::MakeQname(++name);
 	head = GetQualifiedName(e, qname->Car());
-	if(head == nil)
+	if(head == 0)
 	    return qname;
 	else
 	    return Ptree::Nconc(head, qname);
@@ -468,34 +468,34 @@ Ptree* TypeInfo::FullTypeName()
     else if(Encoding::IsSimpleName(name)){
 	qname = Encoding::MakeLeaf(name);
 	head = GetQualifiedName(e, qname);
-	if(head == nil)
+	if(head == 0)
 	    return qname;
 	else
 	    return Ptree::Snoc(head, qname);
     }
     else
-	return nil;
+	return 0;
 }
 
 Ptree* TypeInfo::GetQualifiedName(Environment* e, Ptree* tname)
 {
     Class* c = e->LookupClassMetaobject(tname);
-    if(c == nil)
-	return nil;
+    if(c == 0)
+	return 0;
     else
 	return GetQualifiedName2(c);
 }
 
 Ptree* TypeInfo::GetQualifiedName2(Class* c)
 {
-    Ptree* qname = nil;
+    Ptree* qname = 0;
     Environment* e = c->GetEnvironment();
-    if(e != nil)
+    if(e != 0)
 	e = e->GetOuterEnvironment();
 
-    for(; e != nil; e = e->GetOuterEnvironment()){
+    for(; e != 0; e = e->GetOuterEnvironment()){
 	c = e->IsClassEnvironment();
-	if(c != nil)
+	if(c != 0)
 	    qname = Ptree::Cons(c->Name(),
 				Ptree::Cons(Encoding::scope, qname));
     }
@@ -506,21 +506,21 @@ Ptree* TypeInfo::GetQualifiedName2(Class* c)
 Ptree* TypeInfo::MakePtree(Ptree* name)
 {
     Normalize();
-    if(metaobject != nil){
+    if(metaobject != 0){
 	Ptree* decl;
-	if(name == nil)
-	    decl = nil;
+	if(name == 0)
+	    decl = 0;
 	else
 	    decl = Ptree::List(name);
 
 	return Ptree::List(FullTypeName(), decl);
     }
-    else if(encode != nil){
+    else if(encode != 0){
 	unsigned char* ptr = (unsigned char*)encode;
 	return Encoding::MakePtree(ptr, name);
     }
     else
-	return nil;
+	return 0;
 }
 
 void TypeInfo::Normalize()
@@ -529,7 +529,7 @@ void TypeInfo::Normalize()
     char* ptr = encode;
     int r = refcount;
 
-    if(ptr == nil)
+    if(ptr == 0)
 	return;
     else if(r > 0)
 	return;
@@ -555,7 +555,7 @@ void TypeInfo::Normalize()
 	    else
 		p = SkipName(ptr + 1, e);
 
-	    if(p == nil)
+	    if(p == 0)
 		return;
 	    else{
 		ptr = p;
@@ -579,14 +579,14 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
     Class* c;
     Environment* orig_e = e;
     char* name = Encoding::GetBaseName(ptr, len, e);
-    if(name != nil && e != nil && e->LookupType(name, len, bind))
+    if(name != 0 && e != 0 && e->LookupType(name, len, bind))
 	switch(bind->What()){
 	case Bind::isTypedefName :
 	    ptr = bind->GetEncodedType();
 	    return true;
 	case Bind::isClassName :
 	    c = bind->ClassMetaobject();
-	    if(c == nil)
+	    if(c == 0)
 		Set(ptr, orig_e);
 	    else if (*name == 'T')
 		Set(ptr, c->GetEnvironment());
@@ -596,7 +596,7 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
 	    return false;
 	case Bind::isTemplateClass :
 	    c = bind->ClassMetaobject();
-	    if(c == nil)
+	    if(c == 0)
 		Set(ptr, orig_e);
 	    else
 		Set(ptr, c->GetEnvironment());
@@ -616,8 +616,8 @@ bool TypeInfo::ResolveTypedef(Environment*& e, char*& ptr, bool resolvable)
 
 char* TypeInfo::SkipCv(char* ptr, Environment*& e)
 {
-    if(ptr == nil)
-	return nil;
+    if(ptr == 0)
+	return 0;
 
     for(;;)
 	switch(*ptr){
@@ -634,7 +634,7 @@ finish:
 	Bind* bind;
 	int len;
 	char* name = Encoding::GetBaseName(ptr, len, e);
-	if(name != nil && e != nil && e->LookupType(name, len, bind))
+	if(name != 0 && e != 0 && e->LookupType(name, len, bind))
 	    if(bind->What() != Bind::isTypedefName)
 		return ptr;
 	    else
@@ -646,14 +646,14 @@ finish:
 
 char* TypeInfo::SkipName(char* encode, Environment* e)
 {
-    if(e == nil)
+    if(e == 0)
 	MopErrorMessage("TypeInfo::SkipName()", "nil environment");
 
     int len;
     Environment* e2 = e;
     char* ptr = Encoding::GetBaseName(encode, len, e2);
-    if(ptr == nil)
-	return nil;
+    if(ptr == 0)
+	return 0;
     else
 	return &ptr[len];
 }
@@ -665,7 +665,7 @@ char* TypeInfo::GetReturnType(char* encode, Environment* env)
 	case '_' :
 	    return encode + 1;
 	case '\0' :
-	    return nil;
+	    return 0;
 	default :
 	    encode = SkipType(encode, env);
 	    break;
@@ -674,11 +674,11 @@ char* TypeInfo::GetReturnType(char* encode, Environment* env)
 
 char* TypeInfo::SkipType(char* ptr, Environment* env)
 {
-    while(ptr != nil)
+    while(ptr != 0)
 	switch(*ptr){
 	case '\0' :
 	case '_' :
-	    return nil;
+	    return 0;
 	case 'S' :
 	case 'U' :
 	case 'C' :

@@ -101,7 +101,7 @@ public:
 
     //. Store a link for the given Ptree node. If a decl is given, store an
     //. xref too
-    void link(Ptree* node, Context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl = NULL);
+    void link(Ptree* node, Context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl = 0);
 
     //. Store a Definition link for the given Ptree node using the AST node
     void link(Ptree* node, const AST::Declaration* decl);

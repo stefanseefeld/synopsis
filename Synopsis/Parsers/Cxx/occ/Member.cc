@@ -25,18 +25,18 @@
 
 Member::Member()
 {
-    metaobject = nil;
-    declarator = nil;
+    metaobject = 0;
+    declarator = 0;
     nth = -1;
     removed = false;
-    new_name = nil;
-    new_args = nil;
-    new_init = nil;
-    new_body = nil;
+    new_name = 0;
+    new_args = 0;
+    new_init = 0;
+    new_body = 0;
     arg_name_filled = false;
 
-    implementation = nil;
-    original_decl = nil;
+    implementation = 0;
+    original_decl = 0;
 }
 
 Member::Member(const Member& m)
@@ -61,14 +61,14 @@ Member::Member(Class* c, Ptree* decl)
     declarator = decl;
     nth = -1;
     removed = false;
-    new_name = nil;
-    new_args = nil;
-    new_init = nil;
-    new_body = nil;
+    new_name = 0;
+    new_args = 0;
+    new_init = 0;
+    new_body = 0;
     arg_name_filled = false;
 
-    implementation = nil;
-    original_decl = nil;
+    implementation = 0;
+    original_decl = 0;
 }
 
 void Member::Set(Class* c, Ptree* decl, int n)
@@ -77,25 +77,25 @@ void Member::Set(Class* c, Ptree* decl, int n)
     declarator = decl;
     nth = n;
     removed = false;
-    new_name = nil;
-    new_args = nil;
-    new_init = nil;
-    new_body = nil;
+    new_name = 0;
+    new_args = 0;
+    new_init = 0;
+    new_body = 0;
     arg_name_filled = false;
 
-    implementation = nil;
-    original_decl = nil;
+    implementation = 0;
+    original_decl = 0;
 }
 
 void Member::Signature(TypeInfo& t) const
 {
-    if(declarator == nil){
+    if(declarator == 0){
 	MopErrorMessage("Member::Signature()", "not initialized object.");
 	return;
     }
 
     char* type = declarator->GetEncodedType();
-    if(type == nil)
+    if(type == 0)
 	t.Unknown();
     else
 	t.Set(type, metaobject->GetEnvironment());
@@ -110,13 +110,13 @@ Ptree* Member::Name()
 
 char* Member::Name(int& len)
 {
-    if(declarator == nil){
+    if(declarator == 0){
 	MopErrorMessage("Member::Name()", "not initialized object.");
-	return nil;
+	return 0;
     }
 
     char* name = declarator->GetEncodedName();
-    if(name != nil){
+    if(name != 0){
 	Environment* e = metaobject->GetEnvironment();
 	name = Encoding::GetBaseName(name, len, e);
     }
@@ -126,15 +126,15 @@ char* Member::Name(int& len)
 
 Ptree* Member::Comments()
 {
-    if(declarator == nil){
+    if(declarator == 0){
 	MopErrorMessage("Member::Comments()", "not initialized object.");
-	return nil;
+	return 0;
     }
 
     if (declarator->IsA(ntDeclarator))
 	return ((PtreeDeclarator*)declarator)->GetComments();
     else
-	return nil;
+	return 0;
 }
 
 int Member::Nth()
@@ -150,24 +150,24 @@ Class* Member::Supplier()
     if(Find())
 	return metaobject->GetMemberList()->Ref(nth)->supplying;
     else
-	return nil;
+	return 0;
 }
 
 bool Member::IsConstructor()
 {
-    if(declarator == nil){
+    if(declarator == 0){
 	MopErrorMessage("Member::IsConstructor()", "not initialized object.");
 	return false;
     }
 
     char* name = declarator->GetEncodedName();
-    if(name != nil){
+    if(name != 0){
 	int len;
 	Environment* e = metaobject->GetEnvironment();
 	name = Encoding::GetBaseName(name, len, e);
-	if(name != nil) {
+	if(name != 0) {
 	    Class* sup = Supplier();
-	    if (sup != nil)
+	    if (sup != 0)
 		return sup->Name()->Eq(name, len);
 	}
     }
@@ -177,17 +177,17 @@ bool Member::IsConstructor()
 
 bool Member::IsDestructor()
 {
-    if(declarator == nil){
+    if(declarator == 0){
 	MopErrorMessage("Member::IsDestructor()", "not initialized object.");
 	return false;
     }
 
     char* name = declarator->GetEncodedName();
-    if(name != nil){
+    if(name != 0){
 	int len;
 	Environment* e = metaobject->GetEnvironment();
 	name = Encoding::GetBaseName(name, len, e);
-	if(name != nil)
+	if(name != 0)
 	    return bool(*name == '~');
     }
 
@@ -258,7 +258,7 @@ bool Member::IsInline()
 bool Member::IsInlineFuncImpl()
 {
     Ptree* header = implementation->Car();
-    while(header != nil){
+    while(header != 0){
 	Ptree* h = header->Car();
 	if(h->IsA(INLINE))
 	    return true;
@@ -290,7 +290,7 @@ Ptree* Member::GetUserAccessSpecifier()
     if(Find())
 	return metaobject->GetMemberList()->Ref(nth)->user_access;
     else
-	return nil;
+	return 0;
 }
 
 bool Member::GetUserArgumentModifiers(PtreeArray& mods)
@@ -304,12 +304,12 @@ bool Member::GetUserArgumentModifiers(PtreeArray& mods)
     if(!Walker::GetArgDeclList((PtreeDeclarator*)declarator, args))
 	return false;
 
-    while(args != nil){
+    while(args != 0){
 	Ptree* a = args->Car();
 	if(!a->IsLeaf() && a->Car()->IsA(ntUserdefKeyword))
 	    mods.Append(a->Car());
 	else
-	    mods.Append(nil);
+	    mods.Append(0);
 	
 	args = Ptree::ListTail(args, 2);	// skip ,
     }
@@ -322,14 +322,14 @@ Ptree* Member::GetUserMemberModifier()
     if(Find())
 	return metaobject->GetMemberList()->Ref(nth)->user_mod;
     else
-	return nil;
+	return 0;
 }
 
 bool Member::Find()
 {
     if(nth >= 0)
 	return true;
-    else if(metaobject == nil || declarator == nil)
+    else if(metaobject == 0 || declarator == 0)
 	return false;
 
     MemberList* mlist = metaobject->GetMemberList();
@@ -337,7 +337,7 @@ bool Member::Find()
     int len;
     char* name = Name(len);
     char* sig = declarator->GetEncodedType();
-    if(mlist == nil || name == nil || sig == nil)
+    if(mlist == 0 || name == 0 || sig == 0)
 	return false;
 
     nth = mlist->Lookup(name, len, sig);
@@ -366,13 +366,13 @@ void Member::SetName(Ptree* name)
 
 void Member::SetName(Ptree* name, Ptree* decl)
 {
-    if(decl == nil){
+    if(decl == 0){
 	MopErrorMessage("Member::SetName()", "not initialized object.");
 	return;
     }
 
     char* encoded = decl->GetEncodedName();
-    if(encoded != nil && *encoded == 'Q'){
+    if(encoded != 0 && *encoded == 'Q'){
 	Ptree* qname = ((PtreeDeclarator*)decl)->Name();
 	Ptree* old_name = qname->Last()->First();
 	new_name = Ptree::ShallowSubst(name, old_name, qname);
@@ -395,7 +395,7 @@ Ptree* Member::ArgumentList(Ptree* decl)
     if(Walker::GetArgDeclList((PtreeDeclarator*)decl, args))
 	return args;
     else
-	return nil;
+	return 0;
 }
 
 void Member::SetArgumentList(Ptree* args)
@@ -419,7 +419,7 @@ Ptree* Member::MemberInitializers(Ptree* decl)
 	    return init;
     }
 
-    return nil;
+    return 0;
 }
 
 void Member::SetMemberInitializers(Ptree* init)
@@ -438,7 +438,7 @@ Ptree* Member::FunctionBody()
 	    return def->Nth(3);
     }
 
-    return nil;
+    return 0;
 }
 
 void Member::SetFunctionBody(Ptree* body)
@@ -455,11 +455,11 @@ Ptree* Member::Arguments(Ptree* args, int i)
 {
     Ptree* rest;
 
-    if(args == nil)
+    if(args == 0)
 	return args;
 
-    if(args->Cdr() == nil)
-	rest = nil;
+    if(args->Cdr() == 0)
+	rest = 0;
     else{
 	rest = Arguments(args->Cddr(), i + 1);	// skip ","
 	rest = Ptree::Cons(args->Cadr(), rest);
@@ -478,7 +478,7 @@ Ptree* Member::Arguments(Ptree* args, int i)
 	p = ((PtreeDeclarator*)p)->Name();
     }
 
-    if(p == nil){
+    if(p == 0){
 	arg_name_filled = true;
 	p = Ptree::Make(Walker::argument_name, i);
     }
@@ -511,10 +511,10 @@ MemberFunction::MemberFunction(Class* c, Ptree* impl, Ptree* decl)
 
 MemberList::MemberList()
 {
-    this_class = nil;
+    this_class = 0;
     num = 0;
     size = -1;
-    array = nil;
+    array = 0;
 }
 
 MemberList::Mem* MemberList::Ref(int i)
@@ -542,9 +542,9 @@ void MemberList::Make(Class* metaobject)
 
     Environment* env = metaobject->GetEnvironment();
     Ptree* bases = metaobject->BaseClasses();
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
-	if(bases != nil){
+	if(bases != 0){
 	    AppendBaseClass(env, bases->Car());
 	    bases = bases->Cdr();
 	}
@@ -554,9 +554,9 @@ void MemberList::Make(Class* metaobject)
 void MemberList::AppendThisClass(Class* metaobject)
 {
     int access = PRIVATE;
-    Ptree* user_access = nil;
+    Ptree* user_access = 0;
     Ptree* members = metaobject->Members();
-    while(members != nil){
+    while(members != 0){
 	Ptree* def = members->Car();
 	if(def->IsA(ntDeclaration)){
 	    Ptree* decl;
@@ -564,13 +564,13 @@ void MemberList::AppendThisClass(Class* metaobject)
 	    do{
 		int i = nth++;
 		decl = Walker::NthDeclarator(def, i);
-		if(decl != nil)
+		if(decl != 0)
 		    Append(def, decl, access, user_access);
-	    } while(decl != nil);
+	    } while(decl != 0);
 	}
 	else if(def->IsA(ntAccessSpec)){
 	    access = def->Car()->What();
-	    user_access = nil;
+	    user_access = 0;
 	}
 	else if(def->IsA(ntUserAccessSpec))
 	    user_access = def;
@@ -613,7 +613,7 @@ void MemberList::Append(Ptree* declaration, Ptree* decl,
 void MemberList::AppendBaseClass(Environment* env, Ptree* base_class)
 {
     int access = PRIVATE;
-    while(base_class->Cdr() != nil){
+    while(base_class->Cdr() != 0){
 	Ptree* p = base_class->Car();
 	if(p->IsA(PUBLIC, PROTECTED, PRIVATE))
 	    access = p->What();
@@ -622,14 +622,14 @@ void MemberList::AppendBaseClass(Environment* env, Ptree* base_class)
     }	
 
     Class* metaobject = env->LookupClassMetaobject(base_class->Car());
-    if(metaobject == nil)
+    if(metaobject == 0)
 	return;
 
     MemberList* mlist = metaobject->GetMemberList();
     for(int i = 0; i < mlist->num; ++i){
 	Mem* m = &mlist->array[i];
 	Mem* m2 = Lookup(m->name, m->signature);
-	if(m2 != nil){				// overwrittten
+	if(m2 != 0){				// overwrittten
 	    if(!m2->is_virtual)
 		m2->is_virtual = m->is_virtual;
 	}
@@ -652,7 +652,7 @@ MemberList::Mem* MemberList::Lookup(char* name, char* signature)
 	    return m;
     }
 
-    return nil;
+    return 0;
 }
 
 int MemberList::Lookup(char* name, int len, char* signature)
@@ -672,7 +672,7 @@ int MemberList::Lookup(Environment* env, Ptree* member, int index)
     char* name;
     int len;
 
-    if(member == nil)
+    if(member == 0)
 	return -1;
     else if(member->IsLeaf()){
 	name = member->GetPosition();
@@ -693,7 +693,7 @@ int MemberList::Lookup(Environment* env, Ptree* member, int index)
 
 int MemberList::Lookup(Environment*, char* name, int index)
 {
-    if(name == nil)
+    if(name == 0)
 	return -1;
 
     for(int i = 0; i < num; ++i){
@@ -712,10 +712,10 @@ void MemberList::CheckHeader(Ptree* declaration, Mem* m)
     m->is_static = false;
     m->is_mutable = false;
     m->is_inline = false;
-    m->user_mod = nil;
+    m->user_mod = 0;
 
     Ptree* header = declaration->Car();
-    while(header != nil){
+    while(header != 0){
 	Ptree* h = header->Car();
 	if(h->IsA(VIRTUAL))
 	    m->is_virtual = true;
@@ -732,7 +732,7 @@ void MemberList::CheckHeader(Ptree* declaration, Mem* m)
     }
 
     Ptree* d = declaration->Third();
-    if(d != nil && d->IsA(ntDeclarator))
+    if(d != 0 && d->IsA(ntDeclarator))
 	m->is_inline = true;
 }
 
@@ -742,7 +742,7 @@ ChangedMemberList::ChangedMemberList()
 {
     num = 0;
     size = -1;
-    array = nil;
+    array = 0;
 }
 
 void ChangedMemberList::Append(Member* m, int access)
@@ -770,7 +770,7 @@ void ChangedMemberList::Copy(Member* src, Cmem* dest, int access)
 	    dest->access = access;
     }
     else{
-	dest->def = nil;
+	dest->def = 0;
 	if(access == Class::Undefined)
 	    dest->access = Class::Public;
 	else
@@ -786,13 +786,13 @@ ChangedMemberList::Cmem* ChangedMemberList::Lookup(Ptree* decl)
 	    return m;
     }
 
-    return nil;
+    return 0;
 }
 
 ChangedMemberList::Cmem* ChangedMemberList::Get(int i)
 {
     if(i >= num)
-	return nil;
+	return 0;
     else
 	return Ref(i);
 }

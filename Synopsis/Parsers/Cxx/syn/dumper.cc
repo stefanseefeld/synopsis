@@ -50,7 +50,7 @@
 //
 
 TypeFormatter::TypeFormatter()
-        : m_fptr_id(NULL)
+        : m_fptr_id(0)
 {
     m_scope_stack.push_back(ScopedName());
 }
@@ -95,7 +95,7 @@ std::string TypeFormatter::format(const Types::Type* type, const std::string** i
 {
     if (!type)
         return "(unknown)";
-    const std::string** save = NULL;
+    const std::string** save = 0;
     if (id)
     {
         save = m_fptr_id;
@@ -184,7 +184,7 @@ void TypeFormatter::visit_func_ptr(Types::FuncPtr* type)
     if (m_fptr_id)
     {
         str += **m_fptr_id;
-        *m_fptr_id = NULL;
+        *m_fptr_id = 0;
     }
     str += ")(";
     if (type->parameters().size())

@@ -34,8 +34,8 @@ public:
 
 class CommentedLeaf : public Leaf {
 public:
-    CommentedLeaf(Token& tk, Ptree* c = NULL) : Leaf(tk) { comments = c; }
-    CommentedLeaf(char* p, int l, Ptree* c = NULL) : Leaf(p, l) { comments = c; }
+    CommentedLeaf(Token& tk, Ptree* c = 0) : Leaf(tk) { comments = c; }
+    CommentedLeaf(char* p, int l, Ptree* c = 0) : Leaf(p, l) { comments = c; }
     Ptree* GetComments() { return comments; }
     void SetComments(Ptree* c) { comments = c; }
 
@@ -159,7 +159,7 @@ public:
 
 class PtreeTypedef : public NonLeaf {
 public:
-    PtreeTypedef(Ptree* p) : NonLeaf(p, nil) {}
+    PtreeTypedef(Ptree* p) : NonLeaf(p, 0) {}
     PtreeTypedef(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
     int What();
     Ptree* Translate(Walker*);
@@ -168,14 +168,14 @@ public:
 class PtreeTemplateDecl : public NonLeaf {
 public:
     PtreeTemplateDecl(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
-    PtreeTemplateDecl(Ptree* p) : NonLeaf(p, nil) {}
+    PtreeTemplateDecl(Ptree* p) : NonLeaf(p, 0) {}
     int What();
     Ptree* Translate(Walker*);
 };
 
 class PtreeTemplateInstantiation : public NonLeaf {
 public:
-    PtreeTemplateInstantiation(Ptree* p) : NonLeaf(p, nil) {}
+    PtreeTemplateInstantiation(Ptree* p) : NonLeaf(p, 0) {}
     int What();
     Ptree* Translate(Walker*);
 };
@@ -183,7 +183,7 @@ public:
 class PtreeExternTemplate : public NonLeaf {
 public:
     PtreeExternTemplate(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
-    PtreeExternTemplate(Ptree* p) : NonLeaf(p, nil) {}
+    PtreeExternTemplate(Ptree* p) : NonLeaf(p, 0) {}
     int What();
     Ptree* Translate(Walker*);
 };
@@ -204,7 +204,7 @@ public:
 
 class PtreeNamespaceSpec : public NonLeaf {
 public:
-    PtreeNamespaceSpec(Ptree* p, Ptree* q) : NonLeaf(p, q) { comments = nil; }
+    PtreeNamespaceSpec(Ptree* p, Ptree* q) : NonLeaf(p, q) { comments = 0;}
     int What();
     Ptree* Translate(Walker*);
 
@@ -224,14 +224,14 @@ public:
 
 class PtreeUsing : public NonLeaf {
 public:
-    PtreeUsing(Ptree* p) : NonLeaf(p, nil) {}
+    PtreeUsing(Ptree* p) : NonLeaf(p, 0) {}
     int What();
     Ptree* Translate(Walker*);
 };
 
 class PtreeDeclaration : public NonLeaf {
 public:
-    PtreeDeclaration(Ptree* p, Ptree* q) : NonLeaf(p, q) { comments = nil; }
+    PtreeDeclaration(Ptree* p, Ptree* q) : NonLeaf(p, q) { comments = 0;}
     int What();
     Ptree* Translate(Walker*);
 

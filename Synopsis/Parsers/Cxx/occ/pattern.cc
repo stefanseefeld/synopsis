@@ -73,7 +73,7 @@ bool Ptree::Match(Ptree* list, char* pattern, ...)
     resultsIndex = 0;
     pat = SkipSpaces(pat);
     pat = MatchPat(list, pat);
-    if(pat == nil)
+    if(pat == 0)
 	return false;
     else{
 	pat = SkipSpaces(pat);
@@ -104,9 +104,9 @@ static int CountArgs(char* pat)
 char* Ptree::MatchPat(Ptree* list, char* pat)
 {
     switch(*pat){
-    case '[' :		/* [] means nil */
-	if(list != nil && list->IsLeaf())
-	    return nil;
+    case '[' :		/* [] means 0 */
+	if(list != 0 && list->IsLeaf())
+	    return 0;
 	else
 	    return MatchList(list, pat + 1);
     case '%' :
@@ -118,16 +118,16 @@ char* Ptree::MatchPat(Ptree* list, char* pat)
 	    return(pat + 2);
 	case '_' :
 	case 'r' :	/* %_ and %r must be appear in a list */
-	    return nil;
+	    return 0;
 	default :
 	    break;
 	}
     }
 
-    if(list != nil && list->IsLeaf())
+    if(list != 0 && list->IsLeaf())
 	return MatchWord(list, pat);
     else
-	return nil;
+	return 0;
 }
 
 char* Ptree::MatchList(Ptree* list, char* pat)
@@ -136,24 +136,24 @@ char* Ptree::MatchList(Ptree* list, char* pat)
     pat = SkipSpaces(pat);
     while((c = *pat) != '\0'){
 	if(c == ']')
-	    if(list == nil)
+	    if(list == 0)
 		return(pat + 1);
 	    else
-		return nil;
+		return 0;
 	else if(c == '%' && (d = pat[1], (d == 'r' || d == '_'))){
 	    /* %r or %_ */
 	    if(d == 'r') 
 		*resultsArgs[resultsIndex++] = list;
 
-	    list = nil;
+	    list = 0;
 	    pat = pat + 2;
 	}
-	else if(list == nil)
-	    return nil;
+	else if(list == 0)
+	    return 0;
 	else{
 	    pat = MatchPat(list->Car(), pat);
-	    if(pat == nil)
-		return nil;
+	    if(pat == 0)
+		return 0;
 
 	    list = list->Cdr();
 	}
@@ -162,7 +162,7 @@ char* Ptree::MatchList(Ptree* list, char* pat)
     }
 
     MopErrorMessage("Ptree::Match()", "unmatched bracket");
-    return nil;
+    return 0;
 }
 
 char* Ptree::MatchWord(Ptree* list, char* pat)
@@ -181,7 +181,7 @@ char* Ptree::MatchWord(Ptree* list, char* pat)
 	    if(j == str_len)
 		return pat;
 	    else
-		return nil;
+		return 0;
 	case '%' :
 	    c = *++pat;
 	    switch(c){
@@ -189,19 +189,19 @@ char* Ptree::MatchWord(Ptree* list, char* pat)
 	    case ']' :
 	    case '%' :
 		if(j >= str_len || c != str[j++])
-		    return nil;
+		    return 0;
 
 		break;
 	    default :
 		if(j == str_len)
 		    return pat;
 		else
-		    return nil;
+		    return 0;
 	    }
 	    break;
 	default :
 	    if(j >= str_len || c != str[j++])
-		return nil;
+		return 0;
 	}
     }
 }
@@ -224,7 +224,7 @@ Ptree* Ptree::GenSym()
 
 #if !defined(_MSC_VER) && !defined(__WIN32__)
     struct timeval time;
-    gettimeofday(&time, NULL);
+    gettimeofday(&time, 0);
     uint rnum = (time.tv_sec * 10 + time.tv_usec / 100) & 0xffff;
 #else
     static uint time = 0;
@@ -256,7 +256,7 @@ Ptree* Ptree::Make(const char* pat, ...)
     Ptree* p;
     Ptree* q;
     int i = 0, j = 0;
-    Ptree* result = nil;
+    Ptree* result = 0;
 
     va_start(args, pat);
     while((c = pat[i++]) != '\0')
@@ -279,7 +279,7 @@ Ptree* Ptree::Make(const char* pat, ...)
 		buf[j++] = va_arg(args, int);
 	    else if(c == 'p'){
 		p = va_arg(args, Ptree*);
-		if(p == nil)
+		if(p == 0)
 		    /* ignore */;
 		else if(p->IsLeaf()){
 		    memmove(&buf[j], p->GetPosition(), p->GetLength());
@@ -304,7 +304,7 @@ Ptree* Ptree::Make(const char* pat, ...)
     va_end(args);
 
     if(j > 0)
-	if(result == nil)
+	if(result == 0)
 	    result = new DupLeaf(buf, j);
 	else
 	    result = Snoc(result, new DupLeaf(buf, j));
@@ -331,7 +331,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
     Ptree* p;
     Ptree* q;
     int i = 0, j = 0;
-    Ptree* result = nil;
+    Ptree* result = 0;
 
     va_start(args, pat);
 
@@ -357,7 +357,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 		buf[j++] = va_arg(args, int);
 	    else if(c == 'p'){
 		p = va_arg(args, Ptree*);
-		if(p == nil)
+		if(p == 0)
 		    /* ignore */;
 		else if(p->IsLeaf()){
 		    memmove(&buf[j], p->GetPosition(), p->GetLength());
@@ -367,7 +367,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
 		    if(j > 0)
 			q = new DupLeaf(buf, j);
 		    else
-			q = nil;
+			q = 0;
 
 		    j = 0;
 		    result = Nconc(result, List(q, p));
@@ -382,7 +382,7 @@ Ptree* Ptree::MakeStatement(const char* pat, ...)
     va_end(args);
 
     if(j > 0)
-	if(result == nil)
+	if(result == 0)
 	    result = new DupLeaf(buf, j);
 	else
 	    result = Snoc(result, new DupLeaf(buf, j));
@@ -438,14 +438,14 @@ Ptree* Ptree::qMake(char*)
 {
     MopErrorMessage("Ptree::qMake()",
 		    "the metaclass must be compiled by OpenC++.");
-    return nil;
+    return 0;
 }
 
 Ptree* Ptree::qMakeStatement(char*)
 {
     MopErrorMessage("Ptree::qMakeStatement()",
 		    "the metaclass must be compiled by OpenC++.");
-    return nil;
+    return 0;
 }
 
 // class PtreeHead	--- this is used to implement Ptree::qMake().
@@ -492,20 +492,20 @@ Ptree* PtreeHead::Append(Ptree* lst, Ptree* tail)
     Ptree* p;
     Ptree* q;
 
-    if(tail == nil)
+    if(tail == 0)
 	return lst;
 
     if(!tail->IsLeaf() && tail->Length() == 1){
 	tail = tail->Car();
-	if(tail == nil)
+	if(tail == 0)
 	    return lst;
     }
 
-    if(tail->IsLeaf() && lst != nil){
+    if(tail->IsLeaf() && lst != 0){
 	last = Ptree::Last(lst);
-	if(last != nil){
+	if(last != 0){
 	    p = last->Car();
-	    if(p != nil && p->IsLeaf()){
+	    if(p != 0 && p->IsLeaf()){
 		q = new DupLeaf(p->GetPosition(), p->GetLength(),
 				 tail->GetPosition(), tail->GetLength());
 		last->SetCar(q);
@@ -523,11 +523,11 @@ Ptree* PtreeHead::Append(Ptree* lst, char* str, int len)
     Ptree* p;
     Ptree* q;
 
-    if(lst != nil){
+    if(lst != 0){
 	last = Ptree::Last(lst);
-	if(last != nil){
+	if(last != 0){
 	    p = last->Car();
-	    if(p != nil && p->IsLeaf()){
+	    if(p != 0 && p->IsLeaf()){
 		q = new DupLeaf(p->GetPosition(), p->GetLength(),
 				 str, len);
 		last->SetCar(q);

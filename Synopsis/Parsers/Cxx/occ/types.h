@@ -35,10 +35,6 @@
 #ifndef _types_h
 #define _types_h
 
-#ifndef nil
-#define nil		0
-#endif
-
 // #define IRIX_CC	// If compiled under SGI Irix with CC (not g++)
 
 #if defined(_MSC_VER) && (_MSC_VER <= 1020)	// If MSVC version <= 4.2

@@ -24,7 +24,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
     Ptree* block2;
 
     Environment* fenv = metaobject->GetEnvironment();
-    if(fenv == nil)
+    if(fenv == 0)
 	fenv = env;	// should not reach here.
 
     NameScope old_env = ChangeScope(fenv);
@@ -33,7 +33,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
     bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
-    while(rest != nil){
+    while(rest != 0){
 	Ptree* p = rest->Car();
 	Ptree* q = Translate(p);
 	array.Append(q);
@@ -46,9 +46,9 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
     AppendNewMembers(metaobject, array, changed);
 
     Ptree* appended = metaobject->GetAppendedCode();
-    if(appended != nil){
+    if(appended != 0){
 	changed = true;
-	while(appended != nil){
+	while(appended != 0){
 	    array.Append(appended->Car());
 	    appended = appended->Cdr();
 	}
@@ -69,12 +69,12 @@ void ClassBodyWalker::AppendNewMembers(Class* metaobject, PtreeArray& array,
 {
     ChangedMemberList::Cmem* m;
     ChangedMemberList* appended_list = metaobject->GetAppendedMembers();
-    if(appended_list == nil)
+    if(appended_list == 0)
 	return;
 
     int i = 0;
-    while((m = appended_list->Get(i++)) != nil)
-	if(m->def != nil){
+    while((m = appended_list->Get(i++)) != 0)
+	if(m->def != 0){
 	    changed = true;
 	    ClassWalker w(this);
 	    array.Append(w.ConstructAccessSpecifier(m->access));
@@ -84,7 +84,7 @@ void ClassBodyWalker::AppendNewMembers(Class* metaobject, PtreeArray& array,
 
 Ptree* ClassBodyWalker::TranslateTypespecifier(Ptree* tspec)
 {
-    if(tspec_list == nil)
+    if(tspec_list == 0)
 	return tspec;
 
     int n = tspec_list->Number();
@@ -112,7 +112,7 @@ Ptree* ClassBodyWalker::TranslateTypedef(Ptree* def)
 
 Ptree* ClassBodyWalker::TranslateMetaclassDecl(Ptree*)
 {
-    return nil;
+    return 0;
 }
 
 Ptree* ClassBodyWalker::TranslateDeclarators(Ptree* decls)
@@ -149,11 +149,11 @@ Ptree* ClassBodyWalker::TranslateDeclarator(bool record,
     ClassWalker w(this);
 
     Class* metaobject = env->LookupThis();
-    if(metaobject != nil){
+    if(metaobject != 0){
 	ChangedMemberList::Cmem* m = metaobject->GetChangedMember(decl);
-	if(m != nil){
+	if(m != 0){
 	    Ptree* decl2 = w.MakeMemberDeclarator(record, m, decl);
-	    if(m->removed || m->body == nil || !append_body)
+	    if(m->removed || m->body == 0 || !append_body)
 		return decl2;
 	    else
 		return Ptree::List(decl2, m->body);
@@ -176,7 +176,7 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
     Ptree* tspec2 = TranslateTypespecifier(tspec);
     Environment* fenv = env->DontRecordDeclarator(decl);
 
-    if(fenv == nil){
+    if(fenv == 0){
 	// shouldn't reach here.
 	NewScope();
 	ClassWalker w(this);	// this should be after NewScope().
@@ -197,11 +197,11 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
 	else{
 	    decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl, false);
 	    Class* metaobject = fenv->IsClassEnvironment();
-	    ChangedMemberList::Cmem* m = nil;
-	    if(metaobject != nil)
+	    ChangedMemberList::Cmem* m = 0;
+	    if(metaobject != 0)
 		m = metaobject->GetChangedMember(decl);
 
-	    if(m != nil && m->body != nil)
+	    if(m != 0 && m->body != 0)
 		body2 = m->body;
 	    else
 		body2 = w.TranslateFunctionBody(body);
@@ -213,9 +213,9 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
 
     if(sspec == sspec2 && tspec == tspec2 && decl == decl2 && body == body2)
 	return impl;
-    else if(decl2 == nil)
-	return new PtreeDeclaration(nil, Ptree::List(nil,
-						     Class::semicolon_t));
+    else if(decl2 == 0)
+	return new PtreeDeclaration(0, Ptree::List(0,
+						   Class::semicolon_t));
     else
 	return new PtreeDeclaration(sspec2,
 				    Ptree::List(tspec2, decl2, body2));
