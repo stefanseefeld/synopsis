@@ -54,6 +54,21 @@ ParseEnv::ParseEnv(std::istream *instream, std::ostream *errstream, const std::s
     filename = transUnit->filename;
     
     parseCtxt = new ParseCtxt;
+
+    err_top_level =0;
+    err_cnt = 0;
+    err_tok = 0;
+    possibleType = true;
+    possibleTag = false;
+    possibleLabel = false;
+
+    file_ppln=false;
+    in_preprocess = 0;
+    in_charconst = 0;
+
+    gcc2_paren_cnt = 0;
+
+    tokn_end = &tokn_buff[MAX_TOKN_LEN-1];
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
