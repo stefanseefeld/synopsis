@@ -1,6 +1,6 @@
 # Makefile for Synopsis RefManual
 
-include ../../local.mk
+sinclude ../../local.mk
 
 topdir		:= ../..
 synopsis	:= $(topdir)/synopsis -c config.py

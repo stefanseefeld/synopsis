@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.7 2002/03/04 14:46:13 stefan Exp $
+# $Id: Makefile,v 1.8 2002/07/11 02:07:10 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -43,11 +43,11 @@ $(subdirs):
 
 clean:
 	$(MAKE) action="clean"
-	/bin/rm -f *~ *.pyc *.pyo
+	/bin/rm -f *~ *.pyc *.pyo UI/*.pyc UI/Qt/*.pyc UI/*.pyo UI/Qt/*.pyo Config.py
 
 distclean:
 	$(MAKE) action="distclean"
-	/bin/rm -f *.pyc *.pyo
+	/bin/rm -f *.pyc *.pyo UI/*.pyc UI/Qt/*.pyc UI/*.pyo UI/Qt/*.pyo
 
 install:
 	mkdir -p $(packagedir)/Synopsis

@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.11 2002/03/04 14:46:12 stefan Exp $
+# $Id: Makefile,v 1.12 2002/07/11 02:07:10 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -42,15 +42,15 @@ all:
 	done && test -z "$$fail"; \
 
 clean:
-	/bin/rm -f *~ *.pyc *.pyo
-	@for dir in ${subdirs}; do \
+	/bin/rm -f *~ *.pyc *.pyo regression/*.pyc
+	@for dir in gc ${subdirs}; do \
 	  (cd $$dir && $(MAKE) clean) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
 distclean: clean
 	/bin/rm -f *.pyc *.pyo
-	@for dir in ${subdirs}; do \
+	@for dir in gc ${subdirs}; do \
 	  (cd $$dir && $(MAKE) distclean) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
