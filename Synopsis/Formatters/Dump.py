@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.5 2003/11/21 21:17:30 stefan Exp $
+# $Id: Dump.py,v 1.6 2003/11/25 04:52:26 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -16,16 +16,22 @@ from Synopsis.Processor import Processor, Parameter
 from Synopsis import Type, AST
 
 import sys, getopt, os, os.path, string, types
-import xml
 from xml.dom.minidom import getDOMImplementation
 
 dom = getDOMImplementation().createDocument(None, "dump", None)
 
-__dom_implementation = xml.dom.minidom.getDOMImplementation()
+class Formatter(Processor):
 
-class Writer:
-   def __init__(self, output):
-      self.output = output
+   show_declarations = Parameter(True, 'output declarations')
+   show_types = Parameter(True, 'output types')
+   show_files = Parameter(True, 'output files')
+   stylesheet = Parameter(config.datadir + '/dump.css', 'stylesheet to be referenced for rendering')
+
+   def process(self, ast, **kwds):
+      
+      self.set_parameters(kwds)
+      self.ast = self.merge_input(ast)
+
       self.handlers = {types.NoneType : self.visit_none,
                        types.TypeType : self.visit_type,
                        types.IntType : self.visit_string,
@@ -38,19 +44,44 @@ class Writer:
                        types.InstanceType : self.visit_instance}
       self.visited = {}
 
+
+      self.os = open(self.output, "w")
+      self.os.write("<?xml version='1.0' encoding='ISO-8859-1'?>\n")
+      if self.stylesheet:
+         self.os.write("<?xml-stylesheet href='%s' type='text/css'?>\n"%self.stylesheet)
+
+      self.os.write("<ast>\n")
+
+      if self.show_declarations:
+         self.write_declarations(self.ast.declarations())
+         
+      if self.show_types:
+         self.write_types(self.ast.types())
+
+      if self.show_files:
+         self.write_files(self.ast.files())
+
+      self.os.write("</ast>\n")
+
+      return self.ast
+
    def push(self, name):
+
       element = dom.createElement(name)
       self.node.appendChild(element)
       self.node = element
 
    def pop(self):
+
       self.node = self.node.parentNode
 
    def add_text(self, text):
+
       node = dom.createTextNode(text)
       self.node.appendChild(node)
 
    def visit(self, obj):
+
       i,t = id(obj), type(obj)
       if self.visited.has_key(i):
          self.node.setAttribute('xref', str(i))
@@ -65,6 +96,7 @@ class Writer:
    def visit_type(self, obj): self.write(obj) # where is that used ??
 
    def visit_tuple(self, obj):
+
       if len(obj) == 0: return
       for i in obj:
          #self.push('item')
@@ -72,6 +104,7 @@ class Writer:
          #self.pop()
 
    def visit_list(self, obj):
+
       if len(obj) == 0: return
       for i in obj:
          #self.push('item')
@@ -79,6 +112,7 @@ class Writer:
          #self.pop()
 
    def visit_dict(self, dict):
+
       items = dict.items()
       if len(items) == 0: return
       items.sort()
@@ -138,108 +172,29 @@ class Writer:
       self.pop()
 
    def write_declarations(self, declarations):
+
       self.node = dom.createElement("declarations")
       for d in declarations: self.visit(d)
-      self.node.writexml(self.output, indent=" ", addindent=" ", newl="\n")
+      self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
       self.node.unlink()
       del self.node
 
    def write_types(self, types):
       self.node = dom.createElement("types")
       for t in types.values(): self.visit(t)
-      self.node.writexml(self.output, indent=" ", addindent=" ", newl="\n")
+      self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
       self.node.unlink()
       del self.node
 
    def write_files(self, files):
+
       self.node = dom.createElement("files")
       for f in files:
          self.push("file")
          self.visit(f)
          self.pop()
 
-      self.node.writexml(self.output, indent=" ", addindent=" ", newl="\n")
+      self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
       self.node.unlink()
       del self.node
 
-class Formatter(Processor):
-
-   show_declarations = Parameter(True, 'output declarations')
-   show_types = Parameter(True, 'output types')
-   show_files = Parameter(True, 'output files')
-   stylesheet = Parameter(config.datadir + '/dump.css', 'stylesheet to be referenced for rendering')
-
-   def process(self, ast, **kwds):
-      
-      self.set_parameters(kwds)
-      self.ast = self.merge_input(ast)
-      output = open(self.output, "w")
-      output.write("<?xml version='1.0' encoding='ISO-8859-1'?>\n")
-      if self.stylesheet:
-         output.write("<?xml-stylesheet href='%s' type='text/css'?>\n"%self.stylesheet)
-
-      output.write("<ast>\n")
-
-      writer = Writer(output)
-
-      if self.show_declarations:
-         writer.write_declarations(ast.declarations())
-         
-      if self.show_types:
-         writer.write_types(ast.types())
-
-      if self.show_files:
-         writer.write_files(ast.files())
-
-      output.write("</ast>\n")
-
-      return ast
-
-def usage():
-   """Print usage to stdout"""
-   print \
-"""
-  -o <file>                            Output file
-  -d                                   Show declarations
-  -t                                   Show types
-  -f                                   Show files
- (If none of -d, -t or -f specified, will default to -d, -t, -f)
-"""
-
-def __parseArgs(args):
-   global output, verbose, show_declarations, show_types, show_files
-   # Set defaults
-   output = sys.stdout
-   verbose = 0
-   show_declarations = 0
-   show_types = 0
-   show_files = 0
-
-   try:
-      opts,remainder = getopt.getopt(args, "o:vdtf")
-   except getopt.error, e:
-      sys.stderr.write("Error in arguments: " + str(e) + "\n")
-      sys.exit(1)
-
-   for opt in opts:
-      o,a = opt
-      if o == "-o": output = open(a, "w")
-      elif o == "-v": verbose = 1
-      elif o == "-d": show_declarations = 1
-      elif o == "-t": show_types = 1
-      elif o == "-f": show_files = 1
-      
-   # Consolidate - if no show_ selected, show decls and types
-   if not (show_declarations or show_types or show_files):
-      show_declarations = 1
-      show_types = 1
-      show_files = 1
-    
-# THIS-IS-A-FORMATTER
-def format(args, ast, config_obj):
-   global output, verbose, show_declarations, show_types, show_files
-   __parseArgs(args)
-   formatter = Formatter(verbose=verbose,
-                         show_declarations=show_declarations,
-                         show_types=show_types,
-                         show_files=show_files)

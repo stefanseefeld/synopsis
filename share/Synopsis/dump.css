@@ -1,3 +1,8 @@
+ast
+{ 
+  margin: 5mm;
+}
+
 declarations:before
 { 
   display: block;
@@ -8,8 +13,14 @@ declarations:before
 declarations
 { 
   display: block;
+}
+
+instance > declarations
+{ 
+  display: block;
   padding-left: 10mm;
 }
+
 declarations > *:before,
 declarations > item *:before
 { 
@@ -17,6 +28,30 @@ declarations > item *:before
   font-weight: bold;
 }
 declarations > item:before {  content:"";} /* empty */
+
+types:before
+{ 
+  display: block;
+  content: "Types";
+  font-size: large;
+}
+
+types
+{ 
+  display: block;
+}
+
+types > instance:before
+{ 
+  content: attr(name);
+  font-weight: bold;
+}
+
+types > instance
+{ 
+  display: block;
+  padding-left: 10mm;
+}
 
 files:before
 { 
@@ -43,6 +78,6 @@ comments text
   display: block;
   background: #dddddd;
   border: thin solid;
-  margin: 1mm;
+  margin: 5mm;
   padding: 1mm;
 }
