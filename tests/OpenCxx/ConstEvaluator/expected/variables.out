@@ -1,0 +1,10 @@
+initializer : 1 + 2 - 3
+value : 0
+initializer : 1 << 4
+value : 16
+initializer : 8 | 4
+value : 12
+initializer : 22
+value : 22
+initializer : e
+value : none
