@@ -12,7 +12,7 @@
 #elif PYTHON_MAJOR == 1
 #  if PYTHON_MINOR == 6
 #    include <python1.6/Python.h>
-#  elif
+#  elif PYTHON_MINOR == 5
 #    include <python1.5/Python.h>
 #  else
 #    error "this python version is not supported yet"
