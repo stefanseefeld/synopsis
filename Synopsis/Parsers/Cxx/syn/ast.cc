@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.cc source file
 // Implementation of the AST classes
 
-// $Id: ast.cc,v 1.16 2002/12/09 04:00:59 chalky Exp $
+// $Id: ast.cc,v 1.17 2002/12/12 17:25:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: ast.cc,v $
+// Revision 1.17  2002/12/12 17:25:33  chalky
+// Implemented Include support for C++ parser. A few other minor fixes.
+//
 // Revision 1.16  2002/12/09 04:00:59  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -47,6 +50,14 @@ SourceFile::SourceFile(const std::string& filename, bool is_main)
 { }
 
 //
+// AST::Include
+//
+
+Include::Include(SourceFile* target, bool is_macro, bool is_next)
+    : m_target(target), m_is_macro(is_macro), m_is_next(is_next)
+{ }
+
+//
 // AST::Declaration
 //
 
@@ -55,7 +66,7 @@ Declaration::Declaration(SourceFile* file, int line, const std::string& type, co
 { }
 
 Declaration::~Declaration()
-{}
+{ }
 
 void
 Declaration::accept(Visitor* visitor)

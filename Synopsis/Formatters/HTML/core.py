@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.42 2002/12/09 04:00:59 chalky Exp $
+# $Id: core.py,v 1.43 2002/12/12 17:25:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.43  2002/12/12 17:25:33  chalky
+# Implemented Include support for C++ parser. A few other minor fixes.
+#
 # Revision 1.42  2002/12/09 04:00:59  chalky
 # Added multiple file support to parsers, changed AST datastructure to handle
 # new information, added a demo to demo/C++. AST Declarations now have a
@@ -437,7 +440,7 @@ class CommentDictionary:
 	return comment
     __getitem__ = commentFor
 
-class FileTree(AST.Visitor):
+class FileTree:
     """Maintains a tree of directories and files"""
     def __init__(self):
 	"Installs self in config object as 'fileTree'"
@@ -445,7 +448,10 @@ class FileTree(AST.Visitor):
 	self.__files = {}
 	for filename, file in config.ast.files().items():
 	    if file.is_main():
-		self.__files[filename] = {}
+		dict = {}
+		self.__files[filename] = dict
+		for decl in file.declarations():
+		    dict[decl.name()] = decl
     
     def buildTree(self):
 	"Takes the visited info and makes a tree of directories and files"
@@ -482,30 +488,6 @@ class FileTree(AST.Visitor):
 	"""
 	return self.__root
     
-    ### AST Visitor
-    
-    def visitAST(self, ast):
-	for decl in ast.declarations():
-	    decl.accept(self)
-    def visitDeclaration(self, decl):
-	file = decl.file()
-	if not file: return #print "Decl",decl,"has no file."
-	if not self.__files.has_key(file):
-	    self.__files[file.filename()] = {}
-	self.__files[file.filename()][decl.name()] = decl
-    def visitForward(self, decl):
-	# Don't include (excluded) forward decls in file listing
-	pass
-    def visitClass(self, scope):
-	self.visitDeclaration(scope)
-	# Only nested classes may be in different files
-	for decl in scope.declarations():
-	    if isinstance(decl, AST.Class):
-		self.visitClass(decl)
-    def visitMetaModule(self, scope):
-	for decl in scope.declarations():
-	    decl.accept(self)
-
 class PageManager:
     """This class manages and coordinates the various pages. The user adds
     pages by passing their class object to the addPage method. Pages should be
@@ -731,7 +713,6 @@ def format(args, ast, config_obj):
     # Build class and file trees
     for d in declarations:
 	d.accept(config.classTree)
-	d.accept(config.fileTree)
 
     config.fileTree.buildTree()
  
@@ -776,7 +757,6 @@ def configure_for_gui(ast, config_obj):
     # Build class and file trees
     for d in declarations:
 	d.accept(config.classTree)
-	d.accept(config.fileTree)
 
     config.fileTree.buildTree()
 

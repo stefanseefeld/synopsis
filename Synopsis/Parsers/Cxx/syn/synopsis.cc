@@ -2,7 +2,7 @@
 // This file contains implementation for class Synopsis, which converts the
 // C++ AST into a Python AST.
 
-// $Id: synopsis.cc,v 1.45 2002/12/09 04:01:02 chalky Exp $
+// $Id: synopsis.cc,v 1.46 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 
 // $Log: synopsis.cc,v $
+// Revision 1.46  2002/12/12 17:25:34  chalky
+// Implemented Include support for C++ parser. A few other minor fixes.
+//
 // Revision 1.45  2002/12/09 04:01:02  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -100,6 +103,8 @@ struct Synopsis::Private
 
     //. Return the PyObject for the given AST::SourceFile
     PyObject* py(AST::SourceFile*);
+    //. Return the PyObject for the given AST::Include
+    PyObject* py(AST::Include*);
     //. Return the PyObject for the given AST::Declaration
     PyObject* py(AST::Declaration*);
     //. Return the PyObject for the given AST::Inheritance
@@ -203,6 +208,25 @@ PyObject* Synopsis::Private::py(AST::SourceFile* file)
         {
             std::cout << "Fatal: Still not PyObject after converting." << std::endl;
             throw "Synopsis::Private::py(AST::SourceFile*)";
+        }
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
+
+PyObject* Synopsis::Private::py(AST::Include* incl)
+{
+    ObjMap::iterator iter = obj_map.find(incl);
+    if (iter == obj_map.end())
+    {
+        // Need to convert object first
+        add(incl, m_syn->Include(incl));
+        iter = obj_map.find(incl);
+        if (iter == obj_map.end())
+        {
+            std::cout << "Fatal: Still not PyObject after converting." << std::endl;
+            throw "Synopsis::Private::py(AST::Include*)";
         }
     }
     PyObject* obj = iter->second;
@@ -399,19 +423,29 @@ void Synopsis::translate(AST::Scope* scope, PyObject* ast)
     {
         AST::SourceFile* file = *file_iter++;
 
-        PyObject* decls, *new_decls;
+        PyObject* decls, *new_decls, *incls, *new_incls;
         PyObject* pyfile = m->py(file);
-        PyObject* pyfilename = PyObject_CallMethod(pyfile, "filename", NULL);
 
-        // Add the declarations
-        decls = PyObject_CallMethod(pyfile, "declarations", NULL);
-        assertObject(decls);
-        PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(file->declarations()));
-        // TODO: add the includes
-        Py_DECREF(new_decls);
-        Py_DECREF(decls);
+	// Add the declarations if it's a main file
+	if (file->is_main())
+	{
+	    decls = PyObject_CallMethod(pyfile, "declarations", NULL);
+	    assertObject(decls);
+	    PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(file->declarations()));
+	    // TODO: add the includes
+	    Py_DECREF(new_decls);
+	    Py_DECREF(decls);
+	}
 
+	// Add the includes
+	incls = PyObject_CallMethod(pyfile, "includes", NULL);
+	assertObject(incls);
+	PyObject_CallMethod(incls, "extend", "O", new_incls = m->List(file->includes()));
+	Py_DECREF(new_incls);
+	Py_DECREF(incls);
+	
         // Add to the AST
+        PyObject* pyfilename = PyObject_CallMethod(pyfile, "filename", NULL);
         PyDict_SetItem(pyfiles, pyfilename, pyfile);
         Py_DECREF(pyfilename);
         Py_DECREF(pyfile);
@@ -573,7 +607,7 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 
 PyObject *Synopsis::SourceFile(AST::SourceFile* file)
 {
-    Trace trace("Synopsis::addSourceFile");
+    Trace trace("Synopsis::SourceFile");
     PyObject *pyfile, *filename;
     //std::cout << " Creating SourceFile for " << file->filename() << std::endl;
     pyfile = PyObject_CallMethod(m_ast, "SourceFile", "OO",
@@ -584,6 +618,20 @@ PyObject *Synopsis::SourceFile(AST::SourceFile* file)
     PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
     Py_DECREF(filename);
     return pyfile;
+}
+
+PyObject *Synopsis::Include(AST::Include* include)
+{
+    Trace trace("Synopsis::Include");
+    PyObject *pyinclude, *target;
+    pyinclude = PyObject_CallMethod(m_ast, "Include", "Oii",
+                                 target = m->py(include->target()),
+                                 include->is_macro() ? 1 : 0,
+				 include->is_next() ? 1 : 0
+                                );
+    assertObject(pyinclude);
+    Py_DECREF(target);
+    return pyinclude;
 }
 
 PyObject *Synopsis::Declaration(AST::Declaration* decl)
@@ -900,8 +948,10 @@ void Synopsis::visit_scope(AST::Scope* decl)
 void Synopsis::visit_namespace(AST::Namespace* decl)
 {
     // Namespaces are always included, because the Linker knows to combine
-    // them always
-    m->add(decl, Namespace(decl));
+    // them always. The exception are "local namespaces", those created to
+    // handle scopes created by braces in code.
+    if (decl->type() != "local")
+	m->add(decl, Namespace(decl));
 }
 void Synopsis::visit_class(AST::Class* decl)
 {

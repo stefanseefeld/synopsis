@@ -2,7 +2,7 @@
 // The LinkMap class which maps preprocessed file positions to input file
 // positions
 
-// $Id: link_map.hh,v 1.3 2002/11/17 12:11:43 chalky Exp $
+// $Id: link_map.hh,v 1.4 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -34,7 +34,7 @@ public:
     LinkMap();
 
     //. Returns a reference to a singleton instance of link_map
-    static LinkMap& instance();
+    static LinkMap* instance();
 
     //. Adds a map at the given line. out_{start,end} define the start and
     //. past-the-end markers for the macro in the output file. diff defines

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.cc source file
 // Implementation of the FileFilter class
 
-// $Id: filter.cc,v 1.3 2002/12/09 12:14:10 chalky Exp $
+// $Id: filter.cc,v 1.4 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -74,6 +74,12 @@ struct FileFilter::Private
     StoreType xref;
 };
 
+namespace
+{
+    //. The FileFilter instance
+    FileFilter* filter_instance = NULL;
+}
+
 // Constructor
 FileFilter::FileFilter()
 {
@@ -81,12 +87,20 @@ FileFilter::FileFilter()
     m->only_main = true;
     m->syntax = Private::None;
     m->xref = Private::None;
+    filter_instance = this;
 }
 
 // Destructor
 FileFilter::~FileFilter()
 {
     delete m;
+    filter_instance = NULL;
+}
+
+// Return instance pointer
+FileFilter* FileFilter::instance()
+{
+    return filter_instance;
 }
 
 // Sets whether only declarations in the main file(s) should be stored

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.cc source file
 // Implementation of the LinkStore class
 
-// $Id: linkstore.cc,v 1.20 2002/12/10 07:19:50 chalky Exp $
+// $Id: linkstore.cc,v 1.21 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.21  2002/12/12 17:25:34  chalky
+// Implemented Include support for C++ parser. A few other minor fixes.
+//
 // Revision 1.20  2002/12/10 07:19:50  chalky
 // Remove debugging stuff
 //
@@ -227,7 +230,7 @@ int LinkStore::find_col(int line, const char* ptr)
         ; // do nothing inside loop
     int col = ptr - pos;
     // Resolve macro maps
-    return LinkMap::instance().map(line, col);
+    return LinkMap::instance()->map(line, col);
 }
 
 void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
