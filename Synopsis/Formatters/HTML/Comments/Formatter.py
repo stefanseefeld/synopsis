@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.13 2001/04/03 23:18:47 chalky Exp $
+# $Id: Formatter.py,v 1.14 2001/04/05 14:03:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.14  2001/04/05 14:03:21  chalky
+# Very small change
+#
 # Revision 1.13  2001/04/03 23:18:47  chalky
 # Fixed has_detail for decls with no comments
 #
@@ -321,7 +324,7 @@ class JavadocFormatter (CommentFormatter):
 	    entry = self._find_link_at(ref, scope)
 	    if entry: return href(entry.link, label)
 	    if len(scope) == 0: break
-	    scope = scope[:-1]
+	    del scope[-1]
 	# Not found
 	return label+" "
     def _find_link_at(self, ref, scope):
