@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdio>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "synopsis.hh"
@@ -266,10 +267,23 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
     return dest;
 }
 
+void sighandler(int signo)
+{
+  SWalker *instance = SWalker::instance();
+  std::cerr << "Segmentation Fault while processing " << instance->current_file()
+	    << " at line " << instance->current_lineno()
+	    << " (main file is '" << instance->main_file() << "')" << std::endl;
+  exit(-1);
+}
+
 char *RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations)
 {
   Trace trace("RunOpencxx");
   std::set_unexpected(unexpected);
+  struct sigaction olda;
+  struct sigaction newa;
+  newa.sa_handler = &sighandler;
+  sigaction(SIGSEGV, &newa, &olda);
   static char dest[1024] = "/tmp/synopsis-XXXXXX";
   //tmpnam(dest);
   if (mkstemp(dest) == -1) {
@@ -338,6 +352,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
       std::cerr << "errors while parsing file " << file << std::endl;
       exit(1);
     }
+  sigaction(SIGSEGV, &olda, 0);
   return dest;
 }
 
