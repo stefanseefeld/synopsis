@@ -6,4 +6,5 @@
  <class kind="database" name="synopsis_database.Database"/>
  <class kind="test" name="synopsis_test.APITest"/>
  <class kind="test" name="synopsis_test.ProcessorTest"/>
+ <class kind="test" name="synopsis_test.CToolTest"/>
 </class-directory>

@@ -25,55 +25,70 @@ class Database(database.Database):
                 TextField(name="LDFLAGS"),
                 TextField(name="LIBS")]
 
+   def get_src_path(self, id) : return self.srcdir + os.sep + id.replace('.', os.sep)
+   def get_build_path(self, id) : return id.replace('.', os.sep)
+
    def GetSuite(self, id):
-      """Construct a suite for the given id"""
+      """Construct a suite for the given id.
+      For suites there is a general mapping from ids to paths:
+      replace the period by os.sep to get the path in the build tree,
+      and prefix that with self.srcdir to get the path in the source tree."""
 
-      if not id:
-         path = self.srcdir
-      else:
-         path = os.path.join(*[self.srcdir] + string.split(id, '.'))
+      def get_dir_suites(id):
+         """by default all directories are suites"""
+         path = self.get_src_path(id)
+         return filter(lambda x: os.path.isdir(os.path.join(path, x)),
+                       dircache.listdir(path))
 
-      # make sure this is a suite
-      if not (os.path.basename(path) != '.svn' and os.path.isdir(path)):
-         raise NoSuchSuiteError, id
-      
-      # by default every subdirectory that is not named '.svn' is a suite
-      def is_suite(x): return x != '.svn' and os.path.isdir(os.path.join(path, x))
-      # filter out '.svn' from directory listings
-      def listdir(path): return filter(lambda x: x != '.svn', dircache.listdir(path))
+      def get_file_tests(path, ext = ''):
+         """tests are file names without extension"""
+         return [t[0] for t in map(lambda x:os.path.splitext(x), dircache.listdir(path)) 
+                 if t[0] != '' and not ext or t[1] == ext] # splitext('.svn') == ('','svn') !!
+
+      def get_dir_tests(id, script):
+         """tests are directories if <script> exists"""
+         return [t for t in dircache.listdir(self.get_src_path(id))
+                 if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
+
+      if not os.path.isdir(self.get_src_path(id)): raise NoSuchSuiteError, id
 
       test_ids = []
       suite_ids = []
 
       if id.startswith('Processors.Linker'):
-         # if 'synopsis.py' exists in the subdir, it's a test
-         def is_test(x): return x != '.svn' and os.path.isfile(os.path.join(path, x, 'synopsis.py'))
-         test_ids = filter(is_test, listdir(path))
-         # every other subdir is a suite
-         suite_ids = filter(lambda x: is_suite(x) and not x in test_ids, listdir(path))
-
+         test_ids = get_dir_tests(id, 'synopsis.py')
+         suite_ids = [s for s in get_dir_suites(id) if s not in test_ids]
+         print id, test_ids, suite_ids
       elif id.startswith('Cxx-API'):
          # if 'src' exists, it contains the tests
-         if os.path.isdir(os.path.join(path, 'src')):
-            test_ids = map(lambda x: os.path.splitext(x)[0],
-                           filter(lambda x: x.endswith('.cc'), listdir(os.path.join(path, 'src'))))
+         path = os.path.join(self.get_src_path(id), 'src')
+         if os.path.isdir(path):
+            test_ids = get_file_tests(path, '.cc')
          else:
-            suite_ids = filter(is_suite, listdir(path))
+            suite_ids = get_dir_suites(id)
+
+      elif id.startswith('CTool'):
+         if os.path.isfile(os.path.join(self.get_build_path(id), 'ctool.py')):
+            test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'), '.c')
+         else:
+            suite_ids = get_dir_suites(id)
 
       else:
-         if os.path.isfile(os.path.join(*string.split(id, '.') + ['synopsis.py'])):
-            test_ids = map(lambda x: os.path.splitext(x)[0], listdir(os.path.join(path, 'input')))
+         if os.path.isfile(os.path.join(self.get_build_path(id), 'synopsis.py')):
+            test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'))
          else:
-            suite_ids = filter(is_suite, listdir(path))
-
+            suite_ids = get_dir_suites(id)
+         
+      # ignore accidental inclusion of false tests / suites
       if '.svn' in test_ids: test_ids.remove('.svn')
       if '.svn' in suite_ids: suite_ids.remove('.svn')
       if 'autom4te.cache' in suite_ids: suite_ids.remove('autom4te.cache')
 
       if id:
-         test_ids = map(lambda x: string.join([id, x], '.'), test_ids)
-         suite_ids = map(lambda x: string.join([id, x], '.'), suite_ids)
+         test_ids = ['%s.%s'%(id, t) for t in test_ids]
+         suite_ids = ['%s.%s'%(id, s) for s in suite_ids]
       arguments = {'test_ids' : test_ids, 'suite_ids' : suite_ids}
+
       return ExplicitSuite(arguments,
                            qmtest_database = self,
                            qmtest_id = id)
@@ -86,6 +101,7 @@ class Database(database.Database):
          
       if id.startswith('Processors.Linker'): return self.make_linker_test(id)
       elif id.startswith('Cxx-API'): return self.make_api_test(id)
+      elif id.startswith('CTool'): return self.make_ctool_test(id)
       else: return self.make_processor_test(id)
 
    def make_processor_test(self, id):
@@ -123,7 +139,7 @@ class Database(database.Database):
       Create a ProcessorTest if that directory exists,
       and throw NoSuchTestError otherwise."""
 
-      path = os.path.join([self.srcdir] + id.split('.'))
+      path = self.get_src_path(id)
       if not os.path.isdir(path): raise NoSuchTestError, id
 
       dirname = os.path.join(path, 'input')
@@ -161,3 +177,29 @@ class Database(database.Database):
                                             components[-1] + '.out')
       
       return TestDescriptor(self, id, 'synopsis_test.APITest', parameters)
+
+   def make_ctool_test(self, id):
+      """A test id 'a.b.c' corresponds to an input file
+      'a/b/input/c.<ext>. Create a ProcessorTest if that
+      input file exists, and throw NoSuchTestError otherwise."""
+
+      components = id.split('.')
+      dirname = os.path.join(*[self.srcdir] + components[:-1])
+
+      input = os.path.join(dirname, 'input', components[-1]) + '.c'
+         
+      if not os.path.isfile(input): raise NoSuchTestError, id
+
+      output = os.path.join(*components[:-1] + ['output', components[-1] + '.out'])
+      expected = os.path.join(dirname, 'expected', components[-1] + '.ans')
+      ctool = os.path.join(*components[:-1] + ['ctool.py'])
+
+      parameters = {}
+      parameters['srcdir'] = self.srcdir
+      parameters['input'] = [input]
+      parameters['output'] = output
+      parameters['expected'] = expected
+      parameters['ctool'] = ctool
+      
+      return TestDescriptor(self, id, 'synopsis_test.CToolTest', parameters)
+

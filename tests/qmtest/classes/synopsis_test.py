@@ -97,3 +97,37 @@ class ProcessorTest(Test):
          output = open(self.output).readlines()
          if expected != output:
             result.Fail("output mismatch")
+
+class CToolTest(Test):
+   """Process an input file with a ctool script and
+   compare the output."""
+
+   arguments = [TextField(name="srcdir", description="The source directory."),
+                TextField(name="ctool", description="The ctool script."),
+                TextField(name="input", description="The input files."),
+                TextField(name="output", description="The output file."),
+                TextField(name="expected", description="The output file.")]
+
+   def run_processor(self, context, result):
+
+      input = map(lambda x:os.path.join(self.srcdir, x), self.input)
+      if not os.path.isdir(os.path.dirname(self.output)):
+         os.makedirs(os.path.dirname(self.output))
+
+      command = 'python %s --output=%s %s'%(self.ctool,
+                                            self.output,
+                                            string.join(self.input, ' '))
+
+      script = RedirectedExecutable(60) # 1 minute ought to be enough...
+      status = script.Run(string.split(command))
+      if status != 0:
+         result.Fail("unable to run '%s'"%command)
+      return status == 0
+
+   def Run(self, context, result):
+
+      if self.run_processor(context, result):
+         expected = open(self.expected).readlines()
+         output = open(self.output).readlines()
+         if expected != output:
+            result.Fail("output mismatch")
