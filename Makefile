@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.10 2001/01/22 20:04:47 stefan Exp $
+# $Id: Makefile,v 1.11 2001/01/23 19:49:22 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -24,27 +24,23 @@ include local.mk
 
 SRC	:= __init__.py __init__.pyc
 
-subdirs	:= Core Parser Linker Formatter demo/IDL demo/C++
-# doc
+subdirs	:= Core Parser Linker Formatter
 
-all:
-	@for dir in ${subdirs}; do \
-	   (cd $$dir && $(MAKE)) \
-	    || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"; \
+action	:= all
+
+.PHONY: all $(subdirs)
+
+all:	$(subdirs)
+
+$(subdirs):
+	@echo making $(action) in $@
+	$(MAKE) -C $@ $(action)
 
 clean:
-	/bin/rm -f *~
-	@for dir in ${subdirs}; do \
-	  (cd $$dir && $(MAKE) clean) \
-	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+	$(Make) action="clean"
 
 distclean:
-	@for dir in ${subdirs}; do \
-	  (cd $$dir && $(MAKE) distclean) \
-	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+	$(Make) action="distclean"
 	/bin/rm -f *~ local.mk config.cache config.log config.status configure
 
 # to be elaborated further...
@@ -53,7 +49,4 @@ install:
 	python -c "import compileall; compileall.compile_dir('.')"
 	mkdir -p $(packagedir)/Synopsis
 	install $(SRC) $(packagedir)/Synopsis
-	@for dir in ${subdirs}; do \
-	  (cd $$dir && $(MAKE) install) \
-	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
+	$(MAKE) action="install"
