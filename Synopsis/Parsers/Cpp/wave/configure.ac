@@ -10,7 +10,7 @@ dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.10 $)
-AC_INIT(ucpp, 1.0, synopsis-devel@fresco.org)
+AC_INIT(wave, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
@@ -67,11 +67,9 @@ esac
 
 AC_SUBST(LIBEXT)
 
-topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../..')"`
+topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../../..')"`
 AC_SUBST(topdir)
 
 AC_CONFIG_FILES([Makefile synopsis.py])
-
-mkdir -p ucpp
 
 AC_OUTPUT

@@ -1,0 +1,81 @@
+#
+# Copyright (C) 2004 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+SHELL	:= /bin/sh
+
+srcdir	:= @srcdir@
+synopsis:= python synopsis.py
+
+PYTHON	:= @PYTHON@
+
+CC	:= @CC@
+CXX	:= @CXX@
+MAKEDEP	:= $(CXX) -M
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../../Cxx-API/include -I @PYTHON_INCLUDE@
+CFLAGS	:= @CFLAGS@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= ../../../../Cxx-API/lib/libSynopsis.a @LIBS@
+LIBRARY_EXT := @LIBEXT@
+
+HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/*.hh))
+SRC	:= 
+OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+HDR_SYN	:= $(patsubst %.hh, %.syn, $(HDR))
+CC_SYN	:= $(patsubst %.cc, %.syn, $(SRC))
+DEP	:= $(patsubst %.cc, %.d, $(SRC))
+
+TARGET	:= wave$(LIBRARY_EXT)
+
+vpath %.hh $(srcdir)
+vpath %.cc $(srcdir)
+
+all: $(TARGET)
+
+doc: wave.syn wave-impl.syn
+
+# Link C++ files together
+wave.syn: $(HDR_SYN)
+	@echo linking C++ headers together
+	$(synopsis) link_cxx --output=$@ $^
+
+wave-impl.syn: $(HDR_SYN) $(C_SYN)
+	@echo linking all C++ files together
+	$(synopsis) link_cxx --output=$@ $^
+
+%.d: %.cc
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+
+%.o : %.cc
+	@echo compiling $(@F)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+Makefile: $(srcdir)/Makefile.in
+	./config.status --file Makefile
+
+# Compile C++ .hh files
+$(HDR_SYN): %.syn: %
+	@echo parsing $^
+	mkdir -p $(dir $@)
+	$(synopsis) cxx --output=$@ $?
+
+# Compile C++ .cc files
+$(CC_SYN): %.syn: %
+	@echo parsing $^
+	mkdir -p $(dir $@)
+	$(synopsis) cxx --output=$@ $?
+
+wave$(LIBRARY_EXT): $(OBJ)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean :
+	rm -f *~ *.o wave$(LIBRARY_EXT) *.syn *.d *.pyc *.pyo base_lib
+
+ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
+-include $(DEP)
+endif
