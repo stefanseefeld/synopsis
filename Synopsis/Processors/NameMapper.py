@@ -1,4 +1,4 @@
-# $Id: NameMapper.py,v 1.2 2002/10/20 02:22:38 chalky Exp $
+# $Id: NameMapper.py,v 1.3 2002/12/23 12:17:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameMapper.py,v $
+# Revision 1.3  2002/12/23 12:17:02  chalky
+# Add types for parent scopes
+#
 # Revision 1.2  2002/10/20 02:22:38  chalky
 # Fix reference to verbose flag
 #
@@ -61,6 +64,7 @@ class NameMapper (Operation, AST.Visitor):
     def execute(self, ast):
 	if not config.map_declaration_names: return
 	declarations = ast.declarations()
+	types = ast.types()
 	# Map the names of declarations and their types
 	for decl in declarations:
 	    decl.accept(self)
@@ -70,6 +74,7 @@ class NameMapper (Operation, AST.Visitor):
 	for index in range(len(names),0, -1):
 	    module = AST.MetaModule(lang, type, names[:index])
 	    module.declarations().extend(declarations)
+	    types[module.name()] = Type.Declared(lang, module.name(), module)
 	    declarations[:] = [module]
 
 linkerOperation = NameMapper
