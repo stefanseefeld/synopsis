@@ -13,8 +13,10 @@ class TypeFormatter : public Types::Visitor
 public:
   TypeFormatter();
 
-  //. Sets the current scope
-  void setScope(const ScopedName& scope);
+  //. Sets the current scope, pushing the previous onto a stack
+  void push_scope(const ScopedName& scope);
+  //. Pops the previous scope from the stack
+  void pop_scope();
 
   //
   // Type Visitor
@@ -38,6 +40,8 @@ protected:
   ScopedName m_scope;
   //. Returns the given Name relative to the current scope
   std::string colonate(const ScopedName& name);
+  //. A stack of previous scopes
+  std::vector<ScopedName> m_scope_stack;
 };
 
 //. Dumper displays the AST to the screen
@@ -57,6 +61,7 @@ public:
   virtual void visit_declaration(AST::Declaration*);
   virtual void visit_scope(AST::Scope*);
   virtual void visit_namespace(AST::Namespace*);
+  virtual void visit_forward(AST::Forward*);
   virtual void visit_class(AST::Class*);
   virtual void visit_operation(AST::Operation*);
   virtual void visit_variable(AST::Variable*);

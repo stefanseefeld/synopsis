@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.59 2002/10/20 16:49:26 chalky Exp $
+// $Id: swalker.cc,v 1.60 2002/10/25 02:49:51 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.60  2002/10/25 02:49:51  chalky
+// Support templated forward class declarations
+//
 // Revision 1.59  2002/10/20 16:49:26  chalky
 // Fix bug with methods in templates
 //
@@ -357,25 +360,27 @@ Ptree* SWalker::TranslateAssignInitializer(PtreeDeclarator*, Ptree*) { STrace tr
 // Function object.
 std::string SWalker::format_parameters(AST::Parameter::vector& params)
 {
-  // Set scope for formatter
-  AST::Scope* scope = m_builder->scope();
-  if (scope)
-    m_type_formatter->setScope(scope->name());
-  else
-    {
-      ScopedName empty;
-      m_type_formatter->setScope(empty);
-    }
   // TODO: Tell formatter to expand typedefs! Eg: this function uses a typedef
   // in implementation, but not for declaration in the class!!!!!!
   AST::Parameter::vector::iterator iter = params.begin(), end = params.end();
   if (iter == end)
     return "()";
+  // Set scope for formatter
+  AST::Scope* scope = m_builder->scope();
+  if (scope)
+    m_type_formatter->push_scope(scope->name());
+  else
+    {
+      ScopedName empty;
+      m_type_formatter->push_scope(empty);
+    }
+  // Format the parameters one at a time
   std::ostringstream buf;
   buf << "(" << m_type_formatter->format((*iter++)->type());
   while (iter != end)
     buf << "," << m_type_formatter->format((*iter++)->type());
   buf << ")";
+  m_type_formatter->pop_scope();
   return buf.str();
 }
 
@@ -617,7 +622,8 @@ SWalker::TranslateClassSpec(Ptree* node)
       // Forward declaration
       // [ class|struct <name> ]
       std::string name = parse_name(node->Second());
-      m_builder->add_unknown(name);
+      if (is_template) LOG("Templated class forward declaration " << name);
+      m_builder->add_forward(m_lineno, name, is_template);
       if (m_links)
         { // highlight the comments, at least
           PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
@@ -674,7 +680,9 @@ SWalker::TranslateClassSpec(Ptree* node)
         }
       }
 
+    m_type_formatter->push_scope(m_builder->scope()->name());
     std::string name, spacey_name = m_type_formatter->format(param);
+    m_type_formatter->pop_scope();
     std::remove_copy(
         spacey_name.begin(), spacey_name.end(),
         std::back_inserter(name), ' ');
@@ -743,8 +751,9 @@ void SWalker::TranslateTemplateParams(Ptree* params)
   STrace trace("SWalker::TranslateTemplateParams");
   m_template = new AST::Parameter::vector;
   AST::Parameter::vector& templ_params = *m_template;
-  // Create Template type
-  std::string pre_mods, post_mods, name, value;
+  // Declare some default parameter values - these should not be modified!
+  std::string name, value;
+  AST::Parameter::Mods pre_mods, post_mods;
   while (params)
   {
     Ptree* param = params->First();
@@ -757,7 +766,16 @@ void SWalker::TranslateTemplateParams(Ptree* params)
         // This parameter specifies a type, add as dependent 
         Types::Dependent* dep = m_builder->create_dependent(parse_name(param->Second()));
         m_builder->add(dep);
-        templ_params.push_back(new AST::Parameter(pre_mods, dep, post_mods, name, value));
+        AST::Parameter::Mods paramtype;
+        paramtype.push_back(parse_name(param->First()));
+        templ_params.push_back(new AST::Parameter(paramtype, dep, post_mods, name, value));
+      }
+      else
+      {
+        // Add a parameter, but with no name
+        AST::Parameter::Mods paramtype;
+        paramtype.push_back(parse_name(param->First()));
+        templ_params.push_back(new AST::Parameter(paramtype, NULL, post_mods, name, value));
       }
     }
     else if (param->First()->Eq("template"))
@@ -967,7 +985,7 @@ SWalker::TranslateDeclarator(Ptree* decl)
   char* enctype = decl->GetEncodedType();
   if (!encname || !enctype)
     {
-      cout << "encname or enctype null!" << endl;
+      std::cout << "encname or enctype null!" << std::endl;
       return 0;
     }
   
@@ -1008,7 +1026,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
   // Create parameter objects
   Ptree *p_params = decl->Rest();
   while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
-  if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
+  if (!p_params) { std::cout << "Warning: error finding params!" << std::endl; return 0; }
   std::vector<AST::Parameter*> params;
   TranslateParameters(p_params->Second(), params);
   m_param_cache = params;
@@ -1158,7 +1176,8 @@ SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& para
   while (p_params)
     {
       // A parameter has a type, possibly a name and possibly a value
-      std::string name, value, premods;
+      std::string name, value;
+      AST::Parameter::Mods premods, postmods;
       if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
       Ptree* param = p_params->First();
       // The type is stored in the encoded type string already
@@ -1196,8 +1215,7 @@ SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& para
           for (int ix = 0; ix < type_ix && param->Nth(ix)->IsLeaf(); ix++)
             {
               Ptree* leaf = param->Nth(ix);
-              if (premods.size() > 0) premods.append(" ");
-              premods.append(leaf->GetPosition(), leaf->GetLength());
+              premods.push_back(parse_name(leaf));
             }
           // Find name
           if (Ptree* pname = param->Nth(type_ix+1))
@@ -1215,7 +1233,7 @@ SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& para
           if (value_ix >= 0) value = param->Nth(value_ix)->ToString();
         }
       // Add the AST.Parameter type to the list
-      params.push_back(new AST::Parameter(premods, type, "", name, value));
+      params.push_back(new AST::Parameter(premods, type, postmods, name, value));
       p_params = Ptree::Rest(p_params);
     }
 }
@@ -1265,7 +1283,7 @@ void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types:
       realname += ">";
     }
   else
-    cout << "Warning: Unknown function name: " << encname << endl;
+    std::cout << "Warning: Unknown function name: " << encname << std::endl;
 }
         
 //. Class or Enum
@@ -1331,7 +1349,7 @@ SWalker::TranslateFunctionImplementation(Ptree* node)
   TranslateDeclarator(node->Third());
   if (!m_links) return 0; // Dont translate if not storing links
   if (m_filename != m_source) return 0; // Dont translate if not main file
-  if (!m_operation) { cerr << "Warning: operation was null!" << endl; return 0; }
+  if (!m_operation) { std::cerr << "Warning: operation was null!" << std::endl; return 0; }
 
   FuncImplCache cache;
   cache.oper = m_operation;

@@ -3,6 +3,9 @@
  * C++ AST into a Python AST.
  *
  * $Log: synopsis.cc,v $
+ * Revision 1.42  2002/10/25 02:49:52  chalky
+ * Support templated forward class declarations
+ *
  * Revision 1.41  2002/10/20 15:38:10  chalky
  * Much improved template support, including Function Templates.
  *
@@ -39,6 +42,7 @@ struct is_main
   is_main(bool onlymain, const std::string &mainfile)
     : m_onlymain(onlymain), m_mainfile(mainfile) {}
   bool operator()(AST::Declaration* decl) {
+      if (!decl) return false;
       // returns true if:
       return !m_onlymain // only_main not set
 	  || decl->filename() == m_mainfile // filename is the main file
@@ -696,7 +700,7 @@ PyObject *Synopsis::Parameter(AST::Parameter* decl)
     Trace trace("Synopsis::Parameter");
     PyObject *param, *pre, *post, *type, *value, *name;
     param = PyObject_CallMethod(m_ast, "Parameter", "OOOOO", 
-	pre = m->py(decl->premodifier()), type = m->py(decl->type()), post = m->py(decl->postmodifier()),
+	pre = m->List(decl->premodifier()), type = m->py(decl->type()), post = m->List(decl->postmodifier()),
 	name = m->py(decl->name()), value = m->py(decl->value())
     );
     Py_DECREF(pre);
