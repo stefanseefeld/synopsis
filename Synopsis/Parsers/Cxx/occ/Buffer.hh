@@ -22,7 +22,7 @@ public:
   Buffer(std::streambuf *, const std::string & = std::string("unknown"));
 
   //. return the size of the buffer
-  unsigned long size() { return my_buffer.size();}
+  unsigned long size() const { return my_buffer.size();}
 
   //. report the character at the current position and advance one character
   char get() { return my_cursor < my_buffer.size() ? my_buffer[my_cursor++] : '\0';}
@@ -32,7 +32,7 @@ public:
   void reset(unsigned long c = 0) { my_cursor = c;}
 
   //. report the current position
-  unsigned long position() const { return my_cursor;}
+  unsigned long position() const { return my_cursor - 1;}
   //. report the character at position p
   char at(unsigned long p) const { return my_buffer[p];}
   //. report the pointer at position p

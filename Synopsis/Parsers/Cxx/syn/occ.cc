@@ -23,6 +23,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <cstring>
@@ -122,14 +123,14 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     perror(file);
     exit(1);
   }
-  StreamBuffer prog(ifs);
-  Lexer lexer(&prog);
+  Buffer buffer(ifs.rdbuf());
+  Lexer lexer(&buffer);
   Parser parse(&lexer);
 
   FileFilter* filter = FileFilter::instance();
 
   Builder builder(sourcefile);
-  SWalker swalker(filter, &parse, &builder, &prog);
+  SWalker swalker(filter, &parse, &builder, &buffer);
   if (syn_fake_std)
   {
     // Fake a using from "std" to global
