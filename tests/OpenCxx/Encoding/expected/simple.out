@@ -2,7 +2,7 @@ Declaration :
  int a ;
 Declarator : 
 name : 
-1a
+[1]a
 a 
 type : 
 i
@@ -11,7 +11,7 @@ Declaration :
  double b ;
 Declarator : 
 name : 
-1b
+[1]b
 b 
 type : 
 d
@@ -20,16 +20,16 @@ Declaration :
  struct   {  } c ;
 Declarator : 
 name : 
-1c
+[1]c
 c 
 type : 
-5`0000
+[5]`0000
 `0000 
 Declaration : 
  void d ( int  , double  ) ;
 Declarator : 
 name : 
-1d
+[1]d
 d 
 type : 
 Fid_v
