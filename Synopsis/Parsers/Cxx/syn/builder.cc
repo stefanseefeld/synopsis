@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: builder.cc source file
 // Implementation of the Builder class
 
-// $Id: builder.cc,v 1.44 2003/01/27 06:53:37 chalky Exp $
+// $Id: builder.cc,v 1.45 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: builder.cc,v $
+// Revision 1.45  2003/12/02 05:45:51  stefan
+// generate Builtin 'end of scope' instead of Declaration 'dummy'
+//
 // Revision 1.44  2003/01/27 06:53:37  chalky
 // Added macro support for C++.
 //
@@ -658,13 +661,13 @@ AST::Enum* Builder::add_enum(int line, const std::string& name, const std::vecto
 }
 
 //. Add tail comment
-AST::Declaration* Builder::add_tail_comment(int line)
+AST::Builtin *Builder::add_tail_comment(int line)
 {
     ScopedName name;
-    name.push_back("dummy");
-    AST::Declaration* decl = new AST::Declaration(m_file, line, "dummy", name);
-    add(decl);
-    return decl;
+    name.push_back("EOS");
+    AST::Builtin *builtin = new AST::Builtin(m_file, line, "EOS", name);
+    add(builtin);
+    return builtin;
 }
 
 // A functor that adds only inheritances which are class objects to a given

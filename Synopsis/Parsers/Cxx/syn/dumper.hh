@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: dumper.hh header file
 // The TypeFormatter and Dumper classes
 
-// $Id: dumper.hh,v 1.15 2003/01/27 06:53:37 chalky Exp $
+// $Id: dumper.hh,v 1.16 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -87,6 +87,7 @@ public:
     void visit(const std::vector<AST::Comment*>&);
     virtual void visit_macro(AST::Macro*);
     virtual void visit_declaration(AST::Declaration*);
+    virtual void visit_builtin(AST::Builtin*);
     virtual void visit_scope(AST::Scope*);
     virtual void visit_namespace(AST::Namespace*);
     virtual void visit_forward(AST::Forward*);

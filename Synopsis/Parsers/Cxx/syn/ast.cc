@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.cc source file
 // Implementation of the AST classes
 
-// $Id: ast.cc,v 1.19 2003/01/27 06:53:36 chalky Exp $
+// $Id: ast.cc,v 1.20 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: ast.cc,v $
+// Revision 1.20  2003/12/02 05:45:51  stefan
+// generate Builtin 'end of scope' instead of Declaration 'dummy'
+//
 // Revision 1.19  2003/01/27 06:53:36  chalky
 // Added macro support for C++.
 //
@@ -97,6 +100,23 @@ Declaration::declared()
     if (!m_declared)
         m_declared = new Types::Declared(m_name, this);
     return m_declared;
+}
+
+//
+// AST::Builtin
+//
+
+Builtin::Builtin(SourceFile* file, int line, const std::string &type, const ScopedName& name)
+    : Declaration(file, line, type, name)
+{ }
+
+Builtin::~Builtin()
+{ }
+
+void
+Builtin::accept(Visitor* visitor)
+{
+    visitor->visit_builtin(this);
 }
 
 //
@@ -357,6 +377,10 @@ Visitor::~Visitor()
 {}
 void Visitor::visit_declaration(Declaration*)
 {}
+
+void Visitor::visit_builtin(Builtin*)
+{}
+
 void Visitor::visit_macro(Macro* d)
 {
     visit_declaration(d);

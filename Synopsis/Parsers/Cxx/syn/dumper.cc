@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: dumper.cc source file
 // Implementation of the TypeFormatter and Dumper classes
 
-// $Id: dumper.cc,v 1.23 2003/01/27 06:53:37 chalky Exp $
+// $Id: dumper.cc,v 1.24 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: dumper.cc,v $
+// Revision 1.24  2003/12/02 05:45:51  stefan
+// generate Builtin 'end of scope' instead of Declaration 'dummy'
+//
 // Revision 1.23  2003/01/27 06:53:37  chalky
 // Added macro support for C++.
 //
@@ -293,9 +296,13 @@ std::string Dumper::formatParam(AST::Parameter* param)
 void Dumper::visit_declaration(AST::Declaration* decl)
 {
     visit(decl->comments());
-    if (decl->type() == "dummy")
-        return;
     std::cout << m_indent_string << "DECL " << decl->name() << std::endl;
+}
+
+void Dumper::visit_builtin(AST::Builtin *builtin)
+{
+    visit(builtin->comments());
+    std::cout << m_indent_string << "BUILTIN " << builtin->name() << std::endl;
 }
 
 void Dumper::visit_macro(AST::Macro* macro)
