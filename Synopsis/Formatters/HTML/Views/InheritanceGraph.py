@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.20 2002/10/28 06:13:07 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.21 2002/10/28 11:44:57 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.21  2002/10/28 11:44:57  chalky
+# Split graphs into groups based on common prefixes, and display each separately
+#
 # Revision 1.20  2002/10/28 06:13:07  chalky
 # Fix typo
 #
@@ -125,6 +128,17 @@ class ToDecl (Type.Visitor):
     def visitParametrized(self, type): type.template().accept(self)
     def visitFunctionType(self, type): return
 	
+def find_common_name(graph):
+    common_name = list(graph[0])
+    for decl_name in graph[1:]:
+	if len(common_name) > len(decl_name):
+	    common_name = common_name[:len(decl_name)]
+	for i in range(min(len(decl_name), len(common_name))):
+	    if decl_name[i] != common_name[i]:
+		common_name = common_name[:i]
+		break
+    return string.join(common_name, '::')
+	    
 
 class InheritanceGraph(Page.Page):
     def __init__(self, manager):
@@ -152,32 +166,37 @@ class InheritanceGraph(Page.Page):
 	    if config.verbose:
 		print "Error getting InheritanceGraph.min_group_size value. Using 5."
 	    min_group_size = 5
-	conned = []
-	pending = []
-	while len(graphs):
-	    graph = graphs.pop(0)
+	# Weed out the small graphs and group by common base name
+	common = {}
+	for graph in graphs:
 	    len_graph = len(graph)
 	    if len_graph < min_size:
 		# Ignore the graph
 		continue
-	    # Try adding to an already pending graph
-	    for pend in pending:
-		if len_graph + len(pend) <= min_group_size:
-		    pend.extend(graph)
-		    graph = None
-		    if len(pend) == min_group_size:
-			conned.append(pend)
-			pending.remove(pend)
-		    break
-	    if graph:
-		if len_graph > min_group_size:
-		    # Add to final list
-		    conned.append(graph)
-		else:
-		    # Add to pending list
-		    pending.append(graph)
-	conned.extend(pending)
-	return conned
+	    common.setdefault(find_common_name(graph), []).append(graph)
+	# Consolidate each group
+	for name, graphs in common.items():
+	    conned = []
+	    pending = []
+	    for graph in graphs:
+		# Try adding to an already pending graph
+		for pend in pending:
+		    if len_graph + len(pend) <= min_group_size:
+			pend.extend(graph)
+			graph = None
+			if len(pend) == min_group_size:
+			    conned.append(pend)
+			    pending.remove(pend)
+			break
+		if graph:
+		    if len_graph >= min_group_size:
+			# Add to final list
+			conned.append(graph)
+		    else:
+			# Add to pending list
+			pending.append(graph)
+	    graphs[:] = conned + pending
+	return common
 
     def process(self, start):
 	"""Creates a file with the inheritance graph"""
@@ -199,29 +218,47 @@ class InheritanceGraph(Page.Page):
 	count = 0
 	# Consolidate the graphs, and sort to make the largest appear first
 	lensorter = lambda a, b: cmp(len(b),len(a))
-	graphs = self.consolidate(graphs)
-	graphs.sort(lensorter)
-	for graph in graphs:
-	    try:
-		if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
-		# Find declarations
-		declarations = map(self.__todecl, graph)
-		declarations = filter(lambda x: x is not None, declarations)
-		# Call Dot formatter
-		output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
-		args = ('-i','-f','html','-o',output,'-r',toc_file,'-R',self.filename(),'-t','Synopsis %s'%count,'-n')
-		temp_ast = AST.AST([''], declarations, config.types)
-		Dot.format(args, temp_ast, None)
-		dot_file = open(output + '.html', 'r')
-		self.write(dot_file.read())
-		dot_file.close()
-		os.remove(output + ".html")
-	    except:
-		import traceback
-		traceback.print_exc()
-		print "Graph:",graph
-		print "Declarations:",declarations
-	    count = count + 1
+	common_graphs = self.consolidate(graphs)
+	names = common_graphs.keys()
+	names.sort()
+	for name in names:
+	    graphs = common_graphs[name]
+	    graphs.sort(lensorter)
+	    if name:
+		self.write('<div class="inheritance-group">')
+		scoped_name = string.split(name,'::')
+		type_str = ''
+		if core.config.types.has_key(scoped_name):
+		    type = core.config.types[scoped_name]
+		    if isinstance(type, Type.Declared):
+			type_str = type.declaration().type() + ' '
+		self.write('Graphs in '+type_str+name+':<br>')
+	    for graph in graphs:
+		try:
+		    if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
+		    # Find declarations
+		    declarations = map(self.__todecl, graph)
+		    declarations = filter(lambda x: x is not None, declarations)
+		    # Call Dot formatter
+		    output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
+		    args = (
+			'-i','-f','html','-o',output,'-r',toc_file,
+			'-R',self.filename(),'-t','Synopsis %s'%count,'-n', 
+			'-p',name)
+		    temp_ast = AST.AST([''], declarations, config.types)
+		    Dot.format(args, temp_ast, None)
+		    dot_file = open(output + '.html', 'r')
+		    self.write(dot_file.read())
+		    dot_file.close()
+		    os.remove(output + ".html")
+		except:
+		    import traceback
+		    traceback.print_exc()
+		    print "Graph:",graph
+		    print "Declarations:",declarations
+		count = count + 1
+	    if name:
+		self.write('</div>')
 
 	os.remove(toc_file)
 
