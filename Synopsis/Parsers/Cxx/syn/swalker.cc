@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.75 2003/10/13 01:15:09 stefan Exp $
+// $Id: swalker.cc,v 1.76 2003/10/13 18:50:20 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,11 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.76  2003/10/13 18:50:20  stefan
+// * provide a clearer definition of 'Comment', i.e.
+//   a single comment as opposed to a list of comments
+// * simplify grouping tags with the above clarifications
+//
 // Revision 1.75  2003/10/13 01:15:09  stefan
 // Translate one node at a time, not the concatenated list.
 //
@@ -241,114 +246,80 @@ Leaf* make_Leaf(char* pos, int len)
 void
 SWalker::add_comments(AST::Declaration* decl, Ptree* node)
 {
-    if (node == NULL)
-        return;
+  if (!node) return;
 
-    AST::Comment::vector comments_to_add;
+  AST::Comment::vector comments;
 
-    // First, make sure that node is a list of comments
-    if (node->What() == ntDeclaration)
-        node = static_cast<PtreeDeclaration*>(node)->GetComments();
+  // First, make sure that node is a list of comments
+  if (node->What() == ntDeclaration)
+    node = static_cast<PtreeDeclaration*>(node)->GetComments();
 
-    // Loop over all comments in the list
-    for (Ptree* next = node->Rest(); node && !node->IsLeaf(); next = node->Rest())
+  // Loop over all comments in the list
+  for (Ptree* next = node->Rest(); node && !node->IsLeaf(); next = node->Rest())
+  {
+    Ptree* first = node->First();
+    if (!first || !first->IsLeaf())
     {
-        Ptree* first = node->First();
-        if (!first || !first->IsLeaf())
-        {
-            node = next;
-            continue;
-        }
-
-        update_line_number(node);
-        // Make sure comment is in same file!
-        if (decl && (m_file != decl->file()))
-        {
-            node = next;
-	    // Empty list of comments to add: an #include in the middle is not
-	    // allowed!
-	    comments_to_add.clear();
-            continue;
-        }
-
-        // Check if comment is continued, eg: consecutive C++ comments
-        while (next && next->First() && next->First()->IsLeaf())
-        {
-            if (strncmp(next->First()->GetPosition(), "//", 2))
-                break;
-            char* next_pos = next->First()->GetPosition();
-            char* start_pos = node->First()->GetPosition();
-            char* curr_pos = start_pos + node->First()->GetLength();
-            // Must only be whitespace between current comment and next
-            // and only one newline
-            int newlines = 0;
-            while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
-                if (*curr_pos == '\n' && newlines > 0)
-                    break;
-                else if (*curr_pos++ == '\n')
-                    ++newlines;
-            if (curr_pos < next_pos)
-                break;
-            // Current comment stretches to end of next
-            int len = int(next_pos - start_pos + next->First()->GetLength());
-            //node->SetCar(first = new Leaf(start_pos, len));
-            node->SetCar(first = make_Leaf(start_pos, len));
-            // Skip the combined comment
-            next = next->Rest();
-        }
-
-        // Ensure that there is no more than one newline between the comment and
-        // the declaration. We assume that the declaration is the next
-        // non-comment thing (which could be a bad assumption..)
-        // If extract_tails is set, then comments separated by a space are still
-        // included, but are marked as suspect for the Linker to deal with
-        bool suspect = false;
-        char* pos = first->GetPosition() + first->GetLength();
-        while (*pos && strchr(" \t\r", *pos))
-            ++pos;
-        if (*pos == '\n')
-        {
-            ++pos;
-            // Found only allowed \n
-            while (*pos && strchr(" \t\r", *pos))
-                ++pos;
-            if (*pos == '\n' || !strncmp(pos, "/*", 2))
-            {
-                // 1. More than one newline.. skip entire comment and move onto next.
-                // 2. This comment is followed by a /*, so ignore this one
-                // If extract_tails is set, we keep it anyway but mark as suspect
-                if (!m_extract_tails)
-                {
-                    node = next;
-                    continue;
-                }
-                else
-                    suspect = true;
-            }
-        }
-
-        if (decl)
-        {
-            //AST::Comment* comment = new AST::Comment("", 0, first->ToString(), suspect);
-            AST::Comment* comment = make_Comment(m_file, 0, first, suspect);
-            //decl->comments().push_back(comment);
-	    comments_to_add.push_back(comment);
-        }
-        if (m_links)
-            m_links->long_span(first, "file-comment");
-        // Set first to nil so we dont accidentally do them twice (eg:
-        // when parsing expressions)
-        node->SetCar(nil);
-        node = next;
+      node = next;
+      continue;
+    }
+    update_line_number(node);
+    // Make sure comment is in same file!
+    if (decl && (m_file != decl->file()))
+    {
+      node = next;
+      // Empty list of comments to add: an #include in the middle is not
+      // allowed!
+      comments.clear();
+      continue;
     }
 
-    // Now add the comments, if applicable
-    if (decl && comments_to_add.size())
+    // Check if comment is continued, eg: consecutive C++ comments
+    while (next && next->First() && next->First()->IsLeaf())
     {
-	AST::Comment::vector::iterator i_comment = comments_to_add.begin();
-	while (i_comment != comments_to_add.end())
-	    decl->comments().push_back(*i_comment++);
+      if (!strncmp(first->GetPosition() + first->GetLength() - 2, "*/", 2))
+        break;
+      if (strncmp(next->First()->GetPosition(), "//", 2))
+        break;
+      char* next_pos = next->First()->GetPosition();
+      char* start_pos = node->First()->GetPosition();
+      char* curr_pos = start_pos + node->First()->GetLength();
+      // Must only be whitespace between current comment and next
+      // and only one newline
+      int newlines = 0;
+      while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
+        if (*curr_pos == '\n' && newlines > 0)
+          break;
+        else if (*curr_pos++ == '\n')
+          ++newlines;
+      if (curr_pos < next_pos)
+        break;
+      // Current comment stretches to end of next
+      int len = int(next_pos - start_pos + next->First()->GetLength());
+      //node->SetCar(first = new Leaf(start_pos, len));
+      node->SetCar(first = make_Leaf(start_pos, len));
+      // Skip the combined comment
+      next = next->Rest();
     }
+
+    if (decl)
+    {
+      AST::Comment* comment = make_Comment(m_file, 0, first);
+      comments.push_back(comment);
+    }
+    if (m_links) m_links->long_span(first, "file-comment");
+    // Set first to nil so we dont accidentally do them twice (eg:
+    // when parsing expressions)
+    node->SetCar(nil);
+    node = next;
+  }
+
+  // Now add the comments, if applicable
+  if (decl)
+    for (AST::Comment::vector::iterator i = comments.begin();
+         i != comments.end();
+         ++i)
+      decl->comments().push_back(*i);
 }
 
 // -- These methods implement add_comments for various node types that store

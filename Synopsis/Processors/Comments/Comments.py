@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.20 2003/10/07 21:15:00 stefan Exp $
+# $Id: Comments.py,v 1.21 2003/10/13 18:50:19 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,11 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.21  2003/10/13 18:50:19  stefan
+# * provide a clearer definition of 'Comment', i.e.
+#   a single comment as opposed to a list of comments
+# * simplify grouping tags with the above clarifications
+#
 # Revision 1.20  2003/10/07 21:15:00  stefan
 # adjust to new default grouping syntax
 #
@@ -353,8 +358,7 @@ class Previous (Dummies):
 
 class Grouper (Transformer):
     """A class that detects grouping tags and moves the enclosed nodes into a subnode (a 'Group')"""
-    __re_group = r'^[ \t]*((?P<open>@group[ \t]*(?P<name>.*){)|(?P<close>@group[ \t]*}))(?P<remainder>.*)$'
-    #__re_group = r'^[ \t]*((?P<open>{)[ \t]*(?P<name>[a-zA-Z_]\w*)*|(?P<close>})) ?(.*)$'
+    __re_group = r'^[ \t]*((?P<open>@group[ \t]*(?P<name>.*){)|(?P<close>[ \t]*}))[ \t]*\Z'
     def __init__(self):
 	Transformer.__init__(self)
 	self.re_group = re.compile(Grouper.__re_group, re.M)
@@ -431,17 +435,9 @@ class Grouper (Transformer):
                 group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
                 comments = []
-                # The comment after the open marker becomes the next comment to process
-                if tag.group('remainder'):
-                    process_comments.insert(0, AST.Comment(tag.group('remainder'), c.file(), c.line()))
                 self.push_group(group)
             elif tag.group('close'):
                 self.pop_group(decl)
-            # The comment before the close marker is ignored...? maybe post-comment?
-            # The comment after the close marker becomes the next comment to process
-            remainder = string.join([tag.group('remainder'), c.text()[tag.end():]], '')
-            if remainder:
-                process_comments.insert(0, AST.Comment(remainder, c.file(), c.line()))
         decl.comments()[:] = comments
 
     def visitDeclaration(self, decl):
@@ -480,20 +476,14 @@ class Summarizer (CommentProcessor):
     def __init__(self):
 	self.re_summary = re.compile(Summarizer.re_summary, re.S)
     def process(self, decl):
-	"""Combine and summarize the comments of this declaration."""
-	# First combine
+	"""Summarize the comment of this declaration."""
 	comments = decl.comments()
 	if not len(comments):
 	    return
-	comment = comments[0]
+	# Only use last comment
+	comment = comments[-1]
 	tags = comment.tags()
-	if len(comments) > 1:
-	    # Should be rare to have >1 comment
-	    for extra in comments[1:]:
-		tags.extend(extra.tags())
-		comment.set_text(comment.text() + extra.text())
-	    del comments[1:]
-	# Now decide how much of the comment is the summary
+	# Decide how much of the comment is the summary
 	text = comment.text()
 	mo = self.re_summary.match(text)
 	if mo:
