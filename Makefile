@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.18 2001/04/18 05:44:51 chalky Exp $
+# $Id: Makefile,v 1.19 2001/05/12 17:34:30 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -48,7 +48,7 @@ clean:
 
 distclean:
 	$(MAKE) action="distclean"
-	/bin/rm -f *~ local.mk config.cache config.log config.status configure
+	/bin/rm -f *.pyc *~ local.mk config.cache config.log config.status configure
 
 # to be elaborated further...
 install:

@@ -150,7 +150,7 @@ void Builder::setAccess(AST::Access axs)
 
 void Builder::setFilename(const std::string &filename)
 {
-    if (filename.compare(0, m_basename.size(), m_basename) == 0)
+    if (filename.substr(0, m_basename.size()) == m_basename)
 	m_filename.assign(filename, m_basename.size(), std::string::npos);
     else
 	m_filename = filename;

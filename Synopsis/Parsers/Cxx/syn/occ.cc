@@ -267,8 +267,8 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   Parser parse(&lex);
   
     // Calculate source filename
-    std::string source(src);
-    if (source.compare(0, strlen(syn_basename), std::string(syn_basename)) == 0)
+  std::string source(src);
+  if (source.substr(0, strlen(syn_basename)) == syn_basename)
     source.erase(0, strlen(syn_basename));
 
   Builder builder(syn_basename);
