@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.12 2003/12/02 16:19:41 stefan Exp $
+# $Id: Linker.py,v 1.13 2003/12/03 00:37:47 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -42,8 +42,10 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          self.ast = EmptyModuleRemover.EmptyModuleRemover().process(self.ast)
 
       # now deal with the sub-processors, if any
+      output = self.output
       self.ast = Composite.process(self, self.ast, input=[], output='')
-
+      self.output = output
+      
       return self.output_and_return_ast()
 
    def lookup(self, name):
