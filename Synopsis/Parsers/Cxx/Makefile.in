@@ -50,7 +50,8 @@ SYN_FILES := Translator occ swalker ast builder type dict \
              dumper decoder swalker-syntax linkstore \
              lookup filter
 
-HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.h))
+HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.hh))
+HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/PTree/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
 
 # Generate sources, objs and debug-objs from the FILES
@@ -98,7 +99,7 @@ Makefile: $(srcdir)/Makefile.in
 $(HDR_SYN): %.syn: %
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(synopsis) cxx --output=$@ $?
+	$(synopsis) cxx --verbose --output=$@ $?
 
 # Compile C++ .cc files
 $(CC_SYN): %.cc.syn: %.cc
