@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 2003/09/18 14:50:55 stefan Exp $
+# $Id: Makefile.in,v 1.4 2003/09/21 22:51:40 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -118,7 +118,7 @@ $(GC_LIB):
 	@make -C gc
 
 # This creates the final occ python module
-$(OCC_SO): $(UCPP_LIB) opencxx.a $(SYN_OBJ)
+$(OCC_SO): $(SYN_OBJ) $(UCPP_LIB) opencxx.a
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # This creates the final link python module
@@ -131,7 +131,7 @@ occ.gdb: $(UCPP_GLIB) opencxx.ga $(SYN_GOBJ)
 
 # Compile an archive of the OCC files
 opencxx.a : $(GC_LIB) $(OCC_OBJ)
-ifeq '$(use_gc)' 'yes'
+ifeq ($(USE_GC), yes)
 	cp $(GC_LIB) $@
 endif
 	ar rcs $@ $(OCC_OBJ)
@@ -152,5 +152,7 @@ $(UCPP_GLIB): $(UCPP_GOBJ)
 	ar rcs $@ $^
 
 clean :
-
-distclean: clean
+	rm -f *~ syn/*.o syn/*.go occ/*.o occ/*.go ucpp/*.o ucpp/*.go ucpp/*.a ucpp/*.ga \
+        *.dll *.so *core opencxx.a opencxx.ga \
+        occ.gdb occ.so link.so occ.dll link.dll  \
+	ucpp/*.ao occ/*.o occ/*.go *.pyc *.pyo .deps.* base_lib
