@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.22 2001/02/06 16:02:23 chalky Exp $
+# $Id: ASCII.py,v 1.23 2001/02/13 06:35:20 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.23  2001/02/13 06:35:20  chalky
+# Added config_obj to format() args to prevent exception.
+#
 # Revision 1.22  2001/02/06 16:02:23  chalky
 # Fixes
 #
@@ -286,7 +289,7 @@ def print_types(types):
 	    print "name ==",name
 	    raise
 
-def format(types, declarations, args):
+def format(types, declarations, args, config_obj):
     __parseArgs(args)
     formatter = ASCIIFormatter(output)
     #for type in types:
