@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2001 Shigeru Chiba, Tokyo Institute of Technology.
   Copyright (C) 2001-2002 Stephen Davies
 
   Permission to use, copy, distribute and modify this software and   
@@ -12,6 +12,7 @@
   software for any purpose.  It is provided "as is" without express or
   implied warranty.
 */
+
 /*
    C++ Parser
 
@@ -159,6 +160,7 @@ bool Parser::rProgram(Ptree*& def)
   | metaclass.decl
   | linkage.spec
   | namespace.spec
+  | namespace.alias
   | using.declaration
   | extern.template.decl
   | declaration
@@ -179,6 +181,8 @@ bool Parser::rDefinition(Ptree*& p)
 	res = rLinkageSpec(p);
     else if(t == EXTERN && lex->LookAhead(1) == TEMPLATE)
 	res = rExternTemplateDecl(p);
+    else if(t == NAMESPACE && lex->LookAhead(2) == '=')
+	res = rNamespaceAlias(p);
     else if(t == NAMESPACE)
 	res = rNamespaceSpec(p);
     else if(t == USING)
@@ -193,9 +197,7 @@ bool Parser::rDefinition(Ptree*& p)
 	return true;
     }
 
-    // Leftover comments.. is this needed?
-    /* Ptree* c = */lex->GetComments();
-    //if (c) c->Display();
+    lex->GetComments();
     return res;
 }
 
@@ -283,7 +285,8 @@ bool Parser::isTypeSpecifier()
     int t = lex->LookAhead(0);
     if(t == Identifier || t == Scope
        ||t == CONST || t == VOLATILE
-       || t == CHAR || t == INT || t == SHORT || t == LONG
+       || t == CHAR // || t == WCHAR 
+       || t == INT || t == SHORT || t == LONG
        || t == SIGNED || t == UNSIGNED || t == FLOAT || t == DOUBLE
        || t == VOID || t == BOOLEAN
        || t == CLASS || t == STRUCT || t == UNION || t == ENUM
@@ -463,6 +466,62 @@ bool Parser::rNamespaceSpec(Ptree*& spec)
     return true;
 }
 
+/*
+  namespace.alias : NAMESPACE Identifier '=' Identifier ';'
+*/
+bool Parser::rNamespaceAlias(Ptree *&exp)
+{
+  Token tk;
+
+  if(lex->GetToken(tk) != NAMESPACE) return false;
+  Ptree *ns = new LeafNAMESPACE(tk);
+
+  if (lex->GetToken(tk) != Identifier) return false;
+  Ptree *alias = new Leaf(tk);
+
+  if (lex->GetToken(tk) != '=') return false;
+  Ptree *eq = new Leaf(tk);
+
+  Ptree *name;
+  Encoding encode;
+  int length = 0;
+  if(lex->LookAhead(0) == Scope)
+  {
+    lex->GetToken(tk);
+    name = Ptree::List(new Leaf(tk));
+    encode.GlobalScope();
+    ++length;
+  }
+  else name = nil;
+
+  while (true)
+  {
+    if (lex->GetToken(tk) != Identifier) return false;
+    Ptree *n = new Leaf(tk);
+    encode.SimpleName(n);
+    ++length;
+    
+    if(lex->LookAhead(0) == Scope)
+    {
+      lex->GetToken(tk);
+      name = Ptree::Nconc(name, Ptree::List(n, new Leaf(tk)));
+    }
+    else
+    {
+      if(name == nil) name = n;
+      else name = Ptree::Snoc(name, n);
+
+      if(length > 1) encode.Qualified(length);
+
+      break;
+    }
+  }
+
+  if (lex->GetToken(tk) != ';') return false;
+
+  exp = new PtreeNamespaceAlias(ns, Ptree::List(alias, eq, name, new Leaf(tk)));
+  return true;
+}
 
 /*
   using.declaration : USING ... ';'
@@ -856,6 +915,58 @@ bool Parser::rDeclaration(Ptree*& statement)
     if (res && statement && (statement->What() == ntDeclaration))
 	static_cast<PtreeDeclaration*>(statement)->SetComments(comments);
     return res;
+}
+
+/* single declaration, for use in a condition (controlling
+   expression of switch/while/if) */
+bool Parser::rSimpleDeclaration(Ptree*& statement)
+{
+    Ptree *cv_q, *integral;
+    Encoding type_encode, name_encode;
+
+    /* no member specification permitted here, and no
+       storage specifier:
+          type-specifier ::=
+             simple-type-specifier
+             class-specifier
+             enum-specifier
+             elaborated-type-specifier
+             cv-qualifier */
+
+    if(!optCvQualify(cv_q) || !optIntegralTypeOrClassSpec(integral, type_encode))
+	return false;
+    if (integral == 0 && !rName(integral, type_encode))
+        return false;
+
+    if (cv_q != nil && integral != nil)
+        integral = Ptree::Snoc(cv_q, integral);
+    else if (cv_q != nil && integral == nil)
+        integral = cv_q, cv_q = 0;
+
+    /* no type-specifier so far -> can't be a declaration */
+    if (integral == 0)
+        return false;
+    
+    Ptree* d;
+    if(!rDeclarator(d, kDeclarator, false, type_encode, name_encode,
+                    true, true))
+        return false;
+
+    if (lex->LookAhead(0) != '=')
+        return false;
+
+    Token eqs;
+    lex->GetToken(eqs);
+    int t = lex->LookAhead(0);
+    Ptree* e;
+    if(!rExpression(e))
+        return false;
+
+    Ptree::Nconc(d, Ptree::List(new Leaf(eqs), e));
+
+    statement = new PtreeDeclaration(0, Ptree::List(integral,
+                                                    Ptree::List(d)));
+    return true;
 }
 
 bool Parser::rIntegralDeclaration(Ptree*& statement, Encoding& type_encode,

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2001 Shigeru Chiba, Tokyo Institute of Technology.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -58,6 +58,7 @@ protected:
     bool rMetaArguments(Ptree*&);
     bool rLinkageSpec(Ptree*&);
     bool rNamespaceSpec(Ptree*&);
+    bool rNamespaceAlias(Ptree*&);
     bool rUsing(Ptree*&);
     bool rLinkageBody(Ptree*&);
     bool rTemplateDecl(Ptree*&);
@@ -70,6 +71,8 @@ protected:
     bool rIntegralDeclaration(Ptree*&, Encoding&, Ptree*, Ptree*, Ptree*);
     bool rConstDeclaration(Ptree*&, Encoding&, Ptree*, Ptree*);
     bool rOtherDeclaration(Ptree*&, Encoding&, Ptree*, Ptree*, Ptree*);
+    bool rCondition(Ptree*&);
+    bool rSimpleDeclaration(Ptree*&);
 
     bool isConstructorDecl();
     bool isPtrToMember(int);
@@ -146,8 +149,6 @@ protected:
     bool rVarName(Ptree*&);
     bool rVarNameCore(Ptree*&, Encoding&);
     bool isTemplateArgs();
-
-    bool rCondition(Ptree*&);
 
     bool rFunctionBody(Ptree*&);
     bool rCompoundStatement(Ptree*&);

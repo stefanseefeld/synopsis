@@ -214,6 +214,13 @@ private:
     Ptree* comments;
 };
 
+class PtreeNamespaceAlias : public NonLeaf {
+public:
+    PtreeNamespaceAlias(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
+    int What();
+    Ptree* Translate(Walker*);
+};
+
 class PtreeUsing : public NonLeaf {
 public:
     PtreeUsing(Ptree* p) : NonLeaf(p, nil) {}

@@ -469,6 +469,18 @@ Ptree* PtreeNamespaceSpec::Translate(Walker* w)
     return w->TranslateNamespaceSpec(this);
 }
 
+// class PtreeNamespaceAlias
+
+int PtreeNamespaceAlias::What()
+{
+    return ntNamespaceAlias;
+}
+
+Ptree* PtreeNamespaceAlias::Translate(Walker* w)
+{
+    return w->TranslateNamespaceAlias(this);
+}
+
 // class PtreeUsing
 
 int PtreeUsing::What()
