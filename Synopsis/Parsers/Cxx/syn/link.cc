@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.7 2001/06/05 02:09:05 stefan Exp $
+ * $Id: link.cc,v 1.8 2001/06/06 07:51:45 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.8  2001/06/06 07:51:45  chalky
+ * Fixes and moving towards SXR
+ *
  * Revision 1.7  2001/06/05 02:09:05  stefan
  * some std C++ fixes and a better way to deal with python versions
  *
@@ -282,16 +285,22 @@ namespace {
     void read_tocs() throw (std::string)
     {
 	char buf[3][4096];
+	int url_len = 0;
 	std::vector<const char*>::iterator iter = toc_filenames.begin();
 	while (iter != toc_filenames.end()) {
 	    const char* toc_filename = *iter++;
+	    if (char* pipe = strchr(toc_filename, '|')) {
+		strcpy(buf[2], pipe+1);
+		url_len = strlen(pipe+1);
+		*pipe = 0;
+	    }
 	    std::ifstream in(toc_filename);
 	    if (!in) { throw std::string("Error opening toc file: ")+toc_filename; }
 	    while (in) {
 		// Get line
 		if (!in.getline(buf[0], 4096, ',')) break;
 		if (!in.getline(buf[1], 4096, ',')) break;
-		if (!in.getline(buf[2], 4096)) break;
+		if (!in.getline(buf[2]+url_len, 4096-url_len)) break;
 		// convert &2c;'s to commas
 		for (char*s = buf[0]; *s; s++) {
 		    if (!strncmp(s, "&2c;", 4)) {
@@ -312,7 +321,7 @@ namespace {
     {
 	std::ifstream in(input_filename);
 	if (!in) { throw std::string("Error opening input file: ")+input_filename; }
-	std::ofstream out(output_filename);
+	std::ofstream out(output_filename, links_append ? ios::app : ios::out);
 	if (!out) { throw std::string("Error opening output file: ")+output_filename; }
 	char buf[4096];
 	int line = 1;

@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.4 2001/06/05 03:49:33 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.5 2001/06/06 07:51:45 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.5  2001/06/06 07:51:45  chalky
+// Fixes and moving towards SXR
+//
 // Revision 1.4  2001/06/05 03:49:33  chalky
 // Made my own wrong_type_cast exception. Added template support to qualified
 // names (its bad but it doesnt crash). Added vector<string> output op to builder
@@ -453,8 +456,10 @@ Ptree* SWalker::TranslateTry(Ptree* node) {
 	    Type::Type* arg_link = TypeResolver(m_builder).resolve(arg_type);
 	    storeLink(arg->First(), false, arg_link);
 	    // Create a declaration for the argument
-	    std::string name = m_decoder->decodeName(arg->Second()->GetEncodedName());
-	    m_builder->addVariable(m_lineno, name, arg_type, false);
+	    if (arg->Second() && arg->Second()->GetEncodedName()) {
+		std::string name = m_decoder->decodeName(arg->Second()->GetEncodedName());
+		m_builder->addVariable(m_lineno, name, arg_type, false, "exception");
+	    }
 	}
 	// Translate contents of 'catch' block
 	Translate(catch_node->Nth(4));

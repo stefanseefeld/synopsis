@@ -94,7 +94,7 @@ public:
     AST::Operation* addOperation(int, const std::string &name, const std::vector<std::string> &premod, Type::Type* ret, const std::string &realname);
 
     //. Add a variable
-    AST::Variable* addVariable(int, const std::string &name, Type::Type* vtype, bool constr);
+    AST::Variable* addVariable(int, const std::string &name, Type::Type* vtype, bool constr, const std::string& type);
 
     //. Add a variable to represent 'this', iff we are in a method
     void addThisVariable();
