@@ -124,7 +124,6 @@ MetaString(std::ostream& out, const std::string &string)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static
 void
 PrintAssignOp(std::ostream& out, AssignOp op)
 {
@@ -177,7 +176,6 @@ PrintAssignOp(std::ostream& out, AssignOp op)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static
 void
 PrintRelOp(std::ostream& out, RelOp op)
 {
@@ -210,7 +208,6 @@ PrintRelOp(std::ostream& out, RelOp op)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static
 void
 PrintUnaryOp(std::ostream& out, UnaryOp op)
 {
@@ -253,7 +250,6 @@ PrintUnaryOp(std::ostream& out, UnaryOp op)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static
 void
 PrintBinaryOp(std::ostream& out, BinaryOp op)
 {
