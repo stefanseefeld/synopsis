@@ -515,6 +515,7 @@ namespace AST
     //
 
     //. Returns the Type object of this const
+
     Types::Type*
     ctype() { return m_ctype; }
 
@@ -592,57 +593,68 @@ namespace AST
 
   //. Function encapsulates a function declaration. Note that names may be
   //. stored in mangled form, and formatters should use realname() to get
-  //. the unmangled version.
+  //. the unmangled version. If this is a function template, use the
+  //. template_type() method to get at the template type
   class Function : public Declaration
   {
   public:
-      //. The type of premodifiers
-      typedef std::vector<std::string> Mods;
+    //. The type of premodifiers
+    typedef std::vector<std::string> Mods;
 
-      //. A vector of Function objects
-      typedef std::vector<Function*> vector;
+    //. A vector of Function objects
+    typedef std::vector<Function*> vector;
 
-      //. Constructor
-      Function(
-        const std::string& file, int line, const std::string& type, const ScopedName& name,
-        const Mods& premod, Types::Type* ret, const std::string& realname
-      );
+    //. Constructor
+    Function(
+      const std::string& file, int line, const std::string& type, const ScopedName& name,
+      const Mods& premod, Types::Type* ret, const std::string& realname
+    );
 
-      //. Destructor. Recursively destroys parameters
-      ~Function();
+    //. Destructor. Recursively destroys parameters
+    ~Function();
 
-      //. Accept the given visitor
-      virtual void
-      accept(Visitor*);
+    //. Accept the given visitor
+    virtual void
+    accept(Visitor*);
 
-      //
-      // Attribute Methods
-      //
+    //
+    // Attribute Methods
+    //
 
-      //. Returns the premodifier vector
-      Mods&
-      premodifier() { return m_pre; }
+    //. Returns the premodifier vector
+    Mods&
+    premodifier() { return m_pre; }
 
-      //. Returns the return Type
-      Types::Type*
-      return_type() { return m_ret; }
+    //. Returns the return Type
+    Types::Type*
+    return_type() { return m_ret; }
 
-      //. Returns the real name of this function
-      const std::string&
-      realname() const { return m_realname; }
+    //. Returns the real name of this function
+    const std::string&
+    realname() const { return m_realname; }
 
-      //. Returns the vector of parameters
-      Parameter::vector&
-      parameters() { return m_params; }
+    //. Returns the vector of parameters
+    Parameter::vector&
+    parameters() { return m_params; }
+
+    //. Returns the Template object if this is a template
+    Types::Template*
+    template_type() { return m_template; }
+
+    //. Sets the Template object for this class. NULL means not a template
+    void
+    set_template_type(Types::Template* type) { m_template = type; }
   private:
-      //. The premodifier vector
-      Mods              m_pre;
-      //. The return type
-      Types::Type*       m_ret;
-      //. The real (unmangled) name
-      std::string       m_realname;
-      //. The vector of parameters
-      Parameter::vector m_params;
+    //. The premodifier vector
+    Mods              m_pre;
+    //. The return type
+    Types::Type*      m_ret;
+    //. The real (unmangled) name
+    std::string       m_realname;
+    //. The vector of parameters
+    Parameter::vector m_params;
+    //. The Template Type for this class if it's a template
+    Types::Template*  m_template;
   }; // class Function
   
 

@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.27 2002/10/20 02:21:50 chalky Exp $
+# $Id: Dot.py,v 1.28 2002/10/20 15:38:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.28  2002/10/20 15:38:08  chalky
+# Much improved template support, including Function Templates.
+#
 # Revision 1.27  2002/10/20 02:21:50  chalky
 # Fix up quoting (thanks David).
 #
@@ -209,6 +212,10 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
     def visitUnknown(self, type):
         self.__type_ref = toc[type.link()]
         self.__type_label = Util.ccolonName(type.name(), self.scope())
+        
+    def visitDependent(self, type):
+        self.__type_ref = None
+        self.__type_label = type.name()[-1]
         
     def visitDeclared(self, type):
         self.__type_ref = toc[type.declaration().name()]

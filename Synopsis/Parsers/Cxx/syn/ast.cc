@@ -234,7 +234,7 @@ Function::Function(
   const Mods& premod, Types::Type* ret, const std::string& realname
 )
 : Declaration(file, line, type, name), m_pre(premod), m_ret(ret),
-      m_realname(realname)
+      m_realname(realname), m_template(NULL)
 {
 }
 

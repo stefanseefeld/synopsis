@@ -1538,6 +1538,7 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
     if(!optPtrOperator(d, type_encode))
 	return FALSE;
 
+    char* lex_save = lex->Save();
     t = lex->LookAhead(0);
     if(t == '('){
 	Token op, cp;
@@ -1549,16 +1550,24 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 	    return FALSE;
 
 	if(lex->GetToken(cp) != ')')
-	    return FALSE;
+	{
+	    if (kind != kCastDeclarator) 
+		return FALSE;
+	    lex->Restore(lex_save);
+	    name_encode.Clear();
+	}
+	else
+	{
 
-	if(!should_be_declarator)
-	    if(kind == kDeclarator && d == nil){
-		t = lex->LookAhead(0);
-		if(t != '[' && t != '(')
-		    return FALSE;
-	    }
+	    if(!should_be_declarator)
+		if(kind == kDeclarator && d == nil){
+		    t = lex->LookAhead(0);
+		    if(t != '[' && t != '(')
+			return FALSE;
+		}
 
-	d = Ptree::Snoc(d, Ptree::List(new Leaf(op), decl2, new Leaf(cp)));
+	    d = Ptree::Snoc(d, Ptree::List(new Leaf(op), decl2, new Leaf(cp)));
+	}
     }
     else if(kind != kCastDeclarator){
 	if (t == INLINE){

@@ -112,7 +112,7 @@ void TypeFormatter::visit_parameterized(Types::Parameterized* type)
 
 void TypeFormatter::visit_func_ptr(Types::FuncPtr* type)
 {
-    std::string str = "(*)(";
+    std::string str = format(type->returnType()) + "(";
     if (type->parameters().size()) {
 	str += format(type->parameters().front());
 	Types::Type::vector::iterator iter = type->parameters().begin();
@@ -243,13 +243,17 @@ void Dumper::visit_class(AST::Class* clas)
 	Types::Template* templ = clas->template_type();
 	std::cout << m_indent_string << "template<";
 	std::vector<std::string> names;
-	Types::Type::vector::iterator iter = templ->parameters().begin();
+	AST::Parameter::vector::iterator iter = templ->parameters().begin();
 	while (iter != templ->parameters().end())
-	    names.push_back(format(*iter++));
+	    names.push_back(formatParam(*iter++));
 	std::cout << join(names, ", ") << ">" << std::endl;
 	m_scope.pop_back();
-    }
-    std::cout << m_indent_string << clas->type() << " " << clas->name();
+	if (clas->type().substr(0, 9) == "template ")
+	    std::cout << m_indent_string << (clas->type().c_str()+9) << " " << clas->name();
+	else
+	    std::cout << m_indent_string << clas->type() << " " << clas->name();
+    } else
+	std::cout << m_indent_string << clas->type() << " " << clas->name();
     if (clas->parents().size()) {
 	std::cout << ": ";
 	std::vector<std::string> inherits;
@@ -285,6 +289,17 @@ void Dumper::visit_operation(AST::Operation* oper)
 {
     visit(oper->comments());
     std::cout << m_indent_string;
+    if (oper->template_type()) {
+	m_scope.push_back(oper->name().back());
+	Types::Template* templ = oper->template_type();
+	std::cout << m_indent_string << "template<";
+	std::vector<std::string> names;
+	AST::Parameter::vector::iterator iter = templ->parameters().begin();
+	while (iter != templ->parameters().end())
+	    names.push_back(formatParam(*iter++));
+	std::cout << join(names, ", ") << ">" << std::endl;
+	m_scope.pop_back();
+    }
     if (!isStructor(oper) && oper->return_type()) std::cout << format(oper->return_type()) + " ";
     std::cout << oper->realname() << "(";
     if (oper->parameters().size()) {

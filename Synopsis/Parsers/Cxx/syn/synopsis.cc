@@ -3,6 +3,9 @@
  * C++ AST into a Python AST.
  *
  * $Log: synopsis.cc,v $
+ * Revision 1.41  2002/10/20 15:38:10  chalky
+ * Much improved template support, including Function Templates.
+ *
  * Revision 1.40  2002/10/20 02:25:08  chalky
  * Remove null ptr hack - uses signal(SIGINT) to activate debugger
  *
@@ -360,6 +363,18 @@ PyObject *Synopsis::Base(Types::Base* type)
     return base;
 }
 
+PyObject *Synopsis::Dependent(Types::Dependent* type)
+{
+    Trace trace("Synopsis::Dependent");
+    PyObject *name, *base;
+    base = PyObject_CallMethod(m_type, "Dependent", "OO",
+	m->cxx(), name = m->Tuple(type->name())
+    );
+    PyObject_SetItem(m_dictionary, name, base);
+    Py_DECREF(name);
+    return base;
+}
+
 PyObject *Synopsis::Unknown(Types::Named* type)
 {
     Trace trace("Synopsis::Unknown");
@@ -702,9 +717,16 @@ PyObject *Synopsis::Function(AST::Function* decl)
 	ret = m->py(decl->return_type()),
 	name = m->Tuple(decl->name()), realname = m->py(decl->realname())
     );
+    // This is necessary to prevent inf. loops in several places
+    m->add(decl, func);
     PyObject* new_params;
     PyObject* params = PyObject_CallMethod(func, "parameters", NULL);
     PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
+    if (decl->template_type()) {
+	PyObject* ttype;
+	PyObject_CallMethod(func, "set_template", "O", ttype = m->py(decl->template_type()));
+	Py_DECREF(ttype);
+    }
     addComments(func, decl);
     Py_DECREF(file);
     Py_DECREF(type);
@@ -727,9 +749,16 @@ PyObject *Synopsis::Operation(AST::Operation* decl)
 	ret = m->py(decl->return_type()),
 	name = m->Tuple(decl->name()), realname = m->py(decl->realname())
     );
+    // This is necessary to prevent inf. loops in several places
+    m->add(decl, oper);
     PyObject* new_params;
     PyObject* params = PyObject_CallMethod(oper, "parameters", NULL);
     PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
+    if (decl->template_type()) {
+	PyObject* ttype;
+	PyObject_CallMethod(oper, "set_template", "O", ttype = m->py(decl->template_type()));
+	Py_DECREF(ttype);
+    }
     addComments(oper, decl);
     Py_DECREF(file);
     Py_DECREF(type);
@@ -903,6 +932,9 @@ void Synopsis::visit_comment(AST::Comment* decl) {
 }*/
 void Synopsis::visit_unknown(Types::Unknown* type) {
     m->add(type, Unknown(type));
+}
+void Synopsis::visit_dependent(Types::Dependent* type) {
+    m->add(type, Dependent(type));
 }
 void Synopsis::visit_modifier(Types::Modifier* type) {
     m->add(type, Modifier(type));

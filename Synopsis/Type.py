@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.10 2001/07/19 00:44:39 chalky Exp $
+# $Id: Type.py,v 1.11 2002/10/20 15:38:06 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Type.py,v $
+# Revision 1.11  2002/10/20 15:38:06  chalky
+# Much improved template support, including Function Templates.
+#
 # Revision 1.10  2001/07/19 00:44:39  chalky
 # Fixes in __str__ methods that aren't normally used
 #
@@ -69,7 +72,6 @@ class Type:
 
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Type.__cmp__"
 	return cmp(id(self),id(other))
 
 class Named (Type):
@@ -94,9 +96,18 @@ class Base (Named):
     def accept(self, visitor): visitor.visitBaseType(self)
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Base.__cmp__"
-	return ccmp(self,other) or \
-	    cmp(self.name(),other.name())
+	return ccmp(self,other) or cmp(self.name(),other.name())
+    def __str__(self): return Util.ccolonName(self.name())
+
+class Dependent (Named):
+    """Class for template dependent types"""
+
+    def __init__(self, language, name):
+        Named.__init__(self, language, name)
+    def accept(self, visitor): visitor.visitDependent(self)
+    def __cmp__(self, other):
+	"Comparison operator"
+	return ccmp(self,other) or cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.name())
 
 class Unknown(Named):
@@ -116,7 +127,6 @@ class Unknown(Named):
     def accept(self, visitor): visitor.visitUnknown(self)
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Unknown.__cmp__"
 	return ccmp(self,other) or cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.name())
 
@@ -132,7 +142,6 @@ class Declared (Named):
     def accept(self, visitor): visitor.visitDeclared(self)
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Declared.__cmp__"
 	return ccmp(self,other) or cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.name())
 
@@ -148,7 +157,6 @@ class Template (Declared):
     def accept(self, visitor): visitor.visitTemplate(self)
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Template.__cmp__"
 	return ccmp(self,other) or cmp(self.parameters(),other.parameters())
     def __str__(self):
 	return "template<%s>%s"%(
@@ -178,7 +186,6 @@ class Modifier (Type):
     def set_alias(self, alias): self.__alias = alias
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Modifier.__cmp__",self,other
 	return ccmp(self,other) or \
 	    cmp(self.alias(),other.alias()) or \
 	    cmp(self.premod(),other.premod()) or \
@@ -205,7 +212,6 @@ class Array (Type):
     def set_alias(self, alias): self.__alias = alias
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Modifier.__cmp__",self,other
 	return ccmp(self,other) or \
 	    cmp(self.alias(),other.alias()) or \
 	    cmp(self.sizes(),other.sizes())
@@ -229,7 +235,6 @@ class Parametrized (Type):
     def set_template(self, type): self.__template = type
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Parametrized.__cmp__"
 	return ccmp(self,other) or \
 	    cmp(self.template(),other.template())
     def __str__(self):
@@ -300,3 +305,4 @@ class Visitor:
     def visitTemplate(self, type): return
     def visitParametrized(self, type): return
     def visitFunctionType(self, type): return
+    def visitDependent(self, type): return

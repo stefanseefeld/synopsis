@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.11 2002/10/11 05:58:21 chalky Exp $
+// $Id: linkstore.cc,v 1.12 2002/10/20 15:38:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.12  2002/10/20 15:38:10  chalky
+// Much improved template support, including Function Templates.
+//
 // Revision 1.11  2002/10/11 05:58:21  chalky
 // Better memory management. Better comment proximity detection.
 //
@@ -185,6 +188,12 @@ public:
   }
   void visit_parameterized(Types::Parameterized* param)
   {
+    // Sometimes there's a typename at the front..
+    if (node->First()->IsLeaf() && node->First()->Eq("typename"))
+      node = node->Second();
+    // Some modifiers nest the identifier..
+    while (!node->First()->IsLeaf())
+      node = node->First();
     // For qualified template names the ptree is:
     //  [ std :: [ vector [ < ... , ... > ] ] ]
     // If the name starts with :: (global scope), skip it
@@ -192,7 +201,10 @@ public:
       node = node->Rest();
     // Skip the qualifieds (and just link the final name)
     while (node->Second() && node->Second()->Eq("::"))
-      node = node->Third();
+      if (node->Third()->IsLeaf())
+        node = node->Rest()->Rest();
+      else
+        node = node->Third();
     // Do template
     links->link(node->First(), param->template_type());
     // Do params

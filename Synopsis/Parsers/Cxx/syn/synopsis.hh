@@ -49,6 +49,7 @@ public:
     PyObject *Base(Types::Base*);
     PyObject *Unknown(Types::Named*);
     PyObject *Declared(Types::Declared*);
+    PyObject *Dependent(Types::Dependent*);
     PyObject *Template(Types::Template*);
     PyObject *Modifier(Types::Modifier*);
     PyObject *Array(Types::Array*);
@@ -102,6 +103,7 @@ public:
     void visit_array(Types::Array*);
     //void visitNamed(Types::Named*);
     void visit_base(Types::Base*);
+    void visit_dependent(Types::Dependent*);
     void visit_declared(Types::Declared*);
     void visit_template_type(Types::Template*);
     void visit_parameterized(Types::Parameterized*);

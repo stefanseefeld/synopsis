@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker-syntax.cc,v 1.15 2002/01/30 11:53:15 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.16 2002/10/20 15:38:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.16  2002/10/20 15:38:10  chalky
+// Much improved template support, including Function Templates.
+//
 // Revision 1.15  2002/01/30 11:53:15  chalky
 // Couple bug fixes, some cleaning up.
 //
@@ -43,7 +46,7 @@
 // storing links, ie: they translate code rather than declarations.
 //
 
-#include <iostream.h>
+#include <iostream>
 #include <string>
 #include <typeinfo>
 
@@ -667,8 +670,6 @@ Ptree*
 SWalker::TranslateTemplateInstantiation(Ptree*) { STrace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
 Ptree*
 SWalker::TranslateExternTemplate(Ptree*) { STrace trace("SWalker::TranslateExternTemplate NYI"); return 0; }
-Ptree*
-SWalker::TranslateTemplateFunction(Ptree*, Ptree*) { STrace trace("SWalker::TranslateTemplateFunction NYI"); return 0; }
 Ptree*
 SWalker::TranslateMetaclassDecl(Ptree*) { STrace trace("SWalker::TranslateMetaclassDecl NYI"); return 0; }
 

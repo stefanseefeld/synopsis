@@ -1,8 +1,8 @@
 synopsis	:= ../../bin/synopsis -P boost.synopsis
 
-all: BoostPython
+all: BoostPython/index.html
 
-BoostPython:
+BoostPython/index.html:
 		$(synopsis)
 
 clean:
