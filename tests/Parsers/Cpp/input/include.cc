@@ -1,1 +1,1 @@
-#include "../../../../include/Synopsis/Object.hh"
+#include "../include/header.hh"
