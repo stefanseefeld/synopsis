@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.20 2001/07/11 01:45:02 stefan Exp $
+# $Id: Dot.py,v 1.21 2001/07/12 00:53:12 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.21  2001/07/12 00:53:12  stefan
+# ...wasn't meant to be left for the commit
+#
 # Revision 1.20  2001/07/11 01:45:02  stefan
 # fix Dot and HTML formatters to adjust the references depending on the filename of the output
 #
@@ -387,7 +390,6 @@ def __parseArgs(args):
 
 def _rel(frm, to):
     "Find link to to relative to frm"
-    print "comparing", frm, "to", to
     frm = string.split(frm, '/'); to = string.split(to, '/')
     for l in range((len(frm)<len(to)) and len(frm)-1 or len(to)-1):
         if to[0] == frm[0]: del to[0]; del frm[0]
