@@ -16,6 +16,34 @@ using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
 
+namespace
+{
+PTree::Node *strip_cv_from_integral_type(PTree::Node *integral)
+{
+  if(integral == 0) return 0;
+
+  if(!integral->is_atom())
+    if(PTree::is_a(integral->car(), Token::CONST, Token::VOLATILE))
+      return PTree::second(integral);
+    else if(PTree::is_a(PTree::second(integral), Token::CONST, Token::VOLATILE))
+      return integral->car();
+
+  return integral;
+}
+
+PTree::ClassSpec *get_class_template_spec(PTree::Node *body)
+{
+  if(*PTree::third(body) == ';')
+  {
+    PTree::Node *spec = strip_cv_from_integral_type(PTree::second(body));
+    return dynamic_cast<PTree::ClassSpec *>(spec);
+  }
+  return 0;
+}
+
+}
+
+
 Table::Table(Language l)
   : my_language(l)
 {
@@ -183,7 +211,7 @@ void Table::declare(Typedef *td)
       Encoding name = d->encoded_name();
       Encoding type = d->encoded_type();
       Scope *scope = my_scopes.top();
-      scope->declare(name, new TypeName(type, d, scope));
+      scope->declare(name, new TypedefName(type, d, scope));
     }
     declarations = tail(declarations, 2);
   }
@@ -267,7 +295,7 @@ void Table::declare(TemplateDecl *tdecl)
   Trace trace("Table::declare(TemplateDecl *)");
   if (my_language == NONE) return;
   PTree::Node *body = PTree::nth(tdecl, 4);
-  PTree::ClassSpec *class_spec = Table::get_class_template_spec(body);
+  PTree::ClassSpec *class_spec = get_class_template_spec(body);
   Scope *scope = my_scopes.top();
   if (class_spec)
   {
@@ -293,122 +321,4 @@ SymbolSet Table::lookup(PTree::Encoding const &name) const
 {
   if (my_language == NONE) return SymbolSet();
   else return my_scopes.top()->lookup(name);
-}
-
-//. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo",
-//. for example.
-//. If an error occurs, the function returns 0.
-PTree::Encoding Table::get_base_name(PTree::Encoding const &enc,
-				     Scope const *&scope)
-{
-  if(enc.empty()) return enc;
-  Scope const *s = scope;
-  PTree::Encoding::iterator i = enc.begin();
-  if(*i == 'Q')
-  {
-    int n = *(i + 1) - 0x80;
-    i += 2;
-    while(n-- > 1)
-    {
-      int m = *i++;
-      if(m == 'T') m = Table::get_base_name_if_template(i, s);
-      else if(m < 0x80) return PTree::Encoding(); // error?
-      else
-      {	 // class name
-	m -= 0x80;
-	if(m <= 0)
-	{		// if global scope (e.g. ::Foo)
-	  if(s) s = s->global();
-	}
-	else s = lookup_typedef_name(i, m, s);
-      }
-      i += m;
-    }
-    scope = s;
-  }
-  if(*i == 'T')
-  {		// template class
-    int m = *(i + 1) - 0x80;
-    int n = *(i + m + 2) - 0x80;
-    return PTree::Encoding(i, i + m + n + 3);
-  }
-  else if(*i < 0x80) return PTree::Encoding();
-  else return PTree::Encoding(i + 1, i + 1 + size_t(*i - 0x80));
-}
-
-int Table::get_base_name_if_template(Encoding::iterator i,
-				     Scope const *&scope)
-{
-  int m = *i - 0x80;
-  if(m <= 0) return *(i+1) - 0x80 + 2;
-
-  if(scope)
-  {
-    SymbolSet symbols = scope->lookup(Encoding((char const *)&*(i + 1), m));
-    // FIXME !! (see Environment)
-    if (symbols.size()) return m + (*(i + m + 1) - 0x80) + 2;
-  }
-  // the template name was not found.
-  scope = 0;
-  return m + (*(i + m + 1) - 0x80) + 2;
-}
-
-Scope const *Table::lookup_typedef_name(Encoding::iterator i, size_t s,
-					Scope const *scope)
-{
-//   TypeInfo tinfo;
-//   Bind *bind;
-//   Class *c = 0;
-
-  if(scope)
-    ;
-//     if (scope->LookupType(Encoding((char const *)&*i, s), bind) && bind)
-//       switch(bind->What())
-//       {
-//         case Bind::isClassName :
-// 	  c = bind->ClassMetaobject();
-// 	  break;
-//         case Bind::isTypedefName :
-// 	  bind->GetType(tinfo, env);
-// 	  c = tinfo.class_metaobject();
-// 	  /* if (c == 0) */
-// 	  env = 0;
-// 	  break;
-//         default :
-// 	  break;
-//       }
-//     else if (env->LookupNamespace(Encoding((char const *)&*i, s)))
-//     {
-//       /* For the time being, we simply ignore name spaces.
-//        * For example, std::T is identical to ::T.
-//        */
-//       env = env->GetBottom();
-//     }
-//     else env = 0; // unknown typedef name
-
-//   return c ? c->GetEnvironment() : env;
-  return 0;
-}
-
-PTree::ClassSpec *Table::get_class_template_spec(PTree::Node *body)
-{
-  if(*PTree::third(body) == ';')
-  {
-    PTree::Node *spec = strip_cv_from_integral_type(PTree::second(body));
-    return dynamic_cast<PTree::ClassSpec *>(spec);
-  }
-  return 0;
-}
-
-PTree::Node *Table::strip_cv_from_integral_type(PTree::Node *integral)
-{
-  if(integral == 0) return 0;
-
-  if(!integral->is_atom())
-    if(PTree::is_a(integral->car(), Token::CONST, Token::VOLATILE))
-      return PTree::second(integral);
-    else if(PTree::is_a(PTree::second(integral), Token::CONST, Token::VOLATILE))
-      return integral->car();
-
-  return integral;
 }

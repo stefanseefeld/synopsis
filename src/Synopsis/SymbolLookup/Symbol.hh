@@ -60,6 +60,13 @@ public:
     : Symbol(type, ptree, scope) {}
 };
 
+class TypedefName : public TypeName
+{
+public:
+  TypedefName(const PTree::Encoding &type, PTree::Node *ptree, Scope const *scope)
+    : TypeName(type, ptree, scope) {}
+};
+
 class ClassTemplateName : public Symbol
 {
 public:

@@ -28,12 +28,8 @@ public:
   InitializerFinder(SymbolLookup::Table &table, std::ostream &os)
     : SymbolLookup::Visitor(table), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
+
 private:
-  virtual void visit(PTree::List *node)
-  {
-    for (PTree::Node *n = node; n; n = n->cdr())
-      if (n->car()) n->car()->accept(this);
-  }
   virtual void visit(PTree::Declaration *node)
   {
     PTree::Node *type = PTree::second(node);
@@ -51,12 +47,14 @@ private:
     size_t length = PTree::length(decl);
     if (length >= 2 && *PTree::nth(decl, length - 2) == '=')
     {
-      PTree::Node *init = PTree::tail(decl, length - 1);
+      PTree::Node *init = PTree::tail(decl, length - 1)->car();
       // do the type evaluation here...
-      my_os << "Expression : " << PTree::reify(init) << std::endl;
-      SymbolLookup::TypeEvaluator evaluator(table().current_scope());
-      PTree::Encoding type = evaluator.evaluate(init);
-      my_os << "Type : " << type << std::endl;
+      std::cout << "Expression : " << PTree::reify(init) << std::endl;
+      SymbolLookup::Type type = SymbolLookup::type_of(init, &table().current_scope());
+      std::cout << "Type : " << type << std::endl;
+      std::cout << "Type : " << type.is_const() << std::endl;
+      std::cout << "Type : " << type.is_builtin_type() << std::endl;
+      std::cout << "Type : " << type << std::endl;
     }
   }
 
@@ -74,7 +72,7 @@ int main(int argc, char **argv)
   {
     std::ofstream ofs(argv[1]);
     std::ifstream ifs(argv[2]);
-    Buffer buffer(ifs.rdbuf());
+    Buffer buffer(ifs.rdbuf(), argv[2]);
     Lexer lexer(&buffer);
     SymbolLookup::Table symbols;
     Parser parser(lexer, symbols);

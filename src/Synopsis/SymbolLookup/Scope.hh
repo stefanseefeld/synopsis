@@ -151,27 +151,30 @@ inline Scope *Scope::find_scope(PTree::Node const *node) const
 template <typename T>
 inline T const *Scope::lookup(PTree::Encoding const &name) const throw(TypeError)
 {
-  SymbolTable::const_iterator symbol = my_symbols.lower_bound(name);
-  if (symbol == my_symbols.upper_bound(name)) return 0; // no such symbol
-  else if (symbol->second->type().is_function())
-    throw TypeError(name, symbol->second->type()); // function
-  T const * t = dynamic_cast<T const *>(symbol->second);
-  if (!t) throw TypeError(name, symbol->second->type());
+  SymbolSet symbols = lookup(name);
+  if (symbols.empty()) return 0;
+  Symbol const *symbol = *symbols.begin();
+  if (symbols.size() > 1) // must be a set of overloaded functions
+    throw TypeError(name, symbol->type()); // function
+
+  T const * t = dynamic_cast<T const *>(symbol);
+  if (!t)
+    throw TypeError(name, symbol->type());
   return t;
 }
 
 inline FunctionNameSet
 Scope::lookup_function(PTree::Encoding const &name) const throw(TypeError)
 {
-  SymbolTable::const_iterator symbol = my_symbols.lower_bound(name);
-  FunctionNameSet symbols;
-  for (; symbol != my_symbols.upper_bound(name); ++symbol)
+  SymbolSet symbols = lookup(name);
+  FunctionNameSet funcs;
+  for (SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
   {
-    FunctionName const * t = dynamic_cast<FunctionName const *>(symbol->second);
-    if (!t) throw TypeError(name, symbol->second->type());
-    else symbols.insert(t);
+    FunctionName const * t = dynamic_cast<FunctionName const *>(*i);
+    if (!t) throw TypeError(name, (*i)->type());
+    else funcs.insert(t);
   }
-  return symbols;
+  return funcs;
 }
 
 }
