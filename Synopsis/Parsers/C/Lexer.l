@@ -577,7 +577,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                          LAST_STATE();
                          *tokn_ptr = '\0';
                          lvalp->consValue =
-                           new StringConstant(string(tokn_buff,tokn_ptr-tokn_buff),HERE,isWide);
+                           new StringConstant(std::string(tokn_buff,tokn_ptr-tokn_buff),HERE,isWide);
                          return(err_tok = STRING);
                        }
 
