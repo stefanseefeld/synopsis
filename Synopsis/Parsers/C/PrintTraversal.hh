@@ -88,7 +88,7 @@ public:
   virtual void traverse_function_definition(FunctionDef *);
   virtual void traverse_file(File *);
 private:
-  void indent() { for(int i = 0; i != level; ++i) out << ' ';}
+  void indent() { for(int i = 0; i != level; ++i) out << "  ";}
   void incr_indent() { ++level;}
   void decr_indent() { --level;}
   void null() { indent(); out << ";\n";}

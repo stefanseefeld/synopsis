@@ -39,6 +39,8 @@
 PrintTraversal::PrintTraversal(std::ostream &os, bool d)
    : out(os), debug(d), level(0), show_base(true)
 {
+  if (debug) Statement::debug = true;
+  else Statement::debug = false;
 }
 
 void PrintTraversal::traverse_base(BaseType *type)
