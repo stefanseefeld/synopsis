@@ -23,8 +23,6 @@ python_src	+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
 python_src	+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
 # don't include UI yet, as it isn't up to date with the rest
 python_syn	:= $(patsubst $(topdir)/%.py, %.syn, $(python_src))
-api_hh		:= $(shell find $(topdir)/include -name '*.hh' -print)
-api_hh_syn	:= $(patsubst $(topdir)/%.hh, %.hh.syn, $(api_hh))
 
 texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
 
