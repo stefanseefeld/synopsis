@@ -1,4 +1,4 @@
-synopsis	:= ../../synopsis -p IDL -I. -Wp,-K -f HTML -Wf,--spec=html.spec
+synopsis	:= ../../synopsis -c config.py -I. -Wc,parser=IDL,linker=Linker,formatter=HTML
 
 all: CosNaming Types Graphic Input
 
@@ -12,7 +12,7 @@ Graphic:	Graphic.idl
 		$(synopsis) -o Graphic $?
 
 Input:		Input.idl
-		../../synopsis -p IDL -I. -Wp,-K -f DocBook -o Input.xml $?
+		../../synopsis -c config.py -Wc,parser=IDL,linker=Linker,formatter=DocBook -o Input.xml $?
 
 clean:
 		rm -fr *~ *.html *.syn CosNaming Types Graphic Input
