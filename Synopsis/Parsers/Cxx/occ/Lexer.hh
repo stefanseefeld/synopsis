@@ -19,6 +19,10 @@ class Buffer;
 class Lexer
 {
 public:
+  //. Define sets of token that are to be recognized as special
+  //. keywords (as opposed to identifiers). They can be or'ed.
+  //. If CXX is not specified, the Lexer will operate in 'C mode'.
+  enum TokenSet { CXX=0x01, GNU=0x02, MSVC=0x04};
   typedef std::vector<Token> Comments;
 
   struct InvalidChar : std::runtime_error
@@ -26,7 +30,9 @@ public:
     InvalidChar(const std::string &msg) : std::runtime_error(msg) {}
   };
 
-  Lexer(Buffer *);
+  //. Construct a Lexer on the given Buffer using the given
+  //. token set. The default token set is CXX with GNU extensions.
+  Lexer(Buffer *, int tokenset = CXX|GNU);
   Token::Type get_token(Token &);
   Token::Type look_ahead(size_t);
   Token::Type look_ahead(size_t, Token &);

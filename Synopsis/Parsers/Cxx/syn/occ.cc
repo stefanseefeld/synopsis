@@ -34,6 +34,27 @@
 
 using namespace Synopsis;
 
+//
+// for now occ remains the 'C++ parser backend' for synopsis,
+// and GNU extension and MSVC tokens are activated in compatibility
+// mode.
+// Later this may become an option for the python frontend, too.
+//
+#if defined(__GNUG__) || defined(_GNUG_SYNTAX)
+# if defined(PARSE_MSVC)
+const int tokenset = Lexer::CXX | Lexer::GNU | Lexer::MSVC;
+# else
+const int tokenset = Lexer::CXX | Lexer::GNU;
+# endif
+#else
+# if defined(PARSE_MSVC)
+const int tokenset = Lexer::CXX | Lexer::MSVC;
+# else
+const int tokenset = Lexer::CXX;
+# endif
+#endif
+
+
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
  */
@@ -127,7 +148,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     exit(1);
   }
   Buffer buffer(ifs.rdbuf());
-  Lexer lexer(&buffer);
+  Lexer lexer(&buffer, tokenset);
   Parser parse(&lexer);
 
   FileFilter* filter = FileFilter::instance();
@@ -261,7 +282,7 @@ PyObject *occ_print(PyObject *self, PyObject *args)
   try
   {
     Buffer buffer(ifs.rdbuf());
-    Lexer lexer(&buffer);
+    Lexer lexer(&buffer, tokenset);
     Parser parse(&lexer);
 
     PTree::Display display(std::cout, true);
