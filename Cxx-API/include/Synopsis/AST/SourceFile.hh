@@ -33,9 +33,9 @@ public:
   MacroCall(const Python::Object &o) throw(TypeError) : Python::Object(o) { assert_type();}
   void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.AST", "MacroCall");}
   std::string name() { return narrow<std::string>(attr("name"));}
-  int start() { return narrow<int>(attr("start"));}
-  int end() { return narrow<int>(attr("end"));}
-  int diff() { return narrow<int>(attr("diff"));}
+  long start() { return narrow<long>(attr("start"));}
+  long end() { return narrow<long>(attr("end"));}
+  long diff() { return narrow<long>(attr("diff"));}
 };
 
 }
