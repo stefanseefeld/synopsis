@@ -7,16 +7,17 @@ from Synopsis.Processors import *
 from Synopsis.Parsers import Cxx
 
 from distutils import sysconfig
-import sys, os.path
+import sys, os, os.path
 
 topdir = '@topdir@'
 srcdir = '@srcdir@'
 
 cppflags = ['-I%s'%(topdir + '/include'),
+            '-I%s'%(srcdir + '/gc/include'),
             '-I%s'%(srcdir),
             '-I%s'%(sysconfig.get_python_inc())]
 
-cxx = Cxx.Parser(base_path = topdir + '/',
+cxx = Cxx.Parser(base_path = topdir + os.sep,
                  cppflags = cppflags,
                  syntax_prefix = 'links',
                  xref_prefix = 'xref')
