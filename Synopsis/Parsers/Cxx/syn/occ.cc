@@ -57,11 +57,17 @@ public:
     virtual Ptree *TranslateEnumSpec(Ptree *);
     virtual Ptree *TranslateAccessSpec(Ptree *);
 private:
+    //. update m_filename and m_lineno from the given ptree
+    void updateLineNumber(Ptree*);
+
     //. extract the name of the node
     static string getName(Ptree *);
+
     //. return a Type object for the given name and the given list of scopes
     PyObject *lookupType(Ptree *, PyObject *);
+
     //. return a Type object for the given parse tree and the given list of scopes
+
     Synopsis *synopsis;
     PyObject *_result; // Current working value
     vector<PyObject *> _declarators;
@@ -83,6 +89,15 @@ private:
     code_iter* m_enc_iter;
     string m_encmessage;
 
+    //. The current filename
+    string m_filename;
+    
+    //. The current line number
+    int m_lineno;
+
+    //. The parser which is generating the Ptree
+    Parser* m_parser;
+
     //. Current PtreeDeclaration being parsed
     PtreeDeclaration* m_declaration;
 
@@ -94,14 +109,15 @@ private:
 
 ostream& operator << (ostream& o, const PyWalker::code& code) {
     for (PyWalker::code::const_iterator iter = code.begin(); iter != code.end(); ++iter)
-	if (*iter >= 0x80) o << char(*iter + '0' - 0x80);
+	if (*iter >= 0x80) o << '[' << int(*iter + - 0x80) << ']';
 	else o << *iter;
     return o;
 }
 
 PyWalker::PyWalker(Parser *p, Synopsis *s)
         : Walker(p),
-        synopsis(s)
+        synopsis(s),
+	m_parser(p)
 {
     Trace trace("PyWalker::PyWalker");
     m_ptree = m_declaration = 0;
@@ -110,6 +126,15 @@ PyWalker::PyWalker(Parser *p, Synopsis *s)
 PyWalker::~PyWalker()
 {
     Trace trace("PyWalker::~PyWalker");
+}
+
+void PyWalker::updateLineNumber(Ptree* ptree)
+{
+    char* fname;
+    int fname_len;
+    m_lineno = m_parser->LineNumber(ptree->LeftMost(), fname, fname_len);
+    m_filename.assign(fname, fname_len);
+    synopsis->set_filename(m_filename);
 }
 
 string PyWalker::getName(Ptree *node)
@@ -189,6 +214,7 @@ Ptree *PyWalker::TranslateDeclaration(Ptree *declaration)
     declaration->Display();
 #endif
     m_declaration = static_cast<PtreeDeclaration*>(declaration);
+    updateLineNumber(declaration);
     Walker::TranslateDeclaration(declaration);
     return declaration;
 }
@@ -212,16 +238,16 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
     unsigned char* enctype = reinterpret_cast<unsigned char*>(decl->GetEncodedType());
     if (!encname || !enctype) return decl;
 #if 0
-    cout << "encoding '";
-    Encoding::Print(cout, enctype); cout << "' '";
-    Encoding::Print(cout, encname); cout << '\'' << endl;
+    cout << "Declarator encoding '" << enctype << "' '" << encname << "'" << endl;
 #endif
-    if (enctype[0] == 'F') {
+    // Figure out parameter types:
+    code enctype_s(enctype);
+    code_iter enc_iter = enctype_s.begin();
+    initTypeDecoder(enctype_s, enc_iter, decl->ToString());
+    while (*enc_iter == 'C') ++enc_iter;
+    if (*enc_iter == 'F') {
         //cout << "\n*** Function: "; decl->Display();
-        // Figure out parameter types:
-        code enctype_s(enctype);
-        code_iter enc_iter = enctype_s.begin()+1;
-        initTypeDecoder(enctype_s, enc_iter, decl->ToString());
+	++enc_iter;
 
         // Create parameter objects
         vector<PyObject*> params;
@@ -263,13 +289,23 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
         //for (p = decl; p->Car()->Eq('*') || p->Car()->Eq('&'); p = p->Cdr());
         // TODO: refactor
         string realname;
-        if (*encname > 0x80) realname = decodeName(encname);
-        else if (*encname == 'Q') {
+        if (*encname > 0x80) {
+	    if (encname[1] == '@') {
+		// conversion operator (?)
+		code encname_s(encname);
+		initTypeDecoder(encname_s, enc_iter=encname_s.begin()+2, "");
+		returnType = decodeType();
+		realname = "(" + string(PyString_AsString(PyObject_Str(returnType))) + ")";
+	    } else
+		realname = decodeName(encname);
+        } else if (*encname == 'Q') {
 	    // If a function declaration has a scoped name, then it is not
 	    // declaring a new function in that scope and can be ignored in
 	    // the context of synopsis.
 	    return decl;
-        }
+        } else {
+	    cout << "Warning: Unknown method name: " << encname << endl;
+	}
 
         string name = realname+"@"+reinterpret_cast<char*>(enctype);
         for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
@@ -286,9 +322,33 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
             premod.push_back(p->ToString());
             p = Ptree::Rest(p);
         }
-        PyObject* oper = synopsis->addOperation(-1, true, premod, returnType, name, realname, params);
+        PyObject* oper = synopsis->addOperation(m_lineno, true, premod, returnType, name, realname, params);
 	if (m_declaration->GetComments()) addComments(oper, m_declaration->GetComments());
 	if (decl->GetComments()) addComments(oper, decl->GetComments());
+	// Post Modifier
+	if (enctype_s[0] == 'C') {
+	    PyObject* posties = PyObject_CallMethod(oper, "postmodifier", 0);
+	    PyList_Append(posties, PyString_FromString("const"));
+	}
+    } else {
+	enc_iter = enctype_s.begin();
+	// Get type
+	PyObject* type = decodeType();
+	string name;
+        if (*encname > 0x80) name = decodeName(encname);
+        else if (*encname == 'Q') {
+	    cout << "Scoped name in variable decl!" << endl;
+	    return decl;
+        } else {
+	    cout << "Unknown name in variable decl!" << endl;
+	    return decl;
+	}
+
+	vector<size_t> sizes;
+	PyObject* declor = synopsis->addDeclarator(m_lineno, true, name, sizes);
+	PyObject* var = synopsis->addVariable(m_lineno, true, name, type, false, declor);
+	if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
+	if (decl->GetComments()) addComments(var, decl->GetComments());
     }
     return decl;
 }
@@ -368,20 +428,27 @@ PyObject* PyWalker::decodeType()
                     vector<PyObject*> types;
                     while (iter < tend)
                         types.push_back(decodeType());
-                    names.push_back("template...");
+                    names.push_back(tname);
                 } else {
-                    cout << "Unknown type inside Q: " << *iter << endl;
-		    cout << "Decoding " << string(reinterpret_cast<char*>(&(*m_enctype)[0]),m_enctype->length()) << endl;
-		    cout << "At " << reinterpret_cast<char*>(iter) << endl;
-		    cout << "(int)*iter == " << int(*iter) << endl;
+                    cout << "Warning: Unknown type inside Q: " << *iter << endl;
+		    cout << "         Decoding " << *m_enctype << endl;
                 }
             }
-            // For now just colonate them
-            string name = names[0];
-            for (size_t i = 1; i < names.size(); i++)
-                name += "::" + names[i];
+            // Ask for qualified lookup
+	    baseType = synopsis->lookupType(names);
+	    if (!baseType) {
+		// cout << "Warning: Qualified lookup failed."<<endl;
+		// cout << "         EncType: " << *m_enctype << endl;
+		// cout << "         Function: " << m_encmessage << endl;
+		baseType = NULL;
+		name = names[0];
+		vector<string>::iterator iter;
+		for (iter = names.begin()+1; iter != names.end(); ++iter)
+		    name += "::" + *iter;
+		baseType = synopsis->addForward(name);
+	    }
         }
-    else if (c == '_') { --iter; return NULL; }
+	else if (c == '_') { --iter; return NULL; }
         else if (c == 'F') {
             // Function ptr.. argh!
 	    //cout << "Function ptr type: "; m_ptree->Display();
@@ -414,10 +481,12 @@ PyObject* PyWalker::decodeType()
         }
         else { cout << m_encmessage << "\nUnknown char decoding '"<<*m_enctype<<"': "<<char(c)<<" "<<c<<" at "<<(iter-m_enctype->begin())<<endl; }
     }
-    if (!name.length()) { return Py_None; }
+    if (!baseType && !name.length()) { return Py_None; }
 
     if (!baseType)
         baseType = synopsis->lookupType(name);
+    if (baseType == Py_None)
+	baseType = synopsis->addForward(name);
     if (premod.empty() && postmod.empty())
         return baseType;
     return synopsis->addModifier(baseType, premod, postmod);
@@ -448,9 +517,9 @@ Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
     string name = decodeName(encname);
     vector<size_t> sizes;
     // Create declarator object with name
-    PyObject* declor = synopsis->addDeclarator(-1,true,name,sizes);
+    PyObject* declor = synopsis->addDeclarator(m_lineno,true,name,sizes);
     // Create typedef object
-    PyObject* typedf = synopsis->addTypedef(-1,true,"typedef",name,type,false,declor);
+    PyObject* typedf = synopsis->addTypedef(m_lineno,true,"typedef",name,type,false,declor);
     synopsis->addDeclared(name, typedf);
     ///...
     return declarator;
@@ -471,6 +540,7 @@ Ptree *PyWalker::TranslateTypedef(Ptree *node)
     Trace trace("PyWalker::TranslateTypedef");
     _declarators.clear();
     m_ptree = node;
+    updateLineNumber(node);
     /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
     for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
         TranslateDeclarator(declarator->Car());
@@ -487,9 +557,13 @@ Ptree *PyWalker::TranslateTypedef(Ptree *node)
 Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 {
     //Trace trace("PyWalker::TranslateNamespaceSpec");
+    updateLineNumber(node);
     PtreeNamespaceSpec* nspec = static_cast<PtreeNamespaceSpec*>(node);
-    PyObject* module = synopsis->addModule(-1, 1, getName(node->Cadr()));
+    string name = getName(node->Cadr());
+    PyObject* module = synopsis->addModule(m_lineno, 1, name);
     addComments(module, nspec->GetComments());
+    synopsis->addDeclared(name, module);
+
     synopsis->pushScope(module);
     Translate(Ptree::Third(node));
     synopsis->popScope();
@@ -506,6 +580,7 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 {
     //Trace trace("PyWalker::TranslateClassSpec");
+    updateLineNumber(node);
 
     if(Ptree::Length(node) == 4 && node->Second()->IsLeaf())
     {
@@ -514,7 +589,7 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 	// Create AST.Class object
         string type = getName(node->First());
         string name = getName(node->Second());
-        PyObject *clas = synopsis->addClass(-1, true, type, name);
+        PyObject *clas = synopsis->addClass(m_lineno, true, type, name);
         synopsis->addDeclared(name, clas);
 	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
 	addComments(clas, cspec->GetComments());
@@ -525,7 +600,7 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 
         // Translate the body of the class
         Class* meta = MakeClassMetaobject(node, NULL, node);
-        synopsis->pushScope(clas);
+        synopsis->pushClass(clas);
 	synopsis->pushAccess(is_struct ? Synopsis::Public : Synopsis::Private);
         TranslateClassBody(node->Nth(3), node->Nth(2), meta);
 	synopsis->popAccess();
@@ -621,6 +696,7 @@ Ptree *PyWalker::TranslateAccessSpec(Ptree* spec)
  */
 Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
 {
+    updateLineNumber(spec);
     //cout << "Enum:";spec->Display();cout << endl;
     if (!spec->Second()) { return spec; /* anonymous enum */ }
     string name = spec->Second()->ToString();
@@ -633,13 +709,15 @@ Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
     while (penum) {
 	Ptree* penumor = penum->First();
 	if (penumor->IsLeaf()) {
-	    enumor = synopsis->Enumerator(-1, true, penumor->ToString(), "");
+	    enumor = synopsis->Enumerator(m_lineno, true, penumor->ToString(), "");
+	    addComments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
 	} else {
 	    string name = penumor->First()->ToString(), value;
 	    if (penumor->Length() == 3) {
 		value = penumor->Third()->ToString();
 	    }
-	    enumor = synopsis->Enumerator(-1, true, name, value);
+	    enumor = synopsis->Enumerator(m_lineno, true, name, value);
+	    addComments(enumor, static_cast<CommentedLeaf*>(penumor->First())->GetComments());
 	}
 	enumerators.push_back(enumor);
 	penum = Ptree::Rest(penum);
@@ -648,7 +726,7 @@ Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
     }
 
     
-    PyObject* theEnum = synopsis->addEnum(-1,true,name,enumerators);
+    PyObject* theEnum = synopsis->addEnum(m_lineno,true,name,enumerators);
     synopsis->addDeclared(name, theEnum);
     addComments(theEnum, m_declaration->GetComments());
     return spec;
@@ -802,8 +880,9 @@ int main(int argc, char **argv)
     vector<const char *> cppargs;
     vector<const char *> occargs;
     //   getopts(argc, argv, cppargs, occargs);
+    Py_Initialize();
     PyObject *pylist = PyList_New(argc - 1);
-    for (size_t i = 1; i != argc; ++i)
+    for (int i = 1; i != argc; ++i)
         PyList_SetItem(pylist, i - 1, PyString_FromString(argv[i]));
     getopts(pylist, cppargs, occargs);
     if (!src || *src == '\0')
@@ -811,9 +890,10 @@ int main(int argc, char **argv)
         cerr << "No source file" << endl;
         exit(-1);
     }
-    Py_Initialize();
     char *cppfile = RunPreprocessor(src, cppargs);
-    char *occfile = RunOpencxx(cppfile, occargs, 0, 0);
+    PyObject* type = PyImport_ImportModule("Synopsis.Type");
+    PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
+    char *occfile = RunOpencxx(cppfile, occargs, types, PyList_New(0));
     unlink(cppfile);
     unlink(occfile);
 }

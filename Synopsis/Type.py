@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.7 2001/01/25 18:27:47 stefan Exp $
+# $Id: Type.py,v 1.8 2001/02/05 05:23:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Type.py,v $
+# Revision 1.8  2001/02/05 05:23:14  chalky
+# Dict merge overwrites Unknowns
+#
 # Revision 1.7  2001/01/25 18:27:47  stefan
 # added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
 #
@@ -274,7 +277,12 @@ class Dictionary:
     def clear(self): self.__dict.clear()
     def merge(self, dict):
         for i in dict.keys():
-            if self.has_key(i): pass ##print "Error: multiple types ", Util.ccolonName(i)
+            if self.has_key(i): 
+		if isinstance(self[i], Unknown):
+		    self[i] = dict[i]
+		else:
+		    pass
+		    #print "Error: multiple types ", Util.ccolonName(i), self[i].__class__, dict[i].__class__
             else: self[i] = dict[i]
 
 class Visitor:

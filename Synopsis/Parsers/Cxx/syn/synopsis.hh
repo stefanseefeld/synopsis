@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <list>
 #include <stack>
 #include <python1.5/Python.h>
 
@@ -68,12 +69,13 @@ public:
     //. helper methods
     //.
     vector<string> scopedName(const string &);
-    void pushScope(PyObject *scope) { scopes.push_back(scope);}
-    void popScope() { scopes.pop_back();}
-    void pushNamespace(size_t, bool, const string &);
-    void pushClass(size_t, bool, const string &, const string &);
-    void pushClass(size_t l, bool m, const string &n) { pushClass(l, m, "class", n);}
-    void pushStruct(size_t l, bool m, const string &n) { pushClass(l, m, "struct", n);}
+    void pushScope(PyObject *scope);
+    void popScope();
+    void pushClass(PyObject *clas);
+    //void pushNamespace(size_t, bool, const string &);
+    //void pushClass(size_t, bool, const string &, const string &);
+    //void pushClass(size_t l, bool m, const string &n) { pushClass(l, m, "class", n);}
+    //void pushStruct(size_t l, bool m, const string &n) { pushClass(l, m, "struct", n);}
 
     void setAccessability(Accessability);
     void pushAccess(Accessability);
@@ -84,6 +86,9 @@ public:
 
     PyObject *lookupType(const string &, PyObject *);
     PyObject *lookupType(const string &);
+    PyObject *lookupType(const vector<string>& qualified);
+
+    void set_filename(string& fn) { if (file != fn) file = fn; }
 
     static void addInheritance(PyObject *, const vector<PyObject *> &);
     static PyObject *N2L(const string &);
@@ -91,13 +96,21 @@ public:
     static PyObject *V2L(const vector<PyObject *> &);
     static PyObject *V2L(const vector<size_t> &);
 private:
+    void pushClassBases(PyObject* clas);
+    PyObject* resolveDeclared(PyObject*);
     void addDeclaration(PyObject *);
-    const char *file;
+    string file;
     PyObject *ast;
     PyObject *type;
     PyObject *declarations;
     PyObject *dictionary;
     vector<PyObject *> scopes;
+
+    //. A list of scope names for name lookup
+    list<PyObject *> lookup_scopes;
+
+    //. A stack of old lookup_scopes
+    stack<list<PyObject*> > lookup_scope_stack;
 
     //. Current accessability of declarations
     Synopsis::Accessability m_accessability;

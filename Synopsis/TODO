@@ -1,10 +1,26 @@
-just some random thoughts:
+Random Thoughts
+--------------
 
-* synopsis should be callable like gcc:
-  either build the docs in one process
-  or write down individual trees (using pickle) 
-  and assemble the doc then from these files.
-  Which strategy to choose depends mainly on
-  the size of the project. If using individual
-  files one could use make to select which file 
-  to rebuild
+o. Prague/Sys/Time.hh has operator overloads which are incorrectly parsed.
+
+o. Write different comment parsers
+
+o. Write different ScopeSorters
+
+o. Add command line option for only showing public/protected.
+
+o. Add filename support to all parsers
+
+o. Add indexes by filename. Eg: TopLeft window can switch between namespaces
+and directories.
+
+o. Change namespace index to only show Scopes.
+
+o. Make the modules/files indices modular so that they can be omitted as
+desired
+
+o. Make the C++ parser accept -I directives and strip filenames according to
+them
+
+o. Make the HTML formatter allow to set a level to separate directories into
+multiple indexes for the top-left frame

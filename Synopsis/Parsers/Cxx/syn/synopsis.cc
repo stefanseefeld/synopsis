@@ -28,7 +28,7 @@ Synopsis::Synopsis(const char *f, PyObject *decl, PyObject *dict)
     addBase("...");
     //. well...
     addBase("exception");
-    PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file, -1, 1, "C++", "file", PyList_New(0));
+    PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file.c_str(), -1, 1, "C++", "file", PyList_New(0));
     pushScope(scope);
     m_accessability = Default;
 }
@@ -106,7 +106,7 @@ PyObject *Synopsis::addForward(size_t line, bool main, const string &type, const
 {
     Trace trace("Synopsis::addForward");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *forward = PyObject_CallMethod(ast, "Forward", "siissO", file, line, main, "C++", type.c_str(), pyname);
+    PyObject *forward = PyObject_CallMethod(ast, "Forward", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
     //PyObject_CallMethod(scopes.back(), "append", "O", forward);
     addDeclaration(forward);
     return forward;
@@ -116,7 +116,7 @@ PyObject *Synopsis::addComment(PyObject* decl, const char* text)
 {
     Trace trace("Synopsis::addComment");
     PyObject *pytext = PyString_FromString(text);
-    PyObject *comment = PyObject_CallMethod(ast, "Comment", "Osi", pytext, file, -1);
+    PyObject *comment = PyObject_CallMethod(ast, "Comment", "Osi", pytext, file.c_str(), -1);
     PyObject *comments = PyObject_CallMethod(decl, "comments", 0);
     PyObject_CallMethod(comments, "append", "O", comment);
     return comment;
@@ -126,7 +126,7 @@ PyObject *Synopsis::addDeclarator(size_t line, bool main, const string &name, co
 {
     Trace trace("Synopsis::addDeclarator");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *declarator = PyObject_CallMethod(ast, "Declarator", "siisOO", file, line, main, "C++", pyname, V2L(sizes));
+    PyObject *declarator = PyObject_CallMethod(ast, "Declarator", "siisOO", file.c_str(), line, main, "C++", pyname, V2L(sizes));
     //PyObject_CallMethod(scopes.back(), "append", "O", declarator);
     return declarator;
 }
@@ -135,7 +135,7 @@ PyObject *Synopsis::addScope(size_t line, bool main, const string &type, const s
 {
     Trace trace("Synopsis::addScope");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file, line, main, "C++", type.c_str(), pyname);
+    PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
     //PyObject_CallMethod(scopes.back(), "append", "O", scope);
     addDeclaration(scope);
     return scope;
@@ -145,10 +145,58 @@ PyObject *Synopsis::addModule(size_t line, bool main, const string &name)
 {
     Trace trace("Synopsis::addModule");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *module = PyObject_CallMethod(ast, "Module", "siissO", file, line, main, "C++", "namespace", pyname);
+    PyObject *module = PyObject_CallMethod(ast, "Module", "siissO", file.c_str(), line, main, "C++", "namespace", pyname);
     //PyObject_CallMethod(scopes.back(), "append", "O", module);
     addDeclaration(module);
     return module;
+}
+
+void Synopsis::popScope()
+{
+    scopes.pop_back();
+    lookup_scopes = lookup_scope_stack.top();
+    lookup_scope_stack.pop();
+}
+
+void Synopsis::pushScope(PyObject* scope)
+{
+    scopes.push_back(scope);
+    PyObject* name = PyObject_CallMethod(scope, "name", 0);
+    if (!name) { cout << "Warning: pushScope: scope.name failed.\n         ";
+	PyErr_Print(); return; }
+    lookup_scope_stack.push(lookup_scopes);
+    lookup_scopes.push_front(name);
+}
+
+void Synopsis::pushClass(PyObject* clas)
+{
+    scopes.push_back(clas);
+    lookup_scope_stack.push(lookup_scopes);
+    pushClassBases(clas);
+}
+
+/* This is a post-order recursive algorithm, since the base classes must be inserted
+ * in reverse order: 
+ *  class A; class B; class C: A; class D: B, C;
+ * Final order for D must be: D, B, C, A
+ */
+void Synopsis::pushClassBases(PyObject* clas)
+{
+    PyObject* parents = PyObject_CallMethod(clas, "parents", 0);
+    if (!parents) { PyErr_Print(); return; }
+
+    size_t size = PyList_Size(parents);
+    for (size_t i = size; i > 0;) {
+	i--;
+	PyObject* declared = PyObject_CallMethod(PyList_GetItem(parents, i), "parent", 0);
+	PyObject* baseclass = PyObject_CallMethod(declared, "declaration", 0);
+	pushClassBases(baseclass);
+    }
+	    
+    PyObject* name = PyObject_CallMethod(clas, "name", 0);
+    if (!name) { cout << "Warning: pushClassBases, clas.name failed:\n         ";
+	PyObject_Print(clas, stdout,0);cout<<endl;PyErr_Print(); return; }
+    lookup_scopes.push_front(name);
 }
 
 PyObject *Synopsis::lookupType(const string &name, PyObject *scopes)
@@ -173,20 +221,79 @@ PyObject *Synopsis::lookupType(const string &name, PyObject *scopes)
 PyObject *Synopsis::lookupType(const string &name)
 {
     Trace trace("Synopsis::lookupType(name)");
-    vector<PyObject*> scope_names;
-    vector<PyObject*>::iterator iter = scopes.begin();
-    for (;iter != scopes.end(); iter++)
-        scope_names.push_back(PyObject_CallMethod(*iter, "name", 0));
-    return lookupType(name, V2L(scope_names));
-    /*
+    // TODO: This should only need doing once per pushScope
+    PyObject* slist = PyList_New(lookup_scopes.size());
+    int index = 0;
+    list<PyObject*>::iterator iter = lookup_scopes.begin();
+    while (iter != lookup_scopes.end()) {
+	PyObject* item = *iter++;
+	Py_INCREF(item);
+	PyList_SetItem(slist, index, item);
+	index++;
+    }
     PyObject *pyname = Py_BuildValue("[s]", name.c_str());
-    if (!pyname) {PyErr_Print(); return 0; }
-    PyObject *slist = PyList_New(1);
-    PyObject *sname = PyObject_CallMethod(scopes.back(), "name", 0);
-    PyList_SetItem(slist, 0, sname);
     PyObject *type = PyObject_CallMethod(dictionary, "lookup", "OO", pyname, slist);
-    if (!type) { PyErr_Print(); return 0; }
-    return type;*/
+    return type;
+}
+
+/* Resolve typedefs */
+PyObject* Synopsis::resolveDeclared(PyObject* ptype)
+{
+    //cout << "*** ResolveDeclared: ";PyObject_Print(ptype,stdout,0);cout<<endl;
+    if (ptype == Py_None) return NULL;
+    PyObject* ptype_class = PyObject_GetAttrString(ptype, "__class__");
+    if (ptype_class != PyObject_GetAttrString(type, "Declared"))
+	return NULL;
+    // Declared type:
+    PyObject* name = PyObject_CallMethod(ptype, "name", 0);
+    return name;
+}
+
+/* Lookup a qualified name.
+ * To do this, the first name in the vector is looked up to find a base scope,
+ * and then the rest of the names are appended for the final name.
+ * This is wrong: each name should be looked up in terms of the
+ * so-far-determined scope, but we don't store that scope information (yet).
+ */
+PyObject *Synopsis::lookupType(const vector<string>& qualified)
+{
+    //cout << "Qualified lookup.." << endl;
+    if (!qualified.front().empty()) {
+	PyObject* type = lookupType(qualified.front());
+	PyObject* name = resolveDeclared(type);
+	if (!name) return NULL;
+	PyObject* pyname = PyList_New(PyList_Size(name)+qualified.size()-1);
+	int ix = 0;
+	for (; ix < PyList_Size(name); ix++)
+	    PyList_SetItem(pyname, ix, PyList_GetItem(name, ix));
+	vector<string>::const_iterator iter = qualified.begin()+1;
+	while (iter != qualified.end()) {
+	    PyList_SetItem(pyname, ix, PyString_FromString(iter->c_str()));
+	    iter++; ix++;
+	}
+	PyObject* obj = PyObject_CallMethod(dictionary, "__getitem__", "O", pyname);
+	if (!obj) {
+	    // cout<<"Warning: Constructed Qualified name not found!\n         ";
+	    // cout<<"Name: ";PyObject_Print(pyname,stdout,0);cout<<"\n         ";
+	    // cout<<"First Type: ";PyObject_Print(type,stdout,0);cout<<endl;
+	    return NULL;}
+	return obj;
+    } else {
+	PyObject* pyname = PyList_New(qualified.size()-1);
+	int ix = 0;
+	vector<string>::const_iterator iter = qualified.begin()+1;
+	while (iter != qualified.end()) {
+	    PyList_SetItem(pyname, ix, PyString_FromString(iter->c_str()));
+	    iter++; ix++;
+	}
+	PyObject* obj = PyObject_CallMethod(dictionary, "__getitem__", "O", pyname);
+	if (!obj) {
+	    // cout<<"Warning: Constructed Qualified name not found!\n         ";
+	    // cout<<"Name: ";PyObject_Print(pyname,stdout,0);cout<<endl;
+	    return NULL;}
+	return obj;
+    }
+    return NULL;
 }
 
 PyObject *Synopsis::Inheritance(PyObject *parent, const vector<string> &attributes)
@@ -201,8 +308,8 @@ PyObject *Synopsis::addClass(size_t line, bool main, const string &type, const s
 {
     Trace trace("Synopsis::addClass");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *clas = PyObject_CallMethod(ast, "Class", "siissO", file, line, main, "C++", type.c_str(), pyname);
-    //PyObject *clas = PyObject_CallMethod(ast, "Class", "siisss", file, line, main, "C++", type.c_str(), name.c_str());
+    PyObject *clas = PyObject_CallMethod(ast, "Class", "siissO", file.c_str(), line, main, "C++", type.c_str(), pyname);
+    //PyObject *clas = PyObject_CallMethod(ast, "Class", "siisss", file.c_str(), line, main, "C++", type.c_str(), name.c_str());
     //if (!PyObject_CallMethod(scopes.back(), "append", "O", clas)) {
     //  cout << "addClass:: scopes.back().append(clas) "; PyErr_Print();
     //}
@@ -214,7 +321,7 @@ PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const
 {
     Trace trace("Synopsis::addTypedef");
     PyObject *typed = PyObject_CallMethod( ast, "Typedef", "siissOOiO", 
-	file, line, main, "C++", type.c_str(), V2L(scopedName(name)),
+	file.c_str(), line, main, "C++", type.c_str(), V2L(scopedName(name)),
 	alias, constr, declarator
     );
     PyObject_CallMethod(scopes.back(), "append", "O", typed);
@@ -226,7 +333,7 @@ PyObject *Synopsis::Enumerator(size_t line, bool main, const string &name, const
 {
     Trace trace("Synopsis::addEnumerator");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *enumerator = PyObject_CallMethod(ast, "Enumerator", "siisOs", file, line, main, "C++", pyname, value.c_str());
+    PyObject *enumerator = PyObject_CallMethod(ast, "Enumerator", "siisOs", file.c_str(), line, main, "C++", pyname, value.c_str());
     return enumerator;
 }
 
@@ -234,7 +341,7 @@ PyObject *Synopsis::addEnum(size_t line, bool main, const string &name, const ve
 {
     Trace trace("Synopsis::addEnum");
     PyObject *pyname = V2L(scopedName(name));
-    PyObject *enu = PyObject_CallMethod(ast, "Enum", "siisOO", file, line, main, "C++", pyname, V2L(enumerators));
+    PyObject *enu = PyObject_CallMethod(ast, "Enum", "siisOO", file.c_str(), line, main, "C++", pyname, V2L(enumerators));
     addDeclaration(enu);
     return enu;
 }
@@ -243,17 +350,17 @@ PyObject *Synopsis::addVariable(size_t line, bool main, const string& name, PyOb
 {
     Trace trace("Synopsis::addVariable");
     PyObject *var = PyObject_CallMethod(ast, "Variable", "siissOOiO",
-	file, line, main, "C++", "variable", 
+	file.c_str(), line, main, "C++", "variable", 
 	V2L(scopedName(name)), type, constr, declarator
     );
-    PyObject_CallMethod(scopes.back(), "append", "O", var);
+    addDeclaration(var);
     return var;
 }
 
 PyObject *Synopsis::addConst(size_t line, bool main, PyObject *type, const string &name, const string &value)
 {
     Trace trace("Synopsis::addConst");
-    PyObject *cons = PyObject_CallMethod(ast, "Const", "siissOss", file,
+    PyObject *cons = PyObject_CallMethod(ast, "Const", "siissOss", file.c_str(),
                                          line, main, "C++", "const", type, name.c_str(), name.c_str());
     PyObject_CallMethod(scopes.back(), "append", "O", cons);
     return cons;
@@ -274,7 +381,7 @@ PyObject *Synopsis::Parameter(const string &pre, PyObject *type, const string &p
 PyObject *Synopsis::addFunction(size_t line, bool main, const vector<string> &pre, PyObject *type, const string &name)
 {
     Trace trace("Synopsis::addFunction");
-    PyObject *function = PyObject_CallMethod(ast, "Function", "siissOOs", file, line, main, "C++", "function", V2L(pre),
+    PyObject *function = PyObject_CallMethod(ast, "Function", "siissOOs", file.c_str(), line, main, "C++", "function", V2L(pre),
                          type, name.c_str());
     PyObject_CallMethod(scopes.back(), "append", "O", function);
     return function;
@@ -287,7 +394,7 @@ PyObject *Synopsis::addOperation(size_t line, bool main, const vector<string> &p
     PyObject *pyrname = V2L(scopedName(realname));
     PyObject *pyparams = V2L(params);
     PyObject *operation = PyObject_CallMethod(ast, "Operation", "siissOOOO",
-                          file, line, main, "C++", "function", V2L(pre), type, pyname, pyrname);
+                          file.c_str(), line, main, "C++", "function", V2L(pre), type, pyname, pyrname);
     if (!operation) {
         PyErr_Print(); return operation;
     }
@@ -314,19 +421,19 @@ vector<string> Synopsis::scopedName(const string &name)
     return scope;
 }
 
-void Synopsis::pushNamespace(size_t line, bool main, const string &name)
-{
-    PyObject *module = addModule(-1, true, name);
-    /* PyObject *type = */ addDeclared(name, module);
-    pushScope(module);
-}
-
-void Synopsis::pushClass(size_t line, bool main, const string &meta, const string &name)
-{
-    PyObject *clas = addClass(-1, true, meta, name);
-    /* PyObject *type = */ addDeclared(name, clas);
-    pushScope(clas);
-}
+// void Synopsis::pushNamespace(size_t line, bool main, const string &name)
+// {
+//     PyObject *module = addModule(-1, true, name);
+//     /* PyObject *type = */ addDeclared(name, module);
+//     pushScope(module);
+// }
+// 
+// void Synopsis::pushClass(size_t line, bool main, const string &meta, const string &name)
+// {
+//     PyObject *clas = addClass(-1, true, meta, name);
+//     /* PyObject *type = */ addDeclared(name, clas);
+//     pushScope(clas);
+// }
 
 void Synopsis::setAccessability(Accessability axs)
 {

@@ -32,6 +32,16 @@ public:
     void WritePS(ProgramString&);
 };
 
+class CommentedLeaf : public Leaf {
+public:
+    CommentedLeaf(Token& tk, Ptree* c) : Leaf(tk) { comments = c; }
+    Ptree* GetComments() { return comments; }
+    void SetComments(Ptree* c) { comments = c; }
+
+private:
+    Ptree* comments;
+};
+
 class LeafName : public Leaf {
 public:
     LeafName(Token&);

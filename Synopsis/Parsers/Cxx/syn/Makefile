@@ -18,11 +18,15 @@ CCC = cc
 CXX = c++
 RANLIB =
 
-CFLAGS = -O2 -g
+OPTIMISE = -O6 -march=i686
+#DEBUG = -ggdb -pg
+DEBUG =
+
+CFLAGS = $(OPTIMISE) $(DEBUG)
 #CXXFLAGS = -O2 -I..
-CXXFLAGS = -Wall -I.. -ggdb
+CXXFLAGS = $(OPTIMISE) $(DEBUG) -Wall -I..
 GCLIB = ../gc/gc.a
-LDFLAGS = -g # -export-dynamic	# for GNU ld
+LDFLAGS = $(DEBUG) # -export-dynamic	# for GNU ld
 LIB =# -ldl			# Linux
 PYLIB = -lpython1.5 -ldl -lpthread
 
@@ -38,22 +42,22 @@ $(OBJ): %.o : ../%.cc
 synopsis.o:	synopsis.cc synopsis.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-synopsis.g.o:	synopsis.cc
-	$(CXX) -ggdb -DDEBUG $(CXXFLAGS) -c -o $@ $<
+synopsis.g.o:	synopsis.cc synopsis.hh
+	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<
 
 occ.o:	occ.cc synopsis.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-occ.g.o: occ.cc
-	$(CXX) -ggdb -DDEBUG $(CXXFLAGS) -c -o $@ $<
+occ.g.o: occ.cc synopsis.hh
+	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<
 
 ../../occ.so : opencxx.a synopsis.o occ.o
 	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ occ.o synopsis.o opencxx.a $(LIB)
 
 occ.gdb:	opencxx.a synopsis.g.o occ.g.o
-	$(CXX) -ggdb $(CXXFLAGS) $(LDFLAGS) -o $@ occ.g.o synopsis.g.o opencxx.a $(LIB) $(PYLIB)
+	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ occ.g.o synopsis.g.o opencxx.a $(LIB) $(PYLIB)
 
-opencxx.a : $(OBJ)
+opencxx.a : $(OBJ) $(GCLIB)
 	cp $(GCLIB) $@
 	ar rcs $@ $(OBJ)
 #	$(RANLIB) $@

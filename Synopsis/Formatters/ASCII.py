@@ -191,6 +191,8 @@ class ASCIIFormatter:
 	self.write("}\n")
 
     def visitEnumerator(self, enumer):
+	for comment in enumer.comments():
+	    self.__enumers.append(comment.text())
 	if enumer.value() == "":
 	    self.__enumers.append("%s"%enumer.name()[-1])
 	else:

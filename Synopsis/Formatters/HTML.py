@@ -13,7 +13,7 @@ import sys, getopt, os, os.path, string, types
 from Synopsis import AST, Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
-debug=1
+debug=0
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
@@ -62,6 +62,8 @@ class FileNamer:
     def nameOfScope(self, scope):
 	if not len(scope): return self.nameOfSpecial('global')
 	return string.join(scope,'-') + ".html"
+    def nameOfFile(self, filetuple):
+	return "_file-"+string.join(filetuple,'-')+".html"
     def nameOfIndex(self):
 	return "index.html"
     def nameOfSpecial(self, name):
@@ -113,6 +115,16 @@ class ScopeSorter:
 	    section = _axs_str[decl.accessability()]+section
 	return section
     def _sort_sections(self): pass
+    def sort_section_names(self):
+	sort(self.__sections)
+    def sort_sections(self):
+	for children in self.__section_dict.values()+[self.__children]:
+	    dict = {}
+	    for child in children: dict[child.name()] = child
+	    names = dict.keys()
+	    sort(names)
+	    del children[:]
+	    for name in names: children.append(dict[name])
     def child(self, name):
 	"Returns the child with the given name. Throws KeyError if not found."
 	return self.__child_dict[name]
@@ -236,6 +248,69 @@ class TableOfContents(Visitor.AstVisitor):
 	self.visitDeclaration(enum)
 	for enumor in enum.enumerators():
 	    enumor.accept(self)
+
+class FileTree(Visitor.AstVisitor):
+    """Maintains a tree of directories and files"""
+    def __init__(self):
+	global fileTree
+	fileTree = self
+	self.__files = {}
+
+    def buildTree(self):
+	"Takes the visited info and makes a tree of directories and files"
+	# Split filenames into lists of directories
+	files = []
+	for file in self.__files.keys():
+	    files.append(string.split(file, os.sep))
+	self.__root = Struct(path=(), children={})
+	process_list = [self.__root]
+	while len(process_list):
+	    # Get node
+	    node = process_list[0]
+	    del process_list[0]
+	    for file in files:
+		if len(file) <= len(node.path) or tuple(file[:len(node.path)]) != node.path:
+		    continue
+		child_path = tuple(file[:len(node.path)+1])
+		if node.children.has_key(child_path): continue
+		child = Struct(path=child_path, children={})
+		node.children[child_path] = child
+		if len(child_path) < len(file):
+		    process_list.append(child)
+		else:
+		    fname = string.join(file, os.sep)
+		    child.decls = self.__files[fname]
+
+    def root(self):
+	"""Returns the root node in the file tree.
+	Each node is a Struct with the following members:
+	 path - tuple of dir or filename (eg: 'Prague','Sys','Thread.hh')
+	 children - dict of children by their path tuple
+	Additionally, leaf nodes have the attribute:
+	 decls - dict of declarations in this file by scoped name
+	"""
+	return self.__root
+
+    ### AST Visitor
+
+    def visitAST(self, ast):
+	for decl in ast.declarations():
+	    decl.accept(self)
+    def visitDeclaration(self, decl):
+	file = decl.file()
+	if not file: print "Decl",decl,"has no file."
+	if not self.__files.has_key(file):
+	    self.__files[file] = {}
+	self.__files[file][decl.name()] = decl
+    def visitScope(self, scope):
+	self.visitDeclaration(scope)
+	#for decl in scope.declarations():
+	#    decl.accept(self)
+    def visitMetaModule(self, scope):
+	for decl in scope.declarations():
+	    decl.accept(self)
+	
+
 
 class ClassTree(Visitor.AstVisitor):
     """Maintains a tree of classes directed by inheritance"""
@@ -455,7 +530,7 @@ class BaseFormatter(Visitor.AstVisitor):
     def visitOperation(self, oper):
 	premod = self.formatModifiers(oper.premodifier())
 	type = self.formatType(oper.returnType())
-	if oper.language() == 'C++':
+	if oper.language() == 'C++' and len(oper.realname())>1:
 	    if oper.realname()[-1] == oper.realname()[-2]: type = '<i>constructor</i>'
 	    elif oper.realname()[-1] == "~"+oper.realname()[-2]: type = '<i>destructor</i>'
 	name = self.label(oper.name(), oper.realname())
@@ -471,7 +546,7 @@ class BaseFormatter(Visitor.AstVisitor):
     def visitVariable(self, variable):
 	# TODO: deal with sizes
         type = self.formatType(variable.vtype())
-	self.writeSectionItem(type, variable.name(), variable)
+	self.writeSectionItem(type, variable.name()[-1], variable)
 
 
     # These are overridden in {Summary,Detail}Formatter
@@ -583,6 +658,9 @@ class DetailFormatter(BaseFormatter):
 	name = self.formatParent(clas)
 	self.write(entity('h1', "%s %s"%(type, name)))
 
+	# Print filename
+	self.write("Defined in: "+href(filer.nameOfFile(string.split(clas.file(),os.sep)),clas.file(),target='contents')+"<br>")
+
 	# Print any comments for this class
 	comment = comments[clas].full
 	if comment: self.write(div('desc',comment)+'<br><br>')
@@ -590,7 +668,7 @@ class DetailFormatter(BaseFormatter):
 	# Print out a list of the parents
 	if clas.parents():
 	    self.write('<div class="superclasses">\n')
-	    self.write("Superclasses:")
+	    self.write("Superclasses: ")
 	    parents = map(self.formatInheritance, clas.parents())
 	    self.write(string.join(parents, ", "))
 	    self.write("</div>\n")
@@ -617,17 +695,19 @@ class DetailFormatter(BaseFormatter):
     def visitEnum(self, enum):
         self.write(span("keyword", "enum ") + self.label(enum.name()) + "\n")
         if len(enum.comments()): self.write("\n" + desc(enum.comments()) + "\n")            
-        self.write("<div class=\"enum\">\n")
+        self.write("<div class=\"enum\"><ul>\n")
         for enumerator in enum.enumerators():
             enumerator.accept(self)
             self.write("<br>")
-        self.write("</div>\n")
+        self.write("</ul></div>\n")
 
     def visitEnumerator(self, enumerator):
+	self.write('<li>')
         self.write(self.label(enumerator.name()))
         if len(enumerator.value()):
             self.write(" = " + span("value", enumerator.value()))
 	self.write(desc(enumerator.comments()))
+	self.write('</li>')
 
 
 
@@ -672,6 +752,7 @@ class Paginator:
 	self.createModuleIndexes()
 	self.createFramesFile()
 	self.createInheritanceTree()
+	self.createFileTree()
 
     def createNamespacePages(self):
 	"""Creates a page for every Namespace"""
@@ -684,7 +765,8 @@ class Paginator:
 	"""Create a page with an index of all modules"""
 	self.startFile(filer.nameOfModuleTree(), "Module Index")
 	tree = href(filer.nameOfSpecial('tree'), 'Tree', target='main')
-	self.write(entity('b', "Module Index")+' | %s<br>'%tree)
+	ftree = href(filer.nameOfSpecial('FileTree'), 'Files')
+	self.write(entity('b', "Modules")+' | %s | %s<br>'%(tree,ftree))
 	self.indexModule(self.__start)
 	self.endFile()
 
@@ -703,7 +785,7 @@ class Paginator:
 	fmindex = rel(me, filer.nameOfModuleIndex(self.__start.name()))
 	fglobal = rel(me, filer.nameOfScope(self.__start.name()))
 	frame1 = solotag('frame', name='index', src=findex)
-	frame2 = solotag('frame', name='module_index', src=fmindex)
+	frame2 = solotag('frame', name='contents', src=fmindex)
 	frame3 = solotag('frame', name='main', src=fglobal)
 	frameset1 = entity('frameset', frame1+frame2, rows="30%,*")
 	frameset2 = entity('frameset', frameset1+frame3, cols="200,*")
@@ -750,6 +832,7 @@ class Paginator:
 	# Open file and setup scopes
 	self.startFileScope(ns.name())
 	self.sorter.set_scope(ns)
+	self.sorter.sort_section_names()
 
 	# Write heading
 	if ns is self.__root: 
@@ -779,8 +862,9 @@ class Paginator:
 	    for child in children:
 		# Check if need to add to detail list
 		has_detail = comments[child].detail is not comments[child].summary
+		has_detail = has_detail or isinstance(child, AST.Enum)
 		if has_detail and not isinstance(child, AST.Scope):
-		    if not details.has_key(type):
+		    if not details.has_key(section):
 			details[section] = []
 			sections.append(section)
 		    details[section].append(child)
@@ -806,10 +890,10 @@ class Paginator:
 	name = Util.ccolonName(ns.name()) or "Global Namespace"
 	#if not name: name = "Global Namespace"
 	link = filer.nameOfModuleIndex(ns.name())
-	self.write(href(link, name, target='module_index') + '<br>')
+	self.write(href(link, name, target='contents') + '<br>')
 	# Add children
 	self.sorter.set_scope(ns)
-	dict = self.sorter.children()
+	self.sorter.sort_sections()
 	for child in self.sorter.children():
 	    if isinstance(child, AST.Module):
 		self.indexModule(child)
@@ -817,12 +901,15 @@ class Paginator:
     def processNamespaceIndex(self, ns):
 	self.detailer.set_scope(ns.name())
 	self.sorter.set_scope(ns)
+	self.sorter.sort_section_names()
+	self.sorter.sort_sections()
 
 	# Create file
 	name = Util.ccolonName(ns.name()) or "Global Namespace"
 	fname = filer.nameOfModuleIndex(ns.name())
 	self.startFile(fname, name+" Index")
-	self.write(entity('b', name+" Index"))
+	link = href(filer.nameOfScope(ns.name()), name, target='main')
+	self.write(entity('b', link+" Index"))
 
 	# Make script to switch main frame upon load
 	script = '<!--\nwindow.parent.frames["main"].location="%s";\n-->'
@@ -833,21 +920,61 @@ class Paginator:
 	for section in self.sorter.sections():
 	    if section[-1] == 's': heading = section+'es'
 	    else: heading = section+'s'
-	    self.write('<br>'+entity('i', heading)+'<br>')
+	    heading = '<br>'+entity('i', heading)+'<br>'
 	    # Get a list of children of this type
 	    for child in self.sorter.children(section):
 		# Print out summary for the child
-		if isinstance(child, AST.Function):
-		    self.write(self.detailer.referenceName(child.name(), Util.ccolonName(child.realname(), ns.name()), target='main'))
-		else:
+		if isinstance(child, AST.Scope):
+		    if heading:
+			self.write(heading)
+			heading = None
 		    self.write(self.detailer.referenceName(child.name(), target='main'))
-		self.write('<br>')
+		    self.write('<br>')
 	self.endFile()
 
 	# Queue child namespaces
 	for child in self.sorter.children():
 	    if isinstance(child, AST.Scope):
 		self.__namespaces.append(child)
+    
+    def createFileTree(self):
+	fname = filer.nameOfSpecial('FileTree')
+	self.startFile(fname, "File Tree")
+	self.write(entity('b', 'Files')+'<br>')
+	# recursively visit all nodes
+	self.processFileTreeNode(fileTree.root())
+	self.endFile()
+	# recursively create all node pages
+	self.processFileTreeNodePage(fileTree.root())
+
+    def processFileTreeNode(self, node):
+	if hasattr(node, 'decls'):
+	    self.write(href(filer.nameOfFile(node.path),node.path[-1],target='contents'))
+	elif len(node.path): self.write(node.path[-1])
+	children = node.children.values()
+	if len(children):
+	    self.write('<div class="files">')
+	    for child in children:
+		self.processFileTreeNode(child)
+		self.write('<br>')
+	    self.write('</div>')
+	
+    def processFileTreeNodePage(self, node):
+	for child in node.children.values():
+	    self.processFileTreeNodePage(child)
+	if not hasattr(node, 'decls'): return
+
+	fname = filer.nameOfFile(node.path)
+	self.startFile(fname, string.join(node.path, os.sep))
+	self.write(entity('b', string.join(node.path, os.sep))+'<br>')
+	for name in node.decls.keys():
+	    # TODO make this nicer :)
+	    entry = toc[name]
+	    if not entry: print "no entry for",name
+	    else:
+		self.write(href(entry.link,Util.ccolonName(name),target='main')+'<br>')
+	    
+
 
     def startFileScope(self, scope):
 	"Start a new file from the given scope"
@@ -911,6 +1038,9 @@ def format(types, declarations, args):
     # Create the Class Tree
     ClassTree()
 
+    # Create the File Tree
+    FileTree()
+
     # Create table of contents index
     TableOfContents()
 
@@ -919,6 +1049,9 @@ def format(types, declarations, args):
     for d in declarations:
         d.accept(toc)
 	d.accept(classTree)
+	d.accept(fileTree)
+
+    fileTree.buildTree()
     
     if debug: print "HTML Formatter: Writing Pages..."
     # Create the pages
