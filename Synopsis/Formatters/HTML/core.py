@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.1 2001/02/01 14:58:48 chalky Exp $
+# $Id: core.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,9 +19,13 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.2  2001/02/01 15:23:24  chalky
+# Copywritten brown paper bag edition.
+#
 # Revision 1.1  2001/02/01 14:58:48  chalky
 # Modularized HTML formatter a bit :)
 #
+# These are from the old HTML.py:
 # Revision 1.55  2001/01/24 18:05:16  stefan
 # extended the HTML submodule loading to allow for external formatters
 #
