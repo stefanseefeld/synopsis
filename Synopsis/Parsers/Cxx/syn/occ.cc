@@ -145,11 +145,11 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   
   Builder builder(syn_basename);
   SWalker swalker(&parse, &builder);
-  swalker.setExtractTails(true);
   Ptree *def;
   while(parse.rProgram(def))
     swalker.Translate(def);
 #ifdef DEBUG
+  swalker.setExtractTails(true);
   // Test Synopsis
   //Synopsis synopsis(src, declarations, types);
   //if (syn_main_only) synopsis.onlyTranslateMain();
