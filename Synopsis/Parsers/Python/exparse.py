@@ -13,8 +13,22 @@ import symbol
 import token
 import types
 import string
+import sys
+import os
 
 import pprint
+
+def findModulePath(module):
+    """Return the path for the given module"""
+    global packagepath, packagename
+    if not packagepath: return []
+    packagepath = packagepath+'/'
+    extensions = ['','.py','.pyc','.so']
+    # import from inside current package
+    for ext in extensions:
+	if os.path.exists(packagepath+module+ext):
+	    return packagename+[module]
+    return [module]
 
 def format(tree, depth=-1):
     """Format the given tree up to the given depth.
@@ -60,12 +74,23 @@ def get_docs(file):
     tup = parser.ast2tuple(ast)
     return ModuleInfo(tup, basename)
 
+name_filter = lambda x: x[0] == token.NAME
+second_map = lambda x: x[1]
+rest_map = lambda x: x[1:]
+def filter_names(list): return filter(name_filter, list)
+def map_second(list): return map(second_map, list)
+def map_rest(list): return map(rest_map, list)
+def get_names_only(list):
+    return map_second(filter_names(list))
+
+
 
 class SuiteInfoBase:
     _docstring = ''
     _name = ''
 
-    def __init__(self, tree = None):
+    def __init__(self, tree = None, env={}):
+	self._env = {} ; self._env.update(env)
         self._class_info = {}
 	self._class_names = []
         self._function_info = {}
@@ -88,12 +113,43 @@ class SuiteInfoBase:
                 cstmt = vars['compound']
                 if cstmt[0] == symbol.funcdef:
                     name = cstmt[2][1]
-                    self._function_info[name] = FunctionInfo(cstmt)
+                    self._function_info[name] = FunctionInfo(cstmt, env=self._env)
 		    self._function_names.append(name)
                 elif cstmt[0] == symbol.classdef:
                     name = cstmt[2][1]
-                    self._class_info[name] = ClassInfo(cstmt)
+                    self._class_info[name] = ClassInfo(cstmt, env=self._env)
 		    self._class_names.append(name)
+	    found, vars = match(IMPORT_STMT_PATTERN, node)
+	    while found:
+		imp = vars['import_spec']
+		if imp[0] != symbol.import_stmt: break #while found
+		if imp[1][1] == 'import':
+		    # import dotted_name
+		    names = map_rest(filter(lambda x: x[0] == symbol.dotted_name, imp[2:]))
+		    imps = map(get_names_only, names)
+		    #print "import",imps
+		    self._addImport(imps)
+		elif imp[1][1] == 'from':
+		    # from dotted_name import name, name, ...
+		    name = get_names_only(imp[2][1:])
+		    imps = get_names_only(imp[4:])
+		    #print "from",name,"import",imps
+		    self._addFromImport(name, imps)
+		else:
+		    print "Unknown import."
+		break #while found
+    
+    def _addImport(self, names):
+	for name in names:
+	    link = findModulePath(name[0])
+	    self._env[name[0]] = link
+	    #print "",name[0],"->",link
+    def _addFromImport(self, module, names):
+	base = findModulePath(module[0]) + module[1:]
+	for name in names:
+	    link = base + [name]
+	    self._env[name] = link
+	    #print "",name,"->",link
 
     def get_docstring(self):
         return self._docstring
@@ -125,9 +181,9 @@ class SuiteFuncInfo:
 
 
 class FunctionInfo(SuiteInfoBase, SuiteFuncInfo):
-    def __init__(self, tree = None):
+    def __init__(self, tree = None, env={}):
         self._name = tree[2][1]
-        SuiteInfoBase.__init__(self, tree and tree[-1] or None)
+        SuiteInfoBase.__init__(self, tree and tree[-1] or None, env)
 	self._params = []
 	self._param_defaults = []
 	if tree[3][0] == symbol.parameters:
@@ -155,15 +211,31 @@ class FunctionInfo(SuiteInfoBase, SuiteFuncInfo):
 
 
 class ClassInfo(SuiteInfoBase):
-    def __init__(self, tree = None):
+    def __init__(self, tree = None, env={}):
         self._name = tree[2][1]
-        SuiteInfoBase.__init__(self, tree and tree[-1] or None)
+        SuiteInfoBase.__init__(self, tree and tree[-1] or None, env)
 	self._bases = []
 	if tree[4][0] == symbol.testlist:
 	    for test in tree[4][1:]:
 		found, vars = match(TEST_NAME_PATTERN, test)
-		if found and vars.has_key('name'):
-		    self._bases.append(vars['name'])
+		if found and vars.has_key('power'):
+		    power = vars['power']
+		    if power[0] != symbol.power: continue
+		    atom = power[1]
+		    if atom[0] != symbol.atom: continue
+		    if atom[1][0] != token.NAME: continue
+		    name = [atom[1][1]]
+		    for trailer in power[2:]:
+			if trailer[2][0] == token.NAME: name.append(trailer[2][1])
+		    if self._env.has_key(name[0]):
+			name = self._env[name[0]] + name[1:]
+			self._bases.append(name)
+			#print "BASE:",name
+		    else:
+			#print "BASE:",name[0]
+			self._bases.append(name[0])
+	else:
+	    pass#pprint.pprint(format(tree[4]))
 
     def get_method_names(self):
         return self._function_names
@@ -238,7 +310,7 @@ def dmatch(pattern, data, vars=None):
 	print "dmatch: pattern is not tuple, pattern =",format(pattern)," data =",format(data)
         return (pattern == data), vars
     if len(data) != len(pattern):
-	print "dmatch: bad length."
+	print "dmatch: bad length. data=",format(data,2)," pattern=",format(pattern,1)
         return 0, vars
     for pattern, data in map(None, pattern, data):
         same, vars = dmatch(pattern, data, vars)
@@ -301,11 +373,27 @@ TEST_NAME_PATTERN = (
                 (symbol.arith_expr,
                  (symbol.term,
                   (symbol.factor,
-                   (symbol.power,
-                    (symbol.atom,
-                     (token.NAME, ['name'])
-                     ))))))))))))
+		    ['power']
+                  ))))))))))
      )
+
+# This pattern will match an import statement
+# import_spec is either:
+#   NAME:import, dotted_name
+# or:
+#   NAME:from, dotted_name, NAME:import, NAME [, COMMA, NAME]*
+# hence you must process it manually (second form has variable length)
+IMPORT_STMT_PATTERN = (
+      symbol.stmt, (
+	symbol.simple_stmt, (
+	  symbol.small_stmt, ['import_spec']
+	), (
+	  token.NEWLINE, ''
+	)
+      )
+)
+
+
 
 #
 #  end of file

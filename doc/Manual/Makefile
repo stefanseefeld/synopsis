@@ -1,19 +1,19 @@
 # Makefile for Synopsis RefManual
 
 synopsis	:= ../../synopsis
-bpath		:= ../..
+bpath		:= ../../..
 spath		:= syn
 cxxpath		:= ../../Parser/C++/occ/src/occ
 cxxspath	:= syn/Parser/C++
 
-F_HTML_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Formatter/HTML/*.py))
-PYFILES		:= Formatter/ASCII Formatter/DUMP \
-		   Core/AST Core/Type Core/Util \
-		   Parser/IDL/omni \
-		   Parser/Python/exparse Parser/Python/python \
+F_HTML_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Formatter/HTML/*.py))
+PYFILES		:= Synopsis/Formatter/ASCII Synopsis/Formatter/DUMP \
+		   Synopsis/Core/AST Synopsis/Core/Type Synopsis/Core/Util \
+		   Synopsis/Parser/IDL/omni \
+		   Synopsis/Parser/Python/exparse Synopsis/Parser/Python/python \
 		   $(F_HTML_PYFILES)
 
-NOEX_PY		:= synopsis
+NOEX_PY		:= Synopsis/synopsis
 
 PYSOURCES	:= $(patsubst %,$(bpath)/%.py,$(PYFILES)) \
 		   $(patsubst %,$(bpath)/%,$(NOEX_PY))
@@ -31,16 +31,17 @@ manual:   $(PYSYNS) $(CXXSYNS)
 
 # Compile Python files
 $(spath)/%.syn:	$(bpath)/%.py
-	@if [ ! -d $(spath) ]; then mkdir $(spath); fi
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
 
 # Compile main 'synopsis' file
-$(spath)/synopsis.syn: $(bpath)/synopsis
+$(spath)/Synopsis/synopsis.syn: $(bpath)/Synopsis/synopsis
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
 
 # Compile C++ files
 $(cxxspath)/%.csyn: $(cxxpath)/%.hh
-	@if [ ! -d $(cxxpath) ]; then mkdir $(cxxpath); fi
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/ -Wl,-p,ssd -o $@ $?
 
 clean:
