@@ -22,7 +22,7 @@ class Builder;
 // Forward declaration of Decoder
 class Decoder;
 
-namespace AST { class Parameter; }
+namespace AST { class Parameter; class Inheritance; }
 namespace Type { class Type; }
 
 //. A walker that creates an AST. All Translate* methods have been overridden
@@ -39,6 +39,7 @@ public:
     void TranslateFunctionName(char* encname, string& realname, Type::Type* returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
     void TranslateTypedefDeclarator(Ptree* node);
+    vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
 

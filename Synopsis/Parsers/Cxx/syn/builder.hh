@@ -28,6 +28,9 @@ public:
     //. Destructor. Recursively destroys all AST objects
     ~Builder();
 
+    //. Changes the current accessability for the current scope
+    void setAccess(AST::Access);
+
     //
     // AST Methods
     //
@@ -37,6 +40,9 @@ public:
 
     //. Add the given Declaration to the current scope
     void add(AST::Declaration*);
+
+    //. Add the given non-declaration type to the current scope
+    void add(Type::Named*);
 
     //. Construct and open a new Namespace. The Namespace is becomes the
     //. current scope, and the old one is pushed onto the stack.
@@ -50,6 +56,11 @@ public:
     //. type, ie: "class" or "struct". This is tested to determine the default
     //. accessability.
     AST::Class* startClass(string type, string name);
+    //. Update the search to include base classes. Call this method after
+    //. startClass(), and after filling in the parents() vector of the returned
+    //. AST::Class object. After calling this method, name and type lookups
+    //. will correctly search the base classes of this class.
+    void updateBaseSearch();
 
     //. End the current class and pop the previous Scope off the stack
     void endClass();
@@ -62,6 +73,13 @@ public:
 
     //. Add a typedef
     AST::Typedef* addTypedef(int, string name, Type::Type* alias, bool constr);
+
+    //. Add an enumerator
+    AST::Enumerator* addEnumerator(int, string name, string value);
+
+    //. Add an enum
+    AST::Enum* addEnum(int, string name, const vector<AST::Enumerator*>&);
+
 
     //
     // Type Methods
@@ -83,6 +101,9 @@ public:
 
     //. Create a Template type for the given name in the current scope
     Type::Template* Template(string name, const vector<Type::Type*>&); 
+
+    //. Add a forward decl for given name if it doesnt already exist
+    Type::Forward* addForward(string name);
 
 private:
     //. Current filename
@@ -112,6 +133,8 @@ private:
 	typedef vector<Scope*> Search;
 	//. The list of scopes to search for this scope, including this
 	Search search;
+	//. Current accessability
+	AST::Access access;
     };
     //. The stack of Builder::Scopes
     stack<Scope*> m_scopes;
@@ -133,6 +156,8 @@ private:
     //. an existing Scope* in the Private map.
     Scope* findScope(AST::Scope*);
 
+    //. Utility class to recursively add base classes to given search
+    void addClassBases(AST::Class* clas, Scope::Search& search);
 
 }; // class Builder
 

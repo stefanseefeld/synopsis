@@ -22,16 +22,16 @@ CCC		:= cc
 CXX		:= c++
 RANLIB		:=
 
-OPTIMISE	:= -O2 -march=i686
-#DEBUG = -ggdb -pg
-DEBUG		:=
+# FIXME - the i686 will need to be $configured
+OPTIMISE	:= -O6 -march=i686
+#DEBUG		:= -O2 -ggdb -pg -DDEBUG 
+DEBUG		:= -O6 -DDEBUG
 
-CFLAGS		:= $(OPTIMISE) $(DEBUG)
-#CXXFLAGS = -O2 -I..
+CFLAGS		:= 
 CPPFLAGS	:= -I.. -I$(PYTHON_PREFIX)/include -DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYTHON_MINOR=$(PYTHON_MINOR)
-CXXFLAGS	:= $(OPTIMISE) $(DEBUG) -Wall
+CXXFLAGS	:= -Wall
 GCLIB		:= ../gc/gc.a
-LDFLAGS		:= $(DEBUG) # -export-dynamic	# for GNU ld
+LDFLAGS		:= # -export-dynamic	# for GNU ld
 LIB		:= $(PYTHON_LIB) -ldl -lpthread # Linux
 
 OCC_OBJ		:= buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
@@ -46,28 +46,27 @@ SYN_GOBJ	= $(patsubst %.o, %.go, $(SYN_DEBUG_OBJ))
 
 all : ../../../occ.so
 
+# This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : ../%.cc
-	$(CXX)  -I.. $(CXXFLAGS) -c -o $@ $<
+	$(CXX)  -I.. $(OPTIMISE) $(CXXFLAGS) -c -o $@ $<
 
+# This compiles the parser files with optimisation
 $(SYN_OBJ): %.o : %.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(OPTIMISE) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-# Note dep on .o to hackily inherit deps
+# This compiles debug versions of the object files with .go suffix
 $(SYN_GOBJ): %.go : %.cc
-	$(CXX) -ggdb -pg -DDEBUG $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+# Include deps if they exist. 
 -include .deps.go
 -include .deps.o
 
-synopsis.g.o:	synopsis.cc synopsis.hh
-	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<
-
-occ.g.o: occ.cc synopsis.hh
-	$(CXX) -ggdb -pg -DDEBUG $(CXXFLAGS) -c -o $@ $<
-
+# This creates the final python module
 ../../../occ.so : $(SYN_OBJ) opencxx.a
 	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
 
+# This creates a binary with debugging and profiling that you can run
 occ.gdb:	$(SYN_GOBJ) opencxx.a 
 	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB) $(PYLIB)
 

@@ -778,6 +778,12 @@ static char *RunPreprocessor(const char *file, const vector<const char *> &flags
             args.push_back(dest);
             args.push_back("-x"); // language c++
             args.push_back("c++");
+	    args.push_back("-I");
+	    args.push_back("/home/chalky/src/omni/include");
+	    args.push_back("-I");
+	    args.push_back("/home/chalky/src/Berlin/include");
+	    args.push_back("-I");
+	    args.push_back("/home/chalky/src/Berlin/build/include");
             args.push_back(file);
             args.push_back(0);
             execvp(args[0], (char **)args.begin());
@@ -834,7 +840,7 @@ static char *RunOpencxx(const char *src, const char *file, const vector<const ch
     while(parse.rProgram(def))
 	swalker.Translate(def);
     Dumper dumper;
-    dumper.visitScope(builder.scope());
+    //dumper.visitScope(builder.scope());
 #else
     PyWalker walker(&parse, &synopsis);
     Ptree *def;

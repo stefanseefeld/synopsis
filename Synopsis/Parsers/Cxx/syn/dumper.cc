@@ -38,6 +38,25 @@ string Dumper::colonate(const AST::Name& name)
     return str;
 }
 
+string join(const vector<string>& strs, string sep = " ")
+{
+    vector<string>::const_iterator iter = strs.begin();
+    if (iter == strs.end()) return "";
+    string str = *iter++;
+    while (iter != strs.end())
+	str += sep + *iter++;
+    return str;
+}
+
+string append(const vector<string>& strs, string sep = " ")
+{
+    vector<string>::const_iterator iter = strs.begin();
+    string str = "";
+    while (iter != strs.end())
+	str += *iter++ + sep;
+    return str;
+}
+
 //
 // Type Visitor
 //
@@ -107,14 +126,18 @@ void Dumper::visitTemplateType(Type::Template* type)
 
 void Dumper::visitParameterized(Type::Parameterized* type)
 {
-    m_type = colonate(type->templateType()->name()) + "<";
+    string str;
+    if (type->templateType())
+	str = colonate(type->templateType()->name()) + "<";
+    else
+	str = "(unknown)<";
     if (type->parameters().size()) {
-	m_type += format(type->parameters().front());
+	str += format(type->parameters().front());
 	Type::Type::vector_t::iterator iter = type->parameters().begin();
 	while (++iter != type->parameters().end())
-	    m_type += "," + format(*iter);
+	    str += "," + format(*iter);
     }
-    m_type += ">";
+    m_type = str + ">";
 }
 
 void Dumper::visitFuncPtr(Type::FuncPtr* type)
@@ -190,7 +213,27 @@ void Dumper::visitNamespace(AST::Namespace* ns)
 
 void Dumper::visitClass(AST::Class* clas)
 {
-    cout << m_indent_string << clas->type() << " " << clas->name() << " {" << endl;
+    if (clas->templateType()) {
+	m_scope.push_back(clas->name().back());
+	Type::Template* templ = clas->templateType();
+	cout << m_indent_string << "template<";
+	vector<string> names;
+	Type::Type::vector_t::iterator iter = templ->parameters().begin();
+	while (iter != templ->parameters().end())
+	    names.push_back(format(*iter++));
+	cout << join(names, ", ") << ">" << endl;
+	m_scope.pop_back();
+    }
+    cout << m_indent_string << clas->type() << " " << clas->name();
+    if (clas->parents().size()) {
+	cout << ": ";
+	vector<string> inherits;
+	vector<AST::Inheritance*>::iterator iter = clas->parents().begin();
+	for (;iter != clas->parents().end(); ++iter)
+	    inherits.push_back(append((*iter)->attributes()) + format((*iter)->parent()));
+	cout << join(inherits, ", ");
+    }
+    cout << " {" << endl;
     indent();
     m_scope.push_back(clas->name().back());
     visit(clas->declarations());
@@ -199,10 +242,24 @@ void Dumper::visitClass(AST::Class* clas)
     cout << m_indent_string << "};" << endl;
 }
 
+
+// Utility func that returns true if name[-1] == name[-2]
+// ie: constructor or destructor
+bool isStructor(const AST::Function* func)
+{
+    const AST::Name& name = func->name();
+    if (name.size() < 2) return false;
+    string realname = func->realname();
+    if (realname[0] == '~') return true;
+    AST::Name::const_iterator second_last;
+    second_last = name.end() - 2;
+    return (realname == *second_last);
+}
+
 void Dumper::visitOperation(AST::Operation* oper)
 {
     cout << m_indent_string;
-    cout << format(oper->returnType()) + " ";
+    if (!isStructor(oper)) cout << format(oper->returnType()) + " ";
     cout << oper->realname() << "(";
     if (oper->parameters().size()) {
 	cout << format(oper->parameters().front());
@@ -210,7 +267,7 @@ void Dumper::visitOperation(AST::Operation* oper)
 	while (++iter != oper->parameters().end())
 	    cout << "," << format(*iter);
     }
-    cout << ")" << endl;
+    cout << ");" << endl;
 }
 
 void Dumper::visitVariable(AST::Variable* var)
@@ -222,3 +279,24 @@ void Dumper::visitTypedef(AST::Typedef* tdef)
 {
     cout << m_indent_string << "typedef " << format(tdef->alias()) << " " << tdef->name().back() << ";" << endl;
 }
+
+void Dumper::visitEnum(AST::Enum* decl)
+{
+    cout << m_indent_string << "enum " << decl->name().back() << "{" << endl;
+    indent();
+    vector<AST::Enumerator*>::iterator iter = decl->enumerators().begin();
+    while (iter != decl->enumerators().end())
+	(*iter++)->accept(this);
+    undent();
+    cout << m_indent_string << "};" << endl;
+}
+
+void Dumper::visitEnumerator(AST::Enumerator* enumor)
+{
+    cout << m_indent_string << enumor->name().back();
+    if (enumor->value().size())
+	cout << " = " << enumor->value();
+    cout << "," << endl;
+}
+
+
