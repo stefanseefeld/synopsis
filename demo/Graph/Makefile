@@ -1,4 +1,4 @@
-synopsis	:= ../../synopsis -p C++ -f Dot
+synopsis	:= ../../bin/synopsis -p C++ -f Dot
 
 all: class# collaboration
 
@@ -14,7 +14,7 @@ class.png: demo.hh
 class.map: demo.hh
 	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,map -o $@ $<
 demo: demo.hh
-	../../synopsis -Wc,parser=C++,formatter=HTML -Wf,-t,demo.toc,-S,../html.css -o $@ $<
+	../../bin/synopsis -Wc,parser=C++,formatter=HTML -Wf,-t,demo.toc,-S,../html.css -o $@ $<
 	touch demo
 class.html: demo.hh demo
 	$(synopsis) -Wf,-i -Wf,-t,"inheritance graph",-f,html,-r,"demo.toc|demo" -o $@ $<

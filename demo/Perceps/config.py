@@ -9,6 +9,7 @@ class Config (Base):
 	    include_path = ['.'] # add current dir to include path
 	    main_file = 1 # don't display #included stuff
 	    extract_tails = 1 # Look for trailing comments
+	    preprocessor = 'gcc'
 	modules = {
 	    'C++':CXX,
 	}

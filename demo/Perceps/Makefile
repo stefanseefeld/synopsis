@@ -8,10 +8,10 @@ all:	$(TARGET)
 doxygen: $(TARGET_D)
 
 $(TARGET): $(SOURCE) config.py
-	../../synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML -o Manual display.h
+	../../bin/synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML -o Manual display.h
 
 $(TARGET_D): $(SOURCE) config.py
-	../../synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML_Doxygen -o ManualD display.h
+	../../bin/synopsis -c config.py -Wc,parser=C++,linker=Linker,formatter=HTML_Doxygen -o ManualD display.h
 
 clean:
 	rm -rf core *~ Manual ManualD *.pyc *.pyo
