@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.2 2003/09/18 04:10:05 stefan Exp $
+dnl $Id: configure.ac,v 1.3 2003/09/22 15:47:56 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2003 Stefan Seefeld <stefan@fresco.org> 
@@ -25,7 +25,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.2 $)
+AC_REVISION($Revision: 1.3 $)
 AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
@@ -63,6 +63,13 @@ cpp_profile=""
 case `uname -s` in
 CYGWIN*)
     LIBEXT=dll
+    PYTHON_VERSION=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('VERSION')"`
+    PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
+dnl The following lines assume we are using python from cygwin, not win32.
+dnl Make that more flexible...
+    PYTHON_LIBS="-L $PYTHON_PREFIX/lib/python$PYTHON_VERSION/config -lpython$PYTHON_VERSION"
+    PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
+    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
     ;;
 *)
     CXXFLAGS="$CXXFLAGS -fPIC"
