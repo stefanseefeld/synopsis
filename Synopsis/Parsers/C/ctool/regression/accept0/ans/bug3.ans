@@ -1,5 +1,3 @@
-#line 1 "run/bug3.c"
-
 typedef int  FOO;
 typedef FOO  BAR;
 

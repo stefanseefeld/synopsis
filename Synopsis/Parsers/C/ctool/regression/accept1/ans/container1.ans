@@ -1,5 +1,3 @@
-#line 1 "run/container1.c"
-
 enum e2 ;
 struct s {
   int  s1;

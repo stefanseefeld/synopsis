@@ -1,5 +1,3 @@
-#line 1 "run/union2.c"
-
 union st {
   int  a;
 } x;

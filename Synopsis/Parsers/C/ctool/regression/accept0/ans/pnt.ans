@@ -1,5 +1,3 @@
-#line 1 "run/pnt.c"
-
 int  main()
 {
   char  *a;

@@ -1,5 +1,3 @@
-#line 1 "run/enum1.c"
-
 enum { a0 };
 enum { a1 };
 enum enum1 { a11, a12 };

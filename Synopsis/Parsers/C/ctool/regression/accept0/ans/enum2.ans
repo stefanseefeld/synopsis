@@ -1,5 +1,3 @@
-#line 1 "run/enum2.c"
-
 #include <stdio.h>
 
 enum a { false, true, maybe };

@@ -1,5 +1,3 @@
-#line 1 "run/enum.c"
-
 struct fob {
   int  a;
   int  b;

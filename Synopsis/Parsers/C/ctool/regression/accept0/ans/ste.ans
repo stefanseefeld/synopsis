@@ -1,4 +1,2 @@
-#line 1 "run/ste.c"
-
 void  foo(void (*)());
 
