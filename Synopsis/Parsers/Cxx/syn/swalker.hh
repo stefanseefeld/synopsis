@@ -1,4 +1,3 @@
-// $Id: swalker.hh,v 1.29 2003/12/03 03:43:27 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -11,7 +10,7 @@
 #define H_SYNOPSIS_CPP_SWALKER
 
 #include <occ/ptree.h>
-#include <occ/walker.h>
+#include <occ/Walker.hh>
 // Stupid occ
 #undef Scope
 
@@ -20,7 +19,7 @@
 
 // Forward declarations
 class Builder;
-class Program;
+class Buffer;
 class Decoder;
 class TypeFormatter;
 class LinkStore;
@@ -47,7 +46,7 @@ class SWalker : public Walker
 {
 public:
   //. Constructor
-  SWalker(FileFilter*, Parser*, Builder*, Program*);
+  SWalker(FileFilter*, Parser*, Builder*, Buffer*);
   virtual ~SWalker();
 
   //. Sets store links to true.
@@ -60,8 +59,8 @@ public:
   
   //. Get the Parser object
   Parser* parser() { return my_parser;}
-  //. Get the Program object
-  Program* program() { return my_program;}
+  //. Get the Buffer object
+  Buffer* buffer() { return my_buffer;}
   //. Get the Builder object
   Builder* builder() { return my_builder;}
   //. Get the TypeFormatter object
@@ -195,7 +194,7 @@ private:
   Parser* my_parser;
   Builder* my_builder;
   FileFilter* my_filter;
-  Program* my_program;
+  Buffer* my_buffer;
   Decoder* my_decoder;
   Lookup* my_lookup;
 

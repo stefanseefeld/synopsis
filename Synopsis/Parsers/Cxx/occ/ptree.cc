@@ -14,10 +14,10 @@
 
 #include <cstring>
 #include <iostream>
-#include "token.h"
+#include "Lexer.hh"
 #include "ptree.h"
-#include "encoding.h"
-#include "walker.h"
+#include "Encoding.hh"
+#include "Walker.hh"
 
 // class Leaf
 
@@ -80,7 +80,7 @@ int Leaf::Write(std::ostream& out, int indent)
     return n;
 }
 
-void Leaf::WritePS(ProgramString& out)
+void Leaf::WritePS(StringBuffer &out)
 {
     char* ptr = data.leaf.position;
     int len = data.leaf.length;
@@ -283,7 +283,7 @@ void NonLeaf::PrintWithEncodeds(std::ostream& s, int indent, int depth)
     NonLeaf::Print(s, indent, depth);
 }
 
-void NonLeaf::WritePS(ProgramString& out)
+void NonLeaf::WritePS(StringBuffer &out)
 {
     Ptree* p = this;
     for(;;){

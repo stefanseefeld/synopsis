@@ -15,7 +15,7 @@
 #include <algorithm>
 
 #include <occ/ptree.h>
-#include <occ/parse.h>
+#include <occ/Parser.hh>
 
 #include "swalker.hh"
 #include "strace.hh"
@@ -45,12 +45,12 @@ std::ostream& STrace::operator <<(Ptree* p)
 SWalker *SWalker::g_swalker = 0;
 
 SWalker::SWalker(FileFilter* filter, Parser* parser,
-                 Builder* builder, Program* program)
+                 Builder* builder, Buffer* buffer)
   : Walker(parser),
     my_parser(parser),
     my_builder(builder),
     my_filter(filter),
-    my_program(program),
+    my_buffer(buffer),
     my_decoder(new Decoder(my_builder)),
     my_declaration(0),
     my_template(0),

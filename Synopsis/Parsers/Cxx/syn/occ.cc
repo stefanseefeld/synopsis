@@ -25,10 +25,10 @@
 #  include <signal.h>
 #endif
 
-#include <occ/parse.h>
-#include <occ/metaclass.h>
-#include <occ/env.h>
-#include <occ/encoding.h>
+#include <occ/Parser.hh>
+#include <occ/MetaClass.hh>
+#include <occ/Environment.hh>
+#include <occ/Encoding.hh>
 
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
@@ -149,9 +149,9 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     perror(file);
     exit(1);
   }
-  ProgramFile prog(ifs);
-  Lex lex(&prog);
-  Parser parse(&lex);
+  StreamBuffer prog(ifs);
+  Lexer lexer(&prog);
+  Parser parse(&lexer);
 
   FileFilter* filter = FileFilter::instance();
 
