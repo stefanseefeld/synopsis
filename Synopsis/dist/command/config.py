@@ -54,13 +54,25 @@ class config(build):
         srcdir = os.path.abspath(ext)
         tempdir = os.path.abspath(os.path.join(self.build_temp, ext))
         builddir = os.path.abspath(os.path.join(self.build_lib, ext))
-        configure = os.path.join(srcdir, 'configure')
 
         cwd = os.getcwd()
         mkpath(tempdir, 0777, self.verbose, self.dry_run)
         os.chdir(tempdir)
+        
+        if os.name == 'nt': 
+            # the path to the configure script has to be expressed in posix style
+            # because even if we are compiling for windows, this part is run within
+            # a cygwin shell
+            configure = ('../' * (self.build_temp.count('\\') + ext.count('/')  + 2)
+                         + ext + '/configure')
+            python = string.replace('`cygpath -a %s`'%os.path.dirname(sys.executable)
+                                    + '/' + os.path.basename(sys.executable),
+                                    '\\', '\\\\')
+        else:
+            configure = srcdir + '/configure'
+            python = sys.executable
 
-        command = "%s/configure --with-python=%s"%(srcdir, sys.executable)
+        command = "%s --with-python=%s"%(configure, python)
         if ext == 'Synopsis/Parsers/Cxx' and self.disable_gc:
             command += ' --disable-gc'
         self.announce(command)
