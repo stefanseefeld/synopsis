@@ -3,7 +3,11 @@
 #include <vector>
 #include <list>
 #include <stack>
-#include PYTHON_INCLUDE
+#ifdef PYTHON_INCLUDE
+#  include PYTHON_INCLUDE
+#else
+#  include <Python.h>
+#endif
 #include "ast.hh"
 #include "type.hh"
 
