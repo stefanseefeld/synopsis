@@ -148,7 +148,11 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     else
     {
       flags.push_back("-o"); // output to...
+#ifdef __WIN32__
+      flags.push_back("NUL");
+#else
       flags.push_back("/dev/null");
+#endif
     }
     flags.push_back(input);
     if (verbose)
