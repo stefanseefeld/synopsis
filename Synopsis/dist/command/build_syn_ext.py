@@ -47,17 +47,18 @@ class build_syn_ext(build_ext):
             if os.path.isfile(path):
                 output.append(os.path.join(self.build_lib, ext[0], ext[1]))
 
-
         return output
 
     def build_extension(self, ext):
 
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
 
-        path = os.path.join(self.build_temp, ext[0])
-        if not os.path.exists(path):
-            self.announce("...not configured, skipping")
-            return
+        if os.name == 'nt': 
+            # same as in config.py here: even on 'nt' we have to
+            # use posix paths because we run in a cygwin shell at this point
+            path = string.replace(self.build_temp, '\\', '/') + '/' + ext[0]
+        else:
+            path = os.path.join(self.build_temp, ext[0])
         
         command = "make -C %s %s"%(path, ext[1])
         spawn(['sh', '-c', command], self.verbose, self.dry_run)

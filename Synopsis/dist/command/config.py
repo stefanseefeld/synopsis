@@ -1,39 +1,33 @@
 import os, sys, string
 
 from distutils.core import setup
-from distutils.command.build import build
+from distutils.command.build_ext import build_ext
 from distutils.util import get_platform
 from distutils.dir_util import mkpath
 from distutils.spawn import spawn, find_executable
 from shutil import *
 
-class config(build):
+class config(build_ext):
     """derive from build since we use almost all the same options"""
 
     description = "configure the package"
 
-    user_options = build.user_options[:] + [
+    user_options = build_ext.user_options[:] + [
         ('disable-gc', None,
-         "whether or not to build the C++ parser with the garbage collector"),
-        ('enable-c', None,
-         "whether or not to build the C parser")
-        ]
-    boolean_options = build.boolean_options[:] + ['disable-gc', 'enable-c']
+         "whether or not to build the C++ parser with the garbage collector")]
+    boolean_options = build_ext.boolean_options[:] + ['disable-gc']
 
     def initialize_options (self):
-        build.initialize_options(self)
+        build_ext.initialize_options(self)
         self.disable_gc = 0
-        self.enable_c = 0
 
     def finalize_options (self):
-        build.finalize_options(self)
+        build_ext.finalize_options(self)
         # only append the path once 
         self.extensions = []
         for e in self.distribution.ext_modules:
             if e[0] not in self.extensions:
                 self.extensions.append(e[0])
-        if not self.enable_c and 'Synopsis/Parsers/C' in self.extensions:
-            self.extensions.remove('Synopsis/Parsers/C')
 
     def run(self):
 
