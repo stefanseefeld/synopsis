@@ -1,4 +1,3 @@
-# $Id: Tags.py,v 1.12 2003/11/15 19:55:31 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -66,15 +65,15 @@ def entity(_type, body, **keys):
 def solotag(_type, **keys):
    "Create a solo tag (no close tag) of given type and attributes"
 
-   return '<%s%s>'%(_type,k2a(keys))
+   return '<%s%s />'%(_type,k2a(keys))
 
 def desc(text):
    "Create a description div for the given text"
 
    return text and div("desc", text) or ''
 
-def anglebrackets(text):
-   """Replace angle brackets with HTML codes"""
+def escape(text):
+   """escape special characters ('&', '"', '<', '>')"""
 
    text = text.replace('&', '&amp;')
    text = text.replace('"', '&quot;')
@@ -83,7 +82,7 @@ def anglebrackets(text):
    return text
 
 def replace_spaces(text):
-   """Replaces spaces in the given string with &nbsp; sequences. Does NOT
+   """Replaces spaces in the given string with &#160; sequences. Does NOT
    replace spaces inside tags"""
 
    # original "hello <there stuff> fool <thing me bob>yo<a>hi"
@@ -94,7 +93,7 @@ def replace_spaces(text):
    tags = reduce(lambda x,y: x+y, tags)
    # now ['hello ', 'there stuff', ' fool ', 'thing me bob', 'yo', 'a', 'hi']
    for i in range(0,len(tags),2):
-      tags[i] = tags[i].replace(' ', '&nbsp;')
+      tags[i] = tags[i].replace(' ', '&#160;')
    for i in range(1,len(tags),2):
       tags[i] = '<' + tags[i] + '>'
    return string.join(tags, '')

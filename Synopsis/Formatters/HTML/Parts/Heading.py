@@ -1,4 +1,3 @@
-# $Id: Heading.py,v 1.6 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -33,10 +32,12 @@ class Heading(Part):
    def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
 
-      self.write(text + '\n<hr>\n')
+      self.write(text + '\n<hr/>\n')
 
    def process(self, decl):
       """Process this Part by formatting only the given decl"""
 
+      self.write_start()
       decl.accept(self)
+      self.write_end()
 

@@ -1,4 +1,3 @@
-# $Id: DeclarationFormatter.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -22,9 +21,11 @@ class DeclarationFormatter(Fragment):
    parameters, etc. Some things such as exception specifications are only
    printed out in the detailed version.
    """
-   col_sep = '<td class="summ-info">'
-   row_sep = '</tr><tr><td class="summ-info">'
-   whole_row = '<td class="summ-start" colspan="2">'
+
+   def col(self, text):
+      # quick hack: use '\t' instead of html markup, so it remains valid
+      # stand-alone as well as inside a table row
+      return '\t' + text
 
    def format_parameters(self, parameters):
       "Returns formatted string for the given parameter list"
@@ -35,12 +36,12 @@ class DeclarationFormatter(Fragment):
       """The default is to return no type and just the declarations name for
       the name"""
 
-      return self.col_sep + self.label(decl.name())
+      return self.col(self.label(decl.name()))
 
    def format_forward(self, decl): return self.format_declaration(decl)
    def format_group(self, decl):
 
-      return self.col_sep + ''
+      return self.col('')
 
    def format_scope(self, decl):
       """Scopes have their own views, so return a reference to it"""
@@ -48,7 +49,7 @@ class DeclarationFormatter(Fragment):
       name = decl.name()
       link = rel(self.formatter.filename(),
                  self.processor.file_layout.scope(name))
-      return self.col_sep + href(link, anglebrackets(name[-1]))
+      return href(link, escape(name[-1]))
 
    def format_module(self, decl): return self.format_scope(decl)
    def format_meta_module(self, decl): return self.format_module(decl)
@@ -58,7 +59,7 @@ class DeclarationFormatter(Fragment):
       "(typedef type, typedef name)"
 
       type = self.format_type(decl.alias())
-      return type + self.col_sep +  self.label(decl.name())
+      return self.col(type) + self.col(self.label(decl.name()))
 
    def format_enumerator(self, decl):
       """This is only called by formatEnum"""
@@ -71,20 +72,20 @@ class DeclarationFormatter(Fragment):
       type = self.label(decl.name())
       name = map(lambda enumor:enumor.name()[-1], decl.enumerators())
       name = string.join(name, ', ')
-      return type + self.col_sep + name
+      return self.col(type) + self.col(name)
 
    def format_variable(self, decl):
 
       # TODO: deal with sizes
       type = self.format_type(decl.vtype())
-      return type + self.col_sep + self.label(decl.name())
+      return self.col(type) + self.col(self.label(decl.name()))
 
    def format_const(self, decl):
       "(const type, const name = const value)"
 
       type = self.format_type(decl.ctype())
       name = self.label(decl.name()) + " = " + decl.value()
-      return type + self.col_sep + name
+      return self.col(type) + self.col(name)
 
    def format_function(self, decl):
       "(return type, func + params + exceptions)"
@@ -101,17 +102,20 @@ class DeclarationFormatter(Fragment):
       params = self.format_parameters(decl.parameters())
       postmod = self.format_modifiers(decl.postmodifier())
       raises = self.format_exceptions(decl)
+      # prepend the type by the premodifier(s)
       type = '%s %s'%(premod,type)
       # Prevent linebreaks on shorter lines
       if len(type) < 60:
          type = replace_spaces(type)
       if decl.type() == "attribute": name = '%s %s %s'%(name, postmod, raises)
       else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
+      # treat template syntax like a premodifier
       if decl.template():
          templ = 'template &lt;%s&gt;'%(self.format_parameters(decl.template().parameters()),)
          templ = div('template', templ)
-         return self.whole_row + templ + self.row_sep + type + self.col_sep + name
-      return type + self.col_sep + name
+         type = '%s %s'%(templ, type)
+
+      return self.col(type) + self.col(name)
 
    # Default operation is same as function, and quickest way is to assign:
    def format_operation(self, decl): return self.format_function(decl)

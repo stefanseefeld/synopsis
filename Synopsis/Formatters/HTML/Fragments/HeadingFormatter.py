@@ -1,4 +1,3 @@
-# $Id: HeadingFormatter.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -23,7 +22,7 @@ class HeadingFormatter(Fragment):
       for name in scoped_name[:-1]:
          scope.append(name)
          text.append(self.reference(scope))
-      text.append(anglebrackets(scoped_name[-1]))
+      text.append(escape(scoped_name[-1]))
       return string.join(text, "::\n") + '\n'
 
    def format_name_in_namespace(self, scoped_name):
@@ -43,7 +42,7 @@ class HeadingFormatter(Fragment):
                   # Skip modules (including namespaces)
                   continue
          text.append(self.reference(scope))
-      text.append(anglebrackets(scoped_name[-1]))
+      text.append(escape(scoped_name[-1]))
       return string.join(text, "::\n") + '\n'
 
    def format_namespace_of_name(self, scoped_name):
@@ -122,7 +121,7 @@ class HeadingFormatter(Fragment):
             file_ref = href(rel(self.formatter.filename(), file_link), file_name)
          else:
             file_ref = file_name
-      files = "Files: "+file_ref + "<br>"
+      files = "Files: "+file_ref + "<br/>"
 
       return '%s%s%s%s'%(namespace, templ, name, files)
 

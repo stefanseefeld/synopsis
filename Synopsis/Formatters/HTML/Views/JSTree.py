@@ -1,4 +1,3 @@
-# $Id: JSTree.py,v 1.9 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -12,7 +11,7 @@ from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 #The javascript that goes up the top
-top_js = """<script language="JavaScript1.2"><!--
+top_js = """<script type="text/javascript" language="JavaScript1.2"><!--
 var isNav4 = false, isIE4 = false;
 if (parseInt(navigator.appVersion.charAt(0)) == 4) {
     isNav4 = (navigator.appName == "Netscape") ? true : false;

@@ -1,4 +1,3 @@
-# $Id: InheritanceFormatter.py,v 1.1 2003/12/05 22:31:53 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -18,7 +17,7 @@ class InheritanceFormatter(Default):
 
       if not label: label = decl.name()[-1]
       fullname = Util.ccolonName(decl.name(), self.formatter.scope())
-      title = decl.type() + " " + anglebrackets(fullname)
+      title = decl.type() + " " + escape(fullname)
       return self.reference(decl.name(), label=label, title=title) + ' '
 
    def format_function(self, decl):

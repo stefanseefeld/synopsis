@@ -1,4 +1,3 @@
-# $Id: Scope.py,v 1.27 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -110,7 +109,7 @@ class Scope(View):
       # Open file and setup scopes
       self.__scope = ns.name()
       self.__filename = self.processor.file_layout.scope(self.__scope)
-      self.__title = anglebrackets(string.join(self.__scope))
+      self.__title = escape(string.join(self.__scope))
       self.start_file()
 	
       # Write heading
@@ -124,8 +123,8 @@ class Scope(View):
    def end_file(self):
       """Overrides end_file to provide synopsis logo"""
 
-      self.write('<hr>\n')
+      self.write('<hr/>\n')
       now = time.strftime(r'%c', time.localtime(time.time()))
       logo = href('http://synopsis.fresco.org', 'synopsis')
-      self.write(div('logo', 'Generated on ' + now + ' by \n<br>\n' + logo))
+      self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))
       View.end_file(self)

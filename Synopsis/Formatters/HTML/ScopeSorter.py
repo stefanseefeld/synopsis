@@ -1,4 +1,3 @@
-# $Id: ScopeSorter.py,v 1.11 2003/12/05 21:23:29 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.

@@ -1,4 +1,3 @@
-# $Id: FileLayout.py,v 1.26 2003/12/09 06:30:20 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -88,7 +87,7 @@ class FileLayout (TOC.Linker):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return "_file-"+rel(self.base, file).replace(os.sep, '-')+".html"
+      return "_file-"+file.replace(os.sep, '-')+".html"
 
    def file_source(self, file):
       """Return the filename for the source of an input file.
@@ -96,7 +95,7 @@ class FileLayout (TOC.Linker):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return "_source-"+rel(self.base, file).replace(os.sep, '-')+".html"
+      return "_source-"+file.replace(os.sep, '-')+".html"
 
    def file_details(self, file):
       """Return the filename for the details of an input file.
@@ -104,7 +103,7 @@ class FileLayout (TOC.Linker):
       "_filedetail-" and append ".html" """
 
       file = self._strip_filename(file)
-      return "_filedetail-"+rel(self.base, file).replace(os.sep, '-')+".html"
+      return "_filedetail-"+file.replace(os.sep, '-')+".html"
 
    def index(self):
       """Return the name of the main index file. Default is index.html"""
@@ -153,7 +152,7 @@ class FileLayout (TOC.Linker):
          return self.scope(decl.name())
       # Assume parent scope is class or module, and this is a <A> name in it
       filename = self.scope(decl.name()[:-1])
-      anchor = anglebrackets(decl.name()[-1].replace(' ','-'))
+      anchor = escape(decl.name()[-1].replace(' ','-'))
       return filename + "#" + anchor
 
 class NestedFileLayout (FileLayout):
@@ -174,7 +173,7 @@ class NestedFileLayout (FileLayout):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return os.path.join("File", rel(self.base, file)+".html")
+      return os.path.join("File", file+".html")
 
    def file_source(self, file):
       """Return the filename for the source of an input file.
@@ -182,7 +181,7 @@ class NestedFileLayout (FileLayout):
       and append ".html" """
 
       file = self._strip_filename(file)
-      return os.path.join("Source", rel(self.base, file)+".html")
+      return os.path.join("Source", file+".html")
 
    def file_details(self, file):
       """Return the filename for the details of an input file.
@@ -190,7 +189,7 @@ class NestedFileLayout (FileLayout):
       .html appended."""
 
       file = self._strip_filename(file)
-      return os.path.join("FileDetails", rel(self.base, file)+".html")
+      return os.path.join("FileDetails", file+".html")
 
    def special(self, name):
       """Return the name of a special file (tree, etc)."""

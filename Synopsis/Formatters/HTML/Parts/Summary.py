@@ -1,4 +1,3 @@
-# $Id: Summary.py,v 1.6 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -54,23 +53,22 @@ class Summary(Part):
       the class 'heading'."""
 
       self.write('<table width="100%%" summary="%s">\n'%heading)
-      self.write('<col><col width="100%%">')
+      self.write('<col/><col width="100%" />')
       self.write('<tr><td class="heading" colspan="2">' + heading + '</td></tr>\n')
 
    def write_section_end(self, heading):
       """Closes the table entity and adds a break."""
 
-      self.write('</table>\n<br>\n')
+      self.write('</table>\n<br/>\n')
 
    def write_section_item(self, text):
       """Adds a table row"""
 
-      if text[:22] == '<td class="summ-start"':
-         # text provided its own TD element
-         self.write('<tr>' + text + '</td></tr>\n')
-      else:
-         self.write('<tr><td class="summ-start">' + text + '</td></tr>\n')
-
+      # fragment formatters place a <tab> as separator, so we can replace
+      # it with proper html markup here
+      text = re.sub('\t', '</td><td class="summ-info">', text)
+      self.write('<tr><td class="summ-info">' + text + '</td></tr>')
+      
    def process(self, decl):
       "Print out the summaries from the given decl"
 

@@ -1,4 +1,3 @@
-# $Id: FileIndexer.py,v 1.8 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -67,18 +66,18 @@ class FileIndexer(View):
       self.__title = string.join(name, os.sep)
 
       self.start_file()
-      self.write(entity('b', string.join(name, os.sep))+'<br>')
+      self.write(entity('b', string.join(name, os.sep))+'<br/>')
       if self.__link_source:
          link = rel(self.filename(),
                     self.processor.file_layout.file_source(filename))
-         self.write(href(link, '[File Source]', target="main")+'<br>')
+         self.write(href(link, '[File Source]', target="main")+'<br/>')
       if self.__link_details:
          link = rel(self.filename(),
                     self.processor.file_layout.file_details(filename))
-         self.write(href(link, '[File Details]', target="main")+'<br>')
+         self.write(href(link, '[File Details]', target="main")+'<br/>')
       comments = self.processor.comments
 
-      self.write('<b>Declarations:</b><br>')
+      self.write('<b>Declarations:</b><br/>')
       # Sort items (by name)
       items = map(lambda decl: (decl.name(), decl), file.declarations())
       items.sort()
@@ -88,7 +87,7 @@ class FileIndexer(View):
          entry = self.processor.toc[name]
          if not entry: continue
          summary = string.strip("(%s) %s"%(decl.type(),
-                                           anglebrackets(comments.format_summary(self, decl))))
+                                           escape(comments.format_summary(self, decl))))
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
          if isinstance(decl, AST.Function): print_name = decl.realname()
@@ -107,12 +106,12 @@ class FileIndexer(View):
          while i < len(print_name)-1:
             scope.append(print_name[i])
             if len(last) >= len(scope) and last[:len(scope)] == scope: div_bit = ""
-            else: div_bit = print_name[i]+"<br>"
+            else: div_bit = print_name[i]+"<br/>"
             self.write('%s<div class="fileview-scope">'%div_bit)
             i = i + 1
 
          # Now print the actual item
-         label = anglebrackets(Util.ccolonName(print_name, scope))
+         label = escape(Util.ccolonName(print_name, scope))
          label = replace_spaces(label)
          self.write(div('href',href(link, label, target='main', title=summary)))
          # Store this name incase, f.ex, its a class and the next item is

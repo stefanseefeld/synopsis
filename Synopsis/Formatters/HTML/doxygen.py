@@ -163,12 +163,12 @@ class DOSummary (ASTFormatter.Summary):
 	self.write(str%heading)
 
     def writeSectionEnd(self, heading):
-	str = '<tr><td colspan="2" class="gap" height=20px>&nbsp;</td></tr>'
+	str = '<tr><td colspan="2" class="gap" height="20px">&#160;</td></tr>'
 	self.write(str)
 
     def write_end(self):
 	"""Closes the table entity and adds a break."""
-	str = '</table><br>'
+	str = '</table><br/>'
 	self.write(str)
 
     def writeSectionItem_Foo(self, type, name):
@@ -191,7 +191,7 @@ class DODetail (ASTFormatter.Detail):
 	self.addFormatter( FormatStrategy.DetailCommenter )
 
     def writeSectionEnd(self, heading):
-	self.write('<hr>')
+	self.write('<hr/>')
     def writeSectionItem_Foo(self, text):
 	"""Joins text1 and text2"""
 	self.write(text)

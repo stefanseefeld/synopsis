@@ -1,4 +1,3 @@
-# $Id: Inheritance.py,v 1.5 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -110,6 +109,6 @@ class Inheritance(Part):
 
    def write_section_end(self, heading):
       """Closes the table entity and adds a break."""
-      self.write('</td></tr></table>\n<br>\n')
+      self.write('</td></tr></table>\n<br/>\n')
 
 

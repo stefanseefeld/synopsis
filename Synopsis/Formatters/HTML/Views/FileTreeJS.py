@@ -1,4 +1,3 @@
-# $Id: FileTreeJS.py,v 1.13 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -98,10 +97,10 @@ class FileTree(JSTree):
       self.__title = string.join(name, os.sep)
 
       self.start_file()
-      self.write(entity('b', string.join(name, os.sep))+'<br>')
+      self.write(entity('b', string.join(name, os.sep))+'<br/>')
       if self.link_to_views:
          link = self.processor.file_layout.scoped_special('view', name)
-         self.write(href(link, '[Source]', target="main")+'<br>')
+         self.write(href(link, '[Source]', target="main")+'<br/>')
       for name, decl in node.decls.items():
          # TODO make this nicer :)
          entry = self.processor.toc[name]
@@ -109,7 +108,7 @@ class FileTree(JSTree):
          else:
             # Print link to declaration's view
             if isinstance(decl, AST.Function):
-               self.write(div('href',href(entry.link,anglebrackets(Util.ccolonName(decl.realname())),target='main')))
+               self.write(div('href',href(entry.link,escape(Util.ccolonName(decl.realname())),target='main')))
             else:
                self.write(div('href',href(entry.link,Util.ccolonName(name),target='main')))
                # Print comment

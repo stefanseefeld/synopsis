@@ -1,4 +1,3 @@
-# $Id: XRefLinker.py,v 1.4 2003/12/09 21:03:44 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld

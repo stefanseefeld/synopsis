@@ -1,4 +1,3 @@
-# $Id: SummaryCommenter.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -16,12 +15,12 @@ class SummaryCommenter(Default):
    def format_declaration(self, decl):
       summary = self.processor.comments.format_summary(self.view, decl)
       if summary:
-         return '<br>'+span('summary', summary)
+         return '<br/>'+span('summary', summary)
       return ''
 
    def format_group(self, decl):
       """Override for group to use the div version of commenting, and no
-      <br> before"""
+      <br/> before"""
 
       summary = self.processor.comments.format(self.view, decl)
       if summary:

@@ -1,4 +1,3 @@
-# $Id: NameIndex.py,v 1.18 2003/12/10 05:19:12 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -46,15 +45,15 @@ class NameIndex(View):
       for key in keys:
          self.write('<a name="%s">'%ord(key)+'</a>')
          self.write(entity('h2', key))
-         self.write('<table border=0 width="100%" summary="table of names">')
-         self.write('<col width="*">'*self.columns)
+         self.write('<table border="0" width="100%" summary="table of names">')
+         self.write('<col width="*"/>'*self.columns)
          self.write('<tr>')
          items = dict[key]
          numitems = len(items)
          start = 0
          for column in range(self.columns):
             end = numitems * (column + 1) / self.columns
-            self.write('<td valign=top>')
+            self.write('<td valign="top">')
             for item in items[start:end]:
                self._process_item(item)
             self.write('</td>')
@@ -98,11 +97,11 @@ class NameIndex(View):
       name = type.name()
       decl = type.declaration() # non-declared types are filtered out
       if isinstance(decl, AST.Function):
-         realname = anglebrackets(decl.realname()[-1]) + '()'
+         realname = escape(decl.realname()[-1]) + '()'
       else:
-         realname = anglebrackets(name[-1])
+         realname = escape(name[-1])
       self.write('\n')
-      title = anglebrackets(string.join(name, '::'))
+      title = escape(string.join(name, '::'))
       type = decl.type()
       name = self.reference(name, (), realname, title=title)+' '+type
       self.write(div('nameindex-item', name))

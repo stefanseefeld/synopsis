@@ -1,4 +1,3 @@
-# $Id: Javadoc.py,v 1.3 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -87,7 +86,7 @@ class Javadoc(Formatter):
       return div('tag-heading',"Parameters:") + \
              div('tag-section', string.join(
          map(lambda p:"<b>%s</b> - %s"%(p[0],p[1]), param_tags),
-         '<br>'))
+         '<br/>'))
 
    def format_attrs(self, attr_tags):
       """Formats a list of (attr, description) tags"""
@@ -114,7 +113,7 @@ class Javadoc(Formatter):
          ref,desc = see[0], len(see)>1 and see[1] or ''
          link = self.find_link(view, ref, decl)
          seelist.append(link + desc)
-      return seestr + div('tag-section', string.join(seelist,'\n<br>\n'))
+      return seestr + div('tag-section', string.join(seelist,'\n<br/>\n'))
 
    def find_link(self, view, ref, decl):
       """Given a "reference" and a declaration, returns a HTML link.

@@ -118,7 +118,7 @@ void write(std::ostream& out, int col, char* buf, int len, int buflen)
 	out << "&gt;";
 	break;
       case ' ':
-	out << "&nbsp;";
+	out << "&#160;";
 	break;
       case '"':
 	out << "&quot;";
@@ -129,7 +129,7 @@ void write(std::ostream& out, int col, char* buf, int len, int buflen)
       case '\t':
       {
 	int next = ((col/8)+1)*8;
-	while (col++ < next) out << "&nbsp;";
+	while (col++ < next) out << "&#160;";
 	continue;
       }
       default:
@@ -142,7 +142,7 @@ void write(std::ostream& out, int col, char* buf, int len, int buflen)
 //. Writes the line number to the output
 void write_lineno(std::ostream& out, int line)
 {
-  // out << setw(4) << line << "| "; <-- but with& nbsp;'s
+  // out << setw(4) << line << "| "; <-- but with &#160;'s
   out << "<a name=\"" << line << "\"></a>";
   out << "<span class=\"file-linenum\">";
   int mag = 10000;
@@ -151,10 +151,10 @@ void write_lineno(std::ostream& out, int line)
     int digit = line / mag;
     if (digit)
       break;
-    out << "&nbsp;";
+    out << "&#160;";
     mag /= 10;
   }
-  out << line << "|&nbsp;";
+  out << line << "|&#160;";
   out << "</span>";
 }
 
@@ -318,6 +318,30 @@ void dump_links()
   std::copy(links.begin(), links.end(), std::ostream_iterator<Link::Map::value_type>(std::cout, "\n"));
 }
 
+std::string string_to_attribute(const std::string &o)
+{
+  std::string name;
+  for (std::string::const_iterator i = o.begin(); i != o.end(); ++i)
+    switch (*i)
+    {
+      case '&': name += "&amp;"; break;
+      default: name += *i; break;
+    }
+  return name;
+}
+
+std::string scoped_name_to_attribute(const Python::List &o)
+{
+  std::string name;
+  if (o.empty()) return name;
+  for (Python::List::iterator i = o.begin(); i != o.end() - 1; ++i)
+  {
+    name = Python::Object::narrow<std::string>(*i) + "::";
+  }
+  name += string_to_attribute(Python::Object::narrow<std::string>(*o.rbegin()));
+  return name;
+}
+
 //. Reads the input file, inserts links, and writes the result to the
 //. output. It uses the 'links' line map to iterate through the file
 //. sequentially.
@@ -378,20 +402,21 @@ void link_file(const char *input_filename,
 	    else if (!retn)
 	    {
 	      if (link->type == Link::LINK_START)
-		out << "<a name=\"" << name;
+		out << "<a name=\"" << scoped_name_to_attribute(name);
 	      else
-		out << "<a href=\"#" << name;
+		out << "<a href=\"#" << scoped_name_to_attribute(name);
 	    }
 	    else
 	    {
 	      std::string href = Python::Object::narrow<std::string>(retn);
 	      if (link->type == Link::LINK_START)
-		out << "<a class=\"file-def\" name=\""<<name<<"\"";
+		out << "<a class=\"file-def\" name=\""
+		    << scoped_name_to_attribute(name) << "\"";
 	      else
 		out << "<a class=\"file-ref\"";
 	      out << " href=\"" << href;
 	    }
-	    out << "\" title=\"" << link->desc << "\">";
+	    out << "\" title=\"" << string_to_attribute(link->desc) << "\">";
 	    break;
 	  }
 	  case Link::REF_END:
@@ -422,7 +447,7 @@ void link_file(const char *input_filename,
 	out << "</span>";
       }
     }
-    out << "<br>\n";
+    out << "<br/>\n";
     line++;
   }
 }

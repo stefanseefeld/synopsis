@@ -1,4 +1,3 @@
-# $Id: ModuleListingJS.py,v 1.15 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
