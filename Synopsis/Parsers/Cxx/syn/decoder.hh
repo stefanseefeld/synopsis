@@ -18,6 +18,76 @@ class Builder;
 
 class Lookup;
 
+namespace std {
+//. A specialization of the char_traits for unsigned char
+  template<>
+    struct char_traits<unsigned char>
+    {
+      typedef unsigned char	char_type;
+      typedef int 	        int_type;
+      typedef streampos 	pos_type;
+      typedef streamoff 	off_type;
+      typedef mbstate_t 	state_type;
+
+      static void 
+      assign(char_type& __c1, const char_type& __c2)
+      { __c1 = __c2; }
+
+      static bool 
+      eq(const char_type& __c1, const char_type& __c2)
+      { return __c1 == __c2; }
+
+      static bool 
+      lt(const char_type& __c1, const char_type& __c2)
+      { return __c1 < __c2; }
+
+      static int 
+      compare(const char_type* __s1, const char_type* __s2, size_t __n)
+      { return memcmp(__s1, __s2, __n); }
+
+      static size_t
+      length(const char_type* __s)
+      { return strlen(reinterpret_cast<const char*>(__s)); }
+
+      static const char_type* 
+      find(const char_type* __s, size_t __n, const char_type& __a)
+      { return static_cast<const char_type*>(memchr(__s, __a, __n)); }
+
+      static char_type* 
+      move(char_type* __s1, const char_type* __s2, size_t __n)
+      { return static_cast<char_type*>(memmove(__s1, __s2, __n)); }
+
+      static char_type* 
+      copy(char_type* __s1, const char_type* __s2, size_t __n)
+      {  return static_cast<char_type*>(memcpy(__s1, __s2, __n)); }
+
+      static char_type* 
+      assign(char_type* __s, size_t __n, char_type __a)
+      { return static_cast<char_type*>(memset(__s, __a, __n)); }
+
+      static char_type 
+      to_char_type(const int_type& __c)
+      { return static_cast<char_type>(__c); }
+
+      // To keep both the byte 0xff and the eof symbol 0xffffffff
+      // from ending up as 0xffffffff.
+      static int_type 
+      to_int_type(const char_type& __c)
+      { return static_cast<int_type>(static_cast<unsigned char>(__c)); }
+
+      static bool 
+      eq_int_type(const int_type& __c1, const int_type& __c2)
+      { return __c1 == __c2; }
+
+      static int_type 
+      eof() { return static_cast<int_type>(EOF); }
+
+      static int_type 
+      not_eof(const int_type& __c)
+      { return (__c == eof()) ? 0 : __c; }
+  };
+};
+
 
 //. A string type for the encoded names and types
 typedef std::basic_string<unsigned char> code;
