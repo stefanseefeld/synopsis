@@ -1,8 +1,10 @@
 omniidl		:= omniidl -nf -bcxx
 synopsis	:= ../../synopsis
 
-#CPPFLAGS	:= -I. -I/home/stefan/omni/include -Wp,-D__x86__
-CPPFLAGS	:= -I. -I/home/chalky/src/omni/include -Wp,-D__x86__
+#
+# adapt to your environent...
+#
+CPPFLAGS	:= -I. -I/usr/local/include -Wp,-D__x86__
 
 all:	interface implementation
 
@@ -19,10 +21,10 @@ FactoryImpl.syn:	FactoryImpl.hh Storage.hh
 		$(synopsis) -p C++ -Wp,-m -Wl,-m,crossref.py $(CPPFLAGS) -o $@ $<
 
 interface interface.toc:	Storage.syn
-		$(synopsis) -f HTML -Wf,-t,interface.toc -o interface $<
+		$(synopsis) -f HTML -Wf,-t,interface.toc -Wf,-s,style.css,-S,style.css -o interface $<
 
 implementation: StorableImpl.syn FactoryImpl.syn interface.toc
-		$(synopsis) -f HTML -Wf,-r,interface.toc -o $@ StorableImpl.syn FactoryImpl.syn
+		$(synopsis) -f HTML -Wf,-r,interface.toc -Wf,-s,style.css,-S,style.css -o $@ StorableImpl.syn FactoryImpl.syn
 
 clean:
 	rm -rf Storage.hh StorageSK.cc *.syn interface interface.toc implementation
