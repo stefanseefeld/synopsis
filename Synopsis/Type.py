@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.9 2001/04/17 15:47:26 chalky Exp $
+# $Id: Type.py,v 1.10 2001/07/19 00:44:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Type.py,v $
+# Revision 1.10  2001/07/19 00:44:39  chalky
+# Fixes in __str__ methods that aren't normally used
+#
 # Revision 1.9  2001/04/17 15:47:26  chalky
 # Added declaration name mapper, and changed refmanual to use it instead of the
 # old language mapping
@@ -94,7 +97,7 @@ class Base (Named):
 	#print "Base.__cmp__"
 	return ccmp(self,other) or \
 	    cmp(self.name(),other.name())
-    def __str__(self): return Util.ccolonName(self.__name)
+    def __str__(self): return Util.ccolonName(self.name())
 
 class Unknown(Named):
     """Class for not (yet) known type"""
@@ -115,7 +118,7 @@ class Unknown(Named):
 	"Comparison operator"
 	#print "Unknown.__cmp__"
 	return ccmp(self,other) or cmp(self.name(),other.name())
-    def __str__(self): return Util.ccolonName(self.__name)
+    def __str__(self): return Util.ccolonName(self.name())
 
 class Declared (Named):
     """Class for declared types"""
@@ -131,7 +134,7 @@ class Declared (Named):
 	"Comparison operator"
 	#print "Declared.__cmp__"
 	return ccmp(self,other) or cmp(self.name(),other.name())
-    def __str__(self): return Util.ccolonName(self.__name)
+    def __str__(self): return Util.ccolonName(self.name())
 
 class Template (Declared):
     """Class for declared parametrized types"""
