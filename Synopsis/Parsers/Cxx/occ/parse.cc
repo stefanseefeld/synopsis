@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-1999 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -504,14 +504,30 @@ bool Parser::rLinkageBody(Ptree*& body)
 */
 bool Parser::rTemplateDecl(Ptree*& decl)
 {
+    Ptree *body;
+
+    if(!rTemplateDecl2(decl))
+	return FALSE;
+
+    if(!rDeclaration(body))
+	return FALSE;
+
+    decl = Ptree::Snoc(decl, body);
+    return TRUE;
+}
+
+bool Parser::rTemplateDecl2(Ptree*& decl)
+{
     Token tk;
-    Ptree *args, *body;
+    Ptree *args;
 
     if(lex->GetToken(tk) != TEMPLATE)
 	return FALSE;
 
-    if(lex->LookAhead(0) != '<')
-	return rDeclaration(decl);	// ignore TEMPLATE
+    if(lex->LookAhead(0) != '<') {
+	decl = nil;
+	return TRUE;	// ignore TEMPLATE
+    }
 
     decl = new PtreeTemplateDecl(new LeafReserved(tk));
     if(lex->GetToken(tk) != '<')
@@ -540,10 +556,6 @@ bool Parser::rTemplateDecl(Ptree*& decl)
 	    return FALSE;
     }
 
-    if(!rDeclaration(body))
-	return FALSE;
-
-    decl = Ptree::Snoc(decl, body);
     return TRUE;
 }
 
@@ -582,12 +594,14 @@ bool Parser::rTempArgList(Ptree*& args)
   temp.arg.declaration
   : CLASS Identifier {'=' type.name}
   | type.specifier arg.declarator {'=' additive.expr}
+  | template.decl2 CLASS Identifier {'=' type.name}
 */
 bool Parser::rTempArgDeclaration(Ptree*& decl)
 {
     Token tk1, tk2;
 
-    if(lex->LookAhead(0) == CLASS && lex->LookAhead(1) == Identifier){
+    int t0 = lex->LookAhead(0);
+    if(t0 == CLASS && lex->LookAhead(1) == Identifier){
 	lex->GetToken(tk1);
 	lex->GetToken(tk2);
 	Ptree* name = new Leaf(tk2);
@@ -596,6 +610,26 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
 	if(lex->LookAhead(0) == '='){
 	    Ptree* default_type;
 
+	    lex->GetToken(tk1);
+	    if(!rTypeName(default_type))
+		return FALSE;
+
+	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1),
+						  default_type));
+	}
+    }
+    else if (t0 == TEMPLATE) {
+	if(!rTemplateDecl2(decl))
+	    return FALSE;
+
+	if (lex->GetToken(tk1) != CLASS || lex->GetToken(tk2) != Identifier)
+	    return FALSE;
+
+	Ptree* cspec = new PtreeClassSpec(new LeafReserved(tk1),
+					  Ptree::Cons(new Leaf(tk2), nil));
+	decl = Ptree::Snoc(decl, cspec);
+	if(lex->LookAhead(0) == '='){
+            Ptree* default_type;
 	    lex->GetToken(tk1);
 	    if(!rTypeName(default_type))
 		return FALSE;

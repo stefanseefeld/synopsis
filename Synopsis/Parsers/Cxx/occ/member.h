@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-99 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        

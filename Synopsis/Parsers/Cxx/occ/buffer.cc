@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-1999 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -224,7 +224,7 @@ void Program::Write(ostream& out, const char* file_name)
     int filename_length = 0;
 
     if(Ref(i) == '#')
-	line_number = ReadLineDirective(i + 1, (sint)line_number,
+	line_number = ReadLineDirective(i, (sint)line_number,
 					filename, filename_length);
 
     for(; rep != nil; rep = rep->next){
@@ -241,7 +241,7 @@ void Program::Write(ostream& out, const char* file_name)
 		++nlines;
 		++line_number;
 		if(Ref(i) == '#')
-		    line_number = ReadLineDirective(i + 1, (sint)line_number,
+		    line_number = ReadLineDirective(i, (sint)line_number,
 						    filename, filename_length);
 	    }
 	}
@@ -277,7 +277,7 @@ void Program::Write(ostream& out, const char* file_name)
 	    else if(c == '\n'){
 		++line_number;
 		if(Ref(i) == '#')
-		    line_number = ReadLineDirective(i + 1, (sint)line_number,
+		    line_number = ReadLineDirective(i, (sint)line_number,
 						    filename, filename_length);
 	    }
 	}

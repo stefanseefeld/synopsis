@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997,1998 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -58,6 +58,7 @@ protected:
     bool rUsing(Ptree*&);
     bool rLinkageBody(Ptree*&);
     bool rTemplateDecl(Ptree*&);
+    bool rTemplateDecl2(Ptree*&);
     bool rTempArgList(Ptree*&);
     bool rTempArgDeclaration(Ptree*&);
     bool rExternTemplateDecl(Ptree*&);

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-99 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -329,10 +329,9 @@ int Lex::ReadToken(char*& ptr, int& len)
     for(;;){
 	t = ReadLine();
 
-#if defined(_MSC_VER)
         if(t == Ignore)
 	    continue;
-#endif
+
 	last_token = t;
 
 #if defined(__GNUG__) || defined(_GNUG_SYNTAX)
@@ -367,7 +366,7 @@ int Lex::ReadToken(char*& ptr, int& len)
     return t;
 }
 
-//   SkipAttributeToken() skips __attribute__(...).
+//   SkipAttributeToken() skips __attribute__(...), ___asm__(...), ...
 
 void Lex::SkipAttributeToken()
 {
@@ -754,9 +753,11 @@ static struct rw_table {
     { "__const",	token(CONST) },
     { "__extension__",	token(EXTENSION) },
     { "__inline__",	token(INLINE) },
+    { "__restrict",	token(Ignore) },
     { "__signed",	token(SIGNED) },
     { "__signed__",	token(SIGNED) },
 #endif
+    { "asm",		token(ATTRIBUTE) },
     { "auto",		token(AUTO) },
 #if !defined(_MSC_VER) || (_MSC_VER >= 1100)
     { "bool",		token(BOOLEAN) },

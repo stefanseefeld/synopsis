@@ -14,8 +14,29 @@
 #include "parse.h"
 #include "ptree-core.h"
 
-#define ASSERT_RESULT     if (!_result) PyErr_Print(); assert(_result)
-#define ASSERT_PYOBJ(pyo) if (!pyo)     PyErr_Print(); assert(pyo)
+/*
+ * some debugging help first
+ */
+#define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
+//inline void assertObject(PyObject *obj) {if (!obj) PyErr_Print(); assert(obj);}
+
+#if 0
+class Trace
+{
+public:
+  Trace(const string &s) : scope(s) { cout << "entering " << scope << endl;}
+  ~Trace() { cout << "leaving " << scope << endl;}
+private:
+  string scope;
+};
+#else
+class Trace
+{
+public:
+  Trace(const string &) {}
+  ~Trace() {}
+};
+#endif
 
 /*
  * the following isn't used anywhere. Though it has to be defined and initialized to some dummy default
@@ -47,7 +68,11 @@ public:
   virtual Ptree *TranslateNamespaceSpec(Ptree *);
   virtual Ptree *TranslateClassSpec(Ptree *);
 private:
-  static string getName(Ptree *node) { return node ? string(node->GetPosition(), node->GetLength()) : string();}
+  static string getName(Ptree *node)
+  {
+    Trace trace("PyWalker::getName");
+    return node ? string(node->GetPosition(), node->GetLength()) : string();
+  }
   PyObject *scopedName(const string &);
   PyObject *scope() { return _scope.back();}
   void addDeclaration(PyObject *);
@@ -69,57 +94,55 @@ PyWalker::PyWalker(const char *f, Parser *p, PyObject *d, PyObject *t)
     _decl(d),
     _types(t)
 {
+  Trace trace("PyWalker::PyWalker");
   _astm  = PyImport_ImportModule("Synopsis.AST");
   _typem = PyImport_ImportModule("Synopsis.Type");
-  ASSERT_PYOBJ(_astm);
-  ASSERT_PYOBJ(_typem);
+  assertObject(_astm);
+  assertObject(_typem);
   PyObject *fileScope = PyObject_CallMethod(_astm, "Scope", "siissN", file, 0, 1, "C++", "file", scopedName(string()));
   _scope.push_back(fileScope);
 }
 
 PyWalker::~PyWalker()
 {
+  Trace trace("PyWalker::~PyWalker");
   PyObject *decl = PyObject_CallMethod(scope(), "declarations", "");
   size_t size = PyList_Size(decl);
+#ifndef DEBUG
   for (size_t i = 0; i != size; i++)
-    {
-      PyObject *item = PyList_GetItem(decl, i);
-      ASSERT_PYOBJ(item);
-      PyObject *ok = PyObject_CallMethod(_decl, "append", "O", item);
-      ASSERT_PYOBJ(ok);
-    }
-//   Py_DECREF(_astm);
-//   Py_DECREF(_typem);
+    PyObject_CallMethod(_decl, "append", "O", PyList_GetItem(decl, i));
+#endif
+  Py_DECREF(_astm);
+  Py_DECREF(_typem);
 }
 
 PyObject *PyWalker::scopedName(const string &name)
 {
+  Trace trace("PyWalker::scopedName");
   size_t lsize = _scopedName.size();
   if (name.size()) lsize += 1;
   PyObject *pylist = PyList_New(lsize);
   for (size_t i = 0; i != _scopedName.size(); i++)
-    {
-      PyObject *pystr = PyString_FromString(_scopedName[i].c_str());
-      PyList_SetItem(pylist, i, pystr);
-    }
+    PyList_SetItem(pylist, i, PyString_FromString(_scopedName[i].c_str()));
   if (name.size())
-    {
-      PyObject *pystr = PyString_FromString(name.c_str());
-      PyList_SetItem(pylist, _scopedName.size(), pystr);
-    }
+    PyList_SetItem(pylist, _scopedName.size(), PyString_FromString(name.c_str()));
   return pylist;
 }
 
 void PyWalker::addDeclaration(PyObject *declaration)
 {
+  Trace trace("PyWalker::addDeclaration");
   PyObject *decl = PyObject_CallMethod(scope(), "declarations", "");
-  ASSERT_PYOBJ(decl);
+  assertObject(decl);
   PyObject_CallMethod(decl, "append", "O", declaration);
 }
 
 void PyWalker::addType(PyObject *name, PyObject *type)
 {
+  Trace trace("PyWalker::addType");
+#ifndef DEBUG
   PyObject_CallMethod(_types, "add", "OO", name, type);
+#endif
 }
 
 /*
@@ -151,6 +174,7 @@ void PyWalker::addType(PyObject *name, PyObject *type)
  */
 Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 {
+  Trace trace("PyWalker::TranslateNamespaceSpec");
   string name = getName(node->Cadr());
   PyObject *sname = scopedName(name);
   _result = PyObject_CallMethod(_astm, "Module", "siissN", file, -1, true, "C++", "namespace", sname);
@@ -172,19 +196,43 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
  */
 Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 {
-  string name = getName(node->Cadr());
-  PyObject *sname = scopedName(name);
-  _result = PyObject_CallMethod(_astm, "Class", "siissN", file, -1, true, "C++", "class", sname);
-  addDeclaration(_result);
-  addType(sname, PyObject_CallMethod(_typem, "Declared", "sOO", "C++", sname, _result));
-  _scopedName.push_back(name);
-  _scope.push_back(_result);
-  Translate(Ptree::Nth(node, 4));
-  _scope.pop_back();
-  _scopedName.pop_back();
+  Trace trace("PyWalker::TranslateClassSpec");
+//   node->Display();
+  Ptree* userkey;
+  Ptree* class_def;
+  if(node->Car()->IsLeaf())
+    {
+//       cout << "is leaf" << endl;
+//       node->Car()->Display();
+      userkey = 0;
+      class_def = node;
+    }
+  else
+    {
+//       cout << "is not leaf" << endl;
+      userkey = node->First();
+      class_def = node->Rest();
+    }
+  if(Ptree::Length(class_def) == 4 && class_def->Second()->IsLeaf())
+    {
+//       cout << "here1" << endl;
+//       class_def->Second()->Display();
+      string type = getName(class_def->First());
+      string name = getName(class_def->Second());
+//       cout << "here2" << endl;
+      PyObject *sname = scopedName(name);
+      _result = PyObject_CallMethod(_astm, "Class", "siissN", file, -1, true, "C++", type.c_str(), sname);
+      addDeclaration(_result);
+      addType(sname, PyObject_CallMethod(_typem, "Declared", "sOO", "C++", sname, _result));
+      _scopedName.push_back(name);
+      _scope.push_back(_result);
+      Translate(class_def->Nth(4));
+      _scope.pop_back();
+      _scopedName.pop_back();
+    }
 }
 
-static void getopts(int argc, char **argv, vector<const char *> &cppflags, vector<const char *> &occflags)
+static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags)
 {
   showProgram = false;
   doCompile = false;
@@ -196,6 +244,14 @@ static void getopts(int argc, char **argv, vector<const char *> &cppflags, vecto
   makeSharedLibrary = false;
   sharedLibraryName = 0;
   preprocessTwice = false;
+
+  size_t argsize = PyList_Size(args);
+  for (size_t i = 0; i != argsize; ++i)
+    {
+      const char *argument = PyString_AsString(PyList_GetItem(args, i));
+      if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
+      else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
+    }
 }
 
 static char *RunPreprocessor(const char *file, const vector<const char *> &flags)
@@ -256,6 +312,7 @@ static char *RunOpencxx(const char *file, const vector<const char *> &args, PyOb
   Lex lex(&prog);
   Parser parse(&lex);
   PyWalker walker(file, &parse, declarations, types);
+//   Walker walker(&parse);
   Ptree *def;
   while(parse.rProgram(def))
     walker.Translate(def);
@@ -273,11 +330,10 @@ static PyObject *occParse(PyObject *self, PyObject *args)
 {
   char *src;
   PyObject *parserargs, *types, *declarations;
-  if (!PyArg_ParseTuple(args, "sOOO", &src, &parserargs, &types, &declarations)) return 0;
+  if (!PyArg_ParseTuple(args, "sO!OO!", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations)) return 0;
   vector<const char *> cppargs;
   vector<const char *> occargs;
-//   getopts(argc, argv, cppargs, occargs);
-  getopts(0, 0, cppargs, occargs);
+  getopts(parserargs, cppargs, occargs);
   if (!src || *src == '\0')
     {
       cerr << "No source file" << endl;
@@ -303,3 +359,31 @@ void initocc()
   PyObject_SetAttrString(m, (char*)"version", PyString_FromString("0.1"));
 }
 }
+
+#ifdef DEBUG
+
+int main(int argc, char **argv)
+{
+  if (argc != 2)
+    {
+      cout << "Usage: " << argv[0] << " <filename>" << endl;
+      exit(-1);
+    }
+  char *src = argv[1];
+  vector<const char *> cppargs;
+  vector<const char *> occargs;
+//   getopts(argc, argv, cppargs, occargs);
+  getopts(0, 0, cppargs, occargs);
+  if (!src || *src == '\0')
+    {
+      cerr << "No source file" << endl;
+      exit(-1);
+    }
+  Py_Initialize();
+  char *cppfile = RunPreprocessor(src, cppargs);
+  char *occfile = RunOpencxx(cppfile, occargs, 0, 0);
+  unlink(cppfile);
+  unlink(occfile);
+}
+
+#endif

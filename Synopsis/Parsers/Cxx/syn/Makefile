@@ -23,23 +23,28 @@ CXXFLAGS = -O2 -I..
 GCLIB = ../gc/gc.a
 LDFLAGS =# -export-dynamic	# for GNU ld
 LIB =# -ldl			# Linux
+PYLIB = -lpython1.5 -ldl -lpthread
 
 OBJ = buffer.o hash.o token.o ptree.o ptree-core.o encoding.o env.o\
 	pattern.o walker.o typeinfo.o parse.o mop.o classwalk.o\
 	metaclass.o quote-class.o member.o cbodywalk.o
-
-PYOBJ = occ.o
 
 all : ../../occ.so
 
 $(OBJ): %.o : ../%.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-$(PYOBJ): %.o : %.cc
+occ.o:	occ.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-../../occ.so : opencxx.a $(PYOBJ)
-	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $(PYOBJ) opencxx.a $(LIB)
+occ.g.o: occ.cc
+	$(CXX) -ggdb -DDEBUG $(CXXFLAGS) -c -o $@ $<
+
+../../occ.so : opencxx.a occ.o
+	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ occ.o opencxx.a $(LIB)
+
+occ.gdb:	opencxx.a occ.g.o
+	$(CXX) -ggdb $(CXXFLAGS) $(LDFLAGS) -o $@ occ.g.o opencxx.a $(LIB) $(PYLIB)
 
 opencxx.a : $(OBJ)
 	cp $(GCLIB) $@

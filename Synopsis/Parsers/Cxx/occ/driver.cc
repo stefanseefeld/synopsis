@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-1999 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -49,10 +49,10 @@
 #include <unistd.h>
 #endif
 
-static char thisVersion[] = "2.5.7";
+static char thisVersion[] = "2.5.8";
 
 static char copyingNote[]
-	= "Copyright (c) 1997-1999 Shigeru Chiba.  All Rights Reserved.\n"
+	= "Copyright (c) 1997-2000 Shigeru Chiba.  All Rights Reserved.\n"
 	  "Copyright (c) 1995, 1996 Xerox Corporation. All Rights Reserved.";
 
 const char opencxxErrorMessage[] = " Error(s).  OpenC++ stops.\n";
