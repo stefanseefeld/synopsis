@@ -12,7 +12,20 @@ class config(build.build):
 
     description = "configure the package"
 
+    user_options = build.build.user_options[:] + [
+        ('disable-gc', None,
+         "whether or not to build the C++ parser with the garbage collector")
+        ]
+    boolean_options = build.build.boolean_options[:] + ['disable-gc']
+
     extensions = ['Synopsis/Parser/C', 'Synopsis/Parser/C++']
+
+    def initialize_options (self):
+        build.build.initialize_options(self)
+        self.disable_gc = 0
+
+    def finalize_options (self):
+        build.build.finalize_options(self)
 
     def run(self):
 
@@ -22,7 +35,9 @@ class config(build.build):
 
         for ext in config.extensions:
             self.config_extension(ext)
-
+        if not self.disable_gc:
+            self.config_extension('Synopsis/Parser/C++/gc')
+            
     def config_extension(self, ext):
 
         self.announce("configuring '%s'" % ext)
@@ -38,5 +53,8 @@ class config(build.build):
         os.chdir(tempdir)
 
         command = "%s/configure --with-python=%s"%(srcdir, sys.executable)
+        if ext == 'Synopsis/Parser/C++' and self.disable_gc:
+            command += ' --disable-gc'
+        self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)

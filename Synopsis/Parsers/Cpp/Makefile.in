@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2003/09/18 02:54:14 stefan Exp $
+# $Id: Makefile.in,v 1.2 2003/09/18 04:10:05 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -20,4 +20,137 @@
 
 SHELL	= /bin/sh
 
-dummy:
+srcdir	:= @srcdir@
+
+PYTHON	:= @PYTHON@
+
+CC		:= @CC@
+CXX		:= @CXX@
+MAKEDEP		:= $(CXX) -M
+CPPFLAGS	:= @CPPFLAGS@ -I $(srcdir) -I @PYTHON_INCLUDE@
+CFLAGS		:= @CFLAGS@
+CXXFLAGS	:= @CXXFLAGS@
+LIBS		:= @LIBS@ -lpthread
+LIBRARY_EXT	:= @LIBEXT@
+
+USE_GC		:= @USE_GC@
+
+ifeq ($(USE_GC), yes)
+GC_LIB		:= gc/.libs/libgc.a
+else
+CPPFLAGS	+= -DDONT_GC
+endif
+
+UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
+UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
+
+UCPP_LIB	:= ucpp/ucpp.a
+UCPP_GLIB	:= ucpp/ucpp.ga
+OCC_SO		:= occ.$(LIBRARY_EXT)
+LINK_SO		:= link.$(LIBRARY_EXT)
+
+OCC_FILES	:= buffer hash token ptree ptree-core encoding env \
+		   pattern walker typeinfo parse mop classwalk \
+		   metaclass quote-class member cbodywalk
+
+SYN_FILES	:= synopsis occ swalker ast builder type dict \
+		   dumper decoder swalker-syntax link_map linkstore \
+		   lookup filter
+
+UCPP_FILES	:= mem hashtable cpp lexer assert macro eval
+
+# Generate sources, objs and debug-objs from the FILES
+OCC_SOURCES	:= $(patsubst %, occ/%.cc, $(OCC_FILES))
+OCC_OBJ		:= $(patsubst %, occ/%.o, $(OCC_FILES))
+OCC_GOBJ	:= $(patsubst %, occ/%.go,$(OCC_FILES))
+SYN_SOURCES	:= $(patsubst %, syn/%.cc, $(SYN_FILES))
+SYN_OBJ		:= $(patsubst %, syn/%.o, $(SYN_FILES))
+SYN_GOBJ	:= $(patsubst %, syn/%.go,$(SYN_FILES))
+UCPP_SOURCES	:= $(patsubst %, ucpp/%.c, $(UCPP_FILES))
+UCPP_OBJ	:= $(patsubst %, ucpp/%.o, $(UCPP_FILES))
+UCPP_GOBJ	:= $(patsubst %, ucpp/%.go,$(UCPP_FILES))
+UCPP_AOBJ	:= $(patsubst %, ucpp/%.ao,$(UCPP_FILES))
+
+TARGETS		= $(OCC_SO) $(LINK_SO)
+
+vpath %.cc $(srcdir)
+vpath %.c $(srcdir)
+vpath %.h $(srcdir)
+
+all: $(TARGETS)
+
+# This compiles the OCC files in the parent dir
+$(OCC_OBJ): %.o : %.cc
+	$(CXX)  $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
+
+# This compiles the parser files with optimisation
+$(SYN_OBJ): %.o : %.cc
+	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include $(SYN_FLAGS) $(CXXFLAGS) $(OPTIMISE) -c -o $@ $<
+
+# This compiles the UCPP files from ../ucpp
+$(UCPP_OBJ): %.o : %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(UCPP_FLAGS) $(OPTIMISE) -c -o $@ $<
+
+# This compiles DEBUG versions of the OCC files in the parent dir
+$(OCC_GOBJ): %.go : %.cc
+	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include -I$(srcdir)/occ $(CXXFLAGS) $(DEBUG) -c -o $@ $<
+
+# This compiles DEBUG versions of the object files with .go suffix
+$(SYN_GOBJ): %.go : %.cc
+	$(CXX) $(CPPFLAGS) -I$(srcdir)/gc/include $(SYN_FLAGS) $(CXXFLAGS) $(DEBUG) -c -o $@ $<
+
+# This compiles DEBUG versions of the UCPP files
+$(UCPP_GOBJ): %.go : %.c
+	$(CC) $(CPPFLAGS) $(UCPP_FLAGS) $(CFLAGS) $(DEBUG) -c -o $@ $<
+
+# This compiles STANDALONE versions of the UCPP files
+$(UCPP_AOBJ): %.ao : %.c
+	$(CC) $(CPPFLAGS) $(UCPP_AFLAGS) $(CFLAGS) $(DEBUG) -c -o $@ $<
+
+link-synopsis:	$(srcdir)/syn/link.cc
+	$(CXX) $(CPPFLAGS) -DSTANDALONE $(CXXFLAGS) $(DEBUG) $(SYN_FLAGS) -o link-synopsis link.cc
+
+ucpp:		$(UCPP_AOBJ)
+	$(CC) -o $@ $^
+
+# This calls make in the gc dir to create the gc.a file
+$(GC_LIB):
+	@make -C gc
+
+# This creates the final occ python module
+$(OCC_SO): $(UCPP_LIB) opencxx.a $(SYN_OBJ)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
+# This creates the final link python module
+$(LINK_SO): $(srcdir)/syn/link.cc
+	$(CXX) -shared $(CPPFLAGS) $(SYN_FLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+# This creates a binary with debugging and profiling that you can run
+occ.gdb: $(UCPP_GLIB) opencxx.ga $(SYN_GOBJ)
+	$(CXX) -ggdb -pg $(LDFLAGS) -o $@ $^ $(LIBS) $(PYLIB)
+
+# Compile an archive of the OCC files
+opencxx.a : $(GC_LIB) $(OCC_OBJ)
+ifeq '$(use_gc)' 'yes'
+	cp $(GC_LIB) $@
+endif
+	ar rcs $@ $(OCC_OBJ)
+
+# Compile a DEBUG archive of the OCC files
+opencxx.ga :  $(GC_LIB) $(OCC_GOBJ)
+ifeq ($(USE_GC), yes)
+	cp $(GC_LIB) $@
+endif
+	ar rcs $@ $(OCC_GOBJ)
+
+# Compile an archive of UCPP files
+$(UCPP_LIB): $(UCPP_OBJ)
+	ar rcs $@ $^
+
+# Compile a DEBUG archive of UCPP files
+$(UCPP_GLIB): $(UCPP_GOBJ)
+	ar rcs $@ $^
+
+clean :
+
+distclean: clean

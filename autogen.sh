@@ -11,3 +11,4 @@ conf()
 
 conf Synopsis/Parser/C
 conf Synopsis/Parser/C++
+conf Synopsis/Parser/C++/gc

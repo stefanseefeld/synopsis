@@ -2,7 +2,7 @@
 // Implements the link module/program that reads the stored syntax
 // highlighting info and original file, and generates the output HTML file.
 
-// $Id: link.cc,v 1.25 2002/12/09 13:53:50 chalky Exp $
+// $Id: link.cc,v 1.26 2003/09/18 04:10:05 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2001, 2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: link.cc,v $
+// Revision 1.26  2003/09/18 04:10:05  stefan
+// C++ and C parser modules now compile via 'python setup.py build_ext'.
+//
 // Revision 1.25  2002/12/09 13:53:50  chalky
 // Fixed to not use the PyString's internal data for the toc list
 //
@@ -687,7 +690,11 @@ int main(int argc, char** argv)
 
 #else
 
-#include PYTHON_INCLUDE
+#ifdef PYTHON_INCLUDE
+#  include PYTHON_INCLUDE
+#else
+#  include <Python.h>
+#endif
 
 extern "C"
 {
