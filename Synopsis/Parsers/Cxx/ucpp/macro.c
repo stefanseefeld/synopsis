@@ -1393,34 +1393,28 @@ collect_args:
 			if (ltwds && atl[z].nt != 0 && etl.nt) {
 				if (concat_token(etl.t + (-- etl.nt),
 					atl[z].t)) {
-					error(ls->line, "operator '##' "
-						"produced the invalid token "
-						"'%s%s'",
-						token_name(etl.t + etl.nt),
-						token_name(atl[z].t));
-#ifdef LOW_MEM
-					m->cval.rp = save_art;
-#else
-					m->val.art = save_art;
-#endif
-					etl.nt ++;
-					goto exit_error_2;
-				}
-				if (etl.nt == 0) freemem(etl.t);
-				else if (!ttWHI(etl.t[etl.nt - 1].type)) {
-					t.type = OPT_NONE;
+					/* Invalid token. Should error out,
+					 * but much code depends on silently
+					 * ignoring the error */
+					++etl.nt;
+					atl[z].art = 0;
+				} else {
+					if (etl.nt == 0) freemem(etl.t);
+					else if (!ttWHI(etl.t[etl.nt - 1].type)) {
+						t.type = OPT_NONE;
+						t.line = ls->line;
+						aol(etl.t, etl.nt, t, TOKEN_LIST_MEMG);
+					}
+					t.type = dsharp_lexer.ctok->type;
 					t.line = ls->line;
+					if (S_TOKEN(t.type)) {
+						t.name = sdup(dsharp_lexer.ctok->name);
+						throw_away(ls->gf, t.name);
+					}
+					ZAP_LINE(t);
 					aol(etl.t, etl.nt, t, TOKEN_LIST_MEMG);
+					atl[z].art = 1;
 				}
-				t.type = dsharp_lexer.ctok->type;
-				t.line = ls->line;
-				if (S_TOKEN(t.type)) {
-					t.name = sdup(dsharp_lexer.ctok->name);
-					throw_away(ls->gf, t.name);
-				}
-				ZAP_LINE(t);
-				aol(etl.t, etl.nt, t, TOKEN_LIST_MEMG);
-				atl[z].art = 1;
 			} else atl[z].art = 0;
 			if (atl[z].art < atl[z].nt && (!etl.nt
 				|| !ttWHI(etl.t[etl.nt - 1].type))) {
