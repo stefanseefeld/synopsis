@@ -85,7 +85,7 @@ class Config (Base):
 	    def __init__(self, argv):
 		Base.Formatter.HTML_Doxygen.__init__(self, argv)
 		# Import the config from HTML
-		for attr in ['toc_output','pages','comment_formatters','FilePages','FileTree']:
+		for attr in ['datadir', 'toc_out','pages','comment_formatters','FilePages','FileTree']:
 		    setattr(self, attr, getattr(Config.Formatter.HTML, attr))
 	modules = Base.Formatter.modules
 	modules.update({

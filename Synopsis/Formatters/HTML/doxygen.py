@@ -1,4 +1,4 @@
-# $Id: doxygen.py,v 1.3 2001/04/06 06:27:09 chalky Exp $
+# $Id: doxygen.py,v 1.4 2001/07/10 06:47:45 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: doxygen.py,v $
+# Revision 1.4  2001/07/10 06:47:45  chalky
+# Doxygen stuff works again
+#
 # Revision 1.3  2001/04/06 06:27:09  chalky
 # Change from import * since our py parser cant handle that too well
 #
@@ -39,7 +42,7 @@ from Synopsis.Core import AST
 from Synopsis.Formatter.HTML import ScopeSorter
 from Synopsis.Formatter.HTML.core import config
 from Synopsis.Formatter.HTML.Tags import *
-from Synopsis.Formatter.HTML import ASTFormatter
+from Synopsis.Formatter.HTML import ASTFormatter, FormatStrategy
 	    
 
 class DOScopeSorter (ScopeSorter.ScopeSorter):
@@ -74,7 +77,7 @@ class DOScopeSorter (ScopeSorter.ScopeSorter):
 	names.sort(lambda a, b, order=order: cmp(order(a),order(b)))
 	self._set_section_names(map(lambda x: string.join(x,''), names))
 	
-class DOSummaryASTFormatter (ASTFormatter.SummaryASTFormatter):
+class DOSummaryAST (FormatStrategy.SummaryAST):
     def formatEnum(self, decl):
 	"(enum, enum { list of enumerator names })"
 	ename = self.label(decl.name())
@@ -84,16 +87,16 @@ class DOSummaryASTFormatter (ASTFormatter.SummaryASTFormatter):
 	name = map(enumer, decl.enumerators())
 	name = map(commer, name[:-1]) + name[-1:]
 	name = "%s {%s}"%(ename, string.join(map(divver, name)))
-	return "enum", name
+	return "enum" + self.col_sep + name
 
-class DOSummaryASTCommenter (ASTFormatter.SummaryASTCommenter):
+class DOSummaryCommenter (FormatStrategy.SummaryCommenter):
     """Adds summary comments to all declarations"""
     def formatDeclaration(self, decl):
 	comm = config.comments[decl]
 	more = config.link_detail and ' '+self.reference(decl.name(), 'More...') or ''
-	return '', span('summary', comm.summary) + more
+	return span('summary', comm.summary) + more
 
-class DODetailASTFormatter (ASTFormatter.DetailASTFormatter):
+class DODetailAST (FormatStrategy.DetailAST):
     def formatFunction(self, decl):
 	premod = self.formatModifiers(decl.premodifier())
 	type = self.formatType(decl.returnType())
@@ -116,31 +119,31 @@ class DODetailASTFormatter (ASTFormatter.DetailASTFormatter):
 	    str2 = ',</td></tr><tr><td></td><td class="func">'
 	    params = string.join(params, str2)
 	    name = str%(type, name, params, postmod, raises)
-	return '', name
+	return self.col_sep + name
 
-class PreDivFormatter (ASTFormatter.DefaultASTFormatter):
+class PreDivFormatter (FormatStrategy.Default):
     def formatDeclaration(self, decl):
-	return '<div class="preformat">',''
+	return '<div class="preformat">'
 
-class PostDivFormatter (ASTFormatter.DefaultASTFormatter):
+class PostDivFormatter (FormatStrategy.Default):
     def formatDeclaration(self, decl):
-	return '', '</div>'
+	return '</div>'
 
-class PreSummaryDiv (ASTFormatter.DefaultASTFormatter):
+class PreSummaryDiv (FormatStrategy.Default):
     def formatDeclaration(self, decl):
-	return '', '<div class="summary">'
+	return '<div class="summary">'
 
-class PostSummaryDiv (ASTFormatter.DefaultASTFormatter):
+class PostSummaryDiv (FormatStrategy.Default):
     def formatDeclaration(self, decl):
-	return '', '</div>'
+	return '</div>'
 
 
-class DOSummaryFormatter (ASTFormatter.SummaryFormatter):
+class DOSummary (ASTFormatter.Summary):
     def old_init_formatters(self):
-	self.addFormatter( DOSummaryASTFormatter )
-	self.addFormatter( DOSummaryASTCommenter )
+	self.addFormatter( DOSummaryAST)
+	self.addFormatter( DOSummaryCommenter )
 
-    def writeStart(self):
+    def write_start(self):
 	str = '<table width="100%%">'
 	self.write(str)
 
@@ -152,12 +155,12 @@ class DOSummaryFormatter (ASTFormatter.SummaryFormatter):
 	str = '<tr><td colspan="2" class="gap" height=20px>&nbsp;</td></tr>'
 	self.write(str)
 
-    def writeEnd(self):
+    def write_end(self):
 	"""Closes the table entity and adds a break."""
 	str = '</table><br>'
 	self.write(str)
 
-    def writeSectionItem(self, type, name):
+    def writeSectionItem_Foo(self, type, name):
 	"""Adds a table row with one or two data elements. If type is None
 	then there is only one td with a colspan of 2."""
 	if not len(type):
@@ -168,17 +171,16 @@ class DOSummaryFormatter (ASTFormatter.SummaryFormatter):
 	    self.write(str%(type,name))
 
 
-class DODetailFormatter (ASTFormatter.DetailFormatter):
+class DODetail (ASTFormatter.Detail):
     def old_init_formatters(self):
 	self.addFormatter( PreDivFormatter )
-	self.addFormatter( DODetailASTFormatter )
+	self.addFormatter( DODetailAST )
 	self.addFormatter( PostDivFormatter )
-	self.addFormatter( ASTFormatter.ClassHierarchyGraph )
-	self.addFormatter( ASTFormatter.DetailASTCommenter )
+	self.addFormatter( FormatStrategy.ClassHierarchyGraph )
+	self.addFormatter( FormatStrategy.DetailCommenter )
 
     def writeSectionEnd(self, heading):
 	self.write('<hr>')
-    def writeSectionItem(self, text1, text2):
+    def writeSectionItem_Foo(self, text):
 	"""Joins text1 and text2"""
-	str = '%s %s'
-	self.write(str%(text1, text2))
+	self.write(text)

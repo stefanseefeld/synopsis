@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.4 2001/07/10 05:41:08 chalky Exp $
+#  $Id: Config.py,v 1.5 2001/07/10 06:47:45 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -382,20 +382,20 @@ class Base:
 	    sorter = ('Synopsis.Formatter.HTML.doxygen', 'DOScopeSorter')
 	    class ScopePages:
 		"""Overrides the default ScopePages with doxygen modules."""
-		summarizer = ('Synopsis.Formatter.HTML.doxygen', 'DOSummaryFormatter')
-		detailer = ('Synopsis.Formatter.HTML.doxygen', 'DODetailFormatter')
+		summarizer = ('Synopsis.Formatter.HTML.doxygen', 'DOSummary')
+		detailer = ('Synopsis.Formatter.HTML.doxygen', 'DODetail')
 		summary_formatters = [
-		    ('Synopsis.Formatter.HTML.doxygen', 'DOSummaryASTFormatter'),
+		    ('Synopsis.Formatter.HTML.doxygen', 'DOSummaryAST'),
 		    ('Synopsis.Formatter.HTML.doxygen', 'PreSummaryDiv'),
-		    ('Synopsis.Formatter.HTML.doxygen', 'DOSummaryASTCommenter'),
+		    ('Synopsis.Formatter.HTML.doxygen', 'DOSummaryCommenter'),
 		    ('Synopsis.Formatter.HTML.doxygen', 'PostSummaryDiv'),
 		]
 		detail_formatters = [
 		    ('Synopsis.Formatter.HTML.doxygen', 'PreDivFormatter'),
-		    ('Synopsis.Formatter.HTML.doxygen', 'DODetailASTFormatter'),
+		    ('Synopsis.Formatter.HTML.doxygen', 'DODetailAST'),
 		    ('Synopsis.Formatter.HTML.doxygen', 'PostDivFormatter'),
-		    ('Synopsis.Formatter.HTML.ASTFormatter', 'ClassHierarchyGraph'),
-		    ('Synopsis.Formatter.HTML.ASTFormatter', 'DetailASTCommenter'),
+		    ('Synopsis.Formatter.HTML.FormatStrategy', 'ClassHierarchyGraph'),
+		    ('Synopsis.Formatter.HTML.FormatStrategy', 'DetailCommenter'),
 		]
 
 	class DocBook:
