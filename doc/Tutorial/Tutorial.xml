@@ -47,14 +47,155 @@
 
   <chapter>
     <title>Using the synopsis tool</title>
-
+    <para>In this section we are going to explore the possibilities
+      to generate documentation from source code. We will demonstrate
+      how to use synopsis standalone as well as in conjunction with
+      existing build systems. Further, we will see how to adapt
+      synopsis to your coding and commenting style, as well as how
+      to generate the output in a format and style that fulfills
+      your needs.</para>
     <section>
       <title>The synopsis executable</title>
+      <para>The synopsis executable is a little convenience frontend
+        to the larger Synopsis framework consisting of AST related
+        types as well as processor classes.</para>
+      <para>While the full power of synopsis is available through
+        scripting (see <xref linkend="scripting" />), it is possible
+        to quickly generate simple documentation by means of an
+        easy-to-use executable, that is nothing more but a little
+        script with some extra command line argument parsing.</para>
+      <para>This tool has three processor types it can call:</para>
+      <variablelist>
+        <varlistentry>
+          <term>Parser</term>
+          <listitem>
+            <para>A processor that will parse source code into an
+              internal abstract syntax tree (AST). Various Parsers
+              have a variety of parameters to control how exactly
+              they do that.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Linker</term>
+          <listitem>
+            <para>A processor that will remove duplicate symbols,
+              forward declarations, and apply any number of AST
+              manipulations you want. The user typically specifies
+              what sub-processors to load to run from the linker.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Formatter</term>
+          <listitem>
+            <para>A processor that generates some form of formatted
+              output from an existing AST, typically html, docbook xml,
+              or class graphs.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
 
-      <!-- Talk about the simplest frontend, the
-         synopsis executable: basic usage, options, etc. -->
+      <para>You can run synopsis with a single processor, for example
+        to parse a C++ file <filename>source.hh</filename> and store 
+        the AST into a file <filename>source.syn</filename>, or you can
+        combine it directly with linker and or formatter to generate
+        the output you want in a single call.</para>
+      <para>While the document generation in a single call is convenient,
+        for larger projects it is much more sensible to integrate the
+        document generation into existing build systems and let the build
+        system itself manage the dependencies between the intermediate files
+        and the source files.</para>
+      <para>For example, a typical Makefile fragment that contains the rules
+        to generate documentation out of multiple source files may look like
+        this:</para>
+      <programlisting>
+        hdr := $(wildcard *.h)
+        syn := $(patsubst %.h, %.syn, $(hdr))
 
-      <para></para>
+        html: $(syn)
+            synopsis -f HTML -o $@ $&lt;
+
+        %.syn: %.h
+            synopsis -p Cxx -I../include -o $@ $&lt;
+      </programlisting>
+      <para>Here is a listing of all available options:</para>
+      <variablelist>
+        <varlistentry>
+          <term>-h</term>
+          <term>--help</term>
+          <listitem>
+            <para>print out help message</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-V</term>
+          <term>--version</term>
+          <listitem>
+            <para>print out version info and exit</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-v</term>
+          <term>--verbose</term>
+          <listitem>
+            <para>operate verbosely</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-d</term>
+          <term>--debug</term>
+          <listitem>
+            <para>operate in debug mode</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-o</term>
+          <term>--output</term>
+          <listitem>
+            <para>output file / directory</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-p</term>
+          <term>--parser</term>
+          <listitem>
+            <para>select a parser</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-l</term>
+          <term>--link</term>
+          <listitem>
+            <para>link</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-f</term>
+          <term>--formatter</term>
+          <listitem>
+            <para>select a formatter</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-I</term>
+          <listitem>
+            <para>set an include search path</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-D</term>
+          <listitem>
+            <para>specify a macro for the parser</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>-W</term>
+          <listitem>
+            <para>pass down additional arguments to a processor.
+              For example '-Wp,-I.' sends the '-I.' option to the
+              parser.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
 
     <section>
@@ -67,14 +208,13 @@
       <title>Using comments for documentation</title>
 
       <para>
-        <programlisting>
-          <xi:include href="examples/example1/Shape.h" parse="text"/>
+        <programlisting><xi:include href="examples/example1/Shape.h" parse="text"/>
         </programlisting>
       </para>
     </section>
   </chapter>
 
-  <chapter>
+  <chapter id="scripting">
     <title>Scripting and extending synopsis</title>
 
     <!-- When the synopsis executable isn't

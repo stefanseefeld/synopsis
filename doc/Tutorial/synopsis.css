@@ -8,6 +8,22 @@ body
 :visited { color: #770000; text-decoration: none;}
 :active { color: #ff0000; text-decoration: none;}
 
+div.navheader 
+{
+  border-bottom: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+  padding: 10px;
+}
+
+div.navfooter
+{
+  border-top: solid;
+  border-color: #aaaaaa;
+  border-width: 1px;
+  padding: 10px;
+}
+
 div.page-heading 
 {
     position:float;
