@@ -158,6 +158,7 @@ SourceFile lookup_source_file(const char *filename, bool main)
 {
   Python::Dict files = ast->files();
   SourceFile sf = files.get(strip_base_path(filename));
+  if (sf && main) sf.is_main(true);
   return sf ? sf : create_source_file(filename, main);
 }
 
@@ -228,14 +229,13 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       return 0;
     
     Py_INCREF(py_ast);
-
     // since everything in this file is accessed only during the execution
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
     ast.reset(new AST(py_ast));
     kit.reset(new ASTKit());
     types.reset(new TypeKit());
-    source_file.reset(new SourceFile(create_source_file(input, true)));
+    source_file.reset(new SourceFile(lookup_source_file(input, true)));
 
     flags.insert(flags.begin(), "ucpp");
     flags.push_back("-C"); // keep comments
@@ -267,11 +267,12 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     Python::Dict files = ast->files();
     files.set(strip_base_path(input), *source_file);
 
+    py_ast = ast->ref(); // add new reference
     // make sure these objects are deleted before the python runtime
-    source_file.reset(0);
-    types.reset(0);
-    kit.reset(0);
-    ast.reset(0);
+    source_file.reset();
+    types.reset();
+    kit.reset();
+    ast.reset();
     return py_ast;
   }
   catch (const std::exception &e)
@@ -297,13 +298,14 @@ extern "C"
     std::string abs_filename = normalize_path(filename);
 
     bool activate = false;
-    if (!base_path ||
-	strncmp(abs_filename.c_str(), base_path, strlen(base_path)) == 0)
+    if ((main_file_only && strcmp(input, filename)) || 
+	(base_path && 
+	 strncmp(abs_filename.c_str(), base_path, strlen(base_path)) != 0))
+      active = false;
+    else
     {
       if (!active) active = activate = true;
     }
-    else
-      active = false;
 
     if (!active) return;
 
