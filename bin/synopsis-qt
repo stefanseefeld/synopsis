@@ -1,0 +1,170 @@
+#!/usr/bin/env python
+# Qt GUI for Synopsis
+# Copyright (c) 2001 by Stephen Davies
+#
+# Tested on Debian unstable with python-pyqt package (and dependencies)
+# This appears to be using Qt 2.0
+
+
+import sys, pickle, Synopsis, cStringIO
+from qt import *
+import Synopsis.Core.AST
+from Synopsis.Formatter.ASCII import ASCIIFormatter
+
+class MainWindow (QMainWindow):
+    """The main window of the applet. It controls the whole GUI so far, and
+    has two ListFillers, one for each QListView."""
+    def __init__(self):
+	QMainWindow.__init__(self, None, "Synopsis")
+
+	# Make the menu
+	menu = self.menuBar()
+	file = QPopupMenu(self)
+	file.insertItem("&Open...", self.open)
+	file.insertItem("&Quit", qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
+	menu.insertItem("&File", file)
+
+	# Split up the GUI
+	split = QSplitter(self)
+	splitV = QSplitter(Qt.Vertical, split)
+
+	# Create a top-left listview for the packages
+	self.packages = QListView(splitV)
+	self.packages.setMinimumSize(150,100)
+	self.packages.setRootIsDecorated(1)
+	self.packages.addColumn("Name")
+
+	# Create a bottom-left listview for the other stuff
+	self.listview = QListView(splitV)
+	self.listview.setMinimumSize(150,300)
+	self.listview.addColumn("Name")
+	self.listview.addColumn("Type")
+
+	# Create a textbrowser to show info about selected stuff
+	# This could be just QTextEdit or something I guess... :)
+	self.textview = QTextBrowser(split)
+	self.textview.setMinimumSize(500,350)
+	self.textview.setTextFormat(Qt.RichText)
+
+	self.setCentralWidget(split)
+
+	# Create the fillers. The first only displays a few types
+	self.packfiller = ListFiller(self, self.packages, (
+	    'Package', 'Module', 'Namespace'))
+	self.listfiller = ListFiller(self, self.listview)
+	if ast: self.packfiller.visitAST(ast)
+
+	# Connect things up
+	self.connect(self.packages, SIGNAL('selectionChanged(QListViewItem*)'), self.showPackage)
+	self.connect(self.listview, SIGNAL('selectionChanged(QListViewItem*)'), self.showDecl)
+
+    def open(self):
+	"""Displays the file open dialog, and loads a file if selected"""
+	file = QFileDialog.getOpenFileName(".", "Synopsis files (*.*syn)", self, "file", "Open a Synopsis data file")
+	if file: self.openFile(str(file))
+
+
+    def openFile(self, filename):
+	"""Loads a given file"""
+	try:
+	    unpickler = pickle.Unpickler(open(filename, "r"))
+	    # Clear the GUI
+	    self.packfiller.clear()
+	    self.listfiller.clear()
+	    self.textview.setText("<i>Loading...")
+	    # Load the file
+	    version = unpickler.load()
+	    ast = unpickler.load()
+	    # Fill the GUI
+	    self.packfiller.visitAST(ast)
+	    self.textview.setText("<i>Select a package/namespace to view from the left.")
+	except IOError, e:
+	    # Oops..
+	    QMessageBox.critical(self, "Synopsis", 
+		"An error occurred opening:\n%s\n\n%s"%(filename, str(e)))
+
+    def showPackage(self, item):
+	"""Show a given package (by item)"""
+	decl = self.packfiller.map[item]
+	# Fill the main list
+	self.listfiller.clear()
+	self.listfiller.visitAST(decl)
+	# Grab the comments and put them in the text view
+	os = cStringIO.StringIO()
+	for comment in decl.comments():
+	    os.write(comment.text())
+	    os.write('<hr>')
+	self.textview.setText(os.getvalue())
+
+    def showDecl(self, item):
+	"""Show a given declaration (by item)"""
+	decl = self.listfiller.map[item]
+	# Here we use ASCIIFormatter to quickly get us *something* to display
+	# :)
+	os = cStringIO.StringIO()
+	os.write('<pre>')
+	decl.accept(ASCIIFormatter(os))
+	self.textview.setText(os.getvalue())
+
+
+class ListFiller( Synopsis.Core.AST.Visitor ):
+    """A visitor that fills in a QListView from an AST"""
+    def __init__(self, main, listview, types = None):
+	self.map = {}
+	self.main = main
+	self.listview = listview
+	self.stack = [self.listview]
+	self.types = types
+
+    def clear(self):
+	self.listview.clear()
+	self.map = {}
+	self.stack = [self.listview]
+
+    def visitDeclaration(self, decl):
+	if self.types and decl.type() not in self.types: return
+	item = QListViewItem(self.stack[-1], decl.name()[-1], decl.type())
+	self.map[item] = decl
+	self.__last = item
+
+    def visitAST(self, ast):
+	Synopsis.Core.AST.Visitor.visitAST(self, ast)
+	self.listview.setContentsPos(0,0)
+
+    def visitGroup(self, group):
+	if self.types and group.type() not in self.types: return
+	self.visitDeclaration(group)
+	item = self.__last
+	self.stack.append(item)
+	for decl in group.declarations(): decl.accept(self)
+	self.stack.pop()
+	if len(self.stack) < 3: self.listview.setOpen(item, 1)
+
+
+if __name__ == "__main__":
+    # This is usually set in ASCII's parse_args function.. but we can set it to
+    # something more appropriate
+    Synopsis.Formatter.ASCII.comment_str = '<font color="purple">// %s</font>\n'
+
+    app = QApplication(sys.argv)
+    app.setDesktopSettingsAware(1)
+    # So I prefer the windows style to motif.. shoot me :)
+    #app.setStyle(QWindowsStyle())
+
+    # Parse args
+    load_file = None
+    for arg in sys.argv[1:]:
+	if arg and arg[0] != '-':
+	    load_file = arg
+
+    # Load files
+    ast = None
+    main = MainWindow()
+    app.setMainWidget(main)
+    main.show()
+
+    if load_file:
+	main.openFile(load_file)
+
+    app.exec_loop()
+
