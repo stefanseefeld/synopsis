@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.23 2003/12/08 00:39:23 stefan Exp $
+# $Id: View.py,v 1.24 2003/12/08 03:32:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -202,7 +202,7 @@ class View(Parametrized):
    def get_toc(self, start):
       """Retrieves the TOC for this view. This method assumes that the view
       generates info for the the whole AST, which could be the Scope,
-      the FileSource (source code) or the XRef (cross reference info).
+      the Source (source code) or the XRef (cross reference info).
       The default implementation returns None. Start is the declaration to
       start processing from, which could be the global namespace."""
 
