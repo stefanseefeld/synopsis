@@ -1,564 +1,610 @@
 <?xml version="1.0"?>
-<dia:diagram xmlns:dia="http://www.lysator.liu.se/~alla/dia/">
-  <dia:diagramdata>
-    <dia:attribute name="background">
-      <dia:color val="#ffffff"/>
-    </dia:attribute>
-  </dia:diagramdata>
-  <dia:layer name="Background" visible="true">
-    <dia:object type="Standard - Image" version="0" id="O0">
-      <dia:attribute name="obj_pos">
-        <dia:point val="14.0714,2.71429"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="13.9714,2.61429;17.5286,6.17143"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="14.0714,2.71429"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="border_width">
-        <dia:real val="0.1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_border">
-        <dia:boolean val="false"/>
-      </dia:attribute>
-      <dia:attribute name="keep_aspect">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="file">
-        <dia:string>#/usr/share/pixmaps/gnome-file-h.png#</dia:string>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Image" version="0" id="O1">
-      <dia:attribute name="obj_pos">
-        <dia:point val="3.67143,2.49286"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="3.57143,2.39286;7.12857,5.95"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="3.67143,2.49286"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="border_width">
-        <dia:real val="0.1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_border">
-        <dia:boolean val="false"/>
-      </dia:attribute>
-      <dia:attribute name="keep_aspect">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="file">
-        <dia:string>#/usr/share/pixmaps/gnome-file-h.png#</dia:string>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Image" version="0" id="O2">
-      <dia:attribute name="obj_pos">
-        <dia:point val="3.6,9.20714"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="3.5,9.10714;7.05714,12.6643"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="3.6,9.20714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="border_width">
-        <dia:real val="0.1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_border">
-        <dia:boolean val="false"/>
-      </dia:attribute>
-      <dia:attribute name="keep_aspect">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="file">
-        <dia:string>#/usr/share/pixmaps/gnome-file-h.png#</dia:string>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Image" version="0" id="O3">
-      <dia:attribute name="obj_pos">
-        <dia:point val="13.7429,9.35"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="13.6429,9.25;17.2,12.8071"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="13.7429,9.35"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="border_width">
-        <dia:real val="0.1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_border">
-        <dia:boolean val="false"/>
-      </dia:attribute>
-      <dia:attribute name="keep_aspect">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="file">
-        <dia:string>#/usr/share/pixmaps/gnome-file-h.png#</dia:string>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Line" version="0" id="O4">
-      <dia:attribute name="obj_pos">
-        <dia:point val="7.02857,4.17143"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="6.97857,4.12143;14.1214,4.44286"/>
-      </dia:attribute>
-      <dia:attribute name="conn_endpoints">
-        <dia:point val="7.02857,4.17143"/>
-        <dia:point val="14.0714,4.39286"/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O1" connection="4"/>
-        <dia:connection handle="1" to="O0" connection="3"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="Standard - Line" version="0" id="O5">
-      <dia:attribute name="obj_pos">
-        <dia:point val="6.95714,10.8857"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="6.90714,10.8357;13.7929,11.0786"/>
-      </dia:attribute>
-      <dia:attribute name="conn_endpoints">
-        <dia:point val="6.95714,10.8857"/>
-        <dia:point val="13.7429,11.0286"/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O2" connection="4"/>
-        <dia:connection handle="1" to="O3" connection="3"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="Standard - Line" version="0" id="O6">
-      <dia:attribute name="obj_pos">
-        <dia:point val="17.4286,4.39286"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="17.3786,4.34286;25.4357,8.36429"/>
-      </dia:attribute>
-      <dia:attribute name="conn_endpoints">
-        <dia:point val="17.4286,4.39286"/>
-        <dia:point val="25.3857,8.31429"/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O0" connection="4"/>
-        <dia:connection handle="1" to="O9" connection="3"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="Standard - Line" version="0" id="O7">
-      <dia:attribute name="obj_pos">
-        <dia:point val="17.1,11.0286"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="17.05,8.26429;25.4357,11.0786"/>
-      </dia:attribute>
-      <dia:attribute name="conn_endpoints">
-        <dia:point val="17.1,11.0286"/>
-        <dia:point val="25.3857,8.31429"/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O3" connection="4"/>
-        <dia:connection handle="1" to="O9" connection="3"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="Standard - Line" version="0" id="O8">
-      <dia:attribute name="obj_pos">
-        <dia:point val="28.7429,8.31429"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="28.6929,8.26429;36.2929,9.36429"/>
-      </dia:attribute>
-      <dia:attribute name="conn_endpoints">
-        <dia:point val="28.7429,8.31429"/>
-        <dia:point val="36.2429,9.31429"/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O9" connection="4"/>
-        <dia:connection handle="1" to="O10" connection="3"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="Standard - Image" version="0" id="O9">
-      <dia:attribute name="obj_pos">
-        <dia:point val="25.3857,6.63571"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="25.2857,6.53571;28.8429,10.0929"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="25.3857,6.63571"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="border_width">
-        <dia:real val="0.1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_border">
-        <dia:boolean val="false"/>
-      </dia:attribute>
-      <dia:attribute name="keep_aspect">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="file">
-        <dia:string>#/usr/share/pixmaps/gnome-file-h.png#</dia:string>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Image" version="0" id="O10">
-      <dia:attribute name="obj_pos">
-        <dia:point val="36.2429,7.63571"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="36.1429,7.53571;39.7,11.0929"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="36.2429,7.63571"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.35714"/>
-      </dia:attribute>
-      <dia:attribute name="border_width">
-        <dia:real val="0.1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_border">
-        <dia:boolean val="false"/>
-      </dia:attribute>
-      <dia:attribute name="keep_aspect">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="file">
-        <dia:string>#/usr/share/pixmaps/gnome-file-h.png#</dia:string>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O11">
-      <dia:attribute name="obj_pos">
-        <dia:point val="2.95901,17.1429"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="-0.776992,16.3995;6.69501,17.3995"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#source files#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="2.95901,17.1429"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O12">
-      <dia:attribute name="obj_pos">
-        <dia:point val="13.8162,16.7857"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="6.14115,16.0424;21.4912,18.0424"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#in memory AST
-with forward declarations#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="13.8162,16.7857"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O13">
-      <dia:attribute name="obj_pos">
-        <dia:point val="26.7447,15.4286"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="21.4937,14.6852;31.9957,16.6852"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#AST with resolved
-references#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="26.7447,15.4286"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O14">
-      <dia:attribute name="obj_pos">
-        <dia:point val="37.0926,14.9286"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="35.1746,14.1852;39.0106,15.1852"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#output#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="37.0926,14.9286"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O15">
-      <dia:attribute name="obj_pos">
-        <dia:point val="8.74946,2.94561"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="7.13446,2.20225;10.3645,3.20225"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#parse#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="8.74946,2.94561"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O16">
-      <dia:attribute name="obj_pos">
-        <dia:point val="20.2495,3.58847"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="18.0285,2.84511;22.4705,3.84511"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#resolve#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="20.2495,3.58847"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O17">
-      <dia:attribute name="obj_pos">
-        <dia:point val="31.1285,6.30276"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="29.2105,5.55939;33.0465,6.55939"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#format#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="31.1285,6.30276"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Network - Storage" version="0" id="O18">
-      <dia:attribute name="obj_pos">
-        <dia:point val="17.7372,-0.579153"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="16.6972,-3.31915;18.7772,0.520847"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="16.7372,-3.27915"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="2"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="2.7"/>
-      </dia:attribute>
-      <dia:attribute name="magnify">
-        <dia:real val="1"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>##</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="17.7372,0.26421"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="Standard - Line" version="0" id="O19">
-      <dia:attribute name="obj_pos">
-        <dia:point val="15.75,2.71429"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="15.7,-0.629153;17.7872,2.76429"/>
-      </dia:attribute>
-      <dia:attribute name="conn_endpoints">
-        <dia:point val="15.75,2.71429"/>
-        <dia:point val="17.7372,-0.579153"/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O0" connection="1"/>
-        <dia:connection handle="1" to="O18" connection="1"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="Standard - Text" version="0" id="O20">
-      <dia:attribute name="obj_pos">
-        <dia:point val="20.2372,-4.42201"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="15.2892,-5.16537;25.1852,-4.16537"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#persistent store#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Courier"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="1"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="20.2372,-4.42201"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="1"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-  </dia:layer>
-</dia:diagram>
+<diagram xmlns:dia="http://www.lysator.liu.se/~alla/dia/">
+  <diagramdata>
+    <attribute name="background">
+      <color val="#ffffff"/>
+    </attribute>
+    <attribute name="paper">
+      <composite type="paper">
+        <attribute name="name">
+          <string>#A4#</string>
+        </attribute>
+        <attribute name="tmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="bmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="lmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="rmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="is_portrait">
+          <boolean val="true"/>
+        </attribute>
+        <attribute name="scaling">
+          <real val="1"/>
+        </attribute>
+        <attribute name="fitto">
+          <boolean val="false"/>
+        </attribute>
+      </composite>
+    </attribute>
+  </diagramdata>
+  <layer name="Background" visible="true">
+    <object type="Standard - Image" version="0" id="O0">
+      <attribute name="obj_pos">
+        <point val="14.0207,2.71429"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="13.9207,2.61429;17.4779,6.17143"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="14.0207,2.71429"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="border_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="draw_border">
+        <boolean val="false"/>
+      </attribute>
+      <attribute name="keep_aspect">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="file">
+        <string>#bin.png#</string>
+      </attribute>
+    </object>
+    <object type="Standard - Image" version="0" id="O1">
+      <attribute name="obj_pos">
+        <point val="-3.20894,2.70499"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="-3.30894,2.60499;0.248204,6.16213"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="-3.20894,2.70499"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="border_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="draw_border">
+        <boolean val="false"/>
+      </attribute>
+      <attribute name="keep_aspect">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="file">
+        <string>#text.png#</string>
+      </attribute>
+    </object>
+    <object type="Standard - Line" version="0" id="O2">
+      <attribute name="obj_pos">
+        <point val="0.148204,4.38356"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="0.0982042,4.33356;14.0707,4.44286"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="0.148204,4.38356"/>
+        <point val="14.0207,4.39286"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O1" connection="4"/>
+        <connection handle="1" to="O0" connection="3"/>
+      </connections>
+    </object>
+    <object type="Standard - Line" version="0" id="O3">
+      <attribute name="obj_pos">
+        <point val="0.148204,10.9286"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="0.0982042,10.8786;14.0707,10.9793"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="0.148204,10.9286"/>
+        <point val="14.0207,10.9293"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O17" connection="4"/>
+        <connection handle="1" to="O18" connection="3"/>
+      </connections>
+    </object>
+    <object type="Standard - Line" version="0" id="O4">
+      <attribute name="obj_pos">
+        <point val="17.3779,4.39286"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="17.3279,4.34286;26.0525,7.805"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="17.3779,4.39286"/>
+        <point val="26.0025,7.755"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O0" connection="4"/>
+        <connection handle="1" to="O19" connection="3"/>
+      </connections>
+    </object>
+    <object type="Standard - Line" version="0" id="O5">
+      <attribute name="obj_pos">
+        <point val="17.3779,10.9293"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="17.3279,7.705;26.0525,10.9793"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="17.3779,10.9293"/>
+        <point val="26.0025,7.755"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O18" connection="4"/>
+        <connection handle="1" to="O19" connection="3"/>
+      </connections>
+    </object>
+    <object type="Standard - Line" version="0" id="O6">
+      <attribute name="obj_pos">
+        <point val="29.3596,7.755"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="29.3096,7.705;36.1766,7.83429"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="29.3596,7.755"/>
+        <point val="36.1266,7.78429"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O19" connection="4"/>
+        <connection handle="1" to="O20" connection="3"/>
+      </connections>
+    </object>
+    <object type="Standard - Text" version="0" id="O7">
+      <attribute name="obj_pos">
+        <point val="-1.00079,17.355"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="-4.73679,16.6117;2.73521,17.6117"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#source files#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="-1.00079,17.355"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Text" version="0" id="O8">
+      <attribute name="obj_pos">
+        <point val="15.5133,16.715"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="7.83826,15.9716;23.1883,17.9716"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#in memory AST
+with forward declarations#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="15.5133,16.715"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Text" version="0" id="O9">
+      <attribute name="obj_pos">
+        <point val="27.4518,14.2972"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="22.2008,13.5539;32.7028,15.5539"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#AST with resolved
+references#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="27.4518,14.2972"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Text" version="0" id="O10">
+      <attribute name="obj_pos">
+        <point val="37.8704,14.4336"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="35.9524,13.6903;39.7884,14.6903"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#output#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="37.8704,14.4336"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Text" version="0" id="O11">
+      <attribute name="obj_pos">
+        <point val="6.28645,2.81871"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="4.67145,2.07535;7.90145,3.07535"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#parse#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="6.28645,2.81871"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Text" version="0" id="O12">
+      <attribute name="obj_pos">
+        <point val="22.1587,4.57842"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="19.9377,3.83506;24.3797,4.83506"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#resolve#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="22.1587,4.57842"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Text" version="0" id="O13">
+      <attribute name="obj_pos">
+        <point val="32.8256,6.72702"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="30.9076,5.98366;34.7436,6.98366"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#format#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="32.8256,6.72702"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Network - Storage" version="0" id="O14">
+      <attribute name="obj_pos">
+        <point val="15.6993,-1.28626"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="14.6593,-4.02626;16.7393,-0.186257"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="14.6993,-3.98626"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="2"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="2.7"/>
+      </attribute>
+      <attribute name="magnify">
+        <real val="1"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>##</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="15.6993,-0.442894"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Line" version="0" id="O15">
+      <attribute name="obj_pos">
+        <point val="15.6993,2.71429"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="15.6493,-1.33626;15.7493,2.76429"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="15.6993,2.71429"/>
+        <point val="15.6993,-1.28626"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O0" connection="1"/>
+        <connection handle="1" to="O14" connection="1"/>
+      </connections>
+    </object>
+    <object type="Standard - Text" version="0" id="O16">
+      <attribute name="obj_pos">
+        <point val="16.7017,-4.77556"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="11.7537,-5.51893;21.6497,-4.51893"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#persistent store#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="1"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="16.7017,-4.77556"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="1"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Image" version="0" id="O17">
+      <attribute name="obj_pos">
+        <point val="-3.20894,9.25"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="-3.30894,9.15;0.248204,12.7071"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="-3.20894,9.25"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="border_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="draw_border">
+        <boolean val="false"/>
+      </attribute>
+      <attribute name="keep_aspect">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="file">
+        <string>#text.png#</string>
+      </attribute>
+    </object>
+    <object type="Standard - Image" version="0" id="O18">
+      <attribute name="obj_pos">
+        <point val="14.0207,9.25069"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="13.9207,9.15069;17.4779,12.7078"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="14.0207,9.25069"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="border_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="draw_border">
+        <boolean val="false"/>
+      </attribute>
+      <attribute name="keep_aspect">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="file">
+        <string>#bin.png#</string>
+      </attribute>
+    </object>
+    <object type="Standard - Image" version="0" id="O19">
+      <attribute name="obj_pos">
+        <point val="26.0025,6.07643"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="25.9025,5.97643;29.4596,9.53357"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="26.0025,6.07643"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="border_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="draw_border">
+        <boolean val="false"/>
+      </attribute>
+      <attribute name="keep_aspect">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="file">
+        <string>#bin.png#</string>
+      </attribute>
+    </object>
+    <object type="Standard - Image" version="0" id="O20">
+      <attribute name="obj_pos">
+        <point val="36.1266,6.10572"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="36.0266,6.00572;39.5838,9.56286"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="36.1266,6.10572"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.35714"/>
+      </attribute>
+      <attribute name="border_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="draw_border">
+        <boolean val="false"/>
+      </attribute>
+      <attribute name="keep_aspect">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="file">
+        <string>#ps.png#</string>
+      </attribute>
+    </object>
+  </layer>
+</diagram>
