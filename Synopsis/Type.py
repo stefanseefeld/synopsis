@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.12 2003/11/11 06:05:03 stefan Exp $
+# $Id: Type.py,v 1.13 2003/11/16 14:54:01 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -231,6 +231,8 @@ class Dictionary:
    def keys(self): return self.__dict.keys()
    def values(self): return self.__dict.values()
    def items(self): return self.__dict.items()
+   def get(self, name, default=None):
+      return self.has_key(name) and self.__getitem__(name) or default
    def lookup(self, name, scopes):
       """locate 'name' in one of the scopes"""
       for s in scopes:
