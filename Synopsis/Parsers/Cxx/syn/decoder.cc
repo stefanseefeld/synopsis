@@ -7,6 +7,14 @@
 #include "dumper.hh"
 #include <iostream>
 
+std::ostream& operator <<(std::ostream&o, code& s) {
+    code_iter i = s.begin();
+    for(; i != s.end(); i++)
+	if (*i < 0x80) o << (char)(*i);
+	else o << "\e[1m[" << (int)(*i - 0x80) << "]\e[m";
+    return o;
+}
+
 Decoder::Decoder(Builder* builder)
     : m_builder(builder)
 {
@@ -53,8 +61,8 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
 	    std::ostringstream name;
 	    name << decodeName();
 	    char sep = '<';
-	    code_iter tend = m_iter + *m_iter++ - 0x80 + 1;
-	    while (m_iter < tend)
+	    code_iter tend = m_iter; tend += *m_iter++ - 0x80;
+	    while (m_iter <= tend)
 		name << sep << f.format(decodeType());
 	    name << '>';
 	    names.push_back(name.str());
@@ -150,8 +158,8 @@ Type::Type* Decoder::decodeQualType()
 	    // Template :(
 	    ++m_iter;
 	    std::string tname = decodeName();
-	    code_iter tend = m_iter + *m_iter++ - 0x80 + 1;
-	    while (m_iter < tend)
+	    code_iter tend = m_iter; tend += *m_iter++ - 0x80;
+	    while (m_iter <= tend)
 		types.push_back(decodeType());
 	    names.push_back(tname);
 	} else {
@@ -202,7 +210,7 @@ Type::Type* Decoder::decodeTemplate()
     // Template type: Name first, then size of arg field, then arg
     // types eg: T6vector54cell <-- 5 is len of 4cell
     std::string name = decodeName();
-    code_iter tend = m_iter + *m_iter++ - 0x80;
+    code_iter tend = m_iter; tend += *m_iter++ - 0x80;
     std::vector<Type::Type*> types;
     while (m_iter <= tend)
 	types.push_back(decodeType());

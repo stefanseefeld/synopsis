@@ -275,6 +275,9 @@ private:
 
     //. Recursively adds 'target' as using in 'scope'
     void addUsingNamespace(Scope* target, Scope* scope);
+
+    //. A class that compares Scopes
+    class EqualScope;
 }; // class Builder
 
 #endif

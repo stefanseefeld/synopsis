@@ -1290,7 +1290,7 @@ std::string Builder::dumpSearch(Scope* scope)
     return buf.str();
 }
 
-class EqualScope {
+class Builder::EqualScope {
     AST::Scope* target;
 public:
     EqualScope(Builder::Scope* t) { target = t->scope_decl; }
