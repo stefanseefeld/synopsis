@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: Scope.py,v 1.3 2001/02/05 07:58:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,10 +20,15 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.3  2001/02/05 07:58:39  chalky
+# Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
-#
+
+# System modules
+import time, os
 
 # Synopsis modules
 from Synopsis.Core import AST
@@ -43,6 +48,10 @@ class ScopePages (Page.Page):
 	#TODO use config...
 	self.summarizer = ASTFormatter.SummaryFormatter()
 	self.detailer = ASTFormatter.DetailFormatter()
+	# Hack to find share dir..
+	share = os.path.split(AST.__file__)[0]+"/../share"
+	self.syn_logo = 'synopsis200.jpg'
+	config.files.copyFile(share+'/synopsis200.jpg', self.syn_logo)
 
     def process(self, start):
 	"""Creates a page for every Scope"""
@@ -126,5 +135,13 @@ class ScopePages (Page.Page):
 	self.summarizer.set_scope(scope)
 	self.detailer.set_ostream(self.os())
 	self.detailer.set_scope(scope)
+
+    def endFile(self):
+	"""Overrides endfile to provide synopsis logo"""
+	self.write('<hr>Generated on %s by %s'%(
+	    time.strftime(r'%c', time.localtime(time.time())),
+	    solotag('img', align='top', src=self.syn_logo, border='0', alt="Synopsis")
+	))
+	Page.Page.endFile(self)
  
 htmlPageClass = ScopePages

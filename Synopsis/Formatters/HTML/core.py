@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.5 2001/02/05 05:26:24 chalky Exp $
+# $Id: core.py,v 1.6 2001/02/05 07:58:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.6  2001/02/05 07:58:39  chalky
+# Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
+#
 # Revision 1.5  2001/02/05 05:26:24  chalky
 # Graphs are separated. Misc changes
 #
@@ -322,8 +325,8 @@ def defaultPageset(manager):
     reasonable set of pages. If you provide your own, you need to call
     manager.addPage() for all the pages you want."""
     manager.addPage(stdPage('ScopePages'))
-    #manager.addPage(stdPage('ModuleListingJS'))
-    manager.addPage(stdPage('ModuleListing'))
+    manager.addPage(stdPage('ModuleListingJS'))
+    #manager.addPage(stdPage('ModuleListing'))
     manager.addPage(stdPage('ModuleIndexer'))
     manager.addPage(stdPage('FileTree'))
     manager.addPage(stdPage('InheritanceTree'))
