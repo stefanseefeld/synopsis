@@ -13,6 +13,8 @@
  * If this were a bigger example they might have more.
  * @see Employee.name()
  * @see Employee.id()
+ * @see name()
+ * @see id()
  * @see string
  * @link http://www.c++.org/ Your C++ Manual
  */

@@ -3,6 +3,134 @@
 
 #include "dumper.hh"
 
+//
+//
+// TypeFormatter
+//
+//
+
+TypeFormatter::TypeFormatter()
+{
+}
+
+void TypeFormatter::setScope(const AST::Name& scope) {
+    m_scope = scope;
+}
+
+string TypeFormatter::colonate(const AST::Name& name)
+{
+    string str;
+    AST::Name::const_iterator n_iter = name.begin();
+    AST::Name::const_iterator s_iter = m_scope.begin();
+    // Skip identical scopes
+    while ((n_iter != name.end()) && (s_iter != m_scope.end()) && (*n_iter == *s_iter))
+	++n_iter, ++s_iter;
+    // If name == scope, just return last eg: struct S { S* ptr; };
+    if (n_iter == name.end()) return name.back();
+    // Join the rest in name with colons
+    str = *n_iter++;
+    while (n_iter != name.end())
+	str += "::" + *n_iter++;
+    return str;
+}
+
+
+
+//
+// Type Visitor
+//
+
+string TypeFormatter::format(Type::Type* type)
+{
+    if (!type) return "(unknown)";
+    type->accept(this);
+    return m_type;
+}
+
+void TypeFormatter::visitType(Type::Type* type)
+{
+    m_type = "(unknown)";
+}
+
+void TypeFormatter::visitUnknown(Type::Unknown* type)
+{
+    m_type = colonate(type->name());
+}
+
+void TypeFormatter::visitModifier(Type::Modifier* type)
+{
+    // Premods
+    string pre = "";
+    Type::Type::Mods::iterator iter = type->pre().begin();
+    while (iter != type->pre().end())
+	pre += *iter++ + " ";
+    // Alias
+    m_type = pre + format(type->alias());
+    // Postmods
+    iter = type->post().begin();
+    while (iter != type->post().end())
+	m_type += " " + *iter++;
+}
+
+void TypeFormatter::visitNamed(Type::Named* type)
+{
+    m_type = colonate(type->name());
+}
+
+void TypeFormatter::visitBase(Type::Base* type)
+{
+    m_type = colonate(type->name());
+}
+
+void TypeFormatter::visitDeclared(Type::Declared* type)
+{
+    m_type = colonate(type->name());
+}
+
+void TypeFormatter::visitTemplateType(Type::Template* type)
+{
+    m_type = colonate(type->name());
+}
+
+void TypeFormatter::visitParameterized(Type::Parameterized* type)
+{
+    string str;
+    if (type->templateType())
+	str = colonate(type->templateType()->name()) + "<";
+    else
+	str = "(unknown)<";
+    if (type->parameters().size()) {
+	str += format(type->parameters().front());
+	Type::Type::vector_t::iterator iter = type->parameters().begin();
+	while (++iter != type->parameters().end())
+	    str += "," + format(*iter);
+    }
+    m_type = str + ">";
+}
+
+void TypeFormatter::visitFuncPtr(Type::FuncPtr* type)
+{
+    string str = "(*)(";
+    if (type->parameters().size()) {
+	str += format(type->parameters().front());
+	Type::Type::vector_t::iterator iter = type->parameters().begin();
+	while (++iter != type->parameters().end())
+	    str += "," + format(*iter);
+    }
+    m_type = str + ")";
+
+}
+
+
+
+
+
+//
+//
+// Dumper
+//
+//
+
 Dumper::Dumper()
 {
     m_indent = 0;
@@ -26,23 +154,6 @@ void Dumper::undent()
     m_indent_string.assign(m_indent, ' ');
 }
 
-string Dumper::colonate(const AST::Name& name)
-{
-    string str;
-    AST::Name::const_iterator n_iter = name.begin();
-    AST::Name::const_iterator s_iter = m_scope.begin();
-    // Skip identical scopes
-    while ((n_iter != name.end()) && (s_iter != m_scope.end()) && (*n_iter == *s_iter))
-	++n_iter, ++s_iter;
-    // If name == scope, just return last eg: struct S { S* ptr; };
-    if (n_iter == name.end()) return name.back();
-    // Join the rest in name with colons
-    str = *n_iter++;
-    while (n_iter != name.end())
-	str += "::" + *n_iter++;
-    return str;
-}
-
 string join(const vector<string>& strs, string sep = " ")
 {
     vector<string>::const_iterator iter = strs.begin();
@@ -62,104 +173,16 @@ string append(const vector<string>& strs, string sep = " ")
     return str;
 }
 
-//
-// Type Visitor
-//
-
 //. Utility method
-string colonate(const Type::Name& name)
-{
-    if (!name.size()) return "";
-    string str = name[0];
-    Type::Name::const_iterator iter = name.begin();
-    while (++iter != name.end())
-	str += "::" + *iter;
-    return str;
-}
-
-string Dumper::format(Type::Type* type)
-{
-    if (!type) return "(unknown)";
-    type->accept(this);
-    return m_type;
-}
-
-void Dumper::visitType(Type::Type* type)
-{
-    m_type = "(unknown)";
-}
-
-void Dumper::visitUnknown(Type::Unknown* type)
-{
-    m_type = "{"+colonate(type->name())+"}";
-}
-
-void Dumper::visitModifier(Type::Modifier* type)
-{
-    // Premods
-    string pre = "";
-    Type::Type::Mods::iterator iter = type->pre().begin();
-    while (iter != type->pre().end())
-	pre += *iter++ + " ";
-    // Alias
-    m_type = pre + format(type->alias());
-    // Postmods
-    iter = type->post().begin();
-    while (iter != type->post().end())
-	m_type += " " + *iter++;
-}
-
-void Dumper::visitNamed(Type::Named* type)
-{
-    m_type = colonate(type->name());
-}
-
-void Dumper::visitBase(Type::Base* type)
-{
-    m_type = colonate(type->name());
-}
-
-void Dumper::visitDeclared(Type::Declared* type)
-{
-    m_type = colonate(type->name());
-}
-
-void Dumper::visitTemplateType(Type::Template* type)
-{
-    m_type = colonate(type->name());
-}
-
-void Dumper::visitParameterized(Type::Parameterized* type)
-{
-    string str;
-    if (type->templateType())
-	str = colonate(type->templateType()->name()) + "<";
-    else
-	str = "(unknown)<";
-    if (type->parameters().size()) {
-	str += format(type->parameters().front());
-	Type::Type::vector_t::iterator iter = type->parameters().begin();
-	while (++iter != type->parameters().end())
-	    str += "," + format(*iter);
-    }
-    m_type = str + ">";
-}
-
-void Dumper::visitFuncPtr(Type::FuncPtr* type)
-{
-    string str = "(*)(";
-    if (type->parameters().size()) {
-	str += format(type->parameters().front());
-	Type::Type::vector_t::iterator iter = type->parameters().begin();
-	while (++iter != type->parameters().end())
-	    str += "," + format(*iter);
-    }
-    m_type = str + ")";
-
-}
-
-
-
+// string colonate(const Type::Name& name)
+// {
+//     if (!name.size()) return "";
+//     string str = name[0];
+//     Type::Name::const_iterator iter = name.begin();
+//     while (++iter != name.end())
+// 	str += "::" + *iter;
+//     return str;
+// }
 
 //
 // AST Visitor
@@ -193,7 +216,7 @@ void Dumper::visit(const vector<AST::Comment*>& comms)
 }
 
 // Format a Parameter
-string Dumper::format(AST::Parameter* param)
+string Dumper::formatParam(AST::Parameter* param)
 {
     string str = param->premodifier();
     str += format(param->type());
@@ -281,10 +304,10 @@ void Dumper::visitOperation(AST::Operation* oper)
     if (!isStructor(oper)) cout << format(oper->returnType()) + " ";
     cout << oper->realname() << "(";
     if (oper->parameters().size()) {
-	cout << format(oper->parameters().front());
+	cout << formatParam(oper->parameters().front());
 	vector<AST::Parameter*>::iterator iter = oper->parameters().begin();
 	while (++iter != oper->parameters().end())
-	    cout << "," << format(*iter);
+	    cout << "," << formatParam(*iter);
     }
     cout << ");" << endl;
 }

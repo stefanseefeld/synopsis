@@ -7,16 +7,18 @@
 #include "ast.hh"
 #include "type.hh"
 
-//. Dumper displays the AST to the screen
-class Dumper : public AST::Visitor, public Type::Visitor {
+//. Formats Types in a way suitable for output
+class TypeFormatter : public Type::Visitor {
 public:
-    Dumper();
+    TypeFormatter();
 
-    void onlyShow(string fname);
+    //. Sets the current scope
+    void setScope(const AST::Name& scope);
 
     //
     // Type Visitor
     //
+    //. Returns a formatter string for given type
     string format(Type::Type*);
     virtual void visitType(Type::Type*);
     virtual void visitUnknown(Type::Unknown*);
@@ -28,11 +30,28 @@ public:
     virtual void visitParameterized(Type::Parameterized*);
     virtual void visitFuncPtr(Type::FuncPtr*);
 
+protected:
+    //. The Type String
+    string m_type;
+    //. The current scope name
+    AST::Name m_scope;
+    //. Returns the given Name relative to the current scope
+    string colonate(const AST::Name& name);
+};
+
+//. Dumper displays the AST to the screen
+class Dumper : public AST::Visitor, public TypeFormatter {
+public:
+    Dumper();
+
+    //. Sets to only show decls with given filename
+    void onlyShow(string fname);
+    
+    string formatParam(AST::Parameter*);
     //
     // AST Visitor
     //
     void visit(const vector<AST::Declaration*>&);
-    string format(AST::Parameter*);
     void visit(const vector<AST::Comment*>&);
     virtual void visitDeclaration(AST::Declaration*);
     virtual void visitScope(AST::Scope*);
@@ -53,12 +72,6 @@ private:
     void indent();
     //. Decreases indent
     void undent();
-    //. The Type String
-    string m_type;
-    //. The current scope name
-    AST::Name m_scope;
-    //. Returns the given Name relative to the current scope
-    string colonate(const AST::Name& name);
     //. Only show this filename, if set
     string m_filename;
 
