@@ -31,42 +31,42 @@ demo/C++ and demo/IDL for a list. Mostly these use headers or IDL files copied
 from Berlin's Prague and Warsaw libraries, but there is a custom test C++ file
 called "demo/C++/test.cc" which attempts to test all the features of the C++
 parser. You may use this file as an example of proper documentation style in
-your own programs.
+your own programs. There is also a demo that mixes IDL and C++ in demo/Mixed.
+After running make you should find that the Impl classes link to the IDL
+interfaces as their base classes!
 
 Parsers: IDL, C++, Python
 Formatters:
  HTML - takes a directory name for output (-o Directory)
         Creates many pages in that directory
-	Copies specified stylesheet to new directory (-s stylesheet.css)
+	Copies specified stylesheet to new directory
+ HTML_Simple - one-page HTML output
+ Dia - generates a Dia file with classes and generalizations
+ Dot - generates various graphs, such as Inheritance
  ASCII - Tries to output the AST in a way that is syntactically valid as
          input.
  DUMP - Dumps the AST in a verbose form. This is useful only if you are
         trying to figure out how various input is converted to AST objects.
 	Pipe into "less -r" for best results.
 
-For an example of using synopsis for progressive compilation(??) see the
-Berlin project. A separate AST is created for each input file, and only
+For an example of using synopsis for progressive compilation see the
+RefManual in docs/. A separate AST is created for each input file, and only
 updated when necessary. These separate files are then compiled into a single
 AST and passed to the formatter for output:
 
- for each file:  synopsis -p C++ -Wl,-s,Prague -o syn/$file.syn $file.hh
+ for each file:  synopsis -p C++ -Wp,-m -o syn/$file.syn $file.hh
  finally: synopis -f HTML -o Manual syn/*.syn
 
-Note that telling the Linker to strip namespaces for every file results in
-smaller files and much faster linking, as the standard headers are so large
-that they can cause very large time and memory requirements.
+Note that telling the Parser to only keep main-file declarations (-m) results
+in much smaller files and much faster linking, as the standard headers are so
+large that they can cause huge time and memory requirements.
 
 
 ** Known Bugs
 
 There are a few known bugs that are not yet fixed:
-o. Linking between interface and implementation (IDL and C++) is not yet
-   supported.
-o. The HTML formatter is missing many planned features.
 o. The HTML formatter doesn't sort the sections in class/module pages very
    well - currently it is alphabetical.
-o. Parametrized classes are not supported by the C++ parser nor the HTML
-   formatter.
 
 
 ** Future features
@@ -77,11 +77,9 @@ o. Precompiled headers. This would speed up the parsing and linking speed for
 o. Further linker features and optimisations
 o. Further output options, such as different formats (ps, pdf, latex, sgml,
    man, info).
-o. Further output options, such as pluggable Comment parsers, file layouts,
-   only display public interfaces etc. These are mostly refactored into
-   separate classes, there are just no alternatives written yet :)
-o. Linking between different languages, such that C++ classes are
-   automatically linked to the IDL interfaces they implement.
+o. Further output options, such as pluggable file layouts, only display public
+   interfaces etc. These are mostly refactored into separate classes, there
+   are just no alternatives written yet :)
 o. Using the dictionary to parse and cross-reference all files in a project,
    similar to Mozilla's LXR but properly typed (LXR doesn't understand C/C++
    expressions properly, it just looks for names). The C++ parser already does
