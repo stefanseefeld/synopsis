@@ -1,0 +1,56 @@
+CC	:= @CC@
+CXX	:= @CXX@
+CPPFLAGS:= @CPPFLAGS@
+CFLAGS	:= @CFLAGS@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= -shared #@LDFLAGS@
+LIBS	:= @LIBS@
+AR	:= ar
+RANLIB	:= @RANLIB@
+FLEX	:= @FLEX@
+YACC	:= @YACC@
+
+RM	:= rm -f
+MV	:= mv
+
+CPP_PATH:=/usr/bin/cpp
+
+CTOOLFLAGS:= -D USE_GCC_4_CPP -D DEBUG
+
+CPPFLAGS+= -I . -D LIB_CPP=\"$(CPP_PATH)\" $(CTOOLFLAGS)
+CXXFLAGS+= -g -Wall
+
+SRC	:= lexer.cpp gram.cpp context.cpp decl.cpp express.cpp parseenv.cpp \
+           project.cpp stemnt.cpp symbol.cpp token.cpp location.cpp \
+           PrintTraversal.cpp
+OBJ	:= $(patsubst %.cpp, %.o, $(SRC))
+DEP	:= $(patsubst %.cpp, %.d, $(SRC))
+
+all: libctool.a libctool.so
+
+libctool.a: $(OBJ)
+	$(AR) cr $@ $(OBJ)
+	$(RANLIB) $@
+
+libctool.so: $(OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
+
+%.o:	%.cpp
+	@echo compiling $(@F)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.d:	%.cc %.hh
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(CXX) $(DEPFLAGS) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
+
+lexer.cpp: lexer.l gram.h
+	$(FLEX) $(FLEXFLAGS) $<
+	$(RM) lexer.cpp
+	$(MV) $(FLEXDFLT) lexer.cpp
+
+gram.cpp gram.h:	gram.y
+	$(BISON) $(BISON_V) -d -b gram -o gram.cpp $<
+	$(MV) gram.hpp gram.h
+
+clean:
+	$(RM) lexer.cpp gram.cpp gram.h $(OBJ)
