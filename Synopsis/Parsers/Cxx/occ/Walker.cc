@@ -112,6 +112,12 @@ PTree::Node *Walker::translate(PTree::Node *p)
   return result;
 }
 
+void Walker::visit(PTree::List *node)
+{
+  for (PTree::Node *i = node; i; i = i->cdr())
+    if (i->car()) i->car()->accept(this);
+}
+
 void Walker::visit(PTree::Typedef *node)
 {
   PTree::Node *tspec, *tspec2;
