@@ -6,7 +6,8 @@ syn	:= $(patsubst %.h, %.syn, $(src))
 all: Paths
 
 Paths: Paths.syn
-	$(synopsis) sxr --output=$@ $<
+	$(synopsis) sxr --url=http://localhost:8000/sxr --output=$@ $<
+	@echo "now run sxr-server -u sxr -d `pwd`/Paths"
 
 Paths.syn: $(syn)
 	$(synopsis) link --output=$@ $^

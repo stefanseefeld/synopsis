@@ -1,7 +1,7 @@
 #ifndef _Shapes_h
 #define _Shapes_h
 
-#include "Paths.h"
+#include <Paths.h>
 
 class Shape
 {

@@ -21,7 +21,6 @@ process(cxx_ssd = cxx_ssd,
         cxx_ssd_prev = Composite(cxx, SSDComments(), Previous()),
         cxx_javadoc = Composite(cxx, JavaComments(), JavaTags()),
         link = Linker(Grouper1()),
-        sxr = SXR.Formatter(url = 'http://localhost:8000/sxr.cgi',
-                            src_dir = '../src/',
+        sxr = SXR.Formatter(src_dir = '../src/',
                             xref_prefix='xref',
                             syntax_prefix='links'))
