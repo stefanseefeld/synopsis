@@ -74,6 +74,7 @@ static char *system_macros_def[] = { STD_MACROS, 0 };
 static char *system_assertions_def[] = { STD_ASSERT, 0 };
 #endif
 
+char *original_filename = 0;
 char *current_filename = 0, *current_long_filename = 0;
 static int current_incdir = -1;
 
@@ -308,6 +309,7 @@ void set_init_filename(char *x, int real_file)
 {
 	if (current_filename) freemem(current_filename);
 	current_filename = sdup(x);
+	original_filename = current_filename;
 	current_long_filename = 0;
 	current_incdir = -1;
 	if (real_file) {
@@ -2082,7 +2084,7 @@ int cpp(struct lexer_state *ls)
 				o_diff = o_pos2 - o_pos;
 				i_pos2 = ls->input_pos + (ls->discard ? 1 : 0);
 				i_diff = i_pos2 - i_pos;
-				if (ls_depth == 0) {
+				if (!strcmp(current_filename, original_filename)) {
 				    /*printf("MACRO: INPUT(line %d: %d -> %d = +- %d) OUTPUT(line %d: %d -> %d = +- %d)\n",
 					    i_line, i_pos, i_pos2, i_diff,
 					    o_line, o_pos, o_pos2, o_diff);*/
