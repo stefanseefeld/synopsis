@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.6 2001/02/13 06:55:23 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.7 2001/03/29 14:12:42 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.7  2001/03/29 14:12:42  chalky
+# Consolidate small graphs to speed up processing time (graphviz is slow)
+#
 # Revision 1.6  2001/02/13 06:55:23  chalky
 # Made synopsis -l work again
 #
@@ -85,6 +88,33 @@ class InheritanceGraph(Page.Page):
 	manager.addRootPage('Inheritance Graph', link, 1)
 	self.__todecl = ToDecl()
  
+    def consolidate(self, graphs):
+	"""Consolidates small graphs into larger ones"""
+	try:
+	    minsize = config.obj.InheritanceGraph.min_size
+	except:
+	    if config.verbose:
+		print "Error getting InheritanceGraph.min_size value. Using 5."
+	    minsize = 5
+	conned = []
+	pending = []
+	while len(graphs):
+	    graph = graphs.pop(0)
+	    len_graph = len(graph)
+	    # Try adding to an already pending graph
+	    for pend in pending:
+		if len_graph + len(pend) <= minsize:
+		    pend.extend(graph)
+		    graph = None
+		    if len(pend) == minsize:
+			conned.append(pend)
+			pending.remove(pend)
+		    break
+	    if graph:
+		# Add to pending list
+		pending.append(graph)
+	conned.extend(pending)
+	return conned
 
     def process(self, start):
 	"""Creates a file with the inheritance graph"""
@@ -96,6 +126,7 @@ class InheritanceGraph(Page.Page):
 	graphs = config.classTree.graphs()
 	count = 0
 	lensorter = lambda a, b: cmp(len(b),len(a))
+	graphs = self.consolidate(graphs)
 	graphs.sort(lensorter)
 	for graph in graphs:
 	    try:
