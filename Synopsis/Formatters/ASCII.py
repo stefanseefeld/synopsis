@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.29 2002/10/20 15:38:07 chalky Exp $
+# $Id: ASCII.py,v 1.30 2002/10/26 04:15:53 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.30  2002/10/26 04:15:53  chalky
+# Fix typo in method name
+#
 # Revision 1.29  2002/10/20 15:38:07  chalky
 # Much improved template support, including Function Templates.
 #
@@ -102,7 +105,7 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
     def visitBaseType(self, type):
         self.__type = Util.ccolonName(type.name())
         
-    def visitDependentType(self, type):
+    def visitDependent(self, type):
         self.__type = type.name()[-1]
         
     def visitUnknown(self, type):
