@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+#
+# Copyright (C) 2004 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+
+from xml.sax import saxexts, saxlib, saxutils
+import sys, string, urllib, urlparse
+import getopt
+
+verbose = False
+
+class Reference:
+    def __init__(self, orig, line, ref):
+        self.orig = orig
+        self.line = line
+        self.ref = ref
+
+class DocumentHandler(saxlib.DocumentHandler):
+    """Store urefs with the linenumbers they were encountered in,
+    so we can either traverse them, too, or report errors with specific
+    line numbers."""
+
+    def __init__(self):
+
+        self.urefs = {}
+        self.locator = None
+
+    def get_urefs(self):
+        
+        urefs = map(lambda (u, l): Reference(self.locator.getSystemId(), l, u), self.urefs.items())
+        self.urefs = {}
+        self.locator = None
+        return urefs
+
+    def setDocumentLocator(self, locator):
+        "Receive an object for locating the origin of SAX document events."
+        self.locator = locator
+
+    def startElement(self, name, attrs):
+        "Look for ancors and store links."
+
+        if name == 'a':
+            href = attrs.getValue('href')
+            if not self.urefs.has_key(href):
+                self.urefs[href] = self.locator.getLineNumber()
+
+from xml.sax.drivers import drv_xmlproc
+SAXparser=drv_xmlproc.SAX_XPParser()
+
+handler = DocumentHandler()
+SAXparser.setDocumentHandler(handler)
+SAXparser.setErrorHandler(saxutils.ErrorRaiser())
+
+def usage():
+   print 'Usage : %s [options] <input files>'%sys.argv[0]
+   print """
+List of options:
+
+  -h, --help             help
+  -p, --print            provide verbose feedback during validation
+  -m, --maximum          maximum number of pages to validate
+  -v, --validate         call http://validator.w3.org to validate html
+  -e, --external         follow external links
+"""
+
+def main():
+   global verbose
+
+   max = 50
+   external = False
+   validate = False
+
+   opts, args = getopt.getopt(sys.argv[1:],
+                              'pm:evh',
+                              ['print', 'maximum=', 'external', 'validate', 'help'])
+   for o, a in opts:
+      if o == '-h' or o == '--help':
+         usage()
+         sys.exit(0)
+      elif o == '-p' or o == '--print':
+         verbose = True
+      elif o == '-m' or o == '--maximum':
+         max = a
+      elif o == '-e' or o == '--external':
+         external = a
+      elif o == '-v' or o == '--validate':
+         validate = a
+
+   done = []
+   urefs = [Reference('.', 0, args[0])]
+   while urefs and len(done) < max:
+
+       uref = urefs.pop(0)
+       url = urlparse.urljoin(uref.orig, uref.ref)
+       scheme, location, path, query, fragment = urlparse.urlsplit(url)
+       if not external and scheme and scheme != 'file': continue
+       url = urlparse.urlunsplit((scheme, location, path, query, ''))
+       try:
+           if verbose: print 'parsing', url
+           if validate:
+               SAXparser.parse(url) # send to http://validator.w3.org
+           else:
+               SAXparser.parse(url)
+           urefs.extend(handler.get_urefs())
+            
+       except saxlib.SAXParseException, e:
+           sys.stderr.write("%s; processing aborted\n"%e)
+           break
+
+if __name__ == '__main__':
+
+    main()
