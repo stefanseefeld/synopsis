@@ -10,18 +10,19 @@
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
+from Emulator import get_compiler_info
+import ucpp
 
 import os.path
 
 class Parser(Processor):
 
-   preprocessor = Parameter(None, 'the preprocessor to use')
-   emulate_compiler = Parameter('c++', 'a compiler to emulate')
+   emulate_compiler = Parameter('', 'a compiler to emulate')
    flags = Parameter([], 'list of preprocessor flags such as -I or -D')
    main_file_only = Parameter(True, 'should only main file be processed')
    cpp_output = Parameter(None, 'filename for preprocessed file')
    base_path = Parameter(None, 'path prefix to strip off of the filenames')
-   language = Parameter('C', 'source code programming language of the given input file')
+   language = Parameter('C++', 'source code programming language of the given input file')
 
    def process(self, ast, **kwds):
 
@@ -30,23 +31,16 @@ class Parser(Processor):
 
       flags = self.flags
       base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
-      if not self.preprocessor:
-         import ucpp
-         info = self.get_compiler_info(self.emulate_compiler)
-         flags += map(lambda x:'-I%s'%x, info.include_paths)
-         flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
-         if self.language == 'C++': flags.append('-D__cplusplus=')
-         for file in self.input:
-            self.ast = ucpp.parse(self.ast,
-                                  os.path.abspath(file),
-                                  base_path,
-                                  self.cpp_output,
-                                  self.language, flags, self.main_file_only,
-                                  self.verbose, self.debug)
-      else:
-         print 'not implemented yet: spawn external preprocessor'
+      info = get_compiler_info(self.emulate_compiler)
+      flags += map(lambda x:'-I%s'%x, info.include_paths)
+      flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
+      if self.language == 'C++': flags.append('-D__cplusplus=')
+      for file in self.input:
+         self.ast = ucpp.parse(self.ast,
+                               os.path.abspath(file),
+                               base_path,
+                               self.cpp_output,
+                               self.language, flags, self.main_file_only,
+                               self.verbose, self.debug)
       return self.output_and_return_ast()
 
-   def get_compiler_info(self, compiler):
-      import Emulator
-      return Emulator.get_compiler_info(compiler)

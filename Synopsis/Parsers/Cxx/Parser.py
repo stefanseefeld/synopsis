@@ -20,9 +20,8 @@ import os, os.path, tempfile
 
 class Parser(Processor):
 
-   preprocessor = Parameter(None, 'the preprocessor to use (defaults to internal)')
    preprocess = Parameter(True, 'whether or not to preprocess the input')
-   emulate_compiler = Parameter('c++', 'a compiler to emulate (defaults to \'c++\')')
+   emulate_compiler = Parameter('', 'a compiler to emulate')
    cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
    main_file_only = Parameter(True, 'should only main file be processed')
    base_path = Parameter('', 'path prefix to strip off of the file names')

@@ -14,7 +14,7 @@ user_emulations_file = '~/.synopsis/cpp_emulations'
 
 # The list of default compilers. Note that the C syntax is not quite
 # supported, so including a bazillion different C compilers is futile.
-default_compilers = ['cc', 'c++', 'gcc', 'g++', 'msvc6', 'msvc7', 'msvc71']
+default_compilers = ['cc', 'c++', 'gcc', 'g++', 'cl']
 
 # A cache of the compiler info, loaded from the emulations file or calculated
 # by inspecting available compilers
@@ -109,7 +109,8 @@ def get_fallback(preferred, is_first_time):
     return None
 
 def get_compiler_info(compiler):
-    """Returns the compiler info for the given compiler. The info is returned
+    """Returns the compiler info for the given compiler. If non is
+    specified (''), return the first available one. The info is returned
     as a CompilerInfo object, or None if the compiler isn't found. 
     """
     global failed, compiler_infos
@@ -120,6 +121,9 @@ def get_compiler_info(compiler):
     if len(compiler_infos) == 0:
         # Try to load the emulations file
         compiler_infos = load_compiler_infos()
+    # if no compiler was specified take first available one
+    if not compiler and len(compiler_infos) != 0:
+        compiler = compiler_infos.keys()[0]
     # See if wanted compiler was in file
     if compiler_infos.has_key(compiler):
         info = compiler_infos[compiler]
@@ -128,7 +132,7 @@ def get_compiler_info(compiler):
         # If compiler hasn't changed since then, return cached info
         if file_stamp and info.timestamp == file_stamp:
             return info
-    else:
+    elif compiler:
         # Add compiler to map, but with a dummy value to indicate nothing is
         # known about it
         compiler_infos[compiler] = None
@@ -138,6 +142,9 @@ def get_compiler_info(compiler):
 
     # Cache results to disk
     write_compiler_infos(compiler_infos)
+
+    if not compiler and len(compiler_infos) != 0:
+        compiler = compiler_infos.keys()[0]
 
     # Return discovered info, if compiler was found
     if compiler_infos.has_key(compiler):
@@ -162,6 +169,7 @@ def get_compiler_timestamp(compiler):
     for directory in path:
         # Try to stat the compiler in this directory, if it exists
         filename = os.path.join(directory, compiler)
+        if os.name == 'nt': filename += '.exe'
         try: stats = os.stat(filename)
         except OSError: continue
         return stats[stat.ST_CTIME]
@@ -235,70 +243,75 @@ def find_ms_compiler_info(compiler):
     """Try to find a compiler on the windows platform.
     Return tuple of include path list and macro dictionary."""
 
-    vc6 = 'SOFTWARE\\Microsoft\\DevStudio\\6.0\\Products\\Microsoft Visual C++'
-    vc7 = 'SOFTWARE\\Microsoft\\VisualStudio\\7.0'
-    vc71 = 'SOFTWARE\\Microsoft\\VisualStudio\\7.1'
+    vc6 = ('SOFTWARE\\Microsoft\\DevStudio\\6.0\\Products\\Microsoft Visual C++', 'ProductDir')
+    vc7 = ('SOFTWARE\\Microsoft\\VisualStudio\\7.0', 'InstallDir')
+    vc71 = ('SOFTWARE\\Microsoft\\VisualStudio\\7.1', 'InstallDir')
+
+    vc6_macros =  [('__uuidof(x)', 'IID()'),
+                   ('__int64', 'long long'),
+                   ('_MSC_VER', '1200'),
+                   ('_MSC_EXTENSIONS', ''),
+                   ('_WIN32', ''),
+                   ('_M_IX86', ''),
+                   ('_WCHAR_T_DEFINED', ''),
+                   ('_INTEGRAL_MAX_BITS', '64'),
+                   ('PASCAL', ''),
+                   ('RPC_ENTRY', ''),
+                   ('SHSTDAPI', 'HRESULT'),
+                   ('SHSTDAPI_(x)', 'x')]
+    vc6_paths = ['Include']
+
+    vc7_macros = [('__forceinline', '__inline'),
+                  ('__uuidof(x)', 'IID()'),
+                  ('__w64', ''),
+                  ('__int64', 'long long'),
+                  ('_MSC_VER', '1300'),
+                  ('_MSC_EXTENSIONS', ''),
+                  ('_WIN32', ''),
+                  ('_M_IX86', ''),
+                  ('_WCHAR_T_DEFINED', ''),
+                  ('_INTEGRAL_MAX_BITS', '64'),
+                  ('PASCAL', ''),
+                  ('RPC_ENTRY', ''),
+                  ('SHSTDAPI', 'HRESULT'),
+                  ('SHSTDAPI_(x)', 'x')]
+    vc7_paths = ['..\\..\\Vc7\\Include',
+                 '..\\..\\Vc7\\PlatformSDK\\Include']
+
+    vc71_macros = [('__forceinline', '__inline'),
+                   ('__uuidof(x)', 'IID()'),
+                   ('__w64', ''),
+                   ('__int64', 'long long'),
+                   ('_MSC_VER', '1310'),
+                   ('_MSC_EXTENSIONS', ''),
+                   ('_WIN32', ''),
+                   ('_M_IX86', ''),
+                   ('_WCHAR_T_DEFINED', ''),
+                   ('_INTEGRAL_MAX_BITS', '64'),
+                   ('PASCAL', ''),
+                   ('RPC_ENTRY', ''),
+                   ('SHSTDAPI', 'HRESULT'),
+                   ('SHSTDAPI_(x)', 'x')]
+    vc71_paths = ['..\\..\\Vc7\\Include',
+                  '..\\..\\Vc7\\PlatformSDK\\Include']
+
+    compilers = [(vc71, vc71_macros, vc71_paths),
+                 (vc7, vc7_macros, vc7_paths),
+                 (vc6, vc6_macros, vc6_paths)]
 
     paths, macros = [], []
 
-    try:
-        import _winreg
-        if compiler == 'msvc6':
-            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, vc6)
-            path, type = _winreg.QueryValueEx(key, 'ProductDir')
-            paths.append(os.path.join(str(path), 'Include'))
-            macros.extend([('__uuidof(x)', 'IID()'),
-                           ('__int64', 'long long'),
-                           ('_MSC_VER', '1200'),
-                           ('_MSC_EXTENSIONS', ''),
-                           ('_WIN32', ''),
-                           ('_M_IX86', ''),
-                           ('_WCHAR_T_DEFINED', ''),
-                           ('_INTEGRAL_MAX_BITS', '64'),
-                           ('PASCAL', ''),
-                           ('RPC_ENTRY', ''),
-                           ('SHSTDAPI', 'HRESULT'),
-                           ('SHSTDAPI_(x)', 'x')])
-        elif compiler == 'msvc7':
-            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, vc7)
-            path, type = _winreg.QueryValueEx(key, 'InstallDir')
-            paths.append(os.path.normpath(str(path) + '/../../Vc7/Include'))
-            paths.append(os.path.normpath(str(path) + '/../../Vc7/PlatformSDK/Include'))
-            macros.extend([('__forceinline', '__inline'),
-                           ('__uuidof(x)', 'IID()'),
-                           ('__w64', ''),
-                           ('__int64', 'long long'),
-                           ('_MSC_VER', '1300'),
-                           ('_MSC_EXTENSIONS', ''),
-                           ('_WIN32', ''),
-                           ('_M_IX86', ''),
-                           ('_WCHAR_T_DEFINED', ''),
-                           ('_INTEGRAL_MAX_BITS', '64'),
-                           ('PASCAL', ''),
-                           ('RPC_ENTRY', ''),
-                           ('SHSTDAPI', 'HRESULT'),
-                           ('SHSTDAPI_(x)', 'x')])
-        elif compiler == 'msvc71':
-            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, vc71)
-            path, type = _winreg.QueryValueEx(key, 'InstallDir')
-            paths.append(os.path.normpath(str(path) + '/../../Vc7/Include'))
-            paths.append(os.path.normpath(str(path) + '/../../Vc7/PlatformSDK/Include'))
-            macros.extend([('__forceinline', '__inline'),
-                           ('__uuidof(x)', 'IID()'),
-                           ('__w64', ''),
-                           ('__int64', 'long long'),
-                           ('_MSC_VER', '1310'),
-                           ('_MSC_EXTENSIONS', ''),
-                           ('_WIN32', ''),
-                           ('_M_IX86', ''),
-                           ('_WCHAR_T_DEFINED', ''),
-                           ('_INTEGRAL_MAX_BITS', '64'),
-                           ('PASCAL', ''),
-                           ('RPC_ENTRY', ''),
-                           ('SHSTDAPI', 'HRESULT'),
-                           ('SHSTDAPI_(x)', 'x')])
-    except:
-        pass
+    import _winreg
+    for c in compilers:
+        try:
+            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, c[0][0])
+            path, type = _winreg.QueryValueEx(key, c[0][1])
+            paths.extend([os.path.join(str(path), p) for p in c[2]])
+            macros.extend(c[1])
+            break
+        except:
+            continue
+
     return paths, macros
 
 def find_gcc_compiler_info(compiler):
@@ -368,7 +381,7 @@ def find_compiler_info(compiler):
 
     paths, macros = [], []
 
-    if compiler in ['msvc6', 'msvc7', 'msvc71']:
+    if compiler == 'cl' and os.name == 'nt':
         paths, macros = find_ms_compiler_info(compiler)
 
     else:
