@@ -1,4 +1,4 @@
-# $Id: XRefCompiler.py,v 1.8 2003/11/18 07:26:34 stefan Exp $
+# $Id: XRefCompiler.py,v 1.9 2003/12/08 03:34:13 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -62,7 +62,7 @@ class XRefCompiler(Processor):
          try:
             f = open(file, 'rt')
          except IOError, e:
-            print "Error opening %s: %s"%(file, e)
+            if self.verbose: print "Error opening %s: %s. Skipping."%(file, e)
             continue
 
          lines = f.readlines()
