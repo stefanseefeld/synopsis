@@ -1,4 +1,4 @@
-# $Id: FileTree.py,v 1.1 2002/10/20 03:11:37 chalky Exp $
+# $Id: FileTree.py,v 1.2 2003/01/02 07:00:58 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,78 +19,114 @@
 # 02111-1307, USA.
 #
 # $Log: FileTree.py,v $
+# Revision 1.2  2003/01/02 07:00:58  chalky
+# Only use Core.FileTree, refactored FileTree to be quicker and better.
+#
 # Revision 1.1  2002/10/20 03:11:37  chalky
 # Moved FileTree to Core, as it is needed in the GUI
 #
 
-class FileTree(AST.Visitor):
-    """Maintains a tree of directories and files"""
-    def __init__(self):
-	"Installs self in config object as 'fileTree'"
-	config.fileTree = self
-	self.__files = {}
+import os.path
+
+class FileTree:
+    """Maintains a tree of directories and files.
     
-    def buildTree(self):
-	"Takes the visited info and makes a tree of directories and files"
-	# Split filenames into lists of directories
-	files = []
-	for file in self.__files.keys():
-	    files.append(string.split(file, os.sep))
-	self.__root = Struct(path=(), children={})
-	process_list = [self.__root]
-	while len(process_list):
-	    # Get node
-	    node = process_list[0]
-	    del process_list[0]
-	    for file in files:
-		if len(file) <= len(node.path) or tuple(file[:len(node.path)]) != node.path:
-		    continue
-		child_path = tuple(file[:len(node.path)+1])
-		if node.children.has_key(child_path): continue
-		child = Struct(path=child_path, children={})
-		node.children[child_path] = child
-		if len(child_path) < len(file):
-		    process_list.append(child)
-		else:
-		    fname = string.join(file, os.sep)
-		    child.decls = self.__files[fname]
-    
-    def root(self):
-	"""Returns the root node in the file tree.
-	Each node is a Struct with the following members:
-	 path - tuple of dir or filename (eg: 'Prague','Sys','Thread.hh')
-	 children - dict of children by their path tuple
-	Additionally, leaf nodes have the attribute:
-	 decls - dict of declarations in this file by scoped name
+    The FileTree is constructed using the SourceFiles in the AST. Each
+    SourceFile has a list of declarations in it already. The FileTree object
+    organises these lists into a tree structure, where each node is a
+    directory or a source file."""
+
+    class Node:
+	"""Base class for directories and files in the tree.
+	@attr path the path of this node as a string.
+	@attr filename the name of the node, i.e. the last element of the
+	path string
 	"""
+	def __init__(self, path, filename):
+	    self.path = path
+	    self.filename = filename
+    
+    class Directory (Node):
+	"""FileTree node for directories.
+	@attr path the path of this node as a string.
+	@attr filename the name of the directory, i.e. the last element of the
+	path string
+	@attr children the children of this directory, each Directory or File
+	objects.
+	"""
+	def __init__(self, path, filename):
+	    FileTree.Node.__init__(self, path, filename)
+	    self.children = []
+    
+    class File (Node):
+	"""FileTree node for files.
+	@attr path the path of this node as a string.
+	@attr filename the name of the file, i.e. the last element of the
+	path string
+	@attr decls the list of declarations in this file.
+	"""
+	def __init__(self, path, filename, decls):
+	    FileTree.Node.__init__(self, path, filename)
+	    self.decls = decls
+    
+    def __init__(self):
+	self.__dirs = None
+	self.__root = None
+	self.__ast = None
+
+    def __add_dir(self, path):
+	"""Recursively add a directory to the tree"""
+	if path == '/':
+	    # The root directory is added below the root node
+	    # This is in case absolute filenames are mixed with relative ones
+	    parent = self.__root
+	    filename = '/'
+	else:
+	    parent_dir, filename = os.path.split(path)
+	    if parent_dir:
+		if self.__dirs.has_key(parent_dir):
+		    parent = self.__dirs[parent_dir]
+		else:
+		    parent = self.__add_dir(parent_dir)
+	    else:
+		# No parent means an relative name like 'home/foo/bar'
+		parent = self.__root
+	new_dir = FileTree.Directory(path, filename)
+	self.__dirs[path] = new_dir
+	parent.children.append(new_dir)
+	return new_dir
+
+    def __add_file(self, file, decls):
+	"""Recursively add a file to the tree"""
+	# Find the parent Directory object
+	parent_dir, filename = os.path.split(file)
+	if self.__dirs.has_key(parent_dir):
+	    parent = self.__dirs[parent_dir]
+	else:
+	    parent = self.__add_dir(parent_dir)
+	new_file = FileTree.File(file, filename, decls)
+	parent.children.append(new_file)
+    
+    def set_ast(self, ast):
+	"""Sets the AST to use and builds the tree of Nodes"""
+	self.__ast = ast
+	if ast is None:
+	    self.__dirs = None
+	    self.__root = None
+	    return
+	# Initialise dictionary and root node
+	self.__dirs = {}
+	self.__root = FileTree.Directory('', '')
+	# Add each file to the hierarchy
+	for filename, file in ast.files().items():
+	    if file.is_main():
+		self.__add_file(filename, file.declarations())
+	# Clean up dict
+	self.__dirs = None
+	    
+    def root(self):
+	"""Returns the root node in the file tree, which is a Directory
+	object. The root node is created by set_ast()."""
 	return self.__root
-    
-    ### AST Visitor
-    
-    def visitAST(self, ast):
-	# Reset files dictionary to files listed by the AST object
-	for file in ast.filenames():
-	    self.__files[file] = {}
-	# Visit top level declarations
-	for decl in ast.declarations():
-	    decl.accept(self)
-    def visitDeclaration(self, decl):
-	file = decl.file()
-	if not file: return #print "Decl",decl,"has no file."
-	if not self.__files.has_key(file):
-	    self.__files[file] = {}
-	# Store the declaration in the per-file dictionary
-	self.__files[file][decl.name()] = decl
-    def visitForward(self, decl):
-	# Don't include (excluded) forward decls in file listing
-	pass
-    def visitClass(self, scope):
-	self.visitDeclaration(scope)
-	# Only nested classes may be in different files
-	for decl in scope.declarations():
-	    if isinstance(decl, AST.Class):
-		self.visitClass(decl)
-    def visitMetaModule(self, scope):
-	for decl in scope.declarations():
-	    decl.accept(self)
-	
+ 
+
