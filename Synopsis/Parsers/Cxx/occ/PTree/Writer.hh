@@ -32,7 +32,7 @@ private:
   unsigned long my_lines;
 };
 
-std::string reify(Node *);
+std::string reify(const Node *);
 
 }
 

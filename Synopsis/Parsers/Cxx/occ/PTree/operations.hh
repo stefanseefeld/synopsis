@@ -8,6 +8,7 @@
 #define _PTree_operations_hh
 
 #include <PTree/Node.hh>
+#include <cassert>
 
 namespace PTree
 {
@@ -90,9 +91,20 @@ Node *shallow_subst(Node *, Node *, Node *, Node *,
 Node *subst_sublist(Node *, Node *, Node *);
 
 /* they cause side-effect */
-Node *snoc(Node *, Node *);
 Node *nconc(Node *, Node *);
 Node *nconc(Node *, Node *, Node *);
+template <typename N> N *nconc(N *p, Node *q) 
+{
+  assert(p);
+  last(p)->set_cdr(q);
+  return p;
+}
+
+Node *snoc(Node *, Node *);
+template <typename N> N *snoc(N *p, Node *q)
+{
+  return nconc(p, cons(q, 0));
+}
 
 }
 

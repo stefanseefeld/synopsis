@@ -10,7 +10,6 @@
 #include <PTree/Display.hh>
 #include "Parser.hh"
 #include "Lexer.hh"
-#include <Symbol.hh>
 #include "Environment.hh"
 #include "MetaClass.hh"
 #include "Walker.hh"
@@ -33,9 +32,9 @@ PTree::Node *wrap_comments(const Lexer::Comments &c)
 
 struct Parser::ScopeGuard
 {
-  ScopeGuard(Scopes &s, Scope *scope) : stack(s) { stack.push(scope);}
+  ScopeGuard(Scopes &s, PTree::Scope *scope) : stack(s) { stack.push(scope);}
   ~ScopeGuard() { delete stack.top(); stack.pop();}
-  Scopes stack;
+  Scopes &stack;
 };
 
 Parser::Parser(Lexer *lexer, int ruleset)
@@ -44,7 +43,7 @@ Parser::Parser(Lexer *lexer, int ruleset)
     my_nerrors(0),
     my_comments(0)
 {
-  my_scopes.push(new Scope());
+  my_scopes.push(new PTree::Scope());
 }
 
 Parser::~Parser()
@@ -219,17 +218,17 @@ bool Parser::typedef_(PTree::Node *&def)
   def = PTree::snoc(def, type_name);
   if(!declarators(decl, type_encode, true))
     return false;
-  std::cout << "declarators " << type_encode << std::endl;
-  PTree::display(decl, std::cout, true, true);
+//   std::cout << "declarators " << type_encode << std::endl;
+//   PTree::display(decl, std::cout, true, true);
   // see Environment::RecordTypedefName ...
-  for (PTree::Node *node = decl; node; node = PTree::tail(node, 2))
-  {
-    PTree::Declarator *d = static_cast<PTree::Declarator *>(node->car());
-    PTree::Encoding name = d->encoded_name();
-    PTree::Encoding type = d->encoded_type();
-    std::cout << "typedef declarator : " << name << ' ' << type << std::endl;
-    PTree::display(d, std::cout, true, true);
-  }
+//   for (PTree::Node *node = decl; node; node = PTree::tail(node, 2))
+//   {
+//     PTree::Declarator *d = static_cast<PTree::Declarator *>(node->car());
+//     PTree::Encoding name = d->encoded_name();
+//     PTree::Encoding type = d->encoded_type();
+//     std::cout << "typedef declarator : " << name << ' ' << type << std::endl;
+//     PTree::display(d, std::cout, true, true);
+//   }
   if(my_lexer->get_token(tk) != ';')
     return false;
 
@@ -1414,14 +1413,24 @@ bool Parser::opt_integral_type_or_class_spec(PTree::Node *&p, PTree::Encoding& e
 
   if(t == Token::CLASS || t == Token::STRUCT || t == Token::UNION ||
      t == Token::UserKeyword)
-    return class_spec(p, encode);
-    else if(t == Token::ENUM)
-      return enum_spec(p, encode);
-    else
-    {
-      p = 0;
-      return true;
-    }
+  {
+    PTree::ClassSpec *spec;
+    bool success = class_spec(spec, encode);
+    p = spec;
+    return success;
+  }
+  else if(t == Token::ENUM)
+  {
+    PTree::EnumSpec *spec;
+    bool success = enum_spec(spec, encode);
+    p = spec;
+    return success;
+  }
+  else
+  {
+    p = 0;
+    return true;
+  }
 }
 
 /*
@@ -1801,9 +1810,9 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
     if(d == 0) decl = new PTree::Declarator(type_encode, name_encode, *declared_name);
     else decl = new PTree::Declarator(d, type_encode, name_encode, *declared_name);
 
-  if (!name_encode.empty())
-    my_scopes.top()->declare(name_encode, Symbol(Symbol::VARIABLE, decl));
-  else std::cout << "declared " << type_encode << std::endl;
+//   if (!name_encode.empty())
+//     my_scopes.top()->declare(name_encode, Symbol(Symbol::VARIABLE, decl));
+//   else std::cout << "declared " << type_encode << std::endl;
   return true;
 }
 
@@ -2474,7 +2483,7 @@ bool Parser::function_arguments(PTree::Node *&args)
   : ENUM Identifier
   | ENUM {Identifier} '{' {enum.body} '}'
 */
-bool Parser::enum_spec(PTree::Node *&spec, PTree::Encoding &encode)
+bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
 {
   Token tk, tk2;
   PTree::Node *body;
@@ -2487,7 +2496,7 @@ bool Parser::enum_spec(PTree::Node *&spec, PTree::Encoding &encode)
   {
     PTree::Node *name = new PTree::Atom(tk);
     encode.simple_name(name);
-    ((PTree::EnumSpec*)spec)->set_encoded_name(encode);
+    spec->set_encoded_name(encode);
     spec = PTree::snoc(spec, name);
     if(my_lexer->look_ahead(0) == '{') t = my_lexer->get_token(tk);
     else return true;
@@ -2495,7 +2504,7 @@ bool Parser::enum_spec(PTree::Node *&spec, PTree::Encoding &encode)
   else
   {
     encode.anonymous();
-    ((PTree::EnumSpec*)spec)->set_encoded_name(encode);
+    spec->set_encoded_name(encode);
     spec = PTree::snoc(spec, 0);
   }
   if(t != '{') return false;
@@ -2508,6 +2517,7 @@ bool Parser::enum_spec(PTree::Node *&spec, PTree::Encoding &encode)
   spec = PTree::snoc(spec, 
 		     new PTree::Brace(new PTree::Atom(tk), body,
 				      new PTree::CommentedAtom(tk2, wrap_comments(my_lexer->get_comments()))));
+  my_scopes.top()->declare(spec);
   return true;
 }
 
@@ -2567,7 +2577,7 @@ bool Parser::enum_body(PTree::Node *&body)
   class.key
   : CLASS | STRUCT | UNION
 */
-bool Parser::class_spec(PTree::Node *&spec, PTree::Encoding &encode)
+bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
 {
   PTree::Node *head, *bases, *body, *name;
   Token tk;
@@ -2582,6 +2592,8 @@ bool Parser::class_spec(PTree::Node *&spec, PTree::Encoding &encode)
   spec = new PTree::ClassSpec(new PTree::Reserved(tk), 0, my_comments);
   my_comments = 0;
   if(head != 0) spec = new PTree::ClassSpec(head, spec, 0);
+
+  my_scopes.top()->declare(spec);
 
   if(my_lexer->look_ahead(0) == '{')
   {
@@ -2603,12 +2615,12 @@ bool Parser::class_spec(PTree::Node *&spec, PTree::Encoding &encode)
     else if(t == '{') spec = PTree::snoc(spec, 0);
     else
     {
-      ((PTree::ClassSpec*)spec)->set_encoded_name(encode);
+      spec->set_encoded_name(encode);
       return true;	// class.key Identifier
     }
   }
 
-  ((PTree::ClassSpec*)spec)->set_encoded_name(encode);
+  spec->set_encoded_name(encode);
   if(!class_body(body)) return false;
 
   spec = PTree::snoc(spec, body);
@@ -2696,7 +2708,7 @@ bool Parser::class_body(PTree::Node *&body)
 
   if(my_lexer->get_token(tk) != '{') return false;
 
-  ScopeGuard guard(my_scopes, new NestedScope(my_scopes.top()));
+  ScopeGuard guard(my_scopes, new PTree::NestedScope(my_scopes.top()));
 
   PTree::Node *ob = new PTree::Atom(tk);
   mems = 0;

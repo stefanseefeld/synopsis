@@ -84,14 +84,14 @@ void Writer::newline()
 
 namespace PTree
 {
-std::string reify(Node *p)
+std::string reify(const Node *p)
 {
-  if (p->is_atom())
-    return std::string(p->position(), p->length());
+  if (!p) return "";
+  else if (p->is_atom()) return std::string(p->position(), p->length());
 
   std::ostringstream oss;
   Writer writer(oss);
-  writer.write(p);
+  writer.write(const_cast<Node *>(p));
   return oss.str();
 }
 
