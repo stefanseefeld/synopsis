@@ -36,6 +36,7 @@ class Parser(Processor):
          info = self.get_compiler_info(self.emulate_compiler)
          flags += map(lambda x:'-I%s'%x, info.include_paths)
          flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
+         if self.language == 'C++': flags.append('-D__cplusplus=')
          for file in self.input:
             self.ast = ucpp.parse(self.ast,
                                   os.path.abspath(file),

@@ -18,6 +18,7 @@
 
   'b' boolean
   'c' char
+  'w' wchar_t
   'i' int (signed, unsigned)
   's' short (short int)
   'l' long (long int)
@@ -68,6 +69,7 @@
 
 Ptree* Encoding::bool_t = nil;
 Ptree* Encoding::char_t = nil;
+Ptree* Encoding::wchar_t_t = nil;
 Ptree* Encoding::int_t = nil;
 Ptree* Encoding::short_t = nil;
 Ptree* Encoding::long_t = nil;
@@ -105,6 +107,7 @@ void Encoding::do_init_static()
 {
     Encoding::bool_t = new LeafBOOLEAN("bool", 4);
     Encoding::char_t = new LeafCHAR("char", 4);
+    Encoding::wchar_t_t = new LeafCHAR("wchar_t", 7);
     Encoding::int_t = new LeafINT("int", 3);
     Encoding::short_t = new LeafSHORT("short", 5);
     Encoding::long_t = new LeafLONG("long", 4);
@@ -476,6 +479,9 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 	    goto finish;
 	case 'c' :
 	    typespec = Ptree::Snoc(typespec, char_t);
+	    goto finish;
+	case 'w' :
+	    typespec = Ptree::Snoc(typespec, wchar_t_t);
 	    goto finish;
 	case 'i' :
 	    typespec = Ptree::Snoc(typespec, int_t);

@@ -83,7 +83,7 @@ private:
     int len;
 
 public:
-    static Ptree *bool_t, *char_t, *int_t, *short_t, *long_t,
+    static Ptree *bool_t, *char_t, *wchar_t_t, *int_t, *short_t, *long_t,
 		 *float_t, *double_t, *void_t;
 
     static Ptree *signed_t, *unsigned_t, *const_t, *volatile_t;

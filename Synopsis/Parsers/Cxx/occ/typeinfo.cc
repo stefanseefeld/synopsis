@@ -107,9 +107,19 @@ TypeInfoId TypeInfo::WhatIs()
 	return ArrayType;
     case 'F' :
 	return FunctionType;
-    case 'S' : case 'U' :
-    case 'b' : case 'c' : case 'i' : case 's' : case 'l' : case 'j' :
-    case 'f' : case 'd' : case 'r' : case 'v' :
+    case 'S' :
+    case 'U' :
+    case 'b' :
+    case 'c' :
+    case 'w' :
+    case 'i' :
+    case 's' :
+    case 'l' :
+    case 'j' :
+    case 'f' :
+    case 'd' :
+    case 'r' :
+    case 'v' :
 	return BuiltInType;
     default :
 	if(*ptr == 'Q' || *(unsigned char*)ptr >= 0x80){
@@ -170,6 +180,8 @@ uint TypeInfo::IsBuiltInType()
 	    return(result | BooleanType);
 	case 'c' :
 	    return(result | CharType);
+	case 'w' :
+	    return(result | WideCharType);
 	case 'i' :
 	    return(result | IntType);
 	case 's' :

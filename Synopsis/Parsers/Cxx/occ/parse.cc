@@ -285,7 +285,7 @@ bool Parser::isTypeSpecifier()
     int t = lex->LookAhead(0);
     if(t == Identifier || t == Scope
        ||t == CONST || t == VOLATILE
-       || t == CHAR // || t == WCHAR 
+       || t == CHAR || t == WCHAR 
        || t == INT || t == SHORT || t == LONG
        || t == SIGNED || t == UNSIGNED || t == FLOAT || t == DOUBLE
        || t == VOID || t == BOOLEAN
@@ -1296,7 +1296,7 @@ bool Parser::optCvQualify(Ptree*& cv)
 
 /*
   integral.or.class.spec
-  : (CHAR | INT | SHORT | LONG | SIGNED | UNSIGNED | FLOAT | DOUBLE
+  : (CHAR | WCHAR | INT | SHORT | LONG | SIGNED | UNSIGNED | FLOAT | DOUBLE
      | VOID | BOOLEAN)+
   | class.spec
   | enum.spec
@@ -1313,7 +1313,7 @@ bool Parser::optIntegralTypeOrClassSpec(Ptree*& p, Encoding& encode)
     p = nil;
     for(;;){
 	t = lex->LookAhead(0);
-	if(t == CHAR || t == INT || t == SHORT || t == LONG || t == SIGNED
+	if(t == CHAR || t == WCHAR || t == INT || t == SHORT || t == LONG || t == SIGNED
 	   || t == UNSIGNED || t == FLOAT || t == DOUBLE || t == VOID
 	   || t == BOOLEAN
 #if defined(_MSC_VER)
@@ -1327,6 +1327,10 @@ bool Parser::optIntegralTypeOrClassSpec(Ptree*& p, Encoding& encode)
 	    case CHAR :
 		type = 'c';
 		kw = new LeafCHAR(tk);
+		break;
+	    case WCHAR :
+		type = 'w';
+		kw = new LeafWCHAR(tk);
 		break;
 	    case INT :
 #if defined(_MSC_VER)
@@ -3772,7 +3776,9 @@ bool Parser::rPostfixExpr(Ptree*& exp)
   primary.exp
   : Constant
   | CharConst
+  | WideCharConst
   | StringL
+  | WideStringL
   | THIS
   | var.name
   | '(' comma.expression ')'
@@ -3790,7 +3796,11 @@ bool Parser::rPrimaryExpr(Ptree*& exp)
     Encoding cast_type_encode;
 
     switch(lex->LookAhead(0)){
-    case Constant : case CharConst : case StringL :
+    case Constant :
+    case CharConst :
+    case WideCharConst :
+    case StringL :
+    case WideStringL :
 	lex->GetToken(tk);
 	exp = new Leaf(tk);
 	return true;
@@ -4327,7 +4337,6 @@ bool Parser::rStatement(Ptree*& st)
 	lex->GetToken(tk1);
 	if(!rExpression(exp))
 	    return false;
-
 	if(lex->GetToken(tk2) != ':')
 	    return false;
 

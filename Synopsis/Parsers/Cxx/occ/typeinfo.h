@@ -35,7 +35,8 @@ enum {
     CharType = 1, IntType = 2, ShortType = 4, LongType = 8,
     LongLongType = 16, SignedType = 32, UnsignedType = 64, FloatType = 128,
     DoubleType = 256, LongDoubleType = 512, VoidType = 1024,
-    BooleanType = 2048
+    BooleanType = 2048,
+    WideCharType = 4096
 };
 
 /*
