@@ -73,7 +73,7 @@ class Config (Base):
 		    'SourceLinker',
 		]
 	    class ModuleListing (Base.Formatter.HTML.ModuleListing):
-		child_types = ['Package']
+		child_types = ['package']
 	    class InheritanceGraph:
 		direction='horizontal'
 		min_size=3
