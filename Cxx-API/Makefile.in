@@ -19,7 +19,7 @@ CPPFLAGS:= @CPPFLAGS@ -I $(srcdir)/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= @LIBS@ -lpthread
+LIBS	:= @LIBS@
 
 HDR	:= $(shell find $(srcdir)/include -name '*.hh' -print)
 SRC	:= Trace.cc Path.cc ErrorHandler.cc

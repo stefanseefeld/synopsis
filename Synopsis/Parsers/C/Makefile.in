@@ -21,7 +21,7 @@ CPPFLAGS:= @CPPFLAGS@ -I . -I $(srcdir) -I $(srcdir)/../../../Cxx-API/include -I
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../Cxx-API/lib/libSynopsis.a @LIBS@ -lpthread
+LIBS	:= ../../../Cxx-API/lib/libSynopsis.a @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 CTOOL_SO:= ctool$(LIBRARY_EXT)
