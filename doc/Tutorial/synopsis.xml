@@ -4,11 +4,11 @@
 
 <!ENTITY preface    SYSTEM "preface.xml">
 <!ENTITY chapter1   SYSTEM "intro.xml">
+<!ENTITY chapter4   SYSTEM "configuration.xml">
 <!ENTITY config     SYSTEM "config.xml">
 <!--
 <!ENTITY chapter2   SYSTEM "start.xml">
 <!ENTITY chapter3   SYSTEM "control-graph.xml">
-<!ENTITY chapter4   SYSTEM "mvc.xml">
 <!ENTITY chapter5   SYSTEM "cda.xml">
 <!ENTITY chapter6   SYSTEM "kits.xml">
 <!ENTITY appendix1  SYSTEM "hello-list.xml">
@@ -58,19 +58,7 @@
 <chapter><title>Using the GUI</title>
   <para>The GUI.. is not yet finished :(</para>
 </chapter>
-<chapter><title>Configuration</title>
-  <para>Config file.. python script.. config.base.. examples/demos</para>
-  <section><title>Input: Parsing Source</title>
-    <para>Source parsers?</para>
-  </section>
-  <section><title>Generating Documents</title>
-    <para>Output formats</para>
-  </section>
-  <section><title>Full Configuration Reference</title>
-      <!-- include Synosis.Config module from RefManual -->
-      &config;
-  </section>
-</chapter>
+&chapter4;
 <chapter><title>Manipulating the AST</title><para> </para></chapter>
 <chapter><title>Adding Custom Modules</title><para> </para></chapter>
 <appendix><title>File Formats</title><para> </para></appendix>
