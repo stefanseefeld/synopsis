@@ -1,0 +1,7 @@
+class string 
+{
+public:
+  string() {}
+  string(const string &) {}
+  string & operator=(const string &) { return * this; }
+};
