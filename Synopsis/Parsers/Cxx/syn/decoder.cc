@@ -123,7 +123,7 @@ Types::Type* Decoder::decodeType()
         case '?': return NULL;
         case 'Q': baseType = decodeQualType(); break;
 	case '_': --m_iter; return NULL; // end of func params
-        case 'F': baseType = decodeFuncPtr(); break;
+        case 'F': baseType = decodeFuncPtr(postmod); break;
         case 'T': baseType = decodeTemplate(); break;
         case 'M':
 	    // Pointer to member. Format is same as for named types
@@ -196,10 +196,17 @@ Types::Type* Decoder::decodeQualType()
     return baseType;
 }
 
-Types::Type* Decoder::decodeFuncPtr()
+Types::Type* Decoder::decodeFuncPtr(std::vector<std::string>& postmod)
 {
     // Function ptr. Encoded same as function
-    Types::Type::Mods postmod;
+    Types::Type::Mods premod;
+    // Move * from postmod to funcptr's premod. This makes the output be
+    // "void (*convert)()" instead of "void (convert)()*"
+    if (postmod.size() > 0 && postmod[0] == "*")
+    {
+	premod.push_back(postmod.front());
+	postmod.erase(postmod.begin());
+    }
     Types::Type::vector params;
     while (1) {
 	Types::Type* type = decodeType();
@@ -208,7 +215,7 @@ Types::Type* Decoder::decodeFuncPtr()
     }
     ++m_iter; // skip over '_'
     Types::Type* returnType = decodeType();
-    Types::Type* ret = new Types::FuncPtr(returnType, postmod, params);
+    Types::Type* ret = new Types::FuncPtr(returnType, premod, params);
     return ret;
 }
 
