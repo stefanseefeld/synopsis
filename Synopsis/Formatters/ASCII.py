@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.30 2002/10/26 04:15:53 chalky Exp $
+# $Id: ASCII.py,v 1.31 2002/10/27 12:06:11 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.31  2002/10/27 12:06:11  chalky
+# Fix funcptr parameters
+#
 # Revision 1.30  2002/10/26 04:15:53  chalky
 # Fix typo in method name
 #
@@ -85,6 +88,7 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	self.__axs_stack = []
 	self.__axs_string = ('default:\n','public:\n','protected:\n','private:\n')
 	self.__enumers = []
+	self.__id_holder = None
     def indent(self):
         self.__os.write(self.__istring * self.__indent)
     def incr(self): self.__indent = self.__indent + 1
@@ -95,9 +99,11 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
     def leaveScope(self): self.__scope.pop(),self.decr()
     def write(self, text): self.__os.write(text)
 
-    def formatType(self, type):
+    def formatType(self, type, id_holder = None):
 	if type is None: return '(unknown)'
+	if id_holder: self.__id_holder = id_holder
 	type.accept(self)
+	if id_holder: self.__id_holder = None
 	return self.__type
     
     #################### Type Visitor ###########################################
@@ -127,7 +133,13 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
     def visitFunctionType(self, type):
 	ret = self.formatType(type.returnType())
 	params = map(self.formatType, type.parameters())
-	self.__type = "%s(%s)(%s)"%(ret,string.join(type.premod(),''),string.join(params,", "))
+	premod = string.join(type.premod(),'')
+	if self.__id_holder:
+	    ident = self.__id_holder[0]
+	    del self.__id_holder[0]
+	else:
+	    ident = ''
+	self.__type = "%s(%s%s)(%s)"%(ret,premod,ident,string.join(params,", "))
 
     def visitTemplate(self, type):
 	self.visitDeclared(type)
@@ -220,14 +232,15 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
     def visitParameter(self, parameter):
 	spacer = lambda x: str(x)+" "
 	premod = string.join(map(spacer,parameter.premodifier()),'')
-	type = self.formatType(parameter.type())
+	id_holder = [parameter.identifier()]
+	type = self.formatType(parameter.type(), id_holder)
 	postmod = string.join(map(spacer,parameter.postmodifier()),'')
 	name = ""
 	value = ""
-        if len(parameter.identifier()) != 0:
+        if id_holder and len(parameter.identifier()) != 0:
             name = " " + parameter.identifier()
-            if len(parameter.value()) != 0:
-                value = " = %s"%parameter.value()
+	if len(parameter.value()) != 0:
+	    value = " = %s"%parameter.value()
 	self.__params.append(premod + type + postmod + name + value)
 
     def visitFunction(self, function):
