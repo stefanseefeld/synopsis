@@ -12,6 +12,7 @@
 #define H_SYNOPSIS_CPP_SWALKER
 
 #include "../walker.h"
+#undef Scope
 
 #include <vector>
 using std::vector;
@@ -21,7 +22,8 @@ class ostream;
 class Builder; class Program;
 class Decoder; class TypeFormatter;
 
-namespace AST { class Parameter; class Inheritance; class Declaration; }
+namespace AST { class Parameter; class Inheritance; class Declaration; 
+    class Operation; class Scope; }
 namespace Type { class Type; }
 
 //. A walker that creates an AST. All Translate* methods have been overridden
@@ -53,6 +55,8 @@ public:
     void storeLink(Ptree* node, bool def, Type::Type*);
     //. Store a span of the given class at the given node
     void storeSpan(Ptree* node, const char* clas);
+    //. Sotre a possibly multi-line span of the given class at the given node
+    void storeLongSpan(Ptree* node, const char* clas);
 
     void addComments(AST::Declaration* decl, Ptree* comments);
     void addComments(AST::Declaration* decl, CommentedLeaf* node);
@@ -60,6 +64,8 @@ public:
     void addComments(AST::Declaration* decl, PtreeDeclaration* decl);
     void addComments(AST::Declaration* decl, PtreeNamespaceSpec* decl);
 
+    // Takes the (maybe nil) args list and puts them in m_params
+    void TranslateFunctionArgs(Ptree* args);
     void TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
     void TranslateFunctionName(char* encname, string& realname, Type::Type*& returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
@@ -72,6 +78,9 @@ public:
 
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
+
+    //. Overridden to catch exceptions
+    void Translate(Ptree*);
 
     virtual Ptree* TranslateTypedef(Ptree*);
     virtual Ptree* TranslateTemplateDecl(Ptree*);
@@ -90,7 +99,9 @@ public:
     virtual Ptree* TranslateArgDeclList(bool, Ptree*, Ptree*);
     virtual Ptree* TranslateInitializeArgs(PtreeDeclarator*, Ptree*);
     virtual Ptree* TranslateAssignInitializer(PtreeDeclarator*, Ptree*);
+
     virtual Ptree* TranslateFunctionImplementation(Ptree*);
+
     virtual Ptree* TranslateFunctionBody(Ptree*);
     virtual Ptree* TranslateBrace(Ptree*);
     virtual Ptree* TranslateBlock(Ptree*);
@@ -175,6 +186,50 @@ private:
 
     //. An instance of TypeFormatter for formatting types
     TypeFormatter* m_type_formatter;
+
+    //. The current operation, if in a function block
+    AST::Operation* m_operation;
+    //. The params found before a function block. These may be different from
+    //. the ones that are in the original declaration(s), but it is these names
+    //. we need for referencing names inside the block, so a reference is stored
+    //. here.
+    vector<AST::Parameter*> m_params;
+    //. The type returned from the expression-type translators
+    Type::Type* m_type;
+    //. The Scope to use for name lookups, or NULL to use enclosing default
+    //. scope rules. This is for when we are at a Variable, and already know it
+    //. must be part of a given class (eg, foo->bar .. bar must be in foo's
+    //. class)
+    AST::Scope* m_scope;
+
+    //. The state of postfix translation. This is needed for constructs like
+    //. foo->var versus var or foo->var(). The function call resolution needs
+    //. to be done in the final TranslateVariable, since that's where the last
+    //. name (which is to be linked) is handled.
+    enum Postfix_Flag {
+	Postfix_Var, //.< Lookup as a variable
+	Postfix_Func, //.< Lookup as a function, using m_params for parameters
+    } m_postfix_flag;
+
+    //. Info about one stored function impl. Function impls must be stored
+    //. till the end of a class.
+    struct FuncImplCache {
+	AST::Operation* oper;
+	vector<AST::Parameter*> params;
+	Ptree* body;
+    };
+    //. A vector of function impls
+    typedef vector<FuncImplCache> FuncImplVec;
+    //. A stack of function impl vectors
+    typedef vector<FuncImplVec> FuncImplStack;
+    //. The stack of function impl vectors
+    FuncImplStack m_func_impl_stack;
+    void SWalker::TranslateFuncImplCache(const FuncImplCache& cache);
+
+    //. Finds the column given the start ptr and the current position. The
+    //. derived column number is processed with the link_map before returning,
+    //. so -1 may be returned to indicate "inside macro".
+    int find_col(const char* start, const char* find);
 
 }; // class SWalker
 

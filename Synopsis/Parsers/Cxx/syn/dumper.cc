@@ -40,10 +40,10 @@ string TypeFormatter::colonate(const AST::Name& name)
 // Type Visitor
 //
 
-string TypeFormatter::format(Type::Type* type)
+string TypeFormatter::format(const Type::Type* type)
 {
     if (!type) return "(unknown)";
-    type->accept(this);
+    const_cast<Type::Type*>(type)->accept(this);
     return m_type;
 }
 
@@ -154,7 +154,7 @@ void Dumper::undent()
     m_indent_string.assign(m_indent, ' ');
 }
 
-string join(const vector<string>& strs, string sep = " ")
+static string join(const vector<string>& strs, string sep = " ")
 {
     vector<string>::const_iterator iter = strs.begin();
     if (iter == strs.end()) return "";

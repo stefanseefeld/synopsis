@@ -137,6 +137,9 @@ struct token {
 	int type;
 	long line;
 	char *name;
+#ifdef SYNOPSIS
+	long pos;
+#endif
 };
 
 struct token_fifo {
@@ -196,6 +199,11 @@ struct lexer_state {
 	int condcomp;
 	int condmet;
 	unsigned long condf[2];
+#ifdef SYNOPSIS
+	/* Synopsis options */
+	long input_pos;     /*< Pos of next token is input_pos + discard */
+	long output_pos;    /*< Pos in output stream. May use for stats */
+#endif
 };
 
 /*

@@ -59,6 +59,13 @@ void show(Ptree* p)
 }
 #endif
 
+//. Override unexpected() to print a message before we abort
+void unexpected()
+{
+    cout << "Warning: Aborting due to unexpected exception." << endl;
+    throw std::bad_exception();
+}
+
 namespace
 {
 
@@ -125,6 +132,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 char *RunOpencxx(const char *src, const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
 {
   Trace trace("RunOpencxx");
+  std::set_unexpected(unexpected);
   static char dest[1024] = "/tmp/synopsis-XXXXXX";
   //tmpnam(dest);
   if (mkstemp(dest) == -1) {
@@ -171,8 +179,12 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
 	of = new ofstream(syn_storage);
 	swalker.setStoreLinks(true, of);
     }
-    while(parse.rProgram(def))
-	swalker.Translate(def);
+    try {
+	while(parse.rProgram(def))
+	    swalker.Translate(def);
+    } catch (...) {
+	cout << "Warning: an uncaught exception occurred when translating the parse tree" << endl;
+    }
     // Setup synopsis c++ to py convertor
     Synopsis synopsis(source, declarations, types);
     if (syn_main_only) synopsis.onlyTranslateMain();
@@ -244,31 +256,29 @@ extern "C" void initocc()
 
 int main(int argc, char **argv)
 {
-  if (argc != 2)
-    {
-      cout << "Usage: " << argv[0] << " <filename>" << endl;
-      exit(-1);
+    char *src = NULL;
+    vector<const char *> cppargs;
+    vector<const char *> occargs;
+    //   getopts(argc, argv, cppargs, occargs);
+    Py_Initialize();
+    int i, py_i;
+    for (i = 1, py_i = 0; i != argc; ++i)
+	if (argv[i][0] == '-') ++py_i;
+    PyObject *pylist = PyList_New(py_i);
+    for (i = 1, py_i = 0; i != argc; ++i)
+	if (argv[i][0] != '-') src = argv[i];
+	else PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
+    getopts(pylist, cppargs, occargs);
+    if (!src || *src == '\0') {
+	cerr << "Usage: " << argv[0] << " <filename>" << endl;
+	exit(-1);
     }
-  char *src = argv[1];
-  vector<const char *> cppargs;
-  vector<const char *> occargs;
-  //   getopts(argc, argv, cppargs, occargs);
-  Py_Initialize();
-  PyObject *pylist = PyList_New(argc - 1);
-  for (int i = 1; i != argc; ++i)
-    PyList_SetItem(pylist, i - 1, PyString_FromString(argv[i]));
-  getopts(pylist, cppargs, occargs);
-  if (!src || *src == '\0')
-    {
-      cerr << "No source file" << endl;
-      exit(-1);
-    }
-  char *cppfile = RunPreprocessor(src, cppargs);
-  PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
-  PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
-  char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0));
-  unlink(cppfile);
-  unlink(occfile);
+    char *cppfile = RunPreprocessor(src, cppargs);
+    PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
+    PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
+    char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0));
+    unlink(cppfile);
+    unlink(occfile);
 }
 
 #endif

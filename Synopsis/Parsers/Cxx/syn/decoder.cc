@@ -137,10 +137,15 @@ Type::Type* Decoder::decodeQualType()
 	}
     }
     // Ask for qualified lookup
-    Type::Type* baseType = m_builder->lookupType(names);
-    if (!baseType) {
-	cout << "lookupType(names) returned NULL!" << endl;
+    Type::Type* baseType;
+    try {
+	baseType = m_builder->lookupType(names);
+    } catch (...) {
+	// Ignore error, and return an Unknown instead
+	return new Type::Unknown(names);
     }
+    // If the type is a template, then parameterize it with the params found
+    // in the T decoding
     Type::Declared* declared = dynamic_cast<Type::Declared*>(baseType);
     AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : NULL;
     Type::Template* templType = tempclas ? tempclas->templateType() : NULL;

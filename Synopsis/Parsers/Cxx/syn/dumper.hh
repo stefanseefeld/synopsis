@@ -19,7 +19,7 @@ public:
     // Type Visitor
     //
     //. Returns a formatter string for given type
-    string format(Type::Type*);
+    string format(const Type::Type*);
     virtual void visitType(Type::Type*);
     virtual void visitUnknown(Type::Unknown*);
     virtual void visitModifier(Type::Modifier*);
