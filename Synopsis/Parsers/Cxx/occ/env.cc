@@ -12,8 +12,8 @@
   implied warranty.
 */
 
-#include <iostream.h>
-#include <string.h>
+#include <iostream>
+#include <cstring>
 #include "env.h"
 #include "hash.h"
 #include "ptree-core.h"
@@ -513,8 +513,8 @@ Environment* Environment::IsMember(Ptree* member)
 
 void Environment::Dump()
 {
-    htable->Dump(cerr);
-    cerr << '\n';
+    htable->Dump(std::cerr);
+    std::cerr << '\n';
 }
 
 void Environment::Dump(int level)
@@ -524,7 +524,7 @@ void Environment::Dump(int level)
 	if(e->next != nil)
 	    e = e->next;
 	else{
-	    cerr << "Environment::Dump(): the bottom is reached.\n";
+	    std::cerr << "Environment::Dump(): the bottom is reached.\n";
 	    return;
 	}
 

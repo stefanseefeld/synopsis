@@ -40,7 +40,7 @@ public:
     //. Sets store links to true.
     //. This will cause the whole ptree to be traversed, and any linkable
     //. identifiers found will be stored
-    void setStoreLinks(bool value, ostream* storage) { m_store_links = value; m_storage = storage; }
+    void setStoreLinks(bool value, std::ostream* storage) { m_store_links = value; m_storage = storage; }
 
     //. Get a name from the ptree
     std::string getName(Ptree*) const;

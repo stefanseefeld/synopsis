@@ -12,7 +12,7 @@
   implied warranty.
 */
 
-#include <string.h>
+#include <cstring>
 #include "member.h"
 #include "mop.h"
 #include "token.h"

@@ -12,8 +12,8 @@
   implied warranty.
 */
 
-#include <iostream.h>
-#include <string.h>
+#include <iostream>
+#include <cstring>
 #include "ptree.h"
 #include "token.h"
 #include "walker.h"
@@ -30,43 +30,43 @@ bool Ptree::show_encoded = FALSE;
 
 void MopErrorMessage(char* where, char* msg)
 {
-    cerr << "MOP error: in " << where << ", " << msg << '\n';
+    std::cerr << "MOP error: in " << where << ", " << msg << '\n';
     exit(1);
 }
 
 void MopErrorMessage2(char* msg1, char* msg2)
 {
-    cerr << "MOP error: " << msg1 << msg2 << '\n';
+    std::cerr << "MOP error: " << msg1 << msg2 << '\n';
     exit(1);
 }
 
 void MopWarningMessage(char* where, char* msg)
 {
-    cerr << "MOP warning: in " << where << ", " << msg << '\n';
+    std::cerr << "MOP warning: in " << where << ", " << msg << '\n';
 }
 
 void MopWarningMessage2(char* msg1, char* msg2)
 {
-    cerr << "MOP warning: " << msg1 << msg2 << '\n';
+    std::cerr << "MOP warning: " << msg1 << msg2 << '\n';
 }
 
 void MopMoreWarningMessage(char* msg1, char* msg2)
 {
-    cerr << "             " << msg1;
+    std::cerr << "             " << msg1;
     if(msg2 != nil)
-	cerr << msg2;
+	std::cerr << msg2;
 
-    cerr << '\n';
+    std::cerr << '\n';
 }
 
 // class Ptree
 
 void Ptree::Display()
 {
-    Display2(cerr);
+    Display2(std::cerr);
 }
 
-void Ptree::Display2(ostream& s)
+void Ptree::Display2(std::ostream& s)
 {
     if(this == nil)
 	s << "nil\n";
@@ -76,7 +76,7 @@ void Ptree::Display2(ostream& s)
     }
 }
 
-int Ptree::Write(ostream& s)
+int Ptree::Write(std::ostream& s)
 {
     if(this == nil)
 	return 0;
@@ -84,7 +84,7 @@ int Ptree::Write(ostream& s)
 	return Write(s, 0);
 }
 
-void Ptree::PrintIndent(ostream& out, int indent)
+void Ptree::PrintIndent(std::ostream& out, int indent)
 {
     out << '\n';
     for(int i = 0; i < indent; ++i)

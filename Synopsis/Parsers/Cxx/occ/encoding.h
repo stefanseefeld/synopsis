@@ -15,9 +15,9 @@
 #ifndef _encoding_h
 #define _encoding_h
 
+#include <iosfwd>
 #include "types.h"
 
-class ostream;
 class Ptree;
 class Environment;
 class Bind;
@@ -62,7 +62,7 @@ public:
     void AppendWithLen(char*, int);
     void AppendWithLen(Encoding& e) { AppendWithLen((char*)e.name, e.len); }
 
-    static void Print(ostream&, char*);
+    static void Print(std::ostream&, char*);
     static char* GetBaseName(char*, int&, Environment*&);
     static Ptree* MakePtree(unsigned char*&, Ptree*);
 

@@ -27,8 +27,8 @@
 class Trace
 {
 public:
-    Trace(const std::string &s) : scope(s) { cout << indent() << "entering " << scope << endl; ++level; }
-    ~Trace() { --level; cout << indent() << "leaving " << scope << endl; }
+    Trace(const std::string &s) : scope(s) { std::cout << indent() << "entering " << scope << std::endl; ++level; }
+    ~Trace() { --level; std::cout << indent() << "leaving " << scope << std::endl; }
 private:
     std::string indent() { return std::string(level, ' '); }
     static int level;

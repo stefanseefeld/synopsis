@@ -37,10 +37,10 @@
 #ifndef _hash_h
 #define _hash_h
 
+#include <iosfwd>
 #include "types.h"
 
 typedef void* HashValue;
-class ostream;
 struct HashTableEntry;
 
 class HashTable : public LightObject {
@@ -49,7 +49,7 @@ public:
     HashTable(int) {}
     void MakeTable();
     bool IsEmpty();
-    void Dump(ostream&);
+    void Dump(std::ostream&);
     int AddEntry(char* key, HashValue value, int* index = 0);
     int AddEntry(bool, char* key, int len, HashValue value, int* index = 0);
 

@@ -22,7 +22,7 @@
    is<name>() looks ahead and returns TRUE if the next symbol is <name>.
 */
 
-#include <iostream.h>
+#include <iostream>
 #include "parse.h"
 #include "token.h"
 #include "env.h"
@@ -52,11 +52,11 @@ bool Parser::ErrorMessage(const char* msg, Ptree* name, Ptree* where)
 	    ShowMessageHead(head->GetPosition());
     }
 
-    cerr << msg;
+    std::cerr << msg;
     if(name != nil)
 	name->Write(cerr);
 
-    cerr << '\n';
+    std::cerr << '\n';
     return bool(++nerrors < MaxErrors);
 }
 
@@ -68,11 +68,11 @@ void Parser::WarningMessage(const char* msg, Ptree* name, Ptree* where)
 	    ShowMessageHead(head->GetPosition());
     }
 
-    cerr << "warning: " << msg;
+    std::cerr << "warning: " << msg;
     if(name != nil)
-	name->Write(cerr);
+	name->Write(std::cerr);
 
-    cerr << '\n';
+    std::cerr << '\n';
 }
 
 bool Parser::SyntaxError()
@@ -84,18 +84,18 @@ bool Parser::SyntaxError()
     lex->LookAhead(1, t2);
 
     ShowMessageHead(t.ptr);
-    cerr << "parse error before `";
+    std::cerr << "parse error before `";
     if(t.kind != '\0')
 	for(i = 0; i < t.len; ++i)
-	    cerr << t.ptr[i];
+	    std::cerr << t.ptr[i];
 
     if(t2.kind != '\0'){
-	cerr << ' ';
+	std::cerr << ' ';
 	for(i = 0; i < t2.len; ++i)
-	    cerr << t2.ptr[i];
+	    std::cerr << t2.ptr[i];
     }
 
-    cerr << "'\n";
+    std::cerr << "'\n";
     return bool(++nerrors < MaxErrors);
 }
 
@@ -123,29 +123,35 @@ void Parser::ShowMessageHead(char* pos)
     uint line_number = LineNumber(pos, fname, fname_len);
     int i = 0;
     while(i < fname_len)
-	cerr << fname[i++];
+	std::cerr << fname[i++];
 
 #if defined(_MSC_VER)
-    cerr << '(' << line_number << ") : ";
+    std::cerr << '(' << line_number << ") : ";
 #else
-    cerr << ':' << line_number << ": ";
+    std::cerr << ':' << line_number << ": ";
 #endif
 }
 
 bool Parser::rProgram(Ptree*& def)
 {
+  std::cout << "I'm here 1" << std::endl;
     while(lex->LookAhead(0) != '\0')
 	if(rDefinition(def))
+	  {
+	    std::cout << "I'm here 2" << std::endl;
 	    return TRUE;
+	  }
 	else{
 	    Token tk;
 	    if(!SyntaxError())
+	      {
+		std::cout << "I'm here 3" << std::endl;
 		return FALSE;		// too many errors
-
+	      }
 	    SkipTo(';');
 	    lex->GetToken(tk);	// ignore ';'
 	}
-
+    std::cout << "I'm here 4" << std::endl;
     return FALSE;
 }
 
@@ -4456,10 +4462,10 @@ main()
     Ptree*		def;
 
     while(parse.rProgram(def)){
-	def->Display2(cout);
+	def->Display2(std::cout);
 	w.Translate(def);
     }
 
-    cerr << parse.NumOfErrors() << " errors\n";
+    std::cerr << parse.NumOfErrors() << " errors\n";
 }
 #endif

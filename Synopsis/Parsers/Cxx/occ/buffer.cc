@@ -32,9 +32,10 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
+#include <iostream>
 #include <string>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include "buffer.h"
 #include "token.h"
 #include "ptree-core.h"
@@ -286,7 +287,7 @@ uint Program::LineNumber(char* ptr, char*& filename, int& filename_length)
   This assumes that the first line of the program is
   a # line directive.
 */
-void Program::Write(ostream& out, const char* file_name)
+void Program::Write(std::ostream& out, const char* file_name)
 {
     Replacement* rep = replacement;
     uint pos;
@@ -451,10 +452,10 @@ Program::Replacement::Replacement(Replacement* n, uint st,
 
 // subclasses
 
-ProgramFile::ProgramFile(ifstream& f, char *filename)
+ProgramFile::ProgramFile(std::ifstream& f, char *filename)
 : Program(filename)
 {
-    f.seekg(0, ios::end);
+    f.seekg(0, std::ios::end);
     size = f.tellg();
     f.seekg(0);
 
@@ -493,12 +494,12 @@ ProgramFromStdin::~ProgramFromStdin()
 char ProgramFromStdin::Get()
 {
     if(size >= buf_size){
-	cerr << "ProgramFromStdin: sorry, out of memory\n";
+	std::cerr << "ProgramFromStdin: sorry, out of memory\n";
 	exit(1);
     }
 
     if(index >= size){
-	int c = cin.get();
+	int c = std::cin.get();
 	if(c == EOF)
 	    c = '\0';
 

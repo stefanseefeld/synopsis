@@ -36,10 +36,10 @@
 #include "ptree-core.h"
 
 #if USE_DLOADER
-#include <stdio.h>
-#include <fstream.h>
-#include <string.h>
-#include <stdlib.h>	/* for exit() */
+#include <cstdio>
+#include <fstream>
+#include <cstring>
+#include <cstdlib>	/* for exit() */
 
 // in driver2.cc
 extern void RunSoCompiler(const char* src_file);
@@ -198,7 +198,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
 #if USE_SO
     const char* fname = Ptree::Make("%p-init.cc", class_name)->ToString();
     if(verboseMode)
-	cerr << "Produce " << fname << " ..\n";
+	std::cerr << "Produce " << fname << " ..\n";
 
     ofstream src_file(fname);
     if(!src_file){
@@ -352,7 +352,7 @@ void Metaclass::Load(char* metaclass_name, int len)
     void* handle = LoadSoLib(file_name);	// load <metaclass>.so
 
     if(verboseMode)
-	cerr << "Initialize.. ";
+	std::cerr << "Initialize.. ";
 
     // call opcxx_init_<metaclass>() in <metaclass>.so
 
@@ -365,7 +365,7 @@ void Metaclass::Load(char* metaclass_name, int len)
     delete [] func_name;
 
     if(verboseMode)
-	cerr << "Done.\n";
+	std::cerr << "Done.\n";
 
 #else /* USE_SO */
 
@@ -379,7 +379,7 @@ void Metaclass::Load(char* metaclass_name, int len)
     delete [] file_name;
 
     if(verboseMode)
-	cerr << "Done.\n";
+	std::cerr << "Done.\n";
 #endif /* USE_SO */
 #endif /* USE_DLOADER */
 }
@@ -389,7 +389,7 @@ void* Metaclass::LoadSoLib(char* file_name)
     void* handle = nil;
 #if USE_DLOADER
     if(verboseMode)
-	cerr << "Load " << file_name << ".. ";
+	std::cerr << "Load " << file_name << ".. ";
 
     handle = ::LoadSoLib(file_name);
 #endif /* USE_DLOADER */

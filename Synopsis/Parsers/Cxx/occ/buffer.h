@@ -35,7 +35,7 @@
 #ifndef _buffer_h
 #define _buffer_h
 
-#include <fstream.h>
+#include <fstream>
 #include "types.h"
 
 class Ptree;
@@ -72,7 +72,7 @@ public:
 
     uint LineNumber(char*, char*&, int&);
 
-    void Write(ostream&, const char*);
+    void Write(std::ostream&, const char*);
     sint ReadLineDirective(uint, sint, uint&, int&);
 
 private:
@@ -102,7 +102,7 @@ private:
 
 class ProgramFile : public Program {
 public:
-    ProgramFile(ifstream&, char *filename = "unknown");
+    ProgramFile(std::ifstream&, char *filename = "unknown");
     ~ProgramFile();
 };
 

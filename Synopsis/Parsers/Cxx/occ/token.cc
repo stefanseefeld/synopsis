@@ -32,8 +32,8 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include "token.h"
 #include "hash.h"
 #include "ptree.h"
@@ -978,7 +978,7 @@ int Lex::ReadSeparator(char c, uint top)
 	return SingleCharOp(c);
     }
 
-    cerr << "*** An invalid character has been found! ("
+    std::cerr << "*** An invalid character has been found! ("
 	 << (int)c << ',' << (int)c1 << ")\n";
     return token(BadToken);
 }
@@ -1001,7 +1001,7 @@ int Lex::SingleCharOp(unsigned char c)
 	}while(c != '\n' && c != '\0');
 	return Ignore;
     } else {
-	cerr << "*** An invalid character has been found! ("<<(char)c<<")"<<endl;
+	std::cerr << "*** An invalid character has been found! ("<<(char)c<<")"<< std::endl;
 	return token(BadToken);
     }
 }

@@ -32,9 +32,9 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdarg>
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #endif

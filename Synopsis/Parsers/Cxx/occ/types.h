@@ -56,7 +56,7 @@ typedef int		sint;
 typedef unsigned int	uint;
 
 #if defined(sun) && (defined(sparc) || defined(__sparc))
-#  include <errno.h>
+#  include <cerrno>
 #  ifdef ECHRNG
 #    define SUNOS5
 #  else
@@ -109,7 +109,7 @@ typedef unsigned int	uint;
 */
 #ifdef DONT_GC
 
-#include <string.h>		// For size_t
+#include <cstring>		// For size_t
 
 class LightObject {};
 class Object {};
