@@ -260,7 +260,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"unsigned" {
                       lvalp->base = new BaseType(BT_UnSigned);
                       return(gProject->Parse_TOS->err_tok = UNSGNED);
-                    }                   
+                    }
 <INITIAL>"enum"     {
                       lvalp->typeSpec = BT_Enum;
                       gProject->Parse_TOS->possibleTag = true;
@@ -275,6 +275,13 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->typeSpec = BT_Union;
                       gProject->Parse_TOS->possibleTag = true;
                       return(gProject->Parse_TOS->err_tok = UNION);
+                    }
+
+<INITIAL>"__builtin_va_list"    { 	/* A GCC extension */
+					/* TODO - give it a real type 
+                      lvalp->base = new BaseType(BT_Int);
+                      return(gProject->Parse_TOS->err_tok = INT); */
+					  SETPOS_TOKEN(ELLIPSIS); return(ELLIPSIS);
                     }
 <INITIAL>"break"    { SETPOS_TOKEN(BREAK); return(BREAK); }
 <INITIAL>"case"     { SETPOS_TOKEN(CASE); return(CASE); }
