@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.58 2002/10/20 15:38:10 chalky Exp $
+// $Id: swalker.cc,v 1.59 2002/10/20 16:49:26 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.59  2002/10/20 16:49:26  chalky
+// Fix bug with methods in templates
+//
 // Revision 1.58  2002/10/20 15:38:10  chalky
 // Much improved template support, including Function Templates.
 //
@@ -604,6 +607,9 @@ SWalker::TranslateClassSpec(Ptree* node)
   STrace trace("SWalker::TranslateClassSpec");
   enum { SizeForwardDecl = 2, SizeAnonClass = 3, SizeClass = 4 };
 
+  AST::Parameter::vector* is_template = m_template;
+  m_template = NULL;
+
   int size = Ptree::Length(node);
 
   if (size == SizeForwardDecl)
@@ -672,7 +678,7 @@ SWalker::TranslateClassSpec(Ptree* node)
     std::remove_copy(
         spacey_name.begin(), spacey_name.end(),
         std::back_inserter(name), ' ');
-    clas = m_builder->start_class(m_lineno, type, name, m_template);
+    clas = m_builder->start_class(m_lineno, type, name, is_template);
     // TODO: figure out spec stuff, like what to do with vars, link to
     // original template, etc.
   }
@@ -685,7 +691,7 @@ SWalker::TranslateClassSpec(Ptree* node)
   else 
   {
     std::string name = m_decoder->decodeName();
-    clas = m_builder->start_class(m_lineno, type, name, m_template);
+    clas = m_builder->start_class(m_lineno, type, name, is_template);
   }
   if (m_links && pName) m_links->link(pName, clas);
   LOG("Translating class '" << clas->name() << "'");
@@ -990,6 +996,8 @@ Ptree*
 SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const) 
 {
   STrace trace("SWalker::TranslateFunctionDeclarator");
+  AST::Parameter::vector* is_template = m_template;
+  m_template = NULL;
 
   code_iter& iter = m_decoder->iter();
   char* encname = decl->GetEncodedName();
@@ -1056,7 +1064,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
       // Append const after params if this is a const function
       if (is_const) name += "const";
       // Create AST::Operation object
-      oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname, m_template);
+      oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname, is_template);
       oper->parameters() = params;
     }
   add_comments(oper, m_declaration);
@@ -1223,7 +1231,7 @@ void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types:
           m_decoder->init(encname);
           m_decoder->iter() += 2;
           returnType = m_decoder->decodeType();
-          realname = "(conversion)"; // "("+returnType.ToString()+")";
+          realname = "("+m_type_formatter->format(returnType)+")";
         }
       else
         // simple name

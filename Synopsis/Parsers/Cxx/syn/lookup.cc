@@ -175,6 +175,8 @@ public:
         else
             m_value = true;
     }
+    //. Okay if a template dependent arg
+    void visit_dependent(Types::Dependent*) { m_value = true; }
     //. Fallback: Not okay
     void visit_type(Types::Type*) { m_value = false; }
 };
