@@ -243,10 +243,26 @@ TransUnit::insert(Statement *stemnt, Statement *after /* =NULL */)
 std::ostream&
 operator<<(std::ostream& out, const TransUnit& tu)
 {
+	int	inInclude = 0;
     Statement *stemnt;
 
     for (stemnt=tu.head; stemnt; stemnt=stemnt->next)
-        out << *stemnt << std::endl;
+	{
+		if (inInclude > 0)
+		{
+			if (stemnt->isEndInclude())
+				inInclude--;
+			else if (stemnt->isInclude())
+				inInclude++;
+		}
+		else
+		{
+			if (stemnt->isInclude())
+				inInclude++;
+
+        	out << *stemnt << std::endl;
+		}
+	}
 
     return out;
 }
