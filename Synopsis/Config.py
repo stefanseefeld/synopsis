@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.9 2002/01/13 09:47:59 chalky Exp $
+#  $Id: Config.py,v 1.10 2002/07/04 05:16:19 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -250,6 +250,11 @@ class Base:
 	    @attr file_layout Specifies the file layout to use. This must be a
 	    class that implements the FileLayout interface defined in the
 	    HTML.FileLayout module.
+	    @attr output_dir Specifies the base output directory for generated
+	    files. May be an absolute or relative path, but absolute will
+	    probably work better in larger projects with TOC references. If
+	    this option is not set, the -o argument must be used when running
+	    Synopsis. Simple example: 'output/html'
 	    @see Synopsis.Formatter.HTML The HTML Formatter
 	    @see Synopsis.Formatter.HTML.core The main HTML module
 	    """

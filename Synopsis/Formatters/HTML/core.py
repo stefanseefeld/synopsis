@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.29 2002/03/14 00:19:47 chalky Exp $
+# $Id: core.py,v 1.30 2002/07/04 05:16:19 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.30  2002/07/04 05:16:19  chalky
+# Impl output_dir option for config to replace -o argument to HTML formatter.
+#
 # Revision 1.29  2002/03/14 00:19:47  chalky
 # Added demo of template specializations, and fixed HTML formatter to deal with
 # angle brackets in class names :)
@@ -208,7 +211,7 @@ class Config:
 	self.obj = obj
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
-	    'file_layout')
+	    'file_layout', 'output_dir')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -228,6 +231,10 @@ class Config:
     def _config_datadir(self, datadir):
 	if self.verbose: print "Using datadir:", datadir
 	self.datadir = datadir
+
+    def _config_output_dir(self, output_dir):
+	if self.verbose: print "Using output_dir:", output_dir
+	self.basename = output_dir
 
     def _config_stylesheet(self, stylesheet):
 	if self.verbose: print "Using stylesheet:", stylesheet
