@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.14 2002/12/12 17:25:32 chalky Exp $
+# $Id: DUMP.py,v 1.15 2003/10/03 14:27:33 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.15  2003/10/03 14:27:33  stefan
+# turn off reference identification and pretty printing by default such that the DUMP can be used more easily with 'diff'
+#
 # Revision 1.14  2002/12/12 17:25:32  chalky
 # Implemented Include support for C++ parser. A few other minor fixes.
 #
@@ -62,7 +65,7 @@ from Synopsis.Core import Type, AST
 verbose = 0
 
 class Dumper:
-    def __init__(self):
+    def __init__(self, identify, pretty):
 	self.handlers = {
 	    types.NoneType : self.visitNone,
 	    types.TypeType : self.visitType,
@@ -75,6 +78,8 @@ class Dumper:
 	    types.DictType : self.visitDict,
 	    types.InstanceType : self.visitInstance,
 	}
+	self.identify = identify
+	self.pretty = pretty
 	self.clear()
     def clear(self):
 	self.indent_level = 0
@@ -105,11 +110,12 @@ class Dumper:
 	if self.visited.has_key(i):
 	    if t == types.InstanceType: t = obj.__class__.__name__+" instance"
 	    if hasattr(obj, 'name'):
-		self.write("<already visited %s ( %d ) '%s'>"%(t,i,string.join(obj.name(),"::")))
+		ident = self.identify and '( %d ) '%i or ''
+		self.write("<already visited %s %s'%s'>"%(t,ident,string.join(obj.name(),"::")))
 	    elif hasattr(obj, 'filename'):
-		self.write("<already visited %s ( %d ) '%s'>"%(t,i,obj.filename()))
+		self.write("<already visited %s %s'%s'>"%(t,ident,obj.filename()))
 	    else:
-		self.write("<already visited %s ( %d )>"%(t,i))
+		self.write("<already visited %s %s>"%(t,ident))
 	    return
 	if self.handlers.has_key(t):
 	    self.handlers[t](obj)
@@ -220,10 +226,8 @@ class Dumper:
 		obj.is_next(), obj.target().filename()))
 	    return
 	self.visited[id(obj)] = None
-        self.write("[1m%s.%s[m = "%(
-	    obj.__class__.__module__,
-	    obj.__class__.__name__
-	))
+        template = self.pretty and "[1m%s.%s[m = " or "%s.%s = "
+        self.write(template%(obj.__class__.__module__,obj.__class__.__name__))
 	self.visitDict(obj.__dict__, self._instAttr)
 
 def usage():
@@ -234,32 +238,38 @@ def usage():
   -d                                   Show declarations
   -t                                   Show types
   -f                                   Show forwards also
+  -i                                   identify referenced objects
+  -p                                   enable pretty printing
  (If none of -d, -t or -f specified, will default to -d, -t)
 """
 
 def __parseArgs(args):
     global output, verbose, show_decls, show_types, show_forwards, show_files
+    global identify, pretty
     # Set defaults
     output = sys.stdout
     show_decls = 0
     show_types = 0
     show_forwards = 0
     show_files = 1
+    identify = 0
+    pretty = 0
 
     try:
-        opts,remainder = getopt.getopt(args, "o:vdtf")
+        opts,remainder = getopt.getopt(args, "o:vdtfip")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
 
     for opt in opts:
         o,a = opt
-
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
 	elif o == "-d": show_decls = 1
 	elif o == "-t": show_types = 1
 	elif o == "-f": show_forwards = 1
+	elif o == "-i": identify = 1
+	elif o == "-p": pretty = 1
 
     # Consolidate - if no show_ selected, show decls and types
     if not (show_decls or show_types or show_forwards):
@@ -272,7 +282,7 @@ def format(args, ast, config_obj):
     #formatter = ASCIIFormatter(output)
     #for type in dictionary:
     #    type.output(formatter)
-    dumper = Dumper()
+    dumper = Dumper(identify, pretty)
     show_sourcefiles = 0
     if show_decls:
 	print "*** Declarations:"
