@@ -9,3 +9,6 @@ const int i = (-1);
 const int j = ~0;
 const bool k = true;
 const bool l = false;
+const unsigned int m = sizeof(int);
+const unsigned int n = sizeof(char[8])/sizeof(char);
+const unsigned int o = int(2 * sizeof(bool));

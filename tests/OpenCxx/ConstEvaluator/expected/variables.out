@@ -20,3 +20,9 @@ initializer : true
 value : 1
 initializer : false
 value : 0
+initializer : sizeof ( int  )
+value : 4
+initializer : sizeof ( char [ 8 ] ) / sizeof ( char  )
+value : 8
+initializer : int ( 2 * sizeof ( bool  ) )
+value : 2

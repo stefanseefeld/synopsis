@@ -15,8 +15,45 @@ using namespace PTree;
 
 namespace
 {
-  const std::string TRUE = "true";
-  const std::string FALSE = "false";
+const std::string TRUE = "true";
+const std::string FALSE = "false";
+
+//. FIXME: this is only a quick hack that serves
+//.        as a proof of concept to allow const expressions
+//.        to include sizeof() expressions.
+//.        An elaborate system will probably use a Visitor
+//.        to calculate the size of compound types
+//.
+//. returns a negative value in case it couldn't determine the size
+long size_of_builtin_type(Encoding::iterator e)
+{
+  long size = -1;
+  switch (*e)
+  {
+    case 'b': size = 1; break;
+    case 'c': size = 1; break;
+    case 'w': size = 2; break;
+    case 's': size = 2; break;
+    case 'i': size = 4; break;
+    case 'l': size = 4; break;
+    case 'j': size = 8; break;
+    case 'f': size = 4; break;
+    case 'd': size = 8; break;
+    case 'P': size = 4; break;
+    case 'A':
+    {
+      std::string s;
+      while (*++e != '_') s.push_back(*e);
+      std::istringstream iss(s);
+      iss >> size;
+      size *= size_of_builtin_type(++e);
+      break;
+    }
+    default: return -1;
+  }
+  return size;
+}
+
 }
 
 bool ConstEvaluator::evaluate(Node *node, long &value)
@@ -44,9 +81,9 @@ void ConstEvaluator::visit(Literal *node)
 	iss.setf(std::ios::hex, std::ios::basefield);
 	iss >> my_value;
       }
-      else if (node->length() == 4 && TRUE.compare(0, 4, node->position(), 4) == 0)
+      else if (TRUE.compare(0, 4, node->position(), node->length()) == 0)
 	my_value = 1;
-      else if (node->length() == 5 && FALSE.compare(0, 5, node->position(), 5) == 0)
+      else if (FALSE.compare(0, 5, node->position(), node->length()) == 0)
 	my_value = 0;
       else
       {
@@ -79,6 +116,11 @@ void ConstEvaluator::visit(Identifier *node)
   {
     std::cerr << "Error in ConstName lookup: type was " << e.type << std::endl;
   }
+}
+
+void ConstEvaluator::visit(FstyleCastExpr *node)
+{
+  my_valid = evaluate(third(node)->car(), my_value);
 }
 
 void ConstEvaluator::visit(InfixExpr *node)
@@ -142,6 +184,22 @@ void ConstEvaluator::visit(InfixExpr *node)
     my_value = left || right;
   else
     my_valid = false;
+}
+
+void ConstEvaluator::visit(SizeofExpr *node)
+{
+  if (length(node->cdr()) == 3) // '(' typename ')'
+  {
+    Node *type_decl = second(node->cdr());
+    Encoding type = second(type_decl)->encoded_type();
+    long size = size_of_builtin_type(type.begin());
+    if (size < 0) return;
+    else my_value = static_cast<unsigned long>(size);
+    my_valid = true;
+  }
+  else // unary expr
+  {
+  }
 }
 
 void ConstEvaluator::visit(UnaryExpr *node)

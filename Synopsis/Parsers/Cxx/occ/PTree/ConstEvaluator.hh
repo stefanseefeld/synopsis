@@ -26,7 +26,9 @@ public:
 private:
   virtual void visit(Literal *);
   virtual void visit(Identifier *);
+  virtual void visit(FstyleCastExpr *);
   virtual void visit(InfixExpr *);
+  virtual void visit(SizeofExpr *);
   virtual void visit(UnaryExpr *);
   virtual void visit(CondExpr *);
   virtual void visit(ParenExpr *);

@@ -42,7 +42,7 @@ class Node;
 //.
 //. 'P' pointer
 //. 'R' reference
-//. 'A' []
+//. 'A' array (e.g. char[16] ==> A16_c)
 //. 'F' function (e.g. char foo(int) ==> Fi_c)
 //. 'M' pointer to member (e.g. Type::* ==> M[4]Type)
 //.
@@ -139,7 +139,8 @@ public:
   void ptr_operator(int);
   void ptr_to_member(const Encoding &, int);
   void cast_operator(const Encoding &);
-  void array() { prepend('A');}
+  void array() { prepend("A_", 2);}
+  void array(unsigned long s);
   void function(const Encoding &e) { prepend(e);}
   void recursion(const Encoding &e) { prepend(e);}
   void start_func_args() { append('F');}
