@@ -6,7 +6,11 @@ def href(ref, label): return "<a href=" + ref + ">" + label + "</a>"
 def name(ref, label): return "<a name=" + ref + ">" + label + "</a>"
 def span(clas, body): return "<span class=\"" + clas + "\">" + body + "</span>"
 def div(clas, body): return "<div class=\"" + clas + "\">" + body + "</div>"
-def desc(text): return "<div class=\"desc\">" + string.join(map(lambda s: s.text()[3:], text), '\n') + "</div>"
+def desc(text):
+    block = filter(lambda s: s.text()[0:3] == "//.", text)
+    if not len(block): return ""
+    block = map(lambda s: s.text()[3:], block)
+    return "<div class=\"desc\">" + string.join(block, '\n') + "</div>"
 
 class TableOfContents(Visitor.AstVisitor):
     """
@@ -130,7 +134,9 @@ class HTMLFormatter:
         for i in typedef.declarators():
             i.accept(self)
             declarators.append(self.label(self.__declarator))
-        self.write(string.join(declarators, ","))
+        self.write(string.join(declarators, ", "))
+        for i in typedef.declarators():
+            if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
         if len(typedef.comments()): self.write("\n" + desc(typedef.comments()) + "\n")            
 
     def visitVariable(self, variable):
@@ -140,7 +146,9 @@ class HTMLFormatter:
         for i in variable.declarators():
             i.accept(self)
             declarators.append(self.label(self.__declarator))
-        self.write(string.join(declarators, ","))
+        self.write(string.join(declarators, ", "))
+        for i in variable.declarators():
+            if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
         if len(variable.comments()): self.write("\n" + desc(variable.comments()) + "\n")            
 
     def visitConst(self, const):
