@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.18 2003/12/08 00:39:24 stefan Exp $
+# $Id: XRef.py,v 1.19 2003/12/09 06:30:20 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -15,16 +15,6 @@ from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.XRef import *
 
 import os
-
-class XRefLinker(Linker):
-
-   def __init__(self, xref):
-
-      self.xref = xref
-
-   def link(self, name):
-
-      return file
 
 class XRef(View):
    """A module for creating views full of xref infos"""
@@ -73,7 +63,7 @@ class XRef(View):
       view_info = self.processor.xref.get_view_info()
       if not view_info: return
       for i in range(len(view_info)):
-         self.__filename = self.processor.file_layout.special('xref%d'%i)
+         self.__filename = self.processor.file_layout.xref(i)
          self.__title = 'Cross Reference view #%d'%i
 
          self.start_file()
@@ -99,7 +89,7 @@ class XRef(View):
       # Make a link to the highlighted source
       realfile = os.path.join(self.processor.output, file)
       file_link = self.processor.file_layout.file_source(realfile)
-      file_link = file_link + "#%d"%line
+      file_link = rel(self.filename(), file_link) + "#%d"%line
       # Try and make a descriptive
       desc = ''
       type = self.processor.ast.types().get(scope)
@@ -109,7 +99,7 @@ class XRef(View):
       scope_text = string.join(scope, '::')
       entry = self.processor.toc[scope]
       if entry:
-         scope_text = href(entry.link, scope_text)
+         scope_text = href(rel(self.filename(), entry.link), scope_text)
       # Output list element
       self.write('<li><a href="%s">%s:%s</a>: in%s %s</li>\n'%(
          file_link, file, line, desc, scope_text))
