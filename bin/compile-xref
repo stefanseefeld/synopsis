@@ -51,6 +51,7 @@ for file in input_files:
 	    if len(scope[i]) > 0 and scope[i][0] == '`':
 		# Function scope, truncate here
 		del scope[i+1:]
+		scope[i] = scope[i][1:]
 		break
 	scope = tuple(scope)
 	
