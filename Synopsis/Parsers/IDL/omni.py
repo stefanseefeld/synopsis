@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.35 2003/01/16 17:14:10 chalky Exp $
+# $Id: omni.py,v 1.36 2003/01/20 06:43:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.36  2003/01/20 06:43:02  chalky
+# Refactored comment processing. Added AST.CommentTag. Linker now determines
+# comment summary and extracts tags. Increased AST version number.
+#
 # Revision 1.35  2003/01/16 17:14:10  chalky
 # Increase AST version number. SourceFiles store full filename. Executor/Project
 # uses it to check timestamp for all included files when deciding whether to
@@ -526,7 +530,14 @@ def parse(file, extra_files, args, config_obj):
     path.insert(0, os.path.dirname(sys.argv[0]))
     if hasattr(_omniidl, "__file__"):
 	# Add path to omniidl module
-        path.insert(0, os.path.dirname(_omniidl.__file__))
+	dirname = os.path.dirname(_omniidl.__file__)
+        path.insert(0, dirname)
+	# If, eg, /usr/lib/pythonX.X/site-packages, add /usr/lib
+	dirnames = string.split(dirname, os.sep)
+	if len(dirnames) > 2 and dirnames[-1] == 'site-packages' \
+		and dirnames[-2][:6] == 'python':
+	    path.insert(0, string.join(dirnames[:-2], os.sep))
+	    
     preprocessor = None
     for directory in path:
 	preprocessor = os.path.join(directory, "omnicpp")
@@ -534,6 +545,7 @@ def parse(file, extra_files, args, config_obj):
 	    break
 	preprocessor = None
     if not preprocessor:
+	# Try ordinary cpp
 	print "Error: unable to find omnicpp in path:"
 	print string.join(path, os.pathsep)
 	sys.exit(1)

@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.25 2003/01/16 17:14:10 chalky Exp $
+# $Id: AST.py,v 1.26 2003/01/20 06:43:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.26  2003/01/20 06:43:02  chalky
+# Refactored comment processing. Added AST.CommentTag. Linker now determines
+# comment summary and extracts tags. Increased AST version number.
+#
 # Revision 1.25  2003/01/16 17:14:10  chalky
 # Increase AST version number. SourceFiles store full filename. Executor/Project
 # uses it to check timestamp for all included files when deciding whether to
@@ -105,7 +109,7 @@ import Util, Type
 
 # The version of the file format - this should be increased everytime
 # incompatible changes are made to the AST or Type classes
-FILE_VERSION = 4
+FILE_VERSION = 5
 
 # Accessibility constants
 DEFAULT = 0
@@ -326,7 +330,7 @@ class Declaration:
     """Declaration base class. Every declaration has a name, comments,
     accessibility and type. The default accessibility is DEFAULT except for
     C++ where the Parser always sets it to one of the other three. """
-
+    
     def __init__(self, file, line, language, strtype, name):
 	if file is not None:
 	    if type(file) is not types.InstanceType or not isinstance(file, SourceFile):
@@ -657,19 +661,51 @@ class Operation (Function):
         Function.__init__(self, file, line, language, type, premod, returnType, name, realname)
     def accept(self, visitor): visitor.visitOperation(self)
 
-class Comment :
-    """Class containing information about a comment. There may be one or more
-    lines in the text of the comment, and language-specific comment characters
-    are not stripped.
-    C++ Comments may be suspect, which means that they were not before a
-    declaration, but extract_tails was set so they were kept for the Linker to
-    deal with.
-    """
+class CommentTag:
+    """Information about a tag in a comment. Tags can represent meta-information
+    about a comment or extra attributes related to a declaration. For example,
+    some tags can nominate a comment as belonging to another declaration,
+    while others indicate information such as parameter and return type
+    descriptions."""
 
+    def __init__(self, name, text):
+	"""Constructor. Name is the name of tag, eg: 'class', 'param'. Text is
+	the rest of the text for a tag."""
+	self.__name = name
+	self.__text = text
+
+    def name(self):
+	"""Returns the name of this tag"""
+	return self.__name
+
+    def text(self):
+	"""Returns the text of this tag"""
+	return self.__text
+
+class Comment:
+    """Information about a comment related to a declaration.
+    The comments are extracted verbatim by the parsers, and various Linker
+    CommentProcessors can select comments with appropriate formatting (eg: /**
+    style comments, //. style comments, or all // style comments).
+    The text field is text of the comment, less any tags that have been
+    extracted.
+    The summary field contains a summary of the comment, which may be equal to
+    the comment text if there is no extra detail. The summary field is only
+    set by Linker.Comments.Summarizer, which also ensures that there is only
+    one comment for the declaration first.
+    The list of tags in a comment can be extracted by a Linker
+    CommentProcessor, or is an empty list if not set.
+    C++ Comments may be suspect, which means that they were not immediately
+    before a declaration, but the extract_tails option was set so they were
+    kept for the Linker to deal with.
+    """
+    
     def __init__(self, text, file, line, suspect=0):
-        self.__text = text
         self.__file = file
         self.__line = line
+        self.__text = text
+	self.__summary = None
+	self.__tags = []
 	self.__suspect = suspect
 
     def text(self):
@@ -678,6 +714,16 @@ class Comment :
     def set_text(self, text):
 	"""Changes the text"""
 	self.__text = text
+    def summary(self):
+	"""The summary of the comment"""
+	return self.__summary
+    def set_summary(self, summary):
+	"""Changes the summary"""
+	self.__summary = summary
+    def tags(self):
+	"""The tags of the comment. Only CommentTag instances should be added
+	to this list."""
+	return self.__tags
     def __str__(self):
 	"""Returns the text of the comment"""
 	return self.__text

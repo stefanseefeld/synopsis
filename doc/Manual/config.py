@@ -16,11 +16,11 @@ class Config (Base):
 
     class Linker (Base.Linker):
 	class Cxx (Base.Linker.Linker):
-	    comment_processors = ['dummy','ssd']
+	    comment_processors = ['dummy','ssd', 'javatags', 'summary']
 	class CxxMap (Base.Linker.Linker):
 	    map_declaration_names = 'Synopsis::Parser::C++', 'Package'
 	class Py (Base.Linker.Linker):
-	    pass
+	    comment_processors = ['javatags', 'summary', 'javatags', 'summary']
 	class All (Base.Linker.Linker):
 	    # For linking all the .syn files together
 	    languagize = 0
@@ -54,7 +54,7 @@ class Config (Base):
 
 	    # Add custom comment formatter
 	    comment_formatters = [
-		'summary', 'javadoc', 'section',
+		'javadoc', 'section',
 		('modules.py', 'RefCommentFormatter')
 	    ]
 

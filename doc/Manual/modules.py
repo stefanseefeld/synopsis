@@ -10,7 +10,7 @@ from Synopsis.Formatter import HTML
 from Synopsis.Formatter.HTML.Tags import *
 config = HTML.core.config
 
-class RefCommentFormatter (HTML.CommentFormatter.CommentFormatter):
+class RefCommentFormatter (HTML.CommentFormatter.CommentFormatterStrategy):
     "A formatter that formats <heading> and <example> tags"
     __re_heading = r'<heading>(.*)</heading>'
     __re_example = r'<example>(.*)</example>'
@@ -19,13 +19,12 @@ class RefCommentFormatter (HTML.CommentFormatter.CommentFormatter):
     def __init__(self):
 	self.re_heading = re.compile(self.__re_heading)
 	self.re_example = re.compile(self.__re_example)
-    def parse(self, comm):
+    def format(self, page, decl, text):
 	"Format heading and example tags in the given comment's detail section"
-	str = comm.detail
-	if not str: return
-	str = self.parse_tag(str, self.re_heading, self.__heading)
-	str = self.parse_tag(str, self.re_example, self.__example)
-	comm.detail = str
+	if not text: return
+	text = self.parse_tag(text, self.re_heading, self.__heading)
+	text = self.parse_tag(text, self.re_example, self.__example)
+	return text
     def parse_tag(self, str, regexp, replace):
 	"Use regexp to do search&replace in str with replace"
 	ret = ''

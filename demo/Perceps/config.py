@@ -1,5 +1,6 @@
 # Config file for Perceps demo
 # Files have a strange commenting pattern
+# Demonstates extensibility of Synopsis
 
 from Synopsis.Config import Base
 
@@ -17,7 +18,8 @@ class Config (Base):
     class Linker:
 	class Linker (Base.Linker.Linker):
 	    comment_processors = [
-		('config.py', 'PercepsCommProcessor') # use the processor below
+		('config.py', 'PercepsCommProcessor'), # use the processor below
+		('config.py', 'PercepsCommSplitter'), # use the processor below
 	    ]
 	modules = {
 	    'Linker':Linker,
@@ -27,14 +29,12 @@ class Config (Base):
 	class HTML (Base.Formatter.HTML):
 	    stylesheet_file = '../html.css'
 	    comment_formatters = [
-		('config.py', 'PercepsCommFormatter'), # use the formatter below
 		'javadoc', # also use javadoc to format params and returns
 		'section' # and section to insert blank lines occasionally
 	    ]
 	class HTML_Doxygen (Base.Formatter.HTML_Doxygen):
 	    stylesheet_file = '../html-doxy.css'
 	    comment_formatters = [
-		('config.py', 'PercepsCommFormatter'), # use the formatter below
 		'javadoc', # also use javadoc to format params and returns
 		'section' # and section to insert blank lines occasionally
 	    ]
@@ -56,17 +56,18 @@ class PercepsCommProcessor (Previous):
 	self.last.comments().extend(decl.comments())
 	del decl.comments()[:]
 
-from Synopsis.Formatter.HTML.CommentFormatter import SummarySplitter
+from Synopsis.Core.AST import CommentTag
+from Synopsis.Linker.Comments import CommentProcessor
 import re, string
 
-class PercepsCommFormatter (SummarySplitter):
+class PercepsCommSplitter (CommentProcessor):
     __c_sums = '(?P<sums>([ \t]*//: ?[^\n]*\n)*)' # Matches all summaries
     __c_dets = '(?P<dets>([ \t]*//([^:!][^\n]*)?\n)*)' # Matches all details
     __c_spec = '(?P<spec>([ \t]*//![^\n]*\n)*)' # Matches all specials
     __re_comment = '[ \t\n]*%s%s%s'%(__c_sums,__c_dets,__c_spec) # Matches a valid comment
     __re_sum = '[ \t]*//: ?(?P<text>[^\n]*\n)' # Extract text from a summary line
     __re_det = '[ \t]*// ?(?P<text>[^\n]*\n)' # Extract text from a detail line
-    __re_spec = '[ \t]*//!(?P<cmd>[^:]*): (?P<text>[^\n]*\n)' # Extract command and text from a special line
+    __re_spec = '[ \t]*//!(?P<name>[^:]*): (?P<text>[^\n]*\n)' # Extract command and text from a special line
     __re_star = r'/\*(.*?)\*/'
     def __init__(self):
 	"Compile regular expressions"
@@ -82,60 +83,67 @@ class PercepsCommFormatter (SummarySplitter):
 	    str = str[:mo.start()] + str[mo.end():]
 	    mo = self.re_star.search(str)
 	return str
-    def parse(self, comm):
+    def process(self, decl):
 	"""Parses the comment and keeps only valid comments. Specials are
 	converted to javadoc tags if we know about them, since the javadoc
 	formatter already does a good job of formatting them."""
-	mo = self.re_comment.search(self.strip_star(comm.detail))
+        # First combine
+        comments = decl.comments()
+        if not len(comments):
+            return
+        comment = comments[0]
+        tags = comment.tags()
+        if len(comments) > 1:
+            # Should be rare to have >1 comment
+            for extra in comments[1:]:
+                tags.extend(extra.tags())
+                comment.set_text(comment.text() + extra.text())
+            del comments[1:]
+        # Now decide how much of the comment is the summary
+
+	mo = self.re_comment.search(self.strip_star(comment.text()))
 	if mo:
 	    sums = mo.group('sums') or ''
 	    dets = mo.group('dets') or ''
 	    spec = mo.group('spec') or ''
 	    # Match sums
-	    comm.summary = ''
+	    summary = ''
 	    mo = self.re_sum.match(sums)
 	    while mo:
-		comm.summary = comm.summary + mo.group('text')
+		summary = summary + mo.group('text')
 		sums = sums[mo.end():]
 		mo = self.re_sum.match(sums)
+	    comment.set_summary(summary)
 	    # Match dets
-	    comm.detail = comm.summary
+	    detail = summary
 	    mo = self.re_det.match(dets)
 	    while mo:
-		comm.detail = comm.detail + mo.group('text')
+		detail = detail + mo.group('text')
 		dets = dets[mo.end():]
 		mo = self.re_det.match(dets)
+	    comment.set_text(detail)
 	    # Match specs
 	    mo = self.re_spec.match(spec)
 	    while mo:
-		cmd, text = mo.groups()
-		if cmd == 'param':
-		    # Get rid of the extra -
-		    param = string.split(text, ' ', 1)
-		    if len(param) > 1 and len(param[1]) and param[1][0] == '-':
-			param[1] = param[1][1:]
-			text = string.join(param)
-		    # Store as @param tag
-		    comm.detail = comm.detail + '@param %s'%(text,)
-		elif cmd == 'retval':
-		    # Store as @return tag
-		    comm.detail = comm.detail + '@return %s'%(text,)
-		elif cmd == 'also':
-		    # See also. Convert to @see tag
-		    param = string.split(text, ' ', 1)
-		    if len(param) > 1 and len(param[1]) and param[1][0] == '-':
-			param[1] = param[1][1:]
-			text = string.join(param)
-		    # Store as @param tag
-		    comm.detail = comm.detail + '@see %s'%(text,)
-		else:
-		    print "Unknown command:",cmd,text
+		name, text = mo.groups()
+		# Convert to javadoc style tags
+		if name == 'param':
+		    # Get rid of extra '-'
+		    pair = string.split(text, ' - ', 1)
+		    text = string.join(pair)
+		    name = '@param'
+		elif name == 'retval':
+		    name = '@return'
+		elif name == 'also':
+		    # Get rid of extra '-'
+		    pair = string.split(text, ' - ', 1)
+		    text = string.join(pair)
+		    name = '@see'
+		comment.tags().append(CommentTag(name, text))
 		spec = spec[mo.end():]
 		mo = self.re_spec.match(spec)
 	else:
-	    # Remove this comment since it is invalid
-	    comm.detail = ''
-	# This is why we derive from SummarySplitter - it has this nice
-	# function... :)
-	self._calculateHasDetail(comm)
+	    # Invalid comment - set it to empty
+	    del decl.comments()[0]
+	
 

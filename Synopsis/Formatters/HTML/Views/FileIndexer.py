@@ -1,4 +1,4 @@
-# $Id: FileIndexer.py,v 1.1 2003/01/16 12:46:46 chalky Exp $
+# $Id: FileIndexer.py,v 1.2 2003/01/20 06:43:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: FileIndexer.py,v $
+# Revision 1.2  2003/01/20 06:43:02  chalky
+# Refactored comment processing. Added AST.CommentTag. Linker now determines
+# comment summary and extracts tags. Increased AST version number.
+#
 # Revision 1.1  2003/01/16 12:46:46  chalky
 # Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
 # (used to be part of FileTree) and FileDetails.
@@ -119,7 +123,8 @@ class FileIndexer (Page.Page):
 	    # TODO make this nicer :)
 	    entry = config.toc[name]
 	    if not entry: continue
-	    summary = string.strip("(%s) %s"%(decl.type(), anglebrackets(comments[decl].summary)))
+	    summary = string.strip("(%s) %s"%(decl.type(),
+		anglebrackets(comments.format_summary(self, decl))))
 	    # Print link to declaration's page
 	    link = rel(self.filename(), entry.link)
 	    if isinstance(decl, AST.Function): print_name = decl.realname()

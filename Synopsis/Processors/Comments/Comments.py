@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.17 2002/10/11 11:07:53 chalky Exp $
+# $Id: Comments.py,v 1.18 2003/01/20 06:43:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.18  2003/01/20 06:43:02  chalky
+# Refactored comment processing. Added AST.CommentTag. Linker now determines
+# comment summary and extracts tags. Increased AST version number.
+#
 # Revision 1.17  2002/10/11 11:07:53  chalky
 # Added missing parent __init__ call in Group
 #
@@ -74,8 +78,6 @@
 # (same as ssd,java formatters in HTML)
 #
 #
-
-# TODO - Linker/ is only a temporary location for this file.
 
 """Comment Processor"""
 # System modules
@@ -412,6 +414,68 @@ class Grouper (Transformer):
 	if not len(enumor.name()): return # workaround.
 	self.add(enumor)
 
+class Summarizer (CommentProcessor):
+    """Splits comments into summary/detail parts."""
+    re_summary = r"[ \t\n]*(.*?\.)([ \t\n]|$)"
+    def __init__(self):
+	self.re_summary = re.compile(Summarizer.re_summary, re.S)
+    def process(self, decl):
+	"""Combine and summarize the comments of this declaration."""
+	# First combine
+	comments = decl.comments()
+	if not len(comments):
+	    return
+	comment = comments[0]
+	tags = comment.tags()
+	if len(comments) > 1:
+	    # Should be rare to have >1 comment
+	    for extra in comments[1:]:
+		tags.extend(extra.tags())
+		comment.set_text(comment.text() + extra.text())
+	    del comments[1:]
+	# Now decide how much of the comment is the summary
+	text = comment.text()
+	mo = self.re_summary.match(text)
+	if mo:
+	    # Set summary to the sentence
+	    comment.set_summary(mo.group(1))
+	else:
+	    # Set summary to whole text
+	    comment.set_summary(text)
+
+class JavaTags (CommentProcessor):
+    """Extracts javadoc-style @tags from the end of comments."""
+
+    # The regexp to use for finding all the tags
+    _re_tags = '\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
+
+    def __init__(self):
+	self.re_tags = re.compile(self._re_tags,re.M|re.S)
+    def process(self, decl):
+	"""Extract tags from each comment of the given decl"""
+	for comment in decl.comments():
+	    # Find tags
+	    text = comment.text()
+	    mo = self.re_tags.search(text)
+	    if not mo:
+		continue
+	    # A lambda to use in the reduce expression
+	    joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+' '+y]
+
+	    tags = mo.group('tags')
+	    text = text[:mo.start('tags')]
+	    # Split the tag section into lines
+	    tags = map(string.strip, string.split(tags,'\n'))
+	    # Join non-tag lines to the previous tag
+	    tags = reduce(joiner, tags, [])
+	    # Split the tag lines into @name, rest-of-line pairs
+	    tags = map(lambda line: string.split(line,' ',1), tags)
+	    # Convert the pairs into CommentTag objects
+	    tags = map(lambda pair: AST.CommentTag(pair[0], pair[1]), tags)
+	    # Store back in comment
+	    comment.set_text(text)
+	    comment.tags().extend(tags)
+
 processors = {
     'ssd': SSDComments,
     'ss' : SSComments,
@@ -420,6 +484,8 @@ processors = {
     'dummy': Dummies,
     'prev': Previous,
     'group': Grouper,
+    'summary' : Summarizer,
+    'javatags' : JavaTags,
 }
 
 class Comments(Operation):

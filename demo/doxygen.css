@@ -23,10 +23,17 @@ div.desc {
     margin-left: 1em;
     margin-bottom: 1em;
 }
+div.summary {
+    border: none;
+    font-style: italic;
+    color: #003030;
+    margin-left: 2em;
+}
 span.summary {
     border: none;
     font-style: italic;
     color: #003030;
+    margin-left: 0em;
 }
 div.preformat {
     font-size: bigger;
@@ -38,6 +45,7 @@ td.func {
 }
 div.summary {
     font-size: smaller;
+    margin-left: 0em;
 }
 div.enumerator {
     margin-left: 2em;
@@ -59,6 +67,13 @@ td.heading {
     font-weight: bold;
     padding: 0.1em;
     background: #eeeeee;
+}
+td.summ-start {
+    vertical-align: top;
+    text-align: right;
+}
+td.summ-info {
+    vertical-align: top;
 }
 div.section {
     margin-left: 2em;

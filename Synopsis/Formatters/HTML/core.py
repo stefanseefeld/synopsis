@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.46 2003/01/16 16:48:23 chalky Exp $
+# $Id: core.py,v 1.47 2003/01/20 06:43:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.47  2003/01/20 06:43:02  chalky
+# Refactored comment processing. Added AST.CommentTag. Linker now determines
+# comment summary and extracts tags. Increased AST version number.
+#
 # Revision 1.46  2003/01/16 16:48:23  chalky
 # Using FileTree now forces FileListing, FileIndexer and FileDetails to be used.
 #
@@ -432,25 +436,58 @@ class Struct:
     def __init__(self, **keys):
 	for name, value in keys.items(): setattr(self, name, value)
 
-class CommentDictionary:
-    """This class just maintains a mapping from declaration to comment, since
-    any particular comment is required at least twice. Upon initiation, an
-    instance of this class installs itself in the config object as
-    "comments"."""
+class DeclStyle:
+    """This class just maintains a mapping from declaration to display style.
+    The style is an enumeration, possible values being: SUMMARY (only display
+    a summary for this declaration), DETAIL (summary and detailed info),
+    INLINE (summary and detailed info, where detailed info is an inline
+    version of the declaration even if it's a class, etc.)
+
+    Upon initiation, an instance of this class installs itself in the config
+    object as "decl_style".
+    """
+    SUMMARY = 0
+    DETAIL = 1
+    INLINE = 2
+    
     def __init__(self):
 	self.__dict = {}
-	self._parser = CommentFormatter.CommentParser()
-	config.comments = self
-    def commentForName(self, name):
-	if self.__dict.has_key(name): return self.__dict[name]
-	return None
-    def commentFor(self, decl):
-	"Returns a comment struct (@see CommentParser) for given decl"
-	key = decl.name()
+    def style_of(self, decl):
+	"""Returns the style of the given decl"""
+	SUMMARY = self.SUMMARY
+	DETAIL = self.DETAIL
+	key = id(decl)
 	if self.__dict.has_key(key): return self.__dict[key]
-	self.__dict[key] = comment = self._parser.parse(decl)
-	return comment
-    __getitem__ = commentFor
+	if len(decl.comments()) == 0:
+	    # Set to summary, as this will mean no detailed section
+	    style = SUMMARY
+	else:
+	    comment = decl.comments()[0]
+	    # Calculate the style. The default is detail
+	    if not comment.text():
+		# No comment, don't show detail
+		style = SUMMARY
+	    elif comment.summary() != comment.text():
+		# There is more to the comment than the summary, show detail
+		style = DETAIL
+	    else:
+		# Summary == Comment, don't show detail
+		style = SUMMARY
+	    # Always show tags
+	    if comment.tags():
+		style = DETAIL
+	    # Always show enums
+	    if isinstance(decl, AST.Enum):
+		style = DETAIL
+	    # Show functions if they have exceptions
+	    if isinstance(decl, AST.Function) and len(decl.exceptions()):
+		style = DETAIL
+	    # Don't show detail for scopes (they have their own pages)
+	    if isinstance(decl, AST.Scope):
+		style = SUMMARY
+	self.__dict[key] = style
+	return style
+    __getitem__ = style_of
 
 class PageManager:
     """This class manages and coordinates the various pages. The user adds
@@ -669,8 +706,9 @@ def format(args, ast, config_obj):
     # Instantiate the files object
     config.files = config.files_class()
 
-    # Create the Comments Dictionary
-    CommentDictionary()
+    # Create the declaration styler and the comment formatter
+    config.decl_style = DeclStyle()
+    config.comments = CommentFormatter.CommentFormatter()
 
     # Create the Class Tree (TODO: only if needed...)
     config.classTree = ClassTree.ClassTree()
@@ -717,7 +755,8 @@ def configure_for_gui(ast, config_obj):
     config.types = ast.types()
     declarations = ast.declarations()
     config.files = config.files_class()
-    CommentDictionary()
+    config.decl_style = DeclStyle()
+    config.comments = CommentFormatter.CommentFormatter()
     config.classTree = ClassTree.ClassTree()
     FileTree()
 
