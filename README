@@ -25,7 +25,8 @@ Building
 Testing
 -------
 
-* The tests require a cvs version of qmtest (http://www.qmtest.com)
+* The tests require version 2.1 of qmtest (http://www.qmtest.com),
+  as well as tidy (http://www.w3.org/People/Raggett/tidy/)
 
 * Set the QMTEST_CLASS_PATH environment variable to include the 
   tests/qmtest/classes/ directory, then run 'qmtest run' from inside 
