@@ -1,4 +1,4 @@
-# $Id: process.py,v 1.4 2003/11/22 21:44:06 stefan Exp $
+# $Id: process.py,v 1.5 2003/12/11 04:38:59 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -8,6 +8,7 @@
 
 from Processor import Processor
 import AST
+from getoptions import getoptions
 
 import sys
 
@@ -59,33 +60,10 @@ def process(**commands):
       sys.exit(0)
 
    props = {}
-   # process all option arguments (i.e. those containing a '='
-   while args:
-      arg = args[0]
-      if arg.find('=') == -1 and not arg.startswith('--'):
-         break
-      attribute = arg.split('=', 1)
-      if len(attribute) == 2:
-         name, value = attribute
-         if name.startswith('--'):
-            props[name[2:]] = value # it's a string
-         else:
-            try:
-               props[name] = eval(value) # it's a python expression
-            except:
-               error("""an error occured trying to evaluate the value of \'%s\' (\'%s\')
-to pass this as a string, please use %s="'%s'" """%(name, value, name, value))
-      else:
-         name = attribute[0]
-         if name.startswith('--'):
-            props[name[2:]] = True # flag the attribute as 'set'
-         else:
-            # the nearest thing to 'no python expression'
-            # is None...
-            props[name] = None
-      args = args[1:]
+   # process all option arguments...
+   for o, a in getoptions(args): props[o] = a
 
-   # remaining arguments are mapped to the 'input' value
+   # ...and keep remaining (non-option) arguments as 'input'
    if args: props['input'] = args
 
    if command in commands:
