@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.7 2001/02/06 05:13:05 chalky Exp $
+# $Id: core.py,v 1.8 2001/02/07 14:13:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.8  2001/02/07 14:13:51  chalky
+# Small fixes.
+#
 # Revision 1.7  2001/02/06 05:13:05  chalky
 # Fixes
 #
@@ -391,7 +394,7 @@ def __parseArgs(args):
 	    config.stylesheet_file = a
 	elif o == "-n":
 	    config.namespace = a
-	elif o == "-c": commentFormatterList.append(Util._import(a))
+	elif o == "-c": config.commentFormatterList.append(Util._import(a))
 	elif o == "-C":
 	    if commentFormatters.has_key(a):
 		config.commentFormatterList.append(commentFormatters[a]())
