@@ -397,7 +397,9 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
 <INITIAL>"_cdecl"       { /* Windows only non-standard C crud */ }
 <INITIAL>"__cdecl"      { /* Windows only non-standard C crud */ }
+<INITIAL>"_stdcall"     { /* Windows only non-standard C crud */ }
 <INITIAL>"__stdcall"    { /* Windows only non-standard C crud */ }
+<INITIAL>"_fastcall"    { /* Windows only non-standard C crud */ }
 <INITIAL>"__fastcall"   { /* Windows only non-standard C crud */ }
 
 
@@ -591,7 +593,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                          ** Note: The floatsuffix, if any, will be
                          ** ignored by atof().
                          */
-                         lvalp->consValue = new FloatConstant(atof(yytext),HERE);
+                         lvalp->consValue = new FloatConstant(yytext,HERE);
                          return(gProject->Parse_TOS->err_tok = RNUM);
                        }
 
