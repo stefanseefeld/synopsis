@@ -129,11 +129,11 @@ install: all
 	install -m644 Manual.pdf $(datadir)/synopsis
 
 clean:
-	rm -rf $(sdir) *.pyc *.pyo *.syn *.info* $(TEXI) \
+	rm -rf $(sdir) *.pyc *.pyo *.syn $(TEXI) \
 	$(addprefix Manual., $(texi-help))
 
 distclean:  clean
-	rm -rf html html-doxygen syn links.toc Manual.pdf
+	rm -rf html html-doxygen syn links.toc Manual.pdf *.info* 
 
 # Compile Python files
 $(PYSYNS): $(sdir)/%.syn:	$(topdir)/%.py
