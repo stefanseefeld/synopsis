@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.cc source file
 // Implementation of the LinkStore class
 
-// $Id: linkstore.cc,v 1.19 2002/12/09 12:14:10 chalky Exp $
+// $Id: linkstore.cc,v 1.20 2002/12/10 07:19:50 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.20  2002/12/10 07:19:50  chalky
+// Remove debugging stuff
+//
 // Revision 1.19  2002/12/09 12:14:10  chalky
 // Ensure all files are created
 //
@@ -184,7 +187,7 @@ LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
     filter->get_all_filenames(main, extra);
     // Do the main file in case it is not in extra (it should be unless extra
     // is not being used, i.e.: there is just one file)
-    std::cout << " Creating streams for " << *main << std::endl;
+    //std::cout << " Creating streams for " << *main << std::endl;
     AST::SourceFile* file = filter->get_sourcefile(main->c_str());
     get_syntax_stream(file);
     get_xref_stream(file);
@@ -192,7 +195,7 @@ LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
     std::vector<std::string>::const_iterator iter;
     for (iter = extra->begin(); iter != extra->end(); iter++)
     {
-        std::cout << " Creating streams for " << *iter << std::endl;
+        //std::cout << " Creating streams for " << *iter << std::endl;
         file = filter->get_sourcefile(iter->c_str());
         get_syntax_stream(file);
         get_xref_stream(file);
