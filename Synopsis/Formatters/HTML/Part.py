@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.24 2002/10/26 04:17:58 chalky Exp $
+# $Id: Part.py,v 1.25 2002/10/26 04:20:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.25  2002/10/26 04:20:35  chalky
+# Oops, limit constructor detection to functions
+#
 # Revision 1.24  2002/10/26 04:17:58  chalky
 # Show templates on previous line. Hide constructors in base class. Commas
 # between inherited members
@@ -514,7 +517,7 @@ class Inheritance (Part):
 		if child.accessibility() == AST.PRIVATE:
 		    continue
 		# Don't include constructors and destructors!
-		if child.language() == 'C++' and len(child.realname())>1:
+		if isinstance(child, AST.Function) and child.language() == 'C++' and len(child.realname())>1:
 		    if child.realname()[-1] == child.realname()[-2]: continue
 		    elif child.realname()[-1] == "~"+child.realname()[-2]: continue
 		# FIXME: skip overriden declarations
