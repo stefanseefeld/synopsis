@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <title>Synopsis</title>
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <h1>Synopsis</h1>
+    <p>Synopsis is a documentation extraction tool. Its modular design allows
+    multiple parsers, formatters, and an extendable Linker between the two. It
+    allows intermediate storage of the parsed data, which means you can use
+    Makefiles to incrementally update documentation as your program
+    develops.</p>
+
+    <p>The syntax for running synopsis is generally:</p>
+
+    <pre>
+    synopsis -p <i>parser</i> -Wp,<i>parser,options</i> -o <i>file.syn</i> file.idl
+
+    synopsis -f <i>formatter</i> -Wf,<i>formatter,options</i> -o <i>output</i> file1.syn file2.syn
+    </pre>
+
+    <p>These two steps parse an input file and save the generated AST
+    (abstract syntax tree) to a .syn file. Then the saved AST is loaded,
+    probably from more than one file, and passed to the formatter to generate
+    output. You can combine both these steps if you wish, but it is generally
+    better to use the intermediate .syn storage to allow incremental
+    updates.</p>
+
+    <p>Some formatters, ie HTML, allow storage of a list of links (Table Of
+    Contents - TOC) which may be used by other parts of the project to link
+    between languages or even between websites. You could provide a .toc file
+    on your website, and other people using your library can use it to link
+    their documentation directly to your site.</p>
+
+    <p>Passing options to the parser or formatter follows a similar convention
+    to gcc -- they are specified as a comma-separated list of options in the
+    appropriate -W option (see above). Additionally, many modules accept the
+    "--spec=<i>file</i>" option, whereby they read the specified file for
+    additional options. This file is just a list of options one per line, with
+    arguments separated by spaces. See the demos for examples of this usage.
+    Currently the following modules support this: IDL, HTML and synopsis.</p>
+
+    <p>For further information about the various parsers, formatters and the
+    linker, see:</p>
+
+    <ul>
+      <li>Parsers
+	<ul>
+	  <li><a href="Parsers.html#idl">CORBA IDL</a></li>
+	  <li><a href="Parsers.html#cxx">C++</a></li>
+	  <li><a href="Parsers.html#py">Python</a></li>
+	</ul>
+      </li>
+      <li><a href="Linker.html">Linker</a></li>
+      <li>Formatters
+	<ul>
+	  <li><a href="Formatters.html#ascii">ASCII</a></li>
+	  <li><a href="Formatters.html#dia">Dia</a></li>
+	  <li><a href="Formatters.html#dump">DUMP</a></li>
+	  <li><a href="Formatters.html#html">HTML</a></li>
+	  <li><a href="Formatters.html#htmls">HTML_simple</a></li>
+	</ul>
+      </li>
+      <li><a href="RefManual/index.html">Generated Reference Manual</a></li>
+    </ul>
+
+    <hr/><h2>Prev | Up | <a href="Parsers.html">Next</a> <i>Parsers</i></h2>
+    <hr/><p><i>Synopsis Documentation. Copyright (c) 2001 by Stephen Davies</i></p>
+    
+  </body>
+</html><!-- vim: set sts=2 ts=8 sw=2: -->
