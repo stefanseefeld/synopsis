@@ -21,10 +21,6 @@ class Config (Base):
     class Formatter:
 	class HTML (Base.Formatter.HTML):
 	    stylesheet_file = '../html.css'
-	    def __init__(self, argv):
-		"force style to be synopsis"
-		argv['style'] = 'synopsis'
-		Base.Formatter.HTML.__init__(self, argv)
 	modules = Base.Formatter.modules
 	modules['HTML'] = HTML
 
