@@ -79,7 +79,7 @@ class Formatter(Processor):
 
    stylesheet = Parameter(os.path.join(config.datadir, 'html.css'), 'stylesheet to be used')
    datadir = Parameter('', 'alternative data directory')
-   file_layout = Parameter(FileLayout(), 'how to lay out the output files')
+   file_layout = Parameter(NestedFileLayout(), 'how to lay out the output files')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    toc_out = Parameter('', 'name of file into which to store the TOC')
 
@@ -283,12 +283,12 @@ class Formatter(Processor):
       #filter out roots that are visible
       roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
       #a function generating a link
-      other = lambda x, o=origin, span=span: span('root-other', href(rel(o, x.file), x.label, target=x.target))
+      other = lambda x: span('root-other', href(rel(origin, x.file), x.label, target=x.target))
       #a function simply printing label
-      current = lambda x, span=span: span('root-current', x.label)
+      current = lambda x: span('root-current', x.label)
       # generate the header
-      roots = map(lambda x, o=origin, other=other, current=current: x.file==o and current(x) or other(x), roots)
-      return string.join(roots, ' | \n')+'\n<hr/>\n'
+      roots = map(lambda x: x.file==origin and current(x) or other(x), roots)
+      return div('navigation', string.join(roots, '\n'))+'\n'
 
    def register_filename(self, filename, view, scope):
       """Registers a file for later production. The first view to register

@@ -79,7 +79,7 @@ class FileDetails(View):
          includes = sourcefile.includes()
          # Only show files from the project
          includes = filter(lambda x: x.target().is_main(), includes)
-         self.write('<h2>Includes from this file:</h2>')
+         self.write('<h2 class="heading">Includes from this file:</h2>')
          if not len(includes):
             self.write('No includes.<br/>')
          for include in includes:
@@ -92,7 +92,7 @@ class FileDetails(View):
       except:
          pass
 
-      self.write('<h2>Declarations in this file:</h2>')
+      self.write('<h2 class="heading">Declarations in this file:</h2>')
       # Sort items (by name)
       items = map(lambda decl: (decl.type(), decl.name(), decl), file.declarations())
       # ignore AST.Builtin

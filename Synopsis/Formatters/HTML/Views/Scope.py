@@ -33,11 +33,6 @@ class Scope(View):
    def register(self, processor):
 
       View.register(self, processor)
-      share = config.datadir
-      self.syn_logo = 'synopsis200.jpg'
-      processor.file_layout.copy_file(os.path.join(share, 'synopsis200.jpg'),
-                                      self.syn_logo)
-
       for part in self.parts: part.register(self)
 
       self.__namespaces = []
@@ -123,7 +118,7 @@ class Scope(View):
    def end_file(self):
       """Overrides end_file to provide synopsis logo"""
 
-      self.write('<hr/>\n')
+      self.write('\n')
       now = time.strftime(r'%c', time.localtime(time.time()))
       logo = href('http://synopsis.fresco.org', 'synopsis')
       self.write(div('logo', 'Generated on ' + now + ' by \n<br/>\n' + logo))

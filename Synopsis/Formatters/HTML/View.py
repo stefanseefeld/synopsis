@@ -36,7 +36,7 @@ class Format(Parametrized):
       scripts
       """
 
-      os.write('<?xml version="1.0"?>\n')
+      os.write('<?xml version="1.0" encoding="iso-8859-1"?>\n')
       os.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"\n')
       os.write('    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n')
       os.write('<html xmlns="http://www.w3.org/1999/xhtml" lang="en">\n')

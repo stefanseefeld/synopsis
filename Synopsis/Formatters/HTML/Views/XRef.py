@@ -68,9 +68,10 @@ class XRef(View):
          self.start_file()
          self.write(self.processor.navigation_bar(self.filename()))
          self.write(entity('h1', self.__title))
-         self.write('<hr/>')
          for name in page_info[i]:
+            self.write('<div class="xref-name">')
             self.process_name(name)
+            self.write('</div>')
          self.end_file()
 
    def register_filenames(self, start):
@@ -169,4 +170,4 @@ class XRef(View):
             else:
                self.write(entity('li', file_href + type + Util.ccolonName(cname, name)))
          self.write('</ul></li>\n')
-      self.write('</ul><hr/>\n')
+      self.write('</ul>\n')
