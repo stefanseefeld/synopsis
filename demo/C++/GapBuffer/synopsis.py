@@ -18,7 +18,6 @@ linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper
                 Grouper1(),         # group declarations according to '@group' tags
                 CommentStripper(),  # strip any 'suspicious' comments
                 Previous(),         # attach '//<' comments
-                EmptyNS(),          # skip empty namespaces
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 xref = XRefCompiler(prefix = 'xref')
