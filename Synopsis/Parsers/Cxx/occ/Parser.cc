@@ -175,7 +175,11 @@ bool Parser::definition(PTree::Node *&p)
   if(t == ';')
     res = null_declaration(p);
   else if(t == Token::TYPEDEF)
-    res = typedef_(p);
+  {
+    PTree::Typedef *td;
+    res = typedef_(td);
+    p = td;
+  }
   else if(t == Token::TEMPLATE)
     res = template_decl(p);
   else if(t == Token::METACLASS)
@@ -214,37 +218,23 @@ bool Parser::null_declaration(PTree::Node *&decl)
   typedef
   : TYPEDEF type.specifier declarators ';'
 */
-bool Parser::typedef_(PTree::Node *&def)
+bool Parser::typedef_(PTree::Typedef *&def)
 {
   Token tk;
   PTree::Node *type_name, *decl;
   PTree::Encoding type_encode;
 
-  if(my_lexer->get_token(tk) != Token::TYPEDEF)
-    return false;
+  if(my_lexer->get_token(tk) != Token::TYPEDEF) return false;
 
   def = new PTree::Typedef(new PTree::Reserved(tk));
-  if(!type_specifier(type_name, false, type_encode))
-    return false;
+  if(!type_specifier(type_name, false, type_encode)) return false;
 
   def = PTree::snoc(def, type_name);
-  if(!declarators(decl, type_encode, true))
-    return false;
-//   std::cout << "declarators " << type_encode << std::endl;
-//   PTree::display(decl, std::cout, true, true);
-  // see Environment::RecordTypedefName ...
-//   for (PTree::Node *node = decl; node; node = PTree::tail(node, 2))
-//   {
-//     PTree::Declarator *d = static_cast<PTree::Declarator *>(node->car());
-//     PTree::Encoding name = d->encoded_name();
-//     PTree::Encoding type = d->encoded_type();
-//     std::cout << "typedef declarator : " << name << ' ' << type << std::endl;
-//     PTree::display(d, std::cout, true, true);
-//   }
-  if(my_lexer->get_token(tk) != ';')
-    return false;
+  if(!declarators(decl, type_encode, true)) return false;
+  if(my_lexer->get_token(tk) != ';') return false;
 
   def = PTree::nconc(def, PTree::list(decl, new PTree::Atom(tk)));
+  my_scopes.top()->declare(def);
   return true;
 }
 
@@ -2789,7 +2779,13 @@ bool Parser::class_member(PTree::Node *&mem)
   }
   else if(t == Token::UserKeyword4) return user_access_spec(mem);
   else if(t == ';') return null_declaration(mem);
-  else if(t == Token::TYPEDEF) return typedef_(mem);
+  else if(t == Token::TYPEDEF)
+  {
+    PTree::Typedef *td;
+    bool result = typedef_(td);
+    mem = td;
+    return result;
+  }
   else if(t == Token::TEMPLATE) return template_decl(mem);
   else if(t == Token::USING) return using_(mem);
   else if(t == Token::METACLASS) return metaclass_decl(mem);
@@ -4089,8 +4085,12 @@ bool Parser::statement(PTree::Node *&st)
       if (!using_(st)) return false;
       break;
     case Token::TYPEDEF :
-      if (!typedef_(st)) return false;
+    {
+      PTree::Typedef *td;
+      if (!typedef_(td)) return false;
+      st = td;
       break;
+    }
     case Token::IF :
       if (!if_statement(st)) return false;
       break;

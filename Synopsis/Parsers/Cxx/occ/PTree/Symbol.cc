@@ -42,14 +42,9 @@ void Scope::declare(Typedef *td)
     Node *d = declarations->car();
     if(type_of(d) == Token::ntDeclarator)
     {
-//       Encoding name = d->encoded_name();
-//       Encoding type = d->encoded_type();
-//       if(!name.empty() && !type.empty())
-//       {
-// 	Environment *e = this;
-// 	Encoding base = Environment::get_base_name(name, e);
-// 	if(!base.empty()) my_symbols.insert(base, Symbol(Symbol::TYPE, d));
-//       }
+      Encoding name = d->encoded_name();
+      Encoding type = d->encoded_type();
+      declare(name, new TypeName(type, d));
     }
     declarations = tail(declarations, 2);
   }
