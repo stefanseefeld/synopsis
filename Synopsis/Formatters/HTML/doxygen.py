@@ -1,4 +1,4 @@
-# $Id: doxygen.py,v 1.2 2001/04/05 09:57:49 chalky Exp $
+# $Id: doxygen.py,v 1.3 2001/04/06 06:27:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: doxygen.py,v $
+# Revision 1.3  2001/04/06 06:27:09  chalky
+# Change from import * since our py parser cant handle that too well
+#
 # Revision 1.2  2001/04/05 09:57:49  chalky
 # Add pre and post summary div, so the [Source] link can go inside it
 #
@@ -34,6 +37,10 @@ import string
 
 from Synopsis.Core import AST
 from Synopsis.Formatter.HTML import ScopeSorter
+from Synopsis.Formatter.HTML.core import config
+from Synopsis.Formatter.HTML.Tags import *
+from Synopsis.Formatter.HTML import ASTFormatter
+	    
 
 class DOScopeSorter (ScopeSorter.ScopeSorter):
     def _section_of(self, decl):
@@ -67,9 +74,7 @@ class DOScopeSorter (ScopeSorter.ScopeSorter):
 	names.sort(lambda a, b, order=order: cmp(order(a),order(b)))
 	self._set_section_names(map(lambda x: string.join(x,''), names))
 	
-from Synopsis.Formatter.HTML.ASTFormatter import *
-	    
-class DOSummaryASTFormatter (SummaryASTFormatter):
+class DOSummaryASTFormatter (ASTFormatter.SummaryASTFormatter):
     def formatEnum(self, decl):
 	"(enum, enum { list of enumerator names })"
 	ename = self.label(decl.name())
@@ -81,14 +86,14 @@ class DOSummaryASTFormatter (SummaryASTFormatter):
 	name = "%s {%s}"%(ename, string.join(map(divver, name)))
 	return "enum", name
 
-class DOSummaryASTCommenter (SummaryASTCommenter):
+class DOSummaryASTCommenter (ASTFormatter.SummaryASTCommenter):
     """Adds summary comments to all declarations"""
     def formatDeclaration(self, decl):
 	comm = config.comments[decl]
 	more = config.link_detail and ' '+self.reference(decl.name(), 'More...') or ''
 	return '', span('summary', comm.summary) + more
 
-class DODetailASTFormatter (DetailASTFormatter):
+class DODetailASTFormatter (ASTFormatter.DetailASTFormatter):
     def formatFunction(self, decl):
 	premod = self.formatModifiers(decl.premodifier())
 	type = self.formatType(decl.returnType())
@@ -113,24 +118,24 @@ class DODetailASTFormatter (DetailASTFormatter):
 	    name = str%(type, name, params, postmod, raises)
 	return '', name
 
-class PreDivFormatter (DefaultASTFormatter):
+class PreDivFormatter (ASTFormatter.DefaultASTFormatter):
     def formatDeclaration(self, decl):
 	return '<div class="preformat">',''
 
-class PostDivFormatter (DefaultASTFormatter):
+class PostDivFormatter (ASTFormatter.DefaultASTFormatter):
     def formatDeclaration(self, decl):
 	return '', '</div>'
 
-class PreSummaryDiv (DefaultASTFormatter):
+class PreSummaryDiv (ASTFormatter.DefaultASTFormatter):
     def formatDeclaration(self, decl):
 	return '', '<div class="summary">'
 
-class PostSummaryDiv (DefaultASTFormatter):
+class PostSummaryDiv (ASTFormatter.DefaultASTFormatter):
     def formatDeclaration(self, decl):
 	return '', '</div>'
 
 
-class DOSummaryFormatter (SummaryFormatter):
+class DOSummaryFormatter (ASTFormatter.SummaryFormatter):
     def old_init_formatters(self):
 	self.addFormatter( DOSummaryASTFormatter )
 	self.addFormatter( DOSummaryASTCommenter )
@@ -163,13 +168,13 @@ class DOSummaryFormatter (SummaryFormatter):
 	    self.write(str%(type,name))
 
 
-class DODetailFormatter (DetailFormatter):
+class DODetailFormatter (ASTFormatter.DetailFormatter):
     def old_init_formatters(self):
 	self.addFormatter( PreDivFormatter )
 	self.addFormatter( DODetailASTFormatter )
 	self.addFormatter( PostDivFormatter )
-	self.addFormatter( ClassHierarchyGraph )
-	self.addFormatter( DetailASTCommenter )
+	self.addFormatter( ASTFormatter.ClassHierarchyGraph )
+	self.addFormatter( ASTFormatter.DetailASTCommenter )
 
     def writeSectionEnd(self, heading):
 	self.write('<hr>')
