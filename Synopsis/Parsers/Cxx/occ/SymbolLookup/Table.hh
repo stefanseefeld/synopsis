@@ -35,16 +35,15 @@ public:
   //. Right now only CXX is supported.
   Table(Language = CXX);
 
-  Table &enter_scope();
-  Table &enter_namespace(const PTree::NamespaceSpec *);
-  Table &enter_class(const PTree::ClassSpec *);
-  Table &enter_function(const PTree::Declaration *);
-  Table &enter_block(const PTree::List *);
+  Table &enter_namespace(PTree::NamespaceSpec const *);
+  Table &enter_class(PTree::ClassSpec const *);
+  Table &enter_function(PTree::Declaration const *);
+  Table &enter_block(PTree::List const *);
   void leave_scope();
 
   Scope &current_scope();
 
-  bool evaluate_const(const PTree::Node *node, long &value);
+  bool evaluate_const(PTree::Node const *node, long &value);
 
   void declare(PTree::Declaration *);
   void declare(PTree::Typedef *);
@@ -57,14 +56,17 @@ public:
   void declare(PTree::TemplateDecl *);
 
   //. look up the encoded name and return a set of matching symbols.
-  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const;
+  virtual std::set<Symbol const *> lookup(PTree::Encoding const &) const;
 
 private:
   typedef std::stack<Scope *> Scopes;
 
-  static PTree::Encoding get_base_name(const PTree::Encoding &enc, const Scope *&scope);
-  static int get_base_name_if_template(PTree::Encoding::iterator i, const Scope *&);
-  static const Scope *lookup_typedef_name(PTree::Encoding::iterator, size_t, const Scope *);
+  static PTree::Encoding get_base_name(PTree::Encoding const &enc,
+				       Scope const *&scope);
+  static int get_base_name_if_template(PTree::Encoding::iterator i,
+				       Scope const *&);
+  static Scope const *lookup_typedef_name(PTree::Encoding::iterator,
+					  size_t, Scope const *);
   static PTree::ClassSpec *get_class_template_spec(PTree::Node *);
   static PTree::Node *strip_cv_from_integral_type(PTree::Node *);
 
@@ -74,7 +76,7 @@ private:
 
 inline Table::Guard::~Guard() { if (table) table->leave_scope();}
 
-inline bool Table::evaluate_const(const PTree::Node *node, long &value)
+inline bool Table::evaluate_const(PTree::Node const *node, long &value)
 {
   if (my_language == NONE) return false;
   if (!node) return false;

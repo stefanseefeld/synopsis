@@ -19,7 +19,7 @@ void TemplateParameterScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in);
 }
 
-std::set<Symbol const *> LocalScope::lookup(const Encoding &name) const throw()
+std::set<Symbol const *> LocalScope::lookup(Encoding const &name) const throw()
 {
   std::set<Symbol const *> symbols = Scope::lookup(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
@@ -31,7 +31,7 @@ void LocalScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-std::set<Symbol const *> FunctionScope::lookup(const Encoding &name) const throw()
+std::set<Symbol const *> FunctionScope::lookup(Encoding const &name) const throw()
 {
   std::set<Symbol const *> symbols = Scope::lookup(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
@@ -50,7 +50,7 @@ std::string FunctionScope::name() const
   return oss.str();
 }
 
-std::set<Symbol const *> Class::lookup(const Encoding &name) const throw()
+std::set<Symbol const *> Class::lookup(Encoding const &name) const throw()
 {
   std::set<Symbol const *> symbols = Scope::lookup(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
@@ -58,7 +58,7 @@ std::set<Symbol const *> Class::lookup(const Encoding &name) const throw()
 
 std::string Class::name() const
 {
-  const PTree::Node *name_spec = PTree::second(my_spec);
+  PTree::Node const *name_spec = PTree::second(my_spec);
   // FIXME: why is name_spec for anonumous classes 'list(0, 0)' ?
   //        see Parser::class_spec()...
   if (name_spec && name_spec->is_atom())
@@ -72,7 +72,7 @@ void Class::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-std::set<Symbol const *> Namespace::lookup(const Encoding &name) const throw()
+std::set<Symbol const *> Namespace::lookup(Encoding const &name) const throw()
 {
   std::set<Symbol const *> symbols = Scope::lookup(name);
   return symbols.size() ? symbols : my_outer->lookup(name);
@@ -80,7 +80,7 @@ std::set<Symbol const *> Namespace::lookup(const Encoding &name) const throw()
 
 std::string Namespace::name() const
 {
-  const PTree::Node *name_spec = PTree::second(my_spec);
+  PTree::Node const *name_spec = PTree::second(my_spec);
   return name_spec ? std::string(name_spec->position(), name_spec->length()) : "";
 }
 
