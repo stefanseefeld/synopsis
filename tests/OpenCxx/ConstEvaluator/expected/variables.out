@@ -16,3 +16,7 @@ initializer : ( - 1 )
 value : -1
 initializer : ~ 0
 value : -1
+initializer : true
+value : 1
+initializer : false
+value : 0

@@ -55,6 +55,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["catch"] = Token::CATCH;
     my_keywords["class"] = Token::CLASS;
     my_keywords["delete"] = Token::DELETE;
+    my_keywords["false"] = Token::Constant;
     my_keywords["friend"] = Token::FRIEND;
     my_keywords["mutable"] = Token::MUTABLE;
     my_keywords["namespace"] = Token::NAMESPACE;
@@ -66,6 +67,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["template"] = Token::TEMPLATE;
     my_keywords["this"] = Token::THIS;
     my_keywords["throw"] = Token::THROW;
+    my_keywords["true"] = Token::Constant;
     my_keywords["try"] = Token::TRY;
     my_keywords["typeid"] = Token::TYPEID;
     my_keywords["typename"] = Token::CLASS; // FIXME !!

@@ -13,6 +13,12 @@
 
 using namespace PTree;
 
+namespace
+{
+  const std::string TRUE = "true";
+  const std::string FALSE = "false";
+}
+
 bool ConstEvaluator::evaluate(Node *node, long &value)
 {
   node->accept(this);
@@ -27,6 +33,7 @@ bool ConstEvaluator::evaluate(Node *node, long &value)
 void ConstEvaluator::visit(Literal *node)
 {
   std::istringstream iss(std::string(node->position(), node->length()));
+
   switch (node->type())
   {
     case Token::Constant:
@@ -37,6 +44,10 @@ void ConstEvaluator::visit(Literal *node)
 	iss.setf(std::ios::hex, std::ios::basefield);
 	iss >> my_value;
       }
+      else if (node->length() == 4 && TRUE.compare(0, 4, node->position(), 4) == 0)
+	my_value = 1;
+      else if (node->length() == 5 && FALSE.compare(0, 5, node->position(), 5) == 0)
+	my_value = 0;
       else
       {
 	double value;

@@ -7,3 +7,5 @@ const int g = 1 > 2 ? 1 : 2;
 const int h = (24 >> 3);
 const int i = (-1);
 const int j = ~0;
+const bool k = true;
+const bool l = false;
