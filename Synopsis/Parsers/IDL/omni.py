@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.34 2002/12/12 17:25:35 chalky Exp $
+# $Id: omni.py,v 1.35 2003/01/16 17:14:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,11 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.35  2003/01/16 17:14:10  chalky
+# Increase AST version number. SourceFiles store full filename. Executor/Project
+# uses it to check timestamp for all included files when deciding whether to
+# reparse input files.
+#
 # Revision 1.34  2002/12/12 17:25:35  chalky
 # Implemented Include support for C++ parser. A few other minor fixes.
 #
@@ -542,7 +547,7 @@ def parse(file, extra_files, args, config_obj):
         sys.stderr.write("omni: Error parsing " + file + "\n")
         sys.exit(1)
 
-    sourcefile = AST.SourceFile(strip(file), "IDL")
+    sourcefile = AST.SourceFile(strip(file), file, "IDL")
     sourcefile.set_is_main(1)
     ast = AST.AST()
     ast.files()[sourcefile.filename()] = sourcefile

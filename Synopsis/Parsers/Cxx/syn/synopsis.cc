@@ -2,7 +2,7 @@
 // This file contains implementation for class Synopsis, which converts the
 // C++ AST into a Python AST.
 
-// $Id: synopsis.cc,v 1.46 2002/12/12 17:25:34 chalky Exp $
+// $Id: synopsis.cc,v 1.47 2003/01/16 17:14:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,11 @@
 // 02111-1307, USA.
 
 // $Log: synopsis.cc,v $
+// Revision 1.47  2003/01/16 17:14:10  chalky
+// Increase AST version number. SourceFiles store full filename. Executor/Project
+// uses it to check timestamp for all included files when deciding whether to
+// reparse input files.
+//
 // Revision 1.46  2002/12/12 17:25:34  chalky
 // Implemented Include support for C++ parser. A few other minor fixes.
 //
@@ -608,15 +613,17 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 PyObject *Synopsis::SourceFile(AST::SourceFile* file)
 {
     Trace trace("Synopsis::SourceFile");
-    PyObject *pyfile, *filename;
+    PyObject *pyfile, *filename, *full_filename;
     //std::cout << " Creating SourceFile for " << file->filename() << std::endl;
-    pyfile = PyObject_CallMethod(m_ast, "SourceFile", "OO",
+    pyfile = PyObject_CallMethod(m_ast, "SourceFile", "OOO",
                                  filename = m->py(file->filename()),
+                                 full_filename = m->py(file->full_filename()),
                                  m->cxx()
                                 );
     assertObject(pyfile);
     PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
     Py_DECREF(filename);
+    Py_DECREF(full_filename);
     return pyfile;
 }
 
