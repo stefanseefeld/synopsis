@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.1 2002/09/28 05:51:06 chalky Exp $
+# $Id: emul.py,v 1.2 2002/10/02 03:51:01 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.2  2002/10/02 03:51:01  chalky
+# Allow more flexible gcc version (eg: 2.95.3-5 for cygwin)
+#
 # Revision 1.1  2002/09/28 05:51:06  chalky
 # Moved compiler emulation stuff to this module
 #
@@ -199,7 +202,7 @@ def write_compiler_infos(infos):
     
     
 
-re_specs = re.compile('^Reading specs from (.*/)lib/gcc-lib/(.*)/([0-9]+\.[0-9]+\.[0-9]+)/specs$')
+re_specs = re.compile('^Reading specs from (.*/)lib/gcc-lib/(.*)/([0-9]+\.[0-9]+\.[0-9]+.*)/specs')
 re_version = re.compile('([0-9]+)\.([0-9]+)\.([0-9]+)')
 
 def find_compiler_info(compiler):
