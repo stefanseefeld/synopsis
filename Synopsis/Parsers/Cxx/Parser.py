@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.2 2003/11/05 19:52:24 stefan Exp $
+# $Id: Parser.py,v 1.3 2003/11/11 02:58:31 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -13,37 +13,39 @@ use by python.
 @see C++/SWalker
 """
 
-from Synopsis.Core.Processor import Processor
+from Synopsis.Processor import Processor, Parameter
 from Synopsis.Core import AST
 import occ
 
 class Parser(Processor):
 
-   preprocessor = None
-   emulate_compiler = None
-   cppflags = []
-   main_file_only = True
-   base_path = ''
-   extract_tails = True
-   syntax_prefix = None
-   xref_prefix = None
+   preprocessor = Parameter(None, 'the preprocessor to use (defaults to internal)')
+   emulate_compiler = Parameter(None, 'a compiler to emulate (defaults to \'c++\')')
+   cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
+   main_file_only = Parameter(True, 'should only main file be processed')
+   base_path = Parameter('', 'path prefix to strip off of the file names')
+   extract_tails = Parameter(True, 'consider comments at the end of declarations')
+   syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
+   xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
+
+   extra_files = Parameter([], 'extra files for which to keep info. Highly Deprecated !!!')
    
    def process(self, ast, **kwds):
-        
-      self.__dict__.update(kwds)
 
-      for file in self.input:
-         ast = occ.parse(ast, file, [],
-                         self.verbose,
-                         self.main_file_only,
-                         self.base_path,
-                         self.preprocessor,
-                         self.cppflags,
-                         self.extract_tails,
-                         self.syntax_prefix,
-                         self.xref_prefix,
-                         self.emulate_compiler)
-      output = kwds.get('output')
-      if output:
-         AST.save(output, ast)
-      return ast
+      input = kwds.get('input')
+      self.set_parameters(kwds)
+      self.ast = ast
+      for file in input:
+         self.ast = occ.parse(self.ast, file,
+                              self.extra_files,
+                              self.verbose,
+                              self.main_file_only,
+                              self.base_path,
+                              self.preprocessor,
+                              self.cppflags,
+                              self.extract_tails,
+                              self.syntax_prefix,
+                              self.xref_prefix,
+                              self.emulate_compiler)
+
+      return self.output_and_return_ast()
