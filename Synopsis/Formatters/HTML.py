@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.49 2001/01/22 19:54:41 stefan Exp $
+# $Id: HTML.py,v 1.50 2001/01/22 20:14:36 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.50  2001/01/22 20:14:36  stefan
+# forgot two flags in the usage() function
+#
 # Revision 1.49  2001/01/22 19:54:41  stefan
 # better support for help message
 #
@@ -1262,7 +1265,9 @@ def usage():
 		                       - ssd     Filters for and strips //. comments
 		                       - javadoc @tag style comments
                                        - section test section breaks.
-		                       You may use multiple -f options"""
+		                       You may use multiple -f options
+  -t <filename>                        Generate a table of content and write it to <filename>
+  -r <filename>                        merge in table of content from <filename> and use it to resolve external symbols"""
 
 def __parseArgs(args):
     global basename, stylesheet, namespace, commentParser, stylesheet_file, toc_out, toc_in
