@@ -17,7 +17,7 @@ BISON_V =
 RM = rm -f
 MV = mv
 FLEXDFLT = lex.yy.c
-CT_TARG = ctdemo
+#CT_TARG = ctdemo
 TG_TARG = tg
 CPP_PATH =/lib/cpp
 
@@ -53,8 +53,8 @@ LIBSLOC=
 #	Source files and directories
 #
 
-DEMO_C_MAIN = ctdemo.cpp
-DEMO_C_OBJ = ctdemo.o
+#DEMO_C_MAIN = ctdemo.cpp
+#DEMO_C_OBJ = ctdemo.o
 
 LIBCT_FILES = \
     context.cpp \
@@ -100,7 +100,7 @@ ALL_OBJS = \
 #	Other variables
 #
 
-INCLUDES= -I.
+INCLUDES= -I../include
 CPPFLAGS = -DLIB_CPP=\"$(CPP_PATH)\"
 
 GCCFLAGS = -g -Wall
@@ -141,7 +141,7 @@ CPLUSFLAGS= $(CFLAGS)
 
 .PHONY: all fresh tidy noexes clean release depend setup
 
-all: $(CT_TARG) libct.a
+all: libct.a
 
 $(CT_TARG): gram.h $(ALL_OBJS)
 	$(CPLUS) $(CFLAGS) -o $(CT_TARG) $(ALL_OBJS) $(LIBSLOC) $(LIBS)

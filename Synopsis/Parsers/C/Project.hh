@@ -38,9 +38,9 @@
 #include <iostream>
 #include <cassert>
 
-#include "parseenv.h"
-#include "symbol.h"
-#include "callback.h"
+#include <ctool/parseenv.h>
+#include <ctool/symbol.h>
+#include <ctool/callback.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 

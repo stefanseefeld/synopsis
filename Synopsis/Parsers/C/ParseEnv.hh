@@ -37,10 +37,10 @@
 #include <cstdio>
 #include <string>
 
-#include "config.h"
+#include <ctool/config.h>
 
-#include "context.h"
-#include "lexer.h"
+#include <ctool/context.h>
+#include <ctool/lexer.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 

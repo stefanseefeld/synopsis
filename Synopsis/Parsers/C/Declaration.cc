@@ -33,13 +33,13 @@
 #include <cassert>
 #include <cstring>
 
-#include "decl.h"
-#include "express.h"
-#include "stemnt.h"
+#include <ctool/decl.h>
+#include <ctool/express.h>
+#include <ctool/stemnt.h>
 
-#include "token.h"
+#include <ctool/token.h>
 #include "gram.h"
-#include "project.h"
+#include <ctool/project.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static

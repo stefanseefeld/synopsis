@@ -38,14 +38,14 @@
 #include <iostream>
 #include <vector>
 
-#include "symbol.h"
-#include "express.h"
-#include "decl.h"
-#include "callback.h"
-#include "location.h"
-#include "dup.h"
+#include <ctool/symbol.h>
+#include <ctool/express.h>
+#include <ctool/decl.h>
+#include <ctool/callback.h>
+#include <ctool/location.h>
+#include <ctool/dup.h>
 
-#include "Traversal.h"
+#include <ctool/Traversal.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum StatementType

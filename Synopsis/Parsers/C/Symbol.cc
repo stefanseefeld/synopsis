@@ -34,9 +34,9 @@
 #include <cstring>
 #include <cassert>
 
-#include "symbol.h"
-#include "stemnt.h"
-#include "project.h"
+#include <ctool/symbol.h>
+#include <ctool/stemnt.h>
+#include <ctool/project.h>
 
 //#define  PRINT_LEVEL
 

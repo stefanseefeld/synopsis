@@ -37,14 +37,14 @@
 #include <iostream>
 #include <vector>
 
-#include "symbol.h"
-#include "decl.h"
-#include "callback.h"
-#include "location.h"
-#include "utype.h"
+#include <ctool/symbol.h>
+#include <ctool/decl.h>
+#include <ctool/callback.h>
+#include <ctool/location.h>
+#include <ctool/utype.h>
 
-#include "dup.h"
-#include "Traversal.h"
+#include <ctool/dup.h>
+#include <ctool/Traversal.h>
 
 class Decl;
 class Type;

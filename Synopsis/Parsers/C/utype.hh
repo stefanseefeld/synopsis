@@ -33,8 +33,8 @@
 #ifndef    UTYPE_H
 #define    UTYPE_H
 
-#include "config.h"
-#include "identify.h"
+#include <ctool/config.h>
+#include <ctool/identify.h>
 
 /*  ###############################################################  */
 

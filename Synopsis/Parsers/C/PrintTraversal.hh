@@ -32,7 +32,7 @@
 #ifndef _PrintTraversal_h
 #define _PrintTraversal_h
 
-#include "Traversal.h"
+#include <ctool/Traversal.h>
 #include <iostream>
 
 class PrintTraversal : public Traversal

@@ -38,19 +38,19 @@
  
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-#include    "config.h"
-#include    "utype.h"
-#include    "identify.h"
+#include    <ctool/config.h>
+#include    <ctool/utype.h>
+#include    <ctool/identify.h>
 
-#include    "token.h"
-#include    "parseenv.h"
+#include    <ctool/token.h>
+#include    <ctool/parseenv.h>
 
-#include    "symbol.h"
+#include    <ctool/symbol.h>
 
-#include    "decl.h"
-#include    "express.h"
-#include    "stemnt.h"
-#include    "project.h"
+#include    <ctool/decl.h>
+#include    <ctool/express.h>
+#include    <ctool/stemnt.h>
+#include    <ctool/project.h>
 
 /*  ###############################################################  */
 

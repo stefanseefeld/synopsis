@@ -32,8 +32,8 @@
 
 #include <iostream>
 
-#include "parseenv.h"
-#include "project.h"
+#include <ctool/parseenv.h>
+#include <ctool/project.h>
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 
 extern int yyparse(void);
