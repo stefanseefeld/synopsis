@@ -4,9 +4,11 @@ all: Manual ManualD
 
 Manual: Manual.syn
 	$(synopsis) html --output=$@ $?
+	touch $@
 
 ManualD: Manual.syn
 	$(synopsis) doxygen --output=$@ $?
+	touch $@
 
 Manual.syn: display.syn
 	$(synopsis) link --output=$@ $?
