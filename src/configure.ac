@@ -12,6 +12,12 @@ AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.9 $)
 AC_INIT(libSynopsis, 0.8, synopsis-devel@fresco.org)
 
+AC_ARG_WITH(python, 
+  [  --with-python=PATH      specify the Python interpreter],
+  PYTHON="$with_python",
+  PYTHON="python"
+)
+
 AC_ARG_ENABLE([gc], 
   [  --disable-gc            don't use garbage collector (default is enabled)],
   [ac_cv_enable_gc=no],
@@ -26,6 +32,12 @@ AC_ARG_WITH([gc_prefix],
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
+
+if test -n "$PYTHON" -a "$PYTHON" != yes; then
+  AC_CHECK_FILE($PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
+else
+  AC_PATH_PROG(PYTHON, python2 python, python)
+fi
 
 if test "$ac_cv_enable_gc" == "yes"; then
   GC_BRIDGE=$srcdir/Synopsis/PTree/GC-enabled.tmpl
@@ -49,6 +61,14 @@ CYGWIN*)
     LIBEXT=".dll"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     LIBS="$LIBS -lpthread"
+    if test `$PYTHON -c "import os; print os.name"` = nt; then
+      if test "$CXX" = "g++"; then
+        CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
+        CFLAGS="-mno-cygwin $CFLAGS"
+        CXXFLAGS="-mno-cygwin $CXXFLAGS"
+        LDFLAGS="-mno-cygwin $LDFLAGS"
+      fi
+    fi
     ;;
 *)
     LIBEXT=".so"
