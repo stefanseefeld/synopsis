@@ -273,7 +273,7 @@ class DetailASTFormatter (BaseASTFormatter):
             raises = span("keyword", "raises")
             exceptions = []
             for exception in oper.exceptions():
-                exceptions.append(self.referenceName(exception.name()))
+                exceptions.append(self.reference(exception.name()))
 	    exceptions = span("raises", string.join(exceptions, ", "))
             return '%s (%s)'%(raises, exceptions)
 	return ''
