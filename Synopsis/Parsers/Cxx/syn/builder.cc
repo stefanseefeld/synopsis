@@ -75,9 +75,13 @@ namespace {
 	return str;
     }
 
-    std::ostream& operator <<(std::ostream& out, const std::vector<std::string>& vec) {
-	return out << join(vec, "::");
-    }
+}
+
+//. Formats a vector<string> to the output, joining the strings with ::'s.
+//. This operator is prototyped in builder.hh and can be used from other
+//. modules
+std::ostream& operator <<(std::ostream& out, const std::vector<std::string>& vec) {
+    return out << join(vec, "::");
 }
 
 //
@@ -188,7 +192,7 @@ AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nsty
 		    ns = Type::declared_cast<AST::Namespace>(type);
 		}
 	    }
-	    catch (const std::bad_cast &) {}
+	    catch (const Type::wrong_type_cast &) {}
 	    break;
 	case NamespaceAnon:
 	    // name is the filename. Wrap it in {}'s
@@ -424,7 +428,7 @@ void Builder::addThisVariable()
     AST::Class* clas;
     try {
 	clas = Type::declared_cast<AST::Class>(clas_named);
-    } catch (std::bad_cast) {
+    } catch (const Type::wrong_type_cast &) {
 	// Not in a method -- so dont add a 'this'
 	return;
     }
@@ -639,7 +643,7 @@ AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, co
 	for (vi_Named iter = types.begin(); iter != types.end();)
 	    try {
 		functions.push_back( Type::declared_cast<AST::Function>(*iter++) );
-	    } catch (std::bad_cast) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
+	    } catch (const Type::wrong_type_cast &) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
 	
 	// If no looked up names were functions, program is ill-formed (?)
 	if (!functions.size()) return NULL;
@@ -711,11 +715,10 @@ Type::Named* Builder::lookupType(const std::vector<std::string>& names, bool fun
 		scope = m_scopes.top();
 	    }
 	} else {
-	    AST::Scope* ast_scope;
 	    try {
 		// Find cached scope from 'type'
 		scope = findScope( Type::declared_cast<AST::Scope>(type) );
-	    } catch (std::bad_cast) {
+	    } catch (const Type::wrong_type_cast &) {
 		// Abort lookup
 		throw ERROR("qualified lookup found a scope that wasn't a scope finding: " << names);
 	    }
@@ -754,7 +757,7 @@ Type::Named* Builder::resolveType(Type::Named* type)
 	// Scope is now the containing scope of the type we are checking
 	return findScope(scope)->dict->lookup(*iter);
     }
-    catch (std::bad_cast) {
+    catch (const Type::wrong_type_cast &) {
 	LOG("resolveType failed! bad cast.");
     }
     catch (Dictionary::KeyError e) {

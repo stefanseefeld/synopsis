@@ -130,3 +130,7 @@ void Visitor::visitTemplateType(Template *t) { visitDeclared(t); }
 void Visitor::visitParameterized(Parameterized *t) { visitType(t); }
 void Visitor::visitFuncPtr(FuncPtr *t) { visitType(t); }
 
+// exception wrong_type_cast
+const char* wrong_type_cast::what() const throw() {
+    return "Type::wrong_type_cast";
+}

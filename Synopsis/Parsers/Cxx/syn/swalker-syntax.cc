@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.3 2001/05/06 20:15:03 stefan Exp $
+// $Id: swalker-syntax.cc,v 1.4 2001/06/05 03:49:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.4  2001/06/05 03:49:33  chalky
+// Made my own wrong_type_cast exception. Added template support to qualified
+// names (its bad but it doesnt crash). Added vector<string> output op to builder
+//
 // Revision 1.3  2001/05/06 20:15:03  stefan
 // fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
 //
@@ -87,7 +91,8 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		if (m_scope) type = m_builder->lookupType(getName(spec->First()), m_scope);
 		else type = m_builder->lookupType(getName(spec->First()));
 		if (!type) { throw nodeERROR(spec, "scope '" << getName(spec->First()) << "' not found!"); }
-		m_scope = Type::declared_cast<AST::Scope>(type);
+		try { m_scope = Type::declared_cast<AST::Scope>(type); }
+		catch (const Type::wrong_type_cast&) { throw nodeERROR(spec, "scope '"<<getName(spec->First())<<"' found but not a scope!"); }
 		spec = spec->Rest()->Rest();
 	    }
 	    spec = spec->First();
@@ -105,7 +110,7 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	    if (m_scope) type = m_builder->lookupType(name, m_scope);
 	    else type = m_builder->lookupType(name);
 	    if (!type) { throw nodeERROR(spec, "variable '" << name << "' not found!"); }
-	    // Now find vtype (throw bad_cast if not a variable)
+	    // Now find vtype (throw wrong_type_cast if not a variable)
 	    try {
 		Type::Declared& declared = dynamic_cast<Type::Declared&>(*type);
 		// The variable could be a Variable or Enumerator
@@ -125,7 +130,7 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		} else {
 		    throw nodeERROR(spec, "var was not a Variable nor Enumerator!");
 		}
-	    } catch (std::bad_cast) {
+	    } catch (const std::bad_cast &) {
 		throw nodeERROR(spec, "variable '" << name << "' wasn't a declared type!");
 	    }
 	} else {
@@ -145,6 +150,9 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	m_type = 0;
 	e.set_node(spec);
 	throw;
+    }
+    catch(const Type::wrong_type_cast &) {
+	throw nodeERROR(spec, "wrong type error in TranslateVariable!");
     }
     catch(...) {
 	throw nodeERROR(spec, "unknown error in TranslateVariable!");
@@ -226,7 +234,7 @@ public:
     //. Resolves the given type object
     Type::Type* resolve(Type::Type* t) { m_type = t; t->accept(this); return m_type; }
     //. Tries to resolve the given type object to a Scope
-    AST::Scope* scope(Type::Type* t) throw (std::bad_cast) {
+    AST::Scope* scope(Type::Type* t) throw (Type::wrong_type_cast) {
 	return Type::declared_cast<AST::Scope>(resolve(t));
     }
     //. Looks up the unknown type for a fresh definition
@@ -262,7 +270,7 @@ Ptree* SWalker::TranslateArrowMember(Ptree* node) {
     if (!m_type) { throw nodeERROR(node, "Unable to resolve type of LHS of ->"); }
     try {
 	m_scope = TypeResolver(m_builder).scope(m_type);
-    } catch (std::bad_cast) { throw nodeERROR(node, "LHS of -> was not a scope!"); }
+    } catch (const Type::wrong_type_cast&) { throw nodeERROR(node, "LHS of -> was not a scope!"); }
     // Find member, m_type becomes the var type or func returnType
     Translate(node->Third());
     m_scope = 0;
@@ -282,7 +290,7 @@ Ptree* SWalker::TranslateDotMember(Ptree* node) {
     // Check for reference type
     try {
 	m_scope = TypeResolver(m_builder).scope(m_type);
-    } catch (std::bad_cast) { throw nodeERROR(node, "Warning: LHS of . was not a scope! "); }
+    } catch (const Type::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope! "); }
     // Find member, m_type becomes the var type or func returnType
     Translate(node->Third());
     m_scope = 0;

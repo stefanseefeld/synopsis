@@ -18,6 +18,9 @@ namespace Type {
 
 typedef std::vector<std::string> Name;
 
+//. Prototype for scoped name output operator
+std::ostream& operator <<(std::ostream& out, const std::vector<std::string>& vec);
+
 //. AST Builder.
 //. This class manages the building of an AST, including queries on the
 //. existing AST such as name and type lookups. The building operations are

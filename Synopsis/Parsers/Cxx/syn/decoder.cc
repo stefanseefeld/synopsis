@@ -43,6 +43,14 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
 	// Only handle names here
 	if (*m_iter >= 0x80) { // Name
 	    names.push_back(decodeName());
+	} else if (*m_iter == 'T') {
+	    // Template :(
+	    ++m_iter;
+	    std::string tname = decodeName();
+	    code_iter tend = m_iter + *m_iter++ - 0x80;
+	    while (m_iter < tend)
+		decodeType();
+	    names.push_back(tname);
 	} else {
 	    std::cerr << "Warning: Unknown type inside Q name: " << *m_iter << std::endl;
 	    // FIXME: provide << operator for m_string !

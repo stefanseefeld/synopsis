@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.28 2001/05/25 03:08:49 chalky Exp $
+// $Id: swalker.cc,v 1.29 2001/06/05 03:49:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.29  2001/06/05 03:49:33  chalky
+// Made my own wrong_type_cast exception. Added template support to qualified
+// names (its bad but it doesnt crash). Added vector<string> output op to builder
+//
 // Revision 1.28  2001/05/25 03:08:49  chalky
 // Fixes to compile with 3.0
 //
@@ -192,12 +196,12 @@ void SWalker::storeLink(Ptree* node, bool def, Type::Type* type)
 	// Do params
 	node = node->Second();
 	Type::Type::vector_t::iterator iter = param->parameters().begin();
-	while (node) {
+	Type::Type::vector_t::iterator end = param->parameters().end();
+	while (node && iter != end) {
 	    // Skip '<' or ','
 	    if (!(node = node->Rest())) break;
 	    if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
 		storeLink(node->Car()->Car()->Car(), false, *iter++);
-	    if (iter == param->parameters().end()) break;
 	    node = node->Rest();
 	}
 	return;
@@ -754,8 +758,8 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    try {
 		Type::Named* named_type = m_builder->lookupType(names, true);
 		oper = Type::declared_cast<AST::Operation>(named_type);
-	    } catch (const std::bad_cast &) {
-// 		throw ERROR("Qualified function name wasn't a function:" << names);
+	    } catch (const Type::wrong_type_cast &) {
+ 		throw ERROR("Qualified function name wasn't a function:" << names);
 	    }
 	    // expand param info, since we now have names for them
 	    std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();

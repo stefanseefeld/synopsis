@@ -198,14 +198,16 @@ void Dumper::visit(const std::vector<AST::Declaration*>& decls)
 	    (*iter)->accept(this);
 }
 
-std::ostream& operator << (std::ostream& os, const AST::Name& name)
-{
-    AST::Name::const_iterator iter = name.begin(), end = name.end();
-    if (iter == end) { os << "<global>"; return os; }
-    os << (*iter++);
-    while (iter != end)
-	os << "::" << (*iter++);
-    return os;
+namespace {
+    std::ostream& operator << (std::ostream& os, const AST::Name& name)
+    {
+	AST::Name::const_iterator iter = name.begin(), end = name.end();
+	if (iter == end) { os << "<global>"; return os; }
+	os << (*iter++);
+	while (iter != end)
+	    os << "::" << (*iter++);
+	return os;
+    }
 }
 
 void Dumper::visit(const std::vector<AST::Comment*>& comms)
