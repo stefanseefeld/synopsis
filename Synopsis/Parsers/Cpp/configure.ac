@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.9 2003/12/30 04:27:51 stefan Exp $
+dnl $Id: configure.ac,v 1.10 2003/12/30 19:32:21 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2003 Stefan Seefeld <stefan@fresco.org> 
@@ -25,21 +25,14 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.9 $)
-AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
+AC_REVISION($Revision: 1.10 $)
+AC_INIT(ucpp, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
   PYTHON="$with_python",
   PYTHON=""
 )
-
-AC_ARG_WITH(gc_prefix, 
-  [  --with-gc-prefix=PATH   specify the prefix to the garbage collector],
-  GC_PREFIX="$with_gc_prefix",
-  GC_PREFIX=""
-)
-AC_SUBST(GC_PREFIX)
 
 AC_PROG_CPP
 AC_PROG_CC
@@ -54,12 +47,6 @@ PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get
 
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)
-
-AC_ARG_ENABLE([gc], 
-    [  --disable-gc            don't use garbage collector in C++ parser (default is enabled)],
-    [USE_GC=no],[USE_GC=yes])
-
-AC_SUBST(USE_GC)
 
 LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')"`
 case `uname -s` in
@@ -94,9 +81,6 @@ AC_SUBST(LIBEXT)
 
 AC_CONFIG_FILES([Makefile])
 
-#temporary hack until the file layout can be reworked a bit...
 mkdir -p ucpp
-mkdir -p occ
-mkdir -p syn
 
 AC_OUTPUT
