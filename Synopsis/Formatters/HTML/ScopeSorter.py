@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.6 2001/06/26 04:32:16 stefan Exp $
+# $Id: ScopeSorter.py,v 1.7 2001/07/15 08:28:43 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.7  2001/07/15 08:28:43  chalky
+# Added 'Inheritance' page Part
+#
 # Revision 1.6  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -58,13 +61,18 @@ class ScopeSorter:
     call set_scope, then access the sorted list by the other methods."""
     def __init__(self, scope=None):
 	"Optional scope starts using that AST.Scope"
+	self.__scope = None
 	if scope: self.set_scope(scope)
     def set_scope(self, scope):
 	"Sort children of given scope"
+	if scope is self.__scope: return
 	self.__sections = []
 	self.__section_dict = {}
 	self.__children = []
 	self.__child_dict = {}
+	self.__scope = scope
+	self.__sorted_sections = 0
+	self.__sorted_secnames = 0
 	scopename = scope.name()
 	for decl in scope.declarations():
 	    if isinstance(decl, AST.Forward): continue
@@ -91,7 +99,10 @@ class ScopeSorter:
 	return section
     def _sort_sections(self): pass
     def sort_section_names(self):
+	"""Sorts sections names if they need it"""
+	if self.__sorted_secnames: return
 	core.sort(self.__sections)
+	self.__sorted_secnames = 1
     def _set_section_names(self, sections): self.__sections = sections
     def _handle_group(self, group):
 	"""Handles a group"""
@@ -101,6 +112,8 @@ class ScopeSorter:
 	    name = decl.name()
 	    self._add_decl(decl, name, section)
     def sort_sections(self):
+	"""Sorts the children of all sections, if they need it"""
+	if self.__sorted_sections: return
 	for children in self.__section_dict.values()+[self.__children]:
 	    dict = {}
 	    for child in children: dict[child.name()] = child
@@ -108,6 +121,7 @@ class ScopeSorter:
 	    core.sort(names)
 	    del children[:]
 	    for name in names: children.append(dict[name])
+	self.__sorted_sections = 1
     def child(self, name):
 	"Returns the child with the given name. Throws KeyError if not found."
 	return self.__child_dict[name]

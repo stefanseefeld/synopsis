@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.13 2001/07/15 06:41:57 chalky Exp $
+# $Id: Scope.py,v 1.14 2001/07/15 08:28:43 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.14  2001/07/15 08:28:43  chalky
+# Added 'Inheritance' page Part
+#
 # Revision 1.13  2001/07/15 06:41:57  chalky
 # Factored summarizer and detailer into 'Parts', and added a separate one for
 # the top of the page (Heading)
@@ -134,8 +137,6 @@ class ScopePages (Page.Page):
 	self.__filename = config.files.nameOfScope(self.__scope)
 	self.__title = string.join(self.__scope)
 	self.start_file()
-	config.sorter.set_scope(ns)
-	config.sorter.sort_section_names()
 	
 	# Write heading
 	self.write(self.manager.formatHeader(self.filename()))
