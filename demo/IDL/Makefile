@@ -1,4 +1,8 @@
 synopsis = ../../synopsis -p IDL -Wp,-K -f HTML -Wf,-s,style.css
+synopsis2 = ../../synopsis -p IDL -Wp,-K -f HTML2 -Wf,-s,style.css
+
+CN.html:	CosNaming.idl
+		$(synopsis2) -o CN $?
 
 CosNaming.html:	CosNaming.idl
 		$(synopsis) -o $@ $?

@@ -9,7 +9,8 @@ module CosNaming
 {
   //. an Istring typedef
   typedef string Istring;
-  //. a NameComponent struct
+  //. a NameComponent struct.
+  //. with a multi-line comment.
   struct NameComponent
   {
     //. an id member
@@ -18,7 +19,9 @@ module CosNaming
     Istring kind;
   };
 
-  //. a Name type
+  //. a Name type.
+  //. This is a sequence of NameComponents
+  //. so it forms a scoped name of sorts
   typedef sequence<NameComponent> Name;
   //. a BindingType enum
   enum BindingType

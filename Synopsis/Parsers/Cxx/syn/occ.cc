@@ -14,6 +14,7 @@
 #include "buffer.h"
 #include "parse.h"
 #include "ptree-core.h"
+#include "ptree.h"
 #include "encoding.h"
 
 /*
@@ -40,15 +41,16 @@ class PyWalker : public Walker
 public:
   PyWalker(Parser *, Synopsis *);
   ~PyWalker();
-//   virtual Ptree *TranslateDeclaration(Ptree *);
+  virtual Ptree *TranslateDeclaration(Ptree *);
 //   virtual Ptree *TranslateTemplateDecl(Ptree *);
+  virtual Ptree *TranslateDeclarator(bool, PtreeDeclarator*);
   virtual Ptree *TranslateDeclarator(Ptree *);
   virtual Ptree *TranslateTypedef(Ptree *);
   virtual Ptree *TranslateNamespaceSpec(Ptree *);
   virtual Ptree *TranslateClassSpec(Ptree *);
   virtual Ptree *TranslateTemplateClass(Ptree *, Ptree *);
   virtual vector<PyObject *> TranslateInheritanceSpec(Ptree *);
-  virtual Ptree *TranslateClassBody(Ptree *);
+  virtual Ptree *TranslateClassBody(Ptree *, Ptree*, Class*);
 private:
   //. extract the name of the node
   static string getName(Ptree *);
@@ -58,6 +60,12 @@ private:
   Synopsis *synopsis;
   PyObject *_result; // Current working value
   vector<PyObject *> _declarators;
+
+  //. Return a Type object from the encoded type
+  PyObject* parseEncodedType(string enctype, string::iterator&);
+
+  //. Nasty hack to pass stuff between methods :/
+  Ptree* m_declaration; 
 };
 
 PyWalker::PyWalker(Parser *p, Synopsis *s)
@@ -120,16 +128,137 @@ PyObject *PyWalker::lookupType(Ptree *node, PyObject *scopes)
     }
 }
 
+Ptree *PyWalker::TranslateDeclaration(Ptree *declaration)
+{
+    Trace trace("PyWalker::TranslateDeclaration");
+    declaration->Display();
+    m_declaration = declaration;
+    Walker::TranslateDeclaration(declaration);
+    return declaration;
+}
+
+Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
+{
+    Trace trace("PyWalker::TranslateDeclarator(bool,PtreeDeclarator*)");
+    //decl->Display();
+    if (decl->What() != ntDeclarator) return decl;
+    char* encname = decl->GetEncodedName();
+    char* enctype = decl->GetEncodedType();
+    if (!encname || !enctype) return decl;
+    if (enctype[0] == 'F') {
+	cout << "FUNCTION: "; decl->Display();
+	cout << "encoding '";
+	Encoding::Print(cout, enctype); cout << "' '";
+	Encoding::Print(cout, encname); cout << '\'' << endl;
+	// Figure out parameter types:
+	string enctype_s(enctype);
+	string::iterator iter = enctype_s.begin()+1;
+	typedef vector<PyObject*> PyO_vec;
+	vector<PyObject*> param_types;
+	while (*iter != '_') {
+	    PyObject *type = parseEncodedType(enctype_s, iter);
+	    if (!type) break;
+	    param_types.push_back(type);
+	}
+
+	// Create parameter objects
+	vector<PyObject*> params;
+	Ptree* p = decl->Rest();
+	while (p && !p->Car()->Eq('(')) p = Ptree::Rest(p);
+	if (!p) { cout << "Warning: error finding params!" << endl; return decl; }
+	p = p->Second();
+	PyO_vec::iterator piter, pend = param_types.end();
+	for (piter = param_types.begin(); piter != pend; ++piter) {
+	    string name, value;
+	    if (!p || !p->Car()) break;
+	    Ptree* q = p->Car();
+	    if (q->Length() > 1) {
+		name = q->Second()->ToString();
+		if (q->Length() > 3) {
+		    value = q->Nth(3)->ToString();
+		}
+	    }
+	    params.push_back(synopsis->Parameter("", *piter, "", name, value));
+	    p = Ptree::Rest(p);
+	    if (p && p->Car()->Eq(',')) p = p->Cdr();
+
+	}
+
+	// Figure out the return type:
+	if (*iter != '_') iter += enctype_s.find('_', iter-enctype_s.begin());
+	PyObject* returnType = parseEncodedType(enctype_s, ++iter);
+
+	// Find name:
+	int nth = 0;
+	while (decl->Nth(nth)->Eq('&') || decl->Nth(nth)->Eq('*'))
+	    nth++;
+	string name = decl->Nth(nth)->ToString();
+
+	// Figure out premodifiers
+	vector<string> premod;
+	p = Ptree::First(m_declaration);
+	while (p) {
+	    premod.push_back(p->ToString());
+	    p = Ptree::Rest(p);
+	}
+	PyObject* oper = synopsis->addOperation(-1, true, premod, returnType, name, params);
+    }
+    return decl;
+}
+
+PyObject* PyWalker::parseEncodedType(string enctype, string::iterator &iter)
+{
+    /* NOTE: This function is far from done. See encoding.cc, and also need to
+     * find a better way of getting integral types than addBase() */
+
+    // OpenC++ uses an offset for some things..
+    const int DigitOffset = 0x80;
+
+    string::iterator end = enctype.end();
+    PyObject* obj = 0;
+    for (;iter != end; ++iter) {
+	int c = int((unsigned char)*iter);
+	if (c == 'P') {
+	    //cout << "Pointer to ";
+	} else if (c == 'R') {
+	    //cout << "Reference to ";
+	} else if (c == 'i') {
+	    ++iter;
+	    return synopsis->addBase("int");
+	} else if (c == 'v') {
+	    ++iter;
+	    return synopsis->addBase("void");
+	} else if (c == '?') {
+	    ++iter;
+	    // Constructor/Destructor has no type FIXME
+	    return synopsis->addBase("");
+	} else if (c > DigitOffset) {
+	    int count = c - DigitOffset;
+	    string name(count, '\0');
+	    copy_n(iter+1, count, name.begin());
+	    iter += count;
+	    return synopsis->addBase(name);
+	} else if (c == '_') {
+	    return NULL;
+	} else {
+	    //cout << "Unknown char: " << c;
+	}
+    }
+    cout << "Warning: Unable to parse '" << enctype << "'" << endl;
+    return synopsis->addBase("unknown");
+}
+
 Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
 {
   Trace trace("PyWalker::TranslateDeclarator");
+  declarator->Display();
   if (declarator->What() != ntDeclarator) return declarator;
   char* encname = declarator->GetEncodedName();
   char* enctype = declarator->GetEncodedType();
   if (!encname || !enctype) return declarator;
-//   cout << "encoding '";
-//   Encoding::Print(cout, enctype); cout << "' '";
-//   Encoding::Print(cout, encname); cout << '\'' << endl;
+   cout << "encoding '";
+   Encoding::Print(cout, enctype); cout << "' '";
+   Encoding::Print(cout, encname); cout << '\'' << endl;
   ///...
   return declarator;
 }
@@ -162,7 +291,7 @@ Ptree *PyWalker::TranslateTypedef(Ptree *node)
  */
 Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 {
-  Trace trace("PyWalker::TranslateNamespaceSpec");
+  //Trace trace("PyWalker::TranslateNamespaceSpec");
   synopsis->pushNamespace(-1, 1, getName(node->Cadr()));
   Translate(Ptree::Third(node));
   synopsis->popScope();
@@ -177,7 +306,7 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
  */
 Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 {
-  Trace trace("PyWalker::TranslateClassSpec");
+  //Trace trace("PyWalker::TranslateClassSpec");
   Ptree* userkey;
   Ptree* class_def;
   if(node->Car()->IsLeaf())
@@ -200,8 +329,9 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
       vector<PyObject *> parents = TranslateInheritanceSpec(class_def->Nth(2));
       Synopsis::addInheritance(clas, parents);
       synopsis->pushScope(clas);
+      Class* meta = MakeClassMetaobject(node, userkey, class_def);
       //. the body...
-      TranslateClassBody(class_def->Nth(3));
+      TranslateClassBody(class_def->Nth(3), class_def->Nth(2), meta);
       synopsis->popScope();
     }
   return node;
@@ -209,9 +339,9 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 
 Ptree *PyWalker::TranslateTemplateClass(Ptree *temp_def, Ptree *class_spec)
 {
-  Trace trace("PyWalker::TranslateTemplateClass");
-  temp_def->Display();
-  class_spec->Display();
+  //Trace trace("PyWalker::TranslateTemplateClass");
+  //temp_def->Display();
+  //class_spec->Display();
   Ptree *userkey;
   Ptree *class_def;
   if(class_spec->Car()->IsLeaf())
@@ -230,7 +360,7 @@ Ptree *PyWalker::TranslateTemplateClass(Ptree *temp_def, Ptree *class_spec)
 
 vector<PyObject *> PyWalker::TranslateInheritanceSpec(Ptree *node)
 {
-  Trace trace("PyWalker::TranslateInheritanceSpec");
+  //Trace trace("PyWalker::TranslateInheritanceSpec");
   vector<PyObject *> ispec;
   while(node)
     {
@@ -249,10 +379,11 @@ vector<PyObject *> PyWalker::TranslateInheritanceSpec(Ptree *node)
   return ispec;
 }
 
-Ptree *PyWalker::TranslateClassBody(Ptree *node)
+Ptree *PyWalker::TranslateClassBody(Ptree *block, Ptree *bases, Class *meta)
 {
-  Trace trace("PyWalker::TranslateClassBody");
-  return node;
+  //Trace trace("PyWalker::TranslateClassBody");
+  Walker::TranslateClassBody(block, bases, meta);
+  return block;
 }
 
 static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags)
@@ -354,6 +485,9 @@ extern "C" {
 static PyObject *occParse(PyObject *self, PyObject *args)
 {
   Trace trace("occParse");
+#if 0
+  Ptree::show_encoded = true;
+#endif
   char *src;
   PyObject *parserargs, *types, *declarations;
   if (!PyArg_ParseTuple(args, "sO!OO!", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations)) return 0;
