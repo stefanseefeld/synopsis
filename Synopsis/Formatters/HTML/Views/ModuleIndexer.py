@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.3 2001/02/01 18:36:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.3  2001/02/01 18:36:55  chalky
+# Moved TOC out to Formatter/TOC.py
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -29,7 +32,7 @@
 from Synopsis.Core import AST, Util
 
 # HTML Modules
-import Page
+import core, Page
 from core import config
 from Tags import *
 
@@ -86,9 +89,9 @@ class ModuleIndexer(Page.Page):
 		    heading = None
 		if isinstance(child, AST.Module):
 		    script = link_script%(config.files.nameOfModuleIndex(child.name()),config.files.nameOfScope(child.name()))
-		    self.write(config.toc.referenceName(child.name(), ns.name(), target='main', onClick=script))
+		    self.write(core.reference(child.name(), ns.name(), target='main', onClick=script))
 		else:
-		    self.write(config.toc.referenceName(child.name(), ns.name(), target='main'))
+		    self.write(core.reference(child.name(), ns.name(), target='main'))
 		self.write('<br>')
 	self.endFile()
 
