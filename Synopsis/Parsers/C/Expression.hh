@@ -262,7 +262,8 @@ class CharConstant : public Constant
 class StringConstant : public Constant
 {
   public:
-    StringConstant(char *str, const Location& l, bool isWide=false );
+    StringConstant(const std::string &str, const Location& l,
+                   bool isWide=false );
    ~StringConstant();
 
     int length() const;
@@ -270,7 +271,7 @@ class StringConstant : public Constant
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
-    char    *buff;    // dynamic string storage
+    std::string buff; // dynamic string storage
     bool    wide;     // wide string?
 };
 

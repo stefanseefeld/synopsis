@@ -572,7 +572,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <STR>\"                {   /* Closing quote */
                          LAST_STATE();
                          *tokn_ptr = '\0';
-                         lvalp->consValue = new StringConstant(tokn_buff,HERE,isWide);
+                         lvalp->consValue =
+                           new StringConstant(string(tokn_buff,tokn_ptr-tokn_buff),HERE,isWide);
                          return(err_tok = STRING);
                        }
 
