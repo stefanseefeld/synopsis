@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.18 2001/06/28 07:22:18 stefan Exp $
+# $Id: core.py,v 1.19 2001/07/04 08:17:48 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.19  2001/07/04 08:17:48  uid20151
+# Comments
+#
 # Revision 1.18  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -109,7 +112,11 @@
 # Also 3-frame format inspired by Javadoc
 
 """
-HTML formatter. Output specifies a directory. See manual for usage.
+Core module for the HTML Formatter.
+
+This module is the first to be loaded, and it creates the global 'core.config'
+object before creating any pages. It also handles the command line parsing for
+this module, and coordinates the actual output generation.
 """
 
 # System modules

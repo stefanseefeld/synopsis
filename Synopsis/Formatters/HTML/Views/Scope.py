@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.9 2001/06/28 07:22:18 stefan Exp $
+# $Id: Scope.py,v 1.10 2001/07/04 08:17:48 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.10  2001/07/04 08:17:48  uid20151
+# Comments
+#
 # Revision 1.9  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -188,7 +191,7 @@ class ScopePages (Page.Page):
 	self.write('<hr>\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
         logo = href('http://synopsis.sourceforge.net', 'synopsis')
-        self.write(div('logo', '>Generated on ' + now + ' by \n<br>\n' + logo))
+        self.write(div('logo', 'Generated on ' + now + ' by \n<br>\n' + logo))
 	Page.Page.endFile(self)
  
 htmlPageClass = ScopePages

@@ -1,4 +1,4 @@
-# $Id: ClassTree.py,v 1.2 2001/04/06 02:37:08 chalky Exp $
+# $Id: ClassTree.py,v 1.3 2001/07/04 08:18:04 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ClassTree.py,v $
+# Revision 1.3  2001/07/04 08:18:04  uid20151
+# Comments
+#
 # Revision 1.2  2001/04/06 02:37:08  chalky
 # Add all superclasses to classes list, so that Unknown superclasses are in
 # graphs too (and hence, if they are roots, make sure we dont miss subgraphs!)
@@ -28,6 +31,8 @@
 # Moved from HTML/core.py. Added graphs()
 #
 #
+
+"""Contains the utility class ClassTree, for creating inheritance trees."""
 
 # Synopsis modules
 from Synopsis.Core import AST, Type
