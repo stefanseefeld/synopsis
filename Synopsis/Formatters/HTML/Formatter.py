@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.13 2003/11/22 21:45:59 stefan Exp $
+# $Id: Formatter.py,v 1.14 2003/12/04 21:04:27 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -15,15 +15,64 @@ from Synopsis.Formatters.ClassTree import ClassTree
 from Synopsis.Formatters.XRef import CrossReferencer
 from FileLayout import *
 from TreeFormatter import *
-from CommentFormatter import *
 from DeclarationStyle import *
 from Pages import *
+import Comments
 import Tags
 
 class Struct:
    "Dummy class. Initialise with keyword args."
    def __init__(self, **keys):
       for name, value in keys.items(): setattr(self, name, value)
+
+class CommentFormatter:
+   """A class that takes a Declaration and formats its comments into a string."""
+
+   def __init__(self, formatters):
+
+      # Cache the bound methods
+      self.__format_methods = map(lambda f:f.format, formatters)
+      self.__format_summary_methods = map(lambda f:f.format_summary, formatters)
+      # Weed out the unneccessary calls to the empty base methods
+      base = Comments.Formatter.format.im_func
+      self.__format_methods = filter(
+          lambda m, base=base: m.im_func is not base, self.__format_methods)
+      base = Comments.Formatter.format_summary.im_func
+      self.__format_summary_methods = filter(
+          lambda m, base=base: m.im_func is not base, self.__format_summary_methods)
+
+   def format(self, page, decl):
+      """Formats the first comment of the given AST.Declaration.
+      Note that the Linker.Comments.Summarizer CommentProcessor is supposed
+      to have combined all comments first in the Linker stage.
+      @return the formatted text
+      """
+
+      comments = decl.comments()
+      if len(comments) == 0: return ''
+      text = comments[0].text()
+      if not text: return ''
+      # Let each strategy format the text in turn
+      for method in self.__format_methods:
+         text = method(page, decl, text)
+      return text
+
+   def format_summary(self, page, decl):
+      """Formats the summary of the first comment of the given
+      AST.Declaration.
+      Note that the Linker.Comments.Summarizer CommentProcessor is supposed
+      to have combined all comments first in the Linker stage.
+      @return the formatted summary text
+      """
+
+      comments = decl.comments()
+      if len(comments) == 0: return ''
+      text = comments[0].summary()
+      if not text: return ''
+      # Let each strategy format the text in turn
+      for method in self.__format_summary_methods:
+         text = method(page, decl, text)
+      return text
 
 class Formatter(Processor):
 
@@ -46,8 +95,8 @@ class Formatter(Processor):
                       NameIndex()],
                       '')
    
-   comment_formatters = Parameter([QuoteHTML(),
-                                   SectionFormatter()],
+   comment_formatters = Parameter([Comments.QuoteHTML(),
+                                   Comments.Section()],
                                   '')
    
    tree_formatter = Parameter(TreeFormatter(), 'define how to lay out tree views')
@@ -64,7 +113,7 @@ class Formatter(Processor):
       self.decl_style = Style()
       for f in self.comment_formatters:
          f.init(self)
-      self.comments = CommentFormatter(self)
+      self.comments = CommentFormatter(self.comment_formatters)
       # Create the Class Tree (TODO: only if needed...)
       self.class_tree = ClassTree()
       # Create the File Tree (TODO: only if needed...)
