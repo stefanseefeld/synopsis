@@ -717,7 +717,7 @@ SWalker::TranslateAccessDecl(Ptree* node)
   if (my_links) find_comments(node);
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -730,7 +730,7 @@ SWalker::TranslateUserAccessSpec(Ptree* node)
   if (my_links) find_comments(node);
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -777,7 +777,7 @@ SWalker::TranslateGoto(Ptree* node)
   if (my_links) find_comments(node);
 #ifdef DEBUG
   
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -790,7 +790,7 @@ SWalker::TranslateLabel(Ptree* node)
   if (my_links) find_comments(node);
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -817,7 +817,7 @@ SWalker::TranslatePm(Ptree* node)
   STrace trace("SWalker::TranslatePm NYI");
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -853,7 +853,7 @@ SWalker::TranslateNew(Ptree* node)
   if (my_links) find_comments(node);
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -866,7 +866,7 @@ SWalker::TranslateNew3(Ptree* node)
   if (my_links) find_comments(node);
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -903,7 +903,7 @@ SWalker::TranslateUserStatement(Ptree* node)
   STrace trace("SWalker::TranslateUserStatement NYI");
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;
@@ -915,7 +915,7 @@ SWalker::TranslateStaticUserStatement(Ptree* node)
   STrace trace("SWalker::TranslateStaticUserStatement NYI");
 #ifdef DEBUG
 
-  node->Display2(std::cout);
+  node->print(std::cout);
 #endif
 
   return 0;

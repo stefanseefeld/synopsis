@@ -38,7 +38,10 @@ public:
   bool ErrorMessage(const char*, Ptree* = 0, Ptree* = 0);
   void WarningMessage(const char*, Ptree* = 0, Ptree* = 0);
   int NumOfErrors() { return nerrors; }
-  uint LineNumber(char* pos, std::string &);
+
+  //. Return the origin of the given pointer
+  //. (filename and line number)
+  unsigned long origin(const char *, std::string &) const;
 
   bool rProgram(Ptree*&);
 

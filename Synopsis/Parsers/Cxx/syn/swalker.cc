@@ -36,7 +36,7 @@ STrace::string_list STrace::m_list;
 std::ostream& STrace::operator <<(Ptree* p)
 {
   std::ostream& out = operator <<("-");
-  p->Display2(out);
+  p->print(out);
   return out;
 }
 #endif
@@ -110,7 +110,7 @@ void SWalker::update_line_number(Ptree* ptree)
   // expensive until I hacked buffer.cc to cache the last line number found.
   // Now it's okay as long as you are looking for lines sequentially.
   std::string filename;
-  my_lineno = my_parser->LineNumber(ptree->LeftMost(), filename);
+  my_lineno = my_parser->origin(ptree->begin(), filename);
   if (filename != my_filename)
   {
     my_filename = filename;
@@ -307,12 +307,10 @@ SWalker::Translate(Ptree* node)
   catch (const TranslateError& e)
   {
     if (e.node) node = e.node;
-    char* fname;
-    int fname_len;
-    int lineno = my_parser->LineNumber(node->LeftMost(), fname, fname_len);
-    std::ostringstream buf;
-    buf << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
-    LOG("Warning: An exception occurred:" << buf.str());
+    std::string filename;
+    unsigned long line = my_parser->origin(node->begin(),
+					   filename);
+    LOG("Warning: An exception occurred:" << " (" << filename << ":" << line << ")");
     LOG("- " << e.str());
   }
   catch (const std::exception& e)
@@ -336,16 +334,16 @@ SWalker::Translate(Ptree* node)
     std::cout << "Warning: An exception occurred: " << e.what() << std::endl;
     std::cout << "At: ";
     std::string filename;
-    int lineno = my_parser->LineNumber(node->LeftMost(), filename);
-    std::cout << " (" << filename << ":" << lineno << ")" << std::endl;
+    unsigned long line = my_parser->origin(node->begin(), filename);
+    std::cout << " (" << filename << ":" << line << ")" << std::endl;
   }
   catch (...)
   {
     std::cout << "Warning: An unknown exception occurred: " << std::endl;
     std::cout << "At: ";
     std::string filename;
-    int lineno = my_parser->LineNumber(node->LeftMost(), filename);
-    std::cout << " (" << filename << ":" << lineno << ")" << std::endl;
+    unsigned long line = my_parser->origin(node->begin(), filename);
+    std::cout << " (" << filename << ":" << line << ")" << std::endl;
   }
 #endif
 }

@@ -69,7 +69,9 @@ public:
   Ptree* GetComments();
   Ptree* GetComments2();
 
-  uint LineNumber(char*, std::string &);
+  //. Return the origin of the given pointer
+  //. (filename and line number)
+  unsigned long origin(const char *, std::string &) const;
 
   static bool RecordKeyword(char*, int);
   static bool Reify(Ptree*, unsigned int&);

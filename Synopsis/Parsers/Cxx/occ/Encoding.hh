@@ -63,7 +63,7 @@ public:
     void AppendWithLen(char*, int);
     void AppendWithLen(Encoding& e) { AppendWithLen((char*)e.name, e.len); }
 
-    static void Print(std::ostream&, char*);
+    static void print(std::ostream &, const char *);
     static char* GetBaseName(char*, int&, Environment*&);
     static Ptree* MakePtree(unsigned char*&, Ptree*);
 
