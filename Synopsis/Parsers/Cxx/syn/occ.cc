@@ -29,7 +29,6 @@
 // module
 extern "C" int ucpp_main(int argc, char** argv);
 
-
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
  */
@@ -41,6 +40,9 @@ char* sharedLibraryName;
 void RunSoCompiler(const char *) {}
 void *LoadSoLib(char *) { return 0;}
 void *LookupSymbol(void *, char *) { return 0;}
+
+
+bool verbose;
 
 // If true then everything but what's in the main file will be stripped
 bool syn_main_only, syn_extract_tails, syn_use_gcc;
@@ -76,6 +78,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
     doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
     doPreprocess = true;
     sharedLibraryName = 0;
+    verbose = false;
     syn_main_only = false;
     syn_extract_tails = false;
     syn_use_gcc = false;
@@ -87,7 +90,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 	PyObject* value;
 	if ((value = PyObject_GetAttrString(config, "main_file")) != 0)
 	  syn_main_only = PyObject_IsTrue(value);
-	if ((value = PyObject_GetAttrString(config, "verbose")) != 0) {}	// ignore
+	if ((value = PyObject_GetAttrString(config, "verbose")) != 0) verbose = true;
 	if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
 	  {
 	    if (!IsType(value, List))
@@ -174,6 +177,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 	const char *argument = PyString_AsString(PyList_GetItem(args, i));
 	if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
 	else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
+	else if (strcmp(argument, "-v") == 0) verbose = true;
 	else if (strcmp(argument, "-m") == 0) syn_main_only = true;
 	else if (strcmp(argument, "-b") == 0)
 	  syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
@@ -208,6 +212,13 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 	      args.push_back("-x"); // language c++
 	      args.push_back("c++");
 	      args.push_back(file);
+	      if (verbose)
+		{
+		  std::cout << "calling external preprocessor\n" << args[0];
+		  for (std::vector<const char *>::iterator i = args.begin(); i != args.end(); ++i)
+		    std::cout << ' ' << *i;
+		  std::cout << std::endl;
+		}
 	      args.push_back(0);
 	      execvp(args[0], (char **)&*args.begin());
 	      perror("cannot invoke compiler");
@@ -255,6 +266,13 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 	//args.push_back("-x"); // language c++
 	//args.push_back("c++");
 	args.push_back(file);
+	if (verbose)
+	  {
+	    std::cout << "calling ucpp\n";
+	    for (std::vector<const char *>::iterator i = args.begin(); i != args.end(); ++i)
+	      std::cout << ' ' << *i;
+	    std::cout << std::endl;
+	  }
 	
 	// Call ucpp
 	int status = ucpp_main(args.size(), (char **)&*args.begin());
