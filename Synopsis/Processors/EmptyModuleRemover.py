@@ -1,4 +1,4 @@
-# $Id: EmptyModuleRemover.py,v 1.4 2003/11/11 06:03:59 stefan Exp $
+# $Id: EmptyModuleRemover.py,v 1.5 2003/11/25 20:19:50 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -15,15 +15,13 @@ import string
 class EmptyNS (Processor, AST.Visitor):
    """A class that removes empty namespaces"""
 
-   def __init__(self):
-
-      self.__scopestack = []
-      self.__currscope = []
-
    def process(self, ast, **kwds):
 
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
+
+      self.__scopestack = []
+      self.__currscope = []
 
       for decl in self.ast.declarations():
          decl.accept(self)
@@ -51,15 +49,12 @@ class EmptyNS (Processor, AST.Visitor):
 
    def add(self, decl):
       """Adds the given decl to the current scope"""
+
       self.__currscope.append(decl)
-
-   def currscope(self):
-      """Returns the current scope: a list of declarations"""
-
-      return self.__currscope
 
    def visitDeclaration(self, decl):
       """Adds declaration to scope"""
+
       self.add(decl)
 
    def visitGroup(self, group):
@@ -75,20 +70,15 @@ class EmptyNS (Processor, AST.Visitor):
    def visitModule(self, module):
       """Visits all children of the module, and if there are no declarations
       after that removes the module"""
+
       self.push()
       for decl in module.declarations():
          decl.accept(self)
-      module.declarations()[:] = self.currscope()
-      count = self._count_not_forwards(self.currscope())
+      module.declarations()[:] = self.__currscope
+      # count the number of non-forward declarations in the current scope
+      count = reduce(lambda x, y: x + y,
+                     map(lambda x: not isinstance(x, AST.Forward),
+                         self.__currscope), 0)
+
       if count: self.pop(module)
       else: self.pop_only()
-
-   def _count_not_forwards(self, decls):
-      """Returns the number of declarations not instances of AST.Forward"""
-
-      count = 0
-      for decl in decls:
-         if not isinstance(decl, AST.Forward): count = count+1
-      return count
-
-linkerOperation = EmptyNS
