@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.10 2001/02/13 02:54:15 chalky Exp $
+# $Id: core.py,v 1.11 2001/03/29 14:05:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.11  2001/03/29 14:05:33  chalky
+# Can give namespace to manager._calculateStart. Timing of pages if verbose
+#
 # Revision 1.10  2001/02/13 02:54:15  chalky
 # Added Name Index page
 #
@@ -86,7 +89,7 @@ HTML formatter. Output specifies a directory. See manual for usage.
 """
 
 # System modules
-import sys, getopt, os, os.path, string, types, errno, stat, re
+import sys, getopt, os, os.path, string, types, errno, stat, re, time
 
 # Synopsis modules
 from Synopsis.Core import AST, Type, Util
@@ -351,9 +354,9 @@ class PageManager:
 	"Return the global scope"
 	return self.__global
 
-    def _calculateStart(self, root):
+    def _calculateStart(self, root, namespace=None):
 	"Calculates the start scope using the 'namespace' config var"
-	scope_names = string.split(config.namespace, "::")
+	scope_names = string.split(namespace or config.namespace, "::")
 	start = root # The running result
 	config.sorter.set_scope(root)
 	scope = [] # The running name of the start
@@ -361,10 +364,10 @@ class PageManager:
 	    if not scope_name: break
 	    scope.append(scope_name)
 	    try:
-		child = self.sorter.child(tuple(scope))
+		child = config.sorter.child(tuple(scope))
 		if isinstance(child, AST.Scope):
 		    start = child
-		    self.sorter.set_scope(start)
+		    config.sorter.set_scope(start)
 		else:
 		    raise TypeError, 'calculateStart: Not a Scope'
 	    except:
@@ -372,6 +375,7 @@ class PageManager:
 		import traceback
 		traceback.print_exc()
 		print "Fatal: Couldn't find child scope",scope
+		print "Children:",map(lambda x:x.name(), config.sorter.children())
 		sys.exit(3)
 	return start
 
@@ -414,7 +418,9 @@ class PageManager:
 	self.__global = root
 	start = self._calculateStart(root)
 	for page in self.__pages:
+	    if config.verbose: start_time = time.time()
 	    page.process(start)
+	    if config.verbose: print "Time for %s: %f"%(page.__class__.__name__, time.time() - start_time)
 
     def _loadPages(self):
 	"""Loads the page objects from the config.pages list. Each element is
