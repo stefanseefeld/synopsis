@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.2 2003/11/05 17:21:50 stefan Exp $
+# $Id: Parser.py,v 1.3 2003/11/11 03:03:19 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -6,18 +6,19 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Core.Processor import Processor
-from Synopsis.Core import AST
+from Processor import Processor, Parameter
+from Core import AST
 from python import parse
 
 class Parser(Processor):
 
-    basename=''
+   basename = Parameter('', 'basename to strip off of the parsed modules')
     
-    def process(self, ast, **kwds):
-        for file in kwds['input']:
-            ast.merge(parse(file, 0, {}, None))
-        output = kwds.get('output')
-        if output:
-            AST.save(output, ast)
-        return ast
+   def process(self, ast, **kwds):
+
+      input = kwds.get('input')
+      self.set_parameters(kwds)
+      for file in input:
+         ast.merge(parse(file, 0, {}, None))
+
+      return output_and_return_ast(self)
