@@ -302,9 +302,11 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 		{
 			if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
 			{
+                                #if 0
 				if (! declSym->entry->IsFctDecl())
 					yyerr ("Symbol name duplicated: ", declSym->name);
 				else
+                                #endif
 					curCtxt->possibleDuplication=declSym->entry;
 			}
 
@@ -370,12 +372,14 @@ void ParseCtxt::Mk_declarator(Decl* decl)
 	{
 		if (curCtxt->possibleDuplication)
 		{
-			assert(curCtxt->possibleDuplication->IsFctDecl());
+			//assert(curCtxt->possibleDuplication->IsFctDecl());
 			//assert(curCtxt->possibleDuplication->scope->level
 			//		== gProject->Parse_TOS->transUnit->contxt.syms->clevel);
  
+                        #if 0
 			if (! decl->form || (decl->form->type != TT_Function))
 				yyerr ("Duplicate function name: ", ident->name);
+                        #endif
 			/*
 			else
 				yywarn ("TO DO: checking prototype consistency and eventually delete the new fct symbol");
