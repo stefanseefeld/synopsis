@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.22 2002/10/28 06:15:26 chalky Exp $
+# $Id: Util.py,v 1.23 2002/10/29 15:01:38 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.23  2002/10/29 15:01:38  chalky
+# Support names with spaces
+#
 # Revision 1.22  2002/10/28 06:15:26  chalky
 # Fix double-dot problem when quoting names including an extension (eg: the
 # highlighted source files)
@@ -481,6 +484,7 @@ def quote(name):
     name = re.sub(':','.',name)
     name = re.sub('&','.A',name)
     name = re.sub('\*','.S',name)
+    name = re.sub(' ','.s',name)
 
     if len(name) > 100:
 	hash = md5.md5(original).hexdigest()
