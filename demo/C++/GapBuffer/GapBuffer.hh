@@ -1,4 +1,4 @@
-/*$Id: GapBuffer.hh,v 1.4 2001/06/08 21:05:59 stefan Exp $
+/*$Id: GapBuffer.hh,v 1.5 2001/06/11 10:37:49 chalky Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -76,7 +76,10 @@ class GapBuffer : private std::vector<T>
 public:
   GapBuffer() : curs(0), gapbegin(0), gapend(0) {}
   size_type size() { compact(); return gbegin() - begin();}
-  //. these are methods to control the cursor position
+  //. these are methods to control the cursor position. This is a long
+  //. description for this group, but it will only be displayed if any of its
+  //. contents has a long description. Hmm, but then the group is a child of its
+  //. own section so thats okay!
   //.{ Group1
   //. move the cursor one position forward
   void forward()

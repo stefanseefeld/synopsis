@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.10 2001/06/08 21:04:38 stefan Exp $
+# $Id: Comments.py,v 1.11 2001/06/11 10:37:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.11  2001/06/11 10:37:49  chalky
+# Better grouping support
+#
 # Revision 1.10  2001/06/08 21:04:38  stefan
 # more work on grouping
 #
@@ -271,8 +274,8 @@ class Previous (Dummies):
 
 class Grouper (Transformer):
     """A class that detects grouping tags and moves the enclosed nodes into a subnode (a 'Group')"""
-    __re_open = r'^[ \t]*//\.{ ?(.*)$'
-    __re_close = r'^[ \t]*//\.} ?(.*)$'
+    __re_open = r'^[ \t]*{ ?(.*)$'
+    __re_close = r'^[ \t]*} ?(.*)$'
     def __init__(self):
 	self.re_open = re.compile(Grouper.__re_open, re.M)
 	self.re_close = re.compile(Grouper.__re_close, re.M)

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.10 2001/06/08 21:04:38 stefan Exp $
+# $Id: Part.py,v 1.11 2001/06/11 10:37:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.11  2001/06/11 10:37:49  chalky
+# Better grouping support
+#
 # Revision 1.10  2001/06/08 21:04:38  stefan
 # more work on grouping
 #
@@ -184,7 +187,8 @@ class BaseASTFormatter(ASTFormatter):
     def formatForward(self, decl): return self.formatDeclaration(decl)
     def formatGroup(self, decl):
         print "format group !"
-        return self.formatDeclaration(decl)
+        #return self.formatDeclaration(decl)
+	return '',''
     def formatScope(self, decl):
 	"""Scopes have their own pages, so return a reference to it"""
 	return '',self.reference(decl.name())
@@ -273,6 +277,7 @@ class DefaultASTFormatter (ASTFormatter):
     """A base AST formatter that calls formatDeclaration for all types"""
     # All these use the same method:
     def formatForward(self, decl): return self.formatDeclaration(decl)
+    def formatGroup(self, decl): return self.formatDeclaration(decl)
     def formatScope(self, decl): return self.formatDeclaration(decl)
     def formatModule(self, decl): return self.formatDeclaration(decl)
     def formatMetaModule(self, decl): return self.formatDeclaration(decl)
@@ -290,6 +295,13 @@ class SummaryASTCommenter (DefaultASTFormatter):
 	comm = config.comments[decl]
 	if comm.summary:
 	    return '', '<br>'+span('summary', comm.summary)
+	return '',''
+    def formatGroup(self, decl):
+	"""Override for group to use the div version of commenting, and no
+	<br> before"""
+	comm = config.comments[decl]
+	if comm.summary:
+	    return '', desc(comm.summary)
 	return '',''
     
 class FilePageLinker (DefaultASTFormatter):
