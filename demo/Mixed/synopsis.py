@@ -43,8 +43,7 @@ cxx = Composite(Cxx.Parser(preprocessor = 'c++',
                 SSDComments(),      # filter out any non-'//.' comments
                 CommentStripper())  # strip any 'suspicious' comments
 
-format_idl = HTML.Formatter(stylesheet_file = '../html.css',
-                            toc_out = 'interface.toc',
+format_idl = HTML.Formatter(toc_out = 'interface.toc',
                             views = [FramesIndex(),
                                      Scope(),
                                      ModuleListing(),
@@ -55,8 +54,7 @@ format_idl = HTML.Formatter(stylesheet_file = '../html.css',
                                      InheritanceGraph(),
                                      NameIndex()])
 
-format_cxx = HTML.Formatter(stylesheet_file = '../html.css',
-                            toc_in = ['interface.toc|../interface'],
+format_cxx = HTML.Formatter(toc_in = ['interface.toc|../interface'],
                             views = [FramesIndex(),
                                      Scope(),
                                      ModuleListing(),

@@ -123,11 +123,10 @@ linker = Linker(Stripper(),
                 PercepsCommSplitter(),
                 AccessRestrictor())
 
-html = HTML.Formatter(stylesheet_file = '../html.css',
-                      comment_formatters = [Comments.Javadoc(),
+html = HTML.Formatter(comment_formatters = [Comments.Javadoc(),
                                             Comments.Section()])
 
-doxygen = HTML.Formatter(stylesheet_file = '../doxygen.css',
+doxygen = HTML.Formatter(stylesheet = '../doxygen.css',
                          comment_formatters = [Comments.Javadoc(),
                                                Comments.Section()])
 

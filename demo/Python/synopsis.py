@@ -5,4 +5,4 @@ from Synopsis.Parsers import Python
 from Synopsis.Formatters import HTML
 
 process(parse = Python.Parser(),
-        format = HTML.Formatter(stylesheet_file = '../html.css'))
+        format = HTML.Formatter())

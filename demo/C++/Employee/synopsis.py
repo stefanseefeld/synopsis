@@ -13,4 +13,4 @@ linker = Linker(JavaComments(),     # only keep javadoc-like comments
 
 process(parse = Cxx.Parser(),
         link = linker,
-        format = HTML.Formatter(stylesheet_file = '../../html.css'))
+        format = HTML.Formatter())

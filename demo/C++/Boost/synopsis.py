@@ -39,8 +39,7 @@ linker = Linker(SSComments(),       # filter out any non-'//' comments
                 CommentStripper(),  # strip any 'suspicious' comments
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
-formatter = HTML.Formatter(stylesheet_file = '../../html.css',
-                           views = [FramesIndex(),
+formatter = HTML.Formatter(views = [FramesIndex(),
                                     Scope(),
                                     ModuleListing(),
                                     ModuleIndexer(),
