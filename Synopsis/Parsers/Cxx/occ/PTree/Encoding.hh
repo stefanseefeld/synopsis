@@ -173,6 +173,8 @@ public:
 
 private:
 
+  iterator end_of_scope();
+
   Code my_buffer;
 
 public:
