@@ -43,6 +43,8 @@ TEXI		:= core-ast.texi core-type.texi core-util.texi \
 		   formatter-ascii.texi formatter-html.texi formatter-dump.texi formatter-dia.texi \
 		   formatter-db.texi formatter-dot.texi formatter-html-simple.texi formatter-texi.texi
 
+INCLUDES	:= -I $(topdir)/$(cxxdir) -I $(topdir)/$(cxxdir)/gc/include
+
 all:	html info Manual.pdf
 
 html:   all.syn
@@ -159,7 +161,7 @@ $(sdir)/synopsis.syn: $(topdir)/synopsis
 $(CXXHHSYNS): $(sdir)/%.hh.syn: $(topdir)/%.hh
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
+	@$(synopsis) $(INCLUDES) -DPYTHON_INCLUDE="$(python_include)" \
 	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
 	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
 #
@@ -167,7 +169,7 @@ $(CXXHHSYNS): $(sdir)/%.hh.syn: $(topdir)/%.hh
 $(CXXHSYNS): $(sdir)/%.h.syn: $(topdir)/%.h
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
+	@$(synopsis) $(INCLUDES) -DPYTHON_INCLUDE="$(python_include)" \
 	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
 	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
 
@@ -175,7 +177,7 @@ $(CXXHSYNS): $(sdir)/%.h.syn: $(topdir)/%.h
 $(CXXCCSYNS): $(sdir)/%.cc.syn: $(topdir)/%.cc
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
+	@$(synopsis) $(INCLUDES) -DPYTHON_INCLUDE="$(python_include)" \
 	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
 	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
 
