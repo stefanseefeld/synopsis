@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.6 2001/01/24 01:38:36 chalky Exp $
+# $Id: Dia.py,v 1.7 2001/01/27 06:26:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.7  2001/01/27 06:26:41  chalky
+# Added parameter support
+#
 # Revision 1.6  2001/01/24 01:38:36  chalky
 # Added docstrings to all modules
 #
@@ -31,12 +34,23 @@
 
 """Generates a .dia file of unpositioned classes and generalizations."""
 
-import sys, getopt, os, os.path, string
+import sys, getopt, os, os.path, string, re
 from Synopsis.Core import Type, AST, Util, Visitor
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
     return string.join(map(lambda item:' %s="%s"'%item, keys.items()), '')
+
+def quote(str):
+    "Remove HTML chars from str"
+    str = re.sub('&', '&amp;', str)
+    str = re.sub('<','&lt;', str)
+    str = re.sub('>','&gt;', str)
+    #str = re.sub('<','lt', str)
+    #str = re.sub('>','gt', str)
+    str = re.sub("'", '&#39;', str)
+    str = re.sub('"', '&quot;', str)
+    return str
 
 def usage():
     print """\
@@ -81,10 +95,10 @@ class DiaFormatter(AST.Visitor, Type.Visitor):
 	"Writes a solo tag with attributes from keyword arguments"
 	self.indent()
 	self.write("<%s%s/>\n"%(tagname,k2a(keys)))
-    def attribute(self, name, type, value):
+    def attribute(self, name, type, value, allow_solo=1):
 	"Writes an attribute with given name, type and value"
 	self.startTag('attribute', name=name)
-	if not value:
+	if not value and allow_solo:
 	    self.soloTag(type)
 	elif type == 'string':
 	    self.indent()
@@ -279,7 +293,19 @@ class DiaFormatter(AST.Visitor, Type.Visitor):
 		self.attribute('visibility', 'enum', '0')
 		self.attribute('abstract', 'boolean', 'false')
 		self.attribute('class_scope', 'boolean', 'false')
-		self.soloTag('attribute', name='parameters')
+		if len(oper.parameters()) and not hide_params:
+		    self.startTag('attribute', name='parameters')
+		    for param in oper.parameters():
+			self.startTag('composite', name='umlparameter')
+			self.attribute('name', 'string', param.identifier())
+			self.attribute('type', 'string', '', 0)
+			self.attribute('value', 'string', quote(param.value()))
+			self.attribute('kind', 'enum', '0')
+			self.endTag('composite')
+		    self.endTag('attribute')
+		else:
+		    self.soloTag('attribute', name='parameters')
+ 
 		self.endTag('composite')
 	    self.endTag('attribute')
 	# Finish class object
@@ -296,14 +322,15 @@ def usage():
 """
   -o <file>                            Output file
   -m                                   hide operations
-  -a                                   hide attributes"""
+  -a                                   hide attributes
+  -p                                   hide parameters"""
 
 def __parseArgs(args):
-    global filename, hide_operations, hide_attributes
+    global filename, hide_operations, hide_attributes, hide_params
     filename = None
-    hide_operations = hide_attributes = 0
+    hide_operations = hide_attributes = hide_params = 0
     try:
-        opts,remainder = getopt.getopt(args, "o:mah")
+        opts,remainder = getopt.getopt(args, "o:maph")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -317,6 +344,8 @@ def __parseArgs(args):
 	    hide_operations = 1
 	elif o == "-a":
 	    hide_attributes = 1
+	elif o == "-p":
+	    hide_params = 1
 	elif o == "-h":
 	    usage()
 	    sys.exit(1)
