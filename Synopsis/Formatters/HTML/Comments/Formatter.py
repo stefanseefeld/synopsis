@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.11 2001/03/29 14:09:55 chalky Exp $
+# $Id: Formatter.py,v 1.12 2001/04/03 11:36:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.12  2001/04/03 11:36:24  chalky
+# Made comments show detail by default
+#
 # Revision 1.11  2001/03/29 14:09:55  chalky
 # newlines were getting eaten in tags. made attr list a table
 #
@@ -80,7 +83,7 @@ class CommentParser:
 	strlist = map(lambda x:str(x), decl.comments())
 	comm = core.Struct(
 	    detail=string.join(strlist), summary='', 
-	    has_detail=0, decl=decl)
+	    has_detail=1, decl=decl)
 	if comm.detail:
 	    map(lambda f,c=comm: f.parse(c), self._formatters)
 	return comm
