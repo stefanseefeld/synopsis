@@ -69,7 +69,7 @@ public:
   Ptree* GetComments();
   Ptree* GetComments2();
 
-  uint LineNumber(char*, char*&, int&);
+  uint LineNumber(char*, std::string &);
 
   static bool RecordKeyword(char*, int);
   static bool Reify(Ptree*, unsigned int&);

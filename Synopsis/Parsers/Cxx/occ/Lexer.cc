@@ -73,7 +73,7 @@ Ptree* Lexer::comments = 0;
 Lexer::Lexer(Buffer *buf) : fifo(this)
 {
     file = buf;
-    file->Rewind();
+    file->reset();
     last_token = '\n';
     tokenp = 0;
     token_len = 0;
@@ -110,9 +110,9 @@ void Lexer::GetOnlyClosingBracket(Token& t)
     Restore(t.ptr + 1);
 }
 
-uint Lexer::LineNumber(char* pos, char*& ptr, int& len)
+uint Lexer::LineNumber(char* pos, std::string &filename)
 {
-    return file->LineNumber(pos, ptr, len);
+    return file->origin(pos, filename);
 }
 
 int Lexer::GetToken(Token& t)
@@ -134,17 +134,17 @@ int Lexer::LookAhead(int offset, Token& t)
 
 char* Lexer::TokenPosition()
 {
-    return (char*)file->Read(Tokenp());
+    return (char*)file->ptr(Tokenp());
 }
 
 char Lexer::Ref(uint i)
 {
-    return file->Ref(i);
+    return file->at(i);
 }
 
 void Lexer::Rewind(char* p)
 {
-    file->Rewind(p - file->Read(0));
+    file->reset(p - file->ptr());
 }
 
 bool Lexer::RecordKeyword(char* keyword, int token)
@@ -383,12 +383,12 @@ void Lexer::SkipAttributeToken()
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
     }while(c != '(' && c != '\0');
 
     int i = 1;
     do{
-	c = file->Get();
+	c = file->get();
 	if(c == '(')
 	    ++i;
 	else if(c == ')')
@@ -408,17 +408,17 @@ int Lexer::SkipExtensionToken(char*& ptr, int& len)
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
     }while(is_blank(c) || c == '\n');
 
     if(c != '('){
-	file->Unget();
+	file->unget();
 	return Ignore;		// if no (..) follows, ignore __extension__
     }
 
     int i = 1;
     do{
-	c = file->Get();
+	c = file->get();
 	if(c == '(')
 	    ++i;
 	else if(c == ')')
@@ -435,7 +435,7 @@ int Lexer::SkipExtensionToken(char*& ptr, int& len)
 #define CHECK_END_OF_INSTRUCTION(C, EOI) \
 	if (C == '\0') return; \
 	if (strchr(EOI, C)) { \
-	    this->file->Unget(); \
+	    this->file->unget(); \
 	    return; \
 	}
 
@@ -460,14 +460,14 @@ void Lexer::SkipAsmToken()
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
 	CHECK_END_OF_INSTRUCTION(c, "");
     }while(is_blank(c) || c == '\n');
 
     if(c == '{'){
         int i = 1;
         do{
-	    c = file->Get();
+	    c = file->get();
 	    CHECK_END_OF_INSTRUCTION(c, "");
 	    if(c == '{')
 	        ++i;
@@ -478,7 +478,7 @@ void Lexer::SkipAsmToken()
     else{
         for(;;){
 	    CHECK_END_OF_INSTRUCTION(c, "}\n");
-	    c = file->Get();
+	    c = file->get();
         }
     }
 }
@@ -490,14 +490,14 @@ void Lexer::SkipDeclspecToken()
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
 	CHECK_END_OF_INSTRUCTION(c, "");
     }while(is_blank(c));
 
     if (c == '(') {
         int i = 1;
         do{
-	    c = file->Get();
+	    c = file->get();
 	    CHECK_END_OF_INSTRUCTION(c, "};");
 	    if(c == '(')
 	        ++i;
@@ -517,15 +517,15 @@ char Lexer::GetNextNonWhiteChar()
 
     for(;;){
         do{
-	    c = file->Get();
+	    c = file->get();
         }while(is_blank(c));
 
         if(c != '\\')
 	    break;
 
-        c = file->Get();
+        c = file->get();
         if(c != '\n' && c!= '\r') {
-	    file->Unget();
+	    file->unget();
 	    break;
 	}
     }
@@ -540,9 +540,9 @@ int Lexer::ReadLine()
 
     c = GetNextNonWhiteChar();
 
-    tokenp = top = file->GetCurPos();
+    tokenp = top = file->position();
     if(c == '\0'){
-	file->Unget();
+	file->unget();
 	return '\0';
     }
     else if(c == '\n')
@@ -551,7 +551,7 @@ int Lexer::ReadLine()
 	if(ReadLineDirective())
 	    return '\n';
 	else{
-	    file->Rewind(top + 1);
+	    file->reset(top + 1);
 	    token_len = 1;
 	    return SingleCharOp(c);
 	}
@@ -566,18 +566,18 @@ int Lexer::ReadLine()
 		return token(StringL);
 	}
 
-	file->Rewind(top + 1);
+	file->reset(top + 1);
 	token_len = 1;
 	return SingleCharOp(c);
     }
     else if(is_digit(c))
 	return ReadNumber(c, top);
     else if(c == '.'){
-	c = file->Get();
+	c = file->get();
 	if(is_digit(c))
 	    return ReadFloat(top);
 	else{
-	    file->Unget();
+	    file->unget();
 	    return ReadSeparator('.', top);
 	}
     }
@@ -585,7 +585,7 @@ int Lexer::ReadLine()
     {
       if (c == 'L')
       {
-	c = file->Get();
+	c = file->get();
 	if (c == '\'' || c == '"')
 	{
 	  if (c == '\'')
@@ -603,7 +603,7 @@ int Lexer::ReadLine()
 	    }
 	  }
 	}
-	file->Rewind(top);
+	file->reset(top);
       }
       return ReadIdentifier(top);
     }
@@ -617,14 +617,14 @@ bool Lexer::ReadCharConst(uint top)
     char c;
 
     for(;;){
-	c = file->Get();
+	c = file->get();
 	if(c == '\\'){
-	    c = file->Get();
+	    c = file->get();
 	    if(c == '\0')
 		return false;
 	}
 	else if(c == '\''){
-	    token_len = int(file->GetCurPos() - top + 1);
+	    token_len = int(file->position() - top + 1);
 	    return true;
 	}
 	else if(c == '\n' || c == '\0')
@@ -642,21 +642,21 @@ bool Lexer::ReadStrConst(uint top)
     char c;
 
     // Skip the L if there is one
-    if (*file->Read(top) == 'L')
-	file->Get();
+    if (file->at(top) == 'L')
+	file->get();
 
     for(;;){
-	c = file->Get();
+	c = file->get();
 	if(c == '\\'){
-	    c = file->Get();
+	    c = file->get();
 	    if(c == '\0')
 		return false;
 	}
 	else if(c == '"'){
-	    uint pos = file->GetCurPos() + 1;
+	    uint pos = file->position() + 1;
 	    int nline = 0;
 	    do{
-		c = file->Get();
+		c = file->get();
 		if(c == '\n')
 		    ++nline;
 	    } while(is_blank(c) || c == '\n');
@@ -665,7 +665,7 @@ bool Lexer::ReadStrConst(uint top)
 		/* line_number += nline; */ ;
 	    else{
 		token_len = int(pos - top);
-		file->Rewind(pos);
+		file->reset(pos);
 		return true;
 	    }
 	}
@@ -676,36 +676,36 @@ bool Lexer::ReadStrConst(uint top)
 
 int Lexer::ReadNumber(char c, uint top)
 {
-    char c2 = file->Get();
+    char c2 = file->get();
 
     if(c == '0' && is_xletter(c2)){
 	do{
-	    c = file->Get();
+	    c = file->get();
 	} while(is_hexdigit(c));
 	while(is_int_suffix(c))
-	    c = file->Get();
+	    c = file->get();
 
-	file->Unget();
-	token_len = int(file->GetCurPos() - top + 1);
+	file->unget();
+	token_len = int(file->position() - top + 1);
 	return token(Constant);
     }
 
     while(is_digit(c2))
-	c2 = file->Get();
+	c2 = file->get();
 
     if(is_int_suffix(c2))
 	do{
-	    c2 = file->Get();
+	    c2 = file->get();
 	}while(is_int_suffix(c2));
     else if(c2 == '.')
 	return ReadFloat(top);
     else if(is_eletter(c2)){
-	file->Unget();
+	file->unget();
 	return ReadFloat(top);
     }
 
-    file->Unget();
-    token_len = int(file->GetCurPos() - top + 1);
+    file->unget();
+    token_len = int(file->position() - top + 1);
     return token(Constant);
 }
 
@@ -714,39 +714,39 @@ int Lexer::ReadFloat(uint top)
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
     }while(is_digit(c));
     if(is_float_suffix(c))
 	do{
-	    c = file->Get();
+	    c = file->get();
 	}while(is_float_suffix(c));
     else if(is_eletter(c)){
-	uint p = file->GetCurPos();
-	c = file->Get();
+	uint p = file->position();
+	c = file->get();
 	if(c == '+' || c == '-'){
-	     c = file->Get();
+	     c = file->get();
 	     if(!is_digit(c)){
-		file->Rewind(p);
+		file->reset(p);
 		token_len = int(p - top);
 		return token(Constant);
 	    }
 	}
 	else if(!is_digit(c)){
-	    file->Rewind(p);
+	    file->reset(p);
 	    token_len = int(p - top);
 	    return token(Constant);
 	}
 
 	do{
-	    c = file->Get();
+	    c = file->get();
 	}while(is_digit(c));
 
 	while(is_float_suffix(c))
-	    c = file->Get();
+	    c = file->get();
     }
 
-    file->Unget();
-    token_len = int(file->GetCurPos() - top + 1);
+    file->unget();
+    token_len = int(file->position() - top + 1);
     return token(Constant);
 }
 
@@ -757,7 +757,7 @@ bool Lexer::ReadLineDirective()
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
     }while(c != '\n' && c != '\0');
     return true;
 }
@@ -767,14 +767,14 @@ int Lexer::ReadIdentifier(uint top)
     char c;
 
     do{
-	c = file->Get();
+	c = file->get();
     }while(is_letter(c) || is_digit(c));
 
-    uint len = file->GetCurPos() - top;
+    uint len = file->position() - top;
     token_len = int(len);
-    file->Unget();
+    file->unget();
 
-    return Screening((char*)file->Read(top), int(len));
+    return Screening((char*)file->ptr(top), int(len));
 }
 
 /*
@@ -939,7 +939,7 @@ int Lexer::Screening(char *identifier, int len)
 
 int Lexer::ReadSeparator(char c, uint top)
 {
-    char c1 = file->Get();
+    char c1 = file->get();
 
     token_len = 2;
     if(c1 == '='){
@@ -960,7 +960,7 @@ int Lexer::ReadSeparator(char c, uint top)
 	case '>' :
 	    return token(RelOp);
 	default :
-	    file->Unget();
+	    file->unget();
 	    token_len = 1;
 	    return SingleCharOp(c);
 	}
@@ -969,8 +969,8 @@ int Lexer::ReadSeparator(char c, uint top)
 	switch(c){
 	case '<' :
 	case '>' :
-	    if(file->Get() != '='){
-		file->Unget();
+	    if(file->get() != '='){
+		file->unget();
 		return token(ShiftOp);
 	    }
 	    else{
@@ -987,16 +987,16 @@ int Lexer::ReadSeparator(char c, uint top)
 	case ':' :
 	    return token(Scope);
 	case '.' :
-	    if(file->Get() == '.'){
+	    if(file->get() == '.'){
 		token_len = 3;
 		return token(Ellipsis);
 	    }
 	    else
-		file->Unget();
+		file->unget();
 	case '/' :
 	    return ReadComment(c1, top);
 	default :
-	    file->Unget();
+	    file->unget();
 	    token_len = 1;
 	    return SingleCharOp(c);
 	}
@@ -1004,18 +1004,18 @@ int Lexer::ReadSeparator(char c, uint top)
     else if(c == '.' && c1 == '*')
 	return token(PmOp);
     else if(c == '-' && c1 == '>')
-	if(file->Get() == '*'){
+	if(file->get() == '*'){
 	    token_len = 3;
 	    return token(PmOp);
 	}
 	else{
-	    file->Unget();
+	    file->unget();
 	    return token(ArrowOp);
 	}
     else if(c == '/' && c1 == '*')
 	return ReadComment(c1, top);
     else{
-	file->Unget();
+	file->unget();
 	token_len = 1;
 	return SingleCharOp(c);
     }
@@ -1039,7 +1039,7 @@ int Lexer::SingleCharOp(unsigned char c)
     else if(c == '#') {
 	// Skip to end of line
 	do {
-	    c = file->Get();
+	    c = file->get();
 	}while(c != '\n' && c != '\0');
 	return Ignore;
     } else {
@@ -1052,25 +1052,25 @@ int Lexer::ReadComment(char c, uint top) {
     uint len = 0;
     if (c == '*')	// a nested C-style comment is prohibited.
 	do {
-	    c = file->Get();
+	    c = file->get();
 	    if (c == '*') {
-		c = file->Get();
+		c = file->get();
 		if (c == '/') {
 		    len = 1;
 		    break;
 		}
 		else
-		    file->Unget();
+		    file->unget();
 	    }
 	}while(c != '\0');
     else /* if (c == '/') */
 	do {
-	    c = file->Get();
+	    c = file->get();
 	}while(c != '\n' && c != '\0');
 
-    len += file->GetCurPos() - top;
+    len += file->position() - top;
     token_len = int(len);
-    Leaf* node = new Leaf((char*)file->Read(top), int(len));
+    Leaf* node = new Leaf((char*)file->ptr(top), int(len));
     comments = Ptree::Snoc(comments, node);
     return Ignore;
 }

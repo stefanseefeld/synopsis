@@ -38,7 +38,7 @@ public:
   bool ErrorMessage(const char*, Ptree* = 0, Ptree* = 0);
   void WarningMessage(const char*, Ptree* = 0, Ptree* = 0);
   int NumOfErrors() { return nerrors; }
-  uint LineNumber(char* pos, char*& fname, int& fname_len);
+  uint LineNumber(char* pos, std::string &);
 
   bool rProgram(Ptree*&);
 

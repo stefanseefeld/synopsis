@@ -1,579 +1,159 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
-/*
-  Copyright (c) 1995, 1996 Xerox Corporation.
-  All Rights Reserved.
-
-  Use and copying of this software and preparation of derivative works
-  based upon this software are permitted. Any copy of this software or
-  of any derivative work must include the above copyright notice of
-  Xerox Corporation, this paragraph and the one after it.  Any
-  distribution of this software or derivative works must comply with all
-  applicable United States export control laws.
-
-  This software is made available AS IS, and XEROX CORPORATION DISCLAIMS
-  ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE
-  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-  PURPOSE, AND NOTWITHSTANDING ANY OTHER PROVISION CONTAINED HEREIN, ANY
-  LIABILITY FOR DAMAGES RESULTING FROM THE SOFTWARE OR ITS USE IS
-  EXPRESSLY DISCLAIMED, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
-  NEGLIGENCE) OR STRICT LIABILITY, EVEN IF XEROX CORPORATION IS ADVISED
-  OF THE POSSIBILITY OF SUCH DAMAGES.
-*/
-
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <cstdlib>
+//
+// Copyright (C) 1997-2000 Shigeru Chiba
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 #include "Buffer.hh"
 #include "Lexer.hh"
 #include "Ptree.hh"
 #include "Class.hh"
+#include <streambuf>
+#include <iterator>
+#include <string>
+#include <stdexcept>
 
 #if defined(PARSE_MSVC)
 #define _MSC_VER	1100
 #endif
 
-// Compiler Firewalled private data
-struct LineMapNode {
-    // Position in file buffer
-    uint pos;
-    // Line number
-    int line;
-    // Filename
-    char* filename;
-    // Filename length
-    int filename_len;
-};
-
-struct Buffer::Private
+Buffer::Buffer(std::streambuf *sb, const std::string &filename)
+  : my_filename(filename),
+    my_cursor(0)
 {
-  // This only works if you ask for the line numbers in order
-  LineMapNode first, last;
-  
-  // Find the last pos in the map
-  uint lastPos() { return last.pos;}
-  void start(LineMapNode& node) { first = last = node;}
-  void insert(LineMapNode& node) 
+  std::istreambuf_iterator<char> begin(sb), end;
+  my_buffer.append(begin, end);
+}
+
+void Buffer::substitute(const char *from, const char *to,
+			const char *begin, unsigned long end)
+{
+  // FIXME: this method needs a lot of work:
+  // * the list should be sorted
+  // * we need to define the behavior in case of overlapping regions
+  // etc.
+  my_replacements.push_back(Replacement(from, to, begin, end));
+}
+
+unsigned long Buffer::origin(const char *ptr, std::string &filename) const
+{
+  // Determine pos in file
+  unsigned long cursor = ptr - my_buffer.data();
+  unsigned long start = cursor;
+  if(cursor > my_buffer.size())
+    throw std::invalid_argument("pointer out of bound");
+
+  long lines = 0;
+
+  while(cursor)
   {
-    //cout << "### Inserting node at " << node.pos << " line " << node.line;
-    //cout << " in " << std::string(node.filename, node.filename_len) << endl;
-    last = node;
-  }
-};
-
-Buffer::Buffer(char* name)
-{
-    replacement = 0;
-    defaultname = name;
-    m = new Private;
-    // Add defaultname at line 0
-    LineMapNode node;
-    node.pos = 0; node.line = 0;
-    node.filename = name;
-    node.filename_len = strlen(name);
-    m->start(node);
-}
-
-Buffer::~Buffer()
-{
-  delete m;
-}
-
-char Buffer::Get()
-{
-  if(buf[index] == '\0')
-    return buf[index];
-  else
-    return buf[index++];
-}
-
-void Buffer::Subst(Ptree* newtext, Ptree* oldtext)
-{
-  Replace(oldtext->LeftMost(), oldtext->RightMost(), newtext);
-}
-
-void Buffer::Insert(Ptree* pos, Ptree* before_text, Ptree* after_text)
-{
-  char* p;
-
-  if(before_text != 0)
-  {
-    p = pos->LeftMost();
-    Replace(p, p, before_text);
+    // move back to the last line directive and report
+    // the line number read there plus the number of lines in between
+    switch(at(--cursor))
+    {
+      case '\n':
+ 	++lines;
+ 	break;
+      case '#':
+      {
+ 	unsigned long begin = 0, end = 0;
+	long l = read_line_directive(cursor, -1, begin, end);
+ 	if(l >= 0)
+ 	{
+ 	  unsigned long line = static_cast<unsigned long>(l) + lines;
+	  filename = std::string(my_buffer.data() + begin, end);
+	  return line;
+ 	}
+ 	break;
+      }
+    }
   }
 
-  if(after_text != 0)
+  // if we are here the input file wasn't preprocessed and
+  // thus the first line doesn't start with a line directive
+  filename = my_filename;
+  return 1 + lines;
+}
+
+void Buffer::write(std::ostream &os, const std::string &filename)
+{
+  // FIXME: for now disregard replacements, as we don't have any means
+  // to test correct behavior
+  std::ostreambuf_iterator<char> out(os);
+  std::copy(my_buffer.begin(), my_buffer.end(), out);
+}
+
+long Buffer::read_line_directive(unsigned long cursor, long line,
+				 unsigned long &begin, unsigned long &end) const
+{
+  char c;
+  // skip leading whitespace
+  do
   {
-    p = pos->RightMost();
-    Replace(p, p, after_text);
-  }
-}
-
-void Buffer::MinimumSubst(Ptree* newtext, Ptree* oldtext)
-{
-  if(MinimumSubst2(newtext, oldtext))
-    Subst(newtext, oldtext);
-}
-
-bool Buffer::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
-{
-    int what;
-    if(oldtext == newtext)
-	return false;
-    else if(oldtext == 0 || newtext == 0)
-	return true;
-    else if(what = newtext->What(),
-	    (what == ntExprStatement || what == ntTypedef))
-	return true;
-    else if(oldtext->IsLeaf() || newtext->IsLeaf())
-	return true;
-    else if(oldtext->Car() == 0 && oldtext->Cdr() == 0)
-	return true;
-    else if(oldtext == newtext->Cdr()){
-	Insert(oldtext, newtext->Car(), 0);
-	return false;
-    }
-    else if(oldtext->Car() != 0 && oldtext->Car() == newtext->Second()){
-	Insert(oldtext->Car(), newtext->Car(), 0);
-	newtext = newtext->ListTail(2);
-	if(MinimumSubst2(newtext, oldtext->Cdr()))
-	    if(oldtext->Cdr() == 0)
-		Insert(oldtext->Car(), 0, newtext);
-	    else
-		Subst(newtext, oldtext->Cdr());
-
-	return false;
-    }
-    else{
-	bool dirty1 = MinimumSubst2(newtext->Car(), oldtext->Car());
-	bool dirty2 = MinimumSubst2(newtext->Cdr(), oldtext->Cdr());
-	if(dirty1 == dirty2)
-	    return dirty1;
-	else if(dirty1)
-	    if(oldtext->Cdr() == 0 && newtext->Cdr() == 0)
-		return true;
-	    else if(oldtext->Car() == 0)
-		Insert(oldtext->Cdr(), newtext->Car(), 0);
-	    else
-		Subst(newtext->Car(), oldtext->Car());
-	else
-	    if(oldtext->Car() == 0 && newtext->Car() == 0)
-		return true;
-	    else if(oldtext->Cdr() == 0)
-		Insert(oldtext->Car(), 0, newtext->Cdr());
-	    else
-		Subst(newtext->Cdr(), oldtext->Cdr());
-
-	return false;
-    }
-}
-
-void Buffer::Replace(char* startpos, char* endpos, Ptree* text)
-{
-    if(startpos == 0 || endpos == 0)
-	return;
-
-    uint start = uint(startpos - buf);
-    uint end = uint(endpos - buf);
-    Replacement* p = replacement;
-    if(p == 0)
-	replacement = new Replacement(0, start, end, text);
-    else if(p->next == 0)
-	if(start < p->startpos)
-	    replacement = new Replacement(p, start, end, text);
-	else
-	    p->next = new Replacement(0, start, end, text);
-    else{
-	for(; p->next != 0; p = p->next)
-	    if(start < p->next->startpos)
-		break;
-
-	p->next = new Replacement(p->next, start, end, text);
-    }
-}
-
-/*
-  LineNumber() returns the line number of the line pointed to by PTR.
-*/
-uint Buffer::LineNumber(char* ptr, char*& filename, int& filename_length)
-{
-    sint n;
-    int  len;
-    uint name;
-    int nline = 0;
-
-    // Determine pos in file
-    uint pos = uint(ptr - buf), startpos = pos;
-    if(pos > size){
-	// error?
-	filename = defaultname;
-	filename_length = strlen(defaultname);
-	return 0;
-    }
-
-    // Determine if already passed this point
-    uint lastpos = m->lastPos();
-
-    sint line_number = -1;
-    filename_length = 0;
-
-    while(pos != lastpos){
-	switch(Ref(--pos)){
-	case '\n' :
-	    ++nline;
-	    break;
-	case '#' :
-	    len = 0;
-	    n = ReadLineDirective(pos, -1, name, len);
-	    if(n >= 0){			// unless #pragma
-		if(line_number < 0)
-		    line_number = n + nline;
-
-		if(len > 0 && filename_length == 0){
-		    filename = (char*)Read(name);
-		    filename_length = len;
-		}
-	    }
-	    break;
-	}
-
-	if(line_number >= 0 && filename_length > 0) {
-	    //cout << "### Reached line directive at " << pos << endl;
-	    // We reached a line directive. Record this node
-	    LineMapNode node;
-	    node.pos = startpos; node.line = line_number;
-	    node.filename = filename; node.filename_len = filename_length;
-	    m->insert(node);
-	    return line_number;
-	}
-    }
-
-    //cout << "### Reached end of map at " << pos << endl;
-
-    // We reached the last recorded node, so use that to work it out
-    LineMapNode& node = m->last;
-
-    if(filename_length == 0){
-	filename = node.filename;
-	filename_length = node.filename_len;
-    }
-
-    if(line_number < 0)
-	line_number = nline + node.line;
-
-    // Now record this new node for future reference
-    LineMapNode newnode;
-    newnode.pos = startpos; newnode.line = line_number;
-    newnode.filename = filename; newnode.filename_len = filename_length;
-    m->insert(newnode);
-
-    return line_number;
-}
-
-/*
-  Write() saves the program as a file named FILE_NAME.
-  This assumes that the first line of the program is
-  a # line directive.
-*/
-void Buffer::Write(std::ostream& out, const char* file_name)
-{
-    Replacement* rep = replacement;
-    uint pos;
-    uint nlines = 1;
-    uint line_number = 1;
-    uint i = 0;
-    char c;
-
-    uint filename = 0;
-    int filename_length = 0;
-
-    if(Ref(i) == '#')
-	line_number = ReadLineDirective(i, (sint)line_number,
-					filename, filename_length);
-
-    for(; rep != 0; rep = rep->next){
-	pos = rep->startpos;
-	while(i < pos){
-	    c = Ref(i++);
-	    if(c == '\0'){
-		--i;
-		break;
-	    }
-
-	    out << c;
-	    if(c == '\n'){
-		++nlines;
-		++line_number;
-		if(Ref(i) == '#')
-		    line_number = ReadLineDirective(i, (sint)line_number,
-						    filename, filename_length);
-	    }
-	}
-
-	if(i > 0 && Ref(i - 1) != '\n'){
-	    out << '\n';
-	    ++nlines;
-	}
+    c = at(++cursor);
+  } while(is_blank(c));
 
 #if defined(_MSC_VER) || defined(IRIX_CC)
-	out << "#line " << nlines + 1 << " \"" << file_name << "\"\n";
-#else
-	out << "# " << nlines + 1 << " \"" << file_name << "\"\n";
+  if(cursor + 4 <= my_buffer.size() && my_buffer.substr(cursor, 4) == "line")
+  {
+    // skip 'line' token and following whitespace
+    cursor += 4;
+    do
+    {
+      c = at(++cursor);
+    } while(is_blank(c));
+  }
 #endif
-	++nlines;
-	nlines += rep->text->Write(out);
-	pos = rep->endpos;
-	if(rep->next != 0 && rep->next->startpos <= pos){
-	    rep = rep->next;
-	    out << '\n';
-	    ++nlines;
-	    nlines += rep->text->Write(out);
-	    if(rep->endpos > pos)
-		pos = rep->endpos;
-	}
 
-	while(i < pos){
-	    c = Ref(i++);
-	    if(c == '\0'){
-		--i;
-		break;
-	    }
-	    else if(c == '\n'){
-		++line_number;
-		if(Ref(i) == '#')
-		    line_number = ReadLineDirective(i, (sint)line_number,
-						    filename, filename_length);
-	    }
-	}
-
-#if defined(_MSC_VER) || defined(IRIX_CC)
-	out << "\n#line " << line_number << ' ';
-#else
-	out << "\n# " << line_number << ' ';
-#endif
-	++nlines;
-	if(filename_length > 0)
-	    for(int j = 0; j < filename_length; ++j)
-		out << (char)Ref(filename + j);
-	else
-	    out << '"' << defaultname << '"';
-
-	out << '\n';
-	++nlines;
+  if(is_digit(c))
+  {		/* # <line> <file> */
+    // extract a decimal number
+    unsigned long num = c - '0';
+    while(true)
+    {
+      c = at(++cursor);
+      if(is_digit(c)) num = num * 10 + c - '0';
+      else break;
     }
 
-    while((c = Ref(i++)) != '\0'){
-	out << c;
-	if(c == '\n')
-	    ++nlines;
+    // as the line number reported reports for the *next* line, we set
+    // it to one below as it gets incremented on the next newline
+    long l = num - 1;
+
+    // skip whitespace
+    if(is_blank(c))
+    {
+      do
+      {
+ 	c = at(++cursor);
+      } while(is_blank(c));
+
+      // now get the filename
+      if(c == '"')
+      {
+ 	unsigned long b = cursor;
+ 	do
+ 	{
+ 	  c = at(++cursor);
+ 	} while(c != '"');
+
+ 	if(cursor > b + 2)
+ 	{
+	  // the line is well-formed, let's set the out parameters
+ 	  begin = b;
+ 	  end = cursor;
+	  line = l;
+ 	}
+      }
     }
-
-#if defined(_MSC_VER) || defined(IRIX_CC)
-    out << "\n#line " << nlines + 2 << " \"" << file_name << "\"\n";
-#else
-    out << "\n# " << nlines + 2 << " \"" << file_name << "\"\n";
-#endif
-    Class::FinalizeAll(out);
-    opcxx_ListOfMetaclass::FinalizeAll(out);
-}
-
-sint Buffer::ReadLineDirective(uint i, sint line_number,
-			       uint& filename, int& filename_length)
-{
-    char c;
-
-    do{
-	c = Ref(++i);
-    }while(is_blank(c));
-
-#if defined(_MSC_VER) || defined(IRIX_CC)
-    if(i + 4 <= GetSize() && strncmp(Read(i), "line", 4) == 0){
-	i += 3;
-	do{
-	    c = Ref(++i);
-	}while(is_blank(c));
-    }
-#endif
-
-    if(is_digit(c)){		/* # <line> <file> */
-	uint num = c - '0';
-	for(;;){
-	    c = Ref(++i);
-	    if(is_digit(c))
-		num = num * 10 + c - '0';
-	    else
-		break;
-	}
-
-	line_number = num - 1;	/* line_number'll be incremented soon */
-
-	if(is_blank(c)){
-	    do{
-		c = Ref(++i);
-	    }while(is_blank(c));
-	    if(c == '"'){
-		uint fname_start = i;
-		do{
-		    c = Ref(++i);
-		} while(c != '"');
-		if(i > fname_start + 2){
-		    filename = fname_start;
-		    filename_length = int(i - fname_start + 1);
-		}
-	    }
-	}
-    }
-
-    return line_number;
-}
-
-// class Buffer::Replacement
-
-Buffer::Replacement::Replacement(Replacement* n, uint st,
-				 uint ed, Ptree* t)
-{
-    next = n;
-    startpos = st;
-    endpos = ed;
-    text = t;
-}
-
-// subclasses
-
-StreamBuffer::StreamBuffer(std::istream &f, char *filename)
-  : Buffer(filename)
-{
-  f.seekg(0, std::ios::end);
-  size = f.tellg();
-  f.seekg(0);
-
-  buf = new char[size + 1];
-  f.read(buf, int(size));
-#if defined(_WIN32) || defined(__CYGWIN__)
-  // Under win31/95/NT, the pair CR-LF is replaced by LF,
-  // implying a smallest size
-  size = f.gcount();
-#endif
-  buf[size] = '\0';
-  index = 0;
-}
-
-StreamBuffer::~StreamBuffer()
-{
-  delete [] buf;
-  buf = 0;
-}
-
-CinBuffer::CinBuffer()
-  : Buffer("stdin")
-{
-  const int Size = 512 * 1024;
-  buf = new char[Size];
-  buf_size = Size;
-  index = size = 0;
-}
-
-CinBuffer::~CinBuffer()
-{
-  delete [] buf;
-  buf = 0;
-}
-
-char CinBuffer::Get()
-{
-  if(size >= buf_size)
-  {
-    std::cerr << "ProgramFromStdin: sorry, out of memory\n";
-    exit(1);
   }
-
-  if(index >= size)
-  {
-    int c = std::cin.get();
-    if(c == EOF)
-      c = '\0';
-
-    buf[size++] = c;
-  }
-
-  if(buf[index] == '\0')
-    return buf[index];
-  else
-    return buf[index++];
+  return line;
 }
 
-// class ProgramString
-
-const int Quantum = 4;
-const int BufSize = 1 << Quantum;
-
-StringBuffer::StringBuffer()
-  : Buffer("unknown")
+Buffer::Replacement::Replacement(const char *f, const char *t,
+				 const char *b, unsigned long e)
+  : from(f), to(t),
+    begin(b), end(e)
 {
-  buf = new (GC) char[BufSize];
-  buf[0] = '\0';
-  size = BufSize;
-  index = str_length = 0;
-}
-
-StringBuffer::~StringBuffer()
-{
-//  delete [] buf;
-  buf = 0;
-}
-
-StringBuffer &StringBuffer::operator << (const char* str)
-{
-  int len = strlen(str) + 1;
-
-  if(str_length + len < size)
-  {
-    memmove(&buf[str_length], str, len);
-    str_length += len - 1;
-  }
-  else
-  {
-    size = (str_length + len + BufSize) & ~(BufSize - 1);
-    char* newbuf = new (GC) char[size];
-    memmove(newbuf, buf, size_t(str_length));
-    memmove(&newbuf[str_length], str, len);
-    //	delete [] buf;
-    buf = newbuf;
-    str_length += len - 1;
-  }
-
-  return *this;
-}
-
-StringBuffer &StringBuffer::operator << (const char c)
-{
-  if(str_length + 2 < size)
-  {
-    buf[str_length] = c;
-    buf[++str_length] = '\0';
-  }
-  else
-  {
-    size = (str_length + 2 + BufSize) & ~(BufSize - 1);
-    char* newbuf = new (GC) char[size];
-    memmove(newbuf, buf, size_t(str_length));
-    newbuf[str_length] = c;
-    newbuf[++str_length] = '\0';
-    //	delete [] buf;
-    buf = newbuf;
-  }
-
-  return *this;
 }

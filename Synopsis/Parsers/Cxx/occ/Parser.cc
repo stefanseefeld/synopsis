@@ -104,31 +104,16 @@ bool Parser::SyntaxError()
     return bool(++nerrors < MaxErrors);
 }
 
-uint Parser::LineNumber(char* pos, char*& fname, int& fname_len)
+uint Parser::LineNumber(char* pos, std::string &filename)
 {
-    uint line_number = lex->LineNumber(pos, fname, fname_len);
-    if(fname_len > 1){
-	if(fname[0] == '"') {
-	    ++fname;
-	    --fname_len;
-	}
-
-	if(fname[fname_len - 1] == '"')
-	    --fname_len;
-    }
-
-    return line_number;
+  return lex->LineNumber(pos, filename);
 }
 
 void Parser::ShowMessageHead(char* pos)
 {
-    char* fname;
-    int fname_len;
-
-    uint line_number = LineNumber(pos, fname, fname_len);
-    int i = 0;
-    while(i < fname_len)
-	std::cerr << fname[i++];
+    std::string filename;
+    uint line_number = LineNumber(pos, filename);
+    std::cerr << filename;
 
 #if defined(_MSC_VER)
     std::cerr << '(' << line_number << ") : ";

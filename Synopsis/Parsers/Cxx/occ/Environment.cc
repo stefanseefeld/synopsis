@@ -536,19 +536,19 @@ void Environment::Dump(int level)
     e->Dump();
 }
 
-Ptree* Environment::GetLineNumber(Ptree* p, int& number)
-{
-    if (walker == 0) {
-	number = 0;
-	return 0;
-    }
+// Ptree* Environment::GetLineNumber(Ptree* p, int& number)
+// {
+//     if (walker == 0) {
+// 	number = 0;
+// 	return 0;
+//     }
 
-    char* fname;
-    int fname_len;
-    number = (int)walker->GetParser()->LineNumber(p->GetPosition(),
-						  fname, fname_len);
-    return new Leaf(fname, fname_len);
-}
+//     char* fname;
+//     int fname_len;
+//     number = (int)walker->GetParser()->LineNumber(p->GetPosition(),
+// 						  fname, fname_len);
+//     return new Leaf(fname, fname_len);
+// }
 
 
 // class Environment::Array

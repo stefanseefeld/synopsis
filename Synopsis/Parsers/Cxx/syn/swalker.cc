@@ -53,7 +53,6 @@ SWalker::SWalker(FileFilter* filter, Parser* parser,
     my_decoder(new Decoder(my_builder)),
     my_declaration(0),
     my_template(0),
-    my_filename_ptr(0),
     my_file(0),
     my_lineno(0),
     my_links(0),
@@ -110,13 +109,12 @@ void SWalker::update_line_number(Ptree* ptree)
   // Ask the Parser for the linenumber of the ptree. This used to be
   // expensive until I hacked buffer.cc to cache the last line number found.
   // Now it's okay as long as you are looking for lines sequentially.
-  char* fname;
-  int fname_len;
-  my_lineno = my_parser->LineNumber(ptree->LeftMost(), fname, fname_len);
-  if (fname != my_filename_ptr)
+  std::string filename;
+  my_lineno = my_parser->LineNumber(ptree->LeftMost(), filename);
+  if (filename != my_filename)
   {
-    my_filename_ptr = fname;
-    my_file = my_filter->get_sourcefile(fname, fname_len);
+    my_filename = filename;
+    my_file = my_filter->get_sourcefile(my_filename.c_str());
     my_builder->set_file(my_file);
   }
 }
@@ -337,19 +335,17 @@ SWalker::Translate(Ptree* node)
   {
     std::cout << "Warning: An exception occurred: " << e.what() << std::endl;
     std::cout << "At: ";
-    char* fname;
-    int fname_len;
-    int lineno = my_parser->LineNumber(node->LeftMost(), fname, fname_len);
-    std::cout << " (" << std::string(fname, fname_len) << ":" << lineno << ")" << std::endl;
+    std::string filename;
+    int lineno = my_parser->LineNumber(node->LeftMost(), filename);
+    std::cout << " (" << filename << ":" << lineno << ")" << std::endl;
   }
   catch (...)
   {
     std::cout << "Warning: An unknown exception occurred: " << std::endl;
     std::cout << "At: ";
-    char* fname;
-    int fname_len;
-    int lineno = my_parser->LineNumber(node->LeftMost(), fname, fname_len);
-    std::cout << " (" << std::string(fname, fname_len) << ":" << lineno << ")" << std::endl;
+    std::string filename;
+    int lineno = my_parser->LineNumber(node->LeftMost(), filename);
+    std::cout << " (" << filename << ":" << lineno << ")" << std::endl;
   }
 #endif
 }
