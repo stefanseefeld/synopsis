@@ -30,7 +30,7 @@ RANLIB		:=
 
 # Options for optimised or debug versions
 OPTIMISE	:= -O6 -fPIC
-DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG 
+DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG -fno-inline
 
 # Flags
 CFLAGS		:= 

@@ -245,44 +245,55 @@ namespace Type {
 	virtual void visitFuncPtr(FuncPtr*);
     };
 
+    //. The exception thrown by the special cast templates
+    class wrong_type_cast : public std::exception {
+    public:
+	//. Constructor
+	wrong_type_cast() throw () {}
+	//. Destructor
+	virtual ~wrong_type_cast() throw () {}
+	//. Returns name of this class
+	virtual const char* what() const throw();
+    };
+
     //. Casts Type::Type types to derived types safely. The cast is done using
-    //. dynamic_cast, and std::bad_cast is thrown upon failure.
+    //. dynamic_cast, and wrong_type_cast is thrown upon failure.
     template <class T>
-    T* type_cast(Type* x) throw (std::bad_cast) {
+    T* type_cast(Type* x) throw (wrong_type_cast) {
 	if (T* ptr = dynamic_cast<T*>(x)) return ptr;
-	throw std::bad_cast();
+	throw wrong_type_cast();
     }
 
     //. Casts Type::Named types to derived types safely. The cast is done using
-    //. dynamic_cast, and std::bad_cast is thrown upon failure.
+    //. dynamic_cast, and wrong_type_cast is thrown upon failure.
     template <class T>
-    T* named_cast(Named* x) throw (std::bad_cast) {
+    T* named_cast(Named* x) throw (wrong_type_cast) {
 	if (T* ptr = dynamic_cast<T*>(x)) return ptr;
-	throw std::bad_cast();
+	throw wrong_type_cast();
     }
 
     //. Safely extracts typed Declarations from Named types. The type is first
     //. safely cast to Type::Declared, then the declaration() safely cast to
     //. the template type.
     template <class T>
-    T* declared_cast(Named* x) throw (std::bad_cast) {
+    T* declared_cast(Named* x) throw (wrong_type_cast) {
 	if (Declared* declared = dynamic_cast<Declared*>(x))
 	    if (AST::Declaration* decl = declared->declaration())
 		if (T* ptr = dynamic_cast<T*>(decl))
 		    return ptr;
-	throw std::bad_cast();
+	throw wrong_type_cast();
     }
 
     //. Safely extracts typed Declarations from Type types. The type is first
     //. safely cast to Type::Declared, then the declaration() safely cast to
     //. the template type.
     template <class T>
-    T* declared_cast(Type* x) throw (std::bad_cast) {
+    T* declared_cast(Type* x) throw (wrong_type_cast) {
 	if (Declared* declared = dynamic_cast<Declared*>(x))
 	    if (AST::Declaration* decl = declared->declaration())
 		if (T* ptr = dynamic_cast<T*>(decl))
 		    return ptr;
-	throw std::bad_cast();
+	throw wrong_type_cast();
     }
 
 
