@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.10 2001/03/28 13:11:04 chalky Exp $
+# $Id: Formatter.py,v 1.11 2001/03/29 14:09:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.11  2001/03/29 14:09:55  chalky
+# newlines were getting eaten in tags. made attr list a table
+#
 # Revision 1.10  2001/03/28 13:11:04  chalky
 # Added @attr tag to Javadoc formatter - very similar to @param tags :)
 #
@@ -216,7 +219,7 @@ class JavadocFormatter (CommentFormatter):
 	if str is None: return str
 	#str, see = self.extract(self.re_see_line, str)
 	see_tags, attr_tags, param_tags, return_tag = [], [], [], None
-	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+y]
+	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+' '+y]
 	str, tags = self.parseTags(str, joiner)
 	# Parse each of the tags
 	for line in tags:
@@ -263,12 +266,12 @@ class JavadocFormatter (CommentFormatter):
     def format_attrs(self, attr_tags):
 	"""Formats a list of (attr, description) tags"""
 	if not len(attr_tags): return ''
+	table = '<table border=1 class="attr-table">%s</table>'
+	row = '<tr><td valign="top" class="attr-table-name">%s</td><td class="attr-table-desc">%s</td></tr>'
 	return div('tag-heading',"Attributes:") + \
-		div('tag-section', string.join(
-		    map(lambda p:"<b>%s</b> - %s"%(p[0],p[1]), attr_tags),
-		    '<br>'
+		table%string.join(
+		    map(lambda p,row=row:row%(p[0],p[1]), attr_tags)
 		)
-	    )
     def format_return(self, return_tag):
 	"""Formats a since description string"""
 	if not return_tag: return ''
