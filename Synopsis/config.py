@@ -4,6 +4,9 @@ paths, etc."""
 
 import os, os.path, sys
 
+version = "0.6"
+
+
 if os.name == "posix":
    datadir = os.path.abspath(os.path.join(__file__,
                                           # lib / pythonx.y / site-packages / Synopsis / config.py
