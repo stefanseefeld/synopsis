@@ -43,6 +43,7 @@ SYN_FILES := Translator occ swalker ast builder type dict \
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/PTree/*.hh))
+HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/SymbolLookup/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
 
 # Generate sources, objs and debug-objs from the FILES
@@ -53,7 +54,7 @@ SYN_OBJ	:= $(patsubst %, syn/%.o, $(SYN_FILES))
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
-DEP	:= $(patsubst %.cc, %.d, $(SRC))
+DEP	:= $(patsubst %.cc, %.d, $(SRC) display-ptree.cc dump-symbols.cc)
 
 TARGETS	:= $(OCC_SO) $(LINK_SO)
 
@@ -65,6 +66,9 @@ vpath %.hh $(srcdir)
 all: $(TARGETS)
 
 display-ptree: display-ptree.o $(OCC_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(GC_LIB) $(LIBS)
+
+dump-symbols: dump-symbols.o $(OCC_OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(GC_LIB) $(LIBS)
 
 doc: occ.syn occ-impl.syn

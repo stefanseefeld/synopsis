@@ -14,6 +14,11 @@
 using namespace PTree;
 using namespace SymbolLookup;
 
+Table::Table()
+{
+  my_scopes.push(new Scope());
+}
+
 Table &Table::enter_scope()
 {
   my_scopes.push(new Scope());
