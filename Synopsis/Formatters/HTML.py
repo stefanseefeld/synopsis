@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.51 2001/01/23 00:20:27 chalky Exp $
+# $Id: HTML.py,v 1.52 2001/01/24 01:38:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.52  2001/01/24 01:38:36  chalky
+# Added docstrings to all modules
+#
 # Revision 1.51  2001/01/23 00:20:27  chalky
 # Added employee.cc demo. Fixed small bug wrt linking to details of variables.
 #
@@ -42,6 +45,9 @@
 # . TOC - Consider storing scoped name tuple instead of colonated name
 #   o NOTE: TOC also stores types for some reason. investigate.
 # . Unite Nodes/NamespaceBuilder into TOC
+"""
+HTML formatter. Output specifies a directory. See manual for usage.
+"""
 
 import sys, getopt, os, os.path, string, types, errno, stat, re
 from Synopsis.Core import AST, Type, Util

@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.6 2001/01/22 19:54:41 stefan Exp $
+# $Id: DUMP.py,v 1.7 2001/01/24 01:38:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,12 +19,18 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.7  2001/01/24 01:38:36  chalky
+# Added docstrings to all modules
+#
 # Revision 1.6  2001/01/22 19:54:41  stefan
 # better support for help message
 #
 # Revision 1.5  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
+"""
+Verbose attribute-oriented dump of AST. Pipe into less -r
+"""
 
 import sys, getopt, os, os.path, string, types
 from Synopsis.Core import Type, AST

@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.19 2001/01/22 19:54:41 stefan Exp $
+# $Id: ASCII.py,v 1.20 2001/01/24 01:38:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,12 +20,18 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.20  2001/01/24 01:38:36  chalky
+# Added docstrings to all modules
+#
 # Revision 1.19  2001/01/22 19:54:41  stefan
 # better support for help message
 #
 # Revision 1.18  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
+"""
+Outputs the AST in plain ascii format similar to input.
+"""
 
 import sys, getopt, os, os.path, string
 from Synopsis.Core import Type, AST, Util
