@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.7 2003/11/25 20:20:47 stefan Exp $
+# $Id: Parser.py,v 1.8 2003/11/27 03:38:38 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -25,7 +25,6 @@ class Parser(Processor):
     
    def process(self, ast, **kwds):
 
-      input = kwds.get('input')
       self.set_parameters(kwds)
       self.ast = ast
       self.scopes = []
@@ -33,7 +32,7 @@ class Parser(Processor):
       # Create return type for Python functions:
       self.return_type = Type.Base('Python',('',))
       
-      for file in input:
+      for file in self.input:
          self.process_file(file)
 
       return self.output_and_return_ast()
