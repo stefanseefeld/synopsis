@@ -1,14 +1,15 @@
-synopsis	:= ../../bin/synopsis -Wc,parser=Python,formatter=HTML -Wf,-s,style.css,-S,../html.css
+synopsis := python synopsis.py
 
-all: ast #test
+all: html
 
-ast:	    AST.py
-	    $(synopsis) -o ast $?
+html: AST.syn
+	$(synopsis) format --output=$@ $?
 
-#test:	    test.py
-#	    $(synopsis) -o test $?
+AST.syn: AST.py
+	$(synopsis) parse --output=$@ $?
 
 clean:
-		rm -fr *~ *.html *.syn ast *.pyc *.pyo
+	rm -fr *.syn *~
 
 distclean:	clean
+	rm -rf html
