@@ -1,35 +1,10 @@
-
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-    CTool Library
-    Copyright (C) 1998-2001	Shaun Flisakowski
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 1, or (at your option)
-    any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    o+
-    o+     File:         decl.h
-    o+
-    o+     Programmer:   Shaun Flisakowski
-    o+     Date:         Aug 9, 1998
-    o+
-    o+     A high-level view of types / declarations.
-    o+
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
+//
+// Copyright (C) 1998 Shaun Flisakowski
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 
 #ifndef _Declaration_hh
 #define _Declaration_hh
@@ -38,7 +13,7 @@
 #include <Callback.hh>
 #include <Location.hh>
 #include <Dup.hh>
-#include <Traversal.hh>
+#include <Visitor.hh>
 
 #include <iostream>
 #include <vector>
@@ -48,55 +23,29 @@ class Constant;
 class Expression;
 class EnumConstant;
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-typedef unsigned long BaseTypeSpec;
-
-const BaseTypeSpec BT_NoType       = 0x00000000;  // no type provided
-const BaseTypeSpec BT_Void         = 0x00000001;  // explicitly no type
-const BaseTypeSpec BT_Bool         = 0x00000002;
-const BaseTypeSpec BT_Char         = 0x00000004;
-const BaseTypeSpec BT_Short        = 0x00000008;
-const BaseTypeSpec BT_Int          = 0x00000010;
-const BaseTypeSpec BT_Int64        = 0x00000020;
-const BaseTypeSpec BT_Int32        = 0x00000040;
-const BaseTypeSpec BT_Int16        = 0x00000080;
-const BaseTypeSpec BT_Int8         = 0x00000100;
-const BaseTypeSpec BT_Long         = 0x00000200;
-const BaseTypeSpec BT_LongLong     = 0x00000400;  // a likely C9X addition
-const BaseTypeSpec BT_Float        = 0x00000800;
-const BaseTypeSpec BT_Double       = 0x00001000;
-const BaseTypeSpec BT_Ellipsis     = 0x00002000;
-
-const BaseTypeSpec BT_Struct       = 0x00008000;
-const BaseTypeSpec BT_Union        = 0x00010000;
-const BaseTypeSpec BT_Enum         = 0x00020000;
-const BaseTypeSpec BT_UserType     = 0x00040000;
-const BaseTypeSpec BT_BaseMask     = 0x0004FFFF;
-
-// Sign indicator
-const BaseTypeSpec BT_Signed       = 0x00100000;
-const BaseTypeSpec BT_UnSigned     = 0x00200000;
-const BaseTypeSpec BT_SignMask     = 0x00300000;
-
-const BaseTypeSpec BT_TypeError    = 0x10000000;
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-typedef unsigned short TypeQual;
-
-const TypeQual TQ_None         = 0x0000;
-const TypeQual TQ_Const        = 0x0001;
-const TypeQual TQ_Volatile     = 0x0002;
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-enum StorageType
+struct TypeQual
 {
-    ST_None  = 0,
-    ST_Auto,
-    ST_Extern,
-    ST_Register,
-    ST_Static,
-    ST_Typedef
+  enum { None = 0x0000, Const = 0x0001, Volatile = 0x0002};
+  TypeQual &operator = (short v) { value = v;}
+  bool operator == (short v) const { return value == v;}
+  bool operator != (short v) const { return value != v;}
+  TypeQual &operator |= (const TypeQual &v) { value |= v.value; return *this;}
+  bool operator & (const TypeQual &v) const { return value & v.value;}
+  bool operator | (const TypeQual &v) const { return value | v.value;}
+  std::string to_string() const;
+  short value;  
+};
+
+struct Storage
+{
+  enum {None = 0, Auto, Extern, Register, Static, Typedef};
+  // can't define constructor since Storage is part of a union.
+  // always initialize explicitely !
+  Storage &operator = (short v) { value = v;}
+  bool operator == (short v) const { return value == v;}
+  bool operator != (short v) const { return value != v;}
+  std::string to_string() const;
+  short value;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -121,25 +70,6 @@ enum TypeType
     TT_Union,
     TT_Enum
     */
-};
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-// For gcc extension __attribute__
-enum GccAttribType
-{
-    GCC_Unsupported = 0,    // Not supported by cTool
-
-    GCC_Aligned,
-    GCC_Packed,
-    GCC_CDecl,
-    GCC_Mode,
-    GCC_Format,
-   
-    GCC_Const,
-    GCC_NoReturn,
-    GCC_Malloc,
-    GCC_TransparentUnion,
-    GCC_Pure
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -208,16 +138,13 @@ class EnumDef
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-class Type;
-typedef Dup<Type> DupableType;
-
-class Type : public DupableType
+class Type : public Dup<Type>
 {
   public:
     Type(TypeType _type=TT_Base);
     virtual ~Type();
 
-    virtual void accept(Traversal *) = 0;
+    virtual void accept(TypeVisitor *) = 0;
 
     virtual int     precedence() const { return 16; }
     virtual Type*   dup0() const =0;    // deep-copy
@@ -249,60 +176,92 @@ class Type : public DupableType
     static void    DeleteTypeList(Type* typelist);
 
 
-    TypeType        type;
+    TypeType type;
 
     // Temporary - is moved into the declaration (Decl).
-    StorageType     storage;
+    Storage  storage;
 
   private:
-    Type*           link;    // For linking all type classes togather.
+    Type*    link;    // For linking all type classes togather.
 };
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class BaseType : public Type
 {
-  public:
-    BaseType( BaseTypeSpec = BT_NoType );
-    BaseType( StructDef *sd );
-    BaseType( EnumDef *ed );
-    ~BaseType();
+public:
+  typedef unsigned long Spec;
 
-    virtual void accept(Traversal *t) { t->traverse_base(this);}
+  static const Spec NoType;  // no type provided
+  static const Spec Void;    // explicitly no type
+  static const Spec Bool;
+  static const Spec Char;
+  static const Spec Short;
+  static const Spec Int;
+  static const Spec Int64;
+  static const Spec Int32;
+  static const Spec Int16;
+  static const Spec Int8;
+  static const Spec Long;
+  static const Spec LongLong;// a likely C9X addition
+  static const Spec Float;
+  static const Spec Double;
+  static const Spec Ellipsis;
+  
+  static const Spec Struct;
+  static const Spec Union;
+  static const Spec Enum;
+  static const Spec UserType;
+  static const Spec BaseMask;
+  
+  // Sign indicator
+  static const Spec Signed;
+  static const Spec UnSigned;
+  static const Spec SignMask;
+  
+  static const Spec TypeError;
 
-    Type* dup0() const;    // deep-copy
+  static std::string to_string(Spec);
 
-    Type* extend(Type *extension) { assert(0); return NULL; }
 
-    void printBase( std::ostream& out, int level ) const;
-    void printBefore( std::ostream& out, Symbol *name, int level) const;
-    void printAfter( std::ostream& out ) const;
+  BaseType(Spec = NoType);
+  BaseType(StructDef *sd);
+  BaseType(EnumDef *ed);
+  ~BaseType();
 
-    void printForm(std::ostream& out) const;
+  virtual void accept(TypeVisitor *v) { v->traverse_base(this);}
 
-    void registerComponents();
+  Type* dup0() const;    // deep-copy
 
-    bool lookup( Symbol* sym ) const;
+  Type* extend(Type *extension) { assert(0); return NULL; }
 
-    BaseTypeSpec    typemask;
+  void printBase( std::ostream& out, int level ) const;
+  void printBefore( std::ostream& out, Symbol *name, int level) const;
+  void printAfter( std::ostream& out ) const;
 
-    TypeQual        qualifier;
+  void printForm(std::ostream& out) const;
 
-    Symbol          *tag;        // tag for struct/union/enum
-    Symbol          *typeName;   // typedef name for a UserType
+  void registerComponents();
 
-    StructDef       *stDefn;     // optional definition of struct/union
-    EnumDef         *enDefn;     // optional definition of enum 
+  bool lookup( Symbol* sym ) const;
+
+  Spec       typemask;
+
+  TypeQual   qualifier;
+
+  Symbol    *tag;        // tag for struct/union/enum
+  Symbol    *typeName;   // typedef name for a UserType
+
+  StructDef *stDefn;     // optional definition of struct/union
+  EnumDef   *enDefn;     // optional definition of enum 
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class PtrType : public Type
 {
   public:
-    PtrType(TypeQual qual = TQ_None)
-        : Type(TT_Pointer), qualifier(qual), subType(NULL){};
+    PtrType(short qual) : Type(TT_Pointer), subType(0) { qualifier = qual;};
     ~PtrType(){};
 
-    virtual void accept(Traversal *t) { t->traverse_ptr(this);}
+    virtual void accept(TypeVisitor *v) { v->traverse_ptr(this);}
 
     int    precedence() const { return 15; }
 
@@ -335,7 +294,7 @@ class ArrayType : public Type
 
     ~ArrayType();
 
-    virtual void accept(Traversal *t) { t->traverse_array(this);}
+    virtual void accept(TypeVisitor *v) { v->traverse_array(this);}
 
     Type* dup0() const;    // deep-copy
 
@@ -366,7 +325,7 @@ class BitFieldType : public Type
           : Type(TT_BitField),size(s),subType(NULL) {};
     ~BitFieldType();
 
-    virtual void accept(Traversal *t) { t->traverse_bit_field(this);}
+    virtual void accept(TypeVisitor *v) { v->traverse_bit_field(this);}
 
     Type* dup0() const;    // deep-copy
 
@@ -396,7 +355,7 @@ class FunctionType : public Type
     FunctionType(Decl *args_list = NULL);
     ~FunctionType();
 
-    virtual void accept(Traversal *t) { t->traverse_function(this);}
+    virtual void accept(TypeVisitor *v) { v->traverse_function(this);}
 
     Type* dup0() const;    // deep-copy
 
@@ -428,63 +387,72 @@ class FunctionType : public Type
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class GccAttrib
 {
-  public:
-    GccAttrib( GccAttribType gccType );
-    ~GccAttrib();
+public:
+  enum Type
+  {
+    Unsupported = 0,
+    Aligned, Packed, CDecl, Mode, Format,
+   
+    Const, NoReturn, Malloc, TransparentUnion, Pure
+  };
 
-    GccAttrib* dup0() const;
-    GccAttrib* dup() const;
 
-    void    print( std::ostream& out ) const;
+  GccAttrib(Type);
+  ~GccAttrib();
 
-    GccAttribType    type;
+  GccAttrib* dup0() const;
+  GccAttrib* dup() const;
 
-    uint             value;    // For use with GCC_Aligned
-    Symbol          *mode;     // For use with GCC_Mode, GCC_Format
+  std::string to_string() const;
 
-    uint             strIdx;   // For use with GCC_Format
-    uint             first;    // For use with GCC_Format
+  Type    type;
+
+  uint    value;    // For use with Aligned
+  Symbol *mode;     // For use with Mode, Format
+
+  uint    strIdx;   // For use with Format
+  uint    first;    // For use with Format
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class Decl
 {
-  public:
-    Decl( Symbol* sym = (Symbol*) NULL );
-    Decl( Type* type );
-    ~Decl();
+public:
+  Decl(Symbol *sym = 0);
+  Decl(Type *type);
+  ~Decl();
 
-    Type*   extend( Type* type );
+  Type*   extend( Type* type );
 
-    bool    isTypedef() const { return (storage == ST_Typedef); }
-    bool    isStatic() const { return (storage == ST_Static); }
+  bool    isTypedef() const { return storage == Storage::Typedef; }
+  bool    isStatic() const { return storage == Storage::Static; }
 
-    void    clear();
+  void    clear();
 
-    Decl*   dup0() const;
-    Decl*   dup() const;        // deep-copy
+  Decl*   dup0() const;
+  Decl*   dup() const;        // deep-copy
 
-    void    copy(const Decl& decl);    // shallow copy
+  void    copy(const Decl& decl);    // shallow copy
 
-    void    print(std::ostream& out, bool showBase, int level=0) const;
-    void    printBase(std::ostream& out, Symbol *name,
-                       bool showBase, int level) const;
+  void    print(std::ostream& out, bool showBase, int level=0) const;
+  void    printBase(std::ostream& out, Symbol *name,
+		    bool showBase, int level) const;
 
-    void    findExpr( fnExprCallback cb );
+  void    findExpr( fnExprCallback cb );
 
-    bool lookup( Symbol* sym ) const;
+  bool lookup( Symbol* sym ) const;
 
-    StorageType     storage;
+  Storage     storage;
 
-    Type            *form;    // i.e., int *x[5] 
+  Type       *form;    // i.e., int *x[5] 
 
-    Symbol          *name;    // The symbol being declared.
+  Symbol     *name;    // The symbol being declared.
 
-    GccAttrib       *attrib;  // optional gcc attribute
+  GccAttrib  *attrib;  // optional gcc attribute
 
-    Expression      *initializer;
+  Expression *initializer;
 
-    Decl            *next;    // For linking into lists
+  Decl       *next;    // For linking into lists
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

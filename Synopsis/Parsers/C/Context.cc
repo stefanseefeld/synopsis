@@ -175,7 +175,7 @@ void ParseCtxt::ReinitializeCtxt (void)
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
-BaseType* ParseCtxt::Mk_tag_ref (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* tags)
+BaseType* ParseCtxt::Mk_tag_ref (BaseType::Spec tagType, Symbol* tagSym, SymTbl* tags)
 {
   if (!tagSym)
     return 0;
@@ -213,7 +213,7 @@ BaseType* ParseCtxt::Mk_tag_ref (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* t
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
-BaseType* ParseCtxt::Mk_tag_def (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* tags)
+BaseType* ParseCtxt::Mk_tag_def (BaseType::Spec tagType, Symbol* tagSym, SymTbl* tags)
 {
   if (!tagSym)
     return 0;

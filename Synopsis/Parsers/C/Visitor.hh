@@ -1,44 +1,18 @@
+//
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-    CTool Library
-    Copyright (C) 1998-2001	Shaun Flisakowski
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 1, or (at your option)
-    any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    o+
-    o+     Programmer:   Stefan Seefeld
-    o+     Date:         2003-07-31
-    o+
-    o+     AST and Type Visitors
-    o+
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
-#ifndef _Traversal_h
-#define _Traversal_h
+#ifndef _Visitor_hh
+#define _Visitor_hh
 
 class BaseType;
 class PtrType;
 class ArrayType;
 class BitFieldType;
 class FunctionType;
-
-class Symbol;
 
 class IntConstant;
 class UIntConstant;
@@ -78,20 +52,24 @@ class DeclStemnt;
 class TypedefStemnt;
 class Block;
 class FunctionDef;
-class File;
 
-class Traversal
+class TypeVisitor
 {
 public:
-  virtual ~Traversal() {}
+  virtual ~TypeVisitor() {}
+
   virtual void traverse_base(BaseType *) = 0;
   virtual void traverse_ptr(PtrType *) = 0;
   virtual void traverse_array(ArrayType *) = 0;
   virtual void traverse_bit_field(BitFieldType *) = 0;
   virtual void traverse_function(FunctionType *) = 0;
+};
 
-  virtual void traverse_symbol(Symbol *) = 0;
-
+class ExpressionVisitor
+{
+public:
+  virtual ~ExpressionVisitor() {}
+  
   virtual void traverse_int(IntConstant *) = 0;
   virtual void traverse_uint(UIntConstant *) = 0;
   virtual void traverse_float(FloatConstant *) = 0;
@@ -110,10 +88,13 @@ public:
   virtual void traverse_cast(CastExpr *) = 0;
   virtual void traverse_sizeof(SizeofExpr *) = 0;
   virtual void traverse_index(IndexExpr *) = 0;
+};
 
-  virtual void traverse_label(Label *) = 0;
-  virtual void traverse_decl(Decl *) = 0;
-
+class StatementVisitor
+{
+public:
+  virtual ~StatementVisitor() {}
+  
   virtual void traverse_statement(Statement *) = 0;
   virtual void traverse_file_line(FileLineStemnt *) = 0;
   virtual void traverse_include(InclStemnt *) = 0;
@@ -130,7 +111,6 @@ public:
   virtual void traverse_typedef(TypedefStemnt *) = 0;
   virtual void traverse_block(Block *) = 0;
   virtual void traverse_function_definition(FunctionDef *) = 0;
-  virtual void traverse_file(File *) = 0;
 };
 
 #endif

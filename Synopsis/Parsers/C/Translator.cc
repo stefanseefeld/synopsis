@@ -6,7 +6,7 @@
 //
 
 #include "Translator.hh"
-#include "PrintTraversal.hh"
+#include "Debugger.hh"
 #include "Declaration.hh"
 #include "Statement.hh"
 #include "File.hh"
@@ -15,266 +15,446 @@
 namespace AST = Synopsis::AST;
 namespace Python = Synopsis;
 
-PrintTraversal printer(std::cout, false);
-
-Translator::Translator(PyObject *ast, bool verbose, bool debug)
-  : my_ast(ast), my_verbose(verbose), my_debug(debug)
+namespace 
 {
+  std::string extract_symbol(const Symbol *s) { return s ? s->name : "<nil>";}
 }
 
-Translator::~Translator()
+void Translator::define_type(Synopsis::AST::ScopedName name, AST::Type type)
 {
+  ast.types().attr("__setitem__")(Synopsis::Tuple(name, type));
 }
 
-void Translator::traverse_base(BaseType *)
+bool TypeTranslator::find_type(const std::string &name)
 {
-  Trace trace("Translator::traverse_base");
+  Synopsis::Object get = ast.types().attr("get");
+  this->type = AST::Type(get(Synopsis::Tuple(Synopsis::AST::ScopedName(name))), false);
+  return this->type;
 }
 
-void Translator::traverse_ptr(PtrType *)
+void TypeTranslator::traverse_base(BaseType *type)
 {
-  Trace trace("Translator::traverse_ptr");
+  Trace trace("TypeTranslator::traverse_base");
+  bool anonymous = (type->typemask == BaseType::Struct ||
+		    type->typemask == BaseType::Union ||
+		    type->typemask == BaseType::Enum) && !type->tag;
+
+  if (type->typemask == BaseType::Struct || type->typemask == BaseType::Union)
+  {
+    std::string name = anonymous ? this->symbol : extract_symbol(type->tag);
+    std::string metatype = type->typemask == BaseType::Struct ? "struct" : "union";
+
+    // if stDefn is non-empty, we have to declare a new struct/union type
+    if (type->stDefn)
+    {
+      AST::ASTKit kit;
+      AST::TypeKit types;
+      AST::Class c = kit.create_class(this->file, 0, "C", metatype, name);
+      this->type = types.create_declared("C", name, c);
+      define_type(name, this->type);
+
+      Python::List declarations = c.declarations();
+      ExpressionTranslator et(*this);
+      for (size_t i = 0; i != type->stDefn->nComponents; ++i)
+      {
+	et.translate_decl(type->stDefn->components[i]);
+	declarations.append(et.declaration);
+      }
+      if (anonymous) this->declaration = c;
+      else scope.append(c);
+    }
+    // else we look it up and set the type to 'declared' (if found) or 'unknown'
+    else
+    {
+      AST::ASTKit kit;
+      AST::TypeKit types;
+      if (!find_type(name))
+      {
+	this->type = types.create_unknown("C", name);
+	define_type(name, this->type);
+      }
+    }
+  }
+  else if (type->typemask == BaseType::Enum)
+  {
+    std::string name = anonymous ? this->symbol : extract_symbol(type->tag);
+    std::string metatype = "enum";
+
+    if (type->enDefn)
+    {
+      AST::ASTKit kit;
+      AST::TypeKit types;
+      
+      AST::Enumerators enumerators;
+      ExpressionTranslator et(*this);
+      for (size_t i = 0; i != type->enDefn->nElements; ++i)
+      {
+	//       et.translate_decl(type->enDefn->values[i]);
+	std::string name = extract_symbol(type->enDefn->names[i]);
+	enumerators.append(kit.create_enumerator(this->file, 0, "C", name, ""));
+      }
+
+      AST::Enum e = kit.create_enum(this->file, 0, "C", name, enumerators);
+      this->type = types.create_declared("C", name, e);
+      define_type(name, this->type);
+
+      if (anonymous) this->declaration = e;
+      else scope.append(e);
+    }
+    // else we look it up and set the type to 'declared' (if found) or 'unknown'
+    else
+    {
+      AST::ASTKit kit;
+      AST::TypeKit types;
+      if (!find_type(name))
+      {
+	this->type = types.create_unknown("C", name);
+	define_type(name, this->type);
+      }
+    }
+  }
+  else
+  {
+    std::string name = type->typemask == BaseType::UserType ? extract_symbol(type->typeName) : BaseType::to_string(type->typemask);
+    if (type->typemask == BaseType::UserType)
+
+    AST::ScopedName name(BaseType::to_string(type->typemask));
+    if (!find_type(BaseType::to_string(type->typemask)))
+    {
+      AST::TypeKit kit;
+      this->type = kit.create_base("C", name);
+      define_type(name, this->type);
+    }
+  }
 }
 
-void Translator::traverse_array(ArrayType *)
+void TypeTranslator::traverse_ptr(PtrType *type)
 {
-  Trace trace("Translator::traverse_array");
+  Trace trace("TypeTranslator::traverse_ptr");
+  // get the wrapped type
+  type->subType->accept(this);
+
+  static Python::Object module = Python::Object::import("Synopsis.AST");
+
+  if (this->declaration && this->declaration.is_instance(module.attr("Function")))
+  {
+    AST::Function f = this->declaration; // 'downcast'
+    // now change type to 'Function' and declaration to 'none'(it will be dealt with later)
+    AST::TypeKit types;
+    AST::TypeList parameters;
+    for (AST::Function::Parameters::iterator i = f.parameters().begin();
+	 i != f.parameters().end();
+	 ++i)
+      parameters.append(i->type());
+    this->type = types.create_function_ptr("C", f.return_type(),
+					   AST::Modifiers(std::string("")),
+					   parameters);
+    this->declaration = AST::Declaration(); // None
+  }
+  else
+  {
+    // create and define the wrapper type
+    AST::TypeKit kit;
+    this->type = kit.create_modifier("C", this->type,
+				     AST::Modifiers(),
+				     AST::Modifiers(Python::Tuple("*")));
+  }
 }
 
-void Translator::traverse_bit_field(BitFieldType *)
+void TypeTranslator::traverse_array(ArrayType *type)
 {
-  Trace trace("Translator::traverse_bit_field");
+  Trace trace("TypeTranslator::traverse_array");
+  // get the wrapped type
+  type->subType->accept(this);
+
+  // create and define the wrapper type
+  AST::TypeKit kit;
+  // FIXME: Synopsis.Type.Array takes a list of integers for the array
+  // sizes, which excludes compile-time-constant expressions other than
+  // integer constants. For now use '1' here, as this has to be addressed in
+  // the synopsis type hierarchy
+  Python::TypedList<int> sizes;
+  sizes.append(1);
+  this->type = kit.create_array("C", this->type, sizes);
 }
 
-void Translator::traverse_function(FunctionType *function)
+void TypeTranslator::traverse_bit_field(BitFieldType *)
 {
-  Trace trace("Translator::traverse_function");
-  // save function name
-  std::string name = my_current_symbol;
+  Trace trace("TypeTranslator::traverse_bit_field");
+}
+
+// a FunctionType is encountered in function declarations as well
+// as function pointer declarations. As we can't tell the difference
+// here, we have to store type and declaration and let the caller
+// decide what to do with them
+void TypeTranslator::traverse_function(FunctionType *function)
+{
+  Trace trace("TypeTranslator::traverse_function");
   function->subType->accept(this);
   // save return type
-  AST::Type return_type = my_current_type;
+  AST::Type return_type = this->type;
+  // collect parameters
   AST::Function::Parameters parameters;
+  AST::ASTKit kit;
   for (size_t i = 0; i != function->nArgs; ++i)
   {
-    traverse_decl(function->args[i]);
-    // add parameter here
+    ExpressionTranslator ed(*this);
+    ed.translate_decl(function->args[i]);
+    AST::Parameter p = kit.create_parameter(AST::Modifiers(),
+					    ed.type,
+					    AST::Modifiers(),
+					    extract_symbol(function->args[i]->name),
+					    "");
+    parameters.append(p);
   }
-  AST::Function func = my_kit.create_function(my_file, -1, "C", "function",
-					      AST::Modifiers(),
-					      return_type,
-					      AST::ScopedName(name),
-					      name);
-  my_ast.declarations().append(func);
+  AST::ScopedName name(this->symbol);
+  AST::Function func = kit.create_function(this->file, -1, "C", "function",
+					   AST::Modifiers(),
+					   return_type,
+					   name,
+					   this->symbol);
+  func.parameters().extend(parameters);
+  this->declaration = func;
+//   this->scope.append(func);
+  AST::TypeKit types;
+  this->type = types.create_declared("C", name, func);
+  define_type(name, this->type);
 }
 
-void Translator::traverse_symbol(Symbol *symbol)
+void ExpressionTranslator::traverse_int(IntConstant *)
 {
-  Trace trace("Translator::traverse_symbol");
-  if (symbol) my_current_symbol = symbol->name; // what is 'symbol->entry' ?? 
+  Trace trace("ExpressionTranslator::traverse_int");
 }
 
-void Translator::traverse_int(IntConstant *)
+void ExpressionTranslator::traverse_uint(UIntConstant *)
 {
-  Trace trace("Translator::traverse_int");
+  Trace trace("ExpressionTranslator::traverse_uint");
 }
 
-void Translator::traverse_uint(UIntConstant *)
+void ExpressionTranslator::traverse_float(FloatConstant *)
 {
-  Trace trace("Translator::traverse_uint");
+  Trace trace("ExpressionTranslator::traverse_float");
 }
 
-void Translator::traverse_float(FloatConstant *)
+void ExpressionTranslator::traverse_char(CharConstant *)
 {
-  Trace trace("Translator::traverse_float");
+  Trace trace("ExpressionTranslator::traverse_char");
 }
 
-void Translator::traverse_char(CharConstant *)
+void ExpressionTranslator::traverse_string(StringConstant *)
 {
-  Trace trace("Translator::traverse_char");
+  Trace trace("ExpressionTranslator::traverse_string");
 }
 
-void Translator::traverse_string(StringConstant *)
+void ExpressionTranslator::traverse_array(ArrayConstant *)
 {
-  Trace trace("Translator::traverse_string");
+  Trace trace("ExpressionTranslator::traverse_array");
 }
 
-void Translator::traverse_array(ArrayConstant *)
+void ExpressionTranslator::traverse_enum(EnumConstant *)
 {
-  Trace trace("Translator::traverse_array");
+  Trace trace("ExpressionTranslator::traverse_enum");
 }
 
-void Translator::traverse_enum(EnumConstant *)
+void ExpressionTranslator::traverse_variable(Variable *)
 {
-  Trace trace("Translator::traverse_enum");
+  Trace trace("ExpressionTranslator::traverse_variable");
 }
 
-void Translator::traverse_variable(Variable *)
+void ExpressionTranslator::traverse_call(FunctionCall *)
 {
-  Trace trace("Translator::traverse_variable");
+  Trace trace("ExpressionTranslator::traverse_call");
 }
 
-void Translator::traverse_call(FunctionCall *)
+void ExpressionTranslator::traverse_unary(UnaryExpr *)
 {
-  Trace trace("Translator::traverse_call");
+  Trace trace("ExpressionTranslator::traverse_unary");
 }
 
-void Translator::traverse_unary(UnaryExpr *)
+void ExpressionTranslator::traverse_binary(BinaryExpr *)
 {
-  Trace trace("Translator::traverse_unary");
+  Trace trace("ExpressionTranslator::traverse_binary");
 }
 
-void Translator::traverse_binary(BinaryExpr *)
+void ExpressionTranslator::traverse_trinary(TrinaryExpr *)
 {
-  Trace trace("Translator::traverse_binary");
+  Trace trace("ExpressionTranslator::traverse_trinary");
 }
 
-void Translator::traverse_trinary(TrinaryExpr *)
+void ExpressionTranslator::traverse_assign(AssignExpr *)
 {
-  Trace trace("Translator::traverse_trinary");
+  Trace trace("ExpressionTranslator::traverse_assign");
 }
 
-void Translator::traverse_assign(AssignExpr *)
+void ExpressionTranslator::traverse_rel(RelExpr *)
 {
-  Trace trace("Translator::traverse_assign");
+  Trace trace("ExpressionTranslator::traverse_rel");
 }
 
-void Translator::traverse_rel(RelExpr *)
+void ExpressionTranslator::traverse_cast(CastExpr *)
 {
-  Trace trace("Translator::traverse_rel");
+  Trace trace("ExpressionTranslator::traverse_cast");
 }
 
-void Translator::traverse_cast(CastExpr *)
+void ExpressionTranslator::traverse_sizeof(SizeofExpr *)
 {
-  Trace trace("Translator::traverse_cast");
+  Trace trace("ExpressionTranslator::traverse_sizeof");
 }
 
-void Translator::traverse_sizeof(SizeofExpr *)
+void ExpressionTranslator::traverse_index(IndexExpr *)
 {
-  Trace trace("Translator::traverse_sizeof");
+  Trace trace("ExpressionTranslator::traverse_index");
 }
 
-void Translator::traverse_index(IndexExpr *)
+void ExpressionTranslator::translate_decl(Decl *node)
 {
-  Trace trace("Translator::traverse_index");
+  Trace trace("ExpressionTranslator::translate_decl");
+  std::string symbol = extract_symbol(node->name);
+  TypeTranslator tt(*this, symbol);
+  node->form->accept(&tt);
+  this->declaration = tt.declaration;
+  this->type = tt.type;
+  if (symbol == "<nil>") return; // we are done
+  AST::ASTKit kit;
+  AST::ScopedName name(symbol);
+  if (!this->declaration)
+  {
+    if (node->storage == Storage::Typedef)
+    {
+      this->declaration = kit.create_typedef(this->file, 0, "C",
+					     "typedef",
+					     name,
+					     tt.type, false);
+      AST::TypeKit types;
+      this->type = types.create_declared("C", name, this->declaration);
+      define_type(name, this->type);
+    }
+    else
+      this->declaration = kit.create_variable(this->file, 0, "C",
+					      "variable",
+					      name,
+					      tt.type, false);
+  }
 }
 
-void Translator::traverse_label(Label *)
+void StatementTranslator::traverse_statement(Statement *)
 {
-  Trace trace("Translator::traverse_label");
+  Trace trace("StatementTranslator::traverse_statement");
 }
 
-void Translator::traverse_decl(Decl *node)
+void StatementTranslator::traverse_file_line(FileLineStemnt *)
 {
-  Trace trace("Translator::traverse_decl");
-  traverse_symbol(node->name);
-  node->form->accept(this);
+  Trace trace("StatementTranslator::traverse_file_line");
 }
 
-void Translator::traverse_statement(Statement *)
+void StatementTranslator::traverse_include(InclStemnt *)
 {
-  Trace trace("Translator::traverse_statement");
+  Trace trace("StatementTranslator::traverse_include");
 }
 
-void Translator::traverse_file_line(FileLineStemnt *)
+void StatementTranslator::traverse_end_include(EndInclStemnt *)
 {
-  Trace trace("Translator::traverse_file_line");
+  Trace trace("StatementTranslator::traverse_end_include");
 }
 
-void Translator::traverse_include(InclStemnt *)
+void StatementTranslator::traverse_expression(ExpressionStemnt *)
 {
-  Trace trace("Translator::traverse_include");
+  Trace trace("StatementTranslator::traverse_expression");
 }
 
-void Translator::traverse_end_include(EndInclStemnt *)
+void StatementTranslator::traverse_if(IfStemnt *)
 {
-  Trace trace("Translator::traverse_end_include");
+  Trace trace("StatementTranslator::traverse_if");
 }
 
-void Translator::traverse_expression(ExpressionStemnt *)
+void StatementTranslator::traverse_switch(SwitchStemnt *)
 {
-  Trace trace("Translator::traverse_expression");
+  Trace trace("StatementTranslator::traverse_switch");
 }
 
-void Translator::traverse_if(IfStemnt *)
+void StatementTranslator::traverse_for(ForStemnt *)
 {
-  Trace trace("Translator::traverse_if");
+  Trace trace("StatementTranslator::traverse_for");
 }
 
-void Translator::traverse_switch(SwitchStemnt *)
+void StatementTranslator::traverse_while(WhileStemnt *)
 {
-  Trace trace("Translator::traverse_switch");
+  Trace trace("StatementTranslator::traverse_while");
 }
 
-void Translator::traverse_for(ForStemnt *)
+void StatementTranslator::traverse_do_while(DoWhileStemnt *)
 {
-  Trace trace("Translator::traverse_for");
+  Trace trace("StatementTranslator::traverse_do_while");
 }
 
-void Translator::traverse_while(WhileStemnt *)
+void StatementTranslator::traverse_goto(GotoStemnt *)
 {
-  Trace trace("Translator::traverse_while");
+  Trace trace("StatementTranslator::traverse_goto");
 }
 
-void Translator::traverse_do_while(DoWhileStemnt *)
+void StatementTranslator::traverse_return(ReturnStemnt *)
 {
-  Trace trace("Translator::traverse_do_while");
+  Trace trace("StatementTranslator::traverse_return");
 }
 
-void Translator::traverse_goto(GotoStemnt *)
+void StatementTranslator::traverse_declaration(DeclStemnt *node)
 {
-  Trace trace("Translator::traverse_goto");
-}
+  Trace trace("StatementTranslator::traverse_declaration");
 
-void Translator::traverse_return(ReturnStemnt *)
-{
-  Trace trace("Translator::traverse_return");
-}
-
-void Translator::traverse_declaration(DeclStemnt *node)
-{
-  Trace trace("Translator::traverse_declaration");
-  for (LabelVector::const_iterator i = node->labels.begin();
-       i != node->labels.end();
-       ++i)
-    traverse_label(*i);
-  
   if (!node->decls.empty())
   {
     for (DeclVector::const_iterator i = node->decls.begin();
 	 i != node->decls.end(); ++i)
     {
-      traverse_decl(*i);
+      ExpressionTranslator ed(*this);
+      ed.translate_decl(*i);
+      if (ed.declaration) scope.append(ed.declaration);
     }
   }
 }
 
-void Translator::traverse_typedef(TypedefStemnt *)
+void StatementTranslator::traverse_typedef(TypedefStemnt *)
 {
-  Trace trace("Translator::traverse_typedef");
+  Trace trace("StatementTranslator::traverse_typedef");
 }
 
-void Translator::traverse_block(Block *)
+void StatementTranslator::traverse_block(Block *)
 {
-  Trace trace("Translator::traverse_block");
+  Trace trace("StatementTranslator::traverse_block");
 }
 
-void Translator::traverse_function_definition(FunctionDef *)
+void StatementTranslator::traverse_function_definition(FunctionDef *)
 {
-  Trace trace("Translator::traverse_function_definition");
+  Trace trace("StatementTranslator::traverse_function_definition");
 }
 
-void Translator::traverse_file(File *file)
+void StatementTranslator::translate_file(File *f)
 {
-  Trace trace("Translator::traverse_file");
-
-  my_file = my_ast.files().get(file->my_name);
-  if (!my_file) // hmm, so the file wasn't preprocessed...
+  set_file(f->my_name, f->my_name);
+  size_t include = 0;
+  for (Statement *statement = f->my_head; statement; statement = statement->next)
   {
-    my_file = my_kit.create_source_file(file->my_name, file->my_name, "C");
-    my_ast.files().set(file->my_name, my_file);
+    if (include > 0)
+    {
+      if (statement->isEndInclude()) --include;
+      else if (statement->isInclude()) ++include;
+    }
+    else
+    {
+      if (statement->isInclude()) include++;
+      statement->accept(this);
+    }
   }
-  for (Statement *statement = file->my_head; statement; statement = statement->next)
-    statement->accept(this);
 }
 
+void StatementTranslator::set_file(const std::string &long_name,
+				   const std::string &short_name)
+{
+  file = ast.files().get(long_name);
+  if (!file) // hmm, so the file wasn't preprocessed...
+  {
+    Synopsis::AST::ASTKit kit;
+    file = kit.create_source_file(long_name, short_name, "C");
+    ast.files().set(short_name, file);
+  }
+}

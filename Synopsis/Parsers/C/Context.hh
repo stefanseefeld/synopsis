@@ -75,8 +75,8 @@ public:
   void SetIsKnR (bool is) { curCtxt->isKnR = is;}
     
   Label*    Mk_named_label (Symbol *labelSym, SymTbl *labels);
-  BaseType* Mk_tag_ref (BaseTypeSpec tagType, Symbol *tagSym, SymTbl *tags);
-  BaseType* Mk_tag_def (BaseTypeSpec tagType, Symbol *tagSym, SymTbl *tags);
+  BaseType* Mk_tag_ref (BaseType::Spec tagType, Symbol *tagSym, SymTbl *tags);
+  BaseType* Mk_tag_def (BaseType::Spec tagType, Symbol *tagSym, SymTbl *tags);
   Decl*     Mk_direct_declarator_reentrance (Symbol *declSym, SymTbl *syms);
   void      Mk_declarator (Decl *decl);
   void      Mk_func_declarator (Decl *decl);
@@ -86,7 +86,7 @@ public:
 protected:    
   bool IsTypedefDeclCtxt()
   { 
-    return curCtxt->decl_specs && curCtxt->decl_specs->storage == ST_Typedef;
+    return curCtxt->decl_specs && curCtxt->decl_specs->storage.value == Storage::Typedef;
   }
   
   ParseEnvCtxt *tabCtxt; 

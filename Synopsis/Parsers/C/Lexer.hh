@@ -48,39 +48,39 @@ class File;
 
 typedef union
 {
-    Location        *loc;
+    Location      *loc;
 
-    BinaryOp        binOp;
-    RelOp           relOp;
-    AssignOp        assignOp;
+    BinaryOp       binOp;
+    RelOp          relOp;
+    AssignOp       assignOp;
 
-    Symbol          *symbol;
+    Symbol        *symbol;
 
-    BaseTypeSpec    typeSpec;
-    TypeQual        typeQual;
-    StorageType     storage;
-    GccAttrib       *gccAttrib;
+    BaseType::Spec typeSpec;
+    TypeQual       typeQual;
+    Storage        storage;
+    GccAttrib     *gccAttrib;
 
-    Type            *type;
-    PtrType         *ptr;
-    FunctionType    *fct;
-    BaseType        *base;
-    Decl            *decl;
-    StructDef       *strDef;
-    EnumDef         *enDef;
+    Type          *type;
+    PtrType       *ptr;
+    FunctionType  *fct;
+    BaseType      *base;
+    Decl          *decl;
+    StructDef     *strDef;
+    EnumDef       *enDef;
 
-    Expression      *value;
-    Constant        *consValue;
-    EnumConstant    *enConst;
-    ArrayConstant   *arrayConst;
+    Expression    *value;
+    Constant      *consValue;
+    EnumConstant  *enConst;
+    ArrayConstant *arrayConst;
 
-    Label           *label;
-    Statement       *stemnt;
+    Label         *label;
+    Statement     *stemnt;
 
-    DeclStemnt      *declStemnt;
-    FunctionDef     *functionDef;
+    DeclStemnt    *declStemnt;
+    FunctionDef   *functionDef;
 
-    File            *transunit;
+    File          *transunit;
 
 } lex_union;
 
