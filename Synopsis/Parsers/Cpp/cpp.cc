@@ -48,7 +48,7 @@ SourceFile create_source_file(const char *filename, bool is_main)
   SourceFile sf = kit->create_source_file(name, filename, language);
   Python::Dict files = ast->files();
   files.set(name, sf);
-  sf.is_main(true);
+  if (is_main) sf.is_main(true);
   return sf;
 }
 
@@ -206,7 +206,8 @@ extern "C"
       std::cout << "include : " << source << ' ' << target << ' ' 
 		<< is_macro << ' ' << is_next << std::endl;
 
-    if (strcmp(input, source) != 0) return;
+    // should this be optional ?
+//     if (strcmp(input, source) != 0) return;
     SourceFile target_file = lookup_source_file(target);
 
     Include include = kit->create_include(target_file, is_macro, is_next);
