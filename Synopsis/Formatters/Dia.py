@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.12 2001/07/19 04:03:05 chalky Exp $
+# $Id: Dia.py,v 1.13 2003/11/11 12:50:56 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.13  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.12  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -51,7 +54,7 @@
 # THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string, re
-from Synopsis.Core import Type, AST, Util
+from Synopsis import Type, AST, Util
 
 verbose = 0
 

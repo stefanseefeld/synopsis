@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.3 2003/11/11 02:57:15 stefan Exp $
+# $Id: Dump.py,v 1.4 2003/11/11 12:50:56 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -12,14 +12,13 @@ introspection, and debugging.
 """
 
 from Synopsis.Processor import Processor, Parameter
+from Synopsis import Type, AST
 
 import sys, getopt, os, os.path, string, types
 import xml
 from xml.dom.minidom import getDOMImplementation
 
 dom = getDOMImplementation().createDocument(None, "dump", None)
-
-from Synopsis.Core import Type, AST
 
 __dom_implementation = xml.dom.minidom.getDOMImplementation()
 

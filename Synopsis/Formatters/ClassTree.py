@@ -1,4 +1,4 @@
-# $Id: ClassTree.py,v 1.6 2003/02/01 05:38:17 chalky Exp $
+# $Id: ClassTree.py,v 1.7 2003/11/11 12:50:56 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ClassTree.py,v $
+# Revision 1.7  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.6  2003/02/01 05:38:17  chalky
 # Include Unknown parents in the class tree, so they appear in the inheritance
 # graphs
@@ -45,7 +48,7 @@
 """Contains the utility class ClassTree, for creating inheritance trees."""
 
 # Synopsis modules
-from Synopsis.Core import AST, Type
+from Synopsis import AST, Type
 
 
 def sort(list):

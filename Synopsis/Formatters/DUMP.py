@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.17 2003/10/03 15:00:32 stefan Exp $
+# $Id: DUMP.py,v 1.18 2003/11/11 12:50:56 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.18  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.17  2003/10/03 15:00:32  stefan
 # bug fix
 #
@@ -66,7 +69,7 @@ Verbose attribute-oriented dump of AST. Pipe into less -r
 
 # THIS-IS-A-FORMATTER
 import sys, getopt, os, os.path, string, types
-from Synopsis.Core import Type, AST
+from Synopsis import Type, AST
 
 verbose = 0
 

@@ -1,4 +1,4 @@
-#  $Id: HTML_Simple.py,v 1.14 2001/07/19 04:03:05 chalky Exp $
+#  $Id: HTML_Simple.py,v 1.15 2003/11/11 12:50:56 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.15  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.14  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -55,7 +58,7 @@ Simpler one-page HTML output
 # THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 verbose = 0
 

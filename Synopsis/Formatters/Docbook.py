@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.10 2003/02/02 00:22:44 chalky Exp $
+#  $Id: Docbook.py,v 1.11 2003/11/11 12:50:56 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.11  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.10  2003/02/02 00:22:44  chalky
 # Remove obsolete parseTags method
 #
@@ -56,7 +59,7 @@
 # THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string, re
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 verbose = 0
 
