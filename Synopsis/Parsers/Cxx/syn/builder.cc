@@ -1,6 +1,7 @@
 // File: builder.cc
 
 #include "builder.hh"
+#include "type.hh"
 
 Builder::Builder()
 {
@@ -61,3 +62,14 @@ void Builder::endClass()
 }
 
 
+//
+// Type Methods
+//
+
+Type::Forward* Builder::Forward(string name)
+{
+    // Generate the name
+    AST::Name scope = m_scope->name();
+    scope.push_back(name);
+    return new Type::Forward(scope);
+}

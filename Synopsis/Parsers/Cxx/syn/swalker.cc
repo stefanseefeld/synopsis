@@ -10,6 +10,7 @@
 #include "swalker.hh"
 #include "ast.hh"
 #include "builder.hh"
+#include "decoder.hh"
 
 using namespace AST;
 using std::string;
@@ -42,6 +43,7 @@ SWalker::SWalker(Parser* parser, Builder* builder)
 {
     m_parser = parser;
     m_builder = builder;
+    m_decoder = new Decoder(builder);
 }
 
 string SWalker::getName(Ptree *node)
@@ -170,6 +172,7 @@ Ptree* SWalker::TranslateTemplateDecl(Ptree* def)
 Ptree* SWalker::TranslateDeclaration(Ptree* def) 
 {
     Trace trace("SWalker::TranslateDeclaration");
+    m_declaration = def;
     def->Display(); cout << endl;
     Ptree* decls = Ptree::Third(def);
     if (decls->IsA(ntDeclarator))	// if it is a function
@@ -227,9 +230,156 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
     Trace trace("SWalker::TranslateDeclarator *** NYI");
     // Insert code from occ.cc here
     decl->Display(); cout << endl;
+    char* encname = decl->GetEncodedName();
+    char* enctype = decl->GetEncodedType();
+    if (!encname || !enctype) {
+	cout << "encname or enctype null!" << endl;
+	return 0;
+    }
+
+    // Decide if this is a function or variable
+    m_decoder->init(enctype);
+    code_iter& iter = m_decoder->iter();
+    while (*iter == 'C') ++iter;
+    if (*iter == 'F') {
+	// This is a function
+	++iter;
+
+        // Create parameter objects
+        Ptree *p_params = decl->Rest();
+        while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
+	if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
+        vector<AST::Parameter*> params;
+	TranslateParameters(p_params->Second(), params);
+
+        // Figure out the return type:
+        while (*iter++ != '_'); // in case of decoding error this is needed
+        Type::Type* returnType = m_decoder->decodeType();
+
+        // Find name:
+        // TODO: refactor
+        string realname;
+	TranslateFunctionName(encname, realname, returnType);
+
+	// Function names are mangled, but 0x80+ chars are changed
+        string name = realname+"@"+enctype;
+        for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
+            if (*ptr < 0) (*ptr) += '0'-0x80;
+
+
+        // Figure out premodifiers
+        vector<string> premod;
+        Ptree* p = Ptree::First(m_declaration);
+        while (p) {
+            premod.push_back(p->ToString());
+            p = Ptree::Rest(p);
+        }
+
+	// Create AST::Operation object
+        AST::Operation* oper = m_builder->addOperation(0, name, premod, returnType, realname);
+	oper->parameters() = params;
+	//if (m_declaration->GetComments()) addComments(oper, m_declaration->GetComments());
+	//if (decl->GetComments()) addComments(oper, decl->GetComments());
+	// Post Modifier
+	//if (enctype_s[0] == 'C') {
+	//    PyObject* posties = PyObject_CallMethod(oper, "postmodifier", 0);
+	//    PyList_Append(posties, PyString_FromString("const"));
+	//}
+    } else {
+	// Variable declaration
+	m_decoder->init(enctype);
+	// Get type
+	Type::Type* type = m_decoder->decodeType();
+	string name;
+        if (*encname < 0) name = m_decoder->decodeName(encname);
+        else if (*encname == 'Q') {
+	    cout << "Scoped name in variable decl!" << endl;
+	    return 0;
+        } else {
+	    cout << "Unknown name in variable decl!" << endl;
+	    return 0;
+	}
+
+	// TODO: implement sizes support
+	vector<size_t> sizes;
+	/*AST::Variable* var =*/ m_builder->addVariable(0, name, type, false);
+	//if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
+	//if (decl->GetComments()) addComments(var, decl->GetComments());
+    }
     return 0;
 }
 
+void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
+{
+    while (p_params) {
+	// A parameter has a type, possibly a name and possibly a value
+	string name, value;
+	if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
+	Ptree* param = p_params->First();
+	// The type is stored in the encoded type string already
+	Type::Type* type = m_decoder->decodeType();
+	if (!type) break; // NULL means end of encoding
+	// Find name and value
+	// FIXME: this doesnt account for anon but initialised params!
+	if (param->Length() > 1) {
+	    Ptree* pname = param->Second();
+	    if (pname && pname->Car()) {
+		// * and & modifiers are stored with the name so we must skip them
+		while (pname && (pname->Car()->Eq('*') || pname->Car()->Eq('&'))) pname = pname->Cdr();
+		// Extract name
+		if (pname) {
+		    name = pname->Car()->ToString();
+		}
+	    }
+	    // If there are three cells, they are 1:name 2:= 3:value
+	    if (param->Length() > 2) {
+		value = param->Nth(3)->ToString();
+	    }
+	}
+	// Add the AST.Parameter type to the list
+	params.push_back(new AST::Parameter("", type, "", name, value));
+	p_params = Ptree::Rest(p_params);
+    }
+}
+
+void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type* returnType)
+{
+   if (*encname < 0) {
+	if (encname[1] == '@') {
+	    // conversion operator
+	    m_decoder->init(encname);
+	    m_decoder->iter() += 2;
+	    returnType = m_decoder->decodeType();
+	    realname = "(conversion)"; // "("+returnType.ToString()+")";
+	} else
+	    // simple name
+	    realname = m_decoder->decodeName(encname);
+    } else if (*encname == 'Q') {
+	// If a function declaration has a scoped name, then it is not
+	// declaring a new function in that scope and can be ignored in
+	// the context of synopsis.
+	// TODO: exception?
+	return;
+    } else if (*encname == 'T') {
+	// Template specialisation.
+	// blah<int, int> is T4blah2ii ---> realname = foo<int,int>
+	m_decoder->init(encname);
+	code_iter& iter = ++m_decoder->iter();
+	realname = m_decoder->decodeName()+"<";
+	code_iter tend = iter + *iter++ - 0x80;
+	bool first = true;
+	// Append type names to realname
+	while (iter <= tend) {
+	    Type::Type* type = m_decoder->decodeType();
+	    if (!first) realname+=","; else first=false;
+	    realname += "type"; //type->ToString();
+	}
+	realname += ">";
+    } else {
+	cout << "Warning: Unknown function name: " << encname << endl;
+    }
+}
+	
 //. Class or Enum
 Ptree* SWalker::TranslateTypespecifier(Ptree* tspec) 
 {

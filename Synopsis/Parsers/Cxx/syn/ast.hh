@@ -362,7 +362,7 @@ namespace AST {
 	typedef string Mods;
 
 	//. Constructor
-	Parameter(Mods& pre, Type::Type*, Mods& post, string name, string value);
+	Parameter(Mods pre, Type::Type*, Mods post, string name, string value);
 
 	//. Accept the given AST::Visitor. Note this is not derived from
 	//. Declaration so it is not a virtual method.

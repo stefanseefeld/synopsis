@@ -13,8 +13,17 @@
 
 #include "../walker.h"
 
+#include <vector>
+using std::vector;
+
 // Forward declaration of Builder
 class Builder;
+
+// Forward declaration of Decoder
+class Decoder;
+
+namespace AST { class Parameter; }
+namespace Type { class Type; }
 
 //. A walker that creates an AST. All Translate* methods have been overridden
 //. to remove the translation code.
@@ -26,6 +35,8 @@ public:
     //. Get a name from the ptree
     string getName(Ptree*);
 
+    void SWalker::TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
+    void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type* returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
@@ -106,6 +117,9 @@ public:
 private:
     Parser* m_parser;
     Builder* m_builder;
+    Decoder* m_decoder;
+
+    Ptree* m_declaration;
 
 }; // class SWalker
 
