@@ -8,7 +8,6 @@ mine.  It's dumping core in 0.14, and in the 0.14-hydracat that I am using
 my function pointer code in.  Perhaps you have some light the shed on
 this:
 
-$ more 8q.c
 */
 
 #include <stdio.h>
