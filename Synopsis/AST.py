@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.21 2002/07/11 09:28:23 chalky Exp $
+# $Id: AST.py,v 1.22 2002/10/11 05:56:38 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.22  2002/10/11 05:56:38  chalky
+# Added 'suspect' flag for comments
+#
 # Revision 1.21  2002/07/11 09:28:23  chalky
 # Fixes. Implement Cache Executor
 #
@@ -481,12 +484,17 @@ class Operation (Function):
 class Comment :
     """Class containing information about a comment. There may be one or more
     lines in the text of the comment, and language-specific comment characters
-    are not stripped."""
+    are not stripped.
+    C++ Comments may be suspect, which means that they were not before a
+    declaration, but extract_tails was set so they were kept for the Linker to
+    deal with.
+    """
 
-    def __init__(self, text, file, line):
+    def __init__(self, text, file, line, suspect=0):
         self.__text = text
         self.__file = file
         self.__line = line
+	self.__suspect = suspect
 
     def text(self):
 	"""The text of the comment"""
@@ -503,6 +511,12 @@ class Comment :
     def line(self):
 	"""The line it was defined at"""
 	return self.__line
+    def is_suspect(self):
+	"""Returns true if the comment is suspect"""
+	return self.__suspect
+    def set_suspect(self, suspect):
+	"""Sets whether the comment is suspect"""
+	self.__suspect = suspect
 
 class Visitor :
     """Visitor for AST nodes"""
