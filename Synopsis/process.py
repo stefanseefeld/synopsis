@@ -18,7 +18,7 @@ def error(msg):
    sys.stderr.write('\n')
    sys.exit(-1)
 
-def process(**commands):
+def process(argv = sys.argv, **commands):
    """Accept a set of commands and process according to command line options.
    The typical call will start with the name of the processor to be executed,
    followed by a set of parameters, followed by non-parameter arguments.
@@ -35,21 +35,21 @@ def process(**commands):
       if not isinstance(commands[c], Processor):
          error("command '%s' isn't a valid processor"%c)
 
-   if len(sys.argv) < 2:
-      error("Usage : %s <command> [args] [input files]"%sys.argv[0])
+   if len(argv) < 2:
+      error("Usage : %s <command> [args] [input files]"%argv[0])
 
-   elif sys.argv[1] == '--help':
-      print "Usage: %s --help"%sys.argv[0]
-      print "   or: %s <command> --help"%sys.argv[0]
-      print "   or: %s <command> [parameters]"%sys.argv[0]
+   elif argv[1] == '--help':
+      print "Usage: %s --help"%argv[0]
+      print "   or: %s <command> --help"%argv[0]
+      print "   or: %s <command> [parameters]"%argv[0]
       print ""
       print "Available commands:"
       for c in commands:
          print "   %s"%c
       sys.exit(0)
 
-   command = sys.argv[1]
-   args = sys.argv[2:]
+   command = argv[1]
+   args = argv[2:]
 
    if '--help' in args:
       print "Parameters for command '%s'"%command
