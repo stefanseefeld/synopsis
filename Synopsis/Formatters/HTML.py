@@ -168,15 +168,11 @@ class CommentParser:
     def parse(self, decl):
 	"""Parses the comments of the given AST.Declaration.
 	Returns a struct with vars:
-	 full - full text, summary - one-line summary, detail - detailed info
+	 summary - one-line summary, detail - detailed info
 	"""
 	strlist = map(lambda x:str(x), decl.comments())
-	comm = Struct(full=string.join(strlist))
+	comm = Struct(detail=string.join(strlist),summary='')
 	map(lambda f,c=comm: f.parse(c), self._formatters)
-	full = comm.detail = comm.full
-	end = string.find(full, '.\n')
-	if end < 0: comm.summary = full
-	else: comm.summary = full[:end+2]
 	return comm
 
 class CommentFormatter:
@@ -187,40 +183,96 @@ class CommentFormatter:
 	pass
 
 class SSDFormatter:
-    """A class that strips //.'s from the start of lines"""
+    """A class that strips //.'s from the start of lines in detail"""
     __re_ssd = '^[ \t]*//\. ?(.*)$'
     def __init__(self):
 	self.re_ssd = re.compile(SSDFormatter.__re_ssd, re.M)
     def parse(self, comm):
-	comm.full = self.parse_ssd(comm.full)
+	comm.detail = self.parse_ssd(comm.detail)
     def parse_ssd(self, str):
 	return string.join(self.re_ssd.findall(str),'\n')
+
+class JavaFormatter:
+    """A class that formats java /** style comments"""
+    __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>\n[ \t]*\*.*)*?(\n[ \t]*)?\*/"
+    __re_line = r"\n[ \t]*\*[ \t]*(?P<text>.*)"
+    def __init__(self):
+	self.re_java = re.compile(JavaFormatter.__re_java)
+	self.re_line = re.compile(JavaFormatter.__re_line)
+    def parse(self, comm):
+	text_list = []
+	mo = self.re_java.search(comm.detail)
+	while mo:
+	    text_list.append(mo.group('text'))
+	    lines = mo.group('lines')
+	    mol = self.re_line.search(lines)
+	    while mol:
+		text_list.append(mol.group('text'))
+		mol = self.re_line.search(lines, mol.end())
+	    mo = self.re_java.search(comm.detail, mo.end())
+	comm.detail = string.join(text_list,'\n')
+
+class SummarySplitter:
+    """A formatter that splits comments into summary and detail"""
+    __re_summary = r"[ \t\n]*(.*?\.)([ \t\n]|$)"
+    def __init__(self):
+	self.re_summary = re.compile(SummarySplitter.__re_summary, re.S)
+    def parse(self, comm):
+	mo = self.re_summary.match(comm.detail)
+	if mo: comm.summary = mo.group(1)
 
 class JavadocFormatter:
     """A formatter that formats comments similar to Javadoc @tags"""
     # @see IDL/Foo.Bar
     __re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
+    __re_see_line = '^[ \t]*@see[ \t]+(([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)(\([^)]*\))?([ \t]+(.*))?$'
 
     def __init__(self):
 	"""Create regex objects for regexps"""
 	self.re_see = re.compile(JavadocFormatter.__re_see)
+	self.re_see_line = re.compile(JavadocFormatter.__re_see_line,re.M)
     def parse(self, comm):
 	"""Parse the comm.detail for @tags"""
-	comm.full = self.parse_see(comm.full)
+	comm.detail = self.parse_see(comm.detail)
+	comm.summary = self.parse_see(comm.summary)
+    def extract(self, regexp, str):
+	"""Extracts all matches of the regexp from the text. The MatchObjects
+	are returned in a list"""
+	mo = regexp.search(str)
+	ret = []
+	while mo:
+	    ret.append(mo)
+	    start, end = mo.start(), mo.end()
+	    str = str[:start] + str[end:]
+	    mo = regexp.search(str, start)
+	return str, ret
+
     def parse_see(self, str):
+	str, see = self.extract(self.re_see_line, str)
 	mo = self.re_see.search(str)
 	while mo:
 	    groups, start, end = mo.groups(), mo.start(), mo.end()
 	    lang = groups[1] or ''
 	    name = string.split(groups[2], '.')
 	    entry = toc.lookup(name)
-	    if entry:
-		tag = "see "+href(entry.link, lang+groups[2])
-	    else:
-		tag = "see "+lang+groups[2]
+	    if entry: tag = "see "+href(entry.link, lang+groups[2])
+	    else: tag = "see "+lang+groups[2]
 	    str = str[:start] + tag + str[end:]
 	    end = start + len(tag)
 	    mo = self.re_see.search(str, end)
+	# Add @see lines at end
+	if len(see):
+	    seestr = div('tag-see-header', "See Also:")
+	    seelist = []
+	    for mo in see:
+		groups = mo.groups()
+		lang = groups[1] or ''
+		name = string.split(groups[2], '.')
+		entry = toc.lookup(name)
+		tag = groups[6] or lang+groups[2]
+		if entry: tag = href(entry.link, tag)
+		seelist.append(div('tag-see', tag))
+	    str = str + seestr + string.join(seelist,'')
 	return str
 
 class SectionFormatter:
@@ -230,7 +282,7 @@ class SectionFormatter:
     def __init__(self):
 	self.re_break = re.compile(SectionFormatter.__re_break)
     def parse(self, comm):
-	comm.full = self.parse_break(comm.full)
+	comm.detail = self.parse_break(comm.detail)
     def parse_break(self, str):
 	mo = self.re_break.search(str)
 	while mo:
@@ -247,10 +299,12 @@ commentParsers = {
     'default' : CommentParser,
 }
 commentFormatters = {
-    'default' : CommentFormatter,
+    'none' : CommentFormatter,
+    'ssd' : SSDFormatter,
+    'java' : JavaFormatter,
+    'summary' : SummarySplitter,
     'javadoc' : JavadocFormatter,
     'section' : SectionFormatter,
-    'ssd' : SSDFormatter,
 }
 
 class CommentDictionary:
