@@ -63,6 +63,9 @@ class build_syn_ext(build_ext):
 
     def build_extension(self, ext, copy=True):
 
+        if ext[0] == 'Synopsis/Parsers/Cpp/wave':
+            return # exclude that from the automatic build for now
+
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
 
         # FIXME: this ugly hack is needed since the ucpp module
