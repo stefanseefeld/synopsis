@@ -10,6 +10,7 @@ from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
+from DirBrowse import compile_glob
 
 import time, os, stat, os.path, string
 
@@ -23,6 +24,8 @@ class RawFile(View):
    def register(self, processor):
 
       View.register(self, processor)
+
+      self._exclude = [compile_glob(e) for e in self.exclude]
       self.__files = None
 
    def filename(self):
@@ -46,13 +49,14 @@ class RawFile(View):
       while dirs:
          dir = dirs.pop(0)
          for entry in os.listdir(os.path.abspath(dir)):
-            # Check if entry is in exclude list
-            #exclude = 0
-            #for re in self.__exclude_globs:
-            #   if re.match(entry):
-            #      exclude = 1
-            #if exclude:
-            #   continue
+            exclude = 0
+            for re in self._exclude:
+               if re.match(entry):
+                  print entry, 'excluded'
+                  exclude = 1
+                  break
+            if exclude:
+               continue
             entry_path = os.path.join(dir, entry)
             info = os.stat(entry_path)
             if stat.S_ISDIR(info[stat.ST_MODE]):
