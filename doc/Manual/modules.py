@@ -4,10 +4,9 @@ import re
 
 import Synopsis.Formatter.HTML.CommentFormatter
 import Synopsis.Formatter.HTML.ScopePages
-import Synopsis.Formatter.HTML.ModuleListingJS
+import Synopsis.Formatter.HTML.ModuleListing
 from Synopsis.Core import AST, Type
 from Synopsis.Formatter import HTML
-from Synopsis.Formatter.HTML import JSTree
 from Synopsis.Formatter.HTML.Tags import *
 config = HTML.core.config
 
@@ -79,9 +78,9 @@ class ConfScopePage (HTML.ScopePages.ScopePages):
 	    if isinstance(child, AST.Scope):
 		self.__namespaces.append(child)
  
-class ConfScopeJS (HTML.ModuleListingJS.ModuleListingJS):
+class ConfScope (HTML.ModuleListing.ModuleListing):
     """Creates a page with a Tree of Config classes. This code is based on the
-    ModuleListingJS page, via a few template methods. It is to aide the
+    ModuleListing page, via a few template methods. It is to aide the
     process of finding config information by only showing the tree that exists
     under Config.py."""
     def _init_page(self):
@@ -99,7 +98,7 @@ class ConfScopeJS (HTML.ModuleListingJS.ModuleListingJS):
 	config.sorter.set_scope(start)
 	#start = config.sorter.child(('Python Namespace',))
 	start = self.manager._calculateStart(start, "Synopsis::Config")
-	HTML.ModuleListingJS.ModuleListingJS.process(self, start)
+	HTML.ModuleListing.ModuleListing.process(self, start)
     def _child_filter(self, child):
 	"""Override template method to display all scopes (not just modules)"""
 	return isinstance(child, AST.Scope)

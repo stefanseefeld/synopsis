@@ -4,6 +4,7 @@ class Config (Base):
 	class CXX (Base.Parser.CXX):
 	    main_file = 1
 	    basename = '../../../'
+	    preprocessor='gcc'
 	class Python (Base.Parser.Python):
 	    basename = '../../../'
 	modules = {
@@ -31,17 +32,18 @@ class Config (Base):
 	    toc_out = 'links.toc'
 	    stylesheet_file = '../../demo/html.css'
 	    pages = [
+		'ModuleListing',
 		'ScopePages',
-		'ModuleListingJS',
 		'ModuleIndexer',
-		'FileTreeJS',
+		'FileTree',
 		'InheritanceTree',
 		'InheritanceGraph',
 		'NameIndex',
 		'FilePages',
-		('modules.py', 'ConfScopeJS'),
+		('modules.py', 'ConfScope'),
 		'FramesIndex'
 	    ]
+	    tree_formatter = 'Synopsis.Formatter.HTML.TreeFormatterJS.TreeFormatterJS'
 
 	    # Add custom comment formatter
 	    comment_formatters = [
@@ -64,7 +66,7 @@ class Config (Base):
 		]
 	class ConfigHTML (HTML):
 	    pages = [
-		('modules.py', 'ConfScopeJS'),
+		('modules.py', 'ConfScope'),
 		('modules.py', 'ConfScopePage')
 	    ]
 	    synopsis_pages = pages

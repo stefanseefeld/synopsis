@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.14 2001/05/25 13:45:49 stefan Exp $
+# $Id: core.py,v 1.15 2001/06/05 05:28:34 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.15  2001/06/05 05:28:34  chalky
+# Some old tree abstraction
+#
 # Revision 1.14  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -103,6 +106,7 @@ import sys, getopt, os, os.path, string, types, errno, stat, re, time
 # Synopsis modules
 from Synopsis.Core import AST, Type, Util
 from Synopsis.Formatter import TOC, ClassTree
+from Synopsis.Formatter.HTML import TreeFormatter
 
 verbose=0
 
@@ -127,10 +131,11 @@ class Config:
 	self.pageset = None
 	self.sorter = None
 	self.classTree = None
+	self.treeFormatterClass = TreeFormatter.TreeFormatter
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
 	self.pages = [
-	    'ScopePages', 'ModuleListingJS', 'ModuleIndexer', 'FileTreeJS',
+	    'ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree',
 	    'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'
 	]
 	self.verbose = 0
@@ -148,7 +153,7 @@ class Config:
 	# obj.pages is a list of module names
 	self.obj = obj
 	options = ('pages', 'sorter', 'stylesheet', 'stylesheet_file',
-	    'comment_formatters', 'toc_out', 'toc_in')
+	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -195,6 +200,11 @@ class Config:
     def _config_toc_out(self, toc_out):
 	if self.verbose: print "Will save toc to",toc_out
 	self.toc_out = toc_out
+
+    def _config_tree_formatter(self, tree_class):
+	if self.verbose: print "Using tree class",tree_class
+	clas = import_object(tree_class)
+	self.treeFormatterClass = clas
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served

@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: ModuleListing.py,v 1.3 2001/06/05 05:28:34 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,51 +20,106 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.3  2001/06/05 05:28:34  chalky
+# Some old tree abstraction
+#
+# Revision 1.6  2001/04/18 04:08:03  chalky
+# Sort modules so that packages come first
+#
+# Revision 1.5  2001/04/17 13:36:10  chalky
+# Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
+#
+# Revision 1.4  2001/03/29 14:11:33  chalky
+# Refactoring for use by RefManual's own derived module
+#
+# Revision 1.3  2001/02/06 05:12:46  chalky
+# Added JSTree class and FileTreeJS and modified ModuleListingJS to use JSTree
+#
+# Revision 1.2  2001/02/05 07:58:39  chalky
+# Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
+#
+# Revision 1.1  2001/02/05 05:31:52  chalky
+# Initial commit. Image finding is a hack
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
 #
 
+# System modules
+import os
+
 # Synopsis modules
 from Synopsis.Core import AST, Util
 
 # HTML modules
-import Page
 import core
+import Page
 from core import config
 from Tags import *
 
+
 class ModuleListing(Page.Page): 
-    """Create an index of all modules."""
+    """Create an index of all modules with JS. The JS allows the user to
+    expand/collapse sections of the tree!"""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.__filename = config.files.nameOfSpecial('module_listing')
-	link = href(self.__filename, 'Modules', target="contents")
-	manager.addRootPage('Modules', link, 2)
-	config.set_contents_page(self.__filename)
+	self._children_cache = {}
+	self._init_page()
+
+    def _init_page(self):
+	"Sets _filename and registers the page with the manager"
+	self._filename = config.files.nameOfSpecial('module_listing')
+	link = href(self._filename, 'Modules', target="contents")
+	self.manager.addRootPage('Modules', link, 2)
+	config.set_contents_page(self._filename)
+	self._link_target = 'index'
 
     def process(self, start):
 	"""Create a page with an index of all modules"""
-	self.startFile(self.__filename, "Module Index")
+	# Init tree
+	self.tree = config.treeFormatterClass(self)
+	# Create the file
+	self.startFile(self._filename, "Module Index")
 	self.write(self.manager.formatRoots('Modules', 2))
 	self.write('<hr>')
+	self.tree.startTree()
 	self.indexModule(start, start.name())
+	self.tree.endTree()
 	self.endFile()
 
+    def _child_filter(self, child):
+	return isinstance(child, AST.Module)
+    def _link_href(self, ns):
+	return config.files.nameOfModuleIndex(ns.name())
+    def _get_children(self, decl):
+	try: return self._children_cache[decl]
+	except KeyError: pass
+	config.sorter.set_scope(decl)
+	config.sorter.sort_sections()
+	children = config.sorter.children()
+	children = filter(self._child_filter, children)
+	self._children_cache[decl] = children
+	return children
     def indexModule(self, ns, rel_scope):
 	"Write a link for this module and recursively visit child modules."
 	my_scope = ns.name()
+	# Find children, and sort so that compound children (packages) go first
+	children = self._get_children(ns)
+	children.sort(lambda a,b,g=self._get_children:
+	    cmp(len(g(b)),len(g(a))))
 	# Print link to this module
 	name = Util.ccolonName(my_scope, rel_scope) or "Global Namespace"
-	link = config.files.nameOfModuleIndex(ns.name())
-	self.write(href(link, name, target='index') + '<br>')
-	# Add children
-	config.sorter.set_scope(ns)
-	config.sorter.sort_sections()
-	for child in config.sorter.children():
-	    if isinstance(child, AST.Module):
-		self.write('<div class="module-section">')
+	link = self._link_href(ns)
+	text = href(link, name, target=self._link_target)
+	if not len(children):
+	    self.tree.writeLeaf(text)
+	else:
+	    self.tree.writeNodeStart(text)
+	    # Add children
+	    for child in children:
 		self.indexModule(child, my_scope)
-		self.write('</div>')
+	    self.tree.writeNodeEnd()
 
 htmlPageClass = ModuleListing
+
