@@ -1752,6 +1752,10 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 
     for(;;){
 	t = lex->GetToken(tk);
+	if(t == TEMPLATE) {
+	    // Skip template token, next will be identifier
+	    t = lex->GetToken(tk);
+	}
 	if(t == Identifier){
 	    Ptree* n = new Leaf(tk);
 	    t = lex->LookAhead(0);
