@@ -47,11 +47,11 @@ all:	html info Manual.pdf
 
 html:   all.syn
 	@echo formatting $@
-	@$(synopsis) -Wc,formatter=HTML -o html $^
+	@$(synopsis) -Wc,formatter=HTML $^
 
 html-doxygen:   all.syn
 	@echo formatting $@
-	@$(synopsis) -Wc,formatter=Doxygen -o html-doxygen $^
+	@$(synopsis) -Wc,formatter=Doxygen $^
 
 c++.syn:	$(CXXHHSYNS) $(CXXCCSYNS) $(CXXHSYNS)
 	@echo linking C++ files together

@@ -94,7 +94,7 @@ class ConfScope (HTML.ModuleListing.ModuleListing):
 	#config.set_index_page(self.__filename)
     def _link_href(self, ns):
 	"""Template method to return the href of a link"""
-	return config.files.nameOfScope(ns.name())
+	return rel(self.filename(), config.files.nameOfScope(ns.name()))
     def process(self, start):
 	"""Decorate the process() method to set the start"""
 	config.sorter.set_scope(start)
