@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.32 2002/11/01 03:39:20 chalky Exp $
+# $Id: Dot.py,v 1.33 2002/11/01 04:26:34 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.33  2002/11/01 04:26:34  chalky
+# Fix wrong-ordered imagemap coords
+#
 # Revision 1.32  2002/11/01 03:39:20  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -513,9 +516,9 @@ def _convert_map(input, output):
     while line:
         line = line[:-1]
         if line[0:4] == "rect":
-            url, x1y2, x2y1 = string.split(line[4:])
-            x1, y2 = string.split(x1y2, ",")
-            x2, y1 = string.split(x2y1, ",")
+            url, x1y1, x2y2 = string.split(line[4:])
+            x1, y1 = string.split(x1y1, ",")
+            x2, y2 = string.split(x2y2, ",")
             output.write('<area alt="'+url+'" href="' + _rel(origin, url) + '" shape="rect" coords="')
             output.write(str(x1) + ", " + str(y1) + ", " + str(x2) + ", " + str(y2) + '">\n')
         line = input.readline()
