@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.6 2002/11/13 03:17:19 chalky Exp $
+# $Id: DirBrowse.py,v 1.7 2003/11/08 19:49:54 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: DirBrowse.py,v $
+# Revision 1.7  2003/11/08 19:49:54  stefan
+# replace statcache.stat by os.stat
+#
 # Revision 1.6  2002/11/13 03:17:19  chalky
 # Fix directory heading links when using Nested layout
 #
@@ -41,7 +44,7 @@
 
 
 # System modules
-import os, stat, statcache, os.path, string, time
+import os, stat, os.path, string, time
 
 # Synopsis modules
 from Synopsis.Core import AST, Util
@@ -100,7 +103,7 @@ class DirBrowse(Page.Page):
 		if exclude:
 		    continue
 		entry_path = os.path.join(dir, entry)
-		info = statcache.stat(entry_path)
+		info = os.stat(entry_path)
 		if not stat.S_ISDIR(info[stat.ST_MODE]):
 		    continue
 		filename = self.filename_for_dir(dir)

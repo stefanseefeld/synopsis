@@ -6,7 +6,7 @@ data needed for the execution of an Action is implemented in the matching
 Executor class.
 """
 
-import string, re, os, stat, sys, statcache
+import string, re, os, stat, sys
 
 from Action import ActionVisitor
 from Synopsis.Core import Util
@@ -328,7 +328,7 @@ class CacherExecutor (Executor):
     def _get_timestamp(self, filename):
 	"""Returns the timestamp of the given file, or 0 if not found"""
 	try:
-	    stats = statcache.stat(filename)
+	    stats = os.stat(filename)
 	    return stats[stat.ST_MTIME]
 	except OSError:
 	    # NB: will catch any type of error caused by the stat call, not

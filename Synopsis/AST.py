@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.27 2003/01/27 06:53:36 chalky Exp $
+# $Id: AST.py,v 1.28 2003/11/08 19:49:54 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.28  2003/11/08 19:49:54  stefan
+# replace statcache.stat by os.stat
+#
 # Revision 1.27  2003/01/27 06:53:36  chalky
 # Added macro support for C++.
 #
@@ -107,7 +110,7 @@ Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
 
-import string, sys, cPickle, types, stat, statcache
+import string, sys, cPickle, types, stat
 import Util, Type
 
 # The version of the file format - this should be increased everytime
@@ -187,7 +190,7 @@ def make_deps(ast):
     for file in ast.files().values():
 	filename = file.full_filename()
 	try:
-	    info = statcache.stat(filename)
+	    info = os.stat(filename)
 	except:
 	    # Ignore any file we can't stat
 	    continue
