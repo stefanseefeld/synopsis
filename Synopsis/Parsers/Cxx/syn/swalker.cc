@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.65 2002/10/28 06:14:39 chalky Exp $
+// $Id: swalker.cc,v 1.66 2002/10/29 02:39:57 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.66  2002/10/29 02:39:57  chalky
+// Changes to compile with g++-3.2
+//
 // Revision 1.65  2002/10/28 06:14:39  chalky
 // Rename class/struct/union variables to "data members"
 //
@@ -92,7 +95,7 @@
 #include <iostream>
 #include <string>
 #include <typeinfo>
-#include <strstream>
+#include <sstream>
 #include <algorithm>
 
 #include <occ/ptree.h>
@@ -681,7 +684,7 @@ SWalker::TranslateClassSpec(Ptree* node)
     // encname: "T\222string_char_traits\201c"
     LOG("Specialization?");
     nodeLOG(node);
-    LOG("encname:"<<(code_iter)encname);
+    LOG("encname:"<<make_code(encname));
     Types::Parameterized* param = dynamic_cast<Types::Parameterized*>(m_decoder->decodeTemplate());
     // If a non-type param was found, it's name will be '*'
     for (size_t i = 0; i < param->parameters().size(); i++)
@@ -853,7 +856,7 @@ SWalker::TranslateTemplateFunction(Ptree* def, Ptree* node)
   }
 
   LOG("What is: " << node->What());
-  LOG("Encoded name is: " << (code_iter)node->GetEncodedName());
+  LOG("Encoded name is: " << make_code(node->GetEncodedName()));
 
   AST::Parameter::vector* old_params = m_template;
   update_line_number(def);
@@ -954,8 +957,8 @@ Ptree* SWalker::TranslateTypeof(Ptree* spec, Ptree* declarations)
   STrace trace("SWalker::TranslateTypeof");
   nodeLOG(spec);
   char* encname = spec->Third()->GetEncodedName();
-  LOG("The name is: " << (code_iter)encname);
-  LOG("The type is: " << (code_iter)spec->Third()->GetEncodedType());
+  LOG("The name is: " << make_code(encname));
+  LOG("The type is: " << make_code(spec->Third()->GetEncodedType()));
   // Find the type referred to by the expression
   if (!m_decoder->isName(encname))
   {
@@ -973,7 +976,7 @@ Ptree* SWalker::TranslateTypeof(Ptree* spec, Ptree* declarations)
   if (!decl) return 0;
   LOG("Declaration is " << decl->name());
   // TODO: make this a visitor and support different things
-  if (AST::Function* func = dynamic_cast<AST::Function*>(decl))
+  if (/*AST::Function* func =*/ dynamic_cast<AST::Function*>(decl))
   {
     LOG("decl is a function.");
     while (declarations)

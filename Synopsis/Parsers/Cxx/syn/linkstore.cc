@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.13 2002/10/28 16:25:02 chalky Exp $
+// $Id: linkstore.cc,v 1.14 2002/10/29 02:39:57 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.14  2002/10/29 02:39:57  chalky
+// Changes to compile with g++-3.2
+//
 // Revision 1.13  2002/10/28 16:25:02  chalky
 // Fix crash if using xref output but not syntax output
 //
@@ -71,7 +74,7 @@
 #include "builder.hh"
 #include "strace.hh"
 
-#include <strstream>
+#include <sstream>
 #include <iomanip>
 
 #include <occ/ptree.h>

@@ -95,6 +95,12 @@ typedef std::basic_string<unsigned char> code;
 //. A string iterator type for the encoded names and types
 typedef code::iterator code_iter;
 
+//. A function to make a code string from a normal string
+inline code make_code(const char* c)
+{
+    return code((const unsigned char*)c);
+}
+
 //. Insertion operator for encoded names and types
 std::ostream& operator <<(std::ostream& o, const code& s);
 
