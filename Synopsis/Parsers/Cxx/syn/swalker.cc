@@ -328,7 +328,6 @@ SWalker::translate(PTree::Node *node)
   {
       // This error usually means that the syntax highlighting failed, and
       // can be safely ignored
-    std::cout << "translate error !!" << std::endl;
   }
   catch (const std::exception& e)
   {
