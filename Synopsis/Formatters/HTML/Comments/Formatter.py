@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.15 2001/04/17 13:35:37 chalky Exp $
+# $Id: Formatter.py,v 1.16 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.16  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.15  2001/04/17 13:35:37  chalky
 # Slightly more robust
 #
@@ -105,6 +108,9 @@ class CommentFormatter:
     def parse(self, comm):
 	"""Parse the comment struct"""
 	pass
+    def set_origin(self, origin):
+        """sets an origin URL (file) so we can generate a relative URL for links"""
+        self.__origin = origin
 
 class SSDFormatter (CommentFormatter):
     """A class that strips //.'s from the start of lines in detail"""
@@ -300,7 +306,7 @@ class JavadocFormatter (CommentFormatter):
 	    ref,desc = see[0], len(see)>1 and see[1] or ''
 	    tag = self.find_link(ref, decl)
 	    seelist.append(tag+desc)
-	return seestr + div('tag-section', string.join(seelist,'<br>'))
+	return seestr + div('tag-section', string.join(seelist,'\n<br>\n'))
     def find_link(self, ref, decl):
 	"""Given a "reference" and a declaration, returns a HTML link.
 	Various methods are tried to resolve the reference. First the

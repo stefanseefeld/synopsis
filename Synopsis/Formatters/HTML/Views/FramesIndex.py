@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.3 2001/06/26 04:32:16 stefan Exp $
+# $Id: FramesIndex.py,v 1.4 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FramesIndex.py,v $
+# Revision 1.4  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.3  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -46,7 +49,7 @@ class FramesIndex (Page.Page):
 	"""Creates a frames index file"""
 	me = config.files.nameOfIndex()
 	# TODO use project name..
-	self.startFile(os.path.join(config.basename, me), "Synopsis - Generated Documentation", body='')
+	self.startFile(me, "Synopsis - Generated Documentation", body='')
 	fcontents = rel(me, config.page_contents)
 	findex = rel(me, config.page_index)
 	fglobal = rel(me, config.files.nameOfScope(start.name()))

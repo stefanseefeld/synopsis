@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.8 2001/06/26 04:32:16 stefan Exp $
+# $Id: FileLayout.py,v 1.9 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.9  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.8  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -167,25 +170,21 @@ class NestedFileLayout (FileLayout):
         return reduce(os.path.join, filetuple, 'Files') + '.html'
 
     def nameOfIndex(self):
-	"""Return the name of the main index file. Default is index.html"""
+	"""Return the name of the main index file."""
 	return "index.html"
 
     def nameOfSpecial(self, name):
-	"""Return the name of a special file (tree, etc). Default is
-	_name.html"""
-	return "_" + name + ".html"
+	"""Return the name of a special file (tree, etc)."""
+	return name + ".html"
     
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
-	"""Return the name of a special type of scope file. Default is to join
-	the scope with '-' and prepend '-'+name"""
-	return "_%s-%s%s"%(name, string.join(scope, '-'), ext)
+	"""Return the name of a special type of scope file"""
+        return reduce(os.path.join, scope, name) + ext
 
     def nameOfModuleTree(self):
-	"""Return the name of the module tree index. Default is
-	_modules.html"""
-	return "_modules.html"
+	"""Return the name of the module tree index"""
+	return "Modules.html"
 
     def nameOfModuleIndex(self, scope):
-	"""Return the name of the index of the given module. Default is to
-	join the name with '-', prepend "_module_" and append ".html" """
-	return "_module_" + string.join(scope, '-') + ".html"
+	"""Return the name of the index of the given module"""
+        return reduce(os.path.join, scope, 'Modules') + '.html'

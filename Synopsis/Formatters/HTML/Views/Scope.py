@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.8 2001/06/26 04:32:16 stefan Exp $
+# $Id: Scope.py,v 1.9 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.9  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.8  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -84,7 +87,7 @@ class ScopePages (Page.Page):
 	    raise
 	share = config.datadir
 	self.syn_logo = 'synopsis200.jpg'
-	config.files.copyFile(share+'/synopsis200.jpg', config.basename + '/' + self.syn_logo)
+	config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
 
     def process(self, start):
 	"""Creates a page for every Scope"""
@@ -104,13 +107,15 @@ class ScopePages (Page.Page):
 	config.sorter.sort_section_names()
 	
 	# Write heading
-	self.write(self.manager.formatRoots('')+'<hr>')
+	filename = config.files.nameOfScope(ns.name())
+	self.write(self.manager.formatHeader(filename))
 	if ns is self.manager.globalScope(): 
 	    self.write(entity('h1', "Global Namespace"))
 	else:
 	    # Use the detailer to print an appropriate heading
 	    ns.accept(self.detailer)
-	
+
+	self.write('\n')
 	# Loop throught all the types of children
 	self.printScopeSummaries(ns, details, sections)
 	self.printScopeDetails(details, sections)
@@ -168,21 +173,22 @@ class ScopePages (Page.Page):
  
     def startFileScope(self, scope):
 	"Start a new file from the given scope"
-	fname = os.path.join(config.basename, config.files.nameOfScope(scope))
+	filename = config.files.nameOfScope(scope)
 	title = string.join(scope)
-	self.startFile(fname, title)
+	self.startFile(filename, title)
+	self.summarizer.set_origin(filename)
 	self.summarizer.set_ostream(self.os())
 	self.summarizer.set_scope(scope)
+	self.detailer.set_origin(filename)
 	self.detailer.set_ostream(self.os())
 	self.detailer.set_scope(scope)
 
     def endFile(self):
 	"""Overrides endfile to provide synopsis logo"""
-	self.write('<hr><div class="logo">Generated on %s by<br> %s</div>'%(
-	    time.strftime(r'%c', time.localtime(time.time())),
-            href('http://synopsis.sourceforge.net', 'synopsis')
-	    #solotag('img', align='top', src=self.syn_logo, border='0', alt="Synopsis")
-	))
+	self.write('<hr>\n')
+        now = time.strftime(r'%c', time.localtime(time.time()))
+        logo = href('http://synopsis.sourceforge.net', 'synopsis')
+        self.write(div('logo', '>Generated on ' + now + ' by \n<br>\n' + logo))
 	Page.Page.endFile(self)
  
 htmlPageClass = ScopePages

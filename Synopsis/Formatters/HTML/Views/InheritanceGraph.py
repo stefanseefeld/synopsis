@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.10 2001/06/26 04:32:16 stefan Exp $
+# $Id: InheritanceGraph.py,v 1.11 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.11  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.10  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -95,10 +98,8 @@ class ToDecl (Type.Visitor):
 class InheritanceGraph(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	filename = config.files.nameOfSpecial('classgraph')
-	link = href(filename, 'Inheritance Graph', target='main')
-	self.__filename = os.path.join(config.basename, filename)
-	manager.addRootPage('Inheritance Graph', link, 1)
+	filename = config.files.nameOfSpecial('InheritanceGraph')
+	manager.addRootPage(filename, 'Inheritance Graph', 'main', 1)
 	self.__todecl = ToDecl()
  
     def consolidate(self, graphs):
@@ -131,12 +132,13 @@ class InheritanceGraph(Page.Page):
 
     def process(self, start):
 	"""Creates a file with the inheritance graph"""
-	self.startFile(self.__filename, "Synopsis - Class Hierarchy")
-	self.write(self.manager.formatRoots('Inheritance Graph')+'<hr>')
+	filename = config.files.nameOfSpecial('InheritanceGraph')
+	self.startFile(filename, "Synopsis - Class Hierarchy")
+	self.write(self.manager.formatHeader(filename))
 	self.write(entity('h1', "Inheritance Graph"))
 
 	# Create a toc file for Dot to use
-	toc_file = self.__filename+"-dot.toc"
+	toc_file = filename + "-dot.toc"
 	config.toc.store(toc_file)
 
 	from Synopsis.Formatter import Dot
@@ -152,10 +154,10 @@ class InheritanceGraph(Page.Page):
 		declarations = map(self.__todecl, graph)
 		declarations = filter(lambda x: x is not None, declarations)
 		# Call Dot formatter
-		output = self.__filename+"-dot%s"%count
+		output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
 		args = ('-i','-f','html','-o',output,'-r',toc_file,'-t','Synopsis %s'%count,'-n')
 		Dot.format(config.types, declarations, args, None)
-		dot_file = open(output+'.html', 'r')
+		dot_file = open(output + '.html', 'r')
 		self.write(dot_file.read())
 		dot_file.close()
 		os.remove(output + ".html")

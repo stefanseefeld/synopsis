@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.5 2001/06/26 04:32:16 stefan Exp $
+# $Id: ModuleListing.py,v 1.6 2001/06/28 07:22:18 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.6  2001/06/28 07:22:18  stefan
+# more refactoring/cleanup in the HTML formatter
+#
 # Revision 1.5  2001/06/26 04:32:16  stefan
 # A whole slew of changes mostly to fix the HTML formatter's output generation,
 # i.e. to make the output more robust towards changes in the layout of files.
@@ -79,11 +82,9 @@ class ModuleListing(Page.Page):
 
     def _init_page(self):
 	"Sets _filename and registers the page with the manager"
-	filename = config.files.nameOfSpecial('module_listing')
+	filename = config.files.nameOfSpecial('ModuleTree')
 	config.set_contents_page(filename)
-	link = href(filename, 'Modules', target="contents")
-	self._filename = os.path.join(config.basename, filename)
-	self.manager.addRootPage('Modules', link, 2)
+	self.manager.addRootPage(filename, 'Modules', 'contents', 2)
 	self._link_target = 'index'
 
     def process(self, start):
@@ -94,9 +95,9 @@ class ModuleListing(Page.Page):
 	try: self.child_types = config.obj.ModuleListing.child_types
 	except AttributeError: pass
 	# Create the file
-	self.startFile(self._filename, "Module Index")
-	self.write(self.manager.formatRoots('Modules', 2))
-	self.write('<hr>')
+	filename = config.files.nameOfSpecial('ModuleTree')
+	self.startFile(filename, 'Module Tree')
+	self.write(self.manager.formatHeader(filename, 2))
 	self.tree.startTree()
 	self.indexModule(start, start.name())
 	self.tree.endTree()
