@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.16 2002/10/11 11:09:12 chalky Exp $
+ * $Id: link.cc,v 1.17 2002/10/25 08:56:56 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.17  2002/10/25 08:56:56  chalky
+ * Prevent bad output by clipping to end of line
+ *
  * Revision 1.16  2002/10/11 11:09:12  chalky
  * Remove debugging perror statement
  *
@@ -205,10 +208,10 @@ namespace
   //. confused by HTML, such as < and >. All spaces are replaced with
   //. non-breaking spaces, and tabs are expanded to 8-col tabstops (hence the
   //. col argument)
-  void write(std::ostream& out, int col, char* buf, int len)
+  void write(std::ostream& out, int col, char* buf, int len, int buflen)
   {
     char* ptr = buf, *end = buf+len;
-    while (ptr != end && *ptr)
+    while (ptr != end && col < buflen)
       {
         char c = *ptr++;
         switch (c) 
@@ -272,14 +275,14 @@ namespace
 
   //. Writes whatever indent there is in the buf to the output using the
   //. special span. 'col' is modified to the first non-indent character.
-  void write_indent(std::ostream& out, char* buf, int& col)
+  void write_indent(std::ostream& out, char* buf, int& col, int buflen)
   {
       int len = 0;
       char* ptr = buf;
       while (*ptr && (*ptr == ' ' || *ptr == '\t')) ptr++, len++;
       if (!len) return;
       out << "<span class=\"file-indent\">";
-      write(out, col, buf, len);
+      write(out, col, buf, len, buflen);
       out << "</span>";
       col += len;
   }
@@ -405,25 +408,26 @@ namespace
       std::ofstream out(output_filename, links_append ? std::ios::app : std::ios::out);
       if (!out) { throw std::string("Error opening output file: ")+output_filename; }
       char buf[4096];
-      int line = 1;
+      int line = 1, buflen;
       Link::Map::iterator iter = links.begin(), end = links.end();
       while (in) {
           // Get line
           if (!in.getline(buf, 4096)) break;
+          buflen = strlen(buf);
           write_lineno(out, line);
           // Get Link::Line
           while (iter != end && iter->first < line) ++iter;
           if (iter != end && iter->first == line) {
               // Insert links and write at same time
               int col = 0;
-              write_indent(out, buf, col);
+              write_indent(out, buf, col, buflen);
               out << "<span class=\"file-default\">";
               Link::Line& line = iter->second;
               Link::Line::iterator link_i = line.begin();
               while (link_i != line.end()) {
                   Link* link = *link_i++;
                   if (col < link->col) {
-                      write(out, col, buf+col, link->col - col);
+                      write(out, col, buf+col, link->col - col, buflen);
                       col = link->col;
                   }
                   switch (link->type) {
@@ -463,14 +467,14 @@ namespace
                   }
               }
               // Write any left-over buffer
-              write(out, col, buf+col, -1);
+              write(out, col, buf+col, -1, buflen);
               out << "</span>";
           } else {
               // Write buf
               int col = 0;
-              write_indent(out, buf, col);
+              write_indent(out, buf, col, buflen);
               out << "<span class=\"file-default\">";
-              write(out, col, buf+col, -1);
+              write(out, col, buf+col, -1, buflen);
               out << "</span>";
           }
           out << "<br>\n";
