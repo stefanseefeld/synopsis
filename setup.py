@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.13 2003/11/25 05:12:33 stefan Exp $
+# $Id: setup.py,v 1.14 2003/11/26 15:06:32 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -53,6 +53,17 @@ scripts = ['synopsis', 'synopsis-qt', 'compile-xref', 'search-xref']
 data_files = []
 
 data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
+
+#### add documentation
+
+def add_documentation(all, directory, files):
+   all.append((directory,
+               filter(os.path.isfile,
+                      map(lambda x:os.path.join(directory, x), files))))
+documentation = []
+os.path.walk('share/doc/Synopsis', add_documentation, documentation)
+
+data_files.extend(documentation)
 
 setup(cmdclass={'config':config,
                 'build_doc':build_doc,
