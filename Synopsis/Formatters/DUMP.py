@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.10 2001/05/25 13:45:49 stefan Exp $
+# $Id: DUMP.py,v 1.11 2001/07/19 04:00:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.11  2001/07/19 04:00:39  chalky
+# New .syn file format. Added -d, -t and -f flags
+#
 # Revision 1.10  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -192,6 +195,7 @@ class Dumper:
 	))
 	    
     def visitInstance(self, obj):
+	if isinstance(obj, AST.Forward) and not show_forwards: return
 	self.visited[id(obj)] = None
         self.write("[1m%s.%s[m = "%(
 	    obj.__class__.__module__,
@@ -203,13 +207,23 @@ def usage():
     """Print usage to stdout"""
     print \
 """
-  -o <file>                            Output file"""
+  -o <file>                            Output file
+  -d                                   Show declarations
+  -t                                   Show types
+  -f                                   Show forwards also
+ (If none of -d, -t or -f specified, will default to -d, -t)
+"""
 
 def __parseArgs(args):
-    global output, verbose
+    global output, verbose, show_decls, show_types, show_forwards
+    # Set defaults
     output = sys.stdout
+    show_decls = 0
+    show_types = 0
+    show_forwards = 0
+
     try:
-        opts,remainder = getopt.getopt(args, "o:v")
+        opts,remainder = getopt.getopt(args, "o:vdtf")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -219,15 +233,26 @@ def __parseArgs(args):
 
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
+	elif o == "-d": show_decls = 1
+	elif o == "-t": show_types = 1
+	elif o == "-f": show_forwards = 1
 
-def format(types, declarations, args, config_obj):
+    # Consolidate - if no show_ selected, show decls and types
+    if not (show_decls or show_types or show_forwards):
+	show_decls = 1
+	show_types = 1
+
+def format(args, ast, config_obj):
     global output
     __parseArgs(args)
     #formatter = ASCIIFormatter(output)
     #for type in dictionary:
     #    type.output(formatter)
     dumper = Dumper()
-    print "*** Declarations:"
-    dumper.visit(declarations)
-    print "\n\n\n*** Types:"
-    dumper.visit(types)
+    if show_decls:
+	print "*** Declarations:"
+	dumper.visit(ast.declarations())
+    if show_types:
+	if show_decls: print "\n\n\n"
+	print "*** Types:"
+	dumper.visit(ast.types())
