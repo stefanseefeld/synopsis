@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.24 2001/01/23 21:31:36 stefan Exp $
+#  $Id: synopsis,v 1.25 2001/01/24 00:51:44 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,7 +20,7 @@
 #  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #  02111-1307, USA.
 
-import sys, getopt, os, os.path, string
+import sys, getopt, os, os.path, string, stat
 import cPickle
 
 # Hack, I can't be stuffed finding places to change it :)
@@ -83,14 +83,57 @@ def importFormatter(name):
     return formatter
 
 def listModules():
-    from Synopsis.Parser import Python
-    parser = Python
-    module = Util._import("Synopsis.Parser")
+    """Lists all Parsers, Linkers and Formatters"""
+    try:
+	from Synopsis.Parser import Python
+	parser = Python
+    except ImportError:
+	print "Warning: Unable to load Python parser so docstrings will not be printed."
+	parser = None
+    print "Synopsis: Searching for installed modules..."
+    listModulesFrom('Parser', parser)
+    listModulesFrom('Linker', parser)
+    listModulesFrom('Formatter', parser)
+
+def listModulesFrom(type, parser):
+    """Finds and lists modules of the given type. parser is passed to
+    showModuleParser if it is not None"""
+    module = Util._import("Synopsis."+type)
     moddir = module.__path__[0]
-    print "looking for installed parsers in ", moddir
-    print "sorry, not implemented yet"
-    sys.exit(-1)
-        
+    print "%ss:"%type
+    files = os.listdir(moddir)
+    for module in files:
+	file = os.path.join(moddir, module)
+	st = os.stat(file)
+	if stat.S_ISDIR(st[stat.ST_MODE]):
+	    file = os.path.join(file,'__init__.py')
+	elif stat.S_ISREG(st[stat.ST_MODE]):
+	    if file[-3:] != '.py': continue
+	    if module == '__init__.py': continue
+	    module = module[:-3]
+	else:
+	    continue
+	try:
+	    f = open(file, 'rt')
+	    print " ",module
+	    if parser: showModuleSynopsis(f, parser)
+	    f.close()
+	except IOError:
+	    # silently ignore as not-a-module
+	    pass
+
+def showModuleSynopsis(file, parser):
+    """Shows the doc string for the given file object using parser"""
+    doc = parser.get_synopsis(file)
+    if not doc: return
+    indent = "    "
+    # Strip """'s
+    if doc[:3] == '"""' and doc[-3:] == '"""':
+	doc = doc[3:-3]
+    # Strip surrounding whitespace
+    doc = string.strip(doc)
+    print indent+string.join(string.split(doc,'\n'),'\n'+indent)
+
 def parseArgs(args):
     global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose, help
     try:

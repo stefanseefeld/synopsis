@@ -45,15 +45,16 @@ def stringify(tree):
 	strs.append(stringify(elem))
     return string.join(strs, '')
 
-def get_docs(fileName):
+def get_docs(file):
     """Retrieve information from the parse tree of a source file.
 
-    fileName
+    file
         Name of the file to read Python source code from.
     """
-    source = open(fileName).read()
+    if type(file) == types.StringType: file = open(file)
+    source = file.read()
     import os
-    basename = os.path.basename(os.path.splitext(fileName)[0])
+    basename = os.path.basename(os.path.splitext(file.name)[0])
     import parser
     ast = parser.suite(source)
     tup = parser.ast2tuple(ast)
