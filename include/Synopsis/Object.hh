@@ -150,7 +150,8 @@ class List::iterator
 {
   friend class List;
 public:
-  iterator(const iterator &i) : my_list(i.my_list), my_pos(i.my_pos) {}
+  iterator(const iterator &i)
+    : my_list(i.my_list), my_pos(i.my_pos), my_current(i.my_current) {}
   iterator &operator = (const iterator &);
 
   bool operator == (iterator i);
@@ -181,7 +182,8 @@ class List::reverse_iterator
 {
   friend class List;
 public:
-  reverse_iterator(const reverse_iterator &i) : my_list(i.my_list), my_pos(i.my_pos) {}
+  reverse_iterator(const reverse_iterator &i)
+    : my_list(i.my_list), my_pos(i.my_pos), my_current(i.my_current) {}
   reverse_iterator &operator = (const reverse_iterator &);
 
   bool operator == (reverse_iterator i);
@@ -623,7 +625,8 @@ inline bool List::iterator::operator == (List::iterator i)
 
 inline List::iterator List::iterator::operator + (int i)
 {
-  my_pos += i;
+  if (my_pos != -1) my_pos += i;
+
   if (my_pos < my_list.size())
     my_current = my_list.get(my_pos);
   else
@@ -633,7 +636,8 @@ inline List::iterator List::iterator::operator + (int i)
 
 inline List::iterator List::iterator::operator - (int i)
 {
-  my_pos -= i;
+  my_pos = my_pos == -1 ? my_list.size() - i : my_pos - i;
+
   if (my_pos > -1)
     my_current = my_list.get(my_pos);
   else
@@ -651,9 +655,15 @@ inline void List::iterator::decr()
   operator - (1);
 }
 
+inline bool List::reverse_iterator::operator == (List::reverse_iterator i)
+{
+  return i.my_list.impl() == my_list.impl() && i.my_pos == my_pos;
+}
+
 inline List::reverse_iterator List::reverse_iterator::operator + (int i)
 {
-  my_pos -= i;
+  my_pos = my_pos == -1 ? my_list.size() - i : my_pos - i;
+
   if (my_pos > -1)
     my_current = my_list.get(my_pos);
   else
@@ -664,6 +674,7 @@ inline List::reverse_iterator List::reverse_iterator::operator + (int i)
 inline List::reverse_iterator List::reverse_iterator::operator - (int i)
 {
   my_pos += i;
+
   if (my_pos < my_list.size())
     my_current = my_list.get(my_pos);
   else
