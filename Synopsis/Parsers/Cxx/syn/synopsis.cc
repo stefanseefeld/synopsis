@@ -282,7 +282,7 @@ PyObject *Synopsis::Base(Type::Base* type)
     return base;
 }
 
-PyObject *Synopsis::Unknown(Type::Unknown* type)
+PyObject *Synopsis::Unknown(Type::Named* type)
 {
     Trace trace("Synopsis::addUnknown");
     PyObject *name, *unknown = PyObject_CallMethod(m_type, "Unknown", "OO",
@@ -699,7 +699,10 @@ void Synopsis::visitBase(Type::Base* type) {
     m->add(type, Base(type));
 }
 void Synopsis::visitDeclared(Type::Declared* type) {
-    m->add(type, Declared(type));
+    if (!m->m_main(type->declaration()))
+	m->add(type, Unknown(type));
+    else
+	m->add(type, Declared(type));
 }
 void Synopsis::visitTemplateType(Type::Template* type) {
     m->add(type, Template(type));
