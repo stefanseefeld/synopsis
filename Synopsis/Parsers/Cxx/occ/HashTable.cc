@@ -36,6 +36,8 @@
 #include <cstring>
 #include "HashTable.hh"
 
+using namespace PTree;
+
 struct HashTableEntry {
     const char*	key;		// 0: unused, -1: deleted
     HashValue	value;
