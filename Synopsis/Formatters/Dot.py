@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.28 2002/10/20 15:38:08 chalky Exp $
+# $Id: Dot.py,v 1.29 2002/10/28 11:44:16 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.29  2002/10/28 11:44:16  chalky
+# Support being given a prefix name to strip from class names.
+# Display template parameters in class labels
+#
 # Revision 1.28  2002/10/20 15:38:08  chalky
 # Much improved template support, including Function Templates.
 #
@@ -123,6 +127,7 @@ from Synopsis.Formatter import TOC
 verbose = 0
 toc = None
 nodes = {}
+name_prefix = None
 
 class SystemError:
     """Error thrown by the system() function. Attributes are 'retval', encoded
@@ -150,6 +155,7 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         if attributes: self.__attributes = []
         else: self.__attributes = None
         self.__scope = []
+	if name_prefix: self.__scope = string.split(name_prefix, '::')
         self.__type_ref = None
         self.__type_label = ''
     def scope(self): return self.__scope
@@ -194,18 +200,19 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
     def getClassName(self, node):
 	"""Returns the name of the given class node, relative to all its
 	parents. This makes the graph simpler by making the names shorter"""
-	base = Util.pruneScope(node.name(), self.scope())
+	base = node.name()
 	for i in node.parents():
 	    try:
 		parent = i.parent()
-		pname = Util.pruneScope(parent.name(), self.scope())
+		pname = parent.name()
 		for j in range(len(base)):
 		    if j > len(pname) or pname[j] != base[j]:
 			# Base is longer than parent name, or found a difference
 			base[j:] = []
 			break
 	    except: pass # typedefs etc may cause errors here.. ignore
-	if not node.parents(): base = []
+	if not node.parents():
+	    base = self.scope()
 	return Util.ccolonName(node.name(), base)
 
     #################### Type Visitor ###########################################
@@ -239,7 +246,10 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
 
     def visitTemplate(self, type):
         self.__type_ref = None
-	self.__type_label = "template<%s>"%(string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ","))
+	def clip(x, max=20):
+	    if len(x) > max: return '...'
+	    return x
+	self.__type_label = "template<%s>"%(clip(string.join(map(clip, map(self.formatType, type.parameters())), ","),40))
 
     #################### AST Visitor ############################################
         
@@ -258,6 +268,8 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         for d in node.declarations(): d.accept(self)
 	# NB: old version of dot needed the label surrounded in {}'s (?)
         label = name
+	if node.template():
+	    label = self.formatType(node.template()) + '\\n' + label
         if self.__operations or self.__attributes:
             label = label + '\\n'
             if self.__operations:
@@ -417,7 +429,8 @@ formats = {
 }
 
 def __parseArgs(args, config_obj):
-    global output, title, type, operations, attributes, oformat, verbose, toc_in, origin, no_descend, nodes
+    global output, title, type, operations, attributes, oformat, verbose
+    global toc_in, origin, no_descend, nodes, name_prefix 
     output = ''
     title = 'NoTitle'
     type = ''
@@ -428,8 +441,9 @@ def __parseArgs(args, config_obj):
     origin = ''
     no_descend = 0
     nodes = {}
+    name_prefix = None
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:OAf:r:R:icsvn")
+        opts,remainder = Util.getopt_spec(args, "o:t:OAf:r:R:p:icsvn")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -455,6 +469,7 @@ def __parseArgs(args, config_obj):
         elif o == "-R": origin = a
         elif o == "-v": verbose = 1
 	elif o == "-n": no_descend = 1
+	elif o == "-p": name_prefix = a
 
 def _rel(frm, to):
     "Find link to to relative to frm"
