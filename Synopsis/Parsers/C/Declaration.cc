@@ -1231,6 +1231,10 @@ GccAttrib::print( std::ostream& out ) const
             out << "__noreturn__";
             break;
 
+        case GCC_Malloc:
+            out << "__malloc__";
+            break;
+
         case GCC_Unsupported:
         default:
             out << "<unsupported gcc attribute>";
