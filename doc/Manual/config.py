@@ -34,6 +34,7 @@ class Config (Base):
             datadir = '../../share'
 	    toc_out = 'links.toc'
 	    stylesheet_file = '../../demo/html.css'
+	    file_layout = 'Synopsis.Formatter.HTML.FileLayout.NestedFileLayout'
 	    pages = [
 		'FilePages',
 		'ModuleListing',
