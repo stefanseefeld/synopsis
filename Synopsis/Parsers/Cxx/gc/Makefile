@@ -8,15 +8,15 @@
 #	 c++ interface to gc.a
 # cord/de - builds dumb editor based on cords.
 ABI_FLAG=
-CC=cc $(ABI_FLAG)
-CXX=g++ $(ABI_FLAG)
-AS=as $(ABI_FLAG)
+CC	:= $(CC) $(ABI_FLAG)
+CXX	:= $(CXX) $(ABI_FLAG)
+AS=	:= as $(ABI_FLAG)
 #  The above doesn't work with gas, which doesn't run cpp.
 #  Define AS as `gcc -c -x assembler-with-cpp' instead.
 #  Under Irix 6, you will have to specify the ABI (-o32, -n32, or -64)
 #  if you use something other than the default ABI on your machine.
 
-CFLAGS= -fPIC -O6 -DATOMIC_UNCOLLECTABLE -DNO_SIGNALS -DNO_EXECUTE_PERMISSION -DALL_INTERIOR_POINTERS -DSILENT
+CFLAGS	:= -fPIC -O6 -DATOMIC_UNCOLLECTABLE -DNO_SIGNALS -DNO_EXECUTE_PERMISSION -DALL_INTERIOR_POINTERS -DSILENT
 
 # For dynamic library builds, it may be necessary to add flags to generate
 # PIC code, e.g. -fPIC on Linux.
@@ -115,14 +115,14 @@ CFLAGS= -fPIC -O6 -DATOMIC_UNCOLLECTABLE -DNO_SIGNALS -DNO_EXECUTE_PERMISSION -D
 
 
 
-LIBGC_CFLAGS= -O -DNO_SIGNALS -DSILENT \
+LIBGC_CFLAGS	:= -O -DNO_SIGNALS -DSILENT \
     -DREDIRECT_MALLOC=GC_malloc_uncollectable \
     -DDONT_ADD_BYTE_AT_END -DALL_INTERIOR_POINTERS
 #   Flags for building libgc.a -- the last two are required.
 
-CXXFLAGS= $(CFLAGS) 
-AR= ar
-RANLIB= ranlib
+CXXFLAGS	:= $(CFLAGS) 
+AR		:= ar
+RANLIB		:= ranlib
 
 
 # Redefining srcdir allows object code for the nonPCR version of the collector
