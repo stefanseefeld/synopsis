@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.30 2001/07/19 05:10:39 chalky Exp $
+# $Id: omni.py,v 1.31 2002/11/03 12:43:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.31  2002/11/03 12:43:33  chalky
+# Fix procedure for finding omnicpp to use the PATH variable
+#
 # Revision 1.30  2001/07/19 05:10:39  chalky
 # Use filenames stored in AST object
 #
@@ -502,11 +505,22 @@ def __parseArgs(args, config_obj):
 def parse(file, args, config_obj):
     global preprocessor_args, mainfile_only
     __parseArgs(args, config_obj)
+    path = string.split(os.getenv('PATH'), os.pathsep)
+    # Add Synopsis' bindir
+    path.insert(0, os.path.dirname(sys.argv[0]))
     if hasattr(_omniidl, "__file__"):
-        preprocessor_path = os.path.dirname(_omniidl.__file__)
-    else:
-        preprocessor_path = os.path.dirname(sys.argv[0])
-    preprocessor      = os.path.join(preprocessor_path, "omnicpp")
+	# Add path to omniidl module
+        path.insert(0, os.path.dirname(_omniidl.__file__))
+    preprocessor = None
+    for directory in path:
+	preprocessor = os.path.join(directory, "omnicpp")
+	if os.access(preprocessor, os.R_OK | os.X_OK):
+	    break
+	preprocessor = None
+    if not preprocessor:
+	print "Error: unable to find omnicpp in path:"
+	print string.join(path, os.pathsep)
+	sys.exit(1)
     preprocessor_cmd  = preprocessor + " -lang-c++ -undef -D__OMNIIDL__=" + _omniidl.version
     preprocessor_cmd = preprocessor_cmd + " " + string.join(preprocessor_args, " ") + " " + file
     fd = os.popen(preprocessor_cmd, "r")
