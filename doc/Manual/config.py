@@ -3,6 +3,7 @@ class Config (Base):
     class Formatter (Base.Formatter):
 	class HTML (Base.Formatter.HTML):
 	    toc_output = 'links.toc'
+	    stylesheet_file = '../../demo/html.css'
 	    pages = [
 		'ScopePages',
 		'ModuleListingJS',
@@ -15,16 +16,12 @@ class Config (Base):
 		('modules.py', 'ConfScopeJS'),
 		'FramesIndex'
 	    ]
-	    synopsis_pages = pages
 
 	    # Add custom comment formatter
 	    comment_formatters = [
 		'summary', 'javadoc', 'section',
 		('modules.py', 'RefCommentFormatter')
 	    ]
-	    # Also use it when either style is specified:
-	    synopsis_comment_formatters = comment_formatters
-	    doxygen_comment_formatters = comment_formatters
 
 	    class FilePages:
 		"Override defaults"
@@ -45,7 +42,18 @@ class Config (Base):
 		('modules.py', 'ConfScopePage')
 	    ]
 	    synopsis_pages = pages
+	class HTML_Doxygen (Base.Formatter.HTML_Doxygen):
+	    stylesheet_file = '../../demo/html-doxy.css'
+	    class ScopePages (Base.Formatter.HTML_Doxygen.ScopePages):
+		summary_formatters = Base.Formatter.HTML_Doxygen.ScopePages.summary_formatters
+		summary_formatters.insert(3,'FilePageLinker')
+	    def __init__(self, argv):
+		Base.Formatter.HTML_Doxygen.__init__(self, argv)
+		# Import the config from HTML
+		for attr in ['toc_output','pages','comment_formatters','FilePages','FileTree']:
+		    setattr(self, attr, getattr(Config.Formatter.HTML, attr))
 	modules = {
 	    'HTML':HTML,
+	    'Doxygen':HTML_Doxygen,
 	    'ConfigHTML':ConfigHTML
 	}
