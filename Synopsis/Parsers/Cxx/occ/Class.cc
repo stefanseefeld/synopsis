@@ -17,7 +17,7 @@
 #include "Lexer.hh"
 #include "Class.hh"
 #include "Environment.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Walker.hh"
 #include "ClassWalker.hh"
 #include "TypeInfo.hh"

@@ -28,7 +28,7 @@
 #include <iomanip>
 #include <map>
 
-#include <occ/ptree.h>
+#include <occ/AST.hh>
 #include <occ/Parser.hh>
 #include <occ/Buffer.hh>
 

@@ -1,4 +1,3 @@
-// $Id: swalker.cc,v 1.78 2003/12/03 03:43:27 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -14,7 +13,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include <occ/ptree.h>
+#include <occ/AST.hh>
 #include <occ/Parser.hh>
 
 #include "swalker.hh"

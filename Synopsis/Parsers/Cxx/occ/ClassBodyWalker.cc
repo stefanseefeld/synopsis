@@ -12,7 +12,7 @@
   implied warranty.
 */
 
-#include "ptree.h"
+#include "AST.hh"
 #include "ClassBodyWalker.hh"
 #include "Class.hh"
 #include "Environment.hh"

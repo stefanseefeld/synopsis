@@ -38,7 +38,7 @@
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #endif
-#include "ptree.h"
+#include "AST.hh"
 #include "Lexer.hh"
 #include "Class.hh"
 

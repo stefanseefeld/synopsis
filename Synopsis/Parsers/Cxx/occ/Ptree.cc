@@ -14,7 +14,7 @@
 
 #include <iostream>
 #include <cstring>
-#include "ptree.h"
+#include "AST.hh"
 #include "Lexer.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"

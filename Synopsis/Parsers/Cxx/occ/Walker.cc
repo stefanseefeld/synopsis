@@ -15,7 +15,7 @@
 #include <iostream>
 #include <cstring>
 #include "Environment.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
 #include "Class.hh"
