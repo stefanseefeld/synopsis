@@ -1,68 +1,67 @@
-# $Id: AccessRestrictor.py,v 1.1 2002/08/23 04:37:26 chalky Exp $
+# $Id: AccessRestrictor.py,v 1.2 2003/11/11 02:57:57 stefan Exp $
 #
-# This file is a part of Synopsis.
-# Copyright (C) 2000, 2001 Stefan Seefeld
-# Copyright (C) 2000, 2001 Stephen Davies
+# Copyright (C) 2000 Stefan Seefeld
+# Copyright (C) 2000 Stephen Davies
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-#
-# $Log: AccessRestrictor.py,v $
-# Revision 1.1  2002/08/23 04:37:26  chalky
-# Huge refactoring of Linker to make it modular, and use a config system similar
-# to the HTML package
-#
+
+from Synopsis.Processor import Processor, Parameter
+from Synopsis.Core import AST, Type, Util
 
 import string
 
-from Synopsis.Core import AST, Type, Util
+class AccessRestrictor(Processor, AST.Visitor):
+   """This class processes declarations, and removes those that need greated
+   access than the maximum passed to the constructor"""
 
-from Linker import config, Operation
+   access = Parameter(None, 'specify up to which accessibility level the interface should be documented')
 
-class AccessRestrictor(AST.Visitor):
-    """This class processes declarations, and removes those that need greated
-    access than the maximum passed to the constructor"""
-    def __init__(self):
-	self.__max = config.max_access
-	self.__scopestack = []
-	self.__currscope = []
-    def execute(self, ast):
-	if self.__max is None: return
-	declarations = ast.declarations()
-	for decl in declarations:
-	    decl.accept(self)
-	declarations[:] = self.__currscope
-    def push(self):
-	self.__scopestack.append(self.__currscope)
-	self.__currscope = []
-    def pop(self, decl):
-	self.__currscope = self.__scopestack.pop()
-	self.__currscope.append(decl)
-    def add(self, decl):
-	self.__currscope.append(decl)
-    def currscope(self): return self.__currscope
+   def __init__(self):
 
-    def visitDeclaration(self, decl):
-	if decl.accessibility() > self.__max: return
-	self.add(decl)
-    def visitScope(self, scope):
-	if scope.accessibility() > self.__max: return
-	self.push()
-	for decl in scope.declarations():
-	    decl.accept(self)
-	scope.declarations()[:] = self.__currscope
-	self.pop(scope)
+      self.__scopestack = []
+      self.__currscope = []
+
+   def process(self, ast, **kwds):
+
+      self.set_parameters(kwds)
+      self.ast = self.merge_input(ast)
+
+      if self.access is not None:
+
+         for decl in ast.declarations():
+            decl.accept(self)
+         ast.declarations()[:] = self.__currscope
+
+      return self.output_and_return_ast()
+
+   def push(self):
+
+      self.__scopestack.append(self.__currscope)
+      self.__currscope = []
+
+   def pop(self, decl):
+
+      self.__currscope = self.__scopestack.pop()
+      self.__currscope.append(decl)
+
+   def add(self, decl):
+
+      self.__currscope.append(decl)
+
+   def visitDeclaration(self, decl):
+
+      if decl.accessibility() > self.access: return
+      self.add(decl)
+
+   def visitScope(self, scope):
+
+      if scope.accessibility() > self.access: return
+      self.push()
+      for decl in scope.declarations():
+         decl.accept(self)
+      scope.declarations()[:] = self.__currscope
+      self.pop(scope)
 
 linkerOperation = AccessRestrictor
