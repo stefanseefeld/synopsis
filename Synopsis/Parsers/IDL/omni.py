@@ -152,6 +152,8 @@ class ASTTranslator (idlvisitor.AstVisitor):
         self.__result_declarator = AST.Declarator(node.file(), node.line(), node.mainFile(), "IDL", name, node.sizes())
         self.__types.add(self.__result_declarator.name(),
                          Type.Declared("IDL", self.__result_declarator.name(), self.__result_declarator))
+        for c in node.comments():
+            self.__result_declarator.comments().append(AST.Comment(c.text(), c.file(), c.line()))
         
     def visitTypedef(self, node):
         # if this is an inline constructed type, it is a 'Declared' type
