@@ -15,6 +15,15 @@ using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
 
+SymbolSet TemplateParameterScope::unqualified_lookup(Encoding const &name,
+						     bool scope) const
+{
+  Trace trace("TemplateParameterScope::unqualified_lookup");
+  trace << name;
+  SymbolSet symbols = find(name, scope);
+  return symbols;
+}
+
 void TemplateParameterScope::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "TemplateParameterScope:\n";
@@ -87,6 +96,19 @@ std::string FunctionScope::name() const
   std::ostringstream oss;
   oss << PTree::reify(my_decl);
   return oss.str();
+}
+
+SymbolSet PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
+					     bool scope) const
+{
+  Trace trace("PrototypeScope::unqualified_lookup");
+  return SymbolSet();
+}
+
+void PrototypeScope::dump(std::ostream &os, size_t in) const
+{
+  indent(os, in) << "Prototype:\n";
+  Scope::dump(os, in + 1);
 }
 
 SymbolSet Class::unqualified_lookup(Encoding const &name,

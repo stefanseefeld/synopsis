@@ -93,7 +93,7 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
 {
   Trace trace("Scope::lookup");
   trace << name;
-  // If the name is qualified, start a qualified lookup.
+  // If the name is not qualified, start an unqualified lookup.
   if (!name.is_qualified())
     return unqualified_lookup(name, false);
 

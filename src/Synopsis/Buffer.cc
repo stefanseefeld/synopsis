@@ -26,14 +26,10 @@ Buffer::Buffer(std::streambuf *sb, const std::string &filename)
   my_buffer.append(begin, end);
 }
 
-void Buffer::substitute(const char *from, const char *to,
-			const char *begin, unsigned long end)
+void Buffer::replace(const char *from, const char *to,
+		     const char *begin, unsigned long length)
 {
-  // FIXME: this method needs a lot of work:
-  // * the list should be sorted
-  // * we need to define the behavior in case of overlapping regions
-  // etc.
-  my_replacements.push_back(Replacement(from, to, begin, end));
+  my_replacements.push_back(Replacement(from, to, begin, length));
 }
 
 unsigned long Buffer::origin(const char *ptr, std::string &filename) const
@@ -76,12 +72,23 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
   return 1 + lines;
 }
 
-void Buffer::write(std::ostream &os, const std::string &filename)
+void Buffer::write(std::ostream &os, const std::string &filename) const
 {
-  // FIXME: for now disregard replacements, as we don't have any means
-  // to test correct behavior
+  // FIXME: what should we do with overlapping replacements ?
+  Replacements replacements(my_replacements);
+  std::sort(replacements.begin(), replacements.end(), Replacement::smaller);
   std::ostreambuf_iterator<char> out(os);
-  std::copy(my_buffer.begin(), my_buffer.end(), out);
+  char const *b = my_buffer.data();
+  for (Replacements::iterator r = replacements.begin();
+       r != replacements.end();
+       ++r)
+  {
+    std::copy(b, r->from, out);
+    std::copy(r->begin, r->begin + r->length, out);
+    b = r->to;
+    if (*b == '\0') break;
+  }
+  std::copy(b, my_buffer.data() + my_buffer.length(), out);
 }
 
 long Buffer::read_line_directive(unsigned long cursor, long line,
@@ -152,8 +159,8 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
 }
 
 Buffer::Replacement::Replacement(const char *f, const char *t,
-				 const char *b, unsigned long e)
+				 const char *b, unsigned long l)
   : from(f), to(t),
-    begin(b), end(e)
+    begin(b), length(l)
 {
 }

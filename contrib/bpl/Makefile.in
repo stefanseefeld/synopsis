@@ -23,7 +23,7 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @SYN_LIBS@ -lboost_python @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-MODULES	:= PTree Processor
+MODULES	:= PTree SymbolLookup Processor
 DEP	:= $(patsubst %, %.d, $(MODULES))
 TARGETS	:= $(patsubst %, %.so, $(MODULES))
 
