@@ -10,13 +10,13 @@ from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
 from Synopsis.Formatters.HTML.CommentFormatter import *
 from Synopsis.Formatters.HTML.Pages import *
-from Synopsis.Formatters.HTML.Pages.FileTreeJS import FileTree
+from Synopsis.Formatters import TexInfo
 
 from distutils import sysconfig
 
 topdir = '../../'
 
-python = Composite(Python.Parser(),
+python = Composite(Python.Parser(basename = topdir),
                    JavaTags(),
                    Summarizer())
 
@@ -43,7 +43,8 @@ html = HTML.Formatter(stylesheet_file = '../../demo/html.css',
                       pages = [FramesIndex(),
                                Scope(),
                                FileSource(prefix = 'links',
-                                          toc_in = ['links.toc']),
+                                          toc_in = ['links.toc'],
+                                          scope = 'Synopsis::Parser::C++::'),
                                ModuleListing(),
                                ModuleIndexer(),
                                FileListing(),
@@ -58,4 +59,6 @@ process(python = python,
         link_python = Processor(),
         link_cxx = cxx_processor,
         link = Processor(),
-        html = html)
+        strip = Stripper(),
+        html = html,
+        texi = TexInfo.Formatter())
