@@ -1,4 +1,4 @@
-# $Id: TOC.py,v 1.1 2001/02/01 18:37:25 chalky Exp $
+# $Id: TOC.py,v 1.2 2001/02/13 05:20:04 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TOC.py,v $
+# Revision 1.2  2001/02/13 05:20:04  chalky
+# Made C++ parser mangle functions by formatting their parameter types
+#
 # Revision 1.1  2001/02/01 18:37:25  chalky
 # moved TOC out to here
 #
@@ -27,7 +30,7 @@
 
 """Table of Contents classes"""
 
-import string
+import string, re
 
 from Synopsis.Core import AST, Util
 
@@ -86,10 +89,11 @@ class TableOfContents(AST.Visitor):
     def store(self, file):
         """store the table of contents into a file, such that it can be used later when cross referencing"""
         fout = open(file, 'w')
+	nocomma = lambda str: re.sub(",","&2c;",str)
         for name in self.__toc.keys():
-            scopedname = string.join(name, "::")
+            scopedname = nocomma(string.join(name, "::"))
             lang = self.__toc[tuple(name)].lang
-	    link = self.__toc[tuple(name)].link
+	    link = nocomma(self.__toc[tuple(name)].link)
             fout.write(scopedname + "," + lang + "," + link + "\n")
             
     def load(self, resource):
@@ -99,10 +103,17 @@ class TableOfContents(AST.Visitor):
         else: url = ""
         fin = open(file, 'r')
         line = fin.readline()
+	recomma = lambda str: re.sub("&2c;",",",str)
         while line:
             if line[-1] == '\n': line = line[:-1]
             scopedname, lang, link = string.split(line, ",")
-            name = string.split(scopedname, "::")
+	    scopedname, link = recomma(scopedname), recomma(link)
+	    param_index = string.find(scopedname, '(')
+	    if param_index >= 0:
+		name = string.split(scopedname[:param_index], "::")
+		name = name[:-1] + [name[-1]+scopedname[param_index:]]
+	    else:
+		name = string.split(scopedname, "::")
             if len(url): link = string.join([url, link], "/")
             entry = TocEntry(name, link, lang, "decl")
             self.insert(entry)

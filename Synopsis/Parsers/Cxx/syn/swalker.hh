@@ -22,6 +22,9 @@ class Builder;
 // Forward declaration of Decoder
 class Decoder;
 
+// Forward declaration of TypeFormatter
+class TypeFormatter;
+
 namespace AST { class Parameter; class Inheritance; class Declaration; }
 namespace Type { class Type; }
 
@@ -54,6 +57,11 @@ public:
     virtual Ptree* TranslateDeclarator(Ptree*);
     void TranslateTypedefDeclarator(Ptree* node);
     vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);
+    //. Returns a formatter string of the parameters. The idea is that this
+    //. string will be appended to the function name to form the 'name' of the
+    //. function.
+    string formatParameters(vector<AST::Parameter*>& params);
+
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
 
@@ -147,6 +155,9 @@ private:
 
     //. A dummy name used for tail comments
     vector<string> m_dummyname;
+
+    //. An instance of TypeFormatter for formatting types
+    TypeFormatter* m_type_formatter;
 
 }; // class SWalker
 

@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.16 2001/02/07 14:27:39 chalky Exp $
+// $Id: swalker.cc,v 1.17 2001/02/13 05:20:04 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.17  2001/02/13 05:20:04  chalky
+// Made C++ parser mangle functions by formatting their parameter types
+//
 // Revision 1.16  2001/02/07 14:27:39  chalky
 // Enums inside declarations swallow declaration comments.
 //
@@ -40,6 +43,7 @@
 #include "ast.hh"
 #include "builder.hh"
 #include "decoder.hh"
+#include "dumper.hh"
 
 using namespace AST;
 using std::string;
@@ -75,6 +79,7 @@ SWalker::SWalker(Parser* parser, Builder* builder)
     m_decoder = new Decoder(builder);
     m_filename_ptr = 0;
     m_extract_tails = false;
+    m_type_formatter = new TypeFormatter();
 }
 
 string SWalker::getName(Ptree *node)
@@ -130,6 +135,30 @@ Ptree* SWalker::TranslateAssignInitializer(PtreeDeclarator*, Ptree*) { Trace tra
 //Ptree* SWalker::TranslateClassSpec(Ptree*, Ptree*, Ptree*, Class*) { Trace trace("SWalker::TranslateClassSpec NYI"); return 0; }
 //Ptree* SWalker::TranslateClassBody(Ptree*, Ptree*, Class*) { Trace trace("SWalker::TranslateClassBody NYI"); return 0; }
 //Ptree* SWalker::TranslateTemplateInstantiation(Ptree*, Ptree*, Ptree*, Class*) { Trace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
+
+// Format the given parameters
+string SWalker::formatParameters(vector<AST::Parameter*>& params)
+{
+    // Set scope for formatter
+    AST::Scope* scope = m_builder->scope();
+    if (scope) {
+	m_type_formatter->setScope(scope->name());
+    } else {
+	AST::Name empty;
+	m_type_formatter->setScope(empty);
+    }
+    vector<AST::Parameter*>::iterator iter = params.begin(), end = params.end();
+    if (iter == end) { return "()"; }
+    string str = "(" + m_type_formatter->format((*iter++)->type());
+    while (iter != end) {
+	str += ",";
+	str += m_type_formatter->format((*iter++)->type());
+    }
+    return str+")";
+}
+
+
+
 
 //
 // Translate Methods
@@ -450,10 +479,10 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
         string realname;
 	TranslateFunctionName(encname, realname, returnType);
 
-	// Function names are mangled, but 0x80+ chars are changed
-        string name = realname+"@"+enctype;
-        for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
-            if (*ptr < 0) (*ptr) += '0'-0x80;
+	// Function names have parameters appended
+        string name = realname+formatParameters(params);
+        //for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
+        //    if (*ptr < 0) (*ptr) += '0'-0x80;
 
 
         // Figure out premodifiers
