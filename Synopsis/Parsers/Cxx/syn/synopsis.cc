@@ -810,7 +810,8 @@ void Synopsis::Declaration(Declaration* type)
 //
 void Synopsis::visit_declaration(AST::Declaration* decl) {
     // Assume this is a dummy declaration
-    m->add(decl, Declaration(decl));
+    if (m->m_main(decl))
+	m->add(decl, Declaration(decl));
 }
 void Synopsis::visit_scope(AST::Scope* decl) {
     if (count_main(decl, m->m_main))

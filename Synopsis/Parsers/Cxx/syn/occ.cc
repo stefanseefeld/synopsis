@@ -27,7 +27,7 @@
 #include "dumper.hh"
 
 // Define to test refcounting
-#define SYN_TEST_REFCOUNT
+//#define SYN_TEST_REFCOUNT
 
 // ucpp_main is the renamed main() func of ucpp, since it is included in this
 // module
@@ -579,7 +579,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     source.erase(0, strlen(syn_basename));
 
   Builder builder(syn_basename);
-  SWalker swalker(src, &parse, &builder, &prog);
+  SWalker swalker(src, &parse, &builder, &prog, syn_basename);
   swalker.set_extract_tails(syn_extract_tails);
   Ptree *def;
   if (syn_fake_std)
@@ -719,28 +719,31 @@ PyObject *occParse(PyObject *self, PyObject *args)
 #ifndef DONT_GC
   // Try to cleanup GC if being used
   //std::cout << "GC: Running Garbage Collection..." << std::endl;
-  size_t size = GC_get_heap_size();
+  //size_t size = GC_get_heap_size();
   GC_gcollect();
-  size_t size2 = GC_get_heap_size();
+  //size_t size2 = GC_get_heap_size();
   //std::cout << "GC: Heap went from " << size << " to " << size2 << std::endl;
 #endif
 
+#ifdef SYN_TEST_REFCOUNT
   // Now, there should *fingers crossed* be no python objects. Check..
   {
     PyGC_Head* node = _PyGC_generation0.gc.gc_next;
     size_t count = 0;
     while (node != &_PyGC_generation0)
     {
-      PyObject* obj = (PyObject*)(node + 1);
-      PyObject* str = PyObject_Repr(obj);
+      //PyObject* obj = (PyObject*)(node + 1);
+      //PyObject* str = PyObject_Repr(obj);
       //std::cout << obj->ob_refcnt << " " << PyString_AsString(str) << "\n";
-      Py_DECREF(str);
+      //Py_DECREF(str);
       node = node->gc.gc_next;
       count++;
     } 
     //std::cout << "Collection list contains " << count << " objects." << std::endl;
   }
+#endif
 
+  // Delete all the AST:: and Types:: objects we created
   FakeGC::delete_all();
 
   return ast;
@@ -835,9 +838,9 @@ int main(int argc, char **argv)
 #endif
 #ifndef DONT_GC
   // Try to cleanup GC if being used
-  size_t size = GC_get_heap_size();
+  //size_t size = GC_get_heap_size();
   GC_gcollect();
-  size_t size2 = GC_get_heap_size();
+  //size_t size2 = GC_get_heap_size();
   //std::cout << "Collection: Heap went from " << size << " to " << size2 << std::endl;
 #endif
   Py_Finalize();

@@ -32,7 +32,7 @@ namespace Types { class Type; }
 class SWalker : public Walker {
 public:
     //. Constructor
-    SWalker(const std::string &source, Parser*, Builder*, Program*);
+    SWalker(const std::string& source, Parser*, Builder*, Program*, const std::string& basename);
     virtual ~SWalker();
 
     //. Sets extract tails to true.
@@ -190,6 +190,8 @@ private:
     int m_lineno;
     //. The source filename
     std::string m_source;
+    //. The basename to strip from filenames
+    std::string m_basename;
 
     //. True if should try and extract tail comments before }'s
     bool m_extract_tails;
