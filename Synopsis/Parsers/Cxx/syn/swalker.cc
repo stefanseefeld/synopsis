@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.70 2002/11/17 12:11:44 chalky Exp $
+// $Id: swalker.cc,v 1.71 2002/11/24 01:21:30 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.71  2002/11/24 01:21:30  chalky
+// Added support for declarations in if/switch conditions
+//
 // Revision 1.70  2002/11/17 12:11:44  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -1078,8 +1081,25 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
     if (Ptree::Second(def) && Ptree::Second(def)->What() == ntTypeofExpr)
         TranslateTypeof(Ptree::Second(def), decls);
 
-    if (decls->IsA(ntDeclarator))        // if it is a function
+    if (decls->IsA(ntDeclarator))
+    {
+        // A single declarator is probably a function impl, but could also be
+        // the declarator in an if or switch condition
+        if (const char* encoded_type = decls->GetEncodedType())
+        {
+            // A function may be const, skip the C
+            while (*encoded_type == 'C')
+                encoded_type++;
+            if (*encoded_type != 'F')
+            {
+                // Not a function
+                TranslateDeclarator(decls);
+                m_declaration = NULL;
+                return 0;
+            }
+        }
         TranslateFunctionImplementation(def);
+    }
     else
         // if it is a function prototype or a variable declaration.
         if (!decls->IsLeaf())        // if it is not ";"
@@ -1312,8 +1332,14 @@ SWalker::TranslateVariableDeclarator(Ptree* decl, bool is_const)
             m_links->link(m_declaration->Second(), type);
 
         Ptree* p = decl;
-        while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&')))
+        while (p && p->Car()->IsLeaf() && 
+                (p->Car()->Eq('*') || p->Car()->Eq('&') || p->Car()->Eq("const")))
+        {
+            // Link the const keyword
+            if (p->Car()->Eq("const"))
+                m_links->span(p->Car(), "file-keyword");
             p = Ptree::Rest(p);
+        }
         if (p)
         {
             // p should now be at the name

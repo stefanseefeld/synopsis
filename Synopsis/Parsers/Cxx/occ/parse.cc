@@ -1,5 +1,6 @@
 /*
   Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
+  Copyright (C) 2001-2002 Stephen Davies
 
   Permission to use, copy, distribute and modify this software and   
   its documentation for any purpose is hereby granted without fee,        
@@ -3975,6 +3976,92 @@ bool Parser::isTemplateArgs()
 }
 
 /*
+  condition
+  : comma.expression
+  | declarator.with.init
+
+  Condition is used inside if, switch statements where a declarator can be
+  used if it is initialised.
+*/
+bool Parser::rCondition(Ptree*& exp)
+{
+    Encoding type_encode;
+    char* save;
+
+    // Do declarator first, otherwise "T*foo = blah" gets matched as a
+    // multiplication infix expression inside an assignment expression!
+    save = lex->Save();
+    do {
+	Ptree *storage_s, *cv_q, *cv_q2, *integral, *head, *decl;
+
+	if (!optStorageSpec(storage_s))
+	    break;
+
+	if (storage_s == nil)
+	    head = nil;
+	else
+	    head = storage_s;
+	
+	if (!optCvQualify(cv_q)
+		|| !optIntegralTypeOrClassSpec(integral, type_encode))
+	    break;
+
+	if (integral != nil) {
+	    // Integral Declaration
+	    // Find const after type
+	    if (!optCvQualify(cv_q2))
+		break;
+	    // Make type ptree with pre and post const ptrees
+	    if (cv_q != nil)
+		if (cv_q2 == nil)
+		    integral = Ptree::Snoc(cv_q, integral);
+		else
+		    integral = Ptree::Nconc(cv_q,
+			    Ptree::Cons(integral, cv_q2));
+	    else if (cv_q2 != nil)
+		integral = Ptree::Cons(integral, cv_q2);
+	    // Store type of CV's
+	    type_encode.CvQualify(cv_q, cv_q2);
+	    // Parse declarator
+	    if (!rDeclaratorWithInit(decl, type_encode, TRUE, FALSE))
+		break;
+	    exp = new PtreeDeclaration(head,
+		    Ptree::List(integral, decl));
+	} else {
+	    // Other Declaration
+	    Ptree *type_name;
+	    // Find name of type
+	    if (!rName(type_name, type_encode))
+		break;
+	    // Find const after type
+	    if (!optCvQualify(cv_q2))
+		break;
+	    // Make type ptree with pre and post const ptrees
+	    if (cv_q != nil)
+		if (cv_q2 == nil)
+		    type_name = Ptree::Snoc(cv_q, type_name);
+		else
+		    type_name = Ptree::Nconc(cv_q,
+			    Ptree::Cons(type_name, cv_q2));
+	    else if (cv_q2 != nil)
+		type_name = Ptree::Cons(type_name, cv_q2);
+	    // Store type of CV's
+	    type_encode.CvQualify(cv_q, cv_q2);
+	    // Parse declarator
+	    if (!rDeclaratorWithInit(decl, type_encode, TRUE, FALSE))
+		break;
+	    exp = new PtreeDeclaration(head,
+		    Ptree::List(type_name, decl));
+	}
+	return TRUE;
+    } while(0);
+
+    // Must be a comma expression
+    lex->Restore(save);
+    return rCommaExpression(exp);
+}
+
+/*
   function.body  : compound.statement
 */
 bool Parser::rFunctionBody(Ptree*& body)
@@ -4167,6 +4254,7 @@ bool Parser::rStatement(Ptree*& st)
 
 /*
   if.statement
+  : IF '(' declaration.statement ')' statement { ELSE statement }
   : IF '(' comma.expression ')' statement { ELSE statement }
 */
 bool Parser::rIfStatement(Ptree*& st)
@@ -4180,7 +4268,7 @@ bool Parser::rIfStatement(Ptree*& st)
     if(lex->GetToken(tk2) != '(')
 	return FALSE;
 
-    if(!rCommaExpression(exp))
+    if(!rCondition(exp))
 	return FALSE;
 
     if(lex->GetToken(tk3) != ')')
@@ -4218,7 +4306,7 @@ bool Parser::rSwitchStatement(Ptree*& st)
     if(lex->GetToken(tk2) != '(')
 	return FALSE;
 
-    if(!rCommaExpression(exp))
+    if(!rCondition(exp))
 	return FALSE;
 
     if(lex->GetToken(tk3) != ')')
