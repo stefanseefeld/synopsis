@@ -11,5 +11,6 @@
 <xsl:param name="use.id.as.filename" select="1"/>
 <xsl:param name="chunk.first.sections" select="1"/>
 <xsl:param name="use.svg" select="0"/>
-
+<xsl:param name="header.rule" select="0"/>
+<xsl:param name="footer.rule" select="0"/>
 </xsl:stylesheet>
