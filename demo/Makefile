@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.3 2001/06/15 18:31:31 stefan Exp $
+# $Id: Makefile,v 1.4 2003/03/16 03:22:39 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -40,3 +40,4 @@ $(subdirs):
 
 clean:
 	$(MAKE) action="clean"
+
