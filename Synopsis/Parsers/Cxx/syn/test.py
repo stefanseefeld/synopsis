@@ -5,8 +5,15 @@ import os, types, sys
 
 gdb = None
 
+gcc_include2 = "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include "
+gcc_include3 = "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0.1/include "
+gcc_include = gcc_include2
+python_include = "-DPYTHON_INCLUDE='<python1.5/Python.h>' "
+
+
 html_top = '<html><link rel="stylesheet" href="/home/chalky/src/Synopsis/demo/html.css"><body>'
 class Test:
+    flags = ""
     def run(self):
 	"Return false if test failed"
 	test_text = self.__class__.test
@@ -17,6 +24,7 @@ class Test:
 	f.close()
 	return self.do_run(test_file, test_base)
     def do_run(self, test_file, test_base, flags=""):
+	flags = flags + self.flags
 	if gdb:
 	    return not self.gdb_less(test_file, flags)
 	else:
@@ -281,20 +289,26 @@ void main() {
 }
 """
 
+class StdTest (Test):
+    flags = gcc_include + python_include + "-Wp,-f "
+    test = """
+#include <vector>
+namespace Foo {
+    void func(std::vector<int> array);
+}
+"""
+
 class Link (Test):
     def run(self):
-	#return self.do_run("link.cc", "link", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
-	return self.do_run("link.cc", "link", "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
+	return self.do_run("link.cc", "link", gcc_include + python_include)
 
 class Builder (Test):
     def run(self):
-	return self.do_run("builder.cc", "builder", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
-	#return self.do_run("builder.cc", "builder", "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
+	return self.do_run("builder.cc", "builder", gcc_include + python_include)
 
 class Synopsis (Test):
     def run(self):
-	#return self.do_run("link.cc", "link", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
-	return self.do_run("synopsis.cc", "synopsis", "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
+	return self.do_run("synopsis.cc", "synopsis", gcc_include + python_include)
 
 if __name__ == "__main__":
     tests = {}

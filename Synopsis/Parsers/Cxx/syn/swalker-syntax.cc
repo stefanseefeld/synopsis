@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.11 2001/07/23 15:29:35 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.12 2001/07/29 03:28:04 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.12  2001/07/29 03:28:04  chalky
+// More fixes for directory restructure, and fake_std -f flag for C++ parser.
+//
 // Revision 1.11  2001/07/23 15:29:35  chalky
 // Fixed some regressions and other mis-features
 //
@@ -70,8 +73,8 @@
 #include <string>
 #include <typeinfo>
 
-#include "ptree.h"
-#include "parse.h"
+#include <occ/ptree.h>
+#include <occ/parse.h>
 
 #include "linkstore.hh"
 #include "swalker.hh"

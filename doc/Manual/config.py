@@ -5,6 +5,7 @@ class Config (Base):
 	    main_file = 1
 	    basename = '../../'
 	    preprocessor='gcc'
+	    fake_std = 1
 	class Python (Base.Parser.Python):
 	    basename = '../../'
 	modules = {
