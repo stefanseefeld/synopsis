@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.16 2003/12/06 16:58:17 stefan Exp $
+# $Id: setup.py,v 1.17 2003/12/06 19:59:34 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -14,8 +14,7 @@ from Synopsis.config import *
 
 from Synopsis.dist.command.config import config
 from Synopsis.dist.command.build_doc import build_doc
-from Synopsis.dist.command.build import build
-from Synopsis.dist.command.build_ext import build_ext
+from Synopsis.dist.command.build_syn_ext import build_syn_ext
 
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
@@ -69,8 +68,7 @@ data_files.extend(documentation)
 
 setup(cmdclass={'config':config,
                 'build_doc':build_doc,
-                'build_ext':build_ext,
-                'build':build},
+                'build_ext':build_syn_ext},
       name="synopsis",
       version=version,
       maintainer="Stefan Seefeld",
