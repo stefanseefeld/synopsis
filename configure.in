@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.14 2003/03/23 17:36:27 stefan Exp $
+dnl $Id: configure.in,v 1.15 2003/03/24 08:31:38 chalky Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2001 Stefan Seefeld
@@ -24,7 +24,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.12)
-AC_REVISION($Revision: 1.14 $)
+AC_REVISION($Revision: 1.15 $)
 
 AC_INIT(synopsis.spec.in)
 AC_PROG_MAKE_SET
@@ -104,6 +104,9 @@ AC_MSG_RESULT([$library_ext])
 AC_SUBST(library_ext)
 AC_SUBST(cpp_profile)
 
+if test "$use_gc" = yes; then
+    AC_CONFIG_SUBDIRS(Synopsis/Parser/C++/gc)
+fi
 
 AC_OUTPUT([
 	local.mk:local.mk.in
