@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.6 2003/09/29 20:03:14 stefan Exp $
+# $Id: setup.py,v 1.7 2003/10/07 03:52:22 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -16,6 +16,12 @@ from Synopsis.dist.command.config import config
 from Synopsis.dist.command.build_doc import build_doc
 from Synopsis.dist.command.build import build
 from Synopsis.dist.command.build_ext import build_ext
+
+# patch distutils if it can't cope with the "classifiers" keyword
+from distutils.dist import DistributionMetadata
+if not hasattr(DistributionMetadata, 'classifiers'):
+    DistributionMetadata.classifiers = None
+    DistributionMetadata.download_url = None
 
 module_ext = sysconfig.get_config_var('SO')
 
@@ -49,9 +55,19 @@ setup(cmdclass={'config':config,
       name="synopsis",
       version=__version__,
       author="Stefan Seefeld & Stephen Davies",
-      author_email="synopsis-devel@lists.sf.net",
+      author_email="stefan@fresco.org",
       description="source code inspection tool",
       url="http://synopsis.fresco.org",
+      download_url = 'http://synopsis.fresco.org/download',
+      classifiers = ['Development Status :: 5 - Production/Stable',
+                     'Environment :: Console',
+                     'Environment :: Web Environment',
+                     'Intended Audience :: Developers',
+                     'License :: OSI Approved :: GNU General Public License (GPL)',
+                     'Operating System :: POSIX',
+                     'Programming Language :: Python',
+                     'Programming Language :: C++',
+                     'Topic :: Software Development :: Documentation'],
       packages=py_packages,
       ext_modules=ext_modules,
       scripts=prefix(scripts, "bin/"),
