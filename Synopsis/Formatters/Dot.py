@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.29 2002/10/28 11:44:16 chalky Exp $
+# $Id: Dot.py,v 1.30 2002/10/28 16:27:22 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.30  2002/10/28 16:27:22  chalky
+# Support horizontal inheritance graphs
+#
 # Revision 1.29  2002/10/28 11:44:16  chalky
 # Support being given a prefix name to strip from class names.
 # Display template parameters in class labels
@@ -128,6 +131,7 @@ verbose = 0
 toc = None
 nodes = {}
 name_prefix = None
+direction = 'vertical'
 
 class SystemError:
     """Error thrown by the system() function. Attributes are 'retval', encoded
@@ -269,7 +273,10 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
 	# NB: old version of dot needed the label surrounded in {}'s (?)
         label = name
 	if node.template():
-	    label = self.formatType(node.template()) + '\\n' + label
+            if direction == 'vertical':
+	        label = self.formatType(node.template()) + '\\n' + label
+            else:
+	        label = self.formatType(node.template()) + ' ' + label
         if self.__operations or self.__attributes:
             label = label + '\\n'
             if self.__operations:
@@ -407,17 +414,19 @@ def usage():
     """Print usage to stdout"""
     print \
 """
-  -o <filename>                        Output directory, created if it doesn't exist.
-  -t <title>                           Associate <title> with the generated graph
-  -i                                   Generate an inheritance graph
-  -s                                   Generate an inheritance graph for a single class
-  -O                                   show operations
-  -A                                   show attributs
-  -c                                   Generate a collaboration graph
-  -f <format>                          Generate output in format 'dot', 'ps' (default), 'png', 'gif', 'map', 'html'
-  -r <filename>                        Read in toc for an external data base that is to be referenced (for map/html output)
-  -R <filename>                        Provide a reference URL which is used to compute relative links from the toc entries (for map/html output)    
-  -n                                   Don't descend AST (for internal use)"""
+  -o <filename>         Output directory, created if it doesn't exist.
+  -t <title>            Associate <title> with the generated graph
+  -i                    Generate an inheritance graph
+  -s                    Generate an inheritance graph for a single class
+  -O                    show operations
+  -A                    show attributs
+  -c                    Generate a collaboration graph
+  -f <format>           Generate output in format 'dot', 'ps' (default), 'png', 'gif', 'map', 'html'
+  -r <filename>         Read in toc for an external data base that is to be referenced (for map/html output)
+  -R <filename>         Provide a reference URL which is used to compute relative links from the toc entries (for map/html output)    
+  -n                    Don't descend AST (for internal use)
+  -p <prefix>           Specify a prefix to strip from all class names
+  -d <direction>        Direction of graph: 'vertical' or 'horizontal'"""
 
 formats = {
     'dot' : 'dot',
@@ -430,7 +439,7 @@ formats = {
 
 def __parseArgs(args, config_obj):
     global output, title, type, operations, attributes, oformat, verbose
-    global toc_in, origin, no_descend, nodes, name_prefix 
+    global toc_in, origin, no_descend, nodes, name_prefix, direction
     output = ''
     title = 'NoTitle'
     type = ''
@@ -442,8 +451,9 @@ def __parseArgs(args, config_obj):
     no_descend = 0
     nodes = {}
     name_prefix = None
+    direction = 'vertical'
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:OAf:r:R:p:icsvn")
+        opts,remainder = Util.getopt_spec(args, "o:t:OAf:r:R:p:d:icsvn")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -470,6 +480,7 @@ def __parseArgs(args, config_obj):
         elif o == "-v": verbose = 1
 	elif o == "-n": no_descend = 1
 	elif o == "-p": name_prefix = a
+	elif o == "-d": direction = a
 
 def _rel(frm, to):
     "Find link to to relative to frm"
@@ -533,6 +544,9 @@ def format(args, ast, config_obj):
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = Util.open(tmpfile)
     dotfile.write("digraph \"%s\" {\n"%(title))
+    if direction == 'horizontal':
+        dotfile.write('rankdir="LR";\n')
+        dotfile.write('ranksep="1.0";\n')
     dotfile.write("node[shape=record, fontsize=10, height=0.2, width=0.4, color=black]\n")
     if type == "inheritance":
         generator = InheritanceFormatter(dotfile, operations, attributes)
