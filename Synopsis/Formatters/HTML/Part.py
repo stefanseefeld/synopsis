@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.7 2001/02/16 06:59:32 chalky Exp $
+# $Id: Part.py,v 1.8 2001/03/29 14:06:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.8  2001/03/29 14:06:41  chalky
+# Skip boring graphs (ie, no sub or super classes)
+#
 # Revision 1.7  2001/02/16 06:59:32  chalky
 # ScopePage summaries link to source
 #
@@ -385,6 +388,12 @@ class ClassHierarchyGraph (ClassHierarchySimple):
         except:
             print "Can't load the Dot formatter, using a text based class hierarchy instead"
             return ClassHierarchySimple.formatClass(self, clas)
+	if 1:
+	    super = config.classTree.superclasses(clas.name())
+	    sub = config.classTree.subclasses(clas.name())
+	    if len(super) == 0 and len(sub) == 0:
+		# Skip classes with a boring graph
+		return '', ''
         tmp = tempfile.mktemp("synopsis")
         label = config.files.nameOfScopedSpecial('inheritance', clas.name())
         dot_args = ["-o", tmp, "-f", "html", "-s", "-t", label]
