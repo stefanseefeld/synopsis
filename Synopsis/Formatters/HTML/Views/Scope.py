@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.18 2002/11/01 07:21:15 chalky Exp $
+# $Id: Scope.py,v 1.19 2003/10/07 14:06:16 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.19  2003/10/07 14:06:16  stefan
+# refer to the new site
+#
 # Revision 1.18  2002/11/01 07:21:15  chalky
 # More HTML formatting fixes eg: ampersands and stuff
 #
@@ -196,7 +199,7 @@ class ScopePages (Page.Page):
 	"""Overrides end_file to provide synopsis logo"""
 	self.write('<hr>\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
-        logo = href('http://synopsis.sourceforge.net', 'synopsis')
+        logo = href('http://synopsis.fresco.org', 'synopsis')
         self.write(div('logo', 'Generated on ' + now + ' by \n<br>\n' + logo))
 	Page.Page.end_file(self)
  
