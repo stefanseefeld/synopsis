@@ -52,7 +52,7 @@ protected:
 
   bool definition(PTree::Node *&);
   bool null_declaration(PTree::Node *&);
-  bool typedef_(PTree::Node *&);
+  bool typedef_(PTree::Typedef *&);
   bool type_specifier(PTree::Node *&, bool, PTree::Encoding&);
   bool is_type_specifier();
   bool metaclass_decl(PTree::Node *&);
