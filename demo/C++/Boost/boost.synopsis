@@ -1,0 +1,98 @@
+"""Synopsis Project File v1
+This file is auto-generated. If you must make changes by hand, please make a backup just in case."""
+class struct:
+ def __init__(self,**args):
+  for k,v in args.items(): setattr(self, k, v)
+
+class Project:
+  name = './'
+  data_dir = './'
+  actions = [
+    ['FormatAction', 327, 237, 'HTML Formatter', struct(
+      stylesheet='style.css',
+      stylesheet_file='../html.css',
+      pages=['ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'],
+      InheritanceGraph=struct(
+        min_size=5
+      ),
+      ScopePages=struct(
+        heading_formatters=['Heading', 'ClassHierarchyGraph', 'DetailCommenter'],
+        summary_formatters=['SummaryAST', 'SummaryCommenter'],
+        parts=['Heading', 'Summary', 'Inheritance', 'Detail'],
+        detail_formatters=['DetailAST', 'DetailCommenter']
+      ),
+      datadir='/usr/local/share/synopsis',
+      file_layout='Synopsis.Formatter.HTML.FileLayout.FileLayout',
+      tree_formatter='TreeFormatter.TreeFormatter',
+      comment_formatters=['summary', 'section'],
+      FilePages=struct(
+        toc_files=[],
+        file_path='./%s',
+        scope='',
+        links_path='./%s-links'
+      ),
+      FileTree=struct(
+        link_to_pages=0
+      ),
+      name='HTML',
+      output_dir='BoostPython/',
+      ModuleListing=struct()
+    )],
+    ['SourceAction', 47, 41, 'Boost Sources', [
+      ['Base', '/mnt/src/c++/boost/boost/python/', '*.hpp']
+    ]],
+    ['ParserAction', 151, 57, 'C++ Parser', struct(
+      defines=['PYTHON_INCLUDE=<python2.1/Python.h>'],
+      name='C++',
+      include_path=['/usr/include/g++-v3', '/usr/include/g++-v3/i386-linux', '/usr/lib/gcc-lib/i386-linux/3.2.1/include', '/mnt/src/c++/boost', '/usr/include/python2.1', '/usr/include/g++-v3/backward'],
+      main_file=1,
+      verbose=1
+    )],
+    ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
+    ['SourceAction', 50, 126, 'Test Source', [
+      ['Simple', '/mnt/src/doc/Synopsis/demo/C++/shapes.cc', None],
+      ['Simple', '/mnt/src/doc/Synopsis/demo/C++/employee.cc', None]
+    ]],
+    ['LinkerAction', 326, 58, 'New linker action', struct(
+      comment_processors=['dummy', 'ss'],
+      name='Linker'
+    )],
+    ['FormatAction', 229, 150, 'New format action', struct(
+      stylesheet='style.css',
+      pages=['ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'],
+      comment_formatters=['summary', 'javadoc', 'section'],
+      InheritanceGraph=struct(
+        min_size=5
+      ),
+      ScopePages=struct(
+        heading_formatters=['Heading', 'ClassHierarchyGraph', 'DetailCommenter'],
+        summary_formatters=['SummaryAST', 'SummaryCommenter'],
+        parts=['Heading', 'Summary', 'Inheritance', 'Detail'],
+        detail_formatters=['DetailAST', 'DetailCommenter']
+      ),
+      datadir='/usr/local/share/synopsis',
+      file_layout='Synopsis.Formatter.HTML.FileLayout.FileLayout',
+      tree_formatter='TreeFormatter.TreeFormatter',
+      FilePages=struct(
+        toc_files=[],
+        links_path='./%s-links',
+        file_path='./%s',
+        scope=''
+      ),
+      FileTree=struct(
+        link_to_pages=0
+      ),
+      name='HTML',
+      ModuleListing=struct()
+    )],
+    ['CacherAction', 327, 145, 'Combined Cache', 'BoostFiles', '']
+  ]
+  channels = [
+    ('Boost Sources', 'C++ Parser'),
+    ('C++ Parser', 'New format action'),
+    ('C++ Parser', 'File Cacher'),
+    ('File Cacher', 'New linker action'),
+    ('New linker action', 'Combined Cache'),
+    ('Combined Cache', 'HTML Formatter')
+  ]
+  default_formatter = 'HTML Formatter'
