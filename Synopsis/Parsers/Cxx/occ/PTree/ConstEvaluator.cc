@@ -56,8 +56,12 @@ void ConstEvaluator::visit(Identifier *node)
   {
     Encoding name(node->position(), node->length());
     const ConstName *const_ = my_symbols.lookup<ConstName>(name);
-    my_value = const_->value();
-    my_valid = true;
+    if (!const_) my_valid = false;
+    else
+    {
+      my_value = const_->value();
+      my_valid = true;
+    }
   }
   catch (const Scope::TypeError &e)
   {
