@@ -1,4 +1,4 @@
-#  $Id: Texinfo.py,v 1.4 2001/07/19 04:03:05 chalky Exp $
+#  $Id: Texinfo.py,v 1.5 2001/07/26 08:22:20 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Texinfo.py,v $
+# Revision 1.5  2001/07/26 08:22:20  chalky
+# Fixes 'bug' caused by bad template support
+#
 # Revision 1.4  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -338,8 +341,10 @@ class Formatter (Type.Visitor, AST.Visitor):
         self.__type_label = string.join(type.premod()) + " " + self.__type_label + " " + string.join(type.postmod())
             
     def visitParametrized(self, type):
-        type.template().accept(self)
-        type_label = self.__type_label + "<"
+	if type.template():
+	    type.template().accept(self)
+	    type_label = self.__type_label + "<"
+	else: type_label = "(unknown)<"
         parameters_label = []
         for p in type.parameters():
             p.accept(self)
