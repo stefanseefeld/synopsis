@@ -30,6 +30,10 @@
 #ifndef UCPP__TUNE__
 #define UCPP__TUNE__
 
+#ifdef UCPP_CONFIG
+#include "config.h"
+#else
+
 /* ====================================================================== */
 /*
  * Define LOW_MEM for low memory machines. It seems to improve performance
@@ -48,6 +52,13 @@
 
 /* ====================================================================== */
 /*
+ * Define this if your compiler does not know the strftime() function;
+ * TurboC 2.01 under Msdos does not know strftime().
+ */
+/* #define NOSTRFTIME */
+
+/* ====================================================================== */
+/*
  * Buffering: there are two levels of buffering on input and output streams:
  * the standard libc buffering (manageable with setbuf() and setvbuf())
  * and some buffering provided by ucpp itself. The ucpp buffering uses
@@ -57,7 +68,7 @@
  * NO_LIBC_BUF and NO_UCPP_BUF.
  *
  * Performance may vary, depending on the target architecture. On a
- * Linux/Alpha workstation, use both bufferings (that means, disable none
+ * Linux/Alpha workstation, use both bufferings (which means, disable none
  * of them) for maximum performance. On a Minix-86 machine, disabling
  * ucpp buffering saves some memory and does not seem to impact performance.
  */
@@ -67,9 +78,9 @@
 /*
  * On Unix stations, the system call mmap() might be used on input files.
  * This option is a subclause of ucpp internal buffering. On one station,
- * a 10% speed improvement was observe. Do not define this unless the
+ * a 10% speed improvement was observed. Do not define this unless the
  * host architecture has the following characteristics:
- *  -- Posix compliance
+ *  -- Posix / Single Unix compliance
  *  -- Text files correspond one to one with memory representation
  * If a file is not seekable or not mmapable, ucpp will revert to the
  * standard fread() solution.
@@ -80,11 +91,6 @@
  * on those extremely large files.
  */
 /* #define UCPP_MMAP */
-
-/* To protect the innocent. */
-#if defined(NO_UCPP_BUF) && defined(UCPP_MMAP)
-#undef UCPP_MMAP
-#endif
 
 /* ====================================================================== */
 /*
@@ -113,7 +119,7 @@
 #define PRAGMA_DUMP
 
 /*
- * According to may interpretation of the C99 standard, _Pragma() are
+ * According to my interpretation of the C99 standard, _Pragma() are
  * evaluated wherever macro expansion could take place. However, Neil Booth,
  * whose mother language is English (contrary to me) and who is well aware
  * of the C99 standard (and especially the C preprocessor) told me that
@@ -140,9 +146,6 @@
  * For Linux, get gcc includes too, or you will miss things like stddef.h.
  * The exact path varies much, depending on the distribution.
  */
-/*#define STD_INCLUDE_PATH	"/usr/local/include", "/usr/include", \
-	"/usr/lib/gcc-lib/alphaev56-unknown-linux-gnu/2.95.2/include"
-*/
 #define STD_INCLUDE_PATH	"/usr/include"
 
 /* ====================================================================== */
@@ -158,9 +161,9 @@
  */
 /*
  * uncomment these two lines if you want evaluation with a "long long" type
+ */
 #define NATIVE_UINTMAX	unsigned long long
 #define NATIVE_INTMAX	long long
- */
 /*
  * uncomment the following if you want evaluation with an emulated type
  * built with two "unsigned long".
@@ -187,10 +190,6 @@
  *
  * If you want no standard assertion, define STD_ASSERT to 0.
  */
-/*
-#define STD_ASSERT	"cpu(alpha)", "machine(alpha)", "system(unix)", \
-			"system(linux)"
-*/
 #define STD_ASSERT	"cpu(i386)", "machine(i386)", "system(unix)", \
 			"system(posix)"
 
@@ -258,7 +257,10 @@
  * it might slow down a bit ucpp, and with this option, comments will be
  * kept inside #pragma directives).
  */
-#define SEMPER_FIDELIS
+/* #define SEMPER_FIDELIS */
+
+#endif
+/* End of options overridable by UCPP_CONFIG and config.h */
 
 /* ====================================================================== */
 /*
@@ -281,6 +283,12 @@
 #define FNAME_MEMG		32
 
 /* ====================================================================== */
+
+/* To protect the innocent. */
+#if defined(NO_UCPP_BUF) && defined(UCPP_MMAP)
+#undef UCPP_MMAP
+#endif
+
 /*
  * C90 does not know about the "inline" keyword, but C99 does know,
  * and some C90 compilers know it as an extension. This part detects

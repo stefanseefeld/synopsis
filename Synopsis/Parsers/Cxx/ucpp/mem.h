@@ -33,19 +33,41 @@
 #include <stdlib.h>
 
 void die(void);
-void *incmem(void *, size_t, size_t);
-char *sdup(char *);
 
-#if defined AUDIT || defined MEM_CHECK
+#if defined AUDIT || defined MEM_CHECK || defined MEM_DEBUG
 void *getmem(size_t);
 #else
 #define getmem		malloc
 #endif
 
-#ifdef AUDIT
+#if defined MEM_DEBUG
+void *getmem_debug(size_t, char *, int);
+#undef getmem
+#define getmem(x)	getmem_debug(x, __FILE__, __LINE__)
+#endif
+
+#if defined AUDIT || defined MEM_DEBUG
 void freemem(void *);
 #else
 #define freemem		free
+#endif
+
+#if defined MEM_DEBUG
+void freemem_debug(void *, char *, int);
+#undef freemem
+#define freemem(x)	freemem_debug(x, __FILE__, __LINE__)
+#endif
+
+void *incmem(void *, size_t, size_t);
+char *sdup(char *);
+
+#if defined MEM_DEBUG
+void *incmem_debug(void *, size_t, size_t, char *, int);
+#undef incmem
+#define incmem(x, y, z)	incmem_debug(x, y, z, __FILE__, __LINE__)
+void report_leaks(void);
+char *sdup_debug(char *, char *, int);
+#define sdup(x)		sdup_debug(x, __FILE__, __LINE__)
 #endif
 
 #ifdef AUDIT
@@ -60,11 +82,11 @@ void *mmvwo(void *, void *, size_t);
  * this macro adds the object obj at the end of the array list, handling
  * memory allocation when needed; ptr contains the number of elements in
  * the array, and memg is the granularity of memory allocations (a power
- * of 2 is recommanded, for optimization reasons)
+ * of 2 is recommanded, for optimization reasons).
  *
- * list and ptr may be updated, and thus need to be lvalues
+ * list and ptr may be updated, and thus need to be lvalues.
  */
-#define aol(list,ptr,obj,memg) do { \
+#define aol(list, ptr, obj, memg)	do { \
 		if (((ptr) % (memg)) == 0) { \
 			if ((ptr) != 0) { \
 				(list) = incmem((list), (ptr) * sizeof(obj), \
@@ -80,7 +102,7 @@ void *mmvwo(void *, void *, size_t);
  * bol() does the same as aol(), but adds the new item at the beginning
  * of the list; beware, the computational cost is greater.
  */
-#define bol(list,ptr,obj,memg) do { \
+#define bol(list, ptr, obj, memg)	do { \
 		if (((ptr) % (memg)) == 0) { \
 			if ((ptr) != 0) { \
 				(list) = incmem((list), (ptr) * sizeof(obj), \
@@ -99,7 +121,7 @@ void *mmvwo(void *, void *, size_t);
  * mbol() does the same as bol(), but adds the new item at the given
  * emplacement; bol() is equivalent to mbol with 0 as last argument.
  */
-#define mbol(list,ptr,obj,memg,n) do { \
+#define mbol(list, ptr, obj, memg, n)	do { \
 		if (((ptr) % (memg)) == 0) { \
 			if ((ptr) != 0) { \
 				(list) = incmem((list), (ptr) * sizeof(obj), \
@@ -121,7 +143,7 @@ void *mmvwo(void *, void *, size_t);
  * lvalues, and so must be llng
  */
 
-#define wan(list,ptr,obj,llng) do { \
+#define wan(list, ptr, obj, llng)	do { \
 		if ((ptr) == (llng)) { \
 			(llng) += (llng); \
 			(list) = incmem((list), (ptr) * sizeof(obj), \

@@ -91,7 +91,6 @@ enum {
 	CIRC,		/*	^	*/
 	ASCIRC,		/*	^=	*/
 	LNOT,		/*	!	*/
-	ASNOT,		/*	~=	*/
 	LBRA,		/*	{	*/
 	RBRA,		/*	}	*/
 	LBRK,		/*	[	*/
@@ -124,6 +123,7 @@ enum {
 	LAST_MEANINGFUL_TOKEN,		/* reserved words will go there */
 
 	MACROARG,	/* special token for representing macro arguments */
+	MACROEND,	/* special token for representing end of macro */
 
 	UPLUS = CPPERR,	/* unary + */
 	UMINUS		/* unary - */
@@ -180,7 +180,7 @@ struct lexer_state {
 	/* token control */
 	struct token *ctok;
 	struct token *save_ctok;
-	int tknl;
+	size_t tknl;
 	int ltwnl;
 	int pending_token;
 #ifdef INMACRO_FLAG
@@ -266,11 +266,12 @@ void init_include_path(char *[]);
 void init_lexer_state(struct lexer_state *);
 void init_lexer_mode(struct lexer_state *);
 void free_lexer_state(struct lexer_state *);
+void wipeout(void);
 int lex(struct lexer_state *);
 int check_cpp_errors(struct lexer_state *);
 void add_incpath(char *);
 void init_tables(int);
-void enter_file(struct lexer_state *, unsigned long);
+int enter_file(struct lexer_state *, unsigned long);
 int cpp(struct lexer_state *);
 
 #ifdef UCPP_MMAP

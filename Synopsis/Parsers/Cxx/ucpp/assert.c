@@ -34,7 +34,7 @@
 #include <time.h>
 #include "ucppi.h"
 #include "mem.h"
-#include "hashtable.h"
+#include "hash.h"
 #include "tune.h"
 
 /*
@@ -52,19 +52,24 @@ static struct assert *new_assertion(void)
 	return a;
 }
 
+static void del_token_fifo(struct token_fifo *tf)
+{
+	int i;
+
+	for (i = 0; i < tf->nt; i ++)
+		if (S_TOKEN(tf->t[i].type)) freemem(tf->t[i].name);
+	if (tf->nt) freemem(tf->t);
+}
+
 static void del_assertion(void *va)
 {
 	struct assert *a = va;
-	size_t i, j;
+	size_t i;
 
 	if (a->name) freemem(a->name);
-	for (i = 0; i < a->nbval; i ++) {
-		for (j = 0; j < a->val[i].nt; j ++)
-			if (S_TOKEN(a->val[i].t[j].type))
-				freemem(a->val[i].t[j].name);
-		if (a->val[i].nt) freemem(a->val[i].t);
-	}
+	for (i = 0; i < a->nbval; i ++) del_token_fifo(a->val + i);
 	if (a->nbval) freemem(a->val);
+	freemem(a);
 }
 
 /*
@@ -204,19 +209,27 @@ handle_assert_next3:
 		print_token_fifo(atl);
 		fputs(")\n", emit_output);
 	}
+	freemem(atl);
 	return 0;
 
 handle_assert_trunc:
 	error(l, "unfinished #assert");
 handle_assert_error:
-	if (atl && atl->nt) {
-		for (i = 0; i < atl->nt; i ++)
-			if (S_TOKEN(atl->t[i].type)) freemem(atl->t[i].name);
-		freemem(atl->t);
+	if (atl) {
+		del_token_fifo(atl);
+		freemem(atl);
+	}
+	if (ina) {
+		freemem(a->name);
+		freemem(a);
 	}
 	return ret;
 handle_assert_warp_ign:
 	while (!next_token(ls) && ls->ctok->type != NEWLINE);
+	if (ina) {
+		freemem(a->name);
+		freemem(a);
+	}
 	return ret;
 }
 
@@ -227,13 +240,14 @@ int handle_unassert(struct lexer_state *ls)
 {
 	int ltww;
 	struct token t;
-	struct token_fifo *atl = 0;
+	struct token_fifo atl;
 	struct assert *a;
 	int ret = -1;
 	long l = ls->line;
 	int nnp;
 	size_t i;
 
+	atl.art = atl.nt = 0;
 	while (!next_token(ls)) {
 		if (ls->ctok->type == NEWLINE) break;
 		if (ttMWS(ls->ctok->type)) continue;
@@ -264,8 +278,6 @@ handle_unassert_next:
 	return 0;
 
 handle_unassert_next2:
-	atl = getmem(sizeof(struct token_fifo));
-	atl->art = atl->nt = 0;
 	for (nnp = 1, ltww = 1; nnp && !next_token(ls);) {
 		if (ls->ctok->type == NEWLINE) break;
 		if (ltww && ttMWS(ls->ctok->type)) continue;
@@ -276,7 +288,7 @@ handle_unassert_next2:
 		}
 		t.type = ls->ctok->type;
 		if (S_TOKEN(t.type)) t.name = sdup(ls->ctok->name);
-		aol(atl->t, atl->nt, t, TOKEN_LIST_MEMG);
+		aol(atl.t, atl.nt, t, TOKEN_LIST_MEMG);
 	}
 	goto handle_unassert_trunc;
 
@@ -286,23 +298,23 @@ handle_unassert_next3:
 			warning(l, "trailing garbage in #unassert");
 		}
 	}
-	if (atl->nt && ttMWS(atl->t[atl->nt - 1].type) && (-- atl->nt) == 0)
-		freemem(atl->t);
-	if (atl->nt == 0) {
+	if (atl.nt && ttMWS(atl.t[atl.nt - 1].type) && (-- atl.nt) == 0)
+		freemem(atl.t);
+	if (atl.nt == 0) {
 		error(l, "void assertion in #unassert");
-		freemem(atl);
 		return ret;
 	}
-	for (i = 0; i < a->nbval && cmp_token_list(atl, a->val + i); i ++);
+	for (i = 0; i < a->nbval && cmp_token_list(&atl, a->val + i); i ++);
 	if (i != a->nbval) {
 		/* we have it, undefine it */
+		del_token_fifo(a->val + i);
 		if (i < (a->nbval - 1))
 			mmvwo(a->val + i, a->val + i + 1, (a->nbval - i - 1)
 				* sizeof(struct token_fifo));
-		a->nbval --;
+		if ((-- a->nbval) == 0) freemem(a->val);
 		if (emit_assertions) {
 			fprintf(emit_output, "#unassert %s(", a->name);
-			print_token_fifo(atl);
+			print_token_fifo(&atl);
 			fputs(")\n", emit_output);
 		}
 	}
@@ -312,11 +324,7 @@ handle_unassert_next3:
 handle_unassert_trunc:
 	error(l, "unfinished #unassert");
 handle_unassert_finish:
-	if (atl && atl->nt) {
-		for (i = 0; i < atl->nt; i ++)
-			if (S_TOKEN(atl->t[i].type)) freemem(atl->t[i].name);
-		freemem(atl->t);
-	}
+	if (atl.nt) del_token_fifo(&atl);
 	return ret;
 handle_unassert_warp:
 	while (!next_token(ls) && ls->ctok->type != NEWLINE);
@@ -372,11 +380,20 @@ int destroy_assertion(char *aval)
 }
 
 /*
+ * erase the assertion table
+ */
+void wipe_assertions(void)
+{
+	if (assertions) killHT(assertions);
+	assertions = 0;
+}
+
+/*
  * initialize the assertion table
  */
 void init_assertions(void)
 {
-	if (assertions) killHT(assertions);
+	wipe_assertions();
 	assertions = newHT(128, cmp_struct, hash_struct, del_assertion);
 }
 
