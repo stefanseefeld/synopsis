@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.10 2002/10/29 12:43:56 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.11 2002/11/01 03:39:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.11  2002/11/01 03:39:21  chalky
+# Cleaning up HTML after using 'htmltidy'
+#
 # Revision 1.10  2002/10/29 12:43:56  chalky
 # Added flexible TOC support to link to things other than ScopePages
 #
@@ -120,7 +123,7 @@ class ModuleIndexer(Page.Page):
 	    'window.parent.frames["index"].location=index;\n'\
 	    'window.parent.frames["main"].location=main;\n'\
 	    'return false;}\n-->'
-	self.write(entity('script', load_script, language='Javascript'))
+	self.write(entity('script', load_script, type='Javascript'))
 
 	# Loop throught all the types of children
 	for section in config.sorter.sections():

@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.4 2002/10/29 15:00:16 chalky Exp $
+# $Id: XRef.py,v 1.5 2002/11/01 03:39:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.5  2002/11/01 03:39:21  chalky
+# Cleaning up HTML after using 'htmltidy'
+#
 # Revision 1.4  2002/10/29 15:00:16  chalky
 # Don't show fully scoped name for child declarations
 #
@@ -148,7 +151,7 @@ class XRefPages (Page.Page):
 	if not target_data: return
 
 	jname = string.join(name, '::')
-	self.write('<a name="%s">'%Util.quote(jname))
+	self.write(entity('a', '', name=Util.quote(jname)))
 	desc = ''
 	decl = None
 	if config.types.has_key(name):

@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.8 2002/07/04 06:43:18 chalky Exp $
+# $Id: NameIndex.py,v 1.9 2002/11/01 03:39:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.9  2002/11/01 03:39:21  chalky
+# Cleaning up HTML after using 'htmltidy'
+#
 # Revision 1.8  2002/07/04 06:43:18  chalky
 # Improved support for absolute references - pages known their full path.
 #
@@ -86,9 +89,9 @@ class NameIndex (Page.Page):
 	linker = lambda key: '<a href="#%s">%s</a>'%(ord(key),key)
 	self.write(div('nameindex-index', string.join(map(linker, keys))))
 	for key in keys:
-	    self.write('<a name="%s">'%ord(key))
+	    self.write('<a name="%s">'%ord(key)+'</a>')
 	    self.write(entity('h2', key))
-	    self.write('<table border=0 width="100%">')
+	    self.write('<table border=0 width="100%" summary="table of names">')
 	    self.write('<col width="*">'*columns)
 	    self.write('<tr>')
 	    items = dict[key]

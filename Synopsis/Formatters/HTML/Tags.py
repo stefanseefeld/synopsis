@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.7 2002/07/11 09:28:40 chalky Exp $
+# $Id: Tags.py,v 1.8 2002/11/01 03:39:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.8  2002/11/01 03:39:21  chalky
+# Cleaning up HTML after using 'htmltidy'
+#
 # Revision 1.7  2002/07/11 09:28:40  chalky
 # Missed one
 #
@@ -60,9 +63,9 @@ def rel(frm, to):
         else: break
     if frm: to = ['..'] * (len(frm) - 1) + to
     return string.join(to,'/')
-def href(ref, label, **keys):
+def href(_ref, _label, **keys):
     "Return a href to 'ref' with name 'label' and attributes"
-    return '<a href="%s"%s>%s</a>'%(ref,k2a(keys),label)
+    return '<a href="%s"%s>%s</a>'%(_ref,k2a(keys),_label)
 def name(ref, label):
     "Return a name anchor with given reference and label"
     return '<a class="name" name="%s">%s</a>'%(ref,label)
@@ -72,12 +75,12 @@ def span(clas, body):
 def div(clas, body):
     "Wrap the body in a div of the given class"
     return '<div class="%s">%s</div>'%(clas,body)
-def entity(type, body, **keys):
+def entity(_type, body, **keys):
     "Wrap the body in a tag of given type and attributes"
-    return '<%s%s>%s</%s>'%(type,k2a(keys),body,type)
-def solotag(type, **keys):
+    return '<%s%s>%s</%s>'%(_type,k2a(keys),body,_type)
+def solotag(_type, **keys):
     "Create a solo tag (no close tag) of given type and attributes"
-    return '<%s%s>'%(type,k2a(keys))
+    return '<%s%s>'%(_type,k2a(keys))
 def desc(text):
     "Create a description div for the given text"
     return text and div("desc", text) or ''
@@ -85,5 +88,21 @@ def anglebrackets(text):
     """Replace angle brackets with HTML codes"""
     return re.sub('<','&lt;',re.sub('>','&gt;',text))
 
+
+def replace_spaces(text):
+    """Replaces spaces in the given string with &nbsp; sequences. Does NOT
+    replace spaces inside tags"""
+    # original "hello <there stuff> fool <thing me bob>yo<a>hi"
+    tags = string.split(text, '<')
+    # now ['hello ', 'there stuff> fool ', 'thing me bob>yo', 'a>hi']
+    tags = map(lambda x: string.split(x, '>'), tags)
+    # now [['hello '], ['there stuff', ' fool '], ['thing me bob', 'yo'], ['a', 'hi']]
+    tags = reduce(lambda x,y: x+y, tags)
+    # now ['hello ', 'there stuff', ' fool ', 'thing me bob', 'yo', 'a', 'hi']
+    for i in range(0,len(tags),2):
+	tags[i] = tags[i].replace(' ', '&nbsp;')
+    for i in range(1,len(tags),2):
+	tags[i] = '<' + tags[i] + '>'
+    return string.join(tags, '')
 
 
