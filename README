@@ -12,6 +12,24 @@ disk. Moreover, multiple files may be loaded at once to allow progressive
 compilation using 'make'. Individual formatters take the AST from memory and
 create suitable output.
 
+** Prerequisites
+
+To get graphs in the generated output, you will need to install GraphViz which
+includes the 'dot' tool:
+
+    http://www.graphviz.org/
+
+GraphViz needs the FreeType library:
+
+    http://www.freetype.org/
+
+** Supported platforms
+
+Linux - This is the main development platform, and so is pretty well
+supported!
+
+Cygwin - Supported, but may be out of sync during development. You will
+probably need to specify --disable-gc to configure.
 
 ** Building
 
@@ -109,9 +127,11 @@ Synopsis is hosted at Sourceforge:
 
 Synopsis is developed by:
  - Stefan Seefeld (seefeld@sympatico.ca)
- - Stephen Davies (chalky@null.net)
+ - Stephen Davies (chalky@ieee.org)
 
 Synopsis is released under the GPL.
 
 The C++ parser uses parts of OpenC++ by Shigeru Chiba, who owns copyright on
 his source code. The relevant parts of OpenC++ are included for convenience.
+Some of this code has been modified to fix bugs and/or implement features
+needed for Synopsis.
