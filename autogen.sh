@@ -9,6 +9,7 @@ conf()
   )
 }
 
+conf Cxx-API
 conf Synopsis/Parsers/Cpp
 conf Synopsis/Parsers/C
 conf Synopsis/Parsers/Cxx

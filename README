@@ -4,7 +4,7 @@ Installation guide
 Building
 --------
 
-* If the sources are checked out from cvs, run './autogen.sh' to generate
+* If the sources are checked out from svn, run './autogen.sh' to generate
   the configure scripts. This step requires autoconf to be installed.
 
 * Run 'python setup.py build' to compile everything.
@@ -17,6 +17,11 @@ Building
   source directory, you may consider 'python setup.py build_ext --inplace'
   as an alternative, which will only compile the C/C++ extensions and put
   them right into the source tree.
+
+* To build for windows native, just use the appropriate python interpreter
+  to run the build script. You will need a mingw-compatible version of the
+  python library (libpythonxx.a), which you have to build first. Instructions
+  for this are at http://www.python.org/doc/current/inst/index.html.
 
 * If you want to use an external garbage collector for the Cxx parser
   instead of the built in one, run 
