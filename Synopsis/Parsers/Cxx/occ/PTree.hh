@@ -11,6 +11,7 @@
 #include <PTree/operations.hh>
 #include <PTree/Atoms.hh>
 #include <PTree/Lists.hh>
+#include <PTree/TypeVisitor.hh>
 #include <PTree/generation.hh>
 
 void MopErrorMessage(const char* method_name, const char* msg);

@@ -60,7 +60,6 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   This(Token& t) : Reserved(t) {}
-  int What();
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
 };
@@ -72,8 +71,6 @@ public:
   ReservedT(const Token &tk) : Reserved(tk) {}
   ReservedT(const char *ptr, size_t length) : Reserved(ptr, length) {}
   virtual void accept(Visitor *visitor) { visitor->visit(static_cast<T*>(this));}
-
-  int What() { return t;}
 };
 
 struct AtomAUTO : ReservedT<AtomAUTO, Token::AUTO> 

@@ -45,11 +45,6 @@ void Identifier::Typeof(Walker* w, TypeInfo& t)
   w->TypeofVariable(this, t);
 }
 
-int This::What()
-{
-  return Token::THIS;
-}
-
 Node *This::Translate(Walker* w)
 {
   return w->TranslateThis(this);

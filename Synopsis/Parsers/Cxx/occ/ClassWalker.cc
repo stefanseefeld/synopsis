@@ -224,7 +224,7 @@ PTree::Array* ClassWalker::RecordMembers(PTree::Node *class_def, PTree::Node *ba
     PTree::Node *rest = PTree::second(PTree::nth(class_def, 3));
     while(rest != 0){
 	PTree::Node *mem = rest->car();
-	switch(mem->What()){
+	switch(PTree::type_of(mem)){
 	case Token::ntTypedef :
 	    tspec = PTree::second(mem);
 	    tspec2 = TranslateTypespecifier(tspec);
@@ -270,12 +270,12 @@ void ClassWalker::RecordMemberDeclaration(PTree::Node *mem,
   tspec = PTree::second(mem);
     tspec2 = TranslateTypespecifier(tspec);
     decls = PTree::third(mem);
-    if(decls->IsA(Token::ntDeclarator))	// if it is a function
+    if(PTree::is_a(decls, Token::ntDeclarator))	// if it is a function
 	env->RecordDeclarator(decls);
     else if(!decls->is_atom())		// not a null declaration.
 	while(decls != 0){
 	    PTree::Node *d = decls->car();
-	    if(d->IsA(Token::ntDeclarator))
+	    if(PTree::is_a(d, Token::ntDeclarator))
 		env->RecordDeclarator(d);
 
 	    decls = decls->cdr();
@@ -314,7 +314,7 @@ PTree::Node *ClassWalker::ConstructMember(void* ptr)
     PTree::Node *def = m->def;
     PTree::Node *def2;
 
-    if(PTree::third(def)->IsA(Token::ntDeclarator)){
+    if(PTree::is_a(PTree::third(def), Token::ntDeclarator)){
 	// function implementation
 	if(m->body == 0){
 	    NameScope old_env;
@@ -366,7 +366,7 @@ PTree::Node *ClassWalker::TranslateStorageSpecifiers2(PTree::Node *rest)
 	PTree::Node *h = rest->car();
 	PTree::Node *t = rest->cdr();
 	PTree::Node *t2 = TranslateStorageSpecifiers2(t);
-	if(h->IsA(Token::ntUserdefKeyword))
+	if(PTree::is_a(h, Token::ntUserdefKeyword))
 	    return t2;
 	else if(t == t2)
 	    return rest;
@@ -686,7 +686,7 @@ PTree::Node *ClassWalker::TranslateAssign(PTree::Node *exp)
 
     left = PTree::first(exp);
     right = PTree::third(exp);
-    if(left->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
+    if(PTree::is_a(left, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	PTree::Node *object = PTree::first(left);
 	PTree::Node *op = PTree::second(left);
 	PTree::Node *member = PTree::third(left);
@@ -776,7 +776,7 @@ PTree::Node *ClassWalker::TranslateUnary(PTree::Node *exp)
 
     PTree::Node *unaryop = exp->car();
     PTree::Node *right = PTree::second(exp);
-    if(right->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
+    if(PTree::is_a(right, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	PTree::Node *object = PTree::first(right);
 	PTree::Node *op = PTree::second(right);
 	Typeof(object, type);
@@ -849,7 +849,7 @@ PTree::Node *ClassWalker::TranslatePostfix(PTree::Node *exp)
 
     PTree::Node *left = exp->car();
     PTree::Node *postop = PTree::second(exp);
-    if(left->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
+    if(PTree::is_a(left, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	PTree::Node *object = PTree::first(left);
 	PTree::Node *op = PTree::second(left);
 	Typeof(object, type);
@@ -895,7 +895,7 @@ PTree::Node *ClassWalker::TranslateFuncall(PTree::Node *exp)
 
     fun = exp->car();
     arglist = exp->cdr();
-    if(fun->IsA(Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
+    if(PTree::is_a(fun, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
 	PTree::Node *object = PTree::first(fun);
 	PTree::Node *op = PTree::second(fun);
 	PTree::Node *member = PTree::third(fun);
@@ -1025,7 +1025,7 @@ PTree::Node *ClassWalker::TranslateUserStatement(PTree::Node *exp)
     Class* metaobject = GetClassMetaobject(type);
     if(metaobject != 0){
 	NewScope();
-	if(keyword->IsA(Token::UserKeyword2))		// closure style
+	if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
 	    TranslateArgDeclList2(true, env, false, false, 0, PTree::second(rest));
 
 	PTree::Node *exp2 = metaobject->TranslateUserStatement(env, object, op,
@@ -1051,7 +1051,7 @@ PTree::Node *ClassWalker::TranslateStaticUserStatement(PTree::Node *exp)
 	    Class* metaobject = GetClassMetaobject(type);
 	    if(metaobject != 0){
 		NewScope();
-		if(keyword->IsA(Token::UserKeyword2))		// closure style
+		if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
 		    TranslateArgDeclList2(true, env, false, false, 0,
 					  PTree::second(rest));
 		PTree::Node *exp2 = metaobject->TranslateStaticUserStatement(env,

@@ -295,7 +295,7 @@ void Environment::RecordTypedefName(PTree::Node *decls)
   while(decls)
   {
     PTree::Node *d = decls->car();
-    if(d->What() == Token::ntDeclarator)
+    if(PTree::type_of(d) == Token::ntDeclarator)
     {
       const char *name = d->encoded_name();
       const char *type = d->encoded_type();
@@ -367,7 +367,7 @@ Environment* Environment::RecordTemplateFunction(PTree::Node *def, PTree::Node *
 {
   int n;
   PTree::Node *decl = PTree::third(body);
-  if(decl->IsA(Token::ntDeclarator))
+  if(PTree::is_a(decl, Token::ntDeclarator))
   {
     const char* name = decl->encoded_name();
     if(name)
@@ -384,7 +384,7 @@ Environment* Environment::RecordTemplateFunction(PTree::Node *def, PTree::Node *
 
 Environment* Environment::RecordDeclarator(PTree::Node *decl)
 {
-  if(decl->What() == Token::ntDeclarator)
+  if(PTree::type_of(decl) == Token::ntDeclarator)
   {
     const char* name = decl->encoded_name();
     const char* type = decl->encoded_type();
@@ -404,7 +404,7 @@ Environment* Environment::RecordDeclarator(PTree::Node *decl)
 
 Environment* Environment::DontRecordDeclarator(PTree::Node *decl)
 {
-  if(decl->What() == Token::ntDeclarator)
+  if(PTree::type_of(decl) == Token::ntDeclarator)
   {
     const char* name = decl->encoded_name();
     if(name)
