@@ -1,4 +1,4 @@
-#include <Synopsis/Dict.hh>
+#include <Synopsis/Object.hh>
 #include "Guard.hh"
 #include <string>
 #include <iostream>

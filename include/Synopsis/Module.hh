@@ -1,4 +1,4 @@
-// $Id: Module.hh,v 1.2 2004/01/10 22:50:34 stefan Exp $
+// $Id: Module.hh,v 1.3 2004/01/24 04:44:07 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -10,8 +10,6 @@
 #define _Synopsis_Module_hh
 
 #include <Synopsis/Object.hh>
-#include <Synopsis/Dict.hh>
-#include <Synopsis/Callable.hh>
 
 namespace Synopsis
 {
@@ -26,7 +24,7 @@ public:
 };
 
 inline Module::Module(const std::string &name)
-  : Object(PyImport_AddModule(const_cast<char *>(name.c_str())))
+  : Object(PyImport_ImportModule(const_cast<char *>(name.c_str())))
 {
   Py_INCREF(my_impl);
 }

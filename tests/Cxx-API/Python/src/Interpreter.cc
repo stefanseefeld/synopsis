@@ -1,6 +1,5 @@
 #include <iostream>
 #include <Synopsis/Interpreter.hh>
-#include <Synopsis/Callable.hh>
 #include <Synopsis/Module.hh>
 #include <string>
 #include <cstdio>
@@ -52,16 +51,16 @@ void test3()
   Dict local;
   Object retn = interp.run_file("Command.py", Interpreter::FILE,
                                 global, local);
-  Callable type = local.get("Command");
+  Object type = local.get("Command");
   Tuple args("first", "second", "third");
   Dict kwds;
   kwds.set("input", "foo.h");
   kwds.set("output", "foo.i");
-  Object o = type.call();
-  o = type.call(args);
-  o = type.call(args, kwds);
-  Callable method = o.attr("execute");
-  method.call();
+  retn = type();
+  retn = type(args);
+  retn = type(args, kwds);
+  Object method = retn.attr("execute");
+  method();
 }
 
 int main(int, char **)
