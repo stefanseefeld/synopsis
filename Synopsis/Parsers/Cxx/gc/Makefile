@@ -331,6 +331,8 @@ threadlibs: $(srcdir)/threadlibs.c $(srcdir)/gcconfig.h Makefile
 if_not_there: $(srcdir)/if_not_there.c
 	$(CC) $(CFLAGS) -o if_not_there $(srcdir)/if_not_there.c
 
+distclean: clean
+
 clean: 
 	rm -f gc.a *.o gctest gctest_dyn_link test_cpp \
 	      setjmp_test  mon.out gmon.out a.out core if_not_there if_mach \
