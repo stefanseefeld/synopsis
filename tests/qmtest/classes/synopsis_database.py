@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# $Id: synopsis_database.py,v 1.4 2004/01/12 20:31:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -11,6 +10,7 @@ from qm.fields import TextField
 from qm.test import database
 from qm.test.database import TestDescriptor
 from qm.test.database import NoSuchTestError, NoSuchSuiteError
+from explicit_suite import ExplicitSuite
 from qm.test.suite import Suite
 
 import os, string, dircache
@@ -33,50 +33,50 @@ class Database(database.Database):
          path = os.path.join(*string.split(id, '.'))
 
       # make sure this is a suite
-      if not (os.path.basename(path) != 'CVS'
+      if not (os.path.basename(path) != '.svn'
               and os.path.isdir(path)):
          raise NoSuchSuiteError, id
       
+      # by default every subdirectory that is not named '.svn' is a suite
+      def is_suite(x): return x != '.svn' and os.path.isdir(os.path.join(path, x))
+      # filter out '.svn' from directory listings
+      def listdir(path): return filter(lambda x: x != '.svn', dircache.listdir(path))
+
+      test_ids = []
+      suite_ids = []
+
       if id.startswith('Processors.Linker'):
-         # tests in the Linker suite are treated differently because
-         # input files in 'input' are processed together in a single test
-         child_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
-                            dircache.listdir(path))
-         # if there is a subdir 'input', we consider this a test
-         # else it's a suite
-         test_ids = filter(lambda x: os.path.isdir(os.path.join(path, x, 'input')),
-                           dircache.listdir(path))
-         suite_ids = []
+         # if 'synopsis.py' exists in the subdir, it's a test
+         def is_test(x): return x != '.svn' and os.path.isfile(os.path.join(path, x, 'synopsis.py'))
+         test_ids = filter(is_test, listdir(path))
+         # every other subdir is a suite
+         suite_ids = filter(lambda x: is_suite(x) and not x in test_ids, listdir(path))
 
       elif id.startswith('Cxx-API'):
-         test_ids = []
-         suite_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
-                            dircache.listdir(path))
-         if 'src' in suite_ids:
+         # if 'src' exists, it contains the tests
+         if os.path.isdir(os.path.join(path, 'src')):
             test_ids = map(lambda x: os.path.splitext(x)[0],
-                           filter(lambda x: x.endswith('.cc'),   
-                                  dircache.listdir(os.path.join(path, 'src'))))
-            suite_ids.remove('src')
-            if 'expected' in suite_ids: suite_ids.remove('expected')
+                           filter(lambda x: x.endswith('.cc'), listdir(os.path.join(path, 'src'))))
+         else:
+            suite_ids = filter(is_suite, listdir(path))
 
       else:
-         test_ids = []
-         suite_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
-                            dircache.listdir(path))
-         if 'input' in suite_ids:
-            test_ids = map(lambda x: os.path.splitext(x)[0],
-                           dircache.listdir(os.path.join(path, 'input')))
-            suite_ids.remove('input')
-            if 'expected' in suite_ids: suite_ids.remove('expected')
+         if os.path.isfile(os.path.join(path, 'synopsis.py')):
+            test_ids = map(lambda x: os.path.splitext(x)[0], listdir(os.path.join(path, 'input')))
+         else:
+            suite_ids = filter(is_suite, listdir(path))
 
-      if 'CVS' in test_ids: test_ids.remove('CVS')
-      if 'CVS' in suite_ids: suite_ids.remove('CVS')
+      if '.svn' in test_ids: test_ids.remove('.svn')
+      if '.svn' in suite_ids: suite_ids.remove('.svn')
       if 'autom4te.cache' in suite_ids: suite_ids.remove('autom4te.cache')
 
       if id:
          test_ids = map(lambda x: string.join([id, x], '.'), test_ids)
          suite_ids = map(lambda x: string.join([id, x], '.'), suite_ids)
-      return Suite(self, id, 0, test_ids, suite_ids)
+      arguments = {'test_ids' : test_ids, 'suite_ids' : suite_ids}
+      return ExplicitSuite(arguments,
+                           qmtest_database = self,
+                           qmtest_id = id)
         
    def GetTest(self, id):
       """create a test for the given id."""
