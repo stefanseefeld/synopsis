@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.26 2001/05/25 13:45:49 stefan Exp $
+# $Id: omni.py,v 1.27 2001/06/13 01:55:11 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.27  2001/06/13 01:55:11  stefan
+# modify the realName member to contain only the unscoped name. This has the nice effect that pruning the scope will affect the name and realname at once, since the realName() method computes the scoped name tuple on-the-fly
+#
 # Revision 1.26  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -383,7 +386,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
 	for id in node.identifiers():
 	    name = scopename + [id]
 	    attr = AST.Operation(strip(node.file()), node.line(), "IDL", "attribute",
-				 pre, self.getType(type), name, list(name))
+				 pre, self.getType(type), name, name[-1])
 	    attr.comments().extend(comments)
 	    self.addDeclaration(attr)
 

@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.13 2001/06/08 21:04:38 stefan Exp $
+# $Id: AST.py,v 1.14 2001/06/13 01:55:11 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.14  2001/06/13 01:55:11  stefan
+# modify the realName member to contain only the unscoped name. This has the nice effect that pruning the scope will affect the name and realname at once, since the realName() method computes the scoped name tuple on-the-fly
+#
 # Revision 1.13  2001/06/08 21:04:38  stefan
 # more work on grouping
 #
@@ -126,6 +129,9 @@ class Declaration:
     def name(self):
 	"""The scoped tuple name of this declaration"""
 	return self.__name
+    def set_name(self, newname):
+	"""Name modifier, taking a list"""
+	self.__name = tuple(newname)
     def comments(self):
 	"""A list of Comment objects"""
 	return self.__comments
@@ -373,7 +379,9 @@ class Function (Declaration):
 	return self.__returnType
     def realname(self):
 	"""The unmangled scoped name tuple of this function"""
-	return self.__realname
+        name = list(self.name())
+        name[-1] = self.__realname
+	return tuple(name)
     def parameters(self):
 	"""The list of Parameter objects of this function"""
 	return self.__parameters

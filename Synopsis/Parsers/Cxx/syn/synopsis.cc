@@ -527,12 +527,10 @@ PyObject *Synopsis::Parameter(AST::Parameter* decl)
 PyObject *Synopsis::Function(AST::Function* decl)
 {
     Trace trace("Synopsis::addFunction");
-    AST::Name realname = decl->name();
-    realname.back() = decl->realname();
     PyObject *func = PyObject_CallMethod(m_ast, "Function", "OiOOOOOO", 
 	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
-	m->Tuple(decl->name()), m->Tuple(realname)
+	m->Tuple(decl->name()), m->py(decl->realname())
     );
     PyObject* params = PyObject_CallMethod(func, "parameters", NULL);
     PyObject_CallMethod(params, "extend", "O", m->List(decl->parameters()));
@@ -543,12 +541,10 @@ PyObject *Synopsis::Function(AST::Function* decl)
 PyObject *Synopsis::Operation(AST::Operation* decl)
 {
     Trace trace("Synopsis::addOperation");
-    AST::Name realname = decl->name();
-    realname.back() = decl->realname();
     PyObject *oper = PyObject_CallMethod(m_ast, "Operation", "OiOOOOOO", 
 	m->py(decl->filename()), decl->line(), m->cxx(),
 	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
-	m->Tuple(decl->name()), m->Tuple(realname)
+	m->Tuple(decl->name()), m->py(decl->realname())
     );
     PyObject* params = PyObject_CallMethod(oper, "parameters", NULL);
     PyObject_CallMethod(params, "extend", "O", m->List(decl->parameters()));
