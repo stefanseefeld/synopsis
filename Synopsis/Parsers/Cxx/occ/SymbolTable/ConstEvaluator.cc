@@ -5,13 +5,14 @@
 // see the file COPYING for details.
 //
 
-#include <PTree/ConstEvaluator.hh>
-#include <sstream>
-#include <iomanip>
 #include <PTree/Writer.hh>
 #include <PTree/Display.hh>
+#include <SymbolTable/ConstEvaluator.hh>
+#include <sstream>
+#include <iomanip>
 
 using namespace PTree;
+using namespace SymbolTable;
 
 namespace
 {

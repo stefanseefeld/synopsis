@@ -31,7 +31,7 @@ ClassBodyWalker::translate_class_body(PTree::ClassBody *block,
 {
   PTree::ClassBody *block2;
   Environment *fenv = metaobject->GetEnvironment();
-  if(!fenv) fenv = env; // should not reach here.
+  if(!fenv) fenv = my_environment; // should not reach here.
   NameScope old_env = change_scope(fenv);
   PTree::Array array;
   bool changed = false;
@@ -61,7 +61,7 @@ ClassBodyWalker::translate_class_body(PTree::ClassBody *block,
 
   if(changed)
     block2 = new PTree::ClassBody(PTree::first(block), array.all(),
-				  PTree::third(block), block->scope());
+				  PTree::third(block));
   else
     block2 = block;
 
@@ -141,7 +141,7 @@ PTree::Node *ClassBodyWalker::translate_declarator(bool record,
 						   bool append_body)
 {
   ClassWalker w(this);
-  Class *metaobject = env->LookupThis();
+  Class *metaobject = my_environment->LookupThis();
   if(metaobject)
   {
     ChangedMemberList::Cmem *m = metaobject->GetChangedMember(decl);
@@ -166,7 +166,7 @@ PTree::Node *ClassBodyWalker::translate_function_implementation(PTree::Node *imp
   PTree::Node *body2;
 
   PTree::Node *tspec2 = translate_type_specifier(tspec);
-  Environment *fenv = env->DontRecordDeclarator(decl);
+  Environment *fenv = my_environment->DontRecordDeclarator(decl);
 
   if(fenv == 0)
   {
@@ -179,7 +179,7 @@ PTree::Node *ClassBodyWalker::translate_function_implementation(PTree::Node *imp
   }
   else
   {
-    bool is_nested_class = bool(env != fenv);
+    bool is_nested_class = bool(my_environment != fenv);
     NameScope old_env = change_scope(fenv);
     new_scope();
     ClassWalker w(this);

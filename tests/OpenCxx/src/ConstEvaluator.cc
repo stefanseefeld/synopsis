@@ -3,9 +3,9 @@
 #include <Lexer.hh>
 #include <Parser.hh>
 #include <PTree.hh>
-#include <PTree/ConstEvaluator.hh>
 #include <PTree/Display.hh>
 #include <PTree/Writer.hh>
+#include <SymbolTable/ConstEvaluator.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -15,10 +15,15 @@ using namespace Synopsis;
 class InitializerFinder : public PTree::Visitor
 {
 public:
-  InitializerFinder(std::ostream &os, const PTree::Scope &s)
+  InitializerFinder(std::ostream &os, const SymbolTable::Scope &s)
     : my_os(os), my_symbols(s) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
+  virtual void visit(PTree::List *node)
+  {
+    for (PTree::Node *n = node; n; n = n->cdr())
+      if (n->car()) n->car()->accept(this);
+  }
   virtual void visit(PTree::EnumSpec *node)
   {
     PTree::Node *body = third(node);
@@ -34,7 +39,7 @@ private:
       {
 	PTree::Node *initializer = PTree::third(enumerator);
 	enumerator = enumerator->car();
-	if (!PTree::evaluate_const(initializer, my_symbols, value))
+	if (!SymbolTable::evaluate_const(initializer, my_symbols, value))
 	{
 	  std::cerr << "Error in evaluating enum initializer :\n"
 		    << "Expression doesn't evaluate to a constant integral value" << std::endl;
@@ -65,15 +70,15 @@ private:
       PTree::Node *initializer = PTree::third(node);
       my_os << "initializer : " << PTree::reify(initializer) << std::endl;
       long value;
-      if (PTree::evaluate_const(initializer, my_symbols, value))
+      if (SymbolTable::evaluate_const(initializer, my_symbols, value))
 	my_os << "value : " << value << std::endl;
       else
 	my_os << "value : none" << std::endl;
     }
   }
 
-  std::ostream       &my_os;
-  const PTree::Scope &my_symbols;
+  std::ostream             &my_os;
+  const SymbolTable::Scope &my_symbols;
 };
 
 int main(int argc, char **argv)
@@ -91,8 +96,8 @@ int main(int argc, char **argv)
     Lexer lexer(&buffer);
     Parser parser(&lexer);
     InitializerFinder finder(ofs, *parser.scope());
-    PTree::Node *node;
-    while (parser.parse(node)) finder.find(node);
+    PTree::Node *node = parser.parse();
+    finder.find(node);
   }
   catch (const std::exception &e)
   {

@@ -7,104 +7,100 @@
 //
 #include <PTree.hh>
 #include <PTree/Display.hh>
+#include <PTree/Writer.hh>
 #include "Environment.hh"
 #include <Walker.hh>
 #include <TypeInfo.hh>
 #include <Class.hh>
 #include <MetaClass.hh>
-#include <Parser.hh>
+#include <Buffer.hh>
 #include <Member.hh>
 #include <stdexcept>
 #include <iostream>
 
-Parser* Walker::default_parser = 0;
-const char* Walker::argument_name = "_arg_%d_";
-const char* Walker::default_metaclass = 0;
+Buffer *Walker::default_buffer = 0;
+const char *Walker::argument_name = "_arg_%d_";
+const char *Walker::default_metaclass = 0;
 
-Walker::Walker(Parser* p)
-  : my_result(0)
+Walker::Walker(Buffer *b)
+  : my_buffer(b),
+    my_environment(new Environment(this)),
+    my_result(0)    
 {
-    env = new Environment(this);
-    parser = p;
-    if(default_parser == 0)
-	default_parser = p;
+  if(!default_buffer) default_buffer = my_buffer;
 }
 
-Walker::Walker(Parser* p, Environment* e)
-  : my_result(0)
+Walker::Walker(Buffer *b, Environment* e)
+  : my_buffer(b),
+    my_environment(new Environment(e, this)),
+    my_result(0)
 {
-    env = new Environment(e, this);
-    parser = p;
-    if(default_parser == 0)
-	default_parser = p;
+  if(default_buffer) default_buffer = my_buffer;
 }
 
 Walker::Walker(Environment* e)
-  : my_result(0)
+  : my_buffer(default_buffer),
+    my_environment(new Environment(e, this)),
+    my_result(0)
 {
-    env = new Environment(e, this);
-    if(!default_parser)
-      throw std::runtime_error("Walker::Walker(): no default parser");
-
-    parser = default_parser;
+  if(!default_buffer) throw std::runtime_error("Walker::Walker(): no default buffer");
 }
 
-Walker::Walker(Walker* w)
-  : my_result(0)
+Walker::Walker(Walker *w)
+  : my_buffer(w->my_buffer),
+    my_environment(w->my_environment),
+    my_result(0)
 {
-    env = w->env;
-    parser = w->parser;
 }
 
 void Walker::new_scope()
 {
-    env = new Environment(env);
+  my_environment = new Environment(my_environment);
 }
 
 void Walker::new_scope(Class* metaobject)
 {
-    env = new Environment(env);
-    if(metaobject != 0)
-	metaobject->SetEnvironment(env);
+  my_environment = new Environment(my_environment);
+  if(metaobject) metaobject->SetEnvironment(my_environment);
 }
 
 Environment* Walker::exit_scope()
 {
-    Environment* old_env = env;
-    env = old_env->GetOuterEnvironment();
-    return old_env;
+  Environment* old_env = my_environment;
+  my_environment = old_env->GetOuterEnvironment();
+  return old_env;
 }
 
 void Walker::RecordBaseclassEnv(PTree::Node *bases)
 {
-    while(bases != 0){
-	bases = bases->cdr();		// skip : or ,
-	PTree::Node *base_class = PTree::last(bases->car())->car();
-	Class* metaobject = env->LookupClassMetaobject(base_class);
-	if(metaobject != 0){
-	    Environment* e = metaobject->GetEnvironment();
-	    if(e != 0)
-		env->AddBaseclassEnv(e);
-	}
-
-	bases = bases->cdr();
+  while(bases)
+  {
+    bases = bases->cdr();		// skip : or ,
+    PTree::Node *base_class = PTree::last(bases->car())->car();
+    Class* metaobject = my_environment->LookupClassMetaobject(base_class);
+    if(metaobject)
+    {
+      Environment* e = metaobject->GetEnvironment();
+      if(e) my_environment->AddBaseclassEnv(e);
     }
+    bases = bases->cdr();
+  }
 }
 
 Walker::NameScope Walker::change_scope(Environment* e)
 {
-    NameScope scope;
-    scope.walker = e->GetWalker();
-    e->SetWalker(this);
-    scope.env = env;
-    env = e;
-    return scope;
+  NameScope scope;
+  scope.walker = e->GetWalker();
+  e->SetWalker(this);
+  scope.env = my_environment;
+  my_environment = e;
+  return scope;
 }
 
 void Walker::restore_scope(Walker::NameScope& scope)
 {
-    env->SetWalker(scope.walker);
-    env = scope.env;
+  my_environment->SetWalker(scope.walker);
+  my_environment = scope.env;
 }
 
 PTree::Node *Walker::translate(PTree::Node *p)
@@ -122,7 +118,7 @@ void Walker::visit(PTree::Typedef *node)
 
   tspec = PTree::second(node);
   tspec2 = translate_type_specifier(tspec);
-  env->RecordTypedefName(PTree::third(node));
+  my_environment->RecordTypedefName(PTree::third(node));
   if(tspec == tspec2)
     my_result = node;
   else
@@ -159,7 +155,7 @@ PTree::TemplateDecl *Walker::translate_template_class(PTree::TemplateDecl *decl,
   if(PTree::length(class_def) == 4)
     metaobject = make_template_class_metaobject(decl, userkey, class_def);
 
-  env->RecordTemplateClass(class_spec, metaobject);
+  my_environment->RecordTemplateClass(class_spec, metaobject);
   PTree::ClassSpec *class_spec2 = translate_class_spec(class_spec,
 						       userkey,
 						       class_def,
@@ -184,7 +180,7 @@ Class* Walker::make_template_class_metaobject(PTree::Node *def,
       return metaobject;
     else
     {
-      ErrorMessage("the specified metaclass is not for templates.",
+      error_message("the specified metaclass is not for templates.",
 		   0, def);
       metaobject = new TemplateClass;
     }
@@ -196,7 +192,7 @@ Class* Walker::make_template_class_metaobject(PTree::Node *def,
 PTree::TemplateDecl *Walker::translate_template_function(PTree::TemplateDecl *decl,
 							 PTree::Node *fun)
 {
-    env->RecordTemplateFunction(decl, fun);
+    my_environment->RecordTemplateFunction(decl, fun);
     return decl;
 }
 
@@ -229,14 +225,13 @@ Class *Walker::make_template_instantiation_metaobject(PTree::Node *full_class_sp
   // [class [foo [< ... >]]] -> [class foo]
   PTree::Node *class_name = PTree::first(PTree::second(class_spec));
   Bind* binding = 0;
-  if (!env->Lookup(class_name,binding))
+  if (!my_environment->Lookup(class_name,binding))
     return 0;
 
   Class* metaobject = 0;
   if (binding->What() != Bind::isTemplateClass) 
   {
-    ErrorMessage("not declarated as a template class?!?",
-		 0, full_class_spec);
+    error_message("not declarated as a template class?!?", 0, full_class_spec);
     metaobject = 0;
   }
   else
@@ -249,8 +244,8 @@ Class *Walker::make_template_instantiation_metaobject(PTree::Node *full_class_sp
       return metaobject;
     else
     {
-      ErrorMessage("the specified metaclass is not for templates.",
-		   0, full_class_spec);
+      error_message("the specified metaclass is not for templates.",
+		    0, full_class_spec);
       metaobject = new TemplateClass;
     }
 
@@ -276,7 +271,7 @@ PTree::Node *Walker::translate_template_instantiation(PTree::TemplateInstantiati
 
 void Walker::visit(PTree::MetaclassDecl *node)
 {
-  env->RecordMetaclassName(node);
+  my_environment->RecordMetaclassName(node);
   my_result = node;
 }
 
@@ -295,7 +290,7 @@ void Walker::visit(PTree::NamespaceSpec *node)
 {
   PTree::Node *body = PTree::third(node);
   PTree::Node *body2 = translate(body);
-  env->RecordNamespace(PTree::second(node));
+  my_environment->RecordNamespace(PTree::second(node));
   if(body == body2)
     my_result = node;
   else
@@ -361,7 +356,7 @@ PTree::Node *Walker::translate_declarators(PTree::Node *decls, bool record)
     if(PTree::is_a(p, Token::ntDeclarator))
     {
       PTree::Node *exp, *exp2;
-      if(record) env->RecordDeclarator(p);
+      if(record) my_environment->RecordDeclarator(p);
       len = PTree::length(p);
       exp = exp2 = 0;
       if(len >= 2 && *PTree::nth(p, len - 2) == '=')
@@ -456,7 +451,7 @@ bool Walker::GetArgDeclList(PTree::Declarator* decl, PTree::Node *& args)
 
 PTree::Node *Walker::translate_arg_decl_list(bool record, PTree::Node *, PTree::Node *args)
 {
-    return translate_arg_decl_list2(record, env, false, false, 0, args);
+    return translate_arg_decl_list2(record, my_environment, false, false, 0, args);
 }
 
 // If translate is true, this function eliminates a user-defined keyword.
@@ -560,7 +555,7 @@ PTree::Node *Walker::translate_function_implementation(PTree::Node *impl)
   PTree::Node *body2;
 
   PTree::Node *tspec2 = translate_type_specifier(tspec);
-  Environment* fenv = env->RecordDeclarator(decl);
+  Environment* fenv = my_environment->RecordDeclarator(decl);
   if(!fenv)
   {
     // reach here if resolving the qualified name fails. error?
@@ -588,7 +583,7 @@ PTree::Node *Walker::translate_function_implementation(PTree::Node *impl)
 PTree::Node *Walker::record_args_and_translate_fbody(Class*, PTree::Node *args, PTree::Node *body)
 {
     new_scope();
-    translate_arg_decl_list2(true, env, false, false, 0, args);
+    translate_arg_decl_list2(true, my_environment, false, false, 0, args);
     PTree::Node *body2 = translate_function_body(body);
     exit_scope();
     return body2;
@@ -661,8 +656,7 @@ void Walker::visit(PTree::ClassBody *node)
   if(changed)
     my_result = new PTree::ClassBody(PTree::first(node),
 				     array.all(),
-				     PTree::third(node),
-				     node->scope());
+				     PTree::third(node));
   else
     my_result = node;
 
@@ -692,7 +686,7 @@ PTree::ClassBody *Walker::translate_class_body(PTree::ClassBody *node,
   }
   if(changed)
     block2 = new PTree::ClassBody(PTree::first(node), array.all(),
-				  PTree::third(node), node->scope());
+				  PTree::third(node));
   else
     block2 = node;
 
@@ -720,7 +714,7 @@ void Walker::visit(PTree::ClassSpec *node)
   if(PTree::length(class_def) == 4)
     metaobject = make_class_metaobject(node, userkey, class_def);
 
-  env->RecordClassName(node->encoded_name(), metaobject);
+  my_environment->RecordClassName(node->encoded_name(), metaobject);
   my_result = translate_class_spec(node, userkey, class_def, metaobject);
 }
 
@@ -741,10 +735,10 @@ Class *Walker::make_class_metaobject(PTree::ClassSpec *def, PTree::Node *userkey
     else{
 	if(!metaobject->AcceptTemplate())
 	    return metaobject;
-	else{
-	    ErrorMessage("the specified metaclass is for templates.",
-			 0, def);
-	    metaobject = new Class;
+	else
+	{
+	  error_message("the specified metaclass is for templates.", 0, def);
+	  metaobject = new Class;
 	}
     }
 
@@ -774,30 +768,31 @@ Class* Walker::LookupMetaclass(PTree::Node *def, PTree::Node *userkey, PTree::No
 	return metaobject;
     }
 
-    PTree::Node *mdecl = env->LookupMetaclass(class_name);
+    PTree::Node *mdecl = my_environment->LookupMetaclass(class_name);
     if(mdecl != 0){
 	mclass = PTree::second(mdecl);
 	margs = PTree::nth(mdecl, 4);
 	metaobject = opcxx_ListOfMetaclass::New(mclass, def, margs);
 	if(metaobject == 0)
-	    ErrorMessage("the metaclass is not loaded: ", mclass, class_def);
+	  error_message("the metaclass is not loaded: ", mclass, class_def);
 	else if(userkey != 0)
-	    ErrorMessage("the metaclass declaration conflicts"
-			 " with the keyword: ", mclass, class_def);
+	  error_message("the metaclass declaration conflicts"
+			" with the keyword: ", mclass, class_def);
 
 	return metaobject;
     }
 
     if(userkey != 0){
-	mclass = env->LookupClasskeyword(userkey->car());
+	mclass = my_environment->LookupClasskeyword(userkey->car());
 	if(mclass == 0)
-	    ErrorMessage("invalid keyword: ", userkey, class_def);
-	else{
-	    metaobject = opcxx_ListOfMetaclass::New(mclass, class_def,
-						    PTree::third(userkey));
-	    if(metaobject == 0)
-		ErrorMessage("the metaclass associated with the"
-			     " keyword is not loaded: ", userkey, class_def);
+	  error_message("invalid keyword: ", userkey, class_def);
+	else
+	{
+	  metaobject = opcxx_ListOfMetaclass::New(mclass, class_def,
+						  PTree::third(userkey));
+	  if(metaobject == 0)
+	    error_message("the metaclass associated with the"
+			  " keyword is not loaded: ", userkey, class_def);
 
 	    return metaobject;
 	}
@@ -815,15 +810,16 @@ Class* Walker::LookupBaseMetaclass(PTree::Node *def, PTree::Node *class_def,
 	bases = bases->cdr();
 	PTree::Node *base = PTree::last(bases->car())->car();
 	bases = bases->cdr();
-	Class* m = env->LookupClassMetaobject(base);
+	Class* m = my_environment->LookupClassMetaobject(base);
 	if(m != 0){
 	    if(metaobject == 0)
 		metaobject = m;
 	    else if(m == 0 || strcmp(metaobject->MetaclassName(),
-				       m->MetaclassName()) != 0){
-		ErrorMessage("inherited metaclasses conflict: ",
-			     PTree::second(class_def), class_def);
-		return 0;
+				       m->MetaclassName()) != 0)
+	    {
+	      error_message("inherited metaclasses conflict: ",
+			    PTree::second(class_def), class_def);
+	      return 0;
 	    }
 	}
     }
@@ -865,7 +861,7 @@ PTree::ClassSpec *Walker::translate_class_spec(PTree::ClassSpec *spec,
 
 void Walker::visit(PTree::EnumSpec *node)
 {
-  env->RecordEnumName(node);
+  my_environment->RecordEnumName(node);
   my_result = node;
 }
 
@@ -1631,30 +1627,61 @@ PTree::Node *Walker::NthDeclarator(PTree::Node *def, int& nth)
 //     return false;
 // }
 
-void Walker::ErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
+void Walker::error_message(const char *msg, PTree::Node *name, PTree::Node *where)
 {
-    parser->error_message(msg, name, where);
+  if(where)
+  {
+    PTree::Node *head = PTree::ca_ar(where);
+    if(head) show_message_head(head->position());
+  }
+
+  std::cerr << msg;
+  if(name)
+  {
+    PTree::Writer writer(std::cerr);
+    writer.write(name);
+    std::cerr << '\n';
+  }
 }
 
-void Walker::WarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
+void Walker::warning_message(const char *msg, PTree::Node *name, PTree::Node *where)
 {
-    parser->warning_message(msg, name, where);
+  if(where)
+  {
+    PTree::Node *head = PTree::ca_ar(where);
+    if(head) show_message_head(head->position());
+  }
+
+  std::cerr << "warning: " << msg;
+  if(name)
+  {
+    PTree::Writer writer(std::cerr);
+    writer.write(name);
+  }
+  std::cerr << '\n';
+}
+
+void Walker::show_message_head(const char *position)
+{
+  std::string filename;
+  unsigned long line = default_buffer->origin(position, filename);
+  std::cerr << filename << ':' << line << ": ";
 }
 
 // InaccurateErrorMessage() may report a wrong line number.
 
 void Walker::InaccurateErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-  if(!default_parser)
-    throw std::runtime_error("Walker::InaccurateErrorMessage(): no default parser");
+  if(!default_buffer)
+    throw std::runtime_error("Walker::InaccurateErrorMessage(): no default buffer");
   else
-    default_parser->error_message(msg, name, where);
+    Walker::error_message(msg, name, where);
 }
 
 void Walker::InaccurateWarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-    if(!default_parser)
-      throw std::runtime_error("Walker::InaccurateWarningMessage(): no default parser");
+    if(!default_buffer)
+      throw std::runtime_error("Walker::InaccurateWarningMessage(): no default buffer");
     else
-	default_parser->warning_message(msg, name, where);
+      Walker::warning_message(msg, name, where);
 }

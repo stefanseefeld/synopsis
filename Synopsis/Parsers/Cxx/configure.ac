@@ -105,6 +105,7 @@ AC_CONFIG_FILES([occ/PTree/GC.hh
 
 mkdir -p occ
 mkdir -p occ/PTree
+mkdir -p occ/SymbolTable
 mkdir -p syn
 
 AC_OUTPUT

@@ -27,11 +27,11 @@ GC_LIB	:= @GC_LIB@
 OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
-OCC_FILES := Buffer HashTable Lexer \
-             PTree/Node PTree/Encoding PTree/operations \
+OCC_FILES := PTree/Node PTree/Encoding PTree/operations \
              PTree/Atoms PTree/Lists PTree/generation \
              PTree/Visitor PTree/Display PTree/Writer \
-             PTree/Symbol PTree/ConstEvaluator Parser \
+             SymbolTable/Symbol SymbolTable/Scopes SymbolTable/ConstEvaluator \
+             Buffer HashTable Lexer Parser \
              Environment TypeInfo TypeInfoVisitor \
              Walker Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker

@@ -6,11 +6,12 @@
 //
 #include <PTree/Display.hh>
 #include <PTree/Writer.hh>
-#include <PTree/Symbol.hh>
-#include <PTree/ConstEvaluator.hh>
+#include <SymbolTable/Symbol.hh>
+#include <SymbolTable/ConstEvaluator.hh>
 #include <cassert>
 
 using namespace PTree;
+using namespace SymbolTable;
 
 Scope::~Scope()
 {
@@ -274,17 +275,4 @@ PTree::Node *Scope::strip_cv_from_integral_type(PTree::Node *integral)
       return integral->car();
 
   return integral;
-}
-
-const Symbol *NestedScope::lookup(const Encoding &name) const throw()
-{
-  const Symbol *symbol = Scope::lookup(name);
-  return symbol ? symbol : my_outer->lookup(name);
-}
-
-void NestedScope::dump(std::ostream &os) const
-{
-  os << "NestedScope::dump:" << std::endl;
-  Scope::dump(os);
-  my_outer->dump(os);
 }

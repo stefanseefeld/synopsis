@@ -55,13 +55,9 @@ void Class::do_init_static()
     done_init = true;
 
     class_t = new PTree::Reserved("class", 5);
-    // create dummy scope, since ClassBody expects one
-    PTree::Scope *scope = new PTree::Scope();
     empty_block_t = new PTree::ClassBody(new PTree::Atom("{", 1),
 					 0,
-					 new PTree::Atom("}", 1),
-					 scope);
-    scope->unref();
+					 new PTree::Atom("}", 1));
     public_t = new PTree::AtomPUBLIC("public", 6);
     protected_t = new PTree::AtomPROTECTED("protected", 9);
     private_t = new PTree::AtomPRIVATE("private", 7);
@@ -751,7 +747,7 @@ PTree::Node *Class::TranslateExpression(Environment* env, PTree::Node *exp,
 	return exp;
     }
     else{
-        type_of(exp, env->GetWalker()->GetEnvironment(), type);
+        type_of(exp, env->GetWalker()->environment(), type);
 	return env->GetWalker()->translate(exp);
     }
 }
@@ -1035,13 +1031,13 @@ void* Class::LookupClientData(Environment* env, PTree::Node *key)
 void Class::ErrorMessage(Environment* env, char* msg,
 			 PTree::Node *name, PTree::Node *where)
 {
-    env->GetWalker()->ErrorMessage(msg, name, where);
+  Walker::error_message(msg, name, where);
 }
 
 void Class::WarningMessage(Environment* env, char* msg,
 			   PTree::Node *name, PTree::Node *where)
 {
-    env->GetWalker()->WarningMessage(msg, name, where);
+  Walker::warning_message(msg, name, where);
 }
 
 void Class::ErrorMessage(char* msg, PTree::Node *name, PTree::Node *where)

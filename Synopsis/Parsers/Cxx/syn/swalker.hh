@@ -46,7 +46,7 @@ class SWalker : public Walker
 {
 public:
   //. Constructor
-  SWalker(FileFilter*, Parser*, Builder*, Buffer*);
+  SWalker(FileFilter*, Builder*, Buffer*);
   virtual ~SWalker();
 
   //. Sets store links to true.
@@ -57,8 +57,6 @@ public:
   //. Get a name from the ptree
   std::string parse_name(PTree::Node *) const;
   
-  //. Get the Parser object
-  Parser* parser() { return my_parser;}
   //. Get the Buffer object
   Buffer* buffer() { return my_buffer;}
   //. Get the Builder object
@@ -189,7 +187,6 @@ private:
   // the 'current' walker is a debugging aid.
   static SWalker* g_swalker;
 
-  Parser* my_parser;
   Builder* my_builder;
   FileFilter* my_filter;
   Buffer* my_buffer;
