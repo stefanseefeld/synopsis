@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.10 2001/07/04 08:17:48 uid20151 Exp $
+# $Id: Scope.py,v 1.11 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.11  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.10  2001/07/04 08:17:48  uid20151
 # Comments
 #
@@ -64,6 +70,52 @@ import ASTFormatter
 from core import config
 from Tags import *
 
+def write_summaries(summarizer, ns, details, sections):
+    "Print out the summaries from the given ns and note detailed items"
+    comments = config.comments
+    config.link_detail = 0
+    
+    summarizer.write_start()
+    for section in config.sorter.sections():
+        # Write a header for this section
+        if section[-1] == 's': heading = section+'es Summary:'
+        else: heading = section+'s Summary:'
+        summarizer.writeSectionStart(heading)
+        # Iterate through the children in this section
+        for child in config.sorter.children(section):
+            # Check if need to add to detail list
+            if comments[child].has_detail:
+                # Add this decl to the detail dictionary
+                if not details.has_key(section):
+                    details[section] = []
+                    sections.append(section)
+                details[section].append(child)
+                config.link_detail = 1
+                summarizer.set_link_detail(1)
+            # Print out summary for the child
+            child.accept(summarizer)
+            config.link_detail = 0
+            summarizer.set_link_detail(0)
+        # Finish off this section
+        summarizer.writeSectionEnd(heading)
+    summarizer.write_end()
+
+def write_details(detailer, details, sections):
+    "Print out the details from the given dict of lists"
+
+    # Iterate through the sections with details
+    detailer.write_start()
+    for section in sections:
+        # Write a heading
+        heading = section+' Details:'
+        detailer.writeSectionStart(heading)
+        # Write the sorted list of children of this type
+        for child in details[section]:
+            child.accept(detailer)
+        # Finish the section
+        detailer.writeSectionEnd(heading)
+    detailer.write_end()
+ 
 class ScopePages (Page.Page):
     """A module for creating a page for each Scope with summaries and
     details. This module is highly modular, using the classes from
@@ -74,124 +126,83 @@ class ScopePages (Page.Page):
     """
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	# use config...
-	base = "Synopsis.Formatter.HTML.ASTFormatter."
-	try:
-	    spec = config.obj.ScopePages.summarizer
-	    self.summarizer = core.import_object(spec, basePackage=base)()
-	except AttributeError:
-	    if config.verbose: print "Summarizer config failed. Abort"
-	    raise
-	try:
-	    spec = config.obj.ScopePages.detailer
-	    self.detailer = core.import_object(spec, basePackage=base)()
-	except AttributeError:
-	    if config.verbose: print "Detailer config failed. Abort"
-	    raise
 	share = config.datadir
 	self.syn_logo = 'synopsis200.jpg'
 	config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
+
+    def filename(self):
+        """since ScopePages generates a whole file hierarchy, this method returns the current filename,
+        which may change over the lifetime of this object"""
+        return self.__filename
+    def title(self):
+        """since ScopePages generates a while file hierarchy, this method returns the current title,
+        which may change over the lifetime of this object"""
+        return self.__title
+    def scope(self):
+        """return the current scope processed by this object"""
+        return self.__scope
 
     def process(self, start):
 	"""Creates a page for every Scope"""
 	self.__namespaces = [start]
 	while self.__namespaces:
 	    ns = self.__namespaces.pop(0)
-	    self.processScope(ns)
+	    self.process_scope(ns)
 
-    def processScope(self, ns):
+    def process_scope(self, ns):
 	"""Creates a page for the given scope"""
 	details = {} # A hash of lists of detailed children by type
 	sections = [] # a list of detailed sections
 	
 	# Open file and setup scopes
-	self.startFileScope(ns.name())
+        self.__scope = ns.name()
+	self.__filename = config.files.nameOfScope(self.__scope)
+	self.__title = string.join(self.__scope)
+	self.start_file()
 	config.sorter.set_scope(ns)
 	config.sorter.sort_section_names()
 	
+        # FIXME ! use config...
+	base = "Synopsis.Formatter.HTML.ASTFormatter."
+	try:
+	    spec = config.obj.ScopePages.summarizer
+	    summarizer = core.import_object(spec, basePackage=base)(self)
+	except AttributeError:
+	    if config.verbose: print "Summarizer config failed. Abort"
+	    raise
+        try:
+	    spec = config.obj.ScopePages.detailer
+	    detailer = core.import_object(spec, basePackage=base)(self)
+	except AttributeError:
+	    if config.verbose: print "Detailer config failed. Abort"
+	    raise
+
 	# Write heading
-	filename = config.files.nameOfScope(ns.name())
-	self.write(self.manager.formatHeader(filename))
+	self.write(self.manager.formatHeader(self.filename()))
 	if ns is self.manager.globalScope(): 
 	    self.write(entity('h1', "Global Namespace"))
 	else:
 	    # Use the detailer to print an appropriate heading
-	    ns.accept(self.detailer)
+	    ns.accept(detailer)
 
 	self.write('\n')
+
 	# Loop throught all the types of children
-	self.printScopeSummaries(ns, details, sections)
-	self.printScopeDetails(details, sections)
-	self.endFile()
+	write_summaries(summarizer, ns, details, sections)
+	write_details(detailer, details, sections)
+	self.end_file()
 	
 	# Queue child namespaces
 	for child in config.sorter.children():
 	    if isinstance(child, AST.Scope):
 		self.__namespaces.append(child)
     
-    def printScopeSummaries(self, ns, details, sections):
-	"Print out the summaries from the given ns and note detailed items"
-	comments = config.comments
-	config.link_detail = 0
-	self.summarizer.writeStart()
-	for section in config.sorter.sections():
-	    # Write a header for this section
-	    if section[-1] == 's': heading = section+'es Summary:'
-	    else: heading = section+'s Summary:'
-	    self.summarizer.writeSectionStart(heading)
-	    # Iterate through the children in this section
-	    for child in config.sorter.children(section):
-		# Check if need to add to detail list
-		if comments[child].has_detail:
-		    # Add this decl to the detail dictionary
-		    if not details.has_key(section):
-			details[section] = []
-			sections.append(section)
-		    details[section].append(child)
-		    config.link_detail = 1
-		    self.summarizer.set_link_detail(1)
-		# Print out summary for the child
-		child.accept(self.summarizer)
-		config.link_detail = 0
-		self.summarizer.set_link_detail(0)
-	    # Finish off this section
-	    self.summarizer.writeSectionEnd(heading)
-	self.summarizer.writeEnd()
-
-    def printScopeDetails(self, details, sections):
-	"Print out the details from the given dict of lists"
-	# Iterate through the sections with details
-	self.detailer.writeStart()
-	for section in sections:
-	    # Write a heading
-	    heading = section+' Details:'
-	    self.detailer.writeSectionStart(heading)
-	    # Write the sorted list of children of this type
-	    for child in details[section]:
-		child.accept(self.detailer)
-	    # Finish the section
-	    self.detailer.writeSectionEnd(heading)
-	self.detailer.writeEnd()
-
- 
-    def startFileScope(self, scope):
-	"Start a new file from the given scope"
-	filename = config.files.nameOfScope(scope)
-	title = string.join(scope)
-	self.startFile(filename, title)
-	self.summarizer.set_origin(filename)
-	self.summarizer.set_ostream(self.os())
-	self.summarizer.set_scope(scope)
-	self.detailer.set_origin(filename)
-	self.detailer.set_ostream(self.os())
-	self.detailer.set_scope(scope)
-
-    def endFile(self):
-	"""Overrides endfile to provide synopsis logo"""
+    def end_file(self):
+	"""Overrides end_file to provide synopsis logo"""
 	self.write('<hr>\n')
         now = time.strftime(r'%c', time.localtime(time.time()))
         logo = href('http://synopsis.sourceforge.net', 'synopsis')
         self.write(div('logo', 'Generated on ' + now + ' by \n<br>\n' + logo))
-	Page.Page.endFile(self)
+	Page.Page.end_file(self)
  
 htmlPageClass = ScopePages

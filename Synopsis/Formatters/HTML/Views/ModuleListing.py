@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.7 2001/07/05 02:08:35 uid20151 Exp $
+# $Id: ModuleListing.py,v 1.8 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.8  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.7  2001/07/05 02:08:35  uid20151
 # Changed the registration of pages to be part of a two-phase construction
 #
@@ -81,8 +87,9 @@ class ModuleListing(Page.Page):
 	Page.Page.__init__(self, manager)
 	self.child_types = None
 	self._children_cache = {}
-	self.set_filename(config.files.nameOfSpecial('ModuleTree'))
-	self.set_title('Module Tree')
+
+    def filename(self): return config.files.nameOfSpecial('ModuleTree')
+    def title(self): return 'Module Tree'
 
     def register(self):
 	"registers the page with the manager for the 'contents' (top left) frame"
@@ -99,12 +106,12 @@ class ModuleListing(Page.Page):
 	try: self.child_types = config.obj.ModuleListing.child_types
 	except AttributeError: pass
 	# Create the file
-	self.startFile()
+	self.start_file()
 	self.write(self.manager.formatHeader(self.filename(), 2))
 	self.tree.startTree()
 	self.indexModule(start, start.name())
 	self.tree.endTree()
-	self.endFile()
+	self.end_file()
 
     def _child_filter(self, child):
 	"""Returns true if the given child declaration is to be included"""

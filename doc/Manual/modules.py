@@ -83,12 +83,13 @@ class ConfScope (HTML.ModuleListing.ModuleListing):
     ModuleListing page, via a few template methods. It is to aide the
     process of finding config information by only showing the tree that exists
     under Config.py."""
+
+    def filename(self): return config.files.nameOfSpecial('ConfScopes')
+    def title(self): return 'Config'
+
     def register(self):
 	"""Initialise with the special Config name"""
-	filename = config.files.nameOfSpecial('ConfScopes')
-	self.set_filename(filename)
-	#self._filename = os.path.join(config.basename, filename)
-	self.manager.addRootPage(filename, 'Config', 'index', 1)
+	self.manager.addRootPage(self.filename(), 'Config', 'index', 1)
 	self._link_target = 'main'
 	#config.set_index_page(self.__filename)
     def _link_href(self, ns):

@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.5 2001/06/28 07:22:18 stefan Exp $
+# $Id: FileTreeJS.py,v 1.6 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.6  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.5  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -66,6 +72,15 @@ class FileTree(JSTree.JSTree):
 	myconfig = config.obj.FileTree
 	self._link_pages = myconfig.link_to_pages
    
+    def filename(self):
+        """since FileTree generates a whole file hierarchy, this method returns the current filename,
+        which may change over the lifetime of this object"""
+        return self.__filename
+    def title(self):
+        """since FileTree generates a while file hierarchy, this method returns the current title,
+        which may change over the lifetime of this object"""
+        return self.__title
+
     def process(self, start):
 	# Init tree
 	share = config.datadir
@@ -75,11 +90,11 @@ class FileTree(JSTree.JSTree):
                      'tree_%s.png', 0)
 	# Start the file
 	filename = config.files.nameOfSpecial('FileTree')
-	self.startFile(filename, 'File Tree')
+	self.start_file(filename, 'File Tree')
 	self.write(self.manager.formatHeader(filename, 2))
 	# recursively visit all nodes
 	self.processFileTreeNode(config.fileTree.root())
-	self.endFile()
+	self.end_file()
 	# recursively create all node pages
 	self.processFileTreeNodePage(config.fileTree.root())
 
@@ -115,10 +130,13 @@ class FileTree(JSTree.JSTree):
 	if not hasattr(node, 'decls'): return
 
 	toc = config.toc
+        # set up filename and title for the current page
+	self.__filename = config.files.nameOfFile(node.path)
 	name = list(node.path)
 	while len(name) and name[0] == '..': del name[0]
-	filename = config.files.nameOfFile(node.path)
-	self.startFile(filename, string.join(name, os.sep))
+        self.__title = string.join(name, os.sep)
+
+	self.start_file()
 	self.write(entity('b', string.join(name, os.sep))+'<br>')
 	if self._link_pages:
 	    link = config.files.nameOfScopedSpecial('page', name)
@@ -135,5 +153,6 @@ class FileTree(JSTree.JSTree):
 		    self.write(div('href',href(entry.link,Util.ccolonName(name),target='main')))
 		# Print comment
 		#self.write(self.summarizer.getSummary(node.decls[name]))
+	self.end_file()
 	
 htmlPageClass = FileTree

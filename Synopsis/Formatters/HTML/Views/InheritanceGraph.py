@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.12 2001/07/05 02:08:35 uid20151 Exp $
+# $Id: InheritanceGraph.py,v 1.13 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.13  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.12  2001/07/05 02:08:35  uid20151
 # Changed the registration of pages to be part of a two-phase construction
 #
@@ -101,9 +107,10 @@ class ToDecl (Type.Visitor):
 class InheritanceGraph(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.set_filename(config.files.nameOfSpecial('InheritanceGraph'))
-	self.set_title("Synopsis - Class Hierarchy")
 	self.__todecl = ToDecl()
+
+    def filename(self): return config.files.nameOfSpecial('InheritanceGraph')
+    def title(self): return 'Synopsis - Class Hierarchy'
 
     def register(self):
 	"""Registers this page with the manager"""
@@ -140,7 +147,7 @@ class InheritanceGraph(Page.Page):
     def process(self, start):
 	"""Creates a file with the inheritance graph"""
 	filename = self.filename()
-	self.startFile()
+	self.start_file()
 	self.write(self.manager.formatHeader(filename))
 	self.write(entity('h1', "Inheritance Graph"))
 
@@ -177,7 +184,7 @@ class InheritanceGraph(Page.Page):
 
 	os.remove(toc_file)
 
-	self.endFile() 
+	self.end_file() 
 
 
 htmlPageClass = InheritanceGraph

@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.3 2001/04/17 13:36:10 chalky Exp $
+# $Id: JSTree.py,v 1.4 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: JSTree.py,v $
+# Revision 1.4  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.3  2001/04/17 13:36:10  chalky
 # Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
 #
@@ -125,11 +131,9 @@ class JSTree (Page.Page):
 	config.files.copyFile(close_img, self.__base_close)
 	config.files.copyFile(leaf_img, self.__base_leaf)
 
-    def startFile(self, filename, title):
-	"""Overrides startFile to add the javascript"""
-	Page.Page.startFile(self, filename, title, headextra=top_js%(
-	    self.__base_open, self.__base_close
-	))
+    def start_file(self):
+	"""Overrides start_file to add the javascript"""
+	Page.Page.start_file(self, headextra=top_js%(self.__base_open, self.__base_close))
 
     def formatImage(self, id, filename, alt_text=""):
 	"""Returns the image element for the given image"""

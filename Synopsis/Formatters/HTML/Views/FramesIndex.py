@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.4 2001/06/28 07:22:18 stefan Exp $
+# $Id: FramesIndex.py,v 1.5 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: FramesIndex.py,v $
+# Revision 1.5  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.4  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -45,11 +51,14 @@ class FramesIndex (Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
 
+    def filename(self): return config.files.nameOfIndex()
+    def title(self): return 'Synopsis - Generated Documentation'
+
     def process(self, start):
 	"""Creates a frames index file"""
 	me = config.files.nameOfIndex()
 	# TODO use project name..
-	self.startFile(me, "Synopsis - Generated Documentation", body='')
+	self.start_file(body='')
 	fcontents = rel(me, config.page_contents)
 	findex = rel(me, config.page_index)
 	fglobal = rel(me, config.files.nameOfScope(start.name()))
@@ -59,7 +68,7 @@ class FramesIndex (Page.Page):
 	frameset1 = entity('frameset', frame1+frame2, rows="30%,*")
 	frameset2 = entity('frameset', frameset1+frame3, cols="200,*")
 	self.write(frameset2)
-	self.endFile(body='')
+	self.end_file(body='')
 
 
 htmlPageClass = FramesIndex

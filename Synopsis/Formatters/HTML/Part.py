@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.14 2001/07/04 08:17:16 uid20151 Exp $
+# $Id: Part.py,v 1.15 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.15  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.14  2001/07/04 08:17:16  uid20151
 # Change the strategies to return just one string, and insert their own <TD>
 # when necessary
@@ -469,9 +475,8 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     declaration. Actually writing the formatted info to file is left to
     writeSectionStart, writeSectionEnd, and writeSectionItem.
     """
-    def __init__(self):
-        self.__os = None
-        self.__scope = []
+    def __init__(self, page):
+        self.__page = page
 	self.__formatters = []
 	# Lists of format methods for each AST type
 	self.__formatdict = {
@@ -481,11 +486,10 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	    'formatConst':[], 'formatFunction':[], 'formatOperation':[], 
 	}
     
-    def scope(self): return self.__scope
-    def write(self, text): self.__os.write(text)
-    def set_origin(self, origin): self.__origin = origin
-    def set_scope(self, scope): self.__scope = list(scope)
-    def set_ostream(self, os): self.__os = os
+    def filename(self): return self.__page.filename()
+    def os(self): return self.__page.os()
+    def scope(self): return self.__page.scope()
+    def write(self, text): self.os().write(text)
     def addFormatter(self, formatterClass):
 	"""Adds the given formatter Class. An object is instantiated from the
 	class passing self to the constructor. Stores the object, and stores
@@ -514,7 +518,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	optional keys are appended as attributes to the A tag."""
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = config.toc[name]
-	if entry: return apply(href, (rel(self.__origin, entry.link), label), keys)
+	if entry: return apply(href, (rel(self.filename(), entry.link), label), keys)
 	return label or ''
 
     def label(self, name, label=None):
@@ -581,19 +585,19 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     def visitOperation(self, decl):	self.formatDeclaration(decl, 'formatOperation')
 
     # These are overridden in {Summary,Detail}Formatter
-    def writeStart(self): pass
+    def write_start(self): pass
     def writeSectionStart(self, heading): pass
     def writeSectionEnd(self, heading): pass
     def writeSectionItem(self, text): pass
-    def writeEnd(self): pass
+    def write_end(self): pass
 
 
 class SummaryFormatter(BaseFormatter):
     """Formatting summary visitor. This formatter displays a summary for each
     declaration, with links to the details if there is one. All of this is
     controlled by the ASTFormatters."""
-    def __init__(self):
-	BaseFormatter.__init__(self)
+    def __init__(self, page):
+	BaseFormatter.__init__(self, page)
 	self.__link_detail = 0
 	self._init_formatters()
 
@@ -645,8 +649,8 @@ class SummaryFormatter(BaseFormatter):
 	self.write('<tr><td class="summ-start">' + text + '</td></tr>\n')
 
 class DetailFormatter(BaseFormatter):
-    def __init__(self):
-	BaseFormatter.__init__(self)
+    def __init__(self, page):
+	BaseFormatter.__init__(self, page)
 	self._init_formatters()
 
     def _init_formatters(self):

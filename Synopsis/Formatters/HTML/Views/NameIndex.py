@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.4 2001/07/05 02:08:35 uid20151 Exp $
+# $Id: NameIndex.py,v 1.5 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.5  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.4  2001/07/05 02:08:35  uid20151
 # Changed the registration of pages to be part of a two-phase construction
 #
@@ -47,8 +53,9 @@ class NameIndex (Page.Page):
     """Creates an index of all names on one page in alphabetical order"""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.set_filename(config.files.nameOfSpecial('NameIndex'))
-	self.set_title("Synopsis - Name Index")
+
+    def filename(self): return config.files.nameOfSpecial('NameIndex')
+    def title(self): return 'Synopsis - Name Index'
 
     def register(self):
 	self.manager.addRootPage(self.filename(), 'Name Index', 'main', 1)
@@ -57,7 +64,7 @@ class NameIndex (Page.Page):
 	"""Creates the page. It is created as a list of tables, one for each
 	letter. The tables have a number of columns, which is 2 by default.
 	_processItem is called for each item in the dictionary."""
-	self.startFile()
+	self.start_file()
 	self.write(self.manager.formatHeader(self.filename()))
 	self.write(entity('h1', "Name Index"))
 	self.write('<i>Hold the mouse over a link to see the scope of each name</i>')
@@ -86,7 +93,7 @@ class NameIndex (Page.Page):
 		start = end
 	    self.write('</tr></table>')
 	
-	self.endFile()
+	self.end_file()
 
     def _makeDict(self):
 	"""Returns a dictionary of items. The keys of the dictionary are the
