@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.4 2001/01/31 06:51:24 stefan Exp $
+# $Id: Dot.py,v 1.5 2001/01/31 21:53:11 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.5  2001/01/31 21:53:11  stefan
+# some more work on the dot formatter
+#
 # Revision 1.4  2001/01/31 06:51:24  stefan
 # add support for '-v' to all modules; modified toc lookup to use additional url as prefix
 #
@@ -99,15 +102,26 @@ def usage():
   -o <filename>                        Output directory, created if it doesn't exist.
   -t <title>                           Associate <title> with the generated graph
   -i                                   Generate an inheritance graph
-  -c                                   Generate a collaboration graph"""
+  -c                                   Generate a collaboration graph
+  -f <format>                          Generate output in format 'ps' (default),'png', 'gif', 'map', 'html'"""
+
+formats = {
+    'ps' : 'ps',
+    'png' : 'png',
+    'gif' : 'gif',
+    'map' : 'imap',
+    'html' : 'html',
+}
+
 
 def __parseArgs(args):
-    global output, title, type, verbose
+    global output, title, type, format, verbose
     output = ''
     title = ''
     type = ''
+    format = 'ps'
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:icv")
+        opts,remainder = Util.getopt_spec(args, "o:t:f:icv")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -117,20 +131,54 @@ def __parseArgs(args):
         if o == "-o": output = a
         elif o == "-t": title = a
         elif o == "-i": type = "inheritance"
+        elif o == "-f":
+            if formats.has_key(a): format = formats[a]
+	    else:
+		print "Error: Unknown format. Available formats are:",string.join(formats.keys(), ', ')
+		sys.exit(1)
         elif o == "-c":
             type = "collaboration"
             sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
             sys.exit(-1)
         elif o == "-v": verbose = 1
-        
+
+def _convert_map(input, output):
+    line = output.readline()
+    line = line[:-1]
+    while line:
+        if line[0:4] == "rect":
+            url, x1, y2, x2, y1 = string.split(line[4:])
+        line = output.readline()
+
+def _format1(input, output, format):
+    global verbose
+    command = "dot -T%s -o %s %s"%(format, output, input)
+    if verbose: print "Dot Formatter: running command '" + command + "'"
+    os.system(command)
+
+def _format2(input, output, format):
+    global verbose
+    if format == "html":
+        sys.stderr.write("html not yet supported, sorry\n")
+    elif format == "png":
+        tmpout = output + ".gif"
+        _format1(input, tmpout, "gif")
+        command = "gif2png -O -d %s"%(tmpout)
+        if verbose: print "Dot Formatter: running command '" + command + "'"
+        os.system(command)
+        if verbose: print "Dot Formatter: renaming '" + tmpout[:-4] + ".png'", "to '" + output + "'"
+        os.rename(tmpout[:-4] + ".png", output)
+    else:
+        _format1(input, output, format)
+
 def format(types, declarations, args):
-    global output, title, type, verbose
+    global output, title, type, format, verbose
     __parseArgs(args)
     tmpfile = output + ".dot"
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = open(tmpfile, 'w+')
     dotfile.write("digraph \"%s\" {\n"%(title))
-    dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4]\n")
+    dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4, color=red]\n")
     if type == "inheritance":
         generator = InheritanceFormatter(dotfile)
     else:
@@ -139,8 +187,6 @@ def format(types, declarations, args):
         d.accept(generator)
     dotfile.write("}\n")
     dotfile.close()
-    command = "dot -Tps -o %s %s"%(output, tmpfile)
-    if verbose: print "Dot Formatter: running command '", command, "'"
-    os.system(command)
+    _format2(tmpfile, output, format)
     os.remove(tmpfile)
     
