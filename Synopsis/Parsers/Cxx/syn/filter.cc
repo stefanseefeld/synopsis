@@ -313,13 +313,13 @@ bool FileFilter::should_visit_function_impl(AST::SourceFile* file)
 // Returns true if links should be generated for the given sourcefile
 bool FileFilter::should_link(AST::SourceFile* file)
 {
-    return file->is_main();
+  return !m->syntax_prefix.empty() && file->is_main();
 }
 
 // Returns true if xref info should be generated for the given sourcefile
 bool FileFilter::should_xref(AST::SourceFile* file)
 {
-    return file->is_main();
+  return !m->xref_prefix.empty() && file->is_main();
 }
 
 // Returns true if the given declaration should be stored in the final
