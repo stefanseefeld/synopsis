@@ -759,8 +759,12 @@ static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const
 
 static char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 {
-    static char dest[1024];
-    tmpnam(dest);
+    static char dest[1024] = "/tmp/synopsis-XXXXXX";
+    //tmpnam(dest);
+    if (mkstemp(dest) == -1) {
+	perror("RunPreprocessor");
+	exit(1);
+    }
     switch(fork())
     {
     case 0:
@@ -805,8 +809,13 @@ static char *RunPreprocessor(const char *file, const vector<const char *> &flags
 static char *RunOpencxx(const char *src, const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
 {
     Trace trace("RunOpencxx");
-    static char dest[1024];
-    tmpnam(dest);
+    static char dest[1024] = "/tmp/synopsis-XXXXXX";
+    //tmpnam(dest);
+    if (mkstemp(dest) == -1) {
+	perror("RunPreprocessor");
+	exit(1);
+    }
+    
     ifstream ifs(file);
     if(!ifs)
     {

@@ -35,9 +35,10 @@ public:
     //. Get a name from the ptree
     string getName(Ptree*);
 
-    void SWalker::TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
-    void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type* returnType);
+    void TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
+    void TranslateFunctionName(char* encname, string& realname, Type::Type* returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
+    void TranslateTypedefDeclarator(Ptree* node);
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
 

@@ -9,6 +9,8 @@
 // Forward declare some Type::Types
 namespace Type {
     class Type;
+    class Base;
+    class Named;
     class Forward;
     class Template;
 }
@@ -58,9 +60,23 @@ public:
     //. Add a variable
     AST::Variable* addVariable(int, string name, Type::Type* vtype, bool constr);
 
+    //. Add a typedef
+    AST::Typedef* addTypedef(int, string name, Type::Type* alias, bool constr);
+
     //
     // Type Methods
     //
+
+    //. Looks up the name in the current scope. This method always succeeds --
+    //. if the name is not found it forward declares it.
+    Type::Named* lookupType(string name);
+
+    //. Looks up the qualified name in the current scope. This method always
+    //. succeeds -- if the name is not found it forwards declares it.
+    Type::Named* lookupType(const vector<string>& names);
+
+    //. Create a Base type for the given name in the current scope
+    Type::Base* Base(string name);
 
     //. Create a Forward type for the given name in the current scope
     Type::Forward* Forward(string name);
@@ -72,11 +88,50 @@ private:
     //. Current filename
     string m_filename;
 
+    //. The global scope object
+    AST::Scope* m_global;
+
     //. Current scope object
     AST::Scope* m_scope;
 
-    //. Stack of containing scopes
-    stack<AST::Scope*> m_scope_stack;
+    //
+    // Scope Class
+    //
+
+    //. This class encapsulates a Scope and its dictionary of names
+    struct Scope {
+	//. Constructor
+	Scope(AST::Scope* s);
+	//. Destructor
+	~Scope();
+	//. Dictionary for this scope
+	class Dictionary* dict;
+	//. The declaration for this scope
+	AST::Scope* scope_decl;
+	//. Typedef for a Scope Search
+	typedef vector<Scope*> Search;
+	//. The list of scopes to search for this scope, including this
+	Search search;
+    };
+    //. The stack of Builder::Scopes
+    stack<Scope*> m_scopes;
+
+    //. Looks up the name in the current scope. This method may fail and
+    //. return a NULL ptr.
+    Type::Named* lookup(string name);
+
+    //. Searches for name in the list of Scopes. This method may return NULL
+    //. if the name is not found.
+    Type::Named* lookup(string name, const Scope::Search&);
+
+    //. Private data which uses map
+    struct Private;
+    //. Private data which uses map instance
+    Private* m;
+
+    //. Return a Scope* for the given Declaration. This method first looks for
+    //. an existing Scope* in the Private map.
+    Scope* findScope(AST::Scope*);
 
 
 }; // class Builder

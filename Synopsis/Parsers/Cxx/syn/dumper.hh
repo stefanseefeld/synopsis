@@ -12,12 +12,32 @@ class Dumper : public AST::Visitor, public Type::Visitor {
 public:
     Dumper();
 
+    //
+    // Type Visitor
+    //
+    string format(Type::Type*);
+    virtual void visitType(Type::Type*);
+    virtual void visitForward(Type::Forward*);
+    virtual void visitModifier(Type::Modifier*);
+    virtual void visitNamed(Type::Named*);
+    virtual void visitBase(Type::Base*);
+    virtual void visitDeclared(Type::Declared*);
+    virtual void visitTemplateType(Type::Template*);
+    virtual void visitParameterized(Type::Parameterized*);
+    virtual void visitFuncPtr(Type::FuncPtr*);
+
+    //
+    // AST Visitor
+    //
     void visit(const vector<AST::Declaration*>&);
+    string format(AST::Parameter*);
     virtual void visitDeclaration(AST::Declaration*);
     virtual void visitScope(AST::Scope*);
     virtual void visitNamespace(AST::Namespace*);
     virtual void visitClass(AST::Class*);
     virtual void visitOperation(AST::Operation*);
+    virtual void visitVariable(AST::Variable*);
+    virtual void visitTypedef(AST::Typedef*);
 
 private:
     //. The indent depth
@@ -28,6 +48,12 @@ private:
     void indent();
     //. Decreases indent
     void undent();
+    //. The Type String
+    string m_type;
+    //. The current scope name
+    AST::Name m_scope;
+    //. Returns the given Name relative to the current scope
+    string colonate(const AST::Name& name);
 
 };
 
