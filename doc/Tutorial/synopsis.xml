@@ -639,7 +639,7 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
       modified version of OpenC++ (OCC) by Shigeru Chiba and others. OCC is
       used to generate a &#34;parse-tree&#34; from the preprocessed source
       code. The parse-tree is a data structure that directly represents the
-      syntax of the source code. OCC uses Barry Boehm&#39;s garbage collector,
+      syntax of the source code. OCC uses Hans Boehm&#39;s garbage collector,
       but this can be disabled by passing --disable-gc to configure.</para></listitem><listitem><para>Code
       to &#34;walk&#34; the parse-tree and build an Abstract Syntax Tree. A
       symbol table is also maintained which is used to correctly resolve all
@@ -1230,77 +1230,303 @@ enum Foo {
 
       <para>Takes AST. Output directory. FileLayouts. Config object. Python,
       extensible</para>
+
+      <para>The basic operation of the HTML formatter is that it takes an AST
+      as input, and outputs a whole bunch of .html and .png files to an output
+      directory. These files can either be all in the one directory or ordered
+      into nested subdirectories (see the file_layout option). The output is
+      created by individual modules called &#34;Pages&#34;, and like other
+      parts of Synopsis you specify a list of these and they are executed in
+      order. Each page generates a type of output, such as a frames index, the
+      pages for classes and namespaces, an inheritance graph, the tree of
+      modules to go in the corner frame, the index of individual modules to go
+      in the left frame, etc.</para>
+
+      <para>The order of pages is generally not important, but there are some
+      effects: pages compete for index pages, such as which page gets to write
+      the &#34;index.html&#34; page, which page gets to be the default page
+      for the top-left frame, which page gets to be default for the left
+      frame, etc. The Page which asks for one of these first, gets it, which
+      is why FramesIndex usually comes first.</para>
     </section>
 
     <section>
       <title>Layouts</title>
 
-      <para>three panes, no frames, etc</para>
+      <para>The default layout is to have three frames:<variablelist><varlistentry><term>Top-left
+      &#34;contents&#34; frame</term><listitem><para>This frame shows a tree
+      heirarchy of the modules or files in the project. Clicking on a link
+      opens that module or file in the &#34;index&#34; frame below.</para></listitem></varlistentry><varlistentry><term>Bottom-left
+      &#34;index&#34; frame</term><listitem><para>This frame shows an index of
+      the currently selected module or file, but only shows child classes,
+      structs, namespaces or modules. When a module page is loaded in this
+      frame and you have JavaScript enabled, a more detailed page will open in
+      the main content area. For file pages you will need to click the
+      &#34;File Details&#34; link.</para></listitem></varlistentry><varlistentry><term>Right
+      &#34;main&#34; frame</term><listitem><para>This frame shows the main
+      documentation. At the top of each page you can see a list of
+      documentation areas you can visit: The Modules and Files open in the
+      top-left frame, the Inheritance Graph/Tree and Name Index load in the
+      main frame. For &#34;scope pages&#34; (i.e. the pages for classes and
+      namespaces, including the global namespace which is the default page)
+      the page is divided into summary and detail sections: the summary shows
+      all the declarations in this class or namespace, with a summary for
+      each. For declarations with more comments than just the summary, the
+      name of the declaration will be highlighted, and clicking on it will
+      take you to its detailed information further down the page.</para></listitem></varlistentry></variablelist></para>
+
+      <para>This three-frame layout is inspired by JavaDoc, which is similar,
+      but turns out to be less useful than it might be since most projects
+      don&#39;t have a nice list of packages to go in the top-left frame like
+      the Java libraries do. You will notice from the Synopsis RefManual
+      however that an extensive Python project can fill the frame quite well.</para>
+
+      <para>To enable the three-frame layout, the FramesIndex page must be
+      included as the first Page. You should also have at least one of
+      ModuleListing and FileListing, and ModuleIndexer and FileIndexer to fill
+      in the frames.</para>
+
+      <para>If you don&#39;t want frames then don&#39;t include the
+      FramesIndex page. Whatever Page comes first will get to have the
+      &#34;index.html&#34; page. For example, if ScopePages is first, then the
+      index.html page will be the Global Namespace page. If DirBrowse is
+      first, then it will be the listing of the project directory.</para>
     </section>
 
     <section>
       <title>Pages</title>
 
-      <para>Output generated by Pages, modules derived from the Page class.</para>
+      <para>The output modules you can choose from are detailed below. Some
+      generate multiple HTML files and others just one. Some use enough
+      options that they have their own configuration sub-object, whereas
+      others just use options in the main config object. Remember you can
+      include or exclude any of these pages by setting the &#34;pages&#34;
+      config option to a list of their names.</para>
+
+      <para>Each page module extends from the Page base class, which provides
+      both an interface to use and some default functionality (opening closing
+      files, setting filenames and titles, etc). You can write your own Page
+      class if one of the provided ones doesn&#39;t suit you, or extend from
+      an existing one.</para>
+
+      <section>
+        <title>FramesIndex</title>
+
+        <para>This page should always go first, if you want frames. There are
+        no options to set.</para>
+      </section>
 
       <section>
         <title>ScopePages</title>
 
-        <para></para>
+        <para>This is the most complex output Page, creating the pages for
+        each class and namespace/module/package. It walks the whole AST
+        creating pages as it goes using flexible &#34;Parts&#34; and
+        &#34;FormatStrategies&#34;.</para>
+
+        <para>For each Scope in the AST, the output page has a number of
+        Parts. You can write your own Parts, or change the order, but the
+        usual four are &#39;Heading&#39;, &#39;Summary&#39;,
+        &#39;Inheritance&#39; and &#39;Detail&#39;. A Part is responsible for
+        visiting all the nodes in the Scope and formatting the sections for
+        each type of declaration. It also provides methods for referencing
+        other declarations with correct URLs, and things like formatting Types
+        for display (with URLs for any names in the type). Each part has a
+        list of FormatStrategies which it calls in turn for each declaration,
+        to generate the output HTML for that declaration.</para>
+
+        <para>The Heading part only processes the scope itself, and provides
+        things like a page title, inheritance graph, and comments for the
+        class or module.</para>
+
+        <para>The Summary part processes all the children of the scope, using
+        a set of FormatStrategies to put them in a table with summary
+        comments. Section headings are displayed for each type of declaration
+        (methods, variables, etc).</para>
+
+        <para>The Inheritance part displays the methods inherited from base
+        classes, taking care to hide overridden methods.</para>
+
+        <para>The Detail part processes all the children which have detailed
+        information, using a set of FormatStrategies to list them sequentially
+        with full comments and more detailed info (e.g.: for enums and long
+        typedefs, exception specifications, etc).</para>
+
+        <para>You can control the output by changing the FormatStrategies used
+        by each part, writing your own FormatStrategies, or even your own
+        Parts!</para>
+
+        <para>The FormatStrategies included with Synopsis are:<variablelist><varlistentry><term>Heading</term><listitem><para>Formats
+        the heading of the page for the given declaration. For classes, it
+        shows the class name, any template parameters, a link to the file the
+        class was in, and the module/namespace name. The module/namespace name
+        is placed in a DIV element with class &#34;class-namespace&#34; that
+        by default is floated in the top-right corner of the page.</para></listitem></varlistentry><varlistentry><term>ClassHeirarchySimple</term><listitem><para>Displays
+        the class hierarchy around this class in a textual manner. Mainly for
+        use if you don&#39;t have/want graphviz (dot).</para></listitem></varlistentry><varlistentry><term>ClassHeirarchyGraph</term><listitem><para>Displays
+        the class hierarchy around this class, including all parents, using
+        the Dot formatter to create an embedded PNG image.</para></listitem></varlistentry><varlistentry><term>SummaryAST</term><listitem><para>Formats
+        the elements of the AST in a Summary manner. That is, two columns,
+        with the left column for the type and the right column for the name
+        and other details. SummaryAST actually prints the column divider (a TD
+        element). Declarations which will appear in the Detail section are
+        linked to automatically where the name of the declaration is (so you
+        click on the name and it takes you to the detail). For declarations
+        with no detailed info, the name is not hyperlinked and the #name link
+        will be to the summary.</para></listitem></varlistentry><varlistentry><term>DetailAST</term><listitem><para>Formats
+        the elements of the AST in a Detailed manner. The declaration is
+        printed out similar to how it would in code, and the comments and
+        other details (e.g.: values for an enum) are shown expanded.</para></listitem></varlistentry><varlistentry><term>SummaryCommenter</term><listitem><para>Formats
+        the comments of the declaration using a CommentFormatter instance, and
+        puts them in a SPAN element of class &#39;summary&#39;, which in the
+        default Synopsis CSS is italic.</para></listitem></varlistentry><varlistentry><term>DetailCommenter</term><listitem><para>Formats
+        the comments of the declaration using a CommentFormatter instance, and
+        puts them in a DIV element of class &#39;desc&#39;.</para></listitem></varlistentry><varlistentry><term>Inheritance</term><listitem><para>A
+        simple formatter that just prints the name of the declaration with a
+        link to its documentation, intended for use in the Inheritance Part.</para></listitem></varlistentry><varlistentry><term>SourceLinker</term><listitem><para>Formats
+        a link to the source code for this declaration as &#34;[Source]&#34;.
+        The source code is actually generated by the FileSource Page, so make
+        sure you include that if you want to use this FormatStrategy, and vice
+        versa.</para></listitem></varlistentry><varlistentry><term>XRefLinker</term><listitem><para>Formats
+        a link to the cross-reference information for this declaration as
+        &#34;[XRef]&#34;. The xref info is actually generated by the XRefPages
+        Page, so make sure you include that if you want to use this
+        FormatStrategy, and vice versa.</para></listitem></varlistentry></variablelist></para>
+
+        <para>The default lists of strategies are:<variablelist><varlistentry><term>Heading</term><listitem><para>Heading,
+        ClassHierarchyGraph, DetailCommenter</para></listitem></varlistentry><varlistentry><term>Summary</term><listitem><para>SummaryAST,
+        SummaryCommenter</para></listitem></varlistentry><varlistentry><term>Inheritance</term><listitem><para>Inheritance</para></listitem></varlistentry><varlistentry><term>Detail</term><listitem><para>DetailAST,
+        DetailCommenter</para></listitem></varlistentry></variablelist></para>
       </section>
 
       <section>
         <title>ModuleListing</title>
 
-        <para></para>
+        <para>This page creates a single output file with a tree of all
+        packages/modules/namespaces in the AST. Each package/module/namespace
+        is a link to an index file of that package, module or namespace.</para>
+
+        <para>See the tree_formatter option for how to control the formatting
+        of the tree.</para>
+
+        <para>You can change the types of AST Module node which are included
+        in this tree by creating a &#34;ModuleListing&#34; subobject and
+        setting the option &#34;child_types&#34;. For example, the Python
+        parser creates &#34;package&#34; and &#34;module&#34; types, IDL
+        creates &#34;module&#34; types, and C++ creates &#34;namespaces&#34;.</para>
+
+        <para>The ModuleListing Page creates a link at the top of all pages
+        called &#34;Modules&#34; that is also shown in the top-left frame. You
+        can change this text using the &#34;short_title&#34; option of the
+        ModuleListing subobject.</para>
+
+        <para>E.g.: To only show packages and change the title:<programlisting># Normal HTML config
+class HTML (Base.Formatter.HTML):
+    # A sub object for ModuleListing config
+    class ModuleListing:
+        child_types = [&#39;package&#39;] # only show packages
+        short_title = &#39;Packages&#39;  # set the title to match</programlisting></para>
+
+        <para>XXX There are two types of tree you can use: a simple HTML tree,
+        or one that uses DHTML to open/close individual nodes, with little
+        graphics for the buttons.</para>
       </section>
 
       <section>
         <title>ModuleIndexer</title>
 
-        <para></para>
+        <para>This page goes hand in hand with ModuleListing, creating a
+        concise listing of the declarations in each package/module/namespace.
+        Each declaration is linked to its documentation, but clicking on
+        another package/module/namespace will also load its index page in this
+        frame if the user has javascript enabled. The declarations are sorted
+        into types and displayed in their sections, just like in ScopePages.</para>
       </section>
 
       <section>
         <title>FileListing</title>
 
-        <para></para>
+        <para>This page creates a single output file with a tree of all source
+        files used to create the AST. Each file links to an index page of
+        declarations in that file.</para>
+
+        <para>See the tree_formatter option for how to control the formatting
+        of the tree.</para>
       </section>
 
       <section>
         <title>FileIndexer</title>
 
-        <para></para>
+        <para>Goes hand in hand with FileListing, creating the concise pages
+        for each file.</para>
+
+        <para>If you are using the FileSource Page, a [File Source] link will
+        automatically be included at the top of the page.</para>
+
+        <para>If you are using the FileDetails Page, a [File Details] link
+        will automatically be included at the top of the page.</para>
+
+        <para>Unlike ModuleIndexer, the declarations are displayed in the
+        order they were in the file, with appropriate indenting for non-global
+        declarations.</para>
       </section>
 
       <section>
         <title>FileDetails</title>
 
-        <para></para>
+        <para>Shows details about each file, such as what files it included
+        and a quick list of all the declarations declared in it.</para>
       </section>
 
       <section>
         <title>FileSource</title>
 
-        <para></para>
+        <para>Shows source code for each file that the C++ parser created SXR
+        info for. The actual markup of the source code is done by a C++ module
+        for speed. The stored SXR info is used to hyperlink each identifier in
+        the source code with a link to the documentation for that variable,
+        class, etc, and also provide a hover text of what the identifier is,
+        e.g: &#34;member variable LinkStore::private::buffer_start&#34; or
+        &#34;local variable main&#34;. The ability to correctly identify the
+        identifiers is dependent on the C++ parser, which is currently pretty
+        good except for sometimes getting overloaded functions wrong, and not
+        understanding template instantiations too well just yet.</para>
       </section>
 
       <section>
         <title>RawFilePages</title>
 
-        <para></para>
+        <para>Shows source code for each file in the project as unformatted
+        text.</para>
+      </section>
+
+      <section>
+        <title>DirBrowse</title>
+
+        <para>Shows directories in the project, where each file links to the
+        source code from FileSource if available, the formatted page from
+        RawFilePages if available, or is not a link if neither is available.</para>
       </section>
 
       <section>
         <title>XRefPages</title>
 
-        <para></para>
+        <para>Creates pages with cross-reference information for each
+        declaration. Each declaration will show its parent scope, child
+        declarations if it&#39;s a class or module, references and places it
+        was called from. You can navigate around the XRef documentation but
+        there are no comments shown so it is more useful as an aside for
+        either the source code or regular ScopePages documentation.</para>
       </section>
 
       <section>
         <title>InheritanceGraph</title>
 
-        <para></para>
+        <para>Creates a single page with all inheritance graphs as embedded
+        images using dot (graphviz) to create the graphs. Classes that have no
+        subclasses or superclasses are not shown for brevity.</para>
+
+        <para>XX options</para>
       </section>
 
       <section>
@@ -1314,6 +1540,12 @@ enum Foo {
 
         <para></para>
       </section>
+    </section>
+
+    <section>
+      <title>Options</title>
+
+      <para>Other options than those mentioned above for specific pages are:</para>
     </section>
   </chapter>
 
@@ -1335,5 +1567,11 @@ enum Foo {
     <para>ASCII</para>
 
     <para>DUMP (for debugging your config)</para>
+  </chapter>
+
+  <chapter>
+    <title>Customising Synopsis</title>
+
+    <para>formatter modules, load AST manually, etc.</para>
   </chapter>
 </book>
