@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.10 2003/11/15 19:01:53 stefan Exp $
+# $Id: RawFile.py,v 1.11 2003/11/15 19:51:42 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,13 +9,12 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Part import Page
-from Synopsis.Formatters.HTML import ASTFormatter
+from Synopsis.Formatters.HTML.Page import Page
 from Synopsis.Formatters.HTML.Tags import *
 
 import time, os, stat, os.path, string
 
-class RawFilePages(Page):
+class RawFile(Page):
    """A module for creating a page for each file with hyperlinked source"""
 
    exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
@@ -27,13 +26,13 @@ class RawFilePages(Page):
       self.__files = None
 
    def filename(self):
-      """since RawFilePages generates a whole file hierarchy, this method returns the current filename,
+      """since RawFile generates a whole file hierarchy, this method returns the current filename,
       which may change over the lifetime of this object"""
 
       return self.__filename
 
    def title(self):
-      """since RawFilePages generates a while file hierarchy, this method returns the current title,
+      """since RawFile generates a while file hierarchy, this method returns the current title,
       which may change over the lifetime of this object"""
 
       return self.__title
