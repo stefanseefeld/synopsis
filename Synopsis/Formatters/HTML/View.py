@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.5 2001/06/28 07:22:18 stefan Exp $
+# $Id: View.py,v 1.6 2001/07/05 02:08:35 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.6  2001/07/05 02:08:35  uid20151
+# Changed the registration of pages to be part of a two-phase construction
+#
 # Revision 1.5  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -38,7 +41,7 @@
 #
 
 """
-A module with Page so you can import it for derivation
+Page base class, contains base functionality and common interface for all Pages.
 """
 
 import os.path
@@ -54,6 +57,19 @@ class Page:
 	"Constructor"
 	self.manager = manager
 	self.__os = None
+	self.__filename = ''
+	self.__title = ''
+
+    def filename(self): return self.__filename
+    def title(self): return self.__title
+
+    def set_filename(self, filename):
+	"Sets the filename to be used in a pending startFile call"
+	self.__filename = filename
+
+    def set_title(self, title):
+	"Sets the title to be used in a pending startFile call"
+	self.__title = title
 
     def os(self):
 	"Returns the output stream opened with startFile"
@@ -62,13 +78,21 @@ class Page:
     def write(self, str):
 	"""Writes the given string to the currently opened file"""
 	self.__os.write(str)
+
+    def register(self):
+	"""Registers this Page class with the PageManager. This method is
+	abstract - derived Pages should implement it to call the appropriate
+	methods in PageManager if they need to. This method is called after
+	construction."""
+	pass
        
     def process(self, start):
 	"""Process the given Scope recursively. This is the method which is
 	called to actually create the files, so you probably want to override
 	it ;)"""
+	pass
 	
-    def startFile(self, filename, title, body='<body>', headextra=''):
+    def startFile(self, filename=None, title=None, body='<body>', headextra=''):
 	"""Start a new file with given filename, title and body. This method
 	opens a file for writing, and writes the html header crap at the top.
 	You must specify a title, which is prepended with the project name.
@@ -76,7 +100,8 @@ class Page:
 	for that sort of stuff. You may want to put an onLoad handler in it
 	though in which case that's the place to do it. The opened file is
 	stored and can be accessed using the os() method."""
-	self.__filename = filename
+	if filename is None: filename = self.__filename
+	if title is None: title = self.__title
 	self.__os = Util.open(os.path.join(config.basename, filename))
 	self.write("<html>\n<head>\n")
         self.write('<!-- ' + filename + ' -->\n')
@@ -92,5 +117,3 @@ class Page:
 	self.write("\n%s\n</html>\n"%body)
 	self.__os.close()
 	self.__os = None
-
-    def filename(self): return self.__filename
