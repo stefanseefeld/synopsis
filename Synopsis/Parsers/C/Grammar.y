@@ -97,7 +97,7 @@ int yylex(YYSTYPE *lvalp);
 %token <loc>        BACKQUOTE AT
 
 /* Gcc Extensions */
-%token              ATTRIBUTE ALIGNED PACKED CDECL MODE FORMAT NORETURN MALLOC
+%token              ATTRIBUTE ALIGNED PACKED CDECL MODE FORMAT NORETURN MALLOC TRANSPARENT_UNION PURE
 
 /* Add precedence rules to solve dangling else s/r conflict */
 %nonassoc IF
@@ -2351,6 +2351,14 @@ gcc_inner:  /* Nothing */
          |   CONST
             {
                 $$ = new GccAttrib(GCC_Const);
+            }
+         |   TRANSPARENT_UNION
+            {
+                $$ = new GccAttrib(GCC_TransparentUnion);
+            }
+         |   PURE
+            {
+                $$ = new GccAttrib(GCC_Pure);
             }
          |   NORETURN
             {

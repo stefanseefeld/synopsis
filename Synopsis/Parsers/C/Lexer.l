@@ -345,6 +345,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <GCC_ATTRIB>"__noreturn"  { BEGIN(INITIAL); return(global_parse_env->err_tok = NORETURN); }
 <GCC_ATTRIB>"__noreturn__" { BEGIN(INITIAL); return(global_parse_env->err_tok = NORETURN); }
 <GCC_ATTRIB>"__malloc__" { BEGIN(INITIAL); return(global_parse_env->err_tok = MALLOC); }
+<GCC_ATTRIB>"__transparent_union__" { BEGIN(INITIAL); return(global_parse_env->err_tok = TRANSPARENT_UNION); }
+<GCC_ATTRIB>"__pure__" { BEGIN(INITIAL); return(global_parse_env->err_tok = PURE); }
 
 <INITIAL>"__const"  {
                       lvalp->typeQual = TQ_Const;
@@ -1061,7 +1063,7 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                   case 2:
                       // new line number into the previous included file
                       global_parse_env->yylineno = oldyylineno;
-                      #if 0 // whole idea is flawed
+                      #if 1 // whole idea is flawed
                       *stement = new EndInclStemnt(HERE);
                       #endif
                       if (! file_ppln)
@@ -1075,7 +1077,7 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                       if (! file_ppln)
                           global_parse_env->yylineno = ln - 1;
                       global_parse_env->filename = txt;
-                      #if 0 // whole idea is flawed
+                      #if 1 // whole idea is flawed
                       *stement = new InclStemnt(global_parse_env->filename, HERE);
                       #endif
                       return (*stement != NULL);
