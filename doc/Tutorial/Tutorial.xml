@@ -43,6 +43,10 @@
 
       <para></para>
     </section>
+  </chapter>
+
+  <chapter>
+    <title>Using the synopsis tool</title>
 
     <section>
       <title>The synopsis executable</title>
@@ -55,12 +59,26 @@
   </chapter>
 
   <chapter>
-    <title>Writing a processing pipeline</title>
+    <title>Scripting and extending synopsis</title>
 
     <!-- When the synopsis executable isn't
            powerful enough... -->
 
-    <para></para>
+    <section>
+      <title>The AST</title>
+
+      <para></para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/ast.svg" format="SVG" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/ast.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
+    </section>
 
     <section>
       <title>The Processor class</title>
@@ -175,34 +193,6 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
            other 'Parametrized' -->
 
       <para></para>
-    </section>
-
-    <section>
-      <title></title>
-
-      <para></para>
-    </section>
-  </chapter>
-
-  <chapter>
-    <title>The AST type hierarchy</title>
-
-    <para></para>
-
-    <section>
-      <title>Recording declarations</title>
-
-      <para></para>
-
-      <mediaobject>
-        <imageobject>
-          <imagedata fileref="images/ast.svg" format="SVG" />
-        </imageobject>
-
-        <imageobject>
-          <imagedata fileref="images/ast.png" format="PNG" />
-        </imageobject>
-      </mediaobject>
     </section>
   </chapter>
 </book>
