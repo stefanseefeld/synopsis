@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.27 2003/12/02 05:46:56 stefan Exp $
+# $Id: Comments.py,v 1.28 2003/12/10 05:19:54 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -585,15 +585,3 @@ class JavaTags(CommentProcessor):
          comment.set_text(text)
          comment.tags().extend(tags)
 
-processors = {
-    'ssd': SSDComments,
-    'ss' : SSComments,
-    'java': JavaComments,
-    'qt': QtComments,
-    'prev': Previous,
-    'group': Grouper1,
-    'group2': Grouper2,
-    'stripper': CommentStripper,
-    'summary' : Summarizer,
-    'javatags' : JavaTags,
-}
