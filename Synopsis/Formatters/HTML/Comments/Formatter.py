@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.18 2002/11/01 07:18:15 chalky Exp $
+# $Id: Formatter.py,v 1.19 2003/01/16 18:54:03 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.19  2003/01/16 18:54:03  chalky
+# Simplified re_tags regexp
+#
 # Revision 1.18  2002/11/01 07:18:15  chalky
 # Added the QuoteHTML formatter
 #
@@ -219,7 +222,7 @@ class JavadocFormatter (CommentFormatter):
     # @see IDL/Foo.Bar
     # if a line starts with @tag then all further lines are tags
     _re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
-    _re_tags = '(?P<text>.*?)\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
+    _re_tags = '\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
     _re_see_line = '^[ \t]*@see[ \t]+(([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)(\([^)]*\))?([ \t]+(.*))?$'
     _re_param = '^[ \t]*@param[ \t]+(?P<name>(A-Za-z+]+)([ \t]+(?P<desc>.*))?$'
 
@@ -249,7 +252,8 @@ class JavadocFormatter (CommentFormatter):
 	# Find tags
 	mo = self.re_tags.search(str)
 	if not mo: return str, ''
-	str, tags = mo.group('text'), mo.group('tags')
+	tags = mo.group('tags')
+	str = str[:mo.start('tags')]
 	# Split the tag section into lines
 	tags = map(string.strip, string.split(tags,'\n'))
 	# Join non-tag lines to the previous tag
