@@ -153,7 +153,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     perror(file);
     exit(1);
   }
-  Buffer buffer(ifs.rdbuf());
+  Buffer buffer(ifs.rdbuf(), file);
   Lexer lexer(&buffer, tokenset);
   SymbolLookup::Table symbols;
   Parser parser(lexer, symbols, ruleset);
@@ -268,7 +268,7 @@ PyObject *occ_print(PyObject *self, PyObject *args)
   }
   try
   {
-    Buffer buffer(ifs.rdbuf());
+    Buffer buffer(ifs.rdbuf(), src);
     Lexer lexer(&buffer, tokenset);
     SymbolLookup::Table symbols;
     Parser parser(lexer, symbols, ruleset);

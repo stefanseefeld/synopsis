@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     PTree::Encoding::do_init_static();
 
     std::ifstream ifs(input);
-    Buffer buffer(ifs.rdbuf());
+    Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
     SymbolLookup::Table symbols;
     Parser parser(lexer, symbols);

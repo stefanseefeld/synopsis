@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     if (debug) Trace::enable_debug();
 
     std::ifstream ifs(input);
-    Buffer buffer(ifs.rdbuf());
+    Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
     SymbolLookup::Table symbols;
     Parser parser(lexer, symbols);
