@@ -1,0 +1,951 @@
+<!DOCTYPE UI><UI version="3.0" stdsetdef="1">
+<class>SourceInsertWizard</class>
+<widget class="QWizard">
+    <property name="name">
+        <cstring>SourceInsertWizard</cstring>
+    </property>
+    <property name="geometry">
+        <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>600</width>
+            <height>480</height>
+        </rect>
+    </property>
+    <property name="caption">
+        <string>Source Action - Insert Rule Wizard</string>
+    </property>
+    <property name="titleFont">
+        <font>
+            <pointsize>20</pointsize>
+        </font>
+    </property>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>page</cstring>
+        </property>
+        <attribute name="title">
+            <string>Select Rule Direction</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel9</cstring>
+                </property>
+                <property name="text">
+                    <string>Select the direction for this rule.
+
+By making a rule 'Exclude', you can ignore certain files that you don't want documented. For example, you might want a glob expression to ignore the CVS directories.</string>
+                </property>
+                <property name="alignment">
+                    <set>WordBreak|AlignVCenter</set>
+                </property>
+            </widget>
+            <widget class="QButtonGroup">
+                <property name="name">
+                    <cstring>ButtonGroup2</cstring>
+                </property>
+                <property name="title">
+                    <string>Rule direction</string>
+                </property>
+                <vbox>
+                    <property name="name">
+                        <cstring>unnamed</cstring>
+                    </property>
+                    <property name="margin">
+                        <number>11</number>
+                    </property>
+                    <property name="spacing">
+                        <number>6</number>
+                    </property>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>IncludeRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Include these files</string>
+                        </property>
+                        <property name="checked">
+                            <bool>true</bool>
+                        </property>
+                    </widget>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>ExcludeRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Exclude these files</string>
+                        </property>
+                    </widget>
+                </vbox>
+            </widget>
+            <spacer>
+                <property name="name">
+                    <cstring>Spacer4</cstring>
+                </property>
+                <property name="orientation">
+                    <enum>Vertical</enum>
+                </property>
+                <property name="sizeType">
+                    <enum>Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                    <size>
+                        <width>0</width>
+                        <height>158</height>
+                    </size>
+                </property>
+            </spacer>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>select_type</cstring>
+        </property>
+        <attribute name="title">
+            <string>Select Rule Type</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel3</cstring>
+                </property>
+                <property name="text">
+                    <string>Select the type of source file rule you want to insert:</string>
+                </property>
+            </widget>
+            <widget class="QButtonGroup">
+                <property name="name">
+                    <cstring>ButtonGroup1</cstring>
+                </property>
+                <property name="title">
+                    <string>Rule Type</string>
+                </property>
+                <vbox>
+                    <property name="name">
+                        <cstring>unnamed</cstring>
+                    </property>
+                    <property name="margin">
+                        <number>11</number>
+                    </property>
+                    <property name="spacing">
+                        <number>6</number>
+                    </property>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>SimpleRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Simple</string>
+                        </property>
+                        <property name="checked">
+                            <bool>true</bool>
+                        </property>
+                    </widget>
+                    <widget class="QLabel">
+                        <property name="name">
+                            <cstring>TextLabel4</cstring>
+                        </property>
+                        <property name="text">
+                            <string>A rule that selects a simple list of filenames</string>
+                        </property>
+                        <property name="alignment">
+                            <set>WordBreak|AlignVCenter</set>
+                        </property>
+                        <property name="indent">
+                            <number>22</number>
+                        </property>
+                    </widget>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>DirRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Directory and Glob expression</string>
+                        </property>
+                    </widget>
+                    <widget class="QLabel">
+                        <property name="name">
+                            <cstring>TextLabel5</cstring>
+                        </property>
+                        <property name="text">
+                            <string>A rule that specifies one or more directories and a glob expression to use for selecting files. The glob expression (eg: *.hpp) can also select multiple types (eg: "*.hpp", "*.cpp")</string>
+                        </property>
+                        <property name="alignment">
+                            <set>WordBreak|AlignVCenter</set>
+                        </property>
+                        <property name="indent">
+                            <number>22</number>
+                        </property>
+                    </widget>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>BaseRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Recursive Directory and Glob expression</string>
+                        </property>
+                    </widget>
+                    <widget class="QLabel">
+                        <property name="name">
+                            <cstring>TextLabel5_2</cstring>
+                        </property>
+                        <property name="text">
+                            <string>A rule that specifies one or more directories and a glob expression to use for selecting files, but will also recurse into sub-directories to find matching files</string>
+                        </property>
+                        <property name="alignment">
+                            <set>WordBreak|AlignVCenter</set>
+                        </property>
+                        <property name="indent">
+                            <number>22</number>
+                        </property>
+                    </widget>
+                </vbox>
+            </widget>
+            <spacer>
+                <property name="name">
+                    <cstring>Spacer3</cstring>
+                </property>
+                <property name="orientation">
+                    <enum>Vertical</enum>
+                </property>
+                <property name="sizeType">
+                    <enum>Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                    <size>
+                        <width>0</width>
+                        <height>33</height>
+                    </size>
+                </property>
+            </spacer>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel6</cstring>
+                </property>
+                <property name="text">
+                    <string>Note that in all cases, the directories can be made relative to the current directory, rather than specifying absolute paths.</string>
+                </property>
+                <property name="alignment">
+                    <set>WordBreak|AlignVCenter</set>
+                </property>
+            </widget>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>simple</cstring>
+        </property>
+        <attribute name="title">
+            <string>Select Files</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel7</cstring>
+                </property>
+                <property name="text">
+                    <string>Select the files you want to include in this rule:</string>
+                </property>
+            </widget>
+            <widget class="QGroupBox">
+                <property name="name">
+                    <cstring>GroupBox3</cstring>
+                </property>
+                <property name="title">
+                    <string>Files</string>
+                </property>
+                <vbox>
+                    <property name="name">
+                        <cstring>unnamed</cstring>
+                    </property>
+                    <property name="margin">
+                        <number>11</number>
+                    </property>
+                    <property name="spacing">
+                        <number>6</number>
+                    </property>
+                    <widget class="QListView">
+                        <column>
+                            <property name="text">
+                                <string>Filename</string>
+                            </property>
+                            <property name="clickable">
+                                <bool>true</bool>
+                            </property>
+                            <property name="resizeable">
+                                <bool>true</bool>
+                            </property>
+                        </column>
+                        <property name="name">
+                            <cstring>FileList</cstring>
+                        </property>
+                        <property name="selectionMode">
+                            <enum>Extended</enum>
+                        </property>
+                    </widget>
+                    <widget class="QLayoutWidget">
+                        <property name="name">
+                            <cstring>Layout4</cstring>
+                        </property>
+                        <hbox>
+                            <property name="name">
+                                <cstring>unnamed</cstring>
+                            </property>
+                            <property name="margin">
+                                <number>0</number>
+                            </property>
+                            <property name="spacing">
+                                <number>6</number>
+                            </property>
+                            <widget class="QPushButton">
+                                <property name="name">
+                                    <cstring>AddFilesButton</cstring>
+                                </property>
+                                <property name="text">
+                                    <string>Add files</string>
+                                </property>
+                            </widget>
+                            <spacer>
+                                <property name="name">
+                                    <cstring>Spacer7</cstring>
+                                </property>
+                                <property name="orientation">
+                                    <enum>Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>Expanding</enum>
+                                </property>
+                                <property name="sizeHint">
+                                    <size>
+                                        <width>131</width>
+                                        <height>0</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                            <widget class="QPushButton">
+                                <property name="name">
+                                    <cstring>RemoveFileButton</cstring>
+                                </property>
+                                <property name="enabled">
+                                    <bool>false</bool>
+                                </property>
+                                <property name="text">
+                                    <string>Remove from list</string>
+                                </property>
+                            </widget>
+                        </hbox>
+                    </widget>
+                </vbox>
+            </widget>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>page</cstring>
+        </property>
+        <attribute name="title">
+            <string>Select Directories</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel7_2</cstring>
+                </property>
+                <property name="text">
+                    <string>Select the directories you want to include in this rule:</string>
+                </property>
+            </widget>
+            <widget class="QGroupBox">
+                <property name="name">
+                    <cstring>GroupBox3_2</cstring>
+                </property>
+                <property name="title">
+                    <string>Directories</string>
+                </property>
+                <vbox>
+                    <property name="name">
+                        <cstring>unnamed</cstring>
+                    </property>
+                    <property name="margin">
+                        <number>11</number>
+                    </property>
+                    <property name="spacing">
+                        <number>6</number>
+                    </property>
+                    <widget class="QListView">
+                        <column>
+                            <property name="text">
+                                <string>Path</string>
+                            </property>
+                            <property name="clickable">
+                                <bool>true</bool>
+                            </property>
+                            <property name="resizeable">
+                                <bool>true</bool>
+                            </property>
+                        </column>
+                        <property name="name">
+                            <cstring>DirList</cstring>
+                        </property>
+                        <property name="selectionMode">
+                            <enum>Extended</enum>
+                        </property>
+                    </widget>
+                    <widget class="QLayoutWidget">
+                        <property name="name">
+                            <cstring>Layout7</cstring>
+                        </property>
+                        <hbox>
+                            <property name="name">
+                                <cstring>unnamed</cstring>
+                            </property>
+                            <property name="margin">
+                                <number>0</number>
+                            </property>
+                            <property name="spacing">
+                                <number>6</number>
+                            </property>
+                            <widget class="QPushButton">
+                                <property name="name">
+                                    <cstring>AddDirectoryButton</cstring>
+                                </property>
+                                <property name="text">
+                                    <string>Add directory</string>
+                                </property>
+                            </widget>
+                            <spacer>
+                                <property name="name">
+                                    <cstring>Spacer8</cstring>
+                                </property>
+                                <property name="orientation">
+                                    <enum>Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>Expanding</enum>
+                                </property>
+                                <property name="sizeHint">
+                                    <size>
+                                        <width>121</width>
+                                        <height>0</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                            <widget class="QPushButton">
+                                <property name="name">
+                                    <cstring>RemoveDirectoryButton</cstring>
+                                </property>
+                                <property name="enabled">
+                                    <bool>false</bool>
+                                </property>
+                                <property name="text">
+                                    <string>Remove directory</string>
+                                </property>
+                            </widget>
+                        </hbox>
+                    </widget>
+                </vbox>
+            </widget>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>page</cstring>
+        </property>
+        <attribute name="title">
+            <string>Select File Glob Expression</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel11</cstring>
+                </property>
+                <property name="text">
+                    <string>Enter the glob expression for selecting files. You can enter multiple expressions by using a comma. Extra whitespace is removed. To use a real space or comma in the filename, quote it with a "\" character, eg:
+
+*.cc - select all files ending in .cc
+*.c, *.h - select all files ending in .c or .h
+temp?.hpp - the ? matches one character, eg: temp1.hpp and temp2.hpp but not tempAll.hpp
+*\ * - Any file with a space in it
+* - All files</string>
+                </property>
+                <property name="alignment">
+                    <set>WordBreak|AlignVCenter</set>
+                </property>
+            </widget>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel12</cstring>
+                </property>
+                <property name="text">
+                    <string>Glob Expression:</string>
+                </property>
+            </widget>
+            <widget class="QLineEdit">
+                <property name="name">
+                    <cstring>FileGlobEdit</cstring>
+                </property>
+                <property name="text">
+                    <string>*</string>
+                </property>
+            </widget>
+            <spacer>
+                <property name="name">
+                    <cstring>Spacer5</cstring>
+                </property>
+                <property name="orientation">
+                    <enum>Vertical</enum>
+                </property>
+                <property name="sizeType">
+                    <enum>Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                    <size>
+                        <width>0</width>
+                        <height>50</height>
+                    </size>
+                </property>
+            </spacer>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>page</cstring>
+        </property>
+        <attribute name="title">
+            <string>Select Exclude Expression</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel13</cstring>
+                </property>
+                <property name="text">
+                    <string>Each filename matched by previous rules will be compared to this Glob expression. If it matches then the file will be removed from the list of files for this Source Action.
+
+Note that the expression is compared to the whole filename, but a / is always prefixed to simplify the matching of directory names.
+
+Eg: */CVS/*  matches all CVS directories
+Eg: */.*   matches all hidden files (those that start with a . are hidden by convention in Unix).
+Eg: /Subdir/OldFile.hpp  matches one file in the given project sub-directory
+Eg: */stdafx.h   matches the file stdafx.h in any directory</string>
+                </property>
+                <property name="alignment">
+                    <set>WordBreak|AlignVCenter</set>
+                </property>
+            </widget>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel14</cstring>
+                </property>
+                <property name="text">
+                    <string>Enter Glob Expression or select from list:</string>
+                </property>
+            </widget>
+            <widget class="QComboBox">
+                <item>
+                    <property name="text">
+                        <string>&lt;type here or click arrow for a list&gt;</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>*/CVS/*</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>*/.*</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>*/stdafx.*</string>
+                    </property>
+                </item>
+                <property name="name">
+                    <cstring>ExcludeCombo</cstring>
+                </property>
+                <property name="editable">
+                    <bool>true</bool>
+                </property>
+                <property name="insertionPolicy">
+                    <enum>AtTop</enum>
+                </property>
+            </widget>
+            <spacer>
+                <property name="name">
+                    <cstring>Spacer6</cstring>
+                </property>
+                <property name="orientation">
+                    <enum>Vertical</enum>
+                </property>
+                <property name="sizeType">
+                    <enum>Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                    <size>
+                        <width>0</width>
+                        <height>41</height>
+                    </size>
+                </property>
+            </spacer>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>page</cstring>
+        </property>
+        <attribute name="title">
+            <string>Make directories relative</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel1</cstring>
+                </property>
+                <property name="text">
+                    <string>Using absolute pathnames is generally not a good idea, since it limits the ability to distribute the config file with your software.
+
+You can make any directories you have specified relative to either the current directory, or a specified directory.</string>
+                </property>
+                <property name="alignment">
+                    <set>WordBreak|AlignVCenter</set>
+                </property>
+            </widget>
+            <widget class="QButtonGroup">
+                <property name="name">
+                    <cstring>ButtonGroup3</cstring>
+                </property>
+                <property name="title">
+                    <string>Select relative option</string>
+                </property>
+                <vbox>
+                    <property name="name">
+                        <cstring>unnamed</cstring>
+                    </property>
+                    <property name="margin">
+                        <number>11</number>
+                    </property>
+                    <property name="spacing">
+                        <number>6</number>
+                    </property>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>RelativeNoneRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Don't change my directories</string>
+                        </property>
+                        <property name="checked">
+                            <bool>true</bool>
+                        </property>
+                    </widget>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>RelativeCurrentRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Make directories relative to current directory</string>
+                        </property>
+                    </widget>
+                    <widget class="QLabel">
+                        <property name="name">
+                            <cstring>CurrentDirectoryLabel</cstring>
+                        </property>
+                        <property name="enabled">
+                            <bool>false</bool>
+                        </property>
+                        <property name="text">
+                            <string>Current Directory: foo</string>
+                        </property>
+                        <property name="indent">
+                            <number>20</number>
+                        </property>
+                    </widget>
+                    <widget class="QRadioButton">
+                        <property name="name">
+                            <cstring>RelativeThisRadio</cstring>
+                        </property>
+                        <property name="text">
+                            <string>Make directories relative to this directory:</string>
+                        </property>
+                    </widget>
+                    <widget class="QLayoutWidget">
+                        <property name="name">
+                            <cstring>Layout6</cstring>
+                        </property>
+                        <hbox>
+                            <property name="name">
+                                <cstring>unnamed</cstring>
+                            </property>
+                            <property name="margin">
+                                <number>0</number>
+                            </property>
+                            <property name="spacing">
+                                <number>6</number>
+                            </property>
+                            <widget class="QLineEdit">
+                                <property name="name">
+                                    <cstring>RelativeThisEdit</cstring>
+                                </property>
+                                <property name="enabled">
+                                    <bool>false</bool>
+                                </property>
+                                <property name="sizePolicy">
+                                    <sizepolicy>
+                                        <hsizetype>7</hsizetype>
+                                        <vsizetype>0</vsizetype>
+                                        <horstretch>0</horstretch>
+                                        <verstretch>1</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <property name="text">
+                                    <string>Click the ... button to select a directory</string>
+                                </property>
+                            </widget>
+                            <widget class="QPushButton">
+                                <property name="name">
+                                    <cstring>RelativeThisButton</cstring>
+                                </property>
+                                <property name="enabled">
+                                    <bool>false</bool>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>32</width>
+                                        <height>32767</height>
+                                    </size>
+                                </property>
+                                <property name="text">
+                                    <string>...</string>
+                                </property>
+                            </widget>
+                        </hbox>
+                    </widget>
+                </vbox>
+            </widget>
+        </vbox>
+    </widget>
+    <widget class="QWidget">
+        <property name="name">
+            <cstring>page</cstring>
+        </property>
+        <attribute name="title">
+            <string>Finished</string>
+        </attribute>
+        <vbox>
+            <property name="name">
+                <cstring>unnamed</cstring>
+            </property>
+            <property name="margin">
+                <number>11</number>
+            </property>
+            <property name="spacing">
+                <number>6</number>
+            </property>
+            <widget class="QLabel">
+                <property name="name">
+                    <cstring>TextLabel8</cstring>
+                </property>
+                <property name="text">
+                    <string>That's it!
+
+Your new Source Rule is now complete.
+
+Click Finish to accept this new rule, or go Back to make changes.</string>
+                </property>
+            </widget>
+            <widget class="QTextEdit">
+                <property name="name">
+                    <cstring>RuleInfo</cstring>
+                </property>
+                <property name="text">
+                    <string>Text info for rule goes here ...</string>
+                </property>
+                <property name="readOnly">
+                    <bool>true</bool>
+                </property>
+            </widget>
+        </vbox>
+    </widget>
+</widget>
+<connections>
+    <connection>
+        <sender>IncludeRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>IncludeRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>ExcludeRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>ExcludeRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>SimpleRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>SimpleRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>DirRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>DirRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>BaseRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>BaseRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>AddFilesButton</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>AddFilesButton_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>RemoveFileButton</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>RemoveFileButton_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>FileList</sender>
+        <signal>selectionChanged()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>FileList_selectionChanged()</slot>
+    </connection>
+    <connection>
+        <sender>RelativeNoneRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>RelativeNoneRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>RelativeCurrentRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>RelativeCurrentRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>RelativeThisRadio</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>RelativeThisRadio_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>RelativeThisButton</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>RelativeThisButton_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>AddDirectoryButton</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>AddDirectoryButton_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>RemoveDirectoryButton</sender>
+        <signal>clicked()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>RemoveDirectoryButton_clicked()</slot>
+    </connection>
+    <connection>
+        <sender>DirList</sender>
+        <signal>selectionChanged()</signal>
+        <receiver>SourceInsertWizard</receiver>
+        <slot>DirList_selectionChanged()</slot>
+    </connection>
+</connections>
+<includes>
+    <include location="local" impldecl="in implementation">sourceinsertwizard.ui.h</include>
+</includes>
+<slots>
+    <slot>init()</slot>
+    <slot>SelectFilesButton_clicked()</slot>
+    <slot>IncludeRadio_clicked()</slot>
+    <slot>ExcludeRadio_clicked()</slot>
+    <slot>SimpleRadio_clicked()</slot>
+    <slot>DirRadio_clicked()</slot>
+    <slot>BaseRadio_clicked()</slot>
+    <slot>AddFilesButton_clicked()</slot>
+    <slot>RemoveFileButton_clicked()</slot>
+    <slot>FileList_selectionChanged()</slot>
+    <slot>RelativeNoneRadio_clicked()</slot>
+    <slot>RelativeCurrentRadio_clicked()</slot>
+    <slot>RelativeThisRadio_clicked()</slot>
+    <slot>RelativeThisButton_clicked()</slot>
+    <slot>AddDirectoryButton_clicked()</slot>
+    <slot>RemoveDirectoryButton_clicked()</slot>
+    <slot>DirList_selectionChanged()</slot>
+</slots>
+<layoutdefaults spacing="6" margin="11"/>
+</UI>
