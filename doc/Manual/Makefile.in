@@ -40,7 +40,8 @@ vpath Manual.texi $(srcdir)
 
 all: html pdf info
 
-html: html/python html/cxx-api html/ucpp html/occ html/ctool
+html: html/python html/cxx-api html/ucpp html/occ html/ctool 
+sxr: html/sxr
 pdf: Manual.pdf
 
 html/python: py.syn all.xref
@@ -63,9 +64,17 @@ html/ctool: ctool.syn all.xref
 	@echo formatting $@
 	$(synopsis) html --output=$@ $<
 
-all.xref: py.syn api.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
+html/sxr: sxr.syn all.xref
+	@echo formatting $@
+	$(synopsis) sxr --output=$@ $<
+
+sxr.syn: py.syn api.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
 	@echo generating $@
-	$(synopsis) xref --output=$@ $^
+	$(synopsis) archive --output=$@ $^
+
+all.xref: sxr.syn
+	@echo generating $@
+	$(synopsis) xref --output=$@ $<
 
 # Compile Python files
 $(py_syn): %.syn: %.py
@@ -106,7 +115,7 @@ parsers-cxx-py.syn:	py.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Parsers::Cxx' --output=$@ $^
 
-parsers-cxx-cpp.syn:	cxx.syn
+parsers-cxx-cpp.syn:	occ.syn
 	@echo linking $@
 	$(synopsis) link --output=$@ $^
 
