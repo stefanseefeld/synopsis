@@ -38,7 +38,7 @@ public:
   PyObject *addDeclared(const string &, PyObject *);
   PyObject *addTemplate(const string &, PyObject *, PyObject *);
   PyObject *addModifier(PyObject *, const vector<string> &, const vector<string> &);
-  PyObject *addParametrized(const string &, PyObject *, const vector<PyObject *> &);
+  PyObject *addParametrized(PyObject *, const vector<PyObject *> &);
 
   //.
   //. types from the Synopsis.AST module
