@@ -45,7 +45,13 @@ div.enumerator {
 div.module-section {
     margin-left: 1em;
 }
+div.module-section img {
+    vertical-align: text-bottom;
+}
 div.files {
+    margin-left: 1em;
+}
+div.filepage-scope {
     margin-left: 1em;
 }
 td.heading {
