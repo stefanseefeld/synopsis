@@ -6,14 +6,16 @@
 //
 
 #include <PTree/Display.hh>
+#include <typeinfo>
 
 using namespace PTree;
 
-Display::Display(std::ostream &os, bool encoded)
+Display::Display(std::ostream &os, bool encoded, bool typeinfo)
   : my_os(os),
     my_indent(0),
     my_depth(0),
-    my_encoded(encoded) 
+    my_encoded(encoded),
+    my_typeinfo(typeinfo)
 {
 }
 
@@ -26,6 +28,7 @@ void Display::display(Node *n)
 
 void Display::visit(Atom *a)
 {
+  if (my_typeinfo) my_os << typeid(*a).name() << ':';
   const char *p = a->position();
   size_t n = a->length();
 
@@ -46,6 +49,7 @@ void Display::visit(Atom *a)
 
 void Display::visit(List *l) 
 {
+  if (my_typeinfo) my_os << typeid(*l).name() << ':';
   if(too_deep())
   {
     my_os << " ** too many nestings ** ";
@@ -82,6 +86,7 @@ void Display::visit(List *l)
 
 void Display::visit(DupAtom *a)
 {
+  if (my_typeinfo) my_os << typeid(*a).name() << ':';
   const char *pos = a->position();
   size_t length = a->length();
 
@@ -100,8 +105,10 @@ void Display::visit(DupAtom *a)
 
 void Display::visit(Brace *l)
 {
+  if (my_typeinfo) my_os << typeid(*l).name() << ':';
   if(too_deep())
   {
+    my_os << " ** too many nestings ** ";
     return;
   }
   ++my_indent;

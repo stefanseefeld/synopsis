@@ -17,7 +17,7 @@ namespace PTree
 class Display : public Visitor
 {
 public:
-  Display(std::ostream &os, bool encoded);
+  Display(std::ostream &os, bool encoded, bool typeinfo = false);
 
   void display(Node *);
 
@@ -41,11 +41,12 @@ private:
   size_t        my_indent;
   size_t        my_depth;
   bool          my_encoded;
+  bool          my_typeinfo;
 };
 
-inline void display(const Node *node, std::ostream &os, bool encoded)
+inline void display(const Node *node, std::ostream &os, bool encoded, bool typeinfo)
 {
-  Display d(os, encoded);
+  Display d(os, encoded, typeinfo);
   d.display(const_cast<Node *>(node));
 }
 
