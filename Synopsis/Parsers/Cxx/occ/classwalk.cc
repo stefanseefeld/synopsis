@@ -12,6 +12,7 @@
   implied warranty.
 */
 
+#include <iostream>
 #include "ptree.h"
 #include "classwalk.h"
 #include "cbodywalk.h"

@@ -54,7 +54,7 @@ bool Parser::ErrorMessage(const char* msg, Ptree* name, Ptree* where)
 
     std::cerr << msg;
     if(name != nil)
-	name->Write(cerr);
+	name->Write(std::cerr);
 
     std::cerr << '\n';
     return bool(++nerrors < MaxErrors);

@@ -34,6 +34,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include "token.h"
 #include "hash.h"
 #include "ptree.h"
