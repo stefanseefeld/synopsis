@@ -30,102 +30,7 @@
 
 # define _GC_H
 
-/*
- * Some tests for old macros.  These violate our namespace rules and will
- * disappear shortly.  Use the GC_ names.
- */
-#if defined(SOLARIS_THREADS) || defined(_SOLARIS_THREADS)
-# define GC_SOLARIS_THREADS
-#endif
-#if defined(_SOLARIS_PTHREADS)
-# define GC_SOLARIS_PTHREADS
-#endif
-#if defined(IRIX_THREADS)
-# define GC_IRIX_THREADS
-#endif
-#if defined(DGUX_THREADS)
-# if !defined(GC_DGUX386_THREADS)
-#  define GC_DGUX386_THREADS
-# endif
-#endif
-#if defined(HPUX_THREADS)
-# define GC_HPUX_THREADS
-#endif
-#if defined(OSF1_THREADS)
-# define GC_OSF1_THREADS
-#endif
-#if defined(LINUX_THREADS)
-# define GC_LINUX_THREADS
-#endif
-#if defined(WIN32_THREADS)
-# define GC_WIN32_THREADS
-#endif
-#if defined(USE_LD_WRAP)
-# define GC_USE_LD_WRAP
-#endif
-
-#if !defined(_REENTRANT) && (defined(GC_SOLARIS_THREADS) \
-		             || defined(GC_SOLARIS_PTHREADS) \
-			     || defined(GC_HPUX_THREADS) \
-			     || defined(GC_LINUX_THREADS))
-# define _REENTRANT
-	/* Better late than never.  This fails if system headers that	*/
-	/* depend on this were previously included.			*/
-#endif
-
-#if defined(GC_DGUX386_THREADS) && !defined(_POSIX4A_DRAFT10_SOURCE)
-# define _POSIX4A_DRAFT10_SOURCE 1
-#endif
-
-#if defined(GC_SOLARIS_PTHREADS) && !defined(GC_SOLARIS_THREADS)
-#   define GC_SOLARIS_THREADS
-#endif
-
-# if defined(GC_SOLARIS_PTHREADS) || defined(GC_FREEBSD_THREADS) || \
-	defined(GC_IRIX_THREADS) || defined(GC_LINUX_THREADS) || \
-	defined(GC_HPUX_THREADS) || defined(GC_OSF1_THREADS) || \
-	defined(GC_DGUX386_THREADS) || \
-        (defined(GC_WIN32_THREADS) && defined(__CYGWIN32__))
-#   define GC_PTHREADS
-# endif
-
-# define __GC
-# include <stddef.h>
-# ifdef _WIN32_WCE
-/* Yet more kluges for WinCE */
-#   include <stdlib.h>		/* size_t is defined here */
-    typedef long ptrdiff_t;	/* ptrdiff_t is not defined */
-# endif
-
-#if defined(__MINGW32__) && defined(_DLL) && !defined(GC_NOT_DLL)
-# ifdef GC_BUILD
-#   define GC_API __declspec(dllexport)
-# else
-#   define GC_API __declspec(dllimport)
-# endif
-#endif
-
-#if (defined(__DMC__) || defined(_MSC_VER)) \
-		&& (defined(_DLL) && !defined(GC_NOT_DLL) \
-	            || defined(GC_DLL))
-# ifdef GC_BUILD
-#   define GC_API extern __declspec(dllexport)
-# else
-#   define GC_API __declspec(dllimport)
-# endif
-#endif
-
-#if defined(__WATCOMC__) && defined(GC_DLL)
-# ifdef GC_BUILD
-#   define GC_API extern __declspec(dllexport)
-# else
-#   define GC_API extern __declspec(dllimport)
-# endif
-#endif
-
-#ifndef GC_API
-#define GC_API extern
-#endif
+# include "gc_config_macros.h"
 
 # if defined(__STDC__) || defined(__cplusplus)
 #   define GC_PROTO(args) args
@@ -548,6 +453,42 @@ GC_API GC_PTR GC_malloc_atomic_ignore_off_page GC_PROTO((size_t lb));
 #   define GC_RETURN_ADDR (GC_word)__return_address
 #endif
 
+#ifdef __linux__
+# include <features.h>
+# if (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 1 || __GLIBC__ > 2) \
+     && !defined(__ia64__)
+#   define GC_HAVE_BUILTIN_BACKTRACE
+#   define GC_CAN_SAVE_CALL_STACKS
+# endif
+# if defined(__i386__) || defined(__x86_64__)
+#   define GC_CAN_SAVE_CALL_STACKS
+# endif
+#endif
+
+#if defined(__sparc__)
+#   define GC_CAN_SAVE_CALL_STACKS
+#endif
+
+/* If we're on an a platform on which we can't save call stacks, but	*/
+/* gcc is normally used, we go ahead and define GC_ADD_CALLER.  	*/
+/* We make this decision independent of whether gcc is actually being	*/
+/* used, in order to keep the interface consistent, and allow mixing	*/
+/* of compilers.							*/
+/* This may also be desirable if it is possible but expensive to	*/
+/* retrieve the call chain.						*/
+#if (defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__) \
+     || defined(__FreeBSD__)) & !defined(GC_CAN_SAVE_CALL_STACKS)
+# define GC_ADD_CALLER
+# if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95) 
+    /* gcc knows how to retrieve return address, but we don't know */
+    /* how to generate call stacks.				   */
+#   define GC_RETURN_ADDR (GC_word)__builtin_return_address(0)
+# else
+    /* Just pass 0 for gcc compatibility. */
+#   define GC_RETURN_ADDR 0
+# endif
+#endif
+
 #ifdef GC_ADD_CALLER
 #  define GC_EXTRAS GC_RETURN_ADDR, __FILE__, __LINE__
 #  define GC_EXTRA_PARAMS GC_word ra, GC_CONST char * s, int i
@@ -565,6 +506,10 @@ GC_API GC_PTR GC_debug_malloc_atomic
 GC_API GC_PTR GC_debug_malloc_uncollectable
 	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
 GC_API GC_PTR GC_debug_malloc_stubborn
+	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
+GC_API GC_PTR GC_debug_malloc_ignore_off_page
+	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
+GC_API GC_PTR GC_debug_malloc_atomic_ignore_off_page
 	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
 GC_API void GC_debug_free GC_PROTO((GC_PTR object_addr));
 GC_API GC_PTR GC_debug_realloc
@@ -592,8 +537,12 @@ GC_API GC_PTR GC_debug_realloc_replacement
 # ifdef GC_DEBUG
 #   define GC_MALLOC(sz) GC_debug_malloc(sz, GC_EXTRAS)
 #   define GC_MALLOC_ATOMIC(sz) GC_debug_malloc_atomic(sz, GC_EXTRAS)
-#   define GC_MALLOC_UNCOLLECTABLE(sz) GC_debug_malloc_uncollectable(sz, \
-							GC_EXTRAS)
+#   define GC_MALLOC_UNCOLLECTABLE(sz) \
+			GC_debug_malloc_uncollectable(sz, GC_EXTRAS)
+#   define GC_MALLOC_IGNORE_OFF_PAGE(sz) \
+			GC_debug_malloc_ignore_off_page(sz, GC_EXTRAS)
+#   define GC_MALLOC_ATOMIC_IGNORE_OFF_PAGE(sz) \
+			GC_debug_malloc_atomic_ignore_off_page(sz, GC_EXTRAS)
 #   define GC_REALLOC(old, sz) GC_debug_realloc(old, sz, GC_EXTRAS)
 #   define GC_FREE(p) GC_debug_free(p)
 #   define GC_REGISTER_FINALIZER(p, f, d, of, od) \
@@ -612,6 +561,10 @@ GC_API GC_PTR GC_debug_realloc_replacement
 #   define GC_MALLOC(sz) GC_malloc(sz)
 #   define GC_MALLOC_ATOMIC(sz) GC_malloc_atomic(sz)
 #   define GC_MALLOC_UNCOLLECTABLE(sz) GC_malloc_uncollectable(sz)
+#   define GC_MALLOC_IGNORE_OFF_PAGE(sz) \
+			GC_malloc_ignore_off_page(sz)
+#   define GC_MALLOC_ATOMIC_IGNORE_OFF_PAGE(sz) \
+			GC_malloc_atomic_ignore_off_page(sz)
 #   define GC_REALLOC(old, sz) GC_realloc(old, sz)
 #   define GC_FREE(p) GC_free(p)
 #   define GC_REGISTER_FINALIZER(p, f, d, of, od) \
@@ -763,11 +716,6 @@ GC_API int GC_unregister_disappearing_link GC_PROTO((GC_PTR * /* link */));
 	/* Returns 0 if link was not actually registered.	*/
 	/* Undoes a registration by either of the above two	*/
 	/* routines.						*/
-
-/* Auxiliary fns to make finalization work correctly with displaced	*/
-/* pointers introduced by the debugging allocators.			*/
-GC_API GC_PTR GC_make_closure GC_PROTO((GC_finalization_proc fn, GC_PTR data));
-GC_API void GC_debug_invoke_finalizer GC_PROTO((GC_PTR obj, GC_PTR data));
 
 /* Returns !=0  if GC_invoke_finalizers has something to do. 		*/
 GC_API int GC_should_invoke_finalizers GC_PROTO((void));
