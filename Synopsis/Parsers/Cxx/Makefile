@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.12 2002/07/11 02:07:10 chalky Exp $
+# $Id: Makefile,v 1.13 2002/10/27 07:27:32 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,7 +26,7 @@ include ../../../local.mk
 endif
 endif
 
-SRC	:= __init__.py __init__.pyc occ.so link.so
+SRC	:= __init__.py __init__.pyc occ.$(LIBRARY_EXT) link.$(LIBRARY_EXT)
 
 # Note ucpp and occ are both handled inside syn/Makefile
 ifeq '$(use_gc)' 'yes'
