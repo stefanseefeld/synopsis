@@ -18,6 +18,11 @@ import os
 
 import pprint
 
+# Path to the currently-being-processed package
+packagepath = ''
+# scoped name of the currently-being-processed package
+packagename = []
+
 def findModulePath(module):
     """Return the path for the given module"""
     global packagepath, packagename
