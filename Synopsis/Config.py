@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.22 2003/09/21 19:37:49 stefan Exp $
+#  $Id: Config.py,v 1.23 2003/10/09 05:02:39 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -572,6 +572,10 @@ class Base:
             name = 'DUMP'
             def __init__(self, argv): pass
 
+        class Dump:
+            name = 'Dump'
+            def __init__(self, argv): pass
+
         class Dia:
             name = 'Dia'
             def __init__(self, argv): pass
@@ -579,7 +583,7 @@ class Base:
         modules = {
             'HTML': HTML, 'DocBook':DocBook, 'TexInfo':TexInfo, 'Dot':Dot,
             'HTML_Simple':HTML_Simple, 'ASCII':ASCII,
-            'DUMP':DUMP, 'Dia':Dia,
+            'DUMP':DUMP, 'Dump':Dump, 'Dia':Dia,
             'HTML_Doxygen':HTML_Doxygen,
 	    'BoostBook':BoostBook
         }
