@@ -2230,7 +2230,7 @@ bool Parser::rPtrToMember(Ptree*& ptr_to_mem, Encoding& encode)
 
   template.argument
   : type.name
-  | logical.or.expr
+  | conditional.expr
 */
 bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
 {
@@ -2258,8 +2258,8 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
 	    encode.Append(type_encode);
 	else {
 	    lex->Restore(pos);	
-	    if(!rLogicalOrExpr(a, true))
-		return false;
+	    if(!rConditionalExpr(a, true))
+	        return false;
 
 	    encode.ValueTempParam();
 	}
@@ -2936,7 +2936,7 @@ bool Parser::rExpression(Ptree*& exp)
     Token tk;
     Ptree *left, *right;
 
-    if(!rConditionalExpr(left))
+    if(!rConditionalExpr(left, false))
 	return false;
 
     int t = lex->LookAhead(0);
@@ -2957,12 +2957,12 @@ bool Parser::rExpression(Ptree*& exp)
   conditional.expr
   : logical.or.expr {'?' comma.expression ':' conditional.expr}  right-to-left
 */
-bool Parser::rConditionalExpr(Ptree*& exp)
+bool Parser::rConditionalExpr(Ptree*& exp, bool temp_args)
 {
     Token tk1, tk2;
     Ptree *then, *otherwise;
 
-    if(!rLogicalOrExpr(exp, false))
+    if(!rLogicalOrExpr(exp, temp_args))
 	return false;
 
     if(lex->LookAhead(0) == '?'){
@@ -2973,7 +2973,7 @@ bool Parser::rConditionalExpr(Ptree*& exp)
 	if(lex->GetToken(tk2) != ':')
 	    return false;
 
-	if(!rConditionalExpr(otherwise))
+	if(!rConditionalExpr(otherwise, temp_args))
 	    return false;
 
 	exp = new PtreeCondExpr(exp, Ptree::List(new Leaf(tk1), then,

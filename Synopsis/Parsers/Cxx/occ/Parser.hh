@@ -119,7 +119,7 @@ protected:
   bool rCommaExpression(Ptree*&);
   
   bool rExpression(Ptree*&);
-  bool rConditionalExpr(Ptree*&);
+  bool rConditionalExpr(Ptree*&, bool);
   bool rLogicalOrExpr(Ptree*&, bool);
   bool rLogicalAndExpr(Ptree*&, bool);
   bool rInclusiveOrExpr(Ptree*&, bool);
