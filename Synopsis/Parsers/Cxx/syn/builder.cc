@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: builder.cc source file
 // Implementation of the Builder class
 
-// $Id: builder.cc,v 1.42 2002/12/12 17:25:34 chalky Exp $
+// $Id: builder.cc,v 1.43 2003/01/16 10:19:03 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: builder.cc,v $
+// Revision 1.43  2003/01/16 10:19:03  chalky
+// Prevent true, false and null appearing in output
+//
 // Revision 1.42  2002/12/12 17:25:34  chalky
 // Implemented Include support for C++ parser. A few other minor fixes.
 //
@@ -158,22 +161,23 @@ Builder::Builder(AST::SourceFile* file)
     global->dict->insert(create_base("long long"));
     global->dict->insert(create_base("long double"));
     global->dict->insert(t_null = create_base("__null_t"));
-    // Add variables for true and false
+    // Add a variables for true
     name.clear();
     name.push_back("true");
     decl = new AST::Variable(file, -1, "variable", name, t_bool, false);
-    add(decl);
+    global->dict->insert(decl);
     m->builtin_decls.push_back(decl);
+    // Add a variable for false
     name.clear();
     name.push_back("false");
     decl = new AST::Variable(file, -1, "variable", name, t_bool, false);
-    add(decl);
+    global->dict->insert(decl);
     m->builtin_decls.push_back(decl);
     // Add a variable for null pointer types (g++ #defines NULL to __null)
     name.clear();
     name.push_back("__null");
     decl = new AST::Variable(file, -1, "variable", name, t_null, false);
-    add(decl);
+    global->dict->insert(decl);
     m->builtin_decls.push_back(decl);
 
     // Create the Lookup helper
