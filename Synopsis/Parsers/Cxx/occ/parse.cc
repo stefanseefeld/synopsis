@@ -22,6 +22,7 @@
    is<name>() looks ahead and returns TRUE if the next symbol is <name>.
 */
 
+#include <stdio.h>
 #include <iostream.h>
 #include "parse.h"
 #include "token.h"
@@ -181,9 +182,14 @@ bool Parser::rDefinition(Ptree*& p)
     else if(t == USING)
 	res = rUsing(p);
     else {
+	if (!rDeclaration(p))
+	    return FALSE;
 	Ptree* c = lex->GetComments2();
-	if (res = rDeclaration(p))
+	if (c) {
+	    //cout << "Setting declarator comments to "; c->Display();
 	    Walker::SetDeclaratorComments(p, c);
+	}
+	return TRUE;
     }
 
     lex->GetComments();
@@ -428,6 +434,8 @@ bool Parser::rNamespaceSpec(Ptree*& spec)
     if(lex->GetToken(tk1) != NAMESPACE)
 	return FALSE;
 
+    Ptree* comments = lex->GetComments();
+
     if(lex->LookAhead(0) == '{')
 	name = nil;
     else
@@ -444,8 +452,11 @@ bool Parser::rNamespaceSpec(Ptree*& spec)
 	if(!rDefinition(body))
 	    return FALSE;
 
-    spec = new PtreeNamespaceSpec(new LeafNAMESPACE(tk1),
-				  Ptree::List(name, body));
+    PtreeNamespaceSpec *nspec;
+    spec = nspec = new PtreeNamespaceSpec(
+	new LeafNAMESPACE(tk1), Ptree::List(name, body));
+    
+    nspec->SetComments(comments);
     return TRUE;
 }
 
@@ -778,6 +789,7 @@ bool Parser::rDeclaration(Ptree*& statement)
 {
     Ptree *mem_s, *storage_s, *cv_q, *integral, *head;
     Encoding type_encode;
+    int res;
 
     if(!optMemberSpec(mem_s) || !optStorageSpec(storage_s))
 	return FALSE;
@@ -800,19 +812,24 @@ bool Parser::rDeclaration(Ptree*& statement)
        || !optIntegralTypeOrClassSpec(integral, type_encode))
 	return FALSE;
 
+    Ptree *comments = lex->GetComments();
+
     if(integral != nil)
-	return rIntegralDeclaration(statement, type_encode,
-				    head, integral, cv_q);
+	res = rIntegralDeclaration(statement, type_encode,
+				   head, integral, cv_q);
     else{
 	type_encode.Clear();
 	int t = lex->LookAhead(0);
 	if(cv_q != nil && ((t == Identifier && lex->LookAhead(1) == '=')
 			   || t == '*'))
-	    return rConstDeclaration(statement, type_encode, head, cv_q);
+	    res = rConstDeclaration(statement, type_encode, head, cv_q);
 	else
-	    return rOtherDeclaration(statement, type_encode,
-				     mem_s, cv_q, head);
+	    res = rOtherDeclaration(statement, type_encode,
+				    mem_s, cv_q, head);
     }
+    if (res && statement && (statement->What() == ntDeclaration))
+	static_cast<PtreeDeclaration*>(statement)->SetComments(comments);
+    return res;
 }
 
 bool Parser::rIntegralDeclaration(Ptree*& statement, Encoding& type_encode,
@@ -1378,9 +1395,16 @@ bool Parser::rDeclarators(Ptree*& decls, Encoding& type_encode,
 
     decls = nil;
     for(;;){
+
+	lex->LookAhead(0); // force comment finding
+	Ptree *comments = lex->GetComments();
+
 	encode.Reset(type_encode);
 	if(!rDeclaratorWithInit(d, encode, should_be_declarator, is_statement))
 	    return FALSE;
+	
+	if (d && (d->What() == ntDeclarator))
+	    static_cast<PtreeDeclarator*>(d)->SetComments(comments);
 
 	decls = Ptree::Snoc(decls, d);
 	if(lex->LookAhead(0) == ','){
@@ -2601,9 +2625,13 @@ bool Parser::rClassMember(Ptree*& mem)
 	return rMetaclassDecl(mem);
     else{
 	char* pos = lex->Save();
-	Ptree* comments = lex->GetComments2();
 	if(rDeclaration(mem)) {
-	    Walker::SetDeclaratorComments(mem, comments);
+	    Ptree* comments = lex->GetComments();
+	    if (comments) {
+		//cout << "Warning: rClassMember setting comments to ";
+		comments->Display();
+		Walker::SetDeclaratorComments(mem, comments);
+	    }
 	    return TRUE;
 	}
 

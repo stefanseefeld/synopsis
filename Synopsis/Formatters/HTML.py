@@ -95,7 +95,7 @@ class ScopeSorter:
 	self.__children = {}
 	scopename = scope.name()
 	for decl in scope.declarations():
-	    name, type = decl.name(), decl.type()
+	    name, type = decl.name(), string.capitalize(decl.type())
 	    if name[:-1] != scopename: continue
 	    if not self.__types.has_key(type):
 		self.__types[type] = {}
@@ -757,7 +757,8 @@ class Paginator:
 	    for key in keys:
 		child = dict[key]
 		# Check if need to add to detail list
-		if comments[child].detail and not isinstance(child, AST.Scope):
+		has_detail = comments[child].detail is not comments[child].summary
+		if has_detail and not isinstance(child, AST.Scope):
 		    if not details.has_key(type): details[type] = []
 		    details[type].append(child)
 		    self.summarizer.set_link_detail(1)
