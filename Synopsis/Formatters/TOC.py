@@ -1,4 +1,4 @@
-# $Id: TOC.py,v 1.3 2002/11/01 04:05:06 chalky Exp $
+# $Id: TOC.py,v 1.4 2003/11/11 12:50:56 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TOC.py,v $
+# Revision 1.4  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.3  2002/11/01 04:05:06  chalky
 # Don't let comma replacement screw up ampersands
 #
@@ -35,7 +38,7 @@
 
 import string, re
 
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 # Not sure how this should be set..
 verbose = 0

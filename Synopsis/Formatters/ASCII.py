@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.32 2003/01/27 06:53:36 chalky Exp $
+# $Id: ASCII.py,v 1.33 2003/11/11 12:50:56 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.33  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.32  2003/01/27 06:53:36  chalky
 # Added macro support for C++.
 #
@@ -71,7 +74,7 @@ Outputs the AST in plain ascii format similar to input.
 
 # THIS-IS-A-FORMATTER
 import sys, getopt, os, os.path, string
-from Synopsis.Core import Type, AST, Util
+from Synopsis import Type, AST, Util
 
 verbose = 0
 comment_str = "// %s\n"

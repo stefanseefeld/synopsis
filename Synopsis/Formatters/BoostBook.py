@@ -1,4 +1,4 @@
-#  $Id: BoostBook.py,v 1.1 2003/03/06 10:02:28 chalky Exp $
+#  $Id: BoostBook.py,v 1.2 2003/11/11 12:50:56 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2003 by Stephen Davies
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: BoostBook.py,v $
+# Revision 1.2  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.1  2003/03/06 10:02:28  chalky
 # First cut at a BoostBook formatter
 #
@@ -27,7 +30,7 @@
 # THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string, re
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 verbose = 0
 

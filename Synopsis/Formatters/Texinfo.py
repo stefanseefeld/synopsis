@@ -1,4 +1,4 @@
-#  $Id: Texinfo.py,v 1.5 2001/07/26 08:22:20 chalky Exp $
+#  $Id: Texinfo.py,v 1.6 2003/11/11 12:50:56 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Texinfo.py,v $
+# Revision 1.6  2003/11/11 12:50:56  stefan
+# remove 'Core' module
+#
 # Revision 1.5  2001/07/26 08:22:20  chalky
 # Fixes 'bug' caused by bad template support
 #
@@ -40,7 +43,7 @@
 # THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string, re
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 verbose = 0
 
