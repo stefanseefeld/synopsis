@@ -15,16 +15,16 @@ Storage.syn:	Storage.idl
 		$(synopsis) -p IDL -o $@ $<
 
 StorableImpl.syn:	StorableImpl.hh Storage.hh
-		$(synopsis) -p C++ -Wp,-m -Wl,-m,crossref.py $(CPPFLAGS) -o $@ $<
+		$(synopsis) -p C++ -Wp,-m -Wl,-M,C++toIDL $(CPPFLAGS) -o $@ $<
 
 FactoryImpl.syn:	FactoryImpl.hh Storage.hh
-		$(synopsis) -p C++ -Wp,-m -Wl,-m,crossref.py $(CPPFLAGS) -o $@ $<
+		$(synopsis) -p C++ -Wp,-m -Wl,-M,C++toIDL $(CPPFLAGS) -o $@ $<
 
 interface interface.toc:	Storage.syn
-		$(synopsis) -f HTML -Wf,-t,interface.toc -Wf,-s,style.css,-S,style.css -o interface $<
+		$(synopsis) -f HTML -Wf,-t,interface.toc -Wf,-s,style.css,-S,../html.css -o interface $<
 
 implementation: StorableImpl.syn FactoryImpl.syn interface.toc
-		$(synopsis) -f HTML -Wf,-r,interface.toc -Wf,-s,style.css,-S,style.css -o $@ StorableImpl.syn FactoryImpl.syn
+		$(synopsis) -f HTML -Wf,-r,interface.toc -Wf,-s,style.css,-S,../html.css -o $@ StorableImpl.syn FactoryImpl.syn
 
 clean:
 	rm -rf Storage.hh StorageSK.cc *.syn interface interface.toc implementation
