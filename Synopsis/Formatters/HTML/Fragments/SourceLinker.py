@@ -1,4 +1,4 @@
-# $Id: SourceLinker.py,v 1.1 2003/12/05 22:31:53 stefan Exp $
+# $Id: SourceLinker.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -11,7 +11,7 @@ from Synopsis.Formatters.HTML.Tags import *
 from Default import Default
 
 class SourceLinker(Default):
-   """Adds a link to the decl on the file page to all declarations"""
+   """Adds a link to the decl on the file view to all declarations"""
 
    def format_declaration(self, decl):
 

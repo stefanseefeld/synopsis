@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.18 2003/11/16 21:09:45 stefan Exp $
+# $Id: ModuleIndexer.py,v 1.19 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,23 +9,23 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class ModuleIndexer(Page):
-   """A module for indexing AST.Modules. Each module gets its own page with a
+class ModuleIndexer(View):
+   """A module for indexing AST.Modules. Each module gets its own view with a
    list of nested scope declarations with comments. It is intended to go in
    the left frame..."""
 
    def register(self, processor):
-      """Register first page as index page"""
+      """Register first view as index view"""
 
-      Page.register(self, processor)
+      View.register(self, processor)
       processor.set_using_module_index()
       self.__filename = self.processor.file_layout.module_index(())
-      processor.set_index_page(self.__filename)
+      processor.set_index_view(self.__filename)
 
    def filename(self): return self.__filename
 
@@ -35,15 +35,15 @@ class ModuleIndexer(Page):
       """Creates indexes for all modules"""
 
       start_file = self.processor.file_layout.module_index(start.name())
-      self.processor.set_index_page(start_file)
+      self.processor.set_index_view(start_file)
       self.__namespaces = [start]
       while self.__namespaces:
          ns = self.__namespaces.pop(0)
          self.process_namespace_index(ns)
     
-   def _makePageHeading(self, ns):
+   def make_view_heading(self, ns):
       """Creates a HTML fragment which becomes the name at the top of the
-      index page. This may be overridden, but the default is (now) to make a
+      index view. This may be overridden, but the default is (now) to make a
       linked fully scoped name, where each scope has a link to the relevant
       index."""
 
@@ -71,7 +71,7 @@ class ModuleIndexer(Page):
       self.start_file()
       #target = rel(self.__filename, self.processor.file_layout.scope(ns.name()))
       #link = href(target, self.__title, target='main')
-      self.write(self._makePageHeading(ns))
+      self.write(self.make_view_heading(ns))
 
       toc = self.processor.toc
 

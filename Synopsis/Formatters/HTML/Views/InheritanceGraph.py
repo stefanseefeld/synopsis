@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.29 2003/11/16 21:09:45 stefan Exp $
+# $Id: InheritanceGraph.py,v 1.30 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,7 +9,7 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
@@ -53,7 +53,7 @@ def find_common_name(graph):
             break
    return string.join(common_name, '::')
 
-class InheritanceGraph(Page):
+class InheritanceGraph(View):
 
    min_size = Parameter(2, 'minimum number of nodes for a graph to be displayed')
    min_group_size = Parameter(5, 'how many nodes to put into a group')
@@ -61,9 +61,9 @@ class InheritanceGraph(Page):
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.decl_finder = DeclarationFinder(processor.ast.types(), processor.verbose)
-      self.processor.add_root_page(self.filename(), 'Inheritance Graph', 'main', 1)
+      self.processor.add_root_view(self.filename(), 'Inheritance Graph', 'main', 1)
 
    def filename(self): return self.processor.file_layout.special('InheritanceGraph')
    def title(self): return 'Synopsis - Class Hierarchy'

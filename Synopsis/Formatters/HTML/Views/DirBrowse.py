@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.14 2003/11/16 21:09:45 stefan Exp $
+# $Id: DirBrowse.py,v 1.15 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,13 +9,13 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os, stat, os.path, string, time
 
-class DirBrowse(Page):
-   """A page that shows the entire contents of directories, in a form similar
+class DirBrowse(View):
+   """A view that shows the entire contents of directories, in a form similar
    to LXR."""
 
    exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
@@ -41,18 +41,18 @@ class DirBrowse(Page):
       return self.processor.file_layout.scoped_special('dir', scope)
 
    def register(self, processor):
-      """Registers a page for each file in the hierarchy"""
+      """Registers a view for each file in the hierarchy"""
 
-      Page.register(self, processor)
+      View.register(self, processor)
 
       self.__filename = self.processor.file_layout.special('dir')
       self.__title = 'Directory Listing'
       self.__start = self.__base = processor.output
-      processor.set_main_page(self.__filename)
-      self.processor.add_root_page(self.__filename, 'Files', 'main', 2)
+      processor.set_main_view(self.__filename)
+      self.processor.add_root_view(self.__filename, 'Files', 'main', 2)
 
    def register_filenames(self, start):
-      """Registers a page for every directory"""
+      """Registers a view for every directory"""
       dirs = [self.__start]
       while dirs:
          dir = dirs.pop(0)
@@ -79,7 +79,7 @@ class DirBrowse(Page):
       self.process_dir(self.__start)
     
    def process_dir(self, path):
-      """Process a directory, producing an output page for it"""
+      """Process a directory, producing an output view for it"""
 
       file_layout = self.processor.file_layout
 
@@ -155,6 +155,6 @@ class DirBrowse(Page):
       self.write('</table>')
       self.end_file()
 
-      # recursively create all child directory pages
+      # recursively create all child directory views
       for dir in dirs:
          self.process_dir(dir)

@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.14 2003/11/16 21:09:45 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.15 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -22,21 +22,16 @@ class ModuleListingJS(JSTree):
 
       JSTree.register(self, processor)
       self._children_cache = {}
-      self._init_page()
-
-   def _init_page(self):
-      "Sets _filename and registers the page with the manager"
-
       filename = self.processor.file_layout.special('ModuleTree')
-      self.processor.set_contents_page(filename)
-      self.processor.add_root_page(filename, 'Modules', 'contents', 2)
+      self.processor.set_contents_view(filename)
+      self.processor.add_root_view(filename, 'Modules', 'contents', 2)
       self._link_target = 'index'
 
    def filename(self): return self.processor.file_layout.special('ModuleTree')
    def title(self): return 'Module Tree'
 
    def process(self, start):
-      """Create a page with an index of all modules"""
+      """Create a view with an index of all modules"""
       # Init tree
       share = config.datadir
       self.js_init(os.path.join(share, 'syn-down.png'),

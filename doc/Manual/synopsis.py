@@ -10,7 +10,7 @@ from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
 from Synopsis.Formatters.HTML import Comments
-from Synopsis.Formatters.HTML.Pages import *
+from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import TexInfo
 from Synopsis.Formatters import Dump
 
@@ -39,11 +39,11 @@ html = HTML.Formatter(stylesheet_file = os.path.join(config.datadir, 'html.css')
                       file_layout = NestedFileLayout(),
                       tree_formatter = TreeFormatterJS(),
                       comment_formatters = [Comments.Javadoc(), Comments.Section()],
-                      pages = [FramesIndex(),
+                      views = [FramesIndex(),
                                Scope(),
-                               FileSource(prefix = 'links',
-                                          toc_in = ['links.toc'],
-                                          scope = 'Synopsis::Parsers::Cxx'),
+                               Source(prefix = 'links',
+                                      toc_in = ['links.toc'],
+                                      scope = 'Synopsis::Parsers::Cxx'),
                                ModuleListing(),
                                ModuleIndexer(),
                                FileListing(),

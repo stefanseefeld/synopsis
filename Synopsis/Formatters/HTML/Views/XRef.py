@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.17 2003/11/16 22:23:24 stefan Exp $
+# $Id: XRef.py,v 1.18 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,7 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters.TOC import TOC, Linker
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.XRef import *
 
@@ -26,15 +26,15 @@ class XRefLinker(Linker):
 
       return file
 
-class XRef(Page):
-   """A module for creating pages full of xref infos"""
+class XRef(View):
+   """A module for creating views full of xref infos"""
 
    xref_file = Parameter('', '')
    link_to_scope = Parameter(True, '')
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__filename = None
       self.__title = None
       self.__toc = None
@@ -49,8 +49,8 @@ class XRef(Page):
       # Add an entry for every xref
       xref = self.processor.xref
       for name in xref.get_all_names():
-         page = xref.get_page_for(name)
-         file = self.processor.file_layout.special('xref%d'%page)
+         view = xref.get_view_for(name)
+         file = self.processor.file_layout.special('xref%d'%view)
          file = file + '#' + Util.quote(string.join(name,'::'))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
       return self.__toc
@@ -68,28 +68,28 @@ class XRef(Page):
       return self.__title
 
    def process(self, start):
-      """Creates a page for every bunch of xref infos"""
+      """Creates a view for every bunch of xref infos"""
 
-      page_info = self.processor.xref.get_page_info()
-      if not page_info: return
-      for i in range(len(page_info)):
+      view_info = self.processor.xref.get_view_info()
+      if not view_info: return
+      for i in range(len(view_info)):
          self.__filename = self.processor.file_layout.special('xref%d'%i)
-         self.__title = 'Cross Reference page #%d'%i
+         self.__title = 'Cross Reference view #%d'%i
 
          self.start_file()
          self.write(self.processor.navigation_bar(self.filename()))
          self.write(entity('h1', self.__title))
          self.write('<hr>')
-         for name in page_info[i]:
+         for name in view_info[i]:
             self.process_name(name)
          self.end_file()
 
    def register_filenames(self, start):
-      """Registers each page"""
+      """Registers each view"""
 
-      page_info = self.processor.xref.get_page_info()
-      if not page_info: return
-      for i in range(len(page_info)):
+      view_info = self.processor.xref.get_view_info()
+      if not view_info: return
+      for i in range(len(view_info)):
          filename = self.processor.file_layout.special('xref%d'%i)
          self.processor.register_filename(filename, self, i)
     

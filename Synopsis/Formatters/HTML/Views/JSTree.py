@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.8 2003/11/16 21:09:45 stefan Exp $
+# $Id: JSTree.py,v 1.9 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -8,7 +8,7 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 #The javascript that goes up the top
@@ -65,14 +65,14 @@ init_tree("%s", "%s");
 img_html = """<a href="javascript:toggle('%s');"
 >%s</a>"""
 
-class JSTree(Page):
-   """Page that makes Javascript trees. The trees have expanding and
+class JSTree(View):
+   """View that makes Javascript trees. The trees have expanding and
    collapsing nodes. call js_init() with the button images and default
    open/close policy during process"""
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__id = 0
       self.__open_img = ''
       self.__close_img = ''
@@ -84,7 +84,7 @@ class JSTree(Page):
       return "tree%d"%self.__id
 
    def js_init(self, open_img, close_img, leaf_img, base, default_open=1):
-      """Initialise the JSTree page. This method copies the files to the
+      """Initialise the JSTree view. This method copies the files to the
       output directory and stores the values given.
       @param open_img	     filename of original open image
       @param close_img     filename of original close image
@@ -107,7 +107,7 @@ class JSTree(Page):
    def start_file(self):
       """Overrides start_file to add the javascript"""
 
-      Page.start_file(self, headextra=top_js%(self.__base_open, self.__base_close))
+      View.start_file(self, headextra=top_js%(self.__base_open, self.__base_close))
       
    def formatImage(self, id, filename, alt_text=""):
       """Returns the image element for the given image"""

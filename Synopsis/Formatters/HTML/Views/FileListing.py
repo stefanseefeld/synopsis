@@ -1,4 +1,4 @@
-# $Id: FileListing.py,v 1.6 2003/11/16 21:09:45 stefan Exp $
+# $Id: FileListing.py,v 1.7 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,28 +10,28 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.FileTree import FileTree
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class FileListing(Page):
-   """A page that creates an index of files, and an index for each file.
+class FileListing(View):
+   """A view that creates an index of files, and an index for each file.
    First the index of files is created, intended for the top-left frame.
-   Second a page is created for each file, listing the major declarations for
+   Second a view is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__filename = self.processor.file_layout.special('FileListing')
       self.__title = 'Files'
 
-      processor.set_main_page(self.filename())
-      # Reset filename in case we got main page status
+      processor.set_main_view(self.filename())
+      # Reset filename in case we got main view status
       self.__filename = self.processor.file_layout.special('FileListing')
-      self.processor.add_root_page(self.filename(), self.title(), "contents", 2)
-      processor.set_contents_page(self.filename())
+      self.processor.add_root_view(self.filename(), self.title(), "contents", 2)
+      processor.set_contents_view(self.filename())
 
    def filename(self):
       """Returns the filename"""
@@ -44,7 +44,7 @@ class FileListing(Page):
       return self.__title
 
    def register_filenames(self, start):
-      """Registers a page for each file indexed"""
+      """Registers a view for each file indexed"""
 
       self.processor.register_filename(self.__filename, self, None)
     

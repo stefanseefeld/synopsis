@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.12 2003/11/16 21:09:45 stefan Exp $
+# $Id: RawFile.py,v 1.13 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,19 +9,19 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import time, os, stat, os.path, string
 
-class RawFile(Page):
-   """A module for creating a page for each file with hyperlinked source"""
+class RawFile(View):
+   """A module for creating a view for each file with hyperlinked source"""
 
    exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__start = self.__base = processor.output
       self.__files = None
 
@@ -64,23 +64,23 @@ class RawFile(Page):
       return self.__files
 
    def process(self, start):
-      """Creates a page for every file"""
+      """Creates a view for every file"""
 
       for path, filename in self._get_files():
          self.process_file(path, filename)
 
    def register_filenames(self, start):
-      """Registers a page for every file"""
+      """Registers a view for every file"""
 
       for path, filename in self._get_files():
          self.processor.register_filename(filename, self, path)
 
    def process_file(self, original, filename):
-      """Creates a page for the given file"""
+      """Creates a view for the given file"""
 
       # Check that we got the rego
-      reg_page, reg_scope = self.processor.filename_info(filename)
-      if reg_page is not self: return
+      reg_view, reg_scope = self.processor.filename_info(filename)
+      if reg_view is not self: return
 
       self.__filename = filename
       self.__title = original

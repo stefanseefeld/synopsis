@@ -1,4 +1,4 @@
-# $Id: Javadoc.py,v 1.2 2003/12/05 22:40:44 stefan Exp $
+# $Id: Javadoc.py,v 1.3 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -39,7 +39,7 @@ class Javadoc(Formatter):
          mo = regexp.search(str, start)
       return str, ret
 
-   def format(self, page, decl, text):
+   def format(self, view, decl, text):
       """Format any @tags in the text, and any @tags stored by the JavaTags
       CommentProcessor in the Linker stage."""
 
@@ -60,13 +60,13 @@ class Javadoc(Formatter):
          else:
             # unknown tag
             pass
-      return "%s%s%s%s%s"%(self.format_inline_see(page, decl, text),
+      return "%s%s%s%s%s"%(self.format_inline_see(view, decl, text),
                            self.format_params(param_tags),
                            self.format_attrs(attr_tags),
                            self.format_return(return_tag),
-                           self.format_see(page, see_tags, decl))
+                           self.format_see(view, see_tags, decl))
 
-   def format_inline_see(self, page, decl, text):
+   def format_inline_see(self, view, decl, text):
       """Formats inline @see tags in the text"""
 
       #TODO change to link or whatever javadoc uses
@@ -74,7 +74,7 @@ class Javadoc(Formatter):
       while mo:
          groups, start, end = mo.groups(), mo.start(), mo.end()
          lang = groups[1] or ''
-         link = self.find_link(page, groups[2], decl)
+         link = self.find_link(view, groups[2], decl)
          text = text[:start] + link + text[end:]
          end = start + len(link)
          mo = self.re_see.search(text, end)
@@ -104,7 +104,7 @@ class Javadoc(Formatter):
       if not return_tag: return ''
       return div('tag-heading',"Return:")+div('tag-section',return_tag)
 
-   def format_see(self, page, see_tags, decl):
+   def format_see(self, view, see_tags, decl):
       """Formats a list of (ref,description) tags"""
 
       if not len(see_tags): return ''
@@ -112,11 +112,11 @@ class Javadoc(Formatter):
       seelist = []
       for see in see_tags:
          ref,desc = see[0], len(see)>1 and see[1] or ''
-         link = self.find_link(page, ref, decl)
+         link = self.find_link(view, ref, decl)
          seelist.append(link + desc)
       return seestr + div('tag-section', string.join(seelist,'\n<br>\n'))
 
-   def find_link(self, page, ref, decl):
+   def find_link(self, view, ref, decl):
       """Given a "reference" and a declaration, returns a HTML link.
       Various methods are tried to resolve the reference. First the
       parameters are taken off, then we try to split the ref using '.' or
@@ -143,7 +143,7 @@ class Javadoc(Formatter):
       while 1:
          entry = self._find_link_at(ref, scope)
          if entry:
-            url = rel(page.filename(), entry.link)
+            url = rel(view.filename(), entry.link)
             return href(url, label)
          if len(scope) == 0: break
          del scope[-1]

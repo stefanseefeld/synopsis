@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.24 2003/12/04 21:04:27 stefan Exp $
+# $Id: Formatter.py,v 1.25 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -18,9 +18,9 @@ class Formatter(Parametrized):
       
       self.processor = processor
 
-   def format(self, page, decl, text):
+   def format(self, view, decl, text):
       """Format the given comment
-      @param page the Page to use for references and determining the correct
+      @param view the View to use for references and determining the correct
       relative filename.
       @param decl the declaration
       @param text the comment text to format
@@ -28,9 +28,9 @@ class Formatter(Parametrized):
 
       return text
     
-   def format_summary(self, page, decl, text):
+   def format_summary(self, view, decl, text):
       """Format the given comment summary
-      @param page the Page to use for references and determining the correct
+      @param view the View to use for references and determining the correct
       relative filename.
       @param decl the declaration
       @param summary the comment summary to format

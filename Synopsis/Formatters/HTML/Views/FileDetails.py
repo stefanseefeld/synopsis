@@ -1,4 +1,4 @@
-# $Id: FileDetails.py,v 1.8 2003/12/06 04:02:57 stefan Exp $
+# $Id: FileDetails.py,v 1.9 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,24 +9,24 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
-from Synopsis.Formatters.HTML.Pages.FileSource import *
+from Source import *
 
 import os
 
-class FileDetails(Page):
-   """A page that creates an index of files, and an index for each file.
+class FileDetails(View):
+   """A view that creates an index of files, and an index for each file.
    First the index of files is created, intended for the top-left frame.
-   Second a page is created for each file, listing the major declarations for
+   Second a view is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__filename = ''
       self.__title = ''
-      self.__link_source = processor.has_page('FileSource')
+      self.__link_source = processor.has_view('Source')
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -41,7 +41,7 @@ class FileDetails(Page):
       return self.__title
 
    def register_filenames(self, start):
-      """Registers a page for each file indexed"""
+      """Registers a view for each file indexed"""
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
@@ -49,17 +49,17 @@ class FileDetails(Page):
             self.processor.register_filename(filename, self, file)
     
    def process(self, start):
-      """Creates a page for each file using process_scope"""
+      """Creates a view for each file using process_scope"""
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
             self.process_scope(filename, file)
 
    def process_scope(self, filename, file):
-      """Creates a page for the given file. The page is just an index,
+      """Creates a view for the given file. The view is just an index,
       containing a list of declarations."""
 
-      # set up filename and title for the current page
+      # set up filename and title for the current view
       self.__filename = self.processor.file_layout.file_details(filename)
       # (get rid of ../'s in the filename)
       name = string.split(filename, os.sep)

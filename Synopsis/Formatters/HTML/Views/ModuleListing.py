@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.17 2003/11/20 21:36:10 stefan Exp $
+# $Id: ModuleListing.py,v 1.18 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,12 +9,12 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class ModuleListing(Page):
+class ModuleListing(View):
    """Create an index of all modules."""
 
    short_title = Parameter('Modules', 'short title')
@@ -22,11 +22,11 @@ class ModuleListing(Page):
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self._children_cache = {}
       filename = self.filename()
-      processor.set_contents_page(filename)
-      self.processor.add_root_page(filename, self.short_title, 'contents', 2)
+      processor.set_contents_view(filename)
+      self.processor.add_root_view(filename, self.short_title, 'contents', 2)
       self._link_target = 'index'
 
    def filename(self): return self.processor.file_layout.special('ModuleListing')
@@ -34,7 +34,7 @@ class ModuleListing(Page):
    def title(self): return self.short_title + ' Listing'
 
    def process(self, start):
-      """Create a page with an index of all modules"""
+      """Create a view with an index of all modules"""
       # Init tree
       self.tree = self.processor.tree_formatter
       self.tree.register(self)

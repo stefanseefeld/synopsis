@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.39 2003/12/05 22:30:29 stefan Exp $
+# $Id: Part.py,v 1.40 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,9 +9,9 @@
 
 """AST Formatting classes.
 
-This module contains classes for formatting parts of a scope page (class,
+This module contains classes for formatting parts of a scope view (class,
 module, etc with methods, variables etc. The actual formatting of the
-declarations is delegated to multiple strategies for each part of the page,
+declarations is delegated to multiple strategies for each part of the view,
 and are defined in the FormatStrategy module.
 """
 
@@ -24,7 +24,7 @@ from Tags import *
 import string, os
 
 class Part(Parametrized, Type.Visitor, AST.Visitor):
-   """Base class for formatting a Part of a Scope Page.
+   """Base class for formatting a Part of a Scope View.
     
    This class contains functionality for modularly formatting an AST node and
    its children for display. It is typically used to contruct Heading,
@@ -39,10 +39,10 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
    fragments = Parameter([], "list of Fragments")
 
-   def register(self, page):
+   def register(self, view):
 
-      self.processor = page.processor
-      self.__page = page
+      self.processor = view.processor
+      self.__view = view
       self.__fragments = []
       self.__id_holder = None
       # Lists of format methods for each AST type
@@ -72,10 +72,10 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
                # Add to the dictionary
                self.__formatdict[method].append(method_obj)
     
-   def page(self): return self.__page
-   def filename(self): return self.__page.filename()
-   def os(self): return self.__page.os()
-   def scope(self): return self.__page.scope()
+   def view(self): return self.__view
+   def filename(self): return self.__view.filename()
+   def os(self): return self.__view.os()
+   def scope(self): return self.__view.scope()
    def write(self, text): self.os().write(text)
 
    # Access to generated values
@@ -133,7 +133,7 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
    def process(self, decl):
       """Formats the given decl, creating the output for this Part of the
-      page. This method is implemented in various subclasses in different
+      view. This method is implemented in various subclasses in different
       ways, for example Summary and Detail iterate through the children of
       'decl' section by section, whereas Heading only formats decl itself.
       """

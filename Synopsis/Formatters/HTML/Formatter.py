@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.15 2003/12/05 19:58:56 stefan Exp $
+# $Id: Formatter.py,v 1.16 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -16,7 +16,7 @@ from Synopsis.Formatters.XRef import CrossReferencer
 from FileLayout import *
 from TreeFormatter import *
 from DeclarationStyle import *
-from Pages import *
+from Views import *
 import Comments
 import Tags
 
@@ -41,7 +41,7 @@ class CommentFormatter:
       self.__format_summary_methods = filter(
           lambda m, base=base: m.im_func is not base, self.__format_summary_methods)
 
-   def format(self, page, decl):
+   def format(self, view, decl):
       """Formats the first comment of the given AST.Declaration.
       Note that the Linker.Comments.Summarizer CommentProcessor is supposed
       to have combined all comments first in the Linker stage.
@@ -54,10 +54,10 @@ class CommentFormatter:
       if not text: return ''
       # Let each strategy format the text in turn
       for method in self.__format_methods:
-         text = method(page, decl, text)
+         text = method(view, decl, text)
       return text
 
-   def format_summary(self, page, decl):
+   def format_summary(self, view, decl):
       """Formats the summary of the first comment of the given
       AST.Declaration.
       Note that the Linker.Comments.Summarizer CommentProcessor is supposed
@@ -71,7 +71,7 @@ class CommentFormatter:
       if not text: return ''
       # Let each strategy format the text in turn
       for method in self.__format_summary_methods:
-         text = method(page, decl, text)
+         text = method(view, decl, text)
       return text
 
 class Formatter(Processor):
@@ -83,7 +83,7 @@ class Formatter(Processor):
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    toc_out = Parameter('', 'name of file into which to store the TOC')
 
-   pages = Parameter([FramesIndex(),
+   views = Parameter([FramesIndex(),
                       Scope(),
                       ModuleListing(),
                       ModuleIndexer(),
@@ -127,11 +127,11 @@ class Formatter(Processor):
       self.sorter = ScopeSorter.ScopeSorter()
 
 
-      Tags.using_frames = self.has_page('FramesIndex')
+      Tags.using_frames = self.has_view('FramesIndex')
 
-      self.main_page = None
-      self.contents_page = None
-      self.index_page = None
+      self.main_view = None
+      self.contents_view = None
+      self.index_view = None
       self.using_module_index = False
       
       declarations = self.ast.declarations()
@@ -140,11 +140,11 @@ class Formatter(Processor):
       for d in declarations:
          d.accept(self.class_tree)
 
-      self.__roots = [] #pages with roots, list of Structs
+      self.__roots = [] #views with roots, list of Structs
       self.__global = None # The global scope
-      self.__files = {} # map from filename to (page,scope)
+      self.__files = {} # map from filename to (view,scope)
 
-      for p in self.pages:
+      for p in self.views:
          p.register(self)
 
       root = AST.Module(None,-1,"C++","Global",())
@@ -165,61 +165,60 @@ class Formatter(Processor):
       # load external references from toc files, if any
       for t in self.toc_in: self.toc.load(t)
    
-      if self.verbose: print "HTML Formatter: Writing Pages..."
+      if self.verbose: print "HTML Formatter: Generating Views..."
 
-      # Create the pages
+      # Create the views
       self.__global = root
       start = self.calculate_start(root)
       if self.verbose: print "Registering filenames...",
-      for page in self.pages:
-         page.register_filenames(start)
+      for view in self.views:
+         view.register_filenames(start)
       if self.verbose: print "Done."
-      for page in self.pages:
+      for view in self.views:
          if self.verbose:
-            print "Time for %s:"%page.__class__.__name__,
+            print "Time for %s:"%view.__class__.__name__,
             sys.stdout.flush()
             start_time = time.time()
-         page.process(start)
+         view.process(start)
          if self.verbose:
             print "%f"%(time.time() - start_time)
 
       return self.ast
 
-   def has_page(self, page_name):
-      """test whether the given page is part of the pages list."""
+   def has_view(self, name):
+      """test whether the given view is part of the views list."""
 
       return reduce(lambda x, y: x or y,
-                    map(lambda x: x.__class__.__name__ == page_name,
-                        self.pages))
+                    map(lambda x: x.__class__.__name__ == name, self.views))
 
    def get_toc(self, start):
       """Returns the table of content to link into from the outside"""
 
       ### FIXME : how should this work ?
-      ### We need to point to one of the pages...
-      return self.pages[1].get_toc(start)
+      ### We need to point to one of the views...
+      return self.views[1].get_toc(start)
 
-   def set_main_page(self, page):
-      """Call this method to set the main index.html page. First come first served
+   def set_main_view(self, view):
+      """Call this method to set the main index.html view. First come first served
       -- whatever module the user puts first in the list that sets this is
       it."""
 
-      if not self.main_page:
-         self.main_page = page
+      if not self.main_view:
+         self.main_view = view
 
-   def set_contents_page(self, page):
-      """Call this method to set the contents page. First come first served
+   def set_contents_view(self, view):
+      """Call this method to set the contents view. First come first served
       -- whatever module the user puts first in the list that sets this is
       it. This is the frame in the top-left if you use the default frameset."""
 
-      if not self.contents_page: self.contents_page = page
+      if not self.contents_view: self.contents_view = view
     
-   def set_index_page(self, page):
-      """Call this method to set the index page. First come first served
+   def set_index_view(self, view):
+      """Call this method to set the index view. First come first served
       -- whatever module the user puts first in the list that sets this is
       it. This is the frame on the left if you use the default frameset."""
 
-      if not self.index_page: self.index_page = page
+      if not self.index_view: self.index_view = view
 
    def set_using_module_index(self):
       """Sets the using_module_index flag. This will cause the an
@@ -258,28 +257,28 @@ class Formatter(Processor):
             sys.exit(3)
       return start
 
-   def add_root_page(self, file, label, target, visibility):
-      """Adds a named link to the list of root pages. Called from the
-      constructors of Page objects. The root pages are displayed at the top
-      of every page, depending on their visibility (higher = more visible).
+   def add_root_view(self, file, label, target, visibility):
+      """Adds a named link to the list of root views. Called from the
+      constructors of View objects. The root views are displayed at the top
+      of every view, depending on their visibility (higher = more visible).
       @param file	    the filename, to be used when generating the link
-      @param label	    the label of the page
+      @param label	    the label of the view
       @param target       target frame
       @param visibility   should be a number such as 1 or 2. Visibility 2 is
-      shown on all pages, 1 only on pages with lots of
-      room. For example, pages for the top-left frame
-      only show visibility 2 pages."""
+      shown on all views, 1 only on views with lots of
+      room. For example, views for the top-left frame
+      only show visibility 2 views."""
 
       self.__roots.append(Struct(file=file, label=label, target=target, visibility=visibility))
 
    def navigation_bar(self, origin, visibility=1):
-      """Formats the list of root pages to HTML. The origin specifies the
-      generated page itself (which shouldn't be linked), such that the relative
-      links can be generated. Only root pages of 'visibility' or
+      """Formats the list of root views to HTML. The origin specifies the
+      generated view itself (which shouldn't be linked), such that the relative
+      links can be generated. Only root views of 'visibility' or
       above are included."""
 
-      # If not using frames, show all headings on all pages!
-      if not self.has_page('FramesIndex'):
+      # If not using frames, show all headings on all views!
+      if not self.has_view('FramesIndex'):
          visibility = 1
       #filter out roots that are visible
       roots = filter(lambda x,v=visibility: x.visibility >= v, self.__roots)
@@ -291,16 +290,16 @@ class Formatter(Processor):
       roots = map(lambda x, o=origin, other=other, current=current: x.file==o and current(x) or other(x), roots)
       return string.join(roots, ' | \n')+'\n<hr>\n'
 
-   def register_filename(self, filename, page, scope):
-      """Registers a file for later production. The first page to register
+   def register_filename(self, filename, view, scope):
+      """Registers a file for later production. The first view to register
       the filename gets to keep it."""
 
       filename = str(filename)
       if not self.__files.has_key(filename):
-         self.__files[filename] = (page, scope)
+         self.__files[filename] = (view, scope)
 
    def filename_info(self, filename):
-      """Returns information about a registered file, as a (page,scope)
+      """Returns information about a registered file, as a (view,scope)
       pair. Will return None if the filename isn't registered."""
 
       filename = str(filename)

@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.24 2003/11/16 21:09:45 stefan Exp $
+# $Id: FileLayout.py,v 1.25 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -59,11 +59,11 @@ class FileLayout (TOC.Linker):
          sys.exit(2)
     
    def _check_main(self, filename):
-      """Checks whether the given filename is the main index page or not. If
+      """Checks whether the given filename is the main index view or not. If
       it is, then it returns the filename from index(), else it returns
       it unchanged"""
 
-      if filename == self.processor.main_page: return self.index()
+      if filename == self.processor.main_view: return self.index()
       return filename
 	
    def scope(self, scope):
@@ -133,7 +133,7 @@ class FileLayout (TOC.Linker):
       # Prefer module index for frames
       if self.processor.using_module_index:
          return "_module_" + Util.quote(string.join(scope, '-')) + ".html"
-      # Fall back to the scope page
+      # Fall back to the scope view
       return self.scope(scope)
 	
    def link(self, decl):

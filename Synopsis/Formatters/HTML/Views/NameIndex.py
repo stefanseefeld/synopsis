@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.16 2003/11/16 22:23:24 stefan Exp $
+# $Id: NameIndex.py,v 1.17 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,27 +9,27 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class NameIndex(Page):
-   """Creates an index of all names on one page in alphabetical order"""
+class NameIndex(View):
+   """Creates an index of all names on one view in alphabetical order"""
 
    columns = Parameter(2, 'the number of columns for the listing')
 
    def register(self, processor):
 
-      Page.register(self, processor)
-      self.processor.add_root_page(self.filename(), 'Name Index', 'main', 1)
+      View.register(self, processor)
+      self.processor.add_root_view(self.filename(), 'Name Index', 'main', 1)
 
    def filename(self): return self.processor.file_layout.special('NameIndex')
 
    def title(self): return 'Synopsis - Name Index'
 
    def process(self, start):
-      """Creates the page. It is created as a list of tables, one for each
+      """Creates the view. It is created as a list of tables, one for each
       letter. The tables have a number of columns, which is 2 by default.
       _processItem is called for each item in the dictionary."""
 

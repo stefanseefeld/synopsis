@@ -1,4 +1,4 @@
-# $Id: doxygen.py,v 1.6 2003/11/11 06:01:13 stefan Exp $
+# $Id: doxygen.py,v 1.7 2003/12/08 00:39:23 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: doxygen.py,v $
+# Revision 1.7  2003/12/08 00:39:23  stefan
+# s/page/view/g
+#
 # Revision 1.6  2003/11/11 06:01:13  stefan
 # adjust to directory/package layout changes
 #
@@ -101,7 +104,7 @@ class DOSummaryCommenter (FormatStrategy.SummaryCommenter):
     def formatDeclaration(self, decl):
 	style = config.decl_style[decl]
 	more = (style != core.DeclStyle.SUMMARY) and ' '+self.reference(decl.name(), 'More...') or ''
-	summary = config.comments.format_summary(self.page, decl)
+	summary = config.comments.format_summary(self.view, decl)
 	return span('summary', summary) + more
 
 class DODetailAST (FormatStrategy.DetailAST):

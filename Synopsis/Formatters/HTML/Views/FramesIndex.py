@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.12 2003/11/16 21:09:45 stefan Exp $
+# $Id: FramesIndex.py,v 1.13 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,18 +7,18 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class FramesIndex(Page):
+class FramesIndex(View):
    """A class that creates an index with frames"""
 
    def register(self, processor):
 
-      Page.register(self, processor)
-      processor.set_main_page(self.filename())
+      View.register(self, processor)
+      processor.set_main_view(self.filename())
 
    def filename(self): return self.processor.file_layout.index()
 
@@ -30,8 +30,8 @@ class FramesIndex(Page):
       me = self.filename()
       # TODO use project name..
       self.start_file(body='')
-      fcontents = rel(me, self.processor.contents_page)
-      findex = rel(me, self.processor.index_page)
+      fcontents = rel(me, self.processor.contents_view)
+      findex = rel(me, self.processor.index_view)
       # Find something to link to
       fglobal = findex
       decls = [start]

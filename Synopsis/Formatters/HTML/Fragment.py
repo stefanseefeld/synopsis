@@ -1,4 +1,4 @@
-# $Id: Fragment.py,v 1.1 2003/12/05 22:30:29 stefan Exp $
+# $Id: Fragment.py,v 1.2 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -46,7 +46,7 @@ class Fragment:
       self.label = formatter.label
       self.reference = formatter.reference
       self.format_type = formatter.format_type
-      self.page = formatter.page()
+      self.view = formatter.view()
 
    #
    # Utility methods

@@ -1,4 +1,4 @@
-# $Id: Heading.py,v 1.5 2003/12/05 22:30:29 stefan Exp $
+# $Id: Heading.py,v 1.6 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -13,22 +13,22 @@ from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
 
 class Heading(Part):
-   """Heading page part. Displays a header for the page -- its strategies are
-   only passed the object that the page is for; ie a Class or Module"""
+   """Heading view part. Displays a header for the view -- its strategies are
+   only passed the object that the view is for; ie a Class or Module"""
 
    fragments = Parameter([HeadingFormatter(),
                           ClassHierarchyGraph(),
                           DetailCommenter()],
                          '')
 
-   def register(self, page):
+   def register(self, view):
 
-      if page.processor.has_page('XRef'):
+      if view.processor.has_view('XRef'):
          self.fragments.append(XRefLinker())
-      if page.processor.has_page('FileSource'):
+      if view.processor.has_view('Source'):
          self.fragments.append(SourceLinker())
 
-      Part.register(self, page)
+      Part.register(self, view)
 
    def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
