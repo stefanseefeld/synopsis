@@ -74,6 +74,9 @@ class Config (Base):
 		]
 	    class ModuleListing (Base.Formatter.HTML.ModuleListing):
 		child_types = ['Package']
+	    class InheritanceGraph:
+		direction='horizontal'
+		min_size=3
 	class ConfigHTML (HTML):
 	    pages = [
 		('modules.py', 'ConfScope'),

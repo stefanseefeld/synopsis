@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.21 2002/10/28 11:44:57 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.22 2002/10/28 16:27:22 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.22  2002/10/28 16:27:22  chalky
+# Support horizontal inheritance graphs
+#
 # Revision 1.21  2002/10/28 11:44:57  chalky
 # Split graphs into groups based on common prefixes, and display each separately
 #
@@ -144,6 +147,11 @@ class InheritanceGraph(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
 	self.__todecl = ToDecl()
+        self.__direction = 'vertical'
+        if hasattr(config.obj,'InheritanceGraph'):
+            if hasattr(config.obj.InheritanceGraph,'direction'):
+                if config.obj.InheritanceGraph.direction == 'horizontal':
+                    self.__direction = 'horizontal'
 
     def filename(self): return config.files.nameOfSpecial('InheritanceGraph')
     def title(self): return 'Synopsis - Class Hierarchy'
@@ -244,7 +252,7 @@ class InheritanceGraph(Page.Page):
 		    args = (
 			'-i','-f','html','-o',output,'-r',toc_file,
 			'-R',self.filename(),'-t','Synopsis %s'%count,'-n', 
-			'-p',name)
+			'-p',name,'-d',self.__direction)
 		    temp_ast = AST.AST([''], declarations, config.types)
 		    Dot.format(args, temp_ast, None)
 		    dot_file = open(output + '.html', 'r')

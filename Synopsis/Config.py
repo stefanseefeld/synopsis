@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.12 2002/10/28 06:12:31 chalky Exp $
+#  $Id: Config.py,v 1.13 2002/10/28 16:27:21 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -379,10 +379,14 @@ class Base:
 		so setting this attribute will attempt to group smaller graphs
 		into larger graphs with a minimum number of nodes. The default
 		is 5.
+                @attr direction Can be either 'horizontal' or 'vertical'.
+                Specified the direction of inheritance in the inheritance
+                graphs. The default is 'vertical'.
 		@see Synopsis.Formatter.HTML.InheritanceGraph.InheritanceGraph
 		"""
 		min_size = 1
 		min_group_size = 5
+                direction = 'vertical'
 
 	    class ModuleListing:
 		"""Config for ModuleListing module.
