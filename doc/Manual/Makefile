@@ -40,7 +40,7 @@ TEXI		:= core-ast.texi core-type.texi core-util.texi \
 		   formatter-ascii.texi formatter-html.texi formatter-dump.texi formatter-dia.texi \
 		   formatter-db.texi formatter-dot.texi formatter-html-simple.texi formatter-texi.texi
 
-all:	html Manual.pdf
+all:	html info Manual.pdf
 
 html:   all.syn
 	@echo formatting $@
@@ -114,6 +114,10 @@ Manual.pdf:	$(TEXI) Manual.texi
 	@echo generating $@
 	texi2pdf Manual.texi
 
+info:	$(TEXI) Manual.texi
+	@echo generating info files
+	makeinfo Manual.texi
+
 all.syn:	$(PYSYNS) c++.syn
 	@echo linking $@
 	$(synopsis) -Wc,linker=All -o all.syn $^
@@ -121,10 +125,11 @@ all.syn:	$(PYSYNS) c++.syn
 install: all
 	mkdir -p $(datadir)/synopsis
 	cp -pr html $(datadir)/synopsis
+	install -m644 synopsis.info* $(infodir)
 	install -m644 Manual.pdf $(datadir)/synopsis
 
 clean:
-	rm -rf $(sdir) *.pyc *.pyo *.syn $(TEXI) \
+	rm -rf $(sdir) *.pyc *.pyo *.syn *.info* $(TEXI) \
 	$(addprefix Manual., $(texi-help))
 
 distclean:  clean
