@@ -16,6 +16,12 @@
 #include "ptree.h"
 #include "encoding.h"
 
+#ifdef DEBUG
+#include "swalker.hh"
+#include "builder.hh"
+#include "dumper.hh"
+#endif
+
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
  */
@@ -811,11 +817,23 @@ static char *RunOpencxx(const char *src, const char *file, const vector<const ch
     Lex lex(&prog);
     Parser parse(&lex);
     Synopsis synopsis(src, declarations, types);
-    PyWalker walker(&parse, &synopsis);
-    //   Walker walker(&parse);
+#ifdef DEBUG
+    // Test SWalker
+    Builder builder;
+    SWalker swalker(&parse, &builder);
     Ptree *def;
     while(parse.rProgram(def))
+	swalker.Translate(def);
+    Dumper dumper;
+    dumper.visitScope(builder.scope());
+#else
+    PyWalker walker(&parse, &synopsis);
+    Ptree *def;
+    while(parse.rProgram(def)) {
         walker.Translate(def);
+    }
+#endif
+    
     if(parse.NumOfErrors() != 0)
     {
         cerr << "errors while parsing file " << file << endl;

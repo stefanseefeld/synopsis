@@ -116,6 +116,9 @@ namespace AST {
 	//. Recursively destroys contained declarations
 	virtual ~Scope();
 
+	//. Accepts the given visitor
+	virtual void accept(Visitor*);
+
 	//
 	// Attribute Methods
 	//
@@ -149,6 +152,9 @@ namespace AST {
 	Namespace(const string, int, const string, Name);
 	//. Destructor
 	virtual ~Namespace();
+
+	//. Accepts the given AST::Visitor
+	virtual void accept(Visitor*);
     };
 
     // Forward declare Inheritance
@@ -161,6 +167,9 @@ namespace AST {
 	Class(const string, int, const string, Name);
 	//. Destructor. Recursively destroys Inheritance objects
 	virtual ~Class();
+
+	//. Accepts the given AST::Visitor
+	virtual void accept(Visitor*);
 
 	//
 	// Attribute Methods
@@ -184,6 +193,9 @@ namespace AST {
     public:
 	//. Constructor
 	Inheritance(Access, Class*);
+
+	//. Accepts the given AST::Visitor
+	virtual void accept(Visitor*);
 
 	//
 	// Attribute Methods
