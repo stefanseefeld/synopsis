@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.21 2003/03/06 10:02:47 chalky Exp $
+#  $Id: Config.py,v 1.22 2003/09/21 19:37:49 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -78,7 +78,8 @@ references, unless a filename is needed in which case you need 3.
 
 import sys
 
-prefix = '@prefix@'
+# just a default value, which is overwritten by the synopsis executable anyways...
+prefix = '/usr/local'
 
 class Base:
     """The base class for configuration objects. 
