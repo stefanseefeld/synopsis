@@ -1,4 +1,4 @@
-# $Id: Summary.py,v 1.4 2003/11/18 07:27:13 stefan Exp $
+# $Id: Summary.py,v 1.5 2003/12/05 22:30:29 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -11,7 +11,7 @@ from Synopsis.Processor import Parameter
 from Synopsis import Util
 from Synopsis.Formatters.HTML.Part import Part
 from Synopsis.Formatters.HTML.DeclarationStyle import Style
-from Synopsis.Formatters.HTML import FormatStrategy
+from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
 
 class Summary(Part):
@@ -19,16 +19,16 @@ class Summary(Part):
    declaration, with links to the details if there is one. All of this is
    controlled by the ASTFormatters."""
 
-   formatters = Parameter([FormatStrategy.SummaryAST(),
-                           FormatStrategy.SummaryCommenter()],
-                          '')
+   fragments = Parameter([SummaryFormatter(),
+                          SummaryCommenter()],
+                         '')
 
    def register(self, page):
 
       if page.processor.has_page('XRef'):
-         self.formatters.append(FormatStrategy.XRefLinker())
+         self.fragments.append(XRefLinker())
       if page.processor.has_page('FileSource'):
-         self.formatters.append(FormatStrategy.SourceLinker())
+         self.fragments.append(SourceLinker())
 
       Part.register(self, page)
       self.__link_detail = 0
