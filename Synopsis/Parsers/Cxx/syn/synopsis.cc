@@ -143,8 +143,8 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
 	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(AST::Declaration*)";
 	}
-	// Add the Declared for this declaration
-	PyObject_SetItem(m_syn->m_dictionary, Tuple(decl->name()), py(decl->declared()));
+	// Force Declared creation (and inclusion into dictionary)
+	py(decl->declared());
     }
     PyObject* obj = iter->second;
     Py_INCREF(obj);
@@ -305,7 +305,9 @@ PyObject *Synopsis::Declared(Type::Declared* type)
     PyObject *name, *declared = PyObject_CallMethod(m_type, "Declared", "OOO", 
 	m->cxx(), name = m->Tuple(type->name()), m->py(type->declaration())
     );
-    PyObject_SetItem(m_dictionary, name, declared);
+    // Skip zero-length names (eg: dummy declarators/enumerators)
+    if (type->name().size())
+	PyObject_SetItem(m_dictionary, name, declared);
     return declared;
 }
 
