@@ -91,6 +91,12 @@ public:
   //. look up the encoded name and return the associated symbol, if found.
   virtual const Symbol *lookup(const PTree::Encoding &) const throw();
 
+  //. declare a nested scope
+  void declare_scope(const PTree::Node *, const Scope *);
+
+  //. look up a nested scope by associated parse tree node
+  const Scope *lookup_scope(const PTree::Node *) const;
+
   //. same as the untyped lookup, but type safe. Throws a TypeError
   //. if the symbol exists but doesn't have the expected type.
   template <typename T>
@@ -103,19 +109,37 @@ public:
     return t;
   }
 
-  //. dump the content of the symbol table to a stream (for debugging).
-  virtual void dump(std::ostream &) const;
+  //. recursively dump the content of the symbol table to a stream (for debugging).
+  virtual void dump(std::ostream &, size_t indent) const;
 
 protected:
   //. Scopes are ref counted, and thus are deleted only by 'unref()'
   virtual ~Scope();
 
 private:
-  typedef std::map<PTree::Encoding, const Symbol *> HashTable;
+  //. SymbolTable provides a mapping from (encoded) names to Symbols declared
+  //. in this scope
+  typedef std::map<PTree::Encoding, const Symbol *> SymbolTable;
+  //. ScopeTable provides a mapping from scope nodes to Scopes,
+  //. which can be used to traverse the scope tree in parallel with
+  //. the associated parse tree
+  typedef std::map<const PTree::Node *, const Scope *> ScopeTable;
 
-  HashTable my_symbols;
-  size_t    my_refcount;
+  SymbolTable my_symbols;
+  ScopeTable  my_scopes;
+  size_t      my_refcount;
 };
+
+inline void Scope::declare_scope(const PTree::Node *node, const Scope *scope)
+{
+  my_scopes[node] = scope;
+}
+
+inline const Scope *Scope::lookup_scope(const PTree::Node *node) const
+{
+  ScopeTable::const_iterator i = my_scopes.find(node);
+  return i == my_scopes.end() ? 0 : i->second;
+}
 
 }
 

@@ -26,6 +26,8 @@ public:
     Table &table;
   };
 
+  Table();
+
   Table &enter_scope();
   Table &enter_namespace(const PTree::NamespaceSpec *);
   Table &enter_class(const PTree::ClassSpec *);

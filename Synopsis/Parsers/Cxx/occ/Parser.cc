@@ -165,7 +165,6 @@ void Parser::show_message_head(const char *pos)
 
 PTree::Node *Parser::parse()
 {
-  SymbolLookup::Table::Guard guard(my_symbols.enter_scope());
   PTree::Node *statements = 0;
   while(my_lexer.look_ahead(0) != '\0')
   {

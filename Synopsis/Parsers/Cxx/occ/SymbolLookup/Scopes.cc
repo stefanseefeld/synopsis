@@ -18,24 +18,10 @@ const Symbol *LocalScope::lookup(const Encoding &name) const throw()
   return symbol ? symbol : my_outer->lookup(name);
 }
 
-void LocalScope::dump(std::ostream &os) const
-{
-  os << "LocalScope::dump:" << std::endl;
-  Scope::dump(os);
-  my_outer->dump(os);
-}
-
 const Symbol *Class::lookup(const Encoding &name) const throw()
 {
   const Symbol *symbol = Scope::lookup(name);
   return symbol ? symbol : my_outer->lookup(name);
-}
-
-void Class::dump(std::ostream &os) const
-{
-  os << "Class::dump:" << std::endl;
-  Scope::dump(os);
-  my_outer->dump(os);
 }
 
 std::string Class::name() const
@@ -52,13 +38,6 @@ const Symbol *Namespace::lookup(const Encoding &name) const throw()
 {
   const Symbol *symbol = Scope::lookup(name);
   return symbol ? symbol : my_outer->lookup(name);
-}
-
-void Namespace::dump(std::ostream &os) const
-{
-  os << "Namespace::dump:" << std::endl;
-  Scope::dump(os);
-  my_outer->dump(os);
 }
 
 std::string Namespace::name() const
