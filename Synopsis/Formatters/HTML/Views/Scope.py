@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.3 2001/02/05 07:58:39 chalky Exp $
+# $Id: Scope.py,v 1.4 2001/02/06 15:00:42 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.4  2001/02/06 15:00:42  stefan
+# Dot.py now references the template, not the last parameter, when displaying a Parametrized; replaced logo with a simple link
+#
 # Revision 1.3  2001/02/05 07:58:39  chalky
 # Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
 #
@@ -138,9 +141,10 @@ class ScopePages (Page.Page):
 
     def endFile(self):
 	"""Overrides endfile to provide synopsis logo"""
-	self.write('<hr>Generated on %s by %s'%(
+	self.write('<hr><div class="logo">Generated on %s by<br> %s</div>'%(
 	    time.strftime(r'%c', time.localtime(time.time())),
-	    solotag('img', align='top', src=self.syn_logo, border='0', alt="Synopsis")
+            href('http://synopsis.sourceforge.net', 'synopsis')
+	    #solotag('img', align='top', src=self.syn_logo, border='0', alt="Synopsis")
 	))
 	Page.Page.endFile(self)
  
