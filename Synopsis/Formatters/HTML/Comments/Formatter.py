@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.22 2003/11/14 14:51:09 stefan Exp $
+# $Id: Formatter.py,v 1.23 2003/12/04 20:01:44 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -44,7 +44,7 @@ class CommentFormatter:
       # Let each strategy format the text in turn
       for method in self.__format_methods:
          text = method(page, decl, text)
-         return text
+      return text
 
    def format_summary(self, page, decl):
       """Formats the summary of the first comment of the given
@@ -79,9 +79,9 @@ class CommentFormatterStrategy(Parametrized):
       @param text the comment text to format
       """
 
-      pass
+      return text
     
-   def format_summary(self, page, decl, summary):
+   def format_summary(self, page, decl, text):
       """Format the given comment summary
       @param page the Page to use for references and determining the correct
       relative filename.
@@ -89,7 +89,7 @@ class CommentFormatterStrategy(Parametrized):
       @param summary the comment summary to format
       """
 
-      pass
+      return text
 
 class QuoteHTML(CommentFormatterStrategy):
    """A formatter that quotes HTML characters like the angle brackets and the
