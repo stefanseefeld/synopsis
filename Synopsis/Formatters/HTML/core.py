@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.12 2001/04/06 01:41:09 chalky Exp $
+# $Id: core.py,v 1.13 2001/04/06 02:39:26 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.13  2001/04/06 02:39:26  chalky
+# Get toc in/out from config
+#
 # Revision 1.12  2001/04/06 01:41:09  chalky
 # More verbose verbosity
 #
@@ -110,6 +113,8 @@ class Config:
 	self.commentFormatterList = []
 	self.types = None # Filled in first thing in format()
 	self.toc = None
+	self.toc_out = ""
+	self.toc_in = []
 	self.basename = None
 	self.stylesheet = ""
 	self.stylesheet_file = None
@@ -140,7 +145,7 @@ class Config:
 	# obj.pages is a list of module names
 	self.obj = obj
 	options = ('pages', 'sorter', 'stylesheet', 'stylesheet_file',
-	    'comment_formatters')
+	    'comment_formatters', 'toc_out', 'toc_in')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -179,6 +184,14 @@ class Config:
 	    else:
 		clas = import_object(formatter, basePackage)
 		self.commentFormatterList.append(clas())
+    
+    def _config_toc_in(self, toc_in):
+	if self.verbose: print "Will read toc(s) from",toc_in
+	self.toc_in = toc_in
+
+    def _config_toc_out(self, toc_out):
+	if self.verbose: print "Will save toc to",toc_out
+	self.toc_out = toc_out
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served
@@ -462,8 +475,6 @@ def __parseArgs(args, config_obj):
     global verbose, commentParser, toc_out, toc_in
     commentFormatters = CommentFormatter.commentFormatters
     # Defaults
-    toc_out = ""
-    toc_in = []
 
     # Convert the arguments to a list with custom getopt
     try:
@@ -500,9 +511,9 @@ def __parseArgs(args, config_obj):
 		print "Error: Unknown formatter. Available comment formatters are:",string.join(commentFormatters.keys(), ', ')
 		sys.exit(1)
         elif o == "-t":
-            toc_out = a
+            config.toc_out = a
         elif o == "-r":
-            toc_in.append(a)
+            config.toc_in.append(a)
 	elif o == "-h":
 	    usage()
 	    sys.exit(1)
@@ -538,10 +549,10 @@ def format(types, declarations, args, config_obj):
     for d in declarations:
 	d.accept(config.toc)
     if verbose: print "TOC size:",config.toc.size()
-    if len(toc_out): config.toc.store(toc_out)
+    if len(config.toc_out): config.toc.store(config.toc_out)
     
     # load external references from toc files, if any
-    for t in toc_in: config.toc.load(t)
+    for t in config.toc_in: config.toc.load(t)
 
     for d in declarations:
 	d.accept(config.classTree)
