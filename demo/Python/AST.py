@@ -1,43 +1,10 @@
-# $Id: AST.py,v 1.2 2001/04/06 01:29:03 chalky Exp $
+# $Id: AST.py,v 1.3 2003/11/18 21:57:33 stefan Exp $
 #
-# This file is a part of Synopsis.
-# Copyright (C) 2000, 2001 Stefan Seefeld
-# Copyright (C) 2000, 2001 Stephen Davies
-#
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-#
-# $Log: AST.py,v $
-# Revision 1.2  2001/04/06 01:29:03  chalky
-# Use latest AST.py and use config instead of options
-#
-# Revision 1.9  2001/02/07 09:56:59  chalky
-# Support for "previous comments" in C++ parser and Comments linker.
-#
-# Revision 1.8  2001/01/25 18:27:47  stefan
-# added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
-#
-# Revision 1.7  2001/01/24 12:47:28  chalky
-# Reapplied old behaviour of Visitor of passing the call up to visitDeclaration
-# so that all the places that broke work again.
-#
-# Revision 1.6  2001/01/23 19:47:45  stefan
-# fix Visitor class such that only desired methods need to be redefined
-#
-# Revision 1.5  2001/01/22 17:06:15  stefan
-# added copyright notice, and switched on logging
+# Copyright (C) 2000 Stefan Seefeld
+# Copyright (C) 2000 Stephen Davies
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
 
 """Abstract Syntax Tree classes.
