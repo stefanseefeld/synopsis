@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis_test.py,v 1.2 2003/12/03 05:43:55 stefan Exp $
+# $Id: synopsis_test.py,v 1.3 2004/01/12 20:31:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -15,6 +15,56 @@ from qm.test.result import Result
 import os
 import string
 import sys
+
+class APITest(Test):
+   """Compile and run a test to validate the C++ API."""
+
+   arguments = [TextField(name="src", description="The source file."),
+                TextField(name="exe", description="The executable file."),
+                TextField(name="expected", description="The expected output file."),
+                TextField(name="CXX", description="The compiler command."),
+                TextField(name="CPPFLAGS", description="The preprocessor flags."),
+                TextField(name="CXXFLAGS", description="The compiler flags."),
+                TextField(name="LDFLAGS", description="The linker flags."),
+                TextField(name="LIBS", description="The libraries to link with.")]
+
+   def compile(self, context, result):
+      if not os.path.isdir(os.path.dirname(self.exe)):
+         os.makedirs(os.path.dirname(self.exe))
+
+      command = '%s %s %s %s -o %s %s %s'%(self.CXX,
+                                           self.CPPFLAGS, self.CXXFLAGS,
+                                           self.LDFLAGS,
+                                           self.exe, self.src, self.LIBS)
+      compiler = RedirectedExecutable()
+      status = compiler.Run(string.split(command))
+      if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
+         return self.exe
+      else:
+         result.Fail('compilation failed',
+                     {'synopsis_test.error': compiler.stderr,
+                      'synopsis_test.command': command})
+         return None      
+
+   def Run(self, context, result):
+      exe = self.compile(context, result)
+      if not exe: return
+      test = RedirectedExecutable()
+      status = test.Run([exe])
+      if not os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
+         result.Fail('program exit value : %i'%os.WEXITSTATUS(status))
+         if test.stderr: result['orthotest.error'] = test.stderr
+
+      expected = string.join(open(self.expected, 'r').readlines(), '')
+      if expected and not test.stdout:
+         result.Fail('program did not generate output')
+      elif expected and not expected == test.stdout:
+         expected = '\'%s\''%(expected)
+         output = '\'%s\''%(test.stdout)
+         result.Fail('incorrect output',
+                     {'synopsis_test.expected': expected,
+                      'synopsis_test.output': output})
+
 
 class ProcessorTest(Test):
    """Process an input file with a synopsis script and
