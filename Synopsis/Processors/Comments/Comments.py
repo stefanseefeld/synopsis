@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.6 2001/04/05 11:11:39 chalky Exp $
+# $Id: Comments.py,v 1.7 2001/04/05 16:21:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.7  2001/04/05 16:21:56  chalky
+# Allow user-specified comment processors
+#
 # Revision 1.6  2001/04/05 11:11:39  chalky
 # Many more comments
 #
@@ -45,7 +48,7 @@
 
 """Comment Processor"""
 # System modules
-import sys, string, re, getopt
+import sys, string, re, getopt, types
 
 # Synopsis modules
 from Synopsis.Core import AST, Util
@@ -272,10 +275,15 @@ def __parseArgs(args, config):
 
     if hasattr(config, 'comment_processors'):
 	for proc in config.comment_processors:
-	    if processors.has_key(proc):
-		processor_list.append(processors[proc]())
-	    else:
-		raise ImportError, 'No such processor: %s'%proc
+	    if type(proc) == types.StringType:
+		if processors.has_key(proc):
+		    processor_list.append(processors[proc]())
+		else:
+		    raise ImportError, 'No such processor: %s'%(proc,)
+	    elif type(proc) == types.TupleType:
+		mod = Util._import(proc[0])
+		clas = getattr(mod, proc[1])
+		processor_list.append(clas())
 
     try:
         opts, remainder = getopt.getopt(args, "p:")
