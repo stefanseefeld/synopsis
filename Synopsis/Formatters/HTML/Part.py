@@ -91,7 +91,7 @@ class Part(Parametrized, Type.Visitor, AST.Visitor):
 
       if not label: label = escape(Util.ccolonName(name, self.scope()))
       entry = self.processor.toc[name]
-      if entry: return apply(href, (rel(self.filename(), entry.link), label), keys)
+      if entry: return apply(href, (rel(self.filename(), entry.link), escape(label)), keys)
       return label or ''
 
    def label(self, name, label=None):
