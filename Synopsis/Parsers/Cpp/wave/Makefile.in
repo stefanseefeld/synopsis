@@ -15,18 +15,22 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../../Cxx-API/include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../../../src -I . 
+CPPFLAGS+= -I $(srcdir) -I $(srcdir)/../../../../src -I $(srcdir)/../../../../Cxx-API/include
+CPPFLAGS+= @SYN_CPP@ -I/usr/local/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../../Cxx-API/lib/Cxx-API.a @LIBS@
+LIBS	:= ../../../../Cxx-API/lib/Cxx-API.a 
+LIBS	+= -L/usr/local/lib -lboost_wave -lboost_filesystem 
+LIBS	+= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/*.hh))
-SRC	:= 
+SRC	:= ASTTranslator.cc ParserImpl.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
-HDR_SYN	:= $(patsubst %.hh, %.syn, $(HDR))
-CC_SYN	:= $(patsubst %.cc, %.syn, $(SRC))
+HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
+CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
 TARGET	:= wave$(LIBRARY_EXT)
