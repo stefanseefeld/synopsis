@@ -34,6 +34,7 @@
 #include "dumper.hh"
 #include "lookup.hh"
 #include <iostream>
+#include <sstream>
 
 Decoder::Decoder(Builder* builder)
         : m_builder(builder)
@@ -145,8 +146,14 @@ Types::Type* Decoder::decodeType()
             premod.push_back("volatile");
             break;
         case 'A':
-            premod.push_back("[]");
-            break;
+	{
+	  std::string array("[");
+	  while (*m_iter != '_') array.push_back(*m_iter++);
+	  array.push_back(']');
+	  ++m_iter;
+	  premod.push_back(array);
+	  break;
+	}
         case '*':
             {
                 ScopedName n;

@@ -12,6 +12,7 @@
 #include <PTree/Encoding.hh>
 #include <Lexer.hh>
 #include <iostream>
+#include <sstream>
 
 using namespace PTree;
 
@@ -186,6 +187,14 @@ void Encoding::cast_operator(const Encoding &type)
   append((unsigned char)(0x80 + type.size() + 1));
   append('@');
   append(type);
+}
+
+void Encoding::array(unsigned long s) 
+{
+  std::ostringstream oss;
+  oss << 'A' << s << '_';
+  std::string str = oss.str();
+  prepend(str.c_str(), str.size());
 }
 
 Encoding Encoding::get_template_arguments()

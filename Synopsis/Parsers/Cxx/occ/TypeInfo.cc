@@ -477,6 +477,16 @@ void TypeInfo::normalize()
 	ptr.pop();
 	break;
       case 'A' :	// array
+      {
+	char c = 'A';
+	do
+	{
+	  c = ptr.front();
+	  ptr.pop();
+	} while (c != '_');
+	++r;
+	break;
+      }
       case 'P' :	// pointer *
       case 'R' :	// reference &
 	ptr.pop();
@@ -484,17 +494,17 @@ void TypeInfo::normalize()
 	break;
       case 'F' :	// function
       case 'M' :	// pointer to member ::*
+      {
+	PTree::Encoding tmp(ptr.begin() + 1, ptr.end());
+	PTree::Encoding p = ptr.front() == 'F' ? get_return_type(tmp, e) : skip_name(tmp, e);
+	if(p.empty()) return;
+	else
 	{
-	  PTree::Encoding tmp(ptr.begin() + 1, ptr.end());
-	  PTree::Encoding p = ptr.front() == 'F' ? get_return_type(tmp, e) : skip_name(tmp, e);
-	  if(p.empty()) return;
-	  else
-	  {
-	    ptr = p;
-	    ++r;
-	  }
-	  break;
+	  ptr = p;
+	  ++r;
 	}
+	break;
+      }
       default :
 	if(!resolve_typedef(e, ptr, true)) return;
     }
@@ -592,8 +602,15 @@ PTree::Encoding TypeInfo::skip_type(const PTree::Encoding &ptr, Environment *env
       case 'P' :
       case 'R' :
       case 'A' :
-	r.pop();
+      {
+	char c = 'A';
+	do
+	{
+	  c = r.front();
+	  r.pop();
+	} while (c != '_');
 	break;
+      }
       case 'F' :
 	r = get_return_type(PTree::Encoding(r.begin() + 1, r.end()), env);
 	break;

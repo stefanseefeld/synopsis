@@ -90,12 +90,14 @@ void Scope::declare(EnumSpec *spec)
       Node *initializer = third(enumerator);
       defined = evaluate_const(initializer, *this, value);
       enumerator = enumerator->car();
+#ifndef NDEBUG
       if (!defined)
       {
 	std::cerr << "Error in evaluating enum initializer:\n"
 		  << "Expression doesn't evaluate to a constant integral value:\n"
 		  << reify(initializer) << std::endl;
       }
+#endif
     }
     assert(enumerator->is_atom());
     Encoding name(enumerator->position(), enumerator->length());
@@ -125,7 +127,6 @@ void Scope::declare(TemplateDecl *tdecl)
   {
     PTree::Node *decl = PTree::third(body);
     PTree::Encoding name = decl->encoded_name();
-    std::cout << name << std::endl;
     declare(name, new FunctionTemplateName(Encoding(), decl));
   }
 }

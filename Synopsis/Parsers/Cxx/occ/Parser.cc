@@ -6,6 +6,7 @@
 // see the file COPYING for details.
 //
 #include <PTree.hh>
+#include <PTree/ConstEvaluator.hh>
 #include <PTree/Writer.hh>
 #include <PTree/Display.hh>
 #include "Parser.hh"
@@ -1845,10 +1846,8 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       opt_throw_decl(throw_decl);	// ignore in this version
 
       if(my_lexer->look_ahead(0) == ':')
-	if(member_initializers(mi))
-	  d = PTree::snoc(d, mi);
-	else
-	  return false;
+	if(member_initializers(mi)) d = PTree::snoc(d, mi);
+	else return false;
       
       break;		// "T f(int)(char)" is invalid.
     }
@@ -1857,21 +1856,23 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       Token ob, cb;
       PTree::Node *expr;
       my_lexer->get_token(ob);
-      if(my_lexer->look_ahead(0) == ']')
-	expr = 0;
-      else
-	if(!comma_expression(expr))
-	  return false;
+      if(my_lexer->look_ahead(0) == ']') expr = 0;
+      else if(!comma_expression(expr)) return false;
 
-      if(my_lexer->get_token(cb) != ']')
-	return false;
+      if(my_lexer->get_token(cb) != ']') return false;
 
-      type_encode.array();
+      if (expr)
+      {
+	long size;
+	if (PTree::evaluate_const(expr, *my_scopes.top(), size))
+	  type_encode.array(size);
+	else 
+	  type_encode.array();
+      }
       d = PTree::nconc(d, PTree::list(new PTree::Atom(ob), expr,
 				      new PTree::Atom(cb)));
     }
-    else
-      break;
+    else break;
   }
 
   if(recursive_decl) type_encode.recursion(recursive_encode);
