@@ -37,6 +37,7 @@ public:
 
     void onlyTranslateMain();
     void translate(AST::Scope* global);
+    void set_builtin_decls(const AST::Declaration::vector& builtin_decls);
 
     //
     // types from the Synopsis.Type module

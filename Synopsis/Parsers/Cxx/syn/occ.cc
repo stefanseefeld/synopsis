@@ -222,7 +222,8 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
   
 char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 {
-    static char dest[1024] = "/tmp/synopsis-XXXXXX";
+    static char dest[1024];
+    strcpy(dest, "/tmp/synopsis-XXXXXX");
     if (mkstemp(dest) == -1)
       {
 	perror("RunPreprocessor");
@@ -344,10 +345,11 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   sigaction(SIGSEGV, &newa, &olda);
   sigaction(SIGBUS, &newa, &olda);
   sigaction(SIGABRT, &newa, &olda);
-  static char dest[1024] = "/tmp/synopsis-XXXXXX";
+  static char dest[1024];
+  strcpy(dest, "/tmp/synopsis-XXXXXX");
   //tmpnam(dest);
   if (mkstemp(dest) == -1) {
-    perror("RunPreprocessor");
+    perror("RunOpencxx");
     exit(1);
   }
   
@@ -415,6 +417,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     // Setup synopsis c++ to py convertor
     Synopsis synopsis(source, declarations, types);
     if (syn_main_only) synopsis.onlyTranslateMain();
+    synopsis.set_builtin_decls(builder.builtin_decls());
     // Convert!
     synopsis.translate(builder.scope());
     if (of_syntax) delete of_syntax;

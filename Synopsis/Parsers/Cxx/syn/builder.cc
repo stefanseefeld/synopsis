@@ -73,6 +73,9 @@ struct Builder::Private
   //. A map of name references
   typedef std::map<ScopedName, std::vector<AST::Reference> > RefMap;
   RefMap refs;
+
+  //. A list of builtin declarations
+  Declaration::vector builtin_decls;
 };
 
 //
@@ -90,6 +93,7 @@ Builder::Builder(const std::string& basename)
   m_scopes.push_back(global);
   // Insert the global base types
   Types::Base* t_bool, *t_null;
+  AST::Declaration* decl;
   global->dict->insert(create_base("char"));
   global->dict->insert(t_bool = create_base("bool"));
   global->dict->insert(create_base("short"));
@@ -106,12 +110,18 @@ Builder::Builder(const std::string& basename)
   global->dict->insert(t_null = create_base("__null_t"));
   // Add variables for true and false
   name.clear(); name.push_back("true");
-  add(new AST::Variable("", -1, "variable", name, t_bool, false));
+  decl = new AST::Variable("", -1, "variable", name, t_bool, false);
+  add(decl);
+  m->builtin_decls.push_back(decl);
   name.clear(); name.push_back("false");
-  add(new AST::Variable("", -1, "variable", name, t_bool, false));
+  decl = new AST::Variable("", -1, "variable", name, t_bool, false);
+  add(decl);
+  m->builtin_decls.push_back(decl);
   // Add a variable for null pointer types (g++ #defines NULL to __null)
   name.clear(); name.push_back("__null");
-  add(new AST::Variable("", -1, "variable", name, t_null, false));
+  decl = new AST::Variable("", -1, "variable", name, t_null, false);
+  add(decl);
+  m->builtin_decls.push_back(decl);
 
   // Create the Lookup helper
   m_lookup = new Lookup(this);
@@ -147,6 +157,11 @@ void Builder::set_filename(const std::string& filename)
     m_filename.assign(filename, m_basename.size(), std::string::npos);
   else
     m_filename = filename;
+}
+
+const Declaration::vector& Builder::builtin_decls() const
+{
+  return m->builtin_decls;
 }
 
 //
