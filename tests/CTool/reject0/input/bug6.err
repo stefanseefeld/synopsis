@@ -1,7 +1,0 @@
-"my_ctool_207/regression/accept0/run/bug6.c", line 4: declaration hides parameter: FOO
-	declaration: int
-	parameter  : int
-"my_ctool_207/regression/accept0/run/bug6.c", line 5: identifier redeclared: FOO
-	current : float
-	previous: int : "my_ctool_207/regression/accept0/run/bug6.c", line 4
-cc: acomp failed for my_ctool_207/regression/accept0/run/bug6.c

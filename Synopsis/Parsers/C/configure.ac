@@ -10,7 +10,7 @@ dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.4 $)
-AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
+AC_INIT(Synopsis, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
@@ -18,12 +18,15 @@ AC_ARG_WITH(python,
   PYTHON="python"
 )
 
-AC_PROG_MAKE_SET
-AC_PROG_LEX
-AC_PROG_YACC
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
+
+syn_inc="`cd ${srcdir}/../../../src && pwd`"
+SYN_CPP="`PKG_CONFIG_PATH=../../../src pkg-config --define-variable=includedir=${syn_inc} --cflags Synopsis`"
+SYN_LIBS="`PKG_CONFIG_PATH=../../../src pkg-config --define-variable=prefix=${syn_inc} --libs Synopsis`"
+AC_SUBST(SYN_CPP)
+AC_SUBST(SYN_LIBS)
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
   AC_CHECK_FILE($PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
@@ -34,25 +37,6 @@ PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get
 
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)
-
-dnl ------------------------------------------------------------------
-dnl Environment (this needs to go before AC_LANG(C++)
-dnl ------------------------------------------------------------------
-
-AC_LANG(C)
-AC_HEADER_STDC
-AC_CHECK_FUNCS(getenv putenv setenv unsetenv)
-AC_LANG(C++)
-
-dnl ------------------------------------------------------------------
-dnl General flags
-dnl ------------------------------------------------------------------
-
-AC_MSG_NOTICE([platform specific system utilities])
-AC_CHECK_FUNCS(strsignal)
-AC_CHECK_HEADERS(string.h)
-AC_CHECK_DECLS([strsignal])
-AC_HEADER_SYS_WAIT
 
 LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')"`
 case `uname -s` in
@@ -69,6 +53,7 @@ dnl of the list.
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; import re; print re.sub(r'\\s*-lutil', '', sysconfig.get_config_var('LIBS') or '')"`
     else dnl this is 'nt'
       if test "$CXX" = "g++"; then
+        CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
         CFLAGS="-mno-cygwin $CFLAGS"
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
         LDFLAGS="-mno-cygwin $LDFLAGS"
@@ -88,13 +73,6 @@ dnl of the list.
 esac
 
 AC_SUBST(LIBEXT)
-
-topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../..')"`
-AC_SUBST(topdir)
-
-dnl ------------------------------------------------------------------
-dnl Output substitution
-dnl ------------------------------------------------------------------
 
 AC_CONFIG_FILES([Makefile synopsis.py])
 

@@ -1,5 +1,0 @@
-
-int a;
-
-#undef    X
-

@@ -55,7 +55,7 @@ py_packages = ["Synopsis",
 
 ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
                ('Synopsis/Parsers/Cpp/wave', 'wave' + module_ext),
-               ('Synopsis/Parsers/C', 'ctool' + module_ext),
+               ('Synopsis/Parsers/C', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
                ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
 

@@ -1,7 +1,0 @@
-typedef int  FOO;
-void  func(int  FOO)
-{
-  FOO = 42;
-}
-
-

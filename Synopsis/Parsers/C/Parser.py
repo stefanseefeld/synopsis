@@ -10,7 +10,7 @@
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
-import ctool
+import ParserImpl
 
 import os, os.path, tempfile
 
@@ -51,49 +51,20 @@ class Parser(Processor):
                                      'synopsis-%s.i'%os.getpid())
             self.ast = cpp.process(self.ast,
                                    cpp_output = i_file,
-                                   input = [file])
+                                   input = [file],
+                                   main_file_only = self.main_file_only,
+                                   verbose = self.verbose,
+                                   debug = self.debug)
 
-         self.ast = ctool.parse(self.ast, i_file,
-                                os.path.abspath(file),
-                                base_path,
-                                self.syntax_prefix,
-                                self.xref_prefix,
-                                self.verbose,
-                                self.debug)
+         self.ast = ParserImpl.parse(self.ast, i_file,
+                                     os.path.abspath(file),
+                                     self.main_file_only,
+                                     base_path,
+                                     self.syntax_prefix,
+                                     self.xref_prefix,
+                                     self.verbose,
+                                     self.debug)
 
          if self.preprocess: os.remove(i_file)
 
       return self.output_and_return_ast()
-
-   def dump(self, **kwds):
-      """Run the ctool directly without ast intervention."""
-
-      preprocess = kwds.get('preprocess', self.preprocess)
-      input = kwds.get('input', self.input)
-      output = kwds.get('output', self.output)
-      cppflags = kwds.get('cppflags', self.cppflags)
-      symbols = kwds.get('symbols', False)
-      debug = kwds.get('debug', self.debug)
-
-      if preprocess:
-
-         from Synopsis.Parsers import Cpp
-         cpp = Cpp.Parser(language = 'C',
-                          flags = self.cppflags)
-
-      for file in input:
-
-         i_file = file
-         if preprocess:
-
-            if self.output:
-               i_file = os.path.splitext(self.output)[0] + '.i'
-            else:
-               i_file = os.path.join(tempfile.gettempdir(),
-                                     'synopsis-%s.i'%os.getpid())
-            self.ast = cpp.process(AST.AST(),
-                                   cpp_output = i_file,
-                                   input = [file])
-
-         ctool.dump(self.ast, i_file, file, output, symbols, debug)
-         if preprocess: os.remove(i_file)

@@ -1,4 +1,0 @@
-"my_ctool_207/regression/accept0/run/syms.c", line 23: warning: statement not reached
-"my_ctool_207/regression/accept0/run/syms.c", line 23: void function cannot return value
-"my_ctool_207/regression/accept0/run/syms.c", line 27: void function cannot return value
-cc: acomp failed for my_ctool_207/regression/accept0/run/syms.c

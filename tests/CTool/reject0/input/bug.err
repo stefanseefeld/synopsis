@@ -1,7 +1,0 @@
-"my_ctool_207/regression/accept0/run/bug.c", line 11: "break" outside loop or switch
-"my_ctool_207/regression/accept0/run/bug.c", line 12: warning: statement not reached
-"my_ctool_207/regression/accept0/run/bug.c", line 12: "continue" outside loop
-"my_ctool_207/regression/accept0/run/bug.c", line 15: warning: statement not reached
-"my_ctool_207/regression/accept0/run/bug.c", line 16: warning: statement not reached
-"my_ctool_207/regression/accept0/run/bug.c", line 16: warning: improper pointer/integer combination: op "="
-cc: acomp failed for my_ctool_207/regression/accept0/run/bug.c
