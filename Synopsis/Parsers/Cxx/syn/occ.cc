@@ -382,7 +382,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     }
 #ifdef DEBUG
   swalker.set_extract_tails(true);
-  swalker.set_store_links(true, &std::cout, &std::cerr);
+  swalker.set_store_links(true, &std::cout, NULL);
   while(parse.rProgram(def))
     swalker.Translate(def);
   // // Test Synopsis

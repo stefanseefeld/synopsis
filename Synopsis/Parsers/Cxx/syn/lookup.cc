@@ -638,7 +638,7 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
     }
     // Not class or NS - which is illegal for a qualified (but coulda been
     // template etc?:)
-    LOG("Not class or namespace");
+    LOG("Not class or namespace: " << typeid(scope->scope_decl).name());
     return NULL;
 }
 

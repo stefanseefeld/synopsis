@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.9 2002/01/29 09:42:09 chalky Exp $
+// $Id: linkstore.cc,v 1.10 2002/01/30 11:53:15 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.10  2002/01/30 11:53:15  chalky
+// Couple bug fixes, some cleaning up.
+//
 // Revision 1.9  2002/01/29 09:42:09  chalky
 // Tabify xref scopes
 //
@@ -217,12 +220,37 @@ public:
 // Insertion operator for encode class
 std::ostream& operator <<(std::ostream& out, const LinkStore::encode& enc)
 {
+#ifdef DEBUG
+  // Encoding makes it very hard to read.. :)
+  return out << enc.str;
+#else
   for (const char* s = enc.str; *s; ++s)
     if (isalnum(*s) || *s == '`' || *s == ':')
       out << *s;
     else
       out << '%' << std::hex << std::setw(2) << std::setfill('0') << int(*s) << std::dec;
   return out;
+#endif
+}
+
+
+// A class that allows easy encoding of ScopedNames
+class LinkStore::encode_name
+{
+public:
+  const ScopedName& name;
+  encode_name(const ScopedName& N) : name(N) { }
+};
+
+// Insertion operator for encode class
+std::ostream& operator <<(std::ostream& out, const LinkStore::encode_name& enc)
+{
+#ifdef DEBUG
+  // Encoding makes it very hard to read.. :)
+  return out << LinkStore::encode(join(enc.name, "::"));
+#else
+  return out << LinkStore::encode(join(enc.name, "\t"));
+#endif
 }
 
 // Store if type is named
@@ -295,7 +323,7 @@ void LinkStore::store_syntax_record(int line, int col, int len, Context context,
   // Tab is used since :: is ambiguous as a scope separator unless real
   // parsing is done, and the syntax highlighter generates links into the docs
   // using the scope info
-  out << encode(join(name, "\t")) << FS;
+  out << encode_name(name) << FS;
   // Add the name to the description (REVISIT: This looks too complex!)
   std::vector<AST::Scope*> scopes;
   Types::Named* vtype;
@@ -335,6 +363,6 @@ void LinkStore::store_xref_record(const AST::Declaration* decl, const std::strin
   //m->refs[decl->name()].push_back(AST::Reference(file, line, container->name(), context));
   std::string container_str = join(container->name(), "\t");
   if (!container_str.size()) container_str = "\t";
-  (*m_xref_stream) << encode(join(decl->name(), "\t")) << FS << file << FS << line << FS
+  (*m_xref_stream) << encode_name(decl->name()) << FS << file << FS << line << FS
     << encode(container_str) << FS << m_context_names[context] << RS;
 }

@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: strace.hh,v 1.7 2002/01/28 13:17:24 chalky Exp $
+// $Id: strace.hh,v 1.8 2002/01/30 11:53:15 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: strace.hh,v $
+// Revision 1.8  2002/01/30 11:53:15  chalky
+// Couple bug fixes, some cleaning up.
+//
 // Revision 1.7  2002/01/28 13:17:24  chalky
 // More cleaning up of code. Combined xref into LinkStore. Encoded links file.
 //
@@ -145,7 +148,7 @@ public:
   //. The message
   std::string message;
   //. The node that was being translated
-  Ptree* node;
+  mutable Ptree* node;
 
   //. Constructor. Extracts the error message from the STracer (set by ERROR macros)
   TranslateError(STrace& trace, Ptree* p = 0)
@@ -163,7 +166,7 @@ public:
   //. Returns the error message
   std::string str() const { return message; }
   //. Sets a node for the error, if not already set.
-  void set_node(Ptree* p) { if (!node) node = p; }
+  void set_node(Ptree* p) const { if (!node) node = p; }
 };
 #define ERROR(message) (trace.new_stream() << message, TranslateError(trace))
 #define nodeERROR(node, message) (trace.new_stream() << message, TranslateError(trace, node))
@@ -187,7 +190,7 @@ class TranslateError : public std::exception
 public:
   char* str() { return ""; }
   virtual const char* what() const throw () { return "TranslateError"; }
-  void set_node(Ptree*) { }
+  void set_node(Ptree*) const { }
 };
 #define ERROR(message) TranslateError()
 #define nodeERROR(node, message) TranslateError()

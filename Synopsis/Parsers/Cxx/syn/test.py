@@ -9,7 +9,7 @@ gdb = None
 gcc_include2 = "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include "
 gcc_include3 = "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0.1/include "
 gcc_include = gcc_include2
-python_include = "-DPYTHON_INCLUDE='<python2.1/Python.h>' "
+python_include = "\"-DPYTHON_INCLUDE=<python2.1/Python.h>\" "
 
 
 html_top = '<html><link rel="stylesheet" href="/home/chalky/src/Synopsis/demo/html.css"><body>'
@@ -35,14 +35,15 @@ class Test:
 	ret = os.system(command)
 	return ret >> 8
     def gdb_less(self, test_file, flags = ""):
-	return self.system("make debug && echo ./occ.gdb %s %s && ./occ.gdb %s %s 2>&1 | less"%(flags, test_file, flags, test_file))
+	return self.system("make debug && echo './occ.gdb %s %s' && ./occ.gdb %s %s 2>&1 | less"%(flags, test_file, flags, test_file))
     def view_page(self, file, base, flags=""):
 	f = open("/tmp/%s.top"%base, "w")
 	f.write(html_top)
 	f.close()
 	return self.system("make && "\
 	    "echo \"Running Synopsis...\" && "\
-	    "synopsis -v -Wc,parser=C++ -Wp,-t,-s,/tmp/%(base)s.links,-x,/tmp/%(base)s.xref %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
+	    "echo synopsis -v -Wc,parser=C++ -Wp,-t,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
+	    "synopsis -v -Wc,parser=C++ -Wp,-t,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
 	    "echo \"Running Linker...\" && "\
 	    "./link-synopsis -i %(file)s -l /tmp/%(base)s.links -o /tmp/%(base)s.html.out && "\
 	    "(echo \"Cleaning up...\") && "\

@@ -77,7 +77,9 @@ public:
     void TranslateFunctionArgs(Ptree* args);
     void TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& params);
     void TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType);
-    virtual Ptree* TranslateDeclarator(Ptree*);
+    Ptree* TranslateDeclarator(Ptree*);
+    Ptree* TranslateFunctionDeclarator(Ptree*, bool is_const);
+    Ptree* TranslateVariableDeclarator(Ptree*, bool is_const);
     void TranslateTypedefDeclarator(Ptree* node);
     std::vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);
     //. Returns a formatter string of the parameters. The idea is that this
