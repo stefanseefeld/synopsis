@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2003/08/20 02:16:37 stefan Exp $
+# $Id: Makefile,v 1.2 2003/08/20 03:25:16 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -31,6 +31,9 @@ CPPFLAGS+= -D PYTHON_INCLUDE="$(python_include)"
 else
 CPPFLAGS+= -I $(python_prefix)/include -D PYTHON_INCLUDE="$(python_include)"
 endif
+
+CPPFLAGS+= $(CTOOL_CPPFLAGS)
+LIBS	:= $(CTOOL_LIBS) $(LIBS)
 
 SRC	:= Translator.cc ctool.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))

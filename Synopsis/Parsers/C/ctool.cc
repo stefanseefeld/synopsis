@@ -1,4 +1,4 @@
-// $Id: ctool.cc,v 1.1 2003/08/20 02:16:37 stefan Exp $
+// $Id: ctool.cc,v 1.2 2003/08/20 03:25:16 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2003 Stefan Seefeld
@@ -19,6 +19,9 @@
 // 02111-1307, USA.
 //
 // $Log: ctool.cc,v $
+// Revision 1.2  2003/08/20 03:25:16  stefan
+// little fixes
+//
 // Revision 1.1  2003/08/20 02:16:37  stefan
 // first steps towards a C parser backend (based on the ctool)
 //
@@ -35,6 +38,10 @@
 #  include <Python.h>
 #endif
 #include <fstream>
+
+#if 1
+int Trace::level = 0;
+#endif
 
 bool verbose;
 
@@ -65,7 +72,8 @@ void unexpected()
 
 void getopts(PyObject *args, std::vector<const char *> &cppflags, 
 	     std::vector<const char *> &ctflags,
-	     PyObject* config)
+	     PyObject *config,
+	     PyObject *extra_files)
 {
   verbose = false;
   syn_main_only = false;
@@ -186,6 +194,27 @@ Py_XDECREF(value);
       syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
     else if (strcmp(argument, "-t") == 0)
       syn_extract_tails = true;
+  }
+
+  // If multi_files is set, we check the extra_files argument to see if it
+  // has a list of filenames like it should do
+  if (extra_files && PyList_Check(extra_files))
+  {
+#if 0
+    size_t extra_size = PyList_Size(extra_files);
+    if (extra_size > 0)
+    {
+      PyObject* item;
+      const char* string;
+      syn_extra_filenames = new std::vector<const char*>;
+      for (size_t i = 0; i < extra_size; i++)
+      {
+	item = PyList_GetItem(extra_files, i);
+	string = PyString_AsString(item);
+ 	syn_extra_filenames->push_back(string);
+      }
+    }
+#endif
   }
 }
 
@@ -325,6 +354,7 @@ void do_parse(const char *src,
 	      PyObject *ast, PyObject *types, PyObject *declarations,
 	      PyObject* files)
 {
+  Trace trace("do_parse");
   // Run the preprocessor
   char *cppfile = RunPreprocessor(src, cppargs);
 
@@ -338,12 +368,12 @@ PyObject *ctoolParse(PyObject *self, PyObject *args)
   Trace trace("ctoolParse");
 
   char *src;
-  PyObject *parserargs, *types, *declarations, *config, *ast;
-  if (!PyArg_ParseTuple(args, "sO!O", &src, &PyList_Type, &parserargs, &config))
+  PyObject *extra_files, *parserargs, *types, *declarations, *config, *ast;
+  if (!PyArg_ParseTuple(args, "sOO!O", &src, &extra_files, &PyList_Type, &parserargs, &config))
     return 0;
   std::vector<const char *> cppargs;
   std::vector<const char *> ctargs;
-  getopts(parserargs, cppargs, ctargs, config);
+  getopts(parserargs, cppargs, ctargs, config, extra_files);
   if (!src || *src == '\0')
   {
     std::cerr << "No source file" << std::endl;
