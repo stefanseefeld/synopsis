@@ -7,9 +7,13 @@
 # TODO:
 # . TOC - Consider storing scoped name tuple instead of colonated name
 #   o NOTE: TOC also stores types for some reason. investigate.
+# . Unite Nodes/NamespaceBuilder into TOC
 
 import sys, getopt, os, os.path, string, types
 from Synopsis import Type, Util, Visitor
+
+# Set this to true if your name is Chalky :)
+debug=0
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
@@ -251,7 +255,7 @@ class TableOfContents(Visitor.AstVisitor):
     def lookup(self, name):
         if self.__toc.has_key(name): return self.__toc[name]
 	if string.find(name, ':') >= 0:
-	    print "Warning: TOC lookup of",name,"failed!"
+	    if debug: print "Warning: TOC lookup of",name,"failed!"
         return None
 
     def lookupName(self, name):
@@ -266,8 +270,11 @@ class TableOfContents(Visitor.AstVisitor):
     def add_inheritance(self, supername, subname):
 	supername, subname = tuple(supername), tuple(subname)
 	if not self.__subclasses.has_key(supername):
-	    self.__subclasses[supername] = []
-	self.__subclasses[supername].append(subname)
+	    subs = self.__subclasses[supername] = []
+	else:
+	    subs = self.__subclasses[supername]
+	if subname not in subs:
+	    subs.append(subname)
 
     def subclasses(self, classname):
 	classname = tuple(classname)
@@ -276,7 +283,10 @@ class TableOfContents(Visitor.AstVisitor):
 	return []
 
     def classes(self): return self.__classes
-    def add_class(self, name): self.__classes.append(tuple(name))
+    def add_class(self, name):
+	name = tuple(name)
+	if name not in self.__classes:
+	    self.__classes.append(tuple(name))
 
 class BaseFormatter:
     """
@@ -871,10 +881,13 @@ def format(types, declarations, args):
     # Create a builder for the namespace
     nsb = NamespaceBuilder()
 
+    if debug: print "HTML Formatter: Initialising TOC"
     # Add all declarations to the namespace tree
     for d in declarations:
         d.accept(nsb)
     
+    if debug: print "HTML Formatter: Writing Pages..."
     # Create the pages
     Paginator(nsb.globalns()).process()
+    if debug: print "HTML Formatter: Done!"
 
