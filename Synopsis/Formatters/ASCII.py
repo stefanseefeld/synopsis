@@ -38,7 +38,8 @@ class ASCIIFormatter:
         
     def visitModifier(self, type):
         aliasStr = self.formatType(type.alias())
-        self.__type = "%s %s %s"%(string.join(type.premod()), aliasStr, string.join(type.postmod()))
+	premod = map(lambda x:x+" ", type.premod())
+        self.__type = "%s%s%s"%(string.join(premod,''), aliasStr, string.join(type.postmod(),''))
             
     def visitParametrized(self, type):
         type.template().accept(self)
@@ -52,15 +53,15 @@ class ASCIIFormatter:
         self.indent()
 	dstr = ""
 	# Figure out the type:
-	tstr = self.formatType(typedef.alias())
+	alias = self.formatType(typedef.alias())
 	# Figure out the declarators:
-	for declarator in typedef.declarators():
-	    dstr = dstr + declarator.name()[-1]
-	    if declarator.sizes() is None: continue
-	    for size in declarator.sizes():
-		dstr = dstr + "[%d]"%size
+	# for declarator in typedef.declarators():
+	#     dstr = dstr + declarator.name()[-1]
+	#     if declarator.sizes() is None: continue
+	#     for size in declarator.sizes():
+	# 	dstr = dstr + "[%d]"%size
         self.__os.write("typedef %s %s;\n"%(
-	    tstr, dstr
+	    alias, typedef.name()[-1]
 	))
 
     def visitModule(self, module):
@@ -164,6 +165,11 @@ class ASCIIFormatter:
 	    self.__enumers.append("%s"%enumer.name()[-1])
 	else:
 	    self.__enumers.append("%s = %s"%(enumer.name()[-1], enumer.value()))
+    
+    def visitConst(self, const):
+	ctype = self.formatType(const.ctype())
+	self.indent()
+	self.__os.write("%s %s = %s;\n"%(ctype,const.name()[-1],const.value()))
 
 def __parseArgs(args):
     global output
@@ -187,3 +193,15 @@ def format(types, declarations, args):
     #    type.output(formatter)
     for declaration in declarations:
 	declaration.accept(formatter)
+    keys = types.keys()
+    keys.sort()
+    for name in keys:
+	type = types[name]
+	clas = type.__class__
+	if isinstance(type, Type.Declared):
+	    clas = type.declaration().__class__
+	try:
+	    print "%s\t%s"%(string.split(clas.__name__,'.')[-1], Util.ccolonName(name))
+	except:
+	    print "name ==",name
+	    raise

@@ -957,6 +957,8 @@ def __parseArgs(args):
 def format(types, declarations, args):
     global basename, stylesheet, toc, filer
     __parseArgs(args)
+
+    # Create the file namer
     filer = FileNamer()
     filer.chdirBase()
 
