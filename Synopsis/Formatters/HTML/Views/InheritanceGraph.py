@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.8 2001/04/06 06:26:39 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.9 2001/06/06 04:44:11 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.9  2001/06/06 04:44:11  uid20151
+# Only create TOC once instead of for every graph
+#
 # Revision 1.8  2001/04/06 06:26:39  chalky
 # No more warning on bad types
 #
@@ -125,6 +128,10 @@ class InheritanceGraph(Page.Page):
 	self.write(self.manager.formatRoots('Inheritance Graph')+'<hr>')
 	self.write(entity('h1', "Inheritance Graph"))
 
+	# Create a toc file for Dot to use
+	toc_file = self.__filename+"-dot.toc"
+	config.toc.store(toc_file)
+
 	from Synopsis.Formatter import Dot
 	graphs = config.classTree.graphs()
 	count = 0
@@ -139,20 +146,20 @@ class InheritanceGraph(Page.Page):
 		declarations = filter(lambda x: x is not None, declarations)
 		# Call Dot formatter
 		output = self.__filename+"-dot%s"%count
-		config.toc.store(output+".toc")
-		args = ('-i','-f','html','-o',output,'-r',output+'.toc','-t','Synopsis %s'%count,'-n')
+		args = ('-i','-f','html','-o',output,'-r',toc_file,'-t','Synopsis %s'%count,'-n')
 		Dot.format(config.types, declarations, args, None)
 		dot_file = open(output+'.html', 'r')
 		self.write(dot_file.read())
 		dot_file.close()
 		os.remove(output + ".html")
-		os.remove(output + ".toc")
 	    except:
 		import traceback
 		traceback.print_exc()
 		print "Graph:",graph
 		print "Declarations:",declarations
 	    count = count + 1
+
+	os.remove(toc_file)
 
 	self.endFile() 
 
