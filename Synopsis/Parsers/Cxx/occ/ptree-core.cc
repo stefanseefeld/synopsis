@@ -20,7 +20,7 @@
 #include "typeinfo.h"
 #include "buffer.h"
 
-#if defined(_MSC_VER) || defined(IRIX_CC)
+#if defined(_MSC_VER) || defined(IRIX_CC) || defined(__GLIBC__)
 #include <stdlib.h>		// for exit()
 #endif
 
