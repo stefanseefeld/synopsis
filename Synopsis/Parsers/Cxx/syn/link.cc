@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.11 2001/06/10 07:17:37 chalky Exp $
+ * $Id: link.cc,v 1.12 2001/06/18 15:35:09 stefan Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.12  2001/06/18 15:35:09  stefan
+ * fixes for std C++ conformance
+ *
  * Revision 1.11  2001/06/10 07:17:37  chalky
  * Comment fix, better functions, linking etc. Better link titles
  *
@@ -351,7 +354,7 @@ namespace {
     {
 	std::ifstream in(input_filename);
 	if (!in) { throw std::string("Error opening input file: ")+input_filename; }
-	std::ofstream out(output_filename, links_append ? ios::app : ios::out);
+	std::ofstream out(output_filename, links_append ? std::ios::app : std::ios::out);
 	if (!out) { throw std::string("Error opening output file: ")+output_filename; }
 	char buf[4096];
 	int line = 1;
@@ -493,8 +496,8 @@ extern "C" {
 	    read_tocs();
 	    link_file();
 	    reset();
-	} catch (string err) {
-	    cerr << "Error: " << err << endl;
+	} catch (const std::string &err) {
+	    std::cerr << "Error: " << err << std::endl;
 	    PyErr_SetString(linkError, err.c_str());
 	    return NULL;
 	}
