@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.14 2001/06/13 01:55:11 stefan Exp $
+# $Id: AST.py,v 1.15 2001/06/15 17:46:49 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.15  2001/06/15 17:46:49  stefan
+# set_realname is no longer needed since realname is computed from name
+#
 # Revision 1.14  2001/06/13 01:55:11  stefan
 # modify the realName member to contain only the unscoped name. This has the nice effect that pruning the scope will affect the name and realname at once, since the realName() method computes the scoped name tuple on-the-fly
 #
@@ -399,9 +402,6 @@ class Function (Declaration):
     def accept(self, visitor): visitor.visitFunction(self)
 
     def set_returnType(self, type): self.__returnType = type
-    def set_realname(self, name):
-	"""Sets the real name of this function"""
-	self.__realname = tuple(name)
 
     def __cmp__(self, other):
 	"Recursively compares the typespec of the function"
