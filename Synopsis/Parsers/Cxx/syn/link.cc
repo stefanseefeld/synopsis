@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.20 2002/10/28 18:03:54 chalky Exp $
+ * $Id: link.cc,v 1.21 2002/11/01 04:04:29 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.21  2002/11/01 04:04:29  chalky
+ * Clean up HTML: no empty spans, decode &2c; in URL, to-EOL comments.
+ *
  * Revision 1.20  2002/10/28 18:03:54  chalky
  * Properly decode scoped names, and avoid crash if not using links_scope
  *
@@ -71,6 +74,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <limits.h>
 
 #include <stdio.h>
 
@@ -221,30 +225,31 @@ namespace
   {
     char* ptr = buf, *end = buf+len;
     while (ptr != end && col < buflen)
+    {
+      char c = *ptr++;
+      switch (c) 
       {
-        char c = *ptr++;
-        switch (c) 
-          {
-          case '<': out << "&lt;"; break;
-          case '>': out << "&gt;"; break;
-          case ' ': out << "&nbsp;"; break;
-          case '"': out << "&quot;"; break;
-          case '\t': {
-              int next = ((col/8)+1)*8;
-              while (col++ < next) out << "&nbsp;";
-              continue;
-            }
-          default: out << c;
+        case '<': out << "&lt;"; break;
+        case '>': out << "&gt;"; break;
+        case ' ': out << "&nbsp;"; break;
+        case '"': out << "&quot;"; break;
+        case '&': out << "&amp;"; break;
+        case '\t': {
+            int next = ((col/8)+1)*8;
+            while (col++ < next) out << "&nbsp;";
+            continue;
           }
-        col++;
+        default: out << c;
       }
+      col++;
+    }
   }
 
   //. Writes the line number to the output
   void write_lineno(std::ostream& out, int line)
   {
     // out << setw(4) << line << "| "; <-- but with& nbsp;'s
-    out << "<a name=\"" << line << "\">";
+    out << "<a name=\"" << line << "\"></a>";
     out << "<span class=\"file-linenum\">";
     int mag = 10000;
     while (mag > 1)
@@ -312,6 +317,7 @@ namespace
         link->line = line;
         in >> link->col >> len >> type;
         link->col--; // we count at zero, file counts at one
+        if (len == -1) len = INT_MAX/2; // div 2 to prevent wrap-around
         if (type != "SPAN")
           {
             if (type == "DEF") link->type = Link::LINK_START;
@@ -398,6 +404,20 @@ namespace
             if (!in.getline(buf[2]+url_len, 4096-url_len)) break;
             // convert& 2c;'s to commas
             for (char*s = buf[0]; *s; s++) {
+                if (!strncmp(s, "&amp;", 5)) {
+                    *s = '&';
+                    memmove(s+1, s+5, strlen(s+5)+1);
+                }
+                if (!strncmp(s, "&2c;", 4)) {
+                    *s = ',';
+                    memmove(s+1, s+4, strlen(s+4)+1);
+                }
+            }
+            for (char*s = buf[2]+url_len; *s; s++) {
+                if (!strncmp(s, "&amp;", 5)) {
+                    *s = '&';
+                    memmove(s+1, s+5, strlen(s+5)+1);
+                }
                 if (!strncmp(s, "&2c;", 4)) {
                     *s = ',';
                     memmove(s+1, s+4, strlen(s+4)+1);
@@ -493,9 +513,12 @@ namespace
               // Write buf
               int col = 0;
               write_indent(out, buf, col, buflen);
-              out << "<span class=\"file-default\">";
-              write(out, col, buf+col, -1, buflen);
-              out << "</span>";
+              if (col < buflen)
+              {
+                out << "<span class=\"file-default\">";
+                write(out, col, buf+col, -1, buflen);
+                out << "</span>";
+              }
           }
           out << "<br>\n";
           line++;
