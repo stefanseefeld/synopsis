@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.25 2003/11/11 02:57:57 stefan Exp $
+# $Id: Comments.py,v 1.26 2003/11/11 06:03:59 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -8,7 +8,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 import sys, string, re, types
 

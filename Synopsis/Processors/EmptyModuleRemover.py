@@ -1,4 +1,4 @@
-# $Id: EmptyModuleRemover.py,v 1.3 2003/11/11 04:51:17 stefan Exp $
+# $Id: EmptyModuleRemover.py,v 1.4 2003/11/11 06:03:59 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -8,7 +8,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 import string
 
