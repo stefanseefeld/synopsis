@@ -210,10 +210,10 @@ namespace AST {
 	//. Returns the accessability of this inheritance
 	Access access() { return m_access; }
     private:
-	//. The parent class
-	Class* m_parent;
 	//. The accessability
 	Access m_access;
+	//. The parent class
+	Class* m_parent;
     };
 
     //. Forward declaration. Currently this has no extra attributes.
@@ -398,6 +398,8 @@ namespace AST {
 
 	//. Constructor
 	Function(string, int, string, Name, Mods premod, Type::Type* ret, string realname);
+	//. Destructor. Recursively destroys parameters
+	~Function();
 
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
@@ -472,6 +474,7 @@ namespace AST {
 	virtual void visitForward(Forward*);
 	virtual void visitTypedef(Typedef*);
 	virtual void visitVariable(Variable*);
+	virtual void visitConst(Const*);
 	virtual void visitEnum(Enum*);
 	virtual void visitEnumerator(Enumerator*);
 	virtual void visitFunction(Function*);
