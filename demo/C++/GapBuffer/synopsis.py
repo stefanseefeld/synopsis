@@ -22,8 +22,7 @@ linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper
 
 xref = XRefCompiler(prefix = 'xref')
 
-html = HTML.Formatter(stylesheet_file = '../../html.css',
-                      views = [FramesIndex(),
+html = HTML.Formatter(views = [FramesIndex(),
                                Scope(),
                                ModuleListing(),
                                ModuleIndexer(),
@@ -39,8 +38,7 @@ html = HTML.Formatter(stylesheet_file = '../../html.css',
 template = View.Template(template='sxr.tmpl',
                          copy_files = ['logo.png'])
 
-sxr = HTML.Formatter(stylesheet_file = '../../html.css',
-                     views = [DirBrowse(template = template),
+sxr = HTML.Formatter(views = [DirBrowse(template = template),
                               Scope(template = template),
                               ModuleListing(template = template),
                               InheritanceTree(template = template),

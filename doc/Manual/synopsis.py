@@ -34,8 +34,7 @@ cxx_processor = Linker(SSDComments(),
                        NamePrefixer(prefix = ['Synopsis', 'Parsers', 'Cxx', 'Parser'],
                                     type = 'Package'))
 
-html = HTML.Formatter(stylesheet_file = os.path.join(config.datadir, 'html.css'),
-                      toc_out = 'links.toc',
+html = HTML.Formatter(toc_out = 'links.toc',
                       file_layout = NestedFileLayout(),
                       tree_formatter = TreeFormatterJS(),
                       comment_formatters = [Comments.Javadoc(), Comments.Section()],

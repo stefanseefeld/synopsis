@@ -11,8 +11,7 @@ parser = IDL.Parser(include_paths=['.'])
 
 linker = Linker(SSDComments())      # filter out any non-'//.' comments
 
-format = HTML.Formatter(stylesheet_file = '../html.css',
-                        tree_formatter = TreeFormatterJS())
+format = HTML.Formatter(tree_formatter = TreeFormatterJS())
 
 process(parse = parser,
         link = linker,
