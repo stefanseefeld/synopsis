@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.3 2001/02/06 05:13:05 chalky Exp $
+# $Id: ScopeSorter.py,v 1.4 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.4  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.3  2001/02/06 05:13:05  chalky
 # Fixes
 #
@@ -74,6 +77,7 @@ class ScopeSorter:
     def _sort_sections(self): pass
     def sort_section_names(self):
 	core.sort(self.__sections)
+    def _set_section_names(self, sections): self.__sections = sections
     def sort_sections(self):
 	for children in self.__section_dict.values()+[self.__children]:
 	    dict = {}

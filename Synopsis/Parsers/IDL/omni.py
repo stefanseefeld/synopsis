@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.23 2001/01/31 06:51:24 stefan Exp $
+# $Id: omni.py,v 1.24 2001/02/12 04:08:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.24  2001/02/12 04:08:09  chalky
+# Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
+#
 # Revision 1.23  2001/01/31 06:51:24  stefan
 # add support for '-v' to all modules; modified toc lookup to use additional url as prefix
 #
@@ -438,7 +441,7 @@ def __parseArgs(args):
 	    strip = strip_filename
 	elif o == "-v": verbose = 1
 
-def parse(file, args, typedict, astdict):
+def parse(file, args, typedict, astdict, config_obj):
     global preprocessor_args, mainfile_only
     __parseArgs(args)
     if hasattr(_omniidl, "__file__"):
