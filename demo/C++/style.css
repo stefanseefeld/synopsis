@@ -5,11 +5,13 @@ body
     color: #003030;
     background: #ffffff;
   }
-:link { color: #bb0000; text-decoration: none;}
-:visited { color: #bb0000; text-decoration: none;}
-:active { color: #400000; text-decoration: none;}
-span.keyword { font-weight: bold;}
+:link { color: #603030; text-decoration: none;}
+:visited { color: #603030; text-decoration: none;}
+:active { color: #800000; text-decoration: none;}
+span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
+span.name { font-weight: bold; }
+a.name { font-weight: bold; }
 div.module { padding: 1.0em;}
 div.declarations { padding: 1.0em;}
 div.desc
