@@ -62,7 +62,9 @@
 // Much improved template support, including Function Templates.
 //
 
-#include <unistd.h>
+#if !defined(__WIN32__)
+#  include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -252,6 +254,8 @@ int LinkStore::find_col(int line, const char* ptr)
 
 void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
 {
+  std::cout << "LinkStore::link" << std::endl;
+  node->Display();
     AST::SourceFile* file = m->walker->current_file();
 
     // Dont store records for included files
