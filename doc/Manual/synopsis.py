@@ -9,7 +9,7 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
-from Synopsis.Formatters.HTML.CommentFormatter import *
+from Synopsis.Formatters.HTML import Comments
 from Synopsis.Formatters.HTML.Pages import *
 from Synopsis.Formatters import TexInfo
 from Synopsis.Formatters import Dump
@@ -38,7 +38,7 @@ html = HTML.Formatter(stylesheet_file = os.path.join(config.datadir, 'html.css')
                       toc_out = 'links.toc',
                       file_layout = NestedFileLayout(),
                       tree_formatter = TreeFormatterJS(),
-                      comment_formatters = [JavadocFormatter(), SectionFormatter()],
+                      comment_formatters = [Comments.Javadoc(), Comments.Section()],
                       pages = [FramesIndex(),
                                Scope(),
                                FileSource(prefix = 'links',
