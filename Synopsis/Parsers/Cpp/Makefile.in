@@ -1,4 +1,3 @@
-# $Id: Makefile.in,v 1.13 2004/01/12 01:00:57 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -16,11 +15,11 @@ PYTHON	:= @PYTHON@
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../Cxx-API/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= @LIBS@ -lpthread
+LIBS	:= ../../../Cxx-API/lib/libSynopsis.a @LIBS@ -lpthread
 LIBRARY_EXT := @LIBEXT@
 
 UCPP_FLAGS:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK

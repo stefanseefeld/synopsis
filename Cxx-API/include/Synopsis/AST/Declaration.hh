@@ -1,4 +1,3 @@
-// $Id: Declaration.hh,v 1.3 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -9,7 +8,7 @@
 #ifndef _Synopsis_AST_Declaration_hh
 #define _Synopsis_AST_Declaration_hh
 
-#include <Synopsis/Object.hh>
+#include <Synopsis/Python/Object.hh>
 #include <Synopsis/AST/Visitor.hh>
 #include <Synopsis/AST/Type.hh>
 
@@ -27,19 +26,19 @@ enum Access
 };
 
 class Declaration;
-typedef TypedList<Declaration> Declarations;
+typedef Python::TypedList<Declaration> Declarations;
 
-class SourceFile : public Object
+class SourceFile : public Python::Object
 {
 public:
   SourceFile() {}
-  SourceFile(const Object &o) : Object(o) {}
+  SourceFile(const Python::Object &o) : Python::Object(o) {}
   std::string name() const { return narrow<std::string>(attr("filename")());}
   std::string long_name() const { return narrow<std::string>(attr("full_filename")());}
   bool is_main() const { return narrow<bool>(attr("is_main")());}
-  void is_main(bool flag) { attr("set_is_main")(Tuple(flag));}
-  List includes() { return attr("includes")();}
-  Dict macro_calls() { return attr("macro_calls")();}
+  void is_main(bool flag) { attr("set_is_main")(Python::Tuple(flag));}
+  Python::List includes() { return attr("includes")();}
+  Python::Dict macro_calls() { return attr("macro_calls")();}
   Declarations declarations();
 };
 
@@ -49,41 +48,41 @@ public:
 //. even when they are not adjacent to a declaration - these comments will be
 //. marked as "suspect". Most of these will be discarded by the Linker, unless
 //. they have appropriate markings such as "//.< comment for previous decl"
-class Comment : public Object
+class Comment : public Python::Object
 {
 public:
   Comment() {}
-  Comment(const Object &o, bool check = true)
-    : Object(o) { if (check) assert_type("Synopsis.AST", "Comment");}
+  Comment(const Python::Object &o, bool check = true)
+    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Comment");}
 
   SourceFile file() const { return narrow<SourceFile>(attr("file")());}
   long line() const { return narrow<long>(attr("line")());}
   std::string text() const { return narrow<std::string>(attr("text")());}
-  void suspect(bool flag) { attr("set_suspect")(Tuple(flag));}
+  void suspect(bool flag) { attr("set_suspect")(Python::Tuple(flag));}
   bool suspect() const { return narrow<bool>(attr("is_suspect")());}
 };
 
-class Declaration : public Object
+class Declaration : public Python::Object
 {
 public:
   Declaration() {}
-  Declaration(const Object &o, bool check = true)
-    : Object(o) { if (check) assert_type("Declaration");}
+  Declaration(const Python::Object &o, bool check = true)
+    : Python::Object(o) { if (check) assert_type("Declaration");}
 
   SourceFile file() const { return narrow<SourceFile>(attr("file")());}
   long line() const { return narrow<long>(attr("line")());}
   std::string language() const { return narrow<std::string>(attr("language")());}
   std::string type() const { return narrow<std::string>(attr("type")());}
   ScopedName name() const { return attr("name")();}
-  List comments() { return attr("comments")();}
+  Python::List comments() { return attr("comments")();}
   Access accessibility() const 
   { return static_cast<Access>(narrow<long>(attr("accessibility")()));}
   void accessibility(Access a) const 
-  { attr("accessibility")(Tuple(static_cast<long>(a)));}
+  { attr("accessibility")(Python::Tuple(static_cast<long>(a)));}
 
   virtual void accept(Visitor *v) { v->visit_declaration(this);}
 
-  void assert_type(const char *type) { Object::assert_type("Synopsis.AST", type);}
+  void assert_type(const char *type) { Python::Object::assert_type("Synopsis.AST", type);}
 };
 
 inline Declarations SourceFile::declarations()
@@ -96,7 +95,7 @@ class Builtin : public Declaration
 {
 public:
   Builtin() {}
-  Builtin(const Object &o, bool check = true)
+  Builtin(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Builtin");}
 
   virtual void accept(Visitor *v) { v->visit_builtin(this);}
@@ -106,10 +105,10 @@ class Macro : public Declaration
 {
 public:
   Macro() {}
-  Macro(const Object &o, bool check = true)
+  Macro(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Macro");}
 
-  List parameters() { return attr("parameters")();}
+  Python::List parameters() { return attr("parameters")();}
   std::string text() { return narrow<std::string>(attr("text")());}
 
   virtual void accept(Visitor *v) { v->visit_macro(this);}
@@ -120,7 +119,7 @@ class Forward : public Declaration
 {
 public:
   Forward() {}
-  Forward(const Object &o, bool check = true)
+  Forward(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Forward");}
   
 //   //. Returns the Template object if this is a template
@@ -140,10 +139,10 @@ class Scope : public Declaration
 {
 public:
   Scope() {}
-  Scope(const Object &o, bool check = true)
+  Scope(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Scope");}
 
-  List declarations() const { return attr("declarations")();}
+  Python::List declarations() const { return attr("declarations")();}
 
   virtual void accept(Visitor *v) { v->visit_scope(this);}
 };
@@ -153,7 +152,7 @@ class Module : public Scope
 {
 public:
   Module() {}
-  Module(const Object &o, bool check = true)
+  Module(const Python::Object &o, bool check = true)
     : Scope(o, false) { if (check) assert_type("Module");}
 
   virtual void accept(Visitor *v) { v->visit_module(this);}
@@ -163,12 +162,12 @@ public:
 //. inheritance, namely its accessability. Note that classes inherit from
 //. types, not class declarations. As such it's possible to inherit from a
 //. parameterized type, or a declared typedef or class/struct.
-class Inheritance : public Object
+class Inheritance : public Python::Object
 {
 public:
   Inheritance() {}
-  Inheritance(const Object &o, bool check = true)
-    : Object(o) { if (check) assert_type("Synopsis.AST", "Inheritance");}
+  Inheritance(const Python::Object &o, bool check = true)
+    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Inheritance");}
 
   //. Returns the Class object this inheritance refers to. The method
   //. returns a Type since typedefs to classes are preserved to
@@ -177,7 +176,7 @@ public:
   Type parent() const { return attr("parent")();}
 
   //. Returns the attributes of this inheritance
-  List attributes() const { return attr("attributes")();}
+  Python::List attributes() const { return attr("attributes")();}
 
   void accept(Visitor *v) { v->visit_inheritance(this);}
 };
@@ -187,11 +186,11 @@ class Class : public Scope
 {
 public:
   Class() {}
-  Class(const Object &o, bool check = true)
+  Class(const Python::Object &o, bool check = true)
     : Scope(o, false) { if (check) assert_type("Class");}
 
   //. Constant version of parents()
-  List parents() const { return attr("parents")();}
+  Python::List parents() const { return attr("parents")();}
 
 //   //. Returns the Template object if this is a template
 //   Template template_type() { return attr("template_type")();}
@@ -210,7 +209,7 @@ class Typedef : public Declaration
 {
 public:
   Typedef() {}
-  Typedef(const Object &o, bool check = true)
+  Typedef(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Typedef");}
 
   //. Returns the Type object this typedef aliases
@@ -228,7 +227,7 @@ class Enumerator : public Declaration
 {
 public:
   Enumerator() {}
-  Enumerator(const Object &o, bool check = true)
+  Enumerator(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Enumerator");}
 
   //. Returns the value of this enumerator
@@ -237,18 +236,18 @@ public:
   virtual void accept(Visitor *v) { v->visit_enumerator(this);}
 };
 
-typedef TypedList<Enumerator> Enumerators;
+typedef Python::TypedList<Enumerator> Enumerators;
 
 //. Enum declaration. An enum contains multiple enumerators.
 class Enum : public Declaration
 {
 public:
   Enum() {}
-  Enum(const Object &o, bool check = true)
+  Enum(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Enum");}
 
   //. Returns the vector of Enumerators
-  List enumerators() { return attr("enumerators")();}
+  Python::List enumerators() { return attr("enumerators")();}
 
   virtual void accept(Visitor *v) { v->visit_enum(this);}
 };
@@ -258,7 +257,7 @@ class Variable : public Declaration
 {
 public:
   Variable() {}
-  Variable(const Object &o, bool check = true)
+  Variable(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Variable");}
 
   //. Returns the Type object of this variable
@@ -266,7 +265,7 @@ public:
   //. Returns true if the Type object was constructed inside the variable
   bool constructed() const { return attr("constr")();}
   //. Returns the array sizes vector
-  List sizes() const { return attr("sizes")();}
+  Python::List sizes() const { return attr("sizes")();}
 
   virtual void accept(Visitor *v) { v->visit_variable(this);}
 };
@@ -276,7 +275,7 @@ class Const : public Declaration
 {
 public:
   Const() {}
-  Const(const Object &o, bool check = true)
+  Const(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Const");}
 
   //. Returns the Type object of this const
@@ -287,12 +286,12 @@ public:
   virtual void accept(Visitor *v) { v->visit_const(this);}
 };
 
-class Parameter : public Object
+class Parameter : public Python::Object
 {
 public:
   Parameter() {}
-  Parameter(const Object &o, bool check = true)
-    : Object(o) { if (check) assert_type("Synopsis.AST", "Parameter");}
+  Parameter(const Python::Object &o, bool check = true)
+    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Parameter");}
 
   Modifiers premodifiers() const { return narrow<Modifiers>(attr("premodifiers")());}
   Modifiers postmodifiers() const { return narrow<Modifiers>(attr("postmodifiers")());}
@@ -310,10 +309,10 @@ public:
 class Function : public Declaration
 {
 public:
-  typedef TypedList<Parameter> Parameters;
+  typedef Python::TypedList<Parameter> Parameters;
 
   Function() {}
-  Function(const Object &o, bool check = true)
+  Function(const Python::Object &o, bool check = true)
     : Declaration(o, false) { if (check) assert_type("Function");}
 
 //   //. The type of premodifiers
@@ -349,7 +348,7 @@ class Operation : public Function
 {
 public:
   Operation() {}
-  Operation(const Object &o, bool check = true)
+  Operation(const Python::Object &o, bool check = true)
     : Function(o, false) { if (check) assert_type("Operation");}
 
   virtual void accept(Visitor *v) { v->visit_operation(this);}

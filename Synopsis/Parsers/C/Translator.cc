@@ -12,23 +12,22 @@
 #include "File.hh"
 #include "Trace.hh"
 
-namespace AST = Synopsis::AST;
-namespace Python = Synopsis;
+using namespace Synopsis;
 
 namespace 
 {
   std::string extract_symbol(const Symbol *s) { return s ? s->name : "<nil>";}
 }
 
-void Translator::define_type(Synopsis::AST::ScopedName name, AST::Type type)
+void Translator::define_type(AST::ScopedName name, AST::Type type)
 {
-  ast.types().attr("__setitem__")(Synopsis::Tuple(name, type));
+  ast.types().attr("__setitem__")(Python::Tuple(name, type));
 }
 
 bool TypeTranslator::find_type(const std::string &name)
 {
-  Synopsis::Object get = ast.types().attr("get");
-  this->type = AST::Type(get(Synopsis::Tuple(Synopsis::AST::ScopedName(name))), false);
+  Python::Object get = ast.types().attr("get");
+  this->type = AST::Type(get(Python::Tuple(AST::ScopedName(name))), false);
   return this->type;
 }
 
