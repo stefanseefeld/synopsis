@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.15 2002/10/25 03:43:10 chalky Exp $
+# $Id: FileLayout.py,v 1.16 2002/11/01 07:21:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.16  2002/11/01 07:21:15  chalky
+# More HTML formatting fixes eg: ampersands and stuff
+#
 # Revision 1.15  2002/10/25 03:43:10  chalky
 # Don't put spaces in url anchors
 #
@@ -79,6 +82,7 @@ from Synopsis.Formatter import TOC
 # HTML modules
 import core
 from core import config
+from Tags import *
 
 class FileLayout (TOC.Linker):
     """Base class for naming files.
@@ -164,7 +168,7 @@ class FileLayout (TOC.Linker):
 	    return self.nameOfScope(decl.name())
 	# Assume parent scope is class or module, and this is a <A> name in it
 	filename = self.nameOfScope(decl.name()[:-1])
-	anchor = decl.name()[-1].replace(' ','-')
+	anchor = anglebrackets(decl.name()[-1].replace(' ','-'))
 	return filename + "#" + anchor
 
 class NestedFileLayout (FileLayout):

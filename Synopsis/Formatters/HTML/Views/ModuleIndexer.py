@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.11 2002/11/01 03:39:21 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.12 2002/11/01 07:21:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.12  2002/11/01 07:21:15  chalky
+# More HTML formatting fixes eg: ampersands and stuff
+#
 # Revision 1.11  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -95,7 +98,8 @@ class ModuleIndexer(Page.Page):
 	links = []
 	for depth in range(0, len(name)):
 	    url = config.files.nameOfModuleIndex(name[:depth+1])
-	    links.append(href(rel(self.__filename, url), name[depth]))
+	    label = anglebrackets(name[depth])
+	    links.append(href(rel(self.__filename, url), label))
 	return entity('b', string.join(links, '\n::') + ' Index')
 
     def processNamespaceIndex(self, ns):
@@ -114,7 +118,6 @@ class ModuleIndexer(Page.Page):
 	self.write(self._makePageHeading(ns))
 
 	# Make script to switch main frame upon load
-	link_script = "javascript:return go('%s','%s');"
 	load_script = '<!--\n'
 	if config.toc[ns.name()]:
 	    target = rel(self.__filename, config.toc[ns.name()].link)
@@ -123,7 +126,7 @@ class ModuleIndexer(Page.Page):
 	    'window.parent.frames["index"].location=index;\n'\
 	    'window.parent.frames["main"].location=main;\n'\
 	    'return false;}\n-->'
-	self.write(entity('script', load_script, type='Javascript'))
+	self.write(entity('script', load_script, type='text/javascript'))
 
 	# Loop throught all the types of children
 	for section in config.sorter.sections():
@@ -138,14 +141,13 @@ class ModuleIndexer(Page.Page):
 		if heading:
 		    self.write(heading)
 		    heading = None
+		label = Util.ccolonName(child.name(), ns.name())
+		label = anglebrackets(label)
+		label = replace_spaces(label)
 		if isinstance(child, AST.Module):
 		    index_url = rel(self.__filename, config.files.nameOfModuleIndex(child.name()))
-		    #scope_url = rel(self.__filename, config.files.nameOfScope(child.name()))
-		    #script = link_script%(index_url, scope_url)
-		    #self.write(self.reference(child.name(), ns.name(), target='index', onClick=script))
-		    self.write(self.reference(child.name(), ns.name(), href=index_url))
+		    self.write(href(rel(self.__filename, index_url), label, target='index'))
 		else:
-		    label = anglebrackets(Util.ccolonName(child.name(), ns.name()))
 		    entry = config.toc[child.name()]
 		    if entry:
 			url = rel(self.__filename, entry.link)
@@ -157,7 +159,7 @@ class ModuleIndexer(Page.Page):
 
 	# Queue child namespaces
 	for child in config.sorter.children():
-	    if isinstance(child, AST.Scope):
+	    if isinstance(child, AST.Module):
 		self.__namespaces.append(child)
  
 htmlPageClass = ModuleIndexer

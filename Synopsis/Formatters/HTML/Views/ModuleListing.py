@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.9 2002/07/04 06:43:18 chalky Exp $
+# $Id: ModuleListing.py,v 1.10 2002/11/01 07:21:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.10  2002/11/01 07:21:15  chalky
+# More HTML formatting fixes eg: ampersands and stuff
+#
 # Revision 1.9  2002/07/04 06:43:18  chalky
 # Improved support for absolute references - pages known their full path.
 #
@@ -143,7 +146,7 @@ class ModuleListing(Page.Page):
 	children.sort(lambda a,b,g=self._get_children:
 	    cmp(len(g(b)),len(g(a))))
 	# Print link to this module
-	name = Util.ccolonName(my_scope, rel_scope) or "Global Namespace"
+	name = Util.ccolonName(my_scope, rel_scope) or "Global&nbsp;Namespace"
 	link = self._link_href(ns)
 	text = href(link, name, target=self._link_target)
 	if not len(children):
