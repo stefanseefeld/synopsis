@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.11 2002/07/19 14:26:32 chalky Exp $
+# $Id: FileLayout.py,v 1.12 2002/09/28 06:15:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.12  2002/09/28 06:15:51  chalky
+# Quote filenames to prevent angle brackets being used
+#
 # Revision 1.11  2002/07/19 14:26:32  chalky
 # Revert prefix in FileLayout but keep relative referencing elsewhere.
 #
@@ -58,7 +61,7 @@ default implementation stores everything in the same directory.
 """
 
 # System modules
-import os, sys, stat, string
+import os, sys, stat, string, re
 
 # Synopsis modules
 from Synopsis.Core import Util, AST
@@ -67,6 +70,14 @@ from Synopsis.Formatter import TOC
 # HTML modules
 import core
 from core import config
+
+def quote(name):
+    """Quotes a filename to remove angle brackets"""
+    # The . is arbitrary..
+    name = re.sub('\.','..',name)
+    name = re.sub('<','.L',name)
+    name = re.sub('>','.R',name)
+    return name
 
 class FileLayout (TOC.Linker):
     """Base class for naming files.
@@ -116,9 +127,9 @@ class FileLayout (TOC.Linker):
     def nameOfScope(self, scope):
 	"""Return the filename of a scoped name (class or module).
 	The default implementation is to join the names with '-' and append
-	".html" """
+	".html" Additionally, special characters are quoted in URL-style"""
 	if not len(scope): return self.nameOfSpecial('global')
-	return string.join(scope,'-') + ".html"
+	return quote(string.join(scope,'-')) + ".html"
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
 	tuple (generally it is processed this way beforehand so this is okay).
@@ -135,7 +146,7 @@ class FileLayout (TOC.Linker):
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file. Default is to join
 	the scope with '-' and prepend '-'+name"""
-	return "_%s-%s%s"%(name, string.join(scope, '-'), ext)
+	return "_%s-%s%s"%(name, quote(string.join(scope, '-')), ext)
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index. Default is
 	_modules.html"""
@@ -143,12 +154,13 @@ class FileLayout (TOC.Linker):
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module. Default is to
 	join the name with '-', prepend "_module_" and append ".html" """
-	return "_module_" + string.join(scope, '-') + ".html"
+	return "_module_" + quote(string.join(scope, '-')) + ".html"
     def link(self, decl):
 	"""Create a link to the named declaration. This method may have to
 	deal with the directory layout."""
 	if isinstance(decl, AST.Scope):
 	    # This is a class or module, so it has its own file
+	    print "Linked",decl.name(),"to", self.nameOfScope(decl.name())
 	    return self.nameOfScope(decl.name())
 	# Assume parent scope is class or module, and this is a <A> name in it
 	filename = self.nameOfScope(decl.name()[:-1])
@@ -164,7 +176,7 @@ class NestedFileLayout (FileLayout):
 	One subdirectory per scope"""
         prefix = 'Scopes'
 	if not len(scope): return os.path.join(prefix, 'global') + '.html'
-        else: return reduce(os.path.join, scope, prefix) + '.html'
+        else: return quote(reduce(os.path.join, scope, prefix)) + '.html'
 
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
@@ -182,7 +194,7 @@ class NestedFileLayout (FileLayout):
     
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file"""
-        return reduce(os.path.join, scope, name) + ext
+        return quote(reduce(os.path.join, scope, name)) + ext
 
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index"""
@@ -190,4 +202,4 @@ class NestedFileLayout (FileLayout):
 
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module"""
-        return reduce(os.path.join, scope, 'Modules') + '.html'
+        return quote(reduce(os.path.join, scope, 'Modules')) + '.html'
