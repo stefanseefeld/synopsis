@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.10 2002/10/11 06:03:23 chalky Exp $
+# $Id: actionvis.py,v 1.11 2002/11/02 06:36:19 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.11  2002/11/02 06:36:19  chalky
+# Upgrade to Qt3
+#
 # Revision 1.10  2002/10/11 06:03:23  chalky
 # Use config from project
 #
@@ -109,9 +112,9 @@ class SelectionStrategy (CanvasStrategy):
 	self.__icon = None
 	self.__last = None
 	self.__hilite = None # the action or line to hilight
-	self.__normal_cursor = QCursor(ArrowCursor)
-	self.__moving_cursor = QCursor(BlankCursor)
-	self.__hint_cursor = QCursor(SizeAllCursor)
+	self.__normal_cursor = QCursor(Qt.ArrowCursor)
+	self.__moving_cursor = QCursor(Qt.BlankCursor)
+	self.__hint_cursor = QCursor(Qt.SizeAllCursor)
 
     def reset(self):
 	self.__drag_item = None
@@ -225,9 +228,9 @@ class SelectionStrategy (CanvasStrategy):
 class ConnectStrategy (CanvasStrategy):
     def __init__(self, canvas, view):
 	CanvasStrategy.__init__(self, canvas, view)
-	self.__normal_cursor = QCursor(ArrowCursor)
-	self.__hint_cursor = QCursor(UpArrowCursor)
-	self.__find_cursor = QCursor(SizeHorCursor)
+	self.__normal_cursor = QCursor(Qt.ArrowCursor)
+	self.__hint_cursor = QCursor(Qt.UpArrowCursor)
+	self.__find_cursor = QCursor(Qt.SizeHorCursor)
 	self.templine = QCanvasLine(self.canvas)
 	self.templine.setPen(QPen(Qt.blue, 1, Qt.DotLine))
 
@@ -279,8 +282,8 @@ class AddActionStrategy (CanvasStrategy):
     def __init__(self, canvas, view):
 	CanvasStrategy.__init__(self, canvas, view)
 	self.__drag_action = None
-	self.__normal_cursor = QCursor(ArrowCursor)
-	self.__moving_cursor = QCursor(BlankCursor)
+	self.__normal_cursor = QCursor(Qt.ArrowCursor)
+	self.__moving_cursor = QCursor(Qt.BlankCursor)
 
     def set(self):
 	self.action = Action(self.view.last_pos.x()-16,
@@ -353,7 +356,7 @@ class Icon:
 	if self.icon:
 	    icon = prefix+'/share/synopsis/'+self.icon
 	    self.pixmap = QPixmap(icon)
-	    self.array = QCanvasPixmapArray([self.pixmap], [QPoint(0,0)])
+	    self.array = QCanvasPixmapArray([self.pixmap])
 	    self.img = QCanvasSprite(self.array, canvas)
 	else:
 	    self.img = QCanvasRectangle(action.x(), action.y(), 32, 32, canvas)

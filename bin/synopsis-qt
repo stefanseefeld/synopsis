@@ -2,8 +2,9 @@
 # Qt GUI for Synopsis
 # Copyright (c) 2001 by Stephen Davies
 #
-# Tested on Debian unstable with python-pyqt package (and dependencies)
-# This appears to be using Qt 2.0
+# Tested on Debian unstable with python2.2-qt3 package (and dependencies)
+# You may need to add asgard.debian.org to your sources.list.
+# Qt 2.0 uses a different API in places and is NOT supported
 
 from Synopsis.UI.Qt.main import *
 from Synopsis.Formatter import ASCII
@@ -15,9 +16,9 @@ if __name__ == "__main__":
     ASCII.comment_str = '<font color="purple">// %s</font>\n'
 
     app = QApplication(sys.argv)
-    #app.setDesktopSettingsAware(1) # doesnt work with Qt 2
+    app.setDesktopSettingsAware(1) # doesnt work with Qt 2
     # So I prefer the windows style to motif.. shoot me :)
-    app.setStyle(QWindowsStyle())
+    #app.setStyle(QWindowsStyle())
     #app.setStyle(QPlatinumStyle())
     app.setFont(QFont('Helvetica', 10))
 
