@@ -1,4 +1,4 @@
-# $Id: EmptyModuleRemover.py,v 1.5 2003/11/25 20:19:50 stefan Exp $
+# $Id: EmptyModuleRemover.py,v 1.6 2003/12/02 14:35:53 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -8,12 +8,10 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import AST, Type
 
-import string
-
-class EmptyNS (Processor, AST.Visitor):
-   """A class that removes empty namespaces"""
+class EmptyModuleRemover (Processor, AST.Visitor):
+   """A processor that removes empty modules"""
 
    def process(self, ast, **kwds):
 
