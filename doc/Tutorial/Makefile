@@ -13,7 +13,7 @@ html:	index.html
 pdf:	synopsis.pdf
 
 clean:
-	rm -f *.html *.pdf
+	rm -f *.html *.pdf config.xml
 
 config.xml:	../../Synopsis/Config.py
 	$(SYNOPSIS) -p Python -Wp,-b,../../Synopsis/ -f DocBook -Wf,-d,-m -o config.xml ../../Synopsis/Config.py.in
