@@ -42,7 +42,7 @@ enum NamespaceType
 //. called by SWalker as it walks the parse tree.
 class Builder
 {
-  friend Lookup;
+  friend class Lookup;
 public:
   //. Constructor
   Builder(const std::string& basename);

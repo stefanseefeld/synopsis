@@ -74,7 +74,7 @@ int *transient_characters = 0;
 
 #ifdef NATIVE_UINTMAX
 
-/* typedef NATIVE_UINTMAX ulong; */
+typedef NATIVE_UINTMAX ulong;
 typedef NATIVE_INTMAX slong;
 
 #define to_ulong(x)		((ulong)(x))

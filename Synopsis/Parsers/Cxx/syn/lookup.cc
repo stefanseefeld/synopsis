@@ -78,7 +78,7 @@ namespace
 }
 
 // defined in common.hh
-std::string join(const ScopedName& strs, const std::string& sep = " ")
+std::string join(const ScopedName& strs, const std::string& sep)
 {
     ScopedName::const_iterator iter = strs.begin();
     if (iter == strs.end()) return "";
@@ -564,7 +564,7 @@ public:
 };
 
 //. Private Qualified type lookup
-Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope, bool func_okay = false)
+Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope, bool func_okay)
 {
     STrace trace("Lookup::lookupQual");
     //LOG("name: " << name << " in: " << scope->scope_decl->name());

@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.13 2002/01/28 13:17:24 chalky Exp $
+ * $Id: link.cc,v 1.14 2002/06/14 15:36:04 stefan Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.14  2002/06/14 15:36:04  stefan
+ * fixes to compile with gcc 3.1
+ *
  * Revision 1.13  2002/01/28 13:17:24  chalky
  * More cleaning up of code. Combined xref into LinkStore. Encoded links file.
  *
@@ -45,6 +48,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <iterator>
 #include <vector>
 #include <set>
 #include <map>

@@ -164,6 +164,7 @@ bool Parser::rProgram(Ptree*& def)
 */
 bool Parser::rDefinition(Ptree*& p)
 {
+   std::cout << "rDefinition" << std::endl;
     bool res;
     int t = lex->LookAhead(0);
     if(t == ';')
@@ -189,12 +190,14 @@ bool Parser::rDefinition(Ptree*& p)
 	if (c) {
 	    Walker::SetDeclaratorComments(p, c);
 	}
+   std::cout << "~rDefinition" << std::endl;
 	return TRUE;
     }
 
     // Leftover comments.. is this needed?
     /* Ptree* c = */lex->GetComments();
     //if (c) c->Display();
+   std::cout << "~rDefinition" << std::endl;
     return res;
 }
 
@@ -215,6 +218,7 @@ bool Parser::rNullDeclaration(Ptree*& decl)
 */
 bool Parser::rTypedef(Ptree*& def)
 {
+   std::cout << "rTypedef" << std::endl;
     Token tk;
     Ptree *type_name, *decl;
     Encoding type_encode;
@@ -234,6 +238,7 @@ bool Parser::rTypedef(Ptree*& def)
 	return FALSE;
 
     def = Ptree::Nconc(def, Ptree::List(decl, new Leaf(tk)));
+   std::cout << "~rTypedef" << std::endl;
     return TRUE;
 }
 
@@ -243,6 +248,7 @@ bool Parser::rTypedef(Ptree*& def)
 */
 bool Parser::rTypeSpecifier(Ptree*& tspec, bool check, Encoding& encode)
 {
+   std::cout << "rTypeSpecifier" << std::endl;
     Ptree *cv_q, *cv_q2;
 
     if(!optCvQualify(cv_q) || !optIntegralTypeOrClassSpec(tspec, encode))
@@ -272,6 +278,7 @@ bool Parser::rTypeSpecifier(Ptree*& tspec, bool check, Encoding& encode)
 	tspec = Ptree::Cons(tspec, cv_q2);
 
     encode.CvQualify(cv_q, cv_q2);
+   std::cout << "~rTypeSpecifier" << std::endl;
     return TRUE;
 }
 
@@ -537,6 +544,7 @@ bool Parser::rLinkageBody(Ptree*& body)
 */
 bool Parser::rTemplateDecl(Ptree*& decl)
 {
+   std::cout << "rTemplateDecl" << std::endl;
     Ptree *body;
     TemplateDeclKind kind = tdk_unknown;
 
@@ -575,6 +583,7 @@ bool Parser::rTemplateDecl(Ptree*& decl)
 	MopErrorMessage("rTemplateDecl()", "fatal");
 	break;
     }
+   std::cout << "~rTemplateDecl" << std::endl;
 
     return TRUE;
 }

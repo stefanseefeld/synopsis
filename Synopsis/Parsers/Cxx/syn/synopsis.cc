@@ -93,7 +93,7 @@ struct Synopsis::Private {
     PyObject* List(const std::vector<T*>& vec) {
 	PyObject* list = PyList_New(vec.size());
 	int index = 0;
-	std::vector<T*>::const_iterator iter = vec.begin();
+	typename std::vector<T*>::const_iterator iter = vec.begin();
 	while (iter != vec.end())
 	    PyList_SET_ITEM(list, index++, py(*iter++));
 	return list;
@@ -104,7 +104,7 @@ struct Synopsis::Private {
     PyObject* Tuple(const std::vector<T*>& vec) {
 	PyObject* tuple = PyTuple_New(vec.size());
 	int index = 0;
-	std::vector<T*>::const_iterator iter = vec.begin();
+	typename std::vector<T*>::const_iterator iter = vec.begin();
 	while (iter != vec.end())
 	    PyTuple_SET_ITEM(tuple, index++, py(*iter++));
 	return tuple;
