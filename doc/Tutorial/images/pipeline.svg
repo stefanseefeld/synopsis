@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000802//EN"
+"http://www.w3.org/TR/2000/CR-SVG-20000802/DTD/svg-20000802.dtd">
+<svg width="6.135416666666667in" height="1.6145833333333333in" viewBox="40 35 589 155">
+	<path d="M109,111
+		a19,11 0 0,1 19,-11
+		l 68,0
+ 
+		a19,11 0 0,1 19,11
+		l 0,0
+ 
+		a19,11 0 0,1 -19,11
+		l -68,0
+ 
+		a19,11 0 0,1 -19,-11
+		l 0,-0"
+		style="fill:#ffffcc; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="143" y="116" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">parser</text>
+	<path d="M450,111
+		a19,11 0 0,1 19,-11
+		l 68,0
+ 
+		a19,11 0 0,1 19,11
+		l 0,0
+ 
+		a19,11 0 0,1 -19,11
+		l -68,0
+ 
+		a19,11 0 0,1 -19,-11
+		l 0,-0"
+		style="fill:#ffffcc; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="473" y="116" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">formatter</text>
+	<path d="M280,111
+		a19,11 0 0,1 19,-11
+		l 68,0
+ 
+		a19,11 0 0,1 19,11
+		l 0,0
+ 
+		a19,11 0 0,1 -19,11
+		l -68,0
+ 
+		a19,11 0 0,1 -19,-11
+		l 0,-0"
+		style="fill:#ffffcc; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="315" y="116" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">linker</text>
+	<rect x="89" y="50" width="78" height="23" 
+		style="fill:#ffffcc; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="95" y="63" 
+		style="font-family:Verdana; font-weight:bold; text-decoration:underline; font-size:10; fill:#000000">source file</text>
+	<rect x="360" y="150" width="63" height="23" 
+		style="fill:#ffffcc; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="382" y="163" 
+		style="font-family:Verdana; font-weight:bold; text-decoration:underline; font-size:10; fill:#000000">toc</text>
+	<rect x="530" y="150" width="63" height="23" 
+		style="fill:#ffffcc; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="547" y="163" 
+		style="font-family:Verdana; font-weight:bold; text-decoration:underline; font-size:10; fill:#000000">html</text>
+	<ellipse
+		cx="59" cy="110"
+		rx="9" ry="9"
+		style="fill:#424242; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<ellipse
+		cx="609" cy="109"
+		rx="9" ry="9"
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<ellipse
+		cx="609" cy="109"
+		rx="4" ry="4"
+		style="fill:#424242; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="470" y1="100" x2="470" y2="75" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="470" y1="75" x2="435" y2="75" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="435" y1="75" x2="435" y2="185" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="435" y1="185" x2="410" y2="185" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="410" y1="185" x2="410" y2="173" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="470" y1="100" x2="473" y2="93" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="470" y1="100" x2="467" y2="93" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="280" y1="111" x2="215" y2="111" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="280" y1="111" x2="273" y2="108" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="280" y1="111" x2="273" y2="114" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="450" y1="111" x2="386" y2="111" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="450" y1="111" x2="443" y2="108" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="450" y1="111" x2="443" y2="114" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="600" y1="109" x2="556" y2="109" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="600" y1="109" x2="593" y2="106" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="600" y1="109" x2="593" y2="112" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="109" y1="110" x2="68" y2="110" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="109" y1="110" x2="102" y2="107" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="109" y1="110" x2="102" y2="113" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="370" y1="150" x2="370" y2="123" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="370" y1="150" x2="373" y2="143" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="370" y1="150" x2="367" y2="143" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="119" y1="100" x2="119" y2="73" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="119" y1="100" x2="122" y2="93" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="119" y1="100" x2="116" y2="93" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="540" y1="150" x2="540" y2="123" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:10 "/>
+	<line x1="540" y1="150" x2="543" y2="143" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="540" y1="150" x2="537" y2="143" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+</svg>
