@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.16 2001/02/11 05:39:33 stefan Exp $
+# $Id: Makefile,v 1.17 2001/03/30 14:00:49 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -28,6 +28,7 @@ endif
 
 SRC	:= __init__ Config
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
+SHARE   := $(patsubst %, share/%, synopsis.jpg synopsis200.jpg syn-down.png syn-right.png)
 
 subdirs	:= Core Parser Linker Formatter
 
@@ -55,4 +56,6 @@ install:
 	python -c "import compileall; compileall.compile_dir('.')"
 	mkdir -p $(packagedir)/Synopsis
 	install $(PY) $(packagedir)/Synopsis
+	mkdir -p $(packagedir)/Synopsis/share
+	install $(SHARE) $(packagedir)/Synopsis/share
 	$(MAKE) action="install"
