@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.15 2002/09/20 10:34:52 chalky Exp $
+# $Id: Comments.py,v 1.16 2002/10/11 05:57:17 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.16  2002/10/11 05:57:17  chalky
+# Support suspect comments
+#
 # Revision 1.15  2002/09/20 10:34:52  chalky
 # Add a comment parser for plain old // comments
 #
@@ -214,10 +217,12 @@ class QtComments (CommentProcessor):
 class Transformer (CommentProcessor):
     """A class that creates a new AST from an old one. This is a helper base for
     more specialized classes that manipulate the AST based on the comments in the nodes"""
-    def processAll(self, declarations):
-	"""Overrides the default processAll() to setup the stack"""
+    def __init__(self):
+	"""Constructor"""
 	self.__scopestack = []
 	self.__currscope = []
+    def processAll(self, declarations):
+	"""Overrides the default processAll() to setup the stack"""
 	for decl in declarations: decl.accept(self)
 	declarations[:] = self.__currscope
     def push(self):
@@ -272,7 +277,10 @@ class Previous (Dummies):
 	"""decorates processAll() to initialise last and laststack"""
 	self.last = None
 	self.__laststack = []
-	Dummies.processAll(self, declarations)
+	for decl in declarations:
+	    decl.accept(self)
+	    self.last = decl
+	declarations[:] = self.currscope()
     def push(self):
 	"""decorates push() to also push 'last' onto 'laststack'"""
 	Dummies.push(self)
@@ -284,6 +292,7 @@ class Previous (Dummies):
 	self.last = self.__laststack.pop()
     def visitScope(self, scope):
 	"""overrides visitScope() to set 'last' after each declaration"""
+	self.removeSuspect(scope)
 	self.push()
 	for decl in scope.declarations():
 	    decl.accept(self)
@@ -294,18 +303,27 @@ class Previous (Dummies):
 	"""Checks a decl to see if the comment should be moved. If the comment
 	begins with a less-than sign, then it is moved to the 'last'
 	declaration"""
-	if len(decl.comments()):
+	if len(decl.comments()) and self.last:
 	    first = decl.comments()[0]
 	    if len(first.text()) and first.text()[0] == "<" and self.last:
+		first.set_suspect(0) # Remove suspect flag
 		first.set_text(first.text()[1:]) # Remove '<'
 		self.last.comments().append(first)
 		del decl.comments()[0]
+    def removeSuspect(self, decl):
+	"""Removes any suspect comments from the declaration"""
+	non_suspect = lambda decl: not decl.is_suspect()
+	comments = decl.comments()
+	comments[:] = filter(non_suspect, comments)
     def visitDeclaration(self, decl):
 	"""Calls checkPrevious on the declaration and removes dummies"""
 	self.checkPrevious(decl)
-	if decl.type() != "dummy": self.add(decl)
+	self.removeSuspect(decl)
+	if decl.type() != "dummy":
+	    self.add(decl)
     def visitEnum(self, enum):
 	"""Does the same as visitScope but for enum and enumerators"""
+	self.removeSuspect(enum)
 	self.push()
 	for enumor in enum.enumerators():
 	    enumor.accept(self)
@@ -314,6 +332,7 @@ class Previous (Dummies):
 	self.pop(enum)
     def visitEnumerator(self, enumor):
 	"""Checks previous comment and removes dummies"""
+	self.removeSuspect(enumor)
 	self.checkPrevious(enumor)
 	if len(enumor.name()): self.add(enumor)
 
