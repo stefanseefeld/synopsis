@@ -1,4 +1,3 @@
-# $Id: Comments.py,v 1.28 2003/12/10 05:19:54 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -295,6 +294,7 @@ class Previous(CommentProcessor):
       for enumor in enum.enumerators():
          enumor.accept(self)
          self.last = enumor
+      if enum.eos: enum.eos.accept(self)
       self.pop()
 
    def visitEnumerator(self, enumor):
