@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.3 2001/07/10 05:38:23 chalky Exp $
+#  $Id: Config.py,v 1.4 2001/07/10 05:41:08 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -78,7 +78,7 @@ references, unless a filename is needed in which case you need 3.
 
 import sys
 
-prefix = @prefix@
+prefix = '@prefix@'
 
 class Base:
     """The base class for configuration objects. 
