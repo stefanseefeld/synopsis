@@ -24,7 +24,8 @@ AC_PROG_CXX
 
 syn_inc="`cd ${srcdir}/../src && pwd`"
 SYN_CPP="`PKG_CONFIG_PATH=../src pkg-config --define-variable=includedir=${syn_inc} --cflags Synopsis`"
-SYN_LIBS="`PKG_CONFIG_PATH=../src pkg-config --define-variable=prefix=${syn_inc} --libs Synopsis`"
+syn_lib="`cd ../src && pwd`"
+SYN_LIBS="`PKG_CONFIG_PATH=../src pkg-config --define-variable=prefix=${syn_lib} --libs Synopsis`"
 AC_SUBST(SYN_CPP)
 AC_SUBST(SYN_LIBS)
 
