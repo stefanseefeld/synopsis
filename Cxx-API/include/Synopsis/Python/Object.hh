@@ -439,7 +439,7 @@ inline void Object::check_exception() const
     throw TypeError(Object::narrow<std::string>(v.str()));
   else if (exc == PyExc_AttributeError)
     throw AttributeError();
-  throw std::runtime_error("internal error");
+  throw std::runtime_error(PyString_AsString(value));
 }
 
 inline std::ostream &operator << (std::ostream &os, const Object &o)
