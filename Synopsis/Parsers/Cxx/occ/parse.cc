@@ -41,6 +41,7 @@ Parser::Parser(Lex* l)
 {
     lex = l;
     nerrors = 0;
+    comments = 0;
 }
 
 bool Parser::ErrorMessage(const char* msg, Ptree* name, Ptree* where)
@@ -790,7 +791,7 @@ bool Parser::rDeclaration(Ptree*& statement)
     int res;
 
     lex->LookAhead(0);
-    Ptree *comments = lex->GetComments();
+    comments = lex->GetComments();
 
     if(!optMemberSpec(mem_s) || !optStorageSpec(storage_s))
 	return FALSE;
@@ -2426,7 +2427,6 @@ bool Parser::rClassSpec(Ptree*& spec, Encoding& encode)
     if(t != CLASS && t != STRUCT && t != UNION)
 	return FALSE;
 
-    Ptree* comments = lex->GetComments();
     spec = new PtreeClassSpec(new LeafReserved(tk), nil, comments);
     if(head != nil)
 	spec = new PtreeClassSpec(head, spec, comments);

@@ -31,6 +31,7 @@ public:
     //
     void visit(const vector<AST::Declaration*>&);
     string format(AST::Parameter*);
+    void visit(const vector<AST::Comment*>&);
     virtual void visitDeclaration(AST::Declaration*);
     virtual void visitScope(AST::Scope*);
     virtual void visitNamespace(AST::Namespace*);

@@ -31,6 +31,9 @@ public:
     //. Changes the current accessability for the current scope
     void setAccess(AST::Access);
 
+    //. Changes the current filename
+    void setFilename(string filename);
+    
     //
     // AST Methods
     //
@@ -55,7 +58,7 @@ public:
     //. and the old one is pushed onto the stack. The type argument is the
     //. type, ie: "class" or "struct". This is tested to determine the default
     //. accessability.
-    AST::Class* startClass(string type, string name);
+    AST::Class* startClass(int, string type, string name);
     //. Update the search to include base classes. Call this method after
     //. startClass(), and after filling in the parents() vector of the returned
     //. AST::Class object. After calling this method, name and type lookups

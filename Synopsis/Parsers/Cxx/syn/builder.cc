@@ -92,6 +92,11 @@ void Builder::setAccess(AST::Access axs)
     m_scopes.top()->access = axs;
 }
 
+void Builder::setFilename(string filename)
+{
+    m_filename = filename;
+}
+
 void Builder::add(AST::Declaration* decl)
 {
     //cout << "adding decl " << decl->name().back() << endl;
@@ -187,12 +192,12 @@ void Builder::updateBaseSearch()
 	scope->search.push_back(*iter++);
 }
 
-AST::Class* Builder::startClass(string type, string name)
+AST::Class* Builder::startClass(int lineno, string type, string name)
 {
     // Generate the name
     AST::Name class_name = extend(m_scope->name(), name);
     // Create the Class
-    AST::Class* ns = new AST::Class(m_filename, 0, type, class_name);
+    AST::Class* ns = new AST::Class(m_filename, lineno, type, class_name);
     add(ns);
     // Push stack. Search is this Class plus base Classes plus enclosing NS's search
     Scope* scope = findScope(ns);

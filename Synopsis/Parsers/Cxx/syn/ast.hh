@@ -460,11 +460,16 @@ namespace AST {
 	//. Returns the line number of this declaration
 	int line() const { return m_line; }
 
+	//. Returns the text of this comment
+	string text() const { return m_text; }
+
     private:
 	//. The filename
 	string m_filename;
 	//. The first line number
 	int m_line;
+	//. The test
+	string m_text;
     };
 
     //. The Visitor for the AST hierarchy. This class is just an interface
