@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.11 2001/07/05 05:39:58 stefan Exp $
+# $Id: Scope.py,v 1.12 2001/07/10 14:40:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.12  2001/07/10 14:40:23  chalky
+# Cache summarizer and detailer
+#
 # Revision 1.11  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -129,6 +132,7 @@ class ScopePages (Page.Page):
 	share = config.datadir
 	self.syn_logo = 'synopsis200.jpg'
 	config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
+	self.__summarizer = self.__detailer = None
 
     def filename(self):
         """since ScopePages generates a whole file hierarchy, this method returns the current filename,
@@ -148,6 +152,30 @@ class ScopePages (Page.Page):
 	while self.__namespaces:
 	    ns = self.__namespaces.pop(0)
 	    self.process_scope(ns)
+    
+    def _get_summarizer(self):
+	"Creates a summarizer from config, with caching"
+	if self.__summarizer: return self.__summarizer
+	base = "Synopsis.Formatter.HTML.ASTFormatter."
+	try:
+	    spec = config.obj.ScopePages.summarizer
+	    self.__summarizer = core.import_object(spec, basePackage=base)(self)
+	    return self.__summarizer
+	except AttributeError:
+	    if config.verbose: print "Summarizer config failed. Abort"
+	    raise
+
+    def _get_detailer(self):
+	"Creates a detailer from config, with caching"
+	if self.__detailer: return self.__detailer
+	base = "Synopsis.Formatter.HTML.ASTFormatter."
+        try:
+	    spec = config.obj.ScopePages.detailer
+	    self.__detailer = core.import_object(spec, basePackage=base)(self)
+	    return self.__detailer
+	except AttributeError:
+	    if config.verbose: print "Detailer config failed. Abort"
+	    raise
 
     def process_scope(self, ns):
 	"""Creates a page for the given scope"""
@@ -162,20 +190,8 @@ class ScopePages (Page.Page):
 	config.sorter.set_scope(ns)
 	config.sorter.sort_section_names()
 	
-        # FIXME ! use config...
-	base = "Synopsis.Formatter.HTML.ASTFormatter."
-	try:
-	    spec = config.obj.ScopePages.summarizer
-	    summarizer = core.import_object(spec, basePackage=base)(self)
-	except AttributeError:
-	    if config.verbose: print "Summarizer config failed. Abort"
-	    raise
-        try:
-	    spec = config.obj.ScopePages.detailer
-	    detailer = core.import_object(spec, basePackage=base)(self)
-	except AttributeError:
-	    if config.verbose: print "Detailer config failed. Abort"
-	    raise
+        summarizer = self._get_summarizer()
+	detailer = self._get_detailer()
 
 	# Write heading
 	self.write(self.manager.formatHeader(self.filename()))
