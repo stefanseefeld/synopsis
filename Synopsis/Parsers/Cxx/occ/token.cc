@@ -577,9 +577,18 @@ int Lex::ReadLine()
 	    return ReadSeparator('.', top);
 	}
     }
-    else if(is_letter(c))
+    else if(is_letter(c)) {
+	if (c == 'L') {
+	    // May be a L"const" type string
+	    char next = file->Get();
+	    if (next == '"') {
+		if (ReadStrConst(top))
+		    return token(StringL);
+	    }
+	    file->Unget();
+	}
 	return ReadIdentifier(top);
-    else
+    } else
 	return ReadSeparator(c, top);
 }
 
@@ -605,12 +614,16 @@ bool Lex::ReadCharConst(uint top)
 
 /*
   If text is a sequence of string constants like:
-	"string1" "string2"
+	"string1" "string2"  L"string3"
   then the string constants are delt with as a single constant.
 */
 bool Lex::ReadStrConst(uint top)
 {
     char c;
+
+    // Skip the L if there is one
+    if (*file->Read(top) == 'L')
+	file->Get();
 
     for(;;){
 	c = file->Get();

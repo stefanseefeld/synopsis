@@ -3,6 +3,7 @@
 #include "decoder.hh"
 #include "type.hh"
 #include "builder.hh"
+#include "strace.hh"
 #include <iostream>
 
 Decoder::Decoder(Builder* builder)
@@ -37,6 +38,7 @@ std::string Decoder::decodeName(char* iter)
 
 void Decoder::decodeQualName(std::vector<std::string>& names)
 {
+    STrace trace("Decoder::decodeQualName");
     if (*m_iter++ != 'Q') return;
     int scopes = *m_iter++ - 0x80;
     while (scopes--) {
@@ -47,14 +49,16 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
 	    // Template :(
 	    ++m_iter;
 	    std::string tname = decodeName();
-	    code_iter tend = m_iter + *m_iter++ - 0x80;
+	    code_iter tend = m_iter + *m_iter++ - 0x80 + 1;
 	    while (m_iter < tend)
 		decodeType();
 	    names.push_back(tname);
 	} else {
-	    std::cerr << "Warning: Unknown type inside Q name: " << *m_iter << std::endl;
+	    LOG("Warning: Unknown type inside Q name: " << *m_iter);
+	    LOG("         String was: " << m_string);
 	    // FIXME: provide << operator for m_string !
 // 	    std::cerr << "         Decoding " << m_string << std::endl;
+ 	    throw ERROR("Unknown type inside Q name");
 	}
     }
 }
@@ -139,7 +143,7 @@ Type::Type* Decoder::decodeQualType()
 	    // Template :(
 	    ++m_iter;
 	    std::string tname = decodeName();
-	    code_iter tend = m_iter + *m_iter++ - 0x80;
+	    code_iter tend = m_iter + *m_iter++ - 0x80 + 1;
 	    while (m_iter < tend)
 		types.push_back(decodeType());
 	    names.push_back(tname);

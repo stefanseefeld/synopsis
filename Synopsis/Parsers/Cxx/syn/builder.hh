@@ -114,6 +114,20 @@ public:
     AST::Declaration* addTailComment(int line);
 
     //
+    // Using methods
+    //
+    
+    //. Add a namespace using declaration.
+    void usingNamespace(Type::Named* type);
+
+    //. Add a namespace alias using declaration.
+    void usingNamespace(Type::Named* type, const std::string& alias);
+
+    //. Add a using declaration.
+    void usingDeclaration(Type::Named* type);
+
+
+    //
     // Type Methods
     //
 

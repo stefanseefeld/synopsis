@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.8 2001/06/11 10:37:30 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.9 2001/07/19 13:50:52 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.9  2001/07/19 13:50:52  chalky
+// Support 'using' somewhat, L"const" literals, and better Qual.Templ. names
+//
 // Revision 1.8  2001/06/11 10:37:30  chalky
 // Operators! Arrays! (and probably more that I forget)
 //
@@ -299,7 +302,10 @@ public:
 	else m_type = t;
     }
     //. Processes the template type
-    void visitParameterized(Type::Parameterized* t) { t->templateType()->accept(this); }
+    void visitParameterized(Type::Parameterized* t) {
+	if (t->templateType())
+	    t->templateType()->accept(this);
+    }
 protected:
     Builder* m_builder; //.< A reference to the builder object
     Type::Type* m_type; //.< The type to return
@@ -572,7 +578,6 @@ Ptree* SWalker::TranslateTemplateInstantiation(Ptree*) { STrace trace("SWalker::
 Ptree* SWalker::TranslateExternTemplate(Ptree*) { STrace trace("SWalker::TranslateExternTemplate NYI"); return 0; }
 Ptree* SWalker::TranslateTemplateFunction(Ptree*, Ptree*) { STrace trace("SWalker::TranslateTemplateFunction NYI"); return 0; }
 Ptree* SWalker::TranslateMetaclassDecl(Ptree*) { STrace trace("SWalker::TranslateMetaclassDecl NYI"); return 0; }
-Ptree* SWalker::TranslateUsing(Ptree*) { STrace trace("SWalker::TranslateUsing NYI"); return 0; }
 
 Ptree* SWalker::TranslateStorageSpecifiers(Ptree*) { STrace trace("SWalker::TranslateStorageSpecifiers NYI"); return 0; }
 Ptree* SWalker::TranslateFunctionBody(Ptree*) { STrace trace("SWalker::TranslateFunctionBody NYI"); return 0; }

@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.41 2001/07/03 11:32:40 chalky Exp $
+// $Id: swalker.cc,v 1.42 2001/07/19 13:50:52 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.42  2001/07/19 13:50:52  chalky
+// Support 'using' somewhat, L"const" literals, and better Qual.Templ. names
+//
 // Revision 1.41  2001/07/03 11:32:40  chalky
 // Fix phantom parameter identifier bug
 //
@@ -339,14 +342,13 @@ void SWalker::Translate(Ptree* node) {
 	// debugging :)
 #ifdef DEBUG
 	std::string at;
-	if (e.node) {
-	    char* fname;
-	    int fname_len;
-	    int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
-	    std::ostrstream buf;
-	    buf << at << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
-	    at.assign(buf.str(), buf.pcount());
-	}
+	if (e.node) node = e.node;
+	char* fname;
+	int fname_len;
+	int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
+	std::ostrstream buf;
+	buf << at << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
+	at.assign(buf.str(), buf.pcount());
 	LOG("Warning: An exception occurred:" << at);
 	LOG("- " << e.str());
 #endif
@@ -685,6 +687,13 @@ Ptree* SWalker::TranslateBrace(Ptree* brace)
 	Translate(rest->Car());
 	rest = rest->Cdr();
     }
+    if (m_extract_tails) {
+	Ptree* close = Ptree::Third(brace);
+	AST::Declaration* decl;
+	decl = m_builder->addTailComment(m_lineno);
+	addComments(decl, dynamic_cast<CommentedLeaf*>(close));
+    }
+
     return 0;
 }
 
@@ -773,138 +782,144 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	cout << "encname or enctype null!" << endl;
 	return 0;
     }
+    
+    try {
 
-    // Decide if this is a function or variable
-    m_decoder->init(enctype);
-    code_iter& iter = m_decoder->iter();
-    bool is_const = false;
-    while (*iter == 'C') { ++iter; is_const = true; }
-    if (*iter == 'F') {
-	// This is a function
-	++iter;
+	// Decide if this is a function or variable
+	m_decoder->init(enctype);
+	code_iter& iter = m_decoder->iter();
+	bool is_const = false;
+	while (*iter == 'C') { ++iter; is_const = true; }
+	if (*iter == 'F') {
+	    // This is a function
+	    ++iter;
 
-        // Create parameter objects
-        Ptree *p_params = decl->Rest();
-        while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
-	if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
-        std::vector<AST::Parameter*> params;
-	TranslateParameters(p_params->Second(), params);
-	m_param_cache = params;
+	    // Create parameter objects
+	    Ptree *p_params = decl->Rest();
+	    while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
+	    if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
+	    std::vector<AST::Parameter*> params;
+	    TranslateParameters(p_params->Second(), params);
+	    m_param_cache = params;
 
-        // Figure out the return type:
-        while (*iter++ != '_'); // in case of decoding error this is needed
-        Type::Type* returnType = m_decoder->decodeType();
+	    // Figure out the return type:
+	    while (*iter++ != '_'); // in case of decoding error this is needed
+	    Type::Type* returnType = m_decoder->decodeType();
 
-        // Figure out premodifiers
-        std::vector<std::string> premod;
-        Ptree* p = Ptree::First(m_declaration);
-        while (p) {
-            premod.push_back(p->ToString());
-            p = Ptree::Rest(p);
-        }
-
-        AST::Operation* oper = 0;
-	// Find name:
-	if (encname[0] == 'Q') {
-	    // The name is qualified, which introduces a bit of difficulty
-	    std::vector<std::string> names;
-	    m_decoder->init(encname);
-	    m_decoder->decodeQualName(names);
-	    names.back() += formatParameters(params);
-	    // A qual name must already be declared, so find it:
-	    try {
-		Type::Named* named_type = m_builder->lookupType(names, true);
-		oper = Type::declared_cast<AST::Operation>(named_type);
-	    } catch (const Type::wrong_type_cast &) {
- 		throw ERROR("Qualified function name wasn't a function:" << names);
+	    // Figure out premodifiers
+	    std::vector<std::string> premod;
+	    Ptree* p = Ptree::First(m_declaration);
+	    while (p) {
+		premod.push_back(p->ToString());
+		p = Ptree::Rest(p);
 	    }
-	    // expand param info, since we now have names for them
-	    std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
-	    std::vector<AST::Parameter*>::iterator pend = oper->parameters().end();
-	    std::vector<AST::Parameter*>::iterator new_piter = params.begin();
-	    while (piter != pend) {
-		AST::Parameter* param = *piter++, *new_param = *new_piter++;
-		if (!param->name().size() && new_param->name().size()) {
-		    param->setName(new_param->name());
+
+	    AST::Operation* oper = 0;
+	    // Find name:
+	    if (encname[0] == 'Q') {
+		// The name is qualified, which introduces a bit of difficulty
+		std::vector<std::string> names;
+		m_decoder->init(encname);
+		m_decoder->decodeQualName(names);
+		names.back() += formatParameters(params);
+		// A qual name must already be declared, so find it:
+		try {
+		    Type::Named* named_type = m_builder->lookupType(names, true);
+		    oper = Type::declared_cast<AST::Operation>(named_type);
+		} catch (const Type::wrong_type_cast &) {
+		    throw ERROR("Qualified function name wasn't a function:" << names);
+		}
+		// expand param info, since we now have names for them
+		std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
+		std::vector<AST::Parameter*>::iterator pend = oper->parameters().end();
+		std::vector<AST::Parameter*>::iterator new_piter = params.begin();
+		while (piter != pend) {
+		    AST::Parameter* param = *piter++, *new_param = *new_piter++;
+		    if (!param->name().size() && new_param->name().size()) {
+			param->setName(new_param->name());
+		    }
+		}
+	    } else {
+		// Decode the function name
+		std::string realname;
+		TranslateFunctionName(encname, realname, returnType);
+		// Name is same as realname, but with parameters added
+		std::string name = realname+formatParameters(params);
+		// Append const after params if this is a const function
+		if (is_const) name += "const";
+		// Create AST::Operation object
+		oper = m_builder->addOperation(m_lineno, name, premod, returnType, realname);
+		oper->parameters() = params;
+	    }
+	    addComments(oper, m_declaration);
+	    addComments(oper, dynamic_cast<PtreeDeclarator*>(decl));
+
+	    // if storing links, find name
+	    if (m_links) {
+		// Store for use by TranslateFunctionImplementation
+		m_operation = oper;
+
+		// Do decl type first
+		if (m_store_decl && m_declaration->Second())
+		    m_links->link(m_declaration->Second(), returnType);
+
+		p = decl;
+		while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+		if (p) {
+		    // p should now be at the name
+		    m_links->link(p->Car(), oper);
 		}
 	    }
 	} else {
-	    // Decode the function name
-	    std::string realname;
-	    TranslateFunctionName(encname, realname, returnType);
-	    // Name is same as realname, but with parameters added
-	    std::string name = realname+formatParameters(params);
-	    // Append const after params if this is a const function
-	    if (is_const) name += "const";
-	    // Create AST::Operation object
-	    oper = m_builder->addOperation(m_lineno, name, premod, returnType, realname);
-	    oper->parameters() = params;
-	}
-	addComments(oper, m_declaration);
-	addComments(oper, dynamic_cast<PtreeDeclarator*>(decl));
-
-	// if storing links, find name
-	if (m_links) {
-	    // Store for use by TranslateFunctionImplementation
-	    m_operation = oper;
-
-	    // Do decl type first
-	    if (m_store_decl && m_declaration->Second())
-		m_links->link(m_declaration->Second(), returnType);
-
-	    p = decl;
-	    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
-	    if (p) {
-		// p should now be at the name
-		m_links->link(p->Car(), oper);
+	    // Variable declaration
+	    m_decoder->init(enctype);
+	    // Get type
+	    Type::Type* type = m_decoder->decodeType();
+	    std::string name;
+	    if (*encname < 0) name = m_decoder->decodeName(encname);
+	    else if (*encname == 'Q') {
+		cout << "Scoped name in variable decl!" << endl;
+		return 0;
+	    } else {
+		cout << "Unknown name in variable decl!" << endl;
+		return 0;
 	    }
-	}
-    } else {
-	// Variable declaration
-	m_decoder->init(enctype);
-	// Get type
-	Type::Type* type = m_decoder->decodeType();
-	std::string name;
-        if (*encname < 0) name = m_decoder->decodeName(encname);
-        else if (*encname == 'Q') {
-	    cout << "Scoped name in variable decl!" << endl;
-	    return 0;
-        } else {
-	    cout << "Unknown name in variable decl!" << endl;
-	    return 0;
-	}
 
-	// TODO: implement sizes support
-	std::vector<size_t> sizes;
-	std::string var_type = m_builder->scope()->type();
-	if (var_type == "function") var_type = "local";
-	var_type += " variable";
-	AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false, var_type);
-	//if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
-	//if (decl->GetComments()) addComments(var, decl->GetComments());
-	addComments(var, m_declaration);
-	addComments(var, dynamic_cast<PtreeDeclarator*>(decl));
-	
-	// if storing links, find name
-	if (m_links) {
-	    // Do decl type first
-	    if (m_store_decl && m_declaration->Second()) 
-		m_links->link(m_declaration->Second(), type);
+	    // TODO: implement sizes support
+	    std::vector<size_t> sizes;
+	    std::string var_type = m_builder->scope()->type();
+	    if (var_type == "function") var_type = "local";
+	    var_type += " variable";
+	    AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false, var_type);
+	    //if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
+	    //if (decl->GetComments()) addComments(var, decl->GetComments());
+	    addComments(var, m_declaration);
+	    addComments(var, dynamic_cast<PtreeDeclarator*>(decl));
+	    
+	    // if storing links, find name
+	    if (m_links) {
+		// Do decl type first
+		if (m_store_decl && m_declaration->Second()) 
+		    m_links->link(m_declaration->Second(), type);
 
-	    Ptree* p = decl;
-	    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
-	    if (p) {
-		// p should now be at the name
-		m_links->link(p->Car(), var);
+		Ptree* p = decl;
+		while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+		if (p) {
+		    // p should now be at the name
+		    m_links->link(p->Car(), var);
 
-		// Next might be '=' then expr
-		p = p->Rest();
-		if (p && p->Car() && p->Car()->Eq('=')) {
+		    // Next might be '=' then expr
 		    p = p->Rest();
-		    if (p && p->Car()) Translate(p->Car());
+		    if (p && p->Car() && p->Car()->Eq('=')) {
+			p = p->Rest();
+			if (p && p->Car()) Translate(p->Car());
+		    }
 		}
 	    }
 	}
+    } catch (TranslateError e) {
+	e.set_node(decl);
+	throw;
     }
     return 0;
 }
@@ -1189,5 +1204,50 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 }
 
 
+Ptree* SWalker::TranslateUsing(Ptree* node) {
+    STrace trace("SWalker::TranslateUsing");
+    // [ using Foo :: x ; ]
+    // [ using namespace Foo ; ]
+    // [ using namespace Foo = Bar ; ]
+    if (m_links) m_links->span(node->First(), "file-keyword");
+    bool is_namespace = false;
+    Ptree *p = node->Rest();
+    if (p->First()->Eq("namespace")) {
+	if (m_links) m_links->span(p->First(), "file-keyword");
+	// Find namespace to alias
+	p = p->Rest();
+	is_namespace = true;
+    }
+    // Find name that we are looking up, and make a new ptree list for linking it
+    Ptree *p_name = nil;
+    p_name = Ptree::Snoc(p_name, p->Car());
+    AST::Name name;
+    name.push_back(getName(p->First()));
+    p = p->Rest(); 
+    while (p->First()->Eq("::")) {
+	p_name = Ptree::Snoc(p_name, p->Car()); // Add '::' to p_name
+	p = p->Rest();
+	name.push_back(getName(p->First()));
+	p_name = Ptree::Snoc(p_name, p->Car()); // Add identifier to p_name
+	p = p->Rest();
+    }
+    // Resolve and link name
+    Type::Named* type = m_builder->lookupType(name);
+    if (m_links) m_links->link(p_name, type);
+    if (is_namespace) {
+	// Check for '=' alias
+	if (p->First()->Eq("=")) {
+	    p = p->Rest();
+	    std::string alias = getName(p->First());
+	    m_builder->usingNamespace(type, alias);
+	} else {
+	    m_builder->usingNamespace(type);
+	}
+    } else {
+	// Let builder do all the work
+	m_builder->usingDeclaration(type);
+    }
+    return 0;
+}
 
 

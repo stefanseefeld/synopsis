@@ -32,7 +32,7 @@ class Test:
 	f.close()
 	return self.system("make && "\
 	    "echo \"Running Synopsis...\" && "\
-	    "synopsis -c config.py -Wc,parser=C++ -Wp,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
+	    "synopsis -v -Wc,parser=C++ -Wp,-t,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
 	    "echo \"Running Linker...\" && "\
 	    "./link-synopsis -i %(file)s -l /tmp/%(base)s.links -o /tmp/%(base)s.html.out && "\
 	    "(echo \"Cleaning up...\") && "\
@@ -81,6 +81,91 @@ void func3() {
 void func4() {
     using Foo::x;
     x;
+}
+"""
+
+class UsingTest2 (Test):
+    test = """
+// From C++WD'96 7.4.3.2 Example
+namespace A {
+    int i;
+    namespace B {
+	namespace C {
+	    int i;
+	}
+	using namespace A::B::C;
+	void f1() {
+	    i = 5; // C::i hides A::i
+	}
+    }
+    namespace D {
+	using namespace B;
+	using namespace C;
+	void f2() {
+	    i = 5; // ambiguous, B::C::i or A::i
+	}
+    }
+    void f3() {
+	i = 5; // uses A::i
+    }
+}
+void f4() {
+    i = 5; // ill-formed, neither i visible
+}
+"""
+
+class UsingTest3 (Test):
+    test = """
+// From C++WD'96 7.4.3.3 Example 2
+namespace A {
+    int i;
+}
+namespace B {
+    int i;
+    int j;
+    namespace C {
+	namespace D {
+	    using namespace A;
+	    int j;
+	    int k;
+	    int a = i; // B::i hides A::i
+	}
+	using namespace D;
+	int k = 89; // no problem yet
+	int l = k; // ambiguous: C::k or D::k
+	int m = i; // B::i hides A::i
+	int n = j; // D::j hides B::j
+    }
+}
+"""
+
+class UsingTest4 (Test):
+    test = """
+// From C++WD'96 7.4.3.6 Example
+namespace D {
+    int d1;
+    void f(char);
+}
+using namespace D;
+int d1; // ok, no conflict with D::d1
+namespace E {
+    int e;
+    void f(int);
+}
+namespace D { // namespace extension
+    int d2;
+    using namespace E;
+    void f(int);
+}
+void f()
+{
+    d1++;    // error: ambiguous: ::d1 or D::d1
+    ::d1++;  // ok
+    D::d1++; // ok
+    d2++;    // ok D::d2
+    e++;     // ok E::e
+    f(1);    // error: ambiguous: D::f(int) or E::f(char)
+    f('a');  // ok: D::f(char)
 }
 """
 
@@ -166,6 +251,7 @@ void func(NS::A) {
 class Link (Test):
     def run(self):
 	return self.do_run("link.cc", "link", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
+	#return self.do_run("link.cc", "link", "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
 
 if __name__ == "__main__":
     tests = {}

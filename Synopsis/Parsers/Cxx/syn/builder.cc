@@ -1102,3 +1102,68 @@ Type::Base* Builder::Base(const std::string &name)
 }
 
 
+// Add a namespace using declaration.
+void Builder::usingNamespace(Type::Named* type)
+{
+    STrace trace("Builder::usingNamespace");
+    AST::Scope* ast_scope = Type::declared_cast<AST::Scope>(type);
+    Scope* scope = findScope(ast_scope);
+    AST::Name& target_name = ast_scope->name();
+
+    // Find where to insert 'scope' into top()'s search list
+    // "closest enclosing namespace that contains both using directive and
+    //  target namespace"
+    Scope::Search& search = m_scopes.top()->search;
+    Scope::Search::iterator iter = search.end();
+    // Skip global scope.. cant check something with no name
+    --iter;
+    while (iter != search.begin()) {
+	// Move to next scope to check
+	--iter;
+	AST::Name& search_name = (*iter)->scope_decl->name();
+	if (target_name.size() < search_name.size())
+	    // Search is more nested than the target
+	    break;
+	if (search_name.size() < 1)
+	    // Global NS..
+	    continue;
+	if (target_name[search_name.size()-1] != search_name.back())
+	    // Different scope path taken
+	    break;
+    }
+    iter++;
+    
+    search.insert(iter, scope);
+
+    std::ostrstream buf;
+    iter = search.begin();
+    while (iter != search.end())
+	buf << " " << (*iter++)->scope_decl->name();
+    buf << std::ends;
+    LOG("Search is now:" << buf.str());
+}
+
+// Add a namespace alias using declaration.
+void Builder::usingNamespace(Type::Named* type, const std::string& alias)
+{
+    STrace trace("Builder::usingNamespace");
+
+    // Retrieve the 'Namespace' it points to
+    AST::Namespace* ns = Type::declared_cast<AST::Namespace>(type);
+
+    // Create a new declared type with a different name
+    AST::Name new_name = m_scope->name();
+    new_name.push_back(alias);
+    Type::Declared* declared = new Type::Declared(new_name, ns);
+
+    // Add to current scope
+    add(declared);
+}
+
+// Add a using declaration.
+void Builder::usingDeclaration(Type::Named* type)
+{
+    // Add it to the current scope
+    add(type);
+}
+
