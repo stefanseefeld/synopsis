@@ -28,6 +28,11 @@ public:
 class Synopsis
 {
 public:
+    //. Access specifiers. @see Python/Synopsis.AST for official definition
+    enum Accessability {
+	Default=0, Public, Protected, Private
+    };
+
     Synopsis(const char *, PyObject *, PyObject *);
     ~Synopsis();
     //.
@@ -39,7 +44,6 @@ public:
     PyObject *addTemplate(const string &, PyObject *, PyObject *);
     PyObject *addModifier(PyObject *, const vector<string> &, const vector<string> &);
     PyObject *addParametrized(PyObject *, const vector<PyObject *> &);
-    PyObject *addComment(PyObject* decl, const char* text);
 
     //.
     //. types from the Synopsis.AST module
@@ -70,6 +74,13 @@ public:
     void pushClass(size_t l, bool m, const string &n) { pushClass(l, m, "class", n);}
     void pushStruct(size_t l, bool m, const string &n) { pushClass(l, m, "struct", n);}
 
+    void setAccessability(Accessability);
+    void pushAccess(Accessability);
+    void popAccess();
+
+    PyObject *addComment(PyObject* decl, const char* text);
+    void setAccessability(PyObject* decl, Accessability xs);
+
     PyObject *lookupType(const string &, PyObject *);
     PyObject *lookupType(const string &);
 
@@ -86,4 +97,10 @@ private:
     PyObject *declarations;
     PyObject *dictionary;
     vector<PyObject *> scopes;
+
+    //. Current accessability of declarations
+    Synopsis::Accessability m_accessability;
+
+    //. Stack of current accessabilities for nested classes
+    stack<Synopsis::Accessability> m_access_stack;
 };

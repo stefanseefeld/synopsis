@@ -55,6 +55,7 @@ public:
     virtual vector<PyObject *> TranslateInheritanceSpec(Ptree *);
     virtual Ptree *TranslateClassBody(Ptree *, Ptree*, Class*);
     virtual Ptree *TranslateEnumSpec(Ptree *);
+    virtual Ptree *TranslateAccessSpec(Ptree *);
 private:
     //. extract the name of the node
     static string getName(Ptree *);
@@ -487,21 +488,28 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 
     if(Ptree::Length(node) == 4 && node->Second()->IsLeaf())
     {
-	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
-
+	bool is_struct = node->First()->Eq("struct");
+	
+	// Create AST.Class object
         string type = getName(node->First());
         string name = getName(node->Second());
         PyObject *clas = synopsis->addClass(-1, true, type, name);
         synopsis->addDeclared(name, clas);
+	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
 	addComments(clas, cspec->GetComments());
-        //. parents...
+
+        // Add parents to Class object
         vector<PyObject *> parents = TranslateInheritanceSpec(node->Nth(2));
         Synopsis::addInheritance(clas, parents);
-        synopsis->pushScope(clas);
+
+        // Translate the body of the class
         Class* meta = MakeClassMetaobject(node, NULL, node);
-        //. the body...
+        synopsis->pushScope(clas);
+	synopsis->pushAccess(is_struct ? Synopsis::Public : Synopsis::Private);
         TranslateClassBody(node->Nth(3), node->Nth(2), meta);
+	synopsis->popAccess();
         synopsis->popScope();
+
     }
     return node;
 }
@@ -561,6 +569,30 @@ Ptree *PyWalker::TranslateClassBody(Ptree *block, Ptree *bases, Class *meta)
     //Trace trace("PyWalker::TranslateClassBody");
     Walker::TranslateClassBody(block, bases, meta);
     return block;
+}
+
+/**
+ * Translate accessability specifier.
+ *  [ <spec> : ]
+ * spec is "public", "protected" or "private"
+ */
+Ptree *PyWalker::TranslateAccessSpec(Ptree* spec)
+{
+    switch (spec->First()->What()) {
+    case PUBLIC:
+	synopsis->setAccessability(Synopsis::Public);
+	break;
+    case PROTECTED:
+	synopsis->setAccessability(Synopsis::Protected);
+	break;
+    case PRIVATE:
+	synopsis->setAccessability(Synopsis::Private);
+	break;
+    default:
+	cout << "Warning: Unknown accessability ";
+	spec->Display();
+    }
+    return spec;
 }
 
 /* Enum spec looks like:

@@ -91,27 +91,40 @@ class ScopeSorter:
 	if scope: self.set_scope(scope)
     def set_scope(self, scope):
 	"Sort children of given scope"
-	self.__types = {}
-	self.__children = {}
+	self.__sections = []
+	self.__section_dict = {}
+	self.__children = []
+	self.__child_dict = {}
 	scopename = scope.name()
 	for decl in scope.declarations():
-	    name, type = decl.name(), string.capitalize(decl.type())
+	    name, section = decl.name(), self._section_of(decl)
 	    if name[:-1] != scopename: continue
-	    if not self.__types.has_key(type):
-		self.__types[type] = {}
-	    self.__types[type][name] = decl
-	    self.__children[name] = decl
-    def types(self):
-	"Returns a list of available type string keys"
-	return sort(self.__types.keys())
-    def children(self, type=None):
-	"Returns dictionary of children of given type, or all children"
-	if type is None: return self.__children
-	if self.__types.has_key(type): return self.__types[type]
+	    if not self.__section_dict.has_key(section):
+		self.__section_dict[section] = []
+		self.__sections.append(section)
+	    self.__section_dict[section].append(decl)
+	    self.__children.append(decl)
+	    self.__child_dict[tuple(name)] = decl
+	self._sort_sections()
+    def _section_of(self, decl):
+	_axs_str = ('','Public ','Protected ','Private ')
+	section = string.capitalize(decl.type())
+	if decl.accessability != AST.DEFAULT:
+	    section = _axs_str[decl.accessability()]+section
+	return section
+    def _sort_sections(self): pass
+    def child(self, name):
+	"Returns the child with the given name. Throws KeyError if not found."
+	return self.__child_dict[name]
+    def sections(self):
+	"Returns a list of available section names"
+	return self.__sections
+    def children(self, section=None):
+	"Returns list of children in given section, or all children"
+	if section is None: return self.__children
+	if self.__section_dict.has_key(section):
+	    return self.__section_dict[section]
 	return {}
-    def child_names(self, type=None):
-	"Returns sorted names of children of given type, or all children"
-	return sort(self.children(type).keys())
 
 class Struct:
     "Dummy class. Initialise with keyword args."
@@ -629,17 +642,19 @@ class Paginator:
 	for scope_name in scope_names:
 	    if not scope_name: break
 	    scope.append(scope_name)
-	    children = self.sorter.children()
-	    if children.has_key(tuple(scope)):
-		child = children[tuple(scope)]
+	    try:
+		child = self.sorter.child(tuple(scope))
 		if isinstance(child, AST.Scope):
-		    self.__start = children[tuple(scope)]
+		    self.__start = child
 		    self.sorter.set_scope(self.__start)
-		    continue
-	    # Don't continue if scope traversal failed!
-	    print "Fatal: Couldn't find child scope",scope
-	    print "Children of %s:"%(self.__start.name(),),children.keys()
-	    sys.exit(3)
+		else:
+		    raise TypeError, 'Not a Scope'
+	    except:
+		# Don't continue if scope traversal failed!
+		import traceback
+		traceback.print_exc()
+		print "Fatal: Couldn't find child scope",scope
+		sys.exit(3)
 
     def scope(self): return self.__scope
     def write(self, text): self.__os.write(text)
@@ -724,6 +739,7 @@ class Paginator:
     def processNamespacePage(self, ns):
 	"""Creates a page for the given namespace"""
 	details = {} # A hash of lists of detailed children by type
+	sections = [] # a list of detailed sections
 
 	# Open file and setup scopes
 	self.startFileScope(ns.name())
@@ -737,44 +753,44 @@ class Paginator:
 	    ns.accept(self.detailer)
 
 	# Loop throught all the types of children
-	self.printNamespaceSummaries(ns, details)
-	self.printNamespaceDetails(details)
+	self.printNamespaceSummaries(ns, details, sections)
+	self.printNamespaceDetails(details, sections)
 	self.endFile()
 
 	# Queue child namespaces
-	for child in self.sorter.children().values():
+	for child in self.sorter.children():
 	    if isinstance(child, AST.Scope):
 		self.__namespaces.append(child)
 
-    def printNamespaceSummaries(self, ns, details):
+    def printNamespaceSummaries(self, ns, details, sections):
 	"Print out the summaries from the given ns and note detailed items"
-	for type in self.sorter.types():
-	    if type[-1] == 's': heading = type+'es Summary:'
-	    else: heading = type+'s Summary:'
+	for section in self.sorter.sections():
+	    if section[-1] == 's': heading = section+'es Summary:'
+	    else: heading = section+'s Summary:'
 	    self.summarizer.writeSectionStart(heading)
-	    # Get a sorted list of children of this type
-	    dict, keys = self.sorter.children(type), self.sorter.child_names(type)
-	    for key in keys:
-		child = dict[key]
+	    # Get a list of children of this type
+	    children = self.sorter.children(section)
+	    for child in children:
 		# Check if need to add to detail list
 		has_detail = comments[child].detail is not comments[child].summary
 		if has_detail and not isinstance(child, AST.Scope):
-		    if not details.has_key(type): details[type] = []
-		    details[type].append(child)
+		    if not details.has_key(type):
+			details[section] = []
+			sections.append(section)
+		    details[section].append(child)
 		    self.summarizer.set_link_detail(1)
 		# Print out summary for the child
 		child.accept(self.summarizer)
 		self.summarizer.set_link_detail(0)
 	    self.summarizer.writeSectionEnd(heading)
 
-    def printNamespaceDetails(self, details):
+    def printNamespaceDetails(self, details, sections):
 	"Print out the details from the given dict of lists"
-	for type in sort(details.keys()):
-	    heading = type+' Details:'
+	for section in sections:
+	    heading = section+' Details:'
 	    self.detailer.writeSectionStart(heading)
 	    # Get the sorted list of children of this type
-	    children = details[type]
-	    for child in children:
+	    for child in details[section]:
 		child.accept(self.detailer)
 	    self.detailer.writeSectionEnd(heading)
 
@@ -788,8 +804,7 @@ class Paginator:
 	# Add children
 	self.sorter.set_scope(ns)
 	dict = self.sorter.children()
-	for name in self.sorter.child_names():
-	    child = dict[name]
+	for child in self.sorter.children():
 	    if isinstance(child, AST.Module):
 		self.indexModule(child)
 
@@ -809,15 +824,13 @@ class Paginator:
 	self.write(entity('script', script, language='Javascript'))
 
 	# Loop throught all the types of children
-	for type in self.sorter.types():
-	    if type[-1] == 's': heading = type+'es'
-	    else: heading = type+'s'
+	for section in self.sorter.sections():
+	    if section[-1] == 's': heading = section+'es'
+	    else: heading = section+'s'
 	    self.write('<br>'+entity('i', heading)+'<br>')
-	    # Get a sorted list of children of this type
-	    dict, keys = self.sorter.children(type), self.sorter.child_names(type)
-	    for key in keys:
+	    # Get a list of children of this type
+	    for child in self.sorter.children(section):
 		# Print out summary for the child
-		child = dict[key]
 		if isinstance(child, AST.Function):
 		    self.write(self.detailer.referenceName(child.name(), Util.ccolonName(child.realname(), ns.name()), target='main'))
 		else:
@@ -826,7 +839,7 @@ class Paginator:
 	self.endFile()
 
 	# Queue child namespaces
-	for child in self.sorter.children().values():
+	for child in self.sorter.children():
 	    if isinstance(child, AST.Scope):
 		self.__namespaces.append(child)
 

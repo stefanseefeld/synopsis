@@ -30,6 +30,7 @@ Synopsis::Synopsis(const char *f, PyObject *decl, PyObject *dict)
     addBase("exception");
     PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file, -1, 1, "C++", "file", PyList_New(0));
     pushScope(scope);
+    m_accessability = Default;
 }
 
 Synopsis::~Synopsis()
@@ -320,6 +321,23 @@ void Synopsis::pushClass(size_t line, bool main, const string &meta, const strin
     pushScope(clas);
 }
 
+void Synopsis::setAccessability(Accessability axs)
+{
+    m_accessability = axs;
+}
+
+void Synopsis::pushAccess(Accessability axs)
+{
+    m_access_stack.push(m_accessability);
+    m_accessability = axs;
+}
+
+void Synopsis::popAccess()
+{
+    m_accessability = m_access_stack.top();
+    m_access_stack.pop();
+}
+
 void Synopsis::addInheritance(PyObject *clas, const vector<PyObject *> &parents)
 {
     PyObject *to = PyObject_CallMethod(clas, "parents", 0);
@@ -380,4 +398,5 @@ void Synopsis::addDeclaration(PyObject *declaration)
     PyObject *scope = scopes.back();
     PyObject *declarations = PyObject_CallMethod(scope, "declarations", 0);
     PyObject_CallMethod(declarations, "append", "O", declaration);
+    PyObject_CallMethod(declaration, "set_accessability", "i", m_accessability);
 }
