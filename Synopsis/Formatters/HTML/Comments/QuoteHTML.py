@@ -1,4 +1,4 @@
-# $Id: QuoteHTML.py,v 1.1 2003/12/04 21:04:28 stefan Exp $
+# $Id: QuoteHTML.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -13,7 +13,7 @@ class QuoteHTML(Formatter):
    """A formatter that quotes HTML characters like angle brackets and
    ampersand. Formats both text and summary."""
    
-   def format(self, page, decl, text):
+   def format(self, view, decl, text):
       """Replace angle brackets with HTML codes"""
 
       text = text.replace('&', '&amp;')
@@ -21,7 +21,7 @@ class QuoteHTML(Formatter):
       text = text.replace('>', '&gt;')
       return text
 
-   def format_summary(self, page, decl, text):
+   def format_summary(self, view, decl, text):
       """Replace angle brackets with HTML codes"""
 
       text = text.replace('&', '&amp;')

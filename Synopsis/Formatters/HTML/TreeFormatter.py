@@ -1,4 +1,4 @@
-# $Id: TreeFormatter.py,v 1.4 2003/11/14 14:51:09 stefan Exp $
+# $Id: TreeFormatter.py,v 1.5 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,13 +26,13 @@ class TreeFormatter(Parametrized):
    implementation provided outputs a nested tree using the UL and LI html
    elements."""
 
-   def register(self, page):
-      """A tree is a strategy, so it must be passed the page instance to
+   def register(self, view):
+      """A tree is a strategy, so it must be passed the view instance to
       display to."""
 
-      self.page = page
-      self.write = page.write
-      self.os = page.os()
+      self.view = view
+      self.write = view.write
+      self.os = view.os()
 
    def start_tree(self):
       """Writes anything to the file that needs to be written at the start.

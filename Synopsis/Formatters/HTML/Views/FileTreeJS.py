@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.12 2003/11/16 21:09:45 stefan Exp $
+# $Id: FileTreeJS.py,v 1.13 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -17,13 +17,13 @@ import os
 
 class FileTree(JSTree):
 
-   link_to_pages = Parameter(False, 'some docs...')
+   link_to_views = Parameter(False, 'some docs...')
 
    def register(self, processor):
 
       JSTree.register(self, processor)
       filename = self.processor.file_layout.special('FileTree')
-      self.processor.add_root_page(filename, 'File Tree', 'contents', 2)
+      self.processor.add_root_view(filename, 'File Tree', 'contents', 2)
    
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -52,8 +52,8 @@ class FileTree(JSTree):
       # recursively visit all nodes
       self.process_file_tree_node(self.processor.fileTree.root())
       self.end_file()
-      # recursively create all node pages
-      self.process_file_tree_node_page(self.processor.file_tree.root())
+      # recursively create all node views
+      self.process_file_tree_node_view(self.processor.file_tree.root())
 
    def _node_sorter(self, a, b):
       a_leaf = hasattr(a, 'decls')
@@ -84,13 +84,13 @@ class FileTree(JSTree):
       if len(node.path):
          self.write_node_end()
 	
-   def process_file_tree_node_page(self, node):
+   def process_file_tree_node_view(self, node):
 
       for child in node.children.values():
-         self.process_file_tree_node_page(child)
+         self.process_file_tree_node_view(child)
       if not hasattr(node, 'decls'): return
 
-      # set up filename and title for the current page
+      # set up filename and title for the current view
       self.__filename = self.processor.file_layout.file_index(string.join(node.path,
                                                                           os.sep))
       name = list(node.path)
@@ -99,15 +99,15 @@ class FileTree(JSTree):
 
       self.start_file()
       self.write(entity('b', string.join(name, os.sep))+'<br>')
-      if self.link_to_pages:
-         link = self.processor.file_layout.scoped_special('page', name)
+      if self.link_to_views:
+         link = self.processor.file_layout.scoped_special('view', name)
          self.write(href(link, '[Source]', target="main")+'<br>')
       for name, decl in node.decls.items():
          # TODO make this nicer :)
          entry = self.processor.toc[name]
          if not entry: print "no entry for",name
          else:
-            # Print link to declaration's page
+            # Print link to declaration's view
             if isinstance(decl, AST.Function):
                self.write(div('href',href(entry.link,anglebrackets(Util.ccolonName(decl.realname())),target='main')))
             else:

@@ -1,4 +1,4 @@
-# $Id: FileIndexer.py,v 1.7 2003/11/16 21:09:45 stefan Exp $
+# $Id: FileIndexer.py,v 1.8 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,24 +9,24 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class FileIndexer(Page):
-   """A page that creates an index of files, and an index for each file.
+class FileIndexer(View):
+   """A view that creates an index of files, and an index for each file.
    First the index of files is created, intended for the top-left frame.
-   Second a page is created for each file, listing the major declarations for
+   Second a view is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__filename = ''
       self.__title = ''
-      self.__link_source = processor.has_page('FileSource')
-      self.__link_details = processor.has_page('FileDetails')
+      self.__link_source = processor.has_view('Source')
+      self.__link_details = processor.has_view('FileDetails')
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -41,7 +41,7 @@ class FileIndexer(Page):
       return self.__title
    
    def register_filenames(self, start):
-      """Registers a page for each file indexed"""
+      """Registers a view for each file indexed"""
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
@@ -49,17 +49,17 @@ class FileIndexer(Page):
             self.processor.register_filename(filename, self, file)
     
    def process(self, start):
-      """Creates a page for each file using process_scope"""
+      """Creates a view for each file using process_scope"""
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
             self.process_scope(filename, file)
 
    def process_scope(self, filename, file):
-      """Creates a page for the given file. The page is just an index,
+      """Creates a view for the given file. The view is just an index,
       containing a list of declarations."""
 
-      # set up filename and title for the current page
+      # set up filename and title for the current view
       self.__filename = self.processor.file_layout.file_index(filename)
       # (get rid of ../'s in the filename)
       name = string.split(filename, os.sep)
@@ -89,7 +89,7 @@ class FileIndexer(Page):
          if not entry: continue
          summary = string.strip("(%s) %s"%(decl.type(),
                                            anglebrackets(comments.format_summary(self, decl))))
-         # Print link to declaration's page
+         # Print link to declaration's view
          link = rel(self.filename(), entry.link)
          if isinstance(decl, AST.Function): print_name = decl.realname()
          else: print_name = name
@@ -108,7 +108,7 @@ class FileIndexer(Page):
             scope.append(print_name[i])
             if len(last) >= len(scope) and last[:len(scope)] == scope: div_bit = ""
             else: div_bit = print_name[i]+"<br>"
-            self.write('%s<div class="filepage-scope">'%div_bit)
+            self.write('%s<div class="fileview-scope">'%div_bit)
             i = i + 1
 
          # Now print the actual item

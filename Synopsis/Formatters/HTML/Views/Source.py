@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.10 2003/11/18 07:29:35 stefan Exp $
+# $Id: Source.py,v 1.11 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,7 +9,7 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import time, os
@@ -20,8 +20,8 @@ try:
 except ImportError:
    print "Warning: unable to import link module. Continuing..."
 
-class FileSource(Page):
-   """A module for creating a page for each file with hyperlinked source"""
+class Source(View):
+   """A module for creating a view for each file with hyperlinked source"""
 
    prefix = Parameter('', 'prefix to the syntax files')
    scope = Parameter('', '')
@@ -29,31 +29,31 @@ class FileSource(Page):
 
    def register(self, processor):
 
-      Page.register(self, processor)
+      View.register(self, processor)
       self.__toclist = map(lambda x: ''+x, self.toc_in)
 
    def filename(self):
-      """since FileSource generates a whole file hierarchy, this method returns the current filename,
+      """since Source generates a whole file hierarchy, this method returns the current filename,
       which may change over the lifetime of this object"""
 
       return self.__filename
 
    def title(self):
-      """since FileSource generates a while file hierarchy, this method returns the current title,
+      """since Source generates a while file hierarchy, this method returns the current title,
       which may change over the lifetime of this object"""
 
       return self.__title
 
    def process(self, start):
-      """Creates a page for every file"""
+      """Creates a view for every file"""
 
       # Get the TOC
       toc = self.processor.get_toc(start)
-      tocfile = self.processor.file_layout.special('FileSourceInputTOC')
+      tocfile = self.processor.file_layout.special('SourceInputTOC')
       tocfile = os.path.join(self.processor.output, tocfile)
       toc.store(tocfile)
       self.__toclist.append(tocfile)
-      # create a page for each main file
+      # create a view for each main file
       for file in self.processor.ast.files().values():
          if file.is_main():
             self.process_node(file)
@@ -61,7 +61,7 @@ class FileSource(Page):
       os.unlink(tocfile)
 
    def register_filenames(self, start):
-      """Registers a page for every source file"""
+      """Registers a view for every source file"""
 
       for file in self.processor.ast.files().values():
          if file.is_main():
@@ -72,9 +72,9 @@ class FileSource(Page):
             self.processor.register_filename(filename, self, file)
 	     
    def process_node(self, file):
-      """Creates a page for the given file"""
+      """Creates a view for the given file"""
 
-      # Start page
+      # Start view
       filename = file.filename()
       filename = os.path.join(self.processor.output, filename)
       self.__filename = self.processor.file_layout.file_source(filename)

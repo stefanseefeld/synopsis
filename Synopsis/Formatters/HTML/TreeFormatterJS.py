@@ -1,4 +1,4 @@
-# $Id: TreeFormatterJS.py,v 1.7 2003/11/18 21:30:40 stefan Exp $
+# $Id: TreeFormatterJS.py,v 1.8 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,7 +9,6 @@
 
 from Synopsis import config
 from Synopsis import AST
-from Page import Page
 from Tags import *
 from TreeFormatter import TreeFormatter
 
@@ -94,9 +93,9 @@ class TreeFormatterJS(TreeFormatter):
    collapsing nodes. call js_init() with the button images and default
    open/close policy during process"""
    
-   def register(self, page):
+   def register(self, view):
 
-      TreeFormatter.register(self, page)
+      TreeFormatter.register(self, view)
       self.__id = 0
       self.__open_img = ''
       self.__close_img = ''
@@ -114,7 +113,7 @@ class TreeFormatterJS(TreeFormatter):
       return "tree%d"%self.__id
 
    def js_init(self, open_img, close_img, leaf_img, base, default_open=1):
-      """Initialise the JSTree page. This method copies the files to the
+      """Initialise the JSTree view. This method copies the files to the
       output directory and stores the values given.
       @param open_img	     filename of original open image
       @param close_img     filename of original close image
@@ -130,7 +129,7 @@ class TreeFormatterJS(TreeFormatter):
       self.__base_close = base%'close'
       self.__base_leaf = base%'leaf'
       # Copy images across
-      file_layout = self.page.processor.file_layout
+      file_layout = self.view.processor.file_layout
       file_layout.copy_file(open_img, self.__base_open)
       file_layout.copy_file(close_img, self.__base_close)
       file_layout.copy_file(leaf_img, self.__base_leaf)

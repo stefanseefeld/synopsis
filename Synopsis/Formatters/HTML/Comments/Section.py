@@ -1,4 +1,4 @@
-# $Id: Section.py,v 1.1 2003/12/04 21:04:28 stefan Exp $
+# $Id: Section.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -19,7 +19,7 @@ class Section(Formatter):
 
       self.re_break = re.compile(Section.__re_break)
 
-   def format(self, page, decl, text):
+   def format(self, view, decl, text):
 
       if text is None: return text
       para = '</p>\n<p>'

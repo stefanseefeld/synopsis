@@ -6,7 +6,7 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Processors import *
 from Synopsis.Formatters import Dump
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML.Pages import *
+from Synopsis.Formatters.HTML.Views import *
 
 # this is actually only here as a hack for backward compatibility.
 import glob
@@ -34,13 +34,13 @@ xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
 
 
 linker = Linker(SSComments(),       # filter out any non-'//' comments
-                Grouper2(),         # group declarations according to '@group' tags
+                Grouper1(),         # group declarations according to '@group' tags
                 Previous(),         # attach '//<' comments
                 CommentStripper(),  # strip any 'suspicious' comments
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 formatter = HTML.Formatter(stylesheet_file = '../../html.css',
-                           pages = [FramesIndex(),
+                           views = [FramesIndex(),
                                     Scope(),
                                     ModuleListing(),
                                     ModuleIndexer(),
@@ -49,7 +49,7 @@ formatter = HTML.Formatter(stylesheet_file = '../../html.css',
                                     FileDetails(),
                                     InheritanceTree(),
                                     InheritanceGraph(),
-                                    FileSource(prefix = 'links'),
+                                    Source(prefix = 'links'),
                                     NameIndex(),
                                     XRef(xref_file = 'bpl.xref')])
 

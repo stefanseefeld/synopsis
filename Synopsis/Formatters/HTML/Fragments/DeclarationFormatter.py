@@ -1,4 +1,4 @@
-# $Id: DeclarationFormatter.py,v 1.1 2003/12/05 22:31:53 stefan Exp $
+# $Id: DeclarationFormatter.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -43,7 +43,7 @@ class DeclarationFormatter(Fragment):
       return self.col_sep + ''
 
    def format_scope(self, decl):
-      """Scopes have their own pages, so return a reference to it"""
+      """Scopes have their own views, so return a reference to it"""
 
       name = decl.name()
       link = rel(self.formatter.filename(),

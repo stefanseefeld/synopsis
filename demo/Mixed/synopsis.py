@@ -6,8 +6,8 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Parsers import IDL
 from Synopsis.Processors import *
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML import Page
-from Synopsis.Formatters.HTML.Pages import *
+from Synopsis.Formatters.HTML import View
+from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import TexInfo
 
 class Cxx2IDL(TypeMapper):
@@ -45,7 +45,7 @@ cxx = Composite(Cxx.Parser(preprocessor = 'c++',
 
 format_idl = HTML.Formatter(stylesheet_file = '../html.css',
                             toc_out = 'interface.toc',
-                            pages = [FramesIndex(),
+                            views = [FramesIndex(),
                                      Scope(),
                                      ModuleListing(),
                                      ModuleIndexer(),
@@ -57,7 +57,7 @@ format_idl = HTML.Formatter(stylesheet_file = '../html.css',
 
 format_cxx = HTML.Formatter(stylesheet_file = '../html.css',
                             toc_in = ['interface.toc|../interface'],
-                            pages = [FramesIndex(),
+                            views = [FramesIndex(),
                                      Scope(),
                                      ModuleListing(),
                                      ModuleIndexer(),

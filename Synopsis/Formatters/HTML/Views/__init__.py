@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.2 2003/11/18 07:28:01 stefan Exp $
+# $Id: __init__.py,v 1.3 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -18,7 +18,7 @@ from FileIndexer import FileIndexer
 from FileDetails import FileDetails
 from InheritanceTree import InheritanceTree
 from InheritanceGraph import InheritanceGraph
-from FileSource import FileSource
+from Source import Source
 from NameIndex import NameIndex
 from XRef import XRef
 from RawFile import RawFile

@@ -1,4 +1,4 @@
-# $Id: Inheritance.py,v 1.4 2003/12/05 22:30:29 stefan Exp $
+# $Id: Inheritance.py,v 1.5 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -18,9 +18,9 @@ class Inheritance(Part):
    fragments = Parameter([InheritanceFormatter()],
                          '')
 
-   def register(self, page):
+   def register(self, view):
 
-      Part.register(self, page)
+      Part.register(self, view)
       self.__start_list = 0
 
    def process(self, decl):

@@ -1,4 +1,4 @@
-# $Id: Summary.py,v 1.5 2003/12/05 22:30:29 stefan Exp $
+# $Id: Summary.py,v 1.6 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -23,14 +23,14 @@ class Summary(Part):
                           SummaryCommenter()],
                          '')
 
-   def register(self, page):
+   def register(self, view):
 
-      if page.processor.has_page('XRef'):
+      if view.processor.has_view('XRef'):
          self.fragments.append(XRefLinker())
-      if page.processor.has_page('FileSource'):
+      if view.processor.has_view('Source'):
          self.fragments.append(SourceLinker())
 
-      Part.register(self, page)
+      Part.register(self, view)
       self.__link_detail = 0
 
    def set_link_detail(self, boolean):

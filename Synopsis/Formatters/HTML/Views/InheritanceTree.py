@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.15 2003/11/16 21:09:45 stefan Exp $
+# $Id: InheritanceTree.py,v 1.16 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,17 +9,17 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import Util
-from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
-class InheritanceTree(Page):
+class InheritanceTree(View):
 
    def register(self, processor):
 
-      Page.register(self, processor)
-      self.processor.add_root_page(self.filename(), 'Inheritance Tree', 'main', 1)
+      View.register(self, processor)
+      self.processor.add_root_view(self.filename(), 'Inheritance Tree', 'main', 1)
  
    def filename(self): return self.processor.file_layout.special('InheritanceTree')
 

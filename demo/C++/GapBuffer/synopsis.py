@@ -5,8 +5,8 @@ from Synopsis.Processor import *
 from Synopsis.Parsers import Cxx
 from Synopsis.Processors import *
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML import Page
-from Synopsis.Formatters.HTML.Pages import *
+from Synopsis.Formatters.HTML import View
+from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import TexInfo
 
 parser = Cxx.Parser(syntax_prefix = 'links',
@@ -23,31 +23,31 @@ linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper
 xref = XRefCompiler(prefix = 'xref')
 
 html = HTML.Formatter(stylesheet_file = '../../html.css',
-                      pages = [FramesIndex(),
+                      views = [FramesIndex(),
                                Scope(),
                                ModuleListing(),
                                ModuleIndexer(),
                                FileListing(),
                                FileIndexer(),
                                FileDetails(),
-                               FileSource(prefix='links'),
+                               Source(prefix='links'),
                                InheritanceTree(),
                                InheritanceGraph(),
                                NameIndex(),
                                XRef(xref_file = 'GapBuffer.xref')])
 
-template = Page.Template(template='sxr.tmpl',
+template = View.Template(template='sxr.tmpl',
                          copy_files = ['logo.png'])
 
 sxr = HTML.Formatter(stylesheet_file = '../../html.css',
-                     pages = [DirBrowse(template = template),
+                     views = [DirBrowse(template = template),
                               Scope(template = template),
                               ModuleListing(template = template),
                               InheritanceTree(template = template),
                               InheritanceGraph(template = template),
-                              FileSource(prefix = 'links',
-                                         #toc_from = 'XRef',
-                                         template = template),
+                              Source(prefix = 'links',
+                                     #toc_from = 'XRef',
+                                     template = template),
                               RawFile(template = template),
                               NameIndex(template = template),
                               XRef(xref_file = 'GapBuffer.xref',

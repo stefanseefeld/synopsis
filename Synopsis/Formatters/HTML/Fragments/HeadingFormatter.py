@@ -1,4 +1,4 @@
-# $Id: HeadingFormatter.py,v 1.1 2003/12/05 22:31:53 stefan Exp $
+# $Id: HeadingFormatter.py,v 1.2 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -13,8 +13,8 @@ from Synopsis.Formatters.HTML.Tags import *
 import string
 
 class HeadingFormatter(Fragment):
-   """Formats the top of a page - it is passed only the Declaration that the
-   page is for (a Module or Class)."""
+   """Formats the top of a view - it is passed only the Declaration that the
+   view is for (a Module or Class)."""
 
    def format_name(self, scoped_name):
       """Formats a reference to each parent scope"""
@@ -70,7 +70,7 @@ class HeadingFormatter(Fragment):
    def format_module(self, module):
       """Formats the module by linking to each parent scope in the name"""
 
-      # Module details are only printed at the top of their page
+      # Module details are only printed at the top of their view
       if not module.name():
          type, name = "Global", "Namespace"
       else:
@@ -111,7 +111,7 @@ class HeadingFormatter(Fragment):
 
       # Calculate file-related string
       file_name = rel(self.processor.output, clas.file().filename())
-      # Try the file index page first
+      # Try the file index view first
       file_link = self.processor.file_layout.file_index(clas.file().filename())
       if self.processor.filename_info(file_link):
          file_ref = href(rel(self.formatter.filename(), file_link), file_name, target="index")

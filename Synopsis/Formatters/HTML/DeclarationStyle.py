@@ -1,4 +1,4 @@
-# $Id: DeclarationStyle.py,v 1.2 2003/11/16 21:09:45 stefan Exp $
+# $Id: DeclarationStyle.py,v 1.3 2003/12/08 00:39:23 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -53,7 +53,7 @@ class Style:
 	    # Show functions if they have exceptions
          if isinstance(decl, AST.Function) and len(decl.exceptions()):
             style = DETAIL
-	    # Don't show detail for scopes (they have their own pages)
+	    # Don't show detail for scopes (they have their own views)
          if isinstance(decl, AST.Scope):
             style = SUMMARY
       self.__dict[key] = style
