@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.60 2002/10/25 02:49:51 chalky Exp $
+// $Id: swalker.cc,v 1.61 2002/10/25 03:43:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.61  2002/10/25 03:43:37  chalky
+// Close templates when there's an exception
+//
 // Revision 1.60  2002/10/25 02:49:51  chalky
 // Support templated forward class declarations
 //
@@ -739,8 +742,16 @@ SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
   AST::Parameter::vector* old_params = m_template;
   update_line_number(def);
   m_builder->start_template();
-  TranslateTemplateParams(def->Third());
-  TranslateClassSpec(node);
+  try {
+    TranslateTemplateParams(def->Third());
+    TranslateClassSpec(node);
+  }
+  catch (...)
+  {
+    m_builder->end_template();
+    m_template = old_params;
+    throw;
+  }
   m_builder->end_template();
   m_template = old_params;
   return 0;
@@ -820,7 +831,7 @@ void SWalker::TranslateTemplateParams(Ptree* params)
 Ptree*
 SWalker::TranslateTemplateFunction(Ptree* def, Ptree* node)
 {
-  STrace trace("SWalker::TranslateTemplateFunction NYI");
+  STrace trace("SWalker::TranslateTemplateFunction");
   nodeLOG(def);
   nodeLOG(node);
   if (node->What() != ntDeclaration) {
@@ -835,8 +846,17 @@ SWalker::TranslateTemplateFunction(Ptree* def, Ptree* node)
   AST::Parameter::vector* old_params = m_template;
   update_line_number(def);
   m_builder->start_template();
-  TranslateTemplateParams(def->Third());
-  TranslateDeclaration(node);
+  try
+  {
+    TranslateTemplateParams(def->Third());
+    TranslateDeclaration(node);
+  }
+  catch (...)
+  {
+    m_builder->end_template();
+    m_template = old_params;
+    throw;
+  }
   m_builder->end_template();
   m_template = old_params;
   return 0;
