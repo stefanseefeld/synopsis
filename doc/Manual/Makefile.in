@@ -10,7 +10,7 @@ SHELL	:= /bin/sh
 srcdir	:= @srcdir@
 topdir	:= @topdir@
 
-synopsis := python synopsis.py
+synopsis := @PYTHON@ synopsis.py
 
 # This is a default setting suitable for the sxr-server demo applet
 # use 'make sxr sxr=<URL>' to generate the sxr db for another URL
@@ -42,7 +42,7 @@ vpath Manual.texi $(srcdir)
 
 all: html pdf info
 
-html: html/python html/cxx-api html/ucpp html/occ html/ctool 
+html: html/python html/cxx html/cxx-api html/ucpp html/occ html/ctool 
 sxr: html/sxr
 pdf: Manual.pdf
 

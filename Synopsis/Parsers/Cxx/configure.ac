@@ -15,7 +15,7 @@ AC_INIT(occ, 0.8, synopsis-devel@fresco.org)
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
   PYTHON="$with_python",
-  PYTHON=""
+  PYTHON="python"
 )
 
 AC_PROG_CPP

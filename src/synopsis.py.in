@@ -9,17 +9,14 @@ from Synopsis.Parsers import Cxx
 from distutils import sysconfig
 import sys, os, os.path
 
-topdir = '@topdir@'
 srcdir = '@srcdir@'
 
-cppflags = ['-Iocc',
-            '-I%s'%(topdir + '/Cxx-API/include'),
-            '-I%s'%(srcdir + '/gc/include'),
+cppflags = ['-I.',
+            '-I%s'%(srcdir + '/Synopsis/gc/include'),
             '-I%s'%(srcdir),
-            '-I%s'%(srcdir) + '/occ',
             '-I%s'%(sysconfig.get_python_inc())]
 
-cxx = Cxx.Parser(base_path = topdir + os.sep,
+cxx = Cxx.Parser(base_path = srcdir + os.sep,
                  cppflags = cppflags,
                  syntax_prefix = 'links',
                  xref_prefix = 'xref')

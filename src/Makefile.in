@@ -9,8 +9,8 @@ SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
 builddir:= @builddir@
-synopsis:= python synopsis.py
 
+SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I $(builddir) -I $(srcdir)
@@ -26,7 +26,8 @@ SRC	:= Trace \
            PTree/Atoms PTree/Lists PTree/generation \
            PTree/Visitor PTree/Display PTree/Writer \
            SymbolLookup/Scope SymbolLookup/Scopes \
-           SymbolLookup/ConstEvaluator SymbolLookup/TypeEvaluator \
+           SymbolLookup/ConstEvaluator \
+           SymbolLookup/Type SymbolLookup/TypeEvaluator \
            SymbolLookup/OverloadResolver \
            SymbolLookup/Table \
            SymbolLookup/Visitor \
@@ -60,15 +61,15 @@ $(LIBRARY): $(OBJ) $(GC_LIB)
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-doc: Synopsis.syn Synopsis-impl.syn
+doc: cxx.syn cxx-impl.syn
 
-Synopsis.syn: $(HDR_SYN)
+cxx.syn: $(HDR_SYN)
 	@echo linking C++ headers together
-	$(synopsis) link_cxx --output=$@ $^
+	$(SYNOPSIS) link_cxx --output=$@ $^
 
-Synopsis-impl.syn: $(HDR_SYN) $(CC_SYN)
+cxx-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
-	$(synopsis) link_cxx --output=$@ $^
+	$(SYNOPSIS) link_cxx --output=$@ $^
 
 %.d: %.cc
 	@echo generating dependencies for $(@D)/$(<F)
@@ -84,12 +85,12 @@ Makefile: $(srcdir)/Makefile.in
 $(HDR_SYN): %.syn: %
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(synopsis) cxx --output=$@ $?
+	$(SYNOPSIS) cxx --output=$@ $?
 
 $(CC_SYN): %.cc.syn: %.cc
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(synopsis) cxx --output=$@ $?
+	$(SYNOPSIS) cxx --output=$@ $?
 
 # This calls make in the gc dir to create the gc.a file
 $(GC_LIB):

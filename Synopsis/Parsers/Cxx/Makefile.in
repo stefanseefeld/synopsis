@@ -9,9 +9,9 @@ SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
 builddir:= @builddir@
-synopsis:= python synopsis.py
 
 PYTHON	:= @PYTHON@
+SYNOPSIS:= $(PYTHON) synopsis.py
 
 CC	:= @CC@
 CXX	:= @CXX@
@@ -63,11 +63,11 @@ doc: occ.syn occ-impl.syn
 # Link C++ files together
 occ.syn: $(HDR_SYN)
 	@echo linking C++ headers together
-	$(synopsis) link_cxx --output=$@ $^
+	$(SYNOPSIS) link_cxx --output=$@ $^
 
 occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
-	$(synopsis) link_cxx --output=$@ $^
+	$(SYNOPSIS) link_cxx --output=$@ $^
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)
@@ -84,13 +84,13 @@ Makefile: $(srcdir)/Makefile.in
 $(HDR_SYN): %.syn: %
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(synopsis) cxx --output=$@ $?
+	$(SYNOPSIS) cxx --output=$@ $?
 
 # Compile C++ .cc files
 $(CC_SYN): %.cc.syn: %.cc
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(synopsis) cxx --output=$@ $?
+	$(SYNOPSIS) cxx --output=$@ $?
 
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a

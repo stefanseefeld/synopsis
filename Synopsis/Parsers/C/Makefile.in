@@ -8,9 +8,9 @@
 SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
-synopsis:= python synopsis.py
 
 PYTHON	:= @PYTHON@
+SYNOPSIS:= $(PYTHON) synopsis.py
 
 CC	:= @CC@
 CXX	:= @CXX@
@@ -50,11 +50,11 @@ doc: ctool.syn ctool-impl.syn
 # Link C++ files together
 ctool.syn: $(HDR_SYN)
 	@echo linking C++ headers together
-	$(synopsis) link_cxx --output=$@ $^
+	$(SYNOPSIS) link_cxx --output=$@ $^
 
 ctool-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
-	$(synopsis) link_cxx --output=$@ $^
+	$(SYNOPSIS) link_cxx --output=$@ $^
 
 $(CTOOL_SO): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -72,12 +72,12 @@ clean:
 # Compile C++ .hh files
 $(HDR_SYN): %.syn: %
 	@echo parsing $^
-	$(synopsis) cxx --output=$@ $?
+	$(SYNOPSIS) cxx --output=$@ $?
 
 # Compile C++ .cc files
 $(CC_SYN): %.cc.syn: %.cc
 	@echo parsing $^
-	$(synopsis) cxx --output=$@ $?
+	$(SYNOPSIS) cxx --output=$@ $?
 
 Lexer.cc: Lexer.l Grammar.hh
 	$(LEX) $<
