@@ -20,11 +20,12 @@ public:
   struct Entry
   {
     Entry(bool e);
+    Entry(Entry const &e) : enabled(e.enabled) { e.enabled = false;}
     ~Entry();
 
     template <typename T> Entry const &operator<<(T const &t) const;
 
-    bool enabled;
+    mutable bool enabled;
   };
   friend struct Entry;
   Trace(const std::string &s) : my_scope(s)
@@ -41,7 +42,7 @@ public:
   }
 
   template <typename T>
-  Entry const &operator<<(T const &t) const;
+  Entry operator<<(T const &t) const;
 
   static void enable_debug() { my_debug = true;}
 
@@ -59,6 +60,7 @@ inline Trace::Entry::Entry(bool e)
   if (enabled)
     std::cout << Trace::indent();
 }
+
 inline Trace::Entry::~Entry() 
 {
   if (enabled)
@@ -74,7 +76,7 @@ inline Trace::Entry const &Trace::Entry::operator<<(T const &t) const
 }
 
 template <typename T>
-inline Trace::Entry const &Trace::operator<<(T const &t) const
+inline Trace::Entry Trace::operator<<(T const &t) const
 {
   Entry entry(my_debug);
   return entry << t;
