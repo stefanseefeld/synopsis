@@ -12,4 +12,5 @@ from Comments import *
 from XRefCompiler import *
 from EmptyNS import *
 from AccessRestrictor import *
+from TypeMapper import *
 from LanguageMapper import *
