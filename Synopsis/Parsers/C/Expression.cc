@@ -115,13 +115,10 @@ MetaChar(std::ostream& out, char c, bool inString)
 /*  ###############################################################  */
 /* Print a string, converting chars to escape sequences. */
 std::ostream&
-MetaString(std::ostream& out, char *string)
+MetaString(std::ostream& out, const std::string &string)
 {
-    while (*string)
-    {
-      MetaChar(out,*string,true);
-      string++;
-    }
+    for(unsigned i=0; i<string.size(); i++)
+      MetaChar(out, string[i], true);
 
     return out;
 }
@@ -529,12 +526,11 @@ CharConstant::print(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-StringConstant::StringConstant(char *str, const Location& l,
+StringConstant::StringConstant(const std::string &str,
+                               const Location& l,
 			       bool isWide /* =false */ )
-               : Constant(CT_String, l) 
+               : Constant(CT_String, l), buff(str)
 {
-    buff = new char[strlen(str)+1];
-    strcpy(buff,str);
     wide = isWide;
 
     // Or should this be const char*?
@@ -546,14 +542,13 @@ StringConstant::StringConstant(char *str, const Location& l,
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 StringConstant::~StringConstant()
 {
-    delete [] buff;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 int
 StringConstant::length() const
 {
-    return strlen(buff);
+    return buff.size();
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
