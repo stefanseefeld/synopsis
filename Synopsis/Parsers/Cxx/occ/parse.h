@@ -147,6 +147,8 @@ protected:
     bool rVarNameCore(Ptree*&, Encoding&);
     bool isTemplateArgs();
 
+    bool rCondition(Ptree*&);
+
     bool rFunctionBody(Ptree*&);
     bool rCompoundStatement(Ptree*&);
     bool rStatement(Ptree*&);
