@@ -52,4 +52,6 @@ esac
 
 AC_CONFIG_FILES([src/Makefile src/synopsis.py])
 
+mkdir -p lib
+
 AC_OUTPUT

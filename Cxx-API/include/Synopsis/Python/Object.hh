@@ -5,8 +5,8 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_Object_hh
-#define _Synopsis_Object_hh
+#ifndef _Synopsis_Python_Object_hh
+#define _Synopsis_Python_Object_hh
 
 #include <Python.h>
 #include <string>
@@ -20,6 +20,8 @@
 #endif
 
 namespace Synopsis
+{
+namespace Python
 {
 
 //. Object provides basic
@@ -782,6 +784,7 @@ inline bool Dict::iterator::operator == (Dict::iterator i)
   return i.my_dict.impl() == my_dict.impl() && i.my_pos == my_pos;
 }
 
+}
 }
 
 #endif
