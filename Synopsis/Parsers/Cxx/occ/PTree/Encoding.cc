@@ -7,11 +7,10 @@
 //
 
 #include <PTree/Node.hh>
+#include <PTree/Atoms.hh>
+#include <PTree/TypeVisitor.hh>
 #include <PTree/Encoding.hh>
-#include <TypeInfo.hh>
 #include <Lexer.hh>
-#include <Environment.hh>
-#include <Class.hh>
 #include <iostream>
 
 using namespace PTree;
@@ -189,45 +188,6 @@ void Encoding::cast_operator(const Encoding &type)
   append(type);
 }
 
-//. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
-//. If an error occurs, the function returns 0.
-Encoding Encoding::get_base_name(Environment *&env) const
-{
-  if(my_buffer.empty()) return Encoding();
-  Environment *e = env;
-  iterator i = my_buffer.begin();
-  if(*i == 'Q')
-  {
-    int n = *(i + 1) - 0x80;
-    i += 2;
-    while(n-- > 1)
-    {
-      int m = *i++;
-      if(m == 'T') m = get_base_name_if_template(i, e);
-      else if(m < 0x80) return Encoding(); // error?
-      else
-      {	 // class name
-	m -= 0x80;
-	if(m <= 0)
-	{		// if global scope (e.g. ::Foo)
-	  if(e) e = e->GetBottom();
-	}
-	else e = resolve_typedef_name(i, m, e);
-      }
-      i += m;
-    }
-    env = e;
-  }
-  if(*i == 'T')
-  {		// template class
-    int m = *(i + 1) - 0x80;
-    int n = *(i + m + 2) - 0x80;
-    return Encoding(i, i + m + n + 3);
-  }
-  else if(*i < 0x80) return Encoding();
-  else return Encoding(i + 1, i + 1 + size_t(*i - 0x80));
-}
-
 Encoding Encoding::get_template_arguments()
 {
   int m = my_buffer[0] - 0x80;
@@ -240,61 +200,6 @@ Encoding Encoding::get_template_arguments()
   {
     return Encoding(my_buffer.begin() + 2 + m, my_buffer.begin() + 2 + m + length);
   }
-}
-
-Environment *Encoding::resolve_typedef_name(iterator i, size_t s, Environment *env)
-{
-  TypeInfo tinfo;
-  Bind *bind;
-  Class *c = 0;
-
-  if(env)
-    if (env->LookupType((const char *)&*i, s, bind) && bind)
-      switch(bind->What())
-      {
-        case Bind::isClassName :
-	  c = bind->ClassMetaobject();
-	  break;
-        case Bind::isTypedefName :
-	  bind->GetType(tinfo, env);
-	  c = tinfo.class_metaobject();
-	  /* if (c == 0) */
-	  env = 0;
-	  break;
-        default :
-	  break;
-      }
-    else if (env->LookupNamespace((const char *)&*i, s))
-    {
-      /* For the time being, we simply ignore name spaces.
-       * For example, std::T is identical to ::T.
-       */
-      env = env->GetBottom();
-    }
-    else env = 0; // unknown typedef name
-
-  return c ? c->GetEnvironment() : env;
-}
-
-int Encoding::get_base_name_if_template(iterator i, Environment *&e)
-{
-  int m = *i - 0x80;
-  if(m <= 0) return *(i+1) - 0x80 + 2;
-
-  Bind* b;
-  if(e != 0 && e->LookupType((char*)&*(i + 1), m, b))
-    if(b != 0 && b->What() == Bind::isTemplateClass)
-    {
-      Class* c = b->ClassMetaobject();
-      if(c)
-      {
-	e = c->GetEnvironment();
-	return m + (*(i + m + 1) - 0x80) + 2;
-      }
-    }
-  // the template name was not found.
-  e = 0;
-  return m + (*(i + m + 1) - 0x80) + 2;
 }
 
 PTree::Node *Encoding::make_name()

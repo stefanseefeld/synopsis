@@ -5,26 +5,22 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <Synopsis/Trace.hh>
 #include <PTree.hh>
 #include <PTree/Writer.hh>
+#include <PTree/Display.hh>
 #include "Parser.hh"
 #include "Lexer.hh"
+#include <Symbol.hh>
 #include "Environment.hh"
 #include "MetaClass.hh"
 #include "Walker.hh"
 #include <iostream>
 
-using namespace Synopsis;
-
-#if defined(PARSE_MSVC)
-#define _MSC_VER	1100
-#endif
-
 const int MaxErrors = 10;
 
 namespace
 {
+
 PTree::Node *wrap_comments(const Lexer::Comments &c)
 {
   PTree::Node *head = 0;
@@ -35,12 +31,25 @@ PTree::Node *wrap_comments(const Lexer::Comments &c)
 
 }
 
+struct Parser::ScopeGuard
+{
+  ScopeGuard(Scopes &s, Scope *scope) : stack(s) { stack.push(scope);}
+  ~ScopeGuard() { delete stack.top(); stack.pop();}
+  Scopes stack;
+};
+
 Parser::Parser(Lexer *lexer, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_nerrors(0),
     my_comments(0)
 {
+  my_scopes.push(new Scope());
+}
+
+Parser::~Parser()
+{
+  delete my_scopes.top();
 }
 
 bool Parser::error_message(const char* msg, PTree::Node *name, PTree::Node *where)
@@ -119,7 +128,6 @@ void Parser::show_message_head(const char *pos)
 
 bool Parser::parse(PTree::Node *&def)
 {
-  Trace trace("Parser::parse");
   while(my_lexer->look_ahead(0) != '\0')
     if(definition(def)) return true;
     else
@@ -211,7 +219,17 @@ bool Parser::typedef_(PTree::Node *&def)
   def = PTree::snoc(def, type_name);
   if(!declarators(decl, type_encode, true))
     return false;
-  
+  std::cout << "declarators " << type_encode << std::endl;
+  PTree::display(decl, std::cout, true, true);
+  // see Environment::RecordTypedefName ...
+  for (PTree::Node *node = decl; node; node = PTree::tail(node, 2))
+  {
+    PTree::Declarator *d = static_cast<PTree::Declarator *>(node->car());
+    PTree::Encoding name = d->encoded_name();
+    PTree::Encoding type = d->encoded_type();
+    std::cout << "typedef declarator : " << name << ' ' << type << std::endl;
+    PTree::display(d, std::cout, true, true);
+  }
   if(my_lexer->get_token(tk) != ';')
     return false;
 
@@ -1782,6 +1800,10 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
   else
     if(d == 0) decl = new PTree::Declarator(type_encode, name_encode, *declared_name);
     else decl = new PTree::Declarator(d, type_encode, name_encode, *declared_name);
+
+  if (!name_encode.empty())
+    my_scopes.top()->declare(name_encode, Symbol(Symbol::VARIABLE, decl));
+  else std::cout << "declared " << type_encode << std::endl;
   return true;
 }
 
@@ -2673,6 +2695,8 @@ bool Parser::class_body(PTree::Node *&body)
   PTree::Node *mems, *m;
 
   if(my_lexer->get_token(tk) != '{') return false;
+
+  ScopeGuard guard(my_scopes, new NestedScope(my_scopes.top()));
 
   PTree::Node *ob = new PTree::Atom(tk);
   mems = 0;

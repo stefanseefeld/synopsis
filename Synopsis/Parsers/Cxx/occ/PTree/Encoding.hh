@@ -11,18 +11,11 @@
 #include <string>
 #include <iostream>
 
-class Environment;
-class Bind;
-
 namespace PTree
 {
 
 class Node;
 
-//.
-//. This encoding is also interpreted by TypeInfo.  If you modify this
-//. file, check typeinfo.{h,cc} out as well.
-//.
 //. 'b' boolean
 //. 'c' char
 //. 'w' wchar_t
@@ -156,7 +149,6 @@ public:
   void no_return_type() { append('?');}
   void value_temp_param() { append('*');}
 
-  Encoding get_base_name(Environment *&) const;
   Encoding get_template_arguments();
 
   PTree::Node *make_name();
@@ -169,8 +161,6 @@ public:
   friend std::ostream &operator << (std::ostream &, const Encoding &);
 
 private:
-  static Environment *resolve_typedef_name(iterator, size_t, Environment *);
-  static int get_base_name_if_template(iterator, Environment*&);
 
   Code my_buffer;
 

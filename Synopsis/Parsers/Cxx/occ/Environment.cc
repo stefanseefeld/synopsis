@@ -89,7 +89,7 @@ Class* Environment::LookupClassMetaobject(PTree::Node *name)
   else
   {
     Environment *e = this;
-    PTree::Encoding base = name->encoded_name().get_base_name(e);
+    PTree::Encoding base = Environment::get_base_name(name->encoded_name(), e);
     if(!base.empty() && e)
       if(LookupType((const char *)&*base.begin(), base.size(), bind))
 	if(bind)
@@ -170,7 +170,7 @@ bool Environment::Lookup(PTree::Node *name, Bind*& bind)
     else
     {
       Environment* e = this;
-      PTree::Encoding base = encoding.get_base_name(e);
+      PTree::Encoding base = Environment::get_base_name(encoding, e);
       if(!base.empty() && e) return e->LookupAll((const char *)&*base.begin(), base.size(), bind);
       else return false;
     }
@@ -191,7 +191,7 @@ bool Environment::LookupTop(PTree::Node *name, Bind*& bind)
     else
     {
       Environment* e = this;
-      PTree::Encoding base = encoding.get_base_name(e);
+      PTree::Encoding base = Environment::get_base_name(encoding, e);
       if(!base.empty() && e) return e->LookupTop((const char *)&*base.begin(), base.size(), bind);
       else return false;
     }
@@ -279,7 +279,7 @@ void Environment::RecordTypedefName(PTree::Node *decls)
       if(!name.empty() && !type.empty())
       {
 	Environment* e = this;
-	PTree::Encoding base = name.get_base_name(e);
+	PTree::Encoding base = Environment::get_base_name(name, e);
 	if(!base.empty()) AddEntry((const char *)&*base.begin(), base.size(), new BindTypedefName(type));
       }
     }
@@ -296,7 +296,7 @@ void Environment::RecordEnumName(PTree::Node *spec)
   else
   {
     Environment *e = this;
-    PTree::Encoding base = encoding.get_base_name(e);
+    PTree::Encoding base = Environment::get_base_name(encoding, e);
     if(!base.empty() && e) e->AddEntry((const char *)&*base.begin(), base.size(), new BindEnumName(encoding, spec));
   }
 }
@@ -305,7 +305,7 @@ void Environment::RecordClassName(const PTree::Encoding &name, Class* metaobject
 {
   Bind* bind;
   Environment *e = this;
-  PTree::Encoding base = name.get_base_name(e);
+  PTree::Encoding base = Environment::get_base_name(name, e);
   if(base.empty() || !e) return; // error?
   if(e->LookupAll((const char *)&*base.begin(), base.size(), bind))
     if(bind && bind->What() == Bind::isClassName)
@@ -320,7 +320,7 @@ void Environment::RecordTemplateClass(PTree::Node *spec, Class* metaobject)
 {
   Bind *bind;
   Environment *e = this;
-  PTree::Encoding name = spec->encoded_name().get_base_name(e);
+  PTree::Encoding name = Environment::get_base_name(spec->encoded_name(), e);
   if(name.empty() || !e) return; // error?
 
   if(e->LookupAll((const char *)&*name.begin(), name.size(), bind))
@@ -341,7 +341,7 @@ Environment* Environment::RecordTemplateFunction(PTree::Node *def, PTree::Node *
     if(!name.empty())
     {
       Environment *e = this;
-      PTree::Encoding base = name.get_base_name(e);
+      PTree::Encoding base = Environment::get_base_name(name, e);
       if(!base.empty() && e) e->AddEntry((const char *)&*base.begin(), base.size(), new BindTemplateFunction(def));
       return e;
     }
@@ -358,7 +358,7 @@ Environment* Environment::RecordDeclarator(PTree::Node *decl)
     if(!name.empty() && !type.empty())
     {
       Environment *e = this;
-      PTree::Encoding base = name.get_base_name(e);
+      PTree::Encoding base = Environment::get_base_name(name, e);
 
       // allow a duplicated entry because of overloaded functions
       if(!base.empty() && e) e->AddDupEntry((const char *)&*base.begin(), base.size(), new BindVarName(type));
@@ -376,7 +376,7 @@ Environment* Environment::DontRecordDeclarator(PTree::Node *decl)
     if(!name.empty())
     {
       Environment *e = this;
-      name.get_base_name(e);
+      Environment::get_base_name(name, e);
       return e;
     }
   }
@@ -450,7 +450,7 @@ Environment* Environment::IsMember(PTree::Node *member)
     if(!name.empty())
     {
       e = this;
-      PTree::Encoding base = name.get_base_name(e);
+      PTree::Encoding base = Environment::get_base_name(name, e);
       if(!base.empty() && e && e->metaobject) return e;
     }
   }
@@ -463,6 +463,46 @@ Environment* Environment::IsMember(PTree::Node *member)
     if(bind && !bind->IsType())
       return e;
   return 0;
+}
+
+//. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
+//. If an error occurs, the function returns 0.
+PTree::Encoding Environment::get_base_name(const PTree::Encoding &enc,
+					   Environment *&env)
+{
+  if(enc.empty()) return enc;
+  Environment *e = env;
+  PTree::Encoding::iterator i = enc.begin();
+  if(*i == 'Q')
+  {
+    int n = *(i + 1) - 0x80;
+    i += 2;
+    while(n-- > 1)
+    {
+      int m = *i++;
+      if(m == 'T') m = get_base_name_if_template(i, e);
+      else if(m < 0x80) return PTree::Encoding(); // error?
+      else
+      {	 // class name
+	m -= 0x80;
+	if(m <= 0)
+	{		// if global scope (e.g. ::Foo)
+	  if(e) e = e->GetBottom();
+	}
+	else e = resolve_typedef_name(i, m, e);
+      }
+      i += m;
+    }
+    env = e;
+  }
+  if(*i == 'T')
+  {		// template class
+    int m = *(i + 1) - 0x80;
+    int n = *(i + m + 2) - 0x80;
+    return PTree::Encoding(i, i + m + n + 3);
+  }
+  else if(*i < 0x80) return PTree::Encoding();
+  else return PTree::Encoding(i + 1, i + 1 + size_t(*i - 0x80));
 }
 
 void Environment::Dump()
@@ -482,6 +522,63 @@ void Environment::Dump(int level)
 	return;
       }
     e->Dump();
+}
+
+Environment *Environment::resolve_typedef_name(PTree::Encoding::iterator i, size_t s,
+					       Environment *env)
+{
+  TypeInfo tinfo;
+  Bind *bind;
+  Class *c = 0;
+
+  if(env)
+    if (env->LookupType((const char *)&*i, s, bind) && bind)
+      switch(bind->What())
+      {
+        case Bind::isClassName :
+	  c = bind->ClassMetaobject();
+	  break;
+        case Bind::isTypedefName :
+	  bind->GetType(tinfo, env);
+	  c = tinfo.class_metaobject();
+	  /* if (c == 0) */
+	  env = 0;
+	  break;
+        default :
+	  break;
+      }
+    else if (env->LookupNamespace((const char *)&*i, s))
+    {
+      /* For the time being, we simply ignore name spaces.
+       * For example, std::T is identical to ::T.
+       */
+      env = env->GetBottom();
+    }
+    else env = 0; // unknown typedef name
+
+  return c ? c->GetEnvironment() : env;
+}
+
+int Environment::get_base_name_if_template(PTree::Encoding::iterator i,
+					   Environment *&e)
+{
+  int m = *i - 0x80;
+  if(m <= 0) return *(i+1) - 0x80 + 2;
+
+  Bind* b;
+  if(e != 0 && e->LookupType((char*)&*(i + 1), m, b))
+    if(b != 0 && b->What() == Bind::isTemplateClass)
+    {
+      Class* c = b->ClassMetaobject();
+      if(c)
+      {
+	e = c->GetEnvironment();
+	return m + (*(i + m + 1) - 0x80) + 2;
+      }
+    }
+  // the template name was not found.
+  e = 0;
+  return m + (*(i + m + 1) - 0x80) + 2;
 }
 
 Environment::Array::Array(size_t s)

@@ -9,10 +9,11 @@
 #define _Parser_hh
 
 #include <PTree.hh>
+#include <stack>
 
 class Lexer;
 class Token;
-class Environment;
+class Scope;
 
 //. C++ Parser
 //.
@@ -28,6 +29,7 @@ public:
   //. RuleSet defines non-standard optional rules that can be chosen at runtime.
   enum RuleSet { CXX = 0x01, MSVC = 0x02};
   Parser(Lexer *, int ruleset = CXX);
+  ~Parser();
   bool error_message(const char*, PTree::Node * = 0, PTree::Node * = 0);
   void warning_message(const char*, PTree::Node * = 0, PTree::Node * = 0);
   size_t num_of_errors() { return my_nerrors;}
@@ -166,11 +168,14 @@ protected:
   void skip_to(Token::Type token);
   
 private:
+  typedef std::stack<Scope *> Scopes;
+  struct                      ScopeGuard;
+
   bool more_var_name();
 
-private:
   Lexer       *my_lexer;
   int          my_ruleset;
+  Scopes       my_scopes;
   int          my_nerrors;
   PTree::Node *my_comments;
 };
