@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.3 2001/02/01 18:36:55 chalky Exp $
+# $Id: core.py,v 1.4 2001/02/01 20:08:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.4  2001/02/01 20:08:35  chalky
+# Added types to config
+#
 # Revision 1.3  2001/02/01 18:36:55  chalky
 # Moved TOC out to Formatter/TOC.py
 #
@@ -81,6 +84,7 @@ class Config:
 	"""Constructor - initialise objects to None."""
 	self.commentFormatter = None
 	self.commentFormatterList = []
+	self.types = None # Filled in first thing in format()
 	self.toc = None
 	self.basename = None
 	self.stylesheet = ""
@@ -378,6 +382,7 @@ def defaultPageset(manager):
     manager.addPage(stdPage('ModuleIndexer'))
     manager.addPage(stdPage('FileTree'))
     manager.addPage(stdPage('InheritanceTree'))
+    manager.addPage(stdPage('InheritanceGraph'))
     # This goes last so others can set default pages
     manager.addPage(stdPage('FramesIndex'))
 
@@ -449,6 +454,7 @@ def __parseArgs(args):
 def format(types, declarations, args):
     global toc_out, toc_in
     __parseArgs(args)
+    config.types = types
 
     # Create the file namer
     config.files = FileLayout.FileLayout()
