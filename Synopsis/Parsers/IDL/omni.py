@@ -3,7 +3,8 @@
 # Translator creates a Synopsis tree out of an omniidl AST
 # 
 
-from omniidl import _omniidl, idlast, idltype, idlvisitor, idlutil
+from omniidl import idlast, idltype, idlvisitor, idlutil
+import _omniidl
 import sys, getopt, os, os.path, string
 from Synopsis import Types
 
@@ -110,7 +111,7 @@ class Translator (idlvisitor.AstVisitor):
                              [],
                              node.declarators()[0].identifier())
         if len(self.__current): self.__current[-1].types().append(type)
-        else: self.__rootnode.append(type)
+        else: self.__rootNodes.append(type)
 
     def visitMember(self, node):
         self.__current[-1].attributes().append(Types.Variable(node.file(),
@@ -190,16 +191,38 @@ class Translator (idlvisitor.AstVisitor):
     def visitValueAbs(self, node):     return
     def visitValue(self, node):        return
 
+def __parseArgs(args):
+    global preprocessor_args
+
+    preprocessor_args = []
+    try:
+        opts,remainder = getopt.getopt(args, "I:")
+    except getopt.error, e:
+        sys.stderr.write("Error in arguments: " + e + "\n")
+        sys.exit(1)
+
+    for opt in opts:
+        o,a = opt
+
+        if o == "-I":
+            preprocessor_args.append("-I" + a)
+
 def parse(file, args):
+    global preprocessor_args
+    __parseArgs(args)
     if hasattr(_omniidl, "__file__"):
         preprocessor_path = os.path.dirname(_omniidl.__file__)
     else:
         preprocessor_path = os.path.dirname(sys.argv[0])
-    preprocessor      = os.path.join(preprocessor_path, "omnicpp")
-    preprocessor_cmd  = preprocessor + " -lang-c++ -undef -D__OMNIIDL__=" + _omniidl.version + " " + file
-    file = os.popen(preprocessor_cmd, "r")
+    preprocessor      = os.path.join(preprocessor_path, "omni-cpp")
+    preprocessor_cmd  = preprocessor + " -lang-c++ -undef -D__OMNIIDL__=" + _omniidl.version
+    preprocessor_cmd = preprocessor_cmd + " " + string.join(preprocessor_args, " ") + " " + file
+    fd = os.popen(preprocessor_cmd, "r")
 
-    tree = _omniidl.compile(file)
+    tree = _omniidl.compile(fd)
+    if tree == None:
+        sys.stderr.write("omni: Error parsing " + file + "\n")
+        sys.exit(1)
     translator = Translator()
     tree.accept(translator)
     return translator.nodes()

@@ -1,319 +1,420 @@
 <?xml version="1.0"?>
-<dia:diagram xmlns:dia="http://www.lysator.liu.se/~alla/dia/">
-  <dia:diagramdata>
-    <dia:attribute name="background">
-      <dia:color val="#ffffff"/>
-    </dia:attribute>
-    <dia:attribute name="paper">
-      <dia:composite type="paper">
-        <dia:attribute name="name">
-          <dia:string>#A4#</dia:string>
-        </dia:attribute>
-        <dia:attribute name="tmargin">
-          <dia:real val="2.82"/>
-        </dia:attribute>
-        <dia:attribute name="bmargin">
-          <dia:real val="2.82"/>
-        </dia:attribute>
-        <dia:attribute name="lmargin">
-          <dia:real val="2.82"/>
-        </dia:attribute>
-        <dia:attribute name="rmargin">
-          <dia:real val="2.82"/>
-        </dia:attribute>
-        <dia:attribute name="is_portrait">
-          <dia:boolean val="true"/>
-        </dia:attribute>
-        <dia:attribute name="scaling">
-          <dia:real val="1"/>
-        </dia:attribute>
-      </dia:composite>
-    </dia:attribute>
-  </dia:diagramdata>
-  <dia:layer name="Background" visible="true">
-    <dia:object type="UML - Component" version="0" id="O0">
-      <dia:attribute name="obj_pos">
-        <dia:point val="6,10.55"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="5.95,10.5;16.0311,14.1"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="6,10.55"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="9.98112"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.5"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#abstract syntax tree#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Helvetica"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="0.8"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="8.4,11.95"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="0"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="UML - Component" version="0" id="O1">
-      <dia:attribute name="obj_pos">
-        <dia:point val="12.05,3.35"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="12,3.3;19.3662,6.9"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="12.05,3.35"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="7.26624"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.5"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#input parser#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Helvetica"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="0.8"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="14.45,4.75"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="0"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="UML - Component" version="0" id="O2">
-      <dia:attribute name="obj_pos">
-        <dia:point val="15.75,16.2"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="15.7,16.15;22.0643,19.75"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="15.75,16.2"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="6.26432"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.5"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#formatter#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Helvetica"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="0.8"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="18.15,17.6"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="0"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="UML - Component" version="0" id="O3">
-      <dia:attribute name="obj_pos">
-        <dia:point val="22.3757,9.73525"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="22.3257,9.68525;29.1425,13.2853"/>
-      </dia:attribute>
-      <dia:attribute name="elem_corner">
-        <dia:point val="22.3757,9.73525"/>
-      </dia:attribute>
-      <dia:attribute name="elem_width">
-        <dia:real val="6.7168"/>
-      </dia:attribute>
-      <dia:attribute name="elem_height">
-        <dia:real val="3.5"/>
-      </dia:attribute>
-      <dia:attribute name="text">
-        <dia:composite type="text">
-          <dia:attribute name="string">
-            <dia:string>#doc parser#</dia:string>
-          </dia:attribute>
-          <dia:attribute name="font">
-            <dia:font name="Helvetica"/>
-          </dia:attribute>
-          <dia:attribute name="height">
-            <dia:real val="0.8"/>
-          </dia:attribute>
-          <dia:attribute name="pos">
-            <dia:point val="24.7757,11.1353"/>
-          </dia:attribute>
-          <dia:attribute name="color">
-            <dia:color val="#000000"/>
-          </dia:attribute>
-          <dia:attribute name="alignment">
-            <dia:enum val="0"/>
-          </dia:attribute>
-        </dia:composite>
-      </dia:attribute>
-    </dia:object>
-    <dia:object type="UML - Dependency" version="0" id="O4">
-      <dia:attribute name="obj_pos">
-        <dia:point val="15.6831,6.85"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="10.1406,6;16.5331,11.4"/>
-      </dia:attribute>
-      <dia:attribute name="orth_points">
-        <dia:point val="15.6831,6.85"/>
-        <dia:point val="15.6831,7.93525"/>
-        <dia:point val="10.9906,7.93525"/>
-        <dia:point val="10.9906,10.55"/>
-      </dia:attribute>
-      <dia:attribute name="orth_orient">
-        <dia:enum val="1"/>
-        <dia:enum val="0"/>
-        <dia:enum val="1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_arrow">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="name">
-        <dia:string/>
-      </dia:attribute>
-      <dia:attribute name="stereotype">
-        <dia:string/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O1" connection="6"/>
-        <dia:connection handle="1" to="O0" connection="1"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="UML - Dependency" version="0" id="O5">
-      <dia:attribute name="obj_pos">
-        <dia:point val="18.8822,16.2"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="10.1406,13.2;19.7322,17.05"/>
-      </dia:attribute>
-      <dia:attribute name="orth_points">
-        <dia:point val="18.8822,16.2"/>
-        <dia:point val="18.8822,15.4853"/>
-        <dia:point val="10.9906,15.4853"/>
-        <dia:point val="10.9906,14.05"/>
-      </dia:attribute>
-      <dia:attribute name="orth_orient">
-        <dia:enum val="1"/>
-        <dia:enum val="0"/>
-        <dia:enum val="1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_arrow">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="name">
-        <dia:string/>
-      </dia:attribute>
-      <dia:attribute name="stereotype">
-        <dia:string/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O2" connection="1"/>
-        <dia:connection handle="1" to="O0" connection="6"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="UML - Dependency" version="0" id="O6">
-      <dia:attribute name="obj_pos">
-        <dia:point val="25.7341,9.73525"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="15.1311,7.83525;26.5841,11.4"/>
-      </dia:attribute>
-      <dia:attribute name="orth_points">
-        <dia:point val="25.7341,9.73525"/>
-        <dia:point val="25.7341,8.68525"/>
-        <dia:point val="15.9811,8.68525"/>
-        <dia:point val="15.9811,10.55"/>
-      </dia:attribute>
-      <dia:attribute name="orth_orient">
-        <dia:enum val="1"/>
-        <dia:enum val="0"/>
-        <dia:enum val="1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_arrow">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="name">
-        <dia:string/>
-      </dia:attribute>
-      <dia:attribute name="stereotype">
-        <dia:string/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O3" connection="1"/>
-        <dia:connection handle="1" to="O0" connection="2"/>
-      </dia:connections>
-    </dia:object>
-    <dia:object type="UML - Dependency" version="0" id="O7">
-      <dia:attribute name="obj_pos">
-        <dia:point val="25.7341,9.73525"/>
-      </dia:attribute>
-      <dia:attribute name="obj_bb">
-        <dia:rectangle val="18.4662,6;26.5841,10.5853"/>
-      </dia:attribute>
-      <dia:attribute name="orth_points">
-        <dia:point val="25.7341,9.73525"/>
-        <dia:point val="25.7341,8.68525"/>
-        <dia:point val="19.3162,8.68525"/>
-        <dia:point val="19.3162,6.85"/>
-      </dia:attribute>
-      <dia:attribute name="orth_orient">
-        <dia:enum val="1"/>
-        <dia:enum val="0"/>
-        <dia:enum val="1"/>
-      </dia:attribute>
-      <dia:attribute name="draw_arrow">
-        <dia:boolean val="true"/>
-      </dia:attribute>
-      <dia:attribute name="name">
-        <dia:string/>
-      </dia:attribute>
-      <dia:attribute name="stereotype">
-        <dia:string/>
-      </dia:attribute>
-      <dia:connections>
-        <dia:connection handle="0" to="O3" connection="1"/>
-        <dia:connection handle="1" to="O1" connection="7"/>
-      </dia:connections>
-    </dia:object>
-  </dia:layer>
-</dia:diagram>
+<diagram xmlns:dia="http://www.lysator.liu.se/~alla/dia/">
+  <diagramdata>
+    <attribute name="background">
+      <color val="#ffffff"/>
+    </attribute>
+    <attribute name="paper">
+      <composite type="paper">
+        <attribute name="name">
+          <string>#A4#</string>
+        </attribute>
+        <attribute name="tmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="bmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="lmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="rmargin">
+          <real val="2.82"/>
+        </attribute>
+        <attribute name="is_portrait">
+          <boolean val="true"/>
+        </attribute>
+        <attribute name="scaling">
+          <real val="1"/>
+        </attribute>
+        <attribute name="fitto">
+          <boolean val="false"/>
+        </attribute>
+      </composite>
+    </attribute>
+  </diagramdata>
+  <layer name="Background" visible="true">
+    <object type="UML - Component" version="0" id="O0">
+      <attribute name="obj_pos">
+        <point val="6,10.6"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="5.95,10.55;12.282,14.15"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="6,10.6"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="6.232"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.5"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#Synopsis#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Helvetica"/>
+          </attribute>
+          <attribute name="height">
+            <real val="0.8"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="8.4,12"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="0"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="UML - Component" version="0" id="O1">
+      <attribute name="obj_pos">
+        <point val="12.05,3.35"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="12,3.3;17.427,6.9"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="12.05,3.35"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="5.32704"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.5"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#Parser#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Helvetica"/>
+          </attribute>
+          <attribute name="height">
+            <real val="0.8"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="14.45,4.75"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="0"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="UML - Component" version="0" id="O2">
+      <attribute name="obj_pos">
+        <point val="11.8914,16.7364"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="11.8414,16.6864;18.3997,20.2864"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="11.8914,16.7364"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="6.45824"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.5"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#Formatter#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Helvetica"/>
+          </attribute>
+          <attribute name="height">
+            <real val="0.8"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="14.2914,18.1364"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="0"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="UML - Dependency" version="0" id="O3">
+      <attribute name="obj_pos">
+        <point val="15.6831,6.85"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="8.266,6;16.5331,11.45"/>
+      </attribute>
+      <attribute name="orth_points">
+        <point val="15.6831,6.85"/>
+        <point val="15.6831,7.93525"/>
+        <point val="9.116,7.93525"/>
+        <point val="9.116,10.6"/>
+      </attribute>
+      <attribute name="orth_orient">
+        <enum val="1"/>
+        <enum val="0"/>
+        <enum val="1"/>
+      </attribute>
+      <attribute name="draw_arrow">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="name">
+        <string/>
+      </attribute>
+      <attribute name="stereotype">
+        <string/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O1" connection="6"/>
+        <connection handle="1" to="O0" connection="1"/>
+      </connections>
+    </object>
+    <object type="UML - Dependency" version="0" id="O4">
+      <attribute name="obj_pos">
+        <point val="15.1205,16.7364"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="8.266,13.25;15.9705,17.5864"/>
+      </attribute>
+      <attribute name="orth_points">
+        <point val="15.1205,16.7364"/>
+        <point val="15.1205,15.4853"/>
+        <point val="9.116,15.4853"/>
+        <point val="9.116,14.1"/>
+      </attribute>
+      <attribute name="orth_orient">
+        <enum val="1"/>
+        <enum val="0"/>
+        <enum val="1"/>
+      </attribute>
+      <attribute name="draw_arrow">
+        <boolean val="true"/>
+      </attribute>
+      <attribute name="name">
+        <string/>
+      </attribute>
+      <attribute name="stereotype">
+        <string/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O2" connection="1"/>
+        <connection handle="1" to="O0" connection="6"/>
+      </connections>
+    </object>
+    <object type="UML - Note" version="0" id="O5">
+      <attribute name="obj_pos">
+        <point val="15.3605,11.019"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="15.3105,10.969;33.9633,14.369"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="15.3605,11.019"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="18.5528"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="3.3"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#main module. Defines the AST nodes, 
+resolves cross references 
+and handles archiving#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="0.8"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="15.7105,12.2637"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="0"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Line" version="0" id="O6">
+      <attribute name="obj_pos">
+        <point val="12.232,12.35"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="12.182,12.219;15.4105,12.4"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="12.232,12.35"/>
+        <point val="15.3605,12.269"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <attribute name="line_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="line_style">
+        <enum val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O0" connection="4"/>
+        <connection handle="1" to="O5" connection="3"/>
+      </connections>
+    </object>
+    <object type="UML - Note" version="0" id="O7">
+      <attribute name="obj_pos">
+        <point val="21.9711,0.431965"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="21.9211,0.381965;34.7563,4.58196"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="21.9711,0.431965"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="12.7352"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="4.1"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#implements a parser for
+a particular language.
+Generates an AST for the
+parsed file#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="0.8"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="22.3211,1.67666"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="0"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Line" version="0" id="O8">
+      <attribute name="obj_pos">
+        <point val="17.377,5.1"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="17.327,2.43196;22.0211,5.15"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="17.377,5.1"/>
+        <point val="21.9711,2.48196"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <attribute name="line_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="line_style">
+        <enum val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O1" connection="4"/>
+        <connection handle="1" to="O7" connection="3"/>
+      </connections>
+    </object>
+    <object type="UML - Note" version="0" id="O9">
+      <attribute name="obj_pos">
+        <point val="21.8841,17.6225"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="21.8341,17.5725;35.1541,22.5725"/>
+      </attribute>
+      <attribute name="elem_corner">
+        <point val="21.8841,17.6225"/>
+      </attribute>
+      <attribute name="elem_width">
+        <real val="13.22"/>
+      </attribute>
+      <attribute name="elem_height">
+        <real val="4.9"/>
+      </attribute>
+      <attribute name="text">
+        <composite type="text">
+          <attribute name="string">
+            <string>#implements formatting
+for a particular output
+format. Traverses the AST
+and generates the output
+file(s)#</string>
+          </attribute>
+          <attribute name="font">
+            <font name="Courier"/>
+          </attribute>
+          <attribute name="height">
+            <real val="0.8"/>
+          </attribute>
+          <attribute name="pos">
+            <point val="22.2341,18.8672"/>
+          </attribute>
+          <attribute name="color">
+            <color val="#000000"/>
+          </attribute>
+          <attribute name="alignment">
+            <enum val="0"/>
+          </attribute>
+        </composite>
+      </attribute>
+    </object>
+    <object type="Standard - Line" version="0" id="O10">
+      <attribute name="obj_pos">
+        <point val="18.3497,18.4864"/>
+      </attribute>
+      <attribute name="obj_bb">
+        <rectangle val="18.2997,18.4364;21.9341,20.1225"/>
+      </attribute>
+      <attribute name="conn_endpoints">
+        <point val="18.3497,18.4864"/>
+        <point val="21.8841,20.0725"/>
+      </attribute>
+      <attribute name="numcp">
+        <int val="1"/>
+      </attribute>
+      <attribute name="line_width">
+        <real val="0.1"/>
+      </attribute>
+      <attribute name="line_style">
+        <enum val="1"/>
+      </attribute>
+      <connections>
+        <connection handle="0" to="O2" connection="4"/>
+        <connection handle="1" to="O9" connection="3"/>
+      </connections>
+    </object>
+  </layer>
+</diagram>

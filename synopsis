@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.3 2000/03/07 05:31:05 stefan Exp $
+# $Id: synopsis,v 1.4 2000/03/07 21:52:11 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -30,13 +30,14 @@ def usage():
     print """
 The supported flags are:
 
-  -p <parser>          Select a parser
-  -Wp <arg>[,<arg>...] Send args to the parser
-  -f <formatter>       Select a formatter
-  -Wf <arg>[,<arg>...] Send args to the formatter
-  -o <file>            Write output <file>
-  -v                   Print version info then exit
-  -h                   Print this usage message and exit"""
+  -p,   --parser <parser>              Select a parser
+  -Wp <arg>[,<arg>...]                 Send args to the parser
+  -f,   --formatter <formatter>        Select a formatter
+  -Wf <arg>[,<arg>...]                 Send args to the formatter
+  -I<path>                             Specify include path
+  -o <file>                            Write output <file>
+  -v,   --version                      Print version info then exit
+  -h,   --help                         Print this usage message and exit"""
 
 parser_cmd = ""
 parser_args = []
@@ -47,7 +48,7 @@ output = ""
 def parseArgs(args):
     global parser_cmd, parser_args, formatter_cmd, formatter_args, output
     try:
-        opts,files = getopt.getopt(args, "p:f:W:o:vh")
+        opts,files = getopt.getopt(args, "p:f:W:I:o:vh", ["parser=", "formatter=", "version", "help"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.stderr.write("Use " + cmdname + " -h for help\n")
@@ -56,13 +57,13 @@ def parseArgs(args):
     for opt in opts:
         o,a = opt
 
-        if o == "-p":
+        if o == "-p" or o == "--parser":
             parser_cmd = a
 
-        if o == "-f":
+        elif o == "-f" or o == "--formatter":
             formatter_cmd = a
 
-        if o == "-W":
+        elif o == "-W":
             if a[0] == "p":
                 parser_args.extend(string.split(a[1:], ","))
             elif a[0] == "f":
@@ -72,14 +73,15 @@ def parseArgs(args):
                 sys.stderr.write("Use " + cmdname + " -h for help\n")
                 sys.exit(1)
 
+        elif o == "-I":
+            parser_args.append("-I" + a)
         elif o == "-o":
             output = a
-
-        elif o == "-v":
+        elif o == "-v" or o == "--version":
             version()
             sys.exit(0)
 
-        elif o == "-h" or o == "-h":
+        elif o == "-h" or o == "--help":
             usage()
             sys.exit(0)
 
@@ -123,8 +125,12 @@ def main(argv=None):
 
         if parser_cmd == "":
             unpickler = pickle.Unpickler(open(file, "r"))
-            x = unpickler.load()
-            dictionary.append(x)
+            while (1):
+                try:
+                    x = unpickler.load()
+                except EOFError, e:
+                    break
+                dictionary.append(x)
 
         else:
             dictionary.extend(parser.parse(file, parser_args))
@@ -134,7 +140,7 @@ def main(argv=None):
     #
 
     #
-    # generate output, either with picler or with a formatter
+    # generate output, either with pickler or with a formatter
     #
     if formatter_cmd == "":
         pickler = pickle.Pickler(open(output, "w"))
@@ -147,6 +153,7 @@ def main(argv=None):
             sys.stderr.write(cmdname + ": Could not import formatter `" + formatter_cmd + "'\n")
             sys.exit(1)
 
+        if (output != ""): formatter_args.extend(["-o",output])
         formatter.format(dictionary, formatter_args)
 
 if __name__ == '__main__':

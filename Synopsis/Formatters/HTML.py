@@ -113,11 +113,11 @@ def __parseArgs(args):
 
     for opt in opts:
         o,a = opt
-
         if o == "-o":
             output = open(a, "w")
 
 def format(dictionary, args):
+    global output
     __parseArgs(args)
     formatter = HTMLFormatter(output)
     for type in dictionary:
