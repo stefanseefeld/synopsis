@@ -43,9 +43,9 @@ PTree::Node *nth_declarator(PTree::Node *decl, size_t n)
   return 0;
 }
 
-void set_declarator_comments(PTree::Node *decl, PTree::Node *comments)
+void set_declarator_comments(PTree::Declaration *decl, PTree::Node *comments)
 {
-  if (decl == 0 || !PTree::is_a(decl, Token::ntDeclaration)) return;
+  if (!decl) return;
 
   PTree::Node *declarator;
   size_t n = 0;
@@ -287,9 +287,12 @@ bool Parser::definition(PTree::Node *&p)
     res = using_(p);
   else 
   {
-    if (!declaration(p)) return false;
+    PTree::Declaration *decl;
+    if (!declaration(decl)) return false;
     PTree::Node *c = wrap_comments(my_lexer->get_comments());
-    if (c) set_declarator_comments(p, c);
+    if (c) set_declarator_comments(decl, c);
+    p = decl;
+    my_scopes.top()->declare(decl);
     return true;
   }
   my_lexer->get_comments();
@@ -696,7 +699,7 @@ bool Parser::linkage_body(PTree::Node *&body)
 */
 bool Parser::template_decl(PTree::Node *&decl)
 {
-  PTree::Node *body;
+  PTree::Declaration *body;
   TemplateDeclKind kind = tdk_unknown;
 
   if(!template_decl2(decl, kind))
@@ -921,16 +924,11 @@ bool Parser::template_arg_declaration(PTree::Node *&decl)
 bool Parser::extern_template_decl(PTree::Node *&decl)
 {
   Token tk1, tk2;
-  PTree::Node *body;
+  PTree::Declaration *body;
 
-  if(my_lexer->get_token(tk1) != Token::EXTERN)
-    return false;
-
-  if(my_lexer->get_token(tk2) != Token::TEMPLATE)
-    return false;
-
-  if(!declaration(body))
-    return false;
+  if(my_lexer->get_token(tk1) != Token::EXTERN) return false;
+  if(my_lexer->get_token(tk2) != Token::TEMPLATE) return false;
+  if(!declaration(body)) return false;
 
   decl = new PTree::ExternTemplate(new PTree::Atom(tk1),
 				   PTree::list(new PTree::Atom(tk2), body));
@@ -966,7 +964,7 @@ bool Parser::extern_template_decl(PTree::Node *&decl)
   Note: this regards a statement like "T (a);" as a constructor
         declaration.  See isConstructorDecl().
 */
-bool Parser::declaration(PTree::Node *&statement)
+bool Parser::declaration(PTree::Declaration *&statement)
 {
   PTree::Node *mem_s, *storage_s, *cv_q, *integral, *head;
   PTree::Encoding type_encode;
@@ -1008,9 +1006,9 @@ bool Parser::declaration(PTree::Node *&statement)
     else
       res = other_declaration(statement, type_encode, mem_s, cv_q, head);
   }
-  if (res && statement && (PTree::type_of(statement) == Token::ntDeclaration))
+  if (res && statement)
   {
-    static_cast<PTree::Declaration*>(statement)->set_comments(my_comments);
+    statement->set_comments(my_comments);
     my_comments = 0;
   }
   return res;
@@ -1018,7 +1016,7 @@ bool Parser::declaration(PTree::Node *&statement)
 
 /* single declaration, for use in a condition (controlling
    expression of switch/while/if) */
-bool Parser::simple_declaration(PTree::Node *&statement)
+bool Parser::simple_declaration(PTree::Declaration *&statement)
 {
   PTree::Node *cv_q, *integral;
   PTree::Encoding type_encode, name_encode;
@@ -1066,7 +1064,7 @@ bool Parser::simple_declaration(PTree::Node *&statement)
   return true;
 }
 
-bool Parser::integral_declaration(PTree::Node *&statement,
+bool Parser::integral_declaration(PTree::Declaration *&statement,
 				  PTree::Encoding &type_encode,
 				  PTree::Node *head, PTree::Node *integral,
 				  PTree::Node *cv_q)
@@ -1095,19 +1093,16 @@ bool Parser::integral_declaration(PTree::Node *&statement,
       return true;
     case ':' : // bit field
       my_lexer->get_token(tk);
-      if(!expression(decl))
-	return false;
+      if(!expression(decl)) return false;
 
       decl = PTree::list(PTree::list(new PTree::Atom(tk), decl));
-      if(my_lexer->get_token(tk) != ';')
-	return false;
+      if(my_lexer->get_token(tk) != ';') return false;
 
       statement = new PTree::Declaration(head, PTree::list(integral, decl,
 							   new PTree::Atom(tk)));
       return true;
     default :
-      if(!declarators(decl, type_encode, true))
-	return false;
+      if(!declarators(decl, type_encode, true)) return false;
 
       if(my_lexer->look_ahead(0) == ';')
       {
@@ -1119,11 +1114,8 @@ bool Parser::integral_declaration(PTree::Node *&statement,
       else
       {
 	PTree::Node *body;
-	if(!function_body(body))
-	  return false;
-
-	if(PTree::length(decl) != 1)
-	  return false;
+	if(!function_body(body)) return false;
+	if(PTree::length(decl) != 1) return false;
 
 	statement = new PTree::Declaration(head,
 					   PTree::list(integral, decl->car(), body));
@@ -1132,7 +1124,7 @@ bool Parser::integral_declaration(PTree::Node *&statement,
   }
 }
 
-bool Parser::const_declaration(PTree::Node *&statement, PTree::Encoding&,
+bool Parser::const_declaration(PTree::Declaration *&statement, PTree::Encoding&,
 			       PTree::Node *head, PTree::Node *cv_q)
 {
   PTree::Node *decl;
@@ -1152,7 +1144,7 @@ bool Parser::const_declaration(PTree::Node *&statement, PTree::Encoding&,
   return true;
 }
 
-bool Parser::other_declaration(PTree::Node *&statement, PTree::Encoding &type_encode,
+bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &type_encode,
 			       PTree::Node *mem_s, PTree::Node *cv_q,
 			       PTree::Node *head)
 {
@@ -2880,14 +2872,14 @@ bool Parser::class_member(PTree::Node *&mem)
   else if(t == Token::METACLASS) return metaclass_decl(mem);
   else
   {
-    const char* pos = my_lexer->save();
-    if(declaration(mem))
+    const char *pos = my_lexer->save();
+    PTree::Declaration *decl;
+    if(declaration(decl))
     {
       PTree::Node *comments = wrap_comments(my_lexer->get_comments());
-      if (comments)
-      {
-	set_declarator_comments(mem, comments);
-      }
+      if (comments) set_declarator_comments(decl, comments);
+      my_scopes.top()->declare(decl);
+      mem = decl;
       return true;
     }
     my_lexer->restore(pos);
@@ -4456,8 +4448,13 @@ bool Parser::expr_statement(PTree::Node *&st)
   }
   else
   {
-    const char* pos = my_lexer->save();
-    if(declaration_statement(st)) return true;
+    const char *pos = my_lexer->save();
+    PTree::Declaration *decl;
+    if(declaration_statement(decl))
+    {
+      st = decl;
+      return true;
+    }
     else
     {
       PTree::Node *exp;
@@ -4490,7 +4487,7 @@ bool Parser::expr_statement(PTree::Node *&st)
 
   Note: if you modify this function, take a look at rDeclaration(), too.
 */
-bool Parser::declaration_statement(PTree::Node *&statement)
+bool Parser::declaration_statement(PTree::Declaration *&statement)
 {
   PTree::Node *storage_s, *cv_q, *integral;
   PTree::Encoding type_encode;
@@ -4520,7 +4517,7 @@ bool Parser::declaration_statement(PTree::Node *&statement)
   integral.decl.statement
   : decl.head integral.or.class.spec {cv.qualify} {declarators} ';'
 */
-bool Parser::integral_decl_statement(PTree::Node *&statement, PTree::Encoding& type_encode,
+bool Parser::integral_decl_statement(PTree::Declaration *&statement, PTree::Encoding& type_encode,
 				     PTree::Node *integral, PTree::Node *cv_q, PTree::Node *head)
 {
   PTree::Node *cv_q2, *decl;
@@ -4556,8 +4553,10 @@ bool Parser::integral_decl_statement(PTree::Node *&statement, PTree::Encoding& t
    other.decl.statement
    :decl.head name {cv.qualify} declarators ';'
 */
-bool Parser::other_decl_statement(PTree::Node *&statement, PTree::Encoding& type_encode,
-				  PTree::Node *cv_q, PTree::Node *head)
+bool Parser::other_decl_statement(PTree::Declaration *&statement,
+				  PTree::Encoding& type_encode,
+				  PTree::Node *cv_q,
+				  PTree::Node *head)
 {
   PTree::Node *type_name, *cv_q2, *decl;
   Token tk;

@@ -24,13 +24,29 @@ void Scope::declare(const Encoding &name, const Symbol *s)
 void Scope::declare(Declaration *d)
 {
   Node *decls = third(d);
-  if(is_a(decls, Token::ntDeclarator))	// if it is a function
+  if(is_a(decls, Token::ntDeclarator))
   {
-    //...
+    // function definition
   }
-  else // variable
+  else
   {
-    //...
+    // function or variable declaration
+    PTree::Node *storage_spec = PTree::first(d);
+    PTree::Node *type_spec = PTree::second(d);
+    if (decls->is_atom()) ; // it is a ';'
+    else
+    {
+      for (; decls; decls = decls->cdr())
+      {
+	PTree::Node *decl = decls->car();
+	if (PTree::is_a(decl, Token::ntDeclarator))
+	{
+	  PTree::Encoding name = decl->encoded_name();
+	  PTree::Encoding type = decl->encoded_type();
+	  declare(name, new VariableName(type, decl));
+	}
+      }
+    }
   }
 }
 
