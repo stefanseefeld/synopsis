@@ -39,8 +39,9 @@ class BrowseWindow (QSplitter):
 
 	# Create a textbrowser to show info about selected stuff
 	# This could be just QTextEdit or something I guess... :)
-	self.textview = QTextBrowser(self)
-	self.textview.setMinimumSize(500,350)
+	splitter = QSplitter(Qt.Vertical, self)
+	self.textview = QTextBrowser(splitter)
+	self.textview.setMinimumSize(500,150)
 	self.textview.setTextFormat(Qt.RichText)
 
 
@@ -64,10 +65,14 @@ class BrowseWindow (QSplitter):
 
 	self.__activated = 0
 	self.connect(parent, SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
-	self.show()
 
 	self.classTree = ClassTree()
 	self.global_decl.accept(self.classTree)
+
+	self.decl = None
+	self.graph_window = IGraphWindow(splitter, self.main_window, self.classTree)
+
+	self.show()
 
     def windowActivated(self, widget):
 	if self.__activated:
@@ -84,21 +89,15 @@ class BrowseWindow (QSplitter):
 
 
     def openGraph(self):
-	# Find the right graph
-	graphs = self.classTree.graphs()
-	classes = None
-	for graph in graphs:
-	    if self.decl.name() in graph:
-		classes = graph
-		break
-	if not classes:
-	    print "Warning: unable to find class",self.decl.name(),"in any graph"
-	    print graphs
-	    return
-	IGraphWindow(self.main_window, self.decl, classes, self.classTree)
+	IGraphWindow(self.main_window.workspace, self.main_window,
+		     self.classTree).set_class(self.decl.name())
 
     def setGraphEnabled(self, enable):
 	self._file_menu.setItemEnabled(self._graph_id, enable)
+	if enable:
+	    self.graph_window.set_class(self.decl.name())
+	else:
+	    self.graph_window.hide()
 
     def showPackage(self, item):
 	"""Show a given package (by item)"""
@@ -187,21 +186,48 @@ class IGraphWindow (QCanvasView):
 	def move_super(self, line):
 	    other = line.startPoint()
 	    line.setPoints(other.x(), other.y(), self.mid_x, self.top_y)
+	def clear(self):
+	    "Removes all references to other icons etc so they can be garbage collected"
+	    del self.subs
+	    del self.supers
+	    del self.sub_lines
+	    del self.super_lines
+	    self.text.hide()
+	    self.border.hide()
 
 
-    def __init__(self, main_window, start_class, classes, classTree):
+    def __init__(self, parent, main_window, classTree):
 	self.__canvas = QCanvas()
 	self.main_window = main_window
-	self.classes = classes
 	self.classTree = classTree
-	parent = main_window.workspace
 	QCanvasView.__init__(self, self.__canvas, parent)
 	self.canvas().resize(parent.width(), parent.height())
 
-	# First create all icons
+	# Empty icon list
+	self.icons = {}
+
+    def set_class(self, classname):
+	self.mainclass = classname
+	graphs = self.classTree.graphs()
+	classes = None
+	for graph in graphs:
+	    if classname in graph:
+		classes = graph
+		break
+	if not classes: return
+
+	# Reset icons
+	for icon in self.icons.values():
+	    icon.clear()
+	self.__canvas.setChanged(QRect(QPoint(0,0),self.__canvas.size()))
+	self.__canvas.update()
+
+	# Create new icons
 	self.icons = {}
 	for clas in classes:
 	    self.icons[clas]= self.Icon(self.__canvas, clas, 0,0)
+	    if clas == classname:
+		self.icons[clas].text.setColor(Qt.red)
 
 	# Now connect their supers and subs lists
 	for name, icon in self.icons.items():
@@ -210,9 +236,13 @@ class IGraphWindow (QCanvasView):
 		sub = self.icons[child]
 		icon.add_sub(sub, line)
 		sub.add_super(icon, line)
+		if name == classname or sub.classname == classname:
+		    line.setPen(QPen(Qt.red))
 		line.show()
 	
 	self.organize()
+
+	self.__canvas.update()
 
 	self.show()
 
