@@ -1,0 +1,57 @@
+#
+# Copyright (C) 2005 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+SHELL	:= /bin/sh
+
+srcdir	:= @srcdir@
+builddir:= @builddir@
+
+PYTHON	:= @PYTHON@
+SYNOPSIS:= $(PYTHON) synopsis.py
+
+CXX	:= @CXX@
+MAKEDEP	:= $(CXX) -M
+CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../src -I .
+CPPFLAGS+= -I $(srcdir) -I $(srcdir)/../../src
+CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= @SYN_LIBS@ -lboost_python @LIBS@
+LIBRARY_EXT := @LIBEXT@
+
+MODULES	:= PTree Processor
+DEP	:= $(patsubst %, %.d, $(MODULES))
+TARGETS	:= $(patsubst %, %.so, $(MODULES))
+
+vpath %.cc $(srcdir)
+
+all: $(TARGETS)
+
+%.so: %.o
+	@echo linking $(@F)
+	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
+	strip --strip-unneeded $@
+
+%.d: %.cc
+	@echo generating dependencies for $(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+
+%.o: %.cc
+	@echo compiling $(@F)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+Makefile: $(srcdir)/Makefile.in
+	$(SHELL) -ec 'cd .. && ./config.status --file bpl/Makefile'
+
+clean :
+	rm -f *~ *.o *.d \
+        *.dll *.so *core \
+	*.pyc *.pyo base_lib
+
+ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
+-include $(DEP)
+endif

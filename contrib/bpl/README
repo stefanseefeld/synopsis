@@ -1,0 +1,15 @@
+This is experimental code !
+
+Use boost.python (http://boost.org/libs/python/doc/index.html)
+to provide a python API to the C/C++ parser.
+
+This may or may not become an 'official' synopsis API at some
+point. For now it is only meant to be a sandbox for prototyping.
+
+To compile it, be sure to have boost version >= 1.32 installed.
+You may have to adjust the Makefile.
+
+Good luck !
+
+Stefan
+
