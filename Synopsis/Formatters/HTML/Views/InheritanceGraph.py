@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.4 2001/02/06 16:02:23 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.5 2001/02/06 16:54:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.5  2001/02/06 16:54:15  chalky
+# Added -n to Dot which stops those nested classes
+#
 # Revision 1.4  2001/02/06 16:02:23  chalky
 # Fixes
 #
@@ -57,8 +60,8 @@ class ToDecl (Type.Visitor):
 	    return None
 	self.__decl = None
 	typeobj.accept(self)
-	if self.__decl is None:
-	    return None
+	#if self.__decl is None:
+	#    return None
 	return self.__decl
 	    
     def visitBaseType(self, type): return
@@ -96,11 +99,11 @@ class InheritanceGraph(Page.Page):
 		if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
 		# Find declarations
 		declarations = map(self.__todecl, graph)
-		declarations = filter(lambda x: x, declarations)
+		declarations = filter(lambda x: x is not None, declarations)
 		# Call Dot formatter
 		output = self.__filename+"-dot%s"%count
 		config.toc.store(output+".toc")
-		args = ('-i','-f','html','-o',output,'-r',output+'.toc','-t','Synopsis %s'%count)
+		args = ('-i','-f','html','-o',output,'-r',output+'.toc','-t','Synopsis %s'%count,'-n')
 		Dot.format(config.types, declarations, args)
 		dot_file = open(output+'.html', 'r')
 		self.write(dot_file.read())
