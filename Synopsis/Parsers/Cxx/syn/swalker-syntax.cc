@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.9 2001/07/19 13:50:52 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.10 2001/07/23 11:51:22 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.10  2001/07/23 11:51:22  chalky
+// Better support for name lookup wrt namespaces.
+//
 // Revision 1.9  2001/07/19 13:50:52  chalky
 // Support 'using' somewhat, L"const" literals, and better Qual.Templ. names
 //
@@ -113,18 +116,27 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
     STrace trace("SWalker::TranslateVariable");
     if (m_links) findComments(spec);
     try {
+	Ptree* name_spec = spec;
 	Type::Named* type;
+	AST::Name scoped_name;
 	if (!spec->IsLeaf()) {
 	    // Must be a scoped name.. iterate through the scopes
 	    // stop when spec is at the last name
+	    nodeLOG(spec);
+	    // If first node is '::' then reset m_scope to the global scope
+	    if (spec->First()->Eq("::")) {
+		scoped_name.push_back("");
+		spec = spec->Rest();
+	    }
 	    while (spec->Length() > 2) {
-		if (m_scope) type = m_builder->lookupType(getName(spec->First()), m_scope);
-		else type = m_builder->lookupType(getName(spec->First()));
+		scoped_name.push_back(getName(spec->First()));
+		/*
 		if (!type) { throw nodeERROR(spec, "scope '" << getName(spec->First()) << "' not found!"); }
 		try { m_scope = Type::declared_cast<AST::Scope>(type); }
 		catch (const Type::wrong_type_cast&) { throw nodeERROR(spec, "scope '"<<getName(spec->First())<<"' found but not a scope!"); }
 		// Link the scope name
 		if (m_links) m_links->link(spec->First(), m_scope->declared());
+		*/
 		spec = spec->Rest()->Rest();
 	    }
 	    spec = spec->First();
@@ -134,12 +146,14 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		// skip the 'operator' node
 		spec = spec->Second();
 	    }
+	    scoped_name.push_back(getName(spec));
 	}
 	std::string name = getName(spec);
 	if (m_postfix_flag == Postfix_Var) {
 	    // Variable lookup. m_type will be the vtype
 	    /*cout << "m_scope is " << (m_scope ? m_type_formatter->format(m_scope->declared()) : "global") << endl;*/
-	    if (m_scope) type = m_builder->lookupType(name, m_scope);
+	    if (!scoped_name.empty()) type = m_builder->lookupType(scoped_name, true, m_scope);
+	    else if (m_scope) type = m_builder->lookupType(name, m_scope);
 	    else type = m_builder->lookupType(name);
 	    if (!type) { throw nodeERROR(spec, "variable '" << name << "' not found!"); }
 	    // Now find vtype (throw wrong_type_cast if not a variable)
@@ -151,16 +165,16 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		    // It is a variable
 		    m_type = var->vtype();
 		    // Store a link to the variable itself (not its type)
-		    if (m_links) m_links->link(spec, type);
+		    if (m_links) m_links->link(name_spec, type);
 		    /*cout << "var type name is " << m_type_formatter->format(m_type) << endl;*/
 		} else if ((enumor = dynamic_cast<AST::Enumerator*>(declared.declaration())) != 0) {
 		    // It is an enumerator
 		    m_type = 0; // we have no use for enums in type code
 		    // But still a link is needed
-		    if (m_links) m_links->link(spec, type);
+		    if (m_links) m_links->link(name_spec, type);
 		    /*cout << "enum type name is " << m_type_formatter->format(type) << endl;*/
 		} else {
-		    throw nodeERROR(spec, "var was not a Variable nor Enumerator!");
+		    throw nodeERROR(name_spec, "var was not a Variable nor Enumerator!");
 		}
 	    } catch (const std::bad_cast &) {
 		if (dynamic_cast<Type::Unknown*>(type))
@@ -173,10 +187,11 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	    // Function lookup. m_type will be returnType. params are in m_params
 	    AST::Scope* scope = m_scope ;
 	    if (!scope) scope = m_builder->scope();
+	    // if (!scoped_name.empty()) func = m_builder->lookupFunc(scoped_name, scope, m_params);
 	    AST::Function* func = m_builder->lookupFunc(name, scope, m_params);
-	    if (!func) { throw nodeERROR(spec, "Warning: function '" << name << "' not found!"); }
+	    if (!func) { throw nodeERROR(name_spec, "Warning: function '" << name << "' not found!"); }
 	    // Store a link to the function name
-	    if (m_links) m_links->link(spec, func->declared());
+	    if (m_links) m_links->link(name_spec, func->declared());
 	    // Now find returnType
 	    m_type = func->returnType();
 	}
@@ -338,12 +353,13 @@ Ptree* SWalker::TranslateDotMember(Ptree* node) {
     m_postfix_flag = Postfix_Var;
     Translate(node->First());
     m_postfix_flag = save_flag;
+    nodeLOG(node->First() << " resolved to " << m_type_formatter->format(m_type));
     // m_type should be a declared to a class
     if (!m_type) { throw nodeERROR(node, "Unable to resolve type of LHS of ."); }
     // Check for reference type
     try {
 	m_scope = TypeResolver(m_builder).scope(m_type);
-    } catch (const Type::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope! "); }
+    } catch (const Type::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope: " << ((Type::Named*)m_type)->name()); }
     // Find member, m_type becomes the var type or func returnType
     Translate(node->Third());
     m_scope = 0;

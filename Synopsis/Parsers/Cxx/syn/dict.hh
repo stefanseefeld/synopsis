@@ -23,10 +23,13 @@ public:
     //. Destructor
     ~Dictionary();
 
+    //. The type of multiple entries
+    typedef std::vector<Type::Named*> Types;
+
     //. Exception thrown when multiple declarations are found when one is
     //. expected. The list of declarations is stored in the exception.
     struct MultipleError {
-      std::vector<Type::Named*> types;
+	Types types;
     };
 
     //. Exception thrown when a name is not found in lookup*()
@@ -45,7 +48,7 @@ public:
     //. Lookup a name in the dictionary expecting multiple decls. Use this
     //. method if you expect to find more than one declaration, eg importing
     //. names via a using statement.
-    std::vector<Type::Named*> lookupMultiple(const std::string &name) throw (KeyError);
+    Types lookupMultiple(const std::string &name) throw (KeyError);
 
     //. Add a declaration to the dictionary. The name() is extracted from the
     //. declaration and its last string used as the key. The declaration is

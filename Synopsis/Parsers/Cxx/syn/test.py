@@ -164,7 +164,7 @@ void f()
     D::d1++; // ok
     d2++;    // ok D::d2
     e++;     // ok E::e
-    f(1);    // error: ambiguous: D::f(int) or E::f(char)
+    f(1);    // error: ambiguous: D::f(int) or E::f(int)
     f('a');  // ok: D::f(char)
 }
 """
@@ -250,8 +250,8 @@ void func(NS::A) {
 
 class Link (Test):
     def run(self):
-	return self.do_run("link.cc", "link", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
-	#return self.do_run("link.cc", "link", "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
+	#return self.do_run("link.cc", "link", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
+	return self.do_run("link.cc", "link", "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
 
 if __name__ == "__main__":
     tests = {}
