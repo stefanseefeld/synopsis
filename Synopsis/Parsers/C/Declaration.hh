@@ -26,7 +26,7 @@ class EnumConstant;
 struct TypeQual
 {
   enum { None = 0x0000, Const = 0x0001, Volatile = 0x0002};
-  TypeQual &operator = (short v) { value = v;}
+  TypeQual &operator = (short v) { value = v; return *this;}
   bool operator == (short v) const { return value == v;}
   bool operator != (short v) const { return value != v;}
   TypeQual &operator |= (const TypeQual &v) { value |= v.value; return *this;}
@@ -41,7 +41,7 @@ struct Storage
   enum {None = 0, Auto, Extern, Register, Static, Typedef};
   // can't define constructor since Storage is part of a union.
   // always initialize explicitely !
-  Storage &operator = (short v) { value = v;}
+  Storage &operator = (short v) { value = v; return *this;}
   bool operator == (short v) const { return value == v;}
   bool operator != (short v) const { return value != v;}
   std::string to_string() const;
