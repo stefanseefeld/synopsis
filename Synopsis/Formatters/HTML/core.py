@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.11 2001/03/29 14:05:33 chalky Exp $
+# $Id: core.py,v 1.12 2001/04/06 01:41:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.12  2001/04/06 01:41:09  chalky
+# More verbose verbosity
+#
 # Revision 1.11  2001/03/29 14:05:33  chalky
 # Can give namespace to manager._calculateStart. Timing of pages if verbose
 #
@@ -141,6 +144,7 @@ class Config:
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
+	    elif self.verbose: print "Option",option,"not found in config."
 
     def _config_pages(self, pages):
 	"Configures from the given list of pages"
@@ -475,6 +479,7 @@ def __parseArgs(args, config_obj):
 
     # Use config object if present
     if config_obj: config.use_config(config_obj)
+    elif config.verbose: print "No config object given"
 
     # Parse the list of arguments
     for opt in opts:
