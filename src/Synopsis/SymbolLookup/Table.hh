@@ -64,15 +64,6 @@ public:
 private:
   typedef std::stack<Scope *> Scopes;
 
-  static PTree::Encoding get_base_name(PTree::Encoding const &enc,
-				       Scope const *&scope);
-  static int get_base_name_if_template(PTree::Encoding::iterator i,
-				       Scope const *&);
-  static Scope const *lookup_typedef_name(PTree::Encoding::iterator,
-					  size_t, Scope const *);
-  static PTree::ClassSpec *get_class_template_spec(PTree::Node *);
-  static PTree::Node *strip_cv_from_integral_type(PTree::Node *);
-
   Language my_language;
   Scopes   my_scopes;
 };

@@ -59,7 +59,7 @@ $(LIBRARY): $(OBJ) $(GC_LIB)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $< -L lib -lSynopsis $(LIBS)
 
 doc: cxx.syn cxx-impl.syn
 
