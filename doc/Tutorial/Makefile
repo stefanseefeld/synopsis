@@ -2,24 +2,34 @@
 
 SYNOPSIS	:= ../../bin/synopsis
 
-XMLFILES	:= synopsis.xml preface.xml intro.xml config.xml
+XMLFILES	:= synopsis.xml
 
 .PHONY:	all html pdf clean
 
 all:	html pdf
 
-html:	index.html
+html:	html/index.html
 
 pdf:	synopsis.pdf
 
 clean:
-	rm -f *.html *.pdf config.xml
+	rm -rf html *.pdf
 
 config.xml:	../../Synopsis/Config.py
 	$(SYNOPSIS) -p Python -Wp,-b,../../Synopsis/ -Wl,-p,javatags -f DocBook -Wf,-d,-m -o config.xml ../../Synopsis/Config.py.in
 
-index.html:	$(XMLFILES)
-	docbook2html synopsis.xml
+# The following rules use xsltproc (specifically the xmlto wrapper)
 
+html/index.html:	$(XMLFILES)
+	xmlto --skip-validation -o html -m synopsis-html.xsl html synopsis.xml && cp synopsis-html.css html/synopsis-html.css
+
+#synopsis.pdf:	$(XMLFILES)
+#	xmlto pdf synopsis.xml
+
+## The following rules use Jade (specifically the docbook2 wrapper)
+#
+#html/index.html:	$(XMLFILES)
+#	docbook2html -o html synopsis.xml
+#
 synopsis.pdf:	$(XMLFILES)
 	docbook2pdf synopsis.xml
