@@ -42,8 +42,9 @@ class Executor:
     
 class ExecutorCreator (ActionVisitor):
     """Creates Executor instances for Action objects"""
-    def __init__(self, project):
+    def __init__(self, project, verbose=0):
 	self.__project = project
+	self.verbose = verbose
 
     def project(self):
 	"""Returns the project for this creator"""
@@ -148,6 +149,7 @@ class ParserExecutor (Executor):
 	return names
 
     def get_output(self, name):
+	if self.__executor.verbose: print self.__action.name()+": Parsing "+name
 	config = self.__action.config()
 	parser = self.get_parser()
 	# Do the parse
@@ -197,6 +199,7 @@ class LinkerExecutor (Executor):
 	return [ (myname, ts) ]
 
     def get_output(self, name):
+	if self.__executor.verbose: print self.__action.name()+": Linking "+name
 	# Get input AST(s), probably from a cacher, source or other linker
 	# Prepare the inputs
 	for input in self.__action.inputs():
@@ -259,7 +262,7 @@ class CacherExecutor (Executor):
 		self.__input_map[name] = exec_obj
 		self.__timestamps[name] = timestamp
 	return names
-    def _get_cache_filename(self, name):
+    def get_cache_filename(self, name):
 	"""Returns the filename of the cache for the input with the given
 	name"""
 	jname = str(name)
@@ -283,7 +286,7 @@ class CacherExecutor (Executor):
 	action = self.__action
 	# Check if is a single-file loader (not cache)
 	if action.file: return
-	cache_filename = self._get_cache_filename(name)
+	cache_filename = self.get_cache_filename(name)
 	# Check timestamp on cache
 	cache_ts = self._get_timestamp(cache_filename)
 	if cache_ts > 0 and cache_ts >= self.__timestamps[name]:
@@ -318,7 +321,7 @@ class CacherExecutor (Executor):
 	ast = self.prepare_output(name, 1)
 	if ast: return ast
 	# Should now be able to just load from cache file
-	return AST.load(self._get_cache_filename(name))
+	return AST.load(self.get_cache_filename(name))
 	
 class FormatExecutor (Executor):
     """Formats the input AST given by its single input"""
@@ -339,6 +342,7 @@ class FormatExecutor (Executor):
 	return names
 
     def get_output(self, name):
+	if self.__executor.verbose: print self.__action.name()+": Formatting "+name
 	# Get input AST, probably from a cache or linker
 	ast = self.__input_exec.get_output(name)
 	module = self.__action.config().name
