@@ -794,8 +794,8 @@ static inline int read_token(struct lexer_state *ls)
 	int cstat = S_START, nstat;
 	size_t ltok = 0;
 	int c, outc = 0, ucn_in_id = 0;
-	int shift_state;
-	unsigned long utf8;
+	int shift_state = 0;
+	unsigned long utf8 = 0;
 	long l = ls->line;
 #ifdef SYNOPSIS
 	ls->ctok->pos = ls->input_pos + (ls->discard ? 1 : 0);

@@ -1080,7 +1080,7 @@ unsigned long eval_expr(struct token_fifo *tf, int *ret, int ew)
 	if (tf->art < tf->nt) {
 		error(eval_line, "trailing garbage in constant integral "
 			"expression");
-		for (sart; sart < tf->art; sart++)
+		for (; sart < tf->art; sart++)
 		    fprintf(stderr, "%s ", token_name(tf->t + sart));
 		fputs("---> ", stderr);
 		for (sart = tf->art; sart < tf->nt; sart++)

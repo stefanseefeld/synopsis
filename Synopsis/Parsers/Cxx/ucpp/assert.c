@@ -130,7 +130,7 @@ int handle_assert(struct lexer_state *ls)
 	int ina = 0, ltww;
 	struct token t;
 	struct token_fifo *atl = 0;
-	struct assert *a;
+	struct assert *a = 0;
 	int ret = -1;
 	long l = ls->line;
 	int nnp;
