@@ -1892,13 +1892,6 @@ comp_declarator:  simple_comp
                if(yyerr ("Function type not allowed as field"))
                  YYERROR;
            }
-           else if ($$->form &&
-                    $$->form->isArray() &&
-                    ! ((ArrayType *) $$->form)->size)
-           {
-               if(yyerr ("Unsized array not allowed as field"))
-                 YYERROR;
-           }
            else if (extended && 
                decl && decl->isFunction() && 
                ! extended->isPointer())
