@@ -160,21 +160,24 @@ $(CXXHHSYNS): $(sdir)/%.hh.syn: $(topdir)/%.hh
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
-	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) -o $@ $?
+	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
+	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
 #
 # Compile C++ .h files
 $(CXXHSYNS): $(sdir)/%.h.syn: $(topdir)/%.h
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
-	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) -o $@ $?
+	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
+	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
 
 # Compile C++ .cc files
 $(CXXCCSYNS): $(sdir)/%.cc.syn: $(topdir)/%.cc
 	@echo parsing $^
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	@$(synopsis) -I$(topdir)/$(cxxdir) -DPYTHON_INCLUDE="$(python_include)" \
-	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) -o $@ $?
+	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
+	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
 
 # Create links (only) for C+ .cc files
 
