@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.25 2003/12/08 00:39:23 stefan Exp $
+# $Id: FileLayout.py,v 1.26 2003/12/09 06:30:20 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -39,8 +39,11 @@ class FileLayout (TOC.Linker):
          print "ERROR: Output must be a directory."
          sys.exit(1)
 
-      if processor.stylesheet_file:
-         self.copy_file(processor.stylesheet_file, processor.stylesheet)
+      if os.path.isfile(processor.stylesheet):
+         self.copy_file(processor.stylesheet, 'style.css')
+      else:
+         print "ERROR: stylesheet %s doesn't exist"%processor.stylesheet
+         sys.exit(1)
 
    def copy_file(self, src, dest):
       """Copies file if newer. The file named by orig_name is compared to
@@ -120,6 +123,11 @@ class FileLayout (TOC.Linker):
 
       return "_%s-%s%s"%(name, Util.quote(string.join(scope, '-')), ext)
 
+   def xref(self, page):
+      """Return the name of the xref file for the given page"""
+
+      return '_xref%d.html'%page
+
    def module_tree(self):
       """Return the name of the module tree index. Default is
       _modules.html"""
@@ -193,6 +201,11 @@ class NestedFileLayout (FileLayout):
       """Return the name of a special type of scope file"""
 
       return Util.quote(reduce(os.path.join, scope, name)) + ext
+
+   def xref(self, page):
+      """Return the name of the xref file for the given page"""
+
+      return os.path.join('XRef', 'xref%d.html'%page)
 
    def module_tree(self):
       """Return the name of the module tree index"""
