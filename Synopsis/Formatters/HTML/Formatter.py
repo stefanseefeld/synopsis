@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.16 2003/12/08 00:39:23 stefan Exp $
+# $Id: Formatter.py,v 1.17 2003/12/08 03:31:47 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -19,6 +19,8 @@ from DeclarationStyle import *
 from Views import *
 import Comments
 import Tags
+
+import time
 
 class Struct:
    "Dummy class. Initialise with keyword args."
@@ -144,8 +146,8 @@ class Formatter(Processor):
       self.__global = None # The global scope
       self.__files = {} # map from filename to (view,scope)
 
-      for p in self.views:
-         p.register(self)
+      for view in self.views:
+         view.register(self)
 
       root = AST.Module(None,-1,"C++","Global",())
       root.declarations()[:] = declarations
@@ -165,7 +167,7 @@ class Formatter(Processor):
       # load external references from toc files, if any
       for t in self.toc_in: self.toc.load(t)
    
-      if self.verbose: print "HTML Formatter: Generating Views..."
+      if self.verbose: print "HTML Formatter: Generating views..."
 
       # Create the views
       self.__global = root
