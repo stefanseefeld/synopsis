@@ -9,4 +9,6 @@
 <xsl:param name="use.extensions" select="1"/>
 <xsl:param name="fop.extensions" select="1"/>
 <xsl:param name="shade.verbatim" select="1"/>
+<!-- I'd prefer tables, but fop does a bad job with the layout -->
+<!-- <xsl:param name="segmentedlist.as.table" select="1"/> -->
 </xsl:stylesheet>
