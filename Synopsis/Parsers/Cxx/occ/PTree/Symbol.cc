@@ -112,12 +112,22 @@ void Scope::declare(ClassSpec *spec)
   declare(name, new TypeName(spec->encoded_type(), spec));
 }
 
-void Scope::declare(TemplateDecl *, ClassSpec *)
+void Scope::declare(TemplateDecl *tdecl)
 {
-}
-
-void Scope::declare(TemplateDecl *, Node *)
-{
+  PTree::Node *body = PTree::nth(tdecl, 4);
+  PTree::ClassSpec *class_spec = get_class_template_spec(body);
+  if (class_spec)
+  {
+    Encoding name = class_spec->encoded_name();
+    declare(name, new ClassTemplateName(Encoding(), tdecl));
+  }
+  else
+  {
+    PTree::Node *decl = PTree::third(body);
+    PTree::Encoding name = decl->encoded_name();
+    std::cout << name << std::endl;
+    declare(name, new FunctionTemplateName(Encoding(), decl));
+  }
 }
 
 const Symbol *Scope::lookup(const Encoding &id) const throw()
@@ -141,6 +151,10 @@ void Scope::dump(std::ostream &os) const
     }
     else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
       os << "Type: " << i->first << ' ' << type->type() << std::endl;
+    else if (const ClassTemplateName *type = dynamic_cast<const ClassTemplateName *>(i->second))
+      os << "Class template: " << i->first << ' ' << type->type() << std::endl;
+    else if (const FunctionTemplateName *type = dynamic_cast<const FunctionTemplateName *>(i->second))
+      os << "Function template: " << i->first << ' ' << type->type() << std::endl;
     else // shouldn't get here
       os << "Symbol: " << i->first << ' ' << i->second->type() << std::endl;
   }  
@@ -236,6 +250,29 @@ const Scope *Scope::lookup_typedef_name(Encoding::iterator i, size_t s,
 
 //   return c ? c->GetEnvironment() : env;
   return 0;
+}
+
+PTree::ClassSpec *Scope::get_class_template_spec(PTree::Node *body)
+{
+  if(*PTree::third(body) == ';')
+  {
+    PTree::Node *spec = strip_cv_from_integral_type(PTree::second(body));
+    return dynamic_cast<PTree::ClassSpec *>(spec);
+  }
+  return 0;
+}
+
+PTree::Node *Scope::strip_cv_from_integral_type(PTree::Node *integral)
+{
+  if(integral == 0) return 0;
+
+  if(!integral->is_atom())
+    if(PTree::is_a(integral->car(), Token::CONST, Token::VOLATILE))
+      return PTree::second(integral);
+    else if(PTree::is_a(PTree::second(integral), Token::CONST, Token::VOLATILE))
+      return integral->car();
+
+  return integral;
 }
 
 const Symbol *NestedScope::lookup(const Encoding &name) const throw()

@@ -142,7 +142,8 @@ Parser::Parser(Lexer *lexer, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_nerrors(0),
-    my_comments(0)
+    my_comments(0),
+    my_in_template_decl(false)
 {
   my_scopes.push(new PTree::Scope());
 }
@@ -502,22 +503,17 @@ bool Parser::linkage_spec(PTree::Node *&spec)
   Token tk1, tk2;
   PTree::Node *body;
 
-  if(my_lexer->get_token(tk1) != Token::EXTERN)
-    return false;
-
-  if(my_lexer->get_token(tk2) != Token::StringL)
-    return false;
+  if(my_lexer->get_token(tk1) != Token::EXTERN) return false;
+  if(my_lexer->get_token(tk2) != Token::StringL) return false;
 
   spec = new PTree::LinkageSpec(new PTree::AtomEXTERN(tk1),
 				PTree::list(new PTree::Atom(tk2)));
   if(my_lexer->look_ahead(0) == '{')
   {
-    if(!linkage_body(body))
-      return false;
+    if(!linkage_body(body)) return false;
   }
   else
-    if(!definition(body))
-      return false;
+    if(!definition(body)) return false;
 
   spec = PTree::snoc(spec, body);
   return true;
@@ -534,27 +530,21 @@ bool Parser::namespace_spec(PTree::Node *&spec)
   PTree::Node *name;
   PTree::Node *body;
 
-  if(my_lexer->get_token(tk1) != Token::NAMESPACE)
-    return false;
+  if(my_lexer->get_token(tk1) != Token::NAMESPACE) return false;
 
   PTree::Node *comments = wrap_comments(my_lexer->get_comments());
 
-  if(my_lexer->look_ahead(0) == '{')
-    name = 0;
+  if(my_lexer->look_ahead(0) == '{') name = 0;
   else
     if(my_lexer->get_token(tk2) == Token::Identifier)
       name = new PTree::Atom(tk2);
-    else
-      return false;
+    else return false;
 
   if(my_lexer->look_ahead(0) == '{')
   {
-    if(!linkage_body(body))
-      return false;
+    if(!linkage_body(body)) return false;
   }
-  else
-    if(!definition(body))
-      return false;
+  else if(!definition(body)) return false;
 
   PTree::NamespaceSpec *nspec;
   spec = nspec = new PTree::NamespaceSpec(new PTree::AtomNAMESPACE(tk1),
@@ -700,14 +690,14 @@ bool Parser::linkage_body(PTree::Node *&body)
 bool Parser::template_decl(PTree::Node *&decl)
 {
   PTree::Declaration *body;
+  PTree::TemplateDecl *tdecl;
   TemplateDeclKind kind = tdk_unknown;
 
-  if(!template_decl2(decl, kind))
-    return false;
-
-  if(!declaration(body))
-    return false;
-
+  if(!template_decl2(tdecl, kind)) return false;
+  if (kind == tdk_decl) my_in_template_decl = true;
+  bool success = declaration(body);
+  my_in_template_decl = false;
+  if (!success) return false;
   // Repackage the decl and body depending upon what kind of template
   // declaration was observed.
   switch (kind)
@@ -723,23 +713,30 @@ bool Parser::template_decl(PTree::Node *&decl)
       decl = new PTree::TemplateInstantiation(PTree::second(decl));
       break;
     case tdk_decl:
-    case tdk_specialization:
-      decl = PTree::snoc(decl, body);
+    {
+      tdecl = PTree::snoc(tdecl, body);
+      my_scopes.top()->declare(tdecl);
+      decl = tdecl;
       break;
+    }
+    case tdk_specialization:
+    {
+      tdecl = PTree::snoc(tdecl, body);
+      decl = tdecl;
+      break;
+    }
     default:
       throw std::runtime_error("Parser::template_decl(): fatal");
   }
   return true;
 }
 
-bool Parser::template_decl2(PTree::Node *&decl, TemplateDeclKind &kind)
+bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 {
   Token tk;
   PTree::Node *args;
 
-  if(my_lexer->get_token(tk) != Token::TEMPLATE)
-    return false;
-
+  if(my_lexer->get_token(tk) != Token::TEMPLATE) return false;
   if(my_lexer->look_ahead(0) != '<') 
   {
     // template instantiation
@@ -749,15 +746,11 @@ bool Parser::template_decl2(PTree::Node *&decl, TemplateDeclKind &kind)
   }
 
   decl = new PTree::TemplateDecl(new PTree::Reserved(tk));
-  if(my_lexer->get_token(tk) != '<')
-    return false;
+  if(my_lexer->get_token(tk) != '<') return false;
 
   decl = PTree::snoc(decl, new PTree::Atom(tk));
-  if(!template_arg_list(args))
-    return false;
-
-  if(my_lexer->get_token(tk) != '>')
-    return false;
+  if(!template_arg_list(args)) return false;
+  if(my_lexer->get_token(tk) != '>') return false;
 
   decl = PTree::nconc(decl, PTree::list(args, new PTree::Atom(tk)));
 
@@ -765,24 +758,15 @@ bool Parser::template_decl2(PTree::Node *&decl, TemplateDeclKind &kind)
   while (my_lexer->look_ahead(0) == Token::TEMPLATE) 
   {
     my_lexer->get_token(tk);
-    if(my_lexer->look_ahead(0) != '<')
-      break;
+    if(my_lexer->look_ahead(0) != '<') break;
 
     my_lexer->get_token(tk);
-    if(!template_arg_list(args))
-      return false;
-
-    if(my_lexer->get_token(tk) != '>')
-      return false;
+    if(!template_arg_list(args)) return false;
+    if(my_lexer->get_token(tk) != '>') return false;
   }
 
-  if (args == 0)
-    // template < > declaration
-    kind = tdk_specialization;
-  else
-    // template < ... > declaration
-    kind = tdk_decl;
-
+  if (args == 0) kind = tdk_specialization; // template < > declaration
+  else kind = tdk_decl;                     // template < ... > declaration
   return true;
 }
 
@@ -873,16 +857,19 @@ bool Parser::template_arg_declaration(PTree::Node *&decl)
   else if (t0 == Token::TEMPLATE) 
   {
     TemplateDeclKind kind;
-    if(!template_decl2(decl, kind))
+    PTree::TemplateDecl *tdecl;
+    if(!template_decl2(tdecl, kind)) return false;
+
+    if (my_lexer->get_token(tk1) != Token::CLASS || 
+	my_lexer->get_token(tk2) != Token::Identifier)
       return false;
 
-    if (my_lexer->get_token(tk1) != Token::CLASS || my_lexer->get_token(tk2) != Token::Identifier)
-      return false;
-
-    PTree::Node *cspec = new PTree::ClassSpec(new PTree::Reserved(tk1),
-					      PTree::cons(new PTree::Atom(tk2),0),
-					      0);
-    decl = PTree::snoc(decl, cspec);
+    PTree::ClassSpec *cspec = new PTree::ClassSpec(new PTree::Reserved(tk1),
+						   PTree::cons(new PTree::Atom(tk2), 0),
+						   0);
+    tdecl = PTree::snoc(tdecl, cspec);
+    my_scopes.top()->declare(tdecl);
+    decl = tdecl;
     if(my_lexer->look_ahead(0) == '=')
     {
       PTree::Node *default_type;
@@ -1893,9 +1880,6 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
     if(d == 0) decl = new PTree::Declarator(type_encode, name_encode, *declared_name);
     else decl = new PTree::Declarator(d, type_encode, name_encode, *declared_name);
 
-//   if (!name_encode.empty())
-//     my_scopes.top()->declare(name_encode, Symbol(Symbol::VARIABLE, decl));
-//   else std::cout << "declared " << type_encode << std::endl;
   return true;
 }
 
@@ -2700,7 +2684,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     }
   }
   spec->set_encoded_name(encode);
-  my_scopes.top()->declare(spec);
+  if (!my_in_template_decl) my_scopes.top()->declare(spec);
 
   if(!class_body(body)) return false;
 
