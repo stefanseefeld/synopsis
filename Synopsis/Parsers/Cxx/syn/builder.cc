@@ -211,6 +211,45 @@ AST::Class* Builder::startClass(int lineno, string type, string name)
     return ns;
 }
 
+AST::Class* Builder::startClass(int lineno, string type, const vector<string>& names)
+{
+    // Find the forward declaration of this class
+    Type::Forward* forward = dynamic_cast<Type::Forward*>(lookupType(names));
+    if (!forward) {
+	cout << "Fatal: Qualified class name did not reference a forward type." << endl; exit(1);
+    }
+    // Create the Class
+    AST::Class* ns = new AST::Class(m_filename, lineno, type, forward->name());
+    // Add to container scope
+    vector<string> scope_name = names;
+    scope_name.pop_back();
+    Type::Declared* scope_type = dynamic_cast<Type::Declared*>(lookupType(scope_name));
+    if (!scope_type) {
+	cout << "Fatal: Qualified class name was not in a declaration." << endl; exit(1);
+    }
+    AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
+    if (!scope) {
+	cout << "Fatal: Qualified class name was not in a scope." << endl; exit(1);
+    }
+    // Set access
+    //decl->setAccess(m_scopes.top()->access);
+    // Add declaration
+    scope->declarations().push_back(ns);
+    // Add to name dictionary
+    Builder::Scope* scope_scope = findScope(scope);
+    scope_scope->dict->insert(ns);
+    // Push stack. Search is this Class plus enclosing scopes. bases added later
+    Scope* ns_scope = findScope(ns);
+    ns_scope->search.insert(
+	ns_scope->search.end(),
+	scope_scope->search.begin(),
+	scope_scope->search.end()
+    );
+    m_scopes.push(ns_scope);
+    m_scope = ns;
+    return ns;
+}
+
 void Builder::endClass()
 {
     // Check if it is a class...

@@ -59,6 +59,8 @@ public:
     //. type, ie: "class" or "struct". This is tested to determine the default
     //. accessability.
     AST::Class* startClass(int, string type, string name);
+    //. Construct and open a new Class with a qualified name
+    AST::Class* startClass(int, string type, const vector<string>& names);
     //. Update the search to include base classes. Call this method after
     //. startClass(), and after filling in the parents() vector of the returned
     //. AST::Class object. After calling this method, name and type lookups

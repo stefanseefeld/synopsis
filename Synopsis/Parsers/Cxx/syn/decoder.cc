@@ -34,6 +34,21 @@ string Decoder::decodeName(char* iter)
     return name;
 }
 
+void Decoder::decodeQualName(vector<string>& names)
+{
+    if (*m_iter++ != 'Q') return;
+    int scopes = *m_iter++ - 0x80;
+    while (scopes--) {
+	// Only handle names here
+	if (*m_iter >= 0x80) { // Name
+	    names.push_back(decodeName());
+	} else {
+	    cout << "Warning: Unknown type inside Q name: " << *m_iter << endl;
+	    cout << "         Decoding " << m_string << endl;
+	}
+    }
+}
+
 void Decoder::init(char* string)
 {
     m_string = reinterpret_cast<unsigned char*>(string);
