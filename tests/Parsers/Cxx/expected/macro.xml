@@ -83,8 +83,34 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/macro.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/macro.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls>
+    <key>
+     8
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="-4" end="18" name="LONGER" start="8"/>
+    </value>
+    <key>
+     9
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="1" end="14" name="SHORTER" start="8"/>
+    </value>
+    <key>
+     10
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="7" end="11" name="LINKINSIDE" start="8"/>
+    </value>
+    <key>
+     11
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="10" end="11" name="ARGS" start="8"/>
+    </value>
+   </macro_calls>
+  </instance>
  </files>
 </ast>

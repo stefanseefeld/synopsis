@@ -5,10 +5,7 @@
    <declarations>
     <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Processors/Previous/input/previous.cc" language="C++" line="3" name="Foo.first" type="data member">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Processors/Previous/input/previous.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous.cc" line="0" suspect="0">
        <text>
          first comment
        </text>
@@ -20,10 +17,7 @@
     </instance>
     <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Processors/Previous/input/previous.cc" language="C++" line="4" name="Foo.second" type="data member">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Processors/Previous/input/previous.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous.cc" line="0" suspect="0">
        <text>
          second comment
        </text>
@@ -33,10 +27,7 @@
     </instance>
     <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Processors/Previous/input/previous.cc" language="C++" line="5" name="Foo.third" type="data member">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Processors/Previous/input/previous.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous.cc" line="0" suspect="0">
        <text>
          third comment
        </text>
@@ -44,17 +35,14 @@
      </comments>
      <vtype/>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous.cc" language="C++" line="4" name="EOS" type="EOS"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous.cc" language="C++" line="5" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Enum" file="Processors/Previous/input/previous.cc" language="C++" line="8" name="Enum" type="enum">
    <enumerators>
     <instance accessibility="0" class="Synopsis.AST.Enumerator" file="Processors/Previous/input/previous.cc" language="C++" line="10" name="ONE" type="enumerator" value="">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Processors/Previous/input/previous.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous.cc" line="0" suspect="0">
        <text>
          ONE comment
        </text>
@@ -63,10 +51,7 @@
     </instance>
     <instance accessibility="0" class="Synopsis.AST.Enumerator" file="Processors/Previous/input/previous.cc" language="C++" line="11" name="TWO" type="enumerator" value="">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Processors/Previous/input/previous.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous.cc" line="0" suspect="0">
        <text>
          TWO comment
        </text>
@@ -75,10 +60,7 @@
     </instance>
     <instance accessibility="0" class="Synopsis.AST.Enumerator" file="Processors/Previous/input/previous.cc" language="C++" line="12" name="THREE" type="enumerator" value="">
      <comments>
-      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-       <file>
-        Processors/Previous/input/previous.cc
-       </file>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous.cc" line="0" suspect="0">
        <text>
          THREE comment
        </text>
@@ -87,7 +69,7 @@
     </instance>
    </enumerators>
    <eos>
-    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous.cc" language="C++" line="11" name="EOS" type="EOS"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous.cc" language="C++" line="12" name="EOS" type="EOS"/>
    </eos>
   </instance>
  </declarations>
@@ -121,8 +103,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Processors/Previous/input/previous.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Processors/Previous/input/previous.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

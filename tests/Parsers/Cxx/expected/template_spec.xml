@@ -18,10 +18,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/template_spec.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/template_spec.cc" line="0" suspect="0">
      <text>
       // Test template specializations
 
@@ -132,8 +129,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/template_spec.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/template_spec.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

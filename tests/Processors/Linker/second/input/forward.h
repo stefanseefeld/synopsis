@@ -1,4 +1,2 @@
-#include <string>
-
 class Foo;
 

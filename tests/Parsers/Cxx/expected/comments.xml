@@ -3,65 +3,44 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/comments.cc" language="C++" line="1" name="EOS" type="EOS">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="1">
      <text>
       // 1. Comments Test: One line cpp test
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="1">
      <text>
       // 2. Two line cpp test
 // Second line of test
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="1">
      <text>
       /* 3. One line c test */
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="1">
      <text>
       /* 4. Another c test */
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="0">
      <text>
       /* 5. Two on one */
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="1">
      <text>
       /* 6. line */
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
-     <file>
-      Parsers/Cxx/input/comments.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comments.cc" line="0" suspect="1">
      <text>
       /* 7. Multi
  * line
@@ -78,8 +57,9 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/comments.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/comments.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
  </files>
 </ast>

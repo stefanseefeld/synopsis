@@ -21,10 +21,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="7" name="XY" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
-     <file>
-      Parsers/Cxx/input/static_cast.cc
-     </file>
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/static_cast.cc" line="0" suspect="0">
      <text>
       // There should be a variable XY here
 
@@ -51,8 +48,16 @@
   </instance>
  </types>
  <files>
-  <file>
-   Parsers/Cxx/input/static_cast.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/static_cast.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls>
+    <key>
+     8
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="0" end="15" name="CAT" start="0"/>
+    </value>
+   </macro_calls>
+  </instance>
  </files>
 </ast>

@@ -1,23 +1,65 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
 <ast>
  <declarations>
-  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C" line="2" name="FOO" text="BAR" type="macro"/>
-  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C" line="4" name="PREFIX" text="x##y" type="macro">
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C++" line="4" name="LONGER" text="12345678" type="macro"/>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C++" line="5" name="SHORTER" text="1234" type="macro"/>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C++" line="6" name="LINKINSIDE" text="x" type="macro"/>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C++" line="7" name="ARGS" text="x" type="macro">
    <parameters>
-    x
-    y
-   </parameters>
-  </instance>
-  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C" line="6" name="LOG" text="std::cout &lt;&lt; (x) &lt;&lt; std::endl;" type="macro">
-   <parameters>
-    x
+    a
+    b
+    c
    </parameters>
   </instance>
  </declarations>
- <types/>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="ARGS">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="LINKINSIDE">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="LONGER">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="SHORTER">
+   <declaration/>
+  </instance>
+ </types>
  <files>
-  <file>
-   Parsers/Cpp/input/macros.cc
-  </file>
+  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/input/macros.cc" is_main="1" language="C++">
+   <macro_calls>
+    <key>
+     8
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="-4" end="18" name="LONGER" start="8"/>
+    </value>
+    <key>
+     9
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="1" end="14" name="SHORTER" start="8"/>
+    </value>
+    <key>
+     10
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="7" end="11" name="LINKINSIDE" start="8"/>
+    </value>
+    <key>
+     11
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="10" end="11" name="ARGS" start="8"/>
+    </value>
+    <key>
+     12
+    </key>
+    <value>
+     <instance class="Synopsis.AST.MacroCall" diff="15" end="11" name="ARGS" start="8"/>
+    </value>
+   </macro_calls>
+  </instance>
  </files>
 </ast>
