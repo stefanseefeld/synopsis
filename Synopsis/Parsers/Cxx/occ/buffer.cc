@@ -461,7 +461,7 @@ ProgramFile::ProgramFile(std::ifstream& f, char *filename)
 
     buf = new char[size + 1];
     f.read(buf, int(size));
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__CYGWIN__)
     // Under win31/95/NT, the pair CR-LF is replaced by LF,
     // implying a smallest size
     size = f.gcount();
