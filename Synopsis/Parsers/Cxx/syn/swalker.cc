@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.49 2002/01/30 11:53:15 chalky Exp $
+// $Id: swalker.cc,v 1.50 2002/02/13 11:17:21 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.50  2002/02/13 11:17:21  chalky
+// Slightly better ambiguous function resolution
+//
 // Revision 1.49  2002/01/30 11:53:15  chalky
 // Couple bug fixes, some cleaning up.
 //
@@ -511,6 +514,7 @@ SWalker::TranslateClassSpec(Ptree* node)
       clas = m_builder->start_class(m_lineno, type, name);
     }
   if (m_links && pName) m_links->link(pName, clas);
+  LOG("Translating class '" << clas->name() << "'");
 
   // Translate the inheritance spec, if present
   if (pInheritance)

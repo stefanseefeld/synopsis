@@ -42,7 +42,9 @@ struct ScopeInfo {
   ~ScopeInfo();
 
   //. Dictionary for this scope
-  class Dictionary* dict;
+  Dictionary* dict;
+  //class Dictionary* dict; <-- used to be this, but it confuses parser
+  //--->MAKE INTO TESTCASE!!!
 
   //. The declaration for this scope
   AST::Scope* scope_decl;

@@ -511,19 +511,37 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
       // If not a dummy scope, resolve the set
       if (scope->is_using == false && !results.empty())
         {
-          if (results.size() == 1 && (isType(results[0]) || func_okay))
-            {
-              // Exactly one match! return it
-              return results[0];
-            }
+#ifdef DEBUG
+          Named::vector save_results = results;
+#endif
+          // Remove the unknowns
+          Types::Unknown* unknown = NULL;
+          Named::vector::iterator r_iter = results.begin();
+          while (r_iter != results.end())
+            if ((unknown = dynamic_cast<Types::Unknown*>(*r_iter)) != NULL)
+              r_iter = results.erase(r_iter);
+            else if (!func_okay && !isType(*r_iter))
+              r_iter = results.erase(r_iter);
+            else
+              ++r_iter;
+          // Should be either 1 non-unknowns left or nothing but with
+          // 'unknown' set
+          if (results.size() == 0 && unknown != NULL)
+            return unknown;
+          if (results.size() == 0)
+            // This means there was only functions in the list, which we are
+            // ignoring
+            continue;
+          if (results.size() == 1)
+            // Exactly one match! return it
+            return results[0];
           // Store in class var?
           LOG("Multiple candidates!");
 #ifdef DEBUG
-          Named::vector::iterator iter = results.begin();
-          while (iter != results.end())
-            LOG(" - '" << (*iter++)->name() << "'");
+          for (r_iter = save_results.begin(); r_iter != save_results.end(); ++r_iter)
+            LOG(" - '" << (*r_iter)->name() << "' - " << typeid(**r_iter).name());
 #endif
-          return NULL;
+          return results[0];
         }
     }
   return NULL;
@@ -609,7 +627,7 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
         }
         // Now we have a set of results
         if (!results.size()) {
-            LOG("No results!");
+            LOG("No results! Looking up '" << name << "'");
             return NULL;
         }
         // FIXME: figure out what to do about multiple
@@ -791,7 +809,7 @@ Types::Named* Lookup::resolveType(Types::Named* type)
     STrace trace("Lookup::resolveType(named)");
     try {
         ScopedName& name = type->name();
-        LOG("Resolving " << name);
+        LOG("Resolving '" << name << "'");
         
         ScopedName::iterator iter = name.begin(), end = name.end() - 1;
         AST::Scope* scope = global();
@@ -800,7 +818,7 @@ Types::Named* Lookup::resolveType(Types::Named* type)
             Types::Named* scope_type = find_info(scope)->dict->lookup(*iter++);
             scope = Types::declared_cast<AST::Scope>(scope_type);
         }
-        LOG("Looking up "<<(*iter)<<" in "<<((scope==global())?"global":scope->name().back()));
+        LOG("Looking up '"<<(*iter)<<"' in '"<< ((scope==global())?"global":scope->name().back()) << "'");
         // Scope is now the containing scope of the type we are checking
         return find_info(scope)->dict->lookup(*iter);
     }
