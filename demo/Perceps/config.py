@@ -7,7 +7,7 @@ class Config (Base):
     class Parser:
 	class CXX (Base.Parser.CXX):
 	    include_path = ['.'] # add current dir to include path
-	    main_file = 0 # display #included stuff
+	    main_file = 1 # don't display #included stuff
 	    extract_tails = 1 # Look for trailing comments
 	modules = {
 	    'C++':CXX,
