@@ -196,9 +196,11 @@ int main( int argc, char **argv )
 
         if (unit) 
         {
-	  PrintTraversal pt(std::cout, debug);
-	  // Show the parse tree.
-	  pt.traverse_unit(unit);
+//            std::cout << *unit << std::endl;
+           PrintTraversal pt(std::cout, debug);
+           // Show the parse tree.
+           pt.traverse_unit(unit);
+           std::cout << std::endl;
         } else {
           std::cout << " translation unit for " << file_list[i] << " is NULL." << std::endl;
         }

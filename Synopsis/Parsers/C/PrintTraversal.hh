@@ -38,7 +38,7 @@
 class PrintTraversal : public Traversal
 {
 public:
-  PrintTraversal(std::ostream &os, bool d) : out(os), level(0), debug(d) {}
+  PrintTraversal(std::ostream &, bool);
   virtual void traverse_base(BaseType *);
   virtual void traverse_ptr(PtrType *);
   virtual void traverse_array(ArrayType *);
@@ -99,8 +99,9 @@ private:
   void assign_op(AssignOp op);
   void block(Statement *);
   std::ostream &out;
-  int           level;
   bool          debug;
+  int           level;
+  bool          show_base;
 };
 
 #endif

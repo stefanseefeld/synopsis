@@ -278,10 +278,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                     }
 
 <INITIAL>"__builtin_va_list"    { 	/* A GCC extension */
-					/* TODO - give it a real type 
+   /* TODO - give it a real type */
                       lvalp->base = new BaseType(BT_Int);
-                      return(gProject->Parse_TOS->err_tok = INT); */
-					  SETPOS_TOKEN(ELLIPSIS); return(ELLIPSIS);
+                      return(gProject->Parse_TOS->err_tok = INT);
+/* 					  SETPOS_TOKEN(ELLIPSIS); return(ELLIPSIS); */
                     }
 <INITIAL>"break"    { SETPOS_TOKEN(BREAK); return(BREAK); }
 <INITIAL>"case"     { SETPOS_TOKEN(CASE); return(CASE); }
@@ -464,6 +464,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>";"        { SETPOS_TOKEN(SEMICOLON); return(SEMICOLON); }
 <INITIAL>","        { SETPOS_TOKEN(COMMA); return(COMMA); }
 <INITIAL>"..."      { SETPOS_TOKEN(ELLIPSIS); return(ELLIPSIS); }
+<INITIAL>"__restrict" { /* ignore */} /* GNU extension */
 
 	/* Unused (invalid) characters */
 <INITIAL>"`"        { SETPOS_TOKEN(BACKQUOTE); return(BACKQUOTE); }

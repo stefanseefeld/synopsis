@@ -37,6 +37,11 @@
 
 #include <ctool/PrintTraversal.h>
 
+PrintTraversal::PrintTraversal(std::ostream &os, bool d)
+   : out(os), debug(d), level(0), show_base(true)
+{
+}
+
 void PrintTraversal::traverse_base(BaseType *type)
 {
 }
@@ -436,7 +441,7 @@ void PrintTraversal::traverse_label(Label *node)
 
 void PrintTraversal::traverse_decl(Decl *node)
 {
-  node->print(out, true, level);
+  node->print(out, show_base, level);
 }
 
 void PrintTraversal::traverse_statement(Statement *node)
@@ -690,11 +695,13 @@ void PrintTraversal::traverse_declaration(DeclStemnt *node)
     DeclVector::const_iterator i = node->decls.begin();
     
     traverse_decl(*i);
+    show_base = false;
     for (++i; i != node->decls.end(); ++i)
     {
       out << ", ";
       traverse_decl(*i);
     }
+    show_base = true;
   }
 
   out << ";";
