@@ -1,5 +1,3 @@
-#line 1 "run/bug2.c"
-
 typedef enum { foo, bar } action;
 typedef struct {
   int  action;

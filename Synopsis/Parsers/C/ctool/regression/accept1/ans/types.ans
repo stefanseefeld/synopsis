@@ -1,5 +1,3 @@
-#line 1 "run/types.c"
-
 static unsigned short  i;
 unsigned int  *a;
 unsigned int  **b;

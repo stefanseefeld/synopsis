@@ -1,5 +1,3 @@
-#line 1 "run/struct1.c"
-
 struct list ;
 struct list ;
 struct list {

@@ -1,5 +1,3 @@
-#line 1 "run/dowhile.c"
-
 int  table[] = { 1, 2, 3 };
 void  bar(int  i)
 {

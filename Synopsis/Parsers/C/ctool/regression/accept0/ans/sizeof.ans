@@ -1,5 +1,3 @@
-#line 1 "run/sizeof.c"
-
 int  main()
 {
   int  a;

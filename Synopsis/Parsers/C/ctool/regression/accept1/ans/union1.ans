@@ -1,5 +1,3 @@
-#line 1 "run/union1.c"
-
 union list ;
 union list ;
 union list {

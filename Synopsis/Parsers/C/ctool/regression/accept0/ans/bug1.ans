@@ -1,5 +1,3 @@
-#line 1 "run/bug1.c"
-
 typedef struct {
   int  x;
   int  y;

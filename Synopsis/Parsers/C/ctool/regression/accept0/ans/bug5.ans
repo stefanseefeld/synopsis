@@ -1,5 +1,3 @@
-#line 1 "run/bug5.c"
-
 typedef int  FOO;
 void  func(int  FOO)
 {

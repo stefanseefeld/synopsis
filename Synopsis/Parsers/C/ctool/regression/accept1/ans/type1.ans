@@ -1,5 +1,3 @@
-#line 1 "run/type1.c"
-
 int  main()
 {
   const int  *tab_of_ptr_to_const_int[12];

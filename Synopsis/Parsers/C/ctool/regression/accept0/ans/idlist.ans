@@ -1,5 +1,3 @@
-#line 1 "run/idlist.c"
-
 int  foo[12], *oranges, *apples;
 typedef struct fooizer {
   int  a, b, c;

@@ -1,5 +1,3 @@
-#line 1 "run/bug8.c"
-
 typedef int  my_typedef;
 my_typedef  *ptr = (my_typedef *) (0);
 

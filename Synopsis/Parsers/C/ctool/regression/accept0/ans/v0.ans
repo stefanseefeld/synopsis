@@ -1,4 +1,2 @@
-#line 1 "run/v0.c"
-
 void  foo(void  *bar);
 

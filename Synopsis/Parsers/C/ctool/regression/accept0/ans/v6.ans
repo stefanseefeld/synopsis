@@ -1,5 +1,3 @@
-#line 1 "run/v6.c"
-
 struct fobizer {
   int  a;
 };

@@ -1,5 +1,3 @@
-#line 1 "run/main3a.c"
-
 int  main(int  p)
 {
   int  a = 0;

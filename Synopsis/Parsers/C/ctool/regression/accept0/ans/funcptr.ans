@@ -1,5 +1,3 @@
-#line 1 "run/funcptr.c"
-
 typedef int  (*PFI)(int  val);
 int  myK(int  in)
 {
