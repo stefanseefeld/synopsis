@@ -630,7 +630,7 @@ BitFieldType::lookup( Symbol* sym ) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-FunctionType::FunctionType(Decl *args_list = NULL)
+FunctionType::FunctionType(Decl *args_list /* = NULL */ )
   : Type(TT_Function), KnR_decl(false), nArgs(0), size(0), args(NULL), subType(NULL)
 {
    addArgs (args_list);
