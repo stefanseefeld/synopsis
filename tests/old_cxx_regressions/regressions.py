@@ -335,4 +335,34 @@ struct type_info {
 };
 """
 
+class NestedMacroTest (Regression, Test):
+  test = """
+#define CAT(a, b) CAT_D(a, b)
+#define CAT_D(a, b) a ## b
+
+#define AB(x, y) CAT(x, y)
+
+// There should be a variable XY here
+int
+CAT(A, B)(X, Y)
+;
+"""
+
+class TypenameTest (Regression, Test):
+  test = """
+template < std::size_t Bits,  typename ::boost::uint_t<Bits>::fast TruncPoly >
+class crc_optimal
+{
+    // Implementation type
+    typedef detail::mask_uint_t<Bits>  masking_type;
+
+public:
+    // Type
+    typedef typename masking_type::fast  value_type;
+
+    // Constants for the template parameters
+     static const std::size_t  bit_count = Bits  ;
+};
+"""
+
 # vim: set et sts=2 ts=8 sw=2:
