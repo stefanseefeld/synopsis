@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.10 2003/11/16 22:23:24 stefan Exp $
+# $Id: Formatter.py,v 1.11 2003/11/18 07:30:13 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -9,6 +9,7 @@
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
+from Synopsis.FileTree import FileTree
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.ClassTree import ClassTree
 from Synopsis.Formatters.XRef import CrossReferencer
@@ -16,20 +17,7 @@ from FileLayout import *
 from TreeFormatter import *
 from CommentFormatter import *
 from DeclarationStyle import *
-from Pages.FramesIndex import *
-from Pages.DirBrowse import *
-from Pages.Scope import *
-from Pages.ModuleListing import *
-from Pages.ModuleListingJS import *
-from Pages.ModuleIndexer import *
-from Pages.FileListing import *
-from Pages.FileIndexer import *
-from Pages.FileDetails import *
-from Pages.InheritanceTree import *
-from Pages.InheritanceGraph import *
-from Pages.FileSource import *
-from Pages.NameIndex import *
-from Pages.XRef import *
+from Pages import *
 import Tags
 
 class Struct:
@@ -66,7 +54,6 @@ class Formatter(Processor):
                                   '')
    
    tree_formatter = Parameter(TreeFormatter(), 'define how to lay out tree views')
-   structs_as_classes = Parameter(True, '')
 
    def process(self, ast, **kwds):
 
