@@ -212,33 +212,3 @@ depend:	$(C_FILES) $(CPLUS_FILES) $(LEX_FILES) $(YACC_FILES)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
-
-gram.o: callback.h config.h context.h decl.h dup.h express.h identify.h
-gram.o: lexer.h location.h parseenv.h project.h stemnt.h symbol.h token.h
-gram.o: /usr/include/asm/errno.h /usr/include/bits/endian.h
-gram.o: /usr/include/bits/errno.h /usr/include/bits/pthreadtypes.h
-gram.o: /usr/include/bits/sched.h /usr/include/bits/select.h
-gram.o: /usr/include/bits/setjmp.h /usr/include/bits/sigset.h
-gram.o: /usr/include/bits/stdio_lim.h /usr/include/bits/time.h
-gram.o: /usr/include/bits/types.h /usr/include/bits/wchar.h
-gram.o: /usr/include/endian.h /usr/include/errno.h /usr/include/features.h
-gram.o: /usr/include/_G_config.h /usr/include/gconv.h /usr/include/gnu/stubs.h
-gram.o: /usr/include/libio.h /usr/include/linux/errno.h /usr/include/setjmp.h
-gram.o: /usr/include/sys/cdefs.h /usr/include/sys/select.h
-gram.o: /usr/include/sys/sysmacros.h /usr/include/sys/types.h
-gram.o: /usr/include/time.h /usr/include/wchar.h
-gram.o: /usr/local/lib/gcc-lib/i686-pc-linux-gnu/3.0.1/include/stdarg.h
-gram.o: /usr/local/lib/gcc-lib/i686-pc-linux-gnu/3.0.1/include/stddef.h
-gram.o: /usr/local/lib/gcc-lib/i686-pc-linux-gnu/3.0.1/include/stdio.h utype.h
-lexer.o: callback.h config.h context.h decl.h dup.h express.h gram.h
-lexer.o: identify.h lexer.h location.h parseenv.h project.h stemnt.h symbol.h
-lexer.o: token.h /usr/include/bits/endian.h /usr/include/bits/pthreadtypes.h
-lexer.o: /usr/include/bits/sched.h /usr/include/bits/select.h
-lexer.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
-lexer.o: /usr/include/bits/types.h /usr/include/endian.h
-lexer.o: /usr/include/features.h /usr/include/gnu/stubs.h
-lexer.o: /usr/include/sys/cdefs.h /usr/include/sys/select.h
-lexer.o: /usr/include/sys/sysmacros.h /usr/include/sys/types.h
-lexer.o: /usr/include/time.h
-lexer.o: /usr/local/lib/gcc-lib/i686-pc-linux-gnu/3.0.1/include/stddef.h
-lexer.o: utype.h
