@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2001/01/24 18:33:38 stefan Exp $
+# $Id: Makefile,v 1.5 2001/02/02 17:42:50 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,9 +26,15 @@ include ../local.mk
 endif
 endif
 
-SRC	:= __init__.py __init__.pyc Linker.py Linker.pyc
+SRC	:= __init__ Linker
+PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
+
+action	:= all
+
+.PHONY: all $(subdirs) clean distclean install
 
 all:
+
 clean:
 	/bin/rm -f *~
 
@@ -37,4 +43,4 @@ distclean: clean
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Linker
-	install $(SRC) $(packagedir)/Synopsis/Linker
+	install $(PY) $(packagedir)/Synopsis/Linker

@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.9 2001/01/24 18:33:38 stefan Exp $
+# $Id: Makefile,v 1.10 2001/02/02 17:42:50 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,33 +26,30 @@ include ../local.mk
 endif
 endif
 
-SRC	:= __init__.py __init__.pyc
+SRC	:= __init__
+PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
+
 subdirs	:= IDL C++ Python
 
-all:
-	@for dir in ${subdirs}; do \
-	   (cd $$dir && $(MAKE)) \
-	    || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"; \
+action	:= all
+
+.PHONY: all $(subdirs) clean distclean install
+
+all:	$(subdirs)
+
+$(subdirs):
+	@echo making $(action) in $@
+	$(MAKE) -C $@ $(action)
 
 clean:
+	$(MAKE) action="clean"
 	/bin/rm -f *~
-	@for dir in ${subdirs}; do \
-	  (cd $$dir && $(MAKE) clean) \
-	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
 
 distclean:
+	$(MAKE) action="distclean"
 	/bin/rm -f *.pyc
-	@for dir in ${subdirs}; do \
-	  (cd $$dir && $(MAKE) distclean) \
-	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Parser
-	install $(SRC) $(packagedir)/Synopsis/Parser
-	@for dir in ${subdirs}; do \
-	   (cd $$dir && $(MAKE) install) \
-	    || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"; \
+	install $(PY) $(packagedir)/Synopsis/Parser
+	$(MAKE) action="install"
