@@ -49,6 +49,7 @@ SYN_OBJ		:= synopsis.o occ.o swalker.o ast.o builder.o type.o dict.o \
 SYN_DEBUG_OBJ	:= synopsis.o occ.o swalker.o ast.o builder.o type.o dict.o \
 		   dumper.o decoder.o
 
+OCC_GOBJ	= $(patsubst %.o, %.go, $(OCC_OBJ))
 SYN_GOBJ	= $(patsubst %.o, %.go, $(SYN_DEBUG_OBJ))
 
 all : ../../../occ.so
@@ -61,7 +62,11 @@ $(OCC_OBJ): %.o : ../%.cc
 $(SYN_OBJ): %.o : %.cc
 	$(CXX) $(OPTIMISE) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-# This compiles debug versions of the object files with .go suffix
+# This compiles DEBUG versions of the OCC files in the parent dir
+$(OCC_GOBJ): %.go : ../%.cc
+	$(CXX)  -I.. $(DEBUG) $(CXXFLAGS) -c -o $@ $<
+
+# This compiles DEBUG versions of the object files with .go suffix
 $(SYN_GOBJ): %.go : %.cc
 	$(CXX) $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
@@ -74,13 +79,19 @@ $(SYN_GOBJ): %.go : %.cc
 	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
 
 # This creates a binary with debugging and profiling that you can run
-occ.gdb:	$(SYN_GOBJ) opencxx.a 
+occ.gdb:	$(SYN_GOBJ) opencxx.ga 
 	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB) $(PYLIB)
 
+# Compile an archive of the OCC files
 opencxx.a : $(OCC_OBJ) $(GCLIB)
 	cp $(GCLIB) $@
 	ar rcs $@ $(OCC_OBJ)
-#	$(RANLIB) $@
+
+# Compile a DEBUG archive of the OCC files
+opencxx.ga : $(OCC_GOBJ) $(GCLIB)
+	cp $(GCLIB) $@
+	ar rcs $@ $(OCC_GOBJ)
+
 
 depend:
 	touch .deps.go
@@ -89,4 +100,4 @@ depend:
 	makedepend -f.deps.o $(patsubst %.o,%.cc,$(SYN_OBJ))
 
 clean :
-	rm -f *.[o] *.ii *.so *core opencxx.a ../../../occ.so
+	rm -f *.[o] *.go *.ii *.so *core opencxx.a ../../../occ.so
