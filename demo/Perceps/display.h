@@ -1,5 +1,5 @@
 /*
-	$Id: display.h,v 1.1 2001/04/05 15:25:46 chalky Exp $
+	$Id: display.h,v 1.2 2001/04/05 16:07:59 chalky Exp $
 
 	------------------------------------------------------------------------
 	ClanLib, the platform independent game SDK.
@@ -28,7 +28,6 @@ class CL_Rect;
 #include "cliprect.h"
 #include "signals.h"
 
-class CL_Display
 //: Main Display class.
 // <p>CL_Display is the "main" class when dealing with 2D graphics. It
 // contains simple drawing operations, backbuffer clipping and access to the
@@ -50,6 +49,7 @@ class CL_Display
 // <p>When using OpenGL the GL context will always point to the selected
 // card. So if you need to use OpenGL commands to draw onto another card,
 // you have to select it here.</p>
+class CL_Display
 {
 public:
 	virtual ~CL_Display() { ; }
