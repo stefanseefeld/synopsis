@@ -77,6 +77,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["__alignof__"] = Token::SIZEOF;
     my_keywords["__asm__"] = Token::ATTRIBUTE;
     my_keywords["__attribute__"] = Token::ATTRIBUTE;
+    my_keywords["__builtin_va_arg"] = Token::EXTENSION; // Is this correct ?
     my_keywords["__complex__"] = Token::Ignore;
     my_keywords["__const"] = Token::CONST;
     my_keywords["__extension__"] = Token::EXTENSION;
