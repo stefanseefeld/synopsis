@@ -169,8 +169,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
 
 PyObject *occ_parse(PyObject *self, PyObject *args)
 {
-  Trace trace("occ_parse");
-
   Class::do_init_static();
   Metaclass::do_init_static();
   Environment::do_init_static();
@@ -221,7 +219,6 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
 
   // Delete all the AST:: and Types:: objects we created
   FakeGC::delete_all();
-
   return ast;
 }
 
