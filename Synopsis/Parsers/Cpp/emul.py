@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.2 2002/10/02 03:51:01 chalky Exp $
+# $Id: emul.py,v 1.3 2002/10/11 11:09:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.3  2002/10/11 11:09:39  chalky
+# Add cygwin support to compiler emulations
+#
 # Revision 1.2  2002/10/02 03:51:01  chalky
 # Allow more flexible gcc version (eg: 2.95.3-5 for cygwin)
 #
@@ -258,11 +261,19 @@ def find_compiler_info(compiler):
     macros.append( ('__GNUG__', str(v1)) )
     macros.append( ('__cplusplus__', '1') ) # STD says '199711L', but gcc isn't fully compliant...
     macros.append( ('__VERSION__', version) )
-    macros.append( ('unix', '') )
-    # These last three are architecture dependant:
-    macros.append( ('__ELF__', '') )
-    macros.append( ('linux', '') )
     macros.append( ('system', 'posix') )
+    if hosttype[-6:] == 'cygwin':
+	# These last three are architecture dependant:
+	macros.append( ('__CYGWIN__', '') )
+	macros.append( ('__cygwin__', '') )
+	macros.append( ('__i386__', '') )
+	macros.append( ('__cdecl', '') ) # Removes parse errors due to this keyword
+	macros.append( ('__declspec(x)', '') ) # Removes parse errors due to this keyword
+    else: 
+	# These last three are architecture dependant:
+	macros.append( ('__ELF__', '') )
+	macros.append( ('linux', '') )
+	macros.append( ('unix', '') )
 
     timestamp = get_compiler_timestamp(compiler)
     return CompilerInfo(compiler, 0, timestamp, paths, macros)
