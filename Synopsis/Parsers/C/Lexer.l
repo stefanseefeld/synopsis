@@ -518,6 +518,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>{octnum}  |
 <INITIAL>{intnum}  |
 <INITIAL>{hexnum}   {  /* An integer */
+                         errno=0; // reset errno
+
                          long i = strtol(yytext, (char**) NULL, 0);
 
                          if (errno == ERANGE)
