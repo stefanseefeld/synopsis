@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.43 2002/12/12 17:25:33 chalky Exp $
+# $Id: core.py,v 1.44 2003/01/02 07:00:58 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.44  2003/01/02 07:00:58  chalky
+# Only use Core.FileTree, refactored FileTree to be quicker and better.
+#
 # Revision 1.43  2002/12/12 17:25:33  chalky
 # Implemented Include support for C++ parser. A few other minor fixes.
 #
@@ -202,6 +205,7 @@ import sys, getopt, os, os.path, string, types, errno, stat, re, time
 # Synopsis modules
 from Synopsis.Config import Base
 from Synopsis.Core import AST, Type, Util
+from Synopsis.Core.FileTree import FileTree
 from Synopsis.Formatter import TOC, ClassTree, xref
 from Synopsis.Formatter.HTML import TreeFormatter
 
@@ -440,54 +444,6 @@ class CommentDictionary:
 	return comment
     __getitem__ = commentFor
 
-class FileTree:
-    """Maintains a tree of directories and files"""
-    def __init__(self):
-	"Installs self in config object as 'fileTree'"
-	config.fileTree = self
-	self.__files = {}
-	for filename, file in config.ast.files().items():
-	    if file.is_main():
-		dict = {}
-		self.__files[filename] = dict
-		for decl in file.declarations():
-		    dict[decl.name()] = decl
-    
-    def buildTree(self):
-	"Takes the visited info and makes a tree of directories and files"
-	# Split filenames into lists of directories
-	files = []
-	for file in self.__files.keys():
-	    files.append(string.split(file, os.sep))
-	self.__root = Struct(path=(), children={})
-	process_list = [self.__root]
-	while len(process_list):
-	    # Get node
-	    node = process_list[0]
-	    del process_list[0]
-	    for file in files:
-		if len(file) <= len(node.path) or tuple(file[:len(node.path)]) != node.path:
-		    continue
-		child_path = tuple(file[:len(node.path)+1])
-		if node.children.has_key(child_path): continue
-		child = Struct(path=child_path, children={})
-		node.children[child_path] = child
-		if len(child_path) < len(file):
-		    process_list.append(child)
-		else:
-		    fname = string.join(file, os.sep)
-		    child.decls = self.__files[fname]
-    
-    def root(self):
-	"""Returns the root node in the file tree.
-	Each node is a Struct with the following members:
-	 path - tuple of dir or filename (eg: 'Prague','Sys','Thread.hh')
-	 children - dict of children by their path tuple
-	Additionally, leaf nodes have the attribute:
-	 decls - dict of declarations in this file by scoped name
-	"""
-	return self.__root
-    
 class PageManager:
     """This class manages and coordinates the various pages. The user adds
     pages by passing their class object to the addPage method. Pages should be
@@ -585,9 +541,13 @@ class PageManager:
 	    page.register_filenames(start)
         if config.verbose: print "Done."
 	for page in self.__pages:
-	    if config.verbose: start_time = time.time()
+	    if config.verbose:
+		print "Time for %s:"%page.__class__.__name__,
+		sys.stdout.flush()
+		start_time = time.time()
 	    page.process(start)
-	    if config.verbose: print "Time for %s: %f"%(page.__class__.__name__, time.time() - start_time)
+	    if config.verbose:
+		print "%f"%(time.time() - start_time)
 
     def _loadPages(self):
 	"""Loads the page objects from the config.pages list. Each element is
@@ -708,14 +668,13 @@ def format(args, ast, config_obj):
     config.classTree = ClassTree.ClassTree()
 
     # Create the File Tree (TODO: only if needed...)
-    FileTree()
+    config.fileTree = FileTree()
+    config.fileTree.set_ast(ast)
 
-    # Build class and file trees
+    # Build class tree
     for d in declarations:
 	d.accept(config.classTree)
 
-    config.fileTree.buildTree()
- 
     # Create the page manager, which loads the pages
     manager = PageManager()
     root = AST.Module(None,-1,"C++","Global",())
