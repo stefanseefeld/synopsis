@@ -4,23 +4,39 @@ declarations:before
   content: "Declarations";
   font-size: large;
 }
+
 declarations
 { 
   display: block;
-  margin: 1mm;
+  padding-left: 10mm;
 }
 declarations > *:before,
 declarations > item *:before
 { 
-  content: attr(class)" "attr(type)" "attr(name);
-  color: red;
+  content: attr(type)" "attr(name);
+  font-weight: bold;
 }
 declarations > item:before {  content:"";} /* empty */
+
+files:before
+{ 
+  display: block;
+  content: "Files";
+  font-size: large;
+}
+
+files > file
+{ 
+  display: block;
+  margin: 1mm;
+}
+
 comments summary
 { 
   visibility: hidden;
   display: none;
 }
+
 comments text
 { 
   visibility: visible;
