@@ -881,7 +881,7 @@ comma_expr:  assign_expr
 
 prim_expr:  ident
         {
-            if ($1->entry == NULL)
+            if ($1->entry == NULL && gProject->warn_variable)
             {
                 yywarn("Undeclared variable");
             }

@@ -138,6 +138,10 @@ class Project
 
     static bool gDebug;
     
+    // Warnings
+    
+    bool warn_variable;
+    bool warn_cpp_comment;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
