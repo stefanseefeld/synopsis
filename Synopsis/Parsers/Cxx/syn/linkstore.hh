@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.hh,v 1.5 2002/02/19 09:05:16 chalky Exp $
+// $Id: linkstore.hh,v 1.6 2002/11/02 06:37:38 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.hh,v $
+// Revision 1.6  2002/11/02 06:37:38  chalky
+// Allow non-frames output, some refactoring of page layout, new modules.
+//
 // Revision 1.5  2002/02/19 09:05:16  chalky
 // Applied patch from David Abrahams to help compilation on Cygwin
 //
@@ -78,7 +81,8 @@ public:
   //. @param syntax_stream the output stream to write the syntax links to
   //. @param xref_stream the output stream to write the xref records to
   //. @param swalker the SWalker object we are linking for
-  LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker);
+  //. @param basename the basename to strip from xref records
+  LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker, const std::string& basename);
 
   //. Store a link for the given Ptree node. If a decl is given, store an
   //. xref too
@@ -147,6 +151,9 @@ protected:
 
   //. Names for the Context enum
   static const char* m_context_names[];
+
+  //. The basename to strip from xref records
+  std::string m_basename;
 };
 
 #endif

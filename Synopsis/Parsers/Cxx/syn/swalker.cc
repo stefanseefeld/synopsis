@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.67 2002/10/29 14:59:27 chalky Exp $
+// $Id: swalker.cc,v 1.68 2002/11/02 06:37:38 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.68  2002/11/02 06:37:38  chalky
+// Allow non-frames output, some refactoring of page layout, new modules.
+//
 // Revision 1.67  2002/10/29 14:59:27  chalky
 // Better support for names of specialized templates with spaces in the
 // parameters
@@ -194,7 +197,7 @@ SWalker::set_store_links(bool value, std::ostream* storage, std::ostream* xref)
 {
   // Create a new LinkStore
   if (value)
-    m_links = new LinkStore(storage, xref, this);
+    m_links = new LinkStore(storage, xref, this, m_basename);
   else
     m_links = 0;
 }

@@ -630,12 +630,16 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   std::ofstream* of_syntax = 0;
   std::ofstream* of_xref = 0;
   char syn_buffer[1024];
+  size_t baselen = strlen(syn_basename);
   if (syn_file_syntax)
     of_syntax = new std::ofstream(syn_file_syntax);
   else if (syn_syntax_prefix)
   {
     strcpy(syn_buffer, syn_syntax_prefix);
-    strcat(syn_buffer, src);
+    if (!strncmp(syn_basename, src, baselen))
+      strcat(syn_buffer, src + baselen);
+    else
+      strcat(syn_buffer, src);
     makedirs(syn_buffer);
     of_syntax = new std::ofstream(syn_buffer);
   }
@@ -644,7 +648,10 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   else if (syn_xref_prefix)
   {
     strcpy(syn_buffer, syn_xref_prefix);
-    strcat(syn_buffer, src);
+    if (!strncmp(syn_basename, src, baselen))
+      strcat(syn_buffer, src + baselen);
+    else
+      strcat(syn_buffer, src);
     makedirs(syn_buffer);
     of_xref = new std::ofstream(syn_buffer);
   }

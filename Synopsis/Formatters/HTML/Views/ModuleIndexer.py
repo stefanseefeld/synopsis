@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.12 2002/11/01 07:21:15 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.13 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.13  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.12  2002/11/01 07:21:15  chalky
 # More HTML formatting fixes eg: ampersands and stuff
 #
@@ -78,6 +81,12 @@ class ModuleIndexer(Page.Page):
 
     def filename(self): return self.__filename
     def title(self): return self.__title
+
+    def register(self):
+        """Register first page as index page"""
+	config.set_using_module_index()
+        self.__filename = config.files.nameOfModuleIndex(())
+        config.set_index_page(self.__filename)
 
     def process(self, start):
 	"""Creates indexes for all modules"""
@@ -146,7 +155,7 @@ class ModuleIndexer(Page.Page):
 		label = replace_spaces(label)
 		if isinstance(child, AST.Module):
 		    index_url = rel(self.__filename, config.files.nameOfModuleIndex(child.name()))
-		    self.write(href(rel(self.__filename, index_url), label, target='index'))
+		    self.write(href(index_url, label, target='index'))
 		else:
 		    entry = config.toc[child.name()]
 		    if entry:

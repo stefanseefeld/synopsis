@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.16 2002/11/01 07:21:15 chalky Exp $
+# $Id: FileLayout.py,v 1.17 2002/11/02 06:37:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.17  2002/11/02 06:37:37  chalky
+# Allow non-frames output, some refactoring of page layout, new modules.
+#
 # Revision 1.16  2002/11/01 07:21:15  chalky
 # More HTML formatting fixes eg: ampersands and stuff
 #
@@ -128,26 +131,45 @@ class FileLayout (TOC.Linker):
 	    traceback.print_exc()
 	    print "ERROR: ", reason
 	    sys.exit(2)
+    
+    def _checkMain(self, filename):
+	"""Checks whether the given filename is the main index page or not. If
+	it is, then it returns the filename from nameOfIndex(), else it returns
+	it unchanged"""
+	if filename == config.page_main: return self.nameOfIndex()
+	return filename
 	
     def nameOfScope(self, scope):
 	"""Return the filename of a scoped name (class or module).
 	The default implementation is to join the names with '-' and append
 	".html" Additionally, special characters are Util.quoted in URL-style"""
-	if not len(scope): return self.nameOfSpecial('global')
+	if not len(scope): return self._checkMain(self.nameOfSpecial('global'))
 	return Util.quote(string.join(scope,'-')) + ".html"
-    def nameOfFile(self, filetuple):
-	"""Return the filename of an input file. The file is specified as a
-	tuple (generally it is processed this way beforehand so this is okay).
+    def _stripFilename(self, file):
+        if len(file) and file[0] == '/': file = file[1:]
+        if len(file) and file[-1] == '/': file = file[:-1]
+        return file
+    def nameOfFileIndex(self, file):
+	"""Return the filename for the index of an input file.
+        The base_dir config option is used.
 	Default implementation is to join the path with '-', prepend "_file-"
 	and append ".html" """
-	return "_file-"+string.join(filetuple,'-')+".html"
+        file = self._stripFilename(file)
+        return "_file-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
+    def nameOfFileSource(self, file):
+	"""Return the filename for the source of an input file.
+        The base_dir config option is used.
+	Default implementation is to join the path with '-', prepend "_source-"
+	and append ".html" """
+        file = self._stripFilename(file)
+        return "_source-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
     def nameOfIndex(self):
 	"""Return the name of the main index file. Default is index.html"""
 	return "index.html"
     def nameOfSpecial(self, name):
 	"""Return the name of a special file (tree, etc). Default is
 	_name.html"""
-	return "_" + name + ".html"
+	return self._checkMain("_" + name + ".html")
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file. Default is to join
 	the scope with '-' and prepend '-'+name"""
@@ -159,7 +181,12 @@ class FileLayout (TOC.Linker):
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module. Default is to
 	join the name with '-', prepend "_module_" and append ".html" """
-	return "_module_" + Util.quote(string.join(scope, '-')) + ".html"
+	# Prefer module index for frames
+	if config.using_module_index:
+	    return "_module_" + Util.quote(string.join(scope, '-')) + ".html"
+	# Fall back to the scope page
+	return self.nameOfScope(scope)
+	
     def link(self, decl):
 	"""Create a link to the named declaration. This method may have to
 	deal with the directory layout."""
@@ -183,11 +210,21 @@ class NestedFileLayout (FileLayout):
 	if not len(scope): return os.path.join(prefix, 'global') + '.html'
         else: return Util.quote(reduce(os.path.join, scope, prefix)) + '.html'
 
-    def nameOfFile(self, filetuple):
-	"""Return the filename of an input file. The file is specified as a
-	tuple (generally it is processed this way beforehand so this is okay).
-	The path is prefixed with 'Files', and suffixed with '.html'"""
-        return reduce(os.path.join, filetuple, 'Files') + '.html'
+    def nameOfFileIndex(self, file):
+	"""Return the filename for the index of an input file.
+        The base_dir config option is used.
+	Default implementation is to join the path with '-', prepend "_file-"
+	and append ".html" """
+        file = self._stripFilename(file)
+        return os.path.join("File", rel(config.base_dir, file)+".html")
+
+    def nameOfFileSource(self, file):
+	"""Return the filename for the source of an input file.
+        The base_dir config option is used.
+	Default implementation is to join the path with '-', prepend "_source-"
+	and append ".html" """
+        file = self._stripFilename(file)
+        return os.path.join("Source", rel(config.base_dir, file)+".html")
 
     def nameOfIndex(self):
 	"""Return the name of the main index file."""
