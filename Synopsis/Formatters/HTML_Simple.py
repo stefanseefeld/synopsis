@@ -1,4 +1,4 @@
-#  $Id: HTML_Simple.py,v 1.13 2001/06/08 04:50:13 stefan Exp $
+#  $Id: HTML_Simple.py,v 1.14 2001/07/19 04:03:05 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.14  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.13  2001/06/08 04:50:13  stefan
 # add grouping support
 #
@@ -356,7 +359,7 @@ def __parseArgs(args):
         elif o == "-s": stylesheet = a
         elif o == "-v": verbose = 1
 
-def format(types, declarations, args, config_obj):
+def format(args, ast, config_obj):
     global output, stylesheet
     __parseArgs(args)
     output.write("<html>\n")
@@ -366,11 +369,11 @@ def format(types, declarations, args, config_obj):
     output.write("</head>\n")
     output.write("<body>\n")
     toc = TableOfContents()
-    for d in declarations:
+    for d in ast.declarations():
         d.accept(toc)
     output.write(entity("h1", "Reference") + "\n")
     formatter = HTMLFormatter(output, toc)
-    for d in declarations:
+    for d in ast.declarations():
         d.accept(formatter)
     output.write(entity("h1", "Index") + "\n")
     toc.write(output)

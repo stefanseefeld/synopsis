@@ -381,8 +381,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
   Ptree::show_encoded = true;
 #endif
   char *src;
-  PyObject *parserargs, *types, *declarations, *config;
-  if (!PyArg_ParseTuple(args, "sO!OO!O", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations, &config)) return 0;
+  PyObject *parserargs, *types, *declarations, *config, *ast;
+  if (!PyArg_ParseTuple(args, "sO!O", &src, &PyList_Type, &parserargs, &config)) return 0;
   std::vector<const char *> cppargs;
   std::vector<const char *> occargs;
   getopts(parserargs, cppargs, occargs, config);
@@ -391,12 +391,23 @@ PyObject *occParse(PyObject *self, PyObject *args)
       std::cerr << "No source file" << std::endl;
       exit(-1);
     }
+  // Make AST object
+#define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
+  PyObject* ast_module = PyImport_ImportModule("Synopsis.Core.AST");
+  assertObject(ast_module);
+  ast = PyObject_CallMethod(ast_module, "AST", "");
+  assertObject(ast);
+  declarations = PyObject_CallMethod(ast, "declarations", "");
+  assertObject(declarations);
+  types = PyObject_CallMethod(ast, "types", "");
+  assertObject(types);
+#undef assertObject
+
   char *cppfile = RunPreprocessor(src, cppargs);
   char *occfile = RunOpencxx(src, cppfile, occargs, types, declarations);
   unlink(cppfile);
   unlink(occfile);
-  Py_INCREF(Py_None);
-  return Py_None;
+  return ast;
 }
 
 PyObject *occUsage(PyObject *self, PyObject *)

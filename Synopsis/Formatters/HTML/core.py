@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.22 2001/07/10 14:41:22 chalky Exp $
+# $Id: core.py,v 1.23 2001/07/19 04:03:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.23  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.22  2001/07/10 14:41:22  chalky
 # Make treeformatter config nicer
 #
@@ -577,10 +580,11 @@ def __parseArgs(args, config_obj):
     # Fill in any unspecified defaults
     config.fillDefaults()
 
-def format(types, declarations, args, config_obj):
+def format(args, ast, config_obj):
     global toc_out, toc_in
     __parseArgs(args, config_obj)
-    config.types = types
+    config.types = ast.types()
+    declarations = ast.declarations()
 
     # Instantiate the files object
     config.files = config.files_class()
@@ -615,7 +619,7 @@ def format(types, declarations, args, config_obj):
     
     if verbose: print "HTML Formatter: Writing Pages..."
     # Create the pages
-    # TODO: have synopsis pass an AST with a "root" node to formatters.
+    # Create a dummy Module for the global namespace to simplify things
     root = AST.Module('',-1,"C++","Global",())
     root.declarations()[:] = declarations
     manager = PageManager()

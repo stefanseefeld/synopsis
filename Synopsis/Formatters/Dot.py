@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.21 2001/07/12 00:53:12 stefan Exp $
+# $Id: Dot.py,v 1.22 2001/07/19 04:03:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.22  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.21  2001/07/12 00:53:12  stefan
 # ...wasn't meant to be left for the commit
 #
@@ -444,7 +447,7 @@ def _format_html(input, output):
     os.remove(output + ".map")
     html.write("</map>\n")
 
-def format(types, declarations, args, config_obj):
+def format(args, ast, config_obj):
     global output, title, type, oformat, verbose, toc, toc_in
     __parseArgs(args)
 
@@ -460,10 +463,10 @@ def format(types, declarations, args, config_obj):
     if type == "inheritance":
         generator = InheritanceFormatter(dotfile)
     elif type == "single":
-        generator = SingleInheritanceFormatter(dotfile, -1, types)
+        generator = SingleInheritanceFormatter(dotfile, -1, ast.types())
     else:
         generator = CollaborationFormatter(dotfile)
-    for d in declarations:
+    for d in ast.declarations():
         d.accept(generator)
     dotfile.write("}\n")
     dotfile.close()

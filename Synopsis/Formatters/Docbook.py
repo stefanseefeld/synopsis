@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.6 2001/05/25 13:45:49 stefan Exp $
+#  $Id: Docbook.py,v 1.7 2001/07/19 04:03:05 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.7  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.6  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -222,10 +225,10 @@ def __parseArgs(args):
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
 
-def format(types, declarations, args, config):
+def format(args, ast, config):
     global output
     __parseArgs(args)
     output.write("<!DOCTYPE classsynopsis PUBLIC \"-//OASIS//DTD DocBook V4.2//EN\">\n")
     formatter = Formatter(output)
-    for d in declarations:
+    for d in ast.declarations():
         d.accept(formatter)

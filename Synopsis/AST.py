@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.16 2001/07/03 01:58:56 chalky Exp $
+# $Id: AST.py,v 1.17 2001/07/19 04:03:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.17  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.16  2001/07/03 01:58:56  chalky
 # Remove duplicate set_name method
 #
@@ -72,7 +75,7 @@ PRIVATE.
 # Change AST.file to be AST.files() - a list of files
 
 import string
-import Util
+import Util, Type
 
 # Accessibility constants
 DEFAULT = 0
@@ -86,26 +89,39 @@ def ccmp(a,b):
 
 class AST:
     """Top-level Abstract Syntax Tree.
-    The AST represents the whole AST for a file as a list of declarations, or
-    for a set of linked files."""
+    The AST represents the whole AST for a file or group of files as a list of
+    declarations and a types dictionary.
+    """
 
-    def __init__(self, file, language, declarations):
+    def __init__(self, filenames=[], declarations=[], types=None):
 	"""Constructor"""
-        self.__file         = file
-        self.__language     = language
+	if type(filenames) not in (type(()), type([])): raise TypeError, "filenames parameter must be a list or tuple of filenames"
+	if type(declarations) != type([]): raise TypeError, "declarations parameter must be a list of declarations"
+	if types is None: types = Type.Dictionary()
+	elif not isinstance(types, Type.Dictionary): raise TypeError, "types must be an instance of Type.Dictionary"
+        self.__filenames    = list(filenames)
         self.__declarations = declarations
-    def file(self):
-	"""The file name of the main file"""	
-	return self.__file
-    def language(self):
-	"""The language for this AST"""
-	return self.__language
+	self.__types	    = types
+    def filenames(self):
+	"""The file names of the component files"""	
+	return self.__filenames
     def declarations(self):
 	"""List of Declaration objects. These are the declarations at file scope"""
 	return self.__declarations
+    def types(self):
+	"""Dictionary of types. This is a Type.Dictionary object"""
+	return self.__types
     def accept(self, visitor):
 	"""Accept the given visitor"""
 	visitor.visitAST(self)
+    def merge(self, other_ast):
+	"""Merges another AST. Files and declarations are appended to those in
+	this AST, and types are merged by overwriting existing types -
+	Unduplicator is responsible for sorting out the mess this may cause :)"""
+	self.__filenames.extend(other_ast.filenames())
+	self.__types.merge(other_ast.types())
+	self.__declarations.extend(other_ast.declarations())
+
 
 class Declaration:
     """Declaration base class. Every declaration has a name, comments,

@@ -1,4 +1,4 @@
-#  $Id: Texinfo.py,v 1.3 2001/07/10 06:04:07 stefan Exp $
+#  $Id: Texinfo.py,v 1.4 2001/07/19 04:03:05 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Texinfo.py,v $
+# Revision 1.4  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.3  2001/07/10 06:04:07  stefan
 # added support for info files to the TexInfo formatter
 #
@@ -495,7 +498,7 @@ def __parseArgs(args):
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
 
-def format(types, declarations, args, config):
+def format(args, ast, config):
     global output
     __parseArgs(args)
     #menu = MenuMaker([], output)
@@ -504,5 +507,5 @@ def format(types, declarations, args, config):
     #    d.accept(menu)
     #menu.end()
     formatter = Formatter(output)
-    for d in declarations:
+    for d in ast.declarations():
         d.accept(formatter)
