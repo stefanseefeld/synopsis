@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.3 2002/11/11 15:19:33 chalky Exp $
+# $Id: DirBrowse.py,v 1.4 2002/11/13 01:01:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: DirBrowse.py,v $
+# Revision 1.4  2002/11/13 01:01:49  chalky
+# Improvements to links when using the Nested file layout
+#
 # Revision 1.3  2002/11/11 15:19:33  chalky
 # More fixes to get demo/C++ sxr working without frames
 #
@@ -137,8 +140,9 @@ class DirBrowse(Page.Page):
 		# A directory, process now
 		scope = string.split(rel(self.__start, entry_path), os.sep)
 		linkpath = config.files.nameOfScopedSpecial('dir', scope)
+		linkpath = rel(self.filename(), linkpath)
 		self.write('<tr><td>%s</td><td></td><td align="right">%s</td></tr>\n'%(
-		    href(rel(self.filename(), linkpath), entry+'/'),
+		    href(linkpath, entry+'/'),
 		    time.asctime(time.gmtime(info[stat.ST_MTIME]))))
 		dirs.append(entry_path)
 	    else:
@@ -149,8 +153,9 @@ class DirBrowse(Page.Page):
 	    linkpath = config.files.nameOfFileSource(path)
 	    rego = self.manager.filename_info(linkpath)
 	    if rego:
+		linkurl = rel(self.filename(), linkpath)
 		self.write('<tr><td>%s</td><td align=right>%d</td><td align="right">%s</td></tr>\n'%(
-		    href(linkpath, entry, target="main"), size, timestr))
+		    href(linkurl, entry, target="main"), size, timestr))
 	    else:
 		print "No link for",linkpath
 		self.write('<tr><td>%s</td><td align=right>%d</td><td align="right">%s</td></tr>\n'%(

@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.7 2002/11/11 15:19:34 chalky Exp $
+# $Id: XRef.py,v 1.8 2002/11/13 01:01:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.8  2002/11/13 01:01:49  chalky
+# Improvements to links when using the Nested file layout
+#
 # Revision 1.7  2002/11/11 15:19:34  chalky
 # More fixes to get demo/C++ sxr working without frames
 #
@@ -124,7 +127,8 @@ class XRefPages (Page.Page):
     def process_link(self, file, line, scope):
 	"""Outputs the info for one link"""
 	# Make a link to the highlighted source
-	file_link = config.files.nameOfFileSource(file)
+	realfile = os.path.join(config.base_dir, file)
+	file_link = config.files.nameOfFileSource(realfile)
 	file_link = file_link + "#%d"%line
 	# Try and make a descriptive
 	desc = ''
@@ -195,7 +199,8 @@ class XRefPages (Page.Page):
 	    self.write('<li>Declarations:<ul>\n')
 	    for child in decl.declarations():
 		file, line = child.file(), child.line()
-		file_link = config.files.nameOfFileSource(file)
+		realfile = os.path.join(config.base_dir, file)
+		file_link = config.files.nameOfFileSource(realfile)
 		file_link = '%s#%d'%(file_link,line)
 		file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
 		cname = child.name()
