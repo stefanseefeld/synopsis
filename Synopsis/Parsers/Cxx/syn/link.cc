@@ -325,6 +325,8 @@ std::string string_to_attribute(const std::string &o)
     switch (*i)
     {
       case '&': name += "&amp;"; break;
+      case '<': name += "&lt;"; break;
+      case '>': name += "&gt;"; break;
       default: name += *i; break;
     }
   return name;
