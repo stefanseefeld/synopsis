@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.6 2001/06/15 18:31:31 stefan Exp $
+# $Id: Makefile,v 1.7 2001/07/12 23:36:03 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,8 +26,8 @@ include ../../../local.mk
 endif
 endif
 
-SRC	:= __init__ ASTFormatter CommentFormatter FileLayout FileTree FramesIndex InheritanceGraph InheritanceTree \
-           ModuleIndexer ModuleListing Page ScopePages ScopeSorter Tags core FilePages NameIndex JSTree FileTreeJS \
+SRC	:= __init__ ASTFormatter FormatStrategy CommentFormatter FileLayout FileTree FramesIndex InheritanceGraph InheritanceTree \
+           ModuleIndexer ModuleListing Page ScopePages ScopeSorter Tags core FilePages NameIndex JSTree FileTree FileTreeJS \
 	   ModuleListingJS doxygen
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
