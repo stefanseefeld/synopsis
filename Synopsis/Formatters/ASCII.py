@@ -28,7 +28,7 @@ class ASCIIFormatter:
     #################### Type Visitor ###########################################
 
     def visitBaseType(self, type):
-        self.__type = type.name()
+        self.__type = Util.ccolonName(type.name())
         
     def visitForward(self, type):
         self.__type = Util.ccolonName(type.name(), self.scope())
@@ -45,8 +45,7 @@ class ASCIIFormatter:
         type_save = self.__type
         parameters = []
         for p in type.parameters():
-            p.accept(self)
-            parameters.append(self.__type)
+            parameters.append(self.formatType(p))
         self.__type = "%s<%s>"%(type_save,string.join(parameters, ", "))
 
     def visitTypedef(self, typedef):
@@ -75,6 +74,10 @@ class ASCIIFormatter:
 	self.indent()
 	self.__os.write("}\n")
 
+    def visitMetaModule(self, module):
+	# since no comments:
+	self.visitModule(module)
+
     def visitClass(self, clas):
         self.indent()
 	self.__os.write("%s %s"%(clas.type(),clas.name()[-1]))
@@ -101,8 +104,7 @@ class ASCIIFormatter:
     def visitParameter(self, parameter):
 	spacer = lambda x: str(x)+" "
 	premod = string.join(map(spacer,parameter.premodifier()),'')
-	parameter.type().accept(self)
-	type = self.__type
+	type = self.formatType(parameter.type())
 	postmod = string.join(map(spacer,parameter.postmodifier()),'')
 	name = ""
 	value = ""
@@ -121,14 +123,15 @@ class ASCIIFormatter:
 	self.indent()
         for modifier in operation.premodifier(): self.__os.write(modifier + " ")
 	retStr = self.formatType(operation.returnType())
+	name = operation.realname()
         if operation.language() == "IDL" and operation.type() == "attribute":
-            self.__os.write("attribute %s %s"%(retStr,operation.name()[-1]))
+            self.__os.write("attribute %s %s"%(retStr,name[-1]))
 	else:
-	    if operation.language() == "C++" and operation.name()[-1] in [operation.name()[-2],"~ "+operation.name()[-2]]:
-		self.__os.write("%s("%operation.name()[-1])
+	    if operation.language() == "C++" and len(name)>1 and name[-1] in [name[-2],"~"+name[-2]]:
+		self.__os.write("%s("%name[-1])
 	    else:
 		self.__os.write(retStr)
-		self.__os.write(" %s("%operation.name()[-1])
+		self.__os.write(" %s("%name[-1])
 	    self.__params = []
 	    for parameter in operation.parameters(): parameter.accept(self)
 	    params = string.join(self.__params, ", ")

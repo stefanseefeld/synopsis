@@ -24,6 +24,7 @@ Functions:
     def visitForward(self, node): return
     def visitDeclarator(self, node): return
     def visitModule(self, node): return
+    def visitMetaModule(self, node): return
     def visitClass(self, node): return
     def visitTypedef(self, node): return
     def visitEnumerator(self, node): return

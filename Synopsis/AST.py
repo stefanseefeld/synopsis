@@ -139,8 +139,8 @@ class Module (Scope):
 
 class MetaModule (Module):
     """Module Class that references all places where this Module occurs"""
-    def __init__(self, type, name):
-        Scope.__init__(self, "", "", "", type, name)
+    def __init__(self, lang, type, name):
+        Scope.__init__(self, "", "", lang, type, name)
 	self.__module_declarations = []
     def accept(self, visitor): visitor.visitMetaModule(self)
     def module_declarations(self): return self.__module_declarations
