@@ -690,6 +690,22 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
 						  default_type));
 	}
     }
+    else if (t0 == CLASS) {
+	// class without the identifier
+	lex->GetToken(tk1);
+	decl = Ptree::List(new Leaf(tk1));
+
+	if(lex->LookAhead(0) == '='){
+	    Ptree* default_type;
+
+	    lex->GetToken(tk1);
+	    if(!rTypeName(default_type))
+		return FALSE;
+
+	    decl = Ptree::Nconc(decl, Ptree::List(new Leaf(tk1),
+						  default_type));
+	}
+    }
     else if (t0 == TEMPLATE) {
 	TemplateDeclKind kind;
 	if(!rTemplateDecl2(decl, kind))
@@ -3148,6 +3164,8 @@ bool Parser::rUnaryExpr(Ptree*& exp)
     }
     else if(t == SIZEOF)
 	return rSizeofExpr(exp);
+    else if(t == TYPEID)
+	return rTypeidExpr(exp);
     else if(t == THROW)
 	return rThrowExpr(exp);
     else if(isAllocateExpr(t))
@@ -3213,6 +3231,43 @@ bool Parser::rSizeofExpr(Ptree*& exp)
 	return FALSE;
 
     exp = new PtreeSizeofExpr(new Leaf(tk), Ptree::List(unary));
+    return TRUE;
+}
+
+/*
+  typeid.expr
+  : TYPEID unary.expr
+  | TYPEID '(' type.name ')'
+*/
+bool Parser::rTypeidExpr(Ptree*& exp)
+{
+    Token tk;
+    Ptree* unary;
+
+    if(lex->GetToken(tk) != TYPEID)
+	return FALSE;
+
+    if(lex->LookAhead(0) == '('){
+	Ptree* tname;
+	Token op, cp;
+
+	char* pos = lex->Save();
+	lex->GetToken(op);
+	if(rTypeName(tname))
+	    if(lex->GetToken(cp) == ')'){
+		exp = new PtreeTypeidExpr(new Leaf(tk),
+					  Ptree::List(new Leaf(op), tname,
+						      new Leaf(cp)));
+		return TRUE;
+	    }
+
+	lex->Restore(pos);
+    }
+
+    if(!rUnaryExpr(unary))
+	return FALSE;
+
+    exp = new PtreeTypeidExpr(new Leaf(tk), Ptree::List(unary));
     return TRUE;
 }
 
@@ -3575,6 +3630,7 @@ bool Parser::rPostfixExpr(Ptree*& exp)
   | '(' comma.expression ')'
   | integral.or.class.spec '(' function.arguments ')'
   | openc++.primary.exp
+  | typeid '(' typething ')'
 
   openc++.primary.exp
   : var.name '::' userdef.statement

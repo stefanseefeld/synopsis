@@ -825,6 +825,7 @@ static struct rw_table {
     { "throw",		token(THROW) },
     { "try",		token(TRY) },
     { "typedef",	token(TYPEDEF) },
+    { "typeid",		token(TYPEID) },
     { "typename",	token(CLASS) },	// it's not identical to class, but...
     { "union",		token(UNION) },
     { "unsigned",	token(UNSIGNED) },

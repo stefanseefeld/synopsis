@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.53 2002/04/26 01:21:14 chalky Exp $
+// $Id: swalker.cc,v 1.54 2002/08/23 08:30:08 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.54  2002/08/23 08:30:08  chalky
+// Add ability to parse typeid constructs, for boost.
+//
 // Revision 1.53  2002/04/26 01:21:14  chalky
 // Bugs and cleanups
 //
@@ -597,7 +600,7 @@ Ptree*
 SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 {
   STrace trace("SWalker::TranslateTemplateClass");
-  nodeLOG(def);
+  //nodeLOG(def);
   if (Ptree::Length(node) == 4)
     {
       // if Class definition (not just declaration)
@@ -648,10 +651,14 @@ SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
           //param->Display2(cout);
           if (param->First()->Eq("class") || param->First()->Eq("typename"))
             {
-              // This parameter specifies a type, add as base
-              Types::Base* base = m_builder->create_base(parse_name(param->Second()));
-              m_builder->add(base);
-              templ_params.push_back(base);
+              // Ensure that there is an identifier (it is optional!)
+              if (param->Cdr() && param->Second())
+                {
+                  // This parameter specifies a type, add as base
+                  Types::Base* base = m_builder->create_base(parse_name(param->Second()));
+                  m_builder->add(base);
+                  templ_params.push_back(base);
+                }
             }
           else if (param->First()->Eq("template"))
             {

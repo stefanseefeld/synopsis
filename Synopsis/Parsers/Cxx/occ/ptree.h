@@ -385,6 +385,7 @@ PtreeExprDecl(Cast);
 PtreeExprDecl(Unary);
 PtreeExprDecl(Throw);
 PtreeExprDecl(Sizeof);
+PtreeExprDecl(Typeid);
 PtreeExprDecl(New);
 PtreeExprDecl(Delete);
 PtreeExprDecl(Array);
