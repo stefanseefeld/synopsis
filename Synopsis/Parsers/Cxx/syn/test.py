@@ -292,6 +292,27 @@ void main() {
 }
 """
 
+class TemplateSpecTest (Test):
+    test = """// Test template specializations
+template <typename T>
+class list {
+public:
+    list(T*, int size);
+};
+
+template <void>
+class list {
+public:
+    list(void*, int size) {}
+};
+
+template <int>
+class list {
+public:
+    list(int*, int size) {}
+};
+"""
+
 class StdTest (Test):
     flags = gcc_include + python_include + "-Wp,-f "
     test = """
