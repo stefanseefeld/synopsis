@@ -91,7 +91,7 @@ void Leaf::WritePS(ProgramString& out)
 
 // class LeafName
 
-LeafName::LeafName(Token& t) : Leaf(t) {}
+LeafName::LeafName(Token& t) : CommentedLeaf(t) {}
 
 Ptree* LeafName::Translate(Walker* w)
 {
@@ -106,13 +106,13 @@ void LeafName::Typeof(Walker* w, TypeInfo& t)
 // class DupLeaf
 // This allocates new memory to the given string.
 
-DupLeaf::DupLeaf(char* str, int len) : Leaf(new (GC) char[len], len)
+DupLeaf::DupLeaf(char* str, int len) : CommentedLeaf(new (GC) char[len], len)
 {
     memmove(data.leaf.position, str, len);
 }
 
 DupLeaf::DupLeaf(char* str1, int len1, char* str2, int len2)
-: Leaf(new (GC) char[len1 + len2], len1 + len2)
+: CommentedLeaf(new (GC) char[len1 + len2], len1 + len2)
 {
     memmove(data.leaf.position, str1, len1);
     memmove(&data.leaf.position[len1], str2, len2);

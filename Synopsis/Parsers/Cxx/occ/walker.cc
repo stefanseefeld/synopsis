@@ -1644,6 +1644,59 @@ Ptree* Walker::TranslateArguments(Ptree* arglist)
 	return arglist;
 }
 
+//. Helper function to recursively find the first left-most leaf node
+Ptree* Walker::FindLeftLeaf(Ptree* node, Ptree*& parent)
+{
+    if (!node || node->IsLeaf()) return node;
+    // Non-leaf node. So find first leafy child
+    Ptree* leaf;
+    while (node) {
+	if (node->Car()) {
+	    // There is a child here..
+	    if (node->Car()->IsLeaf()) {
+		// And this child is a leaf! return it and set parent
+		parent = node;
+		return node->Car();
+	    }
+	    if ((leaf = FindLeftLeaf(node->Car(), parent)))
+		// Not a leaf so try recursing on it
+		return leaf;
+	}
+	// No leaves from Car of this node, so try next Cdr
+	node = node->Cdr();
+    }
+    return NULL;
+}
+
+//. Node is never the leaf. Instead we traverse the left side of the tree
+//. until we find a leaf, and change the leaf to be a CommentedLeaf.
+void Walker::SetLeafComments(Ptree* node, Ptree* comments)
+{
+    Ptree* parent, *leaf;
+    CommentedLeaf* cleaf;
+
+    // Find leaf
+    leaf = FindLeftLeaf(node, parent);
+
+    // Sanity
+    if (!leaf) { std::cerr << "Warning: Failed to find leaf when trying to add comments." << endl;
+	parent->Display2(cout);
+	return; }
+
+    if (!(cleaf = dynamic_cast<CommentedLeaf*>(leaf))) {
+	// Must change first child of parent to be a commented leaf
+	Token tk;
+	tk.ptr = leaf->GetPosition();
+	tk.len = leaf->GetLength();
+	cleaf = new (GC) CommentedLeaf(tk, comments);
+	parent->SetCar(cleaf);
+    } else {
+	// Already is a commented leaf, so add the comments to it
+	comments = Ptree::Snoc(cleaf->GetComments(), comments);
+	cleaf->SetComments(comments);
+    }
+}
+
 void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
 {
     if (def == nil || !def->IsA(ntDeclaration))

@@ -34,7 +34,8 @@ public:
 
 class CommentedLeaf : public Leaf {
 public:
-    CommentedLeaf(Token& tk, Ptree* c) : Leaf(tk) { comments = c; }
+    CommentedLeaf(Token& tk, Ptree* c = NULL) : Leaf(tk) { comments = c; }
+    CommentedLeaf(char* p, int l, Ptree* c = NULL) : Leaf(p, l) { comments = c; }
     Ptree* GetComments() { return comments; }
     void SetComments(Ptree* c) { comments = c; }
 
@@ -42,7 +43,7 @@ private:
     Ptree* comments;
 };
 
-class LeafName : public Leaf {
+class LeafName : public CommentedLeaf {
 public:
     LeafName(Token&);
     Ptree* Translate(Walker*);
@@ -52,7 +53,7 @@ public:
 // class DupLeaf is used by Ptree::Make() and QuoteClass (qMake()).
 // The string given to the constructors are duplicated.
 
-class DupLeaf : public Leaf {
+class DupLeaf : public CommentedLeaf {
 public:
     DupLeaf(char*, int);
     DupLeaf(char*, int, char*, int);
@@ -60,10 +61,10 @@ public:
     void Print(std::ostream&, int, int);
 };
 
-class LeafReserved : public Leaf {
+class LeafReserved : public CommentedLeaf {
 public:
-    LeafReserved(Token& t) : Leaf(t) {}
-    LeafReserved(char* str, int len) : Leaf(str, len) {}
+    LeafReserved(Token& t) : CommentedLeaf(t) {}
+    LeafReserved(char* str, int len) : CommentedLeaf(str, len) {}
 };
 
 class LeafThis : public LeafReserved {
