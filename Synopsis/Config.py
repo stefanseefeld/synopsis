@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.17 2003/01/16 12:46:46 chalky Exp $
+#  $Id: Config.py,v 1.18 2003/01/20 07:00:27 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -287,9 +287,8 @@ class Base:
             'ModuleListingJS', 'ModuleIndexer', 'FileTreeJS',
             'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex']
             @attr comment_formatters Lists the formatters to be applied to
-            all comments. The default is ['summary', 'javadoc', 'section'].
-            The summary formatter splits comments into 'summary' and 'detail'
-            sections by looking for the first sentence. Javadoc formats
+            all comments. The default is ['javadoc', 'section'].
+            Javadoc formats
             javadoc-style @tags. Section splits blank lines into paragraph
             breaks. The quotehtml formatter quotes any html characters such as
             angle brackets and ampersands, such as comments that mention C++
@@ -332,7 +331,7 @@ class Base:
                               'InheritanceGraph',
                               'NameIndex',
                               'FramesIndex']
-            comment_formatters = ['summary', 'javadoc', 'section']
+            comment_formatters = ['javadoc', 'section']
             tree_formatter = 'TreeFormatter.TreeFormatter'
             structs_as_classes = 0
             class FileSource:
