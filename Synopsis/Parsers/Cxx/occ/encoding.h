@@ -28,6 +28,7 @@ public:
 			       // MSVC doesn't compile
     Encoding() { len = 0; }
     Encoding(Encoding& e) { Reset(e); }
+    static void do_init_static();
     void Clear() { len = 0; }
     void Reset(Encoding&);
     char* Get();
