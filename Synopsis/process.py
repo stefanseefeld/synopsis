@@ -61,7 +61,7 @@ def process(argv = sys.argv, **commands):
 
    props = {}
    # process all option arguments...
-   for o, a in getoptions(args): props[o] = a
+   for o, a in get_options(args): props[o] = a
 
    # ...and keep remaining (non-option) arguments as 'input'
    if args: props['input'] = args
