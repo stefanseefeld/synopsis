@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.2 2001/11/06 08:47:11 chalky Exp $
+# $Id: Project.py,v 1.3 2001/11/07 05:58:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.3  2001/11/07 05:58:21  chalky
+# Reorganised UI, opening a .syn file now builds a simple project to view it
+#
 # Revision 1.2  2001/11/06 08:47:11  chalky
 # Silly bug, arrows, channels are saved
 #
@@ -157,6 +160,11 @@ class ProjectWriter (Util.PyWriter):
 	self.write_list(('SourceAction', 
 	    action.x(), action.y(), action.name(),
 	    self.long(action.paths()) ))
+    
+    def write_CacherAction(self, action):
+	self.write_list(('CacherAction',
+	    action.x(), action.y(), action.name(),
+	    action.dir, action.file))
 
 class ProjectReader:
     """A class that reads projects"""
@@ -184,6 +192,8 @@ class ProjectReader:
 	for action in project_obj.actions:
 	    t = action[0]
 	    if t == 'SourceAction': self.read_SourceAction(action)
+	    elif t == 'CacherAction': self.read_CacherAction(action)
+	    elif t == 'FormatAction': self.read_FormatAction(action)
 	    else:
 		raise Exception, 'Unknown action type: %s'%action[0]
 	if hasattr(project_obj, 'channels'):
@@ -202,5 +212,12 @@ class ProjectReader:
     def read_SourcePath(self, path):
 	type, dir, glob = path
 	self.action.paths().append(SourcePath(type, dir, glob))
+
+    def read_CacherAction(self, action):
+	type, x, y, name, dir, file = action
+	self.action = CacherAction(x, y, name)
+	self.project.actions().add_action(self.action)
+	self.action.dir = dir
+	self.action.file = file
 		
 

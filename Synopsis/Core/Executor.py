@@ -6,11 +6,10 @@ data needed for the execution of an Action is implemented in the matching
 Executor class.
 """
 
+import string, re, os, stat
+
 from Action import ActionVisitor
-import string
-import re
-import os
-import stat
+import AST
 
 
 class Executor:
@@ -150,10 +149,26 @@ class CacherExecutor (Executor):
 	self.__executor = executor
 	self.__project = executor.project()
 	self.__action = action
+	self.__execs = {}
     def get_output_names(self):
-	pass
+	action = self.__action
+	if action.file:
+	    return action.file
+	names = []
+	# TODO: add logic here to check timestamps, etc
+	for input in action.inputs():
+	    exec_obj = self.__executor.create(input)
+	    self.__execs[input] = exec_obj
+	    names.extend(exec_obj.get_out_names())
+	return map(lambda x: (os.join(action.dir, x[0]), x[1]), names)
     def get_output(self, name):
-	pass
+	action = self.__action
+	if action.file:
+	    # TODO: unpickle file
+	    return AST.load(action.file)
+	else:
+	    # Call inputs
+	    pass
 
 class FormatExecutor (Executor):
     """Formats the input AST given by its single input"""

@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.2 2001/11/06 08:47:11 chalky Exp $
+# $Id: actionvis.py,v 1.3 2001/11/07 05:58:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.3  2001/11/07 05:58:21  chalky
+# Reorganised UI, opening a .syn file now builds a simple project to view it
+#
 # Revision 1.2  2001/11/06 08:47:11  chalky
 # Silly bug, arrows, channels are saved
 #
@@ -370,7 +373,7 @@ class CanvasView (QCanvasView):
 	
 
 class CanvasWindow (QVBox):
-    def __init__(self, parent, main_window, filename = None):
+    def __init__(self, parent, main_window, project):
 	QVBox.__init__(self, parent)
 	self.setCaption("Canvas")
 	self.main_window = main_window
@@ -412,22 +415,23 @@ class CanvasWindow (QVBox):
 	    'action' : self.tool_add
 	}
 	# Make the canvas
-	self.project = Project()
+	self.project = project
 	self.actions = self.project.actions()
 	self.canvas = ActionCanvas(self.actions, self)
 	self.canvas.resize(parent.width(), parent.height())
-	CanvasView(self.canvas, self)
-	# Load the project
-	if filename:
-	    self.project.load(filename)
+	self.canvas_view = CanvasView(self.canvas, self)
 
-	
 	self.show()
 
 	self.connect(parent, SIGNAL('windowActivated(QWidget*)'), self.windowActivated)
 
 	self.setMode('select')
 	self.activate()
+
+    def resizeEvent(self, ev):
+	QVBox.resizeEvent(self, ev)
+	self.canvas.resize(self.canvas_view.width(), self.canvas_view.height())
+
 	
     def setMode(self, mode):
 	self.mode = mode
