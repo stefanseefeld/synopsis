@@ -1,0 +1,46 @@
+# @configure_input@
+
+Name:           Synopsis
+Prefix:		/usr
+Version:        0.4
+Release:        1
+Group:          Development/Tools
+Copyright:      GPL
+URL:            http://Synopsis.sourceforge.net/
+Summary:        Source code documentation tool
+Packager:       Stefan Seefeld (seefeld@sympatico.ca)
+
+Requires:       python >= 1.5
+Source:         %{name}-%{version}.tar.gz
+BuildRoot:      /var/tmp/%{name}-buildroot
+
+%description
+
+synopsis is a modular source code documentation tool with
+support for a variety of programming languages, output formats,
+and comment styles.
+
+%prep
+rm -rf ${RPM_BUILD_ROOT}
+
+%setup -q 
+
+%build
+autoconf
+./configure --prefix=%{prefix} --with-python-prefix=@PYTHON_PREFIX@
+make
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install prefix=$RPM_BUILD_ROOT/%{prefix}
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%doc README
+/bin/synopsis
+@packagedir@/Synopsis/*.py*
+@packagedir@/Synopsis/Parser/*.py*
+@packagedir@/Synopsis/Linker/*.py*
+@packagedir@/Synopsis/Formatter/*.py*
