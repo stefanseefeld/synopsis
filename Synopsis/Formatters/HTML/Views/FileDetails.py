@@ -1,4 +1,4 @@
-# $Id: FileDetails.py,v 1.1 2003/01/16 12:46:46 chalky Exp $
+# $Id: FileDetails.py,v 1.2 2003/01/16 13:31:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileDetails.py,v $
+# Revision 1.2  2003/01/16 13:31:33  chalky
+# Quote the scope name
+#
 # Revision 1.1  2003/01/16 12:46:46  chalky
 # Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
 # (used to be part of FileTree) and FileDetails.
@@ -145,7 +148,7 @@ class FileDetails (Page.Page):
 		if len(curr_scope):
 		    self.write('<h3>%s%s in %s</h3>\n<div>'%(
 			curr_type.capitalize(), plural,
-			Util.ccolonName(curr_scope)))
+			anglebrackets(Util.ccolonName(curr_scope))))
 		else:
 		    self.write('<h3>%s%s</h3>\n<div>'%(curr_type.capitalize(),plural))
 		comma = 0
