@@ -6,7 +6,7 @@ data needed for the execution of an Action is implemented in the matching
 Executor class.
 """
 
-import string, re, os, stat
+import string, re, os, stat, sys
 
 from Action import ActionVisitor
 from Synopsis.Core import Util
@@ -164,18 +164,33 @@ class LinkerExecutor (Executor):
 	self.__executor = executor
 	self.__project = executor.project()
 	self.__action = action
+	self.__inputs = {}
+	self.__names = {}
     def get_output_names(self):
 	"""Links multiple ASTs together, and/or performs other manipulative
 	actions on a single AST."""
-	# TODO: figure out timestamp based on input timestamps
-	return [ ('', 0) ]
+	# Figure out the output name
+	myname = self.__action.name()
+	if not myname: myname = 'LinkerOutput'
+	myname = myname.replace(' ', '_')
+	# Figure out the timestamp
+	ts = 0
+	for input in self.__action.inputs():
+	    exec_obj = self.__executor.create(input)
+	    self.__inputs[input] = exec_obj
+	    names = exec_obj.get_output_names()
+	    self.__names[input] = names
+	    for name, timestamp in names:
+		if timestamp > ts:
+		    ts = timestamp
+	return [ (myname, ts) ]
 
     def get_output(self, name):
 	# Get input AST(s), probably from a cacher, source or other linker
 	ast = AST.AST()
 	for input in self.__action.inputs():
-	    exec_obj = self.__executor.create(input)
-	    names = exec_obj.get_output_names()
+	    exec_obj = self.__inputs[input]
+	    names = self.__names[input]
 	    for name, timestamp in names:
 		input_ast = exec_obj.get_output(name)
 		ast.merge(input_ast)
@@ -205,25 +220,61 @@ class CacherExecutor (Executor):
 	self.__project = executor.project()
 	self.__action = action
 	self.__execs = {}
+	self.__timestamps = {}
+	self.__input_map = {}
+	self.__names = []
     def get_output_names(self):
 	action = self.__action
 	if action.file:
-	    return action.file
-	names = []
+	    # Find file
+	    stats = os.stat(action.file)
+	    return action.file, stats[stat.ST_MTIME]
+	names = self.__names
 	# TODO: add logic here to check timestamps, etc
 	for input in action.inputs():
 	    exec_obj = self.__executor.create(input)
 	    self.__execs[input] = exec_obj
-	    names.extend(exec_obj.get_out_names())
-	return map(lambda x, dir=action.dir: (os.join(dir, x[0]), x[1]), names)
+	    in_names = exec_obj.get_output_names()
+	    names.extend(in_names)
+	    # Remember which input for each name
+	    for name, timestamp in in_names:
+		self.__input_map[name] = exec_obj
+		self.__timestamps[name] = timestamp
+	return names
     def get_output(self, name):
 	action = self.__action
 	if action.file:
-	    # TODO: unpickle file
 	    return AST.load(action.file)
-	else:
-	    # Call inputs
+	# Check timestamp on cache
+	jname = str(name)
+	if jname[0] == '/': jname = jname[1:]
+	cache_filename = os.path.join(action.dir, jname)
+	if cache_filename[-4:] != ".syn":
+	    cache_filename = cache_filename + ".syn"
+	try:
+	    stats = os.stat(cache_filename)
+	    cache_ts = stats[stat.ST_MTIME]
+	    if cache_ts >= self.__timestamps[name]:
+		# Cache is up to date, load from cache
+		return AST.load(cache_filename)
+	except OSError:
+	    # TODO: decide what the error was
 	    pass
+	# Need to regenerate. Find input
+	exec_obj = self.__input_map[name]
+	ast = exec_obj.get_output(name)
+	# Save to cache file
+	try:
+	    # Create dir for file
+	    dir = os.path.dirname(cache_filename)
+	    if not os.path.exists(dir):
+		print "Warning: creating directory",dir
+		os.makedirs(dir)
+	    AST.save(cache_filename, ast)
+	except:
+	    exc, msg = sys.exc_info()[0:2]
+	    print "Warning: %s: %s"%(exc, msg)
+	return ast
 
 class FormatExecutor (Executor):
     """Formats the input AST given by its single input"""
