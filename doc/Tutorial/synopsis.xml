@@ -1148,17 +1148,69 @@ enum Foo {
     </section>
 
     <section>
+      <title>XRefCompiler</title>
+
+      <para>This operation doesn&#39;t act on the AST, but performs a
+      peripheral operation that takes place at the same time as linking. It
+      does use the AST, but only to find a list of source filenames.</para>
+
+      <para>The XRefCompiler should only be used once in a build: it reads
+      (text formatted) xref files from the C++ parser, and writes a single
+      compiled (Pickled) file for the formatter to use. The pickled xref file
+      can also be used for things like CGI scripts. The xref files contain
+      information on all* references to all symbols, including types,
+      functions, function calls and variables.</para>
+
+      <para>* the completeness of the xref info is dependant on the C++
+      parser. At time of writing it does a pretty good job if you&#39;re not
+      using templates, and a mediocre job when it encounters templated types
+      or complexly overloaded functions.</para>
+
+      <para>The format of the output xref file, should you want to use it for
+      a CGI script or some such, is as follows:</para>
+
+      <para> file = (data, index) data = dict&#60;scoped targetname,
+      target_data&#62; index = dict&#60;name, list&#60;scoped
+      targetname&#62;&#62; target_data = (definitions :
+      list&#60;target_info&#62;, func calls : list&#60;target_info&#62;,
+      references : list&#60;target_info&#62;) target_info = (filename, line
+      number : int, scoped context name)</para>
+
+      <para></para>
+
+      <section>
+        <title>XRefCompiler options</title>
+
+        <para>The XRefCompiler has its own config sub-object under the Linker
+        config object. The options are:<variablelist><varlistentry><term>xref_path</term><listitem><para>A
+        string with a &#34;%s&#34; in it, that will be used to find the (text)
+        xref files for each source file in the AST. The %s is replaced with
+        the filename of each source file in turn, and the xref info loaded
+        from the resulting filename. The default is &#34;./%s-xref&#34;. Note
+        that if you specified absolute filenames, the filenames inserted will
+        be absolute - the default will not work in that case.</para></listitem></varlistentry><varlistentry><term>xref_file</term><listitem><para>The
+        output filename. This is a single, pickled, output file. You probably
+        want to set the same filename in the XRefPages HTML options.</para></listitem></varlistentry></variablelist><variablelist><varlistentry><term>no_locals</term><listitem><para>Boolean
+        flag. By default the xref info includes information about local
+        variables defined inside function implementations. Setting this flag
+        to true will cause this info to be discarded from the output file. The
+        AST has no info about local variables in any case, so they would only
+        appear in the XRefPages and the source file pages.</para></listitem></varlistentry></variablelist></para>
+      </section>
+    </section>
+
+    <section>
       <title>Linker options</title>
 
-      <para>Rather than mix the options in with the above sections, they are
+      <para>The options for all the Linker operations except XRefCompiler are
       listed here:<variablelist><varlistentry><term>verbose (boolean)</term><listitem><para>Verbosity
       flag. For config files, this attribute is set by the constructor, but
       only if &#39;verbose&#39; was passed as a config option.</para><para>Can
       be set to true from the command line with &#34;-Wl,-v&#34;</para></listitem></varlistentry><varlistentry><term>operations
       (list of strings)</term><listitem><para>If set, overrides the default
       list of operations to use in the Linker stage. Note that all operations
-      except LanguageMapper do nothing without other options being set, so the
-      default list is:</para><para>[ &#39;Unduplicator&#39;,
+      except LanguageMapper and XRefCompiler do nothing without other options
+      being set, so the default list is:</para><para>[ &#39;Unduplicator&#39;,
       &#39;Stripper&#39;, &#39;NameMapper&#39;, &#39;Comments&#39;,
       &#39;EmptyNS&#39;, &#39;AccessRestrictor&#39; ]</para><para>Note that
       the operations are executed in order.</para></listitem></varlistentry><varlistentry><term>strip
@@ -1227,9 +1279,6 @@ enum Foo {
 
     <section>
       <title>Basics</title>
-
-      <para>Takes AST. Output directory. FileLayouts. Config object. Python,
-      extensible</para>
 
       <para>The basic operation of the HTML formatter is that it takes an AST
       as input, and outputs a whole bunch of .html and .png files to an output
@@ -1401,7 +1450,11 @@ enum Foo {
 
           <para>The ScopePages Page is the most complex to configure, since
           its layout is so flexible. Options are set in the sub-object
-          &#34;ScopePages&#34; inside the HTML config object.</para>
+          &#34;ScopePages&#34; inside the HTML config object:<programlisting># Normal HTML config
+class HTML (Base.Formatter.HTML):
+    # A sub object for ScopePages config
+    class ScopePages:
+        # Following options go here...</programlisting></para>
 
           <para>The following options are available:<variablelist><varlistentry><term>parts</term><listitem><para>A
           list of Part objects to use on each page. Each list item is an
@@ -1452,16 +1505,31 @@ enum Foo {
         can change this text using the &#34;short_title&#34; option of the
         ModuleListing subobject.</para>
 
-        <para>E.g.: To only show packages and change the title:<programlisting># Normal HTML config
+        <para>XXX There are two types of tree you can use: a simple HTML tree,
+        or one that uses DHTML to open/close individual nodes, with little
+        graphics for the buttons.</para>
+
+        <section>
+          <title>Options</title>
+
+          <para>The following options can be set for ModuleListing:<variablelist><varlistentry><term>child_types</term><listitem><para>A
+          list of module types to show in the listing. Each type should be the
+          string from the &#39;type()&#39; method of the Module objects.
+          Examples are &#39;module&#39;, &#39;namespace&#39;, and
+          &#39;package&#39;. By setting this you can restrict what modules are
+          shown, such as only showing Packages in Python. The default is to
+          print all Module nodes in the AST.</para></listitem></varlistentry><varlistentry><term>short_title</term><listitem><para>String
+          that sets the short title of the Page that is displayed in all other
+          Pages as a link to the ModuleListing. The default is
+          &#39;Modules&#39;.</para></listitem></varlistentry></variablelist></para>
+
+          <para>E.g.: To only show packages and change the title:<programlisting># Normal HTML config
 class HTML (Base.Formatter.HTML):
     # A sub object for ModuleListing config
     class ModuleListing:
         child_types = [&#39;package&#39;] # only show packages
         short_title = &#39;Packages&#39;  # set the title to match</programlisting></para>
-
-        <para>XXX There are two types of tree you can use: a simple HTML tree,
-        or one that uses DHTML to open/close individual nodes, with little
-        graphics for the buttons.</para>
+        </section>
       </section>
 
       <section>
@@ -1523,13 +1591,50 @@ class HTML (Base.Formatter.HTML):
         identifiers is dependent on the C++ parser, which is currently pretty
         good except for sometimes getting overloaded functions wrong, and not
         understanding template instantiations too well just yet.</para>
+
+        <para>If the FileSource page is used should be included in the list
+        before RawFilePages, since both compete to provide the source code for
+        each file - and you generally want the syntax highlighted version!</para>
+
+        <section>
+          <title>Options</title>
+
+          <para>The options for FileSource are set in the FileSource config
+          sub-object:<variablelist><varlistentry><term>links_path</term><listitem><para>A
+          string containing a single &#34;%s&#34;. When the &#34;%s&#34; is
+          replaced by the filename it should give the filename of the
+          &#34;links&#34; file generated by the C++ parser for that input
+          file. The default is &#34;./%s&#34; but you could also use
+          &#34;syn/%s&#34; or &#34;syn/%s.syn&#34; to give two examples.</para></listitem></varlistentry><varlistentry><term>toc_files</term><listitem><para>A
+          list of strings, each being a .TOC file to use for linking source
+          code to declarations. The current AST is automatically linked (see
+          toc_from below).</para></listitem></varlistentry><varlistentry><term>scope</term><listitem><para>A
+          string which is prepended to all names before being looked up in the
+          (combined) TOC. For example, the Synopsis RefManual uses
+          &#34;Synopsis::Parser::C++::&#34; since all the C++ types reside in
+          that part of the AST. This is needed since the names used for lookup
+          are generated by the C++ parser, but the types in the TOC (including
+          the current AST) may have been changed by the Linker.</para></listitem></varlistentry><varlistentry><term>toc_from</term><listitem><para>A
+          string which names the Page to get TOC information from. The default
+          is to use the HTML formatter option &#39;default_toc&#39;. By
+          setting this to &#39;ScopePages&#39; or &#39;XRefPages&#39; you can
+          force AST declarations in the source file pages to link to either
+          the ScopePage for that declaration or the XRef page for that
+          declaration.</para></listitem></varlistentry></variablelist></para>
+
+          <para>Note that in previous versions there was also a file_path
+          option, but since version 0.5 it has been superseded by storing the
+          original filenames in the AST along with the &#34;base&#34;-relative
+          filenames.</para>
+        </section>
       </section>
 
       <section>
         <title>RawFilePages</title>
 
         <para>Shows source code for each file in the project as unformatted
-        text.</para>
+        text. See DirBrowse for info on how &#34;files in the project&#34; are
+        found.</para>
       </section>
 
       <section>
@@ -1538,6 +1643,25 @@ class HTML (Base.Formatter.HTML):
         <para>Shows directories in the project, where each file links to the
         source code from FileSource if available, the formatted page from
         RawFilePages if available, or is not a link if neither is available.</para>
+
+        <section>
+          <title>Options</title>
+
+          <para>For both DirBrowse and RawFilePages the following options can
+          be used at the HTML configuration level (i.e.: there is no
+          sub-object, since they are used by more than one Page).<variablelist><varlistentry><term>base_dir</term><listitem><para>String
+          that names the directory which is the &#34;base&#34; of the project,
+          i.e., the one which all project files are named from. If you want to
+          include the name of your project in the directory names, set
+          base_dir to the directory containing your project directory.
+          Relative paths can be used - they must be relative from the current
+          directory when Synopsis is run.</para></listitem></varlistentry><varlistentry><term>start_dir</term><listitem><para>String
+          that names the directory which will be the start of the recursive
+          directory searching. This should be below the base_dir.</para></listitem></varlistentry><varlistentry><term>exclude_globs</term><listitem><para>List
+          of strings. Each string is a &#34;glob&#34; expression (* for
+          wildcard, ? for single-character wildcard). Any file or directory
+          matching the glob expression will not be listed by DirBrowse.</para></listitem></varlistentry></variablelist></para>
+        </section>
       </section>
 
       <section>
@@ -1545,10 +1669,47 @@ class HTML (Base.Formatter.HTML):
 
         <para>Creates pages with cross-reference information for each
         declaration. Each declaration will show its parent scope, child
-        declarations if it&#39;s a class or module, references and places it
-        was called from. You can navigate around the XRef documentation but
-        there are no comments shown so it is more useful as an aside for
-        either the source code or regular ScopePages documentation.</para>
+        declarations (if it&#39;s a class or module), references and places it
+        was called from. You can navigate around the XRef documentation, but
+        there are no comments shown so it is more useful as a navigation aide
+        for either the source code or regular ScopePages documentation.</para>
+
+        <para>The XRefPages module loads compiled XRef information from a
+        single file given in the xref_file option. The XRef information is
+        originally generated in raw (text) format by the C++ parser. You
+        should use the XRefCompiler Linker operation to compile the xref info.</para>
+
+        <section>
+          <title>Options</title>
+
+          <para>The following options are available. They must be set in the
+          XRefPages sub-object:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>xref_file</term>
+
+              <listitem>
+                <para>The filename of the compiled xref info. This option
+                should be the same as the xref_file option of the
+                XRefCompiler, unless you are running Synopsis from different
+                directories. Synopsis cannot load the text based output from
+                the C++ parser here - you must specify a compiled xref file.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>link_to_scopepages</term>
+
+              <listitem>
+                <para>Boolean flag, which if set causes extra links to be
+                inserted to the ScopePages entry for each declaration in the
+                AST. Note that some declarations might not be in the AST,
+                f.ex. if they are local variables.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </section>
       </section>
 
       <section>
@@ -1558,7 +1719,27 @@ class HTML (Base.Formatter.HTML):
         images using dot (graphviz) to create the graphs. Classes that have no
         subclasses or superclasses are not shown for brevity.</para>
 
-        <para>XX options</para>
+        <section>
+          <title>Options</title>
+
+          <para>The follwing options are available. They must be set in the
+          InheritanceGraph sub-object:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>direction</term>
+
+              <listitem>
+                <para>A string direction to use for laying out the graph
+                nodes. The default is &#39;vertical&#39;, but setting this to
+                &#39;horizontal&#39; causes the hierarchies to be laid out
+                left-to-right. This can be useful if you have a relatively
+                &#34;flat&#34; class hierarchy that otherwise is much wider
+                than most browser windows.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </section>
       </section>
 
       <section>
@@ -1582,6 +1763,315 @@ class HTML (Base.Formatter.HTML):
       <title>Options</title>
 
       <para>Other options than those mentioned above for specific pages are:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>verbose</term>
+
+          <listitem>
+            <para>Boolean flag. If set to true then extra info is printed to
+            the console at various stages. For example, timing information
+            will be shown for each Page, allowing you to see which Pages are
+            taking the longest.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>pages</term>
+
+          <listitem>
+            <para>A list of import specifications for the Pages to use. The
+            default attribute is &#34;htmlPageClass&#34; and the default
+            package is &#34;Synopsis.Formatter.HTML.&#34;. The default value
+            of &#34;pages&#34; is: [ &#39;ScopePages&#39;,
+            &#39;ModuleListing&#39;, &#39;ModuleIndexer&#39;,
+            &#39;FileListing&#39;, &#39;FileIndexer&#39;,
+            &#39;FileDetails&#39;, &#39;InheritanceTree&#39;,
+            &#39;InheritanceGraph&#39;, &#39;NameIndex&#39;,
+            &#39;FramesIndex&#39; ]</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>sorter</term>
+
+          <listitem>
+            <para>An import specification for a Sorter object to use for
+            sorting declarations in many places (eg: ScopePages). The default
+            is to use the builtin class Synopsis.Formatter.HTML.ScopeSorter,
+            else you can write your own with the same interface.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>datadir</term>
+
+          <listitem>
+            <para>String that sets the data directory containing Synopsis&#39;
+            images. This is usually set as a default option in Config.py by
+            configure, so that a Synopsis installed in /usr will default to
+            /usr/share/synopsis.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>stylesheet</term>
+
+          <listitem>
+            <para>String that sets the destination filename name of the
+            stylesheet file used in all generated pages. Synopsis output
+            relies heavily on CSS for formatting. The default is
+            &#34;style.css&#34;.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>stylesheet_file</term>
+
+          <listitem>
+            <para>String that sets the source filename of the file to copy the
+            stylesheet from. The default is
+            &#39;$prefix/share/synopsis/html.css&#39;.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>comment_formatters</term>
+
+          <listitem>
+            <para>This option sets a list of comment formatters to use for
+            formatting AST comments. The comments should have already been
+            processed in the Linker stage to extract @tags and create summarys
+            - the formatters are responsible for converting the processed info
+            into HTML output. The formatters are applied in turn to the
+            comment text, in the order they are listed. Available formatters
+            are:</para>
+
+            <variablelist>
+              <varlistentry>
+                <term>none</term>
+
+                <listitem>
+                  <para>Dummy formatter, does nothing.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>ssd</term>
+
+                <listitem>
+                  <para>Dummy formatter, does nothing. The old &#34;ssd&#34;
+                  formatter is now replaced by the &#34;ssd&#34; comment
+                  processor in the Linker stage.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>java</term>
+
+                <listitem>
+                  <para>Dummy formatter, does nothing. The old &#34;java&#34;
+                  formatter is now replaced by the &#34;java&#34; comment
+                  processor in the Linker stage.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>quotehtml</term>
+
+                <listitem>
+                  <para>Quotes any HTML that may be in the comments. Use this
+                  if your comments include un-quoted characters like
+                  angle-brackets. Using this formatter will prevent you from
+                  using any HTML tags in your comments.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>summary</term>
+
+                <listitem>
+                  <para>Dummy formatter, does nothing. The old
+                  &#34;summary&#34; formatter is now replaced by the
+                  &#34;summary&#34; comment processor in the Linker stage.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>javadoc</term>
+
+                <listitem>
+                  <para>Formats any attributes that were processed in the
+                  Linker stage in a JavaDoc style. Currently recognised tags
+                  are: @return, @param, @see, and @attr.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>qtdoc</term>
+
+                <listitem>
+                  <para>Attempts to recognise QtDoc style tags (\sa, \param,
+                  \return). Currently broken.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>section</term>
+
+                <listitem>
+                  <para>Looks for any empty lines in the comments and replaces
+                  them with paragraph breaks. In effect, replaces any two
+                  consecutive newlines with a close paragraph followed by an
+                  open paragraph. The whole comment is also prefixed with an
+                  open paragraph and suffixed with a close paragraph.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+
+            <para>The default is [&#39;javadoc&#39;, &#39;section&#39;]</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>toc_out</term>
+
+          <listitem>
+            <para>Specifies a filename to write a TOC (Table Of Contents) file
+            to. The TOC is an index listing the (relative) URL for each
+            declaration in the AST. You can use the TOC to, for example, link
+            usage of a library to the documentation of that library.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>toc_in</term>
+
+          <listitem>
+            <para>List of strings, specifies a list of filenames to read TOC
+            files from. You may optionally specify a prefix for each TOC file,
+            by adding a &#39;|&#39; (pipe) character followed by the prefix to
+            the end of the filename. For example, if you are specifying a TOC
+            file for the &#34;Foo&#34; project, which has documentation
+            available online at &#34;http://foo.org/doc/&#34;, you can
+            specify:</para>
+
+            <programlisting>toc_in = [ &#39;Foo.toc|http://foo.org/doc/&#39; ]</programlisting>
+
+            <para>This will cause all URLs in the Foo.toc file to be prefixed
+            with the given prefix.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>default_toc</term>
+
+          <listitem>
+            <para>String which specifies the default page to generate TOC info
+            from. The default is &#39;ScopePages&#39;. The page specified by
+            this option will be asked to generate the TOC for the whole AST.
+            The TOC is used internally to generate the default links for all
+            AST declarations - on source pages, scope pages, XRef pages,
+            module and file listings, etc. You can set this to
+            &#39;XRefPages&#39; to default to showing XRef info for the
+            declaration. No other Page can be used. See the &#39;toc_from&#39;
+            option of the FileSource Page for a similar option.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>tree_formatter</term>
+
+          <listitem>
+            <para>Import specification which specifies the object to use for
+            formatting trees in the ModuleListing and FileListing pages. The
+            base package for the import is &#39;Synopsis.Formatter.HTML.&#39;.
+            The default is &#39;TreeFormatter.TreeFormatter&#39;.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>file_layout</term>
+
+          <listitem>
+            <para>Import specification which specifies the FileLayout object
+            to use. The default is
+            &#39;Synopsis.Formatter.HTML.FileLayout&#39;, but you can also
+            specify &#39;Synopsis.Formatter.HTML.NestedFileLayout&#39; to put
+            the output in different directories depending on the Page and
+            Namespace/Module.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>output_dir</term>
+
+          <listitem>
+            <para>String which specifies the directory to output the HTML
+            files into. The directory does not need to exist beforehand.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>structs_as_classes</term>
+
+          <listitem>
+            <para>A boolean flag, which if true causes C++ structs to be
+            listed in the same sections as the classes. Use this if your
+            project uses structs similarly to classes and you want them to be
+            displayed together.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>page_format</term>
+
+          <listitem>
+            <para>An import specification which specifies the format to use
+            for generating all output pages. The default package is
+            &#39;Synopsis.Formatter.HTML.Page.&#39;. The default is
+            &#39;PageFormat&#39;, but you may also specify
+            &#39;TemplatePageFormat&#39; to use a template file for each
+            output file.</para>
+
+            <para>To use the TemplatePageFormat, create a template HTML file
+            with the formatting you require. Ensure that the string
+            &#34;@TITLE@&#34; is in the &#60;title&#62; element, and the
+            string &#34;@CONTENT@&#34; is where you want to the Synopsis
+            output to go. Then add a TemplatePageFormat config sub-object to
+            the HTML config and set these options:</para>
+
+            <variablelist>
+              <varlistentry>
+                <term>file</term>
+
+                <listitem>
+                  <para>Specifies the template filename to use</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>copy_files</term>
+
+                <listitem>
+                  <para>Specifies a list of files that will be copied to the
+                  output directory. Use this for things like images. Each
+                  entry in the list is a 2-tuple giving the original filename
+                  and final filename.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+
+            <para>An example taken from the C++ demo is:</para>
+
+            <programlisting>    class HTML (Config.Base.HTML):
+        class TemplatePageFormat:
+            file = &#39;template-sxr.html&#39;
+            copy_files = [(&#39;gapbuffer-logo.png&#39;, &#39;logo.png&#39;)]
+ </programlisting>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
   </chapter>
 
