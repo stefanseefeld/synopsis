@@ -42,10 +42,26 @@ probably need to specify --disable-gc to configure.
 
 ** Installing
 
-simply call 'make install' to install the synopsis tool together with the 
-associated python package 'Synopsis'.
+Ensure you have write permissions to the install prefix directories (eg: log
+in as root in Linux/UNIX), then simply call 'make install' to install the
+synopsis executable together with the associated python package 'Synopsis'.
 
-** Demos
+** Using Synopsis
+
+Synopsis is a fairly complicated tool. The two best ways to get started are to
+try out the demos, and to read the documentation.
+
+ * Documentation
+
+The documentation takes the form of a DocBook manual, which can be converted
+into PDF or HTML. If you downloaded a release, these should be in docs/Manual,
+else you can generate them yourself or download them from the Synopsis website
+(http://synopsis.sf.net).
+
+Reference documentation generated from the Synopsis source code is available
+in docs/RefManual, and also at the website.
+
+ * Demos
 
 There are demos for IDL, C++, and Python. Step into the demo subdirectory and run
 make to build them.
@@ -59,14 +75,20 @@ For example, if you have unpacked the source in: /mnt/src/Synopsis-0.5
 then set your PYTHONPATH to include: /mnt/src/Synopsis-0.5
 Eg: export PYTHONPATH=/mnt/src/Synopsis-0.5:$PYTHONPATH
 
-Parsers: IDL, C++, Python
-Formatters:
+ * Basic Usage
+
+(More detailed instructions are in the DocBook manual.)
+
+There are three source code parsers: IDL, C++, Python
+
+The available output formatters are:
  HTML - takes a directory name for output (-o Directory)
         Creates many pages in that directory
-	Copies specified stylesheet to new directory
  HTML_Simple - one-page HTML output
  Dia - generates a Dia file with classes and generalizations
  Dot - generates various graphs, such as Inheritance
+ DocBook - generates a docbook file
+ BoostBook - generates a boostbook file (not complete)
  ASCII - Tries to output the AST in a way that is syntactically valid as
          input.
  DUMP - Dumps the AST in a verbose form. This is useful only if you are
@@ -85,18 +107,11 @@ Note that telling the Parser to only keep main-file declarations (-m) results
 in much smaller files and much faster linking, as the standard headers are so
 large that they can cause huge time and memory requirements.
 
-Alternatively, you may use the new config file - for more info check out the
+Alternatively, you may use a config file - for more info check out the
 "Config" section of the RefManual. Doing so can change the above example to:
 
  for each file: synopsis -c config.py -Wc,parser=C++ -o syn/$file.syn $file.hh
        finally: synopsis -c config.py -Wc,formatter=HTML syn/*.syn
-
-
-** Known Bugs
-
-There are a few known bugs that are not yet fixed:
-o. The HTML formatter doesn't sort the sections in class/module pages very
-   well - currently it is alphabetical.
 
 
 ** Future features
@@ -107,13 +122,6 @@ o. Precompiled headers. This would speed up the parsing and linking speed for
 o. Further linker features and optimisations
 o. Further output options, such as different formats (ps, pdf, latex, sgml,
    man, info).
-o. Further output options, such as pluggable file layouts, only display public
-   interfaces etc. These are mostly refactored into separate classes, there
-   are just no alternatives written yet :)
-o. Using the dictionary to parse and cross-reference all files in a project,
-   similar to Mozilla's LXR but properly typed (LXR doesn't understand C/C++
-   expressions properly, it just looks for names). The C++ parser already does
-   a lot of what would be needed in terms of type lookup.
 
 For more information on this TODO list, see the Task Manager at Synopsis'
 Sourceforge home.
