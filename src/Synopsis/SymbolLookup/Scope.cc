@@ -18,13 +18,17 @@ Scope::~Scope()
 {
 }
 
-void Scope::declare(const Encoding &name, const Symbol *s)
+void Scope::declare(Encoding const &name, Symbol const *symbol)
 {
   Trace trace("Scope::declare");
   trace << name;
-  // it is an error to declare a symbol with conflicting
-  // types unless all are functions / function templates
-  if (s->type().is_function())
+  // Conditions under which a symbol can be bound to multiple
+  // objects:
+  // * overloaded functions
+  // * typedefs redefining an already declared or defined type
+  // * defining a type that had been forward declared and typedefed before
+  //
+  if (symbol->type().is_function())
   {
     SymbolTable::const_iterator l = my_symbols.lower_bound(name);
     SymbolTable::const_iterator u = my_symbols.upper_bound(name);
@@ -34,11 +38,22 @@ void Scope::declare(const Encoding &name, const Symbol *s)
     // 	throw MultiplyDefined(name);
   }
   else if (my_symbols.count(name))
-    throw MultiplyDefined(name,
-			  s->ptree(),
-			  my_symbols.lower_bound(name)->second->ptree());
+  {
+    // This is allowed only if one of the symbols is a typedef and the other
+    // a typename.
+    SymbolTable::const_iterator s = my_symbols.find(name);
+    if (!(dynamic_cast<TypeName const *>(s->second) &&
+	  dynamic_cast<TypedefName const *>(symbol)) &&
+	!(dynamic_cast<TypedefName const *>(s->second) && 
+	  dynamic_cast<TypeName const *>(symbol)))
+    {
+      throw MultiplyDefined(name,
+			    symbol->ptree(),
+			    my_symbols.lower_bound(name)->second->ptree());
+    }
+  }
 
-  my_symbols.insert(std::make_pair(name, s));
+  my_symbols.insert(std::make_pair(name, symbol));
 }
 
 void Scope::use(PTree::Using const *udecl)
@@ -66,7 +81,7 @@ Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) cons
   return find_scope(decl);
 }
 
-SymbolSet Scope::find(const Encoding &name, bool scope) const throw()
+SymbolSet Scope::find(Encoding const &name, bool scope) const throw()
 {
   Trace trace("Scope::find");
   trace << name;
@@ -166,23 +181,23 @@ void Scope::dump(std::ostream &os, size_t in) const
 {
   for (SymbolTable::const_iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
   {
-    if (const VariableName *variable = dynamic_cast<const VariableName *>(i->second))
+    if (VariableName const *variable = dynamic_cast<VariableName const *>(i->second))
       indent(os, in) << "Variable: " << i->first << ' ' << variable->type() << std::endl;
-    else if (const ConstName *const_ = dynamic_cast<const ConstName *>(i->second))
+    else if (ConstName const *const_ = dynamic_cast<ConstName const *>(i->second))
     {
       indent(os, in) << "Const:    " << i->first << ' ' << const_->type();
       if (const_->defined()) os << " (" << const_->value() << ')';
       os << std::endl;
     }
-    else if (const NamespaceName *module = dynamic_cast<const NamespaceName *>(i->second))
+    else if (NamespaceName const *module = dynamic_cast<NamespaceName const *>(i->second))
       indent(os, in) << "Namespace: " << i->first << ' ' << module->type() << std::endl;
-    else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
+    else if (TypeName const *type = dynamic_cast<TypeName const *>(i->second))
       indent(os, in) << "Type: " << i->first << ' ' << type->type() << std::endl;
-    else if (const ClassTemplateName *type = dynamic_cast<const ClassTemplateName *>(i->second))
+    else if (ClassTemplateName const *type = dynamic_cast<ClassTemplateName const *>(i->second))
       indent(os, in) << "Class template: " << i->first << ' ' << type->type() << std::endl;
-    else if (const FunctionName *type = dynamic_cast<const FunctionName *>(i->second))
+    else if (FunctionName const *type = dynamic_cast<FunctionName const *>(i->second))
       indent(os, in) << "Function: " << i->first << ' ' << type->type() << std::endl;
-    else if (const FunctionTemplateName *type = dynamic_cast<const FunctionTemplateName *>(i->second))
+    else if (FunctionTemplateName const *type = dynamic_cast<FunctionTemplateName const *>(i->second))
       indent(os, in) << "Function template: " << i->first << ' ' << type->type() << std::endl;
     else // shouldn't get here
       indent(os, in) << "Symbol: " << i->first << ' ' << i->second->type() << std::endl;

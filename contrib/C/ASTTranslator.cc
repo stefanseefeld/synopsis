@@ -9,16 +9,37 @@
 #include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
+#include <Synopsis/Path.hh>
 
 using namespace Synopsis;
 
-ASTTranslator::ASTTranslator(Synopsis::AST::AST ast, bool v, bool d)
+ASTTranslator::ASTTranslator(std::string const &filename,
+			     std::string const &base_path, bool main_file_only,
+			     Synopsis::AST::AST ast, bool v, bool d)
   : my_ast(ast),
     my_lineno(0),
+    my_raw_filename(filename),
+    my_base_path(base_path),
+    my_main_file_only(main_file_only),
     my_types(my_ast.types(), v, d),
     my_verbose(v), my_debug(d) 
 {
   Trace trace("ASTTranslator::ASTTranslator");  
+
+  // determine canonical filenames
+  Path path = Path(my_raw_filename).abs();
+  std::string long_filename = path.str();
+  path.strip(my_base_path);
+  std::string short_filename = path.str();
+
+  AST::SourceFile file = my_ast.files().get(short_filename);
+  if (file)
+    my_file = file;
+  else
+  {
+    my_file = my_ast_kit.create_source_file(short_filename, long_filename, "C");
+    my_ast.files().set(short_filename, my_file);
+  }
 }
 
 void ASTTranslator::translate(PTree::Node *ptree, Buffer &buffer)
@@ -37,10 +58,17 @@ void ASTTranslator::visit(PTree::List *node)
 void ASTTranslator::visit(PTree::Declarator *declarator)
 {
   Trace trace("ASTTranslator::visit(PTree::Declarator *)");
+  trace << declarator;
+  if (!PTree::first(declarator)) return; // empty
+
+  bool visible = update_position(declarator);
   PTree::Encoding name = declarator->encoded_name();
   PTree::Encoding type = declarator->encoded_type();
   if (type.is_function())
   {
+    trace << "declare function " << name << " (" << type << ')' 
+	  << my_raw_filename << ':' << my_lineno;
+
     AST::TypeList parameter_types;
     AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
     AST::Function::Parameters parameters;
@@ -60,7 +88,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 							qname.get(0));
     function.parameters().extend(parameters);
     add_comments(function, declarator->get_comments());
-    my_ast.declarations().append(function);
+    if (visible) declare(function);
   }
   else
   {
@@ -74,20 +102,22 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     else
     {
       if (vtype == "function")
-	vtype = "local";
-      vtype += " variable";
+	vtype = "local ";
+      vtype += "variable";
     }
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno, "C",
 							vtype, qname, t, false);
     add_comments(variable, declarator->get_comments());
-    my_ast.declarations().append(variable);
+    if (visible) declare(variable);
   }
 }
 
 void ASTTranslator::visit(PTree::ClassSpec *class_spec)
 {
   Trace trace("ASTTranslator::visit(PTree::ClassSpec *)");
-  update_position(class_spec);
+  
+  bool visible = update_position(class_spec);
+
   size_t size = PTree::length(class_spec);
   if (size == 2) // forward declaration
   {
@@ -95,39 +125,69 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
 
     std::string type = PTree::reify(PTree::first(class_spec));
     std::string name = PTree::reify(PTree::second(class_spec));
+    AST::ScopedName qname(name);
     AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno, "C",
-						     type, AST::ScopedName(name));
+						     type, qname);
     add_comments(forward, class_spec->get_comments());
-    my_ast.declarations().append(forward);
+    if (visible) declare(forward);
+    my_types.declare(qname, forward);
     return;
-  }  
+  }
+
+  std::string type = PTree::reify(PTree::first(class_spec));
+  std::string name;
+  PTree::ClassBody *body = 0;
+
   if (size == 4) // struct definition
   {
     // [ class|struct <name> <inheritance> [{ body }] ]
 
-    std::string type = PTree::reify(PTree::first(class_spec));
-    std::string name = PTree::reify(PTree::second(class_spec));
-    PTree::nth(class_spec, 3)->accept(this);
+    name = PTree::reify(PTree::second(class_spec));
+    body = static_cast<PTree::ClassBody *>(PTree::nth(class_spec, 3));
   }
   else if (size == 3) // anonymous struct definition
   {
     // [ struct [nil nil] [{ ... }] ]
 
+    PTree::Encoding ename = class_spec->encoded_name();
+    size_t length = (ename.front() - 0x80);
+    name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
+    body = static_cast<PTree::ClassBody *>(PTree::nth(class_spec, 2));
   }
+
+  AST::ScopedName qname(name);
+  AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, "C",
+					      type, qname);
+  add_comments(class_, class_spec->get_comments());
+  if (visible) declare(class_);
+  my_types.declare(qname, class_);
+  my_scope.push(class_);
+  body->accept(this);
+  my_scope.pop();
 }
 
 void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
 {
   Trace trace("ASTTranslator::visit(PTree::EnumSpec *)");
-  if (!PTree::second(enum_spec)) return; /* anonymous enum */
-  std::string name = PTree::reify(PTree::second(enum_spec));
-  update_position(enum_spec);
+
+  bool visible = update_position(enum_spec);
+  std::string name;
+  
+  if (!PTree::second(enum_spec)) //anonymous
+  {
+    PTree::Encoding ename = enum_spec->encoded_name();
+    size_t length = (ename.front() - 0x80);
+    name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
+  }
+  else
+    name = PTree::reify(PTree::second(enum_spec));
 
   AST::Enumerators enumerators;
   PTree::Node *enode = PTree::second(PTree::third(enum_spec));
   AST::Enumerator enumerator;
   while (enode)
   {
+    // quite a costly way to update the line number...
     update_position(enode);
     PTree::Node *penumor = PTree::first(enode);
     if (penumor->is_atom())
@@ -166,12 +226,19 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
 					   name, enumerators);
   add_comments(enum_, enum_spec);
 
-  my_ast.declarations().append(enum_);
+  if (visible) declare(enum_);
+  my_types.declare(AST::ScopedName(name), enum_);
 }
 
 void ASTTranslator::visit(PTree::Typedef *typed)
 {
   Trace trace("ASTTranslator::visit(PTree::Typedef *)");
+
+  bool visible = update_position(typed);
+
+  // the second child node may be an inlined class spec, i.e.
+  // typedef struct {...} type;
+  PTree::second(typed)->accept(this);
 
   for (PTree::Node *d = PTree::third(typed); d; d = PTree::tail(d, 2))
   {
@@ -181,7 +248,8 @@ void ASTTranslator::visit(PTree::Typedef *typed)
     PTree::Declarator *declarator = static_cast<PTree::Declarator *>(d->car());
     PTree::Encoding name = declarator->encoded_name();
     PTree::Encoding type = declarator->encoded_type();
-    trace << "declare type " << name << " (" << type << ')';
+    trace << "declare type " << name << " (" << type << ')' 
+	  << my_raw_filename << ':' << my_lineno;
     assert(name.is_simple_name());
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
@@ -190,10 +258,9 @@ void ASTTranslator::visit(PTree::Typedef *typed)
 							     "typedef",
 							     qname,
 							     alias, false);
-    my_types.declare(qname, declaration);
-    
     add_comments(declaration, declarator->get_comments());
-    my_ast.declarations().append(declaration);
+    if (visible) declare(declaration);
+    my_types.declare(qname, declaration);
   }
 }
 
@@ -358,15 +425,39 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
   declarator.comments().extend(comments);
 }
 
-void ASTTranslator::update_position(PTree::Node *node)
+bool ASTTranslator::update_position(PTree::Node *node)
 {
+  Trace trace("ASTTranslator::update_position");
+
   std::string filename;
   my_lineno = my_buffer->origin(node->begin(), filename);
-  // TODO
 
-//   if (filename != my_file.name())
-//   {
-//     my_file = my_filter->get_sourcefile(my_filename.c_str());
-//     my_builder->set_file(my_file);
-//   }  
+  if (filename != my_raw_filename)
+  {
+    my_raw_filename = filename;
+    // determine canonical filenames
+    Path path = Path(filename).abs();
+    std::string long_filename = path.str();
+    path.strip(my_base_path);
+    std::string short_filename = path.str();
+
+    AST::SourceFile file = my_ast.files().get(short_filename);
+    if (file)
+      my_file = file;
+    else
+    {
+      my_file = my_ast_kit.create_source_file(short_filename, long_filename, "C");
+      my_ast.files().set(short_filename, my_file);
+    }
+  }  
+}
+
+// FIXME: AST should derive from Scope (a global scope IsA scope...)
+//        This method exists because currently it is not.
+void ASTTranslator::declare(AST::Declaration declaration)
+{
+  if (my_scope.size())
+    my_scope.top().declarations().append(declaration);
+  else
+    my_ast.declarations().append(declaration);    
 }
