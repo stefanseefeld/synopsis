@@ -134,24 +134,14 @@ void Parser::ShowMessageHead(char* pos)
 
 bool Parser::rProgram(Ptree*& def)
 {
-  std::cout << "I'm here 1" << std::endl;
     while(lex->LookAhead(0) != '\0')
-	if(rDefinition(def))
-	  {
-	    std::cout << "I'm here 2" << std::endl;
-	    return TRUE;
-	  }
+	if(rDefinition(def)) return TRUE;
 	else{
 	    Token tk;
-	    if(!SyntaxError())
-	      {
-		std::cout << "I'm here 3" << std::endl;
-		return FALSE;		// too many errors
-	      }
+	    if(!SyntaxError()) return FALSE;		// too many errors
 	    SkipTo(';');
 	    lex->GetToken(tk);	// ignore ';'
 	}
-    std::cout << "I'm here 4" << std::endl;
     return FALSE;
 }
 
