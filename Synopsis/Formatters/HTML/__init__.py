@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.7 2003/11/11 04:53:41 stefan Exp $
+# $Id: __init__.py,v 1.8 2003/11/16 22:23:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -19,6 +19,3 @@ to use, etc.
 """
 
 from Formatter import Formatter
-
-import core
-from core import format, usage

@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.15 2003/11/16 21:09:45 stefan Exp $
+# $Id: NameIndex.py,v 1.16 2003/11/16 22:23:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,7 +9,6 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type
-from Synopsis.Formatters.HTML import core, Tags
 from Synopsis.Formatters.HTML.Page import Page
 from Synopsis.Formatters.HTML.Tags import *
 
