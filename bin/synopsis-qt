@@ -98,6 +98,8 @@ class Action:
 	self.__x = x
 	self.__y = y
 	self.__name = name
+	self.__inputs = []
+	self.__outputs = []
     
     def x(self): return self.__x
     def y(self): return self.__y
@@ -106,6 +108,52 @@ class Action:
     def move_by(self, dx, dy): self.__x = self.__x+dx; self.__y = self.__y+dy
     def name(self): return self.__name
     def set_name(self, name): self.__name = name
+    def inputs(self): return self.__inputs
+    def outputs(self): return self.__outputs
+    def accept(self, visitor): visitor.visitAction(self)
+
+class ActionVisitor:
+    def visitAction(self, action): pass
+    def visitSource(self, action): pass
+    def visitParser(self, action): pass
+    def visitLinker(self, action): pass
+    def visitCacher(self, action): pass
+    def visitFormat(self, action): pass
+
+class SourceAction (Action):
+    """A Synopsis Action that loads source files"""
+    def __init__(self, x, y=0, name=""):
+	if isinstance(x, Action): Action.__init__(self, x.x(), x.y(), x.name())
+	else: Action.__init__(self, x, y, name)
+    def accept(self, visitor): visitor.visitSource(self)
+
+class ParserAction (Action):
+    """A Synopsis Action that parses source files"""
+    def __init__(self, x, y=0, name=""):
+	if isinstance(x, Action): Action.__init__(self, x.x(), x.y(), x.name())
+	else: Action.__init__(self, x, y, name)
+    def accept(self, visitor): visitor.visitParser(self)
+
+class LinkerAction (Action):
+    """A Synopsis Action that links ASTs"""
+    def __init__(self, x, y=0, name=""):
+	if isinstance(x, Action): Action.__init__(self, x.x(), x.y(), x.name())
+	else: Action.__init__(self, x, y, name)
+    def accept(self, visitor): visitor.visitLinker(self)
+
+class CacherAction (Action):
+    """A Synopsis Action that caches ASTs to disk"""
+    def __init__(self, x, y=0, name=""):
+	if isinstance(x, Action): Action.__init__(self, x.x(), x.y(), x.name())
+	else: Action.__init__(self, x, y, name)
+    def accept(self, visitor): visitor.visitCacher(self)
+
+class FormatAction (Action):
+    """A Synopsis Action that formats ASTs"""
+    def __init__(self, x, y=0, name=""):
+	if isinstance(x, Action): Action.__init__(self, x.x(), x.y(), x.name())
+	else: Action.__init__(self, x, y, name)
+    def accept(self, visitor): visitor.visitFormat(self)
 
 class ActionManager:
     """Manages the actions in a project"""
@@ -119,7 +167,8 @@ class ActionManager:
 	self.__listeners.append(l)
     def fire(self, signal, *args):
 	for l in self.__listeners:
-	    apply(getattr(l, signal), args)
+	    if hasattr(l, signal):
+		apply(getattr(l, signal), args)
     def add_action(self, action):
 	self.__actions.append(action)
 	self.fire('action_added', action)
@@ -129,6 +178,13 @@ class ActionManager:
     def move_action_by(self, action, dx, dy):
 	action.move_by(dx, dy)
 	self.fire('action_moved', action)
+    def remove_action(self, action):
+	self.__actions.remove(action)
+	self.fire('action_removed', action)
+    def add_channel(self, source, dest):
+	source.outputs().append(dest)
+	dest.inputs().append(source)
+	self.fire('channel_added', source, dest)
 
 class CanvasStrategy:
     "An interface for a strategy to handle mouse events"
@@ -140,6 +196,11 @@ class CanvasStrategy:
     def press(self, event): pass
     def release(self, event): pass
     def move(self, event): pass
+    def key(self, event):
+	if event.key() == Qt.Key_Escape:
+	    self.view.window.setMode('select')
+	else:
+	    event.ignore()
 
 class SelectionStrategy (CanvasStrategy):
     def __init__(self, canvas, view):
@@ -147,6 +208,9 @@ class SelectionStrategy (CanvasStrategy):
 	self.__drag_action = None
 	self.__icon = None
 	self.__last = None
+	self.__normal_cursor = QCursor(ArrowCursor)
+	self.__moving_cursor = QCursor(BlankCursor)
+	self.__hint_cursor = QCursor(SizeAllCursor)
 
     def reset(self):
 	self.__drag_item = None
@@ -156,42 +220,259 @@ class SelectionStrategy (CanvasStrategy):
 	if action:
 	    self.__drag_action = action
 	    self.__last = QPoint(event.pos())
+	    self.view.setCursor(self.__moving_cursor)
 	    
     def release(self, event):
 	if self.__drag_action:
 	    self.__drag_action = None
+	    self.view.setCursor(self.__hint_cursor)
 	    
     def move(self, event):
-	if not self.__drag_action: return
-	dx = event.x() - self.__last.x()
-	dy = event.y() - self.__last.y()
-	self.view.actions.move_action_by(self.__drag_action, dx, dy)
-	self.__last = QPoint(event.pos())
+	if self.__drag_action:
+	    # Move the dragging action
+	    dx = event.x() - self.__last.x()
+	    dy = event.y() - self.__last.y()
+	    self.view.actions.move_action_by(self.__drag_action, dx, dy)
+	    self.__last = QPoint(event.pos())
+	else:
+	    if self.canvas.get_action_at(event.x(), event.y()):
+		self.view.setCursor(self.__hint_cursor)
+	    else:
+		self.view.setCursor(self.__normal_cursor)
+    
+    def key(self, event):
+	"Override default set-mode-to-select behaviour"
+	event.ignore()
 
 class ConnectStrategy (CanvasStrategy):
-    def set(self): print "hello"
-    def reset(self): print "bye"
+    def __init__(self, canvas, view):
+	CanvasStrategy.__init__(self, canvas, view)
+	self.__normal_cursor = QCursor(ArrowCursor)
+	self.__hint_cursor = QCursor(UpArrowCursor)
+	self.__find_cursor = QCursor(SizeHorCursor)
+	self.templine = QCanvasLine(self.canvas)
+	self.templine.setPen(QPen(Qt.blue, 1, Qt.DotLine))
+
+    def set(self):
+	self.source = None
+	self.templine.hide()
+	self.canvas.update()
+    def reset(self):
+	self.templine.hide()
+	self.canvas.update()
+    def move(self, event):
+	if self.source:
+	    self.templine.setPoints(self.source.x()+16, self.source.y()+16, event.x(), event.y())
+	    self.canvas.update()
+	action = self.canvas.get_action_at(event.x(), event.y())
+	if action and action is not self.source:
+	    self.view.setCursor(self.__hint_cursor)
+	elif self.source:
+	    self.view.setCursor(self.__find_cursor)
+	else:
+	    self.view.setCursor(self.__normal_cursor)
+    def press(self, event):
+	action = self.canvas.get_action_at(event.x(), event.y())
+	if not action: return
+	if not self.source: self.setSource(action, event)
+	elif action is not self.source: self.setDest(action)
+    def release(self, event):
+	action = self.canvas.get_action_at(event.x(), event.y())
+	if action and self.source and action is not self.source: self.setDest(action)
+    def setSource(self, action, event):
+	self.source = action
+	self.templine.setPoints(action.x()+16, action.y()+16, event.x(), event.y())
+	self.templine.show()
+	self.canvas.update()
+    def setDest(self, action):
+	self.templine.hide()
+	self.view.actions.add_channel(self.source, action)
+	self.source = None
+	self.view.window.setMode('select')
 
 class AddActionStrategy (CanvasStrategy):
+    def __init__(self, canvas, view):
+	CanvasStrategy.__init__(self, canvas, view)
+	self.__drag_action = None
+	self.__normal_cursor = QCursor(ArrowCursor)
+	self.__moving_cursor = QCursor(BlankCursor)
+
     def set(self):
-	self.action = Action(10, 10, "new action")
+	self.action = Action(self.view.last_pos.x()-16,
+			     self.view.last_pos.y()-16, "new action")
 	self.view.actions.add_action(self.action)
-	print "add action"
-	self.view.viewport().setMouseTracking(1)
-	print self.view.viewport().hasMouseTracking()
+	self.view.setCursor(self.__moving_cursor)
 
     def reset(self):
-	print "clean up action"
-	self.view.viewport().setMouseTracking(0)
+	if self.action:
+	    self.view.actions.remove_action(self.action)
+	self.view.setCursor(self.__normal_cursor)
 
     def move(self, event):
-	print "moving"
-	self.view.actions.move_action(self.action, event.x(), event.y())
+	self.view.actions.move_action(self.action, event.x()-16, event.y()-16)
 
     def release(self, event):
-	print "create an icon here"
+	wizard = AddWizard(self.view, self.action)
+	if wizard.exec_loop() == QDialog.Rejected:
+	    self.view.actions.remove_action(self.action)
+	if wizard.action is not self.action:
+	    # Wizard may create a new more derived action object
+	    self.view.actions.remove_action(self.action)
+	    self.view.actions.add_action(wizard.action)
+	self.action = None
 	self.view.window.setMode('select')
+
+class AddWizard (QWizard):
+    def __init__(self, parent, action):
+	QWizard.__init__(self, parent, 'AddWizard', 1)
+	self.action = action
+
+	self.title_font = QFont('Helvetica', 20, QFont.Bold)
+	self.title_palette = QPalette(self.palette())
+	self.title_palette.setColor(QPalette.Normal, QColorGroup.Foreground, Qt.white)
+	self.title_palette.setColor(QPalette.Normal, QColorGroup.Background, Qt.darkBlue)
+	self.title_label = QLabel('', self)
+	self.title_label.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+	self.title_label.setLineWidth(1)
+	self.title_label.setMidLineWidth(1)
+	self.title_label.setPalette(self.title_palette)
+	self.title_label.setFont(self.title_font)
+
+	self._makeStartPage()
+	self._makeSourcePage()
+	self._makeFinishPage()
+
+    def _makeStartPage(self):
+	vbox = QVBox(self)
+	vbox.layout().setSpacing(4)
+	QLabel('What type of action would you like to create?', vbox)
+	group = QButtonGroup(1, Qt.Horizontal, "&Action type", vbox)
+	radio_source = QRadioButton('&Source - Specifies, monitors and loads source code files', group)
+	radio_parser = QRadioButton('&Parser - Reads source files and parses them into ASTs', group)
+	radio_linker = QRadioButton('&Linker - Operates on one or more ASTs, typically linking various things together', group)
+	radio_cacher = QRadioButton('File &Cache - Stores an AST to disk to speed reprocessing', group)
+	radio_format = QRadioButton('&Formatter - Exports an AST to some format, eg: HTML, PDF', group)
+	self.__action_type_group = group
+	self.__action_types = {
+	    radio_source: 'source', radio_parser: 'parser', radio_linker: 'linker',
+	    radio_format: 'format', radio_cacher: 'cacher' }
+	self.connect(group, SIGNAL('clicked(int)'), self.onActionType)
+
+	self.addPage(vbox, "Select action type")
+	self.setNextEnabled(vbox, 0)
+	self.setHelpEnabled(vbox, 0)
+	self.start = vbox
+
+    def onActionType(self, id):
+	t = self.__action_types[self.__action_type_group.find(id)]
+	if t == 'source':
+	    self.action = SourceAction(self.action)
+	    self.action.set_name('New source action')
+	    self.setAppropriate(self.source, 1)
+	elif t == 'parser':
+	    self.action = ParserAction(self.action)
+	elif t == 'linker':
+	    self.action = LinkerAction(self.action)
+	elif t == 'cacher':
+	    self.action = CacherAction(self.action)
+	elif t == 'format':
+	    self.action = FormatAction(self.action)
+	self.nextButton().setEnabled(1)
+
+    def _makeSourcePage(self):
+	vbox = QVBox(self)
+	QLabel("Source actions are responsible for knowing what files to load\n"+
+	       "from disk for parsing. They watch specified directories for new\n"+
+	       "files that match the extensions they are looking for.", vbox)
+	hbox = QHBox(vbox)
+	label = QLabel("Action &name:", hbox)
+	self.source_name = QLineEdit(hbox)
+	label.setBuddy(self.source_name)
+	self.connect(self.source_name, SIGNAL('textChanged(const QString&)'), self.onActionName)
+
+	self.addPage(vbox, "Source action config")
+	self.setHelpEnabled(vbox, 0)
+	self.setAppropriate(vbox, 0)
+	self.source = vbox
+
+    def onActionName(self, name):
+	self.action.set_name(name)
+
+    def _makeFinishPage(self):
+	vbox = QVBox(self)
+	QLabel('You have finished creating your new action.', vbox)
+	self.addPage(vbox, "Finished")
+	self.setFinish(vbox, 1)
+	self.setFinishEnabled(vbox, 1)
+	self.setHelpEnabled(vbox, 0)
+	self.finish = vbox
+
+    def showPage(self, page):
+	if page is self.source:
+	    self.source_name.setText(self.action.name())
+	QWizard.showPage(self, page)
+
+	if page is self.source:
+	    self.source_name.setFocus()
+	    self.source_name.selectAll()
+	if page is self.finish:
+	    self.finishButton().setFocus()
+
+    def layOutTitleRow(self, hbox, title):
+	self.title_label.setText(title)
+	hbox.add(self.title_label)
 	
+
+class ActionColorizer (ActionVisitor):
+    def __init__(self, action=None):
+	self.color = None
+	if action: action.accept(self)
+    def visitAction(self, action): self.color=Qt.black
+    def visitSource(self, action): self.color=Qt.magenta
+    def visitParser(self, action): self.color=Qt.red
+    def visitLinker(self, action): self.color=Qt.yellow
+    def visitCacher(self, action): self.color=Qt.green
+    def visitFormat(self, action): self.color=Qt.cyan
+
+class Icon:
+    "Encapsulates the canvas display of an Action"
+
+    def __init__(self, canvas, action):
+	self.action = action
+	self.canvas = canvas
+	self.img = QCanvasRectangle(action.x(), action.y(), 32, 32, canvas)
+	self.img.setBrush(QBrush(ActionColorizer(action).color))
+	self.img.setZ(1)
+	self.text = QCanvasText(action.name(), canvas)
+	self.text.setZ(1)
+	self.img.show()
+	self.text.show()
+	self.update_pos()
+    def update_pos(self):
+	self.img.move(self.action.x(), self.action.y())
+	rect = self.text.boundingRect()
+	irect = self.img.boundingRect()
+	y = irect.bottom()
+	x = irect.center().x() - rect.width()/2
+	self.text.move(x, y)
+
+class Line:
+    "Encapsulates the canvas display of a channel between two Actions"
+    def __init__(self, canvas, source, dest):
+	self.canvas = canvas
+	self.source = source
+	self.dest = dest
+	self.line = QCanvasLine(canvas)
+	self.line.setPen(QPen(Qt.blue))
+	self.update_pos()
+	self.line.show()
+    def update_pos(self):
+	source, dest = self.source, self.dest
+	self.line.setPoints(
+	    source.x()+16, source.y()+16,
+	    dest.x()+16, dest.y()+16)
+
+
 class ActionCanvas (QCanvas):
     """Extends QCanvas to automatically fill and update the canvas when
     notified of events by an ActionManager"""
@@ -200,6 +481,7 @@ class ActionCanvas (QCanvas):
 	self.actions = actions
 	self._item_to_action_map = {}
 	self._action_to_icon_map = {}
+	self._action_lines = {}
 
 	self.actions.add_listener(self)
 
@@ -216,10 +498,30 @@ class ActionCanvas (QCanvas):
 	self._action_to_icon_map[action] = icon
 	self.update()
 
+    def action_removed(self, action):
+	"Callback from ActionManager. Removes the Icon for the Action"
+	icon = self._action_to_icon_map[action]
+	del self._action_to_icon_map[action]
+	del self._item_to_action_map[icon.img]
+
     def action_moved(self, action):
 	"Callback from ActionManager. Moves the Icon to follow the Action"
 	icon = self._action_to_icon_map[action]
 	icon.update_pos()
+	if self._action_lines.has_key(action):
+	    for line in self._action_lines[action]:
+		line.update_pos()
+	self.update()
+
+    def channel_added(self, source, dest):
+	"Callback from ActionManager. Adds a channel between the given actions"
+	line = Line(self, source, dest)
+	if not self._action_lines.has_key(source):
+	    self._action_lines[source] = []
+	if not self._action_lines.has_key(dest):
+	    self._action_lines[dest] = []
+	self._action_lines[source].append(line)
+	self._action_lines[dest].append(line)
 	self.update()
 
 
@@ -228,12 +530,15 @@ class CanvasView (QCanvasView):
 	QCanvasView.__init__(self, canvas, parent)
 	self.actions = parent.actions
 	self.window = parent
+	self.last_pos = QPoint(-50,-50)
+	self.viewport().setFocusPolicy(QWidget.ClickFocus)
 	self.__canvas = canvas
 	self.__strategies = {
 	    'select' : SelectionStrategy(canvas, self),
 	    'connect': ConnectStrategy(canvas, self),
 	    'action' : AddActionStrategy(canvas, self)
 	}
+	self.viewport().setMouseTracking(1)
 	
 	self.__strategy = self.__strategies['select']
 	self.connect(parent, PYSIGNAL('modeChanged(string)'), self.modeChanged)
@@ -247,7 +552,10 @@ class CanvasView (QCanvasView):
     def contentsMouseReleaseEvent(self, event):
 	self.__strategy.release(event)
     def contentsMouseMoveEvent(self, event):
+	self.last_pos = QPoint(event.pos())
 	self.__strategy.move(event)
+    def keyPressEvent(self, event):
+	self.__strategy.key(event)
 	
 
 class CanvasWindow (QVBox):
@@ -257,23 +565,33 @@ class CanvasWindow (QVBox):
 	self.main_window = main_window
 	self.__activated = 0
 
-	# Make the menu, to be inserted in the app menu upon window activation
-	self._file_menu = QPopupMenu(main_window.menuBar())
-	self._file_menu.insertItem("New &Action", self.addAction, Qt.CTRL+Qt.Key_A)
-
 	# Make the toolbar
+	self.buttons = QButtonGroup()
+	self.buttons.setExclusive(1)
 	self.tool = QToolBar("Canvas", self.main_window, self)
+	self.tool.setHorizontalStretchable(0)
 	pixmap = QPixmap(16,16); pixmap.fill()
 	self.tool_sel = QToolButton(pixmap, "Select", "Select actions in the display", self.setSelect, self.tool)
+	self.tool_sel.setUsesTextLabel(1)
 	self.tool_sel.setToggleButton(1)
-
-	pixmap = QPixmap(16,16); pixmap.fill(Qt.red)
-	self.tool_con = QToolButton(pixmap, "Connect", "Connect two actions", self.setConnect, self.tool)
-	self.tool_con.setToggleButton(1)
+	self.buttons.insert(self.tool_sel)
 
 	pixmap = QPixmap(16,16); pixmap.fill(Qt.blue)
+	self.tool_con = QToolButton(pixmap, "Connect", "Connect two actions", self.setConnect, self.tool)
+	self.tool_con.setUsesTextLabel(1)
+	self.tool_con.setToggleButton(1)
+	self.buttons.insert(self.tool_con)
+
+	pixmap = QPixmap(16,16); pixmap.fill(Qt.red)
 	self.tool_add = QToolButton(pixmap, "Add Action", "Add a new action to the project", self.setAction, self.tool)
+	self.tool_add.setUsesTextLabel(1)
 	self.tool_add.setToggleButton(1)
+	self.buttons.insert(self.tool_add)
+
+	# Make the menu, to be inserted in the app menu upon window activation
+	self._file_menu = QPopupMenu(main_window.menuBar())
+	self._file_menu.insertItem("New &Action", self.setAction, Qt.CTRL+Qt.Key_A)
+
 
 	self.__tools = {
 	    'select' : self.tool_sel,
@@ -294,21 +612,14 @@ class CanvasWindow (QVBox):
 	
     def setMode(self, mode):
 	self.mode = mode
-	tool = self.__tools[mode]
-	for other in self.__tools.values():
-	    if tool is not other:
-		other.setOn(0)
-	tool.setOn(1)
+	self.__tools[mode].setOn(1)
 
 	self.emit(PYSIGNAL('modeChanged(string)'), (self.mode,))
 
     def windowActivated(self, widget):
 	if self.__activated:
-	    if widget is not self:
-		self.deactivate()
-	else:
-	    if widget is self:
-		self.activate()
+	    if widget is not self: self.deactivate()
+	elif widget is self: self.activate()
     
     def activate(self):
 	self.__activated = 1
@@ -318,9 +629,6 @@ class CanvasWindow (QVBox):
 	self.__activated = 0
 	self.main_window.menuBar().removeItem(self._menu_id)
 
-    def addAction(self):
-	self.actions.add_action(Action(10, 10, "hello"))
-
     def setSelect(self):
 	self.setMode('select')
 
@@ -329,23 +637,6 @@ class CanvasWindow (QVBox):
 
     def setAction(self):
 	self.setMode('action')
-
-class Icon:
-    def __init__(self, canvas, action):
-	self.action = action
-	self.canvas = canvas
-	self.img = QCanvasRectangle(action.x(), action.y(), 32, 32, canvas)
-	self.text = QCanvasText(action.name(), canvas)
-	self.img.show()
-	self.text.show()
-	self.update_pos()
-    def update_pos(self):
-	self.img.move(self.action.x(), self.action.y())
-	rect = self.text.boundingRect()
-	irect = self.img.boundingRect()
-	y = irect.bottom()
-	x = irect.center().x() - rect.width()/2
-	self.text.move(x, y)
 
 class MainWindow (QMainWindow):
     """The main window of the applet. It controls the whole GUI so far, and
@@ -446,6 +737,7 @@ if __name__ == "__main__":
     # So I prefer the windows style to motif.. shoot me :)
     app.setStyle(QWindowsStyle())
     #app.setStyle(QPlatinumStyle())
+    app.setFont(QFont('Helvetica', 9))
 
     # Parse args
     load_file = None
