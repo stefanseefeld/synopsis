@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.25 2001/11/09 15:35:04 chalky Exp $
+# $Id: core.py,v 1.26 2002/01/09 10:16:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.26  2002/01/09 10:16:35  chalky
+# Centralized navigation, clicking links in (html) docs works.
+#
 # Revision 1.25  2001/11/09 15:35:04  chalky
 # GUI shows HTML pages. just. Source window also scrolls to correct line.
 #
@@ -426,6 +429,7 @@ class PageManager:
 	self.__pages = [] #all pages
 	self.__roots = [] #pages with roots, list of Structs
 	self.__global = None # The global scope
+	self.__files = {} # map from filename to (page,scope)
 	self._loadPages()
 
     def globalScope(self):
@@ -512,6 +516,15 @@ class PageManager:
 	basePackage = 'Synopsis.Formatter.HTML.'
 	for page in config.pages:
 	    self.addPage(import_object(page, defaultAttr, basePackage))
+    
+    def register_filename(self, filename, page, scope):
+	"""Registers a file for later production"""
+	self.__files[filename] = (page, scope)
+
+    def filename_info(self, filename):
+	"""Returns information about a registered file, as a (page,scope)
+	pair. May throw a KeyError if the filename isn't registered."""
+	return self.__files[filename]
 
 def usage():
     """Print usage to stdout"""
