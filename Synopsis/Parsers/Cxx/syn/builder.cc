@@ -280,7 +280,7 @@ Type::Named* Builder::lookupType(string name)
     Type::Named* type = lookup(name);
     if (type) return type;
     // Not found, forward declare it
-    cout << "Warning: Name "<<name<<" not found."<<endl;
+    //cout << "Warning: Name "<<name<<" not found in "<<m_filename<<endl;
     return Forward(name);
 }
 
@@ -304,7 +304,7 @@ Type::Named* Builder::lookup(string name, const Scope::Search& search)
 	    return scope->dict->lookup(name);
 	}
 	catch (Dictionary::MultipleError) {
-	    cout << "Warning: Found multiple declarations searching for "<<name<<endl;
+	    //cout << "Warning: Found multiple declarations searching for "<<name<<endl;
 	    return NULL;
 	}
 	catch (Dictionary::KeyError) {

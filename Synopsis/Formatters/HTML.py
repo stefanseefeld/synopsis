@@ -394,7 +394,8 @@ class ClassTree(Visitor.AstVisitor):
 	self.add_class(name)
 	for inheritance in clas.parents():
 	    parent = inheritance.parent()
-	    self.add_inheritance(parent.name(), name)
+	    if hasattr(parent, 'name'):	
+		self.add_inheritance(parent.name(), name)
 	for decl in clas.declarations():
 	    decl.accept(self)
 
@@ -514,7 +515,7 @@ class BaseFormatter(Visitor.AstVisitor):
 
     def visitTemplate(self, type):
 	self.__type_label = "template&lt;%s&gt;"%(
-	    string.join(map(lambda x:"typename "+x, type.parameters()), ",")
+	    string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ",")
 	)
 
     def visitFunctionType(self, type):
@@ -663,8 +664,11 @@ class DetailFormatter(BaseFormatter):
 	return string.join(text, "::")
 
     def formatInheritance(self, inheritance):
-        return '%s %s'%( self.formatModifiers(inheritance.attributes()),
-	    self.referenceName(inheritance.parent().name()))
+	if hasattr(inheritance, 'name'):
+	    return '%s %s'%( self.formatModifiers(inheritance.attributes()),
+		self.referenceName(inheritance.parent().name()))
+	return '%s %s'%( self.formatModifiers(inheritance.attributes()),
+	    self.formatType(inheritance.parent()))
 
     def writeSectionStart(self, heading):
 	str = '<table width="100%%">'\
@@ -694,7 +698,7 @@ class DetailFormatter(BaseFormatter):
 	# Print template
 	templ = clas.template()
 	if templ:
-	    self.write(entity('h2', "template &lt;%s&gt;"%string.join(templ.parameters(),", ")))
+	    self.write(entity('h2', "template &lt;%s&gt;"%string.join(map(self.formatType, templ.parameters()),", ")))
 
 	# Print filename
 	file = string.split(clas.file(), os.sep)

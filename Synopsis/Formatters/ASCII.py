@@ -57,7 +57,7 @@ class ASCIIFormatter:
 
     def visitTemplate(self, type):
 	self.visitDeclared(type)
-	self.__type = "template<"+string.join(type.parameters(),",")+">"+self.__type
+	self.__type = "template<"+string.join(map(self.formatType, type.parameters()),",")+">"+self.__type
 	
     ### AST visitor
 
@@ -115,7 +115,8 @@ class ASCIIFormatter:
             self.write(": ")
 	    p = []
             for parent in clas.parents():
-                p.append("%s"%(Util.ccolonName(parent.parent().name(),clas.name()),))
+		p.append(self.formatType(parent.parent()))
+                #p.append("%s"%(Util.ccolonName(parent.parent().name(),clas.name()),))
 	    self.write(string.join(p, ", "))
 	self.write(" {\n")
         self.enterScope(clas.name()[-1])
