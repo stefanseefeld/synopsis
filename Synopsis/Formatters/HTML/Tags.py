@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.8 2002/11/01 03:39:21 chalky Exp $
+# $Id: Tags.py,v 1.9 2002/11/01 07:20:22 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.9  2002/11/01 07:20:22  chalky
+# Enhanced anglebrackets()
+#
 # Revision 1.8  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -86,8 +89,11 @@ def desc(text):
     return text and div("desc", text) or ''
 def anglebrackets(text):
     """Replace angle brackets with HTML codes"""
-    return re.sub('<','&lt;',re.sub('>','&gt;',text))
-
+    text = text.replace('&', '&amp;')
+    text = text.replace('"', '&quot;')
+    text = text.replace('<', '&lt;')
+    text = text.replace('>', '&gt;')
+    return text
 
 def replace_spaces(text):
     """Replaces spaces in the given string with &nbsp; sequences. Does NOT
