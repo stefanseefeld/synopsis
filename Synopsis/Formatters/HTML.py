@@ -164,28 +164,20 @@ class Struct:
 class CommentParser:
     """A class that takes a Declaration and sorts its comments out."""
     def __init__(self):
-	self._valid = lambda x: 1
-	self._strip = lambda x: x
+	self._formatters = map(lambda n,c=commentFormatters: c[n](), commentFormatterList)
     def parse(self, decl):
 	"""Parses the comments of the given AST.Declaration.
 	Returns a struct with vars:
 	 full - full text, summary - one-line summary, detail - detailed info
-	Full is the original comment, Detail is parsed for tags"""
+	"""
 	strlist = map(lambda x:str(x), decl.comments())
-	strlist = filter(self._valid, strlist)
-	strlist = map(self._strip, strlist)
-	detail = full = string.join(strlist)
-	end = string.find(full, '.')
-	if end < 0: summary = full
-	else: summary = full[:end+1]
-	return Struct(full=full, summary=summary, detail=detail)
-
-class SSDCommentParser (CommentParser):
-    """A Comment parser that keeps only SlashSlashDot comments"""
-    def __init__(self):
-	CommentParser.__init__(self)
-	self._valid = lambda x: x[0:3] == '//.'
-	self._strip = lambda x: x[3:]
+	comm = Struct(full=string.join(strlist))
+	map(lambda f,c=comm: f.parse(c), self._formatters)
+	full = comm.detail = comm.full
+	end = string.find(full, '.\n')
+	if end < 0: comm.summary = full
+	else: comm.summary = full[:end+2]
+	return comm
 
 class CommentFormatter:
     """A class that takes a comment Struct and formats its contents."""
@@ -193,6 +185,16 @@ class CommentFormatter:
     def parse(self, comm):
 	"""Parse the comment struct"""
 	pass
+
+class SSDFormatter:
+    """A class that strips //.'s from the start of lines"""
+    __re_ssd = '^[ \t]*//\. ?(.*)$'
+    def __init__(self):
+	self.re_ssd = re.compile(SSDFormatter.__re_ssd, re.M)
+    def parse(self, comm):
+	comm.full = self.parse_ssd(comm.full)
+    def parse_ssd(self, str):
+	return string.join(self.re_ssd.findall(str),'\n')
 
 class JavadocFormatter:
     """A formatter that formats comments similar to Javadoc @tags"""
@@ -204,7 +206,7 @@ class JavadocFormatter:
 	self.re_see = re.compile(JavadocFormatter.__re_see)
     def parse(self, comm):
 	"""Parse the comm.detail for @tags"""
-	comm.detail = self.parse_see(comm.detail)
+	comm.full = self.parse_see(comm.full)
     def parse_see(self, str):
 	mo = self.re_see.search(str)
 	while mo:
@@ -228,7 +230,7 @@ class SectionFormatter:
     def __init__(self):
 	self.re_break = re.compile(SectionFormatter.__re_break)
     def parse(self, comm):
-	comm.detail = self.parse_break(comm.detail)
+	comm.full = self.parse_break(comm.full)
     def parse_break(self, str):
 	mo = self.re_break.search(str)
 	while mo:
@@ -243,12 +245,12 @@ class SectionFormatter:
 
 commentParsers = {
     'default' : CommentParser,
-    'ssd' : SSDCommentParser
 }
 commentFormatters = {
     'default' : CommentFormatter,
     'javadoc' : JavadocFormatter,
-    'section' : SectionFormatter
+    'section' : SectionFormatter,
+    'ssd' : SSDFormatter,
 }
 
 class CommentDictionary:
@@ -259,7 +261,6 @@ class CommentDictionary:
     def __init__(self):
 	self.__dict = {}
 	self._parser = commentParsers[commentParser]()
-	self._formatters = map(lambda n,c=commentFormatters: c[n](), commentFormatterList)
 	global comments
 	comments = self
     def commentForName(self, name):
@@ -270,7 +271,6 @@ class CommentDictionary:
 	key = decl.name()
 	if self.__dict.has_key(key): return self.__dict[key]
 	self.__dict[key] = comment = self._parser.parse(decl)
-	map(lambda f,c=comment: f.parse(c), self._formatters)
 	return comment
     __getitem__ = commentFor
 
@@ -1145,11 +1145,9 @@ HTML Formatter Usage:
                 If this is newer than the one in the output directory then it
 		is copied over it.
  -n <namespace> Namespace to output
- -c <parser>    Comment parser to use
-		 default  All comments (including slashes)
-		 ssd      Comments begin with //.
- -f <formatter> Comment formatter to use
+ -c <formatter> Comment formatter to use
                  default Nothing
+		 ssd     Filters for and strips //. comments
 		 javadoc @tag style comments
 		 section test section breaks.
 		You may use multiple -f options
@@ -1166,7 +1164,7 @@ def __parseArgs(args):
     commentParser = "default"
     commentFormatterList = []
     try:
-        opts,remainder = getopt.getopt(args, "ho:s:n:c:S:f:")
+        opts,remainder = getopt.getopt(args, "ho:s:n:c:S:")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1182,12 +1180,6 @@ def __parseArgs(args):
 	elif o == "-n":
 	    namespace = a
 	elif o == "-c":
-	    if commentParsers.has_key(a):
-		commentParser = a
-	    else:
-		print "Available comment parsers:",string.join(commentParsers.keys(), ', ')
-		sys.exit(1)
-	elif o == "-f":
 	    if commentFormatters.has_key(a):
 		commentFormatterList.append(a)
 	    else:
