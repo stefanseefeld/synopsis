@@ -1,4 +1,4 @@
-// $Id: linkstore.cc,v 1.2 2001/06/10 07:17:37 chalky Exp $
+// $Id: linkstore.cc,v 1.3 2001/06/13 14:04:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.3  2001/06/13 14:04:37  chalky
+// s/std::cout/LOG/ or so
+//
 // Revision 1.2  2001/06/10 07:17:37  chalky
 // Comment fix, better functions, linking etc. Better link titles
 //
@@ -35,6 +38,7 @@
 #include "link_map.hh"
 #include "dumper.hh"
 #include "builder.hh"
+#include "strace.hh"
 
 #include <strstream>
 
@@ -99,7 +103,8 @@ void LinkStore::link(int line, int col, int len, Type type, const AST::Name& nam
 	}
 	short_name.push_back(vtype->name().back());
     } else {
-	std::cout << "\nWARNING: couldnt map name " << name << std::endl;
+	STrace trace("LinkStore::link");
+	LOG("WARNING: couldnt map name " << name);
 	short_name = name;
     }
     m_link_file << FS << desc << " " << short_name << RS;
