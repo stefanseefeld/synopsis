@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C" line="2" name="FOO" text="BAR" type="macro"/>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C" line="4" name="PREFIX" text="x##y" type="macro">
+   <parameters>
+    x
+    y
+   </parameters>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/macros.cc" language="C" line="6" name="LOG" text="std::cout &lt;&lt; (x) &lt;&lt; std::endl;" type="macro">
+   <parameters>
+    x
+   </parameters>
+  </instance>
+ </declarations>
+ <types/>
+ <files>
+  <file>
+   Parsers/Cpp/input/macros.cc
+  </file>
+ </files>
+</ast>

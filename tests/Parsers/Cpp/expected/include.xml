@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<ast>
+ <declarations/>
+ <types/>
+ <files>
+  <file>
+   Parsers/Cpp/input/include.cc
+  </file>
+ </files>
+</ast>
