@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.62 2002/10/25 05:13:57 chalky Exp $
+// $Id: swalker.cc,v 1.63 2002/10/27 07:23:30 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.63  2002/10/27 07:23:30  chalky
+// Typeof support. Generate Function when appropriate. Better emulation support.
+//
 // Revision 1.62  2002/10/25 05:13:57  chalky
 // Include the 'operator' in operator names
 //
@@ -143,7 +146,7 @@ SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Pr
   m_links(0),
   m_store_decl(false),
   m_type_formatter(new TypeFormatter()),
-  m_operation(0),
+  m_function(0),
   m_type(0),
   m_scope(0),
   m_postfix_flag(Postfix_Var)
@@ -936,6 +939,56 @@ SWalker::TranslateTemplateDecl(Ptree* def)
   return 0;
 }
 
+//. A typeof(expr) expression evaluates to the type of 'expr'. This is a GNU
+//. GCC extension!
+//. Since the OCC parser can't resolve the type properly, we try to do it here
+//. and modify the type of the declarations to set it
+Ptree* SWalker::TranslateTypeof(Ptree* spec, Ptree* declarations)
+{
+  STrace trace("SWalker::TranslateTypeof");
+  nodeLOG(spec);
+  char* encname = spec->Third()->GetEncodedName();
+  LOG("The name is: " << (code_iter)encname);
+  LOG("The type is: " << (code_iter)spec->Third()->GetEncodedType());
+  // Find the type referred to by the expression
+  if (!m_decoder->isName(encname))
+  {
+    LOG("typeof is not a simple name: "); nodeLOG(spec);
+    return 0;
+  }
+  std::string name = m_decoder->decodeName(encname);
+  LOG("name is " << name);
+  Types::Type* type = m_lookup->lookupType(name, true);
+  // Find the declaration it refers to
+  Types::Declared* declared = dynamic_cast<Types::Declared*>(type);
+  if (!declared) return 0;
+  LOG("Looked up " << declared->name());
+  AST::Declaration* decl = declared->declaration();
+  if (!decl) return 0;
+  LOG("Declaration is " << decl->name());
+  // TODO: make this a visitor and support different things
+  if (AST::Function* func = dynamic_cast<AST::Function*>(decl))
+  {
+    LOG("decl is a function.");
+    while (declarations)
+    {
+      Ptree* declarator = declarations->First();
+      declarations = declarations->Rest();
+
+      if (declarator->What() == ntDeclarator)
+        ((PtreeDeclarator*)declarator)->SetEncodedType("PFv_v");
+      else
+        LOG("declarator is " << declarator->What());
+    }
+  }
+  else
+  {
+    LOG("unknown decl type");
+  }
+  nodeLOG(declarations);
+  return 0;
+}
+
 //. Translates a declaration, either variable, typedef or function
 //. Variables:
 //.  [ [modifiers] name [declarators] ; ]
@@ -961,6 +1014,9 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
   
   // Typespecifier may be a class {} etc.
   TranslateTypespecifier(Ptree::Second(def));
+  // Or it might be a typeof()
+  if (Ptree::Second(def) && Ptree::Second(def)->What() == ntTypeofExpr)
+    TranslateTypeof(Ptree::Second(def), decls);
 
   if (decls->IsA(ntDeclarator))        // if it is a function
     TranslateFunctionImplementation(def);
@@ -1067,7 +1123,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
       p = Ptree::Rest(p);
     }
 
-  AST::Operation* oper = 0;
+  AST::Function* func = 0;
   // Find name:
   if (encname[0] == 'Q')
     {
@@ -1080,13 +1136,13 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
       try
         {
           Types::Named* named_type = m_lookup->lookupType(names, true);
-          oper = Types::declared_cast<AST::Operation>(named_type);
+          func = Types::declared_cast<AST::Function>(named_type);
         }
       catch (const Types::wrong_type_cast &)
         { throw ERROR("Qualified function name wasn't a function:" << names); }
       // expand param info, since we now have names for them
-      std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
-      std::vector<AST::Parameter*>::iterator pend = oper->parameters().end();
+      std::vector<AST::Parameter*>::iterator piter = func->parameters().begin();
+      std::vector<AST::Parameter*>::iterator pend = func->parameters().end();
       std::vector<AST::Parameter*>::iterator new_piter = params.begin();
       while (piter != pend)
         {
@@ -1104,18 +1160,18 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
       std::string name = realname + format_parameters(params);
       // Append const after params if this is a const function
       if (is_const) name += "const";
-      // Create AST::Operation object
-      oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname, is_template);
-      oper->parameters() = params;
+      // Create AST::Function object
+      func = m_builder->add_function(m_lineno, name, premod, returnType, realname, is_template);
+      func->parameters() = params;
     }
-  add_comments(oper, m_declaration);
-  add_comments(oper, dynamic_cast<PtreeDeclarator*>(decl));
+  add_comments(func, m_declaration);
+  add_comments(func, dynamic_cast<PtreeDeclarator*>(decl));
 
   // if storing links, find name
   if (m_links)
     {
       // Store for use by TranslateFunctionImplementation
-      m_operation = oper;
+      m_function = func;
 
       // Do decl type first
       if (m_store_decl && m_declaration->Second())
@@ -1125,7 +1181,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
       while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
       if (p)
         // p should now be at the name
-        m_links->link(p->Car(), oper);
+        m_links->link(p->Car(), func);
     }
   return 0;
 }
@@ -1281,8 +1337,9 @@ void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types:
         // operator names are missing the 'operator', add it back
         char c = realname[0];
         if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%'
-            || c == '^' || c == '&' || c == '~' || c == '!' || c == '='
-            || c == '<' || c == '>' || c == ',' || c == '(' || c == '[')
+            || c == '^' || c == '&' || c == '!' || c == '=' || c == '<' 
+            || c == '>' || c == ',' || c == '(' || c == '['
+            || (c == '~' && realname[1] == 0))
           realname = "operator"+realname;
       }
     }
@@ -1376,14 +1433,14 @@ Ptree*
 SWalker::TranslateFunctionImplementation(Ptree* node)
 {
   STrace trace("SWalker::TranslateFunctionImplementation");
-  m_operation = 0; m_params.clear();
+  m_function = 0; m_params.clear();
   TranslateDeclarator(node->Third());
   if (!m_links) return 0; // Dont translate if not storing links
   if (m_filename != m_source) return 0; // Dont translate if not main file
-  if (!m_operation) { std::cerr << "Warning: operation was null!" << std::endl; return 0; }
+  if (!m_function) { std::cerr << "Warning: function was null!" << std::endl; return 0; }
 
   FuncImplCache cache;
-  cache.oper = m_operation;
+  cache.func = m_function;
   cache.params = m_param_cache;
   cache.body = node->Nth(3);
 
@@ -1402,7 +1459,7 @@ SWalker::TranslateFuncImplCache(const FuncImplCache& cache)
   // declarations in the function are added to this dummy namespace. Once we
   // are done, we remove it from the parent scope (its not much use in the
   // documents)
-  std::vector<std::string> name = cache.oper->name();
+  std::vector<std::string> name = cache.func->name();
   name.back() = "`"+name.back();
   m_builder->start_function_impl(name);
   try

@@ -447,30 +447,39 @@ void Builder::end_function_impl()
   m_scope = m_scopes.back()->scope_decl;
 }
 
-//. Add an operation
-AST::Operation* Builder::add_operation(int line, const std::string& name, 
+//. Add an function
+AST::Function* Builder::add_function(int line, const std::string& name, 
     const std::vector<std::string>& premod, Types::Type* ret, 
     const std::string& realname, AST::Parameter::vector* templ_params)
 {
-  // Generate the name
-  ScopedName oper_name;
+  // Find the parent scope, depending on whether this is a template or not
+  AST::Scope* parent_scope;
   if (templ_params)
-    oper_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
+    parent_scope = m_scopes[m_scopes.size()-2]->scope_decl;
   else
-    oper_name = extend(m_scope->name(), name);
+    parent_scope = m_scope;
 
-  AST::Operation* oper = new AST::Operation(m_filename, line, "method", oper_name, premod, ret, realname);
+  // Determine the new scoped name
+  ScopedName func_name = extend(parent_scope->name(), name);
+
+  // Decide whether this is a member function (aka operation) or just a
+  // function
+  AST::Function* func;
+  if (dynamic_cast<AST::Class*>(parent_scope))
+    func = new AST::Operation(m_filename, line, "member function", func_name, premod, ret, realname);
+  else
+    func = new AST::Function(m_filename, line, "function", func_name, premod, ret, realname);
 
   // Create template type
   if (templ_params)
   {
-    Types::Template* templ = new Types::Template(oper_name, oper, *templ_params);
-    oper->set_template_type(templ);
-    add(oper, true);
+    Types::Template* templ = new Types::Template(func_name, func, *templ_params);
+    func->set_template_type(templ);
+    add(func, true);
   }
   else
-    add(oper);
-  return oper;
+    add(func);
+  return func;
 }
 
 //. Add a variable

@@ -41,7 +41,7 @@ enum NamespaceType
 
 //. AST Builder.
 //. This class manages the building of an AST, including queries on the
-//. existing AST such as name and type lookups. The building operations are
+//. existing AST such as name and type lookups. The building functions are
 //. called by SWalker as it walks the parse tree.
 class Builder
 {
@@ -135,8 +135,8 @@ public:
   //. End function impl scope
   void end_function_impl();
 
-  //. Add an operation
-  AST::Operation* add_operation(int, const std::string& name, 
+  //. Add an function
+  AST::Function* add_function(int, const std::string& name, 
       const std::vector<std::string>& premod, Types::Type* ret, 
       const std::string& realname, AST::Parameter::vector* templ_params);
 

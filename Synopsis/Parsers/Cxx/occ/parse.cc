@@ -1793,8 +1793,32 @@ bool Parser::rName(Ptree*& name, Encoding& encode)
 	++length;
     }
     else
+    {
 	name = nil;
 
+	// gcc keyword typeof(rName) means type of the given name
+	if(lex->LookAhead(0) == TYPEOF){
+	    t = lex->GetToken(tk);
+	    if ((t = lex->GetToken(tk2)) != '(')
+		return FALSE;
+	    Ptree* type = Ptree::List(new Leaf(tk2));
+	    Encoding name_encode;
+	    if (!rName(name, name_encode))
+		return FALSE;
+	    if (!name->IsLeaf())
+		name = new PtreeName(name, name_encode);
+	    else
+		name = new PtreeName(Ptree::List(name), name_encode);
+	    type = Ptree::Snoc(type, name);
+	    if ((t = lex->GetToken(tk2)) != ')')
+		return FALSE;
+	    type = Ptree::Snoc(type, new Leaf(tk2));
+	    name = new PtreeTypeofExpr(new Leaf(tk), type);
+	    return TRUE;
+	}
+    }
+
+    
     for(;;){
 	t = lex->GetToken(tk);
 	if(t == TEMPLATE) {

@@ -182,10 +182,10 @@ public:
 };
 
 // Public method to lookup a type
-Types::Named* Lookup::lookupType(const std::string& name)
+Types::Named* Lookup::lookupType(const std::string& name, bool func_okay)
 {
-    STrace trace("Lookup::lookupType(name)");
-    Types::Named* type = lookup(name);
+    STrace trace("Lookup::lookupType(name, func_okay)");
+    Types::Named* type = lookup(name, func_okay);
     if (type) return type;
     // Not found, declare it unknown
     //cout << "Warning: Name "<<name<<" not found in "<<m_filename<<endl;
@@ -193,11 +193,11 @@ Types::Named* Lookup::lookupType(const std::string& name)
 }
 
 // Private method to lookup a type in the current scope
-Types::Named* Lookup::lookup(const std::string& name)
+Types::Named* Lookup::lookup(const std::string& name, bool func_okay)
 {
-    STrace trace("Lookup::lookup(name)");
+    STrace trace("Lookup::lookup(name, func_okay)");
     const ScopeSearch& search = m_builder->scopeinfo()->search;
-    return lookup(name, search);
+    return lookup(name, search, func_okay);
 }
 
 //. Looks up the name in the scope of the given scope
