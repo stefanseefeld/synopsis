@@ -52,7 +52,8 @@ OCC_FILES	:= buffer hash token ptree ptree-core encoding env\
 		   metaclass quote-class member cbodywalk
 
 SYN_FILES	:= synopsis occ swalker ast builder type dict \
-		   dumper decoder swalker-syntax link_map linkstore
+		   dumper decoder swalker-syntax link_map linkstore \
+		   lookup
 
 UCPP_FILES	:= mem hash cpp lexer assert macro eval
 

@@ -1,10 +1,10 @@
+// vim: set ts=8 sts=2 sw=2 et:
 // File: dict.cc
 // Implementation of Dictionary
 
 #include "dict.hh"
 #include "ast.hh"
 #include "type.hh"
-#include "builder.hh"
 
 #include <map>
 #include <vector>
@@ -12,100 +12,120 @@
 #include <string>
 #include <iostream>
 
-typedef std::multimap<std::string, Type::Named*> name_map;
+typedef std::multimap<std::string, Types::Named*> name_map;
 
 //. Define nested class
-struct Dictionary::Data {
-    name_map map;
+struct Dictionary::Data
+{
+  name_map map;
 };
 
 //. Constructor
-Dictionary::Dictionary() {
-    m = new Data;
+Dictionary::Dictionary()
+{
+  m = new Data;
 }
 
 //. Destructor
 Dictionary::~Dictionary() {
-    delete m;
+  delete m;
 }
 
 //. Quick check if the name is in the dict
-bool Dictionary::has_key(const std::string &name)
+bool
+Dictionary::has_key(const std::string& name)
 {
-    return (m->map.find(name) != m->map.end());
+  return m->map.find(name) != m->map.end();
 }
 
 //. Lookup single
-//. TODO: the forward filtering could probably be doing much simpler!
-Type::Named* Dictionary::lookup(const std::string &name) throw (MultipleError, KeyError)
+//. TODO: the forward filtering could probably be done much simpler!
+//. TODO: The exception throwing is heavy too, besides all the vector copying!
+Types::Named*
+Dictionary::lookup(const std::string& name) throw (MultipleError, KeyError)
 {
-    name_map::iterator iter = m->map.lower_bound(name);
-    name_map::iterator end = m->map.upper_bound(name);
-    // Check for not found
-    if (iter == end)
-	throw KeyError(name);
-    Type::Named* type = iter->second;
-    if (++iter == end)
-	return type;
-    // Check for Unknown types
-    if (dynamic_cast<Type::Unknown*>(type)) {
-	// Skip further unknown types
-	while (iter != end && dynamic_cast<Type::Unknown*>(iter->second))
-	    ++iter;
-	if (iter == end)
-	    return type;
-	type = (iter++)->second;
-	// Any other types that aren't unknown cause error
-	while (iter != end && dynamic_cast<Type::Unknown*>(iter->second))
-	    ++iter;
-	if (iter == end)
-	    return type;
+  name_map::iterator iter = m->map.lower_bound(name);
+  name_map::iterator end = m->map.upper_bound(name);
+
+  // Check for not found
+  if (iter == end)
+    throw KeyError(name);
+
+  Types::Named* type = iter->second;
+  if (++iter == end)
+    return type;
+
+  // Check for Unknown types
+  if (dynamic_cast<Types::Unknown*>(type))
+    {
+      // Skip further unknown types
+      while (iter != end && dynamic_cast<Types::Unknown*>(iter->second))
+        ++iter;
+      if (iter == end)
+        // No choice but to return the Unknown
+        return type;
+      type = (iter++)->second;
+      // Any other types that aren't unknown cause error
+      while (iter != end && dynamic_cast<Types::Unknown*>(iter->second))
+        ++iter;
+      if (iter == end)
+        // No more non-Unknown types, so return the one we found
+        return type;
     }
-    // Create exception object
-    MultipleError exc;
-    exc.types.push_back(type);
-    do {
-	exc.types.push_back(iter->second);
-    } while (++iter != end);
-    throw exc;
+  // Create exception object
+  MultipleError exc;
+  exc.types.push_back(type);
+  do
+    exc.types.push_back(iter->second);
+  while (++iter != end);
+  throw exc;
 }
 
 //. Lookup multiple
-std::vector<Type::Named*> Dictionary::lookupMultiple(const std::string &name) throw (KeyError)
+std::vector<Types::Named*>
+Dictionary::lookupMultiple(const std::string& name) throw (KeyError)
 {
-    name_map::iterator iter = m->map.lower_bound(name);
-    name_map::iterator end = m->map.upper_bound(name);
-    // Check for not found
-    if (iter == end)
-	throw KeyError(name);
-    // Store typearation pointers in a vector
-    std::vector<Type::Named*> types;
-    do {
-	types.push_back(iter->second);
-    } while (++iter != end);
-    return types;
+  name_map::iterator iter = m->map.lower_bound(name);
+  name_map::iterator end = m->map.upper_bound(name);
+
+  // Check for not found
+  if (iter == end)
+    throw KeyError(name);
+
+  // Store type pointers in a vector
+  std::vector<Types::Named*> types;
+  do
+    types.push_back(iter->second);
+  while (++iter != end);
+  return types;
 }
 
-void Dictionary::insert(Type::Named* type)
+void
+Dictionary::insert(Types::Named* type)
 {
-    std::string key = type->name().back();
-    m->map.insert(name_map::value_type(key, type));
+  std::string key = type->name().back();
+  m->map.insert(name_map::value_type(key, type));
 }
 
-void Dictionary::insert(AST::Declaration* decl)
+void
+Dictionary::insert(AST::Declaration* decl)
 {
-    Type::Declared* declared = new Type::Declared(decl->name(), decl);
-    insert(declared);
-    AST::Function* func = dynamic_cast<AST::Function*>(decl);
-    if (func) m->map.insert(name_map::value_type(func->realname(), declared));
+  Types::Declared* declared = new Types::Declared(decl->name(), decl);
+  insert(declared);
+  if (AST::Function* func = dynamic_cast<AST::Function*>(decl))
+    // Also insert real (unmangled) name of functions
+    m->map.insert(name_map::value_type(func->realname(), declared));
 }
 
-void Dictionary::dump()
+void
+Dictionary::dump()
 {
-    name_map::iterator iter = m->map.begin(), end = m->map.end();
-    std::cout << "Dumping dictionary: " << m->map.size() << " items.\n";
-    while (iter != end) {
-	name_map::value_type p = *iter++;
-	std::cout << "   " << p.first << "\t-> " << p.second->name() << "\n";
+  name_map::iterator iter = m->map.begin(), end = m->map.end();
+  std::cout << "Dumping dictionary: " << m->map.size() << " items.\n";
+  while (iter != end)
+    {
+      name_map::value_type p = *iter++;
+      std::cout << "   " << p.first << "\t-> " << p.second->name() << "\n";
     }
+  std::cout.flush();
 }

@@ -1,4 +1,4 @@
-// $Id: linkstore.cc,v 1.6 2001/07/28 02:40:02 chalky Exp $
+// $Id: linkstore.cc,v 1.7 2002/01/25 14:24:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.7  2002/01/25 14:24:33  chalky
+// Start of refactoring and restyling effort.
+//
 // Revision 1.6  2001/07/28 02:40:02  chalky
 // Updates for new source layout
 //
@@ -85,11 +88,11 @@ int LinkStore::find_col(int line, const char* ptr)
     return link_map::instance().map(line, col);
 }
 
-void LinkStore::link(int line, int col, int len, Type type, const AST::Name& name, const std::string& desc)
+void LinkStore::link(int line, int col, int len, Type type, const ScopedName& name, const std::string& desc)
 {
     m_link_file << line << FS << col << FS << len << FS;
     m_link_file << m_type_names[type] << FS;
-    for (AST::Name::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
+    for (ScopedName::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
 	std::string word = *iter;
 	for (std::string::size_type pos = word.find(' '); pos != std::string::npos; pos = word.find(' ', pos)) {
 	    word[pos] = 160; // 'unbreakable space', for want of something better
@@ -98,8 +101,8 @@ void LinkStore::link(int line, int col, int len, Type type, const AST::Name& nam
     }
     // Add the name to the description
     std::vector<AST::Scope*> scopes;
-    ::Type::Named* vtype;
-    AST::Name short_name;
+    Types::Named* vtype;
+    ScopedName short_name;
     if (m_walker->getBuilder()->mapName(name, scopes, vtype)) {
 	for (size_t i = 0; i < scopes.size(); i++) {
 	    if (AST::Namespace* ns = dynamic_cast<AST::Namespace*>(scopes[i])) {
@@ -122,7 +125,7 @@ void LinkStore::link(int line, int col, int len, Type type, const AST::Name& nam
     m_link_file << FS << desc << " " << short_name << RS;
 }
 
-void LinkStore::link(Ptree* node, Type type, const AST::Name& name, const std::string& desc)
+void LinkStore::link(Ptree* node, Type type, const ScopedName& name, const std::string& desc)
 {
     if (!m_walker->isMainFile()) return;
     int line = m_walker->getLine(node);
@@ -133,7 +136,7 @@ void LinkStore::link(Ptree* node, Type type, const AST::Name& name, const std::s
     link(line, col, len, type, name, desc);
 }
 
-class TypeStorer : public Type::Visitor {
+class TypeStorer : public Types::Visitor {
     // Variables to pass to link()
     LinkStore* links;
     Ptree* node;
@@ -143,26 +146,26 @@ public:
     TypeStorer(LinkStore* ls, Ptree* n, LinkStore::Type l)
 	: links(ls), node(n), link_type(l) {}
     //. Returns a suitable description for the given type
-    std::string describe(Type::Type* type) {
+    std::string describe(Types::Type* type) {
     	std::string desc;
 	try {
-	    AST::Declaration* decl = Type::declared_cast<AST::Declaration>(type);
+	    AST::Declaration* decl = Types::declared_cast<AST::Declaration>(type);
 	    return decl->type();
-	} catch (const Type::wrong_type_cast&) {
+	} catch (const Types::wrong_type_cast&) {
 	    return links->getSWalker()->getTypeFormatter()->format(type);
 	}
     }
 
     // Visitor methods
-    void visitBase(Type::Base* base) {
+    void visit_base(Types::Base* base) {
 	// Not a link, but a keyword
 	links->span(node, "file-keyword");
     }
-    void visitNamed(Type::Named* named) {
+    void visit_named(Types::Named* named) {
 	// All other nameds get stored
 	links->link(node, link_type, named->name(), describe(named));
     }
-    void visitModifier(Type::Modifier* mod) {
+    void visit_modifier(Types::Modifier* mod) {
 	// We recurse on the mod's alias, but dont link the const bit
 	if (mod->pre().size() && mod->pre().front() == "const") {
 	    if (!node->IsLeaf() && node->First()->Eq("const")) {
@@ -172,7 +175,7 @@ public:
 	}
 	mod->alias()->accept(this);
     }
-    void visitParameterized(Type::Parameterized* param) {
+    void visit_parameterized(Types::Parameterized* param) {
 	// For qualified template names the ptree is:
 	//  [ std :: [ vector [ < ... , ... > ] ] ]
 	// Skip the qualifieds (and just link the final name)
@@ -180,12 +183,12 @@ public:
 	    node = node->Third();
 	}
 	// Do template
-	links->link(node->First(), param->templateType());
+	links->link(node->First(), param->template_type());
 	// Do params
 	node = node->Second();
-	using Type::Type;
-	Type::vector_t::iterator iter = param->parameters().begin();
-	Type::vector_t::iterator end = param->parameters().end();
+	using Types::Type;
+	Types::Type::vector::iterator iter = param->parameters().begin();
+	Types::Type::vector::iterator end = param->parameters().end();
 	while (node && iter != end) {
 	    // Skip '<' or ','
 	    if ( !(node = node->Rest()) ) break;
@@ -199,7 +202,7 @@ public:
 };
 
 // Store if type is named
-void LinkStore::link(Ptree* node, ::Type::Type* type)
+void LinkStore::link(Ptree* node, Types::Type* type)
 {
     if (!m_walker->isMainFile() || !type) return;
     TypeStorer storer(this, node, Reference);

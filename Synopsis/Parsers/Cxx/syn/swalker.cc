@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.46 2002/01/13 09:32:48 chalky Exp $
+// $Id: swalker.cc,v 1.47 2002/01/25 14:24:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,105 +20,15 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.47  2002/01/25 14:24:33  chalky
+// Start of refactoring and restyling effort.
+//
 // Revision 1.46  2002/01/13 09:32:48  chalky
 // Small change to mark template classes as "template class" rather than "class"
 //
 // Revision 1.45  2001/08/09 00:56:50  chalky
 // Moved char*<0 ugliness to Decoder::isName with proper casting
 //
-// Revision 1.44  2001/07/29 03:28:04  chalky
-// More fixes for directory restructure, and fake_std -f flag for C++ parser.
-//
-// Revision 1.43  2001/07/23 15:29:35  chalky
-// Fixed some regressions and other mis-features
-//
-// Revision 1.42  2001/07/19 13:50:52  chalky
-// Support 'using' somewhat, L"const" literals, and better Qual.Templ. names
-//
-// Revision 1.41  2001/07/03 11:32:40  chalky
-// Fix phantom parameter identifier bug
-//
-// Revision 1.40  2001/06/11 10:37:30  chalky
-// Operators! Arrays! (and probably more that I forget)
-//
-// Revision 1.39  2001/06/10 07:17:37  chalky
-// Comment fix, better functions, linking etc. Better link titles
-//
-// Revision 1.38  2001/06/10 00:31:39  chalky
-// Refactored link storage, better comments, better parsing
-//
-// Revision 1.37  2001/06/06 07:51:45  chalky
-// Fixes and moving towards SXR
-//
-// Revision 1.36  2001/06/06 04:56:59  uid20151
-// small optimisation (dont translate non-main func impls)
-//
-// Revision 1.35  2001/06/06 03:28:49  chalky
-// Support anon structs
-//
-// Revision 1.34  2001/06/06 01:18:13  chalky
-// Rewrote parameter parsing to test for different combos of name, value and
-// keywords
-//
-// Revision 1.33  2001/06/05 17:59:25  stefan
-// output some diagnostics when catching a segfault
-//
-// Revision 1.32  2001/06/05 15:34:11  chalky
-// Allow keywords before function parameters, eg: register
-//
-// Revision 1.31  2001/06/05 05:47:02  chalky
-// Added global g_swalker var
-//
-// Revision 1.30  2001/06/05 05:03:53  chalky
-// Added support for qualified typedefs in storeLink
-//
-// Revision 1.29  2001/06/05 03:49:33  chalky
-// Made my own wrong_type_cast exception. Added template support to qualified
-// names (its bad but it doesnt crash). Added vector<string> output op to builder
-//
-// Revision 1.28  2001/05/25 03:08:49  chalky
-// Fixes to compile with 3.0
-//
-// Revision 1.27  2001/05/23 05:08:47  stefan
-// more std C++ issues. It still crashes...
-//
-// Revision 1.26  2001/05/06 20:15:03  stefan
-// fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
-//
-// Revision 1.25  2001/04/17 15:47:26  chalky
-// Added declaration name mapper, and changed refmanual to use it instead of the
-// old language mapping
-//
-// Revision 1.24  2001/04/03 23:01:38  chalky
-// Small fixes and extra comments
-//
-// Revision 1.23  2001/03/19 07:53:45  chalky
-// Small fixes.
-//
-// Revision 1.22  2001/03/16 04:42:00  chalky
-// SXR parses expressions, handles differences from macro expansions. Some work
-// on function call resolution.
-//
-// Revision 1.21  2001/02/16 06:59:32  chalky
-// ScopePage summaries link to source
-//
-// Revision 1.20  2001/02/16 06:33:35  chalky
-// parameterized types, return types, variable types, modifiers, etc.
-//
-// Revision 1.19  2001/02/16 04:57:50  chalky
-// SXR: func parameters, namespaces, comments. Unlink temp file. a class=ref/def
-//
-// Revision 1.18  2001/02/16 02:29:55  chalky
-// Initial work on SXR and HTML integration
-//
-// Revision 1.17  2001/02/13 05:20:04  chalky
-// Made C++ parser mangle functions by formatting their parameter types
-//
-// Revision 1.16  2001/02/07 14:27:39  chalky
-// Enums inside declarations swallow declaration comments.
-//
-//
-
 // File: swalker.cc
 //
 // SWalker class
@@ -140,6 +50,7 @@
 #include "dumper.hh"
 #include "link_map.hh"
 #include "linkstore.hh"
+#include "lookup.hh"
 
 using namespace AST;
 
@@ -188,7 +99,9 @@ SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Pr
       m_scope(0),
       m_postfix_flag(Postfix_Var)
 {
-    g_swalker = this;
+    g_swalker = this; // FIXME: is this needed?
+    m_builder->set_swalker(this);
+    m_lookup = m_builder->lookup();
 }
 
 // The name returned is just the node's text if the node is a leaf. Otherwise,
@@ -259,7 +172,7 @@ void SWalker::updateLineNumber(Ptree* ptree)
 	m_filename_ptr = fname;
 	m_filename.assign(fname, fname_len);
 	//cout << "### fname changed to "<<m_filename<<" at "<<m_lineno<<endl;
-	m_builder->setFilename(m_filename);
+	m_builder->set_filename(m_filename);
     }
 }
 
@@ -323,7 +236,7 @@ std::string SWalker::formatParameters(std::vector<AST::Parameter*>& params)
     if (scope) {
 	m_type_formatter->setScope(scope->name());
     } else {
-	AST::Name empty;
+	ScopedName empty;
 	m_type_formatter->setScope(empty);
     }
     std::vector<AST::Parameter*>::iterator iter = params.begin(), end = params.end();
@@ -370,6 +283,12 @@ void SWalker::Translate(Ptree* node) {
 	nodeLOG(node);
 #else
 	std::cout << "Warning: An exception occurred: " << e.what() << std::endl;
+	char* fname;
+	int fname_len;
+	int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
+	std::ostringstream buf;
+	buf << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
+	std::cout << "At: " << buf.str() << std::endl;
 #endif
     }
     catch (...) {
@@ -422,17 +341,17 @@ Ptree* SWalker::TranslatePtree(Ptree* node) {
 		// End of numeric constant
 		break;
 	}
-	m_type = m_builder->lookupType(num_type);
+	m_type = m_lookup->lookupType(num_type);
     } else if (*str == '\'') {
 	// Whole node is a char literal
 	if (m_links) m_links->span(node, "file-string");
-	m_type = m_builder->lookupType("char");
+	m_type = m_lookup->lookupType("char");
     } else if (*str == '"') {
 	// Assume whole node is a string
 	if (m_links) m_links->span(node, "file-string");
-	m_type = m_builder->lookupType("char");
-	Type::Type::Mods pre, post; pre.push_back("const"); post.push_back("*");
-	m_type = new Type::Modifier(m_type, pre, post);
+	m_type = m_lookup->lookupType("char");
+	Types::Type::Mods pre, post; pre.push_back("const"); post.push_back("*");
+	m_type = new Types::Modifier(m_type, pre, post);
     } else {
 	cout << "Warning: Unknown Ptree "<<node->What(); node->Display2(cout);
 	*((char*)0) = 1;
@@ -466,7 +385,7 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 {
     STrace trace("PyWalker::TranslateInheritanceSpec");
     std::vector<Inheritance*> ispec;
-    Type::Type *type;
+    Types::Type *type;
     while (node) {
         node = node->Cdr();		// skip : or ,
         // the attributes
@@ -479,11 +398,11 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 	Ptree* name = node->Car()->Last()->Car();
 	if (name->IsLeaf()) {
 	    try {
-		type = m_builder->lookupType(getName(name));
+		type = m_lookup->lookupType(getName(name));
 	    } catch (TranslateError) {
 		// Ignore error, and put an Unknown in, instead
-		Type::Name uname; uname.push_back(getName(name));
-		type = new Type::Unknown(uname);
+		ScopedName uname; uname.push_back(getName(name));
+		type = new Types::Unknown(uname);
 	    }
 	} else {
 	    char* encname = name->GetEncodedName();
@@ -631,14 +550,14 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	addComments(clas, cspec->GetComments());
 
 	// Create Template type
-	Type::Type::vector_t templ_params;
+	Types::Type::vector templ_params;
 	Ptree* params = def->Third();
 	while (params) {
 	    Ptree* param = params->First();
 	    //param->Display2(cout);
 	    if (param->First()->Eq("class") || param->First()->Eq("typename")) {
 		// This parameter specifies a type, add as base
-		Type::Base* base = m_builder->Base(getName(param->Second()));
+		Types::Base* base = m_builder->Base(getName(param->Second()));
 		m_builder->add(base);
 		templ_params.push_back(base);
 	    } else {
@@ -647,11 +566,11 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	    }
 	    params = Ptree::Rest(params->Rest());
 	}
-	Type::Template* templ = new Type::Template(clas->name(), clas, templ_params);
-	clas->setTemplateType(templ);
+	Types::Template* templ = new Types::Template(clas->name(), clas, templ_params);
+	clas->set_template_type(templ);
 	std::ostrstream buf;
 	buf << "template " << clas->type() << std::ends;
-	clas->setType(buf.str());
+	clas->set_type(buf.str());
 
 	// Now that template args have been created, translate parents
 	clas->parents() = TranslateInheritanceSpec(node->Nth(2));
@@ -834,7 +753,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 
 	    // Figure out the return type:
 	    while (*iter++ != '_'); // in case of decoding error this is needed
-	    Type::Type* returnType = m_decoder->decodeType();
+	    Types::Type* returnType = m_decoder->decodeType();
 
 	    // Figure out premodifiers
 	    std::vector<std::string> premod;
@@ -854,9 +773,9 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 		names.back() += formatParameters(params);
 		// A qual name must already be declared, so find it:
 		try {
-		    Type::Named* named_type = m_builder->lookupType(names, true);
-		    oper = Type::declared_cast<AST::Operation>(named_type);
-		} catch (const Type::wrong_type_cast &) {
+		    Types::Named* named_type = m_lookup->lookupType(names, true);
+		    oper = Types::declared_cast<AST::Operation>(named_type);
+		} catch (const Types::wrong_type_cast &) {
 		    throw ERROR("Qualified function name wasn't a function:" << names);
 		}
 		// expand param info, since we now have names for them
@@ -866,7 +785,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 		while (piter != pend) {
 		    AST::Parameter* param = *piter++, *new_param = *new_piter++;
 		    if (!param->name().size() && new_param->name().size()) {
-			param->setName(new_param->name());
+			param->set_name(new_param->name());
 		    }
 		}
 	    } else {
@@ -904,7 +823,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    // Variable declaration
 	    m_decoder->init(enctype);
 	    // Get type
-	    Type::Type* type = m_decoder->decodeType();
+	    Types::Type* type = m_decoder->decodeType();
 	    std::string name;
 	    if (m_decoder->isName(encname)) name = m_decoder->decodeName(encname);
 	    else if (*encname == 'Q') {
@@ -964,7 +883,7 @@ void SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>&
 	if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
 	Ptree* param = p_params->First();
 	// The type is stored in the encoded type string already
-	Type::Type* type = m_decoder->decodeType();
+	Types::Type* type = m_decoder->decodeType();
 	if (!type)
 	{
 	    std::cout << "Premature end of decoding!" << std::endl;
@@ -1015,7 +934,7 @@ void SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>&
     }
 }
 
-void SWalker::TranslateFunctionName(char* encname, std::string& realname, Type::Type*& returnType)
+void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType)
 {
    if (m_decoder->isName(encname)) {
 	if (encname[1] == '@') {
@@ -1043,7 +962,7 @@ void SWalker::TranslateFunctionName(char* encname, std::string& realname, Type::
 	bool first = true;
 	// Append type names to realname
 	while (iter <= tend) {
-	    /*Type::Type* type = */m_decoder->decodeType();
+	    /*Types::Type* type = */m_decoder->decodeType();
 	    if (!first) realname+=","; else first=false;
 	    realname += "type"; //type->ToString();
 	}
@@ -1085,7 +1004,7 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
 
     // Get type of declarator
     m_decoder->init(enctype);
-    Type::Type* type = m_decoder->decodeType();
+    Types::Type* type = m_decoder->decodeType();
     // Get name of typedef
     std::string name = m_decoder->decodeName(encname);
     // Create typedef object
@@ -1169,7 +1088,7 @@ Ptree* SWalker::TranslateAccessSpec(Ptree* spec)
 	case PROTECTED: axs = AST::Protected; break;
 	case PRIVATE: axs = AST::Private; break;
     }
-    m_builder->setAccess(axs);
+    m_builder->set_access(axs);
     if (m_links) m_links->span(spec->First(), "file-keyword");
     return 0;
 }
@@ -1250,7 +1169,7 @@ Ptree* SWalker::TranslateUsing(Ptree* node) {
     }
     // Find name that we are looking up, and make a new ptree list for linking it
     Ptree *p_name = Ptree::Snoc(nil, p->Car());
-    AST::Name name;
+    ScopedName name;
     if (p->First()->Eq("::")) {
 	// Eg; "using ::memcpy;" Indicate global scope with empty first
 	name.push_back("");
@@ -1267,7 +1186,7 @@ Ptree* SWalker::TranslateUsing(Ptree* node) {
     }
     // Resolve and link name
     try {
-	Type::Named* type = m_builder->lookupType(name);
+	Types::Named* type = m_lookup->lookupType(name);
 	if (m_links) m_links->link(p_name, type);
 	if (is_namespace) {
 	    // Check for '=' alias

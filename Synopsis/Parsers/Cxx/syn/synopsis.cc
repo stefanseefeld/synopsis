@@ -52,7 +52,7 @@ struct Synopsis::Private {
 	Py_INCREF(Py_None);
 	add((AST::Declaration*)NULL, Py_None);
 	Py_INCREF(Py_None);
-	add((Type::Type*)NULL, Py_None);
+	add((Types::Type*)NULL, Py_None);
     }
     //. Reference to parent synopsis object
     Synopsis* m_syn;
@@ -77,8 +77,8 @@ struct Synopsis::Private {
     PyObject* py(AST::Parameter*);
     //. Return the PyObject for the given AST::Comment
     PyObject* py(AST::Comment*);
-    //. Return the PyObject for the given Type::Type
-    PyObject* py(Type::Type*);
+    //. Return the PyObject for the given Types::Type
+    PyObject* py(Types::Type*);
     //. Return the PyObject for the given string
     PyObject* py(const std::string &);
 
@@ -189,7 +189,7 @@ PyObject* Synopsis::Private::py(AST::Comment* decl)
     ObjMap::iterator iter = obj_map.find(decl);
     if (iter == obj_map.end()) {
 	// Need to convert object first
-	m_syn->visitComment(decl);
+	m_syn->visit_comment(decl);
 	iter = obj_map.find(decl);
 	if (iter == obj_map.end()) {
 	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
@@ -202,7 +202,7 @@ PyObject* Synopsis::Private::py(AST::Comment* decl)
 }
 
 
-PyObject* Synopsis::Private::py(Type::Type* type)
+PyObject* Synopsis::Private::py(Types::Type* type)
 {
     ObjMap::iterator iter = obj_map.find(type);
     if (iter == obj_map.end()) {
@@ -211,7 +211,7 @@ PyObject* Synopsis::Private::py(Type::Type* type)
 	iter = obj_map.find(type);
 	if (iter == obj_map.end()) {
 	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-	    throw "Synopsis::Private::py(Type::Type*)";
+	    throw "Synopsis::Private::py(Types::Type*)";
 	}
     }
     PyObject* obj = iter->second;
@@ -279,7 +279,7 @@ void Synopsis::translate(AST::Scope* scope)
 // Type object factories
 //
 
-PyObject *Synopsis::Base(Type::Base* type)
+PyObject *Synopsis::Base(Types::Base* type)
 {
     Trace trace("Synopsis::Base");
     PyObject *name, *base = PyObject_CallMethod(m_type, "Base", "OO",
@@ -289,7 +289,7 @@ PyObject *Synopsis::Base(Type::Base* type)
     return base;
 }
 
-PyObject *Synopsis::Unknown(Type::Named* type)
+PyObject *Synopsis::Unknown(Types::Named* type)
 {
     Trace trace("Synopsis::Unknown");
     PyObject *name, *unknown = PyObject_CallMethod(m_type, "Unknown", "OO",
@@ -299,7 +299,7 @@ PyObject *Synopsis::Unknown(Type::Named* type)
     return unknown;
 }
 
-PyObject *Synopsis::Declared(Type::Declared* type)
+PyObject *Synopsis::Declared(Types::Declared* type)
 {
     Trace trace("Synopsis::Declared");
     PyObject *name, *declared = PyObject_CallMethod(m_type, "Declared", "OOO", 
@@ -311,7 +311,7 @@ PyObject *Synopsis::Declared(Type::Declared* type)
     return declared;
 }
 
-PyObject *Synopsis::Template(Type::Template* type)
+PyObject *Synopsis::Template(Types::Template* type)
 {
     Trace trace("Synopsis::Template");
     PyObject *name, *templ = PyObject_CallMethod(m_type, "Template", "OOOO",
@@ -322,7 +322,7 @@ PyObject *Synopsis::Template(Type::Template* type)
     return templ;
 }
 
-PyObject *Synopsis::Modifier(Type::Modifier* type)
+PyObject *Synopsis::Modifier(Types::Modifier* type)
 {
     Trace trace("Synopsis::Modifier");
     PyObject *modifier = PyObject_CallMethod(m_type, "Modifier", "OOOO",
@@ -331,22 +331,22 @@ PyObject *Synopsis::Modifier(Type::Modifier* type)
     return modifier;
 }
 
-PyObject *Synopsis::Array(Type::Array *type)
+PyObject *Synopsis::Array(Types::Array *type)
 {
     Trace trace("Synopsis::Array");
     return PyObject_CallMethod(m_type, "Array", "OOO", m->cxx(), m->py(type->alias()), m->List(type->sizes()));
 }
 
-PyObject *Synopsis::Parameterized(Type::Parameterized* type)
+PyObject *Synopsis::Parameterized(Types::Parameterized* type)
 {
     Trace trace("Synopsis::Parametrized");
     PyObject *parametrized = PyObject_CallMethod(m_type, "Parametrized", "OOO",
-	m->cxx(), m->py(type->templateType()), m->List(type->parameters())
+	m->cxx(), m->py(type->template_type()), m->List(type->parameters())
     );
     return parametrized;
 }
 
-PyObject *Synopsis::FuncPtr(Type::FuncPtr* type)
+PyObject *Synopsis::FuncPtr(Types::FuncPtr* type)
 {
     Trace trace("Synopsis::FuncType");
     PyObject *func = PyObject_CallMethod(m_type, "Function", "OOOO",
@@ -450,8 +450,8 @@ PyObject *Synopsis::Class(AST::Class* decl)
     PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
     PyObject *parents = PyObject_CallMethod(clas, "parents", NULL);
     PyObject_CallMethod(parents, "extend", "O", m->List(decl->parents()));
-    if (decl->templateType()) {
-	PyObject_CallMethod(clas, "set_template", "O", m->py(decl->templateType()));
+    if (decl->template_type()) {
+	PyObject_CallMethod(clas, "set_template", "O", m->py(decl->template_type()));
     }
     addComments(clas, decl);
     return clas;
@@ -531,7 +531,7 @@ PyObject *Synopsis::Function(AST::Function* decl)
     Trace trace("Synopsis::addFunction");
     PyObject *func = PyObject_CallMethod(m_ast, "Function", "OiOOOOOO", 
 	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
+	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->return_type()),
 	m->Tuple(decl->name()), m->py(decl->realname())
     );
     PyObject* params = PyObject_CallMethod(func, "parameters", NULL);
@@ -545,7 +545,7 @@ PyObject *Synopsis::Operation(AST::Operation* decl)
     Trace trace("Synopsis::addOperation");
     PyObject *oper = PyObject_CallMethod(m_ast, "Operation", "OiOOOOOO", 
 	m->py(decl->filename()), decl->line(), m->cxx(),
-	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->returnType()),
+	m->py(decl->type()), m->List(decl->premodifier()), m->py(decl->return_type()),
 	m->Tuple(decl->name()), m->py(decl->realname())
     );
     PyObject* params = PyObject_CallMethod(oper, "parameters", NULL);
@@ -626,118 +626,118 @@ void Synopsis::Declaration(Declaration* type)
 //
 // AST::Visitor methods
 //
-void Synopsis::visitDeclaration(AST::Declaration* decl) {
+void Synopsis::visit_declaration(AST::Declaration* decl) {
     // Assume this is a dummy declaration
     m->add(decl, Declaration(decl));
 }
-void Synopsis::visitScope(AST::Scope* decl) {
+void Synopsis::visit_scope(AST::Scope* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Scope(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitNamespace(AST::Namespace* decl) {
+void Synopsis::visit_namespace(AST::Namespace* decl) {
     // Namespaces are always included, because the Linker knows to combine
     // them always
     m->add(decl, Namespace(decl));
 }
-void Synopsis::visitClass(AST::Class* decl) {
+void Synopsis::visit_class(AST::Class* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Class(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitForward(AST::Forward* decl) {
+void Synopsis::visit_forward(AST::Forward* decl) {
     if (m->m_main(decl))
 	m->add(decl, Forward(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitTypedef(AST::Typedef* decl) {
+void Synopsis::visit_typedef(AST::Typedef* decl) {
     if (m->m_main(decl))
 	m->add(decl, Typedef(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitVariable(AST::Variable* decl) {
+void Synopsis::visit_variable(AST::Variable* decl) {
     if (m->m_main(decl))
 	m->add(decl, Variable(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitConst(AST::Const* decl) {
+void Synopsis::visit_const(AST::Const* decl) {
     if (m->m_main(decl))
 	m->add(decl, Const(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitEnum(AST::Enum* decl) {
+void Synopsis::visit_enum(AST::Enum* decl) {
     if (m->m_main(decl))
 	m->add(decl, Enum(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitEnumerator(AST::Enumerator* decl) {
+void Synopsis::visit_enumerator(AST::Enumerator* decl) {
     m->add(decl, Enumerator(decl));
 }
-void Synopsis::visitFunction(AST::Function* decl) {
+void Synopsis::visit_function(AST::Function* decl) {
     if (m->m_main(decl))
 	m->add(decl, Function(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visitOperation(AST::Operation* decl) {
+void Synopsis::visit_operation(AST::Operation* decl) {
     if (m->m_main(decl))
 	m->add(decl, Operation(decl));
     else
 	m->add(decl, Forward(new AST::Forward(decl)));
 }
 
-void Synopsis::visitInheritance(AST::Inheritance* decl) {
+void Synopsis::visit_inheritance(AST::Inheritance* decl) {
     m->add(decl, Inheritance(decl));
 }
-void Synopsis::visitParameter(AST::Parameter* decl) {
+void Synopsis::visit_parameter(AST::Parameter* decl) {
     m->add(decl, Parameter(decl));
 }
-void Synopsis::visitComment(AST::Comment* decl) {
+void Synopsis::visit_comment(AST::Comment* decl) {
     m->add(decl, Comment(decl));
 }
 
 //
-// Type::Visitor methods
+// Types::Visitor methods
 //
-/*void Synopsis::visitType(Type::Type* type) {
+/*void Synopsis::visitType(Types::Type* type) {
     m->add(type, this->Type(type));
 }*/
-void Synopsis::visitUnknown(Type::Unknown* type) {
+void Synopsis::visit_unknown(Types::Unknown* type) {
     m->add(type, Unknown(type));
 }
-void Synopsis::visitModifier(Type::Modifier* type) {
+void Synopsis::visit_modifier(Types::Modifier* type) {
     m->add(type, Modifier(type));
 }
-void Synopsis::visitArray(Type::Array *type) { m->add(type, Array(type));}
-/*void Synopsis::visitNamed(Type::Named* type) {
+void Synopsis::visit_array(Types::Array *type) { m->add(type, Array(type));}
+/*void Synopsis::visitNamed(Types::Named* type) {
     m->add(type, Named(type));
 }*/
-void Synopsis::visitBase(Type::Base* type) {
+void Synopsis::visit_base(Types::Base* type) {
     m->add(type, Base(type));
 }
-void Synopsis::visitDeclared(Type::Declared* type) {
+void Synopsis::visit_declared(Types::Declared* type) {
     if (!m->m_main(type->declaration()))
 	m->add(type, Unknown(type));
     else
 	m->add(type, Declared(type));
 }
-void Synopsis::visitTemplateType(Type::Template* type) {
+void Synopsis::visit_template_type(Types::Template* type) {
     if (!m->m_main(type->declaration()))
 	m->add(type, Unknown(type));
     else
 	m->add(type, Template(type));
 }
-void Synopsis::visitParameterized(Type::Parameterized* type) {
+void Synopsis::visit_parameterized(Types::Parameterized* type) {
     m->add(type, Parameterized(type));
 }
-void Synopsis::visitFuncPtr(Type::FuncPtr* type) {
+void Synopsis::visit_func_ptr(Types::FuncPtr* type) {
     m->add(type, FuncPtr(type));
 }
 

@@ -343,6 +343,9 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     }
 
   Builder builder(syn_basename);
+  SWalker swalker(src, &parse, &builder, &prog);
+  swalker.setExtractTails(syn_extract_tails);
+  Ptree *def;
   if (syn_fake_std)
     {
       // Fake a using from "std" to global
@@ -350,9 +353,6 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
       builder.usingNamespace(builder.global()->declared());
       builder.endNamespace();
     }
-  SWalker swalker(src, &parse, &builder, &prog);
-  swalker.setExtractTails(syn_extract_tails);
-  Ptree *def;
 #ifdef DEBUG
   swalker.setExtractTails(true);
   swalker.setStoreLinks(true, &std::cout);
@@ -366,7 +366,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   // Test Dumper
   Dumper dumper;
   if (syn_main_only) dumper.onlyShow(src);
-  dumper.visitScope(builder.scope());
+  dumper.visit_scope(builder.scope());
 #else
     std::ofstream* of = 0;
     if (syn_storage)

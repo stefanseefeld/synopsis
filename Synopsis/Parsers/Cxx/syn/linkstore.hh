@@ -1,4 +1,4 @@
-// $Id: linkstore.hh,v 1.1 2001/06/10 00:31:39 chalky Exp $
+// $Id: linkstore.hh,v 1.2 2002/01/25 14:24:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.hh,v $
+// Revision 1.2  2002/01/25 14:24:33  chalky
+// Start of refactoring and restyling effort.
+//
 // Revision 1.1  2001/06/10 00:31:39  chalky
 // Refactored link storage, better comments, better parsing
 //
@@ -53,16 +56,16 @@ public:
     LinkStore(std::ostream& out, SWalker* swalker);
 
     //. Store a link
-    void link(int line, int col, int len, Type type, const AST::Name& name, const std::string& desc);
+    void link(int line, int col, int len, Type type, const ScopedName& name, const std::string& desc);
 
     //. Store a link for the given Ptree node
-    void link(Ptree* node, Type, const AST::Name& name, const std::string& desc);
+    void link(Ptree* node, Type, const ScopedName& name, const std::string& desc);
 
     //. Store a Definition link for the given Ptree node using the AST node
     void link(Ptree* node, const AST::Declaration* decl);
 
     //. Store a Reference link for the given node using the given Type
-    void link(Ptree* node, ::Type::Type*);
+    void link(Ptree* node, Types::Type*);
 
     //. Store a span
     void span(int line, int col, int len, const char* desc);

@@ -5,6 +5,7 @@
 #include "builder.hh"
 #include "strace.hh"
 #include "dumper.hh"
+#include "lookup.hh"
 #include <iostream>
 
 std::ostream& operator <<(std::ostream&o, code& s) {
@@ -18,6 +19,7 @@ std::ostream& operator <<(std::ostream&o, code& s) {
 Decoder::Decoder(Builder* builder)
     : m_builder(builder)
 {
+    m_lookup = m_builder->lookup();
 }
 
 std::string Decoder::decodeName()
@@ -82,13 +84,13 @@ void Decoder::init(char* string)
     m_iter = m_string.begin();
 }
 
-Type::Type* Decoder::decodeType()
+Types::Type* Decoder::decodeType()
 {
     STrace trace("Decoder::decodeType()");
     code_iter end = m_string.end();
     std::vector<std::string> premod, postmod;
     std::string name;
-    Type::Type *baseType = NULL;
+    Types::Type *baseType = NULL;
 
     // Loop forever until broken
     while (m_iter != end && !name.length() && !baseType) {
@@ -136,20 +138,20 @@ Type::Type* Decoder::decodeType()
 	return 0;
     }
     if (!baseType)
-        baseType = m_builder->lookupType(name);
+        baseType = m_lookup->lookupType(name);
     if (premod.empty() && postmod.empty())
         return baseType;
-    Type::Type* ret = new Type::Modifier(baseType, premod, postmod);
+    Types::Type* ret = new Types::Modifier(baseType, premod, postmod);
     return ret;
 }
 
-Type::Type* Decoder::decodeQualType()
+Types::Type* Decoder::decodeQualType()
 {
     STrace trace("Decoder::decodeQualType()");
     // Qualified type: first is num of scopes, each a name.
     int scopes = *m_iter++ - 0x80;
     std::vector<std::string> names;
-    std::vector<Type::Type*> types; // if parameterized
+    std::vector<Types::Type*> types; // if parameterized
     while (scopes--) {
 	// Only handle two things here: names and templates
 	if (*m_iter >= 0x80) { // Name
@@ -169,61 +171,61 @@ Type::Type* Decoder::decodeQualType()
 	}
     }
     // Ask for qualified lookup
-    Type::Type* baseType;
+    Types::Type* baseType;
     try {
-	baseType = m_builder->lookupType(names);
+	baseType = m_lookup->lookupType(names);
     } catch (...) {
 	// Ignore error, and return an Unknown instead
-	return new Type::Unknown(names);
+	return new Types::Unknown(names);
     }
     // If the type is a template, then parameterize it with the params found
     // in the T decoding
     if (types.size()) {
-	Type::Declared* declared = dynamic_cast<Type::Declared*>(baseType);
+	Types::Declared* declared = dynamic_cast<Types::Declared*>(baseType);
 	AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : NULL;
-	Type::Template* templType = tempclas ? tempclas->templateType() : NULL;
+	Types::Template* templType = tempclas ? tempclas->template_type() : NULL;
 	if (templType && types.size()) {
-	    return new Type::Parameterized(templType, types);
+	    return new Types::Parameterized(templType, types);
 	}
     }
     return baseType;
 }
 
-Type::Type* Decoder::decodeFuncPtr()
+Types::Type* Decoder::decodeFuncPtr()
 {
     // Function ptr. Encoded same as function
-    Type::Type::Mods postmod;
-    std::vector<Type::Type*> params;
+    Types::Type::Mods postmod;
+    Types::Type::vector params;
     while (1) {
-	Type::Type* type = decodeType();
+	Types::Type* type = decodeType();
 	if (type) params.push_back(type);
 	else break;
     }
     ++m_iter; // skip over '_'
-    Type::Type* returnType = decodeType();
-    Type::Type* ret = new Type::FuncPtr(returnType, postmod, params);
+    Types::Type* returnType = decodeType();
+    Types::Type* ret = new Types::FuncPtr(returnType, postmod, params);
     return ret;
 }
 
-Type::Type* Decoder::decodeTemplate()
+Types::Type* Decoder::decodeTemplate()
 {
     // Template type: Name first, then size of arg field, then arg
     // types eg: T6vector54cell <-- 5 is len of 4cell
     std::string name = decodeName();
     code_iter tend = m_iter; tend += *m_iter++ - 0x80;
-    std::vector<Type::Type*> types;
+    std::vector<Types::Type*> types;
     while (m_iter <= tend)
 	types.push_back(decodeType());
-    Type::Type* type = m_builder->lookupType(name);
+    Types::Type* type = m_lookup->lookupType(name);
     // if type is declared and declaration is class and class is template..
-    Type::Declared* declared = dynamic_cast<Type::Declared*>(type);
-    Type::Template* templ = NULL;
+    Types::Declared* declared = dynamic_cast<Types::Declared*>(type);
+    Types::Template* templ = NULL;
     if (declared) {
 	AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration());
 	if (t_class) {
-	    templ = t_class->templateType();
+	    templ = t_class->template_type();
 	}
     }
-    return new Type::Parameterized(templ, types);
+    return new Types::Parameterized(templ, types);
 } 
 
