@@ -192,7 +192,7 @@ class MacroCall:
    def __init__(self, name, start, end, diff):
 
       self.name = name
-      self.start = start,
+      self.start = start
       self.end = end
       self.diff = diff
 
