@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2000/08/16 17:56:47 stefan Exp $
+# $Id: Makefile,v 1.5 2000/08/17 04:16:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -24,7 +24,7 @@ subdirs	= Synopsis Parser Formatter demo/IDL
 # doc
 
 all:
-	for dir in ${subdirs}; do \
+	@for dir in ${subdirs}; do \
 	   (cd $$dir && $(MAKE)) \
 	    || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"; \

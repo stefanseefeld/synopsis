@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2000/08/17 04:16:47 stefan Exp $
+# $Id: Makefile,v 1.1 2000/08/17 04:16:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -20,7 +20,7 @@
 
 SHELL	= /bin/sh
 
-subdirs	= IDL C++
+subdirs	= occ
 
 all:
 	@for dir in ${subdirs}; do \

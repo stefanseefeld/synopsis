@@ -1,0 +1,21 @@
+body
+  {
+    margin-left: 5%;
+    margin-right: 5%;
+    color: #000000;
+    background: #ffffff;
+  }
+:link { color: #bb0000;}
+:visited { color: #bb0000;}
+:active { color: #bb0000;}
+span.keyword { font-weight: bold;}
+span.variable { font-style: italic;}
+div.module { padding: 1.0em;}
+div.declarations { padding: 1.0em;}
+div.desc
+  {
+    border: none;
+    padding: 1.0em;
+    font-style: italic;
+    background: #eeeeee;
+  }
