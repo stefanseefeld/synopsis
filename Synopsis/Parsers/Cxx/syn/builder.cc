@@ -357,12 +357,16 @@ AST::Class* Builder::start_class(int lineno, const std::string& type, const std:
 AST::Class* Builder::start_class(int lineno, const std::string& type, const ScopedName& names)
 {
   // Find the forward declaration of this class
-  Types::Unknown* unknown = dynamic_cast<Types::Unknown*>(m_lookup->lookupType(names));
-  if (!unknown) {
-      std::cerr << "Fatal: Qualified class name did not reference an unknown type." << std::endl; exit(1);
+  Types::Declared* declared = dynamic_cast<Types::Declared*>(m_lookup->lookupType(names));
+  if (!declared) {
+      std::cerr << "Fatal: Qualified class name did not reference a declared type." << std::endl; exit(1);
+  }
+  AST::Forward* forward = dynamic_cast<AST::Forward*>(declared->declaration());
+  if (!forward) {
+      std::cerr << "Fatal: Qualified class name did not reference a forward declaration." << std::endl; exit(1);
   }
   // Create the Class
-  AST::Class* ns = new AST::Class(m_filename, lineno, type, unknown->name());
+  AST::Class* ns = new AST::Class(m_filename, lineno, type, forward->name());
   // Add to container scope
   ScopedName scope_name = names;
   scope_name.pop_back();
