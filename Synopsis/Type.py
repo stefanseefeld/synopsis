@@ -1,4 +1,3 @@
-# $Id: Type.py,v 1.13 2003/11/16 14:54:01 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -42,7 +41,7 @@ class Named(Type):
    """Named type abstract class"""
    def __init__(self, language, name):
       Type.__init__(self, language)
-      if type(name) != type(()) and type(name) != type([]):
+      if type(name) != tuple and type(name) != list:
          raise TypeError,"Name must be scoped"
       self.__name = tuple(name)
    def name(self):
@@ -221,18 +220,16 @@ class Function(Type):
    
    def set_returnType(self, returnType): self.__returnType = returnType
 
-class Dictionary:
-    
-   def __init__(self): self.__dict = {}
-   def __setitem__(self, name, type): self.__dict[tuple(name)] = type
-   def __getitem__(self, name): return self.__dict[tuple(name)]
-   def __delitem__(self, name): del self.__dict[tuple(name)]
-   def has_key(self, name): return self.__dict.has_key(tuple(name))
-   def keys(self): return self.__dict.keys()
-   def values(self): return self.__dict.values()
-   def items(self): return self.__dict.items()
-   def get(self, name, default=None):
-      return self.has_key(name) and self.__getitem__(name) or default
+class Dictionary(dict):
+   """Dictionary extends the builtin 'dict' in two ways:
+   It allows (modifiable) lists as keys (this is for convenience only, as users
+   don't need to convert to tuple themselfs), and it adds a 'lookup' method to
+   find a type in a set of scopes."""
+   def __setitem__(self, name, type): dict.__setitem__(self, tuple(name), type)
+   def __getitem__(self, name): return dict.__getitem__(self, tuple(name))
+   def __delitem__(self, name): dict.__delitem__(self, tuple(name))
+   def has_key(self, name): return dict.has_key(self, tuple(name))
+   def get(self, name, default=None): return dict.get(self, tuple(name), default)
    def lookup(self, name, scopes):
       """locate 'name' in one of the scopes"""
       for s in scopes:
@@ -244,8 +241,9 @@ class Dictionary:
       if self.has_key(name):
          return self[name]
       return None
-   def clear(self): self.__dict.clear()
    def merge(self, dict):
+      """merge in a foreign dictionary, overriding already defined types only
+      if they are of type 'Unknown'."""
       for i in dict.keys():
          if self.has_key(i): 
             if isinstance(self[i], Unknown):
