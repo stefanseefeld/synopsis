@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.17 2003/12/06 19:59:34 stefan Exp $
+# $Id: setup.py,v 1.18 2003/12/09 21:46:29 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -35,7 +35,7 @@ py_packages = ["Synopsis",
                "Synopsis.Processors", "Synopsis.Processors.Comments",
                "Synopsis.Formatters",
                "Synopsis.Formatters.HTML",
-               "Synopsis.Formatters.HTML.Pages",
+               "Synopsis.Formatters.HTML.Views",
                "Synopsis.Formatters.HTML.Parts",
                "Synopsis.Formatters.HTML.Comments",
                "Synopsis.Formatters.HTML.Fragments"]
