@@ -1,8 +1,19 @@
-#include "synopsis.hh"
-#include <iostream>
-
+// vim: set ts=8 sts=2 sw=2 et:
+/* This file contains implementation for class Synopsis, which converts the
+ * C++ AST into a Python AST.
+ *
+ * $Log: synopsis.cc,v $
+ * Revision 1.40  2002/10/20 02:25:08  chalky
+ * Remove null ptr hack - uses signal(SIGINT) to activate debugger
+ *
+ */
 #include <map>
 #include <set>
+
+#include <iostream>
+#include <signal.h>
+
+#include "synopsis.hh"
 
 #ifdef DO_TRACE
 int Trace::level = 0;
@@ -16,12 +27,7 @@ void nullObj()
   std::cout << "Null ptr." << std::endl;
   if (PyErr_Occurred())
       PyErr_Print();
-#if defined(__CYGWIN__) || defined(__cygwin__)
-  int* i = 0;
-  *i = 1;
-#else
   raise(SIGINT);
-#endif
 }
 
 //. A functor that returns true if the declaration is 'main'
