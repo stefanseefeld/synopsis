@@ -2,7 +2,7 @@
 
 Name:           Synopsis
 Prefix:		/usr
-Version:        0.4
+Version:        0.4.1
 Release:        1
 Group:          Development/Tools
 Copyright:      GPL
@@ -48,3 +48,4 @@ rm -rf $RPM_BUILD_ROOT
 %{prefix}/lib/python@python_version@/site-packages/Synopsis/Linker/*.py*
 %{prefix}/lib/python@python_version@/site-packages/Synopsis/Formatter/*.py*
 %{prefix}/lib/python@python_version@/site-packages/Synopsis/Formatter/HTML/*.py*
+%{prefix}/info/synopsis.info*
