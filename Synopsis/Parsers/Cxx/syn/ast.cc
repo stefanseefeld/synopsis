@@ -116,11 +116,11 @@ Inheritance::accept(Visitor* visitor)
 //
 
 Forward::Forward(const std::string& file, int line, const std::string& type, const ScopedName& name)
-: Declaration(file, line, type, name)
+: Declaration(file, line, type, name), m_template(NULL)
 { }
 
 Forward::Forward(AST::Declaration* decl)
-: Declaration(decl->filename(), decl->line(), decl->type(), decl->name())
+: Declaration(decl->filename(), decl->line(), decl->type(), decl->name()), m_template(NULL)
 { }
 
 void

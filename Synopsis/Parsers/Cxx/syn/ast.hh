@@ -361,6 +361,18 @@ namespace AST
     //. Accepts the given AST::Visitor
     virtual void
     accept(Visitor*);
+    
+    //. Returns the Template object if this is a template
+    Types::Template*
+    template_type() { return m_template; }
+
+    //. Sets the Template object for this class. NULL means not a template
+    void
+    set_template_type(Types::Template* type) { m_template = type; }
+
+  private:
+    //. The Template Type for this forward if it's a template
+    Types::Template*     m_template;
   }; // class Forward
 
   
@@ -537,7 +549,7 @@ namespace AST
   {
   public:
     //. The type of modifiers such as 'in', 'out'
-    typedef std::string Mods;
+    typedef std::vector<std::string> Mods;
 
     //. A vector of Parameter objects
     typedef std::vector<Parameter*> vector;
