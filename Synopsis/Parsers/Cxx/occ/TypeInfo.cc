@@ -276,7 +276,7 @@ bool TypeInfo::is_enum(PTree::Node *&spec)
   {
     Bind *bind;
     Environment *e = my_env;
-    PTree::Encoding name = my_encoding.get_base_name(e);
+    PTree::Encoding name = Environment::get_base_name(my_encoding, e);
     if(!name.empty() && e != 0)
       if(e->LookupType((const char *)&*name.begin(), name.size(), bind))
 	if(bind != 0 && bind->What() == Bind::isEnumName)
@@ -506,7 +506,7 @@ bool TypeInfo::resolve_typedef(Environment *&e, PTree::Encoding &ptr, bool resol
   Bind *bind;
   Class *c;
   Environment *orig_e = e;
-  PTree::Encoding name = ptr.get_base_name(e);
+  PTree::Encoding name = Environment::get_base_name(ptr, e);
   if(!name.empty() && e && e->LookupType((const char *)&*name.begin(),
 					 name.size(), bind))
     switch(bind->What())
@@ -543,7 +543,7 @@ PTree::Encoding TypeInfo::skip_cv(const PTree::Encoding &ptr, Environment *&e)
   {
     Bind *bind;
     int len;
-    PTree::Encoding name = remainder.get_base_name(e);
+    PTree::Encoding name = Environment::get_base_name(remainder, e);
     if(!name.empty() && e && e->LookupType((const char *)&*name.begin(), name.size(), bind))
       if(bind->What() != Bind::isTypedefName)
 	return remainder;
@@ -559,7 +559,7 @@ PTree::Encoding TypeInfo::skip_name(const PTree::Encoding &encode, Environment *
   if(!e) throw std::runtime_error("TypeInfo::skip_name(): nil environment");
 
   Environment *e2 = e;
-  PTree::Encoding ptr = encode.get_base_name(e2);
+  PTree::Encoding ptr = Environment::get_base_name(encode, e2);
   if (ptr.empty()) PTree::Encoding();
   else return PTree::Encoding(encode.begin() + ptr.size(), encode.end());
 }

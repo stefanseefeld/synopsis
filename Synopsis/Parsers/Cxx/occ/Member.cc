@@ -108,7 +108,7 @@ PTree::Encoding Member::encoded_name()
   if(!name.empty())
   {
     Environment *e = metaobject->GetEnvironment();
-    name = name.get_base_name(e);
+    name = Environment::get_base_name(name, e);
   }
   return name;
 }
@@ -147,7 +147,7 @@ bool Member::IsConstructor()
   if(!name.empty())
   {
     Environment *e = metaobject->GetEnvironment();
-    name = name.get_base_name(e);
+    name = Environment::get_base_name(name, e);
     if(!name.empty())
     {
       Class *sup = Supplier();
@@ -168,7 +168,7 @@ bool Member::IsDestructor()
   if(!name.empty())
   {
     Environment *e = metaobject->GetEnvironment();
-    name = name.get_base_name(e);
+    name = Environment::get_base_name(name, e);
     if(!name.empty()) return name.front() == '~';
   }
   return false;
@@ -559,7 +559,7 @@ void MemberList::Append(PTree::Node *declaration, PTree::Node *decl,
     PTree::Encoding name = decl->encoded_name();
     PTree::Encoding type = decl->encoded_type();
     Environment *e = this_class->GetEnvironment();
-    name = name.get_base_name(e);
+    name = Environment::get_base_name(name, e);
 
     CheckHeader(declaration, &mem);
 
@@ -651,7 +651,7 @@ int MemberList::Lookup(Environment* env, PTree::Node *member, int index)
   else
   {
     PTree::Encoding enc = member->encoded_name();
-    enc = enc.get_base_name(env);
+    enc = Environment::get_base_name(enc, env);
     name = std::string(enc.begin(), enc.end());
   }
 

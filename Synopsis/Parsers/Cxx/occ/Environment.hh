@@ -66,6 +66,8 @@ public:
     Class* LookupThis();
   Environment* IsMember(PTree::Node *);
 
+  static PTree::Encoding get_base_name(const PTree::Encoding &, Environment *&);
+
     void Dump();
     void Dump(int);
 
@@ -84,6 +86,12 @@ public:
     };
 
 private:
+
+  static Environment *resolve_typedef_name(PTree::Encoding::iterator, size_t,
+					   Environment *);
+  static int get_base_name_if_template(PTree::Encoding::iterator,
+				       Environment*&);
+
   Environment*	next;
   HashTable*		htable;
   Class*		metaobject;
