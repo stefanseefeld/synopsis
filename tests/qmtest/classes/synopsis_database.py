@@ -56,9 +56,14 @@ class Database(database.Database):
       suite_ids = []
 
       if id.startswith('Processors.Linker'):
+
+         # just make sure this isn't a test itself...
+         if os.path.exists(os.path.join(self.get_build_path(id), 'synopsis.py')):
+            raise NoSuchSuiteError, id
+
          test_ids = get_dir_tests(id, 'synopsis.py')
          suite_ids = [s for s in get_dir_suites(id) if s not in test_ids]
-         print id, test_ids, suite_ids
+
       elif id.startswith('Cxx-API'):
          # if 'src' exists, it contains the tests
          path = os.path.join(self.get_src_path(id), 'src')
@@ -146,8 +151,7 @@ class Database(database.Database):
 
       parameters = {}
       parameters['srcdir'] = self.srcdir
-      parameters['input'] = map(lambda x: os.path.join(dirname, x),
-                                dircache.listdir(dirname))
+      parameters['input'] = [os.path.join(dirname, x) for x in dircache.listdir(dirname) if x != '.svn']
       parameters['output'] = os.path.join(*id.split('.') + ['output.xml'])
       parameters['expected'] = os.path.join(path, 'expected.xml')
       parameters['synopsis'] = os.path.join(*id.split('.') + ['synopsis.py'])
