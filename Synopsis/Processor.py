@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.10 2003/11/22 21:42:58 stefan Exp $
+# $Id: Processor.py,v 1.11 2003/12/04 22:21:08 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -69,7 +69,7 @@ class Parametrized(object):
          if i in self._parameters:
             setattr(self, i, kwds[i])
          else:
-            raise TypeError, "No parameter '%s' in '%s'"%(i, self.__class__.__name__)
+            raise KeyError, "No parameter '%s' in '%s'"%(i, self.__class__.__name__)
 
 
 class Processor(Parametrized):
@@ -126,7 +126,9 @@ class Composite(Processor):
 
    def process(self, ast, **kwds):
       """apply a list of processors. The 'input' value is passed to the first
-      processor only, the 'output' to the last. All other keywords are ignored."""
+      processor only, the 'output' to the last. 'verbose' and 'debug' are
+      passed down if explicitely given as named values.
+      All other keywords are ignored."""
 
       if not self.processors:
          return ast
@@ -137,27 +139,31 @@ class Composite(Processor):
          my_kwds = {}
          if self.input: my_kwds['input'] = self.input
          if self.output: my_kwds['output'] = self.output
+         if kwds.has_key('verbose'): my_kwds['verbose'] = kwds['verbose']
+         if kwds.has_key('debug'): my_kwds['debug'] = kwds['debug']
          return self.processors[0].process(ast, **my_kwds)
 
-      # more than one processors...
+      # more than one processor...
 
       # call the first, passing the 'input' parameter, if present
-      if self.input:
-         ast = self.processors[0].process(ast, input = self.input)
-      else:
-         ast = self.processors[0].process(ast)
+      my_kwds = {}
+      if self.input: my_kwds['input'] = self.input
+      if kwds.has_key('verbose'): my_kwds['verbose'] = kwds['verbose']
+      if kwds.has_key('debug'): my_kwds['debug'] = kwds['debug']
+      ast = self.processors[0].process(ast, **my_kwds)
 
       # deal with all between the first and the last;
-      # they don't get any params
+      # they only get 'verbose' and 'debug' flags
+      my_kwds = {}
+      if kwds.has_key('verbose'): my_kwds['verbose'] = kwds['verbose']
+      if kwds.has_key('debug'): my_kwds['debug'] = kwds['debug']
       if len(self.processors) > 2:
          for p in self.processors[1:-1]:
-            ast = p.process(ast)
+            ast = p.process(ast, **my_kwds)
 
       # call the last, passing the 'output' parameter, if present
-      if self.output:
-         ast = self.processors[-1].process(ast, output = self.output)
-      else:
-         ast = self.processors[-1].process(ast)
+      if self.output: my_kwds['output'] = self.output
+      ast = self.processors[-1].process(ast, **my_kwds)
 
       return ast
    
