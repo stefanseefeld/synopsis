@@ -1,4 +1,4 @@
-#  $Id: HTML_Simple.py,v 1.12 2001/05/25 13:45:49 stefan Exp $
+#  $Id: HTML_Simple.py,v 1.13 2001/06/08 04:50:13 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.13  2001/06/08 04:50:13  stefan
+# add grouping support
+#
 # Revision 1.12  2001/05/25 13:45:49  stefan
 # fix problem with getopt error reporting
 #
@@ -87,6 +90,10 @@ class TableOfContents(AST.Visitor):
         
     def visitDeclarator(self, node):
         self.insert(node.name())
+
+    def visitGroup(self, group):
+        for declaration in group.declarations():
+            declaration.accept(self)
 
     def visitModule(self, module):
         self.insert(module.name())
@@ -208,6 +215,15 @@ class HTMLFormatter (Type.Visitor, AST.Visitor):
         self.write(span("keyword", const.type()) + " " + self.reference(self.__type_ref, self.__type_label) + " ")
         self.write(self.label(const.name()) + " = " + const.value())
         if len(const.comments()): self.write("\n" + desc(const.comments()) + "\n")            
+
+    def visitGroup(self, group):
+        self.write(span("keyword", group.type()) + "\n")
+        if len(group.comments()): self.write("\n" + desc(group.comments()) + "\n")            
+        self.write("<div class=\"group\">\n")
+        for declaration in group.declarations():
+            declaration.accept(self)
+            self.write("<br>\n")
+        self.write("</div>\n")
 
     def visitModule(self, module):
         self.write(span("keyword", module.type()) + " " + self.label(module.name()) + "\n")
