@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.15 2001/06/15 17:46:49 stefan Exp $
+# $Id: AST.py,v 1.16 2001/07/03 01:58:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.16  2001/07/03 01:58:56  chalky
+# Remove duplicate set_name method
+#
 # Revision 1.15  2001/06/15 17:46:49  stefan
 # set_realname is no longer needed since realname is computed from name
 #
@@ -132,9 +135,6 @@ class Declaration:
     def name(self):
 	"""The scoped tuple name of this declaration"""
 	return self.__name
-    def set_name(self, newname):
-	"""Name modifier, taking a list"""
-	self.__name = tuple(newname)
     def comments(self):
 	"""A list of Comment objects"""
 	return self.__comments
