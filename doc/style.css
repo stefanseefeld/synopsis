@@ -39,3 +39,6 @@ td.heading {
     padding: 0.1em;
     background: #aacccc;
 }
+div.section {
+    margin-left: 2em;
+}

@@ -1,0 +1,141 @@
+<html>
+  <head>
+    <title>Synopsis - Parsers</title>
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <h1>Synopsis Parsers</h1>
+    <p>Synopsis has three parsers available so far, for CORBA IDL, C++ and
+    Python. Additionally, in future support may be added for Java, Perl, C
+    with GTK-style objects, and anything else people write parsers for.</p>
+    <ul>
+      <li><a href="#idl">CORBA IDL</a></li>
+      <li><a href="#cxx">C++</a></li>
+      <li><a href="#py">Python</a></li>
+    </ul>
+
+    <a name="idl"><h2>CORBA IDL Parser</h2>
+    <div class="section">
+      <p>The IDL parser is based on the omniidl program distributed with
+      omniORB 3.0.2. Unfortunately this means that your PYTHONPATH must be set
+      properly so that the omniidl python files can be found. Generally if you
+      have a working omniORB installation this will not be a problem for you
+      since omniidl is a core tool.</p>
+      
+      <p>Due to the good design of omniidl, Synopsis is able to utilise the
+      Visitor pattern to translate the AST it generates into one that Synopsis
+      can use, which is a fairly simple process. Modules in IDL are translated
+      into AST.Modules, and Interfaces/Exceptions into AST.Classes. The
+      mapping is fairly straightforward, with the exception that attributes
+      are mapped to AST.Operations with the 'attribute' premodifier.</p>
+      
+      <h3>IDL Options</h3>
+      <div class="section">
+	<table border=0>
+	  <col width="100px">
+	  <tr><td valign="top">-K</td><td>keep comments</td></tr>
+	  <tr><td valign="top">-I <i>path</i></td><td>include the given
+	  directory in the #include search path</td></tr>
+	  <tr><td valign="top">-m</td><td>only include declarations from the
+	  input file in the generated AST, excluding those from #included
+	  files.</td></tr>
+	</table>
+      </div>
+    </div>
+
+
+    <a name="cxx"><h2>C++ Parser</h2>
+    <div class="section">
+      <p>The C++ parser is based on Shigeru Chiba's OpenC++ Compiler (OCC).
+      OCC generates a parse-tree which is then translated into Synopsis' AST
+      with some difficulty (4500 lines of C++). Part of the problem is the
+      need to do name lookup, and the complexities of C++'s type system.
+      However it works and is fairly fast. A large boost in speed was gained
+      for v0.3 by rewriting the whole parser module and only using
+      Python types at the very last moment. Some modifications were also made
+      to the OCC source such as comment extraction and a more efficient
+      algorithm for finding the line number of a declaration (this turned out
+      to be one of the major factors in the slowness of v0.2).</p>
+
+      <p>The source file is passed through the C++ Preprocessor (c++ -E)
+      before parsing so that files are #included and macros expanded. You will
+      probably want to exclude these included files from the generated AST
+      however with the -m flag, since they can increase the size enormously
+      as well as slowing down the Linker and Formatter. Don't forget you can
+      link to the stdc++ library with a TOC (table of contents) file!</p>
+
+      <p>Comment extraction in the C++ parser is somewhat haphazard, but seems
+      to work - comments are accumulated in a buffer by the tokenizer, and
+      collected by the parser at specific points in the declaration parsing
+      process. However it is possible to document individual declarators in a
+      declaration, such as:</p>
+      <pre>
+    /* declaration */
+    int
+      /* declarator 1 blah blah */
+      *i_ptr,
+      /* declarator 2 blah blah */
+      i_array[3];
+      </pre>
+      <p>The use of such commenting is debatable however. You can do the same
+      with enumerators however which is more useful! Comments are extracted
+      verbatim, so you need special formatting in the formatter to remove the
+      comment markers - // or /*. This allows you to make up your own mind
+      about what comment style you want to use.</p>
+
+      <h3>C++ Options</h3>
+      <div class="section">
+	<table border=0>
+	  <col width="100px">
+	  <tr><td valign="top">-D<i>macro</i></td><td>pass the macro
+	  definition to the preprocessor</td></tr>
+	  <tr><td valign="top">-I <i>path</i></td><td>include the given
+	  directory in the #include search path</td></tr>
+	  <tr><td valign="top">-m</td><td>only include declarations from the
+	  input file in the generated AST, excluding those from #included
+	  files.</td></tr>
+	</table>
+      </div>
+    </div>
+ 
+
+    <a name="py"><h2>Python Parser</h2>
+    <div class="section">
+      <p>The Python parser was written very shortly after the v0.2 release in
+      just a couple of hours, based on the parsing "example.py" included with
+      the Python 1.5.2 release. Whilst not as thorough as the IDL or C++
+      parsers, this is understandable given the type-agnostic behaviour of
+      Python syntax -- there is only so much you can extract from the source
+      code. This means that only functions, classes, and methods of classes
+      are extracted. It is recommended that authors use the docstrings to convey this
+      missing type information and available attributes to avoid confusion in
+      the readers of your API documentation.</p>
+
+      <p>Each file is mapped to a module in the AST, with directories being
+      also mapped as modules. You may use the -b option to specify a
+      "basename" which is stripped from the filename before converting it to a
+      module name, like so:</p>
+
+      <pre>synopsis -p Python -Wp,-b,../../src/ -o foo.syn ../../src/Program/foo.py</pre>
+
+      <p>Generates:</p>
+      <pre>
+      module Program {
+	module foo {
+	  // declarations in foo.py here
+	}
+      }
+      </pre>
+
+      <h3>Python Options</h3>
+      <div class="section">
+	<table border=0>
+	  <col width="100px">
+	  <tr><td valign="top">-b <i>path</i></td><td>Sets the basename to
+	  strip from the filename before converting to a module name.</td></tr>
+	</table>
+      </div>
+    </div>
+    
+  </body>
+</html><!-- vim: set sts=2 ts=8 sw=2: -->
