@@ -60,6 +60,9 @@ public:
   const std::string& filename() const { return m_filename; }
   //. Changes the current filename
   void set_filename(const std::string& filename);
+
+  //. Returns the list of builtin decls ("__null_t", "true", etc.)
+  const AST::Declaration::vector& builtin_decls() const;
   
   //
   // State Methods

@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <map>
+#include <set>
 
 #ifdef DO_TRACE
 int Trace::level = 0;
@@ -66,6 +67,8 @@ struct Synopsis::Private {
     typedef std::map<void*, PyObject*> ObjMap;
     // Maps from C++ objects to PyObjects
     ObjMap obj_map;
+    // A set of builtin declarations to not to store in global namespace
+    std::set<AST::Declaration*> builtin_decl_set;
 
     // Note that these methods always succeed
     
@@ -270,9 +273,25 @@ void Synopsis::onlyTranslateMain()
 
 void Synopsis::translate(AST::Scope* scope)
 {
+    AST::Declaration::vector globals, &decls = scope->declarations();
+    AST::Declaration::vector::iterator it = decls.begin();
+
+    // List all declarations not in the builtin_decl_set
+    for (; it != decls.end(); ++it)
+	if (m->builtin_decl_set.find(*it) == m->builtin_decl_set.end())
+	    globals.push_back(*it);
+
     PyObject_CallMethod(m_declarations, "extend", "O",
-	m->List(scope->declarations())
+	m->List(globals)
     );
+}
+
+void Synopsis::set_builtin_decls(const AST::Declaration::vector& builtin_decls)
+{
+    // Insert Base*'s into a set for faster lookup
+    AST::Declaration::vector::const_iterator it = builtin_decls.begin();
+    while (it != builtin_decls.end())
+	m->builtin_decl_set.insert(*it++);
 }
 
 //
