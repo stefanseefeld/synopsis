@@ -47,7 +47,7 @@ html/python: py.syn all.xref
 	@echo formatting $@
 	$(synopsis) html --output=$@ $<
 
-html/cxx_api: api.syn all.xref
+html/cxx-api: api.syn all.xref
 	@echo formatting $@
 	$(synopsis) html --output=html/$@ $<
 
