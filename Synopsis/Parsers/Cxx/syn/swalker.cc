@@ -151,15 +151,6 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
       continue;
     }
     update_line_number(node);
-    // Make sure comment is in same file!
-    if (decl && (my_file != decl->file()))
-    {
-      node = next;
-      // Empty list of comments to add: an #include in the middle is not
-      // allowed!
-      comments.clear();
-      continue;
-    }
 
     // Check if comment is continued, eg: consecutive C++ comments
     while (next && PTree::first(next) && PTree::first(next)->is_atom())
@@ -205,7 +196,7 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
 
     if (decl)
     {
-      AST::Comment* comment = make_Comment(my_file, 0, first, suspect);
+      AST::Comment* comment = make_Comment(my_file, my_lineno, first, suspect);
       comments.push_back(comment);
     }
     if (my_links) my_links->long_span(first, "file-comment");
