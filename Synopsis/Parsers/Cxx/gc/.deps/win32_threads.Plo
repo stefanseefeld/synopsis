@@ -1,1 +1,0 @@
-win32_threads.lo win32_threads.o: win32_threads.c
