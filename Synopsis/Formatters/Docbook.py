@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.3 2001/02/11 05:39:33 stefan Exp $
+#  $Id: Docbook.py,v 1.4 2001/02/11 19:33:32 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.4  2001/02/11 19:33:32  stefan
+# made the C++ parser formally accept the config object; synopsis now correctly formats if a formatter is present, and only dumps a syn file otherwise; some minor fixes to DocBook
+#
 # Revision 1.3  2001/02/11 05:39:33  stefan
 # first try at a more powerful config framework for synopsis
 #
@@ -103,15 +106,11 @@ class Formatter (Type.Visitor, AST.Visitor):
             
     def visitParametrized(self, type):
         type.template().accept(self)
-        type_ref = self.__type_ref + "&lt;"
         type_label = self.__type_label + "&lt;"
-        parameters_ref = []
         parameters_label = []
         for p in type.parameters():
             p.accept(self)
-            parameters_ref.append(self.__type_ref)
-            parameters_label.append(self.reference(self.__type_ref, self.__type_label))
-        self.__type_ref = type_ref + string.join(parameters_ref, ", ") + "&gt;"
+            parameters_label.append(self.__type_label)
         self.__type_label = type_label + string.join(parameters_label, ", ") + "&gt;"
 
     def visitFunctionType(self, type):
@@ -128,7 +127,7 @@ class Formatter (Type.Visitor, AST.Visitor):
             self.__declarator[-1] = self.__declarator[-1] + "[" + str(i) + "]"
 
     def visitTypedef(self, typedef):
-        print "sorry, not implemented"
+        print "sorry, <typedef> not implemented"
 
     def visitVariable(self, variable):
         self.start_entity("fieldsynopsis")
@@ -138,7 +137,7 @@ class Formatter (Type.Visitor, AST.Visitor):
         self.end_entity("fieldsynopsis")
 
     def visitConst(self, const):
-        print "sorry, not implemented"
+        print "sorry, <const> not implemented"
 
     def visitModule(self, module):
         self.scope().append(module.name()[-1])
@@ -157,7 +156,7 @@ class Formatter (Type.Visitor, AST.Visitor):
 
     def visitInheritance(self, inheritance):
         map(lambda a, this=self: this.entity("modifier", a), inheritance.attributes())
-        self.entity("classname", inheritance.parent().name())
+        self.entity("classname", Util.ccolonName(inheritance.parent().name(), self.scope()))
 
     def visitParameter(self, parameter):
         self.start_entity("methodparam")
@@ -169,7 +168,7 @@ class Formatter (Type.Visitor, AST.Visitor):
         self.end_entity("methodparam")
 
     def visitFunction(self, function):
-        print "sorry, not implemented"
+        print "sorry, <function> not implemented"
 
     def visitOperation(self, operation):
         if operation.language() == "IDL" and operation.type() == "attribute":
@@ -182,17 +181,19 @@ class Formatter (Type.Visitor, AST.Visitor):
             self.end_entity("fieldsynopsis")
         else:
             self.start_entity("methodsynopsis")
-            operation.returnType().accept(self)
-            self.entity("type", self.type_label())
+            ret = operation.returnType()
+            if ret:
+                ret.accept(self)
+                self.entity("type", self.type_label())
             self.entity("methodname", Util.ccolonName(operation.realname(), self.scope()))
             for parameter in operation.parameters(): parameter.accept(self)
             map(lambda e, this=self: this.entity("exceptionname", e), operation.exceptions())
             self.end_entity("methodsynopsis")
 
     def visitEnumerator(self, enumerator):
-        print "sorry, not implemented"
+        print "sorry, <enumerator> not implemented"
     def visitEnum(self, enum):
-        print "sorry, not implemented"
+        print "sorry, <enum> not implemented"
 
 def usage():
     """Print usage to stdout"""
