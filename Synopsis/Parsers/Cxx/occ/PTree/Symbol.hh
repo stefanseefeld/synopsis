@@ -56,7 +56,9 @@ public:
     Encoding type;
   };
 
-  virtual ~Scope();
+  Scope() : my_refcount(1) {}
+  Scope *ref() { ++my_refcount; return this;}
+  void unref() { if (!--my_refcount) delete this;}
 
   virtual const Scope *global() const { return this;}
 
@@ -89,6 +91,10 @@ public:
 
   static PTree::Encoding get_base_name(const Encoding &enc, const Scope *&scope);
 
+protected:
+  //. Scopes are ref counted, and thus are deleted only by 'unref()'
+  virtual ~Scope();
+
 private:
   typedef std::map<Encoding, const Symbol *> SymbolTable;
 
@@ -100,16 +106,21 @@ private:
   void declare(const Encoding &name, const Symbol *symbol);
 
   SymbolTable my_symbols;
+  size_t      my_refcount;
 };
 
 //. a NestedScope has an outer Scope.
 class NestedScope : public Scope
 {
 public:
-  NestedScope(Scope *outer) : my_outer(outer) {}
+  NestedScope(Scope *outer) : my_outer(outer->ref()) {}
   virtual const Scope *global() const { return my_outer->global();}
   virtual const Symbol *lookup(const Encoding &) const throw();
   virtual void dump(std::ostream &) const;
+
+protected:
+  ~NestedScope() { my_outer->unref();}
+
 private:
   Scope *my_outer;
 };

@@ -32,8 +32,18 @@ PTree::Node *wrap_comments(const Lexer::Comments &c)
 
 struct Parser::ScopeGuard
 {
-  ScopeGuard(Scopes &s, PTree::Scope *scope) : stack(s) { stack.push(scope);}
-  ~ScopeGuard() { delete stack.top(); stack.pop();}
+  //. push a new scope onto the stack, assuming ownership
+  ScopeGuard(Scopes &s, PTree::Scope *scope) : stack(s) 
+  {
+    stack.push(scope);
+  }
+  //. pop a scope from the stack
+  ~ScopeGuard() 
+  {
+    PTree::Scope *top = stack.top();
+    stack.pop();
+    top->unref();
+  }
   Scopes &stack;
 };
 
@@ -48,7 +58,9 @@ Parser::Parser(Lexer *lexer, int ruleset)
 
 Parser::~Parser()
 {
-  delete my_scopes.top();
+  PTree::Scope *top = my_scopes.top();
+  my_scopes.pop();
+  top->unref();
 }
 
 bool Parser::error_message(const char* msg, PTree::Node *name, PTree::Node *where)
@@ -2593,8 +2605,6 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   my_comments = 0;
   if(head != 0) spec = new PTree::ClassSpec(head, spec, 0);
 
-  my_scopes.top()->declare(spec);
-
   if(my_lexer->look_ahead(0) == '{')
   {
     encode.anonymous();
@@ -2603,7 +2613,6 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   else
   {
     if(!this->name(name, encode)) return false;
-
     spec = PTree::snoc(spec, name);
     t = my_lexer->look_ahead(0);
     if(t == ':')
@@ -2619,8 +2628,9 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
       return true;	// class.key Identifier
     }
   }
-
   spec->set_encoded_name(encode);
+  my_scopes.top()->declare(spec);
+
   if(!class_body(body)) return false;
 
   spec = PTree::snoc(spec, body);
@@ -2730,7 +2740,8 @@ bool Parser::class_body(PTree::Node *&body)
 
   my_lexer->get_token(tk);
   body = new PTree::ClassBody(ob, mems, 
-			      new PTree::CommentedAtom(tk, wrap_comments(my_lexer->get_comments())));
+			      new PTree::CommentedAtom(tk, wrap_comments(my_lexer->get_comments())),
+			      my_scopes.top());
   return true;
 }
 

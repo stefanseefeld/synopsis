@@ -111,12 +111,13 @@ const Symbol *Scope::lookup(const Encoding &id) const throw()
 
 void Scope::dump(std::ostream &os) const
 {
+  os << "Scope::dump:" << std::endl;
   for (SymbolTable::const_iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
   {
     if (const VariableName *variable = dynamic_cast<const VariableName *>(i->second))
       os << "Variable: " << i->first << ' ' << variable->type() << std::endl;
     else if (const ConstName *const_ = dynamic_cast<const ConstName *>(i->second))
-      os << "Const:    " << i->first << ' ' << const_->type() << " (" << const_->value() << '"' << std::endl;
+      os << "Const:    " << i->first << ' ' << const_->type() << " (" << const_->value() << ')' << std::endl;
     else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
       os << "Type: " << i->first << ' ' << type->type() << std::endl;
     else // shouldn't get here
@@ -224,7 +225,7 @@ const Symbol *NestedScope::lookup(const Encoding &name) const throw()
 
 void NestedScope::dump(std::ostream &os) const
 {
+  os << "NestedScope::dump:" << std::endl;
   Scope::dump(os);
-  std::cout << "outer scope:" << std::endl;
   my_outer->dump(os);
 }

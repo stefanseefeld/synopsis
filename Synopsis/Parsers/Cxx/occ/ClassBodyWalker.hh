@@ -25,7 +25,7 @@ public:
   void append_new_members(Class*, PTree::Array&, bool&);
   void visit(PTree::Typedef *);
   void visit(PTree::MetaclassDecl *);
-  PTree::Node *translate_class_body(PTree::Node *block, PTree::Node *bases, Class*);
+  PTree::ClassBody *translate_class_body(PTree::ClassBody *block, PTree::Node *bases, Class*);
   PTree::Node *translate_type_specifier(PTree::Node *);  
   PTree::Node *translate_declarators(PTree::Node *);
   PTree::Node *translate_assign_initializer(PTree::Declarator*, PTree::Node *);

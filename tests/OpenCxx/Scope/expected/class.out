@@ -1,0 +1,9 @@
+Class Spec for 'Class':
+NestedScope::dump:
+Scope::dump:
+Const:    ALL  (255)
+Const:    NONE  (0)
+Type: [4]Enum 
+Type: [6]Nested 
+Scope::dump:
+Type: [5]Class 
