@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.6 2001/07/10 14:41:22 chalky Exp $
+# $Id: NameIndex.py,v 1.7 2002/03/14 00:19:47 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.7  2002/03/14 00:19:47  chalky
+# Added demo of template specializations, and fixed HTML formatter to deal with
+# angle brackets in class names :)
+#
 # Revision 1.6  2001/07/10 14:41:22  chalky
 # Make treeformatter config nicer
 #
@@ -132,7 +136,7 @@ class NameIndex (Page.Page):
 	if isinstance(decl, AST.Function):
 	    realname = decl.realname()[-1] + '()'
 	else:
-	    realname = name[-1]
+	    realname = anglebrackets(name[-1])
 	self.write('\n')
 	title = string.join(name, '::')
 	type = decl.type()

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.21 2001/07/19 04:03:05 chalky Exp $
+# $Id: Part.py,v 1.22 2002/03/14 00:19:47 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.22  2002/03/14 00:19:47  chalky
+# Added demo of template specializations, and fixed HTML formatter to deal with
+# angle brackets in class names :)
+#
 # Revision 1.21  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -174,7 +178,7 @@ class Part(Type.Visitor, AST.Visitor):
 	and the optional label is an alternative name to use as the link text.
 	The name is looked up in the TOC so the link may not be local. The
 	optional keys are appended as attributes to the A tag."""
-	if not label: label = Util.ccolonName(name, self.scope())
+	if not label: label = anglebrackets(Util.ccolonName(name, self.scope()))
 	entry = config.toc[name]
 	if entry: return apply(href, (rel(self.filename(), entry.link), label), keys)
 	return label or ''

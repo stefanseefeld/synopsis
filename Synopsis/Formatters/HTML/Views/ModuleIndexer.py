@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.7 2001/07/10 02:55:51 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.8 2002/03/14 00:19:47 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.8  2002/03/14 00:19:47  chalky
+# Added demo of template specializations, and fixed HTML formatter to deal with
+# angle brackets in class names :)
+#
 # Revision 1.7  2001/07/10 02:55:51  chalky
 # Better comments in some files, and more links work with the nested layout
 #
@@ -130,7 +134,7 @@ class ModuleIndexer(Page.Page):
 		    self.write(core.reference(child.name(), ns.name(), target='main', onClick=script))
 		else:
 		    url = rel(self.__filename, config.files.nameOfScope(child.name()))
-		    label = Util.ccolonName(child.name(), ns.name())
+		    label = anglebrackets(Util.ccolonName(child.name(), ns.name()))
 		    self.write(href(url, label, target='main'))
 		self.write('<br>')
 	self.end_file()
