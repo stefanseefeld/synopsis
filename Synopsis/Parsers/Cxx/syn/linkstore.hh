@@ -58,8 +58,11 @@
 
 #include "ast.hh"
 #include <iostream>
+namespace Synopsis
+{
 class Parser;
 namespace PTree { class Node;}
+}
 class SWalker;
 class FileFilter;
 
@@ -101,23 +104,23 @@ public:
 
     //. Store a link for the given Ptree node. If a decl is given, store an
     //. xref too
-  void link(PTree::Node *node, Context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl = 0);
+  void link(Synopsis::PTree::Node *node, Context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl = 0);
 
     //. Store a Definition link for the given Ptree node using the AST node
-  void link(PTree::Node *node, const AST::Declaration* decl);
+  void link(Synopsis::PTree::Node *node, const AST::Declaration* decl);
 
     //. Store a link for the given node using the given Context, which defaults
     //. to a Reference
-  void link(PTree::Node *node, Types::Type*, Context = Reference);
+  void link(Synopsis::PTree::Node *node, Types::Type*, Context = Reference);
 
     //. Store a span
     void span(int line, int col, int len, const char* desc);
 
     //. Store a span for the given Ptree node
-  void span(PTree::Node *node, const char* desc);
+  void span(Synopsis::PTree::Node *node, const char* desc);
 
     //. Store a long (possibly multi-line) span
-  void long_span(PTree::Node *node, const char* desc);
+  void long_span(Synopsis::PTree::Node *node, const char* desc);
 
     //. Returns the SWalker
     SWalker* swalker();

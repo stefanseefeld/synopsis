@@ -37,6 +37,8 @@
 
 #include "Class.hh"
 
+using namespace Synopsis;
+
 class QuoteClass : public Class 
 {
 public:

@@ -1,8 +1,10 @@
-#include <Buffer.hh>
-#include <Lexer.hh>
+#include <Synopsis/Buffer.hh>
+#include <Synopsis/Lexer.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+
+using namespace Synopsis;
 
 int main(int argc, char **argv)
 {

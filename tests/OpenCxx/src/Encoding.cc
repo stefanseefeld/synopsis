@@ -1,9 +1,9 @@
 #include <Synopsis/Trace.hh>
-#include <Buffer.hh>
-#include <Lexer.hh>
-#include <Parser.hh>
-#include <PTree.hh>
-#include <PTree/Writer.hh>
+#include <Synopsis/Buffer.hh>
+#include <Synopsis/Lexer.hh>
+#include <Synopsis/Parser.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Writer.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>

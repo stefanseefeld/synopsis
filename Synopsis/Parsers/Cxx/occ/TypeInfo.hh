@@ -9,7 +9,9 @@
 #ifndef _TypeInfo_hh
 #define _TypeInfo_hh
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
+
+using namespace Synopsis;
 
 class Class;
 class Environment;

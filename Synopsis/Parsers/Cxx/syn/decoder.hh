@@ -24,7 +24,7 @@
 #ifndef H_SYNOPSIS_CPP_DECODER
 #define H_SYNOPSIS_CPP_DECODER
 
-#include <PTree/Encoding.hh>
+#include <Synopsis/PTree/Encoding.hh>
 #include <string>
 #include <vector>
 
@@ -43,7 +43,7 @@ class Builder;
 class Lookup;
 
 //. A string type for the encoded names and types
-typedef PTree::Encoding::Code code;
+typedef Synopsis::PTree::Encoding::Code code;
 //. A string iterator type for the encoded names and types
 typedef code::iterator code_iter;
 
@@ -56,7 +56,7 @@ public:
     Decoder(Builder*);
 
     //. Initialise the type decoder
-    void init(const PTree::Encoding &);
+  void init(const Synopsis::PTree::Encoding &);
 
     //. Returns the iterator used in decoding
     code_iter& iter()
@@ -91,7 +91,7 @@ public:
     std::string decodeName(code_iter);
 
     //. Decode a name starting from the given char*
-    std::string decodeName(const PTree::Encoding &);
+  std::string decodeName(const Synopsis::PTree::Encoding &);
 
     //. Decode a qualified name with only names in it
     void decodeQualName(ScopedName& names);
@@ -99,7 +99,7 @@ public:
     //. Returns true if the char* is pointing to a name (that starts with a
     //. length). This is needed since char can be signed or unsigned, and
     //. explicitly casting to one or the other is ugly
-  bool isName(const PTree::Encoding &);
+  bool isName(const Synopsis::PTree::Encoding &);
 
 private:
     //. The encoded type string currently being decoded
@@ -114,7 +114,7 @@ private:
     Lookup* m_lookup;
 };
 
-inline bool Decoder::isName(const PTree::Encoding &e)
+inline bool Decoder::isName(const Synopsis::PTree::Encoding &e)
 {
   return !e.empty() && e.at(0) > 0x80;
 }

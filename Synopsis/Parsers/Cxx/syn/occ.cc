@@ -16,12 +16,12 @@
 #include "filter.hh"
 #include "linkstore.hh"
 
-#include <occ/PTree.hh>
-#include <occ/PTree/Display.hh>
-#include <occ/SymbolLookup.hh>
-#include <occ/Buffer.hh>
-#include <occ/Lexer.hh>
-#include <occ/Parser.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Display.hh>
+#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/Buffer.hh>
+#include <Synopsis/Lexer.hh>
+#include <Synopsis/Parser.hh>
 #include <occ/MetaClass.hh>
 #include <occ/Environment.hh>
 

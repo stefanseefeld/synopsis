@@ -10,8 +10,8 @@
 #include <string>
 #include <typeinfo>
 
-#include <occ/PTree.hh>
-#include <occ/Parser.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/Parser.hh>
 #undef Scope
 
 #include "linkstore.hh"
@@ -23,6 +23,8 @@
 #include "strace.hh"
 #include "type.hh"
 #include "ast.hh"
+
+using namespace Synopsis;
 
 void SWalker::visit(PTree::ReturnStatement *node)
 {

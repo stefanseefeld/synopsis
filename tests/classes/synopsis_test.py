@@ -150,11 +150,11 @@ class OpenCxxResource(Resource):
       if not os.path.isdir(os.path.dirname(self.exe)):
          os.makedirs(os.path.dirname(self.exe))
 
-      cppflags = os.popen('sh -c "PKG_CONFIG_PATH=%s pkg-config --cflags OpenCxx"'%self.builddir).read()
+      cppflags = os.popen('sh -c "PKG_CONFIG_PATH=%s pkg-config --cflags Synopsis"'%self.builddir).read()
       command = '%s %s %s %s -o %s %s %s'%(self.CXX,
                                            self.CPPFLAGS + ' ' + cppflags, self.CXXFLAGS,
                                            self.LDFLAGS,
-                                           self.exe, self.src, '%s/opencxx.a '%self.builddir + self.LIBS)
+                                           self.exe, self.src, '-L %s/lib -lSynopsis '%self.builddir + self.LIBS)
       compiler = RedirectedExecutable()
       status = compiler.Run(string.split(command))
       if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
@@ -187,6 +187,10 @@ class OpenCxxTest(Test):
 
       test = RedirectedExecutable()
       command = '%s %s %s'%(self.applet, self.output, self.input)
+      # little hack to make sure the library we see is the one from
+      # the current build
+      # Is there a portable way to achieve this ?
+      os.environ['LD_LIBRARY_PATH'] = os.path.abspath('../src/lib')
       status = test.Run(command.split())
       if os.WIFSIGNALED(status):
          result.Fail('program killed with signal %i'%os.WTERMSIG(status))

@@ -23,8 +23,8 @@
 #include <iomanip>
 #include <map>
 
-#include <occ/PTree.hh>
-#include <occ/Buffer.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/Buffer.hh>
 
 namespace 
 {

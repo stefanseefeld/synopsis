@@ -8,14 +8,16 @@
 
 #include "Environment.hh"
 #include "HashTable.hh"
-#include <PTree.hh>
-#include "Lexer.hh"
-#include "Walker.hh"
+#include <Synopsis/PTree.hh>
+#include "Synopsis/Lexer.hh"
+#include "occ/Walker.hh"
 #include "TypeInfo.hh"
 #include "Class.hh"
-#include "Parser.hh"
+#include "Synopsis/Parser.hh"
 #include <iostream>
 #include <cassert>
+
+using namespace Synopsis;
 
 // class Environment
 

@@ -1,0 +1,106 @@
+dbg_mlc.lo dbg_mlc.o: dbg_mlc.c include/private/dbg_mlc.h \
+  include/private/gc_priv.h include/gc.h include/gc_config_macros.h \
+  /usr/lib/gcc-lib/i386-linux/3.2.3/include/stddef.h \
+  /usr/include/features.h /usr/include/sys/cdefs.h \
+  /usr/include/gnu/stubs.h include/gc_pthread_redirects.h \
+  /usr/include/pthread.h /usr/include/sched.h /usr/include/bits/types.h \
+  /usr/include/bits/wordsize.h /usr/include/bits/typesizes.h \
+  /usr/include/time.h /usr/include/bits/sched.h /usr/include/bits/time.h \
+  /usr/include/signal.h /usr/include/bits/sigset.h \
+  /usr/include/bits/pthreadtypes.h /usr/include/bits/initspin.h \
+  /usr/include/bits/sigthread.h /usr/include/bits/signum.h \
+  /usr/include/bits/siginfo.h /usr/include/bits/sigaction.h \
+  /usr/include/bits/sigcontext.h /usr/include/asm/sigcontext.h \
+  /usr/include/bits/sigstack.h include/gc_mark.h \
+  include/private/gcconfig.h include/private/gc_hdrs.h \
+  /usr/include/stdlib.h /usr/include/sys/types.h /usr/include/endian.h \
+  /usr/include/bits/endian.h /usr/include/sys/select.h \
+  /usr/include/bits/select.h /usr/include/sys/sysmacros.h \
+  /usr/include/alloca.h include/private/gc_locks.h /usr/include/string.h \
+  /usr/include/bits/string.h /usr/include/bits/string2.h
+
+include/private/dbg_mlc.h:
+
+include/private/gc_priv.h:
+
+include/gc.h:
+
+include/gc_config_macros.h:
+
+/usr/lib/gcc-lib/i386-linux/3.2.3/include/stddef.h:
+
+/usr/include/features.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/gnu/stubs.h:
+
+include/gc_pthread_redirects.h:
+
+/usr/include/pthread.h:
+
+/usr/include/sched.h:
+
+/usr/include/bits/types.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/bits/typesizes.h:
+
+/usr/include/time.h:
+
+/usr/include/bits/sched.h:
+
+/usr/include/bits/time.h:
+
+/usr/include/signal.h:
+
+/usr/include/bits/sigset.h:
+
+/usr/include/bits/pthreadtypes.h:
+
+/usr/include/bits/initspin.h:
+
+/usr/include/bits/sigthread.h:
+
+/usr/include/bits/signum.h:
+
+/usr/include/bits/siginfo.h:
+
+/usr/include/bits/sigaction.h:
+
+/usr/include/bits/sigcontext.h:
+
+/usr/include/asm/sigcontext.h:
+
+/usr/include/bits/sigstack.h:
+
+include/gc_mark.h:
+
+include/private/gcconfig.h:
+
+include/private/gc_hdrs.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/endian.h:
+
+/usr/include/bits/endian.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/sys/sysmacros.h:
+
+/usr/include/alloca.h:
+
+include/private/gc_locks.h:
+
+/usr/include/string.h:
+
+/usr/include/bits/string.h:
+
+/usr/include/bits/string2.h:

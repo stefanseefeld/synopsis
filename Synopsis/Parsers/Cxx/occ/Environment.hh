@@ -8,13 +8,15 @@
 #ifndef _Environment_hh
 #define _Environment_hh
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 
 class Class;
 class HashTable;
 class Bind;
 class TypeInfo;
 class Walker;
+
+using namespace Synopsis;
 
 class Environment : public PTree::LightObject 
 {

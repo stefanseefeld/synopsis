@@ -12,13 +12,14 @@
   implied warranty.
 */
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 #include "Member.hh"
 #include "Class.hh"
-#include "Lexer.hh"
+#include "Synopsis/Lexer.hh"
 #include "Environment.hh"
 #include "Walker.hh"
 
+using namespace Synopsis;
 // class Member
 
 Member::Member()

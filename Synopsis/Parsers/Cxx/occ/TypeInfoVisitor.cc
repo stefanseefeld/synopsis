@@ -7,6 +7,8 @@
 #include <TypeInfoVisitor.hh>
 #include <Environment.hh>
 
+using namespace Synopsis;
+
 TypeInfoVisitor::TypeInfoVisitor(TypeInfo &info, Environment *env)
   : my_info(info),
     my_env(env)

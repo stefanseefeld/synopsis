@@ -22,12 +22,12 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@
 
 HDR	:= $(shell find $(srcdir)/include -name '*.hh' -print)
-SRC	:= Trace.cc Path.cc ErrorHandler.cc
+SRC	:= Path.cc ErrorHandler.cc
 OBJ	:= $(patsubst %.cc, src/%.o, $(SRC))
 HDR_SYN	:= $(patsubst $(srcdir)/%, %.syn, $(HDR))
 CC_SYN	:= $(patsubst %, src/%.syn, $(SRC))
 
-TARGET	:= lib/libSynopsis.a
+TARGET	:= lib/Cxx-API.a
 
 vpath %.cc $(srcdir)/src
 vpath %.hh $(srcdir)

@@ -9,7 +9,7 @@
 #ifndef H_SYNOPSIS_CPP_SWALKER
 #define H_SYNOPSIS_CPP_SWALKER
 
-#include <occ/PTree.hh>
+#include <Synopsis/PTree.hh>
 #include <occ/Walker.hh>
 // Stupid occ
 #undef Scope
@@ -19,7 +19,7 @@
 
 // Forward declarations
 class Builder;
-class Buffer;
+namespace Synopsis {class Buffer;}
 class Decoder;
 class TypeFormatter;
 class LinkStore;
@@ -46,7 +46,7 @@ class SWalker : public Walker
 {
 public:
   //. Constructor
-  SWalker(FileFilter*, Builder*, Buffer*);
+  SWalker(FileFilter*, Builder*, Synopsis::Buffer*);
   virtual ~SWalker();
 
   //. Sets store links to true.
@@ -58,7 +58,7 @@ public:
   std::string parse_name(PTree::Node *) const;
   
   //. Get the Buffer object
-  Buffer* buffer() { return my_buffer;}
+  Synopsis::Buffer* buffer() { return my_buffer;}
   //. Get the Builder object
   Builder* builder() { return my_builder;}
   //. Get the TypeFormatter object
@@ -190,7 +190,7 @@ private:
 
   Builder* my_builder;
   FileFilter* my_filter;
-  Buffer* my_buffer;
+  Synopsis::Buffer* my_buffer;
   Decoder* my_decoder;
   Lookup* my_lookup;
 

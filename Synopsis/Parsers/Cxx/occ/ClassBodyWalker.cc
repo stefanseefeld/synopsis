@@ -12,11 +12,13 @@
   implied warranty.
 */
 
-#include "PTree.hh"
+#include "Synopsis/PTree.hh"
 #include "ClassBodyWalker.hh"
 #include "Class.hh"
 #include "Environment.hh"
 #include "Member.hh"
+
+using namespace Synopsis;
 
 ClassBodyWalker::ClassBodyWalker(Walker* w, PTree::Array* tlist)
   : ClassWalker(w), 

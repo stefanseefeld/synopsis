@@ -8,6 +8,7 @@
 SHELL	:= /bin/sh
 
 srcdir	:= @srcdir@
+builddir:= @builddir@
 synopsis:= python synopsis.py
 
 PYTHON	:= @PYTHON@
@@ -15,28 +16,19 @@ PYTHON	:= @PYTHON@
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I occ -I $(srcdir) -I $(srcdir)/../../../Cxx-API/include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../../src -I $(srcdir)/../../../src -I $(srcdir) -I $(srcdir)/../../../Cxx-API/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../Cxx-API/lib/libSynopsis.a @LIBS@
+LIBS	:= -L ../../../src/lib -lSynopsis ../../../Cxx-API/lib/Cxx-API.a @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-GC_LIB	:= @GC_LIB@
+#GC_LIB	:= @GC_LIB@
 
 OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
-OCC_FILES := PTree/Node PTree/Encoding PTree/operations \
-             PTree/Atoms PTree/Lists PTree/generation \
-             PTree/Visitor PTree/Display PTree/Writer \
-             SymbolLookup/Scope SymbolLookup/Scopes \
-             SymbolLookup/ConstEvaluator SymbolLookup/TypeEvaluator \
-             SymbolLookup/OverloadResolver \
-             SymbolLookup/Table \
-             SymbolLookup/Visitor \
-             Buffer HashTable Lexer Parser \
-             Environment TypeInfo TypeInfoVisitor \
+OCC_FILES := HashTable Environment TypeInfo TypeInfoVisitor \
              Walker Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
@@ -45,8 +37,6 @@ SYN_FILES := Translator occ swalker ast builder type dict \
              lookup filter
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/*.hh))
-HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/PTree/*.hh))
-HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/occ/SymbolLookup/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/syn/*.hh))
 
 # Generate sources, objs and debug-objs from the FILES
@@ -57,7 +47,7 @@ SYN_OBJ	:= $(patsubst %, syn/%.o, $(SYN_FILES))
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
-DEP	:= $(patsubst %.cc, %.d, $(SRC) display-ptree.cc dump-symbols.cc)
+DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
 TARGETS	:= $(OCC_SO) $(LINK_SO)
 
@@ -66,13 +56,7 @@ vpath %.c $(srcdir)
 vpath %.h $(srcdir)
 vpath %.hh $(srcdir)
 
-all: $(TARGETS) display-ptree dump-symbols
-
-display-ptree: display-ptree.o $(OCC_OBJ)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(GC_LIB) $(LIBS)
-
-dump-symbols: dump-symbols.o $(OCC_OBJ)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(GC_LIB) $(LIBS)
+all: $(TARGETS) #display-ptree dump-symbols
 
 doc: occ.syn occ-impl.syn
 
@@ -108,10 +92,6 @@ $(CC_SYN): %.cc.syn: %.cc
 	mkdir -p $(dir $@)
 	$(synopsis) cxx --output=$@ $?
 
-# This calls make in the gc dir to create the gc.a file
-$(GC_LIB):
-	$(MAKE) -C gc
-
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -121,17 +101,11 @@ $(LINK_SO): $(srcdir)/syn/link.cc
 	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # Compile an archive of the OCC files
-opencxx.a : $(GC_LIB) $(OCC_OBJ)
-ifneq ($(GC_LIB),)
-	cp $(GC_LIB) $@
-endif
+opencxx.a : $(OCC_OBJ)
 	ar rcs $@ $(OCC_OBJ)
 
-#opencxx.so: libgc.so $(OCC_OBJ)
-#	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
-
 clean :
-	rm -f *~ syn/*.o occ/*.o occ/PTree/*.o syn/*.d occ/*.d occ/PTree/*.d \
+	rm -f *~ syn/*.o occ/*.o syn/*.d occ/*.d \
         *.dll *.so *core opencxx.a \
 	*.pyc *.pyo base_lib
 

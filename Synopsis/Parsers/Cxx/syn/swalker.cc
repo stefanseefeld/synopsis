@@ -13,10 +13,10 @@
 #include <sstream>
 #include <algorithm>
 
-#include <occ/Buffer.hh>
-#include <occ/PTree.hh>
-#include <occ/PTree/Writer.hh>
-#include <occ/PTree/Display.hh>
+#include <Synopsis/Buffer.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Writer.hh>
+#include <Synopsis/PTree/Display.hh>
 
 #include "swalker.hh"
 #include "strace.hh"
@@ -29,6 +29,7 @@
 #include "lookup.hh"
 #include "filter.hh"
 
+using namespace Synopsis;
 using namespace AST;
 
 #ifdef DO_TRACE

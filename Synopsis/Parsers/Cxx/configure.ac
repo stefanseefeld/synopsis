@@ -18,17 +18,6 @@ AC_ARG_WITH(python,
   PYTHON=""
 )
 
-AC_ARG_ENABLE([gc], 
-  [  --disable-gc            don't use garbage collector (default is enabled)],
-  [ac_cv_enable_gc=no],
-  [ac_cv_enable_gc=yes])
-
-AC_ARG_WITH([gc_prefix],
-  [  --with-gc-prefix=PATH   specify the prefix to the garbage collector],
-  [ac_cv_with_gc_prefix="$with_gc_prefix"],
-  [ac_cv_with_gc_prefix=""])
-
-
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
@@ -42,22 +31,6 @@ PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get
 
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)
-
-if test "$ac_cv_enable_gc" == "yes"; then
-  GC_BRIDGE=$srcdir/occ/PTree/GC-enabled.hh
-  if test -n "$ac_cv_with_gc_prefix"; then
-    CPPFLAGS="$CPPFLAGS -I$ac_cv_with_gc_prefix/include/gc"
-    LIBS="-L$ac_cv_with_gc_prefix/lib -lgc $LIBS"
-  else
-    CPPFLAGS="$CPPFLAGS -I$srcdir/gc/include"
-    GC_LIB="gc/.libs/libgc.a"
-    AC_SUBST(GC_LIB)
-  fi
-else
-  GC_BRIDGE=$srcdir/occ/PTree/GC-disabled.hh
-fi
-
-AC_SUBST_FILE(GC_BRIDGE)
 
 LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')"`
 case `uname -s` in
@@ -98,14 +71,11 @@ AC_SUBST(LIBEXT)
 topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../..')"`
 AC_SUBST(topdir)
 
-AC_CONFIG_FILES([occ/PTree/GC.hh
-                 Makefile 
+AC_CONFIG_FILES([Makefile 
                  synopsis.py 
                  OpenCxx.pc])
 
 mkdir -p occ
-mkdir -p occ/PTree
-mkdir -p occ/SymbolLookup
 mkdir -p syn
 
 AC_OUTPUT

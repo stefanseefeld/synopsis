@@ -15,8 +15,10 @@
 #ifndef _ClassWalker_hh
 #define _ClassWalker_hh
 
-#include "PTree.hh"
+#include "Synopsis/PTree.hh"
 #include "Walker.hh"
+
+using namespace Synopsis;
 
 class TypeInfo;
 
