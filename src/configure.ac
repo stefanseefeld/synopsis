@@ -28,7 +28,7 @@ AC_PROG_CC
 AC_PROG_CXX
 
 if test "$ac_cv_enable_gc" == "yes"; then
-  GC_BRIDGE=$srcdir/Synopsis/PTree/GC-enabled.hh
+  GC_BRIDGE=$srcdir/Synopsis/PTree/GC-enabled.tmpl
   if test -n "$ac_cv_with_gc_prefix"; then
     CPPFLAGS="$CPPFLAGS -I$ac_cv_with_gc_prefix/include/gc"
     LIBS="-L$ac_cv_with_gc_prefix/lib -lgc $LIBS"
@@ -38,7 +38,7 @@ if test "$ac_cv_enable_gc" == "yes"; then
     AC_SUBST(GC_LIB)
   fi
 else
-  GC_BRIDGE=$srcdir/Synopsis/PTree/GC-disabled.hh
+  GC_BRIDGE=$srcdir/Synopsis/PTree/GC-disabled.tmpl
 fi
 
 AC_SUBST_FILE(GC_BRIDGE)
