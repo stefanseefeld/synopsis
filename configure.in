@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.15 2003/03/24 08:31:38 chalky Exp $
+dnl $Id: configure.in,v 1.16 2003/03/24 09:05:38 chalky Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2001 Stefan Seefeld
@@ -24,7 +24,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.12)
-AC_REVISION($Revision: 1.15 $)
+AC_REVISION($Revision: 1.16 $)
 
 AC_INIT(synopsis.spec.in)
 AC_PROG_MAKE_SET
@@ -33,7 +33,7 @@ AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_INSTALL
 
-AC_ARG_WITH(python-prefix, [  --with-python-prefix  Prefix for python],[python_prefix="$withval"])
+AC_ARG_WITH(python-prefix, [  --with-python-prefix    Prefix for python],[python_prefix="$withval"])
 if test ".$python_prefix" != . ; then
 	python_cppflags=-I$python_prefix/include
 else
@@ -41,7 +41,7 @@ else
 fi
 
 python_version=
-AC_ARG_WITH(python-version, [  --with-python-version  Python version to use],[python_version="$withval"])
+AC_ARG_WITH(python-version, [  --with-python-version   Python version to use],[python_version="$withval"])
 
 dnl
 dnl check for python's C API
@@ -75,7 +75,9 @@ python_include="<python${python_version}/Python.h>"
 python_lib="-L${python_prefix}/lib/python${python_version}/config -lpython${python_version}"
 
 AC_CHECK_FUNCS(openpty,, AC_CHECK_LIB(util,openpty, [AC_DEFINE(HAVE_OPENPTY)] [LIBS="$LIBS -lutil"]))
-AC_ARG_ENABLE(GC, [use garbage collector in C++ parser],[use_gc="$enableval"],[use_gc=yes])
+AC_ARG_ENABLE([gc], 
+    [  --disable-gc            don't use garbage collector in C++ parser (default is enabled)],
+    [use_gc=no],[use_gc=yes])
 
 AC_SUBST(use_gc)
 AC_SUBST(python_version)
@@ -105,7 +107,16 @@ AC_SUBST(library_ext)
 AC_SUBST(cpp_profile)
 
 if test "$use_gc" = yes; then
-    AC_CONFIG_SUBDIRS(Synopsis/Parser/C++/gc)
+    dnl AC_CONFIG_SUBDIRS always runs configure... :(
+    echo "Running configure in Synopsis/Parser/C++/gc ..."
+    echo "-----------------------------------------------"
+    popdir=`pwd`
+    cd Synopsis/Parser/C++/gc
+    ./configure
+    cd $popdir
+    echo "-----------------------------------------------"
+    echo "- Configure for Garbage Collector was run with default options."
+    echo "- Please rerun manually if required."
 fi
 
 AC_OUTPUT([
