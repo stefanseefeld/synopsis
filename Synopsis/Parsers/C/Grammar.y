@@ -48,6 +48,10 @@ int yylex(YYSTYPE *lvalp);
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
 
+#undef HERE
+#define HERE Location(gProject->Parse_TOS->yylineno, \
+       gProject->Parse_TOS->yycolno, gProject->Parse_TOS->filename )
+
 /*  int  yydebug = 1;  */
 
 /* ###################################################### */
@@ -831,7 +835,7 @@ sizeof_expr:  SIZEOF LPAREN type_name RPAREN   %prec HYPERUNARY
 
 unary_minus_expr:  MINUS cast_expr    %prec UNARY
         {
-            $$ = new UnaryExpr(UO_Minus,$2,NoLocation);
+            $$ = new UnaryExpr(UO_Minus,$2,HERE);
         }
         ;
 
@@ -851,7 +855,7 @@ addr_expr:  B_AND cast_expr             %prec UNARY
 
 indirection_expr:  STAR cast_expr     %prec UNARY
         {
-            $$ = new UnaryExpr(UO_Deref,$2,NoLocation);
+            $$ = new UnaryExpr(UO_Deref,$2,HERE);
         }
         ;
 
@@ -884,7 +888,10 @@ prim_expr:  ident
                 yywarn("Undeclared variable");
             }
 
-            $$ = new Variable($1,NoLocation);
+            $$ = new Variable($1,
+              Location(gProject->Parse_TOS->yylineno,
+                       gProject->Parse_TOS->yycolno,
+                       gProject->Parse_TOS->filename));
         }
          |  paren_expr
          |  constant
@@ -1742,7 +1749,7 @@ enum_def_list_reentrance:  enum_const_def
 
 enum_const_def:  enum_constant
         {
-            $$ = new EnumConstant($1,NULL,NoLocation);
+            $$ = new EnumConstant($1,NULL,HERE);
             if (gProject->Parse_TOS->transUnit)
             {
               if (gProject->Parse_TOS->transUnit->contxt.syms->IsDefined($1->name))
@@ -1754,7 +1761,7 @@ enum_const_def:  enum_constant
         }
               |  enum_constant EQ assign_expr 
         {
-            $$ = new EnumConstant($1,$3,NoLocation);
+            $$ = new EnumConstant($1,$3,HERE);
             if (gProject->Parse_TOS->transUnit)
             {
               if (gProject->Parse_TOS->transUnit->contxt.syms->IsDefined($1->name))
