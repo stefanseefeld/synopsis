@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #!/usr/local/bin/python -v
 #
-# $Id: synopsis,v 1.18 2001/01/21 03:46:29 stefan Exp $
+# $Id: synopsis,v 1.19 2001/01/21 06:40:53 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -27,7 +27,7 @@ import cPickle
 # Hack, I can't be stuffed finding places to change it :)
 pickle = cPickle
 
-from Synopsis.Core import Type, AST
+from Synopsis.Core import Type, AST, Util
 
 def version(): print "synopsis version 0.2"
 cmdname = os.path.basename(sys.argv[0])
@@ -73,7 +73,7 @@ verbose = 0
 def parseArgs(args):
     global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose
     try:
-        opts,files = getopt.getopt(args, "p:f:W:I:o:Vvh", ["parser=", "formatter=", "version", "help"])
+        opts,files = Util.getopt_spec(args, "p:f:W:I:o:Vvh", ["parser=", "formatter=", "version", "help"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.stderr.write("Use " + cmdname + " -h for help\n")
