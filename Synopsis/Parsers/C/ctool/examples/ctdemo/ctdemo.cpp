@@ -39,6 +39,7 @@
 
 #include    "ctdemo.h"
 #include    "ctool.h"
+#include    "PrintTraversal.h"
 
 #ifdef	WINDOWS
 #include "ctool/StdAfx.h"
@@ -195,8 +196,9 @@ int main( int argc, char **argv )
 
         if (unit) 
         {
-            // Show the parse tree.
-            std::cout << *unit << std::endl;
+	  PrintTraversal pt(std::cout, debug);
+	  // Show the parse tree.
+	  pt.traverse_unit(unit);
         } else {
           std::cout << " translation unit for " << file_list[i] << " is NULL." << std::endl;
         }

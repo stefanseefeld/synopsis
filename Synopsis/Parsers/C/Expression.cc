@@ -339,15 +339,6 @@ Expression::~Expression()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Expression*
-Expression::dup0() const
-{
-    Expression *ret = new Expression(etype, location);
-    ret->type = type;    
-    return ret;
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Expression::print(std::ostream& out) const
 {
