@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.8 2001/01/31 06:51:24 stefan Exp $
+# $Id: Dia.py,v 1.9 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.9  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.8  2001/01/31 06:51:24  stefan
 # add support for '-v' to all modules; modified toc lookup to use additional url as prefix
 #
@@ -36,6 +39,7 @@
 #
 
 """Generates a .dia file of unpositioned classes and generalizations."""
+# THIS-IS-A-FORMATTER
 
 import sys, getopt, os, os.path, string, re
 from Synopsis.Core import Type, AST, Util, Visitor
@@ -354,7 +358,7 @@ def __parseArgs(args):
 	sys.stderr.write("Error: No output specified.\n")
 	sys.exit(1)
 
-def format(types, declarations, args):
+def format(types, declarations, args, config_obj):
     __parseArgs(args)
 
     formatter = DiaFormatter(filename)

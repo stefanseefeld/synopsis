@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.5 2001/02/06 16:54:15 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.6 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.6  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.5  2001/02/06 16:54:15  chalky
 # Added -n to Dot which stops those nested classes
 #
@@ -104,7 +107,7 @@ class InheritanceGraph(Page.Page):
 		output = self.__filename+"-dot%s"%count
 		config.toc.store(output+".toc")
 		args = ('-i','-f','html','-o',output,'-r',output+'.toc','-t','Synopsis %s'%count,'-n')
-		Dot.format(config.types, declarations, args)
+		Dot.format(config.types, declarations, args, None)
 		dot_file = open(output+'.html', 'r')
 		self.write(dot_file.read())
 		dot_file.close()

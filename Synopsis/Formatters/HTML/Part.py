@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.5 2001/02/12 04:08:09 chalky Exp $
+# $Id: Part.py,v 1.6 2001/02/13 06:55:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.6  2001/02/13 06:55:23  chalky
+# Made synopsis -l work again
+#
 # Revision 1.5  2001/02/12 04:08:09  chalky
 # Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
 #
@@ -375,7 +378,7 @@ class ClassHierarchyGraph (ClassHierarchySimple):
         #if core.verbose: args.append("-v")
         Dot.toc = config.toc
         Dot.nodes = {}
-        Dot.format(config.types, [clas], dot_args)
+        Dot.format(config.types, [clas], dot_args, None)
         text = ''
         input = open(tmp + ".html", "r+")
         line = input.readline()
