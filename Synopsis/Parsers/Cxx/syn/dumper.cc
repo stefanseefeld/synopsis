@@ -178,6 +178,14 @@ ostream& operator << (ostream& os, const AST::Name& name)
     return os;
 }
 
+void Dumper::visit(const vector<AST::Comment*>& comms)
+{
+    vector<AST::Comment*>::const_iterator iter = comms.begin();
+    while (iter != comms.end()) {
+	cout << m_indent_string << (*iter++)->text() << endl;
+    }
+}
+
 // Format a Parameter
 string Dumper::format(AST::Parameter* param)
 {
@@ -202,6 +210,7 @@ void Dumper::visitScope(AST::Scope* scope)
 
 void Dumper::visitNamespace(AST::Namespace* ns)
 {
+    visit(ns->comments());
     cout << m_indent_string << "namespace " << ns->name() << " {" << endl;
     indent();
     m_scope.push_back(ns->name().back());
@@ -213,6 +222,7 @@ void Dumper::visitNamespace(AST::Namespace* ns)
 
 void Dumper::visitClass(AST::Class* clas)
 {
+    visit(clas->comments());
     if (clas->templateType()) {
 	m_scope.push_back(clas->name().back());
 	Type::Template* templ = clas->templateType();
@@ -258,6 +268,7 @@ bool isStructor(const AST::Function* func)
 
 void Dumper::visitOperation(AST::Operation* oper)
 {
+    visit(oper->comments());
     cout << m_indent_string;
     if (!isStructor(oper)) cout << format(oper->returnType()) + " ";
     cout << oper->realname() << "(";
@@ -272,16 +283,19 @@ void Dumper::visitOperation(AST::Operation* oper)
 
 void Dumper::visitVariable(AST::Variable* var)
 {
+    visit(var->comments());
     cout << m_indent_string << format(var->vtype()) << " " << var->name().back() << ";" << endl;
 }
 
 void Dumper::visitTypedef(AST::Typedef* tdef)
 {
+    visit(tdef->comments());
     cout << m_indent_string << "typedef " << format(tdef->alias()) << " " << tdef->name().back() << ";" << endl;
 }
 
 void Dumper::visitEnum(AST::Enum* decl)
 {
+    visit(decl->comments());
     cout << m_indent_string << "enum " << decl->name().back() << "{" << endl;
     indent();
     vector<AST::Enumerator*>::iterator iter = decl->enumerators().begin();
@@ -293,6 +307,7 @@ void Dumper::visitEnum(AST::Enum* decl)
 
 void Dumper::visitEnumerator(AST::Enumerator* enumor)
 {
+    visit(enumor->comments());
     cout << m_indent_string << enumor->name().back();
     if (enumor->value().size())
 	cout << " = " << enumor->value();

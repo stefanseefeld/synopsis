@@ -22,7 +22,7 @@ class Builder;
 // Forward declaration of Decoder
 class Decoder;
 
-namespace AST { class Parameter; class Inheritance; }
+namespace AST { class Parameter; class Inheritance; class Declaration; }
 namespace Type { class Type; }
 
 //. A walker that creates an AST. All Translate* methods have been overridden
@@ -31,9 +31,18 @@ class SWalker : public Walker {
 public:
     //. Constructor
     SWalker(Parser*, Builder*);
+    virtual ~SWalker() {}
 
     //. Get a name from the ptree
     string getName(Ptree*);
+
+    //. Update the line number
+    void updateLineNumber(Ptree*);
+
+    void addComments(AST::Declaration* decl, Ptree* comments);
+    void addComments(AST::Declaration* decl, CommentedLeaf* node);
+    void addComments(AST::Declaration* decl, PtreeDeclarator* node);
+    void addComments(AST::Declaration* decl, PtreeDeclaration* decl);
 
     void TranslateParameters(Ptree* p_params, vector<AST::Parameter*>& params);
     void TranslateFunctionName(char* encname, string& realname, Type::Type* returnType);
@@ -121,7 +130,12 @@ private:
     Builder* m_builder;
     Decoder* m_decoder;
 
-    Ptree* m_declaration;
+    PtreeDeclaration* m_declaration;
+    //. This pointer is used as a comparison to avoid creating new strings
+    char* m_filename_ptr;
+    //. The current filename as string. This way refcounting will be used
+    string m_filename;
+    int m_lineno;
 
 }; // class SWalker
 

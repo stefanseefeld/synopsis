@@ -278,6 +278,10 @@ void Parameter::accept(Visitor* visitor)
 }
 
 
+Comment::Comment(string file, int line, string text)
+    : m_filename(file), m_line(line), m_text(text)
+{
+}
 
 //
 // AST::Visitor

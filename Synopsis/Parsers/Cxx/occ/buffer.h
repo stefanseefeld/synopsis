@@ -42,12 +42,9 @@ class Ptree;
 
 class Program : public Object {
 public:
-    Program(char *name) {
-	replacement = nil;
-	defaultname = name;
-    }
+    Program(char *name);
 
-    virtual ~Program() {}
+    virtual ~Program();
 
     void Rewind() { index = 0; }
     void Rewind(uint i) { index = i; }
@@ -85,6 +82,10 @@ protected:
     char*	buf;
     uint	size, index;
     char	*defaultname;
+
+    // Private data for line number map -- "compiler firewall"
+    struct Private;
+    Private* m;
 
 private:
     class Replacement : public LightObject {

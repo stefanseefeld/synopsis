@@ -32,6 +32,7 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
+#include <string>
 #include <string.h>
 #include <stdlib.h>
 #include "buffer.h"
@@ -42,6 +43,54 @@
 #if defined(_PARSE_VCC)
 #define _MSC_VER	1100
 #endif
+
+// Compiler Firewalled private data
+struct LineMapNode {
+    // Position in file buffer
+    uint pos;
+    // Line number
+    int line;
+    // Filename
+    char* filename;
+    // Filename length
+    int filename_len;
+};
+
+struct Program::Private {
+    // This only works if you ask for the line numbers in order
+    LineMapNode first, last;
+
+    // Find the last pos in the map
+    uint lastPos() {
+	return last.pos;
+    }
+    void start(LineMapNode& node) {
+	first = last = node;
+    }
+    void insert(LineMapNode& node) {
+	//cout << "### Inserting node at " << node.pos << " line " << node.line;
+	//cout << " in " << std::string(node.filename, node.filename_len) << endl;
+	last = node;
+    }
+};
+
+Program::Program(char* name)
+{
+    replacement = nil;
+    defaultname = name;
+    m = new Private;
+    // Add defaultname at line 0
+    LineMapNode node;
+    node.pos = 0; node.line = 0;
+    node.filename = name;
+    node.filename_len = strlen(name);
+    m->start(node);
+}
+
+Program::~Program()
+{
+    delete m;
+}
 
 char Program::Get()
 {
@@ -162,9 +211,10 @@ uint Program::LineNumber(char* ptr, char*& filename, int& filename_length)
     sint n;
     int  len;
     uint name;
-
     int nline = 0;
-    uint pos = uint(ptr - buf);
+
+    // Determine pos in file
+    uint pos = uint(ptr - buf), startpos = pos;
     if(pos > size){
 	// error?
 	filename = defaultname;
@@ -172,10 +222,13 @@ uint Program::LineNumber(char* ptr, char*& filename, int& filename_length)
 	return 0;
     }
 
+    // Determine if already passed this point
+    uint lastpos = m->lastPos();
+
     sint line_number = -1;
     filename_length = 0;
 
-    while(pos > 0){
+    while(pos > lastpos){
 	switch(Ref(--pos)){
 	case '\n' :
 	    ++nline;
@@ -195,17 +248,35 @@ uint Program::LineNumber(char* ptr, char*& filename, int& filename_length)
 	    break;
 	}
 
-	if(line_number >= 0 && filename_length > 0)
+	if(line_number >= 0 && filename_length > 0) {
+	    //cout << "### Reached line directive at " << pos << endl;
+	    // We reached a line directive. Record this node
+	    LineMapNode node;
+	    node.pos = startpos; node.line = line_number;
+	    node.filename = filename; node.filename_len = filename_length;
+	    m->insert(node);
 	    return line_number;
+	}
     }
 
+    //cout << "### Reached end of map at " << pos << endl;
+
+    // We reached the last recorded node, so use that to work it out
+    LineMapNode& node = m->last;
+
     if(filename_length == 0){
-	filename = defaultname;
-	filename_length = strlen(defaultname);
+	filename = node.filename;
+	filename_length = node.filename_len;
     }
 
     if(line_number < 0)
-	line_number = nline + 1;
+	line_number = nline + node.line;
+
+    // Now record this new node for future reference
+    LineMapNode newnode;
+    newnode.pos = startpos; newnode.line = line_number;
+    newnode.filename = filename; newnode.filename_len = filename_length;
+    m->insert(newnode);
 
     return line_number;
 }

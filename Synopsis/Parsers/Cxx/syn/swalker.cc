@@ -6,6 +6,7 @@
 #include <string>
 
 #include "ptree.h"
+#include "parse.h"
 
 #include "swalker.hh"
 #include "type.hh"
@@ -16,8 +17,7 @@
 using namespace AST;
 using std::string;
 
-//#ifdef DEBUG
-#if 0
+#if 0 && defined(DEBUG)
 #define DO_TRACE
 class Trace
 {
@@ -46,6 +46,7 @@ SWalker::SWalker(Parser* parser, Builder* builder)
     m_parser = parser;
     m_builder = builder;
     m_decoder = new Decoder(builder);
+    m_filename_ptr = 0;
 }
 
 string SWalker::getName(Ptree *node)
@@ -54,6 +55,44 @@ string SWalker::getName(Ptree *node)
     if (node && node->IsLeaf())
         return string(node->GetPosition(), node->GetLength());
     return node->ToString();
+}
+
+void SWalker::updateLineNumber(Ptree* ptree)
+{
+    // Ask the Parser for the linenumber of the ptree. This used to be
+    // expensive until I hacked buffer.cc to cache the last line number found.
+    // Now it's okay as long as you are looking for lines sequentially.
+    char* fname;
+    int fname_len;
+    m_lineno = m_parser->LineNumber(ptree->LeftMost(), fname, fname_len);
+    if (fname != m_filename_ptr) {
+	m_filename_ptr = fname;
+	m_filename.assign(fname, fname_len);
+	cout << "### fname changed to "<<m_filename<<" at "<<m_lineno<<endl;
+	m_builder->setFilename(m_filename);
+    }
+}
+
+
+void SWalker::addComments(AST::Declaration* decl, Ptree* comments)
+{
+    while (comments) {
+	decl->comments().push_back(new AST::Comment("", 0, comments->First()->ToString()));
+	comments = comments->Rest();
+    }
+}
+
+void SWalker::addComments(AST::Declaration* decl, CommentedLeaf* node)
+{
+    if (node) addComments(decl, node->GetComments());
+}
+void SWalker::addComments(AST::Declaration* decl, PtreeDeclaration* node)
+{
+    if (decl) addComments(decl, node->GetComments());
+}
+void SWalker::addComments(AST::Declaration* decl, PtreeDeclarator* node)
+{
+    if (decl) addComments(decl, node->GetComments());
 }
 
 Ptree* SWalker::TranslateArgDeclList(bool, Ptree*, Ptree*) { Trace trace("SWalker::TranslateArgDeclList NYI"); return 0; }
@@ -79,6 +118,7 @@ Ptree* SWalker::TranslatePtree(Ptree*) {
 Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
     Trace trace("SWalker::TranslateNamespaceSpec");
     
+    updateLineNumber(def);
     string name = getName(def->Cadr());
     /*Namespace* ns =*/ m_builder->startNamespace(name);
 
@@ -123,16 +163,17 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
     Trace trace("SWalker::TranslateClassSpec");
     if (Ptree::Length(node) == 4) {
 	// if Class definition (not just declaration)
+	updateLineNumber(node);
 	
 	// Create AST.Class object
         string type = getName(node->First());
         string name = getName(node->Second());
         vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
-        AST::Class *clas = m_builder->startClass(type, name);
+        AST::Class *clas = m_builder->startClass(m_lineno, type, name);
 	clas->parents() = parents;
 	m_builder->updateBaseSearch();
-	//PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
-	//addComments(clas, cspec->GetComments());
+	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	addComments(clas, cspec->GetComments());
 
         // Translate the body of the class
 	TranslateBlock(node->Nth(3));
@@ -154,13 +195,14 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
     Trace trace("SWalker::TranslateTemplateClass");
     if (Ptree::Length(node) == 4) {
 	// if Class definition (not just declaration)
+	updateLineNumber(def);
 	
 	// Create AST.Class object
         string type = getName(node->First());
         string name = getName(node->Second());
-        AST::Class *clas = m_builder->startClass(type, name);
-	//PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
-	//addComments(clas, cspec->GetComments());
+        AST::Class *clas = m_builder->startClass(m_lineno, type, name);
+	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	addComments(clas, cspec->GetComments());
 
 	// Create Template type
 	Type::Type::vector_t templ_params;
@@ -255,7 +297,10 @@ Ptree* SWalker::TranslateTemplateDecl(Ptree* def)
 Ptree* SWalker::TranslateDeclaration(Ptree* def) 
 {
     Trace trace("SWalker::TranslateDeclaration");
-    m_declaration = def;
+
+    updateLineNumber(def);
+
+    m_declaration = dynamic_cast<PtreeDeclaration*>(def);
     Ptree* decls = Ptree::Third(def);
     if (decls->IsA(ntDeclarator))	// if it is a function
 	TranslateFunctionImplementation(def);
@@ -357,8 +402,10 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
         }
 
 	// Create AST::Operation object
-        AST::Operation* oper = m_builder->addOperation(0, name, premod, returnType, realname);
+        AST::Operation* oper = m_builder->addOperation(m_lineno, name, premod, returnType, realname);
 	oper->parameters() = params;
+	addComments(oper, m_declaration);
+	addComments(oper, dynamic_cast<PtreeDeclarator*>(decl));
 	//if (m_declaration->GetComments()) addComments(oper, m_declaration->GetComments());
 	//if (decl->GetComments()) addComments(oper, decl->GetComments());
 	// Post Modifier
@@ -383,9 +430,11 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 
 	// TODO: implement sizes support
 	vector<size_t> sizes;
-	/*AST::Variable* var =*/ m_builder->addVariable(0, name, type, false);
+	AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false);
 	//if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
 	//if (decl->GetComments()) addComments(var, decl->GetComments());
+	addComments(var, m_declaration);
+	addComments(var, dynamic_cast<PtreeDeclarator*>(decl));
     }
     return 0;
 }
@@ -486,13 +535,16 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
     char* enctype = node->GetEncodedType();
     if (!encname || !enctype) return;
 
+    updateLineNumber(node);
+
     // Get type of declarator
     m_decoder->init(enctype);
     Type::Type* type = m_decoder->decodeType();
     // Get name of typedef
     string name = m_decoder->decodeName(encname);
     // Create typedef object
-    m_builder->addTypedef(0, name, type, false);
+    AST::Typedef* tdef = m_builder->addTypedef(m_lineno, name, type, false);
+    addComments(tdef, dynamic_cast<PtreeDeclarator*>(node));
 }
 
 Ptree* SWalker::TranslateFunctionImplementation(Ptree* node)
@@ -524,24 +576,27 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
     if (!spec->Second()) { return 0; /* anonymous enum */ }
     string name = spec->Second()->ToString();
 
+    updateLineNumber(spec);
+    int enum_lineno = m_lineno;
     // Parse enumerators
     vector<AST::Enumerator*> enumerators;
     Ptree* penum = spec->Third()->Second();
     AST::Enumerator* enumor;
     while (penum) {
+	updateLineNumber(penum);
 	Ptree* penumor = penum->First();
 	if (penumor->IsLeaf()) {
 	    // Just a name
-	    enumor = m_builder->addEnumerator(0, penumor->ToString(), "");
-	    //addComments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
+	    enumor = m_builder->addEnumerator(m_lineno, penumor->ToString(), "");
+	    addComments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
 	} else {
 	    // Name = Value
 	    string name = penumor->First()->ToString(), value;
 	    if (penumor->Length() == 3) {
 		value = penumor->Third()->ToString();
 	    }
-	    enumor = m_builder->addEnumerator(0, name, value);
-	    //addComments(enumor, static_cast<CommentedLeaf*>(penumor->First())->GetComments());
+	    enumor = m_builder->addEnumerator(m_lineno, name, value);
+	    addComments(enumor, dynamic_cast<CommentedLeaf*>(penumor->First()));
 	}
 	enumerators.push_back(enumor);
 	penum = Ptree::Rest(penum);
@@ -551,8 +606,8 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
     }
 
     // Create AST.Enum object
-    /*AST::Enum* theEnum = */ m_builder->addEnum(0,name,enumerators);
-    //addComments(theEnum, m_declaration->GetComments());
+    AST::Enum* theEnum = m_builder->addEnum(enum_lineno,name,enumerators);
+    addComments(theEnum, m_declaration);
     return 0;
 }
 

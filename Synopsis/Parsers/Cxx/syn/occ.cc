@@ -834,7 +834,7 @@ static char *RunOpencxx(const char *src, const char *file, const vector<const ch
     while(parse.rProgram(def))
 	swalker.Translate(def);
     Dumper dumper;
-    //dumper.visitScope(builder.scope());
+    dumper.visitScope(builder.scope());
 #else
     PyWalker walker(&parse, &synopsis);
     Ptree *def;

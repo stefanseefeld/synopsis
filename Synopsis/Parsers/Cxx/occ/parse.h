@@ -170,6 +170,7 @@ private:
 private:
     Lex* lex;
     int nerrors;
+    Ptree* comments;
 };
 
 #endif /* _parse_h */
