@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.14 2003/12/04 21:04:27 stefan Exp $
+# $Id: Formatter.py,v 1.15 2003/12/05 19:58:56 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -76,8 +76,8 @@ class CommentFormatter:
 
 class Formatter(Processor):
 
-   stylesheet = Parameter('style.css', '')
-   stylesheet_file = Parameter('../html.css', '')
+   stylesheet = Parameter('style.css', 'the stylesheet to refer to in the html header')
+   stylesheet_file = Parameter(None, 'the stylesheet file to copy')
    datadir = Parameter('', 'alternative data directory')
    file_layout = Parameter(FileLayout(), 'how to lay out the output files')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
