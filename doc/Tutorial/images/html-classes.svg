@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000802//EN"
+"http://www.w3.org/TR/2000/CR-SVG-20000802/DTD/svg-20000802.dtd">
+<svg width="7.25in" height="2.6666666666666665in" viewBox="80 55 696 256">
+	<polygon points="339,106 336,113 342,113 " 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="339" y1="112" x2="339" y2="122" 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="271" y1="122" x2="636" y2="122" 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<polygon points="512,236 509,243 515,243 " 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="512" y1="242" x2="512" y2="252" 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="428" y1="252" x2="698" y2="252" 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<polygon points="159,226 156,233 162,233 " 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="159" y1="232" x2="159" y2="254" 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="118" y1="254" x2="301" y2="254" 
+		style="fill:none; stroke:#000000; stroke-width:1; stroke-dasharray:0 "/>
+	<rect x="360" y="280" width="137" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="363" y="293" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">SummaryCommenter</text>
+	<rect x="630" y="280" width="136" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="633" y="293" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">InheritanceFormatter</text>
+	<rect x="580" y="160" width="112" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="584" y="173" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">InheritanceGraph</text>
+	<rect x="330" y="160" width="95" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="334" y="173" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">ModuleListing</text>
+	<rect x="520" y="280" width="86" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="523" y="293" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">SourceLinker</text>
+	<rect x="160" y="70" width="67" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="163" y="83" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Formatter</text>
+	<rect x="480" y="210" width="65" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="484" y="223" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Fragment</text>
+	<rect x="180" y="280" width="64" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="183" y="293" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Summary</text>
+	<rect x="90" y="280" width="57" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="94" y="293" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Heading</text>
+	<rect x="280" y="280" width="43" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="284" y="293" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Detail</text>
+	<rect x="250" y="160" width="42" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="253" y="173" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Scope</text>
+	<rect x="140" y="200" width="39" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="148" y="213" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Part</text>
+	<rect x="320" y="80" width="39" height="26" 
+		style="fill:#ffcc99; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<text x="326" y="93" 
+		style="font-family:Verdana; font-weight:bold; font-size:10; fill:#000000">Page</text>
+	<polygon points="179,220 184,222 191,220 184,218 " 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="191" y1="220" x2="480" y2="220" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<polygon points="227,90 232,92 239,90 232,88 " 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="239" y1="90" x2="320" y2="90" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<polygon points="250,175 245,173 238,175 245,177 " 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="238" y1="175" x2="200" y2="175" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="200" y1="175" x2="200" y2="210" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="200" y1="210" x2="179" y2="210" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="271" y1="122" x2="271" y2="160" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="377" y1="122" x2="377" y2="160" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="636" y1="122" x2="636" y2="160" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="698" y1="252" x2="698" y2="280" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="428" y1="252" x2="428" y2="280" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="563" y1="252" x2="563" y2="280" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="212" y1="254" x2="212" y2="280" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="118" y1="254" x2="118" y2="280" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+	<line x1="301" y1="254" x2="301" y2="280" 
+		style="fill:none; stroke:#424242; stroke-width:1; stroke-dasharray:0 "/>
+</svg>
