@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.6 2001/02/05 07:58:39 chalky Exp $
+# $Id: FileLayout.py,v 1.7 2001/06/16 01:29:42 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.7  2001/06/16 01:29:42  stefan
+# change the HTML formatter to not use chdir, as this triggers a but in python's import implementation
+#
 # Revision 1.6  2001/02/05 07:58:39  chalky
 # Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
 #
@@ -103,42 +106,32 @@ class FileLayout (TOC.Linker):
 	The default implementation is to join the names with '-' and append
 	".html" """
 	if not len(scope): return self.nameOfSpecial('global')
-	return string.join(scope,'-') + ".html"
+	return config.basename + '/' + string.join(scope,'-') + ".html"
     def nameOfFile(self, filetuple):
 	"""Return the filename of an input file. The file is specified as a
 	tuple (generally it is processed this way beforehand so this is okay).
 	Default implementation is to join the path with '-', prepend "_file-"
 	and append ".html" """
-	return "_file-"+string.join(filetuple,'-')+".html"
+	return config.basename + '/' + "_file-"+string.join(filetuple,'-')+".html"
     def nameOfIndex(self):
 	"""Return the name of the main index file. Default is index.html"""
-	return "index.html"
+	return config.basename + '/' + "index.html"
     def nameOfSpecial(self, name):
 	"""Return the name of a special file (tree, etc). Default is
 	_name.html"""
-	return "_" + name + ".html"
+	return config.basename + '/' + "_" + name + ".html"
     def nameOfScopedSpecial(self, name, scope, ext=".html"):
 	"""Return the name of a special type of scope file. Default is to join
 	the scope with '-' and prepend '-'+name"""
-	return "_%s-%s%s"%(name, string.join(scope, '-'), ext)
+	return config.basename + '/' + "_%s-%s%s"%(name, string.join(scope, '-'), ext)
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index. Default is
 	_modules.html"""
-	return "_modules.html"
+	return config.basename + '/' + "_modules.html"
     def nameOfModuleIndex(self, scope):
 	"""Return the name of the index of the given module. Default is to
 	join the name with '-', prepend "_module_" and append ".html" """
-	return "_module_" + string.join(scope, '-') + ".html"
-    def chdirBase(self):
-	"""Change to the base dir. The old current directory is stored for
-	restoration by chdirRestore"""
-	import os
-	self.__old_dir = os.getcwd()
-	os.chdir(config.basename)
-    def chdirRestore(self):
-	"""Change back to the stored directory"""
-	import os
-	os.chdir(self.__old_dir)
+	return config.basename + '/' + "_module_" + string.join(scope, '-') + ".html"
     def link(self, decl):
 	"""Create a link to the named declaration. This method may have to
 	deal with the directory layout."""
