@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.15 2001/06/05 05:28:34 chalky Exp $
+# $Id: core.py,v 1.16 2001/06/16 01:29:42 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.16  2001/06/16 01:29:42  stefan
+# change the HTML formatter to not use chdir, as this triggers a but in python's import implementation
+#
 # Revision 1.15  2001/06/05 05:28:34  chalky
 # Some old tree abstraction
 #
@@ -575,12 +578,9 @@ def format(types, declarations, args, config_obj):
     
     if verbose: print "HTML Formatter: Writing Pages..."
     # Create the pages
-    config.files.chdirBase()
     # TODO: have synopsis pass an AST with a "root" node to formatters.
     root = AST.Module('',-1,"C++","Global",())
     root.declarations()[:] = declarations
     manager = PageManager()
     manager.process(root)
-
-    config.files.chdirRestore()
 
