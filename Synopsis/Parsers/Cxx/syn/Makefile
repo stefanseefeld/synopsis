@@ -24,20 +24,20 @@ endif
 endif
 
 # Options for optimised or debug versions
-OPTIMISE	:= -O6 -fPIC
+OPTIMISE	:= -O6
 #OPTIMISE	:= -O1 -ggdb -fPIC -fno-inline
-DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG -fno-inline
+DEBUG		:= -O1 -ggdb -pg -DDEBUG -fno-inline
 
 # Flags
 CFLAGS		:= 
 ifeq '$(python_prefix)' '/usr'
-CPPFLAGS	:= -I../occ -DPYTHON_INCLUDE="$(python_include)"
+SYN_FLAGS	:= -I../occ -DPYTHON_INCLUDE="$(python_include)"
 else
-CPPFLAGS	:= -I../occ -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)"
+SYN_FLAGS	:= -I../occ -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)"
 endif
-CXXFLAGS	:= -Wall
+CPPFLAGS	+= -Wall
 ifeq '$(use_gc)' 'no'
-CXXFLAGS	+= -DDONT_GC
+CPPFLAGS	+= -DDONT_GC
 GCLIB		:=
 else
 GCLIB		:= ../gc/gc.a
@@ -84,34 +84,34 @@ debug:		occ.gdb link-synopsis ucpp
 
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : %.cc
-	$(CXX)  $(OPTIMISE) -I.. -I../occ $(CXXFLAGS) -c -o $@ $<
+	$(CXX)  $(OPTIMISE) -I.. -I../occ $(CPPFLAGS) -c -o $@ $<
 
 # This compiles the parser files with optimisation
 $(SYN_OBJ): %.o : %.cc
-	$(CXX) $(OPTIMISE) -I.. $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(OPTIMISE) -I.. $(SYN_FLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # This compiles the UCPP files from ../ucpp
 $(UCPP_OBJ): %.o : %.c
-	$(CC) $(OPTIMISE) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+	$(CC) $(OPTIMISE) $(CPPFLAGS) $(UCPP_FLAGS) -c -o $@ $<
 
 # This compiles DEBUG versions of the OCC files in the parent dir
 $(OCC_GOBJ): %.go : %.cc
-	$(CXX) $(DEBUG) -I.. -I../occ $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(DEBUG) -I.. -I../occ $(CPPFLAGS) -c -o $@ $<
 
 # This compiles DEBUG versions of the object files with .go suffix
 $(SYN_GOBJ): %.go : %.cc
-	$(CXX) $(DEBUG) -I.. $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(DEBUG) -I.. $(SYN_FLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # This compiles DEBUG versions of the UCPP files
 $(UCPP_GOBJ): %.go : %.c
-	$(CC) $(DEBUG) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+	$(CC) $(DEBUG) $(CPPFLAGS) $(UCPP_FLAGS) -c -o $@ $<
 
 # This compiles STANDALONE versions of the UCPP files
 $(UCPP_AOBJ): %.ao : %.c
 	$(CC) $(DEBUG) $(CFLAGS) $(UCPP_AFLAGS) -c -o $@ $<
 
 link-synopsis:	link.cc
-	$(CXX) -DSTANDALONE $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -o link-synopsis link.cc
+	$(CXX) -DSTANDALONE $(DEBUG) $(SYN_FLAGS) $(CPPFLAGS) -o link-synopsis link.cc
 
 ucpp:		$(UCPP_AOBJ)
 	$(CC) -o $@ $^
@@ -127,15 +127,15 @@ $(GCLIB):
 
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a $(UCPP_LIB)
-	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -shared $(CPPFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # This creates the final link python module
 $(LINK_SO): link.cc
-	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -shared $(SYN_FLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # This creates a binary with debugging and profiling that you can run
 occ.gdb:	$(SYN_GOBJ) opencxx.ga  $(UCPP_GLIB)
-	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) $(PYLIB)
+	$(CXX) -ggdb -pg $(CPPFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) $(PYLIB)
 
 # Compile an archive of the OCC files
 opencxx.a : $(OCC_OBJ) $(GCLIB)
