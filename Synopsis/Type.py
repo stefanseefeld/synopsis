@@ -56,10 +56,15 @@ class Unknown(Type):
     """Class for not (yet) known type"""
     def __init__(self, language, name):
         Type.__init__(self, language)
+        self.__language = language
         self.__name = name
 	if type(name) != type(()) and type(name) != type([]):
 	    raise TypeError,"Name must be scoped"
+    def language(self): return self.__language
     def name(self): return self.__name
+    def map(self, language, name):
+        self.__language = language
+        self.__name = name
     def accept(self, visitor): visitor.visitUnknown(self)
     def __cmp__(self, other):
 	"Comparison operator"
