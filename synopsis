@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.36 2001/05/25 13:48:10 stefan Exp $
+#  $Id: synopsis,v 1.37 2001/07/11 02:42:49 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -29,7 +29,7 @@ pickle = cPickle
 from Synopsis.Core import Type, AST, Util
 import Synopsis.Config
 
-def version(): print "synopsis version 0.3"
+def version(): print "synopsis version 0.4"
 cmdname = os.path.basename(sys.argv[0])
 def usage():
     print "\nUsage:", cmdname, "[flags] files"
