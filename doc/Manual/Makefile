@@ -24,13 +24,10 @@ CXXFILES	:= synopsis builder type ast dict decoder swalker dumper
 CXXSOURCES	:= $(patsubst %,$(cxxpath)/%.hh,$(CXXFILES))
 CXXSYNS		:= $(patsubst %,$(cxxspath)/%.csyn,$(CXXFILES))
 
-all:	manual manualcxx
+all:	manual
 
-manual:	$(PYSYNS)
-	$(synopsis) -f HTML -Wf,--spec=html.py.spec -o Manual $^
-
-manualcxx:	$(CXXSYNS)
-	$(synopsis) -f HTML -Wf,--spec=html.cxx.spec -o CxxParserManual $^
+manual:   $(PYSYNS) $(CXXSYNS)
+	$(synopsis) -Wl,-l -f HTML -Wf,--spec=html.cxx.spec -o Manual $^
 
 $(spath)/%.syn:	$(bpath)/%.py
 	@if [ ! -d $(spath) ]; then mkdir $(spath); fi
@@ -41,7 +38,7 @@ $(spath)/synopsis.syn: $(bpath)/synopsis
 
 $(cxxspath)/%.csyn: $(cxxpath)/%.hh
 	@if [ ! -d $(cxxpath) ]; then mkdir $(cxxpath); fi
-	$(synopsis) -p C++ -Wp,-m -o $@ $?
+	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/ -o $@ $?
 
 clean:
 	rm -rf $(spath)
