@@ -6,6 +6,7 @@
 #include <ClassWalker.hh>
 #include <PTree.hh>
 #include <PTree/Display.hh>
+#include <SymbolLookup.hh>
 #include <fstream>
 
 int usage(const char *command)
@@ -48,7 +49,8 @@ int main(int argc, char **argv)
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer);
-    Parser parser(&lexer);
+    SymbolLookup::Table symbols;
+    Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)

@@ -4,15 +4,23 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#ifndef _SymbolTable_Symbol_hh
-#define _SymbolTable_Symbol_hh
+#ifndef _SymbolLookup_Symbol_hh
+#define _SymbolLookup_Symbol_hh
 
 #include <PTree/Encoding.hh>
 #include <PTree/Lists.hh>
 #include <map>
 
-namespace SymbolTable
+namespace SymbolLookup
 {
+
+struct TypeError : public std::exception
+{
+  TypeError(const PTree::Encoding &t) : type(t) {}
+  virtual ~TypeError() throw() {}
+  virtual const char* what() const throw() { return "TypeError";}
+  PTree::Encoding type;
+};
 
 class Symbol
 {
@@ -69,11 +77,6 @@ public:
 class Scope
 {
 public:
-  struct TypeError
-  {
-    TypeError(const PTree::Encoding &t) : type(t) {}
-    PTree::Encoding type;
-  };
 
   Scope() : my_refcount(1) {}
   Scope *ref() { ++my_refcount; return this;}
@@ -81,13 +84,9 @@ public:
 
   virtual const Scope *global() const { return this;}
 
-  void declare(PTree::Declaration *);
-  void declare(PTree::Typedef *);
-  //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
-  void declare(PTree::EnumSpec *);
-  //. declare the class as a new TYPE
-  void declare(PTree::ClassSpec *);
-  void declare(PTree::TemplateDecl *);
+  //. declare the given symbol in the local scope 
+  //. using the given encoded name.
+  void declare(const PTree::Encoding &name, const Symbol *symbol);
 
   //. look up the encoded name and return the associated symbol, if found.
   virtual const Symbol *lookup(const PTree::Encoding &) const throw();
@@ -107,27 +106,15 @@ public:
   //. dump the content of the symbol table to a stream (for debugging).
   virtual void dump(std::ostream &) const;
 
-  static PTree::Encoding get_base_name(const PTree::Encoding &enc, const Scope *&scope);
-
 protected:
   //. Scopes are ref counted, and thus are deleted only by 'unref()'
   virtual ~Scope();
 
 private:
-  typedef std::map<PTree::Encoding, const Symbol *> SymbolTable;
+  typedef std::map<PTree::Encoding, const Symbol *> HashTable;
 
-  static int get_base_name_if_template(PTree::Encoding::iterator i, const Scope *&);
-  static const Scope *lookup_typedef_name(PTree::Encoding::iterator, size_t, const Scope *);
-
-  static PTree::ClassSpec *get_class_template_spec(PTree::Node *);
-  static PTree::Node *strip_cv_from_integral_type(PTree::Node *);
-
-  //. declare the given symbol in the local scope 
-  //. using the given encoded name.
-  void declare(const PTree::Encoding &name, const Symbol *symbol);
-
-  SymbolTable my_symbols;
-  size_t      my_refcount;
+  HashTable my_symbols;
+  size_t    my_refcount;
 };
 
 }

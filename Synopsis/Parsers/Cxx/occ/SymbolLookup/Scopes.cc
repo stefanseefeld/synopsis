@@ -4,13 +4,13 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <SymbolTable/Scopes.hh>
+#include <SymbolLookup/Scopes.hh>
 #include <PTree/Writer.hh>
 #include <PTree/Display.hh>
 #include <cassert>
 
 using namespace PTree;
-using namespace SymbolTable;
+using namespace SymbolLookup;
 
 const Symbol *LocalScope::lookup(const Encoding &name) const throw()
 {

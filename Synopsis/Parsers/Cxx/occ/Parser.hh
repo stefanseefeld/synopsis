@@ -9,8 +9,7 @@
 #define _Parser_hh
 
 #include <PTree.hh>
-#include <SymbolTable.hh>
-#include <stack>
+#include <SymbolLookup.hh>
 #include <vector>
 
 class Lexer;
@@ -42,7 +41,7 @@ public:
   };
   typedef std::vector<Error> ErrorList;
 
-  Parser(Lexer *, int ruleset = CXX);
+  Parser(Lexer &lexer, SymbolLookup::Table &table, int ruleset = CXX);
   ~Parser();
 
   const ErrorList &errors() const { return my_errors;}
@@ -52,9 +51,6 @@ public:
   unsigned long origin(const char *, std::string &) const;
 
   PTree::Node *parse();
-  //. return the current scope (which is the global scope if
-  //. called outside the 'parse' method)
-  const SymbolTable::Scope *scope() const { return my_scopes.top();}
 
 private:
   enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
@@ -184,17 +180,17 @@ private:
   void skip_to(Token::Type token);
   
 private:
-  typedef std::stack<SymbolTable::Scope *> Scopes;
-  struct                                   ScopeGuard;
+//   typedef std::stack<SymbolTable::Scope *> Scopes;
+//   struct                                   ScopeGuard;
 
   bool more_var_name();
 
-  Lexer       *my_lexer;
-  int          my_ruleset;
-  Scopes       my_scopes;
-  ErrorList    my_errors;
-  PTree::Node *my_comments;
-  bool         my_in_template_decl;
+  Lexer               &my_lexer;
+  int                  my_ruleset;
+  SymbolLookup::Table &my_symbols;
+  ErrorList            my_errors;
+  PTree::Node         *my_comments;
+  bool                 my_in_template_decl;
 };
 
 #endif
