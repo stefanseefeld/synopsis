@@ -23,6 +23,7 @@ public:
   virtual ~Visitor() {}
 
   using PTree::Visitor::visit;
+  virtual void visit(PTree::List *);
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::ClassSpec *);
 
