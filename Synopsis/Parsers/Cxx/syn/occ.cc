@@ -676,9 +676,6 @@ PyObject *occParse(PyObject *self, PyObject *args)
 #if 0
   Ptree::show_encoded = true;
 #endif
-#if 1
-  GC_set_max_heap_size(32*1024*1024);
-#endif
 
   char *src;
   PyObject *parserargs, *types, *declarations, *config, *ast;
