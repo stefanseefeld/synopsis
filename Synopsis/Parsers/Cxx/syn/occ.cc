@@ -233,7 +233,32 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	string name = string(encname+1)+"@"+enctype;
 	for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
 	    if (*ptr < 0) (*ptr) += '0'-0x80;
-	string realname = encname+1;
+
+	// TODO: refactor
+	string realname;
+	if (*encname < 0) realname = encname+1;
+	else if (*encname == 'Q') {
+	    char* iter = encname+1;
+	    int scopes = int((unsigned char)*iter++) - 0x80;
+	    vector<string> names;
+	    while (scopes--) {
+		// Only handle two things here: names and templates
+		if (*iter < 0) {
+		    // Name
+		    int length = int((unsigned char)*iter++) - 0x80;
+		    names.push_back(string(iter,length));
+		    iter += length;
+		} else {
+		    cout << "Unknown type inside "<<encname<<": " << *iter << endl;
+		    exit(20);
+		}
+	    }
+	    // For now just colonate them
+	    realname = names[0];
+	    for (size_t i = 1; i < names.size(); i++)
+		realname += "::" + names[i];
+	}
+	    
     
 	// cout << "\n\e[1m"<<name<<"\e[m - ";decl->Display();
 
@@ -296,10 +321,8 @@ PyObject* PyWalker::decodeType()
 	else if (c > DigitOffset) {
 	    int count = c - DigitOffset;
 	    // FIXME: resize name instead
-	    string myname(count, '\0');
-	    copy_n(iter, count, myname.begin());
+	    name.assign(iter, count);
 	    iter += count;
-	    name = myname;
 	}
 	else if (c == 'Q') {
 	    // Qualified type: first is num of scopes, each a name.
@@ -310,9 +333,7 @@ PyObject* PyWalker::decodeType()
 		if (*iter < 0) {
 		    // Name
 		    int length = int((unsigned char)*iter++) - DigitOffset;
-		    string myname(length, '\0');
-		    copy_n(iter, length, myname.begin());
-		    names.push_back(myname);
+		    names.push_back(string(iter, length));
 		    iter += length;
 		} else if (*iter == 'T') {
 		    // Template :(
