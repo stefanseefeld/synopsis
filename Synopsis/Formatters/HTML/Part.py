@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.37 2003/11/15 19:53:44 stefan Exp $
+# $Id: Part.py,v 1.38 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -15,14 +15,15 @@ declarations is delegated to multiple strategies for each part of the page,
 and are defined in the FormatStrategy module.
 """
 
+from Synopsis.Processor import Parametrized, Parameter
 from Synopsis import AST, Type, Util
-
-import Tags, core, FormatStrategy
+import FormatStrategy
+import Tags # need both because otherwise 'Tags.name' would be ambiguous
 from Tags import *
 
-import types, os
+import string, os
 
-class Part(Type.Visitor, AST.Visitor):
+class Part(Parametrized, Type.Visitor, AST.Visitor):
    """Base class for formatting a Part of a Scope Page.
     
    This class contains functionality for modularly formatting an AST node and
@@ -32,11 +33,11 @@ class Part(Type.Visitor, AST.Visitor):
    strategy implements. For each AST declaration visited, the Part asks all
    Strategies which implement the appropriate format method to generate
    output for that declaration. The final writing of the formatted html is
-   delegated to the writeSectionStart, writeSectionEnd, and writeSectionItem
+   delegated to the write_section_start, write_section_end, and write_section_item
    methods, which myst be implemented in a subclass.
    """
 
-   def __init__(self): pass
+   formatters = Parameter([], "list of FormatStrategies (yes, that's an aweful name)")
 
    def register(self, page):
 
@@ -45,12 +46,31 @@ class Part(Type.Visitor, AST.Visitor):
       self.__formatters = []
       self.__id_holder = None
       # Lists of format methods for each AST type
-      self.__formatdict = {
-         'formatDeclaration':[], 'formatForward':[], 'formatGroup':[], 'formatScope':[],
-         'formatModule':[], 'formatMetaModule':[], 'formatClass':[],
-         'formatTypedef':[], 'formatEnum':[], 'formatVariable':[],
-         'formatConst':[], 'formatFunction':[], 'formatOperation':[], 
-         }
+      self.__formatdict = {'format_declaration':[],
+                           'format_forward':[],
+                           'format_group':[],
+                           'format_scope':[],
+                           'format_module':[],
+                           'format_meta_module':[],
+                           'format_class':[],
+                           'format_typedef':[],
+                           'format_enum':[],
+                           'format_variable':[],
+                           'format_const':[],
+                           'format_function':[],
+                           'format_operation':[]}
+
+      # Why not just apply all formatters ? is this an optimization ?
+      # ask chalky...
+      for formatter in self.formatters:
+         formatter.register(self)
+         for method in self.__formatdict.keys():
+            no_func = getattr(FormatStrategy.Strategy, method).im_func
+            method_obj = getattr(formatter, method)
+            # If it was overridden in formatter
+            if method_obj.im_func is not no_func:
+               # Add to the dictionary
+               self.__formatdict[method].append(method_obj)
     
    def page(self): return self.__page
    def filename(self): return self.__page.filename()
@@ -58,36 +78,6 @@ class Part(Type.Visitor, AST.Visitor):
    def scope(self): return self.__page.scope()
    def write(self, text): self.os().write(text)
 
-   def _init_formatters(self, config_option, type_msg):
-      """Loads strategies from config file"""
-      base = 'Synopsis.Formatters.HTML.FormatStrategy.'
-      try:
-         config_obj = getattr(config.obj.ScopePages, config_option)
-         if type(config_obj) not in (types.ListType, types.TupleType):
-            raise TypeError, "ScopePages.%s must be a list or tuple of modules"%config_option
-         for formatter in config_obj:
-            clas = core.import_object(formatter, basePackage=base)
-            if config.verbose > 1: print "Using %s formatter:"%type_msg,clas
-            self.addFormatter(clas)
-      except AttributeError:
-         # Some defaults if config fails
-         self._init_default_formatters()
-
-   def addFormatter(self, formatterClass):
-      """Adds the given formatter Class. An object is instantiated from the
-      class passing self to the constructor. Stores the object, and stores
-      which format methods it overrides"""
-      formatter = formatterClass(self)
-      self.__formatters.append(formatter)
-      # For each method name:
-      for method in self.__formatdict.keys():
-         no_func = getattr(FormatStrategy.Strategy, method).im_func
-         method_obj = getattr(formatter, method)
-         # If it was overridden in formatter
-         if method_obj.im_func is not no_func:
-            # Add to the dictionary
-            self.__formatdict[method].append(method_obj)
-    
    # Access to generated values
    def type_ref(self): return self.__type_ref
    def type_label(self): return self.__type_label
@@ -125,11 +115,11 @@ class Part(Type.Visitor, AST.Visitor):
       return location and Tags.name(location, label) or label
 
 
-   def formatDeclaration(self, decl, method):
+   def format_declaration(self, decl, method):
       """Format decl using named method of each formatter. Each formatter
       returns two strings - type and name. All the types are joined and all
       the names are joined separately. The consolidated type and name
-      strings are then passed to writeSectionItem."""
+      strings are then passed to write_section_item."""
 
       # TODO - investigate quickest way of doing this. I tried.
       # A Lambda that calls the given function with decl
@@ -139,7 +129,7 @@ class Part(Type.Visitor, AST.Visitor):
       if not len(type_name): return
       # NEW CODE:
       text = string.strip(string.join(type_name))
-      self.writeSectionItem(text)
+      self.write_section_item(text)
 
    def process(self, decl):
       """Formats the given decl, creating the output for this Part of the
@@ -151,23 +141,23 @@ class Part(Type.Visitor, AST.Visitor):
       pass
 	
    #################### AST Visitor ############################################
-   def visitDeclaration(self, decl): self.formatDeclaration(decl, 'formatDeclaration')
-   def visitForward(self, decl): self.formatDeclaration(decl, 'formatForward')
-   def visitGroup(self, decl): self.formatDeclaration(decl, 'formatGroup')
-   def visitScope(self, decl): self.formatDeclaration(decl, 'formatScope')
-   def visitModule(self, decl):	self.formatDeclaration(decl, 'formatModule')
-   def visitMetaModule(self, decl): self.formatDeclaration(decl, 'formatMetaModule')
-   def visitClass(self, decl): self.formatDeclaration(decl, 'formatClass')
-   def visitTypedef(self, decl): self.formatDeclaration(decl, 'formatTypedef')
-   def visitEnum(self, decl): self.formatDeclaration(decl, 'formatEnum')
-   def visitVariable(self, decl): self.formatDeclaration(decl, 'formatVariable')
-   def visitConst(self, decl): self.formatDeclaration(decl, 'formatConst')
-   def visitFunction(self, decl): self.formatDeclaration(decl, 'formatFunction')
-   def visitOperation(self, decl): self.formatDeclaration(decl, 'formatOperation')
+   def visitDeclaration(self, decl): self.format_declaration(decl, 'format_declaration')
+   def visitForward(self, decl): self.format_declaration(decl, 'format_forward')
+   def visitGroup(self, decl): self.format_declaration(decl, 'format_group')
+   def visitScope(self, decl): self.format_declaration(decl, 'format_scope')
+   def visitModule(self, decl):	self.format_declaration(decl, 'format_module')
+   def visitMetaModule(self, decl): self.format_declaration(decl, 'format_meta_module')
+   def visitClass(self, decl): self.format_declaration(decl, 'format_class')
+   def visitTypedef(self, decl): self.format_declaration(decl, 'format_typedef')
+   def visitEnum(self, decl): self.format_declaration(decl, 'format_enum')
+   def visitVariable(self, decl): self.format_declaration(decl, 'format_variable')
+   def visitConst(self, decl): self.format_declaration(decl, 'format_const')
+   def visitFunction(self, decl): self.format_declaration(decl, 'format_function')
+   def visitOperation(self, decl): self.format_declaration(decl, 'format_operation')
 
 
    #################### Type Formatter/Visitor #################################
-   def formatType(self, typeObj, id_holder = None):
+   def format_type(self, typeObj, id_holder = None):
       "Returns a reference string for the given type object"
 
       if typeObj is None: return "(unknown)"
@@ -202,7 +192,7 @@ class Part(Type.Visitor, AST.Visitor):
    def visitModifier(self, type):
       "Adds modifiers to the formatted label of the modifier's alias"
 
-      alias = self.formatType(type.alias())
+      alias = self.format_type(type.alias())
       def amp(x):
          if x == '&': return '&amp;'
          return x
@@ -217,7 +207,7 @@ class Part(Type.Visitor, AST.Visitor):
          type_label = self.reference(type.template().name())
       else:
          type_label = "(unknown)"
-      params = map(self.formatType, type.parameters())
+      params = map(self.format_type, type.parameters())
       self.__type_label = "%s&lt;%s&gt;"%(type_label,string.join(params, ", "))
 
    def visitTemplate(self, type):
@@ -225,14 +215,14 @@ class Part(Type.Visitor, AST.Visitor):
 
       self.__type_label = "template&lt;%s&gt;"%(
          string.join(map(lambda x:"typename "+x,
-                         map(self.formatType, type.parameters())), ",")
+                         map(self.format_type, type.parameters())), ",")
          )
 
    def visitFunctionType(self, type):
       "Labels the function type with return type, name and parameters"
       
-      ret = self.formatType(type.returnType())
-      params = map(self.formatType, type.parameters())
+      ret = self.format_type(type.returnType())
+      params = map(self.format_type, type.parameters())
       pre = string.join(type.premod(), '')
       if self.__id_holder:
          ident = self.__id_holder[0]
@@ -249,17 +239,17 @@ class Part(Type.Visitor, AST.Visitor):
 
       pass
 
-   def writeSectionStart(self, heading):
+   def write_section_start(self, heading):
       "Abstract method to start a section of declaration types"
 
       pass
 
-   def writeSectionEnd(self, heading):
+   def write_section_end(self, heading):
       "Abstract method to end a section of declaration types"
 
       pass
 
-   def writeSectionItem(self, text):
+   def write_section_item(self, text):
       "Abstract method to write the output of one formatted declaration"
 
       pass

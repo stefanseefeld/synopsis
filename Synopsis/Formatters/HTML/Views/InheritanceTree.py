@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.14 2003/11/15 19:01:53 stefan Exp $
+# $Id: InheritanceTree.py,v 1.15 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -19,18 +19,18 @@ class InheritanceTree(Page):
    def register(self, processor):
 
       Page.register(self, processor)
-      self.processor.addRootPage(self.filename(), 'Inheritance Tree', 'main', 1)
+      self.processor.add_root_page(self.filename(), 'Inheritance Tree', 'main', 1)
  
-   def filename(self): return self.processor.file_layout.nameOfSpecial('InheritanceTree')
+   def filename(self): return self.processor.file_layout.special('InheritanceTree')
 
    def title(self): return 'Synopsis - Class Hierarchy'
 
    def process(self, start):
       """Creates a file with the inheritance tree"""
 
-      roots = self.processor.classTree.roots()
+      roots = self.processor.class_tree.roots()
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename()))
+      self.write(self.processor.navigation_bar(self.filename()))
       self.write(entity('h1', "Inheritance Tree"))
       self.write('<ul>')
       map(self.process_class_inheritance, map(lambda a,b=start.name():(a,b), roots))
@@ -41,10 +41,10 @@ class InheritanceTree(Page):
       name, rel_name = args
       self.write('<li>')
       self.write(self.reference(name, rel_name))
-      parents = self.processor.classTree.superclasses(name)
+      parents = self.processor.class_tree.superclasses(name)
       if parents:
          self.write(' <i>(%s)</i>'%string.join(map(Util.ccolonName, parents), ", "))
-      subs = self.processor.classTree.subclasses(name)
+      subs = self.processor.class_tree.subclasses(name)
       if subs:
          self.write('<ul>')
          map(self.process_class_inheritance, map(lambda a,b=name:(a,b), subs))

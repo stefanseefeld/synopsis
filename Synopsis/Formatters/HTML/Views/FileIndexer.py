@@ -1,4 +1,4 @@
-# $Id: FileIndexer.py,v 1.6 2003/11/14 17:39:04 stefan Exp $
+# $Id: FileIndexer.py,v 1.7 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -45,7 +45,7 @@ class FileIndexer(Page):
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
-            filename = self.processor.file_layout.nameOfFileIndex(filename)
+            filename = self.processor.file_layout.file_index(filename)
             self.processor.register_filename(filename, self, file)
     
    def process(self, start):
@@ -60,7 +60,7 @@ class FileIndexer(Page):
       containing a list of declarations."""
 
       # set up filename and title for the current page
-      self.__filename = self.processor.file_layout.nameOfFileIndex(filename)
+      self.__filename = self.processor.file_layout.file_index(filename)
       # (get rid of ../'s in the filename)
       name = string.split(filename, os.sep)
       while len(name) and name[0] == '..': del name[0]
@@ -70,11 +70,11 @@ class FileIndexer(Page):
       self.write(entity('b', string.join(name, os.sep))+'<br>')
       if self.__link_source:
          link = rel(self.filename(),
-                    self.processor.file_layout.nameOfFileSource(filename))
+                    self.processor.file_layout.file_source(filename))
          self.write(href(link, '[File Source]', target="main")+'<br>')
       if self.__link_details:
          link = rel(self.filename(),
-                    self.processor.file_layout.nameOfFileDetails(filename))
+                    self.processor.file_layout.file_details(filename))
          self.write(href(link, '[File Details]', target="main")+'<br>')
       comments = self.processor.comments
 

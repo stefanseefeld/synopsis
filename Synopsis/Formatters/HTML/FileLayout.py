@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.23 2003/11/14 14:51:09 stefan Exp $
+# $Id: FileLayout.py,v 1.24 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -14,7 +14,6 @@ default implementation stores everything in the same directory.
 
 from Synopsis import Util, AST
 from Synopsis.Formatters import TOC
-from core import config
 from Tags import *
 
 import os, os.path, sys, stat, string, re
@@ -28,126 +27,114 @@ class FileLayout (TOC.Linker):
    def init(self, processor):
 
       self.processor = processor
-      basename = self.processor.output
-      stylesheet = config.stylesheet
-      stylesheet_file = config.stylesheet_file
-      if basename is None:
-         print "ERROR: No output directory specified."
-         print "You must specify a base directory with the -o option."
-         sys.exit(1)
-      if not os.path.exists(basename):
-         if config.verbose: print "Warning: Output directory does not exist. Creating."
+      self.base = self.processor.output
+      if not os.path.exists(self.base):
+         if processor.verbose: print "Warning: Output directory does not exist. Creating."
          try:
-            os.makedirs(basename, 0755)
+            os.makedirs(self.base, 0755)
          except EnvironmentError, reason:
             print "ERROR: Creating directory:",reason
             sys.exit(2)
-      if stylesheet_file:
-         # Copy stylesheet in
-         self.copyFile(stylesheet_file, os.path.join(basename, stylesheet))
-      if not os.path.isdir(basename):
+      elif not os.path.isdir(self.base):
          print "ERROR: Output must be a directory."
          sys.exit(1)
 
-   def copyFile(self, orig_name, new_name):
-      """Copies file if newer. The file named by orig_name is compared to
-      new_name, and if newer or new_name doesn't exist, it is copied."""
+      if processor.stylesheet_file:
+         self.copy_file(processor.stylesheet_file, processor.stylesheet)
 
+   def copy_file(self, src, dest):
+      """Copies file if newer. The file named by orig_name is compared to
+      <output>/<new_name>, and if newer or new_name doesn't exist, it is copied."""
+
+      dest = os.path.join(self.base, dest)
       try:
-         filetime = os.stat(orig_name)[stat.ST_MTIME]
-         if not os.path.exists(new_name) or \
-		filetime > os.stat(new_name)[stat.ST_MTIME]:
-            fin = open(orig_name,'r')
-            fout = Util.open(new_name)
-            fout.write(fin.read())
-            fin.close()
-            fout.close()
+         filetime = os.stat(src)[stat.ST_MTIME]
+         if (not os.path.exists(dest)
+             or filetime > os.stat(dest)[stat.ST_MTIME]):
+            Util.open(dest).write(open(src, 'r').read())
       except EnvironmentError, reason:
          import traceback
          traceback.print_exc()
          print "ERROR: ", reason
          sys.exit(2)
     
-   def _checkMain(self, filename):
+   def _check_main(self, filename):
       """Checks whether the given filename is the main index page or not. If
-      it is, then it returns the filename from nameOfIndex(), else it returns
+      it is, then it returns the filename from index(), else it returns
       it unchanged"""
 
-      if filename == config.page_main: return self.nameOfIndex()
+      if filename == self.processor.main_page: return self.index()
       return filename
 	
-   def nameOfScope(self, scope):
+   def scope(self, scope):
       """Return the filename of a scoped name (class or module).
       The default implementation is to join the names with '-' and append
       ".html" Additionally, special characters are Util.quoted in URL-style"""
 
-      if not len(scope): return self._checkMain(self.nameOfSpecial('global'))
+      if not len(scope): return self._check_main(self.special('global'))
       return Util.quote(string.join(scope,'-')) + ".html"
 
-   def _stripFilename(self, file):
+   def _strip_filename(self, file):
 
       if len(file) and file[-1] == '/': file = file[:-1]
       return file
 
-   def nameOfFileIndex(self, file):
+   def file_index(self, file):
       """Return the filename for the index of an input file.
-      The base_dir config option is used.
       Default implementation is to join the path with '-', prepend "_file-"
       and append ".html" """
 
-      file = self._stripFilename(file)
-      return "_file-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
+      file = self._strip_filename(file)
+      return "_file-"+rel(self.base, file).replace(os.sep, '-')+".html"
 
-   def nameOfFileSource(self, file):
+   def file_source(self, file):
       """Return the filename for the source of an input file.
-      The base_dir config option is used.
       Default implementation is to join the path with '-', prepend "_source-"
       and append ".html" """
 
-      file = self._stripFilename(file)
-      return "_source-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
+      file = self._strip_filename(file)
+      return "_source-"+rel(self.base, file).replace(os.sep, '-')+".html"
 
-   def nameOfFileDetails(self, file):
+   def file_details(self, file):
       """Return the filename for the details of an input file.
-      The base_dir config option is used.
       Default implementation is to join the path with '-', prepend
       "_filedetail-" and append ".html" """
 
-      file = self._stripFilename(file)
-      return "_filedetail-"+rel(config.base_dir, file).replace(os.sep, '-')+".html"
+      file = self._strip_filename(file)
+      return "_filedetail-"+rel(self.base, file).replace(os.sep, '-')+".html"
 
-   def nameOfIndex(self):
+   def index(self):
       """Return the name of the main index file. Default is index.html"""
 
       return "index.html"
 
-   def nameOfSpecial(self, name):
+   def special(self, name):
       """Return the name of a special file (tree, etc). Default is
       _name.html"""
 
-      return self._checkMain("_" + name + ".html")
+      return self._check_main("_" + name + ".html")
 
-   def nameOfScopedSpecial(self, name, scope, ext=".html"):
+   def scoped_special(self, name, scope, ext=".html"):
       """Return the name of a special type of scope file. Default is to join
       the scope with '-' and prepend '-'+name"""
 
       return "_%s-%s%s"%(name, Util.quote(string.join(scope, '-')), ext)
 
-   def nameOfModuleTree(self):
+   def module_tree(self):
       """Return the name of the module tree index. Default is
       _modules.html"""
 
       return "_modules.html"
 
-   def nameOfModuleIndex(self, scope):
+   def module_index(self, scope):
       """Return the name of the index of the given module. Default is to
       join the name with '-', prepend "_module_" and append ".html" """
 
       # Prefer module index for frames
-      if config.using_module_index:
+      if self.processor.using_module_index:
          return "_module_" + Util.quote(string.join(scope, '-')) + ".html"
       # Fall back to the scope page
-      return self.nameOfScope(scope)
+      return self.scope(scope)
 	
    def link(self, decl):
       """Create a link to the named declaration. This method may have to
@@ -155,72 +142,64 @@ class FileLayout (TOC.Linker):
 
       if isinstance(decl, AST.Scope):
          # This is a class or module, so it has its own file
-         return self.nameOfScope(decl.name())
+         return self.scope(decl.name())
       # Assume parent scope is class or module, and this is a <A> name in it
-      filename = self.nameOfScope(decl.name()[:-1])
+      filename = self.scope(decl.name()[:-1])
       anchor = anglebrackets(decl.name()[-1].replace(' ','-'))
       return filename + "#" + anchor
 
 class NestedFileLayout (FileLayout):
    """generates a structured file system instead of a flat one"""
 
-   def nameOfScope(self, scope):
+   def scope(self, scope):
       """Return the filename of a scoped name (class or module).
       One subdirectory per scope"""
 
       prefix = 'Scopes'
       if not len(scope):
-         return self._checkMain(os.path.join(prefix, 'global') + '.html')
+         return self._check_main(os.path.join(prefix, 'global') + '.html')
       else: return Util.quote(reduce(os.path.join, scope, prefix)) + '.html'
 
-   def nameOfFileIndex(self, file):
+   def file_index(self, file):
       """Return the filename for the index of an input file.
-      The base_dir config option is used.
       Default implementation is to join the path with '-', prepend "_file-"
       and append ".html" """
 
-      file = self._stripFilename(file)
-      return os.path.join("File", rel(config.base_dir, file)+".html")
+      file = self._strip_filename(file)
+      return os.path.join("File", rel(self.base, file)+".html")
 
-   def nameOfFileSource(self, file):
+   def file_source(self, file):
       """Return the filename for the source of an input file.
-      The base_dir config option is used.
       Default implementation is to join the path with '-', prepend "_source-"
       and append ".html" """
 
-      file = self._stripFilename(file)
-      return os.path.join("Source", rel(config.base_dir, file)+".html")
+      file = self._strip_filename(file)
+      return os.path.join("Source", rel(self.base, file)+".html")
 
-   def nameOfFileDetails(self, file):
+   def file_details(self, file):
       """Return the filename for the details of an input file.
-      The base_dir config option is used.
       Returns the filename nested in the FileDetails directory and with
       .html appended."""
 
-      file = self._stripFilename(file)
-      return os.path.join("FileDetails", rel(config.base_dir, file)+".html")
+      file = self._strip_filename(file)
+      return os.path.join("FileDetails", rel(self.base, file)+".html")
 
-   def nameOfIndex(self):
-      """Return the name of the main index file."""
-
-      return "index.html"
-
-   def nameOfSpecial(self, name):
+   def special(self, name):
       """Return the name of a special file (tree, etc)."""
 
-      return self._checkMain(name + ".html")
+      return self._check_main(name + ".html")
     
-   def nameOfScopedSpecial(self, name, scope, ext=".html"):
+   def scoped_special(self, name, scope, ext=".html"):
       """Return the name of a special type of scope file"""
 
       return Util.quote(reduce(os.path.join, scope, name)) + ext
 
-   def nameOfModuleTree(self):
+   def module_tree(self):
       """Return the name of the module tree index"""
 
       return "Modules.html"
 
-   def nameOfModuleIndex(self, scope):
+   def module_index(self, scope):
       """Return the name of the index of the given module"""
 
       return Util.quote(reduce(os.path.join, scope, 'Modules')) + '.html'

@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.14 2003/11/15 19:01:53 stefan Exp $
+# $Id: NameIndex.py,v 1.15 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -23,9 +23,9 @@ class NameIndex(Page):
    def register(self, processor):
 
       Page.register(self, processor)
-      self.processor.addRootPage(self.filename(), 'Name Index', 'main', 1)
+      self.processor.add_root_page(self.filename(), 'Name Index', 'main', 1)
 
-   def filename(self): return self.processor.file_layout.nameOfSpecial('NameIndex')
+   def filename(self): return self.processor.file_layout.special('NameIndex')
 
    def title(self): return 'Synopsis - Name Index'
 
@@ -35,7 +35,7 @@ class NameIndex(Page):
       _processItem is called for each item in the dictionary."""
 
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename()))
+      self.write(self.processor.navigation_bar(self.filename()))
       self.write(entity('h1', "Name Index"))
       self.write('<i>Hold the mouse over a link to see the scope of each name</i>')
 
@@ -57,7 +57,7 @@ class NameIndex(Page):
             end = numitems * (column + 1) / self.columns
             self.write('<td valign=top>')
             for item in items[start:end]:
-               self._processItem(item)
+               self._process_item(item)
             self.write('</td>')
             start = end
          self.write('</tr></table>')
@@ -92,7 +92,7 @@ class NameIndex(Page):
          items.sort(name_cmp)
       return dict
 
-   def _processItem(self, type):
+   def _process_item(self, type):
       """Process the given name for output"""
 
       name = type.name()

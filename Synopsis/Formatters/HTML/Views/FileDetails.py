@@ -1,4 +1,4 @@
-# $Id: FileDetails.py,v 1.6 2003/11/14 17:39:04 stefan Exp $
+# $Id: FileDetails.py,v 1.7 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,8 +26,7 @@ class FileDetails(Page):
       Page.register(self, processor)
       self.__filename = ''
       self.__title = ''
-      self.__link_source = processor.has_page(FileSource)
-      print 'link source', self.__link_source
+      self.__link_source = processor.has_page('FileSource')
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -46,7 +45,7 @@ class FileDetails(Page):
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
-            filename = self.processor.file_layout.nameOfFileDetails(filename)
+            filename = self.processor.file_layout.file_details(filename)
             self.processor.register_filename(filename, self, file)
     
    def process(self, start):
@@ -61,18 +60,18 @@ class FileDetails(Page):
       containing a list of declarations."""
 
       # set up filename and title for the current page
-      self.__filename = self.processor.file_layout.nameOfFileDetails(filename)
+      self.__filename = self.processor.file_layout.file_details(filename)
       # (get rid of ../'s in the filename)
       name = string.split(filename, os.sep)
       while len(name) and name[0] == '..': del name[0]
       self.__title = string.join(name, os.sep)+' Details'
 
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename()))
+      self.write(self.processor.navigation_bar(self.filename()))
       self.write(entity('h1', string.join(name, os.sep))+'<br>')
       if self.__link_source:
          link = rel(self.filename(),
-                    self.processor.file_layout.nameOfFileSource(filename))
+                    self.processor.file_layout.file_source(filename))
          self.write(href(link, '[File Source]', target="main")+'<br>')
 
       # Print list of includes
@@ -89,7 +88,7 @@ class FileDetails(Page):
             if include.is_next(): idesc = 'include_next '
             else: idesc = 'include '
             if include.is_macro(): idesc = idesc + 'from macro '
-            link = rel(self.filename(), self.processor.file_layout.nameOfFileDetails(target_filename))
+            link = rel(self.filename(), self.processor.file_layout.file_details(target_filename))
             self.write(idesc + href(link, target_filename)+'<br>')
       except:
          pass

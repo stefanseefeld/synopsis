@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.13 2003/11/16 01:45:27 stefan Exp $
+# $Id: DirBrowse.py,v 1.14 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -36,20 +36,20 @@ class DirBrowse(Page):
       """Returns the output filename for the given input directory"""
 
       if dir is self.__start:
-         return self.processor.file_layout.nameOfSpecial('dir')
+         return self.processor.file_layout.special('dir')
       scope = string.split(rel(self.__start, dir), os.sep)
-      return self.processor.file_layout.nameOfScopedSpecial('dir', scope)
+      return self.processor.file_layout.scoped_special('dir', scope)
 
    def register(self, processor):
       """Registers a page for each file in the hierarchy"""
 
       Page.register(self, processor)
 
-      self.__filename = self.processor.file_layout.nameOfSpecial('dir')
+      self.__filename = self.processor.file_layout.special('dir')
       self.__title = 'Directory Listing'
       self.__start = self.__base = processor.output
       processor.set_main_page(self.__filename)
-      self.processor.addRootPage(self.__filename, 'Files', 'main', 2)
+      self.processor.add_root_page(self.__filename, 'Files', 'main', 2)
 
    def register_filenames(self, start):
       """Registers a page for every directory"""
@@ -89,19 +89,19 @@ class DirBrowse(Page):
 
       # Start the file
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename(), 1))
+      self.write(self.processor.navigation_bar(self.filename(), 1))
       # Write intro stuff
       root = rel(self.__base, self.__start)
       if not len(root) or root[-1] != '/': root = root + '/'
       if path is self.__start:
          self.write('<h1> '+root)
       else:
-         self.write('<h1>'+href(file_layout.nameOfSpecial('dir'), root + ' '))
+         self.write('<h1>'+href(file_layout.special('dir'), root + ' '))
          dirscope = []
          scope = string.split(rel(self.__start, path), os.sep)
          for dir in scope[:-1]:
             dirscope.append(dir)
-            dirlink = file_layout.nameOfScopedSpecial('dir', dirscope)
+            dirlink = file_layout.scoped_special('dir', dirscope)
             dirlink = rel(self.filename(), dirlink)
             self.write(href(dirlink, dir+'/ '))
          if len(scope) > 0:
@@ -130,7 +130,7 @@ class DirBrowse(Page):
          if stat.S_ISDIR(info[stat.ST_MODE]):
             # A directory, process now
             scope = string.split(rel(self.__start, entry_path), os.sep)
-            linkpath = file_layout.nameOfScopedSpecial('dir', scope)
+            linkpath = file_layout.scoped_special('dir', scope)
             linkpath = rel(self.filename(), linkpath)
             self.write('<tr><td>%s</td><td></td><td align="right">%s</td></tr>\n'%(
                href(linkpath, entry+'/'),
@@ -141,7 +141,7 @@ class DirBrowse(Page):
       for path, entry, info in files:
          size = info[stat.ST_SIZE]
          timestr = time.asctime(time.gmtime(info[stat.ST_MTIME]))
-         linkpath = file_layout.nameOfFileSource(path)
+         linkpath = file_layout.file_source(path)
          rego = self.processor.filename_info(linkpath)
          if rego:
             linkurl = rel(self.filename(), linkpath)

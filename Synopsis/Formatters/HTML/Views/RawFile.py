@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.11 2003/11/15 19:51:42 stefan Exp $
+# $Id: RawFile.py,v 1.12 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -58,7 +58,7 @@ class RawFile(Page):
             #if stat.S_ISDIR(info[stat.ST_MODE]):
             #   dirs.append(entry_path)
             #else:
-            #   filename = self.processor.file_layout.nameOfFileSource(entry_path)
+            #   filename = self.processor.file_layout.file_source(entry_path)
             #   self.__files.append( (entry_path, filename) )
             pass
       return self.__files
@@ -85,7 +85,7 @@ class RawFile(Page):
       self.__filename = filename
       self.__title = original
       self.start_file()
-      self.write(self.processor.formatHeader(filename, 2))
+      self.write(self.processor.navigation_bar(filename, 2))
       self.write('<h1>'+original+'</h1>')
       try:
          f = open(original, 'rt')

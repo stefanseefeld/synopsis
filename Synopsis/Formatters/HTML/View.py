@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.20 2003/11/14 14:51:09 stefan Exp $
+# $Id: View.py,v 1.21 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -73,8 +73,7 @@ class TemplatePageFormat(PageFormat):
       self.__title_tag = '@TITLE@'
       self.__content_tag = '@CONTENT@'
       for file in self.copy_files:
-         dest = os.path.join(processor.output, file[1])
-         processor.file_layout.copyFile(file[0], dest)
+         processor.file_layout.copy_file(file[0], file[1])
       self.load_file()
 
    def load_file(self):

@@ -1,4 +1,4 @@
-# $Id: Inheritance.py,v 1.2 2003/11/16 01:45:27 stefan Exp $
+# $Id: Inheritance.py,v 1.3 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,22 +7,21 @@
 # see the file COPYING for details.
 #
 
+from Synopsis.Processor import Parameter
+from Synopsis import AST, Type, Util
 from Synopsis.Formatters.HTML.Part import Part
-
 from Synopsis.Formatters.HTML import FormatStrategy
 from Synopsis.Formatters.HTML.Tags import *
 
 class Inheritance(Part):
 
+   formatters = Parameter([FormatStrategy.Inheritance()],
+                          '')
+
    def register(self, page):
 
       Part.register(self, page)
-      self._init_formatters('inheritance_formatters', 'inheritance')
       self.__start_list = 0
-
-   def _init_default_formatters(self):
-
-      self.addFormatter(FormatStrategy.Inheritance)
 
    def process(self, decl):
       "Walk the hierarchy to find inherited members to print."
@@ -65,10 +64,10 @@ class Inheritance(Part):
             # Check section heading
             if not started:
                started = 1
-               self.writeSectionStart(heading)
+               self.write_section_start(heading)
             child.accept(self)
          # Finish the section
-         if started: self.writeSectionEnd(heading)
+         if started: self.write_section_end(heading)
 	
       self._process_superclasses(clas, names + child_names)
     
@@ -91,7 +90,7 @@ class Inheritance(Part):
          #print "Ignoring", parent.__class__.__name__, "parent of", clas.name()
          pass #ignore
      
-   def writeSectionStart(self, heading):
+   def write_section_start(self, heading):
       """Creates a table with one row. The row has a td of class 'heading'
       containing the heading string"""
 
@@ -100,7 +99,7 @@ class Inheritance(Part):
       self.write('<tr><td class="inherited">')
       self.__start_list = 1
 
-   def writeSectionItem(self, text):
+   def write_section_item(self, text):
       """Adds a table row"""
 
       if self.__start_list:
@@ -109,7 +108,7 @@ class Inheritance(Part):
       else:
          self.write(',\n'+text)
 
-   def writeSectionEnd(self, heading):
+   def write_section_end(self, heading):
       """Closes the table entity and adds a break."""
       self.write('</td></tr></table>\n<br>\n')
 

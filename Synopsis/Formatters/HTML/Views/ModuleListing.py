@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.15 2003/11/15 19:01:53 stefan Exp $
+# $Id: ModuleListing.py,v 1.16 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,10 +26,10 @@ class ModuleListing(Page):
       self._children_cache = {}
       filename = self.filename()
       processor.set_contents_page(filename)
-      self.processor.addRootPage(filename, self.short_title, 'contents', 2)
+      self.processor.add_root_page(filename, self.short_title, 'contents', 2)
       self._link_target = 'index'
 
-   def filename(self): return self.processor.file_layout.nameOfSpecial('ModuleListing')
+   def filename(self): return self.processor.file_layout.special('ModuleListing')
 
    def title(self): return self.short_title + ' Listing'
 
@@ -40,7 +40,7 @@ class ModuleListing(Page):
       self.tree.register(self)
       # Create the file
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename(), 2))
+      self.write(self.processor.navigation_bar(self.filename(), 2))
       self.tree.start_tree()
       self.indexModule(start, start.name())
       self.tree.end_tree()
@@ -58,7 +58,7 @@ class ModuleListing(Page):
       """Returns the link to the given declaration"""
 
       return rel(self.filename(),
-                 self.processor.file_layout.nameOfModuleIndex(ns.name()))
+                 self.processor.file_layout.module_index(ns.name()))
 
    def _get_children(self, decl):
       """Returns the children of the given declaration"""

@@ -1,4 +1,4 @@
-# $Id: FileListing.py,v 1.5 2003/11/14 17:39:04 stefan Exp $
+# $Id: FileListing.py,v 1.6 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -24,13 +24,13 @@ class FileListing(Page):
    def register(self, processor):
 
       Page.register(self, processor)
-      self.__filename = self.processor.file_layout.nameOfSpecial('FileListing')
+      self.__filename = self.processor.file_layout.special('FileListing')
       self.__title = 'Files'
 
       processor.set_main_page(self.filename())
       # Reset filename in case we got main page status
-      self.__filename = self.processor.file_layout.nameOfSpecial('FileListing')
-      self.processor.addRootPage(self.filename(), self.title(), "contents", 2)
+      self.__filename = self.processor.file_layout.special('FileListing')
+      self.processor.add_root_page(self.filename(), self.title(), "contents", 2)
       processor.set_contents_page(self.filename())
 
    def filename(self):
@@ -49,17 +49,17 @@ class FileListing(Page):
       self.processor.register_filename(self.__filename, self, None)
     
    def process(self, start):
-      """Creates the listing using the recursive processFileTreeNode method"""
+      """Creates the listing using the recursive process_file_tree_node method"""
 
       # Init tree
       self.tree = self.processor.tree_formatter
       self.tree.register(self)
       # Start the file
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename(), 2))
+      self.write(self.processor.navigation_bar(self.filename(), 2))
       self.tree.start_tree()
       # recursively visit all nodes
-      self.processFileTreeNode(processor.fileTree.root())
+      self.process_file_tree_node(self.processor.file_tree.root())
       self.tree.end_tree()
       self.end_file()
 
@@ -73,7 +73,7 @@ class FileListing(Page):
          return cmp(b_leaf, a_leaf)
       return cmp(string.upper(a.path), string.upper(b.path))
 
-   def processFileTreeNode(self, node):
+   def process_file_tree_node(self, node):
       """Creates a portion of the tree for the given file node. This method
       assumes that the file is already in progress, and just appends to
       it. This method is recursive, calling itself for each child of node
@@ -81,7 +81,7 @@ class FileListing(Page):
 
       if isinstance(node, FileTree.File):
          # Leaf node
-         ref = rel(self.filename(), self.processor.file_layout.nameOfFileIndex(node.path))
+         ref = rel(self.filename(), self.processor.file_layout.file_index(node.path))
          text = href(ref, node.filename, target='index')
          self.tree.write_leaf(text)
          return
@@ -92,6 +92,6 @@ class FileListing(Page):
          self.tree.write_node_start(node.filename+os.sep)
       if len(children):
          for child in children:
-            self.processFileTreeNode(child)
+            self.process_file_tree_node(child)
       if len(node.path):
          self.tree.write_node_end()

@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.8 2003/11/15 19:01:53 stefan Exp $
+# $Id: Source.py,v 1.9 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -49,7 +49,7 @@ class FileSource(Page):
 
       # Get the TOC
       toc = self.processor.get_toc(start)
-      tocfile = self.processor.file_layout.nameOfSpecial('FileSourceInputTOC')
+      tocfile = self.processor.file_layout.special('FileSourceInputTOC')
       tocfile = os.path.join(self.processor.output, tocfile)
       toc.store(tocfile)
       self.__toclist.append(tocfile)
@@ -67,7 +67,7 @@ class FileSource(Page):
          if file.is_main():
             filename = file.filename()
             filename = os.path.join(self.processor.output, filename)
-            filename = self.processor.file_layout.nameOfFileSource(filename)
+            filename = self.processor.file_layout.file_source(filename)
             #print "Registering",filename
             self.processor.register_filename(filename, self, file)
 	     
@@ -77,7 +77,7 @@ class FileSource(Page):
       # Start page
       filename = file.filename()
       filename = os.path.join(self.processor.output, filename)
-      self.__filename = self.processor.file_layout.nameOfFileSource(filename)
+      self.__filename = self.processor.file_layout.file_source(filename)
       #name = list(node.path)
       #while len(name) and name[0] == '..': del name[0]
       #source = string.join(name, os.sep)
@@ -92,7 +92,7 @@ class FileSource(Page):
             toclist[index] = toclist[index]+'|'+prefix
 
       self.start_file()
-      self.write(self.processor.formatHeader(self.filename()))
+      self.write(self.processor.navigation_bar(self.filename()))
       self.write('File: '+entity('b', self.__title))
 
       if not link:
@@ -107,7 +107,7 @@ class FileSource(Page):
          # Call link module
          f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
          f_in = file.full_filename()
-         f_link = self.linkpath%source
+         f_link = self.links_path%source
          #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)
          try:
             link.link(toclist, f_in, f_out, f_link, self.scope)

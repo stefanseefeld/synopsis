@@ -1,4 +1,4 @@
-# $Id: Detail.py,v 1.1 2003/11/15 19:54:05 stefan Exp $
+# $Id: Detail.py,v 1.2 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,26 +7,19 @@
 # see the file COPYING for details.
 #
 
+from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.Part import Part
-
 from Synopsis.Formatters.HTML import FormatStrategy
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.DeclarationStyle import *
 
 class Detail(Part):
 
-   def register(self, page):
+   formatters = Parameter([FormatStrategy.DetailAST(),
+                           FormatStrategy.DetailCommenter()],
+                          '')
 
-      Part.register(self, page)
-      self._init_formatters('detail_formatters', 'detail')
-
-   def _init_default_formatters(self):
-
-      self.addFormatter( FormatStrategy.DetailAST )
-      #self.addFormatter( ClassHierarchySimple )
-      self.addFormatter( FormatStrategy.DetailCommenter )
-
-   def writeSectionStart(self, heading):
+   def write_section_start(self, heading):
       """Creates a table with one row. The row has a td of class 'heading'
       containing the heading string"""
 
@@ -34,7 +27,7 @@ class Detail(Part):
       self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
       self.write('</table>')
 
-   def writeSectionItem(self, text):
+   def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
 
       self.write(text + '\n<hr>\n')
@@ -63,8 +56,8 @@ class Detail(Part):
             # Check section heading
             if not started:
                started = 1
-               self.writeSectionStart(heading)
+               self.write_section_start(heading)
             child.accept(self)
          # Finish the section
-         if started: self.writeSectionEnd(heading)
+         if started: self.write_section_end(heading)
       self.write_end()
