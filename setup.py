@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.5 2003/09/21 19:37:49 stefan Exp $
+# $Id: setup.py,v 1.6 2003/09/29 20:03:14 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -23,9 +23,14 @@ def prefix(list, pref): return map(lambda x, p=pref: p + x, list)
 
 py_packages = ["Synopsis",
                "Synopsis.Core",
+               "Synopsis.Parser",
                "Synopsis.Parser.IDL", "Synopsis.Parser.Python",
+               "Synopsis.Parser.C", "Synopsis.Parser.C++",
                "Synopsis.Linker",
-               "Synopsis.Formatter"] 
+               "Synopsis.Formatter",
+               "Synopsis.Formatter.HTML",
+               "Synopsis.UI",
+               "Synopsis.UI.Qt"] 
 
 ext_modules = [('Synopsis/Parser/C', 'ctool' + module_ext),
                ('Synopsis/Parser/C++', 'occ' + module_ext),
