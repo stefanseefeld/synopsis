@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: ScopeSorter.py,v 1.3 2001/02/06 05:13:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.3  2001/02/06 05:13:05  chalky
+# Fixes
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -54,7 +57,7 @@ class ScopeSorter:
 	for decl in scope.declarations():
 	    if isinstance(decl, AST.Forward): continue
 	    name, section = decl.name(), self._section_of(decl)
-	    if name[:-1] != scopename: continue
+	    if len(name) > 1 and name[:-1] != scopename: continue
 	    if not self.__section_dict.has_key(section):
 		self.__section_dict[section] = []
 		self.__sections.append(section)

@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.2 2001/02/05 05:26:24 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.3 2001/02/06 05:13:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.3  2001/02/06 05:13:05  chalky
+# Fixes
+#
 # Revision 1.2  2001/02/05 05:26:24  chalky
 # Graphs are separated. Misc changes
 #
@@ -78,7 +81,7 @@ class InheritanceGraph(Page.Page):
     def process(self, start):
 	"""Creates a file with the inheritance graph"""
 	self.startFile(self.__filename, "Synopsis - Class Hierarchy")
-	self.write(self.manager.formatRoots('')+'<hr>')
+	self.write(self.manager.formatRoots('Inheritance Graph')+'<hr>')
 	self.write(entity('h1', "Inheritance Graph"))
 
 	from Synopsis.Formatter import Dot

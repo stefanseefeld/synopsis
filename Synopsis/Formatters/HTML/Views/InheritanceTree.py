@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.4 2001/02/05 05:26:24 chalky Exp $
+# $Id: InheritanceTree.py,v 1.5 2001/02/06 05:13:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.5  2001/02/06 05:13:05  chalky
+# Fixes
+#
 # Revision 1.4  2001/02/05 05:26:24  chalky
 # Graphs are separated. Misc changes
 #
@@ -49,7 +52,7 @@ class InheritanceTree(Page.Page):
 	roots = config.classTree.roots()
 
 	self.startFile(self.__filename, "Synopsis - Class Hierarchy")
-	self.write(self.manager.formatRoots('')+'<hr>')
+	self.write(self.manager.formatRoots('Inheritance Tree')+'<hr>')
 	self.write(entity('h1', "Inheritance Tree"))
 	self.write('<ul>')
 	map(self.processClassInheritance, map(lambda a,b=start.name():(a,b), roots))
