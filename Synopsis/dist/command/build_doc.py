@@ -71,6 +71,8 @@ class build_doc(build.build):
       mkpath(os.path.join(builddir, 'html'), 0777, self.verbose, self.dry_run)
       copytree(os.path.join(tempdir, 'html'),
                os.path.join(builddir, 'html', 'Manual'))
+      copy_file(os.path.join(tempdir, 'all.xref'),
+                os.path.join(builddir, 'html', 'Manual', 'xref_db'))
       if self.printable:
          mkpath(os.path.join(builddir, 'print'), 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Manual.pdf'),
