@@ -13,5 +13,7 @@
 </xsl:template>
 
 <xsl:param name="html.stylesheet" select="'synopsis-html.css'"/>
+<xsl:param name="use.id.as.filename" select="1"/>
+<xsl:param name='chunk.first.sections' select="1"/>
 
 </xsl:stylesheet>
