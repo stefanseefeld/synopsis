@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.7 2003/11/18 16:44:42 stefan Exp $
+# $Id: Processor.py,v 1.8 2003/11/20 04:45:15 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -105,7 +105,7 @@ class Processor(Parametrized):
       # override default parameter values
       self.set_parameters(kwds)
       # merge in ast from 'input' parameter if given
-      self.merge_input(ast)
+      self.ast = self.merge_input(ast)
 
       # do the real work here...
       
