@@ -182,7 +182,8 @@ PTree::Node *Parser::parse()
     }
   }
   // Retrieve trailing comments
-  (void) PTree::nconc(PTree::last(statements)->car(), wrap_comments(my_lexer.get_comments()));
+  if (statements)
+    (void) PTree::nconc(PTree::last(statements)->car(), wrap_comments(my_lexer.get_comments()));
   return statements;
 }
 
