@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.86 2003/03/14 17:09:50 stefan Exp $
+// $Id: occ.cc,v 1.87 2003/03/21 21:31:23 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.87  2003/03/21 21:31:23  stefan
+// a fix to the fix...
+//
 // Revision 1.86  2003/03/14 17:09:50  stefan
 // separate command and arguments in CC variable
 //
@@ -476,7 +479,7 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
           {
              args.push_back("cpp");
           }
-          std::copy(flags.begin(), flags.end(), args.begin());
+          args.insert(args.end(), flags.begin(), flags.end());
           args.push_back("-C"); // keep comments
           args.push_back("-E"); // stop after preprocessing
           args.push_back("-o"); // output to...
