@@ -34,7 +34,7 @@ SRC	:= Lexer.cc Grammar.cc Context.cc Declaration.cc Expression.cc ParseEnv.cc \
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
-CC_SYN	:= $(patsubst %.cc, %.cc.syn, $(SRC))
+CC_SYN	:= $(patsubst %.cc, %.cc.syn, $(filter-out Lexer.cc Grammar.cc, $(SRC)))
 
 TARGET	:= $(CTOOL_SO)
 

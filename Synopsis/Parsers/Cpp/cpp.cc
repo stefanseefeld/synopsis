@@ -7,6 +7,8 @@
 
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/AST/TypeKit.hh>
+#include <Synopsis/Path.hh>
+#include <Synopsis/ErrorHandler.hh>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -15,10 +17,6 @@
 #include <cstdio>
 #include <memory>
 #include <functional>
-
-#ifdef __WIN32__
-# include <windows.h>
-#endif
 
 using namespace Synopsis;
 
@@ -39,114 +37,12 @@ std::auto_ptr<AST::AST> ast;
 std::auto_ptr<AST::SourceFile> source_file;
 const char *input = 0;
 
-//. return portably the current working directory
-const std::string &get_cwd()
-{
-  static std::string path;
-  if (path.empty())
-#ifdef __WIN32__
-  {
-    DWORD size;
-    if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
-    {
-      throw std::runtime_error("error accessing current working directory");
-    }
-    char *buf = new char[size];
-    if (::GetCurrentDirectoryA(size, buf) == 0)
-    {
-      delete [] buf;
-      throw std::runtime_error("error accessing current working directory");
-    }
-    path = buf;
-    delete [] buf;
-  }
-#else
-    for (long path_max = 32;; path_max *= 2)
-    {
-      char *buf = new char[path_max];
-      if (::getcwd(buf, path_max) == 0)
-      {
-	if (errno != ERANGE)
-	{
-	  delete [] buf;
-	  throw std::runtime_error(strerror(errno));
-	}
-      }
-      else
-      {
-	path = buf;
-	delete [] buf;
-	return path;
-      }
-      delete [] buf;
-    }
-#endif
-  return path;
-}
-
-// normalize and absolutize the given path path
-std::string normalize_path(std::string filename)
-{
-#ifdef __WIN32__
-  char separator = '\\';
-  const char *pat1 = "\\.\\";
-  const char *pat2 = "\\..\\";
-#else
-  char separator = '/';
-  const char *pat1 = "/./";
-  const char *pat2 = "/../";
-#endif
-  if (filename[0] != separator)
-    filename.insert(0, get_cwd() + separator);
-
-  // nothing to do...
-  if (filename.find(pat1) == std::string::npos &&
-      filename.find(pat2) == std::string::npos) return filename;
-  
-  // for the rest we'll operate on a decomposition of the filename...
-  typedef std::vector<std::string> Path;
-  Path path;
-
-  std::string::size_type b = 0;
-  while (b < filename.size())
-  {
-    std::string::size_type e = filename.find(separator, b);
-    path.push_back(std::string(filename, b, e-b));
-    b = e == std::string::npos ? std::string::npos : e + 1;
-  }
-
-  // remove all '.' and '' components
-  path.erase(std::remove(path.begin(), path.end(), "."), path.end());
-  path.erase(std::remove(path.begin(), path.end(), ""), path.end());
-  // now collapse '..' components with the preceding one
-  while (true)
-  {
-    Path::iterator i = std::find(path.begin(), path.end(), "..");
-    if (i == path.end()) break;
-    if (i == path.begin()) throw std::invalid_argument("invalid path");
-    path.erase(i - 1, i + 1); // remove two components
-  }
-
-  // now rebuild the path as a string
-  std::string retn = '/' + path.front();
-  for (Path::iterator i = path.begin() + 1; i != path.end(); ++i)
-    retn += '/' + *i;
-  return retn;
-}
-
-const char *strip_base_path(const char *filename)
-{
-  if (!base_path) return filename;
-  size_t length = strlen(base_path);
-  if (strncmp(filename, base_path, length) == 0)
-    return filename + length;
-  return filename;
-}
-
 //. creates new SourceFile object and store it into ast
-AST::SourceFile create_source_file(const char *filename, bool is_main)
+AST::SourceFile create_source_file(const std::string &filename, bool is_main)
 {
-  const char *name = strip_base_path(filename);
+  Path path = Path(filename).abs();
+  path.strip(base_path);
+  std::string name = path.str();
   AST::SourceFile sf = kit->create_source_file(name, filename, language);
   Python::Dict files = ast->files();
   files.set(name, sf);
@@ -156,10 +52,12 @@ AST::SourceFile create_source_file(const char *filename, bool is_main)
 
 //. creates new or returns existing SourceFile object
 //. with the given filename
-AST::SourceFile lookup_source_file(const char *filename, bool main)
+AST::SourceFile lookup_source_file(const std::string &filename, bool main)
 {
   Python::Dict files = ast->files();
-  AST::SourceFile sf = files.get(strip_base_path(filename));
+  Path path = Path(filename).abs();
+  path.strip(base_path);
+  AST::SourceFile sf = files.get(path.str());
   if (sf && main) sf.is_main(true);
   return sf ? sf : create_source_file(filename, main);
 }
@@ -267,7 +165,9 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       std::cerr << "ucpp returned error flag. ignoring error." << std::endl;
 
     Python::Dict files = ast->files();
-    files.set(strip_base_path(input), *source_file);
+    Path path = Path(input).abs();
+    path.strip(base_path);
+    files.set(path.str(), *source_file);
 
     py_ast = ast->ref(); // add new reference
     // make sure these objects are deleted before the python runtime
@@ -297,7 +197,7 @@ extern "C"
   {
     // turn 'filename' into an absolute path so we can match it against
     // base_path
-    std::string abs_filename = normalize_path(filename);
+    std::string abs_filename = Path(filename).abs().str();
 
     bool activate = false;
     if ((main_file_only && strcmp(input, filename)) || 
@@ -318,7 +218,7 @@ extern "C"
       else
 	std::cout << "returning to file " << abs_filename << std::endl;
 
-    source_file.reset(new AST::SourceFile(lookup_source_file(abs_filename.c_str(), true)));
+    source_file.reset(new AST::SourceFile(lookup_source_file(abs_filename, true)));
   }
 
   //. This function is a callback from the ucpp code to store macro
@@ -352,9 +252,9 @@ extern "C"
       std::cout << "include : " << source << ' ' << target << ' ' << name << ' '
 		<< is_macro << ' ' << is_next << std::endl;
 
-    std::string abs_target = normalize_path(target);
+    Path path = Path(target).abs();
 
-    AST::SourceFile target_file = lookup_source_file(abs_target.c_str(), false);
+    AST::SourceFile target_file = lookup_source_file(path.str(), false);
 
     AST::Include include = kit->create_include(target_file, name, is_macro, is_next);
     Python::List includes = source_file->includes();

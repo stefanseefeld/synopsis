@@ -7,7 +7,6 @@
 
 SHELL	:= /bin/sh
 
-top_srcdir:= @top_srcdir@
 srcdir	:= @srcdir@
 synopsis:= python synopsis.py
 
@@ -16,19 +15,22 @@ PYTHON	:= @PYTHON@
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(top_srcdir)/include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir)/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@ -lpthread
 
-HDR	:= $(shell find $(top_srcdir)/include -name '*.hh' -print)
-SRC	:= Path.cc
-OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+HDR	:= $(shell find $(srcdir)/include -name '*.hh' -print)
+SRC	:= Path.cc ErrorHandler.cc
+OBJ	:= $(patsubst %.cc, src/%.o, $(SRC))
+HDR_SYN	:= $(patsubst $(srcdir)/%, %.syn, $(HDR))
+CC_SYN	:= $(patsubst %, src/%.syn, $(SRC))
 
-TARGET	:= ../lib/libSynopsis.a
+TARGET	:= lib/libSynopsis.a
 
-vpath %.cc $(srcdir)
+vpath %.cc $(srcdir)/src
+vpath %.hh $(srcdir)
 
 all: $(TARGET)
 
@@ -43,7 +45,7 @@ cxx-api-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(synopsis) link_cxx --output=$@ $^
 
-%.o : %.cc
+src/%.o : %.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 # Compile C++ .hh files
@@ -53,7 +55,7 @@ $(HDR_SYN): %.syn: %
 	$(synopsis) cxx --output=$@ $?
 
 # Compile C++ .cc files
-$(CC_SYN): %.cc.syn: %.cc
+$(CC_SYN): src/%.syn: %
 	@echo parsing $^
 	mkdir -p $(dir $@)
 	$(synopsis) cxx --output=$@ $?
@@ -62,4 +64,4 @@ $(TARGET): $(OBJ)
 	ar rcs $@ $(OBJ)
 
 clean :
-	rm -f *~ *.o $(TARGET)
+	rm -f $(srcdir)/src/*~ src/*.o src/*.syn $(TARGET)

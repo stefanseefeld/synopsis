@@ -6,14 +6,13 @@
 // see the file COPYING for details.
 //
 
-#include "synopsis.hh"
+#include "Translator.hh"
+#include "filter.hh"
+
 #include <map>
 #include <set>
-
 #include <iostream>
-#include <signal.h>
-
-#include "filter.hh"
+#include <stdexcept>
 
 #ifdef DO_TRACE
 int Trace::level = 0;
@@ -26,14 +25,14 @@ void nullObj()
 {
   std::cout << "Null ptr." << std::endl;
   if (PyErr_Occurred()) PyErr_Print();
-  raise(SIGINT);
+  throw std::runtime_error("internal error");
 }
 
 // The compiler firewalled private stuff
-struct Synopsis::Private
+struct Translator::Private
 {
   //. Constructor
-  Private(Synopsis* s) : m_syn(s)
+  Private(Translator* s) : m_syn(s)
   {
     m_cxx = PyString_InternFromString("C++");
     Py_INCREF(Py_None);
@@ -42,7 +41,7 @@ struct Synopsis::Private
     add((Types::Type*)NULL, Py_None);
   }
   //. Reference to parent synopsis object
-  Synopsis* m_syn;
+  Translator* m_syn;
   //. Interned string for "C++"
   PyObject* m_cxx;
   //. Returns the string for "C++" as a borrowed reference
@@ -133,7 +132,7 @@ struct Synopsis::Private
 // Convert a Declaration vector to a List. Declarations can return NULL
 // from py(), if they are not in the main file.
 template <>
-PyObject* Synopsis::Private::List(const std::vector<AST::Declaration*>& vec)
+PyObject* Translator::Private::List(const std::vector<AST::Declaration*>& vec)
 {
   std::vector<PyObject*> objects;
   std::vector<AST::Declaration*>::const_iterator iter = vec.begin();
@@ -151,7 +150,7 @@ PyObject* Synopsis::Private::List(const std::vector<AST::Declaration*>& vec)
   return list;
 }
 
-PyObject* Synopsis::Private::py(AST::SourceFile* file)
+PyObject* Translator::Private::py(AST::SourceFile* file)
 {
   ObjMap::iterator iter = obj_map.find(file);
   if (iter == obj_map.end())
@@ -162,7 +161,7 @@ PyObject* Synopsis::Private::py(AST::SourceFile* file)
     if (iter == obj_map.end())
     {
       std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Synopsis::Private::py(AST::SourceFile*)";
+      throw "Translator::Private::py(AST::SourceFile*)";
     }
   }
   PyObject* obj = iter->second;
@@ -170,7 +169,7 @@ PyObject* Synopsis::Private::py(AST::SourceFile* file)
   return obj;
 }
 
-PyObject* Synopsis::Private::py(AST::Include* incl)
+PyObject* Translator::Private::py(AST::Include* incl)
 {
   ObjMap::iterator iter = obj_map.find(incl);
   if (iter == obj_map.end())
@@ -181,7 +180,7 @@ PyObject* Synopsis::Private::py(AST::Include* incl)
     if (iter == obj_map.end())
     {
       std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Synopsis::Private::py(AST::Include*)";
+      throw "Translator::Private::py(AST::Include*)";
     }
   }
   PyObject* obj = iter->second;
@@ -189,7 +188,7 @@ PyObject* Synopsis::Private::py(AST::Include* incl)
   return obj;
 }
 
-PyObject* Synopsis::Private::py(AST::Declaration* decl)
+PyObject* Translator::Private::py(AST::Declaration* decl)
 {
   ObjMap::iterator iter = obj_map.find(decl);
   if (iter == obj_map.end())
@@ -203,7 +202,7 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
       return 0;
       /*
         std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-        throw "Synopsis::Private::py(AST::Declaration*)";
+        throw "Translator::Private::py(AST::Declaration*)";
       */
     }
     // Force addition of type to dictionary
@@ -215,7 +214,7 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
   return obj;
 }
 
-PyObject* Synopsis::Private::py(AST::Inheritance* decl)
+PyObject* Translator::Private::py(AST::Inheritance* decl)
 {
   ObjMap::iterator iter = obj_map.find(decl);
   if (iter == obj_map.end())
@@ -226,14 +225,14 @@ PyObject* Synopsis::Private::py(AST::Inheritance* decl)
     if (iter == obj_map.end())
     {
       std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Synopsis::Private::py(AST::Inheritance*)";
+      throw "Translator::Private::py(AST::Inheritance*)";
     }
   }
   PyObject* obj = iter->second;
   Py_INCREF(obj);
   return obj;
 }
-PyObject* Synopsis::Private::py(AST::Parameter* decl)
+PyObject* Translator::Private::py(AST::Parameter* decl)
 {
   ObjMap::iterator iter = obj_map.find(decl);
   if (iter == obj_map.end())
@@ -244,7 +243,7 @@ PyObject* Synopsis::Private::py(AST::Parameter* decl)
     if (iter == obj_map.end())
     {
       std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Synopsis::Private::py(AST::Parameter*)";
+      throw "Translator::Private::py(AST::Parameter*)";
     }
   }
   PyObject* obj = iter->second;
@@ -252,7 +251,7 @@ PyObject* Synopsis::Private::py(AST::Parameter* decl)
   return obj;
 }
 
-PyObject* Synopsis::Private::py(AST::Comment* decl)
+PyObject* Translator::Private::py(AST::Comment* decl)
 {
   ObjMap::iterator iter = obj_map.find(decl);
   if (iter == obj_map.end())
@@ -263,7 +262,7 @@ PyObject* Synopsis::Private::py(AST::Comment* decl)
     if (iter == obj_map.end())
     {
       std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Synopsis::Private::py(AST::Comment*)";
+      throw "Translator::Private::py(AST::Comment*)";
     }
   }
   PyObject* obj = iter->second;
@@ -272,7 +271,7 @@ PyObject* Synopsis::Private::py(AST::Comment* decl)
 }
 
 
-PyObject* Synopsis::Private::py(Types::Type* type)
+PyObject* Translator::Private::py(Types::Type* type)
 {
   ObjMap::iterator iter = obj_map.find(type);
   if (iter == obj_map.end())
@@ -283,7 +282,7 @@ PyObject* Synopsis::Private::py(Types::Type* type)
     if (iter == obj_map.end())
     {
       std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Synopsis::Private::py(Types::Type*)";
+      throw "Translator::Private::py(Types::Type*)";
     }
   }
   PyObject* obj = iter->second;
@@ -291,17 +290,17 @@ PyObject* Synopsis::Private::py(Types::Type* type)
   return obj;
 }
 
-PyObject* Synopsis::Private::py(const std::string &str)
+PyObject* Translator::Private::py(const std::string &str)
 {
   PyObject* pystr = PyString_FromStringAndSize(str.data(), str.size());
   //PyString_InternInPlace(&pystr);
   return pystr;
 }
 
-Synopsis::Synopsis(FileFilter* filter, PyObject *ast)
+Translator::Translator(FileFilter* filter, PyObject *ast)
   : m_ast(ast), m_filter(filter)
 {
-  Trace trace("Synopsis::Synopsis");
+  Trace trace("Translator::Translator");
   m_ast_module  = PyImport_ImportModule("Synopsis.AST");
   assertObject(m_ast_module);
   m_type_module = PyImport_ImportModule("Synopsis.Type");
@@ -315,9 +314,9 @@ Synopsis::Synopsis(FileFilter* filter, PyObject *ast)
   m = new Private(this);
 }
 
-Synopsis::~Synopsis()
+Translator::~Translator()
 {
-  Trace trace("Synopsis::~Synopsis");
+  Trace trace("Translator::~Translator");
   /*
     PyObject *file = PyObject_CallMethod(scopes.back(), "declarations", 0);
     size_t size = PyList_Size(file);
@@ -348,7 +347,7 @@ Synopsis::~Synopsis()
   delete m;
 }
 
-void Synopsis::translate(AST::Scope* scope)//, PyObject* ast)
+void Translator::translate(AST::Scope* scope)//, PyObject* ast)
 {
   AST::Declaration::vector globals, &decls = scope->declarations();
   AST::Declaration::vector::iterator it = decls.begin();
@@ -408,16 +407,16 @@ void Synopsis::translate(AST::Scope* scope)//, PyObject* ast)
   Py_DECREF(pyfiles);
 }
 
-void Synopsis::set_builtin_decls(const AST::Declaration::vector& builtin_decls)
+void Translator::set_builtin_decls(const AST::Declaration::vector& builtin_decls)
 {
   // Insert Base*'s into a set for faster lookup
   AST::Declaration::vector::const_iterator it = builtin_decls.begin();
   while (it != builtin_decls.end()) m->builtin_decl_set.insert(*it++);
 }
 
-PyObject *Synopsis::Base(Types::Base* type)
+PyObject *Translator::Base(Types::Base* type)
 {
-  Trace trace("Synopsis::Base");
+  Trace trace("Translator::Base");
   PyObject *name, *base;
   base = PyObject_CallMethod(m_type_module, "Base", "OO",
                              m->cxx(), name = m->Tuple(type->name()));
@@ -426,9 +425,9 @@ PyObject *Synopsis::Base(Types::Base* type)
   return base;
 }
 
-PyObject *Synopsis::Dependent(Types::Dependent* type)
+PyObject *Translator::Dependent(Types::Dependent* type)
 {
-  Trace trace("Synopsis::Dependent");
+  Trace trace("Translator::Dependent");
   PyObject *name, *base;
   base = PyObject_CallMethod(m_type_module, "Dependent", "OO",
                              m->cxx(), name = m->Tuple(type->name()));
@@ -437,9 +436,9 @@ PyObject *Synopsis::Dependent(Types::Dependent* type)
   return base;
 }
 
-PyObject *Synopsis::Unknown(Types::Named* type)
+PyObject *Translator::Unknown(Types::Named* type)
 {
-  Trace trace("Synopsis::Unknown");
+  Trace trace("Translator::Unknown");
   PyObject *name, *unknown;
   unknown = PyObject_CallMethod(m_type_module, "Unknown", "OO",
                                 m->cxx(), name = m->Tuple(type->name()));
@@ -448,9 +447,9 @@ PyObject *Synopsis::Unknown(Types::Named* type)
   return unknown;
 }
 
-PyObject *Synopsis::Declared(Types::Declared* type)
+PyObject *Translator::Declared(Types::Declared* type)
 {
-  Trace trace("Synopsis::Declared");
+  Trace trace("Translator::Declared");
   PyObject *name, *declared, *decl;
   declared = PyObject_CallMethod(m_type_module, "Declared", "OOO",
                                  m->cxx(), name = m->Tuple(type->name()), 
@@ -463,9 +462,9 @@ PyObject *Synopsis::Declared(Types::Declared* type)
   return declared;
 }
 
-PyObject *Synopsis::Template(Types::Template* type)
+PyObject *Translator::Template(Types::Template* type)
 {
-  Trace trace("Synopsis::Template");
+  Trace trace("Translator::Template");
   PyObject *name, *templ, *decl, *params;
   templ = PyObject_CallMethod(m_type_module, "Template", "OOOO",
                               m->cxx(), name = m->Tuple(type->name()), 
@@ -478,9 +477,9 @@ PyObject *Synopsis::Template(Types::Template* type)
   return templ;
 }
 
-PyObject *Synopsis::Modifier(Types::Modifier* type)
+PyObject *Translator::Modifier(Types::Modifier* type)
 {
-  Trace trace("Synopsis::Modifier");
+  Trace trace("Translator::Modifier");
   PyObject *modifier, *alias, *pre, *post;
   modifier = PyObject_CallMethod(m_type_module, "Modifier", "OOOO",
                                  m->cxx(), alias = m->py(type->alias()),
@@ -491,9 +490,9 @@ PyObject *Synopsis::Modifier(Types::Modifier* type)
   return modifier;
 }
 
-PyObject *Synopsis::Array(Types::Array *type)
+PyObject *Translator::Array(Types::Array *type)
 {
-  Trace trace("Synopsis::Array");
+  Trace trace("Translator::Array");
   PyObject *array, *alias, *sizes;
   array = PyObject_CallMethod(m_type_module, "Array", "OOO",
                               m->cxx(), alias = m->py(type->alias()), 
@@ -503,9 +502,9 @@ PyObject *Synopsis::Array(Types::Array *type)
   return array;
 }
 
-PyObject *Synopsis::Parameterized(Types::Parameterized* type)
+PyObject *Translator::Parameterized(Types::Parameterized* type)
 {
-  Trace trace("Synopsis::Parametrized");
+  Trace trace("Translator::Parametrized");
   PyObject *parametrized, *templ, *params;
   parametrized = PyObject_CallMethod(m_type_module, "Parametrized", "OOO",
                                      m->cxx(), templ = m->py(type->template_type()), 
@@ -515,9 +514,9 @@ PyObject *Synopsis::Parameterized(Types::Parameterized* type)
   return parametrized;
 }
 
-PyObject *Synopsis::FuncPtr(Types::FuncPtr* type)
+PyObject *Translator::FuncPtr(Types::FuncPtr* type)
 {
-  Trace trace("Synopsis::FuncType");
+  Trace trace("Translator::FuncType");
   PyObject *func, *ret, *pre, *params;
   func = PyObject_CallMethod(m_type_module, "Function", "OOOO",
                              m->cxx(), ret = m->py(type->return_type()), 
@@ -529,7 +528,7 @@ PyObject *Synopsis::FuncPtr(Types::FuncPtr* type)
   return func;
 }
 
-void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
+void Translator::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 {
   PyObject *comments, *new_comments;
   comments = PyObject_CallMethod(pydecl, "comments", NULL);
@@ -541,10 +540,10 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 }
 
 //. merge the file with an existing (python) object if it exists
-PyObject *Synopsis::SourceFile(AST::SourceFile* file)
+PyObject *Translator::SourceFile(AST::SourceFile* file)
 {
   // don't construct, but instead find existing python object !
-  Trace trace("Synopsis::SourceFile");
+  Trace trace("Translator::SourceFile");
   PyObject *files = PyObject_CallMethod(m_ast, "files", "");
   assertObject(files);
   PyObject *pyfile = PyDict_GetItemString(files, file->filename().c_str());
@@ -569,9 +568,9 @@ PyObject *Synopsis::SourceFile(AST::SourceFile* file)
   return pyfile;
 }
 
-PyObject *Synopsis::Include(AST::Include* include)
+PyObject *Translator::Include(AST::Include* include)
 {
-  Trace trace("Synopsis::Include");
+  Trace trace("Translator::Include");
   PyObject *pyinclude, *target;
   pyinclude = PyObject_CallMethod(m_ast_module, "Include", "Oii",
                                   target = m->py(include->target()),
@@ -582,9 +581,9 @@ PyObject *Synopsis::Include(AST::Include* include)
   return pyinclude;
 }
 
-PyObject *Synopsis::Declaration(AST::Declaration* decl)
+PyObject *Translator::Declaration(AST::Declaration* decl)
 {
-  Trace trace("Synopsis::addDeclaration");
+  Trace trace("Translator::addDeclaration");
   PyObject *pydecl, *file, *type, *name;
   pydecl = PyObject_CallMethod(m_ast_module, "Declaration", "OiOOO",
                                file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -597,9 +596,9 @@ PyObject *Synopsis::Declaration(AST::Declaration* decl)
   return pydecl;
 }
 
-PyObject *Synopsis::Builtin(AST::Builtin* decl)
+PyObject *Translator::Builtin(AST::Builtin* decl)
 {
-  Trace trace("Synopsis::Builtin");
+  Trace trace("Translator::Builtin");
   PyObject *pybuiltin, *file, *type, *name;
   pybuiltin = PyObject_CallMethod(m_ast_module, "Builtin", "OiOOO",
                                   file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -612,9 +611,9 @@ PyObject *Synopsis::Builtin(AST::Builtin* decl)
   return pybuiltin;
 }
 
-PyObject *Synopsis::Macro(AST::Macro* decl)
+PyObject *Translator::Macro(AST::Macro* decl)
 {
-  Trace trace("Synopsis::Macro");
+  Trace trace("Translator::Macro");
   PyObject *pymacro, *file, *type, *name, *params, *text;
   if (decl->parameters()) params = m->List(*decl->parameters());
   else
@@ -636,9 +635,9 @@ PyObject *Synopsis::Macro(AST::Macro* decl)
   return pymacro;
 }
 
-PyObject *Synopsis::Forward(AST::Forward* decl)
+PyObject *Translator::Forward(AST::Forward* decl)
 {
-  Trace trace("Synopsis::addForward");
+  Trace trace("Translator::addForward");
   PyObject *forward, *file, *type, *name;
   forward = PyObject_CallMethod(m_ast_module, "Forward", "OiOOO",
                                 file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -650,9 +649,9 @@ PyObject *Synopsis::Forward(AST::Forward* decl)
   return forward;
 }
 
-PyObject *Synopsis::Comment(AST::Comment* decl)
+PyObject *Translator::Comment(AST::Comment* decl)
 {
-  Trace trace("Synopsis::addComment");
+  Trace trace("Translator::addComment");
   std::string text_str = decl->text()+"\n";
   PyObject *text = PyString_FromStringAndSize(text_str.data(), text_str.size());
   PyObject *comment, *file;
@@ -664,9 +663,9 @@ PyObject *Synopsis::Comment(AST::Comment* decl)
   return comment;
 }
 
-PyObject *Synopsis::Scope(AST::Scope* decl)
+PyObject *Translator::Scope(AST::Scope* decl)
 {
-  Trace trace("Synopsis::addScope");
+  Trace trace("Translator::addScope");
   PyObject *scope, *file, *type, *name;
   scope = PyObject_CallMethod(m_ast_module, "Scope", "OiOOO",
                               file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -681,9 +680,9 @@ PyObject *Synopsis::Scope(AST::Scope* decl)
   return scope;
 }
 
-PyObject *Synopsis::Namespace(AST::Namespace* decl)
+PyObject *Translator::Namespace(AST::Namespace* decl)
 {
-  Trace trace("Synopsis::addNamespace");
+  Trace trace("Translator::addNamespace");
   PyObject *module, *file, *type, *name;
   module = PyObject_CallMethod(m_ast_module, "Module", "OiOOO",
                                file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -700,9 +699,9 @@ PyObject *Synopsis::Namespace(AST::Namespace* decl)
   return module;
 }
 
-PyObject *Synopsis::Inheritance(AST::Inheritance* decl)
+PyObject *Translator::Inheritance(AST::Inheritance* decl)
 {
-  Trace trace("Synopsis::Inheritance");
+  Trace trace("Translator::Inheritance");
   PyObject *inheritance, *parent, *attrs;
   inheritance = PyObject_CallMethod(m_ast_module, "Inheritance", "sOO",
                                     "inherits", parent = m->py(decl->parent()), 
@@ -712,9 +711,9 @@ PyObject *Synopsis::Inheritance(AST::Inheritance* decl)
   return inheritance;
 }
 
-PyObject *Synopsis::Class(AST::Class* decl)
+PyObject *Translator::Class(AST::Class* decl)
 {
-  Trace trace("Synopsis::addClass");
+  Trace trace("Translator::addClass");
   PyObject *clas, *file, *type, *name;
   clas = PyObject_CallMethod(m_ast_module, "Class", "OiOOO",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -743,9 +742,9 @@ PyObject *Synopsis::Class(AST::Class* decl)
   return clas;
 }
 
-PyObject *Synopsis::Typedef(AST::Typedef* decl)
+PyObject *Translator::Typedef(AST::Typedef* decl)
 {
-  Trace trace("Synopsis::addTypedef");
+  Trace trace("Translator::addTypedef");
   // FIXME: what to do about the declarator?
   PyObject *tdef, *file, *type, *name, *alias;
   tdef = PyObject_CallMethod(m_ast_module, "Typedef", "OiOOOOi",
@@ -760,9 +759,9 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
   return tdef;
 }
 
-PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
+PyObject *Translator::Enumerator(AST::Enumerator* decl)
 {
-  Trace trace("Synopsis::addEnumerator");
+  Trace trace("Translator::addEnumerator");
   PyObject *enumor, *file, *name, *type;
   if (decl->type() == "dummy") // work around a hack with another hack ;-)
   {
@@ -782,9 +781,9 @@ PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
   return enumor;
 }
 
-PyObject *Synopsis::Enum(AST::Enum* decl)
+PyObject *Translator::Enum(AST::Enum* decl)
 {
-  Trace trace("Synopsis::addEnum");
+  Trace trace("Translator::addEnum");
   PyObject *enumor, *file, *enums, *name;
   enumor = PyObject_CallMethod(m_ast_module, "Enum", "OiOOO",
                                file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -796,9 +795,9 @@ PyObject *Synopsis::Enum(AST::Enum* decl)
   return enumor;
 }
 
-PyObject *Synopsis::Variable(AST::Variable* decl)
+PyObject *Translator::Variable(AST::Variable* decl)
 {
-  Trace trace("Synopsis::addVariable");
+  Trace trace("Translator::addVariable");
   PyObject *var, *file, *type, *name, *vtype;
   var = PyObject_CallMethod(m_ast_module, "Variable", "OiOOOOi",
                             file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -812,9 +811,9 @@ PyObject *Synopsis::Variable(AST::Variable* decl)
   return var;
 }
 
-PyObject *Synopsis::Const(AST::Const* decl)
+PyObject *Translator::Const(AST::Const* decl)
 {
-  Trace trace("Synopsis::addConst");
+  Trace trace("Translator::addConst");
   PyObject *cons, *file, *type, *name, *ctype;
   cons = PyObject_CallMethod(m_ast_module, "Const", "OiOOOOOs",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -828,9 +827,9 @@ PyObject *Synopsis::Const(AST::Const* decl)
   return cons;
 }
 
-PyObject *Synopsis::Parameter(AST::Parameter* decl)
+PyObject *Translator::Parameter(AST::Parameter* decl)
 {
-  Trace trace("Synopsis::Parameter");
+  Trace trace("Translator::Parameter");
   PyObject *param, *pre, *post, *type, *value, *name;
   param = PyObject_CallMethod(m_ast_module, "Parameter", "OOOOO",
                               pre = m->List(decl->premodifier()), type = m->py(decl->type()), 
@@ -844,9 +843,9 @@ PyObject *Synopsis::Parameter(AST::Parameter* decl)
   return param;
 }
 
-PyObject *Synopsis::Function(AST::Function* decl)
+PyObject *Translator::Function(AST::Function* decl)
 {
-  Trace trace("Synopsis::addFunction");
+  Trace trace("Translator::addFunction");
   PyObject *func, *file, *type, *name, *pre, *ret, *realname;
   func = PyObject_CallMethod(m_ast_module, "Function", "OiOOOOOO",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -876,9 +875,9 @@ PyObject *Synopsis::Function(AST::Function* decl)
   return func;
 }
 
-PyObject *Synopsis::Operation(AST::Operation* decl)
+PyObject *Translator::Operation(AST::Operation* decl)
 {
-  Trace trace("Synopsis::addOperation");
+  Trace trace("Translator::addOperation");
   PyObject *oper, *file, *type, *name, *pre, *ret, *realname;
   oper = PyObject_CallMethod(m_ast_module, "Operation", "OiOOOOOO",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
@@ -908,33 +907,33 @@ PyObject *Synopsis::Operation(AST::Operation* decl)
   return oper;
 }
 
-void Synopsis::visit_declaration(AST::Declaration* decl)
+void Translator::visit_declaration(AST::Declaration* decl)
 {
   // Assume this is a dummy declaration
   if (m_filter->should_store(decl)) m->add(decl, Declaration(decl));
 }
-void Synopsis::visit_builtin(AST::Builtin* decl)
+void Translator::visit_builtin(AST::Builtin* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Builtin(decl));
 }
-void Synopsis::visit_macro(AST::Macro* decl)
+void Translator::visit_macro(AST::Macro* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Macro(decl));
 }
-void Synopsis::visit_scope(AST::Scope* decl)
+void Translator::visit_scope(AST::Scope* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Scope(decl));
   //else
   //	m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_namespace(AST::Namespace* decl)
+void Translator::visit_namespace(AST::Namespace* decl)
 {
   // Namespaces are always included, because the Linker knows to combine
   // them always. The exception are "local namespaces", those created to
   // handle scopes created by braces in code.
   if (decl->type() != "local") m->add(decl, Namespace(decl));
 }
-void Synopsis::visit_class(AST::Class* decl)
+void Translator::visit_class(AST::Class* decl)
 {
   // Add if the class is in the main file, *or* if it has any members
   // declared in the main file (eg: forward declared nested classes which
@@ -943,62 +942,62 @@ void Synopsis::visit_class(AST::Class* decl)
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_forward(AST::Forward* decl)
+void Translator::visit_forward(AST::Forward* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Forward(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_typedef(AST::Typedef* decl)
+void Translator::visit_typedef(AST::Typedef* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Typedef(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_variable(AST::Variable* decl)
+void Translator::visit_variable(AST::Variable* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Variable(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_const(AST::Const* decl)
+void Translator::visit_const(AST::Const* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Const(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_enum(AST::Enum* decl)
+void Translator::visit_enum(AST::Enum* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Enum(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_enumerator(AST::Enumerator* decl)
+void Translator::visit_enumerator(AST::Enumerator* decl)
 {
   m->add(decl, Enumerator(decl));
 }
-void Synopsis::visit_function(AST::Function* decl)
+void Translator::visit_function(AST::Function* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Function(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
-void Synopsis::visit_operation(AST::Operation* decl)
+void Translator::visit_operation(AST::Operation* decl)
 {
   if (m_filter->should_store(decl)) m->add(decl, Operation(decl));
   //else
   //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 
-void Synopsis::visit_inheritance(AST::Inheritance* decl)
+void Translator::visit_inheritance(AST::Inheritance* decl)
 {
   m->add(decl, Inheritance(decl));
 }
-void Synopsis::visit_parameter(AST::Parameter* decl)
+void Translator::visit_parameter(AST::Parameter* decl)
 {
   m->add(decl, Parameter(decl));
 }
-void Synopsis::visit_comment(AST::Comment* decl)
+void Translator::visit_comment(AST::Comment* decl)
 {
   m->add(decl, Comment(decl));
 }
@@ -1006,49 +1005,49 @@ void Synopsis::visit_comment(AST::Comment* decl)
 //
 // Types::Visitor methods
 //
-/*void Synopsis::visitType(Types::Type* type) {
+/*void Translator::visitType(Types::Type* type) {
   m->add(type, this->Type(type));
   }*/
-void Synopsis::visit_unknown(Types::Unknown* type)
+void Translator::visit_unknown(Types::Unknown* type)
 {
   m->add(type, Unknown(type));
 }
-void Synopsis::visit_dependent(Types::Dependent* type)
+void Translator::visit_dependent(Types::Dependent* type)
 {
   m->add(type, Dependent(type));
 }
-void Synopsis::visit_modifier(Types::Modifier* type)
+void Translator::visit_modifier(Types::Modifier* type)
 {
   m->add(type, Modifier(type));
 }
-void Synopsis::visit_array(Types::Array *type)
+void Translator::visit_array(Types::Array *type)
 {
   m->add(type, Array(type));
 }
-/*void Synopsis::visitNamed(Types::Named* type) {
+/*void Translator::visitNamed(Types::Named* type) {
   m->add(type, Named(type));
   }*/
-void Synopsis::visit_base(Types::Base* type)
+void Translator::visit_base(Types::Base* type)
 {
   m->add(type, Base(type));
 }
-void Synopsis::visit_declared(Types::Declared* type)
+void Translator::visit_declared(Types::Declared* type)
 {
   if (!m_filter->should_store(type->declaration()))
     m->add(type, Unknown(type));
   else m->add(type, Declared(type));
 }
-void Synopsis::visit_template_type(Types::Template* type)
+void Translator::visit_template_type(Types::Template* type)
 {
   if (!m_filter->should_store(type->declaration()))
     m->add(type, Unknown(type));
   else m->add(type, Template(type));
 }
-void Synopsis::visit_parameterized(Types::Parameterized* type)
+void Translator::visit_parameterized(Types::Parameterized* type)
 {
   m->add(type, Parameterized(type));
 }
-void Synopsis::visit_func_ptr(Types::FuncPtr* type)
+void Translator::visit_func_ptr(Types::FuncPtr* type)
 {
   m->add(type, FuncPtr(type));
 }

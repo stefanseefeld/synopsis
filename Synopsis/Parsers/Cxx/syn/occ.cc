@@ -6,12 +6,20 @@
 // see the file COPYING for details.
 //
 
-#include "synopsis.hh"
+#include <Synopsis/Python/Module.hh>
+#include <Synopsis/Path.hh>
+#include <Synopsis/ErrorHandler.hh>
+#include "Translator.hh"
 #include "swalker.hh"
 #include "builder.hh"
 #include "dumper.hh"
 #include "filter.hh"
 #include "linkstore.hh"
+
+#include <occ/Parser.hh>
+#include <occ/MetaClass.hh>
+#include <occ/Environment.hh>
+#include <occ/Encoding.hh>
 
 #include <cstdio>
 #include <iostream>
@@ -20,15 +28,7 @@
 #include <cstring>
 #include <cstdio>
 
-#if !defined(__WIN32__)
-#  include <unistd.h>
-#  include <signal.h>
-#endif
-
-#include <occ/Parser.hh>
-#include <occ/MetaClass.hh>
-#include <occ/Environment.hh>
-#include <occ/Encoding.hh>
+using namespace Synopsis;
 
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
@@ -101,48 +101,21 @@ const char *strip_prefix(const char *filename, const char *prefix)
   return filename;
 }
 
-#if !defined(__WIN32__)
-
-void sighandler(int signo)
+void error()
 {
-  std::string signame;
-  switch (signo)
-  {
-    case SIGABRT:
-      signame = "Abort";
-      break;
-    case SIGBUS:
-      signame = "Bus error";
-      break;
-    case SIGSEGV:
-      signame = "Segmentation Violation";
-      break;
-    default:
-      signame = "unknown";
-      break;
-  };
   SWalker *instance = SWalker::instance();
-  std::cerr << signame << " caught while processing " << instance->current_file()->filename()
+  std::cerr << "processing " << instance->current_file()->filename()
             << " at line " << instance->current_lineno()
             << std::endl;
-  exit(-1);
 }
-
-#endif
 
 void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
 {
   Trace trace("RunOpencxx");
   std::set_unexpected(unexpected);
 
-#if !defined(__WIN32__)
-  struct sigaction olda;
-  struct sigaction newa;
-  newa.sa_handler = &sighandler;
-  sigaction(SIGSEGV, &newa, &olda);
-  sigaction(SIGBUS, &newa, &olda);
-  sigaction(SIGABRT, &newa, &olda);
-#endif  
+  ErrorHandler error_handler(error);
+
   std::ifstream ifs(file);
   if(!ifs)
   {
@@ -179,10 +152,10 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   }
 
   // Setup synopsis c++ to py convertor
-  Synopsis synopsis(filter, ast);//declarations, types);
-  synopsis.set_builtin_decls(builder.builtin_decls());
+  Translator translator(filter, ast);//declarations, types);
+  translator.set_builtin_decls(builder.builtin_decls());
   // Convert!
-  synopsis.translate(builder.scope());
+  translator.translate(builder.scope());
 
   if(parse.NumOfErrors() != 0)
   {
@@ -190,11 +163,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   }
 
   ifs.close();
-#if !defined(__WIN32__)
-  sigaction(SIGABRT, &olda, 0);
-  sigaction(SIGBUS, &olda, 0);
-  sigaction(SIGSEGV, &olda, 0);
-#endif
 }
 
 PyObject *occ_parse(PyObject *self, PyObject *args)
@@ -253,12 +221,12 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   return ast;
 }
 
-PyMethodDef occ_methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},
-                             {0, 0}};
-};
+PyMethodDef methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},
+			 {0, 0}};
+}
 
 extern "C" void initocc()
 {
-  PyObject* m = Py_InitModule((char*)"occ", occ_methods);
-  PyObject_SetAttrString(m, (char*)"version", PyString_FromString("0.1"));
+  Python::Module module = Python::Module::define("occ", methods);
+  module.set_attr("version", "0.1");
 }

@@ -95,6 +95,5 @@ class Parser(Processor):
                                    cpp_output = i_file,
                                    input = [file])
 
-         ctool.dump(i_file, file, output, symbols, debug)
-
+         ctool.dump(self.ast, i_file, file, output, symbols, debug)
          if preprocess: os.remove(i_file)

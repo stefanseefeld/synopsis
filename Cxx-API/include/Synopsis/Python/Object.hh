@@ -74,6 +74,7 @@ public:
   Object type() const { return PyObject_Type(my_impl);}
   Object repr() const { return PyObject_Repr(my_impl);}
   Object str() const { return PyObject_Str(my_impl);}
+  int cmp(Object o) const;
   Object boolean() const { return PyObject_IsTrue(my_impl);}
   bool is_instance(Object) const;
   void assert_type(const char *module,
@@ -96,14 +97,18 @@ public:
   Object attr(const std::string &) const;
   bool set_attr(const std::string &, Object);
   PyObject *ref() { Py_INCREF(my_impl); return my_impl;}
-
+  int ref_count() const { return my_impl->ob_refcnt;}
 private:
   //. check for an exception and if set translate into
   //. a C++ exception that is thrown
-  void check_exception();
+  void check_exception() const;
   
   PyObject *my_impl;
 };
+
+inline bool operator == (Object o1, Object o2) { return !o1.cmp(o2);}
+inline bool operator < (Object o1, Object o2) { return o1.cmp(o2) < 0;}
+inline bool operator > (Object o1, Object o2) { return o1.cmp(o2)> 0;}
 
 class Tuple : public Object
 {
@@ -120,7 +125,7 @@ public:
   Tuple(Object, Object, Object, Object, Object, Object);
   Tuple(Object, Object, Object, Object, Object, Object, Object);
   Tuple(Object, Object, Object, Object, Object, Object, Object, Object);
-  Object get(size_t i) const { return PyTuple_GetItem(my_impl, i); }
+  Object get(size_t i) const;
 };
 
 class List : public Object
@@ -289,9 +294,20 @@ inline Object::Object(PyObject *o)
 
 inline Object &Object::operator = (const Object &o)
 {
-   Py_DECREF(my_impl);
-   my_impl = o.my_impl;
-   Py_INCREF(my_impl);
+  if (my_impl != o.my_impl)
+  {
+    Py_DECREF(my_impl);
+    my_impl = o.my_impl;
+    Py_INCREF(my_impl);
+  }
+  return *this;
+}
+
+inline int Object::cmp(Object o) const 
+{
+  int result = PyObject_Compare(my_impl, o.my_impl);
+  check_exception();
+  return result;
 }
 
 inline bool Object::is_instance(Object o) const
@@ -343,13 +359,20 @@ inline bool Object::set_attr(const std::string &name, Object value)
 template <typename T>
 inline T Object::narrow(Object o) throw(Object::TypeError)
 {
-  return T(o.my_impl);
+  T retn(o.my_impl);
+  Py_INCREF(o.my_impl);
+  return retn;
 }
 
 template <typename T>
 inline T Object::try_narrow(Object o)
 {
-  try { return T(o.my_impl);}
+  try 
+  {
+    T retn(o.my_impl);
+    Py_INCREF(o.my_impl);
+    return retn;
+  }
   catch (const TypeError &) { return T();}
 }
 
@@ -403,7 +426,7 @@ inline bool Object::narrow(Object o) throw(Object::TypeError)
   return PyInt_AsLong(o.my_impl);
 }
 
-inline void Object::check_exception()
+inline void Object::check_exception() const
 {
   PyObject *exc = PyErr_Occurred();
   if (!exc) return;
@@ -564,6 +587,15 @@ inline Tuple::Tuple(Object o1, Object o2, Object o3,
    Py_INCREF(o8.my_impl);
 }
 
+inline Object Tuple::get(size_t i) const 
+{
+  PyObject *retn = PyTuple_GetItem(my_impl, i);
+  if (!retn) check_exception();
+  Py_INCREF(retn);
+  return Object(retn);
+}
+
+
 inline List::List(Object o) throw(TypeError)
   : Object(o)
 {
@@ -597,6 +629,7 @@ inline void List::set(int i, Object o)
 inline Object List::get(int i) const
 {
   PyObject *retn = PyList_GetItem(my_impl, i);
+  if (!retn) check_exception();
   Py_INCREF(retn);
   return Object(retn);
 }

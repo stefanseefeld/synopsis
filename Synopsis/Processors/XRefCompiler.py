@@ -1,4 +1,3 @@
-# $Id: XRefCompiler.py,v 1.9 2003/12/08 03:34:13 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies

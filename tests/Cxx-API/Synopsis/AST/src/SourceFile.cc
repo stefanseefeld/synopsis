@@ -1,4 +1,4 @@
-#include <Synopsis/Interpreter.hh>
+#include <Synopsis/Python/Interpreter.hh>
 #include <Synopsis/AST/ASTKit.hh>
 #include "Guard.hh"
 #include <string>
@@ -16,8 +16,8 @@ void test1()
 	    << sf.long_name() << ' '
 	    << sf.is_main() << std::endl;
   AST::MacroCall mc = kit.create_macro_call("FOO", 1, 2, 3);
-  Dict mmap = sf.macro_calls();
-  List line = mmap.get(0, List());
+  Python::Dict mmap = sf.macro_calls();
+  Python::List line = mmap.get(0, Python::List());
   line.append(mc);
   mmap.set(0, line);
   std::cout << sf.macro_calls().type() << std::endl;

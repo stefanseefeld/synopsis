@@ -1,4 +1,3 @@
-// $Id: synopsis.hh,v 1.34 2003/12/03 06:43:43 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -50,13 +49,13 @@ public:
 
 class FileFilter;
 
-//. The Synopsis class maps from C++ objects to Python objects
-class Synopsis : public AST::Visitor, public Types::Visitor
+//. The Translator class maps from C++ objects to Python objects
+class Translator : public AST::Visitor, public Types::Visitor
 {
 public:
 
-  Synopsis(FileFilter*, PyObject *ast);
-  ~Synopsis();
+  Translator(FileFilter*, PyObject *ast);
+  ~Translator();
 
   void translate(AST::Scope* global);
   void set_builtin_decls(const AST::Declaration::vector& builtin_decls);

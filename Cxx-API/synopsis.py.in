@@ -12,8 +12,7 @@ import sys, os, os.path
 topdir = '@topdir@'
 srcdir = '@srcdir@'
 
-cppflags = ['-I%s'%(topdir + '/include'),
-            '-I%s'%(srcdir),
+cppflags = ['-I%s'%(srcdir + '/include'),
             '-I%s'%(sysconfig.get_python_inc())]
 
 cxx = Cxx.Parser(base_path = topdir + os.sep,

@@ -370,8 +370,10 @@ InclStemnt::print(std::ostream& out, int level) const
   out << ">$";
 #endif
 
-  out << "#include " << (isStandard ? '<' : '"');
-  out << filename << (isStandard ? '>' : '"') << std::endl;
+  if (text.empty())
+    out << "#include " << '"' << filename << '"' << std::endl;
+  else
+    out << "#include " << text << std::endl;
 }
 
 EndInclStemnt::EndInclStemnt(const Location& l)

@@ -7,7 +7,7 @@
 
 SHELL	:= /bin/sh
 
-subdirs	:= Paths/doc1 Paths/doc2 Paths/doc3
+subdirs	:= Paths/doc1 Paths/doc2 Paths/doc3 Paths/doc4
 
 action	:= all
 

@@ -12,7 +12,7 @@ import sys, os, os.path
 topdir = '@topdir@'
 srcdir = '@srcdir@'
 
-cppflags = ['-I%s'%(topdir + '/include'),
+cppflags = ['-I%s'%(topdir + '/Cxx-API/include'),
             '-I%s'%(srcdir + '/gc/include'),
             '-I%s'%(srcdir),
             '-I%s'%(sysconfig.get_python_inc())]

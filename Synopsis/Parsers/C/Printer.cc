@@ -202,7 +202,9 @@ void TypeBeforePrinter::traverse_ptr(PtrType *type)
     type->subType->accept(this);
     
     if (!type->subType->isPointer() && !type->subType->isBaseType()) my_os << '(';
-    my_os << "*" << type->qualifier.to_string();
+    my_os << '*';
+    std::string qualifier = type->qualifier.to_string();
+    if (!qualifier.empty()) my_os << qualifier << ' ';
   }
   
   my_os << name;
@@ -583,8 +585,10 @@ void StatementPrinter::traverse_file_line(FileLineStemnt *node)
 
 void StatementPrinter::traverse_include(InclStemnt *node)
 {
-  my_os << "#include " << (node->isStandard ? '<' : '"');
-  my_os << node->filename << (node->isStandard ? '>' : '"') << std::endl;
+  if (node->text.empty())
+    my_os << "#include " << '"' << node->filename << '"' << std::endl;
+  else
+    my_os << "#include " << node->text << std::endl;
 }
 
 void StatementPrinter::traverse_end_include(EndInclStemnt *node)

@@ -156,6 +156,7 @@ public:
   void print(std::ostream& out, int level) const;
 
   bool         isStandard;      // use brackets
+  std::string  text;            // if defined, use this
   std::string  filename;
 };
 
