@@ -1,4 +1,9 @@
 
+Requested:
+	Add support for __builtin_next_arg
+	it basically needs to be defined as: 	void* __builtin_next_arg( char* format );
+	before we start parsing.
+
 Gcc Extensions:
   Supported:
     X Char Escapes
