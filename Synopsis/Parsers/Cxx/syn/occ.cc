@@ -239,14 +239,7 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   // Run OCC to generate the AST
   RunOpencxx(source_file, cppfile, ast);
 
-#ifndef DONT_GC
-  // Try to cleanup GC if being used
-  //std::cout << "GC: Running Garbage Collection..." << std::endl;
-  //size_t size = GC_get_heap_size();
-  GC_gcollect();
-  //size_t size2 = GC_get_heap_size();
-  //std::cout << "GC: Heap went from " << size << " to " << size2 << std::endl;
-#endif
+  PTree::cleanup_gc();
 
   // Delete all the AST:: and Types:: objects we created
   FakeGC::delete_all();

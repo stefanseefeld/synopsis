@@ -15,6 +15,7 @@ namespace PTree
 enum GCPlacement {GC, NoGC};
 class LightObject {};
 class Object {};
+inline void cleanup_gc() {}
 
 }
 
