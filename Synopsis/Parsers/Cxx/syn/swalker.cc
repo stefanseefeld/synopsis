@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.76 2003/10/13 18:50:20 stefan Exp $
+// $Id: swalker.cc,v 1.77 2003/10/15 04:28:58 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,10 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.77  2003/10/15 04:28:58  stefan
+// * only keep last comment if it is not suspect
+// * provide an alternative Grouper
+//
 // Revision 1.76  2003/10/13 18:50:20  stefan
 // * provide a clearer definition of 'Comment', i.e.
 //   a single comment as opposed to a list of comments
@@ -302,9 +306,23 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
       next = next->Rest();
     }
 
+    // all comments that are not immediately (i.e. separated
+    // by a single new line) followed by a declaration are
+    // marked as 'suspect'
+    bool suspect = false;
+    char* pos = first->GetPosition() + first->GetLength();
+    while (*pos && strchr(" \t\r", *pos)) ++pos;
+    if (*pos == '\n')
+    {
+      ++pos;
+      // Found only allowed \n
+      while (*pos && strchr(" \t\r", *pos)) ++pos;
+      if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
+    }
+
     if (decl)
     {
-      AST::Comment* comment = make_Comment(m_file, 0, first);
+      AST::Comment* comment = make_Comment(m_file, 0, first, suspect);
       comments.push_back(comment);
     }
     if (m_links) m_links->long_span(first, "file-comment");
