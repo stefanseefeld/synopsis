@@ -1,5 +1,5 @@
 -s style.css
 -S style.css
--c summary
--c javadoc
--c section
+-C summary
+-C javadoc
+-C section
