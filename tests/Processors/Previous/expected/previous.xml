@@ -85,8 +85,10 @@
       </instance>
      </comments>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Enumerator" file="Processors/Previous/input/previous.cc" language="C++" line="11" type="enumerator" value=""/>
    </enumerators>
+   <eos>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous.cc" language="C++" line="11" name="EOS" type="EOS"/>
+   </eos>
   </instance>
  </declarations>
  <types>

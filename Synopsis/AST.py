@@ -472,11 +472,15 @@ class Enum (Declaration):
    Enumerator objects."""
 
    def __init__(self, file, line, language, name, enumerators):
+
       Declaration.__init__(self, file, line, language, "enum", name)
       self.__enumerators = enumerators[:]
+      #FIXME: the Cxx parser will append a Builtin('eos') to the
+      #list of enumerators which we need to extract here.
+      self.eos = None
       if isinstance(self.__enumerators[-1], Builtin):
-         self.__eos = self.__enumerators.pop()
-         
+         self.eos = self.__enumerators.pop()
+
    def enumerators(self):
       """List of Enumerator objects"""
       return self.__enumerators
@@ -712,6 +716,7 @@ class Visitor :
    def visitEnum(self, node):
       self.visitDeclaration(node)
       for enum in node.enumerators(): enum.accept(self)
+      if node.eos: node.eos.accept(self)
    def visitVariable(self, node): self.visitDeclaration(node)
    def visitConst(self, node): self.visitDeclaration(node)
    def visitFunction(self, node):
