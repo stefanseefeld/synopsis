@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.9 2001/06/15 18:31:31 stefan Exp $
+# $Id: Makefile,v 1.10 2001/07/28 02:40:02 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -28,7 +28,8 @@ endif
 
 SRC	:= __init__.py __init__.pyc occ.so link.so
 
-subdirs	= occ
+# Note ucpp and occ are both handled inside syn/Makefile
+subdirs	= gc syn
 
 all:
 	@for dir in ${subdirs}; do \

@@ -1,4 +1,4 @@
-// $Id: linkstore.cc,v 1.5 2001/07/23 15:29:35 chalky Exp $
+// $Id: linkstore.cc,v 1.6 2001/07/28 02:40:02 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.6  2001/07/28 02:40:02  chalky
+// Updates for new source layout
+//
 // Revision 1.5  2001/07/23 15:29:35  chalky
 // Fixed some regressions and other mis-features
 //
@@ -48,9 +51,9 @@
 
 #include <strstream>
 
-#include "../ptree.h"
-#include "../parse.h"
-#include "../buffer.h"
+#include <occ/ptree.h>
+#include <occ/parse.h>
+#include <occ/buffer.h>
 
 
 const char* LinkStore::m_type_names[] = {

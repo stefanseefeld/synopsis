@@ -11,8 +11,8 @@
 #ifndef H_SYNOPSIS_CPP_SWALKER
 #define H_SYNOPSIS_CPP_SWALKER
 
-#include "../ptree.h"
-#include "../walker.h"
+#include <occ/ptree.h>
+#include <occ/walker.h>
 #undef Scope
 
 #include <vector>
