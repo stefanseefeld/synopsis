@@ -408,10 +408,11 @@ int handle_define(struct lexer_state *ls)
 				continue;
 			} else if ((ls->flags & MACRO_VAARG)
 				&& ls->ctok->type == MDOTS) {
+				/* gnu headers seem to use without commas
 				if (need_comma) {
 					error(l, "missing comma before '...'");
 					goto warp_error;
-				}
+				} */
 				if (redef && !n->vaarg) goto redef_error;
 				if (!redef) m->vaarg = 1;
 				saw_mdots = 1;
