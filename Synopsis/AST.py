@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.11 2001/04/17 15:47:26 chalky Exp $
+# $Id: AST.py,v 1.12 2001/06/05 10:03:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.12  2001/06/05 10:03:35  chalky
+# Fixed subtle bug.. s/__type/__returnType/ !!!! bad python! bad!
+#
 # Revision 1.11  2001/04/17 15:47:26  chalky
 # Added declaration name mapper, and changed refmanual to use it instead of the
 # old language mapping
@@ -382,7 +385,7 @@ class Function (Declaration):
 	self.__template = template
     def accept(self, visitor): visitor.visitFunction(self)
 
-    def set_returnType(self, type): self.__type = type
+    def set_returnType(self, type): self.__returnType = type
     def set_realname(self, name):
 	"""Sets the real name of this function"""
 	self.__realname = tuple(name)
