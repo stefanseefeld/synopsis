@@ -44,6 +44,11 @@ public:
     AttributeError(const std::string &msg = "") : std::invalid_argument(msg) {}
   };
 
+  struct KeyError : std::invalid_argument
+  {
+    KeyError(const std::string &msg = "") : std::invalid_argument(msg) {}
+  };
+
   struct ImportError : std::invalid_argument
   {
     ImportError(const std::string &msg = "") : std::invalid_argument(msg) {}
@@ -89,8 +94,13 @@ public:
   Object attr(const std::string &) const;
   bool set_attr(const std::string &, Object);
   PyObject *ref() { Py_INCREF(my_impl); return my_impl;}
+
 private:
-   PyObject *my_impl;
+  //. check for an exception and if set translate into
+  //. a C++ exception that is thrown
+  void check_exception();
+  
+  PyObject *my_impl;
 };
 
 class Tuple : public Object
@@ -269,6 +279,7 @@ inline Object::Object(PyObject *o)
 {
   if (!my_impl)
   {
+    check_exception();
     my_impl = Py_None;
     Py_INCREF(Py_None);
   }
@@ -388,6 +399,22 @@ inline bool Object::narrow(Object o) throw(Object::TypeError)
   if (!PyInt_Check(o.my_impl)) throw TypeError("object not an integer");
 #endif
   return PyInt_AsLong(o.my_impl);
+}
+
+inline void Object::check_exception()
+{
+  PyObject *exc = PyErr_Occurred();
+  if (!exc) return;
+  PyObject *type, *value, *trace;
+  PyErr_Fetch(&type, &value, &trace);
+  Object t(type), v(value), tr(trace); // to release the reference at end of scope
+  if (exc == PyExc_KeyError)
+    throw KeyError(Object::narrow<std::string>(v.str()));
+  else if (exc == PyExc_TypeError)
+    throw TypeError(Object::narrow<std::string>(v.str()));
+  else if (exc == PyExc_AttributeError)
+    throw AttributeError();
+  throw std::runtime_error("internal error");
 }
 
 inline std::ostream &operator << (std::ostream &os, const Object &o)
@@ -580,7 +607,7 @@ inline void List::extend(List l)
 
 inline List::iterator List::begin() const
 {
-  return iterator(*this, 0);
+  return iterator(*this, size() ? 0 : -1);
 }
 
 inline List::iterator List::end() const
