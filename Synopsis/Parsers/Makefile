@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 2001/01/08 19:48:41 stefan Exp $
+# $Id: Makefile,v 1.6 2001/01/10 16:12:02 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -36,7 +36,7 @@ clean:
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-distclean: clean
+distclean:
 	/bin/rm -f *.pyc
 	@for dir in ${subdirs}; do \
 	  (cd $$dir && $(MAKE) distclean) \

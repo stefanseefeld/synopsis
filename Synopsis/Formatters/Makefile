@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2001/01/08 19:48:41 stefan Exp $
+# $Id: Makefile,v 1.5 2001/01/10 16:12:02 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -20,7 +20,8 @@
 
 SHELL	= /bin/sh
 
-PREFIX	:= /usr/local/lib/python
+include ../local.mk
+
 SRC	:= __init__.py DUMP.py ASCII.py HTML.py HTML_Simple.py
 
 all:
@@ -31,5 +32,5 @@ distclean:	clean
 	/bin/rm -f  *.pyc
 
 install:
-	mkdir -p $(PREFIX)/Synopsis/Formatter
-	install $(SRC) $(PREFIX)/Synopsis/Formatter
+	mkdir -p $(packagedir)/Synopsis/Formatter
+	install $(SRC) $(packagedir)/Synopsis/Formatter

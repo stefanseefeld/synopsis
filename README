@@ -15,17 +15,14 @@ create suitable output.
 
 ** Building
 
-Just type 'make' from the top directory and any invidual components that need
-compilation will be compiled. Currently the only such is the C++ Parser
-module, including the garbage collector and OpenC++ parser it uses.
-
+* if the sources are checked out from cvs, run autoconf to generate the configure script
+* run configure (with parameters, if appropriate)
+* run make
 
 ** Installing
 
-Since this is only version 0.2 there is no installation target provided.
-However, to use Synopsis from elsewhere just add the top-level directory to
-your path and call "synopsis". It should find its modules just fine.
-
+simply call 'make install' to install the synopsis tool together with the 
+associated python package 'Synopsis'.
 
 ** Demos
 
@@ -36,7 +33,7 @@ called "demo/C++/test.cc" which attempts to test all the features of the C++
 parser. You may use this file as an example of proper documentation style in
 your own programs.
 
-Parsers: IDL, C++
+Parsers: IDL, C++, Python
 Formatters:
  HTML - takes a directory name for output (-o Directory)
         Creates many pages in that directory

@@ -3,7 +3,21 @@
 #include <vector>
 #include <list>
 #include <stack>
-#include <python1.5/Python.h>
+#if PYTHON_MAJOR == 2
+#  if PYTHON_MINOR == 0
+#    include <python2.0/Python.h>
+#  else
+#    error "this python version is not supported yet"
+#  endif
+#elif PYTHON_MAJOR == 1
+#  if PYTHON_MINOR == 6
+#    include <python1.6/Python.h>
+#  elif
+#    include <python1.5/Python.h>
+#  else
+#    error "this python version is not supported yet"
+#  endif
+#endif
 
 #if 0
 #define DO_TRACE
