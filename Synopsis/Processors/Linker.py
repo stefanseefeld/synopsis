@@ -1,4 +1,3 @@
-# $Id: Linker.py,v 1.14 2003/12/04 01:08:36 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -31,8 +30,11 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       self.types = self.ast.types()
       
       declarations = self.ast.declarations()
-      for decl in declarations: decl.accept(self)
-      declarations[:] = root.declarations()
+      try:
+         for decl in declarations: decl.accept(self)
+         declarations[:] = root.declarations()
+      except TypeError, e:
+         print 'linker error :', e
 
       for file in self.ast.files().values():
          self.visitSourceFile(file)
@@ -193,6 +195,10 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       if metamodule is None:
          metamodule = AST.MetaModule(module.language(), module.type(),module.name())
          self.append(metamodule)
+
+      elif not isinstance(metamodule, AST.MetaModule):
+         raise TypeError, 'symbol type mismatch: Synopsis.AST.Module and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
+
       metamodule.module_declarations().append(module)
       self.merge_comments(metamodule.comments(), module.comments())
       self.push(metamodule)
@@ -215,9 +221,12 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
-      if metamodule is None or not isinstance(metamodule, AST.MetaModule):
+      if metamodule is None:
          metamodule = AST.MetaModule(module.language(), module.type(),module.name())
          self.append(metamodule)
+      elif not isinstance(metamodule, AST.MetaModule):
+         raise TypeError, 'symbol type mismatch: Synopsis.AST.MetaModule and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
+         
       metamodule.module_declarations().extend(module.module_declarations())
       metamodule.comments().extend(module.comments())
       self.push(metamodule)
@@ -314,9 +323,8 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
             self.pop()
             return
          else:
-            print "Linker.visitClass: clas=%s, prev=%s"%(clas.name(), prev)
-            if hasattr(prev, 'name'): print "prev.name=%s"%(prev.name())
-            raise TypeError, "Previous class declaration not a class"
+            raise TypeError, 'symbol type mismatch: Synopsis.AST.Class and %s both match "%s"'%(prev.__class__, '::'.join(name))
+
       self.add_declaration(clas)
       for parent in clas.parents():
          parent.accept(self)
