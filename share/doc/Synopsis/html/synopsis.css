@@ -12,9 +12,7 @@ h1
 {
   background-color: white;
 
-  border-bottom: solid;
-  border-color: #aaaaaa;
-  border-width: 1px;
+  border-bottom: 1px solid #aaaaaa;
   text-align: center;
   
   font-family: "arial";
@@ -25,56 +23,53 @@ h1
   padding: 10px;
 }
 
-table.page 
-{
-  border: 0px;
-  margin: 10px 0px 0px;
-  padding: 0px;
-}
- 
-td.menu 
-{
-  width: 8em;
-  vertical-align: top;
-  padding: 10px 10px 10px;
-  margin: 0px;
+div.navigation
+{ 
+  position: fixed;
+  top: 1em;
+  bottom: 1em;
+  width: 10em;
+  height: 100%;
+  border-right: 1px solid #aaaaaa;
 }
 
-table.menu
-{  
-  position: fixed;
-  top: 5em;
-  left: 1em;
+div.menu 
+{
+  margin-top: 1em;
+  margin-left: 1em;
+  width: 7em;
+  height: auto;
+  border: 1px solid #aaaaaa;
   background-color: #f2f5f7;
-  border: solid;
-  border-width: 1px;
-  border-color: #aaaaaa;
+  vertical-align: top;
   padding: 10px;
 }
 
-table.menu td.normal1
+div.menu p
 { 
+  margin: 0px;
+  padding: 0px;
 }
 
-table.menu td.selected1
+div.menu p.selected1
 { 
   background-color: #dbdee0;
 }
 
-table.menu td.normal2
+div.menu p.normal2
 {
   font-size: small;
   padding-left: 17px;
 }
 
-table.menu td.selected2
+div.menu p.selected2
 { 
   font-size: small;
   padding-left: 17px;
   background-color: #dbdee0;
 }
 
-table.menu td.separator
+div.menu p.separator
 {
   color: #808080;
   border-top: solid;
@@ -82,45 +77,30 @@ table.menu td.separator
   border-width: 1px;
 }
 
-td.content 
-{
-  margin: 0px;
+div.content
+{ 
+  position: absolute;
+  top: 1em;
+  height: auto;
+  left: 10em;
+  right: 1em;
   padding: 10px;
-  vertical-align: top;
 }
 
-table.subheading
+table.form
 {
-  width: 100%;
-  border: none;
+  background-color: #aaaaaa;
   border-spacing: 1px;
 }
-
-td.content td
+table.form td
 {
-  background: #f2f5f7;
-  padding: 10px;
+  background-color: #f2f5f7;
+  padding: 5px;
 }
-
-th
+table.form th
 {
-  background: #f2f5f7;
-  padding: 10px;
-  text-align: left;
-}
-
-table.heading td
-{
-  font-family: avantgarde, sans-serif;
-  font-size: 150%;
-  color: #bb0000;
-}
-
-table.subheading td
-{
-  font-family: avantgarde, sans-serif;
-  font-size: 120%;
-  color: #bb0000;
+  background-color: #f2f5f7;
+  padding: 5px;
 }
 
 div.newsheader
@@ -130,6 +110,9 @@ div.newsheader
 
 div.modifiedby
 {
+  position: absolute;
+  bottom: 1em;
+  height: auto;
   font-size: small;
   margin-left: 10px;
   color: #808080;
@@ -144,3 +127,17 @@ div.hostedby
   margin-right: 10px;
 }
 
+p.logentry .revision
+{ 
+  font-weight: bold;
+}
+
+p.logentry .date
+{ 
+  font-style: italic;
+}
+
+pre.message
+{ 
+  font-size: small;
+}
