@@ -7,10 +7,10 @@
 #      	 and runs some tests of collector and cords.  Does not add cords or
 #	 c++ interface to gc.a
 # cord/de - builds dumb editor based on cords.
-ABI_FLAG=
+ABI_FLAG:=
 CC	:= $(CC) $(ABI_FLAG)
 CXX	:= $(CXX) $(ABI_FLAG)
-AS=	:= as $(ABI_FLAG)
+AS	:= as $(ABI_FLAG)
 #  The above doesn't work with gas, which doesn't run cpp.
 #  Define AS as `gcc -c -x assembler-with-cpp' instead.
 #  Under Irix 6, you will have to specify the ABI (-o32, -n32, or -64)
