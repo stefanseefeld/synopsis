@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.8 2002/04/26 01:21:14 chalky Exp $
+# $Id: browse.py,v 1.9 2002/08/23 04:35:56 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.9  2002/08/23 04:35:56  chalky
+# Use png images w/ Dot. Only show classes in Classes list
+#
 # Revision 1.8  2002/04/26 01:21:14  chalky
 # Bugs and cleanups
 #
@@ -256,7 +259,7 @@ class PackageBrowser (Browser.SelectionListener):
 
 	# Create the filler. It only displays a few types
 	self.filler = ListFiller(self, window.package_list, (
-	    'Package', 'Module', 'Namespace', 'Global'))
+	    'package', 'module', 'namespace', 'global'))
 	self.filler.auto_open = 3
 
 	window.connect(window.package_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_package_item)
@@ -284,6 +287,7 @@ class ClassBrowser (Browser.SelectionListener):
     def __init__(self, window, browser):
 	self.__window = window
 	self.__browser = browser
+	self.__glob = AST.Scope('', -1, '', 'Global Classes', ('global',))
 	browser.add_listener(self)
 
 	# Create the filler
@@ -313,7 +317,12 @@ class ClassBrowser (Browser.SelectionListener):
 
     def current_ast_changed(self, ast):
 	self.filler.clear()
-	self.filler.fillFrom(self.__browser.glob)
+	glob_all = self.__browser.glob.declarations()
+	classes = lambda decl: decl.type() == 'class'
+	print map(lambda x:x.type(), glob_all)
+	glob_cls = filter(classes, glob_all)
+	self.__glob.declarations()[:] = glob_cls
+	self.filler.fillFrom(self.__glob)
 
 class DocoBrowser (Browser.SelectionListener):
     """Browser that manages the documentation view"""
@@ -382,8 +391,8 @@ class DocoBrowser (Browser.SelectionListener):
 		if len(super) == 0 and len(sub) == 0:
 		    # Skip classes with a boring graph
 		    return None
-		tmp = '/tmp/synopsis-inheritance.gif'
-		dot_args = ['-o', tmp, '-f', 'gif', '-s']
+		tmp = '/tmp/synopsis-inheritance.png'
+		dot_args = ['-o', tmp, '-f', 'png', '-s']
 		Dot.toc = core.config.toc
 		Dot.nodes = {}
 		ast = AST.AST([''], [scope], core.config.types)
