@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.28 2002/01/13 09:44:51 chalky Exp $
+# $Id: core.py,v 1.29 2002/03/14 00:19:47 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.29  2002/03/14 00:19:47  chalky
+# Added demo of template specializations, and fixed HTML formatter to deal with
+# angle brackets in class names :)
+#
 # Revision 1.28  2002/01/13 09:44:51  chalky
 # Allow formatted source in GUI
 #
@@ -294,7 +298,7 @@ def reference(name, scope, label=None, **keys):
     """Utility method to insert a reference to a name.
     @see ASTFormatter.BaseFormatter.reference()
     """
-    if not label: label = Util.ccolonName(name, scope)
+    if not label: label = anglebrackets(Util.ccolonName(name, scope))
     entry = config.toc[name]
     if entry: return apply(href, (entry.link, label), keys)
     return label or ''
