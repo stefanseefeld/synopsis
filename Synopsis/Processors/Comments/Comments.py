@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.5 2001/02/12 04:08:09 chalky Exp $
+# $Id: Comments.py,v 1.6 2001/04/05 11:11:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.6  2001/04/05 11:11:39  chalky
+# Many more comments
+#
 # Revision 1.5  2001/02/12 04:08:09  chalky
 # Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
 #
@@ -48,6 +51,12 @@ import sys, string, re, getopt
 from Synopsis.Core import AST, Util
 
 class CommentProcessor (AST.Visitor):
+    """Base class for comment processors.
+
+    This is an AST visitor, and by default all declarations call process()
+    with the current declaration. Subclasses may override just the process
+    method.
+    """
     def processAll(self, declarations):
 	for decl in declarations:
 	    decl.accept(self)
@@ -61,22 +70,28 @@ class SSDComments (CommentProcessor):
     __re_star = r'/\*(.*?)\*/'
     __re_ssd = r'^[ \t]*//\. ?(.*)$'
     def __init__(self):
+	"Compiles the regular expressions"
 	self.re_star = re.compile(SSDComments.__re_star, re.S)
 	self.re_ssd = re.compile(SSDComments.__re_ssd, re.M)
     def process(self, decl):
+	"Calls processComment on all comments"
 	map(self.processComment, decl.comments())
     def processComment(self, comment):
+	"""Replaces the text in the comment. It calls strip_star() first to
+	remove all multi-line star comments, then follows with parse_ssd().
+	"""
 	text = comment.text()
 	text = self.parse_ssd(self.strip_star(text))
 	comment.set_text(text)
     def strip_star(self, str):
-	"""Strips all star-format comments from the docstring"""
+	"""Strips all star-format comments from the string"""
 	mo = self.re_star.search(str)
 	while mo:
 	    str = str[:mo.start()] + str[mo.end():]
 	    mo = self.re_star.search(str)
 	return str
     def parse_ssd(self, str):
+	"""Filters str and returns just the lines that start with //."""
 	return string.join(self.re_ssd.findall(str),'\n')
 
 class JavaComments (CommentProcessor):
@@ -84,11 +99,17 @@ class JavaComments (CommentProcessor):
     __re_java = r"/\*\*[ \t]*(?P<text>.*)(?P<lines>\n[ \t]*\*.*)*?(\n[ \t]*)?\*/"
     __re_line = r"\n[ \t]*\*[ \t]*(?P<text>.*)"
     def __init__(self):
+	"Compiles the regular expressions"
 	self.re_java = re.compile(JavaComments.__re_java)
 	self.re_line = re.compile(JavaComments.__re_line)
     def process(self, decl):
+	"Calls processComment on all comments"
 	map(self.processComment, decl.comments())
     def processComment(self, comment):
+	"""Finds comments in the java format. The format is  /** ... */, and
+	it has to cater for all four line forms: "/** ...", " * ...", " */" and
+	the one-line "/** ... */".
+	"""
 	text = comment.text()
 	text_list = []
 	mo = self.re_java.search(text)
@@ -111,11 +132,14 @@ class QtComments (CommentProcessor):
     __re_brief = r"[ \t]*//!(.*)"
     __re_detail = r"[ \t]*/\*!(.*)\*/[ \t\n]*"
     def __init__(self):
+	"Compiles the regular expressions"
 	self.re_brief = re.compile(self.__re_brief)
 	self.re_detail = re.compile(self.__re_detail, re.S)
     def process(self, decl):
+	"Calls processComment on all comments"
 	map(self.processComment, decl.comments())
     def processComment(self, comment):
+	"Matches either brief or detailed comments"
 	text = comment.text()
 	mo = self.re_brief.match(text)
 	if mo:
@@ -132,34 +156,49 @@ class Dummies (CommentProcessor):
     class just removes them. Since it has to modify the AST, it creates a new
     AST which can then be copied over the old."""
     def processAll(self, declarations):
+	"""Overrides the default processAll() to setup the stack"""
 	self.__scopestack = []
 	self.__currscope = []
 	for decl in declarations: decl.accept(self)
 	declarations[:] = self.__currscope
     def push(self):
+	"""Pushes the current scope onto the stack and starts a new one"""
 	self.__scopestack.append(self.__currscope)
 	self.__currscope = []
     def pop(self, decl):
+	"""Pops the current scope from the stack, and appends the given
+	declaration to it"""
 	self.__currscope = self.__scopestack.pop()
 	self.__currscope.append(decl)
     def add(self, decl):
+	"""Adds the given decl to the current scope"""
 	self.__currscope.append(decl)
-    def currscope(self): return self.__currscope
+    def currscope(self):
+	"""Returns the current scope: a list of declarations"""
+	return self.__currscope
 	
     def visitDeclaration(self, decl):
+	"""Checks for dummy declarations"""
 	if decl.type() == "dummy": return
 	self.add(decl)
     def visitScope(self, scope):
+	"""Visits all children of the scope in a new scope. The value of
+	currscope() at the end of the list is used to replace scope's list of
+	declarations - hence you can remove (or insert) declarations from the
+	list. Such as dummy declarations :)"""
 	self.push()
 	for decl in scope.declarations(): decl.accept(self)
 	scope.declarations()[:] = self.__currscope
 	self.pop(scope)
     def visitEnum(self, enum):
+	"""Does the same as visitScope, but for the enum's list of
+	enumerators"""
 	self.push()
 	for enumor in enum.enumerators(): enumor.accept(self)
 	enum.enumerators()[:] = self.__currscope
 	self.pop(enum)
     def visitEnumerator(self, enumor):
+	"""Removes dummy enumerators"""
 	if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
 	if not len(enumor.name()): return # workaround.
 	self.add(enumor)
@@ -168,17 +207,21 @@ class Previous (Dummies):
     """A class that maps comments that begin with '<' to the previous
     declaration"""
     def processAll(self, declarations):
+	"""decorates processAll() to initialise last and laststack"""
 	self.last = None
 	self.__laststack = []
 	Dummies.processAll(self, declarations)
     def push(self):
+	"""decorates push() to also push 'last' onto 'laststack'"""
 	Dummies.push(self)
 	self.__laststack.append(self.last)
 	self.last = None
     def pop(self, decl):
+	"""decorates pop() to also pop 'last' from 'laststack'"""
 	Dummies.pop(self, decl)
 	self.last = self.__laststack.pop()
     def visitScope(self, scope):
+	"""overrides visitScope() to set 'last' after each declaration"""
 	self.push()
 	for decl in scope.declarations():
 	    decl.accept(self)
@@ -186,6 +229,9 @@ class Previous (Dummies):
 	scope.declarations()[:] = self.currscope()
 	self.pop(scope)
     def checkPrevious(self, decl):
+	"""Checks a decl to see if the comment should be moved. If the comment
+	begins with a less-than sign, then it is moved to the 'last'
+	declaration"""
 	if len(decl.comments()):
 	    first = decl.comments()[0]
 	    if len(first.text()) and first.text()[0] == "<" and self.last:
@@ -193,9 +239,11 @@ class Previous (Dummies):
 		self.last.comments().append(first)
 		del decl.comments()[0]
     def visitDeclaration(self, decl):
+	"""Calls checkPrevious on the declaration and removes dummies"""
 	self.checkPrevious(decl)
 	if decl.type() != "dummy": self.add(decl)
     def visitEnum(self, enum):
+	"""Does the same as visitScope but for enum and enumerators"""
 	self.push()
 	for enumor in enum.enumerators():
 	    enumor.accept(self)
@@ -203,6 +251,7 @@ class Previous (Dummies):
 	enum.enumerators()[:] = self.currscope()
 	self.pop(enum)
     def visitEnumerator(self, enumor):
+	"""Checks previous comment and removes dummies"""
 	self.checkPrevious(enumor)
 	if len(enumor.name()): self.add(enumor)
 
@@ -216,6 +265,7 @@ processors = {
     'prev': Previous,
 }
 def __parseArgs(args, config):
+    """Parses the arguments and config object"""
     global processor_list
     processor_list = []
     languagize = None
@@ -242,6 +292,7 @@ def __parseArgs(args, config):
 		sys.exit(2)
 
 def process(declarations, types, args, config):
+    """Main module entry point"""
     __parseArgs(args, config)
     for processor in processor_list:
 	processor.processAll(declarations)
