@@ -107,10 +107,7 @@ void LinkMap::add(const char* name, int linenum, int start, int end, int diff)
 int LinkMap::map(int linenum, int pos)
 {
     LineMap::iterator line_iter = m->lines.find(linenum);
-    if (line_iter == m->lines.end())
-    {
-        return pos;
-    }
+    if (line_iter == m->lines.end()) return pos;
     Line& line = line_iter->second;
     Line::iterator iter = line.begin(), end = line.end();
     int diff = 0;
