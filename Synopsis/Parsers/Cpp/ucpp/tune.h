@@ -192,7 +192,7 @@
 			"system(linux)"
 */
 #define STD_ASSERT	"cpu(i386)", "machine(i386)", "system(unix)", \
-			"system(linux)"
+			"system(posix)"
 
 /* ====================================================================== */
 /*
@@ -201,8 +201,10 @@
  * Each string must be either "name" or "name=token-list". If you want
  * no predefined macro, define STD_MACROS to 0.
  */
-#define STD_MACROS	"__linux", "__unix", "__alpha", \
-			"__linux__", "__unix__", "__alpha__"
+#define STD_MACROS	"__linux", "__unix", \
+			"linux", "unix", \
+			"__linux__", "__unix__", \
+			"_POSIX_SOURCE", "__GNUC__=3"
 
 /* ====================================================================== */
 /*
@@ -255,7 +257,7 @@
  * it might slow down a bit ucpp, and with this option, comments will be
  * kept inside #pragma directives).
  */
-#define SEMPER_FIDELIS
+/*#define SEMPER_FIDELIS*/
 
 /* ====================================================================== */
 /*

@@ -38,6 +38,7 @@ CPPFLAGS	:= -I.. -I$(PYTHON_PREFIX)/include -DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYT
 CXXFLAGS	:= -Wall
 LDFLAGS		:=
 UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
+UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 LIB		:= $(PYTHON_LIB) -ldl -lpthread # Linux
 
 GCLIB		:= ../gc/gc.a
@@ -68,12 +69,13 @@ SYN_GOBJ	:= $(patsubst %,%.go,$(SYN_FILES))
 UCPP_SOURCES	:= $(patsubst %,../ucpp/%.c,$(UCPP_FILES))
 UCPP_OBJ	:= $(patsubst %,../ucpp/%.o,$(UCPP_FILES))
 UCPP_GOBJ	:= $(patsubst %,../ucpp/%.go,$(UCPP_FILES))
+UCPP_AOBJ	:= $(patsubst %,../ucpp/%.ao,$(UCPP_FILES))
 
 TARGETS		= $(OCC_SO) $(LINK_SO)
 
 all : $(TARGETS)
 
-debug:		occ.gdb link-synopsis
+debug:		occ.gdb link-synopsis ucpp
 
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : ../%.cc
@@ -99,10 +101,18 @@ $(SYN_GOBJ): %.go : %.cc
 $(UCPP_GOBJ): %.go : %.c
 	$(CCC) $(DEBUG) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
 
+# This compiles STANDALONE versions of the UCPP files
+$(UCPP_AOBJ): %.ao : %.c
+	$(CCC) $(DEBUG) $(CFLAGS) $(UCPP_AFLAGS) -c -o $@ $<
+
 link-synopsis:	link.cc
 	$(CXX) -DSTANDALONE $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -o link-synopsis link.cc
 
+ucpp:		$(UCPP_AOBJ)
+	$(CCC) -o $@ $^
+
 # Include deps if they exist. 
+-include .deps.ao
 -include .deps.go
 -include .deps.o
 
@@ -137,9 +147,11 @@ $(UCPP_GLIB):	$(UCPP_GOBJ)
 	ar rcs $@ $^
 
 depend:
+	touch .deps.ao
 	touch .deps.go
 	touch .deps.o
-	makedepend -Y -I.. -DDEBUG -f.deps.go -o.go $(SYN_SOURCES) 2> /dev/null
+	makedepend -Y -I.. -DDEBUG -f.deps.ao -o.ao $(UCPP_SOURCES) 2> /dev/null
+	makedepend -Y -I.. -DDEBUG -f.deps.go -o.go $(UCPP_SOURCES) $(SYN_SOURCES) $(OCC_SOURCES) 2> /dev/null
 	makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES) 2> /dev/null
 
 clean :

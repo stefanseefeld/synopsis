@@ -103,8 +103,8 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
     // Add includes
     args.push_back("-I");
     args.push_back("/usr/include/g++-3/");
-    args.push_back("-I");
-    args.push_back("/usr/include/linux/");
+    //args.push_back("-I");
+    //args.push_back("/usr/include/linux/");
     args.push_back("-I");
     args.push_back("/usr/lib/gcc-lib/i386-linux/2.95.3/include/");
     args.push_back("-o"); // output to...
