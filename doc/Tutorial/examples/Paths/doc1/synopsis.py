@@ -12,7 +12,9 @@ from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML import Comments
 from Synopsis.Formatters import Dot
 
-cxx_ssd = Composite(Cxx.Parser(), SSDComments())
+cxx = Cxx.Parser(base_path='../src')
+
+cxx_ssd = Composite(cxx, SSDComments())
 
 html = HTML.Formatter(comment_formatters = [Comments.QuoteHTML(),
                                             Comments.Section(),
@@ -35,9 +37,9 @@ class Joker(Processor):
         
 
 process(cxx_ssd = cxx_ssd,
-        cxx_ss = Composite(Cxx.Parser(), SSComments()),
-        cxx_ssd_prev = Composite(Cxx.Parser(), SSDComments(), Previous()),
-        cxx_javadoc = Composite(Cxx.Parser(), JavaComments(), JavaTags()),
+        cxx_ss = Composite(cxx, SSComments()),
+        cxx_ssd_prev = Composite(cxx, SSDComments(), Previous()),
+        cxx_javadoc = Composite(cxx, JavaComments(), JavaTags()),
         link = Linker(Grouper1()),
         html = html,
         dot = Dot.Formatter(),
