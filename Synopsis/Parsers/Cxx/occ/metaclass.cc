@@ -68,6 +68,9 @@ extern bool makeSharedLibrary;
 // The followings should be automatically generated but we write it
 // down here for bootstrapping.  Also see Metaclass::IsBuiltinMetaclass()
 
+static opcxx_ListOfMetaclass* QuoteClassCreator;
+static opcxx_ListOfMetaclass* metaclassCreator;
+
 static Class* CreateQuoteClass(Ptree* def, Ptree* marg)
 {
     Class* metaobject = new QuoteClass;
@@ -75,16 +78,25 @@ static Class* CreateQuoteClass(Ptree* def, Ptree* marg)
     return metaobject;
 }
 
-static opcxx_ListOfMetaclass QuoteClassCreator("QuoteClass",
-					       CreateQuoteClass,
-					       QuoteClass::Initialize,
-					       nil);
-
 opcxx_ListOfMetaclass* opcxx_init_QuoteClass()
 {
     return new opcxx_ListOfMetaclass("QuoteClass", CreateQuoteClass,
 				     QuoteClass::Initialize, nil);
 }
+
+static Class* CreateMetaclass(Ptree* def, Ptree* marg)
+{
+    Class* metaobject = new Metaclass;
+    metaobject->InitializeInstance(def, marg);
+    return metaobject;
+}
+
+opcxx_ListOfMetaclass* opcxx_init_Metaclass()
+{
+    return new opcxx_ListOfMetaclass("Metaclass", CreateMetaclass,
+				     Metaclass::Initialize, nil);
+}
+
 
 bool QuoteClass::Initialize()
 {
@@ -99,20 +111,12 @@ char* QuoteClass::MetaclassName()
 
 // class Metaclass
 
-static Class* CreateMetaclass(Ptree* def, Ptree* marg)
+void Metaclass::do_init_static()
 {
-    Class* metaobject = new Metaclass;
-    metaobject->InitializeInstance(def, marg);
-    return metaobject;
-}
-
-static opcxx_ListOfMetaclass metaclassCreator("Metaclass", CreateMetaclass,
-					      Metaclass::Initialize, nil);
-
-opcxx_ListOfMetaclass* opcxx_init_Metaclass()
-{
-    return new opcxx_ListOfMetaclass("Metaclass", CreateMetaclass,
-				     Metaclass::Initialize, nil);
+    QuoteClassCreator = new opcxx_ListOfMetaclass(
+	    "QuoteClass", CreateQuoteClass, QuoteClass::Initialize, nil);
+    metaclassCreator = new opcxx_ListOfMetaclass(
+	    "Metaclass", CreateMetaclass, Metaclass::Initialize, nil);
 }
 
 Metaclass::Metaclass()

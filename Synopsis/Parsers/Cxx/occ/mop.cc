@@ -30,17 +30,47 @@ char* Class::cmd_options[];
 char* Class::metaclass_for_c_functions = nil;
 Class* Class::for_c_functions = nil;
 
-Ptree* Class::class_t = new LeafReserved("class", 5);
-Ptree* Class::empty_block_t = new PtreeClassBody(new Leaf("{", 1),
-						 nil,
-						 new Leaf("}", 1));
-Ptree* Class::public_t = new LeafPUBLIC("public", 6);
-Ptree* Class::protected_t = new LeafPROTECTED("protected", 9);
-Ptree* Class::private_t = new LeafPRIVATE("private", 7);
-Ptree* Class::virtual_t = new LeafVIRTUAL("virtual", 7);
-Ptree* Class::colon_t = new Leaf(":", 1);
-Ptree* Class::comma_t = new Leaf(",", 1);
-Ptree* Class::semicolon_t = new Leaf(";", 1);
+Ptree* Class::class_t = nil;
+Ptree* Class::empty_block_t = nil;
+Ptree* Class::public_t = nil;
+Ptree* Class::protected_t = nil;
+Ptree* Class::private_t = nil;
+Ptree* Class::virtual_t = nil;
+Ptree* Class::colon_t = nil;
+Ptree* Class::comma_t = nil;
+Ptree* Class::semicolon_t = nil;
+
+static opcxx_ListOfMetaclass* classCreator = NULL;
+static opcxx_ListOfMetaclass* templateCreator = NULL;
+static Class* CreateClass(Ptree* def, Ptree* marg);
+static Class* CreateTemplateClass(Ptree* def, Ptree* marg);
+
+void Class::do_init_static()
+{
+    // Only do this once
+    static bool done_init = false;
+    if (done_init) return;
+    done_init = true;
+
+    class_t = new LeafReserved("class", 5);
+    empty_block_t = new PtreeClassBody(new Leaf("{", 1),
+          			     nil,
+          			     new Leaf("}", 1));
+    public_t = new LeafPUBLIC("public", 6);
+    protected_t = new LeafPROTECTED("protected", 9);
+    private_t = new LeafPRIVATE("private", 7);
+    virtual_t = new LeafVIRTUAL("virtual", 7);
+    colon_t = new Leaf(":", 1);
+    comma_t = new Leaf(",", 1);
+    semicolon_t = new Leaf(";", 1);
+
+    classCreator = new opcxx_ListOfMetaclass(
+	    "Class", CreateClass, Class::Initialize, nil);
+
+    templateCreator = new opcxx_ListOfMetaclass(
+	    "TemplateClass", CreateTemplateClass,
+	    TemplateClass::Initialize, nil);
+}
 
 // class Class
 
@@ -1158,9 +1188,6 @@ static Class* CreateClass(Ptree* def, Ptree* marg)
     return metaobject;
 }
 
-static opcxx_ListOfMetaclass classCreator("Class", CreateClass,
-				          Class::Initialize, nil);
-
 opcxx_ListOfMetaclass* opcxx_init_Class()
 {
     return new opcxx_ListOfMetaclass("Class", CreateClass, Class::Initialize,
@@ -1173,11 +1200,6 @@ static Class* CreateTemplateClass(Ptree* def, Ptree* marg)
     metaobject->InitializeInstance(def, marg);
     return metaobject;
 }
-
-static opcxx_ListOfMetaclass templateCreator("TemplateClass",
-					     CreateTemplateClass,
-					     TemplateClass::Initialize,
-					     nil);
 
 opcxx_ListOfMetaclass* opcxx_init_TemplateClass()
 {
