@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.7 2001/01/24 01:38:36 chalky Exp $
+# $Id: DUMP.py,v 1.8 2001/01/31 06:51:24 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.8  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.7  2001/01/24 01:38:36  chalky
 # Added docstrings to all modules
 #
@@ -35,6 +38,7 @@ Verbose attribute-oriented dump of AST. Pipe into less -r
 import sys, getopt, os, os.path, string, types
 from Synopsis.Core import Type, AST
 
+verbose = 0
 
 class Dumper:
     def __init__(self):
@@ -195,10 +199,10 @@ def usage():
   -o <file>                            Output file"""
 
 def __parseArgs(args):
-    global output
+    global output, verbose
     output = sys.stdout
     try:
-        opts,remainder = getopt.getopt(args, "o:")
+        opts,remainder = getopt.getopt(args, "o:v")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -206,8 +210,8 @@ def __parseArgs(args):
     for opt in opts:
         o,a = opt
 
-        if o == "-o":
-            output = open(a, "w")
+        if o == "-o": output = open(a, "w")
+        elif o == "-v": verbose = 1
 
 def format(types, declarations, args):
     global output

@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.3 2001/01/24 01:38:36 chalky Exp $
+# $Id: Dot.py,v 1.4 2001/01/31 06:51:24 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.4  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.3  2001/01/24 01:38:36  chalky
 # Added docstrings to all modules
 #
@@ -36,6 +39,8 @@ Uses 'dot' from graphviz to generate various graphs.
 
 import sys, tempfile, getopt, os, os.path, string, types, errno
 from Synopsis.Core import AST, Type, Util
+
+verbose = 0
 
 class InheritanceFormatter(AST.Visitor):
     """A Formatter that generates an inheritance graph"""
@@ -97,12 +102,12 @@ def usage():
   -c                                   Generate a collaboration graph"""
 
 def __parseArgs(args):
-    global output, title, type
+    global output, title, type, verbose
     output = ''
     title = ''
     type = ''
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:ic")
+        opts,remainder = Util.getopt_spec(args, "o:t:icv")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -116,10 +121,13 @@ def __parseArgs(args):
             type = "collaboration"
             sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
             sys.exit(-1)
+        elif o == "-v": verbose = 1
+        
 def format(types, declarations, args):
-    global output, title, type
+    global output, title, type, verbose
     __parseArgs(args)
     tmpfile = output + ".dot"
+    if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = open(tmpfile, 'w+')
     dotfile.write("digraph \"%s\" {\n"%(title))
     dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4]\n")
@@ -131,6 +139,8 @@ def format(types, declarations, args):
         d.accept(generator)
     dotfile.write("}\n")
     dotfile.close()
-    os.system("dot -Tps -o %s %s"%(output, tmpfile))
+    command = "dot -Tps -o %s %s"%(output, tmpfile)
+    if verbose: print "Dot Formatter: running command '", command, "'"
+    os.system(command)
     os.remove(tmpfile)
     

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: HTML_Simple.py,v 1.8 2001/01/25 01:10:59 chalky Exp $
+#  $Id: HTML_Simple.py,v 1.9 2001/01/31 06:51:24 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -21,6 +21,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.9  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.8  2001/01/25 01:10:59  chalky
 # Fixed html_simple
 #
@@ -39,6 +42,8 @@ Simpler one-page HTML output
 
 import sys, getopt, os, os.path, string
 from Synopsis.Core import AST, Type, Util
+
+verbose = 0
 
 def entity(type, body): return "<" + type + "> " + body + "</" + type + ">"
 def href(ref, label): return "<a href=" + ref + ">" + label + "</a>"
@@ -312,21 +317,20 @@ def usage():
   -s <filename>                        Filename of stylesheet"""
 
 def __parseArgs(args):
-    global output, stylesheet
+    global output, stylesheet, verbose
     output = sys.stdout
     stylesheet = ""
     try:
-        opts,remainder = getopt.getopt(args, "o:s:")
+        opts,remainder = getopt.getopt(args, "o:s:v")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
 
     for opt in opts:
         o,a = opt
-        if o == "-o":
-            output = open(a, "w")
-        elif o == "-s":
-            stylesheet = a
+        if o == "-o": output = open(a, "w")
+        elif o == "-s": stylesheet = a
+        elif o == "-v": verbose = 1
 
 def format(types, declarations, args):
     global output, stylesheet

@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.1 2001/01/27 06:01:21 stefan Exp $
+#  $Id: Docbook.py,v 1.2 2001/01/31 06:51:24 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.2  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.1  2001/01/27 06:01:21  stefan
 # a first take at a docbook formatter
 #
@@ -28,19 +31,13 @@
 import sys, getopt, os, os.path, string
 from Synopsis.Core import AST, Type, Util
 
-languages = {
-    'C++': 'cxx',
-    'IDL': 'idl'
-    }
+verbose = 0
 
-def start_entity(type, params=None):
-    text = "<" + type
-    if params: text = text + " " + string.join(map(lambda p:p[0]+"=\""+p[1]+"\"", params), ' ')
-    text = text + ">"
-    return text
-def end_entity(type): return "</" + type + ">"
-def entity(type, body, params=None):
-    return start_entity(type, params) + "\n" + body + "\n" + end_entity(type)
+languages = {
+    'IDL': 'idl',
+    'C++': 'cxx',
+    'Python': 'python'
+    }
 
 class Formatter (Type.Visitor, AST.Visitor):
     """
@@ -50,9 +47,23 @@ class Formatter (Type.Visitor, AST.Visitor):
     def __init__(self, os):
         self.__os = os
         self.__scope = []
+        self.__indent = 0
 
     def scope(self): return self.__scope
-    def write(self, text): self.__os.write(text + "\n")
+    def write(self, text): self.__os.write(' ' * self.__indent + text + "\n")
+    def start_entity(self, type, params=None):
+        text = "<" + type
+        if params: text = text + " " + string.join(map(lambda p:p[0]+"=\""+p[1]+"\"", params), ' ')
+        text = text + ">"
+        self.write(text)
+        self.__indent = self.__indent + 2
+    def end_entity(self, type):
+        self.__indent = self.__indent - 2
+        self.write("</" + type + ">")
+    def entity(self, type, body, params=None):
+        self.start_entity(type, params)
+        self.write(body)
+        self.end_entity(type)
 
     def reference(self, ref, label):
         """reference takes two strings, a reference (used to look up the symbol and generated the reference),
@@ -117,61 +128,63 @@ class Formatter (Type.Visitor, AST.Visitor):
         print "sorry, not implemented"
 
     def visitVariable(self, variable):
-        self.write(start_entity("fieldsynopsis"))
+        self.start_entity("fieldsynopsis")
         variable.vtype().accept(self)
-        self.write(entity("type", self.type_label()))
-        self.write(entity("varname", variable.name()[-1]))
-        self.write(end_entity("fieldsynopsis"))
+        self.entity("type", self.type_label())
+        self.entity("varname", variable.name()[-1])
+        self.end_entity("fieldsynopsis")
 
     def visitConst(self, const):
         print "sorry, not implemented"
 
     def visitModule(self, module):
-        print "sorry, not implemented"
+        self.scope().append(module.name()[-1])
+        for declaration in module.declarations(): declaration.accept(self)
+        self.scope().pop()
 
     def visitClass(self, clas):
-        self.write(start_entity("classsynopsis", [("class", clas.type()), ("language", languages[clas.language()])]))
-        self.write(entity("classname", Util.ccolonName(clas.name(), self.scope())))
+        self.start_entity("classsynopsis", [("class", clas.type()), ("language", languages[clas.language()])])
+        self.entity("classname", Util.ccolonName(clas.name(), self.scope()))
         if len(clas.parents()):
             for parent in clas.parents(): parent.accept(self)
         self.scope().append(clas.name()[-1])
         for declaration in clas.declarations(): declaration.accept(self)
         self.scope().pop()
-        self.write(end_entity("classsynopsis"))
+        self.end_entity("classsynopsis")
 
     def visitInheritance(self, inheritance):
-        self.write(map(lambda a:entity("modifier", a)+"\n", inheritance.attributes()))
-        self.write(entity("classname", inheritance.parent().name()))
+        map(lambda a:self.entity("modifier", a), inheritance.attributes())
+        self.entity("classname", inheritance.parent().name())
 
     def visitParameter(self, parameter):
-        self.write(start_entity("methodparam"))
-        self.write(map(lambda m:entity("modifier", a)+"\n", parameter.premodifiers()))
+        self.start_entity("methodparam")
+        map(lambda m, this = self: this.entity("modifier", m), parameter.premodifier())
         parameter.type().accept(self)
-        self.write(entity("type", self.type_label()))
-        self.write(entity("parameter", parameter.name()))
-        self.write(map(lambda m:entity("modifier", a)+"\n", parameter.postmodifiers()))
-        self.write(end_entity("methodparam"))
+        self.entity("type", self.type_label())
+        self.entity("parameter", parameter.identifier())
+        map(lambda m, this = self: this.entity("modifier", m), parameter.postmodifier())
+        self.end_entity("methodparam")
 
     def visitFunction(self, function):
         print "sorry, not implemented"
 
     def visitOperation(self, operation):
         if operation.language() == "IDL" and operation.type() == "attribute":
-            self.write(start_entity("fieldsynopsis"))
-            self.write(map(lambda m:entity("modifier", m), operation.premodifiers()))
-            self.write(entity("modifier", "attribute"))
+            self.start_entity("fieldsynopsis")
+            map(lambda m:self.entity("modifier", m), operation.premodifiers())
+            self.entity("modifier", "attribute")
             operation.returnType().accept(self)
-            self.write(entity("type", self.type_label()))
-            self.write(entity("varname", operation.realname()))
-            self.write(end_entity("fieldsynopsis"))
+            self.entity("type", self.type_label())
+            self.entity("varname", operation.realname())
+            self.end_entity("fieldsynopsis")
         else:
-            self.write(start_entity("methodsynopsis"))
+            self.start_entity("methodsynopsis")
             operation.returnType().accept(self)
-            self.write(entity("type", self.type_label()))
-            self.write(entity("methodname", operation.realname()))
+            self.entity("type", self.type_label())
+            self.entity("methodname", Util.ccolonName(operation.realname(), self.scope()))
             for parameter in operation.parameters(): parameter.accept(self)
-            self.write(map(lambda e:entity("exceptionname", e), operation.exceptions()))
-            self.write(end_entity("methodsynopsis"))
+            map(lambda e:self.entity("exceptionname", e), operation.exceptions())
+            self.end_entity("methodsynopsis")
 
     def visitEnumerator(self, enumerator):
         print "sorry, not implemented"
@@ -185,22 +198,21 @@ def usage():
   -o <filename>                        Output filename"""
 
 def __parseArgs(args):
-    global output, stylesheet
+    global output, verbose
     output = sys.stdout
-    stylesheet = ""
     try:
-        opts,remainder = getopt.getopt(args, "o:")
+        opts,remainder = getopt.getopt(args, "o:v")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
 
     for opt in opts:
         o,a = opt
-        if o == "-o":
-            output = open(a, "w")
+        if o == "-o": output = open(a, "w")
+        elif o == "-v": verbose = 1
 
 def format(types, declarations, args):
-    global output, stylesheet
+    global output
     __parseArgs(args)
     output.write("<!DOCTYPE classsynopsis PUBLIC \"-//OASIS//DTD DocBook V4.2//EN\">\n")
     formatter = Formatter(output)

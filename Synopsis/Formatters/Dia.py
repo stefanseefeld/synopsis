@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.7 2001/01/27 06:26:41 chalky Exp $
+# $Id: Dia.py,v 1.8 2001/01/31 06:51:24 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.8  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.7  2001/01/27 06:26:41  chalky
 # Added parameter support
 #
@@ -36,6 +39,8 @@
 
 import sys, getopt, os, os.path, string, re
 from Synopsis.Core import Type, AST, Util, Visitor
+
+verbose = 0
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
@@ -326,11 +331,11 @@ def usage():
   -p                                   hide parameters"""
 
 def __parseArgs(args):
-    global filename, hide_operations, hide_attributes, hide_params
+    global filename, hide_operations, hide_attributes, hide_params, verbose
     filename = None
     hide_operations = hide_attributes = hide_params = 0
     try:
-        opts,remainder = getopt.getopt(args, "o:maph")
+        opts,remainder = getopt.getopt(args, "o:mapv")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -340,15 +345,10 @@ def __parseArgs(args):
 
         if o == "-o":
             filename = a
-	elif o == "-m":
-	    hide_operations = 1
-	elif o == "-a":
-	    hide_attributes = 1
-	elif o == "-p":
-	    hide_params = 1
-	elif o == "-h":
-	    usage()
-	    sys.exit(1)
+	elif o == "-m": hide_operations = 1
+	elif o == "-a": hide_attributes = 1
+	elif o == "-p": hide_params = 1
+	elif o == "-v": verbose = 1
     
     if filename is None:
 	sys.stderr.write("Error: No output specified.\n")

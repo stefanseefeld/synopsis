@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.7 2001/01/24 18:33:38 stefan Exp $
+# $Id: Makefile,v 1.8 2001/01/31 06:51:24 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,7 +26,7 @@ include ../local.mk
 endif
 endif
 
-SRC	:= __init__.py __init__.pyc DUMP.py DUMP.pyc ASCII.py ASCII.pyc HTML.py HTML.pyc HTML_Simple.py HTML_Simple.pyc
+SRC	:= __init__.py __init__.pyc DUMP.py DUMP.pyc ASCII.py ASCII.pyc HTML.py HTML.pyc HTML_Simple.py HTML_Simple.pyc Dia.py Dia.pyc
 
 all:
 clean:

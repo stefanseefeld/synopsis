@@ -22,9 +22,11 @@ FactoryImpl.syn:	FactoryImpl.hh Storage.hh
 
 interface interface.toc:	Storage.syn
 		$(synopsis) -f HTML -Wf,-t,interface.toc -Wf,-s,style.css,-S,../html.css -o interface $<
+		touch $@
 
 implementation: StorableImpl.syn FactoryImpl.syn interface.toc
-		$(synopsis) -f HTML -Wf,-r,interface.toc -Wf,-s,style.css,-S,../html.css -o $@ StorableImpl.syn FactoryImpl.syn
+		$(synopsis) -f HTML -Wf,-r,"interface.toc|../interface" -Wf,-s,style.css,-S,../html.css -o $@ StorableImpl.syn FactoryImpl.syn
+		touch $@
 
 clean:
 	rm -rf Storage.hh StorageSK.cc *.syn interface interface.toc implementation

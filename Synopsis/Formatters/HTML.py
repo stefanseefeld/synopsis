@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.56 2001/01/26 15:08:08 chalky Exp $
+# $Id: HTML.py,v 1.57 2001/01/31 06:51:24 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.57  2001/01/31 06:51:24  stefan
+# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
+#
 # Revision 1.56  2001/01/26 15:08:08  chalky
 # Added patch from Marc Ordinas i Llopis
 #
@@ -64,8 +67,7 @@ HTML formatter. Output specifies a directory. See manual for usage.
 import sys, getopt, os, os.path, string, types, errno, stat, re
 from Synopsis.Core import AST, Type, Util
 
-# Set this to true if your name is Chalky :)
-debug=0
+verbose=0
 
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
@@ -435,7 +437,7 @@ class TableOfContents(AST.Visitor):
     def lookup(self, name):
 	name = tuple(name)
         if self.__toc.has_key(name): return self.__toc[name]
-	if debug and len(name) > 1:
+	if verbose and len(name) > 1:
 	    print "Warning: TOC lookup of",name,"failed!"
         return None
 
@@ -451,16 +453,22 @@ class TableOfContents(AST.Visitor):
         for name in self.__toc.keys():
             scopedname = string.join(name, "::")
             lang = self.__toc[tuple(name)].lang
-            link = os.path.join(basename, self.__toc[tuple(name)].link)
+            link = self.__toc[tuple(name)].link
             fout.write(scopedname + "," + lang + "," + link + "\n")
             
-    def load(self, file):
-        fin = open(os.path.join("..", file), 'r')
+    def load(self, resource):
+        args = string.split(resource, "|")
+        file = args[0]
+        if len(args) > 1: url = args[1]
+        else: url = ""
+        fin = open(file, 'r')
         line = fin.readline()
         while line:
+            if line[-1] == '\n': line = line[:-1]
             scopedname, lang, link = string.split(line, ",")
             name = string.split(scopedname, "::")
-            entry = TocEntry(name, os.path.join("..", link), lang, "decl")
+            if len(url): link = string.join([url, link], "/")
+            entry = TocEntry(name, link, lang, "decl")
             self.insert(entry)
             line = fin.readline()
 
@@ -701,15 +709,12 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     def visitUnknown(self, type):
         label = Util.ccolonName(type.name(), self.scope())
         self.__type_label = self.referenceName(type.link(), label)
-        #self.__type_label = Util.ccolonName(type.name(), self.scope())
         
     def visitDeclared(self, type):
         self.__type_label = self.referenceName(type.name())
-        #self.__type_label = Util.ccolonName(type.name(), self.scope())
         
     def visitModifier(self, type):
         alias = self.formatType(type.alias())
-	#pre = string.join(map(lambda x:x+" ", type.premod()), '')
 	pre = string.join(map(lambda x:x+"&nbsp;", type.premod()), '')
 	post = string.join(type.postmod(), '')
         self.__type_label = "%s%s%s"%(pre,alias,post)
@@ -879,9 +884,6 @@ class DetailFormatter(BaseFormatter):
 	return string.join(text, "::")
 
     def formatInheritance(self, inheritance):
-	if hasattr(inheritance.parent(), 'name'):
-	    return '%s %s'%( self.formatModifiers(inheritance.attributes()),
-		self.referenceName(inheritance.parent().name()))
 	return '%s %s'%( self.formatModifiers(inheritance.attributes()),
 	    self.formatType(inheritance.parent()))
 
@@ -1301,10 +1303,11 @@ def usage():
                                        - section test section breaks.
 		                       You may use multiple -c options
   -t <filename>                        Generate a table of content and write it to <filename>
-  -r <filename>                        merge in table of content from <filename> and use it to resolve external symbols"""
+  -r <filename> ['|'<url>|<directory>] merge in table of content from <filename>, possibly prefixing entries with the
+                                       given url or directory, to resolve external symbols"""
 
 def __parseArgs(args):
-    global basename, stylesheet, namespace, commentParser, stylesheet_file, toc_out, toc_in
+    global verbose, basename, stylesheet, namespace, commentParser, stylesheet_file, toc_out, toc_in
     global commentFormatterList
     basename = None
     stylesheet = ""
@@ -1315,7 +1318,7 @@ def __parseArgs(args):
     toc_in = []
     commentFormatterList = []
     try:
-        opts,remainder = Util.getopt_spec(args, "ho:s:n:c:C:S:t:r:")
+        opts,remainder = Util.getopt_spec(args, "hvo:s:n:c:C:S:t:r:")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1343,14 +1346,15 @@ def __parseArgs(args):
 	elif o == "-h":
 	    usage()
 	    sys.exit(1)
+        elif o == "-v":
+            verbose = 1
 
 def format(types, declarations, args):
-    global basename, stylesheet, toc, filer, toc_out, toc_in
+    global verbose, basename, stylesheet, toc, filer, toc_out, toc_in
     __parseArgs(args)
 
     # Create the file namer
     filer = FileNamer()
-    filer.chdirBase()
 
     # Create the Comments Dictionary
     CommentDictionary()
@@ -1366,28 +1370,29 @@ def format(types, declarations, args):
 
     # Create table of contents index
     TableOfContents()
-    # load external references from toc files, if any
-    for t in toc_in: toc.load(t)
 
-    if debug: print "HTML Formatter: Initialising TOC"
+    if verbose: print "HTML Formatter: Initialising TOC"
     # Add all declarations to the namespace tree
     for d in declarations:
         d.accept(toc)
+    if verbose: print "TOC size:",toc.size()
+    if len(toc_out): toc.store(toc_out)
+    
+    # load external references from toc files, if any
+    for t in toc_in: toc.load(t)
+
+    for d in declarations:
 	d.accept(classTree)
 	d.accept(fileTree)
 
-    if debug: print "TOC size:",toc.size()
-
     fileTree.buildTree()
     
-    if debug: print "HTML Formatter: Writing Pages..."
+    if verbose: print "HTML Formatter: Writing Pages..."
     # Create the pages
+    filer.chdirBase()
     # TODO: have synopsis pass an AST with a "root" node to formatters.
     root = AST.Module('',-1,"C++","Global",())
     root.declarations()[:] = declarations
     Paginator(root).process()
-    if debug: print "HTML Formatter: Done!"
-
     filer.chdirRestore()
-    if len(toc_out): toc.store(toc_out)
 
