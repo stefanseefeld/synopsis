@@ -1,4 +1,7 @@
 
+  Changes for version 2.10:
+	Changed over to GPL for the license.  Bug fixes from Daniel Kroening.
+
   Changes for version 2.09:
     Bug-fixes and changes from Patrick Baudin, fixes Bug 023, 047.
 
