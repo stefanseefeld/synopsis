@@ -7,6 +7,7 @@
 #include <Synopsis/SymbolLookup/Scopes.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/PTree/Display.hh>
+#include <Synopsis/Trace.hh>
 #include <sstream>
 #include <cassert>
 
@@ -23,6 +24,8 @@ void TemplateParameterScope::dump(std::ostream &os, size_t in) const
 SymbolSet LocalScope::unqualified_lookup(Encoding const &name,
 					 bool scope) const
 {
+  Trace trace("LocalScope::unqualified_lookup");
+  trace << name;
   SymbolSet symbols = find(name, scope);
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
 }
@@ -56,6 +59,8 @@ void FunctionScope::use(PTree::Using const *udecl)
 SymbolSet FunctionScope::unqualified_lookup(Encoding const &name,
 					    bool scope) const
 {
+  Trace trace("FunctionScope::unqualified_lookup");
+  trace << name;
   SymbolSet symbols = find(name, scope);
   if (symbols.size()) return symbols;
 
@@ -87,6 +92,8 @@ std::string FunctionScope::name() const
 SymbolSet Class::unqualified_lookup(Encoding const &name,
 				    bool scope) const
 {
+  Trace trace("Class::unqualified_lookup");
+  trace << name;
   SymbolSet symbols = find(name, scope);
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
 }
@@ -143,6 +150,8 @@ void Namespace::use(PTree::Using const *udecl)
 SymbolSet Namespace::unqualified_lookup(Encoding const &name,
 					bool scope) const
 {
+  Trace trace("Namespace::unqualified_lookup");
+  trace << name;
   SymbolSet symbols = find(name, scope);
   if (symbols.size()) return symbols;
 
@@ -151,6 +160,7 @@ SymbolSet Namespace::unqualified_lookup(Encoding const &name,
   while (symbols.empty() && i != my_using.end())
   {
     symbols = (*i)->unqualified_lookup(name, scope);
+    ++i;
   }
   if (symbols.size() || !my_outer)
     return symbols;
