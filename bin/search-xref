@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+# Command line search interface for Synopsis XREF file
+# Copyright (c) 2002 by Stephen Davies
+
+import string, sys, cPickle
+
+if len(sys.argv) != 4:
+    print "Usage: search-xref <data file> <mode> <string>"
+    print "mode is one of:"
+    print " full    - search for fully scoped name,"
+    print "   eg: 'Ptree::Ptree()' will only match that declaration"
+    print " name    - search for name of declaration,"
+    print "   eg: 'Ptree' will only match class Ptree or a constructor"
+    sys.exit(0)
+
+mode = sys.argv[2]
+
+search = sys.argv[3]
+
+f = open(sys.argv[1], 'rb')
+data, index = cPickle.load(f)
+f.close()
+
+def dump(name):
+    if not data.has_key(name): return
+    print string.join(name, '::')
+    target_data = data[name]
+    if target_data[0]:
+	print "  Defined at:"
+	for file, line, scope in target_data[0]:
+	    print "    %s:%s: %s"%(file,line,string.join(scope,'::'))
+    if target_data[1]:
+	print "  Called from:"
+	for file, line, scope in target_data[1]:
+	    print "    %s:%s: %s"%(file,line,string.join(scope,'::'))
+    if target_data[2]:
+	print "  Referenced from:"
+	for file, line, scope in target_data[2]:
+	    print "    %s:%s: %s"%(file,line,string.join(scope,'::'))
+
+
+if mode == 'full':
+    name = string.split(search,'::')
+    found = 0
+    # Check for exact match
+    if data.has_key(name):
+	print "Found exact match:"
+	dump(name)
+	found = 1
+    # Search for last part of name in index
+    if index.has_key(name[-1]):
+	matches = index[name[-1]]
+	print "Found (%d) possible matches:"%(len(matches))
+	for name in matches:
+	    dump(name)
+	found = 1
+    if not found:
+	print "No matches found"
+
+elif mode == 'name':
+    if index.has_key(search):
+	matches = index[search]
+	print "Found (%d) possible matches:"%(len(matches))
+	for name in matches:
+	    dump(name)
+    else:
+	print "No matches found"
