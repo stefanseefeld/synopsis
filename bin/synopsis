@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+# $Id: synopsis,v 1.1 2003/11/27 03:37:23 stefan Exp $
+#
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+from Synopsis import config
+from Synopsis import AST
+from Synopsis.Processor import Processor
+
+import sys, os, os.path, string, getopt
+
+def _import(package, module, processor, verbose=False):
+   """import a processor as <package>.<module>.<processor>,
+   i.e. as the equivalent to 'from <package>.<module> import <processor>"""
+
+   try:
+      mod = __import__(string.join([package, module], '.'))
+
+   except ImportError, msg:
+      if 'verbose' in kwds:
+         print 'Unable to import %s'%string.join([package, module], '.')
+         print 'Reason :', msg
+      else:
+         print 'Error : no processor \'%s\'', name[-1]
+      sys.exit(-1)
+
+   name = string.join([package, module], '.')
+   if processor: name = string.join([name, processor], '.')
+   components = string.split(name, '.')
+   for c in components[1:]:
+      try:
+         mod = getattr(mod, c)
+      except AttributeError, msg:
+         print "Error: Unable to find %s in:\n%s"%(c, repr(mod))
+         sys.exit(-1)
+
+   return mod
+
+def get_opt():
+   """Parse command line options and translate them to
+   processor commands and arguments."""
+
+   opts, args = getopt.getopt(sys.argv[1:],
+                              'o:p:l:f:vh',
+                              ['output=',
+                               'parser=', 'linker=', 'formatter=',
+                               'version', 'help', 'verbose'])
+   processor = None
+   options = {}
+   processor_name = ''
+   help = False
+   for o, a in opts:
+      if o == '-v' or o == '--version':
+         print 'synopsis version %s'%config.version
+         sys.exit(0)
+         
+      if o == '--verbose':
+         options['verbose'] = True
+
+      elif o == '-o' or o == '--output':
+         options['output'] = a
+
+      elif o == '-p' or o == '--parser':
+         processor_name = a
+         processor = _import('Synopsis.Parsers', a, 'Parser',
+                             'verbose' in options)
+
+      elif o == '-f' or o == '--formatter':
+         processor_name = a
+         processor = _import('Synopsis.Formatters', a, 'Formatter',
+                             'verbose' in options)
+
+      elif o == '-l' or o == '--linker':
+         processor_name = 'Linker'
+         processor = _import('Synopsis.Processors', 'Linker',
+                             verbose = 'verbose' in options)
+         processors = string.split(a, ',')
+
+      elif o == '-h' or o == '--help':
+         help = True
+
+   if help:
+      p = processor()
+      print "Parameters for processor '%s':"%processor_name
+      parameters = p.get_parameters()
+      tab = max(map(lambda x:len(x), parameters.keys()))
+      for p in parameters:
+         print "   %-*s     %s"%(tab, p, parameters[p].doc)
+      sys.exit(0)
+
+   if processor_name == 'Linker':
+      options['processors'] = map(lambda x: _import('Synopsis.Processors', x)(),
+                                  processors)
+   options['input'] = args
+
+   return processor, options
+
+def main():
+   processor, options = get_opt()
+   if processor:
+      ast = AST.AST()
+      processor(**options).process(ast)
+   elif '--help' in options:
+      print 'Usage : %s [options] <input files>'%sys.argv[0]
+   else:
+      print 'Usage : %s [options] <input files>'%sys.argv[0]
+
+if __name__ == '__main__':
+   main()
