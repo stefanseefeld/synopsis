@@ -710,20 +710,222 @@ float getHeight(std::string firstname, std::string surname);</programlisting></p
       <section>
         <title>Options</title>
 
-        <para></para>
+        <para><variablelist><varlistentry><term>name (string)</term><listitem><para>Name
+        of this config object: Must be &#39;C++&#39;</para></listitem></varlistentry><varlistentry><term>verbose
+        (boolean)</term><listitem><para>Verbosity flag. For config files, this
+        attribute is set by the constructor, but only if &#39;verbose&#39; was
+        passed as a config option.</para><para>Can be set to true from the
+        command line with &#34;-Wp,-v&#34;</para></listitem></varlistentry><varlistentry><term>main_file
+        (boolean)</term><listitem><para>Flag that selects if should only store
+        the AST generated from the file(s) being processed, and not included
+        files. The default is 1 (true).</para><para>Can be set to true from
+        the command line with &#34;-Wp,-m&#34;</para></listitem></varlistentry><varlistentry><term>basename
+        (string)</term><listitem><para>A file path to strip from the start of
+        all filenames before storing. Setting this option for example will
+        remove any redundant parent directories in the HTML FileListing page.</para><para>Can
+        be set from the command line with, e.g.:
+        &#34;-Wp,-b,../some/basename/&#34;</para></listitem></varlistentry><varlistentry><term>include_path
+        (list of strings)</term><listitem><para>A list of paths to add to the
+        include path. For example: [&#39;/usr/local/corba/&#39;,
+        &#39;../include&#39;]</para><para>Can be set from the command line
+        with, e.g.: &#34;-Wp,-I,/usr/local/corba/,-I,../include&#34;</para></listitem></varlistentry><varlistentry><term>defines
+        (list of strings)</term><listitem><para>A list of defines to pass to
+        the preprocessor. For example: [&#39;FOO&#39;, &#39;BAR=true&#39;]</para><para>Can
+        be set from the command line with, e.g.:
+        &#34;-Wp,-D,FOO,-D,BAR=true&#34;</para></listitem></varlistentry><varlistentry><term>preprocessor
+        (string)</term><listitem><para>Which preprocessor to use. Not setting
+        this causes the builtin ucpp to be used, which can track macro
+        expansions when doing SXR stuff and extract macro definitions for the
+        documentation. Setting it to &#39;gcc&#39; will cause gcc (well,
+        really g++) to be used instead, for use only in cases when ucpp
+        can&#39;t parse your standard libraries (usually because of compiler
+        specific syntax). There are no other settings.</para><para>Can be set
+        to gcc from the command line with &#34;-Wp,-g&#34;</para></listitem></varlistentry><varlistentry><term>extract_tails
+        (boolean)</term><listitem><para>If set to true, then the parser will
+        look for trailing comments before close braces. If it finds them, it
+        will create dummy declarations to hold the comments. If you set this,
+        you should probably also use the &#39;dummy&#39; or &#39;prev&#39;
+        comment processors in the Linker options otherwise you will see the
+        Dummy declarations in your documentation.</para><para>Can be set to
+        true from the command line with &#34;-Wp,-t&#34;</para></listitem></varlistentry><varlistentry><term>storage
+        (string)</term><listitem><para>If set, this must be a string which
+        defines the file to store links into. Setting this also causes the
+        parser to look more carefully at the input file, so that it can
+        generate the links from inside blocks of code (otherwise it skips over
+        them). Note that you usually set this from the command-line with your
+        Makefile via &#34;-Wp,-s,$@.links&#34; or something. (deprecated)</para></listitem></varlistentry><varlistentry><term>syntax_prefix
+        (string)</term><listitem><para>If set, must be a string which defines
+        a prefix to store syntax info into. The source filenames are appended
+        to the prefix to create the output filename, so it should be a
+        directory name to avoid clashes (there is no suffix!). For example, if
+        your file is &#34;src/foo.cc&#34; and prefix is &#34;syn/&#34; then
+        the syntax information will be stored in &#34;syn/src/foo.cc&#34;.</para></listitem></varlistentry><varlistentry><term>xref_prefix
+        (string)</term><listitem><para>If set, must be a string which defines
+        a prefix to store xref info into. See syntax_prefix.</para></listitem></varlistentry><varlistentry><term>syntax_file
+        (string)</term><listitem><para>If set, must be a string with the file
+        to store syntax info into. Note that the syntax info can only hold
+        syntax information about one source file, so this option is of limited
+        use in a config file.</para><para>Can be set from the command line
+        with, e.g: &#34;-Wp,-s,syn/&#34;</para></listitem></varlistentry><varlistentry><term>xref_file
+        (string)</term><listitem><para>If set, must be a string with the file
+        to store xref info into. Note that the xref info can only hold xref
+        information about one source file, so this option is of limited use in
+        a config file.</para><para>Can be set from the command line with,
+        e.g.: &#34;-Wp,-x,xref/&#34;</para></listitem></varlistentry><varlistentry><term>fake_std
+        (boolean)</term><listitem><para>If set, this causes the parser to
+        construct a fake using directive from the std namespace to the global
+        namespace. In effect, this fixes problems seen with using the stdc++
+        headers for gcc 2.95.x where most things dont get placed in the std
+        namespace.</para><para>Can be set to true from the command line with
+        &#34;-Wp,-f&#34;</para></listitem></varlistentry><varlistentry><term>multiple_files
+        (boolean)</term><listitem><para>If set to true then the parser handles
+        multiple files included from the main file at the same time. This
+        option can only be used with the Project file. If syntax_prefix or
+        xref_prefix is set then the extra files will get syntax and xref nfo
+        recorded into the appropriate files. Only one AST is output, but it is
+        as if the ASTs for the individual files were already linked.</para><para>To
+        use this option, your Project file must have a single SourceAction
+        connected to this ParserAction. The SourceAction should have a Simple
+        rule first which is the main sourcefile, and any number of other rules
+        to select other files to record the AST for.</para></listitem></varlistentry></variablelist></para>
       </section>
     </section>
 
     <section>
       <title>Python Parser</title>
 
-      <para>uses Python parser module. poor</para>
+      <para>The Python parser uses Python&#39;s parser library to create an
+      AST from Python source code. This is adequate for the purposes of
+      extracting classes, methods and their comments, but prevents the
+      advanced features like syntax highlighting since the parse tree does not
+      store line number information. There is no support for SXR or XREF
+      features.</para>
+
+      <section>
+        <title>Options</title>
+
+        <para></para>
+
+        <variablelist>
+          <varlistentry>
+            <term>name (string)</term>
+
+            <listitem>
+              <para>Name of this config object: Must be &#39;Python&#39;</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>verbose (flag)</term>
+
+            <listitem>
+              <para>Verbosity flag. For config files, this attribute is set by
+              the constructor, but only if &#39;verbose&#39; was passed as a
+              config option.</para>
+
+              <para>Can be set from the command line with &#34;-Wp,-v&#34;</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>basename (string)</term>
+
+            <listitem>
+              <para>A file path to strip from the start of all filenames
+              before storing. Setting this option for example will remove any
+              redundant parent directories in the HTML FileListing page.</para>
+
+              <para>Can be set from the command line with, e.g.:
+              &#34;-Wp,-b,../some/basename/&#34;</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </section>
     </section>
 
     <section>
       <title>CORBA IDL Parser</title>
 
-      <para>user omniidl module. poor</para>
+      <para>The CORBA IDL Parser uses OmniORB&#39;s (Python) IDL compiler
+      library to parse IDL files and generate an AST. You will need to have
+      the omniidl package installed to use this parser. There is no support
+      for SXR or XREF features.</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>name (string)</term>
+
+          <listitem>
+            <para>Name of this config object: Must be &#39;IDL&#39;</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>verbose (boolean)</term>
+
+          <listitem>
+            <para>Verbosity flag. For config files, this attribute is set by
+            the constructor, but only if &#39;verbose&#39; was passed as a
+            config option.</para>
+
+            <para>Can be set to true from the command line with
+            &#34;-Wp,-v&#34;</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>main_file (boolean)</term>
+
+          <listitem>
+            <para>Flag that selects if should only store the AST generated
+            from the file(s) being processed, and not included files. The
+            default is 1 (true).</para>
+
+            <para>Can be set to true from the command line with
+            &#34;-Wp,-m&#34;</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>basename (string)</term>
+
+          <listitem>
+            <para>A file path to strip from the start of all filenames before
+            storing. Setting this option for example will remove any redundant
+            parent directories in the HTML FileListing page.</para>
+
+            <para>Can be set from the command line with, e.g.:
+            &#34;-Wp,-b,../some/basename/&#34;</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>include_path (list of strings)</term>
+
+          <listitem>
+            <para>A list of paths to add to the include path. For example:
+            [&#39;/usr/local/corba/&#39;, &#39;../idl&#39;]</para>
+
+            <para>Can be set from the command line with, e.g.:
+            &#34;-Wp,-I,/usr/local/corba/,-I,../idl&#34;</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>keep_comments (boolean)</term>
+
+          <listitem>
+            <para>If true, comments will be stored in the AST. The default is
+            true.</para>
+
+            <para>Can be set to true from the command line with
+            &#34;-Wp,-K&#34; (note upper case K)</para>
+
+            <para>Can be set to false from the command line with
+            &#34;-Wp,-k&#34;</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
   </chapter>
 
