@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.5 2002/12/10 07:28:49 chalky Exp $
+# $Id: Linker.py,v 1.6 2003/10/07 02:54:38 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Linker.py,v $
+# Revision 1.6  2003/10/07 02:54:38  stefan
+# don't remove duplicate 'dummy' declarations
+#
 # Revision 1.5  2002/12/10 07:28:49  chalky
 # Unduplicate the list of declarations for each file
 #
@@ -222,7 +225,7 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 	name = decl.name()
 	dict = self.__dicts[-1]
 	decls = self.top().declarations()
-	if dict.has_key(name):
+	if dict.has_key(name) and name != ('dummy',):
 	    prev = dict[name]
 	    if not isinstance(prev, AST.Forward):
 		return
