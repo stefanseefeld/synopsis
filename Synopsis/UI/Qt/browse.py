@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.4 2001/11/09 15:35:04 chalky Exp $
+# $Id: browse.py,v 1.5 2002/01/09 10:16:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.5  2002/01/09 10:16:35  chalky
+# Centralized navigation, clicking links in (html) docs works.
+#
 # Revision 1.4  2001/11/09 15:35:04  chalky
 # GUI shows HTML pages. just. Source window also scrolls to correct line.
 #
@@ -43,50 +46,41 @@ from Synopsis.Formatter.HTML import Page, ScopePages, core
 
 class Browser:
     """Controls the browse widgets of the project window"""
+
+    class SelectionListener:
+	"""Defines the interface for an object that listens to the browser
+	selection"""
+	def current_decl_changed(self, decl):
+	    "Called when the current decl changes"
+	    pass
+	
+	def current_package_changed(self, package):
+	    "Called when the current package changes"
+	    pass
+
+	def current_ast_changed(self, ast):
+	    """Called when the current AST changes. Browser's glob will be
+	    updated first"""
+	    pass
+    
     def __init__(self, window):
+	"""Initialises the browser widgets"""
 	#QSplitter.__init__(self, parent)
-	self.ast = None
 	self.window = window
 	self.main_window = window.main_window
+	self.__ast = None
+	self.__package = None
+	self.__decl = None
+	self.__listeners = []
 
 	self.glob = AST.Scope('', -1, '', 'Global', ('global',))
-	#self.glob.declarations().extend(ast.declarations())
-	#self.setCaption("'%s' - Browse"%filename)
 
-	# Split up the GUI
-	#splitV = QSplitter(Qt.Vertical, self)
-
-	# Create a top-left listview for the packages
-	#window.package_list.setMinimumSize(150,100)
-	#self.packages.addColumn("Name")
-
-	# Create a bottom-left listview for the other stuff
-	#self.listview = QListView(splitV)
-	#self.listview.setMinimumSize(150,300)
-	#self.listview.addColumn("Name")
-	#self.listview.addColumn("Type")
-
-	# Create a textbrowser to show info about selected stuff
-	# This could be just QTextEdit or something I guess... :)
-	#splitter = QSplitter(Qt.Vertical, self)
-	#self.textview = QTextBrowser(splitter)
-	#self.textview.setMinimumSize(500,150)
 	window.doco_display.setTextFormat(Qt.RichText)
 
-
-	# Create the fillers. The first only displays a few types
-	self.packfiller = ListFiller(self, window.package_list, (
-	    'Package', 'Module', 'Namespace', 'Global'))
-	self.packfiller.auto_open = 3
-	self.listfiller = ListFiller(self, window.class_list)
-
 	# Connect things up
-	window.connect(window.package_list, SIGNAL('selectionChanged(QListViewItem*)'), self.showPackage)
-	window.connect(window.class_list, SIGNAL('selectionChanged(QListViewItem*)'), self.showDecl)
-	window.connect(window.class_list, SIGNAL('expanded(QListViewItem*)'), self.selfishExpansion)
+	window.connect(window.right_tab, SIGNAL('currentChanged(QWidget*)'), self.tabChanged)
 
 	window.doco_display.setText("<i>Select a package/namespace to view from the left.")
-	#self.packfiller.fillFrom(self.glob)
 
 	# Make the menu, to be inserted in the app menu upon window activation
 	self._file_menu = QPopupMenu(window.main_window.menuBar())
@@ -98,16 +92,54 @@ class Browser:
 	self.classTree = window.classTree
 	#self.glob.accept(self.classTree)
 
+	self.browsers = (
+	    PackageBrowser(window, self),
+	    ClassBrowser(window, self),
+	    DocoBrowser(window, self),
+	    SourceBrowser(window, self),
+	    GraphBrowser(window, self)
+	)
+
 	self.decl = None
 
-    def show_ast(self, ast):
-	self.ast = ast
+    def current_decl(self):
+	"""Returns the current declaration being viewed by the project"""
+	return self.__decl
+
+    def set_current_decl(self, decl):
+	"""Sets the current declaration being viewed by the project. This will
+	also notify all displays"""
+	self.__decl = decl
+
+	for listener in self.__listeners:
+	    try: listener.current_decl_changed(decl)
+	    except:
+		import traceback
+		print "Exception occurred dispatching to",listener
+		traceback.print_exc()
+    
+    def set_current_package(self, package):
+	"""Sets the current package (a Scope declaration) being viewed by the
+	project. This will also notify all displays"""
+	self.__package = package
+
+	for listener in self.__listeners:
+	    listener.current_package_changed(package)
+
+    def add_listener(self, listener):
+	"""Adds a listener for changes. The listener must implement the
+	SelectionListener interface"""
+	if not isinstance(listener, Browser.SelectionListener):
+	    raise TypeError, 'Not an implementation of SelectionListener'
+	self.__listeners.append(listener)
+
+    def set_current_ast(self, ast):
+	self.__ast = ast
 	self.glob.declarations()[:] = ast.declarations()
-	self.packfiller.fillFrom(self.glob)
 	self.glob.accept(self.classTree)
-	self.listfiller.clear()
-	self.listfiller.fillFrom(self.glob)
-	core.configure_for_gui(ast)
+
+	for listener in self.__listeners:
+	    listener.current_ast_changed(ast)
 
     def windowActivated(self, widget):
 	if self.__activated:
@@ -134,23 +166,7 @@ class Browser:
 	#else:
 	#    self.window.graph_display.hide()
 
-    def showPackage(self, item):
-	"""Show a given package (by item)"""
-	decl = self.packfiller.map[item]
-	self.setGraphEnabled(0)
-	# Fill the main list
-	self.listfiller.clear()
-	self.listfiller.fillFrom(decl)
-	# Grab the comments and put them in the text view
-	os = cStringIO.StringIO()
-	for comment in decl.comments():
-	    os.write(comment.text())
-	    os.write('<hr>')
-	self.window.doco_display.setText(os.getvalue())
-
-    def showDecl(self, item):
-	"""Show a given declaration (by item)"""
-	decl = self.listfiller.map[item]
+    def showDecl(self, decl):
 	self.decl = decl
 	# todo: split these up.. mvc, events etc
 	if self.window.graph_display.isVisible():
@@ -159,59 +175,19 @@ class Browser:
 		self.window.graph_display.set_class(self.decl.name())
 	    else:
 		self.window.graph_display.set_class(None)
-	if self.window.doco_display.isVisible():
-	    # Here we use ASCIIFormatter to quickly get us *something* to display
-	    # :)
-	    if isinstance(decl, AST.Scope):
-		class BufferScopePages (Page.BufferPage, ScopePages.ScopePages):
-		    def __init__(self, manager):
-			ScopePages.ScopePages.__init__(self, manager)
-		pages = BufferScopePages(core.manager)
-		pages.process_scope(decl)
-		text = pages.get_buffer()
-		self.window.doco_display.setText(text)
-	    else:
-		os = cStringIO.StringIO()
-		os.write('<pre>')
-		formatter = ASCIIFormatter(os)
-		formatter.set_scope(decl.name())
-		decl.accept(formatter)
-		self.window.doco_display.setText(os.getvalue())
-	if self.window.source_display.isVisible():
-	    file, line = decl.file(), decl.line()
-	    print file
-	    if not hasattr(self, 'curfile') or self.curfile != file:
-		# read from file
-		text = open(file).read()
-		# number the lines
-		lines = string.split(text, '\n')
-		for line in range(len(lines)): lines[line] = str(line+1)+'| '+lines[line]
-		text = string.join(lines, '\n')
-		# set text
-		self.window.source_display.setText(text)
-		self.curfile = file
-	    # scroll to line
-	    y = (self.window.source_display.fontMetrics().height()+1) * line
-	    self.window.source_display.setContentsPos(0, y)
-	    print line, y
-		
-
-    def selfishExpansion(self, item):
-	"""Selfishly makes item the only expanded node"""
-	if not item.parent(): return
-	iter = item.parent().firstChild()
-	while iter:
-	    if iter != item: self.window.class_list.setOpen(iter, 0)
-	    iter = iter.nextSibling()
+   
+    def tabChanged(self, widget):
+	self.set_current_decl(self.current_decl())
 
 class ListFiller( AST.Visitor ):
     """A visitor that fills in a QListView from an AST"""
-    def __init__(self, main, listview, types = None):
+    def __init__(self, main, listview, types = None, anti_types = None):
 	self.map = {}
 	self.main = main
 	self.listview = listview
 	self.stack = [self.listview]
 	self.types = types
+	self.anti_types = anti_types
 	self.auto_open = 1
 
     def clear(self):
@@ -220,18 +196,26 @@ class ListFiller( AST.Visitor ):
 	self.stack = [self.listview]
 
     def fillFrom(self, decl):
-	self.visitGroup(decl)
+	self.addGroup(decl)
 	self.listview.setContentsPos(0,0)
 
     def visitDeclaration(self, decl):
 	if self.types and decl.type() not in self.types: return
+	if self.anti_types and decl.type() in self.anti_types: return
+	self.addDeclaration(decl)
+
+    def addDeclaration(self, decl):
 	item = QListViewItem(self.stack[-1], decl.name()[-1], decl.type())
 	self.map[item] = decl
 	self.__last = item
 
     def visitGroup(self, group):
 	if self.types and group.type() not in self.types: return
-	self.visitDeclaration(group)
+	if self.anti_types and group.type() in self.anti_types: return
+	self.addGroup(group)
+
+    def addGroup(self, group):
+	self.addDeclaration(group)
 	item = self.__last
 	self.stack.append(item)
 	for decl in group.declarations(): decl.accept(self)
@@ -242,12 +226,204 @@ class ListFiller( AST.Visitor ):
 
     def visitEnum(self, enum):
 	if self.types and enum.type() not in self.types: return
-	self.visitDeclaration(enum)
+	if self.anti_types and enum.type() in self.anti_types: return
+	self.addDeclaration(enum)
 	item = self.__last
 	self.stack.append(item)
 	for decl in enum.enumerators(): decl.accept(self)
 	self.stack.pop()
 	if len(self.stack) <= self.auto_open: self.listview.setOpen(item, 1)
 
+class PackageBrowser (Browser.SelectionListener):
+    """Browser that manages the package view"""
+    def __init__(self, window, browser):
+	self.__window = window
+	self.__browser = browser
+	browser.add_listener(self)
 
+	# Create the filler. It only displays a few types
+	self.filler = ListFiller(self, window.package_list, (
+	    'Package', 'Module', 'Namespace', 'Global'))
+	self.filler.auto_open = 3
+
+	window.connect(window.package_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_package_item)
+
+    def select_package_item(self, item):
+	"""Show a given package (by item)"""
+	decl = self.filler.map[item]
+	self.__browser.set_current_package(decl)
+	self.__browser.set_current_decl(decl)
+
+    def DISABLED_current_package_changed(self, decl):
+	self.setGraphEnabled(0)
+	# Grab the comments and put them in the text view
+	os = cStringIO.StringIO()
+	for comment in decl.comments():
+	    os.write(comment.text())
+	    os.write('<hr>')
+	self.window.doco_display.setText(os.getvalue())
+
+    def current_ast_changed(self, ast):
+	self.filler.fillFrom(self.__browser.glob)
+
+class ClassBrowser (Browser.SelectionListener):
+    """Browser that manages the class view"""
+    def __init__(self, window, browser):
+	self.__window = window
+	self.__browser = browser
+	browser.add_listener(self)
+
+	# Create the filler
+	self.filler = ListFiller(self, window.class_list, None, (
+	    'Package', 'Module', 'Namespace', 'Global'))
+
+	window.connect(window.class_list, SIGNAL('selectionChanged(QListViewItem*)'), self.select_decl_item)
+	window.connect(window.class_list, SIGNAL('expanded(QListViewItem*)'), self.selfish_expansion)
+
+    def select_decl_item(self, item):
+	"""Show a given declaration (by item)"""
+	decl = self.filler.map[item]
+	self.__browser.set_current_decl(decl)
+
+    def current_package_changed(self, package):
+	"Refill the tree with the new package as root"
+	self.filler.clear()
+	self.filler.fillFrom(package)
+
+    def selfish_expansion(self, item):
+	"""Selfishly makes item the only expanded node"""
+	if not item.parent(): return
+	iter = item.parent().firstChild()
+	while iter:
+	    if iter != item: self.__window.class_list.setOpen(iter, 0)
+	    iter = iter.nextSibling()
+
+    def current_ast_changed(self, ast):
+	self.filler.clear()
+	self.filler.fillFrom(self.__browser.glob)
+
+class DocoBrowser (Browser.SelectionListener):
+    """Browser that manages the documentation view"""
+    class BufferScopePages (Page.BufferPage, ScopePages.ScopePages):
+	def __init__(self, manager):
+	    ScopePages.ScopePages.__init__(self, manager)
+	
+	process_scope = ScopePages.ScopePages.process_scope
+	process = ScopePages.ScopePages.process
+	register_filenames = ScopePages.ScopePages.register_filenames
+
+
+    def __init__(self, window, browser):
+	self.__window = window
+	self.__browser = browser
+	browser.add_listener(self)
+
+	self.mime_factory = SourceMimeFactory()
+	self.mime_factory.set_browser(self)
+	self.__window.doco_display.setMimeSourceFactory(self.mime_factory)
+
+	self.__generator = None
+
+	self.__getting_mime = 0
+	
+    def generator(self):
+	if not self.__generator:
+	    self.__generator = self.BufferScopePages(core.manager)
+	return self.__generator
+
+    def current_decl_changed(self, decl):
+	if not self.__window.doco_display.isVisible():
+	    # Not visible, so ignore
+	    return
+	if isinstance(decl, AST.Scope):
+	    # These we can use the HTML scope formatter on
+	    pages = self.generator()
+	    pages.process_scope(decl)
+	    self.__text = pages.get_buffer()
+	    if self.__getting_mime: return
+	    context = pages.filename()
+	    self.__window.doco_display.setText(self.__text, context)
+	elif decl:
+	    # Need more work to use HTML on this.. use ASCIIFormatter for now
+	    os = cStringIO.StringIO()
+	    os.write('<pre>')
+	    formatter = ASCIIFormatter(os)
+	    formatter.set_scope(decl.name())
+	    decl.accept(formatter)
+	    self.__window.doco_display.setText(os.getvalue())
+    
+    def current_ast_changed(self, ast):
+	core.configure_for_gui(ast)
+
+	scope = AST.Scope('',-1,'','','')
+	scope.declarations()[:] = ast.declarations()
+	self.generator().register_filenames(scope)
+
+    def get_mime_data(self, name):
+	try:
+	    page, scope = core.manager.filename_info(name)
+	    print page,scope
+	    if page is self.generator():
+		self.__getting_mime = 1
+		self.__browser.set_current_decl(scope)
+		self.__getting_mime = 0
+		return QTextDrag(self.__text, self.__window.doco_display, '')
+	except KeyError:
+	    pass
+	return None
+	    
+
+class SourceMimeFactory (QMimeSourceFactory):
+    def set_browser(self, browser): self.__browser = browser
+    def data(self, name):
+	d = self.__browser.get_mime_data(str(name))
+	return d    
+
+class SourceBrowser (Browser.SelectionListener):
+    """Browser that manages the source view"""
+    def __init__(self, window, browser):
+	self.__window = window
+	self.__browser = browser
+	browser.add_listener(self)
+
+	self.mime_factory = SourceMimeFactory()
+	self.__window.source_display.setMimeSourceFactory(self.mime_factory)
+
+	self.__current_file = None
+
+    def current_decl_changed(self, decl):
+	if not self.__window.source_display.isVisible():
+	    # Not visible, so ignore
+	    return
+	file, line = decl.file(), decl.line()
+	if self.__current_file != file:
+	    # Check for empty file
+	    if not file:
+		self.__window.source_display.setText('')
+		return
+	    # Open the new file and give it line numbers
+	    text = open(file).read()
+	    # number the lines
+	    lines = string.split(text, '\n')
+	    for line in range(len(lines)): lines[line] = str(line+1)+'| '+lines[line]
+	    text = string.join(lines, '\n')
+	    # set text
+	    self.__window.source_display.setText(text)
+	    self.__current_file = file
+	# scroll to line
+	y = (self.__window.source_display.fontMetrics().height()+1) * line
+	self.__window.source_display.setContentsPos(0, y)
+	#print line, y
+
+class GraphBrowser (Browser.SelectionListener):
+    """Browser that manages the graph view"""
+    def __init__(self, window, browser):
+	self.__window = window
+	self.__browser = browser
+	browser.add_listener(self)
+    def current_decl_changed(self, decl):
+	if not self.__window.graph_display.isVisible():
+	    # Not visible, so ignore
+	    return
+	self.__window.graph_display.set_class(decl.name())
 

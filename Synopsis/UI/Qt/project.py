@@ -1,4 +1,4 @@
-# $Id: project.py,v 1.2 2001/11/09 08:06:59 chalky Exp $
+# $Id: project.py,v 1.3 2002/01/09 10:16:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: project.py,v $
+# Revision 1.3  2002/01/09 10:16:35  chalky
+# Centralized navigation, clicking links in (html) docs works.
+#
 # Revision 1.2  2001/11/09 08:06:59  chalky
 # More GUI fixes and stuff. Double click on Source Actions for a dialog.
 #
@@ -120,7 +123,7 @@ class ProjectWindow (QSplitter):
 	ast = input_exec.get_output(names[0])
 
 	# Give AST to browser
-	self.browser.show_ast(ast)
+	self.browser.set_current_ast(ast)
 	
 
 

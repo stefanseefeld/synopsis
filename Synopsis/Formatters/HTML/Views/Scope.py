@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.15 2001/11/09 15:35:04 chalky Exp $
+# $Id: Scope.py,v 1.16 2002/01/09 10:16:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.16  2002/01/09 10:16:35  chalky
+# Centralized navigation, clicking links in (html) docs works.
+#
 # Revision 1.15  2001/11/09 15:35:04  chalky
 # GUI shows HTML pages. just. Source window also scrolls to correct line.
 #
@@ -131,7 +134,28 @@ class ScopePages (Page.Page):
 	while self.__namespaces:
 	    ns = self.__namespaces.pop(0)
 	    self.process_scope(ns)
-    
+	    
+	    # Queue child namespaces
+	    for child in config.sorter.children():
+		if isinstance(child, AST.Scope):
+		    self.__namespaces.append(child)
+
+    def register_filenames(self, start):
+	"""Registers a page for every Scope"""
+	self.__namespaces = [start]
+	while self.__namespaces:
+	    ns = self.__namespaces.pop(0)
+
+	    filename = config.files.nameOfScope(ns.name())
+	    self.manager.register_filename(filename, self, ns)
+
+	    config.sorter.set_scope(ns)
+	    
+	    # Queue child namespaces
+	    for child in config.sorter.children():
+		if isinstance(child, AST.Scope):
+		    self.__namespaces.append(child)
+     
     def process_scope(self, ns):
 	"""Creates a page for the given scope"""
 	details = {} # A hash of lists of detailed children by type
@@ -150,11 +174,6 @@ class ScopePages (Page.Page):
 	for part in self.__parts:
 	    part.process(ns)
 	self.end_file()
-	
-	# Queue child namespaces
-	for child in config.sorter.children():
-	    if isinstance(child, AST.Scope):
-		self.__namespaces.append(child)
     
     def end_file(self):
 	"""Overrides end_file to provide synopsis logo"""

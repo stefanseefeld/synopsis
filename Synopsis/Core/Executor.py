@@ -160,7 +160,7 @@ class CacherExecutor (Executor):
 	    exec_obj = self.__executor.create(input)
 	    self.__execs[input] = exec_obj
 	    names.extend(exec_obj.get_out_names())
-	return map(lambda x: (os.join(action.dir, x[0]), x[1]), names)
+	return map(lambda x, dir=action.dir: (os.join(dir, x[0]), x[1]), names)
     def get_output(self, name):
 	action = self.__action
 	if action.file:

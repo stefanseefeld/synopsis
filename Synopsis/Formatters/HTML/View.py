@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.8 2001/11/09 15:35:04 chalky Exp $
+# $Id: View.py,v 1.9 2002/01/09 10:16:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.9  2002/01/09 10:16:35  chalky
+# Centralized navigation, clicking links in (html) docs works.
+#
 # Revision 1.8  2001/11/09 15:35:04  chalky
 # GUI shows HTML pages. just. Source window also scrolls to correct line.
 #
@@ -90,11 +93,20 @@ class Page:
 	methods in PageManager if they need to. This method is called after
 	construction."""
 	pass
+
+    def register_filenames(self, start):
+	"""Registers filenames for each file this Page will generate, given
+	the starting Scope."""
+	pass
        
     def process(self, start):
 	"""Process the given Scope recursively. This is the method which is
 	called to actually create the files, so you probably want to override
 	it ;)"""
+	pass
+
+    def process_scope(self, scope):
+	"""Process just the given scope"""
 	pass
 
     def open_file(self):
@@ -131,9 +143,7 @@ class Page:
     def end_file(self, body='</body>'):
 	"Close the file using given close body tag"
 	self.write("\n%s\n</html>\n"%body)
-	print "Closing page, os is",self.__os,type(self.__os)
 	self.close_file()
-	print "Closed page, os is",self.__os,type(self.__os)
 
 class BufferPage (Page):
     """A page that writes to a string buffer."""
@@ -147,7 +157,6 @@ class BufferPage (Page):
 
     def get_buffer(self):
 	"""Returns the page as a string, then deletes the internal buffer"""
-	print "Getting buffer, os is",self.os(),type(self.os())
 	page = self.os().getvalue()
 	# NOW we do the close
 	Page.close_file(self)
