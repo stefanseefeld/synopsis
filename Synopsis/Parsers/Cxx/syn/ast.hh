@@ -231,6 +231,8 @@ namespace AST {
     public:
 	//. Constructor
 	Forward(string, int, string, Name);
+	//. Constructor that copies an existing declaration
+	Forward(AST::Declaration*);
 
 	//. Accepts the given AST::Visitor
 	virtual void accept(Visitor*);

@@ -285,7 +285,7 @@ PyObject *Synopsis::Base(Type::Base* type)
 PyObject *Synopsis::Forward(Type::Forward* type)
 {
     Trace trace("Synopsis::addForward");
-    PyObject *name, *forward = PyObject_CallMethod(m_type, "Base", "OO",
+    PyObject *name, *forward = PyObject_CallMethod(m_type, "Forward", "OO",
 	m->cxx(), name = m->Tuple(type->name())
     );
     PyObject_SetItem(m_dictionary, name, forward);
@@ -610,49 +610,49 @@ void Synopsis::visitScope(AST::Scope* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Scope(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitNamespace(AST::Namespace* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Namespace(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitClass(AST::Class* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Class(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitForward(AST::Forward* decl) {
     if (m->m_main(decl))
 	m->add(decl, Forward(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitTypedef(AST::Typedef* decl) {
     if (m->m_main(decl))
 	m->add(decl, Typedef(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitVariable(AST::Variable* decl) {
     if (m->m_main(decl))
 	m->add(decl, Variable(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitConst(AST::Const* decl) {
     if (m->m_main(decl))
 	m->add(decl, Const(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitEnum(AST::Enum* decl) {
     if (m->m_main(decl))
 	m->add(decl, Enum(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitEnumerator(AST::Enumerator* decl) {
     m->add(decl, Enumerator(decl));
@@ -661,13 +661,13 @@ void Synopsis::visitFunction(AST::Function* decl) {
     if (m->m_main(decl))
 	m->add(decl, Function(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visitOperation(AST::Operation* decl) {
     if (m->m_main(decl))
 	m->add(decl, Operation(decl));
     else
-	m->add(decl, Forward(new Type::Forward(decl->name())));
+	m->add(decl, Forward(new AST::Forward(decl)));
 }
 
 void Synopsis::visitInheritance(AST::Inheritance* decl) {
