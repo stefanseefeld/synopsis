@@ -106,6 +106,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
     args.insert(args.begin(), cc ? cc : "c++");
     args.push_back("-C"); // keep comments
     args.push_back("-lg"); // gcc-like line numbers
+    args.push_back("-Y"); // define system macros in tune.h
     //args.push_back("-E"); // stop after preprocessing
     // Add includes
     args.push_back("-I");
