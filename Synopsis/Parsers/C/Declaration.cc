@@ -1016,7 +1016,8 @@ StructDef::lookup( Symbol* sym ) const
         {
             Symbol *ident = decl->name;
 
-            if (ident->name == sym->name)
+            if (ident != NULL &&
+                ident->name == sym->name)
             {
                 sym->entry = ident->entry;
 
