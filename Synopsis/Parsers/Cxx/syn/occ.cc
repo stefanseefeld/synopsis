@@ -1,4 +1,4 @@
-// $Id: occ.cc,v 1.94 2003/12/03 06:43:43 stefan Exp $
+// $Id: occ.cc,v 1.95 2003/12/17 15:07:24 stefan Exp $
 //
 // Copyright (C) 2000 Stefan Seefeld
 // Copyright (C) 2000 Stephen Davies
@@ -13,18 +13,19 @@
 #include <vector>
 #include <cstring>
 #include <cstdio>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/wait.h>
 
-#include <occ/walker.h>
-#include <occ/token.h>
-#include <occ/buffer.h>
+#if !defined(__WIN32__)
+#  include <unistd.h>
+#  include <signal.h>
+#endif
+
+// #include <occ/walker.h>
+// #include <occ/token.h>
+// #include <occ/buffer.h>
 #include <occ/parse.h>
-#include <occ/ptree-core.h>
-#include <occ/ptree.h>
-#include <occ/encoding.h>
-#include <occ/mop.h>
+// #include <occ/ptree-core.h>
+// #include <occ/ptree.h>
+// #include <occ/mop.h>
 #include <occ/metaclass.h>
 #include <occ/env.h>
 #include <occ/encoding.h>
@@ -43,9 +44,10 @@
 // Define this to test refcounting
 //#define SYN_TEST_REFCOUNT
 
-// ucpp_main is the renamed main() func of ucpp, since it is included in this
-// module
-extern "C" int ucpp_main(int argc, char** argv);
+extern const char *
+RunPreprocessor(const char *preprocessor,
+                const char *src, const std::vector<const char *> &flags,
+                bool verbose);
 
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
@@ -87,7 +89,7 @@ bool verbose;
 
 // If true then everything but what's in the main file will be stripped
 bool syn_main_only;
-bool syn_use_gcc, syn_fake_std;
+bool syn_fake_std;
 bool syn_multi_files;
 
 // If set then this is stripped from the start of all filenames
@@ -98,9 +100,6 @@ const char* syn_syntax_prefix = 0;
 
 // If set then this is the prefix for the filename to store xref info to
 const char* syn_xref_prefix = 0;
-
-// This is the compiler to emulate
-const char* syn_emulate_compiler = "c++";
 
 // A list of extra filenames to store info for
 std::vector<const char*> syn_extra_filenames;
@@ -124,18 +123,21 @@ void unexpected()
   throw std::bad_exception();
 }
 
-//. Emulates the compiler in 'syn_emulate_compiler' by calling the Python
+//. Emulates the given compiler by calling the Python
 //. module Synopsis.Parser.C++.emul to get a list of include paths and macros to
 //. add to the args vector.
-void emulate_compiler(std::vector<const char*>& args)
+bool emulate_compiler(const char *compiler, std::vector<const char*>& args)
 {
   PyObject* emul_module = PyImport_ImportModule("Synopsis.Parsers.Cxx.emul");
-  if (!emul_module) return;
-  PyObject* info = PyObject_CallMethod(emul_module, "get_compiler_info", "s", syn_emulate_compiler);
+  if (!emul_module)
+  {
+     return false;
+  }
+  PyObject* info = PyObject_CallMethod(emul_module, "get_compiler_info", "s", compiler);
   if (!info)
   {
     PyErr_Print();
-    return;
+    return false;
   }
   PyObject* paths = PyObject_GetAttrString(info, "include_paths");
   if (paths)
@@ -202,117 +204,10 @@ void emulate_compiler(std::vector<const char*>& args)
   }
   Py_DECREF(info);
   Py_DECREF(emul_module);
+  return true;
 }
 
-char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
-{
-  static char dest[1024];
-  strcpy(dest, "/tmp/synopsis-XXXXXX");
-  int temp_fd = mkstemp(dest);
-  if (temp_fd == -1)
-  {
-    perror("RunPreprocessor");
-    exit(1);
-  }
-  // Not interested in the open file, just the unique filename
-  close(temp_fd);
-
-  if (syn_use_gcc)
-  {
-    // Release Python's global interpreter lock
-    pythread_save = PyEval_SaveThread();
-    
-    switch(fork())
-    {
-      case 0:
-      {
-        std::vector<const char *> args;
-        char *cc = getenv("CC");
-        if (cc)
-        {
-          // separate command and arguments
-          do
-          {
-            args.push_back(cc);
-            cc = strchr(cc, ' ');                  // find next whitespace...
-            while (cc && *cc == ' ') *cc++ = '\0'; // ...and skip to next non-ws
-          }
-          while (cc && *cc != '\0');
-        }
-        else
-        {
-          args.push_back("cpp");
-        }
-        args.insert(args.end(), flags.begin(), flags.end());
-        args.push_back("-C"); // keep comments
-        args.push_back("-E"); // stop after preprocessing
-        args.push_back("-o"); // output to...
-        args.push_back(dest);
-        args.push_back("-x"); // language c++
-        args.push_back("c++");
-        args.push_back(file);
-        if (verbose)
-        {
-          std::cout << "calling external preprocessor\n" << args[0];
-          for (std::vector<const char *>::iterator i = args.begin(); i != args.end(); ++i)
-            std::cout << ' ' << *i;
-          std::cout << std::endl;
-        }
-        args.push_back(0);
-        execvp(args[0], (char **)&*args.begin());
-        perror("cannot invoke compiler");
-        exit(-1);
-        break;
-      }
-      case -1:
-        perror("RunPreprocessor");
-        exit(-1);
-        break;
-      default:
-      {
-        int status;
-        wait(&status);
-        if (status != 0)
-        {
-          if (WIFEXITED(status))
-            std::cout << "exited with status " << WEXITSTATUS(status) << std::endl;
-          else if (WIFSIGNALED(status))
-            std::cout << "stopped with status " << WTERMSIG(status) << std::endl;
-          exit(1);
-        }
-      }
-    } // switch
-  }
-  else
-  { // else use ucpp
-    // Create argv vector
-    std::vector<const char *> args = flags;
-    char *cc = getenv("CC");
-    args.insert(args.begin(), cc ? cc : "ucpp");
-    args.push_back("-C"); // keep comments
-    args.push_back("-lg"); // gcc-like line numbers
-    emulate_compiler(args);
-    args.push_back("-o"); // output to...
-    args.push_back(dest);
-    args.push_back(file);
-    if (verbose)
-    {
-      std::cout << "calling ucpp\n";
-      for (std::vector<const char *>::iterator i = args.begin(); i != args.end(); ++i)
-        std::cout << ' ' << *i;
-      std::cout << std::endl;
-    }
-    
-    // Release Python's global interpreter lock
-    pythread_save = PyEval_SaveThread();
-    
-    // Call ucpp
-    int status = ucpp_main(args.size(), (char **)&*args.begin());
-    if (status != 0)
-      std::cerr << "ucpp returned error flag. ignoring error." << std::endl;
-  }
-  return dest;
-}
+#if !defined(__WIN32__)
 
 void sighandler(int signo)
 {
@@ -339,17 +234,21 @@ void sighandler(int signo)
   exit(-1);
 }
 
+#endif
+
 void RunOpencxx(const char *src, const char *file, PyObject *ast)
 {
   Trace trace("RunOpencxx");
   std::set_unexpected(unexpected);
+
+#if !defined(__WIN32__)
   struct sigaction olda;
   struct sigaction newa;
   newa.sa_handler = &sighandler;
   sigaction(SIGSEGV, &newa, &olda);
   sigaction(SIGBUS, &newa, &olda);
   sigaction(SIGABRT, &newa, &olda);
-  
+#endif  
   std::ifstream ifs(file);
   if(!ifs)
   {
@@ -422,9 +321,11 @@ void RunOpencxx(const char *src, const char *file, PyObject *ast)
   }
 
   ifs.close();
+#if !defined(__WIN32__)
   sigaction(SIGABRT, &olda, 0);
   sigaction(SIGBUS, &olda, 0);
   sigaction(SIGSEGV, &olda, 0);
+#endif
 }
 
 bool extract(PyObject *list, std::vector<const char *> &out)
@@ -452,6 +353,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
   char *src;
   PyObject *py_extra_files;
   std::vector<const char *> extra_files;
+  const char *syn_emulate_compiler = "c++";
   int verbose, main_file_only;
   char *preprocessor;
   PyObject *py_cppflags;
@@ -469,6 +371,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
                         &syn_xref_prefix,
                         &syn_emulate_compiler)
       || !extract(py_extra_files, extra_files)
+      || !(preprocessor || emulate_compiler(syn_emulate_compiler, cppflags))
       || !extract(py_cppflags, cppflags))
     return 0;
 
@@ -476,7 +379,6 @@ PyObject *occParse(PyObject *self, PyObject *args)
 
   if (verbose) ::verbose = true;
   if (main_file_only) syn_main_only = true;
-  if (preprocessor) syn_use_gcc = true;
 
   for (std::vector<const char *>::iterator i = extra_files.begin();
        i != extra_files.end();
@@ -499,7 +401,10 @@ PyObject *occParse(PyObject *self, PyObject *args)
   if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
 
   // Run the preprocessor
-  char *cppfile = RunPreprocessor(src, cppflags);
+
+  // Release Python's global interpreter lock
+  pythread_save = PyEval_SaveThread();
+  const char *cppfile = RunPreprocessor(preprocessor, src, cppflags, verbose);
 
   // Run OCC to generate the AST
   RunOpencxx(src, cppfile, ast);

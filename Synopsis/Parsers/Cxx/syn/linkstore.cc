@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.cc source file
 // Implementation of the LinkStore class
 
-// $Id: linkstore.cc,v 1.22 2002/12/21 05:04:39 chalky Exp $
+// $Id: linkstore.cc,v 1.23 2003/12/17 15:07:24 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.23  2003/12/17 15:07:24  stefan
+// more work on win32 native platform
+//
 // Revision 1.22  2002/12/21 05:04:39  chalky
 // Move constants since gcc 3.2 didn't like them.
 //
@@ -129,7 +132,11 @@ void makedirs(const char* path)
         *sep = 0;
         // Try to stat this dir
         if ((error = stat(buf, &st)) == -1 && errno == ENOENT)
-            mkdir(buf, 0755);
+#ifdef __WIN32__
+           mkdir(buf);
+#else
+           mkdir(buf, 0755);
+#endif
         else if (error)
         {
             perror(buf);

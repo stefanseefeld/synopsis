@@ -58,7 +58,7 @@ typedef unsigned int	uint;
 #  endif
 #endif
 
-#define USE_DLOADER		1
+#define USE_DLOADER		0
 
 #if !defined (_MSC_VER)
 #define USE_SO			1
