@@ -27,6 +27,9 @@ private:
   virtual void visit(Literal *);
   virtual void visit(Identifier *);
   virtual void visit(InfixExpr *);
+  virtual void visit(UnaryExpr *);
+  virtual void visit(CondExpr *);
+  virtual void visit(ParenExpr *);
   
   bool         my_valid;
   long         my_value;

@@ -74,8 +74,9 @@ void Scope::declare(EnumSpec *spec)
       enumerator = enumerator->car();
       if (!evaluate_const(initializer, *this, value))
       {
-	std::cerr << "Error in evaluating enum initializer :\n"
-		  << "Expression doesn't evaluate to a constant integral value" << std::endl;
+	std::cerr << "Error in evaluating enum initializer:\n"
+		  << "Expression doesn't evaluate to a constant integral value:\n"
+		  << reify(initializer) << std::endl;
       }
     }
     assert(enumerator->is_atom());
