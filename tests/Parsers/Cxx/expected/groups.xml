@@ -1,0 +1,203 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/groups.cc" language="C++" line="8" name="foo" type="struct">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // group documentation
+// @group first group {
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // some comment
+// extending over multiple lines
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // another comment
+
+     </text>
+    </instance>
+   </comments>
+   <declarations>
+    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/groups.cc" language="C++" line="7" name="dummy" type="dummy"/>
+   </declarations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="11" name="test1" type="global variable">
+   <vtype>
+    <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+   </vtype>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="12" name="test2" type="global variable">
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="14" name="bar" type="global variable">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // }
+
+     </text>
+    </instance>
+   </comments>
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="17" name="test3" type="global variable">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // another group
+// @group tests {
+
+     </text>
+    </instance>
+   </comments>
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="18" name="test4" type="global variable">
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="24" name="f" type="global variable">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // }
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // @group outer {
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // @group inner {
+
+     </text>
+    </instance>
+   </comments>
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="26" name="test5" type="global variable">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // @group xxx { not a group
+
+     </text>
+    </instance>
+   </comments>
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/groups.cc" language="C++" line="30" name="test6" type="global variable">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // } and not a group end
+// }
+// and not a group either
+
+     </text>
+    </instance>
+   </comments>
+   <vtype/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/groups.cc" language="C++" line="31" name="dummy" type="dummy">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // }
+
+     </text>
+    </instance>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="1">
+     <file>
+      Parsers/Cxx/input/groups.cc
+     </file>
+     <text>
+      // }
+
+     </text>
+    </instance>
+   </comments>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test1">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test2">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test3">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test4">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="bar">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test6">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test5">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="foo">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="f">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/groups.cc
+  </file>
+ </files>
+</ast>

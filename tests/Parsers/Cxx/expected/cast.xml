@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/cast.cc" language="C++" line="1" name="Foo" type="typedef">
+   <alias>
+    <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+   </alias>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/cast.cc" language="C++" line="3" name="func()" realname="func" type="function">
+   <returnType>
+    <instance class="Synopsis.Type.Base" language="C++" name="void"/>
+   </returnType>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="func()">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/cast.cc
+  </file>
+ </files>
+</ast>

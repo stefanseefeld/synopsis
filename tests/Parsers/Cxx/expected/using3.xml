@@ -1,0 +1,178 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="A" type="namespace">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/using3.cc
+     </file>
+     <text>
+      // From C++WD'96 7.4.3.3 Example 2
+
+     </text>
+    </instance>
+   </comments>
+   <declarations>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="4" name="A.i" type="namespace variable">
+     <vtype>
+      <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+     </vtype>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="4" name="dummy" type="dummy"/>
+   </declarations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="B" type="namespace">
+   <declarations>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="9" name="B.i" type="namespace variable">
+     <vtype/>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="10" name="B.j" type="namespace variable">
+     <vtype/>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="B.C" type="namespace">
+     <declarations>
+      <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="B.C.D" type="namespace">
+       <declarations>
+        <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="16" name="B.C.D.j" type="namespace variable">
+         <vtype/>
+        </instance>
+        <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="17" name="B.C.D.k" type="namespace variable">
+         <vtype/>
+        </instance>
+        <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="18" name="B.C.D.a" type="namespace variable">
+         <vtype/>
+        </instance>
+        <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="18" name="dummy" type="dummy">
+         <comments>
+          <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+           <file>
+            Parsers/Cxx/input/using3.cc
+           </file>
+           <text>
+            // B::i hides A::i
+
+           </text>
+          </instance>
+         </comments>
+        </instance>
+       </declarations>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="21" name="B.C.k" type="namespace variable">
+       <vtype/>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="22" name="B.C.l" type="namespace variable">
+       <comments>
+        <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+         <file>
+          Parsers/Cxx/input/using3.cc
+         </file>
+         <text>
+          // no problem yet
+
+         </text>
+        </instance>
+       </comments>
+       <vtype/>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="23" name="B.C.m" type="namespace variable">
+       <comments>
+        <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+         <file>
+          Parsers/Cxx/input/using3.cc
+         </file>
+         <text>
+          // ambiguous: C::k or D::k
+
+         </text>
+        </instance>
+       </comments>
+       <vtype/>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="24" name="B.C.n" type="namespace variable">
+       <comments>
+        <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+         <file>
+          Parsers/Cxx/input/using3.cc
+         </file>
+         <text>
+          // B::i hides A::i
+
+         </text>
+        </instance>
+       </comments>
+       <vtype/>
+      </instance>
+      <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="23" name="dummy" type="dummy">
+       <comments>
+        <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+         <file>
+          Parsers/Cxx/input/using3.cc
+         </file>
+         <text>
+          // D::j hides B::j
+
+         </text>
+        </instance>
+       </comments>
+      </instance>
+     </declarations>
+    </instance>
+    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="24" name="dummy" type="dummy"/>
+   </declarations>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.D.a">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.i">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.n">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.m">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.l">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.j">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="A">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.D.k">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.D.j">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.D">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="A.i">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C.k">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="B.C">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/using3.cc
+  </file>
+ </files>
+</ast>

@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="2" name="CAT" text="CAT_D(a, b)" type="macro">
+   <parameters>
+    a
+    b
+   </parameters>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="3" name="CAT_D" text="a ## b" type="macro">
+   <parameters>
+    a
+    b
+   </parameters>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="5" name="AB" text="CAT(x, y)" type="macro">
+   <parameters>
+    x
+    y
+   </parameters>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="7" name="XY" type="global variable">
+   <comments>
+    <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+     <file>
+      Parsers/Cxx/input/static_cast.cc
+     </file>
+     <text>
+      // There should be a variable XY here
+
+     </text>
+    </instance>
+   </comments>
+   <vtype>
+    <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+   </vtype>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="CAT_D">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="AB">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="XY">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="CAT">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/static_cast.cc
+  </file>
+ </files>
+</ast>

@@ -1,0 +1,129 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/typename.cc" language="C++" line="2" name="crc_optimal" type="class">
+   <template>
+    <instance class="Synopsis.Type.Template" language="C++" name="crc_optimal">
+     <declaration/>
+     <parameters>
+      <instance class="Synopsis.AST.Parameter" identifier="Bits" value="">
+       <type>
+        <instance class="Synopsis.Type.Unknown" language="C++" name="std.size_t">
+         <link>
+          std
+          size_t
+         </link>
+        </instance>
+       </type>
+      </instance>
+      <instance class="Synopsis.AST.Parameter" identifier="TruncPoly" value="">
+       <type>
+        <instance class="Synopsis.Type.Unknown" language="C++" name="::boost::uint_t::fast">
+         <link>
+          ::boost::uint_t::fast
+         </link>
+        </instance>
+       </type>
+      </instance>
+     </parameters>
+    </instance>
+   </template>
+   <declarations>
+    <instance accessibility="3" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/typename.cc" language="C++" line="5" name="crc_optimal.masking_type" type="typedef">
+     <comments>
+      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+       <file>
+        Parsers/Cxx/input/typename.cc
+       </file>
+       <text>
+        // Implementation type
+
+       </text>
+      </instance>
+     </comments>
+     <alias>
+      <instance class="Synopsis.Type.Unknown" language="C++" name="detail.mask_uint_t">
+       <link>
+        detail
+        mask_uint_t
+       </link>
+      </instance>
+     </alias>
+    </instance>
+    <instance accessibility="1" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/typename.cc" language="C++" line="9" name="crc_optimal.value_type" type="typedef">
+     <comments>
+      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+       <file>
+        Parsers/Cxx/input/typename.cc
+       </file>
+       <text>
+        // Type
+
+       </text>
+      </instance>
+     </comments>
+     <alias>
+      <instance class="Synopsis.Type.Unknown" language="C++" name="masking_type.fast">
+       <link>
+        masking_type
+        fast
+       </link>
+      </instance>
+     </alias>
+    </instance>
+    <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/typename.cc" language="C++" line="12" name="crc_optimal.bit_count" type="data member">
+     <comments>
+      <instance class="Synopsis.AST.Comment" line="0" suspect="0">
+       <file>
+        Parsers/Cxx/input/typename.cc
+       </file>
+       <text>
+        // Constants for the template parameters
+
+       </text>
+      </instance>
+     </comments>
+     <vtype>
+      <instance class="Synopsis.Type.Modifier" language="C++">
+       <alias>
+        <instance class="Synopsis.Type.Unknown" language="C++" name="std.size_t">
+         <link>
+          std
+          size_t
+         </link>
+        </instance>
+       </alias>
+       <premod>
+        const
+       </premod>
+      </instance>
+     </vtype>
+    </instance>
+    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/typename.cc" language="C++" line="11" name="dummy" type="dummy"/>
+   </declarations>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.bit_count">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.value_type">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="crc_optimal.masking_type">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <file>
+   Parsers/Cxx/input/typename.cc
+  </file>
+ </files>
+</ast>
