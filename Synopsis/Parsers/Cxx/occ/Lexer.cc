@@ -793,6 +793,7 @@ static struct rw_table {
     { "__const",	token(CONST) },
     { "__extension__",	token(EXTENSION) },
     { "__imag__",	token(Ignore) },
+    { "__inline",	token(INLINE) },
     { "__inline__",	token(INLINE) },
     { "__real__",	token(Ignore) },
     { "__restrict",	token(Ignore) },
