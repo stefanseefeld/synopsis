@@ -33,7 +33,7 @@ if __name__ == "__main__":
     main.show()
 
     if load_file:
-	main.open_file(load_file)
+	main.do_open_file(load_file)
 
     app.exec_loop()
 

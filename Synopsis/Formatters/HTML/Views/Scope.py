@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.14 2001/07/15 08:28:43 chalky Exp $
+# $Id: Scope.py,v 1.15 2001/11/09 15:35:04 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.15  2001/11/09 15:35:04  chalky
+# GUI shows HTML pages. just. Source window also scrolls to correct line.
+#
 # Revision 1.14  2001/07/15 08:28:43  chalky
 # Added 'Inheritance' page Part
 #
@@ -93,9 +96,11 @@ class ScopePages (Page.Page):
 	Page.Page.__init__(self, manager)
 	share = config.datadir
 	self.syn_logo = 'synopsis200.jpg'
-	config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
+	if config.files:
+	    config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
 	self.__parts = []
 	self._get_parts()
+	self.__namespaces = []
 
     def _get_parts(self):
 	"Loads the list of parts from config"

@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.24 2001/07/19 05:10:39 chalky Exp $
+# $Id: core.py,v 1.25 2001/11/09 15:35:04 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.25  2001/11/09 15:35:04  chalky
+# GUI shows HTML pages. just. Source window also scrolls to correct line.
+#
 # Revision 1.24  2001/07/19 05:10:39  chalky
 # Use filenames stored in AST object
 #
@@ -138,6 +141,7 @@ this module, and coordinates the actual output generation.
 import sys, getopt, os, os.path, string, types, errno, stat, re, time
 
 # Synopsis modules
+from Synopsis.Config import Base
 from Synopsis.Core import AST, Type, Util
 from Synopsis.Formatter import TOC, ClassTree
 from Synopsis.Formatter.HTML import TreeFormatter
@@ -631,3 +635,41 @@ def format(args, ast, config_obj):
     manager = PageManager()
     manager.process(root)
 
+def configure_for_gui(ast):
+    global manager
+
+    config_obj = Base.Formatter.HTML
+    __parseArgs(["-o","/tmp"], config_obj)
+    config.ast = ast
+    config.types = ast.types()
+    declarations = ast.declarations()
+    config.files = config.files_class()
+    CommentDictionary()
+    config.classTree = ClassTree.ClassTree()
+    FileTree()
+
+    # Create table of contents index
+    config.toc = TOC.TableOfContents(config.files)
+
+    # Add all declarations to the namespace tree
+    for d in declarations:
+	d.accept(config.toc)
+    #if len(config.toc_out): config.toc.store(config.toc_out)
+    
+    # load external references from toc files, if any
+    for t in config.toc_in: config.toc.load(t)
+
+    for d in declarations:
+	d.accept(config.classTree)
+	d.accept(config.fileTree)
+
+    config.fileTree.buildTree()
+    
+    # Create the pages
+    # Create a dummy Module for the global namespace to simplify things
+    #root = AST.Module('',-1,"C++","Global",())
+    #root.declarations()[:] = declarations
+    manager = PageManager()
+    #manager.process(root)
+
+ 

@@ -1,4 +1,4 @@
-# $Id: main.py,v 1.3 2001/11/09 08:06:59 chalky Exp $
+# $Id: main.py,v 1.4 2001/11/09 15:35:04 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: main.py,v $
+# Revision 1.4  2001/11/09 15:35:04  chalky
+# GUI shows HTML pages. just. Source window also scrolls to correct line.
+#
 # Revision 1.3  2001/11/09 08:06:59  chalky
 # More GUI fixes and stuff. Double click on Source Actions for a dialog.
 #
@@ -58,9 +61,6 @@ class MainWindow (QMainWindow):
 	self.workspace = QWorkspace(self)
 	self.setCentralWidget(self.workspace)
 
-    def open_file(self):
-	"""Displays the file open dialog, and loads a file if selected"""
-
     def open_project(self):
 	"""Opens a project"""
 	filename = str(QFileDialog.getOpenFileName(".", 
@@ -70,16 +70,18 @@ class MainWindow (QMainWindow):
 	    ProjectWindow(self.workspace, self, filename)
 
 
-    def open_file(self, filename=None):
-	"""Opens a file in a new project. If the filename given is the
-	default None then a file selection dialog is opened to prompt the user
+    def open_file(self):
+	"""A file selection dialog is opened to prompt the user
 	for a filename."""
-	if not filename:
-	    filename = str(QFileDialog.getOpenFileName(".", 
-		"Synopsis files (*.*syn)", self, 
-		"file", "Open a Synopsis data file"))
+	filename = str(QFileDialog.getOpenFileName(".", 
+	    "Synopsis files (*.*syn)", self, 
+	    "file", "Open a Synopsis data file"))
 	if not filename: return
+	print filename
+	self.do_open_file(filename)
 
+    def do_open_file(self, filename):
+	"""Opens a file in a new project."""
 	projwin = ProjectWindow(self.workspace, self, None)
 	project = projwin.project
 	project.set_name('Project for %s'%os.path.split(filename)[1])

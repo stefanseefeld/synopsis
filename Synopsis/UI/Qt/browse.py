@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.3 2001/11/09 08:06:59 chalky Exp $
+# $Id: browse.py,v 1.4 2001/11/09 15:35:04 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.4  2001/11/09 15:35:04  chalky
+# GUI shows HTML pages. just. Source window also scrolls to correct line.
+#
 # Revision 1.3  2001/11/09 08:06:59  chalky
 # More GUI fixes and stuff. Double click on Source Actions for a dialog.
 #
@@ -31,11 +34,12 @@
 #
 
 
-import sys, pickle, Synopsis, cStringIO
+import sys, pickle, Synopsis, cStringIO, string
 from qt import *
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
+from Synopsis.Formatter.HTML import Page, ScopePages, core
 
 class Browser:
     """Controls the browse widgets of the project window"""
@@ -103,6 +107,7 @@ class Browser:
 	self.glob.accept(self.classTree)
 	self.listfiller.clear()
 	self.listfiller.fillFrom(self.glob)
+	core.configure_for_gui(ast)
 
     def windowActivated(self, widget):
 	if self.__activated:
@@ -147,6 +152,7 @@ class Browser:
 	"""Show a given declaration (by item)"""
 	decl = self.listfiller.map[item]
 	self.decl = decl
+	# todo: split these up.. mvc, events etc
 	if self.window.graph_display.isVisible():
 	    if isinstance(decl, AST.Class):
 		#self.setGraphEnabled(isinstance(decl, AST.Class))
@@ -156,17 +162,39 @@ class Browser:
 	if self.window.doco_display.isVisible():
 	    # Here we use ASCIIFormatter to quickly get us *something* to display
 	    # :)
-	    os = cStringIO.StringIO()
-	    os.write('<pre>')
-	    formatter = ASCIIFormatter(os)
-	    formatter.set_scope(decl.name())
-	    decl.accept(formatter)
-	    self.window.doco_display.setText(os.getvalue())
+	    if isinstance(decl, AST.Scope):
+		class BufferScopePages (Page.BufferPage, ScopePages.ScopePages):
+		    def __init__(self, manager):
+			ScopePages.ScopePages.__init__(self, manager)
+		pages = BufferScopePages(core.manager)
+		pages.process_scope(decl)
+		text = pages.get_buffer()
+		self.window.doco_display.setText(text)
+	    else:
+		os = cStringIO.StringIO()
+		os.write('<pre>')
+		formatter = ASCIIFormatter(os)
+		formatter.set_scope(decl.name())
+		decl.accept(formatter)
+		self.window.doco_display.setText(os.getvalue())
 	if self.window.source_display.isVisible():
 	    file, line = decl.file(), decl.line()
 	    print file
-	    text = open(file).read()
-	    self.window.source_display.setText(text)
+	    if not hasattr(self, 'curfile') or self.curfile != file:
+		# read from file
+		text = open(file).read()
+		# number the lines
+		lines = string.split(text, '\n')
+		for line in range(len(lines)): lines[line] = str(line+1)+'| '+lines[line]
+		text = string.join(lines, '\n')
+		# set text
+		self.window.source_display.setText(text)
+		self.curfile = file
+	    # scroll to line
+	    y = (self.window.source_display.fontMetrics().height()+1) * line
+	    self.window.source_display.setContentsPos(0, y)
+	    print line, y
+		
 
     def selfishExpansion(self, item):
 	"""Selfishly makes item the only expanded node"""
