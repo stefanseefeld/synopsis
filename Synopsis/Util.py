@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.16 2002/04/26 01:21:13 chalky Exp $
+# $Id: Util.py,v 1.17 2002/06/22 06:56:31 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.17  2002/06/22 06:56:31  chalky
+# Fixes to PyWriter for nested classes
+#
 # Revision 1.16  2002/04/26 01:21:13  chalky
 # Bugs and cleanups
 #
@@ -378,12 +381,16 @@ class PyWriter:
 	return struct
     def write_PyWriterStruct(self, struct):
 	if not len(struct.dict): return self.write('struct()')
-	self.write('struct(\n')
+	self.write('struct(')
 	self.indent()
-	keyval = lambda kv:'%s=%s'%(kv[0],repr(kv[1]))
-	self.write(string.join(map(keyval, struct.dict), ',\n'))
+	# Write one attribute per line, being sure to allow nested structs
+	prefix = '\n'
+	for key, val in struct.dict:
+	    self.write(prefix+str(key)+'=')
+	    self.write_item(val)
+	    prefix = ',\n'
 	self.outdent()
-	self.write(')')
+	self.write('\n)')
 	
 class PyWriterStruct:
     """A utility class that PyWriter uses to dump class objects. Dict is the
