@@ -3164,8 +3164,6 @@ bool Parser::rUnaryExpr(Ptree*& exp)
     }
     else if(t == SIZEOF)
 	return rSizeofExpr(exp);
-    else if(t == TYPEID)
-	return rTypeidExpr(exp);
     else if(t == THROW)
 	return rThrowExpr(exp);
     else if(isAllocateExpr(t))
@@ -3650,6 +3648,8 @@ bool Parser::rPrimaryExpr(Ptree*& exp)
 	lex->GetToken(tk);
 	exp = new LeafThis(tk);
 	return TRUE;
+    case TYPEID :
+	return rTypeidExpr(exp);
     case '(' :
 	lex->GetToken(tk);
 	if(!rCommaExpression(exp2))
