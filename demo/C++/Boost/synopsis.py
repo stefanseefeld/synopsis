@@ -6,6 +6,7 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Processors import *
 from Synopsis.Formatters import Dump
 from Synopsis.Formatters import HTML
+from Synopsis.Formatters.HTML.Pages import *
 
 # this is actually only here as a hack for backward compatibility.
 import glob
@@ -35,7 +36,19 @@ linker = Linker(SSComments(),       # filter out any non-'//' comments
                 CommentStripper(),  # strip any 'suspicious' comments
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
-formatter = HTML.Formatter(stylesheet_file = '../../html.css')
+formatter = HTML.Formatter(stylesheet_file = '../../html.css',
+                           pages = [FramesIndex(),
+                                    Scope(),
+                                    ModuleListing(),
+                                    ModuleIndexer(),
+                                    FileListing(),
+                                    FileIndexer(),
+                                    FileDetails(),
+                                    InheritanceTree(),
+                                    InheritanceGraph(),
+                                    FileSource(prefix = 'links'),
+                                    NameIndex(),
+                                    XRef(xref_file = 'bpl.xref')])
 
 process(parse = Composite(parser, linker),
         xref = xref,
