@@ -16,26 +16,26 @@ namespace
 }
 
 TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
-  : my_types(types), my_verbose(v), my_debug(d)
+  : my_types(types), my_type_kit("C"), my_verbose(v), my_debug(d)
 {
   Trace trace("TypeTranslator::TypeTranslator");
   // define all the builtin types
   Python::Object define = my_types.attr("__setitem__");
-  define(Python::Tuple(qname("char"), my_type_kit.create_base("C", qname("char"))));
-  define(Python::Tuple(qname("short"), my_type_kit.create_base("C", qname("short"))));
-  define(Python::Tuple(qname("int"), my_type_kit.create_base("C", qname("int"))));
-  define(Python::Tuple(qname("long"), my_type_kit.create_base("C", qname("long"))));
-  define(Python::Tuple(qname("unsigned"), my_type_kit.create_base("C", qname("unsigned"))));
-  define(Python::Tuple(qname("unsigned long"), my_type_kit.create_base("C", qname("unsigned long"))));
-  define(Python::Tuple(qname("float"), my_type_kit.create_base("C", qname("float"))));
-  define(Python::Tuple(qname("double"), my_type_kit.create_base("C", qname("double"))));
-  define(Python::Tuple(qname("void"), my_type_kit.create_base("C", qname("void"))));
-  define(Python::Tuple(qname("..."), my_type_kit.create_base("C", qname("..."))));
-  define(Python::Tuple(qname("long long"), my_type_kit.create_base("C", qname("long long"))));
-  define(Python::Tuple(qname("long double"), my_type_kit.create_base("C", qname("long double"))));
+  define(Python::Tuple(qname("char"), my_type_kit.create_base(qname("char"))));
+  define(Python::Tuple(qname("short"), my_type_kit.create_base(qname("short"))));
+  define(Python::Tuple(qname("int"), my_type_kit.create_base(qname("int"))));
+  define(Python::Tuple(qname("long"), my_type_kit.create_base(qname("long"))));
+  define(Python::Tuple(qname("unsigned"), my_type_kit.create_base(qname("unsigned"))));
+  define(Python::Tuple(qname("unsigned long"), my_type_kit.create_base(qname("unsigned long"))));
+  define(Python::Tuple(qname("float"), my_type_kit.create_base(qname("float"))));
+  define(Python::Tuple(qname("double"), my_type_kit.create_base(qname("double"))));
+  define(Python::Tuple(qname("void"), my_type_kit.create_base(qname("void"))));
+  define(Python::Tuple(qname("..."), my_type_kit.create_base(qname("..."))));
+  define(Python::Tuple(qname("long long"), my_type_kit.create_base(qname("long long"))));
+  define(Python::Tuple(qname("long double"), my_type_kit.create_base(qname("long double"))));
 
   // some GCC extensions...
-  define(Python::Tuple(qname("__builtin_va_list"), my_type_kit.create_base("C", qname("__builtin_va_list"))));
+  define(Python::Tuple(qname("__builtin_va_list"), my_type_kit.create_base(qname("__builtin_va_list"))));
 }
 
 AST::Type TypeTranslator::lookup(PTree::Encoding const &name)
@@ -78,7 +78,7 @@ AST::Type TypeTranslator::declare(AST::ScopedName name,
 {
   Trace trace("TypeTranslator::declare");
   trace << name;
-  AST::Type type = my_type_kit.create_declared("C", name, declaration);
+  AST::Type type = my_type_kit.create_declared(name, declaration);
   my_types.attr("__setitem__")(Python::Tuple(name, type));
   return type;
 }
@@ -227,7 +227,7 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
   if (premod.empty() && postmod.empty())
     type = base;
   else
-    type = my_type_kit.create_modifier("C", base, premod, postmod);
+    type = my_type_kit.create_modifier(base, premod, postmod);
 
   return i;
 }
@@ -258,6 +258,6 @@ PTree::Encoding::iterator TypeTranslator::decode_func_ptr(PTree::Encoding::itera
   }
   ++i; // skip over '_'
   i = decode_type(i, type);
-  type = my_type_kit.create_function_ptr("C", type, premod, parameters);
+  type = my_type_kit.create_function_ptr(type, premod, parameters);
   return i;
 }

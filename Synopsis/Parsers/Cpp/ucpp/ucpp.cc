@@ -43,7 +43,7 @@ AST::SourceFile create_source_file(const std::string &filename, bool is_main)
   Path path = Path(filename).abs();
   path.strip(base_path);
   std::string name = path.str();
-  AST::SourceFile sf = kit->create_source_file(name, filename, language);
+  AST::SourceFile sf = kit->create_source_file(name, filename);
   Python::Dict files = ast->files();
   files.set(name, sf);
   if (is_main) sf.is_main(true);
@@ -75,8 +75,8 @@ void create_macro(const char *filename, int line,
     for (int i = 0; i < num_args; ++i) params.append(args[i]);
     if (vaarg) params.append("...");
   }
-  AST::Macro macro = kit->create_macro(sf, line, language, name, params, text);
-  AST::Declared declared = types->create_declared(language, name, macro);
+  AST::Macro macro = kit->create_macro(sf, line, name, params, text);
+  AST::Declared declared = types->create_declared(name, macro);
 
   Python::List declarations = ast->declarations();
   declarations.append(macro);
@@ -134,8 +134,8 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
     ast.reset(new AST::AST(py_ast));
-    kit.reset(new AST::ASTKit());
-    types.reset(new AST::TypeKit());
+    kit.reset(new AST::ASTKit(language));
+    types.reset(new AST::TypeKit(language));
 
     if (py_base_path)
     {
