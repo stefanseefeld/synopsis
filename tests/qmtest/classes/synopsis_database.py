@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis_database.py,v 1.3 2003/12/02 16:34:30 stefan Exp $
+# $Id: synopsis_database.py,v 1.4 2004/01/12 20:31:03 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -7,15 +7,22 @@
 # see the file COPYING for details.
 #
 
-from   qm.test import database
-from   qm.test.database import TestDescriptor
-from   qm.test.database import NoSuchTestError, NoSuchSuiteError
-from   qm.test.suite import Suite
+from qm.fields import TextField
+from qm.test import database
+from qm.test.database import TestDescriptor
+from qm.test.database import NoSuchTestError, NoSuchSuiteError
+from qm.test.suite import Suite
 
 import os, string, dircache
 
 class Database(database.Database):
    """The Database stores the synopsis tests."""
+
+   arguments = [TextField(name="CXX"),
+                TextField(name="CPPFLAGS"),
+                TextField(name="CXXFLAGS"),
+                TextField(name="LDFLAGS"),
+                TextField(name="LIBS")]
 
    def GetSuite(self, id):
       """Construct a suite for the given id"""
@@ -41,6 +48,17 @@ class Database(database.Database):
                            dircache.listdir(path))
          suite_ids = []
 
+      elif id.startswith('Cxx-API'):
+         test_ids = []
+         suite_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
+                            dircache.listdir(path))
+         if 'src' in suite_ids:
+            test_ids = map(lambda x: os.path.splitext(x)[0],
+                           filter(lambda x: x.endswith('.cc'),   
+                                  dircache.listdir(os.path.join(path, 'src'))))
+            suite_ids.remove('src')
+            if 'expected' in suite_ids: suite_ids.remove('expected')
+
       else:
          test_ids = []
          suite_ids = filter(lambda x: os.path.isdir(os.path.join(path, x)),
@@ -48,10 +66,12 @@ class Database(database.Database):
          if 'input' in suite_ids:
             test_ids = map(lambda x: os.path.splitext(x)[0],
                            dircache.listdir(os.path.join(path, 'input')))
-            if 'CVS' in test_ids: test_ids.remove('CVS')
             suite_ids.remove('input')
             if 'expected' in suite_ids: suite_ids.remove('expected')
-         if 'CVS' in suite_ids: suite_ids.remove('CVS')
+
+      if 'CVS' in test_ids: test_ids.remove('CVS')
+      if 'CVS' in suite_ids: suite_ids.remove('CVS')
+      if 'autom4te.cache' in suite_ids: suite_ids.remove('autom4te.cache')
 
       if id:
          test_ids = map(lambda x: string.join([id, x], '.'), test_ids)
@@ -66,6 +86,10 @@ class Database(database.Database):
          
       if id.startswith('Processors.Linker'):
          return self.make_linker_test(id)
+
+      elif id.startswith('Cxx-API'):
+         return self.make_api_test(id)
+
       else:
          return self.make_test(id)
 
@@ -116,3 +140,21 @@ class Database(database.Database):
       parameters['synopsis'] = os.path.join(*components + ['synopsis.py'])
       
       return TestDescriptor(self, id, 'synopsis_test.ProcessorTest', parameters)
+
+   def make_api_test(self, id):
+
+      components = id.split('.')
+      dirname = os.path.join(*components[:-1])
+
+      parameters = {}
+      parameters['CXX'] = self.CXX
+      parameters['CPPFLAGS'] = self.CPPFLAGS
+      parameters['CXXFLAGS'] = self.CXXFLAGS
+      parameters['LDFLAGS'] = self.LDFLAGS
+      parameters['LIBS'] = self.LIBS
+      parameters['src'] = os.path.join(dirname, 'src', components[-1]) + '.cc'
+      parameters['exe'] = os.path.join(dirname, 'bin', components[-1])
+      parameters['expected'] = os.path.join(dirname, 'expected',
+                                            components[-1] + '.out')
+      
+      return TestDescriptor(self, id, 'synopsis_test.APITest', parameters)
