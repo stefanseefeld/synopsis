@@ -85,4 +85,12 @@ void Visitor::visitDeclaration(Declaration*) {}
 void Visitor::visitScope(Scope* d) { visitDeclaration(d); }
 void Visitor::visitNamespace(Namespace* d) { visitScope(d); }
 void Visitor::visitClass(Class* d) { visitScope(d); }
-void Visitor::visitInheritance(Inheritance*) {}
+void Visitor::visitInheritance(Inheritance* d) {}
+void Visitor::visitForward(Forward* d) { visitDeclaration(d); }
+void Visitor::visitTypedef(Typedef* d) { visitDeclaration(d); }
+void Visitor::visitVariable(Variable* d) { visitDeclaration(d); }
+void Visitor::visitEnum(Enum* d) { visitDeclaration(d); }
+void Visitor::visitEnumerator(Enumerator* d) { visitDeclaration(d); }
+void Visitor::visitFunction(Function* d) { visitDeclaration(d); }
+void Visitor::visitOperation(Operation* d) { visitFunction(d); }
+void Visitor::visitParameter(Parameter* d) { }
