@@ -85,6 +85,38 @@ Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
     return 0;
 }
 
+Ptree* SWalker::TranslateClassSpec(Ptree* node) 
+{
+    Trace trace("SWalker::TranslateClassSpec");
+    if (Ptree::Length(node) == 4) {
+	// if Class definition (not just declaration)
+	//bool is_struct = node->First()->Eq("struct");
+	
+	// Create AST.Class object
+        string type = getName(node->First());
+        string name = getName(node->Second());
+        /*AST::Class *clas =*/ m_builder->startClass(type, name);
+	//PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	//addComments(clas, cspec->GetComments());
+
+        // Add parents to Class object
+        //vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
+        //Synopsis::addInheritance(clas, parents);
+
+        // Translate the body of the class
+        //Class* meta = MakeClassMetaobject(node, NULL, node);
+        //synopsis->pushClass(clas);
+	//synopsis->pushAccess(is_struct ? Synopsis::Public : Synopsis::Private);
+        //TranslateClassBody(node->Nth(3), node->Nth(2), meta);
+	TranslateBlock(node->Nth(3));
+	//synopsis->popAccess();
+        //synopsis->popScope();
+	m_builder->endClass();
+
+    }
+    return 0;
+}
+
 //. Block
 //. [ { [ <statement>* ] } ]
 Ptree* SWalker::TranslateBlock(Ptree* block) {
@@ -124,15 +156,28 @@ Ptree* SWalker::TranslateTemplateDecl(Ptree* def)
     return 0;
 }
 
+//. Translates a declaration, either variable, typedef or function
+//. Variables:
+//.  [ [modifiers] name [declarators] ; ]
+//. Function prototype:
+//.  [ [modifiers] name [declarators] ; ]
+//. Function impl:
+//.  [ [modifiers] name declarator [ { ... } ] ]
+//. Typedef:
+//.  ?
+//. Class definition:
+//.  [ [modifiers] [class foo ...] [declarators]? ; ]
 Ptree* SWalker::TranslateDeclaration(Ptree* def) 
 {
     Trace trace("SWalker::TranslateDeclaration");
+    def->Display(); cout << endl;
     Ptree* decls = Ptree::Third(def);
     if (decls->IsA(ntDeclarator))	// if it is a function
 	TranslateFunctionImplementation(def);
     else {
 	// if it is a function prototype or a variable declaration.
-	TranslateStorageSpecifiers(Ptree::First(def));
+	/////TranslateStorageSpecifiers(Ptree::First(def));
+	// Typespecifier may be a class {} etc.
 	TranslateTypespecifier(Ptree::Second(def));
 	if (!decls->IsLeaf())	// if it is not ";"
 	    TranslateDeclarators(decls);
@@ -144,11 +189,12 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
 Ptree* SWalker::TranslateDeclarators(Ptree* decls) 
 {
     Trace trace("SWalker::TranslateDeclarators");
-    Ptree* rest = decls, *exp, *p;
-    int len;
+    Ptree* rest = decls, /* *exp,*/ *p;
+    //int len;
     while (rest != nil) {
 	p = rest->Car();
 	if (p->IsA(ntDeclarator)) {
+	    /*
 	    len = p->Length();
 	    if (len >= 2 && p->Nth(len - 2)->Eq('=')) {
 		exp = p->ListTail(len - 2);
@@ -160,6 +206,7 @@ Ptree* SWalker::TranslateDeclarators(Ptree* decls)
 		    TranslateInitializeArgs((PtreeDeclarator*)p, last);
 		}
 	    }
+	    */
 
 	    TranslateDeclarator(p);
 	} // if. There is no else..?
@@ -179,6 +226,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 {
     Trace trace("SWalker::TranslateDeclarator *** NYI");
     // Insert code from occ.cc here
+    decl->Display(); cout << endl;
     return 0;
 }
 
@@ -204,7 +252,6 @@ Ptree* SWalker::TranslateStorageSpecifiers(Ptree*) { Trace trace("SWalker::Trans
 Ptree* SWalker::TranslateFunctionImplementation(Ptree*) { Trace trace("SWalker::TranslateFunctionImplementation NYI"); return 0; }
 Ptree* SWalker::TranslateFunctionBody(Ptree*) { Trace trace("SWalker::TranslateFunctionBody NYI"); return 0; }
 
-Ptree* SWalker::TranslateClassSpec(Ptree*) { Trace trace("SWalker::TranslateClassSpec NYI"); return 0; }
 Ptree* SWalker::TranslateEnumSpec(Ptree*) { Trace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
 
 Ptree* SWalker::TranslateAccessSpec(Ptree*) { Trace trace("SWalker::TranslateAccessSpec NYI"); return 0; }

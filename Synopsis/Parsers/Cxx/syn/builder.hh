@@ -19,13 +19,28 @@ public:
     Builder();
     //. Destructor. Recursively destroys all AST objects
     ~Builder();
-   
+
+    //. Returns the current scope
+    AST::Scope* scope() { return m_scope; }
+
+    //. Add the given Declaration to the current scope
+    void add(AST::Declaration*);
+
     //. Construct and open a new Namespace. The Namespace is becomes the
     //. current scope, and the old one is pushed onto the stack.
     AST::Namespace* startNamespace(string name);
 
     //. End the current namespace and pop the previous Scope off the stack
     void endNamespace();
+
+    //. Construct and open a new Class. The Class becomes the current scope,
+    //. and the old one is pushed onto the stack. The type argument is the
+    //. type, ie: "class" or "struct". This is tested to determine the default
+    //. accessability.
+    AST::Class* startClass(string type, string name);
+
+    //. End the current class and pop the previous Scope off the stack
+    void endClass();
 
 private:
     //. Current filename

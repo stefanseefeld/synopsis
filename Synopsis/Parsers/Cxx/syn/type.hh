@@ -8,8 +8,6 @@
 #include <string>
 using std::string;
 
-// Forward declare AST::Name
-namespace AST { typedef vector<string> Name; }
 // Forward declare AST::Declaration
 namespace AST { class Declaration; }
 
@@ -17,7 +15,7 @@ namespace AST { class Declaration; }
 namespace Type {
 
     // Import Name type
-    using AST::Name;
+    typedef vector<string> Name;
 
     // Forward declaration of the Visitor class defined in this file
     class Visitor;
