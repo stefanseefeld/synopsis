@@ -138,7 +138,8 @@ enum GccAttribType
     GCC_Format,
    
     GCC_Const,
-    GCC_NoReturn
+    GCC_NoReturn,
+    GCC_Malloc
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -344,6 +344,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <GCC_ATTRIB>"noreturn"    { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = NORETURN); }
 <GCC_ATTRIB>"__noreturn"  { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = NORETURN); }
 <GCC_ATTRIB>"__noreturn__" { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = NORETURN); }
+<GCC_ATTRIB>"__malloc__" { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = MALLOC); }
 
 <INITIAL>"__const"  {
                       lvalp->typeQual = TQ_Const;
