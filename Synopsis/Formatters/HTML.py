@@ -322,6 +322,25 @@ class TableOfContents(Visitor.AstVisitor):
 
     def insert(self, entry): self.__toc[tuple(entry.name)] = entry
 
+    def store(self, file):
+        """store the table of contents into a file, such that it can be used later when cross referencing"""
+        fout = open(file, 'w')
+        for name in self.__toc.keys():
+            scopedname = string.join(name, "::")
+            lang = self.__toc[tuple(name)].lang
+            link = os.path.join(basename, self.__toc[tuple(name)].link)
+            fout.write(scopedname + " " + lang + " " + link + "\n")
+            
+    def load(self, file):
+        fin = open(os.path.join("..", file), 'r')
+        line = fin.readline()
+        while line:
+            scopedname, lang, link = string.split(line)
+            name = string.split(scopedname, "::")
+            entry = TocEntry(name, os.path.join("..", link), lang, "decl")
+            self.insert(entry)
+            line = fin.readline()
+
     #def globalns(self): return self.__global
     #def set_global(self, ns): self.__global = ns
 
@@ -503,6 +522,7 @@ class BaseFormatter(Visitor.AstVisitor):
 	"""Same as reference but takes a tuple name"""
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = toc[name]
+        if not entry: print "lookup failed for", name
 	if entry: return apply(href, (entry.link, label), keys)
 	return label and span('type', label) or ''
 
@@ -552,7 +572,7 @@ class BaseFormatter(Visitor.AstVisitor):
     def visitBaseType(self, type):
         self.__type_label = self.referenceName(type.name())
         
-    def visitForward(self, type):
+    def visitForwardType(self, type):
         self.__type_label = self.referenceName(type.name())
         #self.__type_label = Util.ccolonName(type.name(), self.scope())
         
@@ -1155,16 +1175,18 @@ HTML Formatter Usage:
 """
 
 def __parseArgs(args):
-    global basename, stylesheet, namespace, commentParser, stylesheet_file
+    global basename, stylesheet, namespace, commentParser, stylesheet_file, toc_out, toc_in
     global commentFormatterList
     basename = None
     stylesheet = ""
     stylesheet_file = None
     namespace = ""
     commentParser = "default"
+    toc_out = ""
+    toc_in = []
     commentFormatterList = []
     try:
-        opts,remainder = Util.getopt_spec(args, "ho:s:n:c:S:")
+        opts,remainder = Util.getopt_spec(args, "ho:s:n:c:S:t:r:")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1185,12 +1207,16 @@ def __parseArgs(args):
 	    else:
 		print "Available comment formatters:",string.join(commentFormatters.keys(), ', ')
 		sys.exit(1)
+        elif o == "-t":
+            toc_out = a
+        elif o == "-r":
+            toc_in.append(a)
 	elif o == "-h":
 	    usage()
 	    sys.exit(1)
 
 def format(types, declarations, args):
-    global basename, stylesheet, toc, filer
+    global basename, stylesheet, toc, filer, toc_out, toc_in
     __parseArgs(args)
 
     # Create the file namer
@@ -1211,6 +1237,8 @@ def format(types, declarations, args):
 
     # Create table of contents index
     TableOfContents()
+    # load external references from toc files, if any
+    for t in toc_in: toc.load(t)
 
     if debug: print "HTML Formatter: Initialising TOC"
     # Add all declarations to the namespace tree
@@ -1232,4 +1260,5 @@ def format(types, declarations, args):
     if debug: print "HTML Formatter: Done!"
 
     filer.chdirRestore()
+    if len(toc_out): toc.store(toc_out)
 
