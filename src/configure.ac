@@ -64,7 +64,7 @@ AC_CONFIG_FILES([Synopsis/PTree/GC.hh
 
 mkdir -p lib
 mkdir -p bin
-mkdir -p gc
+mkdir -p Synopsis/gc
 mkdir -p Synopsis/PTree
 mkdir -p Synopsis/SymbolLookup
 mkdir -p tools
