@@ -29,13 +29,12 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#include <ctool/decl.h>
-#include <ctool/stemnt.h>
-#include <ctool/project.h>
-#include <ctool/express.h>
-#include <ctool/symbol.h>
-
-#include <ctool/PrintTraversal.h>
+#include <Declaration.hh>
+#include <Statement.hh>
+#include <Project.hh>
+#include <Expression.hh>
+#include <Symbol.hh>
+#include <PrintTraversal.hh>
 
 PrintTraversal::PrintTraversal(std::ostream &os, bool d)
    : out(os), debug(d), level(0), show_base(true)

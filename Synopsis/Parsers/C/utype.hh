@@ -30,11 +30,11 @@
     ##
     ###############################################################  */
 
-#ifndef    UTYPE_H
-#define    UTYPE_H
+#ifndef _utype_h
+#define _utype_h
 
-#include <ctool/config.h>
-#include <ctool/identify.h>
+#include <config.hh>
+#include <identify.hh>
 
 /*  ###############################################################  */
 
@@ -46,4 +46,4 @@
 
 /*  ###############################################################  */
 
-#endif    /* UTYPE_H */
+#endif

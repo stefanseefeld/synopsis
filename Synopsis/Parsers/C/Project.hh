@@ -31,16 +31,16 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef    PROJECT_H
-#define    PROJECT_H
+#ifndef _Project_hh
+#define _Project_hh
+
+#include <ParseEnv.hh>
+#include <Symbol.hh>
+#include <Callback.hh>
 
 #include <cstdlib>
 #include <iostream>
 #include <cassert>
-
-#include <ctool/parseenv.h>
-#include <ctool/symbol.h>
-#include <ctool/callback.h>
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 

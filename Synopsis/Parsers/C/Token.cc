@@ -30,419 +30,417 @@
     ##
     ###############################################################  */
 
-#include    <cstdio>
-#include    <cstring>
-#include    <cstdlib>
-#include    <cassert>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cassert>
 
-#include    "gram.h"
+#include "Grammar.hh"
 
 /*  ###############################################################  */
 
 char *toksym(int tok, int white)
 {
-    switch (tok)
-    {
+  switch (tok)
+  {
     /* Special Tokens */
     default:
     case INVALID:
-        return("Invalid Token");
+      return("Invalid Token");
 
     case IDENT:
-        return("Identifier");
+      return("Identifier");
 
     case TAG_NAME:
-        return("Tag Name");
+      return("Tag Name");
 
     case TYPEDEF_NAME:
-        return("Typedef Name");
+      return("Typedef Name");
 
     case STRING:
-        return("String Constant");
+      return("String Constant");
 
     case LSTRING:
-        return("Wide String Constant");
+      return("Wide String Constant");
 
     case CHAR_CONST:
-        return("Character Constant");
+      return("Character Constant");
 
     case LCHAR_CONST:
-        return("Wide Character Constant");
+      return("Wide Character Constant");
 
     case INUM:
-        return("Integer Numeric Constant");
+      return("Integer Numeric Constant");
 
     case RNUM:
-        return("Real Numeric Constant");
+      return("Real Numeric Constant");
 
     
     /* Regular keywords */
     case AUTO:
-        if (white)
-          return("auto ");
-        else
-          return("auto");
+      if (white)
+	return("auto ");
+      else
+	return("auto");
 
     case BREAK:
-        return("break");
+      return("break");
 
     case CASE:
-        if (white)
-          return("case ");
-        else
-          return("case");
+      if (white)
+	return("case ");
+      else
+	return("case");
 
     case CHAR:
-        if (white)
-          return("char ");
-        else
-          return("char");
+      if (white)
+	return("char ");
+      else
+	return("char");
 
     case CONST:
-        if (white)
-          return("const ");
-        else
-          return("const");
+      if (white)
+	return("const ");
+      else
+	return("const");
 
     case CONT:
-        return("continue");
+      return("continue");
 
     case DEFLT:
-        return("default");
+      return("default");
 
     case DO:
-        if (white)
-          return("do ");
-        else
-          return("do");
-
+      if (white)
+	return("do ");
+      else
+	return("do");
+      
     case DOUBLE:
-        if (white)
-          return("double ");
-        else
-          return("double");
-
+      if (white)
+	return("double ");
+      else
+	return("double");
+      
     case ELSE:
-        return("else");
+      return("else");
 
     case ENUM:
-        if (white)
-          return("enum ");
-        else
-          return("enum");
+      if (white)
+	return("enum ");
+      else
+	return("enum");
 
     case EXTRN:
-        if (white)
-          return("extern ");
-        else
-          return("extern");
+      if (white)
+	return("extern ");
+      else
+	return("extern");
 
     case FLOAT:
-        if (white)
-          return("float ");
-        else
-          return("float");
+      if (white)
+	return("float ");
+      else
+	return("float");
 
     case FOR:
-        if (white)
-          return("for ");
-        else
-          return("for");
+      if (white)
+	return("for ");
+      else
+	return("for");
 
     case GOTO:
-        if (white)
-          return("goto ");
-        else
-          return("goto");
+      if (white)
+	return("goto ");
+      else
+	return("goto");
 
     case IF:
-        if (white)
-          return("if ");
-        else
-          return("if");
+      if (white)
+	return("if ");
+      else
+	return("if");
 
     case INT:
-        if (white)
-          return("int ");
-        else
-          return("int");
+      if (white)
+	return("int ");
+      else
+	return("int");
 
     case LONG:
-        if (white)
-          return("long ");
-        else
-          return("long");
+      if (white)
+	return("long ");
+      else
+	return("long");
 
     case REGISTR:
-        if (white)
-          return("register ");
-        else
-          return("register");
+      if (white)
+	return("register ");
+      else
+	return("register");
 
     case RETURN:
-        if (white)
-          return("return ");
-        else
-          return("return");
+      if (white)
+	return("return ");
+      else
+	return("return");
 
     case SHORT:
-        if (white)
-          return("short ");
-        else
-          return("short");
+      if (white)
+	return("short ");
+      else
+	return("short");
 
     case SGNED:
-        if (white)
-          return("signed ");
-        else
-          return("signed");
+      if (white)
+	return("signed ");
+      else
+	return("signed");
 
     case SIZEOF:
-        return("sizeof");
+      return("sizeof");
 
     case STATIC:
-        if (white)
-          return("static ");
-        else
-          return("static");
+      if (white)
+	return("static ");
+      else
+	return("static");
 
     case STRUCT:
-        if (white)
-          return("struct ");
-        else
-          return("struct");
+      if (white)
+	return("struct ");
+      else
+	return("struct");
 
     case SWITCH:
-        if (white)
-          return("switch ");
-        else
-          return("switch");
+      if (white)
+	return("switch ");
+      else
+	return("switch");
 
     case TYPEDEF:
-        if (white)
-          return("typedef ");
-        else
-          return("typedef");
+      if (white)
+	return("typedef ");
+      else
+	return("typedef");
 
     case UNION:
-        if (white)
-          return("union ");
-        else
-          return("union");
+      if (white)
+	return("union ");
+      else
+	return("union");
 
     case UNSGNED:
-        if (white)
-          return("unsigned ");
-        else
-          return("unsigned");
+      if (white)
+	return("unsigned ");
+      else
+	return("unsigned");
 
     case VOID:
-        if (white)
-          return("void ");
-        else
-          return("void");
+      if (white)
+	return("void ");
+      else
+	return("void");
 
     case VOLATILE:
-        if (white)
-          return("volatile ");
-        else
-          return("volatile");
+      if (white)
+	return("volatile ");
+      else
+	return("volatile");
 
     case WHILE:
-        if (white)
-          return("while ");
-        else
-          return("while");
+      if (white)
+	return("while ");
+      else
+	return("while");
     
     // Gcc Extensions
     case ATTRIBUTE:
-        if (white)
-          return("__attribute__ ");
-        else
-          return("__attribute__");
+      if (white)
+	return("__attribute__ ");
+      else
+	return("__attribute__");
 
     case ALIGNED:
-        if (white)
-          return("aligned ");
-        else
-          return("aligned");
+      if (white)
+	return("aligned ");
+      else
+	return("aligned");
 
     case PACKED:
-        if (white)
-          return("packed ");
-        else
-          return("packed");
+      if (white)
+	return("packed ");
+      else
+	return("packed");
 
     // Operators
     case PLUS:
-        return("+");
+      return("+");
 
     case MINUS:
-        return("-");
+      return("-");
 
     case STAR:
-        return("*");
+      return("*");
 
     case DIV:
-        return("/");
+      return("/");
 
     case MOD:
-        return("%");
+      return("%");
     
 
     case EQ:
-        return("=");
+      return("=");
 
     case PLUS_EQ:
-        return("+=");
+      return("+=");
 
     case MINUS_EQ:
-        return("-=");
+      return("-=");
 
     case STAR_EQ:
-        return("*=");
+      return("*=");
 
     case DIV_EQ:
-        return("/=");
+      return("/=");
 
     case MOD_EQ:
-        return("%=");
+      return("%=");
     
 
     case NOT:
-        return("!");
+      return("!");
 
     case AND:
-        return("&&");
+      return("&&");
 
     case OR:
-        return("||");
+      return("||");
 
     case B_NOT:
-        return("~");
+      return("~");
 
     case B_AND:
-        return("&");
+      return("&");
 
     case B_OR:
-        return("|");
+      return("|");
 
     case B_XOR:
-        return("^");
+      return("^");
     
 
     case B_AND_EQ:
-        return("&=");
+      return("&=");
 
     case B_OR_EQ:
-        return("|=");
+      return("|=");
 
     case B_XOR_EQ:
-        return("^=");
+      return("^=");
     
 
     case L_SHIFT:
-        return("<<");
+      return("<<");
 
     case R_SHIFT:
-        return(">>");
+      return(">>");
 
     case L_SHIFT_EQ:
-        return("<<=");
+      return("<<=");
 
     case R_SHIFT_EQ:
-        return(">>=");
+      return(">>=");
     
 
     case EQUAL:
-        return("==");
+      return("==");
 
     case LESS:
-        return("<");
+      return("<");
 
     case LESS_EQ:
-        return("<=");
+      return("<=");
 
     case GRTR:
-        return(">");
+      return(">");
 
     case GRTR_EQ:
-        return(">=");
+      return(">=");
 
     case NOT_EQ:
-        return("!=");
+      return("!=");
     
 
     case ASSIGN:
-        return("Invalid (assignment)");
+      return("Invalid (assignment)");
 
     case INCR:
-        return("++");
+      return("++");
 
     case DECR:
-        return("--");
+      return("--");
     
 
     case LPAREN:
-        return("(");
+      return("(");
 
     case RPAREN:
-        return(")");
+      return(")");
 
     case LBRCKT:
-        return("[");
+      return("[");
 
     case RBRCKT:
-        return("]");
+      return("]");
 
     case LBRACE:
-        return("{");
+      return("{");
 
     case RBRACE:
-        return("}");
+      return("}");
     
 
     case DOT:
-        return(".");
+      return(".");
 
     case ARROW:
-        return("->");
+      return("->");
     
 
     case QUESTMARK:
-        return("?");
+      return("?");
 
     case COLON:
-        return(":");
+      return(":");
 
     case SEMICOLON:
-        return(";");
+      return(";");
 
     case COMMA:
-        return(",");
+      return(",");
 
     case ELLIPSIS:
-        return("...");
+      return("...");
     
 
     case LB_SIGN:
-        return("#");
+      return("#");
 
     case DOUB_LB_SIGN:
-        return("##");
+      return("##");
 
 
     /* Illegal? */    
     case BACKQUOTE:
-        return("`");
+      return("`");
 
     case AT:
-        return("@");
+      return("@");
 
     case PP_LINE:
-        return("#line");
+      return("#line");
     }
 }
-
-/*  ###############################################################  */
 

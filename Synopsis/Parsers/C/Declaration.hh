@@ -31,20 +31,18 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef    DECL_H
-#define    DECL_H
+#ifndef _Declaration_hh
+#define _Declaration_hh
+
+#include <Symbol.hh>
+#include <Callback.hh>
+#include <Location.hh>
+#include <Dup.hh>
+#include <Traversal.hh>
 
 #include <iostream>
 #include <vector>
 #include <cassert>
-
-#include <ctool/symbol.h>
-#include <ctool/callback.h>
-#include <ctool/location.h>
-
-#include <ctool/dup.h>
-
-#include <ctool/Traversal.h>
 
 class Constant;
 class Expression;

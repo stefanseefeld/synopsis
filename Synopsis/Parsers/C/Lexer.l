@@ -31,14 +31,14 @@ extern "C" int yywrap(void);
 #include <string>
 #include <cerrno>
 
-#include <ctool/config.h>
-#include "gram.h"
-#include <ctool/lexer.h>
-#include <ctool/token.h>
-#include <ctool/symbol.h>
-#include <ctool/express.h>
-#include <ctool/stemnt.h>
-#include <ctool/project.h>
+#include <config.hh>
+#include "Grammar.hh"
+#include <Lexer.hh>
+#include <Token.hh>
+#include <Symbol.hh>
+#include <Expression.hh>
+#include <Statement.hh>
+#include <Project.hh>
 
 #ifdef   WINDOWS
 #    ifndef  __STDC__

@@ -29,10 +29,10 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef _PrintTraversal_h
-#define _PrintTraversal_h
+#ifndef _PrintTraversal_hh
+#define _PrintTraversal_hh
 
-#include <ctool/Traversal.h>
+#include <Traversal.hh>
 #include <iostream>
 
 class PrintTraversal : public Traversal

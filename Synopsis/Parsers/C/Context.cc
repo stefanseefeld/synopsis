@@ -30,16 +30,14 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
+#include <config.hh>
+#include <ParseEnv.hh>
+#include <Context.hh>
+#include <Symbol.hh>
+#include <Project.hh>
+#include <Declaration.hh>
+#include <Statement.hh>
 #include <iostream>
-
-#include <ctool/config.h>
-
-#include <ctool/parseenv.h>
-#include <ctool/context.h>
-#include <ctool/symbol.h>
-#include <ctool/project.h>
-#include <ctool/decl.h>
-#include <ctool/stemnt.h>
 
 //#define STATISTICS
 
@@ -54,18 +52,18 @@ EXTERN int yyerr ARGS((char* s));
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 void yyCheckLabelsDefinition (SymTbl* labels)
 {
-	if (labels->clevel == FUNCTION_SCOPE && labels->current)
+  if (labels->clevel == FUNCTION_SCOPE && labels->current)
+  {
+    HashTbl* htab = labels->current->htab;
+    if (htab)
+      for (int j = 0; j < htab->tsize; j++)
+	for (SymEntry* curr = htab->tab[j]; curr; curr = curr->next)
 	{
-		HashTbl* htab = labels->current->htab;
-		if (htab)
-			for (int j = 0; j < htab->tsize; j++)
-				for (SymEntry* curr = htab->tab[j]; curr; curr = curr->next)
-				{
-					assert(curr->IsLabelDecl());
-					if (! curr->u2LabelPosition)
-						yyerr ("undefined label - ", curr->name);
-				}
+	  assert(curr->IsLabelDecl());
+	  if (! curr->u2LabelPosition)
+	    yyerr ("undefined label - ", curr->name);
 	}
+  }
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
@@ -93,21 +91,21 @@ void
 ParseCtxt::SetDeclCtxt (BaseType* decl_specsCtxt)
 {
 #ifdef DECL_DEBUG
-	std::cout << "SetDeclCtxt: ";
-	if (curCtxt->decl_specs)
-	{
-		std::cout << "(Overloading previous setting!: ";
-		curCtxt->decl_specs->printBase(std::cout, 0);
-		std::cout << ", used: " << curCtxt->nb_decl_uses << ")";
-	}  
+  std::cout << "SetDeclCtxt: ";
+  if (curCtxt->decl_specs)
+  {
+    std::cout << "(Overloading previous setting!: ";
+    curCtxt->decl_specs->printBase(std::cout, 0);
+    std::cout << ", used: " << curCtxt->nb_decl_uses << ")";
+  }  
 #endif
   
-	curCtxt->decl_specs = decl_specsCtxt;
-	curCtxt->nb_decl_uses = 0;
+  curCtxt->decl_specs = decl_specsCtxt;
+  curCtxt->nb_decl_uses = 0;
   
 #ifdef DECL_DEBUG
-	curCtxt->decl_specs->printBase(std::cout, 0);
-	std::cout << "\n";
+  curCtxt->decl_specs->printBase(std::cout, 0);
+  std::cout << "\n";
 #endif
 }
 
@@ -131,23 +129,23 @@ Type* ParseCtxt::UseDeclCtxt (void)
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 void ParseCtxt::PushCtxt (void)
 {
-    int varParam = curCtxt->varParam;
-    curCtxt++;
-    if (curCtxt == tabCtxt + size)
-    {
-        int old_size = size;
-        size += size;
-        ParseEnvCtxt* old_tabCtxt = tabCtxt;
-        tabCtxt = new ParseEnvCtxt [size];
-        for (int j = 0; j < old_size; j++)
-            tabCtxt[j] = old_tabCtxt[j];
-        delete [] old_tabCtxt;
-        curCtxt = tabCtxt + old_size;
-    }    
-    curCtxt->varParam = varParam;
-    curCtxt->possibleDuplication = NULL;
-    curCtxt->isKnR = false;
-    ResetDeclCtxt();
+  int varParam = curCtxt->varParam;
+  curCtxt++;
+  if (curCtxt == tabCtxt + size)
+  {
+    int old_size = size;
+    size += size;
+    ParseEnvCtxt* old_tabCtxt = tabCtxt;
+    tabCtxt = new ParseEnvCtxt [size];
+    for (int j = 0; j < old_size; j++)
+      tabCtxt[j] = old_tabCtxt[j];
+    delete [] old_tabCtxt;
+    curCtxt = tabCtxt + old_size;
+  }    
+  curCtxt->varParam = varParam;
+  curCtxt->possibleDuplication = NULL;
+  curCtxt->isKnR = false;
+  ResetDeclCtxt();
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
@@ -179,52 +177,52 @@ void ParseCtxt::ReinitializeCtxt (void)
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 BaseType* ParseCtxt::Mk_tag_ref (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* tags)
 {
-	if (! tagSym)
-		return NULL;
+  if (!tagSym)
+    return 0;
 
-	BaseType* result = new BaseType(tagType);
-	result->tag = tagSym;
+  BaseType* result = new BaseType(tagType);
+  result->tag = tagSym;
 
-	if (tagSym->entry)
-	{
+  if (tagSym->entry)
+  {
 //     std::cout << "struct/union/enum_tag_ref:"
 //       "There is a previous tag entry:"
 //               << "(" << tagSym->entry << ")" << tagSym->name << "$";
 //     tagSym->entry->scope->ShowScopeId(std::cout);
 //     std::cout << " which have to be consistent" << endl;
 
-		if (! tagSym->entry->uStructDef || tagSym->entry->uStructDef->typemask != tagType)
-		{
-			// ... which isn't compatible.
-			yyerr ("Unconsistant tag use: ", tagSym->name);
-			tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
-		}
-	}
-	else
-	{
-		tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
+    if (! tagSym->entry->uStructDef || tagSym->entry->uStructDef->typemask != tagType)
+    {
+      // ... which isn't compatible.
+      yyerr ("Unconsistant tag use: ", tagSym->name);
+      tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
+    }
+  }
+  else
+    {
+      tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
     
 //     std::cout << "struct/union/enum_tag_ref:"
 //       "There is no tag entry:"
 //               << "(" << tagSym->entry << ")" << tagSym->name  << "$";
 //     tagSym->entry->scope->ShowScopeId(std::cout);
 //     std::cout << " has been created" << endl;
-	}
+    }
 
-	return result;
+  return result;
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 BaseType* ParseCtxt::Mk_tag_def (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* tags)
 {
-	if (! tagSym)
-		return NULL;
+  if (!tagSym)
+    return 0;
     
-	BaseType* result = new BaseType(tagType);
-	result->tag = tagSym;
+  BaseType* result = new BaseType(tagType);
+  result->tag = tagSym;
   
-	if (tagSym->entry)
-	{
+  if (tagSym->entry)
+  {
   
 //     std::cout << "struct/union/enum_tag_ref:"
 //                      "There is a previous tag entry:"
@@ -235,23 +233,23 @@ BaseType* ParseCtxt::Mk_tag_def (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* t
 //     tagSym->entry->scope->ShowScopeId(std::cout);
 //     std::cout << " which have to be consistent" << endl;
         
-		if (! tagSym->entry->uStructDef || tagSym->entry->uStructDef->typemask != tagType)
-		{
-			// ... which isn't compatible.
-			yyerr ("Unconsistant tag use: ", tagSym->name);
-			tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
-		}
-	    else if ((tagSym->entry->uStructDef->stDefn || tagSym->entry->uStructDef->enDefn)
-			&& tagSym->entry->scope->level == tags->clevel)
-		{
-			// ... has alreay a definition at this level.
-			yyerr ("struct/union/enum tag redeclared: ", tagSym->name);
-			tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
-		}
-	}
-	else
-	{
-		tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
+    if (! tagSym->entry->uStructDef || tagSym->entry->uStructDef->typemask != tagType)
+    {
+      // ... which isn't compatible.
+      yyerr ("Unconsistant tag use: ", tagSym->name);
+      tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
+    }
+    else if ((tagSym->entry->uStructDef->stDefn || tagSym->entry->uStructDef->enDefn)
+	     && tagSym->entry->scope->level == tags->clevel)
+    {
+      // ... has alreay a definition at this level.
+      yyerr ("struct/union/enum tag redeclared: ", tagSym->name);
+      tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
+    }
+  }
+  else
+  {
+    tagSym->entry = tags->Insert(mk_tag(tagSym->name, result));
     
 //     std::cout << "struct/union/enum_tag_ref:"
 //       "There is no tag entry:"
@@ -259,23 +257,23 @@ BaseType* ParseCtxt::Mk_tag_def (BaseTypeSpec tagType, Symbol* tagSym, SymTbl* t
 //     tagSym->entry->scope->ShowScopeId(std::cout);
 //     std::cout << " has been created" << endl;
 
-	}
-
-	return result;
+  }
+  
+  return result;
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 {
-	if (! declSym)
-		return NULL;
+  if (!declSym)
+    return 0;
  
-	if (curCtxt->possibleDuplication != NULL)
-	{ 
-		yyerr("Warning: Duplicate name: ", declSym->name);
-	}
+  if (curCtxt->possibleDuplication != 0)
+  { 
+    yyerr("Warning: Duplicate name: ", declSym->name);
+  }
 
-	Decl*	result= new Decl(declSym);
+  Decl*	result= new Decl(declSym);
   
 //   std::cout << "isTypedefCtxt=" << IsTypedefDeclCtxt()
 //             << ", Var/Param=" << curCtxt->varParam
@@ -287,62 +285,62 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 //             << ", Parsing level=" << syms->clevel
 //             << std::endl;
   
-	if (curCtxt->varParam == 0)
-	{
-		if (IsTypedefDeclCtxt())
-		{
-			assert(gProject->Parse_TOS->err_top_level || ! isFieldId);
- 			if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
-				// There is a previous entry defined at the same level.
-				yyerr ("Duplicate typedef name: ", declSym->name);
+  if (curCtxt->varParam == 0)
+  {
+    if (IsTypedefDeclCtxt())
+    {
+      assert(gProject->Parse_TOS->err_top_level || ! isFieldId);
+      if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
+	// There is a previous entry defined at the same level.
+	yyerr ("Duplicate typedef name: ", declSym->name);
       
-			declSym->entry = syms->Insert(mk_typedef(declSym->name, result));
-		}
-		else
-		{
-			if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
-			{
-                                #if 0
-				if (! declSym->entry->IsFctDecl())
-					yyerr ("Symbol name duplicated: ", declSym->name);
-				else
-                                #endif
-					curCtxt->possibleDuplication=declSym->entry;
-			}
-
-			if (isFieldId)
-				declSym->entry = syms->Insert(mk_component(declSym->name, result));
-			else
-				declSym->entry = syms->Insert(mk_varfctdecl(declSym->name, result));
-		}
-	}
+      declSym->entry = syms->Insert(mk_typedef(declSym->name, result));
+    }
+    else
+    {
+      if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
+      {
+#if 0
+	if (! declSym->entry->IsFctDecl())
+	  yyerr ("Symbol name duplicated: ", declSym->name);
 	else
-	{
-		assert(gProject->Parse_TOS->err_top_level || ! IsTypedefDeclCtxt());
-
-		if (curCtxt->isKnR && curCtxt->varParam == 1)
-		{
-			if (! (declSym->entry && (declSym->entry->scope->level == syms->clevel)))
-			{
-				// There is not a previous entry defined at the same level.
-				yyerr ("Unknown parameter: ", declSym->name);
-				declSym->entry = syms->Insert(mk_paramdecl(declSym->name, result));
-			}
-			else if (declSym->entry->uVarDecl->form)
-			{
-				assert(declSym->entry->IsParamDecl());
-				yyerr("Duplicate type declaration: ", declSym->name);
-			}
-		}
-		else if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
-		{
-			// There is a previous entry defined at the same level.
-			yyerr("Duplicate parameter name: ", declSym->name);
-			declSym->entry = syms->Insert(mk_paramdecl(declSym->name, result));
-		}
-		else
-			declSym->entry = syms->Insert(mk_paramdecl(declSym->name, result));
-	}
+#endif
+	  curCtxt->possibleDuplication=declSym->entry;
+      }
+      
+      if (isFieldId)
+	declSym->entry = syms->Insert(mk_component(declSym->name, result));
+      else
+	declSym->entry = syms->Insert(mk_varfctdecl(declSym->name, result));
+    }
+  }
+  else
+  {
+    assert(gProject->Parse_TOS->err_top_level || ! IsTypedefDeclCtxt());
+    
+    if (curCtxt->isKnR && curCtxt->varParam == 1)
+    {
+      if (! (declSym->entry && (declSym->entry->scope->level == syms->clevel)))
+      {
+	// There is not a previous entry defined at the same level.
+	yyerr ("Unknown parameter: ", declSym->name);
+	declSym->entry = syms->Insert(mk_paramdecl(declSym->name, result));
+      }
+      else if (declSym->entry->uVarDecl->form)
+      {
+	assert(declSym->entry->IsParamDecl());
+	yyerr("Duplicate type declaration: ", declSym->name);
+      }
+    }
+    else if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
+    {
+      // There is a previous entry defined at the same level.
+      yyerr("Duplicate parameter name: ", declSym->name);
+      declSym->entry = syms->Insert(mk_paramdecl(declSym->name, result));
+    }
+    else
+      declSym->entry = syms->Insert(mk_paramdecl(declSym->name, result));
+  }
     
 //     std::cout << "isTypedefCtxt=" << IsTypedefDeclCtxt()
 //               << ", Var/Param=" << curCtxt->varParam
@@ -355,108 +353,106 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 //               << ", Duplication=" << (curCtxt->possibleDuplication ? curCtxt->possibleDuplication->name : "NO")
 //               << std::endl;
 
-	return result;
+  return result;
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 void ParseCtxt::Mk_declarator(Decl* decl)
 {
-	if (! decl)
-		return;
+  if (! decl)
+    return;
   
-	Symbol* ident = decl->name;
+  Symbol* ident = decl->name;
      
-	assert(! curCtxt->possibleDuplication || ident->entry);
+  assert(! curCtxt->possibleDuplication || ident->entry);
   
-	if (ident && ident->entry)
-	{
-		if (curCtxt->possibleDuplication)
-		{
-			//assert(curCtxt->possibleDuplication->IsFctDecl());
-			//assert(curCtxt->possibleDuplication->scope->level
-			//		== gProject->Parse_TOS->transUnit->contxt.syms->clevel);
- 
-                        #if 0
-			if (! decl->form || (decl->form->type != TT_Function))
-				yyerr ("Duplicate function name: ", ident->name);
-                        #endif
-			/*
-			else
-				yywarn ("TO DO: checking prototype consistency and eventually delete the new fct symbol");
-			*/
-
-			curCtxt->possibleDuplication = NULL;
-		}  
-                    
-		if (ident->entry->type == VarFctDeclEntry)
-		{
-			if (decl->form && (decl->form->type == TT_Function))
-				ident->entry->type = FctDeclEntry;
-			else
-				ident->entry->type = VarDeclEntry;
-		}
-	}
+  if (ident && ident->entry)
+  {
+    if (curCtxt->possibleDuplication)
+    {
+      //assert(curCtxt->possibleDuplication->IsFctDecl());
+      //assert(curCtxt->possibleDuplication->scope->level
+      //		== gProject->Parse_TOS->transUnit->contxt.syms->clevel);
+      
+#if 0
+      if (! decl->form || (decl->form->type != TT_Function))
+	yyerr ("Duplicate function name: ", ident->name);
+#endif
+      /*
+	else
+	yywarn ("TO DO: checking prototype consistency and eventually delete the new fct symbol");
+      */
+      
+      curCtxt->possibleDuplication = NULL;
+    }  
+    
+    if (ident->entry->type == VarFctDeclEntry)
+    {
+      if (decl->form && (decl->form->type == TT_Function))
+	ident->entry->type = FctDeclEntry;
+      else
+	ident->entry->type = VarDeclEntry;
+    }
+  }
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 void ParseCtxt::Mk_func_declarator(Decl* decl)
 {
-	if (! decl)
-		return;
+  if (! decl)
+    return;
   
-	Symbol* ident = decl->name;
+  Symbol* ident = decl->name;
   
-	assert(! curCtxt->possibleDuplication || ident->entry);
-	assert(! gProject->Parse_TOS->err_top_level || decl->form->type == TT_Function);
+  assert(! curCtxt->possibleDuplication || ident->entry);
+  assert(! gProject->Parse_TOS->err_top_level || decl->form->type == TT_Function);
   
-	if (ident && ident->entry)
-	{
-		ident->entry->type = FctDeclEntry;
-		if (curCtxt->possibleDuplication)
-		{
-			assert(curCtxt->possibleDuplication->IsFctDecl());
-			assert(curCtxt->possibleDuplication->scope->level
-					== gProject->Parse_TOS->transUnit->contxt.syms->clevel);
-
-			if (curCtxt->possibleDuplication->u2FunctionDef)
-				yyerr ("Duplicate function name: ", ident->name);
-			/*
-			else
-				yywarn("TO DO: checking prototype consistency and eventually delete the new fct symbol");
-			*/
-
-			curCtxt->possibleDuplication = NULL;
-		}
-	}
+  if (ident && ident->entry)
+  {
+    ident->entry->type = FctDeclEntry;
+    if (curCtxt->possibleDuplication)
+    {
+      assert(curCtxt->possibleDuplication->IsFctDecl());
+      assert(curCtxt->possibleDuplication->scope->level
+	     == gProject->Parse_TOS->transUnit->contxt.syms->clevel);
+      
+      if (curCtxt->possibleDuplication->u2FunctionDef)
+	yyerr ("Duplicate function name: ", ident->name);
+      /*
+	else
+	yywarn("TO DO: checking prototype consistency and eventually delete the new fct symbol");
+      */
+      
+      curCtxt->possibleDuplication = NULL;
+    }
+  }
 }
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 Label* ParseCtxt::Mk_named_label (Symbol* labelSym, SymTbl* labels)
 {
-	if (! labelSym)
-		return NULL;
+  if (!labelSym)
+    return 0;
         
-	labelSym->entry = labels->LookupAt(labelSym->name, FUNCTION_SCOPE);
+  labelSym->entry = labels->LookupAt(labelSym->name, FUNCTION_SCOPE);
   
-	Label* result = new Label(labelSym);
+  Label* result = new Label(labelSym);
   
-	if (labelSym->entry)
-	{
-		if (labelSym->entry->u2LabelPosition)
-		{
-			yyerr("Duplicate label: ", labelSym->name);
-			labelSym->entry = mk_label(labelSym->name, result);
-			labels->InsertAt(labelSym->entry, FUNCTION_SCOPE);
-		}
-	}
-	else
-	{
-		labelSym->entry = mk_label(labelSym->name, result);
-		labels->InsertAt(labelSym->entry, FUNCTION_SCOPE);
-	}
-
-	result->syment = labelSym->entry;
-	return result;
+  if (labelSym->entry)
+  {
+    if (labelSym->entry->u2LabelPosition)
+    {
+      yyerr("Duplicate label: ", labelSym->name);
+      labelSym->entry = mk_label(labelSym->name, result);
+      labels->InsertAt(labelSym->entry, FUNCTION_SCOPE);
+    }
+  }
+  else
+  {
+    labelSym->entry = mk_label(labelSym->name, result);
+    labels->InsertAt(labelSym->entry, FUNCTION_SCOPE);
+  }
+  
+  result->syment = labelSym->entry;
+  return result;
 }
-
-/* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */

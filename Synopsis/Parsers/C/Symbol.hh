@@ -31,14 +31,14 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef    SYMBOL_H
-#define    SYMBOL_H
+#ifndef _Symbol_hh
+#define _Symbol_hh
 
 #include <cstdlib>
 #include <string>
 #include <iostream>
 
-#include <ctool/utype.h>
+#include <utype.hh>
 
 /*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o 
 
@@ -324,5 +324,5 @@ class Symbol
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-#endif  /* SYMBOL_H */
+#endif
 

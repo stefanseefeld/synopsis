@@ -31,18 +31,14 @@
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
-#ifndef PARSEENV_H
-#define PARSEENV_H
+#ifndef _ParseEnv_hh
+#define _ParseEnv_hh
 
+#include <config.hh>
+#include <Context.hh>
+#include <Lexer.hh>
 #include <cstdio>
 #include <string>
-
-#include <ctool/config.h>
-
-#include <ctool/context.h>
-#include <ctool/lexer.h>
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
 #define    YYBUFF_SIZE    4096
 
@@ -51,61 +47,56 @@
 typedef  struct yy_buffer_state  *YY_BUFFER_STATE;
 #endif
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
 class TransUnit;
 class Base;
 class SymEntry;
 
-class ParseEnv
+struct ParseEnv
 {
-  public:
-    ParseEnv(std::istream *instream, std::ostream *errstream, const std::string &fname);
-   ~ParseEnv();
+  ParseEnv(std::istream *instream, std::ostream *errstream, const std::string &fname);
+  ~ParseEnv();
 
-    TransUnit         *transUnit;   // Pointer to the parsed translation unit
+  TransUnit         *transUnit;   // Pointer to the parsed translation unit
 
-    std::string        realfile;    // The file _really_ being parsed.
-    int                in_realfile;
-    std::string        filename;
+  std::string        realfile;    // The file _really_ being parsed.
+  int                in_realfile;
+  std::string        filename;
 
-    std::istream       *yyinstream;  // A pointer to an open file
-    std::ostream       *yyerrstream;
+  std::istream       *yyinstream;  // A pointer to an open file
+  std::ostream       *yyerrstream;
 
-    int                yylineno;    // Line number
-    int                yycolno;     // Column number
-    int                yynxtcol;    // next Column number
+  int                yylineno;    // Line number
+  int                yycolno;     // Column number
+  int                yynxtcol;    // next Column number
 
-    YY_BUFFER_STATE    yybuff;      // A buffer for the lexer
+  YY_BUFFER_STATE    yybuff;      // A buffer for the lexer
+  
+  ParseCtxt         *parseCtxt;
 
-    ParseCtxt         *parseCtxt;
-
-    std::string        line;
-    std::string        last_line;
+  std::string        line;
+  std::string        last_line;
     
-    // for the lexer
-    int   err_top_level;
-    int   err_cnt;
-    int   err_tok;
-    bool  possibleType;
-    bool  possibleTag;
-    bool  possibleLabel;
-
-    bool file_ppln;
-    int  in_preprocess;
-    int  in_charconst;
-
-    int  gcc2_paren_cnt;
-
-    char  tokn_buff[MAX_TOKN_LEN];
-    char *tokn_end;
-    char *tokn_ptr;
-
-    bool  isWide;
+  // for the lexer
+  int   err_top_level;
+  int   err_cnt;
+  int   err_tok;
+  bool  possibleType;
+  bool  possibleTag;
+  bool  possibleLabel;
+  
+  bool file_ppln;
+  int  in_preprocess;
+  int  in_charconst;
+  
+  int  gcc2_paren_cnt;
+  
+  char  tokn_buff[MAX_TOKN_LEN];
+  char *tokn_end;
+  char *tokn_ptr;
+  
+  bool  isWide;
     
-    bool cpp_comment_warn;
+  bool cpp_comment_warn;
 };
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-#endif    /* PARSEENV_H  */
+#endif

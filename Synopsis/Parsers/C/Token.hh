@@ -31,10 +31,10 @@
     ##
     ###############################################################  */
 
-#ifndef    TOKEN_H
-#define    TOKEN_H
+#ifndef _Token_hh
+#define _Token_hh
 
-#include  <ctool/config.h>
+#include  <config.hh>
 
 
 /*  ###############################################################  */
@@ -43,4 +43,4 @@ char *toksym    ARGS((int tok, int white));
 
 /*  ###############################################################  */
 
-#endif    /* TOKEN_H */
+#endif

@@ -31,16 +31,18 @@
 #define   alloca  __builtin_alloca
 #endif
 
-#include <stdio.h>
-#include <errno.h>
-#include <setjmp.h>
+#include <cstdio>
+#include <cerrno>
+/* #include <stdio.h> */
+/* #include <errno.h> */
+/* #include <setjmp.h> // for GCC_Malloc */
 
-#include <ctool/lexer.h>
-#include <ctool/symbol.h>
-#include <ctool/token.h>
-#include <ctool/stemnt.h>
-#include <ctool/location.h>
-#include <ctool/project.h>
+#include <Lexer.hh>
+#include <Symbol.hh>
+#include <Token.hh>
+#include <Statement.hh>
+#include <Location.hh>
+#include <Project.hh>
 
 extern int errno;
 int yylex(YYSTYPE *lvalp);
