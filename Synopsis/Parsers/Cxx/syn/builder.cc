@@ -615,7 +615,26 @@ Types::Unknown* Builder::add_unknown(const std::string& name)
 {
   if (m_scopes.back()->dict->has_key(name) == false)
     add(create_unknown(name));
-  return 0;
+  return NULL;
+}
+
+AST::Forward* Builder::add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params)
+{
+  if (!templ_params)
+  {
+    add_unknown(name);
+    return NULL;
+  }
+  // Must find the scope above the template scope
+  ScopeInfo* parent_scope = m_scopes[m_scopes.size()-2];
+  ScopedName scoped_name = extend(parent_scope->scope_decl->name(), name);
+  if (parent_scope->dict->has_key(name) == true)
+    return NULL;
+  AST::Forward* forward = new AST::Forward(m_filename, lineno, "forward", scoped_name);
+  Types::Template* templ = new Types::Template(scoped_name, NULL, *templ_params);
+  forward->set_template_type(templ);
+  add(forward, true);
+  return NULL;
 }
 
 Types::Base* Builder::create_base(const std::string& name)
