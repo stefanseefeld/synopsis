@@ -73,6 +73,13 @@ public:
     : Symbol(type, ptree) {}
 };
 
+class NamespaceName : public Symbol
+{
+public:
+  NamespaceName(const PTree::Encoding &type, PTree::Node *ptree)
+    : Symbol(type, ptree) {}
+};
+
 //. A Scope contains symbol definitions.
 class Scope
 {
@@ -80,7 +87,8 @@ public:
 
   Scope() : my_refcount(1) {}
   Scope *ref() { ++my_refcount; return this;}
-  void unref() { if (!--my_refcount) delete this;}
+  const Scope *ref() const { ++my_refcount; return this;}
+  void unref() const { if (!--my_refcount) delete this;}
 
   virtual const Scope *global() const { return this;}
 
@@ -125,14 +133,14 @@ private:
   //. the associated parse tree
   typedef std::map<const PTree::Node *, const Scope *> ScopeTable;
 
-  SymbolTable my_symbols;
-  ScopeTable  my_scopes;
-  size_t      my_refcount;
+  SymbolTable    my_symbols;
+  ScopeTable     my_scopes;
+  mutable size_t my_refcount;
 };
 
 inline void Scope::declare_scope(const PTree::Node *node, const Scope *scope)
 {
-  my_scopes[node] = scope;
+  my_scopes[node] = scope->ref();
 }
 
 inline const Scope *Scope::lookup_scope(const PTree::Node *node) const
