@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.26 2001/07/19 04:00:17 chalky Exp $
+# $Id: ASCII.py,v 1.27 2001/07/28 02:41:34 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.27  2001/07/28 02:41:34  chalky
+# Minor sanity fix
+#
 # Revision 1.26  2001/07/19 04:00:17  chalky
 # New .syn file format. Added -b, -c flags
 #
@@ -56,6 +59,7 @@ import sys, getopt, os, os.path, string
 from Synopsis.Core import Type, AST, Util
 
 verbose = 0
+comment_str = "// %s\n"
 
 class ASCIIFormatter(AST.Visitor, Type.Visitor):
     """
@@ -302,8 +306,6 @@ def __parseArgs(args):
 	    (show_colour >= 8) and ";1" or "")
     elif show_bold:
 	comment_str = "\033[1m// %s\033[m\n"
-    else:
-	comment_str = "// %s\n"
 
 def print_types(types):
     keys = types.keys()
