@@ -10,11 +10,14 @@
 #include <Statement.hh>
 #include <Symbol.hh>
 #include <Declaration.hh>
-#include <Project.hh>
 #include <Grammar.hh>
 
 #include <cstring>
 #include <cassert>
+
+bool Statement::debug = false;
+bool Statement::verbose = false;
+
 
 //#define PRINT_LOCATION
 
@@ -241,7 +244,7 @@ Statement::dup0() const
 void
 Statement::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* Statement:" ;
     location.printLocation(out) ;
@@ -325,14 +328,14 @@ InclStemnt::InclStemnt(const std::string& incl, const Location& l)
   isStandard = false;
   filename = incl;
 
-  for (int i = 0; StdPath[i]; ++i)
-  {
-    if (strncmp(filename.c_str(), StdPath[i], strlen(StdPath[i])) == 0)
-    {
-      isStandard = true;
-      filename = &(filename.c_str()[strlen(StdPath[i])]);
-    }
-  }
+//   for (int i = 0; StdPath[i]; ++i)
+//   {
+//     if (strncmp(filename.c_str(), StdPath[i], strlen(StdPath[i])) == 0)
+//     {
+//       isStandard = true;
+//       filename = &(filename.c_str()[strlen(StdPath[i])]);
+//     }
+//   }
 
   for (int i = 0; NrmPath[i]; i++)
   {
@@ -424,7 +427,7 @@ ExpressionStemnt::dup0() const
 void
 ExpressionStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* ExpressionStemnt:" ;
     location.printLocation(out) ;
@@ -477,7 +480,7 @@ IfStemnt::dup0() const
 void
 IfStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* IfStemnt:" ;
     location.printLocation(out) ;
@@ -550,7 +553,7 @@ SwitchStemnt::dup0() const
 void
 SwitchStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* SwitchStemnt:" ;
     location.printLocation(out) ;
@@ -615,7 +618,7 @@ ForStemnt::dup0() const
 void
 ForStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* ForStemnt:" ;
     location.printLocation(out) ;
@@ -683,7 +686,7 @@ WhileStemnt::dup0() const
 void
 WhileStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* WhileStemnt:" ;
     location.printLocation(out) ;
@@ -741,7 +744,7 @@ DoWhileStemnt::dup0() const
 void
 DoWhileStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* DoWhileStemnt:" ;
     location.printLocation(out) ;
@@ -804,7 +807,7 @@ GotoStemnt::dup0() const
 void
 GotoStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* GotoStemnt:" ;
     location.printLocation(out) ;
@@ -840,7 +843,7 @@ ReturnStemnt::dup0() const
 void
 ReturnStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* ReturnStemnt:" ;
     location.printLocation(out) ;
@@ -941,7 +944,7 @@ DeclStemnt::convertToTypedef()
 void
 DeclStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* DeclStemnt:" ;
     location.printLocation(out) ;
@@ -989,7 +992,7 @@ TypedefStemnt::~TypedefStemnt()
 void
 TypedefStemnt::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* TypedefStemnt:" ;
     location.printLocation(out) ;
@@ -1093,7 +1096,7 @@ Block::dup0() const
 void
 Block::print(std::ostream& out, int level) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* BlockStemnt:" ;
     location.printLocation(out) ;
@@ -1198,7 +1201,7 @@ FunctionDef::dup0() const
 void
 FunctionDef::print(std::ostream& out, int) const
 {
-  if (Project::gDebug)
+  if (Statement::debug)
   {
     out << "/* FunctionDef:" ;
     location.printLocation(out) ;

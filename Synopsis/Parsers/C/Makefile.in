@@ -16,7 +16,7 @@ CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
 YACC	:= @YACC@
 LEX	:= @LEX@
-CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I . -I $(srcdir) -I $(srcdir)/../../../include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
@@ -26,9 +26,9 @@ LIBRARY_EXT := @LIBEXT@
 CTOOL_SO:= ctool$(LIBRARY_EXT)
 
 SRC	:= Lexer.cc Grammar.cc Context.cc Declaration.cc Expression.cc ParseEnv.cc \
-           Project.cc Statement.cc Symbol.cc Token.cc Location.cc \
-           PrintTraversal.cc \
-           ctool.cc
+         File.cc Statement.cc Symbol.cc Token.cc Location.cc \
+         PrintTraversal.cc \
+         ctool.cc
 HDR	:= $(patsubst $(srcdir)/include/%, %, $(wildcard $(abs_top_srcdir)/*.hh))
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))

@@ -78,7 +78,7 @@ class DeclStemnt;
 class TypedefStemnt;
 class Block;
 class FunctionDef;
-class TransUnit;
+class File;
 
 class Traversal
 {
@@ -130,7 +130,7 @@ public:
   virtual void traverse_typedef(TypedefStemnt *) = 0;
   virtual void traverse_block(Block *) = 0;
   virtual void traverse_function_definition(FunctionDef *) = 0;
-  virtual void traverse_unit(TransUnit *) = 0;
+  virtual void traverse_file(File *) = 0;
 };
 
 #endif

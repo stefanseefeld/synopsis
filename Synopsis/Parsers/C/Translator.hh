@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#include <ctool/Traversal.h>
+#include <Traversal.hh>
 
 class Translator : public Traversal
 {
@@ -84,7 +84,7 @@ public:
   virtual void traverse_typedef(TypedefStemnt *);
   virtual void traverse_block(Block *);
   virtual void traverse_function_definition(FunctionDef *);
-  virtual void traverse_unit(TransUnit *);  
+  virtual void traverse_unit(File *);  
 private:
 };
 

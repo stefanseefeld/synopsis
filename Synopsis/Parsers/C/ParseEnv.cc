@@ -31,7 +31,7 @@
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
 
 #include <ParseEnv.hh>
-#include <Project.hh>
+#include <File.hh>
 #include <iostream>
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
@@ -39,7 +39,9 @@
 extern int yyparse(void);
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
-ParseEnv::ParseEnv(std::istream *instream, std::ostream *errstream, const std::string& fname )
+ParseEnv::ParseEnv(std::istream *instream,
+                   std::ostream *errstream,
+                   const std::string &fname)
 {
     yyinstream = instream;
     yyerrstream = errstream;
@@ -48,10 +50,10 @@ ParseEnv::ParseEnv(std::istream *instream, std::ostream *errstream, const std::s
     yycolno  = 0;
     yynxtcol = 0;
 
-    transUnit = new TransUnit(fname);
-    realfile = transUnit->filename;
+    transUnit = new File(fname);
+    realfile = transUnit->my_name;
     in_realfile = 1;
-    filename = transUnit->filename;
+    filename = transUnit->my_name;
     
     parseCtxt = new ParseCtxt;
 

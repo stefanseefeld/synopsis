@@ -34,7 +34,7 @@
 class Label;
 class Statement;
 class DeclStemnt;
-class TransUnit;
+class File;
 
 /**************************************************************************/
 
@@ -80,7 +80,7 @@ typedef union
     DeclStemnt      *declStemnt;
     FunctionDef     *functionDef;
 
-    TransUnit       *transunit;
+    File            *transunit;
 
 } lex_union;
 
