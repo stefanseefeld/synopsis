@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2004/01/11 19:45:21 stefan Exp $
+# $Id: Makefile,v 1.2 2004/01/13 07:43:08 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -14,7 +14,7 @@ PYVERSION:=$(shell $(python) -c "from distutils import sysconfig; print sysconfi
 PYINC	:=$(shell $(python) -c "from distutils import sysconfig; print sysconfig.get_python_inc()")
 PYLIBS	:=-L $(PYPREFIX)/lib/python$(PYVERSION)/config -lpython$(PYVERSION) -ldl -lutil -lpthread
 
-CPPFLAGS:= -I ../../../../include -I $(PYINC)
+CPPFLAGS:= -I ../../../../../include -I $(PYINC)
 LDFLAGS	:= -rdynamic
 LIBS	:= $(PYLIBS)
 

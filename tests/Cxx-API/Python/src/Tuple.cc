@@ -1,4 +1,5 @@
 #include <Synopsis/Tuple.hh>
+#include <Synopsis/List.hh>
 #include "Guard.hh"
 #include <string>
 #include <iostream>
@@ -12,7 +13,7 @@ void test1()
   list.append(1);
   list.append("hello");
   list.append("world");
-  Tuple tuple(list);
+  Tuple tuple = list.tuple();
   std::cout << Object::narrow<const char *>(tuple.str()) << std::endl;
   Object object(tuple);
   tuple = Object::narrow<Tuple>(object);

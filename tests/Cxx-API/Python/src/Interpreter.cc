@@ -60,9 +60,8 @@ void test3()
   Object o = type.call();
   o = type.call(args);
   o = type.call(args, kwds);
-  o.call("execute");
-  Callable c(o.attr("execute"));
-  c.call();
+  Callable method = o.attr("execute");
+  method.call();
 }
 
 int main(int, char **)
