@@ -383,3 +383,24 @@ class Comment :
     def line(self):
 	"""The line it was defined at"""
 	return self.__line
+
+class Visitor :
+    """Visitor for AST nodes"""
+    def visitAST(self, node): return
+    def visitDeclaration(self, node): return
+    def visitForward(self, node): self.visitDeclaration(node)
+    def visitDeclarator(self, node): self.visitDeclaration(node)
+    def visitScope(self, node): self.visitDeclaration(node)
+    def visitModule(self, node): self.visitScope(node)
+    def visitMetaModule(self, node): self.visitModule(node)
+    def visitClass(self, node): self.visitScope(node)
+    def visitTypedef(self, node): self.visitDeclaration(node)
+    def visitEnumerator(self, node): self.visitDeclaration(node)
+    def visitEnum(self, node): self.visitDeclaration(node)
+    def visitVariable(self, node): self.visitDeclaration(node)
+    def visitConst(self, node): self.visitDeclaration(node)
+    def visitFunction(self, node): self.visitDeclaration(node)
+    def visitOperation(self, node): self.visitDeclaration(node)
+    def visitParameter(self, node): return
+    def visitComment(self, node): return
+    def visitInheritance(self, node): return
