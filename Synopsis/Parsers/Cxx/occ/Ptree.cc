@@ -24,12 +24,47 @@
 
 bool Ptree::show_encoded = false;
 
+const char *Ptree::begin() const
+{
+  if (IsLeaf()) return GetPosition();
+  else
+  {
+    for (const Ptree *p = this; p; p = p->Cdr())
+    {
+      const char *b = p->Car() ? p->Car()->begin() : 0;
+      if (b) return b;
+    }
+    return 0;
+  }
+}
+
+const char *Ptree::end() const
+{
+  if (IsLeaf()) return GetPosition() + GetLength();
+  else
+  {
+    int n = Length();
+    while(n > 0)
+    {
+      const char *e = Nth(--n)->end();
+      if (e) return e;
+    }    
+    return 0;
+  }
+}
+
 std::string Ptree::string() const
 {
   std::ostringstream oss;
   write(oss);
   return oss.str();
 };
+
+void Ptree::print(std::ostream &os) const
+{
+  print(os, 0, 0);
+  os.put('\n');
+}
 
 // error messages
 
@@ -66,34 +101,12 @@ void MopMoreWarningMessage(char* msg1, char* msg2)
 
 // class Ptree
 
-void Ptree::Display()
-{
-    Display2(std::cerr);
-}
-
-void Ptree::Display2(std::ostream& s)
-{
-    if(this == 0)
-	s << "nil\n";
-    else{
-	Print(s, 0, 0);
-	s << '\n';
-    }
-}
-
 int Ptree::Write(std::ostream& s)
 {
     if(this == 0)
 	return 0;
     else
 	return Write(s, 0);
-}
-
-void Ptree::PrintIndent(std::ostream& out, int indent)
-{
-    out << '\n';
-    for(int i = 0; i < indent; ++i)
-	out << "    ";
 }
 
 bool Ptree::Eq(char c)
@@ -148,43 +161,6 @@ Ptree* Ptree::Ca_ar()		// compute Caa..ar
     return p;
 }
 
-char* Ptree::LeftMost()
-{
-    if(this == 0)
-	return 0;
-    else if(IsLeaf())
-	return GetPosition();
-    else{
-	Ptree* p = this;
-	while(p != 0){
-	    char* i = p->Car()->LeftMost();
-	    if(i != 0)
-		return i;
-	    else
-		p = p->Cdr();
-	}
-	return 0;
-    }
-}
-
-char* Ptree::RightMost()
-{
-    if(this == 0)
-	return 0;
-    else if(IsLeaf())
-	return GetPosition() + GetLength();
-    else{
-	int n = Length();
-	while(n > 0){
-	    char* i = Nth(--n)->RightMost();
-	    if(i != 0)
-		return i;
-	}
-
-	return 0;
-    }
-}
-
 int Ptree::What()
 {
     return BadToken;
@@ -228,12 +204,12 @@ void Ptree::Typeof(Walker* w, TypeInfo& t)
     w->TypeofPtree(this, t);
 }
 
-char* Ptree::GetEncodedType()
+char* Ptree::GetEncodedType() const
 {
     return 0;
 }
 
-char* Ptree::GetEncodedName()
+char* Ptree::GetEncodedName() const
 {
     return 0;
 }
@@ -316,6 +292,15 @@ bool Ptree::Equal(Ptree* p, Ptree* q)
 	return Equal(p->Car(), q->Car()) && Equal(p->Cdr(), q->Cdr());
 }
 
+const Ptree *Ptree::Last(const Ptree *p)	// return the last cons cell.
+{
+  const Ptree *next;
+  if(!p) return 0;
+
+  while((next = p->Cdr())) p = next;
+  return p;
+}
+
 Ptree* Ptree::Last(Ptree* p)	// return the last cons cell.
 {
     Ptree* next;
@@ -328,6 +313,11 @@ Ptree* Ptree::Last(Ptree* p)	// return the last cons cell.
     return p;
 }
 
+const Ptree *Ptree::First(const Ptree *p)
+{
+  return p ? p->Car() : 0;
+}
+
 Ptree* Ptree::First(Ptree* p)
 {
     if(p != 0)
@@ -336,12 +326,28 @@ Ptree* Ptree::First(Ptree* p)
 	return p;
 }
 
+const Ptree *Ptree::Rest(const Ptree *p)
+{
+  return p ? p->Cdr() : 0;
+}
+
 Ptree* Ptree::Rest(Ptree* p)
 {
     if(p != 0)
 	return p->Cdr();
     else
 	return p;
+}
+
+const Ptree *Ptree::Second(const Ptree *p)
+{
+  if(p)
+  {
+    p = p->Cdr();
+    if(p) return p->Car();
+  }
+  
+  return 0;
 }
 
 Ptree* Ptree::Second(Ptree* p)
@@ -353,6 +359,21 @@ Ptree* Ptree::Second(Ptree* p)
     }
 
     return p;
+}
+
+const Ptree *Ptree::Third(const Ptree *p)
+{
+  if(p)
+  {
+    p = p->Cdr();
+    if(p)
+    {
+      p = p->Cdr();
+      if(p) return p->Car();
+    }
+  }
+
+  return p;
 }
 
 Ptree* Ptree::Third(Ptree* p)
@@ -372,6 +393,12 @@ Ptree* Ptree::Third(Ptree* p)
 /*
   Nth(lst, 0) is equivalent to First(lst).
 */
+const Ptree *Ptree::Nth(const Ptree *p, int n)
+{
+  while(p && n-- > 0) p = p->Cdr();
+  return p ? p->Car() : 0;
+}
+
 Ptree* Ptree::Nth(Ptree* p, int n)
 {
     while(p != 0 && n-- > 0)
@@ -386,7 +413,7 @@ Ptree* Ptree::Nth(Ptree* p, int n)
 /*
   Length() returns a negative number if p is not a list.
 */
-int Ptree::Length(Ptree* p)
+int Ptree::Length(const Ptree* p)
 {
     int i = 0;
 
@@ -755,6 +782,11 @@ Ptree* Ptree::Nconc(Ptree* p, Ptree* q, Ptree* r)
     return Nconc(p, Nconc(q, r));
 }
 
+void Ptree::print_indent(std::ostream &os, size_t indent)
+{
+  os.put('\n');
+  for(size_t i = 0; i != indent; ++i) os.put(' ');
+}
 
 // class PtreeIter
 
@@ -853,9 +885,9 @@ void Leaf::write(std::ostream &os) const
   os.write(data.leaf.position, data.leaf.length);
 }
 
-void Leaf::Print(std::ostream& s, int, int)
+void Leaf::print(std::ostream &os, size_t, size_t) const
 {
-  char* p = data.leaf.position;
+  const char *p = data.leaf.position;
   int n = data.leaf.length;
 
   // Recall that [, ], and @ are special characters.
@@ -863,14 +895,14 @@ void Leaf::Print(std::ostream& s, int, int)
   if(n < 1) return;
   else if(n == 1 && *p == '@')
   {
-    s << "\\@";
+    os << "\\@";
     return;
   }
 
   char c = *p++;
-  if(c == '[' || c == ']') s << '\\' << c; // [ and ] at the beginning are escaped.
-  else s << c;
-  while(--n > 0) s << *p++;
+  if(c == '[' || c == ']') os << '\\' << c; // [ and ] at the beginning are escaped.
+  else os << c;
+  while(--n > 0) os << *p++;
 }
 
 int Leaf::Write(std::ostream& out, int indent)
@@ -883,7 +915,7 @@ int Leaf::Write(std::ostream& out, int indent)
     char c = *ptr++;
     if(c == '\n')
     {
-      PrintIndent(out, indent);
+      print_indent(out, indent);
       ++n;
     }
     else out << c;
@@ -908,33 +940,53 @@ void NonLeaf::write(std::ostream &os) const
   }
 }
 
-void NonLeaf::Print(std::ostream& s, int indent, int depth)
+void NonLeaf::print(std::ostream &os, size_t indent, size_t depth) const
 {
-  if(TooDeep(s, depth)) return;
+  if(too_deep(os, depth)) return;
 
-  Ptree* rest = this;
-  s << '[';
+  const Ptree *rest = this;
+  os << '[';
   while(rest != 0)
   {
     if(rest->IsLeaf())
     {
-      s << "@ ";
-      rest->Print(s, indent, depth + 1);
+      os << "@ ";
+      rest->print(os, indent, depth + 1);
       rest = 0;
     }
     else
     {
-      Ptree* head = rest->data.nonleaf.child;
-      if(head == 0) s << "nil";
-      else head->Print(s, indent, depth + 1);
+      const Ptree *head = rest->data.nonleaf.child;
+      if(head == 0) os << "nil";
+      else head->print(os, indent, depth + 1);
       rest = rest->data.nonleaf.next;
-      if(rest != 0) s << ' ';
+      if(rest != 0) os << ' ';
     }
   }
-  s << ']';
+  os << ']';
 }
 
-bool NonLeaf::TooDeep(std::ostream& s, int depth)
+void NonLeaf::print_encoded(std::ostream &os, size_t indent, size_t depth) const
+{
+  if (show_encoded)
+  {
+    const char *encode = GetEncodedType();
+    if(encode)
+    {
+      os << '#';
+      Encoding::print(os, encode);
+    }
+    encode = GetEncodedName();
+    if(encode)
+    {
+      os << '@';
+      Encoding::print(os, encode);
+    }
+  }
+  NonLeaf::print(os, indent, depth);
+}
+
+bool NonLeaf::too_deep(std::ostream& s, size_t depth) const
 {
   if(depth >= 32)
   {
@@ -965,25 +1017,6 @@ int NonLeaf::Write(std::ostream& out, int indent)
   return n;
 }
 
-void NonLeaf::PrintWithEncodeds(std::ostream& s, int indent, int depth)
-{
-  char* encode = GetEncodedType();
-  if(encode != 0)
-  {
-    s << '#';
-    Encoding::Print(s, encode);
-  }
-
-  encode = GetEncodedName();
-  if(encode != 0)
-  {
-    s << '@';
-    Encoding::Print(s, encode);
-  }
-
-  NonLeaf::Print(s, indent, depth);
-}
-
 DupLeaf::DupLeaf(const char* str, int len) : CommentedLeaf(new (GC) char[len], len)
 {
   memmove(data.leaf.position, str, len);
@@ -996,24 +1029,21 @@ DupLeaf::DupLeaf(char* str1, int len1, char* str2, int len2)
   memmove(&data.leaf.position[len1], str2, len2);
 }
 
-void DupLeaf::Print(std::ostream &s, int, int)
+void DupLeaf::print(std::ostream &os, size_t, size_t) const
 {
-  int i, j;
-  char* pos;
-
-  pos = data.leaf.position;
-  j = data.leaf.length;
+  const char *pos = data.leaf.position;
+  int j = data.leaf.length;
 
   if(j == 1 && *pos == '@')
   {
-    s << "\\@";
+    os << "\\@";
     return;
   }
 
-  s << '`';
-  for(i = 0; i < j; ++i)
-    if(pos[i] == '[' || pos[i] == ']') s << '\\' << pos[i];
-    else s << pos[i];
-  s << '`';
+  os << '`';
+  for(int i = 0; i < j; ++i)
+    if(pos[i] == '[' || pos[i] == ']') os << '\\' << pos[i];
+    else os << pos[i];
+  os << '`';
 }
 

@@ -144,10 +144,10 @@ void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const
         store_xref_record(file, decl, file->filename(), line, context);
 
     // Get info for storing a syntax record
-    int col = find_col(file, line, node->LeftMost());
+    int col = find_col(file, line, node->begin());
     if (col < 0)
         return; // inside macro
-    int len = node->RightMost() - node->LeftMost();
+    int len = node->end() - node->begin();
 
     store_syntax_record(file, line, col, len, context, name, desc);
 }
@@ -337,10 +337,10 @@ void LinkStore::span(Ptree* node, const char* desc)
     AST::SourceFile* file = m->walker->current_file();
     if (!m->filter->should_link(file))
         return;
-    int col = find_col(file, line, node->LeftMost());
+    int col = find_col(file, line, node->begin());
     if (col < 0)
         return; // inside macro
-    int len = node->RightMost() - node->LeftMost();
+    int len = node->end() - node->begin();
 
     span(line, col, len, desc);
 }
@@ -352,14 +352,14 @@ void LinkStore::long_span(Ptree* node, const char* desc)
     AST::SourceFile* file = m->walker->current_file();
     if (!m->filter->should_link(file))
         return;
-    int left_col = find_col(file, left_line, node->LeftMost());
+    int left_col = find_col(file, left_line, node->begin());
     if (left_col < 0)
         return; // inside macro
-    int len = node->RightMost() - node->LeftMost();
+    int len = node->end() - node->begin();
 
     // Find right edge
     std::string filename;
-    int right_line = m->parser->LineNumber(node->RightMost(), filename);
+    unsigned long right_line = m->parser->origin(node->end(), filename);
 
     if (right_line == left_line)
         // Same line, so normal output
@@ -367,7 +367,7 @@ void LinkStore::long_span(Ptree* node, const char* desc)
     else
     {
         // Must output one for each line
-        int right_col = find_col(file, right_line, node->RightMost());
+        int right_col = find_col(file, right_line, node->end());
         for (int line = left_line; line < right_line; line++, left_col = 0)
             span(line, left_col, -1, desc);
         // Last line is a bit different

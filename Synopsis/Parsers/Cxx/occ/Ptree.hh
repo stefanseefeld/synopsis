@@ -9,7 +9,8 @@
 #ifndef _Ptree_hh
 #define _Ptree_hh
 
-#include <iosfwd>
+#include <ostream>
+#include <iterator>
 #include "types.h"
 
 class Walker;
@@ -29,28 +30,31 @@ public:
   //. write the part of the source code this node
   //. references to the given output stream
   virtual void write(std::ostream &) const = 0;
+  //. return the start address of this Ptree in the buffer
+  const char *begin() const;
+  //. return the one-past-the-end address of this Ptree in the buffer
+  const char *end() const;
+  //. return a copy of the region of the buffer this ptree represents
   std::string string() const;
+  //. provide an annotated view of the ptree, for debugging purposes
+  void print(std::ostream &) const;
+  virtual void print(std::ostream &, size_t indent, size_t depth) const = 0;
 
-    void Display();
-    void Display2(std::ostream&);
-    virtual void Print(std::ostream&, int, int) = 0;
     int Write(std::ostream&);
     virtual int Write(std::ostream&, int) = 0;
-    void PrintIndent(std::ostream&, int);
 
-    char* GetPosition() { return data.leaf.position; }
-    int GetLength() { return data.leaf.length; }
+    char* GetPosition() const { return data.leaf.position; }
+    int GetLength() const { return data.leaf.length; }
 
+    const Ptree* Car() const { return data.nonleaf.child; }
     Ptree* Car() { return data.nonleaf.child; }
+    const Ptree* Cdr() const { return data.nonleaf.next; }
     Ptree* Cdr() { return data.nonleaf.next; }
     Ptree* Cadr() { return Cdr()->Car(); }
     Ptree* Cddr() { return Cdr()->Cdr(); }
     Ptree* Ca_ar();
     void SetCar(Ptree* p) { data.nonleaf.child = p; }
     void SetCdr(Ptree* p) { data.nonleaf.next = p; }
-
-    char* LeftMost();
-    char* RightMost();
 
     virtual int What();
     bool IsA(int);
@@ -60,16 +64,22 @@ public:
     virtual Ptree* Translate(Walker*);
     virtual void Typeof(Walker*, TypeInfo&);
 
-    virtual char* GetEncodedType();
-    virtual char* GetEncodedName();
+    virtual char* GetEncodedType() const;
+    virtual char* GetEncodedName() const;
 
+    const Ptree* Last() const { return Last(this); }
     Ptree* Last() { return Last(this); }
+    const Ptree* First() const { return First(this); }
     Ptree* First() { return First(this); }
+    const Ptree* Rest() const { return Rest(this); }
     Ptree* Rest() { return Rest(this); }
+    const Ptree* Second() const { return Second(this); }
     Ptree* Second() { return Second(this); }
+    const Ptree* Third() const { return Third(this); }
     Ptree* Third() { return Third(this); }
+    const Ptree* Nth(int n) const { return Nth(this, n); }
     Ptree* Nth(int n) { return Nth(this, n); }
-    int Length() { return Length(this); }
+    int Length() const { return Length(this); }
     Ptree* ListTail(int n) { return ListTail(this, n); }
 
 // static members
@@ -80,13 +90,19 @@ public:
     static bool Eq(Ptree*, Ptree*);
     static bool Equiv(Ptree*, Ptree*);
     static bool Equal(Ptree*, Ptree*);
+    static const Ptree* Last(const Ptree*);
     static Ptree* Last(Ptree*);
+    static const Ptree* First(const Ptree*);
     static Ptree* First(Ptree*);
+    static const Ptree* Rest(const Ptree*);
     static Ptree* Rest(Ptree*);
+    static const Ptree* Second(const Ptree*);
     static Ptree* Second(Ptree*);
+    static const Ptree* Third(const Ptree*);
     static Ptree* Third(Ptree*);
+    static const Ptree* Nth(const Ptree*, int);
     static Ptree* Nth(Ptree*, int);
-    static int Length(Ptree*);
+    static int Length(const Ptree*);
     static Ptree* ListTail(Ptree*, int);
 
     static Ptree* Cons(Ptree*, Ptree*);
@@ -121,6 +137,8 @@ public:
     static Ptree* Nconc(Ptree*, Ptree*);
     static Ptree* Nconc(Ptree*, Ptree*, Ptree*);
 
+  static void print_indent(std::ostream &, size_t);
+
 // in pattern.cc
 public:
     static bool Match(Ptree*, char*, ...);
@@ -142,7 +160,7 @@ private:
     static char* MatchWord(Ptree*, char*);
 
 public:
-    // if this is true, Print() shows an encoded type and name.
+    // if this is true, print() shows an encoded type and name.
     static bool show_encoded;
 
 protected:
@@ -160,10 +178,15 @@ protected:
     friend class NonLeaf;
 };
 
-inline std::ostream& operator << (std::ostream& s, Ptree* p)
+inline std::ostream &operator << (std::ostream &os, Ptree *p)
 {
-    p->Write(s);
-    return s;
+  // FIXME: this doesn't take into account any Ptree / AST modifications
+  //        i.e. it just refers to the unmodified buffer
+  //        Once we allow modifications to the tree we need to look up
+  //        overlapping buffer replacements and inject them into the stream
+  //        as appropriate
+  std::copy(p->begin(), p->end(), std::ostream_iterator<char>(os));
+  return os;
 }
 
 // in ptree.cc
@@ -231,8 +254,8 @@ public:
   bool IsLeaf() const { return true;}
   
   virtual void write(std::ostream &) const;
+  virtual void print(std::ostream &, size_t, size_t) const;
 
-  void Print(std::ostream&, int, int);
   int Write(std::ostream&, int);
 };
 
@@ -243,13 +266,12 @@ public:
   bool IsLeaf() const { return false;}
 
   virtual void write(std::ostream &) const;
+  virtual void print(std::ostream &, size_t, size_t) const;
 
-  void Print(std::ostream&, int, int);
-  int Write(std::ostream&, int);
-  void PrintWithEncodeds(std::ostream&, int, int);
-  
+  int Write(std::ostream&, int);  
 protected:
-  bool TooDeep(std::ostream&, int);
+  bool too_deep(std::ostream&, size_t) const;
+  void print_encoded(std::ostream &, size_t, size_t) const;
 };
 
 class CommentedLeaf : public Leaf 
@@ -272,7 +294,7 @@ public:
   DupLeaf(const char *, int);
   DupLeaf(char *, int, char *, int);
 
-  void Print(std::ostream &, int, int);
+  virtual void print(std::ostream &, size_t, size_t) const;
 };
 
 // error messages

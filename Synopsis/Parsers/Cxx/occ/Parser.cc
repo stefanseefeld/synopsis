@@ -104,21 +104,22 @@ bool Parser::SyntaxError()
     return bool(++nerrors < MaxErrors);
 }
 
-uint Parser::LineNumber(char* pos, std::string &filename)
+unsigned long Parser::origin(const char *ptr,
+			     std::string &filename) const
 {
-  return lex->LineNumber(pos, filename);
+  return lex->origin(ptr, filename);
 }
 
 void Parser::ShowMessageHead(char* pos)
 {
     std::string filename;
-    uint line_number = LineNumber(pos, filename);
+    unsigned long line = origin(pos, filename);
     std::cerr << filename;
 
 #if defined(_MSC_VER)
-    std::cerr << '(' << line_number << ") : ";
+    std::cerr << '(' << line << ") : ";
 #else
-    std::cerr << ':' << line_number << ": ";
+    std::cerr << ':' << line << ": ";
 #endif
 }
 
@@ -2819,8 +2820,6 @@ bool Parser::rClassMember(Ptree*& mem)
 	if(rDeclaration(mem)) {
 	    Ptree* comments = lex->GetComments();
 	    if (comments) {
-		//cout << "Warning: rClassMember setting comments to ";
-		//comments->Display();
 		Walker::SetDeclaratorComments(mem, comments);
 	    }
 	    return true;
@@ -4804,7 +4803,7 @@ main()
     Ptree*		def;
 
     while(parse.rProgram(def)){
-	def->Display2(std::cout);
+	def->print(std::cout);
 	w.Translate(def);
     }
 

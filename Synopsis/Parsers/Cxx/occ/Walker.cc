@@ -1726,7 +1726,7 @@ void Walker::SetLeafComments(Ptree* node, Ptree* comments)
 
     // Sanity
     if (!leaf) { std::cerr << "Warning: Failed to find leaf when trying to add comments." << std::endl;
-	parent->Display2(std::cout);
+	parent->print(std::cout);
 	return; }
 
     if (!(cleaf = dynamic_cast<CommentedLeaf*>(leaf))) {

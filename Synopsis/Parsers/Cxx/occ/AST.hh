@@ -1,17 +1,10 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
-
+//
+// Copyright (C) 1997-2000 Shigeru Chiba
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 #ifndef _AST_hh
 #define _AST_hh
 
@@ -87,7 +80,8 @@ public:
     PtreeBrace(Ptree* ob, Ptree* body, Ptree* cb)
 	: NonLeaf(ob, Ptree::List(body, cb)) {}
 
-    void Print(std::ostream&, int, int);
+  virtual void print(std::ostream &, size_t, size_t) const;
+
     int Write(std::ostream&, int);
 
     Ptree* Translate(Walker*);
@@ -204,12 +198,13 @@ public:
     PtreeDeclarator(Encoding&);
     PtreeDeclarator(PtreeDeclarator*, Ptree*, Ptree*);
 
+  virtual void print(std::ostream &, size_t, size_t) const;
+
     int What();
-    char* GetEncodedType();
-    char* GetEncodedName();
+    char* GetEncodedType() const;
+    char* GetEncodedName() const;
     void SetEncodedType(char* t) { type = t; }
     Ptree* Name() { return declared_name; }
-    void Print(std::ostream&, int, int);
 
     Ptree* GetComments() { return comments; }
     void SetComments(Ptree* c) { comments = c; }
@@ -224,9 +219,11 @@ private:
 class PtreeName : public NonLeaf {
 public:
     PtreeName(Ptree*, Encoding&);
+
+  void print(std::ostream &, size_t, size_t) const;
+
     int What();
-    char* GetEncodedName();
-    void Print(std::ostream&, int, int);
+    char* GetEncodedName() const;
     Ptree* Translate(Walker*);
     void Typeof(Walker*, TypeInfo&);
 
@@ -238,9 +235,11 @@ class PtreeFstyleCastExpr : public NonLeaf {
 public:
     PtreeFstyleCastExpr(Encoding&, Ptree*, Ptree*);
     PtreeFstyleCastExpr(char*, Ptree*, Ptree*);
+
+  void print(std::ostream &, size_t, size_t) const;
+
     int What();
-    char* GetEncodedType();
-    void Print(std::ostream&, int, int);
+    char* GetEncodedType() const;
     Ptree* Translate(Walker*);
     void Typeof(Walker*, TypeInfo&);
 
@@ -254,7 +253,7 @@ public:
     PtreeClassSpec(Ptree*, Ptree*, Ptree*, char*);
     int What();
     Ptree* Translate(Walker*);
-    char* GetEncodedName();
+    char* GetEncodedName() const;
     Ptree* GetComments();
 
 private:
@@ -269,7 +268,7 @@ public:
     PtreeEnumSpec(Ptree*);
     int What();
     Ptree* Translate(Walker*);
-    char* GetEncodedName();
+    char* GetEncodedName() const;
 
 private:
     char* encoded_name;

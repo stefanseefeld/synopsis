@@ -110,9 +110,10 @@ void Lexer::GetOnlyClosingBracket(Token& t)
     Restore(t.ptr + 1);
 }
 
-uint Lexer::LineNumber(char* pos, std::string &filename)
+unsigned long Lexer::origin(const char *ptr,
+			    std::string &filename) const
 {
-    return file->origin(pos, filename);
+  return file->origin(ptr, filename);
 }
 
 int Lexer::GetToken(Token& t)

@@ -1,17 +1,10 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
-
+//
+// Copyright (C) 1997-2000 Shigeru Chiba
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 #include <cstring>
 #include <iostream>
 #include "Lexer.hh"
@@ -84,38 +77,37 @@ ResearvedWordImpl(UserKeyword2)
 
 // class PtreeBrace
 
-void PtreeBrace::Print(std::ostream& s, int indent, int depth)
+void PtreeBrace::print(std::ostream &os, size_t indent, size_t depth) const
 {
-    if(TooDeep(s, depth))
-	return;
+  if(too_deep(os, depth)) return;
 
-    int indent2 = indent + 1;
-    s << "[{";
-    Ptree* body = Ptree::Second(this);
-    if(body == 0){
-	PrintIndent(s, indent2);
-	s << "nil";
+  size_t indent2 = indent + 1;
+  os << "[{";
+  const Ptree *body = Ptree::Second(this);
+  if(!body)
+  {
+    print_indent(os, indent2);
+    os << "nil";
+  }
+  else
+    while(body)
+    {
+      print_indent(os, indent2);
+      if(body->IsLeaf())
+      {
+	os << "@ ";
+	body->print(os, indent + 1, depth + 1);
+      }
+      else
+      {
+	const Ptree *head = body->Car();
+	if(!head) os << "nil";
+	else head->print(os, indent + 1, depth + 1);
+      }
+      body = body->Cdr();
     }
-    else
-	while(body != 0){
-	    PrintIndent(s, indent2);
-	    if(body->IsLeaf()){
-		s << "@ ";
-		body->Print(s, indent + 1, depth + 1);
-	    }
-	    else{
-		Ptree* head = body->Car();
-		if(head == 0)
-		    s << "nil";
-		else
-		    head->Print(s, indent + 1, depth + 1);
-	    }
-
-	    body = body->Cdr();
-	}
-
-    PrintIndent(s, indent);
-    s << "}]";
+  print_indent(os, indent);
+  os << "}]";
 }
 
 int PtreeBrace::Write(std::ostream& out, int indent)
@@ -130,7 +122,7 @@ int PtreeBrace::Write(std::ostream& out, int indent)
 	    break;
 	}
 	else{
-	    PrintIndent(out, indent + 1);
+	    print_indent(out, indent + 1);
 	    ++n;
 	    Ptree* q = p->Car();
 	    p = p->Cdr();
@@ -139,7 +131,7 @@ int PtreeBrace::Write(std::ostream& out, int indent)
 	}
     }
 
-    PrintIndent(out, indent);
+    print_indent(out, indent);
     ++n;
     out << '}';
     return n;
@@ -342,29 +334,25 @@ PtreeDeclarator::PtreeDeclarator(PtreeDeclarator* decl, Ptree* p, Ptree* q)
     comments = 0;
 }
 
+void PtreeDeclarator::print(std::ostream &os, size_t indent, size_t depth) const
+{
+  print_encoded(os, indent, depth);
+}
+
 int PtreeDeclarator::What()
 {
     return ntDeclarator;
 }
 
-char* PtreeDeclarator::GetEncodedType()
+char* PtreeDeclarator::GetEncodedType() const
 {
     return type;
 }
 
-char* PtreeDeclarator::GetEncodedName()
+char* PtreeDeclarator::GetEncodedName() const
 {
     return name;
 }
-
-void PtreeDeclarator::Print(std::ostream& s, int i, int d)
-{
-    if(show_encoded)
-	PrintWithEncodeds(s, i, d);
-    else
-	NonLeaf::Print(s, i, d);
-}
-
 
 // class PtreeName
 
@@ -374,22 +362,19 @@ PtreeName::PtreeName(Ptree* p, Encoding& e)
     name = e.Get();
 }
 
+void PtreeName::print(std::ostream &os, size_t indent, size_t depth) const
+{
+  print_encoded(os, indent, depth);
+}
+
 int PtreeName::What()
 {
     return ntName;
 }
 
-char* PtreeName::GetEncodedName()
+char* PtreeName::GetEncodedName() const
 {
     return name;
-}
-
-void PtreeName::Print(std::ostream& s, int i, int d)
-{
-    if(show_encoded)
-	PrintWithEncodeds(s, i, d);
-    else
-	NonLeaf::Print(s, i, d);
 }
 
 Ptree* PtreeName::Translate(Walker* w)
@@ -416,22 +401,19 @@ PtreeFstyleCastExpr::PtreeFstyleCastExpr(char* e, Ptree* p, Ptree* q)
     type = e;
 }
 
+void PtreeFstyleCastExpr::print(std::ostream &os, size_t indent, size_t depth) const
+{
+  print_encoded(os, indent, depth);
+}
+
 int PtreeFstyleCastExpr::What()
 {
     return ntFstyleCast;
 }
 
-char* PtreeFstyleCastExpr::GetEncodedType()
+char* PtreeFstyleCastExpr::GetEncodedType() const
 {
     return type;
-}
-
-void PtreeFstyleCastExpr::Print(std::ostream& s, int i, int d)
-{
-    if(show_encoded)
-	PrintWithEncodeds(s, i, d);
-    else
-	NonLeaf::Print(s, i, d);
 }
 
 Ptree* PtreeFstyleCastExpr::Translate(Walker* w)
@@ -470,7 +452,7 @@ Ptree* PtreeClassSpec::Translate(Walker* w)
     return w->TranslateClassSpec(this);
 }
 
-char* PtreeClassSpec::GetEncodedName()
+char* PtreeClassSpec::GetEncodedName() const
 {
     return encoded_name;
 }
@@ -498,7 +480,7 @@ Ptree* PtreeEnumSpec::Translate(Walker* w)
     return w->TranslateEnumSpec(this);
 }
 
-char* PtreeEnumSpec::GetEncodedName()
+char* PtreeEnumSpec::GetEncodedName() const
 {
     return encoded_name;
 }
