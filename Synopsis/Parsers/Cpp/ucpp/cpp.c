@@ -74,13 +74,13 @@ static char *system_macros_def[] = { STD_MACROS, 0 };
 static char *system_assertions_def[] = { STD_ASSERT, 0 };
 #endif
 
-char *original_filename = 0;
 char *current_filename = 0, *current_long_filename = 0;
 static int current_incdir = -1;
 
 #ifdef SYNOPSIS
 void synopsis_macro_hook(const char* name, int line, int start, int end, int diff);
 void synopsis_include_hook(const char* source_file, const char* target_file, int is_macro, int is_next);
+void synopsis_file_hook(const char* file, int new_file);
 #endif
 
 #ifndef NO_UCPP_ERROR_FUNCTIONS
@@ -310,7 +310,6 @@ void set_init_filename(char *x, int real_file)
 {
 	if (current_filename) freemem(current_filename);
 	current_filename = sdup(x);
-	original_filename = current_filename;
 	current_long_filename = current_filename;
 	current_incdir = -1;
 	if (real_file) {
@@ -559,7 +558,7 @@ void free_lexer_state(struct lexer_state *ls)
 /*
  * Print line information.
  */
-static void print_line_info(struct lexer_state *ls, unsigned long flags)
+static void print_line_info(struct lexer_state *ls, unsigned long flags, unsigned long enter_leave)
 {
 	char *fn = current_long_filename ?
 		current_long_filename : current_filename;
@@ -567,8 +566,14 @@ static void print_line_info(struct lexer_state *ls, unsigned long flags)
 
 	b = getmem(50 + strlen(fn));
 	if (flags & GCC_LINE_NUM) {
+	  if (enter_leave != 0)
+		sprintf(b, "# %ld \"%s\" %d\n", ls->line, fn, enter_leave);
+	  else
 		sprintf(b, "# %ld \"%s\"\n", ls->line, fn);
 	} else {
+	  if (enter_leave != 0)
+		sprintf(b, "#line %ld \"%s\" %d\n", ls->line, fn, enter_leave);
+	  else
 		sprintf(b, "#line %ld \"%s\"\n", ls->line, fn);
 	}
 	for (d = b; *d; d ++) put_char(ls, (unsigned char)(*d));
@@ -585,7 +590,7 @@ static void print_line_info(struct lexer_state *ls, unsigned long flags)
  *
  * enter_file() returns 1 if a (CONTEXT) token was produced, 0 otherwise.
  */
-int enter_file(struct lexer_state *ls, unsigned long flags)
+int enter_file(struct lexer_state *ls, unsigned long flags, unsigned long enter_leave)
 {
 	char *fn = current_long_filename ?
 		current_long_filename : current_filename;
@@ -600,7 +605,11 @@ int enter_file(struct lexer_state *ls, unsigned long flags)
 		print_token(ls, &t, 0);
 		return 1;
 	}
-	print_line_info(ls, flags);
+	print_line_info(ls, flags, enter_leave);
+#ifdef SYNOPSIS
+	if (enter_leave != 0)
+	  synopsis_file_hook(fn, enter_leave == 1);
+#endif
 	ls->oline --;	/* emitted #line troubled oline */
 	return 0;
 }
@@ -1459,10 +1468,10 @@ do_include_next:
 	ls->input = f;
 #endif
 	current_filename = fname;
-	enter_file(ls, flags);
 #ifdef SYNOPSIS
 	synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, is_macro, nex);
 #endif
+	enter_file(ls, flags, 1);
 	return 0;
 
 #undef left_angle
@@ -1573,7 +1582,7 @@ static int handle_line(struct lexer_state *ls, unsigned long flags)
 		}
 	}
 	freemem(tf2.t);
-	enter_file(ls, flags);
+	enter_file(ls, flags, 0);
 	return 0;
 
 line_macro_err:
@@ -2082,7 +2091,7 @@ int cpp(struct lexer_state *ls)
 		if (!(ls->flags & LEXER) && !ls->ltwnl) put_char(ls, '\n');
 		pop_file_context(ls);
 		ls->oline ++;
-		if (enter_file(ls, ls->flags)) break;
+		if (enter_file(ls, ls->flags, 2)) break;
 	}
 	if (!(ls->ltwnl && (ls->ctok->type == SHARP
 		|| ls->ctok->type == DIG_SHARP))
@@ -2124,12 +2133,12 @@ int cpp(struct lexer_state *ls)
 				o_diff = o_pos2 - o_pos;
 				i_pos2 = ls->input_pos + (ls->discard ? 1 : 0);
 				i_diff = i_pos2 - i_pos;
-				if (!strcmp(current_filename, original_filename)) {
+/* 				if (!strcmp(current_filename, original_filename)) { */
 				    /*printf("MACRO: INPUT(line %d: %d -> %d = +- %d) OUTPUT(line %d: %d -> %d = +- %d)\n",
 					    i_line, i_pos, i_pos2, i_diff,
 					    o_line, o_pos, o_pos2, o_diff);*/
 				    synopsis_macro_hook(m->name, i_line, o_pos, o_pos2, i_diff - o_diff);
-				}
+/* 				} */
 #else
 				x = substitute_macro(ls, m, 0, 1, 0,
 					ls->ctok->line);
@@ -2617,7 +2626,7 @@ int MAIN_FUNC(int argc, char *argv[])
 		if (r == 2) usage(argv[0]);
 		return EXIT_FAILURE;
 	}
-	enter_file(&ls, ls.flags);
+	enter_file(&ls, ls.flags, 0);
 	while ((r = cpp(&ls)) < CPPERR_EOF) {
 		fr = fr || (r > 0);
 	}

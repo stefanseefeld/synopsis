@@ -10,7 +10,6 @@
 #include "swalker.hh"
 #include "builder.hh"
 #include "dumper.hh"
-#include "link_map.hh"
 #include "filter.hh"
 #include "linkstore.hh"
 
@@ -83,9 +82,6 @@ const char* syn_syntax_prefix = 0;
 // If set then this is the prefix for the filename to store xref info to
 const char* syn_xref_prefix = 0;
 
-// A list of extra filenames to store info for
-std::vector<const char*> syn_extra_filenames;
-
 namespace
 {
 
@@ -103,54 +99,6 @@ const char *strip_prefix(const char *filename, const char *prefix)
   if (strncmp(filename, prefix, length) == 0)
     return filename + length;
   return filename;
-}
-
-//. restore the relevant parts from the python ast
-//. The returned SourceFile object is a slice of the original python object
-//. and should be merged back at the end of the parsing such that the other
-//. parts not mirrored here are preserved.
-AST::SourceFile *restore_source_file(PyObject *ast, const std::string &src)
-{
-  LinkMap *map = LinkMap::instance();
-  map->clear();
-
-  FileFilter* filter = FileFilter::instance();
-  AST::SourceFile *sourcefile = filter->get_sourcefile(src.c_str());
-
-  PyObject *files = PyObject_CallMethod(ast, "files", "");
-  assert(files);
-  PyObject *source_file = PyDict_GetItemString(files, strip_prefix(src.c_str(), syn_base_path));
-  Py_DECREF(files);
-  if (!source_file) return sourcefile; // the given file wasn't preprocessed into the AST
-
-  PyObject *macro_calls = PyObject_CallMethod(source_file, "macro_calls", "");
-  if (macro_calls)
-  {
-    PyObject *lines = PyDict_Keys(macro_calls);
-    long size = PyObject_Length(lines);
-    for (long i = 0; i != size; ++i)
-    {
-      PyObject *line_number = PyList_GetItem(lines, i);
-      int l = PyInt_AsLong(line_number);
-      PyObject *line = PyDict_GetItem(macro_calls, line_number);
-      long line_length = PyObject_Length(line);
-      for (long j = 0; j != line_length; ++j)
-      {
-	PyObject *call = PyList_GetItem(line, j);
-	PyObject *name, *start, *end, *diff;
-	name = PyObject_GetAttrString(call, "name");
-	start = PyObject_GetAttrString(call, "start");
-	end = PyObject_GetAttrString(call, "end");
-	diff = PyObject_GetAttrString(call, "diff");
-	map->add(PyString_AsString(name), l,
-		 PyInt_AsLong(start),
-		 PyInt_AsLong(end),
-		 PyInt_AsLong(diff));
-      }
-    }
-    Py_DECREF(macro_calls);
-  }
-  return sourcefile;
 }
 
 #if !defined(__WIN32__)
@@ -249,18 +197,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
 #endif
 }
 
-bool extract(PyObject *list, std::vector<const char *> &out)
-{
-  size_t argsize = PyList_Size(list);
-  for (size_t i = 0; i != argsize; ++i)
-  {
-    const char *value = PyString_AsString(PyList_GetItem(list, i));
-    if (!value) return false;
-    out.push_back(value);
-  }
-  return true;
-}
-
 PyObject *occ_parse(PyObject *self, PyObject *args)
 {
   Trace trace("occ_parse");
@@ -272,29 +208,22 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
 
   PyObject *ast;
   const char *src, *cppfile;
-  PyObject *py_extra_files;
-  std::vector<const char *> extra_files;
   int verbose, main_file_only;
-  if (!PyArg_ParseTuple(args, "OssO!iizzz",
+  if (!PyArg_ParseTuple(args, "Ossiizzz",
                         &ast, &cppfile, &src,
-                        &PyList_Type, &py_extra_files,
                         &verbose,
                         &main_file_only,
                         &syn_base_path,
                         &syn_syntax_prefix,
-                        &syn_xref_prefix)
-      || !extract(py_extra_files, extra_files))
+                        &syn_xref_prefix))
     return 0;
+
+  std::cout << "running occ on " << src << ' ' << syn_base_path << std::endl;
 
   Py_INCREF(ast);
 
   if (verbose) ::verbose = true;
   if (main_file_only) syn_main_only = true;
-
-  for (std::vector<const char *>::iterator i = extra_files.begin();
-       i != extra_files.end();
-       ++i)
-    syn_extra_filenames.push_back(*i);
 
   if (!src || *src == '\0')
   {
@@ -303,15 +232,11 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   }
 
   // Setup the filter
-  FileFilter filter;
-  filter.set_only_main(syn_main_only);
-  filter.set_main_filename(src);
-  filter.set_basename(syn_base_path);
-  filter.add_extra_filenames(syn_extra_filenames);
+  FileFilter filter(ast, src, syn_base_path, syn_main_only);
   if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
   if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
 
-  AST::SourceFile *source_file = restore_source_file(ast, src);
+  AST::SourceFile *source_file = filter.get_sourcefile(src);
   // Run OCC to generate the AST
   RunOpencxx(source_file, cppfile, ast);
 

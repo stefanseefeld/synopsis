@@ -24,6 +24,7 @@
 #ifndef H_SYNOPSIS_CPP_FILTER
 #define H_SYNOPSIS_CPP_FILTER
 
+#include <Python.h>
 #include <string>
 #include <vector>
 #include "ast.hh"
@@ -32,41 +33,21 @@ class FileFilter
 {
 public:
     //. Constructor
-    FileFilter();
+    FileFilter(PyObject *, const std::string &, const std::string &, bool);
 
     //. Destructor
     ~FileFilter();
 
-    //. Sets whether only declarations in the main file(s) should be stored
-    void set_only_main(bool value);
-
-    //. Sets the main filename
-    void set_main_filename(const char* filename);
-
-    //. Adds a list of extra filenames to store info for
-    void add_extra_filenames(const std::vector<const char*>&);
-
-    //. Sets the basename
-    void set_basename(const char* basename);
-
-    //. Sets the filename for syntax output.
-    //. This should only be called if there are no extra files.
-    void set_syntax_filename(const char* filename);
-
-    //. Sets the filename for xref output.
-    //. This should only be called if there are no extra files.
-    void set_xref_filename(const char* filename);
+    std::string get_main_file();
 
     //. Sets the prefix for syntax output filenames.
     //. The syntax filename will be the source filename prepended with the
     //. prefix, so you probably want the prefix to be a directory.
-    //. This can be called whether there are extra files or not.
     void set_syntax_prefix(const char* filename);
 
     //. Sets the prefix for xref output filenames.
     //. The xref filename will be the source filename prepended with the
     //. prefix, so you probably want the prefix to be a directory.
-    //. This can be called whether there are extra files or not.
     void set_xref_prefix(const char* filename);
 
 
@@ -94,7 +75,7 @@ public:
     bool should_store(AST::Declaration* decl);
 
     //. Strips a filename of the basename if present
-    std::string strip_basename(const std::string& filename);
+    std::string strip_base_path(const std::string& filename);
 
     //. Returns the filename to use for storing syntax info
     std::string get_syntax_filename(AST::SourceFile* file);
@@ -104,11 +85,6 @@ public:
 
     //. Returns a list of all the sourcefiles
     void get_all_sourcefiles(AST::SourceFile::vector&);
-
-    //. Returns all the filenames given to the parser.
-    //. @param main a pointer to the main filename will be stored here
-    //. @param extra a pointer to the extra filenames will be stored here
-    void get_all_filenames(const std::string*& main, const std::vector<std::string>*& extra);
 
     //. Returns a pointer to the Filter instance. Note that Filter is *not* a
     //. regular singleton: instance() will return NULL if the Filter doesn't
@@ -126,7 +102,6 @@ private:
     //. Returns true if the given SourceFile is one of the main files
     //. (including extra files)
     bool is_main(std::string filename);
-
 };
 
 #endif

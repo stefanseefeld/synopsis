@@ -52,6 +52,32 @@
 
 using namespace AST;
 
+void MacroCallDict::add(const char *name, int linenum, int start, int end, int diff)
+{
+  Line &line = my_lines[linenum];
+  MacroCall call;
+  call.start = start;
+  call.end = end;
+  call.diff = diff;
+  line.insert(call);
+}
+
+int MacroCallDict::map(int linenum, int pos)
+{
+  Lines::iterator i = my_lines.find(linenum);
+  if (i == my_lines.end()) return pos;
+  Line &line = i->second;
+  Line::iterator j = line.begin(), end = line.end();
+  int diff = 0;
+  while (j != end && j->start < pos)
+  {
+    const MacroCall &call = *j++;
+    if (pos < call.end) return -1;
+    diff = call.diff;
+  }
+  return pos + diff;
+}
+
 //
 // AST::SourceFile
 //

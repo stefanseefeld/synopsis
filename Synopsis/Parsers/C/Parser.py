@@ -32,10 +32,12 @@ class Parser(Processor):
       if self.preprocess:
 
          from Synopsis.Parsers import Cpp
-         cpp = Cpp.Parser(prefix = self.base_path,
+         cpp = Cpp.Parser(base_path = self.base_path,
                           language = 'C',
                           flags = self.cppflags,
                           emulate_compiler = self.emulate_compiler)
+
+      base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
 
       for file in self.input:
 
@@ -48,14 +50,14 @@ class Parser(Processor):
                                    input = [file])
 
          self.ast = ctool.parse(self.ast, i_file,
-                                file,
-                                self.base_path,
+                                os.path.abspath(file),
+                                base_path,
                                 self.syntax_prefix,
                                 self.xref_prefix,
                                 self.verbose,
                                 self.debug)
 
-         if preprocess: os.remove(i_file)
+         if self.preprocess: os.remove(i_file)
 
       return self.output_and_return_ast()
 
@@ -87,4 +89,4 @@ class Parser(Processor):
 
          ctool.dump(i_file, file, output, symbols, debug)
 
-         if preprocess: os.unlink(i_file)
+         if preprocess: os.remove(i_file)

@@ -15,7 +15,8 @@ use by python.
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 import occ
-import os
+
+import os, os.path
 
 class Parser(Processor):
 
@@ -28,8 +29,6 @@ class Parser(Processor):
    syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
 
-   extra_files = Parameter([], 'extra files for which to keep info. Highly Deprecated !!!')
-   
    def process(self, ast, **kwds):
 
       self.set_parameters(kwds)
@@ -38,7 +37,7 @@ class Parser(Processor):
       if self.preprocess:
 
          from Synopsis.Parsers import Cpp
-         cpp = Cpp.Parser(prefix = self.base_path,
+         cpp = Cpp.Parser(base_path = self.base_path,
                           language = 'C++',
                           flags = self.cppflags,
                           emulate_compiler = self.emulate_compiler)
@@ -58,11 +57,11 @@ class Parser(Processor):
                                    verbose = self.verbose,
                                    debug = self.debug)
 
-         self.ast = occ.parse(self.ast, ii_file, file,
-                              self.extra_files,
+         self.ast = occ.parse(self.ast, ii_file,
+                              os.path.abspath(file),
                               self.verbose,
                               self.main_file_only,
-                              self.base_path,
+                              os.path.abspath(self.base_path) + os.sep,
                               self.syntax_prefix,
                               self.xref_prefix)
 

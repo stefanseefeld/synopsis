@@ -7,6 +7,7 @@
 // see the file COPYING for details.
 //
 
+#include <Python.h>
 #include <iostream>
 #include <string>
 #include <typeinfo>
@@ -23,7 +24,6 @@
 #include "builder.hh"
 #include "decoder.hh"
 #include "dumper.hh"
-//#include "link_map.hh"
 #include "linkstore.hh"
 #include "lookup.hh"
 #include "filter.hh"

@@ -147,7 +147,7 @@ protected:
     //. newline. As an added bonus, the returned column number is adjusted
     //. using the link map generated from expanding macros so it can be output
     //. straight to the link file :) The adjustment requires the line number.
-    int find_col(int line, const char* ptr);
+    int find_col(AST::SourceFile *file, int line, const char* ptr);
 
     //. Compiler firewalled private data type
     struct Private;

@@ -241,7 +241,7 @@ struct lexer_state {
 /* internal flags */
 #define READ_AGAIN	     0x080000UL	/* emit again the last token */
 #define TEXT_OUTPUT	     0x100000UL	/* output text */
-
+#define FILE_STRIKES_BACK    0x200000UL /* return to a file */
 /*
  * Public function prototypes
  */
@@ -271,7 +271,7 @@ int lex(struct lexer_state *);
 int check_cpp_errors(struct lexer_state *);
 void add_incpath(char *);
 void init_tables(int);
-int enter_file(struct lexer_state *, unsigned long);
+int enter_file(struct lexer_state *, unsigned long, unsigned long enter_exit);
 int cpp(struct lexer_state *);
 
 #ifdef UCPP_MMAP

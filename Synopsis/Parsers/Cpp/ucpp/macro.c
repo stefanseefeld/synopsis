@@ -1250,7 +1250,7 @@ collect_args:
 			}
 			put_char(ls, '\n');
 			ls->oline = ls->line;
-			enter_file(ls, ls->flags);
+			enter_file(ls, ls->flags, 0);
 #else
 			if (ls->flags & WARN_PRAGMA)
 				warning(ls->line,
