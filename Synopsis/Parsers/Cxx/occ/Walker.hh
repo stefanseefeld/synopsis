@@ -28,6 +28,7 @@ public:
   virtual bool is_class_walker() { return false;}
 
   void visit(PTree::Node *node) { my_result = node;}
+  void visit(PTree::List *);
   void visit(PTree::Identifier *node) { my_result = node;}
   void visit(PTree::This *node) { my_result = node;}
   void visit(PTree::Brace *);
