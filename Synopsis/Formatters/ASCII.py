@@ -12,6 +12,9 @@ class ASCIIFormatter:
         self.__istring = "  "
         self.__os = os
 	self.__scope = []
+	self.__axs = AST.DEFAULT
+	self.__axs_stack = []
+	self.__axs_string = ('default:\n','public:\n','protected:\n','private:\n')
     def indent(self):
         self.__os.write(self.__istring * self.__indent)
     def incr(self): self.__indent = self.__indent + 1
@@ -53,6 +56,11 @@ class ASCIIFormatter:
     ### AST visitor
 
     def visitDeclaration(self, decl):
+	axs = decl.accessability()
+	if axs != self.__axs:
+	    self.decr(); self.indent(); self.incr()
+	    self.write(self.__axs_string[axs])
+	    self.__axs = axs
 	for comment in decl.comments():
 	    self.indent()
 	    self.write(comment.text())
@@ -105,10 +113,14 @@ class ASCIIFormatter:
 	    self.write(string.join(p, ", "))
 	self.write(" {\n")
         self.enterScope(clas.name()[-1])
+	self.__axs_stack.append(self.__axs)
+	if clas.type() == 'struct': self.__axs = AST.PUBLIC
+	else: self.__axs = AST.PRIVATE
         #for type in clas.types(): type.output(self)
         #for operation in clas.operations(): operation.output(self)
 	for declaration in clas.declarations():
 	    declaration.accept(self)
+	self.__axs = self.__axs_stack.pop()
         self.leaveScope()
 	self.indent()
 	self.write("};\n")
