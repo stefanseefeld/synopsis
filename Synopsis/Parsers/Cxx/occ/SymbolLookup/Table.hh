@@ -56,6 +56,9 @@ public:
   void declare(PTree::ClassSpec *);
   void declare(PTree::TemplateDecl *);
 
+  //. look up the encoded name and return a set of matching symbols.
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const;
+
 private:
   typedef std::stack<Scope *> Scopes;
 

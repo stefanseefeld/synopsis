@@ -31,6 +31,18 @@ private:
   std::string   my_context;
 };
 
+class UndefinedSymbol : public Parser::Error
+{
+public:
+  UndefinedSymbol(PTree::Encoding const &name) : my_name(name) {}
+  virtual void write(std::ostream &os) const
+  {
+    os << "Undefined symbol : " << my_name << std::endl;
+  }
+private:
+  PTree::Encoding my_name;
+};
+
 class SymbolAlreadyDefined : public Parser::Error
 {
 public:
@@ -50,6 +62,21 @@ private:
   unsigned long   my_line1;
   std::string     my_file2;
   unsigned long   my_line2;
+};
+
+class SymbolTypeMismatch : public Parser::Error
+{
+public:
+  SymbolTypeMismatch(PTree::Encoding const &name, PTree::Encoding const &type)
+    : my_name(name), my_type(type) {}
+  virtual void write(std::ostream &os) const
+  {
+    os << "Symbol type mismatch : " << my_name 
+       << " has unexpected type " << my_type << std::endl;
+  }
+private:
+  PTree::Encoding my_name;
+  PTree::Encoding my_type;
 };
 
 namespace
@@ -190,16 +217,16 @@ bool Parser::mark_error()
   return my_errors.size() < max_errors;
 }
 
-// (PTree::Encoding const &name,
-// 			    PTree::Node const *def,
-// 			    PTree::Node const *orig)
-
 template <typename T>
 bool Parser::declare(T *t)
 {
   try
   {
     my_symbols.declare(t);
+  }
+  catch (SymbolLookup::Undefined const &e)
+  {
+    my_errors.push_back(new UndefinedSymbol(e.name));
   }
   catch (SymbolLookup::MultiplyDefined const &e)
   {
@@ -210,6 +237,10 @@ bool Parser::declare(T *t)
     my_errors.push_back(new SymbolAlreadyDefined(e.name,
 						 file1, line1,
 						 file2, line2));
+  }
+  catch (SymbolLookup::TypeError const &e)
+  {
+    my_errors.push_back(new SymbolTypeMismatch(e.name, e.type));
   }
   return my_errors.size() < max_errors;
 }
@@ -304,7 +335,6 @@ bool Parser::definition(PTree::Node *&p)
     if (c) set_declarator_comments(decl, c);
     p = decl;
     declare(decl);
-//     my_symbols.declare(decl);
     return true;
   }
   my_lexer.get_comments();
@@ -343,7 +373,6 @@ bool Parser::typedef_(PTree::Typedef *&def)
 
   def = PTree::nconc(def, PTree::list(decl, new PTree::Atom(tk)));
   declare(def);
-//   my_symbols.declare(def);
   return true;
 }
 
@@ -564,7 +593,6 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
   if(my_lexer.look_ahead(0) == '{')
   {
     declare(spec);
-//     my_symbols.declare(spec);
     SymbolLookup::Table::Guard guard(&my_symbols.enter_namespace(spec));
     if(!linkage_body(body)) return false;
   }
@@ -742,7 +770,6 @@ bool Parser::template_decl(PTree::Node *&decl)
     {
       tdecl = PTree::snoc(tdecl, body);
       declare(tdecl);
-//       my_symbols.declare(tdecl);
       decl = tdecl;
       break;
     }
@@ -899,7 +926,6 @@ bool Parser::template_arg_declaration(PTree::Node *&decl)
 						   0);
     tdecl = PTree::snoc(tdecl, cspec);
     declare(tdecl);
-//     my_symbols.declare(tdecl);
     decl = tdecl;
     if(my_lexer.look_ahead(0) == '=')
     {
@@ -2651,7 +2677,6 @@ bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
 		     new PTree::Brace(new PTree::Atom(tk), body,
 				      new PTree::CommentedAtom(tk2, wrap_comments(my_lexer.get_comments()))));
   declare(spec);
-//   my_symbols.declare(spec);
   return true;
 }
 
@@ -2755,7 +2780,6 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   }
   spec->set_encoded_name(encode);
   if (!my_in_template_decl) declare(spec);
-//   if (!my_in_template_decl) my_symbols.declare(spec);
 
   SymbolLookup::Table::Guard guard(&my_symbols.enter_class(spec));
 
@@ -2937,7 +2961,6 @@ bool Parser::class_member(PTree::Node *&mem)
       PTree::Node *comments = wrap_comments(my_lexer.get_comments());
       if (comments) set_declarator_comments(decl, comments);
       declare(decl);
-//       my_symbols.declare(decl);
       mem = decl;
       return true;
     }
@@ -4573,7 +4596,6 @@ bool Parser::expr_statement(PTree::Node *&st)
     if(declaration_statement(decl))
     {
       declare(decl);
-//       my_symbols.declare(decl);
       st = decl;
       return true;
     }

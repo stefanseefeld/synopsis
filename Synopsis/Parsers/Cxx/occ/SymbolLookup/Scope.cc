@@ -18,8 +18,8 @@ Scope::~Scope()
 
 void Scope::declare(const Encoding &name, const Symbol *s)
 {
-  // it is an error if the symbol was already defined in this scope
-  // and either is not a function / function template
+  // it is an error to declare a symbol with conflicting
+  // types unless all are functions / function templates
   if (s->type().is_function())
   {
     SymbolTable::const_iterator l = my_symbols.lower_bound(name);

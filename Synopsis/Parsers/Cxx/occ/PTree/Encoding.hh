@@ -15,6 +15,7 @@ namespace PTree
 {
 
 class Node;
+class Atom;
 
 //. 'b' boolean
 //. 'c' char
@@ -98,6 +99,7 @@ public:
   Encoding(const char *b) : my_buffer(b, b + strlen(b)) {}
   Encoding(const char *b, size_t s) : my_buffer(b, b + s) {}
   Encoding(iterator b, iterator e) : my_buffer(b, e) {}
+  static Encoding simple_name(PTree::Atom const *name);
 
   void clear() { my_buffer.clear();}
   bool empty() const { return my_buffer.empty();}
@@ -152,17 +154,18 @@ public:
 
   //. if this Encoding represents a qualified name,
   //. return the name of the outer scope
-  Encoding get_scope();
+  Encoding get_scope() const;
   //. if this Encoding represents a qualified name,
   //. return the name of the symbol inside the outer scope,
   //. else return the unmodified name
-  Encoding get_symbol();
-  Encoding get_template_arguments();
+  Encoding get_symbol() const;
+  Encoding get_template_arguments() const;
 
   PTree::Node *make_name();
   PTree::Node *make_qname();
   PTree::Node *make_ptree(PTree::Node *);
   bool is_simple_name() const { return front() >= 0x80;}
+  bool is_global_scope() const { return front() == 0x80 && size() == 1;}
   bool is_qualified() const { return front() == 'Q';}
   bool is_function() const { return front() == 'F';}
   bool is_template() const { return front() == 'T';}
@@ -173,7 +176,7 @@ public:
 
 private:
 
-  iterator end_of_scope();
+  iterator end_of_scope() const;
 
   Code my_buffer;
 
