@@ -512,6 +512,11 @@ class BaseFormatter(Visitor.AstVisitor):
             parameters_label.append(self.formatType(p))
         self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
 
+    def visitTemplate(self, type):
+	self.__type_label = "template&lt;%s&gt;"%(
+	    string.join(map(lambda x:"typename "+x, type.parameters()), ",")
+	)
+
     def visitFunctionType(self, type):
 	ret = self.formatType(type.returnType())
 	params = map(self.formatType, type.parameters())
@@ -685,6 +690,11 @@ class DetailFormatter(BaseFormatter):
 	type = string.capitalize(clas.type())
 	name = self.formatParent(clas)
 	self.write(entity('h1', "%s %s"%(type, name)))
+
+	# Print template
+	templ = clas.template()
+	if templ:
+	    self.write(entity('h2', "template &lt;%s&gt;"%string.join(templ.parameters(),", ")))
 
 	# Print filename
 	file = string.split(clas.file(), os.sep)
