@@ -974,7 +974,7 @@ int substitute_macro(struct lexer_state *ls, struct macro *m,
 	/* WARNING: I am not sure if this is correct, however it allows
 	 * parsing of boost's horrible preprocessor abusage   -Chalky
 	 */
-	if (reject_nested == 0) reject_nested = 10;
+	if (reject_nested == 0) reject_nested = 127;
 
 	/*
 	 * Reject the replacement, if we are already inside the macro.
