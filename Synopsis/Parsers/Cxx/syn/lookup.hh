@@ -86,17 +86,17 @@ public:
     //. @param fuc_okay If true, multiple declarations will not cause an error (needs fixing)
     //. @param scope If set determines the scope to start lookup from, else the
     //. current scope is used
-    Types::Named* lookupType(const ScopedName& names, bool func_okay=false, AST::Scope* scope=NULL);
+    Types::Named* lookupType(const ScopedName& names, bool func_okay=false, AST::Scope* scope=0);
 
     //. Looks up the name in the scope of the given scope. This method may
-    //. return a NULL ptr if the lookup failed.
+    //. return a 0 ptr if the lookup failed.
     Types::Named* lookupType(const std::string& name, AST::Scope* scope);
 
     //. Looks up the function in the given scope with the given args.
     AST::Function* lookupFunc(const std::string& , AST::Scope*, const std::vector<Types::Type*>&);
 
     //. Looks up the function operator in the current scope with the given
-    //. types. May return NULL if builtin operator or no operator is found.
+    //. types. May return 0 if builtin operator or no operator is found.
     AST::Function* lookupOperator(const std::string& oper, Types::Type* left_type, Types::Type* right_type);
 
     //. Maps a scoped name into a vector of scopes and the final type. Returns
@@ -105,7 +105,7 @@ public:
 
     //. Returns the types for an array operator on the given type with an
     //. argument of the given type. If a function is used then it is stored in
-    //. the function ptr ref given, else the ptr is set to NULL.
+    //. the function ptr ref given, else the ptr is set to 0.
     Types::Type* arrayOperator(Types::Type* object, Types::Type* arg, AST::Function*&);
 
     //. Resolves the final type of the given type. If the given type is an
@@ -115,15 +115,15 @@ public:
 
 private:
     //. Looks up the name in the current scope. This method may fail and
-    //. return a NULL ptr.
+    //. return a 0 ptr.
     Types::Named* lookup(const std::string& name, bool func_okay = false);
 
-    //. Searches for name in the list of Scopes. This method may return NULL
+    //. Searches for name in the list of Scopes. This method may return 0
     //. if the name is not found.
     Types::Named* lookup(const std::string& name, const ScopeSearch&, bool func_okay = false) throw ();
 
     //. Searches for name in the given qualified scope. This method may return
-    //. NULL if the name is not found. Lookup proceeds according to the spec:
+    //. 0 if the name is not found. Lookup proceeds according to the spec:
     //. if 'scope' is a Class scope, then scope and all base classes are
     //. searched, else if it's a 'namespace' scope then all usings are checked.
     Types::Named* lookupQual(const std::string& name, const ScopeInfo*, bool func_okay = false);

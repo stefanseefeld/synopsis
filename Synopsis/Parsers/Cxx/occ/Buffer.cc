@@ -75,7 +75,7 @@ struct Buffer::Private
 
 Buffer::Buffer(char* name)
 {
-    replacement = nil;
+    replacement = 0;
     defaultname = name;
     m = new Private;
     // Add defaultname at line 0
@@ -108,13 +108,13 @@ void Buffer::Insert(Ptree* pos, Ptree* before_text, Ptree* after_text)
 {
   char* p;
 
-  if(before_text != nil)
+  if(before_text != 0)
   {
     p = pos->LeftMost();
     Replace(p, p, before_text);
   }
 
-  if(after_text != nil)
+  if(after_text != 0)
   {
     p = pos->RightMost();
     Replace(p, p, after_text);
@@ -132,25 +132,25 @@ bool Buffer::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
     int what;
     if(oldtext == newtext)
 	return false;
-    else if(oldtext == nil || newtext == nil)
+    else if(oldtext == 0 || newtext == 0)
 	return true;
     else if(what = newtext->What(),
 	    (what == ntExprStatement || what == ntTypedef))
 	return true;
     else if(oldtext->IsLeaf() || newtext->IsLeaf())
 	return true;
-    else if(oldtext->Car() == nil && oldtext->Cdr() == nil)
+    else if(oldtext->Car() == 0 && oldtext->Cdr() == 0)
 	return true;
     else if(oldtext == newtext->Cdr()){
-	Insert(oldtext, newtext->Car(), nil);
+	Insert(oldtext, newtext->Car(), 0);
 	return false;
     }
-    else if(oldtext->Car() != nil && oldtext->Car() == newtext->Second()){
-	Insert(oldtext->Car(), newtext->Car(), nil);
+    else if(oldtext->Car() != 0 && oldtext->Car() == newtext->Second()){
+	Insert(oldtext->Car(), newtext->Car(), 0);
 	newtext = newtext->ListTail(2);
 	if(MinimumSubst2(newtext, oldtext->Cdr()))
-	    if(oldtext->Cdr() == nil)
-		Insert(oldtext->Car(), nil, newtext);
+	    if(oldtext->Cdr() == 0)
+		Insert(oldtext->Car(), 0, newtext);
 	    else
 		Subst(newtext, oldtext->Cdr());
 
@@ -162,17 +162,17 @@ bool Buffer::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
 	if(dirty1 == dirty2)
 	    return dirty1;
 	else if(dirty1)
-	    if(oldtext->Cdr() == nil && newtext->Cdr() == nil)
+	    if(oldtext->Cdr() == 0 && newtext->Cdr() == 0)
 		return true;
-	    else if(oldtext->Car() == nil)
-		Insert(oldtext->Cdr(), newtext->Car(), nil);
+	    else if(oldtext->Car() == 0)
+		Insert(oldtext->Cdr(), newtext->Car(), 0);
 	    else
 		Subst(newtext->Car(), oldtext->Car());
 	else
-	    if(oldtext->Car() == nil && newtext->Car() == nil)
+	    if(oldtext->Car() == 0 && newtext->Car() == 0)
 		return true;
-	    else if(oldtext->Cdr() == nil)
-		Insert(oldtext->Car(), nil, newtext->Cdr());
+	    else if(oldtext->Cdr() == 0)
+		Insert(oldtext->Car(), 0, newtext->Cdr());
 	    else
 		Subst(newtext->Cdr(), oldtext->Cdr());
 
@@ -182,21 +182,21 @@ bool Buffer::MinimumSubst2(Ptree* newtext, Ptree* oldtext)
 
 void Buffer::Replace(char* startpos, char* endpos, Ptree* text)
 {
-    if(startpos == nil || endpos == nil)
+    if(startpos == 0 || endpos == 0)
 	return;
 
     uint start = uint(startpos - buf);
     uint end = uint(endpos - buf);
     Replacement* p = replacement;
-    if(p == nil)
-	replacement = new Replacement(nil, start, end, text);
-    else if(p->next == nil)
+    if(p == 0)
+	replacement = new Replacement(0, start, end, text);
+    else if(p->next == 0)
 	if(start < p->startpos)
 	    replacement = new Replacement(p, start, end, text);
 	else
-	    p->next = new Replacement(nil, start, end, text);
+	    p->next = new Replacement(0, start, end, text);
     else{
-	for(; p->next != nil; p = p->next)
+	for(; p->next != 0; p = p->next)
 	    if(start < p->next->startpos)
 		break;
 
@@ -303,7 +303,7 @@ void Buffer::Write(std::ostream& out, const char* file_name)
 	line_number = ReadLineDirective(i, (sint)line_number,
 					filename, filename_length);
 
-    for(; rep != nil; rep = rep->next){
+    for(; rep != 0; rep = rep->next){
 	pos = rep->startpos;
 	while(i < pos){
 	    c = Ref(i++);
@@ -335,7 +335,7 @@ void Buffer::Write(std::ostream& out, const char* file_name)
 	++nlines;
 	nlines += rep->text->Write(out);
 	pos = rep->endpos;
-	if(rep->next != nil && rep->next->startpos <= pos){
+	if(rep->next != 0 && rep->next->startpos <= pos){
 	    rep = rep->next;
 	    out << '\n';
 	    ++nlines;
@@ -473,7 +473,7 @@ StreamBuffer::StreamBuffer(std::istream &f, char *filename)
 StreamBuffer::~StreamBuffer()
 {
   delete [] buf;
-  buf = nil;
+  buf = 0;
 }
 
 CinBuffer::CinBuffer()
@@ -488,7 +488,7 @@ CinBuffer::CinBuffer()
 CinBuffer::~CinBuffer()
 {
   delete [] buf;
-  buf = nil;
+  buf = 0;
 }
 
 char CinBuffer::Get()
@@ -531,7 +531,7 @@ StringBuffer::StringBuffer()
 StringBuffer::~StringBuffer()
 {
 //  delete [] buf;
-  buf = nil;
+  buf = 0;
 }
 
 StringBuffer &StringBuffer::operator << (const char* str)

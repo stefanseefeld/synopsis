@@ -85,7 +85,7 @@ public:
   //. CommentedLeaf then it adds those comments as spans
   void find_comments(Ptree* node);
 
-  // Takes the (maybe nil) args list and puts them in my_params
+  // Takes the (maybe 0) args list and puts them in my_params
   void TranslateFunctionArgs(Ptree* args);
   void TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& params);
   void TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType);
@@ -202,7 +202,7 @@ private:
   //. return type and modifiers, etc.
   Ptree* my_declaration;
   //. A pointer to the current template parameters, if any, used to get the
-  //. template parameters and set in the declaration. Should be NULL if not
+  //. template parameters and set in the declaration. Should be 0 if not
   //. in a template.
   std::vector<AST::Parameter*>* my_template;
   //. This pointer is used as a comparison to avoid redundant effort. Do
@@ -238,7 +238,7 @@ private:
   std::vector<Types::Type*> my_params;
   //. The type returned from the expression-type translators
   Types::Type* my_type;
-  //. The Scope to use for name lookups, or NULL to use enclosing default
+  //. The Scope to use for name lookups, or 0 to use enclosing default
   //. scope rules. This is for when we are at a Variable, and already know it
   //. must be part of a given class (eg, foo->bar .. bar must be in foo's
   //. class)

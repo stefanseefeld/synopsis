@@ -24,15 +24,15 @@
 #include "Encoding.hh"
 #include "Member.hh"
 
-Parser* Walker::default_parser = nil;
+Parser* Walker::default_parser = 0;
 char* Walker::argument_name = "_arg_%d_";
-char* Walker::default_metaclass = nil;
+char* Walker::default_metaclass = 0;
 
 Walker::Walker(Parser* p)
 {
     env = new Environment(this);
     parser = p;
-    if(default_parser == nil)
+    if(default_parser == 0)
 	default_parser = p;
 }
 
@@ -40,14 +40,14 @@ Walker::Walker(Parser* p, Environment* e)
 {
     env = new Environment(e, this);
     parser = p;
-    if(default_parser == nil)
+    if(default_parser == 0)
 	default_parser = p;
 }
 
 Walker::Walker(Environment* e)
 {
     env = new Environment(e, this);
-    if(default_parser == nil)
+    if(default_parser == 0)
 	MopErrorMessage("Walker::Walker()", "no default parser");
 
     parser = default_parser;
@@ -67,7 +67,7 @@ void Walker::NewScope()
 void Walker::NewScope(Class* metaobject)
 {
     env = new Environment(env);
-    if(metaobject != nil)
+    if(metaobject != 0)
 	metaobject->SetEnvironment(env);
 }
 
@@ -80,13 +80,13 @@ Environment* Walker::ExitScope()
 
 void Walker::RecordBaseclassEnv(Ptree* bases)
 {
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
 	Ptree* base_class = bases->Car()->Last()->Car();
 	Class* metaobject = env->LookupClassMetaobject(base_class);
-	if(metaobject != nil){
+	if(metaobject != 0){
 	    Environment* e = metaobject->GetEnvironment();
-	    if(e != nil)
+	    if(e != 0)
 		env->AddBaseclassEnv(e);
 	}
 
@@ -117,7 +117,7 @@ bool Walker::IsClassWalker()
 
 Ptree* Walker::Translate(Ptree* p)
 {
-    if(p == nil)
+    if(p == 0)
 	return p;
     else
 	return p->Translate(this);
@@ -125,7 +125,7 @@ Ptree* Walker::Translate(Ptree* p)
 
 void Walker::Typeof(Ptree* p, TypeInfo& t)
 {
-    if(p != nil)
+    if(p != 0)
 	p->Typeof(this, t);
 }
 
@@ -179,7 +179,7 @@ Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
     Ptree* class_def;
 
     if(class_spec->Car()->IsLeaf()){
-	userkey = nil;
+	userkey = 0;
 	class_def = class_spec;
     }
     else{
@@ -187,7 +187,7 @@ Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
 	class_def = class_spec->Cdr();
     }
 
-    Class* metaobject = nil;
+    Class* metaobject = 0;
     if(Ptree::Length(class_def) == 4)
 	metaobject = MakeTemplateClassMetaobject(temp_def, userkey, class_def);
 
@@ -206,7 +206,7 @@ Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
 					   Ptree* class_def)
 {
     Class* metaobject = LookupMetaclass(def, userkey, class_def, true);
-    if(metaobject == nil)
+    if(metaobject == 0)
 	metaobject = new TemplateClass;
     else
 	if(metaobject->AcceptTemplate())
@@ -214,11 +214,11 @@ Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
 	else{
 
 	    ErrorMessage("the specified metaclass is not for templates.",
-			 nil, def);
+			 0, def);
 	    metaobject = new TemplateClass;
 	}
 
-    metaobject->InitializeInstance(def, nil);
+    metaobject->InitializeInstance(def, 0);
     return metaobject;
 }
 
@@ -235,7 +235,7 @@ Ptree* Walker::TranslateTemplateInstantiation(Ptree *inst_spec)
     Ptree* full_class_spec = Ptree::First(inst_spec);
 
     if(full_class_spec->Car()->IsLeaf()){
-	userkey = nil;
+	userkey = 0;
 	class_spec = full_class_spec;
     }
     else{
@@ -243,7 +243,7 @@ Ptree* Walker::TranslateTemplateInstantiation(Ptree *inst_spec)
 	class_spec = full_class_spec->Cdr();
     }
 
-    Class* metaobject = nil;
+    Class* metaobject = 0;
     metaobject = MakeTemplateInstantiationMetaobject(full_class_spec,
 						     userkey, class_spec);
     return TranslateTemplateInstantiation(inst_spec, userkey, 
@@ -255,27 +255,27 @@ Class* Walker::MakeTemplateInstantiationMetaobject(
 {
     // [class [foo [< ... >]]] -> [class foo]
     Ptree* class_name = Ptree::First(Ptree::Second(class_spec));
-    Bind* binding = nil;
+    Bind* binding = 0;
     if (!env->Lookup(class_name,binding))
-	return nil;
+	return 0;
 
-    Class* metaobject = nil;
+    Class* metaobject = 0;
     if (binding->What() != Bind::isTemplateClass) {
 	ErrorMessage("not declarated as a template class?!?",
-		     nil, full_class_spec);
-	metaobject = nil;
+		     0, full_class_spec);
+	metaobject = 0;
     }
     else
 	metaobject = binding->ClassMetaobject();
 
-    if (metaobject == nil)
+    if (metaobject == 0)
 	metaobject = new TemplateClass;
     else
 	if(metaobject->AcceptTemplate())
 	    return metaobject;
 	else{
 	    ErrorMessage("the specified metaclass is not for templates.",
-			 nil, full_class_spec);
+			 0, full_class_spec);
 	    metaobject = new TemplateClass;
 	}
 
@@ -285,7 +285,7 @@ Class* Walker::MakeTemplateInstantiationMetaobject(
 Ptree* Walker::TranslateTemplateInstantiation(Ptree* inst_spec,
 		Ptree* userkey, Ptree* class_spec, Class* metaobject)
 {
-    if (metaobject == nil)
+    if (metaobject == 0)
 	return inst_spec;
     else {
 	Ptree *class_spec2 = TranslateClassSpec(class_spec);
@@ -356,8 +356,8 @@ Ptree* Walker::TranslateDeclaration(Ptree* def)
 
 	if(sspec == sspec2 && tspec == tspec2 && decls == decls2)
 	    return def;
-	else if(decls2 == nil)
-	    return new PtreeDeclaration(nil, Ptree::List(nil,
+	else if(decls2 == 0)
+	    return new PtreeDeclaration(0, Ptree::List(0,
 							 Class::semicolon_t));
 	else
 	    return new PtreeDeclaration(sspec2,
@@ -384,7 +384,7 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
     PtreeArray array;
     bool changed = false;
     Ptree* rest = decls;
-    while(rest != nil){
+    while(rest != 0){
 	Ptree *p, *q;
 	int len;
 	p = q = rest->Car();
@@ -395,14 +395,14 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 		env->RecordDeclarator(p);
 
 	    len = p->Length();
-	    exp = exp2 = nil;
+	    exp = exp2 = 0;
 	    if(len >= 2 && p->Nth(len - 2)->Eq('=')){
 		exp = p->ListTail(len - 2);
 		exp2 = TranslateAssignInitializer((PtreeDeclarator*)p, exp);
 	    }
 	    else{
 		Ptree* last = p->Last()->Car();
-		if(last != nil && !last->IsLeaf() && last->Car()->Eq('(')){
+		if(last != 0 && !last->IsLeaf() && last->Car()->Eq('(')){
 		    exp = last;
 		    exp2 = TranslateInitializeArgs((PtreeDeclarator*)p, last);
 		}
@@ -411,23 +411,23 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 	    q = TranslateDeclarator(false, (PtreeDeclarator*)p);
 	    if(exp != exp2){
 		// exp2 should be a list, but...
-		if(exp2 != nil && exp2->IsLeaf())
+		if(exp2 != 0 && exp2->IsLeaf())
 		    exp2 = Ptree::List(exp2);
 
 		if(p == q){
 		    q = Ptree::SubstSublist(exp2, exp, p->Cdr());
 		    q = new PtreeDeclarator((PtreeDeclarator*)p, p->Car(), q);
 		}
-		else if(q != nil && !q->IsLeaf())
+		else if(q != 0 && !q->IsLeaf())
 		    q = new PtreeDeclarator((PtreeDeclarator*)p, q->Car(),
 					    Ptree::Subst(exp2, exp, q->Cdr()));
 	    }
 	}
 
-	if(q == nil){
+	if(q == 0){
 	    changed = true;
 	    rest = rest->Cdr();
-	    if(rest != nil)
+	    if(rest != 0)
 		rest = rest->Cdr();
 	}
 	else{
@@ -436,7 +436,7 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 		changed = true;
 
 	    rest = rest->Cdr();
-	    if(rest != nil){
+	    if(rest != 0){
 		array.Append(rest->Car());
 		rest = rest->Cdr();
 	    }
@@ -471,9 +471,9 @@ Ptree* Walker::TranslateDeclarator(bool record, PtreeDeclarator* decl)
 bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
 {
     Ptree* p = decl;
-    while(p != nil){
+    while(p != 0){
 	Ptree* q = p->Car();
-	if(q != nil)
+	if(q != 0)
 	    if(q->IsLeaf()){
 		if(q->Eq('(')){
 		    args = p->Cadr();
@@ -486,7 +486,7 @@ bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
 	p = p->Cdr();
     }
 
-    args = nil;
+    args = 0;
     return false;
 }
 
@@ -505,13 +505,13 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
     Ptree* rest;
     Ptree* rest2;
 
-    if(args == nil)
+    if(args == 0)
 	return args;
     else{
 	Ptree *a, *a2;
 	a = a2 = args->Car();
-	if(args->Cdr() == nil)
-	    rest = rest2 = nil;
+	if(args->Cdr() == 0)
+	    rest = rest2 = 0;
 	else{
 	    rest = args->Cddr();	// skip ","
 	    rest2 = TranslateArgDeclList2(record, e, translate, fill_args,
@@ -563,7 +563,7 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 Ptree* Walker::FillArgumentName(Ptree* arg, Ptree* d, int arg_name)
 {
     PtreeDeclarator* decl = (PtreeDeclarator*)d;
-    if(decl->Name() != nil)
+    if(decl->Name() != 0)
 	return arg;
     else{
 	unsigned char* type = (unsigned char*)decl->GetEncodedType();
@@ -599,7 +599,7 @@ Ptree* Walker::TranslateFunctionImplementation(Ptree* impl)
 
     Ptree* tspec2 = TranslateTypespecifier(tspec);
     Environment* fenv = env->RecordDeclarator(decl);
-    if(fenv == nil){
+    if(fenv == 0){
 	// reach here if resolving the qualified name fails. error?
 	NewScope();
 	decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
@@ -642,7 +642,7 @@ Ptree* Walker::TranslateBrace(Ptree* block)
     bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
-    while(rest != nil){
+    while(rest != 0){
 	Ptree* p = rest->Car();
 	Ptree* q = Translate(p);
 	array.Append(q);
@@ -669,7 +669,7 @@ Ptree* Walker::TranslateBlock(Ptree* block)
     bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
-    while(rest != nil){
+    while(rest != 0){
 	Ptree* p = rest->Car();
 	Ptree* q = Translate(p);
 	array.Append(q);
@@ -701,7 +701,7 @@ Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
     bool changed = false;
     Ptree* body = Ptree::Second(block);
     Ptree* rest = body;
-    while(rest != nil){
+    while(rest != 0){
 	Ptree* p = rest->Car();
 	Ptree* q = Translate(p);
 	array.Append(q);
@@ -727,7 +727,7 @@ Ptree* Walker::TranslateClassSpec(Ptree* spec)
     Ptree* class_def;
 
     if(spec->Car()->IsLeaf()){
-	userkey = nil;
+	userkey = 0;
 	class_def = spec;
     }
     else{
@@ -735,7 +735,7 @@ Ptree* Walker::TranslateClassSpec(Ptree* spec)
 	class_def = spec->Cdr();
     }
 
-    Class* metaobject = nil;
+    Class* metaobject = 0;
     if(Ptree::Length(class_def) == 4)
 	metaobject = MakeClassMetaobject(spec, userkey, class_def);
 
@@ -747,27 +747,27 @@ Class* Walker::MakeClassMetaobject(Ptree* def, Ptree* userkey,
 				   Ptree* class_def)
 {
     Class* metaobject = LookupMetaclass(def, userkey, class_def, false);
-    if(metaobject == nil && default_metaclass != nil){
+    if(metaobject == 0 && default_metaclass != 0){
 	metaobject = opcxx_ListOfMetaclass::New(default_metaclass, class_def,
-						nil);
-	if(metaobject == nil)
+						0);
+	if(metaobject == 0)
 	    MopErrorMessage2("the default metaclass cannot be loaded: ",
 			     default_metaclass);
     }
 
-    if(metaobject == nil)
+    if(metaobject == 0)
 	metaobject = new Class;
     else{
 	if(!metaobject->AcceptTemplate())
 	    return metaobject;
 	else{
 	    ErrorMessage("the specified metaclass is for templates.",
-			 nil, def);
+			 0, def);
 	    metaobject = new Class;
 	}
     }
 
-    metaobject->InitializeInstance(class_def, nil);
+    metaobject->InitializeInstance(class_def, 0);
     return metaobject;
 }
 
@@ -776,7 +776,7 @@ void Walker::ChangeDefaultMetaclass(char* name)
     default_metaclass = name;
 }
 
-// LookupMetaclass() returns nil if no metaclass is found.
+// LookupMetaclass() returns 0 if no metaclass is found.
 
 Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
 			       bool is_template)
@@ -789,32 +789,32 @@ Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
     // for bootstrapping
     if(Metaclass::IsBuiltinMetaclass(class_name)){
 	metaobject = new Metaclass;
-	metaobject->InitializeInstance(def, nil);
+	metaobject->InitializeInstance(def, 0);
 	return metaobject;
     }
 
     Ptree* mdecl = env->LookupMetaclass(class_name);
-    if(mdecl != nil){
+    if(mdecl != 0){
 	mclass = mdecl->Second();
 	margs = mdecl->Nth(4);
 	metaobject = opcxx_ListOfMetaclass::New(mclass, def, margs);
-	if(metaobject == nil)
+	if(metaobject == 0)
 	    ErrorMessage("the metaclass is not loaded: ", mclass, class_def);
-	else if(userkey != nil)
+	else if(userkey != 0)
 	    ErrorMessage("the metaclass declaration conflicts"
 			 " with the keyword: ", mclass, class_def);
 
 	return metaobject;
     }
 
-    if(userkey != nil){
+    if(userkey != 0){
 	mclass = env->LookupClasskeyword(userkey->Car());
-	if(mclass == nil)
+	if(mclass == 0)
 	    ErrorMessage("invalid keyword: ", userkey, class_def);
 	else{
 	    metaobject = opcxx_ListOfMetaclass::New(mclass, class_def,
 						    userkey->Third());
-	    if(metaobject == nil)
+	    if(metaobject == 0)
 		ErrorMessage("the metaclass associated with the"
 			     " keyword is not loaded: ", userkey, class_def);
 
@@ -828,40 +828,40 @@ Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
 Class* Walker::LookupBaseMetaclass(Ptree* def, Ptree* class_def,
 				   bool is_template)
 {
-    Class* metaobject = nil;
+    Class* metaobject = 0;
     Ptree* bases = class_def->Third();
-    while(bases != nil){
+    while(bases != 0){
 	bases = bases->Cdr();
 	Ptree* base = bases->Car()->Last()->Car();
 	bases = bases->Cdr();
 	Class* m = env->LookupClassMetaobject(base);
-	if(m != nil){
-	    if(metaobject == nil)
+	if(m != 0){
+	    if(metaobject == 0)
 		metaobject = m;
-	    else if(m == nil || strcmp(metaobject->MetaclassName(),
+	    else if(m == 0 || strcmp(metaobject->MetaclassName(),
 				       m->MetaclassName()) != 0){
 		ErrorMessage("inherited metaclasses conflict: ",
 			     class_def->Second(), class_def);
-		return nil;
+		return 0;
 	    }
 	}
     }
 
-    if(metaobject == nil)
-	return nil;
+    if(metaobject == 0)
+	return 0;
 
     bool accept_template = metaobject->AcceptTemplate();
     if((is_template && accept_template) || (!is_template && !accept_template))
 	return opcxx_ListOfMetaclass::New(metaobject->MetaclassName(),
-					  def, nil);
+					  def, 0);
     else
-	return nil;
+	return 0;
 }
 
 Ptree* Walker::TranslateClassSpec(Ptree* spec, Ptree*,
 				  Ptree* class_def, Class* metaobject)
 {
-    if(metaobject == nil)
+    if(metaobject == 0)
 	return spec;
     else{
 	// a class body is specified.
@@ -874,7 +874,7 @@ Ptree* Walker::TranslateClassSpec(Ptree* spec, Ptree*,
 	    return new PtreeClassSpec(spec->Car(),
 				      Ptree::ShallowSubst(body2, body,
 							  spec->Cdr()),
-				      nil, spec->GetEncodedName());
+				      0, spec->GetEncodedName());
     }
 }
 
@@ -991,7 +991,7 @@ Ptree* Walker::TranslateTry(Ptree* s)
     Ptree* handlers = s->Cddr();
     bool changed = false;
 
-    while(handlers != nil){
+    while(handlers != 0){
 	Ptree* handle = handlers->Car();
 	Ptree* body = handle->Nth(4);
 	Ptree* body2 = Translate(body);
@@ -1091,8 +1091,8 @@ Ptree* Walker::TranslateTypespecifier(Ptree* tspec)
     Ptree *class_spec, *class_spec2;
 
     class_spec = GetClassOrEnumSpec(tspec);
-    if(class_spec == nil)
-	class_spec2 = nil;
+    if(class_spec == 0)
+	class_spec2 = 0;
     else
 	class_spec2 = Translate(class_spec);
 
@@ -1108,7 +1108,7 @@ Ptree* Walker::GetClassOrEnumSpec(Ptree* typespec)
     if(spec->IsA(ntClassSpec, ntEnumSpec))
 	return spec;
 
-    return nil;
+    return 0;
 }
 
 Ptree* Walker::GetClassTemplateSpec(Ptree* body)
@@ -1119,13 +1119,13 @@ Ptree* Walker::GetClassTemplateSpec(Ptree* body)
 	    return spec;
     }
 
-    return nil;
+    return 0;
 }
 
 Ptree* Walker::StripCvFromIntegralType(Ptree* integral)
 {
-    if(integral == nil)
-	return nil;
+    if(integral == 0)
+	return 0;
 
     if(!integral->IsLeaf())
 	if(integral->Car()->IsA(CONST, VOLATILE))
@@ -1343,17 +1343,17 @@ Ptree* Walker::TranslateNew(Ptree* exp)
 
     p = exp;
     userkey = p->Car();
-    if(userkey == nil || !userkey->IsLeaf())
+    if(userkey == 0 || !userkey->IsLeaf())
 	p = exp->Cdr();		// user keyword
     else
-	userkey = nil;
+	userkey = 0;
 
     if(p->Car()->Eq("::")){
 	scope = p->Car();
 	p = p->Cdr();
     }
     else
-	scope = nil;
+	scope = 0;
 
     op = p->Car();
     placement = p->Cadr();
@@ -1399,7 +1399,7 @@ void Walker::TypeofNew(Ptree* exp, TypeInfo& t)
 
     p = exp;
     userkey = p->Car();
-    if(userkey == nil || !userkey->IsLeaf())
+    if(userkey == 0 || !userkey->IsLeaf())
 	p = exp->Cdr();		// user keyword
 
     if(p->Car()->Eq("::"))
@@ -1609,9 +1609,9 @@ Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
 {
     Ptree* decl2 = decl;
     Ptree* p = decl;
-    while(p != nil){
+    while(p != 0){
 	Ptree* head = p->Car();
-	if(head == nil)
+	if(head == 0)
 	    return decl;
 	else if(head->Eq('[')){
 	    Ptree* p2 = TranslateNewDeclarator2(p);
@@ -1632,7 +1632,7 @@ Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
 	p = p->Cdr();
     }
 
-    if(p == nil)
+    if(p == 0)
 	return decl;
     else if(decl->IsA(ntDeclarator))
 	return new PtreeDeclarator((PtreeDeclarator*)decl,
@@ -1643,7 +1643,7 @@ Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
 
 Ptree* Walker::TranslateNewDeclarator2(Ptree* decl)
 {
-    for(Ptree* p = decl; p != nil; p = p->Cdr()){
+    for(Ptree* p = decl; p != 0; p = p->Cdr()){
 	Ptree* head = p->Car();
 	if(head->Eq('[')){
 	    Ptree* size = p->Cadr();
@@ -1663,14 +1663,14 @@ Ptree* Walker::TranslateNewDeclarator2(Ptree* decl)
 
 Ptree* Walker::TranslateArguments(Ptree* arglist)
 {
-    if(arglist == nil)
+    if(arglist == 0)
 	return arglist;
 
     PtreeArray array;
     bool changed = false;
     Ptree* body = Ptree::Second(arglist);
     Ptree* args = body;
-    while(args != nil){
+    while(args != 0){
 	Ptree* p = args->Car();
 	Ptree* q = Translate(p);
 	array.Append(q);
@@ -1678,7 +1678,7 @@ Ptree* Walker::TranslateArguments(Ptree* arglist)
 	    changed = true;
 
 	args = args->Cdr();
-	if(args != nil){
+	if(args != 0){
 	    array.Append(args->Car());
 	    args = args->Cdr();
 	}
@@ -1711,7 +1711,7 @@ Ptree* Walker::FindLeftLeaf(Ptree* node, Ptree*& parent)
 	// No leaves from Car of this node, so try next Cdr
 	node = node->Cdr();
     }
-    return NULL;
+    return 0;
 }
 
 //. Node is never the leaf. Instead we traverse the left side of the tree
@@ -1745,7 +1745,7 @@ void Walker::SetLeafComments(Ptree* node, Ptree* comments)
 
 void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
 {
-    if (def == nil || !def->IsA(ntDeclaration))
+    if (def == 0 || !def->IsA(ntDeclaration))
 	return;
 
     Ptree* decl;
@@ -1753,7 +1753,7 @@ void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
     for (;;) {
 	int i = n++;
 	decl = NthDeclarator(def, i);
-	if (decl == nil)
+	if (decl == 0)
 	    break;
 	else if (decl->IsA(ntDeclarator))
 	    ((PtreeDeclarator*)decl)->SetComments(comments);
@@ -1763,31 +1763,31 @@ void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
 Ptree* Walker::NthDeclarator(Ptree* def, int& nth)
 {
     Ptree* decls = def->Third();
-    if(decls == nil || decls->IsLeaf())
-	return nil;
+    if(decls == 0 || decls->IsLeaf())
+	return 0;
 
     if(decls->IsA(ntDeclarator)){	// if it is a function
 	if(nth-- == 0)
 	    return decls;
     }
     else
-	while(decls != nil && !decls->IsLeaf()){
+	while(decls != 0 && !decls->IsLeaf()){
 	    if(nth-- == 0)
 		return decls->Car();
 
-	    if((decls = decls->Cdr()) != nil)
+	    if((decls = decls->Cdr()) != 0)
 		decls = decls->Cdr();		// skip ,
 	}
 
-    return nil;
+    return 0;
 }
 
 Ptree* Walker::FindDeclarator(Ptree* def, char* name, int len,
 			      char* signature, int& nth, Environment* e)
 {
     Ptree* decls = def->Third();
-    if(decls == nil || decls->IsLeaf())
-	return nil;
+    if(decls == 0 || decls->IsLeaf())
+	return 0;
 
     if(decls->IsA(ntDeclarator)){	// if it is a function
 	if(MatchedDeclarator(decls, name, len, signature, e))
@@ -1796,17 +1796,17 @@ Ptree* Walker::FindDeclarator(Ptree* def, char* name, int len,
 	++nth;
     }
     else
-	while(decls != nil){
+	while(decls != 0){
 	    Ptree* d = decls->Car();
 	    if(MatchedDeclarator(d, name, len, signature, e))
 		return d;
 
 	    ++nth;
-	    if((decls = decls->Cdr()) != nil)
+	    if((decls = decls->Cdr()) != 0)
 		decls = decls->Cdr();		// skip ,
 	}
 
-    return nil;
+    return 0;
 }
 
 bool Walker::MatchedDeclarator(Ptree* decl, char* name, int len,
@@ -1818,7 +1818,7 @@ bool Walker::MatchedDeclarator(Ptree* decl, char* name, int len,
 
     str = decl->GetEncodedName();
     sig = decl->GetEncodedType();
-    if(str == nil || sig == nil)
+    if(str == 0 || sig == 0)
 	return false;
 
     str = Encoding::GetBaseName(str, strlen, e);
@@ -1833,7 +1833,7 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
     int len;
     Environment* e;
     Ptree* decls = def->Third();
-    if(decls == nil || decls->IsLeaf())
+    if(decls == 0 || decls->IsLeaf())
 	return false;
 
     if(decls->IsA(ntDeclarator)){	// if it is a function
@@ -1846,7 +1846,7 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
 	++nth;
     }
     else
-	while(decls != nil){
+	while(decls != 0){
 	    str = decls->Car()->GetEncodedName();
 	    e = env;
 	    str = Encoding::GetBaseName(str, len, e);
@@ -1854,7 +1854,7 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
 		return true;
 
 	    ++nth;
-	    if((decls = decls->Cdr()) != nil)
+	    if((decls = decls->Cdr()) != 0)
 		decls = decls->Cdr();
 	}
 
@@ -1875,7 +1875,7 @@ void Walker::WarningMessage(char* msg, Ptree* name, Ptree* where)
 
 void Walker::InaccurateErrorMessage(char* msg, Ptree* name, Ptree* where)
 {
-    if(default_parser == nil)
+    if(default_parser == 0)
 	MopErrorMessage("Walker::InaccurateErrorMessage()",
 			"no default parser");
     else
@@ -1884,7 +1884,7 @@ void Walker::InaccurateErrorMessage(char* msg, Ptree* name, Ptree* where)
 
 void Walker::InaccurateWarningMessage(char* msg, Ptree* name, Ptree* where)
 {
-    if(default_parser == nil)
+    if(default_parser == 0)
 	MopErrorMessage("Walker::InaccurateWarningMessage()",
 			"no default parser");
     else

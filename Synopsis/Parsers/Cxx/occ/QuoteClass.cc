@@ -47,7 +47,7 @@ Ptree* QuoteClass::TranslateMemberCall(Environment* env,
 
     if(Ptree::Eq(name, "qMake")){
 	Ptree* arg1 = Ptree::First(Ptree::Second(args));
-	if(arg1->Reify(str) && str != nil)
+	if(arg1->Reify(str) && str != 0)
 	    return ProcessBackQuote(env, str, arg1, name);
 	else
 	    ErrorMessage(env, "bad argument for qMake()", arg1, name);
@@ -55,7 +55,7 @@ Ptree* QuoteClass::TranslateMemberCall(Environment* env,
     else if(Ptree::Eq(name, "qMakeStatement")){
 	WarnObsoleteness("Ptree::qMakeStatement()", "Ptree::qMake()");
 	Ptree* arg1 = Ptree::First(Ptree::Second(args));
-	if(arg1->Reify(str) && str != nil)
+	if(arg1->Reify(str) && str != 0)
 	    return ProcessBackQuote(env, str, arg1, name);
 	else
 	    ErrorMessage(env, "bad argument for qMakeStatement()", arg1, name);

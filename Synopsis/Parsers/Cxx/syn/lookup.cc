@@ -443,11 +443,11 @@ AST::Function* Lookup::lookupOperator(const std::string& oper, Types::Type* left
 
     // First check if the types are user-def or enum
     if (!left_user && !right_user)
-        return NULL;
+        return 0;
 
     std::vector<AST::Function*> functions;
     std::vector<Types::Type*> args;
-    AST::Function* best_method = NULL, *best_func = NULL;
+    AST::Function* best_method = 0, *best_func = 0;
     int best_method_cost, best_func_cost;
 
     // Member methods of left_type
@@ -465,7 +465,7 @@ AST::Function* Lookup::lookupOperator(const std::string& oper, Types::Type* left
         }
         catch (const Dictionary::KeyError&)
         {
-            best_method = NULL;
+            best_method = 0;
         }
 
         // Clear functions and args for use below
@@ -553,7 +553,7 @@ AST::Function* Lookup::lookupOperator(const std::string& oper, Types::Type* left
         if (best_func)
             return best_func;
         else
-            return NULL;
+            return 0;
     }
 }
 
@@ -585,7 +585,7 @@ AST::Function* Lookup::bestFunction(const AST::Function::vector& functions, cons
 {
     // Quick sanity check
     if (!functions.size())
-        return NULL;
+        return 0;
     // Find best function using a heuristic
     FunctionHeuristic heuristic(args);
     Function::vector::const_iterator iter = functions.begin(), end = functions.end();
@@ -634,10 +634,10 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
             Named::vector save_results = results;
 #endif
             // Remove the unknowns
-            Types::Unknown* unknown = NULL;
+            Types::Unknown* unknown = 0;
             Named::vector::iterator r_iter = results.begin();
             while (r_iter != results.end())
-                if ((unknown = dynamic_cast<Types::Unknown*>(*r_iter)) != NULL)
+                if ((unknown = dynamic_cast<Types::Unknown*>(*r_iter)) != 0)
                     r_iter = results.erase(r_iter);
                 else if (!func_okay && !isType(*r_iter))
                     r_iter = results.erase(r_iter);
@@ -645,7 +645,7 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
                     ++r_iter;
             // Should be either 1 non-unknowns left or nothing but with
             // 'unknown' set
-            if (results.size() == 0 && unknown != NULL)
+            if (results.size() == 0 && unknown != 0)
                 return unknown;
             if (results.size() == 0)
                 // This means there was only functions in the list, which we are
@@ -665,7 +665,7 @@ Types::Named* Lookup::lookup(const std::string& name, const ScopeSearch& search,
             return results[0];
         }
     }
-    return NULL;
+    return 0;
 }
 
 class InheritanceAdder
@@ -774,10 +774,10 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
         if (!results.size())
         {
             LOG("No results! Looking up '" << name << "'");
-            return NULL;
+            return 0;
         }
         // FIXME: figure out what to do about multiple
-        Types::Named* best = NULL;
+        Types::Named* best = 0;
         int best_score = -1;
         for (std::vector<Types::Named*>::iterator iter = results.begin();
                 iter != results.end(); iter++)
@@ -807,7 +807,7 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
     // Not class or NS - which is illegal for a qualified (but coulda been
     // template etc?:)
     LOG("Not class or namespace: " << typeid(scope->scope_decl).name());
-    return NULL;
+    return 0;
 }
 
 //. Public Qualified Type Lookup
@@ -815,8 +815,8 @@ Types::Named* Lookup::lookupType(const std::vector<std::string>& names, bool fun
 {
     STrace trace("Lookup::lookupType(vector names,search,func_okay)");
     //LOG("looking up '" << names << "' in " << (start_scope?start_scope->name() : m_scope->name()));
-    Types::Named* type = NULL;
-    ScopeInfo* scope = NULL;
+    Types::Named* type = 0;
+    ScopeInfo* scope = 0;
     std::vector<std::string>::const_iterator n_iter = names.begin();
     // Setup the initial scope
     std::string name = *n_iter;
@@ -932,7 +932,7 @@ bool Lookup::mapName(const ScopedName& names, std::vector<AST::Scope*>& o_scopes
 Types::Type* Lookup::arrayOperator(Types::Type* object, Types::Type* arg, AST::Function*& func_oper)
 {
     STrace trace("Lookup::arrayOperator");
-    func_oper = NULL;
+    func_oper = 0;
     // First decide if should use derefence or methods
     TypeInfo info(object);
     if (info.deref)

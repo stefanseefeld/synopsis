@@ -151,7 +151,7 @@ typedef code::iterator code_iter;
 //. A function to make a code string from a normal string
 inline code make_code(const char* c)
 {
-    if (c == NULL)
+    if (c == 0)
         return code();
     return code((const unsigned char*)c);
 }

@@ -42,7 +42,7 @@
 #endif
 
 struct HashTableEntry {
-    char*	key;		// nil: unused, -1: deleted
+    char*	key;		// 0: unused, -1: deleted
     HashValue	value;
 };
 
@@ -59,7 +59,7 @@ void HashTable::MakeTable()
 {
     entries = new (GC) HashTableEntry[Size];
     for(int i = 0; i < Size; ++i)
-	entries[i].key = nil;
+	entries[i].key = 0;
 }
 
 BigHashTable::BigHashTable() : HashTable(0)
@@ -72,7 +72,7 @@ BigHashTable::BigHashTable() : HashTable(0)
 bool HashTable::IsEmpty()
 {
     for(int i = 0; i < Size; ++i)
-	if(entries[i].key != nil && entries[i].key != (char*)-1)
+	if(entries[i].key != 0 && entries[i].key != (char*)-1)
 	    return false;
 
     return true;
@@ -82,7 +82,7 @@ void HashTable::Dump(std::ostream& out)
 {
     out << '{';
     for(int i = 0; i < Size; ++i)
-	if(entries[i].key != nil && entries[i].key != (char*)-1)
+	if(entries[i].key != 0 && entries[i].key != (char*)-1)
 //	    out << entries[i].key << ", ";
 	    out << entries[i].key << '(' << i << "), ";
 
@@ -119,7 +119,7 @@ bool HashTable::Lookup2(char* key, HashValue* value, int* index)
     unsigned int p = StringToInt(key);
     for(int i = 0; i < Size; ++i){
 	int j = HashFunc(p, i);
-	if(entries[j].key == nil){
+	if(entries[j].key == 0){
 	    return false;		// not found
 	}
 	else if(entries[j].key != (char*)-1
@@ -138,7 +138,7 @@ bool HashTable::Lookup2(char* key, int len, HashValue* value, int* index)
     unsigned int p = StringToInt(key, len);
     for(int i = 0; i < Size; ++i){
 	int j = HashFunc(p, i);
-	if(entries[j].key == nil){
+	if(entries[j].key == 0){
 	    return false;		// not found
 	}
 	else if(entries[j].key != (char*)-1
@@ -165,7 +165,7 @@ bool HashTable::LookupEntries(char* key, int len, HashValue* value,
     unsigned int p = StringToInt(key, len);
     for(int i = nth; i < Size; ++i){
 	int j = HashFunc(p, i);
-	if(entries[j].key == nil){
+	if(entries[j].key == 0){
 	    return false;		// not found
 	}
 	else if(entries[j].key != (char*)-1
@@ -225,7 +225,7 @@ bool HashTable::GrowTable(int increment)
     bool done = true;
     for(int i = 0; done && i < Size; ++i) {
         char *key = this->entries[i].key;
-        if (key != nil && key != (char*)-1)
+        if (key != 0 && key != (char*)-1)
 	    done = bool(bigger.AddDupEntry(key, strlen(key), entries[i].value)
 			>= 0);
     }
@@ -248,16 +248,16 @@ int HashTable::AddEntry(char* key, HashValue value, int* index)
     unsigned int p = StringToInt(key);
     for(int i = 0; i < Size; ++i){
 	int j = HashFunc(p, i);
-	if(entries[j].key == nil || entries[j].key == (char*)-1){
+	if(entries[j].key == 0 || entries[j].key == (char*)-1){
 	    entries[j].key = KeyString(key);
 	    entries[j].value = value;
-	    if(index != nil)
+	    if(index != 0)
 		*index = j;
 
 	    return j;
 	}
 	else if(strcmp(entries[j].key, key) == 0){
-	    if(index != nil)
+	    if(index != 0)
 		*index = j;
 
 	    return -1;		// it is already registered.
@@ -268,7 +268,7 @@ int HashTable::AddEntry(char* key, HashValue value, int* index)
 	return AddEntry(key, value, index);
 
     std::cerr << "HashTable overflow (key: " << key << ")\nPanic...\n";
-    if(index != nil)
+    if(index != 0)
 	*index = 0;		// no meaning
 
     return -1;
@@ -281,10 +281,10 @@ int HashTable::AddEntry(bool check_duplication,
     unsigned int p = StringToInt(key, len);
     for(i = 0; i < Size; ++i){
 	int j = HashFunc(p, i);
-	if(entries[j].key == nil || entries[j].key == (char*)-1){
+	if(entries[j].key == 0 || entries[j].key == (char*)-1){
 	    entries[j].key = KeyString(key, len);
 	    entries[j].value = value;
-	    if(index != nil)
+	    if(index != 0)
 		*index = j;
 
 	    return j;
@@ -292,7 +292,7 @@ int HashTable::AddEntry(bool check_duplication,
 	else if(check_duplication
 		&& strncmp(entries[j].key, key, len) == 0
 		&& entries[j].key[len] == '\0'){
-	    if(index != nil)
+	    if(index != 0)
 		*index = j;
 
 	    return -1;		// it is already registered.
@@ -307,7 +307,7 @@ int HashTable::AddEntry(bool check_duplication,
 	std::cerr << key[i];
 
     std::cerr << ")\nPanic...\n";
-    if(index != nil)
+    if(index != 0)
 	*index = 0;		// no meaning
 
     return -1;
@@ -354,7 +354,7 @@ bool HashTable::RemoveEntry(char* key, int len)
 
 unsigned int HashTable::StringToInt(char* key)
 {
-    if(key == nil)
+    if(key == 0)
 	return 0;
 
     unsigned int p = 0;
@@ -371,7 +371,7 @@ unsigned int HashTable::StringToInt(char* key)
 
 unsigned int HashTable::StringToInt(char* key, int len)
 {
-    if(key == nil)
+    if(key == 0)
 	return 0;
 
     unsigned int p = 0;
@@ -403,7 +403,7 @@ int main()
     int		v;
     HashTable	t;
 
-    while(gets(buf) != NULL){
+    while(gets(buf) != 0){
 	unsigned int k = t.StringToInt(buf);
 	printf("key %s (%d): %d\n", buf, k, t.HashFunc(k, 0));
 	printf("key %s (%d): %d\n", buf, k, t.HashFunc(k, 1));

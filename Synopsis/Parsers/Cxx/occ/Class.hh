@@ -206,7 +206,7 @@ public:
     static bool RecordCmdLineOption(char* key, char* value);
     static bool LookupCmdLineOption(char* key);
     static bool LookupCmdLineOption(char* key, char*& value);
-    static void WarnObsoleteness(char*, char* = nil);
+    static void WarnObsoleteness(char*, char* = 0);
 
     static void do_init_static();
 

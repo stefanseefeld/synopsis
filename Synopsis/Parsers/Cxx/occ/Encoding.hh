@@ -34,7 +34,7 @@ public:
     char* Get();
     bool IsEmpty() { return len == 0; }
 
-    void CvQualify(Ptree*, Ptree* = nil);
+    void CvQualify(Ptree*, Ptree* = 0);
     void SimpleConst() { Append("Ci", 2); }
     void GlobalScope();				// ::Type
     void SimpleName(Ptree*);

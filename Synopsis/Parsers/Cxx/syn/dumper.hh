@@ -44,9 +44,9 @@ public:
     //. Returns a formatter string for given type.
     //. The option string pointer refers to the parameter name (where
     //. applicable) so that it can be put in the right place for function pointer
-    //. types. The pointed to pointer will be set to NULL if the identifier is
+    //. types. The pointed to pointer will be set to 0 if the identifier is
     //. used
-    std::string format(const Types::Type*, const std::string** id = NULL);
+    std::string format(const Types::Type*, const std::string** id = 0);
     virtual void visit_type(Types::Type*);
     virtual void visit_unknown(Types::Unknown*);
     virtual void visit_modifier(Types::Modifier*);

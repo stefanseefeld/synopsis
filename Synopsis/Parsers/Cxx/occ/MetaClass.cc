@@ -81,7 +81,7 @@ static Class* CreateQuoteClass(Ptree* def, Ptree* marg)
 opcxx_ListOfMetaclass* opcxx_init_QuoteClass()
 {
     return new opcxx_ListOfMetaclass("QuoteClass", CreateQuoteClass,
-				     QuoteClass::Initialize, nil);
+				     QuoteClass::Initialize, 0);
 }
 
 static Class* CreateMetaclass(Ptree* def, Ptree* marg)
@@ -94,7 +94,7 @@ static Class* CreateMetaclass(Ptree* def, Ptree* marg)
 opcxx_ListOfMetaclass* opcxx_init_Metaclass()
 {
     return new opcxx_ListOfMetaclass("Metaclass", CreateMetaclass,
-				     Metaclass::Initialize, nil);
+				     Metaclass::Initialize, 0);
 }
 
 
@@ -114,14 +114,14 @@ char* QuoteClass::MetaclassName()
 void Metaclass::do_init_static()
 {
     QuoteClassCreator = new opcxx_ListOfMetaclass(
-	    "QuoteClass", CreateQuoteClass, QuoteClass::Initialize, nil);
+	    "QuoteClass", CreateQuoteClass, QuoteClass::Initialize, 0);
     metaclassCreator = new opcxx_ListOfMetaclass(
-	    "Metaclass", CreateMetaclass, Metaclass::Initialize, nil);
+	    "Metaclass", CreateMetaclass, Metaclass::Initialize, 0);
 }
 
 Metaclass::Metaclass()
 {
-    new_function_name = nil;
+    new_function_name = 0;
     first_not_inlined_vf = -1;
 }
 
@@ -215,7 +215,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
     src_file << "char* opcxx_Init_" << class_name << "(){\n";
 
     Ptree* base_name;
-    for(int i = 0; (base_name = NthBaseClassName(i)) != nil; ++i)
+    for(int i = 0; (base_name = NthBaseClassName(i)) != 0; ++i)
 	if(!base_name->Eq("Class"))
 	    src_file << "  LoadMetaclass(\"" << base_name << "\");\n";
 
@@ -227,7 +227,7 @@ void Metaclass::ProduceInitFile(Ptree* class_name)
 #else
     // Push base class names forward to RunCompiler
     Ptree* base_name;
-    for (int i = 0; (base_name = NthBaseClassName(i)) != nil; ++i)
+    for (int i = 0; (base_name = NthBaseClassName(i)) != 0; ++i)
 	if (!base_name->Eq("Class") && !base_name->Eq("TemplateClass"))
 	    BaseClassUsed(base_name->GetPosition(), base_name->GetLength());
 #endif /* USE_SO */
@@ -303,7 +303,7 @@ void Metaclass::AppendHousekeepingCode(Environment* env, Ptree* class_name,
 void LoadMetaclass(char* metaclass_name)
 {
 #if USE_DLOADER
-    if(metaclass_name != nil && *metaclass_name != '\0')
+    if(metaclass_name != 0 && *metaclass_name != '\0')
 	if(!opcxx_ListOfMetaclass::AlreadyRecorded(metaclass_name))
 	    Metaclass::Load(metaclass_name, strlen(metaclass_name));
 #endif
@@ -391,7 +391,7 @@ void Metaclass::Load(char* metaclass_name, int len)
 
 void* Metaclass::LoadSoLib(char* file_name)
 {
-    void* handle = nil;
+    void* handle = 0;
 #if USE_DLOADER
     if(verboseMode)
 	std::cerr << "Load " << file_name << ".. ";

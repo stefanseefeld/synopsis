@@ -53,7 +53,7 @@ void MopWarningMessage2(char* msg1, char* msg2)
 void MopMoreWarningMessage(char* msg1, char* msg2)
 {
     std::cerr << "             " << msg1;
-    if(msg2 != nil)
+    if(msg2 != 0)
 	std::cerr << msg2;
 
     std::cerr << '\n';
@@ -68,7 +68,7 @@ void Ptree::Display()
 
 void Ptree::Display2(std::ostream& s)
 {
-    if(this == nil)
+    if(this == 0)
 	s << "nil\n";
     else{
 	Print(s, 0, 0);
@@ -78,7 +78,7 @@ void Ptree::Display2(std::ostream& s)
 
 int Ptree::Write(std::ostream& s)
 {
-    if(this == nil)
+    if(this == 0)
 	return 0;
     else
 	return Write(s, 0);

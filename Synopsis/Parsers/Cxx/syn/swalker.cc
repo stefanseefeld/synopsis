@@ -32,7 +32,7 @@ using namespace AST;
 #ifdef DO_TRACE
 int STrace::slevel = 0, STrace::dlevel = 0;
 std::ostringstream* STrace::stream = 0;
-STrace::string_list STrace::my_list;
+STrace::string_list STrace::m_list;
 std::ostream& STrace::operator <<(Ptree* p)
 {
   std::ostream& out = operator <<("-");
@@ -213,9 +213,9 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
       comments.push_back(comment);
     }
     if (my_links) my_links->long_span(first, "file-comment");
-    // Set first to nil so we dont accidentally do them twice (eg:
+    // Set first to 0 so we dont accidentally do them twice (eg:
     // when parsing expressions)
-    node->SetCar(nil);
+    node->SetCar(0);
     node = next;
   }
 
@@ -471,7 +471,7 @@ SWalker::TranslateNamespaceSpec(Ptree* def)
   return 0;
 }
 
-//. [ : (public|private|protected|nil) <name> {, ...} ]
+//. [ : (public|private|protected|0) <name> {, ...} ]
 std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 {
   STrace trace("PyWalker::TranslateInheritanceSpec");
@@ -790,7 +790,7 @@ SWalker::TranslateBlock(Ptree* block)
 {
   STrace trace("SWalker::TranslateBlock");
   Ptree* rest = Ptree::Second(block);
-  while (rest != nil)
+  while (rest != 0)
   {
     Translate(rest->Car());
     rest = rest->Cdr();
@@ -809,7 +809,7 @@ SWalker::TranslateBrace(Ptree* brace)
 {
   STrace trace("SWalker::TranslateBrace");
   Ptree* rest = Ptree::Second(brace);
-  while (rest != nil)
+  while (rest != 0)
   {
     Translate(rest->Car());
     rest = rest->Cdr();
@@ -947,7 +947,7 @@ SWalker::TranslateDeclarators(Ptree* decls)
 {
   STrace trace("SWalker::TranslateDeclarators");
   Ptree* rest = decls, *p;
-  while (rest != nil)
+  while (rest != 0)
   {
     p = rest->Car();
     if (p->IsA(ntDeclarator))
@@ -957,7 +957,7 @@ SWalker::TranslateDeclarators(Ptree* decls)
     } // if. There is no else..?
     rest = rest->Cdr();
     // Skip comma
-    if (rest != nil) rest = rest->Cdr();
+    if (rest != 0) rest = rest->Cdr();
   }
   return 0;
 }
@@ -1530,7 +1530,7 @@ SWalker::TranslateEnumSpec(Ptree *spec)
   {
     // Enum declared inside declaration. Comments for the declaration
     // belong to the enum. This is policy. #TODO review policy
-    //my_declaration->SetComments(nil); ?? typedef doesn't have comments?
+    //my_declaration->SetComments(0); ?? typedef doesn't have comments?
   }
   if (my_links) my_links->link(spec->Second(), theEnum);
   return 0;
@@ -1555,7 +1555,7 @@ SWalker::TranslateUsing(Ptree* node)
     is_namespace = true;
   }
   // Find name that we are looking up, and make a new ptree list for linking it
-  Ptree *p_name = Ptree::Snoc(nil, p->Car());
+  Ptree *p_name = Ptree::Snoc(0, p->Car());
   ScopedName name;
   if (p->First()->Eq("::"))
     // Eg; "using ::memcpy;" Indicate global scope with empty first

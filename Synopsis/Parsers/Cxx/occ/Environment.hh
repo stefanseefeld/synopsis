@@ -112,8 +112,8 @@ public:
 	isVarName, isTypedefName, isClassName, isEnumName, isTemplateClass,
 	isTemplateFunction
      };
-    virtual Kind What() = nil;
-    virtual void GetType(TypeInfo&, Environment*) = nil;
+    virtual Kind What() = 0;
+    virtual void GetType(TypeInfo&, Environment*) = 0;
     virtual char* GetEncodedType();
     virtual bool IsType();
     virtual Class* ClassMetaobject();

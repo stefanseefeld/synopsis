@@ -133,7 +133,7 @@ Types::Type* Decoder::decodeType()
     code_iter end = m_string.end();
     std::vector<std::string> premod, postmod;
     std::string name;
-    Types::Type *baseType = NULL;
+    Types::Type *baseType = 0;
 
     // Loop forever until broken
     while (m_iter != end && !name.length() && !baseType)
@@ -206,13 +206,13 @@ Types::Type* Decoder::decodeType()
             name = "...";
             break;
         case '?':
-            return NULL;
+            return 0;
         case 'Q':
             baseType = decodeQualType();
             break;
         case '_':
             --m_iter;
-            return NULL; // end of func params
+            return 0; // end of func params
         case 'F':
             baseType = decodeFuncPtr(postmod);
             break;
@@ -298,8 +298,8 @@ Types::Type* Decoder::decodeQualType()
     if (types.size())
     {
         Types::Declared* declared = dynamic_cast<Types::Declared*>(baseType);
-        AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : NULL;
-        Types::Template* templType = tempclas ? tempclas->template_type() : NULL;
+        AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : 0;
+        Types::Template* templType = tempclas ? tempclas->template_type() : 0;
         if (templType && types.size())
         {
             return new Types::Parameterized(templType, types);
@@ -349,7 +349,7 @@ Types::Type* Decoder::decodeTemplate()
     Types::Type* type = m_lookup->lookupType(name);
     // if type is declared and declaration is class and class is template..
     Types::Declared* declared = dynamic_cast<Types::Declared*>(type);
-    Types::Template* templ = NULL;
+    Types::Template* templ = 0;
     if (declared)
     {
         if (AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration()))

@@ -67,39 +67,39 @@
 #include "Class.hh"
 #include "TypeInfo.hh"
 
-Ptree* Encoding::bool_t = nil;
-Ptree* Encoding::char_t = nil;
-Ptree* Encoding::wchar_t_t = nil;
-Ptree* Encoding::int_t = nil;
-Ptree* Encoding::short_t = nil;
-Ptree* Encoding::long_t = nil;
-Ptree* Encoding::float_t = nil;
-Ptree* Encoding::double_t = nil;
-Ptree* Encoding::void_t = nil;
+Ptree* Encoding::bool_t = 0;
+Ptree* Encoding::char_t = 0;
+Ptree* Encoding::wchar_t_t = 0;
+Ptree* Encoding::int_t = 0;
+Ptree* Encoding::short_t = 0;
+Ptree* Encoding::long_t = 0;
+Ptree* Encoding::float_t = 0;
+Ptree* Encoding::double_t = 0;
+Ptree* Encoding::void_t = 0;
 
-Ptree* Encoding::signed_t = nil;
-Ptree* Encoding::unsigned_t = nil;
-Ptree* Encoding::const_t = nil;
-Ptree* Encoding::volatile_t = nil;
+Ptree* Encoding::signed_t = 0;
+Ptree* Encoding::unsigned_t = 0;
+Ptree* Encoding::const_t = 0;
+Ptree* Encoding::volatile_t = 0;
 
-Ptree* Encoding::operator_name = nil;
-Ptree* Encoding::new_operator = nil;
-Ptree* Encoding::anew_operator = nil;
-Ptree* Encoding::delete_operator = nil;
-Ptree* Encoding::adelete_operator = nil;
+Ptree* Encoding::operator_name = 0;
+Ptree* Encoding::new_operator = 0;
+Ptree* Encoding::anew_operator = 0;
+Ptree* Encoding::delete_operator = 0;
+Ptree* Encoding::adelete_operator = 0;
 
-Ptree* Encoding::star = nil;
-Ptree* Encoding::ampersand = nil;
-Ptree* Encoding::comma = nil;
-Ptree* Encoding::dots = nil;
-Ptree* Encoding::scope = nil;
-Ptree* Encoding::tilder = nil;
-Ptree* Encoding::left_paren = nil;
-Ptree* Encoding::right_paren = nil;
-Ptree* Encoding::left_bracket = nil;
-Ptree* Encoding::right_bracket = nil;
-Ptree* Encoding::left_angle = nil;
-Ptree* Encoding::right_angle = nil;
+Ptree* Encoding::star = 0;
+Ptree* Encoding::ampersand = 0;
+Ptree* Encoding::comma = 0;
+Ptree* Encoding::dots = 0;
+Ptree* Encoding::scope = 0;
+Ptree* Encoding::tilder = 0;
+Ptree* Encoding::left_paren = 0;
+Ptree* Encoding::right_paren = 0;
+Ptree* Encoding::left_bracket = 0;
+Ptree* Encoding::right_bracket = 0;
+Ptree* Encoding::left_angle = 0;
+Ptree* Encoding::right_angle = 0;
 
 const int DigitOffset = 0x80;
 
@@ -151,7 +151,7 @@ void Encoding::Reset(Encoding& e)
 char* Encoding::Get()
 {
     if(len == 0)
-	return nil;
+	return 0;
     else{
 	char* s = new (GC) char[len + 1];
 	memmove(s, name, len);
@@ -171,13 +171,13 @@ void Encoding::Print(std::ostream& s, char* p)
 }
 
 // GetBaseName() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
-// If an error occurs, the function returns nil.
+// If an error occurs, the function returns 0.
 
 char* Encoding::GetBaseName(char* encode, int& len, Environment*& env)
 {
-    if(encode == nil){
+    if(encode == 0){
 	len = 0;
-	return nil;
+	return 0;
     }
 
     Environment* e = env;
@@ -191,12 +191,12 @@ char* Encoding::GetBaseName(char* encode, int& len, Environment*& env)
 		m = GetBaseNameIfTemplate(p, e);
 	    else if(m < 0x80){		// error?
 		len = 0;
-		return nil;
+		return 0;
 	    }
 	    else{			// class name
 		m -= 0x80;
 		if(m <= 0){		// if global scope (e.g. ::Foo)
-		    if(e != nil)
+		    if(e != 0)
 			e = e->GetBottom();
 		}
 		else
@@ -217,7 +217,7 @@ char* Encoding::GetBaseName(char* encode, int& len, Environment*& env)
     }
     else if(*p < 0x80){		// error?
 	len = 0;
-	return nil;
+	return 0;
     }
     else{
 	len = *p - 0x80;
@@ -230,10 +230,10 @@ Environment* Encoding::ResolveTypedefName(Environment* env,
 {
     TypeInfo tinfo;
     Bind* bind;
-    Class* c = nil;
+    Class* c = 0;
 
-    if(env != nil)
-	if (env->LookupType(name, len, bind) && bind != nil)
+    if(env != 0)
+	if (env->LookupType(name, len, bind) && bind != 0)
 	    switch(bind->What()){
 	    case Bind::isClassName :
 		c = bind->ClassMetaobject();
@@ -241,8 +241,8 @@ Environment* Encoding::ResolveTypedefName(Environment* env,
 	    case Bind::isTypedefName :
 		bind->GetType(tinfo, env);
 		c = tinfo.ClassMetaobject();
-		/* if (c == nil) */
-		    env = nil;
+		/* if (c == 0) */
+		    env = 0;
 		break;
 	    default :
 		break;
@@ -254,9 +254,9 @@ Environment* Encoding::ResolveTypedefName(Environment* env,
 	    env = env->GetBottom();
 	}
 	else
-	    env = nil;		// unknown typedef name
+	    env = 0;		// unknown typedef name
 
-    if(c != nil)
+    if(c != 0)
 	return c->GetEnvironment();
     else
 	return env;
@@ -269,17 +269,17 @@ int Encoding::GetBaseNameIfTemplate(unsigned char* name, Environment*& e)
 	return name[1] - 0x80 + 2;
 
     Bind* b;
-    if(e != nil && e->LookupType((char*)&name[1], m, b))
-	if(b != nil && b->What() == Bind::isTemplateClass){
+    if(e != 0 && e->LookupType((char*)&name[1], m, b))
+	if(b != 0 && b->What() == Bind::isTemplateClass){
 	    Class* c = b->ClassMetaobject();
-	    if(c != nil){
+	    if(c != 0){
 		e = c->GetEnvironment();
 		return m + (name[m + 1] - 0x80) + 2;
 	    }
 	}
 
     // the template name was not found.
-    e = nil;
+    e = 0;
     return m + (name[m + 1] - 0x80) + 2;
 }
 
@@ -299,8 +299,8 @@ unsigned char* Encoding::GetTemplateArguments(unsigned char* name, int& len)
 void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
 {
     bool c = false, v = false;
-    if(cv1 != nil && !cv1->IsLeaf())
-	while(cv1 != nil){
+    if(cv1 != 0 && !cv1->IsLeaf())
+	while(cv1 != 0){
 	    int kind = cv1->Car()->What();
 	    cv1 = cv1->Cdr();
 	    if(kind == CONST)
@@ -309,8 +309,8 @@ void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
 		v = true;
 	}
 
-    if(cv2 != nil && !cv2->IsLeaf())
-	while(cv2 != nil){
+    if(cv2 != 0 && !cv2->IsLeaf())
+	while(cv2 != 0){
 	    int kind = cv2->Car()->What();
 	    cv2 = cv2->Cdr();
 	    if(kind == CONST)
@@ -467,12 +467,12 @@ void Encoding::AppendWithLen(char* str, int n)
 Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 {
     Ptree* cv;
-    Ptree* typespec = nil;
-    if(decl != nil)
+    Ptree* typespec = 0;
+    if(decl != 0)
 	decl = Ptree::List(decl);
 
     for(;;){
-	cv = nil;
+	cv = 0;
 	switch(*encoded++){
 	case 'b' :
 	    typespec = Ptree::Snoc(typespec, bool_t);
@@ -581,7 +581,7 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 	case 'F' :
 	cv_function :
 	    {
-		Ptree* args = nil;
+		Ptree* args = 0;
 		while(*encoded != '\0'){
 		    if(*encoded == '_'){
 			++encoded;
@@ -592,15 +592,15 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 			break;
 		    }
 
-		    if(args != nil)
+		    if(args != 0)
 			args = Ptree::Snoc(args, comma);
 
-		    args = Ptree::Snoc(args, MakePtree(encoded, nil));
+		    args = Ptree::Snoc(args, MakePtree(encoded, 0));
 		}
 
 		decl = Ptree::Nconc(decl, Ptree::List(left_paren, args,
 						      right_paren));
-		if(cv != nil)
+		if(cv != 0)
 		    decl = Ptree::Nconc(decl, cv);
 	    }
 	    break;
@@ -609,14 +609,14 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 	case 'T' :
 	    {
     		Ptree* tlabel = MakeLeaf(encoded);      
-	    	Ptree* args = nil;
+	    	Ptree* args = 0;
 	    	int n = *encoded++ - DigitOffset;
 		unsigned char* stop = encoded + n;
 		while(encoded < stop){
-		    if(args != nil)
+		    if(args != 0)
 			args = Ptree::Snoc(args, comma);
 
-		    args = Ptree::Snoc(args, MakePtree(encoded, nil));
+		    args = Ptree::Snoc(args, MakePtree(encoded, 0));
 		}
 
 		tlabel = Ptree::List(tlabel,
@@ -628,7 +628,7 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 	    goto error;
 	default :
 	    if(*--encoded >= DigitOffset){
-		if(typespec == nil)
+		if(typespec == 0)
 		    typespec = MakeLeaf(encoded);
 		else
 		    typespec = Ptree::Snoc(typespec, MakeLeaf(encoded));
@@ -649,10 +649,10 @@ finish :
 Ptree* Encoding::MakeQname(unsigned char*& encoded)
 {
     int n = *encoded++ - DigitOffset;
-    Ptree* qname = nil;
+    Ptree* qname = 0;
     while(n-- > 0){
 	Ptree* leaf = MakeLeaf(encoded);
-	if(leaf != nil)
+	if(leaf != 0)
 	    qname = Ptree::Snoc(qname, leaf);
 
 	if(n > 0)
@@ -669,7 +669,7 @@ Ptree* Encoding::MakeLeaf(unsigned char*& encoded)
     if(len > 0)
 	leaf = new Leaf((char*)encoded, len);
     else
-	leaf = nil;
+	leaf = 0;
 
     encoded += len;
     return leaf;
@@ -682,8 +682,8 @@ bool Encoding::IsSimpleName(unsigned char* p)
 
 Ptree* Encoding::NameToPtree(char* name, int len)
 {
-    if(name == nil)
-	return nil;
+    if(name == 0)
+	return 0;
 
     if(name[0] == 'n'){
 	if(len == 5 && strncmp(name, "new[]", 5) == 0)
@@ -701,7 +701,7 @@ Ptree* Encoding::NameToPtree(char* name, int len)
 	return Ptree::List(tilder, new Leaf(&name[1], len - 1));
     else if(name[0] == '@'){		// cast operator
 	unsigned char* encoded = (unsigned char*)&name[1];
-	return Ptree::List(operator_name, MakePtree(encoded, nil));
+	return Ptree::List(operator_name, MakePtree(encoded, 0));
     }
 
     if(is_letter(name[0]))

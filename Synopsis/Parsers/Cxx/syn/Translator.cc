@@ -36,9 +36,9 @@ struct Translator::Private
   {
     m_cxx = PyString_InternFromString("C++");
     Py_INCREF(Py_None);
-    add((AST::Declaration*)NULL, Py_None);
+    add((AST::Declaration*)0, Py_None);
     Py_INCREF(Py_None);
-    add((Types::Type*)NULL, Py_None);
+    add((Types::Type*)0, Py_None);
   }
   //. Reference to parent synopsis object
   Translator* m_syn;
@@ -129,7 +129,7 @@ struct Translator::Private
   }
 };
 
-// Convert a Declaration vector to a List. Declarations can return NULL
+// Convert a Declaration vector to a List. Declarations can return 0
 // from py(), if they are not in the main file.
 template <>
 PyObject* Translator::Private::List(const std::vector<AST::Declaration*>& vec)
@@ -340,7 +340,7 @@ Translator::~Translator()
     //std::cout << (obj->ob_refcnt-1) << " " << PyString_AsString(repr) << std::endl;
     Py_DECREF(repr);
     Py_DECREF(obj);
-    iter->second = NULL;
+    iter->second = 0;
     ++iter;
   }
   //std::cout << "Total: " << m->obj_map.size()<<" objects." << std::endl;
@@ -365,7 +365,7 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
 
   // Translate the sourcefiles, making sure the declarations list is done
   // for each
-  PyObject* pyfiles = PyObject_CallMethod(m_ast, "files", NULL);
+  PyObject* pyfiles = PyObject_CallMethod(m_ast, "files", 0);
   assertObject(pyfiles);
   assert(PyDict_Check(pyfiles));
   
@@ -382,7 +382,7 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
     // Add the declarations if it's a main file
     if (file->is_main())
     {
-      decls = PyObject_CallMethod(pyfile, "declarations", NULL);
+      decls = PyObject_CallMethod(pyfile, "declarations", 0);
       assertObject(decls);
       PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(file->declarations()));
       // TODO: add the includes
@@ -391,14 +391,14 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
     }
     
     // Add the includes
-    incls = PyObject_CallMethod(pyfile, "includes", NULL);
+    incls = PyObject_CallMethod(pyfile, "includes", 0);
     assertObject(incls);
     PyObject_CallMethod(incls, "extend", "O", new_incls = m->List(file->includes()));
     Py_DECREF(new_incls);
     Py_DECREF(incls);
     
     // Add to the AST
-    PyObject* pyfilename = PyObject_CallMethod(pyfile, "filename", NULL);
+    PyObject* pyfilename = PyObject_CallMethod(pyfile, "filename", 0);
     PyDict_SetItem(pyfiles, pyfilename, pyfile);
     Py_DECREF(pyfilename);
     Py_DECREF(pyfile);
@@ -531,7 +531,7 @@ PyObject *Translator::FuncPtr(Types::FuncPtr* type)
 void Translator::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 {
   PyObject *comments, *new_comments;
-  comments = PyObject_CallMethod(pydecl, "comments", NULL);
+  comments = PyObject_CallMethod(pydecl, "comments", 0);
   PyObject_CallMethod(comments, "extend", "O", new_comments = m->List(cdecl->comments()));
   // Also set the accessability..
   PyObject_CallMethod(pydecl, "set_accessibility", "i", int(cdecl->access()));
@@ -670,7 +670,7 @@ PyObject *Translator::Scope(AST::Scope* decl)
   scope = PyObject_CallMethod(m_ast_module, "Scope", "OiOOO",
                               file = m->py(decl->file()), decl->line(), m->cxx(),
                               type = m->py(decl->type()), name = m->Tuple(decl->name()));
-  PyObject *decls = PyObject_CallMethod(scope, "declarations", NULL);
+  PyObject *decls = PyObject_CallMethod(scope, "declarations", 0);
   PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
   addComments(scope, decl);
   Py_DECREF(file);
@@ -687,7 +687,7 @@ PyObject *Translator::Namespace(AST::Namespace* decl)
   module = PyObject_CallMethod(m_ast_module, "Module", "OiOOO",
                                file = m->py(decl->file()), decl->line(), m->cxx(),
                                type = m->py(decl->type()), name = m->Tuple(decl->name()));
-  PyObject *decls = PyObject_CallMethod(module, "declarations", NULL);
+  PyObject *decls = PyObject_CallMethod(module, "declarations", 0);
   PyObject *new_decls = m->List(decl->declarations());
   PyObject_CallMethod(decls, "extend", "O", new_decls);
   addComments(module, decl);
@@ -721,9 +721,9 @@ PyObject *Translator::Class(AST::Class* decl)
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
   PyObject *new_decls, *new_parents;
-  PyObject *decls = PyObject_CallMethod(clas, "declarations", NULL);
+  PyObject *decls = PyObject_CallMethod(clas, "declarations", 0);
   PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(decl->declarations()));
-  PyObject *parents = PyObject_CallMethod(clas, "parents", NULL);
+  PyObject *parents = PyObject_CallMethod(clas, "parents", 0);
   PyObject_CallMethod(parents, "extend", "O", new_parents = m->List(decl->parents()));
   if (decl->template_type())
   {
@@ -855,7 +855,7 @@ PyObject *Translator::Function(AST::Function* decl)
   // This is necessary to prevent inf. loops in several places
   m->add(decl, func);
   PyObject* new_params;
-  PyObject* params = PyObject_CallMethod(func, "parameters", NULL);
+  PyObject* params = PyObject_CallMethod(func, "parameters", 0);
   PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   if (decl->template_type())
   {
@@ -887,7 +887,7 @@ PyObject *Translator::Operation(AST::Operation* decl)
   // This is necessary to prevent inf. loops in several places
   m->add(decl, oper);
   PyObject* new_params;
-  PyObject* params = PyObject_CallMethod(oper, "parameters", NULL);
+  PyObject* params = PyObject_CallMethod(oper, "parameters", 0);
   PyObject_CallMethod(params, "extend", "O", new_params = m->List(decl->parameters()));
   if (decl->template_type())
   {

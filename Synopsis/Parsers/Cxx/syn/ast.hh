@@ -629,7 +629,7 @@ public:
         return m_template;
     }
 
-    //. Sets the Template object for this class. NULL means not a template
+    //. Sets the Template object for this class. 0 means not a template
     void set_template_type(Types::Template* type)
     {
         m_template = type;
@@ -661,7 +661,7 @@ public:
         return m_template;
     }
 
-    //. Sets the Template object for this class. NULL means not a template
+    //. Sets the Template object for this class. 0 means not a template
     void set_template_type(Types::Template* type)
     {
         m_template = type;
@@ -987,7 +987,7 @@ public:
         return m_template;
     }
 
-    //. Sets the Template object for this class. NULL means not a template
+    //. Sets the Template object for this class. 0 means not a template
     void set_template_type(Types::Template* type)
     {
         m_template = type;

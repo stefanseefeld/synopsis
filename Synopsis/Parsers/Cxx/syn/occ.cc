@@ -132,7 +132,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   SWalker swalker(filter, &parse, &builder, &prog);
   if (syn_fake_std)
   {
-    builder.set_file(sourcefile);
     // Fake a using from "std" to global
     builder.start_namespace("std", NamespaceNamed);
     builder.add_using_namespace(builder.global()->declared());
