@@ -28,6 +28,10 @@
  *
  */
 
+/* Synopsis:
+ * $id$
+ */
+
 #define VERS_MAJ	1
 #define VERS_MIN	0
 /* uncomment the following if you cannot set it with a compiler flag */
