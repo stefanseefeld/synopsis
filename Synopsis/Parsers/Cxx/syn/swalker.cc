@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.29 2001/06/05 03:49:33 chalky Exp $
+// $Id: swalker.cc,v 1.30 2001/06/05 05:03:53 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.30  2001/06/05 05:03:53  chalky
+// Added support for qualified typedefs in storeLink
+//
 // Revision 1.29  2001/06/05 03:49:33  chalky
 // Made my own wrong_type_cast exception. Added template support to qualified
 // names (its bad but it doesnt crash). Added vector<string> output op to builder
@@ -191,6 +194,12 @@ void SWalker::storeLink(Ptree* node, bool def, Type::Type* type)
     }
     Type::Parameterized* param = dynamic_cast<Type::Parameterized*>(type);
     if (param) {
+	// For qualified template names the ptree is:
+	//  [ std :: [ vector [ < ... , ... > ] ] ]
+	// Skip the qualifieds (and just link the final name)
+	while (node->Second()->IsLeaf() && node->Second()->Eq("::")) {
+	    node = node->Third();
+	}
 	// Do template
 	storeLink(node->First(), false, param->templateType());
 	// Do params
