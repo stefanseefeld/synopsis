@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.15 2003/10/03 14:27:33 stefan Exp $
+# $Id: DUMP.py,v 1.16 2003/10/03 14:47:54 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.16  2003/10/03 14:47:54  stefan
+# let DUMP finally respect the '-o' option
+#
 # Revision 1.15  2003/10/03 14:27:33  stefan
 # turn off reference identification and pretty printing by default such that the DUMP can be used more easily with 'diff'
 #
@@ -65,7 +68,7 @@ from Synopsis.Core import Type, AST
 verbose = 0
 
 class Dumper:
-    def __init__(self, identify, pretty):
+    def __init__(self, output, identify, pretty):
 	self.handlers = {
 	    types.NoneType : self.visitNone,
 	    types.TypeType : self.visitType,
@@ -78,6 +81,7 @@ class Dumper:
 	    types.DictType : self.visitDict,
 	    types.InstanceType : self.visitInstance,
 	}
+	self.output = output
 	self.identify = identify
 	self.pretty = pretty
 	self.clear()
@@ -94,10 +98,10 @@ class Dumper:
 	self.write(text)
     def write(self, text):
 	if self.newline:
-	    sys.stdout.write("\n")
-	    sys.stdout.write(self.indent_string)
+	    self.output.write("\n")
+	    self.output.write(self.indent_string)
 	    self.newline = 0
-	sys.stdout.write(str(text))
+	self.output.write(str(text))
     def indent(self, str="  "):
 	self.indent_level = self.indent_level + 1
 	self.indent_string = self.indent_string+str
@@ -282,17 +286,17 @@ def format(args, ast, config_obj):
     #formatter = ASCIIFormatter(output)
     #for type in dictionary:
     #    type.output(formatter)
-    dumper = Dumper(identify, pretty)
+    dumper = Dumper(output, identify, pretty)
     show_sourcefiles = 0
     if show_decls:
-	print "*** Declarations:"
+	output.write("*** Declarations:\n")
 	dumper.visit(ast.declarations())
     if show_types:
-	if show_decls: print "\n\n\n"
-	print "*** Types:"
+	if show_decls: output.write("\n\n\n")
+	output.write("*** Types:\n")
 	dumper.visit(ast.types())
     if show_files:
 	show_sourcefiles = 1
-	print "\n\n\n"
-	print "*** Files:"
+	output.write("\n\n\n")
+	output.write("*** Files:\n")
 	dumper.visit(ast.files())
