@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.19 2002/11/13 02:29:24 chalky Exp $
+# $Id: FileLayout.py,v 1.20 2002/11/13 04:10:48 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.20  2002/11/13 04:10:48  chalky
+# Don't kill absolute filenames
+#
 # Revision 1.19  2002/11/13 02:29:24  chalky
 # Support exclude_glob option to exclude files from listings. Remove debug info.
 #
@@ -152,7 +155,6 @@ class FileLayout (TOC.Linker):
 	if not len(scope): return self._checkMain(self.nameOfSpecial('global'))
 	return Util.quote(string.join(scope,'-')) + ".html"
     def _stripFilename(self, file):
-        if len(file) and file[0] == '/': file = file[1:]
         if len(file) and file[-1] == '/': file = file[:-1]
         return file
     def nameOfFileIndex(self, file):
