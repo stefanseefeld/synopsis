@@ -565,11 +565,8 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
  */
 Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 {
-    //Trace trace("PyWalker::TranslateClassSpec");
     updateLineNumber(node);
 
-    //cout <<"Class: " << Ptree::Length(node)<<" "<<node->Second()->IsLeaf()<<endl;
-    //node->Display(); cout << endl << endl;
     // TODO: Handle nested classes properly (see ThreadData.hh)
     if(Ptree::Length(node) == 4 /* && node->Second()->IsLeaf()*/)
     {
@@ -605,26 +602,50 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
  *  typespec:
  *    [ 'typename' name ]
  */
-Ptree *PyWalker::TranslateTemplateClass(Ptree *temp_def, Ptree *class_spec)
+Ptree *PyWalker::TranslateTemplateClass(Ptree *temp_def, Ptree *node/*class_spec*/)
 {
-    //cout << "TranslateTemplateClass" << endl;
-    //Trace trace("PyWalker::TranslateTemplateClass");
-    //temp_def->Display();
-    //class_spec->Display();
+    updateLineNumber(node);
 
-#if 0
-    char* encname = temp_def->GetEncodedName();
-    char* enctype = temp_def->GetEncodedType();
-    cout << "encoding '";
-    if (enctype&&encname) {Encoding::Print(cout, enctype); cout << "' '";
-        Encoding::Print(cout, encname); cout << '\'' << endl;}
-#endif
+    // TODO: Handle nested classes properly (see ThreadData.hh)
+    if(Ptree::Length(node) == 4 /* && node->Second()->IsLeaf()*/)
+    {
+	bool is_struct = node->First()->Eq("struct");
+	
+	// Create AST.Class object
+        string type = getName(node->First());
+        string name = getName(node->Second());
+        PyObject *clas = synopsis->addClass(m_lineno, true, type, name);
+        synopsis->addDeclared(name, clas);
+	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	addComments(clas, cspec->GetComments());
 
-    // Do template stuff FIXME
+        // Add parents to Class object
+        vector<PyObject *> parents = TranslateInheritanceSpec(node->Nth(2));
+        Synopsis::addInheritance(clas, parents);
 
-    TranslateClassSpec(class_spec);
-    //...
-    return 0;
+	// Find template typenames
+	vector<PyObject*> params;
+	Ptree* typespec = temp_def->Third();
+	while (typespec) {
+	    params.push_back(PyString_FromString(typespec->First()->Second()->ToString()));
+	    do { typespec = typespec->Rest(); }
+	    while (typespec && typespec->First()->Eq(","));
+	}
+
+	// Create Type.Template object
+	PyObject* templ = synopsis->addTemplate(name, clas, synopsis->V2L(params));
+	PyObject_CallMethod(clas, "set_template", "O", templ);
+
+        // Translate the body of the class
+        Class* meta = MakeClassMetaobject(node, NULL, node);
+        synopsis->pushClass(clas);
+	synopsis->pushAccess(is_struct ? Synopsis::Public : Synopsis::Private);
+        TranslateClassBody(node->Nth(3), node->Nth(2), meta);
+	synopsis->popAccess();
+        synopsis->popScope();
+
+    }
+    return temp_def;
 }
 
 vector<PyObject *> PyWalker::TranslateInheritanceSpec(Ptree *node)
