@@ -23,7 +23,8 @@ python = Composite(Python.Parser(basename = topdir + '/'),
                    Summarizer())
 
 cxx = Cxx.Parser(base_path = topdir,
-                 cppflags = ['-I%s'%(topdir + '/Synopsis/Parsers/Cxx'),
+                 cppflags = ['-I%s'%(topdir + '/include'),
+                             '-I%s'%(topdir + '/Synopsis/Parsers/Cxx'),
                              '-I%s'%(sysconfig.get_python_inc())],
                  syntax_prefix='links',
                  xref_prefix='xref')
