@@ -587,8 +587,11 @@ Types::Named* Lookup::lookupQual(const std::string& name, const ScopeInfo* scope
                     }
                     // Else it's a function and a type was wanted: keep looking
                 }
-                catch (Dictionary::MultipleError e) {
+                catch (const Dictionary::MultipleError& e) {
                     // FIXME: check for duplicates etc etc
+                }
+                catch (const Dictionary::KeyError& e) {
+                  std::cerr << "Warning: Key error when has_key said yes" << std::endl;
                 }
             }
             // Add base classes to open list

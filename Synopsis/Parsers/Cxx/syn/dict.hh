@@ -56,7 +56,7 @@ public:
 
   //. Lookup a name in the dictionary. If more than one declaration has this
   //. name then an exception is thrown.
-  Types::Named* lookup(const std::string& name) throw (MultipleError, KeyError);
+  Types::Named* lookup(const std::string& name);// throw (MultipleError, KeyError);
 
   //. Lookup a name in the dictionary expecting multiple decls. Use this
   //. method if you expect to find more than one declaration, eg importing
