@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.8 2002/11/18 11:49:29 chalky Exp $
+#  $Id: Docbook.py,v 1.9 2003/02/01 23:57:37 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.9  2003/02/01 23:57:37  chalky
+# Use new tags
+#
 # Revision 1.8  2002/11/18 11:49:29  chalky
 # Tried to fix it up, but the *synopsis docbook entities aren't what we need.
 # Shortcut to what I needed and just wrote a DocFormatter for the Synopsis
@@ -265,10 +268,6 @@ class DocFormatter (Formatter):
     """A specialized version that just caters for the needs of the DocBook
     manual's Config section. Only modules and classes are printed, and the
     docbook elements classsynopsis etc are not used."""
-    _re_tags = '(?P<text>.*?)\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
-    def __init__(self, os):
-	Formatter.__init__(self, os)
-	self.re_tags = re.compile(self._re_tags, re.M|re.S)
     def parseTags(self, str, joiner):
 	"""Returns text, tags"""
 	# Find tags
@@ -284,14 +283,13 @@ class DocFormatter (Formatter):
     def visitComment(self, comment):
         text = comment.text()
 	see_tags, attr_tags = [], []
-	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+' '+y]
-	text, tags = self.parseTags(text, joiner)
+	tags = comment.tags()
 	# Parse each of the tags
-	for line in tags:
-	    tag, rest = string.split(line,' ',1)
-	    if tag == '@see':
+	for tag in tags:
+	    name, rest = tag.name(), tag.text()
+	    if name == '@see':
 		see_tags.append(rest)
-	    elif tag == '@attr':
+	    elif name == '@attr':
 		attr_tags.append(string.split(rest,' ',1))
 	# Do the body of the comment
         text = text.replace('\n\n', '</para><para>')
