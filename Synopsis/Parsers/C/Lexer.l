@@ -1092,7 +1092,7 @@ void yywarn(char *s)
 
 /***********************************************************************/
 
-int yyerr(char *s, std::string & str)
+int yyerr(char *s, const std::string & str)
 {
     *gProject->Parse_TOS->yyerrstream
       << gProject->Parse_TOS->filename << ":" << gProject->Parse_TOS->yylineno
