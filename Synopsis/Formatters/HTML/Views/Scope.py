@@ -1,0 +1,103 @@
+# Synopsis modules
+from Synopsis.Core import AST
+
+# HTML modules
+import Page
+import core
+import ASTFormatter
+from core import config
+from Tags import *
+
+class ScopePages (Page.Page):
+    """A module for creating a page for each Scope with summaries and
+    details."""
+    def __init__(self, manager):
+	Page.Page.__init__(self, manager)
+	#TODO use config...
+	self.summarizer = ASTFormatter.SummaryFormatter()
+	self.detailer = ASTFormatter.DetailFormatter()
+
+    def process(self, start):
+	"""Creates a page for every Scope"""
+	self.__namespaces = [start]
+	while self.__namespaces:
+	    ns = self.__namespaces.pop(0)
+	    self.processScope(ns)
+
+    def processScope(self, ns):
+	"""Creates a page for the given scope"""
+	details = {} # A hash of lists of detailed children by type
+	sections = [] # a list of detailed sections
+	
+	# Open file and setup scopes
+	self.startFileScope(ns.name())
+	config.sorter.set_scope(ns)
+	config.sorter.sort_section_names()
+	
+	# Write heading
+	self.write(self.manager.formatRoots('')+'<hr>')
+	if ns is self.manager.globalScope(): 
+	    self.write(entity('h1', "Global Namespace"))
+	else:
+	    # Use the detailer to print an appropriate heading
+	    ns.accept(self.detailer)
+	
+	# Loop throught all the types of children
+	self.printScopeSummaries(ns, details, sections)
+	self.printScopeDetails(details, sections)
+	self.endFile()
+	
+	# Queue child namespaces
+	for child in config.sorter.children():
+	    if isinstance(child, AST.Scope):
+		self.__namespaces.append(child)
+    
+    def printScopeSummaries(self, ns, details, sections):
+	"Print out the summaries from the given ns and note detailed items"
+	comments = config.comments
+	for section in config.sorter.sections():
+	    # Write a header for this section
+	    if section[-1] == 's': heading = section+'es Summary:'
+	    else: heading = section+'s Summary:'
+	    self.summarizer.writeSectionStart(heading)
+	    # Iterate through the children in this section
+	    for child in config.sorter.children(section):
+		# Check if need to add to detail list
+		if comments[child].has_detail:
+		    # Add this decl to the detail dictionary
+		    if not details.has_key(section):
+			details[section] = []
+			sections.append(section)
+		    details[section].append(child)
+		    self.summarizer.set_link_detail(1)
+		# Print out summary for the child
+		child.accept(self.summarizer)
+		self.summarizer.set_link_detail(0)
+	    # Finish off this section
+	    self.summarizer.writeSectionEnd(heading)
+
+    def printScopeDetails(self, details, sections):
+	"Print out the details from the given dict of lists"
+	# Iterate through the sections with details
+	for section in sections:
+	    # Write a heading
+	    heading = section+' Details:'
+	    self.detailer.writeSectionStart(heading)
+	    # Write the sorted list of children of this type
+	    for child in details[section]:
+		child.accept(self.detailer)
+	    # Finish the section
+	    self.detailer.writeSectionEnd(heading)
+
+ 
+    def startFileScope(self, scope):
+	"Start a new file from the given scope"
+	fname = config.files.nameOfScope(scope)
+	title = string.join(scope)
+	self.startFile(fname, title)
+	self.summarizer.set_ostream(self.os())
+	self.summarizer.set_scope(scope)
+	self.detailer.set_ostream(self.os())
+	self.detailer.set_scope(scope)
+ 
+htmlPageClass = ScopePages
