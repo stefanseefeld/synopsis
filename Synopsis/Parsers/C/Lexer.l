@@ -1035,7 +1035,7 @@ get_lineno(bool file_ppln, char *txt, Statement **stement)
                       if (gProject->Parse_TOS->filename == txt && 
                           ln > oldyylineno)
                       {
-                          gProject->Parse_TOS->filename = txt;
+                          gProject->Parse_TOS->yylineno = ln - 1;
                           return 0;
                       }
                       /* No break */
@@ -1084,7 +1084,7 @@ void print_caret(const std::string &s, int pos)
 void yywarn(char *s)
 {
     *gProject->Parse_TOS->yyerrstream
-         << gProject->Parse_TOS->transUnit->filename << ":" << gProject->Parse_TOS->yylineno
+         << gProject->Parse_TOS->filename << ":" << gProject->Parse_TOS->yylineno
          << ": Warning - " << s << ":\n" << gProject->Parse_TOS->line;
     print_caret(gProject->Parse_TOS->line, gProject->Parse_TOS->yycolno);
 }
@@ -1130,7 +1130,7 @@ int yyerr(char *s)
 int yyerror(char *s)
 {
     *gProject->Parse_TOS->yyerrstream
-      << gProject->Parse_TOS->transUnit->filename << ":" << gProject->Parse_TOS->yylineno
+      << gProject->Parse_TOS->filename << ":" << gProject->Parse_TOS->yylineno
       << ": Error (" << s << ") before '"
       << toksym(gProject->Parse_TOS->err_tok,0) << "'\n" << gProject->Parse_TOS->line;
     print_caret(gProject->Parse_TOS->line, gProject->Parse_TOS->yycolno);
