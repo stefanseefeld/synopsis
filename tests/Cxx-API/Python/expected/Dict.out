@@ -1,0 +1,9 @@
+{'a': 'A', 1: 2, 'hello': 'world'}
+['a', 1, 'hello']
+['A', 2, 'world']
+[('a', 'A'), (1, 2), ('hello', 'world')]
+A
+None
+('a', 'A')
+(1, 2)
+('hello', 'world')
