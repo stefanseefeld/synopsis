@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.11 2003/11/15 19:01:53 stefan Exp $
+# $Id: FileTreeJS.py,v 1.12 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -22,8 +22,8 @@ class FileTree(JSTree):
    def register(self, processor):
 
       JSTree.register(self, processor)
-      filename = self.processor.file_layout.nameOfSpecial('FileTree')
-      self.processor.addRootPage(filename, 'File Tree', 'contents', 2)
+      filename = self.processor.file_layout.special('FileTree')
+      self.processor.add_root_page(filename, 'File Tree', 'contents', 2)
    
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -46,14 +46,14 @@ class FileTree(JSTree):
                    os.path.join(share, 'syn-dot.png'),
                    'tree_%s.png', 0)
       # Start the file
-      filename = self.processor.file_layout.nameOfSpecial('FileTree')
+      filename = self.processor.file_layout.special('FileTree')
       self.start_file(filename, 'File Tree')
-      self.write(self.processor.formatHeader(filename, 2))
+      self.write(self.processor.navigation_bar(filename, 2))
       # recursively visit all nodes
-      self.processFileTreeNode(self.processor.fileTree.root())
+      self.process_file_tree_node(self.processor.fileTree.root())
       self.end_file()
       # recursively create all node pages
-      self.processFileTreeNodePage(self.processor.fileTree.root())
+      self.process_file_tree_node_page(self.processor.file_tree.root())
 
    def _node_sorter(self, a, b):
       a_leaf = hasattr(a, 'decls')
@@ -62,12 +62,12 @@ class FileTree(JSTree):
          return cmp(b_leaf, a_leaf)
       return cmp(string.upper(a.path[-1]), string.upper(b.path[-1]))
 
-   def processFileTreeNode(self, node):
+   def process_file_tree_node(self, node):
 
       if hasattr(node, 'decls'):
          # Leaf node
-         text = href(self.processor.file_layout.nameOfFileIndex(string.join(node.path,
-                                                                            os.sep)),
+         text = href(self.processor.file_layout.file_index(string.join(node.path,
+                                                                       os.sep)),
                      node.path[-1], target='index')
          self.writeLeaf(text)
          return
@@ -79,20 +79,20 @@ class FileTree(JSTree):
       if len(children):
          for child in children:
             #self.write('<div class="files">')
-            self.processFileTreeNode(child)
+            self.process_file_tree_node(child)
             #self.write('</div>')
       if len(node.path):
-         self.writeNodeEnd()
+         self.write_node_end()
 	
-   def processFileTreeNodePage(self, node):
+   def process_file_tree_node_page(self, node):
 
       for child in node.children.values():
-         self.processFileTreeNodePage(child)
+         self.process_file_tree_node_page(child)
       if not hasattr(node, 'decls'): return
 
       # set up filename and title for the current page
-      self.__filename = self.processor.file_layout.nameOfFileIndex(string.join(node.path,
-                                                                               os.sep))
+      self.__filename = self.processor.file_layout.file_index(string.join(node.path,
+                                                                          os.sep))
       name = list(node.path)
       while len(name) and name[0] == '..': del name[0]
       self.__title = string.join(name, os.sep)
@@ -100,7 +100,7 @@ class FileTree(JSTree):
       self.start_file()
       self.write(entity('b', string.join(name, os.sep))+'<br>')
       if self.link_to_pages:
-         link = self.processor.file_layout.nameOfScopedSpecial('page', name)
+         link = self.processor.file_layout.scoped_special('page', name)
          self.write(href(link, '[Source]', target="main")+'<br>')
       for name, decl in node.decls.items():
          # TODO make this nicer :)

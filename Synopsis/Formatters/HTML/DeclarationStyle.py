@@ -1,4 +1,4 @@
-# $Id: DeclarationStyle.py,v 1.1 2003/11/15 19:55:06 stefan Exp $
+# $Id: DeclarationStyle.py,v 1.2 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -6,6 +6,8 @@
 # Licensed to the public under the terms of the GNU LGPL (>= 2),
 # see the file COPYING for details.
 #
+
+from Synopsis import AST
 
 class Style:
    """This class just maintains a mapping from declaration to display style.

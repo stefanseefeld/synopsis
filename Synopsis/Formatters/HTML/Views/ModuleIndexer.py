@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.17 2003/11/15 19:01:53 stefan Exp $
+# $Id: ModuleIndexer.py,v 1.18 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -24,7 +24,7 @@ class ModuleIndexer(Page):
 
       Page.register(self, processor)
       processor.set_using_module_index()
-      self.__filename = self.processor.file_layout.nameOfModuleIndex(())
+      self.__filename = self.processor.file_layout.module_index(())
       processor.set_index_page(self.__filename)
 
    def filename(self): return self.__filename
@@ -34,12 +34,12 @@ class ModuleIndexer(Page):
    def process(self, start):
       """Creates indexes for all modules"""
 
-      start_file = self.processor.file_layout.nameOfModuleIndex(start.name())
+      start_file = self.processor.file_layout.module_index(start.name())
       self.processor.set_index_page(start_file)
       self.__namespaces = [start]
       while self.__namespaces:
          ns = self.__namespaces.pop(0)
-         self.processNamespaceIndex(ns)
+         self.process_namespace_index(ns)
     
    def _makePageHeading(self, ns):
       """Creates a HTML fragment which becomes the name at the top of the
@@ -51,12 +51,12 @@ class ModuleIndexer(Page):
       if not name: return 'Global Index'
       links = []
       for depth in range(0, len(name)):
-         url = self.processor.file_layout.nameOfModuleIndex(name[:depth+1])
+         url = self.processor.file_layout.module_index(name[:depth+1])
          label = anglebrackets(name[depth])
          links.append(href(rel(self.__filename, url), label))
       return entity('b', string.join(links, '\n::') + ' Index')
 
-   def processNamespaceIndex(self, ns):
+   def process_namespace_index(self, ns):
       "Index one module"
 
       sorter = self.processor.sorter
@@ -64,12 +64,12 @@ class ModuleIndexer(Page):
       sorter.sort_section_names()
       sorter.sort_sections()
 
-      self.__filename = self.processor.file_layout.nameOfModuleIndex(ns.name())
+      self.__filename = self.processor.file_layout.module_index(ns.name())
       self.__title = Util.ccolonName(ns.name()) or 'Global Namespace'
       self.__title = self.__title + ' Index'
       # Create file
       self.start_file()
-      #target = rel(self.__filename, self.processor.file_layout.nameOfScope(ns.name()))
+      #target = rel(self.__filename, self.processor.file_layout.scope(ns.name()))
       #link = href(target, self.__title, target='main')
       self.write(self._makePageHeading(ns))
 
@@ -104,7 +104,7 @@ class ModuleIndexer(Page):
             label = replace_spaces(label)
             if isinstance(child, AST.Module):
                index_url = rel(self.__filename,
-                               self.processor.file_layout.nameOfModuleIndex(child.name()))
+                               self.processor.file_layout.module_index(child.name()))
                self.write(href(index_url, label, target='index'))
             else:
                entry = toc[child.name()]

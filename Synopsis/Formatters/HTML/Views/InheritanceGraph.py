@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.28 2003/11/15 19:01:53 stefan Exp $
+# $Id: InheritanceGraph.py,v 1.29 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -63,9 +63,9 @@ class InheritanceGraph(Page):
 
       Page.register(self, processor)
       self.decl_finder = DeclarationFinder(processor.ast.types(), processor.verbose)
-      self.processor.addRootPage(self.filename(), 'Inheritance Graph', 'main', 1)
+      self.processor.add_root_page(self.filename(), 'Inheritance Graph', 'main', 1)
 
-   def filename(self): return self.processor.file_layout.nameOfSpecial('InheritanceGraph')
+   def filename(self): return self.processor.file_layout.special('InheritanceGraph')
    def title(self): return 'Synopsis - Class Hierarchy'
 
    def consolidate(self, graphs):
@@ -108,7 +108,7 @@ class InheritanceGraph(Page):
 
       filename = self.filename()
       self.start_file()
-      self.write(self.processor.formatHeader(filename))
+      self.write(self.processor.navigation_bar(filename))
       self.write(entity('h1', "Inheritance Graph"))
 
       try:
@@ -120,7 +120,7 @@ class InheritanceGraph(Page):
       # Create a toc file for Dot to use
       toc_file = filename + "-dot.toc"
       self.processor.toc.store(toc_file)
-      graphs = self.processor.classTree.graphs()
+      graphs = self.processor.class_tree.graphs()
       count = 0
       # Consolidate the graphs, and sort to make the largest appear first
       lensorter = lambda a, b: cmp(len(b),len(a))
@@ -141,7 +141,7 @@ class InheritanceGraph(Page):
             self.write('Graphs in '+type_str+name+':<br>')
          for graph in graphs:
             try:
-               if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
+               if self.processor.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
                # Find declarations
                declarations = map(self.decl_finder, graph)
                declarations = filter(lambda x: x is not None, declarations)

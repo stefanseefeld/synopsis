@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.8 2003/11/16 01:45:27 stefan Exp $
+# $Id: Formatter.py,v 1.9 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -20,6 +20,7 @@ from Pages.FramesIndex import *
 from Pages.DirBrowse import *
 from Pages.Scope import *
 from Pages.ModuleListing import *
+from Pages.ModuleListingJS import *
 from Pages.ModuleIndexer import *
 from Pages.FileListing import *
 from Pages.FileIndexer import *
@@ -31,49 +32,21 @@ from Pages.NameIndex import *
 from Pages.XRef import *
 import Tags
 
-class ConfigHTML:
-   """This is a verbatim copy of the HTML class in Config.py.
-   It should serve temporarily here so we can incrementally
-   refactor the HTML formatter. The goal is to get rid of this
-   monster..."""
-   
-   name = 'HTML'
-   # Defaults
-   datadir = '/usr/local' + '/share/synopsis'
-   stylesheet = 'style.css'
-   stylesheet_file = datadir + '/html.css'
-   structs_as_classes = 0
-   class FileSource:
-      file_path = './%s'
-      links_path = './%s-links'
-      toc_files = []
-      scope = ''
-   class ScopePages:
-      parts = ['Heading',
-               'Summary',
-               'Inheritance',
-               'Detail']
-      heading_formatters = ['Heading',
-                            'ClassHierarchyGraph',
-                            'DetailCommenter']
-      summary_formatters = ['SummaryAST',
-                            'SummaryCommenter']
-      detail_formatters = ['DetailAST',
-                           'DetailCommenter']
-
-   def __init__(self, verbose):
-      self.verbose = verbose
+class Struct:
+   "Dummy class. Initialise with keyword args."
+   def __init__(self, **keys):
+      for name, value in keys.items(): setattr(self, name, value)
 
 class Formatter(Processor):
 
    stylesheet = Parameter('style.css', '')
    stylesheet_file = Parameter('../html.css', '')
    datadir = Parameter('', 'alternative data directory')
-   file_layout = Parameter(NestedFileLayout(), 'how to lay out the output files')
+   file_layout = Parameter(FileLayout(), 'how to lay out the output files')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    toc_out = Parameter('', 'name of file into which to store the TOC')
 
-   pages = Parameter([FramesIndex(), #DirBrowse()
+   pages = Parameter([FramesIndex(),#FramesIndex(), #DirBrowse()
                       Scope(),
                       ModuleListing(),
                       ModuleIndexer(),
@@ -109,20 +82,30 @@ class Formatter(Processor):
          f.init(self)
       self.comments = CommentFormatter(self)
       # Create the Class Tree (TODO: only if needed...)
-      self.classTree = ClassTree()
+      self.class_tree = ClassTree()
       # Create the File Tree (TODO: only if needed...)
-      self.fileTree = FileTree()
-      self.fileTree.set_ast(ast)
+      self.file_tree = FileTree()
+      self.file_tree.set_ast(ast)
 
       self.xref = CrossReferencer()
 
+      #if not self.sorter:
+      import ScopeSorter
+      self.sorter = ScopeSorter.ScopeSorter()
+
+
       Tags.using_frames = self.has_page('FramesIndex')
 
+      self.main_page = None
+      self.contents_page = None
+      self.index_page = None
+      self.using_module_index = False
+      
       declarations = ast.declarations()
 
       # Build class tree
       for d in declarations:
-         d.accept(self.classTree)
+         d.accept(self.class_tree)
 
       self.__roots = [] #pages with roots, list of Structs
       self.__global = None # The global scope
@@ -135,7 +118,7 @@ class Formatter(Processor):
       root.declarations()[:] = declarations
 
       # Create table of contents index
-      start = self.calculateStart(root)
+      start = self.calculate_start(root)
       self.toc = self.get_toc(start)
       if self.verbose: print "HTML Formatter: Initialising TOC"
 
@@ -153,7 +136,7 @@ class Formatter(Processor):
 
       # Create the pages
       self.__global = root
-      start = self.calculateStart(root)
+      start = self.calculate_start(root)
       if self.verbose: print "Registering filenames...",
       for page in self.pages:
          page.register_filenames(start)
@@ -205,12 +188,17 @@ class Formatter(Processor):
 
       if not self.index_page: self.index_page = page
 
-   def globalScope(self):
+   def set_using_module_index(self):
+      """Sets the using_module_index flag. This will cause the an
+      intermediate level of links intended to go in the left frame."""
+      self.using_module_index = True
+
+   def global_scope(self):
       "Return the global scope"
 
       return self.__global
 
-   def calculateStart(self, root, namespace=None):
+   def calculate_start(self, root, namespace=None):
       "Calculates the start scope using the 'namespace' config var"
 
       scope_names = string.split(namespace or config.namespace, "::")
@@ -226,7 +214,7 @@ class Formatter(Processor):
                start = child
                self.sorter.set_scope(start)
             else:
-               raise TypeError, 'calculateStart: Not a Scope'
+               raise TypeError, 'calculate_start: Not a Scope'
          except:
             # Don't continue if scope traversal failed!
             import traceback
@@ -236,7 +224,7 @@ class Formatter(Processor):
             sys.exit(3)
       return start
 
-   def addRootPage(self, file, label, target, visibility):
+   def add_root_page(self, file, label, target, visibility):
       """Adds a named link to the list of root pages. Called from the
       constructors of Page objects. The root pages are displayed at the top
       of every page, depending on their visibility (higher = more visible).
@@ -250,7 +238,7 @@ class Formatter(Processor):
 
       self.__roots.append(Struct(file=file, label=label, target=target, visibility=visibility))
 
-   def formatHeader(self, origin, visibility=1):
+   def navigation_bar(self, origin, visibility=1):
       """Formats the list of root pages to HTML. The origin specifies the
       generated page itself (which shouldn't be linked), such that the relative
       links can be generated. Only root pages of 'visibility' or

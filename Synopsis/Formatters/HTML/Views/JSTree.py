@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.7 2003/11/15 19:01:53 stefan Exp $
+# $Id: JSTree.py,v 1.8 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -8,8 +8,8 @@
 #
 
 from Synopsis.Processor import Parameter
-from Synopsis.Formatter.HTML.Page import Page
-from Synopsis.Formatter.HTML.Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.Tags import *
 
 #The javascript that goes up the top
 top_js = """<script language="JavaScript1.2"><!--
@@ -100,9 +100,9 @@ class JSTree(Page):
       self.__base_close = base%'close'
       self.__base_leaf = base%'leaf'
       # Copy images across
-      self.processor.file_layout.copyFile(open_img, self.__base_open)
-      self.processor.file_layout.copyFile(close_img, self.__base_close)
-      self.processor.file_layout.copyFile(leaf_img, self.__base_leaf)
+      self.processor.file_layout.copy_file(open_img, self.__base_open)
+      self.processor.file_layout.copy_file(close_img, self.__base_close)
+      self.processor.file_layout.copy_file(leaf_img, self.__base_leaf)
 
    def start_file(self):
       """Overrides start_file to add the javascript"""

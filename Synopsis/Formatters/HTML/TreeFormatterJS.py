@@ -1,4 +1,4 @@
-# $Id: TreeFormatterJS.py,v 1.5 2003/11/14 14:51:09 stefan Exp $
+# $Id: TreeFormatterJS.py,v 1.6 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -131,10 +131,9 @@ class TreeFormatterJS(TreeFormatter):
       self.__base_leaf = base%'leaf'
       # Copy images across
       file_layout = self.page.processor.file_layout
-      basename = self.page.processor.output
-      file_layout.copyFile(open_img, os.path.join(basename, self.__base_open))
-      file_layout.copyFile(close_img, os.path.join(basename, self.__base_close))
-      file_layout.copyFile(leaf_img, os.path.join(basename, self.__base_leaf))
+      file_layout.copy_file(open_img, self.__base_open)
+      file_layout.copy_file(close_img, self.__base_close)
+      file_layout.copy_file(leaf_img, self.__base_leaf)
 
    def start_tree(self):
       """Writes the javascript"""

@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.11 2003/11/15 19:01:53 stefan Exp $
+# $Id: FramesIndex.py,v 1.12 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -20,7 +20,7 @@ class FramesIndex(Page):
       Page.register(self, processor)
       processor.set_main_page(self.filename())
 
-   def filename(self): return self.processor.file_layout.nameOfIndex()
+   def filename(self): return self.processor.file_layout.index()
 
    def title(self): return 'Synopsis - Generated Documentation'
 

@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.25 2003/11/16 01:45:27 stefan Exp $
+# $Id: Scope.py,v 1.26 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -27,6 +27,7 @@ class Scope(Page):
 
    parts = Parameter([Heading(),
                       Summary(),
+                      Inheritance(),
                       Detail()],
                      '')
    
@@ -35,8 +36,8 @@ class Scope(Page):
       Page.register(self, processor)
       share = config.datadir
       self.syn_logo = 'synopsis200.jpg'
-      self.processor.file_layout.copyFile(os.path.join(share, 'synopsis200.jpg'),
-                                          os.path.join(processor.output, self.syn_logo))
+      processor.file_layout.copy_file(os.path.join(share, 'synopsis200.jpg'),
+                                      self.syn_logo)
 
       for part in self.parts: part.register(self)
 
@@ -77,7 +78,7 @@ class Scope(Page):
          self.process_scope(ns)
          
          # Queue child namespaces
-         for child in config.sorter.children():
+         for child in self.processor.sorter.children():
             if isinstance(child, AST.Scope):
                self.__namespaces.append(child)
 
@@ -88,13 +89,13 @@ class Scope(Page):
       while self.__namespaces:
          ns = self.__namespaces.pop(0)
 
-         filename = self.processor.file_layout.nameOfScope(ns.name())
+         filename = self.processor.file_layout.scope(ns.name())
          self.processor.register_filename(filename, self, ns)
 
-         config.sorter.set_scope(ns)
+         self.processor.sorter.set_scope(ns)
          
          # Queue child namespaces
-         for child in config.sorter.children():
+         for child in self.processor.sorter.children():
             if isinstance(child, AST.Scope):
                self.__namespaces.append(child)
      
@@ -106,15 +107,15 @@ class Scope(Page):
 	
       # Open file and setup scopes
       self.__scope = ns.name()
-      self.__filename = self.processor.file_layout.nameOfScope(self.__scope)
+      self.__filename = self.processor.file_layout.scope(self.__scope)
       self.__title = anglebrackets(string.join(self.__scope))
       self.start_file()
 	
       # Write heading
-      self.write(self.processor.formatHeader(self.filename()))
+      self.write(self.processor.navigation_bar(self.filename()))
 
       # Loop throught all the page Parts
-      for part in self.__parts:
+      for part in self.parts:
          part.process(ns)
       self.end_file()
     

@@ -1,4 +1,4 @@
-# $Id: Heading.py,v 1.2 2003/11/16 01:45:27 stefan Exp $
+# $Id: Heading.py,v 1.3 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,8 +7,8 @@
 # see the file COPYING for details.
 #
 
+from Synopsis.Processor import Parameter
 from Synopsis.Formatters.HTML.Part import Part
-
 from Synopsis.Formatters.HTML import FormatStrategy
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -16,18 +16,12 @@ class Heading(Part):
    """Heading page part. Displays a header for the page -- its strategies are
    only passed the object that the page is for; ie a Class or Module"""
 
-   def register(self, page):
+   formatters = Parameter([FormatStrategy.Heading(),
+                           FormatStrategy.ClassHierarchyGraph(),
+                           FormatStrategy.DetailCommenter()],
+                          '')
 
-      Part.register(self, page)
-      self._init_formatters('heading_formatters', 'heading')
-
-   def _init_default_formatters(self):
-
-      self.addFormatter(FormatStrategy.Heading)
-      self.addFormatter(FormatStrategy.ClassHierarchyGraph)
-      self.addFormatter(FormatStrategy.DetailCommenter)
-
-   def writeSectionItem(self, text):
+   def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
 
       self.write(text + '\n<hr>\n')

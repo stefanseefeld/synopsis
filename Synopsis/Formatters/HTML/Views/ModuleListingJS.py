@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.13 2003/11/15 19:01:53 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.14 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -27,12 +27,12 @@ class ModuleListingJS(JSTree):
    def _init_page(self):
       "Sets _filename and registers the page with the manager"
 
-      filename = self.processor.file_layout.nameOfSpecial('ModuleTree')
+      filename = self.processor.file_layout.special('ModuleTree')
       self.processor.set_contents_page(filename)
-      self.manager.addRootPage(filename, 'Modules', 'contents', 2)
+      self.processor.add_root_page(filename, 'Modules', 'contents', 2)
       self._link_target = 'index'
 
-   def filename(self): return self.processor.file_layout.nameOfSpecial('ModuleTree')
+   def filename(self): return self.processor.file_layout.special('ModuleTree')
    def title(self): return 'Module Tree'
 
    def process(self, start):
@@ -46,7 +46,7 @@ class ModuleListingJS(JSTree):
       self.__share = share
       # Creare the file
       self.start_file()
-      self.write(self.manager.formatHeader(filename, 2))
+      self.write(self.processor.navigation_bar(self.filename(), 2))
       self.indexModule(start, start.name())
       self.end_file()
 
@@ -56,7 +56,7 @@ class ModuleListingJS(JSTree):
 
    def _link_href(self, ns):
 
-      return self.processor.file_layout.nameOfModuleIndex(ns.name())
+      return self.processor.file_layout.module_index(ns.name())
 
    def get_children(self, decl):
 

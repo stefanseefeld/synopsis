@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.15 2003/11/16 01:45:27 stefan Exp $
+# $Id: XRef.py,v 1.16 2003/11/16 21:09:45 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -51,7 +51,7 @@ class XRef(Page):
       xref = self.processor.xref
       for name in xref.get_all_names():
          page = xref.get_page_for(name)
-         file = self.processor.file_layout.nameOfSpecial('xref%d'%page)
+         file = self.processor.file_layout.special('xref%d'%page)
          file = file + '#' + Util.quote(string.join(name,'::'))
          self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
       return self.__toc
@@ -74,11 +74,11 @@ class XRef(Page):
       page_info = self.processor.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
-         self.__filename = self.processor.file_layout.nameOfSpecial('xref%d'%i)
+         self.__filename = self.processor.file_layout.special('xref%d'%i)
          self.__title = 'Cross Reference page #%d'%i
 
          self.start_file()
-         self.write(self.processor.formatHeader(self.filename()))
+         self.write(self.processor.navigation_bar(self.filename()))
          self.write(entity('h1', self.__title))
          self.write('<hr>')
          for name in page_info[i]:
@@ -91,7 +91,7 @@ class XRef(Page):
       page_info = self.processor.xref.get_page_info()
       if not page_info: return
       for i in range(len(page_info)):
-         filename = self.processor.file_layout.nameOfSpecial('xref%d'%i)
+         filename = self.processor.file_layout.special('xref%d'%i)
          self.processor.register_filename(filename, self, i)
     
    def process_link(self, file, line, scope):
@@ -99,7 +99,7 @@ class XRef(Page):
 
       # Make a link to the highlighted source
       realfile = os.path.join(config.base_dir, file)
-      file_link = self.processor.file_layout.nameOfFileSource(realfile)
+      file_link = self.processor.file_layout.file_source(realfile)
       file_link = file_link + "#%d"%line
       # Try and make a descriptive
       desc = ''
@@ -171,7 +171,7 @@ class XRef(Page):
          for child in decl.declarations():
             file, line = child.file().filename(), child.line()
             realfile = os.path.join(config.base_dir, file)
-            file_link = self.processor.file_layout.nameOfFileSource(realfile)
+            file_link = self.processor.file_layout.file_source(realfile)
             file_link = '%s#%d'%(file_link,line)
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
             cname = child.name()
