@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.7 2001/02/12 04:08:09 chalky Exp $
+# $Id: Formatter.py,v 1.8 2001/02/13 05:19:31 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.8  2001/02/13 05:19:31  chalky
+# @see links are done a bit more methodically
+#
 # Revision 1.7  2001/02/12 04:08:09  chalky
 # Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
 #
@@ -261,28 +264,61 @@ class JavadocFormatter (CommentFormatter):
 	    seelist.append(tag+desc)
 	return seestr + div('tag-section', string.join(seelist,'<br>'))
     def find_link(self, ref, decl):
-	"""Given a "reference" and a declaration, returns a HTML link. Various
-	methods are tried to resolve the reference."""
-	# Remove (...)'s
+	"""Given a "reference" and a declaration, returns a HTML link.
+	Various methods are tried to resolve the reference. First the
+	parameters are taken off, then we try to split the ref using '.' or
+	'::'. The params are added back, and then we try to match this scoped
+	name against the current scope. If that fails, then we recursively try
+	enclosing scopes.
+	"""
+	# Remove params
 	index, label = string.find(ref,'('), ref
-	if index >= 0: ref = ref[:index]
-	# Try up-a-scope + ref
-	entry = config.toc.lookup(list(decl.name()[:-1])+[ref])
-	if entry: return href(entry.link, label)
-	# Try all methods in scope
-	entry = self.find_method_entry(ref, decl)
-	if entry: return href(entry.link, label)
-	# Try ref verbatim
-	entry = config.toc.lookup([ref])
-	if entry: return href(entry.link, label)
+	if index >= 0:
+	    params = ref[index:]
+	    ref = ref[:index]
+	else:
+	    params = ''
+	# Split ref
+	ref = string.split(ref, '.')
+	if len(ref) == 1:
+	    ref = string.split(ref[0], '::')
+	# Add params back
+	ref = ref[:-1] + [ref[-1]+params]
+	# Find in all scopes
+	scope = list(decl.name())
+	while 1:
+	    entry = self._find_link_at(ref, scope)
+	    if entry: return href(entry.link, label)
+	    if len(scope) == 0: break
+	    scope = scope[:-1]
 	# Not found
 	return label+" "
-    def find_method_entry(self, ref, decl):
+    def _find_link_at(self, ref, scope):
+	# Try scope + ref[0]
+	entry = config.toc.lookup(scope+ref[:1])
+	if entry:
+	    # Found.
+	    if len(ref) > 1:
+		# Find sub-refs
+		entry = self._find_link_at(ref[1:], scope+ref[:1])
+		if entry:
+		    # Recursive sub-ref was okay!
+		    return entry 
+	    else:
+		# This was the last scope in ref. Done!
+		return entry
+	# Try a method name match:
+	if len(ref) == 1:
+	    entry = self._find_method_entry(ref[0], scope)
+	    if entry: return entry
+	# Not found at this scope
+	return None
+    def _find_method_entry(self, name, scope):
 	"""Tries to find a TOC entry for a method adjacent to decl. The
 	enclosing scope is found using the types dictionary, and the
 	realname()'s of all the functions compared to ref."""
 	try:
-	    scope = config.types[decl.name()[:-1]]
+	    scope = config.types[scope]
 	except KeyError:
 	    #print "No parent scope:",decl.name()[:-1]
 	    return None
@@ -292,8 +328,9 @@ class JavadocFormatter (CommentFormatter):
 	if not isinstance(scope, AST.Scope): return None
 	for decl in scope.declarations():
 	    if isinstance(decl, AST.Function):
-		if decl.realname()[-1] == ref:
+		if decl.realname()[-1] == name:
 		    return config.toc.lookup(decl.name())
+	# Failed
 	return None
 
 class QtDocFormatter (JavadocFormatter):
