@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.6 2003/11/25 04:52:26 stefan Exp $
+# $Id: Dump.py,v 1.7 2003/11/30 01:28:57 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -22,6 +22,7 @@ dom = getDOMImplementation().createDocument(None, "dump", None)
 
 class Formatter(Processor):
 
+   show_ids = Parameter(True, 'output object ids as attributes')
    show_declarations = Parameter(True, 'output declarations')
    show_types = Parameter(True, 'output types')
    show_files = Parameter(True, 'output files')
@@ -84,7 +85,8 @@ class Formatter(Processor):
 
       i,t = id(obj), type(obj)
       if self.visited.has_key(i):
-         self.node.setAttribute('xref', str(i))
+         if self.show_ids:
+            self.node.setAttribute('xref', str(i))
          return
       if self.handlers.has_key(t):
          self.handlers[t](obj)
@@ -136,7 +138,8 @@ class Formatter(Processor):
       self.visited[id(obj)] = None
       self.push("instance")
       self.node.setAttribute('class', "%s.%s"%(obj.__class__.__module__,obj.__class__.__name__))
-      self.node.setAttribute('id', str(id(obj)))
+      if self.show_ids:
+         self.node.setAttribute('id', str(id(obj)))
       attrs = obj.__dict__.items()
       attrs.sort()
       for name, value in attrs:
