@@ -25,6 +25,8 @@ public:
     : Named(o, false) { if (check) assert_type("Declared");}
 
   Declaration declaration() const { return attr("declaration")();}
+
+  virtual void accept(TypeVisitor *v) { v->visit_declared(this);}
 };
 
 //. Template types are declared template types. They have a name, a
@@ -43,6 +45,8 @@ public:
 
   Parameters parameters() { return narrow<Parameters>(attr("parameters")());}
   // specializations() ???
+
+  virtual void accept(TypeVisitor *v) { v->visit_template(this);}
 };
 
 class Parametrized : public Type
@@ -54,7 +58,35 @@ public:
 
   Template _template() const { return narrow<Template>(attr("template")());}  
   TypeList parameters() const { return narrow<TypeList>(attr("parameters")());}
+
+  virtual void accept(TypeVisitor *v) { v->visit_parametrized(this);}
 };
+
+//. Safely extracts typed Declarations from Named types. The type is first
+//. safely cast to Declared, then the declaration() safely cast to
+//. the template type.
+template <typename T>
+T declared_cast(const Type &type) throw (Object::TypeError)
+{
+  if (Declared declared = Object::try_narrow<Declared>(type))
+    if (Declaration decl = declared.declaration())
+      if (T derived = Object::try_narrow<T>(decl))
+	return derived;
+  throw Object::TypeError();
+}
+
+// //. Safely extracts typed Declarations from Type types. The type is first
+// //. safely cast to Declared, then the declaration() safely cast to
+// //. the template type.
+// template <typename T>
+// T declared_cast(const Type &type) throw (Object::TypeError)
+// {
+//   if (Declared declared = Object::try_narrow<Declared>(type))
+//     if (Declaration decl = declared.declaration())
+//       if (T derived = Object::try_narrow<T>(decl))
+// 	return derived;
+//   throw Object::TypeError();
+// }
 
 }
 }

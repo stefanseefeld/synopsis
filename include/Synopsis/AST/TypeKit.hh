@@ -48,7 +48,7 @@ public:
   { return create<Template>("Template", Tuple(lang, sn, decl, params));}
 
   Modifier create_modifier(const std::string &lang, const Type &alias,
-			   const std::string &pre, const std::string &post)
+			   const Modifiers &pre, const Modifiers &post)
   { return create<Modifier>("Modifier", Tuple(lang, alias, pre, post));}
 
   Array create_array(const std::string &lang, const Type &alias,

@@ -10,24 +10,12 @@
 #define _Synopsis_AST_SourceFile_hh
 
 #include <Synopsis/Object.hh>
+#include <Synopsis/AST/Declaration.hh>
 
 namespace Synopsis
 {
 namespace AST
 {
-
-class SourceFile : public Object
-{
-public:
-  SourceFile() {}
-  SourceFile(const Object &o) : Object(o) {}
-  std::string name() const { return narrow<std::string>(attr("filename")());}
-  std::string long_name() const { return narrow<std::string>(attr("full_filename")());}
-  bool is_main() const { return narrow<bool>(attr("is_main")());}
-  void is_main(bool flag) { attr("set_is_main")(Tuple(flag));}
-  List includes() { return attr("includes")();}
-  Dict macro_calls() { return attr("macro_calls")();}
-};
 
 class Include : public Object
 {
