@@ -70,6 +70,7 @@ class Translator (idlvisitor.AstVisitor):
             n.accept(self)
 
     def visitModule(self, node):
+        if node.mainFile() != 1: return
         self.__current.append(Types.Module(node.file(),
                                            node.line(),
                                            "IDL",
@@ -85,6 +86,7 @@ class Translator (idlvisitor.AstVisitor):
         self.__current.pop()
 
     def visitInterface(self, node):
+        if node.mainFile() != 1: return
         self.__current.append(Types.Class(node.file(),
                                           node.line(),
                                           "IDL",
@@ -96,33 +98,38 @@ class Translator (idlvisitor.AstVisitor):
         if len(self.__current) == 1:
             self.__rootNodes.append(self.__current[0])
         else:
-            self.__current[-2].types().append(self.__current[-1])
+            self.__current[-2].declarations().append(self.__current[-1])
         self.__current.pop()
 
     def visitForward(self, node):      return
     def visitConst(self, node):        return
     def visitDeclarator(self, node): return
     def visitTypedef(self, node):
+        if node.mainFile() != 1: return
+        identifiers = []
+        for d in node.declarators(): identifiers.append(d.identifier())
         type = Types.Typedef(node.file(),
                              node.line(),
                              "IDL",
-                             "typedef",
                              self.__names.lookup(node.aliasType()),
                              [],
-                             node.declarators()[0].identifier())
-        if len(self.__current): self.__current[-1].types().append(type)
+                             identifiers)
+        if len(self.__current): self.__current[-1].declarations().append(type)
         else: self.__rootNodes.append(type)
 
     def visitMember(self, node):
-        self.__current[-1].attributes().append(Types.Variable(node.file(),
-                                                              node.line(),
-                                                              "IDL",
-                                                              "member",
-                                                              self.__names.lookup(node.memberType()),
-                                                              [],
-                                                              node.declarators()[0].identifier(),
-                                                              ""))
+        identifiers = []
+        for d in node.declarators(): identifiers.append(d.identifier())
+        self.__current[-1].declarations().append(Types.Variable(node.file(),
+                                                                node.line(),
+                                                                "IDL",
+                                                                "member",
+                                                                self.__names.lookup(node.memberType()),
+                                                                [],
+                                                                identifiers,
+                                                                ""))
     def visitStruct(self, node):
+        if node.mainFile() != 1: return
         self.__current.append(Types.Class(node.file(),
                                           node.line(),
                                           "IDL",
@@ -133,7 +140,7 @@ class Translator (idlvisitor.AstVisitor):
         if len(self.__current) == 1:
             self.__rootNodes.append(self.__current[0])
         else:
-            self.__current[-2].types().append(self.__current[-1])
+            self.__current[-2].declarations().append(self.__current[-1])
         self.__current.pop()
         
     def visitException(self, node):    return
