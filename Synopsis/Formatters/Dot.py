@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.1 2001/01/23 19:50:42 stefan Exp $
+# $Id: Dot.py,v 1.2 2001/01/23 21:31:36 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.2  2001/01/23 21:31:36  stefan
+# bug fixes
+#
 # Revision 1.1  2001/01/23 19:50:42  stefan
 # Dot: an inheritance/collaboration graph generator
 #
@@ -122,5 +125,5 @@ def format(types, declarations, args):
     dotfile.write("}\n")
     dotfile.close()
     os.system("dot -Tps -o %s %s"%(output, tmpfile))
-#    os.remove(tmpfile)
+    os.remove(tmpfile)
     
