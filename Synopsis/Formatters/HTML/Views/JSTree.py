@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.5 2003/11/12 16:42:05 stefan Exp $
+# $Id: JSTree.py,v 1.6 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -71,9 +71,9 @@ class JSTree(Page):
    collapsing nodes. call js_init() with the button images and default
    open/close policy during process"""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       self.__id = 0
       self.__open_img = ''
       self.__close_img = ''
@@ -101,9 +101,9 @@ class JSTree(Page):
       self.__base_close = base%'close'
       self.__base_leaf = base%'leaf'
       # Copy images across
-      config.files.copyFile(open_img, self.__base_open)
-      config.files.copyFile(close_img, self.__base_close)
-      config.files.copyFile(leaf_img, self.__base_leaf)
+      self.processor.file_layout.copyFile(open_img, self.__base_open)
+      self.processor.file_layout.copyFile(close_img, self.__base_close)
+      self.processor.file_layout.copyFile(leaf_img, self.__base_leaf)
 
    def start_file(self):
       """Overrides start_file to add the javascript"""

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.34 2003/11/12 16:42:05 stefan Exp $
+# $Id: Part.py,v 1.35 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -37,6 +37,7 @@ class Part(Type.Visitor, AST.Visitor):
    methods, which myst be implemented in a subclass.
    """
    def __init__(self, page):
+      self.processor = page.processor
       self.__page = page
       self.__formatters = []
       self.__id_holder = None
@@ -97,7 +98,7 @@ class Part(Type.Visitor, AST.Visitor):
       optional keys are appended as attributes to the A tag."""
 
       if not label: label = anglebrackets(Util.ccolonName(name, self.scope()))
-      entry = config.toc[name]
+      entry = self.processor.toc[name]
       if entry: return apply(href, (rel(self.filename(), entry.link), label), keys)
       return label or ''
 
@@ -112,7 +113,7 @@ class Part(Type.Visitor, AST.Visitor):
 
       if label is None: label = name
       # some labels are templates with <>'s
-      entry = config.toc[name]
+      entry = self.processor.toc[name]
       label = anglebrackets(Util.ccolonName(label, self.scope()))
       if entry is None: return label
       location = entry.link

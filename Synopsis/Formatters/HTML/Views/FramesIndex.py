@@ -1,4 +1,4 @@
-# $Id: FramesIndex.py,v 1.9 2003/11/12 16:42:05 stefan Exp $
+# $Id: FramesIndex.py,v 1.10 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,28 +7,28 @@
 # see the file COPYING for details.
 #
 
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
 class FramesIndex(Page):
    """A class that creates an index with frames"""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       config.set_main_page(self.filename())
 
-   def filename(self): return config.files.nameOfIndex()
+   def filename(self): return self.processor.file_layout.nameOfIndex()
 
    def title(self): return 'Synopsis - Generated Documentation'
 
    def process(self, start):
       """Creates a frames index file"""
 
-      me = config.files.nameOfIndex()
+      me = self.filename()
       # TODO use project name..
       self.start_file(body='')
       fcontents = rel(me, config.page_contents)
@@ -38,7 +38,7 @@ class FramesIndex(Page):
       decls = [start]
       while decls:
          decl = decls.pop(0)
-         entry = config.toc[decl.name()]
+         entry = self.processor.toc[decl.name()]
          if entry:
             fglobal = rel(me, entry.link)
             break

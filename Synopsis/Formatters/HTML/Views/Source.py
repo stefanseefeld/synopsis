@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.5 2003/11/12 16:42:05 stefan Exp $
+# $Id: Source.py,v 1.6 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,12 +9,9 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-
-from Page import Page
-import core
-import ASTFormatter
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import time, os
 
@@ -27,14 +24,16 @@ except ImportError:
 class FileSource(Page):
    """A module for creating a page for each file with hyperlinked source"""
 
-   def register(self, manager):
+   toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
 
-      Page.register(self, manager)
+   def register(self, processor):
+
+      Page.register(self, processor)
       # Try old name first for backwards compatibility
       if hasattr(config.obj, 'FilePages'): myconfig = config.obj.FilePages
       else: myconfig = config.obj.FileSource
       self.__linkpath = myconfig.links_path
-      self.__toclist = myconfig.toc_files
+      self.__toclist = self.toc_in
       self.__scope = myconfig.scope
       # We will NOT be in the Manual directory  TODO - use FileLayout for this
       self.__toclist = map(lambda x: ''+x, self.__toclist)
@@ -59,13 +58,13 @@ class FileSource(Page):
       """Creates a page for every file"""
 
       # Get the TOC
-      toc = self.manager.get_toc(start)
-      tocfile = config.files.nameOfSpecial('FileSourceInputTOC')
-      tocfile = os.path.join(config.basename, tocfile)
+      toc = self.processor.get_toc(start)
+      tocfile = self.processor.file_layout.nameOfSpecial('FileSourceInputTOC')
+      tocfile = os.path.join(self.processor.output, tocfile)
       toc.store(tocfile)
       self.__toclist.append(tocfile)
       # create a page for each main file
-      for file in config.ast.files().values():
+      for file in self.processor.ast.files().values():
          if file.is_main():
             self.process_node(file)
 	
@@ -74,22 +73,21 @@ class FileSource(Page):
    def register_filenames(self, start):
       """Registers a page for every source file"""
 
-      for file in config.ast.files().values():
+      for file in self.processor.ast.files().values():
          if file.is_main():
             filename = file.filename()
             filename = os.path.join(config.base_dir, filename)
-            filename = config.files.nameOfFileSource(filename)
+            filename = self.processor.file_layout.nameOfFileSource(filename)
             #print "Registering",filename
-            self.manager.register_filename(filename, self, file)
+            self.processor.register_filename(filename, self, file)
 	     
    def process_node(self, file):
       """Creates a page for the given file"""
 
       # Start page
-      toc = config.toc
       filename = file.filename()
       filename = os.path.join(config.base_dir, filename)
-      self.__filename = config.files.nameOfFileSource(filename)
+      self.__filename = self.processor.file_layout.nameOfFileSource(filename)
       #name = list(node.path)
       #while len(name) and name[0] == '..': del name[0]
       #source = string.join(name, os.sep)
@@ -105,7 +103,7 @@ class FileSource(Page):
             toclist[index] = toclist[index]+'|'+prefix
 
       self.start_file()
-      self.write(self.manager.formatHeader(self.filename()))
+      self.write(self.processor.formatHeader(self.filename()))
       self.write('File: '+entity('b', self.__title))
 
       if not link:
@@ -118,7 +116,7 @@ class FileSource(Page):
       else:
          self.write('<br><div class="file-all">\n')
          # Call link module
-         f_out = os.path.join(config.basename, self.__filename) + '-temp'
+         f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
          f_in = file.full_filename()
          f_link = self.__linkpath%source
          #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)

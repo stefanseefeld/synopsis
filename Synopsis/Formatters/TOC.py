@@ -1,4 +1,4 @@
-# $Id: TOC.py,v 1.6 2003/11/13 20:40:09 stefan Exp $
+# $Id: TOC.py,v 1.7 2003/11/14 14:51:08 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -97,7 +97,7 @@ class TOC(AST.Visitor):
          else:
             name = string.split(scopedname, "::")
          if len(url): link = string.join([url, link], "/")
-         entry = TocEntry(name, link, lang, "decl")
+         entry = TOC.Entry(name, link, lang, "decl")
          self.insert(entry)
          line = fin.readline()
     
@@ -108,7 +108,7 @@ class TOC(AST.Visitor):
 
    def visitDeclaration(self, decl):
 
-      entry = TocEntry(decl.name(), self.linker.link(decl), decl.language(), "decl")
+      entry = TOC.Entry(decl.name(), self.linker.link(decl), decl.language(), "decl")
       self.insert(entry)
 
    def visitForward(self, decl):

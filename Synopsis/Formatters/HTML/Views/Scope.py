@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.22 2003/11/13 20:40:09 stefan Exp $
+# $Id: Scope.py,v 1.23 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,12 +10,9 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST
 from Synopsis.Formatters.TOC import TOC
-
-from Page import Page
-import core
-import ASTFormatter
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import time, os
 
@@ -28,13 +25,13 @@ class ScopePages(Page):
    @see Config.Formatters.HTML.ScopePages Config for ScopePages
    """
    
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       share = config.datadir
       self.syn_logo = 'synopsis200.jpg'
-      if config.files:
-         config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
+      self.processor.file_layout.copyFile(os.path.join(share, 'synopsis200.jpg'),
+                                          os.path.join(config.basename, self.syn_logo))
       self.__parts = []
       self._get_parts()
       self.__namespaces = []
@@ -56,7 +53,7 @@ class ScopePages(Page):
       """Returns the TOC for the whole AST starting at start"""
       
       if self.__toc: return self.__toc
-      self.__toc = TOC(config.files)
+      self.__toc = TOC(self.processor.file_layout)
       start.accept(self.__toc)
       return self.__toc
 
@@ -97,8 +94,8 @@ class ScopePages(Page):
       while self.__namespaces:
          ns = self.__namespaces.pop(0)
 
-         filename = config.files.nameOfScope(ns.name())
-         self.manager.register_filename(filename, self, ns)
+         filename = self.processor.file_layout.nameOfScope(ns.name())
+         self.processor.register_filename(filename, self, ns)
 
          config.sorter.set_scope(ns)
          
@@ -115,12 +112,12 @@ class ScopePages(Page):
 	
       # Open file and setup scopes
       self.__scope = ns.name()
-      self.__filename = config.files.nameOfScope(self.__scope)
+      self.__filename = self.processor.file_layout.nameOfScope(self.__scope)
       self.__title = anglebrackets(string.join(self.__scope))
       self.start_file()
 	
       # Write heading
-      self.write(self.manager.formatHeader(self.filename()))
+      self.write(self.processor.formatHeader(self.filename()))
 
       # Loop throught all the page Parts
       for part in self.__parts:

@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.12 2003/11/12 16:42:05 stefan Exp $
+# $Id: InheritanceTree.py,v 1.13 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,22 +9,20 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import Util
-
-import core
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
 class InheritanceTree(Page):
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
-      self.manager.addRootPage(self.filename(), 'Inheritance Tree', 'main', 1)
+      Page.register(self, processor)
+      self.processor.addRootPage(self.filename(), 'Inheritance Tree', 'main', 1)
  
-   def filename(self): return config.files.nameOfSpecial('InheritanceTree')
+   def filename(self): return self.processor.file_layout.nameOfSpecial('InheritanceTree')
 
    def title(self): return 'Synopsis - Class Hierarchy'
 
@@ -33,7 +31,7 @@ class InheritanceTree(Page):
 
       roots = config.classTree.roots()
       self.start_file()
-      self.write(self.manager.formatHeader(self.filename()))
+      self.write(self.processor.formatHeader(self.filename()))
       self.write(entity('h1', "Inheritance Tree"))
       self.write('<ul>')
       map(self.process_class_inheritance, map(lambda a,b=start.name():(a,b), roots))

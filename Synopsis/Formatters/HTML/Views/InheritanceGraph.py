@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.26 2003/11/12 16:42:05 stefan Exp $
+# $Id: InheritanceGraph.py,v 1.27 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,11 +9,9 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
-
-import core
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
@@ -53,40 +51,27 @@ def find_common_name(graph):
 
 class InheritanceGraph(Page):
 
-   def register(self, manager):
+   min_size = Parameter(2, 'minimum number of nodes for a graph to be displayed')
+   min_group_size = Parameter(5, 'how many nodes to put into a group')
+   direction = Parameter('vertical', 'layout of the graph')
 
-      Page.register(self, manager)
+   def register(self, processor):
+
+      Page.register(self, processor)
       self.__todecl = ToDecl()
-      self.__direction = 'vertical'
-      if hasattr(config.obj,'InheritanceGraph'):
-         if hasattr(config.obj.InheritanceGraph,'direction'):
-            if config.obj.InheritanceGraph.direction == 'horizontal':
-               self.__direction = 'horizontal'
-      self.manager.addRootPage(self.filename(), 'Inheritance Graph', 'main', 1)
+      self.processor.addRootPage(self.filename(), 'Inheritance Graph', 'main', 1)
 
-   def filename(self): return config.files.nameOfSpecial('InheritanceGraph')
+   def filename(self): return self.processor.file_layout.nameOfSpecial('InheritanceGraph')
    def title(self): return 'Synopsis - Class Hierarchy'
 
    def consolidate(self, graphs):
       """Consolidates small graphs into larger ones"""
 
-      try:
-         min_size = config.obj.InheritanceGraph.min_size
-      except:
-         if config.verbose:
-            print "Error getting InheritanceGraph.min_size value. Using 1."
-         min_size = 1
-      try:
-         min_group_size = config.obj.InheritanceGraph.min_group_size
-      except:
-         if config.verbose:
-            print "Error getting InheritanceGraph.min_group_size value. Using 5."
-         min_group_size = 5
       # Weed out the small graphs and group by common base name
       common = {}
       for graph in graphs:
          len_graph = len(graph)
-         if len_graph < min_size:
+         if len_graph < self.min_size:
             # Ignore the graph
             continue
          common.setdefault(find_common_name(graph), []).append(graph)
@@ -97,15 +82,15 @@ class InheritanceGraph(Page):
          for graph in graphs:
             # Try adding to an already pending graph
             for pend in pending:
-               if len_graph + len(pend) <= min_group_size:
+               if len_graph + len(pend) <= self.min_group_size:
                   pend.extend(graph)
                   graph = None
-                  if len(pend) == min_group_size:
+                  if len(pend) == self.min_group_size:
                      conned.append(pend)
                      pending.remove(pend)
                   break
             if graph:
-               if len_graph >= min_group_size:
+               if len_graph >= self.min_group_size:
                   # Add to final list
                   conned.append(graph)
                else:
@@ -119,7 +104,7 @@ class InheritanceGraph(Page):
 
       filename = self.filename()
       self.start_file()
-      self.write(self.manager.formatHeader(filename))
+      self.write(self.processor.formatHeader(filename))
       self.write(entity('h1', "Inheritance Graph"))
 
       try:
@@ -130,7 +115,7 @@ class InheritanceGraph(Page):
          return
       # Create a toc file for Dot to use
       toc_file = filename + "-dot.toc"
-      config.toc.store(toc_file)
+      self.processor.toc.store(toc_file)
       graphs = config.classTree.graphs()
       count = 0
       # Consolidate the graphs, and sort to make the largest appear first
@@ -158,12 +143,21 @@ class InheritanceGraph(Page):
                declarations = filter(lambda x: x is not None, declarations)
                # Call Dot formatter
                output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
-               args = (
-                  '-i','-f','html','-o',output,'-r',toc_file,
-                  '-R',self.filename(),'-t','Synopsis %s'%count,'-n', 
-                  '-p',name,'-d',self.__direction)
-               temp_ast = AST.AST({}, declarations, config.types)
-               Dot.format(args, temp_ast, None)
+               dot = Dot.Formatter()
+               ast = AST.AST({}, declarations, config.types)
+               dot.process(ast,
+                           output=output,
+                           format='html',
+                           toc_in=[toc_file],
+                           base_url=self.filename(),
+                           title='Synopsis %s'%count,
+                           #-n, FIXME : what does the 'no_descend' option do ?
+                           # do we need to expose that through a parameter ?
+                           layout=self.direction)
+               #args = ('-i', '-f', 'html', '-o', output, '-r', toc_file,
+               #        '-R', self.filename(), '-t', 'Synopsis %s'%count, '-n', 
+               #        '-p', name, '-d', self.direction)
+               #Dot.format(args, temp_ast, None)
                dot_file = open(output + '.html', 'r')
                self.write(dot_file.read())
                dot_file.close()

@@ -1,4 +1,4 @@
-# $Id: FileIndexer.py,v 1.4 2003/11/12 16:42:05 stefan Exp $
+# $Id: FileIndexer.py,v 1.5 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,11 +9,9 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-
-from Page import Page
-import core
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
@@ -23,9 +21,9 @@ class FileIndexer(Page):
    Second a page is created for each file, listing the major declarations for
    that file, eg: classes, global functions, namespaces, etc."""
 
-   def register(self, manager):
+   def register(self, processor):
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       self.__filename = ''
       self.__title = ''
       self.__link_source = ('FileSource' in config.pages)
@@ -46,15 +44,15 @@ class FileIndexer(Page):
    def register_filenames(self, start):
       """Registers a page for each file indexed"""
 
-      for filename, file in config.ast.files().items():
+      for filename, file in self.processor.ast.files().items():
          if file.is_main():
-            filename = config.files.nameOfFileIndex(filename)
-            self.manager.register_filename(filename, self, file)
+            filename = self.processor.file_layout.nameOfFileIndex(filename)
+            self.processor.register_filename(filename, self, file)
     
    def process(self, start):
       """Creates a page for each file using process_scope"""
 
-      for filename, file in config.ast.files().items():
+      for filename, file in self.processor.ast.files().items():
          if file.is_main():
             self.process_scope(filename, file)
 
@@ -62,10 +60,8 @@ class FileIndexer(Page):
       """Creates a page for the given file. The page is just an index,
       containing a list of declarations."""
 
-      toc = config.toc
-
       # set up filename and title for the current page
-      self.__filename = config.files.nameOfFileIndex(filename)
+      self.__filename = self.processor.file_layout.nameOfFileIndex(filename)
       # (get rid of ../'s in the filename)
       name = string.split(filename, os.sep)
       while len(name) and name[0] == '..': del name[0]
@@ -75,11 +71,11 @@ class FileIndexer(Page):
       self.write(entity('b', string.join(name, os.sep))+'<br>')
       if self.__link_source:
          link = rel(self.filename(),
-                    config.files.nameOfFileSource(filename))
+                    self.processor.file_layout.nameOfFileSource(filename))
          self.write(href(link, '[File Source]', target="main")+'<br>')
       if self.__link_details:
          link = rel(self.filename(),
-                    config.files.nameOfFileDetails(filename))
+                    self.processor.file_layout.nameOfFileDetails(filename))
          self.write(href(link, '[File Details]', target="main")+'<br>')
       comments = config.comments
 
@@ -90,7 +86,7 @@ class FileIndexer(Page):
       scope, last = [], []
       for name, decl in items:
          # TODO make this nicer :)
-         entry = config.toc[name]
+         entry = self.processor.toc[name]
          if not entry: continue
          summary = string.strip("(%s) %s"%(decl.type(),
                                            anglebrackets(comments.format_summary(self, decl))))

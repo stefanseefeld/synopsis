@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.13 2003/11/12 16:42:05 stefan Exp $
+# $Id: ModuleListing.py,v 1.14 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,51 +9,45 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-
-import core
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
 class ModuleListing(Page):
-   """Create an index of all modules with JS. The JS allows the user to
-   expand/collapse sections of the tree!"""
+   """Create an index of all modules."""
 
-   def register(self, manager):
+   short_title = Parameter('Modules', 'short title')
 
-      Page.register(self, manager)
+   def register(self, processor):
+
+      Page.register(self, processor)
       self.child_types = None
       self._children_cache = {}
-      self.__short_title = 'Modules'
-      if hasattr(config.obj, 'ModuleListing'):
-         myconfig = config.obj.ModuleListing
-         if hasattr(myconfig, 'short_title'):
-            self.__short_title = myconfig.short_title
-
       filename = self.filename()
       config.set_contents_page(filename)
-      self.manager.addRootPage(filename, self.__short_title, 'contents', 2)
+      self.processor.addRootPage(filename, self.short_title, 'contents', 2)
       self._link_target = 'index'
 
-   def filename(self): return config.files.nameOfSpecial('ModuleListing')
+   def filename(self): return self.processor.file_layout.nameOfSpecial('ModuleListing')
 
-   def title(self): return self.__short_title + ' Listing'
+   def title(self): return self.short_title + ' Listing'
 
    def process(self, start):
       """Create a page with an index of all modules"""
       # Init tree
-      self.tree = config.treeFormatterClass(self)
+      self.tree = self.processor.tree_formatter
+      self.tree.register(self)
       # Init list of module types to display
       try: self.child_types = config.obj.ModuleListing.child_types
       except AttributeError: pass
       # Create the file
       self.start_file()
-      self.write(self.manager.formatHeader(self.filename(), 2))
-      self.tree.startTree()
+      self.write(self.processor.formatHeader(self.filename(), 2))
+      self.tree.start_tree()
       self.indexModule(start, start.name())
-      self.tree.endTree()
+      self.tree.end_tree()
       self.end_file()
 
    def _child_filter(self, child):
@@ -67,7 +61,8 @@ class ModuleListing(Page):
    def _link_href(self, ns):
       """Returns the link to the given declaration"""
 
-      return rel(self.filename(), config.files.nameOfModuleIndex(ns.name()))
+      return rel(self.filename(),
+                 self.processor.file_layout.nameOfModuleIndex(ns.name()))
 
    def _get_children(self, decl):
       """Returns the children of the given declaration"""
@@ -94,11 +89,11 @@ class ModuleListing(Page):
       link = self._link_href(ns)
       text = href(link, name, target=self._link_target)
       if not len(children):
-         self.tree.writeLeaf(text)
+         self.tree.write_leaf(text)
       else:
-         self.tree.writeNodeStart(text)
+         self.tree.write_node_start(text)
          # Add children
          for child in children:
             self.indexModule(child, my_scope)
-	    self.tree.writeNodeEnd()
+         self.tree.write_node_end()
 

@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.15 2003/11/12 16:42:05 stefan Exp $
+# $Id: ModuleIndexer.py,v 1.16 2003/11/14 14:51:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,11 +9,9 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-
-import core
-from Page import Page
-from core import config
-from Tags import *
+from Synopsis.Formatters.HTML.Page import Page
+from Synopsis.Formatters.HTML.core import config
+from Synopsis.Formatters.HTML.Tags import *
 
 import os
 
@@ -22,12 +20,12 @@ class ModuleIndexer(Page):
    list of nested scope declarations with comments. It is intended to go in
    the left frame..."""
 
-   def register(self, manager):
+   def register(self, processor):
       """Register first page as index page"""
 
-      Page.register(self, manager)
+      Page.register(self, processor)
       config.set_using_module_index()
-      self.__filename = config.files.nameOfModuleIndex(())
+      self.__filename = self.processor.file_layout.nameOfModuleIndex(())
       config.set_index_page(self.__filename)
 
    def filename(self): return self.__filename
@@ -37,7 +35,7 @@ class ModuleIndexer(Page):
    def process(self, start):
       """Creates indexes for all modules"""
 
-      start_file = config.files.nameOfModuleIndex(start.name())
+      start_file = self.processor.file_layout.nameOfModuleIndex(start.name())
       config.set_index_page(start_file)
       self.__namespaces = [start]
       while self.__namespaces:
@@ -54,7 +52,7 @@ class ModuleIndexer(Page):
       if not name: return 'Global Index'
       links = []
       for depth in range(0, len(name)):
-         url = config.files.nameOfModuleIndex(name[:depth+1])
+         url = self.processor.file_layout.nameOfModuleIndex(name[:depth+1])
          label = anglebrackets(name[depth])
          links.append(href(rel(self.__filename, url), label))
       return entity('b', string.join(links, '\n::') + ' Index')
@@ -66,19 +64,21 @@ class ModuleIndexer(Page):
       config.sorter.sort_section_names()
       config.sorter.sort_sections()
 
-      self.__filename = config.files.nameOfModuleIndex(ns.name())
+      self.__filename = self.processor.file_layout.nameOfModuleIndex(ns.name())
       self.__title = Util.ccolonName(ns.name()) or 'Global Namespace'
       self.__title = self.__title + ' Index'
       # Create file
       self.start_file()
-      #target = rel(self.__filename, config.files.nameOfScope(ns.name()))
+      #target = rel(self.__filename, self.processor.file_layout.nameOfScope(ns.name()))
       #link = href(target, self.__title, target='main')
       self.write(self._makePageHeading(ns))
 
+      toc = self.processor.toc
+
       # Make script to switch main frame upon load
       load_script = '<!--\n'
-      if config.toc[ns.name()]:
-         target = rel(self.__filename, config.toc[ns.name()].link)
+      if toc[ns.name()]:
+         target = rel(self.__filename, toc[ns.name()].link)
          load_script = load_script + 'window.parent.frames["main"].location="%s";\n'%target
       load_script = load_script + 'function go(index,main) {\n'\
                     'window.parent.frames["index"].location=index;\n'\
@@ -103,10 +103,11 @@ class ModuleIndexer(Page):
             label = anglebrackets(label)
             label = replace_spaces(label)
             if isinstance(child, AST.Module):
-               index_url = rel(self.__filename, config.files.nameOfModuleIndex(child.name()))
+               index_url = rel(self.__filename,
+                               self.processor.file_layout.nameOfModuleIndex(child.name()))
                self.write(href(index_url, label, target='index'))
             else:
-               entry = config.toc[child.name()]
+               entry = toc[child.name()]
                if entry:
                   url = rel(self.__filename, entry.link)
                   self.write(href(url, label, target='main'))
