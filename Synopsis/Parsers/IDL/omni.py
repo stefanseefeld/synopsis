@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.29 2001/07/19 04:03:18 chalky Exp $
+# $Id: omni.py,v 1.30 2001/07/19 05:10:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.30  2001/07/19 05:10:39  chalky
+# Use filenames stored in AST object
+#
 # Revision 1.29  2001/07/19 04:03:18  chalky
 # New .syn file format.
 #
@@ -514,7 +517,7 @@ def parse(file, args, config_obj):
         sys.stderr.write("omni: Error parsing " + file + "\n")
         sys.exit(1)
 
-    ast = AST.AST()
+    ast = AST.AST([strip(file)])
     type_trans = TypeTranslator(ast.types())
     ast_trans = ASTTranslator(ast.declarations(), type_trans, mainfile_only)
     tree.accept(ast_trans)

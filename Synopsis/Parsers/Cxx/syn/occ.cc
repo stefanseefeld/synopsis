@@ -294,7 +294,7 @@ void sighandler(int signo)
   exit(-1);
 }
 
-char *RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations)
+char *RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations, PyObject* filenames)
 {
   Trace trace("RunOpencxx");
   std::set_unexpected(unexpected);
@@ -322,6 +322,10 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   std::string source(src);
   if (source.substr(0, strlen(syn_basename)) == syn_basename)
     source.erase(0, strlen(syn_basename));
+  if (filenames) 
+    {
+      PyObject_CallMethod(filenames, "append", "s", source.c_str());
+    }
 
   Builder builder(syn_basename);
   SWalker swalker(src, &parse, &builder, &prog);
@@ -397,6 +401,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
   assertObject(ast_module);
   ast = PyObject_CallMethod(ast_module, "AST", "");
   assertObject(ast);
+  PyObject* filenames = PyObject_CallMethod(ast, "filenames", "");
+  assertObject(filenames);
   declarations = PyObject_CallMethod(ast, "declarations", "");
   assertObject(declarations);
   types = PyObject_CallMethod(ast, "types", "");
@@ -404,7 +410,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
 #undef assertObject
 
   char *cppfile = RunPreprocessor(src, cppargs);
-  char *occfile = RunOpencxx(src, cppfile, occargs, types, declarations);
+  char *occfile = RunOpencxx(src, cppfile, occargs, types, declarations, filenames);
   unlink(cppfile);
   unlink(occfile);
   return ast;
@@ -460,7 +466,7 @@ int main(int argc, char **argv)
     char *cppfile = RunPreprocessor(src, cppargs);
     PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
     PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
-    char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0));
+    char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0), NULL);
     unlink(cppfile);
     unlink(occfile);
 }
