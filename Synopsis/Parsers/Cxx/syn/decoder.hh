@@ -68,6 +68,9 @@ public:
     //. Decode a name starting from the given char*
     string decodeName(char*);
 
+    //. Decode a qualified name with only names in it
+    void decodeQualName(vector<string>& names);
+
 private:
     //. The encoded type string currently being decoded
     code m_string;

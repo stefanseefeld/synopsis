@@ -166,10 +166,19 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	updateLineNumber(node);
 	
 	// Create AST.Class object
+	AST::Class *clas;
         string type = getName(node->First());
-        string name = getName(node->Second());
         vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
-        AST::Class *clas = m_builder->startClass(m_lineno, type, name);
+	char* encname = node->GetEncodedName();
+	if (encname[0] == 'Q') {
+	    vector<string> names;
+	    m_decoder->init(encname);
+	    m_decoder->decodeQualName(names);
+	    clas = m_builder->startClass(m_lineno, type, names);
+	} else {
+	    string name = getName(node->Second());
+	    clas = m_builder->startClass(m_lineno, type, name);
+	}
 	clas->parents() = parents;
 	m_builder->updateBaseSearch();
 	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
