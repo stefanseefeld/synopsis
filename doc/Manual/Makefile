@@ -6,10 +6,12 @@ spath		:= syn
 cxxpath		:= ../../Parser/C++/occ/src/occ
 cxxspath	:= syn/Parser/C++
 
-PYFILES		:= Formatter/HTML Formatter/ASCII Formatter/DUMP \
+F_HTML_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Formatter/HTML/*.py))
+PYFILES		:= Formatter/ASCII Formatter/DUMP \
 		   Core/AST Core/Type Core/Util \
 		   Parser/IDL/omni \
-		   Parser/Python/exparse Parser/Python/python
+		   Parser/Python/exparse Parser/Python/python \
+		   $(F_HTML_PYFILES)
 
 NOEX_PY		:= synopsis
 
