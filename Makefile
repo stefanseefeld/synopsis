@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.8 2001/01/10 16:12:02 stefan Exp $
+# $Id: Makefile,v 1.9 2001/01/10 19:55:45 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -19,6 +19,8 @@
 # MA 02139, USA.
 
 SHELL	:= /bin/sh
+
+include local.mk
 
 SRC	:= __init__.py
 
@@ -49,7 +51,7 @@ distclean:
 install:
 	install -m755 synopsis $(bindir)
 	mkdir -p $(packagedir)/Synopsis
-	install $(SRC) $(PREFIX)/Synopsis
+	install $(SRC) $(packagedir)/Synopsis
 	@for dir in ${subdirs}; do \
 	  (cd $$dir && $(MAKE) install) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
