@@ -302,8 +302,9 @@ void Encoding::CvQualify(PTree::Node *cv1, PTree::Node *cv2)
 {
     bool c = false, v = false;
     if(cv1 != 0 && !cv1->is_atom())
-	while(cv1 != 0){
-	    int kind = cv1->car()->What();
+	while(cv1 != 0)
+	  {
+	    Token::Type kind = PTree::type_of(cv1->car());
 	    cv1 = cv1->cdr();
 	    if(kind == Token::CONST)
 		c = true;
@@ -313,7 +314,7 @@ void Encoding::CvQualify(PTree::Node *cv1, PTree::Node *cv2)
 
     if(cv2 != 0 && !cv2->is_atom())
 	while(cv2 != 0){
-	    int kind = cv2->car()->What();
+            Token::Type kind = PTree::type_of(cv2->car());
 	    cv2 = cv2->cdr();
 	    if(kind == Token::CONST)
 		c = true;

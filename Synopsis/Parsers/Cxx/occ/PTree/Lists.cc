@@ -28,19 +28,9 @@ Node *ClassBody::Translate(Walker* w)
   return w->TranslateClassBody(this, 0, 0);
 }
 
-int Typedef::What()
-{
-  return Token::ntTypedef;
-}
-
 Node *Typedef::Translate(Walker* w)
 {
   return w->TranslateTypedef(this);
-}
-
-int TemplateDecl::What()
-{
-  return Token::ntTemplateDecl;
 }
 
 Node *TemplateDecl::Translate(Walker* w)
@@ -48,19 +38,9 @@ Node *TemplateDecl::Translate(Walker* w)
   return w->TranslateTemplateDecl(this);
 }
 
-int TemplateInstantiation::What()
-{
-  return Token::ntTemplateInstantiation;
-}
-
 Node *TemplateInstantiation::Translate(Walker* w)
 {
   return w->TranslateTemplateInstantiation(this);
-}
-
-int ExternTemplate::What()
-{
-  return Token::ntExternTemplate;
 }
 
 Node *ExternTemplate::Translate(Walker* w)
@@ -68,19 +48,9 @@ Node *ExternTemplate::Translate(Walker* w)
   return w->TranslateExternTemplate(this);
 }
 
-int MetaclassDecl::What()
-{
-  return Token::ntMetaclassDecl;
-}
-
 Node *MetaclassDecl::Translate(Walker* w)
 {
     return w->TranslateMetaclassDecl(this);
-}
-
-int LinkageSpec::What()
-{
-  return Token::ntLinkageSpec;
 }
 
 Node *LinkageSpec::Translate(Walker* w)
@@ -88,19 +58,9 @@ Node *LinkageSpec::Translate(Walker* w)
   return w->TranslateLinkageSpec(this);
 }
 
-int NamespaceSpec::What()
-{
-  return Token::ntNamespaceSpec;
-}
-
 Node *NamespaceSpec::Translate(Walker* w)
 {
   return w->TranslateNamespaceSpec(this);
-}
-
-int NamespaceAlias::What()
-{
-  return Token::ntNamespaceAlias;
 }
 
 Node *NamespaceAlias::Translate(Walker* w)
@@ -108,19 +68,9 @@ Node *NamespaceAlias::Translate(Walker* w)
   return w->TranslateNamespaceAlias(this);
 }
 
-int Using::What()
-{
-  return Token::ntUsing;
-}
-
 Node *Using::Translate(Walker* w)
 {
   return w->TranslateUsing(this);
-}
-
-int Declaration::What()
-{
-  return Token::ntDeclaration;
 }
 
 Node *Declaration::Translate(Walker* w)
@@ -182,11 +132,6 @@ Declarator::Declarator(Declarator *decl, Node *p, Node *q)
 {
 }
 
-int Declarator::What()
-{
-  return Token::ntDeclarator;
-}
-
 const char *Declarator::encoded_type() const
 {
   return my_type;
@@ -201,11 +146,6 @@ Name::Name(Node *p, Encoding &e)
   : List(p->car(), p->cdr()),
     my_name(e.Get())
 {
-}
-
-int Name::What()
-{
-  return Token::ntName;
 }
 
 const char *Name::encoded_name() const
@@ -233,11 +173,6 @@ FstyleCastExpr::FstyleCastExpr(const char *e, Node *p, Node *q)
   : List(p, q),
     my_type(e)
 {
-}
-
-int FstyleCastExpr::What()
-{
-  return Token::ntFstyleCast;
 }
 
 const char *FstyleCastExpr::encoded_type() const
@@ -269,11 +204,6 @@ ClassSpec::ClassSpec(Node *car, Node *cdr, Node *c, const char *encode)
 {
 }
 
-int ClassSpec::What()
-{
-  return Token::ntClassSpec;
-}
-
 Node *ClassSpec::Translate(Walker* w)
 {
   return w->TranslateClassSpec(this);
@@ -295,11 +225,6 @@ EnumSpec::EnumSpec(Node *head)
 {
 }
 
-int EnumSpec::What()
-{
-  return Token::ntEnumSpec;
-}
-
 Node *EnumSpec::Translate(Walker* w)
 {
   return w->TranslateEnumSpec(this);
@@ -315,11 +240,6 @@ AccessSpec::AccessSpec(Node *p, Node *q)
 {
 }
 
-int AccessSpec::What()
-{
-  return Token::ntAccessSpec;
-}
-
 Node *AccessSpec::Translate(Walker* w)
 {
   return w->TranslateAccessSpec(this);
@@ -328,11 +248,6 @@ Node *AccessSpec::Translate(Walker* w)
 AccessDecl::AccessDecl(Node *p, Node *q)
   : List(p, q)
 {
-}
-
-int AccessDecl::What()
-{
-  return Token::ntAccessDecl;
 }
 
 Node *AccessDecl::Translate(Walker* w)
@@ -345,11 +260,6 @@ UserAccessSpec::UserAccessSpec(Node *p, Node *q)
 {
 }
 
-int UserAccessSpec::What()
-{
-  return Token::ntUserAccessSpec;
-}
-
 Node *UserAccessSpec::Translate(Walker* w)
 {
   return w->TranslateUserAccessSpec(this);
@@ -360,13 +270,7 @@ UserdefKeyword::UserdefKeyword(Node *p, Node *q)
 {
 }
 
-int UserdefKeyword::What()
-{
-  return Token::ntUserdefKeyword;
-}
-
 #define PtreeStatementImpl(s)\
-int s##Statement::What() { return Token::nt##s##Statement; }\
 Node *s##Statement::Translate(Walker* w) { return w->Translate##s(this); }
 
 PtreeStatementImpl(If)
@@ -385,18 +289,12 @@ PtreeStatementImpl(Label)
 
 #undef PtreeStatementImpl
 
-int ExprStatement::What()
-{
-  return Token::ntExprStatement;
-}
-
 Node *ExprStatement::Translate(Walker* w)
 {
   return w->TranslateExprStatement(this);
 }
 
 #define PtreeExprImpl(n)\
-int n##Expr::What() { return Token::nt##n##Expr; }\
 Node *n##Expr::Translate(Walker* w) { return w->Translate##n(this); } \
 void n##Expr::Typeof(Walker* w, TypeInfo& t) { w->Typeof##n(this, t);}
 

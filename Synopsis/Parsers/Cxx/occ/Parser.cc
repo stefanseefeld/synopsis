@@ -622,7 +622,7 @@ bool Parser::rTemplateDecl(PTree::Node *&decl)
 	// assumes that decl has the form: [0 [class ...] ;]
 	if (PTree::length(decl) != 3) return false;
 	if (PTree::first(decl) != 0) return false;
-	if (PTree::second(decl)->What() != Token::ntClassSpec) return false;
+	if (PTree::type_of(PTree::second(decl)) != Token::ntClassSpec) return false;
 	if (*PTree::third(decl) != ';') return false;
 	decl = new PTree::TemplateInstantiation(PTree::second(decl));
 	break;
@@ -911,7 +911,7 @@ bool Parser::rDeclaration(PTree::Node *&statement)
 	    res = rOtherDeclaration(statement, type_encode,
 				    mem_s, cv_q, head);
     }
-    if (res && statement && (statement->What() == Token::ntDeclaration))
+    if (res && statement && (PTree::type_of(statement) == Token::ntDeclaration))
     {
       static_cast<PTree::Declaration*>(statement)->SetComments(comments);
       comments = 0;
@@ -1074,7 +1074,7 @@ bool Parser::rOtherDeclaration(PTree::Node *&statement, Encoding& type_encode,
     }
     else if(mem_s != 0 && lex->look_ahead(0) == ';'){
 	// FRIEND name ';'
-	if(PTree::length(mem_s) == 1 && mem_s->car()->What() == Token::FRIEND){
+        if(PTree::length(mem_s) == 1 && PTree::type_of(mem_s->car()) == Token::FRIEND){
 	    lex->get_token(tk);
 	    statement = new PTree::Declaration(head, PTree::list(type_name,
 							       new PTree::Atom(tk)));
@@ -1554,7 +1554,7 @@ bool Parser::rDeclarators(PTree::Node *&decls, Encoding& type_encode,
 	if(!rDeclaratorWithInit(d, encode, should_be_declarator, is_statement))
 	    return false;
 	
-	if (d && (d->What() == Token::ntDeclarator))
+	if (d && (PTree::type_of(d) == Token::ntDeclarator))
 	    static_cast<PTree::Declarator*>(d)->SetComments(comments);
 
 	decls = PTree::snoc(decls, d);
@@ -4642,7 +4642,7 @@ bool Parser::rExprStatement(PTree::Node *&st)
 	    if(!rCommaExpression(exp))
 		return false;
 
-	    if(exp->IsA(Token::ntUserStatementExpr, Token::ntStaticUserStatementExpr)){
+	    if(PTree::is_a(exp, Token::ntUserStatementExpr, Token::ntStaticUserStatementExpr)){
 		st = exp;
 		return true;
 	    }

@@ -98,39 +98,6 @@ void MopMoreWarningMessage(const char* msg1, const char* msg2)
     std::cerr << '\n';
 }
 
-int Node::What()
-{
-  return Token::BadToken;
-}
-
-bool Node::IsA(int kind)
-{
-    if(this == 0)
-	return false;
-    else
-	return bool(What() == kind);
-}
-
-bool Node::IsA(int kind1, int kind2)
-{
-    if(this == 0)
-	return false;
-    else{
-	int k = What();
-	return bool(k == kind1 || k == kind2);
-    }
-}
-
-bool Node::IsA(int kind1, int kind2, int kind3)
-{
-    if(this == 0)
-	return false;
-    else{
-	int k = What();
-	return bool(k == kind1 || k == kind2 || k == kind3);
-    }
-}
-
 Node *Node::Translate(Walker* w)
 {
     return w->TranslatePtree(this);

@@ -163,7 +163,7 @@ PTree::Node *Walker::TranslateTemplateDecl(PTree::Node *def)
 {
     PTree::Node *body = PTree::nth(def, 4);
     PTree::Node *class_spec = GetClassTemplateSpec(body);
-    if(class_spec->IsA(Token::ntClassSpec))
+    if(PTree::is_a(class_spec, Token::ntClassSpec))
 	return TranslateTemplateClass(def, class_spec);
     else
 	return TranslateTemplateFunction(def, body);
@@ -341,7 +341,7 @@ PTree::Node *Walker::TranslateUsing(PTree::Node *def)
 PTree::Node *Walker::TranslateDeclaration(PTree::Node *def)
 {
     PTree::Node *decls = PTree::third(def);
-    if(decls->IsA(Token::ntDeclarator))	// if it is a function
+    if(PTree::is_a(decls, Token::ntDeclarator))	// if it is a function
 	return TranslateFunctionImplementation(def);
     else{
 	// if it is a function prototype or a variable declaration.
@@ -388,7 +388,7 @@ PTree::Node *Walker::TranslateDeclarators(PTree::Node *decls, bool record)
       PTree::Node *p, *q;
 	int len;
 	p = q = rest->car();
-	if(p->IsA(Token::ntDeclarator)){
+	if(PTree::is_a(p, Token::ntDeclarator)){
 	  PTree::Node *exp, *exp2;
 
 	    if(record)
@@ -525,7 +525,7 @@ PTree::Node *Walker::TranslateArgDeclList2(bool record, Environment* e,
 	bool is_ellipsis = a->is_atom();		// a may be "..."
 	if(is_ellipsis)
 	    /* do nothing */;
-	else if(a->car()->IsA(Token::ntUserdefKeyword)){
+	else if(PTree::is_a(a->car(), Token::ntUserdefKeyword)){
 	    if(record)
 		e->RecordDeclarator(PTree::third(a));
 
@@ -535,7 +535,7 @@ PTree::Node *Walker::TranslateArgDeclList2(bool record, Environment* e,
 		    a2 = FillArgumentName(a2, PTree::second(a2), arg_name);
 	    }
 	}
-	else if(a->car()->IsA(Token::REGISTER)){
+	else if(PTree::is_a(a->car(), Token::REGISTER)){
 	    if(record)
 		e->RecordDeclarator(PTree::third(a));
 
@@ -1102,7 +1102,7 @@ PTree::Node *Walker::TranslateTypespecifier(PTree::Node *tspec)
 PTree::Node *Walker::GetClassOrEnumSpec(PTree::Node *typespec)
 {
     PTree::Node *spec = StripCvFromIntegralType(typespec);
-    if(spec->IsA(Token::ntClassSpec, Token::ntEnumSpec))
+    if(PTree::is_a(spec, Token::ntClassSpec, Token::ntEnumSpec))
 	return spec;
 
     return 0;
@@ -1112,7 +1112,7 @@ PTree::Node *Walker::GetClassTemplateSpec(PTree::Node *body)
 {
     if(*PTree::third(body) == ';'){
 	PTree::Node *spec = StripCvFromIntegralType(PTree::second(body));
-	if(spec->IsA(Token::ntClassSpec))
+	if(PTree::is_a(spec, Token::ntClassSpec))
 	    return spec;
     }
 
@@ -1125,9 +1125,9 @@ PTree::Node *Walker::StripCvFromIntegralType(PTree::Node *integral)
 	return 0;
 
     if(!integral->is_atom())
-	if(integral->car()->IsA(Token::CONST, Token::VOLATILE))
+      if(PTree::is_a(integral->car(), Token::CONST, Token::VOLATILE))
 	    return PTree::second(integral);
-	else if(PTree::second(integral)->IsA(Token::CONST, Token::VOLATILE))
+      else if(PTree::is_a(PTree::second(integral), Token::CONST, Token::VOLATILE))
 	    return integral->car();
 
     return integral;
@@ -1631,7 +1631,7 @@ PTree::Node *Walker::TranslateNewDeclarator(PTree::Node *decl)
 
     if(p == 0)
 	return decl;
-    else if(decl->IsA(Token::ntDeclarator))
+    else if(PTree::is_a(decl, Token::ntDeclarator))
 	return new PTree::Declarator((PTree::Declarator*)decl,
 				     decl2->car(), decl2->cdr());
     else
@@ -1744,7 +1744,7 @@ void Walker::SetLeafComments(PTree::Node *node, PTree::Node *comments)
 
 void Walker::SetDeclaratorComments(PTree::Node *def, PTree::Node *comments)
 {
-    if (def == 0 || !def->IsA(Token::ntDeclaration))
+  if (def == 0 || !PTree::is_a(def, Token::ntDeclaration))
 	return;
 
     PTree::Node *decl;
@@ -1754,7 +1754,7 @@ void Walker::SetDeclaratorComments(PTree::Node *def, PTree::Node *comments)
 	decl = NthDeclarator(def, i);
 	if (decl == 0)
 	    break;
-	else if (decl->IsA(Token::ntDeclarator))
+	else if (PTree::is_a(decl, Token::ntDeclarator))
 	    ((PTree::Declarator*)decl)->SetComments(comments);
     }
 }
@@ -1765,7 +1765,7 @@ PTree::Node *Walker::NthDeclarator(PTree::Node *def, int& nth)
     if(decls == 0 || decls->is_atom())
 	return 0;
 
-    if(decls->IsA(Token::ntDeclarator)){	// if it is a function
+    if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
 	if(nth-- == 0)
 	    return decls;
     }
@@ -1788,7 +1788,7 @@ PTree::Node *Walker::FindDeclarator(PTree::Node *def, const char* name, int len,
     if(decls == 0 || decls->is_atom())
 	return 0;
 
-    if(decls->IsA(Token::ntDeclarator)){	// if it is a function
+    if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
 	if(MatchedDeclarator(decls, name, len, signature, e))
 	    return decls;
 
@@ -1835,7 +1835,7 @@ bool Walker::WhichDeclarator(PTree::Node *def, PTree::Node *name, int& nth,
     if(decls == 0 || decls->is_atom())
 	return false;
 
-    if(decls->IsA(Token::ntDeclarator)){	// if it is a function
+    if(PTree::is_a(decls, Token::ntDeclarator)){	// if it is a function
 	str = decls->encoded_name();
 	e = env;
 	str = Encoding::GetBaseName(str, len, e);

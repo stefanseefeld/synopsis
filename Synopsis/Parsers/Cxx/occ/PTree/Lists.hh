@@ -51,8 +51,6 @@ public:
   Typedef(Node *p) : List(p, 0) {}
   Typedef(Node *p, Node *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -62,8 +60,6 @@ public:
   TemplateDecl(Node *p, Node *q) : List(p, q) {}
   TemplateDecl(Node *p) : List(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -72,8 +68,6 @@ class TemplateInstantiation : public List
 public:
   TemplateInstantiation(Node *p) : List(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -83,8 +77,6 @@ public:
   ExternTemplate(Node *p, Node *q) : List(p, q) {}
   ExternTemplate(Node *p) : List(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -93,8 +85,6 @@ class MetaclassDecl : public List
 public:
   MetaclassDecl(Node *p, Node *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -103,8 +93,6 @@ class LinkageSpec : public List
 public:
   LinkageSpec(Node *p, Node *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -113,8 +101,6 @@ class NamespaceSpec : public List
 public:
   NamespaceSpec(Node *p, Node *q) : List(p, q), my_comments(0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
   
   Node *GetComments() { return my_comments;}
@@ -129,8 +115,6 @@ class NamespaceAlias : public List
 public:
   NamespaceAlias(Node *p, Node *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -139,8 +123,6 @@ class Using : public List
 public:
   Using(Node *p) : List(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -149,8 +131,6 @@ class Declaration : public List
 public:
   Declaration(Node *p, Node *q) : List(p, q), my_comments(0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 
   Node *GetComments() { return my_comments;}
@@ -170,8 +150,6 @@ public:
   Declarator(Encoding&);
   Declarator(Declarator*, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   const char *encoded_type() const;
   const char *encoded_name() const;
   void set_encoded_type(const char *t) { my_type = t;}
@@ -192,8 +170,6 @@ class Name : public List
 public:
   Name(Node *, Encoding&);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   const char *encoded_name() const;
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
@@ -208,8 +184,6 @@ public:
   FstyleCastExpr(Encoding&, Node *, Node *);
   FstyleCastExpr(const char*, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   const char *encoded_type() const;
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
@@ -224,8 +198,6 @@ public:
   ClassSpec(Node *, Node *, Node *);
   ClassSpec(Node *, Node *, Node *, const char*);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
   const char *encoded_name() const;
   void set_encoded_name(const char *n) { my_name = n;}
@@ -241,8 +213,6 @@ class EnumSpec : public List
 public:
   EnumSpec(Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
   const char *encoded_name() const;
   void set_encoded_name(const char *n) { my_name = n;}
@@ -255,8 +225,6 @@ class AccessSpec : public List
 public:
   AccessSpec(Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -265,8 +233,6 @@ class AccessDecl : public List
 public:
   AccessDecl(Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -275,8 +241,6 @@ class UserAccessSpec : public List
 public:
   UserAccessSpec(Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
   Node *Translate(Walker*);
 };
 
@@ -285,8 +249,6 @@ class UserdefKeyword : public List
 public:
   UserdefKeyword(Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  int What();
 };
 
 #define PtreeStatementDecl(s)\
@@ -294,7 +256,6 @@ class s##Statement : public List {\
 public:\
   s##Statement(Node *p, Node *q) : List(p, q) {}	\
   virtual void accept(Visitor *visitor) { visitor->visit(this);}\
-  int What();						\
   Node *Translate(Walker*);				\
 }
 
@@ -320,7 +281,6 @@ class n##Expr : public List {\
 public:\
   n##Expr(Node *p, Node *q) : List(p, q) {}	\
   virtual void accept(Visitor *visitor) { visitor->visit(this);} \
-  int What();					\
   Node *Translate(Walker*);			\
   void Typeof(Walker*, TypeInfo&);		\
 }

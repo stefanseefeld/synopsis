@@ -138,7 +138,7 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
   AST::Comment::vector comments;
 
   // First, make sure that node is a list of comments
-  if (node->What() == Token::ntDeclaration)
+  if (PTree::type_of(node) == Token::ntDeclaration)
     node = static_cast<PTree::Declaration*>(node)->GetComments();
 
   // Loop over all comments in the list
@@ -422,7 +422,7 @@ PTree::Node *SWalker::TranslatePtree(PTree::Node *node)
   {
 #ifdef DEBUG
     STrace trace("SWalker::TranslatePtree");
-    LOG("Warning: Unknown Ptree "<<node->What());
+    LOG("Warning: Unknown Ptree "<<PTree::type_od(node));
     nodeLOG(node);
     //*((char*)0) = 1; // force breakpoint, or core dump :)
 #endif
@@ -738,14 +738,14 @@ SWalker::TranslateTemplateFunction(PTree::Node *def, PTree::Node *node)
   STrace trace("SWalker::TranslateTemplateFunction");
   nodeLOG(def);
   nodeLOG(node);
-  if (node->What() != Token::ntDeclaration)
+  if (PTree::type_of(node) != Token::ntDeclaration)
   {
     LOG("Warning: Unknown node type in template");
     nodeLOG(def);
     return 0;
   }
 
-  LOG("What is: " << node->What());
+  LOG("type of node is: " << PTree::type_of(node));
   LOG("Encoded name is: " << make_code(node->encoded_name()));
 
   AST::Parameter::vector* old_params = my_template;
@@ -823,7 +823,7 @@ SWalker::TranslateTemplateDecl(PTree::Node *def)
   STrace trace("SWalker::TranslateTemplateDecl");
   PTree::Node *body = PTree::nth(def, 4);
   PTree::Node *class_spec = GetClassTemplateSpec(body);
-  if(class_spec->IsA(Token::ntClassSpec))
+  if(PTree::is_a(class_spec, Token::ntClassSpec))
     TranslateTemplateClass(def, class_spec);
   else TranslateTemplateFunction(def, body);
   return 0;
@@ -866,10 +866,10 @@ PTree::Node *SWalker::TranslateTypeof(PTree::Node *spec, PTree::Node *declaratio
       PTree::Node *declarator = PTree::first(declarations);
       declarations = PTree::rest(declarations);
       
-      if (declarator->What() == Token::ntDeclarator)
+      if (PTree::type_of(declarator) == Token::ntDeclarator)
         ((PTree::Declarator*)declarator)->set_encoded_type("PFv_v");
       else
-        LOG("declarator is " << declarator->What());
+        LOG("declarator is " << PTree::type_of(declarator));
     }
   }
   else
@@ -906,10 +906,10 @@ PTree::Node *SWalker::TranslateDeclaration(PTree::Node *def)
   // Typespecifier may be a class {} etc.
   TranslateTypespecifier(PTree::second(def));
   // Or it might be a typeof()
-  if (PTree::second(def) && PTree::second(def)->What() == Token::ntTypeofExpr)
+  if (PTree::second(def) && PTree::type_of(PTree::second(def)) == Token::ntTypeofExpr)
     TranslateTypeof(PTree::second(def), decls);
 
-  if (decls->IsA(Token::ntDeclarator))
+  if (PTree::is_a(decls, Token::ntDeclarator))
   {
     // A single declarator is probably a function impl, but could also be
     // the declarator in an if or switch condition
@@ -944,7 +944,7 @@ SWalker::TranslateDeclarators(PTree::Node *decls)
   while (rest != 0)
   {
     p = rest->car();
-    if (p->IsA(Token::ntDeclarator))
+    if (PTree::is_a(p, Token::ntDeclarator))
     {
       TranslateDeclarator(p);
       my_store_decl = false;
@@ -1351,7 +1351,7 @@ SWalker::TranslateTypedef(PTree::Node *node)
 
 void SWalker::TranslateTypedefDeclarator(PTree::Node *node)
 {
-  if (node->What() != Token::ntDeclarator) return;
+  if (PTree::type_of(node) != Token::ntDeclarator) return;
   const char *encname = node->encoded_name();
   const char *enctype = node->encoded_type();
   if (!encname || !enctype) return;
@@ -1454,7 +1454,7 @@ SWalker::TranslateAccessSpec(PTree::Node *spec)
 {
   STrace trace("SWalker::TranslateAccessSpec");
   AST::Access axs = AST::Default;
-  switch (PTree::first(spec)->What())
+  switch (PTree::type_of(PTree::first(spec)))
   {
     case Token::PUBLIC:
       axs = AST::Public;

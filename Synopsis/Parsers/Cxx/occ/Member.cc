@@ -131,7 +131,7 @@ PTree::Node *Member::Comments()
 	return 0;
     }
 
-    if (declarator->IsA(Token::ntDeclarator))
+    if (PTree::is_a(declarator, Token::ntDeclarator))
 	return ((PTree::Declarator*)declarator)->GetComments();
     else
 	return 0;
@@ -260,7 +260,7 @@ bool Member::IsInlineFuncImpl()
     PTree::Node *header = implementation->car();
     while(header != 0){
 	PTree::Node *h = header->car();
-	if(h->IsA(Token::INLINE))
+	if(PTree::is_a(h, Token::INLINE))
 	    return true;
 
 	header = header->cdr();
@@ -302,7 +302,7 @@ bool Member::GetUserArgumentModifiers(PTree::Array& mods)
 
     while(args != 0){
 	PTree::Node *a = args->car();
-	if(!a->is_atom() && a->car()->IsA(Token::ntUserdefKeyword))
+	if(!a->is_atom() && PTree::is_a(a->car(), Token::ntUserdefKeyword))
 	    mods.append(a->car());
 	else
 	    mods.append(0);
@@ -430,7 +430,7 @@ PTree::Node *Member::FunctionBody()
     else if(Find()){
 	PTree::Node *def = metaobject->GetMemberList()->Ref(nth)->definition;
 	PTree::Node *decls = PTree::third(def);
-	if(decls->IsA(Token::ntDeclarator))
+	if(PTree::is_a(decls, Token::ntDeclarator))
 	  return PTree::nth(def, 3);
     }
 
@@ -466,7 +466,7 @@ PTree::Node *Member::Arguments(PTree::Node *args, int i)
     if(a->is_atom())
 	p = a;
     else{
-	if(a->car()->IsA(Token::ntUserdefKeyword, Token::REGISTER))
+      if(PTree::is_a(a->car(), Token::ntUserdefKeyword, Token::REGISTER))
 	    p = PTree::third(a);
 	else
 	    p = PTree::second(a);
@@ -554,7 +554,7 @@ void MemberList::AppendThisClass(Class* metaobject)
     PTree::Node *members = metaobject->Members();
     while(members != 0){
 	PTree::Node *def = members->car();
-	if(def->IsA(Token::ntDeclaration)){
+	if(PTree::is_a(def, Token::ntDeclaration)){
 	    PTree::Node *decl;
 	    int nth = 0;
 	    do{
@@ -564,13 +564,13 @@ void MemberList::AppendThisClass(Class* metaobject)
 		    Append(def, decl, access, user_access);
 	    } while(decl != 0);
 	}
-	else if(def->IsA(Token::ntAccessSpec)){
-	    access = def->car()->What();
+	else if(PTree::is_a(def, Token::ntAccessSpec)){
+	    access = PTree::type_of(def->car());
 	    user_access = 0;
 	}
-	else if(def->IsA(Token::ntUserAccessSpec))
+	else if(PTree::is_a(def, Token::ntUserAccessSpec))
 	    user_access = def;
-	else if(def->IsA(Token::ntAccessDecl))
+	else if(PTree::is_a(def, Token::ntAccessDecl))
 	    /* not implemented */;
 
 	members = members->cdr();
@@ -611,8 +611,8 @@ void MemberList::AppendBaseClass(Environment* env, PTree::Node *base_class)
     int access = Token::PRIVATE;
     while(base_class->cdr() != 0){
 	PTree::Node *p = base_class->car();
-	if(p->IsA(Token::PUBLIC, Token::PROTECTED, Token::PRIVATE))
-	    access = p->What();
+	if(PTree::is_a(p, Token::PUBLIC, Token::PROTECTED, Token::PRIVATE))
+          access = PTree::type_of(p);
 
 	base_class = base_class->cdr();
     }	
@@ -713,22 +713,22 @@ void MemberList::CheckHeader(PTree::Node *declaration, Mem* m)
     PTree::Node *header = declaration->car();
     while(header != 0){
 	PTree::Node *h = header->car();
-	if(h->IsA(Token::VIRTUAL))
+	if(PTree::is_a(h, Token::VIRTUAL))
 	    m->is_virtual = true;
-	else if(h->IsA(Token::STATIC))
+	else if(PTree::is_a(h, Token::STATIC))
 	    m->is_static = true;
-	else if(h->IsA(Token::MUTABLE))
+	else if(PTree::is_a(h, Token::MUTABLE))
 	    m->is_mutable = true;
-	else if(h->IsA(Token::INLINE))
+	else if(PTree::is_a(h, Token::INLINE))
 	    m->is_inline = true;
-	else if(h->IsA(Token::ntUserdefKeyword))
+	else if(PTree::is_a(h, Token::ntUserdefKeyword))
 	    m->user_mod = h;
 
 	header = header->cdr();
     }
 
     PTree::Node *d = PTree::third(declaration);
-    if(d != 0 && d->IsA(Token::ntDeclarator))
+    if(d != 0 && PTree::is_a(d, Token::ntDeclarator))
 	m->is_inline = true;
 }
 

@@ -137,7 +137,7 @@ const char* Class::MetaclassName()
 
 PTree::Node *Class::Comments()
 {
-  if (definition->IsA(Token::ntClassSpec))
+  if (PTree::is_a(definition, Token::ntClassSpec))
     return ((PTree::ClassSpec*)definition)->GetComments();
   return 0;
 }

@@ -44,13 +44,8 @@ public:
   void set_car(Node *p) { my_data.nonleaf.child = p;}
   void set_cdr(Node *p) { my_data.nonleaf.next = p;}
 
-    virtual int What();
-    bool IsA(int);
-    bool IsA(int, int);
-    bool IsA(int, int, int);
-
-    virtual Node *Translate(Walker*);
-    virtual void Typeof(Walker*, TypeInfo&);
+  virtual Node *Translate(Walker*);
+  virtual void Typeof(Walker*, TypeInfo&);
 
   virtual const char *encoded_type() const;
   virtual const char *encoded_name() const;
