@@ -1,0 +1,126 @@
+struct x{
+  int a;
+};
+struct x *y;
+struct y{
+  struct x *y;
+};
+struct z{
+  struct x a, b, c;
+};
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 1  nchild: 3
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[1]: Variable Name: y:
+Definition: struct x *y
+
+-------------
+
+level: 3  nsyms: 1  nchild: 0
+Scope Id: 1_1_1
+HashTab:  #entries: 1  size: 5
+[2]: Component Name: a:
+Definition: int a
+Container: struct x{
+  int a;
+}
+
+-------------
+
+level: 3  nsyms: 1  nchild: 0
+Scope Id: 1_1_2
+HashTab:  #entries: 1  size: 5
+[1]: Component Name: y:
+Definition: struct x *y
+Container: struct y{
+  struct x *y;
+}
+
+-------------
+
+level: 3  nsyms: 3  nchild: 0
+Scope Id: 1_1_3
+HashTab:  #entries: 3  size: 5
+[2]: Component Name: a:
+Definition: struct x a
+Container: struct z{
+  struct x a, b, c;
+}
+
+-------------
+
+[3]: Component Name: b:
+Definition: struct x b
+Container: struct z{
+  struct x a, b, c;
+}
+
+-------------
+
+[4]: Component Name: c:
+Definition: struct x c
+Container: struct z{
+  struct x a, b, c;
+}
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 3  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 3  size: 5
+[0]: Tag Name: x:
+Definition: struct x{
+  int a;
+}
+
+-------------
+
+[1]: Tag Name: y:
+Definition: struct y{
+  struct x *y;
+}
+
+-------------
+
+[2]: Tag Name: z:
+Definition: struct z{
+  struct x a, b, c;
+}
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

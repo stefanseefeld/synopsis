@@ -1,0 +1,19 @@
+
+    This directory contains the main cTool test suite. There are 
+    different sub-suites which test the various parts of cTool.
+
+    Use the test_suite program to test this suite.  Use test_suite -h 
+    for information about its options.
+
+    To add a sub-suite, simply make a directory and place a file called
+    'run_suite' in it. This program will be executed to run the sub-suite.
+    To make a standard suite, add an entry in the top level makefile
+    to make a symlink to '../perl/run_suite'
+
+    If there is a file called 'README' in a sub-suite directory, the
+    first line of the file will be displayed when a user asks for
+    information about the available suites (via test_suite).
+   
+    To add a test to a sub-suite, simply place the input file
+    into the appropriate 'run' directory with a '.c' suffix.
+

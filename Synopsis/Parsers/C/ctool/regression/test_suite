@@ -1,0 +1,356 @@
+#!/s/perl/bin/perl
+
+# ^C is caught to allow for cleanup
+&allow_quit;
+
+#
+# Regression tests for ctree
+#
+# This script chooses a specific suite(s) to test, if called with
+# no options it runs all available test suites.
+# Call with -h (help) to see the usage.
+
+
+# Default Options
+$mailto = "";        # Mail to this person
+$show = 0;           # Show available suites
+$report_only = 0;    # Do a summary type report only
+$debug = 0;
+
+@run_opts = ();      # Options to pass to run_suite
+
+# Get all directories in the suite
+
+@tmpdirs = &get_dir('.');
+
+@testdirs = ();
+
+foreach $dir (@tmpdirs){
+
+    next if (! -d $dir);
+    push(@testdirs,$dir) if (-x "$dir/run_suite") && ($dir ne 'perl');
+}
+
+$| = 1;                 # Set unbuffered
+
+##########################
+
+@suites = ();
+$skip = 0;
+$time = 0;
+
+foreach $item (@ARGV){
+
+    if ($skip){
+        $skip = 0;
+        if ($time){
+            $time = 0;
+            push(@run_opts,$item);
+        } else {
+            $mailto = $item;
+        }
+        next;
+    }
+
+    if (substr($item,0,1) ne '-'){
+        # Trim off trailing '/' (tcsh completion of dir names)
+        chop($item) if (substr($item,-1,1) eq '/');
+        push(@suites,$item);
+
+    } elsif (($item eq '-s') || ($item eq '-S')){
+        push(@run_opts,'-s');
+        $show = 1;
+    } elsif (($item eq '-m') || ($item eq '-M')){
+        $skip = 1;
+    } elsif (($item eq '-h') || ($item eq '-H') || ($item eq '-?')){
+        &show_usage;
+    } elsif (($item eq '-d') || ($item eq '-D')){
+        push(@run_opts,'-d');
+        $debug = 1;
+    } elsif (($item eq '-r') || ($item eq '-R')){
+        push(@run_opts,'-r');
+        $report_only = 1;
+    } elsif (($item eq '-t') || ($item eq '-T')){
+        push(@run_opts,'-t');
+        $skip = 1;
+        $time = 1;
+    }
+}
+
+# if an empty list, get them all
+if (!@suites){
+
+    @suites = @testdirs;
+}
+
+if ($show){
+
+    print "\nAvailable Suites:\n";
+    print "------------------\n";
+
+    while($suite = shift(@suites)){
+
+        $frnt = "$suite: ";
+        $info = &get_info($suite);
+        printf "%-22s \t%s\n", $frnt, $info;
+        #print "Suite $suite: \t $info\n";
+    }
+
+    exit 0;
+}
+
+##########################
+
+if ($mailto){
+
+    open( MAILTO, "| /bin/mail $mailto" ) || die "Could not run /bin/mail";
+    select(MAILTO);
+    $| = 1;                 # Set unbuffered
+
+    print MAILTO <<"EndOfHeader";
+Subject: Test Suite output
+
+EndOfHeader
+}
+
+print "Test Suite output from suite(s): @suites\n\n";
+
+##########################
+
+chop($strt_date = `date`);
+print "test_suite started at: $strt_date\n\n";
+
+# Run all suites
+foreach $suite (@suites){
+
+    if (! -x "$suite/run_suite"){
+        print "Suite $suite not set-up properly.\n";
+        next;
+    }
+
+    $total++;
+    print "Testing the suite $suite\n" if (! $report_only);
+
+    # Run run_suite
+
+    if (chdir("$suite")){
+
+        open(RUNSUITE, "./run_suite @run_opts |");
+
+        print <RUNSUITE>; 
+        close RUNSUITE;
+
+        print "Done testing suite $suite.\n" if (! $report_only);
+        chdir('..'); 
+    } else {
+
+        print "Could not cd into $suite directory.\n";
+    } 
+}
+
+chop($end_date = `date`);
+print "test_suite finished at: $end_date\n\n";
+print "\n";
+
+close MAILTO if ($mailto);
+
+exit 0;
+
+####################################################################
+
+sub get_info {
+
+    my($suite) = @_;
+    my($info);
+
+    $info = '';
+  
+    open(README,"$suite/README") || return " -No information available-";
+
+    chop($info = <README>); 
+
+    return $info;
+}
+
+##########################
+
+sub show_usage {
+
+    print "\nUsage: test_suite [options] [list of suites]\n\n";
+    print "Runs the specified test suites.\n";
+    print "If no list is provided, all available suites are run.\n\n";
+
+    print "Options:\n";
+    print "\t-h:         Show usage (this message).\n";
+    print "\t-s:         Show the available suites.\n";
+    print "\t-r:         Produce a summary-type report only.\n";
+    print "\t-t <mins>:  Specify timeout in minutes (per suite).\n";
+    print "\t-m <user>:  Mail output to user.\n";
+
+    print "\n\tEx:   test_suite -m flisakow\@cs.wisc.edu accept0 accept1\n";
+    print "\tEx:   test_suite -r\n\n";
+
+    die "\n";
+}
+
+###############################################
+# Return true if a core exists (and remove it)
+
+sub core_exist {
+
+    if (-f 'core'){
+        unlink('core');
+        return 1;
+    }
+    return 0;
+}
+
+############################
+#
+# Return a name for lame signal numbers
+#
+
+@sig_name = (
+    'NONE',
+    'SIGHUP  - hangup',
+    'SIGINT  - interrupt',
+    'SIGQUIT - quit',
+    'SIGILL  - illegal instruction',
+    'SIGTRAP - trace trap',
+    'SIGIOT  - IOT (aka abort)',
+    'SIGEMT  - EMT instruction',
+    'SIGFPE  - floating point exception',
+    'SIGKILL - kill',
+    'SIGBUS  - bus error',
+    'SIGSEGV - segmentation violation',
+    'SIGSYS  - bad argument to system call',
+    'SIGPIPE - broken pipe',
+    'SIGALRM - alarm',
+    'SIGTERM - termination'
+);
+
+sub name_sig {
+
+    my($sig) = @_;
+
+    if ( $sig <= 15 ){
+        return $sig_name[$sig];
+    } else {
+        return "machine specific signal";
+    }
+}
+
+############################
+#
+# Do a make of these targets in the pgms directory
+#
+
+sub make {
+
+    my(@targets) = @_;
+    my($target,$ret,$err);
+
+    $ret = 1;
+
+    chdir 'pgms' || return 0;
+
+    foreach $target (@targets){
+
+        $err = system("make $target > make.err 2>&1");
+
+        if (open(MKE_ERR,'make.err')){
+            print <MKE_ERR>;
+            close MKE_ERR;
+            unlink 'make.err';
+        }
+
+        $err /= 256;
+        if ($err){
+            print "Make failed for target $target.\n";
+            $ret = 0;
+        }
+    }
+
+    chdir '..';
+    return $ret;
+}
+############################
+
+sub get_dir {
+
+   my($dir,$pattern) = @_;
+   my(@flist);
+
+   @flist = ();
+
+   # If no pattern supplied, return everything except '.' and '..'
+   $pattern = '!/^\.\.?$/' if (! $pattern);
+
+   opendir(DIR, "$dir");
+
+   eval "\@flist = grep($pattern, sort(readdir(DIR)))";
+   closedir( DIR );
+
+   return @flist;
+}
+
+############################
+#
+#
+
+sub set_max_time {
+
+    local($secs) = @_;
+
+    $SIG{'ALRM'} = 'alrm_handler';
+
+    alarm $secs;
+}
+
+############################
+
+sub alrm_handler {
+
+    print "\n\nCoral TestSuite $suite has run out of time (> $max_time) - quitting.\n\n";
+
+    # Try to clean up a little
+    
+    &core_exist;
+
+    if ((-d 'pgms') && (-f 'pgms/Makefile')){
+        chdir('pgms');
+        &make('clean');
+    }
+
+    exit 1;
+}
+
+############################
+
+sub allow_quit {
+
+     # Watch for ^C and other requests to quit.
+    $SIG{'HUP'}  = 'quit_handler';
+    $SIG{'INT'}  = 'quit_handler';
+    $SIG{'TERM'} = 'quit_handler';
+}
+
+############################
+
+sub quit_handler {
+
+    print "\n\nSignal requesting quit recieved. - quitting.\n\n";
+
+    # Try to clean up a little
+    
+    &core_exist;
+
+    if ((-d 'pgms') && (-f 'pgms/Makefile')){
+        chdir('pgms');
+        &make('clean');
+    }
+
+    exit 0;
+}
+
+############################

@@ -1,0 +1,15 @@
+ Basic Functionality Acceptance Tests
+
+ Name of testsuite : reject0
+
+ Creator :  flisakow
+ Creation Date : 09/98
+
+ Owner (report bugs to) : flisakow@spf-15.com
+ Last Modification Date : 09/09/98
+
+ Programs being tested :
+
+ Change History:
+  09/09/00 : Files of older version of the accept0 suite which aren't ansi C.
+

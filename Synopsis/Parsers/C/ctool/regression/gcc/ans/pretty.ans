@@ -1,0 +1,82 @@
+enum foo ;
+int a(char b)
+{
+  char *f = __FUNCTION__;
+  char *g = b;
+
+  return 0;
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 1  nchild: 1
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[2]: Function Name: a:
+Definition: int a(char b)
+Position: , 5, 0
+
+-------------
+
+level: 3  nsyms: 1  nchild: 1
+Scope Id: 1_1_1
+HashTab:  #entries: 1  size: 5
+[3]: Parameter Name: b:
+Definition: char b
+
+-------------
+
+level: 4  nsyms: 2  nchild: 0
+Scope Id: 1_1_1_1
+HashTab:  #entries: 2  size: 5
+[2]: Variable Name: f:
+Definition: char *f = __FUNCTION__
+
+-------------
+
+[3]: Variable Name: g:
+Definition: char *g = b
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 1  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[2]: Tag Name: foo:
+Definition: enum foo 
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

@@ -1,0 +1,332 @@
+union st{
+  int a;
+}x;
+int f0(union st y)
+{
+  union st z;
+
+  z.a = x.a + y.a;
+  return z.a;
+}
+
+int f1(union st y)
+{
+  union st ;
+  union st *z;
+
+  return y.a;
+}
+
+int f2(union st y)
+{
+  union st ;
+  union st2{
+    union st *c;
+  }z;
+  void g1(union st2 *);
+  int g2(union st *, int );
+
+  g1(&z);
+  return g2(z.c,x.a + y.a);
+}
+
+int f3(union st y)
+{
+  union st ;
+  union st{
+    int c;
+  }z;
+
+  z.c = x.a + y.a;
+  return z.c;
+}
+
+int f4(union st y)
+{
+  union st ;
+  union st2{
+    union st *c;
+  }z;
+  union st{
+    int b;
+  };
+  void gg1(union st2 *);
+  int gg2(union st *, int );
+
+  gg1(&z);
+  x.a = z.c->b;
+  return gg2(z.c,x.a + y.a);
+}
+
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 6  nchild: 6
+Scope Id: 1_1
+HashTab:  #entries: 6  size: 5
+[0]: Function Name: f3:
+Definition: int f3(union st y)
+Position: , 36, 19
+
+-------------
+Variable Name: x:
+Definition: union st{
+  int a;
+}x
+
+-------------
+
+[2]: Function Name: f0:
+Definition: int f0(union st y)
+Position: , 4, 19
+
+-------------
+
+[3]: Function Name: f4:
+Definition: int f4(union st y)
+Position: , 46, 19
+
+-------------
+Function Name: f1:
+Definition: int f1(union st y)
+Position: , 13, 19
+
+-------------
+
+[4]: Function Name: f2:
+Definition: int f2(union st y)
+Position: , 22, 19
+
+-------------
+
+level: 3  nsyms: 1  nchild: 0
+Scope Id: 1_1_1
+HashTab:  #entries: 1  size: 5
+[2]: Component Name: a:
+Definition: int a
+Container: union st{
+  int a;
+}
+
+-------------
+
+level: 3  nsyms: 1  nchild: 1
+Scope Id: 1_1_2
+HashTab:  #entries: 1  size: 5
+[1]: Parameter Name: y:
+Definition: union st y
+
+-------------
+
+level: 4  nsyms: 1  nchild: 0
+Scope Id: 1_1_2_1
+HashTab:  #entries: 1  size: 5
+[2]: Variable Name: z:
+Definition: union st z
+
+-------------
+
+level: 3  nsyms: 1  nchild: 1
+Scope Id: 1_1_3
+HashTab:  #entries: 1  size: 5
+[1]: Parameter Name: y:
+Definition: union st y
+
+-------------
+
+level: 4  nsyms: 1  nchild: 0
+Scope Id: 1_1_3_1
+HashTab:  #entries: 1  size: 5
+[2]: Variable Name: z:
+Definition: union st *z
+
+-------------
+
+level: 3  nsyms: 1  nchild: 1
+Scope Id: 1_1_4
+HashTab:  #entries: 1  size: 5
+[1]: Parameter Name: y:
+Definition: union st y
+
+-------------
+
+level: 4  nsyms: 3  nchild: 1
+Scope Id: 1_1_4_1
+HashTab:  #entries: 3  size: 5
+[0]: Function Name: g1:
+Definition: void g1(union st2 *)
+No Position.
+
+-------------
+
+[2]: Function Name: g2:
+Definition: int g2(union st *, int )
+No Position.
+
+-------------
+Variable Name: z:
+Definition: union st2{
+  union st *c;
+}z
+
+-------------
+
+level: 5  nsyms: 1  nchild: 0
+Scope Id: 1_1_4_1_1
+HashTab:  #entries: 1  size: 5
+[4]: Component Name: c:
+Definition: union st *c
+Container: union st2{
+  union st *c;
+}
+
+-------------
+
+level: 3  nsyms: 1  nchild: 1
+Scope Id: 1_1_5
+HashTab:  #entries: 1  size: 5
+[1]: Parameter Name: y:
+Definition: union st y
+
+-------------
+
+level: 4  nsyms: 1  nchild: 1
+Scope Id: 1_1_5_1
+HashTab:  #entries: 1  size: 5
+[2]: Variable Name: z:
+Definition: union st{
+  int c;
+}z
+
+-------------
+
+level: 5  nsyms: 1  nchild: 0
+Scope Id: 1_1_5_1_1
+HashTab:  #entries: 1  size: 5
+[4]: Component Name: c:
+Definition: int c
+Container: union st{
+  int c;
+}
+
+-------------
+
+level: 3  nsyms: 1  nchild: 1
+Scope Id: 1_1_6
+HashTab:  #entries: 1  size: 5
+[1]: Parameter Name: y:
+Definition: union st y
+
+-------------
+
+level: 4  nsyms: 3  nchild: 2
+Scope Id: 1_1_6_1
+HashTab:  #entries: 3  size: 5
+[0]: Function Name: gg1:
+Definition: void gg1(union st2 *)
+No Position.
+
+-------------
+
+[2]: Function Name: gg2:
+Definition: int gg2(union st *, int )
+No Position.
+
+-------------
+Variable Name: z:
+Definition: union st2{
+  union st *c;
+}z
+
+-------------
+
+level: 5  nsyms: 1  nchild: 0
+Scope Id: 1_1_6_1_1
+HashTab:  #entries: 1  size: 5
+[4]: Component Name: c:
+Definition: union st *c
+Container: union st2{
+  union st *c;
+}
+
+-------------
+
+level: 5  nsyms: 1  nchild: 0
+Scope Id: 1_1_6_1_2
+HashTab:  #entries: 1  size: 5
+[3]: Component Name: b:
+Definition: int b
+Container: union st{
+  int b;
+}
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 1  nchild: 2
+Scope Id: 1_1
+HashTab:  #entries: 1  size: 5
+[1]: Tag Name: st:
+Definition: union st{
+  int b;
+}
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_1
+HashTab: NULL
+level: 4  nsyms: 1  nchild: 0
+Scope Id: 1_1_1_1
+HashTab:  #entries: 1  size: 5
+[3]: Tag Name: st2:
+Definition: union st2{
+  union st *c;
+}
+
+-------------
+
+level: 3  nsyms: 0  nchild: 1
+Scope Id: 1_1_2
+HashTab: NULL
+level: 4  nsyms: 1  nchild: 0
+Scope Id: 1_1_2_1
+HashTab:  #entries: 1  size: 5
+[3]: Tag Name: st2:
+Definition: union st2{
+  union st *c;
+}
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

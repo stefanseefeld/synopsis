@@ -1,0 +1,7 @@
+"my_ctool_207/regression/accept0/run/universe.c", line 11: warning: trailing "," prohibited in enum declaration
+"my_ctool_207/regression/accept0/run/universe.c", line 42: declaration hides parameter: c
+	declaration: int
+	parameter  : pointer to char
+"my_ctool_207/regression/accept0/run/universe.c", line 46: warning: end-of-loop code not reached
+"my_ctool_207/regression/accept0/run/universe.c", line 73: duplicate case in switch: 1
+cc: acomp failed for my_ctool_207/regression/accept0/run/universe.c

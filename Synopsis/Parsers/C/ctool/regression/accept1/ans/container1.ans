@@ -1,0 +1,336 @@
+enum e2 ;
+struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}v;
+enum  { v_0 = sizeof(struct s )  };
+enum  { v_11, v_12 = sizeof(union {
+  int su1;
+  struct s *su2, *su3;
+})  };
+enum e2 { v2 };
+enum e3 { v31, v32 };
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 7  nchild: 2
+Scope Id: 1_1
+HashTab:  #entries: 7  size: 5
+[1]: Enumeration constant Name: v32:
+Definition: NO definition for Enumeration constant entry!
+Container: e3 { v31, v32 }
+
+-------------
+Enumeration constant Name: v_11:
+Definition: NO definition for Enumeration constant entry!
+Container:  { v_11, v_12 = sizeof(union {
+  int su1;
+  struct s *su2, *su3;
+})  }
+
+-------------
+
+[2]: Enumeration constant Name: v2:
+Definition: NO definition for Enumeration constant entry!
+Container: e2 { v2 }
+
+-------------
+Enumeration constant Name: v_0:
+Definition: sizeof(struct s ) 
+Container:  { v_0 = sizeof(struct s )  }
+
+-------------
+
+[3]: Enumeration constant Name: v_12:
+Definition: sizeof(union {
+  int su1;
+  struct s *su2, *su3;
+}) 
+Container:  { v_11, v_12 = sizeof(union {
+  int su1;
+  struct s *su2, *su3;
+})  }
+
+-------------
+Variable Name: v:
+Definition: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}v
+
+-------------
+
+[4]: Enumeration constant Name: v31:
+Definition: NO definition for Enumeration constant entry!
+Container: e3 { v31, v32 }
+
+-------------
+
+level: 3  nsyms: 5  nchild: 2
+Scope Id: 1_1_1
+HashTab:  #entries: 5  size: 5
+[0]: Component Name: s4:
+Definition: union {
+  int su1;
+  struct s *su2, *su3;
+}s4
+Container: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}
+
+-------------
+Component Name: s1:
+Definition: int s1
+Container: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}
+
+-------------
+
+[1]: Component Name: s5:
+Definition: union {
+  int su1;
+  struct s *su2, *su3;
+}s5
+Container: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}
+
+-------------
+
+[2]: Component Name: s2:
+Definition: char s2
+Container: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}
+
+-------------
+
+[3]: Component Name: s3:
+Definition: char s3
+Container: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}
+
+-------------
+
+level: 4  nsyms: 3  nchild: 0
+Scope Id: 1_1_1_1
+HashTab:  #entries: 3  size: 5
+[0]: Component Name: ss2:
+Definition: enum e2 ss2
+Container: struct {
+  int ss1;
+  enum e2 ss2, ss3;
+}
+
+-------------
+
+[1]: Component Name: ss3:
+Definition: enum e2 ss3
+Container: struct {
+  int ss1;
+  enum e2 ss2, ss3;
+}
+
+-------------
+
+[3]: Component Name: ss1:
+Definition: int ss1
+Container: struct {
+  int ss1;
+  enum e2 ss2, ss3;
+}
+
+-------------
+
+level: 4  nsyms: 3  nchild: 0
+Scope Id: 1_1_1_2
+HashTab:  #entries: 3  size: 5
+[1]: Component Name: su2:
+Definition: struct s *su2
+Container: union {
+  int su1;
+  struct s *su2, *su3;
+}
+
+-------------
+
+[2]: Component Name: su3:
+Definition: struct s *su3
+Container: union {
+  int su1;
+  struct s *su2, *su3;
+}
+
+-------------
+
+[4]: Component Name: su1:
+Definition: int su1
+Container: union {
+  int su1;
+  struct s *su2, *su3;
+}
+
+-------------
+
+level: 3  nsyms: 3  nchild: 0
+Scope Id: 1_1_2
+HashTab:  #entries: 3  size: 5
+[1]: Component Name: su2:
+Definition: struct s *su2
+Container: union {
+  int su1;
+  struct s *su2, *su3;
+}
+
+-------------
+
+[2]: Component Name: su3:
+Definition: struct s *su3
+Container: union {
+  int su1;
+  struct s *su2, *su3;
+}
+
+-------------
+
+[4]: Component Name: su1:
+Definition: int su1
+Container: union {
+  int su1;
+  struct s *su2, *su3;
+}
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 3  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 3  size: 5
+[0]: Tag Name: s:
+Definition: struct s{
+  int s1;
+  char s2, s3;
+  double ;
+  struct {
+    int ss1;
+    enum e2 ss2, ss3;
+  };
+  union {
+    int su1;
+    struct s *su2, *su3;
+  }s4, s5;
+}
+
+-------------
+
+[3]: Tag Name: e2:
+Definition: enum e2 { v2 }
+
+-------------
+
+[4]: Tag Name: e3:
+Definition: enum e3 { v31, v32 }
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------

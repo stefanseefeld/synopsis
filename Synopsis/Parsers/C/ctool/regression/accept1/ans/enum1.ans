@@ -1,0 +1,264 @@
+enum  { a0 };
+enum  { a1 };
+enum enum1 { a11, a12 };
+enum enum1 ;
+enum enum2 { a2 = a0 };
+enum enum3 { a31 = 1, a32 = a31 + 1, a33 = a32 << 1 };
+typedef enum enum4 { a4 }enum4, *p_enum4, t_enum4[4];
+typedef enum  { a51 }enum5, *p_enum5, t_enum5[4];
+enum enum5 { a52 };
+enum enum6 ;
+enum enum6 { a6 };
+enum enum1 v11;
+extern const enum enum1 *p12;
+enum enum2 v21 = a2, v22;
+enum enum3 *p31, v32 = a0, *p33 = &v32;
+enum4 v4;
+p_enum4 p4 = &v4;
+t_enum4 t4 = { a0, a2, a4 };
+static enum5 v5;
+static p_enum5 p5 = &v5;
+static t_enum5 t5 = { a0, a2, a4, a51 };
+static enum enum7 { a7 }v71;
+static enum enum8 { a8 }v81 = a8, *p82 = &v81;
+
+Symbols:
+-------------
+Symbol Table:
+level: 1  nsyms: 2  nchild: 1
+Scope Id: 1
+HashTab:  #entries: 2  size: 5
+[3]: Variable Name: __PRETTY_FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+[4]: Variable Name: __FUNCTION__:
+Definition: NO definition for Variable entry!
+
+-------------
+
+level: 2  nsyms: 36  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 36  size: 5
+[0]: Enumeration constant Name: a8:
+Definition: NO definition for Enumeration constant entry!
+Container: enum8 { a8 }
+
+-------------
+Enumeration constant Name: a7:
+Definition: NO definition for Enumeration constant entry!
+Container: enum7 { a7 }
+
+-------------
+Variable Name: t4:
+Definition: t_enum4 t4 = { a0, a2, a4 }
+
+-------------
+Variable Name: p33:
+Definition: enum enum3 *p33 = &v32
+
+-------------
+Variable Name: p12:
+Definition: extern const enum enum1 *p12
+
+-------------
+Variable Name: v11:
+Definition: enum enum1 v11
+
+-------------
+Typedef Name: p_enum5:
+Definition: typedef enum  { a51 }*p_enum5
+
+-------------
+Typedef Name: enum4:
+Definition: typedef enum enum4 { a4 }enum4
+
+-------------
+Enumeration constant Name: a33:
+Definition: a32 << 1
+Container: enum3 { a31 = 1, a32 = a31 + 1, a33 = a32 << 1 }
+
+-------------
+Enumeration constant Name: a2:
+Definition: a0
+Container: enum2 { a2 = a0 }
+
+-------------
+
+[1]: Variable Name: p82:
+Definition: static enum enum8 { a8 }*p82 = &v81
+
+-------------
+Variable Name: v71:
+Definition: static enum enum7 { a7 }v71
+
+-------------
+Variable Name: t5:
+Definition: static t_enum5 t5 = { a0, a2, a4, a51 }
+
+-------------
+Variable Name: v4:
+Definition: enum4 v4
+
+-------------
+Variable Name: v32:
+Definition: enum enum3 v32 = a0
+
+-------------
+Enumeration constant Name: a52:
+Definition: NO definition for Enumeration constant entry!
+Container: enum5 { a52 }
+
+-------------
+Typedef Name: enum5:
+Definition: typedef enum  { a51 }enum5
+
+-------------
+Enumeration constant Name: a4:
+Definition: NO definition for Enumeration constant entry!
+Container: enum4 { a4 }
+
+-------------
+Enumeration constant Name: a11:
+Definition: NO definition for Enumeration constant entry!
+Container: enum1 { a11, a12 }
+
+-------------
+
+[2]: Variable Name: v5:
+Definition: static enum5 v5
+
+-------------
+Variable Name: p4:
+Definition: p_enum4 p4 = &v4
+
+-------------
+Variable Name: p31:
+Definition: enum enum3 *p31
+
+-------------
+Variable Name: v21:
+Definition: enum enum2 v21 = a2
+
+-------------
+Enumeration constant Name: a31:
+Definition: 1
+Container: enum3 { a31 = 1, a32 = a31 + 1, a33 = a32 << 1 }
+
+-------------
+Enumeration constant Name: a0:
+Definition: NO definition for Enumeration constant entry!
+Container:  { a0 }
+
+-------------
+
+[3]: Variable Name: p5:
+Definition: static p_enum5 p5 = &v5
+
+-------------
+Variable Name: v22:
+Definition: enum enum2 v22
+
+-------------
+Typedef Name: t_enum4:
+Definition: typedef enum enum4 { a4 }t_enum4[4]
+
+-------------
+Enumeration constant Name: a12:
+Definition: NO definition for Enumeration constant entry!
+Container: enum1 { a11, a12 }
+
+-------------
+Enumeration constant Name: a1:
+Definition: NO definition for Enumeration constant entry!
+Container:  { a1 }
+
+-------------
+
+[4]: Variable Name: v81:
+Definition: static enum enum8 { a8 }v81 = a8
+
+-------------
+Enumeration constant Name: a6:
+Definition: NO definition for Enumeration constant entry!
+Container: enum6 { a6 }
+
+-------------
+Typedef Name: t_enum5:
+Definition: typedef enum  { a51 }t_enum5[4]
+
+-------------
+Enumeration constant Name: a51:
+Definition: NO definition for Enumeration constant entry!
+Container:  { a51 }
+
+-------------
+Typedef Name: p_enum4:
+Definition: typedef enum enum4 { a4 }*p_enum4
+
+-------------
+Enumeration constant Name: a32:
+Definition: a31 + 1
+Container: enum3 { a31 = 1, a32 = a31 + 1, a33 = a32 << 1 }
+
+-------------
+
+
+-------------
+Tags:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 1
+Scope Id: 1
+HashTab: NULL
+level: 2  nsyms: 8  nchild: 0
+Scope Id: 1_1
+HashTab:  #entries: 8  size: 5
+[0]: Tag Name: enum4:
+Definition: enum enum4 { a4 }
+
+-------------
+Tag Name: enum1:
+Definition: enum enum1 { a11, a12 }
+
+-------------
+
+[1]: Tag Name: enum8:
+Definition: enum enum8 { a8 }
+
+-------------
+Tag Name: enum5:
+Definition: enum enum5 { a52 }
+
+-------------
+
+[2]: Tag Name: enum2:
+Definition: enum enum2 { a2 = a0 }
+
+-------------
+
+[3]: Tag Name: enum6:
+Definition: enum enum6 { a6 }
+
+-------------
+Tag Name: enum3:
+Definition: enum enum3 { a31 = 1, a32 = a31 + 1, a33 = a32 << 1 }
+
+-------------
+
+[4]: Tag Name: enum7:
+Definition: enum enum7 { a7 }
+
+-------------
+
+
+-------------
+Labels:
+-------------
+Symbol Table:
+level: 1  nsyms: 0  nchild: 0
+Scope Id: 1
+HashTab: NULL
+
+-------------
