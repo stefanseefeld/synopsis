@@ -143,11 +143,12 @@ string PyWalker::getName(Ptree *node)
     if (node && node->IsLeaf())
         return node ? string(node->GetPosition(), node->GetLength()) : string();
     else
-    {
+	return node->ToString();
+    /*{
         cerr << "occ internal error in 'PyWalker::getName' : node is ";
         node->Display();
         exit(-1);
-    }
+    }*/
 }
 
 void PyWalker::addComments(PyObject* decl, Ptree* comments)
@@ -582,7 +583,10 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
     //Trace trace("PyWalker::TranslateClassSpec");
     updateLineNumber(node);
 
-    if(Ptree::Length(node) == 4 && node->Second()->IsLeaf())
+    cout <<"Class: " << Ptree::Length(node)<<" "<<node->Second()->IsLeaf()<<endl;
+    node->Display(); cout << endl << endl;
+    // TODO: Handle nested classes properly (see ThreadData.hh)
+    if(Ptree::Length(node) == 4 /* && node->Second()->IsLeaf()*/)
     {
 	bool is_struct = node->First()->Eq("struct");
 	
@@ -799,7 +803,7 @@ static char *RunPreprocessor(const char *file, const vector<const char *> &flags
     return dest;
 }
 
-static char *RunOpencxx(const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
+static char *RunOpencxx(const char *src, const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
 {
     Trace trace("RunOpencxx");
     static char dest[1024];
@@ -813,7 +817,7 @@ static char *RunOpencxx(const char *file, const vector<const char *> &args, PyOb
     ProgramFile prog(ifs);
     Lex lex(&prog);
     Parser parse(&lex);
-    Synopsis synopsis(file, declarations, types);
+    Synopsis synopsis(src, declarations, types);
     PyWalker walker(&parse, &synopsis);
     //   Walker walker(&parse);
     Ptree *def;
@@ -847,7 +851,7 @@ extern "C" {
             exit(-1);
         }
         char *cppfile = RunPreprocessor(src, cppargs);
-        char *occfile = RunOpencxx(cppfile, occargs, types, declarations);
+        char *occfile = RunOpencxx(src, cppfile, occargs, types, declarations);
         unlink(cppfile);
         unlink(occfile);
         Py_INCREF(Py_None);
@@ -893,7 +897,7 @@ int main(int argc, char **argv)
     char *cppfile = RunPreprocessor(src, cppargs);
     PyObject* type = PyImport_ImportModule("Synopsis.Type");
     PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
-    char *occfile = RunOpencxx(cppfile, occargs, types, PyList_New(0));
+    char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0));
     unlink(cppfile);
     unlink(occfile);
 }

@@ -1,20 +1,22 @@
 Random Thoughts
 --------------
 
+FIXED:
+~~~~~
 o. Prague/Sys/Time.hh has operator overloads which are incorrectly parsed.
+o. Add filename support to all parsers
+o. Add indexes by filename. Eg: TopLeft window can switch between namespaces
+   and directories.
+o. Change namespace index to only show Scopes.
 
+
+NYI:
+~~~
 o. Write different comment parsers
 
 o. Write different ScopeSorters
 
 o. Add command line option for only showing public/protected.
-
-o. Add filename support to all parsers
-
-o. Add indexes by filename. Eg: TopLeft window can switch between namespaces
-and directories.
-
-o. Change namespace index to only show Scopes.
 
 o. Make the modules/files indices modular so that they can be omitted as
 desired
