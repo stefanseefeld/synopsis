@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 2003/08/19 04:52:58 stefan Exp $
+# $Id: Makefile.in,v 1.4 2003/08/19 05:23:27 stefan Exp $
 #
 # This source file is a part of the ctool Project.
 # Copyright (C) 2003 Stefan Seefeld
@@ -20,6 +20,8 @@
 
 SHELL		:= /bin/sh
 
+srcdir	:= @srcdir@
+
 include ../local.mk
 
 CPP_PATH:=/usr/bin/cpp
@@ -32,6 +34,7 @@ CXXFLAGS+= -g -Wall
 SRC	:= lexer.cpp gram.cpp context.cpp decl.cpp express.cpp parseenv.cpp \
            project.cpp stemnt.cpp symbol.cpp token.cpp location.cpp \
            PrintTraversal.cpp
+HDR	:= $(patsubst $(srcdir)/include/%, %, $(wildcard $(abs_top_srcdir)/include/ctool/*.h))
 OBJ	:= $(patsubst %.cpp, %.o, $(SRC))
 DEP	:= $(patsubst %.cpp, %.d, $(SRC))
 
@@ -55,6 +58,12 @@ all: ../lib/libctool.a ../lib/libctool.so
 depend:	$(DEP)
 
 install: all
+	$(INSTALL) ../lib/libctool.a $(DESTDIR)$(libdir)
+	$(INSTALL) ../lib/libctool.so $(DESTDIR)$(libdir)
+	$(INSTALL) -d $(DESTDIR)$(includedir)/ctool
+	for header in $(HDR); do \
+          $(INSTALL) $$header $(DESTDIR)$(includedir)/ctool; \
+        done
 
 uninstall:
 
@@ -75,12 +84,12 @@ maintainer-clean: distclean
 	@echo generating dependencies for $(<F)
 	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
 
-lexer.cpp: lexer.l gram.h
+lexer.cpp: $(srcdir)/lexer.l gram.h
 	@echo generating lexer.cpp
 	$(LEX) $<
 	mv lex.yy.c lexer.cpp
 
-gram.cpp gram.h:	gram.y
+gram.cpp gram.h: $(srcdir)/gram.y
 	@echo generating gram.cpp
 	$(YACC) -d -b gram -o gram.cpp $<
 	mv gram.hpp gram.h
