@@ -9,11 +9,8 @@
 #include <vector>
 #include <list>
 #include <string>
-using std::string;
-using std::vector;
-using std::multimap;
 
-typedef multimap<string, Type::Named*> name_map;
+typedef std::multimap<std::string, Type::Named*> name_map;
 
 //. Define nested class
 struct Dictionary::Data {
@@ -31,14 +28,14 @@ Dictionary::~Dictionary() {
 }
 
 //. Quick check if the name is in the dict
-bool Dictionary::has_key(string name)
+bool Dictionary::has_key(const std::string &name)
 {
     return (m->map.find(name) != m->map.end());
 }
 
 //. Lookup single
 //. TODO: the forward filtering could probably be doing much simpler!
-Type::Named* Dictionary::lookup(string name) throw (MultipleError, KeyError)
+Type::Named* Dictionary::lookup(const std::string &name) throw (MultipleError, KeyError)
 {
     name_map::iterator iter = m->map.lower_bound(name);
     name_map::iterator end = m->map.upper_bound(name);
@@ -72,7 +69,7 @@ Type::Named* Dictionary::lookup(string name) throw (MultipleError, KeyError)
 }
 
 //. Lookup multiple
-vector<Type::Named*> Dictionary::lookupMultiple(string name) throw (KeyError)
+std::vector<Type::Named*> Dictionary::lookupMultiple(const std::string &name) throw (KeyError)
 {
     name_map::iterator iter = m->map.lower_bound(name);
     name_map::iterator end = m->map.upper_bound(name);
@@ -80,7 +77,7 @@ vector<Type::Named*> Dictionary::lookupMultiple(string name) throw (KeyError)
     if (iter == end)
 	throw KeyError(name);
     // Store typearation pointers in a vector
-    vector<Type::Named*> types;
+    std::vector<Type::Named*> types;
     do {
 	types.push_back(iter->second);
     } while (++iter != end);
@@ -89,7 +86,7 @@ vector<Type::Named*> Dictionary::lookupMultiple(string name) throw (KeyError)
 
 void Dictionary::insert(Type::Named* type)
 {
-    string key = type->name().back();
+    std::string key = type->name().back();
     m->map.insert(name_map::value_type(key, type));
 }
 

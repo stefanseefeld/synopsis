@@ -2,6 +2,7 @@
 
 
 #include "dumper.hh"
+#include <iostream>
 
 //
 //
@@ -17,9 +18,9 @@ void TypeFormatter::setScope(const AST::Name& scope) {
     m_scope = scope;
 }
 
-string TypeFormatter::colonate(const AST::Name& name)
+std::string TypeFormatter::colonate(const AST::Name& name)
 {
-    string str;
+    std::string str;
     AST::Name::const_iterator n_iter = name.begin();
     AST::Name::const_iterator s_iter = m_scope.begin();
     // Skip identical scopes
@@ -40,7 +41,7 @@ string TypeFormatter::colonate(const AST::Name& name)
 // Type Visitor
 //
 
-string TypeFormatter::format(const Type::Type* type)
+std::string TypeFormatter::format(const Type::Type* type)
 {
     if (!type) return "(unknown)";
     const_cast<Type::Type*>(type)->accept(this);
@@ -60,7 +61,7 @@ void TypeFormatter::visitUnknown(Type::Unknown* type)
 void TypeFormatter::visitModifier(Type::Modifier* type)
 {
     // Premods
-    string pre = "";
+    std::string pre = "";
     Type::Type::Mods::iterator iter = type->pre().begin();
     while (iter != type->pre().end())
 	pre += *iter++ + " ";
@@ -94,7 +95,7 @@ void TypeFormatter::visitTemplateType(Type::Template* type)
 
 void TypeFormatter::visitParameterized(Type::Parameterized* type)
 {
-    string str;
+    std::string str;
     if (type->templateType())
 	str = colonate(type->templateType()->name()) + "<";
     else
@@ -110,7 +111,7 @@ void TypeFormatter::visitParameterized(Type::Parameterized* type)
 
 void TypeFormatter::visitFuncPtr(Type::FuncPtr* type)
 {
-    string str = "(*)(";
+    std::string str = "(*)(";
     if (type->parameters().size()) {
 	str += format(type->parameters().front());
 	Type::Type::vector_t::iterator iter = type->parameters().begin();
@@ -137,7 +138,7 @@ Dumper::Dumper()
     m_indent_string = "";
 }
 
-void Dumper::onlyShow(string fname)
+void Dumper::onlyShow(const std::string &fname)
 {
     m_filename = fname;
 }
@@ -154,20 +155,20 @@ void Dumper::undent()
     m_indent_string.assign(m_indent, ' ');
 }
 
-static string join(const vector<string>& strs, string sep = " ")
+static std::string join(const std::vector<std::string>& strs, std::string sep = " ")
 {
-    vector<string>::const_iterator iter = strs.begin();
+    std::vector<std::string>::const_iterator iter = strs.begin();
     if (iter == strs.end()) return "";
-    string str = *iter++;
+    std::string str = *iter++;
     while (iter != strs.end())
 	str += sep + *iter++;
     return str;
 }
 
-string append(const vector<string>& strs, string sep = " ")
+std::string append(const std::vector<std::string>& strs, const std::string &sep = " ")
 {
-    vector<string>::const_iterator iter = strs.begin();
-    string str = "";
+    std::vector<std::string>::const_iterator iter = strs.begin();
+    std::string str = "";
     while (iter != strs.end())
 	str += *iter++ + sep;
     return str;
@@ -188,16 +189,16 @@ string append(const vector<string>& strs, string sep = " ")
 // AST Visitor
 //
 
-void Dumper::visit(const vector<AST::Declaration*>& decls)
+void Dumper::visit(const std::vector<AST::Declaration*>& decls)
 {
-    vector<AST::Declaration*>::const_iterator iter, end;
+    std::vector<AST::Declaration*>::const_iterator iter, end;
     iter = decls.begin(), end = decls.end();
     for (; iter != end; ++iter)
 	if (!m_filename.size() || (*iter)->filename() == m_filename)
 	    (*iter)->accept(this);
 }
 
-ostream& operator << (ostream& os, const AST::Name& name)
+std::ostream& operator << (std::ostream& os, const AST::Name& name)
 {
     AST::Name::const_iterator iter = name.begin(), end = name.end();
     if (iter == end) { os << "<global>"; return os; }
@@ -207,18 +208,18 @@ ostream& operator << (ostream& os, const AST::Name& name)
     return os;
 }
 
-void Dumper::visit(const vector<AST::Comment*>& comms)
+void Dumper::visit(const std::vector<AST::Comment*>& comms)
 {
-    vector<AST::Comment*>::const_iterator iter = comms.begin();
+    std::vector<AST::Comment*>::const_iterator iter = comms.begin();
     while (iter != comms.end()) {
-	cout << m_indent_string << (*iter++)->text() << endl;
+	std::cout << m_indent_string << (*iter++)->text() << std::endl;
     }
 }
 
 // Format a Parameter
-string Dumper::formatParam(AST::Parameter* param)
+std::string Dumper::formatParam(AST::Parameter* param)
 {
-    string str = param->premodifier();
+    std::string str = param->premodifier();
     str += format(param->type());
     if (param->name().size()) str += " " + param->name();
     if (param->value().size()) str += " = " + param->value();
@@ -230,7 +231,7 @@ void Dumper::visitDeclaration(AST::Declaration* decl)
 {
     visit(decl->comments());
     if (decl->type() == "dummy") return;
-    cout << m_indent_string << "DECL " << decl->name() << endl;
+    std::cout << m_indent_string << "DECL " << decl->name() << std::endl;
 }
 
 void Dumper::visitScope(AST::Scope* scope)
@@ -242,13 +243,13 @@ void Dumper::visitScope(AST::Scope* scope)
 void Dumper::visitNamespace(AST::Namespace* ns)
 {
     visit(ns->comments());
-    cout << m_indent_string << "namespace " << ns->name() << " {" << endl;
+    std::cout << m_indent_string << "namespace " << ns->name() << " {" << std::endl;
     indent();
     m_scope.push_back(ns->name().back());
     visit(ns->declarations());
     m_scope.pop_back();
     undent();
-    cout << m_indent_string << "}" << endl;
+    std::cout << m_indent_string << "}" << std::endl;
 }
 
 void Dumper::visitClass(AST::Class* clas)
@@ -257,30 +258,30 @@ void Dumper::visitClass(AST::Class* clas)
     if (clas->templateType()) {
 	m_scope.push_back(clas->name().back());
 	Type::Template* templ = clas->templateType();
-	cout << m_indent_string << "template<";
-	vector<string> names;
+	std::cout << m_indent_string << "template<";
+	std::vector<std::string> names;
 	Type::Type::vector_t::iterator iter = templ->parameters().begin();
 	while (iter != templ->parameters().end())
 	    names.push_back(format(*iter++));
-	cout << join(names, ", ") << ">" << endl;
+	std::cout << join(names, ", ") << ">" << std::endl;
 	m_scope.pop_back();
     }
-    cout << m_indent_string << clas->type() << " " << clas->name();
+    std::cout << m_indent_string << clas->type() << " " << clas->name();
     if (clas->parents().size()) {
-	cout << ": ";
-	vector<string> inherits;
-	vector<AST::Inheritance*>::iterator iter = clas->parents().begin();
+	std::cout << ": ";
+	std::vector<std::string> inherits;
+	std::vector<AST::Inheritance*>::iterator iter = clas->parents().begin();
 	for (;iter != clas->parents().end(); ++iter)
 	    inherits.push_back(append((*iter)->attributes()) + format((*iter)->parent()));
-	cout << join(inherits, ", ");
+	std::cout << join(inherits, ", ");
     }
-    cout << " {" << endl;
+    std::cout << " {" << std::endl;
     indent();
     m_scope.push_back(clas->name().back());
     visit(clas->declarations());
     m_scope.pop_back();
     undent();
-    cout << m_indent_string << "};" << endl;
+    std::cout << m_indent_string << "};" << std::endl;
 }
 
 
@@ -290,7 +291,7 @@ bool isStructor(const AST::Function* func)
 {
     const AST::Name& name = func->name();
     if (name.size() < 2) return false;
-    string realname = func->realname();
+    std::string realname = func->realname();
     if (realname[0] == '~') return true;
     AST::Name::const_iterator second_last;
     second_last = name.end() - 2;
@@ -300,50 +301,50 @@ bool isStructor(const AST::Function* func)
 void Dumper::visitOperation(AST::Operation* oper)
 {
     visit(oper->comments());
-    cout << m_indent_string;
-    if (!isStructor(oper)) cout << format(oper->returnType()) + " ";
-    cout << oper->realname() << "(";
+    std::cout << m_indent_string;
+    if (!isStructor(oper)) std::cout << format(oper->returnType()) + " ";
+    std::cout << oper->realname() << "(";
     if (oper->parameters().size()) {
-	cout << formatParam(oper->parameters().front());
-	vector<AST::Parameter*>::iterator iter = oper->parameters().begin();
+	std::cout << formatParam(oper->parameters().front());
+	std::vector<AST::Parameter*>::iterator iter = oper->parameters().begin();
 	while (++iter != oper->parameters().end())
-	    cout << "," << formatParam(*iter);
+	    std::cout << "," << formatParam(*iter);
     }
-    cout << ");" << endl;
+    std::cout << ");" << std::endl;
 }
 
 void Dumper::visitVariable(AST::Variable* var)
 {
     visit(var->comments());
-    cout << m_indent_string << format(var->vtype()) << " " << var->name().back() << ";" << endl;
+    std::cout << m_indent_string << format(var->vtype()) << " " << var->name().back() << ";" << std::endl;
 }
 
 void Dumper::visitTypedef(AST::Typedef* tdef)
 {
     visit(tdef->comments());
-    cout << m_indent_string << "typedef " << format(tdef->alias()) << " " << tdef->name().back() << ";" << endl;
+    std::cout << m_indent_string << "typedef " << format(tdef->alias()) << " " << tdef->name().back() << ";" << std::endl;
 }
 
 void Dumper::visitEnum(AST::Enum* decl)
 {
     visit(decl->comments());
-    cout << m_indent_string << "enum " << decl->name().back() << "{" << endl;
+    std::cout << m_indent_string << "enum " << decl->name().back() << "{" << std::endl;
     indent();
-    vector<AST::Enumerator*>::iterator iter = decl->enumerators().begin();
+    std::vector<AST::Enumerator*>::iterator iter = decl->enumerators().begin();
     while (iter != decl->enumerators().end())
 	(*iter++)->accept(this);
     undent();
-    cout << m_indent_string << "};" << endl;
+    std::cout << m_indent_string << "};" << std::endl;
 }
 
 void Dumper::visitEnumerator(AST::Enumerator* enumor)
 {
     visit(enumor->comments());
     if (enumor->type() == "dummy") return;
-    cout << m_indent_string << enumor->name().back();
+    std::cout << m_indent_string << enumor->name().back();
     if (enumor->value().size())
-	cout << " = " << enumor->value();
-    cout << "," << endl;
+	std::cout << " = " << enumor->value();
+    std::cout << "," << std::endl;
 }
 
 

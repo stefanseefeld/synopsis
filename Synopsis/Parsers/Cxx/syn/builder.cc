@@ -1,7 +1,6 @@
 // File: builder.cc
 
 #include <map>
-using std::map;
 #include <typeinfo>
 #include <strstream>
 
@@ -14,7 +13,7 @@ using std::map;
 #include "strace.hh"
 
 //. Utility method
-Name extend(Name name, string str)
+Name extend(const Name &name, const std::string &str)
 {
     Name ret = name;
     ret.push_back(str);
@@ -38,24 +37,24 @@ Builder::Scope::~Scope()
 }
 
 namespace {
-    ostream& operator << (ostream& out, const Builder::Scope& scope)
-    {
-	const AST::Name& name = scope.scope_decl->name();
-	if (name.size())
-	    copy(name.begin(), name.end(), ostream_iterator<string>(out, "::"));
-	else
-	    out << "(global)";
-	return out;
-    }
+//     std::ostream& operator << (std::ostream& out, const Builder::Scope& scope)
+//     {
+// 	const AST::Name& name = scope.scope_decl->name();
+// 	if (name.size())
+// 	    copy(name.begin(), name.end(), ostream_iterator<string>(out, "::"));
+// 	else
+// 	    out << "(global)";
+// 	return out;
+//     }
 
     //. This class is very similar to ostream_iterator, except that it works on
     //. pointers to types
     template <typename T>
     class ostream_ptr_iterator {
-	ostream* out;
+	std::ostream* out;
 	const char* sep;
     public:
-	ostream_ptr_iterator(ostream& o, const char* s) : out(&o), sep(s) {}
+	ostream_ptr_iterator(std::ostream& o, const char* s) : out(&o), sep(s) {}
 	ostream_ptr_iterator<T>& operator =(const T* value) {
 	    *out << *value;
 	    if (sep) *out << sep;
@@ -66,17 +65,17 @@ namespace {
 	ostream_ptr_iterator<T>& operator ++(int) { return *this; }
     };
 
-    string join(const vector<string>& strs, string sep = " ")
+    std::string join(const std::vector<std::string>& strs, const std::string &sep = " ")
     {
-	vector<string>::const_iterator iter = strs.begin();
+	std::vector<std::string>::const_iterator iter = strs.begin();
 	if (iter == strs.end()) return "";
-	string str = *iter++;
+	std::string str = *iter++;
 	while (iter != strs.end())
 	    str += sep + *iter++;
 	return str;
     }
 
-    ostream& operator <<(ostream& out, const vector<string>& vec) {
+    std::ostream& operator <<(std::ostream& out, const std::vector<std::string>& vec) {
 	return out << join(vec, "::");
     }
 }
@@ -86,7 +85,7 @@ namespace {
 //
 
 struct Builder::Private {
-  typedef map<AST::Scope*, Builder::Scope*> ScopeMap;
+  typedef std::map<AST::Scope*, Builder::Scope*> ScopeMap;
   ScopeMap map;
 };
 
@@ -94,7 +93,7 @@ struct Builder::Private {
 // Class Builder
 //
 
-Builder::Builder(string basename)
+Builder::Builder(const std::string &basename)
 {
     m_basename = basename;
     m_unique = 1;
@@ -149,10 +148,10 @@ void Builder::setAccess(AST::Access axs)
     m_scopes.top()->access = axs;
 }
 
-void Builder::setFilename(string filename)
+void Builder::setFilename(const std::string &filename)
 {
-    if (filename.compare(m_basename, 0, m_basename.size()) == 0)
-	m_filename.assign(filename, m_basename.size(), string::npos);
+    if (filename.compare(0, m_basename.size(), m_basename) == 0)
+	m_filename.assign(filename, m_basename.size(), std::string::npos);
     else
 	m_filename = filename;
 }
@@ -175,9 +174,10 @@ void Builder::add(Type::Named* type)
     m_scopes.top()->dict->insert(type);
 }
 
-AST::Namespace* Builder::startNamespace(string name, NamespaceType nstype)
+AST::Namespace* Builder::startNamespace(const std::string &n, NamespaceType nstype)
 {
-    AST::Namespace* ns = NULL;
+    std::string name = n;
+    AST::Namespace* ns = 0;
     bool generated = false;
     switch (nstype) {
 	case NamespaceNamed:
@@ -188,7 +188,7 @@ AST::Namespace* Builder::startNamespace(string name, NamespaceType nstype)
 		    ns = Type::declared_cast<AST::Namespace>(type);
 		}
 	    }
-	    catch (std::bad_cast) {}
+	    catch (const std::bad_cast &) {}
 	    break;
 	case NamespaceAnon:
 	    // name is the filename. Wrap it in {}'s
@@ -197,7 +197,7 @@ AST::Namespace* Builder::startNamespace(string name, NamespaceType nstype)
 	case NamespaceUnique:
 	    { // name is empty or the type. Encode it with a unique number
 		if (!name.size()) name = "ns";
-		ostrstream x; x << '`' << name << m_unique++ << ends;
+		std::ostrstream x; x << '`' << name << m_unique++ << std::ends;
 		name = x.str();
 	    }
 	    break;
@@ -241,7 +241,7 @@ void Builder::endNamespace()
 // Utility class to recursively add base classes to given search
 void Builder::addClassBases(AST::Class* clas, Scope::Search& search)
 {
-    vector<AST::Inheritance*>::iterator inh_iter = clas->parents().begin();
+    std::vector<AST::Inheritance*>::iterator inh_iter = clas->parents().begin();
     while (inh_iter != clas->parents().end()) {
 	AST::Inheritance* inh = *inh_iter++;
 	Type::Type* type = inh->parent();
@@ -277,7 +277,7 @@ void Builder::updateBaseSearch()
 	scope->search.push_back(*iter++);
 }
 
-AST::Class* Builder::startClass(int lineno, string type, string name)
+AST::Class* Builder::startClass(int lineno, const std::string &type, const std::string &name)
 {
     // Generate the name
     AST::Name class_name = extend(m_scope->name(), name);
@@ -297,25 +297,25 @@ AST::Class* Builder::startClass(int lineno, string type, string name)
     return ns;
 }
 
-AST::Class* Builder::startClass(int lineno, string type, const vector<string>& names)
+AST::Class* Builder::startClass(int lineno, const std::string &type, const std::vector<std::string>& names)
 {
     // Find the forward declaration of this class
     Type::Unknown* unknown = dynamic_cast<Type::Unknown*>(lookupType(names));
     if (!unknown) {
-	cout << "Fatal: Qualified class name did not reference an unknown type." << endl; exit(1);
+	std::cerr << "Fatal: Qualified class name did not reference an unknown type." << std::endl; exit(1);
     }
     // Create the Class
     AST::Class* ns = new AST::Class(m_filename, lineno, type, unknown->name());
     // Add to container scope
-    vector<string> scope_name = names;
+    std::vector<std::string> scope_name = names;
     scope_name.pop_back();
     Type::Declared* scope_type = dynamic_cast<Type::Declared*>(lookupType(scope_name));
     if (!scope_type) {
-	cout << "Fatal: Qualified class name was not in a declaration." << endl; exit(1);
+	std::cerr << "Fatal: Qualified class name was not in a declaration." << std::endl; exit(1);
     }
     AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
     if (!scope) {
-	cout << "Fatal: Qualified class name was not in a scope." << endl; exit(1);
+	std::cerr << "Fatal: Qualified class name was not in a scope." << std::endl; exit(1);
     }
     // Set access
     //decl->setAccess(m_scopes.top()->access);
@@ -345,7 +345,7 @@ void Builder::endClass()
 }
 
 //. Start function impl scope
-void Builder::startFunctionImpl(const vector<string>& name)
+void Builder::startFunctionImpl(const std::vector<std::string>& name)
 {
     /*{ cout << "starting function with name: ";
 	Type::Name::const_iterator niter = name.begin();
@@ -360,13 +360,13 @@ void Builder::startFunctionImpl(const vector<string>& name)
     Builder::Scope* scope_scope;
     if (name.size() > 1) {
 	// Find container scope
-	vector<string> scope_name = name;
+	std::vector<std::string> scope_name = name;
 	scope_name.pop_back();
 	scope_name.insert(scope_name.begin(), ""); // force lookup from global, not current scope, since name is fully qualified
 	Type::Declared* scope_type = dynamic_cast<Type::Declared*>(lookupType(scope_name));
-	if (!scope_type) { cout << "Fatal: Qualified func name was not in a declaration." << endl; exit(1); }
+	if (!scope_type) { std::cerr << "Fatal: Qualified func name was not in a declaration." << std::endl; exit(1); }
 	AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
-	if (!scope) { cout << "Fatal: Qualified func name was not in a scope." << endl; exit(1); }
+	if (!scope) { std::cerr << "Fatal: Qualified func name was not in a scope." << std::endl; exit(1); }
 	scope_scope = findScope(scope);
     } else {
 	scope_scope = findScope(m_global);
@@ -392,7 +392,7 @@ void Builder::endFunctionImpl()
 }
 
 //. Add an operation
-AST::Operation* Builder::addOperation(int line, string name, vector<string> premod, Type::Type* ret, string realname)
+AST::Operation* Builder::addOperation(int line, const std::string &name, const std::vector<std::string> &premod, Type::Type* ret, const std::string &realname)
 {
     // Generate the name
     AST::Name scope = m_scope->name();
@@ -403,7 +403,7 @@ AST::Operation* Builder::addOperation(int line, string name, vector<string> prem
 }
 
 //. Add a variable
-AST::Variable* Builder::addVariable(int line, string name, Type::Type* vtype, bool constr)
+AST::Variable* Builder::addVariable(int line, const std::string &name, Type::Type* vtype, bool constr)
 {
     // Generate the name
     AST::Name scope = m_scope->name();
@@ -419,7 +419,7 @@ void Builder::addThisVariable()
     AST::Scope* func_ns = m_scope;
     AST::Name name = func_ns->name();
     name.pop_back();
-    name.insert(name.begin(), string());
+    name.insert(name.begin(), std::string());
     Type::Named* clas_named = lookupType(name, false);
     AST::Class* clas;
     try {
@@ -437,7 +437,7 @@ void Builder::addThisVariable()
 }
 
 //. Add a typedef
-AST::Typedef* Builder::addTypedef(int line, string name, Type::Type* alias, bool constr)
+AST::Typedef* Builder::addTypedef(int line, const std::string &name, Type::Type* alias, bool constr)
 {
     // Generate the name
     AST::Name scoped_name = extend(m_scope->name(), name);
@@ -448,7 +448,7 @@ AST::Typedef* Builder::addTypedef(int line, string name, Type::Type* alias, bool
 }
 
 //. Add an enumerator
-AST::Enumerator* Builder::addEnumerator(int line, string name, string value)
+AST::Enumerator* Builder::addEnumerator(int line, const std::string &name, const std::string &value)
 {
     AST::Name scoped_name = extend(m_scope->name(), name);
     AST::Enumerator* enumor = new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
@@ -457,7 +457,7 @@ AST::Enumerator* Builder::addEnumerator(int line, string name, string value)
 }
 
 //. Add an enum
-AST::Enum* Builder::addEnum(int line, string name, const vector<AST::Enumerator*>& enumors)
+AST::Enum* Builder::addEnum(int line, const std::string &name, const std::vector<AST::Enumerator*>& enumors)
 {
     AST::Name scoped_name = extend(m_scope->name(), name);
     AST::Enum* theEnum = new AST::Enum(m_filename, line, "enum", scoped_name);
@@ -506,7 +506,7 @@ public:
 };
 
 // Public method to lookup a type
-Type::Named* Builder::lookupType(string name)
+Type::Named* Builder::lookupType(const std::string &name)
 {
     STrace trace("Builder::lookupType(name)");
     Type::Named* type = lookup(name);
@@ -517,7 +517,7 @@ Type::Named* Builder::lookupType(string name)
 }
 
 // Private method to lookup a type in the current scope
-Type::Named* Builder::lookup(string name)
+Type::Named* Builder::lookup(const std::string &name)
 {
     STrace trace("Builder::lookup(name)");
     const Scope::Search& search = m_scopes.top()->search;
@@ -525,7 +525,7 @@ Type::Named* Builder::lookup(string name)
 }
 
 //. Looks up the name in the scope of the given scope
-Type::Named* Builder::lookupType(string name, AST::Scope* decl)
+Type::Named* Builder::lookupType(const std::string &name, AST::Scope* decl)
 {
     STrace trace("Builder::lookupType(name,scope)");
     Private::ScopeMap::iterator iter = m->map.find(decl);
@@ -535,9 +535,9 @@ Type::Named* Builder::lookupType(string name, AST::Scope* decl)
 }
 
 class FunctionHeuristic {
-    typedef vector<Type::Type*> v_Type;
+    typedef std::vector<Type::Type*> v_Type;
     typedef v_Type::iterator vi_Type;
-    typedef vector<AST::Parameter*> v_Param;
+    typedef std::vector<AST::Parameter*> v_Param;
     typedef v_Param::iterator vi_Param;
 
     v_Type m_args;
@@ -566,7 +566,7 @@ public:
 	    calcCost(m_args[index], (*params)[index]->type());
 
 #ifdef DEBUG
-	cout << "--Cost is " << cost << endl;
+	std::cout << "--Cost is " << cost << std::endl;
 #endif
 	return cost;
     }
@@ -600,20 +600,20 @@ private:
     void calcCost(Type::Type* type, Type::Type* param_type) {
 	TypeFormatter tf;
 #ifdef DEBUG
-	cout << tf.format(type) <<","<<tf.format(param_type) << endl;
+	std::cout << tf.format(type) <<","<<tf.format(param_type) << std::endl;
 #endif
 	if (type != param_type) cost += 1;
     }
 };
 
 //. Looks up the function in the given scope with the given args. 
-AST::Function* Builder::lookupFunc(string name, AST::Scope* decl, const vector<AST::Parameter*>& params)
+AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, const std::vector<AST::Parameter*>& params)
 {
     STrace trace("Builder::lookupFunc");
     TypeFormatter tf;
     // Change params to param_types
-    vector<Type::Type*> param_types;
-    for (vector<AST::Parameter*>::const_iterator iter = params.begin(); iter != params.end(); iter++)
+    std::vector<Type::Type*> param_types;
+    for (std::vector<AST::Parameter*>::const_iterator iter = params.begin(); iter != params.end(); iter++)
 	param_types.push_back((*iter)->type());
     // First find Builder::Scope object
     Private::ScopeMap::iterator iter = m->map.find(decl);
@@ -626,9 +626,9 @@ AST::Function* Builder::lookupFunc(string name, AST::Scope* decl, const vector<A
 	if (!scope->dict->has_key(name))
 	    continue;
 
-	typedef vector<Type::Named*> v_Named;
+	typedef std::vector<Type::Named*> v_Named;
 	typedef v_Named::iterator vi_Named;
-	typedef vector<AST::Function*> v_Function;
+	typedef std::vector<AST::Function*> v_Function;
 	typedef v_Function::iterator vi_Function;
 
 	// Get the matching names from the dictionary
@@ -664,7 +664,7 @@ AST::Function* Builder::lookupFunc(string name, AST::Scope* decl, const vector<A
 }
 
 // Private method to lookup a type in the specified search space
-Type::Named* Builder::lookup(string name, const Scope::Search& search, bool func_okay) throw ()
+Type::Named* Builder::lookup(const std::string &name, const Scope::Search& search, bool func_okay) throw ()
 {
     STrace trace("Builder::lookup(name,search,func_okay)");
     Scope::Search::const_iterator s_iter = search.begin();
@@ -694,13 +694,13 @@ Type::Named* Builder::lookup(string name, const Scope::Search& search, bool func
 }
 
 //. Public Qualified Type Lookup
-Type::Named* Builder::lookupType(const vector<string>& names, bool func_okay)
+Type::Named* Builder::lookupType(const std::vector<std::string>& names, bool func_okay)
 {
     STrace trace("Builder::lookupType(type::name,search,func_okay)");
     Type::Named* type = NULL;
-    vector<string>::const_iterator n_iter = names.begin();
+    std::vector<std::string>::const_iterator n_iter = names.begin();
     while (n_iter != names.end()) {
-	string name = *n_iter++;
+	std::string name = *n_iter++;
 	Scope* scope;
 	if (!type) {
 	    if (!name.size()) {
@@ -728,7 +728,7 @@ Type::Named* Builder::lookupType(const vector<string>& names, bool func_okay)
 
     if (!type) {
 	// Not found! Add Type.Unknown of scoped name
-	string name = names[0];
+	std::string name = names[0];
 	for (n_iter = names.begin(); ++n_iter != names.end();)
 	    name += "::" + *n_iter;
 	return Unknown(name);
@@ -761,7 +761,7 @@ Type::Named* Builder::resolveType(Type::Named* type)
     }
     catch (Dictionary::MultipleError e) {
 	LOG("resolveType failed! multiple:" << e.types.size());
-	vector<Type::Named*>::iterator iter = e.types.begin();
+	std::vector<Type::Named*>::iterator iter = e.types.begin();
 	while (iter != e.types.end()) {
 	    LOG(" +" << (*iter++)->name());
 	}
@@ -773,7 +773,7 @@ Type::Named* Builder::resolveType(Type::Named* type)
     return type;
 }
 
-Type::Unknown* Builder::Unknown(string name)
+Type::Unknown* Builder::Unknown(const std::string &name)
 {
     // Generate the name
     AST::Name scope = m_scope->name();
@@ -781,15 +781,16 @@ Type::Unknown* Builder::Unknown(string name)
     return new Type::Unknown(scope);
 }
 
-Type::Unknown* Builder::addUnknown(string name)
+Type::Unknown* Builder::addUnknown(const std::string &name)
 {
     if (m_scopes.top()->dict->has_key(name))
-	return NULL;
+	return 0;
     Type::Unknown* unknown = Unknown(name);
     add(unknown);
+    return 0;
 }
 
-Type::Base* Builder::Base(string name)
+Type::Base* Builder::Base(const std::string &name)
 {
     return new Type::Base(extend(m_scope->name(), name));
 }

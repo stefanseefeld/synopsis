@@ -69,7 +69,7 @@ void unexpected()
 namespace
 {
 
-void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags, PyObject* config)
+void getopts(PyObject *args, std::vector<const char *> &cppflags, vector<const char *> &occflags, PyObject* config)
 {
     showProgram = doCompile = verboseMode = makeExecutable = false;
     doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
@@ -180,7 +180,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
     if (syn_use_gcc) {
 	switch(fork()) {
 	    case 0: {
-		vector<const char *> args = flags;
+		std::vector<const char *> args = flags;
 		char *cc = getenv("CC");
 		args.insert(args.begin(), cc ? cc : "c++");
 		args.push_back("-C"); // keep comments
@@ -191,7 +191,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 		args.push_back("c++");
 		args.push_back(file);
 		args.push_back(0);
-		execvp(args[0], (char **)args.begin());
+		execvp(args[0], (char **)&*args.begin());
 		perror("cannot invoke compiler");
 		exit(-1);
 		break;
@@ -214,7 +214,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 	} // switch
     } else { // else use ucpp
 	// Create argv vector
-	vector<const char *> args = flags;
+	std::vector<const char *> args = flags;
 	char *cc = getenv("CC");
 	args.insert(args.begin(), cc ? cc : "c++");
 	args.push_back("-C"); // keep comments
@@ -235,16 +235,17 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 	args.push_back(file);
 
 	// Call ucpp
-	int status = ucpp_main(args.size(), (char **)args.begin());
-	if (status != 0) {
-	    cout << "ucpp returned error flag." << endl;
+	int status = ucpp_main(args.size(), (char **)&*args.begin());
+	if (status != 0)
+	  {
+	    std::cerr << "ucpp returned error flag." << std::endl;
 	    exit(1);
-	}
+	  }
     }
     return dest;
 }
 
-char *RunOpencxx(const char *src, const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
+char *RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations)
 {
   Trace trace("RunOpencxx");
   std::set_unexpected(unexpected);
@@ -255,7 +256,7 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
     exit(1);
   }
   
-  ifstream ifs(file);
+  std::ifstream ifs(file);
   if(!ifs)
     {
       perror(file);
@@ -266,8 +267,8 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   Parser parse(&lex);
   
     // Calculate source filename
-    string source(src);
-    if (source.compare(string(syn_basename), 0, strlen(syn_basename)) == 0)
+    std::string source(src);
+    if (source.compare(0, strlen(syn_basename), std::string(syn_basename)) == 0)
     source.erase(0, strlen(syn_basename));
 
   Builder builder(syn_basename);
@@ -289,16 +290,16 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   if (syn_main_only) dumper.onlyShow(src);
   dumper.visitScope(builder.scope());
 #else
-    ofstream* of = NULL;
+    std::ofstream* of = 0;
     if (syn_storage) {
-	of = new ofstream(syn_storage);
+	of = new std::ofstream(syn_storage);
 	swalker.setStoreLinks(true, of);
     }
     try {
 	while(parse.rProgram(def))
 	    swalker.Translate(def);
     } catch (...) {
-	cout << "Warning: an uncaught exception occurred when translating the parse tree" << endl;
+	std::cerr << "Warning: an uncaught exception occurred when translating the parse tree" << std::endl;
     }
     // Setup synopsis c++ to py convertor
     Synopsis synopsis(source, declarations, types);
@@ -310,7 +311,7 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   
   if(parse.NumOfErrors() != 0)
     {
-      cerr << "errors while parsing file " << file << endl;
+      std::cerr << "errors while parsing file " << file << std::endl;
       exit(1);
     }
   return dest;
@@ -325,12 +326,12 @@ PyObject *occParse(PyObject *self, PyObject *args)
   char *src;
   PyObject *parserargs, *types, *declarations, *config;
   if (!PyArg_ParseTuple(args, "sO!OO!O", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations, &config)) return 0;
-  vector<const char *> cppargs;
-  vector<const char *> occargs;
+  std::vector<const char *> cppargs;
+  std::vector<const char *> occargs;
   getopts(parserargs, cppargs, occargs, config);
   if (!src || *src == '\0')
     {
-      cerr << "No source file" << endl;
+      std::cerr << "No source file" << std::endl;
       exit(-1);
     }
   char *cppfile = RunPreprocessor(src, cppargs);
@@ -344,7 +345,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
 PyObject *occUsage(PyObject *self, PyObject *)
 {
   Trace trace("occParse");
-  cout << "
+  std::cout << "
   -I<path>                             Specify include path to be used by the preprocessor
   -D<macro>                            Specify macro to be used by the preprocessor
   -m                                   Unly keep declarations from the main file
@@ -357,7 +358,7 @@ PyMethodDef occ_methods[] =
 {
   {(char*)"parse",            occParse,               METH_VARARGS},
   {(char*)"usage",            occUsage,               METH_VARARGS},
-  {NULL, NULL}
+  {0, 0}
 };
 };
 
@@ -371,9 +372,9 @@ extern "C" void initocc()
 
 int main(int argc, char **argv)
 {
-    char *src = NULL;
-    vector<const char *> cppargs;
-    vector<const char *> occargs;
+    char *src = 0;
+    std::vector<const char *> cppargs;
+    std::vector<const char *> occargs;
     //   getopts(argc, argv, cppargs, occargs);
     Py_Initialize();
     int i, py_i;
@@ -385,7 +386,7 @@ int main(int argc, char **argv)
 	else PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
     getopts(pylist, cppargs, occargs);
     if (!src || *src == '\0') {
-	cerr << "Usage: " << argv[0] << " <filename>" << endl;
+	std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
 	exit(-1);
     }
     char *cppfile = RunPreprocessor(src, cppargs);

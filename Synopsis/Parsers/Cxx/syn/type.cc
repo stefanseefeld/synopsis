@@ -23,7 +23,7 @@ void Type::Type::accept(Visitor* visitor)
 
 using namespace Type;
 
-Named::Named(Name n)
+Named::Named(const Name &n)
     : m_name(n)
 {
 }
@@ -33,7 +33,7 @@ void Named::accept(Visitor* visitor)
     visitor->visitNamed(this);
 }
 
-Base::Base(Name n)
+Base::Base(const Name &n)
     : Named(n)
 {
 }
@@ -44,7 +44,7 @@ void Base::accept(Visitor* visitor)
     visitor->visitBase(this);
 }
 
-Unknown::Unknown(Name n)
+Unknown::Unknown(const Name &n)
     : Named(n)
 {
 }
@@ -55,7 +55,7 @@ void Unknown::accept(Visitor* visitor)
     visitor->visitUnknown(this);
 }
 
-Declared::Declared(Name n, AST::Declaration* decl)
+Declared::Declared(const Name &n, AST::Declaration* decl)
     : Named(n), m_decl(decl)
 {
 }
@@ -66,7 +66,7 @@ void Declared::accept(Visitor* visitor)
     visitor->visitDeclared(this);
 }
 
-Template::Template(Name n, AST::Declaration* decl, Type::vector_t& params)
+Template::Template(const Name &n, AST::Declaration* decl, const Type::vector_t& params)
     : Declared(n, decl), m_params(params)
 {
 }
@@ -77,7 +77,7 @@ void Template::accept(Visitor* visitor)
     visitor->visitTemplateType(this);
 }
 
-Modifier::Modifier(Type* alias, Mods& pre, Mods& post)
+Modifier::Modifier(Type* alias, const Mods &pre, const Mods &post)
     : m_alias(alias), m_pre(pre), m_post(post)
 {
 }
@@ -91,7 +91,7 @@ void Modifier::accept(Visitor* visitor)
 Array::Array(Type* alias, const Mods &sizes) : m_alias(alias), m_sizes(sizes) {}
 void Array::accept(Visitor* visitor) { visitor->visitArray(this);}
 
-Parameterized::Parameterized(Template* t, Type::vector_t& params)
+Parameterized::Parameterized(Template* t, const Type::vector_t& params)
     : m_template(t), m_params(params)
 {
 }
@@ -102,7 +102,7 @@ void Parameterized::accept(Visitor* visitor)
     visitor->visitParameterized(this);
 }
 
-FuncPtr::FuncPtr(Type::Type* ret, Mods& premods, Type::vector_t& params)
+FuncPtr::FuncPtr(Type::Type* ret, const Mods &premods, const Type::vector_t& params)
     : m_return(ret), m_premod(premods), m_params(params)
 {
 }

@@ -5,8 +5,6 @@
 
 #include <vector>
 #include <string>
-using std::vector;
-using std::string;
 
 // Forward declaration of Type::Named
 namespace Type { class Named; }
@@ -28,26 +26,26 @@ public:
     //. Exception thrown when multiple declarations are found when one is
     //. expected. The list of declarations is stored in the exception.
     struct MultipleError {
-	vector<Type::Named*> types;
+      std::vector<Type::Named*> types;
     };
 
     //. Exception thrown when a name is not found in lookup*()
     struct KeyError {
-	KeyError(string n) : name(n) {}
-	string name;
+	KeyError(const std::string &n) : name(n) {}
+	std::string name;
     };
 
     //. Returns true if name is in dict
-    bool has_key(string name);
+    bool has_key(const std::string &name);
 
     //. Lookup a name in the dictionary. If more than one declaration has this
     //. name then an exception is thrown.
-    Type::Named* lookup(string name) throw (MultipleError, KeyError);
+    Type::Named* lookup(const std::string &name) throw (MultipleError, KeyError);
 
     //. Lookup a name in the dictionary expecting multiple decls. Use this
     //. method if you expect to find more than one declaration, eg importing
     //. names via a using statement.
-    vector<Type::Named*> lookupMultiple(string name) throw (KeyError);
+    std::vector<Type::Named*> lookupMultiple(const std::string &name) throw (KeyError);
 
     //. Add a declaration to the dictionary. The name() is extracted from the
     //. declaration and its last string used as the key. The declaration is

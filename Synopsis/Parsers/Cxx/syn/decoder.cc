@@ -1,40 +1,41 @@
 // File: decoder.cc
 
 #include "decoder.hh"
-
 #include "type.hh"
-
 #include "builder.hh"
+#include <iostream>
 
 Decoder::Decoder(Builder* builder)
     : m_builder(builder)
 {
 }
 
-string Decoder::decodeName()
+std::string Decoder::decodeName()
 {
     size_t length = *m_iter++ - 0x80;
-    string name(reinterpret_cast<char*>(m_iter),length);
+    std::string name(length, '\0');
+    std::copy(m_iter, m_iter + length, name.begin());
     m_iter += length;
     return name;
 }
 
-string Decoder::decodeName(code_iter iter)
+std::string Decoder::decodeName(code_iter iter)
 {
     size_t length = *iter++ - 0x80;
-    string name(reinterpret_cast<char*>(iter),length);
+    std::string name(length, '\0');
+    std::copy(iter, iter + length, name.begin());
     iter += length;
     return name;
 }
 
-string Decoder::decodeName(char* iter)
+std::string Decoder::decodeName(char* iter)
 {
     size_t length = *reinterpret_cast<unsigned char*>(iter++) - 0x80;
-    string name(iter, length);
+    std::string name(iter, length);
     return name;
 }
 
-void Decoder::decodeQualName(vector<string>& names)
+void Decoder::decodeQualName(std::vector<std::string>& names)
 {
     if (*m_iter++ != 'Q') return;
     int scopes = *m_iter++ - 0x80;
@@ -43,8 +44,9 @@ void Decoder::decodeQualName(vector<string>& names)
 	if (*m_iter >= 0x80) { // Name
 	    names.push_back(decodeName());
 	} else {
-	    cout << "Warning: Unknown type inside Q name: " << *m_iter << endl;
-	    cout << "         Decoding " << m_string << endl;
+	    std::cerr << "Warning: Unknown type inside Q name: " << *m_iter << std::endl;
+	    // FIXME: provide << operator for m_string !
+// 	    std::cerr << "         Decoding " << m_string << std::endl;
 	}
     }
 }
@@ -58,8 +60,8 @@ void Decoder::init(char* string)
 Type::Type* Decoder::decodeType()
 {
     code_iter end = m_string.end();
-    vector<string> premod, postmod;
-    string name;
+    std::vector<std::string> premod, postmod;
+    std::string name;
     Type::Type *baseType = NULL;
 
     // Loop forever until broken
@@ -96,14 +98,16 @@ Type::Type* Decoder::decodeType()
 	    break;
         default:
 	    if (c > 0x80) { --m_iter; name = decodeName(); break; } 
-	    cout << "\nUnknown char decoding '"<<m_string<<"': " 
-		 << char(c) << " " << c << " at "
-		 << (m_iter - m_string.begin()) << endl;
+	    // FIXME
+// 	    std::cerr << "\nUnknown char decoding '"<<m_string<<"': " 
+// 		 << char(c) << " " << c << " at "
+// 		 << (m_iter - m_string.begin()) << std::endl;
 	} // switch
     } // while
     if (!baseType && !name.length()) {
-	cout << "no type or name found decoding " << m_string << endl;
-	return NULL;
+      // FIXME
+// 	std::cerr << "no type or name found decoding " << m_string << std::endl;
+	return 0;
     }
     if (!baseType)
         baseType = m_builder->lookupType(name);
@@ -117,8 +121,8 @@ Type::Type* Decoder::decodeQualType()
 {
     // Qualified type: first is num of scopes, each a name.
     int scopes = *m_iter++ - 0x80;
-    vector<string> names;
-    vector<Type::Type*> types; // if parameterized
+    std::vector<std::string> names;
+    std::vector<Type::Type*> types; // if parameterized
     while (scopes--) {
 	// Only handle two things here: names and templates
 	if (*m_iter >= 0x80) { // Name
@@ -126,14 +130,15 @@ Type::Type* Decoder::decodeQualType()
 	} else if (*m_iter == 'T') {
 	    // Template :(
 	    ++m_iter;
-	    string tname = decodeName();
+	    std::string tname = decodeName();
 	    code_iter tend = m_iter + *m_iter++ - 0x80;
 	    while (m_iter < tend)
 		types.push_back(decodeType());
 	    names.push_back(tname);
 	} else {
-	    cout << "Warning: Unknown type inside Q: " << *m_iter << endl;
-	    cout << "         Decoding " << m_string << endl;
+	    std::cerr << "Warning: Unknown type inside Q: " << *m_iter << std::endl;
+	    // FIXME
+// 	    std::cerr << "         Decoding " << m_string << std::endl;
 	}
     }
     // Ask for qualified lookup
@@ -159,7 +164,7 @@ Type::Type* Decoder::decodeFuncPtr()
 {
     // Function ptr. Encoded same as function
     Type::Type::Mods postmod;
-    vector<Type::Type*> params;
+    std::vector<Type::Type*> params;
     while (1) {
 	Type::Type* type = decodeType();
 	if (type) params.push_back(type);
@@ -175,9 +180,9 @@ Type::Type* Decoder::decodeTemplate()
 {
     // Template type: Name first, then size of arg field, then arg
     // types eg: T6vector54cell <-- 5 is len of 4cell
-    string name = decodeName();
+    std::string name = decodeName();
     code_iter tend = m_iter + *m_iter++ - 0x80;
-    vector<Type::Type*> types;
+    std::vector<Type::Type*> types;
     while (m_iter <= tend)
 	types.push_back(decodeType());
     Type::Type* type = m_builder->lookupType(name);

@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.25 2001/04/17 15:47:26 chalky Exp $
+// $Id: swalker.cc,v 1.26 2001/05/06 20:15:03 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.26  2001/05/06 20:15:03  stefan
+// fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
+//
 // Revision 1.25  2001/04/17 15:47:26  chalky
 // Added declaration name mapper, and changed refmanual to use it instead of the
 // old language mapping
@@ -75,7 +78,6 @@
 #include "link_map.hh"
 
 using namespace AST;
-using std::string;
 
 // ------------------------------------------------------------------
 //                 -- CLASS STrace --
@@ -95,29 +97,36 @@ STrace::list STrace::m_list;
 
 // ------------------------------------
 // SWalker Constructor
-SWalker::SWalker(string source, Parser* parser, Builder* builder, Program* program)
-    : Walker(parser), m_source(source)
+SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Program* program)
+    : Walker(parser),
+      m_parser(parser),
+      m_program(program),
+      m_builder(builder),
+      m_decoder(new Decoder(m_builder)),
+      m_declaration(0),
+      m_filename_ptr(0),
+      m_lineno(0),
+      m_source(source),
+      m_extract_tails(false),
+      m_store_links(false),
+      m_storage(0),
+      m_store_decl(false),
+      m_type_formatter(new TypeFormatter()),
+      m_operation(0),
+      m_type(0),
+      m_scope(0),
+      m_postfix_flag(Postfix_Var)
 {
-    m_parser = parser;
-    m_program = program;
-    m_builder = builder;
-    m_decoder = new Decoder(builder);
-    m_filename_ptr = 0;
-    m_extract_tails = false;
-    m_store_links = false;
-    m_type_formatter = new TypeFormatter();
-    m_scope = NULL;
-    m_postfix_flag = Postfix_Var;
 }
 
 // The name returned is just the node's text if the node is a leaf. Otherwise,
 // the ToString method of Ptree is used, which is rather expensive since it
 // creates a temporary write buffer and reifies the node tree into it.
-string SWalker::getName(Ptree *node)
+std::string SWalker::getName(Ptree *node) const
 {
     // STrace trace("SWalker::getName");
     if (node && node->IsLeaf())
-        return string(node->GetPosition(), node->GetLength());
+        return std::string(node->GetPosition(), node->GetLength());
     return node->ToString();
 }
 
@@ -134,7 +143,7 @@ int SWalker::find_col(const char* start, const char* find)
 }
 
 //. Store a link at the given node
-void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
+void SWalker::storeLink(Ptree* node, bool def, const std::vector<std::string>& name)
 {
     if (!m_store_links) return;
     updateLineNumber(node);
@@ -144,9 +153,9 @@ void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
     int len = node->RightMost() - node->LeftMost();
     
     (*m_storage) << m_lineno << " " << col << " " << len << (def ? " DEF" : " REF");
-    for (vector<string>::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
-	string word = *iter;
-	for (string::size_type pos = word.find(' '); pos != string::npos; pos = word.find(' ', pos)) {
+    for (std::vector<std::string>::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
+	std::string word = *iter;
+	for (std::string::size_type pos = word.find(' '); pos != std::string::npos; pos = word.find(' ', pos)) {
 	    word[pos] = 160; // 'unbreakable space', for want of something better
 	}
 	(*m_storage) << " " << word;
@@ -292,7 +301,7 @@ Ptree* SWalker::TranslateAssignInitializer(PtreeDeclarator*, Ptree*) { STrace tr
 // Format the given parameters. m_type_formatter is used to format the given
 // list of parameters into a string, suitable for use as the name of a
 // Function object.
-string SWalker::formatParameters(vector<AST::Parameter*>& params)
+std::string SWalker::formatParameters(std::vector<AST::Parameter*>& params)
 {
     // Set scope for formatter
     AST::Scope* scope = m_builder->scope();
@@ -302,9 +311,9 @@ string SWalker::formatParameters(vector<AST::Parameter*>& params)
 	AST::Name empty;
 	m_type_formatter->setScope(empty);
     }
-    vector<AST::Parameter*>::iterator iter = params.begin(), end = params.end();
+    std::vector<AST::Parameter*>::iterator iter = params.begin(), end = params.end();
     if (iter == end) { return "()"; }
-    string str = "(" + m_type_formatter->format((*iter++)->type());
+    std::string str = "(" + m_type_formatter->format((*iter++)->type());
     while (iter != end) {
 	str += ",";
 	str += m_type_formatter->format((*iter++)->type());
@@ -330,13 +339,13 @@ void SWalker::Translate(Ptree* node) {
 	// can be safely ignored (with an appropriate log message for
 	// debugging :)
 #ifdef DEBUG
-	string at;
+	std::string at;
 	if (e.node) {
 	    char* fname;
 	    int fname_len;
 	    int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
 	    ostrstream buf;
-	    buf << at << " (" << string(fname, fname_len) << ":" << lineno << ")";
+	    buf << at << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
 	    at.assign(buf.str(), buf.pcount());
 	}
 	LOG("Warning: An exception occurred:" << at);
@@ -398,15 +407,15 @@ Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
 }
 
 //. [ : (public|private|protected|nil) <name> {, ...} ]
-vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
+std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
 {
     STrace trace("PyWalker::TranslateInheritanceSpec");
-    vector<Inheritance*> ispec;
+    std::vector<Inheritance*> ispec;
     Type::Type *type;
     while (node) {
         node = node->Cdr();		// skip : or ,
         // the attributes
-        vector<string> attributes(node->Car()->Length() - 1);
+        std::vector<std::string> attributes(node->Car()->Length() - 1);
         for (int i = 0; i != node->Car()->Length() - 1; ++i) {
             attributes[i] = getName(node->Car()->Nth(i));
 	    if (m_store_links) storeSpan(node->Car()->Nth(i), "file-keyword");
@@ -448,21 +457,21 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	
 	// Create AST.Class object
 	AST::Class *clas;
-        string type = getName(node->First());
+        std::string type = getName(node->First());
 	char* encname = node->GetEncodedName();
 	if (encname[0] == 'Q') {
-	    vector<string> names;
+	    std::vector<std::string> names;
 	    m_decoder->init(encname);
 	    m_decoder->decodeQualName(names);
 	    clas = m_builder->startClass(m_lineno, type, names);
 	} else {
-	    string name = getName(node->Second());
+	    std::string name = getName(node->Second());
 	    clas = m_builder->startClass(m_lineno, type, name);
 	}
 	if (m_store_links) storeLink(node->Second(), true, clas->name());
 
 	// Get parents
-        vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
+        std::vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
 	clas->parents() = parents;
 	m_builder->updateBaseSearch();
 	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
@@ -484,7 +493,7 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	m_builder->endClass();
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
-        string name = getName(node->Second());
+        std::string name = getName(node->Second());
 	m_builder->addUnknown(name);
 	if (m_store_links) { // highlight the comments, at least
 	    PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
@@ -506,12 +515,12 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	
 	// Create AST.Class object
 	AST::Class *clas;
-        string type = getName(node->First());
-        vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
+        std::string type = getName(node->First());
+        std::vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
 	char* encname = node->GetEncodedName();
 	//cout << "class encname: " << encname << endl;
 	if (encname[0] == 'Q') {
-	    vector<string> names;
+	    std::vector<std::string> names;
 	    m_decoder->init(encname);
 	    m_decoder->decodeQualName(names);
 	    clas = m_builder->startClass(m_lineno, type, names);
@@ -519,7 +528,7 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	    // Specialisation.. ignore for now. FIXME
 	    return 0;
 	} else {
-	    string name = getName(node->Second());
+	    std::string name = getName(node->Second());
 	    clas = m_builder->startClass(m_lineno, type, name);
 	}
 	clas->parents() = parents;
@@ -567,7 +576,7 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	m_builder->endClass();
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
-        string name = getName(node->Second());
+        std::string name = getName(node->Second());
 	m_builder->addUnknown(name);
     }
     return 0; 
@@ -711,7 +720,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
         Ptree *p_params = decl->Rest();
         while (p_params && !p_params->Car()->Eq('(')) p_params = Ptree::Rest(p_params);
 	if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
-        vector<AST::Parameter*> params;
+        std::vector<AST::Parameter*> params;
 	TranslateParameters(p_params->Second(), params);
 	m_params = params;
 
@@ -720,7 +729,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
         Type::Type* returnType = m_decoder->decodeType();
 
         // Figure out premodifiers
-        vector<string> premod;
+        std::vector<std::string> premod;
         Ptree* p = Ptree::First(m_declaration);
         while (p) {
             premod.push_back(p->ToString());
@@ -731,7 +740,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	// Find name:
 	if (encname[0] == 'Q') {
 	    // The name is qualified, which introduces a bit of difficulty
-	    vector<string> names;
+	    std::vector<std::string> names;
 	    m_decoder->init(encname);
 	    m_decoder->decodeQualName(names);
 	    names.back() += formatParameters(params);
@@ -743,9 +752,9 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 		throw ERROR("Qualified function name wasn't a function:" << names);
 	    }
 	    // expand param info, since we now have names for them
-	    vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
-	    vector<AST::Parameter*>::iterator pend = oper->parameters().end();
-	    vector<AST::Parameter*>::iterator new_piter = params.begin();
+	    std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
+	    std::vector<AST::Parameter*>::iterator pend = oper->parameters().end();
+	    std::vector<AST::Parameter*>::iterator new_piter = params.begin();
 	    while (piter != pend) {
 		AST::Parameter* param = *piter++, *new_param = *new_piter++;
 		if (!param->name().size() && new_param->name().size()) {
@@ -754,10 +763,10 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    }
 	} else {
 	    // Decode the function name
-	    string realname;
+	    std::string realname;
 	    TranslateFunctionName(encname, realname, returnType);
 	    // Name is same as realname, but with parameters added
-	    string name = realname+formatParameters(params);
+	    std::string name = realname+formatParameters(params);
 	    // Append const after params if this is a const function
 	    if (is_const) name += "const";
 	    // Create AST::Operation object
@@ -789,7 +798,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	m_decoder->init(enctype);
 	// Get type
 	Type::Type* type = m_decoder->decodeType();
-	string name;
+	std::string name;
         if (*encname < 0) name = m_decoder->decodeName(encname);
         else if (*encname == 'Q') {
 	    cout << "Scoped name in variable decl!" << endl;
@@ -800,7 +809,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	}
 
 	// TODO: implement sizes support
-	vector<size_t> sizes;
+	std::vector<size_t> sizes;
 	AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false);
 	//if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
 	//if (decl->GetComments()) addComments(var, decl->GetComments());
@@ -833,11 +842,11 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 }
 
 // Fills the vector of Parameter types by parsing p_params.
-void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
+void SWalker::TranslateParameters(Ptree* p_params, std::vector<Parameter*>& params)
 {
     while (p_params) {
 	// A parameter has a type, possibly a name and possibly a value
-	string name, value;
+	std::string name, value;
 	if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
 	Ptree* param = p_params->First();
 	// The type is stored in the encoded type string already
@@ -872,7 +881,7 @@ void SWalker::TranslateParameters(Ptree* p_params, vector<Parameter*>& params)
     }
 }
 
-void SWalker::TranslateFunctionName(char* encname, string& realname, Type::Type*& returnType)
+void SWalker::TranslateFunctionName(char* encname, std::string& realname, Type::Type*& returnType)
 {
    if (*encname < 0) {
 	if (encname[1] == '@') {
@@ -943,7 +952,7 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
     m_decoder->init(enctype);
     Type::Type* type = m_decoder->decodeType();
     // Get name of typedef
-    string name = m_decoder->decodeName(encname);
+    std::string name = m_decoder->decodeName(encname);
     // Create typedef object
     AST::Typedef* tdef = m_builder->addTypedef(m_lineno, name, type, false);
     addComments(tdef, dynamic_cast<PtreeDeclarator*>(node));
@@ -988,12 +997,12 @@ void SWalker::TranslateFuncImplCache(const FuncImplCache& cache)
     // declarations in the function are added to this dummy namespace. Once we
     // are done, we remove it from the parent scope (its not much use in the
     // documents)
-    vector<string> name = cache.oper->name();
+    std::vector<std::string> name = cache.oper->name();
     name.back() = "{"+name.back()+"}";
     m_builder->startFunctionImpl(name);
     try {
 	// Add parameters
-	vector<AST::Parameter*>::const_iterator iter, end;
+	std::vector<AST::Parameter*>::const_iterator iter, end;
 	iter = cache.params.begin();
 	end = cache.params.end();
 	while (iter != end) {
@@ -1034,12 +1043,12 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 {
     //updateLineNumber(spec);
     if (!spec->Second()) { return 0; /* anonymous enum */ }
-    string name = spec->Second()->ToString();
+    std::string name = spec->Second()->ToString();
 
     updateLineNumber(spec);
     int enum_lineno = m_lineno;
     // Parse enumerators
-    vector<AST::Enumerator*> enumerators;
+    std::vector<AST::Enumerator*> enumerators;
     Ptree* penum = spec->Third()->Second();
     AST::Enumerator* enumor;
     while (penum) {
@@ -1052,7 +1061,7 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 	    storeLink(penumor, true, enumor->name());
 	} else {
 	    // Name = Value
-	    string name = penumor->First()->ToString(), value;
+	    std::string name = penumor->First()->ToString(), value;
 	    if (penumor->Length() == 3) {
 		value = penumor->Third()->ToString();
 	    }
