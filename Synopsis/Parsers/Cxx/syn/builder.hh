@@ -130,11 +130,20 @@ public:
     Type::Named* lookupType(const std::string &name, AST::Scope* scope);
 
     //. Looks up the function in the given scope with the given args. 
-    AST::Function* lookupFunc(const std::string &, AST::Scope*, const std::vector<AST::Parameter*>&);
+    AST::Function* lookupFunc(const std::string &, AST::Scope*, const std::vector<Type::Type*>&);
+
+    //. Looks up the function operator in the current scope with the given
+    //. types. May return NULL if builtin operator or no operator is found.
+    AST::Function* lookupOperator(const std::string& oper, Type::Type* left_type, Type::Type* right_type);
 
     //. Maps a scoped name into a vector of scopes and the final type. Returns
     //. true on success.
     bool mapName(const AST::Name& name, std::vector<AST::Scope*>&, Type::Named*&);
+
+    //. Returns the types for an array operator on the given type with an
+    //. argument of the given type. If a function is used then it is stored in
+    //. the function ptr ref given, else the ptr is set to NULL.
+    Type::Type* arrayOperator(Type::Type* object, Type::Type* arg, AST::Function*&);
 
     //. Resolves the final type of the given type. If the given type is an
     //. Unknown, it checks to see if the type has been defined yet and returns
@@ -215,6 +224,15 @@ private:
 
     //. Utility class to recursively add base classes to given search
     void addClassBases(AST::Class* clas, Scope::Search& search);
+
+    //. Utility class to add all functions with the given name in the given
+    //. Scope's dictionary to the given vector. May throw an error if the
+    //. types looked up are not functions.
+    void findFunctions(const std::string&, Scope*, std::vector<AST::Function*>&);
+
+    //. Determines the best function from the given list for the given
+    //. arguments using heuristics. Returns the function and stores the cost
+    AST::Function* bestFunction(const std::vector<AST::Function*>&, const std::vector<Type::Type*>&, int& cost);
 
 }; // class Builder
 

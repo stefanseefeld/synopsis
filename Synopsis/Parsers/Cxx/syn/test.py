@@ -25,7 +25,7 @@ class Test:
 	ret = os.system(command)
 	return ret >> 8
     def gdb_less(self, test_file, flags = ""):
-	return self.system("make debug && ./occ.gdb %s %s | less"%(flags, test_file));
+	return self.system("make debug && echo ./occ.gdb %s %s && ./occ.gdb %s %s | less"%(flags, test_file, flags, test_file))
     def view_page(self, file, base, flags=""):
 	f = open("/tmp/%s.top"%base, "w")
 	f.write(html_top)
@@ -134,6 +134,34 @@ void test() {
     func(1.2);
     func("s");
 }"""
+
+class OperTest (Test):
+    test = """
+struct A {};
+struct B {};
+A operator +(const B&, const B&);
+int operator +(const A&, const A&);
+void func(A);
+void func(B);
+void func(int);
+void main() {
+    B x, y;
+    func( (x + y) + (x + y) ); // should call func(int)
+}
+"""
+
+class KoenigTest (Test):
+    test = """
+namespace NS {
+    struct A {};
+    int operator +(A, A);
+};
+void func(int);
+void func(NS::A) {
+    NS::A x, y;
+    func(x + y); // should call func(int)
+}
+"""
 
 class Link (Test):
     def run(self):

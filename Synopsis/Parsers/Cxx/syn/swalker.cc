@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.39 2001/06/10 07:17:37 chalky Exp $
+// $Id: swalker.cc,v 1.40 2001/06/11 10:37:30 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.40  2001/06/11 10:37:30  chalky
+// Operators! Arrays! (and probably more that I forget)
+//
 // Revision 1.39  2001/06/10 07:17:37  chalky
 // Comment fix, better functions, linking etc. Better link titles
 //
@@ -783,7 +786,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	if (!p_params) { cout << "Warning: error finding params!" << endl; return 0; }
         std::vector<AST::Parameter*> params;
 	TranslateParameters(p_params->Second(), params);
-	m_params = params;
+	m_param_cache = params;
 
         // Figure out the return type:
         while (*iter++ != '_'); // in case of decoding error this is needed
@@ -904,7 +907,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 }
 
 // Fills the vector of Parameter types by parsing p_params.
-void SWalker::TranslateParameters(Ptree* p_params, std::vector<Parameter*>& params)
+void SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& params)
 {
     while (p_params)
     {
@@ -1063,7 +1066,7 @@ Ptree* SWalker::TranslateFunctionImplementation(Ptree* node)
 
     FuncImplCache cache;
     cache.oper = m_operation;
-    cache.params = m_params;
+    cache.params = m_param_cache;
     cache.body = node->Nth(3);
 
     if (dynamic_cast<AST::Class*>(m_builder->scope())) {
