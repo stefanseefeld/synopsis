@@ -16,9 +16,6 @@
 #include <ostream>
 #include <iterator>
 
-class Walker;
-class TypeInfo;
-
 namespace PTree
 {
 
@@ -46,9 +43,6 @@ public:
 
   virtual Encoding encoded_type() const { return Encoding();}
   virtual Encoding encoded_name() const { return Encoding();}
-
-  virtual Node *Translate(Walker*);
-  virtual void Typeof(Walker*, TypeInfo&);
 
 protected:
   //. used by Atom

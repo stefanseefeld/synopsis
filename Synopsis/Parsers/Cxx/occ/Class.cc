@@ -20,6 +20,7 @@
 #include "Environment.hh"
 #include <PTree.hh>
 #include <PTree/Writer.hh>
+#include <TypeInfoVisitor.hh>
 #include "Walker.hh"
 #include "ClassWalker.hh"
 #include "TypeInfo.hh"
@@ -735,19 +736,19 @@ PTree::Node *Class::TranslateExpression(Environment* env, PTree::Node *exp)
     if(exp == 0)
 	return exp;
     else
-	return env->GetWalker()->Translate(exp);
+	return env->GetWalker()->translate(exp);
 }
 
 PTree::Node *Class::TranslateExpression(Environment* env, PTree::Node *exp,
 				  TypeInfo& type)
 {
     if(exp == 0){
-	type.Unknown();
+	type.unknown();
 	return exp;
     }
     else{
-	env->GetWalker()->Typeof(exp, type);
-	return env->GetWalker()->Translate(exp);
+        type_of(exp, env->GetWalker()->GetEnvironment(), type);
+	return env->GetWalker()->translate(exp);
     }
 }
 
@@ -760,18 +761,18 @@ PTree::Node *Class::TranslateStatement(Environment* env, PTree::Node *exp)
 
 PTree::Node *Class::TranslateNewType(Environment* env, PTree::Node *type)
 {
-    return env->GetWalker()->TranslateNew3(type);
+    return env->GetWalker()->translate_new3(type);
 }
 
 PTree::Node *Class::TranslateArguments(Environment* env, PTree::Node *arglist)
 {
-    return env->GetWalker()->TranslateArguments(arglist);
+    return env->GetWalker()->translate_arguments(arglist);
 }
 
 PTree::Node *Class::TranslateFunctionBody(Environment* env, Member& m, PTree::Node *body)
 {
     Walker* w = env->GetWalker();
-    return w->RecordArgsAndTranslateFbody(this, m.ArgumentList(), body);
+    return w->record_args_and_translate_fbody(this, m.ArgumentList(), body);
 }
 
 // others
@@ -913,7 +914,7 @@ void Class::SetMetaclassForFunctions(char* name)
 void Class::InsertBeforeStatement(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	((ClassWalker*)w)->InsertBeforeStatement(p);
     else
 	MopWarningMessage("Class::InsertBeforeStatement()",
@@ -923,7 +924,7 @@ void Class::InsertBeforeStatement(Environment* env, PTree::Node *p)
 void Class::AppendAfterStatement(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	((ClassWalker*)w)->AppendAfterStatement(p);
     else
 	MopWarningMessage("Class::AppendAfterStatement()",
@@ -933,7 +934,7 @@ void Class::AppendAfterStatement(Environment* env, PTree::Node *p)
 void Class::InsertBeforeToplevel(Environment* env, Class* c)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	InsertBeforeToplevel(env, ((ClassWalker*)w)->ConstructClass(c));
     else
 	MopWarningMessage("Class::InsertBeforeToplevel()",
@@ -943,7 +944,7 @@ void Class::InsertBeforeToplevel(Environment* env, Class* c)
 void Class::InsertBeforeToplevel(Environment* env, Member& mem)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker()){
+    if(w->is_class_walker()){
 	ChangedMemberList::Cmem cmem;
 	Member::Copy(&mem, &cmem);
 	InsertBeforeToplevel(env, ((ClassWalker*)w)->ConstructMember(&cmem));
@@ -956,7 +957,7 @@ void Class::InsertBeforeToplevel(Environment* env, Member& mem)
 void Class::InsertBeforeToplevel(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	((ClassWalker*)w)->InsertBeforeToplevel(p);
     else
 	MopWarningMessage("Class::InsertBeforeToplevel()",
@@ -966,7 +967,7 @@ void Class::InsertBeforeToplevel(Environment* env, PTree::Node *p)
 void Class::AppendAfterToplevel(Environment* env, Class* c)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	AppendAfterToplevel(env, ((ClassWalker*)w)->ConstructClass(c));
     else
 	MopWarningMessage("Class::AppendAfterToplevel()",
@@ -976,7 +977,7 @@ void Class::AppendAfterToplevel(Environment* env, Class* c)
 void Class::AppendAfterToplevel(Environment* env, Member& mem)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker()){
+    if(w->is_class_walker()){
 	ChangedMemberList::Cmem cmem;
 	Member::Copy(&mem, &cmem);
 	AppendAfterToplevel(env, ((ClassWalker*)w)->ConstructMember(&cmem));
@@ -989,7 +990,7 @@ void Class::AppendAfterToplevel(Environment* env, Member& mem)
 void Class::AppendAfterToplevel(Environment* env, PTree::Node *p)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	((ClassWalker*)w)->AppendAfterToplevel(p);
     else
 	MopWarningMessage("Class::AppendAfterToplevel()",
@@ -1005,7 +1006,7 @@ bool Class::InsertDeclaration(Environment* env, PTree::Node *decl,
 			      PTree::Node *key, void* client_data)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	return ((ClassWalker*)w)->InsertDeclaration(decl, this, key,
 						    client_data);
     else{
@@ -1018,7 +1019,7 @@ bool Class::InsertDeclaration(Environment* env, PTree::Node *decl,
 void* Class::LookupClientData(Environment* env, PTree::Node *key)
 {
     Walker* w = env->GetWalker();
-    if(w->IsClassWalker())
+    if(w->is_class_walker())
 	return ((ClassWalker*)w)->LookupClientData(this, key);
     else{
 	MopWarningMessage("Class::LookupClientData()",
@@ -1100,7 +1101,7 @@ PTree::Node *TemplateClass::GetClassInTemplate(PTree::Node *def)
   PTree::Node *decl = PTree::nth(def, 4);
   if(!decl) return def;
 
-  PTree::Node *cdef = Walker::GetClassTemplateSpec(decl);
+  PTree::Node *cdef = Walker::get_class_template_spec(decl);
   if(!cdef) return def;
   else return cdef;
 }

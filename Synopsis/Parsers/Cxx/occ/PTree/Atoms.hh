@@ -41,9 +41,6 @@ class Identifier : public CommentedAtom
 public:
   Identifier(const char *p, size_t l) : CommentedAtom(p, l) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  Node *Translate(Walker*);
-  void Typeof(Walker*, TypeInfo&);
 };
 
 class Reserved : public CommentedAtom
@@ -57,11 +54,8 @@ public:
 class This : public Reserved
 {
 public:
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
   This(Token& t) : Reserved(t) {}
-  Node *Translate(Walker*);
-  void Typeof(Walker*, TypeInfo&);
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 template <typename T, Token::Type t>

@@ -90,8 +90,8 @@ void Member::Signature(TypeInfo& t) const
   if(!declarator) throw std::runtime_error("Member::Signature(): not initialized object.");
 
   PTree::Encoding type = declarator->encoded_type();
-  if(type.empty()) t.Unknown();
-  else t.Set(type, metaobject->GetEnvironment());
+  if(type.empty()) t.unknown();
+  else t.set(type, metaobject->GetEnvironment());
 }
 
 PTree::Node *Member::Name()
@@ -178,7 +178,7 @@ bool Member::IsFunction()
 {
   TypeInfo t;
   Signature(t);
-  return t.IsFunction();
+  return t.is_function();
 }
 
 bool Member::IsPublic()

@@ -86,103 +86,101 @@ public:
   void find_comments(PTree::Node * node);
 
   // Takes the (maybe 0) args list and puts them in my_params
-  void TranslateFunctionArgs(PTree::Node * args);
-  void TranslateParameters(PTree::Node * p_params, std::vector<AST::Parameter*>& params);
-  void TranslateFunctionName(const PTree::Encoding &encname, std::string& realname, Types::Type*& returnType);
-  PTree::Node * TranslateDeclarator(PTree::Node *);
-  PTree::Node * TranslateFunctionDeclarator(PTree::Node *, bool is_const);
-  PTree::Node * TranslateVariableDeclarator(PTree::Node *, bool is_const);
-  void TranslateTypedefDeclarator(PTree::Node * node);
-  std::vector<AST::Inheritance*> TranslateInheritanceSpec(PTree::Node *node);
+  void translate_function_args(PTree::Node * args);
+  void translate_parameters(PTree::Node * p_params, std::vector<AST::Parameter*>& params);
+  void translate_function_name(const PTree::Encoding &encname, std::string& realname, Types::Type*& returnType);
+  PTree::Node *translate_declarator(PTree::Node *);
+  PTree::Node *translate_function_declarator(PTree::Node *, bool is_const);
+  PTree::Node *translate_variable_declarator(PTree::Node *, bool is_const);
+  void translate_typedef_declarator(PTree::Node *node);
+  std::vector<AST::Inheritance*> translate_inheritance_spec(PTree::Node *node);
   //. Returns a formatter string of the parameters. The idea is that this
   //. string will be appended to the function name to form the 'name' of the
   //. function.
   std::string format_parameters(std::vector<AST::Parameter*>& params);
 
   //. Translates the template parameters and creates the template type.
-  void SWalker::TranslateTemplateParams(PTree::Node * params);
-
-  // default translation
-  virtual PTree::Node * TranslatePtree(PTree::Node *);
+  void SWalker::translate_template_params(PTree::Node *params);
 
   //. Overridden to catch exceptions
-  void Translate(PTree::Node *);
+  void translate(PTree::Node *);
 
-  virtual PTree::Node * TranslateTypedef(PTree::Node *);
-  virtual PTree::Node * TranslateTemplateDecl(PTree::Node *);
-  virtual PTree::Node * TranslateTemplateInstantiation(PTree::Node *);
+  void visit(PTree::Atom *);
+  void visit(PTree::Typedef *);
+  void visit(PTree::TemplateDecl *);
+  void visit(PTree::TemplateInstantiation *);
   //virtual PTree::Node * TranslateTemplateInstantiation(PTree::Node *, PTree::Node *, PTree::Node *, Class*);
-  virtual PTree::Node * TranslateExternTemplate(PTree::Node *);
-  virtual PTree::Node * TranslateTemplateClass(PTree::Node *, PTree::Node *);
-  virtual PTree::Node * TranslateTemplateFunction(PTree::Node *, PTree::Node *);
-  virtual PTree::Node * TranslateMetaclassDecl(PTree::Node *);
-  virtual PTree::Node * TranslateLinkageSpec(PTree::Node *);
-  virtual PTree::Node * TranslateNamespaceSpec(PTree::Node *);
-  virtual PTree::Node * TranslateUsing(PTree::Node *);
-  virtual PTree::Node * TranslateDeclaration(PTree::Node *);
-  virtual PTree::Node * TranslateStorageSpecifiers(PTree::Node *);
-  virtual PTree::Node * TranslateDeclarators(PTree::Node *);
-  virtual PTree::Node * TranslateArgDeclList(bool, PTree::Node *, PTree::Node *);
-  virtual PTree::Node * TranslateInitializeArgs(PTree::Declarator*, PTree::Node *);
-  virtual PTree::Node * TranslateAssignInitializer(PTree::Declarator*, PTree::Node *);
+  void visit(PTree::ExternTemplate *);
+  void visit(PTree::Identifier *node) { translate_variable(node);}
+  void visit(PTree::Brace *);
+  void visit(PTree::Block *);
+  void visit(PTree::ClassSpec *);
+  void visit(PTree::EnumSpec *);
+  void visit(PTree::MetaclassDecl *);
+  void visit(PTree::LinkageSpec *);
+  void visit(PTree::NamespaceSpec *);
+  void visit(PTree::Using *);
+  void visit(PTree::Declaration *);
+  void visit(PTree::Name *node) { translate_variable(node);}
+  void visit(PTree::AccessSpec *);
+  void visit(PTree::AccessDecl *);
+  void visit(PTree::UserAccessSpec *);
+  void visit(PTree::IfStatement *);
+  void visit(PTree::SwitchStatement *);
+  void visit(PTree::WhileStatement *);
+  void visit(PTree::DoStatement *);
+  void visit(PTree::ForStatement *);
+  void visit(PTree::TryStatement *);
+  void visit(PTree::BreakStatement *);
+  void visit(PTree::ContinueStatement *);
+  void visit(PTree::ReturnStatement *);
+  void visit(PTree::GotoStatement *);
+  void visit(PTree::CaseStatement *);
+  void visit(PTree::DefaultStatement *);
+  void visit(PTree::LabelStatement *);
+  void visit(PTree::ExprStatement *);
+  void visit(PTree::CommaExpr *);
+  void visit(PTree::AssignExpr *);
+  void visit(PTree::CondExpr *);
+  void visit(PTree::InfixExpr *);
+  void visit(PTree::PmExpr *);
+  void visit(PTree::CastExpr *);
+  void visit(PTree::UnaryExpr *);
+  void visit(PTree::ThrowExpr *);
+  void visit(PTree::SizeofExpr *);
+  void visit(PTree::NewExpr *);
+  void visit(PTree::DeleteExpr *);
+  void visit(PTree::This *);
+  void visit(PTree::FstyleCastExpr *);
+  void visit(PTree::ArrayExpr *);
+  void visit(PTree::FuncallExpr *); // and fstyle cast
+  void visit(PTree::PostfixExpr *);
+  void visit(PTree::UserStatementExpr *);
+  void visit(PTree::DotMemberExpr *);
+  void visit(PTree::ArrowMemberExpr *);
+  void visit(PTree::ParenExpr *);
+  void visit(PTree::StaticUserStatementExpr *);
   
-  virtual PTree::Node * TranslateFunctionImplementation(PTree::Node *);
-
-  virtual PTree::Node * TranslateFunctionBody(PTree::Node *);
-  virtual PTree::Node * TranslateBrace(PTree::Node *);
-  virtual PTree::Node * TranslateBlock(PTree::Node *);
+  PTree::TemplateDecl *translate_template_class(PTree::TemplateDecl *,
+						PTree::ClassSpec *);
+  PTree::TemplateDecl *translate_template_function(PTree::TemplateDecl *,
+						   PTree::Node *);
+  PTree::Node *translate_storage_specifiers(PTree::Node *);
+  PTree::Node *translate_declarators(PTree::Node *);
+  PTree::Node *translate_arg_decl_list(bool, PTree::Node *, PTree::Node *);
+  PTree::Node *translate_initialize_args(PTree::Declarator *, PTree::Node *);
+  PTree::Node *translate_assign_initializer(PTree::Declarator *, PTree::Node *);
+  PTree::Node *translate_function_implementation(PTree::Node *);
+  PTree::Node *translate_function_body(PTree::Node *);
   //virtual PTree::Node * TranslateClassBody(PTree::Node *, PTree::Node *, Class*);
   
-  virtual PTree::Node * TranslateClassSpec(PTree::Node *);
   //virtual Class* MakeClassMetaobject(PTree::Node *, PTree::Node *, PTree::Node *);
   //virtual PTree::Node * TranslateClassSpec(PTree::Node *, PTree::Node *, PTree::Node *, Class*);
-  virtual PTree::Node * TranslateEnumSpec(PTree::Node *);
   
-  virtual PTree::Node * TranslateAccessSpec(PTree::Node *);
-  virtual PTree::Node * TranslateAccessDecl(PTree::Node *);
-  virtual PTree::Node * TranslateUserAccessSpec(PTree::Node *);
-  
-  virtual PTree::Node * TranslateIf(PTree::Node *);
-  virtual PTree::Node * TranslateSwitch(PTree::Node *);
-  virtual PTree::Node * TranslateWhile(PTree::Node *);
-  virtual PTree::Node * TranslateDo(PTree::Node *);
-  virtual PTree::Node * TranslateFor(PTree::Node *);
-  virtual PTree::Node * TranslateTry(PTree::Node *);
-  virtual PTree::Node * TranslateBreak(PTree::Node *);
-  virtual PTree::Node * TranslateContinue(PTree::Node *);
-  virtual PTree::Node * TranslateReturn(PTree::Node *);
-  virtual PTree::Node * TranslateGoto(PTree::Node *);
-  virtual PTree::Node * TranslateCase(PTree::Node *);
-  virtual PTree::Node * TranslateDefault(PTree::Node *);
-  virtual PTree::Node * TranslateLabel(PTree::Node *);
-  virtual PTree::Node * TranslateExprStatement(PTree::Node *);
-  
-  virtual PTree::Node * TranslateTypespecifier(PTree::Node *);
-  virtual PTree::Node * TranslateTypeof(PTree::Node *, PTree::Node * declarations);
-  
-  virtual PTree::Node * TranslateComma(PTree::Node *);
-  virtual PTree::Node * TranslateAssign(PTree::Node *);
-  virtual PTree::Node * TranslateCond(PTree::Node *);
-  virtual PTree::Node * TranslateInfix(PTree::Node *);
-  virtual PTree::Node * TranslatePm(PTree::Node *);
-  virtual PTree::Node * TranslateCast(PTree::Node *);
-  virtual PTree::Node * TranslateUnary(PTree::Node *);
-  virtual PTree::Node * TranslateThrow(PTree::Node *);
-  virtual PTree::Node * TranslateSizeof(PTree::Node *);
-  virtual PTree::Node * TranslateNew(PTree::Node *);
-  virtual PTree::Node * TranslateNew3(PTree::Node * type);
-  virtual PTree::Node * TranslateDelete(PTree::Node *);
-  virtual PTree::Node * TranslateThis(PTree::Node *);
-  virtual PTree::Node * TranslateVariable(PTree::Node *);
-  virtual PTree::Node * TranslateFstyleCast(PTree::Node *);
-  virtual PTree::Node * TranslateArray(PTree::Node *);
-  virtual PTree::Node * TranslateFuncall(PTree::Node *);	// and fstyle cast
-  virtual PTree::Node * TranslatePostfix(PTree::Node *);
-  virtual PTree::Node * TranslateUserStatement(PTree::Node *);
-  virtual PTree::Node * TranslateDotMember(PTree::Node *);
-  virtual PTree::Node * TranslateArrowMember(PTree::Node *);
-  virtual PTree::Node * TranslateParen(PTree::Node *);
-  virtual PTree::Node * TranslateStaticUserStatement(PTree::Node *);
+  virtual PTree::Node *translate_type_specifier(PTree::Node *);
+  virtual PTree::Node *translate_typeof(PTree::Node *, PTree::Node * declarations);
+  virtual PTree::Node *translate_new3(PTree::Node *type);
+  void translate_variable(PTree::Node *);
   
   AST::SourceFile* current_file() const { return my_file;}
   int current_lineno() const { return my_lineno;}
@@ -266,7 +264,7 @@ private:
   typedef std::vector<FuncImplVec> FuncImplStack;
   //. The stack of function impl vectors
   FuncImplStack my_func_impl_stack;
-  void SWalker::TranslateFuncImplCache(const FuncImplCache& cache);
+  void SWalker::translate_func_impl_cache(const FuncImplCache &cache);
   
   //. Finds the column given the start ptr and the current position. The
   //. derived column number is processed with the macro call dictionary

@@ -6,7 +6,6 @@
 // see the file COPYING for details.
 //
 #include "PTree/Atoms.hh"
-#include "Walker.hh"
 
 namespace
 {
@@ -35,22 +34,3 @@ DupAtom::DupAtom(const char *str1, size_t len1,
 {
 }
 
-Node *Identifier::Translate(Walker* w)
-{
-  return w->TranslateVariable(this);
-}
-
-void Identifier::Typeof(Walker* w, TypeInfo& t)
-{
-  w->TypeofVariable(this, t);
-}
-
-Node *This::Translate(Walker* w)
-{
-  return w->TranslateThis(this);
-}
-
-void This::Typeof(Walker* w, TypeInfo& t)
-{
-  w->TypeofThis(this, t);
-}

@@ -13,6 +13,7 @@
 */
 
 #include <PTree.hh>
+#include <TypeInfoVisitor.hh>
 #include "ClassWalker.hh"
 #include "ClassBodyWalker.hh"
 #include "Class.hh"
@@ -21,23 +22,17 @@
 #include "Member.hh"
 #include <iostream>
 
-Class* ClassWalker::GetClassMetaobject(TypeInfo& tinfo)
+Class *ClassWalker::get_class_metaobject(TypeInfo& tinfo)
 {
-    Class* c;
-    if(tinfo.IsClass(c))
-	return c;
-    else if(tinfo.IsReferenceType()){
-	tinfo.Dereference();
-	if(tinfo.IsClass(c))
-	    return c;
-    }
-
-    return 0;
-}
-
-bool ClassWalker::IsClassWalker()
-{
-    return true;
+  Class* c;
+  if(tinfo.is_class(c))
+    return c;
+  else if(tinfo.is_reference_type()){
+    tinfo.dereference();
+    if(tinfo.is_class(c))
+      return c;
+  }
+  return 0;
 }
 
 void ClassWalker::InsertBeforeStatement(PTree::Node *p)
@@ -121,14 +116,14 @@ PTree::Node *ClassWalker::GetAppendedPtree()
   return result;
 }
 
-PTree::Node *ClassWalker::TranslateMetaclassDecl(PTree::Node *decl)
+PTree::Node *ClassWalker::translate_metaclass_decl(PTree::Node *decl)
 {
   env->RecordMetaclassName(decl);
   return 0;
 }
 
-PTree::Node *ClassWalker::TranslateClassSpec(PTree::Node *spec, PTree::Node *userkey,
-					     PTree::Node *class_def, Class* metaobject)
+PTree::Node *ClassWalker::translate_class_spec(PTree::Node *spec, PTree::Node *userkey,
+					       PTree::Node *class_def, Class* metaobject)
 {
   if(metaobject)
   {
@@ -141,8 +136,8 @@ PTree::Node *ClassWalker::TranslateClassSpec(PTree::Node *spec, PTree::Node *use
 
     ClassBodyWalker w(this, tspec_list);
     PTree::Node *body = PTree::nth(class_def, 3);
-    PTree::Node *body2 = w.TranslateClassBody(body, PTree::third(class_def),
-					      metaobject);
+    PTree::Node *body2 = w.translate_class_body(body, PTree::third(class_def),
+						metaobject);
     PTree::Node *bases2 = metaobject->GetBaseClasses();
     PTree::Node *cspec = metaobject->GetClassSpecifier();
     PTree::Node *name2 = metaobject->GetNewName();
@@ -159,25 +154,28 @@ PTree::Node *ClassWalker::TranslateClassSpec(PTree::Node *spec, PTree::Node *use
 				   class_def->car(), class_def->cdr(), 0);
 }
 
-PTree::Node *ClassWalker::TranslateTemplateInstantiation(PTree::Node *inst_spec,
-			PTree::Node *userkey, PTree::Node *class_spec, Class* metaobject)
+PTree::Node *ClassWalker::translate_template_instantiation(PTree::TemplateInstantiation *inst_spec,
+							   PTree::Node *userkey,
+							   PTree::ClassSpec *class_spec,
+							   Class *metaobject)
 {
-    PTree::Node *class_spec2;
-    if (metaobject != 0 && metaobject->AcceptTemplate()) {
-	TemplateClass* tmetaobj = (TemplateClass*)metaobject;
-	class_spec2 = tmetaobj->TranslateInstantiation(env, class_spec);
-	if (class_spec != class_spec2)
-	    return class_spec2;
-    }
-    else
-	class_spec2 = class_spec;
+  PTree::Node *class_spec2;
+  if (metaobject && metaobject->AcceptTemplate())
+  {
+    TemplateClass* tmetaobj = (TemplateClass*)metaobject;
+    class_spec2 = tmetaobj->TranslateInstantiation(env, class_spec);
+    if (class_spec != class_spec2)
+      return class_spec2;
+  }
+  else
+    class_spec2 = class_spec;
 
-    if(userkey == 0)
-	return inst_spec;
-    else if (class_spec == class_spec2)
-	return inst_spec;
-    else
-	return new PTree::TemplateInstantiation(class_spec);
+  if(userkey == 0)
+    return inst_spec;
+  else if (class_spec == class_spec2)
+    return inst_spec;
+  else
+    return new PTree::TemplateInstantiation(class_spec);
 }
 
 PTree::Node *ClassWalker::ConstructClass(Class* metaobject)
@@ -188,7 +186,7 @@ PTree::Node *ClassWalker::ConstructClass(Class* metaobject)
     metaobject->TranslateClassHasFinished();
     ClassBodyWalker w(this, 0);
     PTree::Node *body = PTree::nth(def, 3);
-    PTree::Node *body2 = w.TranslateClassBody(body, 0, metaobject);
+    PTree::Node *body2 = w.translate_class_body(body, 0, metaobject);
     PTree::Node *bases2 = metaobject->GetBaseClasses();
     PTree::Node *cspec2 = metaobject->GetClassSpecifier();
     PTree::Node *name2 = metaobject->GetNewName();
@@ -213,7 +211,7 @@ PTree::Array* ClassWalker::RecordMembers(PTree::Node *class_def, PTree::Node *ba
 {
   PTree::Node *tspec, *tspec2;
 
-    NewScope(metaobject);
+    new_scope(metaobject);
     RecordBaseclassEnv(bases);
 
     PTree::Array* tspec_list = new PTree::Array();
@@ -224,7 +222,7 @@ PTree::Array* ClassWalker::RecordMembers(PTree::Node *class_def, PTree::Node *ba
 	switch(PTree::type_of(mem)){
 	case Token::ntTypedef :
 	    tspec = PTree::second(mem);
-	    tspec2 = TranslateTypespecifier(tspec);
+	    tspec2 = translate_type_specifier(tspec);
 	    env->RecordTypedefName(PTree::third(mem));
 	    if(tspec != tspec2){
 		tspec_list->append(tspec);
@@ -253,7 +251,7 @@ PTree::Array* ClassWalker::RecordMembers(PTree::Node *class_def, PTree::Node *ba
 	tspec_list = 0;
     }
 	
-    ExitScope();
+    exit_scope();
     return tspec_list;
 }
 
@@ -265,7 +263,7 @@ void ClassWalker::RecordMemberDeclaration(PTree::Node *mem,
   PTree::Node *tspec, *tspec2, *decls;
 
   tspec = PTree::second(mem);
-    tspec2 = TranslateTypespecifier(tspec);
+    tspec2 = translate_type_specifier(tspec);
     decls = PTree::third(mem);
     if(PTree::is_a(decls, Token::ntDeclarator))	// if it is a function
 	env->RecordDeclarator(decls);
@@ -317,16 +315,16 @@ PTree::Node *ClassWalker::ConstructMember(void* ptr)
 	    NameScope old_env;
 	    Environment* fenv = env->DontRecordDeclarator(m->declarator);
 	    if(fenv != 0)
-		old_env = ChangeScope(fenv);
+		old_env = change_scope(fenv);
 
-	    NewScope();
+	    new_scope();
 	    def2 = MakeMemberDeclarator(true, m,
 					(PTree::Declarator*)m->declarator);
 	    def2 = PTree::list(def2,
-				     TranslateFunctionBody(PTree::nth(def, 3)));
-	    ExitScope();
+			       translate_function_body(PTree::nth(def, 3)));
+	    exit_scope();
 	    if(fenv != 0)
-		RestoreScope(old_env);
+		restore_scope(old_env);
 	}
 	else{
 	    def2 = MakeMemberDeclarator(false, m,
@@ -344,25 +342,25 @@ PTree::Node *ClassWalker::ConstructMember(void* ptr)
 	    def2 = PTree::list(def2, m->body);
     }
 
-    def2 = new PTree::Declaration(TranslateStorageSpecifiers(PTree::first(def)),
-				  PTree::cons(TranslateTypespecifier(PTree::second(def)),
-						    def2));
+    def2 = new PTree::Declaration(translate_storage_specifiers(PTree::first(def)),
+				  PTree::cons(translate_type_specifier(PTree::second(def)),
+					      def2));
     return def2;
 }
 
-PTree::Node *ClassWalker::TranslateStorageSpecifiers(PTree::Node *spec)
+PTree::Node *ClassWalker::translate_storage_specifiers(PTree::Node *spec)
 {
-    return TranslateStorageSpecifiers2(spec);
+    return translate_storage_specifiers2(spec);
 }
 
-PTree::Node *ClassWalker::TranslateStorageSpecifiers2(PTree::Node *rest)
+PTree::Node *ClassWalker::translate_storage_specifiers2(PTree::Node *rest)
 {
     if(rest == 0)
 	return 0;
     else{
 	PTree::Node *h = rest->car();
 	PTree::Node *t = rest->cdr();
-	PTree::Node *t2 = TranslateStorageSpecifiers2(t);
+	PTree::Node *t2 = translate_storage_specifiers2(t);
 	if(PTree::is_a(h, Token::ntUserdefKeyword))
 	    return t2;
 	else if(t == t2)
@@ -372,14 +370,14 @@ PTree::Node *ClassWalker::TranslateStorageSpecifiers2(PTree::Node *rest)
     }
 }
 
-PTree::Node *ClassWalker::TranslateTemplateFunction(PTree::Node *temp_def, PTree::Node *impl)
+PTree::Node *ClassWalker::translate_template_function(PTree::Node *temp_def, PTree::Node *impl)
 {
     Environment* fenv = env->RecordTemplateFunction(temp_def, impl);
     if (fenv != 0) {
 	Class* metaobject = fenv->IsClassEnvironment();
 	if(metaobject != 0){
-	    NameScope old_env = ChangeScope(fenv);
-	    NewScope();
+	    NameScope old_env = change_scope(fenv);
+	    new_scope();
 
 	    ChangedMemberList::Cmem m;
 	    PTree::Node *decl = PTree::third(impl);
@@ -389,8 +387,8 @@ PTree::Node *ClassWalker::TranslateTemplateFunction(PTree::Node *temp_def, PTree
 	    PTree::Node *decl2
 		= MakeMemberDeclarator(true, &m, (PTree::Declarator*)decl);
 
-	    ExitScope();
-	    RestoreScope(old_env);
+	    exit_scope();
+	    restore_scope(old_env);
 	    if(decl != decl2) {
 	      PTree::Node *pt = PTree::list(PTree::second(impl), decl2, PTree::nth(impl, 3));
 	      pt = new PTree::Declaration(PTree::first(impl), pt);
@@ -404,37 +402,37 @@ PTree::Node *ClassWalker::TranslateTemplateFunction(PTree::Node *temp_def, PTree
     return temp_def;
 }
 
-PTree::Node *ClassWalker::TranslateFunctionImplementation(PTree::Node *impl)
+PTree::Node *ClassWalker::translate_function_implementation(PTree::Node *impl)
 {
     PTree::Node *sspec = PTree::first(impl);
-    PTree::Node *sspec2 = TranslateStorageSpecifiers(sspec);
+    PTree::Node *sspec2 = translate_storage_specifiers(sspec);
     PTree::Node *tspec = PTree::second(impl);
     PTree::Node *decl = PTree::third(impl);
     PTree::Node *body = PTree::nth(impl, 3);
     PTree::Node *decl2;
     PTree::Node *body2;
 
-    PTree::Node *tspec2 = TranslateTypespecifier(tspec);
+    PTree::Node *tspec2 = translate_type_specifier(tspec);
     Environment* fenv = env->RecordDeclarator(decl);
 
     if(fenv == 0){
 	// reach here if resolving the qualified name fails. error?
-	NewScope();
-	decl2 = TranslateDeclarator(true, (PTree::Declarator*)decl);
-	body2 = TranslateFunctionBody(body);
-	ExitScope();
+	new_scope();
+	decl2 = translate_declarator(true, (PTree::Declarator*)decl);
+	body2 = translate_function_body(body);
+	exit_scope();
     }
     else{
 	Class* metaobject = fenv->IsClassEnvironment();
-	NameScope old_env = ChangeScope(fenv);
-	NewScope();
+	NameScope old_env = change_scope(fenv);
+	new_scope();
 
 	if (metaobject == 0 && Class::metaclass_for_c_functions != 0)
 	    metaobject = MakeMetaobjectForCfunctions();
 
 	if(metaobject == 0){
-	    decl2 = TranslateDeclarator(true, (PTree::Declarator*)decl);
-	    body2 = TranslateFunctionBody(body);
+	    decl2 = translate_declarator(true, (PTree::Declarator*)decl);
+	    body2 = translate_function_body(body);
 	}
 	else{
 	    ChangedMemberList::Cmem m;
@@ -445,11 +443,11 @@ PTree::Node *ClassWalker::TranslateFunctionImplementation(PTree::Node *impl)
 	    if(m.body != 0)
 		body2 = m.body;
 	    else
-		body2 = TranslateFunctionBody(body);
+		body2 = translate_function_body(body);
 	}
 
-	ExitScope();
-	RestoreScope(old_env);
+	exit_scope();
+	restore_scope(old_env);
     }
 
     if(sspec == sspec2 && tspec == tspec2 && decl == decl2 && body == body2)
@@ -501,12 +499,12 @@ PTree::Node *ClassWalker::MakeMemberDeclarator(bool record, void* ptr,
 
     if(GetArgDeclList(decl, args))
 	if(m->args == 0)
-	    args2 = TranslateArgDeclList2(record, env, true,
-					  m->arg_name_filled, 0, args);
+	    args2 = translate_arg_decl_list2(record, env, true,
+					     m->arg_name_filled, 0, args);
 	else{
 	    args2 = m->args;
 	    // we may need to record the arguments.
-	    TranslateArgDeclList2(record, env, false, false, 0, args);
+	    translate_arg_decl_list2(record, env, false, false, 0, args);
 	}
     else
 	args = args2 = 0;
@@ -545,33 +543,33 @@ PTree::Node *ClassWalker::MakeMemberDeclarator(bool record, void* ptr,
     }
 }
 
-PTree::Node *ClassWalker::RecordArgsAndTranslateFbody(Class* c, PTree::Node *args,
-						      PTree::Node *body)
+PTree::Node *ClassWalker::record_args_and_translate_fbody(Class* c, PTree::Node *args,
+							  PTree::Node *body)
 {
     NameScope old_env;
     Environment* fenv = c->GetEnvironment();
 
     if(fenv != 0)
-	old_env = ChangeScope(fenv);
+	old_env = change_scope(fenv);
 
-    NewScope();
-    TranslateArgDeclList2(true, env, false, false, 0, args);
-    PTree::Node *body2 = TranslateFunctionBody(body);
-    ExitScope();
+    new_scope();
+    translate_arg_decl_list2(true, env, false, false, 0, args);
+    PTree::Node *body2 = translate_function_body(body);
+    exit_scope();
 
     if(fenv != 0)
-	RestoreScope(old_env);
+	restore_scope(old_env);
 
     return body2;
 }
 
-PTree::Node *ClassWalker::TranslateFunctionBody(PTree::Node *body)
+PTree::Node *ClassWalker::translate_function_body(PTree::Node *body)
 {
     PTree::Node *body2;
 
     inserted_declarations.clear();
     client_data = 0;
-    body = Translate(body);
+    body = translate(body);
     if(body == 0 || body->is_atom() || inserted_declarations.number() <= 0)
 	body2 = body;
     else{
@@ -586,143 +584,145 @@ PTree::Node *ClassWalker::TranslateFunctionBody(PTree::Node *body)
     return body2;
 }
 
-PTree::Node *ClassWalker::TranslateBlock(PTree::Node *block)
+void ClassWalker::visit(PTree::Block *node)
 {
-    PTree::Node *block2;
+  new_scope();
 
-    NewScope();
+  PTree::Array array;
+  bool changed = false;
+  PTree::Node *body = PTree::second(node);
+  PTree::Node *rest = body;
+  while(rest)
+  {
+    uint i, n;
+    PTree::Node *p = rest->car();
+    PTree::Node *q = translate(p);
 
-    PTree::Array array;
-    bool changed = false;
-    PTree::Node *body = PTree::second(block);
-    PTree::Node *rest = body;
-    while(rest != 0){
-	uint i, n;
-	PTree::Node *p = rest->car();
-	PTree::Node *q = Translate(p);
-
-	n = before_statement.number();
-	if(n > 0){
-	    changed = true;
-	    for(i = 0; i < n; ++i)
-		array.append(before_statement[i]);
-	}
-
-	array.append(q);
-	if(p != q)
-	    changed = true;
-
-	n = after_statement.number();
-	if(n > 0){
-	    changed = true;
-	    for(i = 0; i < n; ++i)
-		array.append(after_statement[i]);
-	}
-
-	before_statement.clear();
-	after_statement.clear();
-	rest = rest->cdr();
+    n = before_statement.number();
+    if(n > 0)
+    {
+      changed = true;
+      for(i = 0; i < n; ++i)
+	array.append(before_statement[i]);
     }
 
-    if(changed)
-	block2 = new PTree::Block(PTree::first(block), array.all(),
-				  PTree::third(block));
-    else
-	block2 = block;
+    array.append(q);
+    if(p != q) changed = true;
 
-    ExitScope();
-    return block2;
-}
-
-PTree::Node *ClassWalker::TranslateArgDeclList(bool record, PTree::Node *, PTree::Node *args)
-{
-    return TranslateArgDeclList2(record, env, true, false, 0, args);
-}
-
-PTree::Node *ClassWalker::TranslateInitializeArgs(PTree::Declarator* decl,
-						  PTree::Node *init)
-{
-    TypeInfo tinfo;
-    env->Lookup(decl, tinfo);
-    Class* metaobject = tinfo.ClassMetaobject();
-    if(metaobject != 0)
-	return metaobject->TranslateInitializer(env, decl->name(), init);
-    else
-	return TranslateArguments(init);
-}
-
-PTree::Node *ClassWalker::TranslateAssignInitializer(PTree::Declarator* decl,
-						     PTree::Node *init)
-{
-    TypeInfo tinfo;
-    env->Lookup(decl, tinfo);
-    Class* metaobject = tinfo.ClassMetaobject();
-    if(metaobject != 0)
-	return metaobject->TranslateInitializer(env, decl->name(), init);
-    else{
-	PTree::Node *exp = PTree::second(init);
-	PTree::Node *exp2 = Translate(exp);
-	if(exp == exp2)
-	    return init;
-	else
-	    return PTree::list(init->car(), exp2);
+    n = after_statement.number();
+    if(n > 0)
+    {
+      changed = true;
+      for(i = 0; i < n; ++i)
+	array.append(after_statement[i]);
     }
+
+    before_statement.clear();
+    after_statement.clear();
+    rest = rest->cdr();
+  }
+  
+  if(changed)
+    my_result = new PTree::Block(PTree::first(node), array.all(),
+				 PTree::third(node));
+  else
+    my_result = node;
+
+  exit_scope();
 }
 
-PTree::Node *ClassWalker::TranslateUserAccessSpec(PTree::Node *)
+PTree::Node *ClassWalker::translate_arg_decl_list(bool record,
+						  PTree::Node *,
+						  PTree::Node *args)
 {
-    return 0;
+  return translate_arg_decl_list2(record, env, true, false, 0, args);
 }
 
-PTree::Node *ClassWalker::TranslateAssign(PTree::Node *exp)
+PTree::Node *ClassWalker::translate_initialize_args(PTree::Declarator* decl,
+						    PTree::Node *init)
+{
+  TypeInfo tinfo;
+  env->Lookup(decl, tinfo);
+  Class* metaobject = tinfo.class_metaobject();
+  if(metaobject)
+    return metaobject->TranslateInitializer(env, decl->name(), init);
+  else
+    return translate_arguments(init);
+}
+
+PTree::Node *ClassWalker::translate_assign_initializer(PTree::Declarator* decl,
+						       PTree::Node *init)
+{
+  TypeInfo tinfo;
+  env->Lookup(decl, tinfo);
+  Class* metaobject = tinfo.class_metaobject();
+  if(metaobject)
+    return metaobject->TranslateInitializer(env, decl->name(), init);
+  else
+  {
+    PTree::Node *exp = PTree::second(init);
+    PTree::Node *exp2 = translate(exp);
+    if(exp == exp2)
+      return init;
+    else
+      return PTree::list(init->car(), exp2);
+  }
+}
+
+void ClassWalker::visit(PTree::AssignExpr *node)
 {
   PTree::Node *left, *left2, *right, *right2, *exp2;
-    Environment* scope;
-    Class* metaobject;
-    TypeInfo type;
+  Environment* scope;
+  Class* metaobject;
+  TypeInfo type;
 
-    left = PTree::first(exp);
-    right = PTree::third(exp);
-    if(PTree::is_a(left, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
-	PTree::Node *object = PTree::first(left);
-	PTree::Node *op = PTree::second(left);
-	PTree::Node *member = PTree::third(left);
-	PTree::Node *assign_op = PTree::second(exp);
-	Typeof(object, type);
-	if(*op != '.')
-	    type.Dereference();
+  left = PTree::first(node);
+  right = PTree::third(node);
+  if(PTree::is_a(left, Token::ntDotMemberExpr, Token::ntArrowMemberExpr))
+  {
+    PTree::Node *object = PTree::first(left);
+    PTree::Node *op = PTree::second(left);
+    PTree::Node *member = PTree::third(left);
+    PTree::Node *assign_op = PTree::second(node);
+    type_of(object, env, type);
+    if(*op != '.')
+      type.dereference();
 
-	metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateMemberWrite(env, object, op,
-						    member, assign_op, right);
-	    return CheckMemberEquiv(exp, exp2);
-	}
+    metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateMemberWrite(env, object, op,
+					      member, assign_op, right);
+      my_result = CheckMemberEquiv(node, exp2);
     }
-    else if((scope = env->IsMember(left)) != 0){
-	metaobject = scope->IsClassEnvironment();
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateMemberWrite(env, left, PTree::second(exp),
-						    right);
-	    return CheckEquiv(exp, exp2);
-	}
+  }
+  else if((scope = env->IsMember(left)))
+  {
+    metaobject = scope->IsClassEnvironment();
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateMemberWrite(env, left, PTree::second(node),
+					      right);
+      my_result = CheckEquiv(node, exp2);
     }
-    else{
-	Typeof(left, type);
-	metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateAssign(env, left, PTree::second(exp),
-					       right);
-	    return CheckEquiv(exp, exp2);	
-	}
+  }
+  else
+  {
+    type_of(left, env, type);
+    metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateAssign(env, left, PTree::second(node), right);
+      my_result = CheckEquiv(node, exp2);
     }
+  }
 
-    left2 = Translate(left);
-    right2 = Translate(right);
-    if(left == left2 && right == right2)
-	return exp;
-    else
-	return new PTree::AssignExpr(left2, PTree::list(PTree::second(exp), right2));
+  left2 = translate(left);
+  right2 = translate(right);
+  if(left == left2 && right == right2)
+    my_result = node;
+  else
+    my_result = new PTree::AssignExpr(left2, PTree::list(PTree::second(node), right2));
 }
 
 PTree::Node *ClassWalker::CheckMemberEquiv(PTree::Node *exp, PTree::Node *exp2)
@@ -735,258 +735,281 @@ PTree::Node *ClassWalker::CheckMemberEquiv(PTree::Node *exp, PTree::Node *exp2)
 	return exp2;
 }
 
-PTree::Node *ClassWalker::TranslateInfix(PTree::Node *exp)
+void ClassWalker::visit(PTree::InfixExpr *node)
 {
-    TypeInfo type;
+  PTree::Node *left = PTree::first(node);
+  PTree::Node *right = PTree::third(node);
+  TypeInfo type;
+  type_of(right, env, type);
+  Class* metaobject = get_class_metaobject(type);
+  if(!metaobject)
+  {
+    type_of(left, env, type);
+    metaobject = get_class_metaobject(type);
+  }
 
-    PTree::Node *left = PTree::first(exp);
-    PTree::Node *right = PTree::third(exp);
-    Typeof(right, type);
-    Class* metaobject = GetClassMetaobject(type);
-    if(metaobject == 0){
-	Typeof(left, type);
-	metaobject = GetClassMetaobject(type);
-    }
-
-    if(metaobject != 0){
-	PTree::Node *exp2 = metaobject->TranslateBinary(env, left, PTree::second(exp),
-						  right);
-	return CheckEquiv(exp, exp2);
-    }
-    else{
-	PTree::Node *left2 = Translate(left);
-	PTree::Node *right2 = Translate(right);
-	if(left == left2 && right == right2)
-	    return exp;
-	else
-	    return new PTree::InfixExpr(left2, PTree::list(PTree::second(exp),
-								 right2));
-    }
-}
-
-PTree::Node *ClassWalker::TranslateUnary(PTree::Node *exp)
-{
-    TypeInfo type;
-    Environment* scope;
-    Class* metaobject;
-    PTree::Node *exp2;
-
-    PTree::Node *unaryop = exp->car();
-    PTree::Node *right = PTree::second(exp);
-    if(PTree::is_a(right, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
-	PTree::Node *object = PTree::first(right);
-	PTree::Node *op = PTree::second(right);
-	Typeof(object, type);
-	if(*op != '.')
-	    type.Dereference();
-
-	metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateUnaryOnMember(env, unaryop, object,
-						      op, PTree::third(right));
-	    if(PTree::length(exp2) == 2 && exp2->car() == unaryop
-	       && PTree::equiv(PTree::second(exp2), right))
-		return exp;
-	    else
-		return exp2;
-	}
-    }    
-    else if((scope = env->IsMember(right)) != 0){
-	metaobject = scope->IsClassEnvironment();
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateUnaryOnMember(env, unaryop, right);
-	    return CheckEquiv(exp, exp2);
-	}
-    }
-
-    Typeof(right, type);
-    metaobject = GetClassMetaobject(type);
-    if(metaobject != 0){
-	PTree::Node *exp2 = metaobject->TranslateUnary(env, unaryop, right);
-	return CheckEquiv(exp, exp2);
-    }
-    else{
-	PTree::Node *right2 = Translate(right);
-	if(right == right2)
-	    return exp;
-	else
-	    return new PTree::UnaryExpr(unaryop, PTree::list(right2));
-    }
-}
-
-PTree::Node *ClassWalker::TranslateArray(PTree::Node *exp)
-{
-    TypeInfo type;
-
-    PTree::Node *array = exp->car();
-    Typeof(array, type);
-    Class* metaobject = GetClassMetaobject(type);
-    if(metaobject != 0){
-	PTree::Node *exp2 = metaobject->TranslateSubscript(env, array, exp->cdr());
-	return CheckEquiv(exp, exp2);
-    }
-    else{
-	PTree::Node *index = PTree::third(exp);
-	PTree::Node *array2 = Translate(array);
-	PTree::Node *index2 = Translate(index);
-	if(array == array2 && index == index2)
-	    return exp;
-	else
-	    return new PTree::ArrayExpr(array2,
-					PTree::shallow_subst(index2, index, exp->cdr()));
-    }
-}
-
-PTree::Node *ClassWalker::TranslatePostfix(PTree::Node *exp)
-{
-    TypeInfo type;
-    Environment* scope;
-    Class* metaobject;
-    PTree::Node *exp2;
-
-    PTree::Node *left = exp->car();
-    PTree::Node *postop = PTree::second(exp);
-    if(PTree::is_a(left, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
-	PTree::Node *object = PTree::first(left);
-	PTree::Node *op = PTree::second(left);
-	Typeof(object, type);
-	if(*op != '.')
-	    type.Dereference();
-
-	metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslatePostfixOnMember(env, object, op,
-							PTree::third(left), postop);
-	    return CheckMemberEquiv(exp, exp2);
-	}
-    }    
-    else if((scope = env->IsMember(left)) != 0){
-	metaobject = scope->IsClassEnvironment();
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslatePostfixOnMember(env, left, postop);
-	    return CheckEquiv(exp, exp2);
-	}
-    }
-
-    Typeof(left, type);
-    metaobject = GetClassMetaobject(type);
-    if(metaobject != 0){
-	exp2 = metaobject->TranslatePostfix(env, left, postop);
-	return CheckEquiv(exp, exp2);
-    }
-    else{
-	PTree::Node *left2 = Translate(left);
-	if(left == left2)
-	    return exp;
-	else
-	    return new PTree::PostfixExpr(left2, exp->cdr());
-    }
-}
-
-PTree::Node *ClassWalker::TranslateFuncall(PTree::Node *exp)
-{
-    TypeInfo type;
-    Environment* scope;
-    Class* metaobject;
-    PTree::Node *fun, *arglist, *exp2;
-
-    fun = exp->car();
-    arglist = exp->cdr();
-    if(PTree::is_a(fun, Token::ntDotMemberExpr, Token::ntArrowMemberExpr)){
-	PTree::Node *object = PTree::first(fun);
-	PTree::Node *op = PTree::second(fun);
-	PTree::Node *member = PTree::third(fun);
-	Typeof(object, type);
-	if(*op != '.')
-	    type.Dereference();
-
-	metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateMemberCall(env, object, op,
-						   member, arglist);
-	    return CheckMemberEquiv(exp, exp2);
-	}
-    }
-    else if((scope = env->IsMember(fun)) != 0){
-	metaobject = scope->IsClassEnvironment();
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateMemberCall(env, fun, arglist);
-	    return CheckEquiv(exp, exp2);
-	}
-    }
-    else{
-	Typeof(fun, type);
-	metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    exp2 = metaobject->TranslateFunctionCall(env, fun, arglist);
-	    return CheckEquiv(exp, exp2);
-	}
-    }
-
-    PTree::Node *fun2 = Translate(fun);
-    PTree::Node *arglist2 = TranslateArguments(arglist);
-    if(fun == fun2 && arglist == arglist2)
-	return exp;
+  if(metaobject)
+  {
+    PTree::Node *exp2 = metaobject->TranslateBinary(env, left, PTree::second(node),
+						    right);
+    my_result = CheckEquiv(node, exp2);
+  }
+  else
+  {
+    PTree::Node *left2 = translate(left);
+    PTree::Node *right2 = translate(right);
+    if(left == left2 && right == right2)
+      my_result = node;
     else
-	return new PTree::FuncallExpr(fun2, arglist2);
-}
-
-PTree::Node *ClassWalker::TranslateDotMember(PTree::Node *exp)
-{
-    TypeInfo type;
-
-    PTree::Node *left = exp->car();
-    Typeof(left, type);
-    Class* metaobject = GetClassMetaobject(type);
-    if(metaobject != 0){
-	PTree::Node *exp2 = metaobject->TranslateMemberRead(env, left, PTree::second(exp),
-							    PTree::third(exp));
-	return CheckEquiv(exp, exp2);
-    }
-    else{
-	PTree::Node *left2 = Translate(left);
-	if(left == left2)
-	    return exp;
-	else
-	    return new PTree::DotMemberExpr(left2, exp->cdr());
+      my_result = new PTree::InfixExpr(left2, PTree::list(PTree::second(node), right2));
     }
 }
 
-PTree::Node *ClassWalker::TranslateArrowMember(PTree::Node *exp)
+void ClassWalker::visit(PTree::UnaryExpr *node)
 {
-    TypeInfo type;
+  TypeInfo type;
+  Environment* scope;
+  Class* metaobject;
+  PTree::Node *exp2;
 
-    PTree::Node *left = exp->car();
-    Typeof(left, type);
-    type.Dereference();
-    Class* metaobject = GetClassMetaobject(type);
-    if(metaobject != 0){
-	PTree::Node *exp2 = metaobject->TranslateMemberRead(env, left, PTree::second(exp),
-							    PTree::third(exp));
-	return CheckEquiv(exp, exp2);
-    }
-    else{
-	PTree::Node *left2 = Translate(left);
-	if(left == left2)
-	    return exp;
-	else
-	    return new PTree::ArrowMemberExpr(left2, exp->cdr());
-    }
-}
+  PTree::Node *unaryop = node->car();
+  PTree::Node *right = PTree::second(node);
+  if(PTree::is_a(right, Token::ntDotMemberExpr, Token::ntArrowMemberExpr))
+  {
+    PTree::Node *object = PTree::first(right);
+    PTree::Node *op = PTree::second(right);
+    type_of(object, env, type);
+    if(*op != '.') type.dereference();
 
-PTree::Node *ClassWalker::TranslateThis(PTree::Node *exp)
-{
-    TypeInfo type;
-    Typeof(exp, type);
-    type.Dereference();
-    Class* metaobject = GetClassMetaobject(type);
-    if(metaobject != 0)
-	return metaobject->TranslatePointer(env, exp);
+    metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateUnaryOnMember(env, unaryop, object,
+						op, PTree::third(right));
+      if(PTree::length(exp2) == 2 && exp2->car() == unaryop
+	 && PTree::equiv(PTree::second(exp2), right))
+	my_result = node;
+      else
+	my_result = exp2;
+    }
+  }    
+  else if((scope = env->IsMember(right)))
+  {
+    metaobject = scope->IsClassEnvironment();
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateUnaryOnMember(env, unaryop, right);
+      my_result = CheckEquiv(node, exp2);
+    }
+  }
+
+  type_of(right, env, type);
+  metaobject = get_class_metaobject(type);
+  if(metaobject)
+  {
+    PTree::Node *exp2 = metaobject->TranslateUnary(env, unaryop, right);
+    my_result = CheckEquiv(node, exp2);
+  }
+  else
+  {
+    PTree::Node *right2 = translate(right);
+    if(right == right2)
+      my_result = node;
     else
-	return exp;
+      my_result = new PTree::UnaryExpr(unaryop, PTree::list(right2));
+  }
 }
 
-PTree::Node *ClassWalker::TranslateVariable(PTree::Node *exp)
+void ClassWalker::visit(PTree::ArrayExpr *node)
+{
+  TypeInfo type;
+
+  PTree::Node *array = node->car();
+  type_of(array, env, type);
+  Class* metaobject = get_class_metaobject(type);
+  if(metaobject)
+  {
+    PTree::Node *exp2 = metaobject->TranslateSubscript(env, array, node->cdr());
+    my_result = CheckEquiv(node, exp2);
+  }
+  else
+  {
+    PTree::Node *index = PTree::third(node);
+    PTree::Node *array2 = translate(array);
+    PTree::Node *index2 = translate(index);
+    if(array == array2 && index == index2)
+      my_result = node;
+    else
+      my_result = new PTree::ArrayExpr(array2,
+				       PTree::shallow_subst(index2,
+							    index,
+							    node->cdr()));
+  }
+}
+
+void ClassWalker::visit(PTree::PostfixExpr *node)
+{
+  TypeInfo type;
+  Environment* scope;
+  Class* metaobject;
+  PTree::Node *exp2;
+
+  PTree::Node *left = node->car();
+  PTree::Node *postop = PTree::second(node);
+  if(PTree::is_a(left, Token::ntDotMemberExpr, Token::ntArrowMemberExpr))
+  {
+    PTree::Node *object = PTree::first(left);
+    PTree::Node *op = PTree::second(left);
+    type_of(object, env, type);
+    if(*op != '.') type.dereference();
+
+    metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslatePostfixOnMember(env, object, op,
+						  PTree::third(left), postop);
+      my_result = CheckMemberEquiv(node, exp2);
+    }
+  }    
+  else if((scope = env->IsMember(left)))
+  {
+    metaobject = scope->IsClassEnvironment();
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslatePostfixOnMember(env, left, postop);
+      my_result = CheckEquiv(node, exp2);
+    }
+  }
+  type_of(left, env, type);
+  metaobject = get_class_metaobject(type);
+  if(metaobject)
+  {
+    exp2 = metaobject->TranslatePostfix(env, left, postop);
+    my_result = CheckEquiv(node, exp2);
+  }
+  else
+  {
+    PTree::Node *left2 = translate(left);
+    if(left == left2)
+      my_result = node;
+    else
+      my_result = new PTree::PostfixExpr(left2, node->cdr());
+  }
+}
+
+void ClassWalker::visit(PTree::FuncallExpr *node)
+{
+  TypeInfo type;
+  Environment* scope;
+  Class* metaobject;
+  PTree::Node *fun, *arglist, *exp2;
+
+  fun = node->car();
+  arglist = node->cdr();
+  if(PTree::is_a(fun, Token::ntDotMemberExpr, Token::ntArrowMemberExpr))
+  {
+    PTree::Node *object = PTree::first(fun);
+    PTree::Node *op = PTree::second(fun);
+    PTree::Node *member = PTree::third(fun);
+    type_of(object, env, type);
+    if(*op != '.') type.dereference();
+
+    metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateMemberCall(env, object, op,
+					     member, arglist);
+      my_result = CheckMemberEquiv(node, exp2);
+    }
+  }
+  else if((scope = env->IsMember(fun)))
+  {
+    metaobject = scope->IsClassEnvironment();
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateMemberCall(env, fun, arglist);
+      my_result = CheckEquiv(node, exp2);
+    }
+  }
+  else
+  {
+    type_of(fun, env, type);
+    metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      exp2 = metaobject->TranslateFunctionCall(env, fun, arglist);
+      my_result = CheckEquiv(node, exp2);
+    }
+  }
+
+  PTree::Node *fun2 = translate(fun);
+  PTree::Node *arglist2 = translate_arguments(arglist);
+  if(fun == fun2 && arglist == arglist2)
+    my_result = node;
+  else
+    my_result = new PTree::FuncallExpr(fun2, arglist2);
+}
+
+void ClassWalker::visit(PTree::DotMemberExpr *node)
+{
+  TypeInfo type;
+
+  PTree::Node *left = node->car();
+  type_of(left, env, type);
+  Class* metaobject = get_class_metaobject(type);
+  if(metaobject)
+  {
+    PTree::Node *exp2 = metaobject->TranslateMemberRead(env, left, PTree::second(node),
+							PTree::third(node));
+    my_result = CheckEquiv(node, exp2);
+  }
+  else
+  {
+    PTree::Node *left2 = translate(left);
+    if(left == left2)
+      my_result = node;
+    else
+      my_result = new PTree::DotMemberExpr(left2, node->cdr());
+  }
+}
+
+void ClassWalker::visit(PTree::ArrowMemberExpr *node)
+{
+  TypeInfo type;
+
+  PTree::Node *left = node->car();
+  type_of(left, env, type);
+  type.dereference();
+  Class* metaobject = get_class_metaobject(type);
+  if(metaobject)
+  {
+    PTree::Node *exp2 = metaobject->TranslateMemberRead(env, left, PTree::second(node),
+							PTree::third(node));
+    my_result = CheckEquiv(node, exp2);
+  }
+  else
+  {
+    PTree::Node *left2 = translate(left);
+    if(left == left2)
+      my_result = node;
+    else
+      my_result = new PTree::ArrowMemberExpr(left2, node->cdr());
+  }
+}
+
+void ClassWalker::visit(PTree::This *node)
+{
+  TypeInfo type;
+  type_of(node, env, type);
+  type.dereference();
+  Class* metaobject = get_class_metaobject(type);
+  if(metaobject)
+    my_result = metaobject->TranslatePointer(env, node);
+  else
+    my_result = node;
+}
+
+PTree::Node *ClassWalker::translate_variable(PTree::Node *exp)
 {
     Environment* scope = env->IsMember(exp);
     if(scope != 0){
@@ -996,10 +1019,10 @@ PTree::Node *ClassWalker::TranslateVariable(PTree::Node *exp)
     }
 
     TypeInfo type;
-    Typeof(exp, type);
-    if(type.IsPointerType()){
-	type.Dereference();
-	Class* metaobject = GetClassMetaobject(type);
+    type_of(exp, env, type);
+    if(type.is_pointer_type()){
+	type.dereference();
+	Class* metaobject = get_class_metaobject(type);
 	if(metaobject != 0)
 	    return metaobject->TranslatePointer(env, exp);
     }
@@ -1007,131 +1030,141 @@ PTree::Node *ClassWalker::TranslateVariable(PTree::Node *exp)
     return exp;
 }
 
-PTree::Node *ClassWalker::TranslateUserStatement(PTree::Node *exp)
+void ClassWalker::visit(PTree::UserStatementExpr *node)
 {
-    TypeInfo type;
-    PTree::Node *object = PTree::first(exp);
-    PTree::Node *op = PTree::second(exp);
-    PTree::Node *keyword = PTree::third(exp);
-    PTree::Node *rest = PTree::tail(exp, 3);
+  TypeInfo type;
+  PTree::Node *object = PTree::first(node);
+  PTree::Node *op = PTree::second(node);
+  PTree::Node *keyword = PTree::third(node);
+  PTree::Node *rest = PTree::tail(node, 3);
 
-    Typeof(object, type);
-    if(*op != '.')
-	type.Dereference();
+  type_of(object, env, type);
+  if(*op != '.') type.dereference();
 
-    Class* metaobject = GetClassMetaobject(type);
-    if(metaobject != 0){
-	NewScope();
+  Class* metaobject = get_class_metaobject(type);
+  if(metaobject)
+  {
+    new_scope();
+    if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
+      translate_arg_decl_list2(true, env, false, false, 0, PTree::second(rest));
+
+    PTree::Node *exp2 = metaobject->TranslateUserStatement(env, object, op,
+							   keyword, rest);
+    exit_scope();
+    my_result = exp2;
+  }
+  else
+  {
+    ErrorMessage("no complete class specification for: ", object, node);
+    my_result = 0;
+  }
+}
+
+void ClassWalker::visit(PTree::StaticUserStatementExpr *node)
+{
+  bool is_type_name;
+  TypeInfo type;
+  PTree::Node *qualifier = PTree::first(node);
+  PTree::Node *keyword = PTree::third(node);
+  PTree::Node *rest = PTree::tail(node, 3);
+
+  if(env->Lookup(qualifier, is_type_name, type))
+    if(is_type_name)
+    {
+      Class* metaobject = get_class_metaobject(type);
+      if(metaobject)
+      {
+	new_scope();
 	if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
-	    TranslateArgDeclList2(true, env, false, false, 0, PTree::second(rest));
-
-	PTree::Node *exp2 = metaobject->TranslateUserStatement(env, object, op,
-							 keyword, rest);
-	ExitScope();
-	return exp2;
+	  translate_arg_decl_list2(true, env, false, false, 0,
+				   PTree::second(rest));
+	PTree::Node *exp2 = metaobject->TranslateStaticUserStatement(env,
+								     keyword, rest);
+	exit_scope();
+	my_result = exp2;
+	return;
+      }
     }
 
-    ErrorMessage("no complete class specification for: ", object, exp);
-    return 0;
+  ErrorMessage("no complete class specification for: ", qualifier, node);
+  my_result = 0;
 }
 
-PTree::Node *ClassWalker::TranslateStaticUserStatement(PTree::Node *exp)
+PTree::Node *ClassWalker::translate_new2(PTree::Node *exp, PTree::Node *userkey, PTree::Node *scope,
+					 PTree::Node *op, PTree::Node *placement,
+					 PTree::Node *type, PTree::Node *init)
 {
-    bool is_type_name;
-    TypeInfo type;
-    PTree::Node *qualifier = PTree::first(exp);
-    PTree::Node *keyword = PTree::third(exp);
-    PTree::Node *rest = PTree::tail(exp, 3);
+  TypeInfo t;
 
-    if(env->Lookup(qualifier, is_type_name, type))
-	if(is_type_name){
-	    Class* metaobject = GetClassMetaobject(type);
-	    if(metaobject != 0){
-		NewScope();
-		if(PTree::is_a(keyword, Token::UserKeyword2))		// closure style
-		    TranslateArgDeclList2(true, env, false, false, 0,
-					  PTree::second(rest));
-		PTree::Node *exp2 = metaobject->TranslateStaticUserStatement(env,
-							keyword, rest);
-		ExitScope();
-		return exp2;
-	    }
-	}
+  if(type->car() && *type->car() == '(')
+    t.set(PTree::second(PTree::second(type))->encoded_type(), env);
+  else
+    t.set(PTree::second(type)->encoded_type(), env);
 
-    ErrorMessage("no complete class specification for: ", qualifier, exp);
-    return 0;
-}
-
-PTree::Node *ClassWalker::TranslateNew2(PTree::Node *exp, PTree::Node *userkey, PTree::Node *scope,
-				  PTree::Node *op, PTree::Node *placement,
-				  PTree::Node *type, PTree::Node *init)
-{
-    TypeInfo t;
-
-    if(type->car() && *type->car() == '(')
-	t.Set(PTree::second(PTree::second(type))->encoded_type(), env);
+  Class* metaobject = get_class_metaobject(t);
+  if(metaobject != 0)
+  {
+    if(userkey == 0)
+      userkey = scope;
+    
+    PTree::Node *exp2 = metaobject->TranslateNew(env, userkey, op,
+						 placement, type, init);
+    return CheckEquiv(exp, exp2);
+  }
+  else
+  {
+    PTree::Node *placement2 = translate_arguments(placement);
+    PTree::Node *type2 = translate_new3(type);
+    PTree::Node *init2 = translate_arguments(init);
+    if(userkey == 0 && placement == placement2
+       && type == type2 && init == init2)
+      return exp;
     else
-	t.Set(PTree::second(type)->encoded_type(), env);
-
-    Class* metaobject = GetClassMetaobject(t);
-    if(metaobject != 0){
-	if(userkey == 0)
-	    userkey = scope;
-
-	PTree::Node *exp2 = metaobject->TranslateNew(env, userkey, op,
-					       placement, type, init);
-	return CheckEquiv(exp, exp2);
+    {
+      if(userkey == 0)
+	return new PTree::NewExpr(exp->car(),
+				  PTree::shallow_subst(placement2, placement,
+						       type2, type,
+						       init2, init, exp->cdr()));
+      else
+      {
+	ErrorMessage("no complete class specification for: ",
+		     type, exp);
+	exp = exp->cdr();
+	if(placement == placement2 && type == type2 && init == init2)
+	  return exp;
+	else
+	  return new PTree::NewExpr(exp->car(),
+				    PTree::shallow_subst(placement2, placement,
+							 type2, type,
+							 init2, init, exp->cdr()));
+      }    
     }
-    else{
-	PTree::Node *placement2 = TranslateArguments(placement);
-	PTree::Node *type2 = TranslateNew3(type);
-	PTree::Node *init2 = TranslateArguments(init);
-	if(userkey == 0 && placement == placement2
-	   && type == type2 && init == init2)
-	    return exp;
-	else{
-	    if(userkey == 0)
-		return new PTree::NewExpr(exp->car(),
-				PTree::shallow_subst(placement2, placement,
-						     type2, type,
-						     init2, init, exp->cdr()));
-	    else{
-		ErrorMessage("no complete class specification for: ",
-			     type, exp);
-		exp = exp->cdr();
-		if(placement == placement2 && type == type2 && init == init2)
-		    return exp;
-		else
-		    return new PTree::NewExpr(exp->car(),
-				PTree::shallow_subst(placement2, placement,
-						     type2, type,
-						     init2, init, exp->cdr()));
-	    }
-
-	}
-    }
+  }
 }
 
-PTree::Node *ClassWalker::TranslateDelete(PTree::Node *exp)
+void ClassWalker::visit(PTree::DeleteExpr *node)
 {
-    TypeInfo type;
+  TypeInfo type;
 
-    PTree::Node *obj = PTree::last(exp)->car();
-    if(PTree::length(exp) == 2){	// not ::delete or delete []
-	Typeof(obj, type);
-	type.Dereference();
-	Class* metaobject = GetClassMetaobject(type);
-	if(metaobject != 0){
-	    PTree::Node *exp2 = metaobject->TranslateDelete(env, exp->car(), obj);
-	    return CheckEquiv(exp, exp2);
-	}
+  PTree::Node *obj = PTree::last(node)->car();
+  if(PTree::length(node) == 2)
+  {	// not ::delete or delete []
+    type_of(obj, env, type);
+    type.dereference();
+    Class* metaobject = get_class_metaobject(type);
+    if(metaobject)
+    {
+      PTree::Node *exp2 = metaobject->TranslateDelete(env, node->car(), obj);
+      my_result = CheckEquiv(node, exp2);
     }
+  }
 
-    PTree::Node *obj2 = Translate(obj);
-    if(obj == obj2)
-	return exp;
-    else
-	return new PTree::DeleteExpr(exp->car(),
-				   PTree::shallow_subst(obj2, obj,
-							exp->cdr()));
+  PTree::Node *obj2 = translate(obj);
+  if(obj == obj2)
+    my_result = node;
+  else
+    my_result = new PTree::DeleteExpr(node->car(),
+				      PTree::shallow_subst(obj2, obj,
+							   node->cdr()));
 }
