@@ -3,3 +3,4 @@
 -C summary
 -C javadoc
 -C section
+-t links.toc

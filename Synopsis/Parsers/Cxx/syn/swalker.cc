@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.17 2001/02/13 05:20:04 chalky Exp $
+// $Id: swalker.cc,v 1.18 2001/02/16 02:29:55 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.18  2001/02/16 02:29:55  chalky
+// Initial work on SXR and HTML integration
+//
 // Revision 1.17  2001/02/13 05:20:04  chalky
 // Made C++ parser mangle functions by formatting their parameter types
 //
@@ -34,6 +37,7 @@
 
 #include <iostream.h>
 #include <string>
+#include <typeinfo>
 
 #include "ptree.h"
 #include "parse.h"
@@ -71,14 +75,16 @@ public:
 #endif
 
 
-SWalker::SWalker(Parser* parser, Builder* builder)
-    : Walker(parser)
+SWalker::SWalker(string source, Parser* parser, Builder* builder, Program* program)
+    : Walker(parser), m_source(source)
 {
     m_parser = parser;
+    m_program = program;
     m_builder = builder;
     m_decoder = new Decoder(builder);
     m_filename_ptr = 0;
     m_extract_tails = false;
+    m_store_links = false;
     m_type_formatter = new TypeFormatter();
 }
 
@@ -88,6 +94,39 @@ string SWalker::getName(Ptree *node)
     if (node && node->IsLeaf())
         return string(node->GetPosition(), node->GetLength());
     return node->ToString();
+}
+
+int find_col(const char* start, const char* find)
+{
+    const char* pos = find;
+    while (pos > start && *--pos != '\n');
+    return find - pos;
+}
+
+//. Store a link at the given node
+void SWalker::storeLink(Ptree* node, bool def, const vector<string>& name)
+{
+    if (!m_store_links) return;
+    updateLineNumber(node);
+    if (m_filename != m_source) return;
+    int col = find_col(m_program->Read(0), node->LeftMost());
+    int len = node->RightMost() - node->LeftMost();
+    if (0) {
+	cout << "Link: line " << m_lineno << ", col " << col;
+	cout << " \"" << node->ToString() << "\" -> ";
+	for (vector<string>::const_iterator iter = name.begin(); iter != name.end(); ++iter)
+	    cout << *iter << " ";
+	cout << endl;
+    }
+    (*m_storage) << m_lineno << " " << col << " " << len << (def ? " DEF" : " REF");
+    for (vector<string>::const_iterator iter = name.begin(); iter != name.end(); ++iter) {
+	string word = *iter;
+	for (string::size_type pos = word.find(' '); pos != string::npos; pos = word.find(' ', pos)) {
+	    word[pos] = 160; // 'unbreakable space', for want of something better
+	}
+	(*m_storage) << " " << word;
+    }
+    (*m_storage) << "\n";
 }
 
 void SWalker::updateLineNumber(Ptree* ptree)
@@ -176,7 +215,7 @@ Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
     Trace trace("SWalker::TranslateNamespaceSpec");
     
     updateLineNumber(def);
-    string name = getName(def->Cadr());
+    string name = def->Cadr() ? getName(def->Cadr()) : "{"+m_filename+"}";
     /*Namespace* ns =*/ m_builder->startNamespace(name);
 
     Translate(Ptree::Third(def));
@@ -246,6 +285,7 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	TranslateBlock(node->Nth(3));
 	m_builder->endClass();
 
+	storeLink(node->Second(), true, clas->name());
     } else if (Ptree::Length(node) == 2) {
 	// Forward declaration
         string name = getName(node->Second());
@@ -474,17 +514,6 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
         while (*iter++ != '_'); // in case of decoding error this is needed
         Type::Type* returnType = m_decoder->decodeType();
 
-        // Find name:
-        // TODO: refactor
-        string realname;
-	TranslateFunctionName(encname, realname, returnType);
-
-	// Function names have parameters appended
-        string name = realname+formatParameters(params);
-        //for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
-        //    if (*ptr < 0) (*ptr) += '0'-0x80;
-
-
         // Figure out premodifiers
         vector<string> premod;
         Ptree* p = Ptree::First(m_declaration);
@@ -493,18 +522,44 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
             p = Ptree::Rest(p);
         }
 
-	// Create AST::Operation object
-        AST::Operation* oper = m_builder->addOperation(m_lineno, name, premod, returnType, realname);
-	oper->parameters() = params;
+        AST::Operation* oper;
+	// Find name:
+	if (encname[0] == 'Q') {
+	    // The name is qualified, which introduces a bit of difficulty
+	    vector<string> names;
+	    m_decoder->init(encname);
+	    m_decoder->decodeQualName(names);
+	    names.back() += formatParameters(params);
+	    // A qual name must already be declared, so find it:
+	    Type::Named* named_type = m_builder->lookupType(names);
+	    if (!named_type) return NULL;
+	    Type::Declared* decl_type = dynamic_cast<Type::Declared*>(named_type);
+	    if (!decl_type) return NULL;
+	    oper = dynamic_cast<AST::Operation*>(decl_type->declaration());
+	    if (!oper) return NULL;
+	    // TODO: expand param info, eg: if we now have names for them
+	} else {
+	    // Decode the function name
+	    string realname;
+	    TranslateFunctionName(encname, realname, returnType);
+	    // Name is same as realname, but with parameters added
+	    string name = realname+formatParameters(params);
+	    // Create AST::Operation object
+	    oper = m_builder->addOperation(m_lineno, name, premod, returnType, realname);
+	    oper->parameters() = params;
+	}
 	addComments(oper, m_declaration);
 	addComments(oper, dynamic_cast<PtreeDeclarator*>(decl));
-	//if (m_declaration->GetComments()) addComments(oper, m_declaration->GetComments());
-	//if (decl->GetComments()) addComments(oper, decl->GetComments());
-	// Post Modifier
-	//if (enctype_s[0] == 'C') {
-	//    PyObject* posties = PyObject_CallMethod(oper, "postmodifier", 0);
-	//    PyList_Append(posties, PyString_FromString("const"));
-	//}
+
+	// if storing links, find name
+	if (m_store_links) {
+	    p = decl;
+	    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+	    if (p) {
+		// p should now be at the name
+		storeLink(p->Car(), true, oper->name());
+	    }
+	}
     } else {
 	// Variable declaration
 	m_decoder->init(enctype);
@@ -527,6 +582,16 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	//if (decl->GetComments()) addComments(var, decl->GetComments());
 	addComments(var, m_declaration);
 	addComments(var, dynamic_cast<PtreeDeclarator*>(decl));
+	
+	// if storing links, find name
+	if (m_store_links) {
+	    Ptree* p = decl;
+	    while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+	    if (p) {
+		// p should now be at the name
+		storeLink(p->Car(), true, var->name());
+	    }
+	}
     }
     return 0;
 }
@@ -640,6 +705,16 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
     // Create typedef object
     AST::Typedef* tdef = m_builder->addTypedef(m_lineno, name, type, false);
     addComments(tdef, dynamic_cast<PtreeDeclarator*>(node));
+    
+    // if storing links, find name
+    if (m_store_links) {
+	Ptree* p = node;
+	while (p && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+	if (p) {
+	    // p should now be at the name
+	    storeLink(p->Car(), true, tdef->name());
+	}
+    }
 }
 
 Ptree* SWalker::TranslateFunctionImplementation(Ptree* node)
@@ -684,6 +759,7 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 	    // Just a name
 	    enumor = m_builder->addEnumerator(m_lineno, penumor->ToString(), "");
 	    addComments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
+	    storeLink(penumor, true, enumor->name());
 	} else {
 	    // Name = Value
 	    string name = penumor->First()->ToString(), value;
@@ -692,6 +768,7 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 	    }
 	    enumor = m_builder->addEnumerator(m_lineno, name, value);
 	    addComments(enumor, dynamic_cast<CommentedLeaf*>(penumor->First()));
+	    storeLink(penumor->First(), true, enumor->name());
 	}
 	enumerators.push_back(enumor);
 	penum = Ptree::Rest(penum);
@@ -714,6 +791,7 @@ Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
 	// belong to the enum. This is policy. #TODO review policy
 	m_declaration->SetComments(nil);
     }
+    storeLink(spec->Second(), true, theEnum->name());
     return 0;
 }
 

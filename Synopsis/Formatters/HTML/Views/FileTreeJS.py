@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.1 2001/02/06 05:12:46 chalky Exp $
+# $Id: FileTreeJS.py,v 1.2 2001/02/16 02:29:55 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.2  2001/02/16 02:29:55  chalky
+# Initial work on SXR and HTML integration
+#
 # Revision 1.1  2001/02/06 05:12:46  chalky
 # Added JSTree class and FileTreeJS and modified ModuleListingJS to use JSTree
 #
@@ -49,6 +52,8 @@ class FileTree(JSTree.JSTree):
 	self.__filename = config.files.nameOfSpecial('file_tree')
 	link = href(self.__filename, 'File Tree', target="contents")
 	self.manager.addRootPage('File Tree', link, 2)
+	myconfig = config.obj.FileTree
+	self._link_pages = myconfig.link_to_pages
    
     def process(self, start):
 	# Init tree
@@ -98,6 +103,9 @@ class FileTree(JSTree.JSTree):
 	while len(name) and name[0] == '..': del name[0]
 	self.startFile(fname, string.join(name, os.sep))
 	self.write(entity('b', string.join(name, os.sep))+'<br>')
+	if self._link_pages:
+	    link = config.files.nameOfScopedSpecial('page', name)
+	    self.write(href(link, '[Source]', target="main")+'<br>')
 	for name, decl in node.decls.items():
 	    # TODO make this nicer :)
 	    entry = config.toc[name]

@@ -52,7 +52,14 @@ SYN_DEBUG_OBJ	:= synopsis.o occ.o swalker.o ast.o builder.o type.o dict.o \
 OCC_GOBJ	= $(patsubst %.o, %.go, $(OCC_OBJ))
 SYN_GOBJ	= $(patsubst %.o, %.go, $(SYN_DEBUG_OBJ))
 
-all : ../../../occ.so
+OCC_SO		:= ../../../occ.so
+LINK_SO		:= ../../../link.so
+
+TARGETS		= $(OCC_SO) $(LINK_SO)
+
+all : $(TARGETS)
+
+debug:		occ.gdb link-synopsis
 
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : ../%.cc
@@ -70,13 +77,20 @@ $(OCC_GOBJ): %.go : ../%.cc
 $(SYN_GOBJ): %.go : %.cc
 	$(CXX) $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+link-synopsis:	link.cc
+	$(CXX) -DSTANDALONE $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -o link-synopsis link.cc
+
 # Include deps if they exist. 
 -include .deps.go
 -include .deps.o
 
-# This creates the final python module
-../../../occ.so : $(SYN_OBJ) opencxx.a
+# This creates the final occ python module
+$(OCC_SO): $(SYN_OBJ) opencxx.a
 	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
+
+# This creates the final link python module
+$(LINK_SO): link.cc
+	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
 
 # This creates a binary with debugging and profiling that you can run
 occ.gdb:	$(SYN_GOBJ) opencxx.ga 

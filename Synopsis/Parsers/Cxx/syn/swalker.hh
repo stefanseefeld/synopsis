@@ -16,14 +16,10 @@
 #include <vector>
 using std::vector;
 
-// Forward declaration of Builder
-class Builder;
-
-// Forward declaration of Decoder
-class Decoder;
-
-// Forward declaration of TypeFormatter
-class TypeFormatter;
+// Forward declarations
+class ostream;
+class Builder; class Program;
+class Decoder; class TypeFormatter;
 
 namespace AST { class Parameter; class Inheritance; class Declaration; }
 namespace Type { class Type; }
@@ -33,19 +29,26 @@ namespace Type { class Type; }
 class SWalker : public Walker {
 public:
     //. Constructor
-    SWalker(Parser*, Builder*);
+    SWalker(string source, Parser*, Builder*, Program*);
     virtual ~SWalker() {}
 
     //. Sets extract tails to true.
     //. This will cause the parser to create dummy declarations for comments
     //. before close braces or the end of the file
     void setExtractTails(bool value) { m_extract_tails = value; }
+    //. Sets store links to true.
+    //. This will cause the whole ptree to be traversed, and any linkable
+    //. identifiers found will be stored
+    void setStoreLinks(bool value, ostream* storage) { m_store_links = value; m_storage = storage; }
 
     //. Get a name from the ptree
     string getName(Ptree*);
 
     //. Update the line number
     void updateLineNumber(Ptree*);
+
+    //. Store a link at the given node
+    void storeLink(Ptree* node, bool def, const vector<string>& name);
 
     void addComments(AST::Declaration* decl, Ptree* comments);
     void addComments(AST::Declaration* decl, CommentedLeaf* node);
@@ -140,6 +143,7 @@ public:
 
 private:
     Parser* m_parser;
+    Program* m_program;
     Builder* m_builder;
     Decoder* m_decoder;
 
@@ -149,9 +153,15 @@ private:
     //. The current filename as string. This way refcounting will be used
     string m_filename;
     int m_lineno;
+    //. The source filename
+    string m_source;
 
     //. True if should try and extract tail comments before }'s
     bool m_extract_tails;
+    //. True if should parse whole ptree and store links
+    bool m_store_links;
+    //. Storage for links
+    ostream* m_storage;
 
     //. A dummy name used for tail comments
     vector<string> m_dummyname;
