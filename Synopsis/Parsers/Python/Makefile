@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.3 2001/01/22 20:04:47 stefan Exp $
+# $Id: Makefile,v 1.4 2001/01/24 18:33:43 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -20,7 +20,11 @@
 
 SHELL	= /bin/sh
 
+ifeq (,$(findstring $(MAKECMDGOALS), clean distclean))
+ifeq (,$(findstring $(action), clean distclean))
 include ../../local.mk
+endif
+endif
 
 SRC	:= __init__.py __init__.pyc python.py python.pyc exparse.py exparse.pyc
 
