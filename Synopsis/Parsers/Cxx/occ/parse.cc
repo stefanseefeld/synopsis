@@ -1532,16 +1532,23 @@ bool Parser::rDeclarator2(Ptree*& decl, DeclKind kind, bool recursive,
 
 	d = Ptree::Snoc(d, Ptree::List(new Leaf(op), decl2, new Leaf(cp)));
     }
-    else if(kind != kCastDeclarator
-	   && (kind == kDeclarator || t == Identifier || t == Scope)){
-	// if this is an argument declarator, "int (*)()" is valid.
-	Ptree* name;
-	if(rName(name, name_encode))
-	    d = Ptree::Snoc(d, name);
-	else
-	    return FALSE;
+    else if(kind != kCastDeclarator){
+	if (t == INLINE){
+	    // TODO: store inline somehow
+	    Token i;
+	    lex->GetToken(i);
+	    t = lex->LookAhead(0);
+	}
+	if (kind == kDeclarator || t == Identifier || t == Scope){
+	    // if this is an argument declarator, "int (*)()" is valid.
+	    Ptree* name;
+	    if(rName(name, name_encode))
+		d = Ptree::Snoc(d, name);
+	    else
+		return FALSE;
 
-	*declared_name = name;
+	    *declared_name = name;
+	}
     }
     else
 	name_encode.Clear();	// empty
@@ -2056,9 +2063,11 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
 	Ptree* a;
 	char* pos = lex->Save();
 	type_encode.Clear();
-	if(rTypeName(a, type_encode))
+
+	// Prefer type name, but if not ',' or '>' then must be expression
+	if(rTypeName(a, type_encode) && (lex->LookAhead(0) == ',' || lex->LookAhead(0) == '>'))
 	    encode.Append(type_encode);
-	else{
+	else {
 	    lex->Restore(pos);	
 	    if(!rLogicalOrExpr(a, TRUE))
 		return FALSE;
