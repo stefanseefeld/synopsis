@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.63 2002/10/27 07:23:30 chalky Exp $
+// $Id: swalker.cc,v 1.64 2002/10/27 09:55:15 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.64  2002/10/27 09:55:15  chalky
+// Fix parameter name recognition for function pointer parameters
+//
 // Revision 1.63  2002/10/27 07:23:30  chalky
 // Typeof support. Generate Function when appropriate. Better emulation support.
 //
@@ -1253,68 +1256,83 @@ void
 SWalker::TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& params)
 {
   while (p_params)
+  {
+    // A parameter has a type, possibly a name and possibly a value
+    std::string name, value;
+    AST::Parameter::Mods premods, postmods;
+    if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
+    Ptree* param = p_params->First();
+    // The type is stored in the encoded type string already
+    Types::Type* type = m_decoder->decodeType();
+    if (!type)
     {
-      // A parameter has a type, possibly a name and possibly a value
-      std::string name, value;
-      AST::Parameter::Mods premods, postmods;
-      if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
-      Ptree* param = p_params->First();
-      // The type is stored in the encoded type string already
-      Types::Type* type = m_decoder->decodeType();
-      if (!type)
-        {
-          std::cout << "Premature end of decoding!" << std::endl;
-          break; // NULL means end of encoding
-        }
-      // Discover contents. Ptree may look like:
-      //[register iostate [* a] = [0 + 2]]
-      //[register iostate [nil] = 0]
-      //[register iostate [nil]]
-      //[iostate [nil] = 0]
-      //[iostate [nil]]   etc
-      if (param->Length() > 1)
-        {
-          // There is a parameter
-          int type_ix, value_ix = -1, len = param->Length();
-          if (len >= 4 && param->Nth(len-2)->Eq('='))
-            {
-              // There is an =, which must be followed by the value
-              value_ix = len-1;
-              type_ix = len-4;
-            }
-          else
-            {
-              // No =, so last is name and second last is type
-              type_ix = len-2;
-            }
-          // Link type
-          if (m_links && !param->IsLeaf() && param->Nth(type_ix)) 
-            m_links->link(param->Nth(type_ix), type);
-          // Skip keywords (eg: register) which are Leaves
-          for (int ix = 0; ix < type_ix && param->Nth(ix)->IsLeaf(); ix++)
-            {
-              Ptree* leaf = param->Nth(ix);
-              premods.push_back(parse_name(leaf));
-            }
-          // Find name
-          if (Ptree* pname = param->Nth(type_ix+1))
-            {
-              if (!pname->IsLeaf() && pname->Last() && pname->Last()->Car())
-                {
-                  // * and & modifiers are stored with the name so we must skip them
-                  Ptree* last = pname->Last()->Car();
-                  if (!last->Eq('*') && !last->Eq('&'))
-                      // The last node is the name:
-                    name = last->ToString();
-                }
-            }
-          // Find value
-          if (value_ix >= 0) value = param->Nth(value_ix)->ToString();
-        }
-      // Add the AST.Parameter type to the list
-      params.push_back(new AST::Parameter(premods, type, postmods, name, value));
-      p_params = Ptree::Rest(p_params);
+      std::cout << "Premature end of decoding!" << std::endl;
+      break; // NULL means end of encoding
     }
+    // Discover contents. Ptree may look like:
+    //[register iostate [* a] = [0 + 2]]
+    //[register iostate [nil] = 0]
+    //[register iostate [nil]]
+    //[iostate [nil] = 0]
+    //[iostate [nil]]   etc
+    if (param->Length() > 1)
+    {
+      // There is a parameter
+      int type_ix, value_ix = -1, len = param->Length();
+      if (len >= 4 && param->Nth(len-2)->Eq('='))
+      {
+        // There is an =, which must be followed by the value
+        value_ix = len-1;
+        type_ix = len-4;
+      }
+      else
+      {
+        // No =, so last is name and second last is type
+        type_ix = len-2;
+      }
+      // Link type
+      if (m_links && !param->IsLeaf() && param->Nth(type_ix)) 
+        m_links->link(param->Nth(type_ix), type);
+      // Skip keywords (eg: register) which are Leaves
+      for (int ix = 0; ix < type_ix && param->Nth(ix)->IsLeaf(); ix++)
+      {
+        Ptree* leaf = param->Nth(ix);
+        premods.push_back(parse_name(leaf));
+      }
+      // Find name
+      if (Ptree* pname = param->Nth(type_ix+1))
+      {
+        if (pname->Last() && !pname->Last()->IsLeaf() && pname->Last()->First() &&
+            pname->Last()->First()->Eq(')') && pname->Length() >= 4)
+        {
+          // Probably a function pointer type
+          // pname is [* [( [* convert] )] ( [params] )]
+          // set to [( [* convert] )] from example
+          pname = pname->Nth(pname->Length() - 4);
+          if (pname && !pname->IsLeaf() && pname->Length() == 3)
+          {
+            // set to [* convert] from example
+            pname = pname->Second();
+            if (pname && pname->Second() && pname->Second()->IsLeaf())
+              name = parse_name(pname->Second());
+          }
+        }
+        else if (!pname->IsLeaf() && pname->Last() && pname->Last()->Car())
+        {
+          // * and & modifiers are stored with the name so we must skip them
+          Ptree* last = pname->Last()->Car();
+          if (!last->Eq('*') && !last->Eq('&'))
+            // The last node is the name:
+            name = last->ToString();
+        }
+      }
+      // Find value
+      if (value_ix >= 0) value = param->Nth(value_ix)->ToString();
+    }
+    // Add the AST.Parameter type to the list
+    params.push_back(new AST::Parameter(premods, type, postmods, name, value));
+    p_params = Ptree::Rest(p_params);
+  }
 }
 
 void SWalker::TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType)
