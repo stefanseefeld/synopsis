@@ -7,9 +7,8 @@
 #ifndef _SymbolLookup_Scopes_hh
 #define _SymbolLookup_Scopes_hh
 
-#include <SymbolLookup/Symbol.hh>
+#include <SymbolLookup/Scope.hh>
 #include <string>
-#include <vector>
 
 namespace SymbolLookup
 {
@@ -17,7 +16,9 @@ namespace SymbolLookup
 class TemplateParameterScope : public Scope
 {
 public:
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
+
+  virtual void dump(std::ostream &, size_t indent) const;
 };
 
 class LocalScope : public Scope
@@ -25,8 +26,9 @@ class LocalScope : public Scope
 public:
   LocalScope(Scope *outer) : my_outer(outer->ref()) {}
   virtual const Scope *global() const { return my_outer->global();}
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
 
+  virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~LocalScope() { my_outer->unref();}
 
@@ -39,8 +41,9 @@ class FunctionScope : public Scope
 public:
   FunctionScope(Scope *outer) : my_outer(outer->ref()) {}
   virtual const Scope *global() const { return my_outer->global();}
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
 
+  virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~FunctionScope() { my_outer->unref();}
 
@@ -54,8 +57,9 @@ class PrototypeScope : public Scope
 public:
   PrototypeScope(Scope *outer) : my_outer(outer->ref()) {}
   virtual const Scope *global() const { return my_outer->global();}
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
 
+  virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~PrototypeScope() { my_outer->unref();}
 
@@ -71,10 +75,12 @@ public:
   {
   }
   virtual const Scope *global() const { return my_outer->global();}
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
+
+  virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~Class() { my_outer->unref();}
 private:
@@ -91,11 +97,13 @@ public:
   {
   }
   virtual const Scope *global() const { return my_outer->global();}
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
 
   // FIXME: should that really be a string ? It may be better to be conform with
   // Class::name, which, if the class is a template, can't be a string (or can i ?)
   std::string name() const;
+
+  virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~Namespace() { my_outer->unref();}
 private:

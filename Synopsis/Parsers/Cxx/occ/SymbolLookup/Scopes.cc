@@ -12,16 +12,28 @@
 using namespace PTree;
 using namespace SymbolLookup;
 
-const Symbol *LocalScope::lookup(const Encoding &name) const throw()
+void TemplateParameterScope::dump(std::ostream &os, size_t in) const
 {
-  const Symbol *symbol = Scope::lookup(name);
-  return symbol ? symbol : my_outer->lookup(name);
+  indent(os, in) << "TemplateParameterScope:\n";
+  Scope::dump(os, in);
 }
 
-const Symbol *Class::lookup(const Encoding &name) const throw()
+std::set<Symbol const *> LocalScope::lookup(const Encoding &name) const throw()
 {
-  const Symbol *symbol = Scope::lookup(name);
-  return symbol ? symbol : my_outer->lookup(name);
+  std::set<Symbol const *> symbols = Scope::lookup(name);
+  return symbols.size() ? symbols : my_outer->lookup(name);
+}
+
+void LocalScope::dump(std::ostream &os, size_t in) const
+{
+  indent(os, in) << "LocalScope:\n";
+  Scope::dump(os, in + 1);
+}
+
+std::set<Symbol const *> Class::lookup(const Encoding &name) const throw()
+{
+  std::set<Symbol const *> symbols = Scope::lookup(name);
+  return symbols.size() ? symbols : my_outer->lookup(name);
 }
 
 std::string Class::name() const
@@ -34,10 +46,16 @@ std::string Class::name() const
   return "";
 }
 
-const Symbol *Namespace::lookup(const Encoding &name) const throw()
+void Class::dump(std::ostream &os, size_t in) const
 {
-  const Symbol *symbol = Scope::lookup(name);
-  return symbol ? symbol : my_outer->lookup(name);
+  indent(os, in) << "Class '" << this->name() << "':\n";
+  Scope::dump(os, in + 1);
+}
+
+std::set<Symbol const *> Namespace::lookup(const Encoding &name) const throw()
+{
+  std::set<Symbol const *> symbols = Scope::lookup(name);
+  return symbols.size() ? symbols : my_outer->lookup(name);
 }
 
 std::string Namespace::name() const
@@ -46,3 +64,8 @@ std::string Namespace::name() const
   return name_spec ? std::string(name_spec->position(), name_spec->length()) : "";
 }
 
+void Namespace::dump(std::ostream &os, size_t in) const
+{
+  indent(os, in) << "Namespace'" << this->name() << "':\n";
+  Scope::dump(os, in + 1);
+}

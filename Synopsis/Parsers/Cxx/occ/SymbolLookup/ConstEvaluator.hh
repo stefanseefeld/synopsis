@@ -10,7 +10,7 @@
 #include <PTree/Visitor.hh>
 #include <PTree/Atoms.hh>
 #include <PTree/Lists.hh>
-#include <SymbolLookup/Symbol.hh>
+#include <SymbolLookup/Scope.hh>
 #include <cassert>
 
 namespace SymbolLookup

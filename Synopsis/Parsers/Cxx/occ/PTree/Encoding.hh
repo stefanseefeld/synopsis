@@ -157,6 +157,8 @@ public:
   PTree::Node *make_ptree(PTree::Node *);
   bool is_simple_name() const { return front() >= 0x80;}
   bool is_qualified() const { return front() == 'Q';}
+  bool is_function() const { return front() == 'F';}
+  bool is_template() const { return front() == 'T';}
   PTree::Node *name_to_ptree();
 
   friend bool operator < (const Encoding &, const Encoding &);

@@ -9,7 +9,10 @@
 #include <SymbolLookup/Table.hh>
 #include <SymbolLookup/Scopes.hh>
 #include <SymbolLookup/ConstEvaluator.hh>
+#include <Synopsis/Trace.hh>
 #include <cassert>
+
+using Synopsis::Trace;
 
 using namespace PTree;
 using namespace SymbolLookup;
@@ -21,12 +24,14 @@ Table::Table()
 
 Table &Table::enter_scope()
 {
+  Trace trace("Table::enter_scope");
   my_scopes.push(new Scope());
   return *this;
 }
 
 Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
 {
+  Trace trace("Table::enter_namespace");
   Namespace *ns = new Namespace(spec, my_scopes.top());
   my_scopes.top()->declare_scope(spec, ns);
   my_scopes.push(ns);
@@ -35,6 +40,7 @@ Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
 
 Table &Table::enter_class(const PTree::ClassSpec *spec)
 {
+  Trace trace("Table::enter_class");
   Class *cl = new Class(spec, my_scopes.top());
   my_scopes.top()->declare_scope(spec, cl);
   my_scopes.push(cl);
@@ -43,6 +49,7 @@ Table &Table::enter_class(const PTree::ClassSpec *spec)
 
 void Table::leave_scope()
 {
+  Trace trace("Table::leave_scope");
   Scope *top = my_scopes.top();
   my_scopes.pop();
   top->unref();
@@ -55,10 +62,14 @@ Scope &Table::current_scope()
 
 void Table::declare(Declaration *d)
 {
+  Trace trace("Table::declare(Declaration *)");
   Node *decls = third(d);
   if(is_a(decls, Token::ntDeclarator))
   {
     // function definition
+    PTree::Encoding name = decls->encoded_name();
+    PTree::Encoding type = decls->encoded_type();
+    my_scopes.top()->declare(name, new FunctionName(type, decls));
   }
   else
   {
@@ -75,7 +86,10 @@ void Table::declare(Declaration *d)
 	{
 	  PTree::Encoding name = decl->encoded_name();
 	  PTree::Encoding type = decl->encoded_type();
-	  my_scopes.top()->declare(name, new VariableName(type, decl));
+	  if (type.is_function())
+	    my_scopes.top()->declare(name, new FunctionName(type, decl));
+	  else
+	    my_scopes.top()->declare(name, new VariableName(type, decl));
 	}
       }
     }
@@ -84,6 +98,7 @@ void Table::declare(Declaration *d)
 
 void Table::declare(Typedef *td)
 {
+  Trace trace("Table::declare(Typedef *)");
   Node *declarations = third(td);
   while(declarations)
   {
@@ -100,6 +115,7 @@ void Table::declare(Typedef *td)
 
 void Table::declare(EnumSpec *spec)
 {
+  Trace trace("Table::declare(EnumSpec *)");
   Node *tag = second(spec);
   const Encoding &name = spec->encoded_name();
   const Encoding &type = spec->encoded_type();
@@ -143,6 +159,7 @@ void Table::declare(EnumSpec *spec)
 
 void Table::declare(NamespaceSpec *spec)
 {
+  Trace trace("Table::declare(NamespaceSpec *)");
   const Node *name = second(spec);
   Encoding enc(name->position(), name->length());
   // FIXME: do we need a 'type' here ?
@@ -151,12 +168,14 @@ void Table::declare(NamespaceSpec *spec)
 
 void Table::declare(ClassSpec *spec)
 {
+  Trace trace("Table::declare(ClassSpec *)");
   const Encoding &name = spec->encoded_name();
   my_scopes.top()->declare(name, new TypeName(spec->encoded_type(), spec));
 }
 
 void Table::declare(TemplateDecl *tdecl)
 {
+  Trace trace("Table::declare(TemplateDecl *)");
   PTree::Node *body = PTree::nth(tdecl, 4);
   PTree::ClassSpec *class_spec = Table::get_class_template_spec(body);
   if (class_spec)
@@ -218,9 +237,9 @@ int Table::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
 
   if(scope)
   {
-    const Symbol *symbol = scope->lookup(Encoding((const char*)&*(i + 1), m));
+    std::set<Symbol const *> symbols = scope->lookup(Encoding((const char*)&*(i + 1), m));
     // FIXME !! (see Environment)
-    if (symbol) return m + (*(i + m + 1) - 0x80) + 2;
+    if (symbols.size()) return m + (*(i + m + 1) - 0x80) + 2;
   }
   // the template name was not found.
   scope = 0;

@@ -8,6 +8,7 @@
 #define _SymbolLookup_hh
 
 #include <SymbolLookup/Symbol.hh>
+#include <SymbolLookup/Scope.hh>
 #include <SymbolLookup/Scopes.hh>
 #include <SymbolLookup/Table.hh>
 

@@ -9,18 +9,9 @@
 
 #include <PTree/Encoding.hh>
 #include <PTree/Lists.hh>
-#include <map>
 
 namespace SymbolLookup
 {
-
-struct TypeError : public std::exception
-{
-  TypeError(const PTree::Encoding &t) : type(t) {}
-  virtual ~TypeError() throw() {}
-  virtual const char* what() const throw() { return "TypeError";}
-  PTree::Encoding type;
-};
 
 class Symbol
 {
@@ -66,6 +57,13 @@ public:
     : Symbol(type, ptree) {}
 };
 
+class FunctionName : public Symbol
+{
+public:
+  FunctionName(const PTree::Encoding &type, PTree::Node *ptree)
+    : Symbol(type, ptree) {}
+};
+
 class FunctionTemplateName : public Symbol
 {
 public:
@@ -79,75 +77,6 @@ public:
   NamespaceName(const PTree::Encoding &type, PTree::Node *ptree)
     : Symbol(type, ptree) {}
 };
-
-//. A Scope contains symbol definitions.
-class Scope
-{
-public:
-
-  Scope() : my_refcount(1) {}
-  Scope *ref() { ++my_refcount; return this;}
-  const Scope *ref() const { ++my_refcount; return this;}
-  void unref() const { if (!--my_refcount) delete this;}
-
-  virtual const Scope *global() const { return this;}
-
-  //. declare the given symbol in the local scope 
-  //. using the given encoded name.
-  void declare(const PTree::Encoding &name, const Symbol *symbol);
-
-  //. look up the encoded name and return the associated symbol, if found.
-  virtual const Symbol *lookup(const PTree::Encoding &) const throw();
-
-  //. declare a nested scope
-  void declare_scope(const PTree::Node *, const Scope *);
-
-  //. look up a nested scope by associated parse tree node
-  const Scope *lookup_scope(const PTree::Node *) const;
-
-  //. same as the untyped lookup, but type safe. Throws a TypeError
-  //. if the symbol exists but doesn't have the expected type.
-  template <typename T>
-  const T *lookup(const PTree::Encoding &name) const throw(TypeError)
-  {
-    const Symbol *symbol = lookup(name);
-    if (!symbol) return 0;
-    const T *t = dynamic_cast<const T *>(symbol);
-    if (!t) throw TypeError(symbol->type());
-    return t;
-  }
-
-  //. recursively dump the content of the symbol table to a stream (for debugging).
-  virtual void dump(std::ostream &, size_t indent) const;
-
-protected:
-  //. Scopes are ref counted, and thus are deleted only by 'unref()'
-  virtual ~Scope();
-
-private:
-  //. SymbolTable provides a mapping from (encoded) names to Symbols declared
-  //. in this scope
-  typedef std::map<PTree::Encoding, const Symbol *> SymbolTable;
-  //. ScopeTable provides a mapping from scope nodes to Scopes,
-  //. which can be used to traverse the scope tree in parallel with
-  //. the associated parse tree
-  typedef std::map<const PTree::Node *, const Scope *> ScopeTable;
-
-  SymbolTable    my_symbols;
-  ScopeTable     my_scopes;
-  mutable size_t my_refcount;
-};
-
-inline void Scope::declare_scope(const PTree::Node *node, const Scope *scope)
-{
-  my_scopes[node] = scope->ref();
-}
-
-inline const Scope *Scope::lookup_scope(const PTree::Node *node) const
-{
-  ScopeTable::const_iterator i = my_scopes.find(node);
-  return i == my_scopes.end() ? 0 : i->second;
-}
 
 }
 
