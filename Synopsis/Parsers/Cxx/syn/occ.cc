@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.85 2003/01/27 06:53:37 chalky Exp $
+// $Id: occ.cc,v 1.86 2003/03/14 17:09:50 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.86  2003/03/14 17:09:50  stefan
+// separate command and arguments in CC variable
+//
 // Revision 1.85  2003/01/27 06:53:37  chalky
 // Added macro support for C++.
 //
@@ -449,54 +452,69 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 
     if (syn_use_gcc)
     {
-        // Release Python's global interpreter lock
-        pythread_save = PyEval_SaveThread();
-
-        switch(fork())
-        {
-        case 0:
-            {
-                std::vector<const char *> args = flags;
-                char *cc = getenv("CC");
-                args.insert(args.begin(), cc ? cc : "cpp");
-                args.push_back("-C"); // keep comments
-                args.push_back("-E"); // stop after preprocessing
-                args.push_back("-o"); // output to...
-                args.push_back(dest);
-                args.push_back("-x"); // language c++
-                args.push_back("c++");
-                args.push_back(file);
-                if (verbose)
-                {
-                    std::cout << "calling external preprocessor\n" << args[0];
-                    for (std::vector<const char *>::iterator i = args.begin(); i != args.end(); ++i)
-                        std::cout << ' ' << *i;
-                    std::cout << std::endl;
-                }
-                args.push_back(0);
-                execvp(args[0], (char **)&*args.begin());
-                perror("cannot invoke compiler");
-                exit(-1);
-                break;
-            }
-        case -1:
-            perror("RunPreprocessor");
-            exit(-1);
-            break;
-        default:
-            {
-                int status;
-                wait(&status);
-                if (status != 0)
-                {
-                    if (WIFEXITED(status))
-                        std::cout << "exited with status " << WEXITSTATUS(status) << std::endl;
-                    else if (WIFSIGNALED(status))
-                        std::cout << "stopped with status " << WTERMSIG(status) << std::endl;
-                    exit(1);
-                }
-            }
-        } // switch
+       // Release Python's global interpreter lock
+       pythread_save = PyEval_SaveThread();
+       
+       switch(fork())
+       {
+       case 0:
+       {
+          std::vector<const char *> args;
+          char *cc = getenv("CC");
+          if (cc)
+          {
+             // separate command and arguments
+             do
+             {
+                args.push_back(cc);
+                cc = strchr(cc, ' ');                  // find next whitespace...
+                while (cc && *cc == ' ') *cc++ = '\0'; // ...and skip to next non-ws
+             }
+             while (cc && *cc != '\0');
+          }
+          else
+          {
+             args.push_back("cpp");
+          }
+          std::copy(flags.begin(), flags.end(), args.begin());
+          args.push_back("-C"); // keep comments
+          args.push_back("-E"); // stop after preprocessing
+          args.push_back("-o"); // output to...
+          args.push_back(dest);
+          args.push_back("-x"); // language c++
+          args.push_back("c++");
+          args.push_back(file);
+          if (verbose)
+          {
+             std::cout << "calling external preprocessor\n" << args[0];
+             for (std::vector<const char *>::iterator i = args.begin(); i != args.end(); ++i)
+                std::cout << ' ' << *i;
+             std::cout << std::endl;
+          }
+          args.push_back(0);
+          execvp(args[0], (char **)&*args.begin());
+          perror("cannot invoke compiler");
+          exit(-1);
+          break;
+       }
+       case -1:
+          perror("RunPreprocessor");
+          exit(-1);
+          break;
+       default:
+       {
+          int status;
+          wait(&status);
+          if (status != 0)
+          {
+             if (WIFEXITED(status))
+                std::cout << "exited with status " << WEXITSTATUS(status) << std::endl;
+             else if (WIFSIGNALED(status))
+                std::cout << "stopped with status " << WTERMSIG(status) << std::endl;
+             exit(1);
+          }
+       }
+       } // switch
     }
     else
     { // else use ucpp
