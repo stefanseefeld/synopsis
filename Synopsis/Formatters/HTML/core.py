@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.35 2002/10/28 06:12:30 chalky Exp $
+# $Id: core.py,v 1.36 2002/10/28 17:39:37 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.36  2002/10/28 17:39:37  chalky
+# Cross referencing support
+#
 # Revision 1.35  2002/10/28 06:12:30  chalky
 # Add structs_as_classes option
 #
@@ -175,7 +178,7 @@ import sys, getopt, os, os.path, string, types, errno, stat, re, time
 # Synopsis modules
 from Synopsis.Config import Base
 from Synopsis.Core import AST, Type, Util
-from Synopsis.Formatter import TOC, ClassTree
+from Synopsis.Formatter import TOC, ClassTree, xref
 from Synopsis.Formatter.HTML import TreeFormatter
 
 from Synopsis.Core.Util import import_object
@@ -215,6 +218,7 @@ class Config:
 	    'InheritanceTree', 'InheritanceGraph', 'NameIndex', 'FramesIndex'
 	]
 	self.verbose = 0
+	self.xref = xref.CrossReferencer()
 
 
     def fillDefaults(self):
