@@ -22,7 +22,6 @@
    is<name>() looks ahead and returns TRUE if the next symbol is <name>.
 */
 
-#include <stdio.h>
 #include <iostream.h>
 #include "parse.h"
 #include "token.h"
@@ -186,7 +185,6 @@ bool Parser::rDefinition(Ptree*& p)
 	    return FALSE;
 	Ptree* c = lex->GetComments2();
 	if (c) {
-	    //cout << "Setting declarator comments to "; c->Display();
 	    Walker::SetDeclaratorComments(p, c);
 	}
 	return TRUE;

@@ -65,8 +65,8 @@ class FileNamer:
 		    fout.writelines(fin.readlines())
 		    fin.close()
 		    fout.close()
-	    except:
-		print "ERROR: Copying file:",reason
+	    except os.error, reason:
+		print "ERROR: Copying file:", reason
 		sys.exit(2)
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
@@ -157,11 +157,9 @@ class Struct:
 
 class CommentParser:
     """A class that takes a Declaration and sorts its comments out."""
-    def __init__(self, decl=None):
-	# Import class vars into self
-	self._valid = lambda x: x[0:3] == '//.'
-	self._strip = lambda x: x[3:]
-	if decl: self.parse(decl)
+    def __init__(self):
+	self._valid = lambda x: 1
+	self._strip = lambda x: x
     def parse(self, decl):
 	"""Parses the comments of the given AST.Declaration.
 	Returns a struct with vars:
@@ -176,6 +174,18 @@ class CommentParser:
 	else: summary = full[:end+1]
 	return Struct(full=full, summary=summary, detail=detail)
 
+class SSDCommentParser (CommentParser):
+    """A Comment parser that keeps only SlashSlashDot comments"""
+    def __init__(self):
+	CommentParser.__init__(self)
+	self._valid = lambda x: x[0:3] == '//.'
+	self._strip = lambda x: x[3:]
+
+commentParsers = {
+    'default' : CommentParser,
+    'ssd' : SSDCommentParser
+}
+
 class CommentDictionary:
     """This class just maintains a mapping from declaration to comment, since
     any particular comment is required at least twice. Upon initiation, an
@@ -183,7 +193,7 @@ class CommentDictionary:
     "comments"."""
     def __init__(self):
 	self.__dict = {}
-	self._parser = CommentParser()
+	self._parser = commentParsers[commentParser]()
 	global comments
 	comments = self
     def commentForName(self, name):
@@ -424,12 +434,7 @@ class BaseFormatter(Visitor.AstVisitor):
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = toc[name]
 	if entry: return apply(href, (entry.link, label), keys)
-	return span('type', label)
-	# OLD:
-	ref = Util.ccolonName(name)
-	if label is None: 
-	    label = Util.ccolonName(name, self.scope()) or "Global Namespace"
-	return apply(self.reference, (ref, label), keys)
+	return label and span('type', label) or ''
 
     def label(self, ref, label=None):
 	"""Create a label for the given scoped reference name"""
@@ -526,7 +531,8 @@ class BaseFormatter(Visitor.AstVisitor):
 	str = []
 	keyword = lambda m,span=span: span("keyword", m)
 	str.extend(map(keyword, parameter.premodifier()))
-	str.append(self.formatType(parameter.type()))
+	typestr = self.formatType(parameter.type())
+	if typestr: str.append(typestr)
 	str.extend(map(keyword, parameter.postmodifier()))
         if len(parameter.identifier()) != 0:
             str.append(span("variable", parameter.identifier()))
@@ -1037,12 +1043,13 @@ class Paginator:
 	self.__os.close()
 
 def __parseArgs(args):
-    global basename, stylesheet, namespace
+    global basename, stylesheet, namespace, commentParser
     basename = None
     stylesheet = ""
     namespace = ""
+    commentParser = "default"
     try:
-        opts,remainder = getopt.getopt(args, "o:s:n:")
+        opts,remainder = getopt.getopt(args, "o:s:n:c:")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -1055,6 +1062,12 @@ def __parseArgs(args):
             stylesheet = a
 	elif o == "-n":
 	    namespace = a
+	elif o == "-c":
+	    if commentParsers.has_key(a):
+		commentParser = a
+	    else:
+		print "Available comment parsers:",string.join(commentParsers.keys(), ', ')
+		sys.exit(1)
 
 def format(types, declarations, args):
     global basename, stylesheet, toc, filer
