@@ -40,9 +40,10 @@ OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
 OCC_FILES := Buffer HashTable Lexer \
-             PTree/Node PTree/operations PTree/Atom PTree/List PTree/Atoms PTree/Lists \
+             PTree/Node PTree/operations PTree/Atom PTree/List \
+             PTree/Atoms PTree/Lists PTree/generation \
              Encoding Environment \
-             pattern Walker TypeInfo Parser Class ClassWalker \
+             Walker TypeInfo Parser Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
 SYN_FILES := Translator occ swalker ast builder type dict \
