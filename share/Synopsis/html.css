@@ -11,8 +11,28 @@ body
 span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
 span.name { font-weight: bold; }
-span.root-current { background: #eeeeee; color: #888888; font-style: italic; }
-span.root-other { font-weight: bold; }
+div.navigation
+{ 
+  border: 1px solid #aaaaaa;
+  background-color: #f2f5f7;
+  padding: 5px;
+}
+
+div.navigation span 
+{
+  border-right: 1px solid #aaaaaa;
+  padding: 2px;
+}
+
+div.navigation span.root-current 
+{
+  background-color: #dbdee0;
+}
+div.xref-name
+{ 
+  border-top: 1px solid #aaaaaa;
+}
+
 div.template { margin-top: 0.5em; font-style: italic; }
 a.name { font-weight: bold; }
 div.module { padding: 1.0em;}
@@ -49,11 +69,12 @@ div.files {
 div.filepage-scope {
     margin-left: 1em;
 }
-td.heading {
+h2.heading, td.heading {
     font-size: 1.5em;
     font-weight: bold;
     padding: 0.1em;
-    background: #eeeeee;
+    border: 1px solid #aaaaaa;
+    background: #f2f5f7;
 }
 td.summ-start {
     vertical-align: top;
@@ -66,6 +87,7 @@ div.section {
 }
 
 div.logo {
+    border-top: 1px solid #aaaaaa;
     margin-left: 2em;
     text-align: center;
     color: #dddddd;

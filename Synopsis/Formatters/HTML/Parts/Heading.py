@@ -32,7 +32,7 @@ class Heading(Part):
    def write_section_item(self, text):
       """Writes text and follows with a horizontal rule"""
 
-      self.write(text + '\n<hr/>\n')
+      self.write(text + '\n')
 
    def process(self, decl):
       """Process this Part by formatting only the given decl"""
