@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.6 2002/11/02 06:37:37 chalky Exp $
+# $Id: XRef.py,v 1.7 2002/11/11 15:19:34 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.7  2002/11/11 15:19:34  chalky
+# More fixes to get demo/C++ sxr working without frames
+#
 # Revision 1.6  2002/11/02 06:37:37  chalky
 # Allow non-frames output, some refactoring of page layout, new modules.
 #
@@ -66,9 +69,12 @@ class XRefPages (Page.Page):
 	self.__filename = None
 	self.__title = None
 	self.__toc = None
+	self.__link_to_scopepages = 0
 	if hasattr(config.obj, 'XRefPages'):
 	    if hasattr(config.obj.XRefPages, 'xref_file'):
 		self.xref.load(config.obj.XRefPages.xref_file)
+	    if hasattr(config.obj.XRefPages, 'link_to_scopepages'):
+		self.__link_to_scopepages = config.obj.XRefPages.link_to_scopepages
 
     def get_toc(self, start):
 	"""Returns the toc for XRefPages"""
@@ -164,6 +170,12 @@ class XRefPages (Page.Page):
 		desc = self.describe_decl(decl)
 	self.write(entity('h2', desc + jname) + '<ul>\n')
 	
+	if self.__link_to_scopepages:
+	    if config.types.has_key(name):
+		type = config.types[name]
+		if isinstance(type, Type.Declared):
+		    link = config.files.link(type.declaration())
+		    self.write('<li>'+href(rel(self.__filename, link), 'Documentation')+'</li>')
 	if target_data[0]:
 	    self.write('<li>Defined at:<ul>\n')
 	    for file, line, scope in target_data[0]:
