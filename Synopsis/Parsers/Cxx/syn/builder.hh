@@ -192,6 +192,9 @@ public:
   //. Add an Unknown decl for given name if it doesnt already exist
   Types::Unknown* add_unknown(const std::string& name);
 
+  //. Add an Templated Forward decl for given name if it doesnt already exist
+  AST::Forward* add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params);
+
 private:
   //. Base filename to strip from the start of all filenames
   std::string m_basename;
