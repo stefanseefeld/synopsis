@@ -71,7 +71,7 @@ extern int err_cnt;
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 
-extern istream *yyinstream;
+extern std::istream *yyinstream;
 
 extern int yyparse(void);
 
@@ -280,7 +280,7 @@ Project::parse( const char* path, bool use_cpp, /* =true */
                 const char* cpp_cmd,     /* =(const char *)NULL */
                 const char* cd_cmd       /* ="cd % ;"           */ )
 {
-    ifstream   fp;
+    std::ifstream   fp;
     char       cpp_cmmd[500];
     char       cpp_file[200];
     char       *end;
@@ -352,7 +352,7 @@ Project::parse( const char* path, bool use_cpp, /* =true */
     if (!fp)
         return NULL;
     
-    Parse_TOS = new ParseEnv(&fp, &cerr, path);
+    Parse_TOS = new ParseEnv(&fp, &std::cerr, path);
     TransUnit *unit = Parse_TOS->transUnit;
     
     yyinstream = Parse_TOS->yyinstream;

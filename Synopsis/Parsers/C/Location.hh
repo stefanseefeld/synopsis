@@ -36,10 +36,6 @@
 
 #include <string>
 
-#ifndef	WINDOWS
-	class std::ostream;
-#endif
-
 class Location
 {
  public:
