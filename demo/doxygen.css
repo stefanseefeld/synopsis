@@ -70,3 +70,40 @@ div.logo {
     text-align: center;
     color: #dddddd;
 }
+
+div.nameindex-item {
+    margin-left: 1em;
+}
+div.file-all {
+    font-size: smaller;
+}
+span.file-linenum {
+    color: red;
+    font-family: monospace;
+}
+span.file-indent {
+    font-family: monospace;
+}
+span.file-default {
+    color: #222222;
+}
+span.file-keyword {
+    font-weight: bold;
+}
+span.file-comment {
+    color: purple;
+}
+span.file-number {
+    color: blue;
+    font-style: italic;
+}
+span.file-string {
+    color: green;
+    font-style: italic;
+}
+a.file-ref {
+    font-style: italic;
+}
+a.file-def {
+    font-weight: bold;
+}
