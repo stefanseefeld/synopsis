@@ -1,4 +1,3 @@
-# $Id: Source.py,v 1.11 2003/12/08 00:39:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -12,7 +11,7 @@ from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import time, os
+import os
 
 link = None
 try:
@@ -24,9 +23,9 @@ class Source(View):
    """A module for creating a view for each file with hyperlinked source"""
 
    prefix = Parameter('', 'prefix to the syntax files')
-   scope = Parameter('', '')
-   toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
-
+   toc_in = Parameter([], 'obsolete, to be removed in a later release')
+   external_url = Parameter(None, 'base url to use for external links (if None the toc will be used')
+   
    def register(self, processor):
 
       View.register(self, processor)
@@ -48,17 +47,11 @@ class Source(View):
       """Creates a view for every file"""
 
       # Get the TOC
-      toc = self.processor.get_toc(start)
-      tocfile = self.processor.file_layout.special('SourceInputTOC')
-      tocfile = os.path.join(self.processor.output, tocfile)
-      toc.store(tocfile)
-      self.__toclist.append(tocfile)
+      self.toc = self.processor.get_toc(start)
       # create a view for each main file
       for file in self.processor.ast.files().values():
          if file.is_main():
             self.process_node(file)
-	
-      os.unlink(tocfile)
 
    def register_filenames(self, start):
       """Registers a view for every source file"""
@@ -68,7 +61,6 @@ class Source(View):
             filename = file.filename()
             filename = os.path.join(self.processor.output, filename)
             filename = self.processor.file_layout.file_source(filename)
-            #print "Registering",filename
             self.processor.register_filename(filename, self, file)
 	     
    def process_node(self, file):
@@ -78,18 +70,11 @@ class Source(View):
       filename = file.filename()
       filename = os.path.join(self.processor.output, filename)
       self.__filename = self.processor.file_layout.file_source(filename)
-      #name = list(node.path)
-      #while len(name) and name[0] == '..': del name[0]
-      #source = string.join(name, os.sep)
+
+      self.rel_url = rel(self.filename(), '')
+
       source = file.filename()
       self.__title = source
-
-      # Massage toc list to prefix '../../.....' to any relative entry.
-      prefix = rel(self.filename(), '')
-      toclist = list(self.__toclist)
-      for index in range(len(toclist)):
-         if '|' not in toclist[index]:
-            toclist[index] = toclist[index]+'|'+prefix
 
       self.start_file()
       self.write(self.processor.navigation_bar(self.filename()))
@@ -104,20 +89,31 @@ class Source(View):
             self.write("An error occurred:"+ str(e))
       else:
          self.write('<br><div class="file-all">\n')
+
          # Call link module
          f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
          f_in = file.full_filename()
          f_link = os.path.join(self.prefix, source)
-         #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)
          try:
-            link.link(toclist, f_in, f_out, f_link, self.scope)
+            lookup = self.external_url and self.external_ref or self.lookup_symbol
+            link.link(lookup, f_in, f_out, f_link)
+
          except link.error, msg:
             print "An error occurred:",msg
+
          try:
             self.write(open(f_out,'r').read())
             os.unlink(f_out)
+
          except IOError, e:
             self.write("An error occurred:"+ str(e))
          self.write("</div>")
 
       self.end_file()
+
+   def lookup_symbol(self, name):
+      e = self.toc.lookup(tuple(name))
+      return e and self.rel_url + e.link or ''
+
+   def external_ref(self, name):
+      return self.base_url + '/' + '::'.join(name)
