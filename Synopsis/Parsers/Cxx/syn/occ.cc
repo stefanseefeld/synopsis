@@ -341,9 +341,9 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   struct sigaction olda;
   struct sigaction newa;
   newa.sa_handler = &sighandler;
-//  sigaction(SIGSEGV, &newa, &olda);
-//  sigaction(SIGBUS, &newa, &olda);
-//  sigaction(SIGABRT, &newa, &olda);
+  sigaction(SIGSEGV, &newa, &olda);
+  sigaction(SIGBUS, &newa, &olda);
+  sigaction(SIGABRT, &newa, &olda);
   static char dest[1024] = "/tmp/synopsis-XXXXXX";
   //tmpnam(dest);
   if (mkstemp(dest) == -1) {
@@ -426,9 +426,9 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
       std::cerr << "errors while parsing file " << file << std::endl;
       exit(1);
     }
-//  sigaction(SIGABRT, &olda, 0);
-//  sigaction(SIGBUS, &olda, 0);
-//  sigaction(SIGSEGV, &olda, 0);
+  sigaction(SIGABRT, &olda, 0);
+  sigaction(SIGBUS, &olda, 0);
+  sigaction(SIGSEGV, &olda, 0);
   return dest;
 }
 
