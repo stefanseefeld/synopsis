@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.21 2003/01/16 17:14:10 chalky Exp $
+// $Id: ast.hh,v 1.22 2003/01/27 06:53:36 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -400,6 +400,50 @@ private:
 };
 
 
+//. Encapsulates a preprocessor macro. Macros are stored in the AST, but since
+//. they are not regular C++ syntax they are treated specially: They will be
+//. in order compared to other macros, but not to the rest of the AST since
+//. the preprocessing stage occurs first. They will always be in the global
+//. scope. Note that the parameters is a pointer to a vector - if the pointer
+//. is null, then the macro is not function-like. If the pointer is non-null
+//. then it points to a vector of parameter names. If the macro is
+//. function-like but with no parameters, it is a pointer to an empty vector.
+class Macro : public Declaration
+{
+public:
+    //. The type of the parameters
+    typedef std::vector<std::string> Parameters;
+
+    //. Constructor. Assumes ownership of the Parameters vector if it is not a
+    //. null pointer.
+    Macro(SourceFile* file, int line, const ScopedName& name, Parameters* params, const std::string& text);
+
+    //. Destructor
+    virtual ~Macro();
+
+    //. The parameters of the macro. May be a null pointer if the macro is not
+    //. function-like
+    const Parameters* parameters() const
+    {
+	return m_parameters;
+    }
+
+    //. The expansion text of the macro.
+    const std::string& text() const
+    {
+	return m_text;
+    }
+
+    //. Accepts the given visitor
+    virtual void accept(Visitor*);
+
+private:
+    //. The parameters
+    Parameters* m_parameters;
+
+    //. The expansion text
+    std::string m_text;
+};
 
 //. Base class for scopes with contained declarations. Each scope has its
 //. own Dictionary of names so far accumulated for this scope. Each scope
@@ -943,6 +987,7 @@ public:
     // Abstract destructor makes the class abstract
     virtual ~Visitor() = 0;
     virtual void visit_declaration(Declaration*);
+    virtual void visit_macro(Macro*);
     virtual void visit_scope(Scope*);
     virtual void visit_namespace(Namespace*);
     virtual void visit_class(Class*);

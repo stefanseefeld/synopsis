@@ -2,7 +2,7 @@
 // The Builder class, which builds an AST. Used by the SWalker which calls the
 // appropriate Builder member functions
 
-// $Id: builder.hh,v 1.31 2002/12/09 04:01:00 chalky Exp $
+// $Id: builder.hh,v 1.32 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -133,6 +133,11 @@ public:
 
     //. Add the given non-declaration type to the current scope
     void add(Types::Named* named);
+
+    //. Adds the given Macros to the global scope. This method should only be
+    //. called once, with the macros stored in order from the preprocessing
+    //. stage.
+    void add_macros(const std::vector<AST::Macro*>&);
 
     //. Construct and open a new Namespace. The Namespace becomes the
     //. current scope, and the old one is pushed onto the stack. If name is

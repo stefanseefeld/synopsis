@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: dumper.cc source file
 // Implementation of the TypeFormatter and Dumper classes
 
-// $Id: dumper.cc,v 1.22 2002/12/09 04:01:00 chalky Exp $
+// $Id: dumper.cc,v 1.23 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: dumper.cc,v $
+// Revision 1.23  2003/01/27 06:53:37  chalky
+// Added macro support for C++.
+//
 // Revision 1.22  2002/12/09 04:01:00  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -293,6 +296,25 @@ void Dumper::visit_declaration(AST::Declaration* decl)
     if (decl->type() == "dummy")
         return;
     std::cout << m_indent_string << "DECL " << decl->name() << std::endl;
+}
+
+void Dumper::visit_macro(AST::Macro* macro)
+{
+    std::cout << m_indent_string << "#define " << macro->name().back();
+    const AST::Macro::Parameters* params = macro->parameters();
+    if (params)
+    {
+	std::cout << "(";
+	AST::Macro::Parameters::const_iterator iter = params->begin();
+	if (iter != params->end())
+	    std::cout << *iter++;
+	while (iter != params->end())
+	    std::cout << ", " << *iter++;
+	std::cout << ")";
+    }
+    std::cout << " ";
+    std::cout << macro->text();
+    std::cout << "\n";
 }
 
 void Dumper::visit_scope(AST::Scope* scope)

@@ -2,7 +2,7 @@
 // This file contains implementation for class Synopsis, which converts the
 // C++ AST into a Python AST.
 
-// $Id: synopsis.cc,v 1.47 2003/01/16 17:14:10 chalky Exp $
+// $Id: synopsis.cc,v 1.48 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 
 // $Log: synopsis.cc,v $
+// Revision 1.48  2003/01/27 06:53:37  chalky
+// Added macro support for C++.
+//
 // Revision 1.47  2003/01/16 17:14:10  chalky
 // Increase AST version number. SourceFiles store full filename. Executor/Project
 // uses it to check timestamp for all included files when deciding whether to
@@ -657,6 +660,32 @@ PyObject *Synopsis::Declaration(AST::Declaration* decl)
     return pydecl;
 }
 
+PyObject *Synopsis::Macro(AST::Macro* decl)
+{
+    Trace trace("Synopsis::Macro");
+    PyObject *pymacro, *file, *type, *name, *params, *text;
+    if (decl->parameters())
+	params = m->List(*decl->parameters());
+    else
+    {
+	params = Py_None;
+	Py_INCREF(Py_None);
+    }
+    pymacro = PyObject_CallMethod(m_ast, "Macro", "OiOOOOO",
+	    file = m->py(decl->file()), decl->line(), m->cxx(),
+	    type = m->py(decl->type()), name = m->Tuple(decl->name()),
+	    params, text = m->py(decl->text())
+	    );
+    assertObject(pymacro);
+    addComments(pymacro, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    Py_DECREF(params);
+    Py_DECREF(text);
+    return pymacro;
+}
+
 PyObject *Synopsis::Forward(AST::Forward* decl)
 {
     Trace trace("Synopsis::addForward");
@@ -944,6 +973,11 @@ void Synopsis::visit_declaration(AST::Declaration* decl)
     // Assume this is a dummy declaration
     if (m_filter->should_store(decl))
         m->add(decl, Declaration(decl));
+}
+void Synopsis::visit_macro(AST::Macro* decl)
+{
+    if (m_filter->should_store(decl))
+	m->add(decl, Macro(decl));
 }
 void Synopsis::visit_scope(AST::Scope* decl)
 {

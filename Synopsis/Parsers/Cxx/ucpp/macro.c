@@ -37,7 +37,9 @@
 #include "tune.h"
 
 #define DEBUG_MACROS 0
-
+#ifdef SYNOPSIS
+void synopsis_define_hook(const char* file, int line, const char* name, int num_args, const char** args, int vaarg, const char* text);
+#endif
 /*
  * we store macros in a hash table, and retrieve them using their name
  * as identifier.
@@ -325,8 +327,7 @@ int handle_define(struct lexer_state *ls)
 #endif
 	int ltwws = 1, redef = 0;
 	char *mname = 0;
-	int narg;
-	size_t nt;
+	int narg, is_func_like = 1;
 	long l = ls->line;
 	
 #ifdef LOW_MEM
@@ -365,20 +366,18 @@ int handle_define(struct lexer_state *ls)
 #ifdef LOW_MEM
 		n->cval.rp = 0;
 #endif
-		freemem(mname);
-		mname = 0;
 	}
-	if (!redef) {
-		m = new_macro();
-		m->name = mname;
-		mname = 0;
-		m->narg = -1;
+	/* Create a new macro */
+	m = new_macro();
+	m->name = mname;
+	mname = 0;
+	m->narg = -1;
 #ifdef LOW_MEM
 #define mval	mv
 #else
 #define mval	(m->val)
 #endif
-	}
+	
 	if (next_token(ls)) goto define_end;
 	/*
 	 * Check if the token immediately following the macro name is
@@ -418,35 +417,26 @@ int handle_define(struct lexer_state *ls)
 						"macro argument list");
 					goto warp_error;
 				}
-				if (!redef) {
-					aol(m->arg, narg,
-						sdup(ls->ctok->name), 8);
-					/* we must keep track of m->narg
-					   so that cleanup in case of
-					   error works. */
-					m->narg = narg;
-					if (narg == 128
-						&& (ls->flags & WARN_STANDARD))
-						warning(l, "more arguments to "
-							"macro than the ISO "
-							"limit (127)");
+			
+				aol(m->arg, narg,
+					sdup(ls->ctok->name), 8);
+				/* we must keep track of m->narg
+				   so that cleanup in case of
+				   error works. */
+				m->narg = narg;
+				if (narg == 128
+					&& (ls->flags & WARN_STANDARD))
+					warning(l, "more arguments to "
+						"macro than the ISO "
+						"limit (127)");
 #ifdef LOW_MEM
-					if (narg == 254) {
-						error(l, "too many arguments "
-							"in macro definition "
-							"(max 253)");
-						goto warp_error;
-					}
-#endif
-				} else {
-					/* this is a redefinition of the
-					   macro; check equality between
-					   old and new definitions */
-					if (narg >= n->narg) goto redef_error;
-					if (strcmp(ls->ctok->name,
-						n->arg[narg ++]))
-						goto redef_error;
+				if (narg == 254) {
+					error(l, "too many arguments "
+						"in macro definition "
+						"(max 253)");
+					goto warp_error;
 				}
+#endif
 				need_comma = 1;
 				continue;
 			} else if ((ls->flags & MACRO_VAARG)
@@ -456,8 +446,7 @@ int handle_define(struct lexer_state *ls)
 					error(l, "missing comma before '...'");
 					goto warp_error;
 				} */
-				if (redef && !n->vaarg) goto redef_error;
-				if (!redef) m->vaarg = 1;
+				m->vaarg = 1;
 				saw_mdots = 1;
 				need_comma = 1;
 				continue;
@@ -466,8 +455,6 @@ int handle_define(struct lexer_state *ls)
 					error(l, "void macro argument");
 					goto warp_error;
 				}
-				if (redef && n->vaarg && !saw_mdots)
-					goto redef_error;
 				break;
 			} else if (ttMWS(ls->ctok->type)) {
 				continue;
@@ -475,23 +462,21 @@ int handle_define(struct lexer_state *ls)
 			error(l, "invalid macro argument");
 			goto warp_error;
 		}
-		if (!redef) {
-			for (i = 1; i < narg; i ++) for (j = 0; j < i; j ++)
-				if (!strcmp(m->arg[i], m->arg[j])) {
-					error(l, "duplicate macro "
-						"argument");
-					goto warp_error;
-				}
-		}
-		if (!redef) m->narg = narg;
+		for (i = 1; i < narg; i ++) for (j = 0; j < i; j ++)
+			if (!strcmp(m->arg[i], m->arg[j])) {
+				error(l, "duplicate macro "
+					"argument");
+				goto warp_error;
+			}
+		m->narg = narg;
 	} else {
 		if (!ttWHI(ls->ctok->type) && (ls->flags & WARN_STANDARD))
 			warning(ls->line, "identifier not followed by "
 				"whitespace in #define");
 		ls->flags |= READ_AGAIN;
 		narg = 0;
+		is_func_like = 0;
 	}
-	if (redef) nt = 0;
 
 	/* now, we have the arguments. Let's get the macro contents. */
 	while (!next_token(ls) && ls->ctok->type != NEWLINE) {
@@ -505,19 +490,17 @@ int handle_define(struct lexer_state *ls)
 
 			if ((ls->flags & MACRO_VAARG)
 				&& !strcmp(ls->ctok->name, "__VA_ARGS__")) {
-				if (redef) {
-					if (!n->vaarg) goto redef_error;
-				} else if (!m->vaarg) {
+				if (!m->vaarg) {
 					error(l, "'__VA_ARGS__' is forbidden "
 						"in macros with a fixed "
 						"number of arguments");
 					goto warp_error;
 				}
 				t.type = MACROARG;
-				t.line = redef ? n->narg : m->narg;
+				t.line = m->narg;
 			}
 			for (i = 0; i < narg; i ++)
-				if (!strcmp(redef ? n->arg[i] : m->arg[i],
+				if (!strcmp(m->arg[i],
 					ls->ctok->name)) {
 					t.type = MACROARG;
 					/* this is a hack: we store the
@@ -526,7 +509,7 @@ int handle_define(struct lexer_state *ls)
 					break;
 				}
 		}
-		if (!redef && S_TOKEN(t.type)) t.name = sdup(ls->ctok->name);
+		if (S_TOKEN(t.type)) t.name = sdup(ls->ctok->name);
 		if (ttMWS(t.type)) {
 			if (ltwws) continue;
 #ifdef SEMPER_FIDELIS
@@ -536,58 +519,10 @@ int handle_define(struct lexer_state *ls)
 #endif
 			ltwws = 1;
 		} else ltwws = 0;
-		if (!redef) {
-			/* we ensure that each macro token has a correct
-			   line number */
-			if (t.type != MACROARG) t.line = l;
-			aol(mval.t, mval.nt, t, TOKEN_LIST_MEMG);
-		} else {
-#ifdef LOW_MEM
-			int tt;
-
-			if (n->cval.rp >= n->cval.length) {
-#ifdef SEMPER_FIDELIS
-				if (t.type != OPT_NONE) goto redef_error;
-#else
-				if (t.type != NONE) goto redef_error;
-#endif
-			} else if (t.type != n->cval.t[n->cval.rp]
-				|| (t.type == MACROARG
-				    && t.line != n->cval.t[n->cval.rp + 1])
-				|| (S_TOKEN(t.type) && strcmp(ls->ctok->name,
-				   (char *)(n->cval.t + n->cval.rp + 1)))) {
-				goto redef_error;
-			}
-			tt = n->cval.t[n->cval.rp ++];
-			if (S_TOKEN(tt)) n->cval.rp += 1
-				+ strlen((char *)(n->cval.t + n->cval.rp));
-			else if (tt == MACROARG) n->cval.rp ++;
-#else
-			if (nt >= n->val.nt) {
-#ifdef SEMPER_FIDELIS
-				if (t.type != OPT_NONE) goto redef_error;
-#else
-				if (t.type != NONE) goto redef_error;
-#endif
-			} else if (t.type != n->val.t[nt].type
-				|| (t.type == MACROARG
-				    && t.line != n->val.t[nt].line)
-				|| (S_TOKEN(t.type) && strcmp(ls->ctok->name,
-				   n->val.t[nt].name))) {
-				goto redef_error;
-			}
-#endif
-			nt ++;
-		}
-	}
-
-	if (redef) {
-#ifdef LOW_MEM
-		if (n->cval.rp < n->cval.length) goto redef_error_2;
-#else
-		if (nt < n->val.nt) goto redef_error_2;
-#endif
-		return 0;
+		/* we ensure that each macro token has a correct
+		   line number */
+		if (t.type != MACROARG) t.line = l;
+		aol(mval.t, mval.nt, t, TOKEN_LIST_MEMG);
 	}
 
 	/* now we have the complete macro; perform some checks about
@@ -655,11 +590,71 @@ define_end:
 		if (mval.nt) freemem(mval.t);
 	}
 #endif
-	putHT(macros, m);
+#ifdef SYNOPSIS
+	/* Store macro in Synopsis */
+	if (ls->line > 0) /* Skips the -D defines */
+	{
+	    char *text = NULL;
+#ifdef LOW_MEM
+	    if (m->cval.length > 0)
+	    {
+		size_t i, len = 0;
+		/* First determine length */
+		for (i = 0; i < m->cval.length;) {
+		    int tt = m->cval.t[i++];
+		    if (tt == MACROARG) {
+			if (m->cval.t[i] == m->narg)
+			    len += 11; /* "__VA_ARGS__" */
+			else
+			    len += strlen(m->arg[(size_t)(m->cval.t[i])]);
+			i++;
+		    }
+		    else if (S_TOKEN(tt)) {
+			int l = strlen((char *)(m->cval.t + i));
+			i += 1 + l;
+			len += l;
+		    } else len += strlen(operators_name[tt]);
+		}
+		text = malloc(len+1);
+		text[0] = 0;
+		/* Now build string */
+		for (i = 0; i < m->cval.length;) {
+		    int tt = m->cval.t[i++];
+		    if (tt == MACROARG) {
+			if (m->cval.t[i] == m->narg)
+			    strcat(text, "__VA_ARGS__");
+			else
+			    strcat(text, m->arg[(size_t)(m->cval.t[i])]);
+			i++;
+		    }
+		    else if (S_TOKEN(tt)) {
+			strcat(text, (char *)(m->cval.t + i));
+			i += 1 + strlen((char *)(m->cval.t + i));
+		    } else strcat(text, operators_name[tt]);
+		}
+#else
+#error Not Implemented: non-LOW_MEM
+#endif
+	    }
+	    else
+		text = strdup("");
+	    synopsis_define_hook(current_long_filename, (int)ls->line, m->name,
+		    m->narg, (const char**)(is_func_like ? m->arg : NULL), 
+		    m->vaarg, text);
+	    if (text) free(text);
+	}
+#endif
 	if (emit_defines) print_macro(m);
+	if (!redef) putHT(macros, m);
+	else
+	{
+	    /* Free the macro since it was only a temp for Synopsis */
+	    del_macro(m);
+	}
+	
 	return 0;
 
-redef_error:
+/*redef_error:
 	while (ls->ctok->type != NEWLINE && !next_token(ls));
 redef_error_2:
 #ifndef SYNOPSIS
@@ -668,6 +663,7 @@ redef_error_2:
 #else
 	return 0;
 #endif
+*/
 warp_error:
 	while (ls->ctok->type != NEWLINE && !next_token(ls));
 define_error:

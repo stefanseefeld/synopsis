@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.84 2003/01/15 12:10:26 chalky Exp $
+// $Id: occ.cc,v 1.85 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.85  2003/01/27 06:53:37  chalky
+// Added macro support for C++.
+//
 // Revision 1.84  2003/01/15 12:10:26  chalky
 // Removed more global constructors
 //
@@ -587,6 +590,8 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     AST::SourceFile* sourcefile = filter->get_sourcefile(src);
 
     Builder builder(sourcefile);
+    if (syn_macro_defines)
+	builder.add_macros(*syn_macro_defines);
     SWalker swalker(filter, &parse, &builder, &prog);
     swalker.set_extract_tails(syn_extract_tails);
     Ptree *def;

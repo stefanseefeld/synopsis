@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.26 2003/01/20 06:43:02 chalky Exp $
+# $Id: AST.py,v 1.27 2003/01/27 06:53:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.27  2003/01/27 06:53:36  chalky
+# Added macro support for C++.
+#
 # Revision 1.26  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -393,7 +396,7 @@ class Macro (Declaration):
 	"""Returns a list of parameter names (strings) for this macro if it
 	has any. Note that if the macro is not a function-like macro, this
 	method will return None. If it is a function-like macro but with no
-	parameters, and empty list will be returned."""
+	parameters, an empty list will be returned."""
 	return self.__parameters
 
     def text(self):

@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.31 2002/10/27 12:06:11 chalky Exp $
+# $Id: ASCII.py,v 1.32 2003/01/27 06:53:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.32  2003/01/27 06:53:36  chalky
+# Added macro support for C++.
+#
 # Revision 1.31  2002/10/27 12:06:11  chalky
 # Fix funcptr parameters
 #
@@ -154,6 +157,14 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	    self.write(self.__axs_string[axs])
 	    self.__axs = axs
 	self.writeComments(decl.comments())
+
+    def visitMacro(self, macro):
+	self.visitDeclaration(macro)
+	self.indent()
+	params = ''
+	if macro.parameters() is not None:
+	    params = '(' + string.join(macro.parameters(), ', ') + ')'
+	self.write("#define %s%s %s\n"%(macro.name()[-1], params, macro.text()))
     
     def writeComments(self, comments):
 	for comment in comments:
