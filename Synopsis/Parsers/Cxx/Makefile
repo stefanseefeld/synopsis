@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.14 2002/11/01 23:30:14 chalky Exp $
+# $Id: Makefile,v 1.15 2003/01/30 01:07:18 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -28,12 +28,8 @@ endif
 
 SRC	:= __init__.py __init__.pyc emul.py emul.pyc occ.$(LIBRARY_EXT) link.$(LIBRARY_EXT)
 
-# Note ucpp and occ are both handled inside syn/Makefile
-ifeq '$(use_gc)' 'yes'
-subdirs	:= gc syn
-else
+# Note gc, ucpp and occ are both handled inside syn/Makefile
 subdirs	:= syn
-endif
 
 all:
 	@for dir in ${subdirs}; do \

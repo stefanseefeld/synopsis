@@ -38,7 +38,7 @@
 #include "hash.h"
 #include "ptree-core.h"
 #ifndef DONT_GC
-#include "gc/gc.h"
+#include "gc.h"
 #endif
 
 struct HashTableEntry {

@@ -127,7 +127,7 @@ inline void* operator new [](size_t size, GCPlacement gcp)
 
 #else
 
-#include "gc/gc_cpp.h"
+#include "gc_cpp.h"
 typedef gc LightObject;
 typedef gc_cleanup Object;
 

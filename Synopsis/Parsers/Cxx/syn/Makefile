@@ -84,11 +84,11 @@ debug:		occ.gdb link-synopsis ucpp
 
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : %.cc
-	$(CXX)  $(OPTIMISE) -I.. -I../occ $(CPPFLAGS) -c -o $@ $<
+	$(CXX)  $(OPTIMISE) -I.. -I../gc/include -I../occ $(CPPFLAGS) -c -o $@ $<
 
 # This compiles the parser files with optimisation
 $(SYN_OBJ): %.o : %.cc
-	$(CXX) $(OPTIMISE) -I.. $(SYN_FLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(OPTIMISE) -I.. -I../gc/include $(SYN_FLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # This compiles the UCPP files from ../ucpp
 $(UCPP_OBJ): %.o : %.c
@@ -96,11 +96,11 @@ $(UCPP_OBJ): %.o : %.c
 
 # This compiles DEBUG versions of the OCC files in the parent dir
 $(OCC_GOBJ): %.go : %.cc
-	$(CXX) $(DEBUG) -I.. -I../occ $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(DEBUG) -I.. -I../gc/include -I../occ $(CPPFLAGS) -c -o $@ $<
 
 # This compiles DEBUG versions of the object files with .go suffix
 $(SYN_GOBJ): %.go : %.cc
-	$(CXX) $(DEBUG) -I.. $(SYN_FLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(DEBUG) -I.. -I../gc/include $(SYN_FLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # This compiles DEBUG versions of the UCPP files
 $(UCPP_GOBJ): %.go : %.c
@@ -123,7 +123,7 @@ ucpp:		$(UCPP_AOBJ)
 
 # This calls make in the gc dir to create the gc.a file
 $(GCLIB):
-	@make -C ../gc
+	@make -C ../gc c++
 
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a $(UCPP_LIB)
