@@ -207,7 +207,7 @@
         C++ header files.</para>
       <para>Let's assume a simple header file, containing some declarations:</para>
       <para>
-        <programlisting><xi:include href="examples/Paths/Path.h" parse="text"/>
+        <programlisting><xi:include href="examples/Paths/src/Path.h" parse="text"/>
         </programlisting>
       </para>
       <para>Process this with
@@ -240,7 +240,7 @@ synopsis -f HTML -o Paths Path.syn
         looks already much better.
       </para>
       <para>Let us now add more input files:
-        <programlisting><xi:include href="examples/Paths/Polyline.h" parse="text"/>
+        <programlisting><xi:include href="examples/Paths/src/Polyline.h" parse="text"/>
         </programlisting>
         This header uses a different comment convention. Here relevant comments
         start with '//', so we will use the <type>SSComments</type> Processor.
@@ -253,7 +253,7 @@ synopsis -f HTML -o Paths Path.syn Polyline.syn
       </para>
       <para>Finally, let us look at a header file that is written in javadoc style,
         i.e. with java-style comments, and containing special tags:
-        <programlisting><xi:include href="examples/Paths/Nurbs.h" parse="text"/>
+        <programlisting><xi:include href="examples/Paths/src/Nurbs.h" parse="text"/>
         </programlisting>
         Here, we filter out undesired comments with the <type>JavaComments</type>
         processor, and then parse the comments for @tags with <type>JavaTags</type>:
@@ -461,7 +461,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <para>The synopsis framework provides a function <function>process</function> 
         that lets you declare and expose processors as commands so they can be 
         used per command line:
-        <programlisting><xi:include href="examples/Paths/synopsis.py" parse="text"/>
+        <programlisting><xi:include href="examples/Paths/doc1/synopsis.py" parse="text"/>
         </programlisting>
       </para>
       <para>With such a script <filename>synopsis.py</filename> it is possible
