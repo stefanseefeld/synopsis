@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.21 2001/01/28 02:23:49 chalky Exp $
+# $Id: omni.py,v 1.22 2001/01/29 20:22:00 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.22  2001/01/29 20:22:00  stefan
+# fixed getopt bug
+#
 # Revision 1.21  2001/01/28 02:23:49  chalky
 # Added -b basename
 #
@@ -407,7 +410,7 @@ def __parseArgs(args):
     mainfile_only = 0
     basename = ""
     try:
-        opts,remainder = Util.getopt_spec(args, "I:m:kKb:")
+        opts,remainder = Util.getopt_spec(args, "I:b:mkK")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
