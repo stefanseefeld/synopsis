@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.8 2001/07/29 03:28:04 chalky Exp $
+#  $Id: Config.py,v 1.9 2002/01/13 09:47:59 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -284,9 +284,9 @@ class Base:
 		@attr file_path A string with one %s, which when replaced with the
 		'filename()' attribute (ie: filename with the basepath
 		stripped from it by the parser) will give the input filename.
-		The default is '../%s'.
+		The default is './%s'.
 		@attr links_path is the same as file_path, but must give the
-		'links' file. The default is '../%s-links'
+		'links' file. The default is './%s-links'
 		@attr toc_files is a list of '.toc' files to load and use to
 		link references from the file.
 		@attr scope is the base scope to prepend to all names for
@@ -295,8 +295,8 @@ class Base:
 		set here and prepended to all names to look up in the TOC.
 		@see Synopsis.Formatter.HTML.FilePages
 		"""
-		file_path = '../%s'
-		links_path = '../%s-links'
+		file_path = './%s'
+		links_path = './%s-links'
 		toc_files = []
 		scope = ''
 	    class FileTree:
