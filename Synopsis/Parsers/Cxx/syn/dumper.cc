@@ -83,13 +83,19 @@ void TypeFormatter::visit_modifier(Types::Modifier* type)
     std::string pre = "";
     Types::Type::Mods::iterator iter = type->pre().begin();
     while (iter != type->pre().end())
-	pre += *iter++ + " ";
+	if (*iter == "*" || *iter == "&")
+	    pre += *iter++;
+	else
+	    pre += *iter++ + " ";
     // Alias
     m_type = pre + format(type->alias());
     // Postmods
     iter = type->post().begin();
     while (iter != type->post().end())
-	m_type += " " + *iter++;
+	if (*iter == "*" || *iter == "&")
+	    m_type += *iter++;
+	else
+	    m_type += " " + *iter++;
 }
 
 void TypeFormatter::visit_named(Types::Named* type)
