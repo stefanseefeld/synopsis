@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.13 2001/07/05 05:39:58 stefan Exp $
+# $Id: InheritanceGraph.py,v 1.14 2001/07/11 01:45:03 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.14  2001/07/11 01:45:03  stefan
+# fix Dot and HTML formatters to adjust the references depending on the filename of the output
+#
 # Revision 1.13  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -169,7 +172,7 @@ class InheritanceGraph(Page.Page):
 		declarations = filter(lambda x: x is not None, declarations)
 		# Call Dot formatter
 		output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
-		args = ('-i','-f','html','-o',output,'-r',toc_file,'-t','Synopsis %s'%count,'-n')
+		args = ('-i','-f','html','-o',output,'-r',toc_file,'-R',self.filename(),'-t','Synopsis %s'%count,'-n')
 		Dot.format(config.types, declarations, args, None)
 		dot_file = open(output + '.html', 'r')
 		self.write(dot_file.read())

@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.19 2001/06/28 07:22:18 stefan Exp $
+# $Id: Dot.py,v 1.20 2001/07/11 01:45:02 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.20  2001/07/11 01:45:02  stefan
+# fix Dot and HTML formatters to adjust the references depending on the filename of the output
+#
 # Revision 1.19  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -332,7 +335,8 @@ def usage():
   -s                                   Generate an inheritance graph for a single class
   -c                                   Generate a collaboration graph
   -f <format>                          Generate output in format 'dot', 'ps' (default), 'png', 'gif', 'map', 'html'
-  -r <filename>                        Read in toc for an external data base that is to be referenced
+  -r <filename>                        Read in toc for an external data base that is to be referenced (for map/html output)
+  -R <filename>                        Provide a reference URL which is used to compute relative links from the toc entries (for map/html output)    
   -n                                   Don't descend AST (for internal use)"""
 
 formats = {
@@ -346,16 +350,17 @@ formats = {
 
 
 def __parseArgs(args):
-    global output, title, type, oformat, verbose, toc_in, no_descend, nodes
+    global output, title, type, oformat, verbose, toc_in, origin, no_descend, nodes
     output = ''
     title = 'NoTitle'
     type = ''
     oformat = 'ps'
     toc_in = []
+    origin = ''
     no_descend = 0
     nodes = {}
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:f:r:icsvn")
+        opts,remainder = Util.getopt_spec(args, "o:t:f:r:R:icsvn")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -376,8 +381,19 @@ def __parseArgs(args):
 		print "Error: Unknown format. Available formats are:",string.join(formats.keys(), ', ')
 		sys.exit(1)
         elif o == "-r": toc_in.append(a)
+        elif o == "-R": origin = a
         elif o == "-v": verbose = 1
 	elif o == "-n": no_descend = 1
+
+def _rel(frm, to):
+    "Find link to to relative to frm"
+    print "comparing", frm, "to", to
+    frm = string.split(frm, '/'); to = string.split(to, '/')
+    for l in range((len(frm)<len(to)) and len(frm)-1 or len(to)-1):
+        if to[0] == frm[0]: del to[0]; del frm[0]
+        else: break
+    if frm: to = ['..'] * (len(frm) - 1) + to
+    return string.join(to,'/')
 
 def _convert_map(input, output):
     """convert map generated from Dot to a html region map.
@@ -389,7 +405,7 @@ def _convert_map(input, output):
             url, x1y2, x2y1 = string.split(line[4:])
             x1, y2 = string.split(x1y2, ",")
             x2, y1 = string.split(x2y1, ",")
-            output.write("<area href=\"" + url + "\" shape=\"rect\" coords=\"")
+            output.write("<area href=\"" + _rel(origin, url) + "\" shape=\"rect\" coords=\"")
             output.write(str(x1) + ", " + str(y1) + ", " + str(x2) + ", " + str(y2) + "\">\n")
         line = input.readline()
 
