@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.55 2001/01/24 18:05:16 stefan Exp $
+# $Id: HTML.py,v 1.56 2001/01/26 15:08:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.56  2001/01/26 15:08:08  chalky
+# Added patch from Marc Ordinas i Llopis
+#
 # Revision 1.55  2001/01/24 18:05:16  stefan
 # extended the HTML submodule loading to allow for external formatters
 #
@@ -179,8 +182,8 @@ class ScopeSorter:
     def _section_of(self, decl):
 	_axs_str = ('','Public ','Protected ','Private ')
 	section = string.capitalize(decl.type())
-	if decl.accessability != AST.DEFAULT:
-	    section = _axs_str[decl.accessability()]+section
+	if decl.accessibility != AST.DEFAULT:
+	    section = _axs_str[decl.accessibility()]+section
 	return section
     def _sort_sections(self): pass
     def sort_section_names(self):
@@ -876,7 +879,7 @@ class DetailFormatter(BaseFormatter):
 	return string.join(text, "::")
 
     def formatInheritance(self, inheritance):
-	if hasattr(inheritance, 'name'):
+	if hasattr(inheritance.parent(), 'name'):
 	    return '%s %s'%( self.formatModifiers(inheritance.attributes()),
 		self.referenceName(inheritance.parent().name()))
 	return '%s %s'%( self.formatModifiers(inheritance.attributes()),
