@@ -8,7 +8,7 @@
 
 
 from xml.sax import saxexts, saxlib, saxutils
-import sys, string, urllib, urlparse
+import sys, os, string, urllib, urlparse
 import getopt
 
 verbose = False
@@ -55,6 +55,20 @@ handler = DocumentHandler()
 SAXparser.setDocumentHandler(handler)
 SAXparser.setErrorHandler(saxutils.ErrorRaiser())
 
+def validate(url):
+    """validate (x)html conformance using 'tidy'."""
+
+    if verbose: print 'validating', url
+    status = os.system('tidy -errors -quiet %s'%url)
+    if os.WIFSIGNALED(status):
+        print 'internal error:', os.WTERMSIG(status)
+    elif os.WIFEXITED(status):
+        if os.WEXITSTATUS(status) != 0:
+            print 'validation failed'
+        return
+    else:
+        print 'internal error !'
+        
 def usage():
    print 'Usage : %s [options] <input files>'%sys.argv[0]
    print """
@@ -72,7 +86,7 @@ def main():
 
    max = 50
    external = False
-   validate = False
+   do_validate = False
 
    opts, args = getopt.getopt(sys.argv[1:],
                               'pm:evh',
@@ -84,11 +98,11 @@ def main():
       elif o == '-p' or o == '--print':
          verbose = True
       elif o == '-m' or o == '--maximum':
-         max = a
+         max = int(a)
       elif o == '-e' or o == '--external':
-         external = a
+         external = True
       elif o == '-v' or o == '--validate':
-         validate = a
+         do_validate = True
 
    done = []
    urefs = [Reference('.', 0, args[0])]
@@ -99,12 +113,12 @@ def main():
        scheme, location, path, query, fragment = urlparse.urlsplit(url)
        if not external and scheme and scheme != 'file': continue
        url = urlparse.urlunsplit((scheme, location, path, query, ''))
+       if url in done: continue
        try:
            if verbose: print 'parsing', url
-           if validate:
-               SAXparser.parse(url) # send to http://validator.w3.org
-           else:
-               SAXparser.parse(url)
+           SAXparser.parse(url)
+           if do_validate: validate(url)
+           done.append(url)
            urefs.extend(handler.get_urefs())
             
        except saxlib.SAXParseException, e:
