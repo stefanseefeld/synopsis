@@ -319,7 +319,8 @@ def find_gcc_compiler_info(compiler):
 
     paths, macros = [], []
 
-    cin, out,err = os.popen3(compiler + " -E -v -dD " + get_temp_file())
+    command = 'LANG=en_US %s -E -v -dD %s'%(compiler, get_temp_file())
+    cin, out,err = os.popen3(command)
     lines = err.readlines()
     cin.close()
     err.close()
