@@ -10,7 +10,7 @@ all:	html pdf
 
 html:	html/index.html
 
-pdf:	synopsis.pdf
+pdf:	synopsis-user.pdf
 
 clean:
 	rm -rf html *.pdf
@@ -32,5 +32,6 @@ html/index.html:	$(XMLFILES)
 #html/index.html:	$(XMLFILES)
 #	docbook2html -o html synopsis.xml
 #
-synopsis.pdf:	$(XMLFILES)
-	docbook2pdf synopsis.xml
+synopsis-user.pdf:	$(XMLFILES)
+	docbook2pdf synopsis.xml && \
+	mv synopsis.pdf synopsis-user.pdf
