@@ -18,4 +18,4 @@ clean:
 	rm -fr *.syn *~
 
 distclean:	clean
-	rm -rf html
+	rm -rf CosNaming Types Graphic Input html
