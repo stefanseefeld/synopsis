@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.21 2003/11/12 16:42:05 stefan Exp $
+# $Id: Scope.py,v 1.22 2003/11/13 20:40:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,7 +9,7 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST
-from Synopsis.Formatters import TOC
+from Synopsis.Formatters.TOC import TOC
 
 from Page import Page
 import core
@@ -56,7 +56,7 @@ class ScopePages(Page):
       """Returns the TOC for the whole AST starting at start"""
       
       if self.__toc: return self.__toc
-      self.__toc = TOC.TableOfContents(config.files)
+      self.__toc = TOC(config.files)
       start.accept(self.__toc)
       return self.__toc
 

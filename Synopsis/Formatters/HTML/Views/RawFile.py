@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.7 2003/11/12 16:42:05 stefan Exp $
+# $Id: RawFile.py,v 1.8 2003/11/13 20:40:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,10 +9,7 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
-from Synopsis.Formatter import TOC
-
 from Part import Page
-import core
 import ASTFormatter
 from core import config
 from Tags import *

@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.11 2003/11/12 16:42:05 stefan Exp $
+# $Id: XRef.py,v 1.12 2003/11/13 20:40:09 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -9,7 +9,7 @@
 
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
-from Synopsis.Formatters import TOC
+from Synopsis.Formatters.TOC import TOC
 
 from Page import Page
 from core import config
@@ -17,7 +17,7 @@ from Tags import *
 
 import os
 
-class XRefLinker(TOC.Linker):
+class XRefLinker(Linker):
 
    def __init__(self, xref):
 
@@ -48,13 +48,13 @@ class XRefPages(Page):
       """Returns the toc for XRefPages"""
 
       if self.__toc: return self.__toc
-      self.__toc = TOC.TableOfContents(None)
+      self.__toc = TOC(None)
       # Add an entry for every xref
       for name in self.xref.get_all_names():
          page = self.xref.get_page_for(name)
          file = config.files.nameOfSpecial('xref%d'%page)
          file = file + '#' + Util.quote(string.join(name,'::'))
-         self.__toc.insert(TOC.TocEntry(name, file, 'C++', 'xref'))
+         self.__toc.insert(TOC.Entry(name, file, 'C++', 'xref'))
       return self.__toc
 
    def filename(self):

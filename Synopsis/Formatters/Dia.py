@@ -1,379 +1,318 @@
-# $Id: Dia.py,v 1.13 2003/11/11 12:50:56 stefan Exp $
+# $Id: Dia.py,v 1.14 2003/11/13 20:40:09 stefan Exp $
 #
-# This file is a part of Synopsis.
-# Copyright (C) 2000, 2001 Stephen Davies
-#
-# Synopsis is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-# 02111-1307, USA.
-#
-# $Log: Dia.py,v $
-# Revision 1.13  2003/11/11 12:50:56  stefan
-# remove 'Core' module
-#
-# Revision 1.12  2001/07/19 04:03:05  chalky
-# New .syn file format.
-#
-# Revision 1.11  2001/07/17 22:27:28  chalky
-# Fixed regression in import line
-#
-# Revision 1.10  2001/05/25 13:45:49  stefan
-# fix problem with getopt error reporting
-#
-# Revision 1.9  2001/02/13 06:55:23  chalky
-# Made synopsis -l work again
-#
-# Revision 1.8  2001/01/31 06:51:24  stefan
-# add support for '-v' to all modules; modified toc lookup to use additional url as prefix
-#
-# Revision 1.7  2001/01/27 06:26:41  chalky
-# Added parameter support
-#
-# Revision 1.6  2001/01/24 01:38:36  chalky
-# Added docstrings to all modules
-#
-# Revision 1.5  2001/01/22 19:54:41  stefan
-# better support for help message
-#
-# Revision 1.4  2001/01/22 17:06:15  stefan
-# added copyright notice, and switched on logging
+# Copyright (C) 2000 Stefan Seefeld
+# Copyright (C) 2000 Stephen Davies
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
 
 """Generates a .dia file of unpositioned classes and generalizations."""
-# THIS-IS-A-FORMATTER
 
-import sys, getopt, os, os.path, string, re
+from Synopsis.Processor import Processor, Parameter
 from Synopsis import Type, AST, Util
 
-verbose = 0
+import sys, getopt, os, os.path, string, re
 
 def k2a(keys):
-    "Convert a keys dict to a string of attributes"
-    return string.join(map(lambda item:' %s="%s"'%item, keys.items()), '')
+   "Convert a keys dict to a string of attributes"
+   return string.join(map(lambda item:' %s="%s"'%item, keys.items()), '')
 
 def quote(str):
-    "Remove HTML chars from str"
-    str = re.sub('&', '&amp;', str)
-    str = re.sub('<','&lt;', str)
-    str = re.sub('>','&gt;', str)
-    #str = re.sub('<','lt', str)
-    #str = re.sub('>','gt', str)
-    str = re.sub("'", '&#39;', str)
-    str = re.sub('"', '&quot;', str)
-    return str
+   "Remove HTML chars from str"
+   str = re.sub('&', '&amp;', str)
+   str = re.sub('<','&lt;', str)
+   str = re.sub('>','&gt;', str)
+   #str = re.sub('<','lt', str)
+   #str = re.sub('>','gt', str)
+   str = re.sub("'", '&#39;', str)
+   str = re.sub('"', '&quot;', str)
+   return str
 
-def usage():
-    print """\
-Dia Formatter Usage:
-  -m    hide methods/operations
-  -a    hide attributes/variables
-"""
+class Formatter(Processor, AST.Visitor, Type.Visitor):
+   """Outputs a Dia file"""
 
-class DiaFormatter(AST.Visitor, Type.Visitor):
-    """Outputs a Dia file
-    """
-    def __init__(self, filename):
-        self.__indent = 0
-        self.__istring = "  "
-        self.__filename = filename
-	self.__os = None
-	self.__oidcount = 0
-	self.__inherits = [] # list of from,to tuples
-	self.__objects = {} #maps tuple names to object ids
-    def indent(self): self.__os.write(self.__istring * self.__indent)
-    def incr(self): self.__indent = self.__indent + 1
-    def decr(self): self.__indent = self.__indent - 1
-    def write(self, text): self.__os.write(text)
-    def scope(self): return ()
+   hide_operations = Parameter(False, 'hide operations')
+   hide_attributes = Parameter(False, 'hide attributes')
+   hide_parameters = Parameter(False, 'hide parameters')
 
-    def startTag(self, tagname, **keys):
-	"Starts a tag and indents, attributes using keyword arguments"
-	self.indent()
-	self.write("<%s%s>\n"%(tagname,k2a(keys)))
-	self.incr()
-    def startTagDict(self, tagname, attrs):
-	"Starts a tag and indents, attributes using dictionary argument"
-	self.indent()
-	self.write("<%s%s>\n"%(tagname,k2a(attrs)))
-	self.incr()
-    def endTag(self, tagname):
-	"Un-indents and closes tag"
-	self.decr()
-	self.indent()
-	self.write("</%s>\n"%tagname)
-    def soloTag(self, tagname, **keys):
-	"Writes a solo tag with attributes from keyword arguments"
-	self.indent()
-	self.write("<%s%s/>\n"%(tagname,k2a(keys)))
-    def attribute(self, name, type, value, allow_solo=1):
-	"Writes an attribute with given name, type and value"
-	self.startTag('attribute', name=name)
-	if not value and allow_solo:
-	    self.soloTag(type)
-	elif type == 'string':
-	    self.indent()
-	    self.write('<string>#%s#</string>\n'%value)
-	else:
-	    self.soloTag(type, val=value)
-	self.endTag('attribute')
+   def process(self, ast, **kwds):
 
-    def output(self, declarations):
-	"""Output declarations to file"""
-	self.__os = open(filename, 'w')	
+      self.set_parameters(kwds)
+      self.ast = self.merge_input(ast)
+      self.__indent = 0
+      self.__istring = "  "
+      self.__os = None
+      self.__oidcount = 0
+      self.__inherits = [] # list of from,to tuples
+      self.__objects = {} #maps tuple names to object ids
 
-	self.write('<?xml version="1.0"?>\n')
-	self.startTagDict('diagram', {'xmlns:dia':"http://www.lysator.liu.se/~alla/dia/"})
+      self.__os = open(self.output, "w")
 
-	self.doDiagramData()
-	self.startTag('layer', name='Background', visible='true')
-	for decl in declarations:
-	    decl.accept(self)
-	for inheritance in self.__inherits:
-	    self.doInheritance(inheritance)
-	self.endTag('layer')
-	self.endTag('diagram')
+      self.write('<?xml version="1.0"?>\n')
+      self.start_tag_dict('diagram', {'xmlns:dia':"http://www.lysator.liu.se/~alla/dia/"})
 
-	self.__os.close()
+      self.doDiagramData()
+      self.start_tag('layer', name='Background', visible='true')
+      for decl in self.ast.declarations():
+         decl.accept(self)
+      for inheritance in self.__inherits:
+         self.do_inheritance(inheritance)
+      self.end_tag('layer')
+      self.end_tag('diagram')
 
-    def doDiagramData(self):
-	"Write the stock diagramdata stuff"
-	self.startTag('diagramdata')
-	self.attribute('background', 'color', '#ffffff')
-	self.startTag('attribute', name='paper')
-	self.startTag('composite', type='paper')
-	self.attribute('name','string','A4')
-	self.attribute('tmargin','real','2.82')
-	self.attribute('bmargin','real','2.82')
-	self.attribute('lmargin','real','2.82')
-	self.attribute('rmargin','real','2.82')
-	self.attribute('is_portrait','boolean','true')
-	self.attribute('scaling','real','1')
-	self.attribute('fitto','boolean','false')
-	self.endTag('composite')
-	self.endTag('attribute')
-	self.startTag('attribute', name='grid')
-	self.startTag('composite', type='grid')
-	self.attribute('width_x', 'real', '1')
-	self.attribute('width_y', 'real', '1')
-	self.attribute('visible_x', 'int', '1')
-	self.attribute('visible_y', 'int', '1')
-	self.endTag('composite')
-	self.endTag('attribute')
-	self.startTag('attribute', name='guides')
-	self.startTag('composite', type='guides')
-	self.soloTag('attribute', name='hguides')
-	self.soloTag('attribute', name='vguides')
-	self.endTag('composite')
-	self.endTag('attribute')
-	self.endTag('diagramdata')
+      self.__os.close()
 
-    def doInheritance(self, inherit):
-	"Create a generalization object for one inheritance"
-	from_id, to_id = map(self.getObjectID, inherit)
-	id = self.createObjectID(None)
-	self.startTag('object', type='UML - Generalization', version='0', id=id)
-	self.attribute('obj_pos', 'point', '1,0')
-	self.attribute('obj_bb', 'rectangle', '0,0;2,2')
-	self.startTag('attribute', name='orth_points')
-	self.soloTag('point', val='1,0')
-	self.soloTag('point', val='1,1')
-	self.soloTag('point', val='0,1')
-	self.soloTag('point', val='0,2')
-	self.endTag('attribute')
-	self.startTag('attribute', name='orth_orient')
-	self.soloTag('enum', val='1')
-	self.soloTag('enum', val='0')
-	self.soloTag('enum', val='1')
-	self.endTag('attribute')
-	self.attribute('name', 'string', None)
-	self.attribute('stereotype', 'string', None)
-	self.startTag('connections')
-	self.soloTag('connection', handle='0', to=from_id, connection='6')
-	self.soloTag('connection', handle='1', to=to_id, connection='1')
-	self.endTag('connections')
-	self.endTag('object')
-	
+      return self.ast
 
-    def createObjectID(self, decl):
-	"Creates a new object identifier, and remembers it with the given declaration"
-	idstr = 'O'+str(self.__oidcount)
-	if decl: self.__objects[decl.name()] = idstr
-	self.__oidcount = self.__oidcount+1
-	return idstr
+   def indent(self): self.__os.write(self.__istring * self.__indent)
+   def incr(self): self.__indent = self.__indent + 1
+   def decr(self): self.__indent = self.__indent - 1
+   def write(self, text): self.__os.write(text)
+   def scope(self): return ()
 
-    def getObjectID(self, decl):
-	"Returns the stored identifier for the given object"
-	try:
-	    return self.__objects[decl.name()]
-	except KeyError:
-	    print "Warning: no ID for",decl.name()
-	    return 0
+   def start_tag(self, tagname, **keys):
+      "Starts a tag and indents, attributes using keyword arguments"
+
+      self.indent()
+      self.write("<%s%s>\n"%(tagname,k2a(keys)))
+      self.incr()
+
+   def start_tag_dict(self, tagname, attrs):
+      "Starts a tag and indents, attributes using dictionary argument"
+
+      self.indent()
+      self.write("<%s%s>\n"%(tagname,k2a(attrs)))
+      self.incr()
+
+   def end_tag(self, tagname):
+      "Un-indents and closes tag"
+
+      self.decr()
+      self.indent()
+      self.write("</%s>\n"%tagname)
+
+   def solo_tag(self, tagname, **keys):
+      "Writes a solo tag with attributes from keyword arguments"
+
+      self.indent()
+      self.write("<%s%s/>\n"%(tagname,k2a(keys)))
+
+   def attribute(self, name, type, value, allow_solo=1):
+      "Writes an attribute with given name, type and value"
+
+      self.start_tag('attribute', name=name)
+      if not value and allow_solo:
+         self.solo_tag(type)
+      elif type == 'string':
+         self.indent()
+         self.write('<string>#%s#</string>\n'%value)
+      else:
+         self.solo_tag(type, val=value)
+      self.end_tag('attribute')
+
+   def doDiagramData(self):
+      "Write the stock diagramdata stuff"
+
+      self.start_tag('diagramdata')
+      self.attribute('background', 'color', '#ffffff')
+      self.start_tag('attribute', name='paper')
+      self.start_tag('composite', type='paper')
+      self.attribute('name','string','A4')
+      self.attribute('tmargin','real','2.82')
+      self.attribute('bmargin','real','2.82')
+      self.attribute('lmargin','real','2.82')
+      self.attribute('rmargin','real','2.82')
+      self.attribute('is_portrait','boolean','true')
+      self.attribute('scaling','real','1')
+      self.attribute('fitto','boolean','false')
+      self.end_tag('composite')
+      self.end_tag('attribute')
+      self.start_tag('attribute', name='grid')
+      self.start_tag('composite', type='grid')
+      self.attribute('width_x', 'real', '1')
+      self.attribute('width_y', 'real', '1')
+      self.attribute('visible_x', 'int', '1')
+      self.attribute('visible_y', 'int', '1')
+      self.end_tag('composite')
+      self.end_tag('attribute')
+      self.start_tag('attribute', name='guides')
+      self.start_tag('composite', type='guides')
+      self.solo_tag('attribute', name='hguides')
+      self.solo_tag('attribute', name='vguides')
+      self.end_tag('composite')
+      self.end_tag('attribute')
+      self.end_tag('diagramdata')
+
+   def do_inheritance(self, inherit):
+      "Create a generalization object for one inheritance"
+
+      from_id, to_id = map(self.get_object_id, inherit)
+      id = self.create_object_id(None)
+      self.start_tag('object', type='UML - Generalization', version='0', id=id)
+      self.attribute('obj_pos', 'point', '1,0')
+      self.attribute('obj_bb', 'rectangle', '0,0;2,2')
+      self.start_tag('attribute', name='orth_points')
+      self.solo_tag('point', val='1,0')
+      self.solo_tag('point', val='1,1')
+      self.solo_tag('point', val='0,1')
+      self.solo_tag('point', val='0,2')
+      self.end_tag('attribute')
+      self.start_tag('attribute', name='orth_orient')
+      self.solo_tag('enum', val='1')
+      self.solo_tag('enum', val='0')
+      self.solo_tag('enum', val='1')
+      self.end_tag('attribute')
+      self.attribute('name', 'string', None)
+      self.attribute('stereotype', 'string', None)
+      self.start_tag('connections')
+      self.solo_tag('connection', handle='0', to=from_id, connection='6')
+      self.solo_tag('connection', handle='1', to=to_id, connection='1')
+      self.end_tag('connections')
+      self.end_tag('object')
+
+   def create_object_id(self, decl):
+      "Creates a new object identifier, and remembers it with the given declaration"
+
+      idstr = 'O'+str(self.__oidcount)
+      if decl: self.__objects[decl.name()] = idstr
+      self.__oidcount = self.__oidcount+1
+      return idstr
+
+   def get_object_id(self, decl):
+      "Returns the stored identifier for the given object"
+
+      print decl, type(decl)
+      try:
+         return self.__objects[decl.name()]
+      except KeyError:
+         print "Warning: no ID for",decl.name()
+         return 0
     
-    def formatType(self, type):
-	"Returns a string representation for the given type"
-	if type is None: return '(unknown)'
-	type.accept(self)
-	return self.__type
+   def formatType(self, type):
+      "Returns a string representation for the given type"
+
+      if type is None: return '(unknown)'
+      type.accept(self)
+      return self.__type
     
-    #################### Type Visitor ###########################################
+   #################### Type Visitor ##########################################
 
-    def visitBaseType(self, type):
-        self.__type = Util.ccolonName(type.name())
-        
-    def visitUnknown(self, type):
-        self.__type = Util.ccolonName(type.name(), self.scope())
-        
-    def visitDeclared(self, type):
-        self.__type = Util.ccolonName(type.name(), self.scope())
-        
-    def visitModifier(self, type):
-        aliasStr = self.formatType(type.alias())
-	premod = map(lambda x:x+" ", type.premod())
-        self.__type = "%s%s%s"%(string.join(premod,''), aliasStr, string.join(type.postmod(),''))
-            
-    def visitParametrized(self, type):
-	temp = self.formatType(type.template())
-	params = map(self.formatType, type.parameters())
-        self.__type = "%s<%s>"%(temp,string.join(params, ", "))
+   def visitBaseType(self, type):
 
-    def visitFunctionType(self, type):
-	ret = self.formatType(type.returnType())
-	params = map(self.formatType, type.parameters())
-	self.__type = "%s(%s)(%s)"%(ret,string.join(type.premod(),''),string.join(params,", "))
+      self.__type = Util.ccolonName(type.name())
+
+   def visitUnknown(self, type):
+
+      self.__type = Util.ccolonName(type.name(), self.scope())
+
+   def visitDeclared(self, type):
+
+      self.__type = Util.ccolonName(type.name(), self.scope())
+        
+   def visitModifier(self, type):
+
+      aliasStr = self.formatType(type.alias())
+      premod = map(lambda x:x+" ", type.premod())
+      self.__type = "%s%s%s"%(string.join(premod,''), aliasStr, string.join(type.postmod(),''))
+
+   def visitParametrized(self, type):
+
+      temp = self.formatType(type.template())
+      params = map(self.formatType, type.parameters())
+      self.__type = "%s<%s>"%(temp,string.join(params, ", "))
+
+   def visitFunctionType(self, type):
+
+      ret = self.formatType(type.returnType())
+      params = map(self.formatType, type.parameters())
+      self.__type = "%s(%s)(%s)"%(ret,string.join(type.premod(),''),string.join(params,", "))
 
     ################# AST visitor #################
 
-    def visitDeclaration(self, decl):
-	"Default is to not do anything with it"
-	#print "Not writing",decl.type(), decl.name()
-	pass
+   def visitDeclaration(self, decl):
+      "Default is to not do anything with it"
 
-    def visitModule(self, decl):
-	"Just traverse child declarations"
-	# TODO: make a Package UML object and maybe link classes to it?
-	for d in decl.declarations():
-	    d.accept(self)
+      #print "Not writing",decl.type(), decl.name()
+      pass
 
-    def visitClass(self, decl):
-	"Creates a Class object for one class, with attributes and operations"
-	id = self.createObjectID(decl)
-	self.startTag('object', type='UML - Class', version='0', id=id)
-	self.attribute('objpos', 'point', '1,1')
-	self.attribute('obj_bb', 'rectangle', '1,1;2,2')
-	self.attribute('elem_corner', 'point', '1.05,1.05')
-	self.attribute('elem_width', 'real', '1')
-	self.attribute('elem_height', 'real', '5')
-	self.attribute('name', 'string', Util.ccolonName(decl.name()))
-	self.attribute('stereotype', 'string', None)
-	self.attribute('abstract', 'boolean', 'false')
-	self.attribute('suppress_attributes', 'boolean', 'false')
-	self.attribute('suppress_operations', 'boolean', 'false')
-	self.attribute('visible_attributes', 'boolean', hide_attributes and 'false' or 'true')
-	self.attribute('visible_operations', 'boolean', hide_operations and 'false' or 'true')
-	# Do attributes
-	afilt = lambda d: d.type() == 'attribute' or d.type() == 'variable'
-	attributes = filter(afilt, decl.declarations())
-	if not len(attributes) or hide_attributes:
-	    self.soloTag('attribute', name='attributes')
-	else:
-	    self.startTag('attribute', name='attributes')
-	    for attr in attributes:
-		self.startTag('composite', type='umlattribute')
-		self.attribute('name', 'string', attr.name()[-1])
-		if attr.type() == 'attribute':
-		    self.attribute('type', 'string', self.formatType(attr.returnType()))
-		else:
-		    self.attribute('type', 'string', self.formatType(attr.vtype()))
-		self.attribute('value', 'string', None)
-		self.attribute('visibility', 'enum', '0')
-		self.attribute('abstract', 'boolean', 'false')
-		self.attribute('class_scope', 'boolean', 'false')
-		self.endTag('composite')
-	    self.endTag('attribute')
-	# Do operations
-	operations = filter(lambda d: d.type() == 'operation', decl.declarations())
-	if not len(operations) or hide_operations:
-	    self.soloTag('attribute', name='operations')
-	else:
-	    self.startTag('attribute', name='operations')
-	    for oper in operations:
-		self.startTag('composite', type='umloperation')
-		self.attribute('name', 'string', oper.name()[-1])
-		self.attribute('type', 'string', self.formatType(oper.returnType()))
-		self.attribute('visibility', 'enum', '0')
-		self.attribute('abstract', 'boolean', 'false')
-		self.attribute('class_scope', 'boolean', 'false')
-		if len(oper.parameters()) and not hide_params:
-		    self.startTag('attribute', name='parameters')
-		    for param in oper.parameters():
-			self.startTag('composite', name='umlparameter')
-			self.attribute('name', 'string', param.identifier())
-			self.attribute('type', 'string', '', 0)
-			self.attribute('value', 'string', quote(param.value()))
-			self.attribute('kind', 'enum', '0')
-			self.endTag('composite')
-		    self.endTag('attribute')
-		else:
-		    self.soloTag('attribute', name='parameters')
- 
-		self.endTag('composite')
-	    self.endTag('attribute')
-	# Finish class object
-	self.attribute('template', 'boolean', 'false')
-	self.soloTag('attribute', name='templates')
-	self.endTag('object')
+   def visitModule(self, decl):
+      "Just traverse child declarations"
 
-	for inherit in decl.parents():
-	    self.__inherits.append( (inherit.parent(), decl) )
+      # TODO: make a Package UML object and maybe link classes to it?
+      for d in decl.declarations():
+         d.accept(self)
 
-def usage():
-    """Print usage to stdout"""
-    print \
-"""
-  -o <file>                            Output file
-  -m                                   hide operations
-  -a                                   hide attributes
-  -p                                   hide parameters"""
+   def visitClass(self, decl):
+      "Creates a Class object for one class, with attributes and operations"
 
-def __parseArgs(args):
-    global filename, hide_operations, hide_attributes, hide_params, verbose
-    filename = None
-    hide_operations = hide_attributes = hide_params = 0
-    try:
-        opts,remainder = getopt.getopt(args, "o:mapv")
-    except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + str(e) + "\n")
-        sys.exit(1)
+      id = self.create_object_id(decl)
+      self.start_tag('object', type='UML - Class', version='0', id=id)
+      self.attribute('objpos', 'point', '1,1')
+      self.attribute('obj_bb', 'rectangle', '1,1;2,2')
+      self.attribute('elem_corner', 'point', '1.05,1.05')
+      self.attribute('elem_width', 'real', '1')
+      self.attribute('elem_height', 'real', '5')
+      self.attribute('name', 'string', Util.ccolonName(decl.name()))
+      self.attribute('stereotype', 'string', None)
+      self.attribute('abstract', 'boolean', 'false')
+      self.attribute('suppress_attributes', 'boolean', 'false')
+      self.attribute('suppress_operations', 'boolean', 'false')
+      self.attribute('visible_attributes', 'boolean', self.hide_attributes and 'false' or 'true')
+      self.attribute('visible_operations', 'boolean', self.hide_operations and 'false' or 'true')
+      # Do attributes
+      afilt = lambda d: d.type() == 'attribute' or d.type() == 'variable'
+      attributes = filter(afilt, decl.declarations())
+      if not len(attributes) or self.hide_attributes:
+         self.solo_tag('attribute', name='attributes')
+      else:
+         self.start_tag('attribute', name='attributes')
+         for attr in attributes:
+            self.start_tag('composite', type='umlattribute')
+            self.attribute('name', 'string', attr.name()[-1])
+            if attr.type() == 'attribute':
+               self.attribute('type', 'string', self.formatType(attr.returnType()))
+            else:
+               self.attribute('type', 'string', self.formatType(attr.vtype()))
+            self.attribute('value', 'string', None)
+            self.attribute('visibility', 'enum', '0')
+            self.attribute('abstract', 'boolean', 'false')
+            self.attribute('class_scope', 'boolean', 'false')
+            self.end_tag('composite')
+         self.end_tag('attribute')
+      # Do operations
+      operations = filter(lambda d: d.type() == 'operation', decl.declarations())
+      if not len(operations) or self.hide_operations:
+         self.solo_tag('attribute', name='operations')
+      else:
+         self.start_tag('attribute', name='operations')
+         for oper in operations:
+            self.start_tag('composite', type='umloperation')
+            self.attribute('name', 'string', oper.name()[-1])
+            self.attribute('type', 'string', self.formatType(oper.returnType()))
+            self.attribute('visibility', 'enum', '0')
+            self.attribute('abstract', 'boolean', 'false')
+            self.attribute('class_scope', 'boolean', 'false')
+            if len(oper.parameters()) and not self.hide_parameters:
+               self.start_tag('attribute', name='parameters')
+               for param in oper.parameters():
+                  self.start_tag('composite', name='umlparameter')
+                  self.attribute('name', 'string', param.identifier())
+                  self.attribute('type', 'string', '', 0)
+                  self.attribute('value', 'string', quote(param.value()))
+                  self.attribute('kind', 'enum', '0')
+                  self.end_tag('composite')
+               self.end_tag('attribute')
+            else:
+               self.solo_tag('attribute', name='parameters')
+            self.end_tag('composite')
+         self.end_tag('attribute')
+      # Finish class object
+      self.attribute('template', 'boolean', 'false')
+      self.solo_tag('attribute', name='templates')
+      self.end_tag('object')
 
-    for opt in opts:
-        o,a = opt
+      for inherit in decl.parents():
+         self.__inherits.append( (inherit.parent(), decl) )
 
-        if o == "-o":
-            filename = a
-	elif o == "-m": hide_operations = 1
-	elif o == "-a": hide_attributes = 1
-	elif o == "-p": hide_params = 1
-	elif o == "-v": verbose = 1
-    
-    if filename is None:
-	sys.stderr.write("Error: No output specified.\n")
-	sys.exit(1)
-
-def format(args, ast, config_obj):
-    __parseArgs(args)
-
-    formatter = DiaFormatter(filename)
-
-    formatter.output(ast.declarations())
 

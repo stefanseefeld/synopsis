@@ -1,4 +1,4 @@
-# $Id: TOC.py,v 1.5 2003/11/13 17:30:06 stefan Exp $
+# $Id: TOC.py,v 1.6 2003/11/13 20:40:09 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -21,36 +21,35 @@ class Linker:
 
    def link(decl): pass
 
-class TocEntry:
-   """Struct for an entry in the table of contents.
-   Vars: link, lang, type (all strings)
-   Also: name (scoped)"""
+class TOC(AST.Visitor):
+   """Maintains a dictionary of all declarations which can be looked up
+   to create cross references. Names are fully scoped."""
 
-   def __init__(self, name, link, lang, type):
+   class Entry:
+      """Struct for an entry in the table of contents.
+      Vars: link, lang, type (all strings)
+      Also: name (scoped)"""
 
-      self.name = name
-      self.link = link
-      self.lang = lang
-      self.type = type
+      def __init__(self, name, link, lang, type):
 
-class TableOfContents(AST.Visitor):
-   """
-   Maintains a dictionary of all declarations which can be looked up to create
-   cross references. Names are fully scoped.
-   """
+         self.name = name
+         self.link = link
+         self.lang = lang
+         self.type = type
 
-   def __init__(self, linker):
+   def __init__(self, linker, verbose = False):
       """linker is an instance that implements the Linker interface and is
       used to generate the links from declarations."""
 
       self.__toc = {}
       self.linker = linker
+      self.verbose = verbose
     
    def lookup(self, name):
 
       name = tuple(name)
       if self.__toc.has_key(name): return self.__toc[name]
-      if verbose and len(name) > 1:
+      if self.verbose and len(name) > 1:
          print "Warning: TOC lookup of",name,"failed!"
       return None
 
