@@ -32,8 +32,10 @@
 #include <exception>
 #include <list>
 
+namespace Synopsis
+{
 namespace PTree { class Node;}
-
+}
 #if defined(DEBUG)
 #define DO_TRACE
 //. A tracer class that can be used as a Guard around sections of code. The
@@ -85,7 +87,7 @@ public:
         return std::cout;
     }
     //. Insertion operator. Logs a Ptree
-  std::ostream& operator<<(PTree::Node *p); // defined in swalker.cc
+  std::ostream& operator<<(Synopsis::PTree::Node *p); // defined in swalker.cc
     //. Creates a new stringstream for use in buffering output
     std::ostringstream& new_stream()
     {
@@ -128,10 +130,10 @@ public:
     //. The message
     std::string message;
     //. The node that was being translated
-  mutable PTree::Node *node;
+  mutable Synopsis::PTree::Node *node;
 
     //. Constructor. Extracts the error message from the STracer (set by ERROR macros)
-  TranslateError(STrace& trace, PTree::Node *p = 0)
+  TranslateError(STrace& trace, Synopsis::PTree::Node *p = 0)
             : node(p)
     {
         message = trace.get_stream_str();
@@ -156,7 +158,7 @@ public:
         return message;
     }
     //. Sets a node for the error, if not already set.
-  void set_node(PTree::Node *p) const
+  void set_node(Synopsis::PTree::Node *p) const
     {
         if (!node)
             node = p;
@@ -192,7 +194,7 @@ public:
     {
         return "TranslateError";
     }
-  void set_node(PTree::Node *) const
+  void set_node(Synopsis::PTree::Node *) const
     { }
 };
 #define ERROR(message) TranslateError()

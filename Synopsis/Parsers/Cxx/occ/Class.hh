@@ -16,7 +16,7 @@
 #define _Class_hh
 
 #include <iosfwd>
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 #include "Environment.hh"
 #include "TypeInfo.hh"
 #include "Member.hh"
@@ -26,6 +26,8 @@ class Member;
 class MemberList;
 class ChangedMemberList;
 struct ChangedMemberList::Cmem;
+
+using namespace Synopsis;
 
 class Class : public PTree::Object {
 public:

@@ -1,0 +1,27 @@
+//
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
+#ifndef Synopsis_PTree_GC_hh_
+#define Synopsis_PTree_GC_hh_
+
+#include <gc_cpp.h>
+
+namespace Synopsis
+{
+namespace PTree
+{
+
+using ::GC;
+using ::NoGC;
+
+typedef gc LightObject;
+typedef gc_cleanup Object;
+inline void cleanup_gc() { GC_gcollect();}
+
+}
+}
+
+#endif

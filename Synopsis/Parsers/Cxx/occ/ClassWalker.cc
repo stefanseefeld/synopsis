@@ -12,7 +12,7 @@
   implied warranty.
 */
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 #include <TypeInfoVisitor.hh>
 #include "ClassWalker.hh"
 #include "ClassBodyWalker.hh"
@@ -21,6 +21,8 @@
 #include "TypeInfo.hh"
 #include "Member.hh"
 #include <iostream>
+
+using namespace Synopsis;
 
 Class *ClassWalker::get_class_metaobject(TypeInfo& tinfo)
 {

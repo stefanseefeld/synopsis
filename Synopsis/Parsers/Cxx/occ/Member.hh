@@ -15,8 +15,9 @@
 #ifndef _Member_hh
 #define _Member_hh
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 
+using namespace Synopsis;
 class Class;
 class Environment;
 class TypeInfo;

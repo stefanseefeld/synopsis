@@ -15,15 +15,17 @@
 #include <iostream>
 #include <cstring>
 #include <stdexcept>
-#include "Lexer.hh"
+#include "Synopsis/Lexer.hh"
 #include "Class.hh"
 #include "Environment.hh"
-#include <PTree.hh>
-#include <PTree/Writer.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Writer.hh>
 #include <TypeInfoVisitor.hh>
 #include "Walker.hh"
 #include "ClassWalker.hh"
 #include "TypeInfo.hh"
+
+using namespace Synopsis;
 
 ClassArray* Class::class_list = 0;
 int Class::num_of_cmd_options = 0;

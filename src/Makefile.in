@@ -1,0 +1,111 @@
+#
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+SHELL	:= /bin/sh
+
+srcdir	:= @srcdir@
+builddir:= @builddir@
+synopsis:= python synopsis.py
+
+CXX	:= @CXX@
+MAKEDEP	:= $(CXX) -M
+CPPFLAGS:= @CPPFLAGS@ -I $(builddir) -I $(srcdir)
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= @LIBS@
+LIBRARY_EXT := @LIBEXT@
+
+GC_LIB	:= @GC_LIB@
+
+SRC	:= Trace \
+           PTree/Node PTree/Encoding PTree/operations \
+           PTree/Atoms PTree/Lists PTree/generation \
+           PTree/Visitor PTree/Display PTree/Writer \
+           SymbolLookup/Scope SymbolLookup/Scopes \
+           SymbolLookup/ConstEvaluator SymbolLookup/TypeEvaluator \
+           SymbolLookup/OverloadResolver \
+           SymbolLookup/Table \
+           SymbolLookup/Visitor \
+           Buffer Lexer Parser
+
+SRC 	:= $(patsubst %, Synopsis/%.cc, $(SRC))
+
+HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/*.hh))
+HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/PTree/*.hh))
+HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/SymbolLookup/*.hh))
+
+OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+CC_SYN	:= $(patsubst %, %.syn, $(SRC))
+HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
+DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/dump-symbols.cc)
+
+LIBRARY	:= lib/libSynopsis$(LIBRARY_EXT)
+TOOLS	:= bin/display-ptree bin/dump-symbols
+TARGETS	:= $(LIBRARY) $(TOOLS)
+
+vpath %.cc $(srcdir)
+vpath %.c $(srcdir)
+vpath %.h $(srcdir)
+vpath %.hh $(srcdir) $(builddir)
+
+all: $(TARGETS)
+
+$(LIBRARY): $(OBJ) $(GC_LIB)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
+$(TOOLS): bin/%: tools/%.o $(LIBRARY)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+doc: Synopsis.syn Synopsis-impl.syn
+
+Synopsis.syn: $(HDR_SYN)
+	@echo linking C++ headers together
+	$(synopsis) link_cxx --output=$@ $^
+
+Synopsis-impl.syn: $(HDR_SYN) $(CC_SYN)
+	@echo linking all C++ files together
+	$(synopsis) link_cxx --output=$@ $^
+
+%.d: %.cc
+	@echo generating dependencies for $(@D)/$(<F)
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+
+%.o: %.cc
+	@echo compiling $(@D)/$(@F)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+Makefile: $(srcdir)/Makefile.in
+	./config.status --file Makefile
+
+$(HDR_SYN): %.syn: %
+	@echo parsing $^
+	mkdir -p $(dir $@)
+	$(synopsis) cxx --output=$@ $?
+
+$(CC_SYN): %.cc.syn: %.cc
+	@echo parsing $^
+	mkdir -p $(dir $@)
+	$(synopsis) cxx --output=$@ $?
+
+# This calls make in the gc dir to create the gc.a file
+$(GC_LIB):
+	$(MAKE) -C Synopsis/gc
+
+$(TARGET): $(OBJ)
+	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean :
+	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d \
+        Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d \
+        Synopsis/SymbolLookup/*.~ Synopsis/SymbolLookup/*.o Synopsis/SymbolLookup/*.d \
+        tools/*.~ tools/*.o tools/*.d \
+        *.dll *.so *core $(TARGET) \
+	base_lib
+
+ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
+-include $(DEP)
+endif

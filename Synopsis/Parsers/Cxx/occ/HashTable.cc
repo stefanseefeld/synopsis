@@ -36,6 +36,7 @@
 #include <cstring>
 #include "HashTable.hh"
 
+using namespace Synopsis;
 using namespace PTree;
 
 struct HashTableEntry {

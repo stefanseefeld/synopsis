@@ -35,10 +35,12 @@
 // Part of the implementation of QuoteClass is in metaclass.cc.
 
 #include <cstring>
-#include "PTree.hh"
+#include "Synopsis/PTree.hh"
 #include "QuoteClass.hh"
-#include "Buffer.hh"
+#include "Synopsis/Buffer.hh"
 #include <sstream>
+
+using namespace Synopsis;
 
 PTree::Node *QuoteClass::TranslateMemberCall(Environment* env,
 				       PTree::Node *member, PTree::Node *args)

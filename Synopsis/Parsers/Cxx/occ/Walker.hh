@@ -9,11 +9,13 @@
 #ifndef _Walker_hh
 #define _Walker_hh
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
+
+using namespace Synopsis;
 
 class Environment;
 class Class;
-class Buffer;
+namespace Synopsis {class Buffer;}
 
 class Walker : public PTree::Visitor
 {

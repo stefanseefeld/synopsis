@@ -6,11 +6,13 @@
 // see the file COPYING for details.
 //
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 #include <TypeInfo.hh>
 #include <Environment.hh>
 #include <Class.hh>
 #include <stdexcept>
+
+using namespace Synopsis;
 
 TypeInfo::TypeInfo()
   : my_refcount(0),

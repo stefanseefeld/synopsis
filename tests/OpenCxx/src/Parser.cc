@@ -1,11 +1,13 @@
 #include <Synopsis/Trace.hh>
-#include <Buffer.hh>
-#include <Lexer.hh>
-#include <Parser.hh>
-#include <PTree.hh>
-#include <PTree/Display.hh>
-#include <SymbolLookup.hh>
+#include <Synopsis/Buffer.hh>
+#include <Synopsis/Lexer.hh>
+#include <Synopsis/Parser.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Display.hh>
+#include <Synopsis/SymbolLookup.hh>
 #include <fstream>
+
+using namespace Synopsis;
 
 int main(int argc, char **argv)
 {

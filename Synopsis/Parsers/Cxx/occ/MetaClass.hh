@@ -37,6 +37,7 @@
 
 #include "Class.hh"
 
+using namespace Synopsis;
 class Metaclass : public Class 
 {
 public:

@@ -27,7 +27,7 @@ class Database(database.Database):
 
    def __init__(self, path, arguments):
 
-      arguments["modifiable"] = "false"
+      #arguments["modifiable"] = "false"
       database.Database.__init__(self, path, arguments)
       if os.name == 'nt':
          self.srcdir = os.popen('cygpath -w "%s"'%self.srcdir).read()[:-1]
@@ -148,6 +148,17 @@ class Database(database.Database):
          suites = ['%s.%s'%(suite, s) for s in suites]
       return suites
 
+   def GetResourceIds(self, directory="", scan_subdirs=1):
+
+      if directory == '' or directory == 'OpenCxx':
+         return ['OpenCxx.Lexer',
+                 'OpenCxx.Parser',
+                 'OpenCxx.Encoding',
+                 'OpenCxx.ConstEvaluator',
+                 'OpenCxx.SymbolLookup']
+      else:
+         return []
+
    def GetResource(self, id):
       """Construct a resource for the given id.
       For now the only resources provided are OpenCxx test applets."""
@@ -157,12 +168,12 @@ class Database(database.Database):
       parameters = {}
       parameters['CXX'] = self.CXX
       parameters['CPPFLAGS'] = (self.CPPFLAGS +
-                                ' -I../Synopsis/Parsers/Cxx/occ' +
-                                ' -I%s/../Synopsis/Parsers/Cxx/occ'%self.srcdir)
+                                ' -I../src' +
+                                ' -I%s/../src'%self.srcdir)
       parameters['CXXFLAGS'] = self.CXXFLAGS
       parameters['LDFLAGS'] = self.LDFLAGS
       parameters['LIBS'] = self.LIBS
-      parameters['builddir'] = '../Synopsis/Parsers/Cxx'
+      parameters['builddir'] = '../src'
 
 
       suite = id.split('.', 1)[1]

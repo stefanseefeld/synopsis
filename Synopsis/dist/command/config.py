@@ -44,20 +44,21 @@ class config(build_ext):
 
     def config_extensions(self):
 
-        self.config_extension('Cxx-API')
-        for ext in self.extensions:
-            self.config_extension(ext)
+        self.config_extension('src')
         if not self.disable_gc:
             if os.name == 'nt':
                 # for the gc configuration on the win32 native platform
                 # set 'CC' explicitely to 'gcc -mno-cygwin'
                 os.environ['CC'] = "gcc -mno-cygwin"
-            self.config_extension('Synopsis/Parsers/Cxx/gc')
-
+            self.config_extension('src/Synopsis/gc')
+        self.config_extension('Cxx-API')
+        for ext in self.extensions:
+            self.config_extension(ext)
         # not really an extension, but as far as configuration is concerned,
         # treated equally.
         self.config_extension('tests')
         self.config_extension('doc')
+        self.config_extension('contrib')
             
     def config_extension(self, ext):
 
@@ -86,11 +87,6 @@ class config(build_ext):
             python = sys.executable
 
         command = "%s --with-python=%s"%(configure, python)
-        if ext == 'Synopsis/Parsers/Cxx':
-            if self.disable_gc:
-                command += ' --disable-gc'
-            elif self.with_gc_prefix:
-                command += ' --with-gc-prefix=%s'%self.with_gc_prefix
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)

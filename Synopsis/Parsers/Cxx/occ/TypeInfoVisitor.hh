@@ -7,9 +7,11 @@
 #ifndef _TypeInfoVisitor_hh
 #define _TypeInfoVisitor_hh
 
-#include <PTree.hh>
+#include <Synopsis/PTree.hh>
 #include <TypeInfo.hh>
 #include <cassert>
+
+using namespace Synopsis;
 
 class Environment;
 

@@ -20,6 +20,8 @@ from Synopsis.dist.command.build_doc import build_doc
 from Synopsis.dist.command.build_syn_clib import build_syn_clib
 from Synopsis.dist.command.build_syn_ext import build_syn_ext
 from Synopsis.dist.command.test import test
+from Synopsis.dist.command.install_syn_clib import install_syn_clib
+from Synopsis.dist.command.install_syn import install_syn
 
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
@@ -81,7 +83,9 @@ setup(cmdclass={'config':config,
                 'build_doc':build_doc,
                 'build_clib':build_syn_clib,
                 'build_ext':build_syn_ext,
-                'test':test},
+                'test':test,
+                'install_clib':install_syn_clib,
+                'install':install_syn},
       name="synopsis",
       version=version,
       maintainer="Stefan Seefeld",

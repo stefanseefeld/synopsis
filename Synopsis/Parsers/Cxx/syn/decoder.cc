@@ -36,6 +36,8 @@
 #include <iostream>
 #include <sstream>
 
+using namespace Synopsis;
+
 Decoder::Decoder(Builder* builder)
         : m_builder(builder)
 {

@@ -5,18 +5,20 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <PTree.hh>
-#include <PTree/Display.hh>
-#include <PTree/Writer.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/PTree/Display.hh>
+#include <Synopsis/PTree/Writer.hh>
 #include "Environment.hh"
 #include <Walker.hh>
 #include <TypeInfo.hh>
 #include <Class.hh>
 #include <MetaClass.hh>
-#include <Buffer.hh>
+#include <Synopsis/Buffer.hh>
 #include <Member.hh>
 #include <stdexcept>
 #include <iostream>
+
+using namespace Synopsis;
 
 Buffer *Walker::default_buffer = 0;
 const char *Walker::argument_name = "_arg_%d_";

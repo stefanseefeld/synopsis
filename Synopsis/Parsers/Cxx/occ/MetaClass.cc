@@ -33,7 +33,7 @@
 */
 
 #include "MetaClass.hh"
-#include "PTree.hh"
+#include "Synopsis/PTree.hh"
 
 #if USE_DLOADER
 #include <iostream>
@@ -41,6 +41,8 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>	/* for exit() */
+
+using namespace Synopsis;
 
 // in driver2.cc
 extern void RunSoCompiler(const char* src_file);
