@@ -34,4 +34,4 @@ html/index.html:	$(XMLFILES)
 #
 synopsis-user.pdf:	$(XMLFILES)
 	docbook2pdf synopsis.xml && \
-	mv synopsis.pdf synopsis-user.pdf
+	mv synopsis.pdf $@
