@@ -1909,7 +1909,6 @@ static int handle_cpp(struct lexer_state *ls, int sharp_type)
 				handle_pragma(ls);
 				goto handle_exit;
 			} else if (!strcmp(ls->ctok->name, "warning")) {
-				ret = 1;
 				handle_warning(ls);
 				goto handle_exit;
 			} else if (!strcmp(ls->ctok->name, "error")) {
