@@ -146,6 +146,9 @@ class Database(database.Database):
       components = id.split('.')
       dirname = os.path.join(*components[:-1])
 
+      if not os.path.exists(os.path.join(dirname, 'src', components[-1]) + '.cc'):
+         raise NoSuchTestError, id
+
       parameters = {}
       parameters['CXX'] = self.CXX
       parameters['CPPFLAGS'] = self.CPPFLAGS
