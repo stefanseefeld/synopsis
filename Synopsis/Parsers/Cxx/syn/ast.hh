@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.19 2002/12/12 17:25:33 chalky Exp $
+// $Id: ast.hh,v 1.20 2002/12/23 13:47:36 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -195,6 +195,12 @@ public:
     SourceFile* file() const
     {
         return m_file;
+    }
+
+    //. Changes the filename of this declaration
+    void set_file(SourceFile* file)
+    {
+	m_file = file;
     }
 
     //. Returns the line number of this declaration
