@@ -292,8 +292,16 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 
 void sighandler(int signo)
 {
+  string signame;
+  switch (signo)
+    {
+    case SIGABRT: signame = "Abort"; break;
+    case SIGBUS:  signame = "Bus error"; break;
+    case SIGSEGV: signame = "Segmentation Violation"; break;
+    default: signame = "unknown"; break;
+    };
   SWalker *instance = SWalker::instance();
-  std::cerr << "Segmentation Fault while processing " << instance->current_file()
+  std::cerr << signame << "caught while processing " << instance->current_file()
 	    << " at line " << instance->current_lineno()
 	    << " (main file is '" << instance->main_file() << "')" << std::endl;
   exit(-1);
@@ -307,6 +315,8 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   struct sigaction newa;
   newa.sa_handler = &sighandler;
   sigaction(SIGSEGV, &newa, &olda);
+  sigaction(SIGBUS, &newa, &olda);
+  sigaction(SIGABRT, &newa, &olda);
   static char dest[1024] = "/tmp/synopsis-XXXXXX";
   //tmpnam(dest);
   if (mkstemp(dest) == -1) {
@@ -386,6 +396,8 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
       std::cerr << "errors while parsing file " << file << std::endl;
       exit(1);
     }
+  sigaction(SIGABRT, &olda, 0);
+  sigaction(SIGBUS, &olda, 0);
   sigaction(SIGSEGV, &olda, 0);
   return dest;
 }
