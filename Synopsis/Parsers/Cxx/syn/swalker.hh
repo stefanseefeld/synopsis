@@ -88,7 +88,7 @@ public:
   // Takes the (maybe 0) args list and puts them in my_params
   void TranslateFunctionArgs(PTree::Node * args);
   void TranslateParameters(PTree::Node * p_params, std::vector<AST::Parameter*>& params);
-  void TranslateFunctionName(const char *encname, std::string& realname, Types::Type*& returnType);
+  void TranslateFunctionName(const PTree::Encoding &encname, std::string& realname, Types::Type*& returnType);
   PTree::Node * TranslateDeclarator(PTree::Node *);
   PTree::Node * TranslateFunctionDeclarator(PTree::Node *, bool is_const);
   PTree::Node * TranslateVariableDeclarator(PTree::Node *, bool is_const);

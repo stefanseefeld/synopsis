@@ -12,11 +12,11 @@
   implied warranty.
 */
 
+#include <PTree.hh>
 #include "TypeInfo.hh"
-#include "Encoding.hh"
-#include "PTree.hh"
 #include "Environment.hh"
 #include "Class.hh"
+#include <stdexcept>
 
 TypeInfo::TypeInfo()
 {
@@ -34,7 +34,7 @@ void TypeInfo::Unknown()
     env = 0;
 }
 
-void TypeInfo::Set(const char* type, Environment* e)
+void TypeInfo::Set(const PTree::Encoding &type, Environment* e)
 {
     refcount = 0;
     encode = type;
@@ -90,391 +90,358 @@ TypeInfoId TypeInfo::WhatIs()
 	return ClassType;
 
     Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    if(ptr == 0)
-	return UndefType;
+    PTree::Encoding ptr = skip_cv(encode, e);
+    if(ptr.empty() == 0) return UndefType;
 
-    switch(*ptr){
-    case 'T' :
-	return TemplateType;
-    case 'P' :
-	return PointerType;
-    case 'R' :
-	return ReferenceType;
-    case 'M' :
-	return PointerToMemberType;
-    case 'A' :
-	return ArrayType;
-    case 'F' :
-	return FunctionType;
-    case 'S' :
-    case 'U' :
-    case 'b' :
-    case 'c' :
-    case 'w' :
-    case 'i' :
-    case 's' :
-    case 'l' :
-    case 'j' :
-    case 'f' :
-    case 'd' :
-    case 'r' :
-    case 'v' :
-	return BuiltInType;
-    default :
-	if(*ptr == 'Q' || *(const unsigned char*)ptr >= 0x80){
-	    TypeInfo t;
-	    Class* c;
-	    t.Set(ptr, e);
-	    if(t.IsClass(c))
-		return ClassType;
-	    else if(t.IsEnum())
-		return EnumType;
+    switch(*ptr.begin())
+    {
+      case 'T' : return TemplateType;
+      case 'P' : return PointerType;
+      case 'R' : return ReferenceType;
+      case 'M' : return PointerToMemberType;
+      case 'A' : return ArrayType;
+      case 'F' : return FunctionType;
+      case 'S' :
+      case 'U' :
+      case 'b' :
+      case 'c' :
+      case 'w' :
+      case 'i' :
+      case 's' :
+      case 'l' :
+      case 'j' :
+      case 'f' :
+      case 'd' :
+      case 'r' :
+      case 'v' : return BuiltInType;
+      default :
+	if(*ptr.begin() == 'Q' || *ptr.begin() >= 0x80)
+	{
+	  TypeInfo t;
+	  Class* c;
+	  t.Set(ptr, e);
+	  if(t.IsClass(c)) return ClassType;
+	  else if(t.IsEnum()) return EnumType;
 	}
-
 	return UndefType;
     };
 }
 
 bool TypeInfo::IsNoReturnType()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == '?');
+  Normalize();
+  Environment* e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  return(!ptr.empty() && *ptr.begin() == '?');
 }
 
 bool TypeInfo::IsConst()
 {
-    Normalize();
-    const char* ptr = encode;
-    return(ptr != 0 && *ptr == 'C');
+  Normalize();
+  return(!encode.empty() && *encode.begin() == 'C');
 }
 
 bool TypeInfo::IsVolatile()
 {
-    Normalize();
-    const char* ptr = encode;
-    if(ptr == 0)
-	return false;
-    else if(*ptr == 'V')
-	return true;
-    else if(*ptr == 'C')
-	return(ptr[1] == 'V');
-    else
-	return false;
+  Normalize();
+  if(encode.empty()) return false;
+  else if(encode.front() == 'V') return true;
+  else if(encode.front() == 'C') return(encode.at(1) == 'V');
+  else return false;
 }
 
 uint TypeInfo::IsBuiltInType()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    if(ptr == 0)
-	return 0;
+  Normalize();
+  Environment* e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  if(ptr.empty()) return 0;
 
-    uint result = 0;
-    for(;; ++ptr){
-	switch(*ptr){
-	case 'b' :
-	    return(result | BooleanType);
-	case 'c' :
-	    return(result | CharType);
-	case 'w' :
-	    return(result | WideCharType);
-	case 'i' :
-	    return(result | IntType);
-	case 's' :
-	    return(result | ShortType);
-	case 'l' :
-	    return(result | LongType);
-	case 'j' :
-	    return(result | LongLongType);
-	case 'f' :
-	    return(result | FloatType);
-	case 'd' :
-	    return(result | DoubleType);
-	case 'r' :
-	    return(result | LongDoubleType);
-	case 'v' :
-	    return(result | VoidType);
-	case 'S' :
-	    result |= SignedType;
-	    break;
-	case 'U' :
-	    result |= UnsignedType;
-	    break;
-	default :
-	    return 0;
-	}
+  uint result = 0;
+  for(PTree::Encoding::iterator i = ptr.begin(); i != ptr.end(); ++i)
+  {
+    switch(*i)
+    {
+      case 'b' : return result | BooleanType;
+      case 'c' : return result | CharType;
+      case 'w' : return result | WideCharType;
+      case 'i' : return result | IntType;
+      case 's' : return result | ShortType;
+      case 'l' : return result | LongType;
+      case 'j' : return result | LongLongType;
+      case 'f' : return result | FloatType;
+      case 'd' : return result | DoubleType;
+      case 'r' : return result | LongDoubleType;
+      case 'v' : return result | VoidType;
+      case 'S' :
+	result |= SignedType;
+	break;
+      case 'U' :
+	result |= UnsignedType;
+	break;
+      default : return 0;
     }
+  }
 }
 
 bool TypeInfo::IsFunction()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == 'F');
+  Normalize();
+  Environment* e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  return !ptr.empty() && ptr.front() == 'F';
 }
 
 bool TypeInfo::IsEllipsis()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == 'e');
+  Normalize();
+  Environment *e = env;
+  PTree::Encoding  ptr = skip_cv(encode, e);
+  return !ptr.empty() && ptr.front() == 'e';
 }
 
 bool TypeInfo::IsPointerType()
 {
-    if(refcount > 0)
-	return true;
+  if(refcount > 0) return true;
 
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    if(ptr != 0){
-	char c = *ptr;
-	return c == 'P' || c == 'A' || c == 'M';
-    }
-
-    return false;
+  Normalize();
+  Environment* e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  if(!ptr.empty())
+    return ptr.front() == 'P' || ptr.front() == 'A' || ptr.front() == 'M';
+  return false;
 }
 
 bool TypeInfo::IsReferenceType()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == 'R');
+  Normalize();
+  Environment *e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  return !ptr.empty() && ptr.front() == 'R';
 }
 
 bool TypeInfo::IsArray()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == 'A');
+  Normalize();
+  Environment *e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  return !ptr.empty() && ptr.front() == 'A';
 }
 
 bool TypeInfo::IsPointerToMember()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == 'M');
+  Normalize();
+  Environment *e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  return !ptr.empty() && ptr.front() == 'M';
 }
 
 bool TypeInfo::IsTemplateClass()
 {
-    Normalize();
-    Environment* e = env;
-    const char* ptr = SkipCv(encode, e);
-    return(ptr != 0 && *ptr == 'T');
+  Normalize();
+  Environment *e = env;
+  PTree::Encoding ptr = skip_cv(encode, e);
+  return !ptr.empty() && ptr.front() == 'T';
 }
 
 Class* TypeInfo::ClassMetaobject()
 {
-    Class* c;
-    IsClass(c);
-    return c;
+  Class* c;
+  IsClass(c);
+  return c;
 }
 
 bool TypeInfo::IsClass(Class*& c)
 {
-    Normalize();
-    if(metaobject != 0){
-	c = metaobject;
-	return true;
-    }
-    else{
-	c = 0;
-	Environment* e = env;
-	const char* encode2 = SkipCv(encode, e);
-	if(encode == encode2)
-	    return false;
+  Normalize();
+  if(metaobject != 0)
+  {
+    c = metaobject;
+    return true;
+  }
+  else
+  {
+    c = 0;
+    Environment* e = env;
+    PTree::Encoding encode2 = skip_cv(encode, e);
+    if(encode == encode2) return false;
 
-	TypeInfo tinfo;
-	tinfo.Set(encode2, e);
-	return tinfo.IsClass(c);
-    }
+    TypeInfo tinfo;
+    tinfo.Set(encode2, e);
+    return tinfo.IsClass(c);
+  }
 }
 
 bool TypeInfo::IsEnum()
 {
-    PTree::Node *spec;
-    return IsEnum(spec);
+  PTree::Node *spec;
+  return IsEnum(spec);
 }
 
 bool TypeInfo::IsEnum(PTree::Node *&spec)
 {
-    spec = 0;
-    Normalize();
-    if(metaobject != 0)
-	return false;
-    else{
-	Bind* bind;
-	int len;
-	Environment* e = env;
-	const char* name = Encoding::GetBaseName(encode, len, e);
-	if(name != 0 && e != 0)
-	    if(e->LookupType(name, len, bind))
-		if(bind != 0 && bind->What() == Bind::isEnumName){
-		    spec = ((BindEnumName*)bind)->GetSpecification();
-		    return true;
-		}
-
-	e = env;
-	name = SkipCv(encode, e);
-	if(name == encode)
-	    return false;
-
-	TypeInfo tinfo;
-	tinfo.Set(name, e);
-	return tinfo.IsEnum(spec);
-    }
+  spec = 0;
+  Normalize();
+  if(metaobject) return false;
+  else
+  {
+    Bind* bind;
+    Environment *e = env;
+    PTree::Encoding name = encode.get_base_name(e);
+    if(!name.empty() && e != 0)
+      if(e->LookupType((const char *)&*name.begin(), name.size(), bind))
+	if(bind != 0 && bind->What() == Bind::isEnumName)
+	{
+	  spec = ((BindEnumName*)bind)->GetSpecification();
+	  return true;
+	}
+    e = env;
+    name = skip_cv(encode, e);
+    if(name == encode) return false;
+    TypeInfo tinfo;
+    tinfo.Set(name, e);
+    return tinfo.IsEnum(spec);
+  }
 }
 
 void TypeInfo::Dereference(TypeInfo& t)
 {
-    t.refcount = refcount - 1;
-    t.encode = encode;
-    t.metaobject = metaobject;
-    t.env = env;
+  t.refcount = refcount - 1;
+  t.encode = encode;
+  t.metaobject = metaobject;
+  t.env = env;
 }
 
 void TypeInfo::Reference(TypeInfo& t)
 {
-    t.refcount = refcount + 1;
-    t.encode = encode;
-    t.metaobject = metaobject;
-    t.env = env;
+  t.refcount = refcount + 1;
+  t.encode = encode;
+  t.metaobject = metaobject;
+  t.env = env;
 }
 
 bool TypeInfo::NthArgument(int n, TypeInfo& t)
 {
-    Environment* e = env;
-    Normalize();
-    const char* ptr = SkipCv(encode, e);
-    if(ptr == 0 || *ptr != 'F'){
-	t.Unknown();
-	return false;
-    }
+  Environment* e = env;
+  Normalize();
+  PTree::Encoding ptr = skip_cv(encode, e);
+  if(ptr.empty() || ptr.front() != 'F')
+  {
+    t.Unknown();
+    return false;
+  }
 
-    ++ptr;
-    if(*ptr == 'v'){
-	t.SetVoid();
-	return false;		// no arguments
-    }
+  ptr.pop();
+  if(ptr.front() == 'v')
+  {
+    t.SetVoid();
+    return false;		// no arguments
+  }
 
-    while(n-- > 0){
-	ptr = SkipType(ptr, e);
-	if(ptr == 0 || *ptr == '_'){
-	    t.Unknown();
-	    return false;
-	}
+  while(n-- > 0)
+  {
+    ptr = skip_type(ptr, e);
+    if(ptr.empty() || ptr.front() == '_')
+    {
+      t.Unknown();
+      return false;
     }
+  }
 
-    t.Set(ptr, e);
-    return true;
+  t.Set(ptr, e);
+  return true;
 }
 
 int TypeInfo::NumOfArguments()
 {
-    Environment* e = env;
-    Normalize();
-    const char* ptr = SkipCv(encode, e);
-    if(ptr == 0 || *ptr != 'F')
-	return -1;	// not a function
+  Environment* e = env;
+  Normalize();
+  PTree::Encoding ptr = skip_cv(encode, e);
+  if(ptr.empty() || ptr.front() != 'F') return -1; // not a function
+  
+  ptr.pop();
+  if(ptr.front() == 'v') return 0; // no arguments
 
-    ++ptr;
-    if(*ptr == 'v')
-	return 0;	// no arguments
-
-    int n = 0;
-    for(;;){
-	++n;
-	ptr = SkipType(ptr, e);
-	if(ptr == 0 || *ptr == '_')
-	    return n;
-    }
+  size_t n = 0;
+  while(true)
+  {
+    ++n;
+    ptr = skip_type(ptr, e);
+    if(ptr.empty() || ptr.front() == '_') return n;
+  }
 }
 
 bool TypeInfo::NthTemplateArgument(int n, TypeInfo& t)
 {
-    Environment* e = env;
-    Normalize();
-    const char* ptr = SkipCv(encode, e);
-    if(ptr == 0 || *ptr != 'T'){
-	t.Unknown();
-	return false;
+  Environment *e = env;
+  Normalize();
+  PTree::Encoding ptr = skip_cv(encode, e);
+  if(ptr.empty() || ptr.front() != 'T')
+  {
+    t.Unknown();
+    return false;
+  }
+  ptr.pop();
+  ptr = ptr.get_template_arguments();
+  while(n-- > 0)
+  {
+    ptr = skip_type(ptr, e);
+    // DANGER !!! : the original code reads:
+    // if (ptr == 0 || ptr >= end)
+    // see the history if you get into trouble here...
+    if(ptr.empty())
+    {
+      t.Unknown();
+      return false;
     }
-
-    int len;
-    ptr = (const char*)Encoding::GetTemplateArguments((const unsigned char*)++ptr, len);
-    const char* end = ptr + len;
-    while(n-- > 0){
-	ptr = SkipType(ptr, e);
-	if(ptr == 0 || ptr >= end) {
-	    t.Unknown();
-	    return false;
-	}
-    }
-
-    t.Set(ptr, e);
-    return true;
+  }
+  t.Set(ptr, e);
+  return true;
 }
 
 PTree::Node *TypeInfo::FullTypeName()
 {
   PTree::Node *qname, *head;
 
-    Normalize();
-    if(metaobject != 0){
-	qname = metaobject->Name();
-	head = GetQualifiedName2(metaobject);
-	if(head == 0)
-	    return qname;
-	else
-	  return PTree::snoc(head, qname);
-    }
+  Normalize();
+  if(metaobject != 0)
+  {
+    qname = metaobject->Name();
+    head = GetQualifiedName2(metaobject);
+    return head ? PTree::snoc(head, qname) : qname;
+  }
 
-    Environment* e = env;
-    const unsigned char* name = (const unsigned char*)SkipCv(encode, e);
-    if(name == 0)
-	return 0;
+  Environment *e = env;
+  PTree::Encoding name = skip_cv(encode, e);
+  if(name.empty()) return 0;
 
-    if(IsBuiltInType())
-	return PTree::first(Encoding::MakePtree(name, 0));
+  if(IsBuiltInType())
+    return PTree::first(name.make_ptree(0));
 
-    if(*name == 'T'){
-	++name;
-	qname = Encoding::MakeLeaf(name);
-	head = GetQualifiedName(e, qname);
-	if(head == 0)
-	    return qname;
-	else
-	  return PTree::snoc(head, qname);
-    }
-    else if(*name == 'Q'){
-	qname = Encoding::MakeQname(++name);
-	head = GetQualifiedName(e, qname->car());
-	if(head == 0)
-	    return qname;
-	else
-	  return PTree::nconc(head, qname);
-    }
-    else if(Encoding::IsSimpleName(name)){
-	qname = Encoding::MakeLeaf(name);
-	head = GetQualifiedName(e, qname);
-	if(head == 0)
-	    return qname;
-	else
-	  return PTree::snoc(head, qname);
-    }
+  if(name.front() == 'T')
+  {
+    name.pop();
+    qname = name.make_name();
+    head = GetQualifiedName(e, qname);
+    if(head == 0)
+      return qname;
     else
-	return 0;
+      return PTree::snoc(head, qname);
+  }
+  else if(name.front() == 'Q')
+  {
+    name.pop();
+    qname = name.make_qname();
+    head = GetQualifiedName(e, qname->car());
+    return head ? PTree::nconc(head, qname) : qname;
+  }
+  else if(name.is_simple_name())
+  {
+    qname = name.make_name();
+    head = GetQualifiedName(e, qname);
+    return head ? PTree::snoc(head, qname) : qname;
+  }
+  else return 0;
 }
 
 PTree::Node *TypeInfo::GetQualifiedName(Environment* e, PTree::Node *tname)
@@ -494,211 +461,171 @@ PTree::Node *TypeInfo::GetQualifiedName2(Class* c)
   for(; e != 0; e = e->GetOuterEnvironment())
   {
     c = e->IsClassEnvironment();
-    if(c) qname = PTree::cons(c->Name(), PTree::cons(Encoding::scope, qname));
+    if(c) qname = PTree::cons(c->Name(), PTree::cons(PTree::Encoding::scope, qname));
   }
   return qname;
 }
 
 PTree::Node *TypeInfo::MakePtree(PTree::Node *name)
 {
-    Normalize();
-    if(metaobject != 0){
-	PTree::Node *decl;
-	if(name == 0)
-	    decl = 0;
-	else
-	  decl = PTree::list(name);
-
-	return PTree::list(FullTypeName(), decl);
-    }
-    else if(encode != 0){
-	const unsigned char* ptr = (const unsigned char*)encode;
-	return Encoding::MakePtree(ptr, name);
-    }
-    else
-	return 0;
+  Normalize();
+  if(metaobject != 0)
+  {
+    PTree::Node *decl;
+    if(!name) decl = 0;
+    else decl = PTree::list(name);
+    return PTree::list(FullTypeName(), decl);
+  }
+  else if(!encode.empty()) encode.make_ptree(name);
+  else return 0;
 }
 
 void TypeInfo::Normalize()
 {
-    Environment* e = env;
-    const char* ptr = encode;
-    int r = refcount;
+  if(encode.empty() || refcount > 0) return;
 
-    if(ptr == 0)
-	return;
-    else if(r > 0)
-	return;
+  Environment *e = env;
+  PTree::Encoding ptr = encode;
+  int r = refcount;
 
-    while(r < 0)
-	switch(*ptr){
-	case 'C' :	// const
-	case 'V' :	// volatile
-	    ++ptr;
-	    break;
-	case 'A' :	// array
-	case 'P' :	// pointer *
-	case 'R' :	// reference &
-	    ++ptr;
-	    ++r;
-	    break;
-	case 'F' :	// function
-	case 'M' :	// pointer to member ::*
+  while(r < 0)
+    switch(ptr.front())
+    {
+      case 'C' :	// const
+      case 'V' :	// volatile
+	ptr.pop();
+	break;
+      case 'A' :	// array
+      case 'P' :	// pointer *
+      case 'R' :	// reference &
+	ptr.pop();
+	++r;
+	break;
+      case 'F' :	// function
+      case 'M' :	// pointer to member ::*
+	{
+	  PTree::Encoding tmp(ptr.begin() + 1, ptr.end());
+	  PTree::Encoding p = ptr.front() == 'F' ? get_return_type(tmp, e) : skip_name(tmp, e);
+	  if(p.empty()) return;
+	  else
 	  {
-	    const char* p;
-	    if(*ptr == 'F')
-		p = GetReturnType(ptr + 1, e);
-	    else
-		p = SkipName(ptr + 1, e);
-
-	    if(p == 0)
-		return;
-	    else{
-		ptr = p;
-		++r;
-	    }
-	    break;
+	    ptr = p;
+	    ++r;
 	  }
-	default :
-	    if(!ResolveTypedef(e, ptr, true))
-		return;
+	  break;
 	}
-
-    while(ResolveTypedef(e, ptr, false))
-	;
+      default :
+	if(!resolve_typedef(e, ptr, true)) return;
+    }
+  while(resolve_typedef(e, ptr, false)) ; // empty
 }
 
-bool TypeInfo::ResolveTypedef(Environment*& e, const char*& ptr, bool resolvable)
+bool TypeInfo::resolve_typedef(Environment *&e, PTree::Encoding &ptr, bool resolvable)
 {
-    Bind* bind;
+  Bind *bind;
+  Class *c;
+  Environment *orig_e = e;
+  PTree::Encoding name = ptr.get_base_name(e);
+  if(!name.empty() && e && e->LookupType((const char *)&*name.begin(),
+					 name.size(), bind))
+    switch(bind->What())
+    {
+      case Bind::isTypedefName :
+	ptr = bind->encoded_type();
+	return true;
+      case Bind::isClassName :
+	c = bind->ClassMetaobject();
+	if(!c) Set(ptr, orig_e);
+	else if (name.front() == 'T') Set(ptr, c->GetEnvironment());
+	else Set(c);
+	return false;
+      case Bind::isTemplateClass :
+	c = bind->ClassMetaobject();
+	if(!c) Set(ptr, orig_e);
+	else Set(ptr, c->GetEnvironment());
+	return false;
+      default :
+	break;
+    }
+
+  if(resolvable) Unknown();
+  else Set(ptr, orig_e);
+  return false;
+}
+
+PTree::Encoding TypeInfo::skip_cv(const PTree::Encoding &ptr, Environment *&e)
+{
+  if(ptr.empty()) return PTree::Encoding();
+  PTree::Encoding remainder(ptr);
+  while (remainder.front() == 'C' || remainder.front() == 'V') remainder.pop();
+  while(true)
+  {
+    Bind *bind;
     int len;
-    Class* c;
-    Environment* orig_e = e;
-    const char* name = Encoding::GetBaseName(ptr, len, e);
-    if(name != 0 && e != 0 && e->LookupType(name, len, bind))
-	switch(bind->What()){
-	case Bind::isTypedefName :
-	    ptr = bind->encoded_type();
-	    return true;
-	case Bind::isClassName :
-	    c = bind->ClassMetaobject();
-	    if(c == 0)
-		Set(ptr, orig_e);
-	    else if (*name == 'T')
-		Set(ptr, c->GetEnvironment());
-	    else
-		Set(c);
-
-	    return false;
-	case Bind::isTemplateClass :
-	    c = bind->ClassMetaobject();
-	    if(c == 0)
-		Set(ptr, orig_e);
-	    else
-		Set(ptr, c->GetEnvironment());
-
-	    return false;
-	default :
-	    break;
-	}
-
-    if(resolvable)
-	Unknown();
+    PTree::Encoding name = remainder.get_base_name(e);
+    if(!name.empty() && e && e->LookupType((const char *)&*name.begin(), name.size(), bind))
+      if(bind->What() != Bind::isTypedefName)
+	return remainder;
+      else
+	remainder = bind->encoded_type();
     else
-	Set(ptr, orig_e);
-
-    return false;
+      return remainder;
+  }
 }
 
-const char* TypeInfo::SkipCv(const char* ptr, Environment*& e)
+PTree::Encoding TypeInfo::skip_name(const PTree::Encoding &encode, Environment *e)
 {
-    if(ptr == 0)
-	return 0;
+  if(!e) throw std::runtime_error("TypeInfo::skip_name(): nil environment");
 
-    for(;;)
-	switch(*ptr){
-	case 'C' :	// const
-	case 'V' :	// volatile
-	    ++ptr;
-	    break;
-	default :
-	    goto finish;
-	}
+  Environment *e2 = e;
+  PTree::Encoding ptr = encode.get_base_name(e2);
+  if (ptr.empty()) PTree::Encoding();
+  else return PTree::Encoding(encode.begin() + ptr.size(), encode.end());
+}
 
-finish:
-    for(;;){
-	Bind* bind;
-	int len;
-	const char* name = Encoding::GetBaseName(ptr, len, e);
-	if(name != 0 && e != 0 && e->LookupType(name, len, bind))
-	    if(bind->What() != Bind::isTypedefName)
-		return ptr;
-	    else
-		ptr = bind->encoded_type();
-	else
-	    return ptr;
+PTree::Encoding TypeInfo::get_return_type(const PTree::Encoding &encode, Environment *env)
+{
+  PTree::Encoding t = encode;
+  while (true)
+    switch(t.front())
+    {
+      case '_' : return PTree::Encoding(t.begin() + 1, t.end());
+      case '\0' : return PTree::Encoding();
+      default :
+	t = skip_type(t, env);
+	break;
     }
 }
 
-const char* TypeInfo::SkipName(const char* encode, Environment* e)
+PTree::Encoding TypeInfo::skip_type(const PTree::Encoding &ptr, Environment *env)
 {
-    if(e == 0)
-	MopErrorMessage("TypeInfo::SkipName()", "nil environment");
-
-    int len;
-    Environment* e2 = e;
-    const char* ptr = Encoding::GetBaseName(encode, len, e2);
-    if(ptr == 0)
-	return 0;
-    else
-	return &ptr[len];
-}
-
-const char* TypeInfo::GetReturnType(const char* encode, Environment* env)
-{
-    for(;;)
-	switch(*encode){
-	case '_' :
-	    return encode + 1;
-	case '\0' :
-	    return 0;
-	default :
-	    encode = SkipType(encode, env);
-	    break;
-	}
-}
-
-const char* TypeInfo::SkipType(const char* ptr, Environment* env)
-{
-    while(ptr != 0)
-	switch(*ptr){
-	case '\0' :
-	case '_' :
-	    return 0;
-	case 'S' :
-	case 'U' :
-	case 'C' :
-	case 'V' :
-	case 'P' :
-	case 'R' :
-	case 'A' :
-	    ++ptr;
-	    break;
-	case 'F' :
-	    ptr =  GetReturnType(ptr + 1, env);
-	    break;
-	case 'T' :
-	case 'Q' :
-	    return SkipName(ptr, env);
-	case 'M' :
-	    ptr = SkipName(ptr + 1, env);
-	    break;
-	default :
-	    if(*(const unsigned char*)ptr < 0x80)
-		return ptr + 1;
-	    else
-		return SkipName(ptr, env);
-	}
-
-    return ptr;
+  PTree::Encoding r = ptr;
+  while(!r.empty())
+    switch(r.front())
+    {
+      case '\0' :
+      case '_' : PTree::Encoding();
+      case 'S' :
+      case 'U' :
+      case 'C' :
+      case 'V' :
+      case 'P' :
+      case 'R' :
+      case 'A' :
+	r.pop();
+	break;
+      case 'F' :
+	r = get_return_type(PTree::Encoding(r.begin() + 1, r.end()), env);
+	break;
+      case 'T' :
+      case 'Q' :
+	return skip_name(r, env);
+      case 'M' :
+	r = skip_name(PTree::Encoding(r.begin() + 1, r.end()), env);
+	break;
+      default :
+	if(r.front() < 0x80) return PTree::Encoding(r.begin() + 1, r.end());
+	else return skip_name(r, env);
+    }
+  return r;
 }

@@ -80,8 +80,8 @@ Node *Declaration::Translate(Walker* w)
 
 Declarator::Declarator(Node *list, Encoding &t, Encoding &n, Node *dname)
   : List(list->car(), list->cdr()),
-    my_type(t.Get()),
-    my_name(n.Get()),
+    my_type(t),
+    my_name(n),
     my_declared_name(dname),
     my_comments(0)
 {
@@ -89,8 +89,8 @@ Declarator::Declarator(Node *list, Encoding &t, Encoding &n, Node *dname)
 
 Declarator::Declarator(Encoding &t, Encoding &n, Node *dname)
   : List(0, 0),
-    my_type(t.Get()),
-    my_name(n.Get()),
+    my_type(t),
+    my_name(n),
     my_declared_name(dname),
     my_comments(0)
 {
@@ -98,8 +98,8 @@ Declarator::Declarator(Encoding &t, Encoding &n, Node *dname)
 
 Declarator::Declarator(Node *p, Node *q, Encoding &t, Encoding &n, Node *dname)
   : List(p, q),
-    my_type(t.Get()),
-    my_name(n.Get()),
+    my_type(t),
+    my_name(n),
     my_declared_name(dname),
     my_comments(0)
 {
@@ -107,8 +107,7 @@ Declarator::Declarator(Node *p, Node *q, Encoding &t, Encoding &n, Node *dname)
 
 Declarator::Declarator(Node *list, Encoding &t)
   : List(list->car(), list->cdr()),
-    my_type(t.Get()),
-    my_name(0),
+    my_type(t),
     my_declared_name(0),
     my_comments(0)
 {
@@ -116,8 +115,7 @@ Declarator::Declarator(Node *list, Encoding &t)
 
 Declarator::Declarator(Encoding &t)
   : List(0, 0),
-    my_type(t.Get()),
-    my_name(0),
+    my_type(t),
     my_declared_name(0),
     my_comments(0)
 {
@@ -132,25 +130,10 @@ Declarator::Declarator(Declarator *decl, Node *p, Node *q)
 {
 }
 
-const char *Declarator::encoded_type() const
-{
-  return my_type;
-}
-
-const char *Declarator::encoded_name() const
-{
-  return my_name;
-}
-
-Name::Name(Node *p, Encoding &e)
+Name::Name(Node *p, const Encoding &name)
   : List(p->car(), p->cdr()),
-    my_name(e.Get())
+    my_name(name)
 {
-}
-
-const char *Name::encoded_name() const
-{
-  return my_name;
 }
 
 Node *Name::Translate(Walker *w)
@@ -163,21 +146,10 @@ void Name::Typeof(Walker *w, TypeInfo &t)
   w->TypeofVariable(this, t);
 }
 
-FstyleCastExpr::FstyleCastExpr(Encoding &e, Node *p, Node *q)
+FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, Node *q)
   : List(p, q),
-    my_type(e.Get())
+    my_type(type)
 {
-}
-
-FstyleCastExpr::FstyleCastExpr(const char *e, Node *p, Node *q)
-  : List(p, q),
-    my_type(e)
-{
-}
-
-const char *FstyleCastExpr::encoded_type() const
-{
-  return my_type;
 }
 
 Node *FstyleCastExpr::Translate(Walker* w)
@@ -192,14 +164,13 @@ void FstyleCastExpr::Typeof(Walker *w, TypeInfo &t)
 
 ClassSpec::ClassSpec(Node *p, Node *q, Node *c)
   : List(p, q),
-    my_name(0),
     my_comments(c)
 {
 }
 
-ClassSpec::ClassSpec(Node *car, Node *cdr, Node *c, const char *encode)
+ClassSpec::ClassSpec(const Encoding &name, Node *car, Node *cdr, Node *c)
   : List(car, cdr),
-    my_name(encode),
+    my_name(name),
     my_comments(c)
 {
 }
@@ -209,30 +180,14 @@ Node *ClassSpec::Translate(Walker* w)
   return w->TranslateClassSpec(this);
 }
 
-const char *ClassSpec::encoded_name() const
-{
-  return my_name;
-}
-
-Node *ClassSpec::GetComments()
-{
-  return my_comments;
-}
-
 EnumSpec::EnumSpec(Node *head)
-  : List(head, 0),    
-    my_name(0)
+  : List(head, 0)
 {
 }
 
 Node *EnumSpec::Translate(Walker* w)
 {
   return w->TranslateEnumSpec(this);
-}
-
-const char *EnumSpec::encoded_name() const
-{
-  return my_name;
 }
 
 AccessSpec::AccessSpec(Node *p, Node *q)

@@ -9,8 +9,7 @@
 #define _PTree_Lists_hh
 
 #include "PTree/operations.hh"
-
-class Encoding;
+#include "PTree/Encoding.hh"
 
 namespace PTree
 {
@@ -103,8 +102,8 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Node *Translate(Walker*);
   
-  Node *GetComments() { return my_comments;}
-  void SetComments(Node *c) { my_comments = c;}
+  Node *get_comments() { return my_comments;}
+  void set_comments(Node *c) { my_comments = c;}
 
 private:
   Node *my_comments;
@@ -133,8 +132,8 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Node *Translate(Walker*);
 
-  Node *GetComments() { return my_comments;}
-  void SetComments(Node *c) { my_comments = c;}
+  Node *get_comments() { return my_comments;}
+  void set_comments(Node *c) { my_comments = c;}
 
 private:
   Node *my_comments;
@@ -150,62 +149,56 @@ public:
   Declarator(Encoding&);
   Declarator(Declarator*, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-  const char *encoded_type() const;
-  const char *encoded_name() const;
-  void set_encoded_type(const char *t) { my_type = t;}
-  Node *Name() { return my_declared_name;}
-
-  Node *GetComments() { return my_comments;}
-  void SetComments(Node *c) { my_comments = c;}
-
+  Encoding encoded_type() const { return my_type;}
+  Encoding encoded_name() const { return my_name;}
+  void set_encoded_type(const Encoding &t) { my_type = t;}
+  Node *name() { return my_declared_name;}
+  Node *get_comments() { return my_comments;}
+  void set_comments(Node *c) { my_comments = c;}
 private:
-  const char *my_type;
-  const char *my_name;
-  Node       *my_declared_name;
-  Node       *my_comments;
+  Encoding my_type;
+  Encoding my_name;
+  Node    *my_declared_name;
+  Node    *my_comments;
 };
 
 class Name : public List
 {
 public:
-  Name(Node *, Encoding&);
+  Name(Node *, const Encoding &);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-  const char *encoded_name() const;
+  Encoding encoded_name() const { return my_name;}
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
-
 private:
-  const char *my_name;
+  Encoding my_name;
 };
 
 class FstyleCastExpr : public List
 {
 public:
-  FstyleCastExpr(Encoding&, Node *, Node *);
-  FstyleCastExpr(const char*, Node *, Node *);
+  FstyleCastExpr(const Encoding &, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-  const char *encoded_type() const;
+  Encoding encoded_type() const { return my_type;}
   Node *Translate(Walker*);
   void Typeof(Walker*, TypeInfo&);
-
 private:
-  const char *my_type;
+  Encoding my_type;
 };
 
 class ClassSpec : public List
 {
 public:
   ClassSpec(Node *, Node *, Node *);
-  ClassSpec(Node *, Node *, Node *, const char*);
+  ClassSpec(const Encoding &, Node *, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Node *Translate(Walker*);
-  const char *encoded_name() const;
-  void set_encoded_name(const char *n) { my_name = n;}
-  Node *GetComments();
-
+  Encoding encoded_name() const { return my_name;}
+  void set_encoded_name(const Encoding &n) { my_name = n;}
+  Node *get_comments() { return my_comments;}
 private:
-  const char *my_name;
-  Node       *my_comments;
+  Encoding my_name;
+  Node    *my_comments;
 };
 
 class EnumSpec : public List
@@ -214,10 +207,10 @@ public:
   EnumSpec(Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Node *Translate(Walker*);
-  const char *encoded_name() const;
-  void set_encoded_name(const char *n) { my_name = n;}
+  Encoding encoded_name() const { return my_name;}
+  void set_encoded_name(const Encoding &n) { my_name = n;}
 private:
-  const char *my_name;
+  Encoding my_name;
 };
 
 class AccessSpec : public List

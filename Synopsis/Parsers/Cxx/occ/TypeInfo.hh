@@ -40,65 +40,64 @@ enum {
 
 /*
   TypeInfo interprets an encoded type name.  For details of the encoded
-  type name, see class Encoding in encoding.h and encoding.cc.
+  type name, see class PTree::Encoding.
 */
 class TypeInfo : public PTree::LightObject {
 public:
-    TypeInfo();
-    void Unknown();
-    void Set(const char*, Environment*);
-    void Set(Class*);
-    void SetVoid();
-    void SetInt();
+  TypeInfo();
+  void Unknown();
+  void Set(const PTree::Encoding &, Environment*);
+  void Set(Class*);
+  void SetVoid();
+  void SetInt();
   void SetMember(PTree::Node *);
 
-    TypeInfoId WhatIs();
+  TypeInfoId WhatIs();
 
-    bool IsNoReturnType();
+  bool IsNoReturnType();
 
-    bool IsConst();
-    bool IsVolatile();
-
-    uint IsBuiltInType();
-    bool IsFunction();
-    bool IsEllipsis();
-    bool IsPointerType();
-    bool IsReferenceType();
-    bool IsArray();
-    bool IsPointerToMember();
-    bool IsTemplateClass();
-    Class* ClassMetaobject();
-    bool IsClass(Class*&);
-    bool IsEnum();
+  bool IsConst();
+  bool IsVolatile();
+  
+  uint IsBuiltInType();
+  bool IsFunction();
+  bool IsEllipsis();
+  bool IsPointerType();
+  bool IsReferenceType();
+  bool IsArray();
+  bool IsPointerToMember();
+  bool IsTemplateClass();
+  Class* ClassMetaobject();
+  bool IsClass(Class*&);
+  bool IsEnum();
   bool IsEnum(PTree::Node *&spec);
-
-    void Dereference() { --refcount; }
-    void Dereference(TypeInfo&);
-    void Reference() { ++refcount; }
-    void Reference(TypeInfo&);
-    bool NthArgument(int, TypeInfo&);
-    int NumOfArguments();
-    bool NthTemplateArgument(int, TypeInfo&);
-
+  
+  void Dereference() { --refcount; }
+  void Dereference(TypeInfo&);
+  void Reference() { ++refcount; }
+  void Reference(TypeInfo&);
+  bool NthArgument(int, TypeInfo&);
+  int NumOfArguments();
+  bool NthTemplateArgument(int, TypeInfo&);
+  
   PTree::Node *FullTypeName();
   PTree::Node *MakePtree(PTree::Node * = 0);
 
 private:
   static PTree::Node *GetQualifiedName(Environment*, PTree::Node *);
   static PTree::Node *GetQualifiedName2(Class*);
-    void Normalize();
-    bool ResolveTypedef(Environment*&, const char*&, bool);
-
-    static const char* SkipCv(const char*, Environment*&);
-    static const char* SkipName(const char*, Environment*);
-    static const char* GetReturnType(const char*, Environment*);
-    static const char* SkipType(const char*, Environment*);
-
-private:
-    int refcount;
-    const char* encode;
-    Class* metaobject;
-    Environment* env;
+  void Normalize();
+  bool resolve_typedef(Environment *&, PTree::Encoding &, bool);
+  
+  static PTree::Encoding skip_cv(const PTree::Encoding &, Environment*&);
+  static PTree::Encoding skip_name(const PTree::Encoding &, Environment*);
+  static PTree::Encoding get_return_type(const PTree::Encoding &, Environment*);
+  static PTree::Encoding skip_type(const PTree::Encoding &, Environment*);
+  
+  int refcount;
+  PTree::Encoding encode;
+  Class* metaobject;
+  Environment* env;
 };
 
 #endif

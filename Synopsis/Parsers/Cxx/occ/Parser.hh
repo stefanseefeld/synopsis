@@ -20,7 +20,6 @@
 class Lexer;
 class Token;
 class Environment;
-class Encoding;
 
 /*
   Naming conventions for member functions
@@ -55,7 +54,7 @@ protected:
   bool rDefinition(PTree::Node *&);
   bool rNullDeclaration(PTree::Node *&);
   bool rTypedef(PTree::Node *&);
-  bool rTypeSpecifier(PTree::Node *&, bool, Encoding&);
+  bool rTypeSpecifier(PTree::Node *&, bool, PTree::Encoding&);
   bool isTypeSpecifier();
   bool rMetaclassDecl(PTree::Node *&);
   bool rMetaArguments(PTree::Node *&);
@@ -71,9 +70,9 @@ protected:
   bool rExternTemplateDecl(PTree::Node *&);
 
   bool rDeclaration(PTree::Node *&);
-  bool rIntegralDeclaration(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
-  bool rConstDeclaration(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *);
-  bool rOtherDeclaration(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool rIntegralDeclaration(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool rConstDeclaration(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
+  bool rOtherDeclaration(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
   bool rCondition(PTree::Node *&);
   bool rSimpleDeclaration(PTree::Node *&);
 
@@ -82,36 +81,36 @@ protected:
   bool optMemberSpec(PTree::Node *&);
   bool optStorageSpec(PTree::Node *&);
   bool optCvQualify(PTree::Node *&);
-  bool optIntegralTypeOrClassSpec(PTree::Node *&, Encoding&);
-  bool rConstructorDecl(PTree::Node *&, Encoding&);
+  bool optIntegralTypeOrClassSpec(PTree::Node *&, PTree::Encoding&);
+  bool rConstructorDecl(PTree::Node *&, PTree::Encoding&);
   bool optThrowDecl(PTree::Node *&);
   
-  bool rDeclarators(PTree::Node *&, Encoding&, bool, bool = false);
-  bool rDeclaratorWithInit(PTree::Node *&, Encoding&, bool, bool);
-  bool rDeclarator(PTree::Node *&, DeclKind, bool, Encoding&, Encoding&, bool,
+  bool rDeclarators(PTree::Node *&, PTree::Encoding&, bool, bool = false);
+  bool rDeclaratorWithInit(PTree::Node *&, PTree::Encoding&, bool, bool);
+  bool rDeclarator(PTree::Node *&, DeclKind, bool, PTree::Encoding&, PTree::Encoding&, bool,
 		   bool = false);
-  bool rDeclarator2(PTree::Node *&, DeclKind, bool, Encoding&, Encoding&, bool,
+  bool rDeclarator2(PTree::Node *&, DeclKind, bool, PTree::Encoding&, PTree::Encoding&, bool,
 		    bool, PTree::Node **);
-  bool optPtrOperator(PTree::Node *&, Encoding&);
+  bool optPtrOperator(PTree::Node *&, PTree::Encoding&);
   bool rMemberInitializers(PTree::Node *&);
   bool rMemberInit(PTree::Node *&);
   
-  bool rName(PTree::Node *&, Encoding&);
-  bool rOperatorName(PTree::Node *&, Encoding&);
-  bool rCastOperatorName(PTree::Node *&, Encoding&);
-  bool rPtrToMember(PTree::Node *&, Encoding&);
-  bool rTemplateArgs(PTree::Node *&, Encoding&);
+  bool rName(PTree::Node *&, PTree::Encoding&);
+  bool rOperatorName(PTree::Node *&, PTree::Encoding&);
+  bool rCastOperatorName(PTree::Node *&, PTree::Encoding&);
+  bool rPtrToMember(PTree::Node *&, PTree::Encoding&);
+  bool rTemplateArgs(PTree::Node *&, PTree::Encoding&);
   
-  bool rArgDeclListOrInit(PTree::Node *&, bool&, Encoding&, bool);
-  bool rArgDeclList(PTree::Node *&, Encoding&);
-  bool rArgDeclaration(PTree::Node *&, Encoding&);
+  bool rArgDeclListOrInit(PTree::Node *&, bool&, PTree::Encoding&, bool);
+  bool rArgDeclList(PTree::Node *&, PTree::Encoding&);
+  bool rArgDeclaration(PTree::Node *&, PTree::Encoding&);
   
   bool rFunctionArguments(PTree::Node *&);
   bool rInitializeExpr(PTree::Node *&);
   
-  bool rEnumSpec(PTree::Node *&, Encoding&);
+  bool rEnumSpec(PTree::Node *&, PTree::Encoding&);
   bool rEnumBody(PTree::Node *&);
-  bool rClassSpec(PTree::Node *&, Encoding&);
+  bool rClassSpec(PTree::Node *&, PTree::Encoding&);
   bool rBaseSpecifiers(PTree::Node *&);
   bool rClassBody(PTree::Node *&);
   bool rClassMember(PTree::Node *&);
@@ -135,7 +134,7 @@ protected:
   bool rPmExpr(PTree::Node *&);
   bool rCastExpr(PTree::Node *&);
   bool rTypeName(PTree::Node *&);
-  bool rTypeName(PTree::Node *&, Encoding&);
+  bool rTypeName(PTree::Node *&, PTree::Encoding&);
   bool rUnaryExpr(PTree::Node *&);
   bool rThrowExpr(PTree::Node *&);
   bool rSizeofExpr(PTree::Node *&);
@@ -144,13 +143,13 @@ protected:
   bool rAllocateExpr(PTree::Node *&);
   bool rUserdefKeyword(PTree::Node *&);
   bool rAllocateType(PTree::Node *&);
-  bool rNewDeclarator(PTree::Node *&, Encoding&);
+  bool rNewDeclarator(PTree::Node *&, PTree::Encoding&);
   bool rAllocateInitializer(PTree::Node *&);
   bool rPostfixExpr(PTree::Node *&);
   bool rPrimaryExpr(PTree::Node *&);
   bool rUserdefStatement(PTree::Node *&);
   bool rVarName(PTree::Node *&);
-  bool rVarNameCore(PTree::Node *&, Encoding&);
+  bool rVarNameCore(PTree::Node *&, PTree::Encoding&);
   bool isTemplateArgs();
   
   bool rFunctionBody(PTree::Node *&);
@@ -165,8 +164,8 @@ protected:
   
   bool rExprStatement(PTree::Node *&);
   bool rDeclarationStatement(PTree::Node *&);
-  bool rIntegralDeclStatement(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
-  bool rOtherDeclStatement(PTree::Node *&, Encoding&, PTree::Node *, PTree::Node *);
+  bool rIntegralDeclStatement(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  bool rOtherDeclStatement(PTree::Node *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
   
   bool MaybeTypeNameOrClassTemplate(Token&);
   void SkipTo(int token);

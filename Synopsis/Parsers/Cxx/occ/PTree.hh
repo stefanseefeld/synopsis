@@ -7,6 +7,7 @@
 #ifndef _PTree_hh
 #define _PTree_hh
 
+#include <PTree/Encoding.hh>
 #include <PTree/Node.hh>
 #include <PTree/operations.hh>
 #include <PTree/Atoms.hh>

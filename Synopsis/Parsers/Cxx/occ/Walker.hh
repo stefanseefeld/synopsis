@@ -184,10 +184,10 @@ public:
   static PTree::Node *FindLeftLeaf(PTree::Node *node, PTree::Node *& parent);
   static void SetLeafComments(PTree::Node *, PTree::Node *);
   static PTree::Node *NthDeclarator(PTree::Node *, int&);
-  static PTree::Node *FindDeclarator(PTree::Node *, const char*, int, const char*, int&,
-			       Environment*);
-  static bool MatchedDeclarator(PTree::Node *, const char*, int, const char*, Environment*);
-  static bool WhichDeclarator(PTree::Node *, PTree::Node *, int&, Environment*);
+//   static PTree::Node *FindDeclarator(PTree::Node *, const char*, int, const char*, int&,
+// 			       Environment*);
+//   static bool MatchedDeclarator(PTree::Node *, const char*, int, const char*, Environment*);
+//   static bool WhichDeclarator(PTree::Node *, PTree::Node *, int&, Environment*);
   
   void ErrorMessage(const char*, PTree::Node *, PTree::Node *);
   void WarningMessage(const char*, PTree::Node *, PTree::Node *);

@@ -34,7 +34,7 @@
 
 namespace PTree { class Node;}
 
-#if 1 && defined(DEBUG)
+#if defined(DEBUG)
 #define DO_TRACE
 //. A tracer class that can be used as a Guard around sections of code. The
 //. instances are kept in a class-static stack, and enter/leave messages are

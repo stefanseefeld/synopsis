@@ -18,12 +18,11 @@
 #include "Lexer.hh"
 #include "Class.hh"
 #include "Environment.hh"
-#include "PTree.hh"
+#include <PTree.hh>
 #include <PTree/Writer.hh>
 #include "Walker.hh"
 #include "ClassWalker.hh"
 #include "TypeInfo.hh"
-#include "Encoding.hh"
 
 ClassArray* Class::class_list = 0;
 int Class::num_of_cmd_options = 0;
@@ -79,11 +78,11 @@ void Class::do_init_static()
 void Class::Construct(Environment* e, PTree::Node *name)
 {
     PTree::Node *def;
-    Encoding encode;
+    PTree::Encoding encode;
 
-    encode.SimpleName(name);
+    encode.simple_name(name);
     def = PTree::list(name, 0, empty_block_t);
-    def = new PTree::ClassSpec(class_t, def, 0, encode.Get());
+    def = new PTree::ClassSpec(encode, class_t, def, 0);
 
     full_definition = def;
     definition = def;
@@ -138,7 +137,7 @@ const char* Class::MetaclassName()
 PTree::Node *Class::Comments()
 {
   if (PTree::is_a(definition, Token::ntClassSpec))
-    return ((PTree::ClassSpec*)definition)->GetComments();
+    return ((PTree::ClassSpec*)definition)->get_comments();
   return 0;
 }
 
@@ -427,9 +426,7 @@ void Class::AppendBaseClass(PTree::Node *name, int specifier, bool is_virtual)
 	lf = private_t;
 	break;
     default :
-	MopErrorMessage("Class::AppendBaseClass()", "bad specifier");
-	lf = 0;
-	break;
+        throw std::runtime_error("Class::AppendBaseClass(): bad specifier");
     }
 
     PTree::Node *super = PTree::list(lf, name);
@@ -1165,7 +1162,7 @@ Class*& ClassArray::Ref(uint i)
     if(i < num)
 	return array[i];
     else{
-	MopErrorMessage("ClassArray", "out of range");
+        throw std::runtime_error("ClassArray: out of range");
 	return array[0];
     }
 }
@@ -1217,8 +1214,7 @@ opcxx_ListOfMetaclass::opcxx_ListOfMetaclass(const char* n,
 	head = this;
 	finalizer = fin;
 	if(!initialize())
-	    MopErrorMessage("Initialize()",
-			    "the initialization process failed.");
+	  throw std::runtime_error("Initialize(): the initialization process failed.");
     }
 }
 

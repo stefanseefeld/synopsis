@@ -22,7 +22,6 @@
 #include <occ/Parser.hh>
 #include <occ/MetaClass.hh>
 #include <occ/Environment.hh>
-#include <occ/Encoding.hh>
 
 #include <cstdio>
 #include <iostream>
@@ -179,7 +178,7 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   Class::do_init_static();
   Metaclass::do_init_static();
   Environment::do_init_static();
-  Encoding::do_init_static();
+  PTree::Encoding::do_init_static();
 
   PyObject *ast;
   const char *src, *cppfile;
@@ -234,7 +233,7 @@ PyObject *occ_print(PyObject *self, PyObject *args)
   Class::do_init_static();
   Metaclass::do_init_static();
   Environment::do_init_static();
-  Encoding::do_init_static();
+  PTree::Encoding::do_init_static();
 
   const char *src;
   int verbose, debug;

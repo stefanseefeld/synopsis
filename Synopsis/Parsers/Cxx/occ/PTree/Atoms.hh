@@ -15,14 +15,14 @@ namespace PTree
 class CommentedAtom : public Atom
 {
 public:
-  CommentedAtom(const Token &tk, Node *c = 0) : Atom(tk) { comments = c;}
-  CommentedAtom(const char *p, size_t l, Node *c = 0) : Atom(p, l) { comments = c;}
+  CommentedAtom(const Token &tk, Node *c = 0) : Atom(tk), my_comments(c) {}
+  CommentedAtom(const char *p, size_t l, Node *c = 0) : Atom(p, l), my_comments(c) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
-  Node *GetComments() { return comments;}
-  void SetComments(Node *c) { comments = c;}
+  Node *get_comments() { return my_comments;}
+  void set_comments(Node *c) { my_comments = c;}
 private:
-  Node *comments;
+  Node *my_comments;
 };
 
 // class DupLeaf is used by Ptree::Make() and QuoteClass (qMake()).
@@ -39,7 +39,7 @@ public:
 class Identifier : public CommentedAtom
 {
 public:
-  Identifier(const Token &t) : CommentedAtom(t) {}
+  Identifier(const char *p, size_t l) : CommentedAtom(p, l) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Node *Translate(Walker*);

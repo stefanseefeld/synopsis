@@ -9,6 +9,7 @@
 
 #include <PTree.hh>
 #include <Token.hh>
+#include <cassert>
 
 namespace PTree
 {
@@ -103,30 +104,34 @@ private:
   Token::Type my_type;
 };
 
-inline Token::Type type_of(Node *node)
+inline Token::Type type_of(const Node *node)
 {
+  assert(node);
   TypeVisitor v;
-  return v.type_of(node);
+  return v.type_of(const_cast<Node *>(node));
 }
 
-inline bool is_a(Node *node, Token::Type t)
+inline bool is_a(const Node *node, Token::Type t)
 {
+  if (!node) return false;
   TypeVisitor v;
-  Token::Type type = v.type_of(node);
+  Token::Type type = v.type_of(const_cast<Node *>(node));
   return type == t;
 }
 
-inline bool is_a(Node *node, Token::Type t1, Token::Type t2)
+inline bool is_a(const Node *node, Token::Type t1, Token::Type t2)
 {
+  if (!node) return false;
   TypeVisitor v;
-  Token::Type type = v.type_of(node);
+  Token::Type type = v.type_of(const_cast<Node *>(node));
   return type == t1 || type == t2;
 }
 
-inline bool is_a(Node *node, Token::Type t1, Token::Type t2, Token::Type t3)
+inline bool is_a(const Node *node, Token::Type t1, Token::Type t2, Token::Type t3)
 {
+  if (!node) return false;
   TypeVisitor v;
-  Token::Type type = v.type_of(node);
+  Token::Type type = v.type_of(const_cast<Node *>(node));
   return type == t1 || type == t2 || type == t3;
 }
 

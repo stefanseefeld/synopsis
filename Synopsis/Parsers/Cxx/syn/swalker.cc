@@ -15,6 +15,7 @@
 
 #include <occ/PTree.hh>
 #include <occ/PTree/Writer.hh>
+#include <occ/PTree/Display.hh>
 #include <occ/Parser.hh>
 
 #include "swalker.hh"
@@ -37,7 +38,8 @@ STrace::string_list STrace::m_list;
 std::ostream& STrace::operator <<(PTree::Node *p)
 {
   std::ostream& out = operator <<("-");
-  p->print(out);
+  PTree::Display display(out, true);
+  display.display(p);
   return out;
 }
 #endif
@@ -139,7 +141,7 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
 
   // First, make sure that node is a list of comments
   if (PTree::type_of(node) == Token::ntDeclaration)
-    node = static_cast<PTree::Declaration*>(node)->GetComments();
+    node = static_cast<PTree::Declaration*>(node)->get_comments();
 
   // Loop over all comments in the list
   for (PTree::Node *next = PTree::rest(node); node && !node->is_atom(); next = PTree::rest(node))
@@ -227,19 +229,19 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
 // comment pointers
 void SWalker::add_comments(AST::Declaration* decl, PTree::CommentedAtom *node)
 {
-  if (node) add_comments(decl, node->GetComments());
+  if (node) add_comments(decl, node->get_comments());
 }
 void SWalker::add_comments(AST::Declaration* decl, PTree::Declaration* node)
 {
-  if (node) add_comments(decl, node->GetComments());
+  if (node) add_comments(decl, node->get_comments());
 }
 void SWalker::add_comments(AST::Declaration* decl, PTree::Declarator* node)
 {
-  if (node) add_comments(decl, node->GetComments());
+  if (node) add_comments(decl, node->get_comments());
 }
 void SWalker::add_comments(AST::Declaration* decl, PTree::NamespaceSpec* node)
 {
-  if (node) add_comments(decl, node->GetComments());
+  if (node) add_comments(decl, node->get_comments());
 }
 void SWalker::find_comments(PTree::Node *node)
 {
@@ -349,6 +351,7 @@ SWalker::Translate(PTree::Node *node)
 // Default translate, usually means a literal
 PTree::Node *SWalker::TranslatePtree(PTree::Node *node)
 {
+  STrace trace("SWalker::TranslatePtree");
   // Determine type of node
   std::string s = PTree::reify(node);
   const char *str = s.c_str();
@@ -422,7 +425,7 @@ PTree::Node *SWalker::TranslatePtree(PTree::Node *node)
   {
 #ifdef DEBUG
     STrace trace("SWalker::TranslatePtree");
-    LOG("Warning: Unknown Ptree "<<PTree::type_od(node));
+    LOG("Warning: Unknown Ptree "<<PTree::type_of(node));
     nodeLOG(node);
     //*((char*)0) = 1; // force breakpoint, or core dump :)
 #endif
@@ -499,8 +502,7 @@ std::vector<Inheritance*> SWalker::TranslateInheritanceSpec(PTree::Node *node)
     }
     else
     {
-      const char *encname = name->encoded_name();
-      my_decoder->init(encname);
+      my_decoder->init(name->encoded_name());
       type = my_decoder->decodeType();
     }
     if (my_links) my_links->link(name, type);
@@ -535,7 +537,7 @@ SWalker::TranslateClassSpec(PTree::Node *node)
     if (my_links)
     { // highlight the comments, at least
       PTree::ClassSpec* cspec = static_cast<PTree::ClassSpec*>(node);
-      add_comments(0, cspec->GetComments());
+      add_comments(0, cspec->get_comments());
     }
     return 0;
   }
@@ -563,9 +565,9 @@ SWalker::TranslateClassSpec(PTree::Node *node)
   // Create AST.Class object
   AST::Class *clas;
   std::string type = parse_name(pClass);
-  const char *encname = node->encoded_name();
-  my_decoder->init(encname);
-  if (encname[0] == 'T')
+  PTree::Encoding enc = node->encoded_name();
+  my_decoder->init(enc);
+  if (enc.at(0) == 'T')
   {
     // Specialization
     // TODO: deal with this.
@@ -574,7 +576,7 @@ SWalker::TranslateClassSpec(PTree::Node *node)
     // encname: "T\222string_char_traits\201c"
     LOG("Specialization?");
     nodeLOG(node);
-    LOG("encname:"<<make_code(encname));
+    LOG("encname:"<< enc);
     Types::Parameterized* param = dynamic_cast<Types::Parameterized*>(my_decoder->decodeTemplate());
     // If a non-type param was found, it's name will be '*'
     for (size_t i = 0; i < param->parameters().size(); i++)
@@ -595,7 +597,7 @@ SWalker::TranslateClassSpec(PTree::Node *node)
     // TODO: figure out spec stuff, like what to do with vars, link to
     // original template, etc.
   }
-  else if (encname[0] == 'Q')
+  else if (enc.at(0) == 'Q')
   {
     ScopedName names;
     my_decoder->decodeQualName(names);
@@ -618,7 +620,7 @@ SWalker::TranslateClassSpec(PTree::Node *node)
 
   // Add comments
   PTree::ClassSpec* cspec = static_cast<PTree::ClassSpec*>(node);
-  add_comments(clas, cspec->GetComments());
+  add_comments(clas, cspec->get_comments());
 
   // Push the impl stack for a cache of func impls
   my_func_impl_stack.push_back(FuncImplVec());
@@ -746,7 +748,7 @@ SWalker::TranslateTemplateFunction(PTree::Node *def, PTree::Node *node)
   }
 
   LOG("type of node is: " << PTree::type_of(node));
-  LOG("Encoded name is: " << make_code(node->encoded_name()));
+  LOG("Encoded name is: " << node->encoded_name());
 
   AST::Parameter::vector* old_params = my_template;
   update_line_number(def);
@@ -837,17 +839,17 @@ PTree::Node *SWalker::TranslateTypeof(PTree::Node *spec, PTree::Node *declaratio
 {
   STrace trace("SWalker::TranslateTypeof");
   nodeLOG(spec);
-  const char* encname = PTree::third(spec)->encoded_name();
-  LOG("The name is: " << make_code(encname));
-  LOG("The type is: " << make_code(PTree::third(spec)->encoded_type()));
+  PTree::Encoding enc = PTree::third(spec)->encoded_name();
+  LOG("The name is: " << enc);
+  LOG("The type is: " << PTree::third(spec)->encoded_type());
   // Find the type referred to by the expression
-  if (!my_decoder->isName(encname))
+  if (!my_decoder->isName(enc))
   {
     LOG("typeof is not a simple name: ");
     nodeLOG(spec);
     return 0;
   }
-  std::string name = my_decoder->decodeName(encname);
+  std::string name = my_decoder->decodeName(enc);
   LOG("name is " << name);
   Types::Type* type = my_lookup->lookupType(name, true);
   // Find the declaration it refers to
@@ -913,11 +915,13 @@ PTree::Node *SWalker::TranslateDeclaration(PTree::Node *def)
   {
     // A single declarator is probably a function impl, but could also be
     // the declarator in an if or switch condition
-    if (const char* encoded_type = decls->encoded_type())
+    PTree::Encoding enc = decls->encoded_type();
+    if (!enc.empty())
     {
       // A function may be const, skip the C
-      while (*encoded_type == 'C') encoded_type++;
-      if (*encoded_type != 'F')
+      PTree::Encoding::iterator i = enc.begin();
+      while (*i == 'C') ++i;
+      if (*i != 'F')
       {
         // Not a function
         TranslateDeclarator(decls);
@@ -967,11 +971,11 @@ SWalker::TranslateDeclarator(PTree::Node *decl)
   // REVISIT: Figure out why this method is so HUGE!
   STrace trace("SWalker::TranslateDeclarator");
   // Insert code from occ.cc here
-  const char *encname = decl->encoded_name();
-  const char *enctype = decl->encoded_type();
-  if (!encname || !enctype)
+  PTree::Encoding encname = decl->encoded_name();
+  PTree::Encoding enctype = decl->encoded_type();
+  if (encname.empty() || enctype.empty())
   {
-    std::cout << "encname or enctype null!" << std::endl;
+    std::cout << "encname or enctype empty !" << std::endl;
     return 0;
   }
 
@@ -1008,7 +1012,7 @@ SWalker::TranslateFunctionDeclarator(PTree::Node *decl, bool is_const)
   my_template = 0;
 
   code_iter& iter = my_decoder->iter();
-  const char *encname = decl->encoded_name();
+  PTree::Encoding encname = decl->encoded_name();
   
   // This is a function. Skip the 'F'
   ++iter;
@@ -1041,7 +1045,7 @@ SWalker::TranslateFunctionDeclarator(PTree::Node *decl, bool is_const)
 
   AST::Function* func = 0;
   // Find name:
-  if (encname[0] == 'Q')
+  if (encname.at(0) == 'Q')
   {
     // The name is qualified, which introduces a bit of difficulty
     std::vector<std::string> names;
@@ -1110,15 +1114,15 @@ SWalker::TranslateVariableDeclarator(PTree::Node *decl, bool is_const)
 {
   STrace trace("TranslateVariableDeclarator");
   // Variable declaration. Restart decoding
-  const char *encname = decl->encoded_name();
-  const char *enctype = decl->encoded_type();
+  PTree::Encoding encname = decl->encoded_name();
+  PTree::Encoding enctype = decl->encoded_type();
   my_decoder->init(enctype);
   // Get type
   Types::Type* type = my_decoder->decodeType();
   std::string name;
   if (my_decoder->isName(encname))
     name = my_decoder->decodeName(encname);
-  else if (*encname == 'Q')
+  else if (encname.at(0) == 'Q')
   {
     LOG("Scoped name in variable decl!");
     nodeLOG(decl);
@@ -1142,8 +1146,8 @@ SWalker::TranslateVariableDeclarator(PTree::Node *decl, bool is_const)
     var_type += " variable";
   }
   AST::Variable* var = my_builder->add_variable(my_lineno, name, type, false, var_type);
-  //if (my_declaration->GetComments()) add_comments(var, my_declaration->GetComments());
-  //if (decl->GetComments()) add_comments(var, decl->GetComments());
+  //if (my_declaration->get_comments()) add_comments(var, my_declaration->get_comments());
+  //if (decl->get_comments()) add_comments(var, decl->get_comments());
   add_comments(var, my_declaration);
   add_comments(var, dynamic_cast<PTree::Declarator*>(decl));
 
@@ -1185,6 +1189,7 @@ SWalker::TranslateVariableDeclarator(PTree::Node *decl, bool is_const)
 void
 SWalker::TranslateParameters(PTree::Node *p_params, std::vector<AST::Parameter*>& params)
 {
+  STrace trace("SWalker::TranslateParameters");
   while (p_params)
   {
     // A parameter has a type, possibly a name and possibly a value
@@ -1267,12 +1272,12 @@ SWalker::TranslateParameters(PTree::Node *p_params, std::vector<AST::Parameter*>
   }
 }
 
-void SWalker::TranslateFunctionName(const char *encname, std::string& realname, Types::Type*& returnType)
+void SWalker::TranslateFunctionName(const PTree::Encoding &encname, std::string& realname, Types::Type*& returnType)
 {
   STrace trace("SWalker::TranslateFunctionName");
   if (my_decoder->isName(encname))
   {
-    if (encname[1] == '@')
+    if (encname.at(1) == '@')
     {
       // conversion operator
       my_decoder->init(encname);
@@ -1293,7 +1298,7 @@ void SWalker::TranslateFunctionName(const char *encname, std::string& realname, 
         realname = "operator"+realname;
     }
   }
-  else if (*encname == 'Q')
+  else if (encname.at(0) == 'Q')
   {
     // If a function declaration has a scoped name, then it is not
     // declaring a new function in that scope and can be ignored in
@@ -1301,7 +1306,7 @@ void SWalker::TranslateFunctionName(const char *encname, std::string& realname, 
     // TODO: maybe needed for syntax stuff?
     return;
   }
-  else if (*encname == 'T')
+  else if (encname.at(0) == 'T')
   {
     // Template specialisation.
     // blah<int, int> is T4blah2ii ---> realname = foo<int,int>
@@ -1351,10 +1356,11 @@ SWalker::TranslateTypedef(PTree::Node *node)
 
 void SWalker::TranslateTypedefDeclarator(PTree::Node *node)
 {
+  STrace trace("SWalker::TranslateTypedefDeclarator");
   if (PTree::type_of(node) != Token::ntDeclarator) return;
-  const char *encname = node->encoded_name();
-  const char *enctype = node->encoded_type();
-  if (!encname || !enctype) return;
+  PTree::Encoding encname = node->encoded_name();
+  PTree::Encoding enctype = node->encoded_type();
+  if (encname.empty() || enctype.empty()) return;
 
   update_line_number(node);
 
@@ -1477,6 +1483,7 @@ SWalker::TranslateAccessSpec(PTree::Node *spec)
 PTree::Node*
 SWalker::TranslateEnumSpec(PTree::Node *spec)
 {
+  STrace trace("SWalker::TranslateEnumSpec");
   //update_line_number(spec);
   if (my_links) my_links->span(PTree::first(spec), "file-keyword");
   if (!PTree::second(spec))
@@ -1499,7 +1506,7 @@ SWalker::TranslateEnumSpec(PTree::Node *spec)
     {
       // Just a name
       enumor = my_builder->add_enumerator(my_lineno, PTree::reify(penumor), "");
-      add_comments(enumor, static_cast<PTree::CommentedAtom *>(penumor)->GetComments());
+      add_comments(enumor, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
       if (my_links) my_links->link(penumor, enumor);
     }
     else

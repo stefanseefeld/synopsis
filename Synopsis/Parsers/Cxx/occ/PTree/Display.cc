@@ -6,7 +6,6 @@
 //
 
 #include <PTree/Display.hh>
-#include <Encoding.hh>
 
 using namespace PTree;
 
@@ -156,17 +155,15 @@ void Display::print_encoded(List *l)
 {
   if (my_encoded)
   {
-    const char *encode = l->encoded_type();
-    if(encode)
+    Encoding type = l->encoded_type();
+    if(!type.empty())
     {
-      my_os << '#';
-      Encoding::print(my_os, encode);
+      my_os << '#' << type;
     }
-    encode = l->encoded_name();
-    if(encode)
+    Encoding name = l->encoded_name();
+    if(!name.empty())
     {
-      my_os << '@';
-      Encoding::print(my_os, encode);
+      my_os << '@' << name;
     }
   }
   visit(static_cast<List *>(l));
