@@ -11,7 +11,7 @@ from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
 from Synopsis.Formatters.HTML import Comments
 from Synopsis.Formatters.HTML.Views import *
-from Synopsis.Formatters import TexInfo
+from Synopsis.Formatters import Texinfo
 from Synopsis.Formatters import Dump
 
 from distutils import sysconfig
@@ -63,4 +63,4 @@ process(python = python,
         xref = XRefCompiler(prefix='xref'),
         html = html,
         dump = Dump.Formatter(),
-        texi = TexInfo.Formatter())
+        texi = Texinfo.Formatter())
