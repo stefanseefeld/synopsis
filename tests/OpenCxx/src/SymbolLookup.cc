@@ -72,19 +72,12 @@ private:
     if (function->is_atom()) name.simple_name(function);
     else name = function->encoded_name(); // function is a 'PTree::Name'
     std::cout << "Function : " << name << ' ' << std::endl;
-    std::cout << "overload resolution not implemented yet" << std::endl;
-    SymbolSet symbols = table().lookup(name);
-    if (!symbols.empty())
+    Symbol const *symbol = resolve_funcall(node, current_scope());
+    if (symbol)
     {
-      // TODO: implement overload resolution and expression type evaluation
-      //       to select appropriate function
-      for (SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
-      {
-	std::string filename;
-	Symbol const *symbol = *i;
-	unsigned long line_number = my_buffer.origin(symbol->ptree()->begin(), filename);
-	std::cout << "declared at line " << line_number << " in " << filename << std::endl;
-      }
+      std::string filename;
+      unsigned long line_number = my_buffer.origin(symbol->ptree()->begin(), filename);
+      std::cout << "declared at line " << line_number << " in " << filename << std::endl;
     }
     else
       std::cout << "undeclared ! " << std::endl;
@@ -92,11 +85,11 @@ private:
 
   void lookup(PTree::Encoding const &name)
   {
-    SymbolSet symbols = table().lookup(name);
+    SymbolSet symbols = current_scope()->lookup(name);
     if (!symbols.empty())
     {
-      std::string filename;
       Symbol const *first = *symbols.begin();
+      std::string filename;
       unsigned long line_number = my_buffer.origin(first->ptree()->begin(), filename);
       std::cout << "declared at line " << line_number << " in " << filename << std::endl;
     }
@@ -110,16 +103,29 @@ private:
 
 int main(int argc, char **argv)
 {
-  if (argc != 3)
+  if (argc < 3)
   {
-    std::cerr << "Usage: " << argv[0] << " <output> <input>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [-d] <output> <input>" << std::endl;
     exit(-1);
   }
   try
   {
-    std::ofstream ofs(argv[1]);
-    std::ifstream ifs(argv[2]);
-    Buffer buffer(ifs.rdbuf(), argv[2]);
+    std::string output;
+    std::string input;
+    if (argv[1] == std::string("-d"))
+    {
+      Trace::enable_debug();
+      output = argv[2];
+      input = argv[3];
+    }
+    else
+    {
+      output = argv[1];
+      input = argv[2];
+    }
+    std::ofstream ofs(output.c_str());
+    std::ifstream ifs(input.c_str());
+    Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
     Table symbols;
     Parser parser(lexer, symbols);
@@ -127,7 +133,7 @@ int main(int argc, char **argv)
     SymbolFinder finder(buffer, symbols, ofs);
     finder.find(node);
   }
-  catch (const std::exception &e)
+  catch (std::exception const &e)
   {
     std::cerr << "Caught exception : " << e.what() << std::endl;
   }

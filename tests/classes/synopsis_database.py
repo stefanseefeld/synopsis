@@ -167,23 +167,13 @@ class Database(database.Database):
       if not id.startswith('OpenCxx'): raise NoSuchResourceError(id)
 
       parameters = {}
-      parameters['CXX'] = self.CXX
-      parameters['CPPFLAGS'] = (self.CPPFLAGS +
-                                ' -I../src' +
-                                ' -I%s/../src'%self.srcdir)
-      parameters['CXXFLAGS'] = self.CXXFLAGS
-      parameters['LDFLAGS'] = self.LDFLAGS
-      parameters['LIBS'] = self.LIBS
-      parameters['builddir'] = '../src'
-
 
       suite = id.split('.', 1)[1]
       if suite not in ['Lexer', 'Parser', 'Encoding',
                        'ConstEvaluator', 'TypeEvaluator', 'SymbolLookup']:
          raise NoSuchResourceError(id)
       
-      parameters['src'] = os.path.normpath('%s/OpenCxx/src/%s.cc'%(self.srcdir, suite))
-      parameters['exe'] = os.path.normpath('OpenCxx/bin/%s'%suite)
+      parameters['exe'] = os.path.normpath('bin/%s'%suite)
 
       return ResourceDescriptor(self, id, 'synopsis_test.OpenCxxResource', parameters)
       

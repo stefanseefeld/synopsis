@@ -1,40 +1,62 @@
+#include <Synopsis/Trace.hh>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <string>
 
 using namespace Synopsis;
 
 int main(int argc, char **argv)
 {
-  if (argc != 3)
+  if (argc < 3)
   {
-    std::cerr << "Usage: " << argv[0] << " <output> <input>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [-d] <output> <input>" << std::endl;
     exit(-1);
   }
-  std::ofstream ofs(argv[1]);
-  std::ifstream ifs(argv[2]);
-  Buffer buffer(ifs.rdbuf());
-  Lexer lexer(&buffer);
-  int i = 0;
-  while(true)
+  try
   {
-    Token token;
-
-    int t = lexer.look_ahead(i++, token);
-    if(!t) break;
+    std::string output;
+    std::string input;
+    if (argv[1] == std::string("-d"))
+    {
+      Trace::enable_debug();
+      output = argv[2];
+      input = argv[3];
+    }
     else
     {
-      ofs << std::setw(3);
-      if(t < 128)
-	ofs << t << " '" << static_cast<char>(t) << "': ";
-      else
-	ofs << t << "    : ";
-      ofs.put('"');
-      while(token.length-- > 0) ofs.put(*token.ptr++);
-      ofs << "\"\n";
+      output = argv[1];
+      input = argv[2];
     }
+    std::ofstream ofs(output.c_str());
+    std::ifstream ifs(input.c_str());
+    Buffer buffer(ifs.rdbuf(), input);
+    Lexer lexer(&buffer);
+    int i = 0;
+    while(true)
+    {
+      Token token;
+
+      int t = lexer.look_ahead(i++, token);
+      if(!t) break;
+      else
+      {
+	ofs << std::setw(3);
+	if(t < 128)
+	  ofs << t << " '" << static_cast<char>(t) << "': ";
+	else
+	  ofs << t << "    : ";
+	ofs.put('"');
+	while(token.length-- > 0) ofs.put(*token.ptr++);
+	ofs << "\"\n";
+      }
+    }
+  }
+  catch (std::exception const &e)
+  {
+    std::cerr << "Caught exception : " << e.what() << std::endl;
   }
 }
 

@@ -136,25 +136,13 @@ class CToolTest(Test):
 class OpenCxxResource(Resource):
    """build the executables the OpenCxxTests all depend on."""
 
-   arguments = [TextField(name="CXX", description="The compiler command."),
-                TextField(name="CPPFLAGS", description="The preprocessor flags."),
-                TextField(name="CXXFLAGS", description="The compiler flags."),
-                TextField(name="LDFLAGS", description="The linker flags."),
-                TextField(name="LIBS", description="The libraries to link with."),
-                TextField(name="src", description="The source file."),
-                TextField(name="exe", description="The executable file."),
-                TextField(name="srcdir", description="The source directory."),
-                TextField(name="builddir", description="The build directory of the OpenCxx stuff.")]
+   arguments = [TextField(name="MAKE", description="The make tool."),
+                TextField(name="exe", description="The executable file.")]
 
    def compile(self, context, result):
-      if not os.path.isdir(os.path.dirname(self.exe)):
-         os.makedirs(os.path.dirname(self.exe))
 
-      cppflags = os.popen('sh -c "PKG_CONFIG_PATH=%s pkg-config --cflags Synopsis"'%self.builddir).read()
-      command = '%s %s %s %s -o %s %s %s'%(self.CXX,
-                                           self.CPPFLAGS + ' ' + cppflags, self.CXXFLAGS,
-                                           self.LDFLAGS,
-                                           self.exe, self.src, '-L %s/lib -lSynopsis '%self.builddir + self.LIBS)
+      make = os.environ.get('MAKE', 'make')
+      command = '%s -C OpenCxx %s '%(make, self.exe)
       compiler = RedirectedExecutable()
       status = compiler.Run(string.split(command))
       if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:

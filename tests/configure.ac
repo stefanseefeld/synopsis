@@ -62,5 +62,8 @@ templates=`find $srcdir -name '*.in' -print | sed -e "s,^$srcdir/,,g" -e "s,\.in
 
 AC_CONFIG_FILES([$templates])
 
+mkdir -p OpenCxx/src
+mkdir -p OpenCxx/bin
+
 AC_OUTPUT
 
