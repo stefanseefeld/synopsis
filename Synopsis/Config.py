@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.11 2002/10/27 12:03:48 chalky Exp $
+#  $Id: Config.py,v 1.12 2002/10/28 06:12:31 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -244,6 +244,9 @@ class Base:
 	    on Scope Pages. You may set this to override the default sorting,
 	    for example using ('Synopsis.Formatter.HTML.doxygen',
 	    'DOScopeSorter')
+	    @attr structs_as_classes A boolean value which if set causes
+	    structs to be listed as classes in the output. The default is
+	    0 (false).
 	    @attr tree_formatter Specifies which tree formatter to use. There
 	    is a default package of 'Synopsis.Formatter.HTML' and the default
 	    value is 'TreeFormatter.TreeFormatter'
@@ -273,6 +276,7 @@ class Base:
                               'FramesIndex']
             comment_formatters = ['summary', 'javadoc', 'section']
 	    tree_formatter = 'TreeFormatter.TreeFormatter'
+	    structs_as_classes = 0
 	    class FilePages:
 		"""This is the config object for the FilePages module.
 		FilePages creates html pages that contain the actual source

@@ -38,6 +38,7 @@ class Project:
       ),
       name='HTML',
       verbose=1,
+      structs_as_classes=1,
       output_dir='BoostPython/',
       ModuleListing=struct()
     )],
@@ -55,7 +56,7 @@ class Project:
     )],
     ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
     ['SourceAction', 50, 126, 'Test Source', [
-      ['Simple', 'boost/boost/python/object_core.hpp', None]
+      ['Simple', 'boost/boost/python/dict.hpp', None]
     ]],
     ['LinkerAction', 326, 58, 'Combined AST', struct(
       comment_processors=['dummy', 'ss'],
