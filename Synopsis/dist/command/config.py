@@ -18,14 +18,17 @@ class config(build.build):
         ]
     boolean_options = build.build.boolean_options[:] + ['disable-gc']
 
-    extensions = ['Synopsis/Parser/C', 'Synopsis/Parser/C++']
-
     def initialize_options (self):
         build.build.initialize_options(self)
         self.disable_gc = 0
 
     def finalize_options (self):
         build.build.finalize_options(self)
+        # only append the path once 
+        self.extensions = []
+        for e in self.distribution.ext_modules:
+            if not self.extensions.count(e[0]):
+                self.extensions.append(e[0])
 
     def run(self):
 
@@ -33,7 +36,7 @@ class config(build.build):
 
     def config_extensions(self):
 
-        for ext in config.extensions:
+        for ext in self.extensions:
             self.config_extension(ext)
         if not self.disable_gc:
             self.config_extension('Synopsis/Parser/C++/gc')

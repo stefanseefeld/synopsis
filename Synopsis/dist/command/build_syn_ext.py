@@ -4,22 +4,17 @@ from distutils.command import build_ext
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
 from distutils.spawn import spawn, find_executable
-from distutils import sysconfig
 from shutil import *
-
-module_ext = sysconfig.get_config_var('SO')
 
 class build_ext(build_ext.build_ext):
 
-    extensions = [('Synopsis/Parser/C', 'ctool' + module_ext),
-                  ('Synopsis/Parser/C++', 'occ' + module_ext),
-                  ('Synopsis/Parser/C++', 'link' + module_ext),
-                  ]
-
     def run(self):
 
-        for ext in build_ext.extensions:
+        for ext in self.extensions:
             self.build_extension(ext)
+
+    def check_extensions_list (self, extensions):
+        pass # do nothing, trust that the extensions are correct
 
     def get_source_files(self):
 
@@ -27,15 +22,23 @@ class build_ext(build_ext.build_ext):
             files.extend(os.listdir(path))
             print path, os.listdir(path)
         files = []
-        for ext in build_ext.extensions:
-            print 'walking', ext
-            os.path.walk(ext,
-                         #lambda arg, path, files : print path, os.listdir(path),
-                         collect,
-                         files)
+        for ext in self.extensions:
+            os.path.walk(ext[0], collect, files)
             print files
         return files
-    
+
+    def get_outputs(self):
+
+        output = []
+        for ext in self.extensions:
+            #only append the files that actually could be build
+            path = os.path.join(self.build_temp, ext[0], ext[1])
+            if os.path.isfile(path):
+                output.append(os.path.join(self.build_lib, ext[0], ext[1]))
+
+
+        return output
+
     def build_extension(self, ext):
 
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
