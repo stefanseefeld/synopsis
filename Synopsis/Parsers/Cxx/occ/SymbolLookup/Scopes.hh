@@ -39,17 +39,22 @@ private:
 class FunctionScope : public Scope
 {
 public:
-  FunctionScope(Scope *outer) : my_outer(outer->ref()) {}
+  FunctionScope(const PTree::Declaration *decl, Scope *outer)
+    : my_decl(decl), my_outer(outer->ref()) {}
   virtual const Scope *global() const { return my_outer->global();}
   virtual std::set<Symbol const *> lookup(const PTree::Encoding &) const throw();
+
+  // FIXME: what is 'name' ? (template parameters...)
+  std::string name() const;
 
   virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~FunctionScope() { my_outer->unref();}
 
 private:
-  Scope                  *my_outer;
-  TemplateParameterScope *my_parameters;
+  const PTree::Declaration *my_decl;
+  Scope                    *my_outer;
+  TemplateParameterScope   *my_parameters;
 };
 
 class PrototypeScope : public Scope

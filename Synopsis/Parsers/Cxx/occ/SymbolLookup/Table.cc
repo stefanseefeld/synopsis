@@ -47,6 +47,15 @@ Table &Table::enter_class(const PTree::ClassSpec *spec)
   return *this;
 }
 
+Table &Table::enter_function(const PTree::Declaration *decl)
+{
+  Trace trace("Table::enter_function");
+  FunctionScope *func = new FunctionScope(decl, my_scopes.top());
+  my_scopes.top()->declare_scope(decl, func);
+  my_scopes.push(func);
+  return *this;
+}
+
 void Table::leave_scope()
 {
   Trace trace("Table::leave_scope");

@@ -1069,12 +1069,14 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
       }
       else
       {
+  	statement = new PTree::Declaration(head,
+  					   PTree::list(integral, decl->car()));
+ 	SymbolLookup::Table::Guard guard(my_symbols.enter_function(statement));
 	PTree::Node *body;
 	if(!function_body(body)) return false;
 	if(PTree::length(decl) != 1) return false;
 
-	statement = new PTree::Declaration(head,
-					   PTree::list(integral, decl->car(), body));
+  	PTree::snoc(statement, body);
 	return true;
       }
   }
@@ -4483,6 +4485,7 @@ bool Parser::expr_statement(PTree::Node *&st)
     PTree::Declaration *decl;
     if(declaration_statement(decl))
     {
+      my_symbols.declare(decl);
       st = decl;
       return true;
     }
