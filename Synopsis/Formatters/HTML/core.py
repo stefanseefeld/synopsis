@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.20 2001/07/05 02:08:35 uid20151 Exp $
+# $Id: core.py,v 1.21 2001/07/10 02:55:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.21  2001/07/10 02:55:51  chalky
+# Better comments in some files, and more links work with the nested layout
+#
 # Revision 1.20  2001/07/05 02:08:35  uid20151
 # Changed the registration of pages to be part of a two-phase construction
 #
@@ -151,6 +154,7 @@ class Config:
 	self.sorter = None
 	self.namespace = ""
 	self.files = None
+	self.files_class = None
 	self.pageset = None
 	self.sorter = None
 	self.classTree = None
@@ -176,7 +180,8 @@ class Config:
 	# obj.pages is a list of module names
 	self.obj = obj
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
-	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter')
+	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
+	    'file_layout')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -232,6 +237,10 @@ class Config:
 	if self.verbose: print "Using tree class",tree_class
 	clas = import_object(tree_class)
 	self.treeFormatterClass = clas
+    
+    def _config_file_layout(self, layout):
+	if self.verbose: print "Using file layout",layout
+	self.files_class = import_object(layout)
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served
@@ -570,8 +579,8 @@ def format(types, declarations, args, config_obj):
     __parseArgs(args, config_obj)
     config.types = types
 
-    # Create the file namer
-    config.files = FileLayout.FileLayout()
+    # Instantiate the files object
+    config.files = config.files_class()
 
     # Create the Comments Dictionary
     CommentDictionary()

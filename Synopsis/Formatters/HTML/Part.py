@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.15 2001/07/05 05:39:58 stefan Exp $
+# $Id: Part.py,v 1.16 2001/07/10 02:55:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.16  2001/07/10 02:55:51  chalky
+# Better comments in some files, and more links work with the nested layout
+#
 # Revision 1.15  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -103,12 +106,12 @@ class ASTFormatter (Type.Visitor):
     @see DetailFormatter
     """
     def __init__(self, formatter):
-	"""Store formatter as self.format. The formatter is either a
+	"""Store formatter as self.formatter. The formatter is either a
 	SummaryFormatter or DetailFormatter, and is used for things like
 	reference() and label() calls. Local references to the formatter's
 	reference and label methods are stored in self for more efficient use
 	of them."""
-#	self.format = formatter
+	self.formatter = formatter
 	self.label = formatter.label
 	self.reference = formatter.reference
 
@@ -327,7 +330,7 @@ class FilePageLinker (DefaultASTFormatter):
 	filename = config.files.nameOfScopedSpecial('page', filename)
 	name = string.join(decl.name(), '::')
 	link = filename + "#" + name
-	return href(link, "[Source]")
+	return href(rel(self.formatter.filename(), link), "[Source]")
 
 class DetailASTFormatter (BaseASTFormatter):
     """Provides detail-specific AST formatting."""

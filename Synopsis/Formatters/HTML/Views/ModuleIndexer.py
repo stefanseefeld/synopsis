@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.6 2001/07/05 05:39:58 stefan Exp $
+# $Id: ModuleIndexer.py,v 1.7 2001/07/10 02:55:51 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.7  2001/07/10 02:55:51  chalky
+# Better comments in some files, and more links work with the nested layout
+#
 # Revision 1.6  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -68,6 +71,19 @@ class ModuleIndexer(Page.Page):
 	while self.__namespaces:
 	    ns = self.__namespaces.pop(0)
 	    self.processNamespaceIndex(ns)
+    
+    def _makePageHeading(self, ns):
+	"""Creates a HTML fragment which becomes the name at the top of the
+	index page. This may be overridden, but the default is (now) to make a
+	linked fully scoped name, where each scope has a link to the relevant
+	index."""
+	name = ns.name()
+	if not name: return 'Global Index'
+	links = []
+	for depth in range(0, len(name)):
+	    url = config.files.nameOfModuleIndex(name[:depth+1])
+	    links.append(href(rel(self.__filename, url), name[depth]))
+	return entity('b', string.join(links, '\n::') + ' Index')
 
     def processNamespaceIndex(self, ns):
 	"Index one module"
@@ -80,8 +96,9 @@ class ModuleIndexer(Page.Page):
         self.__title = self.__title + ' Index'
 	# Create file
 	self.start_file()
-	link = href(config.files.nameOfScope(ns.name()), name, target='main')
-	self.write(entity('b', link+" Index"))
+	target = rel(self.__filename, config.files.nameOfScope(ns.name()))
+	link = href(target, self.__title, target='main')
+	self.write(self._makePageHeading(ns))
 
 	# Make script to switch main frame upon load
 	link_script = "javascript:return go('%s','%s');"
@@ -90,7 +107,7 @@ class ModuleIndexer(Page.Page):
 	    'window.parent.frames["index"].location=index;\n'\
 	    'window.parent.frames["main"].location=main;\n'\
 	    'return false;}\n-->'
-	load_script = load_script%config.files.nameOfScope(ns.name())
+	load_script = load_script%target
 	self.write(entity('script', load_script, language='Javascript'))
 
 	# Loop throught all the types of children
@@ -107,10 +124,14 @@ class ModuleIndexer(Page.Page):
 		    self.write(heading)
 		    heading = None
 		if isinstance(child, AST.Module):
-		    script = link_script%(config.files.nameOfModuleIndex(child.name()), config.files.nameOfScope(child.name()))
+		    index_url = rel(self.__filename, config.files.nameOfModuleIndex(child.name()))
+		    scope_url = rel(self.__filename, config.files.nameOfScope(child.name()))
+		    script = link_script%(index_url, scope_url)
 		    self.write(core.reference(child.name(), ns.name(), target='main', onClick=script))
 		else:
-		    self.write(core.reference(child.name(), ns.name(), target='main'))
+		    url = rel(self.__filename, config.files.nameOfScope(child.name()))
+		    label = Util.ccolonName(child.name(), ns.name())
+		    self.write(href(url, label, target='main'))
 		self.write('<br>')
 	self.end_file()
 
