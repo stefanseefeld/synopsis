@@ -60,7 +60,9 @@ class build_syn_ext(build_ext):
         else:
             path = os.path.join(self.build_temp, ext[0])
         
-        command = "make -C %s %s"%(path, ext[1])
+        make = os.environ.get('MAKE', 'make')
+
+        command = "%s -C %s %s"%(make, path, ext[1])
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         #The extension may not be compiled. For now just skip it.
         if os.path.isfile(os.path.join(path, ext[1])):
