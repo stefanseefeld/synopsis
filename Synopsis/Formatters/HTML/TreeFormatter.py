@@ -1,4 +1,4 @@
-# $Id: TreeFormatter.py,v 1.2 2002/11/01 03:39:21 chalky Exp $
+# $Id: TreeFormatter.py,v 1.3 2002/12/30 13:48:17 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TreeFormatter.py,v $
+# Revision 1.3  2002/12/30 13:48:17  chalky
+# Use stylesheets for ModuleListing and classes' headings
+#
 # Revision 1.2  2002/11/01 03:39:21  chalky
 # Cleaning up HTML after using 'htmltidy'
 #
@@ -55,7 +58,7 @@ class TreeFormatter:
 	"""Writes anything to the file that needs to be written at the start.
 	For example a script section for the global scripts used by a
 	javascript tree."""
-	self.write('<ul>')
+	self.write('<ul class="tree">')
 
     def endTree(self):
 	"""Writes anything that needs to be written at the end."""
@@ -73,7 +76,7 @@ class TreeFormatter:
 	of children is started. This method call must be followed by a
 	corresponding writeNodeEnd() call. Invididual leaves inside the block
 	may be written out using the writeLeaf() method."""
-	self.write('<li>%s<ul>'%text)
+	self.write('<li>%s<ul class="tree">'%text)
 
     def writeNodeEnd(self):
 	"""Ends a node with children. This method just closes any tags opened
