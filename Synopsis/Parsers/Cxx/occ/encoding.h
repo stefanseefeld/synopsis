@@ -24,7 +24,7 @@ class Bind;
 
 class Encoding {
 public:
-    enum { MaxNameLen = 256 }; // const MaxNameLen = 256;
+    enum { MaxNameLen = 4096 }; // const MaxNameLen = 256;
 			       // MSVC doesn't compile
     Encoding() { len = 0; }
     Encoding(Encoding& e) { Reset(e); }
