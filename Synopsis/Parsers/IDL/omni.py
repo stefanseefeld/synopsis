@@ -132,7 +132,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
             clas.comments().append(AST.Comment(c.text(), c.file(), c.line()))
         for i in node.inherits():
             parent = self.__types.get(i.scopedName())
-            clas.parents().append(AST.Inheritance("", parent.declaration(), []))
+            clas.parents().append(AST.Inheritance("", parent, []))
         for c in node.contents(): c.accept(self)
         self.__scope.pop()
         
@@ -333,7 +333,7 @@ def __parseArgs(args):
     preprocessor_args = []
     mainfile_only = 0
     try:
-        opts,remainder = getopt.getopt(args, "I:m:kK")
+        opts,remainder = Util.getopt_spec(args, "I:m:kK")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
