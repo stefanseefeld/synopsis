@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.50 2001/01/22 20:14:36 stefan Exp $
+# $Id: HTML.py,v 1.51 2001/01/23 00:20:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.51  2001/01/23 00:20:27  chalky
+# Added employee.cc demo. Fixed small bug wrt linking to details of variables.
+#
 # Revision 1.50  2001/01/22 20:14:36  stefan
 # forgot two flags in the usage() function
 #
@@ -238,10 +241,11 @@ class JavaFormatter:
 	while mo:
 	    text_list.append(mo.group('text'))
 	    lines = mo.group('lines')
-	    mol = self.re_line.search(lines)
-	    while mol:
-		text_list.append(mol.group('text'))
-		mol = self.re_line.search(lines, mol.end())
+	    if lines:
+		mol = self.re_line.search(lines)
+		while mol:
+		    text_list.append(mol.group('text'))
+		    mol = self.re_line.search(lines, mol.end())
 	    mo = self.re_java.search(comm.detail, mo.end())
 	comm.detail = string.join(text_list,'\n')
 
@@ -762,7 +766,7 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
     def visitVariable(self, variable):
 	# TODO: deal with sizes
         type = self.formatType(variable.vtype())
-	self.writeSectionItem(type, variable.name()[-1], variable)
+	self.writeSectionItem(type, self.label(variable.name()), variable)
 
 
     # These are overridden in {Summary,Detail}Formatter
