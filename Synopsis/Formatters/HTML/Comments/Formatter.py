@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.3 2001/02/01 16:47:48 chalky Exp $
+# $Id: Formatter.py,v 1.4 2001/02/07 15:31:06 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.4  2001/02/07 15:31:06  chalky
+# Rewrite javadoc formatter. Now all tags must be at the end of the comment,
+# except for inline tags
+#
 # Revision 1.3  2001/02/01 16:47:48  chalky
 # Added CommentFormatter as base of the Comment Formatters ...
 #
@@ -149,17 +153,21 @@ class SummarySplitter (CommentFormatter):
 class JavadocFormatter (CommentFormatter):
     """A formatter that formats comments similar to Javadoc @tags"""
     # @see IDL/Foo.Bar
+    # if a line starts with @tag then all further lines are tags
     __re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
+    __re_tags = '(?P<text>.*?)\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
     __re_see_line = '^[ \t]*@see[ \t]+(([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)(\([^)]*\))?([ \t]+(.*))?$'
+    __re_param = '^[ \t]*@param[ \t]+(?P<name>(A-Za-z+]+)([ \t]+(?P<desc>.*))?$'
 
     def __init__(self):
 	"""Create regex objects for regexps"""
-	self.re_see = re.compile(JavadocFormatter.__re_see)
-	self.re_see_line = re.compile(JavadocFormatter.__re_see_line,re.M)
+	self.re_see = re.compile(self.__re_see)
+	self.re_tags = re.compile(self.__re_tags,re.M|re.S)
+	self.re_see_line = re.compile(self.__re_see_line,re.M)
     def parse(self, comm):
 	"""Parse the comm.detail for @tags"""
-	comm.detail = self.parse_see(comm.detail)
-	comm.summary = self.parse_see(comm.summary)
+	comm.detail = self.parseText(comm.detail)
+	comm.summary = self.parseText(comm.summary)
     def extract(self, regexp, str):
 	"""Extracts all matches of the regexp from the text. The MatchObjects
 	are returned in a list"""
@@ -172,9 +180,44 @@ class JavadocFormatter (CommentFormatter):
 	    mo = regexp.search(str, start)
 	return str, ret
 
-    def parse_see(self, str):
+    def parseTags(self, str):
+	"""Returns text, tags"""
+	# Find tags
+	mo = self.re_tags.search(str)
+	if not mo: return str, ''
+	str, tags = mo.group('text'), mo.group('tags')
+	# Split the tag section into lines
+	tags = map(string.strip, string.split(tags,'\n'))
+	# Join non-tag lines to the previous tag
+	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+y]
+	tags = reduce(joiner, tags, [])
+	return str, tags
+
+    def parseText(self, str):
 	if str is None: return str
-	str, see = self.extract(self.re_see_line, str)
+	#str, see = self.extract(self.re_see_line, str)
+	see_tags, param_tags, return_tag = [], [], None
+	str, tags = self.parseTags(str)
+	# Parse each of the tags
+	for line in tags:
+	    tag, rest = string.split(line,' ',1)
+	    if tag == '@see':
+		see_tags.append(string.split(rest,' ',1))
+	    elif tag == '@param':
+		param_tags.append(string.split(rest,' ',1))
+	    elif tag == '@return':
+		return_tag = rest
+	    else:
+		# Warning: unknown tag
+		pass
+	return "%s%s%s%s"%(
+	    self.parse_see(str),
+	    self.format_params(param_tags),
+	    self.format_return(return_tag),
+	    self.format_see(see_tags)
+	)
+    def parse_see(self, str):
+	# Parse inline @see's  #TODO change to link or whatever javadoc uses
 	mo = self.re_see.search(str)
 	while mo:
 	    groups, start, end = mo.groups(), mo.start(), mo.end()
@@ -186,20 +229,32 @@ class JavadocFormatter (CommentFormatter):
 	    str = str[:start] + tag + str[end:]
 	    end = start + len(tag)
 	    mo = self.re_see.search(str, end)
-	# Add @see lines at end
-	if len(see):
-	    seestr = div('tag-see-header', "See Also:")
-	    seelist = []
-	    for mo in see:
-		groups = mo.groups()
-		lang = groups[1] or ''
-		name = string.split(groups[2], '.')
-		entry = config.toc.lookup(name)
-		tag = groups[6] or lang+groups[2]
-		if entry: tag = href(entry.link, tag)
-		seelist.append(div('tag-see', tag))
-	    str = str + seestr + string.join(seelist,'')
 	return str
+    def format_params(self, param_tags):
+	# Add params at end
+	if not len(param_tags): return ''
+	return "%s<ul>%s</ul>"%(
+	    div('tag-param-header',"Parameters:"),
+	    string.join(
+		map(lambda p:"<li><b>%s</b> - %s</li>"%(p[0],p[1]), param_tags)
+	    )
+	)
+    def format_return(self, return_tag):
+	# Add return at end
+	if not return_tag: return ''
+	return "%s<ul><li>%s</li></ul>"%(div('tag-return-header',"Return:"),return_tag)
+    def format_see(self, see_tags):
+	# Add @see lines at end
+	if not len(see_tags): return ''
+	seestr = div('tag-see-header', "See Also:")
+	seelist = []
+	for see in see_tags:
+	    ref,desc = see[0], len(see)>1 and see[1] or ''
+	    entry = config.toc.lookup(ref)
+	    if entry: tag = href(entry.link, tag)
+	    else: tag = ref+" "
+	    seelist.append(div('tag-see', tag+desc))
+	return seestr + string.join(seelist,'')
 
 class SectionFormatter (CommentFormatter):
     """A test formatter"""
