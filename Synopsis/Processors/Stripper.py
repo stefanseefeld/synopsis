@@ -1,4 +1,4 @@
-# $Id: Stripper.py,v 1.1 2002/08/23 04:37:26 chalky Exp $
+# $Id: Stripper.py,v 1.2 2002/10/11 05:57:17 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Stripper.py,v $
+# Revision 1.2  2002/10/11 05:57:17  chalky
+# Support suspect comments
+#
 # Revision 1.1  2002/08/23 04:37:26  chalky
 # Huge refactoring of Linker to make it modular, and use a config system similar
 # to the HTML package
@@ -90,15 +93,14 @@ class Stripper(Operation, AST.Visitor):
             name = declaration.name()
             if name[0:depth] == scope:
                 if len(name) == depth: break
-                if verbose: print "symbol", string.join(name, "::"),
+                if config.verbose: print "symbol", string.join(name, "::"),
                 declaration.set_name(name[depth:])
-                if verbose: print "stripped to", string.join(name, "::")
+                if config.verbose: print "stripped to", string.join(name, "::")
                 passed = 1
             else: break
-        if verbose and not passed: print "symbol", string.join(declaration.name(), "::"), "removed"
+        if config.verbose and not passed: print "symbol", string.join(declaration.name(), "::"), "removed"
         return passed
 
-    def visitForward(self, node): return
     def visitScope(self, scope):
         root = self.strip(scope) and not self.__in
         if root:
@@ -108,31 +110,25 @@ class Stripper(Operation, AST.Visitor):
             declaration.accept(self)
         if root: self.__in = 0
 
-    def visitTypedef(self, typedef):
-        if self.strip(typedef) and not self.__in:
-            self.__root.append(typedef)
+    def visitDeclaration(self, decl):
+        if self.strip(decl) and not self.__in:
+            self.__root.append(decl)
 
     def visitEnumerator(self, enumerator):
          self.strip(enumerator)
 
     def visitEnum(self, enum):
-        if self.strip(enum) and not self.__in:
-            self.__root.append(enum)
+	self.visitDeclaration(enum)
         for e in enum.enumerators():
             e.accept(self)
 
-    def visitVariable(self, node): return
-    def visitConst(self, node): return
-    def visitParameter(self, node): return
     def visitFunction(self, function):
-        if self.strip(function) and not self.__in:
-            self.__root.append(function)
+	self.visitDeclaration(function)
         for parameter in function.parameters():
             parameter.accept(self)
 
     def visitOperation(self, operation):
-        if self.strip(operation) and not self.__in:
-            self.__root.append(operation)
+	self.visitDeclaration(operation)
         for parameter in operation.parameters():
             parameter.accept(self)
 
