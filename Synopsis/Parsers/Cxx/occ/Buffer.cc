@@ -41,7 +41,7 @@
 #include "Ptree.hh"
 #include "Class.hh"
 
-#if defined(_PARSE_VCC)
+#if defined(PARSE_MSVC)
 #define _MSC_VER	1100
 #endif
 

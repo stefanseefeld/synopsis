@@ -60,6 +60,7 @@ dnl of the list.
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; import re; print re.sub(r'\\s*-lutil', '', sysconfig.get_config_var('LIBS') or '')"`
     else dnl this is 'nt'
       if test "$CXX" = "g++"; then
+        CPPFLAGS="$CPPFLAGS -D PARSE_MSVC"
         CFLAGS="-mno-cygwin $CFLAGS"
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
         LDFLAGS="-mno-cygwin $LDFLAGS"

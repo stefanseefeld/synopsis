@@ -112,7 +112,7 @@ private:
   void SkipAttributeToken();
   int SkipExtensionToken(char*&, int&);
 
-#if defined(_MSC_VER) || defined(_PARSE_VCC)
+#if defined(_MSC_VER) || defined(PARSE_MSVC)
   void SkipAsmToken();
   void SkipDeclspecToken();
 #endif

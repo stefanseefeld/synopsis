@@ -36,7 +36,7 @@
 
 using namespace Synopsis;
 
-#if defined(_PARSE_VCC)
+#if defined(PARSE_MSVC)
 #define _MSC_VER	1100
 #endif
 
@@ -1503,6 +1503,14 @@ bool Parser::optThrowDecl(Ptree*& throw_decl)
 		return false;
 	    else if(t == ')')
 		break;
+#if defined(PARSE_MSVC)
+	    // for MSVC compatibility we accept 'throw(...)' declarations
+	    else if(t == Ellipsis)
+	    {
+	      lex->GetToken(tk);
+	      p = Ptree::Snoc(p, new Leaf(tk));
+	    }
+#endif
 	    else if(rName(q, encode))
 		p = Ptree::Snoc(p, q);
 	    else
