@@ -1,4 +1,4 @@
-// $Id: link_map.cc,v 1.2 2001/05/06 20:15:03 stefan Exp $
+// $Id: link_map.cc,v 1.3 2002/10/25 08:57:47 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 // 02111-1307, USA.
 //
 // $Log: link_map.cc,v $
+// Revision 1.3  2002/10/25 08:57:47  chalky
+// Clear the link map (stores where expanded macros are for syntax highlighted
+// files) after parsing
+//
 // Revision 1.2  2001/05/06 20:15:03  stefan
 // fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
 //
@@ -98,6 +102,11 @@ int link_map::map(int linenum, int pos)
     }
     //cout << "link_map::map: line: "<<linenum<<" pos: "<<pos<<" diff: "<<diff<<endl;
     return pos + diff;
+}
+
+void link_map::clear()
+{
+    m->lines.clear();
 }
 
 extern "C" {
