@@ -2,7 +2,7 @@
 // The Builder class, which builds an AST. Used by the SWalker which calls the
 // appropriate Builder member functions
 
-// $Id: builder.hh,v 1.30 2002/11/17 12:11:43 chalky Exp $
+// $Id: builder.hh,v 1.31 2002/12/09 04:01:00 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -69,7 +69,7 @@ class Builder
     friend class Lookup;
 public:
     //. Constructor
-    Builder(const std::string& basename);
+    Builder(AST::SourceFile* file);
 
     //. Destructor. Recursively destroys all AST objects
     ~Builder();
@@ -83,13 +83,13 @@ public:
     //. Changes the current accessability for the current scope
     void set_access(AST::Access);
 
-    //. Returns the current filename
-    const std::string& filename() const
+    //. Returns the current file
+    AST::SourceFile* file() const
     {
-        return m_filename;
+        return m_file;
     }
-    //. Changes the current filename
-    void set_filename(const std::string& filename);
+    //. Changes the current file
+    void set_file(AST::SourceFile*);
 
     //. Returns the list of builtin decls ("__null_t", "true", etc.)
     const AST::Declaration::vector& builtin_decls() const;
@@ -235,11 +235,8 @@ public:
     AST::Forward* add_forward(int lineno, const std::string& name, AST::Parameter::vector* templ_params);
 
 private:
-    //. Base filename to strip from the start of all filenames
-    std::string m_basename;
-
-    //. Current filename
-    std::string m_filename;
+    //. Current file
+    AST::SourceFile* m_file;
 
     //. The global scope object
     AST::Scope* m_global;

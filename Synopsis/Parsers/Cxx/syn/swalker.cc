@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.71 2002/11/24 01:21:30 chalky Exp $
+// $Id: swalker.cc,v 1.72 2002/12/09 04:01:01 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,11 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.72  2002/12/09 04:01:01  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.71  2002/11/24 01:21:30  chalky
 // Added support for declarations in if/switch conditions
 //
@@ -107,6 +112,7 @@
 //#include "link_map.hh"
 #include "linkstore.hh"
 #include "lookup.hh"
+#include "filter.hh"
 
 using namespace AST;
 
@@ -135,18 +141,18 @@ SWalker *SWalker::g_swalker = 0;
 
 // ------------------------------------
 // SWalker Constructor
-SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Program* program, const std::string& basename)
+SWalker::SWalker(FileFilter* filter, Parser* parser, Builder* builder, Program* program)
         : Walker(parser),
         m_parser(parser),
-        m_program(program),
         m_builder(builder),
+        m_filter(filter),
+        m_program(program),
         m_decoder(new Decoder(m_builder)),
         m_declaration(0),
         m_template(0),
         m_filename_ptr(0),
+        m_file(NULL),
         m_lineno(0),
-        m_source(source),
-        m_basename(basename),
         m_extract_tails(false),
         m_links(0),
         m_store_decl(false),
@@ -182,13 +188,9 @@ SWalker::parse_name(Ptree *node) const
     return node->ToString();
 }
 void
-SWalker::set_store_links(bool value, std::ostream* storage, std::ostream* xref)
+SWalker::set_store_links(LinkStore* links)
 {
-    // Create a new LinkStore
-    if (value)
-        m_links = new LinkStore(storage, xref, this, m_basename);
-    else
-        m_links = 0;
+    m_links = links;
 }
 
 int SWalker::line_of_ptree(Ptree* node)
@@ -212,12 +214,12 @@ void SWalker::update_line_number(Ptree* ptree)
     if (fname != m_filename_ptr)
     {
         m_filename_ptr = fname;
-        m_filename.assign(fname, fname_len);
-        m_builder->set_filename(m_filename);
+        m_file = m_filter->get_sourcefile(fname, fname_len);
+        m_builder->set_file(m_file);
     }
 }
 
-AST::Comment* make_Comment(const std::string& file, int line, Ptree* first, bool suspect=false)
+AST::Comment* make_Comment(SourceFile* file, int line, Ptree* first, bool suspect=false)
 {
     return new AST::Comment(file, line, first->ToString(), suspect);
 }
@@ -248,22 +250,11 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
         }
 
         update_line_number(node);
-        if (decl)
+        // Make sure comment is in same file!
+        if (decl && (m_file != decl->file()))
         {
-            size_t bs = m_basename.size();
-            bool wrong_file;
-            // Must take care of the basename, since decl->filename wont have it
-            // NB: g++ < 3.0 doesn't support the 5 argument string.compare
-            if (bs && strncmp(m_filename_ptr, m_basename.c_str(), bs) == 0)
-                // This works since m_filename_ptr still points to comment's filename
-                wrong_file = (strncmp(m_filename_ptr + bs, decl->filename().c_str(), decl->filename().size()) != 0);
-            else
-                wrong_file = (m_filename != decl->filename());
-            if (wrong_file)
-            {
-                node = next;
-                continue;
-            }
+            node = next;
+            continue;
         }
 
         // Check if comment is continued, eg: consecutive C++ comments
@@ -325,7 +316,7 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
         if (decl)
         {
             //AST::Comment* comment = new AST::Comment("", 0, first->ToString(), suspect);
-            AST::Comment* comment = make_Comment("", 0, first, suspect);
+            AST::Comment* comment = make_Comment(m_file, 0, first, suspect);
             decl->comments().push_back(comment);
         }
         if (m_links)
@@ -601,7 +592,7 @@ SWalker::TranslateNamespaceSpec(Ptree* def)
     if (pIdentifier)
         ns = m_builder->start_namespace(parse_name(pIdentifier), NamespaceNamed);
     else
-        ns = m_builder->start_namespace(m_filename, NamespaceAnon);
+        ns = m_builder->start_namespace(m_file->filename(), NamespaceAnon);
 
     // Add comments
     add_comments(ns, dynamic_cast<PtreeNamespaceSpec*>(def));
@@ -1571,10 +1562,8 @@ SWalker::TranslateFunctionImplementation(Ptree* node)
     m_function = 0;
     m_params.clear();
     TranslateDeclarator(node->Third());
-    if (!m_links)
-        return 0; // Dont translate if not storing links
-    if (m_filename != m_source)
-        return 0; // Dont translate if not main file
+    if (!m_filter->should_visit_function_impl(m_file))
+        return 0;
     if (!m_function)
     {
         std::cerr << "Warning: function was null!" << std::endl;
@@ -1586,8 +1575,7 @@ SWalker::TranslateFunctionImplementation(Ptree* node)
     cache.params = m_param_cache;
     cache.body = node->Nth(3);
 
-    if (dynamic_cast<AST::Class*>(m_builder->scope())
-       )
+    if (dynamic_cast<AST::Class*>(m_builder->scope()))
         m_func_impl_stack.back().push_back(cache);
     else
         TranslateFuncImplCache(cache);
@@ -1614,7 +1602,9 @@ SWalker::TranslateFuncImplCache(const FuncImplCache& cache)
         while (iter != end)
         {
             AST::Parameter* param = *iter++;
-            m_builder->add_variable(m_lineno, param->name(), param->type(), false, "parameter");
+            // Make sure the parameter is named
+            if (param->name().size())
+                m_builder->add_variable(m_lineno, param->name(), param->type(), false, "parameter");
         }
         // Add 'this' if method
         m_builder->add_this_variable();
@@ -1705,7 +1695,7 @@ SWalker::TranslateEnumSpec(Ptree *spec)
     if (m_extract_tails)
     {
         Ptree* close = spec->Third()->Third();
-        enumor = new AST::Enumerator(m_builder->filename(), m_lineno, "dummy", m_dummyname, "");
+        enumor = new AST::Enumerator(m_file, m_lineno, "dummy", m_dummyname, "");
         add_comments(enumor, static_cast<CommentedLeaf*>(close));
         enumerators.push_back(enumor);
     }

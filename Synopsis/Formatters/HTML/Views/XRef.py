@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.8 2002/11/13 01:01:49 chalky Exp $
+# $Id: XRef.py,v 1.9 2002/12/09 04:00:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,11 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.9  2002/12/09 04:00:59  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.8  2002/11/13 01:01:49  chalky
 # Improvements to links when using the Nested file layout
 #
@@ -198,7 +203,7 @@ class XRefPages (Page.Page):
 	if isinstance(decl, AST.Scope):
 	    self.write('<li>Declarations:<ul>\n')
 	    for child in decl.declarations():
-		file, line = child.file(), child.line()
+		file, line = child.file().filename(), child.line()
 		realfile = os.path.join(config.base_dir, file)
 		file_link = config.files.nameOfFileSource(realfile)
 		file_link = '%s#%d'%(file_link,line)

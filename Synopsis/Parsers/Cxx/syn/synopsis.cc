@@ -2,7 +2,7 @@
 // This file contains implementation for class Synopsis, which converts the
 // C++ AST into a Python AST.
 
-// $Id: synopsis.cc,v 1.44 2002/11/17 12:11:44 chalky Exp $
+// $Id: synopsis.cc,v 1.45 2002/12/09 04:01:02 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,11 @@
 // 02111-1307, USA.
 
 // $Log: synopsis.cc,v $
+// Revision 1.45  2002/12/09 04:01:02  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.44  2002/11/17 12:11:44  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -46,6 +51,7 @@
 #include <signal.h>
 
 #include "synopsis.hh"
+#include "filter.hh"
 
 #ifdef DO_TRACE
 int Trace::level = 0;
@@ -62,44 +68,11 @@ void nullObj()
     raise(SIGINT);
 }
 
-//. A functor that returns true if the declaration is 'main'
-struct is_main
-{
-    is_main(bool onlymain, const std::string &mainfile)
-            : m_onlymain(onlymain), m_mainfile(mainfile)
-    {}
-    bool operator()(AST::Declaration* decl)
-    {
-        if (!decl)
-            return false;
-        // returns true if:
-        return !m_onlymain // only_main not set
-               || decl->filename() == m_mainfile // filename is the main file
-               || (dynamic_cast<AST::Namespace*>(decl) != 0); // decl is a namespace
-    }
-    bool m_onlymain;
-    std::string m_mainfile;
-};
-
-int count_main(AST::Scope* scope, is_main& func)
-{
-    int count = 0;
-    std::vector<AST::Declaration*>::iterator iter = scope->declarations().begin();
-    while (iter != scope->declarations().end())
-    {
-        AST::Scope* subscope = dynamic_cast<AST::Scope*>(*iter);
-        if (subscope)
-            count += count_main(subscope, func);
-        count += func(*iter++);
-    }
-    return count;
-}
-
 // The compiler firewalled private stuff
 struct Synopsis::Private
 {
     //. Constructor
-    Private(Synopsis* s) : m_syn(s), m_main(false, s->m_mainfile)
+    Private(Synopsis* s) : m_syn(s)
     {
         m_cxx = PyString_InternFromString("C++");
         Py_INCREF(Py_None);
@@ -116,8 +89,6 @@ struct Synopsis::Private
     {
         return m_cxx;
     }
-    //. is_main functor
-    is_main m_main;
     // Sugar
     typedef std::map<void*, PyObject*> ObjMap;
     // Maps from C++ objects to PyObjects
@@ -127,6 +98,8 @@ struct Synopsis::Private
 
     // Note that these methods always succeed
 
+    //. Return the PyObject for the given AST::SourceFile
+    PyObject* py(AST::SourceFile*);
     //. Return the PyObject for the given AST::Declaration
     PyObject* py(AST::Declaration*);
     //. Return the PyObject for the given AST::Inheritance
@@ -218,6 +191,24 @@ PyObject* Synopsis::Private::List(const std::vector<AST::Declaration*>& vec)
     return list;
 }
 
+PyObject* Synopsis::Private::py(AST::SourceFile* file)
+{
+    ObjMap::iterator iter = obj_map.find(file);
+    if (iter == obj_map.end())
+    {
+        // Need to convert object first
+        add(file, m_syn->SourceFile(file));
+        iter = obj_map.find(file);
+        if (iter == obj_map.end())
+        {
+            std::cout << "Fatal: Still not PyObject after converting." << std::endl;
+            throw "Synopsis::Private::py(AST::SourceFile*)";
+        }
+    }
+    PyObject* obj = iter->second;
+    Py_INCREF(obj);
+    return obj;
+}
 
 PyObject* Synopsis::Private::py(AST::Declaration* decl)
 {
@@ -337,8 +328,8 @@ PyObject* Synopsis::Private::py(const std::string &str)
 // Class Synopsis
 //
 
-Synopsis::Synopsis(const std::string &mainfile, PyObject *decl, PyObject *dict)
-        : m_declarations(decl), m_dictionary(dict), m_mainfile(mainfile)
+Synopsis::Synopsis(FileFilter* filter, PyObject *decl, PyObject *dict)
+        : m_declarations(decl), m_dictionary(dict), m_filter(filter)
 {
     Trace trace("Synopsis::Synopsis");
     m_ast  = PyImport_ImportModule("Synopsis.Core.AST");
@@ -346,7 +337,6 @@ Synopsis::Synopsis(const std::string &mainfile, PyObject *decl, PyObject *dict)
     m_type = PyImport_ImportModule("Synopsis.Core.Type");
     assertObject(m_type);
 
-    m_onlymain = false;
     m = new Private(this);
 }
 
@@ -379,13 +369,7 @@ Synopsis::~Synopsis()
     delete m;
 }
 
-void Synopsis::onlyTranslateMain()
-{
-    m_onlymain = true;
-    m->m_main.m_onlymain = true;
-}
-
-void Synopsis::translate(AST::Scope* scope)
+void Synopsis::translate(AST::Scope* scope, PyObject* ast)
 {
     AST::Declaration::vector globals, &decls = scope->declarations();
     AST::Declaration::vector::iterator it = decls.begin();
@@ -395,11 +379,46 @@ void Synopsis::translate(AST::Scope* scope)
         if (m->builtin_decl_set.find(*it) == m->builtin_decl_set.end())
             globals.push_back(*it);
 
+    // Translate those declarations
     PyObject* list;
     PyObject_CallMethod(m_declarations, "extend", "O",
                         list = m->List(globals)
                        );
     Py_DECREF(list);
+
+    // Translate the sourcefiles, making sure the declarations list is done
+    // for each
+    PyObject* pyfiles = PyObject_CallMethod(ast, "files", NULL);
+    assertObject(pyfiles);
+    assert(PyDict_Check(pyfiles));
+
+    AST::SourceFile::vector all_sourcefiles;
+    m_filter->get_all_sourcefiles(all_sourcefiles);
+    AST::SourceFile::vector::iterator file_iter = all_sourcefiles.begin();
+    while (file_iter != all_sourcefiles.end())
+    {
+        AST::SourceFile* file = *file_iter++;
+
+        PyObject* decls, *new_decls;
+        PyObject* pyfile = m->py(file);
+        PyObject* pyfilename = PyObject_CallMethod(pyfile, "filename", NULL);
+
+        // Add the declarations
+        decls = PyObject_CallMethod(pyfile, "declarations", NULL);
+        assertObject(decls);
+        PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(file->declarations()));
+        // TODO: add the includes
+        Py_DECREF(new_decls);
+        Py_DECREF(decls);
+
+        // Add to the AST
+        PyDict_SetItem(pyfiles, pyfilename, pyfile);
+        Py_DECREF(pyfilename);
+        Py_DECREF(pyfile);
+    }
+
+    Py_DECREF(pyfiles);
+        
 }
 
 void Synopsis::set_builtin_decls(const AST::Declaration::vector& builtin_decls)
@@ -552,12 +571,27 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
     Py_DECREF(new_comments);
 }
 
+PyObject *Synopsis::SourceFile(AST::SourceFile* file)
+{
+    Trace trace("Synopsis::addSourceFile");
+    PyObject *pyfile, *filename;
+    //std::cout << " Creating SourceFile for " << file->filename() << std::endl;
+    pyfile = PyObject_CallMethod(m_ast, "SourceFile", "OO",
+                                 filename = m->py(file->filename()),
+                                 m->cxx()
+                                );
+    assertObject(pyfile);
+    PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
+    Py_DECREF(filename);
+    return pyfile;
+}
+
 PyObject *Synopsis::Declaration(AST::Declaration* decl)
 {
     Trace trace("Synopsis::addDeclaration");
     PyObject *pydecl, *file, *type, *name;
     pydecl = PyObject_CallMethod(m_ast, "Declaration", "OiOOO",
-                                 file = m->py(decl->filename()), decl->line(), m->cxx(),
+                                 file = m->py(decl->file()), decl->line(), m->cxx(),
                                  type = m->py(decl->type()), name = m->Tuple(decl->name())
                                 );
     assertObject(pydecl);
@@ -573,7 +607,7 @@ PyObject *Synopsis::Forward(AST::Forward* decl)
     Trace trace("Synopsis::addForward");
     PyObject *forward, *file, *type, *name;
     forward = PyObject_CallMethod(m_ast, "Forward", "OiOOO",
-                                  file = m->py(decl->filename()), decl->line(), m->cxx(),
+                                  file = m->py(decl->file()), decl->line(), m->cxx(),
                                   type = m->py(decl->type()), name = m->Tuple(decl->name())
                                  );
     addComments(forward, decl);
@@ -590,7 +624,7 @@ PyObject *Synopsis::Comment(AST::Comment* decl)
     PyObject *text = PyString_FromStringAndSize(text_str.data(), text_str.size());
     PyObject *comment, *file;
     comment = PyObject_CallMethod(m_ast, "Comment", "OOii",
-                                  text, file = m->py(decl->filename()), 
+                                  text, file = m->py(decl->file()), 
                                   decl->line(), decl->is_suspect() ? 1 : 0
                                  );
     Py_DECREF(text);
@@ -603,7 +637,7 @@ PyObject *Synopsis::Scope(AST::Scope* decl)
     Trace trace("Synopsis::addScope");
     PyObject *scope, *file, *type, *name;
     scope = PyObject_CallMethod(m_ast, "Scope", "OiOOO",
-                                file = m->py(decl->filename()), decl->line(), m->cxx(),
+                                file = m->py(decl->file()), decl->line(), m->cxx(),
                                 type = m->py(decl->type()), name = m->Tuple(decl->name())
                                );
     PyObject *decls = PyObject_CallMethod(scope, "declarations", NULL);
@@ -621,7 +655,7 @@ PyObject *Synopsis::Namespace(AST::Namespace* decl)
     Trace trace("Synopsis::addNamespace");
     PyObject *module, *file, *type, *name;
     module = PyObject_CallMethod(m_ast, "Module", "OiOOO",
-                                 file = m->py(decl->filename()), decl->line(), m->cxx(),
+                                 file = m->py(decl->file()), decl->line(), m->cxx(),
                                  type = m->py(decl->type()), name = m->Tuple(decl->name())
                                 );
     PyObject *decls = PyObject_CallMethod(module, "declarations", NULL);
@@ -654,7 +688,7 @@ PyObject *Synopsis::Class(AST::Class* decl)
     Trace trace("Synopsis::addClass");
     PyObject *clas, *file, *type, *name;
     clas = PyObject_CallMethod(m_ast, "Class", "OiOOO",
-                               file = m->py(decl->filename()), decl->line(), m->cxx(),
+                               file = m->py(decl->file()), decl->line(), m->cxx(),
                                type = m->py(decl->type()), name = m->Tuple(decl->name())
                               );
     // This is necessary to prevent inf. loops in several places
@@ -687,7 +721,7 @@ PyObject *Synopsis::Typedef(AST::Typedef* decl)
     // FIXME: what to do about the declarator?
     PyObject *tdef, *file, *type, *name, *alias;
     tdef = PyObject_CallMethod(m_ast, "Typedef", "OiOOOOi",
-                               file = m->py(decl->filename()), decl->line(), m->cxx(),
+                               file = m->py(decl->file()), decl->line(), m->cxx(),
                                type = m->py(decl->type()), name = m->Tuple(decl->name()),
                                alias = m->py(decl->alias()), decl->constructed()
                               );
@@ -704,7 +738,7 @@ PyObject *Synopsis::Enumerator(AST::Enumerator* decl)
     Trace trace("Synopsis::addEnumerator");
     PyObject *enumor, *file, *name;
     enumor = PyObject_CallMethod(m_ast, "Enumerator", "OiOOs",
-                                 file = m->py(decl->filename()), decl->line(), m->cxx(),
+                                 file = m->py(decl->file()), decl->line(), m->cxx(),
                                  name = m->Tuple(decl->name()), decl->value().c_str()
                                 );
     addComments(enumor, decl);
@@ -718,7 +752,7 @@ PyObject *Synopsis::Enum(AST::Enum* decl)
     Trace trace("Synopsis::addEnum");
     PyObject *enumor, *file, *enums, *name;
     enumor = PyObject_CallMethod(m_ast, "Enum", "OiOOO",
-                                 file = m->py(decl->filename()), decl->line(), m->cxx(),
+                                 file = m->py(decl->file()), decl->line(), m->cxx(),
                                  name = m->Tuple(decl->name()), enums = m->List(decl->enumerators())
                                 );
     addComments(enumor, decl);
@@ -733,7 +767,7 @@ PyObject *Synopsis::Variable(AST::Variable* decl)
     Trace trace("Synopsis::addVariable");
     PyObject *var, *file, *type, *name, *vtype;
     var = PyObject_CallMethod(m_ast, "Variable", "OiOOOOi",
-                              file = m->py(decl->filename()), decl->line(), m->cxx(),
+                              file = m->py(decl->file()), decl->line(), m->cxx(),
                               type = m->py(decl->type()), name = m->Tuple(decl->name()),
                               vtype = m->py(decl->vtype()), decl->constructed()
                              );
@@ -750,7 +784,7 @@ PyObject *Synopsis::Const(AST::Const* decl)
     Trace trace("Synopsis::addConst");
     PyObject *cons, *file, *type, *name, *ctype;
     cons = PyObject_CallMethod(m_ast, "Const", "OiOOOOOs",
-                               file = m->py(decl->filename()), decl->line(), m->cxx(),
+                               file = m->py(decl->file()), decl->line(), m->cxx(),
                                type = m->py(decl->type()), ctype = m->py(decl->ctype()),
                                name = m->Tuple(decl->name()), decl->value().c_str()
                               );
@@ -784,7 +818,7 @@ PyObject *Synopsis::Function(AST::Function* decl)
     Trace trace("Synopsis::addFunction");
     PyObject *func, *file, *type, *name, *pre, *ret, *realname;
     func = PyObject_CallMethod(m_ast, "Function", "OiOOOOOO",
-                               file = m->py(decl->filename()), decl->line(), m->cxx(),
+                               file = m->py(decl->file()), decl->line(), m->cxx(),
                                type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                                ret = m->py(decl->return_type()),
                                name = m->Tuple(decl->name()), realname = m->py(decl->realname())
@@ -817,7 +851,7 @@ PyObject *Synopsis::Operation(AST::Operation* decl)
     Trace trace("Synopsis::addOperation");
     PyObject *oper, *file, *type, *name, *pre, *ret, *realname;
     oper = PyObject_CallMethod(m_ast, "Operation", "OiOOOOOO",
-                               file = m->py(decl->filename()), decl->line(), m->cxx(),
+                               file = m->py(decl->file()), decl->line(), m->cxx(),
                                type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                                ret = m->py(decl->return_type()),
                                name = m->Tuple(decl->name()), realname = m->py(decl->realname())
@@ -853,12 +887,12 @@ PyObject *Synopsis::Operation(AST::Operation* decl)
 void Synopsis::visit_declaration(AST::Declaration* decl)
 {
     // Assume this is a dummy declaration
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Declaration(decl));
 }
 void Synopsis::visit_scope(AST::Scope* decl)
 {
-    if (count_main(decl, m->m_main))
+    if (m_filter->should_store(decl))
         m->add(decl, Scope(decl));
     //else
     //	m->add(decl, Forward(new AST::Forward(decl)));
@@ -874,42 +908,42 @@ void Synopsis::visit_class(AST::Class* decl)
     // Add if the class is in the main file, *or* if it has any members
     // declared in the main file (eg: forward declared nested classes which
     // are fully defined in this main file)
-    if (m->m_main(decl) || count_main(decl, m->m_main))
+    if (m_filter->should_store(decl))
         m->add(decl, Class(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_forward(AST::Forward* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Forward(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_typedef(AST::Typedef* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Typedef(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_variable(AST::Variable* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Variable(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_const(AST::Const* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Const(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_enum(AST::Enum* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Enum(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
@@ -920,14 +954,14 @@ void Synopsis::visit_enumerator(AST::Enumerator* decl)
 }
 void Synopsis::visit_function(AST::Function* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Function(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_operation(AST::Operation* decl)
 {
-    if (m->m_main(decl))
+    if (m_filter->should_store(decl))
         m->add(decl, Operation(decl));
     //else
     //    m->add(decl, Forward(new AST::Forward(decl)));
@@ -977,14 +1011,14 @@ void Synopsis::visit_base(Types::Base* type)
 }
 void Synopsis::visit_declared(Types::Declared* type)
 {
-    if (!m->m_main(type->declaration()))
+    if (!m_filter->should_store(type->declaration()))
         m->add(type, Unknown(type));
     else
         m->add(type, Declared(type));
 }
 void Synopsis::visit_template_type(Types::Template* type)
 {
-    if (!m->m_main(type->declaration()))
+    if (!m_filter->should_store(type->declaration()))
         m->add(type, Unknown(type));
     else
         m->add(type, Template(type));

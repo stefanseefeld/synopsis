@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.cc source file
 // Implementation of the AST classes
 
-// $Id: ast.cc,v 1.15 2002/11/17 12:11:43 chalky Exp $
+// $Id: ast.cc,v 1.16 2002/12/09 04:00:59 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,11 @@
 // 02111-1307, USA.
 
 // $Log: ast.cc,v $
+// Revision 1.16  2002/12/09 04:00:59  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.15  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -34,11 +39,19 @@
 using namespace AST;
 
 //
+// AST::SourceFile
+//
+
+SourceFile::SourceFile(const std::string& filename, bool is_main)
+    : m_filename(filename), m_is_main(is_main)
+{ }
+
+//
 // AST::Declaration
 //
 
-Declaration::Declaration(const std::string& file, int line, const std::string& type, const ScopedName& name)
-        : m_filename(file), m_line(line), m_type(type), m_name(name), m_access(Default), m_declared(NULL)
+Declaration::Declaration(SourceFile* file, int line, const std::string& type, const ScopedName& name)
+        : m_file(file), m_line(line), m_type(type), m_name(name), m_access(Default), m_declared(NULL)
 { }
 
 Declaration::~Declaration()
@@ -71,7 +84,7 @@ Declaration::declared()
 // AST::Scope
 //
 
-Scope::Scope(const std::string& file, int line, const std::string& type, const ScopedName& name)
+Scope::Scope(SourceFile* file, int line, const std::string& type, const ScopedName& name)
         : Declaration(file, line, type, name)
 { }
 
@@ -88,7 +101,7 @@ Scope::accept(Visitor* visitor)
 // AST::Namespace
 //
 
-Namespace::Namespace(const std::string& file, int line, const std::string& type, const ScopedName& name)
+Namespace::Namespace(SourceFile* file, int line, const std::string& type, const ScopedName& name)
         : Scope(file, line, type, name)
 {}
 
@@ -105,7 +118,7 @@ Namespace::accept(Visitor* visitor)
 // AST::Class
 //
 
-Class::Class(const std::string& file, int line, const std::string& type, const ScopedName& name)
+Class::Class(SourceFile* file, int line, const std::string& type, const ScopedName& name)
         : Scope(file, line, type, name)
 {
     m_template = NULL;
@@ -139,12 +152,12 @@ Inheritance::accept(Visitor* visitor)
 // AST::Forward
 //
 
-Forward::Forward(const std::string& file, int line, const std::string& type, const ScopedName& name)
+Forward::Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name)
         : Declaration(file, line, type, name), m_template(NULL)
 { }
 
 Forward::Forward(AST::Declaration* decl)
-        : Declaration(decl->filename(), decl->line(), decl->type(), decl->name()), m_template(NULL)
+        : Declaration(decl->file(), decl->line(), decl->type(), decl->name()), m_template(NULL)
 { }
 
 void
@@ -158,7 +171,7 @@ Forward::accept(Visitor* visitor)
 // AST::Typedef
 //
 
-Typedef::Typedef(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr)
+Typedef::Typedef(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr)
         : Declaration(file, line, type, name), m_alias(alias), m_constr(constr)
 { }
 
@@ -176,7 +189,7 @@ Typedef::accept(Visitor* visitor)
 // AST::Variable
 //
 
-Variable::Variable(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr)
+Variable::Variable(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr)
         : Declaration(file, line, type, name), m_vtype(vtype), m_constr(constr)
 { }
 
@@ -193,7 +206,7 @@ Variable::accept(Visitor* visitor)
 // AST::Const
 //
 
-Const::Const(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* t, const std::string& v)
+Const::Const(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* t, const std::string& v)
         : Declaration(file, line, type, name), m_ctype(t), m_value(v)
 { }
 
@@ -208,7 +221,7 @@ Const::accept(Visitor* visitor)
 // AST::Enum
 //
 
-Enum::Enum(const std::string& file, int line, const std::string& type, const ScopedName& name)
+Enum::Enum(SourceFile* file, int line, const std::string& type, const ScopedName& name)
         : Declaration(file, line, type, name)
 { }
 
@@ -226,7 +239,7 @@ Enum::accept(Visitor* visitor)
 // AST::Enumerator
 //
 
-Enumerator::Enumerator(const std::string& file, int line, const std::string& type, const ScopedName& name, const std::string& value)
+Enumerator::Enumerator(SourceFile* file, int line, const std::string& type, const ScopedName& name, const std::string& value)
         : Declaration(file, line, type, name), m_value(value)
 { }
 
@@ -242,7 +255,7 @@ Enumerator::accept(Visitor* visitor)
 //
 
 Function::Function(
-    const std::string& file, int line, const std::string& type, const ScopedName& name,
+    SourceFile* file, int line, const std::string& type, const ScopedName& name,
     const Mods& premod, Types::Type* ret, const std::string& realname
 )
         : Declaration(file, line, type, name), m_pre(premod), m_ret(ret),
@@ -264,7 +277,7 @@ Function::accept(Visitor* visitor)
 //
 
 Operation::Operation(
-    const std::string& file, int line, const std::string& type, const ScopedName& name,
+    SourceFile* file, int line, const std::string& type, const ScopedName& name,
     const Mods& premod, Types::Type* ret, const std::string& realname
 )
         : Function(file, line, type, name, premod, ret, realname)
@@ -295,8 +308,8 @@ Parameter::accept(Visitor* visitor)
 }
 
 
-Comment::Comment(const std::string& file, int line, const std::string& text, bool suspect)
-        : m_filename(file), m_line(line), m_text(text), m_suspect(suspect)
+Comment::Comment(SourceFile* file, int line, const std::string& text, bool suspect)
+        : m_file(file), m_line(line), m_text(text), m_suspect(suspect)
 { }
 
 //

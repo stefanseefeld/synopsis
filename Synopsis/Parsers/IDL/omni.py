@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.31 2002/11/03 12:43:33 chalky Exp $
+# $Id: omni.py,v 1.32 2002/12/09 04:01:03 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,11 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.32  2002/12/09 04:01:03  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.31  2002/11/03 12:43:33  chalky
 # Fix procedure for finding omnicpp to use the PATH variable
 #
@@ -502,7 +507,7 @@ def __parseArgs(args, config_obj):
 	    strip = strip_filename
 	elif o == "-v": verbose = 1
 
-def parse(file, args, config_obj):
+def parse(file, extra_files, args, config_obj):
     global preprocessor_args, mainfile_only
     __parseArgs(args, config_obj)
     path = string.split(os.getenv('PATH'), os.pathsep)

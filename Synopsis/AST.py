@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.22 2002/10/11 05:56:38 chalky Exp $
+# $Id: AST.py,v 1.23 2002/12/09 04:00:57 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,11 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.23  2002/12/09 04:00:57  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.22  2002/10/11 05:56:38  chalky
 # Added 'suspect' flag for comments
 #
@@ -86,15 +91,13 @@ are scoped tuples.
 Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
-# TODO:
-# Change AST.file to be AST.files() - a list of files
 
-import string, sys, cPickle
+import string, sys, cPickle, types
 import Util, Type
 
 # The version of the file format - this should be increased everytime
 # incompatible changes are made to the AST or Type classes
-FILE_VERSION = 1
+FILE_VERSION = 2
 
 # Accessibility constants
 DEFAULT = 0
@@ -143,18 +146,19 @@ class AST:
     declarations and a types dictionary.
     """
 
-    def __init__(self, filenames=[], declarations=[], types=None):
+    def __init__(self, files={}, declarations=[], typedict=None):
 	"""Constructor"""
-	if type(filenames) not in (type(()), type([])): raise TypeError, "filenames parameter must be a list or tuple of filenames"
+	if type(files) is not types.DictType: raise TypeError, "files parameter must be a dict of SourceFile objects"
 	if type(declarations) != type([]): raise TypeError, "declarations parameter must be a list of declarations"
-	if types is None: types = Type.Dictionary()
-	elif not isinstance(types, Type.Dictionary): raise TypeError, "types must be an instance of Type.Dictionary"
-        self.__filenames    = list(filenames)
+	if typedict is None: typedict = Type.Dictionary()
+	elif not isinstance(typedict, Type.Dictionary): raise TypeError, "types must be an instance of Type.Dictionary"
+        self.__files	    = files
         self.__declarations = list(declarations)
-	self.__types	    = types
-    def filenames(self):
-	"""The file names of the component files"""	
-	return self.__filenames
+	self.__types	    = typedict
+    def files(self):
+	"""The files this AST represents. Returns a dictionary mapping
+	filename to SourceFile objects."""	
+	return self.__files
     def declarations(self):
 	"""List of Declaration objects. These are the declarations at file scope"""
 	return self.__declarations
@@ -168,26 +172,92 @@ class AST:
 	"""Merges another AST. Files and declarations are appended to those in
 	this AST, and types are merged by overwriting existing types -
 	Unduplicator is responsible for sorting out the mess this may cause :)"""
-	self.__filenames.extend(other_ast.filenames())
 	self.__types.merge(other_ast.types())
 	self.__declarations.extend(other_ast.declarations())
+	# Do a basic job of merging the SourceFiles, trying not to lose
+	# anything (even though duplicates are created at this stage - they
+	# will be cleaned up by the Linker)
+	for filename, file in other_ast.files().items():
+	    if not self.__files.has_key(filename):
+		self.__files[filename] = file
+		continue
+	    myfile = self.__files[filename]
+	    myfile.set_is_main(myfile.is_main() or file.is_main())
+	    myfile.declarations().extend(file.declarations())
+	    myfile.includes().extend(file.includes())
 
+class SourceFile:
+    """The information about a file that the AST was generated from.
+    Contains filename, all declarations from this file (even nested ones) and
+    includes (aka imports) from this file."""
 
+    def __init__(self, filename, language):
+	"""Constructor"""
+	if type(filename) is not types.StringType: raise TypeError, "filename parameter must be a string filename"
+	if type(language) is not types.StringType: raise TypeError, "language parameter must be a string language"
+	self.__filename = filename
+	self.__language = language
+	self.__includes = []
+	self.__macros = []
+	self.__declarations = []
+	self.__is_main = 0
+
+    def is_main(self):
+	"""Returns whether this was a main file. A source file is a main file
+	if it was parsed directly or as an extra file. A source file is not a
+	main file if it was just included. A source file that had no actual
+	declarations but was given to the parser as either the main source
+	file or an extra file is still a main file."""
+	return self.__is_main
+
+    def set_is_main(self, value):
+	"""Sets the is_main flag. Typically only called once, and then may by
+	the linker if it discovers that a file is actually a main file
+	elsewhere."""
+	self.__is_main = value
+
+    def filename(self):
+	"""Returns the filename of this file. The filename can be absolute or
+	relative, depending on the settings for the Parser"""
+	return self.__filename
+
+    def language(self):
+	"""Returns the language for this file as a string"""
+	return self.__language
+
+    def declarations(self):
+	"""Returns a list of declarations declared in this file"""
+	return self.__declarations
+
+    def includes(self):
+	"""Returns a the files included by this file. These may be
+	absolute or relative, depending on the settings for the Parser. This
+	may also include system files. The return value is a list of tuples,
+	with each tuple being a pair (included-from-filename,
+	include-filename). This allows distinction of files directly included
+	(included-from-filename == self.filename()) but also allows dependency
+	tracking since *all* files read while parsing this file are included
+	in the list (even system files)."""
+	return self.__includes
+    
 class Declaration:
     """Declaration base class. Every declaration has a name, comments,
     accessibility and type. The default accessibility is DEFAULT except for
     C++ where the Parser always sets it to one of the other three. """
 
-    def __init__(self, file, line, language, type, name):
+    def __init__(self, file, line, language, strtype, name):
+	if file is not None:
+	    if type(file) is not types.InstanceType or not isinstance(file, SourceFile):
+		raise TypeError, "file must be a SourceFile object"
         self.__file  = file
         self.__line  = line
         self.__language = language
 	self.__name = tuple(name)
-        self.__type = type
+        self.__type = strtype
         self.__comments = []
 	self.__accessibility = DEFAULT
     def file(self):
-	"""The file this declaration appeared in"""
+	"""The SourceFile this declaration appeared in"""
 	return self.__file
     def line(self):
 	"""The line of the file this declaration started at"""
@@ -221,6 +291,30 @@ class Declaration:
     def set_accessibility(self, axs):
 	"""Change the accessibility"""
 	self.__accessibility = axs
+
+class Macro (Declaration):
+    """A preprocessor macro. Note that macros are not strictly part of the
+    AST, and as such are always in the global scope. A macro is "temporary" if
+    it was #undefined in the same file it was #defined in."""
+
+    def __init__(self, file, line, language, type, name, parameters, text):
+	"""Constructor"""
+	Declaration.__init__(self, file, line, language, type, name)
+	self.__parameters = parameters
+	self.__text = text
+
+    def parameters(self):
+	"""Returns a list of parameter names (strings) for this macro if it
+	has any. Note that if the macro is not a function-like macro, this
+	method will return None. If it is a function-like macro but with no
+	parameters, and empty list will be returned."""
+	return self.__parameters
+
+    def text(self):
+	"""Returns the replacement text for this macro as a string"""
+	return self.__text
+
+    def accept(self, visitor): visitor.visitMacro(self)
 
 class Forward (Declaration):
     """Forward declaration"""
@@ -262,7 +356,7 @@ class Module (Scope):
 class MetaModule (Module):
     """Module Class that references all places where this Module occurs"""
     def __init__(self, lang, type, name):
-        Scope.__init__(self, "", "", lang, type, name)
+        Scope.__init__(self, None, "", lang, type, name)
 	self.__module_declarations = []
     def module_declarations(self):
         """The module declarations this metamodule subsumes"""
@@ -523,6 +617,7 @@ class Visitor :
     def visitAST(self, node):
         for declaration in node.declarations(): declaration.accept(self)
     def visitDeclaration(self, node): return
+    def visitMacro(self, node): self.visitDeclaration(node)
     def visitForward(self, node): self.visitDeclaration(node)
     def visitGroup(self, node):
 	self.visitDeclaration(node)

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.hh header file
 // The LinkStore class which stores syntax and xref link info
 
-// $Id: linkstore.hh,v 1.7 2002/11/17 12:11:43 chalky Exp $
+// $Id: linkstore.hh,v 1.8 2002/12/09 04:01:00 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,11 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.hh,v $
+// Revision 1.8  2002/12/09 04:01:00  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.7  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -53,6 +58,7 @@
 class Parser;
 class Ptree;
 class SWalker;
+class FileFilter;
 
 //. Stores link information about the file. Link info is stored in two files
 //. with two purposes.
@@ -81,12 +87,14 @@ public:
         NumContext          //.< Marker used to check size of array
     };
 
-    //. Constructor. Either or both of the streams may be null.
-    //. @param syntax_stream the output stream to write the syntax links to
-    //. @param xref_stream the output stream to write the xref records to
+    //. Constructor.
+    //. @param filter the filter to use to decide whether to output syntax and
+    //. xref records
     //. @param swalker the SWalker object we are linking for
-    //. @param basename the basename to strip from xref records
-    LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker, const std::string& basename);
+    LinkStore(FileFilter* filter, SWalker* swalker);
+
+    //. Destructor. Closes all opened file streams
+    ~LinkStore();
 
     //. Store a link for the given Ptree node. If a decl is given, store an
     //. xref too
@@ -120,10 +128,16 @@ public:
 
 protected:
     //. Store a link in the Syntax File
-    void store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc);
+    void store_syntax_record(AST::SourceFile*, int line, int col, int len, Context context, const ScopedName& name, const std::string& desc);
 
     //. Store a link in the CrossRef File
-    void store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context);
+    void store_xref_record(AST::SourceFile*, const AST::Declaration* decl, const std::string& file, int line, Context context);
+
+    //. Gets the ostream for a syntax file
+    std::ostream& get_syntax_stream(AST::SourceFile*);
+
+    //. Gets the ostream for a xref file
+    std::ostream& get_xref_stream(AST::SourceFile*);
 
     //. Calculates the column number of 'ptr'. m_buffer_start is used as a
     //. lower bounds, since the function counts backwards until it finds a
@@ -132,32 +146,16 @@ protected:
     //. straight to the link file :) The adjustment requires the line number.
     int find_col(int line, const char* ptr);
 
+    //. Compiler firewalled private data type
+    struct Private;
+    //. Compiler firewalled private data
+    Private* m;
+
     //. The field separator
     static char* const FS = " ";
 
     //. The record separator
     static char* const RS = "\n";
-
-    //. The start of the program buffer
-    const char* m_buffer_start;
-
-    //. The output stream for syntax links
-    std::ostream* m_syntax_stream;
-
-    //. The output stream for xref entries
-    std::ostream* m_xref_stream;
-
-    //. The Parser object
-    Parser* m_parser;
-
-    //. The SWalker object
-    SWalker* m_walker;
-
-    //. Names for the Context enum
-    static const char* m_context_names[];
-
-    //. The basename to strip from xref records
-    std::string m_basename;
 };
 
 #endif

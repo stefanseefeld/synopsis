@@ -1,4 +1,4 @@
-# $Id: XRefCompiler.py,v 1.3 2002/11/03 06:08:56 chalky Exp $
+# $Id: XRefCompiler.py,v 1.4 2002/12/09 04:00:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,11 @@
 # 02111-1307, USA.
 #
 # $Log: XRefCompiler.py,v $
+# Revision 1.4  2002/12/09 04:00:59  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.3  2002/11/03 06:08:56  chalky
 # Tolerate file not found errors
 #
@@ -137,7 +142,9 @@ class XRefCompiler(Operation):
 	    if hasattr(obj, 'no_locals'):
 		self.__no_locals = obj.no_locals
     def execute(self, ast):
-	filenames = ast.filenames()
+	filenames = map(lambda x: x[0], 
+	    filter(lambda x: x[1].is_main(), 
+		ast.files().items()))
 	filenames = map(lambda x:self.__xref_path%x, filenames)
 	do_compile(filenames, self.__xref_file, self.__no_locals)
 

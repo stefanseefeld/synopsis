@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.79 2002/11/22 05:59:37 chalky Exp $
+// $Id: occ.cc,v 1.80 2002/12/09 04:01:01 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,11 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.80  2002/12/09 04:01:01  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.79  2002/11/22 05:59:37  chalky
 // Removed free() that shouldn't be there.
 //
@@ -40,7 +45,6 @@
 #include <cstdio>
 #include <unistd.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 
 #include <occ/walker.h>
@@ -59,6 +63,8 @@
 #include "builder.hh"
 #include "dumper.hh"
 #include "link_map.hh"
+#include "filter.hh"
+#include "linkstore.hh"
 
 // Define this to test refcounting
 //#define SYN_TEST_REFCOUNT
@@ -107,7 +113,9 @@ void FakeGC::delete_all()
 bool verbose;
 
 // If true then everything but what's in the main file will be stripped
-bool syn_main_only, syn_extract_tails, syn_use_gcc, syn_fake_std;
+bool syn_main_only;
+bool syn_extract_tails, syn_use_gcc, syn_fake_std;
+bool syn_multi_files;
 
 // If set then this is stripped from the start of all filenames
 const char* syn_basename = "";
@@ -126,6 +134,9 @@ const char* syn_file_xref = 0;
 
 // This is the compiler to emulate
 const char* syn_emulate_compiler = "c++";
+
+// A list of extra filenames to store info for
+std::vector<const char*>* syn_extra_filenames;
 
 // A place to temporarily store Python's thread state
 PyThreadState* pythread_save;
@@ -149,7 +160,8 @@ void unexpected()
     throw std::bad_exception();
 }
 
-void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<const char *> &occflags, PyObject* config)
+void getopts(PyObject *args, std::vector<const char *> &cppflags, 
+        std::vector<const char *> &occflags, PyObject* config, PyObject* extra_files)
 {
     showProgram = doCompile = verboseMode = makeExecutable = false;
     doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
@@ -160,6 +172,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
     syn_extract_tails = false;
     syn_use_gcc = false;
     syn_fake_std = false;
+    syn_multi_files = false;
 
 #define IsType(obj, type) (Py##type##_Check(obj))
 
@@ -257,6 +270,10 @@ Py_XDECREF(value);
         // include paths and macros
         OPT_STRING(syn_emulate_compiler, "emulate_compiler");
         OPT_FLAG(syn_fake_std, "fake_std");
+        // If multiple_files is set then the parser handles multiple files
+        // included from the main one at the same time (they get into the AST,
+        // plus they get their own xref and links files).
+        OPT_FLAG(syn_multi_files, "multiple_files");
     } // if config
 #undef OPT_STRING
 #undef OPT_FLAG
@@ -287,6 +304,25 @@ Py_XDECREF(value);
             syn_use_gcc = true;
         else if (strcmp(argument, "-f") == 0)
             syn_fake_std = true;
+    }
+
+    // If multi_files is set, we check the extra_files argument to see if it
+    // has a list of filenames like it should do
+    if (extra_files && PyList_Check(extra_files))
+    {
+        size_t extra_size = PyList_Size(extra_files);
+        if (extra_size > 0)
+        {
+            PyObject* item;
+            const char* string;
+            syn_extra_filenames = new std::vector<const char*>;
+            for (size_t i = 0; i < extra_size; i++)
+            {
+                item = PyList_GetItem(extra_files, i);
+                string = PyString_AsString(item);
+                syn_extra_filenames->push_back(string);
+            }
+        }
     }
 }
 
@@ -489,48 +525,11 @@ void sighandler(int signo)
     SWalker *instance = SWalker::instance();
     std::cerr << signame << "caught while processing " << instance->current_file()
     << " at line " << instance->current_lineno()
-    << " (main file is '" << instance->main_file() << "')" << std::endl;
+    << std::endl;
     exit(-1);
 }
 
-void makedirs(const char* path)
-{
-    static char buf[1024];
-    strcpy(buf, path);
-    struct stat st;
-    int error;
-    char* ptr = buf, *sep = NULL;
-    // Skip first / if any
-    if (*ptr == '/')
-        ptr++;
-    while (1)
-    {
-        // Find next /
-        while (*ptr && *ptr != '/')
-            ptr++;
-        if (!*ptr)
-            return;
-        sep = ptr;
-        if (ptr == sep + 1)
-            // An empty path component, eg: blah/foo//fred
-            continue;
-        *sep = 0;
-        // Try to stat this dir
-        if ((error = stat(buf, &st)) == -1 && errno == ENOENT)
-            mkdir(buf, 0755);
-        else if (error)
-        {
-            perror(buf);
-            return;
-        }
-        // Restore / to build up path
-        *sep = '/';
-        // Move past /
-        ptr++;
-    }
-}
-
-void RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations, PyObject* filenames)
+void RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *ast, PyObject *types, PyObject *declarations, PyObject* files)
 {
     Trace trace("RunOpencxx");
     std::set_unexpected(unexpected);
@@ -550,6 +549,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     ProgramFile prog(ifs);
     Lex lex(&prog);
     Parser parse(&lex);
+#if 0
     // Make sure basename ends in a '/'
     std::string basename = syn_basename;
     if (basename.size() > 0 && basename[basename.size()-1] != '/')
@@ -558,13 +558,29 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     std::string source(src);
     if (source.substr(0, basename.size()) == basename)
         source.erase(0, basename.size());
+#endif
+    std::string source(src);
 
-    Builder builder(basename.c_str());
-    SWalker swalker(src, &parse, &builder, &prog, basename.c_str());
+    // Setup the filter
+    FileFilter filter;
+    filter.set_only_main(syn_main_only);
+    filter.set_main_filename(src);
+    filter.set_basename(syn_basename);
+    if (syn_extra_filenames) filter.add_extra_filenames(*syn_extra_filenames);
+    if (syn_file_syntax) filter.set_syntax_filename(syn_file_syntax);
+    if (syn_file_xref) filter.set_xref_filename(syn_file_xref);
+    if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
+    if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
+
+    AST::SourceFile* sourcefile = filter.get_sourcefile(src);
+
+    Builder builder(sourcefile);
+    SWalker swalker(&filter, &parse, &builder, &prog);
     swalker.set_extract_tails(syn_extract_tails);
     Ptree *def;
     if (syn_fake_std)
     {
+        builder.set_file(sourcefile);
         // Fake a using from "std" to global
         builder.start_namespace("std", NamespaceNamed);
         builder.add_using_namespace(builder.global()->declared());
@@ -572,7 +588,6 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     }
 #ifdef DEBUG
     swalker.set_extract_tails(syn_extract_tails);
-    swalker.set_store_links(true, &std::cout, NULL);
     while(parse.rProgram(def))
         swalker.Translate(def);
 
@@ -581,9 +596,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
 #ifdef SYN_TEST_REFCOUNT
     // Test Synopsis
     Synopsis synopsis(source, declarations, types);
-    if (syn_main_only)
-        synopsis.onlyTranslateMain();
-    synopsis.translate(builder.scope());
+    synopsis.translate(builder.scope(), ast);
     synopsis.set_builtin_decls(builder.builtin_decls());
 #else
     // Test Dumper
@@ -594,6 +607,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
 #endif
 #else
 
+#if 0
     std::ofstream* of_syntax = 0;
     std::ofstream* of_xref = 0;
     char syn_buffer[1024];
@@ -624,6 +638,9 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     }
     if (of_syntax || of_xref)
         swalker.set_store_links(true, of_syntax, of_xref);
+#endif
+    if (filter.should_link(sourcefile) || filter.should_xref(sourcefile))
+        swalker.set_store_links(new LinkStore(&filter, &swalker));
     try
     {
         while(parse.rProgram(def))
@@ -637,16 +654,10 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     PyEval_RestoreThread(pythread_save);
 
     // Setup synopsis c++ to py convertor
-    Synopsis synopsis(source, declarations, types);
-    if (syn_main_only)
-        synopsis.onlyTranslateMain();
+    Synopsis synopsis(&filter, declarations, types);
     synopsis.set_builtin_decls(builder.builtin_decls());
     // Convert!
-    synopsis.translate(builder.scope());
-    if (of_syntax)
-        delete of_syntax;
-    if (of_xref)
-        delete of_xref;
+    synopsis.translate(builder.scope(), ast);
 #endif
 
     if(parse.NumOfErrors() != 0)
@@ -654,9 +665,9 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
         std::cerr << "Ignoring errors while parsing file: " << file << std::endl;
     }
 
-    if (filenames)
+    if (files)
     {
-        PyObject_CallMethod(filenames, "append", "s", source.c_str());
+        //PyObject_CallMethod(filenames, "append", "s", source.c_str());
     }
     ifs.close();
     sigaction(SIGABRT, &olda, 0);
@@ -673,12 +684,12 @@ PyObject *occParse(PyObject *self, PyObject *args)
 #endif
 
     char *src;
-    PyObject *parserargs, *types, *declarations, *config, *ast;
-    if (!PyArg_ParseTuple(args, "sO!O", &src, &PyList_Type, &parserargs, &config))
+    PyObject *extra_files, *parserargs, *types, *declarations, *config, *ast;
+    if (!PyArg_ParseTuple(args, "sOO!O", &src, &extra_files, &PyList_Type, &parserargs, &config))
         return 0;
     std::vector<const char *> cppargs;
     std::vector<const char *> occargs;
-    getopts(parserargs, cppargs, occargs, config);
+    getopts(parserargs, cppargs, occargs, config, extra_files);
     if (!src || *src == '\0')
     {
         std::cerr << "No source file" << std::endl;
@@ -690,8 +701,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
     assertObject(ast_module);
     ast = PyObject_CallMethod(ast_module, "AST", "");
     assertObject(ast);
-    PyObject* filenames = PyObject_CallMethod(ast, "filenames", "");
-    assertObject(filenames);
+    PyObject* files = PyObject_CallMethod(ast, "files", "");
+    assertObject(files);
     declarations = PyObject_CallMethod(ast, "declarations", "");
     assertObject(declarations);
     types = PyObject_CallMethod(ast, "types", "");
@@ -699,12 +710,17 @@ PyObject *occParse(PyObject *self, PyObject *args)
 #undef assertObject
 
     char *cppfile = RunPreprocessor(src, cppargs);
-    RunOpencxx(src, cppfile, occargs, types, declarations, filenames);
+    RunOpencxx(src, cppfile, occargs, ast, types, declarations, files);
     unlink(cppfile);
 
+    if (syn_extra_filenames)
+    {
+        delete syn_extra_filenames;
+        syn_extra_filenames = 0;
+    }
     Py_DECREF(ast_module);
     Py_DECREF(declarations);
-    Py_DECREF(filenames);
+    Py_DECREF(files);
     Py_DECREF(types);
 
 #ifndef DONT_GC
@@ -796,17 +812,19 @@ int main(int argc, char **argv)
             all_args = true;
         else
             PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
-    getopts(pylist, cppargs, occargs, NULL);
+    getopts(pylist, cppargs, occargs, NULL, NULL);
     if (!src || *src == '\0')
     {
         std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
         exit(-1);
     }
+    PyObject* ast_module = PyImport_ImportModule("Synopsis.Core.AST");
+    PyObject* ast = PyObject_CallMethod(ast_module, "AST", 0);
     PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
     PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
     PyObject* decls = PyList_New(0);
     char *cppfile = RunPreprocessor(src, cppargs);
-    RunOpencxx(src, cppfile, occargs, types, decls, NULL);
+    RunOpencxx(src, cppfile, occargs, ast, types, decls, NULL);
     unlink(cppfile);
 #ifdef SYN_TEST_REFCOUNT
 
@@ -814,6 +832,9 @@ int main(int argc, char **argv)
     Py_DECREF(type);
     Py_DECREF(types);
     Py_DECREF(decls);
+    Py_DECREF(ast);
+    Py_DECREF(ast_module);
+    
     // Now, there should *fingers crossed* be no python objects. Check..
     if (0)
     {
