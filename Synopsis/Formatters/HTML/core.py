@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.30 2002/07/04 05:16:19 chalky Exp $
+# $Id: core.py,v 1.31 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.31  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.30  2002/07/04 05:16:19  chalky
 # Impl output_dir option for config to replace -o argument to HTML formatter.
 #
@@ -301,7 +304,7 @@ def sort(list):
     list.sort()
     return list
 
-def reference(name, scope, label=None, **keys):
+def old_reference(name, scope, label=None, **keys):
     """Utility method to insert a reference to a name.
     @see ASTFormatter.BaseFormatter.reference()
     """

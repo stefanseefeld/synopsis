@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.7 2002/03/14 00:19:47 chalky Exp $
+# $Id: NameIndex.py,v 1.8 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.8  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.7  2002/03/14 00:19:47  chalky
 # Added demo of template specializations, and fixed HTML formatter to deal with
 # angle brackets in class names :)
@@ -140,7 +143,7 @@ class NameIndex (Page.Page):
 	self.write('\n')
 	title = string.join(name, '::')
 	type = decl.type()
-	name = core.reference(name, (), realname, title=title)+' '+type
+	name = self.reference(name, (), realname, title=title)+' '+type
 	self.write(div('nameindex-item', name))
 
 htmlPageClass = NameIndex

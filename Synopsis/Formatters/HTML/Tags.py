@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.4 2001/07/10 05:09:11 chalky Exp $
+# $Id: Tags.py,v 1.5 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.5  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.4  2001/07/10 05:09:11  chalky
 # More links work
 #
@@ -43,12 +46,16 @@ def k2a(keys):
     return string.join(map(lambda item:' %s="%s"'%item, keys.items()), '')
 def rel(frm, to):
     "Find link to to relative to frm"
+    print "Relative: '%s' -> '%s' ="%(frm,to),
     frm = string.split(frm, '/'); to = string.split(to, '/')
-    for l in range((len(frm)<len(to)) and len(frm)-1 or len(to)-1):
+    if len(frm) < len(to): check = len(frm)-1
+    else: check = len(to)-1
+    for l in range(check):
         if to[0] == frm[0]: del to[0]; del frm[0]
         else: break
     #if len(frm) > len(to): to = ['..']*(len(frm)-len(to))+to
     if frm: to = ['..'] * (len(frm) - 1) + to
+    print string.join(to,'/')
     return string.join(to,'/')
 def href(ref, label, **keys):
     "Return a href to 'ref' with name 'label' and attributes"

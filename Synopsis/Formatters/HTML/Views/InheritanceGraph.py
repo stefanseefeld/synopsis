@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.15 2001/07/19 04:03:05 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.16 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.16  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.15  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -174,7 +177,7 @@ class InheritanceGraph(Page.Page):
 		declarations = map(self.__todecl, graph)
 		declarations = filter(lambda x: x is not None, declarations)
 		# Call Dot formatter
-		output = os.path.join(config.basename, os.path.splitext(self.filename())[0]) + '-%s'%count
+		output = os.path.splitext(self.filename())[0] + '-%s'%count
 		args = ('-i','-f','html','-o',output,'-r',toc_file,'-R',self.filename(),'-t','Synopsis %s'%count,'-n')
 		temp_ast = AST.AST([''], declarations, config.types)
 		Dot.format(args, temp_ast, None)

@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.8 2002/03/14 00:19:47 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.9 2002/07/04 06:43:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.9  2002/07/04 06:43:18  chalky
+# Improved support for absolute references - pages known their full path.
+#
 # Revision 1.8  2002/03/14 00:19:47  chalky
 # Added demo of template specializations, and fixed HTML formatter to deal with
 # angle brackets in class names :)
@@ -131,7 +134,7 @@ class ModuleIndexer(Page.Page):
 		    index_url = rel(self.__filename, config.files.nameOfModuleIndex(child.name()))
 		    scope_url = rel(self.__filename, config.files.nameOfScope(child.name()))
 		    script = link_script%(index_url, scope_url)
-		    self.write(core.reference(child.name(), ns.name(), target='main', onClick=script))
+		    self.write(self.reference(child.name(), ns.name(), target='main', onClick=script))
 		else:
 		    url = rel(self.__filename, config.files.nameOfScope(child.name()))
 		    label = anglebrackets(Util.ccolonName(child.name(), ns.name()))
