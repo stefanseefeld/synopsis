@@ -366,11 +366,11 @@ Constant::~Constant()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-IntConstant::IntConstant(long val, bool _L, const Location& l )
+IntConstant::IntConstant(long val, bool b, const Location& l )
             : Constant (CT_Int, l)
 {
     lng = val;
-    L = _L;
+    L = b;
     type = new BaseType(BT_Int);
 }
 
@@ -406,11 +406,11 @@ IntConstant::print(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-UIntConstant::UIntConstant(ulong val, bool _L, const Location& l )
+UIntConstant::UIntConstant(ulong val, bool b, const Location& l )
             : Constant (CT_UInt, l)
 {
     ulng = val;
-    L = _L;
+    L = b;
     type = new BaseType(BT_Int | BT_UnSigned);
 }
 
