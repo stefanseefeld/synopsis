@@ -26,7 +26,7 @@ endif
 # Options for optimised or debug versions
 OPTIMISE	:= -O6
 #OPTIMISE	:= -O1 -ggdb -fno-inline
-DEBUG		:= -O1 -ggdb -pg -DDEBUG -fno-inline
+DEBUG		:= -O1 -ggdb $(CPP_PROFILE) -DDEBUG -fno-inline
 
 # Flags
 CFLAGS		:= 
