@@ -1,4 +1,4 @@
-Synopsis 0.2
+Synopsis 0.3
 ~~~~~~~~~~~~
 
 ** Introduction
@@ -26,14 +26,10 @@ associated python package 'Synopsis'.
 
 ** Demos
 
-There are demos for both IDL and C++. You will have to read the Makefiles in
-demo/C++ and demo/IDL for a list. Mostly these use headers or IDL files copied
-from Berlin's Prague and Warsaw libraries, but there is a custom test C++ file
-called "demo/C++/test.cc" which attempts to test all the features of the C++
-parser. You may use this file as an example of proper documentation style in
-your own programs. There is also a demo that mixes IDL and C++ in demo/Mixed.
-After running make you should find that the Impl classes link to the IDL
-interfaces as their base classes!
+There are demos for IDL, C++, and Python. Step into the demo subdirectory and run
+make to build them.
+For some of them you need particular tools, such as omniidl for the IDL parser, and
+dot for the graph generator.
 
 Parsers: IDL, C++, Python
 Formatters:
