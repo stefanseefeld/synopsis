@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.81 2002/12/12 17:25:34 chalky Exp $
+// $Id: occ.cc,v 1.82 2002/12/20 21:14:25 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.82  2002/12/20 21:14:25  stefan
+// adapt signal handler to new SourceFile code
+//
 // Revision 1.81  2002/12/12 17:25:34  chalky
 // Implemented Include support for C++ parser. A few other minor fixes.
 //
@@ -526,9 +529,9 @@ void sighandler(int signo)
         break;
     };
     SWalker *instance = SWalker::instance();
-    std::cerr << signame << "caught while processing " << instance->current_file()
-    << " at line " << instance->current_lineno()
-    << std::endl;
+    std::cerr << signame << " caught while processing " << instance->current_file()->filename()
+              << " at line " << instance->current_lineno()
+              << std::endl;
     exit(-1);
 }
 
