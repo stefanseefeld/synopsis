@@ -43,7 +43,7 @@ OCC_FILES := Buffer HashTable Lexer Ptree AST Encoding Environment \
              pattern Walker TypeInfo Parser Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 
-SYN_FILES := synopsis occ swalker ast builder type dict \
+SYN_FILES := Translator occ swalker ast builder type dict \
              dumper decoder swalker-syntax linkstore \
              lookup filter
 
