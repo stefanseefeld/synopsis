@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.10 2001/02/06 15:00:42 stefan Exp $
+# $Id: Dot.py,v 1.11 2001/02/06 16:54:15 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.11  2001/02/06 16:54:15  chalky
+# Added -n to Dot which stops those nested classes
+#
 # Revision 1.10  2001/02/06 15:00:42  stefan
 # Dot.py now references the template, not the last parameter, when displaying a Parametrized; replaced logo with a simple link
 #
@@ -147,6 +150,7 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         for inheritance in node.parents():
             inheritance.accept(self)
             self.writeEdge(self.type_label(), label, None)
+	if no_descend: return
         for d in node.declarations(): d.accept(self)
 
 class SingleInheritanceFormatter(InheritanceFormatter):
@@ -262,7 +266,8 @@ def usage():
   -s                                   Generate an inheritance graph for a single class
   -c                                   Generate a collaboration graph
   -f <format>                          Generate output in format 'dot', 'ps' (default), 'png', 'gif', 'map', 'html'
-  -r <filename>                        Read in toc for an external data base that is to be referenced"""
+  -r <filename>                        Read in toc for an external data base that is to be referenced
+  -n                                   Don't descend AST (for internal use)"""
 
 formats = {
     'dot' : 'dot',
@@ -275,14 +280,15 @@ formats = {
 
 
 def __parseArgs(args):
-    global output, title, type, oformat, verbose, toc_in
+    global output, title, type, oformat, verbose, toc_in, no_descend
     output = ''
     title = 'NoTitle'
     type = ''
     oformat = 'ps'
     toc_in = []
+    no_descend = 0
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:f:r:icsv")
+        opts,remainder = Util.getopt_spec(args, "o:t:f:r:icsvn")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -304,6 +310,7 @@ def __parseArgs(args):
 		sys.exit(1)
         elif o == "-r": toc_in.append(a)
         elif o == "-v": verbose = 1
+	elif o == "-n": no_descend = 1
 
 def _convert_map(input, output):
     line = input.readline()
