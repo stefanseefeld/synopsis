@@ -17,7 +17,7 @@ if not len(sys.argv) == 3:
 try:
    processor = import_processor(sys.argv[1])
 except ImportError, msg:
-   sys.stderr.write('Error : %s'%msg)
+   sys.stderr.write('Error : %s\n'%msg)
    sys.exit(-1)
 
 p = processor()
