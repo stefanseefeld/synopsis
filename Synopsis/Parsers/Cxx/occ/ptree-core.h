@@ -15,11 +15,11 @@
 #ifndef _ptree_core_h
 #define _ptree_core_h
 
+#include <iosfwd>
 #include "types.h"
 
 #define NIL	((Ptree*)0)
 
-class ostream;
 class ProgramString;
 class Walker;
 class TypeInfo;
@@ -37,11 +37,11 @@ public:
     bool Eq(Ptree* p) { return Eq(this, p); }
 
     void Display();
-    void Display2(ostream&);
-    virtual void Print(ostream&, int, int) = nil;
-    int Write(ostream&);
-    virtual int Write(ostream&, int) = nil;
-    void PrintIndent(ostream&, int);
+    void Display2(std::ostream&);
+    virtual void Print(std::ostream&, int, int) = nil;
+    int Write(std::ostream&);
+    virtual int Write(std::ostream&, int) = nil;
+    void PrintIndent(std::ostream&, int);
 
     char* ToString();
     virtual void WritePS(ProgramString&) = nil;
@@ -168,7 +168,7 @@ protected:
     friend class NonLeaf;
 };
 
-inline ostream& operator << (ostream& s, Ptree* p)
+inline std::ostream& operator << (std::ostream& s, Ptree* p)
 {
     p->Write(s);
     return s;

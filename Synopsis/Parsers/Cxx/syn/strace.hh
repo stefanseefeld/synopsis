@@ -1,4 +1,4 @@
-// $Id: strace.hh,v 1.2 2001/05/06 20:15:03 stefan Exp $
+// $Id: strace.hh,v 1.3 2001/05/23 05:08:47 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: strace.hh,v $
+// Revision 1.3  2001/05/23 05:08:47  stefan
+// more std C++ issues. It still crashes...
+//
 // Revision 1.2  2001/05/06 20:15:03  stefan
 // fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
 //
@@ -44,7 +47,7 @@ class Ptree;
 #define DO_TRACE
 class STrace
 {
-    typedef std::list<string> list;
+    typedef std::list<std::string> list;
 public:
     STrace(const std::string &s) : scope(s) {
 	m_list.push_back(indent() + "entering " + scope);
@@ -53,24 +56,24 @@ public:
     ~STrace() {
 	if (dlevel > --slevel) {
 	    // 'enter' message was displayed, so display leave message too
-	    cout << indent() << "leaving  " << scope << endl;
+	    std::cout << indent() << "leaving  " << scope << std::endl;
 	    --dlevel;
 	} else
 	    // 'enter' message wasn't displayed, so remove it from list
 	    m_list.pop_back();
     }
-    ostream& operator <<(string s) {
+    std::ostream& operator <<(std::string s) {
 	while (dlevel < slevel) {
-	    cout << m_list.front() << "\n";
+	    std::cout << m_list.front() << "\n";
 	    m_list.pop_front();
 	    ++dlevel;
 	}
-	cout << indent() << s; return cout;
+	std::cout << indent() << s; return std::cout;
     }
     std::string scope;
-    ostrstream& new_stream() {
+    std::ostrstream& new_stream() {
 	if (stream) delete stream;
-	stream = new ostrstream;
+	stream = new std::ostrstream;
 	*stream << scope << ": ";
 	return *stream;
     }
@@ -82,15 +85,16 @@ public:
 private:
     std::string indent() { return std::string(slevel, ' '); }
     static int slevel, dlevel;
-    static ostrstream* stream;
+    static std::ostrstream* stream;
     static list m_list;
 };
 class TranslateError : public std::exception {
 public:
     std::string message;
     Ptree* node;
-    TranslateError(STrace& trace, Ptree* p = NULL) : node(p)
-	{ message = trace.get_stream_str(); trace << "Error: " << message << endl; }
+    TranslateError(STrace& trace, Ptree* p = 0) : node(p)
+	{ message = trace.get_stream_str(); trace << "Error: " << message << std::endl; }
+    ~TranslateError() throw() {}
     virtual const char* what() const throw () { return "TranslateError"; }
     std::string str() { return message; }
     void set_node(Ptree* p) { if (!node) node = p; }
@@ -98,7 +102,7 @@ public:
 };
 #define ERROR(message) (trace.new_stream() << message, TranslateError(trace))
 #define nodeERROR(node, message) (trace.new_stream() << message, TranslateError(trace, node))
-#define LOG(message) trace << message << endl
+#define LOG(message) trace << message << std::endl
 #else
 class STrace
 {

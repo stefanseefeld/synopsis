@@ -12,8 +12,8 @@
   implied warranty.
 */
 
-#include <string.h>
-#include <iostream.h>
+#include <cstring>
+#include <iostream>
 #include "token.h"
 #include "ptree.h"
 #include "encoding.h"
@@ -38,7 +38,7 @@ bool Leaf::IsLeaf()
     return TRUE;
 }
 
-void Leaf::Print(ostream& s, int, int)
+void Leaf::Print(std::ostream& s, int, int)
 {
     char* p = data.leaf.position;
     int n = data.leaf.length;
@@ -62,7 +62,7 @@ void Leaf::Print(ostream& s, int, int)
 	s << *p++;
 }
 
-int Leaf::Write(ostream& out, int indent)
+int Leaf::Write(std::ostream& out, int indent)
 {
     int n = 0;
     char* ptr = data.leaf.position;
@@ -118,7 +118,7 @@ DupLeaf::DupLeaf(char* str1, int len1, char* str2, int len2)
     memmove(&data.leaf.position[len1], str2, len2);
 }
 
-void DupLeaf::Print(ostream& s, int, int)
+void DupLeaf::Print(std::ostream& s, int, int)
 {
     int i, j;
     char* pos;
@@ -204,7 +204,7 @@ bool NonLeaf::IsLeaf()
     return FALSE;
 }
 
-void NonLeaf::Print(ostream& s, int indent, int depth)
+void NonLeaf::Print(std::ostream& s, int indent, int depth)
 {
     if(TooDeep(s, depth))
 	return;
@@ -232,7 +232,7 @@ void NonLeaf::Print(ostream& s, int indent, int depth)
     s << ']';
 }
 
-bool NonLeaf::TooDeep(ostream& s, int depth)
+bool NonLeaf::TooDeep(std::ostream& s, int depth)
 {
     if(depth >= 32){
 	s << " ** too many nestings ** ";
@@ -242,7 +242,7 @@ bool NonLeaf::TooDeep(ostream& s, int depth)
 	return FALSE;
 }
 
-int NonLeaf::Write(ostream& out, int indent)
+int NonLeaf::Write(std::ostream& out, int indent)
 {
     int n = 0;
     Ptree* p = this;
@@ -265,7 +265,7 @@ int NonLeaf::Write(ostream& out, int indent)
     return n;
 }
 
-void NonLeaf::PrintWithEncodeds(ostream& s, int indent, int depth)
+void NonLeaf::PrintWithEncodeds(std::ostream& s, int indent, int depth)
 {
     char* encode = GetEncodedType();
     if(encode != nil){
@@ -305,7 +305,7 @@ void NonLeaf::WritePS(ProgramString& out)
 
 // class PtreeBrace
 
-void PtreeBrace::Print(ostream& s, int indent, int depth)
+void PtreeBrace::Print(std::ostream& s, int indent, int depth)
 {
     if(TooDeep(s, depth))
 	return;
@@ -339,7 +339,7 @@ void PtreeBrace::Print(ostream& s, int indent, int depth)
     s << "}]";
 }
 
-int PtreeBrace::Write(ostream& out, int indent)
+int PtreeBrace::Write(std::ostream& out, int indent)
 {
     int n = 0;
 
@@ -566,7 +566,7 @@ char* PtreeDeclarator::GetEncodedName()
     return name;
 }
 
-void PtreeDeclarator::Print(ostream& s, int i, int d)
+void PtreeDeclarator::Print(std::ostream& s, int i, int d)
 {
     if(show_encoded)
 	PrintWithEncodeds(s, i, d);
@@ -593,7 +593,7 @@ char* PtreeName::GetEncodedName()
     return name;
 }
 
-void PtreeName::Print(ostream& s, int i, int d)
+void PtreeName::Print(std::ostream& s, int i, int d)
 {
     if(show_encoded)
 	PrintWithEncodeds(s, i, d);
@@ -635,7 +635,7 @@ char* PtreeFstyleCastExpr::GetEncodedType()
     return type;
 }
 
-void PtreeFstyleCastExpr::Print(ostream& s, int i, int d)
+void PtreeFstyleCastExpr::Print(std::ostream& s, int i, int d)
 {
     if(show_encoded)
 	PrintWithEncodeds(s, i, d);

@@ -477,7 +477,7 @@ Class* ClassWalker::MakeMetaobjectForCfunctions() {
 				 Ptree::List(name, nil,
 					     Class::empty_block_t),
 				 nil, encode.Get());
-	cerr << "encode: " << class_def->GetEncodedName();
+	std::cerr << "encode: " << class_def->GetEncodedName();
 	Class* metaobject = opcxx_ListOfMetaclass::New(
 			Class::metaclass_for_c_functions,
 			class_def, nil);

@@ -123,7 +123,7 @@ void Compile(int argc, char** argv)
 
 static void ReadStdin()
 {
-    cerr << "OpenC++: No source file.  Read from console.\n";
+    std::cerr << "OpenC++: No source file.  Read from console.\n";
 
     ProgramFromStdin prog;
     int nerrors = ParseOpencxx(&prog);
@@ -132,7 +132,7 @@ static void ReadStdin()
 	if(nerrors == 0)
 	    prog.Write(cout, "stdout");
 	else{
-	    cerr << nerrors << opencxxErrorMessage;
+	    std::cerr << nerrors << opencxxErrorMessage;
 	    exit(1);
 	}
 }
@@ -171,16 +171,16 @@ static char* RunOpencxx(const char* src)
     ProgramFile src_prog(src_stream);
     if(verboseMode){
 	if(doTranslate)
-	    cerr << "[Translate... " << src
+	    std::cerr << "[Translate... " << src
 		 << " into: " << dest << "]\n";
 	else
-	    cerr << "[Parse... " << src << "]\n";
+	    std::cerr << "[Parse... " << src << "]\n";
     }
 
     int nerrors = ParseOpencxx(&src_prog);
 
     if(nerrors != 0){
-	cerr << nerrors << opencxxErrorMessage;
+	std::cerr << nerrors << opencxxErrorMessage;
 	exit(1);
     }
 
@@ -313,46 +313,46 @@ void ParseCmdOptions(int from, int argc, char** argv, char*& source_file)
 
 static void ShowVersion()
 {
-    cerr << "OpenC++ version " << thisVersion << "\n" << copyingNote << "\n";
+    std::cerr << "OpenC++ version " << thisVersion << "\n" << copyingNote << "\n";
 }
 
 static void ShowHelp(char** argv)
 {
-    cerr << "Usage: "
-	 << argv[0]
-	 << " [-l][-s][-V][-v][-E][-m[<file name>]][-c][-n][-p][--regular-c++]\n"
-	 << "\t\t[-I<directory>][-D<macro>[=<def>]][-M<option>[=<value>]]\n"
-	 << "\t\t[-g][-d<option>][-S<metaclass>]\n"
-	 << "\t\t[-- <compiler options>] <source file>\n"
-	 << "\n"
-	 << "    -g             Produce debugging information\n"
-	 << "    -M             Specify an <option> with <value> passed to metaobjects\n"
-	 << "    -l             List metaclasses\n"
-	 << "    -S             Load a metaclass\n"
-	 << "    -s             Show program tree on stdout\n"
-	 << "    -V             Show version\n"
-	 << "    -v             Verbose mode\n"
-	 << "\n"
-	 << " Building stages options\n"
-	 << "    -n             Don't preprocess\n"
-	 << "    -p             Don't translate (stop after parsing)\n"
-	 << "    -E             Don't compile (stop after translation)\n"
-	 << "    -c             Don't make executable (stop after compilation)\n"
+    std::cerr << "Usage: "
+	      << argv[0]
+	      << " [-l][-s][-V][-v][-E][-m[<file name>]][-c][-n][-p][--regular-c++]\n"
+	      << "\t\t[-I<directory>][-D<macro>[=<def>]][-M<option>[=<value>]]\n"
+	      << "\t\t[-g][-d<option>][-S<metaclass>]\n"
+	      << "\t\t[-- <compiler options>] <source file>\n"
+	      << "\n"
+	      << "    -g             Produce debugging information\n"
+	      << "    -M             Specify an <option> with <value> passed to metaobjects\n"
+	      << "    -l             List metaclasses\n"
+	      << "    -S             Load a metaclass\n"
+	      << "    -s             Show program tree on stdout\n"
+	      << "    -V             Show version\n"
+	      << "    -v             Verbose mode\n"
+	      << "\n"
+	      << " Building stages options\n"
+	      << "    -n             Don't preprocess\n"
+	      << "    -p             Don't translate (stop after parsing)\n"
+	      << "    -E             Don't compile (stop after translation)\n"
+	      << "    -c             Don't make executable (stop after compilation)\n"
 #if !defined(IRIX_CC) && !defined (_MSC_VER)
-	 << "    -P             Preprocess again after translation\n"
+	      << "    -P             Preprocess again after translation\n"
 #endif
-	 << "    -m             Compile a metaclass (make a shared library)\n"
-	 << "\n"
-	 << " Preprocessor options\n"
-	 << "    -I<directory>  Add <directory> to the #include path\n"
-	 << "    -D<name>=<def> Define a macro <name> as <def>\n"
-	 << "    -d<option>     Specify a preprocessor option\n"
+	      << "    -m             Compile a metaclass (make a shared library)\n"
+	      << "\n"
+	      << " Preprocessor options\n"
+	      << "    -I<directory>  Add <directory> to the #include path\n"
+	      << "    -D<name>=<def> Define a macro <name> as <def>\n"
+	      << "    -d<option>     Specify a preprocessor option\n"
 #if !defined(IRIX_CC) && !defined (_MSC_VER)
-	 << "    -C             Don't discard comments\n"
+	      << "    -C             Don't discard comments\n"
 #endif
-	 << "\n"
-	 << " Other options\n"
-	 << "    --regular-c++  Inhibit the extended syntax\n";
+	      << "\n"
+	      << " Other options\n"
+	      << "    --regular-c++  Inhibit the extended syntax\n";
 }
 
 void AddCppOption(const char* arg)
@@ -360,7 +360,7 @@ void AddCppOption(const char* arg)
     if(cppArgc < NARGS)
 	cppArgv[cppArgc++] = arg;
     else{
-	cerr << "OpenC++: too many arguments\n";
+	std::cerr << "OpenC++: too many arguments\n";
 	exit(1);
     }
 }
@@ -370,7 +370,7 @@ void AddCcOption(const char* arg)
     if(ccArgc < NARGS)
 	ccArgv[ccArgc++] = arg;
     else{
-	cerr << "OpenC++: too many arguments\n";
+	std::cerr << "OpenC++: too many arguments\n";
 	exit(1);
     }
 }
@@ -388,7 +388,7 @@ static void AddCc2Option(const char* arg)
     if(cc2Argc < NARGS)
 	cc2Argv[cc2Argc++] = arg;
     else{
-	cerr << "OpenC++: too many arguments\n";
+	std::cerr << "OpenC++: too many arguments\n";
 	exit(1);
     }
 }
@@ -403,7 +403,7 @@ static void RecordCmdOption(char* option)
 	*value++ = '\0';
 
     if(!Class::RecordCmdLineOption(option, value)){
-	cerr << "OpenC++: Too many -M options.\n";
+	std::cerr << "OpenC++: Too many -M options.\n";
 	exit(1);
     }
 }
@@ -420,7 +420,7 @@ static void ParseCcOptions(char* arg, char*& source_file)
 		return;
 	    }
 	    else{
-		cerr << errmsg;
+		std::cerr << errmsg;
 		exit(1);
 	    }
     }
@@ -464,5 +464,5 @@ bool IsCxxSource(char* fname)
 void ShowCommandLine(const char*, const char** args)
 {
     while(*args != nil)
-	cerr << ' ' << *args++;
+	std::cerr << ' ' << *args++;
 }

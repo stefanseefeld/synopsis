@@ -57,8 +57,8 @@
   operator <type> ==> @<encoded type>		cast operator
 */
 
-#include <string.h>
-#include <iostream.h>
+#include <cstring>
+#include <iostream>
 #include "encoding.h"
 #include "token.h"
 #include "ptree.h"
@@ -120,7 +120,7 @@ char* Encoding::Get()
     }
 }
 
-void Encoding::Print(ostream& s, char* p)
+void Encoding::Print(std::ostream& s, char* p)
 {
     unsigned char* ptr = (unsigned char*)p;
     for(;*ptr != '\0'; ++ptr)

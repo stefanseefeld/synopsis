@@ -15,13 +15,13 @@
 #ifndef _mop_h
 #define _mop_h
 
+#include <iosfwd>
 #include "types.h"
 #include "ptree-core.h"
 #include "env.h"
 #include "typeinfo.h"
 #include "member.h"
 
-class ostream;
 class ClassArray;
 class Member;
 class MemberList;
@@ -167,7 +167,7 @@ public:
     Environment* GetEnvironment() { return class_environment; }
     virtual bool AcceptTemplate();
     static bool Initialize();
-    static void FinalizeAll(ostream& out);
+    static void FinalizeAll(std::ostream& out);
     virtual Ptree* FinalizeInstance();
     virtual Ptree* Finalize();		// obsolete
     static Ptree* FinalizeClass();
@@ -303,7 +303,7 @@ public:
 			  bool (*)(), Ptree* (*)());
     static Class* New(Ptree*, Ptree*, Ptree*);
     static Class* New(char*, Ptree*, Ptree*);
-    static void FinalizeAll(ostream&);
+    static void FinalizeAll(std::ostream&);
     static bool AlreadyRecorded(char*);
     static bool AlreadyRecorded(Ptree*);
     static void PrintAllMetaclasses();

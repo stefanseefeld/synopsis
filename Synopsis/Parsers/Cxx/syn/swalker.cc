@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.26 2001/05/06 20:15:03 stefan Exp $
+// $Id: swalker.cc,v 1.27 2001/05/23 05:08:47 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.27  2001/05/23 05:08:47  stefan
+// more std C++ issues. It still crashes...
+//
 // Revision 1.26  2001/05/06 20:15:03  stefan
 // fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
 //
@@ -86,7 +89,7 @@ using namespace AST;
 #ifdef DO_TRACE
 // Class variable definitions
 int STrace::slevel = 0, STrace::dlevel = 0;
-ostrstream* STrace::stream = NULL;
+std::ostrstream* STrace::stream = 0;
 STrace::list STrace::m_list;
 #endif
 
@@ -330,7 +333,7 @@ std::string SWalker::formatParameters(std::vector<AST::Parameter*>& params)
 
 // Overrides Walker::Translate to catch any exceptions
 void SWalker::Translate(Ptree* node) {
-    STrace trace("Translate");
+    STrace trace("SWalker::Translate");
     try {
 	Walker::Translate(node);
     }
@@ -736,7 +739,7 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
             p = Ptree::Rest(p);
         }
 
-        AST::Operation* oper;
+        AST::Operation* oper = 0;
 	// Find name:
 	if (encname[0] == 'Q') {
 	    // The name is qualified, which introduces a bit of difficulty
@@ -748,8 +751,8 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 	    try {
 		Type::Named* named_type = m_builder->lookupType(names, true);
 		oper = Type::declared_cast<AST::Operation>(named_type);
-	    } catch (std::bad_cast) {
-		throw ERROR("Qualified function name wasn't a function:" << names);
+	    } catch (const std::bad_cast &) {
+// 		throw ERROR("Qualified function name wasn't a function:" << names);
 	    }
 	    // expand param info, since we now have names for them
 	    std::vector<AST::Parameter*>::iterator piter = oper->parameters().begin();
@@ -844,40 +847,40 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 // Fills the vector of Parameter types by parsing p_params.
 void SWalker::TranslateParameters(Ptree* p_params, std::vector<Parameter*>& params)
 {
-    while (p_params) {
-	// A parameter has a type, possibly a name and possibly a value
-	std::string name, value;
-	if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
-	Ptree* param = p_params->First();
-	// The type is stored in the encoded type string already
-	Type::Type* type = m_decoder->decodeType();
-	if (!type) {
-	    cout << "Premature end of decoding!" << endl;
-	    break; // NULL means end of encoding
+  while (p_params)
+    {
+      // A parameter has a type, possibly a name and possibly a value
+      std::string name, value;
+      if (p_params->Car()->Eq(',')) p_params = p_params->Cdr();
+      Ptree* param = p_params->First();
+      // The type is stored in the encoded type string already
+      Type::Type* type = m_decoder->decodeType();
+      if (!type)
+	{
+	  std::cout << "Premature end of decoding!" << std::endl;
+	  break; // NULL means end of encoding
 	}
-	// Link type
-	if (m_store_links && !param->IsLeaf() && param->First()) 
-	    storeLink(param->First(), false, type);
-	// Find name and value
-	// FIXME: this doesnt account for anon but initialised params!
-	if (param->Length() > 1) {
-	    Ptree* pname = param->Second();
-	    if (pname && pname->Car()) {
-		// * and & modifiers are stored with the name so we must skip them
-		while (pname && (pname->Car()->Eq('*') || pname->Car()->Eq('&'))) pname = pname->Cdr();
-		// Extract name
-		if (pname) {
-		    name = pname->Car()->ToString();
-		}
+      // Link type
+      if (m_store_links && !param->IsLeaf() && param->First()) 
+	storeLink(param->First(), false, type);
+      // Find name and value
+      // FIXME: this doesnt account for anon but initialised params!
+      if (param->Length() > 1)
+	{
+	  Ptree* pname = param->Second();
+	  if (pname && pname->Car())
+	    {
+	      // * and & modifiers are stored with the name so we must skip them
+	      while (pname && (pname->Car()->Eq('*') || pname->Car()->Eq('&'))) pname = pname->Cdr();
+	      // Extract name
+	      if (pname) name = pname->Car()->ToString();
 	    }
-	    // If there are three cells, they are 1:name 2:= 3:value
-	    if (param->Length() > 2) {
-		value = param->Nth(3)->ToString();
-	    }
+	  // If there are three cells, they are 1:name 2:= 3:value
+	  if (param->Length() > 2) value = param->Nth(3)->ToString();
 	}
-	// Add the AST.Parameter type to the list
-	params.push_back(new AST::Parameter("", type, "", name, value));
-	p_params = Ptree::Rest(p_params);
+      // Add the AST.Parameter type to the list
+      params.push_back(new AST::Parameter("", type, "", name, value));
+      p_params = Ptree::Rest(p_params);
     }
 }
 

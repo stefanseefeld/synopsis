@@ -84,10 +84,10 @@ struct Synopsis::Private {
 
     // Convert a vector to a List
     template <class T>
-    PyObject* List(const vector<T*>& vec) {
+    PyObject* List(const std::vector<T*>& vec) {
 	PyObject* list = PyList_New(vec.size());
 	int index = 0;
-	vector<T*>::const_iterator iter = vec.begin();
+	std::vector<T*>::const_iterator iter = vec.begin();
 	while (iter != vec.end())
 	    PyList_SET_ITEM(list, index++, py(*iter++));
 	return list;
@@ -95,10 +95,10 @@ struct Synopsis::Private {
 
     // Convert a vector to a Tuple
     template <class T>
-    PyObject* Tuple(const vector<T*>& vec) {
+    PyObject* Tuple(const std::vector<T*>& vec) {
 	PyObject* tuple = PyTuple_New(vec.size());
 	int index = 0;
-	vector<T*>::const_iterator iter = vec.begin();
+	std::vector<T*>::const_iterator iter = vec.begin();
 	while (iter != vec.end())
 	    PyTuple_SET_ITEM(tuple, index++, py(*iter++));
 	return tuple;

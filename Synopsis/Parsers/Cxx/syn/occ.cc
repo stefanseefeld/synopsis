@@ -62,14 +62,14 @@ void show(Ptree* p)
 //. Override unexpected() to print a message before we abort
 void unexpected()
 {
-    cout << "Warning: Aborting due to unexpected exception." << endl;
+    std::cout << "Warning: Aborting due to unexpected exception." << std::endl;
     throw std::bad_exception();
 }
 
 namespace
 {
 
-void getopts(PyObject *args, std::vector<const char *> &cppflags, vector<const char *> &occflags, PyObject* config)
+void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<const char *> &occflags, PyObject* config)
 {
     showProgram = doCompile = verboseMode = makeExecutable = false;
     doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
@@ -83,136 +83,155 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, vector<const c
     
     // Check config object first
     PyObject* value;
-    if ((value = PyObject_GetAttrString(config, "main_file")) != NULL) {
-	syn_main_only = PyObject_IsTrue(value);
-    }
-    if ((value = PyObject_GetAttrString(config, "verbose")) != NULL) {
-	// ignore
-    }
-    if ((value = PyObject_GetAttrString(config, "include_path")) != NULL) {
-	if (!IsType(value, List)) {
-	    cerr << "Error: include_path must be a list of strings." << endl;
+    if ((value = PyObject_GetAttrString(config, "main_file")) != 0)
+      syn_main_only = PyObject_IsTrue(value);
+    if ((value = PyObject_GetAttrString(config, "verbose")) != 0) {}	// ignore
+    if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
+      {
+	if (!IsType(value, List))
+	  {
+	    std::cerr << "Error: include_path must be a list of strings." << std::endl;
 	    exit(1);
-	}
+	  }
 	// Loop through the include paths
-	for (int i=0, end=PyList_Size(value); i < end; i++) {
+	for (int i=0, end=PyList_Size(value); i < end; i++)
+	  {
 	    PyObject* item = PyList_GetItem(value, i);
-	    if (!item || !IsType(item, String)) {
-		cerr << "Error: include_path must be a list of strings." << endl;
+	    if (!item || !IsType(item, String))
+	      {
+		std::cerr << "Error: include_path must be a list of strings." << std::endl;
 		exit(1);
-	    }
+	      }
 	    // mem leak.. how to fix?
 	    char* buf = new char[PyString_Size(item)+3];
 	    strcpy(buf, "-I");
 	    strcat(buf, PyString_AsString(item));
 	    cppflags.push_back(buf);
-	} // for
-    }
-    if ((value = PyObject_GetAttrString(config, "defines")) != NULL) {
-	if (!IsType(value, List)) {
-	    cerr << "Error: defines must be a list of strings." << endl;
+	  } // for
+      }
+    if ((value = PyObject_GetAttrString(config, "defines")) != 0)
+      {
+	if (!IsType(value, List))
+	  {
+	    std::cerr << "Error: defines must be a list of strings." << std::endl;
 	    exit(1);
-	}
+	  }
 	// Loop through the include paths
-	for (int i=0, end=PyList_Size(value); i < end; i++) {
+	for (int i=0, end=PyList_Size(value); i < end; i++)
+	  {
 	    PyObject* item = PyList_GetItem(value, i);
-	    if (!item || !IsType(item, String)) {
-		cerr << "Error: defines must be a list of strings." << endl;
+	    if (!item || !IsType(item, String))
+	      {
+		std::cerr << "Error: defines must be a list of strings." << std::endl;
 		exit(1);
-	    }
+	      }
 	    // mem leak.. how to fix?
 	    char* buf = new char[PyString_Size(item)+3];
 	    strcpy(buf, "-D");
 	    strcat(buf, PyString_AsString(item));
 	    cppflags.push_back(buf);
-	} // for
-    }
-    if ((value = PyObject_GetAttrString(config, "basename")) != NULL) {
-	if (!IsType(value, String)) {
-	    cerr << "Error: basename must be a string." << endl;
+	  } // for
+      }
+    if ((value = PyObject_GetAttrString(config, "basename")) != 0)
+      {
+	if (!IsType(value, String))
+	  {
+	    std::cerr << "Error: basename must be a string." << std::endl;
 	    exit(1);
-	}
+	  }
 	syn_basename = PyString_AsString(value);
-    }
-    if ((value = PyObject_GetAttrString(config, "extract_tails")) != NULL) {
-	syn_extract_tails = PyObject_IsTrue(value);
-    }
-    if ((value = PyObject_GetAttrString(config, "storage")) != NULL) {
-	if (!IsType(value, String)) {
-	    cerr << "Error: storage must be a string." << endl;
+      }
+    if ((value = PyObject_GetAttrString(config, "extract_tails")) != 0)
+      syn_extract_tails = PyObject_IsTrue(value);
+    if ((value = PyObject_GetAttrString(config, "storage")) != 0)
+      {
+	if (!IsType(value, String))
+	  {
+	    std::cerr << "Error: storage must be a string." << std::endl;
 	    exit(1);
-	}
+	  }
 	syn_storage = PyString_AsString(value);
-    }
-    if ((value = PyObject_GetAttrString(config, "preprocessor")) != NULL) {
-	if (PyObject_Compare(PyObject_Type(value), (PyObject*)&PyString_Type)) {
-	    cerr << "Error: preprocessor must be a string." << endl;
+      }
+    if ((value = PyObject_GetAttrString(config, "preprocessor")) != 0)
+      {
+	if (PyObject_Compare(PyObject_Type(value), (PyObject*)&PyString_Type))
+	  {
+	    std::cerr << "Error: preprocessor must be a string." << std::endl;
 	    exit(1);
-	}
+	  }
 	// This will be a generic preprocessor at some point
 	syn_use_gcc = !strcmp("gcc", PyString_AsString(value));
-    }
+      }
 #undef IsType
     
     // Now check command line args
     size_t argsize = PyList_Size(args);
-    for (size_t i = 0; i != argsize; ++i) {
+    for (size_t i = 0; i != argsize; ++i)
+      {
 	const char *argument = PyString_AsString(PyList_GetItem(args, i));
 	if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
 	else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
 	else if (strcmp(argument, "-m") == 0) syn_main_only = true;
 	else if (strcmp(argument, "-b") == 0)
-	    syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
+	  syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
 	else if (strcmp(argument, "-t") == 0) syn_extract_tails = true;
 	else if (strcmp(argument, "-s") == 0)
-	    syn_storage = PyString_AsString(PyList_GetItem(args, ++i));
+	  syn_storage = PyString_AsString(PyList_GetItem(args, ++i));
 	else if (strcmp(argument, "-g") == 0) syn_use_gcc = true;
-    }
+      }
 }
   
-char *RunPreprocessor(const char *file, const vector<const char *> &flags)
+char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 {
     static char dest[1024] = "/tmp/synopsis-XXXXXX";
-    if (mkstemp(dest) == -1) {
+    if (mkstemp(dest) == -1)
+      {
 	perror("RunPreprocessor");
 	exit(1);
-    }
-    if (syn_use_gcc) {
-	switch(fork()) {
-	    case 0: {
-		std::vector<const char *> args = flags;
-		char *cc = getenv("CC");
-		args.insert(args.begin(), cc ? cc : "c++");
-		args.push_back("-C"); // keep comments
-		args.push_back("-E"); // stop after preprocessing
-		args.push_back("-o"); // output to...
-		args.push_back(dest);
-		args.push_back("-x"); // language c++
-		args.push_back("c++");
-		args.push_back(file);
-		args.push_back(0);
-		execvp(args[0], (char **)&*args.begin());
-		perror("cannot invoke compiler");
-		exit(-1);
-		break;
+      }
+    if (syn_use_gcc)
+      {
+	switch(fork())
+	  {
+	  case 0:
+	    {
+	      std::vector<const char *> args = flags;
+	      char *cc = getenv("CC");
+	      args.insert(args.begin(), cc ? cc : "c++");
+	      args.push_back("-C"); // keep comments
+	      args.push_back("-E"); // stop after preprocessing
+	      args.push_back("-o"); // output to...
+	      args.push_back(dest);
+	      args.push_back("-x"); // language c++
+	      args.push_back("c++");
+	      args.push_back(file);
+	      args.push_back(0);
+	      execvp(args[0], (char **)&*args.begin());
+	      perror("cannot invoke compiler");
+	      exit(-1);
+	      break;
 	    }
-	    case -1:
-		perror("RunPreprocessor");
-		exit(-1);
-		break;
-	    default: {
-		int status;
-		wait(&status);
-		if (status != 0) {
-		    if (WIFEXITED(status))
-			cout << "exited with status " << WEXITSTATUS(status) << endl;
-		    else if (WIFSIGNALED(status))
-			cout << "stopped with status " << WTERMSIG(status) << endl;
-		    exit(1);
+	  case -1:
+	    perror("RunPreprocessor");
+	    exit(-1);
+	    break;
+	  default:
+	    {
+	      int status;
+	      wait(&status);
+	      if (status != 0)
+		{
+		  if (WIFEXITED(status))
+		    std::cout << "exited with status " << WEXITSTATUS(status) << std::endl;
+		  else if (WIFSIGNALED(status))
+		    std::cout << "stopped with status " << WTERMSIG(status) << std::endl;
+		  exit(1);
 		}
 	    }
-	} // switch
-    } else { // else use ucpp
+	  } // switch
+      }
+    else
+      { // else use ucpp
 	// Create argv vector
 	std::vector<const char *> args = flags;
 	char *cc = getenv("CC");
@@ -233,7 +252,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 	//args.push_back("-x"); // language c++
 	//args.push_back("c++");
 	args.push_back(file);
-
+	
 	// Call ucpp
 	int status = ucpp_main(args.size(), (char **)&*args.begin());
 	if (status != 0)
@@ -241,7 +260,7 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 	    std::cerr << "ucpp returned error flag." << std::endl;
 	    exit(1);
 	  }
-    }
+      }
     return dest;
 }
 
@@ -265,7 +284,6 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   ProgramFile prog(ifs);
   Lex lex(&prog);
   Parser parse(&lex);
-  
     // Calculate source filename
   std::string source(src);
   if (source.substr(0, strlen(syn_basename)) == syn_basename)
@@ -277,7 +295,7 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   Ptree *def;
 #ifdef DEBUG
   swalker.setExtractTails(true);
-  swalker.setStoreLinks(true, &cout);
+  swalker.setStoreLinks(true, &std::cout);
   while(parse.rProgram(def))
     swalker.Translate(def);
   // // Test Synopsis
@@ -291,16 +309,20 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   dumper.visitScope(builder.scope());
 #else
     std::ofstream* of = 0;
-    if (syn_storage) {
+    if (syn_storage)
+      {
 	of = new std::ofstream(syn_storage);
 	swalker.setStoreLinks(true, of);
-    }
-    try {
+      }
+    try
+      {
 	while(parse.rProgram(def))
-	    swalker.Translate(def);
-    } catch (...) {
+	  swalker.Translate(def);
+      }
+    catch (...)
+      {
 	std::cerr << "Warning: an uncaught exception occurred when translating the parse tree" << std::endl;
-    }
+      }
     // Setup synopsis c++ to py convertor
     Synopsis synopsis(source, declarations, types);
     if (syn_main_only) synopsis.onlyTranslateMain();
@@ -345,11 +367,11 @@ PyObject *occParse(PyObject *self, PyObject *args)
 PyObject *occUsage(PyObject *self, PyObject *)
 {
   Trace trace("occParse");
-  std::cout << "
-  -I<path>                             Specify include path to be used by the preprocessor
-  -D<macro>                            Specify macro to be used by the preprocessor
-  -m                                   Unly keep declarations from the main file
-  -b basepath                          Strip basepath from start of filenames" << endl;                           
+  std::cout
+    << "  -I<path>                             Specify include path to be used by the preprocessor\n"
+    << "  -D<macro>                            Specify macro to be used by the preprocessor\n"
+    << "  -m                                   Unly keep declarations from the main file\n"
+    << "  -b basepath                          Strip basepath from start of filenames" << std::endl;
   Py_INCREF(Py_None);
   return Py_None;
 }

@@ -27,8 +27,8 @@ public:
     Leaf(Token&);
     bool IsLeaf();
 
-    void Print(ostream&, int, int);
-    int Write(ostream&, int);
+    void Print(std::ostream&, int, int);
+    int Write(std::ostream&, int);
     void WritePS(ProgramString&);
 };
 
@@ -57,7 +57,7 @@ public:
     DupLeaf(char*, int);
     DupLeaf(char*, int, char*, int);
 
-    void Print(ostream&, int, int);
+    void Print(std::ostream&, int, int);
 };
 
 class LeafReserved : public Leaf {
@@ -117,13 +117,13 @@ public:
     NonLeaf(Ptree*, Ptree*);
     bool IsLeaf();
 
-    void Print(ostream&, int, int);
-    int Write(ostream&, int);
-    void PrintWithEncodeds(ostream&, int, int);
+    void Print(std::ostream&, int, int);
+    int Write(std::ostream&, int);
+    void PrintWithEncodeds(std::ostream&, int, int);
     void WritePS(ProgramString&);
 
 protected:
-    bool TooDeep(ostream&, int);
+    bool TooDeep(std::ostream&, int);
 };
 
 class PtreeBrace : public NonLeaf {
@@ -132,8 +132,8 @@ public:
     PtreeBrace(Ptree* ob, Ptree* body, Ptree* cb)
 	: NonLeaf(ob, Ptree::List(body, cb)) {}
 
-    void Print(ostream&, int, int);
-    int Write(ostream&, int);
+    void Print(std::ostream&, int, int);
+    int Write(std::ostream&, int);
 
     Ptree* Translate(Walker*);
 };
@@ -246,7 +246,7 @@ public:
     char* GetEncodedType();
     char* GetEncodedName();
     Ptree* Name() { return declared_name; }
-    void Print(ostream&, int, int);
+    void Print(std::ostream&, int, int);
 
     Ptree* GetComments() { return comments; }
     void SetComments(Ptree* c) { comments = c; }
@@ -263,7 +263,7 @@ public:
     PtreeName(Ptree*, Encoding&);
     int What();
     char* GetEncodedName();
-    void Print(ostream&, int, int);
+    void Print(std::ostream&, int, int);
     Ptree* Translate(Walker*);
     void Typeof(Walker*, TypeInfo&);
 
@@ -277,7 +277,7 @@ public:
     PtreeFstyleCastExpr(char*, Ptree*, Ptree*);
     int What();
     char* GetEncodedType();
-    void Print(ostream&, int, int);
+    void Print(std::ostream&, int, int);
     Ptree* Translate(Walker*);
     void Typeof(Walker*, TypeInfo&);
 

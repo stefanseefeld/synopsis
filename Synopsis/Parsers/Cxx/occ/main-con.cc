@@ -32,7 +32,7 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
-#include <iostream.h>
+#include <iostream>
 
 #if !defined(_MSC_VER)
 
@@ -67,9 +67,9 @@ int main(int argc, char** argv)
 {
     Compile(argc, argv);
     if(verboseMode) {
-        cerr << "[done.]\n";
+        std::cerr << "[done.]\n";
 #ifndef DONT_GC
-        cerr << "[GC happened " << GC_gc_no << " times.]\n";
+        std::cerr << "[GC happened " << GC_gc_no << " times.]\n";
 #endif
     }
 

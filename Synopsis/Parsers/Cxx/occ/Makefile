@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 2001/05/13 02:46:41 stefan Exp $
+# $Id: Makefile,v 1.3 2001/05/23 05:08:47 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -29,7 +29,7 @@ all:
 	done && test -z "$$fail"; \
 
 clean:
-        /bin/rm -f *~ ucpp/*.a
+	/bin/rm -f *~ ucpp/*.a
 	@for dir in ${subdirs}; do \
 	  (cd $$dir && $(MAKE) clean) \
 	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \

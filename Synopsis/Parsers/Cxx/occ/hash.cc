@@ -32,8 +32,8 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
-#include <iostream.h>
-#include <string.h>
+#include <iostream>
+#include <cstring>
 #include "types.h"
 #include "hash.h"
 #include "ptree-core.h"
@@ -78,7 +78,7 @@ bool HashTable::IsEmpty()
     return TRUE;
 }
 
-void HashTable::Dump(ostream& out)
+void HashTable::Dump(std::ostream& out)
 {
     out << '{';
     for(int i = 0; i < Size; ++i)
@@ -267,7 +267,7 @@ int HashTable::AddEntry(char* key, HashValue value, int* index)
     if(GrowTable(1000))
 	return AddEntry(key, value, index);
 
-    cerr << "HashTable overflow (key: " << key << ")\nPanic...\n";
+    std::cerr << "HashTable overflow (key: " << key << ")\nPanic...\n";
     if(index != nil)
 	*index = 0;		// no meaning
 
@@ -302,11 +302,11 @@ int HashTable::AddEntry(bool check_duplication,
     if(GrowTable(1000))
 	return AddEntry(check_duplication, key, len, value, index);
 
-    cerr << "HashTable overflow (key: ";
+    std::cerr << "HashTable overflow (key: ";
     for(i = 0; i < len; ++i)
-	cerr << key[i];
+	std::cerr << key[i];
 
-    cerr << ")\nPanic...\n";
+    std::cerr << ")\nPanic...\n";
     if(index != nil)
 	*index = 0;		// no meaning
 
@@ -323,7 +323,7 @@ void HashTable::ReplaceValue(int index, HashValue val)
     if(0 <= index && index < Size)
 	entries[index].value = val;
     else
-	cerr << "HashTable: invalid index (" << index << ")\n";
+	std::cerr << "HashTable: invalid index (" << index << ")\n";
 }
 
 bool HashTable::RemoveEntry(char* key)

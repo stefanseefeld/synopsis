@@ -12,8 +12,8 @@
   implied warranty.
 */
 
-#include <iostream.h>
-#include <string.h>
+#include <iostream>
+#include <cstring>
 #include "token.h"
 #include "mop.h"
 #include "env.h"
@@ -782,7 +782,7 @@ bool Class::Initialize()
     return TRUE;
 }
 
-void Class::FinalizeAll(ostream& out)
+void Class::FinalizeAll(std::ostream& out)
 {
     if(class_list == nil)
 	return;
@@ -1236,7 +1236,7 @@ Class* opcxx_ListOfMetaclass::New(char* name, Ptree* def, Ptree* marg)
 
 // FinalizeAll() calls all FinalizeClass()s.
 
-void opcxx_ListOfMetaclass::FinalizeAll(ostream& out)
+void opcxx_ListOfMetaclass::FinalizeAll(std::ostream& out)
 {
     for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
 	if(p->finalizer != nil){
@@ -1269,5 +1269,5 @@ bool opcxx_ListOfMetaclass::AlreadyRecorded(Ptree* name)
 void opcxx_ListOfMetaclass::PrintAllMetaclasses()
 {
     for(opcxx_ListOfMetaclass* p = head; p != nil; p = p->next)
-	cout << p->name << '\n';
+	std::cout << p->name << '\n';
 }

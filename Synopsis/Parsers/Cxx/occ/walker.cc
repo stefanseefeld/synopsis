@@ -12,7 +12,7 @@
   implied warranty.
 */
 
-#include <string.h>
+#include <cstring>
 #include "env.h"
 #include "ptree.h"
 #include "walker.h"
