@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.53 2001/01/24 12:50:23 chalky Exp $
+# $Id: HTML.py,v 1.54 2001/01/24 13:06:48 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.54  2001/01/24 13:06:48  chalky
+# Fixed bug related to /**/ causing following //. to be on same line
+#
 # Revision 1.53  2001/01/24 12:50:23  chalky
 # Fixes to get summary/detail linking again since AST.Visitor changed ...
 #
@@ -228,11 +231,20 @@ class CommentFormatter:
 
 class SSDFormatter:
     """A class that strips //.'s from the start of lines in detail"""
-    __re_ssd = '^[ \t]*//\. ?(.*)$'
+    __re_star = r'/\*(.*?)\*/'
+    __re_ssd = r'^[ \t]*//\. ?(.*)$'
     def __init__(self):
+	self.re_star = re.compile(SSDFormatter.__re_star, re.S)
 	self.re_ssd = re.compile(SSDFormatter.__re_ssd, re.M)
     def parse(self, comm):
-	comm.detail = self.parse_ssd(comm.detail)
+	comm.detail = self.parse_ssd(self.strip_star(comm.detail))
+    def strip_star(self, str):
+	"""Strips all star-format comments from the docstring"""
+	mo = self.re_star.search(str)
+	while mo:
+	    str = str[:mo.start()] + str[mo.end():]
+	    mo = self.re_star.search(str)
+	return str
     def parse_ssd(self, str):
 	return string.join(self.re_ssd.findall(str),'\n')
 
