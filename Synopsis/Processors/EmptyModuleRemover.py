@@ -1,4 +1,4 @@
-# $Id: EmptyModuleRemover.py,v 1.6 2003/12/02 14:35:53 stefan Exp $
+# $Id: EmptyModuleRemover.py,v 1.7 2003/12/04 01:08:36 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -55,15 +55,9 @@ class EmptyModuleRemover (Processor, AST.Visitor):
 
       self.add(decl)
 
-   def visitGroup(self, group):
-      """Overrides recursive behaviour to just add the group"""
-
-      self.add(group)
-
-   def visitEnum(self, enum):
-      """Overrides recursive behaviour to just add the enum"""
-
-      self.add(enum)
+   visitBuiltin = visitDeclaration
+   visitGroup = visitDeclaration
+   visitEnum = visitDeclaration
 
    def visitModule(self, module):
       """Visits all children of the module, and if there are no declarations

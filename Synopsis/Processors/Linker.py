@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.13 2003/12/03 00:37:47 stefan Exp $
+# $Id: Linker.py,v 1.14 2003/12/04 01:08:36 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -54,9 +54,6 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
 
       if self.__dicts[-1].has_key(name):
          return self.__dicts[-1][name]
-      #for decl in self.__scopes[-1].declarations():
-      #    if hasattr(decl, 'name') and decl.name() == name:
-      #       return decl
       return None
 
    def append(self, declaration):
@@ -234,11 +231,11 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       If there is already a Forward declaration, then this replaces it
       unless this is also a Forward.
       """
-
+      
       name = decl.name()
       dict = self.__dicts[-1]
       decls = self.top().declarations()
-      if dict.has_key(name) and name != ('dummy',):
+      if dict.has_key(name):
          prev = dict[name]
          if not isinstance(prev, AST.Forward):
             return
@@ -249,6 +246,12 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          return
       decls.append(decl)
       dict[name] = decl
+
+   def visitBuiltin(self, builtin):
+      """preserve builtins unconditionally"""
+
+      decls = self.top().declarations()
+      decls.append(builtin)
 
    def visitNamed(self, decl):
 
