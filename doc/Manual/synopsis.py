@@ -28,8 +28,7 @@ cxx = Cxx.Parser(base_path = topdir,
                  syntax_prefix='links',
                  xref_prefix='xref')
 
-cxx_processor = Linker(EmptyNS(),
-                       SSDComments(),
+cxx_processor = Linker(SSDComments(),
                        JavaTags(),
                        Summarizer(),
                        NamePrefixer(prefix = ['Synopsis', 'Parsers', 'Cxx', 'Parser'],

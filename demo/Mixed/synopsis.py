@@ -33,7 +33,6 @@ class Cxx2IDL(TypeMapper):
 
 idl = Composite(IDL.Parser(),
                 Linker(),           # remove duplicate and forward declarations
-                EmptyNS(),          # skip empty namespaces
                 SSDComments(),      # filter out any non-'//.' comments
                 CommentStripper())  # strip any 'suspicious' comments
 
@@ -41,7 +40,6 @@ cxx = Composite(Cxx.Parser(preprocessor = 'c++',
                            cppflags = ['-I.', '-D__x86__']),
                 Cxx2IDL(),          # map to interface to hide the skeletons
                 Linker(),           # remove duplicate and forward declarations
-                EmptyNS(),          # skip empty namespaces
                 SSDComments(),      # filter out any non-'//.' comments
                 CommentStripper())  # strip any 'suspicious' comments
 

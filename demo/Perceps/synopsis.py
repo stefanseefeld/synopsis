@@ -120,7 +120,6 @@ linker = Linker(Stripper(),
                 NameMapper(),
                 PercepsCommProcessor(),
                 PercepsCommSplitter(),
-                EmptyNS(),
                 AccessRestrictor())
 
 html = HTML.Formatter(stylesheet_file = '../html.css',

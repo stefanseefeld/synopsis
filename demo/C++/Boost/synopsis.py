@@ -36,12 +36,12 @@ linker = Linker(Stripper(),         # strip prefix (see Linker.Stripper.Stripper
                 Grouper2(),         # group declarations according to '@group' tags
                 CommentStripper(),  # strip any 'suspicious' comments
                 Previous(),         # attach '//<' comments
-                EmptyNS(),          # skip empty namespaces
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 formatter = HTML.Formatter(stylesheet_file = '../../html.css')
 
-process(parse = Composite(parser, linker),
+process(parse2 = parser,
+        parse = Composite(parser, linker),
         xref = xref,
         link = linker,
         format = formatter)
