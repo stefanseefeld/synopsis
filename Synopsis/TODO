@@ -24,3 +24,5 @@ them
 
 o. Make the HTML formatter allow to set a level to separate directories into
 multiple indexes for the top-left frame
+
+o. Make an index page with a-z and links to all types with those names

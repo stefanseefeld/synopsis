@@ -227,6 +227,8 @@ class TableOfContents(Visitor.AstVisitor):
 	    print "Warning: TOC lookup of",name,"failed!"
         return None
 
+    def size(self): return len(self.__toc)
+
     __getitem__ = lookup
 
     def insert(self, entry): self.__toc[tuple(entry.name)] = entry
@@ -659,7 +661,10 @@ class DetailFormatter(BaseFormatter):
 	self.write(entity('h1', "%s %s"%(type, name)))
 
 	# Print filename
-	self.write("Defined in: "+href(filer.nameOfFile(string.split(clas.file(),os.sep)),clas.file(),target='contents')+"<br>")
+	file = string.split(clas.file(), os.sep)
+	while len(file) and file[0] == '..': del file[0]
+	file = string.join(file, os.sep)
+	self.write("Defined in: "+href(filer.nameOfFile(string.split(clas.file(),os.sep)),file,target='contents')+"<br>")
 
 	# Print any comments for this class
 	comment = comments[clas].full
@@ -766,7 +771,8 @@ class Paginator:
 	self.startFile(filer.nameOfModuleTree(), "Module Index")
 	tree = href(filer.nameOfSpecial('tree'), 'Tree', target='main')
 	ftree = href(filer.nameOfSpecial('FileTree'), 'Files')
-	self.write(entity('b', "Modules")+' | %s | %s<br>'%(tree,ftree))
+	mtree = entity('b', "Modules")
+	self.write('%s | %s | %s<br>'%(mtree, ftree, tree))
 	self.indexModule(self.__start)
 	self.endFile()
 
@@ -940,7 +946,10 @@ class Paginator:
     def createFileTree(self):
 	fname = filer.nameOfSpecial('FileTree')
 	self.startFile(fname, "File Tree")
-	self.write(entity('b', 'Files')+'<br>')
+	tree = href(filer.nameOfSpecial('tree'), 'Tree', target='main')
+	ftree = entity('b', 'Files')
+	mtree = href(filer.nameOfModuleTree(), 'Modules')
+	self.write('%s | %s | %s<br>'%(mtree, ftree, tree))
 	# recursively visit all nodes
 	self.processFileTreeNode(fileTree.root())
 	self.endFile()
@@ -950,8 +959,16 @@ class Paginator:
     def processFileTreeNode(self, node):
 	if hasattr(node, 'decls'):
 	    self.write(href(filer.nameOfFile(node.path),node.path[-1],target='contents'))
-	elif len(node.path): self.write(node.path[-1])
+	    return
 	children = node.children.values()
+	if len(node.path):
+	    if node.path[-1] == '..':
+		# Don't print anything..
+		for child in children:
+		    self.processFileTreeNode(child)
+		    self.write('<br>')
+		return
+	    self.write(node.path[-1]+os.sep)
 	if len(children):
 	    self.write('<div class="files">')
 	    for child in children:
@@ -965,14 +982,19 @@ class Paginator:
 	if not hasattr(node, 'decls'): return
 
 	fname = filer.nameOfFile(node.path)
-	self.startFile(fname, string.join(node.path, os.sep))
-	self.write(entity('b', string.join(node.path, os.sep))+'<br>')
+	name = list(node.path)
+	while len(name) and name[0] == '..': del name[0]
+	self.startFile(fname, string.join(name, os.sep))
+	self.write(entity('b', string.join(name, os.sep))+'<br>')
 	for name in node.decls.keys():
 	    # TODO make this nicer :)
 	    entry = toc[name]
 	    if not entry: print "no entry for",name
 	    else:
-		self.write(href(entry.link,Util.ccolonName(name),target='main')+'<br>')
+		# Print link to declaration's page
+		self.write(href(entry.link,Util.ccolonName(name),target='main'))
+		# Print comment
+		self.write(self.summarizer.getSummary(node.decls[name]))
 	    
 
 
@@ -1050,6 +1072,8 @@ def format(types, declarations, args):
         d.accept(toc)
 	d.accept(classTree)
 	d.accept(fileTree)
+
+    print "TOC size:",toc.size()
 
     fileTree.buildTree()
     
