@@ -314,6 +314,7 @@ void Dumper::visitEnum(AST::Enum* decl)
 void Dumper::visitEnumerator(AST::Enumerator* enumor)
 {
     visit(enumor->comments());
+    if (enumor->type() == "dummy") return;
     cout << m_indent_string << enumor->name().back();
     if (enumor->value().size())
 	cout << " = " << enumor->value();

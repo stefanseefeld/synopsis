@@ -33,6 +33,11 @@ public:
     SWalker(Parser*, Builder*);
     virtual ~SWalker() {}
 
+    //. Sets extract tails to true.
+    //. This will cause the parser to create dummy declarations for comments
+    //. before close braces or the end of the file
+    void setExtractTails(bool value) { m_extract_tails = value; }
+
     //. Get a name from the ptree
     string getName(Ptree*);
 
@@ -136,6 +141,12 @@ private:
     //. The current filename as string. This way refcounting will be used
     string m_filename;
     int m_lineno;
+
+    //. True if should try and extract tail comments before }'s
+    bool m_extract_tails;
+
+    //. A dummy name used for tail comments
+    vector<string> m_dummyname;
 
 }; // class SWalker
 

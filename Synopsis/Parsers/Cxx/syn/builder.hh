@@ -31,6 +31,8 @@ public:
     //. Changes the current accessability for the current scope
     void setAccess(AST::Access);
 
+    //. Returns the current filename
+    string filename() { return m_filename; }
     //. Changes the current filename
     void setFilename(string filename);
     
