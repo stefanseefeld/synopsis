@@ -307,6 +307,11 @@ func_def:  func_spec cmpnd_stemnt
                 blk->head = blk->tail = (Statement*) NULL;
                 delete $2;    
             }
+			else
+			{
+				delete $1;
+				$$ = (FunctionDef*) NULL;
+			}
         }
         ;
         

@@ -234,8 +234,8 @@ Label::findExpr( fnExprCallback cb )
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Statement::Statement(StatementType stemntType, const Location& l):
-  location(l)
+Statement::Statement(StatementType stemntType, const Location& l)
+  : location(l)
 {
     type  = stemntType;
     next = NULL;

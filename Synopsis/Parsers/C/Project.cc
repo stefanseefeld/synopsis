@@ -151,7 +151,6 @@ TransUnit::TransUnit(const std::string& fname)
  :filename(fname)
 {
     head = tail = NULL;
-
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
