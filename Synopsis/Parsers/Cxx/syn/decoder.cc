@@ -4,6 +4,7 @@
 #include "type.hh"
 #include "builder.hh"
 #include "strace.hh"
+#include "dumper.hh"
 #include <iostream>
 
 Decoder::Decoder(Builder* builder)
@@ -48,11 +49,15 @@ void Decoder::decodeQualName(std::vector<std::string>& names)
 	} else if (*m_iter == 'T') {
 	    // Template :(
 	    ++m_iter;
-	    std::string tname = decodeName();
+	    TypeFormatter f;
+	    std::ostringstream name;
+	    name << decodeName();
+	    char sep = '<';
 	    code_iter tend = m_iter + *m_iter++ - 0x80 + 1;
 	    while (m_iter < tend)
-		decodeType();
-	    names.push_back(tname);
+		name << sep << f.format(decodeType());
+	    name << '>';
+	    names.push_back(name.str());
 	} else {
 	    LOG("Warning: Unknown type inside Q name: " << *m_iter);
 	    LOG("         String was: " << m_string);
@@ -71,6 +76,7 @@ void Decoder::init(char* string)
 
 Type::Type* Decoder::decodeType()
 {
+    STrace trace("Decoder::decodeType()");
     code_iter end = m_string.end();
     std::vector<std::string> premod, postmod;
     std::string name;
@@ -131,6 +137,7 @@ Type::Type* Decoder::decodeType()
 
 Type::Type* Decoder::decodeQualType()
 {
+    STrace trace("Decoder::decodeQualType()");
     // Qualified type: first is num of scopes, each a name.
     int scopes = *m_iter++ - 0x80;
     std::vector<std::string> names;
@@ -163,11 +170,13 @@ Type::Type* Decoder::decodeQualType()
     }
     // If the type is a template, then parameterize it with the params found
     // in the T decoding
-    Type::Declared* declared = dynamic_cast<Type::Declared*>(baseType);
-    AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : NULL;
-    Type::Template* templType = tempclas ? tempclas->templateType() : NULL;
-    if (templType && types.size()) {
-	return new Type::Parameterized(templType, types);
+    if (types.size()) {
+	Type::Declared* declared = dynamic_cast<Type::Declared*>(baseType);
+	AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : NULL;
+	Type::Template* templType = tempclas ? tempclas->templateType() : NULL;
+	if (templType && types.size()) {
+	    return new Type::Parameterized(templType, types);
+	}
     }
     return baseType;
 }
