@@ -1,4 +1,4 @@
-// $Id: strace.hh,v 1.3 2001/05/23 05:08:47 stefan Exp $
+// $Id: strace.hh,v 1.4 2001/06/10 07:17:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: strace.hh,v $
+// Revision 1.4  2001/06/10 07:17:37  chalky
+// Comment fix, better functions, linking etc. Better link titles
+//
 // Revision 1.3  2001/05/23 05:08:47  stefan
 // more std C++ issues. It still crashes...
 //
@@ -70,6 +73,7 @@ public:
 	}
 	std::cout << indent() << s; return std::cout;
     }
+    std::ostream& operator <<(Ptree* p); // defined in swalker.cc
     std::string scope;
     std::ostrstream& new_stream() {
 	if (stream) delete stream;

@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.38 2001/06/10 00:31:39 chalky Exp $
+// $Id: swalker.cc,v 1.39 2001/06/10 07:17:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.39  2001/06/10 07:17:37  chalky
+// Comment fix, better functions, linking etc. Better link titles
+//
 // Revision 1.38  2001/06/10 00:31:39  chalky
 // Refactored link storage, better comments, better parsing
 //
@@ -127,6 +130,12 @@ using namespace AST;
 int STrace::slevel = 0, STrace::dlevel = 0;
 std::ostrstream* STrace::stream = 0;
 STrace::list STrace::m_list;
+std::ostream& STrace::operator <<(Ptree* p)
+{
+    std::ostream& out = operator <<("-");
+    p->Display2(out);
+    return out;
+}
 #endif
 
 // ------------------------------------------------------------------
@@ -179,6 +188,11 @@ Parser* SWalker::getParser()
 Program* SWalker::getProgram()
 {
     return m_program;
+}
+
+Builder* SWalker::getBuilder()
+{
+    return m_builder;
 }
 
 TypeFormatter* SWalker::getTypeFormatter()
@@ -343,11 +357,37 @@ void SWalker::Translate(Ptree* node) {
 Ptree* SWalker::TranslatePtree(Ptree* node) {
     // Determine type of node
     char* str = node->ToString();
-    if (*str >= '0' && *str <= '9') {
+    if (*str >= '0' && *str <= '9' || *str == '.') {
 	// Assume whole node is a number
 	if (m_links) m_links->span(node, "file-number");
 	// TODO: decide if Long, Float, Double, etc
-	m_type = m_builder->lookupType("int");
+	const char* num_type = (*str == '.') ? "double" : "int";
+	while (*++str) {
+	    if (*str >= '0' && *str <= '9')
+		;
+	    else if (*str == 'e' || *str == 'E') {
+		// Might be followed by + or -
+		++str;
+		if (*str == '+' || *str == '-') ++str;
+	    } else if (*str == '.') {
+		num_type = "double";
+	    } else if (*str == 'f' || *str == 'F') {
+		num_type = "float";
+		break;
+	    } else if (*str == 'l' || *str == 'L') {
+		if (num_type == "int") num_type = "long";
+		else if (num_type == "unsigned") num_type = "unsigned long";
+		else if (num_type == "float") num_type = "long double";
+		else std::cout << "Unknown num type: " << num_type << std::endl;
+	    } else if (*str == 'u' || *str == 'U') {
+		if (num_type == "int") num_type = "unsigned";
+		else if (num_type == "long") num_type = "unsigned long";
+		else std::cout << "Unknown num type: " << num_type << std::endl;
+	    } else
+		// End of numeric constant
+		break;
+	}
+	m_type = m_builder->lookupType(num_type);
     } else if (*str == '\'') {
 	// Whole node is a char literal
 	if (m_links) m_links->span(node, "file-string");
@@ -830,7 +870,9 @@ Ptree* SWalker::TranslateDeclarator(Ptree* decl)
 
 	// TODO: implement sizes support
 	std::vector<size_t> sizes;
-	std::string var_type = m_builder->scope()->type() + " variable";
+	std::string var_type = m_builder->scope()->type();
+	if (var_type == "function") var_type = "local";
+	var_type += " variable";
 	AST::Variable* var = m_builder->addVariable(m_lineno, name, type, false, var_type);
 	//if (m_declaration->GetComments()) addComments(var, m_declaration->GetComments());
 	//if (decl->GetComments()) addComments(var, decl->GetComments());
@@ -1040,7 +1082,7 @@ void SWalker::TranslateFuncImplCache(const FuncImplCache& cache)
     // are done, we remove it from the parent scope (its not much use in the
     // documents)
     std::vector<std::string> name = cache.oper->name();
-    //name.back() = "{"+name.back()+"}";
+    name.back() = "`"+name.back();
     m_builder->startFunctionImpl(name);
     try {
 	// Add parameters

@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.10 2001/06/10 00:31:39 chalky Exp $
+ * $Id: link.cc,v 1.11 2001/06/10 07:17:37 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.11  2001/06/10 07:17:37  chalky
+ * Comment fix, better functions, linking etc. Better link titles
+ *
  * Revision 1.10  2001/06/10 00:31:39  chalky
  * Refactored link storage, better comments, better parsing
  *
@@ -223,7 +226,7 @@ namespace {
 	    out << "&nbsp;";
 	    mag /= 10;
 	}
-	out << line << "| ";
+	out << line << "|&nbsp;";
 	out << "</span>";
     }
 
@@ -383,7 +386,10 @@ namespace {
 				    name += "::" + *name_iter++;
 				TOC::iterator toc_iter = toc.find(name);
 				if (toc_iter == toc.end()) {
-				    out << "<a href=\"#" << name;
+				    if (link->type == Link::LINK_START)
+					out << "<a name=\"" << name;
+				    else
+					out << "<a href=\"#" << name;
 				} else {
 				    std::string href = toc_iter->second;
 				    if (link->type == Link::LINK_START)
@@ -392,7 +398,7 @@ namespace {
 					out << "<a class=\"file-ref\"";
 				    out << " href=\"" << href;
 				}
-				out << "\" title=\"" << link->desc <<" "<< name << "\">";
+				out << "\" title=\"" << link->desc << "\">";
 				break;
 			    }
 			case Link::REF_END:

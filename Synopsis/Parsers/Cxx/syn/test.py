@@ -126,8 +126,8 @@ class FuncTest (Test):
     test = """
 void func(char);
 void func(int);
-void func(float);
-void func(char*);
+void func(double);
+void func(const char*);
 void test() {
     func('c');
     func(123);
@@ -137,7 +137,7 @@ void test() {
 
 class Link (Test):
     def run(self):
-	return self.do_run("link.cc", "link", "-Wp,-DPYTHON_MAJOR=1,-DPYTHON_MINOR=5")
+	return self.do_run("link.cc", "link", "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include -DPYTHON_INCLUDE='<python1.5/Python.h>'")
 
 if __name__ == "__main__":
     tests = {}

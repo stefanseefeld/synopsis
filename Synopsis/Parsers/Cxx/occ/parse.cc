@@ -3887,7 +3887,6 @@ bool Parser::rCompoundStatement(Ptree*& body)
 	    return TRUE;	// error recovery
 	}
 
-	lex->GetComments();
 	sts = Ptree::Snoc(sts, st);
     }
 
