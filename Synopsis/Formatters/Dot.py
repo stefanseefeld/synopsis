@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.13 2001/03/19 07:53:45 chalky Exp $
+# $Id: Dot.py,v 1.14 2001/04/06 01:40:19 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.14  2001/04/06 01:40:19  chalky
+# Fixed the unknown nodes bug! Wasn't clearing the nodes dict on each run!
+#
 # Revision 1.13  2001/03/19 07:53:45  chalky
 # Small fixes.
 #
@@ -304,13 +307,15 @@ formats = {
 
 
 def __parseArgs(args):
-    global output, title, type, oformat, verbose, toc_in, no_descend
+    global output, title, type, oformat, verbose, toc_in, no_descend, nodes, toc
     output = ''
     title = 'NoTitle'
     type = ''
     oformat = 'ps'
     toc_in = []
     no_descend = 0
+    nodes = {}
+    toc = None
     try:
         opts,remainder = Util.getopt_spec(args, "o:t:f:r:icsvn")
     except Util.getopt.error, e:
