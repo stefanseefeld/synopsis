@@ -416,9 +416,7 @@ Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
     // Create declarator object with name
     PyObject* declor = synopsis->addDeclarator(-1,true,name,sizes);
     // Create typedef object
-    vector<PyObject*> declrs;
-    declrs.push_back(declor);
-    PyObject* typedf = synopsis->addTypedef(-1,true,"typedef",name,type,false,declrs);
+    PyObject* typedf = synopsis->addTypedef(-1,true,"typedef",name,type,false,declor);
     synopsis->addDeclared(name, typedf);
     ///...
     return declarator;
