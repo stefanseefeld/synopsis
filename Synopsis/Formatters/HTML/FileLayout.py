@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.5 2001/02/01 18:36:55 chalky Exp $
+# $Id: FileLayout.py,v 1.6 2001/02/05 07:58:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.6  2001/02/05 07:58:39  chalky
+# Cleaned up image copying for *JS. Added synopsis logo to ScopePages.
+#
 # Revision 1.5  2001/02/01 18:36:55  chalky
 # Moved TOC out to Formatter/TOC.py
 #
@@ -40,7 +43,7 @@ default implementation stores everything in the same directory.
 """
 
 # System modules
-import os, stat, string
+import os, sys, stat, string
 
 # Synopsis modules
 from Synopsis.Core import AST
@@ -72,23 +75,29 @@ class FileLayout (TOC.Linker):
 		print "ERROR: Creating directory:",reason
 		sys.exit(2)
 	if stylesheet_file:
-	    try:
-		# Copy stylesheet in
-		stylesheet_new = basename+"/"+stylesheet
-		filetime = os.stat(stylesheet_file)[stat.ST_MTIME]
-		if not os.path.exists(stylesheet_new) or \
-		    filetime > os.stat(stylesheet_new)[stat.ST_MTIME]:
-		    fin = open(stylesheet_file,'r')
-		    fout = open(stylesheet_new, 'w')
-		    fout.write(fin.read())
-		    fin.close()
-		    fout.close()
-	    except EnvironmentError, reason:
-		print "ERROR: ", reason
-		sys.exit(2)
+	    # Copy stylesheet in
+	    self.copyFile(stylesheet_file, '%s/%s'%(basename, stylesheet))
 	if not os.path.isdir(basename):
 	    print "ERROR: Output must be a directory."
 	    sys.exit(1)
+    def copyFile(self, orig_name, new_name):
+	"""Copies file if newer. The file named by orig_name is compared to
+	new_name, and if newer or new_name doesn't exist, it is copied."""
+	try:
+	    filetime = os.stat(orig_name)[stat.ST_MTIME]
+	    if not os.path.exists(new_name) or \
+		filetime > os.stat(new_name)[stat.ST_MTIME]:
+		fin = open(orig_name,'r')
+		fout = open(new_name, 'w')
+		fout.write(fin.read())
+		fin.close()
+		fout.close()
+	except EnvironmentError, reason:
+	    import traceback
+	    traceback.print_exc()
+	    print "ERROR: ", reason
+	    sys.exit(2)
+	
     def nameOfScope(self, scope):
 	"""Return the filename of a scoped name (class or module).
 	The default implementation is to join the names with '-' and append
