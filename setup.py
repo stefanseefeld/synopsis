@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.10 2003/11/18 14:38:11 stefan Exp $
+# $Id: setup.py,v 1.11 2003/11/22 14:52:16 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -48,7 +48,9 @@ ext_modules = [('Synopsis/Parsers/C', 'ctool' + module_ext),
 
 scripts = ['synopsis', 'synopsis-qt', 'compile-xref', 'search-xref']
 
-data_files = ["synopsis.jpg", "synopsis200.jpg", "syn-down.png", "syn-right.png", "syn-dot.png"]
+data_files = ["dump.css",
+              "synopsis.jpg", "synopsis200.jpg",
+              "syn-down.png", "syn-right.png", "syn-dot.png"]
 from Synopsis import __version__
 
 setup(cmdclass={'config':config,
