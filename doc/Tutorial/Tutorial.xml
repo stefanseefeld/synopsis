@@ -54,7 +54,7 @@
       synopsis to your coding and commenting style, as well as how
       to generate the output in a format and style that fulfills
       your needs.</para>
-    <section>
+    <section id="executable">
       <title>The synopsis executable</title>
       <para>The synopsis executable is a little convenience frontend
         to the larger Synopsis framework consisting of AST related
@@ -198,13 +198,17 @@
       </variablelist>
     </section>
 
-    <section>
+    <section id="parsing">
       <title>Parsing source code</title>
 
+      <para>As synopsis' current focus is on document generation, the
+        AST it generates from a parsed source file consists of declarations
+        only. Let's thus in the following consider how synopsis parses
+        C++ header files.</para>
       <para></para>
     </section>
 
-    <section>
+    <section id="comments">
       <title>Using comments for documentation</title>
 
       <para>
@@ -220,7 +224,7 @@
     <!-- When the synopsis executable isn't
            powerful enough... -->
 
-    <section>
+    <section id="ast">
       <title>The AST</title>
 
       <para></para>
@@ -236,7 +240,7 @@
       </mediaobject>
     </section>
 
-    <section>
+    <section id="processor">
       <title>The Processor class</title>
 
       <!-- Talk about the Processor class design -->
@@ -300,7 +304,7 @@
   return set.ast</programlisting>
     </section>
 
-    <section>
+    <section id="pipeline">
       <title>Composing a pipeline</title>
 
       <para>With such a design, processors can simply be chained together:</para>
@@ -342,7 +346,7 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
       <programlisting>formatter.process(linker.process(AST(), input = [&#39;source1.syn&#39;, &#39;source2.syn&#39;]), output = &#39;html&#39;)</programlisting>
     </section>
 
-    <section>
+    <section id="parameters">
       <title>Parameters and the order of initialization</title>
 
       <!-- Talk about the Parameter setting for processors and
@@ -353,33 +357,98 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
   </chapter>
   <chapter>
     <title>Processor design</title>
-    <section>
+    <section id="python-parser">
       <title>Python Parser</title>
     </section>
-    <section>
+    <section id="idl-parser">
       <title>IDL Parser</title>
+      <para>The IDL parser parses CORBA IDL.</para>
     </section>
-    <section>
+    <section id="cxx-parser">
       <title>Cxx Parser</title>
+      <para>The Cxx parser parses C++.</para>
     </section>
-    <section>
+    <section id="linker">
       <title>Linker</title>
+      <para>The Linker recursively traverses the AST using the Visitor
+        pattern, and replaces any duplicate types with their originals, and
+        removes duplicate declarations. References to the removed declarations
+        are replaced with a reference to the original. This action is largely
+        unncessary due to the -m flags, but can still be useful in some
+        situations, such as when you have nested classes defined in separate
+        files. It also converts AST.Modules into AST.MetaModules, which list all
+        the files a module is defined in.</para>
     </section>
-    <section>
+    <section id="comment-parsers">
       <title>Comment Parsers</title>
     </section>
-    <section>
+    <section id="dump-formatter">
       <title>Dump Formatter</title>
+      <para>The Dump formatter's main goal is to provide a format
+        that is as close to the AST tree, is easily browsable to the
+        naked eye, and provides the means to do validation or other
+        analysis.</para>
+      <para>It generates an xml tree that can be browsed via mozilla (it
+        uses a stylesheet for convenient display), or it can be analyzed
+        with some special tools using xpath expressions.</para>
+      <para>It is used right now for all unit tests.</para>
+      <para>Here are the available parameters</para>
+      <variablelist>
+        <varlistentry>
+          <term>show_ids</term>
+          <listitem>
+            <para>output object ids as attributes 
+              (these can vary between different executions)</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>show_declarations</term>
+          <listitem>
+            <para>output declarations</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>show_types</term>
+          <listitem>
+            <para>output types</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>show_files</term>
+          <listitem>
+            <para>output files</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>stylesheet</term>
+          <listitem>
+            <para>the stylesheet to refer to</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
-    <section>
+    <section id="ascii-formatter">
+      <title>ASCII Formatter</title>
+      <para>The ASCII formatter attempts to output the AST in a format that is
+      suitable for recompilation, or close to. You can use this to check
+      that your code and comments are getting parsed correctly, or out of
+      interest to see the structure of the AST after Linking. Like the DUMP
+      formatter, this is mostly of use for debugging.</para>
+    </section>
+    <section id="docbook-formatter">
       <title>Docbook Formatter</title>
     </section>
-    <section>
+    <section id="dot-formatter">
       <title>Dot Formatter</title>
+      <para>The Dot formatter can generate graphs. You can generate uml
+        class and collaboration graphs with it in a number of output
+        formats</para>
     </section>
-    <section>
+    <section id="html-formatter">
       <title>HTML Formatter</title>
-
+      <para>The HTML formatter generates html output. It is designed 
+        in a modular way, to let users customize in much detail how
+        to format the AST.</para>
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
