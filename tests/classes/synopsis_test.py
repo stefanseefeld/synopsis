@@ -9,6 +9,7 @@
 from qm.fields import TextField
 from qm.executable import RedirectedExecutable
 from qm.test.test import Test
+from qm.test.resource import Resource
 from qm.test.result import Result
 
 import os
@@ -131,3 +132,75 @@ class CToolTest(Test):
          output = open(self.output).readlines()
          if expected != output:
             result.Fail("output mismatch")
+
+class OpenCxxResource(Resource):
+   """build the executables the OpenCxxTests all depend on."""
+
+   arguments = [TextField(name="CXX", description="The compiler command."),
+                TextField(name="CPPFLAGS", description="The preprocessor flags."),
+                TextField(name="CXXFLAGS", description="The compiler flags."),
+                TextField(name="LDFLAGS", description="The linker flags."),
+                TextField(name="LIBS", description="The libraries to link with."),
+                TextField(name="src", description="The source file."),
+                TextField(name="exe", description="The executable file."),
+                TextField(name="srcdir", description="The source directory."),
+                TextField(name="builddir", description="The build directory of the OpenCxx stuff.")]
+
+   def compile(self, context, result):
+      if not os.path.isdir(os.path.dirname(self.exe)):
+         os.makedirs(os.path.dirname(self.exe))
+
+      cppflags = os.popen('sh -c "PKG_CONFIG_PATH=%s pkg-config --cflags OpenCxx"'%self.builddir).read()
+      command = '%s %s %s %s -o %s %s %s'%(self.CXX,
+                                           self.CPPFLAGS + ' ' + cppflags, self.CXXFLAGS,
+                                           self.LDFLAGS,
+                                           self.exe, self.src, '%s/opencxx.a '%self.builddir + self.LIBS)
+      compiler = RedirectedExecutable()
+      status = compiler.Run(string.split(command))
+      if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
+         return self.exe
+      else:
+         result.Fail('compilation failed',
+                     {'synopsis_test.error': compiler.stderr,
+                      'synopsis_test.command': command})
+         return None      
+
+   def SetUp(self, context, result):
+
+      self.compile(context, result)
+
+class OpenCxxTest(Test):
+   """Process an input file with a processor and compare the output.
+   If the processor doesn't exist yet, attempt to build it."""
+
+   arguments = [TextField(name="applet", description="The applet."),
+                TextField(name="srcdir", description="The source directory."),
+                TextField(name="input", description="The input files."),
+                TextField(name="output", description="The output files."),
+                TextField(name="expected", description="The expected output file.")]
+
+   def run_applet(self, context, result):
+
+      input = map(lambda x:os.path.join(self.srcdir, x), self.input)
+      if not os.path.isdir(os.path.dirname(self.output)):
+         os.makedirs(os.path.dirname(self.output))
+
+      test = RedirectedExecutable()
+      command = '%s %s %s'%(self.applet, self.output, self.input)
+      status = test.Run(command.split())
+      if not os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
+         result.Fail('program exit value : %i'%os.WEXITSTATUS(status))
+         if test.stderr: result['synopsis_test.error'] = test.stderr
+
+      expected = string.join(open(self.expected, 'r').readlines(), '')
+      output = string.join(open(self.output, 'r').readlines(), '')
+      if expected != output:
+         expected = '\'%s\''%(expected)
+         output = '\'%s\''%(test.stdout)
+         result.Fail('incorrect output',
+                     {'synopsis_test.expected': expected,
+                      'synopsis_test.output': output})
+
+   def Run(self, context, result):
+
+      self.run_applet(context, result)
