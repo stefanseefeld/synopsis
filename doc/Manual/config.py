@@ -22,4 +22,10 @@ class Config (Base):
 		toc_files = ['links.toc']
 	    class FileTree:
 		link_to_pages = 1
+	    class ScopePages (Base.Formatter.HTML.ScopePages):
+		summary_formatters = [
+		    ('Synopsis.Formatter.HTML.ASTFormatter','SummaryASTFormatter'),
+		    ('Synopsis.Formatter.HTML.ASTFormatter','SummaryASTCommenter'),
+		    ('Synopsis.Formatter.HTML.ASTFormatter','FilePageLinker'),
+		]
 	modules = {'HTML':HTML}
