@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.88 2003/08/01 00:23:16 stefan Exp $
+// $Id: occ.cc,v 1.89 2003/11/05 17:36:55 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.89  2003/11/05 17:36:55  stefan
+// C++ parser fe refactoring to suite the Processor interface
+//
 // Revision 1.88  2003/08/01 00:23:16  stefan
 // accept '-Wp,-I,<filename>' and '-Wp,-D,<filename>'
 //
@@ -105,9 +108,16 @@ extern "C" int ucpp_main(int argc, char** argv);
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
  */
-bool showProgram, doCompile, makeExecutable, doPreprocess, doTranslate;
-bool verboseMode, regularCpp, makeSharedLibrary, preprocessTwice;
-char* sharedLibraryName;
+bool showProgram = false;
+bool doCompile = false;
+bool makeExecutable = false;
+bool doPreprocess = true;
+bool doTranslate = false;
+bool verboseMode = false;
+bool regularCpp = false;
+bool makeSharedLibrary = false;
+bool preprocessTwice = false;
+char* sharedLibraryName = 0;
 
 /* These also are just dummies needed by the opencxx module */
 void RunSoCompiler(const char *)
@@ -147,7 +157,7 @@ bool syn_extract_tails, syn_use_gcc, syn_fake_std;
 bool syn_multi_files;
 
 // If set then this is stripped from the start of all filenames
-const char* syn_basename = "";
+const char* syn_base_path = "";
 
 // If set then this is the prefix for the filename to store links to
 const char* syn_syntax_prefix = 0;
@@ -155,17 +165,11 @@ const char* syn_syntax_prefix = 0;
 // If set then this is the prefix for the filename to store xref info to
 const char* syn_xref_prefix = 0;
 
-// If set then this is the filename to store links to
-const char* syn_file_syntax = 0;
-
-// If set then this is the filename to store xref to
-const char* syn_file_xref = 0;
-
 // This is the compiler to emulate
 const char* syn_emulate_compiler = "c++";
 
 // A list of extra filenames to store info for
-std::vector<const char*>* syn_extra_filenames = NULL;
+std::vector<const char*> syn_extra_filenames;
 
 // A place to temporarily store Python's thread state
 PyThreadState* pythread_save;
@@ -189,191 +193,12 @@ void unexpected()
     throw std::bad_exception();
 }
 
-void getopts(PyObject *args, std::vector<const char *> &cppflags, 
-        std::vector<const char *> &occflags, PyObject* config, PyObject* extra_files)
-{
-    // Initialise defaults
-    showProgram = doCompile = verboseMode = makeExecutable = false;
-    doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
-    doPreprocess = true;
-    sharedLibraryName = 0;
-    verbose = false;
-    syn_main_only = false;
-    syn_extract_tails = false;
-    syn_use_gcc = false;
-    syn_fake_std = false;
-    syn_multi_files = false;
-    Class::do_init_static();
-    Metaclass::do_init_static();
-    Environment::do_init_static();
-    Encoding::do_init_static();
-
-#define IsType(obj, type) (Py##type##_Check(obj))
-
-#define OPT_FLAG(syn_flag, config_name) \
-if ((value = PyObject_GetAttrString(config, config_name)) != 0)\
-    syn_flag = PyObject_IsTrue(value);\
-Py_XDECREF(value);
-
-#define OPT_STRING(syn_name, config_name) \
-if ((value = PyObject_GetAttrString(config, config_name)) != 0)\
-{ if (!IsType(value, String)) throw "Error: " config_name " must be a string.";\
-  syn_name = PyString_AsString(value);\
-}\
-Py_XDECREF(value);
-
-    // Check config object first
-    if (config)
-    {
-        PyObject* value;
-        OPT_FLAG(verbose, "verbose");
-        OPT_FLAG(syn_main_only, "main_file");
-        // Grab the include paths
-        if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
-        {
-            if (!IsType(value, List))
-            {
-                std::cerr << "Error: include_path must be a list of strings." << std::endl;
-                exit(1);
-            }
-            // Loop through the include paths
-            for (int i=0, end=PyList_Size(value); i < end; i++)
-            {
-                PyObject* item = PyList_GetItem(value, i);
-                if (!item || !IsType(item, String))
-                {
-                    std::cerr << "Error: include_path must be a list of strings." << std::endl;
-                    exit(1);
-                }
-                // mem leak.. how to fix?
-                char* buf = new char[PyString_Size(item)+3];
-                strcpy(buf, "-I");
-                strcat(buf, PyString_AsString(item));
-                cppflags.push_back(buf);
-            } // for
-        }
-        Py_XDECREF(value);
-        // Grab the list of defines
-        if ((value = PyObject_GetAttrString(config, "defines")) != 0)
-        {
-            if (!IsType(value, List))
-            {
-                std::cerr << "Error: defines must be a list of strings." << std::endl;
-                exit(1);
-            }
-            // Loop through the include paths
-            for (int i=0, end=PyList_Size(value); i < end; i++)
-            {
-                PyObject* item = PyList_GetItem(value, i);
-                if (!item || !IsType(item, String))
-                {
-                    std::cerr << "Error: defines must be a list of strings." << std::endl;
-                    exit(1);
-                }
-                // mem leak.. how to fix?
-                char* buf = new char[PyString_Size(item)+3];
-                strcpy(buf, "-D");
-                strcat(buf, PyString_AsString(item));
-                cppflags.push_back(buf);
-            } // for
-        }
-        Py_XDECREF(value);
-
-        // Basename is the prefix to strip from filenames
-        OPT_STRING(syn_basename, "basename");
-        // Extract tails tells the parser to find tail comments
-        OPT_FLAG(syn_extract_tails, "extract_tails");
-        // 'storage' defines the filename to write syntax hilite info to (OBSOLETE)
-        OPT_STRING(syn_file_syntax, "storage");
-        // 'syntax_prefix' defines the prefix for the filename to write syntax hilite info to
-        OPT_STRING(syn_syntax_prefix, "syntax_prefix");
-        // 'syntax_file' defines the filename to write syntax hilite info to
-        OPT_STRING(syn_file_syntax, "syntax_file");
-        // 'xref_prefix' defines the prefix for the xrefname to write syntax hilite info to
-        OPT_STRING(syn_xref_prefix, "xref_prefix");
-        // 'xref_file' defines the filename to write syntax hilite info to
-        OPT_STRING(syn_file_xref, "xref_file");
-        // 'preprocessor' defines whether to use gcc or not
-        char* temp_string = NULL;
-        OPT_STRING(temp_string, "preprocessor");
-        if (temp_string)
-        {
-            syn_use_gcc = !strcmp("gcc", temp_string);
-        }
-        // 'emulate_compiler' specifies the compiler to emulate in terms of
-        // include paths and macros
-        OPT_STRING(syn_emulate_compiler, "emulate_compiler");
-        OPT_FLAG(syn_fake_std, "fake_std");
-        // If multiple_files is set then the parser handles multiple files
-        // included from the main one at the same time (they get into the AST,
-        // plus they get their own xref and links files).
-        OPT_FLAG(syn_multi_files, "multiple_files");
-    } // if config
-#undef OPT_STRING
-#undef OPT_FLAG
-#undef IsType
-
-    // Now check command line args
-    size_t argsize = PyList_Size(args);
-    for (size_t i = 0; i != argsize; ++i)
-    {
-        const char *argument = PyString_AsString(PyList_GetItem(args, i));
-        if (strncmp(argument, "-I", 2) == 0)
-	{
-	  cppflags.push_back(argument);
-	  if (strlen(argument) == 2)
-	    cppflags.push_back(PyString_AsString(PyList_GetItem(args, ++i)));
-	}
-        else if (strncmp(argument, "-D", 2) == 0)
-	{
-	  cppflags.push_back(argument);
-	  if (strlen(argument) == 2)
-	    cppflags.push_back(PyString_AsString(PyList_GetItem(args, ++i)));
-	}
-        else if (strcmp(argument, "-v") == 0)
-            verbose = true;
-        else if (strcmp(argument, "-m") == 0)
-            syn_main_only = true;
-        else if (strcmp(argument, "-b") == 0)
-            syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
-        else if (strcmp(argument, "-t") == 0)
-            syn_extract_tails = true;
-        else if (strcmp(argument, "-s") == 0)
-            syn_file_syntax = PyString_AsString(PyList_GetItem(args, ++i));
-        else if (strcmp(argument, "-x") == 0)
-            syn_file_xref = PyString_AsString(PyList_GetItem(args, ++i));
-        else if (strcmp(argument, "-g") == 0)
-            syn_use_gcc = true;
-        else if (strcmp(argument, "-f") == 0)
-            syn_fake_std = true;
-    }
-
-    // If multi_files is set, we check the extra_files argument to see if it
-    // has a list of filenames like it should do
-    if (extra_files && PyList_Check(extra_files))
-    {
-        size_t extra_size = PyList_Size(extra_files);
-        if (extra_size > 0)
-        {
-            PyObject* item;
-            const char* string;
-            syn_extra_filenames = new std::vector<const char*>;
-            for (size_t i = 0; i < extra_size; i++)
-            {
-                item = PyList_GetItem(extra_files, i);
-                string = PyString_AsString(item);
-                syn_extra_filenames->push_back(string);
-            }
-        }
-    }
-}
-
 //. Emulates the compiler in 'syn_emulate_compiler' by calling the Python
 //. module Synopsis.Parser.C++.emul to get a list of include paths and macros to
 //. add to the args vector.
 void emulate_compiler(std::vector<const char*>& args)
 {
-    PyObject* emul_module = PyImport_ImportModule("Synopsis.Parser.C++.emul");
+    PyObject* emul_module = PyImport_ImportModule("Synopsis.Parser.Cxx.emul");
     if (!emul_module)
         return;
     PyObject* info = PyObject_CallMethod(emul_module, "get_compiler_info", "s", syn_emulate_compiler);
@@ -608,7 +433,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     Parser parse(&lex);
 #if 0
     // Make sure basename ends in a '/'
-    std::string basename = syn_basename;
+    std::string basename = syn_base_path;
     if (basename.size() > 0 && basename[basename.size()-1] != '/')
         basename.append("/");
     // Calculate source filename
@@ -661,9 +486,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     std::ofstream* of_xref = 0;
     char syn_buffer[1024];
     size_t baselen = basename.size();
-    if (syn_file_syntax)
-        of_syntax = new std::ofstream(syn_file_syntax);
-    else if (syn_syntax_prefix)
+    if (syn_syntax_prefix)
     {
         strcpy(syn_buffer, syn_syntax_prefix);
         if (!strncmp(basename.c_str(), src, baselen))
@@ -673,9 +496,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
         makedirs(syn_buffer);
         of_syntax = new std::ofstream(syn_buffer);
     }
-    if (syn_file_xref)
-        of_xref = new std::ofstream(syn_file_xref);
-    else if (syn_xref_prefix)
+    if (syn_xref_prefix)
     {
         strcpy(syn_buffer, syn_xref_prefix);
         if (!strncmp(basename.c_str(), src, baselen))
@@ -733,10 +554,8 @@ void do_parse(const char *src,
     FileFilter filter;
     filter.set_only_main(syn_main_only);
     filter.set_main_filename(src);
-    filter.set_basename(syn_basename);
-    if (syn_extra_filenames) filter.add_extra_filenames(*syn_extra_filenames);
-    if (syn_file_syntax) filter.set_syntax_filename(syn_file_syntax);
-    if (syn_file_xref) filter.set_xref_filename(syn_file_xref);
+    filter.set_basename(syn_base_path);
+    filter.add_extra_filenames(syn_extra_filenames);
     if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
     if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
 
@@ -748,48 +567,87 @@ void do_parse(const char *src,
     unlink(cppfile);
 }
 
+bool extract(PyObject *list, std::vector<const char *> &out)
+{
+  size_t argsize = PyList_Size(list);
+  for (size_t i = 0; i != argsize; ++i)
+  {
+    const char *value = PyString_AsString(PyList_GetItem(list, i));
+    if (!value) return false;
+    out.push_back(value);
+  }
+  return true;
+}
+
 PyObject *occParse(PyObject *self, PyObject *args)
 {
     Trace trace("occParse");
+
+    Class::do_init_static();
+    Metaclass::do_init_static();
+    Environment::do_init_static();
+    Encoding::do_init_static();
+
 #if 0
 
     Ptree::show_encoded = true;
 #endif
 
+    PyObject *ast;
     char *src;
-    PyObject *extra_files, *parserargs, *types, *declarations, *config, *ast;
-    if (!PyArg_ParseTuple(args, "sOO!O", &src, &extra_files, &PyList_Type, &parserargs, &config))
+    PyObject *py_extra_files;
+    std::vector<const char *> extra_files;
+    int verbose, main_file_only;
+    char *preprocessor;
+    PyObject *py_cppflags;
+    std::vector<const char *> cppflags;
+    int extract_tails;
+    if (!PyArg_ParseTuple(args, "OsO!iizzO!izz",
+                          &ast,
+                          &src,
+                          &PyList_Type, &py_extra_files,
+                          &verbose,
+                          &main_file_only,
+                          &syn_base_path,
+                          &preprocessor,
+                          &PyList_Type, &py_cppflags,
+                          &extract_tails,
+                          &syn_syntax_prefix,
+                          &syn_xref_prefix)
+        || !extract(py_extra_files, extra_files)
+        || !extract(py_cppflags, cppflags))
         return 0;
-    std::vector<const char *> cppargs;
-    std::vector<const char *> occargs;
-    getopts(parserargs, cppargs, occargs, config, extra_files);
+
+    Py_INCREF(ast);
+
+    if (verbose) ::verbose = true;
+    if (main_file_only) syn_main_only = true;
+    if (extract_tails) syn_extract_tails = true;
+    if (preprocessor) syn_use_gcc = true;
+
+    for (std::vector<const char *>::iterator i = extra_files.begin();
+         i != extra_files.end();
+         ++i)
+      syn_extra_filenames.push_back(*i);
+
     if (!src || *src == '\0')
     {
-        std::cerr << "No source file" << std::endl;
-        exit(-1);
+      PyErr_SetString(PyExc_RuntimeError, "no input file");
+      return 0;
     }
     // Make AST object
 #define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
-    PyObject* ast_module = PyImport_ImportModule("Synopsis.Core.AST");
-    assertObject(ast_module);
-    ast = PyObject_CallMethod(ast_module, "AST", "");
-    assertObject(ast);
     PyObject* files = PyObject_CallMethod(ast, "files", "");
     assertObject(files);
-    declarations = PyObject_CallMethod(ast, "declarations", "");
+    PyObject *declarations = PyObject_CallMethod(ast, "declarations", "");
     assertObject(declarations);
-    types = PyObject_CallMethod(ast, "types", "");
+    PyObject *types = PyObject_CallMethod(ast, "types", "");
     assertObject(types);
 #undef assertObject
 
-    do_parse(src, cppargs, occargs, ast, types, declarations, files);
+    std::vector<const char *> dummy;
+    do_parse(src, cppflags, dummy, ast, types, declarations, files);
 
-    if (syn_extra_filenames)
-    {
-        delete syn_extra_filenames;
-        syn_extra_filenames = 0;
-    }
-    Py_DECREF(ast_module);
     Py_DECREF(declarations);
     Py_DECREF(files);
     Py_DECREF(types);
@@ -826,28 +684,11 @@ PyObject *occParse(PyObject *self, PyObject *args)
 
     // Clear the link map
     LinkMap::instance()->clear();
-
     return ast;
 }
 
-PyObject *occUsage(PyObject *self, PyObject *)
-{
-    Trace trace("occParse");
-    std::cout
-    << "  -I<path>                             Specify include path to be used by the preprocessor\n"
-    << "  -D<macro>                            Specify macro to be used by the preprocessor\n"
-    << "  -m                                   Unly keep declarations from the main file\n"
-    << "  -b basepath                          Strip basepath from start of filenames" << std::endl;
-    Py_INCREF(Py_None);
-    return Py_None;
-}
-
-PyMethodDef occ_methods[] =
-    {
-        {(char*)"parse",            occParse,               METH_VARARGS},
-        {(char*)"usage",            occUsage,               METH_VARARGS},
-        {0, 0}
-    };
+PyMethodDef occ_methods[] = {{(char*)"parse", occParse, METH_VARARGS},
+                             {0, 0}};
 };
 
 extern "C" void initocc()
@@ -883,6 +724,12 @@ int main(int argc, char **argv)
             all_args = true;
         else
             PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
+
+    Class::do_init_static();
+    Metaclass::do_init_static();
+    Environment::do_init_static();
+    Encoding::do_init_static();
+
     getopts(pylist, cppargs, occargs, NULL, NULL);
     if (!src || *src == '\0')
     {
