@@ -18,6 +18,14 @@ debug=1
 def k2a(keys):
     "Convert a keys dict to a string of attributes"
     return string.join(map(lambda item:' %s="%s"'%item, keys.items()), '')
+def rel(frm, to):
+    "Find link to to relative to frm"
+    frm = string.split(frm, '/'); to = string.split(to, '/')
+    for l in range((len(frm)<len(to)) and len(frm) or len(to)):
+        if to[0] == frm[0]: del to[0]; del frm[0]
+        else: break
+    if len(frm) > len(to): to = ['..']*(len(frm)-len(to))+to
+    return string.join(to,'/')
 def href(ref, label, **keys):
     return '<a href="%s"%s>%s</a>'%(ref,k2a(keys),label)
 def name(ref, label): return '<a class="name" name="%s">%s</a>'%(ref,label)
@@ -33,11 +41,43 @@ def desc(text):
     block = map(lambda s: s.text()[3:], block)
     return div("desc", string.join(block, '\n'))
 
-def filename(basename, scope):
-    """Calculate the filename from the given scope tuple"""
-    scope = map(lambda x:'-'+x, scope)
-    filename = basename + string.join(scope,'') + ".html"
-    return filename
+class FileNamer:
+    """A class that encapsulates naming files."""
+    def __init__(self):
+	if basename is None:
+	    print "ERROR: No output directory specified."
+	    print "You must specify a base directory with the -o option."
+	    sys.exit(1)
+	import os.path
+	if not os.path.exists(basename):
+	    print "Warning: Output directory does not exist. Creating."
+	    try:
+		os.makedirs(basename, 0755)
+	    except os.error, reason:
+		print "ERROR: Creating directory:",reason
+		sys.exit(2)
+	if not os.path.isdir(basename):
+	    print "ERROR: Output must be a directory."
+	    sys.exit(1)
+    def nameOfScope(self, scope):
+	if not len(scope): return self.nameOfSpecial('global')
+	return string.join(scope,'-') + ".html"
+    def nameOfIndex(self):
+	return "index.html"
+    def nameOfSpecial(self, name):
+	return "_" + name + ".html"
+    def nameOfModuleTree(self):
+	return "_modules.html"
+    def nameOfModuleIndex(self, scope):
+	return "_module_" + string.join(scope, '-') + ".html"
+    def chdirBase(self):
+	import os
+	self.__old_dir = os.getcwd()
+	os.chdir(basename)
+    def chdirRestore(self):
+	import os
+	os.chdir(self.__old_dir)
+	
 
 class Node:
     """
@@ -250,9 +290,9 @@ class ScopeInfo:
 	self.is_file = is_file
 	self.has_detail = has_detail
 	if is_file:
-	    self.link = filename(basename, name)
+	    self.link = filer.nameOfScope(name)
 	else:
-	    link = filename(basename, name[:-1])
+	    link = filer.nameOfScope(name[:-1])
 	    self.link = link + "#" + name[-1]
 
 class TableOfContents(Visitor.AstVisitor):
@@ -673,15 +713,7 @@ class Paginator:
 
     def scope(self): return self.__scope
     def write(self, text): self.__os.write(text)
-
-    def getIndexFilename(self, module):
-	"""Returns the filename for the index of the given module"""
-	return filename(basename+'_index', module.name())
-
-    def getModuleIndexFilename(self):
-	"""Returns the filename for the module index"""
-	return basename+"_index_all.html"
-
+    
     def process(self):
 	"""Creates all pages"""
 	self.createNamespacePages()
@@ -699,8 +731,8 @@ class Paginator:
 
     def createModuleIndexFile(self):
 	"""Create a page with an index of all modules"""
-	self.startFile(self.getModuleIndexFilename(), "Module Index")
-	tree = href(basename+"_tree.html", 'Tree', target='main')
+	self.startFile(filer.nameOfModuleTree(), "Module Index")
+	tree = href(filer.nameOfSpecial('tree'), 'Tree', target='main')
 	self.write(entity('b', "Module Index")+' | %s<br>'%tree)
 	self.indexModule(self.__start)
 	self.endFile()
@@ -714,10 +746,11 @@ class Paginator:
 
     def createFramesFile(self):
 	"""Create a frames index file"""
-	self.startFile(basename+"_frames.html", "Synopsis - Generated Documentation", body='')
-	findex = self.getModuleIndexFilename()
-	fmindex = self.getIndexFilename(self.__start)
-	fglobal = filename(basename, self.__global.name())
+	me = filer.nameOfIndex()
+	self.startFile(me, "Synopsis - Generated Documentation", body='')
+	findex = rel(me, filer.nameOfModuleTree())
+	fmindex = rel(me, filer.nameOfModuleIndex(self.__start.name()))
+	fglobal = rel(me, filer.nameOfScope(self.__start.name()))
 	frame1 = solotag('frame', name='index', src=findex)
 	frame2 = solotag('frame', name='module_index', src=fmindex)
 	frame3 = solotag('frame', name='main', src=fglobal)
@@ -745,7 +778,7 @@ class Paginator:
 	    return
 	self.detailer.set_scope([])
 
-	self.startFile(basename+"_tree.html", "Synopsis - Class Hierarchy")
+	self.startFile(filer.nameOfSpecial('tree'), "Synopsis - Class Hierarchy")
 	self.write(entity('h1', "Inheritance Tree"))
 	self.write('<ul>')
 	map(self.processClassInheritance, roots)
@@ -830,7 +863,7 @@ class Paginator:
 	# Print link to this module
 	name = Util.ccolonName(ns.name()) or "Global Namespace"
 	#if not name: name = "Global Namespace"
-	link = self.getIndexFilename(ns)
+	link = filer.nameOfModuleIndex(ns.name())
 	self.write(href(link, name, target='module_index') + '<br>')
 	# Add children
 	for key in ns.children_keys('Namespace'):
@@ -843,13 +876,13 @@ class Paginator:
 
 	# Create file
 	name = Util.ccolonName(ns.name()) or "Global Namespace"
-	fname = self.getIndexFilename(ns)
+	fname = filer.nameOfModuleIndex(ns.name())
 	self.startFile(fname, name+" Index")
 	self.write(entity('b', name+" Index"))
 
 	# Make script to switch main frame upon load
 	script = '<!--\nwindow.parent.frames["main"].location="%s";\n-->'
-	script = script%filename(basename, ns.name())
+	script = script%filer.nameOfScope(ns.name())
 	self.write(entity('script', script, language='Javascript'))
 
 	# Loop throught all the types of children
@@ -878,7 +911,7 @@ class Paginator:
 
     def startFileScope(self, scope):
 	"Start a new file from the given scope"
-	fname = filename(basename, scope)
+	fname = filer.nameOfScope(scope)
 	title = string.join(scope)
 	self.startFile(fname, title)
 	self.summarizer.set_ostream(self.__os)
@@ -922,12 +955,10 @@ def __parseArgs(args):
 	    namespace = a
 
 def format(types, declarations, args):
-    global basename, stylesheet, toc
+    global basename, stylesheet, toc, filer
     __parseArgs(args)
-    if basename is None:
-	print "ERROR: No output base specified. You must specify a base"\
-	    "filename (not ending in .html!)"
-	sys.exit(1)
+    filer = FileNamer()
+    filer.chdirBase()
 
     # Create table of contents index
     toc = TableOfContents()
@@ -944,4 +975,6 @@ def format(types, declarations, args):
     # Create the pages
     Paginator(nsb.globalns()).process()
     if debug: print "HTML Formatter: Done!"
+
+    filer.chdirRestore()
 
