@@ -1195,7 +1195,7 @@ declaration:  decl_specs opt_init_decl_list
   NO REENTRANCE ***/
 no_decl_specs: /* Nothing: returns "int" as default decl_specs */
         {
-            $$ = new BaseType(BT_Int);
+            $$ = new BaseType(BaseType::Int);
             global_parse_env->parseCtxt->SetDeclCtxt($$);
         }
         ;
@@ -1284,7 +1284,7 @@ storage_class: local_or_global_storage_class
                 global_parse_env->transUnit->my_contxt.syms->current->level >= FUNCTION_SCOPE)
                  $$ = $1 ;             
              else
-                 $$ = ST_None ;              
+                 $$ = Storage::None ;              
         }        
         ;
 
@@ -1307,12 +1307,12 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
                 $$ = new BaseType();
             }
 
-            if ($1 == ST_None)
+            if ($1 == Storage::None)
             {
                  if(yyerr("Invalid use of local storage type"))
                    YYERROR;
             }
-            else if ($$->storage != ST_None)             
+            else if ($$->storage != Storage::None)             
                  yywarn("Overloading previous storage type specification");
             else
                  $$->storage = $1;
@@ -1323,19 +1323,19 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
 
             if ($3)
             {
-                if (($3->typemask & BT_Long)
-                    && ($$->typemask & BT_Long))
+                if (($3->typemask & BaseType::Long)
+                    && ($$->typemask & BaseType::Long))
                 {
                    // long long : A likely C9X addition 
-                   $$->typemask &= ~BT_Long;
-                   $3->typemask &= ~BT_Long;
+                   $$->typemask &= ~BaseType::Long;
+                   $3->typemask &= ~BaseType::Long;
                    $$->typemask |= $3->typemask;
-                   $$->typemask |=  BT_LongLong;
+                   $$->typemask |=  BaseType::LongLong;
                 }
                 else
                     $$->typemask |= $3->typemask;
 
-                if ($3->storage != ST_None)
+                if ($3->storage != Storage::None)
                     $$->storage = $3->storage;
 
                 // delete $3;
@@ -1358,7 +1358,7 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
                 $$ = new BaseType();
             }
 
-            if (($$->qualifier & $1) != TQ_None)
+            if (($$->qualifier & $1) != TypeQual::None)
                 yywarn("qualifier already specified");  
                               
             $$->qualifier |= $1;
@@ -1395,7 +1395,7 @@ comp_decl_specs_reentrance:  type_spec_reentrance { global_parse_env->possibleTy
                 $$ = new BaseType();
             }
 
-            if (($$->qualifier & $1) != TQ_None)
+            if (($$->qualifier & $1) != TypeQual::None)
                 yywarn("qualifier already specified");
             $$->qualifier |= $1;
         }
@@ -1510,14 +1510,14 @@ type_qual_list: type_qual_token
               | type_qual_list type_qual_token
         {
             $$ = $1 | $2;
-            if (($2 & $1) != TQ_None)
+            if (($2 & $1) != TypeQual::None)
                 yywarn("qualifier already specified");                               
         }
         ;
 
 opt_type_qual_list:    /* Nothing */
         {
-            $$ = TQ_None;
+            $$ = TypeQual::None;
         }
         |   type_qual_list
         ;
@@ -1551,7 +1551,7 @@ type_spec_reentrance: enum_type_define
 
 typedef_name:  TYPEDEF_NAME
         {
-            $$ = new BaseType(BT_UserType);
+            $$ = new BaseType(BaseType::UserType);
             $$->typeName = $1;
         }
         ;
@@ -2069,7 +2069,7 @@ array_decl: direct_declarator_reentrance LBRCKT opt_const_expr RBRCKT
    NO REENTRANCE ***/
 pointer_start:  STAR opt_type_qual_list
         {
-            $$ = new PtrType($2);    
+            $$ = new PtrType($2.value);    
         }
         ;
 
@@ -2175,7 +2175,7 @@ param_type_list:
 param_type_list_bis: param_list
                | param_list COMMA ELLIPSIS        %prec COMMA_OP
         {
-            BaseType *bt = new BaseType(BT_Ellipsis);
+            BaseType *bt = new BaseType(BaseType::Ellipsis);
 
             $$ = new Decl(bt);
             $$->next = $1;
@@ -2338,35 +2338,35 @@ gcc_attrib:    ATTRIBUTE LPAREN LPAREN gcc_inner RPAREN RPAREN
 gcc_inner:  /* Nothing */
             {
                 /* The lexer ate some unsupported option. */
-                $$ = new GccAttrib(GCC_Unsupported);
+                $$ = new GccAttrib(GccAttrib::Unsupported);
             }
          |   PACKED
             {
-                $$ = new GccAttrib(GCC_Packed);
+                $$ = new GccAttrib(GccAttrib::Packed);
             }
          |   CDECL
             {
-                $$ = new GccAttrib(GCC_CDecl);
+                $$ = new GccAttrib(GccAttrib::CDecl);
             }
          |   CONST
             {
-                $$ = new GccAttrib(GCC_Const);
+                $$ = new GccAttrib(GccAttrib::Const);
             }
          |   TRANSPARENT_UNION
             {
-                $$ = new GccAttrib(GCC_TransparentUnion);
+                $$ = new GccAttrib(GccAttrib::TransparentUnion);
             }
          |   PURE
             {
-                $$ = new GccAttrib(GCC_Pure);
+                $$ = new GccAttrib(GccAttrib::Pure);
             }
          |   NORETURN
             {
-                $$ = new GccAttrib(GCC_NoReturn);
+                $$ = new GccAttrib(GccAttrib::NoReturn);
             }
          |   ALIGNED LPAREN INUM RPAREN
             {
-                $$ = new GccAttrib(GCC_Aligned);
+                $$ = new GccAttrib(GccAttrib::Aligned);
 
                 if ($3->ctype == Constant::Int)
                 {
@@ -2380,7 +2380,7 @@ gcc_inner:  /* Nothing */
             }
          |   MODE LPAREN ident RPAREN
             {
-                $$ = new GccAttrib(GCC_Mode);
+                $$ = new GccAttrib(GccAttrib::Mode);
 
                 $$->mode = $3;
 
@@ -2389,7 +2389,7 @@ gcc_inner:  /* Nothing */
             }
          |   FORMAT LPAREN ident COMMA INUM COMMA INUM RPAREN
             {
-                $$ = new GccAttrib(GCC_Format);
+                $$ = new GccAttrib(GccAttrib::Format);
     
                 $$->mode = $3;
 
@@ -2412,7 +2412,7 @@ gcc_inner:  /* Nothing */
             }
          |   MALLOC
             {
-                $$ = new GccAttrib(GCC_Malloc);
+                $$ = new GccAttrib(GccAttrib::Malloc);
             }
             ;
 

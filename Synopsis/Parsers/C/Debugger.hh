@@ -5,59 +5,54 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Translator_hh
-#define _Translator_hh
+#ifndef _Debugger_hh
+#define _Debugger_hh
 
-#include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/AST/TypeKit.hh>
+#include "Visitor.hh"
+#include "Expression.hh"
+#include "File.hh"
 #include <iostream>
-#include <string>
-#include <vector>
-#include <stack>
 
-#include <Visitor.hh>
-#include <Declaration.hh>
-#include <File.hh>
+//. Debuggers are intended to be used to
+//. easily inspect (i.e. print out) the structure
+//. and content of part of a syntax tree.
 
-struct Translator
+class Debugger
 {
-  Translator(Synopsis::AST::AST a, Synopsis::List s, bool v, bool d)
-    : ast(a), scope(s), verbose(v), debug(d) {}
-  Translator(Translator &t)
-    : ast(t.ast), file(t.file), scope(t.scope), verbose(t.verbose), debug(t.debug) {}
-
-protected:
-  void define_type(Synopsis::AST::ScopedName, Synopsis::AST::Type);
-
-  Synopsis::AST::AST        ast;
-  Synopsis::AST::SourceFile file;
-  Synopsis::List            scope;
-  bool                      verbose;
-  bool                      debug;
+public:
+  Debugger(std::ostream &os) : my_os(os), my_level(0) {}
+  Debugger(Debugger &d) : my_os(d.my_os), my_level(d.my_level) {}
+  size_t indentation() const { return my_level;}
+  std::ostream &os() { return my_os;}
+  void incr_indent() { ++my_level;}
+  void decr_indent() { --my_level;}
+  std::ostream &indent() { return my_os << std::string(my_level * 2, ' ');}
+private:
+  std::ostream &my_os;
+  size_t        my_level;
 };
 
-struct TypeTranslator : TypeVisitor, Translator
+class TypeDebugger : public TypeVisitor, private Debugger
 {
-  TypeTranslator(Translator &t, const std::string &s) : Translator(t), symbol(s) {}
+public:
+  TypeDebugger(std::ostream &os) : Debugger(os) {}
+  TypeDebugger(Debugger &d) : Debugger(d) {}
+  virtual ~TypeDebugger() {}
 
   virtual void traverse_base(BaseType *);
   virtual void traverse_ptr(PtrType *);
   virtual void traverse_array(ArrayType *);
   virtual void traverse_bit_field(BitFieldType *);
   virtual void traverse_function(FunctionType *);
-
-  Synopsis::AST::Type        type;
-  Synopsis::AST::Declaration declaration;
-  std::string                symbol;
-
-private:
-  bool find_type(const std::string &);
 };
 
-struct ExpressionTranslator : ExpressionVisitor, Translator
+class ExpressionDebugger : public ExpressionVisitor, private Debugger
 {
-  ExpressionTranslator(Translator &t) : Translator(t) {}
-
+public:
+  ExpressionDebugger(std::ostream &os) : Debugger(os) {}
+  ExpressionDebugger(Debugger &d) : Debugger(d) {}
+  virtual ~ExpressionDebugger() {}
+  
   virtual void traverse_int(IntConstant *);
   virtual void traverse_uint(UIntConstant *);
   virtual void traverse_float(FloatConstant *);
@@ -77,18 +72,17 @@ struct ExpressionTranslator : ExpressionVisitor, Translator
   virtual void traverse_sizeof(SizeofExpr *);
   virtual void traverse_index(IndexExpr *);
 
-  void translate_decl(Decl *);
-
-  Synopsis::AST::Type        type;
-  Synopsis::AST::Declaration declaration;
+  void debug_label(Label *);
+  void debug_decl(Decl *);
 };
 
-struct StatementTranslator : StatementVisitor, Translator
+class StatementDebugger : public StatementVisitor, private Debugger
 {
-  StatementTranslator(Synopsis::AST::AST a, Synopsis::List s, bool v, bool d)
-    : Translator(a, s, v, d) {}
-  StatementTranslator(Translator &t) : Translator(t) {}
-
+public:
+  StatementDebugger(std::ostream &os) : Debugger(os) {}
+  StatementDebugger(Debugger &d) : Debugger(d) {}
+  virtual ~StatementDebugger() {}
+  
   virtual void traverse_statement(Statement *);
   virtual void traverse_file_line(FileLineStemnt *);
   virtual void traverse_include(InclStemnt *);
@@ -106,11 +100,7 @@ struct StatementTranslator : StatementVisitor, Translator
   virtual void traverse_block(Block *);
   virtual void traverse_function_definition(FunctionDef *);
 
-  void translate_file(File *);  
-
-private:
-  void set_file(const std::string &, const std::string &);
-
+  void debug_file(File *);
 };
 
 #endif

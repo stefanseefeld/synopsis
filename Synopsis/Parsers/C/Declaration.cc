@@ -1,37 +1,10 @@
-
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-    CTool Library
-    Copyright (C) 1998-2001	Shaun Flisakowski
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 1, or (at your option)
-    any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    o+
-    o+     File:         decl.cpp
-    o+
-    o+     Programmer:   Shaun Flisakowski
-    o+     Date:         Aug 9, 1998
-    o+
-    o+     A high-level view of declarations.
-    o+
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
-#include <cassert>
-#include <cstring>
+//
+// Copyright (C) 1998 Shaun Flisakowski
+// Copyright (C) 2004 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 
 #include <Declaration.hh>
 #include <Expression.hh>
@@ -40,50 +13,94 @@
 #include "Grammar.hh"
 #include <File.hh>
 
-static void
-printStorage( std::ostream& out, StorageType storage)
+#include <cassert>
+#include <cstring>
+#include <sstream>
+
+std::string TypeQual::to_string() const
 {
-  switch (storage)
+  std::string retn;
+  if (value & Const) retn += "const ";
+  if (value & Volatile) retn += "volatile ";
+  if (*retn.rbegin() == ' ') retn.erase(retn.end() - 1);
+  return retn;
+}
+
+std::string Storage::to_string() const
+{
+  switch (value)
   {
-    case ST_None:
-      break;
-      
-    case ST_Typedef:
-      out << "typedef ";
-      break;
-
-    case ST_Auto:
-      out << "auto ";
-      break;
-
-    case ST_Register:
-      out << "register ";
-      break;
-
-    case ST_Static:
-      out << "static ";
-      break;
-
-    case ST_Extern:
-      out << "extern ";
-      break;
+    case Typedef: return "typedef";
+    case Auto: return "auto";
+    case Register: return "register";
+    case Static: return "static";
+    case Extern: return "extern";
+    default: return "";
   }
 }
 
-static void
-printQual(std::ostream& out, TypeQual qualifier)
-{
-  if (qualifier & TQ_Const)
-    out << "const ";
+const BaseType::Spec BaseType::NoType       = 0x00000000;  // no type provided
+const BaseType::Spec BaseType::Void         = 0x00000001;  // explicitly no type
+const BaseType::Spec BaseType::Bool         = 0x00000002;
+const BaseType::Spec BaseType::Char         = 0x00000004;
+const BaseType::Spec BaseType::Short        = 0x00000008;
+const BaseType::Spec BaseType::Int          = 0x00000010;
+const BaseType::Spec BaseType::Int64        = 0x00000020;
+const BaseType::Spec BaseType::Int32        = 0x00000040;
+const BaseType::Spec BaseType::Int16        = 0x00000080;
+const BaseType::Spec BaseType::Int8         = 0x00000100;
+const BaseType::Spec BaseType::Long         = 0x00000200;
+const BaseType::Spec BaseType::LongLong     = 0x00000400;  // a likely C9X addition
+const BaseType::Spec BaseType::Float        = 0x00000800;
+const BaseType::Spec BaseType::Double       = 0x00001000;
+const BaseType::Spec BaseType::Ellipsis     = 0x00002000;
 
-  if (qualifier & TQ_Volatile)
-    out << "volatile ";
+const BaseType::Spec BaseType::Struct       = 0x00008000;
+const BaseType::Spec BaseType::Union        = 0x00010000;
+const BaseType::Spec BaseType::Enum         = 0x00020000;
+const BaseType::Spec BaseType::UserType     = 0x00040000;
+const BaseType::Spec BaseType::BaseMask     = 0x0004FFFF;
+
+const BaseType::Spec BaseType::Signed       = 0x00100000;
+const BaseType::Spec BaseType::UnSigned     = 0x00200000;
+const BaseType::Spec BaseType::SignMask     = 0x00300000;
+
+const BaseType::Spec BaseType::TypeError    = 0x10000000;
+
+std::string BaseType::to_string(BaseType::Spec typemask)
+{
+  std::string retn;
+  if (typemask & UnSigned) retn = "unsigned ";
+  else if (typemask & Signed) retn = "signed ";
+  
+  if (typemask & Void) retn += "void ";
+  else if (typemask & Bool) retn += "_Bool ";
+  else if (typemask & Char) retn += "char ";
+  else if (typemask & Int8) retn += "__int8 ";
+  else if (typemask & Int16) retn += "__int16 ";
+  else if (typemask & Int32) retn += "__int32 ";
+  else if (typemask & Int64) retn += "__int64 ";
+  else if (typemask & Short) retn += "short ";
+  else if (typemask & LongLong) retn += "long long ";
+  else if (typemask & Float) retn += "float ";
+  else if ((typemask & Double) &&
+	   (typemask & Long)) retn += "long double ";
+  else if (typemask & Double) retn += "double ";
+  else if (typemask & Ellipsis) retn += "...";
+  else if (typemask & Long) retn += "long ";
+  else if (typemask & Struct) retn += "struct ";
+  else if (typemask & Union) retn += "union ";
+  else if (typemask & Enum) retn += "enum ";
+  else if (typemask & UserType) retn += "<user type> ";
+  else retn += "int ";        // Default
+  if (*retn.rbegin() == ' ') retn.erase(retn.end() - 1);
+  return retn;
 }
 
 Type::Type(TypeType _type /* =TT_Base */)
 {
   type      = _type;
-  storage  = ST_None;
+  storage  = Storage::None;
 
   // Add us into the global list for destruction later.
   link = global_type_list;
@@ -127,41 +144,37 @@ Type::printType(std::ostream& out, Symbol *name, bool showBase, int level) const
   printAfter(out);
 }
 
-BaseType::BaseType(BaseTypeSpec bt /* =BT_NoType */)
-  : Type(TT_Base)
+BaseType::BaseType(BaseType::Spec bt /* =NoType */)
+  : Type(TT_Base),
+    typemask(bt),
+    tag(0),
+    typeName(0),
+    stDefn(0),
+    enDefn(0)
 {
-  typemask = bt;
-  qualifier = TQ_None;
-
-  tag  = NULL;
-  typeName = NULL;
-  stDefn = NULL;
-  enDefn = NULL;
+  qualifier = TypeQual::None;
 }
 
-BaseType::BaseType( StructDef *sd )
-  : Type(TT_Base)
+BaseType::BaseType(StructDef *sd)
+  : Type(TT_Base),
+    typemask(sd->isUnion() ? Union : Struct),
+    tag(sd->tag->dup()),
+    typeName(0),
+    stDefn(sd),
+    enDefn(0)
 {
-  typemask = (sd->isUnion()) ? BT_Union : BT_Struct;
-  qualifier = TQ_None;
-
-  tag  = sd->tag->dup();
-    
-  typeName = NULL;
-  stDefn = sd;
-  enDefn = NULL;
+  qualifier = TypeQual::None;
 }
 
-BaseType::BaseType( EnumDef *ed )
-  : Type(TT_Base)
+BaseType::BaseType(EnumDef *ed)
+  : Type(TT_Base),
+    typemask(Enum),
+    tag(ed->tag->dup()),
+    typeName(0),
+    stDefn(0),
+    enDefn(ed)
 {
-  typemask = BT_Enum;
-  qualifier = TQ_None;
-
-  tag  = ed->tag->dup();
-  typeName = NULL;
-  stDefn = NULL;
-  enDefn = ed;
+  qualifier = TypeQual::None;
 }
 
 BaseType::~BaseType()
@@ -192,42 +205,42 @@ BaseType::dup0() const
 void
 BaseType::printBase(std::ostream& out, int level) const
 {
-  printQual(out,qualifier);
+  out << qualifier.to_string();
 
-  if (typemask & BT_UnSigned)
+  if (typemask & UnSigned)
     out << "unsigned ";
-  else if (typemask & BT_Signed)
+  else if (typemask & Signed)
     out << "signed ";
   
-  if (typemask & BT_Void)
+  if (typemask & Void)
     out << "void ";
-  else if (typemask & BT_Bool)
+  else if (typemask & Bool)
     out << "_Bool ";
-  else if (typemask & BT_Char)
+  else if (typemask & Char)
     out << "char ";
-  else if (typemask & BT_Int8)
+  else if (typemask & Int8)
     out << "__int8 ";
-  else if (typemask & BT_Int16)
+  else if (typemask & Int16)
     out << "__int16 ";
-  else if (typemask & BT_Int32)
+  else if (typemask & Int32)
     out << "__int32 ";
-  else if (typemask & BT_Int64)
+  else if (typemask & Int64)
     out << "__int64 ";
-  else if (typemask & BT_Short)
+  else if (typemask & Short)
     out << "short ";
-  else if (typemask & BT_LongLong)
+  else if (typemask & LongLong)
     out << "long long ";
-  else if (typemask & BT_Float)
+  else if (typemask & Float)
     out << "float ";
-  else if ((typemask & BT_Double) && (typemask & BT_Long))
+  else if ((typemask & Double) && (typemask & Long))
     out << "long double ";
-  else if (typemask & BT_Double)
+  else if (typemask & Double)
     out << "double ";
-  else if (typemask & BT_Ellipsis)
+  else if (typemask & Ellipsis)
     out << "...";
-  else if (typemask & BT_Long)
+  else if (typemask & Long)
     out << "long ";
-  else if (typemask & BT_Struct)
+  else if (typemask & Struct)
   {
     if (stDefn != NULL)
     {
@@ -241,7 +254,7 @@ BaseType::printBase(std::ostream& out, int level) const
 	out << *tag << " ";
     }
   }
-  else if (typemask & BT_Union)
+  else if (typemask & Union)
   {
     if (stDefn != NULL)
     {
@@ -255,7 +268,7 @@ BaseType::printBase(std::ostream& out, int level) const
 	out << *tag << " ";
     }
   }
-  else if (typemask & BT_Enum)
+  else if (typemask & Enum)
   {
     out << "enum ";
     if (enDefn != NULL)
@@ -268,7 +281,7 @@ BaseType::printBase(std::ostream& out, int level) const
 	out << *tag << " ";
     }
   }
-  else if (typemask & BT_UserType)
+  else if (typemask & UserType)
   {
     if (typeName)
       out << *typeName << " ";
@@ -297,17 +310,13 @@ void
 BaseType::printForm(std::ostream& out) const
 {
   out << "-Base";
-  if (qualifier != TQ_None)
-  {
-    out << ":";
-    printQual(out,qualifier);
-  }
+  if (qualifier != TypeQual::None) out << ":" << qualifier.to_string();
 }
 
 void
 BaseType::registerComponents()
 {
-  if ((typemask & BT_Struct) | (typemask & BT_Union))
+  if ((typemask & Struct) | (typemask & Union))
   {
     stDefn->registerComponents();
   }
@@ -316,15 +325,15 @@ BaseType::registerComponents()
 bool
 BaseType::lookup( Symbol* sym ) const
 {
-  if ((typemask & BT_Struct)
-      || (typemask & BT_Union))
+  if ((typemask & Struct)
+      || (typemask & Union))
   {
     if (stDefn != NULL)
     {
       return stDefn->lookup(sym);
     }
   }
-  else if (typemask & BT_UserType)
+  else if (typemask & UserType)
   {
     if (typeName)
     {
@@ -343,7 +352,7 @@ BaseType::lookup( Symbol* sym ) const
 Type*
 PtrType::dup0() const
 {
-  PtrType *ret = new PtrType(qualifier);
+  PtrType *ret = new PtrType(qualifier.value);
   
   ret->subType = subType->dup();
   ret->storage = storage; 
@@ -377,8 +386,7 @@ PtrType::printBefore( std::ostream& out, Symbol *name, int level ) const
     
     if (paren) out << "(" ;
     
-    out << "*" ;
-    printQual(out,qualifier);
+    out << "*" << qualifier.to_string();
     
   }
   
@@ -405,10 +413,9 @@ void
 PtrType::printForm(std::ostream& out) const
 {
   out << "-Ptr";
-  if (qualifier != TQ_None)
+  if (qualifier != TypeQual::None)
   {
-    out << ":";
-    printQual(out,qualifier);
+    out << ":" << qualifier.to_string();
   }
   if (subType) subType->printForm(out);
 }
@@ -890,13 +897,12 @@ bool StructDef::lookup( Symbol* sym ) const
 }
 
 EnumDef::EnumDef()
+  : tag(0),
+    size(0),
+    nElements(0),
+    names(0),
+    values(0)
 {
-  tag = NULL;
-  size = 0;
-  nElements = 0;
-
-  names = NULL;
-  values = NULL;
 }
 
 EnumDef::~EnumDef()
@@ -1027,78 +1033,71 @@ EnumDef::findExpr( fnExprCallback cb )
   }
 }
 
-GccAttrib::GccAttrib( GccAttribType gccType )
-{
-  type = gccType;
-  value = 0;
-  mode = NULL;
-}
+GccAttrib::GccAttrib(GccAttrib::Type t) : type(t), value(0), mode(0) {}
+GccAttrib::~GccAttrib() { delete mode;}
 
-GccAttrib::~GccAttrib()
+std::string GccAttrib::to_string() const
 {
-  delete mode;
-}
-
-void
-GccAttrib::print( std::ostream& out ) const
-{
-  out << " __attribute__ ((";
-
+  std::string attr;
   switch (type)
   {
-    case GCC_Aligned:
-      out << "aligned (" << value << ")";
+    case Aligned:
+    {
+      std::ostringstream oss;
+      oss << "aligned (" << value << ")";
+      attr = oss.str();
+      break;
+    }
+    case Packed:
+      attr = "packed";
       break;
 
-    case GCC_Packed:
-      out << "packed";
+    case CDecl:
+      attr = "__cdecl__";
       break;
 
-    case GCC_CDecl:
-      out << "__cdecl__";
-      break;
-
-    case GCC_Mode:
-      out << "__mode__ (" << *mode << ")";
+    case Mode:
+      attr = "__mode__ (" + mode->name + ")";
       break;
    
-    case GCC_Format:
-      out << "format (" << *mode << "," << strIdx << "," << first << ")";
+    case Format:
+    {
+      std::ostringstream oss;
+      oss << "format (" << *mode << "," << strIdx << "," << first << ")";
+      attr = oss.str();
+      break;
+    }
+    case Const:
+      attr = "__const__";
       break;
 
-    case GCC_Const:
-      out << "__const__";
+    case TransparentUnion:
+      attr = "__transparent_union__";
       break;
 
-    case GCC_TransparentUnion:
-      out << "__transparent_union__";
+    case Pure:
+      attr = "__pure__";
       break;
 
-    case GCC_Pure:
-      out << "__pure__";
+    case NoReturn:
+      attr = "__noreturn__";
       break;
 
-    case GCC_NoReturn:
-      out << "__noreturn__";
+    case Malloc:
+      attr = "__malloc__";
       break;
 
-    case GCC_Malloc:
-      out << "__malloc__";
-      break;
-
-    case GCC_Unsupported:
+    case Unsupported:
   default:
-    out << "<unsupported gcc attribute>";
+    attr = "<unsupported gcc attribute>";
     break;
   }
-
-  out << "))";
 }
 
 GccAttrib*
 GccAttrib::dup() const
 {
-  GccAttrib *ret = this ? dup0() : NULL;
+  GccAttrib *ret = this ? dup0() : 0;
   return ret;
 }
 
@@ -1108,8 +1107,7 @@ GccAttrib::dup0() const
   GccAttrib    *ret = new GccAttrib(type);
   ret->value = value;
   ret->mode = mode->dup();
-      
-    return ret;
+  return ret;
 }
 
 Decl::Decl( Symbol* sym /* =NULL */ )
@@ -1137,7 +1135,7 @@ Decl::~Decl()
 void
 Decl::clear()
 {
-  storage    = ST_None;
+  storage     = Storage::None;
 
   name        = NULL;
   form        = NULL;
@@ -1149,7 +1147,7 @@ Decl::clear()
 Type*
 Decl::extend( Type* type )
 {
-  if (storage == ST_None)
+  if (storage == Storage::None)
     storage = type->storage;
     
   if (form != NULL)
@@ -1198,7 +1196,8 @@ Decl::print(std::ostream& out, bool showBase, int level) const
 
   if (showBase)
   {
-    printStorage(out,storage);
+    std::string st = storage.to_string();
+    if (!st.empty()) out << st << ' ';
     
     // Hack to fix K&R non-declarations
     if (form == NULL)
@@ -1208,7 +1207,7 @@ Decl::print(std::ostream& out, bool showBase, int level) const
   if (form) form->printType(out,name,showBase,level);
   else if (name) out << *name;
 
-  if (attrib) attrib->print(out);
+  if (attrib) out << " __attribute__ ((" << attrib->to_string() << "))";
 
   if (initializer)
   {

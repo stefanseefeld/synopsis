@@ -16,7 +16,7 @@
 #include <Location.hh>
 #include <utype.hh>
 #include <Dup.hh>
-#include <Traversal.hh>
+#include <Visitor.hh>
 
 #include <cstdlib>
 #include <iostream>
@@ -124,7 +124,7 @@ public:
   Expression(Type t, const Location &l);
   virtual ~Expression();
 
-  virtual void accept(Traversal *) = 0;
+  virtual void accept(ExpressionVisitor *) = 0;
 
   virtual int precedence() const { return 16;}
 
@@ -181,7 +181,7 @@ public:
   IntConstant( long val, bool b, const Location& l );
   virtual ~IntConstant();
  
-  virtual void accept(Traversal *t) { t->traverse_int(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_int(this);}
   
   Expression *dup0() const;
   void print(std::ostream& out) const;
@@ -196,7 +196,7 @@ public:
   UIntConstant( ulong val, bool b, const Location& l );
   virtual ~UIntConstant();
  
-  virtual void accept(Traversal *t) { t->traverse_uint(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_uint(this);}
 
   Expression *dup0() const;
   void print(std::ostream& out) const;
@@ -211,7 +211,7 @@ public:
   FloatConstant(const std::string& val, const Location& l );
   virtual ~FloatConstant();
   
-  virtual void accept(Traversal *t) { t->traverse_float(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_float(this);}
   
   Expression *dup0() const;
   void print(std::ostream& out) const;
@@ -225,7 +225,7 @@ public:
   CharConstant(char chr, const Location& l, bool isWide=false );
   ~CharConstant();
   
-  virtual void accept(Traversal *t) { t->traverse_char(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_char(this);}
   
   Expression *dup0() const;
   void print(std::ostream& out) const;
@@ -241,7 +241,7 @@ public:
 		 bool isWide = false);
   ~StringConstant();
   
-  virtual void accept(Traversal *t) { t->traverse_string(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_string(this);}
   
   int length() const;
   
@@ -258,7 +258,7 @@ public:
   ArrayConstant(const Location &l);
   ~ArrayConstant();
   
-  virtual void accept(Traversal *t) { t->traverse_array(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_array(this);}
 
   void addElement( Expression *expr);
   
@@ -276,7 +276,7 @@ public:
   EnumConstant(Symbol *nme, Expression* val, const Location& l );
   ~EnumConstant();
   
-  virtual void accept(Traversal *t) { t->traverse_enum(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_enum(this);}
   
   Expression *dup0() const;
   void print(std::ostream& out) const;
@@ -291,7 +291,7 @@ public:
   Variable(Symbol *varname, const Location& l );
   ~Variable();
   
-  virtual void accept(Traversal *t) { t->traverse_variable(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_variable(this);}
   
   Expression *dup0() const;
   void print(std::ostream& out) const;
@@ -305,7 +305,7 @@ public:
   FunctionCall(Expression *func, const Location& l );
   ~FunctionCall();
   
-  virtual void accept(Traversal *t) { t->traverse_call(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_call(this);}
   
   int  nArgs() const { return args.size(); }
   
@@ -327,7 +327,7 @@ public:
   UnaryExpr( UnaryOp op, Expression *expr, const Location& l );
   ~UnaryExpr();
   
-  virtual void accept(Traversal *t) { t->traverse_unary(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_unary(this);}
   
   int precedence() const;
   
@@ -347,7 +347,7 @@ public:
 	     const Location &l);
   ~BinaryExpr();
   
-  virtual void accept(Traversal *t) { t->traverse_binary(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_binary(this);}
   
   virtual int precedence() const;
   
@@ -369,7 +369,7 @@ public:
 	      const Location &l);
   ~TrinaryExpr();
 
-  virtual void accept(Traversal *t) { t->traverse_trinary(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_trinary(this);}
 
   int precedence() const { return 3;}
 
@@ -390,7 +390,7 @@ public:
 	     const Location &l);
   ~AssignExpr();
   
-  virtual void accept(Traversal *t) { t->traverse_assign(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_assign(this);}
 
   int precedence() const { return 2; }
 
@@ -407,7 +407,7 @@ public:
 	  const Location &l);
   ~RelExpr();
 
-  virtual void accept(Traversal *t) { t->traverse_rel(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_rel(this);}
 
   int precedence() const;
 
@@ -424,7 +424,7 @@ public:
 	   const Location &l);
   ~CastExpr();
 
-  virtual void accept(Traversal *t) { t->traverse_cast(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_cast(this);}
 
   int precedence() const { return 14;}
 
@@ -444,7 +444,7 @@ public:
   SizeofExpr(::Type *operand, const Location &l);
   ~SizeofExpr();
 
-  virtual void accept(Traversal *t) { t->traverse_sizeof(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_sizeof(this);}
 
   int precedence() const { return 15; }
 
@@ -467,7 +467,7 @@ public:
 	    const Location &l);
   ~IndexExpr();
     
-  virtual void accept(Traversal *t) { t->traverse_index(this);}
+  virtual void accept(ExpressionVisitor *v) { v->traverse_index(this);}
 
   //addSubscript( Expression *sub );
   Expression *subscript(int i);

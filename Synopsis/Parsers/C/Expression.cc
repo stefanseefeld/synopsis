@@ -1,11 +1,10 @@
-/* $Id: Expression.cc,v 1.10 2003/12/30 07:33:06 stefan Exp $
- *
- * Copyright (C) 1998 Shaun Flisakowski
- * Copyright (C) 2003 Stefan Seefeld
- * All rights reserved.
- * Licensed to the public under the terms of the GNU LGPL (>= 2),
- * see the file COPYING for details.
- */
+//
+// Copyright (C) 1998 Shaun Flisakowski
+// Copyright (C) 2003 Stefan Seefeld
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 
 #include <config.hh>
 #include <Expression.hh>
@@ -327,7 +326,7 @@ IntConstant::IntConstant(long val, bool b, const Location &l)
     lng(val),
     L(b)
 {
-  type = new BaseType(BT_Int);
+  type = new BaseType(BaseType::Int);
 }
 
 IntConstant::~IntConstant()
@@ -363,7 +362,7 @@ UIntConstant::UIntConstant(ulong val, bool b, const Location &l)
 {
   ulng = val;
   L = b;
-  type = new BaseType(BT_Int | BT_UnSigned);
+  type = new BaseType(BaseType::Int | BaseType::UnSigned);
 }
 
 UIntConstant::~UIntConstant()
@@ -398,7 +397,7 @@ FloatConstant::FloatConstant(const std::string &val, const Location &l)
   : Constant (Constant::Float, l),
     value(val)
 {
-  type = new BaseType(BT_Float);
+  type = new BaseType(BaseType::Float);
 }
 
 FloatConstant::~FloatConstant()
@@ -434,7 +433,7 @@ CharConstant::CharConstant(char chr, const Location& l,
    ch(chr),
    wide(isWide)
 {
-  type = new BaseType(BT_Char);
+  type = new BaseType(BaseType::Char);
 }
 
 CharConstant::~CharConstant()
@@ -475,9 +474,9 @@ StringConstant::StringConstant(const std::string &str,
     wide(isWide)
 {
   // Or should this be const char*?
-  PtrType *ptrType = new PtrType();
+  PtrType *ptrType = new PtrType(TypeQual::None);
   type = ptrType;
-  ptrType->subType = new BaseType(BT_Char);
+  ptrType->subType = new BaseType(BaseType::Char);
 }
 
 StringConstant::~StringConstant()
@@ -1081,7 +1080,7 @@ RelExpr::RelExpr(RelOp op, Expression *lExpr, Expression *rExpr,
   : BinaryExpr(BO_Rel, lExpr, rExpr, l),
     relational_op(op)
 {
-    type = new BaseType(BT_Int);
+    type = new BaseType(BaseType::Int);
 }
 
 RelExpr::~RelExpr()
@@ -1196,7 +1195,7 @@ SizeofExpr::SizeofExpr(Expression *operand, const Location &l)
     sizeofType(0),
     expr(operand)
 {
-  type = new BaseType(BT_UnSigned|BT_Long);
+  type = new BaseType(BaseType::UnSigned|BaseType::Long);
 }
 
 SizeofExpr::SizeofExpr(::Type *operand, const Location &l)
@@ -1204,7 +1203,7 @@ SizeofExpr::SizeofExpr(::Type *operand, const Location &l)
     sizeofType(operand),
     expr(0)
 {
-  type = new BaseType(BT_UnSigned|BT_Long);
+  type = new BaseType(BaseType::UnSigned|BaseType::Long);
 }
 
 SizeofExpr::~SizeofExpr()

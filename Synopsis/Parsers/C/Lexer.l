@@ -176,110 +176,110 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                      }
 
 <INITIAL>"auto"     {
-                      lvalp->storage = ST_Auto;
+                      lvalp->storage = Storage::Auto;
                       return(global_parse_env->err_tok = AUTO);
                     }
 <INITIAL>"extern"   {
-                      lvalp->storage = ST_Extern;
+                      lvalp->storage = Storage::Extern;
                       return(global_parse_env->err_tok = EXTRN);
                     }
 <INITIAL>"register" {
-                      lvalp->storage = ST_Register;
+                      lvalp->storage = Storage::Register;
                       return(global_parse_env->err_tok = REGISTR);
                     }
 <INITIAL>"static"   {
-                      lvalp->storage = ST_Static;
+                      lvalp->storage = Storage::Static;
                       return(global_parse_env->err_tok = STATIC);
                     }
 <INITIAL>"typedef"  {
-                      lvalp->storage = ST_Typedef;
+                      lvalp->storage = Storage::Typedef;
                       return(global_parse_env->err_tok = TYPEDEF);
                     }
 
 <INITIAL>"const"    {
-                      lvalp->typeQual = TQ_Const;
+                      lvalp->typeQual = TypeQual::Const;
                       return(global_parse_env->err_tok = CONST);
                     }
 <INITIAL>"volatile" {
-                      lvalp->typeQual = TQ_Volatile;
+                      lvalp->typeQual = TypeQual::Volatile;
                       return(global_parse_env->err_tok = VOLATILE);
                     }
 
 <INITIAL>"void"     {
-                      lvalp->base = new BaseType(BT_Void);
+                      lvalp->base = new BaseType(BaseType::Void);
                       return(global_parse_env->err_tok = VOID);
                     }
 <INITIAL>"_Bool"     {
-                      lvalp->base = new BaseType(BT_Bool);
+                      lvalp->base = new BaseType(BaseType::Bool);
                       return(global_parse_env->err_tok = BOOL);
                     }
 <INITIAL>"char"     {
-                      lvalp->base = new BaseType(BT_Char);
+                      lvalp->base = new BaseType(BaseType::Char);
                       return(global_parse_env->err_tok = CHAR);
                     }
 <INITIAL>"short"    {
-                      lvalp->base = new BaseType(BT_Short);
+                      lvalp->base = new BaseType(BaseType::Short);
                       return(global_parse_env->err_tok = SHORT);
                     }
 <INITIAL>"int"      {
-                      lvalp->base = new BaseType(BT_Int);
+                      lvalp->base = new BaseType(BaseType::Int);
                       return(global_parse_env->err_tok = INT);
                     }
 <INITIAL>"__int64"  {
-                      lvalp->base = new BaseType(BT_Int64);
+                      lvalp->base = new BaseType(BaseType::Int64);
                       return(global_parse_env->err_tok = INT64);
                     }
 <INITIAL>"__int32"  {
-                      lvalp->base = new BaseType(BT_Int32);
+                      lvalp->base = new BaseType(BaseType::Int32);
                       return(global_parse_env->err_tok = INT32);
                     }
 <INITIAL>"__int16"  {
-                      lvalp->base = new BaseType(BT_Int16);
+                      lvalp->base = new BaseType(BaseType::Int16);
                       return(global_parse_env->err_tok = INT16);
                     }
 <INITIAL>"__int8"   {
-                      lvalp->base = new BaseType(BT_Int8);
+                      lvalp->base = new BaseType(BaseType::Int8);
                       return(global_parse_env->err_tok = INT8);
                     }
 <INITIAL>"long"     {
-                      lvalp->base = new BaseType(BT_Long);
+                      lvalp->base = new BaseType(BaseType::Long);
                       return(global_parse_env->err_tok = LONG);
                     }
 <INITIAL>"float"    {
-                      lvalp->base = new BaseType(BT_Float);
+                      lvalp->base = new BaseType(BaseType::Float);
                       return(global_parse_env->err_tok = FLOAT);
                     }
 <INITIAL>"double"   {
-                      lvalp->base = new BaseType(BT_Double);
+                      lvalp->base = new BaseType(BaseType::Double);
                       return(global_parse_env->err_tok = DOUBLE);
                     }
 <INITIAL>"signed"   {
-                      lvalp->base = new BaseType(BT_Signed);
+                      lvalp->base = new BaseType(BaseType::Signed);
                       return(global_parse_env->err_tok = SGNED);
                     }
 <INITIAL>"unsigned" {
-                      lvalp->base = new BaseType(BT_UnSigned);
+                      lvalp->base = new BaseType(BaseType::UnSigned);
                       return(global_parse_env->err_tok = UNSGNED);
                     }
 <INITIAL>"enum"     {
-                      lvalp->typeSpec = BT_Enum;
+                      lvalp->typeSpec = BaseType::Enum;
                       global_parse_env->possibleTag = true;
                       return(global_parse_env->err_tok = ENUM);
                     }
 <INITIAL>"struct"   { 
-                      lvalp->typeSpec = BT_Struct;
+                      lvalp->typeSpec = BaseType::Struct;
                       global_parse_env->possibleTag = true;
                       return(global_parse_env->err_tok = STRUCT);
                     }
 <INITIAL>"union"    { 
-                      lvalp->typeSpec = BT_Union;
+                      lvalp->typeSpec = BaseType::Union;
                       global_parse_env->possibleTag = true;
                       return(global_parse_env->err_tok = UNION);
                     }
 
 <INITIAL>"__builtin_va_list"    { 	/* A GCC extension */
    /* TODO - give it a real type */
-                      lvalp->base = new BaseType(BT_Int);
+                      lvalp->base = new BaseType(BaseType::Int);
                       return(global_parse_env->err_tok = INT);
 /* 					  SETPOS_TOKEN(ELLIPSIS); return(ELLIPSIS); */
                     }
@@ -349,28 +349,28 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <GCC_ATTRIB>"__pure__" { BEGIN(INITIAL); return(global_parse_env->err_tok = PURE); }
 
 <INITIAL>"__const"  {
-                      lvalp->typeQual = TQ_Const;
+                      lvalp->typeQual = TypeQual::Const;
                       return(global_parse_env->err_tok = CONST);
                     }
 
 <INITIAL>"__const__"  {
-                        lvalp->typeQual = TQ_Const;
+                        lvalp->typeQual = TypeQual::Const;
                         return(global_parse_env->err_tok = CONST);
                       }
 <INITIAL>"__signed" {
-                      lvalp->type = new BaseType(BT_Signed);
+                      lvalp->type = new BaseType(BaseType::Signed);
                       return(global_parse_env->err_tok = SGNED);
                     }
 <INITIAL>"__signed__" {
-                        lvalp->type = new BaseType(BT_Signed);
+                        lvalp->type = new BaseType(BaseType::Signed);
                         return(global_parse_env->err_tok = SGNED);
                       }
 <INITIAL>"__volatile" {
-                        lvalp->typeQual = TQ_Volatile;
+                        lvalp->typeQual = TypeQual::Volatile;
                         return(global_parse_env->err_tok = VOLATILE);
                       }
 <INITIAL>"__volatile__" {
-                          lvalp->typeQual = TQ_Volatile;
+                          lvalp->typeQual = TypeQual::Volatile;
                           return(global_parse_env->err_tok = VOLATILE);
                         }
 

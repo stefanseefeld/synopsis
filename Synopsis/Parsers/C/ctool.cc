@@ -5,8 +5,10 @@
 // see the file COPYING for details.
 //
 
+#include <Synopsis/AST/ASTKit.hh>
 #include "Translator.hh"
-#include "PrintTraversal.hh"
+#include "Debugger.hh"
+#include "Printer.hh"
 #include "File.hh"
 #include "Trace.hh"
 #include <signal.h>
@@ -21,6 +23,8 @@ int Trace::level = 0;
 
 namespace
 {
+
+const char *base_path = 0;
 
 //. Override unexpected() to print a message before we abort
 void unexpected()
@@ -52,13 +56,117 @@ void sighandler(int signo)
   exit(-1);
 }
 
+//. return portably the current working directory
+const std::string &get_cwd()
+{
+  static std::string path;
+  if (path.empty())
+#ifdef __WIN32__
+  {
+    DWORD size;
+    if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
+    {
+      delete [] buf;
+      throw std::runtime_error("error accessing current working directory");
+    }
+    char *buf = new char[size];
+    if (::GetCurrentDirectoryA(size, buf) == 0)
+    {
+      delete [] buf;
+      throw std::runtime_error("error accessing current working directory");
+    }
+    path = buf;
+    delete [] buf;
+  }
+#else
+    for (long path_max = 32;; path_max *= 2)
+    {
+      char *buf = new char[path_max];
+      if (::getcwd(buf, path_max) == 0)
+      {
+	if (errno != ERANGE)
+	{
+	  delete [] buf;
+	  throw std::runtime_error(strerror(errno));
+	}
+      }
+      else
+      {
+	path = buf;
+	delete [] buf;
+	return path;
+      }
+      delete [] buf;
+    }
+#endif
+  return path;
+}
+
+// normalize and absolutize the given path path
+std::string normalize_path(std::string filename)
+{
+#ifdef __WIN32__
+  char separator = '\\';
+  const char *pat1 = "\\.\\";
+  const char *pat2 = "\\..\\";
+#else
+  char separator = '/';
+  const char *pat1 = "/./";
+  const char *pat2 = "/../";
+#endif
+  if (filename[0] != separator)
+    filename.insert(0, get_cwd() + separator);
+
+  // nothing to do...
+  if (filename.find(pat1) == std::string::npos &&
+      filename.find(pat2) == std::string::npos) return filename;
+  
+  // for the rest we'll operate on a decomposition of the filename...
+  typedef std::vector<std::string> Path;
+  Path path;
+
+  std::string::size_type b = 0;
+  while (b < filename.size())
+  {
+    std::string::size_type e = filename.find(separator, b);
+    path.push_back(std::string(filename, b, e-b));
+    b = e == std::string::npos ? std::string::npos : e + 1;
+  }
+
+  // remove all '.' and '' components
+  path.erase(std::remove(path.begin(), path.end(), "."), path.end());
+  path.erase(std::remove(path.begin(), path.end(), ""), path.end());
+  // now collapse '..' components with the preceding one
+  while (true)
+  {
+    Path::iterator i = std::find(path.begin(), path.end(), "..");
+    if (i == path.end()) break;
+    if (i == path.begin()) throw std::invalid_argument("invalid path");
+    path.erase(i - 1, i + 1); // remove two components
+  }
+
+  // now rebuild the path as a string
+  std::string retn = '/' + path.front();
+  for (Path::iterator i = path.begin() + 1; i != path.end(); ++i)
+    retn += '/' + *i;
+  return retn;
+}
+
+const char *strip_base_path(const char *filename)
+{
+  if (!base_path) return filename;
+  size_t length = strlen(base_path);
+  if (strncmp(filename, base_path, length) == 0)
+    return filename + length;
+  return filename;
+}
+
 PyObject *ctool_parse(PyObject *self, PyObject *args)
 {
   try
   {
     char *input;
     char *filename;
-    char *base_path;
     char *syntax_prefix;
     char *xref_prefix;
     int verbose = 0;
@@ -76,8 +184,8 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
                           &debug))
       return 0;
 
+    Synopsis::AST::AST ast(py_ast);
     Py_INCREF(py_ast);
-    
 
     std::set_unexpected(unexpected);
     struct sigaction olda;
@@ -91,8 +199,30 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
     try
     {
       File *file = File::parse(input, filename);
-      Translator translator(py_ast, verbose == 1, debug == 1);
-      translator.traverse_file(file);
+      if (debug)
+      {
+	StatementDebugger debugger(std::cout);
+	debugger.debug_file(file);
+      }
+      StatementTranslator translator(ast, ast.declarations(), 
+				     verbose == 1, debug == 1);
+      translator.translate_file(file);
+    }
+    catch (const Python::Object::TypeError &e)
+    {
+      std::cerr << "TypeError : " << e.what() << std::endl;
+    }
+    catch (const Python::Object::AttributeError &e)
+    {
+      std::cerr << "AttributeError : " << e.what() << std::endl;
+    }
+    catch (const Python::Object::KeyError &e)
+    {
+      std::cerr << "KeyError : " << e.what() << std::endl;
+    }
+    catch (const Python::Object::ImportError &e)
+    {
+      std::cerr << "ImportError : " << e.what() << std::endl;
     }
     catch (const std::exception &e)
     {
@@ -111,7 +241,7 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
   }
 }
 
-PyObject *ctool_dump(PyObject *self, PyObject *args)
+PyObject *ctool_print(PyObject *self, PyObject *args)
 {
   try
   {
@@ -142,8 +272,8 @@ PyObject *ctool_dump(PyObject *self, PyObject *args)
     {
       std::ofstream ofs(output);
       File *file = File::parse(input, filename);
-      PrintTraversal printer(ofs, debug == 1);
-      printer.traverse_file(file);
+      StatementPrinter printer(ofs);
+      printer.print_file(file);
       ofs << std::endl;
 
       if (symbols || debug)
@@ -175,7 +305,7 @@ PyObject *ctool_dump(PyObject *self, PyObject *args)
 }
 
 PyMethodDef methods[] = {{(char*)"parse", ctool_parse, METH_VARARGS},
-			 {(char*)"dump", ctool_dump, METH_VARARGS},
+			 {(char*)"dump", ctool_print, METH_VARARGS},
 			 {0, 0}};
 };
 
