@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.8 2003/11/11 06:01:13 stefan Exp $
+# $Id: FileTreeJS.py,v 1.9 2003/11/12 16:42:05 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.9  2003/11/12 16:42:05  stefan
+# more refactoring
+#
 # Revision 1.8  2003/11/11 06:01:13  stefan
 # adjust to directory/package layout changes
 #
@@ -160,5 +163,3 @@ class FileTree(JSTree.JSTree):
 		# Print comment
 		#self.write(self.summarizer.getSummary(node.decls[name]))
 	self.end_file()
-	
-htmlPageClass = FileTree
