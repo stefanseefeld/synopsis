@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.20 2002/09/28 06:16:19 chalky Exp $
+# $Id: Util.py,v 1.21 2002/10/20 02:21:25 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.21  2002/10/20 02:21:25  chalky
+# Move quote function to Core.Util
+#
 # Revision 1.20  2002/09/28 06:16:19  chalky
 # Don't dump file to stdout
 #
@@ -111,7 +114,7 @@ ccolonName()     -- format a scoped name with '::' separating components.
 pruneScope()     -- remove common prefix from a scoped name.
 getopt_spec(args,options,longlist) -- version of getopt that adds transparent --spec= suppport"""
 
-import string, getopt, sys, os, os.path, cStringIO, types
+import string, getopt, sys, os, os.path, cStringIO, types, re, md5
 
 # Store the current working directory here, since during output it is
 # sometimes changed, and imports should be relative to the current WD
@@ -448,3 +451,35 @@ class PyWriterStruct:
     """A utility class that PyWriter uses to dump class objects. Dict is the
     dictionary of the class being dumped."""
     def __init__(self, dict): self.dict = dict
+
+def quote(name):
+    """Quotes a base filename to remove illegal characters and keep it
+    within a reasonable length for the filesystem.
+
+    The md5 hash function is used if the length of the name after quoting is
+    more than 100 characters. If it is used, then as many characters at the
+    start of the name as possible are kept intact, and the hash appended to
+    make 100 characters.
+
+    Do not pass filenames with meaningful extensions to this function, as the
+    hash could destroy them."""
+
+    original = name # save the old name
+
+    # The . is arbitrary..
+    name = re.sub('\.','..',name)
+    name = re.sub('<','.L',name)
+    name = re.sub('>','.R',name)
+    name = re.sub('\(','.l',name)
+    name = re.sub('\)','.r',name)
+    name = re.sub('::','-',name)
+    name = re.sub(':','.',name)
+    name = re.sub('&','.A',name)
+    name = re.sub('\*','.S',name)
+
+    if len(name) > 100:
+	hash = md5.md5(original).hexdigest()
+	# Keep as much of the name as possible
+	name = name[:100 - len(hash)] + hash
+    return name
+
