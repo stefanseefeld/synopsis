@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.8 2000/08/30 16:47:36 stefan Exp $
+# $Id: synopsis,v 1.9 2000/12/20 00:24:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -21,7 +21,10 @@
 #  02111-1307, USA.
 
 import sys, getopt, os, os.path, string
-import pickle
+import cPickle
+
+# Hack, I can't be stuffed finding places to change it :)
+pickle = cPickle
 
 from Synopsis import Type, AST
 
