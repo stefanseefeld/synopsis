@@ -89,7 +89,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
     def addDeclaration(self, declaration): self.__scope[-1].declarations().append(declaration)
     def addType(self, name, type):
 	if self.__types.types.has_key(name):
-	    if isinstance(self.__types.get(name), Type.Forward):
+	    if isinstance(self.__types.get(name), Type.Unknown):
 		self.__types.add(name, type)
 	    else:
 		pass
@@ -141,7 +141,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         name = list(self.scope())
         name.append(node.identifier())
         self.__result_declarator = AST.Forward(node.file(), node.line(), "IDL", "interface", name)
-        self.addType(name, Type.Forward("IDL", name))
+        self.addType(name, Type.Unknown("IDL", name))
         
     def visitConst(self, node):
         if self.__mainfile_only and not node.mainFile(): return
