@@ -51,10 +51,9 @@ class Declaration:
     accessability and type. The default accessability is DEFAULT except for
     C++ where the Parser always sets it to one of the other three. """
 
-    def __init__(self, file, line, main, language, type, name):
+    def __init__(self, file, line, language, type, name):
         self.__file  = file
         self.__line  = line
-        self.__main  = main
         self.__language = language
 	self.__name = tuple(name)
         self.__type = type
@@ -66,9 +65,6 @@ class Declaration:
     def line(self):
 	"""The line of the file this declaration started at"""
 	return self.__line
-    def mainfile(self):
-	"""True if this declaration is in the main file"""
-	return self.__main
     def language(self):
 	"""The language this declaration is in"""
 	return self.__language
@@ -96,8 +92,8 @@ class Declaration:
 class Forward (Declaration):
     """Forward declaration"""
 
-    def __init__(self, file, line, main, language, type, name):
-        Declaration.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, name):
+        Declaration.__init__(self, file, line, language, type, name)
     def accept(self, visitor): visitor.visitForward(self)
 
 class Declarator (Declaration):
@@ -107,8 +103,8 @@ class Declarator (Declaration):
     used to be many-to-one) which is why they will disappear."""
 
 
-    def __init__(self, file, line, main, language, name, sizes):
-        Declaration.__init__(self, file, line, main, language, "", name)
+    def __init__(self, file, line, language, name, sizes):
+        Declaration.__init__(self, file, line, language, "", name)
         self.__sizes = sizes
     def _setAlias(self, alias):
 	"""Change the alias type. This is used only by the Linker"""
@@ -127,8 +123,8 @@ class Declarator (Declaration):
 class Scope (Declaration):
     """Base class for scopes with contained declarations."""
 
-    def __init__(self, file, line, main, language, type, name):
-        Declaration.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, name):
+        Declaration.__init__(self, file, line, language, type, name)
         self.__declarations = []
     def declarations(self):
 	"""The list of declarations in this scope"""
@@ -137,14 +133,14 @@ class Scope (Declaration):
 class Module (Scope):
     """Module class.
     """
-    def __init__(self, file, line, main, language, type, name):
-        Scope.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, name):
+        Scope.__init__(self, file, line, language, type, name)
     def accept(self, visitor): visitor.visitModule(self)
 
 class MetaModule (Module):
     """Module Class that references all places where this Module occurs"""
     def __init__(self, type, name):
-        Scope.__init__(self, "", "", 1, "", type, name)
+        Scope.__init__(self, "", "", "", type, name)
 	self.__module_declarations = []
     def accept(self, visitor): visitor.visitMetaModule(self)
     def module_declarations(self): return self.__module_declarations
@@ -174,8 +170,8 @@ class Inheritance:
 class Class (Scope):
     """Class class."""
 
-    def __init__(self, file, line, main, language, type, name):
-        Scope.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, name):
+        Scope.__init__(self, file, line, language, type, name)
         self.__parents = []
 	self.__template = None
     def parents(self):
@@ -194,8 +190,8 @@ class Typedef (Declaration):
   alias()           -- the type object referenced by this alias
   constr()          -- boolean: true if the alias type was constructed within this typedef declaration.
   declarator()      -- the new type being declared"""
-    def __init__(self, file, line, main, language, type, name, alias, constr, declarator):
-        Declaration.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, name, alias, constr, declarator):
+        Declaration.__init__(self, file, line, language, type, name)
         self.__alias = alias
         self.__constr = constr
         self.__declarator = declarator
@@ -216,8 +212,8 @@ class Enumerator (Declaration):
     """Enumerator of an Enum. Enumerators represent the individual names and
     values in an enum."""
 
-    def __init__(self, file, line, main, language, name, value):
-        Declaration.__init__(self, file, line, main, language, "enumerator", name)
+    def __init__(self, file, line, language, name, value):
+        Declaration.__init__(self, file, line, language, "enumerator", name)
         self.__value = value
     def value(self):
 	"""The string value of this enumerator"""
@@ -228,8 +224,8 @@ class Enum (Declaration):
     """Enum declaration. The actual names and values are encapsulated by
     Enumerator objects."""
 
-    def __init__(self, file, line, main, language, name, enumerators):
-        Declaration.__init__(self, file, line, main, language, "enum", name)
+    def __init__(self, file, line, language, name, enumerators):
+        Declaration.__init__(self, file, line, language, "enum", name)
         self.__enumerators = enumerators
     def enumerators(self):
 	"""List of Enumerator objects"""
@@ -239,8 +235,8 @@ class Enum (Declaration):
 class Variable (Declaration):
     """Variable definition"""
 
-    def __init__(self, file, line, main, language, type, name, vtype, constr, declarator):
-        Declaration.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, name, vtype, constr, declarator):
+        Declaration.__init__(self, file, line, language, type, name)
         self.__vtype  = vtype
         self.__constr  = constr
         self.__declarator = declarator
@@ -261,8 +257,8 @@ class Variable (Declaration):
 class Const (Declaration):
     """Constant declaration. A constant is a name with a type and value."""
 
-    def __init__(self, file, line, main, language, type, ctype, name, value):
-        Declaration.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, ctype, name, value):
+        Declaration.__init__(self, file, line, language, type, name)
         self.__ctype  = ctype
         self.__value = value
 
@@ -317,8 +313,8 @@ class Function (Declaration):
     Note that function names are stored in mangled form to allow overriding.
     Formatters should use the realname() method to extract the unmangled name."""
 
-    def __init__(self, file, line, main, language, type, premod, returnType, name, realname):
-        Declaration.__init__(self, file, line, main, language, type, name)
+    def __init__(self, file, line, language, type, premod, returnType, name, realname):
+        Declaration.__init__(self, file, line, language, type, name)
 	self.__realname = realname
         self.__premodifier = premod
         self.__returnType = returnType
@@ -361,8 +357,8 @@ class Operation (Function):
     """Operation class. An operation is related to a Function and is currently
     identical.
     """
-    def __init__(self, file, line, main, language, type, premod, returnType, name, realname):
-        Function.__init__(self, file, line, main, language, type, premod, returnType, name, realname)
+    def __init__(self, file, line, language, type, premod, returnType, name, realname):
+        Function.__init__(self, file, line, language, type, premod, returnType, name, realname)
     def accept(self, visitor): visitor.visitOperation(self)
 
 class Comment :

@@ -14,8 +14,8 @@
 
 #  For Linux
 
-CCC = g++
-CXX = g++
+CCC = cc
+CXX = c++
 RANLIB =
 
 CFLAGS = -O2
@@ -34,17 +34,23 @@ all : ../../occ.so
 $(OBJ): %.o : ../%.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-occ.o:	occ.cc
+synopsis.o:	synopsis.cc synopsis.hh
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+synopsis.g.o:	synopsis.cc
+	$(CXX) -ggdb -DDEBUG $(CXXFLAGS) -c -o $@ $<
+
+occ.o:	occ.cc synopsis.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 occ.g.o: occ.cc
 	$(CXX) -ggdb -DDEBUG $(CXXFLAGS) -c -o $@ $<
 
-../../occ.so : opencxx.a occ.o
-	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ occ.o opencxx.a $(LIB)
+../../occ.so : opencxx.a synopsis.o occ.o
+	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ occ.o synopsis.o opencxx.a $(LIB)
 
-occ.gdb:	opencxx.a occ.g.o
-	$(CXX) -ggdb $(CXXFLAGS) $(LDFLAGS) -o $@ occ.g.o opencxx.a $(LIB) $(PYLIB)
+occ.gdb:	opencxx.a synopsis.g.o occ.g.o
+	$(CXX) -ggdb $(CXXFLAGS) $(LDFLAGS) -o $@ occ.g.o synopsis.g.o opencxx.a $(LIB) $(PYLIB)
 
 opencxx.a : $(OBJ)
 	cp $(GCLIB) $@

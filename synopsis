@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.7 2000/08/01 16:04:15 stefan Exp $
+# $Id: synopsis,v 1.8 2000/08/30 16:47:36 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -43,12 +43,14 @@ The supported flags are:
 
 parser_cmd = ""
 parser_args = []
+linker_cmd = "Linker"
+linker_args = []
 formatter_cmd = ""
 formatter_args = []
 output = ""
 
 def parseArgs(args):
-    global parser_cmd, parser_args, formatter_cmd, formatter_args, output
+    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output
     try:
         opts,files = getopt.getopt(args, "p:f:W:I:o:vh", ["parser=", "formatter=", "version", "help"])
     except getopt.error, e:
@@ -68,6 +70,8 @@ def parseArgs(args):
         elif o == "-W":
             if a[0] == "p":
                 parser_args.extend(string.split(a[2:], ","))
+            elif a[0] == "l":
+                linker_args.extend(string.split(a[2:], ","))
             elif a[0] == "f":
                 formatter_args.extend(string.split(a[2:], ","))
             else:
@@ -97,7 +101,7 @@ def my_import(name):
     return mod
 
 def main(argv=None):
-    global parser_cmd, parser_args, formatter_cmd, formatter_args
+    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args
 
     if argv is None: argv = sys.argv
 
@@ -142,12 +146,9 @@ def main(argv=None):
 
     #
     # resolve symbols here...
-    #
-    # for now, avoid all declarations not from a main file, i.e.
-    # implicite (by means of included files) declarations
+    linker = my_import("Linker." + linker_cmd)
+    linker.resolve(linker_args, types, declarations)
 
-    declarations = filter(lambda d: d.mainfile(), declarations)
-    
     #
     # generate output, either with pickler or with a formatter
     #

@@ -48,7 +48,8 @@ class TableOfContents(Visitor.AstVisitor):
 
     def visitTypedef(self, typedef):
         for d in typedef.declarators(): d.accept(self)
-    def visitEnumerator(self, enumerator): self.insert(enumerator.name())
+    def visitEnumerator(self, enumerator):
+        self.insert(enumerator.name())
     def visitEnum(self, enum):
         self.insert(enum.name())
         for e in enum.enumerators(): e.accept(self)
@@ -98,15 +99,20 @@ class HTMLFormatter:
         self.__type_ref = type.name()
         self.__type_label = type.name()
         
-    def visitForwardType(self, type):
+    def visitForward(self, type):
         self.__type_ref = Util.ccolonName(type.name())
         self.__type_label = Util.ccolonName(type.name(), self.scope())
         
-    def visitDeclaredType(self, type):
+    def visitDeclared(self, type):
         self.__type_label = Util.ccolonName(type.name(), self.scope())
         self.__type_ref = Util.ccolonName(type.name())
         
-    def visitParametrizedType(self, type):
+    def visitModifier(self, type):
+        type.alias().accept(self)
+        self.__type_ref = type.premod() + " " + self.__type_ref + " " + type.postmod()
+        self.__type_label = type.premod() + " " + self.__type_label + " " + type.postmod()
+            
+    def visitParametrized(self, type):
         type.template().accept(self)
         type_ref = self.__type_ref + "&lt;"
         type_label = self.__type_label + "&lt;"
