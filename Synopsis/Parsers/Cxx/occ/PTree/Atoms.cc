@@ -7,6 +7,8 @@
 //
 #include "PTree/Atoms.hh"
 
+using namespace PTree;
+
 namespace
 {
 // little helper for initialization
