@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.14 2001/07/19 04:03:05 chalky Exp $
+# $Id: Util.py,v 1.15 2001/11/05 06:52:11 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.15  2001/11/05 06:52:11  chalky
+# Major backside ui changes
+#
 # Revision 1.14  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -92,7 +95,7 @@ ccolonName()     -- format a scoped name with '::' separating components.
 pruneScope()     -- remove common prefix from a scoped name.
 getopt_spec(args,options,longlist) -- version of getopt that adds transparent --spec= suppport"""
 
-import string, getopt, sys, os, os.path
+import string, getopt, sys, os, os.path, cStringIO, types
 
 # Store the current working directory here, since during output it is
 # sometimes changed, and imports should be relative to the current WD
@@ -252,3 +255,101 @@ def getopt_spec(args, options, long_options=[]):
 	else:
 	    ret.append(pair)
     return ret, remainder
+
+class PyWriter:
+    """A class that allows writing data in such a way that it can be read in
+    by just 'exec'ing the file. You should extend it and override write_item()"""
+    def __init__(self, ostream):
+	self.os = ostream
+	self.buffer = cStringIO.StringIO()
+	self.imports = {}
+	self.__indent = '\n'
+	self.__prepend = ''
+	self.__class_funcs = {}
+	self.__long_lists = {}
+    def indent(self):
+	self.__indent = self.__indent+'  '
+    def outdent(self):
+	self.__indent = self.__indent[:-2]
+    def ensure_import(self, module, names):
+	key = module+names
+	if self.imports.has_key(key): return
+	self.imports[key] = None
+	self.os.write('from %s import %s\n'%(module, names))
+    def write(self, str):
+	# Get cached '\n' if any
+	prefix = self.__prepend
+	self.__prepend = ''
+	# Cache '\n' if any
+	if len(str) and str[-1] == '\n':
+	    self.__prepend = '\n'
+	    str = str[:-1]
+	# Indent any remaining \n's, including cached one
+	str = string.replace(prefix + str, '\n', self.__indent)
+	self.buffer.write(str)
+    def write_item(self, item):
+	"""Writes arbitrary items by looking up write_Foo functions where Foo
+	is the class name of the item"""
+	# Use repr() for non-instance types
+	if type(item) is types.ListType:
+	    return self.write_list(item)
+	if type(item) is not types.InstanceType:
+	    return self.write(repr(item))
+    
+	# Check for class in cache
+	class_obj = item.__class__
+	if self.__class_funcs.has_key(class_obj):
+	    return self.__class_funcs[class_obj](item)
+	# Check for write_Foo method
+	func_name = 'write_'+class_obj.__name__
+	if not hasattr(self, func_name):
+	    return self.write(repr(item))
+	# Cache method and call it
+	func = getattr(self, func_name)
+	self.__class_funcs[class_obj] = func
+	func(item)
+    def flush(self):
+	"Writes the buffer to the stream and closes the buffer"
+	# Needed to flush the cached '\n'
+	if self.__prepend: self.write('')
+	self.os.write(self.buffer.getvalue())
+	if 1: # for debugging
+	    sys.stdout.write(self.buffer.getvalue())
+	self.buffer.close()
+    def long(self, list):
+	"Remembers list as wanting 'long' representation (an item per line)"
+	self.__long_lists[id(list)] = None
+	return list
+    def write_list(self, list):
+	"""Writes a list on one line. If long(list) was previously called, the
+	list from its cache and calls write_long_list"""
+	if self.__long_lists.has_key(id(list)):
+	    del self.__long_lists[id(list)]
+	    return self.write_long_list(list)
+	self.write('[')
+	comma = 0
+	for item in list:
+	    if comma: self.write(', ')
+	    else: comma = 1
+	    self.write_item(item)
+	self.write(']')
+    def write_long_list(self, list):
+	"Writes a list with each item on a new line"
+	if not list:
+	    self.write('[]')
+	    return
+	self.write('[\n')
+	self.indent()
+	comma = 0
+	for item in list:
+	    if comma:
+		self.__prepend = ''
+		self.write(',\n')
+	    else: comma = 1
+	    self.write_item(item)
+	self.outdent()
+	self.write('\n]')
+    def write_attr(self, name, value):
+	self.write(name + ' = ')
+	self.write_item(value)
+	self.write('\n')
