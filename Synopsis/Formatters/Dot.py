@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.25 2002/07/11 02:09:34 chalky Exp $
+# $Id: Dot.py,v 1.26 2002/08/21 03:36:54 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,10 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.26  2002/08/21 03:36:54  stefan
+# * use UML inheritance arrows
+# * display operations and attributes if requested
+#
 # Revision 1.25  2002/07/11 02:09:34  chalky
 # Patch from Patrick Mauritz: Use png support in latest graphviz. If dot not
 # present, don't subvert what the user asked for but instead tell them.
@@ -133,8 +137,12 @@ def system(command):
 
 class InheritanceFormatter(AST.Visitor, Type.Visitor):
     """A Formatter that generates an inheritance graph"""
-    def __init__(self, os):
+    def __init__(self, os, operations, attributes):
         self.__os = os
+        if operations: self.__operations = []
+        else: self.__operations = None
+        if attributes: self.__attributes = []
+        else: self.__attributes = None
         self.__scope = []
         self.__type_ref = None
         self.__type_label = ''
@@ -154,12 +162,12 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
         self.__type_ref = None
         self.__type_label = ''
         
-    def writeNode(self, ref, label, **attr):
+    def writeNode(self, ref, name, label, **attr):
         """helper method to generate output for a given node"""
-        if nodes.has_key(label): return
-        nodes[label] = len(nodes)
-        number = nodes[label]
-        self.write("Node" + str(number) + " [shape=\"box\", label=\"" + label + "\"")
+        if nodes.has_key(name): return
+        nodes[name] = len(nodes)
+        number = nodes[name]
+        self.write("Node" + str(number) + " [shape=\"record\", label=\"" + label + "\"")
         self.write(", fontSize = 10, height = 0.2, width = 0.4")
         self.write(string.join(map(lambda item:', %s="%s"'%item, attr.items())))
         if ref: self.write(", URL=\"" + ref + "\"")
@@ -168,7 +176,7 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
     def writeEdge(self, parent, child, label, **attr):
         self.write("Node" + str(nodes[parent]) + " -> ")
         self.write("Node" + str(nodes[child]))
-        self.write("[ color=\"black\", fontsize=10" + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
+        self.write("[ color=\"black\", fontsize=10, dir=back, arrowtail=empty, " + string.join(map(lambda item:', %s="%s"'%item, attr.items())) + "];\n")
 
     def getClassName(self, node):
 	"""Returns the name of the given class node, relative to all its
@@ -221,30 +229,50 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
     def visitInheritance(self, node):
         self.formatType(node.parent())
         if self.type_ref():
-            self.writeNode(self.type_ref().link, self.type_label())
+            self.writeNode(self.type_ref().link, self.type_label(), self.type_label())
         else:
-            self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
+            self.writeNode('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
-        label = self.getClassName(node)
+        if self.__operations is not None: self.__operations.append([])
+        if self.__attributes is not None: self.__attributes.append([])
+        name = self.getClassName(node)
         ref = toc[node.name()]
+        for d in node.declarations(): d.accept(self)
+        label = '{' + name
+        if self.__operations or self.__attributes:
+            label = label + '\\n'
+            if self.__operations:
+                label = label + '|' + string.join(map(lambda x:x[-1] + '()\\l', self.__operations[-1]))
+            if self.__attributes:
+                label = label + '|' + string.join(map(lambda x:x[-1] + '\\l', self.__attributes[-1]))
+        label = label + '}'
         if ref:
-            self.writeNode(ref.link, label)
+            self.writeNode(ref.link, name, label)
         else:
-            self.writeNode('', label, color='gray75', fontcolor='gray75')
+            self.writeNode('', name, label, color='gray75', fontcolor='gray75')
         for inheritance in node.parents():
             inheritance.accept(self)
-            self.writeEdge(self.type_label(), label, None)
+            self.writeEdge(self.type_label(), name, None)
 	if no_descend: return
-        for d in node.declarations(): d.accept(self)
+        if self.__operations: self.__operations = self.__operations[:-1]
+        if self.__attributes: self.__attributes = self.__attributes[:-1]
+
+    def visitOperation(self, operation):
+        if self.__operations:
+            self.__operations[-1].append(operation.realname())
+
+    def visitVariable(self, variable):
+        if self.__attributes:
+            self.__attributes[-1].append(variable.name())
 
 class SingleInheritanceFormatter(InheritanceFormatter):
     """A Formatter that generates an inheritance graph for a specific class.
     This Visitor visits the AST upwards, i.e. following the inheritance links, instead of
     the declarations contained in a given scope."""
     #base = InheritanceFormatter
-    def __init__(self, os, levels, types):
-        InheritanceFormatter.__init__(self, os)
+    def __init__(self, os, operations, attributes, levels, types):
+        InheritanceFormatter.__init__(self, os, operations, attributes)
         self.__levels = levels
         self.__types = types
         self.__current = 1
@@ -265,28 +293,28 @@ class SingleInheritanceFormatter(InheritanceFormatter):
         node.parent().accept(self)
         if self.type_label():
             if self.type_ref():
-                self.writeNode(self.type_ref().link, self.type_label())
+                self.writeNode(self.type_ref().link, self.type_label(), self.type_label())
             else:
-                self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
+                self.writeNode('', self.type_label(), self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
 	# Prevent recursion
 	if self.__visited_classes.has_key(id(node)): return
 	self.__visited_classes[id(node)] = None
 
-        label = self.getClassName(node)
+        name = self.getClassName(node)
         if self.__current == 1:
-            self.writeNode('', label, style='filled', color='lightgrey')
+            self.writeNode('', name, name, style='filled', color='lightgrey')
         else:
             ref = toc[node.name()]
             if ref:
-                self.writeNode(ref.link, label)
+                self.writeNode(ref.link, name, name)
             else:
-                self.writeNode('', label, color='gray75', fontcolor='gray75')
+                self.writeNode('', name, name, color='gray75', fontcolor='gray75')
         for inheritance in node.parents():
             inheritance.accept(self)
             if nodes.has_key(self.type_label()):
-                self.writeEdge(self.type_label(), label, None)
+                self.writeEdge(self.type_label(), name, None)
         # if this is the main class and if there is a type dictionary,
         # look for classes that are derived from this class
 
@@ -306,10 +334,10 @@ class SingleInheritanceFormatter(InheritanceFormatter):
                                     child_label = self.getClassName(child)
                                     ref = toc[child.name()]
                                     if ref:
-                                        self.writeNode(ref.link, child_label)
+                                        self.writeNode(ref.link, child_label, child_label)
                                     else:
-                                        self.writeNode('', child_label, color='gray75', fontcolor='gray75')
-                                    self.writeEdge(label, child_label, None)
+                                        self.writeNode('', child_label, child_label, color='gray75', fontcolor='gray75')
+                                    self.writeEdge(name, child_label, None)
 
 class CollaborationFormatter(AST.Visitor, Type.Visitor):
     """A Formatter that generates a collaboration graph"""
@@ -354,6 +382,8 @@ def usage():
   -t <title>                           Associate <title> with the generated graph
   -i                                   Generate an inheritance graph
   -s                                   Generate an inheritance graph for a single class
+  -O                                   show operations
+  -A                                   show attributs
   -c                                   Generate a collaboration graph
   -f <format>                          Generate output in format 'dot', 'ps' (default), 'png', 'gif', 'map', 'html'
   -r <filename>                        Read in toc for an external data base that is to be referenced (for map/html output)
@@ -369,19 +399,20 @@ formats = {
     'html' : 'html',
 }
 
-
-def __parseArgs(args):
-    global output, title, type, oformat, verbose, toc_in, origin, no_descend, nodes
+def __parseArgs(args, config_obj):
+    global output, title, type, operations, attributes, oformat, verbose, toc_in, origin, no_descend, nodes
     output = ''
     title = 'NoTitle'
     type = ''
+    operations = 0
+    attributes = 0
     oformat = 'ps'
     toc_in = []
     origin = ''
     no_descend = 0
     nodes = {}
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:f:r:R:icsvn")
+        opts,remainder = Util.getopt_spec(args, "o:t:OAf:r:R:icsvn")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
@@ -392,6 +423,8 @@ def __parseArgs(args):
         elif o == "-t": title = a
         elif o == "-i": type = "inheritance"
         elif o == "-s": type = "single"
+        elif o == "-O": operations = 1
+        elif o == "-A": attributes = 1
         elif o == "-c":
             type = "collaboration"
             sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
@@ -457,8 +490,8 @@ def _format_html(input, output):
     html.write("</map>\n")
 
 def format(args, ast, config_obj):
-    global output, title, type, oformat, verbose, toc, toc_in
-    __parseArgs(args)
+    global output, title, type, operations, attributes, oformat, verbose, toc, toc_in
+    __parseArgs(args, config_obj)
 
     # Create table of contents index
     if not toc: toc = TOC.TableOfContents(TOC.Linker())
@@ -468,11 +501,11 @@ def format(args, ast, config_obj):
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = Util.open(tmpfile)
     dotfile.write("digraph \"%s\" {\n"%(title))
-    dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4, color=black]\n")
+    dotfile.write("node[shape=record, fontsize=10, height=0.2, width=0.4, color=black]\n")
     if type == "inheritance":
-        generator = InheritanceFormatter(dotfile)
+        generator = InheritanceFormatter(dotfile, operations, attributes)
     elif type == "single":
-        generator = SingleInheritanceFormatter(dotfile, -1, ast.types())
+        generator = SingleInheritanceFormatter(dotfile, operations, attributes, -1, ast.types())
     else:
         generator = CollaborationFormatter(dotfile)
     for d in ast.declarations():
