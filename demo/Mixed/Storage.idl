@@ -1,0 +1,22 @@
+#ifndef _Storage_idl
+#define _Storage_idl
+
+module Storage
+{
+
+interface ObjectState;
+
+interface Storable
+{
+  void store(in ObjectState state);
+  void load(in ObjectState state);
+};
+
+interface _Factory
+{
+  Storable create_uninitialized();
+};
+
+};
+
+#endif
