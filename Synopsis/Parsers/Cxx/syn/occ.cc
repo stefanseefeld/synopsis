@@ -17,27 +17,19 @@
 #include "ptree.h"
 #include "encoding.h"
 
-/* TODO: figure out how to store overloaded method names :/ */
-
-/*
- * the following isn't used anywhere. Though it has to be defined and initialized to some dummy default
+/* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
  */
-bool showProgram;
-bool doCompile;
-bool makeExecutable;
-bool doPreprocess;
-bool doTranslate;
-bool verboseMode;
-bool regularCpp;
-bool makeSharedLibrary;
+bool showProgram, doCompile, makeExecutable, doPreprocess, doTranslate;
+bool verboseMode, regularCpp, makeSharedLibrary, preprocessTwice;
 char* sharedLibraryName;
-bool preprocessTwice;
 
+/* These also are just dummies needed by the opencxx module */
 void RunSoCompiler(const char *) {}
 void *LoadSoLib(char *) { return 0;}
 void *LookupSymbol(void *, char *) { return 0;}
 
+//. A class that acts like a Visitor to the Ptree
 class PyWalker : public Walker
 {
 public:
@@ -66,44 +58,50 @@ private:
     //. return a Type object for the given name and the given list of scopes
     PyObject *lookupType(Ptree *, PyObject *);
 
-    //. return a Type object for the given parse tree and the given list of scopes
-
     Synopsis *synopsis;
     PyObject *_result; // Current working value
     vector<PyObject *> _declarators;
 
+    //. A string type for the encoded names and types
     typedef basic_string<unsigned char> code;
+    //. A string iterator type for the encoded names and types
     typedef code::iterator code_iter;
 
     //. Add the given comment ptree to the given declaration
     void addComments(PyObject* decl, Ptree* comments);
 
-    //. Return a Type object from the encoded type
+    //. Return a Type object from the encoded type.
+    //. It uses m_enctype and m_enc_iter, so you must call initTypeDecoder
+    //. first.
     PyObject* decodeType();
+
     //. Decode a name starting from the position of m_enc_iter
     string decodeName();
+    //. Decode a name starting from the given iterator
     string decodeName(code_iter);
+    //. Initialise the type decoder
     void initTypeDecoder(code& encoding, code_iter&, string);
 
+    //. The encoded type string currently being decoded
     code* m_enctype;
+    //. The current position in m_enc_iter
     code_iter* m_enc_iter;
+    //. A message for errors, generally the declaration name
     string m_encmessage;
 
     //. The current filename
     string m_filename;
-    
     //. The current line number
     int m_lineno;
 
     //. The parser which is generating the Ptree
     Parser* m_parser;
-
     //. Current PtreeDeclaration being parsed
     PtreeDeclaration* m_declaration;
-
     //. Current ptree typedef being parsed
     Ptree* m_ptree;
 
+    //. Output operator for code strings
     friend ostream& operator << (ostream& o, const PyWalker::code& code);
 };
 
@@ -130,6 +128,8 @@ PyWalker::~PyWalker()
 
 void PyWalker::updateLineNumber(Ptree* ptree)
 {
+    // Ask the Parser for the linenumber of the ptree. Unfortunately this is
+    // rather expensive.
     char* fname;
     int fname_len;
     m_lineno = m_parser->LineNumber(ptree->LeftMost(), fname, fname_len);
@@ -158,25 +158,6 @@ void PyWalker::addComments(PyObject* decl, Ptree* comments)
 	comments = comments->Rest();
     }
 }
-
-// void PyWalker::addDeclaration(PyObject *declaration)
-// {
-//   Trace trace("PyWalker::addDeclaration");
-//   PyObject *decl = PyObject_CallMethod(scope(), "declarations", "");
-//   assertObject(decl);
-//   PyObject_CallMethod(decl, "append", "O", declaration);
-// }
-
-// void PyWalker::addType(PyObject *name, PyObject *type)
-// {
-//   Trace trace("PyWalker::addType");
-// #ifndef DEBUG
-//   PyObject *old_type = PyObject_GetItem(_types, name);
-//   if (!old_type) // we should check whether this is a forward declaration...
-//     PyObject_SetItem(_types, name, type);
-//   cout << "addType " << PyString_AsString(PyObject_Str(name)) << endl;
-// #endif
-// }
 
 PyObject *PyWalker::lookupType(Ptree *node, PyObject *scopes)
 {
@@ -238,16 +219,13 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
     unsigned char* encname = reinterpret_cast<unsigned char*>(decl->GetEncodedName());
     unsigned char* enctype = reinterpret_cast<unsigned char*>(decl->GetEncodedType());
     if (!encname || !enctype) return decl;
-#if 0
-    cout << "Declarator encoding '" << enctype << "' '" << encname << "'" << endl;
-#endif
+
     // Figure out parameter types:
     code enctype_s(enctype);
     code_iter enc_iter = enctype_s.begin();
     initTypeDecoder(enctype_s, enc_iter, decl->ToString());
     while (*enc_iter == 'C') ++enc_iter;
     if (*enc_iter == 'F') {
-        //cout << "\n*** Function: "; decl->Display();
 	++enc_iter;
 
         // Create parameter objects
@@ -257,47 +235,50 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	if (!p) { cout << "Warning: error finding params!" << endl; return decl; }
         Ptree* pparams = p->Second();
         while (pparams) {
+	    // A parameter has a type, possibly a name and possibly a value
             string name, value;
             if (pparams->Car()->Eq(',')) pparams = pparams->Cdr();
             Ptree* param = pparams->First();
-            //Ptree* ptype = param->First();
+	    // The type is stored in the encoded type string already
             PyObject* type = decodeType();
-            if (!type) break; // end of encoding
+            if (!type) break; // NULL means end of encoding
+	    // Find name and value
             if (param->Length() > 1) {
                 Ptree* pname = param->Second();
-                //cout << "pname == "; pname->Display();
                 if (pname && pname->Car()) {
+		    // * and & modifiers are stored with the name so we must skip them
                     while (pname && (pname->Car()->Eq('*') || pname->Car()->Eq('&'))) pname = pname->Cdr();
+		    // Extract name
                     if (pname) {
                         name = pname->Car()->ToString();
-                        //cout << "name == " << name << endl;
                     }
                 }
+		// If there are three cells, they are 1:name 2:= 3:value
                 if (param->Length() > 2) {
                     value = param->Nth(3)->ToString();
                 }
             }
+	    // Add the AST.Parameter type to the list
             params.push_back(synopsis->Parameter("", type, "", name, value));
             pparams = Ptree::Rest(pparams);
         }
 
         // Figure out the return type:
-        //enc_iter = enctype_s.begin() + enctype_s.find('_') + 1;
-        while (*enc_iter++ != '_');
+        while (*enc_iter++ != '_'); // in case of decoding error this is needed
         PyObject* returnType = decodeType();
 
         // Find name:
-        //for (p = decl; p->Car()->Eq('*') || p->Car()->Eq('&'); p = p->Cdr());
         // TODO: refactor
         string realname;
         if (*encname > 0x80) {
 	    if (encname[1] == '@') {
-		// conversion operator (?)
+		// conversion operator
 		code encname_s(encname);
 		initTypeDecoder(encname_s, enc_iter=encname_s.begin()+2, "");
 		returnType = decodeType();
 		realname = "(" + string(PyString_AsString(PyObject_Str(returnType))) + ")";
 	    } else
+		// simple name
 		realname = decodeName(encname);
         } else if (*encname == 'Q') {
 	    // If a function declaration has a scoped name, then it is not
@@ -306,7 +287,7 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	    return decl;
         } else if (*encname == 'T') {
 	    // Template specialisation.
-	    // blah<int> is T.foo.i -> realname = foo<int>
+	    // blah<int, int> is T4blah2ii ---> realname = foo<int,int>
 	    code encname_s(encname);
 	    initTypeDecoder(encname_s, enc_iter=encname_s.begin()+1, "");
             realname = decodeName()+"<";
@@ -322,14 +303,12 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	} else {
 	    cout << "Warning: Unknown method name: " << encname << endl;
 	}
-
+	
+	// Function names are mangled, but 0x80+ chars are changed
         string name = realname+"@"+reinterpret_cast<char*>(enctype);
         for (string::iterator ptr = name.begin(); ptr < name.end(); ptr++)
             if (*ptr < 0) (*ptr) += '0'-0x80;
 
-
-
-        // cout << "\n\e[1m"<<name<<"\e[m - ";decl->Display();
 
         // Figure out premodifiers
         vector<string> premod;
@@ -338,6 +317,8 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
             premod.push_back(p->ToString());
             p = Ptree::Rest(p);
         }
+
+	// Create AST.Operation object
         PyObject* oper = synopsis->addOperation(m_lineno, true, premod, returnType, name, realname, params);
 	if (m_declaration->GetComments()) addComments(oper, m_declaration->GetComments());
 	if (decl->GetComments()) addComments(oper, decl->GetComments());
@@ -347,6 +328,7 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	    PyList_Append(posties, PyString_FromString("const"));
 	}
     } else {
+	// Variable declaration
 	enc_iter = enctype_s.begin();
 	// Get type
 	PyObject* type = decodeType();
@@ -360,6 +342,7 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	    return decl;
 	}
 
+	// TODO: implement sizes support
 	vector<size_t> sizes;
 	PyObject* declor = synopsis->addDeclarator(m_lineno, true, name, sizes);
 	PyObject* var = synopsis->addVariable(m_lineno, true, name, type, false, declor);
@@ -391,22 +374,18 @@ void PyWalker::initTypeDecoder(code& enctype, code_iter& iter, string msg)
     m_enctype = &enctype;
     m_enc_iter = &iter;
     m_encmessage = msg;
-    //cout << "*** Starting decoding of \"" << enctype << "\"" << endl;
 }
 
 PyObject* PyWalker::decodeType()
 {
-    /* NOTE: This function is far from done. See encoding.cc, and also need to
-     * find a better way of getting integral types than addBase() */
-
     code_iter end = m_enctype->end(), &iter = *m_enc_iter;
-    // PyObject* obj = 0;
     vector<string> premod, postmod;
     string name;
     PyObject *baseType = NULL;
+
+    // Loop forever until broken
     while (iter != end && !name.length()) {
         int c = *iter++;
-        //cout << "*** '" << (char)c << "' (" << *iter << ")" << endl;
         if (c == 'P') { postmod.insert(postmod.begin(), "*"); }
         else if (c == 'R') { postmod.insert(postmod.begin(), "&"); }
         else if (c == 'S') { premod.push_back("signed"); }
@@ -453,10 +432,7 @@ PyObject* PyWalker::decodeType()
             // Ask for qualified lookup
 	    baseType = synopsis->lookupType(names);
 	    if (!baseType) {
-		// cout << "Warning: Qualified lookup failed."<<endl;
-		// cout << "         EncType: " << *m_enctype << endl;
-		// cout << "         Function: " << m_encmessage << endl;
-		baseType = NULL;
+		// Not found! Add Type.Forward of scoped name
 		name = names[0];
 		vector<string>::iterator iter;
 		for (iter = names.begin()+1; iter != names.end(); ++iter)
@@ -466,9 +442,7 @@ PyObject* PyWalker::decodeType()
         }
 	else if (c == '_') { --iter; return NULL; }
         else if (c == 'F') {
-            // Function ptr.. argh!
-	    //cout << "Function ptr type: "; m_ptree->Display();
-	    //cout << *m_enctype << endl;
+            // Function ptr. Encoded same as function
 	    vector<PyObject*> params;
             while (1) {
 		PyObject* type = decodeType();
@@ -519,11 +493,7 @@ Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
     unsigned char* encname = reinterpret_cast<unsigned char*>(declarator->GetEncodedName());
     unsigned char* enctype = reinterpret_cast<unsigned char*>(declarator->GetEncodedType());
     if (!encname || !enctype) return declarator;
-#if 0
-    cout << "encoding '";
-    Encoding::Print(cout, enctype); cout << "' '";
-    Encoding::Print(cout, encname); cout << '\'' << endl;
-#endif
+
     // Get type of declarator
     code enctype_s = enctype;
     code_iter iter = enctype_s.begin();
@@ -693,20 +663,13 @@ Ptree *PyWalker::TranslateClassBody(Ptree *block, Ptree *bases, Class *meta)
  */
 Ptree *PyWalker::TranslateAccessSpec(Ptree* spec)
 {
+    Synopsis::Accessability axs = Synopsis::Default;
     switch (spec->First()->What()) {
-    case PUBLIC:
-	synopsis->setAccessability(Synopsis::Public);
-	break;
-    case PROTECTED:
-	synopsis->setAccessability(Synopsis::Protected);
-	break;
-    case PRIVATE:
-	synopsis->setAccessability(Synopsis::Private);
-	break;
-    default:
-	cout << "Warning: Unknown accessability ";
-	spec->Display();
+	case PUBLIC: axs = Synopsis::Public; break;
+	case PROTECTED: axs = Synopsis::Protected; break;
+	case PRIVATE: axs = Synopsis::Private; break;
     }
+    synopsis->setAccessability(axs);
     return spec;
 }
 
@@ -716,10 +679,8 @@ Ptree *PyWalker::TranslateAccessSpec(Ptree* spec)
 Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
 {
     updateLineNumber(spec);
-    //cout << "Enum:";spec->Display();cout << endl;
     if (!spec->Second()) { return spec; /* anonymous enum */ }
     string name = spec->Second()->ToString();
-    //cout << "Name == " << name << endl;
 
     // Parse enumerators
     vector<PyObject*> enumerators;
@@ -728,9 +689,11 @@ Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
     while (penum) {
 	Ptree* penumor = penum->First();
 	if (penumor->IsLeaf()) {
+	    // Just a name
 	    enumor = synopsis->Enumerator(m_lineno, true, penumor->ToString(), "");
 	    addComments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
 	} else {
+	    // Name = Value
 	    string name = penumor->First()->ToString(), value;
 	    if (penumor->Length() == 3) {
 		value = penumor->Third()->ToString();
@@ -740,11 +703,12 @@ Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
 	}
 	enumerators.push_back(enumor);
 	penum = Ptree::Rest(penum);
+	// Skip comma
 	if (penum && penum->Car() && penum->Car()->Eq(','))
 	    penum = Ptree::Rest(penum);
     }
 
-    
+    // Create AST.Enum object
     PyObject* theEnum = synopsis->addEnum(m_lineno,true,name,enumerators);
     synopsis->addDeclared(name, theEnum);
     addComments(theEnum, m_declaration->GetComments());
@@ -753,16 +717,10 @@ Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
 
 static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags)
 {
-    showProgram = false;
-    doCompile = false;
-    verboseMode = false;
-    makeExecutable = false;
+    showProgram = doCompile = verboseMode = makeExecutable = false;
+    doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
     doPreprocess = true;
-    doTranslate = false;
-    regularCpp = false;
-    makeSharedLibrary = false;
     sharedLibraryName = 0;
-    preprocessTwice = false;
 
     size_t argsize = PyList_Size(args);
     for (size_t i = 0; i != argsize; ++i)
