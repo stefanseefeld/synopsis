@@ -254,6 +254,7 @@ class IGraphWindow (QCanvasView):
 	self._organized = {}
 	self._ranks = {}
 	self.rank_down(root)
+	self.space_ranks()
 	self.sort_ranks()
 
 	self.un_offset()
@@ -289,6 +290,24 @@ class IGraphWindow (QCanvasView):
 	    super.move_to(super.x, node.y - 30)
 	    self.rank_down(super)
     
+    def space_ranks(self):
+	"Spaces out the ranks vertically"
+	ranks = self._ranks.keys()
+	ranks.sort()
+	space = 0
+	for rank in ranks:
+	    nodes = self._ranks[rank]
+	    space = space + len(nodes)
+	    new_rank = rank + space
+
+	    del self._ranks[rank]
+	    self._ranks[new_rank] = nodes
+
+	    for node in nodes:
+		node.move_to(node.x, new_rank)
+	    
+	
+    
     def sort_ranks(self):
 	ranks = self._ranks.keys()
 	ranks.sort()
@@ -299,10 +318,21 @@ class IGraphWindow (QCanvasView):
 	    rank_x = -1e6
 	    for node in nodes:
 		for super in node.supers:
+		    # Create a set of nodes that are childen of super at this rank
 		    set = filter(lambda n, y=rank: n.y==y, super.subs)
+		    # Eliminate already ordered nodes
 		    set = filter(lambda n, d=done: not d.has_key(n), set)
+		    # Sort the set relative to where their parents are
+		    summer = lambda sum, num: (sum[0]+num, sum[1]+1)
+		    def average(sum): return sum[1] and float(sum[0])/sum[1] or 0
+		    super_order = lambda s, ds=node.supers: ds.index(s)
+		    node_order = lambda n, summer=summer, super_order=super_order, average=average: \
+		    	average(reduce(summer, map(super_order, n.supers), (0,0)))
+		    set.sort(lambda x,y,no=node_order: cmp(no(x), no(y)))
 		    order.extend(set)
+		    # Make the nodes as done
 		    for s in set: done[s] = 1
+		    # Calculate the width of the set
 		    set_width = 0
 		    for s in set: set_width = set_width + s.width() + 2
 		    # Move nodes to their new order
@@ -316,7 +346,7 @@ class IGraphWindow (QCanvasView):
 		    # Backup: no siblings to rank with so just use rank_x
 		    if rank_x < -1e5: rank_x = 0
 		    node.move_to(rank_x, node.y)
-		    rank_x = rank_x + node.width() + 2
+		    rank_x = rank_x + node.width() + 2 + 5*len(node.subs)
 		    order.append(node)
 		    done[node] = 1
 	    #print rank, map(lambda n:'%s:%d'%(n.classname[-1],n.x), order)
@@ -429,6 +459,7 @@ class CanvasStrategy:
     def press(self, event): pass
     def release(self, event): pass
     def move(self, event): pass
+    def doubleClick(self, event): pass
     def key(self, event):
 	if event.key() == Qt.Key_Escape:
 	    self.view.window.setMode('select')
@@ -472,6 +503,11 @@ class SelectionStrategy (CanvasStrategy):
 		self.view.setCursor(self.__hint_cursor)
 	    else:
 		self.view.setCursor(self.__normal_cursor)
+    
+    def doubleClick(self, event):
+	action = self.canvas.get_action_at(event.x(), event.y())
+	if action:
+	    print action.name()
     
     def key(self, event):
 	"Override default set-mode-to-select behaviour"
@@ -554,6 +590,11 @@ class AddActionStrategy (CanvasStrategy):
 	    self.view.actions.add_action(wizard.action)
 	self.action = None
 	self.view.window.setMode('select')
+
+class ActionPropertiesDialog (QDialog):
+    def __init__(self, parent, action):
+	QDialog.__init__(self, parent)
+	self.action = action
 
 class AddWizard (QWizard):
     def __init__(self, parent, action):
@@ -787,6 +828,8 @@ class CanvasView (QCanvasView):
     def contentsMouseMoveEvent(self, event):
 	self.last_pos = QPoint(event.pos())
 	self.__strategy.move(event)
+    def contentsMouseDoubleClickEvent(self, event):
+	self.__strategy.doubleClick(event)
     def keyPressEvent(self, event):
 	self.__strategy.key(event)
 	
