@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+#include "fakegc.h"
+
+
 //. A scoped name, containing zero or more elements. This typedef makes it
 //. easier to use scoped name types, and also makes it clearer than using the
 //. raw vector in your code.

@@ -26,6 +26,8 @@
 #include "builder.hh"
 #include "dumper.hh"
 
+// Define to test refcounting
+#define SYN_TEST_REFCOUNT
 
 // ucpp_main is the renamed main() func of ucpp, since it is included in this
 // module
@@ -50,6 +52,23 @@ void *LookupSymbol(void *, char *)
   return 0;
 }
 
+/* This implements the static var and method from fakegc.h */
+cleanup* FakeGC::head = NULL;
+void FakeGC::delete_all()
+{
+  cleanup* node = FakeGC::head;
+  cleanup* next;
+  size_t count = 0;
+  while (node)
+  {
+    next = node->cleanup_next;
+    delete node;
+    node = next;
+    count++;
+  }
+  FakeGC::head = NULL;
+  //std::cout << "FakeGC::delete_all(): deleted " << count << " objects." << std::endl;
+}
 
 bool verbose;
 
@@ -58,6 +77,9 @@ bool syn_main_only, syn_extract_tails, syn_use_gcc, syn_fake_std;
 
 // If set then this is stripped from the start of all filenames
 const char* syn_basename = "";
+
+// If set then this is the prefix for the filename to store links to
+const char* syn_file_prefix = 0;
 
 // If set then this is the filename to store links to
 const char* syn_file_syntax = 0;
@@ -102,7 +124,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
   syn_use_gcc = false;
   syn_fake_std = false;
 
-#define IsType(obj, type) (!PyObject_Compare(PyObject_Type(obj), (PyObject*)&Py##type##_Type))
+#define IsType(obj, type) (Py##type##_Check(obj))
 
   // Check config object first
   if (config)
@@ -110,8 +132,10 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
     PyObject* value;
     if ((value = PyObject_GetAttrString(config, "main_file")) != 0)
       syn_main_only = PyObject_IsTrue(value);
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "verbose")) != 0)
       verbose = true;
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "include_path")) != 0)
     {
       if (!IsType(value, List))
@@ -135,6 +159,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
         cppflags.push_back(buf);
       } // for
     }
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "defines")) != 0)
     {
       if (!IsType(value, List))
@@ -158,6 +183,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
         cppflags.push_back(buf);
       } // for
     }
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "basename")) != 0)
     {
       if (!IsType(value, String))
@@ -167,8 +193,10 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       }
       syn_basename = PyString_AsString(value);
     }
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "extract_tails")) != 0)
       syn_extract_tails = PyObject_IsTrue(value);
+    Py_XDECREF(value);
     // 'storage' defines the filename to write syntax hilite info to (OBSOLETE)
     if ((value = PyObject_GetAttrString(config, "storage")) != 0)
     {
@@ -179,6 +207,18 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       }
       syn_file_syntax = PyString_AsString(value);
     }
+    Py_XDECREF(value);
+    // 'syntax_prefix' defines the prefix for the filename to write syntax hilite info to
+    if ((value = PyObject_GetAttrString(config, "syntax_prefix")) != 0)
+    {
+      if (!IsType(value, String))
+      {
+        std::cerr << "Error: syntax_prefix must be a string." << std::endl;
+        exit(1);
+      }
+      syn_file_prefix = PyString_AsString(value);
+    }
+    Py_XDECREF(value);
     // 'syntax_file' defines the filename to write syntax hilite info to
     if ((value = PyObject_GetAttrString(config, "syntax_file")) != 0)
     {
@@ -189,6 +229,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       }
       syn_file_syntax = PyString_AsString(value);
     }
+    Py_XDECREF(value);
     // 'xref_file' defines the filename to write syntax hilite info to
     if ((value = PyObject_GetAttrString(config, "xref_file")) != 0)
     {
@@ -199,6 +240,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       }
       syn_file_xref = PyString_AsString(value);
     }
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "preprocessor")) != 0)
     {
       if (!IsType(value, String))
@@ -209,6 +251,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       // This will be a generic preprocessor at some point
       syn_use_gcc = !strcmp("gcc", PyString_AsString(value));
     }
+    Py_XDECREF(value);
     // 'emulate_compiler' specifies the compiler to emulate in terms of
     // include paths and macros
     if ((value = PyObject_GetAttrString(config, "emulate_compiler")) != 0)
@@ -220,8 +263,10 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
       }
       syn_emulate_compiler = PyString_AsString(value);
     }
+    Py_XDECREF(value);
     if ((value = PyObject_GetAttrString(config, "fake_std")) != 0)
       syn_fake_std = PyObject_IsTrue(value);
+    Py_XDECREF(value);
   } // if config
 #undef IsType
 
@@ -288,6 +333,7 @@ void emulate_compiler(std::vector<const char*>& args)
         args.push_back(path_str);
       }
     }
+    Py_DECREF(paths);
   }
   PyObject* macros = PyObject_GetAttrString(info, "macros");
   if (macros)
@@ -329,7 +375,10 @@ void emulate_compiler(std::vector<const char*>& args)
         // TODO: Figure out where to free this string
       }
     }
+    Py_DECREF(macros);
   }
+  Py_DECREF(info);
+  Py_DECREF(emul_module);
 }
 
 char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
@@ -459,6 +508,43 @@ void sighandler(int signo)
   exit(-1);
 }
 
+void makedirs(const char* path)
+{
+  static char buf[1024];
+  strcpy(buf, path);
+  struct stat st;
+  int error;
+  char* ptr = buf, *sep = NULL;
+  // Skip first / if any
+  if (*ptr == '/')
+    ptr++;
+  while (1)
+  {
+    // Find next /
+    while (*ptr && *ptr != '/')
+      ptr++;
+    if (!*ptr)
+      return;
+    sep = ptr;
+    if (ptr == sep + 1)
+      // An empty path component, eg: blah/foo//fred
+      continue;
+    *sep = 0;
+    // Try to stat this dir
+    if ((error = stat(buf, &st)) == -1 && errno == ENOENT)
+      mkdir(buf, 0755);
+    else if (error)
+    {
+      perror(buf);
+      return;
+    }
+    // Restore / to build up path
+    *sep = '/';
+    // Move past /
+    ptr++;
+  }
+}
+
 char *RunOpencxx(const char *src, const char *file, const std::vector<const char *> &args, PyObject *types, PyObject *declarations, PyObject* filenames)
 {
   Trace trace("RunOpencxx");
@@ -504,29 +590,41 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     builder.end_namespace();
   }
 #ifdef DEBUG
-  swalker.set_extract_tails(true);
+  swalker.set_extract_tails(syn_extract_tails);
   swalker.set_store_links(true, &std::cout, NULL);
   while(parse.rProgram(def))
     swalker.Translate(def);
-  // // Test Synopsis
-  // Synopsis synopsis(src, declarations, types);
-  // if (syn_main_only) synopsis.onlyTranslateMain();
-  // synopsis.translate(builder.scope());
-
+  
+  // Grab interpreter lock again so we can call python
+  PyEval_RestoreThread(pythread_save);
+#ifdef SYN_TEST_REFCOUNT
+  // Test Synopsis
+  Synopsis synopsis(source, declarations, types);
+  if (syn_main_only) synopsis.onlyTranslateMain();
+  synopsis.translate(builder.scope());
+  synopsis.set_builtin_decls(builder.builtin_decls());
+#else
   // Test Dumper
   Dumper dumper;
   if (syn_main_only)
     dumper.onlyShow(src);
   dumper.visit_scope(builder.scope());
-  
-  // Grab interpreter lock again so we can call python
-  PyEval_RestoreThread(pythread_save);
+#endif
 #else
 
   std::ofstream* of_syntax = 0;
   std::ofstream* of_xref = 0;
+  char syn_buffer[1024];
   if (syn_file_syntax)
     of_syntax = new std::ofstream(syn_file_syntax);
+  else if (syn_file_prefix)
+  {
+    strcpy(syn_buffer, syn_file_prefix);
+    strcat(syn_buffer, src);
+    std::cerr << "syntax is " << syn_buffer << std::endl;
+    makedirs(syn_buffer);
+    of_syntax = new std::ofstream(syn_buffer);
+  }
   if (syn_file_xref)
     of_xref = new std::ofstream(syn_file_xref);
   if (of_syntax || of_xref)
@@ -572,17 +670,14 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   return dest;
 }
 
-int stop_func()
-{
-  return 0;
-}
-
 PyObject *occParse(PyObject *self, PyObject *args)
 {
   Trace trace("occParse");
 #if 0
-
   Ptree::show_encoded = true;
+#endif
+#if 1
+  GC_set_max_heap_size(32*1024*1024);
 #endif
 
   char *src;
@@ -616,10 +711,37 @@ PyObject *occParse(PyObject *self, PyObject *args)
   unlink(cppfile);
   unlink(occfile);
 
+  Py_DECREF(ast_module);
+  Py_DECREF(declarations);
+  Py_DECREF(filenames);
+  Py_DECREF(types);
+
 #ifndef DONT_GC
   // Try to cleanup GC if being used
-  //GC_try_to_collect(stop_func);
+  //std::cout << "GC: Running Garbage Collection..." << std::endl;
+  size_t size = GC_get_heap_size();
+  GC_gcollect();
+  size_t size2 = GC_get_heap_size();
+  //std::cout << "GC: Heap went from " << size << " to " << size2 << std::endl;
 #endif
+
+  // Now, there should *fingers crossed* be no python objects. Check..
+  {
+    PyGC_Head* node = _PyGC_generation0.gc.gc_next;
+    size_t count = 0;
+    while (node != &_PyGC_generation0)
+    {
+      PyObject* obj = (PyObject*)(node + 1);
+      PyObject* str = PyObject_Repr(obj);
+      //std::cout << obj->ob_refcnt << " " << PyString_AsString(str) << "\n";
+      Py_DECREF(str);
+      node = node->gc.gc_next;
+      count++;
+    } 
+    //std::cout << "Collection list contains " << count << " objects." << std::endl;
+  }
+
+  FakeGC::delete_all();
 
   return ast;
 }
@@ -683,12 +805,44 @@ int main(int argc, char **argv)
     std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
     exit(-1);
   }
-  char *cppfile = RunPreprocessor(src, cppargs);
   PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
   PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
-  char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0), NULL);
+  PyObject* decls = PyList_New(0);
+  char *cppfile = RunPreprocessor(src, cppargs);
+  char *occfile = RunOpencxx(src, cppfile, occargs, types, decls, NULL);
   unlink(cppfile);
   unlink(occfile);
+#ifdef SYN_TEST_REFCOUNT
+  Py_DECREF(pylist);
+  Py_DECREF(type);
+  Py_DECREF(types);
+  Py_DECREF(decls);
+  // Now, there should *fingers crossed* be no python objects. Check..
+  if (0) {
+    PyGC_Head* node = _PyGC_generation0.gc.gc_next;
+    size_t count = 0;
+    while (node != &_PyGC_generation0)
+    {
+      PyObject* obj = (PyObject*)(node + 1);
+      PyObject* str = PyObject_Repr(obj);
+      //std::cout << obj->ob_refcnt << " " << PyString_AsString(str) << "\n";
+      Py_DECREF(str);
+      node = node->gc.gc_next;
+      count++;
+    } 
+    //std::cout << "Collection list contains " << count << " objects." << std::endl;
+  }
+#endif
+#ifndef DONT_GC
+  // Try to cleanup GC if being used
+  size_t size = GC_get_heap_size();
+  GC_gcollect();
+  size_t size2 = GC_get_heap_size();
+  //std::cout << "Collection: Heap went from " << size << " to " << size2 << std::endl;
+#endif
+  Py_Finalize();
+
+  FakeGC::delete_all();
 }
 
 #endif

@@ -21,8 +21,11 @@ namespace Types
   // Forward declaration of the Types::Visitor class defined in this file
   class Visitor;
 
+  // Forward decl of Named
+  class Named;
+
   //. The base class of the Type hierarchy
-  class Type
+  class Type : public cleanup
   {
   public:
     //. A vector of Type objects
@@ -36,13 +39,12 @@ namespace Types
 
     //. Destructor. Note that Types::Type becomes abstract, unlike AST::Declaration
     virtual
-    ~Type() = 0;
+    ~Type();
 
     //. Accept the given visitor
     virtual void
     accept(Visitor*);
   }; // class Type
-
 
   //. Base class of types with Names
   class Named : public Type
@@ -53,6 +55,9 @@ namespace Types
 
     //. Constructor
     Named(const ScopedName& name);
+
+    //. Destructor
+    ~Named();
 
     //. Accept the given visitor
     virtual void
@@ -86,6 +91,7 @@ namespace Types
     //. Accept the given visitor
     virtual void
     accept(Visitor*);
+
   }; // class Base
 
 
@@ -116,6 +122,7 @@ namespace Types
     virtual void
     accept(Visitor*);
   };
+
 
 
   //. Declared types have a name and a reference to their declaration
@@ -200,6 +207,9 @@ namespace Types
     //. Constructor
     Modifier(Type* alias, const Mods& pre, const Mods& post);
 
+    //. Destructor
+    ~Modifier();
+
     //. Accept the given visitor
     virtual void
     accept(Visitor*);
@@ -234,6 +244,9 @@ namespace Types
     //. Constructor
     Array(Type* alias, const Mods& sizes);
 
+    //. Destructor
+    ~Array();
+
     //. Accept the given visitor
     virtual void
     accept(Visitor*);
@@ -260,6 +273,9 @@ namespace Types
   public:
     //. Constructor
     Parameterized(Template* templ, const Type::vector& params);
+
+    //. Destructor
+    ~Parameterized();
 
     //. Accept the given visitor
     virtual void
@@ -296,6 +312,9 @@ namespace Types
   public:
     //. Constructor
     FuncPtr(Type* ret, const Mods& premods, const Type::vector& params);
+
+    //. Destructor
+    ~FuncPtr();
 
     //. Accept the given visitor
     virtual void

@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.14 2002/06/14 15:36:04 stefan Exp $
+ * $Id: link.cc,v 1.15 2002/10/11 05:58:21 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.15  2002/10/11 05:58:21  chalky
+ * Better memory management. Better comment proximity detection.
+ *
  * Revision 1.14  2002/06/14 15:36:04  stefan
  * fixes to compile with gcc 3.1
  *
@@ -53,6 +56,8 @@
 #include <set>
 #include <map>
 #include <string>
+
+#include <stdio.h>
 
 //. Static namespace for link module
 namespace
@@ -281,6 +286,7 @@ namespace
   {
     std::ifstream in(links_filename);
     char buf[4096];
+    perror(links_filename);
     if (!in) { return; } // this is okay -- just means the file wont be linked
     std::string word, type;
     int line, len;

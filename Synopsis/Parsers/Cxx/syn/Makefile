@@ -24,7 +24,8 @@ endif
 endif
 
 # Options for optimised or debug versions
-OPTIMISE	:= -O6 -fPIC
+#OPTIMISE	:= -O6 -fPIC
+OPTIMISE	:= -O1 -ggdb -fPIC -fno-inline
 DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG -fno-inline
 
 # Flags

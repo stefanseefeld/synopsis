@@ -2,6 +2,7 @@
 // File: ast.cc
 // AST hierarchy
 
+#include "strace.hh"
 #include "ast.hh"
 #include "type.hh"
 
@@ -12,7 +13,8 @@ Declaration::Declaration(const std::string& file, int line, const std::string& t
 { }
 
 Declaration::~Declaration()
-{ }
+{
+}
 
 void
 Declaration::accept(Visitor* visitor)
@@ -47,7 +49,6 @@ Scope::Scope(const std::string& file, int line, const std::string& type, const S
 
 Scope::~Scope()
 {
-  // FIXME: recursively delete...
 }
 
 void
@@ -86,7 +87,8 @@ Class::Class(const std::string& file, int line, const std::string& type, const S
 }
 
 Class::~Class()
-{ }
+{
+}
 
 void
 Class::accept(Visitor* visitor)
@@ -136,6 +138,10 @@ Typedef::Typedef(const std::string& file, int line, const std::string& type, con
 : Declaration(file, line, type, name), m_alias(alias), m_constr(constr)
 { }
 
+Typedef::~Typedef()
+{
+}
+
 void
 Typedef::accept(Visitor* visitor)
 {
@@ -150,6 +156,10 @@ Typedef::accept(Visitor* visitor)
 Variable::Variable(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr)
 : Declaration(file, line, type, name), m_vtype(vtype), m_constr(constr)
 { }
+
+Variable::~Variable()
+{
+}
 
 void
 Variable::accept(Visitor* visitor)
@@ -186,7 +196,8 @@ Enum::Enum(const std::string& file, int line, const std::string& type, const Sco
 { }
 
 Enum::~Enum()
-{ }
+{
+}
 
 void
 Enum::accept(Visitor* visitor)
@@ -229,7 +240,6 @@ Function::Function(
 
 Function::~Function()
 {
-  // Recursively delete parameters..
 }
 
 void
@@ -269,9 +279,9 @@ Parameter::Parameter(const Mods& pre, Types::Type* t, const Mods& post, const st
 : m_pre(pre), m_post(post), m_type(t), m_name(name), m_value(value)
 { }
 
-/*Parameter::~Parameter()
+Parameter::~Parameter()
 {
-}*/
+}
 
 void
 Parameter::accept(Visitor* visitor)
@@ -280,8 +290,8 @@ Parameter::accept(Visitor* visitor)
 }
 
 
-Comment::Comment(const std::string& file, int line, const std::string& text)
-: m_filename(file), m_line(line), m_text(text)
+Comment::Comment(const std::string& file, int line, const std::string& text, bool suspect)
+: m_filename(file), m_line(line), m_text(text), m_suspect(suspect)
 { }
 
 //

@@ -130,6 +130,7 @@ Builder::Builder(const std::string& basename)
 Builder::~Builder()
 {
   // TODO Delete all ...
+  delete m_lookup;
   delete m;
 }
 

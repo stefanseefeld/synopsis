@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.55 2002/09/20 09:51:13 chalky Exp $
+// $Id: swalker.cc,v 1.56 2002/10/11 05:58:21 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.56  2002/10/11 05:58:21  chalky
+// Better memory management. Better comment proximity detection.
+//
 // Revision 1.55  2002/09/20 09:51:13  chalky
 // Don't keep comments originating from different file than declaration
 // Work around bug in g++ 3.2 ? (*iter++ thing)
@@ -130,6 +133,15 @@ SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Pr
   m_lookup = m_builder->lookup();
 }
 
+// Destructor
+SWalker::~SWalker()
+{
+  delete m_decoder;
+  delete m_type_formatter;
+  if (m_links)
+    delete m_links;
+}
+
 // The name returned is just the node's text if the node is a leaf. Otherwise,
 // the ToString method of Ptree is used, which is rather expensive since it
 // creates a temporary write buffer and reifies the node tree into it.
@@ -177,11 +189,27 @@ void SWalker::update_line_number(Ptree* ptree)
     }
 }
 
+AST::Comment* make_Comment(const std::string& file, int line, Ptree* first, bool suspect=false)
+{
+  return new AST::Comment(file, line, first->ToString(), suspect);
+}
+Leaf* make_Leaf(char* pos, int len)
+{
+  return new Leaf(pos, len);
+}
 // Adds the given comments to the given declaration. If m_links is set,
 // then syntax highlighting information is also stored.
 void
 SWalker::add_comments(AST::Declaration* decl, Ptree* node)
 {
+  if (node == NULL)
+    return;
+
+  // First, make sure that node is a list of comments
+  if (node->What() == ntDeclaration)
+    node = static_cast<PtreeDeclaration*>(node)->GetComments();
+
+  // Loop over all comments in the list
   for (Ptree* next = node->Rest(); node && !node->IsLeaf(); next = node->Rest())
     {
       Ptree* first = node->First();
@@ -218,12 +246,48 @@ SWalker::add_comments(AST::Declaration* decl, Ptree* node)
             break;
           // Current comment stretches to end of next
           int len = int(next_pos - start_pos + next->First()->GetLength());
-          node->SetCar(first = new Leaf(start_pos, len));
+          //node->SetCar(first = new Leaf(start_pos, len));
+          node->SetCar(first = make_Leaf(start_pos, len));
           // Skip the combined comment
           next = next->Rest();
         }
 
-      if (decl) decl->comments().push_back(new AST::Comment("", 0, first->ToString()));
+      // Ensure that there is no more than one newline between the comment and
+      // the declaration. We assume that the declaration is the next
+      // non-comment thing (which could be a bad assumption..)
+      // If extract_tails is set, then comments separated by a space are still
+      // included, but are marked as suspect for the Linker to deal with
+      bool suspect = false;
+      char* pos = first->GetPosition() + first->GetLength();
+      while (*pos && strchr(" \t\r", *pos))
+        ++pos;
+      if (*pos == '\n')
+      {
+        ++pos;
+        // Found only allowed \n
+        while (*pos && strchr(" \t\r", *pos))
+          ++pos;
+        if (*pos == '\n' || !strncmp(pos, "/*", 2))
+        {
+          // 1. More than one newline.. skip entire comment and move onto next.
+          // 2. This comment is followed by a /*, so ignore this one
+          // If extract_tails is set, we keep it anyway but mark as suspect
+          if (!m_extract_tails)
+          {
+            node = next;
+            continue;
+          }
+          else
+            suspect = true;
+        }
+      }
+
+      if (decl)
+      {
+        //AST::Comment* comment = new AST::Comment("", 0, first->ToString(), suspect);
+        AST::Comment* comment = make_Comment("", 0, first, suspect);
+        decl->comments().push_back(comment);
+      }
       if (m_links) m_links->long_span(first, "file-comment");
       // Set first to nil so we dont accidentally do them twice (eg:
       // when parsing expressions)
@@ -816,7 +880,7 @@ Ptree* SWalker::TranslateDeclaration(Ptree* def)
 
   update_line_number(def);
 
-  m_declaration = dynamic_cast<PtreeDeclaration*>(def);
+  m_declaration = def;
   m_store_decl = true;
   Ptree* decls = Ptree::Third(def);
   
@@ -1184,7 +1248,7 @@ SWalker::TranslateTypedef(Ptree* node)
   STrace trace("SWalker::TranslateTypedef");
   if (m_links) m_links->span(node->First(), "file-keyword");
   /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
-  m_declaration = static_cast<PtreeDeclaration*>(node); // this may be bad, but we only use as ptree anyway
+  m_declaration = node;
   m_store_decl = true;
   for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
     TranslateTypedefDeclarator(declarator->Car());
@@ -1356,7 +1420,7 @@ SWalker::TranslateEnumSpec(Ptree *spec)
     {
       // Enum declared inside declaration. Comments for the declaration
       // belong to the enum. This is policy. #TODO review policy
-      m_declaration->SetComments(nil);
+      //m_declaration->SetComments(nil); ?? typedef doesn't have comments?
     }
   if (m_links) m_links->link(spec->Second(), theEnum);
   return 0;
