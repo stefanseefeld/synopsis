@@ -312,7 +312,7 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 	if (status != 0)
 	  {
 	    std::cerr << "ucpp returned error flag." << std::endl;
-	    exit(1);
+	    //exit(1); // TODO: throw exception??
 	  }
       }
     return dest;
@@ -427,13 +427,15 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   if(parse.NumOfErrors() != 0)
     {
       std::cerr << "errors while parsing file " << file << std::endl;
-      exit(1);
+      // exit(1); // TODO: throw exception
     }
   sigaction(SIGABRT, &olda, 0);
   sigaction(SIGBUS, &olda, 0);
   sigaction(SIGSEGV, &olda, 0);
   return dest;
 }
+
+int stop_func() { return 0; }
 
 PyObject *occParse(PyObject *self, PyObject *args)
 {
@@ -470,6 +472,11 @@ PyObject *occParse(PyObject *self, PyObject *args)
   char *occfile = RunOpencxx(src, cppfile, occargs, types, declarations, filenames);
   unlink(cppfile);
   unlink(occfile);
+
+#ifndef DONT_GC
+  // Try to cleanup GC if being used
+  GC_try_to_collect(stop_func);
+#endif
   return ast;
 }
 
