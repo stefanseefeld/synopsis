@@ -11,6 +11,7 @@ from Synopsis.Formatters.HTML.TreeFormatterJS import *
 from Synopsis.Formatters.HTML.CommentFormatter import *
 from Synopsis.Formatters.HTML.Pages import *
 from Synopsis.Formatters import TexInfo
+from Synopsis.Formatters import Dump
 
 from distutils import sysconfig
 
@@ -31,9 +32,8 @@ cxx = Composite(Cxx.Parser(base_path = topdir,
                 JavaTags(),
                 Summarizer())
 
-cxx_processor = Composite(Unduplicator(),
-                          NamePrefixer(prefix = ['Synopsis','Parser','C++'],
-                                       type = 'Package'))
+cxx_processor = Linker(NamePrefixer(prefix = ['Synopsis','Parsers','Cxx', 'Parser'],
+                                    type = 'Package'))
 
 html = HTML.Formatter(stylesheet_file = '../../demo/html.css',
                       toc_out = 'links.toc',
@@ -44,7 +44,7 @@ html = HTML.Formatter(stylesheet_file = '../../demo/html.css',
                                Scope(),
                                FileSource(prefix = 'links',
                                           toc_in = ['links.toc'],
-                                          scope = 'Synopsis::Parser::C++::'),
+                                          scope = 'Synopsis::Parsers::Cxx'),
                                ModuleListing(),
                                ModuleIndexer(),
                                FileListing(),
@@ -56,9 +56,10 @@ html = HTML.Formatter(stylesheet_file = '../../demo/html.css',
 
 process(python = python,
         cxx = cxx,
-        link_python = Processor(),
+        link_python = Linker(),
         link_cxx = cxx_processor,
-        link = Processor(),
+        link = Linker(),
         strip = Stripper(),
         html = html,
+        dump = Dump.Formatter(),
         texi = TexInfo.Formatter())
