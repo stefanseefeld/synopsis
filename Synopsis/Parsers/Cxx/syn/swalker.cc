@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.30 2001/06/05 05:03:53 chalky Exp $
+// $Id: swalker.cc,v 1.31 2001/06/05 05:47:02 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.31  2001/06/05 05:47:02  chalky
+// Added global g_swalker var
+//
 // Revision 1.30  2001/06/05 05:03:53  chalky
 // Added support for qualified typedefs in storeLink
 //
@@ -107,6 +110,10 @@ STrace::list STrace::m_list;
 //                 -- CLASS SWalker --
 // ------------------------------------------------------------------
 
+// Global SWalker object - this is never used, but is intended for your use
+// when debugging in case the stack is smashed and you have to way to get at
+// any useful objects
+SWalker* g_swalker;
 
 // ------------------------------------
 // SWalker Constructor
@@ -130,6 +137,7 @@ SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Pr
       m_scope(0),
       m_postfix_flag(Postfix_Var)
 {
+    g_swalker = this;
 }
 
 // The name returned is just the node's text if the node is a leaf. Otherwise,
