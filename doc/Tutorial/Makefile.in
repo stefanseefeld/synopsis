@@ -21,24 +21,30 @@ processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Formatters.HTML.Formatter
 
 appendix:= $(patsubst %, %.xml, $(processors))
-examples:= $(shell cd $(srcdir) && find examples -path '*/.svn' -prune -o -print)
+examples:= $(shell cd $(srcdir) && find examples -path '*/.svn' -prune -o -type f -a -print)
+
+.PHONY: examples
 
 vpath Tutorial.xml $(srcdir)
 
 all: html pdf
 
-html: Tutorial.xml $(appendix)
+html: Tutorial.xml $(appendix) examples 
 	mkdir -p $@
 	cp $(srcdir)/synopsis.css $@
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
+
+examples:
 	for file in $(examples); do \
           if ! cmp -s $(srcdir)/$$file $$file 2>/dev/null; then \
             mkdir -p `dirname $$file`;\
             cp -p $(srcdir)/$$file $$file;\
           fi\
         done
+	make -C examples       # build examples...
+	make -C examples clean # ...but remove temporary files
 
 pdf: Tutorial.pdf
 

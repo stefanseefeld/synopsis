@@ -92,6 +92,10 @@ div.file-all {
     font-family: monospace;
     white-space: nowrap;
 }
+pre.file-all {
+    font-size: smaller;
+    font-family: monospace;
+}
 span.file-linenum {
     color: red;
 }

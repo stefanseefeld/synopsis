@@ -92,7 +92,7 @@ class Template(Format):
       header = text[:content_index]
       # Find the title (doesn't matter if not found)
       self.__title_index = text.find(self.__title_tag)
-      if self.__title_index:
+      if self.__title_index != -1:
          # Remove the title tag
          header = header[:self.__title_index] + \
                   header[self.__title_index+len(self.__title_tag):]

@@ -15,7 +15,7 @@ from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters.HTML import Comments
 from Synopsis.Formatters import Dot
 
-cxx = Cxx.Parser(base_path='../src',
+cxx = Cxx.Parser(base_path='../src/',
                  syntax_prefix='links',
                  xref_prefix='xref')
 

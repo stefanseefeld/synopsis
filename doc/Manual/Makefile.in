@@ -16,13 +16,13 @@ synopsis := python synopsis.py
 # use 'make sxr sxr=<URL>' to generate the sxr db for another URL
 sxr	:= http://localhost:8000/sxr.cgi
 
-py_src		:= $(wildcard $(topdir)/Synopsis/*.py)
-py_src		+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
-py_src		+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
-py_src		+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
-py_src		+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
+python_src	:= $(wildcard $(topdir)/Synopsis/*.py)
+python_src	+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
+python_src	+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
+python_src	+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
+python_src	+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
 # don't include UI yet, as it isn't up to date with the rest
-py_syn		:= $(patsubst $(topdir)/%.py, %.syn, $(py_src))
+python_syn	:= $(patsubst $(topdir)/%.py, %.syn, $(python_src))
 api_hh		:= $(shell find $(topdir)/include -name '*.hh' -print)
 api_hh_syn	:= $(patsubst $(topdir)/%.hh, %.hh.syn, $(api_hh))
 
@@ -48,40 +48,26 @@ html: html/python html/cxx-api html/ucpp html/occ html/ctool
 sxr: html/sxr
 pdf: Manual.pdf
 
-html/python: py.syn all.xref
+html/%: %.syn %.xref
 	@echo formatting $@
 	$(synopsis) html --output=$@ $<
+	touch $@
 
-html/cxx-api: api.syn all.xref
-	@echo formatting $@
-	$(synopsis) html --output=$@ $<
-
-html/ucpp: ucpp.syn all.xref
-	@echo formatting $@
-	$(synopsis) html --output=$@ $<
-
-html/occ: occ.syn all.xref
-	@echo formatting $@
-	$(synopsis) html --output=$@ $<
-
-html/ctool: ctool.syn all.xref
-	@echo formatting $@
-	$(synopsis) html --output=$@ $<
-
-html/sxr: sxr.syn all.xref
+html/sxr: sxr.syn
 	@echo formatting $@
 	$(synopsis) sxr --url=$(sxr) --output=$@ $<
+	touch $@
 
-sxr.syn: py.syn api.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
+sxr.syn: python.syn cxx-api.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
 	@echo generating $@
 	$(synopsis) archive --output=$@ $^
 
-all.xref: sxr.syn
+%.xref: %.syn
 	@echo generating $@
 	$(synopsis) xref --output=$@ $<
 
 # Compile Python files
-$(py_syn): %.syn: %.py
+$(python_syn): %.syn: %.py
 	@echo parsing $^
 	mkdir -p $(dir $@)
 	$(synopsis) python --output=$@ $^
@@ -93,29 +79,29 @@ $(api_hh_syn): %.hh.syn: $(topdir)/%.hh
 	$(synopsis) cxx --output=$@ $?
 
 # Link Python files together
-py.syn:	$(py_syn)
+python.syn: $(python_syn)
 	@echo linking Python files together
 	$(synopsis) link_python --output=$@ $^
 
 # Link C++ API files together
-api.syn: $(api_hh_syn)
+cxx-api.syn: $(api_hh_syn)
 	@echo $(api_hh_syn)
 	@echo linking C++ API files together
 	$(synopsis) link_cxx --output=$@ $^
 
-ast.syn:	py.syn
+ast.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::AST' --output=$@ $^
 
-type.syn:	py.syn
+type.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Type' --output=$@ $^
 
-util.syn:	py.syn
+util.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Util' --output=$@ $^
 
-parsers-cxx-py.syn:	py.syn
+parsers-cxx-py.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Parsers::Cxx' --output=$@ $^
 
@@ -127,47 +113,47 @@ parsers-cxx.syn:	parsers-cxx-py.syn parsers-cxx-cpp.syn
 	@echo linking $@
 	$(synopsis) link --output=$@ $^
 
-parsers-idl.syn:	py.syn
+parsers-idl.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Parsers::IDL' --output=$@ $^
 
-parsers-py.syn:	py.syn
+parsers-py.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Parsers::Python' --output=$@ $^
 
-processors.syn:	py.syn
+processors.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Processors' --output=$@ $^
 
-formatters-ascii.syn:	py.syn
+formatters-ascii.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::ASCII' --output=$@ $^
 
-formatters-html.syn:	py.syn
+formatters-html.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::HTML' --output=$@ $^
 
-formatters-dump.syn:	py.syn
+formatters-dump.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::Dump' --output=$@ $^
 
-formatters-dia.syn:	py.syn
+formatters-dia.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::Dia' --output=$@ $^
 
-formatters-db.syn:	py.syn
+formatters-db.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::DocBook' --output=$@ $^
 
-formatters-dot.syn:	py.syn
+formatters-dot.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::Dot' --output=$@ $^
 
-formatters-html-simple.syn:	py.syn
+formatters-html-simple.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::HTML_Simple' --output=$@ $^
 
-formatters-texi.syn:	py.syn
+formatters-texi.syn:	python.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Formatters::TexInfo' --output=$@ $^
 

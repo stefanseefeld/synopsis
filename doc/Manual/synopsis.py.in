@@ -11,12 +11,14 @@ from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
 from Synopsis.Formatters.HTML import Comments
 from Synopsis.Formatters.HTML.Views import *
+from Synopsis.Formatters import SXR
 from Synopsis.Formatters import Texinfo
 from Synopsis.Formatters import Dump
 
 from distutils import sysconfig
 import sys, os, os.path
 
+srcdir = '@srcdir@'
 topdir = '@topdir@'
 python = Composite(Python.Parser(basename = topdir + os.sep),
                    JavaTags(),
@@ -32,50 +34,44 @@ cxx_processor = Linker(SSDComments(),
                        JavaTags(),
                        Summarizer())
 
-html = HTML.Formatter(toc_out = 'links.toc',
-                      file_layout = NestedFileLayout(),
-                      tree_formatter = TreeFormatterJS(),
-                      comment_formatters = [Comments.Javadoc(), Comments.Section()],
-                      views = [FramesIndex(),
-                               Scope(),
-                               Source(prefix = 'links',
-                                      toc_in = ['links.toc']),
-                               XRef(xref_file = 'all.xref'),
-                               ModuleListing(),
-                               ModuleIndexer(),
-                               FileListing(),
-                               FileIndexer(),
-                               FileDetails(),
-                               InheritanceTree(),
-                               InheritanceGraph(),
-                               NameIndex()])
+class MyHTML(HTML.Formatter):
+   """We have to subclass in order to be able to make the 'xref_file'
+   parameter of the XRef view accessible to the command line"""
 
-class SXR(HTML.Formatter):
-    """This is a facade to the HTML.Formatter. It adds an 'url' parameter and
-    dispatches it to various 'views'."""
+   xref = Parameter('', 'xref file usef for cross referencing')
+    
+   def process(self, ast, **kwds):
+        
+      self.set_parameters(kwds)
 
-    file_layout = Parameter(NestedFileLayout(), '')
-    url = Parameter('/sxr.cgi', 'the base url to use fpr the sxr cgi')
+      toc_out = 'links.toc',
+      file_layout = NestedFileLayout(),
+      tree_formatter = TreeFormatterJS(),
+      comment_formatters = [Comments.Javadoc(), Comments.Section()],
+      self.views = [FramesIndex(),
+                    Scope(),
+                    Source(prefix = 'links',
+                           toc_in = ['links.toc']),
+                    XRef(xref_file = self.xref),
+                    ModuleListing(),
+                    ModuleIndexer(),
+                    FileListing(),
+                    FileIndexer(),
+                    FileDetails(),
+                    InheritanceTree(),
+                    InheritanceGraph(),
+                    NameIndex()]
+      
+      return HTML.Formatter.process(self, ast)
 
-    def process(self, ast, **kwds):
-
-        self.set_parameters(kwds)
-
-        self.views = [SXRIndex(sxr_cgi = self.url),
-                      DirBrowse(src_dir = '@topdir@',
-                                base_path = '@topdir@',
-                                exclude = ['build', 'demo', 'share',
-                                           '.svn', 'autom4te.cache',
-                                           '*.pyc']),
-                      Source(prefix = 'links',
-                             external_url = '%s/ident?full=1&string='%self.url),
-                      RawFile(src_dir = '@topdir@',
-                              base_path = '@topdir@',
-                              exclude = ['build', 'demo', 'share',
-                                         '.svn', 'autom4te.cache',
-                                         '*.pyc'])]
-
-        HTML.Formatter.process(self, ast, **kwds)
+sxr = SXR.Formatter(url = '/sxr.cgi',
+                    src_dir = '@topdir@',
+                    exclude = ['build', 'demo', 'doc', 'share', 'debian',
+                               '.svn', 'autom4te.cache',
+                               '*.pyc', '*.so', '*~'],
+                    xref_prefix='xref',
+                    syntax_prefix='links',
+                    sxr_template = os.path.join(srcdir, 'sxr-template.html'))
 
 process(python = python,
         cxx = cxx,
@@ -85,7 +81,7 @@ process(python = python,
         archive = Processor(),
         strip = Stripper(),
         xref = XRefCompiler(prefix='xref'),
-        html = html,
-        sxr = SXR(),
+        html = MyHTML(),
+        sxr = sxr,
         dump = Dump.Formatter(),
         texi = Texinfo.Formatter())
