@@ -128,7 +128,7 @@ uses explicit invocation.
 
 #include "gc.h"
 
-#ifndef THINK_CPLUS
+#if !defined(THINK_CPLUS) && !defined(_cdecl)
 #define _cdecl
 #endif
 
