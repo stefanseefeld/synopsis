@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="A" type="namespace">
@@ -20,7 +19,7 @@
       <instance class="Synopsis.Type.Base" language="C++" name="int"/>
      </vtype>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="4" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="4" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="B" type="namespace">
@@ -44,7 +43,7 @@
         <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="18" name="B.C.D.a" type="namespace variable">
          <vtype/>
         </instance>
-        <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="18" name="dummy" type="dummy">
+        <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="18" name="EOS" type="EOS">
          <comments>
           <instance class="Synopsis.AST.Comment" line="0" suspect="0">
            <file>
@@ -104,7 +103,7 @@
        </comments>
        <vtype/>
       </instance>
-      <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="23" name="dummy" type="dummy">
+      <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="23" name="EOS" type="EOS">
        <comments>
         <instance class="Synopsis.AST.Comment" line="0" suspect="0">
          <file>
@@ -119,7 +118,7 @@
       </instance>
      </declarations>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using3.cc" language="C++" line="24" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="24" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>
@@ -154,13 +153,13 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="B.C.D">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.i">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="B.C.k">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="B">

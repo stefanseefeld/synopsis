@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/template.cc" language="C++" line="1" name="Object" type="struct">
@@ -61,7 +60,7 @@
       </instance>
      </returnType>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/template.cc" language="C++" line="7" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/template.cc" language="C++" line="7" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/template.cc" language="C++" line="11" name="list" type="class">
@@ -152,7 +151,7 @@
       <instance class="Synopsis.Type.Base" language="C++" name="void"/>
      </returnType>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/template.cc" language="C++" line="22" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/template.cc" language="C++" line="22" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/template.cc" language="C++" line="25" name="main()" realname="main" type="function">
@@ -172,9 +171,6 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="Object.Object()">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.size()">
    <declaration/>
   </instance>
@@ -190,10 +186,13 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="Object.operator=(const Object&amp;)">
    <declaration/>
   </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="main()">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Object.Object(const Object&amp;)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="main()">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Object.func()">

@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/condition.cc" language="C++" line="2" name="X" type="struct">
@@ -25,10 +24,10 @@
       <instance accessibility="1" class="Synopsis.AST.Operation" file="Parsers/Cxx/input/condition.cc" language="C++" line="7" name="X.Y.(bool)()const" realname="(bool)" type="member function">
        <returnType/>
       </instance>
-      <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/condition.cc" language="C++" line="7" name="dummy" type="dummy"/>
+      <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/condition.cc" language="C++" line="7" name="EOS" type="EOS"/>
      </declarations>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/condition.cc" language="C++" line="7" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/condition.cc" language="C++" line="7" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/condition.cc" language="C++" line="10" name="foo()" realname="foo" type="function">
@@ -47,10 +46,10 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="X.Y.(bool)()const">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="X.Y">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="X.Y">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="foo()">

@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/groups2.cc" language="C++" line="8" name="foo" type="struct">
@@ -92,7 +91,7 @@
      </parameters>
      <returnType/>
     </instance>
-    <instance accessibility="3" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/groups2.cc" language="C++" line="19" name="dummy" type="dummy">
+    <instance accessibility="3" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/groups2.cc" language="C++" line="19" name="EOS" type="EOS">
      <comments>
       <instance class="Synopsis.AST.Comment" line="0" suspect="0">
        <file>
@@ -208,7 +207,7 @@
    </comments>
    <vtype/>
   </instance>
-  <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/groups2.cc" language="C++" line="45" name="dummy" type="dummy">
+  <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/groups2.cc" language="C++" line="45" name="EOS" type="EOS">
    <comments>
     <instance class="Synopsis.AST.Comment" line="0" suspect="1">
      <file>
@@ -224,9 +223,6 @@
  </declarations>
  <types>
   <instance class="Synopsis.Type.Declared" language="C++" name="test6">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="test1">
@@ -257,6 +253,9 @@
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="foo.make_fn()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
  </types>

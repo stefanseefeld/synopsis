@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="3" name="list" type="class">
@@ -55,7 +54,7 @@
     <instance accessibility="1" class="Synopsis.AST.Operation" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="7" name="list.size()" realname="size" type="member function">
      <returnType/>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="7" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="7" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="11" name="list&lt;T,0&gt;" type="class">
@@ -97,7 +96,7 @@
     <instance accessibility="1" class="Synopsis.AST.Operation" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="15" name="list&lt;T,0&gt;.size()" realname="size" type="member function">
      <returnType/>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="15" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="15" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="19" name="list&lt;int,I&gt;" type="class">
@@ -132,7 +131,7 @@
     <instance accessibility="1" class="Synopsis.AST.Operation" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="23" name="list&lt;int,I&gt;.size()" realname="size" type="member function">
      <returnType/>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="23" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/template_spec2.cc" language="C++" line="23" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>
@@ -141,9 +140,6 @@
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;T,0&gt;.size()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.size()">
@@ -156,6 +152,9 @@
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.list(T*,int)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int,I&gt;">

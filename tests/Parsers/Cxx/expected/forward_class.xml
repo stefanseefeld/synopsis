@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/forward_class.cc" language="C++" line="1" name="X" type="class">
@@ -19,7 +18,7 @@
     <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/forward_class.cc" language="C++" line="5" name="X.a" type="data member">
      <vtype/>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/forward_class.cc" language="C++" line="5" name="dummy" type="dummy"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/forward_class.cc" language="C++" line="5" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/forward_class.cc" language="C++" line="9" name="pmi" type="global variable">
@@ -86,9 +85,6 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="X.f(int)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="obj">
    <declaration/>
   </instance>
@@ -99,6 +95,9 @@
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="pmd">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="pobj">

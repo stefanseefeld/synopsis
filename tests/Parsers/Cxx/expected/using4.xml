@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
-<?xml-stylesheet href='/home/stefan/synopsis/Synopsis/share/Synopsis/dump.css' type='text/css'?>
 <ast>
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using4.cc" language="C++" line="0" name="D" type="namespace">
@@ -32,7 +31,7 @@
       <instance class="Synopsis.Type.Base" language="C++" name="void"/>
      </returnType>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using4.cc" language="C++" line="5" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using4.cc" language="C++" line="5" name="EOS" type="EOS"/>
     <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using4.cc" language="C++" line="18" name="D.d2" type="namespace variable">
      <comments>
       <instance class="Synopsis.AST.Comment" line="0" suspect="0">
@@ -55,7 +54,7 @@
      </parameters>
      <returnType/>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using4.cc" language="C++" line="20" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using4.cc" language="C++" line="20" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using4.cc" language="C++" line="9" name="d1" type="global variable">
@@ -85,7 +84,7 @@
      </parameters>
      <returnType/>
     </instance>
-    <instance accessibility="0" class="Synopsis.AST.Declaration" file="Parsers/Cxx/input/using4.cc" language="C++" line="13" name="dummy" type="dummy"/>
+    <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using4.cc" language="C++" line="13" name="EOS" type="EOS"/>
    </declarations>
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/using4.cc" language="C++" line="23" name="f()" realname="f" type="function">
@@ -102,10 +101,10 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="E.f(int)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="dummy">
+  <instance class="Synopsis.Type.Declared" language="C++" name="D.f(char)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="D.f(char)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="D.d2">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="D">
@@ -120,7 +119,7 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="d1">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="D.d2">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="D.d1">
