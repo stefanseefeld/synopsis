@@ -1,4 +1,4 @@
-// $Id: cpp.cc,v 1.4 2004/01/13 07:44:25 stefan Exp $
+// $Id: cpp.cc,v 1.5 2004/01/13 17:08:25 stefan Exp $
 //
 // Copyright (C) 2003 Stefan Seefeld
 // All rights reserved.
@@ -110,16 +110,16 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     PyObject *py_flags;
     std::vector<const char *> flags;
     PyObject *py_ast;
-    if (!PyArg_ParseTuple(args, "OszssO!ii",
-			  &py_ast,
-			  &input,
-			  &prefix,
-			  &output,
-			  &language,
-			  &PyList_Type, &py_flags,
-			  &verbose,
-			  &debug)
-	|| !extract(py_flags, flags))
+    if (!PyArg_ParseTuple(args, "OszzsO!ii",
+                          &py_ast,
+                          &input,
+                          &prefix,
+                          &output,
+                          &language,
+                          &PyList_Type, &py_flags,
+                          &verbose,
+                          &debug)
+        || !extract(py_flags, flags))
       return 0;
     
     Py_INCREF(py_ast);
@@ -134,6 +134,11 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     {
       flags.push_back("-o"); // output to...
       flags.push_back(output);
+    }
+    else
+    {
+      flags.push_back("-o"); // output to...
+      flags.push_back("/dev/null");
     }
     flags.push_back(input);
     if (verbose)
