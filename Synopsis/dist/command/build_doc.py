@@ -111,14 +111,29 @@ class build_doc(build.build):
          #       'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'pdf'])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
-                                              'share/doc/Synopsis'))
-      if os.path.isdir(os.path.join(builddir, 'html', 'Manual')):
-         rmtree(os.path.join(builddir, 'html', 'Manual'), 1)
-      mkpath(os.path.join(builddir, 'html'), 0777, self.verbose, self.dry_run)
-      copy_tree(os.path.join(tempdir, 'html'),
-                os.path.join(builddir, 'html', 'Manual'))
+                                              'share/doc/Synopsis/html/Manual'))
+      if os.path.isdir(os.path.join(builddir, 'python')):
+         rmtree(os.path.join(builddir, 'python'), 1)
+      if os.path.isdir(os.path.join(builddir, 'cxx-api')):
+         rmtree(os.path.join(builddir, 'cxx-api'), 1)
+      if os.path.isdir(os.path.join(builddir, 'ucpp')):
+         rmtree(os.path.join(builddir, 'ucpp'), 1)
+      if os.path.isdir(os.path.join(builddir, 'ctool')):
+         rmtree(os.path.join(builddir, 'ctool'), 1)
+      if os.path.isdir(os.path.join(builddir, 'occ')):
+         rmtree(os.path.join(builddir, 'occ'), 1)
+      copy_tree(os.path.join(tempdir, 'html', 'python'),
+                os.path.join(builddir, 'python'))
+      copy_tree(os.path.join(tempdir, 'html', 'cxx-api'),
+                os.path.join(builddir, 'cxx-api'))
+      copy_tree(os.path.join(tempdir, 'html', 'ucpp'),
+                os.path.join(builddir, 'ucpp'))
+      copy_tree(os.path.join(tempdir, 'html', 'ctool'),
+                os.path.join(builddir, 'ctool'))
+      copy_tree(os.path.join(tempdir, 'html', 'occ'),
+                os.path.join(builddir, 'occ'))
       copy_file(os.path.join(tempdir, 'all.xref'),
-                os.path.join(builddir, 'html', 'Manual', 'xref_db'))
+                os.path.join(builddir, 'xref_db'))
       if self.printable:
          mkpath(os.path.join(builddir, 'print'), 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Manual.pdf'),
