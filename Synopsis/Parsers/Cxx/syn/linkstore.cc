@@ -62,6 +62,7 @@
 // Much improved template support, including Function Templates.
 //
 
+#include <Python.h>
 #if !defined(__WIN32__)
 #  include <unistd.h>
 #endif
@@ -74,7 +75,6 @@
 #include "linkstore.hh"
 #include "ast.hh"
 #include "type.hh"
-#include "link_map.hh"
 #include "dumper.hh"
 #include "builder.hh"
 #include "strace.hh"
@@ -202,26 +202,6 @@ LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
         std::cerr << "FATAL ERROR: Wrong number of context names in linkstore.cc" << std::endl;
         exit(1);
     }
-
-    // Create all the output streams to ensure that the files exist
-    const std::string* main;
-    const std::vector<std::string>* extra;
-    filter->get_all_filenames(main, extra);
-    // Do the main file in case it is not in extra (it should be unless extra
-    // is not being used, i.e.: there is just one file)
-    //std::cout << " Creating streams for " << *main << std::endl;
-    AST::SourceFile* file = filter->get_sourcefile(main->c_str());
-    get_syntax_stream(file);
-    get_xref_stream(file);
-    // Do the extra filenames
-    std::vector<std::string>::const_iterator iter;
-    for (iter = extra->begin(); iter != extra->end(); iter++)
-    {
-        //std::cout << " Creating streams for " << *iter << std::endl;
-        file = filter->get_sourcefile(iter->c_str());
-        get_syntax_stream(file);
-        get_xref_stream(file);
-    }
 }
 
 LinkStore::~LinkStore()
@@ -242,14 +222,14 @@ SWalker* LinkStore::swalker()
     return m->walker;
 }
 
-int LinkStore::find_col(int line, const char* ptr)
+int LinkStore::find_col(AST::SourceFile *file, int line, const char* ptr)
 {
     const char* pos = ptr;
     while (pos > m->buffer_start && *--pos != '\n')
         ; // do nothing inside loop
     int col = ptr - pos;
     // Resolve macro maps
-    return LinkMap::instance()->map(line, col);
+    return file->macro_calls().map(line, col);
 }
 
 void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
@@ -266,7 +246,7 @@ void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const
         store_xref_record(file, decl, file->filename(), line, context);
 
     // Get info for storing a syntax record
-    int col = find_col(line, node->LeftMost());
+    int col = find_col(file, line, node->LeftMost());
     if (col < 0)
         return; // inside macro
     int len = node->RightMost() - node->LeftMost();
@@ -455,7 +435,7 @@ void LinkStore::span(Ptree* node, const char* desc)
     AST::SourceFile* file = m->walker->current_file();
     if (!m->filter->should_link(file))
         return;
-    int col = find_col(line, node->LeftMost());
+    int col = find_col(file, line, node->LeftMost());
     if (col < 0)
         return; // inside macro
     int len = node->RightMost() - node->LeftMost();
@@ -470,7 +450,7 @@ void LinkStore::long_span(Ptree* node, const char* desc)
     AST::SourceFile* file = m->walker->current_file();
     if (!m->filter->should_link(file))
         return;
-    int left_col = find_col(left_line, node->LeftMost());
+    int left_col = find_col(file, left_line, node->LeftMost());
     if (left_col < 0)
         return; // inside macro
     int len = node->RightMost() - node->LeftMost();
@@ -486,7 +466,7 @@ void LinkStore::long_span(Ptree* node, const char* desc)
     else
     {
         // Must output one for each line
-        int right_col = find_col(right_line, node->RightMost());
+        int right_col = find_col(file, right_line, node->RightMost());
         for (int line = left_line; line < right_line; line++, left_col = 0)
             span(line, left_col, -1, desc);
         // Last line is a bit different

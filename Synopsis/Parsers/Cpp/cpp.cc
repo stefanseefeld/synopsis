@@ -14,6 +14,7 @@
 #include <cstring>
 #include <cstdio>
 #include <memory>
+#include <functional>
 
 using namespace Synopsis::AST; // import all AST objects...
 namespace Python = Synopsis; // ...and the others into 'Python'
@@ -23,19 +24,119 @@ namespace
 
 int verbose = 0;
 int debug = 0;
+int main_file_only = 0;
+bool active = true;
 const char *language;
-const char *prefix = 0;
-ASTKit *kit;
-TypeKit *types;
-AST *ast;
-SourceFile *source_file;
+const char *base_path = 0;
+// these python objects need to be referenced as pointers
+// since the python runtime environment has to be initiaized first
+std::auto_ptr<ASTKit> kit;
+std::auto_ptr<TypeKit> types;
+std::auto_ptr<AST> ast;
+std::auto_ptr<SourceFile> source_file;
 const char *input = 0;
 
-const char *strip_prefix(const char *filename, const char *prefix)
+//. return portably the current working directory
+const std::string &get_cwd()
 {
-  if (!prefix) return filename;
-  size_t length = strlen(prefix);
-  if (strncmp(filename, prefix, length) == 0)
+  static std::string path;
+  if (path.empty())
+#ifdef __WIN32__
+  {
+    DWORD size;
+    if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
+    {
+      delete [] buf;
+      throw std::runtime_error("error accessing current working directory");
+    }
+    char *buf = new char[size];
+    if (::GetCurrentDirectoryA(size, buf) == 0)
+    {
+      delete [] buf;
+      throw std::runtime_error("error accessing current working directory");
+    }
+    path = buf;
+    delete [] buf;
+  }
+#else
+    for (long path_max = 32;; path_max *= 2)
+    {
+      char *buf = new char[path_max];
+      if (::getcwd(buf, path_max) == 0)
+      {
+	if (errno != ERANGE)
+	{
+	  delete [] buf;
+	  throw std::runtime_error(strerror(errno));
+	}
+      }
+      else
+      {
+	path = buf;
+	delete [] buf;
+	return path;
+      }
+      delete [] buf;
+    }
+#endif
+  return path;
+}
+
+// normalize and absolutize the given path path
+std::string normalize_path(std::string filename)
+{
+#ifdef __WIN32__
+  char separator = '\\';
+  const char *pat1 = "\\.\\";
+  const char *pat2 = "\\..\\";
+#else
+  char separator = '/';
+  const char *pat1 = "/./";
+  const char *pat2 = "/../";
+#endif
+  if (filename[0] != separator)
+    filename.insert(0, get_cwd() + separator);
+
+  // nothing to do...
+  if (filename.find(pat1) == std::string::npos &&
+      filename.find(pat2) == std::string::npos) return filename;
+  
+  // for the rest we'll operate on a decomposition of the filename...
+  typedef std::vector<std::string> Path;
+  Path path;
+
+  std::string::size_type b = 0;
+  while (b < filename.size())
+  {
+    std::string::size_type e = filename.find(separator, b);
+    path.push_back(std::string(filename, b, e-b));
+    b = e == std::string::npos ? std::string::npos : e + 1;
+  }
+
+  // remove all '.' and '' components
+  path.erase(std::remove(path.begin(), path.end(), "."), path.end());
+  path.erase(std::remove(path.begin(), path.end(), ""), path.end());
+  // now collapse '..' components with the preceding one
+  while (true)
+  {
+    Path::iterator i = std::find(path.begin(), path.end(), "..");
+    if (i == path.end()) break;
+    if (i == path.begin()) throw std::invalid_argument("invalid path");
+    path.erase(i - 1, i + 1); // remove two components
+  }
+
+  // now rebuild the path as a string
+  std::string retn = '/' + path.front();
+  for (Path::iterator i = path.begin() + 1; i != path.end(); ++i)
+    retn += '/' + *i;
+  return retn;
+}
+
+const char *strip_base_path(const char *filename)
+{
+  if (!base_path) return filename;
+  size_t length = strlen(base_path);
+  if (strncmp(filename, base_path, length) == 0)
     return filename + length;
   return filename;
 }
@@ -43,7 +144,7 @@ const char *strip_prefix(const char *filename, const char *prefix)
 //. creates new SourceFile object and store it into ast
 SourceFile create_source_file(const char *filename, bool is_main)
 {
-  const char *name = strip_prefix(filename, prefix);
+  const char *name = strip_base_path(filename);
   SourceFile sf = kit->create_source_file(name, filename, language);
   Python::Dict files = ast->files();
   files.set(name, sf);
@@ -53,11 +154,11 @@ SourceFile create_source_file(const char *filename, bool is_main)
 
 //. creates new or returns existing SourceFile object
 //. with the given filename
-SourceFile lookup_source_file(const char *filename)
+SourceFile lookup_source_file(const char *filename, bool main)
 {
   Python::Dict files = ast->files();
-  SourceFile sf = files.get(strip_prefix(filename, prefix));
-  return sf ? sf : create_source_file(filename, false);
+  SourceFile sf = files.get(strip_base_path(filename));
+  return sf ? sf : create_source_file(filename, main);
 }
 
 //. creates new Macro object
@@ -66,7 +167,7 @@ void create_macro(const char *filename, int line,
 		  int vaarg, const char *text)
 {
   Python::Tuple name(macro_name);
-  SourceFile sf = lookup_source_file(filename);
+  SourceFile sf = lookup_source_file(filename, true);
   Python::List params;
   if (args)
   {
@@ -113,13 +214,14 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     PyObject *py_flags;
     std::vector<const char *> flags;
     PyObject *py_ast;
-    if (!PyArg_ParseTuple(args, "OszzsO!ii",
+    if (!PyArg_ParseTuple(args, "OszzsO!iii",
                           &py_ast,
                           &input,
-                          &prefix,
+                          &base_path,
                           &output,
                           &language,
                           &PyList_Type, &py_flags,
+                          &main_file_only,
                           &verbose,
                           &debug)
         || !extract(py_flags, flags))
@@ -130,17 +232,10 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     // since everything in this file is accessed only during the execution
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
-    std::auto_ptr<AST> ast_ptr(new AST(py_ast));
-    ast = ast_ptr.get();
-
-    std::auto_ptr<ASTKit> kit_ptr(new ASTKit());
-    kit = kit_ptr.get();
-
-    std::auto_ptr<TypeKit> types_ptr(new TypeKit());
-    types = types_ptr.get();
-
-    std::auto_ptr<SourceFile> sf_ptr(new SourceFile(create_source_file(input, true)));
-    source_file = sf_ptr.get();
+    ast.reset(new AST(py_ast));
+    kit.reset(new ASTKit());
+    types.reset(new TypeKit());
+    source_file.reset(new SourceFile(create_source_file(input, true)));
 
     flags.insert(flags.begin(), "ucpp");
     flags.push_back("-C"); // keep comments
@@ -170,8 +265,14 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
       std::cerr << "ucpp returned error flag. ignoring error." << std::endl;
 
     Python::Dict files = ast->files();
-    files.set(strip_prefix(input, prefix), *source_file);
-    return ast->ref();
+    files.set(strip_base_path(input), *source_file);
+
+    // make sure these objects are deleted before the python runtime
+    source_file.reset(0);
+    types.reset(0);
+    kit.reset(0);
+    ast.reset(0);
+    return py_ast;
   }
   catch (const std::exception &e)
   {
@@ -182,15 +283,50 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
 
 extern "C"
 {
+  //. This function is a callback from the ucpp code to report
+  //. a context switch in the parser, i.e. either to enter a
+  //. new (included) file (@new_file == true) or to return control
+  //. to an already open file once parsing an included file is
+  //. terminated (@new_file == false)
+  //. Depending on whether the new filename matches with the base_path,
+  //. the parser is activated or deactivated
+  void synopsis_file_hook(const char *filename, int new_file)
+  {
+    // turn 'filename' into an absolute path so we can match it against
+    // base_path
+    std::string abs_filename = normalize_path(filename);
+
+    bool activate = false;
+    if (!base_path ||
+	strncmp(abs_filename.c_str(), base_path, strlen(base_path)) == 0)
+    {
+      if (!active) active = activate = true;
+    }
+    else
+      active = false;
+
+    if (!active) return;
+
+    // just for symmetry, don't report if we were just activated 
+    if (debug && !activate)
+      if (new_file)
+	std::cout << "entering new file " << abs_filename << std::endl;
+      else
+	std::cout << "returning to file " << abs_filename << std::endl;
+
+    source_file.reset(new SourceFile(lookup_source_file(abs_filename.c_str(), true)));
+  }
+
   //. This function is a callback from the ucpp code to store macro
   //. expansions
   void synopsis_macro_hook(const char *name, int line_num,
 			   int start, int end, int diff)
   {
+    if (!active) return;
     if (debug) 
       std::cout << "macro : " << name << ' ' << line_num << ' '
 		<< start << ' ' << end << ' ' << diff << std::endl;
-    
+
     Python::Dict mmap = source_file->macro_calls();
     Python::List line = mmap.get(line_num, Python::List());
     line.append(kit->create_macro_call(name, start, end, diff));
@@ -201,13 +337,14 @@ extern "C"
   void synopsis_include_hook(const char *source, const char *target,
 			     int is_macro, int is_next)
   {
+    if (!active) return;
     if (debug) 
       std::cout << "include : " << source << ' ' << target << ' ' 
 		<< is_macro << ' ' << is_next << std::endl;
 
-    // should this be optional ?
-//     if (strcmp(input, source) != 0) return;
-    SourceFile target_file = lookup_source_file(target);
+    std::string abs_target = normalize_path(target);
+
+    SourceFile target_file = lookup_source_file(abs_target.c_str(), false);
 
     Include include = kit->create_include(target_file, is_macro, is_next);
     Python::List includes = source_file->includes();
@@ -221,11 +358,11 @@ extern "C"
 			    int num_args, const char **args, int vaarg, 
 			    const char *text)
   {
+    if (!active) return;
     if (debug) 
       std::cout << "define : " << filename << ' ' << line << ' ' 
 		<< name << ' ' << num_args << ' ' << text << std::endl;
 
-    if (strcmp(input, filename) != 0) return;
     create_macro(filename, line, name, num_args, args, vaarg, text);
   }
 };

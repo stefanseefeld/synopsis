@@ -23,9 +23,114 @@
 
 #include "filter.hh"
 #include <map>
+#include <iostream>
+#include <stdexcept>
+
+namespace
+{
+//. return portably the current working directory
+const std::string &get_cwd()
+{
+  static std::string path;
+  if (path.empty())
+#ifdef __WIN32__
+  {
+    DWORD size;
+    if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
+    {
+      delete [] buf;
+      throw std::runtime_error("error accessing current working directory");
+    }
+    char *buf = new char[size];
+    if (::GetCurrentDirectoryA(size, buf) == 0)
+    {
+      delete [] buf;
+      throw std::runtime_error("error accessing current working directory");
+    }
+    path = buf;
+    delete [] buf;
+  }
+#else
+    for (long path_max = 32;; path_max *= 2)
+    {
+      char *buf = new char[path_max];
+      if (::getcwd(buf, path_max) == 0)
+      {
+	if (errno != ERANGE)
+	{
+	  delete [] buf;
+	  throw std::runtime_error(strerror(errno));
+	}
+      }
+      else
+      {
+	path = buf;
+	delete [] buf;
+	return path;
+      }
+      delete [] buf;
+    }
+#endif
+  return path;
+}
+
+// normalize and absolutize the given path path
+std::string normalize_path(std::string filename)
+{
+#ifdef __WIN32__
+  char separator = '\\';
+  const char *pat1 = "\\.\\";
+  const char *pat2 = "\\..\\";
+#else
+  char separator = '/';
+  const char *pat1 = "/./";
+  const char *pat2 = "/../";
+#endif
+  if (filename[0] != separator)
+    filename.insert(0, get_cwd() + separator);
+
+  // nothing to do...
+  if (filename.find(pat1) == std::string::npos &&
+      filename.find(pat2) == std::string::npos) return filename;
+  
+  // for the rest we'll operate on a decomposition of the filename...
+  typedef std::vector<std::string> Path;
+  Path path;
+
+  std::string::size_type b = 0;
+  while (b < filename.size())
+  {
+    std::string::size_type e = filename.find(separator, b);
+    path.push_back(std::string(filename, b, e-b));
+    b = e == std::string::npos ? std::string::npos : e + 1;
+  }
+
+  // remove all '.' and '' components
+  path.erase(std::remove(path.begin(), path.end(), "."), path.end());
+  path.erase(std::remove(path.begin(), path.end(), ""), path.end());
+  // now collapse '..' components with the preceding one
+  while (true)
+  {
+    Path::iterator i = std::find(path.begin(), path.end(), "..");
+    if (i == path.end()) break;
+    if (i == path.begin()) throw std::invalid_argument("invalid path");
+    path.erase(i - 1, i + 1); // remove two components
+  }
+
+  // now rebuild the path as a string
+  std::string retn = '/' + path.front();
+  for (Path::iterator i = path.begin() + 1; i != path.end(); ++i)
+    retn += '/' + *i;
+  return retn;
+}
+}
 
 struct FileFilter::Private
 {
+
+    //. used during SourceFile imports
+    PyObject *ast;
+
     //. Whether only main declarations should be stored
     bool only_main;
 
@@ -33,19 +138,10 @@ struct FileFilter::Private
     std::string main_filename;
 
     //. The basename
-    std::string basename;
+    std::string base_path;
 
     //. A vector of strings
     typedef std::vector<std::string> string_vector;
-
-    //. The extra filenames
-    string_vector extra_filenames;
-
-    //. The main syntax filename
-    std::string syntax_filename;
-
-    //. The main xref filename
-    std::string xref_filename;
 
     //. The syntax filename prefix
     std::string syntax_prefix;
@@ -58,35 +154,72 @@ struct FileFilter::Private
 
     //. A map from filename to SourceFile
     file_map_t file_map;
-
-    //. The type of syntax or xref being used
-    enum StoreType
-    {
-        None,
-        Filename,
-        Prefix
-    };
-
-    //. The type of syntax filename being used
-    StoreType syntax;
-
-    //. The type of xref filename being used
-    StoreType xref;
 };
 
 namespace
 {
     //. The FileFilter instance
     FileFilter* filter_instance = NULL;
+
+//. restore the relevant parts from the python ast
+//. The returned SourceFile object is a slice of the original python object
+//. and should be merged back at the end of the parsing such that the other
+//. parts not mirrored here are preserved.
+AST::SourceFile *import_source_file(PyObject *ast,
+				    const std::string &name,
+				    const std::string &long_name,
+				    bool main)
+{
+  AST::SourceFile *sourcefile = new AST::SourceFile(name, long_name, main);
+
+  PyObject *files = PyObject_CallMethod(ast, "files", "");
+  assert(files);
+  PyObject *py_source_file = PyDict_GetItemString(files, name.c_str());
+  Py_DECREF(files);
+  if (!py_source_file) return sourcefile; // the given file wasn't preprocessed into the AST
+
+  PyObject *macro_calls = PyObject_CallMethod(py_source_file, "macro_calls", "");
+  if (macro_calls)
+  {
+    PyObject *lines = PyDict_Keys(macro_calls);
+    long size = PyObject_Length(lines);
+    for (long i = 0; i != size; ++i)
+    {
+      PyObject *line_number = PyList_GetItem(lines, i);
+      int l = PyInt_AsLong(line_number);
+      PyObject *line = PyDict_GetItem(macro_calls, line_number);
+      long line_length = PyObject_Length(line);
+      for (long j = 0; j != line_length; ++j)
+      {
+	PyObject *call = PyList_GetItem(line, j);
+	PyObject *name, *start, *end, *diff;
+	name = PyObject_GetAttrString(call, "name");
+	start = PyObject_GetAttrString(call, "start");
+	end = PyObject_GetAttrString(call, "end");
+	diff = PyObject_GetAttrString(call, "diff");
+	sourcefile->macro_calls().add(PyString_AsString(name), l,
+				      PyInt_AsLong(start),
+				      PyInt_AsLong(end),
+				      PyInt_AsLong(diff));
+      }
+    }
+    Py_DECREF(macro_calls);
+  }
+  return sourcefile;
+}
 }
 
 // Constructor
-FileFilter::FileFilter()
+FileFilter::FileFilter(PyObject *ast,
+		       const std::string &filename,
+		       const std::string &base_path,
+		       bool main)
 {
     m = new Private;
-    m->only_main = true;
-    m->syntax = Private::None;
-    m->xref = Private::None;
+    m->ast = ast;
+    m->main_filename = filename;
+    m->base_path = base_path;
+    m->only_main = main;
     filter_instance = this;
 }
 
@@ -103,49 +236,6 @@ FileFilter* FileFilter::instance()
     return filter_instance;
 }
 
-// Sets whether only declarations in the main file(s) should be stored
-void FileFilter::set_only_main(bool value)
-{
-    m->only_main = value;
-}
-
-// Sets the main filename
-void FileFilter::set_main_filename(const char* filename)
-{
-    m->main_filename = filename;
-}
-
-// Adds a list of extra filenames to store info for
-void FileFilter::add_extra_filenames(const std::vector<const char*>& filenames)
-{
-    std::vector<const char*>::const_iterator iter;
-    for (iter = filenames.begin(); iter != filenames.end(); iter++)
-        m->extra_filenames.push_back(*iter);
-}
-
-// Sets the basename
-void FileFilter::set_basename(const char* basename)
-{
-    m->basename = basename;
-    // Make sure it ends in / if it is set
-    if (m->basename.size() > 0 && m->basename[m->basename.size()-1] != '/')
-        m->basename.append("/");
-}
-
-// Sets the filename for syntax output.
-void FileFilter::set_syntax_filename(const char* filename)
-{
-    m->syntax_filename = filename;
-    m->syntax = Private::Filename;
-}
-
-// Sets the filename for xref output.
-void FileFilter::set_xref_filename(const char* filename)
-{
-    m->xref_filename = filename;
-    m->xref = Private::Filename;
-}
-
 // Sets the prefix for syntax output filenames.
 void FileFilter::set_syntax_prefix(const char* filename)
 {
@@ -153,7 +243,6 @@ void FileFilter::set_syntax_prefix(const char* filename)
     if (m->syntax_prefix.size() > 0
         && m->syntax_prefix[m->syntax_prefix.size()-1] != '/')
        m->syntax_prefix.append("/");
-    m->syntax = Private::Prefix;
 }
 
 // Sets the prefix for xref output filenames.
@@ -163,7 +252,6 @@ void FileFilter::set_xref_prefix(const char* filename)
     if (m->xref_prefix.size() > 0
         && m->xref_prefix[m->xref_prefix.size()-1] != '/')
        m->xref_prefix.append("/");
-    m->xref = Private::Prefix;
 }
 
 
@@ -176,6 +264,8 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
     else
         filename.assign(filename_ptr);
     
+    filename = normalize_path(filename);
+
     // Look in map
     Private::file_map_t::iterator iter = m->file_map.find(filename);
     if (iter != m->file_map.end())
@@ -184,10 +274,10 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
     
     // Not found, create a new SourceFile. Note filename in the object is
     // stripped of the basename
-    AST::SourceFile* file = new AST::SourceFile(
-            strip_basename(filename), 
-	    filename,
-            is_main(filename));
+    AST::SourceFile* file = import_source_file(m->ast,
+					       strip_base_path(filename),
+					       filename, 
+					       is_main(filename));
 
     // Add to the map
     m->file_map[filename] = file;
@@ -197,16 +287,14 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
 
 bool FileFilter::is_main(std::string filename)
 {
-    //std::cout << " Comparing " << filename << " to main: " << m->main_filename << std::endl;
-    if (filename == m->main_filename)
-        return true;
+    if (filename == m->main_filename) return true;
+    else if (m->only_main) return false;
 
-    Private::string_vector::iterator iter = m->extra_filenames.begin();
-    while (iter != m->extra_filenames.end())
-        if (filename == *iter++)
-            return true;
+    if (m->base_path.size() == 0) true;
 
-    return false;
+    size_t length = m->base_path.size();
+    if (length > filename.size()) return false;
+    return strncmp(filename.data(), m->base_path.data(), length) == 0;
 }
 
 // Returns whether a function implementation in the given file should
@@ -214,29 +302,23 @@ bool FileFilter::is_main(std::string filename)
 // one of the files to be stored. 
 bool FileFilter::should_visit_function_impl(AST::SourceFile* file)
 {
-    // First check if not linking or xreffing
-    if (m->syntax == Private::None && m->xref == Private::None)
-        return false;
+  // First check if not linking or xreffing
+  if (m->syntax_prefix.empty() || m->xref_prefix.empty())
+    return false;
 
-    return file->is_main();
+  return file->is_main();
 }
 
 
 // Returns true if links should be generated for the given sourcefile
 bool FileFilter::should_link(AST::SourceFile* file)
 {
-    if (m->syntax == Private::None)
-        return false;
-
     return file->is_main();
 }
 
 // Returns true if xref info should be generated for the given sourcefile
 bool FileFilter::should_xref(AST::SourceFile* file)
 {
-    if (m->xref == Private::None)
-        return false;
-
     return file->is_main();
 }
 
@@ -268,15 +350,15 @@ bool FileFilter::should_store(AST::Declaration* decl)
     return false;
 }
 
-// Strip basename from filename
-std::string FileFilter::strip_basename(const std::string& filename)
+// Strip base path from filename
+std::string FileFilter::strip_base_path(const std::string& filename)
 {
-    if (m->basename.size() == 0)
+    if (m->base_path.size() == 0)
         return filename;
-    size_t length = m->basename.size();
+    size_t length = m->base_path.size();
     if (length > filename.size())
         return filename;
-    if (strncmp(filename.data(), m->basename.data(), length) == 0)
+    if (strncmp(filename.data(), m->base_path.data(), length) == 0)
         return filename.substr(length);
     return filename;
 }
@@ -284,18 +366,12 @@ std::string FileFilter::strip_basename(const std::string& filename)
 // Return syntax filename
 std::string FileFilter::get_syntax_filename(AST::SourceFile* file)
 {
-    if (m->syntax == Private::Filename)
-        return m->syntax_filename;
-
     return m->syntax_prefix + file->filename();
 }
 
 // Return xref filename
 std::string FileFilter::get_xref_filename(AST::SourceFile* file)
 {
-    if (m->xref == Private::Filename)
-        return m->xref_filename;
-
     return m->xref_prefix + file->filename();
 }
 
@@ -307,11 +383,7 @@ void FileFilter::get_all_sourcefiles(AST::SourceFile::vector& all)
         all.push_back(iter->second);
 }
 
-// Returns all filenames
-void FileFilter::get_all_filenames(const std::string*& main, const std::vector<std::string>*& extra)
+std::string FileFilter::get_main_file()
 {
-    main = &m->main_filename;
-    extra = &m->extra_filenames;
+  return m->main_filename;
 }
-
-// vim: set ts=8 sts=4 sw=4 et:

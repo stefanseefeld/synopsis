@@ -30,6 +30,8 @@
 #define H_SYNOPSIS_CPP_AST
 
 #include "common.hh"
+#include <set>
+#include <map>
 
 // Forward declare Dictionary
 class Dictionary;
@@ -323,6 +325,27 @@ private:
     bool m_is_next;
 };
 
+class MacroCallDict
+{
+public:
+  struct MacroCall
+  {
+    std::string name;
+    long start;
+    long end;
+    long diff;
+    bool operator <(const MacroCall &o) const { return start < o.start;}
+  };
+
+  typedef std::set<MacroCall> Line;
+  typedef std::map<long, Line> Lines;
+
+  void add(const char *name, int linenum, int start, int end, int diff);
+  int map(int linenum, int pos);
+private:
+  Lines my_lines;
+};
+
 //. Information about a source file used to generate the AST.
 //.
 //. Generally an AST will include SourceFile objects for *all* files,
@@ -382,6 +405,9 @@ public:
         return m_includes;
     }
 
+    MacroCallDict &macro_calls() { return my_macro_calls;}
+    const MacroCallDict &macro_calls() const { return my_macro_calls;}
+  
 private:
     //. The filename
     std::string m_filename;
@@ -397,6 +423,9 @@ private:
 
     //. The vector of includes
     Include::vector m_includes;
+
+  //. The macro call dictionary
+  MacroCallDict my_macro_calls;
 };
 
 //. A Builtin is a node to be used internally.

@@ -272,7 +272,8 @@ private:
   void SWalker::TranslateFuncImplCache(const FuncImplCache& cache);
   
   //. Finds the column given the start ptr and the current position. The
-  //. derived column number is processed with the link_map before returning,
+  //. derived column number is processed with the macro call dictionary
+  //. from the current file before returning,
   //. so -1 may be returned to indicate "inside macro".
   int find_col(const char* start, const char* find);
 };
