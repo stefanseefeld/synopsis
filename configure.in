@@ -1,7 +1,7 @@
-dnl $Id: configure.in,v 1.13 2002/10/29 02:22:42 chalky Exp $
+dnl $Id: configure.in,v 1.14 2003/03/23 17:36:27 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
-dnl Copyright (C) 2001 Stefan Seefeld <seefeld@sympatico.ca> 
+dnl Copyright (C) 2001 Stefan Seefeld
 dnl
 dnl This library is free software; you can redistribute it and/or
 dnl modify it under the terms of the GNU Library General Public
@@ -24,7 +24,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.12)
-AC_REVISION($Revision: 1.13 $)
+AC_REVISION($Revision: 1.14 $)
 
 AC_INIT(synopsis.spec.in)
 AC_PROG_MAKE_SET

@@ -1,9 +1,8 @@
 # @configure_input@
-# $Id: local.mk.in,v 1.9 2002/10/29 02:22:42 chalky Exp $
+# $Id: local.mk.in,v 1.10 2003/03/23 17:36:27 stefan Exp $
 #
-# This source file is a part of the Berlin Project.
-# Copyright (C) 1999, 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
-# http://www.berlin-consortium.org
+# This source file is a part of the Synopsis Project.
+# Copyright (C) 1999, 2000 Stefan Seefeld
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
