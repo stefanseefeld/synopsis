@@ -43,10 +43,8 @@
 #include "project.h"
 
 extern int errno;
-extern int err_cnt;
 int yylex(YYSTYPE *lvalp);
 
-extern int err_top_level;
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
 
@@ -223,7 +221,7 @@ extern int err_top_level;
   NO REENTRANCE ***/
 program:  /* emtpy source file */ 
         {
-            if (err_cnt == 0)
+            if (gProject->Parse_TOS->err_cnt == 0)
               *gProject->Parse_TOS->yyerrstream
               << "Warning: ANSI/ISO C forbids an empty source file.\n";
             gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
@@ -231,10 +229,10 @@ program:  /* emtpy source file */
         }
        | trans_unit
         {
-            if (err_cnt)
+            if (gProject->Parse_TOS->err_cnt)
             {
                 *gProject->Parse_TOS->yyerrstream
-                << err_cnt << " errors found.\n";
+                << gProject->Parse_TOS->err_cnt << " errors found.\n";
                 gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
             } else {
                 gProject->Parse_TOS->transUnit = $$;
@@ -264,7 +262,7 @@ top_level_exit: /* Safety precaution! */
             gProject->Parse_TOS->parseCtxt->ReinitializeCtxt();
             if (gProject->Parse_TOS->transUnit)
                 gProject->Parse_TOS->transUnit->contxt.ExitScopes(FILE_SCOPE);
-            err_top_level = 0;            
+            gProject->Parse_TOS->err_top_level = 0;            
         }
         ;
         
@@ -322,12 +320,12 @@ func_spec:  decl_specs func_declarator opt_KnR_declaration_list
         {
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
             
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $2;
 
             if ($$->form != NULL)
             {
-                assert(err_top_level ||
+                assert(gProject->Parse_TOS->err_top_level ||
                        $$->form->type == TT_Function );
     
                 $$->extend($1);
@@ -356,7 +354,7 @@ func_spec:  decl_specs func_declarator opt_KnR_declaration_list
 
             if ($$->form != NULL)
             {
-                assert(err_top_level ||
+                assert(gProject->Parse_TOS->err_top_level ||
                        $$->form->type == TT_Function );
                 $$->extend($1);
     
@@ -1075,13 +1073,13 @@ opt_KnR_declaration_list:
                 gProject->Parse_TOS->transUnit->contxt.ReEnterScope();
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
         }
-        {   gProject->Parse_TOS->parseCtxt->SetVarParam(1, !err_top_level, 0); 
+        {   gProject->Parse_TOS->parseCtxt->SetVarParam(1, !gProject->Parse_TOS->err_top_level, 0); 
             gProject->Parse_TOS->parseCtxt->SetIsKnR(true); 
         }
                            declaration_list
         {   $$ = $3;
             gProject->Parse_TOS->parseCtxt->SetIsKnR(false); 
-            gProject->Parse_TOS->parseCtxt->SetVarParam(0, !err_top_level, 1); 
+            gProject->Parse_TOS->parseCtxt->SetVarParam(0, !gProject->Parse_TOS->err_top_level, 1); 
             
             // Exit, but will allow re-enter for a function.
             // Hack, to handle parameters being in the function's scope.
@@ -1106,11 +1104,11 @@ opt_declaration_list:
                 gProject->Parse_TOS->transUnit->contxt.EnterScope();
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
         }
-        {   gProject->Parse_TOS->parseCtxt->SetVarParam(0, !err_top_level, 0); 
+        {   gProject->Parse_TOS->parseCtxt->SetVarParam(0, !gProject->Parse_TOS->err_top_level, 0); 
         }
                        declaration_list
         {   $$ = $3;
-            gProject->Parse_TOS->parseCtxt->SetVarParam(0, !err_top_level, 0);
+            gProject->Parse_TOS->parseCtxt->SetVarParam(0, !gProject->Parse_TOS->err_top_level, 0);
         }
         ;
 
@@ -1149,13 +1147,13 @@ decl_stemnt:  old_style_declaration SEMICOLON
 
 old_style_declaration: no_decl_specs opt_init_decl_list
         {
-            assert (err_top_level ||
+            assert (gProject->Parse_TOS->err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
             
             yywarn("old-style declaration or incorrect type");
 
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $2;
 
             if ($$ == NULL)
@@ -1167,11 +1165,11 @@ old_style_declaration: no_decl_specs opt_init_decl_list
         
 declaration:  decl_specs opt_init_decl_list
         {
-            assert (err_top_level ||
+            assert (gProject->Parse_TOS->err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();            
             
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $2;
             
             if ($$ == NULL)
@@ -1220,7 +1218,7 @@ type_name_bis:  decl_specs_reentrance_bis
         {
             assert ($1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
             
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $1;
             if ($$->isFunction())
                 yyerr ("Function type not allowed as type name");
@@ -1229,7 +1227,7 @@ type_name_bis:  decl_specs_reentrance_bis
         {
             assert ($1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
             
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $2;
             
             Type * extended = $$->extend($1);
@@ -1300,7 +1298,7 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
             else
                  $$->storage = $1;
         }
-          |  type_spec { possibleType = false; } opt_decl_specs_reentrance
+          |  type_spec { gProject->Parse_TOS->possibleType = false; } opt_decl_specs_reentrance
         {
             $$ = $1;
 
@@ -1359,7 +1357,7 @@ opt_comp_decl_specs:   /* Nothing */
               | comp_decl_specs_reentrance
         ;
 
-comp_decl_specs_reentrance:  type_spec_reentrance { possibleType = false; } opt_comp_decl_specs
+comp_decl_specs_reentrance:  type_spec_reentrance { gProject->Parse_TOS->possibleType = false; } opt_comp_decl_specs
         {
             $$ = $1;
 
@@ -1781,9 +1779,9 @@ field_list:
             gProject->Parse_TOS->parseCtxt->PushCtxt();
         }
         {
-            assert (!err_top_level || possibleType);
+            assert (!gProject->Parse_TOS->err_top_level || gProject->Parse_TOS->possibleType);
              /* Safety precaution! */
-             possibleType=true;
+             gProject->Parse_TOS->possibleType=true;
         }
             field_list_reentrance
         {
@@ -1818,12 +1816,12 @@ field_list_reentrance:  comp_decl SEMICOLON
         
 comp_decl:  comp_decl_specs comp_decl_list
         {
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $2;
         }
          |  comp_decl_specs
         {
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = new Decl ($1);
             yywarn ("No field declarator");
         }
@@ -2165,9 +2163,9 @@ param_decl:
         
 param_decl_bis: decl_specs_reentrance_bis declarator
         {
-            assert (err_top_level ||
+            assert (gProject->Parse_TOS->err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = $2;
             Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
             Type * extended = $$->extend(decl);             
@@ -2181,9 +2179,9 @@ param_decl_bis: decl_specs_reentrance_bis declarator
         }
           | decl_specs_reentrance_bis abs_decl_reentrance
         {
-            assert (err_top_level ||
+            assert (gProject->Parse_TOS->err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = new Decl($2);
             
             Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
@@ -2198,7 +2196,7 @@ param_decl_bis: decl_specs_reentrance_bis declarator
         }
           | decl_specs_reentrance_bis
         {
-            possibleType = true;
+            gProject->Parse_TOS->possibleType = true;
             $$ = new Decl($1);
             if ($$->form &&
                 $$->form->isFunction())

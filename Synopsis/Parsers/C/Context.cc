@@ -49,8 +49,6 @@
 
 EXTERN int yyerr ARGS((char* s, const std::string& str));
 EXTERN int yyerr ARGS((char* s));
-EXTERN int yywarn ARGS((char* s));
-EXTERN int err_top_level;
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
@@ -293,7 +291,7 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 	{
 		if (IsTypedefDeclCtxt())
 		{
-			assert(err_top_level || ! isFieldId);
+			assert(gProject->Parse_TOS->err_top_level || ! isFieldId);
  			if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
 				// There is a previous entry defined at the same level.
 				yyerr ("Duplicate typedef name: ", declSym->name);
@@ -318,7 +316,7 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
 	}
 	else
 	{
-		assert(err_top_level || ! IsTypedefDeclCtxt());
+		assert(gProject->Parse_TOS->err_top_level || ! IsTypedefDeclCtxt());
 
 		if (curCtxt->isKnR && curCtxt->varParam == 1)
 		{
@@ -405,7 +403,7 @@ void ParseCtxt::Mk_func_declarator(Decl* decl)
 	Symbol* ident = decl->name;
   
 	assert(! curCtxt->possibleDuplication || ident->entry);
-	assert(! err_top_level || decl->form->type == TT_Function);
+	assert(! gProject->Parse_TOS->err_top_level || decl->form->type == TT_Function);
   
 	if (ident && ident->entry)
 	{

@@ -101,10 +101,4 @@ int  yyerr   (char *s, const std::string & str);
 
 /******************************************************/
 
-// Indicates whether the identifier being parsed
-// could possibly be a type.
-extern bool possibleType;
-
-/******************************************************/
-
 #endif  /* LEXER_H */

@@ -49,48 +49,25 @@ int isatty(int) { return 1; }
 
 #endif  /* WINDOWS */
 
-int   err_top_level =0;
-int   err_cnt = 0;
-int   err_tok = 0;
-bool  possibleType = true;
-bool  possibleTag = false;
-bool  possibleLabel = false;
-
-bool file_ppln=false;
-int  in_preprocess = 0;
-int  in_charconst = 0;
-
-static int cpp_comment_warn = 1;
-int  gcc2_paren_cnt = 0;
-
-char  tokn_buff[MAX_TOKN_LEN];
-char *tokn_end = &tokn_buff[MAX_TOKN_LEN-1];
-char *tokn_ptr;
-
 int cnt_nl(char *txt, int len);
-
-bool  isWide;
 
 #undef YY_INPUT
 
 /* Scan input from a file pointer (default) */
 
-std::string line, last_line;
-std::istream *yyinstream;
-
 #define YY_INPUT(buf,result,max_size) \
     do { \
-        last_line=line; \
+        gProject->Parse_TOS->last_line=gProject->Parse_TOS->line; \
         for(result=0; result<max_size; result++) \
          { \
           char ch; \
-          if(!yyinstream->read(&ch, 1)) \
+          if(!gProject->Parse_TOS->yyinstream->read(&ch, 1)) \
            { \
             if(result==0) result=YY_NULL; \
             break; \
            } \
-          if(result==0) line=""; \
-          line+=ch; \
+          if(result==0) gProject->Parse_TOS->line=""; \
+          gProject->Parse_TOS->line+=ch; \
           buf[result]=ch; \
           if(ch=='\n') { result++; break; } \
          } \
@@ -105,7 +82,7 @@ std::istream *yyinstream;
 
 #undef HERE
 #define HERE Location(gProject->Parse_TOS->yylineno, \
-       gProject->Parse_TOS->yycolno, gProject->Parse_TOS->transUnit->filename )
+       gProject->Parse_TOS->yycolno, gProject->Parse_TOS->filename )
 
 #undef SETPOS_TOKEN
 #define SETPOS_TOKEN(TOKEN) \
@@ -113,13 +90,13 @@ std::istream *yyinstream;
           lvalp->loc = new Location( \
                 gProject->Parse_TOS->yylineno, \
                 gProject->Parse_TOS->yycolno,  \
-                gProject->Parse_TOS->transUnit->filename ); \
+                gProject->Parse_TOS->filename ); \
 	} while(0)
 
 #undef  LAST_STATE
 #define LAST_STATE() \
         do { \
-          if (in_preprocess) \
+          if (gProject->Parse_TOS->in_preprocess) \
             BEGIN(PP); \
           else \
             BEGIN(INITIAL); \
@@ -129,7 +106,7 @@ std::istream *yyinstream;
 #define BEGIN_PP() \
         do { \
           BEGIN(PP); \
-          in_preprocess = 1; \
+          gProject->Parse_TOS->in_preprocess = 1; \
         } while(0)
 
 YYSTYPE my_var;
@@ -177,10 +154,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 %%
 
 <INITIAL>"/*"       { BEGIN(CMMT); }
-<INITIAL>"'"        { BEGIN(CC); isWide = false; }
-<INITIAL>L"'"       { BEGIN(CC); isWide = true; }
-<INITIAL>\"         { BEGIN(STR);   tokn_ptr = tokn_buff; isWide = false; }
-<INITIAL>L\"        { BEGIN(STR);   tokn_ptr = tokn_buff; isWide = true; }
+<INITIAL>"'"        { BEGIN(CC); gProject->Parse_TOS->isWide = false; }
+<INITIAL>L"'"       { BEGIN(CC); gProject->Parse_TOS->isWide = true; }
+<INITIAL>\"         { BEGIN(STR); gProject->Parse_TOS->tokn_ptr = gProject->Parse_TOS->tokn_buff; gProject->Parse_TOS->isWide = false; }
+<INITIAL>L\"        { BEGIN(STR); gProject->Parse_TOS->tokn_ptr = gProject->Parse_TOS->tokn_buff; gProject->Parse_TOS->isWide = true; }
 
 <INITIAL>"//*"      { // Ambiguous C++ style comment, must parse as
                       //    '/' '/*' to be Ansi compliant 
@@ -192,92 +169,92 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                     }
 
 <INITIAL>"//"[^*].*$ { /* C++ style comment */
-                         if (gProject->warn_cpp_comment && cpp_comment_warn){
-                             cpp_comment_warn = 0;
+                         if (gProject->warn_cpp_comment && gProject->Parse_TOS->cpp_comment_warn){
+                             gProject->Parse_TOS->cpp_comment_warn = 0;
                              yywarn("C++ style comment encountered");
                          }
                      }
 
 <INITIAL>"auto"     {
                       lvalp->storage = ST_Auto;
-                      return(err_tok = AUTO);
+                      return(gProject->Parse_TOS->err_tok = AUTO);
                     }
 <INITIAL>"extern"   {
                       lvalp->storage = ST_Extern;
-                      return(err_tok = EXTRN);
+                      return(gProject->Parse_TOS->err_tok = EXTRN);
                     }
 <INITIAL>"register" {
                       lvalp->storage = ST_Register;
-                      return(err_tok = REGISTR);
+                      return(gProject->Parse_TOS->err_tok = REGISTR);
                     }
 <INITIAL>"static"   {
                       lvalp->storage = ST_Static;
-                      return(err_tok = STATIC);
+                      return(gProject->Parse_TOS->err_tok = STATIC);
                     }
 <INITIAL>"typedef"  {
                       lvalp->storage = ST_Typedef;
-                      return(err_tok = TYPEDEF);
+                      return(gProject->Parse_TOS->err_tok = TYPEDEF);
                     }
 
 <INITIAL>"const"    {
                       lvalp->typeQual = TQ_Const;
-                      return(err_tok = CONST);
+                      return(gProject->Parse_TOS->err_tok = CONST);
                     }
 <INITIAL>"volatile" {
                       lvalp->typeQual = TQ_Volatile;
-                      return(err_tok = VOLATILE);
+                      return(gProject->Parse_TOS->err_tok = VOLATILE);
                     }
 
 <INITIAL>"void"     {
                       lvalp->base = new BaseType(BT_Void);
-                      return(err_tok = VOID);
+                      return(gProject->Parse_TOS->err_tok = VOID);
                     }
 <INITIAL>"char"     {
                       lvalp->base = new BaseType(BT_Char);
-                      return(err_tok = CHAR);
+                      return(gProject->Parse_TOS->err_tok = CHAR);
                     }
 <INITIAL>"short"    {
                       lvalp->base = new BaseType(BT_Short);
-                      return(err_tok = SHORT);
+                      return(gProject->Parse_TOS->err_tok = SHORT);
                     }
 <INITIAL>"int"      {
                       lvalp->base = new BaseType(BT_Int);
-                      return(err_tok = INT);
+                      return(gProject->Parse_TOS->err_tok = INT);
                     }
 <INITIAL>"long"     {
                       lvalp->base = new BaseType(BT_Long);
-                      return(err_tok = LONG);
+                      return(gProject->Parse_TOS->err_tok = LONG);
                     }
 <INITIAL>"float"    {
                       lvalp->base = new BaseType(BT_Float);
-                      return(err_tok = FLOAT);
+                      return(gProject->Parse_TOS->err_tok = FLOAT);
                     }
 <INITIAL>"double"   {
                       lvalp->base = new BaseType(BT_Double);
-                      return(err_tok = DOUBLE);
+                      return(gProject->Parse_TOS->err_tok = DOUBLE);
                     }
 <INITIAL>"signed"   {
                       lvalp->base = new BaseType(BT_Signed);
-                      return(err_tok = SGNED);
+                      return(gProject->Parse_TOS->err_tok = SGNED);
                     }
 <INITIAL>"unsigned" {
                       lvalp->base = new BaseType(BT_UnSigned);
-                      return(err_tok = UNSGNED);
+                      return(gProject->Parse_TOS->err_tok = UNSGNED);
                     }                   
 <INITIAL>"enum"     {
                       lvalp->typeSpec = BT_Enum;
-                      possibleTag = true;
-                      return(err_tok = ENUM);
+                      gProject->Parse_TOS->possibleTag = true;
+                      return(gProject->Parse_TOS->err_tok = ENUM);
                     }
 <INITIAL>"struct"   { 
                       lvalp->typeSpec = BT_Struct;
-                      possibleTag = true;
-                      return(err_tok = STRUCT);
+                      gProject->Parse_TOS->possibleTag = true;
+                      return(gProject->Parse_TOS->err_tok = STRUCT);
                     }
 <INITIAL>"union"    { 
                       lvalp->typeSpec = BT_Union;
-                      possibleTag = true;
-                      return(err_tok = UNION);
+                      gProject->Parse_TOS->possibleTag = true;
+                      return(gProject->Parse_TOS->err_tok = UNION);
                     }
 <INITIAL>"break"    { SETPOS_TOKEN(BREAK); return(BREAK); }
 <INITIAL>"case"     { SETPOS_TOKEN(CASE); return(CASE); }
@@ -287,7 +264,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"else"     { SETPOS_TOKEN(ELSE); return(ELSE); }
 <INITIAL>"for"      { SETPOS_TOKEN(FOR); return(FOR); }
 <INITIAL>"goto"     { SETPOS_TOKEN(GOTO); 
-                      possibleLabel = true;
+                      gProject->Parse_TOS->possibleLabel = true;
                       return(GOTO); }
 <INITIAL>"if"       { SETPOS_TOKEN(IF); return(IF); }
 <INITIAL>"return"   { SETPOS_TOKEN(RETURN); return(RETURN); }
@@ -300,65 +277,65 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"__asm"      { BEGIN(GCC_ELIM); }
 <INITIAL>"__asm__"    { BEGIN(GCC_ELIM); }
 
-<GCC_ELIM>"("[^()]*   { gcc2_paren_cnt++; }
+<GCC_ELIM>"("[^()]*   { gProject->Parse_TOS->gcc2_paren_cnt++; }
 <GCC_ELIM>[^()]*      { /* Throw away */ }
-<GCC_ELIM>")"         { if (--gcc2_paren_cnt == 0)
+<GCC_ELIM>")"         { if (--gProject->Parse_TOS->gcc2_paren_cnt == 0)
                           BEGIN(INITIAL);
                       }
 
-<INITIAL>"__attribute"    { BEGIN(GCC_ATTRIB); return(err_tok = ATTRIBUTE); }
-<INITIAL>"__attribute__"  { BEGIN(GCC_ATTRIB); return(err_tok = ATTRIBUTE); }
+<INITIAL>"__attribute"    { BEGIN(GCC_ATTRIB); return(gProject->Parse_TOS->err_tok = ATTRIBUTE); }
+<INITIAL>"__attribute__"  { BEGIN(GCC_ATTRIB); return(gProject->Parse_TOS->err_tok = ATTRIBUTE); }
 
-<GCC_ATTRIB>"aligned"     { BEGIN(INITIAL); return(err_tok = ALIGNED); }
-<GCC_ATTRIB>"__aligned"   { BEGIN(INITIAL); return(err_tok = ALIGNED); }
-<GCC_ATTRIB>"__aligned__" { BEGIN(INITIAL); return(err_tok = ALIGNED); }
-<GCC_ATTRIB>"packed"      { BEGIN(INITIAL); return(err_tok = PACKED); }
-<GCC_ATTRIB>"__packed"    { BEGIN(INITIAL); return(err_tok = PACKED); }
-<GCC_ATTRIB>"__packed__"  { BEGIN(INITIAL); return(err_tok = PACKED); }
-<GCC_ATTRIB>"cdecl"       { BEGIN(INITIAL); return(err_tok = CDECL); }
-<GCC_ATTRIB>"__cdecl"     { BEGIN(INITIAL); return(err_tok = CDECL); }
-<GCC_ATTRIB>"__cdecl__"   { BEGIN(INITIAL); return(err_tok = CDECL); }
+<GCC_ATTRIB>"aligned"     { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = ALIGNED); }
+<GCC_ATTRIB>"__aligned"   { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = ALIGNED); }
+<GCC_ATTRIB>"__aligned__" { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = ALIGNED); }
+<GCC_ATTRIB>"packed"      { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = PACKED); }
+<GCC_ATTRIB>"__packed"    { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = PACKED); }
+<GCC_ATTRIB>"__packed__"  { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = PACKED); }
+<GCC_ATTRIB>"cdecl"       { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = CDECL); }
+<GCC_ATTRIB>"__cdecl"     { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = CDECL); }
+<GCC_ATTRIB>"__cdecl__"   { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = CDECL); }
 
 <GCC_ATTRIB>{whitespace}+ {  /* space/tab/formfeed/vertical tab (ignore) */ }
 <GCC_ATTRIB>"("           { SETPOS_TOKEN(LPAREN); return(LPAREN); }
 
-<GCC_ATTRIB>"format"      { BEGIN(INITIAL); return(err_tok = FORMAT); }
-<GCC_ATTRIB>"__format"    { BEGIN(INITIAL); return(err_tok = FORMAT); }
-<GCC_ATTRIB>"__format__"  { BEGIN(INITIAL); return(err_tok = FORMAT); }
-<GCC_ATTRIB>"mode"        { BEGIN(INITIAL); return(err_tok = MODE); }
-<GCC_ATTRIB>"__mode"      { BEGIN(INITIAL); return(err_tok = MODE); }
-<GCC_ATTRIB>"__mode__"    { BEGIN(INITIAL); return(err_tok = MODE); }
-<GCC_ATTRIB>"const"       { BEGIN(INITIAL); return(err_tok = CONST); }
-<GCC_ATTRIB>"__const"     { BEGIN(INITIAL); return(err_tok = CONST); }
-<GCC_ATTRIB>"__const__"   { BEGIN(INITIAL); return(err_tok = CONST); }
-<GCC_ATTRIB>"noreturn"    { BEGIN(INITIAL); return(err_tok = NORETURN); }
-<GCC_ATTRIB>"__noreturn"  { BEGIN(INITIAL); return(err_tok = NORETURN); }
-<GCC_ATTRIB>"__noreturn__" { BEGIN(INITIAL); return(err_tok = NORETURN); }
+<GCC_ATTRIB>"format"      { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = FORMAT); }
+<GCC_ATTRIB>"__format"    { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = FORMAT); }
+<GCC_ATTRIB>"__format__"  { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = FORMAT); }
+<GCC_ATTRIB>"mode"        { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = MODE); }
+<GCC_ATTRIB>"__mode"      { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = MODE); }
+<GCC_ATTRIB>"__mode__"    { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = MODE); }
+<GCC_ATTRIB>"const"       { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = CONST); }
+<GCC_ATTRIB>"__const"     { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = CONST); }
+<GCC_ATTRIB>"__const__"   { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = CONST); }
+<GCC_ATTRIB>"noreturn"    { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = NORETURN); }
+<GCC_ATTRIB>"__noreturn"  { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = NORETURN); }
+<GCC_ATTRIB>"__noreturn__" { BEGIN(INITIAL); return(gProject->Parse_TOS->err_tok = NORETURN); }
 
 <INITIAL>"__const"  {
                       lvalp->typeQual = TQ_Const;
-                      return(err_tok = CONST);
+                      return(gProject->Parse_TOS->err_tok = CONST);
                     }
 
 <INITIAL>"__const__"  {
                         lvalp->typeQual = TQ_Const;
-                        return(err_tok = CONST);
+                        return(gProject->Parse_TOS->err_tok = CONST);
                       }
 <INITIAL>"__signed" {
                       lvalp->type = new BaseType(BT_Signed);
-                      return(err_tok = SGNED);
+                      return(gProject->Parse_TOS->err_tok = SGNED);
                     }
 <INITIAL>"__signed__" {
                         lvalp->type = new BaseType(BT_Signed);
-                        return(err_tok = SGNED);
+                        return(gProject->Parse_TOS->err_tok = SGNED);
                       }
 <INITIAL>"__volatile" {
                         lvalp->typeQual = TQ_Volatile;
-                        return(err_tok = VOLATILE);
+                        return(gProject->Parse_TOS->err_tok = VOLATILE);
                       }
 <INITIAL>"__volatile__" {
                           lvalp->typeQual = TQ_Volatile;
-                          return(err_tok = VOLATILE);
+                          return(gProject->Parse_TOS->err_tok = VOLATILE);
                         }
 
 <INITIAL>"typeof"      { }
@@ -432,14 +409,14 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"--"       { SETPOS_TOKEN(DECR); return(DECR); }
 
 <INITIAL>"("        { SETPOS_TOKEN(LPAREN);
-                      possibleType = true;
+                      gProject->Parse_TOS->possibleType = true;
                       return(LPAREN);
                     }
 <INITIAL>")"        { SETPOS_TOKEN(RPAREN); return(RPAREN); }
 <INITIAL>"["        { SETPOS_TOKEN(LBRCKT); return(LBRCKT); }
 <INITIAL>"]"        { SETPOS_TOKEN(RBRCKT); return(RBRCKT); }
 <INITIAL>"{"        { SETPOS_TOKEN(LBRACE); 
-                      possibleTag = false;
+                      gProject->Parse_TOS->possibleTag = false;
                       return(LBRACE); }
 <INITIAL>"}"        { SETPOS_TOKEN(RBRACE); return(RBRACE); }
 
@@ -461,14 +438,14 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                              gProject->Parse_TOS->yynxtcol = 0; }
 
 <INITIAL>{pp_strt}"line"{whitespace}* { BEGIN(PPLN); }
-<INITIAL>{pp_strt}"file"{whitespace}* { file_ppln=true; BEGIN(PPLN); }
+<INITIAL>{pp_strt}"file"{whitespace}* { gProject->Parse_TOS->file_ppln=true; BEGIN(PPLN); }
 <INITIAL>{pp_strt}{digit} { BEGIN(PPLN); yyless(1); }
 <INITIAL>{pp_strt} { BEGIN_PP(); }
 
 <PPLN>[^\n]*	{ 
                        BEGIN_PP();
-                       if (get_lineno(file_ppln,yytext,&(lvalp->stemnt)))
-							return (err_tok = PP_LINE);
+                       if (get_lineno(gProject->Parse_TOS->file_ppln,yytext,&(lvalp->stemnt)))
+							return (gProject->Parse_TOS->err_tok = PP_LINE);
                 }
 
 <PP>\\(\n)             {  /* Preprocessor continuation line */
@@ -477,8 +454,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                        }
 
 <PP>\n                 {  /* End of this preprocessor logical line */
-                         file_ppln=false;
-                         in_preprocess = 0;
+                         gProject->Parse_TOS->file_ppln=false;
+                         gProject->Parse_TOS->in_preprocess = 0;
                          yyless(0);        /* Hack! */
                          BEGIN(INITIAL);
                        }
@@ -491,7 +468,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                        
                          lvalp->symbol->name = yytext;
 
-                         if (possibleTag)
+                         if (gProject->Parse_TOS->possibleTag)
                          {
                            /* Check the tag table and insert a  */
                            /* ptr back to the definition.  */
@@ -499,10 +476,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                               = gProject->Parse_TOS->transUnit->contxt.tags->Lookup(
                                     lvalp->symbol->name);
                            lvalp->symbol->entry = se;
-                           possibleTag = false;
-                           return(err_tok = TAG_NAME);
+                           gProject->Parse_TOS->possibleTag = false;
+                           return(gProject->Parse_TOS->err_tok = TAG_NAME);
                          }
-                         else if (possibleLabel)
+                         else if (gProject->Parse_TOS->possibleLabel)
                          {
                            /* Check the tag table and insert a  */
                            /* ptr back to the definition.  */
@@ -515,8 +492,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                                    ->InsertAt(lvalp->symbol->entry = mk_label(lvalp->symbol->name, NULL), 
                                        FUNCTION_SCOPE);
 
-                           possibleLabel = false;
-                           return(err_tok = LABEL_NAME);
+                           gProject->Parse_TOS->possibleLabel = false;
+                           return(gProject->Parse_TOS->err_tok = LABEL_NAME);
                          }
                          else {
                            /* Check the symbol table and insert a  */
@@ -526,16 +503,16 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                                     lvalp->symbol->name);
                            lvalp->symbol->entry = se;
  
-                            if (possibleType)
+                            if (gProject->Parse_TOS->possibleType)
                             {
                               if (se && se->IsTypeDef())
                               {
-                                  return(err_tok = TYPEDEF_NAME);
+                                  return(gProject->Parse_TOS->err_tok = TYPEDEF_NAME);
                               }
                             }
                          }
 
-                         return(err_tok = IDENT);
+                         return(gProject->Parse_TOS->err_tok = IDENT);
                        }
 
 <INITIAL>{octnum}  |
@@ -554,7 +531,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                              lvalp->consValue = new IntConstant(i,HERE);
                          } 
 
-                         return(err_tok = INUM);
+                         return(gProject->Parse_TOS->err_tok = INUM);
                     }
           
 <INITIAL>{digits}{dot}{digits}{exponent}?{floatsuffix}? |
@@ -566,7 +543,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                          ** ignored by atof().
                          */
                          lvalp->consValue = new FloatConstant(atof(yytext),HERE);
-                         return(err_tok = RNUM);
+                         return(gProject->Parse_TOS->err_tok = RNUM);
                        }
 
 <STR>\"{allwhite}*\"   {   /* String Pasting */
@@ -575,10 +552,12 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
 <STR>\"                {   /* Closing quote */
                          LAST_STATE();
-                         *tokn_ptr = '\0';
+                         *gProject->Parse_TOS->tokn_ptr = '\0';
                          lvalp->consValue =
-                           new StringConstant(std::string(tokn_buff,tokn_ptr-tokn_buff),HERE,isWide);
-                         return(err_tok = STRING);
+                           new StringConstant(std::string(gProject->Parse_TOS->tokn_buff,
+                             gProject->Parse_TOS->tokn_ptr-gProject->Parse_TOS->tokn_buff),
+                             HERE,gProject->Parse_TOS->isWide);
+                         return(gProject->Parse_TOS->err_tok = STRING);
                        }
 
 <STR>\n                { /* Error - unterminated string constant */
@@ -610,8 +589,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                             yyerr("Escape sequence out-of-bounds");
                          }
 
-                         if (tokn_ptr < tokn_end)
-                            *tokn_ptr++ = result;
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                            *gProject->Parse_TOS->tokn_ptr++ = result;
                          else
                             yywarn("String constant too long");
                        }
@@ -633,69 +612,69 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                             yywarn("Hexadecimal escape exceeds two chars");
                          }
 
-                         if (tokn_ptr < tokn_end)
-                            *tokn_ptr++ = result;
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                            *gProject->Parse_TOS->tokn_ptr++ = result;
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\{digits}        {  /* Bad escape sequence */
                          yywarn("Bad escape sequence in string");
-                        *tokn_ptr++ = '?';
+                        *gProject->Parse_TOS->tokn_ptr++ = '?';
                        }
 
 <STR>\\n               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\n';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\n';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\t               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\t';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\t';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\r               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\r';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\r';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\b               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\b';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\b';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\f               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\f';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\f';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\v               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\v';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\v';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\a               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = '\a';
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = '\a';
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>\\e               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = ESC_VAL;
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = ESC_VAL;
                          else
                             yywarn("String constant too long");
                        }
@@ -706,17 +685,17 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                        }
 
 <STR>\\.               {
-                         if (tokn_ptr < tokn_end)
-                           *tokn_ptr++ = yytext[1];
+                         if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
+                           *gProject->Parse_TOS->tokn_ptr++ = yytext[1];
                          else
                             yywarn("String constant too long");
                        }
 
 <STR>[^\\\n\"]+        {
                          int n = yyleng;
-                         if (tokn_ptr + n < tokn_end) {
-                             memcpy(tokn_ptr,yytext,n);
-                             tokn_ptr += n;
+                         if (gProject->Parse_TOS->tokn_ptr + n < gProject->Parse_TOS->tokn_end) {
+                             memcpy(gProject->Parse_TOS->tokn_ptr,yytext,n);
+                             gProject->Parse_TOS->tokn_ptr += n;
                          } else 
                             yywarn("String constant too long");
                        }
@@ -726,7 +705,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <CMMT>[^*\n/\\]*\n     {
                          gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 0;
-                         in_preprocess = 0;
+                         gProject->Parse_TOS->in_preprocess = 0;
                        }
 <CMMT>"/"[^*\n]        { }
 <CMMT>\\\n             {
@@ -738,14 +717,14 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <CMMT>"/"\n            {
                          gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 0;
-                         in_preprocess = 0;
+                         gProject->Parse_TOS->in_preprocess = 0;
                        }
 <CMMT>"/*"             { yywarn("/* inside comment"); }
 <CMMT>"*"+[^*/\n\\]*   {   /* Stars */ }
 <CMMT>"*"+[^*/\n\\]*\n {
                          gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 0;
-                         in_preprocess = 0;
+                         gProject->Parse_TOS->in_preprocess = 0;
                        }
 <CMMT>"*"+"/"          {
                          LAST_STATE();
@@ -767,9 +746,9 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                              result = 0;
                          }
 
-                         lvalp->consValue = new CharConstant((char) result, HERE,isWide);
+                         lvalp->consValue = new CharConstant((char) result, HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\x{hexdigit}+"'"  {   /* hex escape sequence - ISO C */
@@ -791,119 +770,119 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                              result = 0;
                          }
 
-                         lvalp->consValue = new CharConstant((char) result, HERE,isWide);
+                         lvalp->consValue = new CharConstant((char) result, HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\{digits}"'"      {  /* Bad escape sequence */
                          yywarn("Bad escape sequence in char constant");
-                         lvalp->consValue = new CharConstant('\0',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\0',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\n                 { /* Error unterminated char constant */
                          gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 0;
                          yywarn("Unterminated char constant");
-                         lvalp->consValue = new CharConstant('\0',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\0',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\n"'"             {
-                         lvalp->consValue = new CharConstant('\n',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\n',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\t"'"             {
-                         lvalp->consValue = new CharConstant('\t',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\t',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\r"'"             {
-                         lvalp->consValue = new CharConstant('\r',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\r',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\b"'"             {
-                         lvalp->consValue = new CharConstant('\b',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\b',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\f"'"             {
-                         lvalp->consValue = new CharConstant('\f',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\f',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\v"'"             {
-                         lvalp->consValue = new CharConstant('\v',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\v',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\a"'"             {
-                         lvalp->consValue = new CharConstant('\a',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\a',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\e"'"             {
-                         lvalp->consValue = new CharConstant(ESC_VAL,HERE,isWide);
+                         lvalp->consValue = new CharConstant(ESC_VAL,HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\\n"'"            {
                          gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 1;  /* Oddity */
-                         lvalp->consValue = new CharConstant('\n',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\n',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>\\."'"             {
-                         lvalp->consValue = new CharConstant(yytext[1],HERE,isWide);
+                         lvalp->consValue = new CharConstant(yytext[1],HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>[^']"'"            {
-                         lvalp->consValue = new CharConstant(*yytext,HERE,isWide);
+                         lvalp->consValue = new CharConstant(*yytext,HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>"'"                { /* Empty */
                          yywarn("Empty character constant");
-                         lvalp->consValue = new CharConstant('\0',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\0',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <CC>[^\\\n][^']+"'"    { /* Multiple characters */
                          yywarn("Invalid character constant");
-                         lvalp->consValue = new CharConstant('\0',HERE,isWide);
+                         lvalp->consValue = new CharConstant('\0',HERE,gProject->Parse_TOS->isWide);
                          LAST_STATE();
-                         return(err_tok = CHAR_CONST);
+                         return(gProject->Parse_TOS->err_tok = CHAR_CONST);
                        }
 
 <INITIAL>{whitespace}+ {  /* space/tab/formfeed/vertical tab (ignore) */ }
 
 <INITIAL,CMMT>\n|\r    { gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 0;
-                         in_preprocess = 0;
+                         gProject->Parse_TOS->in_preprocess = 0;
                        }
 
 <CMMT><<EOF>>          { 
                          yyerr("EOF reached inside comment");
-                         in_preprocess = 0;
+                         gProject->Parse_TOS->in_preprocess = 0;
                          return(0);
                        }
 
@@ -948,7 +927,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
 int yywrap(void)
 {
-    in_preprocess = 0;
+    gProject->Parse_TOS->in_preprocess = 0;
     return 1;
 }
 
@@ -1086,8 +1065,8 @@ void yywarn(char *s)
 {
     *gProject->Parse_TOS->yyerrstream
          << gProject->Parse_TOS->transUnit->filename << ":" << gProject->Parse_TOS->yylineno
-         << ": Warning - " << s << ":\n" << line;
-    print_caret(line, gProject->Parse_TOS->yycolno);
+         << ": Warning - " << s << ":\n" << gProject->Parse_TOS->line;
+    print_caret(gProject->Parse_TOS->line, gProject->Parse_TOS->yycolno);
 }
 
 /***********************************************************************/
@@ -1096,13 +1075,13 @@ int yyerr(char *s, const std::string & str)
 {
     *gProject->Parse_TOS->yyerrstream
       << gProject->Parse_TOS->filename << ":" << gProject->Parse_TOS->yylineno
-      << ": " << s << str << ":\n" << line;
-    print_caret(line, gProject->Parse_TOS->yycolno);
+      << ": " << s << str << ":\n" << gProject->Parse_TOS->line;
+    print_caret(gProject->Parse_TOS->line, gProject->Parse_TOS->yycolno);
 
-    ++err_top_level;
-    if (++err_cnt >= 10){
+    ++gProject->Parse_TOS->err_top_level;
+    if (++gProject->Parse_TOS->err_cnt >= 10){
         *gProject->Parse_TOS->yyerrstream
-          << "Too many errors (" << err_cnt << " detected) - quitting.\n";
+          << "Too many errors (" << gProject->Parse_TOS->err_cnt << " detected) - quitting.\n";
         return(1);
     }
     return(0); 
@@ -1114,13 +1093,13 @@ int yyerr(char *s)
 {
     *gProject->Parse_TOS->yyerrstream
       << gProject->Parse_TOS->filename << ":" << gProject->Parse_TOS->yylineno
-      << ": " << s << ":\n" << line;
-    print_caret(line, gProject->Parse_TOS->yycolno);
+      << ": " << s << ":\n" << gProject->Parse_TOS->line;
+    print_caret(gProject->Parse_TOS->line, gProject->Parse_TOS->yycolno);
 
-    ++err_top_level;
-    if (++err_cnt >= 10){
+    ++gProject->Parse_TOS->err_top_level;
+    if (++gProject->Parse_TOS->err_cnt >= 10){
         *gProject->Parse_TOS->yyerrstream
-          << "Too many errors (" << err_cnt << " detected) - quitting.\n";
+          << "Too many errors (" << gProject->Parse_TOS->err_cnt << " detected) - quitting.\n";
         return(1);
     }
     return(0); 
@@ -1133,12 +1112,12 @@ int yyerror(char *s)
     *gProject->Parse_TOS->yyerrstream
       << gProject->Parse_TOS->transUnit->filename << ":" << gProject->Parse_TOS->yylineno
       << ": Error (" << s << ") before '"
-      << toksym(err_tok,0) << "'\n" << line;
-    print_caret(line, gProject->Parse_TOS->yycolno);
+      << toksym(gProject->Parse_TOS->err_tok,0) << "'\n" << gProject->Parse_TOS->line;
+    print_caret(gProject->Parse_TOS->line, gProject->Parse_TOS->yycolno);
 
-    if (++err_cnt >= 10){
+    if (++gProject->Parse_TOS->err_cnt >= 10){
         *gProject->Parse_TOS->yyerrstream
-          << "Too many errors (" << err_cnt << " detected) - quitting.\n";
+          << "Too many errors (" << gProject->Parse_TOS->err_cnt << " detected) - quitting.\n";
         return(1);
     }
     return(0);

@@ -41,7 +41,7 @@
 #include "stemnt.h"
 
 #include "token.h"
-extern int err_cnt;
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
 #ifdef    USE_GCC_4_CPP
@@ -70,8 +70,6 @@ extern int err_cnt;
 #endif	
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
-
-extern std::istream *yyinstream;
 
 extern int yyparse(void);
 
@@ -372,8 +370,6 @@ Project::parse( const char* path, bool use_cpp, /* =true */
     Parse_TOS = new ParseEnv(&fp, &std::cerr, path);
     TransUnit *unit = Parse_TOS->transUnit;
     
-    yyinstream = Parse_TOS->yyinstream;
-
     unit->contxt.EnterScope();
 
     while(yyparse())
@@ -385,6 +381,8 @@ Project::parse( const char* path, bool use_cpp, /* =true */
     {
       std::cerr << "Remove of file '" << cpp_file << "' failed.\n";
     }
+
+    int err_cnt=gProject->Parse_TOS->err_cnt;
 
     /* Build the translation unit. */
     delete gProject->Parse_TOS;
