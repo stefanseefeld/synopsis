@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.hh,v 1.4 2002/01/30 11:53:15 chalky Exp $
+// $Id: linkstore.hh,v 1.5 2002/02/19 09:05:16 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.hh,v $
+// Revision 1.5  2002/02/19 09:05:16  chalky
+// Applied patch from David Abrahams to help compilation on Cygwin
+//
 // Revision 1.4  2002/01/30 11:53:15  chalky
 // Couple bug fixes, some cleaning up.
 //
@@ -100,19 +103,19 @@ public:
   //. Returns the SWalker
   SWalker* swalker();
 
-protected:
-  //. Store a link in the Syntax File
-  void store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc);
-
-  //. Store a link in the CrossRef File
-  void store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context);
-
   //. Encode a string to the output stream
   //. Usage: cout << encode("some string") << endl; output--> "some%20string\n"
   class encode;
 
   //. Encode a ScopedName to the output stream
   class encode_name;
+
+protected:
+  //. Store a link in the Syntax File
+  void store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc);
+
+  //. Store a link in the CrossRef File
+  void store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context);
 
   //. Calculates the column number of 'ptr'. m_buffer_start is used as a
   //. lower bounds, since the function counts backwards until it finds a

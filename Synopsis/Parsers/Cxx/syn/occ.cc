@@ -319,7 +319,7 @@ char *RunPreprocessor(const char *file, const std::vector<const char *> &flags)
 
 void sighandler(int signo)
 {
-  string signame;
+  std::string signame;
   switch (signo)
     {
     case SIGABRT: signame = "Abort"; break;
