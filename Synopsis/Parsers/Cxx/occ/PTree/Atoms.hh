@@ -12,6 +12,16 @@
 namespace PTree
 {
 
+class Literal : public Atom
+{
+public:
+  Literal(const Token &tk) : Atom(tk), my_type(tk.type) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  Token::Type type() const { return my_type;}
+private:
+  Token::Type my_type;
+};
+
 class CommentedAtom : public Atom
 {
 public:

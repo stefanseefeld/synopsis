@@ -3674,7 +3674,7 @@ bool Parser::primary_expr(PTree::Node *&exp)
     case Token::StringL :
     case Token::WideStringL :
       my_lexer->get_token(tk);
-      exp = new PTree::Atom(tk);
+      exp = new PTree::Literal(tk);
       return true;
     case Token::THIS :
       my_lexer->get_token(tk);

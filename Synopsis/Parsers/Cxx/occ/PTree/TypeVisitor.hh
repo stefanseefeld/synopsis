@@ -21,6 +21,7 @@ public:
 
   Token::Type type_of(Node *node) { node->accept(this); return my_type;}
 
+  virtual void visit(Literal *) { my_type = Token::Constant;}
   virtual void visit(Identifier *) { my_type = Token::Identifier;}
   virtual void visit(This *) { my_type = Token::THIS;}
   virtual void visit(AtomAUTO *) { my_type = Token::AUTO;}

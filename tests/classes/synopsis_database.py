@@ -25,6 +25,11 @@ class Database(database.Database):
                 TextField(name="LDFLAGS"),
                 TextField(name="LIBS")]
 
+   def __init__(self, *args, **kwrds):
+      database.Database.__init__(self, *args, **kwrds)
+      if os.name == 'nt':
+         self.srcdir = os.popen('cygpath -w "%s"'%self.srcdir).read()[:-1]
+
    def get_src_path(self, id) : return self.srcdir + os.sep + id.replace('.', os.sep)
    def get_build_path(self, id) : return id.replace('.', os.sep)
 
@@ -51,6 +56,9 @@ class Database(database.Database):
       elif id == 'OpenCxx.Parser':
          parameters['src'] = os.path.normpath('%s/OpenCxx/src/Parser.cc'%self.srcdir)
          parameters['exe'] = os.path.normpath('OpenCxx/bin/Parser')
+      elif id == 'OpenCxx.ConstEvaluator':
+         parameters['src'] = os.path.normpath('%s/OpenCxx/src/ConstEvaluator.cc'%self.srcdir)
+         parameters['exe'] = os.path.normpath('OpenCxx/bin/ConstEvaluator')
       elif id == 'OpenCxx.Encoding':
          parameters['src'] = os.path.normpath('%s/OpenCxx/src/Encoding.cc'%self.srcdir)
          parameters['exe'] = os.path.normpath('OpenCxx/bin/Encoding')
@@ -267,10 +275,13 @@ class Database(database.Database):
       if id.startswith('OpenCxx.Lexer'):
          parameters['resources'] = ['OpenCxx.Lexer']
          parameters['applet'] = 'OpenCxx/bin/Lexer'
-      if id.startswith('OpenCxx.Parser'):
+      elif id.startswith('OpenCxx.Parser'):
          parameters['resources'] = ['OpenCxx.Parser']
          parameters['applet'] = 'OpenCxx/bin/Parser'
-      if id.startswith('OpenCxx.Encoding'):
+      elif id.startswith('OpenCxx.ConstEvaluator'):
+         parameters['resources'] = ['OpenCxx.ConstEvaluator']
+         parameters['applet'] = 'OpenCxx/bin/ConstEvaluator'
+      elif id.startswith('OpenCxx.Encoding'):
          parameters['resources'] = ['OpenCxx.Encoding']
          parameters['applet'] = 'OpenCxx/bin/Encoding'
          
