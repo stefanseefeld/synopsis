@@ -77,6 +77,16 @@ private:
     my_os << "name : " << std::endl;
     PTree::Encoding name = node->encoded_name();
     my_os << name << std::endl;
+    {
+      PTree::Encoding tmp = name;
+      do
+      {
+	PTree::Encoding scope = tmp.get_scope();
+	PTree::Encoding symbol = tmp.get_symbol();
+	std::cout << "scope " << scope << " , symbol " << symbol << std::endl;
+	if (scope.empty()) break;
+      } while (true);
+    }
     PTree::Node *name_node = name.make_ptree(0);
     my_os << PTree::reify(name_node) << std::endl;
 

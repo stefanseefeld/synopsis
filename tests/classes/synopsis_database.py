@@ -50,22 +50,13 @@ class Database(database.Database):
       parameters['builddir'] = '../Synopsis/Parsers/Cxx'
 
 
-      if id == 'OpenCxx.Lexer':
-         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Lexer.cc'%self.srcdir)
-         parameters['exe'] = os.path.normpath('OpenCxx/bin/Lexer')
-      elif id == 'OpenCxx.Parser':
-         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Parser.cc'%self.srcdir)
-         parameters['exe'] = os.path.normpath('OpenCxx/bin/Parser')
-      elif id == 'OpenCxx.Scope':
-         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Scope.cc'%self.srcdir)
-         parameters['exe'] = os.path.normpath('OpenCxx/bin/Scope')
-      elif id == 'OpenCxx.ConstEvaluator':
-         parameters['src'] = os.path.normpath('%s/OpenCxx/src/ConstEvaluator.cc'%self.srcdir)
-         parameters['exe'] = os.path.normpath('OpenCxx/bin/ConstEvaluator')
-      elif id == 'OpenCxx.Encoding':
-         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Encoding.cc'%self.srcdir)
-         parameters['exe'] = os.path.normpath('OpenCxx/bin/Encoding')
-      else: raise NoSuchResourceError(id)
+      suite = id.split('.', 1)[1]
+      if suite not in ['Lexer', 'Parser', 'Encoding',
+                       'ConstEvaluator', 'SymbolLookup']:
+         raise NoSuchResourceError(id)
+      
+      parameters['src'] = os.path.normpath('%s/OpenCxx/src/%s.cc'%(self.srcdir, suite))
+      parameters['exe'] = os.path.normpath('OpenCxx/bin/%s'%suite)
 
       return ResourceDescriptor(self, id, 'synopsis_test.OpenCxxResource', parameters)
       
@@ -261,35 +252,23 @@ class Database(database.Database):
       'a/b/input/c.<ext>. Create an OpenCxxTest if that
       input file exists, and throw NoSuchTestError otherwise."""
 
-      components = id.split('.')
-      dirname = os.path.join(*[self.srcdir] + components[:-1])
+      base, suite, test = id.split('.')
+      dirname = os.path.join(*[self.srcdir] + [base, suite])
 
-      input = os.path.join(dirname, 'input', components[-1]) + '.cc'
-      output = os.path.join(*components[:-1] + ['output', components[-1] + '.out'])
+      input = os.path.join(dirname, 'input', test) + '.cc'
+      output = os.path.join(*[base, suite, 'output', test + '.out'])
          
       if not os.path.isfile(input): raise NoSuchTestError, id
 
-      expected = os.path.join(dirname, 'expected', components[-1] + '.out')
+      expected = os.path.join(dirname, 'expected', test + '.out')
 
       parameters = {}
       parameters['input'] = input
       parameters['output'] = output
       parameters['expected'] = expected
-      if id.startswith('OpenCxx.Lexer'):
-         parameters['resources'] = ['OpenCxx.Lexer']
-         parameters['applet'] = 'OpenCxx/bin/Lexer'
-      elif id.startswith('OpenCxx.Parser'):
-         parameters['resources'] = ['OpenCxx.Parser']
-         parameters['applet'] = 'OpenCxx/bin/Parser'
-      elif id.startswith('OpenCxx.Scope'):
-         parameters['resources'] = ['OpenCxx.Scope']
-         parameters['applet'] = 'OpenCxx/bin/Scope'
-      elif id.startswith('OpenCxx.ConstEvaluator'):
-         parameters['resources'] = ['OpenCxx.ConstEvaluator']
-         parameters['applet'] = 'OpenCxx/bin/ConstEvaluator'
-      elif id.startswith('OpenCxx.Encoding'):
-         parameters['resources'] = ['OpenCxx.Encoding']
-         parameters['applet'] = 'OpenCxx/bin/Encoding'
+
+      parameters['resources'] = ['OpenCxx.%s'%suite]
+      parameters['applet'] = 'OpenCxx/bin/%s'%suite
          
       return TestDescriptor(self, id, 'synopsis_test.OpenCxxTest', parameters)
 

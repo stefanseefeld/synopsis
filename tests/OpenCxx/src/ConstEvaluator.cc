@@ -5,18 +5,18 @@
 #include <PTree.hh>
 #include <PTree/Display.hh>
 #include <PTree/Writer.hh>
-#include <SymbolTable/ConstEvaluator.hh>
+#include <SymbolLookup.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 
 using namespace Synopsis;
 
-class InitializerFinder : public PTree::Visitor
+class InitializerFinder : public SymbolLookup::Visitor
 {
 public:
-  InitializerFinder(std::ostream &os, const SymbolTable::Scope &s)
-    : my_os(os), my_symbols(s) {}
+  InitializerFinder(SymbolLookup::Table &table, std::ostream &os)
+    : SymbolLookup::Visitor(table), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::List *node)
@@ -39,7 +39,7 @@ private:
       {
 	PTree::Node *initializer = PTree::third(enumerator);
 	enumerator = enumerator->car();
-	if (!SymbolTable::evaluate_const(initializer, my_symbols, value))
+	if (!table().evaluate_const(initializer, value))
 	{
 	  std::cerr << "Error in evaluating enum initializer :\n"
 		    << "Expression doesn't evaluate to a constant integral value" << std::endl;
@@ -70,15 +70,14 @@ private:
       PTree::Node *initializer = PTree::third(node);
       my_os << "initializer : " << PTree::reify(initializer) << std::endl;
       long value;
-      if (SymbolTable::evaluate_const(initializer, my_symbols, value))
+      if (table().evaluate_const(initializer, value))
 	my_os << "value : " << value << std::endl;
       else
 	my_os << "value : none" << std::endl;
     }
   }
 
-  std::ostream             &my_os;
-  const SymbolTable::Scope &my_symbols;
+  std::ostream &my_os;
 };
 
 int main(int argc, char **argv)
@@ -94,9 +93,10 @@ int main(int argc, char **argv)
     std::ifstream ifs(argv[2]);
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer);
-    Parser parser(&lexer);
-    InitializerFinder finder(ofs, *parser.scope());
+    SymbolLookup::Table symbols;
+    Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
+    InitializerFinder finder(symbols, ofs);
     finder.find(node);
   }
   catch (const std::exception &e)

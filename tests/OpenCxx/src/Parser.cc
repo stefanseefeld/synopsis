@@ -4,6 +4,7 @@
 #include <Parser.hh>
 #include <PTree.hh>
 #include <PTree/Display.hh>
+#include <SymbolLookup.hh>
 #include <fstream>
 
 int main(int argc, char **argv)
@@ -17,7 +18,8 @@ int main(int argc, char **argv)
   std::ifstream ifs(argv[2]);
   Buffer buffer(ifs.rdbuf());
   Lexer lexer(&buffer);
-  Parser parser(&lexer);
+  SymbolLookup::Table symbols;
+  Parser parser(lexer, symbols);
   PTree::Node *node = parser.parse();
   PTree::display(node, ofs, true);
 }
