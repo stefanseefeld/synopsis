@@ -87,12 +87,10 @@ PyObject *Synopsis::addModifier(PyObject *alias, const vector<string> &pre, cons
   return modifier;
 }
 
-PyObject *Synopsis::addParametrized(const string &name, PyObject *templ, const vector<PyObject *> &parameters)
+PyObject *Synopsis::addParametrized(PyObject *templ, const vector<PyObject *> &parameters)
 {
   Trace trace("Synopsis::addParametrized");
-  PyObject *pyname = V2L(scopedName(name));
   PyObject *parametrized = PyObject_CallMethod(type, "Parametrized", "sOO", "C++", templ, V2L(parameters));
-  PyObject_SetItem(dictionary, pyname, parametrized);
   return parametrized;
 }
 
@@ -101,7 +99,7 @@ PyObject *Synopsis::addForward(size_t line, bool main, const string &type, const
   Trace trace("Synopsis::addForward");
   PyObject *pyname = V2L(scopedName(name));
   PyObject *forward = PyObject_CallMethod(ast, "Forward", "siissO", file, line, main, "C++", type.c_str(), pyname);
-  PyObject_CallMethod(scopes.top(), "append", "O", forward);
+  //PyObject_CallMethod(scopes.top(), "append", "O", forward);
   addDeclaration(forward);
   return forward;
 }
@@ -111,8 +109,7 @@ PyObject *Synopsis::addDeclarator(size_t line, bool main, const string &name, co
   Trace trace("Synopsis::addDeclarator");
   PyObject *pyname = V2L(scopedName(name));
   PyObject *declarator = PyObject_CallMethod(ast, "Declarator", "siisOO", file, line, main, "C++", pyname, V2L(sizes));
-  PyObject_CallMethod(scopes.top(), "append", "O", declarator);
-  addDeclaration(declarator);
+  //PyObject_CallMethod(scopes.top(), "append", "O", declarator);
   return declarator;
 }
 
@@ -121,7 +118,7 @@ PyObject *Synopsis::addScope(size_t line, bool main, const string &type, const s
   Trace trace("Synopsis::addScope");
   PyObject *pyname = V2L(scopedName(name));
   PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file, line, main, "C++", type.c_str(), pyname);
-  PyObject_CallMethod(scopes.top(), "append", "O", scope);
+  //PyObject_CallMethod(scopes.top(), "append", "O", scope);
   addDeclaration(scope);
   return scope;
 }
@@ -131,7 +128,7 @@ PyObject *Synopsis::addModule(size_t line, bool main, const string &name)
   Trace trace("Synopsis::addModule");
   PyObject *pyname = V2L(scopedName(name));
   PyObject *module = PyObject_CallMethod(ast, "Module", "siissO", file, line, main, "C++", "namespace", pyname);
-  PyObject_CallMethod(scopes.top(), "append", "O", module);
+  //PyObject_CallMethod(scopes.top(), "append", "O", module);
   addDeclaration(module);
   return module;
 }
@@ -182,7 +179,9 @@ PyObject *Synopsis::addClass(size_t line, bool main, const string &type, const s
   PyObject *pyname = V2L(scopedName(name));
   PyObject *clas = PyObject_CallMethod(ast, "Class", "siissO", file, line, main, "C++", type.c_str(), pyname);
   //PyObject *clas = PyObject_CallMethod(ast, "Class", "siisss", file, line, main, "C++", type.c_str(), name.c_str());
-  PyObject_CallMethod(scopes.top(), "append", "O", clas);
+  //if (!PyObject_CallMethod(scopes.top(), "append", "O", clas)) {
+  //  cout << "addClass:: scopes.top().append(clas) "; PyErr_Print();
+  //}
   addDeclaration(clas);
   return clas;
 }
@@ -193,6 +192,7 @@ PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, PyObj
   PyObject *typed = PyObject_CallMethod(ast, "Typedef", "siissOiO", file, line, main, "C++", type.c_str(), alias, constr,
 					V2L(declarators));
   PyObject_CallMethod(scopes.top(), "append", "O", typed);
+  addDeclaration(typed);
   return typed;
 }
 
@@ -206,8 +206,9 @@ PyObject *Synopsis::Enumerator(size_t line, bool main, const string &name, const
 PyObject *Synopsis::addEnum(size_t line, bool main, const string &name, const vector<PyObject *> &enumerators)
 {
   Trace trace("Synopsis::addEnum");
-  PyObject *enu = PyObject_CallMethod(ast, "Enum", "siissO", file, line, main, "C++", name.c_str(), V2L(enumerators));
-  PyObject_CallMethod(scopes.top(), "append", "O", enu);
+  PyObject *pyname = V2L(scopedName(name));
+  PyObject *enu = PyObject_CallMethod(ast, "Enum", "siisOO", file, line, main, "C++", pyname, V2L(enumerators));
+  addDeclaration(enu);
   return enu;
 }
 

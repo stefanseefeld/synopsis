@@ -387,17 +387,16 @@ class BaseFormatter:
         self.__type_label = "%s%s%s"%(pre,alias,post)
             
     def visitParametrized(self, type):
-        type.template().accept(self)
-        type_ref = self.__type_ref + "&lt;"
-        type_label = self.__type_label + "&lt;"
+        type_ref = ''
+        type_label = self.formatType(type.template())
         parameters_ref = []
         parameters_label = []
         for p in type.parameters():
             p.accept(self)
             parameters_ref.append(self.__type_ref)
             parameters_label.append(self.reference(self.__type_ref, self.__type_label))
-        self.__type_ref = type_ref + string.join(parameters_ref, ", ") + "&gt;"
-        self.__type_label = type_label + string.join(parameters_label, ", ") + "&gt;"
+        self.__type_ref = type_ref + "&lt;" + string.join(parameters_ref, ", ") + "&gt;"
+        self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
 
     #################### AST Visitor ############################################
     def visitTypedef(self, typedef):

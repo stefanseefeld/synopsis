@@ -54,6 +54,7 @@ public:
   virtual Ptree *TranslateTemplateClass(Ptree *, Ptree *);
   virtual vector<PyObject *> TranslateInheritanceSpec(Ptree *);
   virtual Ptree *TranslateClassBody(Ptree *, Ptree*, Class*);
+  virtual Ptree *TranslateEnumSpec(Ptree *);
 private:
   //. extract the name of the node
   static string getName(Ptree *);
@@ -66,10 +67,11 @@ private:
 
   //. Return a Type object from the encoded type
   PyObject* decodeType();
-  void initTypeDecoder(string& enctype, string::iterator&);
+  void initTypeDecoder(string& enctype, string::iterator&, string);
 
   string* m_enctype;
   string::iterator* m_enc_iter;
+  string m_encmessage;
 
   //. Nasty hack to pass stuff between methods :/
   Ptree* m_declaration; 
@@ -178,17 +180,17 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
     char* encname = decl->GetEncodedName();
     char* enctype = decl->GetEncodedType();
     if (!encname || !enctype) return decl;
-    if (enctype[0] == 'F') {
-	//cout << "\n*** Function: "; decl->Display();
 #if 0
 	cout << "encoding '";
 	Encoding::Print(cout, enctype); cout << "' '";
 	Encoding::Print(cout, encname); cout << '\'' << endl;
 #endif
+    if (enctype[0] == 'F') {
+	//cout << "\n*** Function: "; decl->Display();
 	// Figure out parameter types:
 	string enctype_s(enctype);
 	string::iterator enc_iter = enctype_s.begin()+1;
-	initTypeDecoder(enctype_s, enc_iter);
+	initTypeDecoder(enctype_s, enc_iter, decl->ToString());
 	
 	// Create parameter objects
 	vector<PyObject*> params;
@@ -245,10 +247,11 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
     return decl;
 }
 
-void PyWalker::initTypeDecoder(string& enctype, string::iterator& iter)
+void PyWalker::initTypeDecoder(string& enctype, string::iterator& iter, string msg)
 {
     m_enctype = &enctype;
     m_enc_iter = &iter;
+    m_encmessage = msg;
     //cout << "*** Starting decoding of \"" << enctype << "\"" << endl;
 }
 
@@ -264,6 +267,7 @@ PyObject* PyWalker::decodeType()
     // PyObject* obj = 0;
     vector<string> premod, postmod;
     string name;
+    PyObject *baseType = NULL;
     while (iter != end && !name.length()) {
 	int c = int((unsigned char)*iter++);
 	//cout << "*** '" << (char)c << "' (" << *iter << ")" << endl;
@@ -272,6 +276,7 @@ PyObject* PyWalker::decodeType()
 	else if (c == 'S') { premod.push_back("signed"); }
 	else if (c == 'U') { premod.push_back("unsigned"); }
 	else if (c == 'C') { premod.push_back("const"); }
+	else if (c == 'V') { premod.push_back("volatile"); }
 	else if (c == 'A') { premod.push_back("[]"); }
 	else if (c == 'i') { name = "int"; }
 	else if (c == 'v') { name = "void"; }
@@ -298,30 +303,69 @@ PyObject* PyWalker::decodeType()
 	    int scopes = int((unsigned char)*iter++) - DigitOffset;
 	    vector<string> names;
 	    while (scopes--) {
-		int length = int((unsigned char)*iter++) - DigitOffset;
-		string myname(length, '\0');
-		copy_n(iter, length, myname.begin());
-		names.push_back(myname);
-		iter += length;
+		// Only handle two things here: names and templates
+		if (*iter < 0) {
+		    // Name
+		    int length = int((unsigned char)*iter++) - DigitOffset;
+		    string myname(length, '\0');
+		    copy_n(iter, length, myname.begin());
+		    names.push_back(myname);
+		    iter += length;
+		} else if (*iter == 'T') {
+		    // Template :(
+		    ++iter;
+		    int length = int((unsigned char)*iter++) - DigitOffset;
+		    string tname(iter, length);
+		    iter += length;
+		    string::iterator end = iter + int((unsigned char)*iter++) - DigitOffset;
+		    vector<PyObject*> types;
+		    while (iter < end)
+			types.push_back(decodeType());
+		    names.push_back("template...");
+		} else {
+		    cout << "Unknown type inside Q: " << *iter << endl;
+		}
 	    }
 	    // For now just colonate them
 	    string name = names[0];
 	    for (size_t i = 1; i < names.size(); i++)
 		name += "::" + names[i];
 	}
-	else if (c == '_') { return NULL; }
+	else if (c == '_') { --iter; return NULL; }
 	else if (c == 'F') {
 	    // Function ptr.. argh!
 	    // FIXME: currently its just skipped
 	    while (decodeType());
+	    ++iter;
 	    decodeType();
 	    return Py_None;
 	}
-	else { cout << "Unknown char decoding '"<<*m_enctype<<"': "<<char(c)<<" "<<c<<" at "<<(iter-m_enctype->begin())<<endl; }
+	else if (c == 'T') {
+	    // Template type: Name first, then size of arg field, then arg
+	    // types eg: T6vector54cell <-- 5 is len of 4cell
+	    int length = int((unsigned char)*iter++) - DigitOffset;
+	    name.assign(iter, length);
+	    iter += length;
+	    string::iterator end = iter + int((unsigned char)*iter++) - DigitOffset;
+	    vector<PyObject*> types;
+	    while (iter < end)
+		types.push_back(decodeType());
+	    PyObject* templ = synopsis->lookupType(name);
+	    baseType = synopsis->addParametrized(templ, types);
+	}
+	else if (c == 'M') {
+	    // Pointer to member. Format is same as for named types
+	    int length = int((unsigned char)*iter++) - DigitOffset;
+	    name.assign(iter, length);
+	    name += "::*";
+	    iter += length;
+	}
+	else { cout << m_encmessage << "\nUnknown char decoding '"<<*m_enctype<<"': "<<char(c)<<" "<<c<<" at "<<(iter-m_enctype->begin())<<endl; }
     }
     if (!name.length()) { return Py_None; }
-
-    PyObject *baseType = synopsis->lookupType(name);
+    
+    if (!baseType)
+	baseType = synopsis->lookupType(name);
     if (premod.empty() && postmod.empty())
 	return baseType;
     return synopsis->addModifier(baseType, premod, postmod);
@@ -329,21 +373,37 @@ PyObject* PyWalker::decodeType()
 
 Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
 {
+  // This is only called from TranslateTypedef
   Trace trace("PyWalker::TranslateDeclarator");
 #ifdef DO_TRACE
     declarator->Display();
 #endif
-  if (declarator->What() != ntDeclarator) return declarator;
-  char* encname = declarator->GetEncodedName();
-  char* enctype = declarator->GetEncodedType();
-  if (!encname || !enctype) return declarator;
-#ifdef DO_TRACE
-   cout << "encoding '";
-   Encoding::Print(cout, enctype); cout << "' '";
-   Encoding::Print(cout, encname); cout << '\'' << endl;
+    if (declarator->What() != ntDeclarator) return declarator;
+    char* encname = declarator->GetEncodedName();
+    char* enctype = declarator->GetEncodedType();
+    if (!encname || !enctype) return declarator;
+#if 0
+    cout << "encoding '";
+    Encoding::Print(cout, enctype); cout << "' '";
+    Encoding::Print(cout, encname); cout << '\'' << endl;
 #endif
-  ///...
-  return declarator;
+    // Get type of declarator
+    string enctype_s(enctype);
+    string::iterator iter = enctype_s.begin();
+    initTypeDecoder(enctype_s, iter, declarator->ToString());
+    PyObject* type = decodeType();
+    // Get name of typedef
+    string name = encname+1;
+    vector<size_t> sizes;
+    // Create declarator object with name
+    PyObject* declor = synopsis->addDeclarator(-1,true,name,sizes);
+    // Create typedef object
+    vector<PyObject*> declrs;
+    declrs.push_back(declor);
+    PyObject* typedf = synopsis->addTypedef(-1,true,"typedef",type,false,declrs);
+    synopsis->addDeclared(name, typedf);
+    ///...
+    return declarator;
 }
 
 /*
@@ -392,53 +452,49 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 {
   //Trace trace("PyWalker::TranslateClassSpec");
-  Ptree* userkey;
-  Ptree* class_def;
-  if(node->Car()->IsLeaf())
+  
+  if(Ptree::Length(node) == 4 && node->Second()->IsLeaf())
     {
-      userkey = 0;
-      class_def = node;
-    }
-  else
-    {
-      userkey = node->First();
-      class_def = node->Rest();
-    }
-  if(Ptree::Length(class_def) == 4 && class_def->Second()->IsLeaf())
-    {
-      string type = getName(class_def->First());
-      string name = getName(class_def->Second());
+      string type = getName(node->First());
+      string name = getName(node->Second());
       PyObject *clas = synopsis->addClass(-1, true, type, name);
       synopsis->addDeclared(name, clas);
       //. parents...
-      vector<PyObject *> parents = TranslateInheritanceSpec(class_def->Nth(2));
+      vector<PyObject *> parents = TranslateInheritanceSpec(node->Nth(2));
       Synopsis::addInheritance(clas, parents);
       synopsis->pushScope(clas);
-      Class* meta = MakeClassMetaobject(node, userkey, class_def);
+      Class* meta = MakeClassMetaobject(node, NULL, node);
       //. the body...
-      TranslateClassBody(class_def->Nth(3), class_def->Nth(2), meta);
+      TranslateClassBody(node->Nth(3), node->Nth(2), meta);
       synopsis->popScope();
     }
   return node;
 }
 
+/* Template Class:
+ *  temp_def:
+ *    [ 'template' < [ typespecs ] > class_spec ]
+ *  typespec:
+ *    [ 'typename' name ]
+ */
 Ptree *PyWalker::TranslateTemplateClass(Ptree *temp_def, Ptree *class_spec)
 {
+    //cout << "TranslateTemplateClass" << endl;
   //Trace trace("PyWalker::TranslateTemplateClass");
   //temp_def->Display();
   //class_spec->Display();
-  Ptree *userkey;
-  Ptree *class_def;
-  if(class_spec->Car()->IsLeaf())
-    {
-      userkey = nil;
-      class_def = class_spec;
-    }
-  else
-    {
-      userkey = class_spec->Car();
-      class_def = class_spec->Cdr();
-    }
+    
+#if 0
+    char* encname = temp_def->GetEncodedName();
+    char* enctype = temp_def->GetEncodedType();
+    cout << "encoding '";
+    if (enctype&&encname) {Encoding::Print(cout, enctype); cout << "' '";
+    Encoding::Print(cout, encname); cout << '\'' << endl;}
+#endif
+
+    // Do template stuff FIXME
+ 
+  TranslateClassSpec(class_spec);
   //...  
   return 0;
 }
@@ -470,6 +526,19 @@ Ptree *PyWalker::TranslateClassBody(Ptree *block, Ptree *bases, Class *meta)
   //Trace trace("PyWalker::TranslateClassBody");
   Walker::TranslateClassBody(block, bases, meta);
   return block;
+}
+
+Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
+{
+    //cout << "Enum:";spec->Display();cout << endl;
+    if (!spec->Second()) { return spec; /* anonymous enum */ }
+    string name = spec->Second()->ToString();
+    //cout << "Name == " << name << endl;
+
+    vector<PyObject*> enumerators;
+    PyObject* theEnum = synopsis->addEnum(-1,true,name,enumerators);
+    synopsis->addDeclared(name, theEnum);
+    return spec;
 }
 
 static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags)

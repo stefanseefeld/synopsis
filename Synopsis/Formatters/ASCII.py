@@ -19,6 +19,12 @@ class ASCIIFormatter:
     def scope(self): return self.__scope
     def enterScope(self, name): self.__scope.append(name),self.incr()
     def leaveScope(self): self.__scope.pop(),self.decr()
+
+    def formatType(self, type):
+	if type is None: return '(unknown)'
+	type.accept(self)
+	return self.__type
+    
     #################### Type Visitor ###########################################
 
     def visitBaseType(self, type):
@@ -31,8 +37,8 @@ class ASCIIFormatter:
         self.__type = Util.ccolonName(type.name(), self.scope())
         
     def visitModifier(self, type):
-        type.alias().accept(self)
-        self.__type = "%s %s %s"%(type.premod(), self.__type, type.postmod())
+        aliasStr = self.formatType(type.alias())
+        self.__type = "%s %s %s"%(string.join(type.premod()), aliasStr, string.join(type.postmod()))
             
     def visitParametrized(self, type):
         type.template().accept(self)
@@ -47,8 +53,7 @@ class ASCIIFormatter:
         self.indent()
 	dstr = ""
 	# Figure out the type:
-	typedef.alias().accept(self)
-        tstr = self.__type
+	tstr = self.formatType(typedef.alias())
 	# Figure out the declarators:
 	for declarator in typedef.declarators():
 	    dstr = dstr + declarator.name()[-1]
@@ -115,12 +120,15 @@ class ASCIIFormatter:
     def visitOperation(self, operation):
 	self.indent()
         for modifier in operation.premodifier(): self.__os.write(modifier + " ")
-	operation.returnType().accept(self)
+	retStr = self.formatType(operation.returnType())
         if operation.language() == "IDL" and operation.type() == "attribute":
-            self.__os.write("attribute %s %s"%(self.__type,operation.name()[-1]))
+            self.__os.write("attribute %s %s"%(retStr,operation.name()[-1]))
 	else:
-	    self.__os.write(self.__type)
-	    self.__os.write(" %s("%operation.name()[-1])
+	    if operation.language() == "C++" and operation.name()[-1] in [operation.name()[-2],"~ "+operation.name()[-2]]:
+		self.__os.write("%s("%operation.name()[-1])
+	    else:
+		self.__os.write(retStr)
+		self.__os.write(" %s("%operation.name()[-1])
 	    self.__params = []
 	    for parameter in operation.parameters(): parameter.accept(self)
 	    params = string.join(self.__params, ", ")
