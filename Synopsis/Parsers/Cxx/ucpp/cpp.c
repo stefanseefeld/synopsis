@@ -2349,8 +2349,9 @@ static void usage(char *command_name)
 	"  -Bfoo(bar)      unassert foo(bar)\n"
 	"  -Y              predefine system-dependant macros\n"
 	"  -Z              do not predefine special macros\n"
-	"  -d              emit defined macros\n"
-	"  -e              emit assertions\n"
+	"  -d              only emit defined macros\n"
+	"  -dD             also emit defined macros\n"
+	"  -e              only emit assertions\n"
 	"misc options:\n"
 	"  -v              print version number and settings\n"
 	"  -h              show this help\n",
@@ -2443,6 +2444,8 @@ static int ucpp_parse_opt(int argc, char *argv[], struct lexer_state *ls)
 			system_macros = 1;
 		} else if (!strcmp(argv[i], "-Z")) {
 			no_special_macros = 1;
+		} else if (!strcmp(argv[i], "-dD")) {
+			print_defs = 1;
 		} else if (!strcmp(argv[i], "-d")) {
 			ls->flags &= ~KEEP_OUTPUT;
 			print_defs = 1;
