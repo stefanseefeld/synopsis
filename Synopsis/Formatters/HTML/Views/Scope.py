@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.12 2001/07/10 14:40:23 chalky Exp $
+# $Id: Scope.py,v 1.13 2001/07/15 06:41:57 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Scope.py,v $
+# Revision 1.13  2001/07/15 06:41:57  chalky
+# Factored summarizer and detailer into 'Parts', and added a separate one for
+# the top of the page (Heading)
+#
 # Revision 1.12  2001/07/10 14:40:23  chalky
 # Cache summarizer and detailer
 #
@@ -73,52 +77,7 @@ import ASTFormatter
 from core import config
 from Tags import *
 
-def write_summaries(summarizer, ns, details, sections):
-    "Print out the summaries from the given ns and note detailed items"
-    comments = config.comments
-    config.link_detail = 0
-    
-    summarizer.write_start()
-    for section in config.sorter.sections():
-        # Write a header for this section
-        if section[-1] == 's': heading = section+'es Summary:'
-        else: heading = section+'s Summary:'
-        summarizer.writeSectionStart(heading)
-        # Iterate through the children in this section
-        for child in config.sorter.children(section):
-            # Check if need to add to detail list
-            if comments[child].has_detail:
-                # Add this decl to the detail dictionary
-                if not details.has_key(section):
-                    details[section] = []
-                    sections.append(section)
-                details[section].append(child)
-                config.link_detail = 1
-                summarizer.set_link_detail(1)
-            # Print out summary for the child
-            child.accept(summarizer)
-            config.link_detail = 0
-            summarizer.set_link_detail(0)
-        # Finish off this section
-        summarizer.writeSectionEnd(heading)
-    summarizer.write_end()
 
-def write_details(detailer, details, sections):
-    "Print out the details from the given dict of lists"
-
-    # Iterate through the sections with details
-    detailer.write_start()
-    for section in sections:
-        # Write a heading
-        heading = section+' Details:'
-        detailer.writeSectionStart(heading)
-        # Write the sorted list of children of this type
-        for child in details[section]:
-            child.accept(detailer)
-        # Finish the section
-        detailer.writeSectionEnd(heading)
-    detailer.write_end()
- 
 class ScopePages (Page.Page):
     """A module for creating a page for each Scope with summaries and
     details. This module is highly modular, using the classes from
@@ -132,7 +91,19 @@ class ScopePages (Page.Page):
 	share = config.datadir
 	self.syn_logo = 'synopsis200.jpg'
 	config.files.copyFile(os.path.join(share, 'synopsis200.jpg'), os.path.join(config.basename, self.syn_logo))
-	self.__summarizer = self.__detailer = None
+	self.__parts = []
+	self._get_parts()
+
+    def _get_parts(self):
+	"Loads the list of parts from config"
+	try:
+	    parts = config.obj.ScopePages.parts
+	except AttributeError:
+	    parts = ['Heading', 'Summary', 'Detail']
+	base = 'Synopsis.Formatter.HTML.ASTFormatter.'
+	for part in parts:
+	    obj = core.import_object(part, basePackage=base)(self)
+	    self.__parts.append(obj)
 
     def filename(self):
         """since ScopePages generates a whole file hierarchy, this method returns the current filename,
@@ -153,30 +124,6 @@ class ScopePages (Page.Page):
 	    ns = self.__namespaces.pop(0)
 	    self.process_scope(ns)
     
-    def _get_summarizer(self):
-	"Creates a summarizer from config, with caching"
-	if self.__summarizer: return self.__summarizer
-	base = "Synopsis.Formatter.HTML.ASTFormatter."
-	try:
-	    spec = config.obj.ScopePages.summarizer
-	    self.__summarizer = core.import_object(spec, basePackage=base)(self)
-	    return self.__summarizer
-	except AttributeError:
-	    if config.verbose: print "Summarizer config failed. Abort"
-	    raise
-
-    def _get_detailer(self):
-	"Creates a detailer from config, with caching"
-	if self.__detailer: return self.__detailer
-	base = "Synopsis.Formatter.HTML.ASTFormatter."
-        try:
-	    spec = config.obj.ScopePages.detailer
-	    self.__detailer = core.import_object(spec, basePackage=base)(self)
-	    return self.__detailer
-	except AttributeError:
-	    if config.verbose: print "Detailer config failed. Abort"
-	    raise
-
     def process_scope(self, ns):
 	"""Creates a page for the given scope"""
 	details = {} # A hash of lists of detailed children by type
@@ -190,22 +137,12 @@ class ScopePages (Page.Page):
 	config.sorter.set_scope(ns)
 	config.sorter.sort_section_names()
 	
-        summarizer = self._get_summarizer()
-	detailer = self._get_detailer()
-
 	# Write heading
 	self.write(self.manager.formatHeader(self.filename()))
-	if ns is self.manager.globalScope(): 
-	    self.write(entity('h1', "Global Namespace"))
-	else:
-	    # Use the detailer to print an appropriate heading
-	    ns.accept(detailer)
 
-	self.write('\n')
-
-	# Loop throught all the types of children
-	write_summaries(summarizer, ns, details, sections)
-	write_details(detailer, details, sections)
+	# Loop throught all the page Parts
+	for part in self.__parts:
+	    part.process(ns)
 	self.end_file()
 	
 	# Queue child namespaces

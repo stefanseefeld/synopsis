@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.17 2001/07/10 05:08:28 chalky Exp $
+# $Id: Part.py,v 1.18 2001/07/15 06:41:57 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.18  2001/07/15 06:41:57  chalky
+# Factored summarizer and detailer into 'Parts', and added a separate one for
+# the top of the page (Heading)
+#
 # Revision 1.17  2001/07/10 05:08:28  chalky
 # Refactored ASTFormatters into FormatStrategies, and simplified names all round
 #
@@ -75,9 +79,10 @@
 #
 """AST Formatting classes.
 
-This module contains ASTFormatter and the default base classes of it. It also
-contains SummaryFormatter and DetailFormatter. Probably they should be moved
-to another file, but that is for another day.
+This module contains classes for formatting parts of a scope page (class,
+module, etc with methods, variables etc. The actual formatting of the
+declarations is delegated to multiple strategies for each part of the page,
+and are defined in the FormatStrategy module.
 """
 # System modules
 import types, os
@@ -90,16 +95,18 @@ import Tags, core, FormatStrategy
 from core import config
 from Tags import *
 
-class Base(Type.Visitor, AST.Visitor):
-    """Formatting visitor base class.
+class Part(Type.Visitor, AST.Visitor):
+    """Base class for formatting a Part of a Scope Page.
     
-    This class contains functionality for modularly
-    formatting an AST for display. It is typically used to contruct Summary
-    and Detail formatters. ASTFormatters are added to the BaseFormatter, which
-    then checks which format methods they implement. For each AST declaration
-    visited, the BaseFormatter asks all ASTFormatters that can to format that
-    declaration. Actually writing the formatted info to file is left to
-    writeSectionStart, writeSectionEnd, and writeSectionItem.
+    This class contains functionality for modularly formatting an AST node and
+    its children for display. It is typically used to contruct Heading,
+    Summary and Detail formatters. Strategy objects are added according to
+    configuration, and this base class  then checks which format methods each
+    strategy implements. For each AST declaration visited, the Part asks all
+    Strategies which implement the appropriate format method to generate
+    output for that declaration. The final writing of the formatted html is
+    delegated to the writeSectionStart, writeSectionEnd, and writeSectionItem
+    methods, which myst be implemented in a subclass.
     """
     def __init__(self, page):
         self.__page = page
@@ -116,6 +123,22 @@ class Base(Type.Visitor, AST.Visitor):
     def os(self): return self.__page.os()
     def scope(self): return self.__page.scope()
     def write(self, text): self.os().write(text)
+
+    def _init_formatters(self, config_option, type_msg):
+	"""Loads strategies from config file"""
+	base = 'Synopsis.Formatter.HTML.FormatStrategy.'
+	try:
+	    config_obj = getattr(config.obj.ScopePages, config_option)
+	    if type(config_obj) not in (types.ListType, types.TupleType):
+		raise TypeError, "ScopePages.%s must be a list or tuple of modules"%config_option
+	    for formatter in config_obj:
+		clas = core.import_object(formatter, basePackage=base)
+		if config.verbose: print "Using %s formatter:"%type_msg,clas
+		self.addFormatter(clas)
+	except AttributeError:
+	    # Some defaults if config fails
+	    self._init_default_formatters()
+
     def addFormatter(self, formatterClass):
 	"""Adds the given formatter Class. An object is instantiated from the
 	class passing self to the constructor. Stores the object, and stores
@@ -166,8 +189,6 @@ class Base(Type.Visitor, AST.Visitor):
         return location and Tags.name(location, label) or label
 
 
-    def formatOperationExceptions(self, operation): pass
-
     def formatDeclaration(self, decl, method):
 	"""Format decl using named method of each formatter. Each formatter
 	returns two strings - type and name. All the types are joined and all
@@ -184,17 +205,14 @@ class Base(Type.Visitor, AST.Visitor):
 	self.writeSectionItem(text)
 	return
 
-	# OLD CODE:
-	# Convert to 2tuple of lists # [['type','type'...],['name','name',...]]
-	type_name = apply(map, [None]+type_name)
-	# Convert to two strings 'type type', 'name name'
-	if type(type_name[0]) == types.TupleType:
-	    type_name = map(string.join, type_name)
-	# Strip strings from extra whitespace of empty types or names
-	ftype, name = map(string.strip, type_name)
-	# Write the two strings
-	self.writeSectionItem(ftype, name)
-
+    def process(self, decl):
+	"""Formats the given decl, creating the output for this Part of the
+	page. This method is implemented in various subclasses in different
+	ways, for example Summary and Detail iterate through the children of
+	'decl' section by section, whereas Heading only formats decl itself.
+	"""
+	pass
+	
     #################### AST Visitor ############################################
     def visitDeclaration(self, decl):	self.formatDeclaration(decl, 'formatDeclaration')
     def visitForward(self, decl):	self.formatDeclaration(decl, 'formatForward')
@@ -278,32 +296,44 @@ class Base(Type.Visitor, AST.Visitor):
 	"Abstract method to end the output, eg close the table"
 	pass
 
+class Heading(Part):
+    """Heading page part. Displays a header for the page -- its strategies are
+    only passed the object that the page is for; ie a Class or Module"""
+    def __init__(self, page):
+	Part.__init__(self, page)
+	self._init_formatters('heading_formatters', 'heading')
 
-class Summary(Base):
+    def _init_default_formatters(self):
+	self.addFormatter( FormatStrategy.Heading )
+	self.addFormatter( FormatStrategy.ClassHierarchyGraph )
+	self.addFormatter( FormatStrategy.DetailASTCommenter )
+
+    def writeSectionItem(self, text):
+	"""Writes text and follows with a horizontal rule"""
+	self.write(text + '\n<hr>\n')
+
+    def process(self, decl):
+	"""Process this Part by formatting only the given decl"""
+	decl.accept(self)
+
+class Summary(Part):
     """Formatting summary visitor. This formatter displays a summary for each
     declaration, with links to the details if there is one. All of this is
     controlled by the ASTFormatters."""
     def __init__(self, page):
-	Base.__init__(self, page)
+	Part.__init__(self, page)
 	self.__link_detail = 0
-	self._init_formatters()
+	self._init_formatters('summary_formatters', 'summary')
 
-    def _init_formatters(self):
-	base = 'Synopsis.Formatter.HTML.FormatStrategy.'
-	try:
-	    for formatter in config.obj.ScopePages.summary_formatters:
-		clas = core.import_object(formatter, basePackage=base)
-		if config.verbose: print "Using summary formatter:",clas
-		self.addFormatter(clas)
-	except AttributeError:
-	    if config.verbose: print "Summary config failed. Using defaults."
-	    self.addFormatter( SummaryASTFormatter )
-	    self.addFormatter( SummaryASTCommenter )
+    def _init_default_formatters(self):
+	self.addFormatter( FormatStrategy.SummaryASTFormatter )
+	self.addFormatter( FormatStrategy.SummaryASTCommenter )
 
     def set_link_detail(self, boolean):
 	"""Sets link_detail flag to given value.
 	@see label()"""
 	self.__link_detail = boolean
+	config.link_detail = boolean
 
     def label(self, ref, label=None):
 	"""Override to check link_detail flag. If it's set, returns a reference
@@ -312,7 +342,7 @@ class Summary(Base):
 	if self.__link_detail:
 	    # Insert a reference instead
 	    return span('name',self.reference(ref, Util.ccolonName(label, self.scope())))
-	return Base.label(self, ref, label)
+	return Part.label(self, ref, label)
 	
     def getSummary(self, node):
 	comment = config.comments[node].summary
@@ -334,24 +364,42 @@ class Summary(Base):
 	"""Adds a table row"""
 	self.write('<tr><td class="summ-start">' + text + '</td></tr>\n')
 
-class Detail(Base):
-    def __init__(self, page):
-	Base.__init__(self, page)
-	self._init_formatters()
+    def process(self, decl):
+	"Print out the summaries from the given decl"
+	comments = config.comments
+	config.link_detail = 0
+	
+	self.write_start()
+	for section in config.sorter.sections():
+	    # Write a header for this section
+	    if section[-1] == 's': heading = section+'es Summary:'
+	    else: heading = section+'s Summary:'
+	    self.writeSectionStart(heading)
+	    # Iterate through the children in this section
+	    for child in config.sorter.children(section):
+		# Check if need to add to detail list
+		if comments[child].has_detail:
+		    # Setup the linking stuff
+		    self.set_link_detail(1)
+		    child.accept(self)
+		    self.set_link_detail(0)
+		else:
+		    # Just do it
+		    child.accept(self)
+	    # Finish off this section
+	    self.writeSectionEnd(heading)
+	self.write_end()
 
-    def _init_formatters(self):
-	base = 'Synopsis.Formatter.HTML.FormatStrategy.'
-	try:
-	    for formatter in config.obj.ScopePages.detail_formatters:
-		clas = core.import_object(formatter, basePackage=base)
-		if config.verbose: print "Using detail formatter:",clas
-		self.addFormatter(clas)
-	except AttributeError:
-	    # Some defaults if config fails
-	    self.addFormatter( DetailASTFormatter )
-	    #self.addFormatter( ClassHierarchySimple )
-	    self.addFormatter( ClassHierarchyGraph )
-	    self.addFormatter( DetailASTCommenter )
+
+class Detail(Part):
+    def __init__(self, page):
+	Part.__init__(self, page)
+	self._init_formatters('detail_formatters', 'detail')
+
+    def _init_default_formatters(self):
+	self.addFormatter( FormatStrategy.DetailASTFormatter )
+	#self.addFormatter( ClassHierarchySimple )
+	self.addFormatter( FormatStrategy.DetailASTCommenter )
 
     def getDetail(self, node):
 	comment = config.comments[node].detail
@@ -369,4 +417,27 @@ class Detail(Base):
 	"""Writes text and follows with a horizontal rule"""
 	self.write(text + '\n<hr>\n')
 
+    def process(self, decl):
+	"Print out the details for the children of the given decl"
+	comments = config.comments
 
+	# Iterate through the sections with details
+	self.write_start()
+	for section in config.sorter.sections():
+	    # Write a heading
+	    heading = section+' Details:'
+	    started = 0 # Lazy section start incase no details for this section
+	    # Iterate through the children in this section
+	    for child in config.sorter.children(section):
+		# Check if need to add to detail list
+		if not comments[child].has_detail:
+		    continue
+		# Check section heading
+		if not started:
+		    started = 1
+		    self.writeSectionStart(heading)
+		child.accept(self)
+	    # Finish the section
+	    if started: self.writeSectionEnd(heading)
+	self.write_end()
+     
