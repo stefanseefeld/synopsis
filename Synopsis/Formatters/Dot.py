@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.9 2001/02/05 05:25:08 chalky Exp $
+# $Id: Dot.py,v 1.10 2001/02/06 15:00:42 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.10  2001/02/06 15:00:42  stefan
+# Dot.py now references the template, not the last parameter, when displaying a Parametrized; replaced logo with a simple link
+#
 # Revision 1.9  2001/02/05 05:25:08  chalky
 # Added hspace and vspace in _format_html
 #
@@ -110,14 +113,15 @@ class InheritanceFormatter(AST.Visitor, Type.Visitor):
 
     def visitParametrized(self, type):
 	if type.template():
-            self.__type_ref = toc[type.template().name()]
+            type_ref = toc[type.template().name()]
 	    type_label = Util.ccolonName(type.template().name(), self.scope())
 	else:
-            self.__type_ref = None
+            type_ref = None
 	    type_label = "(unknown)"
         parameters_label = []
         for p in type.parameters():
             parameters_label.append(self.formatType(p))
+        self.__type_ref = type_ref
         self.__type_label = type_label + "<" + string.join(parameters_label, ", ") + ">"
 
     def visitTemplate(self, type):
