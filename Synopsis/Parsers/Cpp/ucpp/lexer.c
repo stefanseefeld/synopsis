@@ -930,7 +930,7 @@ static inline int read_token(struct lexer_state *ls)
 					outc = 0;
 				} else if (z == S_LCHAR || z == S_SLASH
 					|| (z == S_SHARP && ls->ltwnl)
-					|| (z == S_PCT && ls->ltwnl)
+					//|| (z == S_PCT && ls->ltwnl)
 					|| (z == S_BACKSLASH)) {
 					outc = c;
 				} else if (z == S_PCT2 && ls->ltwnl) {
