@@ -1,4 +1,4 @@
-# $Id: EmptyModuleRemover.py,v 1.2 2003/11/11 02:57:57 stefan Exp $
+# $Id: EmptyModuleRemover.py,v 1.3 2003/11/11 04:51:17 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -51,7 +51,6 @@ class EmptyNS (Processor, AST.Visitor):
 
    def add(self, decl):
       """Adds the given decl to the current scope"""
-      print 'add %s', decl
       self.__currscope.append(decl)
 
    def currscope(self):
@@ -76,16 +75,11 @@ class EmptyNS (Processor, AST.Visitor):
    def visitModule(self, module):
       """Visits all children of the module, and if there are no declarations
       after that removes the module"""
-      print 'visiting module', module
       self.push()
-      print 'module contains', len(module.declarations()), 'declarations'
       for decl in module.declarations():
-         print decl.name(), decl.type()
          decl.accept(self)
       module.declarations()[:] = self.currscope()
       count = self._count_not_forwards(self.currscope())
-      #print string.join(module.name(),'::'),"%d (%d)"%(len(self.currscope()),count),"children"
-      print module, 'has ', count, 'declarations'
       if count: self.pop(module)
       else: self.pop_only()
 
