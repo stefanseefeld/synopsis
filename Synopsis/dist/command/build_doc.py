@@ -76,6 +76,7 @@ class build_doc(build.build):
    def build_tutorial(self):
       """Build the tutorial."""
 
+      self.announce("building tutorial")
       srcdir = os.path.abspath('doc/Tutorial/')
       tempdir = os.path.abspath(os.path.join(self.build_temp,
                                              'share/doc/Synopsis/Tutorial'))

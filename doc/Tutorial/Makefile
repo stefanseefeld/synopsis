@@ -27,7 +27,7 @@ Tutorial.pdf: Tutorial.fo $(appendix)
 	fop $< $@
 
 Tutorial.fo: Tutorial.xml
-	xsltproc --novalid --xinclude -o $@ $(srcdir)/fo.xsl $^
+	xsltproc --novalid --path $(shell pwd) --xinclude -o $@ $(srcdir)/fo.xsl $^
 	mkdir -p images
 	cp -u $(srcdir)/images/*.svg images/
 
