@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.6 2003/12/03 03:43:26 stefan Exp $
+# $Id: Parser.py,v 1.7 2003/12/04 01:13:46 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -31,10 +31,9 @@ class Parser(Processor):
    
    def process(self, ast, **kwds):
 
-      input = kwds.get('input')
       self.set_parameters(kwds)
       self.ast = ast
-      for file in input:
+      for file in self.input:
          self.ast = occ.parse(self.ast, file,
                               self.extra_files,
                               self.verbose,
