@@ -1,4 +1,4 @@
-# $Id: Stripper.py,v 1.7 2003/11/20 21:37:15 stefan Exp $
+# $Id: Stripper.py,v 1.8 2003/11/21 21:18:36 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -31,8 +31,8 @@ class Stripper(Processor, AST.Visitor):
       self.ast = self.merge_input(ast)
       if self.scope:
 
-         self.__scope = map(lambda x: tuple(string.split(x, "::")), self.scope)
-
+         #self.__scope = map(lambda x: tuple(string.split(x, "::")), self.scope)
+         self.__scope = tuple(string.split(self.scope, "::"))
          # strip prefixes and remove non-matching declarations
          self.strip_declarations(self.ast.declarations())
 
@@ -42,11 +42,11 @@ class Stripper(Processor, AST.Visitor):
       return self.output_and_return_ast()
       
    def strip_name(self, name):
-      for scope in self.__scope:
-         depth = len(scope)
-         if name[0:depth] == scope:
-            if len(name) == depth: return None
-            return name[depth:]
+      #for scope in self.__scopes:
+      depth = len(self.scope)
+      if name[0:depth] == self.scope:
+         if len(name) == depth: return None
+         return name[depth:]
       return None
     
    def strip_declarations(self, declarations):
@@ -76,7 +76,7 @@ class Stripper(Processor, AST.Visitor):
       the prefix set and thus should not be removed from the AST."""
       passed = 0
       if not self.__scope: return 1
-      for scope in self.__scope:
+      for scope in [self.__scope]:
          depth = len(scope)
          name = declaration.name()
          if name[0:depth] == scope:
