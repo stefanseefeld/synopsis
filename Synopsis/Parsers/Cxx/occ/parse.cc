@@ -3736,6 +3736,10 @@ bool Parser::rVarNameCore(Ptree*& name, Encoding& encode)
 
     for(;;){
 	int t = lex->GetToken(tk);
+	if(t == TEMPLATE) {
+	    // Skip template token, next will be identifier
+	    t = lex->GetToken(tk);
+	}
 	if(t == Identifier){
 	    Ptree* n = new LeafName(tk);
 	    if(isTemplateArgs()){
@@ -3813,7 +3817,7 @@ bool Parser::moreVarName()
 {
     if(lex->LookAhead(0) == Scope){
 	int t = lex->LookAhead(1);
-	if(t == Identifier || t == '~' || t == OPERATOR)
+	if(t == Identifier || t == '~' || t == OPERATOR || t == TEMPLATE)
 	    return TRUE;
     }
 
