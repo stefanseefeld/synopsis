@@ -41,8 +41,8 @@ def cleanup_temp_file():
     """Removes the temporary file and resets the filename"""
     global temp_filename
     if temp_filename:
-	os.unlink(temp_filename)
-	temp_filename = None
+        os.unlink(temp_filename)
+        temp_filename = None
 
 class CompilerInfo:
     """Info about one compiler.
@@ -58,30 +58,30 @@ class CompilerInfo:
     value of None (not a string) indicates that the macro should be undefined.
     """
     def __init__(self, compiler, is_custom, timestamp, include_paths, macros):
-	self.compiler = compiler
-	self.is_custom = is_custom
-	self.timestamp = timestamp
-	self.include_paths = include_paths
-	self.macros = macros
+        self.compiler = compiler
+        self.is_custom = is_custom
+        self.timestamp = timestamp
+        self.include_paths = include_paths
+        self.macros = macros
 
 def main():
     """The main function - parses the arguments and controls the program"""
     if len(sys.argv) < 2:
-	print usage
-	return
+        print usage
+        return
 
     filename = sys.argv[1]
     print "Filename is ", filename
     if len(sys.argv) > 2:
-	compilers = sys.argv[2:]
+        compilers = sys.argv[2:]
     else:
-	compilers = default_compilers
+        compilers = default_compilers
     print "compilers are:", compilers
 
     infos = get_compiler_infos(compilers)
     if not infos:
-	print "No compilers found. Not writing file!"
-	return
+        print "No compilers found. Not writing file!"
+        return
 
     file = open(filename, 'wt')
     write_compiler_infos(infos, file)
@@ -94,18 +94,18 @@ def get_fallback(preferred, is_first_time):
     """Tries to return info from a fallback compiler, and prints a warning
     message to the user, unless their preferred compiler was 'none'"""
     if is_first_time and preferred != 'none':
-	print "Warning: The specified compiler (%s) could not be found."%(preferred,)
-	print "You may want to retry with the full pathname of the compiler"
-	print "or with it in your path. If you don't have this compiler, you"
-	print "will need to modify the C++ Parser part of your config file."
+        print "Warning: The specified compiler (%s) could not be found."%(preferred,)
+        print "You may want to retry with the full pathname of the compiler"
+        print "or with it in your path. If you don't have this compiler, you"
+        print "will need to modify the C++ Parser part of your config file."
     for compiler in ('g++', 'gcc', 'c++', 'cc'):
-	if compiler_infos.has_key(compiler):
-	    if is_first_time:
+        if compiler_infos.has_key(compiler):
+            if is_first_time:
               print "Warning: Falling back to compiler '%s'"%(compiler,)
-	    return compiler_infos[compiler]
+            return compiler_infos[compiler]
     if preferred != 'none':
-	print "Warning: Unable to fallback to a default compiler emulation."
-	print "Unless you have set appropriate paths, expect errors."
+        print "Warning: Unable to fallback to a default compiler emulation."
+        print "Unless you have set appropriate paths, expect errors."
     return None
 
 def get_compiler_info(compiler):
@@ -115,23 +115,23 @@ def get_compiler_info(compiler):
     global failed, compiler_infos
     # Check if this compiler has already been found to not exist
     if failed.has_key(compiler):
-	return get_fallback(compiler, 0)
+        return get_fallback(compiler, 0)
     # See if already found it
     if len(compiler_infos) == 0:
-	# Try to load the emulations file
-	compiler_infos = load_compiler_infos()
+        # Try to load the emulations file
+        compiler_infos = load_compiler_infos()
     # See if wanted compiler was in file
     if compiler_infos.has_key(compiler):
-	info = compiler_infos[compiler]
-	if info.is_custom: return info
-	file_stamp = get_compiler_timestamp(compiler)
-	# If compiler hasn't changed since then, return cached info
-	if file_stamp and info.timestamp == file_stamp:
-	    return info
+        info = compiler_infos[compiler]
+        if info.is_custom: return info
+        file_stamp = get_compiler_timestamp(compiler)
+        # If compiler hasn't changed since then, return cached info
+        if file_stamp and info.timestamp == file_stamp:
+            return info
     else:
-	# Add compiler to map, but with a dummy value to indicate nothing is
-	# known about it
-	compiler_infos[compiler] = None
+        # Add compiler to map, but with a dummy value to indicate nothing is
+        # known about it
+        compiler_infos[compiler] = None
     
     # Regenerate infos
     refresh_compiler_infos(compiler_infos)
@@ -141,9 +141,9 @@ def get_compiler_info(compiler):
 
     # Return discovered info, if compiler was found
     if compiler_infos.has_key(compiler):
-	return compiler_infos[compiler]
+        return compiler_infos[compiler]
     else:
-	return get_fallback(compiler, 1)
+        return get_fallback(compiler, 1)
 
 def load_compiler_infos():
     """Loads the compiler infos from a file"""
@@ -152,7 +152,7 @@ def load_compiler_infos():
     try: execfile(filename, glob, glob)
     except IOError: return {}
     if glob.has_key('infos'):
-	return glob['infos']
+        return glob['infos']
     return {} 
 
 def get_compiler_timestamp(compiler):
@@ -160,11 +160,11 @@ def get_compiler_timestamp(compiler):
     path = os.getenv('PATH', os.defpath)
     path = string.split(path, os.pathsep)
     for directory in path:
-	# Try to stat the compiler in this directory, if it exists
-	filename = os.path.join(directory, compiler)
-	try: stats = os.stat(filename)
-	except OSError: continue
-	return stats[stat.ST_CTIME]
+        # Try to stat the compiler in this directory, if it exists
+        filename = os.path.join(directory, compiler)
+        try: stats = os.stat(filename)
+        except OSError: continue
+        return stats[stat.ST_CTIME]
     # Not found
     return 0
 
@@ -174,29 +174,29 @@ def refresh_compiler_infos(infos):
     global failed
     # Refresh each non-custom compiler in the map 
     for compiler, info in infos.items():
-	if info and info.is_custom:
-	    # Skip custom compilers
-	    continue
-	if failed.has_key(compiler):
-	    # Skip compilers that have already failed
-	    del infos[compiler]
-	    continue
-	info = find_compiler_info(compiler)
-	if info: infos[compiler] = info
-	else:
-	    del infos[compiler]
-	    failed[compiler] = None
+        if info and info.is_custom:
+            # Skip custom compilers
+            continue
+        if failed.has_key(compiler):
+            # Skip compilers that have already failed
+            del infos[compiler]
+            continue
+        info = find_compiler_info(compiler)
+        if info: infos[compiler] = info
+        else:
+            del infos[compiler]
+            failed[compiler] = None
     # Now try to add defaults
     for compiler in default_compilers:
-	# Don't retry already-failed compilers
-	if failed.has_key(compiler):
-	    continue
-	info = find_compiler_info(compiler)
-	if info: infos[compiler] = info
+        # Don't retry already-failed compilers
+        if failed.has_key(compiler):
+            continue
+        info = find_compiler_info(compiler)
+        if info: infos[compiler] = info
 
     # Cleanup the temp file
     cleanup_temp_file()
-	
+        
 
 #def get_compiler_infos(compilers):
 #    infos = filter(None, map(find_compiler_info, compilers))
@@ -206,7 +206,7 @@ def write_compiler_infos(infos):
     filename = os.path.expanduser(user_emulations_file)
     dirname = os.path.dirname(filename)
     if not os.path.exists(dirname):
-	os.mkdir(dirname)
+        os.mkdir(dirname)
     file = open(filename, 'wt')
     writer = Util.PyWriter(file)
     writer.write_top('"""This file contains info about compilers for use by '+
@@ -216,16 +216,16 @@ def write_compiler_infos(infos):
     writer.indent()
     ccomma = 0
     for compiler, info in infos.items():
-	if ccomma: writer.write(",\n")
-	else: ccomma = 1
-	writer.write("'%s' : struct(\n"%compiler)
-	writer.write('is_custom = %d,\n' % info.is_custom)
-	writer.write('timestamp = %d,\n' % info.timestamp)
-	writer.write("include_paths = ")
-	writer.write_long_list(info.include_paths)
-	writer.write(",\nmacros = ")
-	writer.write_long_list(info.macros)
-	writer.write(")")
+        if ccomma: writer.write(",\n")
+        else: ccomma = 1
+        writer.write("'%s' : struct(\n"%compiler)
+        writer.write('is_custom = %d,\n' % info.is_custom)
+        writer.write('timestamp = %d,\n' % info.timestamp)
+        writer.write("include_paths = ")
+        writer.write_long_list(info.include_paths)
+        writer.write(",\nmacros = ")
+        writer.write_long_list(info.macros)
+        writer.write(")")
     writer.outdent()
     writer.write("\n}\n")
     writer.flush()
@@ -306,39 +306,55 @@ def find_gcc_compiler_info(compiler):
 
     paths, macros = [], []
 
-    cin, out,err = os.popen3(compiler + " -E -v " + get_temp_file())
+    cin, out,err = os.popen3(compiler + " -E -v -dD " + get_temp_file())
     lines = err.readlines()
     cin.close()
-    out.close()
     err.close()
 
     state = 0
     for line in lines:
-	line = line.rstrip()
-	if state == 0:
-	    if line[:11] == 'gcc version': state = 1
-	elif state == 1:
-	    # cpp command line
-	    args = string.split(line)
-	    for arg in args:
-		if arg[0] != '-':
-		    continue
-		if arg[1] == 'D':
-		    if arg.find('=') != -1:
-			macros.append(tuple(string.split(arg[2:], '=', 1)))
-		    else:
-			macros.append((arg[2:], ''))
-		# TODO: do we need the asserts?
-	    state = 2
-	elif state == 2:
-	    if line == '#include <...> search starts here:':
-		state = 3
-	elif state == 3:
-	    if line == 'End of search list.':
-		state = 4
-	    else:
-		paths.append(line.strip())
-	
+        line = line.rstrip()
+        if state == 0:
+            if line[:11] == 'gcc version': state = 1
+        elif state == 1:
+            # cpp command line
+            args = string.split(line)
+            for arg in args:
+                if arg[0] != '-':
+                    continue
+                if arg[1] == 'D':
+                    if arg.find('=') != -1:
+                        macros.append(tuple(string.split(arg[2:], '=', 1)))
+                    else:
+                        macros.append((arg[2:], ''))
+                # TODO: do we need the asserts?
+            state = 2
+        elif state == 2:
+            if line == '#include <...> search starts here:':
+                state = 3
+        elif state == 3:
+            if line == 'End of search list.':
+                state = 4
+            else:
+                paths.append(line.strip())
+
+    # now read built-in macros
+    state = 0
+    for line in out.readlines():
+        line = line.rstrip()
+        if state == 0:
+            if line == '# 1 "<built-in>"':
+                state = 1
+        elif state == 1:
+            if line.startswith('#define '):
+                tokens = line[8:].split(' ', 1)
+                if len(tokens) == 1: tokens.append('')
+                macros.append(tuple(tokens))
+            elif line == '# 1 "<command line>"':
+                state = 2
+
+    out.close()
+        
     # Per-compiler adjustments
     for name, value in tuple(macros):
         if name == '__GNUC__' and value == '2':
