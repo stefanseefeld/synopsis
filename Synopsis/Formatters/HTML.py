@@ -410,6 +410,12 @@ class BaseFormatter(Visitor.AstVisitor):
             parameters_label.append(self.formatType(p))
         self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
 
+    def visitFunctionType(self, type):
+	ret = self.formatType(type.returnType())
+	params = map(self.formatType, type.parameters())
+	pre = string.join(type.premod(), '')
+	self.__type_label = "%s(%s)(%s)"%(ret,pre,string.join(params, ", "))
+
     #################### AST Visitor ############################################
     def visitTypedef(self, typedef):
 	type = self.formatType(typedef.alias())

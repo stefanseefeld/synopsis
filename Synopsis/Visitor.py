@@ -54,3 +54,4 @@ Functions:
     def visitModifier(self, type): return
     def visitTemplate(self, type): return
     def visitParametrized(self, type): return
+    def visitFunctionType(self, type): return

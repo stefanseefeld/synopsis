@@ -83,15 +83,28 @@ private:
     code_iter* m_enc_iter;
     string m_encmessage;
 
-    //. hack to pass stuff between methods
+    //. Current PtreeDeclaration being parsed
     PtreeDeclaration* m_declaration;
+
+    //. Current ptree typedef being parsed
+    Ptree* m_ptree;
+
+    friend ostream& operator << (ostream& o, const PyWalker::code& code);
 };
+
+ostream& operator << (ostream& o, const PyWalker::code& code) {
+    for (PyWalker::code::const_iterator iter = code.begin(); iter != code.end(); ++iter)
+	if (*iter >= 0x80) o << char(*iter + '0' - 0x80);
+	else o << *iter;
+    return o;
+}
 
 PyWalker::PyWalker(Parser *p, Synopsis *s)
         : Walker(p),
         synopsis(s)
 {
     Trace trace("PyWalker::PyWalker");
+    m_ptree = m_declaration = 0;
 }
 
 PyWalker::~PyWalker()
@@ -371,11 +384,18 @@ PyObject* PyWalker::decodeType()
     else if (c == '_') { --iter; return NULL; }
         else if (c == 'F') {
             // Function ptr.. argh!
-            // FIXME: currently its just skipped
-            while (decodeType());
+	    //cout << "Function ptr type: "; m_ptree->Display();
+	    //cout << *m_enctype << endl;
+	    vector<PyObject*> params;
+            while (1) {
+		PyObject* type = decodeType();
+		if (type) params.push_back(type);
+		else break;
+	    }
             ++iter; // skip over '_'
-            decodeType();
-            return Py_None;
+            PyObject* returnType = decodeType();
+	    PyObject* func = synopsis->addFunctionType(returnType, postmod, params);
+            return func;
         }
         else if (c == 'T') {
             // Template type: Name first, then size of arg field, then arg
@@ -450,6 +470,7 @@ Ptree *PyWalker::TranslateTypedef(Ptree *node)
 {
     Trace trace("PyWalker::TranslateTypedef");
     _declarators.clear();
+    m_ptree = node;
     /* Ptree *tspec = */ TranslateTypespecifier(node->Second());
     for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
         TranslateDeclarator(declarator->Car());
