@@ -34,12 +34,12 @@ DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG -fno-inline
 
 # Flags
 CFLAGS		:= 
-CPPFLAGS	:= -I.. -I$(PYTHON_PREFIX)/include -DPYTHON_INCLUDE="$(PYTHON_INCLUDE)" #-DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYTHON_MINOR=$(PYTHON_MINOR)
+CPPFLAGS	:= -I.. -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)"
 CXXFLAGS	:= -Wall
 LDFLAGS		:=
 UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
-LIB		:= $(PYTHON_LIB) -ldl -lpthread # Linux
+LIB		:= $(python_lib) -ldl -lpthread
 
 GCLIB		:= ../gc/gc.a
 UCPP_LIB	:= ../ucpp/ucpp.a
@@ -79,7 +79,7 @@ debug:		occ.gdb link-synopsis ucpp
 
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : ../%.cc
-	$(CXX)  -I.. $(OPTIMISE) $(CXXFLAGS) -c -o $@ $<
+	$(CXX)  $(OPTIMISE) -I.. $(CXXFLAGS) -c -o $@ $<
 
 # This compiles the parser files with optimisation
 $(SYN_OBJ): %.o : %.cc
@@ -155,5 +155,6 @@ depend:
 	makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES) 2> /dev/null
 
 clean :
-	rm -f *.[o] *.go *.ii *.so *core opencxx.a ../../../occ.so ../ucpp/*.o  ../ucpp/*.a
+	rm -f *~ *.o *.go *.ii *.so *core opencxx.a opencxx.ga occ.gdb \
+	../../../occ.so ../../../link.so ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga
 

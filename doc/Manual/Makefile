@@ -59,12 +59,12 @@ $(spath)/Synopsis/synopsis.syn: $(bpath)/Synopsis/synopsis
 # Compile C++ .hh files
 $(spath)/%.csyn: $(bpath)/%.hh
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -I$(PYTHON_PREFIX)/include -DPYTHON_INCLUDE="$(PYTHON_INCLUDE)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
+	$(synopsis) -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -o $@ $?
 
 # Compile C++ .cc files
 $(spath)/%.ccsyn: $(bpath)/%.cc
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -I$(PYTHON_PREFIX)/include -DPYTHON_INCLUDE="$(PYTHON_INCLUDE)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?),-I$(cxxpath)/.. -o $@ $?
+	$(synopsis) -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)" -Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(bpath)/%,syn/%-links,$?),-I$(cxxpath)/.. -o $@ $?
 
 # Create links (only) for C+ .cc files
 
@@ -72,4 +72,4 @@ clean:
 	rm -rf $(spath) *.pyc *.pyo
 
 distclean:  clean
-	rm -rf Manual syn
+	rm -rf Manual syn links.toc
