@@ -24,12 +24,12 @@ inline void cleanup_gc() {}
 }
 }
 
-inline void *operator new(size_t size, PTree::GCPlacement)
+inline void *operator new(size_t size, Synopsis::PTree::GCPlacement)
 {
   return ::operator new(size);
 }
 
-inline void *operator new [](size_t size, PTree::GCPlacement)
+inline void *operator new [](size_t size, Synopsis::PTree::GCPlacement)
 {
   return ::operator new [](size);
 }

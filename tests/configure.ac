@@ -17,8 +17,9 @@ AC_ARG_WITH(python,
 
 AC_PROG_CXX
 
-SYN_CPP="`PKG_CONFIG_PATH=../src pkg-config --define-variable=includedir=${srcdir}/../src --cflags Synopsis`"
-SYN_LIBS="`PKG_CONFIG_PATH=../src pkg-config --define-variable=prefix=${srcdir}/../src --libs Synopsis`"
+syn_inc="`cd ${srcdir}/../src && pwd`"
+SYN_CPP="`PKG_CONFIG_PATH=../src pkg-config --define-variable=includedir=${syn_inc} --cflags Synopsis`"
+SYN_LIBS="`PKG_CONFIG_PATH=../src pkg-config --define-variable=prefix=${syn_inc} --libs Synopsis`"
 CPPFLAGS="$CPPFLAGS $SYN_CPP"
 LIBS="$LIBS $SYN_LIBS"
 

@@ -87,6 +87,8 @@ class config(build_ext):
             python = sys.executable
 
         command = "%s --with-python=%s"%(configure, python)
+        if self.disable_gc:
+            command += " --disable-gc"
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)
