@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.9 2003/11/21 21:16:55 stefan Exp $
+# $Id: Processor.py,v 1.10 2003/11/22 21:42:58 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -122,41 +122,45 @@ class Composite(Processor):
       to list the desired processors. If the named values contain 'processors',
       they override the var list."""
       if processors: self.processors = processors
-      self.__dict__.update(kwds)
+      self.set_parameters(kwds)
 
    def process(self, ast, **kwds):
       """apply a list of processors. The 'input' value is passed to the first
-      processor only, the 'output' to the last."""
+      processor only, the 'output' to the last. All other keywords are ignored."""
 
       if not self.processors:
          return ast
 
-      elif len(self.processors) == 1:
-         return self.processors[0].process(ast, **kwds)
-      
-      # first_kwds is a copy of kwds, but without 'output' defined
-      first_kwds = kwds.copy()
-      if first_kwds.has_key('output'):
-         del first_kwds['output']
-      # last_kwds is a copy of kwds, but without 'input' defined
-      last_kwds = kwds.copy()
-      if last_kwds.has_key('input'):
-         del last_kwds['input']
-      # remove 'input' and 'output' from kwds for all other processors
-      # in the pipeline
-      if kwds.has_key('input'):
-         del kwds['input']
-      if kwds.has_key('output'):
-         del kwds['output']
+      self.set_parameters(kwds)
 
-      ast = self.processors[0].process(ast, **first_kwds)
+      if len(self.processors) == 1:
+         my_kwds = {}
+         if self.input: my_kwds['input'] = self.input
+         if self.output: my_kwds['output'] = self.output
+         return self.processors[0].process(ast, **my_kwds)
 
+      # more than one processors...
+
+      # call the first, passing the 'input' parameter, if present
+      if self.input:
+         ast = self.processors[0].process(ast, input = self.input)
+      else:
+         ast = self.processors[0].process(ast)
+
+      # deal with all between the first and the last;
+      # they don't get any params
       if len(self.processors) > 2:
          for p in self.processors[1:-1]:
-            ast = p.process(ast, **kwds)
+            ast = p.process(ast)
 
-      return self.processors[-1].process(ast, **last_kwds)
+      # call the last, passing the 'output' parameter, if present
+      if self.output:
+         ast = self.processors[-1].process(ast, output = self.output)
+      else:
+         ast = self.processors[-1].process(ast)
 
+      return ast
+   
 class Store(Processor):
    """Store is a convenience class useful to write out the intermediate
    state of the ast within a pipeline such as represented by the 'Composite'"""
