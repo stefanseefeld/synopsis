@@ -50,12 +50,18 @@ RefManual in docs/. A separate AST is created for each input file, and only
 updated when necessary. These separate files are then compiled into a single
 AST and passed to the formatter for output:
 
- for each file:  synopsis -p C++ -Wp,-m -o syn/$file.syn $file.hh
- finally: synopis -f HTML -o Manual syn/*.syn
+ for each file: synopsis -p C++ -Wp,-m -o syn/$file.syn $file.hh
+       finally: synopsis -f HTML -o Manual syn/*.syn
 
 Note that telling the Parser to only keep main-file declarations (-m) results
 in much smaller files and much faster linking, as the standard headers are so
 large that they can cause huge time and memory requirements.
+
+Alternatively, you may use the new config file - for more info check out the
+"Config" section of the RefManual. Doing so can change the above example to:
+
+ for each file: synopsis -c config.py -Wc,parser=C++ -o syn/$file.syn $file.hh
+       finally: synopsis -c config.py -Wc,formatter=HTML syn/*.syn
 
 
 ** Known Bugs
