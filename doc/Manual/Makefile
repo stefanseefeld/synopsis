@@ -1,5 +1,5 @@
-script	:= synopsis.py
-synopsis := python $(script)
+srcdir	:= .
+synopsis := python $(srcdir)/synopsis.py
 
 topdir	:= ../..
 
@@ -20,7 +20,7 @@ texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
 
 
 TEXI		:= ast.texi type.texi util.texi \
-            parsers-c++.texi parsers-idl.texi parsers-py.texi \
+            parsers-cxx.texi parsers-idl.texi parsers-py.texi \
             processors.texi \
             formatters-ascii.texi formatters-html.texi formatters-dump.texi \
             formatters-dia.texi formatters-db.texi formatters-dot.texi \
@@ -34,6 +34,7 @@ vpath %.py $(topdir)
 vpath %.cc $(topdir)
 vpath %.h $(topdir)
 vpath %.hh $(topdir)
+vpath Manual.texi $(srcdir)
 
 html: all.syn
 	@echo formatting $@
@@ -150,13 +151,13 @@ formatters-texi.syn:	py.syn
 	@echo formatting $@
 	$(synopsis) texi --output=$@ $^
 
-Manual.pdf:	$(TEXI) Manual.texi
+Manual.pdf:	Manual.texi $(TEXI)
 	@echo generating $@
-	texi2pdf Manual.texi
+	texi2pdf -I $(srcdir) $?
 
 info:	$(TEXI) Manual.texi
 	@echo generating info files
-	makeinfo Manual.texi
+	makeinfo -I $(srcdir) Manual.texi
 
 install: all
 	mkdir -p $(datadir)/Synopsis

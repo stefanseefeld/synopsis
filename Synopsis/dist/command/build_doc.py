@@ -19,7 +19,8 @@ class build_doc(build.build):
    def run(self):
       """Run this command, i.e. do the actual document generation."""
 
-      self.manual()
+      #self.manual()
+      self.tutorial()
     
    def manual(self):
       """Build the manual."""
@@ -31,42 +32,55 @@ class build_doc(build.build):
       cwd = os.getcwd()
       mkpath(tempdir, 0777, self.verbose, self.dry_run)
       spawn(['make', '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-             'script="%s/synopsis.py"'%srcdir, 'topdir=%s'%cwd])
+             'srcdir=%s'%srcdir, 'topdir=%s'%cwd])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis'))
       if os.path.isdir(os.path.join(builddir, 'html', 'Manual')):
          rmtree(os.path.join(builddir, 'html', 'Manual'), 1)
-      mkpath(builddir, 0777, self.verbose, self.dry_run)
-      copytree(os.path.join(tempdir, 'html'), os.path.join(builddir, 'html', 'Manual'))
+      mkpath(os.path.join(builddir, 'html'), 0777, self.verbose, self.dry_run)
+      copytree(os.path.join(tempdir, 'html'),
+               os.path.join(builddir, 'html', 'Manual'))
 
    def tutorial(self):
+      """Build the tutorial."""
+
+      srcdir = os.path.abspath('doc/Tutorial/')
+      tempdir = os.path.abspath(os.path.join(self.build_temp,
+                                             'share/doc/Synopsis/Tutorial'))
+      builddir = os.path.abspath(os.path.join(self.build_lib,
+                                              'share/doc/Synopsis/print'))
+
+      if os.path.isdir(os.path.join(builddir, 'html', 'Tutorial')):
+         rmtree(os.path.join(builddir, 'html', 'Tutorial'), 1)
 
       xsltproc = find_executable('xsltproc')
       if not xsltproc:
          self.announce("cannot build html tutorial without 'xsltproc'")
-         return
-      self.announce("building html tutorial")
-      srcdir = os.path.abspath('doc/Tutorial/')
-      tempdir = os.path.abspath(os.path.join(self.build_temp, 'share/doc/Synopsis'))
-      builddir = os.path.abspath(os.path.join(self.build_lib, 'share/doc/Synopsis'))
-      cwd = os.getcwd()
-      mkpath(tempdir, 0777, self.verbose, self.dry_run)
-      os.chdir(tempdir)
-      spawn([xmlto, '--skip-validation', '-o', 'html',
-             '-m', os.path.join(srcdir, 'synopsis-html.xsl'),
-             'html', os.path.join(srcdir, 'synopsis.xml')])
-
-      mkpath(builddir, 0777, self.verbose, self.dry_run)
-      if os.path.isdir(os.path.join(builddir, 'html')):
-         rmtree(os.path.join(builddir, 'html'), 1)
-      copytree(os.path.join(tempdir, 'html'), os.path.join(builddir, 'html'))
+      else:
+         self.announce("building html tutorial")
+         command = [xsltproc, '--novalid',
+                    '-o', os.path.join(tempdir, 'html'),
+                    os.path.join(srcdir, 'html.xsl'),
+                    os.path.join(srcdir, 'synopsis.xml')]
+         if self.verbose:
+            print string.join(command)
+         if not self.dry_run:
+            mkpath(tempdir, 0777, self.verbose, self.dry_run)
+            spawn(command)
+            copytree(os.path.join(tempdir, 'html'),
+                     os.path.join(builddir, 'html', 'Tutorial'))
 
       docbook2pdf = find_executable('docbook2pdf')
       if not docbook2pdf:
          self.announce("cannot build pdf docs without 'docbook2pdf'")
-         return
-      self.announce("building pdf manual")
-      spawn([docbook2pdf, os.path.join(srcdir, 'synopsis.xml')])
-      copy2('synopsis.pdf', builddir)
-      os.chdir(cwd)
+      else:
+         self.announce("building pdf manual")
+         command = [docbook2pdf, '-o', os.path.join(tempdir, 'synopsis.pdf'),
+                    os.path.join(srcdir, 'synopsis.xml')]
+         if self.verbose:
+            print string.join(command)
+         if not self.dry_run:
+            spawn(command)
+         copy_file(os.path.join(tempdir, 'synopsis.pdf'), builddir)
+
