@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.5 2001/06/06 07:51:45 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.6 2001/06/10 00:31:39 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.6  2001/06/10 00:31:39  chalky
+// Refactored link storage, better comments, better parsing
+//
 // Revision 1.5  2001/06/06 07:51:45  chalky
 // Fixes and moving towards SXR
 //
@@ -55,6 +58,7 @@
 #include "ptree.h"
 #include "parse.h"
 
+#include "linkstore.hh"
 #include "swalker.hh"
 #include "builder.hh"
 #include "decoder.hh"
@@ -65,10 +69,10 @@
 
 Ptree* SWalker::TranslateReturn(Ptree* spec) {
     STrace trace("SWalker::TranslateReturn");
-    if (!m_store_links) return 0;
+    if (!m_links) return 0;
 
     // Link 'return' keyword
-    storeSpan(spec->First(), "file-keyword");
+    m_links->span(spec->First(), "file-keyword");
 
     // Translate the body of the return, if present
     if (spec->Length() == 3) Translate(spec->Second());
@@ -85,6 +89,7 @@ Ptree* SWalker::TranslateInfix(Ptree* node) {
 
 Ptree* SWalker::TranslateVariable(Ptree* spec) {
     STrace trace("SWalker::TranslateVariable");
+    if (m_links) findComments(spec);
     try {
 	Type::Named* type;
 	if (!spec->IsLeaf()) {
@@ -122,13 +127,13 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		    // It is a variable
 		    m_type = var->vtype();
 		    // Store a link to the variable itself (not its type)
-		    storeLink(spec, false, type);
+		    if (m_links) m_links->link(spec, type);
 		    /*cout << "var type name is " << m_type_formatter->format(m_type) << endl;*/
 		} else if ((enumor = dynamic_cast<AST::Enumerator*>(declared.declaration())) != 0) {
 		    // It is an enumerator
 		    m_type = 0; // we have no use for enums in type code
 		    // But still a link is needed
-		    storeLink(spec, false, type);
+		    if (m_links) m_links->link(spec, type);
 		    /*cout << "enum type name is " << m_type_formatter->format(type) << endl;*/
 		} else {
 		    throw nodeERROR(spec, "var was not a Variable nor Enumerator!");
@@ -143,7 +148,7 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	    AST::Function* func = m_builder->lookupFunc(name, scope, m_params);
 	    if (!func) { throw nodeERROR(spec, "Warning: function '" << name << "' not found!"); }
 	    // Store a link to the function name
-	    storeLink(spec, false, func->declared());
+	    if (m_links) m_links->link(spec, func->declared());
 	    // Now find returnType
 	    m_type = func->returnType();
 	}
@@ -212,6 +217,7 @@ Ptree* SWalker::TranslateExprStatement(Ptree* node) {
 Ptree* SWalker::TranslateUnary(Ptree* node) {
     STrace trace("SWalker::TranslateUnary");
     // [op expr]
+    if (m_links) findComments(node);
     // TODO: lookup unary operator
     Translate(node->Second());
     return 0;
@@ -303,7 +309,8 @@ Ptree* SWalker::TranslateDotMember(Ptree* node) {
 Ptree* SWalker::TranslateIf(Ptree* node) {
     STrace trace("SWalker::TranslateIf");
     // [ if ( expr ) statement (else statement)? ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     // Start a temporary namespace, in case expr is a declaration
     m_builder->startNamespace("if", Builder::NamespaceUnique);
     // Parse expression
@@ -317,7 +324,7 @@ Ptree* SWalker::TranslateIf(Ptree* node) {
     // End the block and check for else
     m_builder->endNamespace();
     if (node->Length() == 7) {
-	storeSpan(node->Nth(5), "file-keyword");
+	if (m_links) m_links->span(node->Nth(5), "file-keyword");
 	AST::Namespace* ns = m_builder->startNamespace("else", Builder::NamespaceUnique);
 	ns->declarations().insert(
 		ns->declarations().begin(),
@@ -335,7 +342,8 @@ Ptree* SWalker::TranslateIf(Ptree* node) {
 Ptree* SWalker::TranslateSwitch(Ptree* node) {
     STrace trace("SWalker::TranslateSwitch");
     // [ switch ( expr ) statement ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     m_builder->startNamespace("switch", Builder::NamespaceUnique);
     // Parse expression
     Translate(node->Third());
@@ -351,7 +359,8 @@ Ptree* SWalker::TranslateSwitch(Ptree* node) {
 Ptree* SWalker::TranslateCase(Ptree* node) {
     STrace trace("SWalker::TranslateCase");
     // [ case expr : [expr] ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     Translate(node->Second());
     Translate(node->Nth(3));
     return 0;
@@ -360,7 +369,8 @@ Ptree* SWalker::TranslateCase(Ptree* node) {
 Ptree* SWalker::TranslateDefault(Ptree* node) {
     STrace trace("SWalker::TranslateDefault");
     // [ default : [expr] ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     Translate(node->Third());
     return 0;
 }
@@ -368,14 +378,16 @@ Ptree* SWalker::TranslateDefault(Ptree* node) {
 Ptree* SWalker::TranslateBreak(Ptree* node) {
     STrace trace("SWalker::TranslateBreak");
     // [ break ; ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     return 0;
 }
 
 Ptree* SWalker::TranslateFor(Ptree* node) {
     STrace trace("SWalker::TranslateFor");
     // [ for ( stmt expr ; expr ) statement ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     m_builder->startNamespace("for", Builder::NamespaceUnique);
     // Parse expressions
     Translate(node->Third());
@@ -393,7 +405,8 @@ Ptree* SWalker::TranslateFor(Ptree* node) {
 Ptree* SWalker::TranslateWhile(Ptree* node) {
     STrace trace("SWalker::TranslateWhile");
     // [ while ( expr ) statement ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     m_builder->startNamespace("while", Builder::NamespaceUnique);
     // Parse expression
     Translate(node->Third());
@@ -416,6 +429,7 @@ Ptree* SWalker::TranslatePostfix(Ptree* node) {
 Ptree* SWalker::TranslateParen(Ptree* node) {
     STrace trace("SWalker::TranslateParen");
     // [ ( expr ) ]
+    if (m_links) findComments(node);
     Translate(node->Second());
     return 0;
 }
@@ -423,13 +437,14 @@ Ptree* SWalker::TranslateParen(Ptree* node) {
 Ptree* SWalker::TranslateCast(Ptree* node) {
     STrace trace("SWalker::TranslateCast");
     // ( type-expr ) expr   ..type-expr is type encoded
+    if (m_links) findComments(node);
     Ptree* type_expr = node->Second();
     //Translate(type_expr->First());
     if (type_expr->Second()->GetEncodedType()) {
 	m_decoder->init(type_expr->Second()->GetEncodedType());
 	m_type = m_decoder->decodeType();
 	m_type = TypeResolver(m_builder).resolve(m_type);
-	if (m_type) storeLink(type_expr->First(), false, m_type);
+	if (m_type && m_links) m_links->link(type_expr->First(), m_type);
     } else m_type = 0;
     Translate(node->Nth(3));
     return 0;
@@ -438,14 +453,15 @@ Ptree* SWalker::TranslateCast(Ptree* node) {
 Ptree* SWalker::TranslateTry(Ptree* node) {
     STrace trace("SWalker::TranslateTry");
     // [ try [{}] [catch ( arg ) [{}] ]* ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     m_builder->startNamespace("try", Builder::NamespaceUnique);
     Translate(node->Second());
     m_builder->endNamespace();
     for (int n = 2; n < node->Length(); n++) {
 	// [ catch ( arg ) [{}] ]
 	Ptree* catch_node = node->Nth(n);
-	storeSpan(catch_node->First(), "file-keyword");
+	if (m_links) m_links->span(catch_node->First(), "file-keyword");
 	m_builder->startNamespace("catch", Builder::NamespaceUnique);
 	Ptree* arg = catch_node->Third();
 	if (arg->Length() == 2) {
@@ -454,7 +470,7 @@ Ptree* SWalker::TranslateTry(Ptree* node) {
 	    Type::Type* arg_type = m_decoder->decodeType();
 	    // Link the type
 	    Type::Type* arg_link = TypeResolver(m_builder).resolve(arg_type);
-	    storeLink(arg->First(), false, arg_link);
+	    if (m_links) m_links->link(arg->First(), arg_link);
 	    // Create a declaration for the argument
 	    if (arg->Second() && arg->Second()->GetEncodedName()) {
 		std::string name = m_decoder->decodeName(arg->Second()->GetEncodedName());
@@ -489,7 +505,8 @@ Ptree* SWalker::TranslateCond(Ptree* node) {
 
 Ptree* SWalker::TranslateThis(Ptree* node) {
     STrace trace("SWalker::TranslateThis");
-    storeSpan(node, "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node, "file-keyword");
     // Set m_type to type of 'this', stored in the name lookup for this func
     m_type = m_builder->lookupType("this");
     return 0;
@@ -509,6 +526,7 @@ Ptree* SWalker::TranslateFunctionBody(Ptree*) { STrace trace("SWalker::Translate
 
 Ptree* SWalker::TranslateAccessDecl(Ptree* node) {
     STrace trace("SWalker::TranslateAccessDecl NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -517,6 +535,7 @@ Ptree* SWalker::TranslateAccessDecl(Ptree* node) {
 
 Ptree* SWalker::TranslateUserAccessSpec(Ptree* node) {
     STrace trace("SWalker::TranslateUserAccessSpec NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -526,6 +545,7 @@ Ptree* SWalker::TranslateUserAccessSpec(Ptree* node) {
 
 Ptree* SWalker::TranslateDo(Ptree* node) {
     STrace trace("SWalker::TranslateDo NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -534,12 +554,14 @@ Ptree* SWalker::TranslateDo(Ptree* node) {
 
 Ptree* SWalker::TranslateContinue(Ptree* node) {
     STrace trace("SWalker::TranslateContinue NYI");
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     return 0;
 }
 
 Ptree* SWalker::TranslateGoto(Ptree* node) {
     STrace trace("SWalker::TranslateGoto NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -548,6 +570,7 @@ Ptree* SWalker::TranslateGoto(Ptree* node) {
 
 Ptree* SWalker::TranslateLabel(Ptree* node) {
     STrace trace("SWalker::TranslateLabel NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -577,7 +600,8 @@ Ptree* SWalker::TranslatePm(Ptree* node) {
 Ptree* SWalker::TranslateThrow(Ptree* node) {
     STrace trace("SWalker::TranslateThrow");
     // [ throw [expr] ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     Translate(node->Second());
     return 0;
 }
@@ -585,7 +609,8 @@ Ptree* SWalker::TranslateThrow(Ptree* node) {
 Ptree* SWalker::TranslateSizeof(Ptree* node) {
     STrace trace("SWalker::TranslateSizeof");
     // [ sizeof ( [type [???] ] ) ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     // TODO: find the type for highlighting, and figure out what the ??? is
     m_type = m_builder->lookupType("int");
     return 0;
@@ -593,6 +618,7 @@ Ptree* SWalker::TranslateSizeof(Ptree* node) {
 
 Ptree* SWalker::TranslateNew(Ptree* node) {
     STrace trace("SWalker::TranslateNew NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -601,6 +627,7 @@ Ptree* SWalker::TranslateNew(Ptree* node) {
 
 Ptree* SWalker::TranslateNew3(Ptree* node) {
     STrace trace("SWalker::TranslateNew3 NYI");
+    if (m_links) findComments(node);
 #ifdef DEBUG
     node->Display2(cout);
 #endif
@@ -610,13 +637,15 @@ Ptree* SWalker::TranslateNew3(Ptree* node) {
 Ptree* SWalker::TranslateDelete(Ptree* node) {
     STrace trace("SWalker::TranslateDelete");
     // [ delete [expr] ]
-    storeSpan(node->First(), "file-keyword");
+    if (m_links) findComments(node);
+    if (m_links) m_links->span(node->First(), "file-keyword");
     Translate(node->Second());
     return 0;
 }
 
 Ptree* SWalker::TranslateFstyleCast(Ptree* node) {
     STrace trace("SWalker::TranslateFstyleCast NYI");
+    if (m_links) findComments(node);
     // [ [type] ( [expr] ) ]
     m_type = 0;
     //Translate(node->Third()); <-- unknown ptree???? FIXME

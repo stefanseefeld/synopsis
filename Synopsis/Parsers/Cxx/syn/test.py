@@ -23,7 +23,7 @@ class Test:
 	    return not self.view_page(test_file, test_base, flags)
     def system(self, command):
 	ret = os.system(command)
-	return ret >> 8;
+	return ret >> 8
     def gdb_less(self, test_file, flags = ""):
 	return self.system("make debug && ./occ.gdb %s %s | less"%(flags, test_file));
     def view_page(self, file, base, flags=""):
@@ -32,13 +32,13 @@ class Test:
 	f.close()
 	return self.system("make && "\
 	    "echo \"Running Synopsis...\" && "\
-	    "synopsis -p C++ -Wp,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
+	    "synopsis -c config.py -Wc,parser=C++ -Wp,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
 	    "echo \"Running Linker...\" && "\
 	    "./link-synopsis -i %(file)s -l /tmp/%(base)s.links -o /tmp/%(base)s.html.out && "\
 	    "(echo \"Cleaning up...\") && "\
 	    "(cat /tmp/%(base)s.top /tmp/%(base)s.html.out > /tmp/%(base)s.html) && "\
 	    "web /tmp/%(base)s.html && "\
-	    "rm /tmp/%(base)s.{links,syn,html.out,top}"%vars() )
+	    "echo rm /tmp/%(base)s.{links,syn,html.out,top}"%vars() )
 
 class IfTest (Test):
     test = """

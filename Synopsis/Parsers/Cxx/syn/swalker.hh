@@ -11,15 +11,17 @@
 #ifndef H_SYNOPSIS_CPP_SWALKER
 #define H_SYNOPSIS_CPP_SWALKER
 
+#include "../ptree.h"
 #include "../walker.h"
 #undef Scope
 
 #include <vector>
+#include <string>
 
 // Forward declarations
-class ostream;
 class Builder; class Program;
 class Decoder; class TypeFormatter;
+class LinkStore;
 
 namespace AST { class Parameter; class Inheritance; class Declaration; 
     class Operation; class Scope; }
@@ -40,28 +42,34 @@ public:
     //. Sets store links to true.
     //. This will cause the whole ptree to be traversed, and any linkable
     //. identifiers found will be stored
-    void setStoreLinks(bool value, std::ostream* storage) { m_store_links = value; m_storage = storage; }
+    void setStoreLinks(bool value, std::ostream* storage);
 
     //. Get a name from the ptree
     std::string getName(Ptree*) const;
 
+    //. Get the Parser object
+    Parser* getParser();
+    //. Get the Program object
+    Program* getProgram();
+    //. Get the TypeFormatter object
+    TypeFormatter* getTypeFormatter();
+
+    //. Get the line number of the given Ptree node
+    int getLine(Ptree*);
+    //. Returns true if the current filename from the last getLine or
+    //. updateLineNumber call is equal to the main source filename
+    bool isMainFile();
     //. Update the line number
     void updateLineNumber(Ptree*);
-
-    //. Store a link at the given node
-    void storeLink(Ptree* node, bool def, const std::vector<std::string> &name);
-    //. Store a link at the given node, if the type is amenable to it
-    void storeLink(Ptree* node, bool def, Type::Type*);
-    //. Store a span of the given class at the given node
-    void storeSpan(Ptree* node, const char* clas);
-    //. Sotre a possibly multi-line span of the given class at the given node
-    void storeLongSpan(Ptree* node, const char* clas);
 
     void addComments(AST::Declaration* decl, Ptree* comments);
     void addComments(AST::Declaration* decl, CommentedLeaf* node);
     void addComments(AST::Declaration* decl, PtreeDeclarator* node);
     void addComments(AST::Declaration* decl, PtreeDeclaration* decl);
     void addComments(AST::Declaration* decl, PtreeNamespaceSpec* decl);
+    //. Traverses left side of tree till it finds a leaf, and if that is a
+    //. CommentedLeaf then it adds those comments as spans
+    void findComments(Ptree* node);
 
     // Takes the (maybe nil) args list and puts them in m_params
     void TranslateFunctionArgs(Ptree* args);
@@ -180,10 +188,9 @@ private:
 
     //. True if should try and extract tail comments before }'s
     bool m_extract_tails;
-    //. True if should parse whole ptree and store links
-    bool m_store_links;
-    //. Storage for links
-    std::ostream* m_storage;
+    //. Storage for links. This is only set if we should be storing links, so
+    //. it must be checked before every use
+    LinkStore* m_links;
     //. True if this TranslateDeclarator should try to store the decl type
     bool m_store_decl;
 
