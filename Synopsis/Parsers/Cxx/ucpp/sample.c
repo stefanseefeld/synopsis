@@ -103,5 +103,12 @@ int main(int argc, char *argv[])
 				: operators_name[ls.ctok->type]);
 		}
 	}
+
+	/* give back memory and exit */
+	wipeout();
+	free_lexer_state(&ls);
+#ifdef MEM_DEBUG
+	report_leaks();
+#endif
 	return 0;
 }

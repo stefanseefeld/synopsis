@@ -28,12 +28,8 @@
  *
  */
 
-/* Synopsis:
- * $id$
- */
-
 #define VERS_MAJ	1
-#define VERS_MIN	0
+#define VERS_MIN	2
 /* uncomment the following if you cannot set it with a compiler flag */
 /* #define STAND_ALONE */
 
@@ -78,7 +74,7 @@ static char *system_macros_def[] = { STD_MACROS, 0 };
 static char *system_assertions_def[] = { STD_ASSERT, 0 };
 #endif
 
-char *current_filename, *current_long_filename = 0;
+char *current_filename = 0, *current_long_filename = 0;
 static int current_incdir = -1;
 
 #ifdef SYNOPSIS
@@ -198,6 +194,13 @@ static void init_garbage_fifo(struct garbage_fifo *gf)
 	gf->ngarb = 0;
 }
 
+static void free_garbage_fifo(struct garbage_fifo *gf)
+{
+	garbage_collect(gf);
+	freemem(gf->garbage);
+	freemem(gf);
+}
+
 /*
  * order is important: it must match the token-constants declared as an
  * enum in the header file.
@@ -212,9 +215,10 @@ char *operators_name[] = {
 	"=>",
 #endif
 	"~", "!=", "&", "&&", "&=", "|", "||", "|=", "%", "%=", "*", "*=",
-	"^", "^=", "!", "~=", "{", "}", "[", "]", "(", ")", ",", "?", ";",
+	"^", "^=", "!",
+	"{", "}", "[", "]", "(", ")", ",", "?", ";",
 	":", ".", "...", "#", "##", " ", "ouch", "<:", ":>", "<%", "%>",
-	"%:", "%:%:"
+	"%:", "%:%:", "", "", "", "", "", "", "", "", ""
 };
 
 /* the ascii representation of a token */
@@ -240,20 +244,28 @@ char *token_name(struct token *t)
  * -- remember in which directory, in the include path, the file was found.
  */
 struct found_file {
-	char *name;		/* first field */
-	char *long_name;
+	char *long_name;	/* first field */
+	char *name;
 	char *protect;
+};
+
+/*
+ * For files from system include path.
+ */
+struct found_file_sys {
+	char *name;
+	struct found_file *rff;
 	int incdir;
 };
 
-static struct HT *found_files = 0, *found_files_loc = 0;
+static struct HT *found_files = 0, *found_files_sys = 0;
 
 static struct found_file *new_found_file(void)
 {
 	struct found_file *ff = getmem(sizeof(struct found_file));
 
+	ff->name = ff->long_name = 0;
 	ff->protect = 0;
-	ff->incdir = -1;
 	return ff;
 }
 
@@ -261,9 +273,28 @@ static void del_found_file(void *m)
 {
 	struct found_file *ff = (struct found_file *)m;
 
-	freemem(ff->name);
-	freemem(ff->long_name);
+	if (ff->name) freemem(ff->name);
+	if (ff->long_name) freemem(ff->long_name);
 	if (ff->protect) freemem(ff->protect);
+	freemem(ff);
+}
+
+static struct found_file_sys *new_found_file_sys(void)
+{
+	struct found_file_sys *ffs = getmem(sizeof(struct found_file_sys));
+
+	ffs->name = 0;
+	ffs->rff = 0;
+	ffs->incdir = -1;
+	return ffs;
+}
+
+static void del_found_file_sys(void *m)
+{
+	struct found_file_sys *ffs = (struct found_file_sys *)m;
+
+	if (ffs->name) freemem(ffs->name);
+	freemem(ffs);
 }
 
 /*
@@ -273,17 +304,10 @@ static void del_found_file(void *m)
 struct protect protect_detect;
 static struct protect *protect_detect_stack = 0;
 
-/*
- * "current_filename" is used for error reporting, and the __FILE__ macro
- */
-static void set_current_filename(char *x)
-{
-	current_filename = x;
-}
-
 void set_init_filename(char *x, int real_file)
 {
-	set_current_filename(sdup(x));
+	if (current_filename) freemem(current_filename);
+	current_filename = sdup(x);
 	current_long_filename = 0;
 	current_incdir = -1;
 	if (real_file) {
@@ -292,7 +316,7 @@ void set_init_filename(char *x, int real_file)
 		protect_detect.ff = new_found_file();
 		protect_detect.ff->name = sdup(x);
 		protect_detect.ff->long_name = sdup(x);
-		putHT(found_files_loc, protect_detect.ff);
+		putHT(found_files, protect_detect.ff);
 	} else {
 		protect_detect.state = 0;
 	}
@@ -302,8 +326,9 @@ static void init_found_files(void)
 {
 	if (found_files) killHT(found_files);
 	found_files = newHT(128, cmp_struct, hash_struct, del_found_file);
-	if (found_files_loc) killHT(found_files_loc);
-	found_files_loc = newHT(128, cmp_struct, hash_struct, del_found_file);
+	if (found_files_sys) killHT(found_files_sys);
+	found_files_sys = newHT(128, cmp_struct, hash_struct,
+		del_found_file_sys);
 }
 
 /*
@@ -317,6 +342,7 @@ static void reinit_lexer_state(struct lexer_state *ls, int wb)
 	ls->from_mmap = 0;
 #endif
 #endif
+	ls->input = 0;
 	ls->ebuf = ls->pbuf = 0;
 	ls->nlka = 0;
 	ls->macfile = 0;
@@ -342,6 +368,7 @@ void init_buf_lexer_state(struct lexer_state *ls, int wb)
 	ls->output_buf = wb ? getmem(OUTPUT_BUF_MEMG) : 0;
 #endif
 	ls->sbuf = 0;
+	ls->output_fifo = 0;
 
 	ls->ctok = getmem(sizeof(struct token));
 	ls->ctok->name = getmem(ls->tknl = TOKEN_NAME_MEMG);
@@ -369,6 +396,7 @@ void init_buf_lexer_state(struct lexer_state *ls, int wb)
 void init_lexer_state(struct lexer_state *ls)
 {
 	init_buf_lexer_state(ls, 1);
+	ls->input = 0;
 }
 
 /*
@@ -395,6 +423,24 @@ static void restore_lexer_state(struct lexer_state *ls,
 	ls->ifnest = lsbak->ifnest;
 	ls->condf[0] = lsbak->condf[0];
 	ls->condf[1] = lsbak->condf[1];
+}
+
+/*
+ * close input file operations on a struct lexer_state
+ */
+static void close_input(struct lexer_state *ls)
+{
+#ifdef UCPP_MMAP
+	if (ls->from_mmap) {
+		munmap((void *)ls->input_buf, ls->ebuf);
+		ls->from_mmap = 0;
+		ls->input_buf = ls->input_buf_sav;
+	}
+#endif
+	if (ls->input) {
+		fclose(ls->input);
+		ls->input = 0;
+	}
 }
 
 /*
@@ -427,12 +473,18 @@ static void pop_file_context(struct lexer_state *ls)
 #ifdef AUDIT
 	if (ls_depth <= 0) ouch("prepare to meet thy creator");
 #endif
+	close_input(ls);
 	restore_lexer_state(ls, &(ls_stack[-- ls_depth].ls));
 	if (protect_detect.macro) freemem(protect_detect.macro);
 	protect_detect = protect_detect_stack[ls_depth];
-	set_current_filename(ls_stack[ls_depth].name);
+	if (current_filename) freemem(current_filename);
+	current_filename = ls_stack[ls_depth].name;
 	current_long_filename = ls_stack[ls_depth].long_name;
 	current_incdir = ls_stack[ls_depth].incdir;
+	if (ls_depth == 0) {
+		freemem(ls_stack);
+		freemem(protect_detect_stack);
+	}
 }
 
 /*
@@ -469,18 +521,35 @@ void init_lexer_mode(struct lexer_state *ls)
 }
 
 /*
- * release memory used by a struct lexer_state
+ * release memory used by a struct lexer_state; this implies closing
+ * any input stream held by this structure.
  */
 void free_lexer_state(struct lexer_state *ls)
 {
+	close_input(ls);
 #ifndef NO_UCPP_BUF
-	if (ls->input_buf) freemem(ls->input_buf);
-	if (ls->output_buf) freemem(ls->output_buf);
+	if (ls->input_buf) {
+		freemem(ls->input_buf);
+		ls->input_buf = 0;
+	}
+	if (ls->output_buf) {
+		freemem(ls->output_buf);
+		ls->output_buf = 0;
+	}
 #endif
-	freemem(ls->ctok->name);
-	freemem(ls->ctok);
-	if (!(ls->flags & LEXER)) garbage_collect(ls->gf);
-	freemem(ls->gf);
+	if (ls->ctok && (!ls->output_fifo || ls->output_fifo->nt == 0)) {
+		freemem(ls->ctok->name);
+		freemem(ls->ctok);
+		ls->ctok = 0;
+	}
+	if (ls->gf) {
+		free_garbage_fifo(ls->gf);
+		ls->gf = 0;
+	}
+	if (ls->output_fifo) {
+		freemem(ls->output_fifo);
+		ls->output_fifo = 0;
+	}
 }
 
 /*
@@ -509,13 +578,15 @@ static void print_line_info(struct lexer_state *ls, unsigned long flags)
  *
  * As a command-line option, gcc-like directives (with only a '#',
  * without 'line') may be produced.
+ *
+ * enter_file() returns 1 if a (CONTEXT) token was produced, 0 otherwise.
  */
-void enter_file(struct lexer_state *ls, unsigned long flags)
+int enter_file(struct lexer_state *ls, unsigned long flags)
 {
 	char *fn = current_long_filename ?
 		current_long_filename : current_filename;
 
-	if (!(flags & LINE_NUM)) return;
+	if (!(flags & LINE_NUM)) return 0;
 	if ((flags & LEXER) && !(flags & TEXT_OUTPUT)) {
 		struct token t;
 
@@ -523,10 +594,11 @@ void enter_file(struct lexer_state *ls, unsigned long flags)
 		t.line = ls->line;
 		t.name = fn;
 		print_token(ls, &t, 0);
-		return;
+		return 1;
 	}
 	print_line_info(ls, flags);
 	ls->oline --;	/* emitted #line troubled oline */
+	return 0;
 }
 
 #ifdef UCPP_MMAP
@@ -606,8 +678,9 @@ static FILE *find_file(char *name, int localdir)
 	int i, incdir = -1;
 	size_t nl = strlen(name);
 	char *s = 0;
-	struct found_file *ff = 0;
+	struct found_file *ff = 0, *nff;
 	int lf = 0;
+	int nffa = 0;
 
 	find_file_error = FF_ERROR;
 	protect_detect.state = -1;
@@ -647,30 +720,29 @@ static FILE *find_file(char *name, int localdir)
 #endif
 			mmv(s + i + 1, name, nl);
 			s[i + 1 + nl] = 0;
-			ff = getHT(found_files_loc, &s);
-		} else ff = getHT(found_files_loc, &name);
+			ff = getHT(found_files, &s);
+		} else ff = getHT(found_files, &name);
 	}
-	if (!ff) ff = getHT(found_files, s ? &s : &name);
-	if (ff) {
-		if (ff->protect && get_macro(ff->protect)) {
-			/* file is protected, do not include it */
-			find_file_error = FF_PROTECT;
-			return 0;
+	if (!ff) {
+		struct found_file_sys *ffs = getHT(found_files_sys, &name);
+
+		if (ffs) {
+			ff = ffs->rff;
+			incdir = ffs->incdir;
 		}
-		protect_detect.ff = ff;
-#ifdef UCPP_MMAP
-		f = fopen_mmap_file(ff->long_name);
-#else
-		f = fopen(ff->long_name, "r");
-#endif
-		if (!f) return 0;
-		goto found_file_2;
-	} else {
-		protect_detect.ff = new_found_file();
 	}
+	/*
+	 * At that point: if the file was found in the cache, ff points to
+	 * the cached descriptive structure; its name is s if s is not 0,
+	 * name otherwise.
+	 */
+	if (ff) goto found_file_cache;
+
 	/*
 	 * This is the first time we find the file, or it was not protected.
 	 */
+	protect_detect.ff = new_found_file();
+	nffa = 1;
 	if (localdir &&
 #ifdef UCPP_MMAP
 		(f = fopen_mmap_file(s ? s : name))
@@ -681,7 +753,15 @@ static FILE *find_file(char *name, int localdir)
 		lf = 1;
 		goto found_file;
 	}
-	if (s) freemem(s);
+	/*
+	 * If s contains a name, that name is now irrelevant: it was a
+	 * filename for a search in the current directory, and the file
+	 * was not found.
+	 */
+	if (s) {
+		freemem(s);
+		s = 0;
+	}
 	for (i = 0; i < include_path_nb; i ++) {
 		size_t ni = strlen(include_path[i]);
 
@@ -712,6 +792,26 @@ static FILE *find_file(char *name, int localdir)
 		}
 #endif
 		incdir = i;
+		if ((ff = getHT(found_files, &s)) != 0) {
+			/*
+			 * The file is known, but not as a system include
+			 * file under the name provided.
+			 */
+			struct found_file_sys *ffs = new_found_file_sys();
+
+			ffs->name = sdup(name);
+			ffs->rff = ff;
+			ffs->incdir = incdir;
+			putHT(found_files_sys, ffs);
+			freemem(s);
+			s = 0;
+			if (nffa) {
+				del_found_file(protect_detect.ff);
+				protect_detect.ff = 0;
+				nffa = 0;
+			}
+			goto found_file_cache;
+		}
 #ifdef UCPP_MMAP
 		f = fopen_mmap_file(s);
 #else
@@ -719,44 +819,103 @@ static FILE *find_file(char *name, int localdir)
 #endif
 		if (f) goto found_file;
 		freemem(s);
+		s = 0;
+	}
+zero_out:
+	if (s) freemem(s);
+	if (nffa) {
+		del_found_file(protect_detect.ff);
+		protect_detect.ff = 0;
+		nffa = 0;
 	}
 	return 0;
+
+	/*
+	 * This part is invoked when the file was found in the
+	 * cache.
+	 */
+found_file_cache:
+	if (ff->protect) {
+		if (get_macro(ff->protect)) {
+			/* file is protected, do not include it */
+			find_file_error = FF_PROTECT;
+			goto zero_out;
+		}
+		/* file is protected but the guardian macro is
+		   not available; disable guardian detection. */
+		protect_detect.state = 0;
+	}
+	protect_detect.ff = ff;
+#ifdef UCPP_MMAP
+	f = fopen_mmap_file(ff->long_name);
+#else
+	f = fopen(ff->long_name, "r");
+#endif
+	if (!f) goto zero_out;
+	find_file_error = FF_KNOWN;
+	goto found_file_2;
+
+	/*
+	 * This part is invoked when we found a new file, which was not
+	 * yet referenced. If lf == 1, then the file was found directly,
+	 * otherwise it was found in some system include directory.
+	 * A new found_file structure has been allocated and is in
+	 * protect_detect.ff
+	 */
 found_file:
-	if (f && ((emit_dependencies == 1 && lf)
+	if (f && ((emit_dependencies == 1 && lf && current_incdir == -1)
 		|| emit_dependencies == 2)) {
 		fprintf(emit_output, " %s", s ? s : name);
 	}
-	if (!ff) {
-		struct found_file *nff = protect_detect.ff;
+	nff = protect_detect.ff;
+	nff->name = sdup(name);
+	nff->long_name = s ? s : sdup(name);
+#ifdef AUDIT
+	if (
+#endif
+	putHT(found_files, nff)
+#ifdef AUDIT
+	) ouch("filename collided with a wraith")
+#endif
+	;
+	if (!lf) {
+		struct found_file_sys *ffs = new_found_file_sys();
 
-		nff->name = sdup(name);
-		nff->long_name = s ? s : sdup(name);
-		nff->incdir = incdir;
-		putHT(lf ? found_files_loc : found_files, nff);
-		s = 0;
-		find_file_error = FF_UNKNOWN;
-		ff = nff;
-	} else find_file_error = FF_KNOWN;
+		ffs->name = sdup(name);
+		ffs->rff = nff;
+		ffs->incdir = incdir;
+		putHT(found_files_sys, ffs);
+	}
+	s = 0;
+	find_file_error = FF_UNKNOWN;
+	ff = nff;
+
 found_file_2:
 	if (s) freemem(s);
 	current_long_filename = ff->long_name;
 #ifdef NO_LIBC_BUF
 	setbuf(f, 0);
 #endif
-	current_incdir = ff->incdir;
+	current_incdir = incdir;
 	return f;
 }
 
 /*
  * Find the named file by looking through the end of the include path.
- * This one is not as optimized as find_file() since it is rarely used.
+ * This is for #include_next directives.
+ * #include_next <foo> and #include_next "foo" are considered identical,
+ * for all practical purposes.
  */
 static FILE *find_file_next(char *name)
 {
 	int i;
 	size_t nl = strlen(name);
 	FILE *f;
+	struct found_file *ff;
 
+	find_file_error = FF_ERROR;
+	protect_detect.state = -1;
+	protect_detect.macro = 0;
 	for (i = current_incdir + 1; i < include_path_nb; i ++) {
 		char *s;
 		size_t ni = strlen(include_path[i]);
@@ -773,15 +932,58 @@ static FILE *find_file_next(char *name)
 			for (c = s; *c; c ++) if (*c == '/') *c = '\\';
 		}
 #endif
-#ifdef UCPP_MMAP
-		f = fopen_mmap_file(s);
-#else
-		f = fopen(s, "r");
-#endif
-		if (f) {
-			if (emit_dependencies == 2) {
-				fprintf(emit_output, " %s", s ? s : name);
+		ff = getHT(found_files, &s);
+		if (ff) {
+			/* file was found in the cache */
+			if (ff->protect) {
+				if (get_macro(ff->protect)) {
+					find_file_error = FF_PROTECT;
+					freemem(s);
+					return 0;
+				}
+				/* file is protected but the guardian macro is
+				   not available; disable guardian detection. */
+				protect_detect.state = 0;
 			}
+			protect_detect.ff = ff;
+#ifdef UCPP_MMAP
+			f = fopen_mmap_file(ff->long_name);
+#else
+			f = fopen(ff->long_name, "r");
+#endif
+			if (!f) {
+				/* file is referenced but yet unavailable. */
+				freemem(s);
+				return 0;
+			}
+			find_file_error = FF_KNOWN;
+			freemem(s);
+			s = ff->long_name;
+		} else {
+#ifdef UCPP_MMAP
+			f = fopen_mmap_file(s);
+#else
+			f = fopen(s, "r");
+#endif
+			if (f) {
+				if (emit_dependencies == 2) {
+					fprintf(emit_output, " %s", s);
+				}
+				ff = protect_detect.ff = new_found_file();
+				ff->name = sdup(s);
+				ff->long_name = s;
+#ifdef AUDIT
+				if (
+#endif
+				putHT(found_files, ff)
+#ifdef AUDIT
+				) ouch("filename collided with a wraith")
+#endif
+				;
+				find_file_error = FF_UNKNOWN;
+			}
+		}
+		if (f) {
 			current_long_filename = s;
 			current_incdir = i;
 			return f;
@@ -889,7 +1091,7 @@ static int handle_if(struct lexer_state *ls)
 #endif
 					ct->line)) {
 					ls->output_fifo = save_tf;
-					return -1;
+					goto error1;
 				}
 				continue;
 			}
@@ -938,6 +1140,7 @@ static int handle_if(struct lexer_state *ls)
 			rt.type = NUMBER;
 			rt.name = av ? "1" : "0";
 			aol(tf2.t, tf2.nt, rt, TOKEN_LIST_MEMG);
+			if (atl.nt) freemem(atl.t);
 			continue;
 
 		assert_generic:
@@ -950,7 +1153,7 @@ static int handle_if(struct lexer_state *ls)
 		assert_error:
 			error(l, "syntax error for assertion in #if");
 			ls->output_fifo = save_tf;
-			return -1;
+			goto error1;
 		}
 		aol(tf2.t, tf2.nt, *ct, TOKEN_LIST_MEMG);
 	}
@@ -993,6 +1196,11 @@ static int handle_if(struct lexer_state *ls)
 	freemem(tf3.t);
 	if (ret) return -1;
 	return (z != 0);
+
+error1:
+	if (tf1.nt) freemem(tf1.t);
+	if (tf2.nt) freemem(tf2.t);
+	return -1;
 }
 
 /*
@@ -1000,12 +1208,13 @@ static int handle_if(struct lexer_state *ls)
  * necessary.
  *
  * If nex is set to non-zero, the directive is considered as a #include_next
- * (extension to C99)
+ * (extension to C99, mimicked from GNU)
  */
 static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 {
 	int c, string_fname = 0;
 	char *fname;
+	unsigned char *fname2;
 	size_t fname_ptr = 0;
 	long l = ls->line;
 	int x, y;
@@ -1013,6 +1222,7 @@ static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 	struct token_fifo tf, tf2, *save_tf;
 	size_t nl;
 	int tgd;
+	struct lexer_state alt_ls;
 
 #define left_angle(t)	((t) == LT || (t) == LEQ || (t) == LSH \
 			|| (t) == ASLSH || (t) == DIG_LBRK || (t) == LBRA)
@@ -1028,7 +1238,7 @@ static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 			discard_char(ls);
 			while ((c = grap_char(ls)) >= 0) {
 				discard_char(ls);
-				if (c == '\n') goto include_error;
+				if (c == '\n') goto include_last_chance;
 				if (c == '>') break;
 				aol(fname, fname_ptr, (char)c, FNAME_MEMG);
 			}
@@ -1039,7 +1249,11 @@ static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 			discard_char(ls);
 			while ((c = grap_char(ls)) >= 0) {
 				discard_char(ls);
-				if (c == '\n') goto include_error;
+				if (c == '\n') {
+				/* macro replacements won't save that one */
+					if (fname_ptr) freemem(fname);
+					goto include_error;
+				}
 				if (c == '"') break;
 				aol(fname, fname_ptr, (char)c, FNAME_MEMG);
 			}
@@ -1050,6 +1264,46 @@ static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 		goto include_macro;
 	}
 
+include_last_chance:
+	/*
+	 * We found a '<' but not the trailing '>'; so we tokenize the
+	 * line, and try to act upon it. The standard lets us free in that
+	 * matter, and no sane programmer would use such a construct, but
+	 * it is no reason not to support it.
+	 */
+	if (fname_ptr == 0) goto include_error;
+	fname2 = getmem(fname_ptr + 1);
+	mmv(fname2 + 1, fname, fname_ptr);
+	fname2[0] = '<';
+	/*
+	 * We merely copy the lexer_state structure; this should be ok,
+	 * since we do want to share the memory structure (garbage_fifo),
+	 * and do not touch any other context-full thing.
+	 */
+	alt_ls = *ls;
+	alt_ls.input = 0;
+	alt_ls.input_string = fname2;
+	alt_ls.pbuf = 0;
+	alt_ls.ebuf = fname_ptr + 1;
+	tf.art = tf.nt = 0;
+	while (!next_token(&alt_ls)) {
+		if (!ttMWS(alt_ls.ctok->type)) {
+			struct token t;
+
+			t.type = alt_ls.ctok->type;
+			t.line = l;
+			if (S_TOKEN(alt_ls.ctok->type)) {
+				t.name = sdup(alt_ls.ctok->name);
+				throw_away(alt_ls.gf, t.name);
+			}
+			aol(tf.t, tf.nt, t, TOKEN_LIST_MEMG);
+		}
+	}
+	freemem(fname2);
+	if (alt_ls.pbuf < alt_ls.ebuf) goto include_error;
+		/* tokenizing failed */
+	goto include_macro2;
+	
 include_error:
 	error(l, "invalid '#include'");
 	return 1;
@@ -1069,6 +1323,7 @@ include_macro:
 			aol(tf.t, tf.nt, t, TOKEN_LIST_MEMG);
 		}
 	}
+include_macro2:
 	tf2.art = tf2.nt = 0;
 	save_tf = ls->output_fifo;
 	ls->output_fifo = &tf2;
@@ -1154,7 +1409,7 @@ do_include:
 
 	/* the increment of ls->line is intended so that the line
 	   numbering is reported correctly in report_context() even if
-	   the #include is at the end of the line with no trailing newline */
+	   the #include is at the end of the file with no trailing newline */
 	if (ls->ctok->type != NEWLINE) ls->line ++;
 do_include_next:
 	if (!(ls->flags & LEXER) && (ls->flags & KEEP_OUTPUT))
@@ -1171,12 +1426,15 @@ do_include_next:
 #endif
 	f = nex ? find_file_next(fname) : find_file(fname, string_fname);
 	if (!f) {
+		current_filename = 0;
 		pop_file_context(ls);
 		if (find_file_error == FF_ERROR) {
 			error(l, "file '%s' not found", fname);
+			freemem(fname);
 			return 1;
 		}
 		/* file was found, but it is useless to include it again */
+		freemem(fname);
 		return 0;
 	}
 #ifdef UCPP_MMAP
@@ -1184,7 +1442,7 @@ do_include_next:
 #else
 	ls->input = f;
 #endif
-	set_current_filename(fname);
+	current_filename = fname;
 	enter_file(ls, flags);
 	return 0;
 
@@ -1286,7 +1544,8 @@ static int handle_line(struct lexer_state *ls, unsigned long flags)
 				*(fname + nl - 1) = 0;
 				mmvwo(fname, fname + 1, nl - 1);
 			}
-			set_current_filename(fname);
+			if (current_filename) freemem(current_filename);
+			current_filename = fname;
 		}
 		for (i ++; i < tf2.nt && ttMWS(tf2.t[i].type); i ++);
 		if (i < tf2.nt && (ls->flags & WARN_STANDARD)) {
@@ -1755,8 +2014,19 @@ int cpp(struct lexer_state *ls)
 
 	while (next_token(ls)) {
 		if (protect_detect.state == 3) {
-			/* Cool ! A protection mechanism has been detected */
-			protect_detect.ff->protect = protect_detect.macro;
+			/*
+			 * At that point, protect_detect.ff->protect might
+			 * be non-zero, if the file has been recursively
+			 * included, and a guardian detected.
+			 */
+			if (!protect_detect.ff->protect) {
+				/* Cool ! A new guardian has been detected. */
+				protect_detect.ff->protect =
+					protect_detect.macro;
+			} else if (protect_detect.macro) {
+				/* We found a guardian but an old one. */
+				freemem(protect_detect.macro);
+			}
 			protect_detect.macro = 0;
 		}
 		if (ls->ifnest) {
@@ -1764,15 +2034,12 @@ int cpp(struct lexer_state *ls)
 				"(depth %ld)", ls->ifnest);
 			r = CPPERR_NEST;
 		}
-		if (ls_depth == 0) {
-		    return CPPERR_EOF;
-		}
-		fclose(ls->input);
-		freemem(current_filename);
+		if (ls_depth == 0) return CPPERR_EOF;
+		close_input(ls);
 		if (!(ls->flags & LEXER) && !ls->ltwnl) put_char(ls, '\n');
 		pop_file_context(ls);
 		ls->oline ++;
-		enter_file(ls, ls->flags);
+		if (enter_file(ls, ls->flags)) break;
 	}
 	if (!(ls->ltwnl && (ls->ctok->type == SHARP
 		|| ls->ctok->type == DIG_SHARP))
@@ -1873,7 +2140,7 @@ static int llex(struct lexer_state *ls)
 #ifdef INMACRO_FLAG
 			ls->inmacro = 0;
 #endif
-			if (tf->nt) freemem(tf->t);
+			freemem(tf->t);
 			tf->art = tf->nt = 0;
 			garbage_collect(ls->gf);
 			ls->ctok = ls->save_ctok;
@@ -1922,17 +2189,12 @@ int check_cpp_errors(struct lexer_state *ls)
 }
 
 /*
- * init_cpp() initializes everything that should be initialized.
- * If standard_inc is non-zero, the standard include directories are
- * added to the search path.
+ * init_cpp() initializes static tables inside ucpp. It needs not be
+ * called more than once.
  */
 void init_cpp(void)
 {
 	init_cppm();
-	init_buf_lexer_state(&dsharp_lexer, 0);
-#ifdef PRAGMA_TOKENIZE
-	init_buf_lexer_state(&tokenize_lexer, 0);
-#endif
 }
 
 /*
@@ -1944,10 +2206,15 @@ void init_tables(int with_assertions)
 	time_t t;
 	struct tm *ct;
 
+	init_buf_lexer_state(&dsharp_lexer, 0);
+#ifdef PRAGMA_TOKENIZE
+	init_buf_lexer_state(&tokenize_lexer, 0);
+#endif
 	time(&t);
 	ct = localtime(&t);
-#ifdef MSDOS
-	/* no function strftime() in TurboC 2.01 */
+#ifdef NOSTRFTIME
+	/* we have a quite old compiler, that does not know the
+	   (standard since 1990) strftime() function. */
 	{
 		char *c = asctime(ct);
 
@@ -2000,7 +2267,48 @@ void add_incpath(char *path)
 	aol(include_path, include_path_nb, sdup(path), INCPATH_MEMG);
 }
 
-#if defined(STAND_ALONE)
+/*
+ * This function cleans the memory. It should release all allocated
+ * memory structures and may be called even if the current pre-processing
+ * is not finished or reported an error.
+ */
+void wipeout()
+{
+	struct lexer_state ls;
+
+	if (include_path_nb > 0) {
+		size_t i;
+
+		for (i = 0; i < include_path_nb; i ++)
+			freemem(include_path[i]);
+		freemem(include_path);
+		include_path = 0;
+		include_path_nb = 0;
+	}
+	if (current_filename) freemem(current_filename);
+	current_filename = 0;
+	current_long_filename = 0;
+	current_incdir = -1;
+	protect_detect.state = 0;
+	if (protect_detect.macro) freemem(protect_detect.macro);
+	protect_detect.macro = 0;
+	protect_detect.ff = 0;
+	init_lexer_state(&ls);
+	while (ls_depth > 0) pop_file_context(&ls);
+	free_lexer_state(&ls);
+	free_lexer_state(&dsharp_lexer);
+#ifdef PRAGMA_TOKENIZE
+	free_lexer_state(&tokenize_lexer);
+#endif
+	if (found_files) killHT(found_files);
+	if (found_files_sys) killHT(found_files_sys);
+	found_files = 0;
+	found_files_sys = 0;
+	wipe_macros();
+	wipe_assertions();
+}
+
+#ifdef STAND_ALONE
 /*
  * print some help
  */
@@ -2264,8 +2572,8 @@ int MAIN_FUNC(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 	enter_file(&ls, ls.flags);
-	while ((r = cpp(&ls)) < CPPERR_EOF) { 
-	    fr = fr || (r > 0);
+	while ((r = cpp(&ls)) < CPPERR_EOF) {
+		fr = fr || (r > 0);
 	}
 	fr = fr || check_cpp_errors(&ls);
 	if (ls.flags & KEEP_OUTPUT) {
@@ -2280,7 +2588,11 @@ int MAIN_FUNC(int argc, char *argv[])
 #endif
 	if (ls.flags & WARN_TRIGRAPHS && ls.count_trigraphs)
 		warning(0, "%ld trigraphs encountered", ls.count_trigraphs);
-
+	free_lexer_state(&ls);
+	wipeout();
+#ifdef MEM_DEBUG
+	report_leaks();
+#endif
 	if (ls.output != stdout) fclose(ls.output);
 	return fr ? EXIT_FAILURE : EXIT_SUCCESS;
 }

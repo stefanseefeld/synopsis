@@ -1,6 +1,6 @@
-ucpp-1.0 is a C preprocessor mostly compliant to ISO-C99.
+ucpp-1.2 is a C preprocessor mostly compliant to ISO-C99.
 
-Author: Thomas Pornin <thomas.pornin@ens.fr>
+Author: Thomas Pornin <pornin@bolet.org>
 Main site: http://www.di.ens.fr/~pornin/ucpp/
 
 
@@ -136,7 +136,9 @@ INSTALLATION
      details).
 
 4. Compile by typing "make". This should produce the ucpp executable
-   file.
+   file. You might see some warning messages, especially with gcc:
+   gcc believes some variables might be used prior to their
+   initialization; ignore those messages.
 
 5. Install wherever you want the binary and the man page ucpp.1.
 
@@ -191,7 +193,7 @@ provided that you states in the documentation (or any substantial part
 of the software) of redistributed code that I am the original author.
 (If you press a cdrom with 200 software packages, I do not insist on
 having my name on the cover of the cdrom -- just keep a Readme file
-somewhere on the cdrom, with the copyright notice included)
+somewhere on the cdrom, with the copyright notice included.)
 
 As a courteous gesture, if you reuse my code, please drop me a mail.
 It raises my self-esteem.
@@ -278,10 +280,10 @@ WARN_TRIGRAPHS
 	a warning if some trigraphs were indeed encountered; the count
 	is stored in the count_trigraphs field of the struct lexer_state
 WARN_TRIGRAPHS_MORE
-	emit a warning for every trigraph encountered
+	emit a warning for each trigraph encountered
 WARN_PRAGMA
 	emit a warning for each non-void _Pragma encountered in non-lexer
-	mode (because these are not dumped in the output) and for each
+	mode (because these are dumped as #pragma in the output) and for each
 	#pragma too, if ucpp was compiled without PRAGMA_DUMP
 FAIL_SHARP
 	emit errors on '#' tokens beginning a line and not followed
@@ -362,7 +364,7 @@ Afterwards:
    ignore the error.
 
 -- otherwise, call cpp(); each call will analyze one or more tokens
-   (one token if it did not found a cpp directive, or a macro name).
+   (one token if it did not find a cpp directive, or a macro name).
    A positive return value is an error.
 
 For both functions, if the return value is CPPERR_EOF (which is a
@@ -385,7 +387,12 @@ are of long type.
 To perform another preprocessing: use free_lexer_state() to release
 memory used by the buffers referenced in lexer_state, and go back to
 step 2. The different tables (macros, assertions...) should be reset to
-their respective initial contents. (Warning: this is currently untested)
+their respective initial contents.
+
+There is also the wipeout() function: when called, it should release
+(almost) all memory blocks allocated dynamically. After a wipeout(),
+ucpp should be back to its state at step 2 (init_cpp() initializes only
+static tables, that are never freed nor modified afterwards).
 
 
 The COPY_LINE buffer: the struct lexer_state contains two interesting
@@ -525,7 +532,7 @@ Since the ucpp behaviour makes ucpp code simpler and cleaner, and
 that it is unlikely that any real-life code would ever be disturbed
 by that interpretation of the standard, ucpp will keep its current
 behaviour until convincing evidence of my misinterpretation of the
-standard is given to me. The problem can only occur is one uses ## to
+standard is given to me. The problem can only occur if one uses ## to
 make a 'defined' operator disappear from a #if expression (everybody
 agrees that the generation of a 'defined' operator triggers undefined
 behaviour).
@@ -631,6 +638,23 @@ using ucpp as code base, I would happily provide some help, if needed.
 
 CHANGES
 -------
+
+From 1.1 to 1.2:
+
+* bugfix: numerous memory leaks
+* new function: wipeout(); this should release all malloc() blocks
+* bugfix: missing "newline" and trailing "context" tokens
+* improved included files name caching
+* included memory leak detection code
+
+From 1.0 to 1.1:
+
+* bugfix: missing newline when exiting from a non-newline-terminated file
+* bugfix: crash when resetting due to definition of the _Pragma pseudo-macro
+* bugfix: handling of additional "optional" whitespace with SEMPER_FIDELIS
+* improved handling of unreplaced arg macros wrt output line
+* tricky handling of utterly tricky #include
+* bugfix: spurious token `~=' eliminated
 
 From 0.9 to 1.0:
 
@@ -739,9 +763,9 @@ From 0.1 to 0.2:
 THANKS TO
 ---------
 
-Volker Barthelmann, Neil Booth, Stéphane Ecolivet, Antoine Leca, Cyrille
-Lefevre, Dave Rivers, Loic Tortay and Laurent Wacrenier, for suggestions
-and beta-testing.
+Volker Barthelmann, Neil Booth, Stephen Davies, Stéphane Ecolivet,
+Marcus Holland-Moritz, Antoine Leca, Cyrille Lefevre, Dave Rivers, Loic
+Tortay and Laurent Wacrenier, for suggestions and beta-testing.
 
 Paul Eggert, Douglas A. Gwyn, Clive D.W. Feather, and the other guys from
 comp.std.c, for explanations about the standard.

@@ -90,11 +90,13 @@ struct assert {
 #define handle_assert		ucpp_handle_assert
 #define handle_unassert		ucpp_handle_unassert
 #define get_assertion		ucpp_get_assertion
+#define wipe_assertions		ucpp_wipe_assertions
 
 int cmp_token_list(struct token_fifo *, struct token_fifo *);
 int handle_assert(struct lexer_state *);
 int handle_unassert(struct lexer_state *);
 struct assert *get_assertion(char *);
+void wipe_assertions(void);
 
 /*
  * from macro.c
@@ -119,6 +121,7 @@ struct macro {
 #define handle_ifndef		ucpp_handle_ifndef
 #define substitute_macro	ucpp_substitute_macro
 #define get_macro		ucpp_get_macro
+#define wipe_macros		ucpp_wipe_macros
 #define dsharp_lexer		ucpp_dsharp_lexer
 #define compile_time		ucpp_compile_time
 #define compile_date		ucpp_compile_date
@@ -134,6 +137,7 @@ int handle_ifndef(struct lexer_state *);
 int substitute_macro(struct lexer_state *, struct macro *,
 	struct token_fifo *, int, int, long);
 struct macro *get_macro(char *);
+void wipe_macros(void);
 
 extern struct lexer_state dsharp_lexer;
 extern char compile_time[], compile_date[];

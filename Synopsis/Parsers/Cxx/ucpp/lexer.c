@@ -76,7 +76,7 @@ enum {
 	S_START, S_SPACE, S_BANG, S_STRING, S_STRING2, S_COLON,
 	S_SHARP, S_PCT, S_PCT2, S_PCT3, S_AMPER, S_CHAR, S_CHAR2, S_STAR,
 	S_PLUS, S_MINUS, S_DOT, S_DOT2, S_SLASH, S_NUMBER, S_NUMBER2, S_LT,
-	S_LT2, S_EQ, S_GT, S_GT2, S_CIRC, S_PIPE, S_TILDE, S_BACKSLASH,
+	S_LT2, S_EQ, S_GT, S_GT2, S_CIRC, S_PIPE, S_BACKSLASH,
 	S_COMMENT, S_COMMENT2, S_COMMENT3, S_COMMENT4, S_COMMENT5,
 	S_NAME, S_NAME_BS, S_LCHAR,
 	MSTATE,
@@ -142,7 +142,7 @@ static struct machine_state {
 	{ S_START,	{ '{' },	STO(LBRA)		},
 	{ S_START,	{ '|' },	S_PIPE			},
 	{ S_START,	{ '}' },	STO(RBRA)		},
-	{ S_START,	{ '~' },	S_TILDE			},
+	{ S_START,	{ '~' },	STO(NOT)		},
 	{ S_START,	{ '\\' },	S_BACKSLASH		},
 
 	/* after a space */
@@ -306,10 +306,6 @@ static struct machine_state {
 	{ S_PIPE,	{ ANY },	FRZ(STO(OR))		},
 	{ S_PIPE,	{ '=' },	STO(ASOR)		},
 	{ S_PIPE,	{ '|' },	STO(LOR)		},
-
-	/* after a ~ */
-	{ S_TILDE,	{ ANY },	FRZ(STO(NOT))		},
-	{ S_TILDE,	{ '=' },	STO(ASNOT)		},
 
 	/* after a / and * */
 #ifdef SEMPER_FIDELIS
@@ -1003,9 +999,6 @@ static inline int read_token(struct lexer_state *ls)
 int next_token(struct lexer_state *ls)
 {
 	if (ls->flags & READ_AGAIN) {
-#if 0 && defined(SYNOPSIS)
-		printf("Reading token again at: %d\n", ls->ctok->pos);
-#endif
 		ls->flags &= ~READ_AGAIN;
 		if (!(ls->flags & LEXER)) {
 			char *c = S_TOKEN(ls->ctok->type) ?
@@ -1024,15 +1017,5 @@ int next_token(struct lexer_state *ls)
 		}
 		return 0;
 	}
-#if 1 || !defined(SYNOPSIS)
 	return read_token(ls);
-#else
-	{   int pos = ls->input_pos, ret = read_token(ls);
-	    if (ls->ctok->type == NAME)
-		printf("Read token at: (%d) %d NAME '%s'\n", pos, ls->ctok->pos, ls->ctok->name);
-	    else
-		printf("Read token at: (%d) %d '%s' \n", pos, ls->ctok->pos, operators_name[ls->ctok->type]);
-	    return ret;
-	}
-#endif
 }
