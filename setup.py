@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.1 2002/08/23 00:39:35 stefan Exp $
+# $Id: setup.py,v 1.2 2002/08/27 04:45:58 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -42,13 +42,17 @@ occ = Extension("occ", src, include_dirs=includes, define_macros=occ_macros)
 
 ext_modules.append(occ)
 
+data_files = ["synopsis.jpg", "synopsis200.jpg", "syn-down.png", "syn-right.png", "syn-dot.png"]
+from Synopsis import __version__
+
 setup(
     name="synopsis",
-    version="0.5",
+    version=__version__,
     author="Stefan Seefeld & Stephen Davies",
     author_email="synopsis-devel@lists.sf.net",
     description="source code inspection tool",
     url="http://synopsis.sf.net",
     packages=py_packages,
     ext_modules=ext_modules,
+    data_files=[('share/Synopsis', prefix(data_files, "share/"))]
     )

@@ -67,15 +67,15 @@ void show(Ptree* p)
 }
 #endif
 
+namespace
+{
+
 //. Override unexpected() to print a message before we abort
 void unexpected()
 {
     std::cout << "Warning: Aborting due to unexpected exception." << std::endl;
     throw std::bad_exception();
 }
-
-namespace
-{
 
 void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<const char *> &occflags, PyObject* config)
 {
