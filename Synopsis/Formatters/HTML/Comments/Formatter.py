@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.8 2001/02/13 05:19:31 chalky Exp $
+# $Id: Formatter.py,v 1.9 2001/03/28 12:55:19 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.9  2001/03/28 12:55:19  chalky
+# Sanity checks
+#
 # Revision 1.8  2001/02/13 05:19:31  chalky
 # @see links are done a bit more methodically
 #
@@ -72,7 +75,8 @@ class CommentParser:
 	comm = core.Struct(
 	    detail=string.join(strlist), summary='', 
 	    has_detail=0, decl=decl)
-	map(lambda f,c=comm: f.parse(c), self._formatters)
+	if comm.detail:
+	    map(lambda f,c=comm: f.parse(c), self._formatters)
 	return comm
 
 class CommentFormatter:
@@ -134,6 +138,7 @@ class SummarySplitter (CommentFormatter):
 	summary is the whole comment and detail is None. If there is only one
 	sentence then detail is still the full comment (you must compare
 	them). It then calls _calculateHasDetail to fill in has_detail."""
+	if comm.detail is None: return # maybe already run the splitter
 	mo = self.re_summary.match(comm.detail)
 	if mo: comm.summary = mo.group(1)
 	else:
