@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.21 2003/10/13 18:50:19 stefan Exp $
+# $Id: Comments.py,v 1.22 2003/10/14 00:28:54 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,13 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.22  2003/10/14 00:28:54  stefan
+# * separate the 'Grouper' class into base and derived
+#   such that the derived class provides the 'process' method
+#   that is specific to the actual tags used for opening and closing the group
+# * add a 'Stripper' class that removes all but the last comments from
+#   all declarations
+#
 # Revision 1.21  2003/10/13 18:50:19  stefan
 # * provide a clearer definition of 'Comment', i.e.
 #   a single comment as opposed to a list of comments
@@ -358,10 +365,8 @@ class Previous (Dummies):
 
 class Grouper (Transformer):
     """A class that detects grouping tags and moves the enclosed nodes into a subnode (a 'Group')"""
-    __re_group = r'^[ \t]*((?P<open>@group[ \t]*(?P<name>.*){)|(?P<close>[ \t]*}))[ \t]*\Z'
     def __init__(self):
 	Transformer.__init__(self)
-	self.re_group = re.compile(Grouper.__re_group, re.M)
         self.__group_stack = [[]]
 
     def strip_dangling_groups(self):
@@ -417,28 +422,7 @@ class Grouper (Transformer):
         If an opening tag is found in the middle of a comment, a new Group is generated, the preceeding
         comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
         """
-        comments = []
-        process_comments = decl.comments()
-        while len(process_comments):
-            c = process_comments.pop(0)
-            tag = self.re_group.search(c.text())
-            if not tag:
-                comments.append(c)
-                continue
-            elif tag.group('open'):
-                # Open group. Name is remainder of line
-                label = tag.group('name') or 'unnamed'
-                # The comment before the open marker becomes the group comment
-                if tag.start('open') > 0:
-                    text = c.text()[:tag.start('open')]
-                    comments.append(AST.Comment(text, c.file(), c.line()))
-                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
-                group.comments()[:] = comments
-                comments = []
-                self.push_group(group)
-            elif tag.group('close'):
-                self.pop_group(decl)
-        decl.comments()[:] = comments
+        pass
 
     def visitDeclaration(self, decl):
         self.process(decl)
@@ -469,6 +453,49 @@ class Grouper (Transformer):
 	if enumor.type() == "dummy": return #This wont work since Core.AST.Enumerator forces type to "enumerator"
 	if not len(enumor.name()): return # workaround.
 	self.add(enumor)
+
+class Grouper1(Grouper):
+    """Grouper that detects ' @group {' and '}' group markup"""
+    __re_group = r'^[ \t]*((?P<open>@group[ \t]*(?P<name>.*){)|(?P<close>[ \t]*}))[ \t]*\Z'
+    def __init__(self):
+	Grouper.__init__(self)
+	self.re_group = re.compile(Grouper1.__re_group, re.M)
+
+    def process(self, decl):
+        """Checks for grouping tags.
+        If an opening tag is found in the middle of a comment, a new Group is generated, the preceeding
+        comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
+        """
+        comments = []
+        process_comments = decl.comments()
+        while len(process_comments):
+            c = process_comments.pop(0)
+            tag = self.re_group.search(c.text())
+            if not tag:
+                comments.append(c)
+                continue
+            elif tag.group('open'):
+                # Open group. Name is remainder of line
+                label = tag.group('name') or 'unnamed'
+                # The comment before the open marker becomes the group comment
+                if tag.start('open') > 0:
+                    text = c.text()[:tag.start('open')]
+                    comments.append(AST.Comment(text, c.file(), c.line()))
+                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
+                group.comments()[:] = comments
+                comments = []
+                self.push_group(group)
+            elif tag.group('close'):
+                self.pop_group(decl)
+        decl.comments()[:] = comments
+
+class Stripper(CommentProcessor):
+    """Strip off all but the last comment."""
+    def process(self, decl):
+	"""Summarize the comment of this declaration."""
+	if not len(decl.comments()):
+	    return
+        decl.comments()[:] = [decl.comments()[-1]]
 
 class Summarizer (CommentProcessor):
     """Splits comments into summary/detail parts."""
@@ -533,7 +560,8 @@ processors = {
     'qt': QtComments,
     'dummy': Dummies,
     'prev': Previous,
-    'group': Grouper,
+    'group': Grouper1,
+    'stripper': Stripper,
     'summary' : Summarizer,
     'javatags' : JavaTags,
 }
