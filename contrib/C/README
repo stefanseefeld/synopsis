@@ -1,0 +1,3 @@
+This is an experimental new C parser based on libSynopsis.
+To test please use the 'synopsis.py' script.
+For issues please refer to http://synopsis.fresco.org/issues/task37
