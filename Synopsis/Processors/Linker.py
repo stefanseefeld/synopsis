@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.8 2003/11/11 06:03:59 stefan Exp $
+# $Id: Linker.py,v 1.9 2003/11/22 21:48:05 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -9,36 +9,43 @@
 
 import string
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import Composite, Parameter
 from Synopsis import AST, Type, Util
 
-class Unduplicator(Processor, AST.Visitor, Type.Visitor):
+class Linker(Composite, AST.Visitor, Type.Visitor):
    """Visitor that removes duplicate declarations"""
 
-   def __init__(self):
-      
-      self.__global = AST.MetaModule("", "",[])
-      self.__scopes = [self.__global]
-      global_dict = {}
-      self.__dict_map = { id(self.__global) : global_dict }
-      self.__dicts = [ global_dict ]
-      
    def process(self, ast, **kwds):
+
+      self.set_parameters(kwds)
+      self.ast = self.merge_input(ast)
+
+      root = AST.MetaModule("", "",[])
+      self.__scopes = [root]
+      global_dict = {}
+      self.__dict_map = {id(root) : global_dict}
+      self.__dicts = [global_dict]
 
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
       
       self.types = self.ast.types()
-      declarations = ast.declarations()
-      for decl in declarations:
-         decl.accept(self)
-      declarations[:] = self.__global.declarations()
-      for file in ast.files().values():
+      
+      declarations = self.ast.declarations()
+      for decl in declarations: decl.accept(self)
+      declarations[:] = root.declarations()
+
+      for file in self.ast.files().values():
          self.visitSourceFile(file)
+
+      # now deal with the sub-processors, if any
+      self.ast = Composite.process(self, self.ast)
+
       return self.output_and_return_ast()
 
    def lookup(self, name):
-      """look whether the current scope already contains a declaration with the given name"""
+      """look whether the current scope already contains
+      a declaration with the given name"""
 
       if self.__dicts[-1].has_key(name):
          return self.__dicts[-1][name]
@@ -49,28 +56,34 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
 
    def append(self, declaration):
       """append declaration to the current scope"""
+
       self.__scopes[-1].declarations().append(declaration)
       self.__dicts[-1][declaration.name()] = declaration
 
    def push(self, scope):
       """push new scope on the stack"""
+
       self.__scopes.append(scope)
       dict = self.__dict_map.setdefault(id(scope), {})
       self.__dicts.append(dict)
 
    def pop(self):
       """restore the previous scope"""
+
       del self.__scopes[-1]
       del self.__dicts[-1]
 
    def top(self):
+
       return self.__scopes[-1]
 
    def top_dict(self):
+
       return self.__dicts[-1]
 
    def linkType(self, type):
       "Returns the same or new proxy type"
+
       self.__type = type
       if type is not None: type.accept(self)
       return self.__type
@@ -78,20 +91,24 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
    #################### Type Visitor ###########################################
 
    def visitBaseType(self, type):
+
       if self.types.has_key(type.name()):
          self.__type = self.types[type.name()]
 
    def visitUnknown(self, type):
+
       if self.types.has_key(type.name()):
          self.__type = self.types[type.name()]
 
    def visitDeclared(self, type):
+
       if self.types.has_key(type.name()):
          self.__type = self.types[type.name()]
       else:
          print "Couldn't find declared type:",type.name()
 
    def visitTemplate(self, type):
+
       # Should be a Declared with the same name
       if not self.types.has_key(type.name()):
          return
@@ -109,18 +126,21 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
          print "Warning: template type disappeared:",type.name()
 
    def visitModifier(self, type):
+
       alias = self.linkType(type.alias())
       if alias is not type.alias():
          type.set_alias(alias)
       self.__type = type
 
    def visitArray(self, type):
+
       alias = self.linkType(type.alias())
       if alias is not type.alias():
          type.set_alias(alias)
       self.__type = type
 
    def visitParametrized(self, type):
+
       templ = self.linkType(type.template())
       if templ is not type.template():
          type.set_template(templ)
@@ -131,6 +151,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       self.__type = type
 
    def visitFunctionType(self, type):
+
       ret = self.linkType(type.returnType())
       if ret is not type.returnType():
          type.set_returnType(ret)
@@ -145,6 +166,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
    def visitSourceFile(self, file):
       """Resolves any duplicates in the list of declarations from this
       file"""
+
       types = self.types
 
       # Clear the list and refill it
@@ -163,6 +185,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       # TODO: includes.
 
    def visitModule(self, module):
+
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
@@ -179,6 +202,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
    def merge_comments(self, dest, src):
       """Merges the src comments into dest. Merge is just an append, unless
       src already exists inside dest!"""
+
       texter = lambda x: x.text()
       dest_str = map(texter, dest)
       src_str = map(texter, src)
@@ -186,6 +210,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       dest.extend(src)
 
    def visitMetaModule(self, module):        
+
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None or not isinstance(metamodule, AST.MetaModule):
@@ -204,6 +229,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       If there is already a Forward declaration, then this replaces it
       unless this is also a Forward.
       """
+
       name = decl.name()
       dict = self.__dicts[-1]
       decls = self.top().declarations()
@@ -220,6 +246,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       dict[name] = decl
 
    def visitNamed(self, decl):
+
       name = decl.name()
       if self.lookup(decl.name()): return
       self.addDeclaration(decl)
@@ -229,6 +256,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
    visitEnum = addDeclaration
 
    def visitFunction(self, func):
+
       if not isinstance(self.top(), AST.Class):
          for decl in self.top().declarations():
             if not isinstance(decl, AST.Function): continue
@@ -244,6 +272,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
    visitOperation = visitFunction
 
    def visitVariable(self, var):
+
       #if not scopedNameOkay(var.name()): return
       vt = self.linkType(var.vtype())
       if vt is not var.vtype():
@@ -251,12 +280,14 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       self.addDeclaration(var)
 
    def visitTypedef(self, tdef):
+
       alias = self.linkType(tdef.alias())
       if alias is not tdef.alias():
          tdef.set_alias(alias)
       self.addDeclaration(tdef)
 
    def visitClass(self, clas):
+
       name = clas.name()
       prev = self.lookup(name)
       if prev:
@@ -288,6 +319,7 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
       self.pop()
 
    def visitInheritance(self, parent):
+
       type = parent.parent()
       if isinstance(type, Type.Declared) or isinstance(type, Type.Unknown):
          ltype = self.linkType(type)
@@ -308,14 +340,14 @@ class Unduplicator(Processor, AST.Visitor, Type.Visitor):
          pass
 
    def visitParameter(self, param):
+
       type = self.linkType(param.type())
       if type is not param.type():
          param.set_type(type)
 
    def visitConst(self, const):
+
       ct = self.linkType(const.ctype())
       if ct is not const.ctype():
          const.set_ctype(ct)
       self.addDeclaration(const)
-
-linkerOperation = Unduplicator

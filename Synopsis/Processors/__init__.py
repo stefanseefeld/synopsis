@@ -5,7 +5,7 @@ merging multiple AST trees, mapping links to different languages, pruning the
 tree, mapping names to different scopes, and dealing with comment prefixes and
 groupings."""
 
-from Unduplicator import *
+from Linker import *
 from Stripper import *
 from NameMapper import *
 from Comments import *
