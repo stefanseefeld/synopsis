@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.14 2002/03/04 14:46:12 stefan Exp $
+# $Id: Makefile,v 1.15 2003/02/01 05:43:04 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -51,5 +51,5 @@ distclean:
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Parser
-	install -m 666 $(PY) $(packagedir)/Synopsis/Parser
+	install -m 644 $(PY) $(packagedir)/Synopsis/Parser
 	$(MAKE) action="install"
