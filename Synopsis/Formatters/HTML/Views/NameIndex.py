@@ -1,4 +1,4 @@
-# $Id: NameIndex.py,v 1.5 2001/07/05 05:39:58 stefan Exp $
+# $Id: NameIndex.py,v 1.6 2001/07/10 14:41:22 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: NameIndex.py,v $
+# Revision 1.6  2001/07/10 14:41:22  chalky
+# Make treeformatter config nicer
+#
 # Revision 1.5  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -108,7 +111,10 @@ class NameIndex (Page.Page):
 	dict = {}
 	def hasher(type, dict=dict):
 	    name = type.name()
-	    key = name[-1][0]
+	    try: key = name[-1][0]
+	    except:
+		print 'name:',name, 'type:',repr(type)
+		raise
 	    if key >= 'a' and key <= 'z': key = chr(ord(key) - 32)
 	    if dict.has_key(key): dict[key].append(type)
 	    else: dict[key] = [type]

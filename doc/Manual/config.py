@@ -47,7 +47,7 @@ class Config (Base):
 		('modules.py', 'ConfScope'),
 		'FramesIndex'
 	    ]
-	    tree_formatter = 'Synopsis.Formatter.HTML.TreeFormatterJS.TreeFormatterJS'
+	    tree_formatter = 'TreeFormatterJS.TreeFormatterJS'
 
 	    # Add custom comment formatter
 	    comment_formatters = [

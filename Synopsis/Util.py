@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.12 2001/06/28 07:22:18 stefan Exp $
+# $Id: Util.py,v 1.13 2001/07/10 14:41:22 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.13  2001/07/10 14:41:22  chalky
+# Make treeformatter config nicer
+#
 # Revision 1.12  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -160,6 +163,7 @@ Return the given string with any non-printing characters escaped."""
 
 def _import(name):
     """import either a module, or a file."""
+    arg_name = name #backup for error reporting
     # if name contains slashes, interpret it as a file
     as_file = string.find(name, "/") != -1
     as_file = as_file or name[-3:] == '.py'
@@ -183,6 +187,7 @@ def _import(name):
 		    except AttributeError, msg:
 			print "Error: Unable to find %s in:\n%s"%(
 			    comp,repr(mod))
+			print "Error: Importing '%s'\n"%arg_name
 			sys.exit(1)
 		return mod
 	    except ImportError, msg:
@@ -208,6 +213,7 @@ def _import(name):
     except ImportError, msg:
         sys.path = sys.path[1:]
         sys.stderr.write("Error: Could not find module %s: %s\n"%(name,msg))
+	sys.stderr.write("Error: Importing '%s'\n"%arg_name)
         sys.stderr.flush()
         sys.exit(-1)
     return mod

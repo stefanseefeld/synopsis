@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.21 2001/07/10 02:55:51 chalky Exp $
+# $Id: core.py,v 1.22 2001/07/10 14:41:22 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.22  2001/07/10 14:41:22  chalky
+# Make treeformatter config nicer
+#
 # Revision 1.21  2001/07/10 02:55:51  chalky
 # Better comments in some files, and more links work with the nested layout
 #
@@ -235,7 +238,7 @@ class Config:
 
     def _config_tree_formatter(self, tree_class):
 	if self.verbose: print "Using tree class",tree_class
-	clas = import_object(tree_class)
+	clas = import_object(tree_class, basePackage='Synopsis.Formatter.HTML.')
 	self.treeFormatterClass = clas
     
     def _config_file_layout(self, layout):
