@@ -8,7 +8,8 @@ html: Tutorial.xml
 	mkdir -p $@
 	cp $(srcdir)/synopsis.css $@
 	xsltproc --novalid -o $@/ $(srcdir)/html.xsl $^
-	cp -r $(srcdir)/images $@
+	mkdir -p $@/images
+	cp $(srcdir)/images/*.png $@/images
 
 pdf: Tutorial.pdf
 
