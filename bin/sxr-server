@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+#
+# Copyright (C) 2004 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+from Synopsis import config
+
+from BaseHTTPServer import HTTPServer
+from CGIHTTPServer import CGIHTTPRequestHandler
+import sys, os, os.path, getopt
+
+src_dir = ''
+document_root = '.'
+
+class RequestHandler(CGIHTTPRequestHandler):
+   """This little demo server emulates apache's 'Alias' and 'ScriptAlias'
+   options to serve source files and data generated from sxr.cgi"""
+
+   def translate_path(self, path):
+      """override this so the sxi.cgi script is used"""
+
+      if path.startswith('/sxr.cgi'):
+         return config.datadir + '/cgi-bin' + path 
+      # Alias /src/ $src_dir/
+      #
+      if path.startswith('/src/'):
+         return os.path.join(src_dir, path[5:])
+
+      # Alias $path $config.datadir/cgi-bin/$path
+      elif path.startswith('/file') or path.startswith('/ident'):
+         print 'returning', config.datadir + '/cgi-bin/sxr.cgi' + path
+         return config.datadir + '/cgi-bin/sxr.cgi' + path 
+
+      elif path.startswith('/'):
+         print document_root + path
+         return document_root + path
+      else:
+         return CGIHTTPRequestHandler.translate_path(self, path)
+
+   def is_cgi(self):
+      """The path either refers to the sxr cgi or to a (source) file."""
+
+      if self.path.startswith('/src/'): return False
+      if (self.path == '/'
+          or self.path.startswith('/file')
+          or self.path.startswith('/ident')):
+         self.cgi_info = '', 'sxr.cgi' + self.path
+         return True
+      return False
+
+def usage():
+   print 'Usage : %s [options] <input files>'%sys.argv[0]
+   print """
+List of options:
+
+  -h, --help             help
+  -p, --port             port to listen for requests
+  -d, --document_root    document root, i.e. top level directory (for things like stylesheets)
+  -t, --template         html template to use for all returned data
+  -s, --src_dir          source directory for source file listings
+  -x, --xref_db          xref database
+"""
+
+def run():
+   global src_dir, document_root
+
+   port = 8000
+   env = {}
+   opts, args = getopt.getopt(sys.argv[1:],
+                              'p:d:t:s:x:h',
+                              ['port=', 'document_root=', 'template=', 'src_dir=', 'xref_db', 'help'])
+   for o, a in opts:
+      if o == '-h' or o == '--help':
+         usage()
+         sys.exit(0)
+      elif o == '-p' or o == '--port':
+         port = int(a)
+      elif o == '-d' or o == '--document_root':
+         document_root = a
+      elif o == '-t' or o == '--template':
+         env['SXR_TEMPLATE'] = a
+      elif o == '-s' or o == '--src_dir':
+         env['SXR_SRC_DIR'] = a
+         src_dir = a
+      elif o == '-x' or o == '--xref_db':
+         env['SXR_XREF_DB'] = a
+
+   os.environ.update(env)
+
+   server_address = ('', port)
+
+   httpd = HTTPServer(server_address, RequestHandler)
+   print "Serving HTTP on", httpd.server_name, "port", httpd.server_port, "..."
+   httpd.serve_forever()
+
+if __name__ == '__main__':
+   run()
+
