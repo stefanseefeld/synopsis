@@ -221,7 +221,56 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   return ast;
 }
 
+PyObject *occ_print(PyObject *self, PyObject *args)
+{
+  Class::do_init_static();
+  Metaclass::do_init_static();
+  Environment::do_init_static();
+  Encoding::do_init_static();
+
+  const char *src;
+  int verbose, debug;
+  if (!PyArg_ParseTuple(args, "sii",
+                        &src,
+                        &verbose,
+                        &debug))
+    return 0;
+
+  if (verbose) ::verbose = true;
+  if (debug) Trace::enable_debug();
+
+  if (!src || *src == '\0')
+  {
+    PyErr_SetString(PyExc_RuntimeError, "no input file");
+    return 0;
+  }
+
+  std::ifstream ifs(src);
+  if(!ifs)
+  {
+    perror(src);
+    exit(1);
+  }
+  Buffer buffer(ifs.rdbuf());
+  Lexer lexer(&buffer);
+  Parser parse(&lexer);
+
+  try
+  {
+    Ptree *def;
+    while(parse.rProgram(def)) def->print(std::cout);
+  }
+  catch (...)
+  {
+    std::cerr << "Warning: an uncaught exception occurred when translating the parse tree" << std::endl;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
 PyMethodDef methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},
+			 {(char*)"dump", occ_print, METH_VARARGS},
 			 {0, 0}};
 }
 
