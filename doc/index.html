@@ -34,11 +34,10 @@
 
     <p>Passing options to the parser or formatter follows a similar convention
     to gcc -- they are specified as a comma-separated list of options in the
-    appropriate -W option (see above). Additionally, many modules accept the
-    "--spec=<i>file</i>" option, whereby they read the specified file for
-    additional options. This file is just a list of options one per line, with
-    arguments separated by spaces. See the demos for examples of this usage.
-    Currently the following modules support this: IDL, HTML and synopsis.</p>
+    appropriate -W option (see above). The best way to pass options though is
+    to use a config file, specified with the -c option. See 
+    <a href="Config.html">Config</a> for more information on this powerful
+    tool.</p>
 
     <p>For further information about the various parsers, formatters and the
     linker, see:</p>
@@ -61,6 +60,7 @@
 	  <li><a href="Formatters.html#htmls">HTML_simple</a></li>
 	</ul>
       </li>
+      <li><a href="Config.html">Configuration Scripts</a></li>
       <li><a href="../demo/index.html">Example output</a> generated with various parsers combined with the HTML formatter</li>
       <li><a href="RefManual/index.html">Generated Reference Manual</a></li>
     </ul>

@@ -1,0 +1,126 @@
+<html>
+  <head>
+    <title>Synopsis Configuration</title>
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <h2><a href="Formatters.html">Prev</a> <i>Formatters</i>
+      | <a href="index.html">Up</a> <i>Synopsis</i>
+      | <a href="RefManual/index.html">Next</a> <i>RefManual</i>
+    </h2><hr/>
+
+    <h1>Configuration</h1>
+    <p>There are two ways of configuring Synopsis - command line arguments, or
+    a config script. Of the two, a config script allows more control and is
+    thus recommended. For example, with a config script you can specify
+    user-defined modules to use. Config scripts are actually Python scripts
+    that are loaded at runtime, and specified via the -c command line option.
+    For full documentation on the available options see 
+    <a href="RefManual/Manual/index.html">the Reference Manual</a> and click on
+    the "Config" link at the top.</p>
+
+    <h2>Quick customization</h2>
+    <p>Some of the simplest customizations you will want to make are:
+      <ul>
+      <li>Specify an include path</li>
+      <li>Specify the type of comments you are using</li>
+      <li>Specify the stylesheet to use</li>
+      </ul>
+    Each of these is a customization of a different module, so the config
+    script isn't as short as you might hope. To use the config.py for the IDL
+    demos as an example:</p>
+
+    <pre>
+     1| <i># Config file for IDL demos</i>
+     2| <i># The IDLs all have comments in //. style</i>
+     3|
+     4| <b>from</b> Synopsis.Config <b>import</b> Base
+     5|
+     6| <b>class</b> Config (Base):
+     7|     <b>class</b> Parser:
+     8| 	<b>class</b> IDL (Base.Parser.IDL):
+     9| 	    include_path = ['.']
+    10| 	modules = {
+    11| 	    'IDL':IDL,
+    12| 	}
+    13| 	    
+    14|     <b>class</b> Linker:
+    15| 	<b>class</b> Linker (Base.Linker.Linker):
+    16| 	    comment_processors = ['ssd']
+    17| 	modules = {
+    18| 	    'Linker':Linker,
+    19| 	}
+    20| 
+    21|     <b>class</b> Formatter:
+    22| 	<b>class</b> HTML (Base.Formatter.HTML):
+    23| 	    stylesheet_file = '../html.css'
+    24| 	modules = Base.Formatter.modules
+    25| 	modules['HTML'] = HTML
+    </pre>
+
+    <p>Since this is Python the first two lines are comments. The fourth line
+    imports the default config class, which is called 'Base'. Base is
+    documented in the above reference manual, and contains many nested classes
+    that represent the different modules that can be configured. The 6th line
+    starts a new class that inherits from 'Base', called Config. The config
+    script must contain a class called Config, which you will almost always
+    want to derive from the Base class.</p>
+
+    <p>Line 7 defines a nested class inside Config called Parser. This class
+    contains only nested classes and a dictionary called 'modules' and nothing
+    else - it is never instantiated. Each nested class is a configuration for
+    a module, in this case the parser modules. The 'modules' dictionary maps
+    names that the user can select to module classes. Note that the key in the
+    dictionary is a string, whilst the value is not a string - it refers to
+    the actual IDL class object (yes, you can do that in Python!)</p>
+
+    <p>The IDL class defined at lines 8 and 9 inherits all the functionality
+    and settings from the base version Base.Parser.IDL. The only change it
+    makes is define an include_path variable so that the IDL parser can find
+    the included .idl files used in the demos. The include_path is a list
+    (hence the square brackets) of strings. The only path we want to add is
+    the current directory. If we wanted more it would look like: <i>include_path
+    = ['/home/foo/include', '/usr/local/include/freetype2']</i>. Note also
+    that in Python strings can be quoted with either single or double quotes -
+    there is absolutely no difference.</p>
+
+    <p>Lines 14 to 19 define a Linker option in the same way that we defined a
+    parser option. The difference is that there is just one Linker module,
+    called Linker. In this case we are setting the 'comment_processors'
+    attribute to a list with one string: 'ssd'. This tells the Linker to strip
+    comments to only those that begin with a Slash-Slash-Dot, ie: "//." The
+    reason this is done at the linker stage is that it allows you to specify a
+    different comment format for different files, without having to respecify
+    it for every parser. Other comment processors include: java, qt, dummy,
+    and prev. 'dummy' and 'prev' are used with the C++ parser's ability to
+    look for backwards-referencing comments (that begin with '&lt;'). If you
+    have this option specified then the C++ parser can insert dummy comments,
+    so you have to use either 'dummy' (which just removes and ignores them) or
+    'prev' (which actually moves the comments to the previous
+    declaration).</p>
+
+    <p>Lines 21 to 25 similarly define a Formatter section, which tells the
+    HTML module to use the given stylesheet file. This stylesheet file will be
+    copied to the output directory with the name 'style.css'. You can change
+    the destination name with the 'stylesheet' option. HTML is the most
+    complex module to configure. If you derive from HTML_Doxygen instead of
+    just HTML, then the default settings will attempt to make the output look
+    similar to Doxygen's output. If you do this, then be careful not to
+    overwrite these defaults but rather to extend them.</p>
+
+    <p>The last two lines do something a little different, and show an
+    interesting feature of Python - the ability to put arbitrary statements in
+    class definitions. Since we only want to update the config for the HTML
+    module, and keep the rest intact, we copy the 'modules' dictionary from
+    the parent class. The last line then changes the module to use for 'HTML'
+    to be the new version that knows which stylesheet to use.</p>
+
+    <hr/>
+    <h2><a href="Formatters.html">Prev</a> <i>Formatters</i>
+      | <a href="index.html">Up</a> <i>Synopsis</i>
+      | <a href="RefManual/index.html">Next</a> <i>RefManual</i>
+    </h2>
+    <hr/><p><i>Synopsis Documentation. Copyright (c) 2001 by Stephen Davies</i></p>
+    
+  </body>
+</html><!-- vim: set sts=2 ts=8 sw=2: -->
