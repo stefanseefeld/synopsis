@@ -1,4 +1,4 @@
-# $Id: FileDetails.py,v 1.7 2003/11/16 21:09:45 stefan Exp $
+# $Id: FileDetails.py,v 1.8 2003/12/06 04:02:57 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -96,6 +96,8 @@ class FileDetails(Page):
       self.write('<h2>Declarations in this file:</h2>')
       # Sort items (by name)
       items = map(lambda decl: (decl.type(), decl.name(), decl), file.declarations())
+      # ignore AST.Builtin
+      items = filter(lambda decl: not isinstance(decl[2], AST.Builtin), items)
       items.sort()
       curr_scope = None
       curr_type = None
