@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.hh header file
 // The LinkStore class which stores syntax and xref link info
 
-// $Id: linkstore.hh,v 1.8 2002/12/09 04:01:00 chalky Exp $
+// $Id: linkstore.hh,v 1.9 2002/12/21 05:04:40 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.hh,v $
+// Revision 1.9  2002/12/21 05:04:40  chalky
+// Move constants since gcc 3.2 didn't like them.
+//
 // Revision 1.8  2002/12/09 04:01:00  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -150,12 +153,6 @@ protected:
     struct Private;
     //. Compiler firewalled private data
     Private* m;
-
-    //. The field separator
-    static char* const FS = " ";
-
-    //. The record separator
-    static char* const RS = "\n";
 };
 
 #endif

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.cc source file
 // Implementation of the LinkStore class
 
-// $Id: linkstore.cc,v 1.21 2002/12/12 17:25:34 chalky Exp $
+// $Id: linkstore.cc,v 1.22 2002/12/21 05:04:39 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.22  2002/12/21 05:04:39  chalky
+// Move constants since gcc 3.2 didn't like them.
+//
 // Revision 1.21  2002/12/12 17:25:34  chalky
 // Implemented Include support for C++ parser. A few other minor fixes.
 //
@@ -82,6 +85,13 @@
 
 namespace 
 {
+
+//. The field separator
+const char* FS = " ";
+
+//. The record separator
+const char* RS = "\n";
+
 const char* context_names[] =
 {
     "REF",
