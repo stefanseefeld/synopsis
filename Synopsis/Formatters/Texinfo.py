@@ -1,4 +1,4 @@
-#  $Id: Texinfo.py,v 1.2 2001/06/15 18:07:48 stefan Exp $
+#  $Id: Texinfo.py,v 1.3 2001/07/10 06:04:07 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Texinfo.py,v $
+# Revision 1.3  2001/07/10 06:04:07  stefan
+# added support for info files to the TexInfo formatter
+#
 # Revision 1.2  2001/06/15 18:07:48  stefan
 # made TexInfo formatter useable. Removed all document structure stuff, such that the output can be embedded into any document level (as a chapter, a section, etc.)
 #
@@ -235,7 +238,7 @@ class Escapifier(CommentFormatter):
     """escapify the strings to become valid texinfo text.
     Only replace '@' by '@@' if these are not part of valid texinfo tags."""
 
-    tags = ['table', 'item', 'samp',] #etc.
+    tags = ['table', 'item', 'samp', 'end'] #etc.
     special = ['{', '}',]
     def __init__(self):
         self.__re_texi = re.compile('@(?!(' + string.join(Escapifier.tags, '|') + '))')
@@ -251,6 +254,20 @@ commentFormatters = {
     'escapify' : Escapifier,
 }
 
+class MenuMaker (AST.Visitor):
+    """generate a texinfo menu for the declarations of a given scope"""
+    def __init__(self, scope, os):
+        self.__scope = scope
+        self.__os = os
+    def write(self, text): self.__os.write(text)
+    def start(self): self.write('@menu\n')
+    def end(self): self.write('@end menu\n')
+    def visitDeclaration(self, node):
+        name = reduce(lambda x,y: string.replace(x, y , '@' + y), Escapifier.special, Util.dotName(node.name(), self.__scope))
+        self.write('* ' + name + '::\t' + node.type() + '\n')
+    visitGroup = visitDeclaration
+    visitEnum = visitDeclaration
+
 class Formatter (Type.Visitor, AST.Visitor):
     """
     The type visitors should generate names relative to the current scope.
@@ -263,6 +280,9 @@ class Formatter (Type.Visitor, AST.Visitor):
         self.__comment_formatters = [JavadocFormatter(), Escapifier()]
     def scope(self): return self.__scope
     def write(self, text): self.__os.write(text)
+
+    def escapify(self, label):
+        return reduce(lambda x,y: string.replace(x, y , '@' + y), Escapifier.special, label)
 
     #def reference(self, ref, label):
     #    """reference takes two strings, a reference (used to look up the symbol and generated the reference),
@@ -277,13 +297,15 @@ class Formatter (Type.Visitor, AST.Visitor):
     #    if location != "": return name("\"" + location + "\"", ref)
     #    else: return ref
 
-    def type_label(self): return self.__type_label
+    def type_label(self): return self.escapify(self.__type_label)
+
+    def decl_label(self, decl): return self.escapify(decl[-1])
 
     def formatType(self, type):
 	"Returns a reference string for the given type object"
 	if type is None: return "(unknown)"
         type.accept(self)
-        return self.__type_label
+        return self.type_label()
 
     def formatComments(self, decl):
 	strlist = map(lambda x:str(x), decl.comments())
@@ -335,11 +357,13 @@ class Formatter (Type.Visitor, AST.Visitor):
             self.__declarator[-1] = self.__declarator[-1] + "[" + str(i) + "]"
 
     def visitTypedef(self, typedef):
-        self.write('@deftp ' + typedef.type() + ' {' + self.formatType(typedef.alias()) + '} {' + typedef.name()[-1] + '}\n')
+        #self.write('@node ' + self.decl_label(typedef.name()) + '\n')
+        self.write('@deftp ' + typedef.type() + ' {' + self.formatType(typedef.alias()) + '} {' + self.decl_label(typedef.name()) + '}\n')
         self.formatComments(typedef)
         self.write('@end deftp\n')
     def visitVariable(self, variable):
-        self.write('@deftypevr {' + variable.type() + '} {' + self.formatType(variable.vtype()) + '} {' + variable.name()[-1] + '}\n')
+        #self.write('@node ' + self.decl_label(variable.name()) + '\n')
+        self.write('@deftypevr {' + variable.type() + '} {' + self.formatType(variable.vtype()) + '} {' + self.decl_label(variable.name()) + '}\n')
         #FIXME !: how can values be represented in texinfo ?
         self.formatComments(variable)
         self.write('@end deftypevr\n')
@@ -348,15 +372,21 @@ class Formatter (Type.Visitor, AST.Visitor):
         print "sorry, <const> not implemented"
 
     def visitModule(self, module):
-        self.write('@deftp ' + module.type() + ' ' + module.name()[-1] + '\n')
+        #self.write('@node ' + self.decl_label(module.name()) + '\n')
+        self.write('@deftp ' + module.type() + ' ' + self.decl_label(module.name()) + '\n')
         self.formatComments(module)
         self.scope().append(module.name()[-1])
+        #menu = MenuMaker(self.scope(), self.__os)
+        #menu.start()
+        #for declaration in module.declarations(): declaration.accept(menu)
+        #menu.end()
         for declaration in module.declarations(): declaration.accept(self)
         self.scope().pop()
         self.write('@end deftp\n')
 
     def visitClass(self, clas):
-        self.write('@deftp ' + clas.type() + ' ' + clas.name()[-1] + '\n')
+        #self.write('@node ' + self.decl_label(clas.name()) + '\n')
+        self.write('@deftp ' + clas.type() + ' ' + self.decl_label(clas.name()) + '\n')
         if len(clas.parents()):
             self.write('parents:')
             first = 1
@@ -367,6 +397,10 @@ class Formatter (Type.Visitor, AST.Visitor):
             self.write('\n')
         self.formatComments(clas)
         self.scope().append(clas.name()[-1])
+        #menu = MenuMaker(self.scope(), self.__os)
+        #menu.start()
+        #for declaration in clas.declarations(): declaration.accept(menu)
+        #menu.end()
         for declaration in clas.declarations(): declaration.accept(self)
         self.scope().pop()
         self.write('@end deftp\n')
@@ -390,7 +424,8 @@ class Formatter (Type.Visitor, AST.Visitor):
             ret_label = '{' + self.type_label() + '}'
         else:
             ret_label = '{}'
-        self.write('@deftypefn ' + function.type() + ' ' + ret_label + ' ' + function.realname()[-1] + '(')
+        #self.write('@node ' + self.decl_label(function.realname()) + '\n')
+        self.write('@deftypefn ' + function.type() + ' ' + ret_label + ' ' + self.decl_label(function.realname()) + '(')
         first = 1
         for parameter in function.parameters():
             if not first: self.write(', ')
@@ -410,7 +445,8 @@ class Formatter (Type.Visitor, AST.Visitor):
         else:
             ret_label = '{}'
         try:
-            self.write('@deftypeop ' + operation.type() + ' ' + self.scope()[-1] + ' ' + ret_label + ' ' + operation.realname()[-1] + '(')
+            #self.write('@node ' + self.decl_label(operation.name()) + '\n')
+            self.write('@deftypeop ' + operation.type() + ' ' + self.decl_label(self.scope()) + ' ' + ret_label + ' ' + self.decl_label(operation.realname()) + '(')
         except:
             print operation.realname()
             sys.exit(0)
@@ -426,14 +462,15 @@ class Formatter (Type.Visitor, AST.Visitor):
         self.write('@end deftypeop\n')
 
     def visitEnumerator(self, enumerator):
-        self.write('@deftypevr {' + enumerator.type() + '} {} {' + enumerator.name()[-1] + '}')
+        self.write('@deftypevr {' + enumerator.type() + '} {} {' + self.decl_label(enumerator.name()) + '}')
         #FIXME !: how can values be represented in texinfo ?
         if enumerator.value(): self.write('\n')
         else: self.write('\n')
         self.formatComments(enumerator)
         self.write('@end deftypevr\n')
     def visitEnum(self, enum):
-        self.write('@deftp ' + enum.type() + ' ' + enum.name()[-1] + '\n')
+        #self.write('@node ' + self.decl_label(enum.name()) + '\n')
+        self.write('@deftp ' + enum.type() + ' ' + self.decl_label(enum.name()) + '\n')
         self.formatComments(enum)
         for enumerator in enum.enumerators(): enumerator.accept(self)
         self.write('@end deftp\n')
@@ -461,6 +498,11 @@ def __parseArgs(args):
 def format(types, declarations, args, config):
     global output
     __parseArgs(args)
+    #menu = MenuMaker([], output)
+    #menu.start()
+    #for d in declarations:
+    #    d.accept(menu)
+    #menu.end()
     formatter = Formatter(output)
     for d in declarations:
         d.accept(formatter)
