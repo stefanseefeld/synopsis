@@ -11,12 +11,13 @@
 #include <fstream>
 
 using namespace Synopsis;
+using namespace SymbolLookup;
 
-class SymbolFinder : public SymbolLookup::Visitor
+class SymbolFinder : public Visitor
 {
 public:
-  SymbolFinder(Buffer const &buffer, SymbolLookup::Table &table, std::ostream &os)
-    : SymbolLookup::Visitor(table), my_buffer(buffer), my_os(os) {}
+  SymbolFinder(Buffer const &buffer, Table &table, std::ostream &os)
+    : Visitor(table), my_buffer(buffer), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::Identifier *iden)
@@ -64,13 +65,38 @@ private:
     lookup(name);
   }
   
+  virtual void visit(PTree::FuncallExpr *node)
+  {
+    PTree::Node *function = node->car();
+    PTree::Encoding name;
+    if (function->is_atom()) name.simple_name(function);
+    else name = function->encoded_name(); // function is a 'PTree::Name'
+    std::cout << "Function : " << name << ' ' << std::endl;
+    std::cout << "overload resolution not implemented yet" << std::endl;
+    SymbolSet symbols = table().lookup(name);
+    if (!symbols.empty())
+    {
+      // TODO: implement overload resolution and expression type evaluation
+      //       to select appropriate function
+      for (SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
+      {
+	std::string filename;
+	Symbol const *symbol = *i;
+	unsigned long line_number = my_buffer.origin(symbol->ptree()->begin(), filename);
+	std::cout << "declared at line " << line_number << " in " << filename << std::endl;
+      }
+    }
+    else
+      std::cout << "undeclared ! " << std::endl;
+  }
+
   void lookup(PTree::Encoding const &name)
   {
-    SymbolLookup::SymbolSet symbols = table().lookup(name);
+    SymbolSet symbols = table().lookup(name);
     if (!symbols.empty())
     {
       std::string filename;
-      SymbolLookup::Symbol const *first = *symbols.begin();
+      Symbol const *first = *symbols.begin();
       unsigned long line_number = my_buffer.origin(first->ptree()->begin(), filename);
       std::cout << "declared at line " << line_number << " in " << filename << std::endl;
     }
@@ -95,7 +121,7 @@ int main(int argc, char **argv)
     std::ifstream ifs(argv[2]);
     Buffer buffer(ifs.rdbuf(), argv[2]);
     Lexer lexer(&buffer);
-    SymbolLookup::Table symbols;
+    Table symbols;
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
     SymbolFinder finder(buffer, symbols, ofs);
