@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.7 2002/06/22 07:03:27 chalky Exp $
+# $Id: actionvis.py,v 1.8 2002/08/23 04:36:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.8  2002/08/23 04:36:35  chalky
+# Use icons! :)
+#
 # Revision 1.7  2002/06/22 07:03:27  chalky
 # Updates to GUI - better editing of Actions, and can now execute some.
 #
@@ -45,6 +48,7 @@
 
 import sys, pickle, Synopsis, cStringIO, math
 from qt import *
+
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Core.Project import *
@@ -316,15 +320,35 @@ class ActionColorizer (ActionVisitor):
     def visitCacher(self, action): self.color=Qt.green
     def visitFormat(self, action): self.color=Qt.cyan
 
+class ActionIcon (ActionVisitor):
+    def __init__(self, action=None):
+	self.icon = None
+	if action: action.accept(self)
+    def visitAction(self, action): pass #self.icon='syn-icon-action.png'
+    def visitSource(self, action): self.icon='syn-icon-c++.png'
+    def visitParser(self, action): self.icon='syn-icon-parse.png'
+    def visitLinker(self, action): pass #self.icon='syn-icon-action.png'
+    def visitCacher(self, action): self.icon='syn-icon-cache.png'
+    def visitFormat(self, action): self.icon='syn-icon-html.xpm'
+
 class Icon:
     "Encapsulates the canvas display of an Action"
 
     def __init__(self, canvas, action):
 	self.action = action
 	self.canvas = canvas
-	self.img = QCanvasRectangle(action.x(), action.y(), 32, 32, canvas)
-	self.brush = QBrush(ActionColorizer(action).color)
-	self.img.setBrush(self.brush)
+	self.icon = ActionIcon(action).icon
+	if self.icon:
+	    icon = 'share/'+self.icon
+	    self.pixmap = QPixmap(icon)
+	    self.array = QCanvasPixmapArray([self.pixmap], [QPoint(0,0)])
+	    self.img = QCanvasSprite(self.array, canvas)
+	else:
+	    self.img = QCanvasRectangle(action.x(), action.y(), 32, 32, canvas)
+	    self.brush = QBrush(ActionColorizer(action).color)
+	    self.img.setBrush(self.brush)
+	self.width = self.img.width()
+	self.height = self.img.height()
 	self.img.setZ(1)
 	self.text = QCanvasText(action.name(), canvas)
 	self.text.setZ(1)
@@ -340,6 +364,7 @@ class Icon:
 	self.text.hide()
     def set_hilite(self, yesno):
 	self.hilite = yesno
+	if not hasattr(self, 'brush'): return
 	if yesno:
 	    colour = self.brush.color()
 	    brush = QBrush(QColor(colour.red()*3/4, colour.green()*3/4,
@@ -384,33 +409,42 @@ class Line:
 	self.update_pos()
     def update_pos(self):
 	source, dest = self.source, self.dest
-	x1, y1 = source.x()+16, source.y()+16
-	x2, y2 = dest.x()+16, dest.y()+16
+	src_action, dst_action = source.action, dest.action
+	# Find centers of the two icons
+	src_xrad, src_yrad = source.width/2, source.height/2
+	dst_xrad, dst_yrad = dest.width/2, dest.height/2
+	x1, y1 = src_action.x()+src_xrad, src_action.y()+src_yrad
+	x2, y2 = dst_action.x()+dst_xrad, dst_action.y()+dst_yrad
+	# Calculate the distance
 	dx, dy = x2 - x1, y2 - y1
 	d = math.sqrt(dx*dx + dy*dy)
 	if d < 32:
+	    # Don't draw lines that are too short (they will be behind the
+	    # icons)
 	    self.line.setPoints(x1, y1, x2, y2)
 	    self.arrow.setPoints(QPointArray([]))
 	    return
+	# Normalize direction vector
 	dx, dy = dx / d, dy / d
-	if math.fabs(dx) < math.fabs(dy):
+	# Find the end-point for the arrow
+	if math.fabs(dx) * dst_yrad < math.fabs(dy) * dst_xrad:
 	    if dy < 0:
 		# Bottom
-		x2 = x2 + 15 * dx / dy
-		y2 = y2 + 15
+		x2 = x2 + dst_yrad * dx / dy
+		y2 = y2 + dst_yrad
 	    else:
 		# Top
-		x2 = x2 - 16 * dx / dy
-		y2 = y2 - 16
+		x2 = x2 - dst_yrad * dx / dy
+		y2 = y2 - dst_yrad
 	else:
 	    if dx < 0:
 		# Left
-		y2 = y2 + 15 * dy / dx
-		x2 = x2 + 15
+		y2 = y2 + dst_xrad * dy / dx
+		x2 = x2 + dst_xrad
 	    else:
 		# Right
-		y2 = y2 - 16 * dy / dx
-		x2 = x2 - 16
+		y2 = y2 - dst_xrad * dy / dx
+		x2 = x2 - dst_xrad
 	self.line.setPoints(x1, y1, x2, y2)
 	alen = 8 + self.hilite
 	awid = 5 + self.hilite
@@ -418,13 +452,6 @@ class Line:
 	    x2 + self.hilite*dx, y2 + self.hilite*dy,
 	    x2 - alen*dx - awid*dy, y2 - alen*dy + awid*dx,
 	    x2 - alen*dx + awid*dy, y2 - alen*dy - awid*dx]))
-	#self.arrow.setPoints(QPointArray([
-	#    x2+5,y2,x2,y2-5,x2-5,y2,x2,y2+5 ]))
-	#self.arrow.setPoints(QPointArray([
-	#    5,0,0,5,-5,0,0,-5 ]))
-	#self.arrow.setX(x2)
-	#self.arrow.setY(y2)
-
 
 class ActionCanvas (QCanvas):
     """Extends QCanvas to automatically fill and update the canvas when
@@ -482,7 +509,9 @@ class ActionCanvas (QCanvas):
 
     def channel_added(self, source, dest):
 	"Callback from ActionManager. Adds a channel between the given actions"
-	line = Line(self, source, dest)
+	src_icon = self._action_to_icon_map[source]
+	dst_icon = self._action_to_icon_map[dest]
+	line = Line(self, src_icon, dst_icon)
 	self._action_lines.setdefault(source, []).append(line)
 	self._action_lines.setdefault(dest, []).append(line)
 	self._item_to_line_map[line.line] = line
@@ -562,21 +591,21 @@ class CanvasWindow (QVBox):
 	self.buttons = QButtonGroup()
 	self.buttons.setExclusive(1)
 	self.tool = QToolBar("Canvas", self.main_window, self)
-	self.tool.setHorizontalStretchable(0)
+	#self.tool.setHorizontalStretchable(0)
 	pixmap = QPixmap(16,16); pixmap.fill()
-	self.tool_sel = QToolButton(pixmap, "Select", "Select actions in the display", self.setSelect, self.tool)
+	self.tool_sel = QToolButton(QIconSet(pixmap), "Select", "Select actions in the display", self.setSelect, self.tool)
 	self.tool_sel.setUsesTextLabel(1)
 	self.tool_sel.setToggleButton(1)
 	self.buttons.insert(self.tool_sel)
 
 	pixmap = QPixmap(16,16); pixmap.fill(Qt.blue)
-	self.tool_con = QToolButton(pixmap, "Connect", "Connect two actions", self.setConnect, self.tool)
+	self.tool_con = QToolButton(QIconSet(pixmap), "Connect", "Connect two actions", self.setConnect, self.tool)
 	self.tool_con.setUsesTextLabel(1)
 	self.tool_con.setToggleButton(1)
 	self.buttons.insert(self.tool_con)
 
 	pixmap = QPixmap(16,16); pixmap.fill(Qt.red)
-	self.tool_add = QToolButton(pixmap, "Add Action", "Add a new action to the project", self.newAction, self.tool)
+	self.tool_add = QToolButton(QIconSet(pixmap), "Add Action", "Add a new action to the project", self.newAction, self.tool)
 	self.tool_add.setUsesTextLabel(1)
 	self.tool_add.setToggleButton(1)
 	self.buttons.insert(self.tool_add)
