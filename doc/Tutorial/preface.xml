@@ -1,0 +1,63 @@
+<!-- Chapter 1 - an introduction to the book -->
+<preface id="preface">
+  <title>Preface</title>
+  <section id="preface-what">
+    <title>What is Synopsis?</title>
+    <para>Synopsis is not a random name. Consider this definition:</para>
+    <blockquote>
+      <attribution>Webster's Revised Unabridged Dictionary, &copy; 1996, 1998 MICRA, Inc.</attribution>
+      <para>
+        \Syn*op"sis\, n.; pl. Synopses. [L., from Gr. ?; sy`n with, together + ? a
+        sight, view, from the root seen in E. optic.] A general view, or a
+        collection of heads or parts so arranged as to exhibit a general view of
+        the whole; an abstract or summary of a discourse; a syllabus; a
+        conspectus.
+      </para>
+      <para>
+        That the reader may see in one view the exactness of the method, as well
+        as force of the argument, I shall here draw up a short synopsis of this
+        epistle. --Bp. Warburton.
+      </para>
+      <para>
+        Syn: Abridgment; compendium; epitome; abstract; summary; syllabus;
+        conspectus. See Abridgment.
+      </para>
+    </blockquote>
+    <para>
+      Synopsis is a tool for generating documentation of a program's structure,
+      using mainly comments embedded in the source code. The end result is
+      ideally documentation that provides an accessible view of the interface,
+      structure and workings of a program or library, depending on the intent
+      of the person creating the documentation.
+    </para>
+    <para>
+      Synopsis has a very modular design, allowing multiple source languages
+      and output formats. Between the input and output, complex
+      transformations can be made to simplify the structure or rename types,
+      as suits the documentation.
+    </para>
+  </section>
+  <section id="preface-this">
+    <title>This Document</title>
+    <para>
+      This document is intended to be a complete user manual for the Synopsis
+      application. It provides both introductory materials on how to use
+      the application to generate documentation, and advanced materials on how
+      to extend Synopsis with custom modules to perform extra tasks.
+    </para>
+  </section>
+  <section id="preface-history">
+    <title>Document Revision History</title>
+    <para>
+    <revhistory>
+      <revision>
+        <revnumber>0.1</revnumber>
+        <date>Nov 18 2002</date>
+        <authorinitials>SD</authorinitials>
+        <revremark>Initial version</revremark>
+      </revision>
+    </revhistory>
+    </para>
+  </section>
+</preface>
+<!-- vim: set ts=8 et sts=2 sw=2: -->

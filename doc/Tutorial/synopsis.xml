@@ -1,0 +1,85 @@
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.2//EN" [
+
+<!-- these are chapter-entity declarations -->
+
+<!ENTITY preface    SYSTEM "preface.xml">
+<!ENTITY chapter1   SYSTEM "intro.xml">
+<!ENTITY config     SYSTEM "config.xml">
+<!--
+<!ENTITY chapter2   SYSTEM "start.xml">
+<!ENTITY chapter3   SYSTEM "control-graph.xml">
+<!ENTITY chapter4   SYSTEM "mvc.xml">
+<!ENTITY chapter5   SYSTEM "cda.xml">
+<!ENTITY chapter6   SYSTEM "kits.xml">
+<!ENTITY appendix1  SYSTEM "hello-list.xml">
+<!ENTITY appendix2  SYSTEM "memory.xml">
+-->
+]>
+
+<!-- This file is copyright (C) 2002 Stephen Davies       -->
+
+<book>
+  <bookinfo>
+  <title><application>Synopsis</application> Manual v0.1</title>
+    <copyright>
+      <year>2002</year>
+      <holder>Stephen Davies</holder>
+    </copyright>
+    <!-- TODO: figure out what to put here. GNU FDL?
+    <legalnotice>
+      <para>Released under the terms of the GNU General Public License, version 2.0 or greater.
+      This document has been prepared for printing and the web using XML &amp; DocBook. It is available
+      online at <ulink url="http://www.fresco.org">http://www.fresco.org</ulink>
+      in HTML and PDF. Comments, additions, and discussion are welcome, and best directed towards the 
+      mailing list.</para>
+    </legalnotice>-->
+    <authorgroup>
+      <author><firstname>Stephen</firstname> <surname>Davies</surname></author>
+      <!-- additional authors, please insert your names here -->
+    </authorgroup>
+    <releaseinfo>This manual describes version 0.5 of Synopsis</releaseinfo>
+    <legalnotice>
+      <title>Feedback</title>
+      <para>
+        To report a bug or make a suggestion regarding Synopsis or this
+        manual, please email the Synopsis mailing list. Details are available
+        at the <ulink url="http://synopsis.sf.net/">website</ulink>.
+      </para>
+    </legalnotice>
+  </bookinfo>
+
+&preface;
+&chapter1; <!-- intro -->
+<chapter><title>Formatting Sourcecode</title>
+  <section><title>Where to put comments</title><para> </para></section>
+  <section><title>How to format comments</title><para> </para></section>
+  <section><title>Extra things to put in comments</title><para> </para></section>
+</chapter>
+<chapter><title>Using the GUI</title>
+  <para>The GUI.. is not yet finished :(</para>
+</chapter>
+<chapter><title>Configuration</title>
+  <para>Config file.. python script.. config.base.. examples/demos</para>
+  <section><title>Input: Parsing Source</title>
+    <para>Source parsers?</para>
+  </section>
+  <section><title>Generating Documents</title>
+    <para>Output formats</para>
+  </section>
+  <section><title>Full Configuration Reference</title>
+      <!-- include Synosis.Config module from RefManual -->
+      &config;
+  </section>
+</chapter>
+<chapter><title>Manipulating the AST</title><para> </para></chapter>
+<chapter><title>Adding Custom Modules</title><para> </para></chapter>
+<appendix><title>File Formats</title><para> </para></appendix>
+<!--
+&chapter2;
+&chapter3;
+&chapter4;
+&chapter6;
+&appendix1;
+&appendix2; -->
+</book>
+<!-- vim: set ts=8 et sts=2 sw=2: -->
