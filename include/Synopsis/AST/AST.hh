@@ -1,4 +1,4 @@
-// $Id: AST.hh,v 1.1 2004/01/10 22:50:34 stefan Exp $
+// $Id: AST.hh,v 1.2 2004/01/11 19:46:29 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -10,6 +10,7 @@
 #define _Synopsis_AST_AST_hh
 
 #include <Synopsis/Object.hh>
+#include <Synopsis/Callable.hh>
 #include <Synopsis/Dict.hh>
 #include <Synopsis/Tuple.hh>
 #include <Synopsis/AST/Declaration.hh>
@@ -23,8 +24,8 @@ public:
   AST() {}
   AST(const Object &o) throw(TypeError) : Object(o) { assert_type();}
 
-  Dict files() { return Dict(call("files"));}
-  List declarations() { return List(call("declarations"));}
+  Dict files() { return Dict(Callable(attr("files")).call());}
+  List declarations() { return List(Callable(attr("declarations")).call());}
   void assert_type() throw(TypeError) { Object::assert_type("Synopsis.AST", "AST");}
 };
 
