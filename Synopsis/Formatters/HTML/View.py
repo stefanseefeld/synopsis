@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.9 2002/01/09 10:16:35 chalky Exp $
+# $Id: View.py,v 1.10 2002/01/09 11:43:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.10  2002/01/09 11:43:41  chalky
+# Inheritance pics
+#
 # Revision 1.9  2002/01/09 10:16:35  chalky
 # Centralized navigation, clicking links in (html) docs works.
 #
@@ -147,6 +150,11 @@ class Page:
 
 class BufferPage (Page):
     """A page that writes to a string buffer."""
+    def _take_control(self):
+	self.open_file = lambda s=self: BufferPage.open_file(s)
+	self.close_file = lambda s=self: BufferPage.close_file(s)
+	self.get_buffer = lambda s=self: BufferPage.get_buffer(s)
+	
     def open_file(self):
 	"Returns a new StringIO"
 	return cStringIO.StringIO()

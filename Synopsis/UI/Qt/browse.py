@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.5 2002/01/09 10:16:35 chalky Exp $
+# $Id: browse.py,v 1.6 2002/01/09 11:43:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.6  2002/01/09 11:43:41  chalky
+# Inheritance pics
+#
 # Revision 1.5  2002/01/09 10:16:35  chalky
 # Centralized navigation, clicking links in (html) docs works.
 #
@@ -43,6 +46,7 @@ from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
 from Synopsis.Formatter.HTML import Page, ScopePages, core
+from Synopsis.Formatter import Dot
 
 class Browser:
     """Controls the browse widgets of the project window"""
@@ -140,6 +144,9 @@ class Browser:
 
 	for listener in self.__listeners:
 	    listener.current_ast_changed(ast)
+    
+    def current_ast(self):
+	return self.__ast
 
     def windowActivated(self, widget):
 	if self.__activated:
@@ -304,14 +311,10 @@ class ClassBrowser (Browser.SelectionListener):
 
 class DocoBrowser (Browser.SelectionListener):
     """Browser that manages the documentation view"""
-    class BufferScopePages (Page.BufferPage, ScopePages.ScopePages):
+    class BufferScopePages (ScopePages.ScopePages, Page.BufferPage):
 	def __init__(self, manager):
 	    ScopePages.ScopePages.__init__(self, manager)
-	
-	process_scope = ScopePages.ScopePages.process_scope
-	process = ScopePages.ScopePages.process
-	register_filenames = ScopePages.ScopePages.register_filenames
-
+	    Page.BufferPage._take_control(self)
 
     def __init__(self, window, browser):
 	self.__window = window
@@ -360,9 +363,34 @@ class DocoBrowser (Browser.SelectionListener):
 	self.generator().register_filenames(scope)
 
     def get_mime_data(self, name):
+	if name[-16:] == '-inheritance.png':
+	    # inheritance graph.
+	    # Horrible Hack Time
+	    try:
+		# Convert to .html name
+		html_name = name[:-16] + '.html'
+		page, scope = core.manager.filename_info(html_name) # may throw KeyError
+
+		super = core.config.classTree.superclasses(scope.name())
+		sub = core.config.classTree.subclasses(scope.name())
+		if len(super) == 0 and len(sub) == 0:
+		    # Skip classes with a boring graph
+		    return None
+		tmp = '/tmp/synopsis-inheritance.gif'
+		dot_args = ['-o', tmp, '-f', 'gif', '-s']
+		Dot.toc = core.config.toc
+		Dot.nodes = {}
+		ast = AST.AST([''], [scope], core.config.types)
+		Dot.format(dot_args, ast, None)
+		data = QImageDrag(QImage(tmp))
+		os.unlink(tmp)
+		return data
+	    except KeyError:
+		print "inheritance doesnt have a page!"
+		pass
+	# Try for html page
 	try:
 	    page, scope = core.manager.filename_info(name)
-	    print page,scope
 	    if page is self.generator():
 		self.__getting_mime = 1
 		self.__browser.set_current_decl(scope)

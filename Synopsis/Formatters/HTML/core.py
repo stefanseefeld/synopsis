@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.26 2002/01/09 10:16:35 chalky Exp $
+# $Id: core.py,v 1.27 2002/01/09 11:43:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.27  2002/01/09 11:43:41  chalky
+# Inheritance pics
+#
 # Revision 1.26  2002/01/09 10:16:35  chalky
 # Centralized navigation, clicking links in (html) docs works.
 #
@@ -519,12 +522,12 @@ class PageManager:
     
     def register_filename(self, filename, page, scope):
 	"""Registers a file for later production"""
-	self.__files[filename] = (page, scope)
+	self.__files[str(filename)] = (page, scope)
 
     def filename_info(self, filename):
 	"""Returns information about a registered file, as a (page,scope)
 	pair. May throw a KeyError if the filename isn't registered."""
-	return self.__files[filename]
+	return self.__files[str(filename)]
 
 def usage():
     """Print usage to stdout"""
