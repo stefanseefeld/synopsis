@@ -3,7 +3,8 @@ from Synopsis.Processor import Composite
 from Synopsis.Parsers import Cpp
 from Synopsis.Parsers import C
 from Synopsis.Formatters import Dump
+import os
 
-process(parse = Composite(C.Parser(base_path = '@abs_top_srcdir@'),
+process(parse = Composite(C.Parser(base_path = '@abs_top_srcdir@' + os.sep),
                           Dump.Formatter(show_ids = False, stylesheet = None)))
 
