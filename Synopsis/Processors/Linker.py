@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.4 2002/10/28 16:30:05 chalky Exp $
+# $Id: Linker.py,v 1.5 2002/12/10 07:28:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Linker.py,v $
+# Revision 1.5  2002/12/10 07:28:49  chalky
+# Unduplicate the list of declarations for each file
+#
 # Revision 1.4  2002/10/28 16:30:05  chalky
 # Trying to fix some bugs in the unduplication/stripping stages. Needs more work
 #
@@ -53,6 +56,8 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 	for decl in declarations:
 	    decl.accept(self)
 	declarations[:] = self.__global.declarations()
+	for file in ast.files().values():
+	    self.visitSourceFile(file)
     def lookup(self, name):
         """look whether the current scope already contains a declaration with the given name"""
 	if self.__dicts[-1].has_key(name):
@@ -151,6 +156,26 @@ class Unduplicator(AST.Visitor, Type.Visitor):
 	self.__type = type
 
     #################### AST Visitor ############################################
+
+    def visitSourceFile(self, file):
+	"""Resolves any duplicates in the list of declarations from this
+	file"""
+	types = config.types
+
+	# Clear the list and refill it
+	old_decls = list(file.declarations())
+	new_decls = file.declarations()
+	new_decls[:] = []
+
+	for decl in old_decls:
+	    # Try to find a replacement declaration
+	    if types.has_key(decl.name()):
+		declared = types[decl.name()]
+		if isinstance(type, Type.Declared):
+		    decl = declared.declaration()
+	    new_decls.append(decl)
+	
+	# TODO: includes.
 
     def visitModule(self, module):
         #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
