@@ -15,7 +15,7 @@ AC_INIT(documentation, 1.0, synopsis-devel@fresco.org)
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
   PYTHON="$with_python",
-  PYTHON=""
+  PYTHON="python"
 )
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then

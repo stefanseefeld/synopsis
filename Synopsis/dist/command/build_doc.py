@@ -51,6 +51,9 @@ class build_doc(build.build):
    def run(self):
       """Run this command, i.e. do the actual document generation."""
 
+      if not os.path.exists(self.build_temp):
+         self.run_command('config')
+
       self.build_lib = '.'
 
       if self.manual or self.sxr: self.build_manual()
@@ -69,7 +72,7 @@ class build_doc(build.build):
       build_ext = self.distribution.get_command_obj('build_ext')
       build_ext.ensure_finalized()
 
-      for e in [('Cxx-API', 'cxx-api')] + self.extensions:
+      for e in [('src', 'cxx'), ('Cxx-API', 'cxx-api')] + self.extensions:
 
          if e[1] == 'wave': continue
          # replace <name>.so by <name>.syn
@@ -120,6 +123,11 @@ class build_doc(build.build):
          rmtree(os.path.join(builddir, 'python'), 1)
          copy_tree(os.path.join(tempdir, 'html', 'python'),
                    os.path.join(builddir, 'python'))
+      if newer(os.path.join(tempdir, 'html', 'cxx'),
+               os.path.join(builddir, 'cxx')):
+         rmtree(os.path.join(builddir, 'cxx'), 1)
+         copy_tree(os.path.join(tempdir, 'html', 'cxx'),
+                   os.path.join(builddir, 'cxx'))
       if newer(os.path.join(tempdir, 'html', 'cxx-api'),
                os.path.join(builddir, 'cxx-api')):
          rmtree(os.path.join(builddir, 'cxx-api'), 1)
