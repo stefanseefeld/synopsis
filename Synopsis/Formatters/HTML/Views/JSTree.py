@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.2 2001/02/06 18:06:35 chalky Exp $
+# $Id: JSTree.py,v 1.3 2001/04/17 13:36:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: JSTree.py,v $
+# Revision 1.3  2001/04/17 13:36:10  chalky
+# Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
+#
 # Revision 1.2  2001/02/06 18:06:35  chalky
 # Added untested compatability with IE4 and Navigator 4
 #
@@ -30,6 +33,7 @@
 
 import Page
 from core import config
+from Tags import *
 
 #The javascript that goes up the top
 top_js = """<script language="JavaScript1.2"><!--
@@ -82,9 +86,8 @@ init_tree("%s", "%s");
 --></script>
 """
 # The HTML for one image. %s's are 2x the same id string and the image
-img_html = """<a onClick="toggle('%s')" href="javascript:void(0);"
-><img id="%s_img" border=0 src="%s"
-></a>"""
+img_html = """<a href="javascript:toggle('%s');"
+>%s</a>"""
 
 class JSTree (Page.Page):
     """Page that makes Javascript trees. The trees have expanding and
@@ -96,12 +99,13 @@ class JSTree (Page.Page):
 	self.__id = 0
 	self.__open_img = ''
 	self.__close_img = ''
+	self.__leaf_img = ''
 	
     def getId(self):
 	self.__id = self.__id + 1
 	return "tree%d"%self.__id
 
-    def js_init(self, open_img, close_img, base, default_open=1):
+    def js_init(self, open_img, close_img, leaf_img, base, default_open=1):
 	"""Initialise the JSTree page. This method copies the files to the
 	output directory and stores the values given.
 	@param open_img	     filename of original open image
@@ -111,12 +115,15 @@ class JSTree (Page.Page):
 	"""
 	self.__open_img = open_img
 	self.__close_img = close_img
+	self.__leaf_img = leaf_img
 	self.__def_open = default_open
 	self.__base_open = base%'open'
 	self.__base_close = base%'close'
+	self.__base_leaf = base%'leaf'
 	# Copy images across
 	config.files.copyFile(open_img, self.__base_open)
 	config.files.copyFile(close_img, self.__base_close)
+	config.files.copyFile(leaf_img, self.__base_leaf)
 
     def startFile(self, filename, title):
 	"""Overrides startFile to add the javascript"""
@@ -124,24 +131,38 @@ class JSTree (Page.Page):
 	    self.__base_open, self.__base_close
 	))
 
-    def formatButton(self):
-	"""Returns the HTML for the open/close button. This method will get a
-	new ID, and should be called before startSection which doesn't."""
-	id = self.getId();
-	return img_html%(id, id,
-	    self.__def_open and self.__base_open or self.__base_close
-	)
+    def formatImage(self, id, filename, alt_text=""):
+	"""Returns the image element for the given image"""
+	# todo: resolve directory path
+	id = id and 'id="%s" '%id or ''
+	return '<img %sborder=0 src="%s" alt="%s">'%(id, filename, alt_text)
 
-    def startSection(self):
-	"""Starts an collapsible section. You must call this *after*
-	formatButton, and before endSection."""
-	id = self.__id
+    def writeLeaf(self, item_text):
+	"""Write a leaf node to the output at the current tree level."""
+	img = self.formatImage(None, self.__base_leaf, "leaf")
+	self.write(div('module-section', img+item_text))
+
+    def writeNodeStart(self, item_text):
+	"""Write a non-leaf node to the output at the current tree level, and
+	start a new level."""
+	# Get a unique id for this node
+	id = self.getId()
+	# Get the image for this node
+	if self.__def_open: img = self.formatImage(id, self.__base_open, 'node')
+	else: img = self.formatImage(id+"_img", self.__base_close, 'node')
+	# Get the scripted link for the image
+	img_link = img_html%(id, img)
+	# Write the item
+	self.write('<div class="module-section">%s%s'%(img_link, item_text))
+	# Start the (collapsible) section for the child nodes
 	if self.__def_open:
-	    self.write('<div id="tree%d">'%id)
+	    self.write('<div id="%s">'%id)
 	else:
-	    self.write('<div id="tree%d" style="display:none;">'%id)
+	    self.write('<div id="%s" style="display:none;">'%id)
 
-    def endSection(self):
-	self.write('</div>')
+    def writeNodeEnd(self):
+	"""Finish a non-leaf node, and close the current tree level."""
+	# Close the collapsible div, and the node's div
+	self.write('</div></div>')
 
 

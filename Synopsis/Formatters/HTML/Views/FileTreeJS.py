@@ -1,4 +1,4 @@
-# $Id: FileTreeJS.py,v 1.2 2001/02/16 02:29:55 chalky Exp $
+# $Id: FileTreeJS.py,v 1.3 2001/04/17 13:36:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileTreeJS.py,v $
+# Revision 1.3  2001/04/17 13:36:10  chalky
+# Slight enhancement to JSTree and derivatives, to use a dot graphic for leaves
+#
 # Revision 1.2  2001/02/16 02:29:55  chalky
 # Initial work on SXR and HTML integration
 #
@@ -58,7 +61,7 @@ class FileTree(JSTree.JSTree):
     def process(self, start):
 	# Init tree
 	share = os.path.split(AST.__file__)[0]+"/../share" #hack..
-	self.js_init(share+'/syn-down.png', share+'/syn-right.png', 'tree_%s.png', 0)
+	self.js_init(share+'/syn-down.png', share+'/syn-right.png', share+'/syn-dot.png', 'tree_%s.png', 0)
 	# Start the file
 	self.startFile(self.__filename, "File Tree")
 	self.write(self.manager.formatRoots('File Tree', 2)+'<hr>')
@@ -77,20 +80,22 @@ class FileTree(JSTree.JSTree):
 
     def processFileTreeNode(self, node):
 	if hasattr(node, 'decls'):
-	    self.write(href(config.files.nameOfFile(node.path),node.path[-1],target='index'))
+	    # Leaf node
+	    text = href(config.files.nameOfFile(node.path),node.path[-1],target='index')
+	    self.writeLeaf(text)
 	    return
+	# Non-leaf node
 	children = node.children.values()
 	children.sort(self._node_sorter)
 	if len(node.path):
-	    self.write(self.formatButton() + node.path[-1]+os.sep)
-	    self.startSection()
+	    self.writeNodeStart(node.path[-1]+os.sep)
 	if len(children):
 	    for child in children:
-		self.write('<div class="files">')
+		#self.write('<div class="files">')
 		self.processFileTreeNode(child)
-		self.write('</div>')
+		#self.write('</div>')
 	if len(node.path):
-	    self.endSection()
+	    self.writeNodeEnd()
 	
     def processFileTreeNodePage(self, node):
 	for child in node.children.values():
