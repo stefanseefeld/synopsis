@@ -34,7 +34,11 @@ DEBUG		:= -O1 -fPIC -ggdb -pg -DDEBUG -fno-inline
 
 # Flags
 CFLAGS		:= 
+ifeq '$(python_prefix)' '/usr'
+CPPFLAGS	:= -I.. -DPYTHON_INCLUDE="$(python_include)"
+else
 CPPFLAGS	:= -I.. -I$(python_prefix)/include -DPYTHON_INCLUDE="$(python_include)"
+endif
 CXXFLAGS	:= -Wall
 LDFLAGS		:=
 UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
