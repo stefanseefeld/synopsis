@@ -110,6 +110,7 @@ public:
     virtual Ptree* TranslateThrow(Ptree*);
     virtual Ptree* TranslateSizeof(Ptree*);
     virtual Ptree* TranslateTypeid(Ptree*);
+    virtual Ptree* TranslateTypeof(Ptree*);
     virtual Ptree* TranslateNew(Ptree*);
     virtual Ptree* TranslateNew2(Ptree*, Ptree*, Ptree*, Ptree*,
 				Ptree*, Ptree*, Ptree*);
@@ -137,6 +138,7 @@ public:
     virtual void TypeofThrow(Ptree*, TypeInfo&);
     virtual void TypeofSizeof(Ptree*, TypeInfo&);
     virtual void TypeofTypeid(Ptree*, TypeInfo&);
+    virtual void TypeofTypeof(Ptree*, TypeInfo&);
     virtual void TypeofNew(Ptree*, TypeInfo&);
     virtual void TypeofDelete(Ptree*, TypeInfo&);
     virtual void TypeofThis(Ptree*, TypeInfo&);

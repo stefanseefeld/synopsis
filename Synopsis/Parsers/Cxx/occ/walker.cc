@@ -1311,6 +1311,26 @@ void Walker::TypeofTypeid(Ptree* exp, TypeInfo& t)
 }
 
 
+Ptree* Walker::TranslateTypeof(Ptree* exp)
+{
+    Ptree* e = exp->Second();
+    if(e->Eq('('))
+	e = exp->Third();
+
+    Ptree* e2 = Translate(e);
+    if(e == e2)
+	return exp;
+    else
+	return new PtreeTypeofExpr(exp->First(),
+				   Ptree::ShallowSubst(e2, e, exp->Cdr()));
+}
+
+void Walker::TypeofTypeof(Ptree* exp, TypeInfo& t)
+{
+    t.SetInt(); // FIXME: Should be the type_info type (exp->Third()->Second()->GetEncodedType(), env);
+}
+
+
 Ptree* Walker::TranslateNew(Ptree* exp)
 {
     Ptree *p;

@@ -5,7 +5,6 @@
 #define H_SYNOPSIS_CPP_LOOKUP
 
 #include "ast.hh"
-#include <map>
 
 // Forward declare some Types::Type's
 namespace Types
@@ -61,7 +60,7 @@ public:
 
   //. Looks up the name in the current scope. This method always succeeds --
   //. if the name is not found it forward declares it.
-  Types::Named* lookupType(const std::string& name);
+  Types::Named* lookupType(const std::string& name, bool func_okay = false);
 
   //. Looks up the qualified name in the current scope. This method always
   //. succeeds -- if the name is not found it forwards declares it.
@@ -99,7 +98,7 @@ public:
 private:
   //. Looks up the name in the current scope. This method may fail and
   //. return a NULL ptr.
-  Types::Named* lookup(const std::string& name);
+  Types::Named* lookup(const std::string& name, bool func_okay = false);
 
   //. Searches for name in the list of Scopes. This method may return NULL
   //. if the name is not found.

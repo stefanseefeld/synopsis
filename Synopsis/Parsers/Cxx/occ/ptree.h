@@ -246,6 +246,7 @@ public:
     int What();
     char* GetEncodedType();
     char* GetEncodedName();
+    void SetEncodedType(char* t) { type = t; }
     Ptree* Name() { return declared_name; }
     void Print(std::ostream&, int, int);
 
@@ -386,6 +387,7 @@ PtreeExprDecl(Unary);
 PtreeExprDecl(Throw);
 PtreeExprDecl(Sizeof);
 PtreeExprDecl(Typeid);
+PtreeExprDecl(Typeof);
 PtreeExprDecl(New);
 PtreeExprDecl(Delete);
 PtreeExprDecl(Array);

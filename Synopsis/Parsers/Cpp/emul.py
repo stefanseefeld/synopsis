@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.5 2002/10/25 02:46:46 chalky Exp $
+# $Id: emul.py,v 1.6 2002/10/27 07:23:29 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.6  2002/10/27 07:23:29  chalky
+# Typeof support. Generate Function when appropriate. Better emulation support.
+#
 # Revision 1.5  2002/10/25 02:46:46  chalky
 # Try to fallback to gcc etc if compiler info fails, and display warning
 #
@@ -40,7 +43,7 @@
 # Moved compiler emulation stuff to this module
 #
 
-import sys, os, os.path, re, string, stat
+import sys, os, os.path, re, string, stat, tempfile
 from Synopsis.Core import Util
 
 # The filename where infos are stored
@@ -59,6 +62,26 @@ compiler_infos = {}
 # A map of failed compilers. This map is kept for the lifetype of Synopsis, so
 # you may have to restart it if a compiler is 'fixed'
 failed = {}
+
+# The temporary filename
+temp_filename = None
+
+def get_temp_file():
+    """Returns the temporary filename. The temp file is created, but is left
+    empty"""
+    global temp_filename
+    if temp_filename: return temp_filename
+    temp_filename = tempfile.mktemp('.cc')
+    f = open(temp_filename, 'w')
+    f.close()
+    return temp_filename
+
+def cleanup_temp_file():
+    """Removes the temporary file and resets the filename"""
+    global temp_filename
+    if temp_filename:
+	os.unlink(temp_filename)
+	temp_filename = None
 
 class CompilerInfo:
     """Info about one compiler.
@@ -208,6 +231,9 @@ def refresh_compiler_infos(infos):
 	    continue
 	info = find_compiler_info(compiler)
 	if info: infos[compiler] = info
+
+    # Cleanup the temp file
+    cleanup_temp_file()
 	
 
 #def get_compiler_infos(compilers):
@@ -249,6 +275,50 @@ re_specs = re.compile('^Reading specs from (.*/)lib/gcc-lib/(.*)/([0-9]+\.[0-9]+
 re_version = re.compile('([0-9]+)\.([0-9]+)\.([0-9]+)')
 
 def find_compiler_info(compiler):
+    print "Finding info for '%s'"%compiler
+
+    # Run the compiler with -v and get the displayed info
+    cin, out,err = os.popen3(compiler + " -E -v " + get_temp_file())
+    lines = err.readlines()
+    cin.close()
+    out.close()
+    err.close()
+
+    paths = []
+    macros = []
+
+    state = 0
+    for line in lines:
+	line = line.rstrip()
+	if state == 0:
+	    if line[:11] == 'gcc version': state = 1
+	elif state == 1:
+	    # cpp command line
+	    args = string.split(line)
+	    for arg in args:
+		if arg[0] != '-':
+		    continue
+		if arg[1] == 'D':
+		    if arg.find('=') != -1:
+			macros.append( tuple(string.split(arg[2:], '=', 1)))
+		    else:
+			macros.append( (arg[2:], '') )
+		# TODO: do we need the asserts?
+	    state = 2
+	elif state == 2:
+	    if line == '#include <...> search starts here:':
+		state = 3
+	elif state == 3:
+	    if line == 'End of search list.':
+		state = 4
+	    else:
+		paths.append(line.strip())
+	
+    timestamp = get_compiler_timestamp(compiler)
+    return CompilerInfo(compiler, 0, timestamp, paths, macros)
+
+    
+def old_find_compiler_info(compiler):
     print "Finding info for '%s'"%compiler
 
     # Run the compiler with -v and get first line to stderr (assumes gcc!!!)

@@ -24,7 +24,7 @@ class Decoder; class TypeFormatter;
 class LinkStore; class Lookup;
 
 namespace AST { class Parameter; class Inheritance; class Declaration; 
-    class Operation; class Scope; }
+    class Function; class Scope; }
 namespace Types { class Type; }
 
 //. A walker that creates an AST. All Translate* methods have been overridden
@@ -146,6 +146,7 @@ public:
     virtual Ptree* TranslateExprStatement(Ptree*);
 
     virtual Ptree* TranslateTypespecifier(Ptree*);
+    virtual Ptree* TranslateTypeof(Ptree*, Ptree* declarations);
 
     virtual Ptree* TranslateComma(Ptree*);
     virtual Ptree* TranslateAssign(Ptree*);
@@ -216,8 +217,8 @@ private:
     //. An instance of TypeFormatter for formatting types
     TypeFormatter* m_type_formatter;
 
-    //. The current operation, if in a function block
-    AST::Operation* m_operation;
+    //. The current function, if in a function block
+    AST::Function* m_function;
     //. The params found before a function block. These may be different from
     //. the ones that are in the original declaration(s), but it is these names
     //. we need for referencing names inside the block, so a reference is stored
@@ -245,7 +246,7 @@ private:
     //. Info about one stored function impl. Function impls must be stored
     //. till the end of a class.
     struct FuncImplCache {
-	AST::Operation* oper;
+	AST::Function* func;
 	std::vector<AST::Parameter*> params;
 	Ptree* body;
     };

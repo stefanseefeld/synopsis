@@ -203,6 +203,10 @@ class TestTemplate (Test):
   def run(self):
     return self.do_run("test-template.cc", "test-template", gcc_include)
 
+class IterativeInclude (Test):
+  def run(self):
+    return self.do_run("iterative_include.h", "iterative_include", "")
+
 class RegressionTest (Test):
   def run(self):
     # Find tests

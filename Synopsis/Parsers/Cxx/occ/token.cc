@@ -783,6 +783,8 @@ static struct rw_table {
     { "__restrict__",	token(Ignore) },
     { "__signed",	token(SIGNED) },
     { "__signed__",	token(SIGNED) },
+    { "__typeof",	token(TYPEOF) },
+    { "__typeof__",	token(TYPEOF) },
 #endif
     { "asm",		token(ATTRIBUTE) },
     { "auto",		token(AUTO) },
