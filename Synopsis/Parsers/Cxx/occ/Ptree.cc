@@ -1,30 +1,35 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
-
-#include <iostream>
-#include <cstring>
+//
+// Copyright (C) 1997-2000 Shigeru Chiba
+// Copyright (C) 2000 Stefan Seefeld
+// Copyright (C) 2000 Stephen Davies
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 #include "AST.hh"
 #include "Lexer.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
+#include "Encoding.hh"
 #include "Buffer.hh"
+#include <iostream>
+#include <sstream>
+#include <cstring>
+#include <cassert>
+#include <stdexcept>
 
 #if defined(_MSC_VER) || defined(IRIX_CC) || defined(__GLIBC__)
 #include <stdlib.h>		// for exit()
 #endif
 
 bool Ptree::show_encoded = false;
+
+std::string Ptree::string() const
+{
+  std::ostringstream oss;
+  write(oss);
+  return oss.str();
+};
 
 // error messages
 
@@ -89,17 +94,6 @@ void Ptree::PrintIndent(std::ostream& out, int indent)
     out << '\n';
     for(int i = 0; i < indent; ++i)
 	out << "    ";
-}
-
-char* Ptree::ToString()
-{
-  if(this == 0) return 0;
-  else
-  {
-    StringBuffer buf;
-    WritePS(buf);
-    return (char*)buf.Read(0);
-  }
 }
 
 bool Ptree::Eq(char c)
@@ -840,3 +834,186 @@ Ptree* PtreeArray::All()
 
     return lst;
 }
+
+Leaf::Leaf(char *ptr, int len)
+{
+  data.leaf.position = ptr;
+  data.leaf.length = len;
+}
+
+Leaf::Leaf(Token &tk)
+{
+  data.leaf.position = tk.ptr;
+  data.leaf.length = tk.len;
+}
+
+void Leaf::write(std::ostream &os) const
+{
+  assert(this);
+  os.write(data.leaf.position, data.leaf.length);
+}
+
+void Leaf::Print(std::ostream& s, int, int)
+{
+  char* p = data.leaf.position;
+  int n = data.leaf.length;
+
+  // Recall that [, ], and @ are special characters.
+
+  if(n < 1) return;
+  else if(n == 1 && *p == '@')
+  {
+    s << "\\@";
+    return;
+  }
+
+  char c = *p++;
+  if(c == '[' || c == ']') s << '\\' << c; // [ and ] at the beginning are escaped.
+  else s << c;
+  while(--n > 0) s << *p++;
+}
+
+int Leaf::Write(std::ostream& out, int indent)
+{
+  int n = 0;
+  char* ptr = data.leaf.position;
+  int len = data.leaf.length;
+  while(len-- > 0)
+  {
+    char c = *ptr++;
+    if(c == '\n')
+    {
+      PrintIndent(out, indent);
+      ++n;
+    }
+    else out << c;
+  }
+  return n;
+}
+
+NonLeaf::NonLeaf(Ptree* p, Ptree* q)
+{
+  data.nonleaf.child = p;
+  data.nonleaf.next = q;
+}
+
+void NonLeaf::write(std::ostream &os) const
+{
+  assert(this);
+  for (const Ptree *p = this; p; p = const_cast<const Ptree *>(const_cast<Ptree *>(p)->Cdr()))
+  {
+    const Ptree *data = const_cast<const Ptree *>(const_cast<Ptree *>(p)->Car());
+    if (data) data->write(os);
+    else if(p->IsLeaf()) throw std::logic_error("NonLeaf::write(): not list");
+  }
+}
+
+void NonLeaf::Print(std::ostream& s, int indent, int depth)
+{
+  if(TooDeep(s, depth)) return;
+
+  Ptree* rest = this;
+  s << '[';
+  while(rest != 0)
+  {
+    if(rest->IsLeaf())
+    {
+      s << "@ ";
+      rest->Print(s, indent, depth + 1);
+      rest = 0;
+    }
+    else
+    {
+      Ptree* head = rest->data.nonleaf.child;
+      if(head == 0) s << "nil";
+      else head->Print(s, indent, depth + 1);
+      rest = rest->data.nonleaf.next;
+      if(rest != 0) s << ' ';
+    }
+  }
+  s << ']';
+}
+
+bool NonLeaf::TooDeep(std::ostream& s, int depth)
+{
+  if(depth >= 32)
+  {
+    s << " ** too many nestings ** ";
+    return true;
+  }
+  else return false;
+}
+
+int NonLeaf::Write(std::ostream& out, int indent)
+{
+  int n = 0;
+  Ptree* p = this;
+  while(true)
+  {
+    Ptree* head = p->Car();
+    if(head != 0) n += head->Write(out, indent);
+
+    p = p->Cdr();
+    if(p == 0) break;
+    else if(p->IsLeaf())
+    {
+      MopErrorMessage("NonLeaf::Write()", "not list");
+      break;
+    }
+    else out << ' ';
+  }
+  return n;
+}
+
+void NonLeaf::PrintWithEncodeds(std::ostream& s, int indent, int depth)
+{
+  char* encode = GetEncodedType();
+  if(encode != 0)
+  {
+    s << '#';
+    Encoding::Print(s, encode);
+  }
+
+  encode = GetEncodedName();
+  if(encode != 0)
+  {
+    s << '@';
+    Encoding::Print(s, encode);
+  }
+
+  NonLeaf::Print(s, indent, depth);
+}
+
+DupLeaf::DupLeaf(const char* str, int len) : CommentedLeaf(new (GC) char[len], len)
+{
+  memmove(data.leaf.position, str, len);
+}
+
+DupLeaf::DupLeaf(char* str1, int len1, char* str2, int len2)
+: CommentedLeaf(new (GC) char[len1 + len2], len1 + len2)
+{
+  memmove(data.leaf.position, str1, len1);
+  memmove(&data.leaf.position[len1], str2, len2);
+}
+
+void DupLeaf::Print(std::ostream &s, int, int)
+{
+  int i, j;
+  char* pos;
+
+  pos = data.leaf.position;
+  j = data.leaf.length;
+
+  if(j == 1 && *pos == '@')
+  {
+    s << "\\@";
+    return;
+  }
+
+  s << '`';
+  for(i = 0; i < j; ++i)
+    if(pos[i] == '[' || pos[i] == ']') s << '\\' << pos[i];
+    else s << pos[i];
+  s << '`';
+}
+

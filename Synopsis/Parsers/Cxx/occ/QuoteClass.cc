@@ -38,6 +38,7 @@
 #include "AST.hh"
 #include "QuoteClass.hh"
 #include "Buffer.hh"
+#include <sstream>
 
 Ptree* QuoteClass::TranslateMemberCall(Environment* env,
 				       Ptree* member, Ptree* args)
@@ -67,15 +68,15 @@ Ptree* QuoteClass::TranslateMemberCall(Environment* env,
 Ptree* QuoteClass::ProcessBackQuote(Environment* env,
 				    char* str, Ptree* arg, Ptree* exp)
 {
-    StringBuffer result;
+    std::ostringstream oss;
 
-    result << "(Ptree*)(PtreeHead()";
+    oss << "(Ptree*)(PtreeHead()";
     while(*str != '\0')
 	if(*str == '`'){
-	    result << '+';
+	    oss << '+';
 	    while(*++str != '`')
 		if(*str != '\0')
-		    result << *str;
+		    oss << *str;
 		else{
 		    ErrorMessage(env,
 				 "unmatched backquote for Ptree::qMake(): ",
@@ -86,14 +87,14 @@ Ptree* QuoteClass::ProcessBackQuote(Environment* env,
 	    ++str;
 	}
 	else{
-	    result << "+\"";
+	    oss << "+\"";
 	    while(*str != '`' && *str != '\0')
-		result << *str++;
+		oss << *str++;
 
-	    result << '"';
+	    oss << '"';
 	}
 
-    result << ')';
-    char* rstr = (char*)result.Read(0);
-    return new DupLeaf(rstr, strlen(rstr));
+    oss << ')';
+    std::string rstr = oss.str();
+    return new DupLeaf(rstr.c_str(), rstr.size());
 }

@@ -1,38 +1,35 @@
-/*
-  Copyright (C) 1997-2000 Shigeru Chiba, University of Tsukuba.
-
-  Permission to use, copy, distribute and modify this software and   
-  its documentation for any purpose is hereby granted without fee,        
-  provided that the above copyright notice appear in all copies and that 
-  both that copyright notice and this permission notice appear in 
-  supporting documentation.
-
-  Shigeru Chiba makes no representations about the suitability of this 
-  software for any purpose.  It is provided "as is" without express or
-  implied warranty.
-*/
-
+//
+// Copyright (C) 1997-2000 Shigeru Chiba
+// Copyright (C) 2000 Stefan Seefeld
+// Copyright (C) 2000 Stephen Davies
+// All rights reserved.
+// Licensed to the public under the terms of the GNU LGPL (>= 2),
+// see the file COPYING for details.
+//
 #ifndef _Ptree_hh
 #define _Ptree_hh
 
 #include <iosfwd>
 #include "types.h"
 
-class StringBuffer;
 class Walker;
 class TypeInfo;
+class Token;
+class Encoding;
 
-#ifdef __opencxx
-metaclass QuoteClass Ptree;           // get qMake() available
-#endif
-
-class OCXXMOP Ptree : public LightObject {
+class OCXXMOP Ptree : public LightObject 
+{
 public:
-    virtual bool IsLeaf() = 0;
+    virtual bool IsLeaf() const = 0;
     bool Eq(char);
     bool Eq(char*);
     bool Eq(char*, int);
     bool Eq(Ptree* p) { return Eq(this, p); }
+
+  //. write the part of the source code this node
+  //. references to the given output stream
+  virtual void write(std::ostream &) const = 0;
+  std::string string() const;
 
     void Display();
     void Display2(std::ostream&);
@@ -40,9 +37,6 @@ public:
     int Write(std::ostream&);
     virtual int Write(std::ostream&, int) = 0;
     void PrintIndent(std::ostream&, int);
-
-    char* ToString();
-    virtual void WritePS(StringBuffer&) = 0;
 
     char* GetPosition() { return data.leaf.position; }
     int GetLength() { return data.leaf.length; }
@@ -227,6 +221,58 @@ private:
 
 private:
     Ptree* ptree;
+};
+
+class Leaf : public Ptree 
+{
+public:
+  Leaf(char *, int);
+  Leaf(Token &);
+  bool IsLeaf() const { return true;}
+  
+  virtual void write(std::ostream &) const;
+
+  void Print(std::ostream&, int, int);
+  int Write(std::ostream&, int);
+};
+
+class NonLeaf : public Ptree 
+{
+public:
+  NonLeaf(Ptree*, Ptree*);
+  bool IsLeaf() const { return false;}
+
+  virtual void write(std::ostream &) const;
+
+  void Print(std::ostream&, int, int);
+  int Write(std::ostream&, int);
+  void PrintWithEncodeds(std::ostream&, int, int);
+  
+protected:
+  bool TooDeep(std::ostream&, int);
+};
+
+class CommentedLeaf : public Leaf 
+{
+public:
+  CommentedLeaf(Token &tk, Ptree *c = 0) : Leaf(tk) { comments = c;}
+  CommentedLeaf(char *p, int l, Ptree *c = 0) : Leaf(p, l) { comments = c;}
+  Ptree *GetComments() { return comments;}
+  void SetComments(Ptree *c) { comments = c;}
+private:
+  Ptree *comments;
+};
+
+// class DupLeaf is used by Ptree::Make() and QuoteClass (qMake()).
+// The string given to the constructors are duplicated.
+
+class DupLeaf : public CommentedLeaf 
+{
+public:
+  DupLeaf(const char *, int);
+  DupLeaf(char *, int, char *, int);
+
+  void Print(std::ostream &, int, int);
 };
 
 // error messages
