@@ -185,7 +185,7 @@ bool Parser::rDefinition(Ptree*& p)
     else {
 	if (!rDeclaration(p))
 	    return FALSE;
-	Ptree* c = lex->GetComments2();
+	Ptree* c = lex->GetComments();
 	if (c) {
 	    Walker::SetDeclaratorComments(p, c);
 	}
@@ -3956,10 +3956,12 @@ bool Parser::rFunctionBody(Ptree*& body)
 bool Parser::rCompoundStatement(Ptree*& body)
 {
     Token ob, cb;
+    Ptree *ob_comments, *cb_comments;
 
     if(lex->GetToken(ob) != '{')
 	return FALSE;
 
+    ob_comments = lex->GetComments();
     Ptree* sts = nil;
     while(lex->LookAhead(0) != '}'){
 	Ptree* st;
@@ -3979,7 +3981,9 @@ bool Parser::rCompoundStatement(Ptree*& body)
     if(lex->GetToken(cb) != '}')
 	return FALSE;
 
-    body = new PtreeBlock(new Leaf(ob), sts, new Leaf(cb));
+    cb_comments = lex->GetComments();
+    body = new PtreeBlock(new CommentedLeaf(ob, ob_comments), sts, 
+	new CommentedLeaf(cb, cb_comments));
     return TRUE;
 }
 
