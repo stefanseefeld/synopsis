@@ -212,26 +212,28 @@ class Constant : public Expression
 class IntConstant : public Constant
 {
   public:
-    IntConstant( long val, const Location& l );
+    IntConstant( long val, bool _L, const Location& l );
     virtual ~IntConstant();
  
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
     long    lng;
+    bool    L;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class UIntConstant : public Constant
 {
   public:
-    UIntConstant( ulong val, const Location& l );
+    UIntConstant( ulong val, bool _L, const Location& l );
     virtual ~UIntConstant();
  
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
     ulong    ulng;
+    bool     L;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

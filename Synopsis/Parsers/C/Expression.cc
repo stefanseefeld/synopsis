@@ -366,10 +366,11 @@ Constant::~Constant()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-IntConstant::IntConstant(long val, const Location& l )
+IntConstant::IntConstant(long val, bool _L, const Location& l )
             : Constant (CT_Int, l)
 {
     lng = val;
+    L = _L;
     type = new BaseType(BT_Int);
 }
 
@@ -382,7 +383,7 @@ IntConstant::~IntConstant()
 Expression*
 IntConstant::dup0() const
 {
-    IntConstant *ret = new IntConstant(lng, location);
+    IntConstant *ret = new IntConstant(lng, L, location);
     ret->type = type;    
     return ret;
 }
@@ -392,6 +393,7 @@ void
 IntConstant::print(std::ostream& out) const
 {
     out << lng;
+    if (L) out << "L";
 
 #ifdef    SHOW_TYPES
     if (type != NULL)
@@ -404,10 +406,11 @@ IntConstant::print(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-UIntConstant::UIntConstant(ulong val, const Location& l )
+UIntConstant::UIntConstant(ulong val, bool _L, const Location& l )
             : Constant (CT_UInt, l)
 {
     ulng = val;
+    L = _L;
     type = new BaseType(BT_Int | BT_UnSigned);
 }
 
@@ -420,7 +423,7 @@ UIntConstant::~UIntConstant()
 Expression*
 UIntConstant::dup0() const
 {
-    UIntConstant *ret = new UIntConstant(ulng, location);
+    UIntConstant *ret = new UIntConstant(ulng, L, location);
     ret->type = type;    
     return ret;
 }
@@ -430,6 +433,7 @@ void
 UIntConstant::print(std::ostream& out) const
 {
     out << ulng;
+    if (L) out << "L";
 
 #ifdef    SHOW_TYPES
     if (type != NULL)
