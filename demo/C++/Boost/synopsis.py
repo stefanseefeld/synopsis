@@ -8,6 +8,9 @@ from Synopsis.Formatters import Dump
 from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML.Views import *
 
+from distutils import sysconfig
+import sys, os.path
+
 # this is actually only here as a hack for backward compatibility.
 import glob
 extra_input = glob.glob('boost/boost/python/*.hpp')
@@ -18,10 +21,10 @@ extra_input += glob.glob('boost/boost/python/detail/*.hpp')
 # the python include path can be obtained from distutils.sysconfig,
 # assuming that the python version used to run synopsis is the same
 # boost should be compiled with
-parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python2.2/Python.h>',
+parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python%s/Python.h>'%sys.version[0:3],
                                 '-DBOOST_PYTHON_SYNOPSIS',
                                 '-Iboost',
-                                '-I/usr/include/python2.2'],
+                                '-I%s'%(sysconfig.get_python_inc())],
                     base_path = 'boost/',
                     main_file_only = True,
                     syntax_prefix = 'links/',
