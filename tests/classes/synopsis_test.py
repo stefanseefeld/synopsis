@@ -188,18 +188,22 @@ class OpenCxxTest(Test):
       test = RedirectedExecutable()
       command = '%s %s %s'%(self.applet, self.output, self.input)
       status = test.Run(command.split())
-      if not os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
+      if os.WIFSIGNALED(status):
+         result.Fail('program killed with signal %i'%os.WTERMSIG(status))
+         
+      elif os.WIFEXITED(status) and os.WEXITSTATUS(status) != 0:
          result.Fail('program exit value : %i'%os.WEXITSTATUS(status))
          if test.stderr: result['synopsis_test.error'] = test.stderr
 
-      expected = string.join(open(self.expected, 'r').readlines(), '')
-      output = string.join(open(self.output, 'r').readlines(), '')
-      if expected != output:
-         expected = '\'%s\''%(expected)
-         output = '\'%s\''%(test.stdout)
-         result.Fail('incorrect output',
-                     {'synopsis_test.expected': expected,
-                      'synopsis_test.output': output})
+      else:
+         expected = string.join(open(self.expected, 'r').readlines(), '')
+         output = string.join(open(self.output, 'r').readlines(), '')
+         if expected != output:
+            expected = '\'%s\''%(expected)
+            output = '\'%s\''%(output)
+            result.Fail('incorrect output',
+                        {'synopsis_test.expected': expected,
+                         'synopsis_test.output': output})
 
    def Run(self, context, result):
 
