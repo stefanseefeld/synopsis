@@ -28,8 +28,7 @@ class build_syn_ext(build_ext):
 
         if not os.path.exists(self.build_temp):
             self.run_command('config')
-        if not os.path.exists(os.path.join(self.build_temp, 'Cxx-API', 'lib', 'libSynopsis.a')):
-            self.run_command('build_clib')
+        self.run_command('build_clib')
         for ext in self.extensions:
             self.build_extension(ext)
 
