@@ -10,6 +10,7 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <iostream>
 
 typedef std::multimap<std::string, Type::Named*> name_map;
 

@@ -12,6 +12,7 @@
   implied warranty.
 */
 
+#include <iostream>
 #include <cstring>
 #include "env.h"
 #include "ptree.h"
@@ -1679,8 +1680,8 @@ void Walker::SetLeafComments(Ptree* node, Ptree* comments)
     leaf = FindLeftLeaf(node, parent);
 
     // Sanity
-    if (!leaf) { std::cerr << "Warning: Failed to find leaf when trying to add comments." << endl;
-	parent->Display2(cout);
+    if (!leaf) { std::cerr << "Warning: Failed to find leaf when trying to add comments." << std::endl;
+	parent->Display2(std::cout);
 	return; }
 
     if (!(cleaf = dynamic_cast<CommentedLeaf*>(leaf))) {
