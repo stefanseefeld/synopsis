@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.1 2003/10/09 05:02:39 stefan Exp $
+# $Id: Dump.py,v 1.2 2003/10/09 05:09:06 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2003 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dump.py,v $
+# Revision 1.2  2003/10/09 05:09:06  stefan
+# fix option parsing
+#
 # Revision 1.1  2003/10/09 05:02:39  stefan
 # a new Dump formatter using xml for easy validation
 #
@@ -178,7 +181,7 @@ def usage():
   -d                                   Show declarations
   -t                                   Show types
   -f                                   Show files
- (If none of -d, -t or -f specified, will default to -d, -t)
+ (If none of -d, -t or -f specified, will default to -d, -t, -f)
 """
 
 def __parseArgs(args):
@@ -190,7 +193,7 @@ def __parseArgs(args):
     show_files = 0
 
     try:
-        opts,remainder = getopt.getopt(args, "o:vdtfip")
+        opts,remainder = getopt.getopt(args, "o:vdtf")
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + str(e) + "\n")
         sys.exit(1)
