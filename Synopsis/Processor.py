@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.8 2003/11/20 04:45:15 stefan Exp $
+# $Id: Processor.py,v 1.9 2003/11/21 21:16:55 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -161,10 +161,9 @@ class Store(Processor):
    """Store is a convenience class useful to write out the intermediate
    state of the ast within a pipeline such as represented by the 'Composite'"""
 
-   output = Parameter('', 'the output filename')
-
    def process(self, ast, **kwds):
       """Simply store the current ast in the 'output' file."""
 
-      self.__dict__.update(kwds)
-      return self.output_and_return()
+      self.set_parameters(kwds)
+      self.ast = self.merge_input(ast)
+      return self.output_and_return_ast()
