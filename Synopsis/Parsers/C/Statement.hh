@@ -115,6 +115,9 @@ class Statement : public Dup<Statement>
   virtual void findExpr(fnExprCallback cb);
   virtual void findStemnt(fnStemntCallback cb ) { (cb)(this);}
 
+  static bool verbose;
+  static bool debug;
+
   Type        type;
   LabelVector labels;
   Location    location;

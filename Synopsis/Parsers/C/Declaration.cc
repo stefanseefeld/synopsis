@@ -38,7 +38,7 @@
 #include <Statement.hh>
 #include <Token.hh>
 #include "Grammar.hh"
-#include <Project.hh>
+#include <File.hh>
 
 static void
 printStorage( std::ostream& out, StorageType storage)
@@ -86,8 +86,8 @@ Type::Type(TypeType _type /* =TT_Base */)
   storage  = ST_None;
 
   // Add us into the global list for destruction later.
-  link = gProject->typeList;
-  gProject->typeList = this;
+  link = global_type_list;
+  global_type_list = this;
 }
 
 Type::~Type()
@@ -857,7 +857,7 @@ StructDef::registerComponents()
       Symbol *ident = decl->name;
       if (ident != NULL)
       {
-	ident->entry = gProject->Parse_TOS->transUnit->contxt.syms
+	ident->entry = global_parse_env->transUnit->my_contxt.syms
 	  ->Insert(mk_component(ident->name,decl,this));
       }
 

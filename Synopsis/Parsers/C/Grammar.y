@@ -42,7 +42,7 @@
 #include <Token.hh>
 #include <Statement.hh>
 #include <Location.hh>
-#include <Project.hh>
+#include <File.hh>
 
 extern int errno;
 int yylex(YYSTYPE *lvalp);
@@ -51,9 +51,9 @@ int yylex(YYSTYPE *lvalp);
 #define YYDEBUG 1
 
 #undef HERE
-#define HERE Location(gProject->Parse_TOS->yylineno, \
-                      gProject->Parse_TOS->yycolno, \
-                      gProject->Parse_TOS->filename)
+#define HERE Location(global_parse_env->yylineno, \
+                      global_parse_env->yycolno, \
+                      global_parse_env->filename)
 
 /*  int  yydebug = 1;  */
 
@@ -228,34 +228,34 @@ int yylex(YYSTYPE *lvalp);
   NO REENTRANCE ***/
 program:  /* emtpy source file */ 
         {
-            if (gProject->Parse_TOS->err_cnt == 0)
-              *gProject->Parse_TOS->yyerrstream
+            if (global_parse_env->err_cnt == 0)
+              *global_parse_env->yyerrstream
               << "Warning: ANSI/ISO C forbids an empty source file.\n";
-            gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
-            $$ = (TransUnit*) NULL;
+            global_parse_env->transUnit = 0;
+            $$ = 0;
         }
        | trans_unit
         {
-            if (gProject->Parse_TOS->err_cnt)
+            if (global_parse_env->err_cnt)
             {
-                *gProject->Parse_TOS->yyerrstream
-                << gProject->Parse_TOS->err_cnt << " errors found.\n";
-                gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
+                *global_parse_env->yyerrstream
+                << global_parse_env->err_cnt << " errors found.\n";
+                global_parse_env->transUnit = 0;
             } else {
-                gProject->Parse_TOS->transUnit = $$;
+                global_parse_env->transUnit = $$;
             }
         }
        | error
         {
-            *gProject->Parse_TOS->yyerrstream << "Errors - Aborting parse.\n";
-            gProject->Parse_TOS->transUnit = (TransUnit*) NULL;
+            *global_parse_env->yyerrstream << "Errors - Aborting parse.\n";
+            global_parse_env->transUnit = 0;
             YYACCEPT;
         }
         ;
 
 trans_unit:  top_level_decl top_level_exit 
         {
-            $$ = gProject->Parse_TOS->transUnit;
+            $$ = global_parse_env->transUnit;
             $$->add($1);
         }
           |  trans_unit top_level_decl top_level_exit
@@ -266,10 +266,10 @@ trans_unit:  top_level_decl top_level_exit
 
 top_level_exit: /* Safety precaution! */
         {
-            gProject->Parse_TOS->parseCtxt->ReinitializeCtxt();
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScopes(FILE_SCOPE);
-            gProject->Parse_TOS->err_top_level = 0;            
+            global_parse_env->parseCtxt->ReinitializeCtxt();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScopes(FILE_SCOPE);
+            global_parse_env->err_top_level = 0;            
         }
         ;
         
@@ -325,14 +325,14 @@ func_def:  func_spec cmpnd_stemnt
         
 func_spec:  decl_specs func_declarator opt_KnR_declaration_list
         {
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
+            global_parse_env->parseCtxt->ResetDeclCtxt();
             
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = $2;
 
             if ($$->form != NULL)
             {
-                assert(gProject->Parse_TOS->err_top_level ||
+                assert(global_parse_env->err_top_level ||
                        $$->form->type == TT_Function );
     
                 $$->extend($1);
@@ -355,13 +355,13 @@ func_spec:  decl_specs func_declarator opt_KnR_declaration_list
          |  no_decl_specs declarator opt_KnR_declaration_list
         {
 
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
+            global_parse_env->parseCtxt->ResetDeclCtxt();
             
             $$ = $2;
 
             if ($$->form != NULL)
             {
-                assert(gProject->Parse_TOS->err_top_level ||
+                assert(global_parse_env->err_top_level ||
                        $$->form->type == TT_Function );
                 $$->extend($1);
     
@@ -387,8 +387,8 @@ func_spec:  decl_specs func_declarator opt_KnR_declaration_list
   NO REENTRANCE ***/
 cmpnd_stemnt:  LBRACE 
         {  
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ReEnterScope();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ReEnterScope();
         }
             opt_declaration_list opt_stemnt_list RBRACE
         {
@@ -396,11 +396,11 @@ cmpnd_stemnt:  LBRACE
             $$ = block;
             block->addDecls($3);
             block->addStatements(ReverseList($4));
-            if (gProject->Parse_TOS->transUnit)
+            if (global_parse_env->transUnit)
             {
-                yyCheckLabelsDefinition(gProject->Parse_TOS->transUnit->contxt.labels);
-                gProject->Parse_TOS->transUnit->contxt.ExitScope();
-                gProject->Parse_TOS->transUnit->contxt.ExitScope();
+                yyCheckLabelsDefinition(global_parse_env->transUnit->my_contxt.labels);
+                global_parse_env->transUnit->my_contxt.ExitScope();
+                global_parse_env->transUnit->my_contxt.ExitScope();
             }
         }
             |  error RBRACE
@@ -451,8 +451,8 @@ cmpnd_stemnt_reentrance:  LBRACE opt_declaration_list opt_stemnt_list_reentrance
             block->addDecls($2);
             block->addStatements(ReverseList($3));
             
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScope();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScope();
         }
             |  error RBRACE
         {
@@ -644,9 +644,9 @@ label:  named_label
 
 named_label:  ident
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_named_label($1,
-                                gProject->Parse_TOS->transUnit->contxt.labels);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_named_label($1,
+                                global_parse_env->transUnit->my_contxt.labels);
         }
         ;
 
@@ -889,7 +889,7 @@ comma_expr:  assign_expr
 
 prim_expr:  ident
         {
-            if ($1->entry == NULL && gProject->warn_variable)
+           if ($1->entry == NULL && 0) //gProject->warn_variable)
             {
                 yywarn("Undeclared variable");
             }
@@ -1068,41 +1068,41 @@ constant:   INUM
   NO REENTRANCE ***/
 opt_KnR_declaration_list:  
         {
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ReEnterScope();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ReEnterScope();
         }
                       /* Nothing */
         {
             $$ = (Decl*) NULL;
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScope();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScope();
         }
                         |
         {
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ReEnterScope();
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ReEnterScope();
+            global_parse_env->parseCtxt->ResetDeclCtxt();
         }
-        {   gProject->Parse_TOS->parseCtxt->SetVarParam(1, !gProject->Parse_TOS->err_top_level, 0); 
-            gProject->Parse_TOS->parseCtxt->SetIsKnR(true); 
+        {   global_parse_env->parseCtxt->SetVarParam(1, !global_parse_env->err_top_level, 0); 
+            global_parse_env->parseCtxt->SetIsKnR(true); 
         }
                            declaration_list
         {   $$ = $3;
-            gProject->Parse_TOS->parseCtxt->SetIsKnR(false); 
-            gProject->Parse_TOS->parseCtxt->SetVarParam(0, !gProject->Parse_TOS->err_top_level, 1); 
+            global_parse_env->parseCtxt->SetIsKnR(false); 
+            global_parse_env->parseCtxt->SetVarParam(0, !global_parse_env->err_top_level, 1); 
             
             // Exit, but will allow re-enter for a function.
             // Hack, to handle parameters being in the function's scope.
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScope(true);
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScope(true);
         }
         ;
 
 opt_declaration_list:
         {
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.EnterScope();
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.EnterScope();
+            global_parse_env->parseCtxt->ResetDeclCtxt();
         }
                       /* Nothing */
         {
@@ -1110,15 +1110,15 @@ opt_declaration_list:
         }
                     |
         {
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.EnterScope();
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.EnterScope();
+            global_parse_env->parseCtxt->ResetDeclCtxt();
         }
-        {   gProject->Parse_TOS->parseCtxt->SetVarParam(0, !gProject->Parse_TOS->err_top_level, 0); 
+        {   global_parse_env->parseCtxt->SetVarParam(0, !global_parse_env->err_top_level, 0); 
         }
                        declaration_list
         {   $$ = $3;
-            gProject->Parse_TOS->parseCtxt->SetVarParam(0, !gProject->Parse_TOS->err_top_level, 0);
+            global_parse_env->parseCtxt->SetVarParam(0, !global_parse_env->err_top_level, 0);
         }
         ;
 
@@ -1157,13 +1157,13 @@ decl_stemnt:  old_style_declaration SEMICOLON
 
 old_style_declaration: no_decl_specs opt_init_decl_list
         {
-            assert (gProject->Parse_TOS->err_top_level ||
-                    $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();
+            assert (global_parse_env->err_top_level ||
+                    $1 == global_parse_env->parseCtxt->curCtxt->decl_specs);
+            global_parse_env->parseCtxt->ResetDeclCtxt();
             
             yywarn("old-style declaration or incorrect type");
 
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = $2;
 
             if ($$ == NULL)
@@ -1175,11 +1175,11 @@ old_style_declaration: no_decl_specs opt_init_decl_list
         
 declaration:  decl_specs opt_init_decl_list
         {
-            assert (gProject->Parse_TOS->err_top_level ||
-                    $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-            gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();            
+            assert (global_parse_env->err_top_level ||
+                    $1 == global_parse_env->parseCtxt->curCtxt->decl_specs);
+            global_parse_env->parseCtxt->ResetDeclCtxt();            
             
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = $2;
             
             if ($$ == NULL)
@@ -1196,7 +1196,7 @@ declaration:  decl_specs opt_init_decl_list
 no_decl_specs: /* Nothing: returns "int" as default decl_specs */
         {
             $$ = new BaseType(BT_Int);
-            gProject->Parse_TOS->parseCtxt->SetDeclCtxt($$);
+            global_parse_env->parseCtxt->SetDeclCtxt($$);
         }
         ;
         
@@ -1214,21 +1214,21 @@ abs_decl: abs_decl_reentrance
         
 type_name:
         {   
-            gProject->Parse_TOS->parseCtxt->PushCtxt();
-            gProject->Parse_TOS->parseCtxt->ResetVarParam();
+            global_parse_env->parseCtxt->PushCtxt();
+            global_parse_env->parseCtxt->ResetVarParam();
         }
             type_name_bis
         {
             $$ = $2;
-            gProject->Parse_TOS->parseCtxt->PopCtxt(false);
+            global_parse_env->parseCtxt->PopCtxt(false);
         }
         ;
         
 type_name_bis:  decl_specs_reentrance_bis
         {
-            assert ($1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
+            assert ($1 == global_parse_env->parseCtxt->curCtxt->decl_specs);
             
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = $1;
             if ($$->isFunction())
                 if(yyerr ("Function type not allowed as type name"))
@@ -1236,9 +1236,9 @@ type_name_bis:  decl_specs_reentrance_bis
         }
          | decl_specs_reentrance_bis abs_decl
         {
-            assert ($1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
+            assert ($1 == global_parse_env->parseCtxt->curCtxt->decl_specs);
             
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = $2;
             
             Type * extended = $$->extend($1);
@@ -1264,7 +1264,7 @@ type_name_bis:  decl_specs_reentrance_bis
                       
 decl_specs_reentrance_bis: decl_specs_reentrance
         {
-            gProject->Parse_TOS->parseCtxt->SetDeclCtxt($$);
+            global_parse_env->parseCtxt->SetDeclCtxt($$);
         }
         ;
           
@@ -1280,8 +1280,8 @@ local_storage_class: AUTO
 storage_class: local_or_global_storage_class
              | local_storage_class
         {
-            if (! gProject->Parse_TOS->transUnit ||
-                gProject->Parse_TOS->transUnit->contxt.syms->current->level >= FUNCTION_SCOPE)
+            if (! global_parse_env->transUnit ||
+                global_parse_env->transUnit->my_contxt.syms->current->level >= FUNCTION_SCOPE)
                  $$ = $1 ;             
              else
                  $$ = ST_None ;              
@@ -1317,7 +1317,7 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
             else
                  $$->storage = $1;
         }
-          |  type_spec { gProject->Parse_TOS->possibleType = false; } opt_decl_specs_reentrance
+          |  type_spec { global_parse_env->possibleType = false; } opt_decl_specs_reentrance
         {
             $$ = $1;
 
@@ -1376,7 +1376,7 @@ opt_comp_decl_specs:   /* Nothing */
               | comp_decl_specs_reentrance
         ;
 
-comp_decl_specs_reentrance:  type_spec_reentrance { gProject->Parse_TOS->possibleType = false; } opt_comp_decl_specs
+comp_decl_specs_reentrance:  type_spec_reentrance { global_parse_env->possibleType = false; } opt_comp_decl_specs
         {
             $$ = $1;
 
@@ -1403,7 +1403,7 @@ comp_decl_specs_reentrance:  type_spec_reentrance { gProject->Parse_TOS->possibl
         
 comp_decl_specs: comp_decl_specs_reentrance
         {
-            gProject->Parse_TOS->parseCtxt->SetDeclCtxt($$);
+            global_parse_env->parseCtxt->SetDeclCtxt($$);
         }
         ;
 /*** INPUT RULES OF THIS SET: 
@@ -1412,7 +1412,7 @@ comp_decl_specs: comp_decl_specs_reentrance
   NO REENTRANCE  ***/
 decl: declarator
         {
-           $1->extend(gProject->Parse_TOS->parseCtxt->UseDeclCtxt());
+           $1->extend(global_parse_env->parseCtxt->UseDeclCtxt());
         }
       opt_gcc_attrib
         {
@@ -1566,9 +1566,9 @@ tag_ref:    TAG_NAME
         
 struct_tag_ref:  STRUCT tag_ref
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_tag_ref($1, $2,
-                                                                gProject->Parse_TOS->transUnit->contxt.tags);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_tag_ref($1, $2,
+                                                                global_parse_env->transUnit->my_contxt.tags);
             else
                 $$ = NULL;                                         
         }
@@ -1576,9 +1576,9 @@ struct_tag_ref:  STRUCT tag_ref
         
 union_tag_ref:  UNION tag_ref
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_tag_ref($1, $2,
-                                                                gProject->Parse_TOS->transUnit->contxt.tags);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_tag_ref($1, $2,
+                                                                global_parse_env->transUnit->my_contxt.tags);
             else
                 $$ = NULL;                                         
         }
@@ -1586,9 +1586,9 @@ union_tag_ref:  UNION tag_ref
         
 enum_tag_ref:  ENUM tag_ref
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_tag_ref($1, $2,
-                                                                gProject->Parse_TOS->transUnit->contxt.tags);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_tag_ref($1, $2,
+                                                                global_parse_env->transUnit->my_contxt.tags);
             else
                 $$ = NULL;                                         
         }
@@ -1596,9 +1596,9 @@ enum_tag_ref:  ENUM tag_ref
         
 struct_tag_def:   STRUCT tag_ref
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_tag_def($1, $2,
-                                                            gProject->Parse_TOS->transUnit->contxt.tags);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_tag_def($1, $2,
+                                                            global_parse_env->transUnit->my_contxt.tags);
             else
                 $$ = NULL;                                         
         }
@@ -1637,9 +1637,9 @@ struct_type_define: STRUCT LBRACE struct_or_union_definition RBRACE
 
 union_tag_def:   UNION tag_ref
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_tag_def($1, $2,
-                                                            gProject->Parse_TOS->transUnit->contxt.tags);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_tag_def($1, $2,
+                                                            global_parse_env->transUnit->my_contxt.tags);
             else
               $$ = NULL ;
         }
@@ -1680,9 +1680,9 @@ union_type_define:  UNION LBRACE struct_or_union_definition RBRACE
         
 enum_tag_def:   ENUM tag_ref
         {
-            if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_tag_def($1,$2,
-                                                            gProject->Parse_TOS->transUnit->contxt.tags);
+            if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_tag_def($1,$2,
+                                                            global_parse_env->transUnit->my_contxt.tags);
             else
               $$ = NULL;
         }
@@ -1767,30 +1767,30 @@ enum_def_list_reentrance:  enum_const_def
 enum_const_def:  enum_constant
         {
             $$ = new EnumConstant($1,NULL,HERE);
-            if (gProject->Parse_TOS->transUnit)
+            if (global_parse_env->transUnit)
             {
-              if (gProject->Parse_TOS->transUnit->contxt.syms->IsDefined($1->name))
+              if (global_parse_env->transUnit->my_contxt.syms->IsDefined($1->name))
               {
                  if(yyerr("Duplicate enumeration constant"))
                    YYERROR;
               }
                  
-              $1->entry = gProject->Parse_TOS->transUnit->contxt.syms->Insert(
+              $1->entry = global_parse_env->transUnit->my_contxt.syms->Insert(
                                   mk_enum_const($1->name, $$));
             }
         }
               |  enum_constant EQ assign_expr 
         {
             $$ = new EnumConstant($1,$3,HERE);
-            if (gProject->Parse_TOS->transUnit)
+            if (global_parse_env->transUnit)
             {
-              if (gProject->Parse_TOS->transUnit->contxt.syms->IsDefined($1->name))
+              if (global_parse_env->transUnit->my_contxt.syms->IsDefined($1->name))
               {
                  if(yyerr("Duplicate enumeration constant"))
                    YYERROR;
               }
                  
-              $1->entry = gProject->Parse_TOS->transUnit->contxt.syms->Insert(
+              $1->entry = global_parse_env->transUnit->my_contxt.syms->Insert(
                                   mk_enum_const($1->name, $$));
             }
         }
@@ -1804,20 +1804,20 @@ enum_constant:  any_ident
    REENTRANCE VIA: comp_decl_specs, type_spec_reentrance CHAIN ***/
 field_list:
         {
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.EnterScope();
-            gProject->Parse_TOS->parseCtxt->PushCtxt();
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.EnterScope();
+            global_parse_env->parseCtxt->PushCtxt();
         }
         {
-            assert (!gProject->Parse_TOS->err_top_level || gProject->Parse_TOS->possibleType);
+            assert (!global_parse_env->err_top_level || global_parse_env->possibleType);
              /* Safety precaution! */
-             gProject->Parse_TOS->possibleType=true;
+             global_parse_env->possibleType=true;
         }
             field_list_reentrance
         {
-            gProject->Parse_TOS->parseCtxt->PopCtxt(false);
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScope();
+            global_parse_env->parseCtxt->PopCtxt(false);
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScope();
             $$ = $3 ;
         }
         ;         
@@ -1846,12 +1846,12 @@ field_list_reentrance:  comp_decl SEMICOLON
         
 comp_decl:  comp_decl_specs comp_decl_list
         {
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = $2;
         }
          |  comp_decl_specs
         {
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = new Decl ($1);
             yywarn ("No field declarator");
         }
@@ -1864,7 +1864,7 @@ comp_decl_list: comp_decl_list_reentrance
         ;
               
 comp_decl_list_reentrance:
-        {   gProject->Parse_TOS->parseCtxt->SetIsFieldId(true); 
+        {   global_parse_env->parseCtxt->SetIsFieldId(true); 
         } 
                            comp_declarator opt_gcc_attrib
         {
@@ -1872,7 +1872,7 @@ comp_decl_list_reentrance:
             $$->attrib = $3;
         }
                         |  comp_decl_list_reentrance COMMA
-        {   gProject->Parse_TOS->parseCtxt->SetIsFieldId(true); 
+        {   global_parse_env->parseCtxt->SetIsFieldId(true); 
         } 
                            comp_declarator opt_gcc_attrib   %prec COMMA_OP
         {
@@ -1885,8 +1885,8 @@ comp_decl_list_reentrance:
 
 comp_declarator:  simple_comp
         {
-           gProject->Parse_TOS->parseCtxt->SetIsFieldId(false); 
-           Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
+           global_parse_env->parseCtxt->SetIsFieldId(false); 
+           Type * decl = global_parse_env->parseCtxt->UseDeclCtxt();
            Type * extended = $$->extend(decl);
            if ($$->form &&
                $$->form->isFunction())
@@ -1903,7 +1903,7 @@ comp_declarator:  simple_comp
         }
                |  bit_field
         {
-           Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
+           Type * decl = global_parse_env->parseCtxt->UseDeclCtxt();
            $$->extend(decl);
            if (! decl)
            {
@@ -1922,7 +1922,7 @@ simple_comp:  declarator
         ;
 
 bit_field:  opt_declarator COLON 
-        {   gProject->Parse_TOS->parseCtxt->SetIsFieldId(false); 
+        {   global_parse_env->parseCtxt->SetIsFieldId(false); 
         }
             width
         {
@@ -1957,13 +1957,13 @@ opt_declarator:  /* Nothing */
      REENTRANCE VIA opt_const_expr ***/
 declarator: declarator_reentrance_bis
         {
-            gProject->Parse_TOS->parseCtxt->Mk_declarator ($$);
+            global_parse_env->parseCtxt->Mk_declarator ($$);
         } 
         ;
         
 func_declarator: declarator_reentrance_bis
         {
-            gProject->Parse_TOS->parseCtxt->Mk_func_declarator ($$);
+            global_parse_env->parseCtxt->Mk_func_declarator ($$);
         } 
         ;
         
@@ -1979,9 +1979,9 @@ direct_declarator_reentrance_bis:  direct_declarator_reentrance
        ;
 
 direct_declarator_reentrance:  ident
-        {  if (gProject->Parse_TOS->transUnit)
-                $$ = gProject->Parse_TOS->parseCtxt->Mk_direct_declarator_reentrance ($1,
-                gProject->Parse_TOS->transUnit->contxt.syms);
+        {  if (global_parse_env->transUnit)
+                $$ = global_parse_env->parseCtxt->Mk_direct_declarator_reentrance ($1,
+                global_parse_env->transUnit->my_contxt.syms);
         }
         |  LPAREN declarator_reentrance_bis RPAREN
         {
@@ -2003,8 +2003,8 @@ direct_declarator_reentrance:  ident
             delete $4 ;
             // Exit, but will allow re-enter for a function.
             // Hack, to handle parameters being in the function's scope.
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScope(true);
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScope(true);
 
         }
         |  direct_declarator_reentrance LPAREN ident_list RPAREN
@@ -2020,8 +2020,8 @@ direct_declarator_reentrance:  ident
             delete $4 ;
             // Exit, but will allow re-enter for a function.
             // Hack, to handle parameters being in the function's scope.
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.ExitScope(true);
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.ExitScope(true);
 
         }
         |  direct_declarator_reentrance LPAREN RPAREN
@@ -2039,12 +2039,12 @@ direct_declarator_reentrance:  ident
             
             delete $2 ;
             delete $3 ;
-            if (gProject->Parse_TOS->transUnit)
+            if (global_parse_env->transUnit)
             {
-                gProject->Parse_TOS->transUnit->contxt.EnterScope();
+                global_parse_env->transUnit->my_contxt.EnterScope();
                 // Exit, but will allow re-enter for a function.
                 // Hack, to handle parameters being in the function's scope.
-                gProject->Parse_TOS->transUnit->contxt.ExitScope(true);
+                global_parse_env->transUnit->my_contxt.ExitScope(true);
             }
         }
         ;
@@ -2088,32 +2088,32 @@ pointer:  pointer_reentrance
      CALLED INPUTS: ident
    NO REENTRANCE ***/
 ident_list:
-       {  gProject->Parse_TOS->parseCtxt->IncrVarParam(1);
-          if (gProject->Parse_TOS->transUnit)
-              gProject->Parse_TOS->transUnit->contxt.EnterScope();
-          gProject->Parse_TOS->parseCtxt->PushCtxt();
+       {  global_parse_env->parseCtxt->IncrVarParam(1);
+          if (global_parse_env->transUnit)
+              global_parse_env->transUnit->my_contxt.EnterScope();
+          global_parse_env->parseCtxt->PushCtxt();
         }
               ident_list_reentrance
        {
           // Exit, but will allow re-enter for a function.
           // Hack, to handle parameters being in the function's scope.
-          gProject->Parse_TOS->parseCtxt->PopCtxt(true);
-          gProject->Parse_TOS->parseCtxt->IncrVarParam(-1);
+          global_parse_env->parseCtxt->PopCtxt(true);
+          global_parse_env->parseCtxt->IncrVarParam(-1);
           $$ = $2;
        }
         ;
 
 ident_list_reentrance: ident
-        {  if (gProject->Parse_TOS->transUnit)
-               $$ = gProject->Parse_TOS->parseCtxt->Mk_direct_declarator_reentrance ($1,
-                gProject->Parse_TOS->transUnit->contxt.syms);
+        {  if (global_parse_env->transUnit)
+               $$ = global_parse_env->parseCtxt->Mk_direct_declarator_reentrance ($1,
+                global_parse_env->transUnit->my_contxt.syms);
         }
           | ident_list_reentrance COMMA ident        %prec COMMA_OP
         {  $$ = $1;
-           if (gProject->Parse_TOS->transUnit)
+           if (global_parse_env->transUnit)
            {
-              $$ = gProject->Parse_TOS->parseCtxt->Mk_direct_declarator_reentrance ($3,
-                gProject->Parse_TOS->transUnit->contxt.syms);
+              $$ = global_parse_env->parseCtxt->Mk_direct_declarator_reentrance ($3,
+                global_parse_env->transUnit->my_contxt.syms);
               $$->next = $1;
            }
         }
@@ -2150,24 +2150,24 @@ opt_param_type_list:  /* Nothing */
            $$ = (Decl*) NULL;
         }
                    |  
-        { gProject->Parse_TOS->parseCtxt->IncrVarParam(1); 
+        { global_parse_env->parseCtxt->IncrVarParam(1); 
         }
                       param_type_list_bis
-        { gProject->Parse_TOS->parseCtxt->IncrVarParam(-1); 
+        { global_parse_env->parseCtxt->IncrVarParam(-1); 
            $$ = $2;
         }
         ;
 
 param_type_list:
-        {   gProject->Parse_TOS->parseCtxt->IncrVarParam(1);
-            if (gProject->Parse_TOS->transUnit)
-                gProject->Parse_TOS->transUnit->contxt.EnterScope();
-            gProject->Parse_TOS->parseCtxt->PushCtxt();
+        {   global_parse_env->parseCtxt->IncrVarParam(1);
+            if (global_parse_env->transUnit)
+                global_parse_env->transUnit->my_contxt.EnterScope();
+            global_parse_env->parseCtxt->PushCtxt();
         }
                  param_type_list_bis
         {
-            gProject->Parse_TOS->parseCtxt->PopCtxt(true);
-            gProject->Parse_TOS->parseCtxt->IncrVarParam(-1);
+            global_parse_env->parseCtxt->PopCtxt(true);
+            global_parse_env->parseCtxt->IncrVarParam(-1);
             $$ = $2 ;
         }
         ;
@@ -2192,22 +2192,22 @@ param_list: param_decl
         
 param_decl:
         {   
-            gProject->Parse_TOS->parseCtxt->PushCtxt();
+            global_parse_env->parseCtxt->PushCtxt();
         }
                      param_decl_bis
         {
-            gProject->Parse_TOS->parseCtxt->PopCtxt(true);
+            global_parse_env->parseCtxt->PopCtxt(true);
             $$ = $2;
         }
         ;
         
 param_decl_bis: decl_specs_reentrance_bis declarator
         {
-            assert (gProject->Parse_TOS->err_top_level ||
-                    $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-            gProject->Parse_TOS->possibleType = true;
+            assert (global_parse_env->err_top_level ||
+                    $1 == global_parse_env->parseCtxt->curCtxt->decl_specs);
+            global_parse_env->possibleType = true;
             $$ = $2;
-            Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
+            Type * decl = global_parse_env->parseCtxt->UseDeclCtxt();
             Type * extended = $$->extend(decl);             
             if ($$->form &&
                 $$->form->isFunction())
@@ -2225,12 +2225,12 @@ param_decl_bis: decl_specs_reentrance_bis declarator
         }
           | decl_specs_reentrance_bis abs_decl_reentrance
         {
-            assert (gProject->Parse_TOS->err_top_level ||
-                    $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-            gProject->Parse_TOS->possibleType = true;
+            assert (global_parse_env->err_top_level ||
+                    $1 == global_parse_env->parseCtxt->curCtxt->decl_specs);
+            global_parse_env->possibleType = true;
             $$ = new Decl($2);
             
-            Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
+            Type * decl = global_parse_env->parseCtxt->UseDeclCtxt();
             Type * extended = $$->extend(decl);
             if ($$->form &&
                 $$->form->isFunction())
@@ -2248,7 +2248,7 @@ param_decl_bis: decl_specs_reentrance_bis declarator
         }
           | decl_specs_reentrance_bis
         {
-            gProject->Parse_TOS->possibleType = true;
+            global_parse_env->possibleType = true;
             $$ = new Decl($1);
             if ($$->form &&
                 $$->form->isFunction())

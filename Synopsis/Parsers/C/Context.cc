@@ -34,7 +34,7 @@
 #include <ParseEnv.hh>
 #include <Context.hh>
 #include <Symbol.hh>
-#include <Project.hh>
+#include <File.hh>
 #include <Declaration.hh>
 #include <Statement.hh>
 #include <iostream>
@@ -289,7 +289,7 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
   {
     if (IsTypedefDeclCtxt())
     {
-      assert(gProject->Parse_TOS->err_top_level || ! isFieldId);
+      assert(global_parse_env->err_top_level || ! isFieldId);
       if (declSym->entry && (declSym->entry->scope->level == syms->clevel))
 	// There is a previous entry defined at the same level.
 	yyerr ("Duplicate typedef name: ", declSym->name);
@@ -316,7 +316,7 @@ Decl* ParseCtxt::Mk_direct_declarator_reentrance (Symbol* declSym, SymTbl* syms)
   }
   else
   {
-    assert(gProject->Parse_TOS->err_top_level || ! IsTypedefDeclCtxt());
+    assert(global_parse_env->err_top_level || ! IsTypedefDeclCtxt());
     
     if (curCtxt->isKnR && curCtxt->varParam == 1)
     {
@@ -405,7 +405,7 @@ void ParseCtxt::Mk_func_declarator(Decl* decl)
   Symbol* ident = decl->name;
   
   assert(! curCtxt->possibleDuplication || ident->entry);
-  assert(! gProject->Parse_TOS->err_top_level || decl->form->type == TT_Function);
+  assert(! global_parse_env->err_top_level || decl->form->type == TT_Function);
   
   if (ident && ident->entry)
   {
@@ -414,7 +414,7 @@ void ParseCtxt::Mk_func_declarator(Decl* decl)
     {
       assert(curCtxt->possibleDuplication->IsFctDecl());
       assert(curCtxt->possibleDuplication->scope->level
-	     == gProject->Parse_TOS->transUnit->contxt.syms->clevel);
+	     == global_parse_env->transUnit->my_contxt.syms->clevel);
       
       if (curCtxt->possibleDuplication->u2FunctionDef)
 	yyerr ("Duplicate function name: ", ident->name);

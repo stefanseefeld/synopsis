@@ -47,7 +47,7 @@
 typedef  struct yy_buffer_state  *YY_BUFFER_STATE;
 #endif
 
-class TransUnit;
+class File;
 class Base;
 class SymEntry;
 
@@ -56,7 +56,7 @@ struct ParseEnv
   ParseEnv(std::istream *instream, std::ostream *errstream, const std::string &fname);
   ~ParseEnv();
 
-  TransUnit         *transUnit;   // Pointer to the parsed translation unit
+  File              *transUnit;   // Pointer to the parsed translation unit
 
   std::string        realfile;    // The file _really_ being parsed.
   int                in_realfile;

@@ -200,7 +200,7 @@ void Translator::traverse_function_definition(FunctionDef *)
 {
 }
 
-void Translator::traverse_unit(TransUnit *)
+void Translator::traverse_unit(File *)
 {
 }
 

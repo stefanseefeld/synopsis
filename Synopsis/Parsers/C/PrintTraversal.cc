@@ -31,7 +31,7 @@
 
 #include <Declaration.hh>
 #include <Statement.hh>
-#include <Project.hh>
+#include <File.hh>
 #include <Expression.hh>
 #include <Symbol.hh>
 #include <PrintTraversal.hh>
@@ -790,10 +790,10 @@ void PrintTraversal::traverse_function_definition(FunctionDef *node)
   traverse_block(node);
 }
 
-void PrintTraversal::traverse_unit(TransUnit *unit)
+void PrintTraversal::traverse_unit(File *unit)
 {
   int inInclude = 0;
-  for (Statement *statement = unit->head; statement; statement = statement->next)
+  for (Statement *statement = unit->my_head; statement; statement = statement->next)
   {
     if (inInclude > 0)
     {

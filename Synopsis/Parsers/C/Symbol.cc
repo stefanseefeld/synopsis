@@ -36,7 +36,6 @@
 
 #include <Symbol.hh>
 #include <Statement.hh>
-#include <Project.hh>
 
 //#define  PRINT_LEVEL
 
@@ -191,7 +190,7 @@ SymEntry::Show(std::ostream& out) const
             if (uVarDecl != NULL)
             {
                 uVarDecl->print(out,true,0);
-                if (gProject->gDebug &&
+                if (Statement::debug &&
                     uVarDecl->form)
                 {
                     out << std::endl;
@@ -216,7 +215,7 @@ SymEntry::Show(std::ostream& out) const
             if (uVarDecl != NULL)
             {
                 uVarDecl->print(out,true,0);
-                if (gProject->gDebug &&
+                if (Statement::debug &&
                     uVarDecl->form)
                 {
                     out << std::endl;
@@ -268,7 +267,7 @@ SymEntry::Show(std::ostream& out) const
             if (uComponent != NULL)
             {
                 uComponent->print(out,true,0);
-                if (gProject->gDebug &&
+                if (Statement::debug &&
                     uComponent->form)
                 {
                     out << std::endl;
@@ -798,13 +797,13 @@ SymTbl::InsertAt(SymEntry *entry, int level)
 
 #ifdef  PRINT_LEVEL
     Indent();
-    *gProject->Parse_TOS->yyerrstream
+    *global_parse_env->yyerrstream
       << "scope level " << current->level << std::endl;
     Indent();
-    *gProject->Parse_TOS->yyerrstream
+    *global_parse_env->yyerrstream
       << "Current level " << clevel << std::endl;
     Indent();
-    *gProject->Parse_TOS->yyerrstream
+    *global_parse_env->yyerrstream
       << "request level " << level << std::endl;
 #endif
 
@@ -1005,7 +1004,7 @@ operator<< ( std::ostream& out, const Symbol& sym )
 
     out << sym.name;
 
-    if (sym.entry && Project::gDebug)
+    if (sym.entry && Statement::debug)
     {
         out << "$"; 
         // To print an identifier of the scope.

@@ -6,7 +6,7 @@
 //
 
 #include <Synopsis/AST/ASTKit.hh>
-#include <ctool/ctool.h>
+#include "File.hh"
 #include "Translator.hh"
 #include "Trace.hh"
 #include <signal.h>
@@ -88,7 +88,7 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
     sigaction(SIGBUS, &newa, &olda);
     sigaction(SIGABRT, &newa, &olda);
     
-    Project  *prj = new Project();
+    File *file = File::parse(input);
     //   TransUnit *unit = prj->parse(file_list[i], use_cpp, cpp_dir,
     // 			       keep_cpp_file, cpp_file, cpp_cmmd, cd_cmmd);
     
