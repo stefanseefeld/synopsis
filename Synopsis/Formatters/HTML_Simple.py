@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: HTML_Simple.py,v 1.7 2001/01/24 01:38:36 chalky Exp $
+#  $Id: HTML_Simple.py,v 1.8 2001/01/25 01:10:59 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -21,6 +21,9 @@
 #  02111-1307, USA.
 #
 # $Log: HTML_Simple.py,v $
+# Revision 1.8  2001/01/25 01:10:59  chalky
+# Fixed html_simple
+#
 # Revision 1.7  2001/01/24 01:38:36  chalky
 # Added docstrings to all modules
 #
@@ -178,25 +181,13 @@ class HTMLFormatter (Type.Visitor, AST.Visitor):
         self.write(span("keyword", typedef.type()) + " ")
         typedef.alias().accept(self)
         self.write(self.reference(self.__type_ref, self.__type_label) + " ")
-        declarators = []
-        i = typedef.declarator()
-	i.accept(self)
-	declarators.append(self.label(self.__declarator))
-        self.write(string.join(declarators, ", "))
-        i = typedef.declarator()
-        if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
+	self.write(self.label(typedef.name()))
         if len(typedef.comments()): self.write("\n" + desc(typedef.comments()) + "\n")            
 
     def visitVariable(self, variable):
         variable.vtype().accept(self)
         self.write(self.reference(self.__type_ref, self.__type_label) + " ")
-        declarators = []
-        i = variable.declarator()
-	i.accept(self)
-	declarators.append(self.label(self.__declarator))
-        self.write(string.join(declarators, ", "))
-        i = variable.declarator()
-	if len(i.comments()): self.write("\n" + desc(i.comments()) + "\n")            
+	self.write(self.label(variable.name()))
         if len(variable.comments()): self.write("\n" + desc(variable.comments()) + "\n")            
 
     def visitConst(self, const):
@@ -239,8 +230,8 @@ class HTMLFormatter (Type.Visitor, AST.Visitor):
 
     def visitInheritance(self, inheritance):
         for attribute in inheritance.attributes(): self.write(span("keywords", attribute) + " ")
-        self.write(self.reference(Util.ccolonName(inheritance.parent().name()),
-                                  Util.ccolonName(inheritance.parent().name(), self.scope())))
+	inheritance.parent().accept(self)
+        self.write(self.reference(self.__type_ref, self.__type_label))
 
     def visitParameter(self, parameter):
         for m in parameter.premodifier(): self.write(span("keyword", m) + " ")
@@ -256,7 +247,7 @@ class HTMLFormatter (Type.Visitor, AST.Visitor):
         for modifier in operation.premodifier(): self.write(span("keyword", modifier) + " ")
         operation.returnType().accept(self)
         self.write(self.reference(self.__type_ref, self.__type_label) + " ")
-        self.write(self.label(function.identifier()) + "(")
+        self.write(self.label(function.realname()) + "(")
         parameters = function.parameters()
         if len(parameters): parameters[0].accept(self)
         for parameter in parameters[1:]:
@@ -281,7 +272,7 @@ class HTMLFormatter (Type.Visitor, AST.Visitor):
 	    self.write(self.reference(self.__type_ref, self.__type_label) + " ")
         if operation.language() == "IDL" and operation.type() == "attribute":
             self.write(span("keyword", "attribute") + " ")
-        self.write(self.label(operation.name()) + "(")
+        self.write(self.label(operation.realname()) + "(")
         parameters = operation.parameters()
         if len(parameters): parameters[0].accept(self)
         for parameter in parameters[1:]:
@@ -353,7 +344,6 @@ def format(types, declarations, args):
     formatter = HTMLFormatter(output, toc)
     for d in declarations:
         d.accept(formatter)
-        output.write("<br>\n")
     output.write(entity("h1", "Index") + "\n")
     toc.write(output)
     output.write("</body>\n")
