@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.2 2001/01/23 21:31:36 stefan Exp $
+# $Id: Dot.py,v 1.3 2001/01/24 01:38:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.3  2001/01/24 01:38:36  chalky
+# Added docstrings to all modules
+#
 # Revision 1.2  2001/01/23 21:31:36  stefan
 # bug fixes
 #
@@ -26,6 +29,10 @@
 # Dot: an inheritance/collaboration graph generator
 #
 #
+
+"""
+Uses 'dot' from graphviz to generate various graphs.
+"""
 
 import sys, tempfile, getopt, os, os.path, string, types, errno
 from Synopsis.Core import AST, Type, Util

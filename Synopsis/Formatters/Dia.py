@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.5 2001/01/22 19:54:41 stefan Exp $
+# $Id: Dia.py,v 1.6 2001/01/24 01:38:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.6  2001/01/24 01:38:36  chalky
+# Added docstrings to all modules
+#
 # Revision 1.5  2001/01/22 19:54:41  stefan
 # better support for help message
 #
@@ -26,10 +29,7 @@
 # added copyright notice, and switched on logging
 #
 
-"""Dia Formatter.
-This formatter outputs a file suitable for Dia. Currently diagram elements are
-unpositioned.
-"""
+"""Generates a .dia file of unpositioned classes and generalizations."""
 
 import sys, getopt, os, os.path, string
 from Synopsis.Core import Type, AST, Util, Visitor
