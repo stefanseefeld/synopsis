@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.9 2001/03/28 12:55:19 chalky Exp $
+# $Id: Formatter.py,v 1.10 2001/03/28 13:11:04 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.10  2001/03/28 13:11:04  chalky
+# Added @attr tag to Javadoc formatter - very similar to @param tags :)
+#
 # Revision 1.9  2001/03/28 12:55:19  chalky
 # Sanity checks
 #
@@ -212,7 +215,7 @@ class JavadocFormatter (CommentFormatter):
     def parseText(self, str, decl):
 	if str is None: return str
 	#str, see = self.extract(self.re_see_line, str)
-	see_tags, param_tags, return_tag = [], [], None
+	see_tags, attr_tags, param_tags, return_tag = [], [], [], None
 	joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+y]
 	str, tags = self.parseTags(str, joiner)
 	# Parse each of the tags
@@ -224,12 +227,15 @@ class JavadocFormatter (CommentFormatter):
 		param_tags.append(string.split(rest,' ',1))
 	    elif tag == '@return':
 		return_tag = rest
+	    elif tag == '@attr':
+		attr_tags.append(string.split(rest,' ',1))
 	    else:
 		# Warning: unknown tag
 		pass
-	return "%s%s%s%s"%(
+	return "%s%s%s%s%s"%(
 	    self.parse_see(str, decl),
 	    self.format_params(param_tags),
+	    self.format_attrs(attr_tags),
 	    self.format_return(return_tag),
 	    self.format_see(see_tags, decl)
 	)
@@ -251,6 +257,15 @@ class JavadocFormatter (CommentFormatter):
 	return div('tag-heading',"Parameters:") + \
 		div('tag-section', string.join(
 		    map(lambda p:"<b>%s</b> - %s"%(p[0],p[1]), param_tags),
+		    '<br>'
+		)
+	    )
+    def format_attrs(self, attr_tags):
+	"""Formats a list of (attr, description) tags"""
+	if not len(attr_tags): return ''
+	return div('tag-heading',"Attributes:") + \
+		div('tag-section', string.join(
+		    map(lambda p:"<b>%s</b> - %s"%(p[0],p[1]), attr_tags),
 		    '<br>'
 		)
 	    )
