@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.7 2001/07/15 08:31:52 chalky Exp $
+#  $Id: Config.py,v 1.8 2001/07/29 03:28:04 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -153,6 +153,10 @@ class Base:
 	    links from inside blocks of code (otherwise it skips over them).
 	    Note that you usually set this from the command-line with your
 	    Makefile via "-Wp,-s,$@.links" or something.
+	    @attr fake_std If set, this causes the parser to construct a fake
+	    using directive from the std namespace to the global namespace. In
+	    effect, this fixes problems seen with using the stdc++ headers for
+	    gcc 2.95.x where most things dont get placed in the std namespace.
 	    @see Synopsis.Parser.C++.__init__
 	    """
             name = 'C++'

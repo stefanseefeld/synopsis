@@ -8,18 +8,19 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "synopsis.hh"
-#include "walker.h"
-#include "token.h"
-#include "buffer.h"
-#include "parse.h"
-#include "ptree-core.h"
-#include "ptree.h"
-#include "encoding.h"
+
+#include <occ/walker.h>
+#include <occ/token.h>
+#include <occ/buffer.h>
+#include <occ/parse.h>
+#include <occ/ptree-core.h>
+#include <occ/ptree.h>
+#include <occ/encoding.h>
 
 // Stupid OCC and stupid macros!
 #undef Scope
 
+#include "synopsis.hh"
 #include "swalker.hh"
 #include "builder.hh"
 #include "dumper.hh"
@@ -45,7 +46,7 @@ void *LookupSymbol(void *, char *) { return 0;}
 bool verbose;
 
 // If true then everything but what's in the main file will be stripped
-bool syn_main_only, syn_extract_tails, syn_use_gcc;
+bool syn_main_only, syn_extract_tails, syn_use_gcc, syn_fake_std;
 
 // If set then this is stripped from the start of all filenames
 const char* syn_basename = "";
@@ -82,6 +83,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
     syn_main_only = false;
     syn_extract_tails = false;
     syn_use_gcc = false;
+    syn_fake_std = false;
 
 #define IsType(obj, type) (!PyObject_Compare(PyObject_Type(obj), (PyObject*)&Py##type##_Type))
     
@@ -167,6 +169,8 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 	    // This will be a generic preprocessor at some point
 	    syn_use_gcc = !strcmp("gcc", PyString_AsString(value));
 	  }
+	if ((value = PyObject_GetAttrString(config, "fake_std")) != 0)
+	  syn_fake_std = PyObject_IsTrue(value);
     } // if config
 #undef IsType
     
@@ -185,6 +189,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 	else if (strcmp(argument, "-s") == 0)
 	  syn_storage = PyString_AsString(PyList_GetItem(args, ++i));
 	else if (strcmp(argument, "-g") == 0) syn_use_gcc = true;
+	else if (strcmp(argument, "-f") == 0) syn_fake_std = true;
       }
 }
   
@@ -328,6 +333,13 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     }
 
   Builder builder(syn_basename);
+  if (syn_fake_std)
+    {
+      // Fake a using from "std" to global
+      builder.startNamespace("std", Builder::NamespaceNamed);
+      builder.usingNamespace(builder.global()->declared());
+      builder.endNamespace();
+    }
   SWalker swalker(src, &parse, &builder, &prog);
   swalker.setExtractTails(syn_extract_tails);
   Ptree *def;
