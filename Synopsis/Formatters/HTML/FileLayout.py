@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: FileLayout.py,v 1.3 2001/02/01 18:06:06 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.3  2001/02/01 18:06:06  chalky
+# Added nameOfScopedSpecial method
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -98,6 +101,10 @@ class FileLayout:
 	"""Return the name of a special file (tree, etc). Default is
 	_name.html"""
 	return "_" + name + ".html"
+    def nameOfScopedSpecial(self, name, scope):
+	"""Return the name of a special type of scope file. Default is to join
+	the scope with '-' and prepend '-'+name"""
+	return "_%s-%s.html"%(name, string.join(scope, '-'))
     def nameOfModuleTree(self):
 	"""Return the name of the module tree index. Default is
 	_modules.html"""
