@@ -1,4 +1,4 @@
-# $Id: Stripper.py,v 1.6 2003/11/11 06:03:59 stefan Exp $
+# $Id: Stripper.py,v 1.7 2003/11/20 21:37:15 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -18,7 +18,7 @@ class Stripper(Processor, AST.Visitor):
    scopes are not accepted but which themselfs are correct can
    be maintained as new root nodes."""
 
-   scopes = []
+   scope = Parameter([], 'strip all but the given scope')
 
    def __init__(self):
       
@@ -29,10 +29,9 @@ class Stripper(Processor, AST.Visitor):
 
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
-      if self.scopes:
+      if self.scope:
 
-         self.__scopes = map(lambda x: tuple(string.split(x, "::")),
-                             self.__scopes)
+         self.__scope = map(lambda x: tuple(string.split(x, "::")), self.scope)
 
          # strip prefixes and remove non-matching declarations
          self.strip_declarations(self.ast.declarations())
@@ -43,7 +42,7 @@ class Stripper(Processor, AST.Visitor):
       return self.output_and_return_ast()
       
    def strip_name(self, name):
-      for scope in self.__scopes:
+      for scope in self.__scope:
          depth = len(scope)
          if name[0:depth] == scope:
             if len(name) == depth: return None
@@ -76,8 +75,8 @@ class Stripper(Processor, AST.Visitor):
       it off, and return success. Success means that the declaration matches
       the prefix set and thus should not be removed from the AST."""
       passed = 0
-      if not self.__scopes: return 1
-      for scope in self.__scopes:
+      if not self.__scope: return 1
+      for scope in self.__scope:
          depth = len(scope)
          name = declaration.name()
          if name[0:depth] == scope:
