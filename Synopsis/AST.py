@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.29 2003/11/11 06:05:03 stefan Exp $
+# $Id: AST.py,v 1.30 2003/12/02 05:44:07 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -298,6 +298,16 @@ class Declaration:
    def set_accessibility(self, axs):
       """Change the accessibility"""
       self.__accessibility = axs
+
+class Builtin (Declaration):
+   """An ast node for internal use only."""
+
+   def __init__(self, file, line, language, type, name):
+      """Constructor"""
+
+      Declaration.__init__(self, file, line, language, type, name)
+
+   def accept(self, visitor): visitor.visitBuiltin(self)
 
 class Macro (Declaration):
    """A preprocessor macro. Note that macros are not strictly part of the
@@ -669,6 +679,7 @@ class Visitor :
    def visitAST(self, node):
       for declaration in node.declarations(): declaration.accept(self)
    def visitDeclaration(self, node): return
+   def visitBuiltin(self, node): return
    def visitMacro(self, node): self.visitDeclaration(node)
    def visitForward(self, node): self.visitDeclaration(node)
    def visitGroup(self, node):
