@@ -34,6 +34,7 @@ class Config (Base):
 	    toc_out = 'links.toc'
 	    stylesheet_file = '../../demo/html.css'
 	    pages = [
+		'FilePages',
 		'ModuleListing',
 		'ScopePages',
 		'ModuleIndexer',
@@ -41,7 +42,6 @@ class Config (Base):
 		'InheritanceTree',
 		'InheritanceGraph',
 		'NameIndex',
-		'FilePages',
 		('modules.py', 'ConfScope'),
 		'FramesIndex'
 	    ]
@@ -58,6 +58,7 @@ class Config (Base):
 		file_path = '../../../%s'
 		links_path = 'syn/%s-links'
 		toc_files = ['links.toc']
+		scope = 'Synopsis::Parser::C++::'
 	    class FileTree:
 		link_to_pages = 1
 	    class ScopePages (Base.Formatter.HTML.ScopePages):
