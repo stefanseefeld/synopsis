@@ -23,12 +23,15 @@ PYSYNS		:= $(patsubst %,$(spath)/%.syn,$(PYFILES) $(NOEX_PY))
 CXXFILES	:= synopsis builder type ast dict decoder swalker dumper
 
 CXXSOURCES	:= $(patsubst %,$(cxxpath)/%.hh,$(CXXFILES))
-CXXSYNS		:= $(patsubst %,$(cxxspath)/%.csyn,$(CXXFILES))
+CXXSYNS		:= $(patsubst $(bpath)/%.hh,$(spath)/%.csyn,$(CXXSOURCES))
 
 all:	manual
 
-manual:   $(PYSYNS) $(CXXSYNS)
-	$(synopsis) -Wl,-l -f HTML -Wf,--spec=html.spec -o Manual $^
+manual:   all.syn
+	$(synopsis) -c config.py -Wc,formatter,HTML -f HTML -Wf,--spec=html.spec -o Manual $^
+
+all.syn:	$(PYSYNS) $(CXXSYNS)
+	$(synopsis) -c config.py -Wl,-l -o all.syn $^
 
 # Compile Python files
 $(spath)/%.syn:	$(bpath)/%.py
@@ -41,9 +44,9 @@ $(spath)/Synopsis/synopsis.syn: $(bpath)/Synopsis/synopsis
 	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
 
 # Compile C++ files
-$(cxxspath)/%.csyn: $(cxxpath)/%.hh
+$(spath)/%.csyn: $(bpath)/%.hh
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/ -Wl,-p,ssd -o $@ $?
+	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/,-s,$(patsubst $(bpath)/%,syn/%-links,$?) -Wl,-p,ssd -o $@ $?
 
 clean:
 	rm -rf $(spath)

@@ -41,6 +41,9 @@ bool syn_main_only, syn_extract_tails;
 // If set then this is stripped from the start of all filenames
 const char* syn_basename = "";
 
+// If set then this is the filename to store links to
+const char* syn_storage = 0;
+
 
 #ifdef DEBUG
 // For use in gdb, since decl->Display() doesn't work too well..
@@ -55,24 +58,24 @@ namespace
 
 void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags)
 {
-  showProgram = doCompile = verboseMode = makeExecutable = false;
-  doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
-  doPreprocess = true;
-  sharedLibraryName = 0;
-  syn_main_only = false;
-  syn_extract_tails = false;
-  
-  size_t argsize = PyList_Size(args);
-  for (size_t i = 0; i != argsize; ++i)
-    {
-      const char *argument = PyString_AsString(PyList_GetItem(args, i));
-      if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
-      else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
-      else if (strcmp(argument, "-m") == 0) syn_main_only = true;
-      else if (strcmp(argument, "-b") == 0)
-	syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
-      else if (strcmp(argument, "-t") == 0) syn_extract_tails = true;
+    showProgram = doCompile = verboseMode = makeExecutable = false;
+    doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
+    doPreprocess = true;
+    sharedLibraryName = 0;
+    syn_main_only = false;
+    syn_extract_tails = false;
 
+    size_t argsize = PyList_Size(args);
+    for (size_t i = 0; i != argsize; ++i) {
+	const char *argument = PyString_AsString(PyList_GetItem(args, i));
+	if (strncmp(argument, "-I", 2) == 0) cppflags.push_back(argument);
+	else if (strncmp(argument, "-D", 2) == 0) cppflags.push_back(argument);
+	else if (strcmp(argument, "-m") == 0) syn_main_only = true;
+	else if (strcmp(argument, "-b") == 0)
+	    syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
+	else if (strcmp(argument, "-t") == 0) syn_extract_tails = true;
+	else if (strcmp(argument, "-s") == 0)
+	    syn_storage = PyString_AsString(PyList_GetItem(args, ++i));
     }
 }
   
@@ -145,32 +148,43 @@ char *RunOpencxx(const char *src, const char *file, const vector<const char *> &
   Lex lex(&prog);
   Parser parse(&lex);
   
+    // Calculate source filename
+    string source(src);
+    if (source.compare(string(syn_basename), 0, strlen(syn_basename)) == 0)
+    source.erase(0, strlen(syn_basename));
+
   Builder builder(syn_basename);
-  SWalker swalker(&parse, &builder);
+  SWalker swalker(src, &parse, &builder, &prog);
   swalker.setExtractTails(syn_extract_tails);
   Ptree *def;
 #ifdef DEBUG
   swalker.setExtractTails(true);
+  swalker.setStoreLinks(true, &cout);
   while(parse.rProgram(def))
     swalker.Translate(def);
-  // Test Synopsis
-  Synopsis synopsis(src, declarations, types);
-  if (syn_main_only) synopsis.onlyTranslateMain();
-  synopsis.translate(builder.scope());
+  // // Test Synopsis
+  // Synopsis synopsis(src, declarations, types);
+  // if (syn_main_only) synopsis.onlyTranslateMain();
+  // synopsis.translate(builder.scope());
   
   // Test Dumper
   Dumper dumper;
   if (syn_main_only) dumper.onlyShow(src);
   dumper.visitScope(builder.scope());
 #else
-  while(parse.rProgram(def))
-    swalker.Translate(def);
-  string source(src);
-  if (source.compare(string(syn_basename), 0, strlen(syn_basename)) == 0)
-    source.erase(0, strlen(syn_basename));
-  Synopsis synopsis(source, declarations, types);
-  if (syn_main_only) synopsis.onlyTranslateMain();
-  synopsis.translate(builder.scope());
+    ofstream* of = NULL;
+    if (syn_storage) {
+	of = new ofstream(syn_storage);
+	swalker.setStoreLinks(true, of);
+    }
+    while(parse.rProgram(def))
+	swalker.Translate(def);
+    // Setup synopsis c++ to py convertor
+    Synopsis synopsis(source, declarations, types);
+    if (syn_main_only) synopsis.onlyTranslateMain();
+    // Convert!
+    synopsis.translate(builder.scope());
+    if (of) delete of;
 #endif
   
   if(parse.NumOfErrors() != 0)

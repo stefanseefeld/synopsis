@@ -228,7 +228,7 @@ uint Program::LineNumber(char* ptr, char*& filename, int& filename_length)
     sint line_number = -1;
     filename_length = 0;
 
-    while(pos > lastpos){
+    while(pos != lastpos){
 	switch(Ref(--pos)){
 	case '\n' :
 	    ++nline;
