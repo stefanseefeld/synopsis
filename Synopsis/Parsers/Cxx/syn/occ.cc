@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.89 2003/11/05 17:36:55 stefan Exp $
+// $Id: occ.cc,v 1.90 2003/11/05 19:52:24 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.90  2003/11/05 19:52:24  stefan
+// forgot support for emulate_compiler...
+//
 // Revision 1.89  2003/11/05 17:36:55  stefan
 // C++ parser fe refactoring to suite the Processor interface
 //
@@ -602,7 +605,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
     PyObject *py_cppflags;
     std::vector<const char *> cppflags;
     int extract_tails;
-    if (!PyArg_ParseTuple(args, "OsO!iizzO!izz",
+    if (!PyArg_ParseTuple(args, "OsO!iizzO!izzz",
                           &ast,
                           &src,
                           &PyList_Type, &py_extra_files,
@@ -613,7 +616,8 @@ PyObject *occParse(PyObject *self, PyObject *args)
                           &PyList_Type, &py_cppflags,
                           &extract_tails,
                           &syn_syntax_prefix,
-                          &syn_xref_prefix)
+                          &syn_xref_prefix,
+                          &syn_emulate_compiler)
         || !extract(py_extra_files, extra_files)
         || !extract(py_cppflags, cppflags))
         return 0;
