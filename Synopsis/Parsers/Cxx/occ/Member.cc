@@ -19,7 +19,7 @@
 #include "Environment.hh"
 #include "Walker.hh"
 #include "Encoding.hh"
-#include "ptree.h"
+#include "AST.hh"
 
 // class Member
 

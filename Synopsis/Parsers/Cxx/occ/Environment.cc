@@ -17,7 +17,7 @@
 #include "Environment.hh"
 #include "HashTable.hh"
 #include "Ptree.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Lexer.hh"
 #include "Encoding.hh"
 #include "Walker.hh"

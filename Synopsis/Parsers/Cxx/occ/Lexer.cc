@@ -37,7 +37,7 @@
 #include <iostream>
 #include "Parser.hh"
 #include "HashTable.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Buffer.hh"
 
 #if defined(_PARSE_VCC)

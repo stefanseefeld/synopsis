@@ -39,7 +39,7 @@ endif
 OCC_SO	:= occ$(LIBRARY_EXT)
 LINK_SO	:= link$(LIBRARY_EXT)
 
-OCC_FILES := Buffer HashTable Lexer ptree Ptree Encoding Environment \
+OCC_FILES := Buffer HashTable Lexer Ptree AST Encoding Environment \
              pattern Walker TypeInfo Parser Class ClassWalker \
              MetaClass QuoteClass Member ClassBodyWalker
 

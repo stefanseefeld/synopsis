@@ -35,7 +35,7 @@
 // Part of the implementation of QuoteClass is in metaclass.cc.
 
 #include <cstring>
-#include "ptree.h"
+#include "AST.hh"
 #include "QuoteClass.hh"
 #include "Buffer.hh"
 

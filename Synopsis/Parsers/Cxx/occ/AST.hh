@@ -12,8 +12,8 @@
   implied warranty.
 */
 
-#ifndef _ptree_hh
-#define _ptree_hh
+#ifndef _AST_hh
+#define _AST_hh
 
 #include "Ptree.hh"
 #include "Lexer.hh"

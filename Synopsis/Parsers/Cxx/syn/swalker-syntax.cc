@@ -10,7 +10,7 @@
 #include <string>
 #include <typeinfo>
 
-#include <occ/ptree.h>
+#include <occ/AST.hh>
 #include <occ/Parser.hh>
 #undef Scope
 

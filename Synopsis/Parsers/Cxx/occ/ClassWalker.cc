@@ -13,7 +13,7 @@
 */
 
 #include <iostream>
-#include "ptree.h"
+#include "AST.hh"
 #include "ClassWalker.hh"
 #include "ClassBodyWalker.hh"
 #include "Class.hh"

@@ -62,7 +62,7 @@
 #include <iostream>
 #include "Encoding.hh"
 #include "Lexer.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Environment.hh"
 #include "Class.hh"
 #include "TypeInfo.hh"

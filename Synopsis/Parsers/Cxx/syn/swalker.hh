@@ -9,7 +9,7 @@
 #ifndef H_SYNOPSIS_CPP_SWALKER
 #define H_SYNOPSIS_CPP_SWALKER
 
-#include <occ/ptree.h>
+#include <occ/AST.hh>
 #include <occ/Walker.hh>
 // Stupid occ
 #undef Scope

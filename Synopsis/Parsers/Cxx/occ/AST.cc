@@ -15,7 +15,7 @@
 #include <cstring>
 #include <iostream>
 #include "Lexer.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Encoding.hh"
 #include "Walker.hh"
 

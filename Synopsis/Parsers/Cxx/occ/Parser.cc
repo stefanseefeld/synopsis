@@ -28,7 +28,7 @@
 #include "Parser.hh"
 #include "Lexer.hh"
 #include "Environment.hh"
-#include "ptree.h"
+#include "AST.hh"
 #include "Encoding.hh"
 #include "MetaClass.hh"
 #include "Walker.hh"
