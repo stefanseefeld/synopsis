@@ -6,8 +6,8 @@ body
     background: #ffffff;
   }
 :link { color: #bb0000; text-decoration: none;}
-:visited { color: #bb0000;}
-:active { color: #bb0000;}
+:visited { color: #440000; text-decoration: none;}
+:active { color: #000000; text-decoration: none;}
 span.keyword { font-weight: bold;}
 span.variable { font-style: italic;}
 div.module { padding: 1.0em;}
@@ -25,6 +25,8 @@ div.summary
     color: #446666;
     margin-left: 3em;
   }
+div.tag-see-header { font-weight: bold; }
+div.tag-see { margin-left: 3em; }
 td.heading {
     font-size: 1.5em;
     font-weight: bold;
