@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.2 2002/11/11 15:04:05 chalky Exp $
+# $Id: RawFile.py,v 1.3 2002/11/13 02:29:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: RawFile.py,v $
+# Revision 1.3  2002/11/13 02:29:24  chalky
+# Support exclude_glob option to exclude files from listings. Remove debug info.
+#
 # Revision 1.2  2002/11/11 15:04:05  chalky
 # Fix bugs when start directory is ''
 #
@@ -69,6 +72,13 @@ class RawFilePages (Page.Page):
         while dirs:
             dir = dirs.pop(0)
             for entry in os.listdir(os.path.abspath(dir)):
+		# Check if entry is in exclude list
+		exclude = 0
+		for re in self.__exclude_globs:
+		    if re.match(entry):
+			exclude = 1
+		if exclude:
+		    continue
                 entry_path = os.path.join(dir, entry)
                 info = statcache.stat(entry_path)
                 if stat.S_ISDIR(info[stat.ST_MODE]):

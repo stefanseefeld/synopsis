@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.4 2002/11/13 01:01:49 chalky Exp $
+# $Id: DirBrowse.py,v 1.5 2002/11/13 02:29:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: DirBrowse.py,v $
+# Revision 1.5  2002/11/13 02:29:24  chalky
+# Support exclude_glob option to exclude files from listings. Remove debug info.
+#
 # Revision 1.4  2002/11/13 01:01:49  chalky
 # Improvements to links when using the Nested file layout
 #
@@ -55,6 +58,7 @@ class DirBrowse(Page.Page):
         self.__title = 'Directory Listing'
 	self.__base = config.base_dir
 	self.__start = config.start_dir
+	self.__exclude_globs = config.exclude_globs
 
     def filename(self):
         """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -85,6 +89,13 @@ class DirBrowse(Page.Page):
 	while dirs:
 	    dir = dirs.pop(0)
 	    for entry in os.listdir(os.path.abspath(dir)):
+		# Check if entry is in exclude list
+		exclude = 0
+		for re in self.__exclude_globs:
+		    if re.match(entry):
+			exclude = 1
+		if exclude:
+		    continue
 		entry_path = os.path.join(dir, entry)
 		info = statcache.stat(entry_path)
 		if not stat.S_ISDIR(info[stat.ST_MODE]):
@@ -134,6 +145,13 @@ class DirBrowse(Page.Page):
 	files = []
 	dirs = []
 	for entry in entries:
+	    # Check if entry is in exclude list
+	    exclude = 0
+	    for re in self.__exclude_globs:
+		if re.match(entry):
+		    exclude = 1
+	    if exclude:
+		continue
 	    entry_path = os.path.join(path, entry)
 	    info = os.stat(entry_path)
 	    if stat.S_ISDIR(info[stat.ST_MODE]):
@@ -157,7 +175,7 @@ class DirBrowse(Page.Page):
 		self.write('<tr><td>%s</td><td align=right>%d</td><td align="right">%s</td></tr>\n'%(
 		    href(linkurl, entry, target="main"), size, timestr))
 	    else:
-		print "No link for",linkpath
+		#print "No link for",linkpath
 		self.write('<tr><td>%s</td><td align=right>%d</td><td align="right">%s</td></tr>\n'%(
 		    entry, size, timestr))
 	# End the table and file
