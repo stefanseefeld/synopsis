@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 2000/03/03 20:22:27 stefan Exp $
+# $Id: Makefile,v 1.2 2000/03/06 03:56:58 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 

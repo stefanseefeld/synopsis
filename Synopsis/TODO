@@ -1,0 +1,10 @@
+just some random thoughts:
+
+* synopsis should be callable like gcc:
+  either build the docs in one process
+  or write down individual trees (using pickle) 
+  and assemble the doc then from these files.
+  Which strategy to choose depends mainly on
+  the size of the project. If using individual
+  files one could use make to select which file 
+  to rebuild
