@@ -1,4 +1,4 @@
-# $Id: TreeFormatterJS.py,v 1.6 2003/11/16 21:09:45 stefan Exp $
+# $Id: TreeFormatterJS.py,v 1.7 2003/11/18 21:30:40 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,9 +7,9 @@
 # see the file COPYING for details.
 #
 
+from Synopsis import config
 from Synopsis import AST
 from Page import Page
-from core import config
 from Tags import *
 from TreeFormatter import TreeFormatter
 
