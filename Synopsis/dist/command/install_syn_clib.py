@@ -20,9 +20,10 @@ class install_syn_clib(Command):
 
         self.set_undefined_options('install',
                                    ('prefix', 'prefix'),
-                                   ('home', 'home'),
-                                   ('build_lib', 'build_dir'))
-
+                                   ('home', 'home'))
+        self.set_undefined_options('build_clib',
+                                   ('build_clib', 'build_dir'))
+        print 'build_dir is', self.build_dir
     def run(self):
 
         libfile = 'libSynopsis.so'
