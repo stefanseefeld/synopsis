@@ -31,7 +31,6 @@ class Object
   friend class List;
   friend class Tuple;
   friend class Dict;
-  friend class Callable;
   friend class Module;
   friend class Interpreter;
 public:
@@ -65,6 +64,7 @@ public:
    
   int hash() const { return PyObject_Hash(my_impl);}
   operator bool () const { return my_impl != Py_None;}
+  Object type() const { return PyObject_Type(my_impl);}
   Object repr() const { return PyObject_Repr(my_impl);}
   Object str() const { return PyObject_Str(my_impl);}
   Object boolean() const { return PyObject_IsTrue(my_impl);}

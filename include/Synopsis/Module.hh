@@ -17,7 +17,6 @@ class Module : public Object
 {
 public:
   Module(const Object &o) : Object(o) {}
-  Module(const std::string &);
   std::string name() const { return PyModule_GetName(my_impl);}
   std::string filename() const { return PyModule_GetFilename(my_impl);}
   Dict dict() const;
