@@ -21,7 +21,7 @@ class Config (Base):
     class Formatter:
 	class HTML (Base.Formatter.HTML):
 	    stylesheet_file = '../html.css'
-	    tree_formatter = 'Synopsis.Formatter.HTML.TreeFormatterJS.TreeFormatterJS'
+	    tree_formatter = 'TreeFormatterJS.TreeFormatterJS'
 	modules = Base.Formatter.modules
 	modules['HTML'] = HTML
 

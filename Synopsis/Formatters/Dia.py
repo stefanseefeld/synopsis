@@ -1,4 +1,4 @@
-# $Id: Dia.py,v 1.11 2001/07/17 22:27:28 chalky Exp $
+# $Id: Dia.py,v 1.12 2001/07/19 04:03:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dia.py,v $
+# Revision 1.12  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.11  2001/07/17 22:27:28  chalky
 # Fixed regression in import line
 #
@@ -364,10 +367,10 @@ def __parseArgs(args):
 	sys.stderr.write("Error: No output specified.\n")
 	sys.exit(1)
 
-def format(types, declarations, args, config_obj):
+def format(args, ast, config_obj):
     __parseArgs(args)
 
     formatter = DiaFormatter(filename)
 
-    formatter.output(declarations)
+    formatter.output(ast.declarations())
 

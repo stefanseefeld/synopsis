@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.28 2001/06/13 13:02:36 chalky Exp $
+# $Id: omni.py,v 1.29 2001/07/19 04:03:18 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.29  2001/07/19 04:03:18  chalky
+# New .syn file format.
+#
 # Revision 1.28  2001/06/13 13:02:36  chalky
 # A couple of fixes for new realname() stuff
 #
@@ -493,7 +496,7 @@ def __parseArgs(args, config_obj):
 	    strip = strip_filename
 	elif o == "-v": verbose = 1
 
-def parse(file, args, typedict, astdict, config_obj):
+def parse(file, args, config_obj):
     global preprocessor_args, mainfile_only
     __parseArgs(args, config_obj)
     if hasattr(_omniidl, "__file__"):
@@ -510,7 +513,9 @@ def parse(file, args, typedict, astdict, config_obj):
     if tree == None:
         sys.stderr.write("omni: Error parsing " + file + "\n")
         sys.exit(1)
-    types = TypeTranslator(typedict)
-    ast = ASTTranslator(astdict, types, mainfile_only)
-    tree.accept(ast)
-    return ast.declarations, types.types
+
+    ast = AST.AST()
+    type_trans = TypeTranslator(ast.types())
+    ast_trans = ASTTranslator(ast.declarations(), type_trans, mainfile_only)
+    tree.accept(ast_trans)
+    return ast

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.38 2001/07/17 03:35:09 stefan Exp $
+#  $Id: synopsis,v 1.39 2001/07/19 04:03:05 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -28,6 +28,10 @@ pickle = cPickle
 
 from Synopsis.Core import Type, AST, Util
 import Synopsis.Config
+
+# The version of the file format - this should be increased everytime
+# incompatible changes are made to the AST or Type classes
+FILE_VERSION = 1
 
 def version(): print "synopsis version 0.4.1"
 cmdname = os.path.basename(sys.argv[0])
@@ -252,11 +256,10 @@ def main(argv=None):
     #
     # real program start
     #
-    types = Type.Dictionary()
-    declarations = []
+    ast = AST.AST()
 
     #
-    # read files, either from picled data base or from parser
+    # read files, either from pickled data base or from parser
     #
     for file in files:
         if file != "-" and not os.path.isfile(file):
@@ -267,23 +270,29 @@ def main(argv=None):
             if verbose: print "Synopsis: loading", file
             unpickler = pickle.Unpickler(open(file, "r"))
             try:
-                t = unpickler.load()
-                d = unpickler.load()
+		version = unpickler.load()
+		if version is not FILE_VERSION:
+		    sys.stderr.write('"'+file+'" is from an old version of '+
+		    'Synopsis. Perhaps you need to "make clean" first? '+
+		    'Bailing out.\n')
+		    sys.exit(1)
+                loaded_ast = unpickler.load()
             except EOFError, e:
                 break
-            types.merge(t)
-            declarations.extend(d)
 
         else:
             if verbose: print "Synopsis: parsing", file
-            parser.parse(file, parser_args, types, declarations, config and config.parser)
+            loaded_ast = parser.parse(file, parser_args, config and config.parser)
+
+	# The loaded or parsed AST is now in loaded_ast --> merge into 'ast'
+	ast.merge(loaded_ast)
 
     #
     # resolve symbols here...
     if verbose: print "Synopsis: linking..."
     if config and config.linker: linker = importLinker(config.linker.name)
     else: linker = importLinker(linker_cmd)
-    linker.resolve(linker_args, types, declarations, config and config.linker)
+    linker.resolve(linker_args, ast, config and config.linker)
 
     #
     # generate output, either with pickler or with a formatter
@@ -301,12 +310,12 @@ def main(argv=None):
 	    if verbose: print "Warning: Creating directory",dir
 	    os.makedirs(dir, 0755)
         pickler = pickle.Pickler(open(output, "w"), 1)
-        pickler.dump(types)
-        pickler.dump(declarations)
+	pickler.dump(FILE_VERSION)
+        pickler.dump(ast)
     if formatter:
         if verbose: print "Synopsis: formatting..."
         if output != "": formatter_args.extend(["-o",output])
-        formatter.format(types, declarations, formatter_args, config and config.formatter)
+        formatter.format(formatter_args, ast, config and config.formatter)
 
 if __name__ == '__main__':
         main()

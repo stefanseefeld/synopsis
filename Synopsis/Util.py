@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.13 2001/07/10 14:41:22 chalky Exp $
+# $Id: Util.py,v 1.14 2001/07/19 04:03:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.14  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.13  2001/07/10 14:41:22  chalky
 # Make treeformatter config nicer
 #
@@ -175,6 +178,7 @@ def _import(name):
                 as_file = 1
                 break
     mod = None
+    error_messages = []
     # try as module
     if not as_file:
 	import_name = list(components)
@@ -188,11 +192,15 @@ def _import(name):
 			print "Error: Unable to find %s in:\n%s"%(
 			    comp,repr(mod))
 			print "Error: Importing '%s'\n"%arg_name
+			print "Collected import messages (may not all be errors):"
+			for message in error_messages: print message
 			sys.exit(1)
 		return mod
 	    except ImportError, msg:
 		# Remove last component and try again
 		del import_name[-1]
+		msg = "  %s:\n    %s"%(string.join(import_name, '.'), msg)
+		error_messages.append(msg)
 	    except SystemExit, msg: raise
 	    except:
 		print "Unknown error occurred importing",name

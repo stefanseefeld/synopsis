@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.20 2001/07/17 01:49:44 chalky Exp $
+# $Id: Part.py,v 1.21 2001/07/19 04:03:05 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.21  2001/07/19 04:03:05  chalky
+# New .syn file format.
+#
 # Revision 1.20  2001/07/17 01:49:44  chalky
 # Fixed names of strategies for defaults
 #
@@ -516,7 +519,7 @@ class Inheritance (Part):
 		if isinstance(parent, AST.Class):
 		    self._process_class(parent, names)
 		    continue
-	    print "Ignoring", parent.__class__.__name__, "parent of", clas.name()
+	    #print "Ignoring", parent.__class__.__name__, "parent of", clas.name()
 	    pass #ignore
      
     def writeSectionStart(self, heading):
