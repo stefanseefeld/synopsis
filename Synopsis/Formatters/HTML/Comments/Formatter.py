@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.4 2001/02/07 15:31:06 chalky Exp $
+# $Id: Formatter.py,v 1.5 2001/02/07 16:14:40 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.5  2001/02/07 16:14:40  chalky
+# Fixed @see linking to be more stubborn (still room for improv. tho)
+#
 # Revision 1.4  2001/02/07 15:31:06  chalky
 # Rewrite javadoc formatter. Now all tags must be at the end of the comment,
 # except for inline tags
@@ -38,7 +41,7 @@
 import re, string
 
 # Synopsis modules
-from Synopsis.Core import AST
+from Synopsis.Core import AST, Type, Util
 
 # HTML modules
 import core
@@ -166,8 +169,8 @@ class JavadocFormatter (CommentFormatter):
 	self.re_see_line = re.compile(self.__re_see_line,re.M)
     def parse(self, comm):
 	"""Parse the comm.detail for @tags"""
-	comm.detail = self.parseText(comm.detail)
-	comm.summary = self.parseText(comm.summary)
+	comm.detail = self.parseText(comm.detail, comm.decl)
+	comm.summary = self.parseText(comm.summary, comm.decl)
     def extract(self, regexp, str):
 	"""Extracts all matches of the regexp from the text. The MatchObjects
 	are returned in a list"""
@@ -193,7 +196,7 @@ class JavadocFormatter (CommentFormatter):
 	tags = reduce(joiner, tags, [])
 	return str, tags
 
-    def parseText(self, str):
+    def parseText(self, str, decl):
 	if str is None: return str
 	#str, see = self.extract(self.re_see_line, str)
 	see_tags, param_tags, return_tag = [], [], None
@@ -211,27 +214,25 @@ class JavadocFormatter (CommentFormatter):
 		# Warning: unknown tag
 		pass
 	return "%s%s%s%s"%(
-	    self.parse_see(str),
+	    self.parse_see(str, decl),
 	    self.format_params(param_tags),
 	    self.format_return(return_tag),
-	    self.format_see(see_tags)
+	    self.format_see(see_tags, decl)
 	)
-    def parse_see(self, str):
+    def parse_see(self, str, decl):
+	"""Parses inline @see tags"""
 	# Parse inline @see's  #TODO change to link or whatever javadoc uses
 	mo = self.re_see.search(str)
 	while mo:
 	    groups, start, end = mo.groups(), mo.start(), mo.end()
 	    lang = groups[1] or ''
-	    name = string.split(groups[2], '.')
-	    entry = config.toc.lookup(name)
-	    if entry: tag = "see "+href(entry.link, lang+groups[2])
-	    else: tag = "see "+lang+groups[2]
+	    tag = self.find_link(groups[2], decl)
 	    str = str[:start] + tag + str[end:]
 	    end = start + len(tag)
 	    mo = self.re_see.search(str, end)
 	return str
     def format_params(self, param_tags):
-	# Add params at end
+	"""Formats a list of (param, description) tags"""
 	if not len(param_tags): return ''
 	return "%s<ul>%s</ul>"%(
 	    div('tag-param-header',"Parameters:"),
@@ -240,21 +241,51 @@ class JavadocFormatter (CommentFormatter):
 	    )
 	)
     def format_return(self, return_tag):
-	# Add return at end
+	"""Formats a since description string"""
 	if not return_tag: return ''
 	return "%s<ul><li>%s</li></ul>"%(div('tag-return-header',"Return:"),return_tag)
-    def format_see(self, see_tags):
-	# Add @see lines at end
+    def format_see(self, see_tags, decl):
+	"""Formats a list of (ref,description) tags"""
 	if not len(see_tags): return ''
 	seestr = div('tag-see-header', "See Also:")
 	seelist = []
 	for see in see_tags:
 	    ref,desc = see[0], len(see)>1 and see[1] or ''
-	    entry = config.toc.lookup(ref)
-	    if entry: tag = href(entry.link, tag)
-	    else: tag = ref+" "
+	    tag = self.find_link(ref, decl)
 	    seelist.append(div('tag-see', tag+desc))
 	return seestr + string.join(seelist,'')
+    def find_link(self, ref, decl):
+	"""Given a "reference" and a declaration, returns a HTML link. Various
+	methods are tried to resolve the reference."""
+	# Remove (...)'s
+	index, label = string.find(ref,'('), ref
+	if index >= 0: ref = ref[:index]
+	# Try up-a-scope + ref
+	entry = config.toc.lookup(list(decl.name()[:-1])+[ref])
+	if entry: return href(entry.link, label)
+	# Try all methods in scope
+	entry = self.find_method_entry(ref, decl)
+	if entry: return href(entry.link, label)
+	# Try ref verbatim
+	entry = config.toc.lookup([ref])
+	if entry: return href(entry.link, label)
+	# Not found
+	return label+" "
+    def find_method_entry(self, ref, decl):
+	"""Tries to find a TOC entry for a method adjacent to decl. The
+	enclosing scope is found using the types dictionary, and the
+	realname()'s of all the functions compared to ref."""
+	scope = config.types[decl.name()[:-1]]
+	if not scope: return None
+	if not isinstance(scope, Type.Declared): return None
+	scope = scope.declaration()
+	if not isinstance(scope, AST.Scope): return None
+	for decl in scope.declarations():
+	    if isinstance(decl, AST.Function):
+		if decl.realname()[-1] == ref:
+		    return config.toc.lookup(decl.name())
+	return None
+
 
 class SectionFormatter (CommentFormatter):
     """A test formatter"""
