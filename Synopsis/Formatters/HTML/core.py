@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.23 2001/07/19 04:03:05 chalky Exp $
+# $Id: core.py,v 1.24 2001/07/19 05:10:39 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.24  2001/07/19 05:10:39  chalky
+# Use filenames stored in AST object
+#
 # Revision 1.23  2001/07/19 04:03:05  chalky
 # New .syn file format.
 #
@@ -313,6 +316,8 @@ class FileTree(AST.Visitor):
 	"Installs self in config object as 'fileTree'"
 	config.fileTree = self
 	self.__files = {}
+	for file in config.ast.filenames():
+	    self.__files[file] = {}
     
     def buildTree(self):
 	"Takes the visited info and makes a tree of directories and files"
@@ -583,6 +588,7 @@ def __parseArgs(args, config_obj):
 def format(args, ast, config_obj):
     global toc_out, toc_in
     __parseArgs(args, config_obj)
+    config.ast = ast
     config.types = ast.types()
     declarations = ast.declarations()
 
