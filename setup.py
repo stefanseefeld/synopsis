@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.12 2003/11/24 22:08:12 stefan Exp $
+# $Id: setup.py,v 1.13 2003/11/25 05:12:33 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -10,7 +10,7 @@
 from distutils.core import setup
 from distutils import sysconfig
 
-from Synopsis import config
+from Synopsis.config import *
 
 from Synopsis.dist.command.config import config
 from Synopsis.dist.command.build_doc import build_doc
@@ -59,7 +59,7 @@ setup(cmdclass={'config':config,
                 'build_ext':build_ext,
                 'build':build},
       name="synopsis",
-      version=config.version,
+      version=version,
       maintainer="Stefan Seefeld",
       maintainer_email="stefan@fresco.org",
       description="source code introspection tool",
