@@ -26,7 +26,12 @@ public:
 private:
   virtual void visit(PTree::List *node);
   virtual void visit(PTree::Declarator *decl);
+  virtual void visit(PTree::ClassSpec *class_spec);
+  virtual void visit(PTree::EnumSpec *enum_spec);
   virtual void visit(PTree::Typedef *typed);
+
+  void translate_parameters(PTree::Node *,
+			    AST::TypeList, AST::Function::Parameters &);
 
   void add_comments(AST::Declaration, PTree::Node *);
   //. update positional information for the given
@@ -39,6 +44,7 @@ private:
   AST::SourceFile my_file;
   unsigned long   my_lineno;
   TypeTranslator  my_types;
+  AST::Scope      my_scope;
   bool            my_verbose;
   bool            my_debug;
   Buffer         *my_buffer;

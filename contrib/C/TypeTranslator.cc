@@ -39,10 +39,35 @@ AST::Type TypeTranslator::lookup(PTree::Encoding const &name)
 {
   Trace trace("TypeTranslator::lookup");
   trace << name;
-  AST::Type type;
   my_name = name;
+  AST::Type type;
   decode_type(name.begin(), type);
   return type;
+}
+
+AST::Type TypeTranslator::lookup_function_types(PTree::Encoding const &name,
+						AST::TypeList &parameters)
+{
+  Trace trace("TypeTranslator::lookup_function_types");
+  trace << name;
+  my_name = name;
+
+  PTree::Encoding::iterator i = name.begin();
+  assert(*i == 'F');
+  ++i;
+  while (true)
+  {
+    AST::Type parameter;
+    i = decode_type(i, parameter);
+    if (parameter)
+      parameters.append(parameter);
+    else
+      break;
+  }
+  ++i; // skip over '_'
+  AST::Type return_type;
+  i = decode_type(i, return_type);
+  return return_type;
 }
 
 AST::Type TypeTranslator::declare(AST::ScopedName name,
@@ -218,18 +243,18 @@ PTree::Encoding::iterator TypeTranslator::decode_func_ptr(PTree::Encoding::itera
     premod.append(postmod.get(0));
     postmod.erase(postmod.begin());
   }
-  AST::TypeList params;
-  while (1)
+  AST::TypeList parameters;
+  while (true)
   {
-    AST::Type param;
-    i = decode_type(i, param);
-    if (param)
-      params.append(type);
+    AST::Type parameter;
+    i = decode_type(i, parameter);
+    if (parameter)
+      parameters.append(parameter);
     else
       break;
   }
   ++i; // skip over '_'
   i = decode_type(i, type);
-  type = my_type_kit.create_function_ptr("C", type, premod, params);
+  type = my_type_kit.create_function_ptr("C", type, premod, parameters);
   return i;
 }

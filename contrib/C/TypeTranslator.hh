@@ -23,6 +23,7 @@ public:
   //. look up and return the named type. If this is a derived type,
   //. it may create a modifier and return that.
   AST::Type lookup(PTree::Encoding const &name);
+  AST::Type lookup_function_types(PTree::Encoding const &name, AST::TypeList &);
   AST::Type declare(AST::ScopedName name,
 		    AST::Declaration declaration);
 
