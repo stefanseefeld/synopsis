@@ -10,7 +10,7 @@
 # . Unite Nodes/NamespaceBuilder into TOC
 
 import sys, getopt, os, os.path, string, types
-from Synopsis import Type, Util, Visitor
+from Synopsis import AST, Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
 debug=1
@@ -472,6 +472,7 @@ class BaseFormatter:
         if oper.type() == "attribute": name = '%s %s %s'%(name, postmod, raises)
 	else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
 	self.writeSectionItem(type, name, oper)
+    visitFunction = visitOperation
 
     def visitVariable(self, variable):
         type = self.formatType(variable.vtype())
@@ -615,11 +616,6 @@ class DetailFormatter(BaseFormatter):
 	    self.write(string.join(refs, ", "))
 	
 	self.write("<br>")
-
-    def visitFunction(self, function):
-	# FIXME: Never seen a function used before (in IDL, anyway)
-	print "Visiting Function"
-	self.visitOperation(function)
 
     def formatOperationExceptions(self, oper):
         if len(oper.exceptions()):
@@ -866,7 +862,11 @@ class Paginator:
 	    for key in keys:
 		# Print out summary for the child
 		child = dict[key]
-		self.write(self.detailer.referenceName(child.name(), target='main'))
+		sinfo = toc.lookupName(child.name())
+		if isinstance(sinfo.node.declarations()[0], AST.Function):
+		    self.write(self.detailer.referenceName(child.name(), Util.ccolonName(sinfo.node.declarations()[0].realname(), ns.name()), target='main'))
+		else:
+		    self.write(self.detailer.referenceName(child.name(), target='main'))
 		self.write('<br>')
 	self.endFile()
 
