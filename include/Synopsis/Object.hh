@@ -1,4 +1,4 @@
-// $Id: Object.hh,v 1.3 2004/01/11 19:46:29 stefan Exp $
+// $Id: Object.hh,v 1.4 2004/01/14 04:03:48 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -55,7 +55,7 @@ public:
   Object(long value) : my_impl(PyInt_FromLong(value)) {}
   Object(bool value) : my_impl(PyInt_FromLong(value)) {}
   virtual ~Object() { Py_DECREF(my_impl);}
-  Object &operator = (Object o);
+  Object &operator = (const Object &o);
    
   int hash() const { return PyObject_Hash(my_impl);}
   operator bool () const { return my_impl != Py_None;}
@@ -67,8 +67,12 @@ public:
 		   const char *type) const
     throw(TypeError);
 
+  //. try to downcast to T, throw on failure
   template <typename T>
   static T narrow(Object) throw(TypeError);
+  //. more relaxed form of downcast, return None on failure
+  template <typename T>
+  static T try_narrow(Object);
   static Object import(const char *name);
 
   Object attr(const char *name) const;
@@ -88,7 +92,7 @@ inline Object::Object(PyObject *o)
   }
 }
 
-inline Object &Object::operator = (Object o)
+inline Object &Object::operator = (const Object &o)
 {
    Py_DECREF(my_impl);
    my_impl = o.my_impl;
@@ -133,6 +137,13 @@ template <typename T>
 inline T Object::narrow(Object o) throw(Object::TypeError)
 {
   return T(o.my_impl);
+}
+
+template <typename T>
+inline T Object::try_narrow(Object o)
+{
+  try { return T(o.my_impl);}
+  catch (const TypeError &) { return T();}
 }
 
 template <>
