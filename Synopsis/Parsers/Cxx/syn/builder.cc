@@ -113,25 +113,29 @@ Builder::Builder(const std::string &basename)
     m_scope = m_global;
     m_scopes.push(global);
     // Insert the global base types
-    Type::Base* t_bool;
+    Type::Base* t_bool, *t_null;
     global->dict->insert(Base("char"));
     global->dict->insert(t_bool = Base("bool"));
     global->dict->insert(Base("short"));
     global->dict->insert(Base("int"));
     global->dict->insert(Base("long"));
-    global->dict->insert(Base("signed"));
     global->dict->insert(Base("unsigned"));
+    global->dict->insert(Base("unsigned long"));
     global->dict->insert(Base("float"));
     global->dict->insert(Base("double"));
     global->dict->insert(Base("void"));
     global->dict->insert(Base("..."));
     global->dict->insert(Base("long long"));
     global->dict->insert(Base("long double"));
+    global->dict->insert(t_null = Base("__null_t"));
     // Add variables for true and false
     name.clear(); name.push_back("true");
     add(new AST::Variable("", -1, "variable", name, t_bool, false));
     name.clear(); name.push_back("false");
     add(new AST::Variable("", -1, "variable", name, t_bool, false));
+    // Add a variable for null pointer types (g++ #defines NULL to __null)
+    name.clear(); name.push_back("__null");
+    add(new AST::Variable("", -1, "variable", name, t_null, false));
 }
 
 Builder::~Builder()
@@ -553,6 +557,68 @@ Type::Named* Builder::lookupType(const std::string &name, AST::Scope* decl)
     return lookup(name, scope->search);
 }
 
+class TypeInfo : public Type::Visitor {
+public:
+    Type::Type* type;
+    bool is_const;
+    bool is_volatile;
+    bool is_null;
+    size_t deref;
+
+    //. Constructor
+    TypeInfo(Type::Type* t) {
+	type = t; is_const = is_volatile = is_null = false; deref = 0;
+	set(t);
+    }
+    //. Set to the given type
+    void set(Type::Type* t) {
+	type = t;
+	t->accept(this);
+    }
+    //. Base -- null is flagged since it is special
+    void visitBase(Type::Base* base) {
+	if (base->name().back() == "__null_t")
+	    is_null = true;
+    }
+    //. Modifiers -- recurse on the alias type
+    void visitModifier(Type::Modifier* mod) {
+	Type::Type::Mods::const_iterator iter;
+	// Check for const
+	for (iter = mod->pre().begin(); iter != mod->pre().end(); iter++)
+	    if (*iter == "const")
+		is_const = true;
+	    else if (*iter == "volatile")
+		is_volatile = true;
+	// Check for derefs
+	for (iter = mod->post().begin(); iter != mod->post().end(); iter++)
+	    if (*iter == "*")
+		deref++;
+	
+	set(mod->alias());
+    }
+    //. Declared -- check for typedef
+    void visitDeclared(Type::Declared* t) {
+	try {
+	    AST::Typedef* tdef = Type::declared_cast<AST::Typedef>(t);
+	    // Recurse on typedef alias
+	    set(tdef->alias());
+	} catch (const Type::wrong_type_cast&) {
+	    // Ignore -- just means not a typedef
+	}
+    }
+};
+
+//. Output operator for debugging
+std::ostream& operator << (std::ostream& o, TypeInfo& i) {
+    TypeFormatter tf;
+    o << "[" << tf.format(i.type);
+    if (i.is_const) o << " (const)";
+    if (i.is_volatile) o << " (volatile)";
+    if (i.deref) o << " " << i.deref << "*";
+    o << "]";
+    return o;
+}
+
 class FunctionHeuristic {
     typedef std::vector<Type::Type*> v_Type;
     typedef v_Type::iterator vi_Type;
@@ -561,9 +627,27 @@ class FunctionHeuristic {
 
     v_Type m_args;
     int cost;
+#ifdef DEBUG
+    STrace trace;
+#endif
 public:
     //. Constructor - takes arguments to match functions against
-    FunctionHeuristic(const v_Type& v) : m_args(v) {}
+    FunctionHeuristic(const v_Type& v) : m_args(v)
+#ifdef DEBUG
+	    , trace("FunctionHeuristic")
+    {
+	TypeFormatter tf;
+	std::ostrstream buf;
+	for (size_t index = 0; index < v.size(); index++) {
+	    if (index) buf << ", ";
+	    buf << tf.format(v[index]);
+	}
+	buf << std::ends;
+	LOG("Function arguments: " << buf.str());
+#else
+    {
+#endif
+    }
 
     //. Heuristic operator, returns 'cost' of given function - higher is
     //. worse, 1000 means no match
@@ -576,16 +660,18 @@ public:
 	int num_default = countDefault(params);
 
 	// Check number of params first
-	if (!func_ellipsis && num_args > num_params) return 1000;
-	if (num_args < num_params - num_default) return 1000;
+	if (!func_ellipsis && num_args > num_params) cost = 1000;
+	if (num_args < num_params - num_default) cost = 1000;
 	
-	// Now calc cost of each argument in turn
-	int max_arg = num_args > num_params ? num_params : num_args;
-	for (int index = 0; index < max_arg; index++)
-	    calcCost(m_args[index], (*params)[index]->type());
+	if (cost < 1000) {
+	    // Now calc cost of each argument in turn
+	    int max_arg = num_args > num_params ? num_params : num_args;
+	    for (int index = 0; index < max_arg; index++)
+		calcCost(m_args[index], (*params)[index]->type());
+	}
 
 #ifdef DEBUG
-	std::cout << "--Cost is " << cost << std::endl;
+	LOG("Function: " << func->name() << " -- Cost is " << cost);
 #endif
 	return cost;
     }
@@ -614,14 +700,24 @@ private:
 	return count;
     }
 
-    //. Calculate the cost of converting 'type' into 'param_type'. The cost is
+    //. Calculate the cost of converting 'arg' into 'param'. The cost is
     //. accumulated on the 'cost' member variable.
-    void calcCost(Type::Type* type, Type::Type* param_type) {
+    void calcCost(Type::Type* arg_t, Type::Type* param_t) {
 	TypeFormatter tf;
+	if (!arg_t) return;
+	TypeInfo arg(arg_t), param(param_t);
 #ifdef DEBUG
-	std::cout << tf.format(type) <<","<<tf.format(param_type) << std::endl;
+	// std::cout << arg << param << std::endl;
+	// // std::cout << tf.format(type) <<","<<tf.format(param_type) << std::endl;
 #endif
-	if (type != param_type) cost += 1;
+	// Null types convert to any ptr with no cost
+	if (arg.is_null && param.deref > 0) return;
+	// Different types is bad
+	if (arg.type != param.type) cost += 10;
+	// Different * levels is also bad
+	if (arg.deref != param.deref) cost += 10;
+	// Worse constness is bad
+	if (arg.is_const > param.is_const) cost += 5;
     }
 };
 
@@ -661,7 +757,7 @@ AST::Function* Builder::lookupFunc(const std::string &name, AST::Scope* decl, co
 	    } catch (const Type::wrong_type_cast &) { throw ERROR("looked up func '"<<name<<"'wasnt a func!"); }
 	
 	// If no looked up names were functions, program is ill-formed (?)
-	if (!functions.size()) return NULL;
+	if (!functions.size()) throw ERROR("No function found for name '"<<name<<"'!");
 
 	// Find best function using a heuristic
 	FunctionHeuristic heuristic(param_types);
@@ -753,6 +849,38 @@ Type::Named* Builder::lookupType(const std::vector<std::string>& names, bool fun
 	return Unknown(name);
     }
     return type;
+}
+
+//. Maps a scoped name into a vector of scopes and the final type. Returns
+//. true on success.
+bool Builder::mapName(const AST::Name& names, std::vector<AST::Scope*>& o_scopes, Type::Named*& o_type)
+{
+    AST::Scope* ast_scope = m_global;
+    AST::Name::const_iterator iter = names.begin();
+    AST::Name::const_iterator last = names.end(); last--;
+
+    // Sanity check
+    if (iter == names.end()) return false;
+
+    // Loop through all containing scopes
+    while (iter != last) {
+	const std::string& name = *iter++;
+	Type::Named* type = lookup(name, findScope(ast_scope)->search, true);
+	if (!type) { std::cout << "\nWarning: failed to lookup " << name << " in " << ast_scope->name() << std::endl; return false; }
+	try { ast_scope = Type::declared_cast<AST::Scope>(type); }
+	catch (const Type::wrong_type_cast&) { std::cout << "\nWarning: looked up scope wasnt a scope!" << name << std::endl; return false; }
+	o_scopes.push_back(ast_scope);
+    }
+
+    // iter now == last, which can be any type
+    Type::Named* type = lookup(*iter, findScope(ast_scope)->search, true);
+    if (!type) {
+	findScope(ast_scope)->dict->dump();
+	std::cout << "\nWarning: final type lookup wasn't found!" << *iter << endl; return false;
+    }
+
+    o_type = type;
+    return true;
 }
 
 Type::Named* Builder::resolveType(Type::Named* type)

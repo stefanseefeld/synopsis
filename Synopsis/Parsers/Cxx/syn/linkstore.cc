@@ -1,4 +1,4 @@
-// $Id: linkstore.cc,v 1.1 2001/06/10 00:31:39 chalky Exp $
+// $Id: linkstore.cc,v 1.2 2001/06/10 07:17:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.2  2001/06/10 07:17:37  chalky
+// Comment fix, better functions, linking etc. Better link titles
+//
 // Revision 1.1  2001/06/10 00:31:39  chalky
 // Refactored link storage, better comments, better parsing
 //
@@ -31,6 +34,9 @@
 #include "type.hh"
 #include "link_map.hh"
 #include "dumper.hh"
+#include "builder.hh"
+
+#include <strstream>
 
 #include "../ptree.h"
 #include "../parse.h"
@@ -77,7 +83,26 @@ void LinkStore::link(int line, int col, int len, Type type, const AST::Name& nam
 	}
 	m_link_file << (iter == name.begin() ? "" : "\t") << word;
     }
-    m_link_file << FS << desc << RS;
+    // Add the name to the description
+    std::vector<AST::Scope*> scopes;
+    ::Type::Named* vtype;
+    AST::Name short_name;
+    if (m_walker->getBuilder()->mapName(name, scopes, vtype)) {
+	for (size_t i = 0; i < scopes.size(); i++) {
+	    if (AST::Namespace* ns = dynamic_cast<AST::Namespace*>(scopes[i])) {
+		if (ns->type() == "function") {
+		    short_name.clear();
+		    continue;
+		}
+	    }
+	    short_name.push_back(scopes[i]->name().back());
+	}
+	short_name.push_back(vtype->name().back());
+    } else {
+	std::cout << "\nWARNING: couldnt map name " << name << std::endl;
+	short_name = name;
+    }
+    m_link_file << FS << desc << " " << short_name << RS;
 }
 
 void LinkStore::link(Ptree* node, Type type, const AST::Name& name, const std::string& desc)

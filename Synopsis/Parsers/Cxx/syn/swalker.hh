@@ -51,6 +51,8 @@ public:
     Parser* getParser();
     //. Get the Program object
     Program* getProgram();
+    //. Get the Builder object
+    Builder* getBuilder();
     //. Get the TypeFormatter object
     TypeFormatter* getTypeFormatter();
 

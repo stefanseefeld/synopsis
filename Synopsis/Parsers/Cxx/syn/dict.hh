@@ -56,6 +56,9 @@ public:
     //. type and its last string used as they key.
     void insert(Type::Named* named);
 
+    //. Dump the contents for debugging
+    void dump();
+
 
 private:
     struct Data;

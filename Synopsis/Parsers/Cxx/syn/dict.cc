@@ -4,6 +4,7 @@
 #include "dict.hh"
 #include "ast.hh"
 #include "type.hh"
+#include "builder.hh"
 
 #include <map>
 #include <vector>
@@ -96,4 +97,14 @@ void Dictionary::insert(AST::Declaration* decl)
     insert(declared);
     AST::Function* func = dynamic_cast<AST::Function*>(decl);
     if (func) m->map.insert(name_map::value_type(func->realname(), declared));
+}
+
+void Dictionary::dump()
+{
+    name_map::iterator iter = m->map.begin(), end = m->map.end();
+    std::cout << "Dumping dictionary: " << m->map.size() << " items.\n";
+    while (iter != end) {
+	name_map::value_type p = *iter++;
+	std::cout << "   " << p.first << "\t-> " << p.second->name() << "\n";
+    }
 }

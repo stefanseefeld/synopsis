@@ -132,6 +132,10 @@ public:
     //. Looks up the function in the given scope with the given args. 
     AST::Function* lookupFunc(const std::string &, AST::Scope*, const std::vector<AST::Parameter*>&);
 
+    //. Maps a scoped name into a vector of scopes and the final type. Returns
+    //. true on success.
+    bool mapName(const AST::Name& name, std::vector<AST::Scope*>&, Type::Named*&);
+
     //. Resolves the final type of the given type. If the given type is an
     //. Unknown, it checks to see if the type has been defined yet and returns
     //. that instead.

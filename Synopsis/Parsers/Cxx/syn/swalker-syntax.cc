@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.6 2001/06/10 00:31:39 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.7 2001/06/10 07:17:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.7  2001/06/10 07:17:37  chalky
+// Comment fix, better functions, linking etc. Better link titles
+//
 // Revision 1.6  2001/06/10 00:31:39  chalky
 // Refactored link storage, better comments, better parsing
 //
@@ -101,6 +104,8 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		if (!type) { throw nodeERROR(spec, "scope '" << getName(spec->First()) << "' not found!"); }
 		try { m_scope = Type::declared_cast<AST::Scope>(type); }
 		catch (const Type::wrong_type_cast&) { throw nodeERROR(spec, "scope '"<<getName(spec->First())<<"' found but not a scope!"); }
+		// Link the scope name
+		if (m_links) m_links->link(spec->First(), m_scope->declared());
 		spec = spec->Rest()->Rest();
 	    }
 	    spec = spec->First();
@@ -139,6 +144,10 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		    throw nodeERROR(spec, "var was not a Variable nor Enumerator!");
 		}
 	    } catch (const std::bad_cast &) {
+		if (dynamic_cast<Type::Unknown*>(type))
+		    throw nodeERROR(spec, "variable '" << name << "' was an Unknown type!");
+		if (dynamic_cast<Type::Base*>(type))
+		    throw nodeERROR(spec, "variable '" << name << "' was a Base type!");
 		throw nodeERROR(spec, "variable '" << name << "' wasn't a declared type!");
 	    }
 	} else {
@@ -190,17 +199,30 @@ Ptree* SWalker::TranslateFuncall(Ptree* node) {	// and fstyle cast
     // doh! That means more m_type nastiness
     //
     // [ postfix ( args ) ]
-
+    LOG(node);
     // In translating the postfix the last var should be looked up as a
     // function. This means we have to find the args first, and store them in
     // m_params as a hint
     std::vector<AST::Parameter*> save_params = m_params;
-    m_params.empty();
-    TranslateFunctionArgs(node->Third());
+    m_params.clear();
+    try {
+	TranslateFunctionArgs(node->Third());
+    } catch (...) {
+	// Restore params before rethrowing exception
+	m_params = save_params;
+	throw;
+    }
 
     Postfix_Flag save_flag = m_postfix_flag;
-    m_postfix_flag = Postfix_Func;
-    Translate(node->First());
+    try {
+	m_postfix_flag = Postfix_Func;
+	Translate(node->First());
+    } catch (...) {
+	// Restore params and flag before rethrowing exception
+	m_params = save_params;
+	m_postfix_flag = save_flag;
+	throw;
+    }
 
     // Restore m_params since we're done with it now
     m_params = save_params;
