@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
 import os, sys, string, re, stat
 from stat import *
 import os.path
@@ -36,6 +43,8 @@ class build_doc(build.build):
       if not (self.html or self.printable): # if no option was given, do both
          self.html = self.printable = True
       build.build.finalize_options(self)
+
+      self.extensions = self.distribution.ext_modules
          
    def run(self):
       """Run this command, i.e. do the actual document generation."""
@@ -49,28 +58,53 @@ class build_doc(build.build):
       """Build the manual."""
         
       self.announce("building reference manual")
-      srcdir = os.path.abspath('doc/Manual/')
+
       tempdir = os.path.abspath(os.path.join(self.build_temp,
-                                             'share/doc/Synopsis/Manual'))
+                                             'doc/Manual'))
+
+      # start by building the docs for all the extensions
+
+      build_ext = self.distribution.get_command_obj('build_ext')
+      build_ext.ensure_finalized()
+
+      for e in self.extensions:
+         # replace 'foo.so' by 'foo.syn' as the new target
+         e = e[0], os.path.splitext(e[1])[0] + '.syn'
+         build_ext.build_extension(e, False)
+
+         if os.path.exists(os.path.join(build_ext.build_temp, e[0], e[1])):
+            copy_file(os.path.join(build_ext.build_temp, e[0], e[1]),
+                      os.path.join(tempdir, e[1]))
+            copy_tree(os.path.join(build_ext.build_temp, e[0], 'links'),
+                      os.path.join(tempdir, 'links'))
+            copy_tree(os.path.join(build_ext.build_temp, e[0], 'xref'),
+                      os.path.join(tempdir, 'xref'))
+         
+      # now run make inside doc/Manual to do the rest
+
+      srcdir = os.path.abspath('doc/Manual/')
+
       cwd = os.getcwd()
       mkpath(tempdir, 0777, self.verbose, self.dry_run)
 
       make = os.environ.get('MAKE', 'make')
 
       if self.html:
-         spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-                'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'html'])
+         #spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
+         #       'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'html'])
+         spawn([make, '-C', tempdir, 'html'])
       if self.printable:
-         spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
-                'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'pdf'])
+         spawn([make, '-C', tempdir, 'pdf'])
+         #spawn([make, '-s', '-f', srcdir + '/Makefile', '-C', tempdir,
+         #       'srcdir=%s'%srcdir, 'topdir=%s'%cwd, 'pdf'])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis'))
       if os.path.isdir(os.path.join(builddir, 'html', 'Manual')):
          rmtree(os.path.join(builddir, 'html', 'Manual'), 1)
       mkpath(os.path.join(builddir, 'html'), 0777, self.verbose, self.dry_run)
-      copytree(os.path.join(tempdir, 'html'),
-               os.path.join(builddir, 'html', 'Manual'))
+      copy_tree(os.path.join(tempdir, 'html'),
+                os.path.join(builddir, 'html', 'Manual'))
       copy_file(os.path.join(tempdir, 'all.xref'),
                 os.path.join(builddir, 'html', 'Manual', 'xref_db'))
       if self.printable:
@@ -84,7 +118,7 @@ class build_doc(build.build):
       self.announce("building tutorial")
       srcdir = os.path.abspath('doc/Tutorial/')
       tempdir = os.path.abspath(os.path.join(self.build_temp,
-                                             'share/doc/Synopsis/Tutorial'))
+                                             'doc/Tutorial'))
       cwd = os.getcwd()
       mkpath(tempdir, 0777, self.verbose, self.dry_run)
 
@@ -103,8 +137,8 @@ class build_doc(build.build):
          if os.path.isdir(os.path.join(builddir, 'html', 'Tutorial')):
             rmtree(os.path.join(builddir, 'html', 'Tutorial'), 1)
          mkpath(os.path.join(builddir, 'html'), 0777, self.verbose, self.dry_run)
-         copytree(os.path.join(tempdir, 'html'),
-                  os.path.join(builddir, 'html', 'Tutorial'))
+         copy_tree(os.path.join(tempdir, 'html'),
+                   os.path.join(builddir, 'html', 'Tutorial'))
       if self.printable:
          mkpath(os.path.join(builddir, 'print'), 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Tutorial.pdf'),

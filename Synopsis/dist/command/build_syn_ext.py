@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2003 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
 import os, sys, string
 
 from distutils.command.build_ext import build_ext
@@ -49,7 +56,7 @@ class build_syn_ext(build_ext):
 
         return output
 
-    def build_extension(self, ext):
+    def build_extension(self, ext, copy=True):
 
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
 
@@ -65,7 +72,7 @@ class build_syn_ext(build_ext):
         command = "%s -C %s %s"%(make, path, ext[1])
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         #The extension may not be compiled. For now just skip it.
-        if os.path.isfile(os.path.join(path, ext[1])):
+        if copy and os.path.isfile(os.path.join(path, ext[1])):
             
             if self.inplace: build_path = ext[0]
             else: build_path = os.path.join(self.build_lib, ext[0])            

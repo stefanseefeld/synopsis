@@ -4,7 +4,6 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Processors import Linker
 from Synopsis.Formatters import Dump
 
-process(parse = Composite(Cxx.Parser(),
+process(parse = Composite(Cxx.Parser(base_path = '@abs_top_srcdir@'),
                           Linker(),
-                          Dump.Formatter(show_ids = False,
-                                         stylesheet = None)))
+                          Dump.Formatter(show_ids = False, stylesheet = None)))

@@ -24,16 +24,13 @@ python = Composite(Python.Parser(basename = topdir + '/'),
 
 cxx = Cxx.Parser(base_path = topdir,
                  cppflags = ['-I%s'%(topdir + '/include'),
-                             '-I%s'%(topdir + '/Synopsis/Parsers/Cxx'),
                              '-I%s'%(sysconfig.get_python_inc())],
                  syntax_prefix='links',
                  xref_prefix='xref')
 
 cxx_processor = Linker(SSDComments(),
                        JavaTags(),
-                       Summarizer(),
-                       NamePrefixer(prefix = ['Synopsis', 'Parsers', 'Cxx', 'Parser'],
-                                    type = 'Package'))
+                       Summarizer())
 
 html = HTML.Formatter(toc_out = 'links.toc',
                       file_layout = NestedFileLayout(),

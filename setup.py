@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.22 2003/12/30 19:32:21 stefan Exp $
+# Copyright (C) 2004 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
 #
 # Setup script for synopsis
 #
@@ -15,6 +18,7 @@ from Synopsis.config import *
 from Synopsis.dist.command.config import config
 from Synopsis.dist.command.build_doc import build_doc
 from Synopsis.dist.command.build_syn_ext import build_syn_ext
+from Synopsis.dist.command.test import test
 
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
@@ -72,7 +76,8 @@ data_files.extend(documentation)
 
 setup(cmdclass={'config':config,
                 'build_doc':build_doc,
-                'build_ext':build_syn_ext},
+                'build_ext':build_syn_ext,
+                'test':test},
       name="synopsis",
       version=version,
       maintainer="Stefan Seefeld",
