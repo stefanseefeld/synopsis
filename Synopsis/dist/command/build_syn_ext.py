@@ -10,6 +10,8 @@ class build_ext(build_ext.build_ext):
 
     def run(self):
 
+        if not os.path.exists(self.build_temp):
+            self.run_command('config')
         for ext in self.extensions:
             self.build_extension(ext)
 
@@ -31,7 +33,7 @@ class build_ext(build_ext.build_ext):
 
         output = []
         for ext in self.extensions:
-            #only append the files that actually could be build
+            #only append the files that actually could be built
             path = os.path.join(self.build_temp, ext[0], ext[1])
             if os.path.isfile(path):
                 output.append(os.path.join(self.build_lib, ext[0], ext[1]))
@@ -45,8 +47,9 @@ class build_ext(build_ext.build_ext):
 
         path = os.path.join(self.build_temp, ext[0])
         if not os.path.exists(path):
-            self.run_command('config')
-
+            self.announce("...not configured, skipping")
+            return
+        
         command = "make -C %s %s"%(path, ext[1])
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         #The extension may not be compiled. For now just skip it.

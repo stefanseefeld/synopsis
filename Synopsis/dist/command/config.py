@@ -14,21 +14,26 @@ class config(build.build):
 
     user_options = build.build.user_options[:] + [
         ('disable-gc', None,
-         "whether or not to build the C++ parser with the garbage collector")
+         "whether or not to build the C++ parser with the garbage collector"),
+        ('enable-c', None,
+         "whether or not to build the C parser")
         ]
-    boolean_options = build.build.boolean_options[:] + ['disable-gc']
+    boolean_options = build.build.boolean_options[:] + ['disable-gc', 'enable-c']
 
     def initialize_options (self):
         build.build.initialize_options(self)
         self.disable_gc = 0
+        self.enable_c = 0
 
     def finalize_options (self):
         build.build.finalize_options(self)
         # only append the path once 
         self.extensions = []
         for e in self.distribution.ext_modules:
-            if not self.extensions.count(e[0]):
+            if e[0] not in self.extensions:
                 self.extensions.append(e[0])
+        if not self.enable_c and 'Synopsis/Parser/C' in self.extensions:
+            self.extensions.remove('Synopsis/Parser/C')
 
     def run(self):
 
