@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.12 2002/05/01 00:27:50 stefan Exp $
+# $Id: Makefile,v 1.13 2003/01/16 18:24:10 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -27,7 +27,7 @@ endif
 endif
 
 SRC	:= __init__.py __init__.pyc Type.py Type.pyc AST.py AST.pyc Util.py Util.pyc \
-           Action.pyc Executor.pyc Project.pyc
+           Action.pyc Executor.pyc Project.pyc FileTree.py FileTree.pyc
 
 all:
 clean:
