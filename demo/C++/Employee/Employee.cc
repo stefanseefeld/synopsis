@@ -11,6 +11,9 @@
  * Representation of an Employee. This class follows the (in)famous example of
  * being an Employee, used in many C++ courses. Employees have names and IDs.
  * If this were a bigger example they might have more.
+ * @see Employee.Employee
+ * @see Employee.Employee()
+ * @see Employee.Employee(string,string)
  * @see Employee.name()
  * @see Employee.id()
  * @see name()
