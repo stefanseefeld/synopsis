@@ -528,5 +528,12 @@ char *nameOfBinaryOp(BinaryOp op);
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
+void PrintRelOp(std::ostream& out, RelOp op);
+void PrintBinaryOp(std::ostream& out, BinaryOp op);
+void PrintUnaryOp(std::ostream& out, UnaryOp op);
+void PrintAssignOp(std::ostream& out, AssignOp op);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+
 #endif  /* EXPRESS_H */
 
