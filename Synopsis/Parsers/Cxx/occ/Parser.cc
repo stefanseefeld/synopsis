@@ -4071,7 +4071,7 @@ bool Parser::moreVarName()
 /*
   template.args : '<' any* '>'
 
-  template.args must be followed by '(' or '::'
+  template.args must be followed by '(', '::', ';', or ','
 */
 bool Parser::isTemplateArgs()
 {
@@ -4102,7 +4102,7 @@ bool Parser::isTemplateArgs()
 	}
 
 	t = lex->LookAhead(i);
-	return bool(t == Scope || t == '(');
+	return bool(t == Scope || t == '(' || t == ';' || t == ',');
     }
 
     return false;
