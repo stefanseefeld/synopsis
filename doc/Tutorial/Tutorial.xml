@@ -19,13 +19,16 @@
 
     <section>
       <title>Inspecting code</title>
+
       <!-- Talk about the problem domain:
          code documentation, software metrics, etc. -->
+
       <para></para>
     </section>
 
     <section>
       <title>The Abstract Syntax Tree</title>
+
       <!-- Talk about source code and its representation
          inside synopsis -->
 
@@ -34,6 +37,7 @@
 
     <section>
       <title>The synopsis processing pipeline</title>
+
       <!-- Talk about AST manipulation as done 
          in synopsis -->
 
@@ -42,6 +46,7 @@
 
     <section>
       <title>The synopsis executable</title>
+
       <!-- Talk about the simplest frontend, the
          synopsis executable: basic usage, options, etc. -->
 
@@ -51,20 +56,121 @@
 
   <chapter>
     <title>Writing a processing pipeline</title>
-      <!-- When the synopsis executable isn't
+
+    <!-- When the synopsis executable isn't
            powerful enough... -->
 
     <para></para>
 
     <section>
       <title>The Processor class</title>
+
       <!-- Talk about the Processor class design -->
 
-      <para></para>
+      <para>The Processor class is at the core of the synopsis framework. It
+      is the basic building block out of which processing pipelines can be
+      composed.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/processor.svg" format="SVG" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/processor.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
+
+      <para>The requirement that processors can be composed into a pipeline
+      has some important consequences for its design. The process method takes
+      an ast argument, which it will operate on, and then return. It is this
+      ast that forms the backbone of the pipeline, as it is passed along from
+      one processor to the next. Additionally, parameters may be passed to the
+      processor, such as input and output.</para>
+
+      <programlisting>def process(self, ast, **keywords):
+
+  self.set_parameters(keywords)
+  self.ast = self.merge_input(ast)
+
+  # do the work here...
+
+  return self.output_and_return_ast()</programlisting>
+
+      <para>Depending on the nature of the processor, it may parse the input
+      file as source code, or simply read it in from a persistent state. In
+      any case, the result of the input reading is merged in with the existing
+      ast.</para>
+
+      <programlisting>def process(self, ast, **keywords):
+
+  self.set_parameters(keywords)
+
+  for file in self.input:
+    self.ast.merge(self.parse(file))
+
+  return self.output_and_return_ast()</programlisting>
+
+      <para>Similarly with the output: if an output parameter is defined, the
+      ast may be stored in that file before it is returned. Or, if the
+      processor is a formatter, the output parameter may indicate the file /
+      directory name to store the formatted output in.</para>
+
+      <programlisting>def process(self, ast, **keywords):
+  
+  self.set_parameters(keywords)
+  self.ast = self.merge_input(ast)
+  
+  self.format(self.output)
+  
+  return set.ast</programlisting>
+    </section>
+
+    <section>
+      <title>Composing a pipeline</title>
+
+      <para>With such a design, processors can simply be chained together:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/pipeline.svg" format="SVG" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/pipeline.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
+
+      <programlisting>parser = ...
+linker = ...
+formatter = ...
+ast = AST()
+formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;])), output=&#39;html&#39;)</programlisting>
+
+      <para>And, to be a little bit more scalable, and to allow the use of
+      dependency tracking build tools such as make, the intermediate asts can
+      be persistet into files:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/pipelines.svg" format="SVG" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/pipelines.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
+
+      <programlisting>parser.process(AST(), input = [&#39;source1.hh&#39;], output = &#39;source1.syn&#39;)</programlisting>
+
+      <programlisting>parser.process(AST(), input = [&#39;source2.hh&#39;], output = &#39;source2.syn&#39;)</programlisting>
+
+      <programlisting>formatter.process(linker.process(AST(), input = [&#39;source1.syn&#39;, &#39;source2.syn&#39;]), output = &#39;html&#39;)</programlisting>
     </section>
 
     <section>
       <title>Parameters and the order of initialization</title>
+
       <!-- Talk about the Parameter setting for processors and
            other 'Parametrized' -->
 
@@ -75,6 +181,28 @@
       <title></title>
 
       <para></para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>The AST type hierarchy</title>
+
+    <para></para>
+
+    <section>
+      <title>Recording declarations</title>
+
+      <para></para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/ast.svg" format="SVG" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/ast.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
     </section>
   </chapter>
 </book>
