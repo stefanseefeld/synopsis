@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.hh header file
 // Defines the FileFilter class for filtering the AST based on filename
 
-// $Id: filter.hh,v 1.1 2002/12/09 04:01:00 chalky Exp $
+// $Id: filter.hh,v 1.2 2002/12/09 12:14:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -104,6 +104,11 @@ public:
 
     //. Returns a list of all the sourcefiles
     void get_all_sourcefiles(AST::SourceFile::vector&);
+
+    //. Returns all the filenames given to the parser.
+    //. @param main a pointer to the main filename will be stored here
+    //. @param extra a pointer to the extra filenames will be stored here
+    void get_all_filenames(const std::string*& main, const std::vector<std::string>*& extra);
 
 private:
     struct Private;

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.cc source file
 // Implementation of the FileFilter class
 
-// $Id: filter.cc,v 1.2 2002/12/09 07:42:16 chalky Exp $
+// $Id: filter.cc,v 1.3 2002/12/09 12:14:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -285,4 +285,12 @@ void FileFilter::get_all_sourcefiles(AST::SourceFile::vector& all)
     for (iter = m->file_map.begin(); iter != m->file_map.end(); iter++)
         all.push_back(iter->second);
 }
+
+// Returns all filenames
+void FileFilter::get_all_filenames(const std::string*& main, const std::vector<std::string>*& extra)
+{
+    main = &m->main_filename;
+    extra = &m->extra_filenames;
+}
+
 // vim: set ts=8 sts=4 sw=4 et:
