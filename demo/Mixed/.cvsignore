@@ -3,3 +3,5 @@ interface
 interface.toc
 Storage{.hh,SK.cc}
 implementation
+StorageSK.cc
+Storage.hh
