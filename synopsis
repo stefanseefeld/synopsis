@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.15 2001/01/07 16:20:08 chalky Exp $
+# $Id: synopsis,v 1.16 2001/01/08 05:21:11 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -28,7 +28,7 @@ pickle = cPickle
 
 from Synopsis import Type, AST
 
-def version(): print "synopsis version 0.1"
+def version(): print "synopsis version 0.2"
 cmdname = os.path.basename(sys.argv[0])
 def usage():
     print "\nUsage:", cmdname, "[flags] files"
@@ -48,10 +48,12 @@ The supported flags are:
   -h,   --help                         Print this usage message and exit
 
 Linker options:
-  -s <Scope>                            Link only the named scope.
+  -s <Scope>                           Link only the named scope.
                                        May be used multiple times.
 		                       Default is to link all input.
 		                       Eg: -Wl,-s,Prague,-s,Berlin::Console
+  -m                                   Link only declarations in the main
+				       files being processed.
 
 HTML options:
     use -f HTML -Wf,-h  with valid input to see usage.

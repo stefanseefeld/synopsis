@@ -44,7 +44,11 @@ class Dumper:
     def visit(self, obj):
 	i,t = id(obj), type(obj)
 	if self.visited.has_key(i):
-	    self.write("<already visited %s ( %d )>"%(t,i))
+	    if t == types.InstanceType: t = obj.__class__.__name__+" instance"
+	    if hasattr(obj, 'name'):
+		self.write("<already visited %s ( %d ) '%s'>"%(t,i,string.join(obj.name(),"::")))
+	    else:
+		self.write("<already visited %s ( %d )>"%(t,i))
 	    return
 	if self.handlers.has_key(t):
 	    self.handlers[t](obj)
@@ -66,6 +70,16 @@ class Dumper:
 	if len(obj) == 0:
 	    self.write("()")
 	    return
+	# Check if all strings
+	strings = 1
+	for elem in obj:
+	    if type(elem) != types.StringType:
+		strings = 0
+		break
+	if strings:
+	    self.write("( "+string.join(obj,"::")+" )")
+	    return
+	# Else write one per line
         self.writeln("( ")
 	self.indent()
 	if len(obj): self.visit(obj[0])
@@ -77,6 +91,15 @@ class Dumper:
     def visitList(self, obj):
 	if len(obj) == 0:
 	    self.write("[]")
+	    return
+	# Check if all strings
+	strings = 1
+	for elem in obj:
+	    if type(elem) != types.StringType:
+		strings = 0
+		break
+	if strings:
+	    self.write("[ "+string.join(obj,"::")+" ]")
 	    return
         self.writeln("[ ")
 	self.indent()

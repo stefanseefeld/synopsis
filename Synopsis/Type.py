@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.8 2001/02/05 05:23:14 chalky Exp $
+# $Id: Type.py,v 1.9 2001/04/17 15:47:26 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Type.py,v $
+# Revision 1.9  2001/04/17 15:47:26  chalky
+# Added declaration name mapper, and changed refmanual to use it instead of the
+# old language mapping
+#
 # Revision 1.8  2001/02/05 05:23:14  chalky
 # Dict merge overwrites Unknowns
 #
@@ -65,17 +69,25 @@ class Type:
 	#print "Type.__cmp__"
 	return cmp(id(self),id(other))
 
-class Base (Type):
+class Named (Type):
+    """Named type abstract class"""
+    def __init__(self, language, name):
+	Type.__init__(self, language)
+	if type(name) != type(()) and type(name) != type([]):
+	    raise TypeError,"Name must be scoped"
+	self.__name = tuple(name)
+    def name(self):
+	"""Returns the name of this type as a scoped tuple"""
+	return self.__name
+    def set_name(self, name):
+	"""Changes the name of this type"""
+	self.__name = name
+
+class Base (Named):
     """Class for base types"""
 
     def __init__(self, language, name):
-        Type.__init__(self, language)
-        self.__name  = name
-	if type(name) != type(()) and type(name) != type([]):
-	    raise TypeError,"Name must be scoped"
-    def name(self):
-        """name of this type"""
-        return self.__name
+        Named.__init__(self, language, name)
     def accept(self, visitor): visitor.visitBaseType(self)
     def __cmp__(self, other):
 	"Comparison operator"
@@ -84,18 +96,12 @@ class Base (Type):
 	    cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.__name)
 
-class Unknown(Type):
+class Unknown(Named):
     """Class for not (yet) known type"""
     base = Type
     def __init__(self, language, name):
-        Type.__init__(self, language)
-        self.__name = name
+        Named.__init__(self, language, name)
         self.__link = name
-	if type(name) != type(()) and type(name) != type([]):
-	    raise TypeError,"Name must be scoped"
-    def name(self):
-        """name of this type"""
-        return self.__name
     def link(self):
         """external reference this type may be associated with"""
         return self.__link
@@ -111,19 +117,15 @@ class Unknown(Type):
 	return ccmp(self,other) or cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.__name)
 
-class Declared (Type):
+class Declared (Named):
     """Class for declared types"""
 
     def __init__(self, language, name, declaration):
-        Type.__init__(self, language)
-        self.__name  = name
+        Named.__init__(self, language, name)
         self.__declaration = declaration
     def declaration(self):
         """declaration object which corresponds to this type"""
         return self.__declaration
-    def name(self):
-        """scoped name of the type"""
-        return self.__name
     def accept(self, visitor): visitor.visitDeclared(self)
     def __cmp__(self, other):
 	"Comparison operator"
