@@ -97,7 +97,7 @@ int  get_lineno (bool file_ppln,char *txt, Statement** stement);
 void yywarn  (char *s);
 int  yyerror (char *s);
 int  yyerr   (char *s);
-int  yyerr   (char *s, std::string & str);
+int  yyerr   (char *s, const std::string & str);
 
 /******************************************************/
 

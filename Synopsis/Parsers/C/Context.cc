@@ -47,7 +47,7 @@
 
 /* o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o */
 
-EXTERN int yyerr ARGS((char* s, std::string& str));
+EXTERN int yyerr ARGS((char* s, const std::string& str));
 EXTERN int yyerr ARGS((char* s));
 EXTERN int yywarn ARGS((char* s));
 EXTERN int err_top_level;
