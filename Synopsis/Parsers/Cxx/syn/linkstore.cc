@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: linkstore.cc,v 1.8 2002/01/28 13:17:24 chalky Exp $
+// $Id: linkstore.cc,v 1.9 2002/01/29 09:42:09 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.9  2002/01/29 09:42:09  chalky
+// Tabify xref scopes
+//
 // Revision 1.8  2002/01/28 13:17:24  chalky
 // More cleaning up of code. Combined xref into LinkStore. Encoded links file.
 //
@@ -330,6 +333,8 @@ void LinkStore::store_xref_record(const AST::Declaration* decl, const std::strin
     return;
   AST::Scope* container = m_walker->builder()->scope();
   //m->refs[decl->name()].push_back(AST::Reference(file, line, container->name(), context));
-  (*m_xref_stream) << encode(join(decl->name(), "::")) << FS << file << FS << line << FS
-    << encode(join(container->name(), "::")) << FS << m_context_names[context] << RS;
+  std::string container_str = join(container->name(), "\t");
+  if (!container_str.size()) container_str = "\t";
+  (*m_xref_stream) << encode(join(decl->name(), "\t")) << FS << file << FS << line << FS
+    << encode(container_str) << FS << m_context_names[context] << RS;
 }
