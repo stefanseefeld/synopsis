@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.31 2002/11/01 07:21:15 chalky Exp $
+# $Id: Part.py,v 1.32 2003/01/20 06:43:02 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.32  2003/01/20 06:43:02  chalky
+# Refactored comment processing. Added AST.CommentTag. Linker now determines
+# comment summary and extracts tags. Increased AST version number.
+#
 # Revision 1.31  2002/11/01 07:21:15  chalky
 # More HTML formatting fixes eg: ampersands and stuff
 #
@@ -134,7 +138,7 @@ from Synopsis.Core import AST, Type, Util
 
 # HTML modules
 import Tags, core, FormatStrategy
-from core import config
+from core import config, DeclStyle
 from Tags import *
 
 class Part(Type.Visitor, AST.Visitor):
@@ -162,6 +166,7 @@ class Part(Type.Visitor, AST.Visitor):
 	    'formatConst':[], 'formatFunction':[], 'formatOperation':[], 
 	}
     
+    def page(self): return self.__page
     def filename(self): return self.__page.filename()
     def os(self): return self.__page.os()
     def scope(self): return self.__page.scope()
@@ -404,11 +409,6 @@ class Summary(Part):
 	    return span('name',self.reference(ref, Util.ccolonName(label, self.scope())))
 	return Part.label(self, ref, label)
 	
-    def getSummary(self, node):
-	comment = config.comments[node].summary
-	if len(comment): return div('summary', comment)
-	else: return ''
-
     def writeSectionStart(self, heading):
 	"""Starts a table entity. The heading is placed in a row in a td with
 	the class 'heading'."""
@@ -430,7 +430,8 @@ class Summary(Part):
 
     def process(self, decl):
 	"Print out the summaries from the given decl"
-	comments = config.comments
+	decl_style = config.decl_style
+	SUMMARY = DeclStyle.SUMMARY
 	config.link_detail = 0
 	
 	config.sorter.set_scope(decl)
@@ -445,7 +446,7 @@ class Summary(Part):
 	    # Iterate through the children in this section
 	    for child in config.sorter.children(section):
 		# Check if need to add to detail list
-		if comments[child].has_detail:
+		if decl_style[child] != SUMMARY:
 		    # Setup the linking stuff
 		    self.set_link_detail(1)
 		    child.accept(self)
@@ -468,11 +469,6 @@ class Detail(Part):
 	#self.addFormatter( ClassHierarchySimple )
 	self.addFormatter( FormatStrategy.DetailCommenter )
 
-    def getDetail(self, node):
-	comment = config.comments[node].detail
-	if comment and len(comment): return '<br>'+div('desc', comment)
-	else: return ''
-
     def writeSectionStart(self, heading):
 	"""Creates a table with one row. The row has a td of class 'heading'
 	containing the heading string"""
@@ -486,7 +482,8 @@ class Detail(Part):
 
     def process(self, decl):
 	"Print out the details for the children of the given decl"
-	comments = config.comments
+	decl_style = config.decl_style
+	SUMMARY = DeclStyle.SUMMARY
 
 	config.sorter.set_scope(decl)
 	config.sorter.sort_section_names()
@@ -500,7 +497,7 @@ class Detail(Part):
 	    # Iterate through the children in this section
 	    for child in config.sorter.children(section):
 		# Check if need to add to detail list
-		if not comments[child].has_detail:
+		if decl_style[child] == SUMMARY:
 		    continue
 		# Check section heading
 		if not started:
