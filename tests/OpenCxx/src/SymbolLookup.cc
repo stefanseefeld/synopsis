@@ -5,36 +5,22 @@
 #include <PTree.hh>
 #include <PTree/Display.hh>
 #include <PTree/Writer.hh>
+#include <SymbolLookup.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 
 using namespace Synopsis;
 
-class ScopeFinder : public PTree::Visitor
+class SymbolFinder : public SymbolLookup::Visitor
 {
 public:
-  ScopeFinder(std::ostream &os)
-    : my_os(os) {}
+  SymbolFinder(SymbolLookup::Table &table, std::ostream &os)
+    : SymbolLookup::Visitor(table), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
-  void visit(PTree::List *l) 
+  virtual void visit(PTree::Declarator *decl)
   {
-    if (l->car()) l->car()->accept(this);
-    if (l->cdr()) l->cdr()->accept(this);
-  }
-
-  virtual void visit(PTree::ClassSpec *spec)
-  {
-    PTree::Node *name = PTree::second(spec);
-    my_os << "Class Spec for '" << PTree::reify(name) << "':\n";
-    PTree::Node *body = PTree::tail(spec, 3);
-    body->accept(this);
-  }
-  virtual void visit(PTree::ClassBody *body)
-  {
-    PTree::Scope *scope = body->scope();
-    scope->dump(my_os);
   }
 
   std::ostream &my_os;
@@ -53,9 +39,10 @@ int main(int argc, char **argv)
     std::ifstream ifs(argv[2]);
     Buffer buffer(ifs.rdbuf());
     Lexer lexer(&buffer);
-    Parser parser(&lexer);
-    ScopeFinder finder(ofs);
+    SymbolLookup::Table symbols;
+    Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
+    SymbolFinder finder(symbols, ofs);
     finder.find(node);
   }
   catch (const std::exception &e)

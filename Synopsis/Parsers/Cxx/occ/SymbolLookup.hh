@@ -11,5 +11,6 @@
 #include <SymbolLookup/Scope.hh>
 #include <SymbolLookup/Scopes.hh>
 #include <SymbolLookup/Table.hh>
+#include <SymbolLookup/Visitor.hh>
 
 #endif

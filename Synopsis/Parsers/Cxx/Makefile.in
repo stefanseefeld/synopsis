@@ -32,6 +32,7 @@ OCC_FILES := PTree/Node PTree/Encoding PTree/operations \
              PTree/Visitor PTree/Display PTree/Writer \
              SymbolLookup/Scope SymbolLookup/Scopes \
              SymbolLookup/ConstEvaluator SymbolLookup/Table \
+             SymbolLookup/Visitor \
              Buffer HashTable Lexer Parser \
              Environment TypeInfo TypeInfoVisitor \
              Walker Class ClassWalker \

@@ -196,8 +196,19 @@ class OpenCxxTest(Test):
          if test.stderr: result['synopsis_test.error'] = test.stderr
 
       else:
-         expected = string.join(open(self.expected, 'r').readlines(), '')
-         output = string.join(open(self.output, 'r').readlines(), '')
+         try:
+            expected = string.join(open(self.expected, 'r').readlines(), '')
+         except IOError, error:
+            result.Fail('error reading expected output',
+                        {'synopsis_test.error': error.strerror})
+            return
+         try:
+            output = string.join(open(self.output, 'r').readlines(), '')
+         except IOError, error:
+            result.Fail('error reading actual output',
+                        {'synopsis_test.error': error.strerror})
+            return
+         
          if expected != output:
             expected = '\'%s\''%(expected)
             output = '\'%s\''%(output)
