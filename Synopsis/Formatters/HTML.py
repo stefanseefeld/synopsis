@@ -79,221 +79,110 @@ class FileNamer:
 	os.chdir(self.__old_dir)
 	
 
-class Node:
-    """
-    A Node in the namespace tree. Each node has a name and a list of AST
-    declarations where it is defined, as well as comments divided into summary
-    and detail.
-    """
-    def __init__(self, name, declarations, scopeinfo = None):
-	self.__name = tuple(name)
-	if declarations is None:
-	    self.__declarations = []
-	    self.__type = 'module'
-	elif type(declarations) == types.ListType:
-	    self.__declarations = declarations
-	    self.__type = declarations[0].type()
-	else:
-	    self.__declarations = [declarations]
-	    self.__type = declarations.type()
-	self.__type = string.capitalize(self.__type)
-	self.__scopeinfo = scopeinfo or ScopeInfo(name, 0, 0)
-	self.__scopeinfo.node = self
-	self._calc_comments()
-	toc.insert(self.__scopeinfo)
+def sort(list):
+    "Utility func to sort and return the given list"
+    list.sort()
+    return list
 
-    def forceTypeTo(self, type):
-	"""Force another type on this Node. This MUST be done before inserting
-	into a namespace, or it will have no effect."""
-	self.__type = type
-
-    def _get_comments(self):
-	"Template method to get the list of AST::Comments for this Node"
-	comments = []
-	for decl in self.__declarations:
-	    comments.extend(decl.comments())
-	return comments
-
-    def _calc_comments(self):
-	"Private method to calculate the comment/summary/detail of this Node"
-	# Find all comments
-	comments = self._get_comments()
-	# Convert list to a single string
-	block = filter(lambda s: s.text()[0:3] == "//.", comments)
-	block = map(lambda s: s.text()[3:], block)
-	self.__comment = comment = string.join(block,'\n')
-	# Split into summary and detail
-	index = string.find(comment, '.')
-	if index != -1:
-	    self.__summary = comment[:index]
-	    self.__detail = comment
-	    self.__scopeinfo.has_detail = 1
-	else:
-	    self.__summary = comment
-	    self.__detail = None
-	    self.__scopeinfo.has_detail = 0
-
-    def name(self): return self.__name
-    def set_name(self, name): self.__name = name
-    def type(self): return self.__type
-    def scope_info(self): return self.__scopeinfo
-    def comment(self): return self.__comment
-    def summary(self): return self.__summary
-    def detail(self): return self.__detail
-    def declarations(self): return self.__declarations
-    def add_declarations(self, decls):
-	"Add further declarations for this Node"
-	if type(decls) == types.ListType:
-	    self.__declarations.extend(decls)
-	else:
-	    self.__declarations.append(decls)
-	self._calc_comments()
-
-class Namespace(Node):
-    """
-    A non-leaf Node, that contains other Nodes.
-    This may be either a Module or a Class.
-    """
-    def __init__(self, name, declarations):
-	Node.__init__(self, name, declarations, ScopeInfo(name, 1, 0))
+class ScopeSorter:
+    """A class that takes a scope and sorts its children by type."""
+    def __init__(self, scope=None):
+	"Optional scope starts using that AST.Scope"
+	if scope: self.set_scope(scope)
+    def set_scope(self, scope):
+	"Sort children of given scope"
 	self.__types = {}
 	self.__children = {}
-	self.scope_info().is_file = 1
+	scopename = scope.name()
+	for decl in scope.declarations():
+	    name, type = decl.name(), decl.type()
+	    if name[:-1] != scopename: continue
+	    if not self.__types.has_key(type):
+		self.__types[type] = {}
+	    self.__types[type][name] = decl
+	    self.__children[name] = decl
     def types(self):
-	keys = self.__types.keys()
-	keys.sort()
-	return keys
-    def has_child(self, name): return self.__children.has_key(tuple(name))
+	"Returns a list of available type string keys"
+	return sort(self.__types.keys())
     def children(self, type=None):
+	"Returns dictionary of children of given type, or all children"
 	if type is None: return self.__children
 	if self.__types.has_key(type): return self.__types[type]
 	return {}
-    def children_keys(self, type=None):
-	keys = self.children(type).keys()
-	keys.sort()
-	return keys
-    def add_child(self, child):
-	if not self.__types.has_key(child.type()):
-	    self.__types[child.type()] = {}
-	self.__types[child.type()][child.name()] = child
-	self.__children[child.name()] = child
-    def get_or_create(self, name, declarations, Class):
-	if self.has_child(name):
-	    child = self.__children[tuple(name)]
-	    child.add_declarations(declarations)
-	    return child
-	child = Class(name, declarations)
-	self.add_child(child)
-	return child
+    def child_names(self, type=None):
+	"Returns sorted names of children of given type, or all children"
+	return sort(self.children(type).keys())
 
-class DeclaratorNode(Node):
-    """
-    This is a special Node type for declarations whose comments are stored in
-    declarator child nodes.
-    FIXME: The AST is broken in this regard; fix it!
-    """
-    def __init__(self, name, declarations):
-	Node.__init__(self, name, declarations)
+class Struct:
+    "Dummy class. Initialise with keyword args."
+    def __init__(self, **keys):
+	for name, value in keys.items(): setattr(self, name, value)
 
-    def _get_comments(self):
-	comments = []
-	for decl in self.declarations():
-	    for dcor in decl.declarators():
-		comments.extend(dcor.comments())
-	return comments
+class CommentParser:
+    """A class that takes a Declaration and sorts its comments out."""
+    def __init__(self, decl=None):
+	# Import class vars into self
+	self._valid = lambda x: x[0:3] == '//.'
+	self._strip = lambda x: x[3:]
+	if decl: self.parse(decl)
+    def parse(self, decl):
+	"""Parses the comments of the given AST.Declaration.
+	Returns a struct with vars:
+	 full - full text, summary - one-line summary, detail - detailed info
+	Full is the original comment, Detail is parsed for tags"""
+	strlist = map(lambda x:str(x), decl.comments())
+	strlist = filter(self._valid, strlist)
+	strlist = map(self._strip, strlist)
+	detail = full = string.join(strlist,'\n')
+	end = string.find(full, '.')
+	if end < 0: summary = full
+	else: summary = full[:end+1]
+	return Struct(full=full, summary=summary, detail=detail)
 
-class NamespaceBuilder(Visitor.AstVisitor):
-    """
-    A Linker the creates the Node/Namespace tree from the AST.
-    """
+class CommentDictionary:
+    """This class just maintains a mapping from declaration to comment, since
+    any particular comment is required at least twice. Upon initiation, an
+    instance of this class installs itself in the global namespace as
+    "comments"."""
     def __init__(self):
-	self.__global = Namespace([], None)
-	self.__scope = []
-	self.__stack = [self.__global]
-	toc.set_global(self.__global)
-    def globalns(self): return self.__global
-    def scope(self): return self.__scope
-    def enterScope(self, subname): self.__scope.append(subname)
-    def leaveScope(self): self.__scope.pop()
-    def current(self): return self.__stack[-1]
-    def enterNamespace(self, ns): self.__stack.append(ns)
-    def leaveNamespace(self): self.__stack.pop()
+	self.__dict = {}
+	self._parser = CommentParser()
+	global comments
+	comments = self
+    def commentForName(self, name):
+	if self.__dict.has_key(name): return self.__dict[name]
+	return None
+    def commentFor(self, decl):
+	"Returns a comment struct (@see CommentParser) for given decl"
+	key = decl.name()
+	if self.__dict.has_key(key): return self.__dict[key]
+	self.__dict[key] = comment = self._parser.parse(decl)
+	return comment
+    __getitem__ = commentFor
 
-    def visitAST(self, ast):
-	for declaration in ast.declarations():
-	    declaration.accept(self)
-    def visitModule(self, module):
-	name = module.name()[-1]
-	self.enterScope(name)
-	ns = self.current().get_or_create(self.scope(), module, Namespace)
-	self.enterNamespace(ns)
-	for declaration in module.declarations():
-	    declaration.accept(self)
-	self.leaveNamespace()
-	self.leaveScope()
-    def visitMetaModule(self, module):
-	print "metamodule name:",module.name()
-	name = module.name()[-1]
-	self.enterScope(name)
-	ns = self.current().get_or_create(self.scope(), module.module_declarations(), Namespace)
-	self.enterNamespace(ns)
-	for declaration in module.declarations():
-	    declaration.accept(self)
-	self.leaveNamespace()
-	self.leaveScope()
-    def visitClass(self, clas):
-	toc.add_class(clas.name())
-	name = clas.name()[-1]
-	self.enterScope(name)
-	ns = Namespace(self.scope(), clas)
-	self.current().add_child(ns)
-	self.enterNamespace(ns)
-	for declaration in clas.declarations():
-	    declaration.accept(self)
-	for parent in clas.parents():
-	    toc.add_inheritance(parent.parent().name(), clas.name())
-	self.leaveNamespace()
-	self.leaveScope()
-    def visitTypedef(self, typedef):
-	for decl in typedef.declarators():
-	    child = DeclaratorNode(decl.name(), typedef)
-	    self.current().add_child(child)
-    def visitOperation(self, oper):
-	child = Node(oper.name(), oper)
-	if oper.type() == 'attribute':
-	    child.forceTypeTo('Attribute')
-	while self.current().has_child(child.name()):
-	    print "overloading",child.name()
-	    child.set_name(child.name()[:-1]+(child.name()[-1]+" ov",))
-	self.current().add_child(child)
-    def visitEnum(self, enum):
-	self.current().add_child(Node(enum.name(), enum))
-    def visitVariable(self, var):
-	for decl in var.declarators():
-	    child = DeclaratorNode(decl.name(), var)
-	    self.current().add_child(child)
-    def visitConst(self, const):
-	self.current().add_child(Node(const.name(), const))
-
-
-class ScopeInfo:
-    """
-    Simple struct that holds info about one scoped name in the TOC.
-    Attributes:
-      name -- scoped name
-      is_file -- true if this scope links direct to a file
-      has_detail -- true if this scope has detailed information
-      link -- fully referenced link to this scope
-    """
-    def __init__(self, name, is_file, has_detail):
+class TocEntry:
+    """Struct for an entry in the table of contents.
+    Vars: link, lang, type (all strings)
+    Also: name (scoped)"""
+    def __init__(self, name, link, lang, type):
 	self.name = name
-	self.is_file = is_file
-	self.has_detail = has_detail
-	if is_file:
-	    self.link = filer.nameOfScope(name)
-	else:
-	    link = filer.nameOfScope(name[:-1])
-	    self.link = link + "#" + name[-1]
+	self.link = link
+	self.lang = lang
+	self.type = type
+
+class Linker:
+    """Class that translates AST.Declarations into links"""
+    def __init__(self):
+	global linker
+	linker = self
+    def link(self, decl):
+	if isinstance(decl, AST.Scope):
+	    # This is a class or module, so it has its own file
+	    return filer.nameOfScope(decl.name())
+	# Assume parent scope is class or module, and this is a <A> name in it
+	filename = filer.nameOfScope(decl.name()[:-1])
+	return filename + "#" + decl.name()[-1]
+    __call__ = link
 
 class TableOfContents(Visitor.AstVisitor):
     """
@@ -301,25 +190,48 @@ class TableOfContents(Visitor.AstVisitor):
     cross references. Names are fully scoped.
     """
     def __init__(self):
+	global toc
+	toc = self
 	self.__toc = {}
-	self.__global = None
-	self.__subclasses = {}
-	self.__classes = []
+	#self.__global = None
     
     def lookup(self, name):
+	name = tuple(name)
         if self.__toc.has_key(name): return self.__toc[name]
-	if string.find(name, ':') >= 0:
-	    if debug: print "Warning: TOC lookup of",name,"failed!"
+	if debug and len(name) > 1:
+	    print "Warning: TOC lookup of",name,"failed!"
         return None
 
-    def lookupName(self, name):
-	return self.lookup(Util.ccolonName(name))
+    __getitem__ = lookup
 
-    def insert(self, info):
-        self.__toc[Util.ccolonName(info.name)] = info
+    def insert(self, entry): self.__toc[tuple(entry.name)] = entry
 
-    def globalns(self): return self.__global
-    def set_global(self, ns): self.__global = ns
+    #def globalns(self): return self.__global
+    #def set_global(self, ns): self.__global = ns
+
+    def visitAST(self, ast):
+	for decl in ast.declarations():
+	    decl.accept(self)
+    def visitDeclaration(self, decl):
+	entry = TocEntry(decl.name(), linker(decl), decl.language(), "decl")
+	self.insert(entry)
+    def visitScope(self, scope):
+	self.visitDeclaration(scope)
+	for decl in scope.declarations():
+	    decl.accept(self)
+    def visitEnum(self, enum):
+	self.visitDeclaration(enum)
+	for enumor in enum.enumerators():
+	    enumor.accept(self)
+
+class ClassTree(Visitor.AstVisitor):
+    """Maintains a tree of classes directed by inheritance"""
+    def __init__(self):
+	global classTree
+	classTree = self
+	self.__superclasses = {}
+	self.__subclasses = {}
+	self.__classes = []
 
     def add_inheritance(self, supername, subname):
 	supername, subname = tuple(supername), tuple(subname)
@@ -329,20 +241,48 @@ class TableOfContents(Visitor.AstVisitor):
 	    subs = self.__subclasses[supername]
 	if subname not in subs:
 	    subs.append(subname)
+	if not self.__superclasses.has_key(subname):
+	    sups = self.__superclasses[subname] = []
+	else:
+	    sups = self.__superclasses[subname]
+	if supername not in sups:
+	    sups.append(supername)
 
     def subclasses(self, classname):
 	classname = tuple(classname)
 	if self.__subclasses.has_key(classname):
-	    return self.__subclasses[classname]
+	    return sort(self.__subclasses[classname])
+	return []
+    def superclasses(self, classname):
+	classname = tuple(classname)
+	if self.__superclasses.has_key(classname):
+	    return sort(self.__superclasses[classname])
 	return []
 
-    def classes(self): return self.__classes
+    def classes(self): return sort(self.__classes)
     def add_class(self, name):
 	name = tuple(name)
 	if name not in self.__classes:
 	    self.__classes.append(tuple(name))
 
-class BaseFormatter:
+    def visitAST(self, ast):
+	for decl in ast.declarations():
+	    decl.accept(self)
+    def visitScope(self, scope):
+	for decl in scope.declarations():
+	    decl.accept(self)
+    def visitClass(self, clas):
+	name = clas.name()
+	self.add_class(name)
+	for inheritance in clas.parents():
+	    parent = inheritance.parent()
+	    self.add_inheritance(parent.name(), name)
+	for decl in clas.declarations():
+	    decl.accept(self)
+
+
+
+class BaseFormatter(Visitor.AstVisitor):
     """
     A Formatter with common base functionality between summary and detail
     sections.
@@ -358,7 +298,6 @@ class BaseFormatter:
     def set_scope(self, scope): self.__scope = list(scope)
     def set_ostream(self, os): self.__os = os
     
-    def is_summary(self): return 0 # FIXME: bad!
     # Access to generated values
     def type_ref(self): return self.__type_ref
     def type_label(self): return self.__type_label
@@ -368,6 +307,7 @@ class BaseFormatter:
     def reference(self, ref, label, **keys):
         """reference takes two strings, a reference (used to look up the symbol and generated the reference),
         and the label (used to actually write it)"""
+	raise TypeError, "reference is deprecated"
 	if ref is None: return label
 	try:
 	    info = toc.lookup(ref)
@@ -379,6 +319,11 @@ class BaseFormatter:
 
     def referenceName(self, name, label=None, **keys):
 	"""Same as reference but takes a tuple name"""
+	if not label: label = Util.ccolonName(name, self.scope())
+	entry = toc[name]
+	if entry: return apply(href, (entry.link, label), keys)
+	return span('type', label)
+	# OLD:
 	ref = Util.ccolonName(name)
 	if label is None: 
 	    label = Util.ccolonName(name, self.scope()) or "Global Namespace"
@@ -387,9 +332,9 @@ class BaseFormatter:
     def label(self, ref, label=None):
 	"""Create a label for the given scoped reference name"""
 	if label is None: label = ref
-        scopeinfo = toc.lookup(Util.ccolonName(ref))
-	if scopeinfo is None: return Util.ccolonName(label)
-	location = scopeinfo.link
+        entry = toc[ref]
+	if entry is None: return Util.ccolonName(label)
+	location = entry.link
         label = Util.ccolonName(label, self.scope())
 	index = string.find(location, '#')
 	if index >= 0: location = location[index+1:]
@@ -404,7 +349,7 @@ class BaseFormatter:
 	"Returns a reference string for the given type object"
 	if typeObj is None: return "(unknown)"
         typeObj.accept(self)
-        return self.reference(self.type_ref(), self.type_label())
+        return self.type_label()
 
     def formatParameters(self, parameters):
         return string.join(map(self.getParameterText, parameters), ", ")
@@ -427,45 +372,35 @@ class BaseFormatter:
     #################### Type Visitor ###########################################
 
     def visitBaseType(self, type):
-        self.__type_ref = Util.ccolonName(type.name())
-        self.__type_label = Util.ccolonName(type.name())
+        self.__type_label = self.referenceName(type.name())
         
     def visitForward(self, type):
-        self.__type_ref = Util.ccolonName(type.name())
-        self.__type_label = Util.ccolonName(type.name(), self.scope())
+        self.__type_label = self.referenceName(type.name())
+        #self.__type_label = Util.ccolonName(type.name(), self.scope())
         
     def visitDeclared(self, type):
-        self.__type_label = Util.ccolonName(type.name(), self.scope())
-        self.__type_ref = Util.ccolonName(type.name())
+        self.__type_label = self.referenceName(type.name())
+        #self.__type_label = Util.ccolonName(type.name(), self.scope())
         
     def visitModifier(self, type):
         alias = self.formatType(type.alias())
 	pre = string.join(map(lambda x:x+" ", type.premod()), '')
 	post = string.join(type.postmod(), '')
-	self.__type_ref = None
         self.__type_label = "%s%s%s"%(pre,alias,post)
             
     def visitParametrized(self, type):
-        type_ref = ''
         type_label = self.formatType(type.template())
-        parameters_ref = []
         parameters_label = []
         for p in type.parameters():
             #p.accept(self)
             #parameters_ref.append(self.__type_ref)
             parameters_label.append(self.formatType(p))
-        self.__type_ref = None #type_ref + "&lt;" + string.join(parameters_ref, ", ") + "&gt;"
         self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
 
     #################### AST Visitor ############################################
     def visitTypedef(self, typedef):
-	#FIXME: Only process given declarator
-	#FIXME: This need to be done in AST
 	type = self.formatType(typedef.alias())
-        for i in typedef.declarators():
-	    # if i == current_decl:
-            name = self.label(self.getDeclaratorName(i))
-	    self.writeSectionItem(type, name, i)
+	self.writeSectionItem(type, self.label(typedef.name()), typedef)
 
     def visitConst(self, const):
 	type = self.formatType(const.ctype())
@@ -515,13 +450,12 @@ class BaseFormatter:
     visitFunction = visitOperation
 
     def visitVariable(self, variable):
+	# TODO: deal with sizes
         type = self.formatType(variable.vtype())
-        for i in variable.declarators():
-            # if i == current_decl
-            name = self.label(self.getDeclaratorName(i))
-	    self.writeSectionItem(type, name, i)
+	self.writeSectionItem(type, variable.name(), variable)
 
 
+    # These are overridden in {Summary,Detail}Formatter
     def writeSectionStart(self, heading): pass
     def writeSectionEnd(self, heading): pass
     def writeSectionItem(self, type, name, node): pass
@@ -529,19 +463,18 @@ class BaseFormatter:
 class SummaryFormatter(BaseFormatter):
     def __init__(self, toc):
 	BaseFormatter.__init__(self, toc)
+	self.__link_detail = 0
+
+    def set_link_detail(self, boolean):
+	self.__link_detail = boolean
 
     def label(self, ref, label=None):
 	if label is None: label = ref
-        scopeinfo = toc.lookup(Util.ccolonName(ref))
-	if scopeinfo and scopeinfo.has_detail:
-	    return self.referenceName(ref, Util.ccolonName(label, self.scope()))
+	if self.__link_detail: return self.referenceName(ref, Util.ccolonName(label, self.scope()))
 	return BaseFormatter.label(self, ref, label)
 	
     def getSummary(self, node):
-	name = node.name()
-	info = toc.lookup(Util.ccolonName(name))
-	if info is None: return ''
-	comment = info.node.summary()
+	comment = comments[node].summary
 	if len(comment): return '<br>'+div('summary', comment)
 	else: return ''
 
@@ -589,10 +522,7 @@ class DetailFormatter(BaseFormatter):
 	BaseFormatter.__init__(self, toc)
 
     def getDetail(self, node):
-	name = node.name()
-	info = toc.lookup(Util.ccolonName(name))
-	if info is None: return ''
-	comment = info.node.detail()
+	comment = comments[node].detail
 	if len(comment): return '<br>'+div('desc', comment)
 	else: return ''
 
@@ -625,9 +555,8 @@ class DetailFormatter(BaseFormatter):
 	self.write(entity('h1', "%s %s"%(type, name)))
 
 	# Print any comments for this module
-	info = toc.lookupName(module.name())
-	if info and info.node.comment():
-	    self.write(div('desc',info.node.comment())+'<br><br>')
+	comment = comments[module].full
+	if comment: self.write(div('desc',comment)+'<br><br>')
 
     def visitClass(self, clas):
 	# Class details are only printed at the top of their page
@@ -636,9 +565,8 @@ class DetailFormatter(BaseFormatter):
 	self.write(entity('h1', "%s %s"%(type, name)))
 
 	# Print any comments for this class
-	info = toc.lookupName(clas.name())
-	if info and info.node.comment():
-	    self.write(div('desc',info.node.comment())+'<br>')
+	comment = comments[clas].full
+	if comment: self.write(div('desc',comment)+'<br><br>')
 
 	# Print out a list of the parents
 	if clas.parents():
@@ -649,7 +577,7 @@ class DetailFormatter(BaseFormatter):
 	    self.write("</div>\n")
 
 	# Print subclasses
-	subs = toc.subclasses(clas.name())
+	subs = classTree.subclasses(clas.name())
 	if subs:
 	    self.write("Known subclasses: ")
 	    refs = map(self.referenceName, subs)
@@ -686,30 +614,32 @@ class DetailFormatter(BaseFormatter):
 
 class Paginator:
     """Visitor that takes the Namespace hierarchy and splits it into pages"""
-    def __init__(self, globalns):
-	self.__global = globalns
+    def __init__(self, root):
+	self.__root = root
 	self.summarizer = SummaryFormatter(toc)
 	self.detailer = DetailFormatter(toc)
 	self.__os = None
 	self.__scope = []
+	self.sorter = ScopeSorter(root)
 	
 	# Resolve start namespace using global namespace var
-	self.__start = self.__global
+	self.__start = self.__root
 	scope_names = string.split(namespace, "::")
 	scope = []
 	for scope_name in scope_names:
 	    if not scope_name: break
 	    scope.append(scope_name)
-	    children = self.__start.children()
+	    children = self.sorter.children()
 	    if children.has_key(tuple(scope)):
 		child = children[tuple(scope)]
-		if isinstance(child, Namespace):
+		if isinstance(child, AST.Scope):
 		    self.__start = children[tuple(scope)]
+		    self.sorter.set_scope(self.__start)
 		    continue
 	    # Don't continue if scope traversal failed!
 	    print "Fatal: Couldn't find child scope",scope
-	    print "Child keys of %s:"%(self.__start.name(),),children.keys()
-	    raise NameError, "I-cant-be-stuffed-making-my-own-exception"
+	    print "Children of %s:"%(self.__start.name(),),children.keys()
+	    sys.exit(3)
 
     def scope(self): return self.__scope
     def write(self, text): self.__os.write(text)
@@ -761,22 +691,15 @@ class Paginator:
 
     def createInheritanceTree(self):
 	"""Creates a file with the inheritance tree"""
-	classes = toc.classes()
-	classes.sort()
-	def root(name, toc=toc, Util=Util):
+	classes = classTree.classes()
+	def root(name):
 	    try:
-		return not toc.lookup(Util.ccolonName(name)).node.declarations()[0].parents()
+		return not classTree.superclasses(name)
 	    except:
 		print "Filtering",Util.ccolonName(name),"failed:"
-		print toc.lookup(Util.ccolonName(name)).node.declarations()[0].__dict__
 		return 0
-	try:
-	    roots = filter(root, classes)
-	except AttributeError:
-	    # for some reason I get a declaration that has no parents() attribute
-	    print "Failed."
-	    return
-	self.detailer.set_scope([])
+	roots = filter(root, classes)
+	self.detailer.set_scope(self.__start.name())
 
 	self.startFile(filer.nameOfSpecial('tree'), "Synopsis - Class Hierarchy")
 	self.write(entity('h1', "Inheritance Tree"))
@@ -788,13 +711,11 @@ class Paginator:
     def processClassInheritance(self, name):
 	self.write('<li>')
 	self.write(self.detailer.referenceName(name))
-	parents = toc.lookup(Util.ccolonName(name)).node.declarations()[0].parents()
+	parents = classTree.superclasses(name)
 	if parents:
-	    namer = lambda parent, Util=Util: Util.ccolonName(parent.parent().name())
-	    self.write(' <i>(%s)</i>'%string.join(map(namer, parents), ", "))
-	subs = toc.subclasses(name)
+	    self.write(' <i>(%s)</i>'%string.join(map(Util.ccolonName, parents), ", "))
+	subs = classTree.subclasses(name)
 	if subs:
-	    subs.sort()
 	    self.write('<ul>')
 	    map(self.processClassInheritance, subs)
 	    self.write('</ul>\n')
@@ -806,13 +727,14 @@ class Paginator:
 
 	# Open file and setup scopes
 	self.startFileScope(ns.name())
+	self.sorter.set_scope(ns)
 
 	# Write heading
-	if ns is self.__global: 
+	if ns is self.__root: 
 	    self.write(entity('h1', "Global Namespace"))
 	else:
 	    # Use the detailer to print an appropriate heading
-	    ns.declarations()[0].accept(self.detailer)
+	    ns.accept(self.detailer)
 
 	# Loop throught all the types of children
 	self.printNamespaceSummaries(ns, details)
@@ -820,42 +742,39 @@ class Paginator:
 	self.endFile()
 
 	# Queue child namespaces
-	for child in ns.children().values():
-	    if isinstance(child, Namespace):
+	for child in self.sorter.children().values():
+	    if isinstance(child, AST.Scope):
 		self.__namespaces.append(child)
 
     def printNamespaceSummaries(self, ns, details):
 	"Print out the summaries from the given ns and note detailed items"
-	for type in ns.types():
+	for type in self.sorter.types():
 	    if type[-1] == 's': heading = type+'es Summary:'
 	    else: heading = type+'s Summary:'
 	    self.summarizer.writeSectionStart(heading)
 	    # Get a sorted list of children of this type
-	    dict, keys = ns.children(type), ns.children_keys(type)
+	    dict, keys = self.sorter.children(type), self.sorter.child_names(type)
 	    for key in keys:
-		# Print out summary for the child
 		child = dict[key]
-		# Print only for first declaration
-		child.declarations()[0].accept(self.summarizer)
 		# Check if need to add to detail list
-		if child.detail() is not None and \
-			not child.scope_info().is_file:
+		if comments[child].detail and not isinstance(child, AST.Scope):
 		    if not details.has_key(type): details[type] = []
 		    details[type].append(child)
+		    self.summarizer.set_link_detail(1)
+		# Print out summary for the child
+		child.accept(self.summarizer)
+		self.summarizer.set_link_detail(0)
 	    self.summarizer.writeSectionEnd(heading)
 
     def printNamespaceDetails(self, details):
 	"Print out the details from the given dict of lists"
-	types = details.keys()
-	types.sort()
-	for type in types:
+	for type in sort(details.keys()):
 	    heading = type+' Details:'
 	    self.detailer.writeSectionStart(heading)
 	    # Get the sorted list of children of this type
 	    children = details[type]
 	    for child in children:
-		# Print only for first declaration
-		child.declarations()[0].accept(self.detailer)
+		child.accept(self.detailer)
 	    self.detailer.writeSectionEnd(heading)
 
     def indexModule(self, ns):
@@ -866,13 +785,16 @@ class Paginator:
 	link = filer.nameOfModuleIndex(ns.name())
 	self.write(href(link, name, target='module_index') + '<br>')
 	# Add children
-	for key in ns.children_keys('Namespace'):
-	    self.indexModule(ns.children('Namespace')[key])
-	for key in ns.children_keys('Module'):
-	    self.indexModule(ns.children('Module')[key])
+	self.sorter.set_scope(ns)
+	dict = self.sorter.children()
+	for name in self.sorter.child_names():
+	    child = dict[name]
+	    if isinstance(child, AST.Module):
+		self.indexModule(child)
 
     def processNamespaceIndex(self, ns):
 	self.detailer.set_scope(ns.name())
+	self.sorter.set_scope(ns)
 
 	# Create file
 	name = Util.ccolonName(ns.name()) or "Global Namespace"
@@ -886,28 +808,26 @@ class Paginator:
 	self.write(entity('script', script, language='Javascript'))
 
 	# Loop throught all the types of children
-	for type in ns.types():
+	for type in self.sorter.types():
 	    if type[-1] == 's': heading = type+'es'
 	    else: heading = type+'s'
 	    self.write('<br>'+entity('i', heading)+'<br>')
 	    # Get a sorted list of children of this type
-	    dict, keys = ns.children(type), ns.children_keys(type)
+	    dict, keys = self.sorter.children(type), self.sorter.child_names(type)
 	    for key in keys:
 		# Print out summary for the child
 		child = dict[key]
-		sinfo = toc.lookupName(child.name())
-		if isinstance(sinfo.node.declarations()[0], AST.Function):
-		    self.write(self.detailer.referenceName(child.name(), Util.ccolonName(sinfo.node.declarations()[0].realname(), ns.name()), target='main'))
+		if isinstance(child, AST.Function):
+		    self.write(self.detailer.referenceName(child.name(), Util.ccolonName(child.realname(), ns.name()), target='main'))
 		else:
 		    self.write(self.detailer.referenceName(child.name(), target='main'))
 		self.write('<br>')
 	self.endFile()
 
 	# Queue child namespaces
-	for child in ns.children('Namespace').values():
-	    self.__namespaces.append(child)
-	for child in ns.children('Module').values():
-	    self.__namespaces.append(child)
+	for child in self.sorter.children().values():
+	    if isinstance(child, AST.Scope):
+		self.__namespaces.append(child)
 
     def startFileScope(self, scope):
 	"Start a new file from the given scope"
@@ -962,20 +882,30 @@ def format(types, declarations, args):
     filer = FileNamer()
     filer.chdirBase()
 
-    # Create table of contents index
-    toc = TableOfContents()
+    # Create the Comments Dictionary
+    CommentDictionary()
 
-    # Create a builder for the namespace
-    nsb = NamespaceBuilder()
+    # Create the Linker
+    Linker()
+
+    # Create the Class Tree
+    ClassTree()
+
+    # Create table of contents index
+    TableOfContents()
 
     if debug: print "HTML Formatter: Initialising TOC"
     # Add all declarations to the namespace tree
     for d in declarations:
-        d.accept(nsb)
+        d.accept(toc)
+	d.accept(classTree)
     
     if debug: print "HTML Formatter: Writing Pages..."
     # Create the pages
-    Paginator(nsb.globalns()).process()
+    # TODO: have synopsis pass an AST with a "root" node to formatters.
+    root = AST.Module('',-1,1,"C++","Global",())
+    root.declarations()[:] = declarations
+    Paginator(root).process()
     if debug: print "HTML Formatter: Done!"
 
     filer.chdirRestore()
