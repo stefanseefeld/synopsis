@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.4 2002/11/13 04:11:00 chalky Exp $
+# $Id: RawFile.py,v 1.5 2003/11/08 19:49:54 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: RawFile.py,v $
+# Revision 1.5  2003/11/08 19:49:54  stefan
+# replace statcache.stat by os.stat
+#
 # Revision 1.4  2002/11/13 04:11:00  chalky
 # Fix exclude_globs bug
 #
@@ -35,7 +38,7 @@
 #
 
 # System modules
-import time, os, stat, statcache, os.path, string
+import time, os, stat, os.path, string
 
 # Synopsis modules
 from Synopsis.Core import AST, Util
@@ -84,7 +87,7 @@ class RawFilePages (Page.Page):
 		if exclude:
 		    continue
                 entry_path = os.path.join(dir, entry)
-                info = statcache.stat(entry_path)
+                info = os.stat(entry_path)
                 if stat.S_ISDIR(info[stat.ST_MODE]):
                     dirs.append(entry_path)
                 else:
