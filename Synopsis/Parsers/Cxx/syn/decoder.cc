@@ -149,8 +149,16 @@ Type::Type* Decoder::decodeTemplate()
     vector<Type::Type*> types;
     while (m_iter <= tend)
 	types.push_back(decodeType());
-    Type::Type* type = 0;//m_builder->lookupType(name);
-    Type::Template* templ = dynamic_cast<Type::Template*>(type);
+    Type::Type* type = m_builder->lookupType(name);
+    // if type is declared and declaration is class and class is template..
+    Type::Declared* declared = dynamic_cast<Type::Declared*>(type);
+    Type::Template* templ = NULL;
+    if (declared) {
+	AST::Class* t_class = dynamic_cast<AST::Class*>(declared->declaration());
+	if (t_class) {
+	    templ = t_class->templateType();
+	}
+    }
     return new Type::Parameterized(templ, types);
 } 
 

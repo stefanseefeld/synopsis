@@ -74,6 +74,7 @@ void Namespace::accept(Visitor* visitor)
 Class::Class(string fn, int line, string type, Name name)
     : Scope(fn, line, type, name)
 {
+    m_template = NULL;
 }
 
 Class::~Class()
@@ -89,8 +90,8 @@ void Class::accept(Visitor* visitor)
 // AST::Inheritance
 //
 
-Inheritance::Inheritance(Access axs, Class* parent)
-    : m_access(axs), m_parent(parent)
+Inheritance::Inheritance(Type::Type* type, const Attrs& attrs)
+    : m_attrs(attrs), m_parent(type)
 {
 }
 

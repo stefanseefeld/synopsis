@@ -18,7 +18,7 @@
 class Dictionary;
 
 // Forward declare Type::Type and Declared
-namespace Type { class Type; class Declared; }
+namespace Type { class Type; class Declared; class Template; }
 
 //. A namespace for the AST hierarchy
 namespace AST {
@@ -80,6 +80,9 @@ namespace AST {
 	//. Returns the accessability of this declaration
 	Access access() const { return m_access; }
 
+	//. Sets the accessability of this declaration
+	void setAccess(Access axs) { m_access = axs; }
+
 	//. Constant version of comments()
 	const vector<Comment*>& comments() const { return m_comments; }
 	//. Returns the vector of comments. The vector returned is the private
@@ -116,9 +119,6 @@ namespace AST {
     //. unsuccessful in this scope. Name lookup is not recursive.
     class Scope : public Declaration {
     public:
-	//. A vector of Scopes for name searching from this Scope
-	typedef vector<Scope*> scope_vector;
-
 	//. Constructor
 	Scope(string, int, string, Name);
 	//. Destructor. 
@@ -139,19 +139,9 @@ namespace AST {
 	//. the Scope.
 	vector<Declaration*>& declarations() { return m_declarations; }
 
-	//. Returns the Dictionary object
-	Dictionary* dict() { return m_dict; }
-	//. Returns the scope_vector of search Scopes
-	scope_vector& search_scopes() { return m_search_scopes; }
-
     private:
 	//. The vector of contained declarations
 	vector<Declaration*> m_declarations;
-	//. The Dictionary of names in this Scope
-	Dictionary* m_dict;
-	//. The search vector of lookup Scopes
-	scope_vector m_search_scopes;
-
     }; // class Scope
 
     //. Namespace class
@@ -191,35 +181,49 @@ namespace AST {
 	//. modifications will affect the Class.
 	vector<Inheritance*>& parents() { return m_parents; }
 
+	//. Returns the Template object if this is a template
+	Type::Template* templateType() { return m_template; }
+	//. Sets the Template object for this class. NULL means not a template
+	void setTemplateType(Type::Template* t) { m_template = t; }
     private:
 	//. The vector of parent Inheritance objects
 	vector<Inheritance*> m_parents;
+	//. The Template Type for this class if it's a template
+	Type::Template* m_template;
     };
 
     //. Inheritance class. This class encapsulates the information about an
-    //. inheritance, namely its accessability.
+    //. inheritance, namely its accessability. Note that classes inherit from
+    //. types, not class declarations. As such it's possible to inherit from a
+    //. parameterized type, or a declared typedef or class/struct.
     class Inheritance {
     public:
+	//. A typedef of the Attributes type
+	typedef vector<string> Attrs;
+
 	//. Constructor
-	Inheritance(Access, Class*);
+	Inheritance(Type::Type*, const Attrs&);
 
 	//. Accepts the given AST::Visitor
-	virtual void accept(Visitor*);
+	void accept(Visitor*);
 
 	//
 	// Attribute Methods
 	//
 
-	//. Returns the Class object this inheritance refers to
-	Class* parent() { return m_parent; }
+	//. Returns the Class object this inheritance refers to. The method
+	//. returns a Type since typedefs to classes are preserved to
+	//. enhance readability of the generated docs. Note that the parent
+	//. may also be a non-declaration type, such as vector<int>
+	Type::Type* parent() { return m_parent; }
 
-	//. Returns the accessability of this inheritance
-	Access access() { return m_access; }
+	//. Returns the attributes of this inheritance
+	const Attrs& attributes() const { return m_attrs; }
     private:
-	//. The accessability
-	Access m_access;
-	//. The parent class
-	Class* m_parent;
+	//. The attributes
+	Attrs m_attrs;
+	//. The parent class or typedef to class
+	Type::Type* m_parent;
     };
 
     //. Forward declaration. Currently this has no extra attributes.
@@ -419,7 +423,7 @@ namespace AST {
 	//. Returns the return Type
 	Type::Type* returnType() { return m_ret; }
 	//. Returns the real name of this function
-	string realname() { return m_realname; }
+	string realname() const { return m_realname; }
 
 	//. Returns the vector of parameters
 	vector<Parameter*>& parameters() { return m_params; }

@@ -38,6 +38,8 @@ public:
     virtual void visitOperation(AST::Operation*);
     virtual void visitVariable(AST::Variable*);
     virtual void visitTypedef(AST::Typedef*);
+    virtual void visitEnum(AST::Enum*);
+    virtual void visitEnumerator(AST::Enumerator*);
 
 private:
     //. The indent depth

@@ -42,12 +42,12 @@ public:
 
     //. Lookup a name in the dictionary. If more than one declaration has this
     //. name then an exception is thrown.
-    Type::Named* lookup(string name) throw (MultipleError);
+    Type::Named* lookup(string name) throw (MultipleError, KeyError);
 
     //. Lookup a name in the dictionary expecting multiple decls. Use this
     //. method if you expect to find more than one declaration, eg importing
     //. names via a using statement.
-    vector<Type::Named*> lookupMultiple(string name);
+    vector<Type::Named*> lookupMultiple(string name) throw (KeyError);
 
     //. Add a declaration to the dictionary. The name() is extracted from the
     //. declaration and its last string used as the key. The declaration is

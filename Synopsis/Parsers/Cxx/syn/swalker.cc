@@ -8,6 +8,7 @@
 #include "ptree.h"
 
 #include "swalker.hh"
+#include "type.hh"
 #include "ast.hh"
 #include "builder.hh"
 #include "decoder.hh"
@@ -15,7 +16,8 @@
 using namespace AST;
 using std::string;
 
-#if DEBUG
+//#ifdef DEBUG
+#if 0
 #define DO_TRACE
 class Trace
 {
@@ -87,35 +89,116 @@ Ptree* SWalker::TranslateNamespaceSpec(Ptree* def) {
     return 0;
 }
 
+vector<Inheritance*> SWalker::TranslateInheritanceSpec(Ptree *node)
+{
+    Trace trace("PyWalker::TranslateInheritanceSpec");
+    vector<Inheritance*> ispec;
+    Type::Type *type;
+    while (node) {
+        node = node->Cdr();		// skip : or ,
+        // the attributes
+        vector<string> attributes(node->Car()->Length() - 1);
+        for (int i = 0; i != node->Car()->Length() - 1; ++i)
+            attributes[i] = getName(node->Car()->Nth(i));
+        // look up the parent type
+	Ptree* name = node->Car()->Last()->Car();
+	if (name->IsLeaf()) {
+	    type = m_builder->lookupType(getName(node->Car()->Last()->Car()));
+	} else {
+	    char* encname = name->GetEncodedName();
+	    m_decoder->init(encname);
+	    type = m_decoder->decodeType();
+	}
+
+        node = node->Cdr();
+        // add it to the list
+        ispec.push_back(new AST::Inheritance(type, attributes));
+    }
+    return ispec;
+}
+
+
 Ptree* SWalker::TranslateClassSpec(Ptree* node) 
 {
     Trace trace("SWalker::TranslateClassSpec");
     if (Ptree::Length(node) == 4) {
 	// if Class definition (not just declaration)
-	//bool is_struct = node->First()->Eq("struct");
 	
 	// Create AST.Class object
         string type = getName(node->First());
         string name = getName(node->Second());
-        /*AST::Class *clas =*/ m_builder->startClass(type, name);
+        vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
+        AST::Class *clas = m_builder->startClass(type, name);
+	clas->parents() = parents;
+	m_builder->updateBaseSearch();
 	//PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
 	//addComments(clas, cspec->GetComments());
 
-        // Add parents to Class object
-        //vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
-        //Synopsis::addInheritance(clas, parents);
-
         // Translate the body of the class
-        //Class* meta = MakeClassMetaobject(node, NULL, node);
-        //synopsis->pushClass(clas);
-	//synopsis->pushAccess(is_struct ? Synopsis::Public : Synopsis::Private);
-        //TranslateClassBody(node->Nth(3), node->Nth(2), meta);
 	TranslateBlock(node->Nth(3));
-	//synopsis->popAccess();
-        //synopsis->popScope();
 	m_builder->endClass();
 
+    } else if (Ptree::Length(node) == 2) {
+	// Forward declaration
+        string name = getName(node->Second());
+	m_builder->addForward(name);
+    } else {
+	cout << "class spec not length 4:" << endl;
+	node->Display2(cout);
     }
+    return 0;
+}
+
+Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
+{
+    Trace trace("SWalker::TranslateTemplateClass");
+    if (Ptree::Length(node) == 4) {
+	// if Class definition (not just declaration)
+	
+	// Create AST.Class object
+        string type = getName(node->First());
+        string name = getName(node->Second());
+        AST::Class *clas = m_builder->startClass(type, name);
+	//PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+	//addComments(clas, cspec->GetComments());
+
+	// Create Template type
+	Type::Type::vector_t templ_params;
+	Ptree* params = def->Third();
+	while (params) {
+	    Ptree* param = params->First();
+	    //param->Display2(cout);
+	    if (param->First()->Eq("class") || param->First()->Eq("typename")) {
+		// This parameter specifies a type, add as base
+		Type::Base* base = m_builder->Base(getName(param->Second()));
+		m_builder->add(base);
+		templ_params.push_back(base);
+	    } else {
+		// This parameter specifies a value or something
+		// TODO: read spec and figure out wtf this is.
+	    }
+	    params = Ptree::Rest(params->Rest());
+	}
+	Type::Template* templ = new Type::Template(clas->name(), clas, templ_params);
+	clas->setTemplateType(templ);
+
+	// Now that template args have been created, translate parents
+	clas->parents() = TranslateInheritanceSpec(node->Nth(2));
+	m_builder->updateBaseSearch();
+
+        // Translate the body of the class
+	TranslateBlock(node->Nth(3));
+	m_builder->endClass();
+    }
+    return 0; 
+}
+
+//. Linkage Spec
+//. [ extern ["C++"] [{ body }] ]
+Ptree* SWalker::TranslateLinkageSpec(Ptree* node)
+{
+    Trace trace("SWalker::TranslateLinkageSpec");
+    Translate(node->Third());
     return 0;
 }
 
@@ -412,21 +495,79 @@ void SWalker::TranslateTypedefDeclarator(Ptree* node)
     m_builder->addTypedef(0, name, type, false);
 }
 
+Ptree* SWalker::TranslateFunctionImplementation(Ptree* node)
+{
+    Trace trace("SWalker::TranslateFunctionImplementation");
+    TranslateDeclarator(node->Third());
+    return 0;
+}
+
+Ptree* SWalker::TranslateAccessSpec(Ptree* spec)
+{
+    Trace trace("SWalker::TranslateAccessSpec");
+    AST::Access axs = AST::Default;
+    switch (spec->First()->What()) {
+	case PUBLIC: axs = AST::Public; break;
+	case PROTECTED: axs = AST::Protected; break;
+	case PRIVATE: axs = AST::Private; break;
+    }
+    m_builder->setAccess(axs);
+    return 0;
+}
+
+/* Enum Spec
+ *  [ enum [name] [{ [name [= value] ]* }] ]
+ */
+Ptree *SWalker::TranslateEnumSpec(Ptree *spec)
+{
+    //updateLineNumber(spec);
+    if (!spec->Second()) { return 0; /* anonymous enum */ }
+    string name = spec->Second()->ToString();
+
+    // Parse enumerators
+    vector<AST::Enumerator*> enumerators;
+    Ptree* penum = spec->Third()->Second();
+    AST::Enumerator* enumor;
+    while (penum) {
+	Ptree* penumor = penum->First();
+	if (penumor->IsLeaf()) {
+	    // Just a name
+	    enumor = m_builder->addEnumerator(0, penumor->ToString(), "");
+	    //addComments(enumor, static_cast<CommentedLeaf*>(penumor)->GetComments());
+	} else {
+	    // Name = Value
+	    string name = penumor->First()->ToString(), value;
+	    if (penumor->Length() == 3) {
+		value = penumor->Third()->ToString();
+	    }
+	    enumor = m_builder->addEnumerator(0, name, value);
+	    //addComments(enumor, static_cast<CommentedLeaf*>(penumor->First())->GetComments());
+	}
+	enumerators.push_back(enumor);
+	penum = Ptree::Rest(penum);
+	// Skip comma
+	if (penum && penum->Car() && penum->Car()->Eq(','))
+	    penum = Ptree::Rest(penum);
+    }
+
+    // Create AST.Enum object
+    /*AST::Enum* theEnum = */ m_builder->addEnum(0,name,enumerators);
+    //addComments(theEnum, m_declaration->GetComments());
+    return 0;
+}
+
+
 Ptree* SWalker::TranslateTemplateInstantiation(Ptree*) { Trace trace("SWalker::TranslateTemplateInstantiation NYI"); return 0; }
 Ptree* SWalker::TranslateExternTemplate(Ptree*) { Trace trace("SWalker::TranslateExternTemplate NYI"); return 0; }
-Ptree* SWalker::TranslateTemplateClass(Ptree*, Ptree*) { Trace trace("SWalker::TranslateTemplateClass NYI"); return 0; }
 Ptree* SWalker::TranslateTemplateFunction(Ptree*, Ptree*) { Trace trace("SWalker::TranslateTemplateFunction NYI"); return 0; }
 Ptree* SWalker::TranslateMetaclassDecl(Ptree*) { Trace trace("SWalker::TranslateMetaclassDecl NYI"); return 0; }
-Ptree* SWalker::TranslateLinkageSpec(Ptree*) { Trace trace("SWalker::TranslateLinkageSpec NYI"); return 0; }
 Ptree* SWalker::TranslateUsing(Ptree*) { Trace trace("SWalker::TranslateUsing NYI"); return 0; }
 
 Ptree* SWalker::TranslateStorageSpecifiers(Ptree*) { Trace trace("SWalker::TranslateStorageSpecifiers NYI"); return 0; }
-Ptree* SWalker::TranslateFunctionImplementation(Ptree*) { Trace trace("SWalker::TranslateFunctionImplementation NYI"); return 0; }
 Ptree* SWalker::TranslateFunctionBody(Ptree*) { Trace trace("SWalker::TranslateFunctionBody NYI"); return 0; }
 
-Ptree* SWalker::TranslateEnumSpec(Ptree*) { Trace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
+//Ptree* SWalker::TranslateEnumSpec(Ptree*) { Trace trace("SWalker::TranslateEnumSpec NYI"); return 0; }
 
-Ptree* SWalker::TranslateAccessSpec(Ptree*) { Trace trace("SWalker::TranslateAccessSpec NYI"); return 0; }
 Ptree* SWalker::TranslateAccessDecl(Ptree*) { Trace trace("SWalker::TranslateAccessDecl NYI"); return 0; }
 Ptree* SWalker::TranslateUserAccessSpec(Ptree*) { Trace trace("SWalker::TranslateUserAccessSpec NYI"); return 0; }
 

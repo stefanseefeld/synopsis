@@ -49,6 +49,7 @@ Builder::Builder()
     AST::Name name;
     m_scope = m_global = new AST::Scope("", 0, "file", name);
     Scope* global = findScope(m_global);
+    m_scope = m_global;
     m_scopes.push(global);
     // Insert the global base types
     global->dict->insert(Base("char"));
@@ -62,6 +63,10 @@ Builder::Builder()
     global->dict->insert(Base("double"));
     global->dict->insert(Base("void"));
     global->dict->insert(Base("..."));
+    global->dict->insert(Base("long long"));
+    global->dict->insert(Base("long double"));
+    global->dict->insert(Base("true"));
+    global->dict->insert(Base("false"));
 }
 
 Builder::~Builder()
@@ -82,21 +87,48 @@ Builder::Scope* Builder::findScope(AST::Scope* decl)
     return iter->second;
 }
 
+void Builder::setAccess(AST::Access axs)
+{
+    m_scopes.top()->access = axs;
+}
+
 void Builder::add(AST::Declaration* decl)
 {
+    //cout << "adding decl " << decl->name().back() << endl;
+    // Set access
+    decl->setAccess(m_scopes.top()->access);
     // Add declaration
     m_scope->declarations().push_back(decl);
     // Add to name dictionary
     m_scopes.top()->dict->insert(decl);
 }
 
+void Builder::add(Type::Named* type)
+{
+    //cout << "adding type " << type->name().back() << endl;
+    // Add to name dictionary
+    m_scopes.top()->dict->insert(type);
+}
+
 AST::Namespace* Builder::startNamespace(string name)
 {
-    // Generate the name
-    AST::Name ns_name = extend(m_scope->name(), name);
-    // Create the Namespace
-    AST::Namespace* ns = new AST::Namespace(m_filename, 0, "namespace", ns_name);
-    add(ns);
+    // Check if namespace already exists
+    AST::Namespace* ns = NULL;
+    do {
+    if (m_scopes.top()->dict->has_key(name)) {
+	Type::Named* type = m_scopes.top()->dict->lookup(name);
+	Type::Declared* declared = dynamic_cast<Type::Declared*>(type);
+	if (!declared) { cout << "Warning: redeclaring namespace with name already used!" << endl; ns=NULL;break;}
+	ns = dynamic_cast<AST::Namespace*>(declared->declaration());
+	if (!ns) { cout << "Warning: redeclaring namespace with name already used!" << endl; break;}
+    } } while(0);
+    if (!ns) {
+	// Generate the name
+	AST::Name ns_name = extend(m_scope->name(), name);
+	// Create the Namespace
+	ns = new AST::Namespace(m_filename, 0, "namespace", ns_name);
+	add(ns);
+    }
     // Push stack. Search is this NS plus enclosing NS's search
     Scope* scope = findScope(ns);
     scope->search.insert(
@@ -114,6 +146,45 @@ void Builder::endNamespace()
     // Check if it is a namespace...
     m_scopes.pop();
     m_scope = m_scopes.top()->scope_decl;
+}
+
+// Utility class to recursively add base classes to given search
+void Builder::addClassBases(AST::Class* clas, Scope::Search& search)
+{
+    vector<AST::Inheritance*>::iterator inh_iter = clas->parents().begin();
+    while (inh_iter != clas->parents().end()) {
+	AST::Inheritance* inh = *inh_iter++;
+	Type::Type* type = inh->parent();
+	Type::Declared* declared;
+	if ((declared = dynamic_cast<Type::Declared*>(type)) != NULL) {
+	    AST::Class* base;
+	    if ((base = dynamic_cast<AST::Class*>(declared->declaration())) != NULL) {
+		// Found a base class, so look it up
+		Scope* scope = findScope(base);
+		search.push_back(scope);
+		// Recursively add..
+		addClassBases(base, search);
+	    }
+	}
+	// TODO: handle typedefs and parameterized types
+    }
+}
+
+void Builder::updateBaseSearch()
+{
+    Scope* scope = m_scopes.top();
+    AST::Class* clas = dynamic_cast<AST::Class*>(scope->scope_decl);
+    if (!clas) return;
+    Scope::Search search = scope->search;
+    Scope::Search::iterator iter = search.begin();
+    scope->search.clear();
+    // Add the scope itself
+    scope->search.push_back(*iter++);
+    // Add base classes
+    addClassBases(clas, scope->search);
+    // Add containing scopes, stored in search
+    while (iter != search.end())
+	scope->search.push_back(*iter++);
 }
 
 AST::Class* Builder::startClass(string type, string name)
@@ -173,6 +244,23 @@ AST::Typedef* Builder::addTypedef(int line, string name, Type::Type* alias, bool
     AST::Typedef* tdef = new AST::Typedef(m_filename, line, "typedef", scoped_name, alias, constr);
     add(tdef);
     return tdef;
+}
+
+//. Add an enumerator
+AST::Enumerator* Builder::addEnumerator(int line, string name, string value)
+{
+    AST::Name scoped_name = extend(m_scope->name(), name);
+    return new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
+}
+
+//. Add an enum
+AST::Enum* Builder::addEnum(int line, string name, const vector<AST::Enumerator*>& enumors)
+{
+    AST::Name scoped_name = extend(m_scope->name(), name);
+    AST::Enum* theEnum = new AST::Enum(m_filename, line, "enum", scoped_name);
+    theEnum->enumerators() = enumors;
+    add(theEnum);
+    return theEnum;
 }
 
 
@@ -269,6 +357,14 @@ Type::Forward* Builder::Forward(string name)
     AST::Name scope = m_scope->name();
     scope.push_back(name);
     return new Type::Forward(scope);
+}
+
+Type::Forward* Builder::addForward(string name)
+{
+    if (m_scopes.top()->dict->has_key(name))
+	return NULL;
+    Type::Forward* forward = Forward(name);
+    add(forward);
 }
 
 Type::Base* Builder::Base(string name)

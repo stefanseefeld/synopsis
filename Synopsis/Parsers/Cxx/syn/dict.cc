@@ -7,6 +7,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 #include <string>
 using std::string;
 using std::vector;
@@ -36,7 +37,8 @@ bool Dictionary::has_key(string name)
 }
 
 //. Lookup single
-Type::Named* Dictionary::lookup(string name) throw (MultipleError)
+//. TODO: the forward filtering could probably be doing much simpler!
+Type::Named* Dictionary::lookup(string name) throw (MultipleError, KeyError)
 {
     name_map::iterator iter = m->map.lower_bound(name);
     name_map::iterator end = m->map.upper_bound(name);
@@ -46,17 +48,31 @@ Type::Named* Dictionary::lookup(string name) throw (MultipleError)
     Type::Named* type = iter->second;
     if (++iter == end)
 	return type;
+    // Check for Forward types
+    if (dynamic_cast<Type::Forward*>(type)) {
+	// Skip further forward types
+	while (iter != end && dynamic_cast<Type::Forward*>(iter->second))
+	    ++iter;
+	if (iter == end)
+	    return type;
+	type = (iter++)->second;
+	// Any other types that aren't forwards cause error
+	while (iter != end && dynamic_cast<Type::Forward*>(iter->second))
+	    ++iter;
+	if (iter == end)
+	    return type;
+    }
     // Create exception object
-    MultipleError* exc = new MultipleError;
-    exc->types.push_back(type);
+    MultipleError exc;
+    exc.types.push_back(type);
     do {
-	exc->types.push_back(iter->second);
+	exc.types.push_back(iter->second);
     } while (++iter != end);
     throw exc;
 }
 
 //. Lookup multiple
-vector<Type::Named*> Dictionary::lookupMultiple(string name)
+vector<Type::Named*> Dictionary::lookupMultiple(string name) throw (KeyError)
 {
     name_map::iterator iter = m->map.lower_bound(name);
     name_map::iterator end = m->map.upper_bound(name);
