@@ -92,37 +92,37 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="E.e">
+  <instance class="Synopsis.Type.Declared" language="C++" name="D">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="D.f(int)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="E.f(int)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="D.f(char)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="D.d1">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="D.d2">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="D">
+  <instance class="Synopsis.Type.Declared" language="C++" name="D.f(char)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="D.f(int)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="E">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="f()">
+  <instance class="Synopsis.Type.Declared" language="C++" name="E.e">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="d1">
+  <instance class="Synopsis.Type.Declared" language="C++" name="E.f(int)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="D.d1">
+  <instance class="Synopsis.Type.Declared" language="C++" name="d1">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="f()">
    <declaration/>
   </instance>
  </types>

@@ -79,34 +79,34 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="foo()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="X.f(int)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="obj">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="X.a">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="pmi">
+  <instance class="Synopsis.Type.Declared" language="C++" name="X.f(int)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="foo()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="obj">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="pmc">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="pmd">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="pobj">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="pmf">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="pmc">
+  <instance class="Synopsis.Type.Declared" language="C++" name="pmi">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="pobj">
    <declaration/>
   </instance>
  </types>

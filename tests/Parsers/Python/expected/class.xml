@@ -72,19 +72,19 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="Python" name="Parsers.Python.input">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="Python" name="Parsers">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="Python" name="Parsers.Python">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="Python" name="Parsers.Python.input.class.Class">
+  <instance class="Synopsis.Type.Declared" language="Python" name="Parsers.Python.input">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="Python" name="Parsers.Python.input.class">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="Python" name="Parsers.Python.input.class.Class">
    <declaration/>
   </instance>
  </types>

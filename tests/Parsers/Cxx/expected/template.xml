@@ -159,43 +159,31 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list.m_size">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list.replace(int,const T&amp;)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Object.Object()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list.size()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Object.f">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Object">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list.list()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Object.operator=(const Object&amp;)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="main()">
+  <instance class="Synopsis.Type.Declared" language="C++" name="Object.Object()">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Object.Object(const Object&amp;)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="Object.f">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="Object.func()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Object.operator=(const Object&amp;)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list.list()">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.list(T*)">
@@ -204,7 +192,19 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="list.m_array">
    <declaration/>
   </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list.m_size">
+   <declaration/>
+  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.operator[](int)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list.replace(int,const T&amp;)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="list.size()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="main()">
    <declaration/>
   </instance>
  </types>

@@ -98,10 +98,10 @@
   <instance class="Synopsis.Type.Declared" language="C++" name="CAT">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const Foo&amp;,const Foo&amp;)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const Foo&amp;,const Foo&amp;)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="operator+=(const Foo&amp;,const Foo&amp;)">

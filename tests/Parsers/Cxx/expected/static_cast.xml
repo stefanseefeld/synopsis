@@ -37,16 +37,16 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="CAT_D">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="AB">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="XY">
+  <instance class="Synopsis.Type.Declared" language="C++" name="CAT">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="CAT">
+  <instance class="Synopsis.Type.Declared" language="C++" name="CAT_D">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="XY">
    <declaration/>
   </instance>
  </types>

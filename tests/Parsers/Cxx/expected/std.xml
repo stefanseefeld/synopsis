@@ -1160,12 +1160,6 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.func(std::vector&lt;int&gt;)">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Unknown" language="C++" name="__gnu_cxx">
    <link>
     __gnu_cxx
@@ -1177,6 +1171,12 @@
    </link>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.func(std::vector&lt;int&gt;)">
    <declaration/>
   </instance>
  </types>
@@ -1191,7 +1191,7 @@
    /usr/include/c++/3.2.2/cstddef
   </file>
   <file>
-   /usr/include/alloca.h
+   /usr/include/c++/3.2.2/bits/fpos.h
   </file>
   <file>
    /usr/include/c++/3.2.2/bits/stl_alloc.h
@@ -1296,7 +1296,7 @@
    /usr/include/c++/3.2.2/bits/stringfwd.h
   </file>
   <file>
-   /usr/include/bits/wordsize.h
+   /usr/include/bits/posix1_lim.h
   </file>
   <file>
    /usr/include/bits/typesizes.h
@@ -1341,7 +1341,7 @@
    /usr/include/bits/select.h
   </file>
   <file>
-   /usr/include/c++/3.2.2/bits/fpos.h
+   /usr/include/alloca.h
   </file>
   <file>
    /usr/include/c++/3.2.2/ctime
@@ -1404,7 +1404,7 @@
    /usr/include/sched.h
   </file>
   <file>
-   /usr/include/bits/posix1_lim.h
+   /usr/include/bits/wordsize.h
   </file>
   <file>
    /usr/include/c++/3.2.2/vector

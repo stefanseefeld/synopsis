@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.8 2003/12/02 05:45:03 stefan Exp $
+# $Id: Dump.py,v 1.9 2003/12/28 21:46:37 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -185,7 +185,9 @@ class Formatter(Processor):
 
    def write_types(self, types):
       self.node = dom.createElement("types")
-      for t in types.values(): self.visit(t)
+      values = types.values()
+      values.sort()
+      for t in values: self.visit(t)
       self.node.writexml(self.os, indent=" ", addindent=" ", newl="\n")
       self.node.unlink()
       del self.node

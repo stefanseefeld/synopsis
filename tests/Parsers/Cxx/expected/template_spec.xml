@@ -109,19 +109,19 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int&gt;.list(int*,int)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="list">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list.list(T*,int)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int&gt;">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int&gt;">
+  <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;int&gt;.list(int*,int)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="list&lt;void&gt;">

@@ -114,25 +114,25 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const B&amp;,const B&amp;)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="func(B)">
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="func(A)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const A&amp;,const A&amp;)">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="main()">
+  <instance class="Synopsis.Type.Declared" language="C++" name="func(B)">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="func(int)">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+  <instance class="Synopsis.Type.Declared" language="C++" name="main()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const A&amp;,const A&amp;)">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="operator+(const B&amp;,const B&amp;)">
    <declaration/>
   </instance>
  </types>

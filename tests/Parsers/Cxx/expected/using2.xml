@@ -56,37 +56,37 @@
   </instance>
  </declarations>
  <types>
-  <instance class="Synopsis.Type.Declared" language="C++" name="A.D.f2()">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="f4()">
+  <instance class="Synopsis.Type.Declared" language="C++" name="A.B">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.B.C">
    <declaration/>
   </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="A.i">
-   <declaration/>
-  </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.B.C.i">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="A.f3()">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
-   <declaration/>
-  </instance>
-  <instance class="Synopsis.Type.Declared" language="C++" name="A.B">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.B.f1()">
    <declaration/>
   </instance>
   <instance class="Synopsis.Type.Declared" language="C++" name="A.D">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="A.D.f2()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="A.f3()">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="A.i">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="f4()">
    <declaration/>
   </instance>
  </types>
