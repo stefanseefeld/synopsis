@@ -1,4 +1,4 @@
-#!/s/perl/bin/perl
+#!/usr/bin/perl
 
 # ^C is caught to allow for cleanup
 &allow_quit;
@@ -26,7 +26,7 @@ $create_output = 0;
 
 $max_time = 3600;        # 60 minutes to live by default
 
-$command = "../../src/ctdemo -s";    # The command to run
+$command = "../../src/ctdemo ";    # The command to run
 
                                  # command line options
 $options = '';
