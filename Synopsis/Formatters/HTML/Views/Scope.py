@@ -1,4 +1,4 @@
-# $Id: Scope.py,v 1.24 2003/11/15 19:01:53 stefan Exp $
+# $Id: Scope.py,v 1.25 2003/11/16 01:45:27 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -13,7 +13,7 @@ from Synopsis import AST
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.HTML.Page import Page
 from Synopsis.Formatters.HTML.Tags import *
-from Synopsis.Formatters.HTML.ASTFormatter import *
+from Synopsis.Formatters.HTML.Parts import *
 import time, os
 
 class Scope(Page):

@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.12 2003/11/15 19:01:53 stefan Exp $
+# $Id: DirBrowse.py,v 1.13 2003/11/16 01:45:27 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -7,7 +7,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Processor import Parametrized
+from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Page import Page
 from Synopsis.Formatters.HTML.Tags import *

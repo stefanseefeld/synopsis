@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.7 2003/11/15 19:55:31 stefan Exp $
+# $Id: Formatter.py,v 1.8 2003/11/16 01:45:27 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -173,7 +173,7 @@ class Formatter(Processor):
       """test whether the given page is part of the pages list."""
 
       return reduce(lambda x, y: x or y,
-                    map(lambda x: x.__class__.__name__ = page_name,
+                    map(lambda x: x.__class__.__name__ == page_name,
                         self.pages))
 
    def get_toc(self, start):

@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.14 2003/11/15 19:01:53 stefan Exp $
+# $Id: XRef.py,v 1.15 2003/11/16 01:45:27 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -147,7 +147,6 @@ class XRef(Page):
       self.write(entity('h2', desc + jname) + '<ul>\n')
 	
       if self.link_to_scope:
-         types = 
          type = self.processor.ast.types().get(name, None)
          if isinstance(type, Type.Declared):
             link = self.processor.file_layout.link(type.declaration())
