@@ -1,0 +1,6 @@
+[nil [int] [#i@1a[a]] ;]
+[nil [double] [#d@1b[b]] ;]
+[nil [struct [nil nil] [{
+ nil
+}]] [#5`0000@1c[c]] ;]
+[nil [void] [#Fid_v@1d[d ( [[[int] #i[nil]] , [[double] #d[nil]]] )]] ;]

@@ -1,0 +1,36 @@
+Declaration : 
+ int a ;
+Declarator : 
+name : 
+1a
+a 
+type : 
+i
+ 
+Declaration : 
+ double b ;
+Declarator : 
+name : 
+1b
+b 
+type : 
+d
+ 
+Declaration : 
+ struct   {  } c ;
+Declarator : 
+name : 
+1c
+c 
+type : 
+5`0000
+`0000 
+Declaration : 
+ void d ( int  , double  ) ;
+Declarator : 
+name : 
+1d
+d 
+type : 
+Fid_v
+       

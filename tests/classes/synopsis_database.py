@@ -8,8 +8,8 @@
 
 from qm.fields import TextField
 from qm.test import database
-from qm.test.database import TestDescriptor
-from qm.test.database import NoSuchTestError, NoSuchSuiteError
+from qm.test.database import TestDescriptor, ResourceDescriptor
+from qm.test.database import NoSuchTestError, NoSuchSuiteError, NoSuchResourceError
 from explicit_suite import ExplicitSuite
 from qm.test.suite import Suite
 
@@ -28,6 +28,36 @@ class Database(database.Database):
    def get_src_path(self, id) : return self.srcdir + os.sep + id.replace('.', os.sep)
    def get_build_path(self, id) : return id.replace('.', os.sep)
 
+   def GetResource(self, id):
+      """Construct a resource for the given id.
+      For now the only resources provided are OpenCxx test applets."""
+
+      if not id.startswith('OpenCxx'): raise NoSuchResourceError(id)
+
+      parameters = {}
+      parameters['CXX'] = self.CXX
+      parameters['CPPFLAGS'] = (self.CPPFLAGS +
+                                ' -I../Synopsis/Parsers/Cxx/occ' +
+                                ' -I%s/../Synopsis/Parsers/Cxx/occ'%self.srcdir)
+      parameters['CXXFLAGS'] = self.CXXFLAGS
+      parameters['LDFLAGS'] = self.LDFLAGS
+      parameters['LIBS'] = self.LIBS
+      parameters['builddir'] = '../Synopsis/Parsers/Cxx'
+
+
+      if id == 'OpenCxx.Lexer':
+         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Lexer.cc'%self.srcdir)
+         parameters['exe'] = os.path.normpath('OpenCxx/bin/Lexer')
+      elif id == 'OpenCxx.Parser':
+         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Parser.cc'%self.srcdir)
+         parameters['exe'] = os.path.normpath('OpenCxx/bin/Parser')
+      elif id == 'OpenCxx.Encoding':
+         parameters['src'] = os.path.normpath('%s/OpenCxx/src/Encoding.cc'%self.srcdir)
+         parameters['exe'] = os.path.normpath('OpenCxx/bin/Encoding')
+      else: raise NoSuchResourceError(id)
+
+      return ResourceDescriptor(self, id, 'synopsis_test.OpenCxxResource', parameters)
+      
    def GetSuite(self, id):
       """Construct a suite for the given id.
       For suites there is a general mapping from ids to paths:
@@ -78,12 +108,18 @@ class Database(database.Database):
          else:
             suite_ids = get_dir_suites(id)
 
+      elif id.startswith('OpenCxx'):
+         if os.path.isdir(os.path.join(self.get_src_path(id), 'input')):
+            test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'), '.cc')
+         else:
+            suite_ids = get_dir_suites(id)
+
       else:
          if os.path.isfile(os.path.join(self.get_build_path(id), 'synopsis.py')):
             test_ids = get_file_tests(os.path.join(self.get_src_path(id), 'input'))
          else:
             suite_ids = get_dir_suites(id)
-         
+
       # ignore accidental inclusion of false tests / suites
       if '.svn' in test_ids: test_ids.remove('.svn')
       if '.svn' in suite_ids: suite_ids.remove('.svn')
@@ -92,6 +128,7 @@ class Database(database.Database):
       if id:
          test_ids = ['%s.%s'%(id, t) for t in test_ids]
          suite_ids = ['%s.%s'%(id, s) for s in suite_ids]
+
       arguments = {'test_ids' : test_ids, 'suite_ids' : suite_ids}
 
       return ExplicitSuite(arguments,
@@ -107,6 +144,7 @@ class Database(database.Database):
       if id.startswith('Processors.Linker'): return self.make_linker_test(id)
       elif id.startswith('Cxx-API'): return self.make_api_test(id)
       elif id.startswith('CTool'): return self.make_ctool_test(id)
+      elif id.startswith('OpenCxx'): return self.make_opencxx_test(id)
       else: return self.make_processor_test(id)
 
    def make_processor_test(self, id):
@@ -184,7 +222,7 @@ class Database(database.Database):
 
    def make_ctool_test(self, id):
       """A test id 'a.b.c' corresponds to an input file
-      'a/b/input/c.<ext>. Create a ProcessorTest if that
+      'a/b/input/c.<ext>. Create a CToolTest if that
       input file exists, and throw NoSuchTestError otherwise."""
 
       components = id.split('.')
@@ -206,4 +244,35 @@ class Database(database.Database):
       parameters['ctool'] = ctool
       
       return TestDescriptor(self, id, 'synopsis_test.CToolTest', parameters)
+
+   def make_opencxx_test(self, id):
+      """A test id 'a.b.c' corresponds to an input file
+      'a/b/input/c.<ext>. Create an OpenCxxTest if that
+      input file exists, and throw NoSuchTestError otherwise."""
+
+      components = id.split('.')
+      dirname = os.path.join(*[self.srcdir] + components[:-1])
+
+      input = os.path.join(dirname, 'input', components[-1]) + '.cc'
+      output = os.path.join(*components[:-1] + ['output', components[-1] + '.out'])
+         
+      if not os.path.isfile(input): raise NoSuchTestError, id
+
+      expected = os.path.join(dirname, 'expected', components[-1] + '.out')
+
+      parameters = {}
+      parameters['input'] = input
+      parameters['output'] = output
+      parameters['expected'] = expected
+      if id.startswith('OpenCxx.Lexer'):
+         parameters['resources'] = ['OpenCxx.Lexer']
+         parameters['applet'] = 'OpenCxx/bin/Lexer'
+      if id.startswith('OpenCxx.Parser'):
+         parameters['resources'] = ['OpenCxx.Parser']
+         parameters['applet'] = 'OpenCxx/bin/Parser'
+      if id.startswith('OpenCxx.Encoding'):
+         parameters['resources'] = ['OpenCxx.Encoding']
+         parameters['applet'] = 'OpenCxx/bin/Encoding'
+         
+      return TestDescriptor(self, id, 'synopsis_test.OpenCxxTest', parameters)
 
