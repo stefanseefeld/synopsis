@@ -42,7 +42,7 @@ void *LoadSoLib(char *) { return 0;}
 void *LookupSymbol(void *, char *) { return 0;}
 
 // If true then everything but what's in the main file will be stripped
-bool syn_main_only, syn_extract_tails;
+bool syn_main_only, syn_extract_tails, syn_use_gcc;
 
 // If set then this is stripped from the start of all filenames
 const char* syn_basename = "";
@@ -77,6 +77,7 @@ void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *
     sharedLibraryName = 0;
     syn_main_only = false;
     syn_extract_tails = false;
+    syn_use_gcc = false;
 
     size_t argsize = PyList_Size(args);
     for (size_t i = 0; i != argsize; ++i) {
@@ -89,6 +90,7 @@ void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *
 	else if (strcmp(argument, "-t") == 0) syn_extract_tails = true;
 	else if (strcmp(argument, "-s") == 0)
 	    syn_storage = PyString_AsString(PyList_GetItem(args, ++i));
+	else if (strcmp(argument, "-g") == 0) syn_use_gcc = true;
     }
 }
   
@@ -99,33 +101,69 @@ char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 	perror("RunPreprocessor");
 	exit(1);
     }
+    if (syn_use_gcc) {
+	switch(fork()) {
+	    case 0: {
+		vector<const char *> args = flags;
+		char *cc = getenv("CC");
+		args.insert(args.begin(), cc ? cc : "c++");
+		args.push_back("-C"); // keep comments
+		args.push_back("-E"); // stop after preprocessing
+		args.push_back("-o"); // output to...
+		args.push_back(dest);
+		args.push_back("-x"); // language c++
+		args.push_back("c++");
+		args.push_back(file);
+		args.push_back(0);
+		execvp(args[0], (char **)args.begin());
+		perror("cannot invoke compiler");
+		exit(-1);
+		break;
+	    }
+	    case -1:
+		perror("RunPreprocessor");
+		exit(-1);
+		break;
+	    default: {
+		int status;
+		wait(&status);
+		if (status != 0) {
+		    if (WIFEXITED(status))
+			cout << "exited with status " << WEXITSTATUS(status) << endl;
+		    else if (WIFSIGNALED(status))
+			cout << "stopped with status " << WTERMSIG(status) << endl;
+		    exit(1);
+		}
+	    }
+	} // switch
+    } else { // else use ucpp
+	// Create argv vector
+	vector<const char *> args = flags;
+	char *cc = getenv("CC");
+	args.insert(args.begin(), cc ? cc : "c++");
+	args.push_back("-C"); // keep comments
+	args.push_back("-lg"); // gcc-like line numbers
+	args.push_back("-Y"); // define system macros in tune.h
+	//args.push_back("-E"); // stop after preprocessing
+	// Add includes
+	args.push_back("-I");
+	args.push_back("/usr/include/g++-3/");
+	//args.push_back("-I");
+	//args.push_back("/usr/include/linux/");
+	args.push_back("-I");
+	args.push_back("/usr/lib/gcc-lib/i386-linux/2.95.3/include/");
+	args.push_back("-o"); // output to...
+	args.push_back(dest);
+	//args.push_back("-x"); // language c++
+	//args.push_back("c++");
+	args.push_back(file);
 
-    // Create argv vector
-    vector<const char *> args = flags;
-    char *cc = getenv("CC");
-    args.insert(args.begin(), cc ? cc : "c++");
-    args.push_back("-C"); // keep comments
-    args.push_back("-lg"); // gcc-like line numbers
-    args.push_back("-Y"); // define system macros in tune.h
-    //args.push_back("-E"); // stop after preprocessing
-    // Add includes
-    args.push_back("-I");
-    args.push_back("/usr/include/g++-3/");
-    //args.push_back("-I");
-    //args.push_back("/usr/include/linux/");
-    args.push_back("-I");
-    args.push_back("/usr/lib/gcc-lib/i386-linux/2.95.3/include/");
-    args.push_back("-o"); // output to...
-    args.push_back(dest);
-    //args.push_back("-x"); // language c++
-    //args.push_back("c++");
-    args.push_back(file);
-
-    // Call ucpp
-    int status = ucpp_main(args.size(), (char **)args.begin());
-    if (status != 0) {
-	cout << "ucpp returned error flag." << endl;
-	exit(1);
+	// Call ucpp
+	int status = ucpp_main(args.size(), (char **)args.begin());
+	if (status != 0) {
+	    cout << "ucpp returned error flag." << endl;
+	    exit(1);
+	}
     }
     return dest;
 }
