@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.23 2002/10/29 15:01:38 chalky Exp $
+# $Id: Util.py,v 1.24 2002/11/19 03:49:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.24  2002/11/19 03:49:49  chalky
+# Sort structs in PyWriter to make diffs of config files easier
+#
 # Revision 1.23  2002/10/29 15:01:38  chalky
 # Support names with spaces
 #
@@ -438,8 +441,10 @@ class PyWriter:
 	if t in (types.ClassType, types.InstanceType):
 	    self.ensure_struct()
 	    flatten_item = lambda kv, self=self: (kv[0], self.flatten_struct(kv[1]))
-	    items = lambda kv: kv[0] not in ('__init__', '__doc__', '__module__')
-	    return PyWriterStruct(map(flatten_item, filter(items, struct.__dict__.items()) ))
+	    filter_item = lambda kv: kv[0] not in ('__init__', '__doc__', '__module__')
+	    items = map(flatten_item, filter(filter_item, struct.__dict__.items()))
+	    items.sort()
+	    return PyWriterStruct(items)
 	return struct
     def write_PyWriterStruct(self, struct):
 	if not len(struct.dict): return self.write('struct()')
