@@ -67,13 +67,13 @@ data_files.append(('share/Synopsis', glob.glob('share/Synopsis/*.*')))
 #### add documentation
 
 def add_documentation(all, directory, files):
-   if directory[-3:] == 'CVS': return
+
+   if '.svn' in files: files.remove('.svn')
    all.append((directory,
                filter(os.path.isfile,
                       map(lambda x:os.path.join(directory, x), files))))
 documentation = []
 os.path.walk('share/doc/Synopsis', add_documentation, documentation)
-
 data_files.extend(documentation)
 
 setup(cmdclass={'config':config,
