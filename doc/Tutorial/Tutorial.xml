@@ -583,7 +583,7 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
   <appendix><title>Listing of all Processors and their parameters</title>
     <para>
       This is a listing of all processors with their respective parameters
-      that can be set as described in <xref linkend="parameters" />.
+      that can be set as described in <xref linkend="script" />.
     </para>
     <xi:include href="Synopsis.Parsers.Python.Parser.xml">
       <xi:fallback>The Python parser reference...</xi:fallback>
