@@ -12,9 +12,9 @@ from Synopsis import Util
 # The filename where infos are stored
 user_emulations_file = '~/.synopsis/cpp_emulations'
 
-# The list of default compilers. Note that the C syntax is not quite
-# supported, so including a bazillion different C compilers is futile.
-default_compilers = ['cc', 'c++', 'gcc', 'g++', 'cl']
+# The list of default compilers.
+default_cc_compilers = ['cc', 'gcc']
+default_cxx_compilers = ['c++', 'g++', 'cl']
 
 # A cache of the compiler info, loaded from the emulations file or calculated
 # by inspecting available compilers
@@ -27,12 +27,16 @@ failed = {}
 # The temporary filename
 temp_filename = None
 
-def get_temp_file():
+def get_temp_file(language):
     """Returns the temporary filename. The temp file is created, but is left
-    empty"""
+    empty. Choose an extension appropriate for the language, as some compilers
+    (notably gcc) will guess the language based on it."""
     global temp_filename
     if temp_filename: return temp_filename
-    temp_filename = tempfile.mktemp('.cc')
+    if language == 'C++':
+        temp_filename = tempfile.mktemp('.cc')
+    else:
+        temp_filename = tempfile.mktemp('.c')
     f = open(temp_filename, 'w')
     f.close()
     return temp_filename
@@ -49,6 +53,7 @@ class CompilerInfo:
 
     @attr compiler The name of the compiler, typically the executable name,
     which must either be in the path or given as an absolute pathname
+    @attr language The language the compiler is used for.
     @attr is_custom True if this is a custom compiler - in which case it will
     never be updated automatically.
     @attr timestamp The timestamp of the compiler binary
@@ -57,38 +62,13 @@ class CompilerInfo:
     macros. A value of '' (empty string) indicates an empty definition. A
     value of None (not a string) indicates that the macro should be undefined.
     """
-    def __init__(self, compiler, is_custom, timestamp, include_paths, macros):
+    def __init__(self, compiler, language, is_custom, timestamp, include_paths, macros):
         self.compiler = compiler
+        self.language = language
         self.is_custom = is_custom
         self.timestamp = timestamp
         self.include_paths = include_paths
         self.macros = macros
-
-def main():
-    """The main function - parses the arguments and controls the program"""
-    if len(sys.argv) < 2:
-        print usage
-        return
-
-    filename = sys.argv[1]
-    print "Filename is ", filename
-    if len(sys.argv) > 2:
-        compilers = sys.argv[2:]
-    else:
-        compilers = default_compilers
-    print "compilers are:", compilers
-
-    infos = get_compiler_infos(compilers)
-    if not infos:
-        print "No compilers found. Not writing file!"
-        return
-
-    file = open(filename, 'wt')
-    write_compiler_infos(infos, file)
-    file.close()
-
-    print "Found info about the following compilers:"
-    print string.join(map(lambda x: x[0], infos), ', ')
 
 def get_fallback(preferred, is_first_time):
     """Tries to return info from a fallback compiler, and prints a warning
@@ -108,10 +88,11 @@ def get_fallback(preferred, is_first_time):
         print "Unless you have set appropriate paths, expect errors."
     return None
 
-def get_compiler_info(compiler):
+def get_compiler_info(language, compiler):
     """Returns the compiler info for the given compiler. If non is
-    specified (''), return the first available one. The info is returned
-    as a CompilerInfo object, or None if the compiler isn't found. 
+    specified (''), return the first available one for the given language.
+    The info is returned as a CompilerInfo object, or None if the compiler
+    isn't found. 
     """
     global failed, compiler_infos
     # Check if this compiler has already been found to not exist
@@ -122,8 +103,10 @@ def get_compiler_info(compiler):
         # Try to load the emulations file
         compiler_infos = load_compiler_infos()
     # if no compiler was specified take first available one
-    if not compiler and len(compiler_infos) != 0:
-        compiler = compiler_infos.keys()[0]
+    for c in compiler_infos:
+        if compiler_infos[c].language == language:
+            compiler = c
+            break
     # See if wanted compiler was in file
     if compiler_infos.has_key(compiler):
         info = compiler_infos[compiler]
@@ -195,7 +178,7 @@ def refresh_compiler_infos(infos):
             del infos[compiler]
             failed[compiler] = None
     # Now try to add defaults
-    for compiler in default_compilers:
+    for compiler in default_cc_compilers + default_cxx_compilers:
         # Don't retry already-failed compilers
         if failed.has_key(compiler):
             continue
@@ -205,10 +188,6 @@ def refresh_compiler_infos(infos):
     # Cleanup the temp file
     cleanup_temp_file()
         
-
-#def get_compiler_infos(compilers):
-#    infos = filter(None, map(find_compiler_info, compilers))
-#    return infos
 
 def write_compiler_infos(infos):
     filename = os.path.expanduser(user_emulations_file)
@@ -227,6 +206,7 @@ def write_compiler_infos(infos):
         if ccomma: writer.write(",\n")
         else: ccomma = 1
         writer.write("'%s' : struct(\n"%compiler)
+        writer.write("language = '%s',\n" % info.language)
         writer.write('is_custom = %d,\n' % info.is_custom)
         writer.write('timestamp = %d,\n' % info.timestamp)
         writer.write("include_paths = ")
@@ -312,14 +292,19 @@ def find_ms_compiler_info(compiler):
         except:
             continue
 
-    return paths, macros
+    return 'C++', paths, macros
 
 def find_gcc_compiler_info(compiler):
     # Run the compiler with -v and get the displayed info
 
+    if compiler in ['cc', 'gcc']:
+        language = 'C'
+    else:
+        language = 'Cxx'
+
     paths, macros = [], []
 
-    command = 'LANG=en_US %s -E -v -dD %s'%(compiler, get_temp_file())
+    command = 'LANG=en_US %s -E -v -dD %s'%(compiler, get_temp_file(language))
     cin, out,err = os.popen3(command)
     lines = err.readlines()
     cin.close()
@@ -375,7 +360,7 @@ def find_gcc_compiler_info(compiler):
             # gcc 2.x needs this or it uses nonstandard syntax in the headers
             macros.append(('__STRICT_ANSI__', ''))
 
-    return paths, macros
+    return language, paths, macros
 
 def find_compiler_info(compiler):
     print "Finding info for '%s' ..."%compiler,
@@ -383,10 +368,10 @@ def find_compiler_info(compiler):
     paths, macros = [], []
 
     if compiler == 'cl' and os.name == 'nt':
-        paths, macros = find_ms_compiler_info(compiler)
+        language, paths, macros = find_ms_compiler_info(compiler)
 
     else:
-        paths, macros = find_gcc_compiler_info(compiler)
+        language, paths, macros = find_gcc_compiler_info(compiler)
         
     if not paths or not macros:
         print "Failed"
@@ -394,6 +379,6 @@ def find_compiler_info(compiler):
     print "Found"
 
     timestamp = get_compiler_timestamp(compiler)
-    return CompilerInfo(compiler, 0, timestamp, paths, macros)
+    return CompilerInfo(compiler, language, 0, timestamp, paths, macros)
 
    
