@@ -8,6 +8,8 @@
 #include <PTree/ConstEvaluator.hh>
 #include <sstream>
 #include <iomanip>
+#include <PTree/Writer.hh>
+#include <PTree/Display.hh>
 
 using namespace PTree;
 
@@ -29,7 +31,6 @@ void ConstEvaluator::visit(Literal *node)
   {
     case Token::Constant:
     {
-//       std::cout << '"' << *node->position() << node->position()[1] << '"' << std::endl;
       if (*node->position() == '0' && 
 	  (node->position()[1] == 'x' || node->position()[1] == 'X'))
       {
@@ -74,7 +75,7 @@ void ConstEvaluator::visit(InfixExpr *node)
   long left, right;
   if (!evaluate(first(node), left) ||
       !evaluate(third(node), right))
-    my_valid = false;
+    return;
 
   Node *op = second(node);
   assert(op->is_atom() && op->length() <= 2);
@@ -130,4 +131,45 @@ void ConstEvaluator::visit(InfixExpr *node)
     my_value = left || right;
   else
     my_valid = false;
+}
+
+void ConstEvaluator::visit(UnaryExpr *node)
+{
+  Node *op = node->car();
+  Node *expr = node->cdr()->car();
+  assert(op->is_atom() && op->length() == 1);
+  if (!evaluate(expr, my_value)) return;
+
+  switch (*op->position()) // '*' and '&' do not apply to constant expressions
+  {
+    case '+': break; 
+    case '-':
+      my_value = -my_value;
+      break;
+    case '!': 
+      my_value = !my_value;
+      break;
+    case '~': 
+      my_value = ~my_value;
+      break;
+    default:
+      my_valid = false;
+  }
+}
+
+void ConstEvaluator::visit(CondExpr *node)
+{
+  long condition;
+  if (!evaluate(node->car(), condition)) return;
+  if (condition) // interpret as bool
+    my_valid = evaluate(PTree::tail(node->cdr(), 1)->car(), my_value);
+  else
+    my_valid = evaluate(PTree::tail(node->cdr(), 3)->car(), my_value);
+}
+
+void ConstEvaluator::visit(ParenExpr *node)
+{
+  Node *body = node->cdr()->car();
+  if (!body) my_valid = false;
+  else body->accept(this);
 }

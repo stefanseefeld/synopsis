@@ -8,3 +8,11 @@ initializer : 22
 value : 22
 initializer : e
 value : none
+initializer : 1 > 2 ? 1 : 2
+value : 2
+initializer : ( 24 >> 3 )
+value : 3
+initializer : ( - 1 )
+value : -1
+initializer : ~ 0
+value : -1
