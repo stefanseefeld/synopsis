@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.31 2001/02/16 02:29:55 chalky Exp $
+#  $Id: synopsis,v 1.32 2001/02/17 00:19:54 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -155,9 +155,11 @@ def parseArgs(args):
 
         if o == "-p" or o == "--parser":
             parser_cmd = a
+	    config_args['parser'] = a
 
         elif o == "-f" or o == "--formatter":
             formatter_cmd = a
+	    config_args['formatter'] = a
 
         elif o == "-W":
             if a[0] == "p":
