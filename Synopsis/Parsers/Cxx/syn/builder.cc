@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: builder.cc source file
 // Implementation of the Builder class
 
-// $Id: builder.cc,v 1.43 2003/01/16 10:19:03 chalky Exp $
+// $Id: builder.cc,v 1.44 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: builder.cc,v $
+// Revision 1.44  2003/01/27 06:53:37  chalky
+// Added macro support for C++.
+//
 // Revision 1.43  2003/01/16 10:19:03  chalky
 // Prevent true, false and null appearing in output
 //
@@ -256,6 +259,14 @@ void Builder::add(Types::Named* type)
 {
     // Add to name dictionary
     m_scopes.back()->dict->insert(type);
+}
+
+void Builder::add_macros(const std::vector<AST::Macro*>& macros)
+{
+    std::vector<AST::Macro*>::const_iterator iter;
+    for (iter = macros.begin(); iter != macros.end(); iter++)
+	m_global->declarations().push_back(*iter);
+
 }
 
 AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nstype)

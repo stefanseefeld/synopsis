@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.cc source file
 // Implementation of the AST classes
 
-// $Id: ast.cc,v 1.18 2003/01/16 17:14:10 chalky Exp $
+// $Id: ast.cc,v 1.19 2003/01/27 06:53:36 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: ast.cc,v $
+// Revision 1.19  2003/01/27 06:53:36  chalky
+// Added macro support for C++.
+//
 // Revision 1.18  2003/01/16 17:14:10  chalky
 // Increase AST version number. SourceFiles store full filename. Executor/Project
 // uses it to check timestamp for all included files when deciding whether to
@@ -94,6 +97,24 @@ Declaration::declared()
     if (!m_declared)
         m_declared = new Types::Declared(m_name, this);
     return m_declared;
+}
+
+//
+// AST::Macro
+//
+
+Macro::Macro(SourceFile* file, int line, const ScopedName& name, Parameters* params, const std::string& text)
+    : Declaration(file, line, "macro", name),
+    m_parameters(params), m_text(text)
+{ }
+
+Macro::~Macro()
+{ }
+
+void
+Macro::accept(Visitor* visitor)
+{
+    visitor->visit_macro(this);
 }
 
 //
@@ -336,6 +357,10 @@ Visitor::~Visitor()
 {}
 void Visitor::visit_declaration(Declaration*)
 {}
+void Visitor::visit_macro(Macro* d)
+{
+    visit_declaration(d);
+}
 void Visitor::visit_scope(Scope* d)
 {
     visit_declaration(d);

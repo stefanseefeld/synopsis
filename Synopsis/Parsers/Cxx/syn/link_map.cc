@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: LinkMap.cc source file
 // Implementation of the LinkMap class
 
-// $Id: link_map.cc,v 1.5 2002/12/12 17:25:34 chalky Exp $
+// $Id: link_map.cc,v 1.6 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 
 // $Log: link_map.cc,v $
+// Revision 1.6  2003/01/27 06:53:37  chalky
+// Added macro support for C++.
+//
 // Revision 1.5  2002/12/12 17:25:34  chalky
 // Implemented Include support for C++ parser. A few other minor fixes.
 //
@@ -50,6 +53,8 @@
 #include <set>
 #include <string>
 
+//. This vector is initialised on first use (if any) by synopsis_define_hook
+std::vector<AST::Macro*>* syn_macro_defines = NULL;
 
 namespace
 {
@@ -153,6 +158,35 @@ extern "C"
 	AST::SourceFile* target = filter->get_sourcefile(target_file);
 	AST::Include* include = new AST::Include(target, is_macro, is_next);
 	file->includes().push_back(include);
+    }
+
+    //. This function is a callback from the ucpp code to store macro
+    //. definitions
+    void synopsis_define_hook(const char* filename, int line, const char* name, int num_args, const char** args, int vaarg, const char* text)
+    {
+	FileFilter* filter = FileFilter::instance();
+	if (!filter)
+	    return;
+	AST::SourceFile* file = filter->get_sourcefile(filename);
+	if (!file->is_main())
+	    return;
+	if (syn_macro_defines == NULL)
+	    syn_macro_defines = new std::vector<AST::Macro*>;
+	AST::Macro::Parameters* params = NULL;
+	if (args != NULL)
+	{
+	    params = new AST::Macro::Parameters;
+	    for (int i = 0; i < num_args; i++)
+		params->push_back(args[i]);
+	    if (vaarg)
+		params->push_back("...");
+	}
+	ScopedName macro_name;
+	macro_name.push_back(name);
+	AST::Macro* macro = new AST::Macro(file, line, macro_name, params, text);
+	//. Don't know global NS yet.. Will have to extract these later
+	file->declarations().push_back(macro);
+	syn_macro_defines->push_back(macro);
     }
 };
 // vim: set ts=8 sts=4 sw=4 et:

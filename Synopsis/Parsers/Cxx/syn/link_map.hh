@@ -2,7 +2,7 @@
 // The LinkMap class which maps preprocessed file positions to input file
 // positions
 
-// $Id: link_map.hh,v 1.4 2002/12/12 17:25:34 chalky Exp $
+// $Id: link_map.hh,v 1.5 2003/01/27 06:53:37 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -25,6 +25,13 @@
 
 #ifndef H_SYNOPSIS_CPP_LINKMAP
 #define H_SYNOPSIS_CPP_LINKMAP
+
+#include <vector>
+#include "ast.hh"
+
+//. Declared in link_map.cc just because all the ucpp->synopsis hooks are
+//. there for now.
+extern std::vector<AST::Macro*>* syn_macro_defines;
 
 //. LinkMap is a map from preprocessed file positions to input file positions
 class LinkMap
