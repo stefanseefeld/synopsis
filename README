@@ -40,6 +40,11 @@ probably need to specify --disable-gc to configure.
 * run ./configure (with parameters, if appropriate)
 * run make
 
+Note that ./configure will also run configure in Synopsis/Parser/C++/gc,
+unless you specify the --disable-gc option. Configure is run with default
+options - to change these please manually run ./configure from that directory
+also.
+
 ** Installing
 
 Ensure you have write permissions to the install prefix directories (eg: log
