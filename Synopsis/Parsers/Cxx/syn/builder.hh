@@ -24,7 +24,7 @@ typedef vector<string> Name;
 class Builder {
 public:
     //. Constructor
-    Builder();
+    Builder(string basename);
     //. Destructor. Recursively destroys all AST objects
     ~Builder();
 
@@ -111,6 +111,9 @@ public:
     Type::Unknown* addUnknown(string name);
 
 private:
+    //. Base filename to strip from the start of all filenames
+    string m_basename;
+
     //. Current filename
     string m_filename;
 
