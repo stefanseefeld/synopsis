@@ -32,7 +32,7 @@
   OF THE POSSIBILITY OF SUCH DAMAGES.
 */
 
-#include "PTree.hh" // for MopWarningMessage only !
+#include <PTree.hh> // for MopWarningMessage only !
 #include <PTree/generation.hh>
 #include <cstdio>
 #include <cstring>
@@ -41,7 +41,7 @@
 #if !defined(_MSC_VER)
 #include <sys/time.h>
 #endif
-// #include "Lexer.hh"
+#include "Lexer.hh" // for is_xletter et al.
 // #include "Class.hh"
 
 #if (defined(sun) && defined(SUNOS4)) || defined(SUNOS5)

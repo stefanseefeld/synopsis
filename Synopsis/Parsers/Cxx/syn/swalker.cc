@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include <occ/PTree.hh>
+#include <occ/PTree/Writer.hh>
 #include <occ/Parser.hh>
 
 #include "swalker.hh"
@@ -82,10 +83,7 @@ SWalker::~SWalker()
 std::string
 SWalker::parse_name(PTree::Node *node) const
 {
-  // STrace trace("SWalker::parse_name");
-  if (node && node->is_atom())
-    return std::string(node->position(), node->length());
-  return node->string();
+  return PTree::reify(node);
 }
 
 void
@@ -122,7 +120,7 @@ void SWalker::update_line_number(PTree::Node *ptree)
 AST::Comment *
 make_Comment(SourceFile* file, int line, PTree::Node *first, bool suspect=false)
 {
-  return new AST::Comment(file, line, first->string(), suspect);
+  return new AST::Comment(file, line, PTree::reify(first), suspect);
 }
 
 PTree::Atom *make_Leaf(const char *pos, size_t len)
@@ -352,7 +350,7 @@ SWalker::Translate(PTree::Node *node)
 PTree::Node *SWalker::TranslatePtree(PTree::Node *node)
 {
   // Determine type of node
-  std::string s = node->string();
+  std::string s = PTree::reify(node);
   const char *str = s.c_str();
   if (*str >= '0' && *str <= '9' || *str == '.')
   {
@@ -1037,7 +1035,7 @@ SWalker::TranslateFunctionDeclarator(PTree::Node *decl, bool is_const)
   PTree::Node *p = PTree::first(my_declaration);
   while (p)
   {
-    premod.push_back(p->car()->string());
+    premod.push_back(PTree::reify(p->car()));
     p = PTree::rest(p);
   }
 
@@ -1257,11 +1255,11 @@ SWalker::TranslateParameters(PTree::Node *p_params, std::vector<AST::Parameter*>
           PTree::Node *last = PTree::last(pname)->car();
           if (*last != '*' && *last != '&')
             // The last node is the name:
-            name = last->string();
+            name = PTree::reify(last);
         }
       }
       // Find value
-      if (value_ix >= 0) value = PTree::nth(param, value_ix)->string();
+      if (value_ix >= 0) value = PTree::reify(PTree::nth(param, value_ix));
     }
     // Add the AST.Parameter type to the list
     params.push_back(new AST::Parameter(premods, type, postmods, name, value));
@@ -1485,7 +1483,7 @@ SWalker::TranslateEnumSpec(PTree::Node *spec)
   {
     return 0; /* anonymous enum */
   }
-  std::string name = PTree::second(spec)->string();
+  std::string name = PTree::reify(PTree::second(spec));
 
   update_line_number(spec);
   int enum_lineno = my_lineno;
@@ -1500,16 +1498,17 @@ SWalker::TranslateEnumSpec(PTree::Node *spec)
     if (penumor->is_atom())
     {
       // Just a name
-      enumor = my_builder->add_enumerator(my_lineno, penumor->string(), "");
+      enumor = my_builder->add_enumerator(my_lineno, PTree::reify(penumor), "");
       add_comments(enumor, static_cast<PTree::CommentedAtom *>(penumor)->GetComments());
       if (my_links) my_links->link(penumor, enumor);
     }
     else
     {
       // Name = Value
-      std::string name = PTree::first(penumor)->string(), value;
+      std::string name = PTree::reify(PTree::first(penumor));
+      std::string value;
       if (PTree::length(penumor) == 3)
-        value = PTree::third(penumor)->string();
+        value = PTree::reify(PTree::third(penumor));
       enumor = my_builder->add_enumerator(my_lineno, name, value);
       add_comments(enumor, dynamic_cast<PTree::CommentedAtom *>(PTree::first(penumor)));
       if (my_links) my_links->link(PTree::first(penumor), enumor);

@@ -54,7 +54,7 @@ extern void BaseClassUsed(char *, int);		// in driver2.cc
 #endif /* USE_DLOADER */
 
 extern bool verboseMode;	// defined in driver.cc
-extern bool makeSharedLibrary;
+// extern bool makeSharedLibrary;
 
 
 // class QuoteClass
@@ -161,13 +161,15 @@ void Metaclass::TranslateClass(Environment* env)
 		"    %p::Initialize, %p);\n",
 		tmpname, name, tmpname2, name, tmpname, name, finalizer));
 
-	if(makeSharedLibrary){
-	    ProduceInitFile(name);
-	    first_not_inlined_vf = FindFirstNotInlinedVirtualFunction();
-	    new_function_name = tmpname;
-	    if(first_not_inlined_vf < 0)
-		AppendHousekeepingCode(env, Name(), tmpname, finalizer);
-	}
+	// FIXME: find an alternative for this...
+
+// 	if(makeSharedLibrary){
+// 	    ProduceInitFile(name);
+// 	    first_not_inlined_vf = FindFirstNotInlinedVirtualFunction();
+// 	    new_function_name = tmpname;
+// 	    if(first_not_inlined_vf < 0)
+// 		AppendHousekeepingCode(env, Name(), tmpname, finalizer);
+// 	}
     }
 
     Class::TranslateClass(env);

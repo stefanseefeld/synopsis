@@ -8,8 +8,6 @@
 //
 #include "PTree/Node.hh"
 #include "PTree/operations.hh"
-#include "PTree/List.hh"
-#include "Lexer.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
 #include "Encoding.hh"
@@ -25,8 +23,6 @@
 #endif
 
 using namespace PTree;
-
-bool Node::show_encoded = false;
 
 Node::Node(const char *ptr, size_t len)
 {
@@ -69,19 +65,6 @@ const char *Node::end() const
   }
 }
 
-std::string Node::string() const
-{
-  std::ostringstream oss;
-  write(oss);
-  return oss.str();
-};
-
-void Node::print(std::ostream &os) const
-{
-  print(os, 0, 0);
-  os.put('\n');
-}
-
 // error messages
 
 void MopErrorMessage(const char* where, const char* msg)
@@ -113,16 +96,6 @@ void MopMoreWarningMessage(const char* msg1, const char* msg2)
 	std::cerr << msg2;
 
     std::cerr << '\n';
-}
-
-// class Node
-
-int Node::Write(std::ostream& s)
-{
-    if(this == 0)
-	return 0;
-    else
-	return Write(s, 0);
 }
 
 int Node::What()
@@ -176,12 +149,6 @@ const char *Node::encoded_type() const
 const char *Node::encoded_name() const
 {
   return 0;
-}
-
-void Node::print_indent(std::ostream &os, size_t indent)
-{
-  os.put('\n');
-  for(size_t i = 0; i != indent; ++i) os.put(' ');
 }
 
 Node *Iterator::pop()

@@ -19,6 +19,7 @@
 #include "Class.hh"
 #include "Environment.hh"
 #include "PTree.hh"
+#include <PTree/Writer.hh>
 #include "Walker.hh"
 #include "ClassWalker.hh"
 #include "TypeInfo.hh"
@@ -813,7 +814,8 @@ void Class::FinalizeAll(std::ostream& out)
 	if(c != 0){
 	    PTree::Node *p = c->FinalizeInstance();
 	    if(p != 0){
-		p->Write(out);
+                PTree::Writer writer(out);
+		writer.write(p);
 		out << '\n';
 	    }
 	}
@@ -1258,7 +1260,8 @@ void opcxx_ListOfMetaclass::FinalizeAll(std::ostream& out)
 	if(p->finalizer != 0){
 	    PTree::Node *code = (*p->finalizer)();
 	    if(code != 0){
-		code->Write(out);
+                PTree::Writer writer(out);
+		writer.write(code);
 		out << '\n';
 	    }
 	}

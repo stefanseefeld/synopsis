@@ -8,7 +8,6 @@
 #ifndef _PTree_Lists_hh
 #define _PTree_Lists_hh
 
-#include "PTree/List.hh"
 #include "PTree/operations.hh"
 
 class Encoding;
@@ -22,10 +21,6 @@ public:
   Brace(Node *p, Node *q) : List(p, q) {}
   Brace(Node *ob, Node *body, Node *cb) : List(ob, list(body, cb)) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  virtual void print(std::ostream &, size_t, size_t) const;
-
-  int Write(std::ostream&, int);
 
   Node *Translate(Walker*);
 };
@@ -176,8 +171,6 @@ public:
   Declarator(Declarator*, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
-  virtual void print(std::ostream &, size_t, size_t) const;
-
   int What();
   const char *encoded_type() const;
   const char *encoded_name() const;
@@ -200,8 +193,6 @@ public:
   Name(Node *, Encoding&);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
-  void print(std::ostream &, size_t, size_t) const;
-
   int What();
   const char *encoded_name() const;
   Node *Translate(Walker*);
@@ -217,8 +208,6 @@ public:
   FstyleCastExpr(Encoding&, Node *, Node *);
   FstyleCastExpr(const char*, Node *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  void print(std::ostream &, size_t, size_t) const;
 
   int What();
   const char *encoded_type() const;

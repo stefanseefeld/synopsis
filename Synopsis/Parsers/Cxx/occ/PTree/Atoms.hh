@@ -7,8 +7,7 @@
 #ifndef _PTree_Atoms_hh
 #define _PTree_Atoms_hh
 
-#include "PTree/Atom.hh"
-#include "Lexer.hh"
+#include "PTree/Node.hh"
 
 namespace PTree
 {
@@ -35,8 +34,6 @@ public:
   DupAtom(const char *, size_t);
   DupAtom(const char *, size_t, const char *, size_t);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  virtual void print(std::ostream &, size_t, size_t) const;
 };
 
 class Identifier : public CommentedAtom

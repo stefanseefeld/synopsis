@@ -30,6 +30,7 @@
 #include "Lexer.hh"
 #include "Environment.hh"
 #include "PTree.hh"
+#include <PTree/Writer.hh>
 #include "Encoding.hh"
 #include "MetaClass.hh"
 #include "Walker.hh"
@@ -55,26 +56,28 @@ PTree::Node *wrap_comments(const Lexer::Comments &c)
 }
 
 Parser::Parser(Lexer *l)
+  : lex(l),
+    nerrors(0),
+    comments(0)
 {
-    lex = l;
-    nerrors = 0;
-    comments = 0;
 }
 
 bool Parser::ErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-    if(where != 0){
-	PTree::Node *head = PTree::ca_ar(where);
-	if(head != 0)
-	    ShowMessageHead(head->position());
-    }
+  if(where != 0)
+  {
+    PTree::Node *head = PTree::ca_ar(where);
+    if(head) ShowMessageHead(head->position());
+  }
 
-    std::cerr << msg;
-    if(name != 0)
-	name->Write(std::cerr);
-
+  std::cerr << msg;
+  if(name)
+  {
+    PTree::Writer writer(std::cerr);
+    writer.write(name);
     std::cerr << '\n';
     return bool(++nerrors < MaxErrors);
+  }
 }
 
 void Parser::WarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
@@ -86,9 +89,11 @@ void Parser::WarningMessage(const char* msg, PTree::Node *name, PTree::Node *whe
     }
 
     std::cerr << "warning: " << msg;
-    if(name != 0)
-	name->Write(std::cerr);
-
+    if(name)
+    {
+      PTree::Writer writer(std::cerr);
+      writer.write(name);
+    }
     std::cerr << '\n';
 }
 

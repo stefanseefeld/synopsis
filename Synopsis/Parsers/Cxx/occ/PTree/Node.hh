@@ -11,12 +11,12 @@
 
 #include <PTree/GC.hh>
 #include <PTree/Visitor.hh>
+#include <Token.hh>
 #include <ostream>
 #include <iterator>
 
 class Walker;
 class TypeInfo;
-class Token;
 class Encoding;
 
 namespace PTree
@@ -29,21 +29,10 @@ public:
   virtual bool is_atom() const = 0;
   virtual void accept(Visitor *visitor) = 0;
 
-  //. write the part of the source code this node
-  //. references to the given output stream
-  virtual void write(std::ostream &) const = 0;
   //. return the start address of this Ptree in the buffer
   const char *begin() const;
   //. return the one-past-the-end address of this Ptree in the buffer
   const char *end() const;
-  //. return a copy of the region of the buffer this ptree represents
-  std::string string() const;
-  //. provide an annotated view of the ptree, for debugging purposes
-  void print(std::ostream &) const;
-  virtual void print(std::ostream &, size_t indent, size_t depth) const = 0;
-
-    int Write(std::ostream&);
-    virtual int Write(std::ostream&, int) = 0;
 
   const char *position() const { return my_data.leaf.position;}
   size_t length() const { return my_data.leaf.length;}
@@ -65,11 +54,6 @@ public:
 
   virtual const char *encoded_type() const;
   virtual const char *encoded_name() const;
-
-  static void print_indent(std::ostream &, size_t);
-
-  // if this is true, print() shows an encoded type and name.
-  static bool show_encoded;
 
 protected:
   //. used by Atom
@@ -136,6 +120,23 @@ private:
   size_t num, size;
   Node **array;
   Node *default_buf[8];
+};
+
+class Atom : public Node
+{
+public:
+  Atom(const char *p, size_t l) : Node(p, l) {}
+  Atom(const Token &t) : Node(t.ptr, t.length) {}
+  bool is_atom() const { return true;}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class List : public Node
+{
+public:
+  List(Node *p, Node *q) : Node(p, q) {}
+  bool is_atom() const { return false;}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 }

@@ -35,24 +35,6 @@ DupAtom::DupAtom(const char *str1, size_t len1,
 {
 }
 
-void DupAtom::print(std::ostream &os, size_t, size_t) const
-{
-  const char *pos = position();
-  size_t j = length();
-
-  if(j == 1 && *pos == '@')
-  {
-    os << "\\@";
-    return;
-  }
-
-  os << '`';
-  for(size_t i = 0; i < j; ++i)
-    if(pos[i] == '[' || pos[i] == ']') os << '\\' << pos[i];
-    else os << pos[i];
-  os << '`';
-}
-
 Node *Identifier::Translate(Walker* w)
 {
   return w->TranslateVariable(this);
