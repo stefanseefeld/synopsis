@@ -117,7 +117,8 @@ class ASCIIFormatter:
         self.enterScope(clas.name()[-1])
 	self.__axs_stack.append(self.__axs)
 	if clas.type() == 'struct': self.__axs = AST.PUBLIC
-	else: self.__axs = AST.PRIVATE
+	elif clas.type() == 'class': self.__axs = AST.PRIVATE
+	else: self.__axs = AST.DEFAULT
         #for type in clas.types(): type.output(self)
         #for operation in clas.operations(): operation.output(self)
 	for declaration in clas.declarations():
@@ -145,10 +146,7 @@ class ASCIIFormatter:
 	self.__params.append(premod + type + postmod + name + value)
 
     def visitFunction(self, function):
-	self.visitDeclaration(function)
-        self.write(function.name() + "(")
-        for parameter in function.parameters(): parameter.accept(self)
-        self.write(")\n")
+	self.visitOperation(function)
 
     def visitOperation(self, operation):
 	self.visitDeclaration(operation)
