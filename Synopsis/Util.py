@@ -26,8 +26,11 @@
 #   
 #   Utility functions
 
-# $Id: Util.py,v 1.2 2001/01/21 06:22:51 chalky Exp $
+# $Id: Util.py,v 1.3 2001/01/21 19:31:03 stefan Exp $
 # $Log: Util.py,v $
+# Revision 1.3  2001/01/21 19:31:03  stefan
+# new and improved import function that accepts file names or modules
+#
 # Revision 1.2  2001/01/21 06:22:51  chalky
 # Added Util.getopt_spec for --spec=file.spec support
 #
@@ -69,7 +72,7 @@ ccolonName()     -- format a scoped name with '::' separating components.
 pruneScope()     -- remove common prefix from a scoped name.
 getopt_spec(args,options,longlist) -- version of getopt that adds transparent --spec= suppport"""
 
-import string, getopt
+import string, getopt, sys, os, os.path
 
 def slashName(scopedName, our_scope=[]):
     """slashName(list, [list]) -> string
@@ -129,6 +132,41 @@ Return the given string with any non-printing characters escaped."""
         if l[i] not in vis:
             l[i] = "\\%03o" % ord(l[i])
     return string.join(l, "")
+
+def _import(name):
+    """import either a module, or a file."""
+    # if name contains slashes, interpret it as a file
+    as_file = string.find(name, "/") != -1
+    if not as_file:
+        components = string.split(name, ".")
+        # if one of the components is empty, name is interpreted as a file ('.foo' for example)
+        for comp in components:
+            if not comp:
+                as_file = 1
+                break
+    mod = None
+    # try as module
+    if not as_file:
+        try:
+            mod = __import__(name)
+        except ImportError, msg:
+            pass
+        for comp in components[1:]:
+            mod = getattr(mod, comp)
+        return mod
+    # try as file
+    try:
+        dir = os.path.abspath(os.path.dirname(name))
+        name = os.path.basename(name)
+        sys.path.insert(0, dir)
+        mod = __import__(name)
+        sys.path = sys.path[1:]
+    except ImportError, msg:
+        sys.stderr.write("Error: Could not find module")
+        sys.stderr.write(name + "\n")
+        sys.stderr.flush()
+        raise
+    return mod
 
 def splitAndStrip(line):
     """Splits a line at the first space, then strips the second argument"""
