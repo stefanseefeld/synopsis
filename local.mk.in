@@ -1,5 +1,5 @@
 # @configure_input@
-# $Id: local.mk.in,v 1.8 2002/10/20 15:36:09 chalky Exp $
+# $Id: local.mk.in,v 1.9 2002/10/29 02:22:42 chalky Exp $
 #
 # This source file is a part of the Berlin Project.
 # Copyright (C) 1999, 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -49,3 +49,4 @@ use_gc		:= @use_gc@
 LIBS		:= @python_lib@ @LIBS@ -lpthread
 CPPFLAGS	:= @CPPFLAGS@
 LIBRARY_EXT	:= @library_ext@
+CPP_PROFILE	:= @cpp_profile@

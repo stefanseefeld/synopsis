@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.12 2002/10/27 07:20:23 chalky Exp $
+dnl $Id: configure.in,v 1.13 2002/10/29 02:22:42 chalky Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2001 Stefan Seefeld <seefeld@sympatico.ca> 
@@ -24,7 +24,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.12)
-AC_REVISION($Revision: 1.12 $)
+AC_REVISION($Revision: 1.13 $)
 
 AC_INIT(synopsis.spec.in)
 AC_PROG_MAKE_SET
@@ -88,18 +88,21 @@ AC_CHECK_LIB(dl, dlopen, [LIBS="-ldl $LIBS"])
 
 dnl Check host for things like -fPIC and library extension
 AC_MSG_CHECKING([for library file extension])
+cpp_profile=""
 case `uname -s` in
 CYGWIN*)
     library_ext=dll
     ;;
 *)
     CPPFLAGS="-fPIC $CPPFLAGS"
+    cpp_profile="-pg"
     library_ext=so
     ;;
 esac
 AC_MSG_RESULT([$library_ext])
 
 AC_SUBST(library_ext)
+AC_SUBST(cpp_profile)
 
 
 AC_OUTPUT([
