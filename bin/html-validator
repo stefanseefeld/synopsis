@@ -104,6 +104,10 @@ def main():
       elif o == '-v' or o == '--validate':
          do_validate = True
 
+   if not args:
+         usage()
+         sys.exit(0)
+
    done = []
    urefs = [Reference('.', 0, args[0])]
    while urefs and len(done) < max:
