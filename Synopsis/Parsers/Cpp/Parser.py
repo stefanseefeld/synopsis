@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.1 2004/01/02 03:58:47 stefan Exp $
+# $Id: Parser.py,v 1.2 2004/01/04 02:08:26 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -17,6 +17,10 @@ class Parser(Processor):
    preprocessor = Parameter(None, 'the preprocessor to use')
    emulate_compiler = Parameter('c++', 'a compiler to emulate')
    flags = Parameter([], 'list of preprocessor flags such as -I or -D')
+   cpp_output = Parameter(None, 'filename for preprocessed file')
+   cpp_mmap = Parameter(None, 'output macro calls for the given file')
+   prefix = Parameter(None, 'prefix to strip off from the filename')
+   language = Parameter('C', 'source code programming language of the given input file')
 
    def process(self, ast, **kwds):
 
@@ -30,7 +34,9 @@ class Parser(Processor):
          flags += map(lambda x:'-I%s'%x, info.include_paths)
          flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
          for file in self.input:
-            self.ast = ucpp.parse(self.ast, file, self.output, flags, self.verbose, self.debug)
+            self.ast = ucpp.parse(self.ast, file, self.prefix,
+                                  self.cpp_output, self.cpp_mmap,
+                                  self.language, flags, self.verbose, self.debug)
       else:
          print 'not implemented yet: spawn external preprocessor'
       return self.output_and_return_ast()
