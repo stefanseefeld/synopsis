@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.27 2001/05/23 05:08:47 stefan Exp $
+// $Id: swalker.cc,v 1.28 2001/05/25 03:08:49 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.28  2001/05/25 03:08:49  chalky
+// Fixes to compile with 3.0
+//
 // Revision 1.27  2001/05/23 05:08:47  stefan
 // more std C++ issues. It still crashes...
 //
@@ -347,7 +350,7 @@ void SWalker::Translate(Ptree* node) {
 	    char* fname;
 	    int fname_len;
 	    int lineno = m_parser->LineNumber(node->LeftMost(), fname, fname_len);
-	    ostrstream buf;
+	    std::ostrstream buf;
 	    buf << at << " (" << std::string(fname, fname_len) << ":" << lineno << ")";
 	    at.assign(buf.str(), buf.pcount());
 	}

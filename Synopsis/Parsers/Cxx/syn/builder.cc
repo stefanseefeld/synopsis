@@ -711,6 +711,7 @@ Type::Named* Builder::lookupType(const std::vector<std::string>& names, bool fun
 		scope = m_scopes.top();
 	    }
 	} else {
+	    AST::Scope* ast_scope;
 	    try {
 		// Find cached scope from 'type'
 		scope = findScope( Type::declared_cast<AST::Scope>(type) );
