@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: linkstore.cc source file
 // Implementation of the LinkStore class
 
-// $Id: linkstore.cc,v 1.17 2002/11/17 12:11:43 chalky Exp $
+// $Id: linkstore.cc,v 1.18 2002/12/09 04:01:00 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,11 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.18  2002/12/09 04:01:00  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.17  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -42,6 +47,12 @@
 // Much improved template support, including Function Templates.
 //
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <cstdio>
+
 #include "swalker.hh"
 #include "linkstore.hh"
 #include "ast.hh"
@@ -50,16 +61,19 @@
 #include "dumper.hh"
 #include "builder.hh"
 #include "strace.hh"
+#include "filter.hh"
 
 #include <sstream>
 #include <iomanip>
+#include <map>
 
 #include <occ/ptree.h>
 #include <occ/parse.h>
 #include <occ/buffer.h>
 
-
-const char* LinkStore::m_context_names[] =
+namespace 
+{
+const char* context_names[] =
 {
     "REF",
     "DEF",
@@ -70,32 +84,120 @@ const char* LinkStore::m_context_names[] =
     "CALL"
 };
 
-LinkStore::LinkStore(std::ostream* syntax_stream, std::ostream* xref_stream, SWalker* swalker, const std::string& basename)
-        : m_syntax_stream(syntax_stream),
-        m_xref_stream(xref_stream),
-        m_walker(swalker),
-        m_basename(basename)
+// Utility function to ensure that all the directories in the given path
+// exist, creating them if needed.
+void makedirs(const char* path)
 {
-    m_buffer_start = swalker->program()->Read(0);
-    m_parser = swalker->parser();
+    static char buf[1024];
+    strcpy(buf, path);
+    struct stat st;
+    int error;
+    char* ptr = buf, *sep = NULL;
+    // Skip first / if any
+    if (*ptr == '/')
+        ptr++;
+    while (1)
+    {
+        // Find next /
+        while (*ptr && *ptr != '/')
+            ptr++;
+        if (!*ptr)
+            return;
+        sep = ptr;
+        if (ptr == sep + 1)
+            // An empty path component, eg: blah/foo//fred
+            continue;
+        *sep = 0;
+        // Try to stat this dir
+        if ((error = stat(buf, &st)) == -1 && errno == ENOENT)
+            mkdir(buf, 0755);
+        else if (error)
+        {
+            perror(buf);
+            return;
+        }
+        // Restore / to build up path
+        *sep = '/';
+        // Move past /
+        ptr++;
+    }
+}
+
+}
+
+struct LinkStore::Private
+{
+    //. The start of the program buffer
+    const char* buffer_start;
+
+    //. The filter
+    FileFilter* filter;
+
+    //. The Parser object
+    Parser* parser;
+
+    //. The SWalker object
+    SWalker* walker;
+
+    //. Struct for storing a pair of ofstream pointers
+    struct Streams {
+        std::ofstream* syntax;
+        std::ofstream* xref;
+        Streams() : syntax(NULL), xref(NULL) {}
+        Streams(const Streams& o) : syntax(o.syntax), xref(o.xref) {}
+        Streams& operator =(const Streams& o)
+        {
+            syntax = o.syntax;
+            xref = o.xref;
+            return *this;
+        }
+    };
+
+    //. The type of a map of streams
+    typedef std::map<AST::SourceFile*,Streams> StreamsMap;
+
+    //. A map of streams for each file
+    StreamsMap streams;
+};
+
+LinkStore::LinkStore(FileFilter* filter, SWalker* swalker)
+{
+    m = new Private;
+    m->filter = filter;
+    m->walker = swalker;
+    m->buffer_start = swalker->program()->Read(0);
+    m->parser = swalker->parser();
 
     // Check size of array here to prevent later segfaults
-    if (sizeof(m_context_names)/sizeof(m_context_names[0]) != NumContext)
+    if (sizeof(context_names)/sizeof(context_names[0]) != NumContext)
     {
         std::cerr << "FATAL ERROR: Wrong number of context names in linkstore.cc" << std::endl;
         exit(1);
     }
 }
 
+LinkStore::~LinkStore()
+{
+    // Delete (which closes) all the opened file streams
+    Private::StreamsMap::iterator iter = m->streams.begin();
+    while (iter != m->streams.end())
+    {
+        Private::Streams& streams = (iter++)->second;
+        if (streams.syntax) delete streams.syntax;
+        if (streams.xref) delete streams.xref;
+    }
+    delete m;
+}
+
 SWalker* LinkStore::swalker()
 {
-    return m_walker;
+    return m->walker;
 }
 
 int LinkStore::find_col(int line, const char* ptr)
 {
     const char* pos = ptr;
-    while (pos > m_buffer_start && *--pos != '\n')
+    while (pos > m->buffer_start && *--pos != '\n')
         ; // do nothing inside loop
     int col = ptr - pos;
     // Resolve macro maps
@@ -104,14 +206,16 @@ int LinkStore::find_col(int line, const char* ptr)
 
 void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const std::string& desc, const AST::Declaration* decl)
 {
+    AST::SourceFile* file = m->walker->current_file();
+
     // Dont store records for included files
-    if (!m_walker->is_main_file())
+    if (!m->filter->should_link(file))
         return;
 
     // Get info for storing an xref record
-    int line = m_walker->line_of_ptree(node);
+    int line = m->walker->line_of_ptree(node);
     if (decl != NULL)
-        store_xref_record(decl, m_walker->current_file(), line, context);
+        store_xref_record(file, decl, file->filename(), line, context);
 
     // Get info for storing a syntax record
     int col = find_col(line, node->LeftMost());
@@ -119,7 +223,7 @@ void LinkStore::link(Ptree* node, Context context, const ScopedName& name, const
         return; // inside macro
     int len = node->RightMost() - node->LeftMost();
 
-    store_syntax_record(line, col, len, context, name, desc);
+    store_syntax_record(file, line, col, len, context, name, desc);
 }
 
 //. A class which acts as a Types Visitor to store the correct link to a given
@@ -271,7 +375,8 @@ std::ostream& operator <<(std::ostream& out, const LinkStore::encode_name& enc)
 // Store if type is named
 void LinkStore::link(Ptree* node, Types::Type* type, Context context)
 {
-    if (!m_walker->is_main_file() || !type)
+    AST::SourceFile* file = m->walker->current_file();
+    if (!type || !m->filter->should_link(file))
         return;
     TypeStorer storer(this, node, context);
     type->accept(&storer);
@@ -279,24 +384,28 @@ void LinkStore::link(Ptree* node, Types::Type* type, Context context)
 
 void LinkStore::link(Ptree* node, const AST::Declaration* decl)
 {
-    if (!m_walker->is_main_file() || !decl)
+    AST::SourceFile* file = m->walker->current_file();
+    if (!decl || !m->filter->should_link(file))
         return;
     link(node, Definition, decl->name(), decl->type(), decl);
 }
 
 void LinkStore::span(int line, int col, int len, const char* desc)
 {
-    if (!m_syntax_stream)
+    AST::SourceFile* file = m->walker->current_file();
+    if (!m->filter->should_link(file))
         return;
-    std::ostream& out = *m_syntax_stream;
+    std::ostream& out = get_syntax_stream(file);
+
     out << line << FS << col << FS << len << FS;
-    out << m_context_names[Span] << FS << encode(desc) << RS;
+    out << context_names[Span] << FS << encode(desc) << RS;
 }
 
 void LinkStore::span(Ptree* node, const char* desc)
 {
-    int line = m_walker->line_of_ptree(node);
-    if (!m_walker->is_main_file())
+    int line = m->walker->line_of_ptree(node);
+    AST::SourceFile* file = m->walker->current_file();
+    if (!m->filter->should_link(file))
         return;
     int col = find_col(line, node->LeftMost());
     if (col < 0)
@@ -309,8 +418,9 @@ void LinkStore::span(Ptree* node, const char* desc)
 void LinkStore::long_span(Ptree* node, const char* desc)
 {
     // Find left edge
-    int left_line = m_walker->line_of_ptree(node);
-    if (!m_walker->is_main_file())
+    int left_line = m->walker->line_of_ptree(node);
+    AST::SourceFile* file = m->walker->current_file();
+    if (!m->filter->should_link(file))
         return;
     int left_col = find_col(left_line, node->LeftMost());
     if (left_col < 0)
@@ -320,7 +430,7 @@ void LinkStore::long_span(Ptree* node, const char* desc)
     // Find right edge
     char* fname;
     int fname_len;
-    int right_line = m_parser->LineNumber(node->RightMost(), fname, fname_len);
+    int right_line = m->parser->LineNumber(node->RightMost(), fname, fname_len);
 
     if (right_line == left_line)
         // Same line, so normal output
@@ -337,13 +447,13 @@ void LinkStore::long_span(Ptree* node, const char* desc)
 }
 
 // Store a link in the Syntax File
-void LinkStore::store_syntax_record(int line, int col, int len, Context context, const ScopedName& name, const std::string& desc)
+void LinkStore::store_syntax_record(AST::SourceFile* file, int line, int col, int len, Context context, const ScopedName& name, const std::string& desc)
 {
-    if (!m_syntax_stream)
-        return;
-    std::ostream& out = *m_syntax_stream;
+    std::ostream& out = get_syntax_stream(file);
+
+    // Start the record
     out << line << FS << col << FS << len << FS;
-    out << m_context_names[context] << FS;
+    out << context_names[context] << FS;
     // Tab is used since :: is ambiguous as a scope separator unless real
     // parsing is done, and the syntax highlighter generates links into the docs
     // using the scope info
@@ -352,7 +462,7 @@ void LinkStore::store_syntax_record(int line, int col, int len, Context context,
     std::vector<AST::Scope*> scopes;
     Types::Named* vtype;
     ScopedName short_name;
-    if (m_walker->builder()->mapName(name, scopes, vtype))
+    if (m->walker->builder()->mapName(name, scopes, vtype))
     {
         for (size_t i = 0; i < scopes.size(); i++)
         {
@@ -380,20 +490,47 @@ void LinkStore::store_syntax_record(int line, int col, int len, Context context,
 
 
 // Store a link in the CrossRef File
-void LinkStore::store_xref_record(const AST::Declaration* decl, const std::string& file, int line, Context context)
+void LinkStore::store_xref_record(
+        AST::SourceFile* file, 
+        const AST::Declaration* decl, 
+        const std::string& filename, int line, Context context)
 {
-    if (!m_xref_stream)
-        return;
-    // Strip the basename from the filename
-    std::string filename = file;
-    if (filename.substr(0, m_basename.size()) == m_basename)
-        filename.assign(file, m_basename.size(), std::string::npos);
-    AST::Scope* container = m_walker->builder()->scope();
-    //m->refs[decl->name()].push_back(AST::Reference(file, line, container->name(), context));
+    std::ostream& out = get_xref_stream(file);
+
+    AST::Scope* container = m->walker->builder()->scope();
     std::string container_str = join(container->name(), "\t");
     if (!container_str.size())
         container_str = "\t";
-    (*m_xref_stream) << encode_name(decl->name()) << FS << filename << FS << line << FS
-    << encode(container_str) << FS << m_context_names[context] << RS;
+    out << encode_name(decl->name()) << FS << filename << FS << line << FS;
+    out << encode(container_str) << FS << context_names[context] << RS;
 }
+
+// Gets the ofstream for a syntax file
+std::ostream& LinkStore::get_syntax_stream(AST::SourceFile* file)
+{
+    // Find the stream to use
+    Private::Streams& streams = m->streams[file];
+    if (!streams.syntax)
+    {
+        std::string filename = m->filter->get_syntax_filename(file);
+        makedirs(filename.c_str());
+        streams.syntax = new std::ofstream(filename.c_str());
+    }
+    return *streams.syntax;
+}
+
+// Gets the ofstream for a xref file
+std::ostream& LinkStore::get_xref_stream(AST::SourceFile* file)
+{
+    // Find the stream to use
+    Private::Streams& streams = m->streams[file];
+    if (!streams.xref)
+    {
+        std::string filename = m->filter->get_xref_filename(file);
+        makedirs(filename.c_str());
+        streams.xref = new std::ofstream(filename.c_str());
+    }
+    return *streams.xref;
+}
+
 // vim: set ts=8 sts=4 sw=4 et:

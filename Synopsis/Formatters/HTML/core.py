@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.41 2002/11/16 04:12:33 chalky Exp $
+# $Id: core.py,v 1.42 2002/12/09 04:00:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,11 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.42  2002/12/09 04:00:59  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.41  2002/11/16 04:12:33  chalky
 # Added strategies for page formatting, and added one to allow template HTML
 # files to be used.
@@ -438,8 +443,9 @@ class FileTree(AST.Visitor):
 	"Installs self in config object as 'fileTree'"
 	config.fileTree = self
 	self.__files = {}
-	for file in config.ast.filenames():
-	    self.__files[file] = {}
+	for filename, file in config.ast.files().items():
+	    if file.is_main():
+		self.__files[filename] = {}
     
     def buildTree(self):
 	"Takes the visited info and makes a tree of directories and files"
@@ -485,8 +491,8 @@ class FileTree(AST.Visitor):
 	file = decl.file()
 	if not file: return #print "Decl",decl,"has no file."
 	if not self.__files.has_key(file):
-	    self.__files[file] = {}
-	self.__files[file][decl.name()] = decl
+	    self.__files[file.filename()] = {}
+	self.__files[file.filename()][decl.name()] = decl
     def visitForward(self, decl):
 	# Don't include (excluded) forward decls in file listing
 	pass
@@ -731,7 +737,7 @@ def format(args, ast, config_obj):
  
     # Create the page manager, which loads the pages
     manager = PageManager()
-    root = AST.Module('',-1,"C++","Global",())
+    root = AST.Module(None,-1,"C++","Global",())
     root.declarations()[:] = declarations
 
     # Create table of contents index

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.17 2002/11/17 12:11:43 chalky Exp $
+// $Id: ast.hh,v 1.18 2002/12/09 04:00:59 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -47,6 +47,9 @@ namespace AST
 {
 // Forward declaration of AST::Visitor defined in this file
 class Visitor;
+
+// Forward declaration of AST::SourceFile defined in this file
+class SourceFile;
 
 //. An enumeration of accessability specifiers
 enum Access
@@ -100,16 +103,16 @@ public:
     typedef std::vector<Comment*> vector;
 
     //. Constructor
-    Comment(const std::string& file, int line, const std::string& text, bool suspect=false);
+    Comment(SourceFile* file, int line, const std::string& text, bool suspect=false);
 
     //
     // Attributes
     //
 
     //. Returns the filename of this comment
-    const std::string& filename() const
+    SourceFile* file() const
     {
-        return m_filename;
+        return m_file;
     }
 
     //. Returns the line number of the start of this comment
@@ -137,8 +140,8 @@ public:
     }
 
 private:
-    //. The filename
-    std::string m_filename;
+    //. The file
+    SourceFile* m_file;
     //. The first line number
     int         m_line;
     //. The text
@@ -162,7 +165,7 @@ public:
     typedef std::vector<Declaration*> vector;
 
     //. Constructor
-    Declaration(const std::string& filename, int line, const std::string& type, const ScopedName& name);
+    Declaration(SourceFile* file, int line, const std::string& type, const ScopedName& name);
 
     //. Destructor. Recursively deletes the comments for this declaration
     virtual
@@ -189,9 +192,9 @@ public:
     }
 
     //. Returns the filename of this declaration
-    const std::string& filename() const
+    SourceFile* file() const
     {
-        return m_filename;
+        return m_file;
     }
 
     //. Returns the line number of this declaration
@@ -251,7 +254,7 @@ public:
 
 private:
     //. The filename
-    std::string     m_filename;
+    SourceFile*     m_file;
     //. The first line number
     int             m_line;
     //. The string type name
@@ -267,6 +270,68 @@ private:
 };
 
 
+class SourceFile : public cleanup
+{
+public:
+    //. A vector of SourceFiles
+    typedef std::vector<SourceFile*> vector;
+
+    //. Constructor
+    SourceFile(const std::string& filename, bool is_main);
+
+    //. Returns the filename of this declaration
+    const std::string& filename() const
+    {
+        return m_filename;
+    }
+
+    //. Returns whether this is a main file (as opposed to extra included file
+    //. just being stored for its list of includes)
+    bool is_main()
+    {
+        return m_is_main;
+    }
+
+    //. Returns the vector of declarations in this file
+    Declaration::vector& declarations()
+    {
+        return m_declarations;
+    }
+
+    //. Returns a const vector of declarations in this file
+    const Declaration::vector& declarations() const
+    {
+        return m_declarations;
+    }
+
+    //. Returns a vector of includes in this file
+    SourceFile::vector& includes()
+    {
+        return m_includes;
+    }
+
+    //. Returns a const vector of includes in this file
+    const SourceFile::vector& includes() const
+    {
+        return m_includes;
+    }
+
+private:
+    //. The filename
+    std::string m_filename;
+
+    //. Whether this file is a main file 
+    bool m_is_main;
+
+    //. The vector of declarations
+    Declaration::vector m_declarations;
+
+    //. The vector of includes
+    SourceFile::vector m_includes;
+};
+
+
+
 //. Base class for scopes with contained declarations. Each scope has its
 //. own Dictionary of names so far accumulated for this scope. Each scope
 //. also as a complete vector of scopes where name lookup is to proceed if
@@ -275,7 +340,7 @@ class Scope : public Declaration
 {
 public:
     //. Constructor
-    Scope(const std::string& file, int line, const std::string& type, const ScopedName& name);
+    Scope(SourceFile* file, int line, const std::string& type, const ScopedName& name);
 
     //. Destructor.
     //. Recursively destroys contained declarations
@@ -313,7 +378,7 @@ class Namespace : public Scope
 {
 public:
     //. Constructor
-    Namespace(const std::string& file, int line, const std::string& type, const ScopedName& name);
+    Namespace(SourceFile* file, int line, const std::string& type, const ScopedName& name);
     //. Destructor
     virtual
     ~Namespace();
@@ -376,7 +441,7 @@ class Class : public Scope
 {
 public:
     //. Constructor
-    Class(const std::string& file, int line, const std::string& type, const ScopedName& name);
+    Class(SourceFile* file, int line, const std::string& type, const ScopedName& name);
 
     //. Destructor. Recursively destroys Inheritance objects
     virtual ~Class();
@@ -427,7 +492,7 @@ class Forward : public Declaration
 {
 public:
     //. Constructor
-    Forward(const std::string& file, int line, const std::string& type, const ScopedName& name);
+    Forward(SourceFile* file, int line, const std::string& type, const ScopedName& name);
     //. Constructor that copies an existing declaration
     Forward(AST::Declaration* decl);
 
@@ -457,7 +522,7 @@ class Typedef : public Declaration
 {
 public:
     //. Constructor
-    Typedef(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr);
+    Typedef(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* alias, bool constr);
 
     //. Destructor
     ~Typedef();
@@ -498,7 +563,7 @@ public:
     typedef std::vector<size_t> Sizes;
 
     //. Constructor
-    Variable(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr);
+    Variable(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* vtype, bool constr);
 
     //. Destructor
     ~Variable();
@@ -550,7 +615,7 @@ public:
     typedef std::vector<Enumerator*> vector;
 
     //. Constructor
-    Enumerator(const std::string& file, int line, const std::string& type, const ScopedName& name, const std::string& value);
+    Enumerator(SourceFile* file, int line, const std::string& type, const ScopedName& name, const std::string& value);
 
     //. Accept the given AST::Visitor
     virtual void accept(Visitor*);
@@ -576,7 +641,7 @@ class Enum : public Declaration
 {
 public:
     //. Constructor
-    Enum(const std::string& file, int line, const std::string& type, const ScopedName& name);
+    Enum(SourceFile* file, int line, const std::string& type, const ScopedName& name);
     //. Destructor. Recursively destroys Enumerators
     ~Enum();
 
@@ -605,7 +670,7 @@ class Const : public Declaration
 {
 public:
     //. Constructor
-    Const(const std::string& file, int line, const std::string& type, const ScopedName& name, Types::Type* ctype, const std::string& value);
+    Const(SourceFile* file, int line, const std::string& type, const ScopedName& name, Types::Type* ctype, const std::string& value);
 
     //. Accept the given AST::Visitor
     virtual void accept(Visitor*);
@@ -722,7 +787,7 @@ public:
 
     //. Constructor
     Function(
-        const std::string& file, int line, const std::string& type, const ScopedName& name,
+        SourceFile* file, int line, const std::string& type, const ScopedName& name,
         const Mods& premod, Types::Type* ret, const std::string& realname
     );
 
@@ -790,7 +855,7 @@ class Operation : public Function
 {
 public:
     //. Constructor
-    Operation(const std::string& file, int line, const std::string& type, const ScopedName& name, const Mods& modifiers, Types::Type* ret, const std::string& realname);
+    Operation(SourceFile* file, int line, const std::string& type, const ScopedName& name, const Mods& modifiers, Types::Type* ret, const std::string& realname);
 
     //. Accept the given visitor
     virtual void

@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.22 2002/10/28 16:27:22 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.23 2002/12/09 04:00:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,11 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.23  2002/12/09 04:00:59  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.22  2002/10/28 16:27:22  chalky
 # Support horizontal inheritance graphs
 #
@@ -253,7 +258,7 @@ class InheritanceGraph(Page.Page):
 			'-i','-f','html','-o',output,'-r',toc_file,
 			'-R',self.filename(),'-t','Synopsis %s'%count,'-n', 
 			'-p',name,'-d',self.__direction)
-		    temp_ast = AST.AST([''], declarations, config.types)
+		    temp_ast = AST.AST({}, declarations, config.types)
 		    Dot.format(args, temp_ast, None)
 		    dot_file = open(output + '.html', 'r')
 		    self.write(dot_file.read())

@@ -134,6 +134,9 @@ class SourceExecutor (Executor):
 			elif stat.S_ISREG(stats[stat.ST_MODE]):
 			    # Check if matches glob
 			    if glob.match(file):
+				# Strip any "./" from the start of the name
+				if len(filepath) > 2 and filepath[:2] == "./":
+				    filepath = filepath[2:]
 				names.append((filepath, stats[stat.ST_MTIME]))
 	    elif rule.type == 'Exclude':
 		glob = self.compile_glob(rule.glob)
@@ -142,7 +145,7 @@ class SourceExecutor (Executor):
 		for name in old_names:
 		    # Only re-add ones that don't match
 		    if not glob.match(name[0]):
-		    names.append(name)
+			names.append(name)
 	   
 	return names
     def get_output(self, name):
@@ -157,6 +160,22 @@ class ParserExecutor (Executor):
 	self.__project = executor.project()
 	self.__action = action
 	self.__name_map = {}
+	self.__is_multi = None
+
+    def is_multi(self):
+	"""Returns true if this parser parses multiple source files at once.
+	This is determined by the parser type and config options."""
+	if self.__is_multi is not None: return self.__is_multi
+	config = self.__action.config()
+	module = config.name
+	if module == "C++":
+	    if hasattr(config, 'multiple_files'):
+		self.__is_multi = config.multiple_files
+	    else:
+		self.__is_multi = 0
+	else:
+	    self.__is_multi = 0
+	return self.__is_multi
 
     def get_output_names(self):
 	"""Returns the names from all connected SourceActions, and caches
@@ -169,6 +188,10 @@ class ParserExecutor (Executor):
 	    names.extend(source_names)
 	    for name, timestamp in source_names:
 		self.__name_map[name] = source
+	# Check multi-file
+	if self.is_multi():
+	    # Only return first name
+	    return names[0:1]
 	return names
 
     def get_output(self, name):
@@ -178,7 +201,11 @@ class ParserExecutor (Executor):
 	config = self.__action.config()
 	parser = self.get_parser()
 	# Do the parse
-	ast = parser.parse(name, [], config)
+	extra_files = None
+	if self.is_multi():
+	    # Find all source files
+	    extra_files = self.__name_map.keys()
+	ast = parser.parse(name, extra_files, [], config)
 	# Return the parsed AST
 	return ast
 

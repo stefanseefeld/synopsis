@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: builder.cc source file
 // Implementation of the Builder class
 
-// $Id: builder.cc,v 1.39 2002/11/17 12:11:43 chalky Exp $
+// $Id: builder.cc,v 1.40 2002/12/09 04:01:00 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,11 @@
 // 02111-1307, USA.
 
 // $Log: builder.cc,v $
+// Revision 1.40  2002/12/09 04:01:00  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.39  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -121,13 +126,12 @@ struct Builder::Private
 // Class Builder
 //
 
-Builder::Builder(const std::string& basename)
+Builder::Builder(AST::SourceFile* file)
 {
-    m_basename = basename;
     m_unique = 1;
     m = new Private;
     ScopedName name;
-    m_scope = m_global = new AST::Namespace("", 0, "global", name);
+    m_scope = m_global = new AST::Namespace(file, 0, "global", name);
     ScopeInfo* global = find_info(m_global);
     m_scopes.push_back(global);
     // Insert the global base types
@@ -150,18 +154,18 @@ Builder::Builder(const std::string& basename)
     // Add variables for true and false
     name.clear();
     name.push_back("true");
-    decl = new AST::Variable("", -1, "variable", name, t_bool, false);
+    decl = new AST::Variable(file, -1, "variable", name, t_bool, false);
     add(decl);
     m->builtin_decls.push_back(decl);
     name.clear();
     name.push_back("false");
-    decl = new AST::Variable("", -1, "variable", name, t_bool, false);
+    decl = new AST::Variable(file, -1, "variable", name, t_bool, false);
     add(decl);
     m->builtin_decls.push_back(decl);
     // Add a variable for null pointer types (g++ #defines NULL to __null)
     name.clear();
     name.push_back("__null");
-    decl = new AST::Variable("", -1, "variable", name, t_null, false);
+    decl = new AST::Variable(file, -1, "variable", name, t_null, false);
     add(decl);
     m->builtin_decls.push_back(decl);
 
@@ -194,12 +198,9 @@ void Builder::set_access(AST::Access axs)
     m_scopes.back()->access = axs;
 }
 
-void Builder::set_filename(const std::string& filename)
+void Builder::set_file(AST::SourceFile* file)
 {
-    if (filename.substr(0, m_basename.size()) == m_basename)
-        m_filename.assign(filename, m_basename.size(), std::string::npos);
-    else
-        m_filename = filename;
+    m_file = file;
 }
 
 const Declaration::vector& Builder::builtin_decls() const
@@ -231,6 +232,8 @@ void Builder::add(AST::Declaration* decl, bool is_template)
     decls->push_back(decl);
     // Add to name dictionary
     scopeinfo->dict->insert(decl);
+    // Add to SourceFile
+    decl->file()->declarations().push_back(decl);
 }
 
 void Builder::add(Types::Named* type)
@@ -300,12 +303,12 @@ AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
         generated = true;
         // Create the namspace
         if (nstype == NamespaceTemplate)
-            ns = new AST::Namespace(m_filename, 0, type_str, m_scope->name());
+            ns = new AST::Namespace(m_file, 0, type_str, m_scope->name());
         else
         {
             // Generate a nested name
             ScopedName ns_name = extend(m_scope->name(), name);
-            ns = new AST::Namespace(m_filename, 0, type_str, ns_name);
+            ns = new AST::Namespace(m_file, 0, type_str, ns_name);
             add(ns);
         }
     }
@@ -383,7 +386,7 @@ AST::Class* Builder::start_class(int lineno, const std::string& type, const std:
     else
         class_name = extend(m_scope->name(), name);
     // Create the Class
-    AST::Class* ns = new AST::Class(m_filename, lineno, type, class_name);
+    AST::Class* ns = new AST::Class(m_file, lineno, type, class_name);
     // Create template type
     if (templ_params)
     {
@@ -427,7 +430,7 @@ AST::Class* Builder::start_class(int lineno, const std::string& type, const Scop
         }
     }
     // Create the Class
-    AST::Class* ns = new AST::Class(m_filename, lineno, type, named->name());
+    AST::Class* ns = new AST::Class(m_file, lineno, type, named->name());
     // Add to container scope
     ScopedName scope_name = names;
     scope_name.pop_back();
@@ -483,7 +486,7 @@ void Builder::start_function_impl(const ScopedName& name)
 {
     STrace trace("Builder::start_function_impl");
     // Create the Namespace
-    AST::Namespace* ns = new AST::Namespace(m_filename, 0, "function", name);
+    AST::Namespace* ns = new AST::Namespace(m_file, 0, "function", name);
     ScopeInfo* ns_info = find_info(ns);
     ScopeInfo* scope_info;
     if (name.size() > 1)
@@ -544,9 +547,9 @@ AST::Function* Builder::add_function(int line, const std::string& name,
     // function
     AST::Function* func;
     if (dynamic_cast<AST::Class*>(parent_scope))
-        func = new AST::Operation(m_filename, line, "member function", func_name, premod, ret, realname);
+        func = new AST::Operation(m_file, line, "member function", func_name, premod, ret, realname);
     else
-        func = new AST::Function(m_filename, line, "function", func_name, premod, ret, realname);
+        func = new AST::Function(m_file, line, "function", func_name, premod, ret, realname);
 
     // Create template type
     if (templ_params)
@@ -566,7 +569,7 @@ AST::Variable* Builder::add_variable(int line, const std::string& name, Types::T
     // Generate the name
     ScopedName scope = m_scope->name();
     scope.push_back(name);
-    AST::Variable* var = new AST::Variable(m_filename, line, type, scope, vtype, constr);
+    AST::Variable* var = new AST::Variable(m_file, line, type, scope, vtype, constr);
     add(var);
     return var;
 }
@@ -603,7 +606,7 @@ AST::Typedef* Builder::add_typedef(int line, const std::string& name, Types::Typ
     // Generate the name
     ScopedName scoped_name = extend(m_scope->name(), name);
     // Create the object
-    AST::Typedef* tdef = new AST::Typedef(m_filename, line, "typedef", scoped_name, alias, constr);
+    AST::Typedef* tdef = new AST::Typedef(m_file, line, "typedef", scoped_name, alias, constr);
     add(tdef);
     return tdef;
 }
@@ -612,7 +615,7 @@ AST::Typedef* Builder::add_typedef(int line, const std::string& name, Types::Typ
 AST::Enumerator* Builder::add_enumerator(int line, const std::string& name, const std::string& value)
 {
     ScopedName scoped_name = extend(m_scope->name(), name);
-    AST::Enumerator* enumor = new AST::Enumerator(m_filename, line, "enumerator", scoped_name, value);
+    AST::Enumerator* enumor = new AST::Enumerator(m_file, line, "enumerator", scoped_name, value);
     add(enumor->declared());
     return enumor;
 }
@@ -621,7 +624,7 @@ AST::Enumerator* Builder::add_enumerator(int line, const std::string& name, cons
 AST::Enum* Builder::add_enum(int line, const std::string& name, const std::vector<AST::Enumerator*>& enumors)
 {
     ScopedName scoped_name = extend(m_scope->name(), name);
-    AST::Enum* theEnum = new AST::Enum(m_filename, line, "enum", scoped_name);
+    AST::Enum* theEnum = new AST::Enum(m_file, line, "enum", scoped_name);
     theEnum->enumerators() = enumors;
     add(theEnum);
     return theEnum;
@@ -632,7 +635,7 @@ AST::Declaration* Builder::add_tail_comment(int line)
 {
     ScopedName name;
     name.push_back("dummy");
-    AST::Declaration* decl = new AST::Declaration(m_filename, line, "dummy", name);
+    AST::Declaration* decl = new AST::Declaration(m_file, line, "dummy", name);
     add(decl);
     return decl;
 }
@@ -743,7 +746,7 @@ AST::Forward* Builder::add_forward(int lineno, const std::string& name, AST::Par
     ScopedName scoped_name = extend(parent_scope->scope_decl->name(), name);
     if (parent_scope->dict->has_key(name) == true)
         return NULL;
-    AST::Forward* forward = new AST::Forward(m_filename, lineno, "forward", scoped_name);
+    AST::Forward* forward = new AST::Forward(m_file, lineno, "forward", scoped_name);
     Types::Template* templ = new Types::Template(scoped_name, NULL, *templ_params);
     forward->set_template_type(templ);
     add(forward, true);

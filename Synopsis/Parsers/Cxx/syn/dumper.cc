@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: dumper.cc source file
 // Implementation of the TypeFormatter and Dumper classes
 
-// $Id: dumper.cc,v 1.21 2002/11/17 12:11:43 chalky Exp $
+// $Id: dumper.cc,v 1.22 2002/12/09 04:01:00 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,11 @@
 // 02111-1307, USA.
 
 // $Log: dumper.cc,v $
+// Revision 1.22  2002/12/09 04:01:00  chalky
+// Added multiple file support to parsers, changed AST datastructure to handle
+// new information, added a demo to demo/C++. AST Declarations now have a
+// reference to a SourceFile (which includes a filename) instead of a filename.
+//
 // Revision 1.21  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -249,7 +254,7 @@ void Dumper::visit(const std::vector<AST::Declaration*>& decls)
     std::vector<AST::Declaration*>::const_iterator iter, end;
     iter = decls.begin(), end = decls.end();
     for (; iter != end; ++iter)
-        if (!m_filename.size() || (*iter)->filename() == m_filename)
+        if (!m_filename.size() || (*iter)->file()->filename() == m_filename)
             (*iter)->accept(this);
 }
 

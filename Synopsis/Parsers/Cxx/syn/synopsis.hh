@@ -2,7 +2,7 @@
 // Definition of the Synopsis class for mapping the C++ objects to Python
 // objects
 
-// $Id: synopsis.hh,v 1.29 2002/11/17 12:11:44 chalky Exp $
+// $Id: synopsis.hh,v 1.30 2002/12/09 04:01:02 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -73,49 +73,51 @@ public:
 ;
 #endif
 
+class FileFilter;
+
 //. The Synopsis class maps from C++ objects to Python objects
 class Synopsis : public AST::Visitor, public Types::Visitor
 {
 public:
 
-    Synopsis(const std::string &mainfile, PyObject *decls, PyObject *types);
+    Synopsis(FileFilter*, PyObject *decls, PyObject *types);
     ~Synopsis();
 
-    void onlyTranslateMain();
-    void translate(AST::Scope* global);
+    void translate(AST::Scope* global, PyObject* ast);
     void set_builtin_decls(const AST::Declaration::vector& builtin_decls);
 
     //
     // types from the Synopsis.Type module
     //
-    PyObject *Base(Types::Base*);
-    PyObject *Unknown(Types::Named*);
-    PyObject *Declared(Types::Declared*);
-    PyObject *Dependent(Types::Dependent*);
-    PyObject *Template(Types::Template*);
-    PyObject *Modifier(Types::Modifier*);
-    PyObject *Array(Types::Array*);
-    PyObject *Parameterized(Types::Parameterized*);
-    PyObject *FuncPtr(Types::FuncPtr*);
+    PyObject* Base(Types::Base*);
+    PyObject* Unknown(Types::Named*);
+    PyObject* Declared(Types::Declared*);
+    PyObject* Dependent(Types::Dependent*);
+    PyObject* Template(Types::Template*);
+    PyObject* Modifier(Types::Modifier*);
+    PyObject* Array(Types::Array*);
+    PyObject* Parameterized(Types::Parameterized*);
+    PyObject* FuncPtr(Types::FuncPtr*);
 
     //
     // types from the Synopsis.AST module
     //
-    PyObject *Declaration(AST::Declaration*);
-    PyObject *Forward(AST::Forward*);
-    PyObject *Scope(AST::Scope*);
-    PyObject *Namespace(AST::Namespace*);
-    PyObject *Inheritance(AST::Inheritance*);
-    PyObject *Class(AST::Class*);
-    PyObject *Typedef(AST::Typedef*);
-    PyObject *Enumerator(AST::Enumerator*);
-    PyObject *Enum(AST::Enum*);
-    PyObject *Variable(AST::Variable*);
-    PyObject *Const(AST::Const*);
-    PyObject *Parameter(AST::Parameter*);
-    PyObject *Function(AST::Function*);
-    PyObject *Operation(AST::Operation*);
-    PyObject *Comment(AST::Comment*);
+    PyObject* SourceFile(AST::SourceFile*);
+    PyObject* Declaration(AST::Declaration*);
+    PyObject* Forward(AST::Forward*);
+    PyObject* Scope(AST::Scope*);
+    PyObject* Namespace(AST::Namespace*);
+    PyObject* Inheritance(AST::Inheritance*);
+    PyObject* Class(AST::Class*);
+    PyObject* Typedef(AST::Typedef*);
+    PyObject* Enumerator(AST::Enumerator*);
+    PyObject* Enum(AST::Enum*);
+    PyObject* Variable(AST::Variable*);
+    PyObject* Const(AST::Const*);
+    PyObject* Parameter(AST::Parameter*);
+    PyObject* Function(AST::Function*);
+    PyObject* Operation(AST::Operation*);
+    PyObject* Comment(AST::Comment*);
 
     //
     // AST::Visitor methods
@@ -180,13 +182,12 @@ private:
     void addDeclaration(PyObject *);
     */
 private:
-    PyObject *m_ast;
-    PyObject *m_type;
-    PyObject *m_declarations;
-    PyObject *m_dictionary;
-    std::string m_mainfile;
+    PyObject* m_ast;
+    PyObject* m_type;
+    PyObject* m_declarations;
+    PyObject* m_dictionary;
 
-    bool m_onlymain;
+    FileFilter* m_filter;
 };
 
 #endif

@@ -24,8 +24,8 @@ endif
 endif
 
 # Options for optimised or debug versions
-OPTIMISE	:= -O6
-#OPTIMISE	:= -O1 -ggdb -fno-inline
+#OPTIMISE	:= -O6
+OPTIMISE	:= -O1 -ggdb -fno-inline
 DEBUG		:= -O1 -ggdb $(CPP_PROFILE) -DDEBUG -fno-inline
 
 # Flags
@@ -58,7 +58,7 @@ OCC_FILES	:= buffer hash token ptree ptree-core encoding env\
 
 SYN_FILES	:= synopsis occ swalker ast builder type dict \
 		   dumper decoder swalker-syntax link_map linkstore \
-		   lookup
+		   lookup filter
 
 UCPP_FILES	:= mem hashtable cpp lexer assert macro eval
 

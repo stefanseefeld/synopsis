@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.12 2002/04/26 01:21:13 chalky Exp $
+# $Id: DUMP.py,v 1.13 2002/12/09 04:00:58 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,11 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.13  2002/12/09 04:00:58  chalky
+# Added multiple file support to parsers, changed AST datastructure to handle
+# new information, added a demo to demo/C++. AST Declarations now have a
+# reference to a SourceFile (which includes a filename) instead of a filename.
+#
 # Revision 1.12  2002/04/26 01:21:13  chalky
 # Bugs and cleanups
 #
@@ -221,12 +226,13 @@ def usage():
 """
 
 def __parseArgs(args):
-    global output, verbose, show_decls, show_types, show_forwards
+    global output, verbose, show_decls, show_types, show_forwards, show_files
     # Set defaults
     output = sys.stdout
     show_decls = 0
     show_types = 0
     show_forwards = 0
+    show_files = 1
 
     try:
         opts,remainder = getopt.getopt(args, "o:vdtf")
@@ -262,3 +268,7 @@ def format(args, ast, config_obj):
 	if show_decls: print "\n\n\n"
 	print "*** Types:"
 	dumper.visit(ast.types())
+    if show_files:
+	print "\n\n\n"
+	print "*** Files:"
+	dumper.visit(ast.files())
