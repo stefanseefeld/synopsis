@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.9 2003/11/16 21:09:45 stefan Exp $
+# $Id: Formatter.py,v 1.10 2003/11/16 22:23:24 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -201,7 +201,8 @@ class Formatter(Processor):
    def calculate_start(self, root, namespace=None):
       "Calculates the start scope using the 'namespace' config var"
 
-      scope_names = string.split(namespace or config.namespace, "::")
+      scope_names = string.split(namespace or '', "::")
+      #scope_names = string.split(namespace or config.namespace, "::")
       start = root # The running result
       self.sorter.set_scope(root)
       scope = [] # The running name of the start

@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.16 2003/11/16 21:09:45 stefan Exp $
+# $Id: XRef.py,v 1.17 2003/11/16 22:23:24 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -11,7 +11,6 @@ from Synopsis.Processor import Parameter
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters.TOC import TOC, Linker
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.XRef import *
 
@@ -98,15 +97,14 @@ class XRef(Page):
       """Outputs the info for one link"""
 
       # Make a link to the highlighted source
-      realfile = os.path.join(config.base_dir, file)
+      realfile = os.path.join(self.processor.output, file)
       file_link = self.processor.file_layout.file_source(realfile)
       file_link = file_link + "#%d"%line
       # Try and make a descriptive
       desc = ''
-      if config.types.has_key(scope):
-         type = config.types[scope]
-         if isinstance(type, Type.Declared):
-            desc = ' ' + type.declaration().type()
+      type = self.processor.ast.types().get(scope)
+      if isinstance(type, Type.Declared):
+         desc = ' ' + type.declaration().type()
       # Try and find a link to the scope
       scope_text = string.join(scope, '::')
       entry = self.processor.toc[scope]
@@ -139,11 +137,10 @@ class XRef(Page):
       self.write(entity('a', '', name=Util.quote(jname)))
       desc = ''
       decl = None
-      if config.types.has_key(name):
-         type = config.types[name]
-         if isinstance(type, Type.Declared):
-            decl = type.declaration()
-            desc = self.describe_decl(decl)
+      type = self.processor.ast.types().get(name)
+      if isinstance(type, Type.Declared):
+         decl = type.declaration()
+         desc = self.describe_decl(decl)
       self.write(entity('h2', desc + jname) + '<ul>\n')
 	
       if self.link_to_scope:
@@ -170,7 +167,7 @@ class XRef(Page):
          self.write('<li>Declarations:<ul>\n')
          for child in decl.declarations():
             file, line = child.file().filename(), child.line()
-            realfile = os.path.join(config.base_dir, file)
+            realfile = os.path.join(self.processor.output, file)
             file_link = self.processor.file_layout.file_source(realfile)
             file_link = '%s#%d'%(file_link,line)
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)
