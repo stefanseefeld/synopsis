@@ -37,9 +37,13 @@ CFLAGS		:=
 CPPFLAGS	:= -I.. -I$(PYTHON_PREFIX)/include -DPYTHON_MAJOR=$(PYTHON_MAJOR) -DPYTHON_MINOR=$(PYTHON_MINOR)
 CXXFLAGS	:= -Wall
 LDFLAGS		:=
+UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
+UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 LIB		:= $(PYTHON_LIB) -ldl -lpthread # Linux
 
 GCLIB		:= ../gc/gc.a
+UCPP_LIB	:= ../ucpp/ucpp.a
+UCPP_GLIB	:= ../ucpp/ucpp.ga
 OCC_SO		:= ../../../occ.so
 LINK_SO		:= ../../../link.so
 
@@ -51,6 +55,8 @@ OCC_FILES	:= buffer hash token ptree ptree-core encoding env\
 SYN_FILES	:= synopsis occ swalker ast builder type dict \
 		   dumper decoder
 
+UCPP_FILES	:= mem hash cpp lexer assert macro eval
+
 # Generate sources, objs and debug-objs from the FILES
 OCC_SOURCES	:= $(patsubst %,../%.cc,$(OCC_FILES))
 OCC_OBJ		:= $(patsubst %,%.o,$(OCC_FILES))
@@ -60,11 +66,16 @@ SYN_SOURCES	:= $(patsubst %,%.cc,$(SYN_FILES))
 SYN_OBJ		:= $(patsubst %,%.o,$(SYN_FILES))
 SYN_GOBJ	:= $(patsubst %,%.go,$(SYN_FILES))
 
+UCPP_SOURCES	:= $(patsubst %,../ucpp/%.c,$(UCPP_FILES))
+UCPP_OBJ	:= $(patsubst %,../ucpp/%.o,$(UCPP_FILES))
+UCPP_GOBJ	:= $(patsubst %,../ucpp/%.go,$(UCPP_FILES))
+UCPP_AOBJ	:= $(patsubst %,../ucpp/%.ao,$(UCPP_FILES))
+
 TARGETS		= $(OCC_SO) $(LINK_SO)
 
 all : $(TARGETS)
 
-debug:		occ.gdb link-synopsis
+debug:		occ.gdb link-synopsis ucpp
 
 # This compiles the OCC files in the parent dir
 $(OCC_OBJ): %.o : ../%.cc
@@ -74,6 +85,10 @@ $(OCC_OBJ): %.o : ../%.cc
 $(SYN_OBJ): %.o : %.cc
 	$(CXX) $(OPTIMISE) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+# This compiles the UCPP files from ../ucpp
+$(UCPP_OBJ): %.o : %.c
+	$(CCC) $(OPTIMISE) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+
 # This compiles DEBUG versions of the OCC files in the parent dir
 $(OCC_GOBJ): %.go : ../%.cc
 	$(CXX)  -I.. $(DEBUG) $(CXXFLAGS) -c -o $@ $<
@@ -82,16 +97,27 @@ $(OCC_GOBJ): %.go : ../%.cc
 $(SYN_GOBJ): %.go : %.cc
 	$(CXX) $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+# This compiles DEBUG versions of the UCPP files
+$(UCPP_GOBJ): %.go : %.c
+	$(CCC) $(DEBUG) $(CFLAGS) $(UCPP_FLAGS) -c -o $@ $<
+
+# This compiles STANDALONE versions of the UCPP files
+$(UCPP_AOBJ): %.ao : %.c
+	$(CCC) $(DEBUG) $(CFLAGS) $(UCPP_AFLAGS) -c -o $@ $<
+
 link-synopsis:	link.cc
 	$(CXX) -DSTANDALONE $(DEBUG) $(CPPFLAGS) $(CXXFLAGS) -o link-synopsis link.cc
 
+ucpp:		$(UCPP_AOBJ)
+	$(CCC) -o $@ $^
 
 # Include deps if they exist. 
+-include .deps.ao
 -include .deps.go
 -include .deps.o
 
 # This creates the final occ python module
-$(OCC_SO): $(SYN_OBJ) opencxx.a
+$(OCC_SO): $(SYN_OBJ) opencxx.a $(UCPP_LIB)
 	$(CXX) -shared $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
 
 # This creates the final link python module
@@ -99,7 +125,7 @@ $(LINK_SO): link.cc
 	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
 
 # This creates a binary with debugging and profiling that you can run
-occ.gdb:	$(SYN_GOBJ) opencxx.ga
+occ.gdb:	$(SYN_GOBJ) opencxx.ga  $(UCPP_GLIB)
 	$(CXX) -ggdb -pg $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIB) $(PYLIB)
 
 # Compile an archive of the OCC files
@@ -112,13 +138,22 @@ opencxx.ga : $(OCC_GOBJ) $(GCLIB)
 	cp $(GCLIB) $@
 	ar rcs $@ $(OCC_GOBJ)
 
+# Compile an archive of UCPP files
+$(UCPP_LIB):	$(UCPP_OBJ)
+	ar rcs $@ $^
+
+# Compile a DEBUG archive of UCPP files
+$(UCPP_GLIB):	$(UCPP_GOBJ)
+	ar rcs $@ $^
 
 depend:
+	touch .deps.ao
 	touch .deps.go
 	touch .deps.o
-	makedepend -Y -I.. -DDEBUG -f.deps.go -o.go $(SYN_SOURCES) $(OCC_SOURCES) 2> /dev/null
-	makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(OCC_SOURCES) 2> /dev/null
+	makedepend -Y -I.. -DDEBUG -f.deps.ao -o.ao $(UCPP_SOURCES) 2> /dev/null
+	makedepend -Y -I.. -DDEBUG -f.deps.go -o.go $(UCPP_SOURCES) $(SYN_SOURCES) $(OCC_SOURCES) 2> /dev/null
+	makedepend -Y -I.. -f.deps.o $(SYN_SOURCES) $(UCPP_SOURCES) $(OCC_SOURCES) 2> /dev/null
 
 clean :
-	rm -f *.[o] *.go *.ii *.so *core opencxx.a ../../../occ.so
+	rm -f *.[o] *.go *.ii *.so *core opencxx.a ../../../occ.so ../ucpp/*.o
 
