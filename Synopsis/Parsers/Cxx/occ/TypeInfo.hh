@@ -15,9 +15,8 @@
 #ifndef _TypeInfo_hh
 #define _TypeInfo_hh
 
-#include "types.h"
+#include <PTree.hh>
 
-namespace PTree { class Node;}
 class Class;
 class Environment;
 class Bind;
@@ -43,7 +42,7 @@ enum {
   TypeInfo interprets an encoded type name.  For details of the encoded
   type name, see class Encoding in encoding.h and encoding.cc.
 */
-class OCXXMOP TypeInfo : public LightObject {
+class TypeInfo : public PTree::LightObject {
 public:
     TypeInfo();
     void Unknown();

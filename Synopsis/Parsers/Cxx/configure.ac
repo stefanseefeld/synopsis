@@ -10,7 +10,7 @@ dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.9 $)
-AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
+AC_INIT(occ, 0.8, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
@@ -18,12 +18,16 @@ AC_ARG_WITH(python,
   PYTHON=""
 )
 
-AC_ARG_WITH(gc_prefix, 
+AC_ARG_ENABLE([gc], 
+  [  --disable-gc            don't use garbage collector (default is enabled)],
+  [ac_cv_enable_gc=no],
+  [ac_cv_enable_gc=yes])
+
+AC_ARG_WITH([gc_prefix],
   [  --with-gc-prefix=PATH   specify the prefix to the garbage collector],
-  GC_PREFIX="$with_gc_prefix",
-  GC_PREFIX=""
-)
-AC_SUBST(GC_PREFIX)
+  [ac_cv_with_gc_prefix="$with_gc_prefix"],
+  [ac_cv_with_gc_prefix=""])
+
 
 AC_PROG_CPP
 AC_PROG_CC
@@ -39,11 +43,22 @@ PYTHON_INCLUDE=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get
 AC_SUBST(PYTHON)
 AC_SUBST(PYTHON_INCLUDE)
 
-AC_ARG_ENABLE([gc], 
-    [  --disable-gc            don't use garbage collector in C++ parser (default is enabled)],
-    [USE_GC=no],[USE_GC=yes])
+if test "$ac_cv_enable_gc" == "yes"; then
+  GC_BRIDGE=$srcdir/occ/PTree/GC-enabled.hh
+  if test -n "$ac_cv_with_gc_prefix"; then
+    CPPFLAGS="$CPPFLAGS -I$ac_cv_with_gc_prefix/include/gc"
+    LIBS="-L$ac_cv_with_gc_prefix/lib -lgc $LIBS"
+  else
+    CPPFLAGS="$CPPFLAGS -I$srcdir/gc/include"
+    GC_LIB="gc/.libs/libgc.a"
+    AC_SUBST(GC_LIB)
+  fi
+else
+  GC_BRIDGE=$srcdir/occ/PTree/GC-disabled.hh
+  CPPFLAGS+="$CPPFLAGS -DDONT_GC"
+fi
 
-AC_SUBST(USE_GC)
+AC_SUBST_FILE(GC_BRIDGE)
 
 LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')"`
 case `uname -s` in
@@ -82,7 +97,10 @@ AC_SUBST(LIBEXT)
 topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../..')"`
 AC_SUBST(topdir)
 
-AC_CONFIG_FILES([Makefile synopsis.py])
+AC_CONFIG_FILES([occ/PTree/GC.hh
+                 Makefile 
+                 synopsis.py 
+                 OpenCxx.pc])
 
 mkdir -p occ
 mkdir -p occ/PTree

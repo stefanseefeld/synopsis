@@ -15,19 +15,14 @@
 #ifndef _Walker_hh
 #define _Walker_hh
 
-#include "types.h"
+#include <PTree.hh>
 
 class Environment;
 class TypeInfo;
 class Class;
 class Parser;
-namespace PTree 
-{
-  class Node;
-  class Declarator;
-}
 
-class Walker : public LightObject 
+class Walker : public PTree::LightObject 
 {
 public:
   Walker(Parser*);

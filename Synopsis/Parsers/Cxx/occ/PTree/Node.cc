@@ -242,7 +242,7 @@ Node *&Array::ref(size_t i)
 Node *Array::all()
 {
   Node *lst = 0;
-  for(sint i = number() - 1; i >= 0; --i)
+  for(int i = number() - 1; i >= 0; --i)
     lst = cons(ref(i), lst);
   return lst;
 }

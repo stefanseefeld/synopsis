@@ -16,8 +16,7 @@
 #define _Class_hh
 
 #include <iosfwd>
-#include "types.h"
-#include "PTree.hh"
+#include <PTree.hh>
 #include "Environment.hh"
 #include "TypeInfo.hh"
 #include "Member.hh"
@@ -28,7 +27,7 @@ class MemberList;
 class ChangedMemberList;
 struct ChangedMemberList::Cmem;
 
-class OCXXMOP Class : public Object {
+class Class : public PTree::Object {
 public:
     Class() {}
     Class(Environment* e, char* name) { Construct(e, PTree::make(name)); }
@@ -263,7 +262,7 @@ friend class ClassBodyWalker;
 friend class Member;
 };
 
-class OCXXMOP TemplateClass : public Class {
+class TemplateClass : public Class {
 public:
     void InitializeInstance(PTree::Node *def, PTree::Node *margs);
     static bool Initialize();
@@ -280,7 +279,7 @@ private:
     PTree::Node *template_definition;
 };
 
-class OCXXMOP ClassArray : public LightObject {
+class ClassArray : public PTree::LightObject {
 public:
     ClassArray(int = 16);
     uint Number() { return num; }
@@ -299,7 +298,7 @@ private:
 
 typedef Class* (*opcxx_MetaclassCreator)(PTree::Node *, PTree::Node *);
 
-class OCXXMOP opcxx_ListOfMetaclass {
+class opcxx_ListOfMetaclass {
 public:
     opcxx_ListOfMetaclass(const char*, opcxx_MetaclassCreator,
 			  bool (*)(), PTree::Node *(*)());

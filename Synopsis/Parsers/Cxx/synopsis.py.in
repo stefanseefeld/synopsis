@@ -12,7 +12,8 @@ import sys, os, os.path
 topdir = '@topdir@'
 srcdir = '@srcdir@'
 
-cppflags = ['-I%s'%(topdir + '/Cxx-API/include'),
+cppflags = ['-Iocc',
+            '-I%s'%(topdir + '/Cxx-API/include'),
             '-I%s'%(srcdir + '/gc/include'),
             '-I%s'%(srcdir),
             '-I%s'%(srcdir) + '/occ',

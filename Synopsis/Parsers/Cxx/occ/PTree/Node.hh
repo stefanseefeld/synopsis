@@ -9,10 +9,10 @@
 #ifndef _PTree_Node_hh
 #define _PTree_Node_hh
 
+#include <PTree/GC.hh>
 #include <PTree/Visitor.hh>
 #include <ostream>
 #include <iterator>
-#include "types.h"
 
 class Walker;
 class TypeInfo;

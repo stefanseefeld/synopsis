@@ -34,12 +34,7 @@
 
 #include <iostream>
 #include <cstring>
-#include "types.h"
 #include "HashTable.hh"
-#include "PTree.hh"
-#ifndef DONT_GC
-#include "gc.h"
-#endif
 
 struct HashTableEntry {
     const char*	key;		// 0: unused, -1: deleted

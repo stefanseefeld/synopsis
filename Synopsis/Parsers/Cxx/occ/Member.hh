@@ -15,18 +15,13 @@
 #ifndef _Member_hh
 #define _Member_hh
 
-#include "types.h"
+#include <PTree.hh>
 
-namespace PTree 
-{
-  class Node;
-  class Array;
-}
 class Class;
 class Environment;
 class TypeInfo;
 
-class OCXXMOP Member : public LightObject {
+class Member : public PTree::LightObject {
 public:
     Member();
     Member(const Member&);
@@ -108,12 +103,12 @@ private:
 friend class ChangedMemberList;
 };
 
-class OCXXMOP MemberFunction : public Member {
+class MemberFunction : public Member {
 public:
     MemberFunction(Class*, PTree::Node *, PTree::Node *);
 };
 
-class OCXXMOP MemberList : public LightObject {
+class MemberList : public PTree::LightObject {
 public:
     struct Mem {
 	Class* supplying;
@@ -150,7 +145,7 @@ private:
     Mem* array;
 };
 
-class ChangedMemberList : public LightObject {
+class ChangedMemberList : public PTree::LightObject {
 public:
     struct Cmem {
 	PTree::Node *declarator;

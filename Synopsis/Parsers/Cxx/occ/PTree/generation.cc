@@ -63,7 +63,7 @@ const char *skip_spaces(const char *pat)
   return pat;
 }
 
-const char *integer_to_string(sint num, int& length)
+const char *integer_to_string(int num, int& length)
 {
   const int N = 16;
   static char buf[N];

@@ -15,8 +15,7 @@
 #ifndef _Environment_hh
 #define _Environment_hh
 
-#include "types.h"
-#include "PTree.hh"
+#include <PTree.hh>
 
 class Class;
 class HashTable;
@@ -27,7 +26,7 @@ class Walker;
 
 // class Environment
 
-class OCXXMOP Environment : public LightObject {
+class Environment : public PTree::LightObject {
 public:
     Environment(Walker* w);
     Environment(Environment* e);
@@ -82,7 +81,7 @@ public:
 //     PTree::Node *GetLineNumber(Ptree*, int&);
 
 public:
-    class OCXXMOP Array : public LightObject {
+  class Array : public PTree::LightObject {
     public:
 	Array(int = 2);
 	uint Number() { return num; }
@@ -106,7 +105,7 @@ private:
 
 // class Bind and its subclasses
 
-class Bind : public LightObject 
+class Bind : public PTree::LightObject 
 {
 public:
   enum Kind 
