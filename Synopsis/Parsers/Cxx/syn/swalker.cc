@@ -3,7 +3,7 @@
 // See also swalker-syntax.cc for the more syntax-highlighting oriented member
 // functions.
 
-// $Id: swalker.cc,v 1.74 2002/12/23 13:47:36 chalky Exp $
+// $Id: swalker.cc,v 1.75 2003/10/13 01:15:09 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -25,6 +25,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.75  2003/10/13 01:15:09  stefan
+// Translate one node at a time, not the concatenated list.
+//
 // Revision 1.74  2002/12/23 13:47:36  chalky
 // Reset namespace filenames for each namespace declaration.
 //
@@ -1225,7 +1228,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
     Ptree* p = Ptree::First(m_declaration);
     while (p)
     {
-        premod.push_back(p->ToString());
+        premod.push_back(p->Car()->ToString());
         p = Ptree::Rest(p);
     }
 
