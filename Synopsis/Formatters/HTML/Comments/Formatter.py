@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.20 2003/01/20 06:43:02 chalky Exp $
+# $Id: Formatter.py,v 1.21 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.21  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.20  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -87,7 +90,7 @@
 import re, string
 
 # Synopsis modules
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 # HTML modules
 import core

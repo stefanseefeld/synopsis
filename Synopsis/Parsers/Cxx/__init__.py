@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.9 2003/11/05 17:36:55 stefan Exp $
+# $Id: __init__.py,v 1.10 2003/11/11 06:01:45 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -8,11 +8,6 @@
 
 from Parser import *
 
-try:
-    import occ
-except:
-    import sys
-    print sys.exc_type, sys.exc_value
 import emul
 
 def usage():

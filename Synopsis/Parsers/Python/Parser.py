@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.3 2003/11/11 03:03:19 stefan Exp $
+# $Id: Parser.py,v 1.4 2003/11/11 06:02:01 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -7,7 +7,7 @@
 #
 
 from Processor import Processor, Parameter
-from Core import AST
+import AST
 from python import parse
 
 class Parser(Processor):

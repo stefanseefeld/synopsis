@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: setup.py,v 1.8 2003/11/05 01:56:59 stefan Exp $
+# $Id: setup.py,v 1.9 2003/11/11 06:00:34 stefan Exp $
 #
 # Setup script for synopsis
 #
@@ -28,20 +28,21 @@ module_ext = sysconfig.get_config_var('SO')
 def prefix(list, pref): return map(lambda x, p=pref: p + x, list)
 
 py_packages = ["Synopsis",
-               "Synopsis.Core",
-               "Synopsis.Parser",
-               "Synopsis.Parser.IDL", "Synopsis.Parser.Python",
-               "Synopsis.Parser.C", "Synopsis.Parser.Cxx",
-               "Synopsis.Linker",
-               "Synopsis.Formatter",
-               "Synopsis.Formatter.HTML",
-               "Synopsis.UI",
-               "Synopsis.UI.Qt"] 
+               "Synopsis.Parsers",
+               "Synopsis.Parsers.IDL", "Synopsis.Parsers.Python",
+               "Synopsis.Parsers.C", "Synopsis.Parsers.Cxx",
+               "Synopsis.Processors",
+               "Synopsis.Formatters",
+               "Synopsis.Formatters.HTML"]
 
-ext_modules = [('Synopsis/Parser/C', 'ctool' + module_ext),
-               ('Synopsis/Parser/Cxx', 'occ' + module_ext),
-               ('Synopsis/Parser/Cxx', 'link' + module_ext),
-               ]
+#"Synopsis.Core",
+#"Synopsis.UI",
+#"Synopsis.UI.Qt"] 
+
+
+ext_modules = [('Synopsis/Parsers/C', 'ctool' + module_ext),
+               ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
+               ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
 
 scripts = ['synopsis', 'synopsis-qt', 'compile-xref', 'search-xref']
 

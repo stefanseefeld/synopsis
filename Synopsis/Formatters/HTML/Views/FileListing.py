@@ -1,4 +1,4 @@
-# $Id: FileListing.py,v 1.1 2003/01/16 12:46:46 chalky Exp $
+# $Id: FileListing.py,v 1.2 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000-2003 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileListing.py,v $
+# Revision 1.2  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.1  2003/01/16 12:46:46  chalky
 # Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
 # (used to be part of FileTree) and FileDetails.
@@ -44,8 +47,8 @@
 import os
 
 # Synopsis modules
-from Synopsis.Core import AST, Util
-from Synopsis.Core.FileTree import FileTree
+from Synopsis import AST, Util
+from Synopsis.FileTree import FileTree
 
 # HTML modules
 import Page

@@ -32,8 +32,8 @@ class config(build.build):
         for e in self.distribution.ext_modules:
             if e[0] not in self.extensions:
                 self.extensions.append(e[0])
-        if not self.enable_c and 'Synopsis/Parser/C' in self.extensions:
-            self.extensions.remove('Synopsis/Parser/C')
+        if not self.enable_c and 'Synopsis/Parsers/C' in self.extensions:
+            self.extensions.remove('Synopsis/Parsers/C')
 
     def run(self):
 
@@ -44,7 +44,7 @@ class config(build.build):
         for ext in self.extensions:
             self.config_extension(ext)
         if not self.disable_gc:
-            self.config_extension('Synopsis/Parser/Cxx/gc')
+            self.config_extension('Synopsis/Parsers/Cxx/gc')
             
     def config_extension(self, ext):
 
@@ -61,7 +61,7 @@ class config(build.build):
         os.chdir(tempdir)
 
         command = "%s/configure --with-python=%s"%(srcdir, sys.executable)
-        if ext == 'Synopsis/Parser/Cxx' and self.disable_gc:
+        if ext == 'Synopsis/Parsers/Cxx' and self.disable_gc:
             command += ' --disable-gc'
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)

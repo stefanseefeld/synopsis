@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.9 2001/07/05 05:39:58 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.10 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.10  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.9  2001/07/05 05:39:58  stefan
 # advanced a lot in the refactoring of the HTML module.
 # Page now is a truely polymorphic (abstract) class. Some derived classes
@@ -62,7 +65,7 @@
 import os
 
 # Synopsis modules
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 # HTML modules
 import core

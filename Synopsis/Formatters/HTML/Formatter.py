@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.1 2003/11/11 04:53:41 stefan Exp $
+# $Id: Formatter.py,v 1.2 2003/11/11 06:01:13 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -7,7 +7,7 @@
 #
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis.Core import AST
+from Synopsis import AST
 from FramesIndex import *
 from ScopePages import *
 from ModuleListing import *
@@ -37,7 +37,7 @@ class ConfigHTML:
    datadir = '/usr/local' + '/share/synopsis'
    stylesheet = 'style.css'
    stylesheet_file = datadir + '/html.css'
-   file_layout = 'Synopsis.Formatter.HTML.FileLayout.FileLayout'
+   file_layout = 'Synopsis.Formatters.HTML.FileLayout.FileLayout'
    pages = ['FramesIndex',
             'ScopePages',
             'ModuleListing',

@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.90 2003/11/05 19:52:24 stefan Exp $
+// $Id: occ.cc,v 1.91 2003/11/11 06:01:45 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.91  2003/11/11 06:01:45  stefan
+// adjust to directory/package layout changes
+//
 // Revision 1.90  2003/11/05 19:52:24  stefan
 // forgot support for emulate_compiler...
 //
@@ -201,7 +204,7 @@ void unexpected()
 //. add to the args vector.
 void emulate_compiler(std::vector<const char*>& args)
 {
-    PyObject* emul_module = PyImport_ImportModule("Synopsis.Parser.Cxx.emul");
+    PyObject* emul_module = PyImport_ImportModule("Synopsis.Parsers.Cxx.emul");
     if (!emul_module)
         return;
     PyObject* info = PyObject_CallMethod(emul_module, "get_compiler_info", "s", syn_emulate_compiler);
@@ -740,9 +743,9 @@ int main(int argc, char **argv)
         std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
         exit(-1);
     }
-    PyObject* ast_module = PyImport_ImportModule("Synopsis.Core.AST");
+    PyObject* ast_module = PyImport_ImportModule("Synopsis.AST");
     PyObject* ast = PyObject_CallMethod(ast_module, "AST", 0);
-    PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
+    PyObject* type = PyImport_ImportModule("Synopsis.Type");
     PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
     PyObject* decls = PyList_New(0);
     

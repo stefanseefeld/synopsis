@@ -1,4 +1,4 @@
-# $Id: XRef.py,v 1.9 2002/12/09 04:00:59 chalky Exp $
+# $Id: XRef.py,v 1.10 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: XRef.py,v $
+# Revision 1.10  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.9  2002/12/09 04:00:59  chalky
 # Added multiple file support to parsers, changed AST datastructure to handle
 # new information, added a demo to demo/C++. AST Declarations now have a
@@ -53,10 +56,10 @@
 import os
 
 # Synopsis modules
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 # Formatter modules
-from Synopsis.Formatter import TOC
+from Synopsis.Formatters import TOC
 
 # HTML modules
 import Page

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.32 2003/01/20 06:43:02 chalky Exp $
+# $Id: Part.py,v 1.33 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.33  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.32  2003/01/20 06:43:02  chalky
 # Refactored comment processing. Added AST.CommentTag. Linker now determines
 # comment summary and extracts tags. Increased AST version number.
@@ -134,7 +137,7 @@ and are defined in the FormatStrategy module.
 import types, os
 
 # Synopsis modules
-from Synopsis.Core import AST, Type, Util
+from Synopsis import AST, Type, Util
 
 # HTML modules
 import Tags, core, FormatStrategy
@@ -174,7 +177,7 @@ class Part(Type.Visitor, AST.Visitor):
 
     def _init_formatters(self, config_option, type_msg):
 	"""Loads strategies from config file"""
-	base = 'Synopsis.Formatter.HTML.FormatStrategy.'
+	base = 'Synopsis.Formatters.HTML.FormatStrategy.'
 	try:
 	    config_obj = getattr(config.obj.ScopePages, config_option)
 	    if type(config_obj) not in (types.ListType, types.TupleType):

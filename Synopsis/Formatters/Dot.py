@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.34 2002/11/20 15:18:41 stefan Exp $
+# $Id: Dot.py,v 1.35 2003/11/11 06:02:52 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.35  2003/11/11 06:02:52  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.34  2002/11/20 15:18:41  stefan
 # don't quote dirname part of a file name
 #
@@ -136,8 +139,8 @@ Uses 'dot' from graphviz to generate various graphs.
 # THIS-IS-A-FORMATTER
 
 import sys, tempfile, getopt, os, os.path, string, types, errno, re
-from Synopsis.Core import AST, Type, Util
-from Synopsis.Formatter import TOC
+from Synopsis import AST, Type, Util
+from Synopsis.Formatters import TOC
 
 verbose = 0
 toc = None

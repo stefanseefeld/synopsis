@@ -2,7 +2,7 @@
 // This file contains implementation for class Synopsis, which converts the
 // C++ AST into a Python AST.
 
-// $Id: synopsis.cc,v 1.48 2003/01/27 06:53:37 chalky Exp $
+// $Id: synopsis.cc,v 1.49 2003/11/11 06:01:45 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 
 // $Log: synopsis.cc,v $
+// Revision 1.49  2003/11/11 06:01:45  stefan
+// adjust to directory/package layout changes
+//
 // Revision 1.48  2003/01/27 06:53:37  chalky
 // Added macro support for C++.
 //
@@ -364,9 +367,9 @@ Synopsis::Synopsis(FileFilter* filter, PyObject *decl, PyObject *dict)
         : m_declarations(decl), m_dictionary(dict), m_filter(filter)
 {
     Trace trace("Synopsis::Synopsis");
-    m_ast  = PyImport_ImportModule("Synopsis.Core.AST");
+    m_ast  = PyImport_ImportModule("Synopsis.AST");
     assertObject(m_ast);
-    m_type = PyImport_ImportModule("Synopsis.Core.Type");
+    m_type = PyImport_ImportModule("Synopsis.Type");
     assertObject(m_type);
 
     m = new Private(this);

@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.13 2002/11/02 06:37:37 chalky Exp $
+# $Id: ModuleIndexer.py,v 1.14 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.14  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.13  2002/11/02 06:37:37  chalky
 # Allow non-frames output, some refactoring of page layout, new modules.
 #
@@ -66,7 +69,7 @@
 #
 
 import os
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 import core, Page
 from core import config

@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.5 2003/11/08 19:49:54 stefan Exp $
+# $Id: RawFile.py,v 1.6 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: RawFile.py,v $
+# Revision 1.6  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.5  2003/11/08 19:49:54  stefan
 # replace statcache.stat by os.stat
 #
@@ -41,7 +44,7 @@
 import time, os, stat, os.path, string
 
 # Synopsis modules
-from Synopsis.Core import AST, Util
+from Synopsis import AST, Util
 
 # Formatter modules
 from Synopsis.Formatter import TOC

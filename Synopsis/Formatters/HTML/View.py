@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.17 2003/10/21 20:53:30 stefan Exp $
+# $Id: View.py,v 1.18 2003/11/11 06:01:13 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.18  2003/11/11 06:01:13  stefan
+# adjust to directory/package layout changes
+#
 # Revision 1.17  2003/10/21 20:53:30  stefan
 # reenable logging of page instance to aid debugging
 #
@@ -80,7 +83,7 @@ Page base class, contains base functionality and common interface for all Pages.
 """
 
 import os.path, cStringIO
-from Synopsis.Core import Util
+from Synopsis import Util
 
 import core
 from core import config
@@ -253,7 +256,7 @@ class Page:
 	self.__os = None
 	format_class = PageFormat
 	if config.page_format:
-	    format_class = Util.import_object(config.page_format, basePackage = 'Synopsis.Formatter.HTML.Page.')
+	    format_class = Util.import_object(config.page_format, basePackage = 'Synopsis.Formatters.HTML.Page.')
 	self.__format = format_class()
 
     def filename(self):

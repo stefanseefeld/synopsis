@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.3 2003/11/11 02:58:31 stefan Exp $
+# $Id: Parser.py,v 1.4 2003/11/11 06:01:45 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -14,7 +14,7 @@ use by python.
 """
 
 from Synopsis.Processor import Processor, Parameter
-from Synopsis.Core import AST
+from Synopsis import AST
 import occ
 
 class Parser(Processor):
