@@ -13,51 +13,50 @@
 #include <stdexcept>
 
 TypeInfo::TypeInfo()
+  : my_refcount(0),
+    my_metaobject(0),
+    my_env(0)
 {
-  refcount = 0;
-  encode = 0;
-  metaobject = 0;
-  env = 0;
 }
 
 void TypeInfo::unknown()
 {
-  refcount = 0;
-  encode = 0;
-  metaobject = 0;
-  env = 0;
+  my_refcount = 0;
+  my_encoding.clear();
+  my_metaobject = 0;
+  my_env = 0;
 }
 
 void TypeInfo::set(const PTree::Encoding &type, Environment* e)
 {
-  refcount = 0;
-  encode = type;
-  metaobject = 0;
-  env = e;
+  my_refcount = 0;
+  my_encoding = type;
+  my_metaobject = 0;
+  my_env = e;
 }
 
 void TypeInfo::set(Class *m)
 {
-  refcount = 0;
-  encode = 0;
-  metaobject = m;
-  env = 0;
+  my_refcount = 0;
+  my_encoding = 0;
+  my_metaobject = m;
+  my_env = 0;
 }
 
 void TypeInfo::set_void()
 {
-  refcount = 0;
-  encode = "v";
-  metaobject = 0;
-  env = 0;
+  my_refcount = 0;
+  my_encoding = "v";
+  my_metaobject = 0;
+  my_env = 0;
 }
 
 void TypeInfo::set_int()
 {
-  refcount = 0;
-  encode = "i";
-  metaobject = 0;
-  env = 0;
+  my_refcount = 0;
+  my_encoding = "i";
+  my_metaobject = 0;
+  my_env = 0;
 }
 
 void TypeInfo::set_member(PTree::Node *member)
@@ -74,13 +73,13 @@ void TypeInfo::set_member(PTree::Node *member)
 
 TypeInfoId TypeInfo::id()
 {
-  if(refcount > 0) return PointerType;
+  if(my_refcount > 0) return PointerType;
 
   normalize();
-  if(metaobject) return ClassType;
+  if(my_metaobject) return ClassType;
 
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   if(ptr.empty() == 0) return UndefType;
 
   switch(*ptr.begin())
@@ -120,31 +119,31 @@ TypeInfoId TypeInfo::id()
 bool TypeInfo::is_no_return_type()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   return(!ptr.empty() && *ptr.begin() == '?');
 }
 
 bool TypeInfo::is_const()
 {
   normalize();
-  return(!encode.empty() && *encode.begin() == 'C');
+  return(!my_encoding.empty() && *my_encoding.begin() == 'C');
 }
 
 bool TypeInfo::is_volatile()
 {
   normalize();
-  if(encode.empty()) return false;
-  else if(encode.front() == 'V') return true;
-  else if(encode.front() == 'C') return(encode.at(1) == 'V');
+  if(my_encoding.empty()) return false;
+  else if(my_encoding.front() == 'V') return true;
+  else if(my_encoding.front() == 'C') return(my_encoding.at(1) == 'V');
   else return false;
 }
 
 size_t TypeInfo::is_builtin_type()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   if(ptr.empty()) return 0;
 
   size_t result = 0;
@@ -177,26 +176,26 @@ size_t TypeInfo::is_builtin_type()
 bool TypeInfo::is_function()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   return !ptr.empty() && ptr.front() == 'F';
 }
 
 bool TypeInfo::is_ellipsis()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding  ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding  ptr = skip_cv(my_encoding, e);
   return !ptr.empty() && ptr.front() == 'e';
 }
 
 bool TypeInfo::is_pointer_type()
 {
-  if(refcount > 0) return true;
+  if(my_refcount > 0) return true;
 
   normalize();
-  Environment* e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment* e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   if(!ptr.empty())
     return ptr.front() == 'P' || ptr.front() == 'A' || ptr.front() == 'M';
   return false;
@@ -205,32 +204,32 @@ bool TypeInfo::is_pointer_type()
 bool TypeInfo::is_reference_type()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   return !ptr.empty() && ptr.front() == 'R';
 }
 
 bool TypeInfo::is_array()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   return !ptr.empty() && ptr.front() == 'A';
 }
 
 bool TypeInfo::is_pointer_to_member()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   return !ptr.empty() && ptr.front() == 'M';
 }
 
 bool TypeInfo::is_template_class()
 {
   normalize();
-  Environment *e = env;
-  PTree::Encoding ptr = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   return !ptr.empty() && ptr.front() == 'T';
 }
 
@@ -244,17 +243,17 @@ Class *TypeInfo::class_metaobject()
 bool TypeInfo::is_class(Class *&c)
 {
   normalize();
-  if(metaobject != 0)
+  if(my_metaobject != 0)
   {
-    c = metaobject;
+    c = my_metaobject;
     return true;
   }
   else
   {
     c = 0;
-    Environment *e = env;
-    PTree::Encoding encode2 = skip_cv(encode, e);
-    if(encode == encode2) return false;
+    Environment *e = my_env;
+    PTree::Encoding encode2 = skip_cv(my_encoding, e);
+    if(my_encoding == encode2) return false;
 
     TypeInfo tinfo;
     tinfo.set(encode2, e);
@@ -272,12 +271,12 @@ bool TypeInfo::is_enum(PTree::Node *&spec)
 {
   spec = 0;
   normalize();
-  if(metaobject) return false;
+  if(my_metaobject) return false;
   else
   {
     Bind *bind;
-    Environment *e = env;
-    PTree::Encoding name = encode.get_base_name(e);
+    Environment *e = my_env;
+    PTree::Encoding name = my_encoding.get_base_name(e);
     if(!name.empty() && e != 0)
       if(e->LookupType((const char *)&*name.begin(), name.size(), bind))
 	if(bind != 0 && bind->What() == Bind::isEnumName)
@@ -285,9 +284,9 @@ bool TypeInfo::is_enum(PTree::Node *&spec)
 	  spec = ((BindEnumName*)bind)->GetSpecification();
 	  return true;
 	}
-    e = env;
-    name = skip_cv(encode, e);
-    if(name == encode) return false;
+    e = my_env;
+    name = skip_cv(my_encoding, e);
+    if(name == my_encoding) return false;
     TypeInfo tinfo;
     tinfo.set(name, e);
     return tinfo.is_enum(spec);
@@ -296,25 +295,25 @@ bool TypeInfo::is_enum(PTree::Node *&spec)
 
 void TypeInfo::dereference(TypeInfo &t)
 {
-  t.refcount = refcount - 1;
-  t.encode = encode;
-  t.metaobject = metaobject;
-  t.env = env;
+  t.my_refcount = my_refcount - 1;
+  t.my_encoding = my_encoding;
+  t.my_metaobject = my_metaobject;
+  t.my_env = my_env;
 }
 
 void TypeInfo::reference(TypeInfo &t)
 {
-  t.refcount = refcount + 1;
-  t.encode = encode;
-  t.metaobject = metaobject;
-  t.env = env;
+  t.my_refcount = my_refcount + 1;
+  t.my_encoding = my_encoding;
+  t.my_metaobject = my_metaobject;
+  t.my_env = my_env;
 }
 
 bool TypeInfo::nth_argument(int n, TypeInfo &t)
 {
-  Environment *e = env;
+  Environment *e = my_env;
   normalize();
-  PTree::Encoding ptr = skip_cv(encode, e);
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   if(ptr.empty() || ptr.front() != 'F')
   {
     t.unknown();
@@ -344,9 +343,9 @@ bool TypeInfo::nth_argument(int n, TypeInfo &t)
 
 int TypeInfo::num_of_arguments()
 {
-  Environment *e = env;
+  Environment *e = my_env;
   normalize();
-  PTree::Encoding ptr = skip_cv(encode, e);
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   if(ptr.empty() || ptr.front() != 'F') return -1; // not a function
   
   ptr.pop();
@@ -363,9 +362,9 @@ int TypeInfo::num_of_arguments()
 
 bool TypeInfo::nth_template_argument(int n, TypeInfo &t)
 {
-  Environment *e = env;
+  Environment *e = my_env;
   normalize();
-  PTree::Encoding ptr = skip_cv(encode, e);
+  PTree::Encoding ptr = skip_cv(my_encoding, e);
   if(ptr.empty() || ptr.front() != 'T')
   {
     t.unknown();
@@ -392,15 +391,15 @@ bool TypeInfo::nth_template_argument(int n, TypeInfo &t)
 PTree::Node *TypeInfo::full_type_name()
 {
   normalize();
-  if(metaobject != 0)
+  if(my_metaobject != 0)
   {
-    PTree::Node *qname = metaobject->Name();
-    PTree::Node *head = get_qualified_name2(metaobject);
+    PTree::Node *qname = my_metaobject->Name();
+    PTree::Node *head = get_qualified_name2(my_metaobject);
     return head ? PTree::snoc(head, qname) : qname;
   }
 
-  Environment *e = env;
-  PTree::Encoding name = skip_cv(encode, e);
+  Environment *e = my_env;
+  PTree::Encoding name = skip_cv(my_encoding, e);
   if(name.empty()) return 0;
 
   if(is_builtin_type())
@@ -451,24 +450,24 @@ PTree::Node *TypeInfo::get_qualified_name2(Class *c)
 PTree::Node *TypeInfo::make_ptree(PTree::Node *name)
 {
   normalize();
-  if(metaobject != 0)
+  if(my_metaobject != 0)
   {
     PTree::Node *decl;
     if(!name) decl = 0;
     else decl = PTree::list(name);
     return PTree::list(full_type_name(), decl);
   }
-  else if(!encode.empty()) encode.make_ptree(name);
+  else if(!my_encoding.empty()) my_encoding.make_ptree(name);
   else return 0;
 }
 
 void TypeInfo::normalize()
 {
-  if(encode.empty() || refcount > 0) return;
+  if(my_encoding.empty() || my_refcount > 0) return;
 
-  Environment *e = env;
-  PTree::Encoding ptr = encode;
-  int r = refcount;
+  Environment *e = my_env;
+  PTree::Encoding ptr = my_encoding;
+  int r = my_refcount;
 
   while(r < 0)
     switch(ptr.front())

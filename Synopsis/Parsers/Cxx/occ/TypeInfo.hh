@@ -67,9 +67,9 @@ public:
   bool is_enum();
   bool is_enum(PTree::Node *&spec);
   
-  void dereference() { --refcount;}
+  void dereference() { --my_refcount;}
   void dereference(TypeInfo&);
-  void reference() { ++refcount;}
+  void reference() { ++my_refcount;}
   void reference(TypeInfo&);
   bool nth_argument(int, TypeInfo&);
   int num_of_arguments();
@@ -89,10 +89,10 @@ private:
   static PTree::Encoding get_return_type(const PTree::Encoding &, Environment*);
   static PTree::Encoding skip_type(const PTree::Encoding &, Environment*);
   
-  int refcount;
-  PTree::Encoding encode;
-  Class* metaobject;
-  Environment* env;
+  size_t          my_refcount;
+  PTree::Encoding my_encoding;
+  Class          *my_metaobject;
+  Environment    *my_env;
 };
 
 #endif
