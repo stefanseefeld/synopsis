@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.5 2003/11/16 15:06:29 stefan Exp $
+# $Id: Processor.py,v 1.6 2003/11/17 01:24:11 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -69,7 +69,7 @@ class Parametrized(object):
          if i in self._parameters:
             setattr(self, i, kwds[i])
          else:
-            raise TypeError, "No parameter '%s' in 'Parametrized'"%(i)
+            raise TypeError, "No parameter '%s' in '%s'"%(i, self.__class__.__name__)
 
 
 class Processor(Parametrized):
@@ -77,18 +77,8 @@ class Processor(Parametrized):
 
    verbose = Parameter(False, "operate verbosely")
    debug = Parameter(False, "generate debug traces")
-
-   def set_parameters(self, kwds):
-      """Sets the given parameters to override the default values.
-      Override the Parametrized version so we can handle 'input' and 'output'
-      which are not in the _parameters' catalog."""
-      for i in kwds:
-         if i in self._parameters:
-            setattr(self, i, kwds[i])
-         elif i == 'input' or i == 'output':
-            setattr(self, i, kwds[i]) # these are not in self._parameters but are legal
-         else:
-            raise TypeError, "No parameter '%s' in processor '%s'"%(i, self.__class__.__name__)
+   input = Parameter([], "input files to process")
+   output = Parameter('', "output file to save the ast to")
 
    def merge_input(self, ast):
       """Join the given ast with a set of asts to be read from 'input' parameter"""
