@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 2001/01/24 18:33:38 stefan Exp $
+# $Id: Makefile,v 1.6 2001/03/30 14:00:49 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,7 +26,7 @@ include ../../local.mk
 endif
 endif
 
-SRC	:= __init__.py __init__.pyc occ.so
+SRC	:= __init__.py __init__.pyc occ.so link.so
 
 subdirs	= occ
 
