@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.39 2002/11/11 15:19:35 chalky Exp $
+# $Id: core.py,v 1.40 2002/11/13 02:29:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.40  2002/11/13 02:29:24  chalky
+# Support exclude_glob option to exclude files from listings. Remove debug info.
+#
 # Revision 1.39  2002/11/11 15:19:35  chalky
 # More fixes to get demo/C++ sxr working without frames
 #
@@ -224,6 +227,7 @@ class Config:
 	self.using_module_index = 0
         self.base_dir = ''
         self.start_dir = ''
+	self.exclude_globs = []
 	self.treeFormatterClass = TreeFormatter.TreeFormatter
 	self.page_contents = "" # page contents frame (top-left)
 	self.page_index = "" # page for index frame (left)
@@ -251,7 +255,7 @@ class Config:
 	options = ('pages', 'sorter', 'datadir', 'stylesheet', 'stylesheet_file',
 	    'comment_formatters', 'toc_out', 'toc_in', 'tree_formatter',
 	    'file_layout', 'output_dir', 'structs_as_classes', 'default_toc',
-            'base_dir', 'start_dir')
+            'base_dir', 'start_dir', 'exclude_globs')
 	for option in options:
 	    if hasattr(obj, option):
 		getattr(self, '_config_'+option)(getattr(obj, option))
@@ -333,6 +337,10 @@ class Config:
     def _config_structs_as_classes(self, yesno):
 	if self.verbose > 1: print "Using structs as classes:",yesno
 	self.structs_as_classes = yesno
+
+    def _config_exclude_globs(self, globs):
+	if self.verbose > 1: print "Using exclude globs:",globs
+	self.exclude_globs = map(compile_glob, globs)
     
     def set_contents_page(self, page):
 	"""Call this method to set the contents page. First come first served
@@ -378,6 +386,17 @@ def old_reference(name, scope, label=None, **keys):
     entry = config.toc[name]
     if entry: return apply(href, (entry.link, label), keys)
     return label or ''
+
+def compile_glob(globstr):
+    """Returns a compiled regular expression for the given glob string. A
+    glob string is something like "*.?pp" which gets translated into
+    "^.*\..pp$"."""
+    glob = string.replace(globstr, '.', '\.')
+    glob = string.replace(glob, '?', '.')
+    glob = string.replace(glob, '*', '.*')
+    glob = re.compile('^%s$'%glob)
+    return glob
+
 
 class Struct:
     "Dummy class. Initialise with keyword args."

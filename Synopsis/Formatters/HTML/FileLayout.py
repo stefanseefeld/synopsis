@@ -1,4 +1,4 @@
-# $Id: FileLayout.py,v 1.18 2002/11/13 01:01:49 chalky Exp $
+# $Id: FileLayout.py,v 1.19 2002/11/13 02:29:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: FileLayout.py,v $
+# Revision 1.19  2002/11/13 02:29:24  chalky
+# Support exclude_glob option to exclude files from listings. Remove debug info.
+#
 # Revision 1.18  2002/11/13 01:01:49  chalky
 # Improvements to links when using the Nested file layout
 #
@@ -228,7 +231,6 @@ class NestedFileLayout (FileLayout):
 	Default implementation is to join the path with '-', prepend "_source-"
 	and append ".html" """
         file = self._stripFilename(file)
-	print "rel",config.base_dir,",",file,"=",rel(config.base_dir, file)
         return os.path.join("Source", rel(config.base_dir, file)+".html")
 
     def nameOfIndex(self):
