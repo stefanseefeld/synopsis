@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.45 2003/01/16 12:46:46 chalky Exp $
+# $Id: core.py,v 1.46 2003/01/16 16:48:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.46  2003/01/16 16:48:23  chalky
+# Using FileTree now forces FileListing, FileIndexer and FileDetails to be used.
+#
 # Revision 1.45  2003/01/16 12:46:46  chalky
 # Renamed FilePages to FileSource, FileTree to FileListing. Added FileIndexer
 # (used to be part of FileTree) and FileDetails.
@@ -562,7 +565,7 @@ class PageManager:
 	attribute using the second string."""
 	defaultAttr = 'htmlPageClass'
 	basePackage = 'Synopsis.Formatter.HTML.'
-	for page in config.pages:
+	for page in list(config.pages):
 	    obj = self.addPage(import_object(page, defaultAttr, basePackage))
 	    self.__page_objects[page] = obj
     
