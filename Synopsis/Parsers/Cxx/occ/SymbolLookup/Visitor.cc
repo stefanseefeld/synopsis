@@ -19,10 +19,12 @@ void Visitor::visit(PTree::NamespaceSpec *spec)
 {
   my_table.enter_namespace(spec);
   visit(static_cast<PTree::List *>(spec));
+  my_table.leave_scope();
 }
 
 void Visitor::visit(PTree::ClassSpec *spec)
 {
   my_table.enter_class(spec);
   visit(static_cast<PTree::List *>(spec));
+  my_table.leave_scope();
 }

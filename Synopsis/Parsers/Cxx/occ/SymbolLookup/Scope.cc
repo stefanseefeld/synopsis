@@ -37,14 +37,97 @@ void Scope::declare(const Encoding &name, const Symbol *s)
   my_symbols.insert(std::make_pair(name, s));
 }
 
-std::set<Symbol const *> Scope::lookup(const Encoding &name) const throw()
+SymbolSet Scope::find(const Encoding &name) const throw()
 {
   SymbolTable::const_iterator l = my_symbols.lower_bound(name);
   SymbolTable::const_iterator u = my_symbols.upper_bound(name);
-  std::set<Symbol const *> symbols;
+  SymbolSet symbols;
   for (; l != u; ++l) symbols.insert(l->second);
   return symbols;
+}
+
+SymbolSet Scope::lookup(PTree::Encoding const &name) const
+{
+  // If the name is qualified, start a qualified lookup.
+  if (!name.is_qualified())
+    return unqualified_lookup(name);
+
+  PTree::Encoding symbol_name = name.get_scope();
+  PTree::Encoding remainder = name.get_symbol();
   
+  // If the scope is the global scope, do a qualified lookup there.
+  if (symbol_name.is_global_scope())
+    return global()->qualified_lookup(remainder);
+
+  // Else do an unqualified lookup for the scope, followed by a
+  // qualified lookup of the remainder in that scope.
+  SymbolSet symbols = unqualified_lookup(symbol_name);
+  if (symbols.empty())
+    throw Undefined(symbol_name);
+  else if (symbols.size() > 1)
+    // If the name was found multiple times, it must refer to a function,
+    // so throw a TypeError.
+    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+
+  // As scopes contain a table of nested scopes, accessible through their respective
+  // declaration objects, we find the scope using the symbol's declaration as key
+  // within its scope.
+  Symbol const *symbol = *symbols.begin();
+  Scope const *scope = symbol->scope()->find_scope(symbol->ptree());
+  // Now do a qualified lookup of the remainder in the given scope.
+  return scope->qualified_lookup(remainder);
+}
+
+SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
+{
+  PTree::Encoding symbol_name = name.get_scope();
+  PTree::Encoding remainder = name.get_symbol();
+
+  if (symbol_name.empty())
+  {
+    symbol_name = name;
+    remainder.clear();
+  }
+
+  // find symbol locally
+  SymbolSet symbols = find(symbol_name);
+  if (symbols.empty()) throw Undefined(symbol_name);
+  else if (symbols.size() > 1)
+  {
+    // can we assume here that all symbols refer to functions ?
+    std::cerr << "didn't expect multiple symbols when looking for " << name << std::endl;
+    dump(std::cerr, 0);
+    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+  }
+
+  // If the remainder is empty, just return the found symbol(s).
+  if (remainder.empty()) return symbols;
+
+  // Else take the found symbol to refer to a scope and look up
+  // the remainder there.
+
+  // now make sure the symbol indeed refers to a scope
+  PTree::Node const *decl = 0;
+  if (NamespaceName const *ns = dynamic_cast<NamespaceName const *>(*symbols.begin()))
+    decl = ns->ptree();
+  else if (TypeName const *tn = dynamic_cast<TypeName const *>(*symbols.begin()))
+  {
+    decl = tn->ptree();
+    // test that 'decl' is a ClassSpec
+  }
+  // TODO: test for ClassTemplateName ...
+  if (!decl)
+  {
+    // the symbol was found but doesn't refer to a scope
+    std::cerr << name << " neither refers to a namespace nore a type" << std::endl;
+    dump(std::cerr, 0);
+    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+  }
+  // move into inner scope and start over the lookup
+  Scope const *nested = find_scope(decl);
+  if (!nested)
+    throw InternalError("undeclared scope !");
+  return nested->qualified_lookup(remainder);
 }
 
 void Scope::dump(std::ostream &os, size_t in) const
