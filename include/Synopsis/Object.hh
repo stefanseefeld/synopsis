@@ -294,6 +294,10 @@ inline void Object::assert_type(const char *module_name,
     msg += module_name;
     msg += ".";
     msg += type_name;
+    msg += " (was ";
+    Object type = attr("__class__").repr();
+    msg += PyString_AS_STRING(type.my_impl);
+    msg += ")";
     throw TypeError(msg);
   }
 }
@@ -375,7 +379,7 @@ inline bool Object::narrow(Object o) throw(Object::TypeError)
   return PyInt_AsLong(o.my_impl);
 }
 
-std::ostream &operator << (std::ostream &os, const Object &o)
+inline std::ostream &operator << (std::ostream &os, const Object &o)
 {
   return os << Object::narrow<std::string>(o.str());
 }
