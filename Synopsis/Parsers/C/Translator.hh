@@ -10,6 +10,7 @@
 
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/AST/TypeKit.hh>
+#include <Synopsis/Trace.hh>
 #include <iostream>
 #include <string>
 #include <vector>

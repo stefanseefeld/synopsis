@@ -5,7 +5,6 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/Trace.hh>
 #include "Translator.hh"
 #include "Debugger.hh"
 #include "Declaration.hh"
