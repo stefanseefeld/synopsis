@@ -26,6 +26,10 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifdef __WIN32__
+# include <windows.h>
+#endif
+
 namespace
 {
 //. return portably the current working directory
@@ -38,7 +42,6 @@ const std::string &get_cwd()
     DWORD size;
     if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
     {
-      delete [] buf;
       throw std::runtime_error("error accessing current working directory");
     }
     char *buf = new char[size];

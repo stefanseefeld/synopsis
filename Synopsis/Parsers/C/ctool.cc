@@ -11,9 +11,14 @@
 #include "Printer.hh"
 #include "File.hh"
 #include "Trace.hh"
-#include <signal.h>
-#include <sys/wait.h>
 #include <fstream>
+
+#if !defined(__WIN32__)
+# include <signal.h>
+# include <sys/wait.h>
+#else
+# include <windows.h>
+#endif
 
 using namespace Synopsis::AST; // import all AST objects...
 namespace Python = Synopsis; // ...and the others into 'Python'
@@ -32,6 +37,8 @@ void unexpected()
   std::cout << "Warning: Aborting due to unexpected exception." << std::endl;
   throw std::bad_exception();
 }
+
+#if !defined(__WIN32__)
 
 void sighandler(int signo)
 {
@@ -56,6 +63,8 @@ void sighandler(int signo)
   exit(-1);
 }
 
+#endif
+
 //. return portably the current working directory
 const std::string &get_cwd()
 {
@@ -66,7 +75,6 @@ const std::string &get_cwd()
     DWORD size;
     if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
     {
-      delete [] buf;
       throw std::runtime_error("error accessing current working directory");
     }
     char *buf = new char[size];
@@ -188,12 +196,15 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
     Py_INCREF(py_ast);
 
     std::set_unexpected(unexpected);
+
+#if !defined(__WIN32__)
     struct sigaction olda;
     struct sigaction newa;
     newa.sa_handler = &sighandler;
     sigaction(SIGSEGV, &newa, &olda);
     sigaction(SIGBUS, &newa, &olda);
     sigaction(SIGABRT, &newa, &olda);
+#endif  
     
     if (debug) Trace::enable_debug();
     try
@@ -228,9 +239,12 @@ PyObject *ctool_parse(PyObject *self, PyObject *args)
     {
       std::cerr << "internal error : " << e.what() << std::endl;
     }
+
+#if !defined(__WIN32__)
     sigaction(SIGABRT, &olda, 0);
     sigaction(SIGBUS, &olda, 0);
     sigaction(SIGSEGV, &olda, 0);
+#endif
 
     return py_ast;
   }
@@ -261,12 +275,15 @@ PyObject *ctool_print(PyObject *self, PyObject *args)
       return 0;
 
     std::set_unexpected(unexpected);
+
+#if !defined(__WIN32__)
     struct sigaction olda;
     struct sigaction newa;
     newa.sa_handler = &sighandler;
     sigaction(SIGSEGV, &newa, &olda);
     sigaction(SIGBUS, &newa, &olda);
     sigaction(SIGABRT, &newa, &olda);
+#endif
     
     try
     {
@@ -290,9 +307,12 @@ PyObject *ctool_print(PyObject *self, PyObject *args)
     {
       std::cerr << "internal error : " << e.what() << std::endl;
     }
+
+#if !defined(__WIN32__)
     sigaction(SIGABRT, &olda, 0);
     sigaction(SIGBUS, &olda, 0);
     sigaction(SIGSEGV, &olda, 0);
+#endif
 
     Py_INCREF(Py_None);
     return Py_None;

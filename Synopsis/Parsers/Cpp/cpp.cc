@@ -16,6 +16,10 @@
 #include <memory>
 #include <functional>
 
+#ifdef __WIN32__
+# include <windows.h>
+#endif
+
 using namespace Synopsis::AST; // import all AST objects...
 namespace Python = Synopsis; // ...and the others into 'Python'
 
@@ -46,7 +50,6 @@ const std::string &get_cwd()
     DWORD size;
     if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
     {
-      delete [] buf;
       throw std::runtime_error("error accessing current working directory");
     }
     char *buf = new char[size];

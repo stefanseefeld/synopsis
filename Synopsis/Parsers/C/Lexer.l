@@ -40,14 +40,14 @@ extern "C" int yywrap(void);
 #include <Statement.hh>
 #include <File.hh>
 
-#ifdef   WINDOWS
-#    ifndef  __STDC__
-#    define  __STDC__    1
-#    endif
+#ifdef __WIN32__
+# ifndef  __STDC__
+#  define  __STDC__    1
+# endif
 
 int isatty(int) { return 1; }
 
-#endif  /* WINDOWS */
+#endif  /* __WIN32__ */
 
 int cnt_nl(char *txt, int len);
 
