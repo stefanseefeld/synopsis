@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.6 2001/07/10 14:41:22 chalky Exp $
+#  $Id: Config.py,v 1.7 2001/07/15 08:31:52 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -309,13 +309,17 @@ class Base:
 		creates the bulk of the documentation - the pages for modules
 		and classes, with summary and detail sections for each type of
 		ast node. ScopePages is very modular, and all the modules it
-		uses are in the ASTFormatter module, which is where it looks
-		if you use the 'simple' module spec.
+		uses are in the ASTFormatter and FormatStrategy modules, which
+		is where it looks if you use the 'simple' module spec.
+		(FIXME)
 
-		@param summarizer module to use as summarizer. The default is
-		'SummaryFormatter' (from ASTFormatter)
-		@param detailer module to use as detailer. The default is
-		'DetailFormatter' (from ASTFormatter)
+		@param parts modules to use to generate parts of each page.
+		The default package is Synopsis.Formatter.HTML.ASTFormatter
+		and the default list is 'Heading','Summary', and 'Detail'
+
+		@param heading_formatters list of modules for Heading page
+		Part. The default is 'Heading', 'ClassHierarchyGraph', and
+		'DetailCommenter'.
 
 		@param summary_formatters list of modules for SummaryFormatter
 		to use. The default is ['SummaryAST', 'SummaryCommenter']
@@ -330,15 +334,23 @@ class Base:
 		@see Synopsis.Formatter.HTML.ScopePages
 		@see Synopsis.Formatter.HTML.ASTFormatter
 		"""
-		summarizer = 'Summary'
-		detailer = 'Detail'
+		parts = [
+		    'Heading',
+		    'Summary',
+		    'Inheritance',
+		    'Detail'
+		]
+		heading_formatters = [
+		    'Heading',
+		    'ClassHierarchyGraph',
+		    'DetailCommenter'
+		]
 		summary_formatters = [
 		    'SummaryAST',
 		    'SummaryCommenter'
 		]
 		detail_formatters = [
 		    'DetailAST',
-		    'ClassHierarchyGraph',
 		    'DetailCommenter'
 		]
 	    class InheritanceGraph:
