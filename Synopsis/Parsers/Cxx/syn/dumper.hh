@@ -17,6 +17,7 @@ public:
     virtual void visitScope(AST::Scope*);
     virtual void visitNamespace(AST::Namespace*);
     virtual void visitClass(AST::Class*);
+    virtual void visitOperation(AST::Operation*);
 
 private:
     //. The indent depth
