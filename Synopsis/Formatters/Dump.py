@@ -1,4 +1,4 @@
-# $Id: Dump.py,v 1.4 2003/11/11 12:50:56 stefan Exp $
+# $Id: Dump.py,v 1.5 2003/11/21 21:17:30 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -11,6 +11,7 @@ Verbose attribute-oriented xml dump of AST, useful for validation,
 introspection, and debugging.
 """
 
+from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import Type, AST
 
@@ -152,7 +153,11 @@ class Writer:
 
    def write_files(self, files):
       self.node = dom.createElement("files")
-      for f in files: self.visit(f)
+      for f in files:
+         self.push("file")
+         self.visit(f)
+         self.pop()
+
       self.node.writexml(self.output, indent=" ", addindent=" ", newl="\n")
       self.node.unlink()
       del self.node
@@ -162,7 +167,7 @@ class Formatter(Processor):
    show_declarations = Parameter(True, 'output declarations')
    show_types = Parameter(True, 'output types')
    show_files = Parameter(True, 'output files')
-   stylesheet = Parameter('dump.css', 'stylesheet to be referenced for rendering')
+   stylesheet = Parameter(config.datadir + '/dump.css', 'stylesheet to be referenced for rendering')
 
    def process(self, ast, **kwds):
       
