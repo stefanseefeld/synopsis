@@ -22,6 +22,10 @@ void test1()
 
   for (List::iterator i = list.begin(); i != list.end(); ++i)
     std::cout << Object::narrow<std::string>(i->str()) << std::endl;
+  for (List::reverse_iterator i = list.rbegin(); i != list.rend(); ++i)
+    std::cout << Object::narrow<std::string>(i->str()) << std::endl;
+  std::cout << *(list.begin() + 1) << ' ' << *(list.end() - 1) << std::endl;
+  std::cout << *(list.rbegin() + 1) << ' ' << *(list.rend() - 1) << std::endl;
 }
 
 int main(int, char **)
