@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.26 2001/01/31 06:51:24 stefan Exp $
+#  $Id: synopsis,v 1.27 2001/02/11 05:39:33 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -40,6 +40,8 @@ The supported flags are:
   -Wl,<arg>[,<arg>...]                 Send args to the linker
   -f,   --formatter <formatter>        Select a formatter
   -Wf,<arg>[,<arg>...]                 Send args to the formatter
+  -c,   --config <filename>            provide custom configuration through Config class in <filename>
+  -Wc,<arg>[,<arg>...]                 Send args to the config module
   -I<path>                             Specify include path
   -D<macro>                            Specify macro for the parser
   -o <filename>                        Write output to <filename>
@@ -55,6 +57,8 @@ linker_cmd = "Linker"
 linker_args = []
 formatter_cmd = ""
 formatter_args = []
+config_file = ""
+config_args = {}
 output = ""
 verbose = 0
 
@@ -135,9 +139,9 @@ def showModuleSynopsis(file, parser):
     print indent+string.join(string.split(doc,'\n'),'\n'+indent)
 
 def parseArgs(args):
-    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose, help
+    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, config_file, config_args, output, verbose, help
     try:
-        opts,files = Util.getopt_spec(args, "p:f:W:I:o:Vvhl", ["parser=", "formatter=", "version", "help", "list"])
+        opts,files = Util.getopt_spec(args, "p:f:W:I:o:c:Vvhl", ["parser=", "formatter=", "config=", "version", "help", "list"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.stderr.write("Use `" + cmdname + " -h' for help\n")
@@ -159,6 +163,9 @@ def parseArgs(args):
                 linker_args.extend(string.split(a[2:], ","))
             elif a[0] == "f":
                 formatter_args.extend(string.split(a[2:], ","))
+            elif a[0] == "c":
+                args = string.split(a[2:], ",")
+                for i in range(0, (len(args)+1)/2): config_args[args[2*i]] = args[2*i+1]
             else:
                 sys.stderr.write("Error in arguments: option " + o + " not recognized\n")
                 sys.stderr.write("Use " + cmdname + " -h for help\n")
@@ -170,6 +177,8 @@ def parseArgs(args):
             parser_args.append("-D" + a)
         elif o == "-o":
             output = a
+        elif o == "-c" or o == "--config":
+            config_file = a
         elif o == "-v" or o == "--verbose":
             verbose = 1
             parser_args.append("-v")
@@ -213,12 +222,18 @@ def main(argv=None):
                 print "\nArguments for formatter `" + formatter_cmd + "':\n"
                 formatter.usage()
         sys.exit(0)
-        
+
+    config = None
+    if config_file:
+        config = Util._import(config_file)
+        config = config.Config(config_args)
+
     if len(files) == 0:
         sys.stderr.write(cmdname + ": No files specified\n")
         sys.exit(1)
 
     if parser_cmd != "": parser = importParser(parser_cmd)
+    elif config and config.parser: parser = importParser(config.parser.name)
     #
     # real program start
     #
@@ -233,7 +248,7 @@ def main(argv=None):
             sys.stderr.write(cmdname + ": `" + file + "' does not exist\n")
             sys.exit(1)
 
-        if parser_cmd == "":
+        if parser_cmd == "" and not config or not config.parser:
             if verbose: print "Synopsis: loading", file
             unpickler = pickle.Unpickler(open(file, "r"))
             try:
@@ -246,18 +261,19 @@ def main(argv=None):
 
         else:
             if verbose: print "Synopsis: parsing", file
-            parser.parse(file, parser_args, types, declarations)
+            parser.parse(file, parser_args, types, declarations, config and config.parser)
 
     #
     # resolve symbols here...
     if verbose: print "Synopsis: linking..."
-    linker = importLinker(linker_cmd)
-    linker.resolve(linker_args, types, declarations)
+    if config and config.linker: linker = importLinker(config.linker.name)
+    else: linker = importLinker(linker_cmd)
+    linker.resolve(linker_args, types, declarations, config and config.linker)
 
     #
     # generate output, either with pickler or with a formatter
     #
-    if formatter_cmd == "":
+    if formatter_cmd == "" and not config or not config.formatter:
         if verbose: print "Synopsis: writing file..."
         if output == "":
             sys.stderr.write(cmdname + ": no output file specified\n")
@@ -270,11 +286,12 @@ def main(argv=None):
         pickler.dump(types)
         pickler.dump(declarations)
 
-    else:
-        if verbose: print "Synopsis: formatting..."
-        formatter = importFormatter(formatter_cmd)
-        if output != "": formatter_args.extend(["-o",output])
-        formatter.format(types, declarations, formatter_args)
+    elif formatter_cmd: formatter = importFormatter(formatter_cmd)
+    elif config and config.formatter: formatter = importFormatter(config.formatter.name)
+    else: sys.exit(0)
+    if verbose: print "Synopsis: formatting..."
+    if output != "": formatter_args.extend(["-o",output])
+    formatter.format(types, declarations, formatter_args, config and config.formatter)
 
 if __name__ == '__main__':
         main()

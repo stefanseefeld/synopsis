@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.2 2001/01/31 06:51:24 stefan Exp $
+#  $Id: Docbook.py,v 1.3 2001/02/11 05:39:33 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.3  2001/02/11 05:39:33  stefan
+# first try at a more powerful config framework for synopsis
+#
 # Revision 1.2  2001/01/31 06:51:24  stefan
 # add support for '-v' to all modules; modified toc lookup to use additional url as prefix
 #
@@ -153,16 +156,16 @@ class Formatter (Type.Visitor, AST.Visitor):
         self.end_entity("classsynopsis")
 
     def visitInheritance(self, inheritance):
-        map(lambda a:self.entity("modifier", a), inheritance.attributes())
+        map(lambda a, this=self: this.entity("modifier", a), inheritance.attributes())
         self.entity("classname", inheritance.parent().name())
 
     def visitParameter(self, parameter):
         self.start_entity("methodparam")
-        map(lambda m, this = self: this.entity("modifier", m), parameter.premodifier())
+        map(lambda m, this=self: this.entity("modifier", m), parameter.premodifier())
         parameter.type().accept(self)
         self.entity("type", self.type_label())
         self.entity("parameter", parameter.identifier())
-        map(lambda m, this = self: this.entity("modifier", m), parameter.postmodifier())
+        map(lambda m, this=self: this.entity("modifier", m), parameter.postmodifier())
         self.end_entity("methodparam")
 
     def visitFunction(self, function):
@@ -171,7 +174,7 @@ class Formatter (Type.Visitor, AST.Visitor):
     def visitOperation(self, operation):
         if operation.language() == "IDL" and operation.type() == "attribute":
             self.start_entity("fieldsynopsis")
-            map(lambda m:self.entity("modifier", m), operation.premodifiers())
+            map(lambda m, this=self: this.entity("modifier", m), operation.premodifiers())
             self.entity("modifier", "attribute")
             operation.returnType().accept(self)
             self.entity("type", self.type_label())
@@ -183,7 +186,7 @@ class Formatter (Type.Visitor, AST.Visitor):
             self.entity("type", self.type_label())
             self.entity("methodname", Util.ccolonName(operation.realname(), self.scope()))
             for parameter in operation.parameters(): parameter.accept(self)
-            map(lambda e:self.entity("exceptionname", e), operation.exceptions())
+            map(lambda e, this=self: this.entity("exceptionname", e), operation.exceptions())
             self.end_entity("methodsynopsis")
 
     def visitEnumerator(self, enumerator):
@@ -211,7 +214,7 @@ def __parseArgs(args):
         if o == "-o": output = open(a, "w")
         elif o == "-v": verbose = 1
 
-def format(types, declarations, args):
+def format(types, declarations, args, config):
     global output
     __parseArgs(args)
     output.write("<!DOCTYPE classsynopsis PUBLIC \"-//OASIS//DTD DocBook V4.2//EN\">\n")

@@ -26,6 +26,7 @@ private:
 class Mixin : virtual public Root
 {
 public:
+  void dummy();
 };
 class Multi: virtual public Composite, virtual public Mixin
 {
