@@ -34,14 +34,17 @@ class Encoding;
 class Parser : public Object {
 public:
     Parser(Lex*);
-    bool ErrorMessage(char*, Ptree* = nil, Ptree* = nil);
-    void WarningMessage(char*, Ptree* = nil, Ptree* = nil);
+    bool ErrorMessage(const char*, Ptree* = nil, Ptree* = nil);
+    void WarningMessage(const char*, Ptree* = nil, Ptree* = nil);
     int NumOfErrors() { return nerrors; }
+    uint LineNumber(char* pos, char*& fname, int& fname_len);
 
     bool rProgram(Ptree*&);
 
 protected:
     enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
+    enum TemplateDeclKind { tdk_unknown, tdk_decl, tdk_instantiation, 
+			    tdk_specialization, num_tdks };
 
     bool SyntaxError();
     void ShowMessageHead(char*);
@@ -58,7 +61,7 @@ protected:
     bool rUsing(Ptree*&);
     bool rLinkageBody(Ptree*&);
     bool rTemplateDecl(Ptree*&);
-    bool rTemplateDecl2(Ptree*&);
+    bool rTemplateDecl2(Ptree*&, TemplateDeclKind &kind);
     bool rTempArgList(Ptree*&);
     bool rTempArgDeclaration(Ptree*&);
     bool rExternTemplateDecl(Ptree*&);

@@ -26,12 +26,13 @@ class TypeInfo;
 class OCXXMOP Member : public LightObject {
 public:
     Member();
-    Member(Member&);
+    Member(const Member&);
     Member(Class*, Ptree*);
     void Set(Class*, Ptree*, int);
 
-    void Signature(TypeInfo& t);
+    void Signature(TypeInfo& t) const;
     Ptree* Name();
+    Ptree* Comments();
     int Nth();
     Class* Supplier();
     bool IsConstructor();

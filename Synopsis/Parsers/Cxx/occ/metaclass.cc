@@ -137,7 +137,7 @@ void Metaclass::TranslateClass(Environment* env)
     if(!IsBuiltinMetaclass(name)){
 	CheckObsoleteness();
 	InsertInitialize();
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(_PARSE_VCC)
 	AddClassSpecifier(Ptree::Make("__declspec(dllexport)"));
 #endif
 	AppendMember(Ptree::Make("public: char* MetaclassName() {\n"

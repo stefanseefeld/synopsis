@@ -40,12 +40,16 @@ public:
     Ptree* TranslateMetaclassDecl(Ptree* decl);
     Ptree* TranslateClassSpec(Ptree* spec, Ptree* userkey,
 			      Ptree* class_def, Class* metaobject);
+    Ptree* TranslateTemplateInstantiation(Ptree* spec, Ptree* userkey,
+					Ptree* class_def, Class* metaobject);
     Ptree* ConstructClass(Class* metaobject);
 
     Ptree* ConstructAccessSpecifier(int access);
     Ptree* ConstructMember(void* /* i.e. ChangedMemberList::Mem* */);
 
     Ptree* TranslateStorageSpecifiers(Ptree*);
+    Ptree* TranslateTemplateFunction(Ptree* temp_def, Ptree* impl);
+    Class* MakeMetaobjectForCfunctions();
     Ptree* TranslateFunctionImplementation(Ptree*);
     Ptree* MakeMemberDeclarator(bool record,
 				void* /* aka ChangedMemberList::Mem* */,

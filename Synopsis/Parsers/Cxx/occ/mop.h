@@ -39,6 +39,7 @@ public:
 
 // introspection
 
+    Ptree* Comments();
     Ptree* Name();
     Ptree* BaseClasses();
     Ptree* Members();
@@ -180,6 +181,7 @@ public:
     static void RegisterMetaclass(char* keyword, char* class_name);
 
     static void ChangeDefaultMetaclass(char* name);
+    static void SetMetaclassForFunctions(char* name);
 
     static void InsertBeforeStatement(Environment*, Ptree*);
     static void AppendAfterStatement(Environment*, Ptree*);
@@ -240,6 +242,9 @@ private:
     static int num_of_cmd_options;
     static char* cmd_options[MaxOptions * 2];
 
+    static char* metaclass_for_c_functions;
+    static Class* for_c_functions;
+
     static Ptree* class_t;
     static Ptree* empty_block_t;
     static Ptree* public_t;
@@ -265,6 +270,7 @@ public:
     Ptree* TemplateDefinition() { return template_definition; }
     Ptree* TemplateArguments();
     bool AcceptTemplate();
+    virtual Ptree* TranslateInstantiation(Environment*, Ptree*);
 
 private:
     static Ptree* GetClassInTemplate(Ptree* def);

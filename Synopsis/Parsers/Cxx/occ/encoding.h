@@ -71,6 +71,8 @@ public:
     static bool IsSimpleName(unsigned char*);
     static Ptree* NameToPtree(char*, int);
 
+    static unsigned char* GetTemplateArguments(unsigned char*, int&);
+
 private:
     static Environment* ResolveTypedefName(Environment*, char*, int);
     static int GetBaseNameIfTemplate(unsigned char*, Environment*&);
@@ -89,7 +91,8 @@ public:
 		 *delete_operator, *adelete_operator;
 
     static Ptree *star, *ampersand, *comma, *dots, *scope, *tilder,
-		 *left_paren, *right_paren, *left_bracket, *right_bracket;
+		 *left_paren, *right_paren, *left_bracket, *right_bracket,
+		 *left_angle, *right_angle;
 };
 
 #endif /* _encoding_h */

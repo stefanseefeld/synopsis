@@ -36,8 +36,12 @@
 #include <string.h>
 #include "token.h"
 #include "hash.h"
-#include "ptree-core.h"
+#include "ptree.h"
 #include "buffer.h"
+
+#if defined(_PARSE_VCC)
+#define _MSC_VER	1100
+#endif
 
 #if defined(_MSC_VER)
 #include <assert.h>		// for assert in InitializeOtherKeywords
@@ -63,6 +67,7 @@ static void InitializeOtherKeywords();
 // class Lex
 
 HashTable* Lex::user_keywords = nil;
+Ptree* Lex::comments = nil;
 
 Lex::Lex(Program* prog) : fifo(this)
 {
@@ -890,7 +895,7 @@ int Lex::Screening(char *identifier, int len)
     return token(Identifier);
 }
 
-int Lex::ReadSeparator(char c, uint)
+int Lex::ReadSeparator(char c, uint top)
 {
     char c1 = file->Get();
 
@@ -946,6 +951,8 @@ int Lex::ReadSeparator(char c, uint)
 	    }
 	    else
 		file->Unget();
+	case '/' :
+	    return ReadComment(c1, top);
 	default :
 	    file->Unget();
 	    token_len = 1;
@@ -963,6 +970,8 @@ int Lex::ReadSeparator(char c, uint)
 	    file->Unget();
 	    return token(ArrowOp);
 	}
+    else if(c == '/' && c1 == '*')
+	return ReadComment(c1, top);
     else{
 	file->Unget();
 	token_len = 1;
@@ -987,6 +996,43 @@ int Lex::SingleCharOp(unsigned char c)
 	return c;
     else
 	return token(BadToken);
+}
+
+int Lex::ReadComment(char c, uint top) {
+    uint len = 0;
+    if (c == '*')	// a nested C-style comment is prohibited.
+	do {
+	    c = file->Get();
+	    if (c == '*') {
+		c = file->Get();
+		if (c == '/') {
+		    len = 1;
+		    break;
+		}
+		else
+		    file->Unget();
+	    }
+	}while(c != '\0');
+    else /* if (c == '/') */
+	do {
+	    c = file->Get();
+	}while(c != '\n' && c != '\0');
+
+    len += file->GetCurPos() - top;
+    token_len = int(len);
+    Leaf* node = new Leaf((char*)file->Read(top), int(len));
+    comments = Ptree::Snoc(comments, node);
+    return Ignore;
+}
+
+Ptree* Lex::GetComments() {
+    Ptree* c = comments;
+    comments = nil;
+    return c;
+}
+
+Ptree* Lex::GetComments2() {
+    return comments;
 }
 
 #ifdef TEST

@@ -409,6 +409,18 @@ Ptree* PtreeTemplateDecl::Translate(Walker* w)
     return w->TranslateTemplateDecl(this);
 }
 
+// class PtreeTemplateInstantiation
+
+int PtreeTemplateInstantiation::What()
+{
+    return ntTemplateInstantiation;
+}
+
+Ptree* PtreeTemplateInstantiation::Translate(Walker* w)
+{
+    return w->TranslateTemplateInstantiation(this);
+}
+
 // class PtreeExternTemplate
 
 int PtreeExternTemplate::What()
@@ -490,6 +502,7 @@ PtreeDeclarator::PtreeDeclarator(Ptree* list, Encoding& t, Encoding& n,
     type = t.Get();
     name = n.Get();
     declared_name = dname;
+    comments = nil;
 }
 
 PtreeDeclarator::PtreeDeclarator(Encoding& t, Encoding& n, Ptree* dname)
@@ -498,6 +511,7 @@ PtreeDeclarator::PtreeDeclarator(Encoding& t, Encoding& n, Ptree* dname)
     type = t.Get();
     name = n.Get();
     declared_name = dname;
+    comments = nil;
 }
 
 PtreeDeclarator::PtreeDeclarator(Ptree* p, Ptree* q,
@@ -507,6 +521,7 @@ PtreeDeclarator::PtreeDeclarator(Ptree* p, Ptree* q,
     type = t.Get();
     name = n.Get();
     declared_name = dname;
+    comments = nil;
 }
 
 PtreeDeclarator::PtreeDeclarator(Ptree* list, Encoding& t)
@@ -515,6 +530,7 @@ PtreeDeclarator::PtreeDeclarator(Ptree* list, Encoding& t)
     type = t.Get();
     name = nil;
     declared_name = nil;
+    comments = nil;
 }
 
 PtreeDeclarator::PtreeDeclarator(Encoding& t)
@@ -523,6 +539,7 @@ PtreeDeclarator::PtreeDeclarator(Encoding& t)
     type = t.Get();
     name = nil;
     declared_name = nil;
+    comments = nil;
 }
 
 PtreeDeclarator::PtreeDeclarator(PtreeDeclarator* decl, Ptree* p, Ptree* q)
@@ -531,6 +548,7 @@ PtreeDeclarator::PtreeDeclarator(PtreeDeclarator* decl, Ptree* p, Ptree* q)
     type = decl->type;
     name = decl->name;
     declared_name = decl->declared_name;
+    comments = nil;
 }
 
 int PtreeDeclarator::What()
@@ -637,16 +655,18 @@ void PtreeFstyleCastExpr::Typeof(Walker* w, TypeInfo& t)
 
 // class PtreeClassSpec
 
-PtreeClassSpec::PtreeClassSpec(Ptree* p, Ptree* q)
+PtreeClassSpec::PtreeClassSpec(Ptree* p, Ptree* q, Ptree* c)
 : NonLeaf(p, q)
 {
     encoded_name = nil;
+    comments = c;
 }
 
-PtreeClassSpec::PtreeClassSpec(Ptree* car, Ptree* cdr, char* encode)
-: NonLeaf(car, cdr)
+PtreeClassSpec::PtreeClassSpec(Ptree* car, Ptree* cdr,
+		Ptree* c, char* encode) : NonLeaf(car, cdr)
 {
     encoded_name = encode;
+    comments = c;
 }
 
 int PtreeClassSpec::What()
@@ -662,6 +682,11 @@ Ptree* PtreeClassSpec::Translate(Walker* w)
 char* PtreeClassSpec::GetEncodedName()
 {
     return encoded_name;
+}
+
+Ptree* PtreeClassSpec::GetComments()
+{
+    return comments;
 }
 
 // class PtreeEnumSpec

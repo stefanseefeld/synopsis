@@ -96,6 +96,8 @@ Ptree* Encoding::left_paren = new Leaf("(", 1);
 Ptree* Encoding::right_paren = new Leaf(")", 1);
 Ptree* Encoding::left_bracket = new Leaf("[", 1);
 Ptree* Encoding::right_bracket = new Leaf("]", 1);
+Ptree* Encoding::left_angle = new Leaf("<", 1);
+Ptree* Encoding::right_angle = new Leaf(">", 1);
 
 const int DigitOffset = 0x80;
 
@@ -153,7 +155,7 @@ char* Encoding::GetBaseName(char* encode, int& len, Environment*& env)
 	    }
 	    else{			// class name
 		m -= 0x80;
-		if(m <= 0){
+		if(m <= 0){		// if global scope (e.g. ::Foo)
 		    if(e != nil)
 			e = e->GetBottom();
 		}
@@ -190,23 +192,34 @@ Environment* Encoding::ResolveTypedefName(Environment* env,
     Bind* bind;
     Class* c = nil;
 
-    if(env != nil && env->LookupType(name, len, bind) && bind != nil)
-	switch(bind->What()){
-	case Bind::isClassName :
-	    c = bind->ClassMetaobject();
-	    break;
-	case Bind::isTypedefName :
-	    bind->GetType(tinfo, env);
-	    c = tinfo.ClassMetaobject();
-	    break;
-	default :
-	    break;
+    if(env != nil)
+	if (env->LookupType(name, len, bind) && bind != nil)
+	    switch(bind->What()){
+	    case Bind::isClassName :
+		c = bind->ClassMetaobject();
+		break;
+	    case Bind::isTypedefName :
+		bind->GetType(tinfo, env);
+		c = tinfo.ClassMetaobject();
+		/* if (c == nil) */
+		    env = nil;
+		break;
+	    default :
+		break;
+	    }
+	else if (env->LookupNamespace(name, len)) {
+	    /* For the time being, we simply ignore name spaces.
+	     * For example, std::T is identical to ::T.
+	     */
+	    env = env->GetBottom();
 	}
+	else
+	    env = nil;		// unknown typedef name
 
     if(c != nil)
 	return c->GetEnvironment();
     else
-	return nil;
+	return env;
 }
 
 int Encoding::GetBaseNameIfTemplate(unsigned char* name, Environment*& e)
@@ -225,8 +238,22 @@ int Encoding::GetBaseNameIfTemplate(unsigned char* name, Environment*& e)
 	    }
 	}
 
+    // the template name was not found.
     e = nil;
     return m + (name[m + 1] - 0x80) + 2;
+}
+
+unsigned char* Encoding::GetTemplateArguments(unsigned char* name, int& len)
+{
+    int m = name[0] - 0x80;
+    if(m <= 0){
+	len = name[1] - 0x80;
+	return &name[2];
+    }
+    else{
+	len = name[m + 1] - 0x80;
+	return &name[m + 2];
+    }
 }
 
 void Encoding::CvQualify(Ptree* cv1, Ptree* cv2)
@@ -537,6 +564,23 @@ Ptree* Encoding::MakePtree(unsigned char*& encoded, Ptree* decl)
 	case '\0' :
 	    goto finish;
 	case 'T' :
+	    {
+    		Ptree* tlabel = MakeLeaf(encoded);      
+	    	Ptree* args = nil;
+	    	int n = *encoded++ - DigitOffset;
+		unsigned char* stop = encoded + n;
+		while(encoded < stop){
+		    if(args != nil)
+			args = Ptree::Snoc(args, comma);
+
+		    args = Ptree::Snoc(args, MakePtree(encoded, nil));
+		}
+
+		tlabel = Ptree::List(tlabel,
+				Ptree::List(left_angle, args, right_angle));
+		typespec = Ptree::Nconc(typespec, tlabel);
+		goto finish;
+	    }
 	case '*' :
 	    goto error;
 	default :

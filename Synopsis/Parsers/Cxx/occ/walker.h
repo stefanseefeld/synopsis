@@ -42,6 +42,11 @@ public:
 
     virtual Ptree* TranslateTypedef(Ptree*);
     virtual Ptree* TranslateTemplateDecl(Ptree*);
+    virtual Ptree* TranslateTemplateInstantiation(Ptree*);
+    virtual Ptree* TranslateTemplateInstantiation(Ptree*, Ptree*,
+						  Ptree*, Class*);
+    virtual Class* MakeTemplateInstantiationMetaobject(
+	Ptree* full_class_spec, Ptree* userkey, Ptree* class_spec);
     virtual Ptree* TranslateExternTemplate(Ptree*);
     virtual Ptree* TranslateTemplateClass(Ptree*, Ptree*);
     virtual Class* MakeTemplateClassMetaobject(Ptree*, Ptree*, Ptree*);
@@ -171,6 +176,7 @@ public:
     static Ptree* GetClassOrEnumSpec(Ptree*);
     static Ptree* GetClassTemplateSpec(Ptree*);
     static Ptree* StripCvFromIntegralType(Ptree*);
+    static void SetDeclaratorComments(Ptree*, Ptree*);
     static Ptree* NthDeclarator(Ptree*, int&);
     static Ptree* FindDeclarator(Ptree*, char*, int, char*, int&,
 				 Environment*);
@@ -184,6 +190,9 @@ public:
     static void InaccurateWarningMessage(char*, Ptree*, Ptree*);
 
     static void ChangeDefaultMetaclass(char*);
+
+public:
+    Parser* GetParser() { return parser; }
 
 protected:
     Environment* env;

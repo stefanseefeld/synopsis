@@ -39,7 +39,7 @@ Member::Member()
     original_decl = nil;
 }
 
-Member::Member(Member& m)
+Member::Member(const Member& m)
 {
     metaobject = m.metaobject;
     declarator = m.declarator;
@@ -87,7 +87,7 @@ void Member::Set(Class* c, Ptree* decl, int n)
     original_decl = nil;
 }
 
-void Member::Signature(TypeInfo& t)
+void Member::Signature(TypeInfo& t) const
 {
     if(declarator == nil){
 	MopErrorMessage("Member::Signature()", "not initialized object.");
@@ -122,6 +122,19 @@ char* Member::Name(int& len)
     }
 
     return name;
+}
+
+Ptree* Member::Comments()
+{
+    if(declarator == nil){
+	MopErrorMessage("Member::Comments()", "not initialized object.");
+	return nil;
+    }
+
+    if (declarator->IsA(ntDeclarator))
+	return ((PtreeDeclarator*)declarator)->GetComments();
+    else
+	return nil;
 }
 
 int Member::Nth()

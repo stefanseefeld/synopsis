@@ -56,6 +56,8 @@ public:
     int AddEntry(char*, int, Bind*);
     int AddDupEntry(char*, int, Bind*);
 
+    void RecordNamespace(Ptree*);
+    bool LookupNamespace(char*, int);
     void RecordTypedefName(Ptree*);
     void RecordEnumName(Ptree*);
     void RecordClassName(char*, Class*);
@@ -75,6 +77,8 @@ public:
 
     void Dump();
     void Dump(int);
+
+    Ptree* GetLineNumber(Ptree*, int&);
 
 public:
     class OCXXMOP Array : public LightObject {
@@ -96,6 +100,7 @@ private:
     PtreeArray		metaclasses;
     static PtreeArray*	classkeywords;
     Array		baseclasses;
+    static HashTable*	namespace_table;
 };
 
 // class Bind and its subclasses

@@ -19,6 +19,7 @@
 #include "env.h"
 #include "typeinfo.h"
 #include "member.h"
+#include "encoding.h"
 
 Class* ClassWalker::GetClassMetaobject(TypeInfo& tinfo)
 {
@@ -152,7 +153,7 @@ Ptree* ClassWalker::TranslateClassSpec(Ptree* spec, Ptree* userkey,
 	    Ptree* rest = Ptree::List(name2, bases2, body2);
 	    if(cspec != nil)
 		rest = Ptree::Cons(cspec, rest);
-	    return new PtreeClassSpec(class_def->Car(), rest,
+	    return new PtreeClassSpec(class_def->Car(), rest, nil,
 				      spec->GetEncodedName());
 	}
     }
@@ -161,7 +162,28 @@ Ptree* ClassWalker::TranslateClassSpec(Ptree* spec, Ptree* userkey,
 	return spec;
     else
 	return new PtreeClassSpec(class_def->Car(), class_def->Cdr(),
-				  spec->GetEncodedName());
+				  nil, spec->GetEncodedName());
+}
+
+Ptree* ClassWalker::TranslateTemplateInstantiation(Ptree* inst_spec,
+			Ptree* userkey, Ptree* class_spec, Class* metaobject)
+{
+    Ptree* class_spec2;
+    if (metaobject != nil && metaobject->AcceptTemplate()) {
+	TemplateClass* tmetaobj = (TemplateClass*)metaobject;
+	class_spec2 = tmetaobj->TranslateInstantiation(env, class_spec);
+	if (class_spec != class_spec2)
+	    return class_spec2;
+    }
+    else
+	class_spec2 = class_spec;
+
+    if(userkey == nil)
+	return inst_spec;
+    else if (class_spec == class_spec2)
+	return inst_spec;
+    else
+	return new PtreeTemplateInstantiation(class_spec);
 }
 
 Ptree* ClassWalker::ConstructClass(Class* metaobject)
@@ -186,7 +208,8 @@ Ptree* ClassWalker::ConstructClass(Class* metaobject)
 	if(cspec2 != nil)
 	    rest = Ptree::Cons(cspec2, rest);
 
-	def2 = new PtreeClassSpec(def->Car(), rest, def->GetEncodedName());
+	def2 = new PtreeClassSpec(def->Car(), rest,
+				  nil, def->GetEncodedName());
     }
 
     return new PtreeDeclaration(nil, Ptree::List(def2, Class::semicolon_t));
@@ -223,6 +246,7 @@ PtreeArray* ClassWalker::RecordMembers(Ptree* class_def, Ptree* bases,
 	    RecordMemberDeclaration(mem, tspec_list);
 	    break;
 	case ntTemplateDecl :
+	case ntTemplateInstantiation :
 	case ntUsing :
 	default :
 	    break;
@@ -356,6 +380,38 @@ Ptree* ClassWalker::TranslateStorageSpecifiers2(Ptree* rest)
     }
 }
 
+Ptree* ClassWalker::TranslateTemplateFunction(Ptree* temp_def, Ptree* impl)
+{
+    Environment* fenv = env->RecordTemplateFunction(temp_def, impl);
+    if (fenv != nil) {
+	Class* metaobject = fenv->IsClassEnvironment();
+	if(metaobject != nil){
+	    NameScope old_env = ChangeScope(fenv);
+	    NewScope();
+
+	    ChangedMemberList::Cmem m;
+	    Ptree* decl = impl->Third();
+	    MemberFunction mem(metaobject, impl, decl);
+	    metaobject->TranslateMemberFunction(env, mem);
+	    ChangedMemberList::Copy(&mem, &m, Class::Undefined);
+	    Ptree* decl2
+		= MakeMemberDeclarator(TRUE, &m, (PtreeDeclarator*)decl);
+
+	    ExitScope();
+	    RestoreScope(old_env);
+	    if(decl != decl2) {
+		Ptree* pt = Ptree::List(impl->Second(), decl2, impl->Nth(3));
+		pt = new PtreeDeclaration(impl->First(), pt);
+		pt = Ptree::List(temp_def->Second(), temp_def->Third(),
+				 temp_def->Nth(3), pt);
+		return new PtreeTemplateDecl(temp_def->First(), pt);
+	    }
+	}
+    }
+
+    return temp_def;
+}
+
 Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
 {
     Ptree* sspec = impl->First();
@@ -370,7 +426,7 @@ Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
     Environment* fenv = env->RecordDeclarator(decl);
 
     if(fenv == nil){
-	// shouldn't reach here.
+	// reach here if resolving the qualified name fails. error?
 	NewScope();
 	decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
 	body2 = TranslateFunctionBody(body);
@@ -380,6 +436,10 @@ Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
 	Class* metaobject = fenv->IsClassEnvironment();
 	NameScope old_env = ChangeScope(fenv);
 	NewScope();
+
+	if (metaobject == nil && Class::metaclass_for_c_functions != nil)
+	    metaobject = MakeMetaobjectForCfunctions();
+
 	if(metaobject == nil){
 	    decl2 = TranslateDeclarator(TRUE, (PtreeDeclarator*)decl);
 	    body2 = TranslateFunctionBody(body);
@@ -405,6 +465,32 @@ Ptree* ClassWalker::TranslateFunctionImplementation(Ptree* impl)
     else
 	return new PtreeDeclaration(sspec2,
 				    Ptree::List(tspec2, decl2, body2));
+}
+
+Class* ClassWalker::MakeMetaobjectForCfunctions() {
+    if (Class::for_c_functions == nil) {
+	Encoding encode;
+	Ptree* name = new Leaf("<C>", 3);
+	encode.SimpleName(name);
+	Ptree* class_def
+	    = new PtreeClassSpec(Class::class_t,
+				 Ptree::List(name, nil,
+					     Class::empty_block_t),
+				 nil, encode.Get());
+	cerr << "encode: " << class_def->GetEncodedName();
+	Class* metaobject = opcxx_ListOfMetaclass::New(
+			Class::metaclass_for_c_functions,
+			class_def, nil);
+	if(metaobject == nil)
+	    MopErrorMessage2(
+		"the metaclass for C functions cannot be loaded: ",
+		Class::metaclass_for_c_functions);
+
+	metaobject->SetEnvironment(env);
+	Class::for_c_functions = metaobject;
+    }
+
+    return Class::for_c_functions;
 }
 
 Ptree* ClassWalker::MakeMemberDeclarator(bool record, void* ptr,

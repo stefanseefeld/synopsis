@@ -9,7 +9,7 @@
 # cord/de - builds dumb editor based on cords.
 ABI_FLAG=
 CC=cc $(ABI_FLAG)
-CXX=c++ $(ABI_FLAG)
+CXX=g++ $(ABI_FLAG)
 AS=as $(ABI_FLAG)
 #  The above doesn't work with gas, which doesn't run cpp.
 #  Define AS as `gcc -c -x assembler-with-cpp' instead.

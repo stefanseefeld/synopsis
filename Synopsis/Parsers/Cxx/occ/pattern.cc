@@ -247,7 +247,7 @@ Ptree* Ptree::GenSym()
 
 // If you edit Make(), you should also edit MakeStatement().
 
-Ptree* Ptree::Make(char* pat, ...)
+Ptree* Ptree::Make(const char* pat, ...)
 {
     va_list args;
     const int N = 4096;
@@ -322,7 +322,7 @@ Ptree* Ptree::Make(char* pat, ...)
 
   Note: this version is perfectly identical to Make(). 97/3/26
 */
-Ptree* Ptree::MakeStatement(char* pat, ...)
+Ptree* Ptree::MakeStatement(const char* pat, ...)
 {
     va_list args;
     const int N = 4096;

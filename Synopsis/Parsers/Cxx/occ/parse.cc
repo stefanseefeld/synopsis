@@ -29,6 +29,11 @@
 #include "ptree.h"
 #include "encoding.h"
 #include "metaclass.h"
+#include "walker.h"
+
+#if defined(_PARSE_VCC)
+#define _MSC_VER	1100
+#endif
 
 const int MaxErrors = 10;
 
@@ -38,7 +43,7 @@ Parser::Parser(Lex* l)
     nerrors = 0;
 }
 
-bool Parser::ErrorMessage(char* msg, Ptree* name, Ptree* where)
+bool Parser::ErrorMessage(const char* msg, Ptree* name, Ptree* where)
 {
     if(where != nil){
 	Ptree* head = where->Ca_ar();
@@ -54,7 +59,7 @@ bool Parser::ErrorMessage(char* msg, Ptree* name, Ptree* where)
     return bool(++nerrors < MaxErrors);
 }
 
-void Parser::WarningMessage(char* msg, Ptree* name, Ptree* where)
+void Parser::WarningMessage(const char* msg, Ptree* name, Ptree* where)
 {
     if(where != nil){
 	Ptree* head = where->Ca_ar();
@@ -93,22 +98,29 @@ bool Parser::SyntaxError()
     return bool(++nerrors < MaxErrors);
 }
 
-void Parser::ShowMessageHead(char* pos)
+uint Parser::LineNumber(char* pos, char*& fname, int& fname_len)
 {
-    char* fname;
-    int fname_len;
-
     uint line_number = lex->LineNumber(pos, fname, fname_len);
-
-    int i = 0;
     if(fname_len > 1){
-	if(fname[0] == '"')
-	    ++i;
+	if(fname[0] == '"') {
+	    ++fname;
+	    --fname_len;
+	}
 
 	if(fname[fname_len - 1] == '"')
 	    --fname_len;
     }
 
+    return line_number;
+}
+
+void Parser::ShowMessageHead(char* pos)
+{
+    char* fname;
+    int fname_len;
+
+    uint line_number = LineNumber(pos, fname, fname_len);
+    int i = 0;
     while(i < fname_len)
 	cerr << fname[i++];
 
@@ -150,25 +162,32 @@ bool Parser::rProgram(Ptree*& def)
 */
 bool Parser::rDefinition(Ptree*& p)
 {
+    bool res;
     int t = lex->LookAhead(0);
     if(t == ';')
-	return rNullDeclaration(p);
+	res = rNullDeclaration(p);
     else if(t == TYPEDEF)
-	return rTypedef(p);
+	res = rTypedef(p);
     else if(t == TEMPLATE)
-	return rTemplateDecl(p);
+	res = rTemplateDecl(p);
     else if(t == METACLASS)
-	return rMetaclassDecl(p);
+	res = rMetaclassDecl(p);
     else if(t == EXTERN && lex->LookAhead(1) == StringL)
-	return rLinkageSpec(p);
+	res = rLinkageSpec(p);
     else if(t == EXTERN && lex->LookAhead(1) == TEMPLATE)
-	return rExternTemplateDecl(p);
+	res = rExternTemplateDecl(p);
     else if(t == NAMESPACE)
-	return rNamespaceSpec(p);
+	res = rNamespaceSpec(p);
     else if(t == USING)
-	return rUsing(p);
-    else
-	return rDeclaration(p);
+	res = rUsing(p);
+    else {
+	Ptree* c = lex->GetComments2();
+	if (res = rDeclaration(p))
+	    Walker::SetDeclaratorComments(p, c);
+    }
+
+    lex->GetComments();
+    return res;
 }
 
 bool Parser::rNullDeclaration(Ptree*& decl)
@@ -505,18 +524,48 @@ bool Parser::rLinkageBody(Ptree*& body)
 bool Parser::rTemplateDecl(Ptree*& decl)
 {
     Ptree *body;
+    TemplateDeclKind kind = tdk_unknown;
 
-    if(!rTemplateDecl2(decl))
+    if(!rTemplateDecl2(decl, kind))
 	return FALSE;
 
     if(!rDeclaration(body))
 	return FALSE;
 
-    decl = Ptree::Snoc(decl, body);
+    // Repackage the decl and body depending upon what kind of template
+    // declaration was observed.
+    switch (kind) {
+    case tdk_instantiation:
+	// Repackage the decl as a PtreeTemplateInstantiation
+	decl = body;
+	// assumes that decl has the form: [nil [class ...] ;]
+	if (Ptree::Length(decl) != 3)
+	    return FALSE;
+
+	if (Ptree::First(decl) != nil)
+	    return FALSE;
+
+	if (Ptree::Second(decl)->What() != ntClassSpec)
+	    return FALSE;
+
+	if (!Ptree::Eq(Ptree::Third(decl), ';'))
+	    return FALSE;
+
+	decl = new PtreeTemplateInstantiation(Ptree::Second(decl));
+	break;
+    case tdk_decl:
+    case tdk_specialization:
+	decl = Ptree::Snoc(decl, body);
+	break;
+    default:
+	MopErrorMessage("rTemplateDecl()", "fatal");
+	break;
+    }
+
     return TRUE;
 }
 
-bool Parser::rTemplateDecl2(Ptree*& decl)
+bool Parser::rTemplateDecl2(Ptree*& decl, TemplateDeclKind &kind)
 {
     Token tk;
     Ptree *args;
@@ -525,7 +574,9 @@ bool Parser::rTemplateDecl2(Ptree*& decl)
 	return FALSE;
 
     if(lex->LookAhead(0) != '<') {
+	// template instantiation
 	decl = nil;
+	kind = tdk_instantiation;
 	return TRUE;	// ignore TEMPLATE
     }
 
@@ -555,6 +606,13 @@ bool Parser::rTemplateDecl2(Ptree*& decl)
 	if(lex->GetToken(tk) != '>')
 	    return FALSE;
     }
+
+    if (args == nil)
+	// template < > declaration
+	kind = tdk_specialization;
+    else
+	// template < ... > declaration
+	kind = tdk_decl;
 
     return TRUE;
 }
@@ -619,14 +677,16 @@ bool Parser::rTempArgDeclaration(Ptree*& decl)
 	}
     }
     else if (t0 == TEMPLATE) {
-	if(!rTemplateDecl2(decl))
+	TemplateDeclKind kind;
+	if(!rTemplateDecl2(decl, kind))
 	    return FALSE;
 
 	if (lex->GetToken(tk1) != CLASS || lex->GetToken(tk2) != Identifier)
 	    return FALSE;
 
 	Ptree* cspec = new PtreeClassSpec(new LeafReserved(tk1),
-					  Ptree::Cons(new Leaf(tk2), nil));
+					  Ptree::Cons(new Leaf(tk2),nil),
+					  nil);
 	decl = Ptree::Snoc(decl, cspec);
 	if(lex->LookAhead(0) == '='){
             Ptree* default_type;
@@ -2015,7 +2075,7 @@ bool Parser::rTemplateArgs(Ptree*& temp_args, Encoding& encode)
   If maybe_init is true, we first examine whether tokens construct
   function.arguments.  This ordering is significant if tokens are
 	Point p(s, t);
-  s and t can be type names and variable names.
+  s and t can be type names or variable names.
 */
 bool Parser::rArgDeclListOrInit(Ptree*& arglist, bool& is_args,
 				Encoding& encode, bool maybe_init)
@@ -2341,9 +2401,10 @@ bool Parser::rClassSpec(Ptree*& spec, Encoding& encode)
     if(t != CLASS && t != STRUCT && t != UNION)
 	return FALSE;
 
-    spec = new PtreeClassSpec(new LeafReserved(tk), nil);
+    Ptree* comments = lex->GetComments();
+    spec = new PtreeClassSpec(new LeafReserved(tk), nil, comments);
     if(head != nil)
-	spec = new PtreeClassSpec(head, spec);
+	spec = new PtreeClassSpec(head, spec, comments);
 
     if(lex->LookAhead(0) == '{'){
 	encode.NoName();
@@ -2473,6 +2534,7 @@ bool Parser::rClassBody(Ptree*& body)
 	    return TRUE;	// error recovery
 	}
 
+	lex->GetComments();
 	mems = Ptree::Snoc(mems, m);
     }
 
@@ -2539,8 +2601,11 @@ bool Parser::rClassMember(Ptree*& mem)
 	return rMetaclassDecl(mem);
     else{
 	char* pos = lex->Save();
-	if(rDeclaration(mem))
+	Ptree* comments = lex->GetComments2();
+	if(rDeclaration(mem)) {
+	    Walker::SetDeclaratorComments(mem, comments);
 	    return TRUE;
+	}
 
 	lex->Restore(pos);
 	return rAccessDecl(mem);
@@ -3794,6 +3859,7 @@ bool Parser::rCompoundStatement(Ptree*& body)
 	    return TRUE;	// error recovery
 	}
 
+	lex->GetComments();
 	sts = Ptree::Snoc(sts, st);
     }
 
