@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.23 2003/10/15 03:44:01 stefan Exp $
+# $Id: Comments.py,v 1.24 2003/10/15 04:28:59 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.24  2003/10/15 04:28:59  stefan
+# * only keep last comment if it is not suspect
+# * provide an alternative Grouper
+#
 # Revision 1.23  2003/10/15 03:44:01  stefan
 # add new Grouper 'group2' to match '@group {' and '@group }'
 #
@@ -541,7 +545,10 @@ class Stripper(CommentProcessor):
 	"""Summarize the comment of this declaration."""
 	if not len(decl.comments()):
 	    return
-        decl.comments()[:] = [decl.comments()[-1]]
+        if decl.comments()[-1].is_suspect():
+            decl.comments()[:] = []
+        else:
+            decl.comments()[:] = [decl.comments()[-1]]
 
 class Summarizer (CommentProcessor):
     """Splits comments into summary/detail parts."""
