@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.18 2002/07/19 14:26:32 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.19 2002/10/27 12:03:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.19  2002/10/27 12:03:49  chalky
+# Rename min_size option to min_group_size, add new min_size option
+#
 # Revision 1.18  2002/07/19 14:26:32  chalky
 # Revert prefix in FileLayout but keep relative referencing elsewhere.
 #
@@ -135,28 +138,41 @@ class InheritanceGraph(Page.Page):
     def consolidate(self, graphs):
 	"""Consolidates small graphs into larger ones"""
 	try:
-	    minsize = config.obj.InheritanceGraph.min_size
+	    min_size = config.obj.InheritanceGraph.min_size
 	except:
 	    if config.verbose:
-		print "Error getting InheritanceGraph.min_size value. Using 5."
-	    minsize = 5
+		print "Error getting InheritanceGraph.min_size value. Using 1."
+	    min_size = 1
+	try:
+	    min_group_size = config.obj.InheritanceGraph.min_group_size
+	except:
+	    if config.verbose:
+		print "Error getting InheritanceGraph.min_group_size value. Using 5."
+	    min_size = 5
 	conned = []
 	pending = []
 	while len(graphs):
 	    graph = graphs.pop(0)
 	    len_graph = len(graph)
+	    if len_graph < min_size:
+		# Ignore the graph
+		continue
 	    # Try adding to an already pending graph
 	    for pend in pending:
-		if len_graph + len(pend) <= minsize:
+		if len_graph + len(pend) <= min_group_size:
 		    pend.extend(graph)
 		    graph = None
-		    if len(pend) == minsize:
+		    if len(pend) == min_group_size:
 			conned.append(pend)
 			pending.remove(pend)
 		    break
 	    if graph:
-		# Add to pending list
-		pending.append(graph)
+		if len_graph > min_group_size:
+		    # Add to final list
+		    conned.append(graph)
+		else:
+		    # Add to pending list
+		    pending.append(graph)
 	conned.extend(pending)
 	return conned
 
@@ -178,6 +194,7 @@ class InheritanceGraph(Page.Page):
 	config.toc.store(toc_file)
 	graphs = config.classTree.graphs()
 	count = 0
+	# Consolidate the graphs, and sort to make the largest appear first
 	lensorter = lambda a, b: cmp(len(b),len(a))
 	graphs = self.consolidate(graphs)
 	graphs.sort(lensorter)
