@@ -1286,7 +1286,6 @@ Decl::extend( Type* type )
     
     form = type;
     return NULL;
-
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
