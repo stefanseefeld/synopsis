@@ -101,11 +101,11 @@ public:
   { return create<Parameter>("Parameter", Tuple(pre, type, post, name, value));}
 
   Function create_function(const SourceFile &file, int line, const std::string &lang,
- 			   const std::string &type, const ScopedName &name,
- 			   const Modifiers &pre, const Type &ret,
+ 			   const std::string &type, const Modifiers &pre,
+ 			   const Type &ret, const ScopedName &name,
  			   const std::string &realname)
-  { return create<Function>("Function", Tuple(file, line, lang, type, name,
- 					      pre, ret, realname));}
+  { return create<Function>("Function", Tuple(file, line, lang, type, pre, ret,
+ 					      name, realname));}
 
   Operation create_operation(const SourceFile &file, int line, const std::string &lang,
 			     const std::string &type, const ScopedName &name,
