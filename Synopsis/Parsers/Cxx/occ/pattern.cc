@@ -216,16 +216,14 @@ static char* SkipSpaces(char* pat)
 
 Ptree* Ptree::GenSym()
 {
-#if !defined(_MSC_VER)
-    struct timeval time;
-#endif
     static char head[] = "_sym";
     static int seed = 1;
     int len1, len2;
 
     IntegerToString(seed, len1);
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__WIN32__)
+    struct timeval time;
     gettimeofday(&time, NULL);
     uint rnum = (time.tv_sec * 10 + time.tv_usec / 100) & 0xffff;
 #else

@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.7 2003/12/12 19:09:30 stefan Exp $
+dnl $Id: configure.ac,v 1.8 2003/12/17 15:07:24 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2003 Stefan Seefeld <stefan@fresco.org> 
@@ -25,7 +25,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.7 $)
+AC_REVISION($Revision: 1.8 $)
 AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
@@ -82,7 +82,9 @@ dnl of the list.
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; import re; print re.sub(r'\\s*-lutil', '', sysconfig.get_config_var('LIBS') or '')"`
     else dnl this is 'nt'
       if test "$CXX" = "g++"; then
+        CFLAGS="-mno-cygwin $CFLAGS"
         CXXFLAGS="-mno-cygwin $CXXFLAGS"
+        LDFLAGS="-mno-cygwin $LDFLAGS"
       fi
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`

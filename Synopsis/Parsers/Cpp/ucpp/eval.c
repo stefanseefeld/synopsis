@@ -75,7 +75,7 @@ int *transient_characters = 0;
 #ifdef NATIVE_UINTMAX
 
 /* Cygwin doesn't have ulong. Linux does. */
-#if defined(__CYGWIN__) || defined(__cygwin__)
+#if defined(__CYGWIN__) || defined(__cygwin__) || defined(__WIN32__)
 typedef NATIVE_UINTMAX ulong;
 #endif
 typedef NATIVE_INTMAX slong;

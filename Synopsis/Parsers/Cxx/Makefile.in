@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2003/12/12 19:00:52 stefan Exp $
+# $Id: Makefile.in,v 1.8 2003/12/17 15:07:24 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -30,6 +30,7 @@ MAKEDEP		:= $(CXX) -M
 CPPFLAGS	   := @CPPFLAGS@ -I $(srcdir) -I @PYTHON_INCLUDE@
 CFLAGS		:= @CFLAGS@
 CXXFLAGS	   := @CXXFLAGS@
+LDFLAGS		:= @LDFLAGS@
 LIBS	      := @LIBS@ -lpthread
 LIBRARY_EXT := @LIBEXT@
 
@@ -59,7 +60,7 @@ OCC_FILES	:= buffer hash token ptree ptree-core encoding env \
 		         pattern walker typeinfo parse mop classwalk \
 		         metaclass quote-class member cbodywalk
 
-SYN_FILES	:= synopsis occ swalker ast builder type dict \
+SYN_FILES	:= synopsis cpp occ swalker ast builder type dict \
 		         dumper decoder swalker-syntax link_map linkstore \
 		         lookup filter
 

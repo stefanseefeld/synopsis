@@ -41,6 +41,10 @@ class config(build_ext):
         for ext in self.extensions:
             self.config_extension(ext)
         if not self.disable_gc:
+            if os.name == 'nt':
+                # for the gc configuration on the win32 native platform
+                # set 'CC' explicitely to 'gcc -mno-cygwin'
+                os.environ['CC'] = "gcc -mno-cygwin"
             self.config_extension('Synopsis/Parsers/Cxx/gc')
             
     def config_extension(self, ext):
@@ -56,7 +60,7 @@ class config(build_ext):
         mkpath(tempdir, 0777, self.verbose, self.dry_run)
         os.chdir(tempdir)
         
-        if os.name == 'nt': 
+        if os.name == 'nt':
             # the path to the configure script has to be expressed in posix style
             # because even if we are compiling for windows, this part is run within
             # a cygwin shell
