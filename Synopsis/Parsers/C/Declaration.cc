@@ -1200,6 +1200,10 @@ GccAttrib::print( std::ostream& out ) const
             out << "packed";
             break;
 
+        case GCC_CDecl:
+            out << "__cdecl__";
+            break;
+
         case GCC_Mode:
             out << "__mode__ (" << *mode << ")";
             break;

@@ -127,6 +127,7 @@ enum GccAttribType
 
     GCC_Aligned,
     GCC_Packed,
+    GCC_CDecl,
     GCC_Mode,
     GCC_Format,
    

@@ -92,7 +92,7 @@ extern int err_top_level;
 %token <loc>        BACKQUOTE AT
 
 /* Gcc Extensions */
-%token              ATTRIBUTE ALIGNED PACKED MODE FORMAT NORETURN
+%token              ATTRIBUTE ALIGNED PACKED CDECL MODE FORMAT NORETURN
 
 /* Add precedence rules to solve dangling else s/r conflict */
 %nonassoc IF
@@ -2290,6 +2290,10 @@ gcc_inner:  /* Nothing */
          |   PACKED
             {
                 $$ = new GccAttrib( GCC_Packed );
+            }
+         |   CDECL
+            {
+                $$ = new GccAttrib( GCC_CDecl );
             }
          |   CONST
             {
