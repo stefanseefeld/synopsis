@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.10 2002/03/04 14:46:12 stefan Exp $
+# $Id: Makefile,v 1.11 2003/02/01 05:43:04 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -37,4 +37,4 @@ distclean:	clean
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Parser/IDL
-	install -m 666 $(SRC) $(packagedir)/Synopsis/Parser/IDL
+	install -m 644 $(SRC) $(packagedir)/Synopsis/Parser/IDL

@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.15 2003/01/30 01:07:18 chalky Exp $
+# $Id: Makefile,v 1.16 2003/02/01 05:43:04 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -53,4 +53,4 @@ distclean: clean
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Parser/C++
-	install -m 666 $(SRC) $(packagedir)/Synopsis/Parser/C++
+	install -m 644 $(SRC) $(packagedir)/Synopsis/Parser/C++

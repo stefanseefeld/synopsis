@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.11 2002/11/01 23:30:14 chalky Exp $
+# $Id: Makefile,v 1.12 2003/02/01 05:43:04 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -46,4 +46,4 @@ distclean: clean
 
 install:
 	mkdir -p $(packagedir)/Synopsis/Linker
-	install -m 666 $(PY) $(packagedir)/Synopsis/Linker
+	install -m 644 $(PY) $(packagedir)/Synopsis/Linker
