@@ -156,7 +156,14 @@ public:
     virtual Ptree* TranslateParen(Ptree*);
     virtual Ptree* TranslateStaticUserStatement(Ptree*);
 
+    std::string current_file() const { return m_filename;}
+    int         current_lineno() const { return m_lineno;}
+    std::string main_file() const { return m_source;}
+    static SWalker *instance() { return g_swalker;}
 private:
+    // the 'current' walker is a debugging aid.
+    static SWalker* g_swalker;
+
     Parser* m_parser;
     Program* m_program;
     Builder* m_builder;

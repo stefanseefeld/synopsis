@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.32 2001/06/05 15:34:11 chalky Exp $
+// $Id: swalker.cc,v 1.33 2001/06/05 17:59:25 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.33  2001/06/05 17:59:25  stefan
+// output some diagnostics when catching a segfault
+//
 // Revision 1.32  2001/06/05 15:34:11  chalky
 // Allow keywords before function parameters, eg: register
 //
@@ -113,10 +116,8 @@ STrace::list STrace::m_list;
 //                 -- CLASS SWalker --
 // ------------------------------------------------------------------
 
-// Global SWalker object - this is never used, but is intended for your use
-// when debugging in case the stack is smashed and you have to way to get at
-// any useful objects
-SWalker* g_swalker;
+SWalker *SWalker::g_swalker = 0;
+
 
 // ------------------------------------
 // SWalker Constructor
