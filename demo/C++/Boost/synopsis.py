@@ -35,7 +35,8 @@ linker = Linker(SSComments(),       # filter out any non-'//' comments
                 Summarizer(),       # separate summary (first phrase) from detail (everything)
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
-html = HTML.Formatter(file_layout = FileLayout(), # bpl uses 'aux' module which would usually
+html = HTML.Formatter(title = 'Boost Python Reference Manual',
+                      file_layout = FileLayout(), # bpl uses 'aux' module which would usually
                                                   # map to an 'aux' directory, which silly windows
                                                   # doesn't allow
                       views = [FramesIndex(),

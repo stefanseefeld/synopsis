@@ -42,7 +42,7 @@ class FramesIndex(View):
 
    def filename(self): return self.processor.file_layout.index()
 
-   def title(self): return 'Synopsis - Generated Documentation'
+   def title(self): return self.processor.title
 
    def process(self, start):
       """Creates a frames index file"""

@@ -77,6 +77,7 @@ class CommentFormatter:
 
 class Formatter(Processor):
 
+   title = Parameter('Synopsis - Generated Documentation', 'title to put into html header')
    stylesheet = Parameter(os.path.join(config.datadir, 'html.css'), 'stylesheet to be used')
    datadir = Parameter('', 'alternative data directory')
    file_layout = Parameter(NestedFileLayout(), 'how to lay out the output files')
