@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2000/08/17 04:16:47 stefan Exp $
+# $Id: Makefile,v 1.1 2000/08/17 04:16:48 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -20,7 +20,7 @@
 
 SHELL	= /bin/sh
 
-subdirs	= IDL C++
+subdirs	= gc occ
 
 all:
 	@for dir in ${subdirs}; do \
@@ -36,8 +36,3 @@ clean:
 	done && test -z "$$fail"
 
 distclean: clean
-	/bin/rm -f *.pyc
-	@for dir in ${subdirs}; do \
-	  (cd $$dir && $(MAKE) distclean) \
-	  || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
-	done && test -z "$$fail"
