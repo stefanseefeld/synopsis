@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.6 2002/07/11 02:03:49 chalky Exp $
+# $Id: Tags.py,v 1.7 2002/07/11 09:28:40 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.7  2002/07/11 09:28:40  chalky
+# Missed one
+#
 # Revision 1.6  2002/07/11 02:03:49  chalky
 # Oops, remove print that shouldn't be there.
 #
@@ -56,7 +59,6 @@ def rel(frm, to):
         if to[0] == frm[0]: del to[0]; del frm[0]
         else: break
     if frm: to = ['..'] * (len(frm) - 1) + to
-    print string.join(to,'/')
     return string.join(to,'/')
 def href(ref, label, **keys):
     "Return a href to 'ref' with name 'label' and attributes"
