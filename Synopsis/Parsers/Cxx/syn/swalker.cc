@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.45 2001/08/09 00:56:50 chalky Exp $
+// $Id: swalker.cc,v 1.46 2002/01/13 09:32:48 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.46  2002/01/13 09:32:48  chalky
+// Small change to mark template classes as "template class" rather than "class"
+//
 // Revision 1.45  2001/08/09 00:56:50  chalky
 // Moved char*<0 ugliness to Decoder::isName with proper casting
 //
@@ -123,6 +126,7 @@
 #include <iostream.h>
 #include <string>
 #include <typeinfo>
+#include <strstream>
 
 #include <occ/ptree.h>
 #include <occ/parse.h>
@@ -645,6 +649,9 @@ Ptree* SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 	}
 	Type::Template* templ = new Type::Template(clas->name(), clas, templ_params);
 	clas->setTemplateType(templ);
+	std::ostrstream buf;
+	buf << "template " << clas->type() << std::ends;
+	clas->setType(buf.str());
 
 	// Now that template args have been created, translate parents
 	clas->parents() = TranslateInheritanceSpec(node->Nth(2));

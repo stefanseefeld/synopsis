@@ -74,6 +74,10 @@ namespace AST {
 	// TODO: move to whatever classes need it. Not needed here!
 	//. Returns the string type name of this declaration
 	const std::string &type() const { return m_type; }
+
+	//. Change the type string. Currently only used to indicate template
+	//. types
+	void setType(const std::string &type) { m_type = type; }
 	
 	//. Returns the accessability of this declaration
 	Access access() const { return m_access; }
