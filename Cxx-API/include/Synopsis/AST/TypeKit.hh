@@ -21,47 +21,49 @@ namespace AST
 class TypeKit : public Python::Kit
 {
 public:
-  TypeKit() : Kit("Synopsis.Type") {}
+  TypeKit(std::string const &lang) : Kit("Synopsis.Type"), my_lang(lang) {}
 
-  Type create_type(const std::string &lang)
-  { return create<Type>("Type", Python::Tuple(lang));}
+  Type create_type()
+  { return create<Type>("Type", Python::Tuple(my_lang));}
 
-  Named create_named(const std::string &lang, const ScopedName &sn)
-  { return create<Named>("Named", Python::Tuple(lang, sn));}
+  Named create_named(const ScopedName &sn)
+  { return create<Named>("Named", Python::Tuple(my_lang, sn));}
 
-  Base create_base(const std::string &lang, const ScopedName &sn)
-  { return create<Base>("Base", Python::Tuple(lang, sn));}
+  Base create_base(const ScopedName &sn)
+  { return create<Base>("Base", Python::Tuple(my_lang, sn));}
 
-  Dependent create_dependent(const std::string &lang, const ScopedName &sn)
-  { return create<Dependent>("Dependent", Python::Tuple(lang, sn));}
+  Dependent create_dependent(const ScopedName &sn)
+  { return create<Dependent>("Dependent", Python::Tuple(my_lang, sn));}
 
-  Unknown create_unknown(const std::string &lang, const ScopedName &sn)
-  { return create<Unknown>("Unknown", Python::Tuple(lang, sn));}
+  Unknown create_unknown(const ScopedName &sn)
+  { return create<Unknown>("Unknown", Python::Tuple(my_lang, sn));}
 
-  Declared create_declared(const std::string &lang, const ScopedName &sn,
+  Declared create_declared(const ScopedName &sn,
 			   const Declaration &decl)
-  { return create<Declared>("Declared", Python::Tuple(lang, sn, decl));}
+  { return create<Declared>("Declared", Python::Tuple(my_lang, sn, decl));}
 
-  Template create_template(const std::string &lang, const ScopedName &sn,
+  Template create_template(const ScopedName &sn,
 			   const Declaration &decl, const Python::List &params)
-  { return create<Template>("Template", Python::Tuple(lang, sn, decl, params));}
+  { return create<Template>("Template", Python::Tuple(my_lang, sn, decl, params));}
 
-  Modifier create_modifier(const std::string &lang, const Type &alias,
+  Modifier create_modifier(const Type &alias,
 			   const Modifiers &pre, const Modifiers &post)
-  { return create<Modifier>("Modifier", Python::Tuple(lang, alias, pre, post));}
+  { return create<Modifier>("Modifier", Python::Tuple(my_lang, alias, pre, post));}
 
-  Array create_array(const std::string &lang, const Type &alias,
+  Array create_array(const Type &alias,
 		     const Python::TypedList<int> &sizes)
-  { return create<Array>("Array", Python::Tuple(lang, alias, sizes));}
+  { return create<Array>("Array", Python::Tuple(my_lang, alias, sizes));}
 
-  Parametrized create_parametrized(const std::string &lang, const Template &t,
+  Parametrized create_parametrized(const Template &t,
 				   const Python::List &params)
-  { return create<Parametrized>("Parametrized", Python::Tuple(lang, t, params));}
+  { return create<Parametrized>("Parametrized", Python::Tuple(my_lang, t, params));}
 
-  FunctionPtr create_function_ptr(const std::string &lang, const Type &retn,
+  FunctionPtr create_function_ptr(const Type &retn,
 				  const Modifiers &pre, const TypeList &params)
-  { return create<FunctionPtr>("Function", Python::Tuple(lang, retn, pre, params));}
+  { return create<FunctionPtr>("Function", Python::Tuple(my_lang, retn, pre, params));}
 
+private:
+  std::string my_lang;
 };
 
 }

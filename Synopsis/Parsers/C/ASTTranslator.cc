@@ -17,6 +17,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
 			     std::string const &base_path, bool main_file_only,
 			     Synopsis::AST::AST ast, bool v, bool d)
   : my_ast(ast),
+    my_ast_kit("C"),
     my_lineno(0),
     my_raw_filename(filename),
     my_base_path(base_path),
@@ -37,7 +38,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_file = file;
   else
   {
-    my_file = my_ast_kit.create_source_file(short_filename, long_filename, "C");
+    my_file = my_ast_kit.create_source_file(short_filename, long_filename);
     my_ast.files().set(short_filename, my_file);
   }
 }
@@ -80,7 +81,6 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Modifiers modifiers;
     AST::Function function = my_ast_kit.create_function(my_file, my_lineno,
-							"C",
 							"function",
 							modifiers,
 							return_type,
@@ -105,7 +105,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 	vtype = "local ";
       vtype += "variable";
     }
-    AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno, "C",
+    AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
     add_comments(variable, declarator->get_comments());
     if (visible) declare(variable);
@@ -126,7 +126,7 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
     std::string type = PTree::reify(PTree::first(class_spec));
     std::string name = PTree::reify(PTree::second(class_spec));
     AST::ScopedName qname(name);
-    AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno, "C",
+    AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
 						     type, qname);
     add_comments(forward, class_spec->get_comments());
     if (visible) declare(forward);
@@ -156,8 +156,7 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
   }
 
   AST::ScopedName qname(name);
-  AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, "C",
-					      type, qname);
+  AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
   add_comments(class_, class_spec->get_comments());
   if (visible) declare(class_);
   my_types.declare(qname, class_);
@@ -194,8 +193,7 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
     {
       // Just a name
       AST::ScopedName qname(PTree::reify(penumor));
-      enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, "C",
-						qname, "");
+      enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
       add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
     }
     else
@@ -205,8 +203,7 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
       std::string value;
       if (PTree::length(penumor) == 3)
         value = PTree::reify(PTree::third(penumor));
-      enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, "C",
-						qname, value);
+      enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, value);
       add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
@@ -216,14 +213,13 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
   }
   // Add a dummy enumerator at the end to absorb trailing comments.
   PTree::Node *close = PTree::third(PTree::third(enum_spec));
-  enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, "C",
+  enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
 					    AST::ScopedName(std::string("dummy")), "");
   add_comments(enumerator, static_cast<PTree::CommentedAtom *>(close));
   enumerators.append(enumerator);
   
   // Create AST.Enum object
-  AST::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, "C",
-					   name, enumerators);
+  AST::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, name, enumerators);
   add_comments(enum_, enum_spec);
 
   if (visible) declare(enum_);
@@ -254,7 +250,7 @@ void ASTTranslator::visit(PTree::Typedef *typed)
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Type alias = my_types.lookup(type);
-    AST::Declaration declaration = my_ast_kit.create_typedef(my_file, 0, "C",
+    AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
 							     "typedef",
 							     qname,
 							     alias, false);
@@ -446,7 +442,7 @@ bool ASTTranslator::update_position(PTree::Node *node)
       my_file = file;
     else
     {
-      my_file = my_ast_kit.create_source_file(short_filename, long_filename, "C");
+      my_file = my_ast_kit.create_source_file(short_filename, long_filename);
       my_ast.files().set(short_filename, my_file);
     }
   }  
