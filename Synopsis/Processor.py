@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.6 2003/11/17 01:24:11 stefan Exp $
+# $Id: Processor.py,v 1.7 2003/11/18 16:44:42 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -50,7 +50,7 @@ class Parametrized(object):
          if not p in instance._parameters:
             raise KeyError, "'%s' processor doesn't have '%s' parameter"%(cls.__name__, p)
          else:
-            setattr(cls, p, kwds[p])
+            setattr(instance, p, kwds[p])
 
       return instance
 
