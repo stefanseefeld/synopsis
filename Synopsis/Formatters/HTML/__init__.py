@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.4 2001/02/13 06:55:23 chalky Exp $
+# $Id: __init__.py,v 1.5 2001/02/13 10:07:33 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: __init__.py,v $
+# Revision 1.5  2001/02/13 10:07:33  chalky
+# Fixed typo
+#
 # Revision 1.4  2001/02/13 06:55:23  chalky
 # Made synopsis -l work again
 #
@@ -42,7 +45,7 @@
 try:
     import core
 
-    from core import usage
+    from core import format, usage
 
 except:
     print "An error occurred loading the HTML module:"
