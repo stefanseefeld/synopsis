@@ -1,4 +1,4 @@
-# $Id: ScopeSorter.py,v 1.4 2001/02/12 04:08:09 chalky Exp $
+# $Id: ScopeSorter.py,v 1.5 2001/06/11 10:37:49 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ScopeSorter.py,v $
+# Revision 1.5  2001/06/11 10:37:49  chalky
+# Better grouping support
+#
 # Revision 1.4  2001/02/12 04:08:09  chalky
 # Added config options to HTML and Linker. Config demo has doxy and synopsis styles.
 #
@@ -59,15 +62,21 @@ class ScopeSorter:
 	scopename = scope.name()
 	for decl in scope.declarations():
 	    if isinstance(decl, AST.Forward): continue
+	    if isinstance(decl, AST.Group) and decl.__class__.__name__ == 'Group':
+		self._handle_group(decl)
+		continue
 	    name, section = decl.name(), self._section_of(decl)
 	    if len(name) > 1 and name[:-1] != scopename: continue
-	    if not self.__section_dict.has_key(section):
-		self.__section_dict[section] = []
-		self.__sections.append(section)
-	    self.__section_dict[section].append(decl)
-	    self.__children.append(decl)
-	    self.__child_dict[tuple(name)] = decl
+	    self._add_decl(decl, name, section)
 	self._sort_sections()
+    def _add_decl(self, decl, name, section):
+	"Adds the given decl with given name and section to the internal data"
+	if not self.__section_dict.has_key(section):
+	    self.__section_dict[section] = []
+	    self.__sections.append(section)
+	self.__section_dict[section].append(decl)
+	self.__children.append(decl)
+	self.__child_dict[tuple(name)] = decl
     def _section_of(self, decl):
 	_axs_str = ('','Public ','Protected ','Private ')
 	section = string.capitalize(decl.type())
@@ -78,6 +87,14 @@ class ScopeSorter:
     def sort_section_names(self):
 	core.sort(self.__sections)
     def _set_section_names(self, sections): self.__sections = sections
+    def _handle_group(self, group):
+	"""Handles a group"""
+	print "Handling group",group.name()
+	section = group.name()[-1]
+	self._add_decl(group, group.name(), section)
+	for decl in group.declarations():
+	    name = decl.name()
+	    self._add_decl(decl, name, section)
     def sort_sections(self):
 	for children in self.__section_dict.values()+[self.__children]:
 	    dict = {}
