@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.27 2001/07/28 02:41:34 chalky Exp $
+# $Id: ASCII.py,v 1.28 2001/08/02 03:25:09 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.28  2001/08/02 03:25:09  chalky
+# Reworked handling of enumerators for use in synopsis-qt GUI
+#
 # Revision 1.27  2001/07/28 02:41:34  chalky
 # Minor sanity fix
 #
@@ -75,11 +78,13 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	self.__axs = AST.DEFAULT
 	self.__axs_stack = []
 	self.__axs_string = ('default:\n','public:\n','protected:\n','private:\n')
+	self.__enumers = []
     def indent(self):
         self.__os.write(self.__istring * self.__indent)
     def incr(self): self.__indent = self.__indent + 1
     def decr(self): self.__indent = self.__indent - 1
     def scope(self): return self.__scope
+    def set_scope(self, name): self.__scope = list(name)
     def enterScope(self, name): self.__scope.append(name),self.incr()
     def leaveScope(self): self.__scope.pop(),self.decr()
     def write(self, text): self.__os.write(text)
@@ -127,14 +132,16 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	    self.decr(); self.indent(); self.incr()
 	    self.write(self.__axs_string[axs])
 	    self.__axs = axs
-	for comment in decl.comments():
+	self.writeComments(decl.comments())
+    
+    def writeComments(self, comments):
+	for comment in comments:
 	    text = comment.text()
 	    if not text: continue
 	    lines = string.split(text, "\n")
 	    for line in lines:
 		self.indent()
 		self.write(comment_str%line)
-	    #self.write("\n")
 
     def visitTypedef(self, typedef):
 	self.visitDeclaration(typedef)
@@ -248,22 +255,23 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
 	self.visitDeclaration(enum)
 	self.indent()
 	istr = self.__istring * (self.__indent+1)
-	self.write("enum %s {\n%s"%(enum.name()[-1],istr))
+	self.write("enum %s {"%enum.name()[-1])
 	self.__enumers = []
+	comma = ''
 	for enumer in enum.enumerators():
+	    self.write(comma+'\n'+istr)
 	    enumer.accept(self)
-	self.write(string.join(self.__enumers, ",\n%s"%istr))
+	    comma = ','
 	self.write("\n")
 	self.indent()
 	self.write("}\n")
 
     def visitEnumerator(self, enumer):
-	for comment in enumer.comments():
-	    self.__enumers.append(comment.text())
+	self.writeComments(enumer.comments())
 	if enumer.value() == "":
-	    self.__enumers.append("%s"%enumer.name()[-1])
+	    self.write("%s"%enumer.name()[-1])
 	else:
-	    self.__enumers.append("%s = %s"%(enumer.name()[-1], enumer.value()))
+	    self.write("%s = %s"%(enumer.name()[-1], enumer.value()))
     
     def visitConst(self, const):
 	self.visitDeclaration(const)
