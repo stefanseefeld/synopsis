@@ -581,18 +581,34 @@ int Lex::ReadLine()
 	    return ReadSeparator('.', top);
 	}
     }
-    else if(is_letter(c)) {
-	if (c == 'L') {
-	    // May be a L"const" type string
-	    char next = file->Get();
-	    if (next == '"') {
-		if (ReadStrConst(top))
-		    return token(StringL);
+    else if(is_letter(c))
+    {
+      if (c == 'L')
+      {
+	c = file->Get();
+	if (c == '\'' || c == '"')
+	{
+	  if (c == '\'')
+	  {
+	    if (ReadCharConst(top+1))
+	    {
+	      return token(WideCharConst);
 	    }
-	    file->Unget();
+	  } 
+	  else
+	  {
+	    if(ReadStrConst(top+1))
+	    {
+	      return token(WideStringL);
+	    }
+	  }
 	}
-	return ReadIdentifier(top);
-    } else
+	file->Rewind(top);
+      }
+      return ReadIdentifier(top);
+    }
+
+    else
 	return ReadSeparator(c, top);
 }
 
@@ -842,6 +858,7 @@ static struct rw_table {
     { "virtual",	token(VIRTUAL) },
     { "void",		token(VOID) },
     { "volatile",	token(VOLATILE) },
+    { "wchar_t",	token(WCHAR) },
     { "while",		token(WHILE) },
     /* NULL slot */
 };
@@ -1113,8 +1130,10 @@ Constant	{digit}+{int_suffix}*
 		{digit}+"e"("+"|"-")*{digit}+{float_suffix}*
 
 CharConst	\'([^'\n]|\\[^\n])\'
+WideCharConst	L\'([^'\n]|\\[^\n])\'
 
 StringL		\"([^"\n]|\\["\n])*\"
+WideStringL	L\"([^"\n]|\\["\n])*\"
 
 Identifier	{letter}+({letter}|{digit})*
 

@@ -86,6 +86,7 @@ public: \
 ResearvedWordDecl(AUTO);
 ResearvedWordDecl(BOOLEAN);
 ResearvedWordDecl(CHAR);
+ResearvedWordDecl(WCHAR);
 ResearvedWordDecl(CONST);
 ResearvedWordDecl(DOUBLE);
 ResearvedWordDecl(EXTERN);

@@ -184,6 +184,9 @@ Types::Type* Decoder::decodeType()
         case 'c':
             name = "char";
             break;
+        case 'w':
+            name = "wchar_t";
+            break;
         case 'l':
             name = "long";
             break;

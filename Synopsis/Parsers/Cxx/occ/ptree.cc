@@ -164,6 +164,7 @@ int Leaf##w::What() { return w; }
 ResearvedWordImpl(AUTO)
 ResearvedWordImpl(BOOLEAN)
 ResearvedWordImpl(CHAR)
+ResearvedWordImpl(WCHAR)
 ResearvedWordImpl(CONST)
 ResearvedWordImpl(DOUBLE)
 ResearvedWordImpl(EXTERN)
