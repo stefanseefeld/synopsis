@@ -170,9 +170,9 @@ Types::Type* Decoder::decodeQualType()
 		types.push_back(decodeType());
 	    names.push_back(tname);
 	} else {
-	    std::cerr << "Warning: Unknown type inside Q: " << *m_iter << std::endl;
+	    //std::cerr << "Warning: Unknown type inside Q: " << *m_iter << std::endl;
 	    // FIXME
-// 	    std::cerr << "         Decoding " << m_string << std::endl;
+ 	    //std::cerr << "         Decoding " << m_string << std::endl;
 	}
     }
     // Ask for qualified lookup
