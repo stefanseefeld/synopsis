@@ -7,7 +7,11 @@ use by python.
 #
 # configure for the parser you want here...
 #
-from occ import parse, usage
+try:
+    from occ import parse, usage
+except:
+    import sys
+    print sys.exc_type, sys.exc_value
 import emul
 
 # THIS-IS-A-PARSER
