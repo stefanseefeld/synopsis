@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.13 2002/04/26 01:21:14 chalky Exp $
+# $Id: Comments.py,v 1.14 2002/08/23 04:37:26 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.14  2002/08/23 04:37:26  chalky
+# Huge refactoring of Linker to make it modular, and use a config system similar
+# to the HTML package
+#
 # Revision 1.13  2002/04/26 01:21:14  chalky
 # Bugs and cleanups
 #
@@ -70,6 +74,8 @@ import sys, string, re, getopt, types
 
 # Synopsis modules
 from Synopsis.Core import AST, Util
+
+from Synopsis.Linker.Linker import config, Operation
 
 class CommentProcessor (AST.Visitor):
     """Base class for comment processors.
@@ -359,40 +365,26 @@ processors = {
     'group': Grouper,
 }
 
-def __parseArgs(args, config):
-    """Parses the arguments and config object"""
-    global processor_list
-    processor_list = []
-    languagize = None
+class Comments(Operation):
+    def __init__(self):
+	"""Constructor, parses the config object"""
+	self.processor_list = []
 
-    if hasattr(config, 'comment_processors'):
-	for proc in config.comment_processors:
-	    if type(proc) == types.StringType:
-		if processors.has_key(proc):
-		    processor_list.append(processors[proc]())
-		else:
-		    raise ImportError, 'No such processor: %s'%(proc,)
-	    elif type(proc) == types.TupleType:
-		mod = Util._import(proc[0])
-		clas = getattr(mod, proc[1])
-		processor_list.append(clas())
+	if hasattr(config, 'comment_processors'):
+	    for proc in config.comment_processors:
+		if type(proc) == types.StringType:
+		    if processors.has_key(proc):
+			self.processor_list.append(processors[proc]())
+		    else:
+			raise ImportError, 'No such processor: %s'%(proc,)
+		elif type(proc) == types.TupleType:
+		    mod = Util._import(proc[0])
+		    clas = getattr(mod, proc[1])
+		    self.processor_list.append(clas())
 
-    try:
-        opts, remainder = getopt.getopt(args, "p:")
-    except getopt.error, e:
-        sys.stderr.write("Error in arguments: " + str(e) + "\n")
-        sys.exit(1)
+    def execute(self, ast):
+	declarations = ast.declarations()
+	for processor in self.processor_list:
+	    processor.processAll(declarations)
 
-    for o,a in opts:
-	if o == '-p':
-	    if processors.has_key(a):
-		processor_list.append(processors[a]())
-	    else:
-		print "Available processors:",string.join(processors.keys())
-		sys.exit(2)
-
-def process(declarations, types, args, config):
-    """Main module entry point"""
-    __parseArgs(args, config)
-    for processor in processor_list:
-	processor.processAll(declarations)
+linkerOperation = Comments
