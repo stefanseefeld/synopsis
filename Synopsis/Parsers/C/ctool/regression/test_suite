@@ -1,4 +1,4 @@
-#!/s/perl/bin/perl
+#!/usr/bin/perl
 
 # ^C is caught to allow for cleanup
 &allow_quit;
