@@ -1,5 +1,7 @@
-int table[] = { 1, 2, 3 };
-void bar(int i)
+#line 1 "run/dowhile.c"
+
+int  table[] = { 1, 2, 3 };
+void  bar(int  i)
 {
   do   {
     i = i >> 1;
@@ -10,59 +12,3 @@ void bar(int i)
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 2  nchild: 1
-Scope Id: 1_1
-HashTab:  #entries: 2  size: 5
-[0]: Variable Name: table:
-Definition: int table[] = { 1, 2, 3 }
-
--------------
-
-[2]: Function Name: bar:
-Definition: void bar(int i)
-Position: , 4, 16
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[0]: Parameter Name: i:
-Definition: int i
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------

@@ -1,49 +1,5 @@
-typedef int FOO;
-typedef FOO BAR;
+#line 1 "run/bug3.c"
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
+typedef int  FOO;
+typedef FOO  BAR;
 
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 2  nchild: 0
-Scope Id: 1_1
-HashTab:  #entries: 2  size: 5
-[2]: Typedef Name: BAR:
-Definition: typedef FOO BAR
-
--------------
-Typedef Name: FOO:
-Definition: typedef int FOO
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------

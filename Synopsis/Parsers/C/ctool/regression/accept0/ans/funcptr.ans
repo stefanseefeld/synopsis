@@ -1,13 +1,16 @@
-typedef int (*PFI)(int val);
-int myK(int in)
+#line 1 "run/funcptr.c"
+
+typedef int  (*PFI)(int  val);
+int  myK(int  in)
 {
   return in;
 }
 
-int main()
+int  main()
 {
-  int y;
-  PFI k;
+  int  x;
+  int  y;
+  PFI  k;
 
   k = myK;
   x = k(2);
@@ -16,93 +19,3 @@ int main()
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 3  nchild: 3
-Scope Id: 1_1
-HashTab:  #entries: 3  size: 5
-[2]: Function Name: main:
-Definition: int main()
-Position: , 11, 0
-
--------------
-
-[4]: Function Name: myK:
-Definition: int myK(int in)
-Position: , 6, 0
-
--------------
-Typedef Name: PFI:
-Definition: typedef int (*PFI)(int val)
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[4]: Parameter Name: val:
-Definition: int val
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_2
-HashTab:  #entries: 1  size: 5
-[3]: Parameter Name: in:
-Definition: int in
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_3
-HashTab: NULL
-level: 4  nsyms: 3  nchild: 0
-Scope Id: 1_1_3_1
-HashTab:  #entries: 3  size: 5
-[0]: Variable Name: x:
-Definition: int x
-
--------------
-
-[1]: Variable Name: y:
-Definition: int y
-
--------------
-
-[2]: Variable Name: k:
-Definition: PFI k
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------

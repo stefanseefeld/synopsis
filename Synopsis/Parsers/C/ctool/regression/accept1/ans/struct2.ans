@@ -1,57 +1,59 @@
-struct st{
-  int a;
-}x;
-int f0(struct st y)
+#line 1 "run/struct2.c"
+
+struct st {
+  int  a;
+} x;
+int  f0(struct st  y)
 {
-  struct st z;
+  struct st  z;
 
   z.a = x.a + y.a;
   return z.a;
 }
 
-int f1(struct st y)
+int  f1(struct st  y)
 {
   struct st ;
-  struct st *z;
+  struct st  *z;
 
   return y.a;
 }
 
-int f2(struct st y)
+int  f2(struct st  y)
 {
   struct st ;
-  struct st2{
-    struct st *c;
-  }z;
-  void g1(struct st2 *);
-  int g2(struct st *, int );
+  struct st2 {
+    struct st  *c;
+  } z;
+  void  g1(struct st2 *);
+  int  g2(struct st *, int );
 
   g1(&z);
   return g2(z.c,x.a + y.a);
 }
 
-int f3(struct st y)
+int  f3(struct st  y)
 {
   struct st ;
-  struct st{
-    int c;
-  }z;
+  struct st {
+    int  c;
+  } z;
 
   z.c = x.a + y.a;
   return z.c;
 }
 
-int f4(struct st y)
+int  f4(struct st  y)
 {
   struct st ;
-  struct st2{
-    struct st *c;
-  }z;
-  struct st{
-    int b;
+  struct st2 {
+    struct st  *c;
+  } z;
+  struct st {
+    int  b;
   };
-  void gg1(struct st2 *);
-  int gg2(struct st *, int );
+  void  gg1(struct st2 *);
+  int  gg2(struct st *, int );
 
   gg1(&z);
   x.a = z.c->b;
@@ -59,274 +61,3 @@ int f4(struct st y)
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 6  nchild: 6
-Scope Id: 1_1
-HashTab:  #entries: 6  size: 5
-[0]: Function Name: f3:
-Definition: int f3(struct st y)
-Position: , 36, 20
-
--------------
-Variable Name: x:
-Definition: struct st{
-  int a;
-}x
-
--------------
-
-[2]: Function Name: f0:
-Definition: int f0(struct st y)
-Position: , 4, 20
-
--------------
-
-[3]: Function Name: f4:
-Definition: int f4(struct st y)
-Position: , 46, 20
-
--------------
-Function Name: f1:
-Definition: int f1(struct st y)
-Position: , 13, 20
-
--------------
-
-[4]: Function Name: f2:
-Definition: int f2(struct st y)
-Position: , 22, 20
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[2]: Component Name: a:
-Definition: int a
-Container: struct st{
-  int a;
-}
-
--------------
-
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_2
-HashTab:  #entries: 1  size: 5
-[1]: Parameter Name: y:
-Definition: struct st y
-
--------------
-
-level: 4  nsyms: 1  nchild: 0
-Scope Id: 1_1_2_1
-HashTab:  #entries: 1  size: 5
-[2]: Variable Name: z:
-Definition: struct st z
-
--------------
-
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_3
-HashTab:  #entries: 1  size: 5
-[1]: Parameter Name: y:
-Definition: struct st y
-
--------------
-
-level: 4  nsyms: 1  nchild: 0
-Scope Id: 1_1_3_1
-HashTab:  #entries: 1  size: 5
-[2]: Variable Name: z:
-Definition: struct st *z
-
--------------
-
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_4
-HashTab:  #entries: 1  size: 5
-[1]: Parameter Name: y:
-Definition: struct st y
-
--------------
-
-level: 4  nsyms: 3  nchild: 1
-Scope Id: 1_1_4_1
-HashTab:  #entries: 3  size: 5
-[0]: Function Name: g1:
-Definition: void g1(struct st2 *)
-No Position.
-
--------------
-
-[2]: Function Name: g2:
-Definition: int g2(struct st *, int )
-No Position.
-
--------------
-Variable Name: z:
-Definition: struct st2{
-  struct st *c;
-}z
-
--------------
-
-level: 5  nsyms: 1  nchild: 0
-Scope Id: 1_1_4_1_1
-HashTab:  #entries: 1  size: 5
-[4]: Component Name: c:
-Definition: struct st *c
-Container: struct st2{
-  struct st *c;
-}
-
--------------
-
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_5
-HashTab:  #entries: 1  size: 5
-[1]: Parameter Name: y:
-Definition: struct st y
-
--------------
-
-level: 4  nsyms: 1  nchild: 1
-Scope Id: 1_1_5_1
-HashTab:  #entries: 1  size: 5
-[2]: Variable Name: z:
-Definition: struct st{
-  int c;
-}z
-
--------------
-
-level: 5  nsyms: 1  nchild: 0
-Scope Id: 1_1_5_1_1
-HashTab:  #entries: 1  size: 5
-[4]: Component Name: c:
-Definition: int c
-Container: struct st{
-  int c;
-}
-
--------------
-
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_6
-HashTab:  #entries: 1  size: 5
-[1]: Parameter Name: y:
-Definition: struct st y
-
--------------
-
-level: 4  nsyms: 3  nchild: 2
-Scope Id: 1_1_6_1
-HashTab:  #entries: 3  size: 5
-[0]: Function Name: gg1:
-Definition: void gg1(struct st2 *)
-No Position.
-
--------------
-
-[2]: Function Name: gg2:
-Definition: int gg2(struct st *, int )
-No Position.
-
--------------
-Variable Name: z:
-Definition: struct st2{
-  struct st *c;
-}z
-
--------------
-
-level: 5  nsyms: 1  nchild: 0
-Scope Id: 1_1_6_1_1
-HashTab:  #entries: 1  size: 5
-[4]: Component Name: c:
-Definition: struct st *c
-Container: struct st2{
-  struct st *c;
-}
-
--------------
-
-level: 5  nsyms: 1  nchild: 0
-Scope Id: 1_1_6_1_2
-HashTab:  #entries: 1  size: 5
-[3]: Component Name: b:
-Definition: int b
-Container: struct st{
-  int b;
-}
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 1
-Scope Id: 1
-HashTab: NULL
-level: 2  nsyms: 1  nchild: 2
-Scope Id: 1_1
-HashTab:  #entries: 1  size: 5
-[1]: Tag Name: st:
-Definition: struct st{
-  int b;
-}
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_1
-HashTab: NULL
-level: 4  nsyms: 1  nchild: 0
-Scope Id: 1_1_1_1
-HashTab:  #entries: 1  size: 5
-[3]: Tag Name: st2:
-Definition: struct st2{
-  struct st *c;
-}
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_2
-HashTab: NULL
-level: 4  nsyms: 1  nchild: 0
-Scope Id: 1_1_2_1
-HashTab:  #entries: 1  size: 5
-[3]: Tag Name: st2:
-Definition: struct st2{
-  struct st *c;
-}
-
--------------
-
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------

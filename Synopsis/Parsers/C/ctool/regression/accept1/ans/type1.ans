@@ -1,83 +1,12 @@
-int main()
+#line 1 "run/type1.c"
+
+int  main()
 {
-  const int *tab_of_ptr_to_const_int[12];
-  float *const tab_of_const_ptr_to_float[10];
-  int (*const tab_of_const_ptr_to_function_returning_an_int[5])(float , long );
-  void (*function_returning_a_ptr_to_a_void_function(int , void (*)(int )))(int );
-  float (*(*(*ptr_to_an_array_of_ptr_to_function_returning_ptr_to_function_returning_a_float)[5])(char (*)(int )))(char );
+  const int  *tab_of_ptr_to_const_int[12];
+  float  *const tab_of_const_ptr_to_float[10];
+  int  (*const tab_of_const_ptr_to_function_returning_an_int[5])(float , long );
+  void  (*function_returning_a_ptr_to_a_void_function(int , void (*)(int )))(int );
+  float  (*(*(*ptr_to_an_array_of_ptr_to_function_returning_ptr_to_function_returning_a_float)[5])(char (*)(int )))(char );
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 1  nchild: 1
-Scope Id: 1_1
-HashTab:  #entries: 1  size: 5
-[2]: Function Name: main:
-Definition: int main()
-Position: , 2, 7
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_1
-HashTab: NULL
-level: 4  nsyms: 5  nchild: 0
-Scope Id: 1_1_1_1
-HashTab:  #entries: 5  size: 5
-[0]: Variable Name: ptr_to_an_array_of_ptr_to_function_returning_ptr_to_function_returning_a_float:
-Definition: float (*(*(*ptr_to_an_array_of_ptr_to_function_returning_ptr_to_function_returning_a_float)[5])(char (*)(int )))(char )
-
--------------
-Variable Name: tab_of_const_ptr_to_function_returning_an_int:
-Definition: int (*const tab_of_const_ptr_to_function_returning_an_int[5])(float , long )
-
--------------
-
-[2]: Variable Name: tab_of_const_ptr_to_float:
-Definition: float *const tab_of_const_ptr_to_float[10]
-
--------------
-Variable Name: tab_of_ptr_to_const_int:
-Definition: const int *tab_of_ptr_to_const_int[12]
-
--------------
-
-[4]: Function Name: function_returning_a_ptr_to_a_void_function:
-Definition: void (*function_returning_a_ptr_to_a_void_function(int , void (*)(int )))(int )
-No Position.
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------

@@ -1,75 +1,13 @@
-void f1(void )
+#line 1 "run/label1.c"
+
+void  f1(void )
 {
 }
 
-void f2(void )
+void  f2(void )
 {
 start:
   x = x + 1;
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 2  nchild: 0
-Scope Id: 1_1
-HashTab:  #entries: 2  size: 5
-[3]: Function Name: f1:
-Definition: void f1(void )
-Position: , 2, 0
-
--------------
-
-[4]: Function Name: f2:
-Definition: void f2(void )
-Position: , 6, 0
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 1
-Scope Id: 1
-HashTab: NULL
-level: 2  nsyms: 0  nchild: 1
-Scope Id: 1_1
-HashTab: NULL
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[2]: Label Name: start:
-Definition: start:
-Position: , 8, 8
-
--------------
-
-level: 4  nsyms: 0  nchild: 0
-Scope Id: 1_1_1_1
-HashTab: NULL
-
--------------

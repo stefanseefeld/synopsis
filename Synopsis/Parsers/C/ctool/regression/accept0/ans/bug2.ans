@@ -1,13 +1,15 @@
-typedef enum  { foo, bar }action;
+#line 1 "run/bug2.c"
+
+typedef enum { foo, bar } action;
 typedef struct {
-  int action;
-}baz, batz;
-typedef float FOO;
-extern FOO blatz();
-int main()
+  int  action;
+} batz, baz;
+typedef float  FOO;
+extern FOO  blatz();
+int  main()
 {
-  FOO x;
-  int FOO;
+  FOO  x;
+  int  FOO;
 
   goto FOO;
   FOO = 42;
@@ -16,126 +18,3 @@ FOO:
 }
 
 
-Symbols:
--------------
-Symbol Table:
-level: 1  nsyms: 2  nchild: 1
-Scope Id: 1
-HashTab:  #entries: 2  size: 5
-[3]: Variable Name: __PRETTY_FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-[4]: Variable Name: __FUNCTION__:
-Definition: NO definition for Variable entry!
-
--------------
-
-level: 2  nsyms: 8  nchild: 2
-Scope Id: 1_1
-HashTab:  #entries: 8  size: 5
-[0]: Function Name: blatz:
-Definition: extern FOO blatz()
-No Position.
-
--------------
-
-[2]: Function Name: main:
-Definition: int main()
-Position: , 20, 0
-
--------------
-Typedef Name: FOO:
-Definition: typedef float FOO
-
--------------
-Typedef Name: action:
-Definition: typedef enum  { foo, bar }action
-
--------------
-Enumeration constant Name: bar:
-Definition: NO definition for Enumeration constant entry!
-Container:  { foo, bar }
-
--------------
-Enumeration constant Name: foo:
-Definition: NO definition for Enumeration constant entry!
-Container:  { foo, bar }
-
--------------
-
-[3]: Typedef Name: batz:
-Definition: typedef struct {
-  int action;
-}batz
-
--------------
-
-[4]: Typedef Name: baz:
-Definition: typedef struct {
-  int action;
-}baz
-
--------------
-
-level: 3  nsyms: 1  nchild: 0
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[2]: Component Name: action:
-Definition: int action
-Container: struct {
-  int action;
-}
-
--------------
-
-level: 3  nsyms: 0  nchild: 1
-Scope Id: 1_1_2
-HashTab: NULL
-level: 4  nsyms: 2  nchild: 0
-Scope Id: 1_1_2_1
-HashTab:  #entries: 2  size: 5
-[0]: Variable Name: x:
-Definition: FOO x
-
--------------
-
-[2]: Variable Name: FOO:
-Definition: int FOO
-
--------------
-
-
--------------
-Tags:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 0
-Scope Id: 1
-HashTab: NULL
-
--------------
-Labels:
--------------
-Symbol Table:
-level: 1  nsyms: 0  nchild: 1
-Scope Id: 1
-HashTab: NULL
-level: 2  nsyms: 0  nchild: 1
-Scope Id: 1_1
-HashTab: NULL
-level: 3  nsyms: 1  nchild: 1
-Scope Id: 1_1_1
-HashTab:  #entries: 1  size: 5
-[2]: Label Name: FOO:
-Definition: FOO:
-Position: , 28, 4
-
--------------
-
-level: 4  nsyms: 0  nchild: 0
-Scope Id: 1_1_1_1
-HashTab: NULL
-
--------------
