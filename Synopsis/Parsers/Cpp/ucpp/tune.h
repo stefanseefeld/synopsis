@@ -48,7 +48,9 @@
  * backslashes to seperate directory components.
  */
 /* #define AMIGA */
-/* #define MSDOS */
+#ifdef __WIN32__
+#  define MSDOS
+#endif
 
 /* ====================================================================== */
 /*

@@ -28,7 +28,7 @@ int debug = 0;
 int main_file_only = 0;
 bool active = true;
 const char *language;
-const char *base_path = 0;
+std::string base_path;
 // these python objects need to be referenced as pointers
 // since the python runtime environment has to be initiaized first
 std::auto_ptr<AST::ASTKit> kit;
@@ -111,6 +111,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
 {
   try
   {
+    const char *py_base_path;
     char *output;
     PyObject *py_flags;
     std::vector<const char *> flags;
@@ -118,7 +119,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OszzsO!iii",
                           &py_ast,
                           &input,
-                          &base_path,
+                          &py_base_path,
                           &output,
                           &language,
                           &PyList_Type, &py_flags,
@@ -135,6 +136,13 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     ast.reset(new AST::AST(py_ast));
     kit.reset(new AST::ASTKit());
     types.reset(new AST::TypeKit());
+
+    if (py_base_path)
+    {
+      Path path(py_base_path);
+      base_path = path.abs().str();
+    }
+
     source_file.reset(new AST::SourceFile(lookup_source_file(input, true)));
 
     flags.insert(flags.begin(), "ucpp");
@@ -205,8 +213,7 @@ extern "C"
 
     bool activate = false;
     if ((main_file_only && strcmp(input, filename)) || 
-	(base_path && 
-	 strncmp(abs_filename.c_str(), base_path, strlen(base_path)) != 0))
+	(base_path.size() && abs_filename.substr(0, base_path.size()) != base_path))
       active = false;
     else
     {
@@ -258,6 +265,7 @@ extern "C"
 
     Path path = Path(target).abs();
 
+//     bool main = !base_path || strncmp(path.str().c_str(), base_path, strlen(base_path));
     AST::SourceFile target_file = lookup_source_file(path.str(), false);
 
     AST::Include include = kit->create_include(target_file, name, is_macro, is_next);
