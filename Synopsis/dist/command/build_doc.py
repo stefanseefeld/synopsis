@@ -9,7 +9,7 @@ from distutils.spawn import spawn, find_executable
 from distutils.dep_util import newer, newer_group
 from distutils.dir_util import copy_tree, remove_tree
 from distutils.file_util import copy_file
-
+from distutils import sysconfig
 
 class Target:
     def __init__(self, cmd, rule, dependencies, **kw):
@@ -68,17 +68,24 @@ class build_doc(build.build):
 
         synopsis = "synopsis -c config.py"
         py_sources = []
-        hh_sources = []
-        cc_sources = []
+        cxx_sources = []
         py = re.compile(r'.*\.py$')
-        hh = re.compile(r'.*\.hh$')
-        cc = re.compile(r'.*\.cc$')
+        # only parse C++ code for now
+        #cxx = re.compile(r'((.*)\.(hh|h|cc)$)')
+        cxx = re.compile(r'((.*)\.(hh|cc)$)')
         def add_py(arg, dirname, names):
-            #exclude the dist stuff for now
+            # exclude the dist stuff for now,
+            # or else a synopsis bug will be triggered
             if dirname == 'Synopsis/dist/command':
                 return
             arg.extend(map(lambda f, d=dirname: os.path.join(d, f),
                            filter(lambda f, re=py: re.match(f), names)))
+        def add_cxx(arg, dirname, names):
+            # only parse the C++ parser for now
+            if dirname[:19] != 'Synopsis/Parser/C++':
+                return
+            arg.extend(map(lambda f, d=dirname: os.path.join(d, f),
+                           filter(lambda f, re=cxx: re.match(f), names)))
         def add_hh(arg, dirname, names):
             arg.extend(map(lambda f, d=dirname: os.path.join(d, f),
                            filter(lambda f, re=hh: re.match(f), names)))
@@ -87,17 +94,29 @@ class build_doc(build.build):
                            filter(lambda f, re=cc: re.match(f), names)))
 
         os.path.walk('Synopsis', add_py, py_sources)
+        os.path.walk('Synopsis', add_cxx, cxx_sources)
         
         cwd = os.getcwd()
         os.chdir(os.path.normpath('docs/RefManual'))
-        py_syns = map(lambda f,s=self:Target(s, synopsis + " -Wc,parser=Py,linker=Py -o %(output)s %(input)s",
-                                             [],
+        command = synopsis + " -Wc,parser=Py,linker=Py -o %(output)s %(input)s"
+        py_syns = map(lambda f,s=self:Target(s, command, [],
                                              output=re.sub('\.py$', '.syn', f),
                                              input=[os.path.join('..','..',f)]),
                       py_sources)
         py_syn = Target(self, synopsis + " -o %(output)s %(input)s", py_syns,
                         output='py.syn', input=map(lambda f:re.sub('\.py$', '.syn', f),
                                                    py_sources))
+        command = synopsis + " -I ../../Synopsis/Parser/C++ -I ../../Synopsis/Parser/C++/gc/include -I " + sysconfig.get_python_inc()
+        command += " -Wc,parser=C++,linker=C++ -Wp,-s,syn/%s-links,%s"
+        cxx_syns = map(lambda f,s=self:Target(s, command%(f[0], f[1]) + " -o %(output)s %(input)s", [],
+                                              output=f[0] + ".syn",
+                                              input=[os.path.join('..','..',f[0])]),
+                       # this maps <file> to (<file>, <stem>, <ext>)
+                       map(lambda f:cxx.match(f).groups(), cxx_sources))
+        cxx_syn = Target(self, synopsis + " -Wc,linker=C++Final -o %(output)s %(input)s", cxx_syns,
+                         output='c++.syn',
+                         input=map(lambda f:f + ".syn", cxx_sources))
+
         core_ast_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Core::AST' -o %(output)s %(input)%",
                               [py_syn], output="core-ast.syn", input=['py.syn'])
         core_type_syn = Target(self, synopsis + " -Wc,linker=All -Wl,-s,'Synopsis::Core::Type' -o %(output)s %(input)%",
@@ -134,7 +153,7 @@ class build_doc(build.build):
                                     [py_syn], output="formatter-texi.syn", input=['py.syn'])
 
         all_syn = Target(self, synopsis + " -Wc,linker=All -o %(output)s %(input)s",
-                                    [py_syn], output="all.syn", input=['py.syn'])
+                                    [py_syn, cxx_syn], output="all.syn", input=['py.syn', 'c++.syn'])
 
         html = Target(self, synopsis + " -Wc,formatter=HTML %(input)s",
                                     [all_syn], output="html", input=['all.syn'])
