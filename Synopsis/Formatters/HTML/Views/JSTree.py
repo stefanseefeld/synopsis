@@ -1,4 +1,4 @@
-# $Id: JSTree.py,v 1.1 2001/02/06 05:12:46 chalky Exp $
+# $Id: JSTree.py,v 1.2 2001/02/06 18:06:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: JSTree.py,v $
+# Revision 1.2  2001/02/06 18:06:35  chalky
+# Added untested compatability with IE4 and Navigator 4
+#
 # Revision 1.1  2001/02/06 05:12:46  chalky
 # Added JSTree class and FileTreeJS and modified ModuleListingJS to use JSTree
 #
@@ -30,19 +33,49 @@ from core import config
 
 #The javascript that goes up the top
 top_js = """<script language="JavaScript1.2"><!--
+var isNav4 = false, isIE4 = false;
+if (parseInt(navigator.appVersion.charAt(0)) == 4) {
+    isNav4 = (navigator.appName == "Netscape") ? true : false;
+} else if (parseInt(navigator.appVersion.charAt(0)) >= 4) {
+    isIE4 = (navigator.appName.indexOf("Microsoft") != -1) ? true : false;
+}
+var isMoz = (isNav4 || isIE4) ? false : true;
+
 showImage = new Image(); hideImage = new Image();
 function init_tree(show_src, hide_src) {
     showImage.src = show_src; hideImage.src = hide_src;
 }
 function toggle(id) {
-    section = document.getElementById(id);
-    image = document.getElementById(id+"_img");
-    if (section.style.display == "none") {
-	section.style.display = "";
-	image.src = showImage.src;
-    } else {
-	section.style.display = "none";
-	image.src = hideImage.src;
+    if (isMoz) {
+	section = document.getElementById(id);
+	image = document.getElementById(id+"_img");
+	if (section.style.display == "none") {
+	    section.style.display = "";
+	    image.src = showImage.src;
+	} else {
+	    section.style.display = "none";
+	    image.src = hideImage.src;
+	}
+    } else if (isIE4) {
+	section = document.items[id];
+	image = document.images[id+"_img"];
+	if (section.style.display == "none") {
+	    section.style.display = "";
+	    image.src = showImage.src;
+	} else {
+	    section.style.display = "none";
+	    image.src = hideImage.src;
+	}
+    } else if (isNav4) {
+	section = document.items[id];
+	image = document.images[id+"_img"];
+	if (section.display == "none") {
+	    section.style.display = "";
+	    image.src = showImage.src;
+	} else {
+	    section.display = "none";
+	    image.src = hideImage.src;
+	}
     }
 }
 init_tree("%s", "%s");
