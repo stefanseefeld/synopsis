@@ -33,7 +33,7 @@
 */
 
 #include <stdio.h>
-#include <iostream.h>
+#include <iostream>
 #include <string.h>
 #include "token.h"
 #include "buffer.h"
