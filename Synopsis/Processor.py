@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.11 2003/12/04 22:21:08 stefan Exp $
+# $Id: Processor.py,v 1.12 2003/12/10 05:18:36 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -131,7 +131,7 @@ class Composite(Processor):
       All other keywords are ignored."""
 
       if not self.processors:
-         return ast
+         return super(Composite, self).process(ast, **kwds)
 
       self.set_parameters(kwds)
 
