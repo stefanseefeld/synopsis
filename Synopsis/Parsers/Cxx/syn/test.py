@@ -42,7 +42,7 @@ class Test:
 	f.close()
 	return self.system("make && "\
 	    "echo \"Running Synopsis...\" && "\
-	    "synopsis -v -Wc,parser=C++ -Wp,-t,-s,/tmp/%(base)s.links %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
+	    "synopsis -v -Wc,parser=C++ -Wp,-t,-s,/tmp/%(base)s.links,-x,/tmp/%(base)s.xref %(flags)s -o /tmp/%(base)s.syn %(file)s && "\
 	    "echo \"Running Linker...\" && "\
 	    "./link-synopsis -i %(file)s -l /tmp/%(base)s.links -o /tmp/%(base)s.html.out && "\
 	    "(echo \"Cleaning up...\") && "\

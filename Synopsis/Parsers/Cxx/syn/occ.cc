@@ -1,3 +1,4 @@
+// vim: set ts=8 sts=2 sw=2 et:
 #include <cstdio>
 #include <iostream>
 #include <string>
@@ -52,7 +53,10 @@ bool syn_main_only, syn_extract_tails, syn_use_gcc, syn_fake_std;
 const char* syn_basename = "";
 
 // If set then this is the filename to store links to
-const char* syn_storage = 0;
+const char* syn_file_syntax = 0;
+
+// If set then this is the filename to store xref to
+const char* syn_file_xref = 0;
 
 
 #ifdef DEBUG
@@ -150,6 +154,7 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 	  }
 	if ((value = PyObject_GetAttrString(config, "extract_tails")) != 0)
 	  syn_extract_tails = PyObject_IsTrue(value);
+	// 'storage' defines the filename to write syntax hilite info to (OBSOLETE)
 	if ((value = PyObject_GetAttrString(config, "storage")) != 0)
 	  {
 	    if (!IsType(value, String))
@@ -157,7 +162,27 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 		std::cerr << "Error: storage must be a string." << std::endl;
 		exit(1);
 	      }
-	    syn_storage = PyString_AsString(value);
+	    syn_file_syntax = PyString_AsString(value);
+	  }
+	// 'syntax_file' defines the filename to write syntax hilite info to
+	if ((value = PyObject_GetAttrString(config, "syntax_file")) != 0)
+	  {
+	    if (!IsType(value, String))
+	      {
+		std::cerr << "Error: syntax_file must be a string." << std::endl;
+		exit(1);
+	      }
+	    syn_file_syntax = PyString_AsString(value);
+	  }
+	// 'xref_file' defines the filename to write syntax hilite info to
+	if ((value = PyObject_GetAttrString(config, "xref_file")) != 0)
+	  {
+	    if (!IsType(value, String))
+	      {
+		std::cerr << "Error: xref_file must be a string." << std::endl;
+		exit(1);
+	      }
+	    syn_file_xref = PyString_AsString(value);
 	  }
 	if ((value = PyObject_GetAttrString(config, "preprocessor")) != 0)
 	  {
@@ -187,7 +212,9 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags, std::vector<co
 	  syn_basename = PyString_AsString(PyList_GetItem(args, ++i));
 	else if (strcmp(argument, "-t") == 0) syn_extract_tails = true;
 	else if (strcmp(argument, "-s") == 0)
-	  syn_storage = PyString_AsString(PyList_GetItem(args, ++i));
+	  syn_file_syntax = PyString_AsString(PyList_GetItem(args, ++i));
+	else if (strcmp(argument, "-x") == 0)
+	  syn_file_xref = PyString_AsString(PyList_GetItem(args, ++i));
 	else if (strcmp(argument, "-g") == 0) syn_use_gcc = true;
 	else if (strcmp(argument, "-f") == 0) syn_fake_std = true;
       }
@@ -368,12 +395,14 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
   if (syn_main_only) dumper.onlyShow(src);
   dumper.visit_scope(builder.scope());
 #else
-    std::ofstream* of = 0;
-    if (syn_storage)
-      {
-	of = new std::ofstream(syn_storage);
-	swalker.set_store_links(true, of, NULL);
-      }
+    std::ofstream* of_syntax = 0;
+    std::ofstream* of_xref = 0;
+    if (syn_file_syntax)
+      of_syntax = new std::ofstream(syn_file_syntax);
+    if (syn_file_xref)
+      of_xref = new std::ofstream(syn_file_xref);
+    if (of_syntax || of_xref)
+      swalker.set_store_links(true, of_syntax, of_xref);
     try
       {
 	while(parse.rProgram(def))
@@ -388,7 +417,8 @@ char *RunOpencxx(const char *src, const char *file, const std::vector<const char
     if (syn_main_only) synopsis.onlyTranslateMain();
     // Convert!
     synopsis.translate(builder.scope());
-    if (of) delete of;
+    if (of_syntax) delete of_syntax;
+    if (of_xref) delete of_xref;
 #endif
   
   if(parse.NumOfErrors() != 0)
