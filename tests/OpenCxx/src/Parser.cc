@@ -20,5 +20,5 @@ int main(int argc, char **argv)
   Parser parser(&lexer);
   PTree::Display display(ofs, true);
   PTree::Node *node;
-  while (parser.rProgram(node)) display.display(node);
+  while (parser.parse(node)) display.display(node);
 }

@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     Parser parser(&lexer);
     EncodingFinder finder(ofs);
     PTree::Node *node;
-    while (parser.rProgram(node)) finder.find(node);
+    while (parser.parse(node)) finder.find(node);
   }
   catch (const std::exception &e)
   {

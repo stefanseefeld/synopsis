@@ -1630,12 +1630,12 @@ PTree::Node *Walker::NthDeclarator(PTree::Node *def, int& nth)
 
 void Walker::ErrorMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-    parser->ErrorMessage(msg, name, where);
+    parser->error_message(msg, name, where);
 }
 
 void Walker::WarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
 {
-    parser->WarningMessage(msg, name, where);
+    parser->warning_message(msg, name, where);
 }
 
 // InaccurateErrorMessage() may report a wrong line number.
@@ -1645,7 +1645,7 @@ void Walker::InaccurateErrorMessage(const char* msg, PTree::Node *name, PTree::N
   if(!default_parser)
     throw std::runtime_error("Walker::InaccurateErrorMessage(): no default parser");
   else
-    default_parser->ErrorMessage(msg, name, where);
+    default_parser->error_message(msg, name, where);
 }
 
 void Walker::InaccurateWarningMessage(const char* msg, PTree::Node *name, PTree::Node *where)
@@ -1653,5 +1653,5 @@ void Walker::InaccurateWarningMessage(const char* msg, PTree::Node *name, PTree:
     if(!default_parser)
       throw std::runtime_error("Walker::InaccurateWarningMessage(): no default parser");
     else
-	default_parser->WarningMessage(msg, name, where);
+	default_parser->warning_message(msg, name, where);
 }
