@@ -163,5 +163,6 @@ depend: .deps.o
 
 clean :
 	rm -f *~ *.o *.go *.ii *.so *core opencxx.a opencxx.ga occ.gdb \
-	../../../occ.so ../../../link.so ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga
+	../occ.so ../link.so ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga \
+	../ucpp/*.ao ../occ/*.o ../occ/*.go
 
