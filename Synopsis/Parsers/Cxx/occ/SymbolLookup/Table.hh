@@ -31,6 +31,7 @@ public:
   Table &enter_scope();
   Table &enter_namespace(const PTree::NamespaceSpec *);
   Table &enter_class(const PTree::ClassSpec *);
+  Table &enter_function(const PTree::Declaration *);
   void leave_scope();
 
   Scope &current_scope();

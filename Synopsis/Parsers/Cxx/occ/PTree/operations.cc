@@ -253,18 +253,18 @@ Node *append(Node *p, Node *q)
       return cons(q, 0);
     else return q;
 
-    result = tail = cons(p->car(), 0);
+  result = tail = cons(p->car(), 0);
+  p = p->cdr();
+  while(p != 0)
+  {
+    Node *cell = cons(p->car(), 0);
+    tail->set_cdr(cell);
+    tail = cell;
     p = p->cdr();
-    while(p != 0)
-    {
-      Node *cell = cons(p->car(), 0);
-      tail->set_cdr(cell);
-      tail = cell;
-      p = p->cdr();
-    }
-    if(q != 0 && q->is_atom()) tail->set_cdr(cons(q, 0));
-    else tail->set_cdr(q);
-    return result;
+  }
+  if(q != 0 && q->is_atom()) tail->set_cdr(cons(q, 0));
+  else tail->set_cdr(q);
+  return result;
 }
 
 /*

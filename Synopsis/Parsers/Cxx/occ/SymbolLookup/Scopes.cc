@@ -7,6 +7,7 @@
 #include <SymbolLookup/Scopes.hh>
 #include <PTree/Writer.hh>
 #include <PTree/Display.hh>
+#include <sstream>
 #include <cassert>
 
 using namespace PTree;
@@ -28,6 +29,25 @@ void LocalScope::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "LocalScope:\n";
   Scope::dump(os, in + 1);
+}
+
+std::set<Symbol const *> FunctionScope::lookup(const Encoding &name) const throw()
+{
+  std::set<Symbol const *> symbols = Scope::lookup(name);
+  return symbols.size() ? symbols : my_outer->lookup(name);
+}
+
+void FunctionScope::dump(std::ostream &os, size_t in) const
+{
+  indent(os, in) << "FunctionScope '" << this->name() << "':\n";
+  Scope::dump(os, in + 1);
+}
+
+std::string FunctionScope::name() const
+{
+  std::ostringstream oss;
+  oss << PTree::reify(PTree::third(my_decl));
+  return oss.str();
 }
 
 std::set<Symbol const *> Class::lookup(const Encoding &name) const throw()
