@@ -10,7 +10,7 @@ from Stripper import *
 from NameMapper import *
 from Comments import *
 from XRefCompiler import *
-from EmptyNS import *
+from EmptyModuleRemover import *
 from AccessRestrictor import *
 from TypeMapper import *
 from LanguageMapper import *

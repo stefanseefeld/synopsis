@@ -1,4 +1,4 @@
-# $Id: Linker.py,v 1.11 2003/11/25 20:19:00 stefan Exp $
+# $Id: Linker.py,v 1.12 2003/12/02 16:19:41 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -10,10 +10,12 @@
 import string
 
 from Synopsis.Processor import Composite, Parameter
-from Synopsis import AST, Type, Util
+from Synopsis import AST, Type
 
 class Linker(Composite, AST.Visitor, Type.Visitor):
    """Visitor that removes duplicate declarations"""
+
+   remove_empty_modules = Parameter(True, 'Remove empty modules.')
 
    def process(self, ast, **kwds):
 
@@ -35,8 +37,12 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       for file in self.ast.files().values():
          self.visitSourceFile(file)
 
+      if self.remove_empty_modules:
+         import EmptyModuleRemover
+         self.ast = EmptyModuleRemover.EmptyModuleRemover().process(self.ast)
+
       # now deal with the sub-processors, if any
-      self.ast = Composite.process(self, self.ast, input=[])
+      self.ast = Composite.process(self, self.ast, input=[], output='')
 
       return self.output_and_return_ast()
 
