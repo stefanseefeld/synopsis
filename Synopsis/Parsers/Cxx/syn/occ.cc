@@ -7,6 +7,7 @@
 //
 
 #include <Synopsis/Python/Module.hh>
+#include <Synopsis/Trace.hh>
 #include <Synopsis/Path.hh>
 #include <Synopsis/ErrorHandler.hh>
 #include "Translator.hh"
@@ -130,7 +131,6 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
 
   Builder builder(sourcefile);
   SWalker swalker(filter, &parse, &builder, &prog);
-  Ptree *def;
   if (syn_fake_std)
   {
     builder.set_file(sourcefile);
@@ -144,7 +144,9 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     swalker.set_store_links(new LinkStore(filter, &swalker));
   try
   {
-    while(parse.rProgram(def)) swalker.Translate(def);
+    Ptree *def;
+    while(parse.rProgram(def))
+      swalker.Translate(def);
   }
   catch (...)
   {
@@ -176,19 +178,21 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
 
   PyObject *ast;
   const char *src, *cppfile;
-  int verbose, main_file_only;
-  if (!PyArg_ParseTuple(args, "Ossiizzz",
+  int main_file_only, verbose, debug;
+  if (!PyArg_ParseTuple(args, "Ossizzzii",
                         &ast, &cppfile, &src,
-                        &verbose,
                         &main_file_only,
                         &syn_base_path,
                         &syn_syntax_prefix,
-                        &syn_xref_prefix))
+                        &syn_xref_prefix,
+                        &verbose,
+                        &debug))
     return 0;
 
   Py_INCREF(ast);
 
   if (verbose) ::verbose = true;
+  if (debug) Trace::enable_debug();
   if (main_file_only) syn_main_only = true;
 
   if (!src || *src == '\0')
