@@ -23,6 +23,12 @@
 #include "builder.hh"
 #include "dumper.hh"
 
+
+// ucpp_main is the renamed main() func of ucpp, since it is included in this
+// module
+extern "C" int ucpp_main(int argc, char** argv);
+
+
 /* The following aren't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
  */
@@ -81,51 +87,39 @@ void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *
   
 char *RunPreprocessor(const char *file, const vector<const char *> &flags)
 {
-  static char dest[1024] = "/tmp/synopsis-XXXXXX";
-  //tmpnam(dest);
-  if (mkstemp(dest) == -1) {
-    perror("RunPreprocessor");
-    exit(1);
-  }
-  switch(fork())
-    {
-    case 0:
-      {
-	vector<const char *> args = flags;
-	char *cc = getenv("CC");
-	args.insert(args.begin(), cc ? cc : "c++");
-	args.push_back("-C"); // keep comments
-	args.push_back("-E"); // stop after preprocessing
-	args.push_back("-o"); // output to...
-	args.push_back(dest);
-	args.push_back("-x"); // language c++
-	args.push_back("c++");
-	args.push_back(file);
-	args.push_back(0);
-	execvp(args[0], (char **)args.begin());
-	perror("cannot invoke compiler");
-	exit(-1);
-	break;
-      }
-    case -1:
-      perror("RunPreprocessor");
-      exit(-1);
-      break;
-    default:
-      {
-	int status;
-	wait(&status);
-	if(status != 0)
-	  {
-	    if (WIFEXITED(status))
-	      cout << "exited with status " << WEXITSTATUS(status) << endl;
-	    else if (WIFSIGNALED(status))
-	      cout << "stopped with status " << WTERMSIG(status) << endl;
-	    exit(1);
-	  }
-      }
+    static char dest[1024] = "/tmp/synopsis-XXXXXX";
+    if (mkstemp(dest) == -1) {
+	perror("RunPreprocessor");
+	exit(1);
     }
-  return dest;
+
+    // Create argv vector
+    vector<const char *> args = flags;
+    char *cc = getenv("CC");
+    args.insert(args.begin(), cc ? cc : "c++");
+    args.push_back("-C"); // keep comments
+    args.push_back("-lg"); // gcc-like line numbers
+    //args.push_back("-E"); // stop after preprocessing
+    // Add includes
+    args.push_back("-I");
+    args.push_back("/usr/include/g++-3/");
+    args.push_back("-I");
+    args.push_back("/usr/include/linux/");
+    args.push_back("-I");
+    args.push_back("/usr/lib/gcc-lib/i386-linux/2.95.3/include/");
+    args.push_back("-o"); // output to...
+    args.push_back(dest);
+    //args.push_back("-x"); // language c++
+    //args.push_back("c++");
+    args.push_back(file);
+
+    // Call ucpp
+    int status = ucpp_main(args.size(), (char **)args.begin());
+    if (status != 0) {
+	cout << "ucpp returned error flag." << endl;
+	exit(1);
+    }
+    return dest;
 }
 
 char *RunOpencxx(const char *src, const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
