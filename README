@@ -5,9 +5,13 @@ Building
 --------
 
 * If the sources are checked out from cvs, run './autogen.sh' to generate
-  the configure scripts.
+  the configure scripts. This step requires autoconf to be installed.
+
 * Run 'python setup.py build' to compile everything.
   This will place all files that are going to be installed under build/
+  This step requires GNU make to be installed. If the executable 'make'
+  is not GNU make, you have to set the 'MAKE' environment variable to
+  GNU make.
 
   If you do not want to install, but rather try synopsis out from within the
   source directory, you may consider 'python setup.py build_ext --inplace'
