@@ -59,6 +59,8 @@ public:
     static void* LoadSoLib(char* file_name);
     static void* LookupSymbol(void* handle, char* symbol);
 
+    static void do_init_static();
+
 private:
     Ptree* new_function_name;
     int    first_not_inlined_vf;

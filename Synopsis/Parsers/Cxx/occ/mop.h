@@ -208,6 +208,8 @@ public:
     static bool LookupCmdLineOption(char* key, char*& value);
     static void WarnObsoleteness(char*, char* = nil);
 
+    static void do_init_static();
+
 private:
     void Construct(Environment*, Ptree*);
 

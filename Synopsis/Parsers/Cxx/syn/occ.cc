@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.82 2002/12/20 21:14:25 stefan Exp $
+// $Id: occ.cc,v 1.83 2002/12/23 07:50:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,10 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.83  2002/12/23 07:50:10  chalky
+// Get rid of statically initialised objects due to non-deterministic
+// initialisation order (particularly, the GC may not be available).
+//
 // Revision 1.82  2002/12/20 21:14:25  stefan
 // adapt signal handler to new SourceFile code
 //
@@ -60,6 +64,8 @@
 #include <occ/ptree-core.h>
 #include <occ/ptree.h>
 #include <occ/encoding.h>
+#include <occ/mop.h>
+#include <occ/metaclass.h>
 
 // Stupid macro
 #undef Scope
@@ -142,7 +148,7 @@ const char* syn_file_xref = 0;
 const char* syn_emulate_compiler = "c++";
 
 // A list of extra filenames to store info for
-std::vector<const char*>* syn_extra_filenames;
+std::vector<const char*>* syn_extra_filenames = NULL;
 
 // A place to temporarily store Python's thread state
 PyThreadState* pythread_save;
@@ -169,6 +175,7 @@ void unexpected()
 void getopts(PyObject *args, std::vector<const char *> &cppflags, 
         std::vector<const char *> &occflags, PyObject* config, PyObject* extra_files)
 {
+    // Initialise defaults
     showProgram = doCompile = verboseMode = makeExecutable = false;
     doTranslate = regularCpp = makeSharedLibrary = preprocessTwice = false;
     doPreprocess = true;
@@ -179,6 +186,8 @@ void getopts(PyObject *args, std::vector<const char *> &cppflags,
     syn_use_gcc = false;
     syn_fake_std = false;
     syn_multi_files = false;
+    Class::do_init_static();
+    Metaclass::do_init_static();
 
 #define IsType(obj, type) (Py##type##_Check(obj))
 
