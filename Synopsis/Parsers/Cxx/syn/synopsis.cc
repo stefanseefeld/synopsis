@@ -14,8 +14,9 @@ int Trace::level = 0;
 void nullObj()
 {
   std::cout << "Null ptr." << std::endl;
-  int* i = 0;
-  *i = 1;
+  /*int* i = 0;
+  *i = 1; */
+  raise(SIGINT);
 }
 
 //. A functor that returns true if the declaration is 'main'
@@ -132,8 +133,27 @@ struct Synopsis::Private {
 	    PyTuple_SET_ITEM(tuple, index++, py(*iter++));
 	return tuple;
     }
-    
-};
+}; 
+// Convert a Declaration vector to a List. Declarations can return NULL
+// from py(), if they are not in the main file.
+template <>
+PyObject* Synopsis::Private::List(const std::vector<AST::Declaration*>& vec) {
+    std::vector<PyObject*> objects;
+    std::vector<AST::Declaration*>::const_iterator iter = vec.begin();
+    while (iter != vec.end()) {
+	PyObject* obj = py(*iter++);
+	if (obj != NULL)
+	    objects.push_back(obj);
+    }
+
+    PyObject* list = PyList_New(objects.size());
+    int index = 0;
+    std::vector<PyObject*>::const_iterator piter = objects.begin();
+    while (piter != objects.end())
+	PyList_SET_ITEM(list, index++, *piter++);
+    return list;
+}
+
 
 PyObject* Synopsis::Private::py(AST::Declaration* decl)
 {
@@ -143,8 +163,12 @@ PyObject* Synopsis::Private::py(AST::Declaration* decl)
 	decl->accept(m_syn);
 	iter = obj_map.find(decl);
 	if (iter == obj_map.end()) {
+	    // Probably means it's not in the main file
+	    return NULL;
+	    /*
 	    std::cout << "Fatal: Still not PyObject after converting." << std::endl;
 	    throw "Synopsis::Private::py(AST::Declaration*)";
+	    */
 	}
 	// Force Declared creation (and inclusion into dictionary)
 	py(decl->declared());
@@ -652,8 +676,8 @@ void Synopsis::visit_declaration(AST::Declaration* decl) {
 void Synopsis::visit_scope(AST::Scope* decl) {
     if (count_main(decl, m->m_main))
 	m->add(decl, Scope(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //	m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_namespace(AST::Namespace* decl) {
     // Namespaces are always included, because the Linker knows to combine
@@ -661,40 +685,43 @@ void Synopsis::visit_namespace(AST::Namespace* decl) {
     m->add(decl, Namespace(decl));
 }
 void Synopsis::visit_class(AST::Class* decl) {
-    if (count_main(decl, m->m_main))
+    // Add if the class is in the main file, *or* if it has any members
+    // declared in the main file (eg: forward declared nested classes which
+    // are fully defined in this main file)
+    if (m->m_main(decl) || count_main(decl, m->m_main))
 	m->add(decl, Class(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_forward(AST::Forward* decl) {
     if (m->m_main(decl))
 	m->add(decl, Forward(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_typedef(AST::Typedef* decl) {
     if (m->m_main(decl))
 	m->add(decl, Typedef(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_variable(AST::Variable* decl) {
     if (m->m_main(decl))
 	m->add(decl, Variable(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_const(AST::Const* decl) {
     if (m->m_main(decl))
 	m->add(decl, Const(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_enum(AST::Enum* decl) {
     if (m->m_main(decl))
 	m->add(decl, Enum(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_enumerator(AST::Enumerator* decl) {
     m->add(decl, Enumerator(decl));
@@ -702,14 +729,14 @@ void Synopsis::visit_enumerator(AST::Enumerator* decl) {
 void Synopsis::visit_function(AST::Function* decl) {
     if (m->m_main(decl))
 	m->add(decl, Function(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 void Synopsis::visit_operation(AST::Operation* decl) {
     if (m->m_main(decl))
 	m->add(decl, Operation(decl));
-    else
-	m->add(decl, Forward(new AST::Forward(decl)));
+    //else
+    //    m->add(decl, Forward(new AST::Forward(decl)));
 }
 
 void Synopsis::visit_inheritance(AST::Inheritance* decl) {
