@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.4 2000/03/07 21:52:11 stefan Exp $
+# $Id: synopsis,v 1.5 2000/03/09 05:15:38 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -143,6 +143,9 @@ def main(argv=None):
     # generate output, either with pickler or with a formatter
     #
     if formatter_cmd == "":
+        if output == "":
+            sys.stderr.write(cmdname + ": no output file specified\n")
+            sys.exit(1)
         pickler = pickle.Pickler(open(output, "w"))
         for x in dictionary: pickler.dump(x)
 
@@ -153,7 +156,7 @@ def main(argv=None):
             sys.stderr.write(cmdname + ": Could not import formatter `" + formatter_cmd + "'\n")
             sys.exit(1)
 
-        if (output != ""): formatter_args.extend(["-o",output])
+        if output != "": formatter_args.extend(["-o",output])
         formatter.format(dictionary, formatter_args)
 
 if __name__ == '__main__':

@@ -3,101 +3,138 @@ from Synopsis import Types
 
 def entity(type, body): return "<" + type + "> " + body + "</" + type + ">"
 
+class TableOfContents:
+    """
+    generate a dictionary of all declarations which can be looked up to create
+    links
+    """
+    def __init__(self):
+        self.__toc__ = {}
+    def lookup(self, name):
+        n = name
+        if len(n) > 2 and n[0] == ':' and n[1] == ':': n = n[2:]
+        if self.__toc__.has_key(n): return self.__toc__[n]
+        else: return ""
+    def insert(self, name):
+        n = name
+        if len(n) > 2 and n[0] == ':' and n[1] == ':': n = n[2:]
+        self.__toc__[n] = n
+
+    def visitTypedef(self, typedef):
+        for i in typedef.identifiers(): self.insert(i)
+
+    def visitVariable(self, variable):
+        for i in variable.identifiers(): self.insert(i)
+
+    def visitModule(self, module):
+        self.insert(module.identifier())
+        for declaration in module.declarations():
+            declaration.accept(self)
+
+    def visitClass(self, clas):
+        self.insert(clas.identifier())
+        for declaration in clas.declarations():
+            declaration.accept(self)
+        for operation in clas.operations():
+            operation.accept(self)
+
+    def visitParameter(self, parameter):
+        self.insert(parameter.type())
+
+    def visitFunction(self, function):
+        self.insert(function.identifier())
+        for parameter in function.parameters(): parameter.accept(self)
+
+    def visitOperation(self, operation):
+        self.insert(operation.identifier())
+        for parameter in operation.parameters(): parameter.accept(self)
+    
+
 class HTMLFormatter:
     """
     outputs as html.
     """
-    def __init__(self, os):
+    def __init__(self, os, toc):
         self.__os = os
+        self.__toc = toc
+    def reference(self, ref):
+        location = self.__toc.lookup(ref)
+        if location != "":
+            return "<a href=#" + location + ">" + ref + "</a>"
+        else: return "<i>" + ref + "</i>"
 
-    def formatBaseType(self, base):
-        self.__os.write(base.type())
-        self.__os.write(" ")
-        self.__os.write(base.identifier())
-        self.__os.write("\n")
+    def label(self, ref):
+        location = self.__toc.lookup(ref)
+        if location != "":
+            return "<a name=\"" + location + "\">" + ref + "</a>"
+        else: return ref
 
-    def formatTypedef(self, typedef):
-        self.__os.write(entity("b", typedef.type()) + " " + typedef.identifier() + " " + typedef.alias() + "\n")
+    def visitTypedef(self, typedef):
+        self.__os.write(entity("b", "typedef") + " " + self.reference(typedef.alias()))
+        for i in typedef.identifiers(): self.__os.write(" " + self.label(i))
 
-    def formatVariable(self, variable):
-        self.__os.write(entity("b", variable.type()) + " " + variable.identifier() + "\n")
+    def visitVariable(self, variable):
+        self.__os.write(self.reference(variable.type()))
+        for i in variable.identifiers():
+            self.__os.write(" " + self.label(i))
 
-    def formatConst(self, const):
-        self.__os.write(entity("b", const.type()) + " " + const.identifier())
-        if len(const.value()) != 0: self.__os.write(" = " + const.value() + "\n")
-
-    def formatModule(self, module):
-        self.__os.write(entity("b", module.type()) + " " + module.identifier() + "\n")
+    def visitModule(self, module):
+        self.__os.write(entity("b", module.type()) + " " + self.label(module.identifier()) + "\n")
         self.__os.write("<blockquote>\n")
-        for type in module.types():
-            type.output(self)
+        for declaration in module.declarations():
+            declaration.accept(self)
             self.__os.write("<br>\n")
         self.__os.write("</blockquote>\n")
 
-    def formatClass(self, clas):
-        self.__os.write(entity("b", clas.type()) + " " + clas.identifier() + "\n")
+    def visitClass(self, clas):
+        self.__os.write(entity("b", clas.type()) + " " + self.label(clas.identifier()) + "\n")
         if len(clas.parents()):
             self.__os.write("<blockquote>\n")
             self.__os.write(entity("b", "parents:") + "\n")
             self.__os.write("<blockquote>\n")
             for parent in clas.parents():
-                parent.output(self)
+                parent.accept(self)
                 self.__os.write("<br>\n")
             self.__os.write("</blockquote>\n")
             self.__os.write("</blockquote>\n")
-        if len(clas.types()):
+        if len(clas.declarations()):
             self.__os.write("<blockquote>\n")
-            self.__os.write(entity("b", "nested types:") + "\n")
-            self.__os.write("<blockquote>\n")
-            for type in clas.types():
-                type.output(self)
+            for d in clas.declarations():
+                d.accept(self)
                 self.__os.write("<br>\n")
-            self.__os.write("</blockquote>\n")
             self.__os.write("</blockquote>\n")
         if len(clas.operations()):
             self.__os.write("<blockquote>\n")
-            self.__os.write(entity("b", "operations:") + "\n")
-            self.__os.write("<blockquote>\n")
             for operation in clas.operations():
-                operation.output(self)
+                operation.accept(self)
                 self.__os.write("<br>\n")
-            self.__os.write("</blockquote>\n")
-            self.__os.write("</blockquote>\n")
-        if len(clas.attributes()):
-            self.__os.write("<blockquote>\n")
-            self.__os.write(entity("b", "members:") + "\n")
-            self.__os.write("<blockquote>\n")
-            for attribute in clas.attributes():
-                attribute.output(self)
-                self.__os.write("<br>\n")
-            self.__os.write("</blockquote>\n")
             self.__os.write("</blockquote>\n")
 
-    def formatInheritance(self, inheritance):
+    def visitInheritance(self, inheritance):
         for attribute in inheritance.attributes(): self.__os.write(attribute + " ")
-        self.__os.write(inheritance.parent().identifier())
+        self.__os.write(self.reference(inheritance.parent().identifier()))
 
-    def formatParameter(self, parameter):
+    def visitParameter(self, parameter):
         for m in parameter.premodifier(): self.__os.write(m + " ")
-        self.__os.write(parameter.type() + " ")
+        self.__os.write(self.reference(parameter.type()) + " ")
         for m in parameter.postmodifier(): self.__os.write(m + " ")
         if len(parameter.identifier()) != 0:
             self.__os.write(parameter.identifier())
             if len(parameter.value()) != 0:
                 self.__os.write(" = " + parameter.value())
 
-    def formatFunction(self, function):
-        self.__os.write(function.identifier() + "(")
-        for parameter in function.parameters(): parameter.output(self)
+    def visitFunction(self, function):
+        self.__os.write(self.label(function.identifier()) + "(")
+        for parameter in function.parameters(): parameter.accept(self)
         self.__os.write(")\n")
 
-    def formatOperation(self, operation):
+    def visitOperation(self, operation):
         for modifier in operation.premodifier(): self.__os.write(modifier + " ")
-        self.__os.write(operation.returnType() + " ")
+        self.__os.write(self.reference(operation.returnType()) + " ")
         if operation.language() == "IDL" and operation.type() == "attribute":
             self.__os.write("attribute ")
-        self.__os.write(operation.identifier() + "(")
-        for parameter in operation.parameters(): parameter.output(self)
+        self.__os.write(self.label(operation.identifier()) + "(")
+        for parameter in operation.parameters(): parameter.accept(self)
         self.__os.write(")")
         for modifier in operation.postmodifier(): self.__os.write(modifier + " ")
         self.__os.write("\n")
@@ -119,7 +156,10 @@ def __parseArgs(args):
 def format(dictionary, args):
     global output
     __parseArgs(args)
-    formatter = HTMLFormatter(output)
+    toc = TableOfContents()
     for type in dictionary:
-        type.output(formatter)
+        type.accept(toc)
+    formatter = HTMLFormatter(output, toc)
+    for type in dictionary:
+        type.accept(formatter)
         output.write("<br>\n")
