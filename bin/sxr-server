@@ -24,30 +24,17 @@ class RequestHandler(CGIHTTPRequestHandler):
 
       if path.startswith('/sxr.cgi'):
          return config.datadir + '/cgi-bin' + path 
-      # Alias /src/ $src_dir/
-      #
-      if path.startswith('/src/'):
-         return os.path.join(src_dir, path[5:])
-
-      # Alias $path $config.datadir/cgi-bin/$path
-      elif path.startswith('/file') or path.startswith('/ident'):
-         print 'returning', config.datadir + '/cgi-bin/sxr.cgi' + path
-         return config.datadir + '/cgi-bin/sxr.cgi' + path 
 
       elif path.startswith('/'):
-         print document_root + path
          return document_root + path
       else:
-         return CGIHTTPRequestHandler.translate_path(self, path)
+         return path
 
    def is_cgi(self):
       """The path either refers to the sxr cgi or to a (source) file."""
 
-      if self.path.startswith('/src/'): return False
-      if (self.path == '/'
-          or self.path.startswith('/file')
-          or self.path.startswith('/ident')):
-         self.cgi_info = '', 'sxr.cgi' + self.path
+      if self.path.startswith('/sxr.cgi'):
+         self.cgi_info = '', self.path[1:]
          return True
       return False
 
@@ -93,7 +80,7 @@ def run():
    server_address = ('', port)
 
    httpd = HTTPServer(server_address, RequestHandler)
-   print "Serving HTTP on", httpd.server_name, "port", httpd.server_port, "..."
+   print "Serving HTTP on", httpd.server_name + "/sxr.cgi", "port", httpd.server_port, "..."
    httpd.serve_forever()
 
 if __name__ == '__main__':

@@ -7,23 +7,9 @@
 #
 
 import sys, os, string, dircache, cgi, cPickle
-import cgitb
+import urllib, cgitb
 
 cgitb.enable()
-
-script = ''
-
-def print_ident(file, line, text):
-    return "<a href=\"%s/src/%s.html#%s\">%s:%s: %s</a>"%(script, file, line,
-                                                          file, line, text)
-
-def print_file(file, name = None):
-    if not name: name = file
-    if name.endswith('.html'):
-        name = name[:-5] # strip of trailing '.html'
-        return "<a href=\"%s/src/%s\">%s</a>"%(script, file, name)
-    else:
-        return "<a href=\"%s/files/%s\">%s/</a>"%(script, file, name)
 
 class Handler(object):
 
@@ -48,7 +34,16 @@ class Handler(object):
         self.command = path[1]
         self.path_info = string.join(path[2:], '/')
         self.form = cgi.FieldStorage()
+        self.script_name = os.environ.get('SCRIPT_NAME', None)
 
+    def print_ident(self, file, line, text):
+        return "<a href=\"/Source/%s.html#%s\">%s:%s: %s</a>"%(file, line,
+                                                               file, line, text)
+
+    def print_file(self, file, name = None):
+        if not name: name = file
+        name = name[:-5] # strip of trailing '.html'
+        return "<a href=\"/Source/%s\">%s</a>"%(file, name)
 
     def dump(self, data, name):
         if not data.has_key(name): return
@@ -58,88 +53,20 @@ class Handler(object):
             print "<li>Defined at:<br>"
             print "<ul>"
             for file, line, scope in target_data[0]:
-                print "<li>%s</li>"%(print_ident(file, line, string.join(scope,'::')))
+                print "<li>%s</li>"%(self.print_ident(file, line, string.join(scope,'::')))
             print "</ul></li>"
         if target_data[1]:
             print "<li>Called from:<br>"
             print "<ul>"
             for file, line, scope in target_data[1]:
-                print "<li>%s</li>"%(print_ident(file, line, string.join(scope,'::')))
+                print "<li>%s</li>"%(self.print_ident(file, line, string.join(scope,'::')))
             print "</ul></li>"
         if target_data[2]:
             print "<li>Referenced from:<br>"
             print "<ul>"
             for file, line, scope in target_data[2]:
-                print "<li>%s</li>"%(print_ident(file, line, string.join(scope,'::')))
+                print "<li>%s</li>"%(self.print_ident(file, line, string.join(scope,'::')))
             print "</ul></li>"
-
-    def index(self):
-        """Generate an index page"""
-        print """
-<table>
-  <tr>
-    <td colspan="2">
-      Click here to start browsing at the root of the directory tree:
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <a href="%(script)s/files">/</a>
-    </td>
-    <td>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      Use this field to search for files by name:
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <a href="%(script)s/file">File Name Search</a>
-    </td>
-    <td>
-      <form method="get" action="%(script)s/file">
-        <input type="text" name="string" value="" size="15"/>
-        <input type="submit" value="Find"/>
-      </form>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      Use this field to find a particular function, variable, etc.:
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <a href="%(script)s/ident">Identifier Search</a>
-    </td>
-    <td>
-      <form method="get" action="%(script)s/ident">
-        <input type="text" name="string" value="" size="15"/>
-        <input type="submit" value="Find"/>
-      </form>
-    </td>
-  </tr>
-</table>
-"""%{'script' : script}
-
-    def files(self):
-        """Generate a directory listing"""
-
-        if os.path.isdir(os.path.join(self.src_dir, self.path_info)):
-            print '<h2 class="directory">'
-            root = ''
-            for p in self.path_info.split('/'):
-                if root: root += '/' + p
-                else: root = p
-                print print_file(root, p)
-            print '</h2>'
-            files = dircache.listdir(os.path.join(self.src_dir, self.path_info))
-            print '<p class="directory">'
-            for f in files:
-                print '%s</br>'%print_file(os.path.join(self.path_info, f), f)
-            print '</p>'
 
     def file(self):
         """Generate a file search listing"""
@@ -163,7 +90,7 @@ class Handler(object):
     </td>
   </tr>
 </table>
-"""%{'script': script}
+"""%{'script': self.script_name}
 
         if self.form.has_key('string'):
             file = self.form['string'].value
@@ -174,7 +101,7 @@ class Handler(object):
             if files:
                 print '<ul>'
                 for f in files:
-                    print '<li>%s</li>'%(print_file(f[2:].strip()))
+                    print '<li>%s</li>'%(self.print_file(f[2:].strip()))
                 print '</ul>'
 
     def ident(self):
@@ -199,7 +126,7 @@ class Handler(object):
     </td>
   </tr>
 </table>
-"""%{'script' : script}
+"""%{'script' : self.script_name}
 
         if self.form.has_key('string'):
             ident = self.form['string']
@@ -215,7 +142,7 @@ class Handler(object):
                 # Check for exact match
                 if data.has_key(name):
                     print "Found exact match:<br>"
-                    dump(data, name)
+                    self.dump(data, name)
                     found = True
                 # Search for last part of name in index
                 if index.has_key(name[-1]):
@@ -223,7 +150,7 @@ class Handler(object):
                     print "Found (%d) possible matches:<br>"%(len(matches))
                     print '<ul>'
                     for name in matches:
-                        dump(data, name)
+                        self.dump(data, name)
                     print '</ul>'
                     found = True
                 if not found:
@@ -246,9 +173,7 @@ class Handler(object):
 
         print self.template[0]
 
-        if not self.command: self.index()
-        elif self.command == 'files': self.files()
-        elif self.command == 'file': self.file()
+        if self.command == 'file': self.file()
         elif self.command == 'ident': self.ident()
 
         print self.template[1]
