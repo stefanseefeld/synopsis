@@ -1,4 +1,4 @@
-# $Id: Util.py,v 1.17 2002/06/22 06:56:31 chalky Exp $
+# $Id: Util.py,v 1.18 2002/08/23 04:37:26 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: Util.py,v $
+# Revision 1.18  2002/08/23 04:37:26  chalky
+# Huge refactoring of Linker to make it modular, and use a config system similar
+# to the HTML package
+#
 # Revision 1.17  2002/06/22 06:56:31  chalky
 # Fixes to PyWriter for nested classes
 #
@@ -234,6 +238,45 @@ def _import(name):
         sys.stderr.flush()
         sys.exit(-1)
     return mod
+
+def import_object(spec, defaultAttr = None, basePackage = ''):
+    """Imports an object according to 'spec'. spec must be either a
+    string or a tuple of two strings. A tuple of two strings means load the
+    module from the first string, and look for an attribute using the second
+    string. One string is interpreted according to the optional arguments. The
+    default is just to load the named module. 'defaultAttr' means to look for
+    the named attribute in the module and return that. 'basePackage' means to
+    prepend the named string to the spec before importing. Note that you may
+    pass a list instead of a tuple, and it will have the same effect.
+    
+    This is used by the HTML formatter for example, to specify page classes.
+    Each class is in a separate module, and each module has a htmlPageAttr
+    attribute that references the class of the Page for that module. This
+    avoids the need to specify a list of default pages, easing
+    maintainability."""
+    if type(spec) == types.ListType: spec = tuple(spec)
+    if type(spec) == types.TupleType:
+	# Tuple means (module-name, attribute-name)
+	if len(spec) != 2:
+	    raise TypeError, "Import tuple must have two strings"
+	name, attr = spec
+	if type(name) != types.StringType or type(attr) != types.StringType:
+	    raise TypeError, "Import tuple must have two strings"
+	module = _import(name)
+	if not hasattr(module, attr):
+	    raise ImportError, "Module %s has no %s attribute."%spec
+	return getattr(module, attr)
+    elif type(spec) == types.StringType:
+	# String means HTML module with htmlPageClass attribute
+	module = _import(basePackage+spec)
+	if defaultAttr is not None:
+	    if not hasattr(module, defaultAttr):
+		raise ImportError, "Module %s has no %s attribute."%(spec, defaultAttr)
+	    return getattr(module, defaultAttr)
+	return module
+    else:
+	raise TypeError, "Import spec must be a string or tuple of two strings."
+
 
 def splitAndStrip(line):
     """Splits a line at the first space, then strips the second argument"""
