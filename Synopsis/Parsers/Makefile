@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.15 2003/02/01 05:43:04 chalky Exp $
+# $Id: Makefile,v 1.16 2003/08/20 02:16:37 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -30,6 +30,9 @@ SRC	:= __init__
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
 subdirs	:= IDL C++ Python
+ifeq ($(CTOOL), 1)
+subdirs	+= C
+endif
 
 action	:= all
 

@@ -1,5 +1,5 @@
 # @configure_input@
-# $Id: local.mk.in,v 1.10 2003/03/23 17:36:27 stefan Exp $
+# $Id: local.mk.in,v 1.11 2003/08/20 02:16:37 stefan Exp $
 #
 # This source file is a part of the Synopsis Project.
 # Copyright (C) 1999, 2000 Stefan Seefeld
@@ -44,8 +44,14 @@ packagedir	:= $(prefix)/lib/python$(python_version)/site-packages
 
 CC		:= @CC@
 CXX		:= @CXX@
+MAKEDEP		:= $(CXX) -M
 use_gc		:= @use_gc@
 LIBS		:= @python_lib@ @LIBS@ -lpthread
 CPPFLAGS	:= @CPPFLAGS@
+CFLAGS		:= @CFLAGS@
+CXXFLAGS	:= @CXXFLAGS@
 LIBRARY_EXT	:= @library_ext@
 CPP_PROFILE	:= @cpp_profile@
+CTOOL		:= @CTOOL@
+CTOOL_CPPFLAGS	:= @CTOOL_CPPFLAGS@
+CTOOL_LIBS	:= @CTOOL_LIBS@
