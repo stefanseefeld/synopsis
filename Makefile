@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.21 2001/05/31 13:21:25 stefan Exp $
+# $Id: Makefile,v 1.22 2001/06/10 18:44:16 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -48,6 +48,8 @@ clean:
 
 distclean:
 	$(MAKE) action="distclean"
+	$(MAKE) -C demo action="clean"
+	$(MAKE) -C docs/RefManual distclean
 	/bin/rm -f *.pyc *~ local.mk config.cache config.log config.status configure
 
 # to be elaborated further...

@@ -10,7 +10,6 @@ URL:            http://Synopsis.sourceforge.net/
 Summary:        Source code documentation tool
 Packager:       Stefan Seefeld (seefeld@sympatico.ca)
 
-Requires:       python >= 1.5
 Source:         %{name}-%{version}.tar.gz
 BuildRoot:      /var/tmp/%{name}-buildroot
 
@@ -27,7 +26,7 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %build
 autoconf
-./configure --prefix=%{prefix} --with-python-prefix=@PYTHON_PREFIX@
+./configure --prefix=%{prefix} --with-python-version=@python_version@ --with-python-prefix=@python_prefix@
 make
 
 %install
@@ -39,11 +38,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %doc README
-/bin/synopsis
-@packagedir@/Synopsis/*.py*
-@packagedir@/Synopsis/Parser/*.py*
-@packagedir@/Synopsis/Parser/C++/*.py*
-@packagedir@/Synopsis/Parser/C++/*.so
-@packagedir@/Synopsis/Linker/*.py*
-@packagedir@/Synopsis/Formatter/*.py*
-@packagedir@/Synopsis/Formatter/HTML/*.py*
+%{prefix}/bin/synopsis
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/*.py*
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/Parser/*.py*
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/Parser/C++/*.py*
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/Parser/C++/*.so
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/Linker/*.py*
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/Formatter/*.py*
+%{prefix}/lib/python@python_version@/site-packages/Synopsis/Formatter/HTML/*.py*
