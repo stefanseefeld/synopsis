@@ -34,7 +34,7 @@
 #include <time.h>
 #include "ucppi.h"
 #include "mem.h"
-#include "hash.h"
+#include "hashtable.h"
 #include "tune.h"
 
 /*
