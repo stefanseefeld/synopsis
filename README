@@ -48,6 +48,13 @@ There are demos for IDL, C++, and Python. Step into the demo subdirectory and ru
 make to build them.
 For some of them you need particular tools, such as omniidl for the IDL parser, and
 dot for the graph generator.
+If you have not installed Synopsis, then you may have to set your PYTHONPATH
+to ensure that the Synopsis directory (the one inside the main directory,
+which contains the Config.py file) can be found.
+For example, if you have unpacked the source in: /mnt/src/Synopsis-0.5
+(Config.py will be in /mnt/src/Synopsis-0.5/Synopsis/Config.py)
+then set your PYTHONPATH to include: /mnt/src/Synopsis-0.5
+Eg: export PYTHONPATH=/mnt/src/Synopsis-0.5:$PYTHONPATH
 
 Parsers: IDL, C++, Python
 Formatters:
@@ -110,6 +117,8 @@ Sourceforge home.
 
 
 ** More info
+
+See the docs/ directory for more documentation, including a docbook manual.
 
 Synopsis is hosted at Sourceforge:
 
