@@ -46,6 +46,9 @@ install: build
 	# Add here commands to install the package into debian/synopsis.
 	$(MAKE) install prefix=$(CURDIR)/debian/synopsis/usr
 	cp $(CURDIR)/debian/*.1 $(CURDIR)/debian/synopsis/usr/share/man/man1/
+	chmod -x $(CURDIR)/debian/synopsis/usr/share/synopsis/*.jpg
+	chmod -x $(CURDIR)/debian/synopsis/usr/share/synopsis/*.png
+
 
 
 # Build architecture-independent files here.
