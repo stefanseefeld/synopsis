@@ -25,7 +25,8 @@ class build_doc(build.build):
    user_options = [('manual', 'm', "build the manual only"),
                    ('tutorial', 't', "build the tutorial only"),
                    ('html', 'h', "build for html output only"),
-                   ('printable', 'p', "build for pdf output only")]
+                   ('printable', 'p', "build for pdf output only"),
+                   ('sxr=', 'x', "build the sxr database for synopsis for the given URL (requires -m)")]
    boolean_options = ['manual', 'tutorial', 'html', 'print']
 
    def initialize_options (self):
@@ -35,6 +36,7 @@ class build_doc(build.build):
       self.tutorial = False
       self.html = False
       self.printable = False
+      self.sxr = ''
 
    def finalize_options (self):
 
@@ -105,6 +107,8 @@ class build_doc(build.build):
          spawn([make, '-C', tempdir, 'html'])
       if self.printable:
          spawn([make, '-C', tempdir, 'pdf'])
+      if self.sxr:
+         spawn([make, '-C', tempdir, 'sxr', 'sxr=%s'%self.sxr])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
