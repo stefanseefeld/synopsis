@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.18 2002/12/09 04:00:59 chalky Exp $
+// $Id: ast.hh,v 1.19 2002/12/12 17:25:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -269,7 +269,60 @@ private:
     mutable Types::Declared* m_declared;
 };
 
+//. Information about an #include or #include_next directive.
+//. This object is a thin wrapper around the target SourceFile, with some
+//. attributes to indicate whether the directive included a macro expansion,
+//. and whether it was an #include_next or not.
+//.
+//. A macro expansion is flagged because often you don't want to include those
+//. in an include graph. For example, some headers in the Boost PP library
+//. will include other files multiple times, where the file included is given
+//. by a macro. It is rare that you actually want to show this macro-dependent
+//. include in the documentation or in a graph.
+class Include : public cleanup
+{
+public:
+    //. A vector of Includes
+    typedef std::vector<Include*> vector;
 
+    //. Constructor
+    Include(SourceFile* target, bool is_macro, bool is_next);
+
+    //. Returns the target of this include
+    SourceFile* target() const
+    {
+	return m_target;
+    }
+
+    //. Returns whether the include filename was a macro expansion
+    bool is_macro() const
+    {
+	return m_is_macro;
+    }
+
+    //. Returns whether the include was an #include_next directive
+    bool is_next() const
+    {
+	return m_is_next;
+    }
+
+private:
+    //. The target file of the include or include_next
+    SourceFile* m_target;
+
+    //. Whether the include filename was a macro expansion
+    bool m_is_macro;
+
+    //. Whether the include was an #include_next directive
+    bool m_is_next;
+};
+
+//. Information about a source file used to generate the AST.
+//.
+//. Generally an AST will include SourceFile objects for *all* files,
+//. including headers, that were used. The difference is that the main files
+//. (those named to the parser) are flagged as "main", and others will not
+//. have lists of declarations.
 class SourceFile : public cleanup
 {
 public:
@@ -305,13 +358,13 @@ public:
     }
 
     //. Returns a vector of includes in this file
-    SourceFile::vector& includes()
+    Include::vector& includes()
     {
         return m_includes;
     }
 
     //. Returns a const vector of includes in this file
-    const SourceFile::vector& includes() const
+    const Include::vector& includes() const
     {
         return m_includes;
     }
@@ -327,7 +380,7 @@ private:
     Declaration::vector m_declarations;
 
     //. The vector of includes
-    SourceFile::vector m_includes;
+    Include::vector m_includes;
 };
 
 

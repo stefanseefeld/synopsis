@@ -2,7 +2,7 @@
 // Definition of the Synopsis class for mapping the C++ objects to Python
 // objects
 
-// $Id: synopsis.hh,v 1.30 2002/12/09 04:01:02 chalky Exp $
+// $Id: synopsis.hh,v 1.31 2002/12/12 17:25:35 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -103,6 +103,7 @@ public:
     // types from the Synopsis.AST module
     //
     PyObject* SourceFile(AST::SourceFile*);
+    PyObject* Include(AST::Include*);
     PyObject* Declaration(AST::Declaration*);
     PyObject* Forward(AST::Forward*);
     PyObject* Scope(AST::Scope*);

@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.33 2002/12/10 07:27:47 chalky Exp $
+# $Id: omni.py,v 1.34 2002/12/12 17:25:35 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.34  2002/12/12 17:25:35  chalky
+# Implemented Include support for C++ parser. A few other minor fixes.
+#
 # Revision 1.33  2002/12/10 07:27:47  chalky
 # Fixed for new AST structure (SourceFiles)
 #
@@ -540,6 +543,7 @@ def parse(file, extra_files, args, config_obj):
         sys.exit(1)
 
     sourcefile = AST.SourceFile(strip(file), "IDL")
+    sourcefile.set_is_main(1)
     ast = AST.AST()
     ast.files()[sourcefile.filename()] = sourcefile
     type_trans = TypeTranslator(ast.types())

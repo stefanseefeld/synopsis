@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.23 2002/12/09 04:00:57 chalky Exp $
+# $Id: AST.py,v 1.24 2002/12/12 17:25:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.24  2002/12/12 17:25:32  chalky
+# Implemented Include support for C++ parser. A few other minor fixes.
+#
 # Revision 1.23  2002/12/09 04:00:57  chalky
 # Added multiple file support to parsers, changed AST datastructure to handle
 # new information, added a demo to demo/C++. AST Declarations now have a
@@ -97,7 +100,7 @@ import Util, Type
 
 # The version of the file format - this should be increased everytime
 # incompatible changes are made to the AST or Type classes
-FILE_VERSION = 2
+FILE_VERSION = 3
 
 # Accessibility constants
 DEFAULT = 0
@@ -146,8 +149,10 @@ class AST:
     declarations and a types dictionary.
     """
 
-    def __init__(self, files={}, declarations=[], typedict=None):
+    def __init__(self, files=None, declarations=None, typedict=None):
 	"""Constructor"""
+	if files is None: files = {}
+	if declarations is None: declarations = []
 	if type(files) is not types.DictType: raise TypeError, "files parameter must be a dict of SourceFile objects"
 	if type(declarations) != type([]): raise TypeError, "declarations parameter must be a list of declarations"
 	if typedict is None: typedict = Type.Dictionary()
@@ -186,6 +191,30 @@ class AST:
 	    myfile.declarations().extend(file.declarations())
 	    myfile.includes().extend(file.includes())
 
+class Include:
+    """Information about an include directive in a SourceFile.
+    If the include directive required a macro expansion to get the filename,
+    the is_macro will return true. If the include directive was actually an
+    include_next, then is_next will return true.
+    """
+    def __init__(self, target, is_macro, is_next):
+	if not isinstance(target, SourceFile): raise TypeError, "target parameter must be a SourceFile"
+	self.__target = target
+	self.__is_macro = is_macro
+	self.__is_next = is_next
+
+    def target(self):
+	return self.__target
+
+    def set_target(self, target):
+	self.__target = target
+
+    def is_macro(self):
+	return self.__is_macro
+
+    def is_next(self):
+	return self.__is_next
+
 class SourceFile:
     """The information about a file that the AST was generated from.
     Contains filename, all declarations from this file (even nested ones) and
@@ -198,7 +227,6 @@ class SourceFile:
 	self.__filename = filename
 	self.__language = language
 	self.__includes = []
-	self.__macros = []
 	self.__declarations = []
 	self.__is_main = 0
 

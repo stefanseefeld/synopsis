@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: builder.cc source file
 // Implementation of the Builder class
 
-// $Id: builder.cc,v 1.41 2002/12/09 08:27:34 chalky Exp $
+// $Id: builder.cc,v 1.42 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,9 @@
 // 02111-1307, USA.
 
 // $Log: builder.cc,v $
+// Revision 1.42  2002/12/12 17:25:34  chalky
+// Implemented Include support for C++ parser. A few other minor fixes.
+//
 // Revision 1.41  2002/12/09 08:27:34  chalky
 // initialise m_file
 //
@@ -232,12 +235,17 @@ void Builder::add(AST::Declaration* decl, bool is_template)
     }
     // Set access
     decl->set_access(scopeinfo->access);
-    // Add declaration
-    decls->push_back(decl);
     // Add to name dictionary
     scopeinfo->dict->insert(decl);
-    // Add to SourceFile
-    decl->file()->declarations().push_back(decl);
+
+    const std::string& scope_type = scopeinfo->scope_decl->type();
+    if (scope_type != "local" && scope_type != "function")
+    {
+	// Add declaration
+	decls->push_back(decl);
+	// Add to SourceFile
+	decl->file()->declarations().push_back(decl);
+    }
 }
 
 void Builder::add(Types::Named* type)

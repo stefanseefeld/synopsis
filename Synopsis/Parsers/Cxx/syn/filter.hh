@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.hh header file
 // Defines the FileFilter class for filtering the AST based on filename
 
-// $Id: filter.hh,v 1.2 2002/12/09 12:14:10 chalky Exp $
+// $Id: filter.hh,v 1.3 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -109,6 +109,13 @@ public:
     //. @param main a pointer to the main filename will be stored here
     //. @param extra a pointer to the extra filenames will be stored here
     void get_all_filenames(const std::string*& main, const std::vector<std::string>*& extra);
+
+    //. Returns a pointer to the Filter instance. Note that Filter is *not* a
+    //. regular singleton: instance() will return NULL if the Filter doesn't
+    //. exist, and the constructor/destructor control this. The reason for
+    //. this method is so the C function synopsis_include_hook can use the
+    //. Filter object without having a reference to it.
+    static FileFilter* instance();
 
 private:
     struct Private;

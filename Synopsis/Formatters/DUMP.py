@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.13 2002/12/09 04:00:58 chalky Exp $
+# $Id: DUMP.py,v 1.14 2002/12/12 17:25:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.14  2002/12/12 17:25:32  chalky
+# Implemented Include support for C++ parser. A few other minor fixes.
+#
 # Revision 1.13  2002/12/09 04:00:58  chalky
 # Added multiple file support to parsers, changed AST datastructure to handle
 # new information, added a demo to demo/C++. AST Declarations now have a
@@ -103,6 +106,8 @@ class Dumper:
 	    if t == types.InstanceType: t = obj.__class__.__name__+" instance"
 	    if hasattr(obj, 'name'):
 		self.write("<already visited %s ( %d ) '%s'>"%(t,i,string.join(obj.name(),"::")))
+	    elif hasattr(obj, 'filename'):
+		self.write("<already visited %s ( %d ) '%s'>"%(t,i,obj.filename()))
 	    else:
 		self.write("<already visited %s ( %d )>"%(t,i))
 	    return
@@ -207,6 +212,13 @@ class Dumper:
     def visitInstance(self, obj):
 	global show_forwards
 	if isinstance(obj, AST.Forward) and not show_forwards: return
+	if isinstance(obj, AST.SourceFile) and not show_sourcefiles:
+	    self.write("SourceFile: '%s'"%obj.filename())
+	    return
+	if isinstance(obj, AST.Include):
+	    self.write("Include: (macro:%d, next:%d) '%s'"%(obj.is_macro(),
+		obj.is_next(), obj.target().filename()))
+	    return
 	self.visited[id(obj)] = None
         self.write("[1m%s.%s[m = "%(
 	    obj.__class__.__module__,
@@ -255,12 +267,13 @@ def __parseArgs(args):
 	show_types = 1
 
 def format(args, ast, config_obj):
-    global output
+    global output, show_sourcefiles
     __parseArgs(args)
     #formatter = ASCIIFormatter(output)
     #for type in dictionary:
     #    type.output(formatter)
     dumper = Dumper()
+    show_sourcefiles = 0
     if show_decls:
 	print "*** Declarations:"
 	dumper.visit(ast.declarations())
@@ -269,6 +282,7 @@ def format(args, ast, config_obj):
 	print "*** Types:"
 	dumper.visit(ast.types())
     if show_files:
+	show_sourcefiles = 1
 	print "\n\n\n"
 	print "*** Files:"
 	dumper.visit(ast.files())

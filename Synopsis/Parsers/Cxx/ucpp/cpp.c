@@ -80,6 +80,7 @@ static int current_incdir = -1;
 
 #ifdef SYNOPSIS
 void synopsis_macro_hook(const char* name, int line, int start, int end, int diff);
+void synopsis_include_hook(const char* source_file, const char* target_file, int is_macro, int is_next);
 #endif
 
 #ifndef NO_UCPP_ERROR_FUNCTIONS
@@ -310,7 +311,7 @@ void set_init_filename(char *x, int real_file)
 	if (current_filename) freemem(current_filename);
 	current_filename = sdup(x);
 	original_filename = current_filename;
-	current_long_filename = 0;
+	current_long_filename = current_filename;
 	current_incdir = -1;
 	if (real_file) {
 		protect_detect.macro = 0;
@@ -842,6 +843,7 @@ found_file_cache:
 		if (get_macro(ff->protect)) {
 			/* file is protected, do not include it */
 			find_file_error = FF_PROTECT;
+			current_long_filename = ff->long_name;
 			goto zero_out;
 		}
 		/* file is protected but the guardian macro is
@@ -942,6 +944,7 @@ static FILE *find_file_next(char *name)
 				if (get_macro(ff->protect)) {
 					find_file_error = FF_PROTECT;
 					freemem(s);
+					current_long_filename = ff->long_name;
 					return 0;
 				}
 				/* file is protected but the guardian macro is
@@ -1225,6 +1228,7 @@ static int handle_include(struct lexer_state *ls, unsigned long flags, int nex)
 	struct token_fifo tf, tf2, *save_tf;
 	size_t nl;
 	int tgd;
+	int is_macro = 0;
 	struct lexer_state alt_ls;
 
 #define left_angle(t)	((t) == LT || (t) == LEQ || (t) == LSH \
@@ -1327,6 +1331,7 @@ include_macro:
 		}
 	}
 include_macro2:
+	is_macro = 1;
 	tf2.art = tf2.nt = 0;
 	save_tf = ls->output_fifo;
 	ls->output_fifo = &tf2;
@@ -1429,6 +1434,14 @@ do_include_next:
 #endif
 	f = nex ? find_file_next(fname) : find_file(fname, string_fname);
 	if (!f) {
+#ifdef SYNOPSIS
+		if (find_file_error == FF_PROTECT) {
+		    // Still record protected includes (those not included
+		    // because they have a #ifndef/define/endif protection and
+		    // have already been included)
+		    synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, is_macro, nex);
+		}
+#endif
 		current_filename = 0;
 		pop_file_context(ls);
 		if (find_file_error == FF_ERROR) {
@@ -1447,6 +1460,9 @@ do_include_next:
 #endif
 	current_filename = fname;
 	enter_file(ls, flags);
+#ifdef SYNOPSIS
+	synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, is_macro, nex);
+#endif
 	return 0;
 
 #undef left_angle

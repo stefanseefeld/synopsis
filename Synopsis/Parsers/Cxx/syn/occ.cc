@@ -2,7 +2,7 @@
 // Main entry point for the C++ parser module, and also debugging main
 // function.
 
-// $Id: occ.cc,v 1.80 2002/12/09 04:01:01 chalky Exp $
+// $Id: occ.cc,v 1.81 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -24,6 +24,9 @@
 // 02111-1307, USA.
 
 // $Log: occ.cc,v $
+// Revision 1.81  2002/12/12 17:25:34  chalky
+// Implemented Include support for C++ parser. A few other minor fixes.
+//
 // Revision 1.80  2002/12/09 04:01:01  chalky
 // Added multiple file support to parsers, changed AST datastructure to handle
 // new information, added a demo to demo/C++. AST Declarations now have a
@@ -559,23 +562,13 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     if (source.substr(0, basename.size()) == basename)
         source.erase(0, basename.size());
 #endif
-    std::string source(src);
 
-    // Setup the filter
-    FileFilter filter;
-    filter.set_only_main(syn_main_only);
-    filter.set_main_filename(src);
-    filter.set_basename(syn_basename);
-    if (syn_extra_filenames) filter.add_extra_filenames(*syn_extra_filenames);
-    if (syn_file_syntax) filter.set_syntax_filename(syn_file_syntax);
-    if (syn_file_xref) filter.set_xref_filename(syn_file_xref);
-    if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
-    if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
+    FileFilter* filter = FileFilter::instance();
 
-    AST::SourceFile* sourcefile = filter.get_sourcefile(src);
+    AST::SourceFile* sourcefile = filter->get_sourcefile(src);
 
     Builder builder(sourcefile);
-    SWalker swalker(&filter, &parse, &builder, &prog);
+    SWalker swalker(filter, &parse, &builder, &prog);
     swalker.set_extract_tails(syn_extract_tails);
     Ptree *def;
     if (syn_fake_std)
@@ -595,7 +588,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     PyEval_RestoreThread(pythread_save);
 #ifdef SYN_TEST_REFCOUNT
     // Test Synopsis
-    Synopsis synopsis(source, declarations, types);
+    Synopsis synopsis(src, declarations, types);
     synopsis.translate(builder.scope(), ast);
     synopsis.set_builtin_decls(builder.builtin_decls());
 #else
@@ -639,8 +632,8 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     if (of_syntax || of_xref)
         swalker.set_store_links(true, of_syntax, of_xref);
 #endif
-    if (filter.should_link(sourcefile) || filter.should_xref(sourcefile))
-        swalker.set_store_links(new LinkStore(&filter, &swalker));
+    if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
+        swalker.set_store_links(new LinkStore(filter, &swalker));
     try
     {
         while(parse.rProgram(def))
@@ -654,7 +647,7 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     PyEval_RestoreThread(pythread_save);
 
     // Setup synopsis c++ to py convertor
-    Synopsis synopsis(&filter, declarations, types);
+    Synopsis synopsis(filter, declarations, types);
     synopsis.set_builtin_decls(builder.builtin_decls());
     // Convert!
     synopsis.translate(builder.scope(), ast);
@@ -673,6 +666,30 @@ void RunOpencxx(const char *src, const char *file, const std::vector<const char 
     sigaction(SIGABRT, &olda, 0);
     sigaction(SIGBUS, &olda, 0);
     sigaction(SIGSEGV, &olda, 0);
+}
+
+void do_parse(const char *src, 
+	const std::vector<const char *>& cppargs, 
+	const std::vector<const char *>& occargs, 
+	PyObject *ast, PyObject *types, PyObject *declarations, PyObject* files)
+{
+    // Setup the filter
+    FileFilter filter;
+    filter.set_only_main(syn_main_only);
+    filter.set_main_filename(src);
+    filter.set_basename(syn_basename);
+    if (syn_extra_filenames) filter.add_extra_filenames(*syn_extra_filenames);
+    if (syn_file_syntax) filter.set_syntax_filename(syn_file_syntax);
+    if (syn_file_xref) filter.set_xref_filename(syn_file_xref);
+    if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
+    if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
+
+    // Run the preprocessor
+    char *cppfile = RunPreprocessor(src, cppargs);
+
+    // Run OCC to generate the AST
+    RunOpencxx(src, cppfile, occargs, ast, types, declarations, files);
+    unlink(cppfile);
 }
 
 PyObject *occParse(PyObject *self, PyObject *args)
@@ -709,9 +726,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
     assertObject(types);
 #undef assertObject
 
-    char *cppfile = RunPreprocessor(src, cppargs);
-    RunOpencxx(src, cppfile, occargs, ast, types, declarations, files);
-    unlink(cppfile);
+    do_parse(src, cppargs, occargs, ast, types, declarations, files);
 
     if (syn_extra_filenames)
     {
@@ -754,7 +769,7 @@ PyObject *occParse(PyObject *self, PyObject *args)
     FakeGC::delete_all();
 
     // Clear the link map
-    LinkMap::instance().clear();
+    LinkMap::instance()->clear();
 
     return ast;
 }
@@ -823,9 +838,9 @@ int main(int argc, char **argv)
     PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
     PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
     PyObject* decls = PyList_New(0);
-    char *cppfile = RunPreprocessor(src, cppargs);
-    RunOpencxx(src, cppfile, occargs, ast, types, decls, NULL);
-    unlink(cppfile);
+    
+    do_parse(src, cppargs, occargs, ast, types, decls, NULL);
+
 #ifdef SYN_TEST_REFCOUNT
 
     Py_DECREF(pylist);

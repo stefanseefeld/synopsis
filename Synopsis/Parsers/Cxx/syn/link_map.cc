@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: LinkMap.cc source file
 // Implementation of the LinkMap class
 
-// $Id: link_map.cc,v 1.4 2002/11/17 12:11:43 chalky Exp $
+// $Id: link_map.cc,v 1.5 2002/12/12 17:25:34 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000-2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 
 // $Log: link_map.cc,v $
+// Revision 1.5  2002/12/12 17:25:34  chalky
+// Implemented Include support for C++ parser. A few other minor fixes.
+//
 // Revision 1.4  2002/11/17 12:11:43  chalky
 // Reformatted all files with astyle --style=ansi, renamed fakegc.hh
 //
@@ -40,6 +43,8 @@
 
 
 #include "link_map.hh"
+#include "filter.hh"
+#include "ast.hh"
 
 #include <map>
 #include <set>
@@ -77,12 +82,12 @@ LinkMap::LinkMap()
     m = new Private;
 }
 
-LinkMap& LinkMap::instance()
+LinkMap* LinkMap::instance()
 {
     static LinkMap* inst = 0;
     if (!inst)
         inst = new LinkMap;
-    return *inst;
+    return inst;
 }
 
 void LinkMap::add(const char* name, int linenum, int start, int end, int diff)
@@ -125,10 +130,29 @@ void LinkMap::clear()
 
 extern "C"
 {
-    //. This function is a callback from the ucpp code
+    //. This function is a callback from the ucpp code to store macro
+    //. expansions
     void synopsis_macro_hook(const char* name, int line, int start, int end, int diff)
     {
-        LinkMap::instance().add(name, line, start, end, diff);
+        LinkMap::instance()->add(name, line, start, end, diff);
+    }
+
+    //. This function is a callback from the ucpp code to store includes
+    void synopsis_include_hook(const char* source_file, const char* target_file, int is_macro, int is_next)
+    {
+	// There is not enough code here to make another class..
+	FileFilter* filter = FileFilter::instance();
+	if (!filter)
+	    return;
+
+	// Add another Include to the source's SourceFile
+	// We don't deal with duplicates here. The Linker's Unduplicator will
+	// take care of that.
+	//std::cout << "Include: " << source_file << " -> " << target_file << std::endl;
+	AST::SourceFile* file = filter->get_sourcefile(source_file);
+	AST::SourceFile* target = filter->get_sourcefile(target_file);
+	AST::Include* include = new AST::Include(target, is_macro, is_next);
+	file->includes().push_back(include);
     }
 };
 // vim: set ts=8 sts=4 sw=4 et:
