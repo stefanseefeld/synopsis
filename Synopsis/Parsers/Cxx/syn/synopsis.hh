@@ -57,7 +57,7 @@ public:
     // types from the Synopsis.Type module
     //
     PyObject *Base(Type::Base*);
-    PyObject *Unknown(Type::Unknown*);
+    PyObject *Unknown(Type::Named*);
     PyObject *Declared(Type::Declared*);
     PyObject *Template(Type::Template*);
     PyObject *Modifier(Type::Modifier*);
