@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.4 2001/02/01 20:08:35 chalky Exp $
+# $Id: core.py,v 1.5 2001/02/05 05:26:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.5  2001/02/05 05:26:24  chalky
+# Graphs are separated. Misc changes
+#
 # Revision 1.4  2001/02/01 20:08:35  chalky
 # Added types to config
 #
@@ -72,7 +75,7 @@ import sys, getopt, os, os.path, string, types, errno, stat, re
 
 # Synopsis modules
 from Synopsis.Core import AST, Type, Util
-from Synopsis.Formatter import TOC
+from Synopsis.Formatter import TOC, ClassTree
 
 verbose=0
 
@@ -231,65 +234,6 @@ class FileTree(AST.Visitor):
 	
 
 
-class ClassTree(AST.Visitor):
-    """Maintains a tree of classes directed by inheritance. This object always
-    exists, since it is used for other things such as printing class bases."""
-    # TODO - only create if needed (if Info tells us to)
-    def __init__(self):
-	"Installs self in config object as 'classTree'"
-	config.classTree = self
-	self.__superclasses = {}
-	self.__subclasses = {}
-	self.__classes = []
-    
-    def add_inheritance(self, supername, subname):
-	supername, subname = tuple(supername), tuple(subname)
-	if not self.__subclasses.has_key(supername):
-	    subs = self.__subclasses[supername] = []
-	else:
-	    subs = self.__subclasses[supername]
-	if subname not in subs:
-	    subs.append(subname)
-	if not self.__superclasses.has_key(subname):
-	    sups = self.__superclasses[subname] = []
-	else:
-	    sups = self.__superclasses[subname]
-	if supername not in sups:
-	    sups.append(supername)
-    
-    def subclasses(self, classname):
-	classname = tuple(classname)
-	if self.__subclasses.has_key(classname):
-	    return sort(self.__subclasses[classname])
-	return []
-    def superclasses(self, classname):
-	classname = tuple(classname)
-	if self.__superclasses.has_key(classname):
-	    return sort(self.__superclasses[classname])
-	return []
-    
-    def classes(self): return sort(self.__classes)
-    def add_class(self, name):
-	name = tuple(name)
-	if name not in self.__classes:
-	    self.__classes.append(tuple(name))
-    
-    def visitAST(self, ast):
-	for decl in ast.declarations():
-	    decl.accept(self)
-    def visitScope(self, scope):
-	for decl in scope.declarations():
-	    decl.accept(self)
-    def visitClass(self, clas):
-	name = clas.name()
-	self.add_class(name)
-	for inheritance in clas.parents():
-	    parent = inheritance.parent()
-	    if hasattr(parent, 'name'):	
-		self.add_inheritance(parent.name(), name)
-	for decl in clas.declarations():
-	    decl.accept(self)
-
 
 class PageManager:
     """This class manages and coordinates the various pages. The user adds
@@ -378,6 +322,7 @@ def defaultPageset(manager):
     reasonable set of pages. If you provide your own, you need to call
     manager.addPage() for all the pages you want."""
     manager.addPage(stdPage('ScopePages'))
+    #manager.addPage(stdPage('ModuleListingJS'))
     manager.addPage(stdPage('ModuleListing'))
     manager.addPage(stdPage('ModuleIndexer'))
     manager.addPage(stdPage('FileTree'))
@@ -447,6 +392,8 @@ def __parseArgs(args):
 	elif o == "-h":
 	    usage()
 	    sys.exit(1)
+	elif o == "-v":
+	    verbose=1
 
     # Fill in any unspecified defaults
     config.fillDefaults()
@@ -463,7 +410,7 @@ def format(types, declarations, args):
     CommentDictionary()
 
     # Create the Class Tree (TODO: only if needed...)
-    ClassTree()
+    config.classTree = ClassTree.ClassTree()
 
     # Create the File Tree (TODO: only if needed...)
     FileTree()
