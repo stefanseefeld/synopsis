@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.10 2002/07/04 05:16:19 chalky Exp $
+#  $Id: Config.py,v 1.11 2002/10/27 12:03:48 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -364,7 +364,11 @@ class Base:
 		]
 	    class InheritanceGraph:
 		"""Config for InheritanceGraph module.
-		@attr min_size Minimum grouping size of graphs. The graph is
+		@attr min_size Minimum size of graphs to be included in
+		output. The default setting is 1, which means all classes will
+		be included. A setting of three means that only hierarchies
+		consisting of three or more classes will be included.
+		@attr min_group_size Minimum grouping size of graphs. The graph is
 		split into subgraphs because graphviz can makes graphs tens of
 		thousands of pixels wide otherwise. The time to process the
 		graphs is proportional to the number of times graphviz is run,
@@ -373,7 +377,8 @@ class Base:
 		is 5.
 		@see Synopsis.Formatter.HTML.InheritanceGraph.InheritanceGraph
 		"""
-		min_size = 5
+		min_size = 1
+		min_group_size = 5
 
 	    class ModuleListing:
 		"""Config for ModuleListing module.
