@@ -1,4 +1,4 @@
-// $Id: linkstore.cc,v 1.3 2001/06/13 14:04:37 chalky Exp $
+// $Id: linkstore.cc,v 1.4 2001/07/23 11:51:22 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: linkstore.cc,v $
+// Revision 1.4  2001/07/23 11:51:22  chalky
+// Better support for name lookup wrt namespaces.
+//
 // Revision 1.3  2001/06/13 14:04:37  chalky
 // s/std::cout/LOG/ or so
 //
@@ -95,12 +98,15 @@ void LinkStore::link(int line, int col, int len, Type type, const AST::Name& nam
 	for (size_t i = 0; i < scopes.size(); i++) {
 	    if (AST::Namespace* ns = dynamic_cast<AST::Namespace*>(scopes[i])) {
 		if (ns->type() == "function") {
+		    // Restart description at function scope
 		    short_name.clear();
 		    continue;
 		}
 	    }
+	    // Add the name to the short name
 	    short_name.push_back(scopes[i]->name().back());
 	}
+	// Add the final type name to the short name
 	short_name.push_back(vtype->name().back());
     } else {
 	STrace trace("LinkStore::link");

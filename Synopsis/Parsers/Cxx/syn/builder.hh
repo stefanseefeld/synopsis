@@ -48,6 +48,9 @@ public:
     //. Returns the current scope
     AST::Scope* scope() { return m_scope; }
 
+    //. Returns the global scope
+    AST::Scope* global() { return m_global; }
+
     //. Add the given Declaration to the current scope
     void add(AST::Declaration*);
 
@@ -137,7 +140,11 @@ public:
 
     //. Looks up the qualified name in the current scope. This method always
     //. succeeds -- if the name is not found it forwards declares it.
-    Type::Named* lookupType(const std::vector<std::string> &names, bool func_okay=false);
+    //. @param names The list of identifiers given
+    //. @param fuc_okay If true, multiple declarations will not cause an error (needs fixing)
+    //. @param scope If set determines the scope to start lookup from, else the
+    //. current scope is used
+    Type::Named* lookupType(const std::vector<std::string> &names, bool func_okay=false, AST::Scope* scope=NULL);
 
     //. Looks up the name in the scope of the given scope. This method may
     //. return a NULL ptr if the lookup failed.
@@ -200,6 +207,8 @@ private:
     struct Scope {
 	//. Constructor
 	Scope(AST::Scope* s);
+	//. Constructor that creates a Dummy 'using' scope referencing 's'
+	Scope(Scope* s);
 	//. Destructor
 	~Scope();
 	//. Dictionary for this scope
@@ -210,6 +219,13 @@ private:
 	typedef std::vector<Scope*> Search;
 	//. The list of scopes to search for this scope, including this
 	Search search;
+	//. The list of scopes in the search because they are 'using'd
+	Search using_scopes;
+	//. The list of scopes 'using' this one
+	Search used_by;
+	//. True only if this is a dummy Scope representing the use of
+	//. another. If this is the case, then only 'dict' is set
+	bool is_using;
 	//. Current accessability
 	AST::Access access;
 	//. Counts of named sub-namespaces
@@ -226,6 +242,12 @@ private:
     //. Searches for name in the list of Scopes. This method may return NULL
     //. if the name is not found.
     Type::Named* lookup(const std::string &name, const Scope::Search&, bool func_okay = false) throw ();
+
+    //. Searches for name in the given qualified scope. This method may return
+    //. NULL if the name is not found. Lookup proceeds according to the spec:
+    //. if 'scope' is a Class scope, then scope and all base classes are
+    //. searched, else if it's a 'namespace' scope then all usings are checked.
+    Type::Named* lookupQual(const std::string& name, const Scope*, bool func_okay = false);
 
     //. Private data which uses map
     struct Private;
@@ -248,6 +270,11 @@ private:
     //. arguments using heuristics. Returns the function and stores the cost
     AST::Function* bestFunction(const std::vector<AST::Function*>&, const std::vector<Type::Type*>&, int& cost);
 
+    //. Formats the search of the given Scope for logging
+    std::string dumpSearch(Builder::Scope* scope);
+
+    //. Recursively adds 'target' as using in 'scope'
+    void addUsingNamespace(Scope* target, Scope* scope);
 }; // class Builder
 
 #endif
