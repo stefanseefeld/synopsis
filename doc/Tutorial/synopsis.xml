@@ -1,73 +1,762 @@
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.2//EN" [
-
-<!-- these are chapter-entity declarations -->
-
-<!ENTITY preface    SYSTEM "preface.xml">
-<!ENTITY chapter1   SYSTEM "intro.xml">
-<!ENTITY chapter4   SYSTEM "configuration.xml">
-<!ENTITY config     SYSTEM "config.xml">
-<!--
-<!ENTITY chapter2   SYSTEM "start.xml">
-<!ENTITY chapter3   SYSTEM "control-graph.xml">
-<!ENTITY chapter5   SYSTEM "cda.xml">
-<!ENTITY chapter6   SYSTEM "kits.xml">
-<!ENTITY appendix1  SYSTEM "hello-list.xml">
-<!ENTITY appendix2  SYSTEM "memory.xml">
--->
-]>
-
-<!-- This file is copyright (C) 2002 Stephen Davies       -->
-
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.0/docbookx.dtd">
 <book>
-  <bookinfo>
-  <title><application>Synopsis</application> Manual v0.1</title>
-    <copyright>
-      <year>2002</year>
-      <holder>Stephen Davies</holder>
-    </copyright>
-    <!-- TODO: figure out what to put here. GNU FDL?
-    <legalnotice>
-      <para>Released under the terms of the GNU General Public License, version 2.0 or greater.
-      This document has been prepared for printing and the web using XML &amp; DocBook. It is available
-      online at <ulink url="http://www.fresco.org">http://www.fresco.org</ulink>
-      in HTML and PDF. Comments, additions, and discussion are welcome, and best directed towards the 
-      mailing list.</para>
-    </legalnotice>-->
-    <authorgroup>
-      <author><firstname>Stephen</firstname> <surname>Davies</surname></author>
-      <!-- additional authors, please insert your names here -->
-    </authorgroup>
-    <releaseinfo>This manual describes version 0.5 of Synopsis</releaseinfo>
-    <legalnotice>
-      <title>Feedback</title>
-      <para>
-        To report a bug or make a suggestion regarding Synopsis or this
-        manual, please email the Synopsis mailing list. Details are available
-        at the <ulink url="http://synopsis.sf.net/">website</ulink>.
-      </para>
-    </legalnotice>
-  </bookinfo>
+  <title>Synopsis User Manual</title>
 
-&preface;
-&chapter1; <!-- intro -->
-<chapter><title>Formatting Sourcecode</title>
-  <section><title>Where to put comments</title><para> </para></section>
-  <section><title>How to format comments</title><para> </para></section>
-  <section><title>Extra things to put in comments</title><para> </para></section>
-</chapter>
-<chapter><title>Using the GUI</title>
-  <para>The GUI.. is not yet finished :(</para>
-</chapter>
-&chapter4;
-<chapter><title>Manipulating the AST</title><para> </para></chapter>
-<chapter><title>Adding Custom Modules</title><para> </para></chapter>
-<appendix><title>File Formats</title><para> </para></appendix>
-<!--
-&chapter2;
-&chapter3;
-&chapter4;
-&chapter6;
-&appendix1;
-&appendix2; -->
+  <chapter>
+    <title>Introduction</title>
+
+    <section>
+      <title>What is Synopsis?</title>
+
+      <para>Synopsis is a tool for creating documentation from source code,
+      using both comments and the code itself - the code is actually parsed
+      rather than just searching for comments and particular expressions.
+      Currently Synopsis can parse C++, Python and CORBA IDL, and generate
+      documentation in a range of formats including HTML, DocBook, PDF and Dia
+      graphs.</para>
+
+      <para>There are three stages in the documentation process: Parsing,
+      Linking and Formatting. The data passed between each stage is an AST
+      (Abstract Syntax Tree), a rich data structure which reflects the
+      structure of the program. All three stages can be executed at once, or
+      the AST can be stored to disk for later use.</para>
+
+      <para>Parsing is performed by language-specific parser modules. The most
+      advanced is the C++ parser which does correct name resolution and
+      generates extra information used to syntax highlight the source code and
+      cross-reference symbols.</para>
+
+      <para>The Linking stage is where Synopsis derives most of its power,
+      performing complex manipulations of the AST. At a minimum it handles the
+      merging of multiple ASTs, eg: from different source files. It can
+      manipulate the AST based on comments in the source, or perform things
+      like renaming declarations to, for example, link directly to an IDL
+      interface instead of a CORBA stub/skeleton.</para>
+
+      <para>The Formatting stage generates the documentation from the AST
+      output by the Linking stage. There are a number of modules, but the most
+      common is the HTML module. The HTML formatter is very flexible, itself
+      consisting of multiple &#34;Page&#34; modules each of which generates a
+      part of the documentation (the index, the list of modules, the class
+      documentation, the inheritance tree, etc.)</para>
+
+      <para>Synopsis was written by Stephen Davies (aka Chalky) and Stefan
+      Seefeld.</para>
+
+      <para>This manual was written by Stephen Davies.</para>
+    </section>
+
+    <section>
+      <title>How to use this manual</title>
+
+      <para>Synopsis is very configurable, and this manual attempts to
+      document all the features that can be enabled and how to configure them
+      properly.</para>
+
+      <para>The tutorial chapter shows some quick examples of how to get
+      Synopsis working, and you can always check out the demos in the source
+      distribution to see how some features work. Further chapters list all of
+      the Parser, Linker and Formatter modules and all of the features/options
+      available for each. Each feature has a detailed description, but for a
+      quick reference you can also see the Config section of the Reference
+      Manual generated from the Synopsis source code. You will also need the
+      Reference Manual if you intend to write any extensions to Synopsis.</para>
+    </section>
+
+    <section>
+      <title>How to use Synopsis</title>
+
+      <para>Synopsis is a command-line tool, however a GUI may be included in
+      future releases. Due to the highly configurable nature of Synopsis, it
+      is not feasible to make a command line switch for each option. In order
+      to aide testing and debugging of your configuration however, some of the
+      more common options do have command line switches.</para>
+
+      <para>So, the main way to configure Synopsis is with a config file,
+      which is actually a Python script (usually config.py). This script is
+      executed in a sandbox by Synopsis, and then its namespace is inspected
+      to extract the configuration options. If you already know Python then
+      you will have no problems reading and writing the script, and if you
+      don&#39;t, well Python is really easy to learn - the Python tutorial
+      included with Python will get you up to speed in half an hour or less!
+      You don&#39;t need to know any of the builtin functions or libraries to
+      write a config script.</para>
+
+      <para>Synopsis uses three stages to generate documentation: parsing each
+      source file to an AST (Abstract Syntax Tree), linking ASTs together and
+      performing manipulations, and formatting the final AST. There are two
+      ways to control this process:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Use a Makefile, and run Synopsis multiple times. This allows
+          you to integrate Synopsis with your existing build system. A simple
+          Makefile has three rules: one to parse each source file to a .syn
+          file, another to link all the .syn files into a single .syn file,
+          and a third to format the final .syn file. All the configuration is
+          stored in the config.py file and the only switches given to Synopsis
+          are to indicate the stage of processing and the input/output
+          filenames/directories.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use a Synopsis Project file. Project files are a new paradigm
+          invented for the upcoming GUI which allows the entire process to
+          execute with one synopsis command (eg: synopsis -P
+          project.synopsis). It has some rules similar to make, with the
+          exception that it does proper dependency checking and has flexible
+          rules for selecting input files. The only downside is that in order
+          to make the file easily readable and writable by the GUI it is much
+          less readable and writable by hand.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>This manual will concentrate on the Makefile and config.py method,
+      as this is the simplest to learn. All of the configuration options are
+      valid in both files, with the exception of those for controlling the
+      processing of the three stages in the second method.</para>
+
+      <para>Synopsis can also integrate your project&#39;s documentation
+      across multiple separate libraries or modules. An example is the best
+      way to illustrate this: The Fresco Project has a Reference Manual for
+      its IDL interfaces and its many implementation libraries and modules
+      available online. Your project is a module which integrates with
+      Fresco&#39;s display server, using both the IDL API and the display
+      server&#39;s internal API. By downloading a .toc file (Table Of
+      Contents) from the Fresco website, the documentation you generate for
+      your project can link directly to Fresco&#39;s online documentation. For
+      example, you have a method change_picture(Graphic g) where Graphic is an
+      interface from the IDL API. In your documentation, Graphic will be a
+      hyperlink to the documentation of the Graphic interface at the Fresco
+      website. Neat huh? The Fresco documentation itself uses this feature to
+      generate the documentation for each library separately, using .toc files
+      to link to documentation of the libraries each library uses.</para>
+    </section>
+
+    <section>
+      <title>Where to get more help</title>
+
+      <para>Website: http://synopsis.sf.net</para>
+
+      <para>Task/Bug/Patch/File manager at SourceForge:
+      http://sourceforge.net/projects/synopsis/</para>
+
+      <para>Mailing List: http://sourceforge.net/mail/?group_id=3169</para>
+
+      <para>Reference Manual: Your distribution might have a -doc package for
+      this, else it is in the docs/RefManual directory of the source
+      distribution. This is a generated source code reference for Synopsis,
+      but also included is complete documentation for the Configuration files
+      (see the Config link in the top right of any page).</para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>Tutorial</title>
+
+    <section>
+      <title>Running Synopsis</title>
+
+      <para>Several demos are included with the source distribution, and are
+      designed to be run without installing. However, if Synopsis is not
+      installed then you will need to set your PYTHONPATH to include the
+      Synopsis directory (the one with &#34;configure&#34;) and the
+      &#34;share&#34; data (i.e.: icons) will not be accessible. There are
+      demos for each parser, and some other feature demos, such as the Boost
+      demo which documents Boost.Python and the Perceps demo which shows how
+      to extend Synopsis to deal with &#34;strange&#34; commenting rules.</para>
+
+      <para>Makefiles, stages, flags.</para>
+    </section>
+
+    <section>
+      <title>The easy way: copy a demo config + modify</title>
+
+      <para>Copy one based on language, edit paths etc.</para>
+
+      <para>The easiest way to get started using Synopsis is to copy a config
+      file and maybe a Makefile from one of the demos.</para>
+
+      <para>Lets say your project is called Player (it&#39;s a CD player!) has
+      the following layout:</para>
+
+      <programlisting>/src/Player/Makefile
+/src/Player/src/player.cc     # main file
+/src/Player/src/gui.cc        # GUI code
+/src/Player/src/driver.cc     # CD playing code
+/src/Player/include/driver.hh # Classes for the CD playing code
+/src/Player/include/gui.hh    # Classes for the GUI code
+/src/Player/syn/              # Intermediate Synopsis files will go here
+/src/Player/doc/html/         # Synopsis documentation will go here</programlisting>
+
+      <para>Since it is a C++ project, we will copy the simple-config.py from
+      the C++ demo. The C++ demo has several examples it compiles, so the
+      config.py file there is a bit more complex than we need.</para>
+
+      <section>
+        <title>The Makefile</title>
+
+        <para>Your Makefile probably already has a variable FILES which lists
+        the .cc files in src/, but Synopsis cares most about the header files.
+        You will also need variables which contain the names of the .syn files
+        generated by Synopsis&#39; parser, so add these lines to your
+        Makefile:<programlisting># Project files
+FILES = src/player.cc src/gui.cc src/driver.cc
+INCLUDES = include/driver.hh include/gui.hh
+
+# List of output .syn files for each input file
+SYN_FILES = $(patsubst %,syn/%.syn,$(FILES) $(INCLUDES))</programlisting></para>
+
+        <para>The patsubst line is a feature of (GNU) make that replaces a
+        word (the %) with the word prefixed with syn/ (so the file goes in the
+        syn directory) and suffixed with .syn (to mark it as a Synopsis file).
+        This is done for both the source files and the include files.</para>
+
+        <para>The first step is to add a rule which will compile your source
+        files (including .hh files!) into Synopsis .syn files containing the
+        parsed AST:<programlisting># A pattern rule to parse each input file
+$(SYN_FILES): syn/%.syn: %
+        # Here $@ is the output .syn file and $&#60; is the .cc or .hh file
+        synopsis -c config.py -Wc,parser=C++ -o $@ $&#60;</programlisting></para>
+
+        <para>The first line there is a pattern rule. It says that for each of
+        the SYN_FILES, the output syn/%.syn depends on %. This means, for
+        example, that syn/src/player.cc.syn depends on src/player.cc.</para>
+
+        <para>The arguments to synopsis are:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>-c config.py</term>
+
+            <listitem>
+              <para>Use the config file &#34;config.py&#34;. This is the
+              Python script with the configuration options in it. We will get
+              to this file later...</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>-Wc,parser=C++</term>
+
+            <listitem>
+              <para>Gives the &#34;parser=C++&#34; option to the configuration
+              module. Note that the -Wx,foo,bar style of command line option
+              is borrowed from the GCC parser. Options are separated by commas
+              and are passed to the relevant modules. Other modules you can
+              address in this way are the parser
+              (&#34;-Wp,-m,-s,myfile.cc.links&#34;), the linker
+              (&#34;-Wl,-s,Foo::Bar&#34;) and the formatter
+              (&#34;-Wf,-s,styleshee.css&#34;). In this case we are telling
+              Synopsis to use the parser config with the name C++. This also
+              tells it that the inputs are source files and must be parsed.
+              See the config.py section below for more on this.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>-o $@</term>
+
+            <listitem>
+              <para>Output the AST to $@, which will be expanded by Make to be
+              the output file, eg: syn/src/player.cc.syn</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>$&#60;</term>
+
+            <listitem>
+              <para>Input file, which will be expanded by Make to be the first
+              dependancy - the source file, eg: src/player.cc</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Next is a rule to combine the multiple .syn files into a single
+        one containing the whole AST for your project:<programlisting># The combined AST file which is the result of linking all files together
+COMBINED = syn/combined.syn
+
+# Make the combined file depend on all the intermediate files
+$(COMBINED): $(SYN_FILES)
+        # Link all the files together
+        synopsis -c config.py -Wc,linker=Linker -o $(COMBINED) $(SYN_FILES)</programlisting></para>
+
+        <para>The arguments to synopsis here are:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>-Wc,linker=Linker</term>
+
+            <listitem>
+              <para>Similar to the previous -Wc option, this one tells
+              Synopsis to use the linker config named as &#34;Linker&#34; in
+              the config file. Since we didn&#39;t specify a parser, Synopsis
+              assumes that the inputs are binary .syn files containing parsed
+              ASTs.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>$(SYN_FILES)</term>
+
+            <listitem>
+              <para>A small note that make expands this variable to many files
+              (5 in our example). Multiple AST files can be passed to the
+              Linker, or to a formatter (in which case Synopsis links them
+              with default options).</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Finally, a rule to format the combined AST into the HTML output.
+        This step and the previous one can be done in one go, but this way you
+        can generate multiple output formats from the one AST.<programlisting># The (main) final output file
+HTML = doc/html/index.html
+
+# Make the output file depend on the combined file
+$(HTML): $(COMBINED)
+        # Run synopsis to generate output
+        synopsis -c config.py -Wc,formatter=HTML $(COMBINED)</programlisting></para>
+
+        <para>The arguments should be obvious by now:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>-Wc,formatter=HTML</term>
+
+            <listitem>
+              <para>Tells Synopsis to use the formatter config named
+              &#34;HTML&#34;.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>Some housekeeping rules come last: A nice &#34;doc&#34; target
+        so you can run &#34;make doc&#34;, and a clean target so you can run
+        &#34;make clean&#34;. If you already have a clean target, just add
+        this to your existing one.<programlisting># A doc target which creates the output file
+doc:    $(HTML)
+
+# A clean target which removes all the .syn files
+clean:
+        rm -rf $(COMBINED) $(SYN_FILES)</programlisting></para>
+
+        <para>The final Makefile looks like this:<programlisting># Project files
+FILES = src/player.cc src/gui.cc src/driver.cc
+INCLUDES = include/driver.hh include/gui.hh
+
+# List of output .syn files for each input file
+SYN_FILES = $(patsubst %,syn/%.syn,$(FILES) $(INCLUDES))
+
+# The (main) final output file
+HTML = doc/html/index.html
+
+# The combined AST file which is the result of linking all files together
+COMBINED = syn/combined.syn
+
+# A doc target which creates the output file
+doc:    $(HTML)
+
+# A clean target which removes all the .syn files
+clean:
+        rm -rf $(COMBINED) $(SYN_FILES)
+
+# Make the output file depend on the combined file
+$(HTML): $(COMBINED)
+        # Run synopsis to generate output
+        synopsis -c config.py -Wc,formatter=HTML $(COMBINED)
+
+# Make the combined file depend on all the intermediate files
+$(COMBINED): $(SYN_FILES)
+        # Link all the files together
+        synopsis -c config.py -Wc,linker=Linker -o $(COMBINED) $(SYN_FILES)
+
+# A pattern rule to parse each input file
+$(SYN_FILES): syn/%.syn: %
+        # Here $@ is the output .syn file and $&#60; is the .cc or .hh file
+        synopsis -c config.py -Wc,parser=C++ -o $@ $&#60;</programlisting></para>
+
+        <para>You can find this Makefile in demo/Tutorial/Player.</para>
+      </section>
+
+      <section>
+        <title>The config.py file</title>
+
+        <para>Now that the Makefile is written it&#39;s time to look at the
+        config file. The simple-config.py looks like this:<programlisting># Config file for C++ demos
+# Only some files have comments in //. style
+ 
+from Synopsis.Config import Base
+ 
+class Config (Base):
+    class Parser:
+        class CXX (Base.Parser.CXX):
+            main_file = 1
+        modules = {
+            &#39;C++&#39;:CXX,
+        }
+             
+    class Linker:
+        class LinkerJava (Base.Linker.Linker):
+            comment_processors = [&#39;java&#39;, &#39;javatags&#39;, &#39;summary&#39;]
+        modules = {
+            &#39;Linker&#39;:LinkerJava,
+        }
+ 
+    class Formatter:
+        class HTML (Base.Formatter.HTML):
+            stylesheet_file = &#39;../html.css&#39;
+ 
+        modules = Base.Formatter.modules
+        modules[&#39;HTML&#39;] = HTML</programlisting></para>
+
+        <para>It is important to remember that the config.py file is a real
+        python script and is executed just like a Python program. This has the
+        advantage of allowing familiar syntax and flexibility, but at the
+        expense of a little security risk - however generating documentation
+        for source code is probably less risky than running the source code
+        itself, and a config.py file is easier to check.</para>
+
+        <para>The first Python line is to access the &#34;default&#34; config
+        options in the module Synopsis.Config. The default options are stored
+        in the Base class, which has many subclasses for the different
+        modules. You can see these in either the Config.py file itself, or in
+        the generated reference manual. It is not strictly necessary to use
+        the Base class, but it simplifies the config file somewhat by
+        providing many sensible defaults.</para>
+
+        <para>The rest of the file defines a class called Config, which has
+        three subclasses called Parser, Linker and Formatter, representing the
+        three stages of processing. Each of these subclasses contains a
+        &#34;modules&#34; dictionary which lists different named
+        configurations for that stage. Usually the only use for having
+        different configurations is to use different modules (different
+        parsers, different formatters), but you can also have multiple
+        configurations for the same module. The most common example of this is
+        to have multiple Linker configurations for different commenting styles
+        and other options.</para>
+
+        <para>Let&#39;s examine the file a section at a time:<programlisting>class Config (Base):</programlisting></para>
+
+        <para>The Config class derives from the Base class (that we imported
+        at the start of the file) which has a constructor to sort out the
+        configurations in the config class. Remember that Python uses
+        indentation to indicate scope, so the lines after this are all
+        indented to indicate that they are part of the Config class.<programlisting>class Parser:</programlisting></para>
+
+        <para>This is the first subclass, containing configurations for the
+        Parser stage.<programlisting>class CXX (Base.Parser.CXX):
+    main_file = 1</programlisting></para>
+
+        <para>This is the only parser configuration in this config file.
+        Configurations are classes too, but they are instantiated when they
+        are used so they can have constructors to set options at run time.
+        This configuration class is called &#34;CXX&#34; and derives from the
+        class Base.Parser.CXX which has some default config options and also a
+        constructor (so be sure to call it if you write your own).</para>
+
+        <para>Configuration options are set as attributes in the config
+        object, which the parser examines when it runs. The only one here sets
+        the &#34;main_file&#34; option to &#34;1&#34;. See later chapters in
+        this manual for more options, or the reference manual for a complete
+        list.<programlisting>modules = {
+    &#39;C++&#39;:CXX,
+}</programlisting></para>
+
+        <para>This little bit of code sets an attribute in the Parser class
+        called modules, to a dictionary (note the braces aka curly brackets)
+        of named configurations. Here &#39;C++&#39; is the name of the
+        configuration to be used on the command line, and CXX (no quotes!)
+        refers to the CXX class in the current scope. Note that the class was
+        called CXX rather than C++ since C++ is not a valid class name.</para>
+
+        <para>There is just one thing missing here: how does Synopsis actually
+        know to use the C++ parser for this config? Surely it doesn&#39;t go
+        by the name... The answer lies in the fact that we derived from the
+        default configuration class Base.Parser.CXX. Looking in the Config.py
+        file shows (amongst other things):<programlisting>class CXX:
+    name = &#39;C++&#39;</programlisting></para>
+
+        <para>Synopsis uses the name, along with the fact that the
+        configuration was in the Parser section, to make the module name
+        &#34;Synopsis.Parser.C++&#34;, load the module and look for a
+        &#34;parse&#34; function. It turns out that C++ is a valid name for a
+        package in Python, but only if you use the import() function (rather
+        than an import statement). If you look in the site-packages directory
+        (e.g. /usr/lib/python2.2/site-packages) you will see the file
+        Synopsis/Parser/C++/__init__.py, which is the module actually loaded
+        to get the C++ parser.</para>
+
+        <para>To use a parser for a different language, the easiest thing to
+        do is derive from one of Base.Parser.IDL or Base.Parser.Python, as
+        appropriate. Note that the different parsers generally have different
+        options.</para>
+
+        <para>Getting back to the config file, the Linker section is pretty
+        similar to the Parser section, except for this line:<programlisting>comment_processors = [&#39;java&#39;, &#39;javatags&#39;, &#39;summary&#39;]</programlisting></para>
+
+        <para>The syntax here is setting the comment_processors attribute to a
+        list of strings. The (square) brackets indicate a list (parentheses
+        aka round brackets indicate a tuple, which is an immutable list).
+        Strings can be either single or double quotes - Python makes no
+        distinction between the two so it&#39;s just a matter of style.</para>
+
+        <para>This particular option tells the Linker to apply the three
+        comment processors called &#39;java&#39;, &#39;javatags&#39; and
+        &#39;summary&#39; in that order. Comment processors are operations
+        that use the comments attached to declarations to perform
+        manipulations of either the comments or the AST itself:<variablelist><varlistentry><term>java</term><listitem><para>Looks
+        for comments with the java commenting style of /** foo bar */. Any
+        comments not matching this format are removed, and then the /** and */
+        strings are also removed. Intermediate lines must begin with a *, so a
+        multi-line comment looks like:<programlisting>/** The first sentence is a summary.
+ * The rest of the comment goes here, with each line
+ * beginning with a star. The closing star-slash can go
+ * either by itself or at the end of a line.
+ */</programlisting></para></listitem></varlistentry><varlistentry><term>javatags</term><listitem><para>Comments
+        can have special &#34;tags&#34; which indicate either processing or
+        formatting. This processor extracts the JavaDoc style tags from the
+        comments and stores them with the comment for other processors or
+        formatters to use. The tags must be at the end of the comment, but
+        this allows them to span multiple lines if necessary. An example of
+        JavaDoc tags is:<programlisting>/** Returns the height of the given person.
+ * @param firstname the first name of the person
+ * @param surname the surname of the person
+ * @return the height of the person or 0 if the person was not found
+ */
+float getHeight(std::string firstname, std::string surname);</programlisting></para></listitem></varlistentry><varlistentry><term>summary</term><listitem><para>This
+        processor extracts a summary of each comment and stores it with the
+        comment, allowing the documentation to display a (usually one line)
+        summary next to declarations in order to keep the pages tidy, and show
+        the full comments elsewhere (e.g. further down the page). This
+        processor also combines the comments for each declaration, so it
+        should be the last one in the list.</para></listitem></varlistentry></variablelist></para>
+
+        <para>See chapter XXX for a full list of comment processors.</para>
+
+        <para>The HTML formatter we will have to change slightly. The
+        stylesheet_file option tells the HTML formatter where to read the
+        stylesheet from, and since the demo&#39;s are designed to run without
+        Synopsis being installed, this is probably wrong. The default is to
+        use the one installed in $prefix/share/Synopsis, so you can either
+        delete the line or set it to the correct path. If you delete it,
+        remember that Python needs the word &#34;pass&#34; for an empty class
+        (or function):<programlisting>class HTML (Base.Formatter.HTML):
+    pass</programlisting>Finally, the way the modules dictionary is set for
+        the Formatter is a bit different. Here we first set it to the default
+        value from the base class, then overwrite the entry for HTML with the
+        new HTML formatter configuration. By using the default value like
+        this, you get (default) configurations for all the different
+        formatters.</para>
+      </section>
+
+      <section>
+        <title>The output explained</title>
+
+        <para>That&#39;s it! Just run &#34;make doc&#34; and hopefully it
+        should all work. You will see Synopsis being run for each input file,
+        to combine the ASTs, and the format the output.</para>
+
+        <para>The HTML is output to whatever directory you set in the
+        Makefile, which was written above as doc/html/. Point your web browser
+        at the index.html file there to view the documentation, and you will
+        see three frames (using the default configuration) similar to JavaDoc
+        documentation:</para>
+
+        <para><variablelist><varlistentry><term>Top-left &#34;contents&#34;
+        frame</term><listitem><para>This frame shows a tree heirarchy of the
+        modules or files in the project. Clicking on a link opens that module
+        or file in the &#34;index&#34; frame below.</para></listitem></varlistentry><varlistentry><term>Bottom-left
+        &#34;index&#34; frame</term><listitem><para>This frame shows an index
+        of the currently selected module or file, but only shows child
+        classes, structs, namespaces or modules. When a module page is loaded
+        in this frame and you have JavaScript enabled, a more detailed page
+        will open in the main content area. For file pages you will need to
+        click the &#34;File Details&#34; link.</para></listitem></varlistentry><varlistentry><term>Right
+        &#34;main&#34; frame</term><listitem><para>This frame shows the main
+        documentation. At the top of each page you can see a list of
+        documentation areas you can visit: The Modules and Files open in the
+        top-left frame, the Inheritance Graph/Tree and Name Index load in the
+        main frame.</para></listitem></varlistentry></variablelist></para>
+      </section>
+    </section>
+
+    <section>
+      <title>The hard way: create from scratch</title>
+
+      <para>Allows flexibility. Mention deriving from Config.Base</para>
+    </section>
+
+    <section>
+      <title>The powerful way: new config format</title>
+
+      <para>Replace make. used by GUI. hard to read/write.</para>
+    </section>
+
+    <section>
+      <title>The future way: use the GUI</title>
+
+      <para>In some future release there will be a GUI to allow easy
+      configuration of Synopsis.</para>
+
+      <para></para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>The Parsers</title>
+
+    <section>
+      <title>C++ Parser</title>
+
+      <para>most advanced. SXR. XREF. UCPP, OCC</para>
+    </section>
+
+    <section>
+      <title>Python Parser</title>
+
+      <para>uses Python parser module. poor</para>
+    </section>
+
+    <section>
+      <title>CORBA IDL Parser</title>
+
+      <para>user omniidl module. poor</para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>The Linker</title>
+
+    <para>only one.</para>
+
+    <para>merge ASTs</para>
+
+    <para>transformations based on comments</para>
+
+    <para>moving/renaming AST subtrees</para>
+
+    <para>mapping names (or how to link implementation to interface)</para>
+  </chapter>
+
+  <chapter>
+    <title>The HTML Formatter</title>
+
+    <para>The HTML formatter is so comprehensive compared to the other
+    formatters that it deserves a chapter of its own.</para>
+
+    <section>
+      <title>Basics</title>
+
+      <para>Takes AST. Output directory. FileLayouts. Config object. Python,
+      extensible</para>
+    </section>
+
+    <section>
+      <title>Layouts</title>
+
+      <para>three panes, no frames, etc</para>
+    </section>
+
+    <section>
+      <title>Pages</title>
+
+      <para>Output generated by Pages, modules derived from the Page class.</para>
+
+      <section>
+        <title>ScopePages</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>ModuleListing</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>ModuleIndexer</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>FileListing</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>FileIndexer</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>FileDetails</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>FileSource</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>RawFilePages</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>XRefPages</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>InheritanceGraph</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>InheritanceTree</title>
+
+        <para></para>
+      </section>
+
+      <section>
+        <title>NameIndex</title>
+
+        <para></para>
+      </section>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>Other Formatters</title>
+
+    <para>HTML</para>
+
+    <para>HTML_Simple</para>
+
+    <para>DocBook</para>
+
+    <para>PDF</para>
+
+    <para>Dia</para>
+
+    <para>Dot</para>
+
+    <para>ASCII</para>
+
+    <para>DUMP (for debugging your config)</para>
+  </chapter>
 </book>
-<!-- vim: set ts=8 et sts=2 sw=2: -->
