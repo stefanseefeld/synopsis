@@ -1,4 +1,4 @@
-// $Id: Object.hh,v 1.2 2004/01/10 22:50:34 stefan Exp $
+// $Id: Object.hh,v 1.3 2004/01/11 19:46:29 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -58,9 +58,10 @@ public:
   Object &operator = (Object o);
    
   int hash() const { return PyObject_Hash(my_impl);}
-  operator bool () const { return PyObject_IsTrue(my_impl);}
+  operator bool () const { return my_impl != Py_None;}
   Object repr() const { return PyObject_Repr(my_impl);}
   Object str() const { return PyObject_Str(my_impl);}
+  Object boolean() const { return PyObject_IsTrue(my_impl);}
   bool is_instance(Object) const;
   void assert_type(const char *module,
 		   const char *type) const
@@ -71,62 +72,6 @@ public:
   static Object import(const char *name);
 
   Object attr(const char *name) const;
-
-  Object call(const char *name);
-  Object call(const char *name,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object);
-  Object call(const char *name,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object,
-              Object);
 
   PyObject *ref() { Py_INCREF(my_impl); return my_impl;}
 private:
@@ -182,155 +127,6 @@ inline Object Object::attr(const char *name) const
   PyObject *retn = PyObject_GetAttrString(my_impl, const_cast<char *>(name));
   if (!retn) throw AttributeError(name);
   else return Object(retn);
-}
-
-inline Object Object::call(const char *name)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name), 0);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "O",
-                             o1.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OO",
-                             o1.my_impl,
-                             o2.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3,
-                           Object o4)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl,
-                             o4.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3,
-                           Object o4,
-                           Object o5)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOOOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl,
-                             o4.my_impl,
-                             o5.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3,
-                           Object o4,
-                           Object o5,
-                           Object o6)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOOOOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl,
-                             o4.my_impl,
-                             o5.my_impl,
-                             o6.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3,
-                           Object o4,
-                           Object o5,
-                           Object o6,
-                           Object o7)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOOOOOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl,
-                             o4.my_impl,
-                             o5.my_impl,
-                             o6.my_impl,
-                             o7.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3,
-                           Object o4,
-                           Object o5,
-                           Object o6,
-                           Object o7,
-                           Object o8)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOOOOOOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl,
-                             o4.my_impl,
-                             o5.my_impl,
-                             o6.my_impl,
-                             o7.my_impl,
-                             o8.my_impl);
-}
-
-inline Object Object::call(const char *name,
-                           Object o1,
-                           Object o2,
-                           Object o3,
-                           Object o4,
-                           Object o5,
-                           Object o6,
-                           Object o7,
-                           Object o8,
-                           Object o9)
-{
-  return PyObject_CallMethod(my_impl, const_cast<char *>(name),
-                             "OOOOOOOOO",
-                             o1.my_impl,
-                             o2.my_impl,
-                             o3.my_impl,
-                             o4.my_impl,
-                             o5.my_impl,
-                             o6.my_impl,
-                             o7.my_impl,
-                             o8.my_impl,
-                             o9.my_impl);
 }
 
 template <typename T>
