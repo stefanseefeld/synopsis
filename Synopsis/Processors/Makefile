@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.10 2002/03/04 14:46:13 stefan Exp $
+# $Id: Makefile,v 1.11 2002/11/01 23:30:14 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,7 +26,10 @@ include ../../local.mk
 endif
 endif
 
-SRC	:= __init__ Linker Comments
+SRC	:= __init__ Linker Comments AccessRestrictor \
+	   EmptyNS LanguageMapper NameMapper Stripper \
+	   Unduplicator XRefCompiler
+
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
 action	:= all
