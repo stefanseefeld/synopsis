@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker-syntax.cc,v 1.16 2002/10/20 15:38:10 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.17 2002/10/29 02:39:57 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.17  2002/10/29 02:39:57  chalky
+// Changes to compile with g++-3.2
+//
 // Revision 1.16  2002/10/20 15:38:10  chalky
 // Much improved template support, including Function Templates.
 //
@@ -686,7 +689,7 @@ SWalker::TranslateAccessDecl(Ptree* node)
   STrace trace("SWalker::TranslateAccessDecl NYI");
   if (m_links) find_comments(node);
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -697,7 +700,7 @@ SWalker::TranslateUserAccessSpec(Ptree* node)
   STrace trace("SWalker::TranslateUserAccessSpec NYI");
   if (m_links) find_comments(node);
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -742,7 +745,7 @@ SWalker::TranslateGoto(Ptree* node)
   STrace trace("SWalker::TranslateGoto NYI");
   if (m_links) find_comments(node);
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -753,7 +756,7 @@ SWalker::TranslateLabel(Ptree* node)
   STrace trace("SWalker::TranslateLabel NYI");
   if (m_links) find_comments(node);
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -778,7 +781,7 @@ SWalker::TranslatePm(Ptree* node)
 {
   STrace trace("SWalker::TranslatePm NYI");
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -812,7 +815,7 @@ SWalker::TranslateNew(Ptree* node)
   STrace trace("SWalker::TranslateNew NYI");
   if (m_links) find_comments(node);
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -823,7 +826,7 @@ SWalker::TranslateNew3(Ptree* node)
   STrace trace("SWalker::TranslateNew3 NYI");
   if (m_links) find_comments(node);
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -858,7 +861,7 @@ SWalker::TranslateUserStatement(Ptree* node)
 {
   STrace trace("SWalker::TranslateUserStatement NYI");
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
@@ -868,7 +871,7 @@ SWalker::TranslateStaticUserStatement(Ptree* node)
 {
   STrace trace("SWalker::TranslateStaticUserStatement NYI");
 #ifdef DEBUG
-  node->Display2(cout);
+  node->Display2(std::cout);
 #endif
   return 0;
 }
