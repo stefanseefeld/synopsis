@@ -1,41 +1,15 @@
-# Makefile for Synopsis RefManual
+synopsis := python synopsis.py
 
-sinclude ../../local.mk
+topdir	:= ../..
 
-topdir		:= ../..
-synopsis	:= $(topdir)/bin/synopsis -c config.py
-sdir		:= syn
-cxxdir		:= Synopsis/Parser/C++
-cxxsdir		:= syn/Parser/C++
-
-texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
-
-PYSOURCES	:= $(wildcard $(topdir)/Synopsis/*.py)
-PYSOURCES	:= $(PYSOURCES) $(wildcard $(topdir)/Synopsis/*/*.py)
-PYSOURCES	:= $(PYSOURCES) $(wildcard $(topdir)/Synopsis/*/*/*.py)
-#PY_HTMLSOURCES	:= $(wildcard $(topdir)/Synopsis/Formatter/HTML/*.py)
-#PY_FSOURCES	:= $(wildcard $(topdir)/Synopsis/Formatter/*.py)
-#PY_CSOURCES	:= $(wildcard $(topdir)/Synopsis/Core/*.py)
-#PY_LSOURCES	:= $(wildcard $(topdir)/Synopsis/Linker/*.py)
-#PY_PSOURCES	:= $(wildcard $(topdir)/Synopsis/Parser/*.py)
-#PY_PPSOURCES	:= $(wildcard $(topdir)/Synopsis/Parser/*/*.py)
-#PYSOURCES	:= $(PY_SSOURCES) $(PY_CSOURCES) $(PY_LSOURCES) $(PY_FSOURCES) $(PY_HTMLSOURCES) $(PY_PSOURCES) $(PY_PPSOURCES)
-CXXCCSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.cc)
-CXXCCSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.cc) $(CXXCCSOURCES)
-CXXHHSOURCES    := $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.hh)
-CXXHSOURCES     := $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.h)
-
-
-#S_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(S_PYFILES))
-#F_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(F_HTML_PYFILES) $(F_PYFILES))
-#C_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(C_PYFILES))
-#L_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(L_PYFILES))
-#P_PYSYNS	:= $(patsubst %, $(sdir)/%.syn, $(P_PYFILES) $(PP_PYFILES))
-#PYSYNS		:= $(S_PYSYNS) $(F_PYSYNS) $(C_PYSYNS) $(L_PYSYNS) $(P_PYSYNS)
-PYSYNS		:= $(patsubst $(topdir)/%.py, $(sdir)/%.syn, $(PYSOURCES))
-CXXHSYNS	:= $(patsubst $(topdir)/%.h, $(sdir)/%.h.syn, $(CXXHSOURCES))
-CXXHHSYNS	:= $(patsubst $(topdir)/%.hh, $(sdir)/%.hh.syn, $(CXXHHSOURCES))
-CXXCCSYNS	:= $(patsubst $(topdir)/%.cc, $(sdir)/%.cc.syn, $(CXXCCSOURCES))
+py_src		:= $(shell find $(topdir)/Synopsis -name '*.py' -print)
+py_syn		:= $(patsubst $(topdir)/%.py, %.syn, $(py_src))
+cxx_hh  	:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/syn/*.hh)
+cxx_hh_syn	:= $(patsubst $(topdir)/%.hh, %.hh.syn, $(cxx_hh))
+cxx_h		:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/occ/*.h)
+cxx_h_syn	:= $(patsubst $(topdir)/%.h, %.h.syn, $(cxx_h))
+cxx_cc		:= $(wildcard $(topdir)/Synopsis/Parser/C++/syn/*.cc)
+cxx_cc		+= $(wildcard $(topdir)/Synopsis/Parser/C++/occ/*.cc)
 
 TEXI		:= core-ast.texi core-type.texi core-util.texi \
 		   parser-c++.texi parser-idl.texi parser-py.texi \
@@ -43,25 +17,62 @@ TEXI		:= core-ast.texi core-type.texi core-util.texi \
 		   formatter-ascii.texi formatter-html.texi formatter-dump.texi formatter-dia.texi \
 		   formatter-db.texi formatter-dot.texi formatter-html-simple.texi formatter-texi.texi
 
-INCLUDES	:= -I $(topdir)/$(cxxdir) -I $(topdir)/$(cxxdir)/gc/include
 
-all:	html info Manual.pdf
+all: py.syn
 
-html:   all.syn
+vpath %.py $(topdir)
+vpath %.cc $(topdir)
+vpath %.h $(topdir)
+vpath %.hh $(topdir)
+
+html:   c++.syn
 	@echo formatting $@
-	@$(synopsis) -Wc,formatter=HTML $^
+	@$(synopsis) html --output=$@ $^
+
+# Compile Python files
+$(py_syn): %.syn: %.py
+	@echo parsing $^
+	if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	$(synopsis) python --output=$@ $^
+
+# Compile C++ .hh files
+$(cxx_hh_syn): %.hh.syn: $(topdir)/%.hh
+	@echo parsing $^
+	if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	$(synopsis) cxx --output=$@ $?
+
+# Compile C++ .h files
+$(cxx_h_syn): %.h.syn: $(topdir)/%.h
+	@echo parsing $^
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	$(synopsis) cxx --output=$@ $?
+
+# Compile C++ .cc files
+$(cxx_cc_syn): %.cc.syn: $(topdir)/%.cc
+	@echo parsing $^
+	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	$(synopsis) cxx --output=$@ $?
+
+# Link Python files together
+py.syn:	$(py_syn)
+	@echo linking Python files together
+	$(synopsis) link_python --output=$@ $^
+
+# Link C++ files together
+c++.syn: $(cxx_hh_syn) $(cxx_h_syn) $(cxx_cc_syn)
+	@echo linking C++ files together
+	@$(synopsis) link_cxx --output=$@ $^
+
+# Link all files together
+all.syn: py.syn c++.syn
+	@echo linking all files together
+	@$(synopsis) link --output=$@ $^
+
+texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
 
 html-doxygen:   all.syn
 	@echo formatting $@
 	@$(synopsis) -Wc,formatter=Doxygen $^
-
-c++.syn:	$(CXXHHSYNS) $(CXXCCSYNS) $(CXXHSYNS)
-	@echo linking C++ files together
-	@$(synopsis) -Wc,linker=C++Final -o c++.syn $^
-
-py.syn:	$(PYSYNS)
-	@echo linking Python files together
-	@$(synopsis) -o py.syn $^
 
 core-ast.syn:	py.syn
 	@echo linking $@
@@ -127,10 +138,6 @@ info:	$(TEXI) Manual.texi
 	@echo generating info files
 	makeinfo Manual.texi
 
-all.syn:	py.syn c++.syn
-	@echo linking all files together
-	@$(synopsis) -Wc,linker=All -o all.syn $^
-
 install: all
 	mkdir -p $(datadir)/synopsis
 	cp -pr html $(datadir)/synopsis
@@ -144,42 +151,4 @@ clean:
 
 distclean:  clean
 	rm -rf html html-doxygen syn links.toc Manual.pdf *.info* 
-
-# Compile Python files
-$(PYSYNS): $(sdir)/%.syn:	$(topdir)/%.py
-	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
-
-# Compile main 'synopsis' file
-$(sdir)/synopsis.syn: $(topdir)/synopsis
-	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) -Wc,parser=Py,linker=Py -o $@ $?
-
-# Compile C++ .hh files
-$(CXXHHSYNS): $(sdir)/%.hh.syn: $(topdir)/%.hh
-	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) $(INCLUDES) -DPYTHON_INCLUDE="$(python_include)" \
-	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
-	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
-#
-# Compile C++ .h files
-$(CXXHSYNS): $(sdir)/%.h.syn: $(topdir)/%.h
-	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) $(INCLUDES) -DPYTHON_INCLUDE="$(python_include)" \
-	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
-	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
-
-# Compile C++ .cc files
-$(CXXCCSYNS): $(sdir)/%.cc.syn: $(topdir)/%.cc
-	@echo parsing $^
-	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	@$(synopsis) $(INCLUDES) -DPYTHON_INCLUDE="$(python_include)" \
-	-Wc,parser=C++,linker=C++ -Wp,-s,$(patsubst $(topdir)/%,syn/%-links,$?) \
-	-Wp,-x,$(patsubst $(topdir)/%,syn/%-xref,$?) -o $@ $?
-
-# Create links (only) for C+ .cc files
 
