@@ -111,12 +111,12 @@ Type::DeleteTypeList(Type* typeList)
 
     while (curr != NULL)
     {
-        delete prev;
+	if(prev!=NULL) delete prev;
         prev = curr;
         curr = curr->link;
     }
 
-    delete prev;
+    if(prev!=NULL) delete prev;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
