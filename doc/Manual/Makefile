@@ -7,7 +7,7 @@ py_src		:= $(wildcard $(topdir)/Synopsis/*.py)
 py_src		+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
 py_src		+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
 py_src		+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
-# don't include dist yet, synopsis can't deal with dynamic type overrides yet
+py_src		+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
 # don't include UI yet, as it isn't up to date with the rest
 py_syn		:= $(patsubst $(topdir)/%.py, %.syn, $(py_src))
 cxx_hh  	:= $(wildcard $(topdir)/Synopsis/Parsers/Cxx/syn/*.hh)
