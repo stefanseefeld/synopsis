@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.16 2003/11/16 21:09:45 stefan Exp $
+# $Id: ModuleListing.py,v 1.17 2003/11/20 21:36:10 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -42,7 +42,7 @@ class ModuleListing(Page):
       self.start_file()
       self.write(self.processor.navigation_bar(self.filename(), 2))
       self.tree.start_tree()
-      self.indexModule(start, start.name())
+      self.index_module(start, start.name())
       self.tree.end_tree()
       self.end_file()
 
@@ -74,7 +74,7 @@ class ModuleListing(Page):
       self._children_cache[decl] = children
       return children
 
-   def indexModule(self, ns, rel_scope):
+   def index_module(self, ns, rel_scope):
       "Write a link for this module and recursively visit child modules."
 
       my_scope = ns.name()
@@ -92,6 +92,6 @@ class ModuleListing(Page):
          self.tree.write_node_start(text)
          # Add children
          for child in children:
-            self.indexModule(child, my_scope)
+            self.index_module(child, my_scope)
          self.tree.write_node_end()
 
