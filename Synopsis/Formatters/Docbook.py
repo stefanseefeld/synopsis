@@ -1,4 +1,4 @@
-#  $Id: Docbook.py,v 1.9 2003/02/01 23:57:37 chalky Exp $
+#  $Id: Docbook.py,v 1.10 2003/02/02 00:22:44 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 #  02111-1307, USA.
 #
 # $Log: Docbook.py,v $
+# Revision 1.10  2003/02/02 00:22:44  chalky
+# Remove obsolete parseTags method
+#
 # Revision 1.9  2003/02/01 23:57:37  chalky
 # Use new tags
 #
@@ -268,18 +271,6 @@ class DocFormatter (Formatter):
     """A specialized version that just caters for the needs of the DocBook
     manual's Config section. Only modules and classes are printed, and the
     docbook elements classsynopsis etc are not used."""
-    def parseTags(self, str, joiner):
-	"""Returns text, tags"""
-	# Find tags
-	mo = self.re_tags.search(str)
-	if not mo: return str, ''
-	str, tags = mo.group('text'), mo.group('tags')
-	# Split the tag section into lines
-	tags = map(string.strip, string.split(tags,'\n'))
-	# Join non-tag lines to the previous tag
-	tags = reduce(joiner, tags, [])
-	return str, tags
-
     def visitComment(self, comment):
         text = comment.text()
 	see_tags, attr_tags = [], []
