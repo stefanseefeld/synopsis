@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.17 2001/01/22 17:06:15 stefan Exp $
+# $Id: omni.py,v 1.18 2001/01/22 19:54:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.18  2001/01/22 19:54:41  stefan
+# better support for help message
+#
 # Revision 1.17  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -351,6 +354,14 @@ class ASTTranslator (idlvisitor.AstVisitor):
 #    def visitValueBox(self, node):     return
 #    def visitValueAbs(self, node):     return
 #    def visitValue(self, node):        return
+
+def usage():
+    print \
+"""
+  -I<path>                             Specify include path to be used by the preprocessor
+  -m                                   Unly keep declarations from the main file
+  -k                                   Comments after declarations are kept for the back-ends
+  -K                                   Comments before declarations are kept for the back-ends"""
 
 def __parseArgs(args):
     global preprocessor_args, mainfile_only

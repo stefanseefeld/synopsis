@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  $Id: synopsis,v 1.21 2001/01/22 17:06:15 stefan Exp $
+#  $Id: synopsis,v 1.22 2001/01/22 19:54:41 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -28,7 +28,7 @@ pickle = cPickle
 
 from Synopsis.Core import Type, AST, Util
 
-def version(): print "synopsis version 0.2"
+def version(): print "synopsis version 0.3"
 cmdname = os.path.basename(sys.argv[0])
 def usage():
     print "\nUsage:", cmdname, "[flags] files"
@@ -42,24 +42,12 @@ The supported flags are:
   -Wf,<arg>[,<arg>...]                 Send args to the formatter
   -I<path>                             Specify include path
   -D<macro>                            Specify macro for the parser
-  -o <file>                            Write output <file>
+  -o <filename>                        Write output to <filename>
   -v,   --verbose                      Print debugging info
   -V,   --version                      Print version info then exit
-  -h,   --help                         Print this usage message and exit
+  -h,   --help                         Print this usage message and exit"""
 
-Linker options:
-  -s <Scope>                           Link only the named scope.
-                                       May be used multiple times.
-		                       Default is to link all input.
-		                       Eg: -Wl,-s,Prague,-s,Berlin::Console
-  -m                                   Link only declarations in the main
-				       files being processed.
-
-HTML options:
-    use -f HTML -Wf,-h  with valid input to see usage.
-
-"""
-
+help = 0
 parser_cmd = ""
 parser_args = []
 linker_cmd = "Linker"
@@ -70,12 +58,12 @@ output = ""
 verbose = 0
 
 def parseArgs(args):
-    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose
+    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose, help
     try:
         opts,files = Util.getopt_spec(args, "p:f:W:I:o:Vvh", ["parser=", "formatter=", "version", "help"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
-        sys.stderr.write("Use " + cmdname + " -h for help\n")
+        sys.stderr.write("Use `" + cmdname + " -h' for help\n")
         sys.exit(1)
 
     for opt in opts:
@@ -111,13 +99,36 @@ def parseArgs(args):
             version()
             sys.exit(0)
         elif o == "-h" or o == "--help":
-            usage()
-            sys.exit(0)
+            help = 1
 
     return files
 
+def importParser(name):
+    try:
+        parser = Util._import("Synopsis.Parser." + name)
+    except ImportError:
+        sys.stderr.write(cmdname + ": Could not import parser `" + name + "'\n")
+        sys.exit(1)
+    return parser
+
+def importLinker(name):
+    try:
+        linker = Util._import("Synopsis.Linker." + name)
+    except ImportError:
+        sys.stderr.write(cmdname + ": Could not import linker `" + name + "'\n")
+        sys.exit(1)
+    return linker
+
+def importFormatter(name):
+    try:
+        formatter = Util._import("Synopsis.Formatter." + name)
+    except ImportError:
+        sys.stderr.write(cmdname + ": Could not import formatter `" + name + "'\n")
+        sys.exit(1)
+    return formatter
+
 def main(argv=None):
-    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args
+    global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, help
 
     if argv is None: argv = sys.argv
 
@@ -125,19 +136,35 @@ def main(argv=None):
     # parse command line arguments
     #
     files = parseArgs(argv[1:])
+    if help:
+        usage()
+        if parser_cmd:
+            parser = importParser(parser_cmd)
+            if hasattr(parser, "usage"):
+                print "\nArguments for parser `" + parser_cmd + "':\n"
+                parser.usage()
+        if linker_cmd:
+            linker = importLinker(linker_cmd)
+            if hasattr(linker, "usage"):
+                print "\nArguments for linker `" + linker_cmd + "':\n"
+                linker.usage()
+        if formatter_cmd:
+            formatter = importFormatter(formatter_cmd)
+            if hasattr(formatter, "usage"):
+                print "\nArguments for formatter `" + formatter_cmd + "':\n"
+                formatter.usage()
+        sys.exit(0)
+        
     if len(files) == 0:
         sys.stderr.write(cmdname + ": No files specified\n")
         sys.exit(1)
 
+    if parser_cmd != "": parser = importParser(parser_cmd)
+    #
+    # real program start
+    #
     types = Type.Dictionary()
     declarations = []
-
-    if parser_cmd != "":
-        try:
-            parser = Util._import("Synopsis.Parser." + parser_cmd)
-        except ImportError:
-            sys.stderr.write(cmdname + ": Could not import parser `" + parser_cmd + "'\n")
-            raise#sys.exit(1)
 
     #
     # read files, either from picled data base or from parser
@@ -165,7 +192,7 @@ def main(argv=None):
     #
     # resolve symbols here...
     if verbose: print "*** Synopsis: Linking"
-    linker = Util._import("Synopsis.Linker." + linker_cmd)
+    linker = importLinker(linker_cmd)
     linker.resolve(linker_args, types, declarations)
 
     #
@@ -185,12 +212,7 @@ def main(argv=None):
         pickler.dump(declarations)
 
     else:
-        try:
-            formatter = Util._import("Synopsis.Formatter." + formatter_cmd)
-        except ImportError:
-            sys.stderr.write(cmdname + ": Could not import formatter `" + formatter_cmd + "'\n")
-            sys.exit(1)
-
+        formatter = importFormatter(formatter_cmd)
         if output != "": formatter_args.extend(["-o",output])
         formatter.format(types, declarations, formatter_args)
 

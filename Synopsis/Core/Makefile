@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 2001/01/22 17:06:15 stefan Exp $
+# $Id: Makefile,v 1.5 2001/01/22 19:54:41 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld <seefeld@sympatico.ca> 
@@ -22,7 +22,7 @@ SHELL	:= /bin/sh
 
 include ../local.mk
 
-SRC	:= __init__.py Type.py AST.py Util.py Visitor.py 
+SRC	:= __init__.py Type.py AST.py Util.py 
 
 all:
 clean:

@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.48 2001/01/22 17:06:15 stefan Exp $
+# $Id: HTML.py,v 1.49 2001/01/22 19:54:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.49  2001/01/22 19:54:41  stefan
+# better support for help message
+#
 # Revision 1.48  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -1246,22 +1249,20 @@ class Paginator:
 
 def usage():
     """Print usage to stdout"""
-    print """
-HTML Formatter Usage:
- -o <dir>    Output directory, created if it doesn't exist.
- -s <filename>  Filename of stylesheet in output directory
- -S <filename>  Filename of stylesheet to copy
-                If this is newer than the one in the output directory then it
-		is copied over it.
- -n <namespace> Namespace to output
- -c <formatter> Comment formatter to use
-                 default Nothing
-		 ssd     Filters for and strips //. comments
-		 javadoc @tag style comments
-		 section test section breaks.
-		You may use multiple -f options
- -h             This help
+    print \
 """
+  -o <dir>                             Output directory, created if it doesn't exist.
+  -s <filename>                        Filename of stylesheet in output directory
+  -S <filename>                        Filename of stylesheet to copy
+                                       If this is newer than the one in the output directory then it
+		                       is copied over it.
+  -n <namespace>                       Namespace to output
+  -c <formatter>                       Comment formatter to use
+                                       - default Nothing
+		                       - ssd     Filters for and strips //. comments
+		                       - javadoc @tag style comments
+                                       - section test section breaks.
+		                       You may use multiple -f options"""
 
 def __parseArgs(args):
     global basename, stylesheet, namespace, commentParser, stylesheet_file, toc_out, toc_in

@@ -1,4 +1,4 @@
-# $Id: DUMP.py,v 1.5 2001/01/22 17:06:15 stefan Exp $
+# $Id: DUMP.py,v 1.6 2001/01/22 19:54:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: DUMP.py,v $
+# Revision 1.6  2001/01/22 19:54:41  stefan
+# better support for help message
+#
 # Revision 1.5  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -179,7 +182,11 @@ class Dumper:
 	))
 	self.visitDict(obj.__dict__, self._instAttr)
 
-
+def usage():
+    """Print usage to stdout"""
+    print \
+"""
+  -o <file>                            Output file"""
 
 def __parseArgs(args):
     global output
