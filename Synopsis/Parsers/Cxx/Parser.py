@@ -58,6 +58,7 @@ class Parser(Processor):
             self.ast = cpp.process(self.ast,
                                    cpp_output = ii_file,
                                    input = [file],
+                                   main_file_only = self.main_file_only,
                                    verbose = self.verbose,
                                    debug = self.debug)
 
