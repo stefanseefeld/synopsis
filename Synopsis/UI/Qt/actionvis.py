@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.11 2002/11/02 06:36:19 chalky Exp $
+# $Id: actionvis.py,v 1.12 2002/11/11 14:28:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,10 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.12  2002/11/11 14:28:41  chalky
+# New Source Edit dialog, with Insert Rule wizard and new s/path/rules with
+# extra features.
+#
 # Revision 1.11  2002/11/02 06:36:19  chalky
 # Upgrade to Qt3
 #
@@ -223,6 +227,11 @@ class SelectionStrategy (CanvasStrategy):
 
     def on_properties(self, action):
 	print action.name()
+	if isinstance(action, SourceAction):
+	    editor = actionwiz.SourceActionEditor(self.view, self.canvas.project)
+	    result = editor.edit(action)
+	    print result
+	    return
 	actionwiz.ActionDialog(self.view, action, self.canvas.project)
 
 class ConnectStrategy (CanvasStrategy):
@@ -279,15 +288,18 @@ class ConnectStrategy (CanvasStrategy):
 	self.view.window.setMode('select')
 
 class AddActionStrategy (CanvasStrategy):
-    def __init__(self, canvas, view):
+    def __init__(self, canvas, view, action_type):
 	CanvasStrategy.__init__(self, canvas, view)
 	self.__drag_action = None
 	self.__normal_cursor = QCursor(Qt.ArrowCursor)
 	self.__moving_cursor = QCursor(Qt.BlankCursor)
+	self.__action_type = action_type
 
     def set(self):
-	self.action = Action(self.view.last_pos.x()-16,
-			     self.view.last_pos.y()-16, "New action")
+	action_class = getattr(Synopsis.Core.Action, '%sAction'%self.__action_type)
+	self.action = action_class(self.view.last_pos.x()-16,
+			     self.view.last_pos.y()-16, 
+			     "New %s action"%self.__action_type)
 	try:
 	    # Run the wizard to set the type of the action
 	    wizard = actionwiz.AddWizard(self.view, self.action, self.canvas.project)
@@ -342,7 +354,7 @@ class ActionIcon (ActionVisitor):
     def visitAction(self, action): pass #self.icon='syn-icon-action.png'
     def visitSource(self, action): self.icon='syn-icon-c++.png'
     def visitParser(self, action): self.icon='syn-icon-parse.png'
-    def visitLinker(self, action): pass #self.icon='syn-icon-action.png'
+    def visitLinker(self, action): self.icon='syn-icon-link.png'
     def visitCacher(self, action): self.icon='syn-icon-cache.png'
     def visitFormat(self, action): self.icon='syn-icon-html.png'
 
@@ -573,7 +585,11 @@ class CanvasView (QCanvasView):
 	self.__strategies = {
 	    'select' : SelectionStrategy(canvas, self),
 	    'connect': ConnectStrategy(canvas, self),
-	    'action' : AddActionStrategy(canvas, self)
+	    'new_source' : AddActionStrategy(canvas, self, 'Source'),
+	    'new_parse' : AddActionStrategy(canvas, self, 'Parser'),
+	    'new_link' : AddActionStrategy(canvas, self, 'Linker'),
+	    'new_cache' : AddActionStrategy(canvas, self, 'Cacher'),
+	    'new_format' : AddActionStrategy(canvas, self, 'Format')
 	}
 	self.viewport().setMouseTracking(1)
 	
@@ -621,15 +637,20 @@ class CanvasWindow (QVBox):
 	self.tool_con.setToggleButton(1)
 	self.buttons.insert(self.tool_con)
 
-	pixmap = QPixmap(16,16); pixmap.fill(Qt.red)
-	self.tool_add = QToolButton(QIconSet(pixmap), "Add Action", "Add a new action to the project", self.newAction, self.tool)
-	self.tool_add.setUsesTextLabel(1)
-	self.tool_add.setToggleButton(1)
-	self.buttons.insert(self.tool_add)
+	#pixmap = QPixmap(16,16); pixmap.fill(Qt.red)
+	#self.tool_add = QToolButton(QIconSet(pixmap), "Add Action", "Add a new action to the project", self.newAction, self.tool)
+	#self.tool_add.setUsesTextLabel(1)
+	#self.tool_add.setToggleButton(1)
+	#self.buttons.insert(self.tool_add)
+	tools = (('Source','source','c++'), ('Parser','parse','parse'),
+		 ('Linker','link','link'), ('Cache','cache', 'cache'),
+		 ('Formatter','format', 'html'))
+	for name, short_name, icon in tools:
+	    self._makeNewTool(name, short_name, icon)
 
 	# Make the menu, to be inserted in the app menu upon window activation
 	self._file_menu = QPopupMenu(main_window.menuBar())
-	self._file_menu.insertItem("New &Action", self.newAction, Qt.CTRL+Qt.Key_A)
+	#self._file_menu.insertItem("New &Action", self.newAction, Qt.CTRL+Qt.Key_A)
 	self._file_menu.insertItem("&Save Project", self.saveProject, Qt.CTRL+Qt.Key_S)
 	self._file_menu.insertItem("Save Project &As...", self.saveProjectAs)
 
@@ -637,7 +658,11 @@ class CanvasWindow (QVBox):
 	self.__tools = {
 	    'select' : self.tool_sel,
 	    'connect': self.tool_con,
-	    'action' : self.tool_add
+	    'new_source' : self.tool_source,
+	    'new_parse' : self.tool_parse,
+	    'new_link' : self.tool_link,
+	    'new_cache' : self.tool_cache,
+	    'new_format' : self.tool_format
 	}
 	# Make the canvas
 	self.project = project
@@ -652,6 +677,21 @@ class CanvasWindow (QVBox):
 
 	self.setMode('select')
 	self.activate()
+
+    def _makeNewTool(self, name, short_name, icon_id):
+	icon = prefix+'/share/synopsis/syn-icon-%s.png'%icon_id
+	image = QImage(icon)
+	# Resize icon to correct size
+	image.smoothScale(16, 16, QImage.ScaleMin)
+	pixmap = QPixmap(image)
+	tool = QToolButton(QIconSet(pixmap), "New %s"%name,
+	    "Add a new %s action to the project"%name, 
+	    getattr(self, 'new%sAction'%name), self.tool)
+	tool.setUsesTextLabel(1)
+	tool.setToggleButton(1)
+	self.buttons.insert(tool)
+	# Store with appropriate name in self
+	setattr(self, 'tool_'+short_name, tool)
 
     def resizeEvent(self, ev):
 	QVBox.resizeEvent(self, ev)
@@ -683,8 +723,20 @@ class CanvasWindow (QVBox):
     def setConnect(self):
 	self.setMode('connect')
 
-    def newAction(self):
-	self.setMode('action')
+    def newSourceAction(self):
+	self.setMode('new_source')
+
+    def newParserAction(self):
+	self.setMode('new_parse')
+
+    def newLinkerAction(self):
+	self.setMode('new_link')
+
+    def newCacheAction(self):
+	self.setMode('new_cache')
+
+    def newFormatterAction(self):
+	self.setMode('new_format')
 
     def saveProject(self):
 	if self.project.filename() is None:
