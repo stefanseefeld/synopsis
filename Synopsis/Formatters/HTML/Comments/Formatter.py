@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.12 2001/04/03 11:36:24 chalky Exp $
+# $Id: Formatter.py,v 1.13 2001/04/03 23:18:47 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Formatter.py,v $
+# Revision 1.13  2001/04/03 23:18:47  chalky
+# Fixed has_detail for decls with no comments
+#
 # Revision 1.12  2001/04/03 11:36:24  chalky
 # Made comments show detail by default
 #
@@ -86,6 +89,8 @@ class CommentParser:
 	    has_detail=1, decl=decl)
 	if comm.detail:
 	    map(lambda f,c=comm: f.parse(c), self._formatters)
+	else:
+	    comm.has_detail=0
 	return comm
 
 class CommentFormatter:
