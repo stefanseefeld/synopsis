@@ -1,0 +1,143 @@
+\input texinfo @c -*-texinfo-*-
+@setfilename synopsis.info
+@settitle Synopsis
+
+@c header for the info version
+@ifinfo
+Synopsis Reference Manual
+
+Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+
+Permission is granted to make and distribute verbatim copies of this
+document provided the copyright notice and this permission notice
+are preserved on all copies.
+@end ifinfo
+
+@c title page for the printed version
+@titlepage
+@title Synopsis
+@subtitle Version: 0.4
+@author Stefan Seefeld, Stephen Davies
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
+
+@sp 2
+This is Version: 0.4 of the Synopsis Reference Manual
+@sp 2
+
+Permission is granted to make and distribute verbatim copies of this
+document provided the copyright notice and this permission notice
+are preserved on all copies.
+@end titlepage
+
+@iftex
+@headings off
+@evenheading @thispage @|  @| @thischapter
+@oddheading  @thissection @|  @| @thispage
+@everyfooting @| Synopsis Manual @| Version: 0.4
+@end iftex
+
+@c top level menu
+@ifinfo
+@node Top, Copying, (dir), (dir)
+@top Synopsis
+
+some intro here
+@end ifinfo
+
+@menu
+* Copying::  This demo is freely redistributable.
+* Overview:: How does it work
+* Core::     The backbone of the synopsis tool
+* Parser::   Parser plugins
+* Linker::   Linker plugins
+* Parser::   Parser plugins
+@end menu
+
+@chapter Overview
+To be written...
+
+@chapter The Core Module
+The backbone of synopsis is an Abstract Syntax Tree, together with a
+Type dictionary. Both are designed to be sufficiently abstract to support
+a variety of languges, without giving up the necessary details to retain
+language specific information. The AST module contains the type that are
+used to generate all the nodes of a syntax tree, such as 'Class', 'Module',
+or 'Variable', while the Type module contains the associated meta types,
+i.e. for example 'Parametrized', 'BaseType', 'Declared'. Both modules
+define a Visitor which you can use for introspection of the AST/Type dictionary,
+to manipulate the data and or to generate some output from it.
+@page
+@section The AST Module
+@include core-ast.texi
+@page
+@section The Type Module
+@include core-type.texi
+@page
+@section The Util Module
+@include core-util.texi
+
+@chapter The Parser Module
+Synopsis provides a set of parsers that generate an Abstract Syntax Tree
+from various programming languages. They are usually part of third party
+projects, such that we only need to provide a thin wrapper to bind them
+to the synopsis core.
+@page
+@section The C++ Module
+@include parser-c++.texi
+@page
+@section The IDL Module
+@include parser-idl.texi
+@page
+@section The Python Module
+@include parser-py.texi
+
+@chapter The Linker Module
+The linker performs some first modifications to the AST/Type dictionary
+as to resolve cross references (even across languages !), strip off
+unwanted scopes, parse the comments that are associated with the declarations
+for cross references, etc.
+@include linker.texi
+
+@chapter The Formatter Module
+The backbone of synopsis is an Abstract Syntax Tree, which can be
+traversed using the Visitor Pattern. One of the main uses of Visitors
+is to provide different Formatters, which traverse the AST to generate
+formatted output. This module contains a range of formatters for various
+purposes, ranging from online browsing, over graph generation, to generating
+hardcopies.
+@page
+@section The ASCII Module
+@include formatter-ascii.texi
+@page
+@section The HTML Module
+@include formatter-html.texi
+@page
+@section The DUMP Module
+@include formatter-dump.texi
+@page
+@section The Dia Module
+@include formatter-dia.texi
+@page
+@section The DocBook Module
+@include formatter-db.texi
+@page
+@section The Dot Module
+@include formatter-dot.texi
+@page
+@section The HTML_Simple Module
+@include formatter-html-simple.texi
+@page
+@section The TexInfo Module
+@include formatter-texi.texi
+
+@unnumbered Type Index
+@printindex tp
+
+@unnumbered Function Index
+@printindex fn
+
+@contents
+@bye
