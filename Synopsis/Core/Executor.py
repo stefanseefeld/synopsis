@@ -140,7 +140,6 @@ class ParserExecutor (Executor):
 	config = self.__action.config()
 	parser = self.get_parser()
 	# Do the parse
-	print "Synopsis: parsing", name
 	ast = parser.parse(name, [], config)
 	# Return the parsed AST
 	return ast

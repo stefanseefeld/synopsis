@@ -1,4 +1,4 @@
-# $Id: project.py,v 1.3 2002/01/09 10:16:35 chalky Exp $
+# $Id: project.py,v 1.4 2002/06/22 07:03:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: project.py,v $
+# Revision 1.4  2002/06/22 07:03:27  chalky
+# Updates to GUI - better editing of Actions, and can now execute some.
+#
 # Revision 1.3  2002/01/09 10:16:35  chalky
 # Centralized navigation, clicking links in (html) docs works.
 #
@@ -100,10 +103,15 @@ class ProjectWindow (QSplitter):
 	loads the AST into the browser windows."""
 	# Find output
 	formatter = None
-	for action in self.project.actions().actions():
-	    if isinstance(action, Action.FormatAction):
-		# Check html..
-		formatter = action
+	if formatter is None:
+	    # Try to get default from Project
+	    formatter = self.project.default_formatter()
+	if formatter is None:
+	    # Try to find a HTML formatter
+	    for action in self.project.actions().actions():
+		if isinstance(action, Action.FormatAction):
+		    # Check html..
+		    formatter = action
 	if not formatter:
 	    # Maybe tell user..
 	    return
@@ -120,7 +128,7 @@ class ProjectWindow (QSplitter):
 
 	# Get AST from the input
 	names = input_exec.get_output_names()
-	ast = input_exec.get_output(names[0])
+	ast = input_exec.get_output(names[0][0])
 
 	# Give AST to browser
 	self.browser.set_current_ast(ast)
