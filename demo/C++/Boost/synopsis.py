@@ -33,7 +33,8 @@ linker = Composite(Unduplicator(),     # remove duplicate and forward declaratio
                    Previous(),         # attach '//<-' comments
                    Dummies(),          # drop 'dummy' declarations
                    EmptyNS(),          # skip empty namespaces
-                   #XRefCompiler(),     # compile xref dictionary
+                   XRefCompiler(xref_prefix='BoostXRef/',
+                                output='all.xref'),     # compile xref dictionary
                    AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
 dump = Dump.Formatter(show_declarations = True,

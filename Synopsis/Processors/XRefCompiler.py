@@ -1,4 +1,4 @@
-# $Id: XRefCompiler.py,v 1.6 2003/11/11 06:03:59 stefan Exp $
+# $Id: XRefCompiler.py,v 1.7 2003/11/17 01:26:18 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -10,7 +10,7 @@
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST, Type, Util
 
-import string, cPickle, urllib
+import os.path, string, cPickle, urllib
 
 class XRefCompiler(Processor):
    """This class compiles a set of text-based xref files from the C++ parser
@@ -30,8 +30,7 @@ class XRefCompiler(Processor):
    dictionary.
    """
 
-   xref_path = Parameter('./%s-xref', '')
-   xref_file = Parameter('compiled.xref', '')
+   xref_prefix = Parameter('', 'where to look for xref files')
    no_locals = Parameter(True, '')
 
    def process(self, ast, **kwds):
@@ -41,12 +40,17 @@ class XRefCompiler(Processor):
 
       filenames = map(lambda x: x[0], 
                       filter(lambda x: x[1].is_main(), ast.files().items()))
-      filenames = map(lambda x:self.xref_path%x, filenames)
-      self.do_compile(filenames, self.xref_file, self.no_locals)
+      filenames = map(lambda x:os.path.join(self.xref_prefix, x), filenames)
+      self.do_compile(filenames, self.output, self.no_locals)
 
-      return self.output_and_return_ast()
+      return self.ast
 
-   def do_compile(self, input_files, output_file, no_locals):
+   def do_compile(self, input_files, output, no_locals):
+
+      if not output:
+         if self.verbose: print "XRefCompiler: no output given"
+         return
+
       # Init data structures
       data = {}
       index = {}
@@ -110,8 +114,8 @@ class XRefCompiler(Processor):
          if paren != -1:
             index.setdefault(name[:paren],[]).append(target)
 
-      if self.verbose: print "XRefCompiler: Writing",output_file
-      f = open(output_file, 'wb')
+      if self.verbose: print "XRefCompiler: Writing",output
+      f = open(output, 'wb')
       cPickle.dump(file_data, f)
       f.close()
 
