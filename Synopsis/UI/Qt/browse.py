@@ -1,4 +1,4 @@
-# $Id: browse.py,v 1.10 2002/09/28 05:53:31 chalky Exp $
+# $Id: browse.py,v 1.11 2002/10/11 06:03:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: browse.py,v $
+# Revision 1.11  2002/10/11 06:03:23  chalky
+# Use config from project
+#
 # Revision 1.10  2002/09/28 05:53:31  chalky
 # Refactored display into separate project and browser windows. Execute projects
 # in the background
@@ -55,6 +58,7 @@
 
 import sys, pickle, Synopsis, cStringIO, string, re
 from qt import *
+from Synopsis import Config
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
@@ -86,12 +90,15 @@ class BrowserWindow (QSplitter):
 	    updated first"""
 	    pass
     
-    def __init__(self, main_window, filename, project_window):
+    def __init__(self, main_window, filename, project_window, config = None):
 	QSplitter.__init__(self, main_window.workspace)
 	self.main_window = main_window
 	self.project_window = project_window
 	self.filename = filename
 	self.setCaption('Output Window')
+	self.config = config
+	if not config:
+	    self.config = Config.Base.HTML
 
 	self.classTree = ClassTree.ClassTree()
 	self.fileTree = None #FileTree()
@@ -413,7 +420,7 @@ class DocoBrowser (BrowserWindow.SelectionListener):
 	    self.__browser.doco_display.setText(os.getvalue())
     
     def current_ast_changed(self, ast):
-	core.configure_for_gui(ast)
+	core.configure_for_gui(ast, self.__browser.config)
 
 	scope = AST.Scope('',-1,'','','')
 	scope.declarations()[:] = ast.declarations()
@@ -478,7 +485,7 @@ tags = {
 def format_source(text):
     """The source relies on stylesheets, and Qt doesn't have powerful enough
     stylesheets. This function manually converts the html..."""
-    #print '===\n%s\n==='%text
+    print '===\n%s\n==='%text
     mo = re_tag.search(text)
     stack = [] # stack of close tags
     result = [] # list of strings for result text
@@ -554,8 +561,8 @@ class SourceBrowser (BrowserWindow.SelectionListener):
 
     def generator(self):
 	if not self.__generator:
-	    fileconfig = core.config.obj.FilePages
-	    fileconfig.links_path = 'docs/RefManual/syn/%s-links'
+	    #fileconfig = core.config.obj.FilePages
+	    #fileconfig.links_path = 'docs/RefManual/syn/%s-links'
 	    self.__generator = self.BufferFilePages(core.manager)
 	    self.__generator.register_filenames(None)
 	return self.__generator
@@ -604,7 +611,7 @@ class SourceBrowser (BrowserWindow.SelectionListener):
 	#print line, y
 
     def current_ast_changed(self, ast):
-	core.configure_for_gui(ast)
+	core.configure_for_gui(ast, self.__browser.config)
 
 	scope = AST.Scope('',-1,'','','')
 	scope.declarations()[:] = ast.declarations()

@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.9 2002/09/28 05:53:31 chalky Exp $
+# $Id: actionvis.py,v 1.10 2002/10/11 06:03:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.10  2002/10/11 06:03:23  chalky
+# Use config from project
+#
 # Revision 1.9  2002/09/28 05:53:31  chalky
 # Refactored display into separate project and browser windows. Execute projects
 # in the background
@@ -57,6 +60,7 @@ from qt import *
 if not globals().has_key('QCanvasView'):
     from qtcanvas import *
 
+from Synopsis.Config import prefix
 from Synopsis.Core import AST, Util
 from Synopsis.Core.Action import *
 from Synopsis.Core.Project import *
@@ -337,7 +341,7 @@ class ActionIcon (ActionVisitor):
     def visitParser(self, action): self.icon='syn-icon-parse.png'
     def visitLinker(self, action): pass #self.icon='syn-icon-action.png'
     def visitCacher(self, action): self.icon='syn-icon-cache.png'
-    def visitFormat(self, action): self.icon='syn-icon-html.xpm'
+    def visitFormat(self, action): self.icon='syn-icon-html.png'
 
 class Icon:
     "Encapsulates the canvas display of an Action"
@@ -347,7 +351,7 @@ class Icon:
 	self.canvas = canvas
 	self.icon = ActionIcon(action).icon
 	if self.icon:
-	    icon = 'share/'+self.icon
+	    icon = prefix+'/share/synopsis/'+self.icon
 	    self.pixmap = QPixmap(icon)
 	    self.array = QCanvasPixmapArray([self.pixmap], [QPoint(0,0)])
 	    self.img = QCanvasSprite(self.array, canvas)
@@ -421,6 +425,8 @@ class Line:
 	# Find centers of the two icons
 	src_xrad, src_yrad = source.width/2, source.height/2
 	dst_xrad, dst_yrad = dest.width/2, dest.height/2
+	if src_xrad == 0: src_xrad, src_yrad = 10, 10
+	if dst_xrad == 0: dst_xrad, dst_yrad = 10, 10
 	x1, y1 = src_action.x()+src_xrad, src_action.y()+src_yrad
 	x2, y2 = dst_action.x()+dst_xrad, dst_action.y()+dst_yrad
 	# Calculate the distance

@@ -1,4 +1,4 @@
-# $Id: project.py,v 1.5 2002/09/28 05:53:31 chalky Exp $
+# $Id: project.py,v 1.6 2002/10/11 06:03:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: project.py,v $
+# Revision 1.6  2002/10/11 06:03:23  chalky
+# Use config from project
+#
 # Revision 1.5  2002/09/28 05:53:31  chalky
 # Refactored display into separate project and browser windows. Execute projects
 # in the background
@@ -109,6 +112,7 @@ class ProjectWindow (QSplitter):
 	if not formatter:
 	    # Maybe tell user..
 	    return
+	self.format_action = formatter
 
 	# Find input to formatter
 	inputs = formatter.inputs()
@@ -175,7 +179,8 @@ class ProjectWindow (QSplitter):
 	    # Thread ended
 	    # Give AST to browser
 	    if not self.browser:
-		self.browser = BrowserWindow(self.main_window, None, self)
+		config = self.format_action.config()
+		self.browser = BrowserWindow(self.main_window, None, self, config)
 		self.browser.setCaption(self.project.name()+' : Browser Window')
 
 	    # Now load ast from cache
