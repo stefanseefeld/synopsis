@@ -18,8 +18,7 @@ from distutils import sysconfig
 import sys, os.path
 
 topdir = os.path.abspath(sys.argv[0] + '/../../..')
-
-python = Composite(Python.Parser(basename = topdir),
+python = Composite(Python.Parser(basename = topdir + '/'),
                    JavaTags(),
                    Summarizer())
 
