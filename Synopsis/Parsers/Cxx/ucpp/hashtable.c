@@ -29,7 +29,7 @@
  */
 
 #include <string.h>
-#include "hash.h"
+#include "hashtable.h"
 #include "mem.h"
 
 /*
