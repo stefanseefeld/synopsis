@@ -27,18 +27,21 @@ CXXSYNS		:= $(patsubst %,$(cxxspath)/%.csyn,$(CXXFILES))
 all:	manual
 
 manual:   $(PYSYNS) $(CXXSYNS)
-	$(synopsis) -Wl,-l -f HTML -Wf,--spec=html.cxx.spec -o Manual $^
+	$(synopsis) -Wl,-l -f HTML -Wf,--spec=html.spec -o Manual $^
 
+# Compile Python files
 $(spath)/%.syn:	$(bpath)/%.py
 	@if [ ! -d $(spath) ]; then mkdir $(spath); fi
 	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
 
+# Compile main 'synopsis' file
 $(spath)/synopsis.syn: $(bpath)/synopsis
 	$(synopsis) -p Python -Wp,-b,$(bpath)/ -o $@ $?
 
+# Compile C++ files
 $(cxxspath)/%.csyn: $(cxxpath)/%.hh
 	@if [ ! -d $(cxxpath) ]; then mkdir $(cxxpath); fi
-	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/ -o $@ $?
+	$(synopsis) -p C++ -Wp,-m,-b,$(bpath)/ -Wl,-p,ssd -o $@ $?
 
 clean:
 	rm -rf $(spath)
