@@ -9,6 +9,7 @@
 #ifndef _PTree_Node_hh
 #define _PTree_Node_hh
 
+#include <PTree/Visitor.hh>
 #include <ostream>
 #include <iterator>
 #include "types.h"
@@ -26,6 +27,7 @@ class Node : public LightObject
 public:
   virtual ~Node() {}
   virtual bool is_atom() const = 0;
+  virtual void accept(Visitor *visitor) = 0;
 
   //. write the part of the source code this node
   //. references to the given output stream

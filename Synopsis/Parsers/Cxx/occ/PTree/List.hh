@@ -17,6 +17,7 @@ class List : public Node
 public:
   List(Node *p, Node *q) : Node(p, q) {}
   bool is_atom() const { return false;}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   virtual void write(std::ostream &) const;
   virtual void print(std::ostream &, size_t, size_t) const;
