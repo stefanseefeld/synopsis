@@ -4,8 +4,9 @@ Installation guide
 Building
 --------
 
-* If the sources are checked out from cvs, run ./autogen.sh the configure scripts.
-* Run python setup.py build to compile everything.
+* If the sources are checked out from cvs, run './autogen.sh' to generate
+  the configure scripts.
+* Run 'python setup.py build' to compile everything.
   This will place all files that are going to be installed under build/
 
   If you do not want to install, but rather try synopsis out from within the
@@ -22,7 +23,8 @@ Building documentation
 * All four targets require xsltproc, and the printable Tutorial requires
   additionally fop (from http://xml.apache.org)
 
-* If you only want to build the html versions, run 'python setup.py build_doc --html'
+* If you only want to build the html versions, run 
+  'python setup.py build_doc --html'
 
 * If you only want the Tutorial, run 'python setup.py build_doc --tutorial'
 
@@ -34,7 +36,8 @@ Installing
 * To install synopsis in <prefix>, run 'python setup.py install --prefix=<prefix>'
   The default prefix is '/usr/local'.
 
-* If documentation was built before, it will be installed into <prefix>/share/doc/Synopsis
+* If documentation was built before, it will be installed into 
+  <prefix>/share/doc/Synopsis
 
 Using Synopsis
 --------------
