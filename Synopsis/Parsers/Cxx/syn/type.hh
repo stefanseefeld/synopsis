@@ -29,6 +29,8 @@ namespace Type {
 	//. Typedef for modifier list
 	typedef vector<string> Mods;
 
+	//. Constructor
+	Type();
 	//. Destructor
 	virtual ~Type() = 0;
 	//. Accept the given visitor
@@ -40,8 +42,6 @@ namespace Type {
     public:
 	//. Constructor
 	Named(Name);
-	//. Destructor
-	virtual ~Named();
 	//. Accept the given visitor
 	virtual void accept(Visitor*);
 
@@ -90,10 +90,10 @@ namespace Type {
 	//
 
 	//. Returns the Declaration referenced by this type
-	AST::Declaration* declaration() { return m_declaration; }
+	AST::Declaration* declaration() { return m_decl; }
     private:
 	//. The declaration referenced by this type
-	AST::Declaration* m_declaration;
+	AST::Declaration* m_decl;
     };
 
     //. Template types are declared template types. They have a name, a
@@ -217,9 +217,15 @@ namespace Type {
 	virtual ~Visitor() = 0;
 	virtual void visitType(Type*);
 	virtual void visitForward(Forward*);
-	virtual void visitBase(Forward*);
-	virtual void viistDeclared(Declared*);
+	virtual void visitModifier(Modifier*);
+	virtual void visitNamed(Named*);
+	virtual void visitBase(Base*);
+	virtual void visitDeclared(Declared*);
+	virtual void visitTemplateType(Template*);
+	virtual void visitParameterized(Parameterized*);
+	virtual void visitFuncPtr(FuncPtr*);
     };
-}
+
+} // namespace Type
 
 #endif
