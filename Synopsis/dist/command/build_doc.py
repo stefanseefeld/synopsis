@@ -137,6 +137,11 @@ class build_doc(build.build):
          rmtree(os.path.join(builddir, 'occ'), 1)
          copy_tree(os.path.join(tempdir, 'html', 'occ'),
                    os.path.join(builddir, 'occ'))
+      if self.sxr and newer(os.path.join(tempdir, 'html', 'sxr'),
+               os.path.join(builddir, 'sxr')):
+         rmtree(os.path.join(builddir, 'sxr'), 1)
+         copy_tree(os.path.join(tempdir, 'html', 'sxr'),
+                   os.path.join(builddir, 'sxr'))
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
