@@ -77,6 +77,20 @@ div.logo {
     color: #dddddd;
 }
 
+div.class-namespace {
+    font-size: 1.5em;
+    float: right;
+}
+div.class-template {
+    font-size: 1.7em;
+}
+div.class-name {
+    font-size: 1.7em;
+    margin-bottom: 1em;
+}
+ul.tree {
+    padding-left: 1em;
+}
 div.nameindex-item {
     margin-left: 1em;
 }
