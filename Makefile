@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.22 2001/06/10 18:44:16 stefan Exp $
+# $Id: Makefile,v 1.23 2001/06/15 18:31:31 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -26,15 +26,13 @@ include local.mk
 endif
 endif
 
-SRC	:= __init__ Config
-PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 SHARE   := $(patsubst %, share/%, synopsis.jpg synopsis200.jpg syn-down.png syn-right.png syn-dot.png)
 
-subdirs	:= Core Parser Linker Formatter
+subdirs	:= Synopsis
 
 action	:= all
 
-.PHONY: all $(subdirs)
+.PHONY: all $(subdirs) docs
 
 all:	$(subdirs)
 
@@ -42,23 +40,21 @@ $(subdirs):
 	@echo making $(action) in $@
 	$(MAKE) -C $@ $(action)
 
+docs:
+	$(MAKE) -C docs/RefManual
+
 clean:
 	$(MAKE) action="clean"
-	/bin/rm -f *.pyc
 
 distclean:
 	$(MAKE) action="distclean"
 	$(MAKE) -C demo action="clean"
 	$(MAKE) -C docs/RefManual distclean
-	/bin/rm -f *.pyc *~ local.mk config.cache config.log config.status configure
+	/bin/rm -f *~ local.mk synopsis.spec config.cache config.log config.status configure
 
-# to be elaborated further...
-install: $(subdirs)
+install:
+	python -c "import compileall; compileall.compile_dir('Synopsis')"
+	$(MAKE) action="install"
 	mkdir -p $(bindir)
 	install -m755 synopsis $(bindir)
-	python -c "import compileall; compileall.compile_dir('.')"
-	mkdir -p $(packagedir)/Synopsis
-	install -m666 $(PY) $(packagedir)/Synopsis
-	mkdir -p $(packagedir)/Synopsis/share
-	install -m666 $(SHARE) $(packagedir)/Synopsis/share
-	$(MAKE) action="install"
+	$(MAKE) -C docs/RefManual install

@@ -19,7 +19,7 @@ SHELL		:= /bin/sh
 # Include local config stuff
 ifeq (,$(findstring $(MAKECMDGOALS), clean distclean))
 ifeq (,$(findstring $(action), clean distclean))
-include ../../../../../local.mk
+include ../../../../../../local.mk
 endif
 endif
 

@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.6 2001/06/10 18:48:46 stefan Exp $
+dnl $Id: configure.in,v 1.7 2001/06/15 18:31:31 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2001 Stefan Seefeld <seefeld@sympatico.ca> 
@@ -24,11 +24,12 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.12)
-AC_REVISION($Revision: 1.6 $)
+AC_REVISION($Revision: 1.7 $)
 
 AC_INIT(synopsis.spec.in)
 AC_PROG_MAKE_SET
 AC_PROG_CC
+AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_INSTALL
 
@@ -39,6 +40,7 @@ else
 	python_prefix=/usr
 fi
 
+python_version=
 AC_ARG_WITH(python-version, [  --with-python-version  Python version to use],[python_version="$withval"])
 
 dnl

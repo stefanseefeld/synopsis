@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.8 2001/05/02 02:29:49 stefan Exp $
+# $Id: Makefile,v 1.9 2001/06/15 18:31:31 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -22,7 +22,7 @@ SHELL	= /bin/sh
 
 ifeq (,$(findstring $(MAKECMDGOALS), clean distclean))
 ifeq (,$(findstring $(action), clean distclean))
-include ../../local.mk
+include ../../../local.mk
 endif
 endif
 
