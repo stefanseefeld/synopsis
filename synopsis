@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.2 2000/03/07 05:27:18 stefan Exp $
+# $Id: synopsis,v 1.3 2000/03/07 05:31:05 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -26,7 +26,7 @@ import pickle
 def version(): print "synopsis version 0.1"
 cmdname = os.path.basename(sys.argv[0])
 def usage():
-    print "\nUsage:", cmdname, "[flags] -p<parser> -f<formatter> files"
+    print "\nUsage:", cmdname, "[flags] files"
     print """
 The supported flags are:
 
