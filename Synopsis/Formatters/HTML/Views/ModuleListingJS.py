@@ -1,4 +1,4 @@
-# $Id: ModuleListingJS.py,v 1.8 2001/06/28 07:22:18 stefan Exp $
+# $Id: ModuleListingJS.py,v 1.9 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListingJS.py,v $
+# Revision 1.9  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.8  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -80,21 +86,23 @@ class ModuleListingJS(JSTree.JSTree):
 	self.manager.addRootPage(filename, 'Modules', 'contents', 2)
 	self._link_target = 'index'
 
+    def filename(self): return config.files.nameOfSpecial('ModuleTree')
+    def title(self): return 'Module Tree'
+
     def process(self, start):
 	"""Create a page with an index of all modules"""
 	# Init tree
 	share = config.datadir
 	self.js_init(os.path.join(share, 'syn-down.png'),
                      os.path.join(share, 'syn-right.png'),
-		     os.path.join(share, '/syn-dot.png'),
+		     os.path.join(share, 'syn-dot.png'),
                      'tree_%s.png', 0)
 	self.__share = share
 	# Creare the file
-	filename = config.files.nameOfSpecial('ModuleTree')
-	self.startFile(filename, "Module Tree")
+	self.start_file()
 	self.write(self.manager.formatHeader(filename, 2))
 	self.indexModule(start, start.name())
-	self.endFile()
+	self.end_file()
 
     def _child_filter(self, child):
 	return isinstance(child, AST.Module)

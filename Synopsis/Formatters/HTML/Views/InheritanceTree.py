@@ -1,4 +1,4 @@
-# $Id: InheritanceTree.py,v 1.8 2001/07/05 02:08:35 uid20151 Exp $
+# $Id: InheritanceTree.py,v 1.9 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceTree.py,v $
+# Revision 1.9  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.8  2001/07/05 02:08:35  uid20151
 # Changed the registration of pages to be part of a two-phase construction
 #
@@ -56,8 +62,9 @@ from Tags import *
 class InheritanceTree(Page.Page):
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
-	self.set_filename(config.files.nameOfSpecial('InheritanceTree'))
-	self.set_title("Synopsis - Class Hierarchy")
+
+    def filename(self): return config.files.nameOfSpecial('InheritanceTree')
+    def title(self): return 'Synopsis - Class Hierarchy'
 
     def register(self):
 	self.manager.addRootPage(self.filename(), 'Inheritance Tree', 'main', 1)
@@ -65,13 +72,13 @@ class InheritanceTree(Page.Page):
     def process(self, start):
 	"""Creates a file with the inheritance tree"""
 	roots = config.classTree.roots()
-	self.startFile()
+	self.start_file()
 	self.write(self.manager.formatHeader(self.filename()))
 	self.write(entity('h1', "Inheritance Tree"))
 	self.write('<ul>')
 	map(self.processClassInheritance, map(lambda a,b=start.name():(a,b), roots))
 	self.write('</ul>')
-	self.endFile()   
+	self.end_file()   
 
     def processClassInheritance(self, args):
 	name, rel_name = args

@@ -1,4 +1,4 @@
-# $Id: ModuleIndexer.py,v 1.5 2001/06/28 07:22:18 stefan Exp $
+# $Id: ModuleIndexer.py,v 1.6 2001/07/05 05:39:58 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,12 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleIndexer.py,v $
+# Revision 1.6  2001/07/05 05:39:58  stefan
+# advanced a lot in the refactoring of the HTML module.
+# Page now is a truely polymorphic (abstract) class. Some derived classes
+# implement the 'filename()' method as a constant, some return a variable
+# dependent on what the current scope is...
+#
 # Revision 1.5  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -50,6 +56,10 @@ class ModuleIndexer(Page.Page):
     the left frame..."""
     def __init__(self, manager):
 	Page.Page.__init__(self, manager)
+
+    def filename(self): return self.__filename
+    def title(self): return self.__title
+
     def process(self, start):
 	"""Creates indexes for all modules"""
 	start_file = config.files.nameOfModuleIndex(start.name())
@@ -65,10 +75,11 @@ class ModuleIndexer(Page.Page):
 	config.sorter.sort_section_names()
 	config.sorter.sort_sections()
 
+        self.__filename = config.files.nameOfModuleIndex(ns.name())
+        self.__title = Util.ccolonName(ns.name()) or 'Global Namespace'
+        self.__title = self.__title + ' Index'
 	# Create file
-	name = Util.ccolonName(ns.name()) or "Global Namespace"
-	filename = config.files.nameOfModuleIndex(ns.name())
-	self.startFile(filename, name+" Index")
+	self.start_file()
 	link = href(config.files.nameOfScope(ns.name()), name, target='main')
 	self.write(entity('b', link+" Index"))
 
@@ -101,7 +112,7 @@ class ModuleIndexer(Page.Page):
 		else:
 		    self.write(core.reference(child.name(), ns.name(), target='main'))
 		self.write('<br>')
-	self.endFile()
+	self.end_file()
 
 	# Queue child namespaces
 	for child in config.sorter.children():
