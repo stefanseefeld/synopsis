@@ -21,8 +21,6 @@ Parser* Walker::default_parser = 0;
 const char* Walker::argument_name = "_arg_%d_";
 const char* Walker::default_metaclass = 0;
 
-using PTree::GC;
-
 Walker::Walker(Parser* p)
   : my_result(0)
 {
@@ -1501,7 +1499,7 @@ void Walker::SetLeafComments(PTree::Node *node, PTree::Node *comments)
     if (!(cleaf = dynamic_cast<PTree::CommentedAtom *>(leaf))) {
 	// Must change first child of parent to be a commented leaf
         Token tk(leaf->position(), leaf->length(), Token::Comment);
-	cleaf = new (GC) PTree::CommentedAtom(tk, comments);
+	cleaf = new (PTree::GC) PTree::CommentedAtom(tk, comments);
 	parent->set_car(cleaf);
     } else {
 	// Already is a commented leaf, so add the comments to it

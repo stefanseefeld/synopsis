@@ -54,7 +54,7 @@ HashTable::HashTable()
 
 void HashTable::MakeTable()
 {
-    entries = new (GC) HashTableEntry[Size];
+    entries = new (PTree::GC) HashTableEntry[Size];
     for(int i = 0; i < Size; ++i)
 	entries[i].key = 0;
 }
@@ -87,13 +87,13 @@ void HashTable::Dump(std::ostream& out)
 }
 
 char* HashTable::KeyString(const char* key) {
-    char* str = new (GC) char[strlen(key) + 1];
+    char* str = new (PTree::GC) char[strlen(key) + 1];
     strcpy(str, key);
     return str;
 }
 
 char* HashTable::KeyString(const char* key, int len) {
-    char* str = new (GC) char[len + 1];
+    char* str = new (PTree::GC) char[len + 1];
     memmove(str, key, len);
     str[len] = '\0';
     return str;

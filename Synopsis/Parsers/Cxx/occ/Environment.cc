@@ -19,8 +19,6 @@
 
 // class Environment
 
-using PTree::GC;
-
 PTree::Array* Environment::classkeywords = 0;
 HashTable* Environment::namespace_table = 0;
 
@@ -590,7 +588,7 @@ Environment::Array::Array(size_t s)
 {
   num = 0;
   size = s;
-  if(s > 0) array = new (GC) Environment*[s];
+  if(s > 0) array = new (PTree::GC) Environment*[s];
   else array = 0;
 }
 
@@ -599,7 +597,7 @@ void Environment::Array::Append(Environment* p)
   if(num >= size)
   {
     size += 8;
-    Environment** a = new (GC) Environment*[size];
+    Environment** a = new (PTree::GC) Environment*[size];
     memmove(a, array, size_t(num * sizeof(Environment*)));
     delete [] array;
     array = a;

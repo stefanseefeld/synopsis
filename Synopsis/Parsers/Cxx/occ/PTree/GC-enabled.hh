@@ -12,6 +12,9 @@
 namespace PTree
 {
 
+using ::GC;
+using ::NoGC;
+
 typedef gc LightObject;
 typedef gc_cleanup Object;
 inline void cleanup_gc() { GC_gcollect();}
