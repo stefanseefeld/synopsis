@@ -5,7 +5,7 @@
   <title>Synopsis User Manual</title>
 
   <chapter>
-    <title>Introduction</title>
+    <title id="introduction">Introduction</title>
 
     <section>
       <title>What is Synopsis?</title>
@@ -136,6 +136,113 @@
     </section>
 
     <section>
+      <title>How to format your comments</title>
+
+      <para>Synopsis is designed to be flexible in how you comment your code.
+      All three stages of Synopsis deal with comments: the parser extracts
+      them, the linker processes them, and the formatter formats them.</para>
+
+      <section>
+        <title>The parser</title>
+
+        <para>The parser is where the comments are extracted, and is the least
+        flexible because the parsers use existing parser components (Python,
+        IDL) or are hard coded in C++. Each parser looks for comments before
+        declarations, and attaches them to the following declaration. The
+        general rule is that comments must be immediately before the
+        declaration, and there must be no blank lines between the comments and
+        the start of the declaration. See below for an exception to this rule
+        for C++.</para>
+
+        <para>The following is okay:<programlisting>// A comment
+/* Another comment
+ * more text
+ */
+// Another comment
+void the_declaration();</programlisting></para>
+
+        <para>The following are not okay; the comments will be ignored:<programlisting>// A comment
+
+void the_declaration();
+
+void the_declaration()
+// A comment
+{
+  some_code();
+}</programlisting></para>
+
+        <para>The exception for C++ is when the option &#39;extract_tails&#39;
+        (-Wp,-t on the command line) is used. In this case, all comments from
+        the originating source file are included, but the ones which would not
+        usually be included are flagged as &#39;suspect&#39;. Comments that
+        occurred after all declarations in a block (file, class, or namespace)
+        are attached to a &#39;dummy&#39; declaration, which must be removed
+        in the Linker stage using one of the &#39;dummy&#39; or &#39;prev&#39;
+        comment processors. The former removes the dummy declarations and
+        suspect comments, the latter does the same but checks for special
+        syntax first, as shown:<programlisting>int i; //&#60; A trailing comment
+enum Foo {
+  Foo_A, //&#60; A trailing comment for A
+  Foo_B  //&#60; A trailing comment for B attached to a dummy declaration
+};//&#60; A trailing comment for Foo
+void func()
+{
+}
+//&#60; A trailing comment for func attached to a dummy declaration (if func was at the end of the file after preprocessing)</programlisting></para>
+
+        <para>The &#39;&#60;&#39; character at the start of the comment (after
+        removing the prefix, // in this case) tells the &#39;prev&#39; comment
+        processor to move the comment to the previous declaration. As you can
+        see, this also applies to enumerators. The comment can be anywhere
+        after the declaration - on the same line, the next line, or even
+        further down.</para>
+      </section>
+
+      <section>
+        <title>The linker</title>
+
+        <para>The Linker deals with comments in the Comments linker operation.
+        The Comments operation uses the config option
+        &#39;comment_processors&#39; to find a list of Comment Processors to
+        use, one after the other, on the whole AST. Each processor typically
+        traverses the whole AST looking for comments, and performing
+        operations on them.</para>
+
+        <para>The first comment processor in the list should always be one
+        which strips away the comment characters, such as &#34;//&#34;,
+        &#34;//.&#34;, &#34;/* .. */&#34;, &#34;//!&#34;, etc. After that,
+        there are a number of processors you can use, for things like
+        extracting JavaDoc style tags (@return, @param, etc), dealing with
+        suspect comments and dummy declarations for C++ code, and deciding on
+        a summary for the comment. The processor &#39;group&#39; is a
+        processor that uses comments to organise declarations into
+        &#39;groups&#39;, within a class or namespace.</para>
+
+        <para>The comment processors are all written in Python, and you can
+        specify your own in a config file to perform custom processing, or to
+        deal with unusual comment styles. </para>
+
+        <para>See the chapter on the Linker for more information on this.</para>
+      </section>
+
+      <section>
+        <title>The formatter</title>
+
+        <para>Formatting comments is mostly concerned with dealing with the
+        styling (which uses CSS in HTML, so you can change it from the
+        stylesheet withing writing any code), and processing the tags found in
+        the comments. The tags are already extracted by the linker (if you use
+        the &#39;javatags&#39; comment processor), so it&#39;s just a matter
+        of formatting them in HTML or whatever. The only complexity is the
+        @see tag, which has to try and find the referenced declaration to make
+        a URL link.</para>
+
+        <para>See the chapter on the formatter you want to use for more
+        information on comments (if there is any special support).</para>
+      </section>
+    </section>
+
+    <section>
       <title>Where to get more help</title>
 
       <para>Website: http://synopsis.sf.net</para>
@@ -154,7 +261,7 @@
   </chapter>
 
   <chapter>
-    <title>Tutorial</title>
+    <title id="tutorial">Tutorial</title>
 
     <section>
       <title>Running Synopsis</title>
@@ -842,7 +949,7 @@ class Project:
   </chapter>
 
   <chapter>
-    <title>The Parsers</title>
+    <title id="parsers">The Parsers</title>
 
     <section>
       <title>C++ Parser</title>
@@ -1151,7 +1258,7 @@ class Project:
   </chapter>
 
   <chapter>
-    <title>The Linker</title>
+    <title id="linker">The Linker</title>
 
     <para>The Linker is one of the more powerful features of Synopsis. It is
     actually a slight misnomer, since it does more than just linking multiple
@@ -1201,7 +1308,7 @@ class Project:
     </section>
 
     <section>
-      <title>NameMapper</title>
+      <title id="linker-namemapper">NameMapper</title>
 
       <para>This simple operation adds a prefix to every declaration and type
       name in the AST. The Synopsis RefManual uses this to move the whole C++
@@ -1209,7 +1316,7 @@ class Project:
     </section>
 
     <section>
-      <title>Comments</title>
+      <title id="linker-comments">Comments</title>
 
       <para>This is the most complex Linker operation, since it is itself
       composed of multiple &#34;comment processors&#34; which work on comments
@@ -1491,7 +1598,7 @@ target_info = (filename, line number : int, scoped context name)</programlisting
   </chapter>
 
   <chapter>
-    <title>The HTML Formatter</title>
+    <title id="htmlformatter">The HTML Formatter</title>
 
     <para>The HTML formatter is so comprehensive compared to the other
     formatters that it deserves a chapter of its own. See the next chapter for
@@ -2321,7 +2428,7 @@ class HTML (Base.Formatter.HTML):
   </chapter>
 
   <chapter>
-    <title>Other Formatters</title>
+    <title id="formatters">Other Formatters</title>
 
     <para>Synopsis has other formatters than the HTML formatter, although they
     are far less developed.</para>
@@ -2560,7 +2667,7 @@ class HTML (Base.Formatter.HTML):
       depending on extra parameters given to it (base package and default
       attribute). Wherever you see mention of an import specification in this
       manual, it will also say whether a base package or default attribute is
-      given to the import_object function. </para>
+      given to the import_object function.</para>
 
       <para>&#39;spec&#39; must be either a string or a tuple of two strings:</para>
 
