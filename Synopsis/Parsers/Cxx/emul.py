@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.4 2002/10/24 23:41:09 chalky Exp $
+# $Id: emul.py,v 1.5 2002/10/25 02:46:46 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.5  2002/10/25 02:46:46  chalky
+# Try to fallback to gcc etc if compiler info fails, and display warning
+#
 # Revision 1.4  2002/10/24 23:41:09  chalky
 # Cache information for the lifetime of the module about which compilers are
 # available and which are not
@@ -103,6 +106,23 @@ def main():
     print "Found info about the following compilers:"
     print string.join(map(lambda x: x[0], infos), ', ')
 
+def get_fallback(preferred, is_first_time):
+    """Tries to return info from a fallback compiler, and prints a warning
+    message to the user, unless their preferred compiler was 'none'"""
+    if is_first_time and preferred != 'none':
+	print "Warning: The specified compiler (%s) could not be found."%(preferred,)
+	print "You may want to retry with the full pathname of the compiler"
+	print "or with it in your path. If you don't have this compiler, you"
+	print "will need to modify the C++ Parser part of your config file."
+    for compiler in ('g++', 'gcc', 'c++', 'cc'):
+	if compiler_infos.has_key(compiler):
+	    print "Warning: Falling back to compiler '%s'"%(compiler,)
+	    return compiler_infos[compiler]
+    if preferred != 'none':
+	print "Warning: Unable to fallback to a default compiler emulation."
+	print "Unless you have set appropriate paths, expect errors."
+    return None
+
 def get_compiler_info(compiler):
     """Returns the compiler info for the given compiler. The info is returned
     as a CompilerInfo object, or None if the compiler isn't found. 
@@ -110,7 +130,7 @@ def get_compiler_info(compiler):
     global failed, compiler_infos
     # Check if this compiler has already been found to not exist
     if failed.has_key(compiler):
-	return None
+	return get_fallback(compiler, 0)
     # See if already found it
     if len(compiler_infos) == 0:
 	# Try to load the emulations file
@@ -138,7 +158,7 @@ def get_compiler_info(compiler):
     if compiler_infos.has_key(compiler):
 	return compiler_infos[compiler]
     else:
-	return None
+	return get_fallback(compiler, 1)
 
 def load_compiler_infos():
     """Loads the compiler infos from a file"""
