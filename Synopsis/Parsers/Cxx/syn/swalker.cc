@@ -1,4 +1,4 @@
-// $Id: swalker.cc,v 1.20 2001/02/16 06:33:35 chalky Exp $
+// $Id: swalker.cc,v 1.21 2001/02/16 06:59:32 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.21  2001/02/16 06:59:32  chalky
+// ScopePage summaries link to source
+//
 // Revision 1.20  2001/02/16 06:33:35  chalky
 // parameterized types, return types, variable types, modifiers, etc.
 //
@@ -155,7 +158,6 @@ void SWalker::storeLink(Ptree* node, bool def, Type::Type* type)
 	    if (!(node = node->Rest())) break;
 	    if (node->Car() && node->Car()->Car() && !node->Car()->Car()->IsLeaf() && node->Car()->Car()->Car())
 		storeLink(node->Car()->Car()->Car(), false, *iter++);
-	    node->Display2(cout);
 	    if (iter == param->parameters().end()) break;
 	    node = node->Rest();
 	}

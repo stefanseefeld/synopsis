@@ -1,5 +1,5 @@
 /*
- * $Id: link.cc,v 1.3 2001/02/16 06:33:35 chalky Exp $
+ * $Id: link.cc,v 1.4 2001/02/16 06:59:32 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.4  2001/02/16 06:59:32  chalky
+ * ScopePage summaries link to source
+ *
  * Revision 1.3  2001/02/16 06:33:35  chalky
  * parameterized types, return types, variable types, modifiers, etc.
  *
@@ -337,10 +340,13 @@ namespace {
 				while (name_iter != link->name.end())
 				    name += "::" + *name_iter++;
 				TOC::iterator href = toc.find(name);
-				const char* aclass = (link->type == Link::LINK_START) ? "file-def" : "file-ref";
 				if (href != toc.end()) {
-				    out << "<a class=\""<<aclass<<"\" href=\"" << href->second << "\" ";
-				    out << "title=\"" << name << "\">";
+				    if (link->type == Link::LINK_START)
+					out << "<a class=\"file-def\" name=\""<<name<<"\"";
+				    else
+					out << "<a class=\"file-ref\"";
+				    out << " href=\"" << href->second;
+				    out << "\" title=\"" << name << "\">";
 				} else {
 				    //cerr << "link: didn't find " << name << endl;
 				    out << "<a>"; break;

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.6 2001/02/13 06:55:23 chalky Exp $
+# $Id: Part.py,v 1.7 2001/02/16 06:59:32 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.7  2001/02/16 06:59:32  chalky
+# ScopePage summaries link to source
+#
 # Revision 1.6  2001/02/13 06:55:23  chalky
 # Made synopsis -l work again
 #
@@ -264,8 +267,18 @@ class SummaryASTCommenter (DefaultASTFormatter):
     """Adds summary comments to all declarations"""
     def formatDeclaration(self, decl):
 	comm = config.comments[decl]
-	return '', div('summary', comm.summary)
+	if comm.summary:
+	    return '', '<br>'+span('summary', comm.summary)
+	return '',''
     
+class FilePageLinker (DefaultASTFormatter):
+    """Adds a link to the decl on the file page to all declarations"""
+    def formatDeclaration(self, decl):
+	filename = string.split(decl.file(), os.sep)
+	filename = config.files.nameOfScopedSpecial('page', filename)
+	name = string.join(decl.name(), '::')
+	link = filename + "#" + name
+	return '', href(link, "[Source]")
 
 class DetailASTFormatter (BaseASTFormatter):
     """Provides detail-specific AST formatting."""
