@@ -959,6 +959,7 @@ Type::Named* Builder::lookupType(const std::vector<std::string>& names, bool fun
 //. true on success.
 bool Builder::mapName(const AST::Name& names, std::vector<AST::Scope*>& o_scopes, Type::Named*& o_type)
 {
+    STrace trace("Builder::mapName");
     AST::Scope* ast_scope = m_global;
     AST::Name::const_iterator iter = names.begin();
     AST::Name::const_iterator last = names.end(); last--;
@@ -970,17 +971,17 @@ bool Builder::mapName(const AST::Name& names, std::vector<AST::Scope*>& o_scopes
     while (iter != last) {
 	const std::string& name = *iter++;
 	Type::Named* type = lookup(name, findScope(ast_scope)->search, true);
-	if (!type) { std::cout << "\nWarning: failed to lookup " << name << " in " << ast_scope->name() << std::endl; return false; }
+	if (!type) { LOG("Warning: failed to lookup " << name << " in " << ast_scope->name()); return false; }
 	try { ast_scope = Type::declared_cast<AST::Scope>(type); }
-	catch (const Type::wrong_type_cast&) { std::cout << "\nWarning: looked up scope wasnt a scope!" << name << std::endl; return false; }
+	catch (const Type::wrong_type_cast&) { LOG("Warning: looked up scope wasnt a scope!" << name); return false; }
 	o_scopes.push_back(ast_scope);
     }
 
     // iter now == last, which can be any type
     Type::Named* type = lookup(*iter, findScope(ast_scope)->search, true);
     if (!type) {
-	findScope(ast_scope)->dict->dump();
-	std::cout << "\nWarning: final type lookup wasn't found!" << *iter << endl; return false;
+	//findScope(ast_scope)->dict->dump();
+	LOG("\nWarning: final type lookup wasn't found!" << *iter); return false;
     }
 
     o_type = type;
