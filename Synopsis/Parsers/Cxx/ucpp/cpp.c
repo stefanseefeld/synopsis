@@ -52,7 +52,7 @@
 #include <time.h>
 #include "ucppi.h"
 #include "mem.h"
-#include "hash.h"
+#include "hashtable.h"
 #ifdef UCPP_MMAP
 #include <unistd.h>
 #include <sys/types.h>
