@@ -89,7 +89,7 @@ void Dumper::visitType(Type::Type* type)
     m_type = "(unknown)";
 }
 
-void Dumper::visitForward(Type::Forward* type)
+void Dumper::visitUnknown(Type::Unknown* type)
 {
     m_type = "{"+colonate(type->name())+"}";
 }

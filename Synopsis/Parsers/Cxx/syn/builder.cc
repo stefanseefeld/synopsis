@@ -216,12 +216,12 @@ AST::Class* Builder::startClass(int lineno, string type, string name)
 AST::Class* Builder::startClass(int lineno, string type, const vector<string>& names)
 {
     // Find the forward declaration of this class
-    Type::Forward* forward = dynamic_cast<Type::Forward*>(lookupType(names));
-    if (!forward) {
-	cout << "Fatal: Qualified class name did not reference a forward type." << endl; exit(1);
+    Type::Unknown* unknown = dynamic_cast<Type::Unknown*>(lookupType(names));
+    if (!unknown) {
+	cout << "Fatal: Qualified class name did not reference an unknown type." << endl; exit(1);
     }
     // Create the Class
-    AST::Class* ns = new AST::Class(m_filename, lineno, type, forward->name());
+    AST::Class* ns = new AST::Class(m_filename, lineno, type, unknown->name());
     // Add to container scope
     vector<string> scope_name = names;
     scope_name.pop_back();
@@ -321,9 +321,9 @@ Type::Named* Builder::lookupType(string name)
 {
     Type::Named* type = lookup(name);
     if (type) return type;
-    // Not found, forward declare it
+    // Not found, declare it unknown
     //cout << "Warning: Name "<<name<<" not found in "<<m_filename<<endl;
-    return Forward(name);
+    return Unknown(name);
 }
 
 // Private method to lookup a type in the current scope
@@ -388,30 +388,30 @@ Type::Named* Builder::lookupType(const vector<string>& names)
     }
 
     if (!type) {
-	// Not found! Add Type.Forward of scoped name
+	// Not found! Add Type.Unknown of scoped name
 	string name = names[0];
 	for (n_iter = names.begin(); ++n_iter != names.end();)
 	    name += "::" + *n_iter;
-	return Forward(name);
+	return Unknown(name);
     }
     return type;
 }
 
 
-Type::Forward* Builder::Forward(string name)
+Type::Unknown* Builder::Unknown(string name)
 {
     // Generate the name
     AST::Name scope = m_scope->name();
     scope.push_back(name);
-    return new Type::Forward(scope);
+    return new Type::Unknown(scope);
 }
 
-Type::Forward* Builder::addForward(string name)
+Type::Unknown* Builder::addUnknown(string name)
 {
     if (m_scopes.top()->dict->has_key(name))
 	return NULL;
-    Type::Forward* forward = Forward(name);
-    add(forward);
+    Type::Unknown* unknown = Unknown(name);
+    add(unknown);
 }
 
 Type::Base* Builder::Base(string name)

@@ -282,14 +282,14 @@ PyObject *Synopsis::Base(Type::Base* type)
     return base;
 }
 
-PyObject *Synopsis::Forward(Type::Forward* type)
+PyObject *Synopsis::Unknown(Type::Unknown* type)
 {
-    Trace trace("Synopsis::addForward");
-    PyObject *name, *forward = PyObject_CallMethod(m_type, "Forward", "OO",
+    Trace trace("Synopsis::addUnknown");
+    PyObject *name, *unknown = PyObject_CallMethod(m_type, "Unknown", "OO",
 	m->cxx(), name = m->Tuple(type->name())
     );
-    PyObject_SetItem(m_dictionary, name, forward);
-    return forward;
+    PyObject_SetItem(m_dictionary, name, unknown);
+    return unknown;
 }
 
 PyObject *Synopsis::Declared(Type::Declared* type)
@@ -686,8 +686,8 @@ void Synopsis::visitComment(AST::Comment* decl) {
 /*void Synopsis::visitType(Type::Type* type) {
     m->add(type, this->Type(type));
 }*/
-void Synopsis::visitForward(Type::Forward* type) {
-    m->add(type, Forward(type));
+void Synopsis::visitUnknown(Type::Unknown* type) {
+    m->add(type, Unknown(type));
 }
 void Synopsis::visitModifier(Type::Modifier* type) {
     m->add(type, Modifier(type));

@@ -1,7 +1,7 @@
 import sys, getopt, os, os.path, string
 from Synopsis.Core import Type, AST, Util
 
-class ASCIIFormatter:
+class ASCIIFormatter(AST.Visitor, Type.Visitor):
     """
     outputs as ascii. This is to test for features
     still missing. The output should be compatible
@@ -34,7 +34,7 @@ class ASCIIFormatter:
     def visitBaseType(self, type):
         self.__type = Util.ccolonName(type.name())
         
-    def visitForward(self, type):
+    def visitUnknown(self, type):
         self.__type = Util.ccolonName(type.name(), self.scope())
         
     def visitDeclared(self, type):

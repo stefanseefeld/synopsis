@@ -48,16 +48,16 @@ Type::Named* Dictionary::lookup(string name) throw (MultipleError, KeyError)
     Type::Named* type = iter->second;
     if (++iter == end)
 	return type;
-    // Check for Forward types
-    if (dynamic_cast<Type::Forward*>(type)) {
-	// Skip further forward types
-	while (iter != end && dynamic_cast<Type::Forward*>(iter->second))
+    // Check for Unknown types
+    if (dynamic_cast<Type::Unknown*>(type)) {
+	// Skip further unknown types
+	while (iter != end && dynamic_cast<Type::Unknown*>(iter->second))
 	    ++iter;
 	if (iter == end)
 	    return type;
 	type = (iter++)->second;
-	// Any other types that aren't forwards cause error
-	while (iter != end && dynamic_cast<Type::Forward*>(iter->second))
+	// Any other types that aren't unknown cause error
+	while (iter != end && dynamic_cast<Type::Unknown*>(iter->second))
 	    ++iter;
 	if (iter == end)
 	    return type;

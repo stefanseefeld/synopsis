@@ -17,7 +17,7 @@ Dia Formatter Usage:
   -a    hide attributes/variables
 """
 
-class DiaFormatter (Visitor.AstVisitor, Visitor.TypeVisitor):
+class DiaFormatter(AST.Visitor, Type.Visitor):
     """Outputs a Dia file
     """
     def __init__(self, filename):
@@ -168,7 +168,7 @@ class DiaFormatter (Visitor.AstVisitor, Visitor.TypeVisitor):
     def visitBaseType(self, type):
         self.__type = Util.ccolonName(type.name())
         
-    def visitForward(self, type):
+    def visitUnknown(self, type):
         self.__type = Util.ccolonName(type.name(), self.scope())
         
     def visitDeclared(self, type):
