@@ -773,6 +773,7 @@ static struct rw_table {
     { "__extension__",	token(EXTENSION) },
     { "__inline__",	token(INLINE) },
     { "__restrict",	token(Ignore) },
+    { "__restrict__",	token(Ignore) },
     { "__signed",	token(SIGNED) },
     { "__signed__",	token(SIGNED) },
 #endif
