@@ -10,9 +10,10 @@ F_HTML_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Format
 F_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Formatter/*.py))
 C_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Core/*.py))
 L_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Linker/*.py))
-PYFILES		:= Synopsis/Parser/IDL/omni Synopsis/Config \
-		   Synopsis/Parser/Python/exparse Synopsis/Parser/Python/python \
-		   $(C_PYFILES) $(L_PYFILES) $(F_PYFILES) $(F_HTML_PYFILES)
+P_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Parser/*.py))
+PP_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Parser/*/*.py))
+PYFILES		:= Synopsis/Config \
+		   $(C_PYFILES) $(L_PYFILES) $(F_PYFILES) $(F_HTML_PYFILES) $(P_PYFILES) $(PP_PYFILES)
 
 NOEX_PY		:= Synopsis/synopsis
 
