@@ -1,6 +1,6 @@
 // vim: set ts=8 sts=2 sw=2 et:
 /*
- * $Id: link.cc,v 1.19 2002/10/28 17:38:17 chalky Exp $
+ * $Id: link.cc,v 1.20 2002/10/28 18:03:54 chalky Exp $
  *
  * This file is a part of Synopsis.
  * Copyright (C) 2000, 2001 Stephen Davies
@@ -22,6 +22,9 @@
  * 02111-1307, USA.
  *
  * $Log: link.cc,v $
+ * Revision 1.20  2002/10/28 18:03:54  chalky
+ * Properly decode scoped names, and avoid crash if not using links_scope
+ *
  * Revision 1.19  2002/10/28 17:38:17  chalky
  * Ooops, get rid of #
  *
@@ -327,7 +330,14 @@ namespace
                 //for (std::string::size_type pos = word.find(160); pos != std::string::npos; pos = word.find(160, pos)) {
                 //    word[pos] = ' ';
                 //}
-                link->name.push_back(decode(word));
+                word = decode(word);
+                size_t start = 0, end;
+                while ((end = word.find('\t', start)) != std::string::npos)
+                {
+                  link->name.push_back(word.substr(start, end));
+                  start = end + 1;
+                }
+                link->name.push_back(word.substr(start, end));
             } while (in && (c = in.get()) != '\n' && c != ' ');
             // Read description
             if (!in.getline(buf, 4096)) break;
@@ -396,9 +406,12 @@ namespace
             // We cheat here and exclude lines that dont have
             // 'links_scope' at the start, and then chop it from the ones
             // that do
-            if (strncmp(buf[0], links_scope, strlen(links_scope)))
-                continue;
-            memmove(buf[0], buf[0] + strlen(links_scope), strlen(buf[0]) - strlen(links_scope) + 1);
+            if (links_scope)
+            {
+              if (strncmp(buf[0], links_scope, strlen(links_scope)))
+                  continue;
+              memmove(buf[0], buf[0] + strlen(links_scope), strlen(buf[0]) - strlen(links_scope) + 1);
+            }
             // Store in toc map
             toc[buf[0]] = buf[2];
         }
