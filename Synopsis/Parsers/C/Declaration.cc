@@ -128,7 +128,7 @@ Type::printType( std::ostream& out, Symbol *name, bool showBase, int level ) con
         printBase(out,level);
 
 		if (name != NULL)
-			cout << " ";
+			out << " ";
 	}
 
     printBefore(out,name,level);
