@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.6 2002/06/22 07:03:27 chalky Exp $
+# $Id: Project.py,v 1.7 2002/09/20 10:36:40 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.7  2002/09/20 10:36:40  chalky
+# Write the comment to the top of the project file
+#
 # Revision 1.6  2002/06/22 07:03:27  chalky
 # Updates to GUI - better editing of Actions, and can now execute some.
 #
@@ -81,8 +84,9 @@ class Project:
 	file = open(self.__filename, 'w')
 	writer = ProjectWriter(file)
 	
-	writer.write(
-	    '"""This file is auto-generated. If you must make changes by hand, '+
+	writer.write_top(
+	    '"""Synopsis Project File v1\n'+
+	    'This file is auto-generated. If you must make changes by hand, '+
 	    'please make a backup just in case."""\n')
 	# write project stuff like name, base dir, etc here
 	writer.write_item(self)
