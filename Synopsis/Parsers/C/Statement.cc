@@ -1,157 +1,115 @@
-
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-    CTool Library
-    Copyright (C) 1998-2001	Shaun Flisakowski
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 1, or (at your option)
-    any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    o+
-    o+     File:         stemnt.cpp
-    o+
-    o+     Programmer:   Shaun Flisakowski
-    o+     Date:         Aug 9, 1998
-    o+
-    o+     A high-level view of statements.
-    o+
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
-#include <cstring>
-#include <cassert>
+/* $Id: Statement.cc,v 1.6 2003/12/30 07:33:06 stefan Exp $
+ *
+ * Copyright (C) 1998 Shaun Flisakowski
+ * Copyright (C) 2003 Stefan Seefeld
+ * All rights reserved.
+ * Licensed to the public under the terms of the GNU LGPL (>= 2),
+ * see the file COPYING for details.
+ */
 
 #include <Statement.hh>
 #include <Symbol.hh>
 #include <Declaration.hh>
 #include <Project.hh>
+#include <Grammar.hh>
 
-#include "Grammar.hh"
+#include <cstring>
+#include <cassert>
 
 //#define PRINT_LOCATION
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //  indent - 2 spaces per level.
 void
 indent(std::ostream& out, int level)
 {
-    if (level > 0)
-    {
-        for (int j=level; j > 0; j--)
-          out << "  ";
-    }
+  if (level > 0)
+    for (int j=level; j > 0; j--) out << "  ";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 printNull(std::ostream& out, int level)
 {
-    indent(out,level);
-    out << ";\n";
+  indent(out,level);
+  out << ";\n";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 printBlock(std::ostream& out, int level, Statement *block)
 {
-    if (block == NULL)
-        printNull(out,level+1);
-    else if (block->isBlock())
-        block->print(out,level);
-    else
-    {
-        block->print(out,level+1);
-        if (block->needSemicolon())
-            out << ";";
-    }
+  if (block == 0) printNull(out,level+1);
+  else if (block->isBlock()) block->print(out,level);
+  else
+  {
+    block->print(out,level+1);
+    if (block->needSemicolon()) out << ";";
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
-ReverseList( Statement* sList )
+ReverseList(Statement *sList)
 {
-    Statement*    head = NULL;
+  Statement *head = 0;
 
-    while (sList != NULL)
-    {
-        Statement*    ste = sList;
-
-        sList = sList->next;
-
-        ste->next = head;
-        head = ste;
-    }
-
-    return head; 
+  while (sList)
+  {
+    Statement *ste = sList;
+    sList = sList->next;
+    ste->next = head;
+    head = ste;
+  }
+  return head; 
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Label::Label( LabelType labelType )
+Label::Label(Type t)
+  : type(t),
+    begin(0),
+    end(0)
 {
-    type  = labelType;
-    begin = NULL;
-    end   = NULL;
 }   
 
-Label::Label( Expression *expr )
+Label::Label(Expression *expr)
+  : type(Case),
+    begin(expr),
+    end(0)
 {
-    type = LT_Case;
-    begin = expr;
-    end   = NULL;
 }   
 
-Label::Label( Expression *_begin, Expression *_end )
+Label::Label(Expression *b, Expression *e)
+  : type(CaseRange),
+    begin(b),
+    end(e)
 {
-    type = LT_CaseRange;
-    begin = _begin;
-    end   = _end;
 }
 
-Label::Label( Symbol *sym )
+Label::Label(Symbol *sym)
+  : type(Goto),
+    name(sym),
+    end(0)
 {
-    type = LT_Goto;
-    name = sym;
-    end   = NULL;
 }   
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Label::~Label()
 {
-    switch (type)
-    {
-        case LT_Case:
-        case LT_CaseRange:
-            delete begin;
-            delete end;
-            break;
-
-        case LT_Goto:
-            delete name;
-            break;
-
-        default:
-            break;
-    }
+  switch (type)
+  {
+    case Case:
+    case CaseRange:
+      delete begin;
+      delete end;
+      break;
+    case Goto:
+      delete name;
+      break;
+    default:
+      break;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Label*
 Label::dup() const
 {
-    Label *ret = this ? dup0() : NULL;
-    return ret;
+  Label *ret = this ? dup0() : 0;
+  return ret;
 }
 
 Label*
@@ -162,25 +120,23 @@ Label::dup0() const
     switch (type)
     {
       default:
-      case LT_None:
-      case LT_Default:
+      case None:
+      case Default:
         break;
 
-      case LT_CaseRange:
+      case CaseRange:
         ret->end = end->dup();
-      case LT_Case:
+      case Case:
         ret->begin = begin->dup();
         break;
 
-      case LT_Goto:
+      case Goto:
         ret->name = name->dup();
         break;
     }
-    
     return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Label::print(std::ostream& out, int level) const
 {
@@ -188,185 +144,162 @@ Label::print(std::ostream& out, int level) const
 
     switch (type)
     {
-        case LT_None:
-            assert(0);
-            break;
+      case None:
+	assert(0);
+	break;
 
-        case LT_Default:
-            out << "default";
-            break;
+      case Default:
+	out << "default";
+	break;
 
-        case LT_Case:
-            assert(begin);
-            out << "case " << *begin;
-            break;
+      case Case:
+	assert(begin);
+	out << "case " << *begin;
+	break;
 
-        case LT_CaseRange:
-            assert(begin);
-            assert(end);
-            out << "case " << *begin << " ... " << *end;
-            break;
+      case CaseRange:
+	assert(begin);
+	assert(end);
+	out << "case " << *begin << " ... " << *end;
+	break;
 
-        case LT_Goto:
-            assert(name);
-            out << *name;
-            break;
+      case Goto:
+	assert(name);
+	out << *name;
+	break;
     }
-
     out << ":\n";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-Label::findExpr( fnExprCallback cb )
+Label::findExpr(fnExprCallback cb)
 {
-    switch (type)
-    {
-        default:
-            break;
+  switch (type)
+  {
+    default:
+      break;
 
-        case LT_CaseRange:
-            end->findExpr(cb);
-        case LT_Case:
-            begin->findExpr(cb);
-            break;
-    }
+    case CaseRange:
+      end->findExpr(cb);
+    case Case:
+      begin->findExpr(cb);
+      break;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Statement::Statement(StatementType stemntType, const Location& l)
-  : location(l)
+Statement::Statement(Type t, const Location &l)
+  : type(t),
+    location(l),
+    next(0)
 {
-    type  = stemntType;
-    next = NULL;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement::~Statement()
 {
-    LabelVector::iterator    j;
-
-    for (j=labels.begin(); j != labels.end(); j++)
-    {
-        delete *j;
-    }
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void
-Statement::addLabel( Label *lbl )
-{
-    labels.push_back(lbl);
-
-    // Hook the label's symtable entry back to this statement.
-    if (lbl->type == LT_Goto)
-    {
-        if (lbl->name->entry != NULL)
-            lbl->name->entry->u2LabelPosition = this;
-    }
+  for (LabelVector::iterator i = labels.begin(); i != labels.end(); ++i)
+    delete *i;
 }
 
 void
-Statement::addHeadLabel( Label *lbl )
+Statement::addLabel(Label *lbl)
 {
-    labels.insert(labels.begin(),lbl);
+  labels.push_back(lbl);
 
-    // Hook the label's symtable entry back to this statement.
-    if (lbl->type == LT_Goto)
-    {
-        if (lbl->name->entry != NULL)
-	{
-            lbl->name->entry->u2LabelPosition = this;
-            lbl->name->entry->uLabelDef = lbl;
-        }
-    }
+  // Hook the label's symtable entry back to this statement.
+  if (lbl->type == Label::Goto)
+  {
+    if (lbl->name->entry != 0)
+      lbl->name->entry->u2LabelPosition = this;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+Statement::addHeadLabel(Label *lbl)
+{
+  labels.insert(labels.begin(), lbl);
+
+  // Hook the label's symtable entry back to this statement.
+  if (lbl->type == Label::Goto)
+  {
+    if (lbl->name->entry != 0)
+    {
+      lbl->name->entry->u2LabelPosition = this;
+      lbl->name->entry->uLabelDef = lbl;
+    }
+  }
+}
+
 Statement*
 Statement::dup0() const
 {
-    Statement *ret = new Statement(type, location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  Statement *ret = new Statement(type, location);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Statement::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* Statement:" ;
-        location.printLocation(out) ;
-        out << " */";
-    }
+  if (Project::gDebug)
+  {
+    out << "/* Statement:" ;
+    location.printLocation(out) ;
+    out << " */";
+  }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  for (LabelVector::const_iterator i =labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out, level);
 
-    indent(out,level);
+  indent(out,level);
 
-    switch (type)
-    {
-      default:
-        out << __PRETTY_FUNCTION__ << std::endl;
-        out << nameOfStatementType(type) << std::endl;
-        break;
+  switch (type)
+  {
+    default:
+      out << __PRETTY_FUNCTION__ << std::endl;
+      out << nameOfStatementType(type) << std::endl;
+      break;
 
-      case ST_NullStemnt:          // The null statement.
-        out << ";";
-        break;
+    case NullStemnt:          // The null statement.
+      out << ";";
+      break;
 
-      case ST_ContinueStemnt:
-        out << "continue";
-        break;
+    case ContinueStemnt:
+      out << "continue";
+      break;
 
-      case ST_BreakStemnt:
-        out << "break";
-        break;
-    }
+    case BreakStemnt:
+      out << "break";
+      break;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-Statement::findExpr( fnExprCallback cb )
+Statement::findExpr(fnExprCallback cb)
 {
-    LabelVector::iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->findExpr(cb);
+  for (LabelVector::iterator i =labels.begin(); i != labels.end(); ++i)
+    (*i)->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-FileLineStemnt::FileLineStemnt(const std::string& incl, int lino, const Location& l):
-  Statement( ST_FileLineStemnt, l ), filename(incl), linenumber(lino)
+FileLineStemnt::FileLineStemnt(const std::string &incl, int lino, const Location &l)
+  : Statement(Statement::FileLineStemnt, l), filename(incl), linenumber(lino)
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 FileLineStemnt::~FileLineStemnt()
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 FileLineStemnt::dup0() const
 {
-    FileLineStemnt *ret = new FileLineStemnt(filename, linenumber, location);
+  FileLineStemnt *ret = new FileLineStemnt(filename, linenumber, location);
     
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  for (LabelVector::const_iterator i =labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FileLineStemnt::print(std::ostream& out, int level) const
 {
@@ -376,63 +309,55 @@ FileLineStemnt::print(std::ostream& out, int level) const
   out << ">$";
 #endif
 
-    if (linenumber > 0)
-        out << "#line " << linenumber;
-    else
-        out << "#file";
+  if (linenumber > 0)
+    out << "#line " << linenumber;
+  else
+    out << "#file";
       
-    out << " \"" << filename << "\"" << std::endl;
+  out << " \"" << filename << "\"" << std::endl;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-InclStemnt::InclStemnt(const std::string& incl, const Location& l):
-  Statement( ST_InclStemnt, l )
+InclStemnt::InclStemnt(const std::string& incl, const Location& l)
+  : Statement(Statement::InclStemnt, l)
 {
-static const char  *NrmPath[] = { "./", NULL };
+  static const char  *NrmPath[] = { "./", 0};
 
-    int    j;
+  isStandard = false;
+  filename = incl;
 
-    isStandard = false;
-    filename = incl;
-
-    for (j=0; StdPath[j]; j++)
+  for (int i = 0; StdPath[i]; ++i)
+  {
+    if (strncmp(filename.c_str(), StdPath[i], strlen(StdPath[i])) == 0)
     {
-        if (strncmp(filename.c_str(),StdPath[j],strlen(StdPath[j])) == 0)
-        {
-            isStandard = true;
-            filename = &(filename.c_str()[strlen(StdPath[j])]);
-        }
+      isStandard = true;
+      filename = &(filename.c_str()[strlen(StdPath[i])]);
     }
+  }
 
-    for (j=0; NrmPath[j]; j++)
+  for (int i = 0; NrmPath[i]; i++)
+  {
+    if (strncmp(filename.c_str(), NrmPath[i], strlen(NrmPath[i])) == 0)
     {
-        if (strncmp(filename.c_str(),NrmPath[j],strlen(NrmPath[j])) == 0)
-        {
-            filename = &(filename.c_str()[strlen(NrmPath[j])]);
-        }
+      filename = &(filename.c_str()[strlen(NrmPath[i])]);
     }
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 InclStemnt::~InclStemnt()
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 InclStemnt::dup0() const
 {
-    InclStemnt *ret = new InclStemnt(filename, location);
-    ret->isStandard = isStandard;
+  InclStemnt *ret = new InclStemnt(filename, location);
+  ret->isStandard = isStandard;
     
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 InclStemnt::print(std::ostream& out, int level) const
 {
@@ -442,35 +367,29 @@ InclStemnt::print(std::ostream& out, int level) const
   out << ">$";
 #endif
 
-    out << "#include " << (isStandard ? '<' : '"');
-    out << filename << (isStandard ? '>' : '"') << std::endl;
+  out << "#include " << (isStandard ? '<' : '"');
+  out << filename << (isStandard ? '>' : '"') << std::endl;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 EndInclStemnt::EndInclStemnt(const Location& l)
-           : Statement( ST_EndInclStemnt, l )
+  : Statement(Statement::EndInclStemnt, l)
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 EndInclStemnt::~EndInclStemnt()
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 EndInclStemnt::dup0() const
 {
-    EndInclStemnt *ret = new EndInclStemnt(location);
+  EndInclStemnt *ret = new EndInclStemnt(location);
     
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 EndInclStemnt::print(std::ostream& out, int level) const
 {
@@ -481,719 +400,585 @@ EndInclStemnt::print(std::ostream& out, int level) const
 #endif
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-ExpressionStemnt::ExpressionStemnt( Expression *expr, const Location& l)
-                 : Statement( ST_ExpressionStemnt, l )
+ExpressionStemnt::ExpressionStemnt(Expression *expr, const Location& l)
+  : Statement(Statement::ExpressionStemnt, l),
+    expression(expr)
 {
-    expression = expr;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 ExpressionStemnt::~ExpressionStemnt()
 {
-    delete expression;
+  delete expression;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 ExpressionStemnt::dup0() const
 {
-    ExpressionStemnt *ret = new ExpressionStemnt(expression->dup(), location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
+  ExpressionStemnt *ret = new ExpressionStemnt(expression->dup(), location);  
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
         
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 ExpressionStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* ExpressionStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* ExpressionStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out, level);
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
-
-    indent(out,level);
-    assert(expression);
-    out << *expression;
+  indent(out,level);
+  assert(expression);
+  out << *expression;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-ExpressionStemnt::findExpr( fnExprCallback cb )
+ExpressionStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
-    expression->findExpr(cb);
+  Statement::findExpr(cb);
+  expression->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-IfStemnt::IfStemnt( Expression *_cond,
-                    Statement *_thenBlk, const Location& l,
-                    Statement *_elseBlk /* =NULL */)
-         : Statement( ST_IfStemnt, l )
+IfStemnt::IfStemnt(Expression *c,
+		   Statement *t, const Location &l,
+		   Statement *e)
+  : Statement(Statement::IfStemnt, l),
+    cond(c),
+    thenBlk(t),
+    elseBlk(e)
 {
-    cond = _cond;
-    thenBlk = _thenBlk;
-    elseBlk = _elseBlk;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 IfStemnt::~IfStemnt()
 {
-    delete cond;
-    delete thenBlk;
-    delete elseBlk;
+  delete elseBlk;
+  delete thenBlk;
+  delete cond;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 IfStemnt::dup0() const
 {
-    IfStemnt *ret = new IfStemnt(cond->dup(),thenBlk->dup(),location,elseBlk->dup());
+  IfStemnt *ret = new IfStemnt(cond->dup(), thenBlk->dup(),
+			       location, elseBlk->dup());
     
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
         
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 IfStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* IfStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* IfStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out, level);
 
+  indent(out,level);
+
+  out << "if (" << *cond << ")\n";
+  printBlock(out,level,thenBlk);
+
+  if (elseBlk)
+  {
+    out << std::endl;
     indent(out,level);
-
-    out << "if (" << *cond << ")\n";
-    printBlock(out,level,thenBlk);
-
-    if (elseBlk)
-    {
-        out << std::endl;
-        indent(out,level);
-        out << "else\n";
-        printBlock(out,level,elseBlk);
-    }
+    out << "else\n";
+    printBlock(out,level,elseBlk);
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-IfStemnt::findExpr( fnExprCallback cb )
+IfStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
+  Statement::findExpr(cb);
 
-    cond->findExpr(cb);
+  cond->findExpr(cb);
 
-    thenBlk->findExpr(cb);
+  thenBlk->findExpr(cb);
 
-    if (elseBlk)
-        elseBlk->findExpr(cb);
+  if (elseBlk) elseBlk->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-IfStemnt::findStemnt( fnStemntCallback cb )
+IfStemnt::findStemnt(fnStemntCallback cb)
 {
-    (cb)(this);
+  (cb)(this);
 
-    thenBlk->findStemnt(cb);
+  thenBlk->findStemnt(cb);
 
-    if (elseBlk)
-        elseBlk->findStemnt(cb);
+  if (elseBlk) elseBlk->findStemnt(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-SwitchStemnt::SwitchStemnt( Expression *_cond, Statement *_block,
-			    const Location& l )
-             : Statement( ST_SwitchStemnt, l )
+SwitchStemnt::SwitchStemnt(Expression *c, Statement *b,
+			   const Location &l)
+  : Statement(Statement::SwitchStemnt, l),
+    cond(c),
+    block(b)
 {
-    cond = _cond;
-    block = _block;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 SwitchStemnt::~SwitchStemnt()
 {
-    delete cond;
-    delete block;
+  delete block;
+  delete cond;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 SwitchStemnt::dup0() const
 {
-    SwitchStemnt *ret = new SwitchStemnt(cond->dup(),block->dup(), location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  SwitchStemnt *ret = new SwitchStemnt(cond->dup(),block->dup(), location);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 SwitchStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* SwitchStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* SwitchStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
 
-    indent(out,level);
+  indent(out,level);
 
-    out << "switch (" << *cond << ")\n";
+  out << "switch (" << *cond << ")\n";
 
-    printBlock(out,level,block);
+  printBlock(out,level,block);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-SwitchStemnt::findExpr( fnExprCallback cb )
+SwitchStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
-    cond->findExpr(cb);
-    block->findExpr(cb);
+  Statement::findExpr(cb);
+  cond->findExpr(cb);
+  block->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-SwitchStemnt::findStemnt( fnStemntCallback cb )
+SwitchStemnt::findStemnt(fnStemntCallback cb)
 {
-    (cb)(this);
+  (cb)(this);
 
-    block->findStemnt(cb);
+  block->findStemnt(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-ForStemnt::ForStemnt( Expression *_init, Expression *_cond,
-                      Expression *_incr, const Location& l,
-		      Statement *_block /* =NULL */)
-          : Statement( ST_ForStemnt, l )
+ForStemnt::ForStemnt(Expression *i, Expression *c,
+		     Expression *inc, const Location &l,
+		     Statement *b)
+  : Statement(Statement::ForStemnt, l),
+    init(i),
+    cond(c),
+    incr(inc),
+    block(b)
 {
-    init = _init;
-    cond = _cond;
-    incr = _incr;
-
-    block = _block;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 ForStemnt::~ForStemnt()
 {
-    delete init;
-    delete cond;
-    delete incr;
-
     delete block;
+    delete incr;
+    delete cond;
+    delete init;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 ForStemnt::dup0() const
 {
-    ForStemnt *ret = new ForStemnt(init->dup(),cond->dup(),incr->dup(),
-                                   location,block->dup());
-                                   
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  ForStemnt *ret = new ForStemnt(init->dup(),cond->dup(),incr->dup(),
+				 location, block->dup());
+  for (LabelVector::const_iterator i =labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 ForStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* ForStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* ForStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  indent(out,level);
 
-    indent(out,level);
+  out << "for (";
 
-    out << "for (";
+  if (init) out << *init;
+  out << "; ";
 
-    if (init)
-        out << *init;
-    out << "; ";
+  if (cond) out << *cond;
+  out << "; ";
 
-    if (cond)
-        out << *cond;
-    out << "; ";
+  if (incr) out << *incr;
+  out << ")\n";
 
-    if (incr)
-        out << *incr;
-    out << ")\n";
-
-    printBlock(out,level,block);
+  printBlock(out,level,block);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-ForStemnt::findExpr( fnExprCallback cb )
+ForStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
+  Statement::findExpr(cb);
 
-    if (init != NULL)
-        init->findExpr(cb);
-
-    if (cond != NULL)
-        cond->findExpr(cb);
-
-    if (incr != NULL)
-        incr->findExpr(cb);
-
-    if (block != NULL)
-        block->findExpr(cb);
+  if (init) init->findExpr(cb);
+  if (cond) cond->findExpr(cb);
+  if (incr) incr->findExpr(cb);
+  if (block) block->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-ForStemnt::findStemnt( fnStemntCallback cb )
+ForStemnt::findStemnt(fnStemntCallback cb)
 {
-    (cb)(this);
-
-    if (block)
-        block->findStemnt(cb);
+  (cb)(this);
+  if (block) block->findStemnt(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-WhileStemnt::WhileStemnt( Expression *_cond, Statement *_block,
-			  const Location& l)
-            : Statement( ST_WhileStemnt, l )
+WhileStemnt::WhileStemnt(Expression *c, Statement *b, const Location &l)
+  : Statement(Statement::WhileStemnt, l),
+    cond(c),
+    block(b)
 {
-    cond = _cond;
-    block = _block;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 WhileStemnt::~WhileStemnt()
 {
-    delete cond;
-    delete block;
+  delete block;
+  delete cond;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 WhileStemnt::dup0() const
 {
-    WhileStemnt *ret = new WhileStemnt(cond->dup(),block->dup(), location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  WhileStemnt *ret = new WhileStemnt(cond->dup(),block->dup(), location);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 WhileStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* WhileStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* WhileStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
 
-    indent(out,level);
+  indent(out,level);
 
-    out << "while (" << *cond << ")\n";
+  out << "while (" << *cond << ")\n";
 
-    printBlock(out,level,block);
+  printBlock(out,level,block);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-WhileStemnt::findExpr( fnExprCallback cb )
+WhileStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
-
-    cond->findExpr(cb);
-
-    if (block)
-        block->findExpr(cb);
+  Statement::findExpr(cb);
+  cond->findExpr(cb);
+  if (block) block->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-WhileStemnt::findStemnt( fnStemntCallback cb )
+WhileStemnt::findStemnt(fnStemntCallback cb)
 {
-    (cb)(this);
-
-    if (block)
-        block->findStemnt(cb);
+  (cb)(this);
+  if (block) block->findStemnt(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-DoWhileStemnt::DoWhileStemnt( Expression *_cond, Statement *_block,
-			     const Location& l)
-              : Statement( ST_DoWhileStemnt, l )
+DoWhileStemnt::DoWhileStemnt(Expression *c, Statement *b,
+			     const Location &l)
+  : Statement(Statement::DoWhileStemnt, l),
+    cond(c),
+    block(b)
 {
-    cond = _cond;
-    block = _block;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 DoWhileStemnt::~DoWhileStemnt()
 {
-    delete cond;
-    delete block;
+  delete block;
+  delete cond;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 DoWhileStemnt::dup0() const
 {
-    DoWhileStemnt *ret = new DoWhileStemnt(cond->dup(),block->dup(), location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  DoWhileStemnt *ret = new DoWhileStemnt(cond->dup(),block->dup(), location);
+  for (LabelVector::const_iterator i =labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 DoWhileStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* DoWhileStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* DoWhileStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
 
-    indent(out,level);
-    out << "do ";
+  indent(out,level);
+  out << "do ";
 
-    if (!block->isBlock())
-        out << std::endl;
+  if (!block->isBlock())
+    out << std::endl;
 
-    printBlock(out,level,block);
+  printBlock(out,level,block);
 
-    if (!block->isBlock())
-        out << std::endl;
+  if (!block->isBlock())
+    out << std::endl;
 
-    indent(out,level);
-    out << "while (" << *cond << ")";
+  indent(out,level);
+  out << "while (" << *cond << ")";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-DoWhileStemnt::findExpr( fnExprCallback cb )
+DoWhileStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
-
-    cond->findExpr(cb);
-
-    if (block)
-        block->findExpr(cb);
+  Statement::findExpr(cb);
+  cond->findExpr(cb);
+  if (block) block->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-DoWhileStemnt::findStemnt( fnStemntCallback cb )
+DoWhileStemnt::findStemnt(fnStemntCallback cb)
 {
-    (cb)(this);
-
-    if (block)
-        block->findStemnt(cb);
+  (cb)(this);
+  if (block) block->findStemnt(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-GotoStemnt::GotoStemnt( Symbol *_dest, const Location& l)
-           : Statement( ST_GotoStemnt, l )
+GotoStemnt::GotoStemnt(Symbol *d, const Location &l)
+  : Statement(Statement::GotoStemnt, l),
+    dest(d)
 {
-    dest = _dest;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 GotoStemnt::~GotoStemnt()
 {
-    delete dest;
+  delete dest;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 GotoStemnt::dup0() const
 {
-    GotoStemnt *ret = new GotoStemnt(dest->dup(), location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  GotoStemnt *ret = new GotoStemnt(dest->dup(), location);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 GotoStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* GotoStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* GotoStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
-
-    indent(out,level);
-    out << "goto " << *dest;
+  indent(out,level);
+  out << "goto " << *dest;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-ReturnStemnt::ReturnStemnt( Expression *_result, const Location& l)
-             : Statement( ST_ReturnStemnt, l )
+ReturnStemnt::ReturnStemnt(Expression *r, const Location &l)
+  : Statement(Statement::ReturnStemnt, l),
+    result(r)
 {
-    result = _result;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 ReturnStemnt::~ReturnStemnt()
 {
-    delete result;
+  delete result;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 ReturnStemnt::dup0() const
 {
-    ReturnStemnt *ret = new ReturnStemnt(result->dup(), location);
-    
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-        
-    return ret;
+  ReturnStemnt *ret = new ReturnStemnt(result->dup(), location);
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 ReturnStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* ReturnStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* ReturnStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+  indent(out,level);
+  out << "return";
 
-    indent(out,level);
-    out << "return";
-
-    if (result)
-        out << " " << *result;
+  if (result) out << " " << *result;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-ReturnStemnt::findExpr( fnExprCallback cb )
+ReturnStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
-
-    if (result)
-        result->findExpr(cb);
+  Statement::findExpr(cb);
+  if (result) result->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-DeclStemnt::DeclStemnt(const Location& l,
-		       StatementType stype /* =ST_DeclStemnt */)
-      : Statement( stype, l )
+DeclStemnt::DeclStemnt(const Location &l,
+		       Statement::Type t /* =ST_DeclStemnt */)
+  : Statement(t, l)
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 DeclStemnt::~DeclStemnt()
 {
-    DeclVector::iterator    j;
-
-    for (j=decls.begin(); j != decls.end(); j++)
-        delete *j;
+  for (DeclVector::iterator i = decls.begin(); i != decls.end(); ++i)
+    delete *i;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 DeclStemnt::addDecl(Decl *decl)
 {
-    decls.push_back(decl);
+  decls.push_back(decl);
 }
 
 void
 DeclStemnt::addDecls(Decl *decls)
 {
-    Decl    *decl = decls;
-
-    while (decls != NULL)
-    {
-        decls = decls->next;
-        decl->next = NULL;
-        //std::cout << "Decl is: ";
-        //decl->print(std::cout,true);
-        //std::cout << std::endl;
-        addDecl(decl);
-        decl = decls;
-    }
+  Decl *decl = decls;
+  while (decls)
+  {
+    decls = decls->next;
+    decl->next = 0;
+    //std::cout << "Decl is: ";
+    //decl->print(std::cout,true);
+    //std::cout << std::endl;
+    addDecl(decl);
+    decl = decls;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 DeclStemnt::dup0() const
 {
-    DeclStemnt *ret;
-    if (type == ST_TypedefStemnt)
-        ret = new TypedefStemnt(location);
-    else
-        ret = new DeclStemnt(location);
+  DeclStemnt *ret;
+  if (type == TypedefStemnt)
+    ret = new ::TypedefStemnt(location);
+  else ret = new DeclStemnt(location);
 
-    DeclVector::const_iterator    j;
-    for (j=decls.begin(); j != decls.end(); j++)
-        ret->addDecl((*j)->dup());
+  for (DeclVector::const_iterator i = decls.begin(); i != decls.end(); ++i)
+    ret->addDecl((*i)->dup());
 
-    LabelVector::const_iterator    k;
-    for (k=labels.begin(); k != labels.end(); k++)
-        ret->addLabel((*k)->dup());
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
 
-    return ret;
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 DeclStemnt*
 DeclStemnt::convertToTypedef()
 {
-    // Nothing to do?
-    if (isTypedef())
-        return this;
+  // Nothing to do?
+  if (isTypedef()) return this;
 
-    TypedefStemnt *ret = new TypedefStemnt(location);
+  ::TypedefStemnt *ret = new ::TypedefStemnt(location);
 
-    // Since we are really the same thing,
-    // let's just steal the insides.
-    LabelVector::iterator    k;
-    for (k=labels.begin(); k != labels.end(); k++)
-    {
-        ret->addLabel(*k);
-    }
-    labels.clear();
+  // Since we are really the same thing,
+  // let's just steal the insides.
+  for (LabelVector::iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel(*i);
+  labels.clear();
 
-    ret->next    = next;
-    next = NULL;
+  ret->next    = next;
+  next = 0;
 
-    DeclVector::iterator    j;
+  for (DeclVector::iterator i = decls.begin(); i != decls.end(); ++i)
+    ret->addDecl(*i);
+  decls.clear();
 
-    for (j=decls.begin(); j != decls.end(); j++)
-    {
-        ret->addDecl(*j);
-    }
-
-    decls.clear();
-
-    delete this;        // Danger - Will Robinson!
-
-    return ret;
+  delete this;        // Danger - Will Robinson!
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 DeclStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
+  if (Project::gDebug)
+  {
+    out << "/* DeclStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
+
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
+
+  indent(out,level);
+
+  if (!decls.empty())
+  {
+    DeclVector::const_iterator i = decls.begin();
+
+    (*i)->print(out,true,level);
+    for (++i; i != decls.end(); ++i)
     {
-        out << "/* DeclStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
+      out << ", ";
+      (*i)->print(out,false,level);
     }
+  }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
-
-    indent(out,level);
-
-    if (!decls.empty())
-    {
-        DeclVector::const_iterator    j = decls.begin();
-
-        (*j)->print(out,true,level);
-        for (j++; j != decls.end(); j++)
-        {
-            out << ", ";
-            (*j)->print(out,false,level);
-        }
-    }
-
-    out << ";";
+  out << ";";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-DeclStemnt::findExpr( fnExprCallback cb )
+DeclStemnt::findExpr(fnExprCallback cb)
 {
-    Statement::findExpr(cb);
+  Statement::findExpr(cb);
 
-    DeclVector::iterator    j;
-
-    for (j = decls.begin(); j != decls.end(); j++)
-    {
-        (*j)->findExpr(cb);
-    }
+  for (DeclVector::iterator i = decls.begin(); i != decls.end(); ++i)
+    (*i)->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-TypedefStemnt::TypedefStemnt(const Location& l)
-              : DeclStemnt( l, ST_TypedefStemnt )
+TypedefStemnt::TypedefStemnt(const Location &l)
+  : DeclStemnt(l, Statement::TypedefStemnt)
 {
 }
 
@@ -1201,342 +986,293 @@ TypedefStemnt::~TypedefStemnt()
 {
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 TypedefStemnt::print(std::ostream& out, int level) const
 {
-    if (Project::gDebug)
+  if (Project::gDebug)
+  {
+    out << "/* TypedefStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
+
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
+
+  indent(out,level);
+
+  out << "typedef ";
+
+  if (!decls.empty())
+  {
+    DeclVector::const_iterator i = decls.begin();
+    
+    (*i)->print(out,true,level);
+    for (++i; i != decls.end(); ++i)
     {
-        out << "/* TypedefStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
+      out << ", ";
+      (*i)->print(out,false,level);
     }
-
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
-
-    indent(out,level);
-
-    out << "typedef ";
-
-    if (!decls.empty())
-    {
-        DeclVector::const_iterator    j = decls.begin();
-
-        (*j)->print(out,true,level);
-        for (j++; j != decls.end(); j++)
-        {
-            out << ", ";
-            (*j)->print(out,false,level);
-        }
-    }
-
-    out << ";";
+  }
+  out << ";";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Block::Block(const Location& l)
-      : Statement( ST_Block , l )
+Block::Block(const Location &l)
+  : Statement(Statement::Block, l),
+    head(0),
+    tail(0)
 {
-    head = tail = NULL;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Block::~Block()
 {
-    Statement *stemnt, *prevStemnt = NULL;
+  Statement *stemnt, *prevStemnt = 0;
 
-    for (stemnt=head; stemnt; stemnt=stemnt->next)
-    {
-        delete prevStemnt;
-        prevStemnt = stemnt;
-    }
+  for (stemnt= head; stemnt; stemnt = stemnt->next)
+  {
     delete prevStemnt;
+    prevStemnt = stemnt;
+  }
+  delete prevStemnt;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Block::add(Statement *stemnt)
 {
-    if (stemnt)
-    {
-        stemnt->next = NULL;
-    
-        if (tail)
-            tail->next = stemnt;
-        else
-            head = stemnt;
-    
-        tail = stemnt;
-    }
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void
-Block::addStatements(Statement* stemnts)
-{
-    Statement*    stemnt;
-
-    while (stemnts != NULL)
-    {
-        stemnt = stemnts;
-        stemnts = stemnts->next;
-
-        stemnt->next = NULL;
-        add(stemnt);
-    }
+  if (stemnt)
+  {
+    stemnt->next = 0;
+    if (tail) tail->next = stemnt;
+    else head = stemnt;
+    tail = stemnt;
+  }
 }
 
 void
-Block::addDecls(Decl* decls)
+Block::addStatements(Statement *stemnts)
 {
-    Decl    *decl = decls;
+  Statement *stemnt;
+  while (stemnts != 0)
+  {
+    stemnt = stemnts;
+    stemnts = stemnts->next;
 
-    while (decls != NULL)
-    {
-        DeclStemnt*   ds = new DeclStemnt(location);
-
-        decls = decls->next;
-        decl->next = NULL;
-
-        ds->addDecl(decl);
-        add(ds);        
-
-        decl = decls;
-    }
+    stemnt->next = 0;
+    add(stemnt);
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+Block::addDecls(Decl *decls)
+{
+  Decl *decl = decls;
+  while (decls != 0)
+  {
+    ::DeclStemnt *ds = new ::DeclStemnt(location);
+    decls = decls->next;
+    decl->next = 0;
+
+    ds->addDecl(decl);
+    add(ds);        
+    decl = decls;
+  }
+}
+
 Statement*
 Block::dup0() const
 {
-    Block *ret = new Block(location);
+  Block *ret = new Block(location);
+  for (Statement *stemnt = head; stemnt; stemnt = stemnt->next)
+    ret->add(stemnt->dup());
 
-    for (Statement *stemnt=head; stemnt; stemnt=stemnt->next)
-        ret->add(stemnt->dup());
-
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-
-    return ret;
+  for (LabelVector::const_iterator i =labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Block::print(std::ostream& out, int level) const
 {
-    bool       isDecl;
-    Statement *stemnt;
+  if (Project::gDebug)
+  {
+    out << "/* BlockStemnt:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
 
-    if (Project::gDebug)
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    (*i)->print(out,level);
+  
+  indent(out,level);
+  out << "{\n";
+
+  bool isDecl = (head != 0) ? head->isDeclaration() : false;
+  for (Statement *stemnt = head; stemnt; stemnt = stemnt->next)
+  {
+    if (isDecl && !stemnt->isDeclaration())
     {
-        out << "/* BlockStemnt:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
+      isDecl = false;
+      out << std::endl;
     }
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->print(out,level);
+    stemnt->print(out,level+1);
 
-    indent(out,level);
-    out << "{\n";
+    if (stemnt->needSemicolon())
+      out << ";";
+    out << std::endl;
+  }
 
-    isDecl = (head != NULL) ? head->isDeclaration() : false;
-    for (stemnt=head; stemnt; stemnt=stemnt->next)
-    {
-        if (isDecl && !stemnt->isDeclaration())
-        {
-            isDecl = false;
-            out << std::endl;
-        }
-
-        stemnt->print(out,level+1);
-
-        if (stemnt->needSemicolon())
-            out << ";";
-        out << std::endl;
-    }
-
-    indent(out,level);
-    out << "}\n";
+  indent(out,level);
+  out << "}\n";
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-Block::findExpr( fnExprCallback cb )
+Block::findExpr(fnExprCallback cb)
 {
-    Statement *stemnt;
+  Statement *stemnt;
 
-    Statement::findExpr(cb);
+  Statement::findExpr(cb);
 
-    for (stemnt=head; stemnt; stemnt=stemnt->next)
-    {
-        stemnt->findExpr(cb);
-    }
+  for (stemnt=head; stemnt; stemnt=stemnt->next)
+    stemnt->findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-Block::findStemnt( fnStemntCallback cb )
+Block::findStemnt(fnStemntCallback cb)
 {
-    Statement *stemnt;
-
-    (cb)(this);
-
-    for (stemnt=head; stemnt; stemnt=stemnt->next)
-    {
-        stemnt->findStemnt(cb);
-    }
+  (cb)(this);
+  for (Statement *stemnt = head; stemnt; stemnt = stemnt->next)
+    stemnt->findStemnt(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Block::insert(Statement *stemnt, Statement *after /* =NULL */)
 {
-    if (stemnt)
+  if (stemnt)
+  {
+    stemnt->next = 0;
+    if (tail)
     {
-        stemnt->next = NULL;
-    
-        if (tail)
-        {
-            if (after)
-            {
-                stemnt->next = after->next;
-                after->next = stemnt;
-            }
-            else
-            {
-                stemnt->next = head;
-                head = stemnt;
-            }
-
-            if (stemnt->next == NULL)
-                tail = stemnt;
-        }
-        else
-            head = tail = stemnt;
+      if (after)
+      {
+	stemnt->next = after->next;
+	after->next = stemnt;
+      }
+      else
+      {
+	stemnt->next = head;
+	head = stemnt;
+      }
+      
+      if (stemnt->next == 0) tail = stemnt;
     }
+    else head = tail = stemnt;
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-FunctionDef::FunctionDef(const Location& l)
-            : Block(l)
+FunctionDef::FunctionDef(const Location &l)
+  : Block(l),
+    decl(0)
 {
-    decl = NULL;
 }
 
 FunctionDef::~FunctionDef()
 {
-    delete decl;
+  delete decl;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 FunctionDef::dup0() const
 {
-    FunctionDef *ret = new FunctionDef(location);
-    ret->decl = decl->dup();
+  FunctionDef *ret = new FunctionDef(location);
+  ret->decl = decl->dup();
 
-    for (Statement *stemnt=head; stemnt; stemnt=stemnt->next)
-        ret->add(stemnt->dup());
+  for (Statement *stemnt=head; stemnt; stemnt=stemnt->next)
+    ret->add(stemnt->dup());
 
-    LabelVector::const_iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        ret->addLabel((*j)->dup());
-
-    return ret;
+  for (LabelVector::const_iterator i = labels.begin(); i != labels.end(); ++i)
+    ret->addLabel((*i)->dup());
+  return ret;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionDef::print(std::ostream& out, int) const
 {
-    if (Project::gDebug)
-    {
-        out << "/* FunctionDef:" ;
-        location.printLocation(out) ;
-        out << " */" << std::endl;
-    }
+  if (Project::gDebug)
+  {
+    out << "/* FunctionDef:" ;
+    location.printLocation(out) ;
+    out << " */" << std::endl;
+  }
 
-    decl->print(out,true); 
-    out << std::endl;
+  decl->print(out,true); 
+  out << std::endl;
 
-    Block::print(out,0);
+  Block::print(out,0);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-FunctionDef::findExpr( fnExprCallback cb )
+FunctionDef::findExpr(fnExprCallback cb)
 {
-    decl->findExpr(cb);
-
-    Block::findExpr(cb);
+  decl->findExpr(cb);
+  Block::findExpr(cb);
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Symbol*
 FunctionDef::FunctionName() const
 {
-    return decl->name;
+  return decl->name;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::ostream&
 operator<< (std::ostream& out, const Statement& stemnt)
 {
-    stemnt.print(out,0);
-    return out;
+  stemnt.print(out,0);
+  return out;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 #define  SHOW(X)  case X: return #X
 
 char*
-nameOfStatementType( StatementType type )
+nameOfStatementType(Statement::Type type)
 {
-    switch (type)
-    {
-        default:
-            return "Unknown StatementType";
+  switch (type)
+  {
+    default:
+      return "Unknown StatementType";
 
-        SHOW(ST_NullStemnt);
-        SHOW(ST_DeclStemnt);
-        SHOW(ST_ExpressionStemnt);
-        SHOW(ST_IfStemnt);
-        SHOW(ST_SwitchStemnt);
-        SHOW(ST_ForStemnt);
-        SHOW(ST_WhileStemnt);
-        SHOW(ST_DoWhileStemnt);
-        SHOW(ST_ContinueStemnt);
-        SHOW(ST_BreakStemnt);
-        SHOW(ST_GotoStemnt);
-        SHOW(ST_ReturnStemnt);
-        SHOW(ST_Block);
-        SHOW(ST_InclStemnt);
-        SHOW(ST_EndInclStemnt);
-    }
+    SHOW(Statement::NullStemnt);
+    SHOW(Statement::DeclStemnt);
+    SHOW(Statement::ExpressionStemnt);
+    SHOW(Statement::IfStemnt);
+    SHOW(Statement::SwitchStemnt);
+    SHOW(Statement::ForStemnt);
+    SHOW(Statement::WhileStemnt);
+    SHOW(Statement::DoWhileStemnt);
+    SHOW(Statement::ContinueStemnt);
+    SHOW(Statement::BreakStemnt);
+    SHOW(Statement::GotoStemnt);
+    SHOW(Statement::ReturnStemnt);
+    SHOW(Statement::Block);
+    SHOW(Statement::InclStemnt);
+    SHOW(Statement::EndInclStemnt);
+  }
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 char*
-nameOfLabelType( LabelType type )
+nameOfLabelType(Label::Type type)
 {
-    switch (type)
-    {
-        default:
-            return "Unknown LabelType";
+  switch (type)
+  {
+    default:
+      return "Unknown LabelType";
 
-        SHOW(LT_None);        // No label - invalid.
-        SHOW(LT_Default);     // default:
-        SHOW(LT_Case);        // case <expr>:
-        SHOW(LT_Goto);        // A named label (goto destination).
-    }
+    SHOW(Label::None);        // No label - invalid.
+    SHOW(Label::Default);     // default:
+    SHOW(Label::Case);        // case <expr>:
+    SHOW(Label::Goto);        // A named label (goto destination).
+  }
 }
 
 #undef SHOW
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
