@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.11 2002/11/02 06:37:37 chalky Exp $
+# $Id: Makefile,v 1.12 2003/01/16 18:23:28 chalky Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -28,7 +28,7 @@ endif
 
 SRC	:= __init__ ASTFormatter FormatStrategy CommentFormatter FileLayout FramesIndex InheritanceGraph InheritanceTree TreeFormatter TreeFormatterJS\
            ModuleIndexer ModuleListing ModuleListingJS Page ScopePages ScopeSorter Tags core FilePages NameIndex JSTree FileTree FileTreeJS \
-	   doxygen XRefPages DirBrowse RawFilePages
+	   doxygen XRefPages DirBrowse RawFilePages FileListing FileIndexer FileDetails FileSource
 PY	:= $(patsubst %, %.py, $(SRC)) $(patsubst %, %.pyc, $(SRC))
 
 action	:= all
