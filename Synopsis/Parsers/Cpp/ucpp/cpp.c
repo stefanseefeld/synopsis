@@ -79,7 +79,8 @@ static int current_incdir = -1;
 
 #ifdef SYNOPSIS
 void synopsis_macro_hook(const char* name, int line, int start, int end, int diff);
-void synopsis_include_hook(const char* source_file, const char* target_file, int is_macro, int is_next);
+void synopsis_include_hook(const char* source_file, const char* target_file,
+			   const char *fname, int system, int is_macro, int is_next);
 void synopsis_file_hook(const char* file, int new_file);
 #endif
 
@@ -1448,7 +1449,7 @@ do_include_next:
 		    // Still record protected includes (those not included
 		    // because they have a #ifndef/define/endif protection and
 		    // have already been included)
-		    synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, is_macro, nex);
+		    synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, fname, string_fname, is_macro, nex);
 		}
 #endif
 		current_filename = 0;
@@ -1469,7 +1470,7 @@ do_include_next:
 #endif
 	current_filename = fname;
 #ifdef SYNOPSIS
-	synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, is_macro, nex);
+	synopsis_include_hook(ls_stack[ls_depth-1].long_name, current_long_filename, fname, string_fname, is_macro, nex);
 #endif
 	enter_file(ls, flags, 1);
 	return 0;
@@ -2440,7 +2441,7 @@ static int ucpp_parse_opt(int argc, char *argv[], struct lexer_state *ls)
 	int system_macros = 0, standard_assertions = 1;
 
 	init_lexer_state(ls);
-	ls->flags = DEFAULT_CPP_FLAGS;
+	ls->flags = DEFAULT_CPP_FLAGS | COPY_LINE;
 	emit_output = ls->output = stdout;
 	for (i = 1; i < argc; i ++) if (argv[i][0] == '-') {
 		if (!strcmp(argv[i], "-h")) {

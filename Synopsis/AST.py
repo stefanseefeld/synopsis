@@ -1,4 +1,3 @@
-# $Id: AST.py,v 1.31 2004/01/13 07:37:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -166,10 +165,11 @@ class Include:
    the is_macro will return true. If the include directive was actually an
    include_next, then is_next will return true.
    """
-   def __init__(self, target, is_macro, is_next):
+   def __init__(self, target, name, is_macro, is_next):
       if not isinstance(target, SourceFile):
          raise TypeError, "target parameter must be a SourceFile"
       self.__target = target
+      self.__name = name
       self.__is_macro = is_macro
       self.__is_next = is_next
 
@@ -178,6 +178,10 @@ class Include:
 
    def set_target(self, target):
       self.__target = target
+
+   def name(self):
+      """return the name as it appears in the include statement"""
+      return self.__name
 
    def is_macro(self):
       return self.__is_macro

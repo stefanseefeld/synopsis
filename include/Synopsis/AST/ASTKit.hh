@@ -38,8 +38,9 @@ public:
 			 const std::string &type, const ScopedName &name)
   { return create<Builtin>("Builtin", Tuple(file, line, lang, type, name));}
 
-  Include create_include(const SourceFile &sf, bool is_macro, bool is_next)
-  { return create<Include>("Include", Tuple(sf, is_macro, is_next));}
+  Include create_include(const SourceFile &sf, const std::string &name,
+			 bool is_macro, bool is_next)
+  { return create<Include>("Include", Tuple(sf, name, is_macro, is_next));}
 
   Macro create_macro(SourceFile &sf, long line, const std::string &lang,
 		     const ScopedName &name, const List &parameters,
@@ -77,13 +78,12 @@ public:
   { return create<Typedef>("Typedef", Tuple(file, line, lang, type, name, alias, constr));}
 
   Enumerator create_enumerator(const SourceFile &file, int line, const std::string &lang,
-			       const std::string &type, const ScopedName &name,
-			       const std::string &value)
-  { return create<Enumerator>("Enumerator", Tuple(file, line, lang, type, name, value));}
+			       const ScopedName &name, const std::string &value)
+  { return create<Enumerator>("Enumerator", Tuple(file, line, lang, name, value));}
 
   Enum create_enum(const SourceFile &file, int line, const std::string &lang,
-		   const std::string &type, const ScopedName &name)
-  { return create<Enum>("Enum", Tuple(file, line, lang, type, name));}
+		   const ScopedName &name, const Enumerators &values)
+  { return create<Enum>("Enum", Tuple(file, line, lang, name, values));}
 
   Variable create_variable(const SourceFile &file, int line, const std::string &lang,
 			   const std::string &type, const ScopedName &name,
