@@ -1,4 +1,4 @@
-# $Id: actionwiz.py,v 1.1 2001/11/05 06:52:11 chalky Exp $
+# $Id: actionwiz.py,v 1.2 2001/11/09 08:06:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionwiz.py,v $
+# Revision 1.2  2001/11/09 08:06:59  chalky
+# More GUI fixes and stuff. Double click on Source Actions for a dialog.
+#
 # Revision 1.1  2001/11/05 06:52:11  chalky
 # Major backside ui changes
 #
@@ -42,32 +45,43 @@ class SourcePage (QVBox):
     def set_action(self, action):
 	self.__ac.action = action
     def _make_layout(self):
-	vbox = self
+	self.setSpacing(4)
 	label = QLabel("<p>Source actions are responsible for knowing what files to load "+
 	       "from disk for parsing. They watch specified directories for new "+
-	       "files that match the extensions they are looking for.", vbox)
-	hbox = QHBox(vbox)
+	       "files that match the extensions they are looking for.", self)
+
+	# Make action name field
+	hbox = QHBox(self)
 	label = QLabel("Action &name:", hbox)
 	self.source_name = QLineEdit(hbox)
+	QToolTip.add(self.source_name, "A unique name for this Action")
 	label.setBuddy(self.source_name)
 	self.connect(self.source_name, SIGNAL('textChanged(const QString&)'), self.onActionName)
 	hbox.setSpacing(4)
 
-	frame = QVGroupBox("&Path list:", vbox)
-	self.source_paths = QListBox(frame)
+	# Make source path area
+	label = QLabel("&Path list:", self)
+	self.source_paths = QListBox(self)
 	label.setBuddy(self.source_paths)
-	frame.addSpace(4)
-	bhbox = QHBox(frame)
+	# Add buttons
+	bhbox = QHBox(self)
+	bhbox.setSpacing(4)
 	self.source_add_path = QPushButton('&Add', bhbox)
-	self.connect(self.source_add_path, SIGNAL('clicked()'), self.onSourceAddPath)
 	self.source_remove_path = QPushButton('&Remove', bhbox)
 	self.source_test_path = QPushButton('&Test', bhbox)
+	QToolTip.add(self.source_add_path, "Add a new path setting")
+	QToolTip.add(self.source_remove_path, "Remove the selected path setting")
+	QToolTip.add(self.source_test_path, "Displays which files your settings will select")
+	self.connect(self.source_add_path, SIGNAL('clicked()'), self.onSourceAddPath)
 	self.connect(self.source_test_path, SIGNAL('clicked()'), self.onSourceTest)
 
     def pre_show(self):
 	self.source_name.setText(self.action().name())
+	self.__update_list()
 
-    def post_show(self):
+    def showEvent(self, ev):
+	QVBox.showEvent(self, ev)
+	# Focus name field
 	self.source_name.setFocus()
 	self.source_name.selectAll()
 
@@ -143,7 +157,7 @@ class SourcePage (QVBox):
 
     def onSourceTest(self):
 	from Synopsis.Core.Executor import ExecutorCreator
-	project = Project()
+	project = self.__ac.project
 	source_exec = ExecutorCreator(project).create(self.action())
 	names = source_exec.get_output_names()
 	print type(names), names
@@ -160,11 +174,38 @@ class SourcePage (QVBox):
 	dialog.exec_loop()
 	
 
+class SourceDialog (QDialog):
+    def __init__(self, parent, action, project):
+	QDialog.__init__(self, parent, 'Action Properties', 1, 
+	    Qt.WStyle_Customize | Qt.WStyle_NormalBorder | Qt.WStyle_Title)
+	self.setCaption('Action Properties')
+	self.project = project
+	self.action = action
+	self.setMinimumSize(500,400)
+	self.vbox = QVBoxLayout(self)
+	self.vbox.setMargin(4)
+	self.vbox.setSpacing(4)
+	self.source_page = SourcePage(self, self)
+	self.source_page.pre_show()
+	frame = QFrame(self)
+	frame.setFrameStyle(QFrame.HLine | QFrame.Sunken)
+	self.vbox.addWidget(self.source_page)
+	self.vbox.addWidget(frame)
+	#self.vbox.addWidget(self.hbox)
+	self.hbox = QHBoxLayout(self.vbox)
+	self.ok = QPushButton("Okay", self)
+	self.cancel = QPushButton("Cancel", self)
+	self.hbox.addStretch()
+	self.hbox.addWidget(self.ok)
+	self.hbox.addWidget(self.cancel)
+	self.connect(self.ok, SIGNAL('clicked()'), self.accept)
+	self.connect(self.cancel, SIGNAL('clicked()'), self.reject)
+	self.exec_loop()
 
 
 
 class AddWizard (QWizard):
-    def __init__(self, parent, action):
+    def __init__(self, parent, action, project):
 	QWizard.__init__(self, parent, 'AddWizard', 1)
 	self.setMinimumSize(600,400)
 	self.action = action
@@ -256,8 +297,6 @@ class AddWizard (QWizard):
 	    self.source.pre_show()
 	QWizard.showPage(self, page)
 
-	if page is self.source:
-	    self.source.post_show()
 	if page is self.finish:
 	    self.finishButton().setFocus()
 

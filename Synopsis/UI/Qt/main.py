@@ -1,4 +1,4 @@
-# $Id: main.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
+# $Id: main.py,v 1.3 2001/11/09 08:06:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: main.py,v $
+# Revision 1.3  2001/11/09 08:06:59  chalky
+# More GUI fixes and stuff. Double click on Source Actions for a dialog.
+#
 # Revision 1.2  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -46,21 +49,19 @@ class MainWindow (QMainWindow):
 	# Make the menu
 	menu = self.menuBar()
 	file = QPopupMenu(self)
-	file.insertItem("&Open File...", self.open, Qt.CTRL+Qt.Key_O)
-	file.insertItem("&New Project...", self.newProject, Qt.CTRL+Qt.Key_N)
-	file.insertItem("Open &Project...", self.openProject, Qt.CTRL+Qt.Key_P)
+	file.insertItem("&Open File...", self.open_file, Qt.CTRL+Qt.Key_O)
+	file.insertItem("&New Project...", self.new_project, Qt.CTRL+Qt.Key_N)
+	file.insertItem("Open &Project...", self.open_project, Qt.CTRL+Qt.Key_P)
 	file.insertItem("&Quit", qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
 	menu.insertItem("&File", file)
 
 	self.workspace = QWorkspace(self)
 	self.setCentralWidget(self.workspace)
 
-    def open(self):
+    def open_file(self):
 	"""Displays the file open dialog, and loads a file if selected"""
-	file = QFileDialog.getOpenFileName(".", "Synopsis files (*.*syn)", self, "file", "Open a Synopsis data file")
-	if file: self.openFile(str(file))
 
-    def openProject(self):
+    def open_project(self):
 	"""Opens a project"""
 	filename = str(QFileDialog.getOpenFileName(".", 
 	    "Synopsis Project files (*.synopsis)", self, 
@@ -69,7 +70,16 @@ class MainWindow (QMainWindow):
 	    ProjectWindow(self.workspace, self, filename)
 
 
-    def openFile(self, filename):
+    def open_file(self, filename=None):
+	"""Opens a file in a new project. If the filename given is the
+	default None then a file selection dialog is opened to prompt the user
+	for a filename."""
+	if not filename:
+	    filename = str(QFileDialog.getOpenFileName(".", 
+		"Synopsis files (*.*syn)", self, 
+		"file", "Open a Synopsis data file"))
+	if not filename: return
+
 	projwin = ProjectWindow(self.workspace, self, None)
 	project = projwin.project
 	project.set_name('Project for %s'%os.path.split(filename)[1])
@@ -84,23 +94,6 @@ class MainWindow (QMainWindow):
 	projwin.show_output()
 
 
-    def old_openFile(self, filename):
-	"""Loads a given file"""
-	try:
-	    unpickler = pickle.Unpickler(open(filename, "r"))
-	    # Load the file
-	    version = unpickler.load()
-	    ast = unpickler.load()
-	    # Fill the GUI
-	    glob = AST.Scope('', -1, '', 'Global', ('global',))
-	    glob.declarations().extend(ast.declarations())
-	    win = BrowseWindow(self.workspace, self, filename, glob)
-	    win.show()
-	except IOError, e:
-	    # Oops..
-	    QMessageBox.critical(self, "Synopsis", 
-		"An error occurred opening:\n%s\n\n%s"%(filename, str(e)))
-    
-    def newProject(self):
+    def new_project(self):
 	ProjectWindow(self.workspace, self, None)
 

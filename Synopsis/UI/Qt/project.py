@@ -1,4 +1,4 @@
-# $Id: project.py,v 1.1 2001/11/07 05:58:21 chalky Exp $
+# $Id: project.py,v 1.2 2001/11/09 08:06:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: project.py,v $
+# Revision 1.2  2001/11/09 08:06:59  chalky
+# More GUI fixes and stuff. Double click on Source Actions for a dialog.
+#
 # Revision 1.1  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -29,7 +32,8 @@
 from qt import *
 from Synopsis.Core import Action, Executor
 from Synopsis.Core.Project import Project
-from Synopsis.Formatter.ClassTree import ClassTree
+from Synopsis.Formatter import ClassTree
+from Synopsis.Formatter.HTML.core import FileTree
 
 from actionvis import CanvasWindow
 from igraph import IGraphWindow
@@ -42,7 +46,8 @@ class ProjectWindow (QSplitter):
 	self.project = Project()
 	self.setCaption('Project Window')
 
-	self.classTree = ClassTree()
+	self.classTree = ClassTree.ClassTree()
+	self.fileTree = None #FileTree()
 	#self.tabs = QTabWidget(self)
 	#self.listView = QListView(self)
 	self._make_left()
@@ -77,7 +82,7 @@ class ProjectWindow (QSplitter):
     def _make_right(self):
 	self.right_tab = QTabWidget(self)
 	self.doco_display = QTextBrowser(self.right_tab)
-	self.source_display = QLabel(self.right_tab, "Source stuff..")
+	self.source_display = QTextBrowser(self.right_tab)
 	self.actions_display = CanvasWindow(self, self.main_window, self.project)
 	self.graph_display = IGraphWindow(self.right_tab, self.main_window, self.classTree)
 	self.right_tab.addTab(self.doco_display, "Documentation")

@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.3 2001/11/07 05:58:21 chalky Exp $
+# $Id: actionvis.py,v 1.4 2001/11/09 08:06:59 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.4  2001/11/09 08:06:59  chalky
+# More GUI fixes and stuff. Double click on Source Actions for a dialog.
+#
 # Revision 1.3  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -39,7 +42,7 @@ from Synopsis.Core.Project import *
 from Synopsis.Formatter.ASCII import ASCIIFormatter
 from Synopsis.Formatter.ClassTree import ClassTree
 
-from actionwiz import AddWizard
+from actionwiz import AddWizard, SourceDialog
 
 class CanvasStrategy:
     "An interface for a strategy to handle mouse events"
@@ -100,6 +103,8 @@ class SelectionStrategy (CanvasStrategy):
 	action = self.canvas.get_action_at(event.x(), event.y())
 	if action:
 	    print action.name()
+	    if isinstance(action, SourceAction):
+		SourceDialog(self.view, action, self.canvas.project)
     
     def key(self, event):
 	"Override default set-mode-to-select behaviour"
@@ -163,7 +168,7 @@ class AddActionStrategy (CanvasStrategy):
 			     self.view.last_pos.y()-16, "New action")
 	try:
 	    # Run the wizard to set the type of the action
-	    wizard = AddWizard(self.view, self.action)
+	    wizard = AddWizard(self.view, self.action, self.canvas.project)
 	    if wizard.exec_loop() == QDialog.Rejected:
 		# Abort adding
 		self.action = None
@@ -288,9 +293,10 @@ class Line:
 class ActionCanvas (QCanvas):
     """Extends QCanvas to automatically fill and update the canvas when
     notified of events by an ActionManager"""
-    def __init__(self, actions, parent):
+    def __init__(self, actions, parent, project):
 	QCanvas.__init__(self, parent)
 	self.actions = actions
+	self.project = project
 	self._item_to_action_map = {}
 	self._action_to_icon_map = {}
 	self._action_lines = {}
@@ -417,7 +423,7 @@ class CanvasWindow (QVBox):
 	# Make the canvas
 	self.project = project
 	self.actions = self.project.actions()
-	self.canvas = ActionCanvas(self.actions, self)
+	self.canvas = ActionCanvas(self.actions, self, project)
 	self.canvas.resize(parent.width(), parent.height())
 	self.canvas_view = CanvasView(self.canvas, self)
 
