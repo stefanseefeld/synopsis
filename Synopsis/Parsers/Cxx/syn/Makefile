@@ -25,7 +25,7 @@ endif
 
 # Options for optimised or debug versions
 OPTIMISE	:= -O6
-#OPTIMISE	:= -O1 -ggdb -fPIC -fno-inline
+#OPTIMISE	:= -O1 -ggdb -fno-inline
 DEBUG		:= -O1 -ggdb -pg -DDEBUG -fno-inline
 
 # Flags
@@ -48,8 +48,8 @@ UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 
 UCPP_LIB	:= ../ucpp/ucpp.a
 UCPP_GLIB	:= ../ucpp/ucpp.ga
-OCC_SO		:= ../occ.so
-LINK_SO		:= ../link.so
+OCC_SO		:= ../occ.$(LIBRARY_EXT)
+LINK_SO		:= ../link.$(LIBRARY_EXT)
 
 
 OCC_FILES	:= buffer hash token ptree ptree-core encoding env\
@@ -172,8 +172,8 @@ depend: .deps.o
 	@echo Done.
 
 clean :
-	rm -f *~ *.o *.go *.ii *.so *core opencxx.a opencxx.ga occ.gdb \
-	../occ.so ../link.so ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga \
+	rm -f *~ *.o *.go *.ii *.$(LIBRARY_EXT) *core opencxx.a opencxx.ga occ.gdb \
+	$(OCC_SO) $(LINK_SO) ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga \
 	../ucpp/*.ao ../occ/*.o ../occ/*.go *.pyc *.pyo .deps.* base_lib
 
 distclean: clean
