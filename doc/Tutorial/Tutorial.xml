@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
 "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
-<book xmlns:xi="http://www.w3.org/2001/XInclude">
+<book xmlns:xi="http://www.w3.org/2003/XInclude">
   <bookinfo>
     <title>Synopsis Tutorial</title>
 
@@ -577,15 +577,43 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     </section>
     <section id="dot-formatter">
       <title>Dot Formatter</title>
-      <para>The Dot formatter can generate graphs. You can generate uml
-        class and collaboration graphs with it in a number of output
-        formats</para>
+      <para>The Dot formatter can generate graphs for various types and output formats.
+        Among the supported output formats are <type>png</type>, <type>svg</type>, and
+        <type>html</type>.</para>
+      <para>A typical use is the generation of UML class (inheritance and aggregation)
+        diagrams:</para>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Classes3.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
+      <para>But it can also be used to generate a graphical representation of file
+        inclusions:</para>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Files.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
     </section>
     <section id="html-formatter">
       <title>HTML Formatter</title>
       <para>The HTML formatter generates html output. It is designed 
         in a modular way, to let users customize in much detail how
         to format the AST.</para>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/html-classes.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
+      <para></para>
+    </section>
+    <section id="sxr-formatter">
+      <title>SXR Formatter</title>
+      <para>The SXR formatter is a variant of the HTML formatter.</para>
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
@@ -631,6 +659,9 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     <xi:include href="Synopsis.Processors.Linker.xml">
       <xi:fallback>The Linker reference...</xi:fallback>
     </xi:include>
+    <xi:include href="Synopsis.Formatters.Dot.Formatter.xml">
+      <xi:fallback>The Dot formatter reference...</xi:fallback>
+    </xi:include>
     <xi:include href="Synopsis.Formatters.Dump.Formatter.xml">
       <xi:fallback>The Dump formatter reference...</xi:fallback>
     </xi:include>
@@ -642,6 +673,9 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     </xi:include>
     <xi:include href="Synopsis.Formatters.HTML.Formatter.xml">
       <xi:fallback>The HTML formatter reference...</xi:fallback>
+    </xi:include>
+    <xi:include href="Synopsis.Formatters.SXR.Formatter.xml">
+      <xi:fallback>The SXR formatter reference...</xi:fallback>
     </xi:include>
   </appendix>
 </book>

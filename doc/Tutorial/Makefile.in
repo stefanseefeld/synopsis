@@ -18,7 +18,9 @@ processors := Synopsis.Parsers.Python.Parser \
               Synopsis.Formatters.Dump.Formatter \
               Synopsis.Formatters.Docbook.Formatter \
               Synopsis.Formatters.Texinfo.Formatter \
-              Synopsis.Formatters.HTML.Formatter
+              Synopsis.Formatters.Dot.Formatter \
+              Synopsis.Formatters.HTML.Formatter \
+              Synopsis.Formatters.SXR.Formatter
 
 appendix:= $(patsubst %, %.xml, $(processors))
 examples:= $(shell cd $(srcdir) && find examples -path '*/.svn' -prune -o -type f -a -print)
@@ -35,6 +37,7 @@ html: Tutorial.xml $(appendix) examples
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
+	cp examples/Paths/doc4/*.png $@/images/
 
 examples:
 	for file in $(examples); do \
