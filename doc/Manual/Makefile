@@ -131,6 +131,7 @@ all.syn:	py.syn c++.syn
 install: all
 	mkdir -p $(datadir)/synopsis
 	cp -pr html $(datadir)/synopsis
+	mkdir -p $(infodir)
 	install -m644 synopsis.info* $(infodir)
 	install -m644 Manual.pdf $(datadir)/synopsis
 
