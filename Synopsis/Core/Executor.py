@@ -107,22 +107,34 @@ class SourceExecutor (Executor):
 		return (1, path_obj.dir, path_obj.glob)
 
 	names = []
-	paths = map(path_to_tuple, self.__action.paths())
-	while len(paths):
-	    recurse, path, globpath = paths.pop()
-	    glob = self.compile_glob(globpath)
-	    # Get list of files matching this path
-	    for file in os.listdir(path):
-		# Stat file
-		filepath = os.path.join(path, file)
-		stats = os.stat(filepath)
-		if stat.S_ISDIR(stats[stat.ST_MODE]) and recurse:
-		    # Add to list of paths to check
-		    paths.append( (1, filepath, globpath) )
-		elif stat.S_ISREG(stats[stat.ST_MODE]):
-		    # Check if matches glob
-		    if glob.match(file):
-			names.append((filepath, stats[stat.ST_MTIME]))
+	for rule in self.__action.rules():
+	    if rule.type == 'Simple':
+		# Add the specified files if they exist
+		for file in rule.files:
+		    try:
+			filepath = os.path.abspath(file)
+			stats = os.stat(filepath)
+			if stat.S_ISREG(stats[stat.ST_MODE]):
+			    names.append((file, stats[stat.ST_MTIME]))
+		    except OSError, e:
+			print "Warning:",e
+	    elif rule.type == 'Glob':
+		glob = self.compile_glob(rule.glob)
+		dirs = map(os.path.abspath, rule.dirs)
+		while len(dirs):
+		    dir = dirs.pop(0)
+		    # Get list of files in this dir
+		    for file in os.listdir(dir):
+			# Stat file
+			filepath = os.path.join(dir, file)
+			stats = os.stat(filepath)
+			if stat.S_ISDIR(stats[stat.ST_MODE]) and rule.recursive:
+			    # Add to list of dirs to check
+			    dirs.append(filepath)
+			elif stat.S_ISREG(stats[stat.ST_MODE]):
+			    # Check if matches glob
+			    if glob.match(file):
+				names.append((filepath, stats[stat.ST_MTIME]))
 	return names
     def get_output(self, name):
 	"""Raises an exception, since the SourceAction is only used to

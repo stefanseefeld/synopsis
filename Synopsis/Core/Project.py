@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.9 2002/10/27 12:08:25 chalky Exp $
+# $Id: Project.py,v 1.10 2002/11/19 03:44:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.10  2002/11/19 03:44:08  chalky
+# Changed SourcePath to SourceRule, included an Exclude rule
+#
 # Revision 1.9  2002/10/27 12:08:25  chalky
 # Add a project verbose flag, used by the Executor
 #
@@ -48,7 +51,7 @@
 # Major backside ui changes
 #
 
-import sys
+import sys, types
 from Synopsis.Core import Util
 from Action import *
 
@@ -286,13 +289,19 @@ class ProjectWriter (Util.PyWriter):
 		channels.append( (source.name(), dest.name()) )
 	self.write_attr('channels', self.long(channels))
 
-    def write_SourcePath(self, path):
-	self.write_list((path.type, path.dir, path.glob))
+    def write_SimpleSourceRule(self, rule):
+	self.write_list((rule.type, rule.files))
+
+    def write_GlobSourceRule(self, rule):
+	self.write_list((rule.type, rule.dirs, rule.glob, rule.recursive))
+
+    def write_ExcludeSourceRule(self, rule):
+	self.write_list((rule.type, rule.glob))
 
     def write_SourceAction(self, action):
 	self.write_list(('SourceAction', 
 	    action.x(), action.y(), action.name(),
-	    self.long(action.paths()) ))
+	    self.long(action.rules()) ))
     
     def write_ParserAction(self, action):
 	self.write_list(('ParserAction',
@@ -355,10 +364,10 @@ class ProjectReader:
 		actions.add_channel(src_obj, dst_obj)
 
     def read_SourceAction(self, action):
-	type, x, y, name, paths = action
+	type, x, y, name, rules = action
 	self.action = SourceAction(x, y, name) 
 	self.project.actions().add_action(self.action)
-	for path in paths: self.read_SourcePath(path)
+	for rule in rules: self.read_SourceRule(rule)
 
     def read_ParserAction(self, action):
 	type, x, y, name, config = action
@@ -378,9 +387,26 @@ class ProjectReader:
 	self.project.actions().add_action(self.action)
 	self.action.set_config(config)
 
-    def read_SourcePath(self, path):
-	type, dir, glob = path
-	self.action.paths().append(SourcePath(type, dir, glob))
+    def read_SourceRule(self, rule):
+	rules = self.action.rules()
+	if rule[0] == 'Simple':
+	    if type(rule[1]) == types.ListType:
+		rules.append(SimpleSourceRule(rule[1]))
+	    else:
+		# Backwards compat.
+		rules.append(SimpleSourceRule([rule[1]]))
+	elif rule[0] == 'Glob':
+	    rules.append(GlobSourceRule(rule[1], rule[2], rule[3]))
+	elif rule[0] == 'Exclude':
+	    rules.append(ExcludeSourceRule(rule[1]))
+	elif rule[0] == 'Dir':
+	    # Backwards compat.
+	    rules.append(GlobSourceRule([rule[1]], rule[2], 0))
+	elif rule[0] == 'Base':
+	    # Backwards compat.
+	    rules.append(GlobSourceRule([rule[1]], rule[2], 1))
+	else:
+	    print "Warning: unknown source rule:",repr(rule)
 
     def read_CacherAction(self, action):
 	type, x, y, name, dir, file = action
