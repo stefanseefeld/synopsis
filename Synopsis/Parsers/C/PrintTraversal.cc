@@ -790,7 +790,7 @@ void PrintTraversal::traverse_function_definition(FunctionDef *node)
   traverse_block(node);
 }
 
-void PrintTraversal::traverse_unit(File *unit)
+void PrintTraversal::traverse_file(File *unit)
 {
   int inInclude = 0;
   for (Statement *statement = unit->my_head; statement; statement = statement->next)

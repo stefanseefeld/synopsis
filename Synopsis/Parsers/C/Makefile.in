@@ -27,7 +27,7 @@ CTOOL_SO:= ctool$(LIBRARY_EXT)
 
 SRC	:= Lexer.cc Grammar.cc Context.cc Declaration.cc Expression.cc ParseEnv.cc \
          File.cc Statement.cc Symbol.cc Token.cc Location.cc \
-         PrintTraversal.cc \
+         PrintTraversal.cc Translator.cc \
          ctool.cc
 HDR	:= $(patsubst $(srcdir)/include/%, %, $(wildcard $(abs_top_srcdir)/*.hh))
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))

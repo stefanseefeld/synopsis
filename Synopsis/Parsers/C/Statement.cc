@@ -517,13 +517,13 @@ IfStemnt::findExpr(fnExprCallback cb)
 }
 
 void
-IfStemnt::findStemnt(fnStemntCallback cb)
+IfStemnt::find_statement(fnStemntCallback cb)
 {
   (cb)(this);
 
-  thenBlk->findStemnt(cb);
+  thenBlk->find_statement(cb);
 
-  if (elseBlk) elseBlk->findStemnt(cb);
+  if (elseBlk) elseBlk->find_statement(cb);
 }
 
 SwitchStemnt::SwitchStemnt(Expression *c, Statement *b,
@@ -579,11 +579,11 @@ SwitchStemnt::findExpr(fnExprCallback cb)
 }
 
 void
-SwitchStemnt::findStemnt(fnStemntCallback cb)
+SwitchStemnt::find_statement(fnStemntCallback cb)
 {
   (cb)(this);
 
-  block->findStemnt(cb);
+  block->find_statement(cb);
 }
 
 ForStemnt::ForStemnt(Expression *i, Expression *c,
@@ -655,10 +655,10 @@ ForStemnt::findExpr(fnExprCallback cb)
 }
 
 void
-ForStemnt::findStemnt(fnStemntCallback cb)
+ForStemnt::find_statement(fnStemntCallback cb)
 {
   (cb)(this);
-  if (block) block->findStemnt(cb);
+  if (block) block->find_statement(cb);
 }
 
 WhileStemnt::WhileStemnt(Expression *c, Statement *b, const Location &l)
@@ -712,10 +712,10 @@ WhileStemnt::findExpr(fnExprCallback cb)
 }
 
 void
-WhileStemnt::findStemnt(fnStemntCallback cb)
+WhileStemnt::find_statement(fnStemntCallback cb)
 {
   (cb)(this);
-  if (block) block->findStemnt(cb);
+  if (block) block->find_statement(cb);
 }
 
 DoWhileStemnt::DoWhileStemnt(Expression *c, Statement *b,
@@ -778,10 +778,10 @@ DoWhileStemnt::findExpr(fnExprCallback cb)
 }
 
 void
-DoWhileStemnt::findStemnt(fnStemntCallback cb)
+DoWhileStemnt::find_statement(fnStemntCallback cb)
 {
   (cb)(this);
-  if (block) block->findStemnt(cb);
+  if (block) block->find_statement(cb);
 }
 
 GotoStemnt::GotoStemnt(Symbol *d, const Location &l)
@@ -1141,11 +1141,11 @@ Block::findExpr(fnExprCallback cb)
 }
 
 void
-Block::findStemnt(fnStemntCallback cb)
+Block::find_statement(fnStemntCallback cb)
 {
   (cb)(this);
   for (Statement *stemnt = head; stemnt; stemnt = stemnt->next)
-    stemnt->findStemnt(cb);
+    stemnt->find_statement(cb);
 }
 
 void

@@ -32,13 +32,13 @@ File::~File()
   delete nxt;
 }
 
-void File::findStemnt(fnStemntCallback cb)
+void File::find_statement(fnStemntCallback cb)
 {
   for (Statement *ste = my_head; ste; ste = ste->next)
-    ste->findStemnt(cb);
+    ste->find_statement(cb);
 }
 
-void File::findFunctionDef(fnFunctionCallback cb)
+void File::find_function_def(fnFunctionCallback cb)
 {
   for (Statement *ste = my_head; ste; ste = ste->next)
     // Function definition can only occur at the top level.
@@ -81,7 +81,7 @@ void File::insert(Statement *stemnt, Statement *after)
   }
 }
 
-bool File::insertBefore(Statement *stemnt, Statement *before)
+bool File::insert_before(Statement *stemnt, Statement *before)
 {
   if (!stemnt) return false;
 
@@ -119,12 +119,12 @@ std::ostream &operator << (std::ostream &os, const File &f)
   return os;
 }
 
-File *File::parse(const std::string &path)
+File *File::parse(const std::string &path, const std::string &name)
 {
   std::ifstream ifs(path.c_str());
   if (!ifs) return 0;
     
-  global_parse_env = new ParseEnv(&ifs, &std::cerr, path);
+  global_parse_env = new ParseEnv(&ifs, &std::cerr, name);
   File *unit = global_parse_env->transUnit;
     
   unit->my_contxt.EnterScope();
