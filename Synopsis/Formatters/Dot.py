@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.5 2001/01/31 21:53:11 stefan Exp $
+# $Id: Dot.py,v 1.6 2001/02/01 04:04:23 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.6  2001/02/01 04:04:23  stefan
+# added support for html page generation
+#
 # Revision 1.5  2001/01/31 21:53:11  stefan
 # some more work on the dot formatter
 #
@@ -44,20 +47,131 @@ import sys, tempfile, getopt, os, os.path, string, types, errno
 from Synopsis.Core import AST, Type, Util
 
 verbose = 0
+toc = None
+nodes = {}
 
-class InheritanceFormatter(AST.Visitor):
+class TocEntry:
+    """Struct for an entry in the table of contents.
+    Vars: link, lang, type (all strings)
+    Also: name (scoped)"""
+    def __init__(self, name, link, lang, type):
+	self.name = name
+	self.link = link
+	self.lang = lang
+	self.type = type
+
+class TableOfContents(AST.Visitor):
+    """Maintains a dictionary of all declarations which can be looked up to create
+    cross references. Names are fully scoped."""
+    def __init__(self):
+	self.__toc = {}
+    
+    def lookup(self, name):
+	name = tuple(name)
+        if self.__toc.has_key(name): return self.__toc[name]
+	if verbose and len(name) > 1:
+	    print "Warning: TOC lookup of",name,"failed!"
+        return None
+
+    def size(self): return len(self.__toc)
+
+    __getitem__ = lookup
+
+    def insert(self, entry): self.__toc[tuple(entry.name)] = entry
+
+    def load(self, resource):
+        args = string.split(resource, "|")
+        file = args[0]
+        if len(args) > 1: url = args[1]
+        else: url = ""
+        fin = open(file, 'r')
+        line = fin.readline()
+        while line:
+            if line[-1] == '\n': line = line[:-1]
+            scopedname, lang, link = string.split(line, ",")
+            name = string.split(scopedname, "::")
+            if len(url): link = string.join([url, link], "/")
+            entry = TocEntry(name, link, lang, "decl")
+            self.insert(entry)
+            line = fin.readline()
+
+class InheritanceFormatter(AST.Visitor, Type.Visitor):
     """A Formatter that generates an inheritance graph"""
-    def __init__(self, output):
-        self.__output = output
-    def write(self, text): self.__output.write(text)
+    def __init__(self, os):
+        self.__os = os
+        self.__scope = []
+    def scope(self): return self.__scope
+    def write(self, text): self.__os.write(text)
+    def type_ref(self): return self.__type_ref
+    def type_label(self): return self.__type_label
+    def parameter(self): return self.__parameter
+
+    def formatType(self, typeObj):
+	"Returns a reference string for the given type object"
+	if typeObj is None: return "(unknown)"
+        typeObj.accept(self)
+        return self.type_label()
+
+    def writeNode(self, ref, label):
+        """helper method to generate output for a given node"""
+        if nodes.has_key(label): return
+        nodes[label] = len(nodes)
+        number = nodes[label]
+        if ref: color = "grey75"
+        else: color = "black"
+        self.write("Node" + str(number) + " [shape=\"box\", label=\"" + label + "\"")
+        self.write(", fontSize = 10, height = 0.2, width = 0.4")
+        self.write(", color=\"" + color + "\"")
+        if ref: self.write(", URL=\"" + ref.link + "\"")
+        self.write("];\n")
+
+    def writeEdge(self, parent, child, label, attr):
+            self.write("Node" + str(nodes[parent]) + " -> ")
+            self.write("Node" + str(nodes[child]))
+            self.write("[ color=\"black\", fontsize=10, style=\"")
+            #if "private" in attr: self.write("dotted")
+            #else:
+            self.write("solid")
+            self.write("\"];\n")        
+
+    #################### Type Visitor ###########################################
+    def visitUnknown(self, type):
+        self.__type_ref = toc[type.link()]
+        self.__type_label = Util.ccolonName(type.name(), self.scope())
+        
+    def visitDeclared(self, type):
+        self.__type_ref = toc[type.name()]
+        self.__type_label = Util.ccolonName(type.name(), self.scope())
+
+    def visitParametrized(self, type):
+	if type.template():
+            self.__type_ref = toc[type.template().name()]
+	    type_label = Util.ccolonName(type.template().name(), self.scope())
+	else:
+            self.__type_ref = None
+	    type_label = "(unknown)"
+        parameters_label = []
+        for p in type.parameters():
+            parameters_label.append(self.formatType(p))
+        self.__type_label = type_label + "&lt;" + string.join(parameters_label, ", ") + "&gt;"
+
+    def visitTemplate(self, type):
+        self.__type_ref = None
+	self.__type_label = "template&lt;%s&gt;"%(
+            string.join(map(lambda x:"typename "+x, map(self.formatType, type.parameters())), ","))
+
+    #################### AST Visitor ############################################
+        
+    def visitInheritance(self, node):
+        self.formatType(node.parent())
+        self.writeNode(self.type_ref(), self.type_label())
+        
     def visitClass(self, node):
-        name = node.name()
+        label = Util.ccolonName(node.name(), self.scope())
+        self.writeNode(toc[node.name()], label)
         for inheritance in node.parents():
-            parent = inheritance.parent()
-	    if hasattr(parent, 'name'):
-                self.write(parent.name()[-1] + " -> " + name[-1])
-            elif "private" in inheritance.attributes(): self.write("[style=dotted];\n")
-            else: self.write(";\n");
+            inheritance.accept(self)
+            self.writeEdge(self.type_label(), label, None, inheritance.attributes())
         for d in node.declarations(): d.accept(self)
 
 class CollaborationFormatter(AST.Visitor, Type.Visitor):
@@ -103,9 +217,11 @@ def usage():
   -t <title>                           Associate <title> with the generated graph
   -i                                   Generate an inheritance graph
   -c                                   Generate a collaboration graph
-  -f <format>                          Generate output in format 'ps' (default),'png', 'gif', 'map', 'html'"""
+  -f <format>                          Generate output in format 'dot', 'ps' (default), 'png', 'gif', 'map', 'html'
+  -r <filename>                        Read in toc for an external data base that is to be referenced"""
 
 formats = {
+    'dot' : 'dot',
     'ps' : 'ps',
     'png' : 'png',
     'gif' : 'gif',
@@ -115,13 +231,14 @@ formats = {
 
 
 def __parseArgs(args):
-    global output, title, type, format, verbose
+    global output, title, type, format, verbose, toc_in
     output = ''
-    title = ''
+    title = 'None'
     type = ''
     format = 'ps'
+    toc_in = []
     try:
-        opts,remainder = Util.getopt_spec(args, "o:t:f:icv")
+        opts,remainder = Util.getopt_spec(args, "o:t:f:r:icv")
     except Util.getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.exit(1)
@@ -131,53 +248,76 @@ def __parseArgs(args):
         if o == "-o": output = a
         elif o == "-t": title = a
         elif o == "-i": type = "inheritance"
+        elif o == "-c":
+            type = "collaboration"
+            sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
+            sys.exit(-1)
         elif o == "-f":
             if formats.has_key(a): format = formats[a]
 	    else:
 		print "Error: Unknown format. Available formats are:",string.join(formats.keys(), ', ')
 		sys.exit(1)
-        elif o == "-c":
-            type = "collaboration"
-            sys.stderr.write("sorry, collaboration diagrams not yet implemented\n");
-            sys.exit(-1)
+        elif o == "-r":            
+            toc_in.append(a)
         elif o == "-v": verbose = 1
 
 def _convert_map(input, output):
-    line = output.readline()
-    line = line[:-1]
+    line = input.readline()
     while line:
+        line = line[:-1]
         if line[0:4] == "rect":
-            url, x1, y2, x2, y1 = string.split(line[4:])
-        line = output.readline()
+            url, x1y2, x2y1 = string.split(line[4:])
+            x1, y2 = string.split(x1y2, ",")
+            x2, y1 = string.split(x2y1, ",")
+            output.write("<area href=\"" + url + "\" shape=\"rect\" coords=\"")
+            output.write(str(x1) + ", " + str(y1) + ", " + str(x2) + ", " + str(y2) + "\">\n")
+        line = input.readline()
 
-def _format1(input, output, format):
+def _format(input, output, format):
     global verbose
     command = "dot -T%s -o %s %s"%(format, output, input)
     if verbose: print "Dot Formatter: running command '" + command + "'"
     os.system(command)
 
-def _format2(input, output, format):
-    global verbose
-    if format == "html":
-        sys.stderr.write("html not yet supported, sorry\n")
-    elif format == "png":
-        tmpout = output + ".gif"
-        _format1(input, tmpout, "gif")
-        command = "gif2png -O -d %s"%(tmpout)
-        if verbose: print "Dot Formatter: running command '" + command + "'"
-        os.system(command)
-        if verbose: print "Dot Formatter: renaming '" + tmpout[:-4] + ".png'", "to '" + output + "'"
-        os.rename(tmpout[:-4] + ".png", output)
-    else:
-        _format1(input, output, format)
+def _format_png(input, output):
+    tmpout = output + ".gif"
+    _format(input, tmpout, "gif")
+    command = "gif2png -O -d %s"%(tmpout)
+    if verbose: print "Dot Formatter: running command '" + command + "'"
+    os.system(command)
+    if verbose: print "Dot Formatter: renaming '" + tmpout[:-4] + ".png'", "to '" + output + "'"
+    os.rename(tmpout[:-4] + ".png", output)
+
+def _format_html(input, output):
+    if output[-5:] == ".html": output = output[:-5]
+    _format_png(input, output + ".png")
+    _format(input, output + ".map", "imap")
+    label = string.join(string.split(title), "_")
+    html = open(output + ".html", "w+")
+    html.write("<table border=0 cellspacing=10 cellpadding=0>\n")
+    html.write("<tr><td><img src=\"" + output + ".png\" border=\"0\" usemap=\"#")
+    html.write(label + "_map\"></td></tr>\n")
+    html.write("<map name=\"" + label + "_map\">\n")
+    dotmap = open(output + ".map", "r+")
+    _convert_map(dotmap, html)
+    dotmap.close()
+    os.remove(output + ".map")
+    html.write("</map>\n")
+    html.write("</table>\n")    
 
 def format(types, declarations, args):
-    global output, title, type, format, verbose
+    global output, title, type, format, verbose, toc, toc_in
     __parseArgs(args)
+
+    # Create table of contents index
+    toc = TableOfContents()
+    for t in toc_in: toc.load(t)
+
     tmpfile = output + ".dot"
     if verbose: print "Dot Formatter: Writing dot file..."
     dotfile = open(tmpfile, 'w+')
-    dotfile.write("digraph \"%s\" {\n"%(title))
+    if title == 'None': dotfile.write("digraph {\n")
+    else:  dotfile.write("digraph \"%s\" {\n"%(title))
     dotfile.write("node[shape=box, fontsize=10, height=0.2, width=0.4, color=red]\n")
     if type == "inheritance":
         generator = InheritanceFormatter(dotfile)
@@ -187,6 +327,14 @@ def format(types, declarations, args):
         d.accept(generator)
     dotfile.write("}\n")
     dotfile.close()
-    _format2(tmpfile, output, format)
-    os.remove(tmpfile)
-    
+    if format == "dot":
+        os.rename(tmpfile, output)
+    elif format == "png":
+        _format_png(tmpfile, output)
+        os.remove(tmpfile)
+    elif format == "html":
+        _format_html(tmpfile, output)
+        os.remove(tmpfile)
+    else:
+        _format(tmpfile, output, format)
+        os.remove(tmpfile)
