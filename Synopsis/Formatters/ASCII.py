@@ -1,5 +1,5 @@
 import sys, getopt, os, os.path, string
-from Synopsis import Type, AST, Util
+from Synopsis.Core import Type, AST, Util
 
 class ASCIIFormatter:
     """

@@ -1,5 +1,5 @@
 import sys, getopt, os, os.path, string
-from Synopsis import Type, Util, Visitor
+from Synopsis.Core import Type, Util, Visitor
 
 def entity(type, body): return "<" + type + "> " + body + "</" + type + ">"
 def href(ref, label): return "<a href=" + ref + ">" + label + "</a>"

@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <python1.5/Python.h>
 #include "synopsis.hh"
 #include "walker.h"
 #include "token.h"
@@ -889,7 +888,7 @@ int main(int argc, char **argv)
         exit(-1);
     }
     char *cppfile = RunPreprocessor(src, cppargs);
-    PyObject* type = PyImport_ImportModule("Synopsis.Type");
+    PyObject* type = PyImport_ImportModule("Synopsis.Core.Type");
     PyObject* types = PyObject_CallMethod(type, "Dictionary", 0);
     char *occfile = RunOpencxx(src, cppfile, occargs, types, PyList_New(0));
     unlink(cppfile);

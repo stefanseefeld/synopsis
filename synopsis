@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: synopsis,v 1.16 2001/01/08 05:21:11 chalky Exp $
+# $Id: synopsis,v 1.17 2001/01/08 19:48:41 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -26,7 +26,7 @@ import cPickle
 # Hack, I can't be stuffed finding places to change it :)
 pickle = cPickle
 
-from Synopsis import Type, AST
+from Synopsis.Core import Type, AST
 
 def version(): print "synopsis version 0.2"
 cmdname = os.path.basename(sys.argv[0])
@@ -72,7 +72,7 @@ verbose = 0
 def parseArgs(args):
     global parser_cmd, parser_args, linker_cmd, linker_args, formatter_cmd, formatter_args, output, verbose
     try:
-        opts,files = getopt.getopt(args, "p:f:W:I:o:vh", ["parser=", "formatter=", "version", "help"])
+        opts,files = getopt.getopt(args, "p:f:W:I:o:Vvh", ["parser=", "formatter=", "version", "help"])
     except getopt.error, e:
         sys.stderr.write("Error in arguments: " + e + "\n")
         sys.stderr.write("Use " + cmdname + " -h for help\n")
@@ -141,7 +141,7 @@ def main(argv=None):
 
     if parser_cmd != "":
         try:
-            parser = my_import("Parser." + parser_cmd)
+            parser = my_import("Synopsis.Parser." + parser_cmd)
         except ImportError:
             sys.stderr.write(cmdname + ": Could not import parser `" + parser_cmd + "'\n")
             raise#sys.exit(1)
@@ -172,20 +172,20 @@ def main(argv=None):
     #
     # resolve symbols here...
     if verbose: print "*** Synopsis: Linking"
-    linker = my_import("Linker." + linker_cmd)
+    linker = my_import("Synopsis.Linker." + linker_cmd)
     linker.resolve(linker_args, types, declarations)
 
     #
     # generate output, either with pickler or with a formatter
     #
     if formatter_cmd == "":
-        if (verbose): print "*** Synopsis: Writing file"
+        if verbose: print "*** Synopsis: Writing file"
         if output == "":
             sys.stderr.write(cmdname + ": no output file specified\n")
             sys.exit(1)
 	dir = os.path.split(output)[0]
 	if dir and not os.path.exists(dir):
-	    print "Warning: Creating directory",dir
+	    if verbose: print "Warning: Creating directory",dir
 	    os.makedirs(dir, 0755)
         pickler = pickle.Pickler(open(output, "w"), 1)
         pickler.dump(types)
@@ -193,7 +193,7 @@ def main(argv=None):
 
     else:
         try:
-            formatter = my_import("Formatter." + formatter_cmd)
+            formatter = my_import("Synopsis.Formatter." + formatter_cmd)
         except ImportError:
             sys.stderr.write(cmdname + ": Could not import formatter `" + formatter_cmd + "'\n")
             sys.exit(1)

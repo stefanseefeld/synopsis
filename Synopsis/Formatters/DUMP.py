@@ -1,5 +1,5 @@
 import sys, getopt, os, os.path, string, types
-from Synopsis import Type, AST
+from Synopsis.Core import Type, AST
 
 
 class Dumper:

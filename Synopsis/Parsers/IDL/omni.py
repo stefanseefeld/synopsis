@@ -1,7 +1,7 @@
 from omniidl import idlast, idltype, idlvisitor, idlutil
 import _omniidl
 import sys, getopt, os, os.path, string
-from Synopsis import Type, AST, Util
+from Synopsis.Core import Type, AST, Util
 
 class TypeTranslator (idlvisitor.TypeVisitor):
     """maps idltype objects to Synopsis.Type objects in a Type.Dictionary"""

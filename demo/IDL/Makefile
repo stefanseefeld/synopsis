@@ -1,4 +1,4 @@
-synopsis = ../../synopsis -p IDL -Wp,-K -f HTML -Wf,-s,style.css
+synopsis = synopsis -p IDL -Wp,-K -f HTML -Wf,-s,style.css
 
 all:
 
@@ -18,3 +18,5 @@ clean:
 		rm -f *~ *.html *.syn
 
 distclean:	clean
+
+install:
