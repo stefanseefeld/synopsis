@@ -15,7 +15,7 @@
 #include <iostream>
 #include <cstring>
 #include "Environment.hh"
-#include "AST.hh"
+#include "PTree.hh"
 #include "Walker.hh"
 #include "TypeInfo.hh"
 #include "Class.hh"
@@ -78,11 +78,11 @@ Environment* Walker::ExitScope()
     return old_env;
 }
 
-void Walker::RecordBaseclassEnv(Ptree* bases)
+void Walker::RecordBaseclassEnv(PTree::Node *bases)
 {
     while(bases != 0){
 	bases = bases->Cdr();		// skip : or ,
-	Ptree* base_class = bases->Car()->Last()->Car();
+	PTree::Node *base_class = bases->Car()->Last()->Car();
 	Class* metaobject = env->LookupClassMetaobject(base_class);
 	if(metaobject != 0){
 	    Environment* e = metaobject->GetEnvironment();
@@ -115,7 +115,7 @@ bool Walker::IsClassWalker()
     return false;
 }
 
-Ptree* Walker::Translate(Ptree* p)
+PTree::Node *Walker::Translate(PTree::Node *p)
 {
     if(p == 0)
 	return p;
@@ -123,7 +123,7 @@ Ptree* Walker::Translate(Ptree* p)
 	return p->Translate(this);
 }
 
-void Walker::Typeof(Ptree* p, TypeInfo& t)
+void Walker::Typeof(PTree::Node *p, TypeInfo& t)
 {
     if(p != 0)
 	p->Typeof(this, t);
@@ -131,52 +131,52 @@ void Walker::Typeof(Ptree* p, TypeInfo& t)
 
 // default translation
 
-Ptree* Walker::TranslatePtree(Ptree* p)
+PTree::Node *Walker::TranslatePtree(PTree::Node *p)
 {
     return p;
 }
 
-void Walker::TypeofPtree(Ptree*, TypeInfo& t)
+void Walker::TypeofPtree(PTree::Node *, TypeInfo& t)
 {
     t.Unknown();
 }
 
 // translation for each class of node
 
-Ptree* Walker::TranslateTypedef(Ptree* def)
+PTree::Node *Walker::TranslateTypedef(PTree::Node *def)
 {
-    Ptree *tspec, *tspec2;
+  PTree::Node *tspec, *tspec2;
 
-    tspec = Ptree::Second(def);
+    tspec = PTree::Node::Second(def);
     tspec2 = TranslateTypespecifier(tspec);
-    env->RecordTypedefName(Ptree::Third(def));
+    env->RecordTypedefName(PTree::Node::Third(def));
     if(tspec == tspec2)
 	return def;
     else
-	return new PtreeTypedef(Ptree::First(def),
-				Ptree::List(tspec2,
-					    Ptree::ListTail(def, 2)));
+	return new PTree::Typedef(PTree::Node::First(def),
+				  PTree::Node::List(tspec2,
+						    PTree::Node::ListTail(def, 2)));
 }
 
-Ptree* Walker::TranslateTemplateDecl(Ptree* def)
+PTree::Node *Walker::TranslateTemplateDecl(PTree::Node *def)
 {
-    Ptree* body = Ptree::Nth(def, 4);
-    Ptree* class_spec = GetClassTemplateSpec(body);
+    PTree::Node *body = PTree::Node::Nth(def, 4);
+    PTree::Node *class_spec = GetClassTemplateSpec(body);
     if(class_spec->IsA(Token::ntClassSpec))
 	return TranslateTemplateClass(def, class_spec);
     else
 	return TranslateTemplateFunction(def, body);
 }
 
-Ptree* Walker::TranslateExternTemplate(Ptree* def)
+PTree::Node *Walker::TranslateExternTemplate(PTree::Node *def)
 {
     return def;
 }
 
-Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
+PTree::Node *Walker::TranslateTemplateClass(PTree::Node *temp_def, PTree::Node *class_spec)
 {
-    Ptree* userkey;
-    Ptree* class_def;
+    PTree::Node *userkey;
+    PTree::Node *class_def;
 
     if(class_spec->Car()->IsLeaf()){
 	userkey = 0;
@@ -188,22 +188,22 @@ Ptree* Walker::TranslateTemplateClass(Ptree* temp_def, Ptree* class_spec)
     }
 
     Class* metaobject = 0;
-    if(Ptree::Length(class_def) == 4)
+    if(PTree::Node::Length(class_def) == 4)
 	metaobject = MakeTemplateClassMetaobject(temp_def, userkey, class_def);
 
     env->RecordTemplateClass(class_spec, metaobject);
-    Ptree* class_spec2 = TranslateClassSpec(class_spec, userkey, class_def,
+    PTree::Node *class_spec2 = TranslateClassSpec(class_spec, userkey, class_def,
 					    metaobject);
     if(class_spec == class_spec2)
 	return temp_def;
     else
-	return new PtreeTemplateDecl(temp_def->Car(),
-				     Ptree::Subst(class_spec2, class_spec,
-						  temp_def->Cdr()));
+	return new PTree::TemplateDecl(temp_def->Car(),
+				       PTree::Node::Subst(class_spec2, class_spec,
+							  temp_def->Cdr()));
 }
 
-Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
-					   Ptree* class_def)
+Class* Walker::MakeTemplateClassMetaobject(PTree::Node *def, PTree::Node *userkey,
+					   PTree::Node *class_def)
 {
     Class* metaobject = LookupMetaclass(def, userkey, class_def, true);
     if(metaobject == 0)
@@ -222,17 +222,17 @@ Class* Walker::MakeTemplateClassMetaobject(Ptree* def, Ptree* userkey,
     return metaobject;
 }
 
-Ptree* Walker::TranslateTemplateFunction(Ptree* temp_def, Ptree* fun)
+PTree::Node *Walker::TranslateTemplateFunction(PTree::Node *temp_def, PTree::Node *fun)
 {
     env->RecordTemplateFunction(temp_def, fun);
     return temp_def;
 }
 
-Ptree* Walker::TranslateTemplateInstantiation(Ptree *inst_spec)
+PTree::Node *Walker::TranslateTemplateInstantiation(PTree::Node *inst_spec)
 {
-    Ptree* userkey;
-    Ptree* class_spec;
-    Ptree* full_class_spec = Ptree::First(inst_spec);
+    PTree::Node *userkey;
+    PTree::Node *class_spec;
+    PTree::Node *full_class_spec = PTree::Node::First(inst_spec);
 
     if(full_class_spec->Car()->IsLeaf()){
 	userkey = 0;
@@ -251,10 +251,10 @@ Ptree* Walker::TranslateTemplateInstantiation(Ptree *inst_spec)
 }
 
 Class* Walker::MakeTemplateInstantiationMetaobject(
-    Ptree* full_class_spec, Ptree* userkey, Ptree* class_spec)
+    PTree::Node *full_class_spec, PTree::Node *userkey, PTree::Node *class_spec)
 {
     // [class [foo [< ... >]]] -> [class foo]
-    Ptree* class_name = Ptree::First(Ptree::Second(class_spec));
+    PTree::Node *class_name = PTree::Node::First(PTree::Node::Second(class_spec));
     Bind* binding = 0;
     if (!env->Lookup(class_name,binding))
 	return 0;
@@ -282,13 +282,13 @@ Class* Walker::MakeTemplateInstantiationMetaobject(
     return metaobject;
 }
 
-Ptree* Walker::TranslateTemplateInstantiation(Ptree* inst_spec,
-		Ptree* userkey, Ptree* class_spec, Class* metaobject)
+PTree::Node *Walker::TranslateTemplateInstantiation(PTree::Node *inst_spec,
+		PTree::Node *userkey, PTree::Node *class_spec, Class* metaobject)
 {
     if (metaobject == 0)
 	return inst_spec;
     else {
-	Ptree *class_spec2 = TranslateClassSpec(class_spec);
+      PTree::Node *class_spec2 = TranslateClassSpec(class_spec);
 	if (class_spec == class_spec2)
 	    return inst_spec;
 	else
@@ -296,59 +296,59 @@ Ptree* Walker::TranslateTemplateInstantiation(Ptree* inst_spec,
     }
 }
 
-Ptree* Walker::TranslateMetaclassDecl(Ptree* decl)
+PTree::Node *Walker::TranslateMetaclassDecl(PTree::Node *decl)
 {
     env->RecordMetaclassName(decl);
     return decl;
 }
 
-Ptree* Walker::TranslateLinkageSpec(Ptree* def)
+PTree::Node *Walker::TranslateLinkageSpec(PTree::Node *def)
 {
-    Ptree* body = Ptree::Third(def);
-    Ptree* body2 = Translate(body);
+    PTree::Node *body = PTree::Node::Third(def);
+    PTree::Node *body2 = Translate(body);
     if(body == body2)
 	return def;
     else
-	return new PtreeLinkageSpec(Ptree::First(def),
-				    Ptree::List(Ptree::Second(def),
-						body2));
+	return new PTree::LinkageSpec(PTree::Node::First(def),
+				      PTree::Node::List(PTree::Node::Second(def),
+							body2));
 }
 
-Ptree* Walker::TranslateNamespaceSpec(Ptree* def)
+PTree::Node *Walker::TranslateNamespaceSpec(PTree::Node *def)
 {
-    Ptree* body = Ptree::Third(def);
-    Ptree* body2 = Translate(body);
-    env->RecordNamespace(Ptree::Second(def));
+    PTree::Node *body = PTree::Node::Third(def);
+    PTree::Node *body2 = Translate(body);
+    env->RecordNamespace(PTree::Node::Second(def));
     if(body == body2)
 	return def;
     else
-	return new PtreeNamespaceSpec(Ptree::First(def),
-				      Ptree::List(Ptree::Second(def),
-						  body2));
+	return new PTree::NamespaceSpec(PTree::Node::First(def),
+					PTree::Node::List(PTree::Node::Second(def),
+							  body2));
 }
 
-Ptree* Walker::TranslateNamespaceAlias(Ptree* def)
+PTree::Node *Walker::TranslateNamespaceAlias(PTree::Node *def)
 {
   return def;
 }
 
-Ptree* Walker::TranslateUsing(Ptree* def)
+PTree::Node *Walker::TranslateUsing(PTree::Node *def)
 {
     return def;
 }
 
-Ptree* Walker::TranslateDeclaration(Ptree* def)
+PTree::Node *Walker::TranslateDeclaration(PTree::Node *def)
 {
-    Ptree* decls = Ptree::Third(def);
+    PTree::Node *decls = PTree::Node::Third(def);
     if(decls->IsA(Token::ntDeclarator))	// if it is a function
 	return TranslateFunctionImplementation(def);
     else{
 	// if it is a function prototype or a variable declaration.
-	Ptree* decls2;
-	Ptree* sspec = Ptree::First(def);
-	Ptree* sspec2 = TranslateStorageSpecifiers(sspec);
-	Ptree* tspec = Ptree::Second(def);
-	Ptree* tspec2 = TranslateTypespecifier(tspec);
+	PTree::Node *decls2;
+	PTree::Node *sspec = PTree::Node::First(def);
+	PTree::Node *sspec2 = TranslateStorageSpecifiers(sspec);
+	PTree::Node *tspec = PTree::Node::Second(def);
+	PTree::Node *tspec2 = TranslateTypespecifier(tspec);
 	if(decls->IsLeaf())	// if it is ";"
 	    decls2 = decls;
 	else
@@ -357,39 +357,38 @@ Ptree* Walker::TranslateDeclaration(Ptree* def)
 	if(sspec == sspec2 && tspec == tspec2 && decls == decls2)
 	    return def;
 	else if(decls2 == 0)
-	    return new PtreeDeclaration(0, Ptree::List(0,
-							 Class::semicolon_t));
+	    return new PTree::Declaration(0, PTree::Node::List(0, Class::semicolon_t));
 	else
-	    return new PtreeDeclaration(sspec2,
-					Ptree::ShallowSubst(tspec2, tspec,
-							    decls2, decls,
-							    def->Cdr()));
+	    return new PTree::Declaration(sspec2,
+					  PTree::Node::ShallowSubst(tspec2, tspec,
+								    decls2, decls,
+								    def->Cdr()));
     }
 }
 
 // TranslateStorageSpecifiers() also deals with inline, virtual, etc.
 
-Ptree* Walker::TranslateStorageSpecifiers(Ptree* spec)
+PTree::Node *Walker::TranslateStorageSpecifiers(PTree::Node *spec)
 {
     return spec;
 }
 
-Ptree* Walker::TranslateDeclarators(Ptree* decls)
+PTree::Node *Walker::TranslateDeclarators(PTree::Node *decls)
 {
     return TranslateDeclarators(decls, true);
 }
 
-Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
+PTree::Node *Walker::TranslateDeclarators(PTree::Node *decls, bool record)
 {
-    PtreeArray array;
+    PTree::Array array;
     bool changed = false;
-    Ptree* rest = decls;
+    PTree::Node *rest = decls;
     while(rest != 0){
-	Ptree *p, *q;
+      PTree::Node *p, *q;
 	int len;
 	p = q = rest->Car();
 	if(p->IsA(Token::ntDeclarator)){
-	    Ptree *exp, *exp2;
+	  PTree::Node *exp, *exp2;
 
 	    if(record)
 		env->RecordDeclarator(p);
@@ -398,29 +397,29 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 	    exp = exp2 = 0;
 	    if(len >= 2 && p->Nth(len - 2)->Eq('=')){
 		exp = p->ListTail(len - 2);
-		exp2 = TranslateAssignInitializer((PtreeDeclarator*)p, exp);
+		exp2 = TranslateAssignInitializer((PTree::Declarator*)p, exp);
 	    }
 	    else{
-		Ptree* last = p->Last()->Car();
+		PTree::Node *last = p->Last()->Car();
 		if(last != 0 && !last->IsLeaf() && last->Car()->Eq('(')){
 		    exp = last;
-		    exp2 = TranslateInitializeArgs((PtreeDeclarator*)p, last);
+		    exp2 = TranslateInitializeArgs((PTree::Declarator*)p, last);
 		}
 	    }
 
-	    q = TranslateDeclarator(false, (PtreeDeclarator*)p);
+	    q = TranslateDeclarator(false, (PTree::Declarator*)p);
 	    if(exp != exp2){
 		// exp2 should be a list, but...
 		if(exp2 != 0 && exp2->IsLeaf())
-		    exp2 = Ptree::List(exp2);
+		    exp2 = PTree::Node::List(exp2);
 
 		if(p == q){
-		    q = Ptree::SubstSublist(exp2, exp, p->Cdr());
-		    q = new PtreeDeclarator((PtreeDeclarator*)p, p->Car(), q);
+		    q = PTree::Node::SubstSublist(exp2, exp, p->Cdr());
+		    q = new PTree::Declarator((PTree::Declarator*)p, p->Car(), q);
 		}
 		else if(q != 0 && !q->IsLeaf())
-		    q = new PtreeDeclarator((PtreeDeclarator*)p, q->Car(),
-					    Ptree::Subst(exp2, exp, q->Cdr()));
+		    q = new PTree::Declarator((PTree::Declarator*)p, q->Car(),
+					    PTree::Node::Subst(exp2, exp, q->Cdr()));
 	    }
 	}
 
@@ -449,30 +448,30 @@ Ptree* Walker::TranslateDeclarators(Ptree* decls, bool record)
 	return decls;
 }
 
-Ptree* Walker::TranslateDeclarator(bool record, PtreeDeclarator* decl)
+PTree::Node *Walker::TranslateDeclarator(bool record, PTree::Declarator* decl)
 {
     // if record is true, the formal arguments are recorded in the
     // current environment.
 
-    Ptree* args;
+    PTree::Node *args;
     if(GetArgDeclList(decl, args)){
-	Ptree* args2 = TranslateArgDeclList(record, decl, args);
+	PTree::Node *args2 = TranslateArgDeclList(record, decl, args);
 	if(args == args2)
 	    return decl;
 	else
-	    return new PtreeDeclarator(decl, decl->Car(),
-				       Ptree::Subst(args2, args,
-						    decl->Cdr()));
+	    return new PTree::Declarator(decl, decl->Car(),
+					 PTree::Node::Subst(args2, args,
+							    decl->Cdr()));
     }
     else
 	return decl;
 }
 
-bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
+bool Walker::GetArgDeclList(PTree::Declarator* decl, PTree::Node *& args)
 {
-    Ptree* p = decl;
+    PTree::Node *p = decl;
     while(p != 0){
-	Ptree* q = p->Car();
+	PTree::Node *q = p->Car();
 	if(q != 0)
 	    if(q->IsLeaf()){
 		if(q->Eq('(')){
@@ -490,25 +489,25 @@ bool Walker::GetArgDeclList(PtreeDeclarator* decl, Ptree*& args)
     return false;
 }
 
-Ptree* Walker::TranslateArgDeclList(bool record, Ptree*, Ptree* args)
+PTree::Node *Walker::TranslateArgDeclList(bool record, PTree::Node *, PTree::Node *args)
 {
     return TranslateArgDeclList2(record, env, false, false, 0, args);
 }
 
 // If translate is true, this function eliminates a user-defined keyword.
 
-Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
+PTree::Node *Walker::TranslateArgDeclList2(bool record, Environment* e,
 				     bool translate,
 				     bool fill_args, int arg_name,
-				     Ptree* args)
+				     PTree::Node *args)
 {
-    Ptree* rest;
-    Ptree* rest2;
+    PTree::Node *rest;
+    PTree::Node *rest2;
 
     if(args == 0)
 	return args;
     else{
-	Ptree *a, *a2;
+      PTree::Node *a, *a2;
 	a = a2 = args->Car();
 	if(args->Cdr() == 0)
 	    rest = rest2 = 0;
@@ -519,7 +518,7 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 	    if(rest == rest2)
 		rest = rest2 = args->Cdr();
 	    else
-		rest2 = Ptree::Cons(args->Cadr(), rest2);
+		rest2 = PTree::Node::Cons(args->Cadr(), rest2);
 	}
 
 	bool is_ellipsis = a->IsLeaf();		// a may be "..."
@@ -542,7 +541,7 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 	    if(translate && fill_args){
 		a2 = FillArgumentName(a, a->Third(), arg_name);
 		if(a != a2)
-		    a2 = Ptree::Cons(a->First(), a2);
+		    a2 = PTree::Node::Cons(a->First(), a2);
 	    }
 	}
 	else{
@@ -554,62 +553,62 @@ Ptree* Walker::TranslateArgDeclList2(bool record, Environment* e,
 	}
 
 	if(a != a2 || rest != rest2)
-	    return Ptree::Cons(a2, rest2);
+	    return PTree::Node::Cons(a2, rest2);
 	else
 	    return args;
     }
 }
 
-Ptree* Walker::FillArgumentName(Ptree* arg, Ptree* d, int arg_name)
+PTree::Node *Walker::FillArgumentName(PTree::Node *arg, PTree::Node *d, int arg_name)
 {
-    PtreeDeclarator* decl = (PtreeDeclarator*)d;
+    PTree::Declarator* decl = (PTree::Declarator*)d;
     if(decl->Name() != 0)
 	return arg;
     else{
 	unsigned char* type = (unsigned char*)decl->GetEncodedType();
 	return Encoding::MakePtree(type,
-				   Ptree::Make(argument_name, arg_name));
+				   PTree::Node::Make(argument_name, arg_name));
     }
 }
 
-Ptree* Walker::TranslateAssignInitializer(PtreeDeclarator*, Ptree* init)
+PTree::Node *Walker::TranslateAssignInitializer(PTree::Declarator*, PTree::Node *init)
 {
-    Ptree* exp = init->Second();
-    Ptree* exp2 = Translate(exp);
+    PTree::Node *exp = init->Second();
+    PTree::Node *exp2 = Translate(exp);
     if(exp == exp2)
 	return init;
     else
-	return Ptree::List(init->Car(), exp2);
+	return PTree::Node::List(init->Car(), exp2);
 }
 
-Ptree* Walker::TranslateInitializeArgs(PtreeDeclarator*, Ptree* init)
+PTree::Node *Walker::TranslateInitializeArgs(PTree::Declarator*, PTree::Node *init)
 {
     return TranslateArguments(init);
 }
 
-Ptree* Walker::TranslateFunctionImplementation(Ptree* impl)
+PTree::Node *Walker::TranslateFunctionImplementation(PTree::Node *impl)
 {
-    Ptree* sspec = Ptree::First(impl);
-    Ptree* sspec2 = TranslateStorageSpecifiers(sspec);
-    Ptree* tspec = Ptree::Second(impl);
-    Ptree* decl = Ptree::Third(impl);
-    Ptree* body = Ptree::Nth(impl, 3);
-    Ptree* decl2;
-    Ptree* body2;
+    PTree::Node *sspec = PTree::Node::First(impl);
+    PTree::Node *sspec2 = TranslateStorageSpecifiers(sspec);
+    PTree::Node *tspec = PTree::Node::Second(impl);
+    PTree::Node *decl = PTree::Node::Third(impl);
+    PTree::Node *body = PTree::Node::Nth(impl, 3);
+    PTree::Node *decl2;
+    PTree::Node *body2;
 
-    Ptree* tspec2 = TranslateTypespecifier(tspec);
+    PTree::Node *tspec2 = TranslateTypespecifier(tspec);
     Environment* fenv = env->RecordDeclarator(decl);
     if(fenv == 0){
 	// reach here if resolving the qualified name fails. error?
 	NewScope();
-	decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
+	decl2 = TranslateDeclarator(true, (PTree::Declarator*)decl);
 	body2 = Translate(body);
 	ExitScope();
     }
     else{
 	NameScope old_env = ChangeScope(fenv);
 	NewScope();
-	decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl);
+	decl2 = TranslateDeclarator(true, (PTree::Declarator*)decl);
 	body2 = Translate(body);
 	ExitScope();
 	RestoreScope(old_env);
@@ -618,33 +617,33 @@ Ptree* Walker::TranslateFunctionImplementation(Ptree* impl)
     if(sspec == sspec2 && tspec == tspec2 && decl == decl2 && body == body2)
 	return impl;
     else
-	return new PtreeDeclaration(sspec2,
-				    Ptree::List(tspec2, decl2, body2));
+	return new PTree::Declaration(sspec2,
+				      PTree::Node::List(tspec2, decl2, body2));
 }
 
-Ptree* Walker::RecordArgsAndTranslateFbody(Class*, Ptree* args, Ptree* body)
+PTree::Node *Walker::RecordArgsAndTranslateFbody(Class*, PTree::Node *args, PTree::Node *body)
 {
     NewScope();
     TranslateArgDeclList2(true, env, false, false, 0, args);
-    Ptree* body2 = TranslateFunctionBody(body);
+    PTree::Node *body2 = TranslateFunctionBody(body);
     ExitScope();
     return body2;
 }
 
-Ptree* Walker::TranslateFunctionBody(Ptree* body)
+PTree::Node *Walker::TranslateFunctionBody(PTree::Node *body)
 {
     return Translate(body);
 }
 
-Ptree* Walker::TranslateBrace(Ptree* block)
+PTree::Node *Walker::TranslateBrace(PTree::Node *block)
 {
-    PtreeArray array;
+    PTree::Array array;
     bool changed = false;
-    Ptree* body = Ptree::Second(block);
-    Ptree* rest = body;
+    PTree::Node *body = PTree::Node::Second(block);
+    PTree::Node *rest = body;
     while(rest != 0){
-	Ptree* p = rest->Car();
-	Ptree* q = Translate(p);
+	PTree::Node *p = rest->Car();
+	PTree::Node *q = Translate(p);
 	array.Append(q);
 	if(p != q)
 	    changed = true;
@@ -653,25 +652,25 @@ Ptree* Walker::TranslateBrace(Ptree* block)
     }
 
     if(changed)
-	return new PtreeBrace(Ptree::First(block), array.All(),
-			      Ptree::Third(block));
+	return new PTree::Brace(PTree::Node::First(block), array.All(),
+				PTree::Node::Third(block));
     else
 	return block;
 }
 
-Ptree* Walker::TranslateBlock(Ptree* block)
+PTree::Node *Walker::TranslateBlock(PTree::Node *block)
 {
-    Ptree* block2;
+    PTree::Node *block2;
 
     NewScope();
 
-    PtreeArray array;
+    PTree::Array array;
     bool changed = false;
-    Ptree* body = Ptree::Second(block);
-    Ptree* rest = body;
+    PTree::Node *body = PTree::Node::Second(block);
+    PTree::Node *rest = body;
     while(rest != 0){
-	Ptree* p = rest->Car();
-	Ptree* q = Translate(p);
+	PTree::Node *p = rest->Car();
+	PTree::Node *q = Translate(p);
 	array.Append(q);
 	if(p != q)
 	    changed = true;
@@ -680,8 +679,8 @@ Ptree* Walker::TranslateBlock(Ptree* block)
     }
 
     if(changed)
-	block2 = new PtreeBlock(Ptree::First(block), array.All(),
-				Ptree::Third(block));
+	block2 = new PTree::Block(PTree::Node::First(block), array.All(),
+				  PTree::Node::Third(block));
     else
 	block2 = block;
 
@@ -689,21 +688,21 @@ Ptree* Walker::TranslateBlock(Ptree* block)
     return block2;
 }
 
-Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
+PTree::Node *Walker::TranslateClassBody(PTree::Node *block, PTree::Node *bases,
 				  Class* metaobject)
 {
-    Ptree* block2;
+    PTree::Node *block2;
 
     NewScope(metaobject);
     RecordBaseclassEnv(bases);
 
-    PtreeArray array;
+    PTree::Array array;
     bool changed = false;
-    Ptree* body = Ptree::Second(block);
-    Ptree* rest = body;
+    PTree::Node *body = PTree::Node::Second(block);
+    PTree::Node *rest = body;
     while(rest != 0){
-	Ptree* p = rest->Car();
-	Ptree* q = Translate(p);
+	PTree::Node *p = rest->Car();
+	PTree::Node *q = Translate(p);
 	array.Append(q);
 	if(p != q)
 	    changed = true;
@@ -712,8 +711,8 @@ Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
     }
 
     if(changed)
-	block2 = new PtreeClassBody(Ptree::First(block), array.All(),
-				    Ptree::Third(block));
+	block2 = new PTree::ClassBody(PTree::Node::First(block), array.All(),
+				      PTree::Node::Third(block));
     else
 	block2 = block;
 
@@ -721,10 +720,10 @@ Ptree* Walker::TranslateClassBody(Ptree* block, Ptree* bases,
     return block2;
 }
 
-Ptree* Walker::TranslateClassSpec(Ptree* spec)
+PTree::Node *Walker::TranslateClassSpec(PTree::Node *spec)
 {
-    Ptree* userkey;
-    Ptree* class_def;
+    PTree::Node *userkey;
+    PTree::Node *class_def;
 
     if(spec->Car()->IsLeaf()){
 	userkey = 0;
@@ -736,15 +735,15 @@ Ptree* Walker::TranslateClassSpec(Ptree* spec)
     }
 
     Class* metaobject = 0;
-    if(Ptree::Length(class_def) == 4)
+    if(PTree::Node::Length(class_def) == 4)
 	metaobject = MakeClassMetaobject(spec, userkey, class_def);
 
     env->RecordClassName(spec->GetEncodedName(), metaobject);
     return TranslateClassSpec(spec, userkey, class_def, metaobject);
 }
 
-Class* Walker::MakeClassMetaobject(Ptree* def, Ptree* userkey,
-				   Ptree* class_def)
+Class* Walker::MakeClassMetaobject(PTree::Node *def, PTree::Node *userkey,
+				   PTree::Node *class_def)
 {
     Class* metaobject = LookupMetaclass(def, userkey, class_def, false);
     if(metaobject == 0 && default_metaclass != 0){
@@ -778,13 +777,13 @@ void Walker::ChangeDefaultMetaclass(char* name)
 
 // LookupMetaclass() returns 0 if no metaclass is found.
 
-Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
+Class* Walker::LookupMetaclass(PTree::Node *def, PTree::Node *userkey, PTree::Node *class_def,
 			       bool is_template)
 {
-    Ptree *mclass, *margs;
+  PTree::Node *mclass, *margs;
     Class* metaobject;
 
-    Ptree* class_name = class_def->Second();
+    PTree::Node *class_name = class_def->Second();
 
     // for bootstrapping
     if(Metaclass::IsBuiltinMetaclass(class_name)){
@@ -793,7 +792,7 @@ Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
 	return metaobject;
     }
 
-    Ptree* mdecl = env->LookupMetaclass(class_name);
+    PTree::Node *mdecl = env->LookupMetaclass(class_name);
     if(mdecl != 0){
 	mclass = mdecl->Second();
 	margs = mdecl->Nth(4);
@@ -825,14 +824,14 @@ Class* Walker::LookupMetaclass(Ptree* def, Ptree* userkey, Ptree* class_def,
     return LookupBaseMetaclass(def, class_def, is_template);
 }
 
-Class* Walker::LookupBaseMetaclass(Ptree* def, Ptree* class_def,
+Class* Walker::LookupBaseMetaclass(PTree::Node *def, PTree::Node *class_def,
 				   bool is_template)
 {
     Class* metaobject = 0;
-    Ptree* bases = class_def->Third();
+    PTree::Node *bases = class_def->Third();
     while(bases != 0){
 	bases = bases->Cdr();
-	Ptree* base = bases->Car()->Last()->Car();
+	PTree::Node *base = bases->Car()->Last()->Car();
 	bases = bases->Cdr();
 	Class* m = env->LookupClassMetaobject(base);
 	if(m != 0){
@@ -858,147 +857,147 @@ Class* Walker::LookupBaseMetaclass(Ptree* def, Ptree* class_def,
 	return 0;
 }
 
-Ptree* Walker::TranslateClassSpec(Ptree* spec, Ptree*,
-				  Ptree* class_def, Class* metaobject)
+PTree::Node *Walker::TranslateClassSpec(PTree::Node *spec, PTree::Node *,
+				  PTree::Node *class_def, Class* metaobject)
 {
     if(metaobject == 0)
 	return spec;
     else{
 	// a class body is specified.
-	Ptree* body = class_def->Nth(3);
-	Ptree* body2 = TranslateClassBody(body, class_def->Third(),
+	PTree::Node *body = class_def->Nth(3);
+	PTree::Node *body2 = TranslateClassBody(body, class_def->Third(),
 					  metaobject);
 	if(body == body2)
 	    return spec;
 	else
-	    return new PtreeClassSpec(spec->Car(),
-				      Ptree::ShallowSubst(body2, body,
-							  spec->Cdr()),
-				      0, spec->GetEncodedName());
+	    return new PTree::ClassSpec(spec->Car(),
+					PTree::Node::ShallowSubst(body2, body,
+								  spec->Cdr()),
+					0, spec->GetEncodedName());
     }
 }
 
 
-Ptree* Walker::TranslateEnumSpec(Ptree* spec)
+PTree::Node *Walker::TranslateEnumSpec(PTree::Node *spec)
 {
     env->RecordEnumName(spec);
     return spec;
 }
 
-Ptree* Walker::TranslateAccessSpec(Ptree* p)
+PTree::Node *Walker::TranslateAccessSpec(PTree::Node *p)
 {
     return p;
 }
 
-Ptree* Walker::TranslateAccessDecl(Ptree* p)
+PTree::Node *Walker::TranslateAccessDecl(PTree::Node *p)
 {
     return p;
 }
 
-Ptree* Walker::TranslateUserAccessSpec(Ptree* p)
+PTree::Node *Walker::TranslateUserAccessSpec(PTree::Node *p)
 {
     return p;
 }
 
-Ptree* Walker::TranslateIf(Ptree* s)
+PTree::Node *Walker::TranslateIf(PTree::Node *s)
 {
-    Ptree* cond = s->Third();
-    Ptree* cond2 = Translate(cond);
-    Ptree* then_part = s->Nth(4);
-    Ptree* then_part2 = Translate(then_part);
-    Ptree* else_part = s->Nth(6);
-    Ptree* else_part2 = Translate(else_part);
+    PTree::Node *cond = s->Third();
+    PTree::Node *cond2 = Translate(cond);
+    PTree::Node *then_part = s->Nth(4);
+    PTree::Node *then_part2 = Translate(then_part);
+    PTree::Node *else_part = s->Nth(6);
+    PTree::Node *else_part2 = Translate(else_part);
 
     if(cond == cond2 && then_part == then_part2 && else_part == else_part2)
 	return s;
     else{
-	Ptree* rest = Ptree::ShallowSubst(cond2, cond, then_part2, then_part,
+	PTree::Node *rest = PTree::Node::ShallowSubst(cond2, cond, then_part2, then_part,
 					  else_part2, else_part, s->Cdr());
-	return new PtreeIfStatement(s->Car(), rest);
+	return new PTree::IfStatement(s->Car(), rest);
     }
 }
 
-Ptree* Walker::TranslateSwitch(Ptree* s)
+PTree::Node *Walker::TranslateSwitch(PTree::Node *s)
 {
-    Ptree* cond = s->Third();
-    Ptree* cond2 = Translate(cond);
-    Ptree* body = s->Nth(4);
-    Ptree* body2 = Translate(body);
+    PTree::Node *cond = s->Third();
+    PTree::Node *cond2 = Translate(cond);
+    PTree::Node *body = s->Nth(4);
+    PTree::Node *body2 = Translate(body);
     if(cond == cond2 && body == body2)
 	return s;
     else{
-	Ptree* rest = Ptree::ShallowSubst(cond2, cond, body2, body, s->Cdr());
-	return new PtreeSwitchStatement(s->Car(), rest);
+	PTree::Node *rest = PTree::Node::ShallowSubst(cond2, cond, body2, body, s->Cdr());
+	return new PTree::SwitchStatement(s->Car(), rest);
     }
 }
 
-Ptree* Walker::TranslateWhile(Ptree* s)
+PTree::Node *Walker::TranslateWhile(PTree::Node *s)
 {
-    Ptree* cond = s->Third();
-    Ptree* cond2 = Translate(cond);
-    Ptree* body = s->Nth(4);
-    Ptree* body2 = Translate(body);
+    PTree::Node *cond = s->Third();
+    PTree::Node *cond2 = Translate(cond);
+    PTree::Node *body = s->Nth(4);
+    PTree::Node *body2 = Translate(body);
     if(cond == cond2 && body == body2)
 	return s;
     else{
-	Ptree* rest = Ptree::ShallowSubst(cond2, cond, body2, body, s->Cdr());
-	return new PtreeWhileStatement(s->Car(), rest);
+	PTree::Node *rest = PTree::Node::ShallowSubst(cond2, cond, body2, body, s->Cdr());
+	return new PTree::WhileStatement(s->Car(), rest);
     }
 }
 
-Ptree* Walker::TranslateDo(Ptree* s)
+PTree::Node *Walker::TranslateDo(PTree::Node *s)
 {
-    Ptree* body = s->Second();
-    Ptree* body2 = Translate(body);
-    Ptree* cond = s->Nth(4);
-    Ptree* cond2 = Translate(cond);
+    PTree::Node *body = s->Second();
+    PTree::Node *body2 = Translate(body);
+    PTree::Node *cond = s->Nth(4);
+    PTree::Node *cond2 = Translate(cond);
     if(cond == cond2 && body == body2)
 	return s;
     else{
-	Ptree* rest = Ptree::ShallowSubst(body2, body, cond2, cond, s->Cdr());
-	return new PtreeDoStatement(s->Car(), rest);
+	PTree::Node *rest = PTree::Node::ShallowSubst(body2, body, cond2, cond, s->Cdr());
+	return new PTree::DoStatement(s->Car(), rest);
     }
 }
 
-Ptree* Walker::TranslateFor(Ptree* s)
+PTree::Node *Walker::TranslateFor(PTree::Node *s)
 {
     NewScope();
-    Ptree* exp1 = s->Third();
-    Ptree* exp1t = Translate(exp1);
-    Ptree* exp2 = s->Nth(3);
-    Ptree* exp2t = Translate(exp2);
-    Ptree* exp3 = s->Nth(5);
-    Ptree* exp3t = Translate(exp3);
-    Ptree* body = s->Nth(7);
-    Ptree* body2 = Translate(body);
+    PTree::Node *exp1 = s->Third();
+    PTree::Node *exp1t = Translate(exp1);
+    PTree::Node *exp2 = s->Nth(3);
+    PTree::Node *exp2t = Translate(exp2);
+    PTree::Node *exp3 = s->Nth(5);
+    PTree::Node *exp3t = Translate(exp3);
+    PTree::Node *body = s->Nth(7);
+    PTree::Node *body2 = Translate(body);
     ExitScope();
 
     if(exp1 == exp1t && exp2 == exp2t && exp3 == exp3t && body == body2)
 	return s;
     else{
-	Ptree* rest = Ptree::ShallowSubst(exp1t, exp1, exp2t, exp2,
+	PTree::Node *rest = PTree::Node::ShallowSubst(exp1t, exp1, exp2t, exp2,
 					  exp3t, exp3, body2, body, s->Cdr());
-	return new PtreeForStatement(s->Car(), rest);
+	return new PTree::ForStatement(s->Car(), rest);
     }
 }
 
-Ptree* Walker::TranslateTry(Ptree* s)
+PTree::Node *Walker::TranslateTry(PTree::Node *s)
 {
-    Ptree* try_block = s->Second();
-    Ptree* try_block2 = Translate(try_block);
+    PTree::Node *try_block = s->Second();
+    PTree::Node *try_block2 = Translate(try_block);
 
-    PtreeArray array;
-    Ptree* handlers = s->Cddr();
+    PTree::Array array;
+    PTree::Node *handlers = s->Cddr();
     bool changed = false;
 
     while(handlers != 0){
-	Ptree* handle = handlers->Car();
-	Ptree* body = handle->Nth(4);
-	Ptree* body2 = Translate(body);
+	PTree::Node *handle = handlers->Car();
+	PTree::Node *body = handle->Nth(4);
+	PTree::Node *body2 = Translate(body);
 	if(body == body2)
 	    array.Append(handle);
 	else{
-	    array.Append(Ptree::ShallowSubst(body2, body, handle));
+	    array.Append(PTree::Node::ShallowSubst(body2, body, handle));
 	    changed = true;
 	}
 
@@ -1008,87 +1007,87 @@ Ptree* Walker::TranslateTry(Ptree* s)
     if(try_block == try_block2 && !changed)
 	return s;
     else
-	return new PtreeTryStatement(s->Car(),
-				     Ptree::Cons(try_block2, array.All()));
+	return new PTree::TryStatement(s->Car(),
+				       PTree::Node::Cons(try_block2, array.All()));
 }
 
-Ptree* Walker::TranslateBreak(Ptree* s)
+PTree::Node *Walker::TranslateBreak(PTree::Node *s)
 {
     return s;
 }
 
-Ptree* Walker::TranslateContinue(Ptree* s)
+PTree::Node *Walker::TranslateContinue(PTree::Node *s)
 {
     return s;
 }
 
-Ptree* Walker::TranslateReturn(Ptree* s)
+PTree::Node *Walker::TranslateReturn(PTree::Node *s)
 {
     if(s->Length() == 2)
 	return s;
     else{
-	Ptree* exp = s->Second();
-	Ptree* exp2 = Translate(exp);
+	PTree::Node *exp = s->Second();
+	PTree::Node *exp2 = Translate(exp);
 	if(exp == exp2)
 	    return s;
 	else
-	    return new PtreeReturnStatement(s->Car(),
-					    Ptree::ShallowSubst(exp2, exp,
-								s->Cdr()));
+	    return new PTree::ReturnStatement(s->Car(),
+					      PTree::Node::ShallowSubst(exp2, exp,
+									s->Cdr()));
     }
 }
 
-Ptree* Walker::TranslateGoto(Ptree* s)
+PTree::Node *Walker::TranslateGoto(PTree::Node *s)
 {
     return s;
 }
 
-Ptree* Walker::TranslateCase(Ptree* s)
+PTree::Node *Walker::TranslateCase(PTree::Node *s)
 {
-    Ptree* st = s->Nth(3);
-    Ptree* st2 = Translate(st);
+    PTree::Node *st = s->Nth(3);
+    PTree::Node *st2 = Translate(st);
     if(st == st2)
 	return s;
     else
-	return new PtreeCaseStatement(s->Car(),
-				      Ptree::ShallowSubst(st2, st, s->Cdr()));
+	return new PTree::CaseStatement(s->Car(),
+					PTree::Node::ShallowSubst(st2, st, s->Cdr()));
 }
 
-Ptree* Walker::TranslateDefault(Ptree* s)
+PTree::Node *Walker::TranslateDefault(PTree::Node *s)
 {
-    Ptree* st = s->Third();
-    Ptree* st2 = Translate(st);
+    PTree::Node *st = s->Third();
+    PTree::Node *st2 = Translate(st);
     if(st == st2)
 	return s;
     else
-	return new PtreeDefaultStatement(s->Car(),
-					 Ptree::List(s->Cadr(), st2));
+	return new PTree::DefaultStatement(s->Car(),
+					   PTree::Node::List(s->Cadr(), st2));
 }
 
-Ptree* Walker::TranslateLabel(Ptree* s)
+PTree::Node *Walker::TranslateLabel(PTree::Node *s)
 {
-    Ptree* st = s->Third();
-    Ptree* st2 = Translate(st);
+    PTree::Node *st = s->Third();
+    PTree::Node *st2 = Translate(st);
     if(st == st2)
 	return s;
     else
-	return new PtreeLabelStatement(s->Car(),
-				       Ptree::List(s->Cadr(), st2));
+	return new PTree::LabelStatement(s->Car(),
+					 PTree::Node::List(s->Cadr(), st2));
 }
 
-Ptree* Walker::TranslateExprStatement(Ptree* s)
+PTree::Node *Walker::TranslateExprStatement(PTree::Node *s)
 {
-    Ptree* exp = s->First();
-    Ptree* exp2 = Translate(exp);
+    PTree::Node *exp = s->First();
+    PTree::Node *exp2 = Translate(exp);
     if(exp == exp2)
 	return s;
     else
-	return new PtreeExprStatement(exp2, s->Cdr());
+      return new PTree::ExprStatement(exp2, s->Cdr());
 }
 
-Ptree* Walker::TranslateTypespecifier(Ptree* tspec)
+PTree::Node *Walker::TranslateTypespecifier(PTree::Node *tspec)
 {
-    Ptree *class_spec, *class_spec2;
+  PTree::Node *class_spec, *class_spec2;
 
     class_spec = GetClassOrEnumSpec(tspec);
     if(class_spec == 0)
@@ -1099,22 +1098,22 @@ Ptree* Walker::TranslateTypespecifier(Ptree* tspec)
     if(class_spec == class_spec2)
 	return tspec;
     else
-	return Ptree::ShallowSubst(class_spec2, class_spec, tspec);
+	return PTree::Node::ShallowSubst(class_spec2, class_spec, tspec);
 }
 
-Ptree* Walker::GetClassOrEnumSpec(Ptree* typespec)
+PTree::Node *Walker::GetClassOrEnumSpec(PTree::Node *typespec)
 {
-    Ptree* spec = StripCvFromIntegralType(typespec);
+    PTree::Node *spec = StripCvFromIntegralType(typespec);
     if(spec->IsA(Token::ntClassSpec, Token::ntEnumSpec))
 	return spec;
 
     return 0;
 }
 
-Ptree* Walker::GetClassTemplateSpec(Ptree* body)
+PTree::Node *Walker::GetClassTemplateSpec(PTree::Node *body)
 {
-    if(Ptree::Eq(Ptree::Third(body), ';')){
-	Ptree* spec = StripCvFromIntegralType(Ptree::Second(body));
+    if(PTree::Node::Eq(PTree::Node::Third(body), ';')){
+	PTree::Node *spec = StripCvFromIntegralType(PTree::Node::Second(body));
 	if(spec->IsA(Token::ntClassSpec))
 	    return spec;
     }
@@ -1122,224 +1121,224 @@ Ptree* Walker::GetClassTemplateSpec(Ptree* body)
     return 0;
 }
 
-Ptree* Walker::StripCvFromIntegralType(Ptree* integral)
+PTree::Node *Walker::StripCvFromIntegralType(PTree::Node *integral)
 {
     if(integral == 0)
 	return 0;
 
     if(!integral->IsLeaf())
 	if(integral->Car()->IsA(Token::CONST, Token::VOLATILE))
-	    return Ptree::Second(integral);
-	else if(Ptree::Second(integral)->IsA(Token::CONST, Token::VOLATILE))
+	    return PTree::Node::Second(integral);
+	else if(PTree::Node::Second(integral)->IsA(Token::CONST, Token::VOLATILE))
 	    return integral->Car();
 
     return integral;
 }
 
-Ptree* Walker::TranslateComma(Ptree* exp)
+PTree::Node *Walker::TranslateComma(PTree::Node *exp)
 {
-    Ptree* left = exp->First();
-    Ptree* left2 = Translate(left);
-    Ptree* right = exp->Third();
-    Ptree* right2 = Translate(right);
+    PTree::Node *left = exp->First();
+    PTree::Node *left2 = Translate(left);
+    PTree::Node *right = exp->Third();
+    PTree::Node *right2 = Translate(right);
     if(left == left2 && right == right2)
 	return exp;
     else
-	return new PtreeCommaExpr(left2, Ptree::List(exp->Second(), right2));
+	return new PTree::CommaExpr(left2, PTree::Node::List(exp->Second(), right2));
 }
 
-void Walker::TypeofComma(Ptree* exp, TypeInfo& t)
+void Walker::TypeofComma(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Third(), t);
 }
 
-Ptree* Walker::TranslateAssign(Ptree* exp)
+PTree::Node *Walker::TranslateAssign(PTree::Node *exp)
 {
-    Ptree* left = exp->First();
-    Ptree* left2 = Translate(left);
-    Ptree* right = exp->Third();
-    Ptree* right2 = Translate(right);
+    PTree::Node *left = exp->First();
+    PTree::Node *left2 = Translate(left);
+    PTree::Node *right = exp->Third();
+    PTree::Node *right2 = Translate(right);
     if(left == left2 && right == right2)
 	return exp;
     else
-	return new PtreeAssignExpr(left2, Ptree::List(exp->Second(), right2));
+	return new PTree::AssignExpr(left2, PTree::Node::List(exp->Second(), right2));
 }
 
-void Walker::TypeofAssign(Ptree* exp, TypeInfo& t)
+void Walker::TypeofAssign(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->First(), t);
 }
 
-Ptree* Walker::TranslateCond(Ptree* exp)
+PTree::Node *Walker::TranslateCond(PTree::Node *exp)
 {
-    Ptree* c = exp->First();
-    Ptree* c2 = Translate(c);
-    Ptree* t = exp->Third();
-    Ptree* t2 = Translate(t);
-    Ptree* e = exp->Nth(4);
-    Ptree* e2 = Translate(e);
+    PTree::Node *c = exp->First();
+    PTree::Node *c2 = Translate(c);
+    PTree::Node *t = exp->Third();
+    PTree::Node *t2 = Translate(t);
+    PTree::Node *e = exp->Nth(4);
+    PTree::Node *e2 = Translate(e);
     if(c == c2 && t == t2 && e == e2)
 	return exp;
     else
-	return new PtreeCondExpr(c2, Ptree::List(exp->Second(), t2,
+	return new PTree::CondExpr(c2, PTree::Node::List(exp->Second(), t2,
 						 exp->Nth(3), e2));
 }
 
-void Walker::TypeofCond(Ptree* exp, TypeInfo& t)
+void Walker::TypeofCond(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Third(), t);
 }
 
-Ptree* Walker::TranslateInfix(Ptree* exp)
+PTree::Node *Walker::TranslateInfix(PTree::Node *exp)
 {
-    Ptree* left = exp->First();
-    Ptree* left2 = Translate(left);
-    Ptree* right = exp->Third();
-    Ptree* right2 = Translate(right);
+    PTree::Node *left = exp->First();
+    PTree::Node *left2 = Translate(left);
+    PTree::Node *right = exp->Third();
+    PTree::Node *right2 = Translate(right);
     if(left == left2 && right == right2)
 	return exp;
     else
-	return new PtreeInfixExpr(left2, Ptree::List(exp->Second(), right2));
+	return new PTree::InfixExpr(left2, PTree::Node::List(exp->Second(), right2));
 }
 
-void Walker::TypeofInfix(Ptree* exp, TypeInfo& t)
+void Walker::TypeofInfix(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->First(), t);
 }
 
-Ptree* Walker::TranslatePm(Ptree* exp)
+PTree::Node *Walker::TranslatePm(PTree::Node *exp)
 {
-    Ptree* left = exp->First();
-    Ptree* left2 = Translate(left);
-    Ptree* right = exp->Third();
-    Ptree* right2 = Translate(right);
+    PTree::Node *left = exp->First();
+    PTree::Node *left2 = Translate(left);
+    PTree::Node *right = exp->Third();
+    PTree::Node *right2 = Translate(right);
     if(left == left2 && right == right2)
 	return exp;
     else
-	return new PtreePmExpr(left2, Ptree::List(exp->Second(), right2));
+	return new PTree::PmExpr(left2, PTree::Node::List(exp->Second(), right2));
 }
 
-void Walker::TypeofPm(Ptree* exp, TypeInfo& t)
+void Walker::TypeofPm(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Third(), t);
     t.Dereference();
 }
 
-Ptree* Walker::TranslateCast(Ptree* exp)
+PTree::Node *Walker::TranslateCast(PTree::Node *exp)
 {
-    Ptree* e = exp->Nth(3);
-    Ptree* e2 = Translate(e);
+    PTree::Node *e = exp->Nth(3);
+    PTree::Node *e2 = Translate(e);
     if(e == e2)
 	return exp;
     else
-	return new PtreeCastExpr(exp->First(),
-				 Ptree::ShallowSubst(e2, e, exp->Cdr()));
+	return new PTree::CastExpr(exp->First(),
+				   PTree::Node::ShallowSubst(e2, e, exp->Cdr()));
 }
 
-void Walker::TypeofCast(Ptree* exp, TypeInfo& t)
+void Walker::TypeofCast(PTree::Node *exp, TypeInfo& t)
 {
     t.Set(exp->Second()->Second()->GetEncodedType(), env);
 }
 
-Ptree* Walker::TranslateUnary(Ptree* exp)
+PTree::Node *Walker::TranslateUnary(PTree::Node *exp)
 {
-    Ptree* oprnd = exp->Second();
-    Ptree* oprnd2 = Translate(oprnd);
+    PTree::Node *oprnd = exp->Second();
+    PTree::Node *oprnd2 = Translate(oprnd);
     if(oprnd == oprnd2)
 	return exp;
     else
-	return new PtreeUnaryExpr(exp->First(), Ptree::List(oprnd2));
+	return new PTree::UnaryExpr(exp->First(), PTree::Node::List(oprnd2));
 }
 
-void Walker::TypeofUnary(Ptree* exp, TypeInfo& t)
+void Walker::TypeofUnary(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Second(), t);
 
-    Ptree* op = exp->First();
+    PTree::Node *op = exp->First();
     if(op->Eq('*'))
 	t.Dereference();
     else if(op->Eq('&'))
 	t.Reference();
 }
 
-Ptree* Walker::TranslateThrow(Ptree* exp)
+PTree::Node *Walker::TranslateThrow(PTree::Node *exp)
 {
-    Ptree* oprnd = exp->Second();
-    Ptree* oprnd2 = Translate(oprnd);
+    PTree::Node *oprnd = exp->Second();
+    PTree::Node *oprnd2 = Translate(oprnd);
     if(oprnd == oprnd2)
 	return exp;
     else
-	return new PtreeThrowExpr(exp->First(), Ptree::List(oprnd2));
+	return new PTree::ThrowExpr(exp->First(), PTree::Node::List(oprnd2));
 }
 
-void Walker::TypeofThrow(Ptree*, TypeInfo& t)
+void Walker::TypeofThrow(PTree::Node *, TypeInfo& t)
 {
     t.SetVoid();
 }
 
-Ptree* Walker::TranslateSizeof(Ptree* exp)
+PTree::Node *Walker::TranslateSizeof(PTree::Node *exp)
 {
-    Ptree* e = exp->Second();
+    PTree::Node *e = exp->Second();
     if(e->Eq('('))
 	e = exp->Third();
 
-    Ptree* e2 = Translate(e);
+    PTree::Node *e2 = Translate(e);
     if(e == e2)
 	return exp;
     else
-	return new PtreeSizeofExpr(exp->First(),
-				   Ptree::ShallowSubst(e2, e, exp->Cdr()));
+	return new PTree::SizeofExpr(exp->First(),
+				     PTree::Node::ShallowSubst(e2, e, exp->Cdr()));
 }
 
-void Walker::TypeofSizeof(Ptree*, TypeInfo& t)
+void Walker::TypeofSizeof(PTree::Node *, TypeInfo& t)
 {
     t.SetInt();
 }
 
-Ptree* Walker::TranslateTypeid(Ptree* exp)
+PTree::Node *Walker::TranslateTypeid(PTree::Node *exp)
 {
-    Ptree* e = exp->Second();
+    PTree::Node *e = exp->Second();
     if(e->Eq('('))
 	e = exp->Third();
 
-    Ptree* e2 = Translate(e);
+    PTree::Node *e2 = Translate(e);
     if(e == e2)
 	return exp;
     else
-	return new PtreeTypeidExpr(exp->First(),
-				   Ptree::ShallowSubst(e2, e, exp->Cdr()));
+	return new PTree::TypeidExpr(exp->First(),
+				     PTree::Node::ShallowSubst(e2, e, exp->Cdr()));
 }
 
-void Walker::TypeofTypeid(Ptree* exp, TypeInfo& t)
+void Walker::TypeofTypeid(PTree::Node *exp, TypeInfo& t)
 {
     t.SetInt(); // FIXME: Should be the type_info type (exp->Third()->Second()->GetEncodedType(), env);
 }
 
 
-Ptree* Walker::TranslateTypeof(Ptree* exp)
+PTree::Node *Walker::TranslateTypeof(PTree::Node *exp)
 {
-    Ptree* e = exp->Second();
+    PTree::Node *e = exp->Second();
     if(e->Eq('('))
 	e = exp->Third();
 
-    Ptree* e2 = Translate(e);
+    PTree::Node *e2 = Translate(e);
     if(e == e2)
 	return exp;
     else
-	return new PtreeTypeofExpr(exp->First(),
-				   Ptree::ShallowSubst(e2, e, exp->Cdr()));
+	return new PTree::TypeofExpr(exp->First(),
+				     PTree::Node::ShallowSubst(e2, e, exp->Cdr()));
 }
 
-void Walker::TypeofTypeof(Ptree* exp, TypeInfo& t)
+void Walker::TypeofTypeof(PTree::Node *exp, TypeInfo& t)
 {
     t.SetInt(); // FIXME: Should be the type_info type (exp->Third()->Second()->GetEncodedType(), env);
 }
 
 
-Ptree* Walker::TranslateNew(Ptree* exp)
+PTree::Node *Walker::TranslateNew(PTree::Node *exp)
 {
-    Ptree *p;
-    Ptree *userkey, *scope, *op, *placement, *type, *init;
+  PTree::Node *p;
+  PTree::Node *userkey, *scope, *op, *placement, *type, *init;
 
     p = exp;
     userkey = p->Car();
@@ -1362,40 +1361,40 @@ Ptree* Walker::TranslateNew(Ptree* exp)
     return TranslateNew2(exp, userkey, scope, op, placement, type, init);
 }
 
-Ptree* Walker::TranslateNew2(Ptree* exp, Ptree*, Ptree*,
-			     Ptree*, Ptree* placement,
-			     Ptree* type, Ptree* init)
+PTree::Node *Walker::TranslateNew2(PTree::Node *exp, PTree::Node *, PTree::Node *,
+			     PTree::Node *, PTree::Node *placement,
+			     PTree::Node *type, PTree::Node *init)
 {
-    Ptree* placement2 = TranslateArguments(placement);
-    Ptree* type2 = TranslateNew3(type);
-    Ptree* init2 = TranslateArguments(init);
+    PTree::Node *placement2 = TranslateArguments(placement);
+    PTree::Node *type2 = TranslateNew3(type);
+    PTree::Node *init2 = TranslateArguments(init);
     if(placement == placement2 && init == init2)
 	return exp;
     else
-	return new PtreeNewExpr(exp->Car(),
-				Ptree::ShallowSubst(placement2, placement,
-						    type2, type,
-						    init2, init,
-						    exp->Cdr()));
+	return new PTree::NewExpr(exp->Car(),
+				  PTree::Node::ShallowSubst(placement2, placement,
+							    type2, type,
+							    init2, init,
+							    exp->Cdr()));
 }
 
-Ptree* Walker::TranslateNew3(Ptree* type)
+PTree::Node *Walker::TranslateNew3(PTree::Node *type)
 {
-    Ptree* p = type;
+    PTree::Node *p = type;
     if(p->Car()->Eq('('))
 	p = p->Second();
 
-    Ptree* decl = p->Second();
-    Ptree* decl2 = TranslateNewDeclarator(decl);
+    PTree::Node *decl = p->Second();
+    PTree::Node *decl2 = TranslateNewDeclarator(decl);
     if(decl == decl2)
 	return type;
     else
-	return Ptree::Subst(decl2, decl, type);
+	return PTree::Node::Subst(decl2, decl, type);
 }
 
-void Walker::TypeofNew(Ptree* exp, TypeInfo& t)
+void Walker::TypeofNew(PTree::Node *exp, TypeInfo& t)
 {
-    Ptree *p, *userkey, *type;
+  PTree::Node *p, *userkey, *type;
 
     p = exp;
     userkey = p->Car();
@@ -1415,34 +1414,34 @@ void Walker::TypeofNew(Ptree* exp, TypeInfo& t)
     t.Reference();
 }
 
-Ptree* Walker::TranslateDelete(Ptree* exp)
+PTree::Node *Walker::TranslateDelete(PTree::Node *exp)
 {
-    Ptree* obj = Ptree::Last(exp)->Car();
-    Ptree* obj2 = Translate(obj);
+    PTree::Node *obj = PTree::Node::Last(exp)->Car();
+    PTree::Node *obj2 = Translate(obj);
     if(obj == obj2)
 	return exp;
     else
-	return new PtreeDeleteExpr(exp->Car(),
-				   Ptree::ShallowSubst(obj2, obj,
-						       exp->Cdr()));
+	return new PTree::DeleteExpr(exp->Car(),
+				     PTree::Node::ShallowSubst(obj2, obj,
+							       exp->Cdr()));
 }
 
-void Walker::TypeofDelete(Ptree*, TypeInfo& t)
+void Walker::TypeofDelete(PTree::Node *, TypeInfo& t)
 {
     t.SetVoid();
 }
 
-Ptree* Walker::TranslateThis(Ptree* exp)
+PTree::Node *Walker::TranslateThis(PTree::Node *exp)
 {
     return exp;
 }
 
-void Walker::TypeofThis(Ptree*, TypeInfo& t)
+void Walker::TypeofThis(PTree::Node *, TypeInfo& t)
 {
     t.Set(env->LookupThis());
 }
 
-Ptree* Walker::TranslateVariable(Ptree* exp)
+PTree::Node *Walker::TranslateVariable(PTree::Node *exp)
 {
     return exp;
 }
@@ -1450,7 +1449,7 @@ Ptree* Walker::TranslateVariable(Ptree* exp)
 /*
   This may be a class name if the expression is a function-style cast.
 */
-void Walker::TypeofVariable(Ptree* exp, TypeInfo& t)
+void Walker::TypeofVariable(PTree::Node *exp, TypeInfo& t)
 {
     bool is_type_name;
 
@@ -1463,36 +1462,36 @@ void Walker::TypeofVariable(Ptree* exp, TypeInfo& t)
   TranslateFstyleCast() deals with function-style casts
   to an integral type
 */
-Ptree* Walker::TranslateFstyleCast(Ptree* exp)
+PTree::Node *Walker::TranslateFstyleCast(PTree::Node *exp)
 {
-    Ptree* args = exp->Cdr();
-    Ptree* args2 = TranslateArguments(args);
+    PTree::Node *args = exp->Cdr();
+    PTree::Node *args2 = TranslateArguments(args);
     if(args == args2)
 	return exp;
     else
-	return new PtreeFstyleCastExpr(exp->GetEncodedType(), exp->Car(),
-				       args2);
+	return new PTree::FstyleCastExpr(exp->GetEncodedType(), exp->Car(),
+					 args2);
 }
 
-void Walker::TypeofFstyleCast(Ptree* exp, TypeInfo& t)
+void Walker::TypeofFstyleCast(PTree::Node *exp, TypeInfo& t)
 {
     t.Set(exp->GetEncodedType(), env);
 }
 
-Ptree* Walker::TranslateArray(Ptree* exp)
+PTree::Node *Walker::TranslateArray(PTree::Node *exp)
 {
-    Ptree* array = exp->Car();
-    Ptree* array2 = Translate(array);
-    Ptree* index = exp->Third();
-    Ptree* index2 = Translate(index);
+    PTree::Node *array = exp->Car();
+    PTree::Node *array2 = Translate(array);
+    PTree::Node *index = exp->Third();
+    PTree::Node *index2 = Translate(index);
     if(array == array2 && index == index2)
 	return exp;
     else
-	return new PtreeArrayExpr(array2, Ptree::Subst(index2, index,
-						       exp->Cdr()));
+	return new PTree::ArrayExpr(array2, PTree::Node::Subst(index2, index,
+							       exp->Cdr()));
 }
 
-void Walker::TypeofArray(Ptree* exp, TypeInfo& t)
+void Walker::TypeofArray(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Car(), t);
     t.Dereference();
@@ -1501,19 +1500,19 @@ void Walker::TypeofArray(Ptree* exp, TypeInfo& t)
 /*
   TranslateFuncall() also deals with function-style casts to a class.
 */
-Ptree* Walker::TranslateFuncall(Ptree* exp)
+PTree::Node *Walker::TranslateFuncall(PTree::Node *exp)
 {
-    Ptree* fun = exp->Car();
-    Ptree* fun2 = Translate(fun);
-    Ptree* args = exp->Cdr();
-    Ptree* args2 = TranslateArguments(args);
+    PTree::Node *fun = exp->Car();
+    PTree::Node *fun2 = Translate(fun);
+    PTree::Node *args = exp->Cdr();
+    PTree::Node *args2 = TranslateArguments(args);
     if(fun == fun2 && args == args2)
 	return exp;
     else
-	return new PtreeFuncallExpr(fun2, args2);
+	return new PTree::FuncallExpr(fun2, args2);
 }
 
-void Walker::TypeofFuncall(Ptree* exp, TypeInfo& t)
+void Walker::TypeofFuncall(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Car(), t);
     if(!t.IsFunction())
@@ -1522,110 +1521,110 @@ void Walker::TypeofFuncall(Ptree* exp, TypeInfo& t)
     t.Dereference();
 }
 
-Ptree* Walker::TranslatePostfix(Ptree* exp)
+PTree::Node *Walker::TranslatePostfix(PTree::Node *exp)
 {
-    Ptree* left = exp->Car();
-    Ptree* left2 = Translate(left);
+    PTree::Node *left = exp->Car();
+    PTree::Node *left2 = Translate(left);
     if(left == left2)
 	return exp;
     else
-	return new PtreePostfixExpr(left2, exp->Cdr());
+	return new PTree::PostfixExpr(left2, exp->Cdr());
 }
 
-void Walker::TypeofPostfix(Ptree* exp, TypeInfo& t)
+void Walker::TypeofPostfix(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Car(), t);
 }
 
-Ptree* Walker::TranslateUserStatement(Ptree* exp)
+PTree::Node *Walker::TranslateUserStatement(PTree::Node *exp)
 {
     return exp;
 }
 
-void Walker::TypeofUserStatement(Ptree*, TypeInfo& t)
+void Walker::TypeofUserStatement(PTree::Node *, TypeInfo& t)
 {
     t.Unknown();
 }
 
-Ptree* Walker::TranslateDotMember(Ptree* exp)
+PTree::Node *Walker::TranslateDotMember(PTree::Node *exp)
 {
-    Ptree* left = exp->Car();
-    Ptree* left2 = Translate(left);
+    PTree::Node *left = exp->Car();
+    PTree::Node *left2 = Translate(left);
     if(left == left2)
 	return exp;
     else
-	return new PtreeDotMemberExpr(left2, exp->Cdr());
+	return new PTree::DotMemberExpr(left2, exp->Cdr());
 }
 
-void Walker::TypeofDotMember(Ptree* exp, TypeInfo& t)
+void Walker::TypeofDotMember(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Car(), t);
     t.SetMember(exp->Third());
 }
 
-Ptree* Walker::TranslateArrowMember(Ptree* exp)
+PTree::Node *Walker::TranslateArrowMember(PTree::Node *exp)
 {
-    Ptree* left = exp->Car();
-    Ptree* left2 = Translate(left);
+    PTree::Node *left = exp->Car();
+    PTree::Node *left2 = Translate(left);
     if(left == left2)
 	return exp;
     else
-	return new PtreeArrowMemberExpr(left2, exp->Cdr());
+	return new PTree::ArrowMemberExpr(left2, exp->Cdr());
 }
 
-void Walker::TypeofArrowMember(Ptree* exp, TypeInfo& t)
+void Walker::TypeofArrowMember(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Car(), t);
     t.Dereference();
     t.SetMember(exp->Third());
 }
 
-Ptree* Walker::TranslateParen(Ptree* exp)
+PTree::Node *Walker::TranslateParen(PTree::Node *exp)
 {
-    Ptree* e = exp->Second();
-    Ptree* e2 = Translate(e);
+    PTree::Node *e = exp->Second();
+    PTree::Node *e2 = Translate(e);
     if(e == e2)
 	return exp;
     else
-	return new PtreeParenExpr(exp->Car(), Ptree::List(e2, exp->Third()));
+	return new PTree::ParenExpr(exp->Car(), PTree::Node::List(e2, exp->Third()));
 }
 
-void Walker::TypeofParen(Ptree* exp, TypeInfo& t)
+void Walker::TypeofParen(PTree::Node *exp, TypeInfo& t)
 {
     Typeof(exp->Second(), t);
 }
 
-Ptree* Walker::TranslateStaticUserStatement(Ptree* exp)
+PTree::Node *Walker::TranslateStaticUserStatement(PTree::Node *exp)
 {
     return exp;
 }
 
-void Walker::TypeofStaticUserStatement(Ptree*, TypeInfo& t)
+void Walker::TypeofStaticUserStatement(PTree::Node *, TypeInfo& t)
 {
     t.Unknown();
 }
 
-Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
+PTree::Node *Walker::TranslateNewDeclarator(PTree::Node *decl)
 {
-    Ptree* decl2 = decl;
-    Ptree* p = decl;
+    PTree::Node *decl2 = decl;
+    PTree::Node *p = decl;
     while(p != 0){
-	Ptree* head = p->Car();
+	PTree::Node *head = p->Car();
 	if(head == 0)
 	    return decl;
 	else if(head->Eq('[')){
-	    Ptree* p2 = TranslateNewDeclarator2(p);
+	    PTree::Node *p2 = TranslateNewDeclarator2(p);
 	    if(p == p2)
 		return decl;
 	    else{
-		decl2 = Ptree::ShallowSubst(p2, p, decl);
+		decl2 = PTree::Node::ShallowSubst(p2, p, decl);
 		break;
 	    }
 	}
 	else if(!head->IsLeaf() && head->Car()->Eq('(')){
-	    Ptree* d = head->Cadr();
-	    Ptree* d2 = TranslateNewDeclarator(d);
-	    decl2 = Ptree::ShallowSubst(d2, d, decl);
+	    PTree::Node *d = head->Cadr();
+	    PTree::Node *d2 = TranslateNewDeclarator(d);
+	    decl2 = PTree::Node::ShallowSubst(d2, d, decl);
 	    break;
 	}
 
@@ -1635,22 +1634,22 @@ Ptree* Walker::TranslateNewDeclarator(Ptree* decl)
     if(p == 0)
 	return decl;
     else if(decl->IsA(Token::ntDeclarator))
-	return new PtreeDeclarator((PtreeDeclarator*)decl,
-				   decl2->Car(), decl2->Cdr());
+	return new PTree::Declarator((PTree::Declarator*)decl,
+				     decl2->Car(), decl2->Cdr());
     else
 	return decl2;
 }
 
-Ptree* Walker::TranslateNewDeclarator2(Ptree* decl)
+PTree::Node *Walker::TranslateNewDeclarator2(PTree::Node *decl)
 {
-    for(Ptree* p = decl; p != 0; p = p->Cdr()){
-	Ptree* head = p->Car();
+    for(PTree::Node *p = decl; p != 0; p = p->Cdr()){
+	PTree::Node *head = p->Car();
 	if(head->Eq('[')){
-	    Ptree* size = p->Cadr();
-	    Ptree* size2 = Translate(size);
+	    PTree::Node *size = p->Cadr();
+	    PTree::Node *size2 = Translate(size);
 	    if(size != size2){
-		Ptree* q = TranslateNewDeclarator2(Ptree::ListTail(p, 3));
-		return Ptree::Nconc(Ptree::List(p->Car(), size2, p->Third()),
+		PTree::Node *q = TranslateNewDeclarator2(PTree::Node::ListTail(p, 3));
+		return PTree::Node::Nconc(PTree::Node::List(p->Car(), size2, p->Third()),
 				    q);
 	    }
 	}
@@ -1661,18 +1660,18 @@ Ptree* Walker::TranslateNewDeclarator2(Ptree* decl)
     return decl;
 }
 
-Ptree* Walker::TranslateArguments(Ptree* arglist)
+PTree::Node *Walker::TranslateArguments(PTree::Node *arglist)
 {
     if(arglist == 0)
 	return arglist;
 
-    PtreeArray array;
+    PTree::Array array;
     bool changed = false;
-    Ptree* body = Ptree::Second(arglist);
-    Ptree* args = body;
+    PTree::Node *body = PTree::Node::Second(arglist);
+    PTree::Node *args = body;
     while(args != 0){
-	Ptree* p = args->Car();
-	Ptree* q = Translate(p);
+	PTree::Node *p = args->Car();
+	PTree::Node *q = Translate(p);
 	array.Append(q);
 	if(p != q)
 	    changed = true;
@@ -1685,17 +1684,17 @@ Ptree* Walker::TranslateArguments(Ptree* arglist)
     }
 
     if(changed)
-	return Ptree::ShallowSubst(array.All(), body, arglist);
+	return PTree::Node::ShallowSubst(array.All(), body, arglist);
     else
 	return arglist;
 }
 
 //. Helper function to recursively find the first left-most leaf node
-Ptree* Walker::FindLeftLeaf(Ptree* node, Ptree*& parent)
+PTree::Node *Walker::FindLeftLeaf(PTree::Node *node, PTree::Node *& parent)
 {
     if (!node || node->IsLeaf()) return node;
     // Non-leaf node. So find first leafy child
-    Ptree* leaf;
+    PTree::Node *leaf;
     while (node) {
 	if (node->Car()) {
 	    // There is a child here..
@@ -1716,10 +1715,10 @@ Ptree* Walker::FindLeftLeaf(Ptree* node, Ptree*& parent)
 
 //. Node is never the leaf. Instead we traverse the left side of the tree
 //. until we find a leaf, and change the leaf to be a CommentedLeaf.
-void Walker::SetLeafComments(Ptree* node, Ptree* comments)
+void Walker::SetLeafComments(PTree::Node *node, PTree::Node *comments)
 {
-    Ptree* parent, *leaf;
-    CommentedLeaf* cleaf;
+    PTree::Node *parent, *leaf;
+    PTree::CommentedAtom* cleaf;
 
     // Find leaf
     leaf = FindLeftLeaf(node, parent);
@@ -1729,24 +1728,24 @@ void Walker::SetLeafComments(Ptree* node, Ptree* comments)
 	parent->print(std::cout);
 	return; }
 
-    if (!(cleaf = dynamic_cast<CommentedLeaf*>(leaf))) {
+    if (!(cleaf = dynamic_cast<PTree::CommentedAtom *>(leaf))) {
 	// Must change first child of parent to be a commented leaf
         Token tk(leaf->GetPosition(), leaf->GetLength(), Token::Comment);
-	cleaf = new (GC) CommentedLeaf(tk, comments);
+	cleaf = new (GC) PTree::CommentedAtom(tk, comments);
 	parent->SetCar(cleaf);
     } else {
 	// Already is a commented leaf, so add the comments to it
-	comments = Ptree::Snoc(cleaf->GetComments(), comments);
+	comments = PTree::Node::Snoc(cleaf->GetComments(), comments);
 	cleaf->SetComments(comments);
     }
 }
 
-void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
+void Walker::SetDeclaratorComments(PTree::Node *def, PTree::Node *comments)
 {
     if (def == 0 || !def->IsA(Token::ntDeclaration))
 	return;
 
-    Ptree* decl;
+    PTree::Node *decl;
     int n = 0;
     for (;;) {
 	int i = n++;
@@ -1754,13 +1753,13 @@ void Walker::SetDeclaratorComments(Ptree* def, Ptree* comments)
 	if (decl == 0)
 	    break;
 	else if (decl->IsA(Token::ntDeclarator))
-	    ((PtreeDeclarator*)decl)->SetComments(comments);
+	    ((PTree::Declarator*)decl)->SetComments(comments);
     }
 }
 
-Ptree* Walker::NthDeclarator(Ptree* def, int& nth)
+PTree::Node *Walker::NthDeclarator(PTree::Node *def, int& nth)
 {
-    Ptree* decls = def->Third();
+    PTree::Node *decls = def->Third();
     if(decls == 0 || decls->IsLeaf())
 	return 0;
 
@@ -1780,10 +1779,10 @@ Ptree* Walker::NthDeclarator(Ptree* def, int& nth)
     return 0;
 }
 
-Ptree* Walker::FindDeclarator(Ptree* def, char* name, int len,
+PTree::Node *Walker::FindDeclarator(PTree::Node *def, char* name, int len,
 			      char* signature, int& nth, Environment* e)
 {
-    Ptree* decls = def->Third();
+    PTree::Node *decls = def->Third();
     if(decls == 0 || decls->IsLeaf())
 	return 0;
 
@@ -1795,7 +1794,7 @@ Ptree* Walker::FindDeclarator(Ptree* def, char* name, int len,
     }
     else
 	while(decls != 0){
-	    Ptree* d = decls->Car();
+	    PTree::Node *d = decls->Car();
 	    if(MatchedDeclarator(d, name, len, signature, e))
 		return d;
 
@@ -1807,7 +1806,7 @@ Ptree* Walker::FindDeclarator(Ptree* def, char* name, int len,
     return 0;
 }
 
-bool Walker::MatchedDeclarator(Ptree* decl, char* name, int len,
+bool Walker::MatchedDeclarator(PTree::Node *decl, char* name, int len,
 			       char* signature, Environment* e)
 {
     char* str;
@@ -1824,13 +1823,13 @@ bool Walker::MatchedDeclarator(Ptree* decl, char* name, int len,
 		&& strcmp(signature, sig) == 0);
 }
 
-bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
+bool Walker::WhichDeclarator(PTree::Node *def, PTree::Node *name, int& nth,
 			     Environment* env)
 {
     char* str;
     int len;
     Environment* e;
-    Ptree* decls = def->Third();
+    PTree::Node *decls = def->Third();
     if(decls == 0 || decls->IsLeaf())
 	return false;
 
@@ -1859,19 +1858,19 @@ bool Walker::WhichDeclarator(Ptree* def, Ptree* name, int& nth,
     return false;
 }
 
-void Walker::ErrorMessage(char* msg, Ptree* name, Ptree* where)
+void Walker::ErrorMessage(char* msg, PTree::Node *name, PTree::Node *where)
 {
     parser->ErrorMessage(msg, name, where);
 }
 
-void Walker::WarningMessage(char* msg, Ptree* name, Ptree* where)
+void Walker::WarningMessage(char* msg, PTree::Node *name, PTree::Node *where)
 {
     parser->WarningMessage(msg, name, where);
 }
 
 // InaccurateErrorMessage() may report a wrong line number.
 
-void Walker::InaccurateErrorMessage(char* msg, Ptree* name, Ptree* where)
+void Walker::InaccurateErrorMessage(char* msg, PTree::Node *name, PTree::Node *where)
 {
     if(default_parser == 0)
 	MopErrorMessage("Walker::InaccurateErrorMessage()",
@@ -1880,7 +1879,7 @@ void Walker::InaccurateErrorMessage(char* msg, Ptree* name, Ptree* where)
 	default_parser->ErrorMessage(msg, name, where);
 }
 
-void Walker::InaccurateWarningMessage(char* msg, Ptree* name, Ptree* where)
+void Walker::InaccurateWarningMessage(char* msg, PTree::Node *name, PTree::Node *where)
 {
     if(default_parser == 0)
 	MopErrorMessage("Walker::InaccurateWarningMessage()",

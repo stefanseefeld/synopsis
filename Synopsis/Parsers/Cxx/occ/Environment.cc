@@ -16,8 +16,7 @@
 #include <cstring>
 #include "Environment.hh"
 #include "HashTable.hh"
-#include "Ptree.hh"
-#include "AST.hh"
+#include "PTree.hh"
 #include "Lexer.hh"
 #include "Encoding.hh"
 #include "Walker.hh"
@@ -27,7 +26,7 @@
 
 // class Environment
 
-PtreeArray* Environment::classkeywords = 0;
+PTree::Array* Environment::classkeywords = 0;
 HashTable* Environment::namespace_table = 0;
 
 void Environment::do_init_static()
@@ -76,7 +75,7 @@ Environment* Environment::GetBottom()
     return p;
 }
 
-Class* Environment::LookupClassMetaobject(Ptree* name)
+Class* Environment::LookupClassMetaobject(PTree::Node *name)
 {
     TypeInfo tinfo;
     Bind* bind = 0;
@@ -139,7 +138,7 @@ bool Environment::LookupType(const char* name, int len, Bind*& t)
     return false;
 }
 
-bool Environment::Lookup(Ptree* name, TypeInfo& t)
+bool Environment::Lookup(PTree::Node *name, TypeInfo& t)
 {
     Bind* bind;
 
@@ -153,7 +152,7 @@ bool Environment::Lookup(Ptree* name, TypeInfo& t)
     }
 }
 
-bool Environment::Lookup(Ptree* name, bool& is_type_name, TypeInfo& t)
+bool Environment::Lookup(PTree::Node *name, bool& is_type_name, TypeInfo& t)
 {
     Bind* bind;
 
@@ -168,7 +167,7 @@ bool Environment::Lookup(Ptree* name, bool& is_type_name, TypeInfo& t)
     }
 }
 
-bool Environment::Lookup(Ptree* name, Bind*& bind)
+bool Environment::Lookup(PTree::Node *name, Bind*& bind)
 {
     bind = 0;
     if(this == 0){
@@ -196,7 +195,7 @@ bool Environment::Lookup(Ptree* name, Bind*& bind)
     }
 }
 
-bool Environment::LookupTop(Ptree* name, Bind*& bind)
+bool Environment::LookupTop(PTree::Node *name, Bind*& bind)
 {
     bind = 0;
     if(this == 0){
@@ -278,7 +277,7 @@ int Environment::AddDupEntry(char* key, int len, Bind* b) {
     return htable->AddDupEntry(key, len, b);
 }
 
-void Environment::RecordNamespace(Ptree* name)
+void Environment::RecordNamespace(PTree::Node *name)
 {
     if (name != 0)
 	namespace_table->AddEntry(name->GetPosition(), name->GetLength(),
@@ -291,10 +290,10 @@ bool Environment::LookupNamespace(char* name, int len)
     return namespace_table->Lookup(name, len, &value);
 }
 
-void Environment::RecordTypedefName(Ptree* decls)
+void Environment::RecordTypedefName(PTree::Node *decls)
 {
     while(decls != 0){
-	Ptree* d = decls->Car();
+      PTree::Node *d = decls->Car();
 	if(d->What() == Token::ntDeclarator){
 	    char* name = d->GetEncodedName();
 	    char* type = d->GetEncodedType();
@@ -307,13 +306,13 @@ void Environment::RecordTypedefName(Ptree* decls)
 	    }
 	}
 
-	decls = Ptree::ListTail(decls, 2);
+	decls = PTree::Node::ListTail(decls, 2);
     }
 }
 
-void Environment::RecordEnumName(Ptree* spec)
+void Environment::RecordEnumName(PTree::Node *spec)
 {
-    Ptree* tag = Ptree::Second(spec);
+  PTree::Node *tag = PTree::Node::Second(spec);
     char* encoded_name = spec->GetEncodedName();
     if(tag != 0 && tag->IsLeaf())
 	AddEntry(tag->GetPosition(), tag->GetLength(),
@@ -349,7 +348,7 @@ void Environment::RecordClassName(char* encoded_name, Class* metaobject)
     e->AddEntry(name, n, new BindClassName(metaobject));
 }
 
-void Environment::RecordTemplateClass(Ptree* spec, Class* metaobject)
+void Environment::RecordTemplateClass(PTree::Node *spec, Class* metaobject)
 {
     int n;
     Environment* e;
@@ -371,10 +370,10 @@ void Environment::RecordTemplateClass(Ptree* spec, Class* metaobject)
     e->AddEntry(name, n, new BindTemplateClass(metaobject));
 }
 
-Environment* Environment::RecordTemplateFunction(Ptree* def, Ptree* body)
+Environment* Environment::RecordTemplateFunction(PTree::Node *def, PTree::Node *body)
 {
     int n;
-    Ptree* decl = Ptree::Third(body);
+    PTree::Node *decl = PTree::Node::Third(body);
     if(decl->IsA(Token::ntDeclarator)){
 	char* name = decl->GetEncodedName();
 	if(name != 0){
@@ -390,7 +389,7 @@ Environment* Environment::RecordTemplateFunction(Ptree* def, Ptree* body)
     return this;
 }
 
-Environment* Environment::RecordDeclarator(Ptree* decl)
+Environment* Environment::RecordDeclarator(PTree::Node *decl)
 {
     if(decl->What() == Token::ntDeclarator){
 	char* name = decl->GetEncodedName();
@@ -411,7 +410,7 @@ Environment* Environment::RecordDeclarator(Ptree* decl)
     return this;
 }
 
-Environment* Environment::DontRecordDeclarator(Ptree* decl)
+Environment* Environment::DontRecordDeclarator(PTree::Node *decl)
 {
     if(decl->What() == Token::ntDeclarator){
 	char* name = decl->GetEncodedName();
@@ -426,17 +425,17 @@ Environment* Environment::DontRecordDeclarator(Ptree* decl)
     return this;
 }
 
-void Environment::RecordMetaclassName(Ptree* decl)
+void Environment::RecordMetaclassName(PTree::Node *decl)
 {
     if(decl->Third() != 0)
 	metaclasses.Append(decl);
 }
 
-Ptree* Environment::LookupMetaclass(Ptree* name)
+PTree::Node *Environment::LookupMetaclass(PTree::Node *name)
 {
     uint n = metaclasses.Number();
     for(uint i = 0; i < n; ++i){
-	Ptree* d = metaclasses[i];
+      PTree::Node *d = metaclasses[i];
 	if(d->Third()->Eq(name))
 	    return d;
     }
@@ -446,8 +445,8 @@ Ptree* Environment::LookupMetaclass(Ptree* name)
 
 bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
 {
-    Ptree* keywordp = new Leaf(keyword, strlen(keyword));
-    Ptree* metaclassp = new Leaf(metaclass_name, strlen(metaclass_name));
+  PTree::Node *keywordp = new PTree::Atom(keyword, strlen(keyword));
+  PTree::Node *metaclassp = new PTree::Atom(metaclass_name, strlen(metaclass_name));
 
     if(LookupClasskeyword(keywordp) == 0){
 	classkeywords->Append(keywordp);
@@ -458,14 +457,14 @@ bool Environment::RecordClasskeyword(char* keyword, char* metaclass_name)
 	return false;
 }
 
-Ptree* Environment::LookupClasskeyword(Ptree* keyword)
+PTree::Node *Environment::LookupClasskeyword(PTree::Node *keyword)
 {
     if(classkeywords == 0)
-	classkeywords = new PtreeArray;
+	classkeywords = new PTree::Array;
 
     uint n = classkeywords->Number();
     for(uint i = 0; i < n; i += 2){
-	Ptree* d = classkeywords->Ref(i);
+      PTree::Node *d = classkeywords->Ref(i);
 	if(d->Eq(keyword))
 	    return classkeywords->Ref(i + 1);
     }
@@ -486,7 +485,7 @@ Class* Environment::LookupThis()
 // IsMember() returns the class environment that the member belongs to.
 // If the member is not valid, IsMember() returns 0.
 
-Environment* Environment::IsMember(Ptree* member)
+Environment* Environment::IsMember(PTree::Node *member)
 {
     Bind* bind;
     Environment* e;
@@ -659,7 +658,7 @@ void BindClassName::SetClassMetaobject(Class* c)
     metaobject = c;
 }
 
-BindEnumName::BindEnumName(char* encoded_type, Ptree* spec)
+BindEnumName::BindEnumName(char* encoded_type, PTree::Node *spec)
 {
     type = encoded_type;
     specification = spec;

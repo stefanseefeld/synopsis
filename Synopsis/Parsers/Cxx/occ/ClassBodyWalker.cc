@@ -12,16 +12,16 @@
   implied warranty.
 */
 
-#include "AST.hh"
+#include "PTree.hh"
 #include "ClassBodyWalker.hh"
 #include "Class.hh"
 #include "Environment.hh"
 #include "Member.hh"
 
-Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
+PTree::Node *ClassBodyWalker::TranslateClassBody(PTree::Node *block, PTree::Node *,
 					   Class* metaobject)
 {
-    Ptree* block2;
+    PTree::Node *block2;
 
     Environment* fenv = metaobject->GetEnvironment();
     if(fenv == 0)
@@ -29,13 +29,13 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
 
     NameScope old_env = ChangeScope(fenv);
 
-    PtreeArray array;
+    PTree::Array array;
     bool changed = false;
-    Ptree* body = Ptree::Second(block);
-    Ptree* rest = body;
+    PTree::Node *body = PTree::Node::Second(block);
+    PTree::Node *rest = body;
     while(rest != 0){
-	Ptree* p = rest->Car();
-	Ptree* q = Translate(p);
+	PTree::Node *p = rest->Car();
+	PTree::Node *q = Translate(p);
 	array.Append(q);
 	if(p != q)
 	    changed = true;
@@ -45,7 +45,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
 
     AppendNewMembers(metaobject, array, changed);
 
-    Ptree* appended = metaobject->GetAppendedCode();
+    PTree::Node *appended = metaobject->GetAppendedCode();
     if(appended != 0){
 	changed = true;
 	while(appended != 0){
@@ -55,8 +55,8 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
     }
 
     if(changed)
-	block2 = new PtreeClassBody(Ptree::First(block), array.All(),
-				    Ptree::Third(block));
+	block2 = new PTree::ClassBody(PTree::Node::First(block), array.All(),
+				      PTree::Node::Third(block));
     else
 	block2 = block;
 
@@ -64,7 +64,7 @@ Ptree* ClassBodyWalker::TranslateClassBody(Ptree* block, Ptree*,
     return block2;
 }
 
-void ClassBodyWalker::AppendNewMembers(Class* metaobject, PtreeArray& array,
+void ClassBodyWalker::AppendNewMembers(Class* metaobject, PTree::Array& array,
 				       bool& changed)
 {
     ChangedMemberList::Cmem* m;
@@ -82,7 +82,7 @@ void ClassBodyWalker::AppendNewMembers(Class* metaobject, PtreeArray& array,
 	}
 }
 
-Ptree* ClassBodyWalker::TranslateTypespecifier(Ptree* tspec)
+PTree::Node *ClassBodyWalker::TranslateTypespecifier(PTree::Node *tspec)
 {
     if(tspec_list == 0)
 	return tspec;
@@ -95,55 +95,55 @@ Ptree* ClassBodyWalker::TranslateTypespecifier(Ptree* tspec)
     return tspec;
 }
 
-Ptree* ClassBodyWalker::TranslateTypedef(Ptree* def)
+PTree::Node *ClassBodyWalker::TranslateTypedef(PTree::Node *def)
 {
-    Ptree *tspec, *tspec2;
+    PTree::Node *tspec, *tspec2;
 
-    tspec = Ptree::Second(def);
+    tspec = PTree::Node::Second(def);
     tspec2 = TranslateTypespecifier(tspec);
 
     if(tspec == tspec2)
 	return def;
     else
-	return new PtreeTypedef(Ptree::First(def),
-				Ptree::List(tspec2,
-					    Ptree::ListTail(def, 2)));
+	return new PTree::Typedef(PTree::Node::First(def),
+				PTree::Node::List(tspec2,
+					   PTree::Node::ListTail(def, 2)));
 }
 
-Ptree* ClassBodyWalker::TranslateMetaclassDecl(Ptree*)
+PTree::Node *ClassBodyWalker::TranslateMetaclassDecl(PTree::Node *)
 {
     return 0;
 }
 
-Ptree* ClassBodyWalker::TranslateDeclarators(Ptree* decls)
+PTree::Node *ClassBodyWalker::TranslateDeclarators(PTree::Node *decls)
 {
     return ClassWalker::TranslateDeclarators(decls, false);
 }
 
-Ptree* ClassBodyWalker::TranslateAssignInitializer(PtreeDeclarator* decl,
-						   Ptree* init)
+PTree::Node *ClassBodyWalker::TranslateAssignInitializer(PTree::Declarator* decl,
+						   PTree::Node *init)
 {
     ClassWalker w(this);
 
     return w.TranslateAssignInitializer(decl, init);
 }
 
-Ptree* ClassBodyWalker::TranslateInitializeArgs(PtreeDeclarator* decl,
-						Ptree* init)
+PTree::Node *ClassBodyWalker::TranslateInitializeArgs(PTree::Declarator* decl,
+						PTree::Node *init)
 {
     ClassWalker w(this);
 
     return w.TranslateInitializeArgs(decl, init);
 }
 
-Ptree* ClassBodyWalker::TranslateDeclarator(bool record,
-					    PtreeDeclarator* decl)
+PTree::Node *ClassBodyWalker::TranslateDeclarator(bool record,
+					    PTree::Declarator* decl)
 {
     return TranslateDeclarator(record, decl, true);
 }
 
-Ptree* ClassBodyWalker::TranslateDeclarator(bool record,
-					    PtreeDeclarator* decl,
+PTree::Node *ClassBodyWalker::TranslateDeclarator(bool record,
+					    PTree::Declarator* decl,
 					    bool append_body)
 {
     ClassWalker w(this);
@@ -152,35 +152,35 @@ Ptree* ClassBodyWalker::TranslateDeclarator(bool record,
     if(metaobject != 0){
 	ChangedMemberList::Cmem* m = metaobject->GetChangedMember(decl);
 	if(m != 0){
-	    Ptree* decl2 = w.MakeMemberDeclarator(record, m, decl);
+	    PTree::Node *decl2 = w.MakeMemberDeclarator(record, m, decl);
 	    if(m->removed || m->body == 0 || !append_body)
 		return decl2;
 	    else
-		return Ptree::List(decl2, m->body);
+		return PTree::Node::List(decl2, m->body);
 	}
     }
 
     return w.TranslateDeclarator(record, decl);
 }
 
-Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
+PTree::Node *ClassBodyWalker::TranslateFunctionImplementation(PTree::Node *impl)
 {
-    Ptree* sspec = impl->First();
-    Ptree* sspec2 = TranslateStorageSpecifiers(sspec);
-    Ptree* tspec = impl->Second();
-    Ptree* decl = impl->Third();
-    Ptree* body = impl->Nth(3);
-    Ptree* decl2;
-    Ptree* body2;
+    PTree::Node *sspec = impl->First();
+    PTree::Node *sspec2 = TranslateStorageSpecifiers(sspec);
+    PTree::Node *tspec = impl->Second();
+    PTree::Node *decl = impl->Third();
+    PTree::Node *body = impl->Nth(3);
+    PTree::Node *decl2;
+    PTree::Node *body2;
 
-    Ptree* tspec2 = TranslateTypespecifier(tspec);
+    PTree::Node *tspec2 = TranslateTypespecifier(tspec);
     Environment* fenv = env->DontRecordDeclarator(decl);
 
     if(fenv == 0){
 	// shouldn't reach here.
 	NewScope();
 	ClassWalker w(this);	// this should be after NewScope().
-	decl2 = w.TranslateDeclarator(true, (PtreeDeclarator*)decl);
+	decl2 = w.TranslateDeclarator(true, (PTree::Declarator*)decl);
 	body2 = w.TranslateFunctionBody(body);
 	ExitScope();
     }
@@ -191,11 +191,11 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
 	ClassWalker w(this);
 	if(is_nested_class){
 	    // if it's a member function of a nested class
-	    decl2 = w.TranslateDeclarator(true, (PtreeDeclarator*)decl);
+	    decl2 = w.TranslateDeclarator(true, (PTree::Declarator*)decl);
 	    body2 = w.TranslateFunctionBody(body);
 	}
 	else{
-	    decl2 = TranslateDeclarator(true, (PtreeDeclarator*)decl, false);
+	    decl2 = TranslateDeclarator(true, (PTree::Declarator*)decl, false);
 	    Class* metaobject = fenv->IsClassEnvironment();
 	    ChangedMemberList::Cmem* m = 0;
 	    if(metaobject != 0)
@@ -214,11 +214,11 @@ Ptree* ClassBodyWalker::TranslateFunctionImplementation(Ptree* impl)
     if(sspec == sspec2 && tspec == tspec2 && decl == decl2 && body == body2)
 	return impl;
     else if(decl2 == 0)
-	return new PtreeDeclaration(0, Ptree::List(0,
+	return new PTree::Declaration(0, PTree::Node::List(0,
 						   Class::semicolon_t));
     else
-	return new PtreeDeclaration(sspec2,
-				    Ptree::List(tspec2, decl2, body2));
+	return new PTree::Declaration(sspec2,
+				    PTree::Node::List(tspec2, decl2, body2));
 }
 
 

@@ -35,27 +35,27 @@
 // Part of the implementation of QuoteClass is in metaclass.cc.
 
 #include <cstring>
-#include "AST.hh"
+#include "PTree.hh"
 #include "QuoteClass.hh"
 #include "Buffer.hh"
 #include <sstream>
 
-Ptree* QuoteClass::TranslateMemberCall(Environment* env,
-				       Ptree* member, Ptree* args)
+PTree::Node *QuoteClass::TranslateMemberCall(Environment* env,
+				       PTree::Node *member, PTree::Node *args)
 {
-    Ptree* name = StripClassQualifier(member);
+    PTree::Node *name = StripClassQualifier(member);
     char* str;
 
-    if(Ptree::Eq(name, "qMake")){
-	Ptree* arg1 = Ptree::First(Ptree::Second(args));
+    if(PTree::Node::Eq(name, "qMake")){
+	PTree::Node *arg1 = PTree::Node::First(PTree::Node::Second(args));
 	if(arg1->Reify(str) && str != 0)
 	    return ProcessBackQuote(env, str, arg1, name);
 	else
 	    ErrorMessage(env, "bad argument for qMake()", arg1, name);
     }
-    else if(Ptree::Eq(name, "qMakeStatement")){
-	WarnObsoleteness("Ptree::qMakeStatement()", "Ptree::qMake()");
-	Ptree* arg1 = Ptree::First(Ptree::Second(args));
+    else if(PTree::Node::Eq(name, "qMakeStatement")){
+	WarnObsoleteness("PTree::Node::qMakeStatement()", "PTree::Node::qMake()");
+	PTree::Node *arg1 = PTree::Node::First(PTree::Node::Second(args));
 	if(arg1->Reify(str) && str != 0)
 	    return ProcessBackQuote(env, str, arg1, name);
 	else
@@ -65,12 +65,12 @@ Ptree* QuoteClass::TranslateMemberCall(Environment* env,
     return Class::TranslateMemberCall(env, member, args);
 }
 
-Ptree* QuoteClass::ProcessBackQuote(Environment* env,
-				    char* str, Ptree* arg, Ptree* exp)
+PTree::Node *QuoteClass::ProcessBackQuote(Environment* env,
+				    char* str, PTree::Node *arg, PTree::Node *exp)
 {
     std::ostringstream oss;
 
-    oss << "(Ptree*)(PtreeHead()";
+    oss << "(PTree::Node *)(PtreeHead()";
     while(*str != '\0')
 	if(*str == '`'){
 	    oss << '+';
@@ -79,7 +79,7 @@ Ptree* QuoteClass::ProcessBackQuote(Environment* env,
 		    oss << *str;
 		else{
 		    ErrorMessage(env,
-				 "unmatched backquote for Ptree::qMake(): ",
+				 "unmatched backquote for PTree::Node::qMake(): ",
 				 arg, exp);
 		    break;
 		}
@@ -96,5 +96,5 @@ Ptree* QuoteClass::ProcessBackQuote(Environment* env,
 
     oss << ')';
     std::string rstr = oss.str();
-    return new DupLeaf(rstr.c_str(), rstr.size());
+    return new PTree::DupAtom(rstr.c_str(), rstr.size());
 }

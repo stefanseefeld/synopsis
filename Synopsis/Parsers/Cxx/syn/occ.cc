@@ -16,6 +16,8 @@
 #include "filter.hh"
 #include "linkstore.hh"
 
+#include <occ/Buffer.hh>
+#include <occ/Lexer.hh>
 #include <occ/Parser.hh>
 #include <occ/MetaClass.hh>
 #include <occ/Environment.hh>
@@ -144,7 +146,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
     swalker.set_store_links(new LinkStore(filter, &swalker));
   try
   {
-    Ptree *def;
+    PTree::Node *def;
     while(parse.rProgram(def))
       swalker.Translate(def);
   }
@@ -262,7 +264,7 @@ PyObject *occ_print(PyObject *self, PyObject *args)
 
   try
   {
-    Ptree *def;
+    PTree::Node *def;
     while(parse.rProgram(def)) def->print(std::cout);
   }
   catch (...)

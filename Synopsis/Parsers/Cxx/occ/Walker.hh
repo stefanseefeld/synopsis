@@ -21,8 +21,11 @@ class Environment;
 class TypeInfo;
 class Class;
 class Parser;
-class Ptree;
-class PtreeDeclarator;
+namespace PTree 
+{
+  class Node;
+  class Declarator;
+}
 
 class Walker : public LightObject 
 {
@@ -32,127 +35,127 @@ public:
   Walker(Environment*);
   Walker(Walker*);
 
-  Ptree* Translate(Ptree*);
-  void Typeof(Ptree*, TypeInfo&);
+  PTree::Node *Translate(PTree::Node *);
+  void Typeof(PTree::Node *, TypeInfo&);
 
   virtual bool IsClassWalker();
 
     // default translation
-  virtual Ptree* TranslatePtree(Ptree*);
-  virtual void TypeofPtree(Ptree*, TypeInfo&);
+  virtual PTree::Node *TranslatePtree(PTree::Node *);
+  virtual void TypeofPtree(PTree::Node *, TypeInfo&);
 
-  virtual Ptree* TranslateTypedef(Ptree*);
-  virtual Ptree* TranslateTemplateDecl(Ptree*);
-  virtual Ptree* TranslateTemplateInstantiation(Ptree*);
-  virtual Ptree* TranslateTemplateInstantiation(Ptree*, Ptree*,
-						Ptree*, Class*);
-  virtual Class* MakeTemplateInstantiationMetaobject(Ptree* full_class_spec, Ptree* userkey, Ptree* class_spec);
-  virtual Ptree* TranslateExternTemplate(Ptree*);
-  virtual Ptree* TranslateTemplateClass(Ptree*, Ptree*);
-  virtual Class* MakeTemplateClassMetaobject(Ptree*, Ptree*, Ptree*);
-  virtual Ptree* TranslateTemplateFunction(Ptree*, Ptree*);
-  virtual Ptree* TranslateMetaclassDecl(Ptree*);
-  virtual Ptree* TranslateLinkageSpec(Ptree*);
-  virtual Ptree* TranslateNamespaceSpec(Ptree*);
-  virtual Ptree* TranslateNamespaceAlias(Ptree*);
-  virtual Ptree* TranslateUsing(Ptree*);
-  virtual Ptree* TranslateDeclaration(Ptree*);
-  virtual Ptree* TranslateStorageSpecifiers(Ptree*);
-  virtual Ptree* TranslateDeclarators(Ptree*);
-  virtual Ptree* TranslateDeclarator(bool, PtreeDeclarator*);
-  static bool GetArgDeclList(PtreeDeclarator*, Ptree*&);
-  virtual Ptree* TranslateArgDeclList(bool, Ptree*, Ptree*);
-  static Ptree* TranslateArgDeclList2(bool, Environment*, bool, bool, int,
-				      Ptree*);
-  static Ptree* FillArgumentName(Ptree*, Ptree*, int arg_name);
-  virtual Ptree* TranslateInitializeArgs(PtreeDeclarator*, Ptree*);
-  virtual Ptree* TranslateAssignInitializer(PtreeDeclarator*, Ptree*);
-  virtual Ptree* TranslateFunctionImplementation(Ptree*);
-  virtual Ptree* RecordArgsAndTranslateFbody(Class*, Ptree* args,
-					     Ptree* body);
-  virtual Ptree* TranslateFunctionBody(Ptree*);
-  virtual Ptree* TranslateBrace(Ptree*);
-  virtual Ptree* TranslateBlock(Ptree*);
-  virtual Ptree* TranslateClassBody(Ptree*, Ptree*, Class*);
+  virtual PTree::Node *TranslateTypedef(PTree::Node *);
+  virtual PTree::Node *TranslateTemplateDecl(PTree::Node *);
+  virtual PTree::Node *TranslateTemplateInstantiation(PTree::Node *);
+  virtual PTree::Node *TranslateTemplateInstantiation(PTree::Node *, PTree::Node *,
+						PTree::Node *, Class*);
+  virtual Class* MakeTemplateInstantiationMetaobject(PTree::Node *full_class_spec, PTree::Node *userkey, PTree::Node *class_spec);
+  virtual PTree::Node *TranslateExternTemplate(PTree::Node *);
+  virtual PTree::Node *TranslateTemplateClass(PTree::Node *, PTree::Node *);
+  virtual Class* MakeTemplateClassMetaobject(PTree::Node *, PTree::Node *, PTree::Node *);
+  virtual PTree::Node *TranslateTemplateFunction(PTree::Node *, PTree::Node *);
+  virtual PTree::Node *TranslateMetaclassDecl(PTree::Node *);
+  virtual PTree::Node *TranslateLinkageSpec(PTree::Node *);
+  virtual PTree::Node *TranslateNamespaceSpec(PTree::Node *);
+  virtual PTree::Node *TranslateNamespaceAlias(PTree::Node *);
+  virtual PTree::Node *TranslateUsing(PTree::Node *);
+  virtual PTree::Node *TranslateDeclaration(PTree::Node *);
+  virtual PTree::Node *TranslateStorageSpecifiers(PTree::Node *);
+  virtual PTree::Node *TranslateDeclarators(PTree::Node *);
+  virtual PTree::Node *TranslateDeclarator(bool, PTree::Declarator*);
+  static bool GetArgDeclList(PTree::Declarator*, PTree::Node *&);
+  virtual PTree::Node *TranslateArgDeclList(bool, PTree::Node *, PTree::Node *);
+  static PTree::Node *TranslateArgDeclList2(bool, Environment*, bool, bool, int,
+				      PTree::Node *);
+  static PTree::Node *FillArgumentName(PTree::Node *, PTree::Node *, int arg_name);
+  virtual PTree::Node *TranslateInitializeArgs(PTree::Declarator*, PTree::Node *);
+  virtual PTree::Node *TranslateAssignInitializer(PTree::Declarator*, PTree::Node *);
+  virtual PTree::Node *TranslateFunctionImplementation(PTree::Node *);
+  virtual PTree::Node *RecordArgsAndTranslateFbody(Class*, PTree::Node *args,
+					     PTree::Node *body);
+  virtual PTree::Node *TranslateFunctionBody(PTree::Node *);
+  virtual PTree::Node *TranslateBrace(PTree::Node *);
+  virtual PTree::Node *TranslateBlock(PTree::Node *);
+  virtual PTree::Node *TranslateClassBody(PTree::Node *, PTree::Node *, Class*);
   
-  virtual Ptree* TranslateClassSpec(Ptree*);
-  virtual Class* MakeClassMetaobject(Ptree*, Ptree*, Ptree*);
-  virtual Ptree* TranslateClassSpec(Ptree*, Ptree*, Ptree*, Class*);
-  virtual Ptree* TranslateEnumSpec(Ptree*);
+  virtual PTree::Node *TranslateClassSpec(PTree::Node *);
+  virtual Class* MakeClassMetaobject(PTree::Node *, PTree::Node *, PTree::Node *);
+  virtual PTree::Node *TranslateClassSpec(PTree::Node *, PTree::Node *, PTree::Node *, Class*);
+  virtual PTree::Node *TranslateEnumSpec(PTree::Node *);
   
-  virtual Ptree* TranslateAccessSpec(Ptree*);
-  virtual Ptree* TranslateAccessDecl(Ptree*);
-  virtual Ptree* TranslateUserAccessSpec(Ptree*);
+  virtual PTree::Node *TranslateAccessSpec(PTree::Node *);
+  virtual PTree::Node *TranslateAccessDecl(PTree::Node *);
+  virtual PTree::Node *TranslateUserAccessSpec(PTree::Node *);
   
-  virtual Ptree* TranslateIf(Ptree*);
-  virtual Ptree* TranslateSwitch(Ptree*);
-  virtual Ptree* TranslateWhile(Ptree*);
-  virtual Ptree* TranslateDo(Ptree*);
-  virtual Ptree* TranslateFor(Ptree*);
-  virtual Ptree* TranslateTry(Ptree*);
-  virtual Ptree* TranslateBreak(Ptree*);
-  virtual Ptree* TranslateContinue(Ptree*);
-  virtual Ptree* TranslateReturn(Ptree*);
-  virtual Ptree* TranslateGoto(Ptree*);
-  virtual Ptree* TranslateCase(Ptree*);
-  virtual Ptree* TranslateDefault(Ptree*);
-  virtual Ptree* TranslateLabel(Ptree*);
-  virtual Ptree* TranslateExprStatement(Ptree*);
+  virtual PTree::Node *TranslateIf(PTree::Node *);
+  virtual PTree::Node *TranslateSwitch(PTree::Node *);
+  virtual PTree::Node *TranslateWhile(PTree::Node *);
+  virtual PTree::Node *TranslateDo(PTree::Node *);
+  virtual PTree::Node *TranslateFor(PTree::Node *);
+  virtual PTree::Node *TranslateTry(PTree::Node *);
+  virtual PTree::Node *TranslateBreak(PTree::Node *);
+  virtual PTree::Node *TranslateContinue(PTree::Node *);
+  virtual PTree::Node *TranslateReturn(PTree::Node *);
+  virtual PTree::Node *TranslateGoto(PTree::Node *);
+  virtual PTree::Node *TranslateCase(PTree::Node *);
+  virtual PTree::Node *TranslateDefault(PTree::Node *);
+  virtual PTree::Node *TranslateLabel(PTree::Node *);
+  virtual PTree::Node *TranslateExprStatement(PTree::Node *);
   
-  virtual Ptree* TranslateTypespecifier(Ptree*);
+  virtual PTree::Node *TranslateTypespecifier(PTree::Node *);
   
-  virtual Ptree* TranslateComma(Ptree*);
-  virtual Ptree* TranslateAssign(Ptree*);
-  virtual Ptree* TranslateCond(Ptree*);
-  virtual Ptree* TranslateInfix(Ptree*);
-  virtual Ptree* TranslatePm(Ptree*);
-  virtual Ptree* TranslateCast(Ptree*);
-  virtual Ptree* TranslateUnary(Ptree*);
-  virtual Ptree* TranslateThrow(Ptree*);
-  virtual Ptree* TranslateSizeof(Ptree*);
-  virtual Ptree* TranslateTypeid(Ptree*);
-  virtual Ptree* TranslateTypeof(Ptree*);
-  virtual Ptree* TranslateNew(Ptree*);
-  virtual Ptree* TranslateNew2(Ptree*, Ptree*, Ptree*, Ptree*,
-			       Ptree*, Ptree*, Ptree*);
-  virtual Ptree* TranslateNew3(Ptree* type);
-  virtual Ptree* TranslateDelete(Ptree*);
-  virtual Ptree* TranslateThis(Ptree*);
-  virtual Ptree* TranslateVariable(Ptree*);
-  virtual Ptree* TranslateFstyleCast(Ptree*);
-  virtual Ptree* TranslateArray(Ptree*);
-  virtual Ptree* TranslateFuncall(Ptree*);	// and fstyle cast
-  virtual Ptree* TranslatePostfix(Ptree*);
-  virtual Ptree* TranslateUserStatement(Ptree*);
-  virtual Ptree* TranslateDotMember(Ptree*);
-  virtual Ptree* TranslateArrowMember(Ptree*);
-  virtual Ptree* TranslateParen(Ptree*);
-  virtual Ptree* TranslateStaticUserStatement(Ptree*);
+  virtual PTree::Node *TranslateComma(PTree::Node *);
+  virtual PTree::Node *TranslateAssign(PTree::Node *);
+  virtual PTree::Node *TranslateCond(PTree::Node *);
+  virtual PTree::Node *TranslateInfix(PTree::Node *);
+  virtual PTree::Node *TranslatePm(PTree::Node *);
+  virtual PTree::Node *TranslateCast(PTree::Node *);
+  virtual PTree::Node *TranslateUnary(PTree::Node *);
+  virtual PTree::Node *TranslateThrow(PTree::Node *);
+  virtual PTree::Node *TranslateSizeof(PTree::Node *);
+  virtual PTree::Node *TranslateTypeid(PTree::Node *);
+  virtual PTree::Node *TranslateTypeof(PTree::Node *);
+  virtual PTree::Node *TranslateNew(PTree::Node *);
+  virtual PTree::Node *TranslateNew2(PTree::Node *, PTree::Node *, PTree::Node *, PTree::Node *,
+			       PTree::Node *, PTree::Node *, PTree::Node *);
+  virtual PTree::Node *TranslateNew3(PTree::Node *type);
+  virtual PTree::Node *TranslateDelete(PTree::Node *);
+  virtual PTree::Node *TranslateThis(PTree::Node *);
+  virtual PTree::Node *TranslateVariable(PTree::Node *);
+  virtual PTree::Node *TranslateFstyleCast(PTree::Node *);
+  virtual PTree::Node *TranslateArray(PTree::Node *);
+  virtual PTree::Node *TranslateFuncall(PTree::Node *);	// and fstyle cast
+  virtual PTree::Node *TranslatePostfix(PTree::Node *);
+  virtual PTree::Node *TranslateUserStatement(PTree::Node *);
+  virtual PTree::Node *TranslateDotMember(PTree::Node *);
+  virtual PTree::Node *TranslateArrowMember(PTree::Node *);
+  virtual PTree::Node *TranslateParen(PTree::Node *);
+  virtual PTree::Node *TranslateStaticUserStatement(PTree::Node *);
   
-  virtual void TypeofComma(Ptree*, TypeInfo&);
-  virtual void TypeofAssign(Ptree*, TypeInfo&);
-  virtual void TypeofCond(Ptree*, TypeInfo&);
-  virtual void TypeofInfix(Ptree*, TypeInfo&);
-  virtual void TypeofPm(Ptree*, TypeInfo&);
-  virtual void TypeofCast(Ptree*, TypeInfo&);
-  virtual void TypeofUnary(Ptree*, TypeInfo&);
-  virtual void TypeofThrow(Ptree*, TypeInfo&);
-  virtual void TypeofSizeof(Ptree*, TypeInfo&);
-  virtual void TypeofTypeid(Ptree*, TypeInfo&);
-  virtual void TypeofTypeof(Ptree*, TypeInfo&);
-  virtual void TypeofNew(Ptree*, TypeInfo&);
-  virtual void TypeofDelete(Ptree*, TypeInfo&);
-  virtual void TypeofThis(Ptree*, TypeInfo&);
-  virtual void TypeofVariable(Ptree*, TypeInfo&);
-  virtual void TypeofFstyleCast(Ptree*, TypeInfo&);
-  virtual void TypeofArray(Ptree*, TypeInfo&);
-  virtual void TypeofFuncall(Ptree*, TypeInfo&);	// and fstyle cast
-  virtual void TypeofPostfix(Ptree*, TypeInfo&);
-  virtual void TypeofUserStatement(Ptree*, TypeInfo&);
-  virtual void TypeofDotMember(Ptree*, TypeInfo&);
-  virtual void TypeofArrowMember(Ptree*, TypeInfo&);
-  virtual void TypeofParen(Ptree*, TypeInfo&);
-  virtual void TypeofStaticUserStatement(Ptree*, TypeInfo&);
+  virtual void TypeofComma(PTree::Node *, TypeInfo&);
+  virtual void TypeofAssign(PTree::Node *, TypeInfo&);
+  virtual void TypeofCond(PTree::Node *, TypeInfo&);
+  virtual void TypeofInfix(PTree::Node *, TypeInfo&);
+  virtual void TypeofPm(PTree::Node *, TypeInfo&);
+  virtual void TypeofCast(PTree::Node *, TypeInfo&);
+  virtual void TypeofUnary(PTree::Node *, TypeInfo&);
+  virtual void TypeofThrow(PTree::Node *, TypeInfo&);
+  virtual void TypeofSizeof(PTree::Node *, TypeInfo&);
+  virtual void TypeofTypeid(PTree::Node *, TypeInfo&);
+  virtual void TypeofTypeof(PTree::Node *, TypeInfo&);
+  virtual void TypeofNew(PTree::Node *, TypeInfo&);
+  virtual void TypeofDelete(PTree::Node *, TypeInfo&);
+  virtual void TypeofThis(PTree::Node *, TypeInfo&);
+  virtual void TypeofVariable(PTree::Node *, TypeInfo&);
+  virtual void TypeofFstyleCast(PTree::Node *, TypeInfo&);
+  virtual void TypeofArray(PTree::Node *, TypeInfo&);
+  virtual void TypeofFuncall(PTree::Node *, TypeInfo&);	// and fstyle cast
+  virtual void TypeofPostfix(PTree::Node *, TypeInfo&);
+  virtual void TypeofUserStatement(PTree::Node *, TypeInfo&);
+  virtual void TypeofDotMember(PTree::Node *, TypeInfo&);
+  virtual void TypeofArrowMember(PTree::Node *, TypeInfo&);
+  virtual void TypeofParen(PTree::Node *, TypeInfo&);
+  virtual void TypeofStaticUserStatement(PTree::Node *, TypeInfo&);
   
 public:
   struct NameScope 
@@ -164,38 +167,38 @@ public:
   void NewScope();
   void NewScope(Class*);
   Environment* ExitScope();
-  void RecordBaseclassEnv(Ptree*);
+  void RecordBaseclassEnv(PTree::Node *);
   NameScope ChangeScope(Environment*);
   void RestoreScope(NameScope&);
   
 protected:
-  Ptree* TranslateDeclarators(Ptree*, bool);
-  Class* LookupMetaclass(Ptree*, Ptree*, Ptree*, bool);
+  PTree::Node *TranslateDeclarators(PTree::Node *, bool);
+  Class* LookupMetaclass(PTree::Node *, PTree::Node *, PTree::Node *, bool);
   
 private:
-  Class* LookupBaseMetaclass(Ptree*, Ptree*, bool);
+  Class* LookupBaseMetaclass(PTree::Node *, PTree::Node *, bool);
   
 public:
-  Ptree* TranslateNewDeclarator(Ptree* decl);
-  Ptree* TranslateNewDeclarator2(Ptree* decl);
-  Ptree* TranslateArguments(Ptree*);
-  static Ptree* GetClassOrEnumSpec(Ptree*);
-  static Ptree* GetClassTemplateSpec(Ptree*);
-  static Ptree* StripCvFromIntegralType(Ptree*);
-  static void SetDeclaratorComments(Ptree*, Ptree*);
-  static Ptree* FindLeftLeaf(Ptree* node, Ptree*& parent);
-  static void SetLeafComments(Ptree*, Ptree*);
-  static Ptree* NthDeclarator(Ptree*, int&);
-  static Ptree* FindDeclarator(Ptree*, char*, int, char*, int&,
+  PTree::Node *TranslateNewDeclarator(PTree::Node *decl);
+  PTree::Node *TranslateNewDeclarator2(PTree::Node *decl);
+  PTree::Node *TranslateArguments(PTree::Node *);
+  static PTree::Node *GetClassOrEnumSpec(PTree::Node *);
+  static PTree::Node *GetClassTemplateSpec(PTree::Node *);
+  static PTree::Node *StripCvFromIntegralType(PTree::Node *);
+  static void SetDeclaratorComments(PTree::Node *, PTree::Node *);
+  static PTree::Node *FindLeftLeaf(PTree::Node *node, PTree::Node *& parent);
+  static void SetLeafComments(PTree::Node *, PTree::Node *);
+  static PTree::Node *NthDeclarator(PTree::Node *, int&);
+  static PTree::Node *FindDeclarator(PTree::Node *, char*, int, char*, int&,
 			       Environment*);
-  static bool MatchedDeclarator(Ptree*, char*, int, char*, Environment*);
-  static bool WhichDeclarator(Ptree*, Ptree*, int&, Environment*);
+  static bool MatchedDeclarator(PTree::Node *, char*, int, char*, Environment*);
+  static bool WhichDeclarator(PTree::Node *, PTree::Node *, int&, Environment*);
   
-  void ErrorMessage(char*, Ptree*, Ptree*);
-  void WarningMessage(char*, Ptree*, Ptree*);
+  void ErrorMessage(char*, PTree::Node *, PTree::Node *);
+  void WarningMessage(char*, PTree::Node *, PTree::Node *);
   
-  static void InaccurateErrorMessage(char*, Ptree*, Ptree*);
-  static void InaccurateWarningMessage(char*, Ptree*, Ptree*);
+  static void InaccurateErrorMessage(char*, PTree::Node *, PTree::Node *);
+  static void InaccurateWarningMessage(char*, PTree::Node *, PTree::Node *);
   
   static void ChangeDefaultMetaclass(char*);
   

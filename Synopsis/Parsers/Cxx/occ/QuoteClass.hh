@@ -42,10 +42,10 @@ class QuoteClass : public Class
 public:
   static bool Initialize();
   char* MetaclassName();
-  Ptree* TranslateMemberCall(Environment*, Ptree*, Ptree*);
+  PTree::Node *TranslateMemberCall(Environment*, PTree::Node *, PTree::Node *);
 
 private:
-  Ptree* ProcessBackQuote(Environment*, char*, Ptree*, Ptree*);
+  PTree::Node *ProcessBackQuote(Environment*, char*, PTree::Node *, PTree::Node *);
 };
 
 #endif

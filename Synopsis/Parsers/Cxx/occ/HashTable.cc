@@ -36,7 +36,7 @@
 #include <cstring>
 #include "types.h"
 #include "HashTable.hh"
-#include "Ptree.hh"
+#include "PTree.hh"
 #ifndef DONT_GC
 #include "gc.h"
 #endif

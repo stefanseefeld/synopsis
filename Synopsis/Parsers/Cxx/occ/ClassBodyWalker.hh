@@ -22,25 +22,25 @@
 class ClassBodyWalker : public ClassWalker 
 {
 public:
-  ClassBodyWalker(Walker* w, PtreeArray* tlist) : ClassWalker(w) 
+  ClassBodyWalker(Walker* w, PTree::Array* tlist) : ClassWalker(w) 
   {
     tspec_list = tlist;
   }
-  Ptree* TranslateClassBody(Ptree* block, Ptree* bases, Class*);
-  void AppendNewMembers(Class*, PtreeArray&, bool&);
-  Ptree* TranslateTypespecifier(Ptree* tspec);
-  Ptree* TranslateTypedef(Ptree* def);
-  Ptree* TranslateMetaclassDecl(Ptree* decl);
-  Ptree* TranslateDeclarators(Ptree* decls);
-  Ptree* TranslateAssignInitializer(PtreeDeclarator* decl, Ptree* init);
-  Ptree* TranslateInitializeArgs(PtreeDeclarator* decl, Ptree* init);
-  Ptree* TranslateDeclarator(bool record, PtreeDeclarator* decl);
-  Ptree* TranslateDeclarator(bool record, PtreeDeclarator* decl,
-			     bool append_body);
-  Ptree* TranslateFunctionImplementation(Ptree* impl);
+  PTree::Node *TranslateClassBody(PTree::Node *block, PTree::Node *bases, Class*);
+  void AppendNewMembers(Class*, PTree::Array&, bool&);
+  PTree::Node *TranslateTypespecifier(PTree::Node *tspec);
+  PTree::Node *TranslateTypedef(PTree::Node *def);
+  PTree::Node *TranslateMetaclassDecl(PTree::Node *decl);
+  PTree::Node *TranslateDeclarators(PTree::Node *decls);
+  PTree::Node *TranslateAssignInitializer(PTree::Declarator* decl, PTree::Node *init);
+  PTree::Node *TranslateInitializeArgs(PTree::Declarator* decl, PTree::Node *init);
+  PTree::Node *TranslateDeclarator(bool record, PTree::Declarator* decl);
+  PTree::Node *TranslateDeclarator(bool record, PTree::Declarator* decl,
+				   bool append_body);
+  PTree::Node *TranslateFunctionImplementation(PTree::Node *impl);
 
 private:
-  PtreeArray* tspec_list;
+  PTree::Array* tspec_list;
 };
 
 #endif

@@ -7,8 +7,6 @@
 //
 #include "Buffer.hh"
 #include "Lexer.hh"
-#include "Ptree.hh"
-#include "Class.hh"
 #include <streambuf>
 #include <iterator>
 #include <string>
