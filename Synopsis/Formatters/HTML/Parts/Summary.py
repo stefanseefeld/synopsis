@@ -1,4 +1,4 @@
-# $Id: Summary.py,v 1.3 2003/11/16 21:09:45 stefan Exp $
+# $Id: Summary.py,v 1.4 2003/11/18 07:27:13 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -25,6 +25,11 @@ class Summary(Part):
 
    def register(self, page):
 
+      if page.processor.has_page('XRef'):
+         self.formatters.append(FormatStrategy.XRefLinker())
+      if page.processor.has_page('FileSource'):
+         self.formatters.append(FormatStrategy.SourceLinker())
+
       Part.register(self, page)
       self.__link_detail = 0
 
@@ -33,8 +38,6 @@ class Summary(Part):
       @see label()"""
 
       self.__link_detail = boolean
-      # FIXME: reenable this...
-      #config.link_detail = boolean
 
    def label(self, ref, label=None):
       """Override to check link_detail flag. If it's set, returns a reference
@@ -46,7 +49,7 @@ class Summary(Part):
          return span('name',self.reference(ref, Util.ccolonName(label, self.scope())))
       return Part.label(self, ref, label)
 	
-   def writeSectionStart(self, heading):
+   def write_section_start(self, heading):
       """Starts a table entity. The heading is placed in a row in a td with
       the class 'heading'."""
 
@@ -54,12 +57,12 @@ class Summary(Part):
       self.write('<col><col width="100%%">')
       self.write('<tr><td class="heading" colspan="2">' + heading + '</td></tr>\n')
 
-   def writeSectionEnd(self, heading):
+   def write_section_end(self, heading):
       """Closes the table entity and adds a break."""
 
       self.write('</table>\n<br>\n')
 
-   def writeSectionItem(self, text):
+   def write_section_item(self, text):
       """Adds a table row"""
 
       if text[:22] == '<td class="summ-start"':
@@ -73,8 +76,6 @@ class Summary(Part):
 
       decl_style = self.processor.decl_style
       SUMMARY = Style.SUMMARY
-      #FIXME : reenable this...
-      #config.link_detail = 0
 
       sorter = self.processor.sorter
       sorter.set_scope(decl)
@@ -85,7 +86,7 @@ class Summary(Part):
          # Write a header for this section
          if section[-1] == 's': heading = section+'es Summary:'
          else: heading = section+'s Summary:'
-         self.writeSectionStart(heading)
+         self.write_section_start(heading)
          # Iterate through the children in this section
          for child in sorter.children(section):
             # Check if need to add to detail list
@@ -98,6 +99,6 @@ class Summary(Part):
                # Just do it
                child.accept(self)
          # Finish off this section
-         self.writeSectionEnd(heading)
+         self.write_section_end(heading)
       self.write_end()
 
