@@ -509,12 +509,14 @@ int main(int argc, char **argv)
     //   getopts(argc, argv, cppargs, occargs);
     Py_Initialize();
     int i, py_i;
+    bool all_args = false;
     for (i = 1, py_i = 0; i != argc; ++i)
 	if (argv[i][0] == '-') ++py_i;
     PyObject *pylist = PyList_New(py_i);
     for (i = 1, py_i = 0; i != argc; ++i)
-	if (argv[i][0] != '-') src = argv[i];
-	else PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
+	if (!all_args && argv[i][0] != '-') src = argv[i];
+	else if (!strcmp(argv[i], "--")) all_args = true;
+        else PyList_SetItem(pylist, py_i++, PyString_FromString(argv[i]));
     getopts(pylist, cppargs, occargs, NULL);
     if (!src || *src == '\0') {
 	std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
