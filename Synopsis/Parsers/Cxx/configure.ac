@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.5 2003/12/10 19:19:57 stefan Exp $
+dnl $Id: configure.ac,v 1.6 2003/12/12 19:00:52 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2003 Stefan Seefeld <stefan@fresco.org> 
@@ -25,7 +25,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.5 $)
+AC_REVISION($Revision: 1.6 $)
 AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
@@ -33,6 +33,13 @@ AC_ARG_WITH(python,
   PYTHON="$with_python",
   PYTHON=""
 )
+
+AC_ARG_WITH(gc_prefix, 
+  [  --with-gc-prefix=PATH   specify the prefix to the garbage collector],
+  GC_PREFIX="$with_gc_prefix",
+  GC_PREFIX=""
+)
+AC_SUBST(GC_PREFIX)
 
 AC_PROG_CPP
 AC_PROG_CC
@@ -74,6 +81,9 @@ dnl to do that, we need the name of a function in each one, so we'll just hack -
 dnl of the list.
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; import re; print re.sub(r'\\s*-lutil', '', sysconfig.get_config_var('LIBS') or '')"`
     else dnl this is 'nt'
+      if test "$CXX" = "g++"; then
+        CXXFLAGS="-mno_cygwin $CXXFLAGS"
+      fi
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
     fi
