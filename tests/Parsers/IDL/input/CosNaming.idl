@@ -1,0 +1,104 @@
+
+#ifndef _CosNaming_IDL_
+#define _CosNaming_IDL_
+
+#pragma prefix "omg.org"
+
+//. a CosNaming module
+module CosNaming
+{
+  //. an Istring typedef
+  typedef string Istring;
+  //. a NameComponent struct.
+  //. with a multi-line comment.
+  struct NameComponent
+  {
+    //. an id member
+    Istring id;
+    //. a kind member
+    Istring kind;
+  };
+
+  //. a Name type.
+  //. This is a sequence of NameComponents
+  //. so it forms a scoped name of sorts
+  typedef sequence<NameComponent> Name;
+  //. a BindingType enum
+  enum BindingType
+  {
+    nobject,
+    ncontext
+  };
+
+  //. a Binding struct
+  struct Binding
+  {
+    //. a binding_name member
+    Name binding_name;
+    //. a binding_type member
+    BindingType binding_type;
+  };
+
+  //. a BindingList type
+  typedef sequence<Binding> BindingList;
+
+  interface BindingIterator;
+
+  //. a NamingContext interface
+  interface NamingContext
+    {
+      //. a NotFoundReason enum
+      enum NotFoundReason
+      {
+	missing_node,
+	not_context,
+	not_object
+      };
+
+      //. an exception
+      exception NotFound
+	{
+	  NotFoundReason why;
+	  Name rest_of_name;
+	};
+      
+      exception CannotProceed
+	{
+	  NamingContext ctx;
+	  Name rest_of_name;
+	};
+      
+      exception InvalidName{};
+      exception AlreadyBound{};
+      exception NotEmpty{};
+      
+      //. and the bind method...
+      void bind(in Name n, in Object obj)
+	raises(NotFound, CannotProceed, InvalidName, AlreadyBound);
+      void rebind(in Name n, in Object obj)
+	raises(NotFound, CannotProceed, InvalidName);
+      void bind_context(in Name n, in NamingContext nc)
+	raises(NotFound, CannotProceed, InvalidName, AlreadyBound);
+      void rebind_context(in Name n, in NamingContext nc)
+	raises(NotFound, CannotProceed, InvalidName);
+      Object resolve(in Name n)
+	raises(NotFound, CannotProceed, InvalidName);
+      void unbind(in Name n)
+	raises(NotFound, CannotProceed, InvalidName);
+      NamingContext new_context();
+      NamingContext bind_new_context(in Name n)
+	raises(NotFound, AlreadyBound, CannotProceed, InvalidName);
+      void destroy()
+	raises(NotEmpty);
+      void list(in unsigned long how_many, out BindingList bl, out BindingIterator bi);
+    };
+  
+  interface BindingIterator
+    {
+      boolean next_one(out Binding b);
+      boolean next_n(in unsigned long how_many, out BindingList bl);
+      void destroy();
+    };
+};
+
+#endif /* !_CosNaming_IDL_ */
