@@ -1565,6 +1565,26 @@ line_macro_err:
 }
 
 /*
+ * a #warning directive: we emit the message without any modification
+ * (except the usual backslash+newline and trigraphs)
+ */
+static void handle_warning(struct lexer_state *ls)
+{
+	int c;
+	size_t p = 0, lp = 128;
+	long l = ls->line;
+	unsigned char *buf = getmem(lp);
+
+	while ((c = grap_char(ls)) >= 0 && c != '\n') {
+		discard_char(ls);
+		wan(buf, p, (unsigned char)c, lp);
+	}
+	wan(buf, p, 0, lp);
+	error(l, "#warning%s", buf);
+	freemem(buf);
+}
+
+/*
  * a #error directive: we emit the message without any modification
  * (except the usual backslash+newline and trigraphs)
  */
@@ -1887,6 +1907,10 @@ static int handle_cpp(struct lexer_state *ls, int sharp_type)
 				if (!(ls->flags & HANDLE_PRAGMA))
 					goto handle_warp_ign;
 				handle_pragma(ls);
+				goto handle_exit;
+			} else if (!strcmp(ls->ctok->name, "warning")) {
+				ret = 1;
+				handle_warning(ls);
 				goto handle_exit;
 			} else if (!strcmp(ls->ctok->name, "error")) {
 				ret = 1;
