@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.7 2001/01/24 12:47:28 chalky Exp $
+# $Id: AST.py,v 1.8 2001/01/25 18:27:47 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.8  2001/01/25 18:27:47  stefan
+# added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
+#
 # Revision 1.7  2001/01/24 12:47:28  chalky
 # Reapplied old behaviour of Visitor of passing the call up to visitDeclaration
 # so that all the places that broke work again.
@@ -46,7 +49,7 @@ PRIVATE.
 import string
 import Util
 
-# Accessability constants
+# Accessibility constants
 DEFAULT = 0
 PUBLIC = 1
 PROTECTED = 2
@@ -81,7 +84,7 @@ class AST:
 
 class Declaration:
     """Declaration base class. Every declaration has a name, comments,
-    accessability and type. The default accessability is DEFAULT except for
+    accessibility and type. The default accessibility is DEFAULT except for
     C++ where the Parser always sets it to one of the other three. """
 
     def __init__(self, file, line, language, type, name):
@@ -91,7 +94,7 @@ class Declaration:
 	self.__name = tuple(name)
         self.__type = type
         self.__comments = []
-	self.__accessability = DEFAULT
+	self.__accessibility = DEFAULT
     def file(self):
 	"""The file this declaration appeared in"""
 	return self.__file
@@ -113,14 +116,14 @@ class Declaration:
     def accept(self, visitor):
 	"""Visit the given visitor. For Declaration it does nothing."""
 	pass
-    def accessability(self):
-	"""One of the accessability constants.
+    def accessibility(self):
+	"""One of the accessibility constants.
 	This may be one of DEFAULT, PUBLIC, PROTECTED or PRIVATE, which are
 	defined at module scope (Synopsis.AST)"""
-	return self.__accessability
-    def set_accessability(self, axs):
-	"""Change the accessability"""
-	self.__accessability = axs
+	return self.__accessibility
+    def set_accessibility(self, axs):
+	"""Change the accessibility"""
+	self.__accessibility = axs
 
 class Forward (Declaration):
     """Forward declaration"""
@@ -128,30 +131,6 @@ class Forward (Declaration):
     def __init__(self, file, line, language, type, name):
         Declaration.__init__(self, file, line, language, type, name)
     def accept(self, visitor): visitor.visitForward(self)
-
-class Declarator (Declaration):
-    """Declarator. This is a class, soon to be phased out, that holds
-    information about each declaration for variables and typedefs. Currently
-    there is only one declarator per variable or typedef declaration (they
-    used to be many-to-one) which is why they will disappear."""
-
-
-    def __init__(self, file, line, language, name, sizes):
-        Declaration.__init__(self, file, line, language, "", name)
-        self.__sizes = sizes
-    def _setAlias(self, alias):
-	"""Change the alias type. This is used only by the Linker"""
-	self.__alias = alias
-
-    def sizes(self):
-	"""List of array sizes, or None"""
-	return self.__sizes
-    def alias(self):
-	"""Type object if this is a typedef declarator, or None"""
-	return self.__alias
-    def accept(self, visitor):
-	"""Accept the given visitor"""
-	visitor.visitDeclarator(self)
 
 class Scope (Declaration):
     """Base class for scopes with contained declarations."""
@@ -164,8 +143,7 @@ class Scope (Declaration):
 	return self.__declarations
 
 class Module (Scope):
-    """Module class.
-    """
+    """Module class"""
     def __init__(self, file, line, language, type, name):
         Scope.__init__(self, file, line, language, type, name)
     def accept(self, visitor): visitor.visitModule(self)
@@ -175,8 +153,10 @@ class MetaModule (Module):
     def __init__(self, lang, type, name):
         Scope.__init__(self, "", "", lang, type, name)
 	self.__module_declarations = []
+    def module_declarations(self):
+        """The module declarations this metamodule subsumes"""
+        return self.__module_declarations
     def accept(self, visitor): visitor.visitMetaModule(self)
-    def module_declarations(self): return self.__module_declarations
 
 
 class Inheritance:
@@ -221,13 +201,11 @@ class Typedef (Declaration):
     """Typedef class.
 
   alias()           -- the type object referenced by this alias
-  constr()          -- boolean: true if the alias type was constructed within this typedef declaration.
-  declarator()      -- the new type being declared"""
-    def __init__(self, file, line, language, type, name, alias, constr, declarator):
+  constr()          -- boolean: true if the alias type was constructed within this typedef declaration."""
+    def __init__(self, file, line, language, type, name, alias, constr):
         Declaration.__init__(self, file, line, language, type, name)
         self.__alias = alias
         self.__constr = constr
-        self.__declarator = declarator
     def alias(self):
 	"""The Type object aliased by this typedef"""
 	return self.__alias
@@ -235,8 +213,6 @@ class Typedef (Declaration):
 	"""True if alias type was constructed here.
 	For example, typedef struct _Foo {} Foo;"""
 	return self.__constr
-    def declarator(self):
-	return self.__declarator
     def accept(self, visitor): visitor.visitTypedef(self)
 
     def set_alias(self, type): self.__alias = type
@@ -268,11 +244,10 @@ class Enum (Declaration):
 class Variable (Declaration):
     """Variable definition"""
 
-    def __init__(self, file, line, language, type, name, vtype, constr, declarator):
+    def __init__(self, file, line, language, type, name, vtype, constr):
         Declaration.__init__(self, file, line, language, type, name)
         self.__vtype  = vtype
         self.__constr  = constr
-        self.__declarator = declarator
 
     def vtype(self):
 	"""The Type object for this variable"""
@@ -281,7 +256,6 @@ class Variable (Declaration):
 	"""True if the type was constructed here.
 	For example: struct Foo {} myFoo;"""
 	return self.__constr
-    def declarator(self): return self.__declarator
     def accept(self, visitor): visitor.visitVariable(self)
 
     def set_vtype(self, vtype): self.__vtype = vtype
@@ -423,7 +397,6 @@ class Visitor :
         for declaration in node.declarations(): declaration.accept(self)
     def visitDeclaration(self, node): return
     def visitForward(self, node): self.visitDeclaration(node)
-    def visitDeclarator(self, node): self.visitDeclaration(node)
     def visitScope(self, node):
 	self.visitDeclaration(node)
         for declaration in node.declarations(): declaration.accept(self)

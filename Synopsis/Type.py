@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.6 2001/01/24 18:06:45 stefan Exp $
+# $Id: Type.py,v 1.7 2001/01/25 18:27:47 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Type.py,v $
+# Revision 1.7  2001/01/25 18:27:47  stefan
+# added Type.Array type and removed AST.Declarator. Adjusted the IDL parser to that.
+#
 # Revision 1.6  2001/01/24 18:06:45  stefan
 # fixed the Unknown type to have a name *and* a link attribute, to distinguish the written label from the link it refers to
 #
@@ -43,17 +46,16 @@ class Error:
         return self.err
 
 class Type:
-    """Type abstract class.
-
-Function:
-
-  language()        -- the language this type was defined in
-  accept(visitor)   -- visitor pattern accept. See idlvisitor.py."""
+    """Type abstract class."""
 
     def __init__(self, language):
         self.__language = language
-    def language(self): return self.__language
-    def accept(self, visitor): pass
+    def language(self):
+        """the language this type was defined in"""
+        return self.__language
+    def accept(self, visitor):
+        """visitor pattern accept. @see Visitor"""
+        pass
 
     def __cmp__(self, other):
 	"Comparison operator"
@@ -61,18 +63,16 @@ Function:
 	return cmp(id(self),id(other))
 
 class Base (Type):
-    """Class for base types. (Type)
-
-Functions:
-
-  name()        -- Simple name of the type."""
+    """Class for base types"""
 
     def __init__(self, language, name):
         Type.__init__(self, language)
         self.__name  = name
 	if type(name) != type(()) and type(name) != type([]):
 	    raise TypeError,"Name must be scoped"
-    def name(self): return self.__name
+    def name(self):
+        """name of this type"""
+        return self.__name
     def accept(self, visitor): visitor.visitBaseType(self)
     def __cmp__(self, other):
 	"Comparison operator"
@@ -90,9 +90,14 @@ class Unknown(Type):
         self.__link = name
 	if type(name) != type(()) and type(name) != type([]):
 	    raise TypeError,"Name must be scoped"
-    def name(self): return self.__name
-    def link(self): return self.__link
+    def name(self):
+        """name of this type"""
+        return self.__name
+    def link(self):
+        """external reference this type may be associated with"""
+        return self.__link
     def resolve(self, language, name, link):
+        """associate this type with an external reference, instead of a declaration"""
         self.base.__language = language
         self.__name = name
         self.__link = link
@@ -104,19 +109,18 @@ class Unknown(Type):
     def __str__(self): return Util.ccolonName(self.__name)
 
 class Declared (Type):
-    """Class for declared types (Type)
-
-Functions:
-
-  declaration() -- Decl object which corresponds to this type.
-  name()        -- scoped name of the type."""
+    """Class for declared types"""
 
     def __init__(self, language, name, declaration):
         Type.__init__(self, language)
         self.__name  = name
         self.__declaration = declaration
-    def declaration(self): return self.__declaration
-    def name(self): return self.__name
+    def declaration(self):
+        """declaration object which corresponds to this type"""
+        return self.__declaration
+    def name(self):
+        """scoped name of the type"""
+        return self.__name
     def accept(self, visitor): visitor.visitDeclared(self)
     def __cmp__(self, other):
 	"Comparison operator"
@@ -125,15 +129,14 @@ Functions:
     def __str__(self): return Util.ccolonName(self.__name)
 
 class Template (Declared):
-    """Class for declared parametrized types
-Functions:
-
-  parameters()  -- list of type names used to declare this template"""
+    """Class for declared parametrized types"""
 
     def __init__(self, language, name, declaration, parameters):
         Declared.__init__(self, language, name, declaration)
         self.__parameters = parameters
-    def parameters(self): return self.__parameters
+    def parameters(self):
+        """list of type names used to declare this template"""
+        return self.__parameters
     def accept(self, visitor): visitor.visitTemplate(self)
     def __cmp__(self, other):
 	"Comparison operator"
@@ -146,21 +149,22 @@ Functions:
 	)
 
 class Modifier (Type):
-    """Class for alias types with modifiers (such as 'const', '&', etc.)
-Functions:
-
-  alias()    -- the type this type refers to
-  premod()   -- the modifier string
-  postmod()  -- the modifier string"""
+    """Class for alias types with modifiers (such as 'const', '&', etc.)"""
 
     def __init__(self, language, alias, premod, postmod):
         Type.__init__(self, language)
         self.__alias = alias
         self.__premod = premod
         self.__postmod = postmod
-    def alias(self): return self.__alias
-    def premod(self): return self.__premod
-    def postmod(self): return self.__postmod
+    def alias(self):
+        """the type this type refers to"""
+        return self.__alias
+    def premod(self):
+        """the modifier string"""
+        return self.__premod
+    def postmod(self):
+        """the modifier string"""
+        return self.__postmod
     def accept(self, visitor): visitor.visitModifier(self)
 
     def set_alias(self, alias): self.__alias = alias
@@ -178,19 +182,41 @@ Functions:
 	    string.join(self.__postmod,'')
 	)
 
-class Parametrized (Type):
-    """Class for parametrized type instances
-Functions:
+class Array (Type):
+    """a modifier that adds array dimensions to a type"""
+    
+    def __init__(self, language, alias, sizes):
+        Type.__init__(self, language)
+        self.__alias = alias
+        self.__sizes = sizes
+    def alias(self): return self.__alias
+    """primary type this array decorates"""
+    def sizes(self): return self.__sizes
+    """dimensions of the array"""
+    def accept(self, visitor): visitor.visitArray(self)
+    def set_alias(self, alias): self.__alias = alias
+    def __cmp__(self, other):
+	"Comparison operator"
+	#print "Modifier.__cmp__",self,other
+	return ccmp(self,other) or \
+	    cmp(self.alias(),other.alias()) or \
+	    cmp(self.sizes(),other.sizes())
+    def __str__(self): 
+	return "%s%s"%(str(self.__alias), string.join(map(lambda s:"[" + s + "]",self.__sizes),''))
 
-  template()    -- template type this is an instance of
-  parameters()  -- list of types for which this template is instanciated"""
+class Parametrized (Type):
+    """Class for parametrized type instances"""
 
     def __init__(self, language, template, parameters):
         Type.__init__(self, language)
         self.__template = template
         self.__parameters = parameters
-    def template(self): return self.__template
-    def parameters(self): return self.__parameters
+    def template(self):
+        """template type this is an instance of"""
+        return self.__template
+    def parameters(self):
+        """list of types for which this template is instanciated"""
+        return self.__parameters
     def accept(self, visitor): visitor.visitParametrized(self)
     def set_template(self, type): self.__template = type
     def __cmp__(self, other):
@@ -205,20 +231,21 @@ Functions:
 	)
 
 class Function (Type):
-    """Class for function pointer types.
-    Functions:
-	returnType()	-- nested return type
-	premodifiers()	-- list of premodifier strings
-	parameters()	-- list of nested parameter types
-    """
+    """Class for function pointer types."""
     def __init__(self, language, retType, premod, params):
 	Type.__init__(self, language)
 	self.__returnType = retType
 	self.__premod = premod
 	self.__params = params
-    def returnType(self): return self.__returnType
-    def premod(self): return self.__premod
-    def parameters(self): return self.__params
+    def returnType(self):
+        """nested return type"""
+        return self.__returnType
+    def premod(self):
+        """list of premodifier strings"""
+        return self.__premod
+    def parameters(self):
+        """list of nested parameter types"""
+        return self.__params
     def accept(self, visitor): visitor.visitFunctionType(self)
 
     def set_returnType(self, returnType): self.__returnType = returnType
@@ -256,6 +283,7 @@ class Visitor:
     def visitUnknown(self, type): return
     def visitDeclared(self, type): return
     def visitModifier(self, type): return
+    def visitArray(self, type): return
     def visitTemplate(self, type): return
     def visitParametrized(self, type): return
     def visitFunctionType(self, type): return
