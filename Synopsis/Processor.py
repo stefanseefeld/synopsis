@@ -1,4 +1,3 @@
-# $Id: Processor.py,v 1.12 2003/12/10 05:18:36 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -139,8 +138,8 @@ class Composite(Processor):
          my_kwds = {}
          if self.input: my_kwds['input'] = self.input
          if self.output: my_kwds['output'] = self.output
-         if kwds.has_key('verbose'): my_kwds['verbose'] = kwds['verbose']
-         if kwds.has_key('debug'): my_kwds['debug'] = kwds['debug']
+         if self.verbose: my_kwds['verbose'] = self.verbose
+         if self.debug: my_kwds['debug'] = self.debug
          return self.processors[0].process(ast, **my_kwds)
 
       # more than one processor...
@@ -148,8 +147,8 @@ class Composite(Processor):
       # call the first, passing the 'input' parameter, if present
       my_kwds = {}
       if self.input: my_kwds['input'] = self.input
-      if kwds.has_key('verbose'): my_kwds['verbose'] = kwds['verbose']
-      if kwds.has_key('debug'): my_kwds['debug'] = kwds['debug']
+      if self.verbose: my_kwds['verbose'] = self.verbose
+      if self.debug: my_kwds['debug'] = self.debug
       ast = self.processors[0].process(ast, **my_kwds)
 
       # deal with all between the first and the last;
