@@ -16,7 +16,11 @@
 
 SHELL		:= /bin/sh
 
+ifeq (,$(findstring $(MAKECMDGOALS), clean distclean))
+ifeq (,$(findstring $(action), clean distclean))
 include ../../../../../local.mk
+endif
+endif
 
 CCC		:= cc
 CXX		:= c++
