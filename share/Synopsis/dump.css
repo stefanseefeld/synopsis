@@ -1,0 +1,32 @@
+declarations:before
+{ 
+  display: block;
+  content: "Declarations";
+  font-size: large;
+}
+declarations
+{ 
+  display: block;
+  margin: 1mm;
+}
+declarations > *:before,
+declarations > item *:before
+{ 
+  content: attr(class)" "attr(type)" "attr(name);
+  color: red;
+}
+declarations > item:before {  content:"";} /* empty */
+comments summary
+{ 
+  visibility: hidden;
+  display: none;
+}
+comments text
+{ 
+  visibility: visible;
+  display: block;
+  background: #dddddd;
+  border: thin solid;
+  margin: 1mm;
+  padding: 1mm;
+}
