@@ -11,7 +11,17 @@ from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
 
-import os, stat, os.path, string, time
+import os, stat, os.path, string, time, re
+
+def compile_glob(globstr):
+    """Returns a compiled regular expression for the given glob string. A
+    glob string is something like "*.?pp" which gets translated into
+    "^.*\..pp$"."""
+    glob = string.replace(globstr, '.', '\.')
+    glob = string.replace(glob, '?', '.')
+    glob = string.replace(glob, '*', '.*')
+    glob = re.compile('^%s$'%glob)
+    return glob
 
 class DirBrowse(View):
    """A view that shows the entire contents of directories, in a form similar
@@ -46,6 +56,8 @@ class DirBrowse(View):
 
       View.register(self, processor)
 
+      self._exclude = [compile_glob(e) for e in self.exclude]
+
       self.__filename = self.processor.file_layout.special('dir')
       
       self.__title = 'Directory Listing'
@@ -64,13 +76,14 @@ class DirBrowse(View):
       while dirs:
          dir = dirs.pop(0)
          for entry in os.listdir(os.path.abspath(dir)):
-            # Check if entry is in exclude list
-            #exclude = 0
-            #for re in self.__exclude_globs:
-            #   if re.match(entry):
-            #      exclude = 1
-            #if exclude:
-            #   continue
+            exclude = 0
+            for re in self._exclude:
+               if re.match(entry):
+                  print entry, 'excluded'
+                  exclude = 1
+                  break
+            if exclude:
+               continue
             entry_path = os.path.join(dir, entry)
             if os.path.isdir(entry_path):
                filename = self.filename_for_dir(dir)
@@ -125,13 +138,14 @@ class DirBrowse(View):
       files = []
       dirs = []
       for entry in entries:
-         # Check if entry is in exclude list
-         #exclude = 0
-         #for re in self.__exclude_globs:
-         #   if re.match(entry):
-         #      exclude = 1
-         #if exclude:
-         #   continue
+         exclude = 0
+         for re in self._exclude:
+            if re.match(entry):
+               exclude = 1
+               print entry, 'excluded'
+               break
+         if exclude:
+            continue
          entry_path = os.path.join(path, entry)
          info = os.stat(entry_path)
          if stat.S_ISDIR(info[stat.ST_MODE]):
