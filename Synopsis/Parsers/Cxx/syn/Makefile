@@ -59,7 +59,7 @@ SYN_FILES	:= synopsis occ swalker ast builder type dict \
 		   dumper decoder swalker-syntax link_map linkstore \
 		   lookup
 
-UCPP_FILES	:= mem hash cpp lexer assert macro eval
+UCPP_FILES	:= mem hashtable cpp lexer assert macro eval
 
 # Generate sources, objs and debug-objs from the FILES
 OCC_SOURCES	:= $(patsubst %,../occ/%.cc,$(OCC_FILES))
