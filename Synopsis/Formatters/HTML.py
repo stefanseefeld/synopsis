@@ -1,4 +1,4 @@
-# $Id: HTML.py,v 1.52 2001/01/24 01:38:36 chalky Exp $
+# $Id: HTML.py,v 1.53 2001/01/24 12:50:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: HTML.py,v $
+# Revision 1.53  2001/01/24 12:50:23  chalky
+# Fixes to get summary/detail linking again since AST.Visitor changed ...
+#
 # Revision 1.52  2001/01/24 01:38:36  chalky
 # Added docstrings to all modules
 #
@@ -454,14 +457,14 @@ class TableOfContents(AST.Visitor):
 	self.insert(entry)
     def visitForward(self, decl):
 	pass
-    def visitScope(self, scope):
-	self.visitDeclaration(scope)
-	for decl in scope.declarations():
-	    decl.accept(self)
-    def visitEnum(self, enum):
-	self.visitDeclaration(enum)
-	for enumor in enum.enumerators():
-	    enumor.accept(self)
+    #def visitScope(self, scope):
+    #	self.visitDeclaration(scope)
+    #	for decl in scope.declarations():
+    #	    decl.accept(self)
+    #def visitEnum(self, enum):
+    #	self.visitDeclaration(enum)
+    #	for enumor in enum.enumerators():
+    #	    enumor.accept(self)
 
 class FileTree(AST.Visitor):
     """Maintains a tree of directories and files"""
@@ -628,7 +631,8 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = toc[name]
 	if entry: return apply(href, (entry.link, label), keys)
-	return label and span('type', label) or ''
+	#return label and span('type', label) or ''
+	return label or ''
 
     def label(self, ref, label=None):
 	"""Create a label for the given scoped reference name"""
@@ -843,7 +847,7 @@ class DetailFormatter(BaseFormatter):
 
     def getDetail(self, node):
 	comment = comments[node].detail
-	if len(comment): return '<br>'+div('desc', comment)
+	if comment and len(comment): return '<br>'+div('desc', comment)
 	else: return ''
 
     def formatParent(self, node):
