@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis,v 1.1 2003/11/27 03:37:23 stefan Exp $
+# $Id: synopsis,v 1.2 2003/11/27 06:02:02 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -40,6 +40,21 @@ def _import(package, module, processor, verbose=False):
 
    return mod
 
+def usage():
+   """Print a little usage text"""
+
+   print 'Usage : %s [options] <input files>'%sys.argv[0]
+   print """
+List of options:
+
+  -p, --parser           Select a parser
+  -f, --formatter        Select a formatter
+  -l, --linker           Link
+  -o, --output           output file / directory
+      --verbose          operate verbosely
+  -h, --help             help
+"""
+   
 def get_opt():
    """Parse command line options and translate them to
    processor commands and arguments."""
@@ -84,12 +99,15 @@ def get_opt():
          help = True
 
    if help:
-      p = processor()
-      print "Parameters for processor '%s':"%processor_name
-      parameters = p.get_parameters()
-      tab = max(map(lambda x:len(x), parameters.keys()))
-      for p in parameters:
-         print "   %-*s     %s"%(tab, p, parameters[p].doc)
+      if processor:
+         p = processor()
+         print "Parameters for processor '%s':"%processor_name
+         parameters = p.get_parameters()
+         tab = max(map(lambda x:len(x), parameters.keys()))
+         for p in parameters:
+            print "   %-*s     %s"%(tab, p, parameters[p].doc)
+      else:
+         usage()
       sys.exit(0)
 
    if processor_name == 'Linker':
@@ -104,8 +122,6 @@ def main():
    if processor:
       ast = AST.AST()
       processor(**options).process(ast)
-   elif '--help' in options:
-      print 'Usage : %s [options] <input files>'%sys.argv[0]
    else:
       print 'Usage : %s [options] <input files>'%sys.argv[0]
 
