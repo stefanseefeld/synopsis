@@ -1,4 +1,4 @@
-# $Id: NameMapper.py,v 1.6 2003/11/19 16:22:38 stefan Exp $
+# $Id: NameMapper.py,v 1.7 2003/11/20 04:46:38 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -12,56 +12,58 @@ import string
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST, Type, Util
 
-from Linker import config
-
-class NameMapper (Processor, AST.Visitor):
-   """This class adds a prefix to all declaration and type names."""
-
-   map_declaration_names = Parameter(None, '')
-   map_declaration_type = Parameter('Language', '')
-
-   def visitDeclaration(self, decl):
-      """Changes the name of this declaration and its associated type"""
-
-      # Change the name of the decl
-      name = decl.name()
-      newname = tuple(self.map_declaration_names + name)
-      decl.set_name(newname)
-      # Change the name of the associated type
-      try:
-         type = self.types[name]
-         del self.types[name]
-         type.set_name(newname)
-         self.types[newname] = type
-      except KeyError, msg:
-         if self.verbose: print "Warning: Unable to map name of type:",msg
+class NameMapper(Processor, AST.Visitor):
+   """Abstract base class for name mapping."""
 
    def visitGroup(self, node):
       """Recursively visits declarations under this group/scope/etc"""
 
       self.visitDeclaration(node)
       for declaration in node.declarations():
-         declaration.accept(self)
+         declaration.accept(self)   
+
+class NamePrefixer(NameMapper):
+   """This class adds a prefix to all declaration and type names."""
+
+   prefix = Parameter([], 'the prefix which to prepend to all declared types')
+   type = Parameter('Language', 'type to use for the new toplevel modules')
 
    def process(self, ast, **kwds):
 
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
 
-      if not self.map_declaration_names:
+      if not self.prefix:
          return self.output_and_return_ast()
-      declarations = ast.declarations()
-      types = ast.types()
-      # Map the names of declarations and their types
-      for decl in declarations:
+
+      for decl in self.ast.declarations():
          decl.accept(self)
+
       # Now we need to put the declarations in actual nested MetaModules
-      lang, type = '', self.map_declaration_type
-      names = self.map_declaration_names
-      for index in range(len(names),0, -1):
-         module = AST.MetaModule(lang, type, names[:index])
-         module.declarations().extend(declarations)
-         types[module.name()] = Type.Declared(lang, module.name(), module)
-         declarations[:] = [module]
+      lang, type = '', self.type
+      for index in range(len(self.prefix), 0, -1):
+         module = AST.MetaModule(lang, type, self.prefix[:index])
+         module.declarations().extend(self.ast.declarations())
+         self.ast.types()[module.name()] = Type.Declared(lang,
+                                                         module.name(),
+                                                         module)
+         self.ast.declarations()[:] = [module]
 
       return self.output_and_return_ast()
+
+   def visitDeclaration(self, decl):
+      """Changes the name of this declaration and its associated type"""
+
+      # Change the name of the decl
+      name = decl.name()
+      new_name = tuple(self.prefix + list(name))
+      decl.set_name(new_name)
+      # Change the name of the associated type
+      try:
+         type = self.ast.types()[name]
+         del self.ast.types()[name]
+         type.set_name(new_name)
+         self.ast.types()[new_name] = type
+      except KeyError, msg:
+         if self.verbose: print "Warning: Unable to map name of type:",msg
+
