@@ -1,19 +1,19 @@
-# $Id: MANIFEST.in,v 1.2 2003/09/18 20:28:58 stefan Exp $
+# $Id: MANIFEST.in,v 1.3 2003/11/19 19:44:52 stefan Exp $
 #
 # MANIFEST template for source distribution generation
 #
 
-include README MANIFEST.in setup.py autogen.sh
+include COPYING README MANIFEST.in setup.py autogen.sh
 
 # python modules
 recursive-include   Synopsis *.py
 
 # C/C++ extensions
-recursive-include   Synopsis/Parser/C *
-recursive-include   Synopsis/Parser/C++ *
+recursive-include   Synopsis/Parsers/C *
+recursive-include   Synopsis/Parsers/C++ *
 
 # data files
-include             share/*
+include             share/Synopsis/*
 
 # documentation
 recursive-include   docs *
