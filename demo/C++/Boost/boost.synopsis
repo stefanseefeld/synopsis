@@ -30,7 +30,7 @@ class Project:
       comment_formatters=['quotehtml', 'summary', 'section'],
       FilePages=struct(
         toc_files=[],
-        file_path='%s',
+        file_path='boost/%s',
         scope='',
         links_path='BoostLinks/%s'
       ),
@@ -73,7 +73,7 @@ class Project:
       comment_formatters=['quotehtml', 'summary', 'section'],
       FilePages=struct(
         toc_files=[],
-        file_path='%s',
+        file_path='boost/%s',
         scope='',
         links_path='BoostLinks/%s'
       ),
@@ -92,17 +92,21 @@ class Project:
       ['Base', 'boost/boost/', '*.hpp']
     ]],
     ['SourceAction', 47, 41, 'Boost Python Sources', [
-      ['Base', 'boost/boost/python/', '*.hpp']
+      ['Simple', ['boost/boost/python.hpp']],
+      ['Base', 'boost/boost/python/', '*.hpp'],
+      ['Exclude', '*/CVS/*']
     ]],
     ['ParserAction', 151, 57, 'C++ Parser', struct(
       defines=['PYTHON_INCLUDE=<python2.2/Python.h>', 'BOOST_PYTHON_SYNOPSIS'],
       name='C++',
+      basename='boost/',
       include_path=['boost', '/usr/include/python2.2'],
       main_file=1,
       verbose=0,
       emulate_compiler='g++-3.2',
       syntax_prefix='BoostLinks/',
-      xref_prefix='BoostXRef/'
+      xref_prefix='BoostXRef/',
+      multiple_files=1
     )],
     ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
     ['SourceAction', 50, 126, 'Test Source', [
