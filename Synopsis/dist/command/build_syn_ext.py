@@ -76,10 +76,10 @@ class build_syn_ext(build_ext):
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
             path = string.replace(self.build_temp, '\\', '/') + '/' + ext[0]
-            temp_target = string.replace(self.build_temp, '\\', '/') + '/' + target
+            temp_target = string.replace(self.build_temp, '\\', '/') + '/' + ext[0]
         else:
             path = os.path.join(self.build_temp, ext[0])
-            temp_target = os.path.join(self.build_temp, target)
+            temp_target = os.path.join(self.build_temp, ext[0])
         
         make = os.environ.get('MAKE', 'make')
 

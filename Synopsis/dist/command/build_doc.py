@@ -71,6 +71,7 @@ class build_doc(build.build):
 
       for e in [('Cxx-API', 'cxx-api')] + self.extensions:
 
+         if e[1] == 'wave': continue
          # replace <name>.so by <name>.syn
          api = os.path.splitext(e[1])[0] + '.syn'
          all = os.path.splitext(e[1])[0] + '-impl.syn'
@@ -84,8 +85,10 @@ class build_doc(build.build):
                        os.path.join(tempdir, api))):
             copy_file(os.path.join(build_ext.build_temp, e[0], api),
                       os.path.join(tempdir, api))
+         if os.path.exists(os.path.join(build_ext.build_temp, e[0], 'links')):
             copy_tree(os.path.join(build_ext.build_temp, e[0], 'links'),
                       os.path.join(tempdir, 'links'))
+         if os.path.exists(os.path.join(build_ext.build_temp, e[0], 'xref')):
             copy_tree(os.path.join(build_ext.build_temp, e[0], 'xref'),
                       os.path.join(tempdir, 'xref'))
          if (os.path.exists(os.path.join(build_ext.build_temp, e[0], all))
