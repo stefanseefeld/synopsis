@@ -3,15 +3,16 @@
 synopsis	:= ../../synopsis
 bpath		:= ../../..
 spath		:= syn
-cxxpath		:= ../../Parser/C++/occ/src/occ
+cxxpath		:= ../../../Synopsis/Parser/C++/occ/src/occ
 cxxspath	:= syn/Parser/C++
 
 F_HTML_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Formatter/HTML/*.py))
-PYFILES		:= Synopsis/Formatter/ASCII Synopsis/Formatter/DUMP \
-		   Synopsis/Core/AST Synopsis/Core/Type Synopsis/Core/Util \
-		   Synopsis/Parser/IDL/omni \
+F_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Formatter/*.py))
+C_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Core/*.py))
+L_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Linker/*.py))
+PYFILES		:= Synopsis/Parser/IDL/omni \
 		   Synopsis/Parser/Python/exparse Synopsis/Parser/Python/python \
-		   $(F_HTML_PYFILES)
+		   $(C_PYFILES) $(L_PYFILES) $(F_PYFILES) $(F_HTML_PYFILES)
 
 NOEX_PY		:= Synopsis/synopsis
 
