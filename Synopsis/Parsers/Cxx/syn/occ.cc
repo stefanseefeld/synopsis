@@ -304,7 +304,22 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 	    // declaring a new function in that scope and can be ignored in
 	    // the context of synopsis.
 	    return decl;
-        } else {
+        } else if (*encname == 'T') {
+	    // Template specialisation.
+	    // blah<int> is T.foo.i -> realname = foo<int>
+	    code encname_s(encname);
+	    initTypeDecoder(encname_s, enc_iter=encname_s.begin()+1, "");
+            realname = decodeName()+"<";
+            code_iter tend = enc_iter + *enc_iter++ - 0x80;
+	    bool first = true;
+	    // Append type names to realname
+            while (enc_iter <= tend) {
+		PyObject* type = decodeType();
+		if (!first) realname+=","; else first=false;
+		realname += PyString_AsString(PyObject_Str(type));
+	    }
+	    realname += ">";
+	} else {
 	    cout << "Warning: Unknown method name: " << encname << endl;
 	}
 

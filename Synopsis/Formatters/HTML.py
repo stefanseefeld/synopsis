@@ -9,7 +9,7 @@
 #   o NOTE: TOC also stores types for some reason. investigate.
 # . Unite Nodes/NamespaceBuilder into TOC
 
-import sys, getopt, os, os.path, string, types, errno, stat
+import sys, getopt, os, os.path, string, types, errno, stat, re
 from Synopsis import AST, Type, Util, Visitor
 
 # Set this to true if your name is Chalky :)
@@ -40,6 +40,9 @@ def desc(text):
     if not len(block): return ""
     block = map(lambda s: s.text()[3:], block)
     return div("desc", string.join(block, '\n'))
+def anglebrackets(text):
+    """Replace angle brackets with HTML codes"""
+    return re.sub('<','&lt;',re.sub('>','&gt;',text))
 
 class FileNamer:
     """A class that encapsulates naming files."""
@@ -442,10 +445,11 @@ class BaseFormatter(Visitor.AstVisitor):
     def label(self, ref, label=None):
 	"""Create a label for the given scoped reference name"""
 	if label is None: label = ref
+	# some labels are templates with <>'s
         entry = toc[ref]
-	if entry is None: return Util.ccolonName(label)
+        label = anglebrackets(Util.ccolonName(label, self.scope()))
+	if entry is None: return label #return Util.ccolonName(label)
 	location = entry.link
-        label = Util.ccolonName(label, self.scope())
 	index = string.find(location, '#')
 	if index >= 0: location = location[index+1:]
         return location and name(location, label) or label
@@ -494,7 +498,8 @@ class BaseFormatter(Visitor.AstVisitor):
         
     def visitModifier(self, type):
         alias = self.formatType(type.alias())
-	pre = string.join(map(lambda x:x+" ", type.premod()), '')
+	#pre = string.join(map(lambda x:x+" ", type.premod()), '')
+	pre = string.join(map(lambda x:x+"&nbsp;", type.premod()), '')
 	post = string.join(type.postmod(), '')
         self.__type_label = "%s%s%s"%(pre,alias,post)
             
@@ -1008,13 +1013,16 @@ class Paginator:
 	while len(name) and name[0] == '..': del name[0]
 	self.startFile(fname, string.join(name, os.sep))
 	self.write(entity('b', string.join(name, os.sep))+'<br>')
-	for name in node.decls.keys():
+	for name, decl in node.decls.items():
 	    # TODO make this nicer :)
 	    entry = toc[name]
 	    if not entry: print "no entry for",name
 	    else:
 		# Print link to declaration's page
-		self.write(div('href',href(entry.link,Util.ccolonName(name),target='main')))
+		if isinstance(decl, AST.Function):
+		    self.write(div('href',href(entry.link,anglebrackets(Util.ccolonName(decl.realname())),target='main')))
+		else:
+		    self.write(div('href',href(entry.link,Util.ccolonName(name),target='main')))
 		# Print comment
 		self.write(self.summarizer.getSummary(node.decls[name]))
 	    
