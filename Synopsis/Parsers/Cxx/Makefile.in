@@ -99,7 +99,7 @@ Makefile: $(srcdir)/Makefile.in
 $(HDR_SYN): %.syn: %
 	@echo parsing $^
 	mkdir -p $(dir $@)
-	$(synopsis) cxx --verbose --output=$@ $?
+	$(synopsis) cxx --output=$@ $?
 
 # Compile C++ .cc files
 $(CC_SYN): %.cc.syn: %.cc
