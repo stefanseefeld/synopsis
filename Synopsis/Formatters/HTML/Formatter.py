@@ -1,4 +1,4 @@
-# $Id: Formatter.py,v 1.4 2003/11/14 14:51:09 stefan Exp $
+# $Id: Formatter.py,v 1.5 2003/11/14 17:39:04 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -118,14 +118,15 @@ class Formatter(Processor):
       config.decl_style = DeclStyle()
       for f in self.comment_formatters:
          f.init(self)
-      config.comments = CommentFormatter(self)
+
+      self.comments = CommentFormatter(self)
 
       # Create the Class Tree (TODO: only if needed...)
-      config.classTree = ClassTree.ClassTree()
+      self.classTree = ClassTree.ClassTree()
 
       # Create the File Tree (TODO: only if needed...)
-      config.fileTree = FileTree()
-      config.fileTree.set_ast(ast)
+      self.fileTree = FileTree()
+      self.fileTree.set_ast(ast)
 
       # Build class tree
       for d in declarations:
@@ -194,6 +195,28 @@ class Formatter(Processor):
       ### FIXME : how should this work ?
       ### We need to point to one of the pages...
       return self.pages[1].get_toc(start)
+
+   def set_main_page(self, page):
+      """Call this method to set the main index.html page. First come first served
+      -- whatever module the user puts first in the list that sets this is
+      it."""
+
+      if not self.main_page:
+         self.main_page = page
+
+   def set_contents_page(self, page):
+      """Call this method to set the contents page. First come first served
+      -- whatever module the user puts first in the list that sets this is
+      it. This is the frame in the top-left if you use the default frameset."""
+
+      if not self.contents_page: self.contents_page = page
+    
+   def set_index_page(self, page):
+      """Call this method to set the index page. First come first served
+      -- whatever module the user puts first in the list that sets this is
+      it. This is the frame on the left if you use the default frameset."""
+
+      if not self.index_page: self.index_page = page
 
    def globalScope(self):
       "Return the global scope"

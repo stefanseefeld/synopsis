@@ -1,4 +1,4 @@
-# $Id: DirBrowse.py,v 1.10 2003/11/14 14:51:09 stefan Exp $
+# $Id: DirBrowse.py,v 1.11 2003/11/14 17:39:04 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,6 @@
 from Synopsis.Processor import Parametrized
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import os, stat, os.path, string, time
@@ -18,6 +17,8 @@ import os, stat, os.path, string, time
 class DirBrowse(Page):
    """A page that shows the entire contents of directories, in a form similar
    to LXR."""
+
+   exclude = Parameter([], 'TODO: define an exclusion mechanism (glob based ?)')
 
    def filename(self):
       """since FileTree generates a whole file hierarchy, this method returns the current filename,
@@ -46,12 +47,9 @@ class DirBrowse(Page):
 
       self.__filename = self.processor.file_layout.nameOfSpecial('dir')
       self.__title = 'Directory Listing'
-      self.__base = config.base_dir
-      self.__start = config.start_dir
-      self.__exclude_globs = config.exclude_globs
+      self.__start = self.__base = processor.output
       #if not self.__base: return
-      config.set_main_page(self.__filename)
-      self.__filename = self.processor.file_layout.nameOfSpecial('dir')
+      processor.set_main_page(self.__filename)
       self.processor.addRootPage(self.__filename, 'Files', 'main', 2)
 
    def register_filenames(self, start):
@@ -61,12 +59,12 @@ class DirBrowse(Page):
          dir = dirs.pop(0)
          for entry in os.listdir(os.path.abspath(dir)):
             # Check if entry is in exclude list
-            exclude = 0
-            for re in self.__exclude_globs:
-               if re.match(entry):
-                  exclude = 1
-            if exclude:
-               continue
+            #exclude = 0
+            #for re in self.__exclude_globs:
+            #   if re.match(entry):
+            #      exclude = 1
+            #if exclude:
+            #   continue
             entry_path = os.path.join(dir, entry)
             info = os.stat(entry_path)
             if not stat.S_ISDIR(info[stat.ST_MODE]):
@@ -122,12 +120,12 @@ class DirBrowse(Page):
       dirs = []
       for entry in entries:
          # Check if entry is in exclude list
-         exclude = 0
-         for re in self.__exclude_globs:
-            if re.match(entry):
-               exclude = 1
-         if exclude:
-            continue
+         #exclude = 0
+         #for re in self.__exclude_globs:
+         #   if re.match(entry):
+         #      exclude = 1
+         #if exclude:
+         #   continue
          entry_path = os.path.join(path, entry)
          info = os.stat(entry_path)
          if stat.S_ISDIR(info[stat.ST_MODE]):

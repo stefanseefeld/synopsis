@@ -1,4 +1,4 @@
-# $Id: Source.py,v 1.6 2003/11/14 14:51:09 stefan Exp $
+# $Id: Source.py,v 1.7 2003/11/14 17:39:04 stefan Exp $
 #
 # Copyright (C) 2000 Stephen Davies
 # Copyright (C) 2000 Stefan Seefeld
@@ -10,7 +10,6 @@
 from Synopsis.Processor import Parameter
 from Synopsis import AST, Util
 from Synopsis.Formatters.HTML.Page import Page
-from Synopsis.Formatters.HTML.core import config
 from Synopsis.Formatters.HTML.Tags import *
 
 import time, os
@@ -24,23 +23,14 @@ except ImportError:
 class FileSource(Page):
    """A module for creating a page for each file with hyperlinked source"""
 
+   links_path = Parameter('./%s-links', '')
+   scope = Parameter('', '')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
 
    def register(self, processor):
 
       Page.register(self, processor)
-      # Try old name first for backwards compatibility
-      if hasattr(config.obj, 'FilePages'): myconfig = config.obj.FilePages
-      else: myconfig = config.obj.FileSource
-      self.__linkpath = myconfig.links_path
-      self.__toclist = self.toc_in
-      self.__scope = myconfig.scope
-      # We will NOT be in the Manual directory  TODO - use FileLayout for this
-      self.__toclist = map(lambda x: ''+x, self.__toclist)
-      if hasattr(myconfig, 'use_toc'):
-         self.__tocfrom = myconfig.use_toc
-      else:
-         self.__tocfrom = config.default_toc
+      self.__toclist = map(lambda x: ''+x, self.toc_in)
 
    def filename(self):
       """since FileSource generates a whole file hierarchy, this method returns the current filename,
@@ -76,7 +66,7 @@ class FileSource(Page):
       for file in self.processor.ast.files().values():
          if file.is_main():
             filename = file.filename()
-            filename = os.path.join(config.base_dir, filename)
+            filename = os.path.join(self.processor.output, filename)
             filename = self.processor.file_layout.nameOfFileSource(filename)
             #print "Registering",filename
             self.processor.register_filename(filename, self, file)
@@ -86,7 +76,7 @@ class FileSource(Page):
 
       # Start page
       filename = file.filename()
-      filename = os.path.join(config.base_dir, filename)
+      filename = os.path.join(self.processor.output, filename)
       self.__filename = self.processor.file_layout.nameOfFileSource(filename)
       #name = list(node.path)
       #while len(name) and name[0] == '..': del name[0]
@@ -96,7 +86,6 @@ class FileSource(Page):
 
       # Massage toc list to prefix '../../.....' to any relative entry.
       prefix = rel(self.filename(), '')
-      toc_to_change = config.toc_out
       toclist = list(self.__toclist)
       for index in range(len(toclist)):
          if '|' not in toclist[index]:
@@ -118,10 +107,10 @@ class FileSource(Page):
          # Call link module
          f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
          f_in = file.full_filename()
-         f_link = self.__linkpath%source
+         f_link = self.linkpath%source
          #print "file: %s    link: %s    out: %s"%(f_in, f_link, f_out)
          try:
-            link.link(toclist, f_in, f_out, f_link, self.__scope) #, config.types)
+            link.link(toclist, f_in, f_out, f_link, self.scope) #, config.types)
          except link.error, msg:
             print "An error occurred:",msg
          try:
