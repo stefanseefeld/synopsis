@@ -7,16 +7,20 @@ all: html pdf
 html: Tutorial.xml
 	mkdir -p $@
 	cp $(srcdir)/synopsis.css $@
-	xsltproc --novalid -o $@/ $(srcdir)/html.xsl $^
+	xsltproc --novalid --xinclude -o $@/ $(srcdir)/html.xsl $^
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images
 
 pdf: Tutorial.pdf
 
-Tutorial.pdf: Tutorial.xml
-	docbook2pdf $^
+Tutorial.pdf: Tutorial.fo
+	fop $^ $@
+
+Tutorial.fo: Tutorial.xml
+	xsltproc --novalid --xinclude -o $@ $(srcdir)/fo.xsl $^
 
 clean:
+	rm Tutorial.fo
 
 distclean: clean
 	rm -rf html Tutorial.pdf
