@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.8 2002/09/28 06:17:01 chalky Exp $
+# $Id: Project.py,v 1.9 2002/10/27 12:08:25 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.9  2002/10/27 12:08:25  chalky
+# Add a project verbose flag, used by the Executor
+#
 # Revision 1.8  2002/09/28 06:17:01  chalky
 # Added is_project
 #
@@ -66,6 +69,7 @@ class Project:
 	self.__actions = ProjectActions(self)
 	self.__name = 'New Project'
 	self.__default_formatter = None
+	self.__verbose = 0
     def filename(self):
 	"Returns the filename of this project, or None if not set yet"
 	return self.__filename
@@ -77,6 +81,9 @@ class Project:
 
     def name(self): return self.__name
     def set_name(self, name): self.__name = name
+
+    def verbose(self): return self.__verbose
+    def set_verbose(self, verbose): self.__verbose = verbose
 
     def default_formatter(self): return self.__default_formatter
     def set_default_formatter(self, action):
@@ -265,6 +272,7 @@ class ProjectWriter (Util.PyWriter):
 	# write project stuff like name, base dir, etc here
 	self.write_attr('name', project.name())
 	self.write_attr('data_dir', project.data_dir())
+	self.write_attr('verbose', project.verbose())
 	self.write_item(project.actions())
 	dfm = project.default_formatter()
 	if dfm: self.write_attr('default_formatter', dfm.name())
@@ -325,6 +333,7 @@ class ProjectReader:
 	project = self.project
 	# Read project stuff like name
 	if hasattr(proj_obj, 'name'): project.set_name(proj_obj.name)
+	if hasattr(proj_obj, 'verbose'): project.set_verbose(proj_obj.verbose)
 	if hasattr(proj_obj, 'data_dir'): project.set_data_dir(proj_obj.data_dir)
 	self.read_ProjectActions(proj_obj)
 	if hasattr(proj_obj, 'default_formatter'):
