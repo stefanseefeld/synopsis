@@ -96,5 +96,5 @@ setup(cmdclass={'config':config,
                      'Topic :: Software Development :: Documentation'],
       packages=py_packages,
       ext_modules=ext_modules,
-      scripts=prefix(scripts, "bin/"),
+      scripts=prefix(scripts, "scripts/"),
       data_files=data_files)

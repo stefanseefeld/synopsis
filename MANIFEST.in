@@ -1,4 +1,3 @@
-# $Id: MANIFEST.in,v 1.5 2003/11/26 15:06:32 stefan Exp $
 #
 # MANIFEST template for source distribution generation
 #
@@ -8,7 +7,11 @@ include COPYING README MANIFEST.in setup.py autogen.sh
 # python modules
 recursive-include   Synopsis *.py
 
+# C++ API
+recursive-include   include *.hh
+
 # C/C++ extensions
+recursive-include   Synopsis/Parsers/Cpp *
 recursive-include   Synopsis/Parsers/C *
 recursive-include   Synopsis/Parsers/Cxx *
 
@@ -20,7 +23,10 @@ recursive-include   doc *
 recursive-include   demo *
 
 # scripts
-include             bin/*
+include             scripts/*
 
-# suppress CVS bookkeeping stuff
-global-exclude */CVS/*
+# unit tests
+recursive-include   tests *
+
+# suppress svn bookkeeping stuff
+global-exclude */.svn/*
