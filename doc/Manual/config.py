@@ -65,9 +65,9 @@ class Config (Base):
 		link_to_pages = 1
 	    class ScopePages (Base.Formatter.HTML.ScopePages):
 		summary_formatters = [
-		    ('Synopsis.Formatter.HTML.ASTFormatter','SummaryASTFormatter'),
-		    ('Synopsis.Formatter.HTML.ASTFormatter','SummaryASTCommenter'),
-		    ('Synopsis.Formatter.HTML.ASTFormatter','FilePageLinker'),
+		    'SummaryAST',
+		    'SummaryCommenter',
+		    'SourceLinker',
 		]
 	    class ModuleListing (Base.Formatter.HTML.ModuleListing):
 		child_types = ['Package']
@@ -81,7 +81,7 @@ class Config (Base):
 	    stylesheet_file = '../../demo/html-doxy.css'
 	    class ScopePages (Base.Formatter.HTML_Doxygen.ScopePages):
 		summary_formatters = Base.Formatter.HTML_Doxygen.ScopePages.summary_formatters
-		summary_formatters.insert(3,'FilePageLinker')
+		summary_formatters.insert(3,'SourceLinker')
 	    def __init__(self, argv):
 		Base.Formatter.HTML_Doxygen.__init__(self, argv)
 		# Import the config from HTML
