@@ -1,4 +1,4 @@
-/*$Id: GapBuffer.hh,v 1.5 2001/06/11 10:37:49 chalky Exp $
+/*$Id: GapBuffer.hh,v 1.6 2002/04/26 01:21:14 chalky Exp $
  *
  * This source file is a part of the Berlin Project.
  * Copyright (C) 1999 Stefan Seefeld <stefan@berlin-consortium.org> 
@@ -106,6 +106,7 @@ public:
   //. set the current position
   void position(size_type p) { shift(p - curs);}
   //.}
+  //. Insert an item
   void insert(value_type u)
     {
       editing();

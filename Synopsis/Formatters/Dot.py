@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.23 2002/01/09 11:43:41 chalky Exp $
+# $Id: Dot.py,v 1.24 2002/04/26 01:21:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: Dot.py,v $
+# Revision 1.24  2002/04/26 01:21:14  chalky
+# Bugs and cleanups
+#
 # Revision 1.23  2002/01/09 11:43:41  chalky
 # Inheritance pics
 #
@@ -241,14 +244,15 @@ class SingleInheritanceFormatter(InheritanceFormatter):
         self.__levels = levels
         self.__types = types
         self.__current = 1
+	self.__visited_classes = {} # classes already visited, to prevent recursion
 
     #################### Type Visitor ###########################################
 
     def visitDeclared(self, type):
         if self.__current < self.__levels or self.__levels == -1:
-            self.__current = self.__current + 1
-            type.declaration().accept(self)
-            self.__current = self.__current - 1
+	    self.__current = self.__current + 1
+	    type.declaration().accept(self)
+	    self.__current = self.__current - 1
         # to restore the ref/label...
         InheritanceFormatter.visitDeclared(self, type)
     #################### AST Visitor ############################################
@@ -262,6 +266,10 @@ class SingleInheritanceFormatter(InheritanceFormatter):
                 self.writeNode('', self.type_label(), color='gray75', fontcolor='gray75')
         
     def visitClass(self, node):
+	# Prevent recursion
+	if self.__visited_classes.has_key(id(node)): return
+	self.__visited_classes[id(node)] = None
+
         label = self.getClassName(node)
         if self.__current == 1:
             self.writeNode('', label, style='filled', color='lightgrey')
@@ -426,6 +434,7 @@ def _format_png(input, output):
     tmpout = output + ".gif"
     _format(input, tmpout, "gif")
     command = 'gif2png -O -d "%s"'%(tmpout)
+    command = 'gif2png -O "%s"'%(tmpout)
     if verbose: print "Dot Formatter: running command '" + command + "'"
     system(command)
     if verbose: print "Dot Formatter: renaming '" + tmpout[:-4] + ".png'", "to '" + output + "'"
@@ -477,10 +486,10 @@ def format(args, ast, config_obj):
         os.rename(tmpfile, output)
     elif oformat == "png":
         _format_png(tmpfile, output)
-        os.remove(tmpfile)
+        #os.remove(tmpfile)
     elif oformat == "html":
         _format_html(tmpfile, output)
-        os.remove(tmpfile)
+        #os.remove(tmpfile)
     else:
         _format(tmpfile, output, oformat)
         os.remove(tmpfile)

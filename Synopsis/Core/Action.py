@@ -1,4 +1,4 @@
-# $Id: Action.py,v 1.2 2001/11/07 05:58:21 chalky Exp $
+# $Id: Action.py,v 1.3 2002/04/26 01:21:13 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Action.py,v $
+# Revision 1.3  2002/04/26 01:21:13  chalky
+# Bugs and cleanups
+#
 # Revision 1.2  2001/11/07 05:58:21  chalky
 # Reorganised UI, opening a .syn file now builds a simple project to view it
 #
@@ -86,21 +89,39 @@ class SourceAction (Action):
 	Action.__init__(self, x, y, name)
 	self.__paths = []
     def paths(self):
-	"""Returns a list of paths. Each path is a Path object with a path or
+	"""Returns a list of paths. Each path is a SourcePath object with a path or
 	dir+glob combination of the source files to load."""
 	return self.__paths
     def accept(self, visitor): return visitor.visitSource(self)
 
 class ParserAction (Action):
-    """A Synopsis Action that parses source files"""
+    """A Synopsis Action that parses source files.
+    
+    Each parser object has a config object, which is passed to the Parser
+    module. For a default config object, use Synopsis.Config.Base.xxx where
+    xxx is the Parser module."""
     def __init__(self, x, y, name):
 	Action.__init__(self, x, y, name)
+	self.__config = None
+    def config(self):
+	"""Returns the config object for this Parser"""
+	return self.__config
+    def set_config(self, config):
+	"""Sets the config object for this Parser."""
+	self.__config = config
     def accept(self, visitor): return visitor.visitParser(self)
 
 class LinkerAction (Action):
     """A Synopsis Action that links ASTs"""
     def __init__(self, x, y, name):
 	Action.__init__(self, x, y, name)
+	self.__config = None
+    def config(self):
+	"""Returns the config object for this Linker"""
+	return self.__config
+    def set_config(self, config):
+	"""Sets the config object for this Linker."""
+	self.__config = config
     def accept(self, visitor): return visitor.visitLinker(self)
 
 class CacherAction (Action):
@@ -116,6 +137,13 @@ class FormatAction (Action):
     """A Synopsis Action that formats ASTs into other media"""
     def __init__(self, x, y, name):
 	Action.__init__(self, x, y, name)
+	self.__config = None
+    def config(self):
+	"""Returns the config object for this Formatter"""
+	return self.__config
+    def set_config(self, config):
+	"""Sets the config object for this Formatter."""
+	self.__config = config
     def accept(self, visitor): return visitor.visitFormat(self)
 
 

@@ -1,4 +1,4 @@
-# $Id: Comments.py,v 1.12 2002/04/25 23:54:09 chalky Exp $
+# $Id: Comments.py,v 1.13 2002/04/26 01:21:14 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Comments.py,v $
+# Revision 1.13  2002/04/26 01:21:14  chalky
+# Bugs and cleanups
+#
 # Revision 1.12  2002/04/25 23:54:09  chalky
 # Fixed bug caused by new re module in python 2.1 handling groups differently
 #
@@ -289,18 +292,39 @@ class Grouper (Transformer):
         comments are associated with it, and is pushed onto the scope stack as well as the groups stack.
         """
         comments = []
-        for c in decl.comments():
-            if self.re_open.findall(c.text()):
-                label = string.strip(c.text()[string.find(c.text(), '{') + 1:])
+	process_comments = decl.comments()
+	while len(process_comments):
+	    c = process_comments.pop(0)
+	    open_mo = self.re_open.search(c.text())
+	    if open_mo:
+		# Open group. Name is remainder of line
+                label = open_mo.group(1)
+		# The comment before the { becomes the group comment
+		if open_mo.start() > 0:
+		    text = c.text()[:open_mo.start()]
+		    comments.append(AST.Comment(text, c.file(), c.line()))
                 group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
                 comments = []
+		# The comment after the { becomes the next comment to process
+		if open_mo.end() < len(c.text()):
+		    text = c.text()[open_mo.end()+1:]
+		    process_comments.insert(0, AST.Comment(text, c.file(), c.line()))
                 self.push()
                 self.__groups.append(group)
-            elif self.re_close.findall(c.text()):
+		continue
+	    close_mo = self.re_close.search(c.text())
+            if close_mo:
+		# Fixme: the close group doesn't handle things as well as open
+		# does!
                 group = self.__groups.pop()
                 group.declarations()[:] = self.currscope()
                 self.pop(group)
+		# The comment before the } is ignored...? maybe post-comment?
+		# The comment after the } becomes the next comment to process
+		if close_mo.end() < len(c.text()):
+		    text = c.text()[close_mo.end()+1:]
+		    process_comments.insert(0, AST.Comment(text, c.file(), c.line()))
             else: comments.append(c)
         decl.comments()[:] = comments
 	self.add(decl)

@@ -9,17 +9,28 @@ Executor class.
 import string, re, os, stat
 
 from Action import ActionVisitor
+from Synopsis.Core import Util
 import AST
 
 
 class Executor:
-    """Base class for executor classes"""
-    def get_output_names(self): pass # --> list of (name, timestamp)'s
+    """Base class for executor classes, defining the common interface between
+    each executor instance."""
+    def get_output_names(self):
+	"""Returns a list of (name, timestamp) tuples, representing the output
+	from this executor. The names must be given to get_output in turn to
+	retrieve the AST objects, and the timestamp may be used for build
+	control."""
+	pass
 
-    def get_output(self, name): pass # --> AST
+    def get_output(self, name):
+	"""Returns the AST object for the given name. Name must one returned
+	from the 'get_output_names' method."""
+	pass
 
     
 class ExecutorCreator (ActionVisitor):
+    """Creates Executor instances for Action objects"""
     def __init__(self, project):
 	self.__project = project
 
@@ -126,7 +137,28 @@ class ParserExecutor (Executor):
 	return names
 
     def get_output(self, name):
-	print "parsing "+name
+	config = self.__action.config()
+	parser = self.get_parser()
+	# Do the parse
+	print "Synopsis: parsing", name
+	ast = parser.parse(name, [], config)
+	# Return the parsed AST
+	return ast
+
+    def get_parser(self):
+	"""Returns the parser module, using the module name stored in the
+	Action object. If the module cannot be loaded, this method will raise
+	an exception."""
+	module = self.__action.config().name
+	try:
+	    parser = Util._import("Synopsis.Parser." + module)
+	except ImportError:
+	    # TODO: invent some exception to pass up
+	    sys.stderr.write(cmdname + ": Could not import parser `" + name + "'\n")
+	    sys.exit(1)
+	return parser
+
+
 		
 class LinkerExecutor (Executor):
     def __init__(self, executor, action):
@@ -136,13 +168,37 @@ class LinkerExecutor (Executor):
     def get_output_names(self):
 	"""Links multiple ASTs together, and/or performs other manipulative
 	actions on a single AST."""
-	# Get input AST(s), probably from a cacher, source or other linker
-	# Pass AST(s) to linker
-	# Output AST
-	pass
+	# TODO: figure out timestamp based on input timestamps
+	return [ ('', 0) ]
 
     def get_output(self, name):
-	pass
+	# Get input AST(s), probably from a cacher, source or other linker
+	ast = AST.AST()
+	for input in self.__action.inputs():
+	    exec_obj = self.__executor.create(input)
+	    names = exec_obj.get_output_names()
+	    for name, timestamp in names:
+		input_ast = exec_obj.get_output(name)
+		ast.merge(input_ast)
+	# Pass merged AST to linker
+	module = self.get_linker()
+	module.resolve([], ast, self.__action.config())
+	# Return linked AST
+	return ast
+
+    def get_linker(self):
+	"""Returns the linker module, using the module name stored in the
+	Action object. If the module cannot be loaded, this method will raise
+	an exception."""
+	module = self.__action.config().name
+	try:
+	    linker = Util._import("Synopsis.Linker." + module)
+	except ImportError:
+	    # TODO: invent some exception to pass up
+	    sys.stderr.write(cmdname + ": Could not import linker `" + name + "'\n")
+	    sys.exit(1)
+	return linker
+
 
 class CacherExecutor (Executor):
     def __init__(self, executor, action):
@@ -188,8 +244,14 @@ class FormatExecutor (Executor):
     def get_output(self, name):
 	# Get input AST, probably from a cache or linker
 	ast = self.__input_exec.get_output(name)
+	module = self.__action.config().name
 	# Pass AST to formatter
-	print "Formatting ",name
+	try:
+	    formatter = Util._import("Synopsis.Formatter." + module)
+	except ImportError:
+	    sys.stderr.write(cmdname + ": Could not import formatter `" + module + "'\n")
+	    sys.exit(1)
+	formatter.format([], ast, self.__action.config())
 	# Finalize AST (incl. maybe write to disk with timestamp info)
 	return None
     

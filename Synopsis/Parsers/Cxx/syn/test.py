@@ -25,10 +25,12 @@ class Test:
 	f.close()
 	return self.do_run(test_file, test_base)
     def do_run(self, test_file, test_base, flags=""):
-	global gdb
+	global gdb, dump
 	flags = flags + self.flags
 	if gdb:
 	    return not self.gdb_less(test_file, flags)
+	elif dump:
+	    return not self.dump_less(test_file, flags)
 	else:
 	    return not self.view_page(test_file, test_base, flags)
     def system(self, command):
@@ -36,6 +38,11 @@ class Test:
 	return ret >> 8
     def gdb_less(self, test_file, flags = ""):
 	return self.system("make debug && echo './occ.gdb %s %s' && ./occ.gdb %s %s 2>&1 | less"%(flags, test_file, flags, test_file))
+    def dump_less(self, test_file, flags = ""):
+	return self.system("make && "\
+	"echo synopsis -v -Wc,parser=C++,formatter=DUMP %(flags)s %(test_file)s &&"\
+	"synopsis -v -Wc,parser=C++,formatter=DUMP -Wf,-d,-t,-f %(flags)s %(test_file)s "\
+	"2>&1 | less -r"%vars())
     def view_page(self, file, base, flags=""):
 	f = open("/tmp/%s.top"%base, "w")
 	f.write(html_top)
@@ -50,6 +57,21 @@ class Test:
 	    "(cat /tmp/%(base)s.top /tmp/%(base)s.html.out > /tmp/%(base)s.html) && "\
 	    "web /tmp/%(base)s.html && "\
 	    "echo rm /tmp/%(base)s.{links,syn,html.out,top}"%vars() )
+
+class Comments (Test):
+    test = """
+// 1. One line cpp test
+
+// 2. Two line cpp test
+// Second line of test
+
+/* 3. One line c test */
+/* 4. Another c test */
+/* 5. Two on one */ /* 6. line */
+/* 7. Multi
+ * line
+ */
+"""
 
 class IfTest (Test):
     test = """
@@ -384,6 +406,9 @@ if __name__ == "__main__":
 	    if arg[1] == 'g':
 		global gdb
 		gdb = 1
+	    elif arg == '--dump':
+		global dump
+		dump = 1
 	    else:
 		print "Unknown argument:",arg
 	else:
