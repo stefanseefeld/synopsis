@@ -887,7 +887,7 @@ StructDef::print(std::ostream& out, Symbol *name, int level) const
         out << "struct ";
 
     if (tag)
-        out << *tag;
+        out << *tag << " ";
 
     out << "{\n"; 
 
@@ -1128,9 +1128,11 @@ void
 EnumDef::print(std::ostream& out, Symbol*, int level) const
 {
     if (tag)
-        out << *tag;
+	{
+        out << *tag << " ";
+	}
 
-    out << " { "; 
+   	out << "{ "; 
 
     if (nElements > 0)
     {
