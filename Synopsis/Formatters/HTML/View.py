@@ -1,4 +1,4 @@
-# $Id: View.py,v 1.2 2001/02/01 15:23:24 chalky Exp $
+# $Id: View.py,v 1.3 2001/02/05 05:26:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: View.py,v $
+# Revision 1.3  2001/02/05 05:26:24  chalky
+# Graphs are separated. Misc changes
+#
 # Revision 1.2  2001/02/01 15:23:24  chalky
 # Copywritten brown paper bag edition.
 #
@@ -55,7 +58,7 @@ class Page:
 	it ;)"""
 	print "Processing",start
 	
-    def startFile(self, filename, title, body='<body>'):
+    def startFile(self, filename, title, body='<body>', headextra=''):
 	"""Start a new file with given filename, title and body. This method
 	opens a file for writing, and writes the html header crap at the top.
 	You must specify a title, which is prepended with the project name.
@@ -69,6 +72,7 @@ class Page:
 	self.write(entity('title','Synopsis - '+title))
 	if len(config.stylesheet):
 	    self.write(entity('link', '', rel='stylesheet', href=config.stylesheet))
+	self.write(headextra)
 	self.write("</head>%s\n"%body)
     
     def endFile(self, body='</body>'):

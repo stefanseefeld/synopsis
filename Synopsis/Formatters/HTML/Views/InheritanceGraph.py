@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.1 2001/02/01 20:09:18 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.2 2001/02/05 05:26:24 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.2  2001/02/05 05:26:24  chalky
+# Graphs are separated. Misc changes
+#
 # Revision 1.1  2001/02/01 20:09:18  chalky
 # Initial commit.
 #
@@ -33,11 +36,35 @@
 
 import os
 
-from Synopsis.Core import Util
+from Synopsis.Core import AST, Type, Util
 
 import core, Page
 from core import config
 from Tags import *
+
+class ToDecl (Type.Visitor):
+    def __call__(self, name):
+	try:
+	    typeobj = config.types[name]
+	except KeyError:
+	    print "Warning: %s not found in types dict."%(name,)
+	    return AST.Declaration('',-1,'','',name)
+	self.__decl = None
+	typeobj.accept(self)
+	if self.__decl is None:
+	    print "Warning: Can't derive a declaration from %s : %s."%(name, typeobj.__class__)
+	    return AST.Declaration('',-1,'','',name)
+	return self.__decl
+	    
+    def visitBaseType(self, type): return
+    def visitUnknown(self, type): return
+    def visitDeclared(self, type): self.__decl = type.declaration()
+    def visitModifier(self, type): type.alias().accept(self)
+    def visitArray(self, type): type.alias().accept(self)
+    def visitTemplate(self, type): self.__decl = type.declaration()
+    def visitParametrized(self, type): type.template().accept(self)
+    def visitFunctionType(self, type): return
+	
 
 class InheritanceGraph(Page.Page):
     def __init__(self, manager):
@@ -45,46 +72,43 @@ class InheritanceGraph(Page.Page):
 	self.__filename = config.files.nameOfSpecial('classgraph')
 	link = href(self.__filename, 'Inheritance Graph', target='main')
 	manager.addRootPage('Inheritance Graph', link, 1)
+	self.__todecl = ToDecl()
  
+
     def process(self, start):
 	"""Creates a file with the inheritance graph"""
 	self.startFile(self.__filename, "Synopsis - Class Hierarchy")
-	self.write(entity('h1', "Inheritance Tree"))
+	self.write(self.manager.formatRoots('')+'<hr>')
+	self.write(entity('h1', "Inheritance Graph"))
 
 	from Synopsis.Formatter import Dot
-	output = self.__filename+"-dot"
-	config.toc.store(output+".toc")
-	args = ('-i','-f','html','-o',output,'-r',output+'.toc','-t','Synopsis')
-	Dot.format(config.types, [start], args)
-	dot_file = open(output+'.html', 'r')
-	self.write(dot_file.read())
-	dot_file.close()
-	os.remove(output + ".html")
-	os.remove(output + ".toc")
+	graphs = config.classTree.graphs()
+	count = 0
+	lensorter = lambda a, b: cmp(len(b),len(a))
+	graphs.sort(lensorter)
+	for graph in graphs:
+	    try:
+		if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
+		# Find declarations
+		declarations = map(self.__todecl, graph)
+		# Call Dot formatter
+		output = self.__filename+"-dot%s"%count
+		config.toc.store(output+".toc")
+		args = ('-i','-f','html','-o',output,'-r',output+'.toc','-t','Synopsis %s'%count)
+		Dot.format(config.types, declarations, args)
+		dot_file = open(output+'.html', 'r')
+		self.write(dot_file.read())
+		dot_file.close()
+		os.remove(output + ".html")
+		os.remove(output + ".toc")
+	    except:
+		import traceback
+		traceback.print_exc()
+		print "Graph:",graph
+		print "Declarations:",declarations
+	    count = count + 1
 
-	self.endFile()   
+	self.endFile() 
 
-
-    def old(self):
-	from Synopsis.Formatter import Dot
-	output = self.__filename
-	if output[-5:] == ".html": output = output[:-5]
-	input = output+".html.dot"
-	config.toc.store(output+".toc")
-	args = ('-i','-f','dot','-o',input,'-r',output+'.toc','-t','Synopsis')
-	Dot.format(config.types, [start], args)
-	Dot._format_png(input, output + ".png")
-	Dot._format(input, output + ".map", "imap")
-	label = 'ClassGraph'
-	self.write("<img src=\"" + output + ".png\" border=\"0\" usemap=\"#")
-	self.write(label + "_map\">\n")
-	self.write("<map name=\"" + label + "_map\">\n")
-	dotmap = open(output + ".map", "r+")
-	Dot._convert_map(dotmap, self.os())
-	dotmap.close()
-	os.remove(output + ".map")
-	self.write("</map>\n")
-
-	self.endFile()   
 
 htmlPageClass = InheritanceGraph
