@@ -20,9 +20,9 @@ RANLIB =
 
 CFLAGS = -O2
 #CXXFLAGS = -O2 -I..
-CXXFLAGS = -Wall -I..
+CXXFLAGS = -Wall -I.. -g
 GCLIB = ../gc/gc.a
-LDFLAGS = # -export-dynamic	# for GNU ld
+LDFLAGS = -g # -export-dynamic	# for GNU ld
 LIB =# -ldl			# Linux
 PYLIB = -lpython1.5 -ldl -lpthread
 

@@ -314,6 +314,7 @@ class BaseFormatter:
     def reference(self, ref, label, **keys):
         """reference takes two strings, a reference (used to look up the symbol and generated the reference),
         and the label (used to actually write it)"""
+	if ref is None: return label
         info = toc.lookup(ref)
 	if info is None: return span('type', label)
         return apply(href, (info.link, label), keys)
@@ -379,9 +380,11 @@ class BaseFormatter:
         self.__type_ref = Util.ccolonName(type.name())
         
     def visitModifier(self, type):
-        type.alias().accept(self)
-        self.__type_ref = type.premod() + " " + self.__type_ref + " " + type.postmod()
-        self.__type_label = type.premod() + " " + self.__type_label + " " + type.postmod()
+        alias = self.formatType(type.alias())
+	pre = string.join(map(lambda x:x+" ", type.premod()), '')
+	post = string.join(type.postmod(), '')
+	self.__type_ref = None
+        self.__type_label = "%s%s%s"%(pre,alias,post)
             
     def visitParametrized(self, type):
         type.template().accept(self)
@@ -440,6 +443,9 @@ class BaseFormatter:
     def visitOperation(self, oper):
 	premod = self.formatModifiers(oper.premodifier())
 	type = self.formatType(oper.returnType())
+	if oper.language() == 'C++':
+	    if oper.name()[-1] == oper.name()[-2]: type = '<i>constructor</i>'
+	    elif oper.name()[-1] == "~ "+oper.name()[-2]: type = '<i>destructor</i>'
 	name = self.label(oper.name())
 	params = self.formatParameters(oper.parameters())
 	postmod = self.formatModifiers(oper.postmodifier())
