@@ -21,11 +21,11 @@
 // Forward declarations
 class Builder; class Program;
 class Decoder; class TypeFormatter;
-class LinkStore;
+class LinkStore; class Lookup;
 
 namespace AST { class Parameter; class Inheritance; class Declaration; 
     class Operation; class Scope; }
-namespace Type { class Type; }
+namespace Types { class Type; }
 
 //. A walker that creates an AST. All Translate* methods have been overridden
 //. to remove the translation code.
@@ -76,7 +76,7 @@ public:
     // Takes the (maybe nil) args list and puts them in m_params
     void TranslateFunctionArgs(Ptree* args);
     void TranslateParameters(Ptree* p_params, std::vector<AST::Parameter*>& params);
-    void TranslateFunctionName(char* encname, std::string& realname, Type::Type*& returnType);
+    void TranslateFunctionName(char* encname, std::string& realname, Types::Type*& returnType);
     virtual Ptree* TranslateDeclarator(Ptree*);
     void TranslateTypedefDeclarator(Ptree* node);
     std::vector<AST::Inheritance*> TranslateInheritanceSpec(Ptree *node);
@@ -178,6 +178,7 @@ private:
     Program* m_program;
     Builder* m_builder;
     Decoder* m_decoder;
+    Lookup* m_lookup;
 
     PtreeDeclaration* m_declaration;
     //. This pointer is used as a comparison to avoid creating new strings
@@ -210,9 +211,9 @@ private:
     //. here.
     std::vector<AST::Parameter*> m_param_cache;
     //. The types accumulated for function parameters in function calls
-    std::vector<Type::Type*> m_params;
+    std::vector<Types::Type*> m_params;
     //. The type returned from the expression-type translators
-    Type::Type* m_type;
+    Types::Type* m_type;
     //. The Scope to use for name lookups, or NULL to use enclosing default
     //. scope rules. This is for when we are at a Variable, and already know it
     //. must be part of a given class (eg, foo->bar .. bar must be in foo's

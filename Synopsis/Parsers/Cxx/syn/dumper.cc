@@ -1,6 +1,7 @@
 // File: dumper.cc
 
 
+#include "common.hh"
 #include "dumper.hh"
 #include <iostream>
 
@@ -14,15 +15,15 @@ TypeFormatter::TypeFormatter()
 {
 }
 
-void TypeFormatter::setScope(const AST::Name& scope) {
+void TypeFormatter::setScope(const ScopedName& scope) {
     m_scope = scope;
 }
 
-std::string TypeFormatter::colonate(const AST::Name& name)
+std::string TypeFormatter::colonate(const ScopedName& name)
 {
     std::string str;
-    AST::Name::const_iterator n_iter = name.begin();
-    AST::Name::const_iterator s_iter = m_scope.begin();
+    ScopedName::const_iterator n_iter = name.begin();
+    ScopedName::const_iterator s_iter = m_scope.begin();
     // Skip identical scopes
     while ((n_iter != name.end()) && (s_iter != m_scope.end()) && (*n_iter == *s_iter))
 	++n_iter, ++s_iter;
@@ -41,28 +42,28 @@ std::string TypeFormatter::colonate(const AST::Name& name)
 // Type Visitor
 //
 
-std::string TypeFormatter::format(const Type::Type* type)
+std::string TypeFormatter::format(const Types::Type* type)
 {
     if (!type) return "(unknown)";
-    const_cast<Type::Type*>(type)->accept(this);
+    const_cast<Types::Type*>(type)->accept(this);
     return m_type;
 }
 
-void TypeFormatter::visitType(Type::Type* type)
+void TypeFormatter::visit_type(Types::Type* type)
 {
     m_type = "(unknown)";
 }
 
-void TypeFormatter::visitUnknown(Type::Unknown* type)
+void TypeFormatter::visit_unknown(Types::Unknown* type)
 {
     m_type = colonate(type->name());
 }
 
-void TypeFormatter::visitModifier(Type::Modifier* type)
+void TypeFormatter::visit_modifier(Types::Modifier* type)
 {
     // Premods
     std::string pre = "";
-    Type::Type::Mods::iterator iter = type->pre().begin();
+    Types::Type::Mods::iterator iter = type->pre().begin();
     while (iter != type->pre().end())
 	pre += *iter++ + " ";
     // Alias
@@ -73,48 +74,48 @@ void TypeFormatter::visitModifier(Type::Modifier* type)
 	m_type += " " + *iter++;
 }
 
-void TypeFormatter::visitNamed(Type::Named* type)
+void TypeFormatter::visit_named(Types::Named* type)
 {
     m_type = colonate(type->name());
 }
 
-void TypeFormatter::visitBase(Type::Base* type)
+void TypeFormatter::visit_base(Types::Base* type)
 {
     m_type = colonate(type->name());
 }
 
-void TypeFormatter::visitDeclared(Type::Declared* type)
+void TypeFormatter::visit_declared(Types::Declared* type)
 {
     m_type = colonate(type->name());
 }
 
-void TypeFormatter::visitTemplateType(Type::Template* type)
+void TypeFormatter::visit_template_type(Types::Template* type)
 {
     m_type = colonate(type->name());
 }
 
-void TypeFormatter::visitParameterized(Type::Parameterized* type)
+void TypeFormatter::visit_parameterized(Types::Parameterized* type)
 {
     std::string str;
-    if (type->templateType())
-	str = colonate(type->templateType()->name()) + "<";
+    if (type->template_type())
+	str = colonate(type->template_type()->name()) + "<";
     else
 	str = "(unknown)<";
     if (type->parameters().size()) {
 	str += format(type->parameters().front());
-	Type::Type::vector_t::iterator iter = type->parameters().begin();
+	Types::Type::vector::iterator iter = type->parameters().begin();
 	while (++iter != type->parameters().end())
 	    str += "," + format(*iter);
     }
     m_type = str + ">";
 }
 
-void TypeFormatter::visitFuncPtr(Type::FuncPtr* type)
+void TypeFormatter::visit_func_ptr(Types::FuncPtr* type)
 {
     std::string str = "(*)(";
     if (type->parameters().size()) {
 	str += format(type->parameters().front());
-	Type::Type::vector_t::iterator iter = type->parameters().begin();
+	Types::Type::vector::iterator iter = type->parameters().begin();
 	while (++iter != type->parameters().end())
 	    str += "," + format(*iter);
     }
@@ -155,16 +156,6 @@ void Dumper::undent()
     m_indent_string.assign(m_indent, ' ');
 }
 
-static std::string join(const std::vector<std::string>& strs, std::string sep = " ")
-{
-    std::vector<std::string>::const_iterator iter = strs.begin();
-    if (iter == strs.end()) return "";
-    std::string str = *iter++;
-    while (iter != strs.end())
-	str += sep + *iter++;
-    return str;
-}
-
 std::string append(const std::vector<std::string>& strs, const std::string &sep = " ")
 {
     std::vector<std::string>::const_iterator iter = strs.begin();
@@ -175,11 +166,11 @@ std::string append(const std::vector<std::string>& strs, const std::string &sep 
 }
 
 //. Utility method
-// string colonate(const Type::Name& name)
+// string colonate(const Types::Name& name)
 // {
 //     if (!name.size()) return "";
 //     string str = name[0];
-//     Type::Name::const_iterator iter = name.begin();
+//     Types::Name::const_iterator iter = name.begin();
 //     while (++iter != name.end())
 // 	str += "::" + *iter;
 //     return str;
@@ -196,18 +187,6 @@ void Dumper::visit(const std::vector<AST::Declaration*>& decls)
     for (; iter != end; ++iter)
 	if (!m_filename.size() || (*iter)->filename() == m_filename)
 	    (*iter)->accept(this);
-}
-
-namespace {
-    std::ostream& operator << (std::ostream& os, const AST::Name& name)
-    {
-	AST::Name::const_iterator iter = name.begin(), end = name.end();
-	if (iter == end) { os << "<global>"; return os; }
-	os << (*iter++);
-	while (iter != end)
-	    os << "::" << (*iter++);
-	return os;
-    }
 }
 
 void Dumper::visit(const std::vector<AST::Comment*>& comms)
@@ -231,20 +210,20 @@ std::string Dumper::formatParam(AST::Parameter* param)
     return str;
 }
 
-void Dumper::visitDeclaration(AST::Declaration* decl)
+void Dumper::visit_declaration(AST::Declaration* decl)
 {
     visit(decl->comments());
     if (decl->type() == "dummy") return;
     std::cout << m_indent_string << "DECL " << decl->name() << std::endl;
 }
 
-void Dumper::visitScope(AST::Scope* scope)
+void Dumper::visit_scope(AST::Scope* scope)
 {
     // Generally the File scope..
     visit(scope->declarations());
 }
 
-void Dumper::visitNamespace(AST::Namespace* ns)
+void Dumper::visit_namespace(AST::Namespace* ns)
 {
     visit(ns->comments());
     std::cout << m_indent_string << "namespace " << ns->name() << " {" << std::endl;
@@ -256,15 +235,15 @@ void Dumper::visitNamespace(AST::Namespace* ns)
     std::cout << m_indent_string << "}" << std::endl;
 }
 
-void Dumper::visitClass(AST::Class* clas)
+void Dumper::visit_class(AST::Class* clas)
 {
     visit(clas->comments());
-    if (clas->templateType()) {
+    if (clas->template_type()) {
 	m_scope.push_back(clas->name().back());
-	Type::Template* templ = clas->templateType();
+	Types::Template* templ = clas->template_type();
 	std::cout << m_indent_string << "template<";
 	std::vector<std::string> names;
-	Type::Type::vector_t::iterator iter = templ->parameters().begin();
+	Types::Type::vector::iterator iter = templ->parameters().begin();
 	while (iter != templ->parameters().end())
 	    names.push_back(format(*iter++));
 	std::cout << join(names, ", ") << ">" << std::endl;
@@ -293,20 +272,20 @@ void Dumper::visitClass(AST::Class* clas)
 // ie: constructor or destructor
 bool isStructor(const AST::Function* func)
 {
-    const AST::Name& name = func->name();
+    const ScopedName& name = func->name();
     if (name.size() < 2) return false;
     std::string realname = func->realname();
     if (realname[0] == '~') return true;
-    AST::Name::const_iterator second_last;
+    ScopedName::const_iterator second_last;
     second_last = name.end() - 2;
     return (realname == *second_last);
 }
 
-void Dumper::visitOperation(AST::Operation* oper)
+void Dumper::visit_operation(AST::Operation* oper)
 {
     visit(oper->comments());
     std::cout << m_indent_string;
-    if (!isStructor(oper)) std::cout << format(oper->returnType()) + " ";
+    if (!isStructor(oper)) std::cout << format(oper->return_type()) + " ";
     std::cout << oper->realname() << "(";
     if (oper->parameters().size()) {
 	std::cout << formatParam(oper->parameters().front());
@@ -317,19 +296,19 @@ void Dumper::visitOperation(AST::Operation* oper)
     std::cout << ");" << std::endl;
 }
 
-void Dumper::visitVariable(AST::Variable* var)
+void Dumper::visit_variable(AST::Variable* var)
 {
     visit(var->comments());
     std::cout << m_indent_string << format(var->vtype()) << " " << var->name().back() << ";" << std::endl;
 }
 
-void Dumper::visitTypedef(AST::Typedef* tdef)
+void Dumper::visit_typedef(AST::Typedef* tdef)
 {
     visit(tdef->comments());
     std::cout << m_indent_string << "typedef " << format(tdef->alias()) << " " << tdef->name().back() << ";" << std::endl;
 }
 
-void Dumper::visitEnum(AST::Enum* decl)
+void Dumper::visit_enum(AST::Enum* decl)
 {
     visit(decl->comments());
     std::cout << m_indent_string << "enum " << decl->name().back() << "{" << std::endl;
@@ -341,7 +320,7 @@ void Dumper::visitEnum(AST::Enum* decl)
     std::cout << m_indent_string << "};" << std::endl;
 }
 
-void Dumper::visitEnumerator(AST::Enumerator* enumor)
+void Dumper::visit_enumerator(AST::Enumerator* enumor)
 {
     visit(enumor->comments());
     if (enumor->type() == "dummy") return;

@@ -1,116 +1,109 @@
+// vim: set ts=8 sts=2 sw=2 et:
 // File: type.cc
 
 #include "type.hh"
 
-/*
-using Type::Named;
-using Type::Base;
-using Type::Unknown;
-using Type::Declared;
-using Type::Template;
-using Type::Modifier;
-using Type::Visitor;
-using Type::Parameterized;
-using Type::FuncPtr;
-*/
+using namespace Types;
 
-Type::Type::Type() {}
-Type::Type::~Type() {}
-void Type::Type::accept(Visitor* visitor)
+Type::Type() { }
+Type::~Type() { }
+
+void
+Type::accept(Visitor* visitor)
 {
-    visitor->visitType(this);
+  visitor->visit_type(this);
 }
 
-using namespace Type;
-
-Named::Named(const Name &n)
-    : m_name(n)
-{
-}
+Named::Named(const ScopedName& n)
+: m_name(n)
+{ }
 
 void Named::accept(Visitor* visitor)
 {
-    visitor->visitNamed(this);
+  visitor->visit_named(this);
 }
 
-Base::Base(const Name &n)
-    : Named(n)
+Base::Base(const ScopedName& n)
+: Named(n)
+{ }
+
+
+void
+Base::accept(Visitor* visitor)
 {
+  visitor->visit_base(this);
 }
 
-
-void Base::accept(Visitor* visitor)
-{
-    visitor->visitBase(this);
-}
-
-Unknown::Unknown(const Name &n)
-    : Named(n)
-{
-}
+Unknown::Unknown(const ScopedName& n)
+: Named(n)
+{ }
 
 
 void Unknown::accept(Visitor* visitor)
 {
-    visitor->visitUnknown(this);
+  visitor->visit_unknown(this);
 }
 
-Declared::Declared(const Name &n, AST::Declaration* decl)
-    : Named(n), m_decl(decl)
+Declared::Declared(const ScopedName& n, AST::Declaration* decl)
+: Named(n), m_decl(decl)
+{ }
+
+
+void
+Declared::accept(Visitor* visitor)
 {
+  visitor->visit_declared(this);
 }
 
+Template::Template(const ScopedName& n, AST::Declaration* decl, const Type::vector& params)
+: Declared(n, decl), m_params(params)
+{ }
 
-void Declared::accept(Visitor* visitor)
+
+void
+Template::accept(Visitor* visitor)
 {
-    visitor->visitDeclared(this);
+  visitor->visit_template_type(this);
 }
 
-Template::Template(const Name &n, AST::Declaration* decl, const Type::vector_t& params)
-    : Declared(n, decl), m_params(params)
+Modifier::Modifier(Type* alias, const Mods& pre, const Mods& post)
+: m_alias(alias), m_pre(pre), m_post(post)
+{ }
+
+
+void
+Modifier::accept(Visitor* visitor)
 {
+  visitor->visit_modifier(this);
 }
 
-
-void Template::accept(Visitor* visitor)
+Array::Array(Type* alias, const Mods& sizes) : m_alias(alias), m_sizes(sizes) {}
+void
+Array::accept(Visitor* visitor)
 {
-    visitor->visitTemplateType(this);
+  visitor->visit_array(this);
 }
 
-Modifier::Modifier(Type* alias, const Mods &pre, const Mods &post)
-    : m_alias(alias), m_pre(pre), m_post(post)
+Parameterized::Parameterized(Template* t, const Type::vector& params)
+: m_template(t), m_params(params)
+{ }
+
+
+void
+Parameterized::accept(Visitor* visitor)
 {
+  visitor->visit_parameterized(this);
 }
 
+FuncPtr::FuncPtr(Type::Type* ret, const Mods& premods, const Type::vector& params)
+: m_return(ret), m_premod(premods), m_params(params)
+{ }
 
-void Modifier::accept(Visitor* visitor)
+
+void
+FuncPtr::accept(Visitor* visitor)
 {
-    visitor->visitModifier(this);
-}
-
-Array::Array(Type* alias, const Mods &sizes) : m_alias(alias), m_sizes(sizes) {}
-void Array::accept(Visitor* visitor) { visitor->visitArray(this);}
-
-Parameterized::Parameterized(Template* t, const Type::vector_t& params)
-    : m_template(t), m_params(params)
-{
-}
-
-
-void Parameterized::accept(Visitor* visitor)
-{
-    visitor->visitParameterized(this);
-}
-
-FuncPtr::FuncPtr(Type::Type* ret, const Mods &premods, const Type::vector_t& params)
-    : m_return(ret), m_premod(premods), m_params(params)
-{
-}
-
-
-void FuncPtr::accept(Visitor* visitor)
-{
-    visitor->visitFuncPtr(this);
+  visitor->visit_func_ptr(this);
 }
 
 //
@@ -119,18 +112,19 @@ void FuncPtr::accept(Visitor* visitor)
 
 //Visitor::Visitor() {}
 Visitor::~Visitor() {}
-void Visitor::visitType(Type*) {}
-void Visitor::visitUnknown(Unknown *t) { visitType(t); }
-void Visitor::visitBase(Base *t) { visitNamed(t); }
-void Visitor::visitDeclared(Declared *t) { visitNamed(t); }
-void Visitor::visitModifier(Modifier *t) { visitType(t); }
-void Visitor::visitArray(Array *t) { visitType(t); }
-void Visitor::visitNamed(Named *t) { visitType(t); }
-void Visitor::visitTemplateType(Template *t) { visitDeclared(t); }
-void Visitor::visitParameterized(Parameterized *t) { visitType(t); }
-void Visitor::visitFuncPtr(FuncPtr *t) { visitType(t); }
+void Visitor::visit_type(Type*) {}
+void Visitor::visit_unknown(Unknown *t) { visit_type(t); }
+void Visitor::visit_base(Base *t) { visit_named(t); }
+void Visitor::visit_declared(Declared *t) { visit_named(t); }
+void Visitor::visit_modifier(Modifier *t) { visit_type(t); }
+void Visitor::visit_array(Array *t) { visit_type(t); }
+void Visitor::visit_named(Named *t) { visit_type(t); }
+void Visitor::visit_template_type(Template *t) { visit_declared(t); }
+void Visitor::visit_parameterized(Parameterized *t) { visit_type(t); }
+void Visitor::visit_func_ptr(FuncPtr *t) { visit_type(t); }
 
 // exception wrong_type_cast
-const char* wrong_type_cast::what() const throw() {
-    return "Type::wrong_type_cast";
+const char* wrong_type_cast::what() const throw()
+{
+  return "Type::wrong_type_cast";
 }

@@ -1,4 +1,4 @@
-// $Id: swalker-syntax.cc,v 1.12 2001/07/29 03:28:04 chalky Exp $
+// $Id: swalker-syntax.cc,v 1.13 2002/01/25 14:24:33 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -20,44 +20,11 @@
 // 02111-1307, USA.
 //
 // $Log: swalker-syntax.cc,v $
+// Revision 1.13  2002/01/25 14:24:33  chalky
+// Start of refactoring and restyling effort.
+//
 // Revision 1.12  2001/07/29 03:28:04  chalky
 // More fixes for directory restructure, and fake_std -f flag for C++ parser.
-//
-// Revision 1.11  2001/07/23 15:29:35  chalky
-// Fixed some regressions and other mis-features
-//
-// Revision 1.10  2001/07/23 11:51:22  chalky
-// Better support for name lookup wrt namespaces.
-//
-// Revision 1.9  2001/07/19 13:50:52  chalky
-// Support 'using' somewhat, L"const" literals, and better Qual.Templ. names
-//
-// Revision 1.8  2001/06/11 10:37:30  chalky
-// Operators! Arrays! (and probably more that I forget)
-//
-// Revision 1.7  2001/06/10 07:17:37  chalky
-// Comment fix, better functions, linking etc. Better link titles
-//
-// Revision 1.6  2001/06/10 00:31:39  chalky
-// Refactored link storage, better comments, better parsing
-//
-// Revision 1.5  2001/06/06 07:51:45  chalky
-// Fixes and moving towards SXR
-//
-// Revision 1.4  2001/06/05 03:49:33  chalky
-// Made my own wrong_type_cast exception. Added template support to qualified
-// names (its bad but it doesnt crash). Added vector<string> output op to builder
-//
-// Revision 1.3  2001/05/06 20:15:03  stefan
-// fixes to get std compliant; replaced some pass-by-value by pass-by-const-ref; bug fixes;
-//
-// Revision 1.2  2001/04/03 23:01:37  chalky
-// Small fixes and extra comments
-//
-// Revision 1.1  2001/03/16 04:42:00  chalky
-// SXR parses expressions, handles differences from macro expansions. Some work
-// on function call resolution.
-//
 //
 
 // This file contains the methods of SWalker that are mostly concerned with
@@ -75,11 +42,13 @@
 
 #include <occ/ptree.h>
 #include <occ/parse.h>
+#undef Scope
 
 #include "linkstore.hh"
 #include "swalker.hh"
 #include "builder.hh"
 #include "decoder.hh"
+#include "lookup.hh"
 #include "dumper.hh"
 #include "strace.hh"
 #include "type.hh"
@@ -101,18 +70,18 @@ Ptree* SWalker::TranslateInfix(Ptree* node) {
     STrace trace("SWalker::TranslateInfix"); 
     // [left op right]
     Translate(node->First());
-    Type::Type* left_type = m_type;
+    Types::Type* left_type = m_type;
     Translate(node->Third());
-    Type::Type* right_type = m_type;
+    Types::Type* right_type = m_type;
     std::string oper = getName(node->Second());
     TypeFormatter tf;
     LOG("BINARY-OPER: " << tf.format(left_type) << " " << oper << " " << tf.format(right_type));
     nodeLOG(node);
     if (!left_type || !right_type) { m_type = NULL; return 0; }
     // Lookup an appropriate operator
-    AST::Function* func = m_builder->lookupOperator(oper, left_type, right_type);
+    AST::Function* func = m_lookup->lookupOperator(oper, left_type, right_type);
     if (func) {
-	m_type = func->returnType();
+	m_type = func->return_type();
 	if (m_links) m_links->link(node->Second(), func->declared());
     }
     return 0;
@@ -123,12 +92,12 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
     if (m_links) findComments(spec);
     try {
 	Ptree* name_spec = spec;
-	Type::Named* type;
-	AST::Name scoped_name;
+	Types::Named* type;
+	ScopedName scoped_name;
 	if (!spec->IsLeaf()) {
 	    // Must be a scoped name.. iterate through the scopes
 	    // stop when spec is at the last name
-	    nodeLOG(spec);
+	    //nodeLOG(spec);
 	    // If first node is '::' then reset m_scope to the global scope
 	    if (spec->First()->Eq("::")) {
 		scoped_name.push_back("");
@@ -138,8 +107,8 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		scoped_name.push_back(getName(spec->First()));
 		/*
 		if (!type) { throw nodeERROR(spec, "scope '" << getName(spec->First()) << "' not found!"); }
-		try { m_scope = Type::declared_cast<AST::Scope>(type); }
-		catch (const Type::wrong_type_cast&) { throw nodeERROR(spec, "scope '"<<getName(spec->First())<<"' found but not a scope!"); }
+		try { m_scope = Types::declared_cast<AST::Scope>(type); }
+		catch (const Types::wrong_type_cast&) { throw nodeERROR(spec, "scope '"<<getName(spec->First())<<"' found but not a scope!"); }
 		// Link the scope name
 		if (m_links) m_links->link(spec->First(), m_scope->declared());
 		*/
@@ -158,13 +127,14 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	if (m_postfix_flag == Postfix_Var) {
 	    // Variable lookup. m_type will be the vtype
 	    /*cout << "m_scope is " << (m_scope ? m_type_formatter->format(m_scope->declared()) : "global") << endl;*/
-	    if (!scoped_name.empty()) type = m_builder->lookupType(scoped_name, true, m_scope);
-	    else if (m_scope) type = m_builder->lookupType(name, m_scope);
-	    else type = m_builder->lookupType(name);
+	    if (!scoped_name.empty()) type = m_lookup->lookupType(scoped_name, true, m_scope);
+	    else if (m_scope) type = m_lookup->lookupType(name, m_scope);
+	    else type = m_lookup->lookupType(name);
 	    if (!type) { throw nodeERROR(spec, "variable '" << name << "' not found!"); }
 	    // Now find vtype (throw wrong_type_cast if not a variable)
 	    try {
-		Type::Declared& declared = dynamic_cast<Type::Declared&>(*type);
+		Types::Declared& declared = dynamic_cast<Types::Declared&>(*type);
+                m_builder->storeReference(declared.declaration(), m_filename, m_lineno, 0, "reference");
 		// The variable could be a Variable or Enumerator
 		AST::Variable* var; AST::Enumerator* enumor;
 		if ((var = dynamic_cast<AST::Variable*>(declared.declaration())) != 0) {
@@ -183,9 +153,9 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 		    throw nodeERROR(name_spec, "var was not a Variable nor Enumerator!");
 		}
 	    } catch (const std::bad_cast &) {
-		if (dynamic_cast<Type::Unknown*>(type))
+		if (dynamic_cast<Types::Unknown*>(type))
 		    throw nodeERROR(spec, "variable '" << name << "' was an Unknown type!");
-		if (dynamic_cast<Type::Base*>(type))
+		if (dynamic_cast<Types::Base*>(type))
 		    throw nodeERROR(spec, "variable '" << name << "' was a Base type!");
 		throw nodeERROR(spec, "variable '" << name << "' wasn't a declared type!");
 	    }
@@ -193,13 +163,14 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	    // Function lookup. m_type will be returnType. params are in m_params
 	    AST::Scope* scope = m_scope ;
 	    if (!scope) scope = m_builder->scope();
-	    // if (!scoped_name.empty()) func = m_builder->lookupFunc(scoped_name, scope, m_params);
-	    AST::Function* func = m_builder->lookupFunc(name, scope, m_params);
+	    // if (!scoped_name.empty()) func = m_lookup->lookupFunc(scoped_name, scope, m_params);
+	    AST::Function* func = m_lookup->lookupFunc(name, scope, m_params);
 	    if (!func) { throw nodeERROR(name_spec, "Warning: function '" << name << "' not found!"); }
 	    // Store a link to the function name
 	    if (m_links) m_links->link(name_spec, func->declared());
+            m_builder->storeReference(func, m_filename, m_lineno, 0, "call");
 	    // Now find returnType
-	    m_type = func->returnType();
+	    m_type = func->return_type();
 	}
     } 
     catch(TranslateError& e) {
@@ -208,7 +179,7 @@ Ptree* SWalker::TranslateVariable(Ptree* spec) {
 	e.set_node(spec);
 	throw;
     }
-    catch(const Type::wrong_type_cast &) {
+    catch(const Types::wrong_type_cast &) {
 	throw nodeERROR(spec, "wrong type error in TranslateVariable!");
     }
     catch(...) {
@@ -243,7 +214,7 @@ Ptree* SWalker::TranslateFuncall(Ptree* node) {	// and fstyle cast
     // In translating the postfix the last var should be looked up as a
     // function. This means we have to find the args first, and store them in
     // m_params as a hint
-    std::vector<Type::Type*> save_params = m_params;
+    std::vector<Types::Type*> save_params = m_params;
     m_params.clear();
     try {
 	TranslateFunctionArgs(node->Third());
@@ -291,45 +262,45 @@ Ptree* SWalker::TranslateAssign(Ptree* node) {
     // TODO: lookup = operator
     m_type = 0;
     Translate(node->First());
-    Type::Type* ret_type = m_type;
+    Types::Type* ret_type = m_type;
     Translate(node->Third());
     m_type = ret_type; return 0;
 }
 
 //. Resolves the final type of any given Type. For example, it traverses
 //. typedefs and parametrized types, and resolves unknowns by looking them up.
-class TypeResolver : public Type::Visitor {
+class TypeResolver : public Types::Visitor {
 public:
     //. Constructor - needs a Builder to resolve unknowns with
     TypeResolver(Builder* b) { m_builder = b; }
     //. Resolves the given type object
-    Type::Type* resolve(Type::Type* t) { m_type = t; t->accept(this); return m_type; }
+    Types::Type* resolve(Types::Type* t) { m_type = t; t->accept(this); return m_type; }
     //. Tries to resolve the given type object to a Scope
-    AST::Scope* scope(Type::Type* t) throw (Type::wrong_type_cast, TranslateError) {
-	return Type::declared_cast<AST::Scope>(resolve(t));
+    AST::Scope* scope(Types::Type* t) throw (Types::wrong_type_cast, TranslateError) {
+	return Types::declared_cast<AST::Scope>(resolve(t));
     }
     //. Looks up the unknown type for a fresh definition
-    void visitUnknown(Type::Unknown* t) {
-	m_type = m_builder->resolveType(t);
-	if (!dynamic_cast<Type::Unknown*>(m_type))
+    void visit_unknown(Types::Unknown* t) {
+	m_type = m_builder->lookup()->resolveType(t);
+	if (!dynamic_cast<Types::Unknown*>(m_type))
 	    m_type->accept(this);
     }
     //. Recursively processes the aliased type
-    void visitModifier(Type::Modifier* t) { t->alias()->accept(this); }
+    void visit_modifier(Types::Modifier* t) { t->alias()->accept(this); }
     //. Checks for typedefs and recursively processes them
-    void visitDeclared(Type::Declared* t) {
+    void visit_declared(Types::Declared* t) {
 	AST::Typedef* tdef = dynamic_cast<AST::Typedef*>(t->declaration());
 	if (tdef) { tdef->alias()->accept(this); }
 	else m_type = t;
     }
     //. Processes the template type
-    void visitParameterized(Type::Parameterized* t) {
-	if (t->templateType())
-	    t->templateType()->accept(this);
+    void visit_parameterized(Types::Parameterized* t) {
+	if (t->template_type())
+	    t->template_type()->accept(this);
     }
 protected:
     Builder* m_builder; //.< A reference to the builder object
-    Type::Type* m_type; //.< The type to return
+    Types::Type* m_type; //.< The type to return
 };
 
 Ptree* SWalker::TranslateArrowMember(Ptree* node) {
@@ -344,7 +315,7 @@ Ptree* SWalker::TranslateArrowMember(Ptree* node) {
     if (!m_type) { throw nodeERROR(node, "Unable to resolve type of LHS of ->"); }
     try {
 	m_scope = TypeResolver(m_builder).scope(m_type);
-    } catch (const Type::wrong_type_cast&) { throw nodeERROR(node, "LHS of -> was not a scope!"); }
+    } catch (const Types::wrong_type_cast&) { throw nodeERROR(node, "LHS of -> was not a scope!"); }
     // Find member, m_type becomes the var type or func returnType
     Translate(node->Third());
     m_scope = 0;
@@ -366,7 +337,7 @@ Ptree* SWalker::TranslateDotMember(Ptree* node) {
     // Check for reference type
     try {
 	m_scope = TypeResolver(m_builder).scope(m_type);
-    } catch (const Type::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope: " << m_type_formatter->format(m_type)); }
+    } catch (const Types::wrong_type_cast &) { throw nodeERROR(node, "Warning: LHS of . was not a scope: " << m_type_formatter->format(m_type)); }
     // Find member, m_type becomes the var type or func returnType
     LOG("translating third");
     Translate(node->Third());
@@ -535,9 +506,9 @@ Ptree* SWalker::TranslateTry(Ptree* node) {
 	if (arg->Length() == 2) {
 	    // Get the arg type
 	    m_decoder->init(arg->Second()->GetEncodedType());
-	    Type::Type* arg_type = m_decoder->decodeType();
+	    Types::Type* arg_type = m_decoder->decodeType();
 	    // Link the type
-	    Type::Type* arg_link = TypeResolver(m_builder).resolve(arg_type);
+	    Types::Type* arg_link = TypeResolver(m_builder).resolve(arg_type);
 	    if (m_links) m_links->link(arg->First(), arg_link);
 	    // Create a declaration for the argument
 	    if (arg->Second() && arg->Second()->GetEncodedName()) {
@@ -556,10 +527,10 @@ Ptree* SWalker::TranslateArray(Ptree* node) {
     STrace trace("SWalker::TranslateArray");
     // <postfix> \[ <expr> \]
     Translate(node->First());
-    Type::Type* object = m_type;
+    Types::Type* object = m_type;
 
     Translate(node->Third());
-    Type::Type* arg = m_type;
+    Types::Type* arg = m_type;
 
     if (!object || !arg) { m_type = NULL; return 0; }
     // Resolve final type
@@ -567,7 +538,7 @@ Ptree* SWalker::TranslateArray(Ptree* node) {
 	TypeFormatter tf;
 	LOG("ARRAY-OPER: " << tf.format(object) << " [] " << tf.format(arg));
 	AST::Function* func;
-	m_type = m_builder->arrayOperator(object, arg, func);
+	m_type = m_lookup->arrayOperator(object, arg, func);
 	if (func && m_links) {
 	    // Link the [ and ] to the function operator used
 	    m_links->link(node->Nth(1), func->declared());
@@ -593,7 +564,7 @@ Ptree* SWalker::TranslateThis(Ptree* node) {
     if (m_links) findComments(node);
     if (m_links) m_links->span(node, "file-keyword");
     // Set m_type to type of 'this', stored in the name lookup for this func
-    m_type = m_builder->lookupType("this");
+    m_type = m_lookup->lookupType("this");
     return 0;
 }
 
@@ -708,7 +679,7 @@ Ptree* SWalker::TranslateSizeof(Ptree* node) {
     if (m_links) findComments(node);
     if (m_links) m_links->span(node->First(), "file-keyword");
     // TODO: find the type for highlighting, and figure out what the ??? is
-    m_type = m_builder->lookupType("int");
+    m_type = m_lookup->lookupType("int");
     return 0;
 }
 

@@ -3,12 +3,13 @@
 
 import os, types, sys
 
+global gdb
 gdb = None
 
 gcc_include2 = "-I/usr/include/g++-3/ -I/usr/lib/gcc-lib/i386-linux/2.95.4/include "
 gcc_include3 = "-I/usr/include/g++-v3/ -I/usr/include/g++-v3/i386-linux/ -I/usr/lib/gcc-lib/i386-linux/3.0.1/include "
 gcc_include = gcc_include2
-python_include = "-DPYTHON_INCLUDE='<python1.5/Python.h>' "
+python_include = "-DPYTHON_INCLUDE='<python2.1/Python.h>' "
 
 
 html_top = '<html><link rel="stylesheet" href="/home/chalky/src/Synopsis/demo/html.css"><body>'
@@ -24,6 +25,7 @@ class Test:
 	f.close()
 	return self.do_run(test_file, test_base)
     def do_run(self, test_file, test_base, flags=""):
+	global gdb
 	flags = flags + self.flags
 	if gdb:
 	    return not self.gdb_less(test_file, flags)
@@ -298,6 +300,12 @@ namespace Foo {
 }
 """
 
+class StaticCastTest (Test):
+    test = """
+typedef unsigned int size_type;
+int really_big_number = static_cast<size_type>(-1);
+"""
+
 class Link (Test):
     def run(self):
 	return self.do_run("link.cc", "link", gcc_include + python_include)
@@ -309,6 +317,10 @@ class Builder (Test):
 class Synopsis (Test):
     def run(self):
 	return self.do_run("synopsis.cc", "synopsis", gcc_include + python_include)
+
+class AST (Test):
+    def run(self):
+	return self.do_run("ast.hh", "ast", gcc_include + python_include)
 
 if __name__ == "__main__":
     tests = {}

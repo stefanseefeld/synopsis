@@ -29,7 +29,7 @@ public:
 #endif
 
 //. The Synopsis class maps from C++ objects to Python objects
-class Synopsis : public AST::Visitor, public Type::Visitor {
+class Synopsis : public AST::Visitor, public Types::Visitor {
 public:
 
     Synopsis(const std::string &mainfile, PyObject *decls, PyObject *types);
@@ -41,14 +41,14 @@ public:
     //
     // types from the Synopsis.Type module
     //
-    PyObject *Base(Type::Base*);
-    PyObject *Unknown(Type::Named*);
-    PyObject *Declared(Type::Declared*);
-    PyObject *Template(Type::Template*);
-    PyObject *Modifier(Type::Modifier*);
-    PyObject *Array(Type::Array*);
-    PyObject *Parameterized(Type::Parameterized*);
-    PyObject *FuncPtr(Type::FuncPtr*);
+    PyObject *Base(Types::Base*);
+    PyObject *Unknown(Types::Named*);
+    PyObject *Declared(Types::Declared*);
+    PyObject *Template(Types::Template*);
+    PyObject *Modifier(Types::Modifier*);
+    PyObject *Array(Types::Array*);
+    PyObject *Parameterized(Types::Parameterized*);
+    PyObject *FuncPtr(Types::FuncPtr*);
 
     //
     // types from the Synopsis.AST module
@@ -72,35 +72,35 @@ public:
     //
     // AST::Visitor methods
     //
-    void visitDeclaration(AST::Declaration*);
-    void visitScope(AST::Scope*);
-    void visitNamespace(AST::Namespace*);
-    void visitClass(AST::Class*);
-    void visitInheritance(AST::Inheritance*);
-    void visitForward(AST::Forward*);
-    void visitTypedef(AST::Typedef*);
-    void visitVariable(AST::Variable*);
-    void visitConst(AST::Const*);
-    void visitEnum(AST::Enum*);
-    void visitEnumerator(AST::Enumerator*);
-    void visitFunction(AST::Function*);
-    void visitOperation(AST::Operation*);
-    void visitParameter(AST::Parameter*);
-    void visitComment(AST::Comment*);
+    void visit_declaration(AST::Declaration*);
+    void visit_scope(AST::Scope*);
+    void visit_namespace(AST::Namespace*);
+    void visit_class(AST::Class*);
+    void visit_inheritance(AST::Inheritance*);
+    void visit_forward(AST::Forward*);
+    void visit_typedef(AST::Typedef*);
+    void visit_variable(AST::Variable*);
+    void visit_const(AST::Const*);
+    void visit_enum(AST::Enum*);
+    void visit_enumerator(AST::Enumerator*);
+    void visit_function(AST::Function*);
+    void visit_operation(AST::Operation*);
+    void visit_parameter(AST::Parameter*);
+    void visit_comment(AST::Comment*);
 
     //
-    // Type::Visitor methods
+    // Types::Visitor methods
     //
-    //void visitType(Type::Type*);
-    void visitUnknown(Type::Unknown*);
-    void visitModifier(Type::Modifier*);
-    void visitArray(Type::Array*);
-    //void visitNamed(Type::Named*);
-    void visitBase(Type::Base*);
-    void visitDeclared(Type::Declared*);
-    void visitTemplateType(Type::Template*);
-    void visitParameterized(Type::Parameterized*);
-    void visitFuncPtr(Type::FuncPtr*);
+    //void visitType(Types::Type*);
+    void visit_unknown(Types::Unknown*);
+    void visit_modifier(Types::Modifier*);
+    void visit_array(Types::Array*);
+    //void visitNamed(Types::Named*);
+    void visit_base(Types::Base*);
+    void visit_declared(Types::Declared*);
+    void visit_template_type(Types::Template*);
+    void visit_parameterized(Types::Parameterized*);
+    void visit_func_ptr(Types::FuncPtr*);
 
 private:
     //. Compiler Firewalled private data

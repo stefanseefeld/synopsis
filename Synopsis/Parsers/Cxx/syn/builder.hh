@@ -1,283 +1,237 @@
+// vim: set ts=8 sts=2 sw=2 et:
 // File: builder.hh
 
 #ifndef H_SYNOPSIS_CPP_BUILDER
 #define H_SYNOPSIS_CPP_BUILDER
 
 #include "ast.hh"
-#include <stack>
 #include <map>
 
-// Forward declare some Type::Types
-namespace Type {
-    class Type;
-    class Base;
-    class Named;
-    class Unknown;
-    class Template;
-    class Function;
+// Forward declare some Types::Types
+namespace Types
+{
+  class Type;
+  class Base;
+  class Named;
+  class Unknown;
+  class TemplateType;
+  class FuncPtr;
 }
 
-typedef std::vector<std::string> Name;
+// Forward declare the SWalker class
+class SWalker;
 
-//. Prototype for scoped name output operator
-std::ostream& operator <<(std::ostream& out, const std::vector<std::string>& vec);
+// Forward declare the Lookup class
+class Lookup;
+
+class ScopeInfo;
+typedef std::vector<ScopeInfo*> ScopeSearch; // TODO: move to common
 
 //. AST Builder.
 //. This class manages the building of an AST, including queries on the
 //. existing AST such as name and type lookups. The building operations are
 //. called by SWalker as it walks the parse tree.
-class Builder {
+class Builder
+{
+  friend Lookup;
 public:
-    //. Constructor
-    Builder(const std::string &basename);
-    //. Destructor. Recursively destroys all AST objects
-    ~Builder();
+  //. Constructor
+  Builder(const std::string& basename);
 
-    //. Changes the current accessability for the current scope
-    void setAccess(AST::Access);
+  //. Destructor. Recursively destroys all AST objects
+  ~Builder();
 
-    //. Returns the current filename
-    const std::string &filename() const { return m_filename; }
-    //. Changes the current filename
-    void setFilename(const std::string &filename);
-    
-    //
-    // AST Methods
-    //
+  //. Sets the swalker
+  void set_swalker(SWalker* swalker) { m_swalker = swalker; }
 
-    //. Returns the current scope
-    AST::Scope* scope() { return m_scope; }
+  //. Changes the current accessability for the current scope
+  void set_access(AST::Access);
 
-    //. Returns the global scope
-    AST::Scope* global() { return m_global; }
+  //. Returns the current filename
+  const std::string& filename() const { return m_filename; }
+  //. Changes the current filename
+  void set_filename(const std::string& filename);
+  
+  //
+  // AST Methods
+  //
 
-    //. Add the given Declaration to the current scope
-    void add(AST::Declaration*);
+  //. Returns the current scope
+  AST::Scope* scope() { return m_scope; }
 
-    //. Add the given non-declaration type to the current scope
-    void add(Type::Named*);
+  //. Returns the current ScopeInfo for the current Scope
+  ScopeInfo* scopeinfo() { return m_scopes.back(); }
 
-    //. Enumeration of types of namespaces
-    enum NamespaceType {
-	NamespaceNamed, //.< Normal, named, namespace. name is its given name
-	NamespaceAnon, //.< An anonymous namespace. name is the filename
-	NamespaceUnique, //.< A unique namespace. name is the type (for, while, etc.)
-    };
+  //. Returns the scope 'depth' deep. 0 means current scope, 1 means parent, etc
+  AST::Scope* scope(size_t depth);
 
-    //. Construct and open a new Namespace. The Namespace becomes the
-    //. current scope, and the old one is pushed onto the stack. If name is
-    //. empty then a unique name is generated of the form `ns1
-    AST::Namespace* startNamespace(const std::string &name, NamespaceType type);
+  //. Returns the global scope
+  AST::Scope* global() { return m_global; }
 
-    //. End the current namespace and pop the previous Scope off the stack
-    void endNamespace();
+  //. Returns the Lookup object for the builder
+  Lookup* lookup() { return m_lookup; }
 
-    //. Construct and open a new Class. The Class becomes the current scope,
-    //. and the old one is pushed onto the stack. The type argument is the
-    //. type, ie: "class" or "struct". This is tested to determine the default
-    //. accessability.
-    AST::Class* startClass(int, const std::string &type, const std::string &name);
-    //. Construct and open a new Class with a qualified name
-    AST::Class* startClass(int, const std::string &type, const std::vector<std::string> &names);
-    //. Update the search to include base classes. Call this method after
-    //. startClass(), and after filling in the parents() vector of the returned
-    //. AST::Class object. After calling this method, name and type lookups
-    //. will correctly search the base classes of this class.
-    void updateBaseSearch();
+  //. Add the given Declaration to the current scope
+  void add(AST::Declaration* declaration);
 
-    //. End the current class and pop the previous Scope off the stack
-    void endClass();
+  //. Add the given non-declaration type to the current scope
+  void add(Types::Named* named);
 
-    //. Start function impl scope
-    void startFunctionImpl(const std::vector<std::string> &name);
+  //. Enumeration of types of namespaces
+  enum NamespaceType
+  {
+    NamespaceNamed, //.< Normal, named, namespace. name is its given name
+    NamespaceAnon, //.< An anonymous namespace. name is the filename
+    NamespaceUnique, //.< A unique namespace. name is the type (for, while, etc.)
+  };
 
-    //. End function impl scope
-    void endFunctionImpl();
+  //. Construct and open a new Namespace. The Namespace becomes the
+  //. current scope, and the old one is pushed onto the stack. If name is
+  //. empty then a unique name is generated of the form `ns1
+  AST::Namespace* startNamespace(const std::string& name, NamespaceType type);
 
-    //. Add an operation
-    AST::Operation* addOperation(int, const std::string &name, const std::vector<std::string> &premod, Type::Type* ret, const std::string &realname);
+  //. End the current namespace and pop the previous Scope off the stack
+  void endNamespace();
 
-    //. Add a variable
-    AST::Variable* addVariable(int, const std::string &name, Type::Type* vtype, bool constr, const std::string& type);
+  //. Construct and open a new Class. The Class becomes the current scope,
+  //. and the old one is pushed onto the stack. The type argument is the
+  //. type, ie: "class" or "struct". This is tested to determine the default
+  //. accessability.
+  AST::Class* startClass(int, const std::string& type, const std::string& name);
 
-    //. Add a variable to represent 'this', iff we are in a method
-    void addThisVariable();
+  //. Construct and open a new Class with a qualified name
+  AST::Class* startClass(int, const std::string& type, const ScopedName& names);
 
-    //. Add a typedef
-    AST::Typedef* addTypedef(int, const std::string &name, Type::Type* alias, bool constr);
+  //. Update the search to include base classes. Call this method after
+  //. startClass(), and after filling in the parents() vector of the returned
+  //. AST::Class object. After calling this method, name and type lookups
+  //. will correctly search the base classes of this class.
+  void updateBaseSearch();
 
-    //. Add an enumerator
-    AST::Enumerator* addEnumerator(int, const std::string &name, const std::string &value);
+  //. End the current class and pop the previous Scope off the stack
+  void endClass();
 
-    //. Add an enum
-    AST::Enum* addEnum(int, const std::string &name, const std::vector<AST::Enumerator*>&);
+  //. Start function impl scope
+  void startFunctionImpl(const ScopedName& name);
 
-    //. Add a tail comment. This will be a dummy declaration with an empty
-    //. and type "dummy"
-    AST::Declaration* addTailComment(int line);
+  //. End function impl scope
+  void endFunctionImpl();
 
-    //
-    // Using methods
-    //
-    
-    //. Add a namespace using declaration.
-    void usingNamespace(Type::Named* type);
+  //. Add an operation
+  AST::Operation* addOperation(int, const std::string& name, const std::vector<std::string>& premod, Types::Type* ret, const std::string& realname);
 
-    //. Add a namespace alias using declaration.
-    void usingNamespace(Type::Named* type, const std::string& alias);
+  //. Add a variable
+  AST::Variable* addVariable(int, const std::string& name, Types::Type* vtype, bool constr, const std::string& type);
 
-    //. Add a using declaration.
-    void usingDeclaration(Type::Named* type);
+  //. Add a variable to represent 'this', iff we are in a method
+  void addThisVariable();
+
+  //. Add a typedef
+  AST::Typedef* addTypedef(int, const std::string& name, Types::Type* alias, bool constr);
+
+  //. Add an enumerator
+  AST::Enumerator* addEnumerator(int, const std::string& name, const std::string& value);
+
+  //. Add an enum
+  AST::Enum* addEnum(int, const std::string& name, const AST::Enumerator::vector &);
+
+  //. Add a tail comment. This will be a dummy declaration with an empty
+  //. and type "dummy"
+  AST::Declaration* addTailComment(int line);
+
+  //
+  // Using methods
+  //
+  
+  //. Add a namespace using declaration.
+  void usingNamespace(Types::Named* type);
+
+  //. Add a namespace alias using declaration.
+  void usingNamespace(Types::Named* type, const std::string& alias);
+
+  //. Add a using declaration.
+  void usingDeclaration(Types::Named* type);
 
 
-    //
-    // Type Methods
-    //
+  //. Maps a scoped name into a vector of scopes and the final type. Returns
+  //. true on success.
+  bool mapName(const ScopedName& name, std::vector<AST::Scope*>&, Types::Named*&);
 
-    //. Looks up the name in the current scope. This method always succeeds --
-    //. if the name is not found it forward declares it.
-    Type::Named* lookupType(const std::string &name);
+  //. Create a Base type for the given name in the current scope
+  Types::Base* Base(const std::string& name);
 
-    //. Looks up the qualified name in the current scope. This method always
-    //. succeeds -- if the name is not found it forwards declares it.
-    //. @param names The list of identifiers given
-    //. @param fuc_okay If true, multiple declarations will not cause an error (needs fixing)
-    //. @param scope If set determines the scope to start lookup from, else the
-    //. current scope is used
-    Type::Named* lookupType(const std::vector<std::string> &names, bool func_okay=false, AST::Scope* scope=NULL);
+  //. Create an Unknown type for the given name in the current scope
+  Types::Unknown* Unknown(const std::string& name);
 
-    //. Looks up the name in the scope of the given scope. This method may
-    //. return a NULL ptr if the lookup failed.
-    Type::Named* lookupType(const std::string &name, AST::Scope* scope);
+  //. Create a Template type for the given name in the current scope
+  Types::Template* Template(const std::string& name, const std::vector<Types::Type*>&); 
 
-    //. Looks up the function in the given scope with the given args. 
-    AST::Function* lookupFunc(const std::string &, AST::Scope*, const std::vector<Type::Type*>&);
+  //. Add an Unknown decl for given name if it doesnt already exist
+  Types::Unknown* addUnknown(const std::string& name);
 
-    //. Looks up the function operator in the current scope with the given
-    //. types. May return NULL if builtin operator or no operator is found.
-    AST::Function* lookupOperator(const std::string& oper, Type::Type* left_type, Type::Type* right_type);
+  //
+  // cross-reference methods
+  //
 
-    //. Maps a scoped name into a vector of scopes and the final type. Returns
-    //. true on success.
-    bool mapName(const AST::Name& name, std::vector<AST::Scope*>&, Type::Named*&);
-
-    //. Returns the types for an array operator on the given type with an
-    //. argument of the given type. If a function is used then it is stored in
-    //. the function ptr ref given, else the ptr is set to NULL.
-    Type::Type* arrayOperator(Type::Type* object, Type::Type* arg, AST::Function*&);
-
-    //. Resolves the final type of the given type. If the given type is an
-    //. Unknown, it checks to see if the type has been defined yet and returns
-    //. that instead.
-    Type::Named* resolveType(Type::Named* maybe_unknown);
-
-    //. Create a Base type for the given name in the current scope
-    Type::Base* Base(const std::string &name);
-
-    //. Create an Unknown type for the given name in the current scope
-    Type::Unknown* Unknown(const std::string &name);
-
-    //. Create a Template type for the given name in the current scope
-    Type::Template* Template(const std::string &name, const std::vector<Type::Type*>&); 
-
-    //. Add an Unknown decl for given name if it doesnt already exist
-    Type::Unknown* addUnknown(const std::string &name);
+  //. Add a reference to the given decl to the reference DB
+  void storeReference(AST::Declaration* decl, const std::string& file, int line, int depth, const std::string& context);
 
 private:
-    //. Base filename to strip from the start of all filenames
-    std::string m_basename;
+  //. Base filename to strip from the start of all filenames
+  std::string m_basename;
 
-    //. Current filename
-    std::string m_filename;
+  //. Current filename
+  std::string m_filename;
 
-    //. The global scope object
-    AST::Scope* m_global;
+  //. The global scope object
+  AST::Scope* m_global;
 
-    //. Current scope object
-    AST::Scope* m_scope;
+  //. Current scope object
+  AST::Scope* m_scope;
 
-    //. A counter used to generate unique namespace names
-    int m_unique;
+  //. A counter used to generate unique namespace names
+  int m_unique;
 
-    //
-    // Scope Class
-    //
+  //. The stack of Builder::Scopes
+  std::vector<ScopeInfo*> m_scopes;
 
-    //. This class encapsulates a Scope and its dictionary of names
-    struct Scope {
-	//. Constructor
-	Scope(AST::Scope* s);
-	//. Constructor that creates a Dummy 'using' scope referencing 's'
-	Scope(Scope* s);
-	//. Destructor
-	~Scope();
-	//. Dictionary for this scope
-	class Dictionary* dict;
-	//. The declaration for this scope
-	AST::Scope* scope_decl;
-	//. Typedef for a Scope Search
-	typedef std::vector<Scope*> Search;
-	//. The list of scopes to search for this scope, including this
-	Search search;
-	//. The list of scopes in the search because they are 'using'd
-	Search using_scopes;
-	//. The list of scopes 'using' this one
-	Search used_by;
-	//. True only if this is a dummy Scope representing the use of
-	//. another. If this is the case, then only 'dict' is set
-	bool is_using;
-	//. Current accessability
-	AST::Access access;
-	//. Counts of named sub-namespaces
-	std::map<std::string, int> nscounts;
-	int getCount(const std::string& name);
-    };
-    //. The stack of Builder::Scopes
-    std::stack<Scope*> m_scopes;
+  //. Private data which uses map
+  struct Private;
+  //. Private data which uses map instance
+  Private* m;
 
-    //. Looks up the name in the current scope. This method may fail and
-    //. return a NULL ptr.
-    Type::Named* lookup(const std::string &name);
+  //. Return a ScopeInfo* for the given Declaration. This method first looks for
+  //. an existing Scope* in the Private map.
+  ScopeInfo* find_scope(AST::Scope*);
 
-    //. Searches for name in the list of Scopes. This method may return NULL
-    //. if the name is not found.
-    Type::Named* lookup(const std::string &name, const Scope::Search&, bool func_okay = false) throw ();
+  //. Utility class to recursively add base classes to given search
+  void addClassBases(AST::Class* clas, ScopeSearch& search);
 
-    //. Searches for name in the given qualified scope. This method may return
-    //. NULL if the name is not found. Lookup proceeds according to the spec:
-    //. if 'scope' is a Class scope, then scope and all base classes are
-    //. searched, else if it's a 'namespace' scope then all usings are checked.
-    Type::Named* lookupQual(const std::string& name, const Scope*, bool func_okay = false);
+  //. Utility class to add all functions with the given name in the given
+  //. Scope's dictionary to the given vector. May throw an error if the
+  //. types looked up are not functions.
+  void findFunctions(const std::string&, ScopeInfo*, std::vector<AST::Function*>&);
 
-    //. Private data which uses map
-    struct Private;
-    //. Private data which uses map instance
-    Private* m;
+  //. Determines the best function from the given list for the given
+  //. arguments using heuristics. Returns the function and stores the cost
+  AST::Function* bestFunction(const std::vector<AST::Function*>&, const std::vector<Types::Type*>&, int& cost);
 
-    //. Return a Scope* for the given Declaration. This method first looks for
-    //. an existing Scope* in the Private map.
-    Scope* findScope(AST::Scope*);
+  //. Formats the search of the given Scope for logging
+  std::string dumpSearch(ScopeInfo* scope);
 
-    //. Utility class to recursively add base classes to given search
-    void addClassBases(AST::Class* clas, Scope::Search& search);
+  //. Recursively adds 'target' as using in 'scope'
+  void addUsingNamespace(ScopeInfo* target, ScopeInfo* scope);
 
-    //. Utility class to add all functions with the given name in the given
-    //. Scope's dictionary to the given vector. May throw an error if the
-    //. types looked up are not functions.
-    void findFunctions(const std::string&, Scope*, std::vector<AST::Function*>&);
+  //. A class that compares Scopes
+  class EqualScope;
 
-    //. Determines the best function from the given list for the given
-    //. arguments using heuristics. Returns the function and stores the cost
-    AST::Function* bestFunction(const std::vector<AST::Function*>&, const std::vector<Type::Type*>&, int& cost);
+  //. A pointer to the SWalker. This is set explicitly by the SWalker during
+  //. its constructor (which takes a Builder).
+  SWalker* m_swalker;
 
-    //. Formats the search of the given Scope for logging
-    std::string dumpSearch(Builder::Scope* scope);
+  //. A pointer to the Lookup
+  Lookup* m_lookup;
 
-    //. Recursively adds 'target' as using in 'scope'
-    void addUsingNamespace(Scope* target, Scope* scope);
-
-    //. A class that compares Scopes
-    class EqualScope;
 }; // class Builder
 
 #endif
