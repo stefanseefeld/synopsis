@@ -5,12 +5,14 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_Module_hh
-#define _Synopsis_Module_hh
+#ifndef _Synopsis_Python_Module_hh
+#define _Synopsis_Python_Module_hh
 
-#include <Synopsis/Object.hh>
+#include <Synopsis/Python/Object.hh>
 
 namespace Synopsis
+{
+namespace Python
 {
 
 class Module : public Object
@@ -41,6 +43,7 @@ inline Dict Module::dict() const
   return Object(d);
 }
 
+}
 }
 
 #endif

@@ -5,12 +5,14 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_Kit_hh
-#define _Synopsis_Kit_hh
+#ifndef _Synopsis_Python_Kit_hh
+#define _Synopsis_Python_Kit_hh
 
-#include <Synopsis/Module.hh>
+#include <Synopsis/Python/Module.hh>
 
 namespace Synopsis
+{
+namespace Python
 {
 
 class Kit : public Module
@@ -23,6 +25,7 @@ public:
   { return dict().get(name)(t, d);}
 };
 
+}
 }
 
 #endif

@@ -1,4 +1,3 @@
-// $Id: Interpreter.hh,v 1.3 2004/01/24 04:44:07 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -6,13 +5,15 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_Interpreter_hh
-#define _Synopsis_Interpreter_hh
+#ifndef _Synopsis_Python_Interpreter_hh
+#define _Synopsis_Python_Interpreter_hh
 
-#include <Synopsis/Object.hh>
+#include <Synopsis/Python/Object.hh>
 #include <string>
 
 namespace Synopsis
+{
+namespace Python
 {
 
 class Interpreter
@@ -56,6 +57,7 @@ inline Object Interpreter::run_file(const std::string &script,
   return retn;
 }
 
+}
 }
 
 #endif

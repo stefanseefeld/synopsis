@@ -26,7 +26,7 @@ HDR	:= $(shell find $(top_srcdir)/include -name '*.hh' -print)
 SRC	:= Path.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 
-TARGET	:= libSynopsis.a
+TARGET	:= ../lib/libSynopsis.a
 
 vpath %.cc $(srcdir)
 

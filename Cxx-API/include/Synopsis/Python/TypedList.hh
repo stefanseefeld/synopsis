@@ -1,4 +1,3 @@
-// $Id: TypedList.hh,v 1.1 2004/01/25 21:21:54 stefan Exp $
 //
 // Copyright (C) 2004 Stefan Seefeld
 // All rights reserved.
@@ -6,12 +5,14 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_TypedList_hh
-#define _Synopsis_TypedList_hh
+#ifndef _Synopsis_Python_TypedList_hh
+#define _Synopsis_Python_TypedList_hh
 
-#include <Synopsis/Object.hh>
+#include <Synopsis/Python/Object.hh>
 
 namespace Synopsis
+{
+namespace Python
 {
 
 //. A typed list replace some modifiers by a 'more typed' variant
@@ -64,6 +65,7 @@ inline TypedList<T>::TypedList(const T &t1, const T &t2, const T &t3, const T &t
   append(t4);
 }
 
+}
 }
 
 #endif
