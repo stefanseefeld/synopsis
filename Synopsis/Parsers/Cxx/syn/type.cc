@@ -51,14 +51,14 @@ Unknown::accept(Visitor* visitor)
   visitor->visit_unknown(this);
 }
 
-Dependant::Dependant(const ScopedName& n)
+Dependent::Dependent(const ScopedName& n)
 : Named(n)
 { }
 
 void
-Dependant::accept(Visitor* visitor)
+Dependent::accept(Visitor* visitor)
 {
-  visitor->visit_dependant(this);
+  visitor->visit_dependent(this);
 }
 
 Declared::Declared(const ScopedName& n, AST::Declaration* decl)
@@ -72,7 +72,7 @@ Declared::accept(Visitor* visitor)
   visitor->visit_declared(this);
 }
 
-Template::Template(const ScopedName& n, AST::Declaration* decl, const Type::vector& params)
+Template::Template(const ScopedName& n, AST::Declaration* decl, const param_vector& params)
 : Declared(n, decl), m_params(params)
 { }
 
@@ -146,7 +146,7 @@ Visitor::~Visitor() {}
 void Visitor::visit_type(Type*) {}
 void Visitor::visit_unknown(Unknown* t) { visit_type(t); }
 void Visitor::visit_base(Base* t) { visit_named(t); }
-void Visitor::visit_dependant(Dependant* t) { visit_named(t); }
+void Visitor::visit_dependent(Dependent* t) { visit_named(t); }
 void Visitor::visit_declared(Declared* t) { visit_named(t); }
 void Visitor::visit_modifier(Modifier* t) { visit_type(t); }
 void Visitor::visit_array(Array* t) { visit_type(t); }

@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.22 2002/03/14 00:19:47 chalky Exp $
+# $Id: Part.py,v 1.23 2002/10/20 15:38:08 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.23  2002/10/20 15:38:08  chalky
+# Much improved template support, including Function Templates.
+#
 # Revision 1.22  2002/03/14 00:19:47  chalky
 # Added demo of template specializations, and fixed HTML formatter to deal with
 # angle brackets in class names :)
@@ -260,6 +263,10 @@ class Part(Type.Visitor, AST.Visitor):
     def visitDeclared(self, type):
 	"Sets the label to be a reference to the type's name"
         self.__type_label = self.reference(type.name())
+
+    def visitDependent(self, type):
+	"Sets the label to be the type's name (which has no proper scope)"
+        self.__type_label = type.name()[-1]
         
     def visitModifier(self, type):
 	"Adds modifiers to the formatted label of the modifier's alias"

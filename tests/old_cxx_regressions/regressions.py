@@ -404,4 +404,50 @@ void CAT(operator,+) (const Foo&, const Foo&) {}
 void operator CAT(+,=) (const Foo&, const Foo&) {}
 """
 
+class FuncTemplTest (Regression, Test):
+  test = """
+// Test function templates
+
+// Test template arg
+template <class A>
+int func1(A a) { return 0; };
+
+// Test template return
+template <class A>
+A func2(int i) { return 0; };
+
+// Test template arg and return
+template <class A>
+A func2(A a) { return 0; };
+
+// Test template arg and return w/ different types
+template <class A, class B>
+B func2(A a) { return 0; };
+
+// Test template arg and return w/ different types. Function declaration
+template <class A, class B>
+B func2(A a);
+"""
+
+class FuncTemplArgTest (Regression, Test):
+  test = """
+// Test function pointers as template arguments
+
+template <class Foo>
+struct function { };
+
+// Test template class with function argument
+// (not really a template function)
+template <class A1, class A2>
+struct function<void (A1,A2)> { };
+
+// Test return type fptr
+template <class R>
+struct function<R (void)> { };
+
+// Test return type fptr
+template <class R>
+struct function<R (int, int)> { };
+"""
+
 # vim: set et sts=2 ts=8 sw=2:

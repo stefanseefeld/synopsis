@@ -17,6 +17,7 @@ namespace Types
   class Unknown;
   class TemplateType;
   class FuncPtr;
+  class Dependent;
 }
 
 // Forward declare the SWalker class
@@ -34,6 +35,7 @@ enum NamespaceType
   NamespaceNamed, //.< Normal, named, namespace. name is its given name
   NamespaceAnon, //.< An anonymous namespace. name is the filename
   NamespaceUnique, //.< A unique namespace. name is the type (for, while, etc.)
+  NamespaceTemplate, //.< A template namespace. name is empty
 };
 
 
@@ -85,8 +87,10 @@ public:
   // AST Methods
   //
 
-  //. Add the given Declaration to the current scope
-  void add(AST::Declaration* declaration);
+  //. Add the given Declaration to the current scope. If is_template is true,
+  //. then it is added to the parent of the current scope, assuming that the
+  //. current scope is the temporary template scope
+  void add(AST::Declaration* declaration, bool is_template = false);
 
   //. Add the given non-declaration type to the current scope
   void add(Types::Named* named);
@@ -99,11 +103,19 @@ public:
   //. End the current namespace and pop the previous Scope off the stack
   void end_namespace();
 
+  //. Starts a new template namespace
+  AST::Namespace* start_template();
+
+  //. End the current template namespace
+  void end_template();
+
   //. Construct and open a new Class. The Class becomes the current scope,
   //. and the old one is pushed onto the stack. The type argument is the
   //. type, ie: "class" or "struct". This is tested to determine the default
-  //. accessability.
-  AST::Class* start_class(int, const std::string& type, const std::string& name);
+  //. accessability. If this is a template class, the templ_params vector must
+  //. be non-null pointer
+  AST::Class* start_class(int, const std::string& type, const std::string& name,
+      AST::Parameter::vector* templ_params);
 
   //. Construct and open a new Class with a qualified name
   AST::Class* start_class(int, const std::string& type, const ScopedName& names);
@@ -124,7 +136,9 @@ public:
   void end_function_impl();
 
   //. Add an operation
-  AST::Operation* add_operation(int, const std::string& name, const std::vector<std::string>& premod, Types::Type* ret, const std::string& realname);
+  AST::Operation* add_operation(int, const std::string& name, 
+      const std::vector<std::string>& premod, Types::Type* ret, 
+      const std::string& realname, AST::Parameter::vector* templ_params);
 
   //. Add a variable
   AST::Variable* add_variable(int, const std::string& name, Types::Type* vtype, bool constr, const std::string& type);
@@ -165,6 +179,9 @@ public:
 
   //. Create a Base type for the given name in the current scope
   Types::Base* create_base(const std::string& name);
+
+  //. Create a Dependent type for the given name in the current scope
+  Types::Dependent* create_dependent(const std::string& name);
 
   //. Create an Unknown type for the given name in the current scope
   Types::Unknown* create_unknown(const std::string& name);

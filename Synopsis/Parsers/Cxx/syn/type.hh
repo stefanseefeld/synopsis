@@ -13,7 +13,7 @@
 
 // Forward declare AST::Declaration
 namespace AST
-{ class Declaration; }
+{ class Declaration; class Parameter; }
 
 //. The Type hierarchy
 namespace Types
@@ -107,17 +107,17 @@ namespace Types
   };
 
 
-  //. Template parameter dependant types have a possibly scoped name, but no
+  //. Template parameter dependent types have a possibly scoped name, but no
   //. known type. Member types of template-parameters will be scoped, eg:
   //. 
   //. template<class T> class A { T::B b; }
   //.
   //. Here T::B is a depandant type, and so is T.
-  class Dependant : public Named
+  class Dependent : public Named
   {
   public:
     //. Constructor
-    Dependant(const ScopedName& name);
+    Dependent(const ScopedName& name);
     //. Accept the given visitor
     virtual void
     accept(Visitor*);
@@ -154,17 +154,21 @@ namespace Types
 
 
   //. Template types are declared template types. They have a name, a
-  //. declaration (which is an AST::Class) and a vector of Types used to
-  //. declare this template. Currently these must be Base types, but a
-  //. future version may implement a special type for this purpose.
+  //. declaration (which is an AST::Class) and a vector of parameters
+  //. declare this template. Each parameter (using AST::Parameter) should be
+  //. either the correct type for non-type parameters, or a Dependent for type
+  //. parameters. In either case, there may be default values.
   class Template : public Declared
   {
   public:
     //. A vector of Types::Template objects
     typedef std::vector<Types::Template*> vector;
 
+    //. A vector of Parameter objects
+    typedef std::vector<AST::Parameter*> param_vector;
+
     //. Constructor
-    Template(const ScopedName& name , AST::Declaration* decl, const Type::vector& params);
+    Template(const ScopedName& name , AST::Declaration* decl, const param_vector& params);
 
     //. Accept the given visitor
     virtual void
@@ -175,11 +179,11 @@ namespace Types
     //
 
     //. Constant version of parameters()
-    const Type::vector&
+    const param_vector&
     parameters() const { return m_params; }
 
     //. Returns the vector of parameter Types
-    Type::vector&
+    param_vector&
     parameters() { return m_params; }
 
     //. Constant version of specializations()
@@ -193,7 +197,7 @@ namespace Types
 
   private:
     //. The parameters
-    Type::vector m_params;
+    param_vector m_params;
 
     //. The vector of specializations for this template
     Template::vector m_specs;
@@ -365,7 +369,7 @@ namespace Types
     virtual void visit_array(Array*);
     virtual void visit_named(Named*);
     virtual void visit_base(Base*);
-    virtual void visit_dependant(Dependant*);
+    virtual void visit_dependent(Dependent*);
     virtual void visit_declared(Declared*);
     virtual void visit_template_type(Template*);
     virtual void visit_parameterized(Parameterized*);

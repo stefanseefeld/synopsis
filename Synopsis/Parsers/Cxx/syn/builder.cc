@@ -169,14 +169,26 @@ const Declaration::vector& Builder::builtin_decls() const
 // AST Methods
 //
 
-void Builder::add(AST::Declaration* decl)
+void Builder::add(AST::Declaration* decl, bool is_template)
 {
+  ScopeInfo* scopeinfo;
+  AST::Declaration::vector* decls;
+  if (is_template)
+  {
+    scopeinfo = m_scopes[m_scopes.size()-2];
+    decls = &scopeinfo->scope_decl->declarations();
+  }
+  else
+  {
+    scopeinfo = m_scopes.back();
+    decls = &m_scope->declarations();
+  }
   // Set access
-  decl->set_access(m_scopes.back()->access);
+  decl->set_access(scopeinfo->access);
   // Add declaration
-  m_scope->declarations().push_back(decl);
+  decls->push_back(decl);
   // Add to name dictionary
-  m_scopes.back()->dict->insert(decl);
+  scopeinfo->dict->insert(decl);
 }
 
 void Builder::add(Types::Named* type)
@@ -192,7 +204,7 @@ AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
   bool generated = false;
   // Decide what to do based on the given namespace type
   switch (nstype)
-    {
+  {
     case NamespaceNamed:
       type_str = "namespace";
       { // Check if namespace already exists
@@ -223,17 +235,31 @@ AST::Namespace* Builder::start_namespace(const std::string& n, NamespaceType nst
         name = buf.str();
       }
       break;
-    }
+    case NamespaceTemplate:
+      type_str = "template";
+      { // name is empty or the type. Encode it with a unique number
+        if (!name.size()) name = "template";
+        int count = m_scopes.back()->getCount(name);
+        std::ostringstream buf; buf << '`' << name << count;
+        name = buf.str();
+      }
+      break;
+  }
   // Create a new namespace object unless we already found one
   if (ns == NULL)
+  {
+    generated = true;
+    // Create the namspace
+    if (nstype == NamespaceTemplate)
+      ns = new AST::Namespace(m_filename, 0, type_str, m_scope->name());
+    else
     {
-      generated = true;
-      // Generate the name
+      // Generate a nested name
       ScopedName ns_name = extend(m_scope->name(), name);
-      // Create the Namespace
       ns = new AST::Namespace(m_filename, 0, type_str, ns_name);
       add(ns);
     }
+  }
   // Create ScopeInfo object. Search is this NS plus enclosing NS's search
   ScopeInfo* ns_info = find_info(ns);
   ScopeInfo* current = m_scopes.back();
@@ -297,13 +323,25 @@ void Builder::update_class_base_search()
     scope->search.push_back(*iter++);
 }
 
-AST::Class* Builder::start_class(int lineno, const std::string& type, const std::string& name)
+AST::Class* Builder::start_class(int lineno, const std::string& type, const std::string& name, AST::Parameter::vector* templ_params)
 {
   // Generate the name
-  ScopedName class_name = extend(m_scope->name(), name);
+  ScopedName class_name;
+  if (templ_params)
+    class_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
+  else
+    class_name = extend(m_scope->name(), name);
   // Create the Class
   AST::Class* ns = new AST::Class(m_filename, lineno, type, class_name);
-  add(ns);
+  // Create template type
+  if (templ_params)
+  {
+    Types::Template* templ = new Types::Template(class_name, ns, *templ_params);
+    ns->set_template_type(templ);
+    add(ns, true);
+  }
+  else
+    add(ns);
   // Push stack. Search is this Class plus base Classes plus enclosing NS's search
   ScopeInfo* ns_info = find_info(ns);
   ns_info->access = (type == "struct" ? AST::Public : AST::Private);
@@ -360,9 +398,21 @@ void Builder::end_class()
   m_scope = m_scopes.back()->scope_decl;
 }
 
+AST::Namespace* Builder::start_template()
+{
+  return start_namespace("", NamespaceTemplate);
+}
+
+void Builder::end_template()
+{
+  end_namespace();
+}
+
+
 //. Start function impl scope
 void Builder::start_function_impl(const ScopedName& name)
 {
+  STrace trace("Builder::start_function_impl");
   // Create the Namespace
   AST::Namespace* ns = new AST::Namespace(m_filename, 0, "function", name);
   ScopeInfo* ns_info = find_info(ns);
@@ -373,9 +423,9 @@ void Builder::start_function_impl(const ScopedName& name)
       scope_name.pop_back();
       scope_name.insert(scope_name.begin(), ""); // force lookup from global, not current scope, since name is fully qualified
       Types::Declared* scope_type = dynamic_cast<Types::Declared*>(m_lookup->lookupType(scope_name));
-      if (!scope_type) { std::cerr << "Fatal: Qualified func name was not in a declaration." << std::endl; exit(1); }
+      if (!scope_type) { throw ERROR("Warning: Qualified func name was not in a declaration. Parent scope is:" << scope_name);}
       AST::Scope* scope = dynamic_cast<AST::Scope*>(scope_type->declaration());
-      if (!scope) { std::cerr << "Fatal: Qualified func name was not in a scope." << std::endl; exit(1); }
+      if (!scope) { throw ERROR("Warning: Qualified func name was not in a scope."); }
       scope_info = find_info(scope);
   } else {
       scope_info = find_info(m_global);
@@ -398,13 +448,28 @@ void Builder::end_function_impl()
 }
 
 //. Add an operation
-AST::Operation* Builder::add_operation(int line, const std::string& name, const std::vector<std::string>& premod, Types::Type* ret, const std::string& realname)
+AST::Operation* Builder::add_operation(int line, const std::string& name, 
+    const std::vector<std::string>& premod, Types::Type* ret, 
+    const std::string& realname, AST::Parameter::vector* templ_params)
 {
   // Generate the name
-  ScopedName scope = m_scope->name();
-  scope.push_back(name);
-  AST::Operation* oper = new AST::Operation(m_filename, line, "method", scope, premod, ret, realname);
-  add(oper);
+  ScopedName oper_name;
+  if (templ_params)
+    oper_name = extend(m_scopes[m_scopes.size()-2]->scope_decl->name(), name);
+  else
+    oper_name = extend(m_scope->name(), name);
+
+  AST::Operation* oper = new AST::Operation(m_filename, line, "method", oper_name, premod, ret, realname);
+
+  // Create template type
+  if (templ_params)
+  {
+    Types::Template* templ = new Types::Template(oper_name, oper, *templ_params);
+    oper->set_template_type(templ);
+    add(oper, true);
+  }
+  else
+    add(oper);
   return oper;
 }
 
@@ -556,6 +621,11 @@ Types::Unknown* Builder::add_unknown(const std::string& name)
 Types::Base* Builder::create_base(const std::string& name)
 {
   return new Types::Base(extend(m_scope->name(), name));
+}
+
+Types::Dependent* Builder::create_dependent(const std::string& name)
+{
+  return new Types::Dependent(extend(m_scope->name(), name));
 }
 
 std::string Builder::dump_search(ScopeInfo* scope)

@@ -1,5 +1,5 @@
 // vim: set ts=8 sts=2 sw=2 et:
-// $Id: swalker.cc,v 1.57 2002/10/11 07:37:29 chalky Exp $
+// $Id: swalker.cc,v 1.58 2002/10/20 15:38:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2000, 2001 Stephen Davies
@@ -21,6 +21,9 @@
 // 02111-1307, USA.
 //
 // $Log: swalker.cc,v $
+// Revision 1.58  2002/10/20 15:38:10  chalky
+// Much improved template support, including Function Templates.
+//
 // Revision 1.57  2002/10/11 07:37:29  chalky
 // Fixed problem with comments and setting a basename
 //
@@ -65,7 +68,7 @@
 //
 // SWalker class
 
-#include <iostream.h>
+#include <iostream>
 #include <string>
 #include <typeinfo>
 #include <strstream>
@@ -119,6 +122,7 @@ SWalker::SWalker(const std::string &source, Parser* parser, Builder* builder, Pr
   m_builder(builder),
   m_decoder(new Decoder(m_builder)),
   m_declaration(0),
+  m_template(0),
   m_filename_ptr(0),
   m_lineno(0),
   m_source(source),
@@ -641,23 +645,48 @@ SWalker::TranslateClassSpec(Ptree* node)
   std::string type = parse_name(pClass);
   char* encname = node->GetEncodedName();
   m_decoder->init(encname);
-  if (encname[0] == 'Q')
-    {
-      ScopedName names;
-      m_decoder->decodeQualName(names);
-      clas = m_builder->start_class(m_lineno, type, names);
-    }
-  else if (encname[0] == 'T')
+  if (encname[0] == 'T')
+  {
+    // Specialization
     // TODO: deal with this.
     // Eg: /usr/include/g++-3/std/straits.h
     // search: /^struct string_char_traits <char> {/
     // encname: "T\222string_char_traits\201c"
-    return 0;
-  else
-    {
-      std::string name = m_decoder->decodeName();
-      clas = m_builder->start_class(m_lineno, type, name);
-    }
+    LOG("Specialization?");
+    nodeLOG(node);
+    LOG("encname:"<<(code_iter)encname);
+    Types::Parameterized* param = dynamic_cast<Types::Parameterized*>(m_decoder->decodeTemplate());
+    // If a non-type param was found, it's name will be '*'
+    for (size_t i = 0; i < param->parameters().size(); i++)
+      if (Types::Dependent* dep = dynamic_cast<Types::Dependent*>(param->parameters()[i]))
+      {
+        if (dep->name().size() == 1 && dep->name()[0] == "*")
+        {
+          // Find the value of this parameter
+          std::string name = parse_name(pName->Second()->Second()->Nth(i*2));
+          dep->name()[0] = name;
+        }
+      }
+
+    std::string name, spacey_name = m_type_formatter->format(param);
+    std::remove_copy(
+        spacey_name.begin(), spacey_name.end(),
+        std::back_inserter(name), ' ');
+    clas = m_builder->start_class(m_lineno, type, name, m_template);
+    // TODO: figure out spec stuff, like what to do with vars, link to
+    // original template, etc.
+  }
+  else if (encname[0] == 'Q')
+  {
+    ScopedName names;
+    m_decoder->decodeQualName(names);
+    clas = m_builder->start_class(m_lineno, type, names);
+  }
+  else 
+  {
+    std::string name = m_decoder->decodeName();
+    clas = m_builder->start_class(m_lineno, type, name, m_template);
+  }
   if (m_links && pName) m_links->link(pName, clas);
   LOG("Translating class '" << clas->name() << "'");
 
@@ -693,119 +722,100 @@ Ptree*
 SWalker::TranslateTemplateClass(Ptree* def, Ptree* node)
 {
   STrace trace("SWalker::TranslateTemplateClass");
-  //nodeLOG(def);
-  if (Ptree::Length(node) == 4)
-    {
-      // if Class definition (not just declaration)
-      update_line_number(def);
-      
-      // Create AST.Class object
-      AST::Class *clas;
-      std::string type = parse_name(node->First());
-      std::vector<Inheritance*> parents = TranslateInheritanceSpec(node->Nth(2));
-      char* encname = node->GetEncodedName();
-      //cout << "class encname: " << encname << endl;
-      if (encname[0] == 'Q')
-        {
-          std::vector<std::string> names;
-          m_decoder->init(encname);
-          m_decoder->decodeQualName(names);
-          clas = m_builder->start_class(m_lineno, type, names);
-        }
-      else if (encname[0] == 'T')
-        {
-          // Specialization.. for now just make class with encoded name. FIXME
-          LOG("Specialization!");
-          nodeLOG(def);
-          //return 0;
-          std::string spacey_name = parse_name(node->Second()), name;
-          std::remove_copy(
-              spacey_name.begin(), spacey_name.end(),
-              std::back_inserter(name), ' ');
-          clas = m_builder->start_class(m_lineno, type, name);
-        }
-      else
-        {
-          std::string name = parse_name(node->Second());
-          clas = m_builder->start_class(m_lineno, type, name);
-        }
-      clas->parents() = parents;
-      m_builder->update_class_base_search();
-      PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
-      add_comments(clas, cspec->GetComments());
+  AST::Parameter::vector* old_params = m_template;
+  update_line_number(def);
+  m_builder->start_template();
+  TranslateTemplateParams(def->Third());
+  TranslateClassSpec(node);
+  m_builder->end_template();
+  m_template = old_params;
+  return 0;
+}
 
-      // Create Template type
-      // FIXME: this needs to be done before base classes!!!
-      Types::Type::vector templ_params;
-      Ptree* params = def->Third();
-      while (params)
-        {
-          Ptree* param = params->First();
-          //param->Display2(cout);
-          if (param->First()->Eq("class") || param->First()->Eq("typename"))
-            {
-              // Ensure that there is an identifier (it is optional!)
-              if (param->Cdr() && param->Second())
-                {
-                  // This parameter specifies a type, add as base
-                  Types::Base* base = m_builder->create_base(parse_name(param->Second()));
-                  m_builder->add(base);
-                  templ_params.push_back(base);
-                }
-            }
-          else if (param->First()->Eq("template"))
-            {
-              // A non-type parameter that is templatized
-              // eg: template< class A, template<class T> class B = foo > C;
-              // FIXME.
-              LOG("templated non-type template parameter!");
-              nodeLOG(param);
-            }
-          else
-            {
-              // This parameter specifies a value or something
-              // TODO: read spec and figure out wtf this is.
-              LOG("non-type template parameter! approximating..");
-              nodeLOG(param);
-              Ptree* p = param->Second();
-              while (p && p->Car() && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
-              Types::Base* base = m_builder->create_base(parse_name(p));
-              templ_params.push_back(base);
-            }
-          params = Ptree::Rest(params->Rest());
+void SWalker::TranslateTemplateParams(Ptree* params)
+{
+  STrace trace("SWalker::TranslateTemplateParams");
+  m_template = new AST::Parameter::vector;
+  AST::Parameter::vector& templ_params = *m_template;
+  // Create Template type
+  std::string pre_mods, post_mods, name, value;
+  while (params)
+  {
+    Ptree* param = params->First();
+    nodeLOG(param);
+    if (param->First()->Eq("class") || param->First()->Eq("typename"))
+    {
+      // Ensure that there is an identifier (it is optional!)
+      if (param->Cdr() && param->Second())
+      {
+        // This parameter specifies a type, add as dependent 
+        Types::Dependent* dep = m_builder->create_dependent(parse_name(param->Second()));
+        m_builder->add(dep);
+        templ_params.push_back(new AST::Parameter(pre_mods, dep, post_mods, name, value));
       }
-      Types::Template* templ = new Types::Template(clas->name(), clas, templ_params);
-      clas->set_template_type(templ);
-      std::ostrstream buf;
-      buf << "template " << clas->type() << std::ends;
-      clas->set_type(buf.str());
-
-      // Now that template args have been created, translate parents
-      clas->parents() = TranslateInheritanceSpec(node->Nth(2));
-      m_builder->update_class_base_search();
-
-      // Push the impl stack for a cache of func impls
-      m_func_impl_stack.push_back(FuncImplVec());
-
-      // Translate the body of the class
-      TranslateBlock(node->Nth(3));
-      
-      // Translate any func impls inlined in the class
-      FuncImplVec& vec = m_func_impl_stack.back();
-      FuncImplVec::iterator iter = vec.begin();
-      while (iter != vec.end())
-        TranslateFuncImplCache(*iter++);
-      m_func_impl_stack.pop_back();
-          
-      m_builder->end_class();
     }
-  else if (Ptree::Length(node) == 2)
+    else if (param->First()->Eq("template"))
     {
-      // Forward declaration
-      std::string name = parse_name(node->Second());
-      m_builder->add_unknown(name);
+      // A non-type parameter that is templatized
+      // eg: template< class A, template<class T> class B = foo > C;
+      // FIXME.
+      LOG("templated non-type template parameter!");
+      nodeLOG(param);
     }
-  return 0; 
+    else
+    {
+      // This parameter specifies a value or something
+      // FIXME can do a lot more here..
+      LOG("non-type template parameter! approximating..");
+      nodeLOG(param);
+      Ptree* p = param->Second();
+      while (p && p->Car() && p->Car()->IsLeaf() && (p->Car()->Eq('*') || p->Car()->Eq('&'))) p = Ptree::Rest(p);
+      std::string name = parse_name(p);
+      Types::Dependent* dep = m_builder->create_dependent(name);
+      m_builder->add(dep);
+      // Figure out the type of the param
+      m_decoder->init(param->Second()->GetEncodedType());
+      Types::Type* param_type = m_decoder->decodeType();
+      templ_params.push_back(new AST::Parameter(pre_mods, param_type, post_mods, name, value));
+    }
+    // Skip comma
+    params = Ptree::Rest(params->Rest());
+  }
+  /*
+  Types::Template* templ = new Types::Template(decl->name(), decl, templ_params);
+  if (AST::Class* clas = dynamic_cast<AST::Class*>(decl))
+    clas->set_template_type(templ);
+  else if (AST::Function* func = dynamic_cast<AST::Function*>(decl))
+    func->set_template_type(templ);
+  std::ostrstream buf;
+  buf << "template " << decl->type() << std::ends;
+  decl->set_type(buf.str());
+  */
+}
+
+Ptree*
+SWalker::TranslateTemplateFunction(Ptree* def, Ptree* node)
+{
+  STrace trace("SWalker::TranslateTemplateFunction NYI");
+  nodeLOG(def);
+  nodeLOG(node);
+  if (node->What() != ntDeclaration) {
+    LOG("Warning: Unknown node type in template");
+    nodeLOG(def);
+    return 0;
+  }
+
+  LOG("What is: " << node->What());
+  LOG("Encoded name is: " << (code_iter)node->GetEncodedName());
+
+  AST::Parameter::vector* old_params = m_template;
+  update_line_number(def);
+  m_builder->start_template();
+  TranslateTemplateParams(def->Third());
+  TranslateDeclaration(node);
+  m_builder->end_template();
+  m_template = old_params;
+  return 0;
 }
 
 //. Linkage Spec
@@ -1046,7 +1056,7 @@ SWalker::TranslateFunctionDeclarator(Ptree* decl, bool is_const)
       // Append const after params if this is a const function
       if (is_const) name += "const";
       // Create AST::Operation object
-      oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname);
+      oper = m_builder->add_operation(m_lineno, name, premod, returnType, realname, m_template);
       oper->parameters() = params;
     }
   add_comments(oper, m_declaration);

@@ -87,6 +87,9 @@ public:
     //. function.
     std::string format_parameters(std::vector<AST::Parameter*>& params);
 
+    //. Translates the template parameters and creates the template type.
+    void SWalker::TranslateTemplateParams(Ptree* params);
+
     // default translation
     virtual Ptree* TranslatePtree(Ptree*);
 
@@ -182,7 +185,13 @@ private:
     Decoder* m_decoder;
     Lookup* m_lookup;
 
+    //. A pointer to the currect declaration ptree, if any, used to get the
+    //. return type and modifiers, etc.
     Ptree* m_declaration;
+    //. A pointer to the current template parameters, if any, used to get the
+    //. template parameters and set in the declaration. Should be NULL if not
+    //. in a template.
+    std::vector<AST::Parameter*>* m_template;
     //. This pointer is used as a comparison to avoid creating new strings
     char* m_filename_ptr;
     //. The current filename as string. This way refcounting will be used

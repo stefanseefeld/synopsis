@@ -108,7 +108,7 @@ Types::Type* Decoder::decodeType()
         case 'C': premod.push_back("const"); break;
         case 'V': premod.push_back("volatile"); break;
         case 'A': premod.push_back("[]"); break;
-        case '*': name = "..."; break;
+	case '*': {ScopedName n; n.push_back("*"); baseType = new Types::Dependent(n); break;}
         case 'i': name = "int"; break;
         case 'v': name = "void"; break;
         case 'b': name = "bool"; break;
@@ -216,6 +216,7 @@ Types::Type* Decoder::decodeTemplate()
 {
     // Template type: Name first, then size of arg field, then arg
     // types eg: T6vector54cell <-- 5 is len of 4cell
+    if (*m_iter == 'T') ++m_iter;
     std::string name = decodeName();
     code_iter tend = m_iter; tend += *m_iter++ - 0x80;
     std::vector<Types::Type*> types;
