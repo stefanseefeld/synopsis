@@ -12,16 +12,17 @@ class Project:
     ['FormatAction', 327, 237, 'HTML Formatter', struct(
       stylesheet='style.css',
       stylesheet_file='../html.css',
-      pages=['ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'NameIndex', 'FramesIndex'],
+      pages=['ScopePages', 'ModuleListing', 'ModuleIndexer', 'FileTree', 'InheritanceTree', 'InheritanceGraph', 'FilePages', 'NameIndex', 'FramesIndex', 'XRefPages'],
       InheritanceGraph=struct(
         min_size=3,
-	min_group_size=10
+	min_group_size=5,
+	direction='horizontal'
       ),
       ScopePages=struct(
         parts=['Heading', 'Summary', 'Inheritance', 'Detail'],
-        heading_formatters=['Heading', 'ClassHierarchyGraph', 'DetailCommenter', 'SourceLinker'],
-        summary_formatters=['SummaryAST', 'SummaryCommenter', 'SourceLinker'],
-        detail_formatters=['DetailAST', 'DetailCommenter', 'SourceLinker']
+        heading_formatters=['Heading', 'ClassHierarchyGraph', 'DetailCommenter', 'SourceLinker', 'XRefLinker'],
+        summary_formatters=['SummaryAST', 'SummaryCommenter', 'SourceLinker', 'XRefLinker'],
+        detail_formatters=['DetailAST', 'DetailCommenter', 'SourceLinker', 'XRefLinker']
       ),
       datadir='/usr/local/share/synopsis',
       file_layout='Synopsis.Formatter.HTML.FileLayout.FileLayout',
@@ -35,6 +36,9 @@ class Project:
       ),
       FileTree=struct(
         link_to_pages=1
+      ),
+      XRefPages=struct(
+	xref_file='BoostXRef/compiled.xref'
       ),
       name='HTML',
       verbose=1,
@@ -52,15 +56,21 @@ class Project:
       main_file=1,
       verbose=0,
       emulate_compiler='g++-3.2',
-      syntax_prefix='BoostLinks/'
+      syntax_prefix='BoostLinks/',
+      xref_prefix='BoostXRef/'
     )],
     ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
     ['SourceAction', 50, 126, 'Test Source', [
       ['Simple', 'boost/boost/python/dict.hpp', None]
     ]],
     ['LinkerAction', 326, 58, 'Combined AST', struct(
+      name='Linker',
       comment_processors=['dummy', 'ss'],
-      name='Linker'
+      operations=['Unduplicator', 'Stripper', 'NameMapper', 'Comments', 'EmptyNS', 'AccessRestrictor', 'XRefCompiler'],
+      XRefCompiler=struct(
+	xref_path='BoostXRef/%s',
+	xref_file='BoostXRef/compiled.xref'
+      )
     )],
     ['CacherAction', 327, 145, 'Combined AST Cache', 'BoostFiles', '']
   ]
