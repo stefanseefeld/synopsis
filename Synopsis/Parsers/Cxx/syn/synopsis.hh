@@ -37,7 +37,7 @@ public:
   PyObject *addForward(const string &);
   PyObject *addDeclared(const string &, PyObject *);
   PyObject *addTemplate(const string &, PyObject *, PyObject *);
-  PyObject *addModifier(const string &, PyObject *, const vector<string> &, const vector<string> &);
+  PyObject *addModifier(PyObject *, const vector<string> &, const vector<string> &);
   PyObject *addParametrized(const string &, PyObject *, const vector<PyObject *> &);
 
   //.

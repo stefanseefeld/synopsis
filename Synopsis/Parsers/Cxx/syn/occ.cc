@@ -17,6 +17,8 @@
 #include "ptree.h"
 #include "encoding.h"
 
+/* TODO: figure out how to store overloaded method names :/ */
+
 /*
  * the following isn't used anywhere. Though it has to be defined and initialized to some dummy default
  * values since it is required by the opencxx.a module, which I don't want to modify...
@@ -45,6 +47,7 @@ public:
 //   virtual Ptree *TranslateTemplateDecl(Ptree *);
   virtual Ptree *TranslateDeclarator(bool, PtreeDeclarator*);
   virtual Ptree *TranslateDeclarator(Ptree *);
+  virtual Ptree *TranslateFunctionImplementation(Ptree *);
   virtual Ptree *TranslateTypedef(Ptree *);
   virtual Ptree *TranslateNamespaceSpec(Ptree *);
   virtual Ptree *TranslateClassSpec(Ptree *);
@@ -62,7 +65,11 @@ private:
   vector<PyObject *> _declarators;
 
   //. Return a Type object from the encoded type
-  PyObject* parseEncodedType(string enctype, string::iterator&);
+  PyObject* decodeType();
+  void initTypeDecoder(string& enctype, string::iterator&);
+
+  string* m_enctype;
+  string::iterator* m_enc_iter;
 
   //. Nasty hack to pass stuff between methods :/
   Ptree* m_declaration; 
@@ -133,6 +140,15 @@ PyObject *PyWalker::lookupType(Ptree *node, PyObject *scopes)
     }
 }
 
+//. Translates a declaration, either variable, typedef or function
+//. Function prototype:
+//.  [ [modifiers] name [declarators] ; ]
+//. Function impl:
+//.  [ [modifiers] name declarator [ { ... } ] ]
+//. Typedef:
+//.  ?
+//. Variables:
+//.  ?
 Ptree *PyWalker::TranslateDeclaration(Ptree *declaration)
 {
     Trace trace("PyWalker::TranslateDeclaration");
@@ -144,64 +160,77 @@ Ptree *PyWalker::TranslateDeclaration(Ptree *declaration)
     return declaration;
 }
 
+Ptree *PyWalker::TranslateFunctionImplementation(Ptree *p)
+{
+    TranslateDeclarator(false, (PtreeDeclarator*)p->Third());
+    return p;
+}
+
+//. Translates a declarator
+//. Function proto:
+//.   [ { * | & }* name ( [params] ) ]
+//. param:
+//.   [ [types] { [ { * | & }* name ] { = value } } ]
 Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
 {
     Trace trace("PyWalker::TranslateDeclarator(bool,PtreeDeclarator*)");
-    //decl->Display();
     if (decl->What() != ntDeclarator) return decl;
     char* encname = decl->GetEncodedName();
     char* enctype = decl->GetEncodedType();
     if (!encname || !enctype) return decl;
     if (enctype[0] == 'F') {
+	//cout << "\n*** Function: "; decl->Display();
 #if 0
-	cout << "FUNCTION: "; decl->Display();
 	cout << "encoding '";
 	Encoding::Print(cout, enctype); cout << "' '";
 	Encoding::Print(cout, encname); cout << '\'' << endl;
 #endif
 	// Figure out parameter types:
 	string enctype_s(enctype);
-	string::iterator iter = enctype_s.begin()+1;
-	typedef vector<PyObject*> PyO_vec;
-	vector<PyObject*> param_types;
-	while (*iter != '_') {
-	    PyObject *type = parseEncodedType(enctype_s, iter);
-	    if (!type) break;
-	    param_types.push_back(type);
-	}
-
+	string::iterator enc_iter = enctype_s.begin()+1;
+	initTypeDecoder(enctype_s, enc_iter);
+	
 	// Create parameter objects
 	vector<PyObject*> params;
-	Ptree* p = decl->Rest();
+	Ptree *p = decl->Rest();
 	while (p && !p->Car()->Eq('(')) p = Ptree::Rest(p);
 	if (!p) { cout << "Warning: error finding params!" << endl; return decl; }
-	p = p->Second();
-	PyO_vec::iterator piter, pend = param_types.end();
-	for (piter = param_types.begin(); piter != pend; ++piter) {
+	Ptree* pparams = p->Second();
+	while (pparams) {
 	    string name, value;
-	    if (!p || !p->Car()) break;
-	    Ptree* q = p->Car();
-	    if (q->Length() > 1) {
-		name = q->Second()->ToString();
-		if (q->Length() > 3) {
-		    value = q->Nth(3)->ToString();
+	    if (pparams->Car()->Eq(',')) pparams = pparams->Cdr();
+	    Ptree* param = pparams->First();
+	    //Ptree* ptype = param->First();
+	    PyObject* type = decodeType();
+	    if (!type) break; // end of encoding
+	    if (param->Length() > 1) {
+		Ptree* pname = param->Second();
+		//cout << "pname == "; pname->Display();
+		if (pname && pname->Car()) {
+		    while (pname && (pname->Car()->Eq('*') || pname->Car()->Eq('&'))) pname = pname->Cdr();
+		    if (pname) {
+			name = pname->Car()->ToString();
+			//cout << "name == " << name << endl;
+		    }
+		}
+		if (param->Length() > 2) {
+		    value = param->Nth(3)->ToString();
 		}
 	    }
-	    params.push_back(synopsis->Parameter("", *piter, "", name, value));
-	    p = Ptree::Rest(p);
-	    if (p && p->Car()->Eq(',')) p = p->Cdr();
-
+	    params.push_back(synopsis->Parameter("", type, "", name, value));
+	    pparams = Ptree::Rest(pparams);
 	}
 
 	// Figure out the return type:
-	if (*iter != '_') iter += enctype_s.find('_', iter-enctype_s.begin());
-	PyObject* returnType = parseEncodedType(enctype_s, ++iter);
+	//enc_iter = enctype_s.begin() + enctype_s.find('_') + 1;
+	while (*enc_iter++ != '_');
+	PyObject* returnType = decodeType();
 
 	// Find name:
-	int nth = 0;
-	while (decl->Nth(nth)->Eq('&') || decl->Nth(nth)->Eq('*'))
-	    nth++;
-	string name = decl->Nth(nth)->ToString();
+	for (p = decl; p->Car()->Eq('*') || p->Car()->Eq('&'); p = p->Cdr());
+	string name = p ? p->Car()->ToString() : "";
+    
+	// cout << "\n\e[1m"<<name<<"\e[m - ";decl->Display();
 
 	// Figure out premodifiers
 	vector<string> premod;
@@ -216,7 +245,14 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
     return decl;
 }
 
-PyObject* PyWalker::parseEncodedType(string enctype, string::iterator &iter)
+void PyWalker::initTypeDecoder(string& enctype, string::iterator& iter)
+{
+    m_enctype = &enctype;
+    m_enc_iter = &iter;
+    //cout << "*** Starting decoding of \"" << enctype << "\"" << endl;
+}
+
+PyObject* PyWalker::decodeType()
 {
     /* NOTE: This function is far from done. See encoding.cc, and also need to
      * find a better way of getting integral types than addBase() */
@@ -224,43 +260,71 @@ PyObject* PyWalker::parseEncodedType(string enctype, string::iterator &iter)
     // OpenC++ uses an offset for some things..
     const int DigitOffset = 0x80;
 
-    string::iterator end = enctype.end();
+    string::iterator end = m_enctype->end(), &iter = *m_enc_iter;
     // PyObject* obj = 0;
-    for (;iter != end; ++iter) {
-	int c = int((unsigned char)*iter);
-	if (c == 'P') { /* cout << "Pointer to "; */ }
-	else if (c == 'R') { /*cout << "Reference to "; */ }
-	else if (c == 'S') { /*cout << "Signed "; */ }
-	else if (c == 'U') { /*cout << "Unsigned "; */ }
-	else if (c == 'C') { /*cout << "Const"; */ }
-	else if (c == 'i') { ++iter; return synopsis->lookupType("int"); }
-	else if (c == 'v') { ++iter; return synopsis->lookupType("void"); }
-	else if (c == 'b') { ++iter; return synopsis->lookupType("bool"); }
-	else if (c == 's') { ++iter; return synopsis->lookupType("short"); }
-	else if (c == 'c') { ++iter; return synopsis->lookupType("char"); }
-	else if (c == 'l') { ++iter; return synopsis->lookupType("long"); }
-	else if (c == 'j') { ++iter; return synopsis->lookupType("long long"); }
-	else if (c == 'f') { ++iter; return synopsis->lookupType("float"); }
-	else if (c == 'd') { ++iter; return synopsis->lookupType("double"); }
-	else if (c == 'r') { ++iter; return synopsis->lookupType("long double"); }
-	else if (c == '?') {
-	    ++iter;
-	    // Constructor/Destructor has no type FIXME
-	    return synopsis->lookupType("?");
-	} else if (c > DigitOffset) {
+    vector<string> premod, postmod;
+    string name;
+    while (iter != end && !name.length()) {
+	int c = int((unsigned char)*iter++);
+	//cout << "*** '" << (char)c << "' (" << *iter << ")" << endl;
+	if (c == 'P') { postmod.insert(postmod.begin(), "*"); }
+	else if (c == 'R') { postmod.insert(postmod.begin(), "&"); }
+	else if (c == 'S') { premod.push_back("signed"); }
+	else if (c == 'U') { premod.push_back("unsigned"); }
+	else if (c == 'C') { premod.push_back("const"); }
+	else if (c == 'A') { premod.push_back("[]"); }
+	else if (c == 'i') { name = "int"; }
+	else if (c == 'v') { name = "void"; }
+	else if (c == 'b') { name = "bool"; }
+	else if (c == 's') { name = "short"; }
+	else if (c == 'c') { name = "char"; }
+	else if (c == 'l') { name = "long"; }
+	else if (c == 'j') { name = "long long"; }
+	else if (c == 'f') { name = "float"; }
+	else if (c == 'd') { name = "double"; }
+	else if (c == 'r') { name = "long double"; }
+	else if (c == 'e') { name = "..."; }
+	else if (c == '?') { return Py_None; }
+	else if (c > DigitOffset) {
 	    int count = c - DigitOffset;
-	    string name(count, '\0');
-	    copy_n(iter+1, count, name.begin());
+	    // FIXME: resize name instead
+	    string myname(count, '\0');
+	    copy_n(iter, count, myname.begin());
 	    iter += count;
-	    return synopsis->lookupType(name);
-	} else if (c == '_') {
-	    return NULL;
-	} else {
-	    //cout << "Unknown char: " << c;
+	    name = myname;
 	}
+	else if (c == 'Q') {
+	    // Qualified type: first is num of scopes, each a name.
+	    int scopes = int((unsigned char)*iter++) - DigitOffset;
+	    vector<string> names;
+	    while (scopes--) {
+		int length = int((unsigned char)*iter++) - DigitOffset;
+		string myname(length, '\0');
+		copy_n(iter, length, myname.begin());
+		names.push_back(myname);
+		iter += length;
+	    }
+	    // For now just colonate them
+	    string name = names[0];
+	    for (size_t i = 1; i < names.size(); i++)
+		name += "::" + names[i];
+	}
+	else if (c == '_') { return NULL; }
+	else if (c == 'F') {
+	    // Function ptr.. argh!
+	    // FIXME: currently its just skipped
+	    while (decodeType());
+	    decodeType();
+	    return Py_None;
+	}
+	else { cout << "Unknown char decoding '"<<*m_enctype<<"': "<<char(c)<<" "<<c<<" at "<<(iter-m_enctype->begin())<<endl; }
     }
-    cout << "Warning: Unable to parse '" << enctype << "'" << endl;
-    return synopsis->addBase("unknown");
+    if (!name.length()) { return Py_None; }
+
+    PyObject *baseType = synopsis->lookupType(name);
+    if (premod.empty() && postmod.empty())
+	return baseType;
+    return synopsis->addModifier(baseType, premod, postmod);
 }
 
 Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)

@@ -25,6 +25,7 @@ Synopsis::Synopsis(const char *f, PyObject *decl, PyObject *dict)
   addBase("float");
   addBase("double");
   addBase("void");
+  addBase("...");
   //. well...
   addBase("exception");
   PyObject *scope = PyObject_CallMethod(ast, "Scope", "siissO", file, -1, 1, "C++", "file", PyList_New(0));
@@ -79,12 +80,10 @@ PyObject *Synopsis::addTemplate(const string &name, PyObject *declaration, PyObj
   return templ;
 }
 
-PyObject *Synopsis::addModifier(const string &name, PyObject *alias, const vector<string> &pre, const vector<string> &post)
+PyObject *Synopsis::addModifier(PyObject *alias, const vector<string> &pre, const vector<string> &post)
 {
   Trace trace("Synopsis::addModifier");
-  PyObject *pyname = V2L(scopedName(name));
-  PyObject *modifier = PyObject_CallMethod(type, "Modifier", "sOOOO", "C++", pyname, alias, V2L(pre), V2L(post));
-  PyObject_SetItem(dictionary, pyname, modifier);
+  PyObject *modifier = PyObject_CallMethod(type, "Modifier", "sOOO", "C++", alias, V2L(pre), V2L(post));
   return modifier;
 }
 
