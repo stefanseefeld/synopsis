@@ -44,9 +44,10 @@ class Project:
     ['ParserAction', 151, 57, 'C++ Parser', struct(
       defines=['PYTHON_INCLUDE=<python2.1/Python.h>'],
       name='C++',
-      include_path=['/usr/include/g++-v3', '/usr/include/g++-v3/i386-linux', '/usr/lib/gcc-lib/i386-linux/3.2.1/include', '/mnt/src/c++/boost', '/usr/include/python2.1', '/usr/include/g++-v3/backward'],
+      include_path=['/mnt/src/c++/boost', '/usr/include/python2.1'],
       main_file=1,
-      verbose=1
+      verbose=1,
+      emulate_compiler='g++-3.2'
     )],
     ['CacherAction', 237, 57, 'File Cacher', 'BoostFiles', None],
     ['SourceAction', 50, 126, 'Test Source', [
