@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.20 2001/05/13 02:33:18 stefan Exp $
+# $Id: Makefile,v 1.21 2001/05/31 13:21:25 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2000 Stefan Seefeld
@@ -51,7 +51,7 @@ distclean:
 	/bin/rm -f *.pyc *~ local.mk config.cache config.log config.status configure
 
 # to be elaborated further...
-install:
+install: $(subdirs)
 	mkdir -p $(bindir)
 	install -m755 synopsis $(bindir)
 	python -c "import compileall; compileall.compile_dir('.')"
