@@ -17,8 +17,9 @@ using Synopsis::Trace;
 using namespace PTree;
 using namespace SymbolLookup;
 
-Table::Table()
+Table::Table(Language /* ignore for now */)
 {
+  // define the global scope
   my_scopes.push(new Scope());
 }
 
