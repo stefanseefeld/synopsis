@@ -26,8 +26,11 @@
 #   
 #   Utility functions
 
-# $Id: Util.py,v 1.3 2001/01/21 19:31:03 stefan Exp $
+# $Id: Util.py,v 1.4 2001/01/22 06:04:25 stefan Exp $
 # $Log: Util.py,v $
+# Revision 1.4  2001/01/22 06:04:25  stefan
+# some advances on cross referencing
+#
 # Revision 1.3  2001/01/21 19:31:03  stefan
 # new and improved import function that accepts file names or modules
 #
@@ -52,15 +55,6 @@
 #
 # Revision 1.1  2000/08/01 03:28:26  stefan
 # a major rewrite, hopefully much more robust
-#
-# Revision 1.3  1999/11/15 15:49:23  dpg1
-# Documentation strings.
-#
-# Revision 1.2  1999/11/01 20:18:30  dpg1
-# Added string escaping
-#
-# Revision 1.1  1999/10/29 15:47:07  dpg1
-# First revision.
 #
 
 """Utility functions for IDL compilers
@@ -149,23 +143,24 @@ def _import(name):
     if not as_file:
         try:
             mod = __import__(name)
+            for comp in components[1:]:
+                mod = getattr(mod, comp)
+            return mod
         except ImportError, msg:
             pass
-        for comp in components[1:]:
-            mod = getattr(mod, comp)
-        return mod
     # try as file
     try:
         dir = os.path.abspath(os.path.dirname(name))
         name = os.path.basename(name)
+        modname = name[:]
+        if modname[-3:] == ".py": modname = modname[0:-3]
         sys.path.insert(0, dir)
-        mod = __import__(name)
-        sys.path = sys.path[1:]
+        mod = __import__(modname)
     except ImportError, msg:
-        sys.stderr.write("Error: Could not find module")
-        sys.stderr.write(name + "\n")
+        sys.path = sys.path[1:]
+        sys.stderr.write("Error: Could not find module " + name + "\n")
         sys.stderr.flush()
-        raise
+        sys.exit(-1)
     return mod
 
 def splitAndStrip(line):

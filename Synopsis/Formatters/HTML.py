@@ -574,7 +574,6 @@ class BaseFormatter(Type.Visitor, AST.Visitor):
 	"""Same as reference but takes a tuple name"""
 	if not label: label = Util.ccolonName(name, self.scope())
 	entry = toc[name]
-        #if not entry: print "lookup failed for", name
 	if entry: return apply(href, (entry.link, label), keys)
 	return label and span('type', label) or ''
 
