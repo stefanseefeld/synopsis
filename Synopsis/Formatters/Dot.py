@@ -1,4 +1,4 @@
-# $Id: Dot.py,v 1.38 2003/11/19 17:15:06 stefan Exp $
+# $Id: Dot.py,v 1.39 2003/11/19 18:08:07 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -91,7 +91,7 @@ class InheritanceGenerator(AST.Visitor, Type.Visitor):
       label = re.sub('{',r'\{',label)
       label = re.sub('}',r'\}',label)
 
-      self.write("Node" + str(number) + " [shape=\"record\", label=\"" + label + "\"")
+      self.write("Node" + str(number) + " [shape=\"record\", label=\"{" + label + "}\"")
       self.write(", fontSize = 10, height = 0.2, width = 0.4")
       self.write(string.join(map(lambda item:', %s="%s"'%item, attr.items())))
       if ref: self.write(", URL=\"" + ref + "\"")
