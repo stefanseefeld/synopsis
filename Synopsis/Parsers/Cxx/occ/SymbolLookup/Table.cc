@@ -24,50 +24,58 @@ Table::Table(Language l)
   my_scopes.push(new Scope());
 }
 
-Table &Table::enter_scope()
-{
-  Trace trace("Table::enter_scope");
-  if (my_language == NONE) return *this;
-  my_scopes.push(new Scope());
-  return *this;
-}
-
-Table &Table::enter_namespace(const PTree::NamespaceSpec *spec)
+Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
 {
   Trace trace("Table::enter_namespace");
   if (my_language == NONE) return *this;
-  Namespace *ns = new Namespace(spec, my_scopes.top());
-  my_scopes.top()->declare_scope(spec, ns);
-  my_scopes.push(ns);
+  Scope *scope = my_scopes.top()->lookup_scope(spec);
+  if (!scope)
+  {
+    scope = new Namespace(spec, my_scopes.top());
+    my_scopes.top()->declare_scope(spec, scope);
+  }
+  my_scopes.push(scope);
   return *this;
 }
 
-Table &Table::enter_class(const PTree::ClassSpec *spec)
+Table &Table::enter_class(PTree::ClassSpec const *spec)
 {
   Trace trace("Table::enter_class");
   if (my_language == NONE) return *this;
-  Class *cl = new Class(spec, my_scopes.top());
-  my_scopes.top()->declare_scope(spec, cl);
-  my_scopes.push(cl);
+  Scope *scope = my_scopes.top()->lookup_scope(spec);
+  if (!scope)
+  {
+    scope = new Class(spec, my_scopes.top());
+    my_scopes.top()->declare_scope(spec, scope);
+  }
+  my_scopes.push(scope);
   return *this;
 }
 
-Table &Table::enter_function(const PTree::Declaration *decl)
+Table &Table::enter_function(PTree::Declaration const *decl)
 {
   Trace trace("Table::enter_function");
   if (my_language == NONE) return *this;
-  FunctionScope *func = new FunctionScope(decl, my_scopes.top());
-  my_scopes.top()->declare_scope(decl, func);
-  my_scopes.push(func);
+  Scope *scope = my_scopes.top()->lookup_scope(decl);
+  if (!scope)
+  {
+    scope = new FunctionScope(decl, my_scopes.top());
+    my_scopes.top()->declare_scope(decl, scope);
+  }
+  my_scopes.push(scope);
   return *this;
 }
 
-Table &Table::enter_block(const PTree::List *block)
+Table &Table::enter_block(PTree::List const *block)
 {
   Trace trace("Table::enter_block");
   if (my_language == NONE) return *this;
-  LocalScope *scope = new LocalScope(block, my_scopes.top());
-  my_scopes.top()->declare_scope(block, scope);
+  Scope *scope = my_scopes.top()->lookup_scope(block);
+  if (!scope)
+  {
+    scope = new LocalScope(block, my_scopes.top());
+    my_scopes.top()->declare_scope(block, scope);
+  }
   my_scopes.push(scope);
   return *this;
 }
@@ -166,8 +174,8 @@ void Table::declare(EnumSpec *spec)
   Trace trace("Table::declare(EnumSpec *)");
   if (my_language == NONE) return;
   Node *tag = second(spec);
-  const Encoding &name = spec->encoded_name();
-  const Encoding &type = spec->encoded_type();
+  Encoding const &name = spec->encoded_name();
+  Encoding const &type = spec->encoded_type();
   if(tag && tag->is_atom()) 
     my_scopes.top()->declare(name, new TypeName(type, spec));
   // else it's an anonymous enum
@@ -210,7 +218,7 @@ void Table::declare(NamespaceSpec *spec)
 {
   Trace trace("Table::declare(NamespaceSpec *)");
   if (my_language == NONE) return;
-  const Node *name = second(spec);
+  Node const *name = second(spec);
   Encoding enc = Encoding::simple_name(static_cast<Atom const *>(name));
   // FIXME: do we need a 'type' here ?
   my_scopes.top()->declare(enc, new NamespaceName(spec->encoded_type(), spec));
@@ -220,7 +228,7 @@ void Table::declare(ClassSpec *spec)
 {
   Trace trace("Table::declare(ClassSpec *)");
   if (my_language == NONE) return;
-  const Encoding &name = spec->encoded_name();
+  Encoding const &name = spec->encoded_name();
   my_scopes.top()->declare(name, new TypeName(spec->encoded_type(), spec));
 }
 
@@ -249,7 +257,7 @@ std::set<Symbol const *> Table::lookup(PTree::Encoding const &name) const
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();
 
-  const Scope *scope = my_scopes.top(); // start to look here
+  Scope const *scope = my_scopes.top(); // start to look here
   if (symbol_name.is_global_scope())
   {
     scope = my_scopes.top()->global();
@@ -293,12 +301,14 @@ std::set<Symbol const *> Table::lookup(PTree::Encoding const &name) const
   return symbols;
 }
 
-//. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo", for example.
+//. get_base_name() returns "Foo" if ENCODE is "Q[2][1]X[3]Foo",
+//. for example.
 //. If an error occurs, the function returns 0.
-PTree::Encoding Table::get_base_name(const PTree::Encoding &enc, const Scope *&scope)
+PTree::Encoding Table::get_base_name(PTree::Encoding const &enc,
+				     Scope const *&scope)
 {
   if(enc.empty()) return enc;
-  const Scope *s = scope;
+  Scope const *s = scope;
   PTree::Encoding::iterator i = enc.begin();
   if(*i == 'Q')
   {
@@ -332,14 +342,15 @@ PTree::Encoding Table::get_base_name(const PTree::Encoding &enc, const Scope *&s
   else return PTree::Encoding(i + 1, i + 1 + size_t(*i - 0x80));
 }
 
-int Table::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
+int Table::get_base_name_if_template(Encoding::iterator i,
+				     Scope const *&scope)
 {
   int m = *i - 0x80;
   if(m <= 0) return *(i+1) - 0x80 + 2;
 
   if(scope)
   {
-    std::set<Symbol const *> symbols = scope->lookup(Encoding((const char*)&*(i + 1), m));
+    std::set<Symbol const *> symbols = scope->lookup(Encoding((char const *)&*(i + 1), m));
     // FIXME !! (see Environment)
     if (symbols.size()) return m + (*(i + m + 1) - 0x80) + 2;
   }
@@ -348,8 +359,8 @@ int Table::get_base_name_if_template(Encoding::iterator i, const Scope *&scope)
   return m + (*(i + m + 1) - 0x80) + 2;
 }
 
-const Scope *Table::lookup_typedef_name(Encoding::iterator i, size_t s,
-					const Scope *scope)
+Scope const *Table::lookup_typedef_name(Encoding::iterator i, size_t s,
+					Scope const *scope)
 {
 //   TypeInfo tinfo;
 //   Bind *bind;
@@ -357,7 +368,7 @@ const Scope *Table::lookup_typedef_name(Encoding::iterator i, size_t s,
 
   if(scope)
     ;
-//     if (scope->LookupType(Encoding((const char *)&*i, s), bind) && bind)
+//     if (scope->LookupType(Encoding((char const *)&*i, s), bind) && bind)
 //       switch(bind->What())
 //       {
 //         case Bind::isClassName :
@@ -372,7 +383,7 @@ const Scope *Table::lookup_typedef_name(Encoding::iterator i, size_t s,
 //         default :
 // 	  break;
 //       }
-//     else if (env->LookupNamespace(Encoding((const char *)&*i, s)))
+//     else if (env->LookupNamespace(Encoding((char const *)&*i, s)))
 //     {
 //       /* For the time being, we simply ignore name spaces.
 //        * For example, std::T is identical to ::T.

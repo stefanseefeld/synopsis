@@ -33,7 +33,9 @@ struct Undefined : std::exception
 
 struct MultiplyDefined : std::exception
 {
-  MultiplyDefined(PTree::Encoding const &n, const PTree::Node *decl, const PTree::Node *orig)
+  MultiplyDefined(PTree::Encoding const &n,
+		  PTree::Node const *decl,
+		  PTree::Node const *orig)
     : name(n), declaration(decl), original(orig) {}
   virtual ~MultiplyDefined() throw() {}
   virtual char const * what() const throw() { return "MultiplyDefined";}
@@ -59,33 +61,33 @@ public:
 
   Scope() : my_refcount(1) {}
   Scope *ref() { ++my_refcount; return this;}
-  const Scope *ref() const { ++my_refcount; return this;}
+  Scope const *ref() const { ++my_refcount; return this;}
   void unref() const { if (!--my_refcount) delete this;}
 
-  virtual const Scope *global() const { return this;}
+  virtual Scope const *global() const { return this;}
 
   //. declare the given symbol in the local scope 
   //. using the given encoded name.
-  void declare(const PTree::Encoding &name, const Symbol *symbol);
+  void declare(PTree::Encoding const &name, Symbol const *symbol);
 
   //. declare a nested scope
-  void declare_scope(const PTree::Node *, const Scope *);
+  void declare_scope(PTree::Node const *, Scope *);
 
   //. look up a nested scope by associated parse tree node
-  const Scope *lookup_scope(const PTree::Node *) const;
+  Scope *lookup_scope(PTree::Node const *) const;
 
   //. look up the encoded name and return a set of matching symbols.
-  virtual std::set<const Symbol *> lookup(const PTree::Encoding &) const throw();
+  virtual std::set<Symbol const *> lookup(PTree::Encoding const &) const throw();
 
   //. same as the untyped lookup, but type safe. Return either a set of function names
   //. (if T is of type FunctionName) or a single matching symbol.
   //. Throws a TypeError if the symbol exists but doesn't have the expected type.
   template <typename T>
-  const T *lookup(const PTree::Encoding &name) const throw(TypeError);
+  T const *lookup(PTree::Encoding const &name) const throw(TypeError);
 
   //. lookup specialization for the case where the Symbol looked for is a FunctionName,
   //. as in this case a set of possibly overloaded functions is returned.
-  std::set<FunctionName const *> lookup_function(const PTree::Encoding &name) const throw(TypeError);
+  std::set<FunctionName const *> lookup_function(PTree::Encoding const &name) const throw(TypeError);
 
   //. recursively dump the content of the symbol table to a stream (for debugging).
   virtual void dump(std::ostream &, size_t indent) const;
@@ -100,30 +102,31 @@ protected:
 private:
   //. SymbolTable provides a mapping from (encoded) names to Symbols declared
   //. in this scope.
-  typedef std::multimap<PTree::Encoding, const Symbol *> SymbolTable;
+  typedef std::multimap<PTree::Encoding, Symbol const *> SymbolTable;
   //. ScopeTable provides a mapping from scope nodes to Scopes,
   //. which can be used to traverse the scope tree in parallel with
-  //. the associated parse tree.
-  typedef std::map<const PTree::Node *, const Scope *> ScopeTable;
+  //. the associated parse tree. As this traversal is also done
+  //. during the parsing, the scopes can not be const.
+  typedef std::map<PTree::Node const *, Scope *> ScopeTable;
 
   SymbolTable    my_symbols;
   ScopeTable     my_scopes;
   mutable size_t my_refcount;
 };
 
-inline void Scope::declare_scope(const PTree::Node *node, const Scope *scope)
+inline void Scope::declare_scope(PTree::Node const *node, Scope *scope)
 {
   my_scopes[node] = scope->ref();
 }
 
-inline const Scope *Scope::lookup_scope(const PTree::Node *node) const
+inline Scope *Scope::lookup_scope(PTree::Node const *node) const
 {
   ScopeTable::const_iterator i = my_scopes.find(node);
   return i == my_scopes.end() ? 0 : i->second;
 }
 
 template <typename T>
-inline T const *Scope::lookup(const PTree::Encoding &name) const throw(TypeError)
+inline T const *Scope::lookup(PTree::Encoding const &name) const throw(TypeError)
 {
   SymbolTable::const_iterator symbol = my_symbols.lower_bound(name);
   if (symbol == my_symbols.upper_bound(name)) return 0; // no such symbol
@@ -135,7 +138,7 @@ inline T const *Scope::lookup(const PTree::Encoding &name) const throw(TypeError
 }
 
 inline std::set<FunctionName const *> 
-Scope::lookup_function(const PTree::Encoding &name) const throw(TypeError)
+Scope::lookup_function(PTree::Encoding const &name) const throw(TypeError)
 {
   SymbolTable::const_iterator symbol = my_symbols.lower_bound(name);
   std::set<FunctionName const *> symbols;
