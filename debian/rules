@@ -6,14 +6,17 @@
 #export DH_VERBOSE=1
 
 # This is the debhelper compatability version to use.
-export DH_COMPAT=3
+export DH_COMPAT=4
+
+export ROOTSYNOPSIS=$(CURDIR)/debian/synopsis
+export ROOTSYNDOT=$(CURDIR)/debian/synopsis-formatter-dot
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	# Add here commands to configure the package.
-	autoconf
-	./configure --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info --with-python-prefix=\$${prefix}
+	# do some stuff according to DEB_BUILD_ARCH
+	./autogen.sh
+	python setup.py config --with-gc-prefix=/usr
 
 	touch configure-stamp
 
@@ -22,8 +25,6 @@ build-stamp:
 	dh_testdir
 
 	# Add here commands to compile the package.
-	$(MAKE)
-	#/usr/bin/docbook-to-man debian/synopsis.sgml > synopsis.1
 
 	touch build-stamp
 
@@ -33,7 +34,10 @@ clean:
 	rm -f build-stamp configure-stamp
 
 	# Add here commands to clean up after the build process.
-	-$(MAKE) distclean
+	-python setup.py clean -a
+	find . -name '*.pyc' -exec rm \{\} \;
+	find . -name 'configure' -exec rm \{\} \;
+	find . -name 'autom4te.cache' -exec rm -rf \{\} \;
 
 	dh_clean
 
@@ -44,16 +48,17 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/synopsis.
-	$(MAKE) install prefix=$(CURDIR)/debian/synopsis/usr
-	cp $(CURDIR)/debian/*.1 $(CURDIR)/debian/synopsis/usr/share/man/man1/
-	chmod -x $(CURDIR)/debian/synopsis/usr/share/synopsis/*.jpg
-	chmod -x $(CURDIR)/debian/synopsis/usr/share/synopsis/*.png
-
+	python setup.py install --prefix=/usr --root=$(ROOTSYNOPSIS)
+	mkdir -p $(ROOTSYNOPSIS)/usr/share/doc/synopsis
+	mv $(ROOTSYNOPSIS)/usr/share/doc/Synopsis/* $(ROOTSYNOPSIS)/usr/share/doc/synopsis
+	rmdir $(ROOTSYNOPSIS)/usr/share/doc/Synopsis
+	cp $(CURDIR)/debian/*.1 $(ROOTSYNOPSIS)/usr/share/man/man1/
+	mkdir -p $(ROOTSYNDOT)/usr/lib/python2.3/site-packages/Synopsis/Formatters
+	mv $(ROOTSYNOPSIS)/usr/lib/python2.3/site-packages/Synopsis/Formatters/Dot.* $(ROOTSYNDOT)/usr/lib/python2.3/site-packages/Synopsis/Formatters
 
 
 # Build architecture-independent files here.
 binary-indep: build install
-# We have nothing to do by default.
 
 # Build architecture-dependent files here.
 binary-arch: build install
@@ -73,6 +78,7 @@ binary-arch: build install
 	dh_installinfo
 #	dh_undocumented
 	dh_installchangelogs 
+	dh_python -a
 	dh_link
 	dh_strip
 	dh_compress
