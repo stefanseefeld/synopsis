@@ -1,4 +1,4 @@
-# $Id: actionwiz.py,v 1.4 2002/06/22 07:03:27 chalky Exp $
+# $Id: actionwiz.py,v 1.5 2002/07/04 06:44:41 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionwiz.py,v $
+# Revision 1.5  2002/07/04 06:44:41  chalky
+# Can now edit define list for C++ Parser.
+#
 # Revision 1.4  2002/06/22 07:03:27  chalky
 # Updates to GUI - better editing of Actions, and can now execute some.
 #
@@ -301,24 +304,44 @@ class CppParserPage (QVBox):
 	self.connect(self.main_only, SIGNAL('toggled(bool)'), self.onMainFile)
 	# Make include path area
 	label = QLabel("&Include paths:", self)
-	self.path_list = QListBox(self)
+	hbox = QHBox(self)
+	self.path_list = QListBox(hbox)
 	label.setBuddy(self.path_list)
-	self._update_list()
+	self._update_path_list()
 	self.connect(self.path_list, SIGNAL('clicked(QListBoxItem*)'), self.onPathSelected)
 
 	# Make buttons
-	bhbox = QHBox(self)
-	bhbox.setSpacing(4)
-	self.badd = QPushButton('&Add', bhbox)
-	self.bremove = QPushButton('&Remove', bhbox)
-	self.bgcc = QPushButton('Add &GCC paths', bhbox)
+	bbox = QVBox(hbox)
+	bbox.setSpacing(4)
+	self.badd = QPushButton('&Add', bbox)
+	self.bremove = QPushButton('&Remove', bbox)
+	self.bgcc = QPushButton('Add &GCC paths', bbox)
 	QToolTip.add(self.badd, "Add a new path setting")
 	QToolTip.add(self.bremove, "Remove the selected path setting")
 	self.connect(self.badd, SIGNAL('clicked()'), self.onAddPath)
 	self.connect(self.bremove, SIGNAL('clicked()'), self.onRemovePath)
 	self.connect(self.bgcc, SIGNAL('clicked()'), self.onAddGCC)
 
-    def _update_list(self):
+	# Make Define area
+	label = QLabel("Preprocessor &defines:", self)
+	hbox = QHBox(self)
+	self.def_list = QListBox(hbox)
+	label.setBuddy(self.def_list)
+	self._update_def_list()
+	self.connect(self.def_list, SIGNAL('clicked(QListBoxItem*)'), self.onDefSelected)
+
+	# Make buttons
+	bbox = QVBox(hbox)
+	bbox.setSpacing(4)
+	self.bdadd = QPushButton('&Add', bbox)
+	self.bdremove = QPushButton('&Remove', bbox)
+	QToolTip.add(self.bdadd, "Add a new define")
+	QToolTip.add(self.bdremove, "Remove the selected define")
+	self.connect(self.bdadd, SIGNAL('clicked()'), self.onAddDefine)
+	self.connect(self.bdremove, SIGNAL('clicked()'), self.onRemoveDefine)
+
+
+    def _update_path_list(self):
 	config = self.action().config()
 	self.path_list.clear()
 	self.path_items = {}
@@ -330,6 +353,19 @@ class CppParserPage (QVBox):
 	    print "path:",path
 	    item = QListBoxText(self.path_list, path)
 	    self.path_items[path] = item
+
+    def _update_def_list(self):
+	config = self.action().config()
+	self.def_list.clear()
+	self.def_items = {}
+	if not hasattr(config, 'defines') or \
+		type(config.defines) != type([]):
+	    config.defines = []
+	for define in config.defines:
+	    # Listbox item is automatically added to the list
+	    print "Define:", define
+	    item = QListBoxText(self.def_list, define)
+	    self.def_items[define] = item
 
     def pre_show(self):
 	pass
@@ -343,8 +379,15 @@ class CppParserPage (QVBox):
     def onPathSelected(self, item):
 	path = item.text()
 
-    def onAddPath(self):
+    def onDefSelected(self, item):
 	pass
+
+    def onAddPath(self):
+	dir = QFileDialog.getExistingDirectory()
+	dir = str(dir)
+	if dir:
+	    self.action().config().include_path.append(dir)
+	    self._update_path_list()
 
     def onRemovePath(self):
 	pass
@@ -361,6 +404,18 @@ class CppParserPage (QVBox):
     def onMainFile(self, on):
 	self.action().config().main_file = not not on
 
+    def onAddDefine(self):
+	define, okay = QInputDialog.getText("Add define",
+	    "Enter the new define. Eg: 'DEBUG' or 'MODE=1' without quotes.")
+	define = str(define)
+	if okay and define:
+	    self.action().config().defines.append(define)
+	    self._update_def_list()
+    
+    def onRemoveDefine(self):
+	curr = self.def_list.currentItem()
+	if curr < 0: return
+	del self.action().config().defines[curr]
 
 class FormatterPage (QVBox):
     """The Page (portion of dialog) that displays options for a Formatter
