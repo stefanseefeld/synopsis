@@ -8,35 +8,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <python1.5/Python.h>
+#include "synopsis.hh"
 #include "walker.h"
 #include "token.h"
 #include "buffer.h"
 #include "parse.h"
 #include "ptree-core.h"
-
-/*
- * some debugging help first
- */
-#define assertObject(pyo) if (!pyo) PyErr_Print(); assert(pyo)
-//inline void assertObject(PyObject *obj) {if (!obj) PyErr_Print(); assert(obj);}
-
-#if 0
-class Trace
-{
-public:
-  Trace(const string &s) : scope(s) { cout << "entering " << scope << endl;}
-  ~Trace() { cout << "leaving " << scope << endl;}
-private:
-  string scope;
-};
-#else
-class Trace
-{
-public:
-  Trace(const string &) {}
-  ~Trace() {}
-};
-#endif
+#include "encoding.h"
 
 /*
  * the following isn't used anywhere. Though it has to be defined and initialized to some dummy default
@@ -59,112 +37,122 @@ void *LookupSymbol(void *, char *) { return 0;}
 
 class PyWalker : public Walker
 {
-  typedef vector<string> scopedName_t;
-  typedef vector<PyObject *> scope_t;
 public:
-  PyWalker(const char *, Parser *, PyObject *, PyObject *);
+  PyWalker(Parser *, Synopsis *);
   ~PyWalker();
-//   virtual Ptree *TranslateTypedef(Ptree *);
+//   virtual Ptree *TranslateDeclaration(Ptree *);
+//   virtual Ptree *TranslateTemplateDecl(Ptree *);
+  virtual Ptree *TranslateDeclarator(Ptree *);
+  virtual Ptree *TranslateTypedef(Ptree *);
   virtual Ptree *TranslateNamespaceSpec(Ptree *);
   virtual Ptree *TranslateClassSpec(Ptree *);
+  virtual Ptree *TranslateTemplateClass(Ptree *, Ptree *);
+  virtual vector<PyObject *> TranslateInheritanceSpec(Ptree *);
+  virtual Ptree *TranslateClassBody(Ptree *);
 private:
-  static string getName(Ptree *node)
-  {
-    Trace trace("PyWalker::getName");
-    return node ? string(node->GetPosition(), node->GetLength()) : string();
-  }
-  PyObject *scopedName(const string &);
-  PyObject *scope() { return _scope.back();}
-  void addDeclaration(PyObject *);
-  void addType(PyObject *, PyObject *);
-
-  const char *file;
-  PyObject *_astm;
-  PyObject *_typem;
-  PyObject *_decl;
-  PyObject *_types;
+  //. extract the name of the node
+  static string getName(Ptree *);
+  //. return a Type object for the given name and the given list of scopes
+  PyObject *lookupType(Ptree *, PyObject *);
+  //. return a Type object for the given parse tree and the given list of scopes
+  Synopsis *synopsis;
   PyObject *_result; // Current working value
-  scopedName_t _scopedName;
-  scope_t      _scope;
+  vector<PyObject *> _declarators;
 };
 
-PyWalker::PyWalker(const char *f, Parser *p, PyObject *d, PyObject *t)
+PyWalker::PyWalker(Parser *p, Synopsis *s)
   : Walker(p),
-    file(f),
-    _decl(d),
-    _types(t)
+    synopsis(s)
 {
   Trace trace("PyWalker::PyWalker");
-  _astm  = PyImport_ImportModule("Synopsis.AST");
-  _typem = PyImport_ImportModule("Synopsis.Type");
-  assertObject(_astm);
-  assertObject(_typem);
-  PyObject *fileScope = PyObject_CallMethod(_astm, "Scope", "siissN", file, 0, 1, "C++", "file", scopedName(string()));
-  _scope.push_back(fileScope);
 }
 
 PyWalker::~PyWalker()
 {
   Trace trace("PyWalker::~PyWalker");
-  PyObject *decl = PyObject_CallMethod(scope(), "declarations", "");
-  size_t size = PyList_Size(decl);
-#ifndef DEBUG
-  for (size_t i = 0; i != size; i++)
-    PyObject_CallMethod(_decl, "append", "O", PyList_GetItem(decl, i));
-#endif
-  Py_DECREF(_astm);
-  Py_DECREF(_typem);
+}
+  
+string PyWalker::getName(Ptree *node)
+{
+  Trace trace("PyWalker::getName");
+  if (node && node->IsLeaf())
+    return node ? string(node->GetPosition(), node->GetLength()) : string();
+  else
+    {
+      cerr << "occ internal error in 'PyWalker::getName' : node is ";
+      node->Display();
+      exit(-1);
+    }
 }
 
-PyObject *PyWalker::scopedName(const string &name)
+// void PyWalker::addDeclaration(PyObject *declaration)
+// {
+//   Trace trace("PyWalker::addDeclaration");
+//   PyObject *decl = PyObject_CallMethod(scope(), "declarations", "");
+//   assertObject(decl);
+//   PyObject_CallMethod(decl, "append", "O", declaration);
+// }
+
+// void PyWalker::addType(PyObject *name, PyObject *type)
+// {
+//   Trace trace("PyWalker::addType");
+// #ifndef DEBUG
+//   PyObject *old_type = PyObject_GetItem(_types, name);
+//   if (!old_type) // we should check whether this is a forward declaration...
+//     PyObject_SetItem(_types, name, type);
+//   cout << "addType " << PyString_AsString(PyObject_Str(name)) << endl;
+// #endif
+// }
+
+PyObject *PyWalker::lookupType(Ptree *node, PyObject *scopes)
 {
-  Trace trace("PyWalker::scopedName");
-  size_t lsize = _scopedName.size();
-  if (name.size()) lsize += 1;
-  PyObject *pylist = PyList_New(lsize);
-  for (size_t i = 0; i != _scopedName.size(); i++)
-    PyList_SetItem(pylist, i, PyString_FromString(_scopedName[i].c_str()));
-  if (name.size())
-    PyList_SetItem(pylist, _scopedName.size(), PyString_FromString(name.c_str()));
-  return pylist;
+  if (node->IsLeaf()) return synopsis->lookupType(getName(node), scopes);
+//   else if (node->Length() == 2) //template
+//     {
+      
+//     }
+  else
+    {
+      cerr << "occ internal error in 'PyWalker::lookupType' : node is ";
+      node->Display();
+      exit(-1);
+      return 0;
+    }
 }
 
-void PyWalker::addDeclaration(PyObject *declaration)
+Ptree *PyWalker::TranslateDeclarator(Ptree *declarator)
 {
-  Trace trace("PyWalker::addDeclaration");
-  PyObject *decl = PyObject_CallMethod(scope(), "declarations", "");
-  assertObject(decl);
-  PyObject_CallMethod(decl, "append", "O", declaration);
-}
-
-void PyWalker::addType(PyObject *name, PyObject *type)
-{
-  Trace trace("PyWalker::addType");
-#ifndef DEBUG
-  PyObject_CallMethod(_types, "add", "OO", name, type);
-#endif
+  Trace trace("PyWalker::TranslateDeclarator");
+  if (declarator->What() != ntDeclarator) return declarator;
+  char* encname = declarator->GetEncodedName();
+  char* enctype = declarator->GetEncodedType();
+  if (!encname || !enctype) return declarator;
+//   cout << "encoding '";
+//   Encoding::Print(cout, enctype); cout << "' '";
+//   Encoding::Print(cout, encname); cout << '\'' << endl;
+  ///...
+  return declarator;
 }
 
 /*
  * a typedef declaration contains three items:
  *         * 'typedef'
  *         * the alias type
- *         * the type declarator
+ *         * the type declarators
+ * unfortunately they may be folded together, such as if the alias type
+ * is a derived type (pointer, reference), or a fuction pointer.
+ * for now let's ignore these cases and simply treat typedefs as a 
+ * list of three nodes...
  */
-// Ptree *PyWalker::TranslateTypedefSpec(Ptree *node)
-// {
-//   string name = getName(node->Cadr());
-//   PyObject *sname = scopedName(name);
-//   _result = PyObject_CallMethod(_astm, "Typedef", "siissOiO", file, -1, true, "C++", "typedef", alias, 0, declarators);
-//   addDeclaration(_result);
-// //   for all declarators:
-// //   addType(sname, PyObject_CallMethod(_typem, "Declared", "sOO", "C++", sname, _result));
-//   _scopedName.push_back(name);
-//   _scope.push_back(_result);
-//   Translate(Ptree::Third(node));
-//   _scope.pop_back();
-//   _scopedName.pop_back();
-// }
+Ptree *PyWalker::TranslateTypedef(Ptree *node)
+{
+  Trace trace("PyWalker::TranslateTypedef");
+  _declarators.clear();
+  Ptree *tspec = TranslateTypespecifier(node->Second());
+  for (Ptree *declarator = node->Third(); declarator; declarator = declarator->ListTail(2))
+    TranslateDeclarator(declarator->Car());
+  //. now traverse the declarators list and insert them into the AST...
+}
 
 /*
  * a namespace declaration contains three items:
@@ -175,16 +163,9 @@ void PyWalker::addType(PyObject *name, PyObject *type)
 Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 {
   Trace trace("PyWalker::TranslateNamespaceSpec");
-  string name = getName(node->Cadr());
-  PyObject *sname = scopedName(name);
-  _result = PyObject_CallMethod(_astm, "Module", "siissN", file, -1, true, "C++", "namespace", sname);
-  addDeclaration(_result);
-  addType(sname, PyObject_CallMethod(_typem, "Declared", "sOO", "C++", sname, _result));
-  _scopedName.push_back(name);
-  _scope.push_back(_result);
+  synopsis->pushNamespace(-1, 1, getName(node->Cadr()));
   Translate(Ptree::Third(node));
-  _scope.pop_back();
-  _scopedName.pop_back();
+  synopsis->popScope();
 }
 
 /*
@@ -197,39 +178,81 @@ Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 {
   Trace trace("PyWalker::TranslateClassSpec");
-//   node->Display();
   Ptree* userkey;
   Ptree* class_def;
   if(node->Car()->IsLeaf())
     {
-//       cout << "is leaf" << endl;
-//       node->Car()->Display();
       userkey = 0;
       class_def = node;
     }
   else
     {
-//       cout << "is not leaf" << endl;
       userkey = node->First();
       class_def = node->Rest();
     }
   if(Ptree::Length(class_def) == 4 && class_def->Second()->IsLeaf())
     {
-//       cout << "here1" << endl;
-//       class_def->Second()->Display();
       string type = getName(class_def->First());
       string name = getName(class_def->Second());
-//       cout << "here2" << endl;
-      PyObject *sname = scopedName(name);
-      _result = PyObject_CallMethod(_astm, "Class", "siissN", file, -1, true, "C++", type.c_str(), sname);
-      addDeclaration(_result);
-      addType(sname, PyObject_CallMethod(_typem, "Declared", "sOO", "C++", sname, _result));
-      _scopedName.push_back(name);
-      _scope.push_back(_result);
-      Translate(class_def->Nth(4));
-      _scope.pop_back();
-      _scopedName.pop_back();
+      PyObject *clas = synopsis->addClass(-1, true, type, name);
+      synopsis->addDeclared(name, clas);
+      //. parents...
+      vector<PyObject *> parents = TranslateInheritanceSpec(class_def->Nth(2));
+      Synopsis::addInheritance(clas, parents);
+      synopsis->pushScope(clas);
+      //. the body...
+      TranslateClassBody(class_def->Nth(3));
+      synopsis->popScope();
     }
+  return node;
+}
+
+Ptree *PyWalker::TranslateTemplateClass(Ptree *temp_def, Ptree *class_spec)
+{
+  Trace trace("PyWalker::TranslateTemplateClass");
+  temp_def->Display();
+  class_spec->Display();
+  Ptree *userkey;
+  Ptree *class_def;
+  if(class_spec->Car()->IsLeaf())
+    {
+      userkey = nil;
+      class_def = class_spec;
+    }
+  else
+    {
+      userkey = class_spec->Car();
+      class_def = class_spec->Cdr();
+    }
+  //...  
+  return 0;
+}
+
+vector<PyObject *> PyWalker::TranslateInheritanceSpec(Ptree *node)
+{
+  Trace trace("PyWalker::TranslateInheritanceSpec");
+  vector<PyObject *> ispec;
+  while(node)
+    {
+      node = node->Cdr();		// skip : or ,
+      //. the attributes
+      vector<string> attributes(node->Car()->Length() - 1);
+      for (size_t i = 0; i != node->Car()->Length() - 1; ++i)
+	attributes[i] = getName(node->Car()->Nth(i));
+      //. look up the parent class
+      PyObject *pdecl = lookupType(node->Car()->Last()->Car(), Py_BuildValue("[]"));
+//       assertObject(pdecl);
+      //. add it to the list
+      ispec.push_back(synopsis->Inheritance(pdecl, attributes));
+      node = node->Cdr();
+    }
+  return ispec;
+}
+
+Ptree *PyWalker::TranslateClassBody(Ptree *node)
+{
+  Trace trace("PyWalker::TranslateClassBody");
+  return node;
 }
 
 static void getopts(PyObject *args, vector<const char *> &cppflags, vector<const char *> &occflags)
@@ -300,6 +323,7 @@ static char *RunPreprocessor(const char *file, const vector<const char *> &flags
 
 static char *RunOpencxx(const char *file, const vector<const char *> &args, PyObject *types, PyObject *declarations)
 {
+  Trace trace("RunOpencxx");
   static char dest[1024];
   tmpnam(dest);
   ifstream ifs(file);
@@ -311,7 +335,8 @@ static char *RunOpencxx(const char *file, const vector<const char *> &args, PyOb
   ProgramFile prog(ifs);
   Lex lex(&prog);
   Parser parse(&lex);
-  PyWalker walker(file, &parse, declarations, types);
+  Synopsis synopsis(file, declarations, types);
+  PyWalker walker(&parse, &synopsis);
 //   Walker walker(&parse);
   Ptree *def;
   while(parse.rProgram(def))
@@ -328,6 +353,7 @@ extern "C" {
 
 static PyObject *occParse(PyObject *self, PyObject *args)
 {
+  Trace trace("occParse");
   char *src;
   PyObject *parserargs, *types, *declarations;
   if (!PyArg_ParseTuple(args, "sO!OO!", &src, &PyList_Type, &parserargs, &types, &PyList_Type, &declarations)) return 0;
@@ -373,7 +399,10 @@ int main(int argc, char **argv)
   vector<const char *> cppargs;
   vector<const char *> occargs;
 //   getopts(argc, argv, cppargs, occargs);
-  getopts(0, 0, cppargs, occargs);
+  PyObject *pylist = PyList_New(argc - 1);
+  for (size_t i = 1; i != argc; ++i)
+    PyList_SetItem(pylist, i - 1, PyString_FromString(argv[i]));
+  getopts(pylist, cppargs, occargs);
   if (!src || *src == '\0')
     {
       cerr << "No source file" << endl;

@@ -52,21 +52,18 @@ Functions:
 	    cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.__name)
 
-class Forward (Type):
-    """Forward-declared type
-
-Functions:
-"""
+class Unknown(Type):
+    """Class for not (yet) known type"""
     def __init__(self, language, name):
         Type.__init__(self, language)
         self.__name = name
 	if type(name) != type(()) and type(name) != type([]):
 	    raise TypeError,"Name must be scoped"
     def name(self): return self.__name
-    def accept(self, visitor): visitor.visitForward(self)
+    def accept(self, visitor): visitor.visitUnknown(self)
     def __cmp__(self, other):
 	"Comparison operator"
-	#print "Forward.__cmp__"
+	#print "Unknown.__cmp__"
 	return ccmp(self,other) or cmp(self.name(),other.name())
     def __str__(self): return Util.ccolonName(self.__name)
 
@@ -216,3 +213,13 @@ class Dictionary:
         for i in dict.keys():
             if self.has_key(i): pass ##print "Error: multiple types ", Util.ccolonName(i)
             else: self[i] = dict[i]
+
+class Visitor:
+    """Visitor for Type objects"""
+    def visitBaseType(self, type): return
+    def visitUnknown(self, type): return
+    def visitDeclared(self, type): return
+    def visitModifier(self, type): return
+    def visitTemplate(self, type): return
+    def visitParametrized(self, type): return
+    def visitFunctionType(self, type): return

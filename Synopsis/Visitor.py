@@ -40,11 +40,13 @@ class TypeVisitor:
 Functions:
 
   visitBaseType(type)
-  visitDeclaredType(type)
-  visitTemplateType(type)
-  visitParametrizedType(type)"""
+  visitDeclared(type)
+  visitModifier(node)
+  visitTemplate(type)
+  visitParametrized(type)"""
 
     def visitBaseType(self, type):     return
-    def visitDeclaredType(self, type): return
-    def visitTemplateType(self, type): return
-    def visitParametrizedType(self, type): return
+    def visitDeclared(self, type): return
+    def visitModifier(self, type): return
+    def visitTemplate(self, type): return
+    def visitParametrized(self, type): return
