@@ -67,12 +67,14 @@ void Scope::declare(EnumSpec *spec)
   for (Node *e = second(body); e; e = rest(rest(e)))
   {
     Node *enumerator = e->car();
+    bool defined = true;
     if (enumerator->is_atom()) ++value;
     else  // [identifier = initializer]
     {
       Node *initializer = third(enumerator);
+      defined = evaluate_const(initializer, *this, value);
       enumerator = enumerator->car();
-      if (!evaluate_const(initializer, *this, value))
+      if (!defined)
       {
 	std::cerr << "Error in evaluating enum initializer:\n"
 		  << "Expression doesn't evaluate to a constant integral value:\n"
@@ -80,8 +82,11 @@ void Scope::declare(EnumSpec *spec)
       }
     }
     assert(enumerator->is_atom());
-    declare(Encoding(enumerator->position(), enumerator->length()),
-	    new ConstName(type, value, enumerator));
+    Encoding name(enumerator->position(), enumerator->length());
+    if (defined)
+      declare(name, new ConstName(type, value, enumerator));
+    else
+      declare(name, new ConstName(type, enumerator));
   }
 }
 
@@ -113,7 +118,11 @@ void Scope::dump(std::ostream &os) const
     if (const VariableName *variable = dynamic_cast<const VariableName *>(i->second))
       os << "Variable: " << i->first << ' ' << variable->type() << std::endl;
     else if (const ConstName *const_ = dynamic_cast<const ConstName *>(i->second))
-      os << "Const:    " << i->first << ' ' << const_->type() << " (" << const_->value() << ')' << std::endl;
+    {
+      os << "Const:    " << i->first << ' ' << const_->type();
+      if (const_->defined()) os << " (" << const_->value() << ')';
+      os << std::endl;
+    }
     else if (const TypeName *type = dynamic_cast<const TypeName *>(i->second))
       os << "Type: " << i->first << ' ' << type->type() << std::endl;
     else // shouldn't get here

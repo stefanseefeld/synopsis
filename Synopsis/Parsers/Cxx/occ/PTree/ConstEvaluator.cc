@@ -57,7 +57,7 @@ void ConstEvaluator::visit(Identifier *node)
   {
     Encoding name(node->position(), node->length());
     const ConstName *const_ = my_symbols.lookup<ConstName>(name);
-    if (!const_) my_valid = false;
+    if (!const_ || !const_->defined()) my_valid = false;
     else
     {
       my_value = const_->value();

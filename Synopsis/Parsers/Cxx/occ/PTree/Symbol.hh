@@ -34,9 +34,13 @@ class ConstName : public Symbol
 {
 public:
   ConstName(const Encoding &type, long v, Node *ptree)
-    : Symbol(type, ptree), my_value(v) {}
+    : Symbol(type, ptree), my_defined(true), my_value(v) {}
+  ConstName(const Encoding &type, Node *ptree)
+    : Symbol(type, ptree), my_defined(false) {}
+  bool defined() const { return my_defined;}
   long value() const { return my_value;}
 private:
+  bool my_defined;
   long my_value;
 };
 
