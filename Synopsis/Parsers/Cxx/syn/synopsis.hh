@@ -49,10 +49,10 @@ public:
     PyObject *addModule(size_t, bool, const string &);
     PyObject *Inheritance(PyObject *, const vector<string> &);
     PyObject *addClass(size_t, bool, const string &, const string &);
-    PyObject *addTypedef(size_t, bool, const string &, const string&, PyObject *, bool, vector<PyObject *> &);
+    PyObject *addTypedef(size_t, bool, const string &, const string&, PyObject *, bool, PyObject*);
     PyObject *Enumerator(size_t, bool, const string &, const string &);
     PyObject *addEnum(size_t, bool, const string &, const vector<PyObject *> &);
-    PyObject *addVariable(size_t, bool, const string&, PyObject *, bool, const vector<PyObject *> &);
+    PyObject *addVariable(size_t, bool, const string&, PyObject *, bool, PyObject*);
     PyObject *addConst(size_t, bool, PyObject *, const string &, const string &);
     PyObject *Parameter(const string &, PyObject *, const string &, const string & = string(), const string & = string());
     PyObject *addFunction(size_t, bool, const vector<string> &, PyObject *, const string &);

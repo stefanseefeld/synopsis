@@ -192,12 +192,12 @@ PyObject *Synopsis::addClass(size_t line, bool main, const string &type, const s
     return clas;
 }
 
-PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const string& name, PyObject *alias, bool constr, vector<PyObject *> &declarators)
+PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const string& name, PyObject *alias, bool constr, PyObject* declarator)
 {
     Trace trace("Synopsis::addTypedef");
     PyObject *typed = PyObject_CallMethod( ast, "Typedef", "siissOOiO", 
 	file, line, main, "C++", type.c_str(), V2L(scopedName(name)),
-	alias, constr, V2L(declarators)
+	alias, constr, declarator
     );
     PyObject_CallMethod(scopes.back(), "append", "O", typed);
     addDeclaration(typed);
@@ -220,12 +220,12 @@ PyObject *Synopsis::addEnum(size_t line, bool main, const string &name, const ve
     return enu;
 }
 
-PyObject *Synopsis::addVariable(size_t line, bool main, const string& name, PyObject *type, bool constr, const vector<PyObject *> &declarators)
+PyObject *Synopsis::addVariable(size_t line, bool main, const string& name, PyObject *type, bool constr, PyObject* declarator)
 {
     Trace trace("Synopsis::addVariable");
     PyObject *var = PyObject_CallMethod(ast, "Variable", "siissOOiO",
 	file, line, main, "C++", "variable", 
-	V2L(scopedName(name)), type, constr, V2L(declarators)
+	V2L(scopedName(name)), type, constr, declarator
     );
     PyObject_CallMethod(scopes.back(), "append", "O", var);
     return var;

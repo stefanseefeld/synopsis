@@ -21,19 +21,22 @@ Functions:
 
     def visitAST(self, node): return
     def visitDeclaration(self, node): return
-    def visitForward(self, node): return
-    def visitDeclarator(self, node): return
-    def visitModule(self, node): return
-    def visitMetaModule(self, node): return
-    def visitClass(self, node): return
-    def visitTypedef(self, node): return
-    def visitEnumerator(self, node): return
-    def visitEnum(self, node): return
-    def visitVariable(self, node): return
-    def visitConst(self, node): return
+    def visitForward(self, node): self.visitDeclaration(node)
+    def visitDeclarator(self, node): self.visitDeclaration(node)
+    def visitScope(self, node): self.visitDeclaration(node)
+    def visitModule(self, node): self.visitScope(node)
+    def visitMetaModule(self, node): self.visitModule(node)
+    def visitClass(self, node): self.visitScope(node)
+    def visitTypedef(self, node): self.visitDeclaration(node)
+    def visitEnumerator(self, node): self.visitDeclaration(node)
+    def visitEnum(self, node): self.visitDeclaration(node)
+    def visitVariable(self, node): self.visitDeclaration(node)
+    def visitConst(self, node): self.visitDeclaration(node)
+    def visitFunction(self, node): self.visitDeclaration(node)
+    def visitOperation(self, node): self.visitDeclaration(node)
     def visitParameter(self, node): return
-    def visitFunction(self, node): return
-    def visitOperation(self, node): return
+    def visitComment(self, node): return
+    def visitInheritance(self, node): return
 
 class TypeVisitor:
     """Visitor for Type objects
@@ -46,7 +49,7 @@ Functions:
   visitTemplate(type)
   visitParametrized(type)"""
 
-    def visitBaseType(self, type):     return
+    def visitBaseType(self, type): return
     def visitDeclared(self, type): return
     def visitModifier(self, type): return
     def visitTemplate(self, type): return
