@@ -1,4 +1,4 @@
-# $Id: __init__.py,v 1.5 2001/02/13 10:07:33 chalky Exp $
+# $Id: __init__.py,v 1.6 2001/07/04 08:17:48 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: __init__.py,v $
+# Revision 1.6  2001/07/04 08:17:48  uid20151
+# Comments
+#
 # Revision 1.5  2001/02/13 10:07:33  chalky
 # Fixed typo
 #
@@ -34,7 +37,17 @@
 #
 #
 
-"""HTML Formatter"""
+"""HTML Formatter package.
+
+The HTML formatter consists of three broad groups: the core, the pages and the
+utility classes. The core coordinates the page generation, and maintains the
+config for the formatter, along with the utility classes in use. The pages can
+be selected via the config to produce output tailored to the users needs.
+Finally, the utility classes are those that are used by many pages, and
+include things like the file layout, the table of contents, the tree formatter
+to use, etc.
+"""
+
 #
 # __init__.py
 #
