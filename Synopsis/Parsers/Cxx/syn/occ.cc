@@ -96,6 +96,15 @@ void unexpected()
   throw std::bad_exception();
 }
 
+const char *strip_prefix(const char *filename, const char *prefix)
+{
+  if (!prefix) return filename;
+  size_t length = strlen(prefix);
+  if (strncmp(filename, prefix, length) == 0)
+    return filename + length;
+  return filename;
+}
+
 //. restore the relevant parts from the python ast
 //. The returned SourceFile object is a slice of the original python object
 //. and should be merged back at the end of the parsing such that the other
@@ -110,7 +119,7 @@ AST::SourceFile *restore_source_file(PyObject *ast, const std::string &src)
 
   PyObject *files = PyObject_CallMethod(ast, "files", "");
   assert(files);
-  PyObject *source_file = PyDict_GetItemString(files, src.c_str());
+  PyObject *source_file = PyDict_GetItemString(files, strip_prefix(src.c_str(), syn_base_path));
   Py_DECREF(files);
   if (!source_file) return sourcefile; // the given file wasn't preprocessed into the AST
 

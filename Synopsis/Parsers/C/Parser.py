@@ -55,7 +55,7 @@ class Parser(Processor):
                                 self.verbose,
                                 self.debug)
 
-         if preprocess: os.unlink(i_file)
+         if preprocess: os.remove(i_file)
 
       return self.output_and_return_ast()
 

@@ -66,9 +66,6 @@ class Parser(Processor):
                               self.syntax_prefix,
                               self.xref_prefix)
 
-         if self.preprocess:
-
-            os.remove(ii_file)
-
+         if self.preprocess: os.remove(ii_file)
 
       return self.output_and_return_ast()

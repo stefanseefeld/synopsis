@@ -35,7 +35,6 @@ const char *strip_prefix(const char *filename, const char *prefix)
 {
   if (!prefix) return filename;
   size_t length = strlen(prefix);
-  if (length > strlen(filename)) return filename; // ??
   if (strncmp(filename, prefix, length) == 0)
     return filename + length;
   return filename;
