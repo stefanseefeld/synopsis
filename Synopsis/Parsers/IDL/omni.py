@@ -1,4 +1,4 @@
-# $Id: omni.py,v 1.27 2001/06/13 01:55:11 stefan Exp $
+# $Id: omni.py,v 1.28 2001/06/13 13:02:36 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: omni.py,v $
+# Revision 1.28  2001/06/13 13:02:36  chalky
+# A couple of fixes for new realname() stuff
+#
 # Revision 1.27  2001/06/13 01:55:11  stefan
 # modify the realName member to contain only the unscoped name. This has the nice effect that pruning the scope will affect the name and realname at once, since the realName() method computes the scoped name tuple on-the-fly
 #
@@ -332,8 +335,9 @@ class ASTTranslator (idlvisitor.AstVisitor):
             self.addType(type, array)
         name = list(self.scope())
         name.append(node.declarator().identifier())
-        self.__scope[-1].declarations().append(AST.Operation(strip(node.file()), node.line(), "IDL", "case",
-                                                             [], self.getType(type), name, list(name)))
+        self.__scope[-1].declarations().append(
+	    AST.Operation(strip(node.file()), node.line(), "IDL", "case",
+			  [], self.getType(type), name, name[-1]))
     def visitUnion(self, node):
         name = list(self.scope()) + [node.identifier()]
         if self.__mainfile_only and not node.mainFile():
@@ -406,7 +410,7 @@ class ASTTranslator (idlvisitor.AstVisitor):
         returnType = self.__types.internalize(node.returnType())
         name = list(self.scope())
         name.append(node.identifier())
-        self.__operation = AST.Operation(strip(node.file()), node.line(), "IDL", "operation", pre, self.getType(returnType), name, list(name))
+        self.__operation = AST.Operation(strip(node.file()), node.line(), "IDL", "operation", pre, self.getType(returnType), name, name[-1])
         for c in node.comments():
             self.__operation.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
         for p in node.parameters(): p.accept(self)
