@@ -62,7 +62,7 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
  	if(l >= 0)
  	{
  	  unsigned long line = static_cast<unsigned long>(l) + lines;
-	  filename = std::string(my_buffer.data() + begin, end);
+	  filename = std::string(my_buffer.data() + begin, end - begin);
 	  return line;
  	}
  	break;
@@ -141,7 +141,7 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
  	if(cursor > b + 2)
  	{
 	  // the line is well-formed, let's set the out parameters
- 	  begin = b;
+ 	  begin = b + 1;
  	  end = cursor;
 	  line = l;
  	}
