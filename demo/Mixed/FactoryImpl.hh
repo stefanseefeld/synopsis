@@ -3,7 +3,7 @@
 
 #include <Storage.hh>
 
-class FactoryImpl : public virtual Storage_POA::Factory
+class FactoryImpl : public virtual POA_Storage::Factory
 {
 public:
   FactoryImpl();
