@@ -10,7 +10,7 @@ F_HTML_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Format
 F_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Formatter/*.py))
 C_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Core/*.py))
 L_PYFILES	:= $(patsubst $(bpath)/%.py,%,$(wildcard $(bpath)/Synopsis/Linker/*.py))
-PYFILES		:= Synopsis/Parser/IDL/omni \
+PYFILES		:= Synopsis/Parser/IDL/omni Synopsis/Config \
 		   Synopsis/Parser/Python/exparse Synopsis/Parser/Python/python \
 		   $(C_PYFILES) $(L_PYFILES) $(F_PYFILES) $(F_HTML_PYFILES)
 
@@ -28,7 +28,7 @@ CXXSYNS		:= $(patsubst $(bpath)/%.hh,$(spath)/%.csyn,$(CXXSOURCES))
 all:	manual
 
 manual:   all.syn
-	$(synopsis) -c config.py -Wc,formatter,HTML -f HTML -Wf,--spec=html.spec -o Manual $^
+	$(synopsis) -c config.py -Wc,formatter,HTML,style,synopsis -o Manual $^
 
 all.syn:	$(PYSYNS) $(CXXSYNS)
 	$(synopsis) -c config.py -Wl,-l -o all.syn $^
