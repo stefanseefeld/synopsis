@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.19 2001/07/15 08:28:43 chalky Exp $
+# $Id: Part.py,v 1.20 2001/07/17 01:49:44 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.20  2001/07/17 01:49:44  chalky
+# Fixed names of strategies for defaults
+#
 # Revision 1.19  2001/07/15 08:28:43  chalky
 # Added 'Inheritance' page Part
 #
@@ -309,7 +312,7 @@ class Heading(Part):
     def _init_default_formatters(self):
 	self.addFormatter( FormatStrategy.Heading )
 	self.addFormatter( FormatStrategy.ClassHierarchyGraph )
-	self.addFormatter( FormatStrategy.DetailASTCommenter )
+	self.addFormatter( FormatStrategy.DetailCommenter )
 
     def writeSectionItem(self, text):
 	"""Writes text and follows with a horizontal rule"""
@@ -329,8 +332,8 @@ class Summary(Part):
 	self._init_formatters('summary_formatters', 'summary')
 
     def _init_default_formatters(self):
-	self.addFormatter( FormatStrategy.SummaryASTFormatter )
-	self.addFormatter( FormatStrategy.SummaryASTCommenter )
+	self.addFormatter( FormatStrategy.SummaryAST )
+	self.addFormatter( FormatStrategy.SummaryCommenter )
 
     def set_link_detail(self, boolean):
 	"""Sets link_detail flag to given value.
@@ -403,9 +406,9 @@ class Detail(Part):
 	self._init_formatters('detail_formatters', 'detail')
 
     def _init_default_formatters(self):
-	self.addFormatter( FormatStrategy.DetailASTFormatter )
+	self.addFormatter( FormatStrategy.DetailAST )
 	#self.addFormatter( ClassHierarchySimple )
-	self.addFormatter( FormatStrategy.DetailASTCommenter )
+	self.addFormatter( FormatStrategy.DetailCommenter )
 
     def getDetail(self, node):
 	comment = config.comments[node].detail
