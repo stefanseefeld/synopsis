@@ -1,4 +1,4 @@
-# $Id: TreeFormatter.py,v 1.1 2001/06/05 10:43:07 chalky Exp $
+# $Id: TreeFormatter.py,v 1.2 2002/11/01 03:39:21 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: TreeFormatter.py,v $
+# Revision 1.2  2002/11/01 03:39:21  chalky
+# Cleaning up HTML after using 'htmltidy'
+#
 # Revision 1.1  2001/06/05 10:43:07  chalky
 # Initial TreeFormatter and a JS version
 #
@@ -51,12 +54,12 @@ class TreeFormatter:
     def startTree(self):
 	"""Writes anything to the file that needs to be written at the start.
 	For example a script section for the global scripts used by a
-	javascript tree. In this default version nothing is done."""
-	pass
+	javascript tree."""
+	self.write('<ul>')
 
     def endTree(self):
 	"""Writes anything that needs to be written at the end."""
-	pass
+	self.write('</ul>')
     
     def writeLeaf(self, text):
 	"""Writes a leaf to the output. A leaf is a node with no children, for

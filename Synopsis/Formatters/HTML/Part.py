@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.29 2002/10/28 08:16:52 chalky Exp $
+# $Id: Part.py,v 1.30 2002/11/01 03:39:20 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.30  2002/11/01 03:39:20  chalky
+# Cleaning up HTML after using 'htmltidy'
+#
 # Revision 1.29  2002/10/28 08:16:52  chalky
 # Undo previous table change. Put non-breaking spaces in first column instead
 #
@@ -403,7 +406,7 @@ class Summary(Part):
     def writeSectionStart(self, heading):
 	"""Starts a table entity. The heading is placed in a row in a td with
 	the class 'heading'."""
-	self.write('<table width="100%%">\n')
+	self.write('<table width="100%%" summary="%s">\n'%heading)
 	self.write('<col><col width="100%%">')
 	self.write('<tr><td class="heading" colspan="2">' + heading + '</td></tr>\n')
 
@@ -467,7 +470,7 @@ class Detail(Part):
     def writeSectionStart(self, heading):
 	"""Creates a table with one row. The row has a td of class 'heading'
 	containing the heading string"""
-	self.write('<table width="100%%">\n')
+	self.write('<table width="100%%" summary="%s">\n'%heading)
         self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
         self.write('</table>')
 
@@ -577,7 +580,7 @@ class Inheritance (Part):
     def writeSectionStart(self, heading):
 	"""Creates a table with one row. The row has a td of class 'heading'
 	containing the heading string"""
-	self.write('<table width="100%%">\n')
+	self.write('<table width="100%%" summary="%s">\n'%heading)
         self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
 	self.write('<tr><td class="inherited">')
 	self.__start_list = 1
