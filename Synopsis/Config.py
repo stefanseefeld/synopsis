@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.23 2003/10/09 05:02:39 stefan Exp $
+#  $Id: Config.py,v 1.24 2003/11/05 01:57:00 stefan Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -124,9 +124,9 @@ class Base:
             main_file = 1
             def __init__(self, argv):
                 if argv.has_key('verbose'): self.verbose = 1
-        class CXX:
+        class Cxx:
             """Config object for the C++ parser.
-            @attr name Name of this config object: 'C++'
+            @attr name Name of this config object: 'Cxx'
             @attr verbose Verbosity flag. This attribute is set by __init__(),
             but only if 'verbose' was passed as a config option.
             @attr main_file Flag that selects if should only store the AST
@@ -189,9 +189,9 @@ class Base:
             should have a Simple rule first which is the main sourcefile, and
             any number of other rules to select other files to record the AST
             for.
-            @see Synopsis.Parser.C++.__init__
+            @see Synopsis.Parser.Cxx.__init__
             """
-            name = 'C++'
+            name = 'Cxx'
             include_path = []
             def __init__(self, argv):
                 if argv.has_key('verbose'): self.verbose = 1
@@ -213,7 +213,7 @@ class Base:
                 if argv.has_key('verbose'): self.verbose = 1
                 self.main_file = 1
 
-        modules = {'C++': CXX,
+        modules = {'Cxx': Cxx,
                    'IDL': IDL,
                    'Python': Python}
     
