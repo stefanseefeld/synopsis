@@ -359,7 +359,7 @@ void Synopsis::addComments(PyObject* pydecl, AST::Declaration* cdecl)
     PyObject* comments = PyObject_CallMethod(pydecl, "comments", NULL);
     PyObject_CallMethod(comments, "extend", "O", m->List(cdecl->comments()));
     // Also set the accessability..
-    PyObject_CallMethod(pydecl, "set_accessability", "i", int(cdecl->access()));
+    PyObject_CallMethod(pydecl, "set_accessibility", "i", int(cdecl->access()));
 }
 
 PyObject *Synopsis::Declaration(AST::Declaration* decl)
