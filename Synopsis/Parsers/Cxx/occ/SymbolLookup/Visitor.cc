@@ -9,6 +9,12 @@
 
 using namespace SymbolLookup;
 
+void Visitor::visit(PTree::List *node)
+{
+  for (PTree::Node *i = node; i; i = i->cdr())
+    if (i->car()) i->car()->accept(this);
+}
+
 void Visitor::visit(PTree::NamespaceSpec *spec)
 {
   my_table.enter_namespace(spec);
