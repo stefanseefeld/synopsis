@@ -9,7 +9,11 @@
 #include <vector>
 #include <stdexcept>
 #include <cerrno>
+#include <cstdio>
 #include <windows.h>
+#include <io.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 using namespace Synopsis;
 
@@ -79,4 +83,26 @@ std::string Path::normalize(const std::string &filename)
   for (Components::iterator i = components.begin() + 1; i != components.end(); ++i)
     retn += '/' + *i;
   return retn;
+}
+
+namespace Synopsis
+{
+
+void makedirs(const Path &path) throw(std::runtime_error)
+{
+  const std::string &dir = path.str();
+  if (dir.empty()) throw std::runtime_error("empty path in 'makedirs'");
+  std::string::size_type cursor = 0;
+  while (cursor != std::string::npos)
+  {
+    cursor = dir.find(Path::SEPARATOR, cursor + 1);
+    struct stat st;
+    int error;
+    if ((error = stat(dir.substr(0, cursor).c_str(), &st)) == -1 &&
+	errno == ENOENT)
+      mkdir(dir.substr(0, cursor).c_str());
+    else if (error) throw std::runtime_error(strerror(errno));
+  }
+}
+
 }

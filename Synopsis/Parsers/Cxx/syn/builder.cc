@@ -171,13 +171,13 @@ Builder::Builder(AST::SourceFile* file)
     // Add a variables for true
     name.clear();
     name.push_back("true");
-    decl = new AST::Variable(file, -1, "variable", name, t_bool, false);
+    decl = new AST::Const(file, -1, "const", name, t_bool, "true");
     global->dict->insert(decl);
     m->builtin_decls.push_back(decl);
     // Add a variable for false
     name.clear();
     name.push_back("false");
-    decl = new AST::Variable(file, -1, "variable", name, t_bool, false);
+    decl = new AST::Const(file, -1, "const", name, t_bool, "false");
     global->dict->insert(decl);
     m->builtin_decls.push_back(decl);
     // Add a variable for null pointer types (g++ #defines NULL to __null)

@@ -815,10 +815,11 @@ PyObject *Translator::Const(AST::Const* decl)
 {
   Trace trace("Translator::addConst");
   PyObject *cons, *file, *type, *name, *ctype;
-  cons = PyObject_CallMethod(m_ast_module, "Const", "OiOOOOOs",
+  cons = PyObject_CallMethod(m_ast_module, "Const", "OiOOOOs",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
                              type = m->py(decl->type()), ctype = m->py(decl->ctype()),
                              name = m->Tuple(decl->name()), decl->value().c_str());
+  if (PyErr_Occurred()) PyErr_Print();
   addComments(cons, decl);
   Py_DECREF(file);
   Py_DECREF(type);

@@ -7,13 +7,7 @@
 //
 
 #include <Python.h>
-#if !defined(__WIN32__)
-#  include <unistd.h>
-#endif
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <cstdio>
+#include <Synopsis/Path.hh>
 
 #include "swalker.hh"
 #include "linkstore.hh"
@@ -52,50 +46,9 @@ const char* context_names[] =
     "CALL"
 };
 
-// Utility function to ensure that all the directories in the given path
-// exist, creating them if needed.
-void makedirs(const char* path)
-{
-    static char buf[1024];
-    strcpy(buf, path);
-    struct stat st;
-    int error;
-    char* ptr = buf, *sep = 0;
-    // Skip first / if any
-    if (*ptr == '/')
-        ptr++;
-    while (1)
-    {
-        // Find next /
-        while (*ptr && *ptr != '/')
-            ptr++;
-        if (!*ptr)
-            return;
-        sep = ptr;
-        if (ptr == sep + 1)
-            // An empty path component, eg: blah/foo//fred
-            continue;
-        *sep = 0;
-        // Try to stat this dir
-        if ((error = stat(buf, &st)) == -1 && errno == ENOENT)
-#ifdef __WIN32__
-           mkdir(buf);
-#else
-           mkdir(buf, 0755);
-#endif
-        else if (error)
-        {
-            perror(buf);
-            return;
-        }
-        // Restore / to build up path
-        *sep = '/';
-        // Move past /
-        ptr++;
-    }
 }
 
-}
+using namespace Synopsis;
 
 struct LinkStore::Private
 {
@@ -232,6 +185,10 @@ public:
         // Not a link, but a keyword
         links->span(node, "file-keyword");
     }
+    void visit_dependent(Types::Dependent*)
+    {
+    }
+
     void visit_named(Types::Named* named)
     {
         // All other nameds get stored
@@ -485,7 +442,7 @@ std::ostream& LinkStore::get_syntax_stream(AST::SourceFile* file)
     if (!streams.syntax)
     {
         std::string filename = m->filter->get_syntax_filename(file);
-        makedirs(filename.c_str());
+        makedirs(Path(filename).dirname());
         streams.syntax = new std::ofstream(filename.c_str());
     }
     return *streams.syntax;
@@ -499,7 +456,7 @@ std::ostream& LinkStore::get_xref_stream(AST::SourceFile* file)
     if (!streams.xref)
     {
         std::string filename = m->filter->get_xref_filename(file);
-        makedirs(filename.c_str());
+        makedirs(Path(filename).dirname());
         streams.xref = new std::ofstream(filename.c_str());
     }
     return *streams.xref;
