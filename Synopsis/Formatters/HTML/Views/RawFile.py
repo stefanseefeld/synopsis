@@ -1,4 +1,4 @@
-# $Id: RawFile.py,v 1.3 2002/11/13 02:29:24 chalky Exp $
+# $Id: RawFile.py,v 1.4 2002/11/13 04:11:00 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: RawFile.py,v $
+# Revision 1.4  2002/11/13 04:11:00  chalky
+# Fix exclude_globs bug
+#
 # Revision 1.3  2002/11/13 02:29:24  chalky
 # Support exclude_glob option to exclude files from listings. Remove debug info.
 #
@@ -54,6 +57,7 @@ class RawFilePages (Page.Page):
         self.__base = config.base_dir
         self.__start = config.start_dir
         self.__files = None
+	self.__exclude_globs = config.exclude_globs
 
     def filename(self):
         """since RawFilePages generates a whole file hierarchy, this method returns the current filename,
