@@ -28,6 +28,17 @@ endif
 OPTIMISE	:= -O1 -ggdb -fno-inline
 DEBUG		:= -O1 -ggdb $(CPP_PROFILE) -DDEBUG -fno-inline
 
+## GC config.
+
+#old versions (pre-autoconf/automake)
+#GC_TARGET	:= c++
+#GC_LIB		:= ../gc/gc.a
+
+#new versions (with autoconf/automake)
+GC_TARGET	:=
+GC_LIB		:= ../gc/.libs/libgc.a
+
+
 # Flags
 CFLAGS		:= 
 ifeq '$(python_prefix)' '/usr'
@@ -40,7 +51,7 @@ ifeq '$(use_gc)' 'no'
 CPPFLAGS	+= -DDONT_GC
 GCLIB		:=
 else
-GCLIB		:= ../gc/gc.a
+GCLIB		:= $(GC_LIB)
 endif
 LDFLAGS		:=
 UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
@@ -123,7 +134,7 @@ ucpp:		$(UCPP_AOBJ)
 
 # This calls make in the gc dir to create the gc.a file
 $(GCLIB):
-	@make -C ../gc c++
+	@make -C ../gc $(GC_TARGET)
 
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a $(UCPP_LIB)
