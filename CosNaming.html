@@ -1,0 +1,21 @@
+module CosNaming
+  typedef string
+  struct NameComponent
+  typedef sequence<::CosNaming::NameComponent>
+  struct Binding
+  typedef sequence<::CosNaming::Binding>
+  interface NamingContext
+bind(in ::CosNaming::Name nin ::CORBA::Object obj)
+rebind(in ::CosNaming::Name nin ::CORBA::Object obj)
+bind_context(in ::CosNaming::Name nin ::CosNaming::NamingContext nc)
+rebind_context(in ::CosNaming::Name nin ::CosNaming::NamingContext nc)
+resolve(in ::CosNaming::Name n)
+unbind(in ::CosNaming::Name n)
+new_context()
+bind_new_context(in ::CosNaming::Name n)
+destroy()
+list(in unsigned long how_manyout ::CosNaming::BindingList blout ::CosNaming::BindingIterator bi)
+  interface BindingIterator
+next_one(out ::CosNaming::Binding b)
+next_n(in unsigned long how_manyout ::CosNaming::BindingList bl)
+destroy()
