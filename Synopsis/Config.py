@@ -1,4 +1,4 @@
-#  $Id: Config.py,v 1.14 2002/10/29 04:58:12 chalky Exp $
+#  $Id: Config.py,v 1.15 2002/11/01 07:19:41 chalky Exp $
 #
 #  This file is a part of Synopsis.
 #  Copyright (C) 2000, 2001 Stefan Seefeld
@@ -291,7 +291,10 @@ class Base:
 	    The summary formatter splits comments into 'summary' and 'detail'
 	    sections by looking for the first sentence. Javadoc formats
 	    javadoc-style @tags. Section splits blank lines into paragraph
-	    breaks.
+	    breaks. The quotehtml formatter quotes any html characters such as
+	    angle brackets and ampersands, such as comments that mention C++
+	    templates. This also has the effect of disabling any HTML in the
+	    comments, and so is off by default.
 	    @attr sorter Specifies the Sorter to be used to sort declarations
 	    on Scope Pages. You may set this to override the default sorting,
 	    for example using ('Synopsis.Formatter.HTML.doxygen',
