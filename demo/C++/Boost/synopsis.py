@@ -6,6 +6,7 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Processors import *
 from Synopsis.Formatters import Dump
 from Synopsis.Formatters import HTML
+from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 
@@ -34,7 +35,10 @@ linker = Linker(SSComments(),       # filter out any non-'//' comments
                 Summarizer(),       # separate summary (first phrase) from detail (everything)
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
-html = HTML.Formatter(views = [FramesIndex(),
+html = HTML.Formatter(file_layout = FileLayout(), # bpl uses 'aux' module which would usually
+                                                  # map to an 'aux' directory, which silly windows
+                                                  # doesn't allow
+                      views = [FramesIndex(),
                                Scope(),
                                ModuleListing(),
                                ModuleIndexer(),
