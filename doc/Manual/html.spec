@@ -1,6 +1,0 @@
--s style.css
--S ../../demo/html.css
--C summary
--C javadoc
--C section
--t links.toc
