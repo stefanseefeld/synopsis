@@ -1,4 +1,4 @@
-# $Id: Tags.py,v 1.3 2001/06/28 07:22:18 stefan Exp $
+# $Id: Tags.py,v 1.4 2001/07/10 05:09:11 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Tags.py,v $
+# Revision 1.4  2001/07/10 05:09:11  chalky
+# More links work
+#
 # Revision 1.3  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -41,7 +44,7 @@ def k2a(keys):
 def rel(frm, to):
     "Find link to to relative to frm"
     frm = string.split(frm, '/'); to = string.split(to, '/')
-    for l in range((len(frm)<len(to)) and len(frm) or len(to)):
+    for l in range((len(frm)<len(to)) and len(frm)-1 or len(to)-1):
         if to[0] == frm[0]: del to[0]; del frm[0]
         else: break
     #if len(frm) > len(to): to = ['..']*(len(frm)-len(to))+to
