@@ -29,9 +29,9 @@ vpath %.cc $(topdir)
 vpath %.h $(topdir)
 vpath %.hh $(topdir)
 
-html:   all.syn
+html: all.syn
 	@echo formatting $@
-	@$(synopsis) html --output=$@ $^
+	$(synopsis) html --output=$@ $^
 
 # Compile Python files
 $(py_syn): %.syn: %.py
@@ -63,14 +63,14 @@ py.syn:	$(py_syn)
 	$(synopsis) link_python --output=$@ $^
 
 # Link C++ files together
-c++.syn: $(cxx_hh_syn) $(cxx_h_syn) $(cxx_cc_syn)
+cxx.syn: $(cxx_hh_syn) $(cxx_h_syn) $(cxx_cc_syn)
 	@echo linking C++ files together
-	@$(synopsis) link_cxx --output=$@ $^
+	$(synopsis) link_cxx --output=$@ $^
 
 # Link all files together
-all.syn: py.syn c++.syn
+all.syn: py.syn cxx.syn
 	@echo linking all files together
-	@$(synopsis) link --output=$@ $^
+	$(synopsis) link --output=$@ $^
 
 ast.syn:	py.syn
 	@echo linking $@
@@ -84,15 +84,15 @@ util.syn:	py.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Util' --output=$@ $^
 
-parsers-c++-py.syn:	py.syn
+parsers-cxx-py.syn:	py.syn
 	@echo linking $@
 	$(synopsis) strip --scope='Synopsis::Parsers::Cxx' --output=$@ $^
 
-parsers-c++-cpp.syn:	c++.syn
+parsers-cxx-cpp.syn:	cxx.syn
 	@echo linking $@
 	$(synopsis) link --output=$@ $^
 
-parsers-c++.syn:	parsers-c++-py.syn parsers-c++-cpp.syn
+parsers-cxx.syn:	parsers-cxx-py.syn parsers-cxx-cpp.syn
 	@echo linking $@
 	$(synopsis) link --output=$@ $^
 
