@@ -1390,14 +1390,13 @@ enum Foo {
       <para>The format of the output xref file, should you want to use it for
       a CGI script or some such, is as follows:</para>
 
-      <para>file = (data, index) data = dict&#60;scoped targetname,
-      target_data&#62; index = dict&#60;name, list&#60;scoped
-      targetname&#62;&#62; target_data = (definitions :
-      list&#60;target_info&#62;, func calls : list&#60;target_info&#62;,
-      references : list&#60;target_info&#62;) target_info = (filename, line
-      number : int, scoped context name)</para>
-
-      <para></para>
+      <programlisting>file = (data, index)
+data = dict&#60;scoped targetname, target_data&#62;
+index = dict&#60;name, list&#60;scoped targetname&#62;&#62;
+target_data = (definitions : list&#60;target_info&#62;, 
+    func calls : list&#60;target_info&#62;, 
+    references : list&#60;target_info&#62;)
+target_info = (filename, line number : int, scoped context name)</programlisting>
 
       <section>
         <title>XRefCompiler options</title>
@@ -2293,6 +2292,31 @@ class HTML (Base.Formatter.HTML):
           </listitem>
         </varlistentry>
       </variablelist>
+
+      <para>In addition, you may use the following command line arguments.
+      Except for &#34;-o&#34;, they must all be set using the
+      &#34;-Wf,foo&#34; syntax.<variablelist><varlistentry><term>-o filename</term><listitem><para>Specifies
+      an output directory. You do not need to use special syntax for this
+      option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry><varlistentry><term>-d
+      datadir</term><listitem><para>Sets the data directory where images and
+      stylesheets will be loaded from by default.</para></listitem></varlistentry><varlistentry><term>-s
+      stylesheet</term><listitem><para>Sets the name of the stylesheet in the
+      generated manual directory (not the original file!)</para></listitem></varlistentry><varlistentry><term>-S
+      stylesheet_file</term><listitem><para>Sets the filename of the
+      stylesheet to copy into the generated manual directory.</para></listitem></varlistentry><varlistentry><term>-n
+      namespace</term><listitem><para>Sets the namespace ???</para></listitem></varlistentry><varlistentry><term>-c
+      comment_formatter</term><listitem><para>Specifies an additional comment
+      formatter to use. The given comment_formatter must be either an object
+      name accessible from the available PYTHON_PATH, or a filename with
+      global functions matching the requirements.</para></listitem></varlistentry><varlistentry><term>-C
+      comment_formatter</term><listitem><para>Specifies an additional inbuilt
+      comment formatter to use. See the CommentFormatter section above for a
+      list of available comment formatters.</para></listitem></varlistentry><varlistentry><term>-t
+      toc_filename</term><listitem><para>Specifies that the TOC should be
+      written to the given filename.</para></listitem></varlistentry><varlistentry><term>-r
+      toc_filename</term><listitem><para>Specifies that the TOC should be read
+      from the given filename. The read TOC is merged with the current TOC.</para></listitem></varlistentry></variablelist></para>
     </section>
   </chapter>
 
@@ -2307,6 +2331,17 @@ class HTML (Base.Formatter.HTML):
 
       <para>This formatter simply writes one output file containing the whole
       AST, marked up in HTML.</para>
+
+      <para>The HTML_Simple formatter does not support any config options yet,
+      however some command line options are still supported. Don&#39;t forget
+      to set them using the &#34;-Wf,-foo&#34; syntax!<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. The default
+      is to send output to the console (stdout). You do not need to use the
+      special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry><varlistentry><term>-s
+      stylesheet</term><listitem><para>Specifies the stylesheet to link to in
+      the generated HTML file. If note specified, then no stylesheet is linked
+      to.</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
@@ -2315,6 +2350,18 @@ class HTML (Base.Formatter.HTML):
       <para>This formatter attempts to format the output as DocBook format.
       Unfortunately the elements available in DocBook do not cover all the C++
       types.</para>
+
+      <para>The DocBook formatter does not support any config options yet,
+      however some command line options are still supported. Don&#39;t forget
+      to set them using the &#34;-Wf,-foo&#34; syntax!<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. The default
+      is to send output to the console (stdout). You do not need to use the
+      special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry><varlistentry><term>-d</term><listitem><para>Specifies
+      that no DOCTYPE element should be output.</para></listitem></varlistentry><varlistentry><term>-m</term><listitem><para>Specifies
+      that the (Synopsis Reference -) Manual Format should be used. This
+      format doesn&#39;t try to use the docbook code elements, and instead
+      uses nested sections and titles to identify elements.</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
@@ -2324,12 +2371,30 @@ class HTML (Base.Formatter.HTML):
       BoostBook is a derivative of DocBook with full support of C++
       constructs, developed by the Boost project for documenting their
       libraries.</para>
+
+      <para>The DocBook formatter does not support any config options yet,
+      however some command line options are still supported. Don&#39;t forget
+      to set them using the &#34;-Wf,-foo&#34; syntax!<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. The default
+      is to send output to the console (stdout). You do not need to use the
+      special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
-      <title>PDF</title>
+      <title>TexInfo</title>
 
-      <para>This formatter attempts to output PDF.</para>
+      <para>This formatter attempts to output TexInfo .info files. These can
+      be compiled using other tools into man-pages, PDF files, info manuals,
+      etc.</para>
+
+      <para>The DocBook formatter does not support any config options yet,
+      however some command line options are still supported. Don&#39;t forget
+      to set them using the &#34;-Wf,-foo&#34; syntax!<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. The default
+      is to send output to the console (stdout). You do not need to use the
+      special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
@@ -2338,7 +2403,41 @@ class HTML (Base.Formatter.HTML):
       <para>This formatter uses the &#39;dot&#39; tool, a part of GraphViz, to
       generate graphs of the AST. It is mostly used by the HTML formatter for
       generating inheritance graphs, but can also be used as a stand-alone
-      formatter.</para>
+      formatter. It can currently generate two types of diagram: inheritance
+      and single. The inheritance diagram shows the entire hierarchy, whereas
+      the single diagram shows only the hierarchy starting at a given class,
+      and going one level down and all the way up to the top-level parent
+      class(es). The former is used by the InheritanceGraph HTML page, and the
+      latter by the individual class pages.</para>
+
+      <para>The Dot formatter does not support any config options yet, however
+      some command line options are still supported. Don&#39;t forget to set
+      them using the &#34;-Wf,-foo&#34; syntax!<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. You do not
+      need to use the special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry><varlistentry><term>-t
+      title</term><listitem><para>Specifies a title for the graph</para></listitem></varlistentry><varlistentry><term>-i</term><listitem><para>Specifies
+      an &#34;inheritance&#34; style graph, showing all classes.</para></listitem></varlistentry><varlistentry><term>-s</term><listitem><para>Specifies
+      a &#34;single&#34; style graph, showing only the graph related to a
+      single class.</para></listitem></varlistentry><varlistentry><term>-O</term><listitem><para>Causes
+      operations to be shown</para></listitem></varlistentry><varlistentry><term>-A</term><listitem><para>Causes
+      attributes to be shown</para></listitem></varlistentry><varlistentry><term>-f
+      format</term><listitem><para>Specifies an output format, can be one of:<variablelist><varlistentry><term>dot</term><listitem><para>GraphViz
+      dot file.</para></listitem></varlistentry><varlistentry><term>ps</term><listitem><para>PostScript
+      file.</para></listitem></varlistentry><varlistentry><term>png</term><listitem><para>Portable
+      Network Graphic file, for use in web pages.</para></listitem></varlistentry><varlistentry><term>gif</term><listitem><para>Graphics
+      Interchange Format, for use in web pages (prefer png due to patent
+      issues).</para></listitem></varlistentry><varlistentry><term>map</term><listitem><para>HTML
+      map segment, for embedding in web pages with links to classes.</para></listitem></varlistentry></variablelist><variablelist><varlistentry><term>html</term><listitem><para>HTML
+      segment, for embedding in web pages with links to classes or as a
+      standalone page.</para></listitem></varlistentry></variablelist></para></listitem></varlistentry><varlistentry><term>-r
+      tocfile</term><listitem><para>Specifies a TOC file to read, allowing the
+      generation of links to the classes in the graph. See the HTML formatter
+      for more info about TOC files.</para></listitem></varlistentry><varlistentry><term>-R
+      classname</term><listitem><para>Specifies the origin of the graph for
+      Single graphs</para></listitem></varlistentry><varlistentry><term>-d
+      direction</term><listitem><para>Specifies the direction. Can be
+      &#39;horizontal&#39; or &#39;vertical&#39;.</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
@@ -2346,6 +2445,17 @@ class HTML (Base.Formatter.HTML):
 
       <para>This formatter attempts to output the AST in a format resembling
       C++.</para>
+
+      <para>The ASCII formatter does not support any config options yet,
+      however some command line options are still supported. Don&#39;t forget
+      to set them using the &#34;-Wf,-foo&#34; syntax!<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. The default
+      is to send output to the console (stdout). You do not need to use the
+      special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry><varlistentry><term>-b</term><listitem><para>Shows
+      comments in bold using terminal codes</para></listitem></varlistentry><varlistentry><term>-c
+      number</term><listitem><para>Shows comments in the given colour number,
+      using terminal codes.</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
@@ -2354,14 +2464,77 @@ class HTML (Base.Formatter.HTML):
       <para>This formatter outputs the AST in a format useful for debugging
       Synopsis or your config. It displayes the AST hierarchy using a generic
       object dumper. It also shows the types dictionary and the listing of
-      sourcefiles.</para>
+      sourcefiles. The best way to use the DUMP formatter is to pipe the
+      output into &#34;less&#34;, preferably with the &#34;-r&#34; flag so
+      that the bold names are shown. Using the &#34;-r&#34; flag however will
+      cause problems with comments longer than a screen width.</para>
+
+      <para>The DUMP formatter does not support any config options yet,
+      however some command line options are still supported. Don&#39;t forget
+      to set them using the &#34;-Wf,-foo&#34; syntax! Note that if none of
+      -d, -t or -f are specified, the default is equivalent to -d and -t.<variablelist><varlistentry><term>-o
+      filename</term><listitem><para>Specifies an output filename. The default
+      is to send output to the console (stdout). You do not need to use the
+      special syntax for this option.</para></listitem></varlistentry><varlistentry><term>-v</term><listitem><para>Enables
+      verbose operation.</para></listitem></varlistentry><varlistentry><term>-d</term><listitem><para>Shows
+      the declarations, following the AST hierarchy</para></listitem></varlistentry><varlistentry><term>-t</term><listitem><para>Shows
+      the types dictionary</para></listitem></varlistentry><varlistentry><term>-f</term><listitem><para>Shows
+      forward declarations</para></listitem></varlistentry></variablelist></para>
     </section>
 
     <section>
       <title>Dia</title>
 
       <para>This formatter attempts to output the AST as a Dia graph. The Dia
-      format is not public, however, and changes between versions.</para>
+      file format is just XML, so this makes the formatter quite simple.</para>
+
+      <para>The Dia formatter does not support any config options yet, however
+      some command line options are still supported. Don&#39;t forget to set
+      them using the &#34;-Wf,-foo&#34; syntax!</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>-o filename</term>
+
+          <listitem>
+            <para>Specifies an output filename. It should probably end in
+            &#34;.dia&#34;. You do not need to use the special syntax for this
+            option.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>-v</term>
+
+          <listitem>
+            <para>Enables verbose operation.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>-m</term>
+
+          <listitem>
+            <para>Hides the operations/methods in the classes.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>-a</term>
+
+          <listitem>
+            <para>Hides the attributes/variables in the classes.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>-p</term>
+
+          <listitem>
+            <para>Hides the parameters in the operation/method specifications.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
     </section>
   </chapter>
 
