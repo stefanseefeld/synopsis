@@ -1,4 +1,4 @@
-# $Id: Processor.py,v 1.4 2003/11/14 13:59:01 stefan Exp $
+# $Id: Processor.py,v 1.5 2003/11/16 15:06:29 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -39,12 +39,12 @@ class Parametrized(object):
       instance = object.__new__(cls)
       # iterate over all base classes, starting at the 'Parametrized' base class
       # i.e. remove mixin classes
-      hierarchy = list(filter(lambda i:isinstance(i, Parametrized), cls.__mro__))
+      hierarchy = list(filter(lambda i:issubclass(i, Parametrized), cls.__mro__))
       hierarchy.reverse()
       parameters = {}
       for c in hierarchy:
          parameters.update(c._parameters)
-         setattr(instance, '_parameters', parameters)
+      setattr(instance, '_parameters', parameters)
 
       for p in kwds:
          if not p in instance._parameters:
