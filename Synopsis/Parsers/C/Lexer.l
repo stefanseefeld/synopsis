@@ -563,7 +563,9 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                        }
 
 <STR>\n                { /* Error - unterminated string constant */
-                         yyerr("Unterminated string constant starting");
+                         if(yyerr("Unterminated string constant starting"))
+                           yyterminate();
+
                          LAST_STATE();
                          return(INVALID);
                        }
@@ -581,14 +583,17 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
                          if (sscanf(tmpOct+1, "%o", &result ) < 1)
                          {
-                             yyerr("Invalid octal escape sequence");
+                             if(yyerr("Invalid octal escape sequence"))
+                               yyterminate();
+
                              LAST_STATE();
                              return(INVALID);
                          }
 
                              /* error, constant is out-of-bounds */
                          if ( result > 0xff ){
-                            yyerr("Escape sequence out-of-bounds");
+                            if(yyerr("Escape sequence out-of-bounds"))
+                              yyterminate();
                          }
 
                          if (gProject->Parse_TOS->tokn_ptr < gProject->Parse_TOS->tokn_end)
@@ -602,14 +607,17 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
                          if (sscanf(yytext+2, "%x", &result ) < 1)
                          {
-                             yyerr("Invalid hex escape sequence");
+                             if(yyerr("Invalid hex escape sequence"))
+                               yyterminate();
+
                              LAST_STATE();
                              return(INVALID);
                          }
 
                              /* error, constant is out-of-bounds */
                          if ( result > 0xff ){
-                            yyerr("Escape sequence out-of-bounds");
+                            if(yyerr("Escape sequence out-of-bounds"))
+                              yyterminate();
                          } else if (yyleng > 4){
                             yywarn("Hexadecimal escape exceeds two chars");
                          }
@@ -737,7 +745,9 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
                          if (sscanf(yytext+1, "%o", &result ) < 1)
                          {
-                             yyerr("Invalid octal escape sequence");
+                             if(yyerr("Invalid octal escape sequence"))
+                               yyterminate();
+
                              LAST_STATE();
                              return(INVALID);
                          }
@@ -758,7 +768,9 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
                          if (sscanf(yytext+2, "%x", &result ) < 1)
                          {
-                             yyerr("Invalid hex escape sequence");
+                             if(yyerr("Invalid hex escape sequence"))
+                               yyterminate();
+
                              LAST_STATE();
                              return(INVALID);
                          }

@@ -517,7 +517,9 @@ labeled_stemnt: label COLON stemnt_reentrance
             if ($$ == NULL)
             {
               /* Sorry, we must have a statement here. */
-              yyerr("Can't have a label at the end of a block! ");
+              if(yyerr("Can't have a label at the end of a block! "))
+                YYERROR;
+                
               $$ = new Statement(ST_NullStemnt,*$2);
             }
             $$->addHeadLabel($1);
@@ -1227,7 +1229,8 @@ type_name_bis:  decl_specs_reentrance_bis
             gProject->Parse_TOS->possibleType = true;
             $$ = $1;
             if ($$->isFunction())
-                yyerr ("Function type not allowed as type name");
+                if(yyerr ("Function type not allowed as type name"))
+                  YYERROR;
         }
          | decl_specs_reentrance_bis abs_decl
         {
@@ -1238,12 +1241,17 @@ type_name_bis:  decl_specs_reentrance_bis
             
             Type * extended = $$->extend($1);
             if ($$->isFunction())
-                yyerr ("Function type not allowed as type name");
+            {
+                if(yyerr ("Function type not allowed as type name"))
+                  YYERROR;
+            }
             else if (extended && 
                 $1 && $1->isFunction() && 
                 ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
-                
+            {
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
+            }
         }
         ;      
 /*** INPUT RULES OF THIS SET: 
@@ -1298,7 +1306,10 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
             }
 
             if ($1 == ST_None)
-                 yyerr("Invalid use of local storage type");
+            {
+                 if(yyerr("Invalid use of local storage type"))
+                   YYERROR;
+            }
             else if ($$->storage != ST_None)             
                  yywarn("Overloading previous storage type specification");
             else
@@ -1752,7 +1763,10 @@ enum_const_def:  enum_constant
             if (gProject->Parse_TOS->transUnit)
             {
               if (gProject->Parse_TOS->transUnit->contxt.syms->IsDefined($1->name))
-                 yyerr("Duplicate enumeration constant");
+              {
+                 if(yyerr("Duplicate enumeration constant"))
+                   YYERROR;
+              }
                  
               $1->entry = gProject->Parse_TOS->transUnit->contxt.syms->Insert(
                                   mk_enum_const($1->name, $$));
@@ -1764,7 +1778,10 @@ enum_const_def:  enum_constant
             if (gProject->Parse_TOS->transUnit)
             {
               if (gProject->Parse_TOS->transUnit->contxt.syms->IsDefined($1->name))
-                 yyerr("Duplicate enumeration constant");
+              {
+                 if(yyerr("Duplicate enumeration constant"))
+                   YYERROR;
+              }
                  
               $1->entry = gProject->Parse_TOS->transUnit->contxt.syms->Insert(
                                   mk_enum_const($1->name, $$));
@@ -1866,15 +1883,22 @@ comp_declarator:  simple_comp
            Type * extended = $$->extend(decl);
            if ($$->form &&
                $$->form->isFunction())
-               yyerr ("Function type not allowed as field");
+           {
+               if(yyerr ("Function type not allowed as field"))
+                 YYERROR;
+           }
            else if ($$->form &&
                     $$->form->isArray() &&
                     ! ((ArrayType *) $$->form)->size)
-               yyerr ("Unsized array not allowed as field");
+           {
+               if(yyerr ("Unsized array not allowed as field"))
+                 YYERROR;
+           }
            else if (extended && 
                decl && decl->isFunction() && 
                ! extended->isPointer())
-               yyerr ("Wrong type combination") ;
+               if(yyerr ("Wrong type combination"))
+                 YYERROR;
                 
         }
                |  bit_field
@@ -1882,9 +1906,15 @@ comp_declarator:  simple_comp
            Type * decl = gProject->Parse_TOS->parseCtxt->UseDeclCtxt();
            $$->extend(decl);
            if (! decl)
-               yyerr ("No type specifier for bit field") ;
+           {
+               if(yyerr ("No type specifier for bit field"))
+                 YYERROR;
+           }
            else if (!$$->form)
-               yyerr ("Wrong type combination") ;
+           {
+               if(yyerr ("Wrong type combination"))
+                 YYERROR;
+           }
         }
         ;
 
@@ -1966,7 +1996,8 @@ direct_declarator_reentrance:  ident
             FunctionType * ft = new FunctionType(ReverseList($3));
             Type * extended = $$->extend(ft);
             if (extended && ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
                 
             delete $2 ;
             delete $4 ;
@@ -1982,7 +2013,8 @@ direct_declarator_reentrance:  ident
             FunctionType * ft = new FunctionType(ReverseList($3));
             Type * extended = $$->extend(ft);
             if (extended && ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
 
             delete $2 ;
             delete $4 ;
@@ -2001,7 +2033,8 @@ direct_declarator_reentrance:  ident
 				FunctionType* ft = new FunctionType();
 				Type* extended = $$->extend(ft);
 				if (extended && ! extended->isPointer())
-           	 	    yyerr ("Wrong type combination") ;
+           	 	    if(yyerr ("Wrong type combination"))
+                              YYERROR;
 			}
             
             delete $2 ;
@@ -2023,7 +2056,8 @@ array_decl: direct_declarator_reentrance LBRCKT opt_const_expr RBRCKT
             Type * extended = $$->extend(at);
             if (extended && 
                 extended->isFunction())
-                yyerr ("Wrong type combination") ;
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
               
             delete $2 ;
             delete $4 ;
@@ -2177,11 +2211,17 @@ param_decl_bis: decl_specs_reentrance_bis declarator
             Type * extended = $$->extend(decl);             
             if ($$->form &&
                 $$->form->isFunction())
-                yyerr ("Function type not allowed");
+             {
+                if(yyerr ("Function type not allowed"))
+                  YYERROR;
+             }
             else if (extended && 
                 decl && decl->isFunction() && 
                 ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
+             {
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
+             }
         }
           | decl_specs_reentrance_bis abs_decl_reentrance
         {
@@ -2194,11 +2234,17 @@ param_decl_bis: decl_specs_reentrance_bis declarator
             Type * extended = $$->extend(decl);
             if ($$->form &&
                 $$->form->isFunction())
-                yyerr ("Function type not allowed for parameter");
+            {
+                if(yyerr ("Function type not allowed for parameter"))
+                  YYERROR;
+            }
             else if (extended && 
                 decl && decl->isFunction() && 
                 ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
+            {
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
+            }
         }
           | decl_specs_reentrance_bis
         {
@@ -2206,7 +2252,8 @@ param_decl_bis: decl_specs_reentrance_bis declarator
             $$ = new Decl($1);
             if ($$->form &&
                 $$->form->isFunction())
-                yyerr ("Function type not allowed for parameter");
+                if(yyerr ("Function type not allowed for parameter"))
+                  YYERROR;
         }
         ;
 /*** INPUT RULE OF THIS SET:
@@ -2247,7 +2294,8 @@ direct_abs_decl_reentrance:  LPAREN abs_decl_reentrance RPAREN
             Type * extended = $$->extend(at) ;
             if (extended && 
                 extended->isFunction())
-                yyerr ("Wrong type combination") ;
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
         }
         |  LPAREN opt_param_type_list RPAREN
         {
@@ -2260,7 +2308,8 @@ direct_abs_decl_reentrance:  LPAREN abs_decl_reentrance RPAREN
             Type * extended = $$->extend(ft) ;
             if (extended && 
                 ! extended->isPointer())
-                yyerr ("Wrong type combination") ;
+                if(yyerr ("Wrong type combination"))
+                  YYERROR;
                 
         }
         ;
