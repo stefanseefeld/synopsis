@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 2003/09/18 04:10:05 stefan Exp $
+# $Id: Makefile.in,v 1.3 2003/09/18 14:50:55 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -20,58 +20,58 @@
 
 SHELL	= /bin/sh
 
-srcdir	:= @srcdir@
+srcdir	   := @srcdir@
 
-PYTHON	:= @PYTHON@
+PYTHON	   := @PYTHON@
 
-CC		:= @CC@
-CXX		:= @CXX@
+CC		      := @CC@
+CXX		   := @CXX@
 MAKEDEP		:= $(CXX) -M
-CPPFLAGS	:= @CPPFLAGS@ -I $(srcdir) -I @PYTHON_INCLUDE@
+CPPFLAGS	   := @CPPFLAGS@ -I $(srcdir) -I @PYTHON_INCLUDE@
 CFLAGS		:= @CFLAGS@
-CXXFLAGS	:= @CXXFLAGS@
-LIBS		:= @LIBS@ -lpthread
-LIBRARY_EXT	:= @LIBEXT@
+CXXFLAGS	   := @CXXFLAGS@
+LIBS	      := @LIBS@ -lpthread
+LIBRARY_EXT := @LIBEXT@
 
-USE_GC		:= @USE_GC@
+USE_GC	   := @USE_GC@
 
 ifeq ($(USE_GC), yes)
-GC_LIB		:= gc/.libs/libgc.a
+GC_LIB	   := gc/.libs/libgc.a
 else
-CPPFLAGS	+= -DDONT_GC
+CPPFLAGS    += -DDONT_GC
 endif
 
 UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 
-UCPP_LIB	:= ucpp/ucpp.a
-UCPP_GLIB	:= ucpp/ucpp.ga
-OCC_SO		:= occ.$(LIBRARY_EXT)
-LINK_SO		:= link.$(LIBRARY_EXT)
+UCPP_LIB	   := ucpp/ucpp.a
+UCPP_GLIB   := ucpp/ucpp.ga
+OCC_SO	   := occ.$(LIBRARY_EXT)
+LINK_SO	   := link.$(LIBRARY_EXT)
 
 OCC_FILES	:= buffer hash token ptree ptree-core encoding env \
-		   pattern walker typeinfo parse mop classwalk \
-		   metaclass quote-class member cbodywalk
+		         pattern walker typeinfo parse mop classwalk \
+		         metaclass quote-class member cbodywalk
 
 SYN_FILES	:= synopsis occ swalker ast builder type dict \
-		   dumper decoder swalker-syntax link_map linkstore \
-		   lookup filter
+		         dumper decoder swalker-syntax link_map linkstore \
+		         lookup filter
 
 UCPP_FILES	:= mem hashtable cpp lexer assert macro eval
 
 # Generate sources, objs and debug-objs from the FILES
 OCC_SOURCES	:= $(patsubst %, occ/%.cc, $(OCC_FILES))
-OCC_OBJ		:= $(patsubst %, occ/%.o, $(OCC_FILES))
-OCC_GOBJ	:= $(patsubst %, occ/%.go,$(OCC_FILES))
-SYN_SOURCES	:= $(patsubst %, syn/%.cc, $(SYN_FILES))
-SYN_OBJ		:= $(patsubst %, syn/%.o, $(SYN_FILES))
-SYN_GOBJ	:= $(patsubst %, syn/%.go,$(SYN_FILES))
-UCPP_SOURCES	:= $(patsubst %, ucpp/%.c, $(UCPP_FILES))
-UCPP_OBJ	:= $(patsubst %, ucpp/%.o, $(UCPP_FILES))
-UCPP_GOBJ	:= $(patsubst %, ucpp/%.go,$(UCPP_FILES))
-UCPP_AOBJ	:= $(patsubst %, ucpp/%.ao,$(UCPP_FILES))
+OCC_OBJ	   := $(patsubst %, occ/%.o, $(OCC_FILES))
+OCC_GOBJ    := $(patsubst %, occ/%.go,$(OCC_FILES))
+SYN_SOURCES := $(patsubst %, syn/%.cc, $(SYN_FILES))
+SYN_OBJ	   := $(patsubst %, syn/%.o, $(SYN_FILES))
+SYN_GOBJ	   := $(patsubst %, syn/%.go,$(SYN_FILES))
+UCPP_SOURCES:= $(patsubst %, ucpp/%.c, $(UCPP_FILES))
+UCPP_OBJ	   := $(patsubst %, ucpp/%.o, $(UCPP_FILES))
+UCPP_GOBJ   := $(patsubst %, ucpp/%.go,$(UCPP_FILES))
+UCPP_AOBJ   := $(patsubst %, ucpp/%.ao,$(UCPP_FILES))
 
-TARGETS		= $(OCC_SO) $(LINK_SO)
+TARGETS		:= $(OCC_SO) $(LINK_SO)
 
 vpath %.cc $(srcdir)
 vpath %.c $(srcdir)
