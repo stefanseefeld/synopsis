@@ -6,25 +6,6 @@
 
 using namespace Synopsis;
 
-char SEP = '/';
-
-void test2()
-{
-  std::string scripts = __FILE__;
-  scripts = scripts.substr(0, scripts.rfind(SEP, scripts.rfind(SEP) - 1) + 1);
-  scripts += "scripts";
-  scripts += SEP;
-  
-  Interpreter interp;
-  Module module("__main__");
-  Dict global = module.dict();
-  Dict local;
-  Object retn = interp.run_file(scripts + "SourceFile.py", Interpreter::FILE,
-				global, local);
-  Object type = local.get("SourceFile");
-  
-}
-
 void test1()
 {
   AST::ASTKit kit = AST::ASTKit();
@@ -39,18 +20,14 @@ void test1()
   List line = mmap.get(0, List());
   line.append(mc);
   mmap.set(0, line);
+  std::cout << sf.macro_calls().type() << std::endl;
 }
 
 int main(int, char **)
 {
   try
   {
-    test2();
     test1();
-  }
-  catch (const Interpreter::Exception &)
-  {
-    PyErr_Print();
   }
   catch (const std::exception &e)
   {
