@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
 "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
-<book xmlns:xi="http://www.w3.org/2003/XInclude">
+<book xmlns:xi="http://www.w3.org/2001/XInclude">
   <bookinfo>
     <title>Synopsis Tutorial</title>
 
@@ -68,9 +68,10 @@
 
       <para>
         <programlisting>
-          <xi:include href="examples/example1/example.h" parse="text"/>
-        </programlisting></para>
-      </section>
+          <xi:include href="examples/example1/Shape.h" parse="text"/>
+        </programlisting>
+      </para>
+    </section>
   </chapter>
 
   <chapter>
@@ -86,7 +87,7 @@
 
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/ast.svg" format="SVG" />
+          <imagedata fileref="images/ast.svg" format="SVG" scale="80" />
         </imageobject>
 
         <imageobject>
@@ -106,7 +107,7 @@
 
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/processor.svg" format="SVG" />
+          <imagedata fileref="images/processor.svg" format="SVG" scale="80" />
         </imageobject>
 
         <imageobject>
@@ -166,7 +167,7 @@
 
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/pipeline.svg" format="SVG" />
+          <imagedata fileref="images/pipeline.svg" format="SVG" scale="80" />
         </imageobject>
 
         <imageobject>
@@ -186,7 +187,7 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
 
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/pipelines.svg" format="SVG" />
+          <imagedata fileref="images/pipelines.svg" format="SVG" scale="80" />
         </imageobject>
 
         <imageobject>
@@ -207,6 +208,47 @@ formatter.process(linker.process(parser.process(ast, input=[&#39;source.hh&#39;]
       <!-- Talk about the Parameter setting for processors and
            other 'Parametrized' -->
 
+      <para></para>
+    </section>
+  </chapter>
+  <chapter>
+    <title>Processor design</title>
+    <section>
+      <title>Python Parser</title>
+    </section>
+    <section>
+      <title>IDL Parser</title>
+    </section>
+    <section>
+      <title>Cxx Parser</title>
+    </section>
+    <section>
+      <title>Linker</title>
+    </section>
+    <section>
+      <title>Comment Parsers</title>
+    </section>
+    <section>
+      <title>Dump Formatter</title>
+    </section>
+    <section>
+      <title>Docbook Formatter</title>
+    </section>
+    <section>
+      <title>Dot Formatter</title>
+    </section>
+    <section>
+      <title>HTML Formatter</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/html-classes.svg" format="SVG" scale="80" />
+        </imageobject>
+
+        <imageobject>
+          <imagedata fileref="images/html-classes.png" format="PNG" />
+        </imageobject>
+      </mediaobject>
       <para></para>
     </section>
   </chapter>
