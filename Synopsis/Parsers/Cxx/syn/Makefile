@@ -78,7 +78,7 @@ UCPP_AOBJ	:= $(patsubst %,../ucpp/%.ao,$(UCPP_FILES))
 
 TARGETS		= $(OCC_SO) $(LINK_SO)
 
-all : depend $(TARGETS)
+all:	 depend $(TARGETS)
 
 debug:		occ.gdb link-synopsis ucpp
 
@@ -172,8 +172,8 @@ depend: .deps.o
 	@echo Done.
 
 clean :
-	rm -f *~ *.o *.go *.ii *.$(LIBRARY_EXT) *core opencxx.a opencxx.ga occ.gdb \
-	$(OCC_SO) $(LINK_SO) ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga \
+	rm -f *~ *.o *.go *.ii *.dll *.so *core opencxx.a opencxx.ga occ.gdb \
+	../occ.so ../link.so ../occ.dll ../link.dll ../ucpp/*.o ../ucpp/*.go ../ucpp/*.a ../ucpp/*.ga \
 	../ucpp/*.ao ../occ/*.o ../occ/*.go *.pyc *.pyo .deps.* base_lib
 
 distclean: clean

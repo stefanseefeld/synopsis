@@ -1,5 +1,5 @@
 #
-# $Id: emul.py,v 1.6 2002/10/27 07:23:29 chalky Exp $
+# $Id: emul.py,v 1.7 2002/10/29 06:56:52 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 # different compilers
 
 # $Log: emul.py,v $
+# Revision 1.7  2002/10/29 06:56:52  chalky
+# Fixes to work on cygwin
+#
 # Revision 1.6  2002/10/27 07:23:29  chalky
 # Typeof support. Generate Function when appropriate. Better emulation support.
 #
@@ -139,7 +142,8 @@ def get_fallback(preferred, is_first_time):
 	print "will need to modify the C++ Parser part of your config file."
     for compiler in ('g++', 'gcc', 'c++', 'cc'):
 	if compiler_infos.has_key(compiler):
-	    print "Warning: Falling back to compiler '%s'"%(compiler,)
+	    if is_first_time:
+              print "Warning: Falling back to compiler '%s'"%(compiler,)
 	    return compiler_infos[compiler]
     if preferred != 'none':
 	print "Warning: Unable to fallback to a default compiler emulation."
@@ -275,7 +279,7 @@ re_specs = re.compile('^Reading specs from (.*/)lib/gcc-lib/(.*)/([0-9]+\.[0-9]+
 re_version = re.compile('([0-9]+)\.([0-9]+)\.([0-9]+)')
 
 def find_compiler_info(compiler):
-    print "Finding info for '%s'"%compiler
+    print "Finding info for '%s' ..."%compiler,
 
     # Run the compiler with -v and get the displayed info
     cin, out,err = os.popen3(compiler + " -E -v " + get_temp_file())
@@ -314,6 +318,10 @@ def find_compiler_info(compiler):
 	    else:
 		paths.append(line.strip())
 	
+    if not paths or not macros:
+      print "Failed"
+      return None
+    print "Found"
     timestamp = get_compiler_timestamp(compiler)
     return CompilerInfo(compiler, 0, timestamp, paths, macros)
 
