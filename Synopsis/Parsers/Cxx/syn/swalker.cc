@@ -193,10 +193,10 @@ Ptree* SWalker::TranslateClassSpec(Ptree* node)
 	// Forward declaration
         string name = getName(node->Second());
 	m_builder->addForward(name);
-    } else {
+    } /* else {
 	cout << "class spec not length 4:" << endl;
 	node->Display2(cout);
-    }
+    } */
     return 0;
 }
 

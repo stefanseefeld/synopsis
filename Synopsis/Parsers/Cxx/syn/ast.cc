@@ -114,6 +114,11 @@ Forward::Forward(string fn, int line, string type, Name name)
 {
 }
 
+Forward::Forward(AST::Declaration* decl)
+    : Declaration(decl->filename(), decl->line(), decl->type(), decl->name())
+{
+}
+
 /*Forward::~Forward()
 {
 }*/
