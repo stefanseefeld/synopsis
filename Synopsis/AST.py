@@ -1,4 +1,4 @@
-# $Id: AST.py,v 1.24 2002/12/12 17:25:32 chalky Exp $
+# $Id: AST.py,v 1.25 2003/01/16 17:14:10 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,11 @@
 # 02111-1307, USA.
 #
 # $Log: AST.py,v $
+# Revision 1.25  2003/01/16 17:14:10  chalky
+# Increase AST version number. SourceFiles store full filename. Executor/Project
+# uses it to check timestamp for all included files when deciding whether to
+# reparse input files.
+#
 # Revision 1.24  2002/12/12 17:25:32  chalky
 # Implemented Include support for C++ parser. A few other minor fixes.
 #
@@ -95,12 +100,12 @@ Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
 
-import string, sys, cPickle, types
+import string, sys, cPickle, types, stat, statcache
 import Util, Type
 
 # The version of the file format - this should be increased everytime
 # incompatible changes are made to the AST or Type classes
-FILE_VERSION = 3
+FILE_VERSION = 4
 
 # Accessibility constants
 DEFAULT = 0
@@ -118,30 +123,70 @@ def load(filename):
 	file = open(filename, "r")
 	unpickler = cPickle.Unpickler(file)
 	version = unpickler.load()
-	if version is FILE_VERSION:
-	    ast = unpickler.load()
+	if version is not FILE_VERSION:
 	    file.close()
-	    return ast
+	    raise Exception, 'Wrong file version'
+	deps = unpickler.load() # ignored here
+	ast = unpickler.load()
 	file.close()
-	raise Exception, 'Wrong file version'
+	return ast
     except:
 	exc, msg = sys.exc_info()[0:2]
 	if exc is Exception:
-	    raise Exception, "Loading '%s': %s"%(filename, msg)
-	raise Exception, "Loading '%s', %s: %s"%(filename, exc, msg)
+	    raise Exception, "Loading AST from '%s': %s"%(filename, msg)
+	raise Exception, "Loading AST from '%s', %s: %s"%(filename, exc, msg)
+
+def load_deps(filename):
+    """Loads a dependencies object from the given filename. The file will be
+    an AST save file (usually *.syn), but this method only reads up to the
+    dependencies object stored before the actual AST. The object returned is a
+    list of (filename, timestamp) pairs."""
+    try:
+	file = open(filename, "r")
+	unpickler = cPickle.Unpickler(file)
+	version = unpickler.load()
+	if version is not FILE_VERSION:
+	    file.close()
+	    raise Exception, 'Wrong file version'
+	deps = unpickler.load()
+	# stop here, before loading the (probably huge) AST object
+	file.close()
+	return deps
+    except:
+	exc, msg = sys.exc_info()[0:2]
+	if exc is Exception:
+	    raise Exception, "Loading dependencies from '%s': %s"%(filename, msg)
+	raise Exception, "Loading dependencies from '%s', %s: %s"%(filename, exc, msg)
 
 def save(filename, ast):
     """Saves an AST object to the given filename"""
     try:
+	deps = make_deps(ast)
 	file = open(filename, "w")
 	pickler = cPickle.Pickler(file, 1)
 	pickler.dump(FILE_VERSION)
+	pickler.dump(deps)
 	pickler.dump(ast)
 	file.close()
     except:
 	exc, msg = sys.exc_info()[0:2]
 	raise Exception, "Saving '%s', %s: %s"%(filename, exc, msg)
 
+def make_deps(ast):
+    """Creates the dependencies object to save in the .syn file from the given
+    AST. The dependencies are a list of (filename, timestamp) pairs, extracted
+    from ast.files()"""
+    deps = []
+    for file in ast.files().values():
+	filename = file.full_filename()
+	try:
+	    info = statcache.stat(filename)
+	except:
+	    # Ignore any file we can't stat
+	    continue
+	time = info[stat.ST_MTIME]
+	deps.append( (filename, time) )
+    return deps
 
 class AST:
     """Top-level Abstract Syntax Tree.
@@ -220,11 +265,13 @@ class SourceFile:
     Contains filename, all declarations from this file (even nested ones) and
     includes (aka imports) from this file."""
 
-    def __init__(self, filename, language):
+    def __init__(self, filename, full_filename, language):
 	"""Constructor"""
 	if type(filename) is not types.StringType: raise TypeError, "filename parameter must be a string filename"
+	if type(full_filename) is not types.StringType: raise TypeError, "full_filename parameter must be a string filename"
 	if type(language) is not types.StringType: raise TypeError, "language parameter must be a string language"
 	self.__filename = filename
+	self.__full_filename = full_filename
 	self.__language = language
 	self.__includes = []
 	self.__declarations = []
@@ -248,6 +295,13 @@ class SourceFile:
 	"""Returns the filename of this file. The filename can be absolute or
 	relative, depending on the settings for the Parser"""
 	return self.__filename
+
+    def full_filename(self):
+	"""Returns the full_filename of this file. The filename can be absolute or
+	relative, depending on the filename given to the Parser. This filename
+	does not have any basename stripped from it, and should be accessible
+	from the current directory as is whether absolute or relative."""
+	return self.__full_filename
 
     def language(self):
 	"""Returns the language for this file as a string"""

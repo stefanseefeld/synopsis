@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.cc source file
 // Implementation of the AST classes
 
-// $Id: ast.cc,v 1.17 2002/12/12 17:25:33 chalky Exp $
+// $Id: ast.cc,v 1.18 2003/01/16 17:14:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -22,6 +22,11 @@
 // 02111-1307, USA.
 
 // $Log: ast.cc,v $
+// Revision 1.18  2003/01/16 17:14:10  chalky
+// Increase AST version number. SourceFiles store full filename. Executor/Project
+// uses it to check timestamp for all included files when deciding whether to
+// reparse input files.
+//
 // Revision 1.17  2002/12/12 17:25:33  chalky
 // Implemented Include support for C++ parser. A few other minor fixes.
 //
@@ -45,8 +50,8 @@ using namespace AST;
 // AST::SourceFile
 //
 
-SourceFile::SourceFile(const std::string& filename, bool is_main)
-    : m_filename(filename), m_is_main(is_main)
+SourceFile::SourceFile(const std::string& filename, const std::string& full_filename, bool is_main)
+    : m_filename(filename), m_full_filename(full_filename), m_is_main(is_main)
 { }
 
 //

@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: filter.cc source file
 // Implementation of the FileFilter class
 
-// $Id: filter.cc,v 1.4 2002/12/12 17:25:34 chalky Exp $
+// $Id: filter.cc,v 1.5 2003/01/16 17:14:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -180,6 +180,7 @@ AST::SourceFile* FileFilter::get_sourcefile(const char* filename_ptr, size_t len
     // stripped of the basename
     AST::SourceFile* file = new AST::SourceFile(
             strip_basename(filename), 
+	    filename,
             is_main(filename));
 
     // Add to the map

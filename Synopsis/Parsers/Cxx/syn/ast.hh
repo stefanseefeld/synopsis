@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.20 2002/12/23 13:47:36 chalky Exp $
+// $Id: ast.hh,v 1.21 2003/01/16 17:14:10 chalky Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -336,12 +336,19 @@ public:
     typedef std::vector<SourceFile*> vector;
 
     //. Constructor
-    SourceFile(const std::string& filename, bool is_main);
+    SourceFile(const std::string& filename, const std::string& full_filename, bool is_main);
 
-    //. Returns the filename of this declaration
+    //. Returns the filename of this SourceFile (may be stripped by a
+    //. basename)
     const std::string& filename() const
     {
         return m_filename;
+    }
+
+    //. Returns the full filename of this SourceFile
+    const std::string& full_filename() const
+    {
+        return m_full_filename;
     }
 
     //. Returns whether this is a main file (as opposed to extra included file
@@ -378,6 +385,9 @@ public:
 private:
     //. The filename
     std::string m_filename;
+
+    //. The full filename
+    std::string m_full_filename;
 
     //. Whether this file is a main file 
     bool m_is_main;

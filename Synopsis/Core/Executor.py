@@ -6,7 +6,7 @@ data needed for the execution of an Action is implemented in the matching
 Executor class.
 """
 
-import string, re, os, stat, sys
+import string, re, os, stat, sys, statcache
 
 from Action import ActionVisitor
 from Synopsis.Core import Util
@@ -328,12 +328,48 @@ class CacherExecutor (Executor):
     def _get_timestamp(self, filename):
 	"""Returns the timestamp of the given file, or 0 if not found"""
 	try:
-	    stats = os.stat(filename)
+	    stats = statcache.stat(filename)
 	    return stats[stat.ST_MTIME]
 	except OSError:
 	    # NB: will catch any type of error caused by the stat call, not
 	    # just Not Found
 	    return 0
+
+    def _is_up_to_date(self, name, cache_filename):
+	"""Returns true if the input 'name' in file 'cache_filename' is up to
+	date. Checks all dependencies"""
+	# Check timestamp on cache
+	cache_ts = self._get_timestamp(cache_filename)
+	if cache_ts == 0 or cache_ts < self.__timestamps[name]:
+	    # Cache doesn't exist or is older than file
+	    return 0
+	# Load the deps from the file to check that they are all okay
+	try:
+	    deps = AST.load_deps(cache_filename)
+	except:
+	    # Hopefully wrong file version - must create anew
+	    msg = sys.exc_info()[1]
+	    print "Warning: Forcing rebuild due to error (%s)"%msg
+	    return 0
+	# Decide basename to use. Must end in a /
+	basename = None
+	if hasattr(self.__action, 'basename'):
+	    basename = self.__action.basename
+	    if len(basename) and basename[-1] != '/':
+		basename = basename + '/'
+	# Check each dep
+	for filename, timestamp in deps:
+	    # Must match exactly (eg: installing headers from a
+	    # tarball/package gives files their original timestamp, which may
+	    # be earlier than the timestamp we last saw!
+	    if basename and filename[0] != '/':
+		# Presume need to prepend basename
+		filename = basename + filename
+	    if timestamp != self._get_timestamp(filename):
+		return 0
+	# All deps checked out okay!
+	return 1
+
     def prepare_output(self, name, keep):
 	"""Prepares the output, which means that it parses it, saves it to
 	disk, and forgets about it. If keep is set, return the AST anyway"""
@@ -341,10 +377,7 @@ class CacherExecutor (Executor):
 	# Check if is a single-file loader (not cache)
 	if action.file: return
 	cache_filename = self.get_cache_filename(name)
-	# Check timestamp on cache
-	cache_ts = self._get_timestamp(cache_filename)
-	if cache_ts > 0 and cache_ts >= self.__timestamps[name]:
-	    # Cache is up to date
+	if self._is_up_to_date(name, cache_filename):
 	    return
 	# Need to regenerate. Find input
 	exec_obj = self.__input_map[name]
