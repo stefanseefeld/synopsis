@@ -1,4 +1,4 @@
-# $Id: InheritanceGraph.py,v 1.3 2001/02/06 05:13:05 chalky Exp $
+# $Id: InheritanceGraph.py,v 1.4 2001/02/06 16:02:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: InheritanceGraph.py,v $
+# Revision 1.4  2001/02/06 16:02:23  chalky
+# Fixes
+#
 # Revision 1.3  2001/02/06 05:13:05  chalky
 # Fixes
 #
@@ -51,12 +54,11 @@ class ToDecl (Type.Visitor):
 	    typeobj = config.types[name]
 	except KeyError:
 	    print "Warning: %s not found in types dict."%(name,)
-	    return AST.Declaration('',-1,'','',name)
+	    return None
 	self.__decl = None
 	typeobj.accept(self)
 	if self.__decl is None:
-	    print "Warning: Can't derive a declaration from %s : %s."%(name, typeobj.__class__)
-	    return AST.Declaration('',-1,'','',name)
+	    return None
 	return self.__decl
 	    
     def visitBaseType(self, type): return
@@ -94,6 +96,7 @@ class InheritanceGraph(Page.Page):
 		if core.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
 		# Find declarations
 		declarations = map(self.__todecl, graph)
+		declarations = filter(lambda x: x, declarations)
 		# Call Dot formatter
 		output = self.__filename+"-dot%s"%count
 		config.toc.store(output+".toc")

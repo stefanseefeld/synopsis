@@ -1,4 +1,4 @@
-# $Id: ASCII.py,v 1.21 2001/01/31 06:51:24 stefan Exp $
+# $Id: ASCII.py,v 1.22 2001/02/06 16:02:23 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ASCII.py,v $
+# Revision 1.22  2001/02/06 16:02:23  chalky
+# Fixes
+#
 # Revision 1.21  2001/01/31 06:51:24  stefan
 # add support for '-v' to all modules; modified toc lookup to use additional url as prefix
 #
@@ -102,7 +105,7 @@ class ASCIIFormatter(AST.Visitor, Type.Visitor):
     ### AST visitor
 
     def visitDeclaration(self, decl):
-	axs = decl.accessability()
+	axs = decl.accessibility()
 	if axs != self.__axs:
 	    self.decr(); self.indent(); self.incr()
 	    self.write(self.__axs_string[axs])
