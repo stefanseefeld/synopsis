@@ -30,7 +30,9 @@ void Scope::declare(const Encoding &name, const Symbol *s)
     // 	throw MultiplyDefined(name);
   }
   else if (my_symbols.count(name))
-    throw MultiplyDefined(name);
+    throw MultiplyDefined(name,
+			  my_symbols.lower_bound(name)->second->ptree(),
+			  s->ptree());
 
   my_symbols.insert(std::make_pair(name, s));
 }

@@ -18,10 +18,11 @@ class Symbol
 public:
   Symbol(const PTree::Encoding &t, PTree::Node *p) : my_type(t), my_ptree(p) {}
   virtual ~Symbol(){}
-  const PTree::Encoding &type() const { return my_type;}
+  PTree::Encoding const & type() const { return my_type;}
+  PTree::Node const * ptree() const { return my_ptree;}
 private:
   PTree::Encoding my_type;
-  PTree::Node    *my_ptree;
+  PTree::Node const * my_ptree;
 };
 
 class VariableName : public Symbol

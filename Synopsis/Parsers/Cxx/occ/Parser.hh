@@ -30,16 +30,14 @@ public:
   enum RuleSet { CXX = 0x01, MSVC = 0x02};
 
   //. Error is used to cache parse errors encountered during the execution
-  //. of the parse method. For now only syntax errors are recognized.
-  struct Error
+  //. of the parse method.
+  class Error
   {
-    Error(const std::string &f, unsigned long l, const std::string &c)
-      : filename(f), line(l), context(c) {}
-    std::string   filename;
-    unsigned long line;
-    std::string   context;
+  public:
+    virtual ~Error() {}
+    virtual void write(std::ostream &) const = 0;
   };
-  typedef std::vector<Error> ErrorList;
+  typedef std::vector<Error *> ErrorList;
 
   Parser(Lexer &lexer, SymbolLookup::Table &table, int ruleset = CXX);
   ~Parser();
@@ -58,6 +56,8 @@ private:
 			  tdk_specialization, num_tdks };
 
   bool mark_error();
+  template <typename T>
+  bool declare(T *);
   void show_message_head(const char*);
 
   bool definition(PTree::Node *&);

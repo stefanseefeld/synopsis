@@ -15,6 +15,43 @@
 
 using Synopsis::Trace;
 
+class SyntaxError : public Parser::Error
+{
+public:
+  SyntaxError(const std::string &f, unsigned long l, const std::string &c)
+    : my_filename(f), my_line(l), my_context(c) {}
+  virtual void write(std::ostream &) const
+  {
+    std::cerr << "Syntax error : " << my_filename << ':' << my_line 
+	      << ": Error before '" << my_context << '\'' << std::endl;
+  }
+private:
+  std::string   my_filename;
+  unsigned long my_line;
+  std::string   my_context;
+};
+
+class SymbolAlreadyDefined : public Parser::Error
+{
+public:
+  SymbolAlreadyDefined(PTree::Encoding const &name, 
+		       std::string const & f1, unsigned long l1,
+		       std::string const & f2, unsigned long l2)
+    : my_name(name), my_file1(f1), my_line1(l1), my_file2(f2), my_line2(l2) {}
+  virtual void write(std::ostream &os) const
+  {
+    os << "Symbol already defined : definition of " << my_name
+       << " at " << my_file1 << ':' << my_line1 << '\n'
+       << "previously defined at " << my_file2 << ':' << my_line2 << std::endl;
+  }
+private:
+  PTree::Encoding my_name;
+  std::string     my_file1;
+  unsigned long   my_line1;
+  std::string     my_file2;
+  unsigned long   my_line2;
+};
+
 namespace
 {
 
@@ -149,7 +186,31 @@ bool Parser::mark_error()
   const char *end = t1.ptr;
   if(t2.type != '\0') end = t2.ptr + t2.length;
   else if(t1.type != '\0') end = t1.ptr + t1.length;
-  my_errors.push_back(Error(filename, line, std::string(t1.ptr, end - t1.ptr)));
+  my_errors.push_back(new SyntaxError(filename, line, std::string(t1.ptr, end - t1.ptr)));
+  return my_errors.size() < max_errors;
+}
+
+// (PTree::Encoding const &name,
+// 			    PTree::Node const *def,
+// 			    PTree::Node const *orig)
+
+template <typename T>
+bool Parser::declare(T *t)
+{
+  try
+  {
+    my_symbols.declare(t);
+  }
+  catch (SymbolLookup::MultiplyDefined const &e)
+  {
+    std::string file1;
+    unsigned long line1 = my_lexer.origin(e.declaration->begin(), file1);
+    std::string file2;
+    unsigned long line2 = my_lexer.origin(e.original->begin(), file2);
+    my_errors.push_back(new SymbolAlreadyDefined(e.name,
+						 file1, line1,
+						 file2, line2));
+  }
   return my_errors.size() < max_errors;
 }
 
@@ -242,7 +303,8 @@ bool Parser::definition(PTree::Node *&p)
     PTree::Node *c = wrap_comments(my_lexer.get_comments());
     if (c) set_declarator_comments(decl, c);
     p = decl;
-    my_symbols.declare(decl);
+    declare(decl);
+//     my_symbols.declare(decl);
     return true;
   }
   my_lexer.get_comments();
@@ -280,7 +342,8 @@ bool Parser::typedef_(PTree::Typedef *&def)
   if(my_lexer.get_token(tk) != ';') return false;
 
   def = PTree::nconc(def, PTree::list(decl, new PTree::Atom(tk)));
-  my_symbols.declare(def);
+  declare(def);
+//   my_symbols.declare(def);
   return true;
 }
 
@@ -500,7 +563,8 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
   PTree::Node *body;
   if(my_lexer.look_ahead(0) == '{')
   {
-    my_symbols.declare(spec);
+    declare(spec);
+//     my_symbols.declare(spec);
     SymbolLookup::Table::Guard guard(&my_symbols.enter_namespace(spec));
     if(!linkage_body(body)) return false;
   }
@@ -677,7 +741,8 @@ bool Parser::template_decl(PTree::Node *&decl)
     case tdk_decl:
     {
       tdecl = PTree::snoc(tdecl, body);
-      my_symbols.declare(tdecl);
+      declare(tdecl);
+//       my_symbols.declare(tdecl);
       decl = tdecl;
       break;
     }
@@ -833,7 +898,8 @@ bool Parser::template_arg_declaration(PTree::Node *&decl)
 						   PTree::cons(new PTree::Atom(tk2), 0),
 						   0);
     tdecl = PTree::snoc(tdecl, cspec);
-    my_symbols.declare(tdecl);
+    declare(tdecl);
+//     my_symbols.declare(tdecl);
     decl = tdecl;
     if(my_lexer.look_ahead(0) == '=')
     {
@@ -2584,7 +2650,8 @@ bool Parser::enum_spec(PTree::EnumSpec *&spec, PTree::Encoding &encode)
   spec = PTree::snoc(spec, 
 		     new PTree::Brace(new PTree::Atom(tk), body,
 				      new PTree::CommentedAtom(tk2, wrap_comments(my_lexer.get_comments()))));
-  my_symbols.declare(spec);
+  declare(spec);
+//   my_symbols.declare(spec);
   return true;
 }
 
@@ -2687,7 +2754,8 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     }
   }
   spec->set_encoded_name(encode);
-  if (!my_in_template_decl) my_symbols.declare(spec);
+  if (!my_in_template_decl) declare(spec);
+//   if (!my_in_template_decl) my_symbols.declare(spec);
 
   SymbolLookup::Table::Guard guard(&my_symbols.enter_class(spec));
 
@@ -2868,7 +2936,8 @@ bool Parser::class_member(PTree::Node *&mem)
     {
       PTree::Node *comments = wrap_comments(my_lexer.get_comments());
       if (comments) set_declarator_comments(decl, comments);
-      my_symbols.declare(decl);
+      declare(decl);
+//       my_symbols.declare(decl);
       mem = decl;
       return true;
     }
@@ -4503,7 +4572,8 @@ bool Parser::expr_statement(PTree::Node *&st)
     PTree::Declaration *decl;
     if(declaration_statement(decl))
     {
-      my_symbols.declare(decl);
+      declare(decl);
+//       my_symbols.declare(decl);
       st = decl;
       return true;
     }
