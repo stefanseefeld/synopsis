@@ -204,7 +204,8 @@
 #define STD_MACROS	"__linux", "__unix", \
 			"linux", "unix", \
 			"__linux__", "__unix__", \
-			"_POSIX_SOURCE", "__GNUC__=3"
+			"_POSIX_SOURCE", "__GNUC__=3", \
+			"__GNUG__=2", "__cplusplus"
 
 /* ====================================================================== */
 /*
