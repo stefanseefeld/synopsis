@@ -1,4 +1,4 @@
-# $Id: Part.py,v 1.18 2001/07/15 06:41:57 chalky Exp $
+# $Id: Part.py,v 1.19 2001/07/15 08:28:43 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Part.py,v $
+# Revision 1.19  2001/07/15 08:28:43  chalky
+# Added 'Inheritance' page Part
+#
 # Revision 1.18  2001/07/15 06:41:57  chalky
 # Factored summarizer and detailer into 'Parts', and added a separate one for
 # the top of the page (Heading)
@@ -369,6 +372,9 @@ class Summary(Part):
 	comments = config.comments
 	config.link_detail = 0
 	
+	config.sorter.set_scope(decl)
+	config.sorter.sort_section_names()
+
 	self.write_start()
 	for section in config.sorter.sections():
 	    # Write a header for this section
@@ -421,6 +427,9 @@ class Detail(Part):
 	"Print out the details for the children of the given decl"
 	comments = config.comments
 
+	config.sorter.set_scope(decl)
+	config.sorter.sort_section_names()
+
 	# Iterate through the sections with details
 	self.write_start()
 	for section in config.sorter.sections():
@@ -441,3 +450,85 @@ class Detail(Part):
 	    if started: self.writeSectionEnd(heading)
 	self.write_end()
      
+class Inheritance (Part):
+    def __init__(self, page):
+	Part.__init__(self, page)
+	self._init_formatters('inheritance_formatters', 'inheritance')
+
+    def _init_default_formatters(self):
+	self.addFormatter( FormatStrategy.Inheritance )
+
+    def process(self, decl):
+	"Walk the hierarchy to find inherited members to print."
+	if not isinstance(decl, AST.Class): return
+	self.write_start()
+	names = decl.declarations()
+	names = map(self._short_name, names)
+	self._process_superclasses(decl, names)
+	self.write_end()
+
+    def _process_class(self, clas, names):
+	"Prints info for the given class, and calls _process_superclasses after"
+	config.sorter.set_scope(clas)
+	config.sorter.sort_section_names()
+	child_names = []
+
+	# Iterate through the sections
+	for section in config.sorter.sections():
+	    # Write a heading
+	    heading = section+'s Inherited from '+ Util.ccolonName(clas.name(), self.scope())
+	    started = 0 # Lazy section start incase no details for this section
+	    # Iterate through the children in this section
+	    for child in config.sorter.children(section):
+		child_name = self._short_name(child)
+		if child_name in names:
+		    continue
+		# FIXME: This doesn't account for the inheritance type
+		# (private etc)
+		if child.accessibility() == AST.PRIVATE:
+		    continue
+		child_names.append(child_name)
+		# Check section heading
+		if not started:
+		    started = 1
+		    self.writeSectionStart(heading)
+		child.accept(self)
+	    # Finish the section
+	    if started: self.writeSectionEnd(heading)
+	
+	self._process_superclasses(clas, names + child_names)
+    
+    def _short_name(self, decl):
+	if isinstance(decl, AST.Function):
+	    return decl.realname()[-1]
+	return decl.name()[-1]
+    
+    def _process_superclasses(self, clas, names):
+	"""Iterates through the superclasses of clas and calls _process_clas for
+	each"""
+	for inheritance in clas.parents():
+	    parent = inheritance.parent()
+	    if isinstance(parent, Type.Declared):
+		parent = parent.declaration()
+		if isinstance(parent, AST.Class):
+		    self._process_class(parent, names)
+		    continue
+	    print "Ignoring", parent.__class__.__name__, "parent of", clas.name()
+	    pass #ignore
+     
+    def writeSectionStart(self, heading):
+	"""Creates a table with one row. The row has a td of class 'heading'
+	containing the heading string"""
+	self.write('<table width="100%%">\n')
+        self.write('<tr><td colspan="2" class="heading">' + heading + '</td></tr>\n')
+	self.write('<tr><td class="inherited">')
+
+    def writeSectionItem(self, text):
+	"""Adds a table row"""
+	self.write(text + '\n')
+
+    def writeSectionEnd(self, heading):
+	"""Closes the table entity and adds a break."""
+	self.write('</td></tr></table>\n<br>\n')
+
+
