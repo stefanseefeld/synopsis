@@ -104,6 +104,16 @@ PyObject *Synopsis::addForward(size_t line, bool main, const string &type, const
     return forward;
 }
 
+PyObject *Synopsis::addComment(PyObject* decl, const char* text)
+{
+    Trace trace("Synopsis::addComment");
+    PyObject *pytext = PyString_FromString(text);
+    PyObject *comment = PyObject_CallMethod(ast, "Comment", "Osi", pytext, file, -1);
+    PyObject *comments = PyObject_CallMethod(decl, "comments", 0);
+    PyObject_CallMethod(comments, "append", "O", comment);
+    return comment;
+}
+
 PyObject *Synopsis::addDeclarator(size_t line, bool main, const string &name, const vector<size_t> &sizes)
 {
     Trace trace("Synopsis::addDeclarator");
@@ -207,7 +217,8 @@ PyObject *Synopsis::addTypedef(size_t line, bool main, const string &type, const
 PyObject *Synopsis::Enumerator(size_t line, bool main, const string &name, const string &value)
 {
     Trace trace("Synopsis::addEnumerator");
-    PyObject *enumerator = PyObject_CallMethod(ast, "Enumerator", "siisss", file, line, main, "C++", name.c_str(), value.c_str());
+    PyObject *pyname = V2L(scopedName(name));
+    PyObject *enumerator = PyObject_CallMethod(ast, "Enumerator", "siisOs", file, line, main, "C++", pyname, value.c_str());
     return enumerator;
 }
 
@@ -286,10 +297,10 @@ vector<string> Synopsis::scopedName(const string &name)
     PyObject *sname = PyObject_CallMethod(current, "name", 0);
     assertObject(sname);
     //PyList_Check(sname); // warning: Statement with no effect (???)
-    size_t size = PyList_Size(sname);
+    size_t size = PyTuple_Size(sname);
     vector<string> scope(size);
     for (size_t i = 0; i != size; ++i)
-        scope[i] = PyString_AsString(PyList_GetItem(sname, i));
+        scope[i] = PyString_AsString(PyTuple_GetItem(sname, i));
     if (!name.empty()) scope.push_back(name);
     Py_DECREF(sname);
     return scope;

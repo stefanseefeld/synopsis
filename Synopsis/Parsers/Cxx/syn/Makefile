@@ -18,9 +18,9 @@ CCC = cc
 CXX = c++
 RANLIB =
 
-CFLAGS = -O2
+CFLAGS = -O2 -g
 #CXXFLAGS = -O2 -I..
-CXXFLAGS = -Wall -I.. -g
+CXXFLAGS = -Wall -I.. -ggdb
 GCLIB = ../gc/gc.a
 LDFLAGS = -g # -export-dynamic	# for GNU ld
 LIB =# -ldl			# Linux

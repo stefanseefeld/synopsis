@@ -107,6 +107,7 @@ Ptree* Class::Comments()
 {
     if (definition->IsA(ntClassSpec))
 	return ((PtreeClassSpec*)definition)->GetComments();
+    return nil;
 }
 
 Ptree* Class::Name()

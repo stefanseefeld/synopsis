@@ -994,8 +994,16 @@ int Lex::SingleCharOp(unsigned char c)
 	return c;
     else if('{' <= c && c <= '~')
 	return c;
-    else
+    else if(c == '#') {
+	// Skip to end of line
+	do {
+	    c = file->Get();
+	}while(c != '\n' && c != '\0');
+	return Ignore;
+    } else {
+	cerr << "*** An invalid character has been found! ("<<(char)c<<")"<<endl;
 	return token(BadToken);
+    }
 }
 
 int Lex::ReadComment(char c, uint top) {

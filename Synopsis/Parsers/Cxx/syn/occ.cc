@@ -68,6 +68,9 @@ private:
     typedef basic_string<unsigned char> code;
     typedef code::iterator code_iter;
 
+    //. Add the given comment ptree to the given declaration
+    void addComments(PyObject* decl, Ptree* comments);
+
     //. Return a Type object from the encoded type
     PyObject* decodeType();
     //. Decode a name starting from the position of m_enc_iter
@@ -79,8 +82,8 @@ private:
     code_iter* m_enc_iter;
     string m_encmessage;
 
-    //. Nasty hack to pass stuff between methods :/
-    Ptree* m_declaration;
+    //. hack to pass stuff between methods
+    PtreeDeclaration* m_declaration;
 };
 
 PyWalker::PyWalker(Parser *p, Synopsis *s)
@@ -105,6 +108,14 @@ string PyWalker::getName(Ptree *node)
         cerr << "occ internal error in 'PyWalker::getName' : node is ";
         node->Display();
         exit(-1);
+    }
+}
+
+void PyWalker::addComments(PyObject* decl, Ptree* comments)
+{
+    while (comments) {
+	synopsis->addComment(decl, comments->First()->ToString());
+	comments = comments->Rest();
     }
 }
 
@@ -163,7 +174,7 @@ Ptree *PyWalker::TranslateDeclaration(Ptree *declaration)
 #ifdef DO_TRACE
     declaration->Display();
 #endif
-    m_declaration = declaration;
+    m_declaration = static_cast<PtreeDeclaration*>(declaration);
     Walker::TranslateDeclaration(declaration);
     return declaration;
 }
@@ -261,7 +272,9 @@ Ptree *PyWalker::TranslateDeclarator(bool, PtreeDeclarator* decl)
             premod.push_back(p->ToString());
             p = Ptree::Rest(p);
         }
-        synopsis->addOperation(-1, true, premod, returnType, name, realname, params);
+        PyObject* oper = synopsis->addOperation(-1, true, premod, returnType, name, realname, params);
+	if (m_declaration->GetComments()) addComments(oper, m_declaration->GetComments());
+	if (decl->GetComments()) addComments(oper, decl->GetComments());
     }
     return decl;
 }
@@ -452,7 +465,10 @@ Ptree *PyWalker::TranslateTypedef(Ptree *node)
 Ptree *PyWalker::TranslateNamespaceSpec(Ptree *node)
 {
     //Trace trace("PyWalker::TranslateNamespaceSpec");
-    synopsis->pushNamespace(-1, 1, getName(node->Cadr()));
+    PtreeNamespaceSpec* nspec = static_cast<PtreeNamespaceSpec*>(node);
+    PyObject* module = synopsis->addModule(-1, 1, getName(node->Cadr()));
+    addComments(module, nspec->GetComments());
+    synopsis->pushScope(module);
     Translate(Ptree::Third(node));
     synopsis->popScope();
     return node;
@@ -471,10 +487,13 @@ Ptree *PyWalker::TranslateClassSpec(Ptree *node)
 
     if(Ptree::Length(node) == 4 && node->Second()->IsLeaf())
     {
+	PtreeClassSpec* cspec = static_cast<PtreeClassSpec*>(node);
+
         string type = getName(node->First());
         string name = getName(node->Second());
         PyObject *clas = synopsis->addClass(-1, true, type, name);
         synopsis->addDeclared(name, clas);
+	addComments(clas, cspec->GetComments());
         //. parents...
         vector<PyObject *> parents = TranslateInheritanceSpec(node->Nth(2));
         Synopsis::addInheritance(clas, parents);
@@ -544,6 +563,9 @@ Ptree *PyWalker::TranslateClassBody(Ptree *block, Ptree *bases, Class *meta)
     return block;
 }
 
+/* Enum spec looks like:
+ *  [ enum [name] [{ [name [= value] ]* }] ]
+ */
 Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
 {
     //cout << "Enum:";spec->Display();cout << endl;
@@ -551,9 +573,31 @@ Ptree *PyWalker::TranslateEnumSpec(Ptree *spec)
     string name = spec->Second()->ToString();
     //cout << "Name == " << name << endl;
 
+    // Parse enumerators
     vector<PyObject*> enumerators;
+    Ptree* penum = spec->Third()->Second();
+    PyObject* enumor;
+    while (penum) {
+	Ptree* penumor = penum->First();
+	if (penumor->IsLeaf()) {
+	    enumor = synopsis->Enumerator(-1, true, penumor->ToString(), "");
+	} else {
+	    string name = penumor->First()->ToString(), value;
+	    if (penumor->Length() == 3) {
+		value = penumor->Third()->ToString();
+	    }
+	    enumor = synopsis->Enumerator(-1, true, name, value);
+	}
+	enumerators.push_back(enumor);
+	penum = Ptree::Rest(penum);
+	if (penum && penum->Car() && penum->Car()->Eq(','))
+	    penum = Ptree::Rest(penum);
+    }
+
+    
     PyObject* theEnum = synopsis->addEnum(-1,true,name,enumerators);
     synopsis->addDeclared(name, theEnum);
+    addComments(theEnum, m_declaration->GetComments());
     return spec;
 }
 
@@ -590,10 +634,11 @@ static char *RunPreprocessor(const char *file, const vector<const char *> &flags
             vector<const char *> args = flags;
             char *cc = getenv("CC");
             args.insert(args.begin(), cc ? cc : "c++");
-            args.push_back("-E");
-            args.push_back("-o");
+            args.push_back("-C"); // keep comments
+            args.push_back("-E"); // stop after preprocessing
+            args.push_back("-o"); // output to...
             args.push_back(dest);
-            args.push_back("-x");
+            args.push_back("-x"); // language c++
             args.push_back("c++");
             args.push_back(file);
             args.push_back(0);

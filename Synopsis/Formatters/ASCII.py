@@ -50,7 +50,16 @@ class ASCIIFormatter:
             parameters.append(self.formatType(p))
         self.__type = "%s<%s>"%(type_save,string.join(parameters, ", "))
 
+    ### AST visitor
+
+    def visitDeclaration(self, decl):
+	for comment in decl.comments():
+	    self.indent()
+	    self.write(comment.text())
+	    self.write("\n")
+
     def visitTypedef(self, typedef):
+	self.visitDeclaration(typedef)
         self.indent()
 	dstr = ""
 	# Figure out the type:
@@ -66,6 +75,7 @@ class ASCIIFormatter:
 	))
 
     def visitModule(self, module):
+	self.visitDeclaration(module)
         self.indent()
 	self.write("%s %s {\n"%(module.type(),module.name()[-1]))
         self.enterScope(module.name()[-1])
@@ -77,10 +87,14 @@ class ASCIIFormatter:
 	self.write("}\n")
 
     def visitMetaModule(self, module):
+	self.visitDeclaration(module)
+	for decl in module.module_declarations():
+	    self.visitDeclaration(decl)
 	# since no comments:
 	self.visitModule(module)
 
     def visitClass(self, clas):
+	self.visitDeclaration(clas)
         self.indent()
 	self.write("%s %s"%(clas.type(),clas.name()[-1]))
         if len(clas.parents()):
@@ -117,11 +131,13 @@ class ASCIIFormatter:
 	self.__params.append(premod + type + postmod + name + value)
 
     def visitFunction(self, function):
+	self.visitDeclaration(function)
         self.write(function.name() + "(")
         for parameter in function.parameters(): parameter.accept(self)
         self.write(")\n")
 
     def visitOperation(self, operation):
+	self.visitDeclaration(operation)
 	self.indent()
         for modifier in operation.premodifier(): self.write(modifier + " ")
 	retStr = self.formatType(operation.returnType())
@@ -142,11 +158,13 @@ class ASCIIFormatter:
         self.write(";\n")
 
     def visitVariable(self, var):
+	self.visitDeclaration(var)
 	name = var.name
 	self.indent()
 	self.write("%s %s;\n"%(self.formatType(var.vtype()),var.name()[-1]))
 
     def visitEnum(self, enum):
+	self.visitDeclaration(enum)
 	self.indent()
 	istr = self.__istring * (self.__indent+1)
 	self.write("enum %s {\n%s"%(enum.name()[-1],istr))
@@ -165,6 +183,7 @@ class ASCIIFormatter:
 	    self.__enumers.append("%s = %s"%(enumer.name()[-1], enumer.value()))
     
     def visitConst(self, const):
+	self.visitDeclaration(const)
 	ctype = self.formatType(const.ctype())
 	self.indent()
 	self.__os.write("%s %s = %s;\n"%(ctype,const.name()[-1],const.value()))
@@ -184,13 +203,7 @@ def __parseArgs(args):
         if o == "-o":
             output = open(a, "w")
 
-def format(types, declarations, args):
-    __parseArgs(args)
-    formatter = ASCIIFormatter(output)
-    #for type in types:
-    #    type.output(formatter)
-    for declaration in declarations:
-	declaration.accept(formatter)
+def print_types(types):
     keys = types.keys()
     keys.sort()
     for name in keys:
@@ -203,3 +216,13 @@ def format(types, declarations, args):
 	except:
 	    print "name ==",name
 	    raise
+
+def format(types, declarations, args):
+    __parseArgs(args)
+    formatter = ASCIIFormatter(output)
+    #for type in types:
+    #    type.output(formatter)
+    for declaration in declarations:
+	declaration.accept(formatter)
+
+    # print_types(types)

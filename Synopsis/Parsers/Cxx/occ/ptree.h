@@ -192,9 +192,15 @@ public:
 
 class PtreeNamespaceSpec : public NonLeaf {
 public:
-    PtreeNamespaceSpec(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
+    PtreeNamespaceSpec(Ptree* p, Ptree* q) : NonLeaf(p, q) { comments = nil; }
     int What();
     Ptree* Translate(Walker*);
+
+    Ptree* GetComments() { return comments; }
+    void SetComments(Ptree* c) { comments = c; }
+
+private:
+    Ptree* comments;
 };
 
 class PtreeUsing : public NonLeaf {
@@ -206,9 +212,15 @@ public:
 
 class PtreeDeclaration : public NonLeaf {
 public:
-    PtreeDeclaration(Ptree* p, Ptree* q) : NonLeaf(p, q) {}
+    PtreeDeclaration(Ptree* p, Ptree* q) : NonLeaf(p, q) { comments = nil; }
     int What();
     Ptree* Translate(Walker*);
+
+    Ptree* GetComments() { return comments; }
+    void SetComments(Ptree* c) { comments = c; }
+
+private:
+    Ptree* comments;
 };
 
 class PtreeDeclarator : public NonLeaf {

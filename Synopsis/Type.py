@@ -1,4 +1,4 @@
-# $Id: Type.py,v 1.5 2001/01/22 17:06:15 stefan Exp $
+# $Id: Type.py,v 1.6 2001/01/24 18:06:45 stefan Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Type.py,v $
+# Revision 1.6  2001/01/24 18:06:45  stefan
+# fixed the Unknown type to have a name *and* a link attribute, to distinguish the written label from the link it refers to
+#
 # Revision 1.5  2001/01/22 17:06:15  stefan
 # added copyright notice, and switched on logging
 #
@@ -83,15 +86,16 @@ class Unknown(Type):
     base = Type
     def __init__(self, language, name):
         Type.__init__(self, language)
-#        self.__language = language
         self.__name = name
+        self.__link = name
 	if type(name) != type(()) and type(name) != type([]):
 	    raise TypeError,"Name must be scoped"
-#    def language(self): return self.__language
     def name(self): return self.__name
-    def map(self, language, name):
+    def link(self): return self.__link
+    def resolve(self, language, name, link):
         self.base.__language = language
         self.__name = name
+        self.__link = link
     def accept(self, visitor): visitor.visitUnknown(self)
     def __cmp__(self, other):
 	"Comparison operator"
