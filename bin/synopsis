@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# $Id: synopsis,v 1.3 2003/12/05 19:43:53 stefan Exp $
+# $Id: synopsis,v 1.4 2003/12/09 21:27:19 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -13,32 +13,21 @@ from Synopsis.Processor import Processor, Composite
 
 import sys, os, os.path, string, getopt
 
-def _import(package, module, processor, verbose=False):
-   """import a processor as <package>.<module>.<processor>,
-   i.e. as the equivalent to 'from <package>.<module> import <processor>"""
+def __import__(name, verbose):
+   """Import a named processor. Instead of returning the module, this
+   reimplementation returns the processor itself. Exits on error."""
 
+   from Synopsis.import_processor import import_processor
    try:
-      mod = __import__(string.join([package, module], '.'))
+      return import_processor(name)
 
    except ImportError, msg:
-      if 'verbose' in kwds:
-         print 'Unable to import %s'%string.join([package, module], '.')
+      if verbose:
+         print 'Unable to import %s'%name
          print 'Reason :', msg
       else:
-         print 'Error : no processor \'%s\'', name[-1]
+         print 'Error : no processor \'%s\'', name.split('.')[-1]
       sys.exit(-1)
-
-   name = string.join([package, module], '.')
-   if processor: name = string.join([name, processor], '.')
-   components = string.split(name, '.')
-   for c in components[1:]:
-      try:
-         mod = getattr(mod, c)
-      except AttributeError, msg:
-         print "Error: Unable to find %s in:\n%s"%(c, repr(mod))
-         sys.exit(-1)
-
-   return mod
 
 def usage():
    """Print a little usage text"""
@@ -93,21 +82,19 @@ def get_opt(argv):
          options['output'] = a
 
       elif o == '-p' or o == '--parser':
-         parser = _import('Synopsis.Parsers', a, 'Parser',
-                          'verbose' in options)
+         parser = __import__('Synopsis.Parsers.%s.Parser'%a,
+                             'verbose' in options)
 
       elif o == '-l' or o == '--linker':
-         linker = _import('Synopsis.Processors', 'Linker',
-                          'verbose' in options)
-         print 'a', a
-         if a:
-            linker_opts['processors'] = map(lambda x: _import('Synopsis.Processors', x, x,
+         linker = __import__('Synopsis.Processors.Linker',
+                             'verbose' in options)
+         linker_opts['processors'] = map(lambda x: __import__('Synopsis.Processors.%s.%s'%(x, x),
                                                               'verbose' in options)(),
-                                            string.split(a, ','))
+                                         string.split(a, ','))
 
       elif o == '-f' or o == '--formatter':
-         formatter = _import('Synopsis.Formatters', a, 'Formatter',
-                             'verbose' in options)
+         formatter = __import__('Synopsis.Formatters.%s.Formatter'%a,
+                                'verbose' in options)
 
       elif o == '-I':
          if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
