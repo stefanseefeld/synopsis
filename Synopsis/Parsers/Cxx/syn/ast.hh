@@ -1,7 +1,7 @@
 // Synopsis C++ Parser: ast.hh header file
 // Defines the AST classes in the AST namespace
 
-// $Id: ast.hh,v 1.23 2003/11/11 06:01:45 stefan Exp $
+// $Id: ast.hh,v 1.24 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -399,6 +399,20 @@ private:
     Include::vector m_includes;
 };
 
+//. A Builtin is a node to be used internally.
+//. Right now it's being used to capture comments
+//. at the end of a scope.
+class Builtin : public Declaration
+{
+public:
+    Builtin(SourceFile* file, int line, const std::string &type, const ScopedName& name);
+
+    //. Destructor
+    virtual ~Builtin();
+
+    //. Accepts the given visitor
+    virtual void accept(Visitor*);
+};
 
 //. Encapsulates a preprocessor macro. Macros are stored in the AST, but since
 //. they are not regular C++ syntax they are treated specially: They will be
@@ -987,6 +1001,7 @@ public:
     // Abstract destructor makes the class abstract
     virtual ~Visitor() = 0;
     virtual void visit_declaration(Declaration*);
+    virtual void visit_builtin(Builtin*);
     virtual void visit_macro(Macro*);
     virtual void visit_scope(Scope*);
     virtual void visit_namespace(Namespace*);

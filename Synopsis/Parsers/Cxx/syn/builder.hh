@@ -2,7 +2,7 @@
 // The Builder class, which builds an AST. Used by the SWalker which calls the
 // appropriate Builder member functions
 
-// $Id: builder.hh,v 1.32 2003/01/27 06:53:37 chalky Exp $
+// $Id: builder.hh,v 1.33 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -199,9 +199,8 @@ public:
     //. Add an enum
     AST::Enum* add_enum(int, const std::string& name, const AST::Enumerator::vector &);
 
-    //. Add a tail comment. This will be a dummy declaration with an empty name
-    //. and type "dummy"
-    AST::Declaration* add_tail_comment(int line);
+    //. Add a tail comment. This will be a builtin with name 'EOS'
+    AST::Builtin *add_tail_comment(int line);
 
     //
     // Using methods

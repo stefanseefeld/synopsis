@@ -2,7 +2,7 @@
 // This file contains implementation for class Synopsis, which converts the
 // C++ AST into a Python AST.
 
-// $Id: synopsis.cc,v 1.49 2003/11/11 06:01:45 stefan Exp $
+// $Id: synopsis.cc,v 1.50 2003/12/02 05:45:51 stefan Exp $
 //
 // This file is a part of Synopsis.
 // Copyright (C) 2002 Stephen Davies
@@ -23,6 +23,9 @@
 // 02111-1307, USA.
 
 // $Log: synopsis.cc,v $
+// Revision 1.50  2003/12/02 05:45:51  stefan
+// generate Builtin 'end of scope' instead of Declaration 'dummy'
+//
 // Revision 1.49  2003/11/11 06:01:45  stefan
 // adjust to directory/package layout changes
 //
@@ -663,6 +666,21 @@ PyObject *Synopsis::Declaration(AST::Declaration* decl)
     return pydecl;
 }
 
+PyObject *Synopsis::Builtin(AST::Builtin* decl)
+{
+    Trace trace("Synopsis::Builtin");
+    PyObject *pybuiltin, *file, *type, *name;
+    pybuiltin = PyObject_CallMethod(m_ast, "Builtin", "OiOOO",
+	    file = m->py(decl->file()), decl->line(), m->cxx(),
+	    type = m->py(decl->type()), name = m->Tuple(decl->name()));
+    assertObject(pybuiltin);
+    addComments(pybuiltin, decl);
+    Py_DECREF(file);
+    Py_DECREF(type);
+    Py_DECREF(name);
+    return pybuiltin;
+}
+
 PyObject *Synopsis::Macro(AST::Macro* decl)
 {
     Trace trace("Synopsis::Macro");
@@ -976,6 +994,11 @@ void Synopsis::visit_declaration(AST::Declaration* decl)
     // Assume this is a dummy declaration
     if (m_filter->should_store(decl))
         m->add(decl, Declaration(decl));
+}
+void Synopsis::visit_builtin(AST::Builtin* decl)
+{
+    if (m_filter->should_store(decl))
+	m->add(decl, Builtin(decl));
 }
 void Synopsis::visit_macro(AST::Macro* decl)
 {
