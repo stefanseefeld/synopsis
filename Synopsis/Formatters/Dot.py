@@ -42,10 +42,17 @@ def system(command):
 
 class DotFileGenerator:
    """A class that encapsulates the dot file generation"""
-   def __init__(self, os, direction):
+   def __init__(self, os, direction, bgcolor):
 
       self.__os = os
       self.direction = direction
+      self.bgcolor = bgcolor
+      # bgcolor is either a named color, or a hex value starting with '#', or a hsv triple
+      if self.bgcolor:
+         if type(self.bgcolor) is str:
+            if self.bgcolor[0] == '#': self.bgcolor = '"%s"'%self.bgcolor
+         if type(self.bgcolor) is tuple:
+            self.bgcolor = '"%f,%f,%f"'%(self.bgcolor[0], self.bgcolor[1], self.bgcolor[2])
       self.nodes = {}
 
    def write(self, text): self.__os.write(text)
@@ -63,9 +70,13 @@ class DotFileGenerator:
       label = re.sub('{',r'\{',label)
       label = re.sub('}',r'\}',label)
 
+      if self.bgcolor:
+         attr['fillcolor'] = self.bgcolor
+         attr['style'] = 'filled'
+
       self.write("Node" + str(number) + " [shape=\"record\", label=\"{" + label + "}\"")
       self.write(", fontSize = 10, height = 0.2, width = 0.4")
-      self.write(string.join(map(lambda item:', %s="%s"'%item, attr.items())))
+      self.write(string.join(map(lambda item:', %s=%s'%item, attr.items())))
       if ref: self.write(", URL=\"" + ref + "\"")
       self.write("];\n")
 
@@ -80,9 +91,9 @@ class InheritanceGenerator(DotFileGenerator, AST.Visitor, Type.Visitor):
    it is used to generate URLs. If no reference could be found in the toc, the node will
    be grayed out."""
    def __init__(self, os, direction, operations, attributes, aggregation,
-                toc, prefix, no_descend):
+                toc, prefix, no_descend, bgcolor):
       
-      DotFileGenerator.__init__(self, os, direction)
+      DotFileGenerator.__init__(self, os, direction, bgcolor)
       if operations: self.__operations = []
       else: self.__operations = None
       if attributes: self.__attributes = []
@@ -258,9 +269,9 @@ class SingleInheritanceGenerator(InheritanceGenerator):
    the declarations contained in a given scope."""
 
    def __init__(self, os, direction, operations, attributes, levels, types,
-                toc, prefix, no_descend):
+                toc, prefix, no_descend, bgcolor):
       InheritanceGenerator.__init__(self, os, direction, operations, attributes, False,
-                                    toc, prefix, no_descend)
+                                    toc, prefix, no_descend, bgcolor)
       self.__levels = levels
       self.__types = types
       self.__current = 1
@@ -416,13 +427,12 @@ class Formatter(Processor):
    hide_operations = Parameter(True, 'hide operations')
    hide_attributes = Parameter(True, 'hide attributes')
    show_aggregation = Parameter(False, 'show aggregation')
+   bgcolor = Parameter(None, 'background color for nodes')
    format = Parameter('ps', "Generate output in format 'dot', 'ps', 'png', 'gif', 'map', 'html'")
    layout = Parameter('vertical', 'Direction of graph')
    prefix = Parameter(None, 'Prefix to strip from all class names')
    toc_in = Parameter([], 'list of table of content files to use for symbol lookup')
    base_url = Parameter(None, 'base url to use for generated links')
-
-   "-n                    Don't descend AST (for internal use)"
 
    def process(self, ast, **kwds):
       global verbose
@@ -466,15 +476,17 @@ class Formatter(Processor):
                                                 not self.hide_operations,
                                                 not self.hide_attributes,
                                                 -1, self.ast.types(),
-                                                toc, self.prefix, False)
+                                                toc, self.prefix, False,
+                                                self.bgcolor)
       elif self.type == 'class':
          generator = InheritanceGenerator(dotfile, self.layout,
                                           not self.hide_operations,
                                           not self.hide_attributes,
                                           self.show_aggregation,
-                                          toc, self.prefix, False)
+                                          toc, self.prefix, False,
+                                          self.bgcolor)
       elif self.type == 'file':
-         generator = FileDependencyGenerator(dotfile, self.layout)
+         generator = FileDependencyGenerator(dotfile, self.layout, self.bgcolor)
       else:
          sys.stderr.write("Dot: unknown type\n");
          

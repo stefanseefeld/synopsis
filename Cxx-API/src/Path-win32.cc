@@ -13,6 +13,8 @@
 
 using namespace Synopsis;
 
+const char Path::SEPARATOR = '\\';
+
 std::string Path::cwd()
 {
   static std::string path;

@@ -1,4 +1,3 @@
-# $Id: Parser.py,v 1.3 2004/01/13 07:44:25 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -49,5 +48,5 @@ class Parser(Processor):
       return self.output_and_return_ast()
 
    def get_compiler_info(self, compiler):
-      import emul
-      return emul.get_compiler_info(compiler)
+      import Emulator
+      return Emulator.get_compiler_info(compiler)

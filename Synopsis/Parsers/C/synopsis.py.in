@@ -13,7 +13,7 @@ topdir = '@topdir@'
 srcdir = '@srcdir@'
 
 cppflags = ['-I.',
-            '-I%s'%(topdir + '/include'),
+            '-I%s'%(topdir + '/Cxx-API/include'),
             '-I%s'%(srcdir),
             '-I%s'%(sysconfig.get_python_inc())]
 

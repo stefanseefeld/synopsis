@@ -69,7 +69,7 @@ class build_doc(build.build):
       build_ext = self.distribution.get_command_obj('build_ext')
       build_ext.ensure_finalized()
 
-      for e in self.extensions:
+      for e in [('Cxx-API', 'cxx-api')] + self.extensions:
 
          # replace <name>.so by <name>.syn
          api = os.path.splitext(e[1])[0] + '.syn'

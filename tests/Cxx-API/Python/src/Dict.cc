@@ -1,9 +1,9 @@
-#include <Synopsis/Object.hh>
+#include <Synopsis/Python/Object.hh>
 #include "Guard.hh"
 #include <string>
 #include <iostream>
 
-using namespace Synopsis;
+using namespace Synopsis::Python;
 
 void test1()
 {

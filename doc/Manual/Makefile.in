@@ -58,7 +58,7 @@ html/sxr: sxr.syn
 	$(synopsis) sxr --url=$(sxr) --output=$@ $<
 	touch $@
 
-sxr.syn: python.syn cxx-api.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
+sxr.syn: python.syn cxx-api-impl.syn ucpp-impl.syn occ-impl.syn ctool-impl.syn
 	@echo generating $@
 	$(synopsis) archive --output=$@ $^
 
@@ -72,22 +72,10 @@ $(python_syn): %.syn: %.py
 	mkdir -p $(dir $@)
 	$(synopsis) python --output=$@ $^
 
-# Compile C++ .hh files
-$(api_hh_syn): %.hh.syn: $(topdir)/%.hh
-	@echo parsing $^
-	mkdir -p $(dir $@)
-	$(synopsis) cxx --output=$@ $?
-
 # Link Python files together
 python.syn: $(python_syn)
 	@echo linking Python files together
 	$(synopsis) link_python --output=$@ $^
-
-# Link C++ API files together
-cxx-api.syn: $(api_hh_syn)
-	@echo $(api_hh_syn)
-	@echo linking C++ API files together
-	$(synopsis) link_cxx --output=$@ $^
 
 ast.syn:	python.syn
 	@echo linking $@

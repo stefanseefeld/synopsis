@@ -38,9 +38,9 @@ class build_syn_clib (Command):
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
-            path = string.replace(self.build_temp, '\\', '/') + '/Cxx-API/src'
+            path = string.replace(self.build_temp, '\\', '/') + '/Cxx-API'
         else:
-            path = os.path.join(self.build_temp, 'Cxx-API', 'src')
+            path = os.path.join(self.build_temp, 'Cxx-API')
         
         make = os.environ.get('MAKE', 'make')
 

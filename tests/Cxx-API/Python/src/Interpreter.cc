@@ -1,11 +1,12 @@
 #include <iostream>
-#include <Synopsis/Interpreter.hh>
-#include <Synopsis/Module.hh>
+#include <Synopsis/Python/Interpreter.hh>
+#include <Synopsis/Python/Module.hh>
 #include <string>
 #include <cstdio>
 #include <iostream>
 #include "Guard.hh"
-using namespace Synopsis;
+
+using namespace Synopsis::Python;
 
 void print(Dict &d)
 {

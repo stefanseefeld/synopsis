@@ -50,8 +50,12 @@ CYGWIN*)
     ;;
 esac
 
-AC_CONFIG_FILES([src/Makefile src/synopsis.py])
+topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/..')"`
+AC_SUBST(topdir)
 
+AC_CONFIG_FILES([Makefile synopsis.py])
+
+mkdir -p src
 mkdir -p lib
 
 AC_OUTPUT

@@ -15,6 +15,20 @@
 
 using namespace Synopsis;
 
+std::string Path::basename() const
+{
+  if (my_impl.empty()) return "";
+  std::string::size_type i = my_impl.rfind(Path::SEPARATOR);
+  return i == std::string::npos ? my_impl : my_impl.substr(i + 1);
+}
+
+Path Path::dirname() const
+{
+  if (my_impl.empty()) return Path("");
+  std::string::size_type i = my_impl.rfind(Path::SEPARATOR);
+  return i == std::string::npos ? Path("") : Path(my_impl.substr(0, i));
+}
+
 void Path::strip(const std::string &prefix)
 {
   if (prefix.empty()) return;
