@@ -1,4 +1,4 @@
-# $Id: Project.py,v 1.5 2002/06/12 12:58:09 chalky Exp $
+# $Id: Project.py,v 1.6 2002/06/22 07:03:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: Project.py,v $
+# Revision 1.6  2002/06/22 07:03:27  chalky
+# Updates to GUI - better editing of Actions, and can now execute some.
+#
 # Revision 1.5  2002/06/12 12:58:09  chalky
 # Added remove channel facility.
 #
@@ -48,8 +51,9 @@ class Project:
     def __init__(self):
 	self.__data_dir = './'
 	self.__filename = None
-	self.__actions = ProjectActions()
+	self.__actions = ProjectActions(self)
 	self.__name = 'New Project'
+	self.__default_formatter = None
     def filename(self):
 	"Returns the filename of this project, or None if not set yet"
 	return self.__filename
@@ -61,6 +65,11 @@ class Project:
 
     def name(self): return self.__name
     def set_name(self, name): self.__name = name
+
+    def default_formatter(self): return self.__default_formatter
+    def set_default_formatter(self, action):
+	if isinstance(action, FormatAction) or action is None:
+	    self.__default_formatter = action
 
     def actions(self):
 	"Returns a ProjectActions object"
@@ -85,44 +94,81 @@ class Project:
 	ProjectReader(self).read(filename)
 
 class ProjectActions:
-    """Manages the actions in a project"""
-    class Listener:
-	"""The listener interface for ProjectActions events"""
-	#def action_added(self, action):
-	#def action_moved(self, action):
-	#def action_removed(self, action):
-	#def channel_added(self, source, dest):
-	#def channel_removed(self, source, dest):
-	pass
-    def __init__(self):
+    """Manages the actions in a project.
+
+    Clients can register for events related to the actions. The events
+    supported by the listener interface are:
+
+    def action_added(self, action):
+    def action_moved(self, action):
+    def action_removed(self, action):
+    def channel_added(self, source, dest):
+    def channel_removed(self, source, dest):
+    """
+
+    def __init__(self, project):
+	"""Constructor"""
+	self.project = project
 	self.__actions = []
 	self.__action_names = {}
 	self.__listeners = []
+
     def actions(self):
+	"""Returns the list of actions in this project Actions. The list
+	returned should be considered read-only"""
 	return self.__actions
+
     def get_action(self, name):
+	"""Returns the Action object by name. This method uses a dictionary
+	lookup so should be preferred to iteration. Returns None if the name
+	is not found."""
+	if not self.__action_names.has_key(name): return None
 	return self.__action_names[name]
+
     def add_listener(self, l):
+	"""Adds a listener to this Projec Actions' events. The listener may
+	implement any of the supported methods and will receive those events.
+	@see ProjectActions for more info."""
 	self.__listeners.append(l)
-    def fire(self, signal, *args):
+
+    def __fire(self, signal, *args):
+	"""Fires the given event to all listeners"""
 	for l in self.__listeners:
 	    if hasattr(l, signal):
 		apply(getattr(l, signal), args)
+
     def add_action(self, action):
+	"""Adds the given action to this project"""
 	self.check_name(action)
 	self.__actions.append(action)
 	self.__action_names[action.name()] = action
-	self.fire('action_added', action)
+	self.__fire('action_added', action)
+
     def move_action(self, action, x, y):
+	"""Moves the given action to the given screen coordinates"""
 	action.move_to(x, y)
-	self.fire('action_moved', action)
+	self.__fire('action_moved', action)
+
     def move_action_by(self, action, dx, dy):
+	"""Moves the given action by the given screen delta-coordinates"""
 	action.move_by(dx, dy)
-	self.fire('action_moved', action)
+	self.__fire('action_moved', action)
+
     def remove_action(self, action):
+	"""Removes the given action, and destroys all channels to/from it"""
+	if action not in self.__actions: return
+	# Remove all channels
+	for src in tuple(action.inputs()):
+	    self.remove_channel(src, action)
+	for dst in tuple(action.outputs()):
+	    self.remove_channel(action, dst)
+	# Remove action
 	self.__actions.remove(action)
 	del self.__action_names[action.name()]
-	self.fire('action_removed', action)
+	# Check default_formatter
+	if action is self.project.default_formatter():
+	    self.project.set_default_formatter(None)
+	self.__fire('action_removed', action)
 
     def rename_action(self, action, newname):
 	"""Renames the given action to the given name"""
@@ -137,7 +183,7 @@ class ProjectActions:
 	if dest in source.outputs() and source in dest.inputs(): return
 	source.outputs().append(dest)
 	dest.inputs().append(source)
-	self.fire('channel_added', source, dest)
+	self.__fire('channel_added', source, dest)
 
     def remove_channel(self, source, dest):
 	"""Removes a "channel" between two actions. If the channel doesn't
@@ -147,12 +193,12 @@ class ProjectActions:
 	    return
 	source.outputs().remove(dest)
 	dest.inputs().remove(source)
-	self.fire('channel_removed', source, dest)
+	self.__fire('channel_removed', source, dest)
 
     def action_changed(self, action):
 	"""Indicates that the given action has changed, so that listeners can
 	update themselves"""
-	self.fire('action_changed', action)
+	self.__fire('action_changed', action)
 
     def check_name(self, action):
 	"Checks the name, and renames if necessary"
@@ -165,6 +211,40 @@ class ProjectActions:
 	    newname = '%s (%d)'%(name, copy)
 	action.set_name(newname)
 
+    def is_valid_channel(self, source, dest):
+	"""Returns true if the given source-dest pair would form a valid
+	channel.
+	Invalid pairs (eg: formatter->formatter) return false.
+	Cyclic channels are also disallowed."""
+	valid_pairs = {
+	    SourceAction : (ParserAction,),
+	    ParserAction : (CacherAction,LinkerAction,FormatAction),
+	    LinkerAction : (CacherAction,LinkerAction,FormatAction),
+	    CacherAction : (CacherAction,LinkerAction,FormatAction),
+	    FormatAction : ()
+	}
+	if not isinstance(source, Action) or not isinstance(dest, Action):
+	    return None
+	# First, check valid pair
+	if not valid_pairs.has_key(source.__class__):
+	    return None
+	if dest.__class__ not in valid_pairs[source.__class__]:
+	    return None
+	# Second, check that dest isn't already output of source
+	if dest in source.outputs() or dest is source:
+	    return None
+	# Third, check cycles: descend input tree checking for dest
+	check = list(source.inputs())
+	while len(check):
+	    action = check.pop(0)
+	    if action is dest:
+		return None
+	    check.extend(action.inputs())
+	# If got this far, combination is valid!
+	return 1
+
+
+
 class ProjectWriter (Util.PyWriter):
     def write_Project(self, project):
 	self.write("class Project:\n")
@@ -173,6 +253,8 @@ class ProjectWriter (Util.PyWriter):
 	self.write_attr('name', project.name())
 	self.write_attr('data_dir', project.data_dir())
 	self.write_item(project.actions())
+	dfm = project.default_formatter()
+	if dfm: self.write_attr('default_formatter', dfm.name())
 	self.outdent()
 
     def write_ProjectActions(self, actions):
@@ -232,6 +314,9 @@ class ProjectReader:
 	if hasattr(proj_obj, 'name'): project.set_name(proj_obj.name)
 	if hasattr(proj_obj, 'data_dir'): project.set_name(proj_obj.data_dir)
 	self.read_ProjectActions(proj_obj)
+	if hasattr(proj_obj, 'default_formatter'):
+	    action = project.actions().get_action(proj_obj.default_formatter)
+	    if action: project.set_default_formatter(action)
     def read_ProjectActions(self, project_obj):
 	for action in project_obj.actions:
 	    t = action[0]

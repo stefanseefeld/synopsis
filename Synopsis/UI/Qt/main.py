@@ -1,4 +1,4 @@
-# $Id: main.py,v 1.4 2001/11/09 15:35:04 chalky Exp $
+# $Id: main.py,v 1.5 2002/06/22 07:03:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: main.py,v $
+# Revision 1.5  2002/06/22 07:03:27  chalky
+# Updates to GUI - better editing of Actions, and can now execute some.
+#
 # Revision 1.4  2001/11/09 15:35:04  chalky
 # GUI shows HTML pages. just. Source window also scrolls to correct line.
 #
@@ -55,6 +58,7 @@ class MainWindow (QMainWindow):
 	file.insertItem("&Open File...", self.open_file, Qt.CTRL+Qt.Key_O)
 	file.insertItem("&New Project...", self.new_project, Qt.CTRL+Qt.Key_N)
 	file.insertItem("Open &Project...", self.open_project, Qt.CTRL+Qt.Key_P)
+	file.insertItem("Show output", self.show_output)
 	file.insertItem("&Quit", qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
 	menu.insertItem("&File", file)
 
@@ -98,4 +102,9 @@ class MainWindow (QMainWindow):
 
     def new_project(self):
 	ProjectWindow(self.workspace, self, None)
+
+    def show_output(self):
+	win = self.workspace.activeWindow()
+	if isinstance(win, ProjectWindow):
+	    win.show_output()
 

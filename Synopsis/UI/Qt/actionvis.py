@@ -1,4 +1,4 @@
-# $Id: actionvis.py,v 1.6 2002/06/12 12:58:33 chalky Exp $
+# $Id: actionvis.py,v 1.7 2002/06/22 07:03:27 chalky Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stefan Seefeld
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: actionvis.py,v $
+# Revision 1.7  2002/06/22 07:03:27  chalky
+# Updates to GUI - better editing of Actions, and can now execute some.
+#
 # Revision 1.6  2002/06/12 12:58:33  chalky
 # Updates to display - hilite items and right click menus
 #
@@ -71,16 +74,18 @@ class SelectionStrategy (CanvasStrategy):
     """The normal CanvasStrategy to handle mouse actions."""
 
     class MenuHandler:
-	"""Wraps menu callbacks with an action"""
-	def __init__(self, sel, action):
+	"""Wraps menu callbacks with an action or line object"""
+	def __init__(self, sel, obj):
 	    self.sel = sel
-	    self.action = action
+	    self.obj = obj 
 	def on_properties(self):
-	    self.sel.on_properties(self.action)
+	    self.sel.on_properties(self.obj)
 	def on_delete_action(self):
-	    self.sel.on_delete_action(self.action)
+	    self.sel.on_delete_action(self.obj)
 	def on_delete_line(self):
-	    self.sel.on_delete_line(self.action)
+	    self.sel.on_delete_line(self.obj)
+	def on_default_formatter(self):
+	    self.sel.on_default_formatter(self.obj)
 
     def __init__(self, canvas, view):
 	CanvasStrategy.__init__(self, canvas, view)
@@ -109,6 +114,10 @@ class SelectionStrategy (CanvasStrategy):
 		handler = self.MenuHandler(self, action)
 		menu = QPopupMenu(self.view)
 		menu.insertItem("Delete Action", handler.on_delete_action)
+		if isinstance(action, FormatAction):
+		    id = menu.insertItem("Default Formatter", handler.on_default_formatter)
+		    check = self.canvas.project.default_formatter() is action
+		    menu.setItemChecked(id, check)
 		menu.insertItem("Properties...", handler.on_properties)
 		menu.exec_loop(QCursor.pos())
 		return
@@ -170,18 +179,32 @@ class SelectionStrategy (CanvasStrategy):
 	"Override default set-mode-to-select behaviour"
 	event.ignore()
 
-    def on_delete_line(self, action):
-	pass
+    def on_delete_line(self, line):
+	print "Deleting line",line.source.name(),"->",line.dest.name()
+	button = QMessageBox.warning(self.view, "Confirm delete",\
+	    'Delete line from "%s" to "%s"?'%(line.source.name(),
+	    line.dest.name()), QMessageBox.Yes, QMessageBox.No)
+	if button is QMessageBox.No: return
+	self.canvas.actions.remove_channel(line.source, line.dest)
 
     def on_delete_action(self, action):
-	pass
+	print "Deleting action",action.name()
+	button = QMessageBox.warning(self.view, "Confirm delete",\
+	    'Delete action "%s"?'%(action.name(),),
+	    QMessageBox.Yes, QMessageBox.No)
+	if button is QMessageBox.No: return
+	self.canvas.actions.remove_action(action)
+
+    def on_default_formatter(self, action):
+	print "Changing default formatter:",action.name()
+	if self.canvas.project.default_formatter() is action:
+	    self.canvas.project.set_default_formatter(None)
+	else:
+	    self.canvas.project.set_default_formatter(action)
 
     def on_properties(self, action):
 	print action.name()
-	if isinstance(action, SourceAction):
-	    actionwiz.ActionDialog(actionwiz.SourcePage, self.view, action, self.canvas.project)
-	elif isinstance(action, ParserAction):
-	    actionwiz.ActionDialog(actionwiz.ParserPage, self.view, action, self.canvas.project)
+	actionwiz.ActionDialog(self.view, action, self.canvas.project)
 
 class ConnectStrategy (CanvasStrategy):
     def __init__(self, canvas, view):
@@ -200,13 +223,16 @@ class ConnectStrategy (CanvasStrategy):
 	self.templine.hide()
 	self.canvas.update()
     def move(self, event):
+	# Find action under cursor and change cursor type
 	if self.source:
 	    self.templine.setPoints(self.source.x()+16, self.source.y()+16, event.x(), event.y())
 	    self.canvas.update()
 	action = self.canvas.get_action_at(event.x(), event.y())
 	if action and action is not self.source:
-	    self.view.setCursor(self.__hint_cursor)
-	elif self.source:
+	    if self.view.actions.is_valid_channel(self.source, action):
+		self.view.setCursor(self.__hint_cursor)
+		return
+	if self.source:
 	    self.view.setCursor(self.__find_cursor)
 	else:
 	    self.view.setCursor(self.__normal_cursor)
@@ -214,10 +240,14 @@ class ConnectStrategy (CanvasStrategy):
 	action = self.canvas.get_action_at(event.x(), event.y())
 	if not action: return
 	if not self.source: self.setSource(action, event)
-	elif action is not self.source: self.setDest(action)
+	elif action is not self.source:
+	    if self.view.actions.is_valid_channel(self.source, action):
+		self.setDest(action)
     def release(self, event):
 	action = self.canvas.get_action_at(event.x(), event.y())
-	if action and self.source and action is not self.source: self.setDest(action)
+	if action and self.source and action is not self.source:
+	    if self.view.actions.is_valid_channel(self.source, action):
+		self.setDest(action)
     def setSource(self, action, event):
 	self.source = action
 	self.templine.setPoints(action.x()+16, action.y()+16, event.x(), event.y())
@@ -302,6 +332,12 @@ class Icon:
 	self.text.show()
 	self.hilite = 0
 	self.update_pos()
+    def hide(self):
+	"""Hides icon on canvas"""
+	# Note, items must be deleted, which will occur when GC happens.
+	# Until them, make them invisible
+	self.img.hide()
+	self.text.hide()
     def set_hilite(self, yesno):
 	self.hilite = yesno
 	if yesno:
@@ -333,6 +369,10 @@ class Line:
 	self.update_pos()
 	self.line.show()
 	self.arrow.show()
+    def hide(self):
+	"""Hide line on canvas"""
+	self.line.hide()
+	self.arrow.hide()
     def set_hilite(self, yesno):
 	self.hilite = yesno
 	if yesno:
@@ -428,6 +468,8 @@ class ActionCanvas (QCanvas):
 	icon = self._action_to_icon_map[action]
 	del self._action_to_icon_map[action]
 	del self._item_to_action_map[icon.img]
+	icon.hide()
+	self.update()
 
     def action_moved(self, action):
 	"Callback from ActionManager. Moves the Icon to follow the Action"
@@ -449,18 +491,20 @@ class ActionCanvas (QCanvas):
     def channel_removed(self, source, dest):
 	"Callback from ActionManager. Adds a channel between the given actions"
 	# NB: check source and dest separately to handle inconsistancies
-	# better, should they arise
+	# better, if they should arise
 	if self._action_lines[source]:
 	    for line in self._action_lines[source]:
 		if line.dest is dest:
 		    self._action_lines[source].remove(line)
 		    if self._item_to_line_map.has_key(line.line):
+			self._item_to_line_map[line.line].hide()
 			del self._item_to_line_map[line.line]
 	if self._action_lines[dest]:
 	    for line in self._action_lines[dest]:
 		if line.source is source:
 		    self._action_lines[dest].remove(line)
 		    if self._item_to_line_map.has_key(line.line):
+			self._item_to_line_map[line.line].hide()
 			del self._item_to_line_map[line.line]
 	self.update()
 
