@@ -1,4 +1,4 @@
-# $Id: core.py,v 1.19 2001/07/04 08:17:48 uid20151 Exp $
+# $Id: core.py,v 1.20 2001/07/05 02:08:35 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -19,6 +19,9 @@
 # 02111-1307, USA.
 #
 # $Log: core.py,v $
+# Revision 1.20  2001/07/05 02:08:35  uid20151
+# Changed the registration of pages to be part of a two-phase construction
+#
 # Revision 1.19  2001/07/04 08:17:48  uid20151
 # Comments
 #
@@ -436,6 +439,7 @@ class PageManager:
 	isn't returned."""
 	page = pageClass(self)
 	self.__pages.append(page)
+	page.register()
     
     def addRootPage(self, file, label, target, visibility):
 	"""Adds a named link to the list of root pages. Called from the

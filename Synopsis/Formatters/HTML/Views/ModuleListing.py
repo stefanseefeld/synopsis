@@ -1,4 +1,4 @@
-# $Id: ModuleListing.py,v 1.6 2001/06/28 07:22:18 stefan Exp $
+# $Id: ModuleListing.py,v 1.7 2001/07/05 02:08:35 uid20151 Exp $
 #
 # This file is a part of Synopsis.
 # Copyright (C) 2000, 2001 Stephen Davies
@@ -20,6 +20,9 @@
 # 02111-1307, USA.
 #
 # $Log: ModuleListing.py,v $
+# Revision 1.7  2001/07/05 02:08:35  uid20151
+# Changed the registration of pages to be part of a two-phase construction
+#
 # Revision 1.6  2001/06/28 07:22:18  stefan
 # more refactoring/cleanup in the HTML formatter
 #
@@ -78,11 +81,12 @@ class ModuleListing(Page.Page):
 	Page.Page.__init__(self, manager)
 	self.child_types = None
 	self._children_cache = {}
-	self._init_page()
+	self.set_filename(config.files.nameOfSpecial('ModuleTree'))
+	self.set_title('Module Tree')
 
-    def _init_page(self):
-	"Sets _filename and registers the page with the manager"
-	filename = config.files.nameOfSpecial('ModuleTree')
+    def register(self):
+	"registers the page with the manager for the 'contents' (top left) frame"
+	filename = self.filename()
 	config.set_contents_page(filename)
 	self.manager.addRootPage(filename, 'Modules', 'contents', 2)
 	self._link_target = 'index'
@@ -95,22 +99,24 @@ class ModuleListing(Page.Page):
 	try: self.child_types = config.obj.ModuleListing.child_types
 	except AttributeError: pass
 	# Create the file
-	filename = config.files.nameOfSpecial('ModuleTree')
-	self.startFile(filename, 'Module Tree')
-	self.write(self.manager.formatHeader(filename, 2))
+	self.startFile()
+	self.write(self.manager.formatHeader(self.filename(), 2))
 	self.tree.startTree()
 	self.indexModule(start, start.name())
 	self.tree.endTree()
 	self.endFile()
 
     def _child_filter(self, child):
+	"""Returns true if the given child declaration is to be included"""
 	if not isinstance(child, AST.Module): return 0
 	if self.child_types and child.type() not in self.child_types:
 	    return 0
 	return 1
     def _link_href(self, ns):
+	"""Returns the link to the given declaration"""
 	return config.files.nameOfModuleIndex(ns.name())
     def _get_children(self, decl):
+	"""Returns the children of the given declaration"""
 	try: return self._children_cache[decl]
 	except KeyError: pass
 	config.sorter.set_scope(decl)
