@@ -83,7 +83,7 @@ private:
   std::string         my_base_path;
   FileStack           my_file_stack;
   bool                my_main_file_only;
-  bool                my_active;
+  unsigned int        my_mask_counter;
   bool                my_verbose;
   bool                my_debug;
 };

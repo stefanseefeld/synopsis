@@ -116,6 +116,8 @@ PyObject *parse(PyObject *self, PyObject *args)
 			      std::string("-D__cplusplus=1")),
 		  flags.end());
     }
+    ctx.add_include_path(".");
+    ctx.set_sysinclude_delimiter();
     for (std::vector<char const *>::iterator i = flags.begin();
 	 i != flags.end();
 	 ++i)
