@@ -1,4 +1,4 @@
-dnl $Id: configure.ac,v 1.8 2003/12/17 15:07:24 stefan Exp $
+dnl $Id: configure.ac,v 1.9 2003/12/30 04:27:51 stefan Exp $
 dnl
 dnl This source file is a part of the Synopsis Project.
 dnl Copyright (C) 2003 Stefan Seefeld <stefan@fresco.org> 
@@ -25,7 +25,7 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.8 $)
+AC_REVISION($Revision: 1.9 $)
 AC_INIT(occ, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
@@ -61,12 +61,6 @@ AC_ARG_ENABLE([gc],
 
 AC_SUBST(USE_GC)
 
-dnl check for libdl
-AC_CHECK_LIB(dl, dlopen, [LIBS="-ldl $LIBS"])
-
-dnl Check host for things like -fPIC and library extension
-AC_MSG_CHECKING([for library file extension])
-cpp_profile=""
 LIBEXT=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('SO')"`
 case `uname -s` in
 CYGWIN*)
@@ -95,7 +89,6 @@ dnl of the list.
     CXXFLAGS="$CXXFLAGS -fPIC"
     ;;
 esac
-AC_MSG_RESULT([$LIBEXT])
 
 AC_SUBST(LIBEXT)
 

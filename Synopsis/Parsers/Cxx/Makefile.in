@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 2003/12/17 15:07:24 stefan Exp $
+# $Id: Makefile.in,v 1.9 2003/12/30 04:27:51 stefan Exp $
 #
 # This source file is a part of the Synopsis Project
 # Copyright (C) 2003 Stefan Seefeld
@@ -18,63 +18,63 @@
 # Free Software Foundation, Inc., 675 Mass Ave, Cambridge,
 # MA 02139, USA.
 
-SHELL	= /bin/sh
+SHELL	:= /bin/sh
 
-srcdir	   := @srcdir@
+srcdir	:= @srcdir@
 
-PYTHON	   := @PYTHON@
+PYTHON	:= @PYTHON@
 
-CC		      := @CC@
-CXX		   := @CXX@
-MAKEDEP		:= $(CXX) -M
-CPPFLAGS	   := @CPPFLAGS@ -I $(srcdir) -I @PYTHON_INCLUDE@
-CFLAGS		:= @CFLAGS@
-CXXFLAGS	   := @CXXFLAGS@
-LDFLAGS		:= @LDFLAGS@
-LIBS	      := @LIBS@ -lpthread
+CC	:= @CC@
+CXX	:= @CXX@
+MAKEDEP	:= $(CXX) -M
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I @PYTHON_INCLUDE@
+CFLAGS	:= @CFLAGS@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= @LIBS@ -lpthread
 LIBRARY_EXT := @LIBEXT@
 
-USE_GC	   := @USE_GC@
-GC_PREFIX	:= @GC_PREFIX@
+USE_GC	:= @USE_GC@
+GC_PREFIX:= @GC_PREFIX@
 
 ifeq ($(USE_GC), yes) # should we compile with gc ?
 ifneq ($(GC_PREFIX),)  # should we use the internal gc ?
-CPPFLAGS		+= -I $(GC_PREFIX)/include/gc
-LIBS			+= -L $(GC_PREFIX)/lib -lgc
+CPPFLAGS+= -I $(GC_PREFIX)/include/gc
+LIBS	+= -L $(GC_PREFIX)/lib -lgc
 else
-GC_LIB	   := gc/.libs/libgc.a
+GC_LIB	:= gc/.libs/libgc.a
 endif
 else
-CPPFLAGS    += -DDONT_GC
+CPPFLAGS+= -DDONT_GC
 endif
 
-UCPP_FLAGS	:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
-UCPP_AFLAGS	:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
+UCPP_FLAGS:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
+UCPP_AFLAGS:= -DSTAND_ALONE -DAUDIT -DMEM_CHECK
 
-UCPP_LIB	   := ucpp/ucpp.a
-UCPP_GLIB   := ucpp/ucpp.ga
-OCC_SO	   := occ$(LIBRARY_EXT)
-LINK_SO	   := link$(LIBRARY_EXT)
+UCPP_LIB:= ucpp/ucpp.a
+UCPP_GLIB:= ucpp/ucpp.ga
+OCC_SO	:= occ$(LIBRARY_EXT)
+LINK_SO	:= link$(LIBRARY_EXT)
 
-OCC_FILES	:= buffer hash token ptree ptree-core encoding env \
-		         pattern walker typeinfo parse mop classwalk \
-		         metaclass quote-class member cbodywalk
+OCC_FILES := buffer hash token ptree ptree-core encoding env \
+             pattern walker typeinfo parse mop classwalk \
+             metaclass quote-class member cbodywalk
 
-SYN_FILES	:= synopsis cpp occ swalker ast builder type dict \
-		         dumper decoder swalker-syntax link_map linkstore \
-		         lookup filter
+SYN_FILES := synopsis cpp occ swalker ast builder type dict \
+             dumper decoder swalker-syntax link_map linkstore \
+             lookup filter
 
-UCPP_FILES	:= mem hashtable cpp lexer assert macro eval
+UCPP_FILES:= mem hashtable cpp lexer assert macro eval
 
 # Generate sources, objs and debug-objs from the FILES
-OCC_SOURCES	:= $(patsubst %, occ/%.cc, $(OCC_FILES))
-OCC_OBJ	   := $(patsubst %, occ/%.o, $(OCC_FILES))
+OCC_SOURCES := $(patsubst %, occ/%.cc, $(OCC_FILES))
+OCC_OBJ	    := $(patsubst %, occ/%.o, $(OCC_FILES))
 OCC_GOBJ    := $(patsubst %, occ/%.go,$(OCC_FILES))
 SYN_SOURCES := $(patsubst %, syn/%.cc, $(SYN_FILES))
-SYN_OBJ	   := $(patsubst %, syn/%.o, $(SYN_FILES))
-SYN_GOBJ	   := $(patsubst %, syn/%.go,$(SYN_FILES))
+SYN_OBJ	    := $(patsubst %, syn/%.o, $(SYN_FILES))
+SYN_GOBJ    := $(patsubst %, syn/%.go,$(SYN_FILES))
 UCPP_SOURCES:= $(patsubst %, ucpp/%.c, $(UCPP_FILES))
-UCPP_OBJ	   := $(patsubst %, ucpp/%.o, $(UCPP_FILES))
+UCPP_OBJ    := $(patsubst %, ucpp/%.o, $(UCPP_FILES))
 UCPP_GOBJ   := $(patsubst %, ucpp/%.go,$(UCPP_FILES))
 UCPP_AOBJ   := $(patsubst %, ucpp/%.ao,$(UCPP_FILES))
 
