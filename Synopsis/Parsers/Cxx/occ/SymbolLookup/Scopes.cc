@@ -19,10 +19,11 @@ void TemplateParameterScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in);
 }
 
-SymbolSet LocalScope::unqualified_lookup(Encoding const &name) const
+SymbolSet LocalScope::unqualified_lookup(Encoding const &name,
+					 bool scope) const
 {
-  SymbolSet symbols = find(name);
-  return symbols.size() ? symbols : my_outer->lookup(name);
+  SymbolSet symbols = find(name, scope);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
 }
 
 void LocalScope::dump(std::ostream &os, size_t in) const
@@ -31,10 +32,11 @@ void LocalScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-SymbolSet FunctionScope::unqualified_lookup(Encoding const &name) const
+SymbolSet FunctionScope::unqualified_lookup(Encoding const &name,
+					    bool scope) const
 {
-  SymbolSet symbols = find(name);
-  return symbols.size() ? symbols : my_outer->lookup(name);
+  SymbolSet symbols = find(name, scope);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
 }
 
 void FunctionScope::dump(std::ostream &os, size_t in) const
@@ -46,14 +48,15 @@ void FunctionScope::dump(std::ostream &os, size_t in) const
 std::string FunctionScope::name() const
 {
   std::ostringstream oss;
-  oss << PTree::reify(PTree::third(my_decl));
+  oss << PTree::reify(my_decl);
   return oss.str();
 }
 
-SymbolSet Class::unqualified_lookup(Encoding const &name) const
+SymbolSet Class::unqualified_lookup(Encoding const &name,
+				    bool scope) const
 {
-  SymbolSet symbols = find(name);
-  return symbols.size() ? symbols : my_outer->lookup(name);
+  SymbolSet symbols = find(name, scope);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
 }
 
 std::string Class::name() const
@@ -72,10 +75,11 @@ void Class::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-SymbolSet Namespace::unqualified_lookup(Encoding const &name) const
+SymbolSet Namespace::unqualified_lookup(Encoding const &name,
+					bool scope) const
 {
-  SymbolSet symbols = find(name);
-  return symbols.size() ? symbols : my_outer->lookup(name);
+  SymbolSet symbols = find(name, scope);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
 }
 
 std::string Namespace::name() const
@@ -90,9 +94,10 @@ void Namespace::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-SymbolSet GlobalScope::unqualified_lookup(Encoding const &name) const
+SymbolSet GlobalScope::unqualified_lookup(Encoding const &name,
+					  bool scope) const
 {
-  SymbolSet symbols = find(name);
+  SymbolSet symbols = find(name, scope);
   return symbols;
 }
 

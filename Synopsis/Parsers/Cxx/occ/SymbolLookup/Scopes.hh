@@ -16,7 +16,7 @@ namespace SymbolLookup
 class TemplateParameterScope : public Scope
 {
 public:
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   virtual void dump(std::ostream &, size_t indent) const;
 };
@@ -27,7 +27,7 @@ public:
   LocalScope(PTree::List const *node, Scope const *outer)
     : my_node(node), my_outer(outer->ref()) {}
   virtual Scope const *global() const { return my_outer->global();}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   virtual void dump(std::ostream &, size_t indent) const;
 protected:
@@ -44,7 +44,7 @@ public:
   FunctionScope(PTree::Declaration const *decl, Scope const *outer)
     : my_decl(decl), my_outer(outer->ref()) {}
   virtual Scope const *global() const { return my_outer->global();}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
@@ -64,7 +64,7 @@ class PrototypeScope : public Scope
 public:
   PrototypeScope(Scope const *outer) : my_outer(outer->ref()) {}
   virtual Scope const *global() const { return my_outer->global();}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   virtual void dump(std::ostream &, size_t indent) const;
 protected:
@@ -82,7 +82,7 @@ public:
   {
   }
   virtual Scope const *global() const { return my_outer->global();}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
@@ -104,7 +104,7 @@ public:
   {
   }
   virtual Scope const *global() const { return my_outer->global();}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   // FIXME: should that really be a string ? It may be better to be conform with
   // Class::name, which, if the class is a template, can't be a string (or can i ?)
@@ -123,7 +123,7 @@ class GlobalScope : public Scope
 public:
   GlobalScope() {}
   virtual Scope const *global() const { return this;}
-  virtual SymbolSet unqualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
 
   virtual void dump(std::ostream &, size_t indent) const;
 };

@@ -109,7 +109,6 @@ void Table::declare(Declaration *d)
     // declare it only once (but allow overloading)
 
     PTree::Encoding name = decls->encoded_name();
-
     // see whether it was previously declared
     FunctionNameSet fs = my_scopes.top()->lookup_function(name);
     // If name is qualified the function has to be declared already
