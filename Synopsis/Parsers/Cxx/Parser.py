@@ -1,4 +1,4 @@
-# $Id: Parser.py,v 1.1 2003/11/05 17:36:55 stefan Exp $
+# $Id: Parser.py,v 1.2 2003/11/05 19:52:24 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -19,14 +19,15 @@ import occ
 
 class Parser(Processor):
 
+   preprocessor = None
+   emulate_compiler = None
    cppflags = []
    main_file_only = True
-   preprocessor = 'gcc'
    base_path = ''
    extract_tails = True
    syntax_prefix = None
    xref_prefix = None
-  
+   
    def process(self, ast, **kwds):
         
       self.__dict__.update(kwds)
@@ -40,7 +41,8 @@ class Parser(Processor):
                          self.cppflags,
                          self.extract_tails,
                          self.syntax_prefix,
-                         self.xref_prefix)
+                         self.xref_prefix,
+                         self.emulate_compiler)
       output = kwds.get('output')
       if output:
          AST.save(output, ast)
