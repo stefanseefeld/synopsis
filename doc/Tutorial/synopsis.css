@@ -47,3 +47,21 @@ pre.programlisting
     font-size : smaller;
     background: #f2f5f7;
 }
+
+div.segmentedlist table
+{
+    background: #f2f5f7;
+    border-spacing: 1px;
+}
+
+div.segmentedlist table th
+{
+  background: #f2f5f7;
+  padding: 4px;
+}
+
+div.segmentedlist table td
+{
+  background-color: #ffffff;
+  padding: 4px;
+}
