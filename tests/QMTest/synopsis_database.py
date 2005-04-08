@@ -70,7 +70,7 @@ class Database(database.Database):
          if os.path.isdir(path):
             tests = get_file_tests(path, '.cc')
 
-      elif suite.startswith('OpenCxx'):
+      elif suite.startswith('Cxx'):
          if os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
             tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'), '.cc')
 
@@ -106,7 +106,7 @@ class Database(database.Database):
 
       if not suite:
 
-         suites = ['OpenCxx', 'Parsers', 'Processors']
+         suites = ['Cxx', 'Parsers', 'Processors']
 
       elif suite.startswith('Processors.Linker'):
 
@@ -123,7 +123,7 @@ class Database(database.Database):
          if not os.path.isdir(path):
             suites = get_dir_suites(suite)
 
-      elif suite.startswith('OpenCxx'):
+      elif suite.startswith('Cxx'):
          if not os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
             suites = get_dir_suites(suite)
             suites.remove('src')
@@ -142,21 +142,21 @@ class Database(database.Database):
 
    def GetResourceIds(self, directory="", scan_subdirs=1):
 
-      if directory == '' or directory == 'OpenCxx':
-         return ['OpenCxx.Lexer',
-                 'OpenCxx.Parser',
-                 'OpenCxx.Encoding',
-                 'OpenCxx.ConstEvaluator',
-                 'OpenCxx.SymbolLookup',
-                 'OpenCxx.TypeAnalysis']
+      if directory == '' or directory == 'Cxx':
+         return ['Cxx.Lexer',
+                 'Cxx.Parser',
+                 'Cxx.Encoding',
+                 'Cxx.ConstEvaluator',
+                 'Cxx.SymbolLookup',
+                 'Cxx.TypeAnalysis']
       else:
          return []
 
    def GetResource(self, id):
       """Construct a resource for the given id.
-      For now the only resources provided are OpenCxx test applets."""
+      For now the only resources provided are Cxx test applets."""
 
-      if not id.startswith('OpenCxx'): raise NoSuchResourceError(id)
+      if not id.startswith('Cxx'): raise NoSuchResourceError(id)
 
       parameters = {}
 
@@ -167,7 +167,7 @@ class Database(database.Database):
       
       parameters['exe'] = os.path.normpath('bin/%s'%suite)
 
-      return ResourceDescriptor(self, id, 'synopsis_test.OpenCxxResource', parameters)
+      return ResourceDescriptor(self, id, 'synopsis_test.CxxResource', parameters)
       
    def GetSuite(self, id):
       """Construct a suite for the given id.
@@ -192,7 +192,7 @@ class Database(database.Database):
          
       if id.startswith('Processors.Linker'): return self.make_linker_test(id)
       elif id.startswith('Cxx-API'): return self.make_api_test(id)
-      elif id.startswith('OpenCxx'): return self.make_opencxx_test(id)
+      elif id.startswith('Cxx'): return self.make_opencxx_test(id)
       else: return self.make_processor_test(id)
 
    def make_processor_test(self, id):
@@ -270,7 +270,7 @@ class Database(database.Database):
 
    def make_opencxx_test(self, id):
       """A test id 'a.b.c' corresponds to an input file
-      'a/b/input/c.<ext>. Create an OpenCxxTest if that
+      'a/b/input/c.<ext>. Create an CxxTest if that
       input file exists, and throw NoSuchTestError otherwise."""
 
       base, suite, test = id.split('.')
@@ -288,8 +288,8 @@ class Database(database.Database):
       parameters['output'] = output
       parameters['expected'] = expected
 
-      parameters['resources'] = ['OpenCxx.%s'%suite]
-      parameters['applet'] = 'OpenCxx/bin/%s'%suite
+      parameters['resources'] = ['Cxx.%s'%suite]
+      parameters['applet'] = 'Cxx/bin/%s'%suite
          
-      return TestDescriptor(self, id, 'synopsis_test.OpenCxxTest', parameters)
+      return TestDescriptor(self, id, 'synopsis_test.CxxTest', parameters)
 

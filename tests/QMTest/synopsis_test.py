@@ -99,8 +99,8 @@ class ProcessorTest(Test):
          if expected != output:
             result.Fail("output mismatch")
 
-class OpenCxxResource(Resource):
-   """build the executables the OpenCxxTests all depend on."""
+class CxxResource(Resource):
+   """build the executables the CxxTests all depend on."""
 
    arguments = [TextField(name="MAKE", description="The make tool."),
                 TextField(name="exe", description="The executable file.")]
@@ -108,7 +108,7 @@ class OpenCxxResource(Resource):
    def compile(self, context, result):
 
       make = os.environ.get('MAKE', 'make')
-      command = '%s -C OpenCxx %s '%(make, self.exe)
+      command = '%s -C Cxx %s '%(make, self.exe)
       compiler = RedirectedExecutable()
       status = compiler.Run(string.split(command))
       if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
@@ -123,7 +123,7 @@ class OpenCxxResource(Resource):
 
       self.compile(context, result)
 
-class OpenCxxTest(Test):
+class CxxTest(Test):
    """Process an input file with a processor and compare the output.
    If the processor doesn't exist yet, attempt to build it."""
 

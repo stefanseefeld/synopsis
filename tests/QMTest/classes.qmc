@@ -7,6 +7,6 @@
  <class kind="test" name="synopsis_test.APITest"/>
  <class kind="test" name="synopsis_test.ProcessorTest"/>
  <class kind="test" name="synopsis_test.CToolTest"/>
- <class kind="test" name="synopsis_test.OpenCxxTest"/>
- <class kind="resource" name="synopsis_test.OpenCxxResource"/>
+ <class kind="test" name="synopsis_test.CxxTest"/>
+ <class kind="resource" name="synopsis_test.CxxResource"/>
 </class-directory>
