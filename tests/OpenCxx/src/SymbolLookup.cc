@@ -23,7 +23,7 @@ private:
   virtual void visit(PTree::Identifier *iden)
   {
     PTree::Encoding name = PTree::Encoding::simple_name(iden);
-    my_os << "Identifier : " << name << std::endl;
+    my_os << "Identifier : " << name.unmangled() << std::endl;
     lookup(name);
   }
 
@@ -36,11 +36,39 @@ private:
     PTree::third(typed)->accept(this);
   }
 
+  virtual void visit(PTree::Declaration *node)
+  {
+    PTree::Node *rest = PTree::third(node);
+    if (rest->is_atom()) return; // ';' means forward declaration
+
+    PTree::second(node)->accept(this);
+
+    // If the second child is an Identifier, it was already
+    // dealt with above. Same for Name. Only need to look up
+    // Atom here...
+    if (PTree::second(node)->is_atom())
+    {
+      PTree::Atom const *name = static_cast<PTree::Atom *>(PTree::second(node));
+      PTree::Encoding type = PTree::Encoding::simple_name(name);
+      my_os << "Type : " << type.unmangled() << std::endl;
+      lookup(type);
+    }
+
+    if(PTree::is_a(rest, Token::ntDeclarator))
+      rest->accept(this);
+    else
+      for (; rest; rest = rest->cdr())
+      {
+	PTree::Node *p = rest->car();
+	p->accept(this);
+      }
+  }
+
   virtual void visit(PTree::Declarator *decl)
   {
     PTree::Encoding name = decl->encoded_name();
     PTree::Encoding type = decl->encoded_type();
-    my_os << "Declarator : " << name << std::endl;
+    my_os << "Declarator : " << name.unmangled() << std::endl;
     lookup(name);
     // Visit the initializer, if there is any.
     if (type.is_function()) return;
@@ -61,17 +89,27 @@ private:
   virtual void visit(PTree::Name *n)
   {
     PTree::Encoding name = n->encoded_name();
-    my_os << "Name : " << name << std::endl;
+    my_os << "Name : " << name.unmangled() << std::endl;
     lookup(name);
   }
   
+  virtual void visit(PTree::ClassSpec *node)
+  {
+    PTree::Encoding name = node->encoded_name();
+    my_os << "ClassSpec : " << name.unmangled() << std::endl;
+    lookup(name);
+    // Visit the body, if there is one.
+    if(PTree::length(node) == 4)
+      PTree::nth(node, 3)->accept(this);
+  }
+
   virtual void visit(PTree::FuncallExpr *node)
   {
     PTree::Node *function = node->car();
     PTree::Encoding name;
     if (function->is_atom()) name.simple_name(function);
     else name = function->encoded_name(); // function is a 'PTree::Name'
-    my_os << "Function : " << name << ' ' << std::endl;
+    my_os << "Function : " << name.unmangled() << std::endl;
     lookup(name);
   }
 
@@ -119,7 +157,7 @@ int main(int argc, char **argv)
     }
     std::ofstream ofs(output.c_str());
     std::ifstream ifs(input.c_str());
-    Buffer buffer(ifs.rdbuf(), input);
+    Buffer buffer(ifs.rdbuf(), "<input>");
     Lexer lexer(&buffer);
     Table symbols;
     Parser parser(lexer, symbols);

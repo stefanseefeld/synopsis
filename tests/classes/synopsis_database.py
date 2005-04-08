@@ -147,8 +147,8 @@ class Database(database.Database):
                  'OpenCxx.Parser',
                  'OpenCxx.Encoding',
                  'OpenCxx.ConstEvaluator',
-                 'OpenCxx.TypeEvaluator',
-                 'OpenCxx.SymbolLookup']
+                 'OpenCxx.SymbolLookup',
+                 'OpenCxx.TypeAnalysis']
       else:
          return []
 
@@ -162,7 +162,7 @@ class Database(database.Database):
 
       suite = id.split('.', 1)[1]
       if suite not in ['Lexer', 'Parser', 'Encoding',
-                       'ConstEvaluator', 'TypeEvaluator', 'SymbolLookup']:
+                       'ConstEvaluator', 'SymbolLookup', 'TypeAnalysis']:
          raise NoSuchResourceError(id)
       
       parameters['exe'] = os.path.normpath('bin/%s'%suite)

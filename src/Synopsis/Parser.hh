@@ -159,6 +159,7 @@ private:
   bool allocate_initializer(PTree::Node *&);
   bool postfix_expr(PTree::Node *&);
   bool primary_expr(PTree::Node *&);
+  bool typeof_expr(PTree::Node *&);
   bool userdef_statement(PTree::Node *&);
   bool var_name(PTree::Node *&);
   bool var_name_core(PTree::Node *&, PTree::Encoding&);
@@ -178,7 +179,7 @@ private:
   bool declaration_statement(PTree::Declaration *&);
   bool integral_decl_statement(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
   bool other_decl_statement(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
-  
+
   bool maybe_typename_or_class_template(Token&);
   void skip_to(Token::Type token);
   

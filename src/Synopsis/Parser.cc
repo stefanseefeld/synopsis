@@ -2098,23 +2098,7 @@ bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
 
     // gcc keyword typeof(name) means type of the given name
     if(my_lexer.look_ahead(0) == Token::TYPEOF)
-    {
-      t = my_lexer.get_token(tk);
-      if ((t = my_lexer.get_token(tk2)) != '(')
-	return false;
-      PTree::Node *type = PTree::list(new PTree::Atom(tk2));
-      PTree::Encoding name_encode;
-      if (!name(id, name_encode)) return false;
-      if (!id->is_atom())
-	id = new PTree::Name(id, name_encode);
-      else
-	id = new PTree::Name(PTree::list(id), name_encode);
-      type = PTree::snoc(type, id);
-      if ((t = my_lexer.get_token(tk2)) != ')') return false;
-      type = PTree::snoc(type, new PTree::Atom(tk2));
-      id = new PTree::TypeofExpr(new PTree::Atom(tk), type);
-      return true;
-    }
+      return typeof_expr(id);
   }
   while(true)
   {
@@ -2793,6 +2777,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     else
     {
       spec->set_encoded_name(encode);
+      if (!my_in_template_decl) declare(spec);
       return true;	// class.key Identifier
     }
   }
@@ -3943,6 +3928,30 @@ bool Parser::primary_expr(PTree::Node *&exp)
 	return true;
       }
   }
+}
+
+bool Parser::typeof_expr(PTree::Node *&node)
+{
+  Trace trace("Parser::typeof_expr");
+  Token tk, tk2;
+
+  Token::Type t = my_lexer.get_token(tk);
+  if (t != Token::TYPEOF)
+    return false;
+  if ((t = my_lexer.get_token(tk2)) != '(')
+    return false;
+  PTree::Node *type = PTree::list(new PTree::Atom(tk2));
+//   PTree::Encoding name_encode;
+  if (!expression(node)) return false;
+//   if (!node->is_atom())
+//     node = new PTree::Name(node, name_encode);
+//   else
+//     node = new PTree::Name(PTree::list(node), name_encode);
+  type = PTree::snoc(type, node);
+  if ((t = my_lexer.get_token(tk2)) != ')') return false;
+  type = PTree::snoc(type, new PTree::Atom(tk2));
+  node = new PTree::TypeofExpr(new PTree::Atom(tk), type);
+  return true;
 }
 
 /*

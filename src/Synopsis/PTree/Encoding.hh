@@ -162,6 +162,8 @@ public:
   //. else return the unmodified name
   Encoding get_symbol() const;
   Encoding get_template_arguments() const;
+  
+  std::string unmangled() const;
 
   PTree::Node *make_name();
   PTree::Node *make_qname();

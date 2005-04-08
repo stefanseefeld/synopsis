@@ -89,6 +89,7 @@ mkdir -p bin
 mkdir -p Synopsis/gc
 mkdir -p Synopsis/PTree
 mkdir -p Synopsis/SymbolLookup
+mkdir -p Synopsis/TypeAnalysis
 mkdir -p tools
 
 AC_OUTPUT
