@@ -6,6 +6,7 @@
 // see the file COPYING for details.
 //
 
+#include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Node.hh>
 #include <Synopsis/PTree/Atoms.hh>
 #include <Synopsis/PTree/TypeVisitor.hh>
@@ -50,6 +51,239 @@ Node *Encoding::left_bracket = 0;
 Node *Encoding::right_bracket = 0;
 Node *Encoding::left_angle = 0;
 Node *Encoding::right_angle = 0;
+
+namespace
+{
+class Unmangler
+{
+public:
+  typedef Encoding::iterator iterator;
+
+  Unmangler(iterator begin, iterator end) : my_cursor(begin), my_end(end) {}
+
+  std::string unmangle();
+  std::string unmangle_name();
+  std::string unmangle_qname();
+  std::string unmangle_template();
+  std::string unmangle_func(std::string&);
+
+private:
+  iterator my_cursor;
+  iterator const my_end;
+};
+
+std::string Unmangler::unmangle_name()
+{
+  Trace trace("Unmangler::unmangle_name()");
+  size_t length = *my_cursor++ - 0x80;
+  std::string name(length, '\0');
+  std::copy(my_cursor, my_cursor + length, name.begin());
+  my_cursor += length;
+  return name;
+}
+
+std::string Unmangler::unmangle()
+{
+  Trace trace("Unmangler::unmangle()");
+  std::string premod, postmod;
+  std::string name;
+  std::string base;
+  
+  while (my_cursor != my_end && !name.length() && !base.length())
+  {
+    int c = *my_cursor++;
+    switch (c)
+    {
+      case 'P':
+	postmod += "*";
+	break;
+      case 'R':
+	postmod += "&";
+	break;
+      case 'S':
+	premod += "signed ";
+	break;
+      case 'U':
+	premod += "unsigned ";
+	break;
+      case 'C':
+	premod += "const ";
+	break;
+      case 'V':
+	premod += "volatile ";
+	break;
+      case 'A':
+      {
+	std::string array("[");
+	while (*my_cursor != '_') array += *my_cursor++;
+	array += ']';
+	++my_cursor;
+	premod += array;
+	break;
+      }
+      case '*':
+	base = "*";
+	break;
+      case 'i':
+	name = "int";
+	break;
+      case 'v':
+	name = "void";
+	break;
+      case 'b':
+	name = "bool";
+	break;
+      case 's':
+	name = "short";
+	break;
+      case 'c':
+	name = "char";
+	break;
+      case 'w':
+	name = "wchar_t";
+	break;
+      case 'l':
+	name = "long";
+	break;
+      case 'j':
+	name = "long long";
+	break;
+      case 'f':
+	name = "float";
+	break;
+      case 'd':
+	name = "double";
+	break;
+      case 'r':
+	name = "long double";
+	break;
+      case 'e':
+	name = "...";
+	break;
+      case '?':
+	return ""; //FIXME !
+      case 'Q':
+	base = unmangle_qname();
+	break;
+      case '_':
+	--my_cursor;
+	return ""; // end of func params
+      case 'F':
+	base = unmangle_func(postmod);
+	break;
+      case 'T':
+	base = unmangle_template();
+	break;
+      case 'M':
+	// Pointer to member. Format is same as for named types
+	name = unmangle_name() + "::*";
+	break;
+      default:
+	assert(c > 0x80);
+	--my_cursor;
+	name = unmangle_name();
+	break;
+    } // switch
+  } // while
+  if (!base.length() && !name.length())
+    throw std::runtime_error("unmangling error");
+  if (!base.length())
+    base = name;
+  return premod + base + postmod;
+}
+
+std::string Unmangler::unmangle_qname()
+{
+  Trace trace("Unmangler::unmangle_qname()");
+  // Qualified type: first is num of scopes (at least one), each a name.
+  std::string qname;
+  int scopes = *my_cursor++ - 0x80;
+  while (scopes--)
+  {
+    std::string name;
+    // Only handle two things here: names and templates
+    if (*my_cursor >= 0x80)
+      name = unmangle_name();
+    else if (*my_cursor == 'T')
+    {
+      ++my_cursor;
+      name = unmangle_name();
+      name += '<';
+      iterator tend = my_cursor;
+      tend += *my_cursor++ - 0x80;
+      bool first = true;
+      while (my_cursor <= tend)
+      {
+	if (!first) name += ',';
+	else first = false;
+	name += unmangle();
+      }
+      name += '>';
+    }
+    else
+    {
+      
+      //std::cerr << "Warning: Unknown type inside Q: " << *my_cursor << std::endl;
+      // FIXME
+      //std::cerr << "         Decoding " << my_string << std::endl;
+    }
+    if (qname.length()) qname += "::" + name;
+    else qname = name;
+  }
+  return qname;
+}
+
+std::string Unmangler::unmangle_func(std::string& postmod)
+{
+  Trace trace("Unmangler::unmangle_func()");
+  // Function ptr. Encoded same as function
+  std::string premod;
+  // Move * from postmod to funcptr's premod. This makes the output be
+  // "void (*convert)()" instead of "void (convert)()*"
+  if (postmod.size() > 0 && postmod[0] == '*')
+  {
+    premod += postmod[0];
+    postmod.erase(postmod.begin());
+  }
+  std::vector<std::string> params;
+  while (true)
+  {
+    std::string type = unmangle();
+    if (type.empty())
+      break;
+    else
+      params.push_back(type);
+  }
+  ++my_cursor; // skip over '_'
+  std::string returnType = unmangle();
+  std::string ret = returnType + "(*)(";
+  if (params.size()) ret += params[0];
+  for (size_t p = 1; p != params.size(); ++p)
+    ret += "," + params[p];
+  ret += ")";
+  return ret;
+}
+
+std::string Unmangler::unmangle_template()
+{
+  Trace trace("Unmangler::unmangle_template()");
+
+  // Template type: Name first, then size of arg field, then arg
+  // types eg: T6vector54cell <-- 5 is len of 4cell
+  if (*my_cursor == 'T')
+    ++my_cursor;
+  std::string name = unmangle_name();
+  iterator tend = my_cursor;
+  tend += *my_cursor++ - 0x80;
+  name += "<";
+  if (my_cursor <= tend) name += unmangle();
+  while (my_cursor <= tend) name += "," + unmangle();
+  name += ">";
+  return name;
+}
+
+}
+
 
 void Encoding::do_init_static()
 {
@@ -237,6 +471,13 @@ Encoding Encoding::get_symbol() const
   Encoding retn(end_of_scope(), end());
   if (size > 2) retn.qualified(size - 1);
   return retn;
+}
+
+std::string Encoding::unmangled() const
+{
+  if (empty()) return "";
+  Unmangler unmangler(begin(), end());
+  return unmangler.unmangle();
 }
 
 Encoding Encoding::get_template_arguments() const
@@ -471,4 +712,12 @@ PTree::Node *Encoding::name_to_ptree()
   }
   if(is_letter(my_buffer[0])) return new PTree::Identifier(copy(), my_buffer.size());
   else return PTree::list(operator_name, new PTree::Identifier(copy(), my_buffer.size()));
+}
+
+namespace Synopsis
+{
+namespace PTree
+{
+
+}
 }

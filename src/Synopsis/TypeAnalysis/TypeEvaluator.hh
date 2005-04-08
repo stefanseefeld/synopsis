@@ -4,26 +4,26 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#ifndef Synopsis_SymbolLookup_TypeEvaluator_hh_
-#define Synopsis_SymbolLookup_TypeEvaluator_hh_
+#ifndef Synopsis_TypeAnalysis_TypeEvaluator_hh_
+#define Synopsis_TypeAnalysis_TypeEvaluator_hh_
 
 #include <Synopsis/PTree/Visitor.hh>
 #include <Synopsis/PTree/Atoms.hh>
 #include <Synopsis/PTree/Lists.hh>
 #include <Synopsis/SymbolLookup/Scope.hh>
-#include <Synopsis/SymbolLookup/Type.hh>
+#include <Synopsis/TypeAnalysis/Type.hh>
 
 namespace Synopsis
 {
-namespace SymbolLookup
+namespace TypeAnalysis
 {
 
 //. evaluate the type of an expression
 class TypeEvaluator : private PTree::Visitor
 {
 public:
-  TypeEvaluator(Scope const *s) : my_scope(s) {}
-  Type evaluate(PTree::Node const *node);
+  TypeEvaluator(SymbolLookup::Scope const *s) : my_scope(s) {}
+  Type const *evaluate(PTree::Node const *node);
 
 private:
   virtual void visit(PTree::Literal *);
@@ -50,11 +50,12 @@ private:
   virtual void visit(PTree::ArrowMemberExpr *);
   virtual void visit(PTree::ParenExpr *);
   
-  Scope const *my_scope;
-  Type         my_type;
+  SymbolLookup::Scope const *my_scope;
+  Type const *               my_type;
 };
   
-inline Type type_of(PTree::Node const *node, Scope const *s)
+inline Type const *type_of(PTree::Node const *node,
+			   SymbolLookup::Scope const *s)
 {
   TypeEvaluator evaluator(s);
   return evaluator.evaluate(node);

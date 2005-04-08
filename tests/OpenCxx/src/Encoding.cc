@@ -18,8 +18,8 @@ public:
 private:
   virtual void visit(PTree::List *node)
   {
-    for (PTree::Node *i = node; i; i = i->cdr())
-      if (i->car()) i->car()->accept(this);
+    if (node->car()) node->car()->accept(this);
+    if (node->cdr()) node->cdr()->accept(this);
   }
 
 //   virtual void visit(PTree::Typedef *node)
@@ -31,29 +31,27 @@ private:
 
   virtual void visit(PTree::Name *node)
   {
-    my_os << "Name : " << std::endl;
     PTree::Encoding name = node->encoded_name();
-    my_os << name << std::endl;
+    my_os << "Name : " << name << ' ' << name.unmangled() << std::endl;
     PTree::Node *name_node = name.make_ptree(0);
     my_os << PTree::reify(name_node) << std::endl;
   }
 
   virtual void visit(PTree::ClassSpec *node)
   {
-    my_os << "ClassSpec : " << std::endl;
-    my_os << "name : " << std::endl;
     PTree::Encoding name = node->encoded_name();
-    my_os << name << std::endl;
+    my_os << "ClassSpec : " << name << ' ' << name.unmangled() << std::endl;
     PTree::Node *name_node = name.make_ptree(0);
     my_os << PTree::reify(name_node) << std::endl;
+    // Visit the body, if there is one.
+    if(PTree::length(node) == 4)
+      PTree::nth(node, 3)->accept(this);
   }
 
   virtual void visit(PTree::EnumSpec *node)
   {
-    my_os << "EnumSpec : " << std::endl;
-    my_os << "name : " << std::endl;
     PTree::Encoding name = node->encoded_name();
-    my_os << name << std::endl;
+    my_os << "EnumSpec : " << name << ' ' << name.unmangled() << std::endl;
     PTree::Node *name_node = name.make_ptree(0);
     my_os << PTree::reify(name_node) << std::endl;
   }
@@ -62,37 +60,36 @@ private:
   {
     my_os << "Declaration : " << std::endl;
     my_os << PTree::reify(node) << std::endl;
+    PTree::second(node)->accept(this);
     PTree::Node *rest = PTree::third(node);
     if (rest->is_atom()) return; // ';'
-    for (; rest; rest = rest->cdr())
-    {
-      PTree::Node *p = rest->car();
-      p->accept(this);
-    }
+    else if(PTree::is_a(rest, Token::ntDeclarator))
+      rest->accept(this);
+    else
+      for (; rest; rest = rest->cdr())
+      {
+	PTree::Node *p = rest->car();
+	p->accept(this);
+      }
+  }
+
+  virtual void visit(PTree::TemplateDecl *node)
+  {
+    my_os << "TemplateDecl : " << std::endl;
+    my_os << PTree::reify(node) << std::endl;
+    PTree::Node *decl = PTree::nth(node, 4);
+    decl->accept(this);
   }
 
   virtual void visit(PTree::Declarator *node) 
   {
-    my_os << "Declarator : " << std::endl;
-    my_os << "name : " << std::endl;
     PTree::Encoding name = node->encoded_name();
-    my_os << name << std::endl;
-    {
-      PTree::Encoding tmp = name;
-      do
-      {
-	PTree::Encoding scope = tmp.get_scope();
-	PTree::Encoding symbol = tmp.get_symbol();
-	std::cout << "scope " << scope << " , symbol " << symbol << std::endl;
-	if (scope.empty()) break;
-      } while (true);
-    }
+    my_os << "Declarator : " << name << ' ' << name.unmangled() << std::endl;
     PTree::Node *name_node = name.make_ptree(0);
     my_os << PTree::reify(name_node) << std::endl;
 
-    my_os << "type : " << std::endl;
     PTree::Encoding type = node->encoded_type();
-    my_os << type << std::endl;
+    my_os << "type : " << type << ' ' << type.unmangled() << std::endl;
     PTree::Node *type_node = type.make_ptree(0);
     my_os << PTree::reify(type_node) << std::endl;
   }

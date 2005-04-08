@@ -18,7 +18,7 @@ CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
 LIBS	:= -L$(builddir)/../../src/lib -lSynopsis @LIBS@
 
-TESTS	:= Lexer Encoding Parser ConstEvaluator TypeEvaluator SymbolLookup
+TESTS	:= Lexer Encoding Parser ConstEvaluator SymbolLookup TypeAnalysis
 
 SRC 	:= $(patsubst %, src/%.cc, $(TESTS))
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
