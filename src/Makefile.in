@@ -42,6 +42,7 @@ SRC 	:= $(patsubst %, Synopsis/%.cc, $(SRC))
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/PTree/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/SymbolLookup/*.hh))
+HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/TypeAnalysis/*.hh))
 
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
@@ -104,9 +105,10 @@ $(TARGET): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
-	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d \
-        Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d \
-        Synopsis/SymbolLookup/*.~ Synopsis/SymbolLookup/*.o Synopsis/SymbolLookup/*.d \
+	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \
+        Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d Synopsis/PTree/*.syn \
+        Synopsis/SymbolLookup/*.~ Synopsis/SymbolLookup/*.o Synopsis/SymbolLookup/*.d Synopsis/SymbolLookup/*.syn \
+        Synopsis/TypeAnalysis/*.~ Synopsis/TypeAnalysis/*.o Synopsis/TypeAnalysis/*.d Synopsis/TypeAnalysis/*.syn \
         tools/*.~ tools/*.o tools/*.d \
         *.dll *.so *core $(TARGET) \
 	base_lib

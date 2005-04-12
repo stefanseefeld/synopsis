@@ -46,8 +46,6 @@ class build_doc(build.build):
          self.html = self.printable = True
       build.build.finalize_options(self)
 
-      self.extensions = self.distribution.ext_modules
-         
    def run(self):
       """Run this command, i.e. do the actual document generation."""
 
@@ -64,101 +62,85 @@ class build_doc(build.build):
         
       self.announce("building reference manual")
 
-      tempdir = os.path.abspath(os.path.join(self.build_temp,
-                                             'doc/Manual'))
+      tmp_man_dir = os.path.abspath(os.path.join(self.build_temp,
+                                                 'doc/Manual'))
 
-      # start by building the docs for all the extensions
+      make = os.environ.get('MAKE', 'make')
 
-      build_ext = self.distribution.get_command_obj('build_ext')
-      build_ext.ensure_finalized()
+      build_clib = self.distribution.get_command_obj('build_clib')
+      build_clib.ensure_finalized()
 
-      for e in [('src', 'cxx'), ('Cxx-API', 'cxx-api')] + self.extensions:
+      for e in [('src', 'cxx'), ('Cxx-API', 'cxx-api')]:
 
-         if e[1] == 'wave': continue
+         tmpdir = os.path.join(build_clib.build_temp, e[0])
+
          # replace <name>.so by <name>.syn
          api = os.path.splitext(e[1])[0] + '.syn'
          all = os.path.splitext(e[1])[0] + '-impl.syn'
-
+         
          # build the 'doc' target
          e = e[0], 'doc'
-         build_ext.build_extension(e, False)
+         spawn([make, '-C', tmpdir, e[1]])
 
-         if (os.path.exists(os.path.join(build_ext.build_temp, e[0], api))
-             and newer(os.path.join(build_ext.build_temp, e[0], api),
-                       os.path.join(tempdir, api))):
-            copy_file(os.path.join(build_ext.build_temp, e[0], api),
-                      os.path.join(tempdir, api))
-         if os.path.exists(os.path.join(build_ext.build_temp, e[0], 'links')):
-            copy_tree(os.path.join(build_ext.build_temp, e[0], 'links'),
-                      os.path.join(tempdir, 'links'))
-         if os.path.exists(os.path.join(build_ext.build_temp, e[0], 'xref')):
-            copy_tree(os.path.join(build_ext.build_temp, e[0], 'xref'),
-                      os.path.join(tempdir, 'xref'))
-         if (os.path.exists(os.path.join(build_ext.build_temp, e[0], all))
-             and newer(os.path.join(build_ext.build_temp, e[0], all),
-                       os.path.join(tempdir, all))):
-            copy_file(os.path.join(build_ext.build_temp, e[0], all),
-                      os.path.join(tempdir, all))
+         if (os.path.exists(os.path.join(tmpdir, api))
+             and newer(os.path.join(tmpdir, api),
+                       os.path.join(tmp_man_dir, api))):
+            copy_file(os.path.join(build_clib.build_temp, e[0], api),
+                      os.path.join(tmp_man_dir, api))
+         if os.path.exists(os.path.join(build_clib.build_temp, e[0], 'links')):
+            copy_tree(os.path.join(build_clib.build_temp, e[0], 'links'),
+                      os.path.join(tmp_man_dir, 'links'))
+         if os.path.exists(os.path.join(build_clib.build_temp, e[0], 'xref')):
+            copy_tree(os.path.join(build_clib.build_temp, e[0], 'xref'),
+                      os.path.join(tmp_man_dir, 'xref'))
+         if (os.path.exists(os.path.join(build_clib.build_temp, e[0], all))
+             and newer(os.path.join(build_clib.build_temp, e[0], all),
+                       os.path.join(tmp_man_dir, all))):
+            copy_file(os.path.join(build_clib.build_temp, e[0], all),
+                      os.path.join(tmp_man_dir, all))
          
       # now run make inside doc/Manual to do the rest
 
       srcdir = os.path.abspath('doc/Manual/')
 
       cwd = os.getcwd()
-      mkpath(tempdir, 0777, self.verbose, self.dry_run)
-
-      make = os.environ.get('MAKE', 'make')
+      mkpath(tmp_man_dir, 0777, self.verbose, self.dry_run)
 
       if self.html:
-         spawn([make, '-C', tempdir, 'html'])
+         spawn([make, '-C', tmp_man_dir, 'html'])
       if self.printable:
-         spawn([make, '-C', tempdir, 'pdf'])
+         spawn([make, '-C', tmp_man_dir, 'pdf'])
       if self.sxr:
-         spawn([make, '-C', tempdir, 'sxr', 'sxr=%s'%self.sxr])
+         spawn([make, '-C', tmp_man_dir, 'sxr', 'sxr=%s'%self.sxr])
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
-      if newer(os.path.join(tempdir, 'html', 'python'),
+      if newer(os.path.join(tmp_man_dir, 'html', 'python'),
                os.path.join(builddir, 'python')):
          rmtree(os.path.join(builddir, 'python'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'python'),
+         copy_tree(os.path.join(tmp_man_dir, 'html', 'python'),
                    os.path.join(builddir, 'python'))
-      if newer(os.path.join(tempdir, 'html', 'cxx'),
+      if newer(os.path.join(tmp_man_dir, 'html', 'cxx'),
                os.path.join(builddir, 'cxx')):
          rmtree(os.path.join(builddir, 'cxx'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'cxx'),
+         copy_tree(os.path.join(tmp_man_dir, 'html', 'cxx'),
                    os.path.join(builddir, 'cxx'))
-      if newer(os.path.join(tempdir, 'html', 'cxx-api'),
+      if newer(os.path.join(tmp_man_dir, 'html', 'cxx-api'),
                os.path.join(builddir, 'cxx-api')):
          rmtree(os.path.join(builddir, 'cxx-api'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'cxx-api'),
+         copy_tree(os.path.join(tmp_man_dir, 'html', 'cxx-api'),
                    os.path.join(builddir, 'cxx-api'))
-      if newer(os.path.join(tempdir, 'html', 'ucpp'),
-               os.path.join(builddir, 'ucpp')):
-         rmtree(os.path.join(builddir, 'ucpp'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'ucpp'),
-                   os.path.join(builddir, 'ucpp'))
-      if newer(os.path.join(tempdir, 'html', 'ctool'),
-               os.path.join(builddir, 'ctool')):
-         rmtree(os.path.join(builddir, 'ctool'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'ctool'),
-                   os.path.join(builddir, 'ctool'))
-      if newer(os.path.join(tempdir, 'html', 'occ'),
-               os.path.join(builddir, 'occ')):
-         rmtree(os.path.join(builddir, 'occ'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'occ'),
-                   os.path.join(builddir, 'occ'))
-      if self.sxr and newer(os.path.join(tempdir, 'html', 'sxr'),
+      if self.sxr and newer(os.path.join(tmp_man_dir, 'html', 'sxr'),
                os.path.join(builddir, 'sxr')):
          rmtree(os.path.join(builddir, 'sxr'), 1)
-         copy_tree(os.path.join(tempdir, 'html', 'sxr'),
+         copy_tree(os.path.join(tmp_man_dir, 'html', 'sxr'),
                    os.path.join(builddir, 'sxr'))
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/Synopsis/print'))
          mkpath(builddir, 0777, self.verbose, self.dry_run)
-         copy_file(os.path.join(tempdir, 'Manual.pdf'),
+         copy_file(os.path.join(tmp_man_dir, 'Manual.pdf'),
                    os.path.join(builddir, 'Manual.pdf'))
 
    def build_tutorial(self):
