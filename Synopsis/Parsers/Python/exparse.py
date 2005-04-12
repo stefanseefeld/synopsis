@@ -127,23 +127,27 @@ class SuiteInfoBase:
 	    found, vars = match(IMPORT_STMT_PATTERN, node)
 	    while found:
 		imp = vars['import_spec']
-		if imp[0] != symbol.import_stmt: break #while found
-		if imp[1][1] == 'import':
-		    # import dotted_name
-		    names = map_rest(filter(lambda x: x[0] == symbol.dotted_name, imp[2:]))
-		    imps = map(get_names_only, names)
-		    #print "import",imps
-		    self._addImport(imps)
-		elif imp[1][1] == 'from':
-		    # from dotted_name import name, name, ...
-		    name = get_names_only(imp[2][1:])
-		    imps = get_names_only(imp[4:])
-		    #print "from",name,"import",imps
-		    self._addFromImport(name, imps)
-		else:
-		    print "Unknown import."
-		break #while found
-    
+                if sys.version_info[:2] < (2, 4):
+                    if imp[0] != symbol.import_stmt: break #while found
+                    if imp[1][1] == 'import':
+                        # import dotted_name
+                        names = map_rest(filter(lambda x: x[0] == symbol.dotted_name, imp[2:]))
+                        imps = map(get_names_only, names)
+                        #print "import",imps
+                        self._addImport(imps)
+                    elif imp[1][1] == 'from':
+                        # from dotted_name import name, name, ...
+                        name = get_names_only(imp[2][1:])
+                        imps = get_names_only(imp[4:])
+                        # print "from",name,"import",imps
+                        self._addFromImport(name, imps)
+                    else:
+                        print "Unknown import."
+                    break #while found
+                else:
+                    # Ignore import statements in python 2.4 for now.
+                    break;
+                    
     def _addImport(self, names):
 	for name in names:
 	    link = findModulePath(name[0])

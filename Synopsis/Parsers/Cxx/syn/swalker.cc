@@ -820,6 +820,7 @@ void SWalker::visit(PTree::TemplateDecl *node)
 PTree::Node *SWalker::translate_typeof(PTree::Node *spec, PTree::Node *declarations)
 {
   STrace trace("SWalker::translate_typeof");
+  return 0;
   nodeLOG(spec);
   PTree::Encoding enc = PTree::third(spec)->encoded_name();
   LOG("The name is: " << enc);
