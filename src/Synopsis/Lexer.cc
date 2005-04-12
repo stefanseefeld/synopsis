@@ -93,6 +93,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["__restrict__"] = Token::Ignore;
     my_keywords["__signed"] = Token::SIGNED;
     my_keywords["__signed__"] = Token::SIGNED;
+    my_keywords["typeof"] = Token::TYPEOF;
     my_keywords["__typeof"] = Token::TYPEOF;
     my_keywords["__typeof__"] = Token::TYPEOF;
   }

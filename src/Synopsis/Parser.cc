@@ -2098,7 +2098,11 @@ bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
 
     // gcc keyword typeof(name) means type of the given name
     if(my_lexer.look_ahead(0) == Token::TYPEOF)
+    {
+      // TODO: Do proper type analysis.
+      encode.anonymous();
       return typeof_expr(id);
+    }
   }
   while(true)
   {
@@ -3941,12 +3945,16 @@ bool Parser::typeof_expr(PTree::Node *&node)
   if ((t = my_lexer.get_token(tk2)) != '(')
     return false;
   PTree::Node *type = PTree::list(new PTree::Atom(tk2));
-//   PTree::Encoding name_encode;
+#if 1
   if (!expression(node)) return false;
-//   if (!node->is_atom())
-//     node = new PTree::Name(node, name_encode);
-//   else
-//     node = new PTree::Name(PTree::list(node), name_encode);
+#else
+  PTree::Encoding name_encode;
+  if (!name(node, name_encode)) return false; 	 
+  if (!node->is_atom())
+    node = new PTree::Name(node, name_encode);
+  else
+    node = new PTree::Name(PTree::list(node), name_encode);
+#endif
   type = PTree::snoc(type, node);
   if ((t = my_lexer.get_token(tk2)) != ')') return false;
   type = PTree::snoc(type, new PTree::Atom(tk2));

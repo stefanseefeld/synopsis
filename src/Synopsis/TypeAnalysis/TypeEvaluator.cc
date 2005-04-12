@@ -18,63 +18,68 @@ namespace
 std::string const TRUE = "true";
 std::string const FALSE = "false";
 
-char const *numeric_type(char const *position, size_t length)
+Type const *numeric_type(char const *position, size_t length)
 {
   // TODO: If there is no explicit specifier for signedness or long,
   //       simply assume 'int'. Implement 2.13.1 [lex.icon]
   if (length > 2 && *position == '0' && 
       (*(position + 1) == 'x' || *(position + 1) == 'X'))
     // hexadecimal literal
-    return "Ui";
+    return &UINT;
   else if (length > 1 && *position == '0' && *(position + 1) != '.')
     // octal literal
-    return "Ui";
+    return &UINT;
   else if (TRUE.compare(0, 4, position, length) == 0 ||
 	   FALSE.compare(0, 5, position, length) == 0)
-    return "b";
+    return &BOOL;
   char const *c = position;
   for (size_t i = 0; i != length; ++i, ++c)
   {
     if (*c == '.' || *c == 'E' || *c == 'e')
       // floating-point literal
-      return (*(position + length - 1) == 'l' || *(position + length - 1) == 'L' ?
-	      "d" : "f");
+      return (*(position + length - 1) == 'l' ||
+	      *(position + length - 1) == 'L' ? &DOUBLE : &FLOAT);
   }
   // integral literal
-  if (*(position + length - 1) == 'l' || *(position + length - 1) == 'L')
-    return (*(position + length - 2) == 'u' || *(position + length - 2) == 'U' ?
-	      "Ul" : "l");
-  return (*(position + length - 1) == 'u' || *(position + length - 1) == 'U' ?
-	  "Ui" : "i");
+  if (*(position + length - 1) == 'l' || 
+      *(position + length - 1) == 'L')
+    return (*(position + length - 2) == 'u' || 
+	    *(position + length - 2) == 'U' ? &ULONG : &LONG);
+  return (*(position + length - 1) == 'u' ||
+	  *(position + length - 1) == 'U' ? &UINT : &INT);
 }
 
 }
 
 Type const *TypeEvaluator::evaluate(Node const *node)
 {
-//   my_type.unknown();
+  my_type = 0;
   if (node) const_cast<Node *>(node)->accept(this);
   return my_type;
 }
 
 void TypeEvaluator::visit(Literal *node)
 {
-//   switch (node->type())
-//   {
-//     case Token::CharConst: my_type.set("c"); break;
-//     case Token::WideCharConst: my_type.set("w"); break;
-//     case Token::StringL: my_type.set("CPc"); break;
-//     case Token::WideStringL: my_type.set("CPw"); break;
-//     case Token::Constant:
-//       my_type.set(numeric_type(node->position(), node->length()));
-//       break;
-//     default:
-//       std::cerr << "unmatched type for literal " 
-// 		<< std::string(node->position(), node->length()) 
-// 		<< ' ' << node->type() << std::endl;
-//       my_type.set("c");
-//       break;
-//   }
+  switch (node->type())
+  {
+    case Token::CharConst: my_type = &CHAR; break;
+    case Token::WideCharConst: my_type = &WCHAR; break;
+    case Token::StringL: 
+      my_type = new Pointer(new CVType(&CHAR, CVType::CONST));
+      break;
+    case Token::WideStringL:
+      my_type = new Pointer(new CVType(&WCHAR, CVType::CONST));
+      break;
+    case Token::Constant:
+      my_type = numeric_type(node->position(), node->length());
+      break;
+    default:
+      std::cerr << "unmatched type for literal " 
+ 		<< std::string(node->position(), node->length()) 
+ 		<< ' ' << node->type() << std::endl;
+      my_type = &CHAR;
+      break;
+  }
 }
 
 void TypeEvaluator::visit(Identifier *node)
@@ -97,7 +102,8 @@ void TypeEvaluator::visit(Identifier *node)
 void TypeEvaluator::visit(PTree::This *)
 {
   // FIXME: TBD
-//   my_type.set(my_env->LookupThis());
+  //        * find the current scope (object)
+  //        * find its type
 }
 
 void TypeEvaluator::visit(PTree::Name *node)
@@ -128,7 +134,7 @@ void TypeEvaluator::visit(PTree::AssignExpr *node)
 
 void TypeEvaluator::visit(CondExpr *node)
 {
-//   my_type.set("b");
+  my_type = &BOOL;
 //   type_of(PTree::third(node));
 }
 
