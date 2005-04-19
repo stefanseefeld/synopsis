@@ -18,14 +18,18 @@ AC_ARG_WITH(python,
   PYTHON="python"
 )
 
+AC_ARG_WITH(syn-cxx,
+  [  --with-syn-cxx=PATH     specify the Synopsis C++ library prefix],
+  SYN_CXX="$with_syn_cxx",
+  SYN_CXX="/usr/local"
+)
+
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
 
-syn_inc="`cd ${srcdir}/../../../../src && pwd`"
-SYN_CPP="`PKG_CONFIG_PATH=../../../../src pkg-config --define-variable=includedir=${syn_inc} --cflags Synopsis`"
-syn_lib="`cd ../../../../src && pwd`"
-SYN_LIBS="`PKG_CONFIG_PATH=../../../../src pkg-config --define-variable=prefix=${syn_lib} --libs Synopsis`"
+SYN_CPP="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --cflags Synopsis-uninstalled`"
+SYN_LIBS="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --libs Synopsis-uninstalled`"
 AC_SUBST(SYN_CPP)
 AC_SUBST(SYN_LIBS)
 

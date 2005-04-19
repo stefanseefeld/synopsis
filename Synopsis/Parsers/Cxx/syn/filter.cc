@@ -23,7 +23,7 @@
 
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
-#include <Synopsis/Path.hh>
+#include <Support/Path.hh>
 #include "filter.hh"
 #include <map>
 #include <iostream>

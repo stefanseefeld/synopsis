@@ -3,12 +3,15 @@
 #
 
 include COPYING README MANIFEST.in setup.py autogen.sh
+exclude setup.cfg
 
 # python modules
 recursive-include   Synopsis *.py
 
+# Synopsis C++ API
+recursive-include   src *
+
 # C/C++ extensions
-recursive-include   Cxx-API *
 recursive-include   Synopsis/Parsers/Cpp *
 recursive-include   Synopsis/Parsers/C *
 recursive-include   Synopsis/Parsers/Cxx *
@@ -25,6 +28,8 @@ include             scripts/*
 
 # unit tests
 recursive-include   tests *
+# experimental code
+recursive-include   contrib *
 
 # suppress svn bookkeeping stuff ...
 global-exclude .svn

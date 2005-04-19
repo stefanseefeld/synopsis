@@ -5,7 +5,7 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/Path.hh>
+#include "Path.hh"
 
 #ifdef __WIN32__
 # include "Path-win32.cc"

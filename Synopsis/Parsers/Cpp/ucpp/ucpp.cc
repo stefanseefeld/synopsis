@@ -7,8 +7,8 @@
 
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/AST/TypeKit.hh>
-#include <Synopsis/Path.hh>
-#include <Synopsis/ErrorHandler.hh>
+#include <Support/Path.hh>
+#include <Support/ErrorHandler.hh>
 #include <vector>
 #include <string>
 #include <iostream>

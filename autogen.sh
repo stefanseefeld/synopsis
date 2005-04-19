@@ -11,7 +11,6 @@ conf()
 
 conf src
 conf src/Synopsis/gc
-conf Cxx-API
 conf Synopsis/Parsers/Cpp/ucpp
 conf Synopsis/Parsers/Cpp/wave
 conf Synopsis/Parsers/C

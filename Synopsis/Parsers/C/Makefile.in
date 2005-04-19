@@ -15,12 +15,12 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../../src -I . 
-CPPFLAGS+= -I $(srcdir) -I $(srcdir)/../../../src -I $(srcdir)/../../../Cxx-API/include
+CPPFLAGS:= @CPPFLAGS@ -I . 
+CPPFLAGS+= -I $(srcdir)
 CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../Cxx-API/lib/Cxx-API.a @SYN_LIBS@ @LIBS@
+LIBS	:= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 SRC	:= TypeTranslator.cc ASTTranslator.cc ParserImpl.cc

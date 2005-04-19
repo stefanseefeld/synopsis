@@ -7,7 +7,7 @@
 //
 
 #include <Python.h>
-#include <Synopsis/Path.hh>
+#include <Support/Path.hh>
 
 #include "swalker.hh"
 #include "linkstore.hh"

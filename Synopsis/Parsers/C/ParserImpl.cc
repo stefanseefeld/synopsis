@@ -6,11 +6,8 @@
 //
 
 #include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/ErrorHandler.hh>
-
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
-#include <Synopsis/ErrorHandler.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolLookup.hh>
@@ -18,6 +15,7 @@
 #include <Synopsis/Lexer.hh>
 #include <Synopsis/Parser.hh>
 #include "ASTTranslator.hh"
+#include <Support/ErrorHandler.hh>
 #include <fstream>
 
 using namespace Synopsis;

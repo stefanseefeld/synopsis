@@ -15,14 +15,13 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../../../src -I . 
-CPPFLAGS+= -I $(srcdir) -I $(srcdir)/../../../../src -I $(srcdir)/../../../../Cxx-API/include
+CPPFLAGS:= @CPPFLAGS@ -I . 
+CPPFLAGS+= -I $(srcdir)
 CPPFLAGS+= @SYN_CPP@ -I/usr/local/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../../Cxx-API/lib/Cxx-API.a 
-LIBS	+= -L/usr/local/lib -lboost_wave -lboost_filesystem 
+LIBS	:= -L/usr/local/lib -lboost_wave -lboost_filesystem 
 LIBS	+= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 

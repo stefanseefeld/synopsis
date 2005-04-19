@@ -13,15 +13,13 @@ builddir:= @builddir@
 PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
-CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../../src -I $(srcdir) -I $(srcdir)/../../../Cxx-API/include
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir)
 CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
-CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../Cxx-API/lib/Cxx-API.a @SYN_LIBS@ @LIBS@
+LIBS	:= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 OCC_SO	:= occ$(LIBRARY_EXT)
