@@ -10,6 +10,7 @@ from distutils.core import Command
 from distutils import sysconfig
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
+from distutils.util import get_platform
 from distutils.spawn import spawn, find_executable
 from shutil import *
 
@@ -24,19 +25,24 @@ class build_syn_clib (Command):
 
     def initialize_options (self):
 
+        self.build_base = 'build'
         self.build_clib = None
-        self.build_temp = None
+        self.build_ctemp = None
+
 
     def finalize_options (self):
 
-        self.set_undefined_options('build_ext',
-                                   ('build_lib', 'build_clib'),
-                                   ('build_temp', 'build_temp'))
+        if self.build_ctemp is None:
+            self.build_ctemp = os.path.join(self.build_base,
+                                           'ctemp.' + get_platform())
+        if self.build_clib is None:
+            self.build_clib = os.path.join(self.build_base,
+                                           'clib.' + get_platform())
+
 
     def run(self):
 
         self.build_src()
-        self.build_cxx_api()
 
     def build_src(self):
 
@@ -49,9 +55,9 @@ class build_syn_clib (Command):
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
-            path = string.replace(self.build_temp, '\\', '/') + '/src'
+            path = string.replace(self.build_ctemp, '\\', '/') + '/src'
         else:
-            path = os.path.join(self.build_temp, 'src')
+            path = os.path.join(self.build_ctemp, 'src')
         
         make = os.environ.get('MAKE', 'make')
 
@@ -70,31 +76,15 @@ class build_syn_clib (Command):
                       os.path.join(build_path, tool),
                       1, 1, 0, None, self.verbose, self.dry_run)
 
-    def build_cxx_api(self):
-
-        self.announce("building 'Cxx-API.a'")
-        if os.name == 'nt': 
-            # same as in config.py here: even on 'nt' we have to
-            # use posix paths because we run in a cygwin shell at this point
-            path = string.replace(self.build_temp, '\\', '/') + '/Cxx-API'
-        else:
-            path = os.path.join(self.build_temp, 'Cxx-API')
-        
-        make = os.environ.get('MAKE', 'make')
-
-        command = "%s -C %s %s"%(make, path, 'all')
-        spawn(['sh', '-c', command], self.verbose, self.dry_run)
-
     def get_source_files(self):
 
         def collect(arg, path, files):
-            files.extend(os.listdir(path))
-            print path, os.listdir(path)
+            arg.extend([os.path.join(path, f)
+                        for f in files if f[0] != '.']) # skip hidden files
         files = []
         os.path.walk('src', collect, files)
-        os.path.walk('Cxx-API', collect, files)
         return files
 
     def get_outputs(self):
 
-        return [] # no output, only temporaries
+        return [] # nothing to report here

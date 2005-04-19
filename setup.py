@@ -22,6 +22,7 @@ from Synopsis.dist.command.build_syn_ext import build_syn_ext
 from Synopsis.dist.command.test import test
 from Synopsis.dist.command.install_syn_clib import install_syn_clib
 from Synopsis.dist.command.install_syn import install_syn
+from Synopsis.dist.command.bdist_dpkg import bdist_dpkg
 
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
@@ -73,8 +74,10 @@ def add_documentation(all, directory, files):
 
    if '.svn' in files: files.remove('.svn')
    all.append((directory,
-               filter(os.path.isfile,
-                      map(lambda x:os.path.join(directory, x), files))))
+               [os.path.join(directory, file)
+                for file in files
+                if os.path.isfile(file)]))
+
 documentation = []
 os.path.walk('share/doc/Synopsis', add_documentation, documentation)
 data_files.extend(documentation)
@@ -85,7 +88,8 @@ setup(cmdclass={'config':config,
                 'build_ext':build_syn_ext,
                 'test':test,
                 'install_clib':install_syn_clib,
-                'install':install_syn},
+                'install':install_syn,
+                'bdist_dpkg':bdist_dpkg},
       name="synopsis",
       version=version,
       maintainer="Stefan Seefeld",
@@ -93,6 +97,7 @@ setup(cmdclass={'config':config,
       description="source code introspection tool",
       url="http://synopsis.fresco.org",
       download_url = 'http://synopsis.fresco.org/download',
+      license = 'LGPL',
       classifiers = ['Development Status :: 5 - Production/Stable',
                      'Environment :: Console',
                      'Environment :: Web Environment',

@@ -82,6 +82,7 @@ AC_SUBST(LIBEXT)
 AC_CONFIG_FILES([Synopsis/PTree/GC.hh
                  Makefile 
                  synopsis.py 
+                 Synopsis-uninstalled.pc
                  Synopsis.pc])
 
 mkdir -p lib
@@ -90,6 +91,7 @@ mkdir -p Synopsis/gc
 mkdir -p Synopsis/PTree
 mkdir -p Synopsis/SymbolLookup
 mkdir -p Synopsis/TypeAnalysis
+mkdir -p Support
 mkdir -p tools
 
 AC_OUTPUT

@@ -38,12 +38,11 @@ class build_syn_ext(build_ext):
     def get_source_files(self):
 
         def collect(arg, path, files):
-            files.extend(os.listdir(path))
-            print path, os.listdir(path)
-        files = []
+            arg.extend([os.path.join(path, file) for file in files])
+        sources = []
         for ext in self.extensions:
-            os.path.walk(ext[0], collect, files)
-        return files
+            os.path.walk(ext[0], collect, sources)
+        return sources
 
     def get_outputs(self):
 
@@ -52,13 +51,12 @@ class build_syn_ext(build_ext):
             # FIXME: this ugly hack is needed since the ucpp module
             # should be installed in the Cpp package, not Cpp.ucpp
             if ext[1][:4] in ['ucpp', 'wave']:
-                path = os.path.join(self.build_temp, os.path.dirname(ext[0]), ext[1])
+                path = os.path.join(self.build_lib, os.path.dirname(ext[0]), ext[1])
             else:
-                path = os.path.join(self.build_temp, ext[0], ext[1])
+                path = os.path.join(self.build_lib, ext[0], ext[1])
             #only append the files that actually could be built
             if os.path.isfile(path):
-                output.append(os.path.join(self.build_lib, ext[0], ext[1]))
-
+                output.append(path)
         return output
 
     def build_extension(self, ext, copy=True):

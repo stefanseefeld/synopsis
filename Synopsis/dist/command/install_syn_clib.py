@@ -3,6 +3,18 @@ from distutils.core import Command
 from distutils.errors import DistutilsOptionError
 from distutils.dir_util import mkpath
 from distutils.file_util import copy_file
+from distutils.util import change_root
+from distutils import sysconfig
+
+def collect_headers(arg, path, files):
+    """Collect headers to be installed."""
+
+    # For now at least the following are not part of the public API
+    if os.path.split(path)[1] in ['Support', 'Python', 'AST']:
+        return
+    arg.extend([os.path.join(path, f)
+                for f in files
+                if f.endswith('.hh') or f.endswith('.h')])
 
 class install_syn_clib(Command):
 
@@ -23,32 +35,61 @@ class install_syn_clib(Command):
                                    ('home', 'home'))
         self.set_undefined_options('build_clib',
                                    ('build_clib', 'build_dir'))
+
+        # the bdist commands set a 'root' attribute (equivalent to
+        # make's DESTDIR), which we have to merge in, if it exists.
+        install = self.distribution.get_command_obj('install')
+        install.ensure_finalized()
+
+        self.root = getattr(install, 'root')
+
     def run(self):
 
-        libfile = 'libSynopsis.so'
-        if not os.path.isfile(os.path.join(self.build_dir, 'lib', libfile)):
+        if os.name == 'nt':
+            LIBEXT = '.dll'
+        else:
+            LIBEXT = sysconfig.get_config_var('SO')
+        target = 'libSynopsis%s'%LIBEXT
+        if not os.path.isfile(os.path.join(self.build_dir, 'lib', target)):
             self.run_command('build_clib')
+            
+        if self.root:
+            prefix = change_root(self.root, self.prefix)
+        else:
+            prefix = self.prefix
 
-        libdir = os.path.join(self.prefix, 'lib')
+        libdir = os.path.join(prefix, 'lib')
         mkpath (libdir, 0777, self.verbose, self.dry_run)
-        copy_file(os.path.join(self.build_dir, 'lib', libfile),
-                  os.path.join(libdir, libfile),
+        copy_file(os.path.join(self.build_dir, 'lib', target),
+                  os.path.join(libdir, target),
                   1, 1, 0, None, self.verbose, self.dry_run)
 
-
-        def add_headers(all, directory, files):
-
-            headers = filter(lambda name:name.endswith('.hh'),
-                             map(lambda x:os.path.join(directory, x), files))
-            all.extend(headers)
-
         headers = []
-        os.path.walk(os.path.join('src', 'Synopsis'), add_headers, headers)
+        os.path.walk(os.path.join('src', 'Synopsis'), collect_headers, headers)
 
-        incdir = os.path.join(self.prefix, 'include')
+        incdir = os.path.join(prefix, 'include')
         for header in headers:
             target = os.path.join(incdir, header[4:])
             mkpath (os.path.dirname(target), 0777, self.verbose, self.dry_run)
             copy_file(header, target,
                       1, 1, 0, None, self.verbose, self.dry_run)
             
+    def get_outputs(self):
+
+        if self.root:
+            prefix = change_root(self.root, self.prefix)
+        else:
+            prefix = self.prefix
+
+        if os.name == 'nt':
+            LIBEXT = '.dll'
+        else:
+            LIBEXT = sysconfig.get_config_var('SO')
+        library = os.path.join(prefix, 'lib', 'libSynopsis%s'%LIBEXT)
+        headers = []
+        os.path.walk(os.path.join('src', 'Synopsis'), collect_headers, headers)
+        include_dir = os.path.join(prefix, 'include')
+        headers = [os.path.join(include_dir, h[4:]) for h in headers]
+        return [library] + headers
+        
+

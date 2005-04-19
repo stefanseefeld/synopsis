@@ -6,11 +6,9 @@
 //
 
 #include <Synopsis/AST/ASTKit.hh>
-#include <Synopsis/ErrorHandler.hh>
-
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
-#include <Synopsis/ErrorHandler.hh>
+#include <Support/ErrorHandler.hh>
 #include "ASTTranslator.hh"
 #include <memory>
 

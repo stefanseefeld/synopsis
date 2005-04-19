@@ -39,6 +39,8 @@ SRC	:= Trace \
 
 SRC 	:= $(patsubst %, Synopsis/%.cc, $(SRC))
 
+SUP	:= $(patsubst %, Support/%.cc, Path ErrorHandler)
+
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/PTree/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/SymbolLookup/*.hh))
@@ -50,8 +52,9 @@ HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
 DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/dump-symbols.cc)
 
 LIBRARY	:= lib/libSynopsis$(LIBRARY_EXT)
+SUPPORT := lib/libSupport.a
 TOOLS	:= bin/display-ptree bin/dump-symbols
-TARGETS	:= $(LIBRARY) $(TOOLS)
+TARGETS	:= $(LIBRARY) $(SUPPORT) $(TOOLS)
 
 vpath %.cc $(srcdir)
 vpath %.c $(srcdir)
@@ -62,6 +65,9 @@ all: $(TARGETS)
 
 $(LIBRARY): $(OBJ) $(GC_LIB)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+
+$(SUPPORT): $(patsubst %.cc, %.o, $(SUP))
+	$(AR) cru $@ $^
 
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
 	$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)

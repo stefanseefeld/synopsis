@@ -5,51 +5,53 @@
 // see the file COPYING for details.
 //
 
-#include <Synopsis/Path.hh>
+#include "Path.hh"
 #include <vector>
 #include <stdexcept>
 #include <cerrno>
-#include <cstdio>
-#include <windows.h>
-#include <io.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 using namespace Synopsis;
 
-const char Path::SEPARATOR = '\\';
+const char Path::SEPARATOR = '/';
 
 std::string Path::cwd()
 {
   static std::string path;
   if (path.empty())
-  {
-    DWORD size;
-    if ((size = ::GetCurrentDirectoryA(0, 0)) == 0)
+    for (long path_max = 32;; path_max *= 2)
     {
-      throw std::runtime_error("error accessing current working directory");
-    }
-    char *buf = new char[size];
-    if (::GetCurrentDirectoryA(size, buf) == 0)
-    {
+      char *buf = new char[path_max];
+      if (::getcwd(buf, path_max) == 0)
+      {
+	if (errno != ERANGE)
+	{
+	  delete [] buf;
+	  throw std::runtime_error(strerror(errno));
+	}
+      }
+      else
+      {
+	path = buf;
+	delete [] buf;
+	return path;
+      }
       delete [] buf;
-      throw std::runtime_error("error accessing current working directory");
     }
-    path = buf;
-    delete [] buf;
-  }
   return path;
 }
 
 std::string Path::normalize(const std::string &filename)
 {
   std::string value = filename;
-  char separator = '\\';
-  const char *pat1 = "\\.\\";
-  const char *pat2 = "\\..\\";
-  if (value[0] != separator &&
-      value.size() > 2 && value[1] != ':' && value[2] != '\\')
-    value.insert(0, cwd() + separator);
+  char separator = '/';
+  const char *pat1 = "/./";
+  const char *pat2 = "/../";
+  if (value[0] != separator)
+    value.insert(0, Path::cwd() + separator);
+
   // nothing to do...
   if (value.find(pat1) == std::string::npos &&
       value.find(pat2) == std::string::npos) return value;
@@ -100,7 +102,7 @@ void makedirs(const Path &path) throw(std::runtime_error)
     int error;
     if ((error = stat(dir.substr(0, cursor).c_str(), &st)) == -1 &&
 	errno == ENOENT)
-      mkdir(dir.substr(0, cursor).c_str());
+      mkdir(dir.substr(0, cursor).c_str(), 0755);
     else if (error) throw std::runtime_error(strerror(errno));
   }
 }

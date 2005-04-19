@@ -25,12 +25,26 @@ class config(build_ext):
          "the prefix to the garbage collector.")]
     boolean_options = build_ext.boolean_options[:] + ['disable-gc']
 
-    def initialize_options (self):
+    def initialize_options(self):
+
         build_ext.initialize_options(self)
         self.disable_gc = 0
         self.with_gc_prefix = ''
 
-    def finalize_options (self):
+    def finalize_options(self):
+
+        # set build_clib to build_lib if it was explicitely given,
+        # overriding the default value.
+        if self.build_temp:
+            self.build_ctemp = self.build_temp
+        else:
+            self.build_ctemp = os.path.join('build', 'ctemp.' + get_platform())
+
+        if self.build_lib:
+            self.build_clib = self.build_lib
+        else:
+            self.build_clib = os.path.join('build', 'clib.' + get_platform())
+
         build_ext.finalize_options(self)
         # only append the path once 
         self.extensions = []
@@ -38,36 +52,39 @@ class config(build_ext):
             if e[0] not in self.extensions:
                 self.extensions.append(e[0])
 
+
     def run(self):
 
-        self.config_extensions()
-
-    def config_extensions(self):
-
-        self.config_extension('src')
+        self.config('src', self.build_ctemp, self.build_clib)
         if not self.disable_gc:
             if os.name == 'nt':
                 # for the gc configuration on the win32 native platform
                 # set 'CC' explicitely to 'gcc -mno-cygwin'
                 os.environ['CC'] = "gcc -mno-cygwin"
-            self.config_extension('src/Synopsis/gc')
-        self.config_extension('Cxx-API')
-        for ext in self.extensions:
-            self.config_extension(ext)
-        # not really an extension, but as far as configuration is concerned,
-        # treated equally.
-        self.config_extension('tests')
-        self.config_extension('doc')
-        self.config_extension('contrib')
-            
-    def config_extension(self, ext):
+            self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
 
-        self.announce("configuring '%s'" % ext)
-        path = os.path.join(self.build_temp, ext)
+        for ext in self.extensions:
+            self.config(ext, self.build_temp, self.build_lib,
+                        '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
+
+        self.config('tests', self.build_temp, self.build_lib,
+                    '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
+        self.config('doc', self.build_ctemp, self.build_clib)
+        self.config('contrib', self.build_temp, self.build_lib,
+                    '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
+
+            
+    def config(self, component, build_temp, build_lib, args=''):
+        """Configure a component.
+        Depending on whether it depends on the Python C API, it will
+        be compiled into 'build_lib' or 'build_clib'."""
+
+        self.announce("configuring '%s'" % component)
+        path = os.path.join(build_temp, component)
         mkpath (path, 0777, self.verbose, self.dry_run)
-        srcdir = os.path.abspath(ext)
-        tempdir = os.path.abspath(os.path.join(self.build_temp, ext))
-        builddir = os.path.abspath(os.path.join(self.build_lib, ext))
+        srcdir = os.path.abspath(component)
+        tempdir = os.path.abspath(os.path.join(build_temp, component))
+        builddir = os.path.abspath(os.path.join(build_lib, component))
 
         cwd = os.getcwd()
         mkpath(tempdir, 0777, self.verbose, self.dry_run)
@@ -77,8 +94,8 @@ class config(build_ext):
             # the path to the configure script has to be expressed in posix style
             # because even if we are compiling for windows, this part is run within
             # a cygwin shell
-            configure = ('../' * (self.build_temp.count('\\') + ext.count('/')  + 2)
-                         + ext + '/configure')
+            configure = ('../' * (build_temp.count('\\') + component.count('/')  + 2)
+                         + component + '/configure')
             python = string.replace('`cygpath -a %s`'%os.path.dirname(sys.executable)
                                     + '/' + os.path.basename(sys.executable),
                                     '\\', '\\\\')
@@ -89,6 +106,7 @@ class config(build_ext):
         command = "%s --with-python=%s"%(configure, python)
         if self.disable_gc:
             command += " --disable-gc"
+        command += ' %s'%args
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)

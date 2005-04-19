@@ -9,7 +9,7 @@
 #include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
-#include <Synopsis/Path.hh>
+#include <Support/Path.hh>
 
 using namespace Synopsis;
 

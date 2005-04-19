@@ -18,9 +18,20 @@ AC_ARG_WITH(python,
   PYTHON="python"
 )
 
+AC_ARG_WITH(syn-cxx,
+  [  --with-syn-cxx=PATH     specify the Synopsis C++ library prefix],
+  SYN_CXX="$with_syn_cxx",
+  SYN_CXX="/usr/local"
+)
+
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
+
+SYN_CPP="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --cflags Synopsis-uninstalled`"
+SYN_LIBS="`PKG_CONFIG_PATH=$SYN_CXX pkg-config --libs Synopsis-uninstalled`"
+AC_SUBST(SYN_CPP)
+AC_SUBST(SYN_LIBS)
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
   AC_CHECK_FILE($PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))

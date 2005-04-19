@@ -15,11 +15,12 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 CC	:= @CC@
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(srcdir) -I $(srcdir)/../../../../Cxx-API/include -I @PYTHON_INCLUDE@
+CPPFLAGS:= @CPPFLAGS@ -I $(srcdir)
+CPPFLAGS+= @SYN_CPP@ -I/usr/local/include -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
-LIBS	:= ../../../../Cxx-API/lib/Cxx-API.a @LIBS@
+LIBS	:= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
 UCPP_FLAGS:= -DSYNOPSIS -DSTAND_ALONE -DAUDIT -DMEM_CHECK
