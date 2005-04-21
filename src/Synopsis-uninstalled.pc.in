@@ -1,0 +1,11 @@
+prefix=
+exec_prefix=
+libdir=@abs_builddir@/lib
+includedir=@srcdir@
+
+Name: Synopsis
+Description: C/C++ source code introspection tool
+Version: @PACKAGE_VERSION@
+Requires:
+Libs: -L${libdir} -lSupport -lSynopsis
+Cflags: -I@abs_top_builddir@ -I${includedir} @GC_CPP@ @CPPFLAGS@
