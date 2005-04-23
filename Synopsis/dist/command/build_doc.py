@@ -70,34 +70,23 @@ class build_doc(build.build):
       build_clib = self.distribution.get_command_obj('build_clib')
       build_clib.ensure_finalized()
 
-      for e in [('src', 'cxx'), ('Cxx-API', 'cxx-api')]:
+      tmpdir = os.path.join(build_clib.build_ctemp, 'src')
 
-         tmpdir = os.path.join(build_clib.build_temp, e[0])
+      # build the 'doc' target
+      spawn([make, '-C', tmpdir, 'doc'])
 
-         # replace <name>.so by <name>.syn
-         api = os.path.splitext(e[1])[0] + '.syn'
-         all = os.path.splitext(e[1])[0] + '-impl.syn'
-         
-         # build the 'doc' target
-         e = e[0], 'doc'
-         spawn([make, '-C', tmpdir, e[1]])
-
-         if (os.path.exists(os.path.join(tmpdir, api))
-             and newer(os.path.join(tmpdir, api),
-                       os.path.join(tmp_man_dir, api))):
-            copy_file(os.path.join(build_clib.build_temp, e[0], api),
-                      os.path.join(tmp_man_dir, api))
-         if os.path.exists(os.path.join(build_clib.build_temp, e[0], 'links')):
-            copy_tree(os.path.join(build_clib.build_temp, e[0], 'links'),
-                      os.path.join(tmp_man_dir, 'links'))
-         if os.path.exists(os.path.join(build_clib.build_temp, e[0], 'xref')):
-            copy_tree(os.path.join(build_clib.build_temp, e[0], 'xref'),
-                      os.path.join(tmp_man_dir, 'xref'))
-         if (os.path.exists(os.path.join(build_clib.build_temp, e[0], all))
-             and newer(os.path.join(build_clib.build_temp, e[0], all),
-                       os.path.join(tmp_man_dir, all))):
-            copy_file(os.path.join(build_clib.build_temp, e[0], all),
-                      os.path.join(tmp_man_dir, all))
+      for d in ['cxx.syn', 'cxx-impl.syn']:
+         src, dest = os.path.join(tmpdir, d), os.path.join(tmp_man_dir, d)
+         if os.path.exists(src) and newer(src, dest):
+            copy_file(src, dest)
+         else:
+            print 'not copying', src
+      for d in ['links', 'xref']:
+         src, dest = os.path.join(tmpdir, d), os.path.join(tmp_man_dir, d)
+         if os.path.exists(src) and newer(src, dest):
+            copy_tree(src, dest)
+         else:
+            print 'not copying', src
          
       # now run make inside doc/Manual to do the rest
 
@@ -115,26 +104,13 @@ class build_doc(build.build):
 
       builddir = os.path.abspath(os.path.join(self.build_lib,
                                               'share/doc/Synopsis/html/Manual'))
-      if newer(os.path.join(tmp_man_dir, 'html', 'python'),
-               os.path.join(builddir, 'python')):
-         rmtree(os.path.join(builddir, 'python'), 1)
-         copy_tree(os.path.join(tmp_man_dir, 'html', 'python'),
-                   os.path.join(builddir, 'python'))
-      if newer(os.path.join(tmp_man_dir, 'html', 'cxx'),
-               os.path.join(builddir, 'cxx')):
-         rmtree(os.path.join(builddir, 'cxx'), 1)
-         copy_tree(os.path.join(tmp_man_dir, 'html', 'cxx'),
-                   os.path.join(builddir, 'cxx'))
-      if newer(os.path.join(tmp_man_dir, 'html', 'cxx-api'),
-               os.path.join(builddir, 'cxx-api')):
-         rmtree(os.path.join(builddir, 'cxx-api'), 1)
-         copy_tree(os.path.join(tmp_man_dir, 'html', 'cxx-api'),
-                   os.path.join(builddir, 'cxx-api'))
-      if self.sxr and newer(os.path.join(tmp_man_dir, 'html', 'sxr'),
-               os.path.join(builddir, 'sxr')):
-         rmtree(os.path.join(builddir, 'sxr'), 1)
-         copy_tree(os.path.join(tmp_man_dir, 'html', 'sxr'),
-                   os.path.join(builddir, 'sxr'))
+      for d in ['python', 'cxx', 'sxr']:
+         src = os.path.join(tmp_man_dir, 'html', d)
+         dest = os.path.join(builddir, d)
+
+         if newer(src, dest):
+            rmtree(dest, True)
+            copy_tree(src, dest)
 
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,

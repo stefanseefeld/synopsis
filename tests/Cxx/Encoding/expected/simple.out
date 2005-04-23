@@ -1,36 +1,31 @@
 Declaration : 
  int a ;
-Declarator : 
-name : 
-[1]a
+Declarator : [1]a a
 a 
-type : 
-i
+type : i int
  
 Declaration : 
  double b ;
-Declarator : 
-name : 
-[1]b
+Declarator : [1]b b
 b 
-type : 
-d
+type : d double
  
 Declaration : 
- struct   {  } c ;
-Declarator : 
-name : 
-[1]c
+ struct   {
+} c ;
+ClassSpec : [5]`0000 `0000
+`0000 
+Declarator : [1]c c
 c 
-type : 
-[5]`0000
+type : [5]`0000 `0000
 `0000 
 Declaration : 
  void d ( int  , double  ) ;
-Declarator : 
-name : 
-[1]d
+Declarator : [1]d d
 d 
-type : 
-Fid_v
+type : Fid_v void(*)(int,double)
        
+Declarator : [1]e e
+e 
+type : i int
+ 

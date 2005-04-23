@@ -77,10 +77,14 @@ doc: cxx.syn cxx-impl.syn
 cxx.syn: $(HDR_SYN)
 	@echo linking C++ headers together
 	$(SYNOPSIS) link_cxx --output=$@ $^
+	touch 'links'
+	touch 'xref'
 
 cxx-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
 	$(SYNOPSIS) link_cxx --output=$@ $^
+	touch 'links'
+	touch 'xref'
 
 %.d: %.cc
 	@echo generating dependencies for $(@D)/$(<F)

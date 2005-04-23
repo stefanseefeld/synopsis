@@ -42,7 +42,7 @@ vpath Manual.texi $(srcdir)
 
 all: html pdf info
 
-html: html/python html/cxx html/cxx-api
+html: html/python html/cxx
 sxr: html/sxr
 pdf: Manual.pdf
 
@@ -56,7 +56,7 @@ html/sxr: sxr.syn
 	$(synopsis) sxr --url=$(sxr) --output=$@ $<
 	touch $@
 
-sxr.syn: python.syn cxx-api-impl.syn
+sxr.syn: python.syn cxx-impl.syn
 	@echo generating $@
 	$(synopsis) archive --output=$@ $^
 

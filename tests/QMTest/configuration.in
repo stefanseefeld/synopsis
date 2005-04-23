@@ -4,9 +4,4 @@
   'http://www.codesourcery.com/qm/dtds/2.1/-//qm/2.1/extension//en.dtd'>
 <extension class="synopsis_database.Database" kind="database">
   <argument name="srcdir"><text>@abs_top_srcdir@</text></argument>
-  <argument name="CXX"><text>@CXX@</text></argument>
-  <argument name="CPPFLAGS"><text>-I @abs_top_srcdir@/../Cxx-API/include @CPPFLAGS@</text></argument>
-  <argument name="CXXFLAGS"><text>@CXXFLAGS@</text></argument>
-  <argument name="LDFLAGS"><text>@LDFLAGS@</text></argument>
-  <argument name="LIBS"><text>@abs_top_builddir@/../Cxx-API/lib/Cxx-API.a @LIBS@</text></argument>
 </extension>

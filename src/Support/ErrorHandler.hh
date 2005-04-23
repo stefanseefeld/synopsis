@@ -5,8 +5,8 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_ErrorHandler_hh
-#define _Synopsis_ErrorHandler_hh
+#ifndef Synopsis_ErrorHandler_hh_
+#define Synopsis_ErrorHandler_hh_
 
 #include <string>
 

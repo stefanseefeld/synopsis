@@ -5,8 +5,8 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_Path_hh
-#define _Synopsis_Path_hh
+#ifndef Synopsis_Path_hh_
+#define Synopsis_Path_hh_
 
 #include <string>
 #include <stdexcept>

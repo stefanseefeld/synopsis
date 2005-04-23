@@ -12,30 +12,26 @@ from qm.test.test import Test
 from qm.test.resource import Resource
 from qm.test.result import Result
 
-import os
-import string
-import sys
+import os, sys, string, re
 
 class APITest(Test):
    """Compile and run a test to validate the C++ API."""
 
    arguments = [TextField(name="src", description="The source file."),
                 TextField(name="exe", description="The executable file."),
-                TextField(name="expected", description="The expected output file."),
-                TextField(name="CXX", description="The compiler command."),
-                TextField(name="CPPFLAGS", description="The preprocessor flags."),
-                TextField(name="CXXFLAGS", description="The compiler flags."),
-                TextField(name="LDFLAGS", description="The linker flags."),
-                TextField(name="LIBS", description="The libraries to link with.")]
+                TextField(name="expected", description="The expected output file.")]
 
    def compile(self, context, result):
       if not os.path.isdir(os.path.dirname(self.exe)):
          os.makedirs(os.path.dirname(self.exe))
 
-      command = '%s %s %s %s -o %s %s %s'%(self.CXX,
-                                           self.CPPFLAGS, self.CXXFLAGS,
-                                           self.LDFLAGS,
-                                           self.exe, self.src, self.LIBS)
+      CXX = context.get('CXX', 'c++')
+      CPPFLAGS = context.get('CPPFLAGS', '')
+      CXXFLAGS = context.get('CXXFLAGS', '')
+      LDFLAGS = context.get('LDFLAGS', '')
+      LIBS = context.get('LIBS', '')
+      command = '%s %s %s %s -o %s %s %s'%(CXX, CPPFLAGS, CXXFLAGS, LDFLAGS,
+                                           self.exe, self.src, LIBS)
       compiler = RedirectedExecutable()
       status = compiler.Run(string.split(command))
       if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
@@ -133,18 +129,23 @@ class CxxTest(Test):
                 TextField(name="output", description="The output files."),
                 TextField(name="expected", description="The expected output file.")]
 
+   _ld_paths = re.compile(r'-L\s*\S+')
+
    def run_applet(self, context, result):
 
       input = map(lambda x:os.path.join(self.srcdir, x), self.input)
       if not os.path.isdir(os.path.dirname(self.output)):
          os.makedirs(os.path.dirname(self.output))
 
+      # Make sure we see the right libraries during program loading.
+      LIBS=context.get('LIBS', '')
+      LD_PATHS=[p[2:].strip() for p in CxxTest._ld_paths.findall(LIBS)]
+      LD_LIBRARY_PATH = ':'.join(LD_PATHS)
+      LD_LIBRARY_PATH += ':' + os.environ.get('LD_LIBRARY_PATH', '')
+      os.environ['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
+
       test = RedirectedExecutable()
       command = '%s %s %s'%(self.applet, self.output, self.input)
-      # little hack to make sure the library we see is the one from
-      # the current build
-      # Is there a portable way to achieve this ?
-      os.environ['LD_LIBRARY_PATH'] = os.path.abspath('../src/lib')
       status = test.Run(command.split())
       if os.WIFSIGNALED(status):
          result.Fail('program killed with signal %i'%os.WTERMSIG(status))
