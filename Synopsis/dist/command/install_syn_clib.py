@@ -74,6 +74,12 @@ class install_syn_clib(Command):
             copy_file(header, target,
                       1, 1, 0, None, self.verbose, self.dry_run)
             
+        pkgdir = os.path.join(libdir, 'pkgconfig')
+        mkpath (pkgdir, 0777, self.verbose, self.dry_run)
+        copy_file(os.path.join(self.build_dir, 'Synopsis.pc'),
+                  os.path.join(pkgdir, 'Synopsis.pc'),
+                  1, 1, 0, None, self.verbose, self.dry_run)
+
     def get_outputs(self):
 
         if self.root:
@@ -86,10 +92,11 @@ class install_syn_clib(Command):
         else:
             LIBEXT = sysconfig.get_config_var('SO')
         library = os.path.join(prefix, 'lib', 'libSynopsis%s'%LIBEXT)
+        pkgconf = os.path.join(prefix, 'lib', 'pkgconfig', 'Synopsis.pc')
         headers = []
         os.path.walk(os.path.join('src', 'Synopsis'), collect_headers, headers)
         include_dir = os.path.join(prefix, 'include')
         headers = [os.path.join(include_dir, h[4:]) for h in headers]
-        return [library] + headers
+        return [library, pkgconf] + headers
         
 

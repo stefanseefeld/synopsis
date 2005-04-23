@@ -42,10 +42,6 @@ class build_syn_clib (Command):
 
     def run(self):
 
-        self.build_src()
-
-    def build_src(self):
-
         if os.name == 'nt':
             LIBEXT = '.dll'
         else:
@@ -64,17 +60,23 @@ class build_syn_clib (Command):
         command = "%s -C %s %s"%(make, path, 'all')
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
 
+        # copy library
         build_path = os.path.join(self.build_clib, 'lib')
         mkpath (build_path, 0777, self.verbose, self.dry_run)
         copy_file(os.path.join(path, os.path.join('lib', target)),
                   os.path.join(build_path, target),
                   1, 1, 0, None, self.verbose, self.dry_run)
+        # copy tools
         build_path = os.path.join(self.build_clib, 'bin')
         mkpath (build_path, 0777, self.verbose, self.dry_run)
         for tool in dircache.listdir(os.path.join(path, 'bin')):
             copy_file(os.path.join(path, 'bin', tool),
                       os.path.join(build_path, tool),
                       1, 1, 0, None, self.verbose, self.dry_run)
+        # copy pkgconfig file
+        copy_file(os.path.join(path, 'Synopsis.pc'),
+                  os.path.join(self.build_clib, 'Synopsis.pc'),
+                  1, 1, 0, None, self.verbose, self.dry_run)
 
     def get_source_files(self):
 
