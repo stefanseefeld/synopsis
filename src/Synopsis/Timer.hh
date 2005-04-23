@@ -5,8 +5,8 @@
 // see the file COPYING for details.
 //
 
-#ifndef _Synopsis_Timer_hh
-#define _Synopsis_Timer_hh
+#ifndef Synopsis_Timer_hh_
+#define Synopsis_Timer_hh_
 
 #include <ctime>
 

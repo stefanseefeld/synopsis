@@ -69,7 +69,7 @@ class config(build_ext):
 
         self.config('tests', self.build_temp, self.build_lib,
                     '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
-        self.config('doc', self.build_ctemp, self.build_clib)
+        self.config('doc', self.build_temp, self.build_lib)
         self.config('contrib', self.build_temp, self.build_lib,
                     '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
 

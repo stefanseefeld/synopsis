@@ -18,12 +18,7 @@ import os, string, dircache
 class Database(database.Database):
    """The Database stores the synopsis tests."""
 
-   arguments = [TextField(name="srcdir"),
-                TextField(name="CXX"),
-                TextField(name="CPPFLAGS"),
-                TextField(name="CXXFLAGS"),
-                TextField(name="LDFLAGS"),
-                TextField(name="LIBS")]
+   arguments = [TextField(name="srcdir")]
 
    def __init__(self, path, arguments):
 
@@ -38,18 +33,25 @@ class Database(database.Database):
    def get_build_path(self, id):
       return id.replace('.', os.sep)
 
+   def get_file_tests(self, path, ext = ''):
+      """tests are file names without extension"""
+      return [t[0]
+              for t in [os.path.splitext(x) for x in dircache.listdir(path)] 
+              if t[0] != '' and not ext or t[1] == ext]
+
+   def get_dir_tests(self, id, script):
+      """tests are directories if <script> exists"""
+      return [t for t in dircache.listdir(self.get_src_path(id))
+              if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
+
+   def get_dir_suites(self, id):
+      """by default all directories are suites"""
+      path = self.get_src_path(id)
+      return filter(lambda x: os.path.isdir(os.path.join(path, x)),
+                    dircache.listdir(path))
+
    def GetTestIds(self, suite = "", scan_subdirs = 0):
       """Return all test IDs that are part of the given suite."""
-
-      def get_file_tests(path, ext = ''):
-         """tests are file names without extension"""
-         return [t[0] for t in map(lambda x:os.path.splitext(x), dircache.listdir(path)) 
-                 if t[0] != '' and not ext or t[1] == ext] # splitext('.svn') == ('','svn') !!
-
-      def get_dir_tests(id, script):
-         """tests are directories if <script> exists"""
-         return [t for t in dircache.listdir(self.get_src_path(id))
-                 if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
 
       if not os.path.isdir(self.get_src_path(suite)):
          raise NoSuchSuiteError, suite
@@ -62,21 +64,24 @@ class Database(database.Database):
          if os.path.exists(os.path.join(self.get_build_path(suite), 'synopsis.py')):
             raise NoSuchSuiteError, suite
 
-         tests = get_dir_tests(suite, 'synopsis.py')
+         tests = self.get_dir_tests(suite, 'synopsis.py')
 
       elif suite.startswith('Cxx-API'):
          # if 'src' exists, it contains the tests
          path = os.path.join(self.get_src_path(suite), 'src')
          if os.path.isdir(path):
-            tests = get_file_tests(path, '.cc')
+            tests = self.get_file_tests(path, '.cc')
 
       elif suite.startswith('Cxx'):
          if os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
-            tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'), '.cc')
+            tests = self.get_file_tests(os.path.join(self.get_src_path(suite),
+                                                     'input'),
+                                   '.cc')
 
       else:
          if os.path.isfile(os.path.join(self.get_build_path(suite), 'synopsis.py')):
-            tests = get_file_tests(os.path.join(self.get_src_path(suite), 'input'))
+            tests = self.get_file_tests(os.path.join(self.get_src_path(suite),
+                                                     'input'))
 
       # ignore accidental inclusion of false tests / suites
       if '.svn' in tests: tests.remove('.svn')
@@ -87,17 +92,6 @@ class Database(database.Database):
    
    def GetSuiteIds(self, suite = "", scan_subdirs = 0):
       """Return all suite IDs that are part of the given suite."""
-
-      def get_dir_tests(id, script):
-         """tests are directories if <script> exists"""
-         return [t for t in dircache.listdir(self.get_src_path(id))
-                 if os.path.isfile(os.path.join(self.get_build_path(id), t, script))]
-
-      def get_dir_suites(id):
-         """by default all directories are suites"""
-         path = self.get_src_path(id)
-         return filter(lambda x: os.path.isdir(os.path.join(path, x)),
-                       dircache.listdir(path))
 
       if not os.path.isdir(self.get_src_path(suite)):
          raise NoSuchSuiteError, suite
@@ -114,23 +108,24 @@ class Database(database.Database):
          if os.path.exists(os.path.join(self.get_build_path(suite), 'synopsis.py')):
             raise NoSuchSuiteError, suite
 
-         tests = get_dir_tests(suite, 'synopsis.py')
-         suites = [s for s in get_dir_suites(suite) if s not in tests]
+         tests = self.get_dir_tests(suite, 'synopsis.py')
+         suites = [s for s in self.get_dir_suites(suite) if s not in tests]
 
       elif suite.startswith('Cxx-API'):
          # if 'src' exists, it contains the tests
          path = os.path.join(self.get_src_path(suite), 'src')
          if not os.path.isdir(path):
-            suites = get_dir_suites(suite)
+            suites = self.get_dir_suites(suite)
 
       elif suite.startswith('Cxx'):
          if not os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
-            suites = get_dir_suites(suite)
+            suites = self.get_dir_suites(suite)
             suites.remove('src')
 
       else:
-         if not os.path.isfile(os.path.join(self.get_build_path(suite), 'synopsis.py')):
-            suites = get_dir_suites(suite)
+         if not os.path.isfile(os.path.join(self.get_build_path(suite),
+                                            'synopsis.py')):
+            suites = self.get_dir_suites(suite)
 
       # ignore accidental inclusion of false tests / suites
       if '.svn' in suites: suites.remove('.svn')
