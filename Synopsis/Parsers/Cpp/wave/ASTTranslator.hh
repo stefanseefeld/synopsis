@@ -42,7 +42,8 @@ public:
  
   void rescanned_macro(Container const &result);
 
-  void opened_include_file(std::string const &filename, 
+  void opened_include_file(std::string const &dir, 
+			   std::string const &filename, 
 			   std::size_t include_depth,
 			   bool is_system_include);
 

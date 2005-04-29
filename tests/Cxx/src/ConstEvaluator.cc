@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     std::string input;
     if (argv[1] == std::string("-d"))
     {
-      Trace::enable_debug();
+      Trace::enable(Trace::ALL);
       output = argv[2];
       input = argv[3];
     }

@@ -53,7 +53,7 @@ Table::Table(Language l)
 
 Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
 {
-  Trace trace("Table::enter_namespace");
+  Trace trace("Table::enter_namespace", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return *this;
   Scope *scope = my_scopes.top()->find_scope(spec);
   if (!scope)
@@ -83,7 +83,7 @@ Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
 
 Table &Table::enter_class(PTree::ClassSpec const *spec)
 {
-  Trace trace("Table::enter_class");
+  Trace trace("Table::enter_class", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return *this;
   Scope *scope = my_scopes.top()->find_scope(spec);
   if (!scope)
@@ -98,7 +98,7 @@ Table &Table::enter_class(PTree::ClassSpec const *spec)
 
 Table &Table::enter_function(PTree::Declaration const *decl)
 {
-  Trace trace("Table::enter_function");
+  Trace trace("Table::enter_function", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return *this;
   Scope *scope = my_scopes.top()->find_scope(decl);
   if (!scope)
@@ -113,7 +113,7 @@ Table &Table::enter_function(PTree::Declaration const *decl)
 
 Table &Table::enter_block(PTree::List const *block)
 {
-  Trace trace("Table::enter_block");
+  Trace trace("Table::enter_block", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return *this;
   Scope *scope = my_scopes.top()->find_scope(block);
   if (!scope)
@@ -128,7 +128,7 @@ Table &Table::enter_block(PTree::List const *block)
 
 void Table::leave_scope()
 {
-  Trace trace("Table::leave_scope");
+  Trace trace("Table::leave_scope", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Scope *top = my_scopes.top();
   my_scopes.pop();
@@ -142,7 +142,7 @@ Scope &Table::current_scope()
 
 void Table::declare(Declaration *d)
 {
-  Trace trace("Table::declare(Declaration *)");
+  Trace trace("Table::declare(Declaration *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Node *decls = third(d);
   if(is_a(decls, Token::ntDeclarator))
@@ -200,7 +200,7 @@ void Table::declare(Declaration *d)
 
 void Table::declare(Typedef *td)
 {
-  Trace trace("Table::declare(Typedef *)");
+  Trace trace("Table::declare(Typedef *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Node *declarations = third(td);
   while(declarations)
@@ -219,7 +219,7 @@ void Table::declare(Typedef *td)
 
 void Table::declare(EnumSpec *spec)
 {
-  Trace trace("Table::declare(EnumSpec *)");
+  Trace trace("Table::declare(EnumSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Node *tag = second(spec);
   Encoding const &name = spec->encoded_name();
@@ -265,7 +265,7 @@ void Table::declare(EnumSpec *spec)
 
 void Table::declare(NamespaceSpec *spec)
 {
-  Trace trace("Table::declare(NamespaceSpec *)");
+  Trace trace("Table::declare(NamespaceSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   // Beware anonymous namespaces !
   Encoding name = (second(spec) ?
@@ -283,7 +283,7 @@ void Table::declare(NamespaceSpec *spec)
 
 void Table::declare(ClassSpec *spec)
 {
-  Trace trace("Table::declare(ClassSpec *)");
+  Trace trace("Table::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Encoding const &name = spec->encoded_name();
   Scope *scope = my_scopes.top();
@@ -292,7 +292,7 @@ void Table::declare(ClassSpec *spec)
 
 void Table::declare(TemplateDecl *tdecl)
 {
-  Trace trace("Table::declare(TemplateDecl *)");
+  Trace trace("Table::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   PTree::Node *body = PTree::nth(tdecl, 4);
   PTree::ClassSpec *class_spec = get_class_template_spec(body);
@@ -312,7 +312,7 @@ void Table::declare(TemplateDecl *tdecl)
 
 void Table::declare(PTree::Using *ustmt)
 {
-  Trace trace("Table::declare(Using *)");
+  Trace trace("Table::declare(Using *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   my_scopes.top()->use(ustmt);
 }

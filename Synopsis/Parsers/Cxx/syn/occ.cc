@@ -142,7 +142,7 @@ void error()
 
 void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
 {
-  Trace trace("RunOpencxx");
+  Trace trace("RunOpencxx", Trace::TRANSLATION);
   std::set_unexpected(unexpected);
 
   ErrorHandler error_handler(error);
@@ -211,7 +211,7 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   Py_INCREF(ast);
 
   if (verbose) ::verbose = true;
-  if (debug) Trace::enable_debug();
+  if (debug) Trace::enable(Trace::ALL);
   if (main_file_only) syn_main_only = true;
 
   if (!src || *src == '\0')
@@ -252,7 +252,7 @@ PyObject *occ_print(PyObject *self, PyObject *args)
     return 0;
 
   if (verbose) ::verbose = true;
-  if (debug) Trace::enable_debug();
+  if (debug) Trace::enable(Trace::ALL);
 
   if (!src || *src == '\0')
   {

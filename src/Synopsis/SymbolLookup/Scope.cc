@@ -20,7 +20,7 @@ Scope::~Scope()
 
 void Scope::declare(Encoding const &name, Symbol const *symbol)
 {
-  Trace trace("Scope::declare");
+  Trace trace("Scope::declare", Trace::SYMBOLLOOKUP);
   trace << name;
   // Conditions under which a symbol can be bound to multiple
   // objects:
@@ -83,7 +83,7 @@ Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) cons
 
 SymbolSet Scope::find(Encoding const &name, bool scope) const throw()
 {
-  Trace trace("Scope::find");
+  Trace trace("Scope::find", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolTable::const_iterator l = my_symbols.lower_bound(name);
   SymbolTable::const_iterator u = my_symbols.upper_bound(name);
@@ -106,7 +106,7 @@ SymbolSet Scope::find(Encoding const &name, bool scope) const throw()
 
 SymbolSet Scope::lookup(PTree::Encoding const &name) const
 {
-  Trace trace("Scope::lookup");
+  Trace trace("Scope::lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   // If the name is not qualified, start an unqualified lookup.
   if (!name.is_qualified())
@@ -143,7 +143,7 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
 
 SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
 {
-  Trace trace("Scope::qualified_lookup");
+  Trace trace("Scope::qualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();

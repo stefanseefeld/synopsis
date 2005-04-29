@@ -25,7 +25,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_types(my_ast.types(), v, d),
     my_verbose(v), my_debug(d) 
 {
-  Trace trace("ASTTranslator::ASTTranslator");  
+  Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
 
   // determine canonical filenames
   Path path = Path(my_raw_filename).abs();
@@ -45,7 +45,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
 
 void ASTTranslator::translate(PTree::Node *ptree, Buffer &buffer)
 {
-  Trace trace("ASTTranslator::translate");
+  Trace trace("ASTTranslator::translate", Trace::TRANSLATION);
   my_buffer = &buffer;
   ptree->accept(this);
 }
@@ -58,7 +58,7 @@ void ASTTranslator::visit(PTree::List *node)
 
 void ASTTranslator::visit(PTree::Declarator *declarator)
 {
-  Trace trace("ASTTranslator::visit(PTree::Declarator *)");
+  Trace trace("ASTTranslator::visit(PTree::Declarator *)", Trace::TRANSLATION);
   trace << declarator;
   if (!PTree::first(declarator)) return; // empty
 
@@ -116,7 +116,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 
 void ASTTranslator::visit(PTree::Declaration *declaration)
 {
-  Trace trace("ASTTranslator::visit(PTree::Declaration *)");
+  Trace trace("ASTTranslator::visit(PTree::Declaration *)", Trace::TRANSLATION);
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
   my_declaration = declaration;
@@ -126,7 +126,7 @@ void ASTTranslator::visit(PTree::Declaration *declaration)
 
 void ASTTranslator::visit(PTree::ClassSpec *class_spec)
 {
-  Trace trace("ASTTranslator::visit(PTree::ClassSpec *)");
+  Trace trace("ASTTranslator::visit(PTree::ClassSpec *)", Trace::TRANSLATION);
   
   bool visible = update_position(class_spec);
 
@@ -179,7 +179,7 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
 
 void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
 {
-  Trace trace("ASTTranslator::visit(PTree::EnumSpec *)");
+  Trace trace("ASTTranslator::visit(PTree::EnumSpec *)", Trace::TRANSLATION);
 
   bool visible = update_position(enum_spec);
   std::string name;
@@ -240,7 +240,7 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
 
 void ASTTranslator::visit(PTree::Typedef *typed)
 {
-  Trace trace("ASTTranslator::visit(PTree::Typedef *)");
+  Trace trace("ASTTranslator::visit(PTree::Typedef *)", Trace::TRANSLATION);
 
   bool visible = update_position(typed);
 
@@ -276,7 +276,7 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
 					 AST::TypeList types,
 					 AST::Function::Parameters &parameters)
 {
-  Trace trace("ASTTranslator::translate_parameters");
+  Trace trace("ASTTranslator::translate_parameters", Trace::TRANSLATION);
 
   while (node)
   {
@@ -357,7 +357,7 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
 
 void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
 {
-  Trace trace("ASTTranslator::add_comments");
+  Trace trace("ASTTranslator::add_comments", Trace::TRANSLATION);
   if (!declarator || !c) return;
   
   Python::List comments;
@@ -433,7 +433,7 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
 
 bool ASTTranslator::update_position(PTree::Node *node)
 {
-  Trace trace("ASTTranslator::update_position");
+  Trace trace("ASTTranslator::update_position", Trace::TRANSLATION);
 
   std::string filename;
   my_lineno = my_buffer->origin(node->begin(), filename);

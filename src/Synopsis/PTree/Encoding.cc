@@ -74,7 +74,7 @@ private:
 
 std::string Unmangler::unmangle_name()
 {
-  Trace trace("Unmangler::unmangle_name()");
+  Trace trace("Unmangler::unmangle_name()", Trace::PTREE);
   size_t length = *my_cursor++ - 0x80;
   std::string name(length, '\0');
   std::copy(my_cursor, my_cursor + length, name.begin());
@@ -84,7 +84,7 @@ std::string Unmangler::unmangle_name()
 
 std::string Unmangler::unmangle()
 {
-  Trace trace("Unmangler::unmangle()");
+  Trace trace("Unmangler::unmangle()", Trace::PTREE);
   std::string premod, postmod;
   std::string name;
   std::string base;
@@ -194,7 +194,7 @@ std::string Unmangler::unmangle()
 
 std::string Unmangler::unmangle_qname()
 {
-  Trace trace("Unmangler::unmangle_qname()");
+  Trace trace("Unmangler::unmangle_qname()", Trace::PTREE);
   // Qualified type: first is num of scopes (at least one), each a name.
   std::string qname;
   int scopes = *my_cursor++ - 0x80;
@@ -235,7 +235,7 @@ std::string Unmangler::unmangle_qname()
 
 std::string Unmangler::unmangle_func(std::string& postmod)
 {
-  Trace trace("Unmangler::unmangle_func()");
+  Trace trace("Unmangler::unmangle_func()", Trace::PTREE);
   // Function ptr. Encoded same as function
   std::string premod;
   // Move * from postmod to funcptr's premod. This makes the output be
@@ -266,7 +266,7 @@ std::string Unmangler::unmangle_func(std::string& postmod)
 
 std::string Unmangler::unmangle_template()
 {
-  Trace trace("Unmangler::unmangle_template()");
+  Trace trace("Unmangler::unmangle_template()", Trace::PTREE);
 
   // Template type: Name first, then size of arg field, then arg
   // types eg: T6vector54cell <-- 5 is len of 4cell
