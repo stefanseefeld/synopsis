@@ -9,5 +9,5 @@
 
 using namespace Synopsis;
 
-bool   Trace::my_debug = false;
+unsigned int Trace::my_mask = Trace::NONE;
 size_t Trace::my_level = 0;

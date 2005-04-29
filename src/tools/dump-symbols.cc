@@ -28,7 +28,7 @@ int main(int argc, char **argv)
   input = argv[argc - 1];
   try
   {
-    if (debug) Trace::enable_debug();
+    if (debug) Trace::enable(Trace::SYMBOLLOOKUP);
 
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);

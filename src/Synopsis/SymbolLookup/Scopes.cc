@@ -18,7 +18,7 @@ using namespace SymbolLookup;
 SymbolSet TemplateParameterScope::unqualified_lookup(Encoding const &name,
 						     bool scope) const
 {
-  Trace trace("TemplateParameterScope::unqualified_lookup");
+  Trace trace("TemplateParameterScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, scope);
   return symbols;
@@ -33,7 +33,7 @@ void TemplateParameterScope::dump(std::ostream &os, size_t in) const
 SymbolSet LocalScope::unqualified_lookup(Encoding const &name,
 					 bool scope) const
 {
-  Trace trace("LocalScope::unqualified_lookup");
+  Trace trace("LocalScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, scope);
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
@@ -68,7 +68,7 @@ void FunctionScope::use(PTree::Using const *udecl)
 SymbolSet FunctionScope::unqualified_lookup(Encoding const &name,
 					    bool scope) const
 {
-  Trace trace("FunctionScope::unqualified_lookup");
+  Trace trace("FunctionScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, scope);
   if (symbols.size()) return symbols;
@@ -101,7 +101,7 @@ std::string FunctionScope::name() const
 SymbolSet PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
 					     bool scope) const
 {
-  Trace trace("PrototypeScope::unqualified_lookup");
+  Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   return SymbolSet();
 }
 
@@ -114,7 +114,7 @@ void PrototypeScope::dump(std::ostream &os, size_t in) const
 SymbolSet Class::unqualified_lookup(Encoding const &name,
 				    bool scope) const
 {
-  Trace trace("Class::unqualified_lookup");
+  Trace trace("Class::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, scope);
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
@@ -172,7 +172,7 @@ void Namespace::use(PTree::Using const *udecl)
 SymbolSet Namespace::unqualified_lookup(Encoding const &name,
 					bool scope) const
 {
-  Trace trace("Namespace::unqualified_lookup");
+  Trace trace("Namespace::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, scope);
   if (symbols.size()) return symbols;

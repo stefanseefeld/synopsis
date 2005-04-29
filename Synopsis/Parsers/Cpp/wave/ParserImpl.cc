@@ -80,7 +80,7 @@ PyObject *parse(PyObject *self, PyObject *args)
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
-  if (debug) Synopsis::Trace::enable_debug();
+  if (debug) Synopsis::Trace::enable(Trace::ALL);
 
   if (!input_file || *input_file == '\0')
   {
@@ -114,8 +114,6 @@ PyObject *parse(PyObject *self, PyObject *args)
 			      std::string("-D__cplusplus=1")),
 		  flags.end());
     }
-    ctx.add_include_path(".");
-    ctx.set_sysinclude_delimiter();
     for (std::vector<char const *>::iterator i = flags.begin();
 	 i != flags.end();
 	 ++i)
@@ -123,7 +121,10 @@ PyObject *parse(PyObject *self, PyObject *args)
       if (**i == '-')
       {
 	if (*(*i + 1) == 'I')
+	{
 	  ctx.add_include_path(*i + 2);
+	  ctx.add_sysinclude_path(*i + 2);
+	}
 	else if (*(*i + 1) == 'D')
 	  ctx.add_macro_definition(*i + 2);
 	else if (*(*i + 1) == 'U')

@@ -80,7 +80,7 @@ int main(int argc, char **argv)
   input = argv[argc - 1];
   try
   {
-    if (debug) Trace::enable_debug();
+    if (debug) Trace::enable(Trace::ALL);
 
     PTree::Encoding::do_init_static();
 

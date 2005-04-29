@@ -17,6 +17,15 @@ namespace Synopsis
 class Trace
 {
 public:
+  // This category list is incomplete and needs to be filled in as
+  // more code is being written.
+  enum Category { NONE=0x0,
+		  PTREE=0x01,
+		  SYMBOLLOOKUP=0x02,
+		  PARSING=0x04,
+		  TRANSLATION=0x08,
+		  ALL=0xff};
+
   struct Entry
   {
     Entry(bool e);
@@ -28,15 +37,16 @@ public:
     mutable bool enabled;
   };
   friend struct Entry;
-  Trace(const std::string &s) : my_scope(s)
+  Trace(const std::string &s, unsigned int c)
+    : my_scope(s), my_visibility(my_mask & c)
   {
-    if (!my_debug) return;
+    if (!my_visibility) return;
     std::cout << indent() << "entering " << my_scope << std::endl;
     ++my_level;
   }
   ~Trace()
   {
-    if (!my_debug) return;
+    if (!my_visibility) return;
     --my_level;
     std::cout << indent() << "leaving " << my_scope << std::endl;
   }
@@ -44,14 +54,15 @@ public:
   template <typename T>
   Entry operator<<(T const &t) const;
 
-  static void enable_debug() { my_debug = true;}
+  static void enable(unsigned int mask = ALL) { my_mask = mask;}
 
 private:
   static std::string indent() { return std::string(my_level, ' ');}
 
-  static bool   my_debug;
-  static size_t my_level;
-  std::string   my_scope;
+  static unsigned int my_mask;
+  static size_t       my_level;
+  bool                my_visibility;
+  std::string         my_scope;
 };
 
 inline Trace::Entry::Entry(bool e) 
@@ -78,7 +89,7 @@ inline Trace::Entry const &Trace::Entry::operator<<(T const &t) const
 template <typename T>
 inline Trace::Entry Trace::operator<<(T const &t) const
 {
-  Entry entry(my_debug);
+  Entry entry(my_visibility);
   return entry << t;
 }
 

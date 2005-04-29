@@ -7,7 +7,7 @@
 
 #include "ASTTranslator.hh"
 #include <Synopsis/Trace.hh>
-#include <Synopsis/Path.hh>
+#include <Support/Path.hh>
 
 using namespace Synopsis;
 namespace wave = boost::wave;
@@ -23,7 +23,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_mask_counter(0),
     my_verbose(v), my_debug(d) 
 {
-  Trace trace("ASTTranslator::ASTTranslator");
+  Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
   my_file_stack.push(lookup_source_file(my_raw_filename, true));
 }
 
@@ -33,7 +33,7 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
 						  Token const &macrocall,
 						  std::vector<Container> const &arguments) 
 {
-  Trace trace("ASTTranslator::expand_function_like_macro");
+  Trace trace("ASTTranslator::expand_function_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
   std::cout << macrocall.get_position() << ": "
 	    << macrocall.get_value() << "(";
@@ -52,7 +52,7 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
 						Container const &definition,
 						Token const &macrocall)
 {
-  Trace trace("ASTTranslator::expand_object_like_macro");
+  Trace trace("ASTTranslator::expand_object_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
   std::cout << macrocall.get_position() << ": "
 	    << macrocall.get_value() << std::endl;
@@ -60,22 +60,23 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
  
 void ASTTranslator::expanded_macro(Container const &result)
 {
-  Trace trace("ASTTranslator::expand_macro");
+  Trace trace("ASTTranslator::expand_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
  
 void ASTTranslator::rescanned_macro(Container const &result)
 {
-  Trace trace("ASTTranslator::rescanned_macro");
+  Trace trace("ASTTranslator::rescanned_macro", Trace::TRANSLATION);
   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
 
-void ASTTranslator::opened_include_file(std::string const &filename, 
+void ASTTranslator::opened_include_file(std::string const &dir, 
+					std::string const &filename, 
 					std::size_t include_depth,
 					bool is_system_include)
 {
-  Trace trace("ASTTranslator::opened_include_file");
+  Trace trace("ASTTranslator::opened_include_file", Trace::TRANSLATION);
   if (my_mask_counter)
   {
     ++my_mask_counter;
@@ -98,7 +99,7 @@ void ASTTranslator::opened_include_file(std::string const &filename,
 
 void ASTTranslator::returning_from_include_file()
 {
-  Trace trace("ASTTranslator::returning_from_include_file");
+  Trace trace("ASTTranslator::returning_from_include_file", Trace::TRANSLATION);
   if (my_mask_counter < 2) my_file_stack.pop();
   // if the file was masked, decrement the counter
   if (my_mask_counter) --my_mask_counter;
