@@ -56,9 +56,9 @@ void Scope::declare(Encoding const &name, Symbol const *symbol)
   my_symbols.insert(std::make_pair(name, symbol));
 }
 
-void Scope::use(PTree::Using const *udecl)
+void Scope::use(PTree::UsingDirective const *udir)
 {
-  throw InternalError("Invalid use of 'using' declaration.");
+  throw InternalError("Invalid use of using directive in this scope.");
 }
 
 Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) const
@@ -156,7 +156,7 @@ SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
 
   // find symbol locally
   SymbolSet symbols = find(symbol_name);
-  if (symbols.empty()) throw Undefined(symbol_name);
+  if (symbols.empty()) return symbols; // nothing found
 
   // If the remainder is empty, just return the found symbol(s).
   else if (remainder.empty()) return symbols;

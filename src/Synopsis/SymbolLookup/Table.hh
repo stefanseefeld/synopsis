@@ -56,7 +56,8 @@ public:
   //. declare the class as a new TYPE
   void declare(PTree::ClassSpec *);
   void declare(PTree::TemplateDecl *);
-  void declare(PTree::Using *);
+  void declare(PTree::UsingDirective *);
+  void declare(PTree::UsingDeclaration *);
 
   //. look up the encoded name and return a set of matching symbols.
   virtual std::set<Symbol const *> lookup(PTree::Encoding const &) const;

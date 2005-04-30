@@ -118,8 +118,9 @@ public:
   void visit(PTree::MetaclassDecl *);
   void visit(PTree::LinkageSpec *);
   void visit(PTree::NamespaceSpec *);
-  void visit(PTree::Using *);
+  void visit(PTree::UsingDirective *);
   void visit(PTree::Declaration *);
+  void visit(PTree::UsingDeclaration *);
   void visit(PTree::Name *node) { translate_variable(node);}
   void visit(PTree::AccessSpec *);
   void visit(PTree::AccessDecl *);

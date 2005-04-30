@@ -50,9 +50,10 @@ public:
   FunctionScope(PTree::Declaration const *decl, Scope const *outer)
     : my_decl(decl), my_outer(outer->ref()) {}
 
-  virtual void use(PTree::Using const *);
+  virtual void use(PTree::UsingDirective const *);
   virtual Scope const *global() const { return my_outer->global();}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
+  virtual SymbolSet qualified_lookup(PTree::Encoding const &) const;
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
@@ -118,9 +119,10 @@ public:
   }
   Namespace *find_namespace(std::string const &name) const;
 
-  virtual void use(PTree::Using const *);
+  virtual void use(PTree::UsingDirective const *);
   virtual Scope const *global() const { return my_outer ? my_outer->global() : this;}
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &, bool) const;
+  virtual SymbolSet qualified_lookup(PTree::Encoding const &) const;
 
   // FIXME: should that really be a string ? It may be better to be conform with
   // Class::name, which, if the class is a template, can't be a string (or can it ?)

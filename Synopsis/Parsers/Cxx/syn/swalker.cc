@@ -1507,19 +1507,15 @@ void SWalker::visit(PTree::EnumSpec *node)
   if (my_links) my_links->link(PTree::second(node), theEnum);
 }
 
-void SWalker::visit(PTree::Using *node)
+void SWalker::visit(PTree::UsingDirective *node)
 {
-  STrace trace("SWalker::visit(PTree::Using*)");
+  STrace trace("SWalker::visit(PTree::UsingDirective*)");
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  bool is_namespace = false;
   PTree::Node *p = PTree::rest(node);
-  if (*PTree::first(p) == "namespace")
-  {
-    if (my_links) my_links->span(PTree::first(p), "file-keyword");
-    // Find namespace to alias
-    p = PTree::rest(p);
-    is_namespace = true;
-  }
+  if (my_links) my_links->span(PTree::first(p), "file-keyword");
+  // Find namespace to alias
+  p = PTree::rest(p);
+
   // Find name that we are looking up, and make a new ptree list for linking it
   p = p->car(); // p now points to the 'PTree::Name' child of 'PTree::Using'
   PTree::Node *p_name = PTree::snoc(0, p->car());
@@ -1546,21 +1542,58 @@ void SWalker::visit(PTree::Using *node)
   {
     Types::Named* type = my_lookup->lookupType(name);
     if (my_links) my_links->link(p_name, type);
-    if (is_namespace)
+    // Check for '=' alias
+    // Huh ? '=' isn't valid within a 'using' directive or declaration
+    if (p && *PTree::first(p) == "=")
     {
-      // Check for '=' alias
-      // Huh ? '=' isn't valid within a 'using' directive or declaration
-      if (p && *PTree::first(p) == "=")
-      {
-        p = PTree::rest(p);
-        std::string alias = parse_name(PTree::first(p));
-        my_builder->add_aliased_using_namespace(type, alias);
-      }
-      else my_builder->add_using_namespace(type);
+      p = PTree::rest(p);
+      std::string alias = parse_name(PTree::first(p));
+      my_builder->add_aliased_using_namespace(type, alias);
     }
-    else
-      // Let builder do all the work
-      my_builder->add_using_declaration(type);
+    else my_builder->add_using_namespace(type);
+  }
+  catch (const TranslateError& e)
+  {
+    LOG("Oops!");
+    e.set_node(node);
+    throw;
+  }
+}
+
+void SWalker::visit(PTree::UsingDeclaration *node)
+{
+  STrace trace("SWalker::visit(PTree::UsingDeclaration*)");
+  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  PTree::Node *p = PTree::rest(node);
+
+  // Find name that we are looking up, and make a new ptree list for linking it
+  p = p->car(); // p now points to the 'PTree::Name' child of 'PTree::Using'
+  PTree::Node *p_name = PTree::snoc(0, p->car());
+  ScopedName name;
+  if (*PTree::first(p) == "::")
+    // Eg; "using ::memcpy;" Indicate global scope with empty first
+    name.push_back("");
+  else
+  {
+    name.push_back(parse_name(PTree::first(p)));
+    p = PTree::rest(p);
+  }
+  while (p && *PTree::first(p) == "::")
+  {
+    p_name = PTree::snoc(p_name, p->car()); // Add '::' to p_name
+    p = PTree::rest(p);
+    name.push_back(parse_name(PTree::first(p)));
+    p_name = PTree::snoc(p_name, p->car()); // Add identifier to p_name
+    p = PTree::rest(p);
+  }
+
+  // Resolve and link name
+  try
+  {
+    Types::Named* type = my_lookup->lookupType(name);
+    if (my_links) my_links->link(p_name, type);
+    // Let builder do all the work
+    my_builder->add_using_declaration(type);
   }
   catch (const TranslateError& e)
   {

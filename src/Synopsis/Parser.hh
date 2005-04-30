@@ -73,7 +73,8 @@ private:
   bool linkage_spec(PTree::Node *&);
   bool namespace_spec(PTree::NamespaceSpec *&);
   bool namespace_alias(PTree::Node *&);
-  bool using_(PTree::Using *&);
+  bool using_directive(PTree::UsingDirective *&);
+  bool using_declaration(PTree::UsingDeclaration *&);
   bool linkage_body(PTree::Node *&);
   bool template_decl(PTree::Node *&);
   bool template_decl2(PTree::TemplateDecl *&, TemplateDeclKind &kind);

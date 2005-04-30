@@ -310,11 +310,18 @@ void Table::declare(TemplateDecl *tdecl)
   }
 }
 
-void Table::declare(PTree::Using *ustmt)
+void Table::declare(PTree::UsingDirective *usingdir)
 {
-  Trace trace("Table::declare(Using *)", Trace::SYMBOLLOOKUP);
+  Trace trace("Table::declare(UsingDirective *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  my_scopes.top()->use(ustmt);
+  my_scopes.top()->use(usingdir);
+}
+
+void Table::declare(PTree::UsingDeclaration *usingdecl)
+{
+  Trace trace("Table::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
+  trace << "TBD !";
+  if (my_language == NONE) return;
 }
 
 SymbolSet Table::lookup(PTree::Encoding const &name) const

@@ -15,9 +15,8 @@ SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
 MAKEDEP	:= $(CXX) -M
-CPPFLAGS:= @CPPFLAGS@ -I $(builddir)/../../src -I .
-CPPFLAGS+= -I $(srcdir) -I $(srcdir)/../../src
-CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
+CPPFLAGS:= -I $(srcdir) -I .
+CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@ @CPPFLAGS@
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
 LIBS	:= @SYN_LIBS@ -lboost_python @LIBS@

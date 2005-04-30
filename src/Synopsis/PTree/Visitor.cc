@@ -54,8 +54,9 @@ void Visitor::visit(MetaclassDecl *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(LinkageSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(NamespaceSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(NamespaceAlias *l) { visit(static_cast<List *>(l));}
-void Visitor::visit(Using *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(UsingDirective *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Declaration *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(UsingDeclaration *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Declarator *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Name *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(FstyleCastExpr *l) { visit(static_cast<List *>(l));}

@@ -37,11 +37,19 @@ public:
     mutable bool enabled;
   };
   friend struct Entry;
-  Trace(const std::string &s, unsigned int c)
+  Trace(std::string const &s, unsigned int c)
     : my_scope(s), my_visibility(my_mask & c)
   {
     if (!my_visibility) return;
     std::cout << indent() << "entering " << my_scope << std::endl;
+    ++my_level;
+  }
+  template <typename T>
+  Trace(std::string const &s, unsigned int c, T const &t)
+    : my_scope(s), my_visibility(my_mask & c)
+  {
+    if (!my_visibility) return;
+    std::cout << indent() << "entering " << my_scope << ' ' << t << std::endl;
     ++my_level;
   }
   ~Trace()

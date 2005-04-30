@@ -17,6 +17,13 @@ void Visitor::visit(PTree::List *node)
   if (node->cdr()) node->cdr()->accept(this);
 }
 
+void Visitor::visit(PTree::Block *node)
+{
+  my_table.enter_block(node);
+  visit_block(node);
+  my_table.leave_scope();  
+}
+
 void Visitor::visit(PTree::NamespaceSpec *spec)
 {
   my_table.enter_namespace(spec);
@@ -31,7 +38,7 @@ void Visitor::visit(PTree::Declaration *decl)
   {
     visit(static_cast<PTree::Declarator *>(decls)); // visit the declarator
     my_table.enter_function(decl);
-    visit(static_cast<PTree::Block *>(PTree::nth(decl, 3))); // visit the body
+    visit_block(static_cast<PTree::Block *>(PTree::nth(decl, 3)));
     my_table.leave_scope();
   }
   else
@@ -54,3 +61,9 @@ void Visitor::visit(PTree::ArrowMemberExpr *expr)
 {
   std::cout << "Sorry: arrow member expression (<postfix>-><name>) not yet supported" << std::endl;
 }
+
+void Visitor::visit_block(PTree::Block *node)
+{
+  visit(static_cast<PTree::List *>(node));
+}
+

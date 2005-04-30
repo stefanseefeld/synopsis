@@ -60,8 +60,9 @@ public:
   virtual void visit(LinkageSpec *) { my_type = Token::ntLinkageSpec;}
   virtual void visit(NamespaceSpec *) { my_type = Token::ntNamespaceSpec;}
   virtual void visit(NamespaceAlias *) { my_type = Token::ntNamespaceAlias;}
-  virtual void visit(Using *) { my_type = Token::ntUsing;}
+  virtual void visit(UsingDirective *) { my_type = Token::ntUsing;}
   virtual void visit(Declaration *) { my_type = Token::ntDeclaration;}
+  virtual void visit(UsingDeclaration *) { my_type = Token::ntUsing;}
   virtual void visit(Declarator *) { my_type = Token::ntDeclarator;}
   virtual void visit(Name *) { my_type = Token::ntName;}
   virtual void visit(FstyleCastExpr *) { my_type = Token::ntFstyleCast;}

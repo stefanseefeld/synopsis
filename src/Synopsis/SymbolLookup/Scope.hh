@@ -78,9 +78,11 @@ public:
   //. declare a nested scope
   void declare_scope(PTree::Node const *, Scope *);
 
-  //. declare a 'using' statement.
-  //. The default implementation raises an exception.
-  virtual void use(PTree::Using const *);
+  //. declare a 'using' directive.
+  //. The default implementation raises an exception,
+  //. as it is only well-formed when the current scope
+  //. is a function scope or a namespace.
+  virtual void use(PTree::UsingDirective const *);
 
   //. find a nested scope by declaration
   Scope *find_scope(PTree::Node const *) const;
@@ -111,7 +113,7 @@ public:
 
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &,
 				       bool scope) const = 0;
-  SymbolSet qualified_lookup(PTree::Encoding const &) const;
+  virtual SymbolSet qualified_lookup(PTree::Encoding const &) const;
 
   //. recursively dump the content of the symbol table to a stream (for debugging).
   virtual void dump(std::ostream &, size_t indent) const;
