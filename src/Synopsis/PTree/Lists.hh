@@ -104,10 +104,10 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class Using : public List 
+class UsingDirective : public List 
 {
 public:
-  Using(Node *p) : List(p, 0) {}
+  UsingDirective(Node *p) : List(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
@@ -121,6 +121,13 @@ public:
 
 private:
   Node *my_comments;
+};
+
+class UsingDeclaration : public List 
+{
+public:
+  UsingDeclaration(Node *p) : List(p, 0) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class Declarator : public List

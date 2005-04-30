@@ -45,7 +45,7 @@ void LocalScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in + 1);
 }
 
-void FunctionScope::use(PTree::Using const *udecl)
+void FunctionScope::use(PTree::UsingDirective const *udecl)
 {
   if (*PTree::second(udecl) == "namespace") // using.dir
   {
@@ -74,10 +74,10 @@ SymbolSet FunctionScope::unqualified_lookup(Encoding const &name,
   if (symbols.size()) return symbols;
 
   // see 7.3.4 [namespace.udir]
-  Using::const_iterator i = my_using.begin();
-  while (symbols.empty() && i != my_using.end())
+  for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
   {
-    symbols = (*i)->unqualified_lookup(name, scope);
+    SymbolSet more = (*i)->unqualified_lookup(name, scope);
+    symbols.insert(more.begin(), more.end());
   }
   if (symbols.size() || !my_outer)
     return symbols;
@@ -103,6 +103,49 @@ SymbolSet PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
 {
   Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   return SymbolSet();
+}
+
+SymbolSet FunctionScope::qualified_lookup(PTree::Encoding const &name) const
+{
+  Trace trace("FunctionScope::qualified_lookup", Trace::SYMBOLLOOKUP);
+  trace << name;
+  PTree::Encoding symbol_name = name.get_scope();
+  PTree::Encoding remainder = name.get_symbol();
+
+  if (symbol_name.empty())
+  {
+    symbol_name = name;
+    remainder.clear();
+  }
+
+  // find symbol locally
+  SymbolSet symbols = find(symbol_name);
+  // see 7.3.4 [namespace.udir]
+  if (symbols.empty())
+    for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
+    {
+      SymbolSet more = (*i)->qualified_lookup(name);
+      symbols.insert(more.begin(), more.end());
+    }
+  if (symbols.empty()) return symbols; // nothing found
+
+  // If the remainder is empty, just return the found symbol(s).
+  else if (remainder.empty()) return symbols;
+
+  // Having multiple symbols implies they are all overloaded functions.
+  // That's a type error if the reminder is non-empty, as we are looking
+  // for a scope.
+  else if (symbols.size() > 1)
+    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+
+  // Find the scope the symbol refers to 
+  // and look up the remainder there.
+
+  // move into inner scope and start over the lookup
+  Scope const *nested = find_scope(symbol_name, *symbols.begin());
+  if (!nested) throw InternalError("undeclared scope !");
+
+  return nested->qualified_lookup(remainder);
 }
 
 void PrototypeScope::dump(std::ostream &os, size_t in) const
@@ -149,7 +192,7 @@ Namespace *Namespace::find_namespace(std::string const &name) const
   return 0;
 }
 
-void Namespace::use(PTree::Using const *udecl)
+void Namespace::use(PTree::UsingDirective const *udecl)
 {
   if (*PTree::second(udecl) == "namespace") // using.dir
   {
@@ -178,16 +221,58 @@ SymbolSet Namespace::unqualified_lookup(Encoding const &name,
   if (symbols.size()) return symbols;
 
   // see 7.3.4 [namespace.udir]
-  Using::const_iterator i = my_using.begin();
-  while (symbols.empty() && i != my_using.end())
+  for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
   {
-    symbols = (*i)->unqualified_lookup(name, scope);
-    ++i;
+    SymbolSet more = (*i)->unqualified_lookup(name, scope);
+    symbols.insert(more.begin(), more.end());
   }
   if (symbols.size() || !my_outer)
     return symbols;
   else
     return my_outer->unqualified_lookup(name, scope);
+}
+
+SymbolSet Namespace::qualified_lookup(PTree::Encoding const &name) const
+{
+  Trace trace("Namespace::qualified_lookup", Trace::SYMBOLLOOKUP, this->name());
+  trace << name;
+  PTree::Encoding symbol_name = name.get_scope();
+  PTree::Encoding remainder = name.get_symbol();
+
+  if (symbol_name.empty())
+  {
+    symbol_name = name;
+    remainder.clear();
+  }
+
+  // find symbol locally
+  SymbolSet symbols = find(symbol_name);
+  // see 7.3.4 [namespace.udir]
+  if (symbols.empty())
+    for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
+    {
+      SymbolSet more = (*i)->qualified_lookup(name);
+      symbols.insert(more.begin(), more.end());
+    }
+  if (symbols.empty()) return symbols; // nothing found
+
+  // If the remainder is empty, just return the found symbol(s).
+  else if (remainder.empty()) return symbols;
+
+  // Having multiple symbols implies they are all overloaded functions.
+  // That's a type error if the reminder is non-empty, as we are looking
+  // for a scope.
+  else if (symbols.size() > 1)
+    throw TypeError(symbol_name, (*symbols.begin())->ptree()->encoded_type());
+
+  // Find the scope the symbol refers to 
+  // and look up the remainder there.
+
+  // move into inner scope and start over the lookup
+  Scope const *nested = find_scope(symbol_name, *symbols.begin());
+  if (!nested) throw InternalError("undeclared scope !");
+
+  return nested->qualified_lookup(remainder);
 }
 
 std::string Namespace::name() const

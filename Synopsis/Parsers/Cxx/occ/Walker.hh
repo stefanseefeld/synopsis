@@ -44,8 +44,9 @@ public:
   void visit(PTree::LinkageSpec *);
   void visit(PTree::NamespaceSpec *);
   void visit(PTree::NamespaceAlias *);
-  void visit(PTree::Using *);
+  void visit(PTree::UsingDirective *);
   void visit(PTree::Declaration *);
+  void visit(PTree::UsingDeclaration *);
   void visit(PTree::Name *node) { my_result = node;}
   void visit(PTree::FstyleCastExpr *);
   void visit(PTree::ClassSpec *);

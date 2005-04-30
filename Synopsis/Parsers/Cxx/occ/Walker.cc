@@ -311,7 +311,7 @@ void Walker::visit(PTree::NamespaceAlias *node)
   my_result = node;
 }
 
-void Walker::visit(PTree::Using *node)
+void Walker::visit(PTree::UsingDirective *node)
 {
   my_result = node;
 }
@@ -344,6 +344,11 @@ void Walker::visit(PTree::Declaration *node)
 							      decls2, decls,
 							      node->cdr()));
   }
+}
+
+void Walker::visit(PTree::UsingDeclaration *node)
+{
+  my_result = node;
 }
 
 PTree::Node *Walker::translate_declarators(PTree::Node *decls)

@@ -27,6 +27,11 @@ private:
     lookup(name);
   }
 
+  virtual void visit(PTree::Block *node)
+  {
+    Visitor::visit(node);
+  }
+
   virtual void visit(PTree::Typedef *typed)
   {
     // We need to figure out how to reproduce the (encoded) name of
@@ -34,6 +39,15 @@ private:
     my_os << "Type : " << "<not implemented yet>" << std::endl;
 //     lookup(name);
     PTree::third(typed)->accept(this);
+  }
+
+  virtual void visit(PTree::NamespaceSpec *node)
+  {
+    PTree::Atom const *name = static_cast<PTree::Atom *>(PTree::second(node));
+    PTree::Encoding ename = PTree::Encoding::simple_name(name);
+    my_os << "Namespace : " << ename.unmangled() << std::endl;
+    lookup(ename);
+    Visitor::visit(node);
   }
 
   virtual void visit(PTree::Declaration *node)
@@ -54,8 +68,22 @@ private:
       lookup(type);
     }
 
+    // A single declarator is probably a function impl, but could also be
+    // the declarator in an if or switch condition
     if(PTree::is_a(rest, Token::ntDeclarator))
+    {
       rest->accept(this);
+      PTree::Encoding type = rest->encoded_type();
+      if (!type.empty())
+      {
+	// A function may be const, skip the C
+	PTree::Encoding::iterator i = type.begin();
+	while (*i == 'C') ++i;
+	if (*i != 'F') return; // Not a function
+      }
+      // visit function body
+      PTree::nth(node, 3)->accept(this);
+    }
     else
       for (; rest; rest = rest->cdr())
       {
@@ -146,7 +174,7 @@ int main(int argc, char **argv)
     std::string input;
     if (argv[1] == std::string("-d"))
     {
-      Trace::enable(Trace::ALL);
+      Trace::enable(Trace::SYMBOLLOOKUP);
       output = argv[2];
       input = argv[3];
     }
@@ -162,8 +190,14 @@ int main(int argc, char **argv)
     Table symbols;
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
-    SymbolFinder finder(buffer, symbols, ofs);
-    finder.find(node);
+    const Parser::ErrorList &errors = parser.errors();
+    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+      (*i)->write(std::cerr);
+    if (node)
+    {
+      SymbolFinder finder(buffer, symbols, ofs);
+      finder.find(node);
+    }
   }
   catch (std::exception const &e)
   {

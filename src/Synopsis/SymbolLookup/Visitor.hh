@@ -26,6 +26,7 @@ public:
 
   using PTree::Visitor::visit;
   virtual void visit(PTree::List *);
+  virtual void visit(PTree::Block *);
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::Declaration *);
   virtual void visit(PTree::ClassSpec *);
@@ -37,6 +38,10 @@ protected:
   Scope const *current_scope() { return &my_table.current_scope();}
 
 private:
+  //. the virtual visit(Block) version above does scoping,
+  //. which isn't what we want if traversing a function (FIXME: or is it ?)
+  //. so the following factors out the common code.
+  void visit_block(PTree::Block *);
   //. The symbol lookup table.
   Table &my_table;
 };

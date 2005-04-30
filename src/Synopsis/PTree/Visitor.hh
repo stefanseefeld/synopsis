@@ -58,8 +58,9 @@ namespace PTree
   class LinkageSpec;
   class NamespaceSpec;
   class NamespaceAlias;
-  class Using;
+  class UsingDirective;
   class Declaration;
+  class UsingDeclaration;
   class Declarator;
   class Name;
   class FstyleCastExpr;
@@ -164,10 +165,9 @@ public:
   //. [ namespace <identifier> [{ body }] ]
   virtual void visit(NamespaceSpec *);
   virtual void visit(NamespaceAlias *);
-  //. [ using Foo :: x ; ]
   //. [ using namespace Foo ; ]
   //. [ using namespace Foo = Bar ; ]
-  virtual void visit(Using *);
+  virtual void visit(UsingDirective *);
   //. either variable, typedef or function
   //. Variables:
   //.  [ [modifiers] name [declarators] ; ]
@@ -180,6 +180,8 @@ public:
   //. Class definition:
   //.  [ [modifiers] [class foo ...] [declarators]? ; ]
   virtual void visit(Declaration *);
+  //. [ using Foo :: x ; ]
+  virtual void visit(UsingDeclaration *);
   //. [ [ declarator { = <expr> } ] , ... ]
   virtual void visit(Declarator *);
   virtual void visit(Name *);
