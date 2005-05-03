@@ -37,7 +37,7 @@ public:
   UndefinedSymbol(PTree::Encoding const &name) : my_name(name) {}
   virtual void write(std::ostream &os) const
   {
-    os << "Undefined symbol : " << my_name << std::endl;
+    os << "Undefined symbol : " << my_name.unmangled() << std::endl;
   }
 private:
   PTree::Encoding my_name;
@@ -52,7 +52,7 @@ public:
     : my_name(name), my_file1(f1), my_line1(l1), my_file2(f2), my_line2(l2) {}
   virtual void write(std::ostream &os) const
   {
-    os << "Symbol already defined : definition of " << my_name
+    os << "Symbol already defined : definition of " << my_name.unmangled()
        << " at " << my_file1 << ':' << my_line1 << '\n'
        << "previously defined at " << my_file2 << ':' << my_line2 << std::endl;
   }
@@ -71,8 +71,8 @@ public:
     : my_name(name), my_type(type) {}
   virtual void write(std::ostream &os) const
   {
-    os << "Symbol type mismatch : " << my_name 
-       << " has unexpected type " << my_type << std::endl;
+    os << "Symbol type mismatch : " << my_name.unmangled()
+       << " has unexpected type " << my_type.unmangled() << std::endl;
   }
 private:
   PTree::Encoding my_name;
@@ -330,16 +330,22 @@ bool Parser::definition(PTree::Node *&p)
     if (my_lexer.look_ahead(1) == Token::NAMESPACE)
     {
       PTree::UsingDirective *udir;
-      if (!using_directive(udir)) return false;
-      declare(udir);
-      p = udir;
+      res = using_directive(udir);
+      if (res)
+      {
+	declare(udir);
+	p = udir;
+      }
     }
     else
     {
       PTree::UsingDeclaration *udecl;
-      if (!using_declaration(udecl)) return false;
-      declare(udecl);
-      p = udecl;
+      res = using_declaration(udecl);
+      if (res)
+      {
+	declare(udecl);
+	p = udecl;
+      }
     }
   }
   else 
@@ -681,18 +687,18 @@ bool Parser::namespace_alias(PTree::Node *&exp)
   using.directive
   : USING NAMESPACE name
 */
-bool Parser::using_directive(PTree::UsingDirective *&decl)
+bool Parser::using_directive(PTree::UsingDirective *&udir)
 {
   Trace trace("Parser::using_directive", Trace::PARSING);
   Token tk;
   if(my_lexer.get_token(tk) != Token::USING)
     return false;
 
-  decl = new PTree::UsingDirective(new PTree::AtomUSING(tk));
+  udir = new PTree::UsingDirective(new PTree::AtomUSING(tk));
 
   if(my_lexer.get_token(tk) != Token::NAMESPACE)
     return false;
-  decl = PTree::snoc(decl, new PTree::AtomNAMESPACE(tk));
+  udir = PTree::snoc(udir, new PTree::AtomNAMESPACE(tk));
 
   PTree::Node *id;
   PTree::Encoding name_encode;
@@ -701,9 +707,11 @@ bool Parser::using_directive(PTree::UsingDirective *&decl)
     id = new PTree::Name(id, name_encode);
   else
     id = new PTree::Name(PTree::list(id), name_encode);
-  decl = PTree::snoc(decl, id);
-  if (!my_lexer.look_ahead(0) == ';') return false;
-  else return true;
+  udir = PTree::snoc(udir, id);
+  if (my_lexer.get_token(tk) != ';') return false;
+
+  udir = PTree::snoc(udir, new PTree::Atom(tk));
+  return true;
 }
 
 
@@ -711,7 +719,7 @@ bool Parser::using_directive(PTree::UsingDirective *&decl)
   using.declaration
   : USING name
 */
-bool Parser::using_declaration(PTree::UsingDeclaration *&decl)
+bool Parser::using_declaration(PTree::UsingDeclaration *&udecl)
 {
   Trace trace("Parser::user_declaration", Trace::PARSING);
   Token tk;
@@ -719,7 +727,7 @@ bool Parser::using_declaration(PTree::UsingDeclaration *&decl)
   if(my_lexer.get_token(tk) != Token::USING)
     return false;
 
-  decl = new PTree::UsingDeclaration(new PTree::AtomUSING(tk));
+  udecl = new PTree::UsingDeclaration(new PTree::AtomUSING(tk));
 
   PTree::Node *id;
   PTree::Encoding name_encode;
@@ -728,9 +736,11 @@ bool Parser::using_declaration(PTree::UsingDeclaration *&decl)
     id = new PTree::Name(id, name_encode);
   else
     id = new PTree::Name(PTree::list(id), name_encode);
-  decl = PTree::snoc(decl, id);
-  if (!my_lexer.look_ahead(0) == ';') return false;
-  else return true;
+  udecl = PTree::snoc(udecl, id);
+  if (my_lexer.get_token(tk) != ';') return false;
+
+  udecl = PTree::snoc(udecl, new PTree::Atom(tk));
+  return true;
 }
 
 
@@ -2777,7 +2787,8 @@ bool Parser::enum_body(PTree::Node *&body)
 bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
 {
   Trace trace("Parser::class_spec", Trace::PARSING);
-  PTree::Node *head, *bases, *body, *name;
+  PTree::Node *head, *bases, *name;
+  PTree::ClassBody *body;
   Token tk;
 
   head = 0;
@@ -2791,7 +2802,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   my_comments = 0;
   if(head != 0) spec = new PTree::ClassSpec(head, spec, 0);
 
-  if(my_lexer.look_ahead(0) == '{')
+  if(my_lexer.look_ahead(0) == '{') // anonymous class
   {
     encode.anonymous();
     // FIXME: why is the absense of a name marked by a list(0, 0) ?
@@ -2817,13 +2828,12 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     }
   }
   spec->set_encoded_name(encode);
-  if (!my_in_template_decl) declare(spec);
-
-  SymbolLookup::Table::Guard guard(&my_symbols.enter_class(spec));
-
-  if(!class_body(body)) return false;
-
+  {
+    SymbolLookup::Table::Guard guard(&my_symbols.enter_class(spec));
+    if(!class_body(body)) return false;
+  }
   spec = PTree::snoc(spec, body);
+  if (!my_in_template_decl) declare(spec);
 
   return true;
 }
@@ -2903,7 +2913,7 @@ bool Parser::base_specifiers(PTree::Node *&bases)
 /*
   class.body : '{' (class.members)* '}'
 */
-bool Parser::class_body(PTree::Node *&body)
+bool Parser::class_body(PTree::ClassBody *&body)
 {
   Trace trace("Parser::class_body", Trace::PARSING);
   Token tk;
@@ -2921,7 +2931,7 @@ bool Parser::class_body(PTree::Node *&body)
 
       skip_to('}');
       my_lexer.get_token(tk);
-      body = PTree::list(ob, 0, new PTree::Atom(tk));
+      body = new PTree::ClassBody(ob, 0, new PTree::Atom(tk));
       return true;	// error recovery
     }
 

@@ -7,12 +7,76 @@
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolLookup/Scope.hh>
+#include <Synopsis/SymbolLookup/Visitor.hh>
 #include <Synopsis/Trace.hh>
 #include <functional>
 
 using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
+
+namespace
+{
+class SymbolDisplay : private SymbolLookup::Visitor
+{
+public:
+  SymbolDisplay(std::ostream &os, size_t indent)
+    : my_os(os), my_indent(indent, ' ') {}
+  void display(Encoding const &name, Symbol const *symbol)
+  {
+    my_name = name.unmangled();
+    symbol->accept(this);
+    my_os << std::endl;
+  }
+private:
+  std::ostream &prefix(std::string const &type)
+  { return my_os << my_indent << type;}
+  virtual void visit(Symbol const *) {}
+  virtual void visit(VariableName const *name)
+  {
+    prefix("Variable:          ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(ConstName const *name)
+  {
+    prefix("Const:             ") << my_name << ' ' << name->type().unmangled();
+    if (name->defined()) my_os << " (" << name->value() << ')';
+  }
+  virtual void visit(TypeName const *) {}
+  virtual void visit(TypedefName const *name)
+  {
+    prefix("Typedef:           ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(ClassName const *name)
+  {
+    prefix("Class:             ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(EnumName const *name)
+  {
+    prefix("Enum:              ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(ClassTemplateName const *name)
+  {
+    prefix("Class template:    ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(FunctionName const *name)
+  {
+    prefix("Function:          ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(FunctionTemplateName const *name)
+  {
+    prefix("Function template: ") << my_name << ' ' << name->type().unmangled();
+  }
+  virtual void visit(NamespaceName const *name)
+  {
+    prefix("Namespace:         ") << my_name << ' ' << name->type().unmangled();
+  }
+
+  std::ostream &my_os;
+  std::string   my_indent;
+  std::string   my_name;
+};
+
+}
 
 Scope::~Scope()
 {
@@ -22,37 +86,6 @@ void Scope::declare(Encoding const &name, Symbol const *symbol)
 {
   Trace trace("Scope::declare", Trace::SYMBOLLOOKUP);
   trace << name;
-  // Conditions under which a symbol can be bound to multiple
-  // objects:
-  // * overloaded functions
-  // * typedefs redefining an already declared or defined type
-  // * defining a type that had been forward declared and typedefed before
-  //
-  if (symbol->type().is_function())
-  {
-    SymbolTable::const_iterator l = my_symbols.lower_bound(name);
-    SymbolTable::const_iterator u = my_symbols.upper_bound(name);
-    // FIXME: test for functions and function templates...
-    //     for (; l != u; ++l)
-    //       if (!l->second->type().is_function())
-    // 	throw MultiplyDefined(name);
-  }
-  else if (my_symbols.count(name))
-  {
-    // This is allowed only if one of the symbols is a typedef and the other
-    // a typename.
-    SymbolTable::const_iterator s = my_symbols.find(name);
-    if (!(dynamic_cast<TypeName const *>(s->second) &&
-	  dynamic_cast<TypedefName const *>(symbol)) &&
-	!(dynamic_cast<TypedefName const *>(s->second) && 
-	  dynamic_cast<TypeName const *>(symbol)))
-    {
-      throw MultiplyDefined(name,
-			    symbol->ptree(),
-			    my_symbols.lower_bound(name)->second->ptree());
-    }
-  }
-
   my_symbols.insert(std::make_pair(name, symbol));
 }
 
@@ -81,7 +114,7 @@ Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) cons
   return find_scope(decl);
 }
 
-SymbolSet Scope::find(Encoding const &name, bool scope) const throw()
+SymbolSet Scope::find(Encoding const &name, LookupContext context) const throw()
 {
   Trace trace("Scope::find", Trace::SYMBOLLOOKUP);
   trace << name;
@@ -91,37 +124,71 @@ SymbolSet Scope::find(Encoding const &name, bool scope) const throw()
   // [basic.lookup.qual]
   // During the lookup for a name preceding the :: scope resolution operator, 
   // object, function, and enumerator names are ignored.
-  if (scope)
+  if (context & SCOPE)
     for (; l != u; ++l)
     {
       if ((!dynamic_cast<VariableName const *>(l->second)) &&
-	  (!dynamic_cast<ConstName const *>(l->second)) &&
 	  (!dynamic_cast<FunctionName const *>(l->second)))
 	symbols.insert(l->second);
     }
+  // [basic.lookup.elab]
+  else if (context & ELABORATE)
+    for (; l != u; ++l)
+    {
+      if ((dynamic_cast<ClassName const *>(l->second)) ||
+	  (dynamic_cast<EnumName const *>(l->second)))
+	symbols.insert(l->second);
+    }
+  // [basic.scope.hiding]
   else
-    for (; l != u; ++l) symbols.insert(l->second);
+  {
+    // There is at most one type-name, which needs to be
+    // hidden if any other symbol was found.
+    TypeName const *type_name = 0;
+    for (; l != u; ++l)
+    {
+      TypeName const *type = dynamic_cast<TypeName const *>(l->second);
+      if (!type) symbols.insert(l->second);
+      else type_name = type;
+    }
+    if (!symbols.size() && type_name) symbols.insert(type_name);
+  }
   return symbols;
 }
 
-SymbolSet Scope::lookup(PTree::Encoding const &name) const
+void Scope::remove(Symbol const *symbol)
+{
+  Trace trace("Scope::remove", Trace::SYMBOLLOOKUP);
+  for (SymbolTable::iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
+    if (i->second == symbol)
+    {
+      my_symbols.erase(i);
+      delete symbol;
+      return;
+    }
+  // FIXME: Calling 'remove' with an unknown symbol is an error.
+  // Should we throw here ? 
+}
+
+SymbolSet 
+Scope::lookup(PTree::Encoding const &name, LookupContext context) const
 {
   Trace trace("Scope::lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   // If the name is not qualified, start an unqualified lookup.
   if (!name.is_qualified())
-    return unqualified_lookup(name, false);
+    return unqualified_lookup(name, context);
 
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();
   
   // If the scope is the global scope, do a qualified lookup there.
   if (symbol_name.is_global_scope())
-    return global()->qualified_lookup(remainder);
+    return global()->qualified_lookup(remainder, context);
 
   // Else do an unqualified lookup for the scope, followed by a
   // qualified lookup of the remainder in that scope.
-  SymbolSet symbols = unqualified_lookup(symbol_name, true);
+  SymbolSet symbols = unqualified_lookup(symbol_name, context | SCOPE);
   if (symbols.empty())
     throw Undefined(symbol_name);
   else if (symbols.size() > 1)
@@ -138,10 +205,12 @@ SymbolSet Scope::lookup(PTree::Encoding const &name) const
     throw InternalError("undeclared scope !");
 
   // Now do a qualified lookup of the remainder in the given scope.
-  return scope->qualified_lookup(remainder);
+  return scope->qualified_lookup(remainder, context);
 }
 
-SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
+SymbolSet 
+Scope::qualified_lookup(PTree::Encoding const &name,
+			LookupContext context) const
 {
   Trace trace("Scope::qualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
@@ -155,7 +224,7 @@ SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
   }
 
   // find symbol locally
-  SymbolSet symbols = find(symbol_name);
+  SymbolSet symbols = find(symbol_name, context);
   if (symbols.empty()) return symbols; // nothing found
 
   // If the remainder is empty, just return the found symbol(s).
@@ -174,33 +243,15 @@ SymbolSet Scope::qualified_lookup(PTree::Encoding const &name) const
   Scope const *nested = find_scope(symbol_name, *symbols.begin());
   if (!nested) throw InternalError("undeclared scope !");
 
-  return nested->qualified_lookup(remainder);
+  return nested->qualified_lookup(remainder, context);
 }
 
 void Scope::dump(std::ostream &os, size_t in) const
 {
   for (SymbolTable::const_iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
   {
-    if (VariableName const *variable = dynamic_cast<VariableName const *>(i->second))
-      indent(os, in) << "Variable: " << i->first << ' ' << variable->type() << std::endl;
-    else if (ConstName const *const_ = dynamic_cast<ConstName const *>(i->second))
-    {
-      indent(os, in) << "Const:    " << i->first << ' ' << const_->type();
-      if (const_->defined()) os << " (" << const_->value() << ')';
-      os << std::endl;
-    }
-    else if (NamespaceName const *module = dynamic_cast<NamespaceName const *>(i->second))
-      indent(os, in) << "Namespace: " << i->first << ' ' << module->type() << std::endl;
-    else if (TypeName const *type = dynamic_cast<TypeName const *>(i->second))
-      indent(os, in) << "Type: " << i->first << ' ' << type->type() << std::endl;
-    else if (ClassTemplateName const *type = dynamic_cast<ClassTemplateName const *>(i->second))
-      indent(os, in) << "Class template: " << i->first << ' ' << type->type() << std::endl;
-    else if (FunctionName const *type = dynamic_cast<FunctionName const *>(i->second))
-      indent(os, in) << "Function: " << i->first << ' ' << type->type() << std::endl;
-    else if (FunctionTemplateName const *type = dynamic_cast<FunctionTemplateName const *>(i->second))
-      indent(os, in) << "Function template: " << i->first << ' ' << type->type() << std::endl;
-    else // shouldn't get here
-      indent(os, in) << "Symbol: " << i->first << ' ' << i->second->type() << std::endl;
+    SymbolDisplay display(os, in + 1);
+    display.display(i->first, i->second);
   }
   for (ScopeTable::const_iterator i = my_scopes.begin(); i != my_scopes.end(); ++i)
     i->second->dump(os, in + 1);

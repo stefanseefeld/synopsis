@@ -482,7 +482,11 @@ bool Type::resolve_typedef(Scope const *&scope, PTree::Encoding &name, bool reso
       name.front() == 'Q' ||
       name.front() == 'T') // user defined type ?
   {
-    TypeName const *tn = scope->lookup<TypeName>(name);
+    
+    SymbolSet symbols = scope->lookup(name);
+    TypeName const *tn = 0;
+    if (symbols.size() == 1) 
+      tn = dynamic_cast<TypeName const *>(*symbols.begin());
     if (TypedefName const *td = dynamic_cast<TypedefName const *>(tn))
     {
       name = td->type();
@@ -509,7 +513,10 @@ PTree::Encoding Type::skip_cv(PTree::Encoding const & name, Scope const *& scope
   {
     if(!name.empty() && scope)
     {
-      TypeName const *tn = scope->lookup<TypeName>(name);
+      SymbolSet symbols = scope->lookup(name);
+      TypeName const *tn = 0;
+      if (symbols.size() == 1) 
+	tn = dynamic_cast<TypeName const *>(*symbols.begin());
       if (TypedefName const *td = dynamic_cast<TypedefName const *>(tn))
 	remainder = td->type();
       else

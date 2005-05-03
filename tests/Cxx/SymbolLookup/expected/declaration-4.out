@@ -1,5 +1,7 @@
 ClassSpec : X
 declared at line 1 in <input>
+ClassSpec : X
+declared at line 1 in <input>
 Declarator : x1
 declared at line 2 in <input>
 Type : X

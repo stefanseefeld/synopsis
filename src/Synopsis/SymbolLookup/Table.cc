@@ -73,7 +73,7 @@ Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
   if (!scope)
   {
     // This is a new namespace. Declare it.
-    scope = new Namespace(spec, my_scopes.top());
+    scope = new Namespace(spec, static_cast<Namespace *>(my_scopes.top()));
     my_scopes.top()->declare_scope(spec, scope);
   }
   else scope->ref();
@@ -151,30 +151,29 @@ void Table::declare(Declaration *d)
     // declare it only once (but allow overloading)
 
     PTree::Encoding name = decls->encoded_name();
-    // see whether it was previously declared
-    FunctionNameSet fs = my_scopes.top()->lookup_function(name);
-    // If name is qualified the function has to be declared already
-    // so we only need to find it to report an error if it was not.
-    
-
     PTree::Encoding type = decls->encoded_type();
 
-    // if the name is qualified, it has to be
-    // declared already. If it hasn't, raise an error
+    // If the name is qualified, it has to be
+    // declared already. If it hasn't, raise an error.
+    Scope *scope = my_scopes.top();
     if (name.is_qualified())
     {
-      SymbolSet symbols = lookup(name);
+      SymbolSet symbols = lookup(name, Scope::DECLARATION);
       if (symbols.empty()) throw Undefined(name);
-      return;
+      // FIXME: We need type analysis / overload resolution
+      //        here to take the right symbol.
+      Symbol const *symbol = *symbols.begin();
+      while (name.is_qualified()) name = name.get_symbol();
+      scope = symbol->scope();
+      // TODO: check whether this is the definition of a previously
+      //       declared function, according to 3.1/2 [basic.def]
+      scope->remove(symbol);
     }
-    
-    // FIXME: raise an error if this function was already defined
-    Scope *scope = my_scopes.top();
-    scope->declare(name, new FunctionName(type, decls, scope));
+    scope->declare(name, new FunctionName(type, decls, true, scope));
   }
   else
   {
-    // function or variable declaration
+    // Function or variable declaration.
     PTree::Node *storage_spec = PTree::first(d);
     PTree::Node *type_spec = PTree::second(d);
     if (decls->is_atom()) ; // it is a ';'
@@ -187,11 +186,26 @@ void Table::declare(Declaration *d)
 	{
 	  PTree::Encoding name = decl->encoded_name();
 	  PTree::Encoding type = decl->encoded_type();
+
 	  Scope *scope = my_scopes.top();
-	  if (type.is_function())
-	    scope->declare(name, new FunctionName(type, decl, scope));
-	  else
-	    scope->declare(name, new VariableName(type, decl, scope));
+	  if (name.is_qualified())
+	  {
+	    SymbolSet symbols = lookup(name, Scope::DECLARATION);
+	    if (symbols.empty()) throw Undefined(name);
+	    // FIXME: We need type analysis / overload resolution
+	    //        here to take the right symbol.
+	    Symbol const *symbol = *symbols.begin();
+	    while (name.is_qualified()) name = name.get_symbol();
+	    scope = symbol->scope();
+	    // TODO: check whether this is the definition of a previously
+	    //       declared variable, according to 3.1/2 [basic.def]
+	    scope->remove(symbol);
+	  }
+
+	  if (type.is_function()) // It's a function declaration.
+	    scope->declare(name, new FunctionName(type, decl, false, scope));
+	  else                    // It's a variable definition.
+	    scope->declare(name, new VariableName(type, decl, true, scope));
 	}
       }
     }
@@ -224,8 +238,9 @@ void Table::declare(EnumSpec *spec)
   Node *tag = second(spec);
   Encoding const &name = spec->encoded_name();
   Encoding const &type = spec->encoded_type();
+  Scope *scope = my_scopes.top();
   if(tag && tag->is_atom()) 
-    my_scopes.top()->declare(name, new TypeName(type, spec, my_scopes.top()));
+    scope->declare(name, new EnumName(type, spec, my_scopes.top()));
   // else it's an anonymous enum
 
   Node *body = third(spec);
@@ -255,11 +270,10 @@ void Table::declare(EnumSpec *spec)
     }
     assert(enumerator->is_atom());
     Encoding name(enumerator->position(), enumerator->length());
-    Scope *scope = my_scopes.top();
     if (defined)
-      scope->declare(name, new ConstName(type, value, enumerator, scope));
+      scope->declare(name, new ConstName(type, value, enumerator, true, scope));
     else
-      scope->declare(name, new ConstName(type, enumerator, scope));
+      scope->declare(name, new ConstName(type, enumerator, true, scope));
   }
 }
 
@@ -273,10 +287,10 @@ void Table::declare(NamespaceSpec *spec)
 		   "<anonymous>");
   Scope *scope = my_scopes.top();
   // Namespaces can be reopened, so only declare it if it isn't already known.
-  SymbolSet symbols = scope->find(name);
+  SymbolSet symbols = scope->find(name, Scope::SCOPE);
   if (symbols.empty())
   {
-    scope->declare(name, new NamespaceName(spec->encoded_type(), spec, scope));
+    scope->declare(name, new NamespaceName(spec->encoded_type(), spec, true, scope));
   }
   // FIXME: assert that the found symbol really refers to a namespace !
 }
@@ -286,8 +300,35 @@ void Table::declare(ClassSpec *spec)
   Trace trace("Table::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Encoding const &name = spec->encoded_name();
+  // If class spec contains a class body, it's a definition.
+  ClassBody *body = spec->body();
+
   Scope *scope = my_scopes.top();
-  scope->declare(name, new TypeName(spec->encoded_type(), spec, scope));
+
+  SymbolSet symbols = scope->find(name, Scope::DEFAULT);
+  for (SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
+  {
+    // If the symbol was defined as a different type, the program is ill-formed.
+    // Else if the symbol corresponds to a forward-declared class, replace it.
+    if (ClassName const *class_ = dynamic_cast<ClassName const *>(*i))
+    {
+      if (class_->is_definition())
+      {
+	if (body)
+	  throw MultiplyDefined(name, spec, class_->ptree()); // ODR
+	else return; // Ignore forward declaration if symbol is already defined.
+      }
+      else if (body) scope->remove(*i); // Remove forward declaration.
+      else return;                      // Don't issue another forward declaration.
+    }
+    else if (TypeName const *type = dynamic_cast<TypeName const *>(*i))
+      // Symbol already defined as different type.
+      throw MultiplyDefined(name, spec, type->ptree());
+  }
+  if (body)
+    scope->declare(name, new ClassName(spec->encoded_type(), spec, true, scope));
+  else
+    scope->declare(name, new ClassName(spec->encoded_type(), spec, false, scope));
 }
 
 void Table::declare(TemplateDecl *tdecl)
@@ -300,7 +341,7 @@ void Table::declare(TemplateDecl *tdecl)
   if (class_spec)
   {
     Encoding name = class_spec->encoded_name();
-    scope->declare(name, new ClassTemplateName(Encoding(), tdecl, scope));
+    scope->declare(name, new ClassTemplateName(Encoding(), tdecl, true, scope));
   }
   else
   {
@@ -324,8 +365,8 @@ void Table::declare(PTree::UsingDeclaration *usingdecl)
   if (my_language == NONE) return;
 }
 
-SymbolSet Table::lookup(PTree::Encoding const &name) const
+SymbolSet Table::lookup(PTree::Encoding const &name, Scope::LookupContext c) const
 {
   if (my_language == NONE) return SymbolSet();
-  else return my_scopes.top()->lookup(name);
+  else return my_scopes.top()->lookup(name, c);
 }

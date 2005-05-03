@@ -1,0 +1,11 @@
+Undefined symbol : A::f1
+Namespace : A
+declared at line 1 in <input>
+Namespace : B
+declared at line 3 in <input>
+Declarator : f1
+declared at line 5 in <input>
+Name : B
+declared at line 3 in <input>
+Declarator : A::f1
+undeclared ! 

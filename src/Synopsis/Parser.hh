@@ -125,7 +125,7 @@ private:
   bool enum_body(PTree::Node *&);
   bool class_spec(PTree::ClassSpec *&, PTree::Encoding&);
   bool base_specifiers(PTree::Node *&);
-  bool class_body(PTree::Node *&);
+  bool class_body(PTree::ClassBody *&);
   bool class_member(PTree::Node *&);
   bool access_decl(PTree::Node *&);
   bool user_access_spec(PTree::Node *&);

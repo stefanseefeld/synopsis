@@ -32,7 +32,7 @@ SRC	:= Trace \
            SymbolLookup/ConstEvaluator \
            SymbolLookup/Type \
            SymbolLookup/Table \
-           SymbolLookup/Visitor \
+           SymbolLookup/Walker \
            TypeAnalysis/Type TypeAnalysis/Kit \
            TypeAnalysis/TypeEvaluator TypeAnalysis/OverloadResolver \
            Buffer Lexer Parser

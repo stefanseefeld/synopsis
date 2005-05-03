@@ -57,7 +57,7 @@ PyObject *parse(PyObject *self, PyObject *args)
   ErrorHandler error_handler();
 
 //   if (verbose) ::verbose = true;
-  if (debug) Synopsis::Trace::enable_debug();
+  if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
 
   if (!src || *src == '\0')
   {

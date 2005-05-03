@@ -22,11 +22,11 @@ using namespace Synopsis;
 //. Test input should be a set of declarations where
 //. the initializers are expressions which we look up
 //. the type for.
-class InitializerFinder : private SymbolLookup::Visitor
+class InitializerFinder : private SymbolLookup::Walker
 {
 public:
   InitializerFinder(SymbolLookup::Table &table, std::ostream &os)
-    : SymbolLookup::Visitor(table), my_os(os) {}
+    : SymbolLookup::Walker(table), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 
 private:

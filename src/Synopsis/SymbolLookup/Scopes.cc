@@ -15,12 +15,13 @@ using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
 
-SymbolSet TemplateParameterScope::unqualified_lookup(Encoding const &name,
-						     bool scope) const
+SymbolSet 
+TemplateParameterScope::unqualified_lookup(Encoding const &name,
+					   LookupContext context) const
 {
   Trace trace("TemplateParameterScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
-  SymbolSet symbols = find(name, scope);
+  SymbolSet symbols = find(name, context == SCOPE);
   return symbols;
 }
 
@@ -30,19 +31,20 @@ void TemplateParameterScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in);
 }
 
-SymbolSet LocalScope::unqualified_lookup(Encoding const &name,
-					 bool scope) const
+SymbolSet 
+LocalScope::unqualified_lookup(Encoding const &name,
+			       LookupContext context) const
 {
   Trace trace("LocalScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
-  SymbolSet symbols = find(name, scope);
-  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
+  SymbolSet symbols = find(name, context == SCOPE);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
 void LocalScope::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "LocalScope:\n";
-  Scope::dump(os, in + 1);
+  Scope::dump(os, in);
 }
 
 void FunctionScope::use(PTree::UsingDirective const *udecl)
@@ -57,7 +59,7 @@ void FunctionScope::use(PTree::UsingDirective const *udecl)
     //        by the appropriate Symbol subclass(es) ?
     Scope const *scope = symbol->scope()->find_scope(name, symbol);
     Namespace const *ns = dynamic_cast<Namespace const *>(scope);
-    if (ns) my_using.push_back(ns);
+    if (ns) my_using.insert(ns);
   }
   else
   {
@@ -65,47 +67,51 @@ void FunctionScope::use(PTree::UsingDirective const *udecl)
   }
 }
 
-SymbolSet FunctionScope::unqualified_lookup(Encoding const &name,
-					    bool scope) const
+SymbolSet 
+FunctionScope::unqualified_lookup(Encoding const &name,
+				  LookupContext context) const
 {
   Trace trace("FunctionScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
-  SymbolSet symbols = find(name, scope);
+  SymbolSet symbols = find(name, context == SCOPE);
   if (symbols.size()) return symbols;
 
   // see 7.3.4 [namespace.udir]
   for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
   {
-    SymbolSet more = (*i)->unqualified_lookup(name, scope);
+    SymbolSet more = (*i)->unqualified_lookup(name, context | USING);
     symbols.insert(more.begin(), more.end());
   }
   if (symbols.size() || !my_outer)
     return symbols;
   else
-    return my_outer->unqualified_lookup(name, scope);
+    return my_outer->unqualified_lookup(name, context);
 }
 
 void FunctionScope::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "FunctionScope '" << this->name() << "':\n";
-  Scope::dump(os, in + 1);
+  Scope::dump(os, in);
 }
 
 std::string FunctionScope::name() const
 {
   std::ostringstream oss;
-  oss << PTree::reify(my_decl);
+  oss << PTree::reify(PTree::third(my_decl));
   return oss.str();
 }
 
-SymbolSet PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
-					     bool scope) const
+SymbolSet 
+PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
+				   LookupContext context) const
 {
   Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   return SymbolSet();
 }
 
-SymbolSet FunctionScope::qualified_lookup(PTree::Encoding const &name) const
+SymbolSet 
+FunctionScope::qualified_lookup(PTree::Encoding const &name,
+				LookupContext context) const
 {
   Trace trace("FunctionScope::qualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
@@ -119,12 +125,12 @@ SymbolSet FunctionScope::qualified_lookup(PTree::Encoding const &name) const
   }
 
   // find symbol locally
-  SymbolSet symbols = find(symbol_name);
+  SymbolSet symbols = find(symbol_name, context);
   // see 7.3.4 [namespace.udir]
   if (symbols.empty())
     for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
     {
-      SymbolSet more = (*i)->qualified_lookup(name);
+      SymbolSet more = (*i)->qualified_lookup(name, context);
       symbols.insert(more.begin(), more.end());
     }
   if (symbols.empty()) return symbols; // nothing found
@@ -145,22 +151,23 @@ SymbolSet FunctionScope::qualified_lookup(PTree::Encoding const &name) const
   Scope const *nested = find_scope(symbol_name, *symbols.begin());
   if (!nested) throw InternalError("undeclared scope !");
 
-  return nested->qualified_lookup(remainder);
+  return nested->qualified_lookup(remainder, context);
 }
 
 void PrototypeScope::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "Prototype:\n";
-  Scope::dump(os, in + 1);
+  Scope::dump(os, in);
 }
 
-SymbolSet Class::unqualified_lookup(Encoding const &name,
-				    bool scope) const
+SymbolSet 
+Class::unqualified_lookup(Encoding const &name,
+			  LookupContext context) const
 {
   Trace trace("Class::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
-  SymbolSet symbols = find(name, scope);
-  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, scope);
+  SymbolSet symbols = find(name, context == SCOPE);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
 std::string Class::name() const
@@ -176,7 +183,7 @@ std::string Class::name() const
 void Class::dump(std::ostream &os, size_t in) const
 {
   indent(os, in) << "Class '" << this->name() << "':\n";
-  Scope::dump(os, in + 1);
+  Scope::dump(os, in);
 }
 
 Namespace *Namespace::find_namespace(std::string const &name) const
@@ -204,7 +211,7 @@ void Namespace::use(PTree::UsingDirective const *udecl)
     //        by the appropriate Symbol subclass(es) ?
     Scope const *scope = symbol->scope()->find_scope(name, symbol);
     Namespace const *ns = dynamic_cast<Namespace const *>(scope);
-    if (ns) my_using.push_back(ns);
+    if (ns) my_using.insert(ns);
   }
   else
   {
@@ -212,30 +219,71 @@ void Namespace::use(PTree::UsingDirective const *udecl)
   }
 }
 
-SymbolSet Namespace::unqualified_lookup(Encoding const &name,
-					bool scope) const
+SymbolSet 
+Namespace::unqualified_lookup(Encoding const &name,
+			      LookupContext context) const
 {
-  Trace trace("Namespace::unqualified_lookup", Trace::SYMBOLLOOKUP);
+  Using searched;
+  return unqualified_lookup(name, context, searched);
+}
+
+SymbolSet 
+Namespace::qualified_lookup(PTree::Encoding const &name,
+			    LookupContext context) const
+{
+  Using searched;
+  return qualified_lookup(name, context, searched);
+}
+
+std::string Namespace::name() const
+{
+  if (!my_spec) return "<global>";
+  PTree::Node const *name_spec = PTree::second(my_spec);
+  if (name_spec)
+    return std::string(name_spec->position(), name_spec->length());
+  else
+    return "<anonymous>";
+}
+
+void Namespace::dump(std::ostream &os, size_t in) const
+{
+  indent(os, in) << "Namespace '" << this->name() << "':\n";
+  Scope::dump(os, in);
+}
+
+SymbolSet Namespace::unqualified_lookup(Encoding const &name,
+					LookupContext context,
+					Using &searched) const
+{
+  Trace trace("Namespace::unqualified_lookup", Trace::SYMBOLLOOKUP, this->name());
   trace << name;
-  SymbolSet symbols = find(name, scope);
+  searched.insert(this);
+  SymbolSet symbols = find(name, context);
   if (symbols.size()) return symbols;
 
   // see 7.3.4 [namespace.udir]
   for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
-  {
-    SymbolSet more = (*i)->unqualified_lookup(name, scope);
-    symbols.insert(more.begin(), more.end());
-  }
-  if (symbols.size() || !my_outer)
+    if (searched.find(*i) == searched.end())
+    {
+      SymbolSet more = (*i)->unqualified_lookup(name, context | USING, searched);
+      symbols.insert(more.begin(), more.end());
+    }
+  if (symbols.size() ||
+      context & USING ||
+      !my_outer ||
+      searched.find(my_outer) != searched.end())
     return symbols;
   else
-    return my_outer->unqualified_lookup(name, scope);
+    return my_outer->unqualified_lookup(name, context, searched);
 }
 
-SymbolSet Namespace::qualified_lookup(PTree::Encoding const &name) const
+SymbolSet Namespace::qualified_lookup(PTree::Encoding const &name,
+				      LookupContext context,
+				      Using &searched) const
 {
   Trace trace("Namespace::qualified_lookup", Trace::SYMBOLLOOKUP, this->name());
   trace << name;
+
   PTree::Encoding symbol_name = name.get_scope();
   PTree::Encoding remainder = name.get_symbol();
 
@@ -246,14 +294,16 @@ SymbolSet Namespace::qualified_lookup(PTree::Encoding const &name) const
   }
 
   // find symbol locally
-  SymbolSet symbols = find(symbol_name);
-  // see 7.3.4 [namespace.udir]
-  if (symbols.empty())
+  SymbolSet symbols = find(symbol_name, context);
+
+  // see 3.4.3.2/2 and 3.4.3.2/6
+  if (!symbols.size() && (context ^ DECLARATION || name.is_qualified()))
     for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
-    {
-      SymbolSet more = (*i)->qualified_lookup(name);
-      symbols.insert(more.begin(), more.end());
-    }
+      if (searched.find(*i) == searched.end())
+      {
+	SymbolSet more = (*i)->qualified_lookup(name, context, searched);
+	symbols.insert(more.begin(), more.end());
+      }
   if (symbols.empty()) return symbols; // nothing found
 
   // If the remainder is empty, just return the found symbol(s).
@@ -272,21 +322,6 @@ SymbolSet Namespace::qualified_lookup(PTree::Encoding const &name) const
   Scope const *nested = find_scope(symbol_name, *symbols.begin());
   if (!nested) throw InternalError("undeclared scope !");
 
-  return nested->qualified_lookup(remainder);
+  return nested->qualified_lookup(remainder, context);
 }
 
-std::string Namespace::name() const
-{
-  if (!my_spec) return "<global>";
-  PTree::Node const *name_spec = PTree::second(my_spec);
-  if (name_spec)
-    return std::string(name_spec->position(), name_spec->length());
-  else
-    return "<anonymous>";
-}
-
-void Namespace::dump(std::ostream &os, size_t in) const
-{
-  indent(os, in) << "Namespace'" << this->name() << "':\n";
-  Scope::dump(os, in + 1);
-}
