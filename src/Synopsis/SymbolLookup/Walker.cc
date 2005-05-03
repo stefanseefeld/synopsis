@@ -4,34 +4,34 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <Synopsis/SymbolLookup/Visitor.hh>
+#include <Synopsis/SymbolLookup/Walker.hh>
 #include <Synopsis/PTree/Lists.hh>
 #include <Synopsis/PTree/TypeVisitor.hh>
 
 using namespace Synopsis;
 using namespace SymbolLookup;
 
-void Visitor::visit(PTree::List *node)
+void Walker::visit(PTree::List *node)
 {
   if (node->car()) node->car()->accept(this);
   if (node->cdr()) node->cdr()->accept(this);
 }
 
-void Visitor::visit(PTree::Block *node)
+void Walker::visit(PTree::Block *node)
 {
   my_table.enter_block(node);
   visit_block(node);
   my_table.leave_scope();  
 }
 
-void Visitor::visit(PTree::NamespaceSpec *spec)
+void Walker::visit(PTree::NamespaceSpec *spec)
 {
   my_table.enter_namespace(spec);
   visit(static_cast<PTree::List *>(spec));
   my_table.leave_scope();
 }
 
-void Visitor::visit(PTree::Declaration *decl)
+void Walker::visit(PTree::Declaration *decl)
 {
   PTree::Node *decls = PTree::third(decl);
   if(PTree::is_a(decls, Token::ntDeclarator)) // function definition
@@ -45,24 +45,25 @@ void Visitor::visit(PTree::Declaration *decl)
     visit(static_cast<PTree::List *>(decl));
 }
 
-void Visitor::visit(PTree::ClassSpec *spec)
+void Walker::visit(PTree::ClassSpec *spec)
 {
   my_table.enter_class(spec);
-  visit(static_cast<PTree::List *>(spec));
+  if (PTree::ClassBody *body = spec->body())
+    body->accept(this);
   my_table.leave_scope();
 }
 
-void Visitor::visit(PTree::DotMemberExpr *expr)
+void Walker::visit(PTree::DotMemberExpr *expr)
 {
   std::cout << "Sorry: dot member expression (<postfix>.<name>) not yet supported" << std::endl;
 }
 
-void Visitor::visit(PTree::ArrowMemberExpr *expr)
+void Walker::visit(PTree::ArrowMemberExpr *expr)
 {
   std::cout << "Sorry: arrow member expression (<postfix>-><name>) not yet supported" << std::endl;
 }
 
-void Visitor::visit_block(PTree::Block *node)
+void Walker::visit_block(PTree::Block *node)
 {
   visit(static_cast<PTree::List *>(node));
 }

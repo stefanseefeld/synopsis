@@ -57,12 +57,23 @@ private:
 };
 
 typedef std::set<Symbol const *> SymbolSet;
-typedef std::set<FunctionName const *> FunctionNameSet;
 
 //. A Scope contains symbol definitions.
 class Scope
 {
+  //. SymbolTable provides a mapping from (encoded) names to Symbols declared
+  //. in this scope.
+  typedef std::multimap<PTree::Encoding, Symbol const *> SymbolTable;
+
 public:
+  typedef SymbolTable::iterator iterator;
+
+  typedef unsigned int LookupContext;
+  static LookupContext const DEFAULT = 0x0;
+  static LookupContext const SCOPE = 0x1; // lookup a scope, see [basic.lookup.qual]
+  static LookupContext const USING = 0x2; // lookup in the context of a using directive
+  static LookupContext const ELABORATE = 0x4; // elaborate name lookup
+  static LookupContext const DECLARATION = 0x8; // see 3.4.3.2/6 [namespace.qual]
 
   Scope() : my_refcount(1) {}
   Scope *ref() { ++my_refcount; return this;}
@@ -94,37 +105,27 @@ public:
 
   //. find the encoded name declared in this scope and 
   //. return a set of matching symbols.
-  SymbolSet find(PTree::Encoding const &, bool scope = false) const throw();
+  SymbolSet find(PTree::Encoding const &, LookupContext) const throw();
+  //. Remove the given symbol from the scope.
+  //. s shall not be used after its removal.
+  void remove(Symbol const *s);
 
   //. look up the encoded name and return a set of matching symbols.
-  SymbolSet lookup(PTree::Encoding const &) const;
-
-  //. same as the untyped lookup, but type safe. 
-  // Return either a set of function names
-  //. (if T is of type FunctionName) or a single matching symbol.
-  //. Throws a TypeError if the symbol exists but doesn't have the expected type.
-  template <typename T>
-  T const *lookup(PTree::Encoding const &name) const throw(TypeError);
-
-  //. lookup specialization for the case where the Symbol looked for 
-  //. is a FunctionName,
-  //. as in this case a set of possibly overloaded functions is returned.
-  FunctionNameSet lookup_function(PTree::Encoding const &name) const throw(TypeError);
+  SymbolSet lookup(PTree::Encoding const &, LookupContext = DEFAULT) const;
 
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &,
-				       bool scope) const = 0;
-  virtual SymbolSet qualified_lookup(PTree::Encoding const &) const;
+				       LookupContext = DEFAULT) const = 0;
+  virtual SymbolSet qualified_lookup(PTree::Encoding const &,
+				     LookupContext = DEFAULT) const;
 
   //. recursively dump the content of the symbol table to a stream (for debugging).
   virtual void dump(std::ostream &, size_t indent) const;
 
 protected:
+
   //. Scopes are ref counted, and thus are deleted only by 'unref()'
   virtual ~Scope();
 
-  //. SymbolTable provides a mapping from (encoded) names to Symbols declared
-  //. in this scope.
-  typedef std::multimap<PTree::Encoding, Symbol const *> SymbolTable;
   //. ScopeTable provides a mapping from scope nodes to Scopes,
   //. which can be used to traverse the scope tree in parallel with
   //. the associated parse tree. As this traversal is also done
@@ -148,35 +149,6 @@ inline Scope *Scope::find_scope(PTree::Node const *node) const
 {
   ScopeTable::const_iterator i = my_scopes.find(node);
   return i == my_scopes.end() ? 0 : i->second;
-}
-
-template <typename T>
-inline T const *Scope::lookup(PTree::Encoding const &name) const throw(TypeError)
-{
-  SymbolSet symbols = lookup(name);
-  if (symbols.empty()) return 0;
-  Symbol const *symbol = *symbols.begin();
-  if (symbols.size() > 1) // must be a set of overloaded functions
-    throw TypeError(name, symbol->type()); // function
-
-  T const * t = dynamic_cast<T const *>(symbol);
-  if (!t)
-    throw TypeError(name, symbol->type());
-  return t;
-}
-
-inline FunctionNameSet
-Scope::lookup_function(PTree::Encoding const &name) const throw(TypeError)
-{
-  SymbolSet symbols = lookup(name);
-  FunctionNameSet funcs;
-  for (SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
-  {
-    FunctionName const * t = dynamic_cast<FunctionName const *>(*i);
-    if (!t) throw TypeError(name, (*i)->type());
-    else funcs.insert(t);
-  }
-  return funcs;
 }
 
 }

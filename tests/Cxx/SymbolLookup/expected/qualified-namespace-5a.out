@@ -1,0 +1,22 @@
+Namespace : A
+declared at line 1 in <input>
+ClassSpec : x
+declared at line 3 in <input>
+Declarator : x
+declared at line 4 in <input>
+Declarator : y
+declared at line 5 in <input>
+Namespace : B
+declared at line 7 in <input>
+ClassSpec : y
+declared at line 9 in <input>
+Namespace : C
+declared at line 11 in <input>
+Name : A
+declared at line 1 in <input>
+Name : B
+declared at line 7 in <input>
+Declarator : i
+declared at line 15 in <input>
+Name : C::x
+declared at line 4 in <input>

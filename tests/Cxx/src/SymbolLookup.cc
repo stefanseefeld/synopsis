@@ -13,11 +13,11 @@
 using namespace Synopsis;
 using namespace SymbolLookup;
 
-class SymbolFinder : public Visitor
+class SymbolFinder : private Walker
 {
 public:
   SymbolFinder(Buffer const &buffer, Table &table, std::ostream &os)
-    : Visitor(table), my_buffer(buffer), my_os(os) {}
+    : Walker(table), my_buffer(buffer), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::Identifier *iden)
@@ -29,7 +29,7 @@ private:
 
   virtual void visit(PTree::Block *node)
   {
-    Visitor::visit(node);
+    Walker::visit(node);
   }
 
   virtual void visit(PTree::Typedef *typed)
@@ -47,49 +47,21 @@ private:
     PTree::Encoding ename = PTree::Encoding::simple_name(name);
     my_os << "Namespace : " << ename.unmangled() << std::endl;
     lookup(ename);
-    Visitor::visit(node);
+    Walker::visit(node);
   }
 
   virtual void visit(PTree::Declaration *node)
   {
-    PTree::Node *rest = PTree::third(node);
-    if (rest->is_atom()) return; // ';' means forward declaration
-
-    PTree::second(node)->accept(this);
-
-    // If the second child is an Identifier, it was already
-    // dealt with above. Same for Name. Only need to look up
-    // Atom here...
-    if (PTree::second(node)->is_atom())
+    PTree::Node *type_spec = PTree::second(node);
+    // FIXME: what about compound types ?
+    if (type_spec && type_spec->is_atom())
     {
       PTree::Atom const *name = static_cast<PTree::Atom *>(PTree::second(node));
       PTree::Encoding type = PTree::Encoding::simple_name(name);
       my_os << "Type : " << type.unmangled() << std::endl;
       lookup(type);
     }
-
-    // A single declarator is probably a function impl, but could also be
-    // the declarator in an if or switch condition
-    if(PTree::is_a(rest, Token::ntDeclarator))
-    {
-      rest->accept(this);
-      PTree::Encoding type = rest->encoded_type();
-      if (!type.empty())
-      {
-	// A function may be const, skip the C
-	PTree::Encoding::iterator i = type.begin();
-	while (*i == 'C') ++i;
-	if (*i != 'F') return; // Not a function
-      }
-      // visit function body
-      PTree::nth(node, 3)->accept(this);
-    }
-    else
-      for (; rest; rest = rest->cdr())
-      {
-	PTree::Node *p = rest->car();
-	p->accept(this);
-      }
+    Walker::visit(node);
   }
 
   virtual void visit(PTree::Declarator *decl)
@@ -97,7 +69,7 @@ private:
     PTree::Encoding name = decl->encoded_name();
     PTree::Encoding type = decl->encoded_type();
     my_os << "Declarator : " << name.unmangled() << std::endl;
-    lookup(name);
+    lookup(name, Scope::DECLARATION);
     // Visit the initializer, if there is any.
     if (type.is_function()) return;
     size_t length = PTree::length(decl);
@@ -125,10 +97,8 @@ private:
   {
     PTree::Encoding name = node->encoded_name();
     my_os << "ClassSpec : " << name.unmangled() << std::endl;
-    lookup(name);
-    // Visit the body, if there is one.
-    if(PTree::length(node) == 4)
-      PTree::nth(node, 3)->accept(this);
+    lookup(name, Scope::ELABORATE);
+    Walker::visit(node);
   }
 
   virtual void visit(PTree::FuncallExpr *node)
@@ -141,9 +111,9 @@ private:
     lookup(name);
   }
 
-  void lookup(PTree::Encoding const &name)
+  void lookup(PTree::Encoding const &name, Scope::LookupContext c = Scope::DEFAULT)
   {
-    SymbolSet symbols = current_scope()->lookup(name);
+    SymbolSet symbols = current_scope()->lookup(name, c);
     if (!symbols.empty())
     {
       for (SymbolSet::iterator s = symbols.begin(); s != symbols.end(); ++s)
@@ -192,7 +162,7 @@ int main(int argc, char **argv)
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
+      (*i)->write(ofs);
     if (node)
     {
       SymbolFinder finder(buffer, symbols, ofs);

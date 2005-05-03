@@ -109,7 +109,10 @@ void ConstEvaluator::visit(Identifier *node)
   try
   {
     Encoding name(node->position(), node->length());
-    const ConstName *const_ = my_symbols.lookup<ConstName>(name);
+    SymbolSet symbols = my_symbols.lookup(name);
+    ConstName const *const_ = 0;
+    if (symbols.size() == 1) 
+      const_ = dynamic_cast<ConstName const *>(*symbols.begin());
     if (!const_ || !const_->defined()) my_valid = false;
     else
     {

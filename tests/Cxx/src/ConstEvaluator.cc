@@ -12,11 +12,11 @@
 
 using namespace Synopsis;
 
-class InitializerFinder : public SymbolLookup::Visitor
+class InitializerFinder : private SymbolLookup::Walker
 {
 public:
   InitializerFinder(SymbolLookup::Table &table, std::ostream &os)
-    : SymbolLookup::Visitor(table), my_os(os) {}
+    : SymbolLookup::Walker(table), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::List *node)

@@ -60,7 +60,8 @@ public:
   void declare(PTree::UsingDeclaration *);
 
   //. look up the encoded name and return a set of matching symbols.
-  virtual std::set<Symbol const *> lookup(PTree::Encoding const &) const;
+  SymbolSet lookup(PTree::Encoding const &,
+		   Scope::LookupContext = Scope::DEFAULT) const;
 
 private:
   typedef std::stack<Scope *> Scopes;

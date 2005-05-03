@@ -182,6 +182,8 @@ public:
   Encoding encoded_name() const { return my_name;}
   void set_encoded_name(const Encoding &n) { my_name = n;}
   Node *get_comments() { return my_comments;}
+  //. The following assumes proper C++, i.e. no OpenC++ extension.
+  ClassBody *body() { return static_cast<ClassBody *>(PTree::nth(this, 3));}
 private:
   Encoding my_name;
   Node    *my_comments;
