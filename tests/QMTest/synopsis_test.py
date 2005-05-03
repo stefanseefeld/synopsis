@@ -13,6 +13,7 @@ from qm.test.resource import Resource
 from qm.test.result import Result
 
 import os, sys, string, re
+import difflib
 
 class APITest(Test):
    """Compile and run a test to validate the C++ API."""
@@ -51,15 +52,17 @@ class APITest(Test):
          result.Fail('program exit value : %i'%os.WEXITSTATUS(status))
          if test.stderr: result['orthotest.error'] = test.stderr
 
-      expected = string.join(open(self.expected, 'r').readlines(), '')
-      if expected and not test.stdout:
+      expected = open(self.expected, 'r').readlines()
+      output = test.stdout.split('\n')
+      if expected and not output:
          result.Fail('program did not generate output')
-      elif expected and not expected == test.stdout:
-         expected = '\'%s\''%(expected)
-         output = '\'%s\''%(test.stdout)
+      elif expected and expected != output:
+         diff = ''.join(difflib.unified_diff(expected, output))
+         expected = ''.join(expected)
          result.Fail('incorrect output',
-                     {'synopsis_test.expected': expected,
-                      'synopsis_test.output': output})
+                     {'synopsis_test.expected': result.Quote(expected),
+                      'synopsis_test.output': result.Quote(test.stdout),
+                      'synopsis_test.diff': result.Quote(diff)})
 
 
 class ProcessorTest(Test):
@@ -84,16 +87,22 @@ class ProcessorTest(Test):
       script = RedirectedExecutable(60) # 1 minute ought to be enough...
       status = script.Run(string.split(command))
       if status != 0:
-         result.Fail("unable to run '%s'"%command)
+         result.Fail('unable to run', {'synopsis_test.command': command})
       return status == 0
 
    def Run(self, context, result):
 
       if self.run_processor(context, result):
-         expected = open(self.expected).readlines()
-         output = open(self.output).readlines()
+         expected = open(self.expected, 'r').readlines()
+         output = open(self.output, 'r').readlines()
          if expected != output:
-            result.Fail("output mismatch")
+            diff = ''.join(difflib.unified_diff(expected, output))
+            expected = ''.join(expected)
+            output = ''.join(output)
+            result.Fail('incorrect output',
+                        {'synopsis_test.expected': result.Quote(expected),
+                         'synopsis_test.output': result.Quote(output),
+                         'synopsis_test.diff': result.Quote(diff)})
 
 class CxxResource(Resource):
    """build the executables the CxxTests all depend on."""
@@ -156,24 +165,26 @@ class CxxTest(Test):
 
       else:
          try:
-            expected = string.join(open(self.expected, 'r').readlines(), '')
+            expected = open(self.expected, 'r').readlines()
          except IOError, error:
             result.Fail('error reading expected output',
                         {'synopsis_test.error': error.strerror})
             return
          try:
-            output = string.join(open(self.output, 'r').readlines(), '')
+            output = open(self.output, 'r').readlines()
          except IOError, error:
             result.Fail('error reading actual output',
                         {'synopsis_test.error': error.strerror})
             return
          
          if expected != output:
-            expected = '\'%s\''%(expected)
-            output = '\'%s\''%(output)
+            diff = ''.join(difflib.unified_diff(expected, output))
+            expected = ''.join(expected)
+            output = ''.join(output)
             result.Fail('incorrect output',
-                        {'synopsis_test.expected': expected,
-                         'synopsis_test.output': output})
+                        {'synopsis_test.expected': report.Quote(expected),
+                         'synopsis_test.output': report.Quote(output),
+                         'synopsis_test.diff': report(output)})
 
    def Run(self, context, result):
 
