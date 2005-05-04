@@ -3,13 +3,13 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="5" name="func1(A)" realname="func1" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="1" suspect="1">
      <text>
       // Test function templates
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="3" suspect="0">
      <text>
       // Test template arg
 
@@ -42,7 +42,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="9" name="func2(int)" realname="func2" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="7" suspect="0">
      <text>
       // Test template return
 
@@ -73,7 +73,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="13" name="func2(A)" realname="func2" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="11" suspect="0">
      <text>
       // Test template arg and return
 
@@ -104,7 +104,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="17" name="func2(A)" realname="func2" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="15" suspect="0">
      <text>
       // Test template arg and return w/ different types
 
@@ -143,7 +143,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_template.cc" language="C++" line="21" name="func2(A)" realname="func2" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template.cc" line="19" suspect="0">
      <text>
       // Test template arg and return w/ different types. Function declaration
 

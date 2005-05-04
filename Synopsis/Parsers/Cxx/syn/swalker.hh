@@ -110,9 +110,11 @@ public:
   void visit(PTree::TemplateInstantiation *);
   //virtual PTree::Node * TranslateTemplateInstantiation(PTree::Node *, PTree::Node *, PTree::Node *, Class*);
   void visit(PTree::ExternTemplate *);
+  void visit(PTree::CommentedAtom *);
   void visit(PTree::Identifier *node) { translate_variable(node);}
   void visit(PTree::Brace *);
   void visit(PTree::Block *);
+  void visit(PTree::ClassBody *node) { visit(static_cast<PTree::Brace *>(node));}
   void visit(PTree::ClassSpec *);
   void visit(PTree::EnumSpec *);
   void visit(PTree::MetaclassDecl *);

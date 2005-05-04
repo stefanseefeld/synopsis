@@ -90,7 +90,7 @@
       </instance>
      </vtype>
     </instance>
-    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/typename.cc" language="C++" line="12" name="EOS" type="EOS"/>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/typename.cc" language="C++" line="11" name="EOS" type="EOS"/>
    </declarations>
   </instance>
  </declarations>

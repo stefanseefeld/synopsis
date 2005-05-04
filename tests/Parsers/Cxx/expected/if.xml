@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/if.cc" language="C++" line="2" name="func()" realname="func" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/if.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/if.cc" line="1" suspect="0">
      <text>
       // If test
 

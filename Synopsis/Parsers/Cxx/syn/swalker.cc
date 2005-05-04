@@ -435,6 +435,22 @@ void SWalker::visit(PTree::List *node)
       catch (const TranslateError &) {}
 }
 
+void SWalker::visit(PTree::CommentedAtom *node)
+{
+  // The only purpose of this method is to filter
+  // out those atoms that are used as end markers.
+  // They can be recognized by having length() == 0.
+  if (node->length() == 0)
+  {
+    // The begin of the node coincides with the start of the comment.
+    update_line_number(node);
+    AST::Builtin *builtin = my_builder->add_tail_comment(my_lineno);
+    add_comments(builtin, node);
+  }
+  else
+    visit(static_cast<PTree::Atom *>(node));
+}
+
 //. NamespaceSpec
 void SWalker::visit(PTree::NamespaceSpec *node)
 {
@@ -523,7 +539,6 @@ void SWalker::visit(PTree::ClassSpec *node)
   my_template = 0;
 
   int size = PTree::length(node);
-
   if (size == SizeForwardDecl)
   {
     // Forward declaration
@@ -622,7 +637,6 @@ void SWalker::visit(PTree::ClassSpec *node)
 
   // Push the impl stack for a cache of func impls
   my_func_impl_stack.push_back(FuncImplVec());
-
   // Translate the body of the class
   translate(pBody);
 
