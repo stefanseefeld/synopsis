@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using2.cc" language="C++" line="0" name="A" type="namespace">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using2.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using2.cc" line="1" suspect="0">
      <text>
       // From C++WD'96 7.4.3.2 Example
 

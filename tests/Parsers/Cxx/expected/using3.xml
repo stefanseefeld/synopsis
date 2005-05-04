@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Module" file="Parsers/Cxx/input/using3.cc" language="C++" line="0" name="A" type="namespace">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="1" suspect="0">
      <text>
       // From C++WD'96 7.4.3.3 Example 2
 
@@ -42,7 +42,7 @@
         </instance>
         <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="18" name="EOS" type="EOS">
          <comments>
-          <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="0" suspect="0">
+          <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="18" suspect="0">
            <text>
             // B::i hides A::i
 
@@ -57,7 +57,7 @@
       </instance>
       <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="22" name="B.C.l" type="namespace variable">
        <comments>
-        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="0" suspect="0">
+        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="21" suspect="0">
          <text>
           // no problem yet
 
@@ -68,7 +68,7 @@
       </instance>
       <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="23" name="B.C.m" type="namespace variable">
        <comments>
-        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="0" suspect="0">
+        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="22" suspect="0">
          <text>
           // ambiguous: C::k or D::k
 
@@ -79,7 +79,7 @@
       </instance>
       <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/using3.cc" language="C++" line="24" name="B.C.n" type="namespace variable">
        <comments>
-        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="0" suspect="0">
+        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="23" suspect="0">
          <text>
           // B::i hides A::i
 
@@ -88,9 +88,9 @@
        </comments>
        <vtype/>
       </instance>
-      <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="24" name="EOS" type="EOS">
+      <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/using3.cc" language="C++" line="23" name="EOS" type="EOS">
        <comments>
-        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="0" suspect="0">
+        <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/using3.cc" line="24" suspect="0">
          <text>
           // D::j hides B::j
 

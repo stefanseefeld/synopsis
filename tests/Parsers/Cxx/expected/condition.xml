@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/condition.cc" language="C++" line="2" name="X" type="struct">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/condition.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/condition.cc" line="1" suspect="0">
      <text>
       // Tests the ability to use a declaration in the condition of an if or switch
 

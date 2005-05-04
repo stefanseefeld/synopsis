@@ -108,7 +108,12 @@ class ProcessorTest(Test):
    def Run(self, context, result):
 
       if self.run_processor(context, result):
-         expected = open(self.expected, 'r').readlines()
+         try:
+            expected = open(self.expected, 'r').readlines()
+         except IOError, error:
+            result.Fail('error reading expected output',
+                        {'synopsis_test.error': error.strerror})
+            return
          output = open(self.output, 'r').readlines()
          if expected != output:
             quote = context.get('report') and no_quote or result.Quote
