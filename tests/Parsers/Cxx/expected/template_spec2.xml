@@ -23,7 +23,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/template_spec2.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/template_spec2.cc" line="1" suspect="0">
      <text>
       // Test template specializations #2
 

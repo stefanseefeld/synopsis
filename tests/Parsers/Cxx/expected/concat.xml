@@ -9,7 +9,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Class" file="Parsers/Cxx/input/concat.cc" language="C++" line="6" name="Foo" type="class">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/concat.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/concat.cc" line="1" suspect="1">
      <text>
       // According to spec, the ## operator must produce a valid PP token.
 // Unfortunately, no compilers known to man enforce this rule except UCPP, so

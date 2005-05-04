@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="3" name="test1" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="1" suspect="1">
      <text>
       // Comment at start
 
@@ -16,7 +16,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="7" name="test2" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="5" suspect="0">
      <text>
       // Test2: This should have a comment, unlike test1
 // It should also have two lines
@@ -28,7 +28,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="12" name="test3" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="9" suspect="1">
      <text>
       /* A comment by itself
  * Over multiple lines. */
@@ -40,14 +40,14 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="18" name="test4" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="14" suspect="1">
      <text>
       /* This comment should be ignored.
  */
 
      </text>
     </instance>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="16" suspect="0">
      <text>
       /* Test4: Should have a comment
  * */
@@ -59,7 +59,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="23" name="test5" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="20" suspect="0">
      <text>
       /* Test5: This should have a comment, unlike test 3
  * Which had a gap.
@@ -72,7 +72,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Builtin" file="Parsers/Cxx/input/comment_proximity.cc" language="C++" line="24" name="EOS" type="EOS">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/comment_proximity.cc" line="24" suspect="1">
      <text>
       //&lt; This should still be tail-appended!
 
