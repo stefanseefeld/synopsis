@@ -15,6 +15,10 @@ from qm.test.result import Result
 import os, sys, string, re
 import difflib
 
+def no_quote(str):
+   return str
+
+
 class APITest(Test):
    """Compile and run a test to validate the C++ API."""
 
@@ -50,19 +54,25 @@ class APITest(Test):
       status = test.Run([exe])
       if not os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
          result.Fail('program exit value : %i'%os.WEXITSTATUS(status))
-         if test.stderr: result['orthotest.error'] = test.stderr
+         if test.stderr: result['synopsis_test.error'] = test.stderr
 
-      expected = open(self.expected, 'r').readlines()
-      output = test.stdout.split('\n')
+      try:
+         expected = open(self.expected, 'r').readlines()
+         output = test.stdout.split('\n')
+      except IOError, error:
+         result.Fail('error reading expected output',
+                     {'synopsis_test.error': error.strerror})
+         return
       if expected and not output:
          result.Fail('program did not generate output')
       elif expected and expected != output:
          diff = ''.join(difflib.unified_diff(expected, output))
          expected = ''.join(expected)
+         quote = context.get('report') and no_quote or result.Quote
          result.Fail('incorrect output',
-                     {'synopsis_test.expected': result.Quote(expected),
-                      'synopsis_test.output': result.Quote(test.stdout),
-                      'synopsis_test.diff': result.Quote(diff)})
+                     {'synopsis_test.expected': quote(expected),
+                      'synopsis_test.output': quote(test.stdout),
+                      'synopsis_test.diff': quote(diff)})
 
 
 class ProcessorTest(Test):
@@ -84,10 +94,15 @@ class ProcessorTest(Test):
       command = 'python %s parse --output=%s %s'%(self.synopsis,
                                                   self.output,
                                                   string.join(self.input, ' '))
+      # Make sure the modules from the current working dir are used.
+      os.environ['PYTHONPATH'] = os.path.join(self.srcdir, os.pardir)
       script = RedirectedExecutable(60) # 1 minute ought to be enough...
       status = script.Run(string.split(command))
       if status != 0:
-         result.Fail('unable to run', {'synopsis_test.command': command})
+         quote = context.get('report') and no_quote or result.Quote
+         result.Fail('unable to run',
+                     {'synopsis_test.command': quote(command),
+                      'synopsis_test.error': quote(script.stderr)})
       return status == 0
 
    def Run(self, context, result):
@@ -96,13 +111,14 @@ class ProcessorTest(Test):
          expected = open(self.expected, 'r').readlines()
          output = open(self.output, 'r').readlines()
          if expected != output:
+            quote = context.get('report') and no_quote or result.Quote
             diff = ''.join(difflib.unified_diff(expected, output))
             expected = ''.join(expected)
             output = ''.join(output)
             result.Fail('incorrect output',
-                        {'synopsis_test.expected': result.Quote(expected),
-                         'synopsis_test.output': result.Quote(output),
-                         'synopsis_test.diff': result.Quote(diff)})
+                        {'synopsis_test.expected': quote(expected),
+                         'synopsis_test.output': quote(output),
+                         'synopsis_test.diff': quote(diff)})
 
 class CxxResource(Resource):
    """build the executables the CxxTests all depend on."""
@@ -178,13 +194,14 @@ class CxxTest(Test):
             return
          
          if expected != output:
+            quote = context.get('report') and no_quote or result.Quote
             diff = ''.join(difflib.unified_diff(expected, output))
             expected = ''.join(expected)
             output = ''.join(output)
             result.Fail('incorrect output',
-                        {'synopsis_test.expected': report.Quote(expected),
-                         'synopsis_test.output': report.Quote(output),
-                         'synopsis_test.diff': report(output)})
+                        {'synopsis_test.expected': quote(expected),
+                         'synopsis_test.output': quote(output),
+                         'synopsis_test.diff': quote(diff)})
 
    def Run(self, context, result):
 

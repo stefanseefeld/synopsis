@@ -59,7 +59,7 @@ private:
       PTree::Atom const *name = static_cast<PTree::Atom *>(PTree::second(node));
       PTree::Encoding type = PTree::Encoding::simple_name(name);
       my_os << "Type : " << type.unmangled() << std::endl;
-      lookup(type);
+      lookup(type, Scope::DEFAULT, true);
     }
     Walker::visit(node);
   }
@@ -111,11 +111,26 @@ private:
     lookup(name);
   }
 
-  void lookup(PTree::Encoding const &name, Scope::LookupContext c = Scope::DEFAULT)
+  void lookup(PTree::Encoding const &name,
+	      Scope::LookupContext c = Scope::DEFAULT,
+	      bool type = false)
   {
     SymbolSet symbols = current_scope()->lookup(name, c);
     if (!symbols.empty())
     {
+      if (type) // Expect a single match that is a type-name.
+      {
+	TypeName const *type = dynamic_cast<TypeName const *>(*symbols.begin());
+	if (type)
+	{
+	  std::string filename;
+	  unsigned long line_number = my_buffer.origin(type->ptree()->begin(), filename);
+	  my_os << "declared at line " << line_number << " in " << filename << std::endl;
+	  return;
+	}
+	else my_os << "only non-types found" << std::endl;
+      }
+
       for (SymbolSet::iterator s = symbols.begin(); s != symbols.end(); ++s)
       {
 	std::string filename;
