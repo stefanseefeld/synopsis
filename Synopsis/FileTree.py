@@ -1,4 +1,3 @@
-# $Id: FileTree.py,v 1.3 2003/11/11 06:05:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -57,7 +56,8 @@ class FileTree:
       
    def __add_dir(self, path):
       """Recursively add a directory to the tree"""
-      if path == '/':
+      parent_dir, filename = os.path.split(path)
+      if parent_dir == path:
          # The root directory is added below the root node
          # This is in case absolute filenames are mixed with relative ones
          parent = self.__root

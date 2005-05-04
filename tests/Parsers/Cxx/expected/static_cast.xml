@@ -21,7 +21,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Parsers/Cxx/input/static_cast.cc" language="C++" line="7" name="XY" type="global variable">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/static_cast.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/static_cast.cc" line="6" suspect="0">
      <text>
       // There should be a variable XY here
 

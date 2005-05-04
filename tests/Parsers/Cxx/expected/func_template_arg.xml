@@ -18,7 +18,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="1" suspect="1">
      <text>
       // Test function pointers as template arguments
 
@@ -54,7 +54,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="6" suspect="0">
      <text>
       // Test template class with function argument
 // (not really a template function)
@@ -83,7 +83,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="11" suspect="0">
      <text>
       // Test return type fptr
 
@@ -111,7 +111,7 @@
     </instance>
    </template>
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_template_arg.cc" line="15" suspect="0">
      <text>
       // Test return type fptr
 

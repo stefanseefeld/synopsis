@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/func_ptr.cc" language="C++" line="3" name="PyObject" type="typedef">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="0" suspect="1">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="1" suspect="1">
      <text>
       // Tests function pointers
 
@@ -16,7 +16,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_ptr.cc" language="C++" line="6" name="insert(void*(*)(PyObject*),bool)" realname="insert" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="5" suspect="0">
      <text>
       // A function which takes a func ptr as a parameter
 
@@ -63,7 +63,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_ptr.cc" language="C++" line="9" name="insert(void*(*)(PyObject*,int),bool)" realname="insert" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="8" suspect="0">
      <text>
       // A function which takes a func ptr as a parameter
 
@@ -105,7 +105,7 @@
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/func_ptr.cc" language="C++" line="12" name="insert2(int)" realname="insert2" type="function">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Parsers/Cxx/input/func_ptr.cc" line="11" suspect="0">
      <text>
       // A function which returns a func ptr
 

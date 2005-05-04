@@ -278,8 +278,15 @@ PTree::Node *Parser::parse()
     }
   }
   // Retrieve trailing comments
-  if (statements)
-    (void) PTree::nconc(PTree::last(statements)->car(), wrap_comments(my_lexer.get_comments()));
+  PTree::Node *c = wrap_comments(my_lexer.get_comments());
+  if (c)
+  {
+    // Use zero-length CommentedAtom as special marker.
+    // Should we define a 'PTree::Comment' atom for those comments that
+    // don't clash with the grammar ? At least that seems less hackish than this:
+    c = new PTree::CommentedAtom(c->begin(), 0, c);
+    statements = PTree::nconc(statements, PTree::list(c));
+  }
   return statements;
 }
 
