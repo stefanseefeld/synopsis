@@ -44,7 +44,7 @@ clean:
 %.o:	%.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.d:	%.cc %.hh
+%.d:	%.cc
 	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
 
 Makefile: $(srcdir)/Makefile.in
