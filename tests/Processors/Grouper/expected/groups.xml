@@ -3,7 +3,7 @@
  <declarations>
   <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Grouper/input/groups.cc" language="C++" line="8" name="first group " type="group">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="1" suspect="0">
      <text>
       group documentation
 
@@ -13,13 +13,13 @@
    <declarations>
     <instance accessibility="0" class="Synopsis.AST.Class" file="Processors/Grouper/input/groups.cc" language="C++" line="8" name="foo" type="struct">
      <comments>
-      <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="0" suspect="1">
+      <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="4" suspect="1">
        <text>
         some comment
 extending over multiple lines
        </text>
       </instance>
-      <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="0" suspect="0">
+      <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="7" suspect="0">
        <text>
         another comment
        </text>
@@ -41,7 +41,7 @@ extending over multiple lines
   </instance>
   <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Grouper/input/groups.cc" language="C++" line="17" name="tests " type="group">
    <comments>
-    <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="0" suspect="0">
+    <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="15" suspect="0">
      <text>
       another group
 
@@ -66,7 +66,7 @@ extending over multiple lines
       </instance>
       <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="26" name="test5" type="global variable">
        <comments>
-        <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="0" suspect="0">
+        <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="25" suspect="0">
          <text>
           @group xxx { not a group
          </text>
@@ -76,7 +76,7 @@ extending over multiple lines
       </instance>
       <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Grouper/input/groups.cc" language="C++" line="30" name="test6" type="global variable">
        <comments>
-        <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="0" suspect="0">
+        <instance class="Synopsis.AST.Comment" file="Processors/Grouper/input/groups.cc" line="27" suspect="0">
          <text>
           } and not a group end
 }
