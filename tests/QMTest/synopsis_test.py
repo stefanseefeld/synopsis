@@ -95,7 +95,7 @@ class ProcessorTest(Test):
                                                   self.output,
                                                   string.join(self.input, ' '))
       # Make sure the modules from the current working dir are used.
-      os.environ['PYTHONPATH'] = os.path.join(self.srcdir, os.pardir)
+      #os.environ['PYTHONPATH'] = os.path.join(self.srcdir, os.pardir)
       script = RedirectedExecutable(60) # 1 minute ought to be enough...
       status = script.Run(string.split(command))
       if status != 0:

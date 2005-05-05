@@ -488,7 +488,7 @@ class Enum (Declaration):
       #FIXME: the Cxx parser will append a Builtin('eos') to the
       #list of enumerators which we need to extract here.
       self.eos = None
-      if isinstance(self.__enumerators[-1], Builtin):
+      if self.__enumerators and isinstance(self.__enumerators[-1], Builtin):
          self.eos = self.__enumerators.pop()
 
    def enumerators(self):

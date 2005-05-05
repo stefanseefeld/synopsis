@@ -19,6 +19,8 @@ class config(build_ext):
     description = "configure the package"
 
     user_options = build_ext.user_options[:] + [
+        ('prefix=', None,
+         "installation prefix"),
         ('disable-gc', None,
          "whether or not to build the C++ parser with the garbage collector"),
         ('with-gc-prefix=', None,
@@ -27,12 +29,18 @@ class config(build_ext):
 
     def initialize_options(self):
 
+        self.prefix = None
         build_ext.initialize_options(self)
         self.disable_gc = 0
         self.with_gc_prefix = ''
 
     def finalize_options(self):
 
+        if not self.prefix:
+            # default to default prefix used by the install command
+            install = self.distribution.get_command_obj('install')
+            install.ensure_finalized()
+            self.prefix = install.prefix
         # set build_clib to build_lib if it was explicitely given,
         # overriding the default value.
         if self.build_temp:
@@ -103,7 +111,7 @@ class config(build_ext):
             configure = srcdir + '/configure'
             python = sys.executable
 
-        command = "%s --with-python=%s"%(configure, python)
+        command = "%s --prefix=%s --with-python=%s"%(configure, self.prefix, python)
         if self.disable_gc:
             command += " --disable-gc"
         command += ' %s'%args
