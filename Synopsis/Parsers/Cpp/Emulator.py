@@ -227,7 +227,12 @@ class CompilerList(object):
 
         self.compilers = []
         self.load(filename)
+        self.__modified = False
 
+    def __del__(self):
+
+        if self.__modified:
+            self.save()
 
     def list(self):
 
@@ -328,7 +333,7 @@ class CompilerList(object):
                 compilers.append(ci)
                 
         self.compilers = compilers
-
+        self.__modified = True
 
     def find(self, language, compiler, arguments):
 
@@ -341,6 +346,7 @@ class CompilerList(object):
         print 'could not find anything for %s %s %s'%(language, compiler, arguments)
         ci = self._query(language, compiler, arguments)
         self.compilers.append(ci)
+        self.__modified = True
         return ci
 
 
@@ -360,5 +366,4 @@ def get_compiler_info(language, compiler = '', arguments = None):
         compiler_list = CompilerList()
 
     ci = compiler_list.find(language, compiler, arguments)
-    compiler_list.save()
     return ci

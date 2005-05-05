@@ -11,11 +11,20 @@ However, it is possible to build Synopsis for a native windows
 platform, running with the win32 python installation and emulating
 a MSVC compiler.
 
-Building
---------
+Configuring
+-----------
 
 * If the sources are checked out from svn, run './autogen.sh' to generate
   the configure scripts. This step requires autoconf to be installed.
+
+* Run 'python setup.py config' to configure the subprojects.
+
+* Be careful to pass the same '--prefix' option you are going to pass
+  to the 'install' command, if you plan to install synopsis. See
+  the section about installing for details.
+
+Building
+--------
 
 * Run 'python setup.py build' to compile everything.
   This will place all files that are going to be installed under build/
@@ -40,7 +49,7 @@ Building
 Testing
 -------
 
-* The tests require version 2.1 of qmtest (http://www.qmtest.com),
+* The tests require version 2.2 of qmtest (http://www.qmtest.com),
   as well as tidy (http://www.w3.org/People/Raggett/tidy/)
 
 * run 'python setup.py test [--suite=<id>]' where the optional
@@ -67,7 +76,7 @@ Installing
 ----------
 
 * To install synopsis in <prefix>, run 'python setup.py install --prefix=<prefix>'
-  The default prefix is '/usr/local'.
+  The default prefix is the one from the python interpreter used during the build.
 
 * If documentation was built before, it will be installed into 
   <prefix>/share/doc/Synopsis
