@@ -124,7 +124,8 @@ public:
       my_outer(outer ? static_cast<Namespace const *>(outer->ref()) : 0)
   {
   }
-  Namespace *find_namespace(std::string const &name) const;
+  //. Find a nested namespace.
+  Namespace *find_namespace(PTree::NamespaceSpec const *name) const;
 
   virtual void use(PTree::UsingDirective const *);
   virtual Scope const *global() const 

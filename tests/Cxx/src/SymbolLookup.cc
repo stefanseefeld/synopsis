@@ -43,8 +43,10 @@ private:
 
   virtual void visit(PTree::NamespaceSpec *node)
   {
-    PTree::Atom const *name = static_cast<PTree::Atom *>(PTree::second(node));
-    PTree::Encoding ename = PTree::Encoding::simple_name(name);
+    PTree::Node const *name = PTree::second(node);
+    PTree::Encoding ename;
+    if (name) ename.simple_name(name);
+    else ename.append_with_length("<anonymous>");
     my_os << "Namespace : " << ename.unmangled() << std::endl;
     lookup(ename);
     Walker::visit(node);
