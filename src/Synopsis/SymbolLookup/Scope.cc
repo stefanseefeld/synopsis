@@ -114,6 +114,13 @@ Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) cons
   return find_scope(decl);
 }
 
+void Scope::remove_scope(PTree::Node const *decl)
+{
+  ScopeTable::iterator i = my_scopes.find(decl);
+  if (i == my_scopes.end()) throw InternalError("Attempt to remove unknown scope !");
+  my_scopes.erase(i);
+}
+
 SymbolSet Scope::find(Encoding const &name, LookupContext context) const throw()
 {
   Trace trace("Scope::find", Trace::SYMBOLLOOKUP);

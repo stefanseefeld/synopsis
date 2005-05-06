@@ -100,6 +100,8 @@ public:
   //. find a nested scope by symbol.
   //. The encoded name is provided for diagnostic purposes only.
   Scope *find_scope(PTree::Encoding const &, Symbol const *) const;
+  //. Remove the given nested scope from the scope.
+  void remove_scope(PTree::Node const*);
   //. find a nested scope by name
   //Scope *find_scope(PTree::Encoding const &) const;
 

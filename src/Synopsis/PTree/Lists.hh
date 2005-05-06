@@ -123,10 +123,18 @@ private:
   Node *my_comments;
 };
 
+class ParameterDeclaration : public List 
+{
+public:
+  ParameterDeclaration(Node *mod, Node *type, Node *decl)
+    : List(mod, list(type, decl)) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
 class UsingDeclaration : public List 
 {
 public:
-  UsingDeclaration(Node *p) : List(p, 0) {}
+  UsingDeclaration(Node *p, Node *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
@@ -183,6 +191,7 @@ public:
   void set_encoded_name(const Encoding &n) { my_name = n;}
   Node *get_comments() { return my_comments;}
   //. The following assumes proper C++, i.e. no OpenC++ extension.
+  ClassBody const *body() const { return static_cast<ClassBody const *>(PTree::nth(this, 3));}
   ClassBody *body() { return static_cast<ClassBody *>(PTree::nth(this, 3));}
 private:
   Encoding my_name;

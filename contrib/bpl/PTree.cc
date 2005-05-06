@@ -69,6 +69,7 @@ public:
   virtual void visit_namespace_alias(NamespaceAlias *l) { apply("visit_list", l);}
   virtual void visit_using_directive(UsingDirective *l) { apply("visit_list", l);}
   virtual void visit_declaration(Declaration *l) { apply("visit_list", l);}
+  virtual void visit_parameter_declaration(ParameterDeclaration *l) { apply("visit_list", l);}
   virtual void visit_using_declaration(UsingDeclaration *l) { apply("visit_list", l);}
   virtual void visit_declarator(Declarator *l) { apply("visit_list", l);}
   virtual void visit_name(Name *l) { apply("visit_list", l);}
@@ -160,6 +161,7 @@ public:
   virtual void visit(NamespaceAlias *n) { apply("visit_namespace_alias", n);}
   virtual void visit(UsingDirective *n) { apply("visit_using_directive", n);}
   virtual void visit(Declaration *n) { apply("visit_declaration", n);}
+  virtual void visit(ParameterDeclaration *n) { apply("visit_parameter_declaration", n);}
   virtual void visit(UsingDeclaration *n) { apply("visit_using_declaration", n);}
   virtual void visit(Declarator *n) { apply("visit_declarator", n);}
   virtual void visit(Name *n) { apply("visit_name", n);}
@@ -288,6 +290,7 @@ BOOST_PYTHON_MODULE(PTree)
   visitor.def("visit_namespace_alias", &VisitorWrapper::visit_namespace_alias);
   visitor.def("visit_using_directive", &VisitorWrapper::visit_using_directive);
   visitor.def("visit_declaration", &VisitorWrapper::visit_declaration);
+  visitor.def("visit_parameter_declaration", &VisitorWrapper::visit_parameter_declaration);
   visitor.def("visit_using_declaration", &VisitorWrapper::visit_using_declaration);
   visitor.def("visit_declarator", &VisitorWrapper::visit_declarator);
   visitor.def("visit_name", &VisitorWrapper::visit_name);
@@ -404,6 +407,7 @@ BOOST_PYTHON_MODULE(PTree)
   bpl::class_<NamespaceAlias, bpl::bases<List>, NamespaceAlias *, boost::noncopyable> namespace_alias("NamespaceAlias", bpl::no_init);
   bpl::class_<UsingDirective, bpl::bases<List>, UsingDirective *, boost::noncopyable> using_directive("UsingDirective", bpl::no_init);
   bpl::class_<Declaration, bpl::bases<List>, Declaration *, boost::noncopyable> declaration("Declaration", bpl::no_init);
+  bpl::class_<ParameterDeclaration, bpl::bases<List>, ParameterDeclaration *, boost::noncopyable> parameter_declaration("ParameterDeclaration", bpl::no_init);
   bpl::class_<UsingDeclaration, bpl::bases<List>, UsingDeclaration *, boost::noncopyable> using_declaration("UsingDeclaration", bpl::no_init);
   bpl::class_<Declarator, bpl::bases<List>, Declarator *, boost::noncopyable> declarator("Declarator", bpl::no_init);
   bpl::class_<Name, bpl::bases<List>, Name *, boost::noncopyable> name("Name", bpl::no_init);

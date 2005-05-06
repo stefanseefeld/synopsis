@@ -47,6 +47,24 @@ void LocalScope::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in);
 }
 
+FunctionScope::FunctionScope(PTree::Declaration const *decl, 
+			     PrototypeScope *proto,
+			     Scope const *outer)
+  : my_decl(decl), my_outer(outer->ref()) 
+{
+  for (SymbolTable::iterator i = proto->my_symbols.begin();
+       i != proto->my_symbols.end();
+       ++i)
+  {
+    Symbol const *symbol = i->second;
+    my_symbols.insert(std::make_pair(i->first,
+				     new VariableName(symbol->type(),
+						      symbol->ptree(),
+						      true, this)));
+  }
+  proto->unref();
+}
+
 void FunctionScope::use(PTree::UsingDirective const *udecl)
 {
   if (*PTree::second(udecl) == "namespace") // using.dir

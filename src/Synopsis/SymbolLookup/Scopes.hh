@@ -46,11 +46,12 @@ private:
   Scope       const *my_outer;
 };
 
+class PrototypeScope;
+
 class FunctionScope : public Scope
 {
 public:
-  FunctionScope(PTree::Declaration const *decl, Scope const *outer)
-    : my_decl(decl), my_outer(outer->ref()) {}
+  FunctionScope(PTree::Declaration const *, PrototypeScope *, Scope const *);
 
   virtual void use(PTree::UsingDirective const *);
   virtual Scope const *global() const { return my_outer->global();}
@@ -77,19 +78,23 @@ private:
 
 class PrototypeScope : public Scope
 {
+  friend class FunctionScope;
 public:
-  PrototypeScope(Scope const *outer) : my_outer(outer->ref()) {}
+  PrototypeScope(PTree::Node const *decl, Scope const *outer)
+    : my_decl(decl), my_outer(outer->ref()) {}
 
   virtual Scope const *global() const { return my_outer->global();}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
+  PTree::Node const *declaration() const { return my_decl;}
   virtual void dump(std::ostream &, size_t indent) const;
 protected:
   ~PrototypeScope() { my_outer->unref();}
 
 private:
-  Scope const *my_outer;
+  PTree::Node const *my_decl;
+  Scope const *      my_outer;
 };
 
 class Class : public Scope

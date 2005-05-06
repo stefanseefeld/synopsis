@@ -734,8 +734,6 @@ bool Parser::using_declaration(PTree::UsingDeclaration *&udecl)
   if(my_lexer.get_token(tk) != Token::USING)
     return false;
 
-  udecl = new PTree::UsingDeclaration(new PTree::AtomUSING(tk));
-
   PTree::Node *id;
   PTree::Encoding name_encode;
   if (!name(id, name_encode)) return false;
@@ -743,7 +741,9 @@ bool Parser::using_declaration(PTree::UsingDeclaration *&udecl)
     id = new PTree::Name(id, name_encode);
   else
     id = new PTree::Name(PTree::list(id), name_encode);
-  udecl = PTree::snoc(udecl, id);
+
+  udecl = new PTree::UsingDeclaration(new PTree::AtomUSING(tk), id);
+
   if (my_lexer.get_token(tk) != ';') return false;
 
   udecl = PTree::snoc(udecl, new PTree::Atom(tk));
@@ -1229,7 +1229,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
       {
   	statement = new PTree::Declaration(head,
   					   PTree::list(integral, decl->car()));
- 	SymbolLookup::Table::Guard guard(&my_symbols.enter_function(statement));
+ 	SymbolLookup::Table::Guard guard(&my_symbols.enter_function_definition(statement));
 	PTree::Block *body;
 	if(!function_body(body)) return false;
 	if(PTree::length(decl) != 1) return false;
@@ -1661,7 +1661,7 @@ bool Parser::constructor_decl(PTree::Node *&constructor, PTree::Encoding& encode
     encode.end_func_args();
   }
   else
-    if(!arg_decl_list(args, encode))
+    if(!parameter_declaration_list(args, encode))
       return false;
 
   my_lexer.get_token(cp);
@@ -1954,6 +1954,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       PTree::Node *args, *cv, *throw_decl, *mi;
       bool is_args = true;
 
+      SymbolLookup::Table::Guard guard(&my_symbols.enter_function_declaration(d));
       my_lexer.get_token(op);
       if(my_lexer.look_ahead(0) == ')')
       {
@@ -1963,7 +1964,8 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 	args_encode.end_func_args();
       }
       else
-	if(!arg_decl_list_or_init(args, is_args, args_encode, is_statement))
+	if(!parameter_declaration_list_or_init(args, is_args,
+					       args_encode, is_statement))
 	  return false;
       if(my_lexer.get_token(cp) != ')')
 	return false;
@@ -2468,7 +2470,7 @@ bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
 
 /*
   arg.decl.list.or.init
-    : arg.decl.list
+    : para.decl.list
     | function.arguments
 
   This rule accepts function.arguments to parse declarations like:
@@ -2480,10 +2482,10 @@ bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
 	Point p(s, t);
   s and t can be type names or variable names.
 */
-bool Parser::arg_decl_list_or_init(PTree::Node *&arglist, bool &is_args,
-				   PTree::Encoding &encode, bool maybe_init)
+bool Parser::parameter_declaration_list_or_init(PTree::Node *&arglist, bool &is_args,
+						PTree::Encoding &encode, bool maybe_init)
 {
-  Trace trace("Parser::arg_decl_list_or_init", Trace::PARSING);
+  Trace trace("Parser::parameter_declaration_list_or_init", Trace::PARSING);
   const char* pos = my_lexer.save();
   if(maybe_init)
   {
@@ -2496,10 +2498,10 @@ bool Parser::arg_decl_list_or_init(PTree::Node *&arglist, bool &is_args,
       }
 
     my_lexer.restore(pos);
-    return(is_args = arg_decl_list(arglist, encode));
+    return(is_args = parameter_declaration_list(arglist, encode));
   }
   else 
-    if(is_args = arg_decl_list(arglist, encode)) return true;
+    if(is_args = parameter_declaration_list(arglist, encode)) return true;
     else
     {
       my_lexer.restore(pos);
@@ -2509,25 +2511,23 @@ bool Parser::arg_decl_list_or_init(PTree::Node *&arglist, bool &is_args,
 }
 
 /*
-  arg.decl.list
+  para.decl.list
     : empty
     | arg.declaration ( ',' arg.declaration )* {{ ',' } Ellipses}
 */
-bool Parser::arg_decl_list(PTree::Node *&arglist, PTree::Encoding& encode)
+bool Parser::parameter_declaration_list(PTree::Node *&arglist,
+					PTree::Encoding& encode)
 {
-  Trace trace("Parser::arg_decl_list", Trace::PARSING);
-  PTree::Node *list;
-  PTree::Node *d;
-  int t;
-  Token tk;
+  Trace trace("Parser::parameter_declaration_list", Trace::PARSING);
+  PTree::Node *list = 0;
   PTree::Encoding arg_encode;
 
   encode.start_func_args();
-  list = 0;
   while(true)
   {
+    PTree::ParameterDeclaration *pdecl;
     arg_encode.clear();
-    t = my_lexer.look_ahead(0);
+    int t = my_lexer.look_ahead(0);
     if(t == ')')
     {
       if(list == 0) encode.void_();
@@ -2536,18 +2536,20 @@ bool Parser::arg_decl_list(PTree::Node *&arglist, PTree::Encoding& encode)
     }
     else if(t == Token::Ellipsis)
     {
+      Token tk;
       my_lexer.get_token(tk);
       encode.ellipsis_arg();
       arglist = PTree::snoc(list, new PTree::Atom(tk));
       break;
     }
-    else if(arg_declaration(d, arg_encode))
+    else if(parameter_declaration(pdecl, arg_encode))
     {
       encode.append(arg_encode);
-      list = PTree::snoc(list, d);
+      list = PTree::snoc(list, pdecl);
       t = my_lexer.look_ahead(0);
       if(t == ',')
       {
+	Token tk;
 	my_lexer.get_token(tk);
 	list = PTree::snoc(list, new PTree::Atom(tk));
       }
@@ -2564,14 +2566,15 @@ bool Parser::arg_decl_list(PTree::Node *&arglist, PTree::Encoding& encode)
 }
 
 /*
-  arg.declaration
+  parameter.declaration
     : {userdef.keyword | REGISTER} type.specifier arg.declarator
       {'=' expression}
 */
-bool Parser::arg_declaration(PTree::Node *&decl, PTree::Encoding &encode)
+bool Parser::parameter_declaration(PTree::ParameterDeclaration *&para,
+				   PTree::Encoding &encode)
 {
-  Trace trace("Parser::arg_declaration", Trace::PARSING);
-  PTree::Node *header, *type_name, *arg, *e;
+  Trace trace("Parser::parameter_declaration", Trace::PARSING);
+  PTree::Node *header;
   Token tk;
   PTree::Encoding name_encode;
 
@@ -2589,18 +2592,22 @@ bool Parser::arg_declaration(PTree::Node *&decl, PTree::Encoding &encode)
       break;
   }
 
+  PTree::Node *type_name;
   if(!type_specifier(type_name, true, encode)) return false;
 
-  if(!declarator(arg, kArgDeclarator, false, encode, name_encode, true)) return false;
+  PTree::Node *decl;
+  if(!declarator(decl, kArgDeclarator, false, encode, name_encode, true)) return false;
 
-  decl = header ? PTree::list(header, type_name, arg) : PTree::list(type_name, arg);
+  para = new PTree::ParameterDeclaration(header, type_name, decl);
+  declare(para);
   int t = my_lexer.look_ahead(0);
   if(t == '=')
   {
     my_lexer.get_token(tk);
-    if(!initialize_expr(e)) return false;
+    PTree::Node *init;
+    if(!initialize_expr(init)) return false;
     
-    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), e));
+    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), init));
   }
   return true;
 }
@@ -4045,7 +4052,7 @@ bool Parser::userdef_statement(PTree::Node *&st)
       goto rest;
     case Token::UserKeyword2 :
       keyword = new PTree::AtomUserKeyword2(tk);
-      if(!arg_decl_list(exp, dummy_encode)) return false;
+      if(!parameter_declaration_list(exp, dummy_encode)) return false;
     rest:
     {
       if(my_lexer.get_token(tk3) != ')') return false;
@@ -4664,6 +4671,7 @@ bool Parser::try_statement(PTree::Node *&st)
   {
     if(my_lexer.get_token(tk) != Token::CATCH) return false;
     if(my_lexer.get_token(op) != '(') return false;
+    // TODO: handler should become a ParameterDeclaration
     PTree::Node *handler;
     if(my_lexer.look_ahead(0) == Token::Ellipsis)
     {
@@ -4673,7 +4681,9 @@ bool Parser::try_statement(PTree::Node *&st)
     else
     {
       PTree::Encoding encode;
-      if(!arg_declaration(handler, encode)) return false;
+      PTree::ParameterDeclaration *parameter;
+      if(!parameter_declaration(parameter, encode)) return false;
+      handler = parameter;
     }
     if(my_lexer.get_token(cp) != ')') return false;
     PTree::Block *body;
