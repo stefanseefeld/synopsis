@@ -37,7 +37,7 @@ void Walker::visit(PTree::Declaration *decl)
   if(PTree::is_a(decls, Token::ntDeclarator)) // function definition
   {
     visit(static_cast<PTree::Declarator *>(decls)); // visit the declarator
-    my_table.enter_function(decl);
+    my_table.enter_function_definition(decl);
     visit_block(static_cast<PTree::Block *>(PTree::nth(decl, 3)));
     my_table.leave_scope();
   }

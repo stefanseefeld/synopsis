@@ -21,7 +21,7 @@ class Scope;
 class Symbol
 {
 public:
-  Symbol(const PTree::Encoding &t, PTree::Node *p, bool def, Scope *s)
+  Symbol(PTree::Encoding const &t, PTree::Node const *p, bool def, Scope *s)
     : my_type(t), my_ptree(p), my_definition(def), my_scope(s) {}
   virtual ~Symbol(){}
   virtual void accept(Visitor *v) const { v->visit(this);}
@@ -39,7 +39,8 @@ private:
 class VariableName : public Symbol
 {
 public:
-  VariableName(const PTree::Encoding &type, PTree::Node *ptree, bool def, Scope *s)
+  VariableName(PTree::Encoding const &type, PTree::Node const *ptree,
+	       bool def, Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -47,11 +48,11 @@ public:
 class ConstName : public VariableName
 {
 public:
-  ConstName(const PTree::Encoding &type, long v,
-	    PTree::Node *ptree, bool def, Scope *s)
+  ConstName(PTree::Encoding const &type, long v,
+	    PTree::Node const *ptree, bool def, Scope *s)
     : VariableName(type, ptree, def, s), my_defined(true), my_value(v) {}
-  ConstName(const PTree::Encoding &type,
-	    PTree::Node *ptree, bool def, Scope *s)
+  ConstName(PTree::Encoding const &type,
+	    PTree::Node const *ptree, bool def, Scope *s)
     : VariableName(type, ptree, def, s), my_defined(false) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
   bool defined() const { return my_defined;}
@@ -64,7 +65,8 @@ private:
 class TypeName : public Symbol
 {
 public:
-  TypeName(const PTree::Encoding &type, PTree::Node *ptree, bool def, Scope *s)
+  TypeName(PTree::Encoding const &type, PTree::Node const *ptree,
+	   bool def, Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -72,7 +74,7 @@ public:
 class TypedefName : public TypeName
 {
 public:
-  TypedefName(const PTree::Encoding &type, PTree::Node *ptree, Scope *scope)
+  TypedefName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope)
     : TypeName(type, ptree, false, scope) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -80,7 +82,7 @@ public:
 class ClassName : public TypeName
 {
 public:
-  ClassName(const PTree::Encoding &type, PTree::Node *ptree, bool def, Scope *s)
+  ClassName(PTree::Encoding const &type, PTree::Node const *ptree, bool def, Scope *s)
     : TypeName(type, ptree, def, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -88,7 +90,7 @@ public:
 class EnumName : public TypeName
 {
 public:
-  EnumName(const PTree::Encoding &type, PTree::Node *ptree, Scope *scope)
+  EnumName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope)
     : TypeName(type, ptree, true, scope) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -96,7 +98,7 @@ public:
 class ClassTemplateName : public Symbol
 {
 public:
-  ClassTemplateName(const PTree::Encoding &type, PTree::Node *ptree, bool def,
+  ClassTemplateName(PTree::Encoding const &type, PTree::Node const *ptree, bool def,
 		    Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
@@ -105,7 +107,8 @@ public:
 class FunctionName : public Symbol
 {
 public:
-  FunctionName(const PTree::Encoding &type, PTree::Node *ptree, bool def, Scope *s)
+  FunctionName(PTree::Encoding const &type, PTree::Node const *ptree,
+	       bool def, Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -113,7 +116,7 @@ public:
 class FunctionTemplateName : public Symbol
 {
 public:
-  FunctionTemplateName(const PTree::Encoding &type, PTree::Node *ptree, Scope *s)
+  FunctionTemplateName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *s)
     : Symbol(type, ptree, true, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };
@@ -121,7 +124,8 @@ public:
 class NamespaceName : public Symbol
 {
 public:
-  NamespaceName(const PTree::Encoding &type, PTree::Node *ptree, bool def, Scope *s)
+  NamespaceName(PTree::Encoding const &type, PTree::Node const *ptree,
+		bool def, Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(Visitor *v) const { v->visit(this);}
 };

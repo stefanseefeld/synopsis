@@ -18,7 +18,7 @@ using namespace SymbolLookup;
 
 namespace
 {
-PTree::Node *strip_cv_from_integral_type(PTree::Node *integral)
+PTree::Node const *strip_cv_from_integral_type(PTree::Node const *integral)
 {
   if(integral == 0) return 0;
 
@@ -31,12 +31,12 @@ PTree::Node *strip_cv_from_integral_type(PTree::Node *integral)
   return integral;
 }
 
-PTree::ClassSpec *get_class_template_spec(PTree::Node *body)
+PTree::ClassSpec const *get_class_template_spec(PTree::Node const *body)
 {
   if(*PTree::third(body) == ';')
   {
-    PTree::Node *spec = strip_cv_from_integral_type(PTree::second(body));
-    return dynamic_cast<PTree::ClassSpec *>(spec);
+    PTree::Node const *spec = strip_cv_from_integral_type(PTree::second(body));
+    return dynamic_cast<PTree::ClassSpec const *>(spec);
   }
   return 0;
 }
@@ -94,14 +94,36 @@ Table &Table::enter_class(PTree::ClassSpec const *spec)
   return *this;
 }
 
-Table &Table::enter_function(PTree::Declaration const *decl)
+Table &Table::enter_function_declaration(PTree::Node const *decl)
 {
-  Trace trace("Table::enter_function", Trace::SYMBOLLOOKUP);
+  Trace trace("Table::enter_function_declaration", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return *this;
   Scope *scope = my_scopes.top()->find_scope(decl);
   if (!scope)
   {
-    scope = new FunctionScope(decl, my_scopes.top());
+    my_prototype = new PrototypeScope(decl, my_scopes.top());
+    scope = my_prototype;
+    my_scopes.top()->declare_scope(decl, scope);
+
+  }
+  else scope->ref();
+  my_scopes.push(scope);
+  return *this;
+}
+
+Table &Table::enter_function_definition(PTree::Declaration const *decl)
+{
+  Trace trace("Table::enter_function_definition", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return *this;
+  // The scope must be identical to my_prototype.
+  // Replace it with a FunctionScope, i.e. transfer all
+  // symbols (which are parameter declarations).
+  Scope *scope = my_scopes.top()->find_scope(decl);
+  if (!scope)
+  {
+    my_scopes.top()->remove_scope(my_prototype->declaration());
+    scope = new FunctionScope(decl, my_prototype, my_scopes.top());
+    my_prototype = 0;
     my_scopes.top()->declare_scope(decl, scope);
   }
   else scope->ref();
@@ -138,11 +160,11 @@ Scope &Table::current_scope()
   return *my_scopes.top();
 }
 
-void Table::declare(Declaration *d)
+void Table::declare(Declaration const *d)
 {
   Trace trace("Table::declare(Declaration *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  Node *decls = third(d);
+  Node const *decls = third(d);
   if(is_a(decls, Token::ntDeclarator))
   {
     // function definition,
@@ -172,18 +194,18 @@ void Table::declare(Declaration *d)
   else
   {
     // Function or variable declaration.
-    PTree::Node *storage_spec = PTree::first(d);
-    PTree::Node *type_spec = PTree::second(d);
+    PTree::Node const *storage_spec = PTree::first(d);
+    PTree::Node const *type_spec = PTree::second(d);
     if (decls->is_atom()) ; // it is a ';'
     else
     {
       for (; decls; decls = decls->cdr())
       {
-	PTree::Node *decl = decls->car();
+	PTree::Node const *decl = decls->car();
 	if (PTree::is_a(decl, Token::ntDeclarator))
 	{
 	  PTree::Encoding name = decl->encoded_name();
-	  PTree::Encoding type = decl->encoded_type();
+	  PTree::Encoding const &type = decl->encoded_type();
 
 	  Scope *scope = my_scopes.top();
 	  if (name.is_qualified())
@@ -210,18 +232,18 @@ void Table::declare(Declaration *d)
   }
 }
 
-void Table::declare(Typedef *td)
+void Table::declare(Typedef const *td)
 {
   Trace trace("Table::declare(Typedef *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  Node *declarations = third(td);
+  PTree::Node const *declarations = third(td);
   while(declarations)
   {
-    Node *d = declarations->car();
+    PTree::Node const *d = declarations->car();
     if(type_of(d) == Token::ntDeclarator)
     {
-      Encoding name = d->encoded_name();
-      Encoding type = d->encoded_type();
+      Encoding const &name = d->encoded_name();
+      Encoding const &type = d->encoded_type();
       Scope *scope = my_scopes.top();
       scope->declare(name, new TypedefName(type, d, scope));
     }
@@ -229,11 +251,11 @@ void Table::declare(Typedef *td)
   }
 }
 
-void Table::declare(EnumSpec *spec)
+void Table::declare(EnumSpec const *spec)
 {
   Trace trace("Table::declare(EnumSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  Node *tag = second(spec);
+  PTree::Node const *tag = second(spec);
   Encoding const &name = spec->encoded_name();
   Encoding const &type = spec->encoded_type();
   Scope *scope = my_scopes.top();
@@ -241,20 +263,20 @@ void Table::declare(EnumSpec *spec)
     scope->declare(name, new EnumName(type, spec, my_scopes.top()));
   // else it's an anonymous enum
 
-  Node *body = third(spec);
+  PTree::Node const *body = third(spec);
   // The numeric value of an enumerator is either specified
   // by an explicit initializer or it is determined by incrementing
   // by one the value of the previous enumerator.
   // The default value for the first enumerator is 0
   long value = -1;
-  for (Node *e = second(body); e; e = rest(rest(e)))
+  for (PTree::Node const *e = second(body); e; e = rest(rest(e)))
   {
-    Node *enumerator = e->car();
+    PTree::Node const *enumerator = e->car();
     bool defined = true;
     if (enumerator->is_atom()) ++value;
     else  // [identifier = initializer]
     {
-      Node *initializer = third(enumerator);
+      PTree::Node const *initializer = third(enumerator);
       defined = evaluate_const(initializer, value);
       enumerator = enumerator->car();
 #ifndef NDEBUG
@@ -267,7 +289,7 @@ void Table::declare(EnumSpec *spec)
 #endif
     }
     assert(enumerator->is_atom());
-    Encoding name(enumerator->position(), enumerator->length());
+    PTree::Encoding name(enumerator->position(), enumerator->length());
     if (defined)
       scope->declare(name, new ConstName(type, value, enumerator, true, scope));
     else
@@ -275,7 +297,7 @@ void Table::declare(EnumSpec *spec)
   }
 }
 
-void Table::declare(NamespaceSpec *spec)
+void Table::declare(NamespaceSpec const *spec)
 {
   Trace trace("Table::declare(NamespaceSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
@@ -293,13 +315,13 @@ void Table::declare(NamespaceSpec *spec)
   // FIXME: assert that the found symbol really refers to a namespace !
 }
 
-void Table::declare(ClassSpec *spec)
+void Table::declare(ClassSpec const *spec)
 {
   Trace trace("Table::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Encoding const &name = spec->encoded_name();
   // If class spec contains a class body, it's a definition.
-  ClassBody *body = spec->body();
+  PTree::ClassBody const *body = spec->body();
 
   Scope *scope = my_scopes.top();
 
@@ -329,34 +351,44 @@ void Table::declare(ClassSpec *spec)
     scope->declare(name, new ClassName(spec->encoded_type(), spec, false, scope));
 }
 
-void Table::declare(TemplateDecl *tdecl)
+void Table::declare(TemplateDecl const *tdecl)
 {
   Trace trace("Table::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  PTree::Node *body = PTree::nth(tdecl, 4);
-  PTree::ClassSpec *class_spec = get_class_template_spec(body);
+  PTree::Node const *body = PTree::nth(tdecl, 4);
+  PTree::ClassSpec const *class_spec = get_class_template_spec(body);
   Scope *scope = my_scopes.top();
   if (class_spec)
   {
-    Encoding name = class_spec->encoded_name();
+    Encoding const &name = class_spec->encoded_name();
     scope->declare(name, new ClassTemplateName(Encoding(), tdecl, true, scope));
   }
   else
   {
-    PTree::Node *decl = PTree::third(body);
-    PTree::Encoding name = decl->encoded_name();
+    PTree::Node const *decl = PTree::third(body);
+    PTree::Encoding const &name = decl->encoded_name();
     scope->declare(name, new FunctionTemplateName(Encoding(), decl, scope));
   }
 }
 
-void Table::declare(PTree::UsingDirective *usingdir)
+void Table::declare(PTree::UsingDirective const *usingdir)
 {
   Trace trace("Table::declare(UsingDirective *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   my_scopes.top()->use(usingdir);
 }
 
-void Table::declare(PTree::UsingDeclaration *usingdecl)
+void Table::declare(PTree::ParameterDeclaration const *pdecl)
+{
+  Trace trace("Table::declare(ParameterDeclaration *)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+  PTree::Node const *decl = PTree::third(pdecl);
+  PTree::Encoding const &name = decl->encoded_name();
+  PTree::Encoding const &type = decl->encoded_type();
+  my_prototype->declare(name, new VariableName(type, decl, true, my_prototype));
+}
+
+void Table::declare(PTree::UsingDeclaration const *usingdecl)
 {
   Trace trace("Table::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
   trace << "TBD !";

@@ -16,6 +16,8 @@ namespace Synopsis
 namespace SymbolLookup
 {
 
+class PrototypeScope;
+
 //. Table provides a facade to the SymbolLookup module...
 class Table
 {
@@ -39,7 +41,8 @@ public:
 
   Table &enter_namespace(PTree::NamespaceSpec const *);
   Table &enter_class(PTree::ClassSpec const *);
-  Table &enter_function(PTree::Declaration const *);
+  Table &enter_function_declaration(PTree::Node const *);
+  Table &enter_function_definition(PTree::Declaration const *);
   Table &enter_block(PTree::List const *);
   void leave_scope();
 
@@ -47,17 +50,18 @@ public:
 
   bool evaluate_const(PTree::Node const *node, long &value);
 
-  void declare(PTree::Declaration *);
-  void declare(PTree::Typedef *);
+  void declare(PTree::Declaration const *);
+  void declare(PTree::Typedef const *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
-  void declare(PTree::EnumSpec *);
+  void declare(PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE
-  void declare(PTree::NamespaceSpec *);
+  void declare(PTree::NamespaceSpec const *);
   //. declare the class as a new TYPE
-  void declare(PTree::ClassSpec *);
-  void declare(PTree::TemplateDecl *);
-  void declare(PTree::UsingDirective *);
-  void declare(PTree::UsingDeclaration *);
+  void declare(PTree::ClassSpec const *);
+  void declare(PTree::TemplateDecl const *);
+  void declare(PTree::UsingDirective const *);
+  void declare(PTree::ParameterDeclaration const *);
+  void declare(PTree::UsingDeclaration const *);
 
   //. look up the encoded name and return a set of matching symbols.
   SymbolSet lookup(PTree::Encoding const &,
@@ -66,8 +70,13 @@ public:
 private:
   typedef std::stack<Scope *> Scopes;
 
-  Language my_language;
-  Scopes   my_scopes;
+  Language                      my_language;
+  Scopes                        my_scopes;
+  //. When parsing a function definition the declarator is seen first,
+  //. and thus a prototype is created to hold the parameters.
+  //. Later, when the function definition proper is seen, the symbols
+  //. are transfered and the prototype is deleted.
+  SymbolLookup::PrototypeScope *my_prototype;
 };
 
 inline Table::Guard::~Guard() { if (table) table->leave_scope();}

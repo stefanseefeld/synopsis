@@ -114,9 +114,10 @@ private:
   bool ptr_to_member(PTree::Node *&, PTree::Encoding&);
   bool template_args(PTree::Node *&, PTree::Encoding&);
   
-  bool arg_decl_list_or_init(PTree::Node *&, bool&, PTree::Encoding&, bool);
-  bool arg_decl_list(PTree::Node *&, PTree::Encoding&);
-  bool arg_declaration(PTree::Node *&, PTree::Encoding&);
+  bool parameter_declaration_list_or_init(PTree::Node *&, bool&,
+					  PTree::Encoding&, bool);
+  bool parameter_declaration_list(PTree::Node *&, PTree::Encoding&);
+  bool parameter_declaration(PTree::ParameterDeclaration *&, PTree::Encoding&);
   
   bool function_arguments(PTree::Node *&);
   bool initialize_expr(PTree::Node *&);
