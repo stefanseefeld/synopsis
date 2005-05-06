@@ -186,8 +186,12 @@ void Class::dump(std::ostream &os, size_t in) const
   Scope::dump(os, in);
 }
 
-Namespace *Namespace::find_namespace(std::string const &name) const
+Namespace *Namespace::find_namespace(PTree::NamespaceSpec const *spec) const
 {
+  std::string name = "<anonymous>";
+  PTree::Node const *ns_name = PTree::second(spec);
+  if (ns_name)
+    name.assign(ns_name->position(), ns_name->length());
   for (ScopeTable::const_iterator i = my_scopes.begin();
        i != my_scopes.end();
        ++i)

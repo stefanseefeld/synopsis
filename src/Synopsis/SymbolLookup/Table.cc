@@ -61,11 +61,9 @@ Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
     // If the namespace was already opened before, we should add a reference
     // to it under the current NamespaceSpec, too.
     // However, namespaces are only valid within namespaces (and the global scope).
-    Namespace *ns = dynamic_cast<Namespace *>(my_scopes.top());
-    if (ns)
+    if (Namespace *ns = dynamic_cast<Namespace *>(my_scopes.top()))
     {
-      PTree::Node const *name = PTree::second(spec);
-      scope = ns->find_namespace(std::string(name->position(), name->length()));
+      scope = ns->find_namespace(spec);
       if (scope)
 	ns->declare_scope(spec, scope);
     }
@@ -282,9 +280,9 @@ void Table::declare(NamespaceSpec *spec)
   Trace trace("Table::declare(NamespaceSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   // Beware anonymous namespaces !
-  Encoding name = (second(spec) ?
-		   Encoding::simple_name(static_cast<Atom const *>(second(spec))) :
-		   "<anonymous>");
+  Encoding name;
+  if (second(spec)) name.simple_name(second(spec));
+  else name.append_with_length("<anonymous>");
   Scope *scope = my_scopes.top();
   // Namespaces can be reopened, so only declare it if it isn't already known.
   SymbolSet symbols = scope->find(name, Scope::SCOPE);
