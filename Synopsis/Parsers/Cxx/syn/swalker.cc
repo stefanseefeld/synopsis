@@ -1195,6 +1195,11 @@ SWalker::translate_parameters(PTree::Node *p_params, std::vector<AST::Parameter*
     //[register iostate [nil]]
     //[iostate [nil] = 0]
     //[iostate [nil]]   etc
+
+    // Note 2005-05-06: Modified parameter-declaration-list
+    //                  to hold PTree::ParameterDeclarations,
+    //                  which have a reserved slot for the 'register'
+    //                  (but which may be empty). --stefan
     if (PTree::length(param) > 1)
     {
       // There is a parameter
@@ -1214,7 +1219,9 @@ SWalker::translate_parameters(PTree::Node *p_params, std::vector<AST::Parameter*
       if (my_links && !param->is_atom() && PTree::nth(param, type_ix))
         my_links->link(PTree::nth(param, type_ix), type);
       // Skip keywords (eg: register) which are Leaves
-      for (int ix = 0; ix < type_ix && PTree::nth(param, ix)->is_atom(); ix++)
+      for (int ix = 0;
+	   ix < type_ix && PTree::nth(param, ix) && PTree::nth(param, ix)->is_atom();
+	   ix++)
       {
         PTree::Node *leaf = PTree::nth(param, ix);
         premods.push_back(parse_name(leaf));
