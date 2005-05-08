@@ -60,6 +60,7 @@ namespace PTree
   class NamespaceAlias;
   class UsingDirective;
   class Declaration;
+  class FunctionDefinition;
   class ParameterDeclaration;
   class UsingDeclaration;
   class Declarator;
@@ -174,13 +175,14 @@ public:
   //.  [ [modifiers] name [declarators] ; ]
   //. Function prototype:
   //.  [ [modifiers] name [declarators] ; ]
-  //. Function impl:
-  //.  [ [modifiers] name declarator [ { ... } ] ]
   //. Typedef:
   //.  ?
   //. Class definition:
   //.  [ [modifiers] [class foo ...] [declarators]? ; ]
   virtual void visit(Declaration *);
+  //. Function definition:
+  //.  [ [modifiers] name declarator [ { ... } ] ]
+  virtual void visit(FunctionDefinition *);
   //. [ decl-specifier-seq ]
   //. [ decl-specifier-seq declarator ]
   //. [ decl-specifier-seq declarator = assignment-expression ]

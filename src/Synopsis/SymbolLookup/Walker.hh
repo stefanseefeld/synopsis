@@ -28,7 +28,7 @@ public:
   virtual void visit(PTree::List *);
   virtual void visit(PTree::Block *);
   virtual void visit(PTree::NamespaceSpec *);
-  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::FunctionDefinition *);
   virtual void visit(PTree::ClassSpec *);
   virtual void visit(PTree::DotMemberExpr *);
   virtual void visit(PTree::ArrowMemberExpr *);

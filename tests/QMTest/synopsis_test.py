@@ -178,10 +178,12 @@ class CxxTest(Test):
       command = '%s %s %s'%(self.applet, self.output, self.input)
       status = test.Run(command.split())
       if os.WIFSIGNALED(status):
-         result.Fail('program killed with signal %i'%os.WTERMSIG(status))
+         result.Fail('program killed with signal %i'%os.WTERMSIG(status),
+                     {'synopsis_test.command': command})
          
       elif os.WIFEXITED(status) and os.WEXITSTATUS(status) != 0:
-         result.Fail('program exit value : %i'%os.WEXITSTATUS(status))
+         result.Fail('program exit value : %i'%os.WEXITSTATUS(status),
+                     {'synopsis_test.command': command})
          if test.stderr: result['synopsis_test.error'] = test.stderr
 
       else:

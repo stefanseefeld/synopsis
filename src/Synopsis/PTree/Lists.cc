@@ -65,6 +65,19 @@ Declarator::Declarator(Declarator *decl, Node *p, Node *q)
 {
 }
 
+Node *Declarator::initializer()
+{
+  size_t l = PTree::length(this);
+  if (l < 2) return 0;
+  if (Node *assign = nth(this, l - 2))
+    if (*assign == '=')
+      return tail(this, l - 1); // initializer-clause
+  if (Node *expr = nth(this, l - 1))
+    if (!expr->is_atom() && first(expr) && *first(expr) == '(')
+      return second(expr); // expression-list
+  return 0;
+}
+
 Name::Name(Node *p, const Encoding &name)
   : List(p->car(), p->cdr()),
     my_name(name)

@@ -123,6 +123,13 @@ private:
   Node *my_comments;
 };
 
+class FunctionDefinition : public Declaration
+{
+public:
+  FunctionDefinition(Node *p, Node *q) : Declaration(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
 class ParameterDeclaration : public List 
 {
 public:
@@ -152,6 +159,7 @@ public:
   Encoding encoded_name() const { return my_name;}
   void set_encoded_type(const Encoding &t) { my_type = t;}
   Node *name() { return my_declared_name;}
+  Node *initializer();
   Node *get_comments() { return my_comments;}
   void set_comments(Node *c) { my_comments = c;}
 private:
