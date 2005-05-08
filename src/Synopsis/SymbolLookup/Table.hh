@@ -42,7 +42,7 @@ public:
   Table &enter_namespace(PTree::NamespaceSpec const *);
   Table &enter_class(PTree::ClassSpec const *);
   Table &enter_function_declaration(PTree::Node const *);
-  Table &enter_function_definition(PTree::Declaration const *);
+  Table &enter_function_definition(PTree::FunctionDefinition const *);
   Table &enter_block(PTree::List const *);
   void leave_scope();
 

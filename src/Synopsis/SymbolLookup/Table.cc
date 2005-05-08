@@ -111,7 +111,7 @@ Table &Table::enter_function_declaration(PTree::Node const *decl)
   return *this;
 }
 
-Table &Table::enter_function_definition(PTree::Declaration const *decl)
+Table &Table::enter_function_definition(PTree::FunctionDefinition const *decl)
 {
   Trace trace("Table::enter_function_definition", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return *this;

@@ -22,6 +22,7 @@ public:
 private:
   virtual void visit(PTree::Identifier *iden)
   {
+    Trace trace("SymbolFinder::visit(Identifier)", Trace::SYMBOLLOOKUP);
     PTree::Encoding name = PTree::Encoding::simple_name(iden);
     my_os << "Identifier : " << name.unmangled() << std::endl;
     lookup(name);
@@ -29,11 +30,13 @@ private:
 
   virtual void visit(PTree::Block *node)
   {
+    Trace trace("SymbolFinder::visit(Block)", Trace::SYMBOLLOOKUP);
     Walker::visit(node);
   }
 
   virtual void visit(PTree::Typedef *typed)
   {
+    Trace trace("SymbolFinder::visit(Typedef)", Trace::SYMBOLLOOKUP);
     // We need to figure out how to reproduce the (encoded) name of
     // the type being aliased.
     my_os << "Type : " << "<not implemented yet>" << std::endl;
@@ -43,6 +46,7 @@ private:
 
   virtual void visit(PTree::NamespaceSpec *node)
   {
+    Trace trace("SymbolFinder::visit(NamespaceSpec)", Trace::SYMBOLLOOKUP);
     PTree::Node const *name = PTree::second(node);
     PTree::Encoding ename;
     if (name) ename.simple_name(name);
@@ -54,6 +58,7 @@ private:
 
   virtual void visit(PTree::Declaration *node)
   {
+    Trace trace("SymbolFinder::visit(Declaration)", Trace::SYMBOLLOOKUP);
     PTree::Node *type_spec = PTree::second(node);
     // FIXME: what about compound types ?
     if (type_spec && type_spec->is_atom())
@@ -68,28 +73,19 @@ private:
 
   virtual void visit(PTree::Declarator *decl)
   {
+    Trace trace("SymbolFinder::visit(Declarator)", Trace::SYMBOLLOOKUP);
     PTree::Encoding name = decl->encoded_name();
     PTree::Encoding type = decl->encoded_type();
     my_os << "Declarator : " << name.unmangled() << std::endl;
     lookup(name, Scope::DECLARATION);
-    // Visit the initializer, if there is any.
     if (type.is_function()) return;
-    size_t length = PTree::length(decl);
-    if (length >= 2 && *PTree::nth(decl, length - 2) == '=')
-    {
-      PTree::Node *init = PTree::tail(decl, length - 1);
-      init->accept(this); // assign initializer
-    }
-    else
-    {
-      PTree::Node *last = PTree::last(decl)->car();
-      if(last && !last->is_atom() && *last->car() == '(')
-	PTree::second(last)->accept(this);
-    }
+    if (PTree::Node *initializer = decl->initializer())
+      initializer->accept(this);
   }
 
   virtual void visit(PTree::Name *n)
   {
+    Trace trace("SymbolFinder::visit(Name)", Trace::SYMBOLLOOKUP);
     PTree::Encoding name = n->encoded_name();
     my_os << "Name : " << name.unmangled() << std::endl;
     lookup(name);
@@ -97,6 +93,7 @@ private:
   
   virtual void visit(PTree::ClassSpec *node)
   {
+    Trace trace("SymbolFinder::visit(ClassSpec)", Trace::SYMBOLLOOKUP);
     PTree::Encoding name = node->encoded_name();
     my_os << "ClassSpec : " << name.unmangled() << std::endl;
     lookup(name, Scope::ELABORATE);
@@ -105,6 +102,7 @@ private:
 
   virtual void visit(PTree::FuncallExpr *node)
   {
+    Trace trace("SymbolFinder::visit(FuncallExpr)", Trace::SYMBOLLOOKUP);
     PTree::Node *function = node->car();
     PTree::Encoding name;
     if (function->is_atom()) name.simple_name(function);
@@ -117,6 +115,7 @@ private:
 	      Scope::LookupContext c = Scope::DEFAULT,
 	      bool type = false)
   {
+    Trace trace("SymbolFinder::lookup", Trace::SYMBOLLOOKUP);
     SymbolSet symbols = current_scope()->lookup(name, c);
     if (!symbols.empty())
     {

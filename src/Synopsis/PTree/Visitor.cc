@@ -56,6 +56,7 @@ void Visitor::visit(NamespaceSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(NamespaceAlias *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(UsingDirective *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Declaration *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(FunctionDefinition *l) { visit(static_cast<Declaration *>(l));}
 void Visitor::visit(ParameterDeclaration *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(UsingDeclaration *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Declarator *l) { visit(static_cast<List *>(l));}

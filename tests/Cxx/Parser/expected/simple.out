@@ -1,3 +1,3 @@
 [[nil [int] [#i@[1]a[a]] ;] [nil [double] [#d@[1]b[b]] ;] [nil [struct [nil nil] [{
  nil
-}]] [#[5]`0000@[1]c[c]] ;] [nil [void] [#Fid_v@[1]d[d ( [[[int] #i[nil]] , [[double] #d[nil]]] )]] ;]]
+}]] [#[5]`0000@[1]c[c]] ;] [nil [void] [#Fid_v@[1]d[d ( [[nil [int] #i[nil]] , [nil [double] #d[nil]]] )]] ;]]

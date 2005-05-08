@@ -1227,14 +1227,15 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
       }
       else
       {
-  	statement = new PTree::Declaration(head,
-  					   PTree::list(integral, decl->car()));
- 	SymbolLookup::Table::Guard guard(&my_symbols.enter_function_definition(statement));
+	PTree::FunctionDefinition *def;
+  	def = new PTree::FunctionDefinition(head,
+					    PTree::list(integral, decl->car()));
+ 	SymbolLookup::Table::Guard guard(&my_symbols.enter_function_definition(def));
 	PTree::Block *body;
 	if(!function_body(body)) return false;
 	if(PTree::length(decl) != 1) return false;
 
-  	PTree::snoc(statement, body);
+  	statement = PTree::snoc(def, body);
 	return true;
       }
   }

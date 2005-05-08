@@ -20,7 +20,7 @@ c
 type : [5]`0000 `0000
 `0000 
 Declaration : 
- void d ( int  , double  ) ;
+ void d (  int  ,  double  ) ;
 Declarator : [1]d d
 d 
 type : Fid_v void(*)(int,double)
