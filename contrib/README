@@ -1,0 +1,29 @@
+This directory contains experimental code that may or may not
+be moved into the 'public' framework. As synopsis is in heavy
+development, it is distributed with the source distribution
+anyways, hoping that it may whet your appetit.
+
+To be able to compile the code, you will have to adjust the
+(local) build system to your platform. You will at least
+have to call $(srcdir)/configure <options> where options
+is at least:
+
+--with-python=<python>          the name of the python executable.
+--with-syn-cxx=<syn-cxx-prefix> the prefix to the Synopsis library.
+
+Additionally, you may have to modify the Makefiles to adjust
+the names of the various boost libraries being used (unfortunately
+the naming isn't consistent across platforms).
+
+The following subprojects are being worked on:
+
+* bpl :  A set of python extension modules that reflect the low
+         level C++ parser API to python using boost.python.
+
+* wave : A new CPP parser (i.e. preprocessor) backend based on
+         boost.wave.
+
+
+
+
+Good luck !

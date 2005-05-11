@@ -10,7 +10,6 @@ SHELL	:= /bin/sh
 srcdir	:= @srcdir@
 
 PYTHON	:= @PYTHON@
-SYNOPSIS:= $(PYTHON) synopsis.py
 
 CC	:= @CC@
 CXX	:= @CXX@
@@ -28,8 +27,6 @@ LIBRARY_EXT := @LIBEXT@
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/*.hh))
 SRC	:= ASTTranslator.cc ParserImpl.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
-HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
-CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
 TARGET	:= wave$(LIBRARY_EXT)
@@ -40,15 +37,6 @@ vpath %.cc $(srcdir)
 all: $(TARGET)
 
 doc: wave.syn wave-impl.syn
-
-# Link C++ files together
-wave.syn: $(HDR_SYN)
-	@echo linking C++ headers together
-	$(SYNOPSIS) link_cxx --output=$@ $^
-
-wave-impl.syn: $(HDR_SYN) $(C_SYN)
-	@echo linking all C++ files together
-	$(SYNOPSIS) link_cxx --output=$@ $^
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)
@@ -61,23 +49,11 @@ wave-impl.syn: $(HDR_SYN) $(C_SYN)
 Makefile: $(srcdir)/Makefile.in
 	./config.status --file Makefile
 
-# Compile C++ .hh files
-$(HDR_SYN): %.syn: %
-	@echo parsing $^
-	mkdir -p $(dir $@)
-	$(SYNOPSIS) cxx --output=$@ $?
-
-# Compile C++ .cc files
-$(CC_SYN): %.syn: %
-	@echo parsing $^
-	mkdir -p $(dir $@)
-	$(SYNOPSIS) cxx --output=$@ $?
-
 wave$(LIBRARY_EXT): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
-	rm -f *~ *.o wave$(LIBRARY_EXT) *.syn *.d *.pyc *.pyo base_lib
+	rm -f *~ *.o wave$(LIBRARY_EXT) *.d *.pyc *.pyo base_lib
 
 ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))
 -include $(DEP)

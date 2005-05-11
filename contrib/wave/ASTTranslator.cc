@@ -12,11 +12,12 @@
 using namespace Synopsis;
 namespace wave = boost::wave;
 
-ASTTranslator::ASTTranslator(std::string const &filename,
+ASTTranslator::ASTTranslator(std::string const &language,
+			     std::string const &filename,
 			     std::string const &base_path, bool main_file_only,
 			     AST::AST ast, bool v, bool d)
   : my_ast(ast),
-    my_ast_kit("C"),
+    my_ast_kit(language),
     my_raw_filename(filename),
     my_base_path(base_path),
     my_main_file_only(main_file_only),
@@ -35,17 +36,17 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
 {
   Trace trace("ASTTranslator::expand_function_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
-  std::cout << macrocall.get_position() << ": "
-	    << macrocall.get_value() << "(";
+//   std::cout << macrocall.get_position() << ": "
+// 	    << macrocall.get_value() << "(";
 
   // argument list
-  for (Container::size_type i = 0; i < arguments.size(); ++i) 
-  {
-    std::cout << wave::util::impl::as_string(arguments[i]);
-    if (i < arguments.size()-1)
-      std::cout << ", ";
-  }
-  std::cout << ")" << std::endl; 
+//   for (Container::size_type i = 0; i < arguments.size(); ++i) 
+//   {
+//     std::cout << wave::util::impl::as_string(arguments[i]);
+//     if (i < arguments.size()-1)
+//       std::cout << ", ";
+//   }
+//   std::cout << ")" << std::endl; 
 }
  
 void ASTTranslator::expanding_object_like_macro(Token const &macro, 
@@ -54,42 +55,53 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
 {
   Trace trace("ASTTranslator::expand_object_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
-  std::cout << macrocall.get_position() << ": "
-	    << macrocall.get_value() << std::endl;
+//   std::cout << macrocall.get_position() << ": "
+// 	    << macrocall.get_value() << std::endl;
 }
  
 void ASTTranslator::expanded_macro(Container const &result)
 {
   Trace trace("ASTTranslator::expand_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
-  std::cout << wave::util::impl::as_string(result) << std::endl;
+//   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
  
 void ASTTranslator::rescanned_macro(Container const &result)
 {
   Trace trace("ASTTranslator::rescanned_macro", Trace::TRANSLATION);
-  std::cout << wave::util::impl::as_string(result) << std::endl;
+//   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
 
-void ASTTranslator::opened_include_file(std::string const &dir, 
-					std::string const &filename, 
+void ASTTranslator::found_include_directive(std::string const &filename)
+{
+  Trace trace("ASTTranslator::found_include_directive", Trace::TRANSLATION);
+  trace << filename;
+
+  my_next_include = filename;
+}
+
+void ASTTranslator::opened_include_file(std::string const &relname, 
+					std::string const &absname, 
 					std::size_t include_depth,
 					bool is_system_include)
 {
   Trace trace("ASTTranslator::opened_include_file", Trace::TRANSLATION);
+  trace << absname;
   if (my_mask_counter)
   {
     ++my_mask_counter;
     return;
   }
-  AST::SourceFile sf = lookup_source_file(filename, false);
+  AST::SourceFile sf = lookup_source_file(relname, false);
 
-  AST::Include include = my_ast_kit.create_include(sf, filename, false, false);
+  AST::Include include = my_ast_kit.create_include(sf, my_next_include, false, false);
   Python::List includes = my_file_stack.top().includes();
   includes.append(include);
   my_file_stack.push(sf);
 
-  std::string abs_filename = Path(filename).abs().str();
+  // The following confusing naming indicates something needs
+  // to be cleared up !
+  std::string abs_filename = Path(relname).abs().str();
   // Only keep the first level of includes starting from the last unmasked file.
   if (my_main_file_only || 
       (my_base_path.size() && 
@@ -108,6 +120,8 @@ void ASTTranslator::returning_from_include_file()
 AST::SourceFile ASTTranslator::lookup_source_file(std::string const &filename,
 						  bool main)
 {
+  Trace trace("ASTTranslator::lookup_source_file", Trace::TRANSLATION);
+  trace << filename << ' ' << main;
   Path path = Path(filename).abs();
   path.strip(my_base_path);
   std::string short_name = path.str();
