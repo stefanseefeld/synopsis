@@ -47,7 +47,7 @@ doc: wave.syn wave-impl.syn
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 Makefile: $(srcdir)/Makefile.in
-	./config.status --file Makefile
+	$(SHELL) -ec 'cd .. && ./config.status --file wave/Makefile'
 
 wave$(LIBRARY_EXT): $(OBJ)
 	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
