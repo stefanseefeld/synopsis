@@ -102,18 +102,29 @@ PyObject *parse(PyObject *self, PyObject *args)
                           ASTTranslator> context_type;
 
     context_type ctx(input.begin(), input.end(), input_file,
-		     ASTTranslator(input_file, base_path, main_file_only,
+		     ASTTranslator(language, input_file, base_path, main_file_only,
 				   ast, verbose, debug));
 
     if (std::string(language) == "C")
+    {
       ctx.set_language(wave::support_c99);
+      // Remove the '__STDC_HOSTED__' macro as wave predefines it.
+      flags.erase(std::remove(flags.begin(), flags.end(),
+			      std::string("-D__STDC_HOSTED__=1")),
+		  flags.end());
+    }
     else
     {
+      ctx.set_language(wave::enable_variadics(ctx.get_language()));
+      // FIXME: should only enable in GCC compat mode.
+      ctx.set_language(wave::enable_long_long(ctx.get_language()));
       // Remove the '__cplusplus' macro as wave predefines it.
       flags.erase(std::remove(flags.begin(), flags.end(),
 			      std::string("-D__cplusplus=1")),
 		  flags.end());
     }
+//     ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
+
     for (std::vector<char const *>::iterator i = flags.begin();
 	 i != flags.end();
 	 ++i)

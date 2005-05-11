@@ -24,7 +24,8 @@ class ASTTranslator : public wave::context_policies::default_preprocessing_hooks
 public:
   typedef std::list<Token, boost::fast_pool_allocator<Token> > Container;
 
-  ASTTranslator(std::string const &filename,
+  ASTTranslator(std::string const &language,
+		std::string const &filename,
 		std::string const &base_path, bool main_file_only,
 		AST::AST a, bool v, bool d);
 
@@ -41,6 +42,8 @@ public:
   void expanded_macro(Container const &result);
  
   void rescanned_macro(Container const &result);
+
+  void found_include_directive(std::string const &filename);
 
   void opened_include_file(std::string const &dir, 
 			   std::string const &filename, 
@@ -83,6 +86,7 @@ private:
   std::string         my_raw_filename;
   std::string         my_base_path;
   FileStack           my_file_stack;
+  std::string         my_next_include;
   bool                my_main_file_only;
   unsigned int        my_mask_counter;
   bool                my_verbose;
