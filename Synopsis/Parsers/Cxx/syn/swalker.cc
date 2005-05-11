@@ -323,19 +323,19 @@ SWalker::translate(PTree::Node *node)
   }
   catch (const std::exception& e)
   {
-    std::cout << "Warning: An exception occurred: " << e.what() << std::endl;
-    std::cout << "At: ";
+    std::cerr << "Warning: An exception occurred: " << e.what() << std::endl;
+    std::cerr << "At: ";
     std::string filename;
     unsigned long line = my_buffer->origin(node->begin(), filename);
-    std::cout << " (" << filename << ":" << line << ")" << std::endl;
+    std::cerr << " (" << filename << ":" << line << ")" << std::endl;
   }
   catch (...)
   {
-    std::cout << "Warning: An unknown exception occurred: " << std::endl;
-    std::cout << "At: ";
+    std::cerr << "Warning: An unknown exception occurred: " << std::endl;
+    std::cerr << "At: ";
     std::string filename;
     unsigned long line = my_buffer->origin(node->begin(), filename);
-    std::cout << " (" << filename << ":" << line << ")" << std::endl;
+    std::cerr << " (" << filename << ":" << line << ")" << std::endl;
   }
 #endif
 }
@@ -376,14 +376,14 @@ void SWalker::visit(PTree::Atom *node)
         else if (num_type == "float") num_type = "long double";
         else if (num_type == "double") num_type = "long double";
         else
-          std::cout << "Unknown num type: " << num_type << std::endl;
+          std::cerr << "Unknown num type: " << num_type << std::endl;
       }
       else if (*str == 'u' || *str == 'U')
       {
         if (num_type == "int") num_type = "unsigned";
         else if (num_type == "long") num_type = "unsigned long";
         else
-          std::cout << "Unknown num type: " << num_type << std::endl;
+          std::cerr << "Unknown num type: " << num_type << std::endl;
       }
       else break;// End of numeric constant
     }
@@ -959,7 +959,7 @@ SWalker::translate_declarator(PTree::Node *decl)
   PTree::Encoding enctype = decl->encoded_type();
   if (encname.empty() || enctype.empty())
   {
-    std::cout << "encname or enctype empty !" << std::endl;
+    std::cerr << "encname or enctype empty !" << std::endl;
     return 0;
   }
 
@@ -1007,7 +1007,8 @@ SWalker::translate_function_declarator(PTree::Node *decl, bool is_const)
     p_params = PTree::rest(p_params);
   if (!p_params)
   {
-    std::cout << "Warning: error finding params!" << std::endl;
+    std::cerr << "Warning: error finding params for '" 
+	      << PTree::reify(decl) << '\'' << std::endl;
     return 0;
   }
   std::vector<AST::Parameter*> params;
@@ -1186,7 +1187,7 @@ SWalker::translate_parameters(PTree::Node *p_params, std::vector<AST::Parameter*
     Types::Type* type = my_decoder->decodeType();
     if (!type)
     {
-      std::cout << "Premature end of decoding!" << std::endl;
+      std::cerr << "Premature end of decoding!" << std::endl;
       break; // 0 means end of encoding
     }
     // Discover contents. Ptree may look like:
@@ -1318,7 +1319,7 @@ void SWalker::translate_function_name(const PTree::Encoding &encname, std::strin
     realname += ">";
   }
   else
-    std::cout << "Warning: Unknown function name: " << encname << std::endl;
+    std::cerr << "Warning: Unknown function name: " << encname << std::endl;
 }
 
 //. Class or Enum
@@ -1586,9 +1587,7 @@ void SWalker::visit(PTree::UsingDeclaration *node)
   STrace trace("SWalker::visit(PTree::UsingDeclaration*)");
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
   PTree::Node *p = PTree::rest(node);
-
   // Find name that we are looking up, and make a new ptree list for linking it
-  p = p->car(); // p now points to the 'PTree::Name' child of 'PTree::Using'
   PTree::Node *p_name = PTree::snoc(0, p->car());
   ScopedName name;
   if (*PTree::first(p) == "::")
