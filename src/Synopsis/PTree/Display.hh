@@ -19,7 +19,7 @@ namespace PTree
 class Display : private Visitor
 {
 public:
-  Display(std::ostream &os, bool encoded, bool typeinfo = false);
+  Display(std::ostream &os, bool encoded);
 
   void display(Node const *);
 
@@ -41,16 +41,40 @@ private:
 
   std::ostream &my_os;
   size_t        my_indent;
-  size_t        my_depth;
   bool          my_encoded;
-  bool          my_typeinfo;
+};
+
+class RTTIDisplay : private Visitor
+{
+public:
+  RTTIDisplay(std::ostream &os, bool encoded);
+
+  void display(Node const *);
+
+  virtual void visit(Atom *);
+  virtual void visit(List *);
+  virtual void visit(DupAtom *);
+private:
+  void newline();
+
+  std::ostream &my_os;
+  size_t        my_indent;
+  bool          my_encoded;
 };
 
 inline void display(const Node *node, std::ostream &os,
-		    bool encoded, bool typeinfo = false)
+		    bool encoded = false, bool typeinfo = false)
 {
-  Display d(os, encoded, typeinfo);
-  d.display(node);
+  if (typeinfo)
+  {
+    RTTIDisplay d(os, encoded);
+    d.display(node);
+  }
+  else
+  {
+    Display d(os, encoded);
+    d.display(node);
+  }
 }
 
 }
