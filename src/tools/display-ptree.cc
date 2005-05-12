@@ -17,7 +17,7 @@ using namespace Synopsis;
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " [-g <filename>] [-d] [-r] <input>" << std::endl;
+  std::cerr << "Usage: " << command << " [-g <filename>] [-d] [-r] [-e] <input>" << std::endl;
   return -1;
 }
 
@@ -62,6 +62,7 @@ private:
 
 int main(int argc, char **argv)
 {
+  bool encoding = false;
   bool typeinfo = false;
   bool debug = false;
   std::string dotfile;
@@ -79,6 +80,7 @@ int main(int argc, char **argv)
       }
       dotfile = argv[i];
     }
+    else if (argv[i] == std::string("-e")) encoding = true;
     else if (argv[i] == std::string("-r")) typeinfo = true;
     else if (argv[i] == std::string("-d")) debug = true;
     else return usage(argv[0]);
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
     if (!node) return -1;
     if (dotfile.empty())
     {
-      PTree::display(node, std::cout, true, typeinfo);
+      PTree::display(node, std::cout, encoding, typeinfo);
     }
     else
     {
