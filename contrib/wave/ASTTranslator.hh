@@ -62,12 +62,10 @@ public:
   {}
 
   // macro definition hooks
-  template <typename ParametersT, typename DefinitionT>
   void defined_macro(Token const &name, bool is_functionlike,
-		     ParametersT const &parameters,
-		     DefinitionT const &definition,
-		     bool is_predefined)
-  {}
+		     std::vector<Token> const &parameters,
+		     Container const &definition,
+		     bool is_predefined);
 
   template <typename StringT>
   void undefined_macro(StringT const &name)
