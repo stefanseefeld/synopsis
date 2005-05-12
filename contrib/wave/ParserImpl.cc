@@ -123,7 +123,7 @@ PyObject *parse(PyObject *self, PyObject *args)
 			      std::string("-D__cplusplus=1")),
 		  flags.end());
     }
-//     ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
+    ctx.set_language(wave::enable_preserve_comments(ctx.get_language()));
 
     for (std::vector<char const *>::iterator i = flags.begin();
 	 i != flags.end();
@@ -137,7 +137,7 @@ PyObject *parse(PyObject *self, PyObject *args)
 	  ctx.add_sysinclude_path(*i + 2);
 	}
 	else if (*(*i + 1) == 'D')
-	  ctx.add_macro_definition(*i + 2);
+	  ctx.add_macro_definition(*i + 2, true);
 	else if (*(*i + 1) == 'U')
 	  ctx.remove_macro_definition(*i + 2);
       }

@@ -37,7 +37,7 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
   Trace trace("ASTTranslator::expand_function_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
 //   std::cout << macrocall.get_position() << ": "
-// 	    << macrocall.get_value() << "(";
+//  	    << macrocall.get_value() << "(";
 
   // argument list
 //   for (Container::size_type i = 0; i < arguments.size(); ++i) 
@@ -56,7 +56,7 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
   Trace trace("ASTTranslator::expand_object_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
 //   std::cout << macrocall.get_position() << ": "
-// 	    << macrocall.get_value() << std::endl;
+//  	    << macrocall.get_value() << std::endl;
 }
  
 void ASTTranslator::expanded_macro(Container const &result)
@@ -115,6 +115,37 @@ void ASTTranslator::returning_from_include_file()
   if (my_mask_counter < 2) my_file_stack.pop();
   // if the file was masked, decrement the counter
   if (my_mask_counter) --my_mask_counter;
+}
+
+void ASTTranslator::defined_macro(Token const &name, bool is_functionlike,
+				  std::vector<Token> const &parameters,
+				  Container const &definition,
+				  bool is_predefined)
+{
+  Trace trace("ASTTranslator::defined_macro", Trace::TRANSLATION);
+  trace << name;
+  if (my_mask_counter || is_predefined) return;
+  
+  Token::string_type const &m = name.get_value();
+  std::string macro_name(m.begin(), m.end());
+  Token::position_type position = name.get_position();
+
+  Python::List params;
+  std::string text;
+//   for (std::vector<Token>::const_iterator i = parameters.begin();
+//        i != parameters.end(); ++i) 
+//   {
+//     std::cout << wave::util::impl::as_string(arguments[i]);
+//     if (i < arguments.size()-1)
+//       std::cout << ", ";
+//   }
+
+  AST::Declarations declarations = my_file_stack.top().declarations();
+  AST::Macro macro = my_ast_kit.create_macro(my_file_stack.top(),
+					     position.get_line(),
+					     AST::ScopedName(macro_name),
+					     params, text);
+  declarations.append(macro);
 }
 
 AST::SourceFile ASTTranslator::lookup_source_file(std::string const &filename,

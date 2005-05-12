@@ -101,7 +101,8 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
     c = at(++cursor);
   } while(is_blank(c));
 
-#if defined(_MSC_VER) || defined(IRIX_CC)
+  // gcc only generates '#' instead of '#line', so make the following check
+  // optional.
   if(cursor + 4 <= my_buffer.size() && my_buffer.substr(cursor, 4) == "line")
   {
     // skip 'line' token and following whitespace
@@ -111,7 +112,6 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
       c = at(++cursor);
     } while(is_blank(c));
   }
-#endif
 
   if(is_digit(c))
   {		/* # <line> <file> */

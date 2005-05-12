@@ -13,7 +13,8 @@ from types import *
 from distutils.core import Command
 from distutils.debug import DEBUG
 from distutils.util import get_platform, convert_path
-from distutils.file_util import write_file
+from distutils.file_util import write_file, copy_file
+from distutils.dir_util import mkpath
 from distutils.errors import *
 from distutils import log
 
@@ -131,15 +132,12 @@ Section: libs
             output.write('\n')          # Separator line
             
             output.write("Package: %s\n" % package_name)
-            output.write("""Section: libs
-Architecture: all\n""")
-            output.write("Depends: python%(pyversion)s\n" % d)
-            if dist.has_ext_modules():
-                # XXX how do I figure out the right architecture?
-                output.write('Architecture: i386\n')
-            else:
-                output.write('Architecture: all\n')
 
+            #added missing Version information to control --- Vinzenz Feenstra (evilissimo@users.sf.net)
+	    output.write("Version: %s\n" % dist.get_version() )
+            output.write("""Section: libs
+Architecture: any\n""")
+            output.write("Depends: python%(pyversion)s\n" % d)
             output.write("Description: %s\n" % dist.get_description())
             s = dist.get_long_description()
             s = string.replace(s, '\n', '\n  ')
@@ -169,6 +167,8 @@ Architecture: all\n""")
             output = self._write_file('copyright')
             output.write(COPYRIGHT_FILE % d)
             output.close()
+        mkpath('debian/tmp/DEBIAN', 0755)
+        copy_file('debian/control', 'debian/tmp/DEBIAN/control')
 
     def _write_file (self, filename):
         path = os.path.join('debian', filename)
