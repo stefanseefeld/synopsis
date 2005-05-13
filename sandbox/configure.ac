@@ -10,7 +10,7 @@ dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
 AC_REVISION($Revision: 1.9 $)
-AC_INIT(contrib, 1.0, synopsis-devel@fresco.org)
+AC_INIT(sandbox, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
@@ -34,7 +34,7 @@ AC_SUBST(SYN_CPP)
 AC_SUBST(SYN_LIBS)
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
-  AC_CHECK_FILE($PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
+  AC_CHECK_PROG(PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
 else
   AC_PATH_PROG(PYTHON, python2 python, python)
 fi

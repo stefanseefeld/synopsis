@@ -29,7 +29,7 @@ include             scripts/*
 # unit tests
 recursive-include   tests *
 # experimental code
-recursive-include   contrib *
+recursive-include   sandbox *
 
 # suppress svn bookkeeping stuff ...
 global-exclude .svn

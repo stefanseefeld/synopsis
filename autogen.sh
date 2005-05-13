@@ -16,4 +16,4 @@ conf Synopsis/Parsers/C
 conf Synopsis/Parsers/Cxx
 conf tests
 conf doc
-conf contrib
+conf sandbox
