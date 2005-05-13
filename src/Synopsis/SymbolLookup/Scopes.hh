@@ -16,7 +16,28 @@ namespace Synopsis
 namespace SymbolLookup
 {
 
+class TemplateParameterScope;
+class LocalScope;
+class PrototypeScope;
+class FunctionScope;
+class Class;
 class Namespace;
+
+//. A Visitor for Scopes.
+//. The default implementation does nothing, so
+//. users only need to implement the ones they need.
+class ScopeVisitor
+{
+public:
+  virtual ~ScopeVisitor() {}
+
+  virtual void visit(TemplateParameterScope *) {}
+  virtual void visit(LocalScope *) {}
+  virtual void visit(PrototypeScope *) {}
+  virtual void visit(FunctionScope *) {}
+  virtual void visit(Class *) {}
+  virtual void visit(Namespace *) {}
+};
 
 class TemplateParameterScope : public Scope
 {
@@ -24,7 +45,7 @@ public:
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
-  virtual void dump(std::ostream &, size_t indent) const;
+  virtual void accept(ScopeVisitor *v) { v->visit(this);}
 };
 
 class LocalScope : public Scope
@@ -33,11 +54,13 @@ public:
   LocalScope(PTree::List const *node, Scope const *outer)
     : my_node(node), my_outer(outer->ref()) {}
 
-  virtual Scope const *global() const { return my_outer->global();}
+  virtual Scope const *outer_scope() const { return my_outer;}
+
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
-  virtual void dump(std::ostream &, size_t indent) const;
+  virtual void accept(ScopeVisitor *v) { v->visit(this);}
+
 protected:
   ~LocalScope() { my_outer->unref();}
 
@@ -46,15 +69,13 @@ private:
   Scope       const *my_outer;
 };
 
-class PrototypeScope;
-
 class FunctionScope : public Scope
 {
 public:
   FunctionScope(PTree::Declaration const *, PrototypeScope *, Scope const *);
 
   virtual void use(PTree::UsingDirective const *);
-  virtual Scope const *global() const { return my_outer->global();}
+  virtual Scope const *outer_scope() const { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
   virtual SymbolSet 
@@ -63,7 +84,8 @@ public:
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
 
-  virtual void dump(std::ostream &, size_t indent) const;
+  virtual void accept(ScopeVisitor *v) { v->visit(this);}
+
 protected:
   ~FunctionScope() { my_outer->unref();}
 
@@ -83,12 +105,16 @@ public:
   PrototypeScope(PTree::Node const *decl, Scope const *outer)
     : my_decl(decl), my_outer(outer->ref()) {}
 
-  virtual Scope const *global() const { return my_outer->global();}
+  virtual Scope const *outer_scope() const { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
   PTree::Node const *declaration() const { return my_decl;}
-  virtual void dump(std::ostream &, size_t indent) const;
+
+  std::string name() const;
+
+  virtual void accept(ScopeVisitor *v) { v->visit(this);}
+
 protected:
   ~PrototypeScope() { my_outer->unref();}
 
@@ -105,16 +131,18 @@ public:
   {
   }
 
-  virtual Scope const *global() const { return my_outer->global();}
+  virtual Scope const *outer_scope() const { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
 
-  virtual void dump(std::ostream &, size_t indent) const;
+  virtual void accept(ScopeVisitor *v) { v->visit(this);}
+
 protected:
   ~Class() { my_outer->unref();}
+
 private:
   PTree::ClassSpec       const *my_spec;
   Scope                  const *my_outer;
@@ -133,8 +161,7 @@ public:
   Namespace *find_namespace(PTree::NamespaceSpec const *name) const;
 
   virtual void use(PTree::UsingDirective const *);
-  virtual Scope const *global() const 
-  { return my_outer ? my_outer->global() : this;}
+  virtual Scope const *outer_scope() const { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
   virtual SymbolSet 
@@ -144,9 +171,11 @@ public:
   // Class::name, which, if the class is a template, can't be a string (or can it ?)
   std::string name() const;
 
-  virtual void dump(std::ostream &, size_t indent) const;
+  virtual void accept(ScopeVisitor *v) { v->visit(this);}
+
 protected:
   ~Namespace() { if (my_outer) my_outer->unref();}
+
 private:
   typedef std::set<Namespace const *> Using;
 

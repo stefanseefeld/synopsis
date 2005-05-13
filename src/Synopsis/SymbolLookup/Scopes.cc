@@ -25,12 +25,6 @@ TemplateParameterScope::unqualified_lookup(Encoding const &name,
   return symbols;
 }
 
-void TemplateParameterScope::dump(std::ostream &os, size_t in) const
-{
-  indent(os, in) << "TemplateParameterScope:\n";
-  Scope::dump(os, in);
-}
-
 SymbolSet 
 LocalScope::unqualified_lookup(Encoding const &name,
 			       LookupContext context) const
@@ -39,12 +33,6 @@ LocalScope::unqualified_lookup(Encoding const &name,
   trace << name;
   SymbolSet symbols = find(name, context == SCOPE);
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
-}
-
-void LocalScope::dump(std::ostream &os, size_t in) const
-{
-  indent(os, in) << "LocalScope:\n";
-  Scope::dump(os, in);
 }
 
 FunctionScope::FunctionScope(PTree::Declaration const *decl, 
@@ -106,25 +94,11 @@ FunctionScope::unqualified_lookup(Encoding const &name,
     return my_outer->unqualified_lookup(name, context);
 }
 
-void FunctionScope::dump(std::ostream &os, size_t in) const
-{
-  indent(os, in) << "FunctionScope '" << this->name() << "':\n";
-  Scope::dump(os, in);
-}
-
 std::string FunctionScope::name() const
 {
   std::ostringstream oss;
   oss << PTree::reify(PTree::third(my_decl));
   return oss.str();
-}
-
-SymbolSet 
-PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
-				   LookupContext context) const
-{
-  Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
-  return SymbolSet();
 }
 
 SymbolSet 
@@ -172,10 +146,19 @@ FunctionScope::qualified_lookup(PTree::Encoding const &name,
   return nested->qualified_lookup(remainder, context);
 }
 
-void PrototypeScope::dump(std::ostream &os, size_t in) const
+SymbolSet 
+PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
+				   LookupContext context) const
 {
-  indent(os, in) << "Prototype:\n";
-  Scope::dump(os, in);
+  Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
+  return SymbolSet();
+}
+
+std::string PrototypeScope::name() const
+{
+  std::ostringstream oss;
+  oss << PTree::reify(my_decl);
+  return oss.str();
 }
 
 SymbolSet 
@@ -196,12 +179,6 @@ std::string Class::name() const
   if (name_spec && name_spec->is_atom())
     return std::string(name_spec->position(), name_spec->length());
   return "";
-}
-
-void Class::dump(std::ostream &os, size_t in) const
-{
-  indent(os, in) << "Class '" << this->name() << "':\n";
-  Scope::dump(os, in);
 }
 
 Namespace *Namespace::find_namespace(PTree::NamespaceSpec const *spec) const
@@ -265,12 +242,6 @@ std::string Namespace::name() const
     return std::string(name_spec->position(), name_spec->length());
   else
     return "<anonymous>";
-}
-
-void Namespace::dump(std::ostream &os, size_t in) const
-{
-  indent(os, in) << "Namespace '" << this->name() << "':\n";
-  Scope::dump(os, in);
 }
 
 SymbolSet Namespace::unqualified_lookup(Encoding const &name,

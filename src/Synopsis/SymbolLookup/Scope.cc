@@ -7,76 +7,12 @@
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolLookup/Scope.hh>
-#include <Synopsis/SymbolLookup/Visitor.hh>
 #include <Synopsis/Trace.hh>
 #include <functional>
 
 using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
-
-namespace
-{
-class SymbolDisplay : private SymbolLookup::Visitor
-{
-public:
-  SymbolDisplay(std::ostream &os, size_t indent)
-    : my_os(os), my_indent(indent, ' ') {}
-  void display(Encoding const &name, Symbol const *symbol)
-  {
-    my_name = name.unmangled();
-    symbol->accept(this);
-    my_os << std::endl;
-  }
-private:
-  std::ostream &prefix(std::string const &type)
-  { return my_os << my_indent << type;}
-  virtual void visit(Symbol const *) {}
-  virtual void visit(VariableName const *name)
-  {
-    prefix("Variable:          ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(ConstName const *name)
-  {
-    prefix("Const:             ") << my_name << ' ' << name->type().unmangled();
-    if (name->defined()) my_os << " (" << name->value() << ')';
-  }
-  virtual void visit(TypeName const *) {}
-  virtual void visit(TypedefName const *name)
-  {
-    prefix("Typedef:           ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(ClassName const *name)
-  {
-    prefix("Class:             ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(EnumName const *name)
-  {
-    prefix("Enum:              ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(ClassTemplateName const *name)
-  {
-    prefix("Class template:    ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(FunctionName const *name)
-  {
-    prefix("Function:          ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(FunctionTemplateName const *name)
-  {
-    prefix("Function template: ") << my_name << ' ' << name->type().unmangled();
-  }
-  virtual void visit(NamespaceName const *name)
-  {
-    prefix("Namespace:         ") << my_name << ' ' << name->type().unmangled();
-  }
-
-  std::ostream &my_os;
-  std::string   my_indent;
-  std::string   my_name;
-};
-
-}
 
 Scope::~Scope()
 {
@@ -191,7 +127,7 @@ Scope::lookup(PTree::Encoding const &name, LookupContext context) const
   
   // If the scope is the global scope, do a qualified lookup there.
   if (symbol_name.is_global_scope())
-    return global()->qualified_lookup(remainder, context);
+    return global_scope()->qualified_lookup(remainder, context);
 
   // Else do an unqualified lookup for the scope, followed by a
   // qualified lookup of the remainder in that scope.
@@ -251,21 +187,4 @@ Scope::qualified_lookup(PTree::Encoding const &name,
   if (!nested) throw InternalError("undeclared scope !");
 
   return nested->qualified_lookup(remainder, context);
-}
-
-void Scope::dump(std::ostream &os, size_t in) const
-{
-  for (SymbolTable::const_iterator i = my_symbols.begin(); i != my_symbols.end(); ++i)
-  {
-    SymbolDisplay display(os, in + 1);
-    display.display(i->first, i->second);
-  }
-  for (ScopeTable::const_iterator i = my_scopes.begin(); i != my_scopes.end(); ++i)
-    i->second->dump(os, in + 1);
-}
-
-std::ostream &Scope::indent(std::ostream &os, size_t i)
-{
-  while (i--) os.put(' ');
-  return os;
 }

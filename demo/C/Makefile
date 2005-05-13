@@ -1,10 +1,23 @@
-synopsis := ../../bin/synopsis -v
+#
+# Copyright (C) 2005 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
 
-all: html
+SHELL	:= /bin/sh
 
-html: API.syn
-	rm -rf $@
-	$(synopsis) -f HTML -o $@ $<
+CPPFLAGS:= pkg-config --cflags Synopsis
+LIBS	:= pkg-config --libs Synopsis
 
-API.syn: API.h
-	$(synopsis) -p C -o $@ $<
+TARGET	:= call-graph
+
+call-graph: call-graph.o
+	$(CXX) $(LDFLAGS) -o $@ $< $(LIBS)
+
+%.o: %.cc
+	@echo compiling $(@D)/$(@F)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+clean :
+	rm -f call-graph
