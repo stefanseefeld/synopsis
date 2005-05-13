@@ -1007,8 +1007,11 @@ SWalker::translate_function_declarator(PTree::Node *decl, bool is_const)
     p_params = PTree::rest(p_params);
   if (!p_params)
   {
+    std::string filename;
+    unsigned long lineno = my_buffer->origin(decl->begin(), filename);
     std::cerr << "Warning: error finding params for '" 
-	      << PTree::reify(decl) << '\'' << std::endl;
+	      << PTree::reify(decl) 
+	      << "\' (at " << filename << ':' << lineno << ')' << std::endl;
     return 0;
   }
   std::vector<AST::Parameter*> params;

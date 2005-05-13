@@ -13,6 +13,5 @@
 #include <Synopsis/SymbolLookup/Table.hh>
 #include <Synopsis/SymbolLookup/Type.hh>
 #include <Synopsis/SymbolLookup/Walker.hh>
-#include <Synopsis/SymbolLookup/Visitor.hh>
 
 #endif

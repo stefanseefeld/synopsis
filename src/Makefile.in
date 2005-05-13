@@ -49,11 +49,11 @@ HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/TypeAnalysis/*.h
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
-DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/dump-symbols.cc)
+DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/display-symbols.cc)
 
 LIBRARY	:= lib/libSynopsis$(LIBRARY_EXT)
 SUPPORT := lib/libSupport.a
-TOOLS	:= bin/display-ptree bin/dump-symbols
+TOOLS	:= bin/display-ptree bin/display-symbols
 TARGETS	:= $(LIBRARY) $(SUPPORT) $(TOOLS)
 
 vpath %.cc $(srcdir)

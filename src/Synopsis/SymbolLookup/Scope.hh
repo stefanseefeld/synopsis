@@ -58,15 +58,23 @@ private:
 
 typedef std::set<Symbol const *> SymbolSet;
 
+class ScopeVisitor;
+
 //. A Scope contains symbol definitions.
 class Scope
 {
   //. SymbolTable provides a mapping from (encoded) names to Symbols declared
   //. in this scope.
   typedef std::multimap<PTree::Encoding, Symbol const *> SymbolTable;
+  //. ScopeTable provides a mapping from scope nodes to Scopes,
+  //. which can be used to traverse the scope tree in parallel with
+  //. the associated parse tree. As this traversal is also done
+  //. during the parsing, the scopes can not be const.
+  typedef std::map<PTree::Node const *, Scope *> ScopeTable;
 
 public:
-  typedef SymbolTable::iterator iterator;
+  typedef SymbolTable::const_iterator symbol_iterator;
+  typedef ScopeTable::const_iterator scope_iterator;
 
   typedef unsigned int LookupContext;
   static LookupContext const DEFAULT = 0x0;
@@ -80,7 +88,16 @@ public:
   Scope const *ref() const { ++my_refcount; return this;}
   void unref() const { if (!--my_refcount) delete this;}
 
-  virtual Scope const *global() const = 0;
+  virtual Scope const *outer_scope() const = 0;
+  Scope const *global_scope() const;
+
+  virtual void accept(ScopeVisitor *v) = 0;
+
+  symbol_iterator symbols_begin() const { return my_symbols.begin();}
+  symbol_iterator symbols_end() const { return my_symbols.end();}
+
+  scope_iterator scopes_begin() const { return my_scopes.begin();}
+  scope_iterator scopes_end() const { return my_scopes.end();}
 
   //. declare the given symbol in the local scope 
   //. using the given encoded name.
@@ -120,22 +137,10 @@ public:
   virtual SymbolSet qualified_lookup(PTree::Encoding const &,
 				     LookupContext = DEFAULT) const;
 
-  //. recursively dump the content of the symbol table to a stream (for debugging).
-  virtual void dump(std::ostream &, size_t indent) const;
-
 protected:
 
   //. Scopes are ref counted, and thus are deleted only by 'unref()'
   virtual ~Scope();
-
-  //. ScopeTable provides a mapping from scope nodes to Scopes,
-  //. which can be used to traverse the scope tree in parallel with
-  //. the associated parse tree. As this traversal is also done
-  //. during the parsing, the scopes can not be const.
-  typedef std::map<PTree::Node const *, Scope *> ScopeTable;
-
-  //. little helper function used in the implementation of 'dump()'
-  static std::ostream &indent(std::ostream &os, size_t i);
 
   SymbolTable    my_symbols;
   ScopeTable     my_scopes;
@@ -151,6 +156,14 @@ inline Scope *Scope::find_scope(PTree::Node const *node) const
 {
   ScopeTable::const_iterator i = my_scopes.find(node);
   return i == my_scopes.end() ? 0 : i->second;
+}
+
+inline Scope const *Scope::global_scope() const
+{
+  Scope const *scope = this;
+  while (Scope const *outer = scope->outer_scope())
+    scope = outer;
+  return scope;
 }
 
 }
