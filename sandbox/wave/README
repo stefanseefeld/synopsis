@@ -19,7 +19,7 @@ call './autogen.sh', followed by at least
 build
 =====
 
-* cd into build/temp.<platform>/Synopsis/Parsers/Cpp/wave
+* cd into build/temp.<platform>/sandbox/wave
 
 * Adjust the Makefile as needed and call 'make'.
 * Copy the resulting 'wave.so' into the source tree at

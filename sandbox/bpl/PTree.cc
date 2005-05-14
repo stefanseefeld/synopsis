@@ -237,6 +237,7 @@ BOOST_PYTHON_MODULE(PTree)
 {
   bpl::class_<Encoding> encoding("Encoding");
   encoding.def("__str__", as_string);
+  encoding.def("unmangled", &Encoding::unmangled);
   encoding.add_property("is_simple_name", &Encoding::is_simple_name);
   encoding.add_property("is_global_scope", &Encoding::is_global_scope);
   encoding.add_property("is_qualified", &Encoding::is_qualified);
