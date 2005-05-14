@@ -74,6 +74,10 @@ private:
   std::ostream &my_os;
 };
 
+//. Display the given parse tree segment on the given output stream.
+//. If 'encoded' is set to 'true', print encoded names / types
+//. on appropriate nodes. If 'typeinfo' is set to 'true', print
+//. the class names of the nodes.
 inline void display(Node const *node, std::ostream &os,
 		    bool encoded = false, bool typeinfo = false)
 {
@@ -89,6 +93,7 @@ inline void display(Node const *node, std::ostream &os,
   }
 }
 
+//. Generate a dot file for the given parse tree segment.
 inline void generate_dot_file(Node const *node, std::ostream &os)
 {
   DotFileGenerator generator(os);

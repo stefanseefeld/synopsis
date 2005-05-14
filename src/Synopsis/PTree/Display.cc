@@ -37,11 +37,8 @@ std::string demangle(char const *mangled)
   assert(status != -3); // invalid argument error
   if (status == -1) { throw std::bad_alloc();}
   else
-  {
     // On failure return the mangled name.
     demangled = status == -2 ? mangled : keeper.p;
-    keeper.p = 0;
-  }
   return demangled;
 #else
   return mangled;
