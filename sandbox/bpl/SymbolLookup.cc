@@ -26,7 +26,8 @@ BOOST_PYTHON_MODULE(SymbolLookup)
   bpl::class_<SymbolSet> symbol_set("SymbolSet");
 
   bpl::class_<Scope, Scope *, boost::noncopyable> scope("Scope", bpl::no_init);
-  scope.def("global", &Scope::global, bpl::return_value_policy<bpl::reference_existing_object>());
+  scope.def("outer_scope", &Scope::outer_scope, bpl::return_value_policy<bpl::reference_existing_object>());
+  scope.def("global_scope", &Scope::global_scope, bpl::return_value_policy<bpl::reference_existing_object>());
   scope.def("lookup", lookup_symbol);
 
   bpl::class_<Symbol, Symbol *, boost::noncopyable> symbol("Symbol", bpl::no_init);
