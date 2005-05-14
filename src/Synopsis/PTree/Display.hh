@@ -62,7 +62,19 @@ private:
   bool          my_encoded;
 };
 
-inline void display(const Node *node, std::ostream &os,
+class DotFileGenerator : public PTree::Visitor
+{
+public:
+  DotFileGenerator(std::ostream &);
+  void write(PTree::Node const *ptree);
+private:
+  virtual void visit(PTree::Atom *a);
+  virtual void visit(PTree::List *l);
+
+  std::ostream &my_os;
+};
+
+inline void display(Node const *node, std::ostream &os,
 		    bool encoded = false, bool typeinfo = false)
 {
   if (typeinfo)
@@ -75,6 +87,12 @@ inline void display(const Node *node, std::ostream &os,
     Display d(os, encoded);
     d.display(node);
   }
+}
+
+inline void generate_dot_file(Node const *node, std::ostream &os)
+{
+  DotFileGenerator generator(os);
+  generator.write(node);
 }
 
 }

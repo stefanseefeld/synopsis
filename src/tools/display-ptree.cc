@@ -21,45 +21,6 @@ int usage(const char *command)
   return -1;
 }
 
-class DotFileGenerator : public PTree::Visitor
-{
-public:
-  DotFileGenerator(std::string const &filename) : my_os(filename.c_str()) {}
-  void write(PTree::Node *ptree)
-  {
-    my_os << "digraph PTree\n{\n"
-	  << "node[fillcolor=\"#ffffcc\", pencolor=\"#424242\" style=\"filled\"];\n";
-    ptree->accept(this);
-    my_os << '}' << std::endl;
-  }
-private:
-  virtual void visit(PTree::Atom *a)
-  {
-    my_os << (long)a 
-	  << " [label=\"" << std::string(a->position(), a->length())
-	  << "\" fillcolor=\"#ffcccc\"];\n";
-  }
-  virtual void visit(PTree::List *l)
-  {
-    my_os << (long)l 
-	  << " [label=\"" << typeid(*l).name() << "\"];\n";
-    if (l->car())
-    {
-      l->car()->accept(this);
-      my_os << (long)l << "->" 
-	    << (long)l->car() << ';' << std::endl;
-    }
-    if (l->cdr())
-    {
-      l->cdr()->accept(this);
-      my_os << (long)l << "->" 
-	    << (long)l->cdr() << ';' << std::endl;
-    }
-  }
-
-  std::ofstream my_os;
-};
-
 int main(int argc, char **argv)
 {
   bool encoding = false;
@@ -109,8 +70,8 @@ int main(int argc, char **argv)
     }
     else
     {
-      DotFileGenerator dot(dotfile);
-      dot.write(node);
+      std::ofstream os(dotfile.c_str());
+      PTree::generate_dot_file(node, os);
     }
   }
   catch (const std::exception &e)
