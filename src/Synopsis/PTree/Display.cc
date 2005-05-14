@@ -7,6 +7,47 @@
 
 #include <Synopsis/PTree/Display.hh>
 #include <typeinfo>
+#if defined(__GNUC__) &&  __GNUC__ >= 3
+# include <cxxabi.h>
+
+# if __GNUC__ == 3 && __GNUC_MINOR__ == 0
+namespace abi
+{
+  extern "C" char* __cxa_demangle(char const*, char*, std::size_t*, int*);
+}
+# endif 
+#endif
+
+namespace
+{
+
+struct free_mem
+{
+  free_mem(char *p) : p(p) {}
+  ~free_mem() { std::free(p);}
+  char * p;
+};
+
+std::string demangle(char const *mangled)
+{
+#if defined(__GNUC__) &&  __GNUC__ >= 3
+  std::string demangled;
+  int status;
+  free_mem keeper(abi::__cxa_demangle(mangled, 0, 0, &status));
+  assert(status != -3); // invalid argument error
+  if (status == -1) { throw std::bad_alloc();}
+  else
+  {
+    // On failure return the mangled name.
+    demangled = status == -2 ? mangled : keeper.p;
+    keeper.p = 0;
+  }
+  return demangled;
+#else
+  return mangled;
+#endif
+}
+}
 
 using namespace Synopsis;
 using namespace PTree;
@@ -160,7 +201,7 @@ void RTTIDisplay::display(Node const *n)
 void RTTIDisplay::visit(Atom *a)
 {
   newline();
-  my_os << typeid(*a).name() << ": ";
+  my_os << demangle(typeid(*a).name()) << ": ";
   char const *p = a->position();
   size_t n = a->length();
 
@@ -178,7 +219,7 @@ void RTTIDisplay::visit(Atom *a)
 void RTTIDisplay::visit(List *l) 
 {
   newline();
-  my_os << typeid(*l).name() << ": ";
+  my_os << demangle(typeid(*l).name()) << ": ";
   if (my_encoded)
   {
     Encoding type = l->encoded_type();
@@ -222,7 +263,7 @@ void RTTIDisplay::visit(List *l)
 void RTTIDisplay::visit(DupAtom *a)
 {
   newline();
-  my_os << typeid(*a).name() << ": ";
+  my_os << demangle(typeid(*a).name()) << ": ";
   char const *pos = a->position();
   size_t length = a->length();
 
@@ -241,5 +282,39 @@ void RTTIDisplay::newline()
 {
   my_os.put('\n');
   for(size_t i = 0; i != my_indent; ++i) my_os.put(' ');
+}
+
+DotFileGenerator::DotFileGenerator(std::ostream &os) : my_os(os) {}
+void DotFileGenerator::write(PTree::Node const *ptree)
+{
+  my_os << "digraph PTree\n{\n"
+	<< "node[fillcolor=\"#ffffcc\", pencolor=\"#424242\" style=\"filled\"];\n";
+  const_cast<Node *>(ptree)->accept(this);
+  my_os << '}' << std::endl;
+}
+
+void DotFileGenerator::visit(PTree::Atom *a)
+{
+  my_os << (long)a 
+	<< " [label=\"" << std::string(a->position(), a->length())
+	<< "\" fillcolor=\"#ffcccc\"];\n";
+}
+
+void DotFileGenerator::visit(PTree::List *l)
+{
+  my_os << (long)l 
+	<< " [label=\"" << demangle(typeid(*l).name()) << "\"];\n";
+  if (l->car())
+  {
+    l->car()->accept(this);
+    my_os << (long)l << "->" 
+	  << (long)l->car() << ';' << std::endl;
+  }
+  if (l->cdr())
+  {
+    l->cdr()->accept(this);
+    my_os << (long)l << "->" 
+	  << (long)l->cdr() << ';' << std::endl;
+  }
 }
 
