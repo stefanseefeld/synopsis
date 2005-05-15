@@ -72,12 +72,13 @@ void ASTTranslator::rescanned_macro(Container const &result)
 //   std::cout << wave::util::impl::as_string(result) << std::endl;
 }
 
-void ASTTranslator::found_include_directive(std::string const &filename)
+void ASTTranslator::found_include_directive(std::string const &filename, bool next)
 {
   Trace trace("ASTTranslator::found_include_directive", Trace::TRANSLATION);
   trace << filename;
 
-  my_next_include = filename;
+  my_include_dir = filename;
+  my_include_next_dir = next;
 }
 
 void ASTTranslator::opened_include_file(std::string const &relname, 
@@ -94,7 +95,8 @@ void ASTTranslator::opened_include_file(std::string const &relname,
   }
   AST::SourceFile sf = lookup_source_file(relname, false);
 
-  AST::Include include = my_ast_kit.create_include(sf, my_next_include, false, false);
+  AST::Include include = my_ast_kit.create_include(sf, my_include_dir,
+						   false, my_include_next_dir);
   Python::List includes = my_file_stack.top().includes();
   includes.append(include);
   my_file_stack.push(sf);
