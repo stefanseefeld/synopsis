@@ -43,7 +43,7 @@ public:
  
   void rescanned_macro(Container const &result);
 
-  void found_include_directive(std::string const &filename);
+  void found_include_directive(std::string const &filename, bool);
 
   void opened_include_file(std::string const &dir, 
 			   std::string const &filename, 
@@ -84,7 +84,8 @@ private:
   std::string         my_raw_filename;
   std::string         my_base_path;
   FileStack           my_file_stack;
-  std::string         my_next_include;
+  std::string         my_include_dir;
+  bool                my_include_next_dir;
   bool                my_main_file_only;
   unsigned int        my_mask_counter;
   bool                my_verbose;
