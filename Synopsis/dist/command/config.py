@@ -72,7 +72,7 @@ class config(build_ext):
                 syn_cxx = string.replace('`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp),
                                          '\\', '\\\\\\\\\\\\\\\\')
             else:
-                syn_cxx = '%/src'%os.path.abspath(self.build_ctemp)
+                syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)
                 
             self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
 
