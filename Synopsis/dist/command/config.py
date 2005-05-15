@@ -69,17 +69,22 @@ class config(build_ext):
                 # for the gc configuration on the win32 native platform
                 # set 'CC' explicitely to 'gcc -mno-cygwin'
                 os.environ['CC'] = "gcc -mno-cygwin"
+                syn_cxx = string.replace('`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp),
+                                         '\\', '\\\\\\\\\\\\\\\\')
+            else:
+                syn_cxx = '%/src'%os.path.abspath(self.build_ctemp)
+                
             self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
 
         for ext in self.extensions:
             self.config(ext, self.build_temp, self.build_lib,
-                        '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
+                        '--with-syn-cxx=%s'%syn_cxx)
 
         self.config('tests', self.build_temp, self.build_lib,
-                    '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
+                    '--with-syn-cxx=%s'%syn_cxx)
         self.config('doc', self.build_temp, self.build_lib)
         self.config('sandbox', self.build_temp, self.build_lib,
-                    '--with-syn-cxx=%s/src'%os.path.abspath(self.build_ctemp))
+                    '--with-syn-cxx=%s'%syn_cxx)
 
             
     def config(self, component, build_temp, build_lib, args=''):
@@ -106,12 +111,14 @@ class config(build_ext):
                          + component + '/configure')
             python = string.replace('`cygpath -a %s`'%os.path.dirname(sys.executable)
                                     + '/' + os.path.basename(sys.executable),
-                                    '\\', '\\\\')
+                                    '\\', '\\\\\\\\\\\\\\\\')
+            prefix = '`cygpath -a %s`'%sys.prefix
+        
         else:
             configure = srcdir + '/configure'
             python = sys.executable
-
-        command = "%s --prefix=%s --with-python=%s"%(configure, self.prefix, python)
+            prefix = self.prefix
+        command = "%s --prefix=%s --with-python=%s"%(configure, prefix, python)
         if self.disable_gc:
             command += " --disable-gc"
         command += ' %s'%args

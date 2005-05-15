@@ -1,7 +1,7 @@
 prefix=
 exec_prefix=
 libdir=@abs_builddir@/lib
-includedir=@srcdir@
+includedir=@abs_srcdir@
 
 Name: Synopsis
 Description: C/C++ source code introspection tool
