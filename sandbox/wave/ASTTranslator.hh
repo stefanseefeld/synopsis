@@ -67,9 +67,7 @@ public:
 		     Container const &definition,
 		     bool is_predefined);
 
-  template <typename StringT>
-  void undefined_macro(StringT const &name)
-  {}
+  void undefined_macro(Token const &name);
 
 private:
   typedef std::stack<AST::SourceFile> FileStack;

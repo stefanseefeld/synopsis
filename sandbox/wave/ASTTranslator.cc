@@ -150,6 +150,12 @@ void ASTTranslator::defined_macro(Token const &name, bool is_functionlike,
   declarations.append(macro);
 }
 
+void ASTTranslator::undefined_macro(Token const &name)
+{
+  Trace trace("ASTTranslator::undefined_macro", Trace::TRANSLATION);
+  trace << name;
+}
+
 AST::SourceFile ASTTranslator::lookup_source_file(std::string const &filename,
 						  bool main)
 {

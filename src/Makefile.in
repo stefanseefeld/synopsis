@@ -111,16 +111,13 @@ $(CC_SYN): %.cc.syn: %.cc
 $(GC_LIB):
 	$(MAKE) -C Synopsis/gc
 
-$(TARGET): $(OBJ)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
-
 clean :
 	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \
         Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d Synopsis/PTree/*.syn \
         Synopsis/SymbolLookup/*.~ Synopsis/SymbolLookup/*.o Synopsis/SymbolLookup/*.d Synopsis/SymbolLookup/*.syn \
         Synopsis/TypeAnalysis/*.~ Synopsis/TypeAnalysis/*.o Synopsis/TypeAnalysis/*.d Synopsis/TypeAnalysis/*.syn \
         tools/*.~ tools/*.o tools/*.d \
-        *.dll *.so *core $(TARGET) \
+        *.dll *.so *core \
 	base_lib
 
 ifeq (,$(filter $(MAKECMDGOALS), depend clean distclean))

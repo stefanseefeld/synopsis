@@ -7,8 +7,8 @@
 
 SHELL	:= /bin/sh
 
-CPPFLAGS:= pkg-config --cflags Synopsis
-LIBS	:= pkg-config --libs Synopsis
+CPPFLAGS:= `pkg-config --cflags Synopsis`
+LIBS	:= `pkg-config --libs Synopsis`
 
 TARGET	:= call-graph
 
