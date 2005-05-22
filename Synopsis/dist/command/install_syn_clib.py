@@ -6,15 +6,20 @@ from distutils.file_util import copy_file
 from distutils.util import change_root
 from distutils import sysconfig
 
-def collect_headers(arg, path, files):
-    """Collect headers to be installed."""
+def header_collector(prefix):
 
-    # For now at least the following are not part of the public API
-    if os.path.split(path)[1] in ['Support', 'Python', 'AST']:
-        return
-    arg.extend([os.path.join(path, f)
-                for f in files
-                if f.endswith('.hh') or f.endswith('.h')])
+    def collect_headers(arg, path, files):
+        """Collect headers to be installed."""
+
+        # For now at least the following are not part of the public API
+        if os.path.split(path)[1] in ['Support', 'Python', 'AST']:
+            return
+        arg.extend([(os.path.join(path, f), os.path.join(path, f)[len(prefix) + 1:])
+                    for f in files
+                    if f.endswith('.hh') or f.endswith('.h')])
+
+    return collect_headers
+
 
 class install_syn_clib(Command):
 
@@ -65,13 +70,17 @@ class install_syn_clib(Command):
                   1, 1, 0, None, self.verbose, self.dry_run)
 
         headers = []
-        os.path.walk(os.path.join('src', 'Synopsis'), collect_headers, headers)
-
+        os.path.walk(os.path.join('src', 'Synopsis'),
+                     header_collector('src'),
+                     headers)
+        os.path.walk(os.path.join(self.build_dir, 'include', 'Synopsis'),
+                     header_collector(os.path.join(self.build_dir, 'include')),
+                     headers)
         incdir = os.path.join(prefix, 'include')
-        for header in headers:
-            target = os.path.join(incdir, header[4:])
+        for src, dest in headers:
+            target = os.path.join(incdir, dest)
             mkpath (os.path.dirname(target), 0777, self.verbose, self.dry_run)
-            copy_file(header, target,
+            copy_file(src, target,
                       1, 1, 0, None, self.verbose, self.dry_run)
             
         pkgdir = os.path.join(libdir, 'pkgconfig')
@@ -94,9 +103,14 @@ class install_syn_clib(Command):
         library = os.path.join(prefix, 'lib', 'libSynopsis%s'%LIBEXT)
         pkgconf = os.path.join(prefix, 'lib', 'pkgconfig', 'Synopsis.pc')
         headers = []
-        os.path.walk(os.path.join('src', 'Synopsis'), collect_headers, headers)
+        os.path.walk(os.path.join('src', 'Synopsis'),
+                     header_collector('src'),
+                     headers)
+        os.path.walk(os.path.join(self.build_dir, 'include', 'Synopsis'),
+                     header_collector(os.path.join(self.build_dir, 'include')),
+                     headers)
         include_dir = os.path.join(prefix, 'include')
-        headers = [os.path.join(include_dir, h[4:]) for h in headers]
+        headers = [os.path.join(include_dir, dest) for (src, dest) in headers]
         return [library, pkgconf] + headers
         
 

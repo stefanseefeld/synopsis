@@ -14,6 +14,15 @@ from distutils.util import get_platform
 from distutils.spawn import spawn, find_executable
 from shutil import *
 
+def collect_headers(arg, path, files):
+    
+    # For now at least the following are not part of the public API
+    if os.path.split(path)[1] in ['Support', 'Python', 'AST']:
+        return
+    arg.extend([os.path.join(path, f) for f in files
+                if f.endswith('.hh') or f.endswith('.h')])
+
+
 class build_syn_clib (Command):
 
     description = "build common C/C++ stuff used by all extensions"
@@ -66,6 +75,17 @@ class build_syn_clib (Command):
         copy_file(os.path.join(path, os.path.join('lib', target)),
                   os.path.join(build_path, target),
                   1, 1, 0, None, self.verbose, self.dry_run)
+        # copy headers
+        headers = []
+        os.path.walk(os.path.join(self.build_ctemp, 'src', 'Synopsis'),
+                     collect_headers,
+                     headers)
+        incdir = os.path.join(self.build_clib, 'include')
+        for header in headers:
+            target = os.path.join(incdir, header[len(self.build_ctemp) + 5:])
+            mkpath (os.path.dirname(target), 0777, self.verbose, self.dry_run)
+            copy_file(header, target, 1, 1, 0, None, self.verbose, self.dry_run)
+
         # copy tools
         build_path = os.path.join(self.build_clib, 'bin')
         mkpath (build_path, 0777, self.verbose, self.dry_run)

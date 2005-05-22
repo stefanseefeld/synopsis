@@ -23,6 +23,7 @@ from Synopsis.dist.command.test import test
 from Synopsis.dist.command.install_syn_clib import install_syn_clib
 from Synopsis.dist.command.install_syn import install_syn
 from Synopsis.dist.command.bdist_dpkg import bdist_dpkg
+from Synopsis.dist.command.clean_syn import clean_syn
 
 # patch distutils if it can't cope with the "classifiers" keyword
 from distutils.dist import DistributionMetadata
@@ -35,7 +36,6 @@ import os, sys, re, glob
 module_ext = sysconfig.get_config_var('SO')
 
 def prefix(list, pref): return map(lambda x: pref + x, list)
-
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
                "Synopsis.Parsers.IDL", "Synopsis.Parsers.Python",
@@ -88,7 +88,8 @@ setup(cmdclass={'config':config,
                 'test':test,
                 'install_clib':install_syn_clib,
                 'install':install_syn,
-                'bdist_dpkg':bdist_dpkg},
+                'bdist_dpkg':bdist_dpkg,
+                'clean':clean_syn},
       name="synopsis",
       version=version,
       author="Stefan Seefeld",

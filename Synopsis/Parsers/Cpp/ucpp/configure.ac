@@ -67,10 +67,12 @@ dnl of the list.
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
     fi
+    CFLAGS="-D_REENTRANT $CFLAGS"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS -lpthread"
     ;;
 *)
+    CFLAGS="-pthread $CFLAGS -fPIC"
     CXXFLAGS="-pthread $CXXFLAGS -fPIC"
     LDFLAGS="-pthread $LDFLAGS"
     ;;
