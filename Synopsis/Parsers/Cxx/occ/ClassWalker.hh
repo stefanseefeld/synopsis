@@ -79,7 +79,7 @@ public:
   void visit(PTree::FuncallExpr *);
   void visit(PTree::DotMemberExpr *);
   void visit(PTree::ArrowMemberExpr *);
-  void visit(PTree::This *);
+  void visit(PTree::Kwd::This *);
   void visit(PTree::Name *node) { my_result = translate_variable(node);}
   void visit(PTree::Identifier *node) { my_result = translate_variable(node);}
   void visit(PTree::UserStatementExpr *);

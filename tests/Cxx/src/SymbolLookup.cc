@@ -53,7 +53,7 @@ private:
     else ename.append_with_length("<anonymous>");
     my_os << "Namespace : " << ename.unmangled() << std::endl;
     lookup(ename);
-    Walker::visit(node);
+    Walker::traverse(node);
   }
 
   virtual void visit(PTree::Declaration *node)
@@ -97,7 +97,7 @@ private:
     PTree::Encoding name = node->encoded_name();
     my_os << "ClassSpec : " << name.unmangled() << std::endl;
     lookup(name, Scope::ELABORATE);
-    Walker::visit(node);
+    Walker::traverse(node);
   }
 
   virtual void visit(PTree::FuncallExpr *node)

@@ -56,14 +56,14 @@ void Class::do_init_static()
     if (done_init) return;
     done_init = true;
 
-    class_t = new PTree::Reserved("class", 5);
+    class_t = new PTree::Kwd::Class("class", 5);
     empty_block_t = new PTree::ClassBody(new PTree::Atom("{", 1),
 					 0,
 					 new PTree::Atom("}", 1));
-    public_t = new PTree::AtomPUBLIC("public", 6);
-    protected_t = new PTree::AtomPROTECTED("protected", 9);
-    private_t = new PTree::AtomPRIVATE("private", 7);
-    virtual_t = new PTree::AtomVIRTUAL("virtual", 7);
+    public_t = new PTree::Kwd::Public("public", 6);
+    protected_t = new PTree::Kwd::Protected("protected", 9);
+    private_t = new PTree::Kwd::Private("private", 7);
+    virtual_t = new PTree::Kwd::Virtual("virtual", 7);
     colon_t = new PTree::Atom(":", 1);
     comma_t = new PTree::Atom(",", 1);
     semicolon_t = new PTree::Atom(";", 1);

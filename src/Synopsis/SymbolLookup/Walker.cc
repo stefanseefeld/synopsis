@@ -30,9 +30,7 @@ void Walker::visit(PTree::Block *node)
 void Walker::visit(PTree::NamespaceSpec *spec)
 {
   Trace trace("Walker::visit(NamespaceSpec)", Trace::SYMBOLLOOKUP);
-  my_table.enter_namespace(spec);
-  visit(static_cast<PTree::List *>(spec));
-  my_table.leave_scope();
+  traverse(spec);
 }
 
 void Walker::visit(PTree::FunctionDefinition *def)
@@ -48,10 +46,7 @@ void Walker::visit(PTree::FunctionDefinition *def)
 void Walker::visit(PTree::ClassSpec *spec)
 {
   Trace trace("Walker::visit(ClassSpec)", Trace::SYMBOLLOOKUP);
-  my_table.enter_class(spec);
-  if (PTree::ClassBody *body = spec->body())
-    body->accept(this);
-  my_table.leave_scope();
+  traverse(spec);
 }
 
 void Walker::visit(PTree::DotMemberExpr *expr)
@@ -64,6 +59,23 @@ void Walker::visit(PTree::ArrowMemberExpr *expr)
 {
   Trace trace("Walker::visit(ArrowMemberExpr)", Trace::SYMBOLLOOKUP);
   std::cout << "Sorry: arrow member expression (<postfix>-><name>) not yet supported" << std::endl;
+}
+
+void Walker::traverse(PTree::NamespaceSpec *spec)
+{
+  Trace trace("Walker::traverse(NamespaceSpec)", Trace::SYMBOLLOOKUP);
+  my_table.enter_namespace(spec);
+  PTree::tail(spec, 2)->car()->accept(this);
+  my_table.leave_scope();
+}
+
+void Walker::traverse(PTree::ClassSpec *spec)
+{
+  Trace trace("Walker::traverse(ClassSpec)", Trace::SYMBOLLOOKUP);
+  my_table.enter_class(spec);
+  if (PTree::ClassBody *body = spec->body())
+    body->accept(this);
+  my_table.leave_scope();
 }
 
 void Walker::visit_block(PTree::Block *node)

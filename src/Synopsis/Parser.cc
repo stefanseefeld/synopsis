@@ -392,7 +392,7 @@ bool Parser::typedef_(PTree::Typedef *&def)
 
   if(my_lexer.get_token(tk) != Token::TYPEDEF) return false;
 
-  def = new PTree::Typedef(new PTree::Reserved(tk));
+  def = new PTree::Typedef(new PTree::Kwd::Typedef(tk));
   if(!type_specifier(type_name, false, type_encode)) return false;
 
   def = PTree::snoc(def, type_name);
@@ -450,7 +450,7 @@ bool Parser::type_specifier(PTree::Node *&tspec, bool check, PTree::Encoding &en
 bool Parser::is_type_specifier()
 {
   int t = my_lexer.look_ahead(0);
-  if(t == Token::Identifier || t == Token::Scope
+  if(t == Token::TYPENAME || t == Token::Identifier || t == Token::Scope
      || t == Token::CONST || t == Token::VOLATILE
      || t == Token::CHAR || t == Token::WCHAR 
      || t == Token::INT || t == Token::SHORT || t == Token::LONG
@@ -489,25 +489,25 @@ bool Parser::metaclass_decl(PTree::Node *&decl)
   t = my_lexer.get_token(tk3);
   if(t == Token::Identifier)
   {
-    metaclass_name = new PTree::Atom(tk2);
-    decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
+    metaclass_name = new PTree::Identifier(tk2);
+    decl = new PTree::MetaclassDecl(new PTree::UserKeyword(tk1),
 				    PTree::list(metaclass_name,
-						new PTree::Atom(tk3)));
+						new PTree::Identifier(tk3)));
   }
   else if(t == ':')
   {
     if(my_lexer.get_token(tk4) != Token::Identifier)
       return false;
 
-    metaclass_name = new PTree::Atom(tk4);
-    decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
+    metaclass_name = new PTree::Identifier(tk4);
+    decl = new PTree::MetaclassDecl(new PTree::UserKeyword(tk1),
 				    PTree::list(metaclass_name,
-						new PTree::Atom(tk2)));
+						new PTree::Identifier(tk2)));
   }
   else if(t == ';')
   {
-    metaclass_name = new PTree::Atom(tk2);
-    decl = new PTree::MetaclassDecl(new PTree::Reserved(tk1),
+    metaclass_name = new PTree::Identifier(tk2);
+    decl = new PTree::MetaclassDecl(new PTree::UserKeyword(tk1),
 				    PTree::list(metaclass_name, 0,
 						new PTree::Atom(tk3)));
     return true;
@@ -579,7 +579,7 @@ bool Parser::linkage_spec(PTree::Node *&spec)
   if(my_lexer.get_token(tk1) != Token::EXTERN) return false;
   if(my_lexer.get_token(tk2) != Token::StringL) return false;
 
-  spec = new PTree::LinkageSpec(new PTree::AtomEXTERN(tk1),
+  spec = new PTree::LinkageSpec(new PTree::Kwd::Extern(tk1),
 				PTree::list(new PTree::Atom(tk2)));
   if(my_lexer.look_ahead(0) == '{')
   {
@@ -600,21 +600,21 @@ bool Parser::linkage_spec(PTree::Node *&spec)
 bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
 {
   Trace trace("Parser::namespace_spec", Trace::PARSING);
-  Token tk1, tk2;
 
-  if(my_lexer.get_token(tk1) != Token::NAMESPACE) return false;
+  Token tk;
+  if(my_lexer.get_token(tk) != Token::NAMESPACE) return false;
+  PTree::Kwd::Namespace *namespace_ = new PTree::Kwd::Namespace(tk);
 
   PTree::Node *comments = wrap_comments(my_lexer.get_comments());
 
   PTree::Node *name;
   if(my_lexer.look_ahead(0) == '{') name = 0;
   else
-    if(my_lexer.get_token(tk2) == Token::Identifier)
-      name = new PTree::Atom(tk2);
+    if(my_lexer.get_token(tk) == Token::Identifier)
+      name = new PTree::Identifier(tk);
     else return false;
 
-  spec = new PTree::NamespaceSpec(new PTree::AtomNAMESPACE(tk1),
-				  PTree::list(name, 0));
+  spec = new PTree::NamespaceSpec(namespace_, PTree::list(name, 0));
   spec->set_comments(comments);
 
   PTree::Node *body;
@@ -640,10 +640,10 @@ bool Parser::namespace_alias(PTree::Node *&exp)
   Token tk;
 
   if(my_lexer.get_token(tk) != Token::NAMESPACE) return false;
-  PTree::Node *ns = new PTree::AtomNAMESPACE(tk);
+  PTree::Node *ns = new PTree::Kwd::Namespace(tk);
 
   if (my_lexer.get_token(tk) != Token::Identifier) return false;
-  PTree::Node *alias = new PTree::Atom(tk);
+  PTree::Node *alias = new PTree::Identifier(tk);
 
   if (my_lexer.get_token(tk) != '=') return false;
   PTree::Node *eq = new PTree::Atom(tk);
@@ -663,7 +663,7 @@ bool Parser::namespace_alias(PTree::Node *&exp)
   while (true)
   {
     if (my_lexer.get_token(tk) != Token::Identifier) return false;
-    PTree::Node *n = new PTree::Atom(tk);
+    PTree::Node *n = new PTree::Identifier(tk);
     encode.simple_name(n);
     ++length;
     
@@ -701,11 +701,11 @@ bool Parser::using_directive(PTree::UsingDirective *&udir)
   if(my_lexer.get_token(tk) != Token::USING)
     return false;
 
-  udir = new PTree::UsingDirective(new PTree::AtomUSING(tk));
+  udir = new PTree::UsingDirective(new PTree::Kwd::Using(tk));
 
   if(my_lexer.get_token(tk) != Token::NAMESPACE)
     return false;
-  udir = PTree::snoc(udir, new PTree::AtomNAMESPACE(tk));
+  udir = PTree::snoc(udir, new PTree::Kwd::Namespace(tk));
 
   PTree::Node *id;
   PTree::Encoding name_encode;
@@ -742,7 +742,7 @@ bool Parser::using_declaration(PTree::UsingDeclaration *&udecl)
   else
     id = new PTree::Name(PTree::list(id), name_encode);
 
-  udecl = new PTree::UsingDeclaration(new PTree::AtomUSING(tk), id);
+  udecl = new PTree::UsingDeclaration(new PTree::Kwd::Using(tk), id);
 
   if (my_lexer.get_token(tk) != ';') return false;
 
@@ -855,7 +855,7 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 {
   Trace trace("Parser::template_decl2", Trace::PARSING);
   Token tk;
-  PTree::Node *args;
+  PTree::List *params;
 
   if(my_lexer.get_token(tk) != Token::TEMPLATE) return false;
   if(my_lexer.look_ahead(0) != '<') 
@@ -866,163 +866,147 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
     return true;	// ignore TEMPLATE
   }
 
-  decl = new PTree::TemplateDecl(new PTree::Reserved(tk));
+  decl = new PTree::TemplateDecl(new PTree::Kwd::Template(tk));
   if(my_lexer.get_token(tk) != '<') return false;
 
   decl = PTree::snoc(decl, new PTree::Atom(tk));
-  if(!template_arg_list(args)) return false;
+  {
+    SymbolLookup::Table::Guard guard(&my_symbols.enter_template_parameter_list(decl));
+    if(!template_parameter_list(params)) return false;
+  }
   if(my_lexer.get_token(tk) != '>') return false;
 
-  decl = PTree::nconc(decl, PTree::list(args, new PTree::Atom(tk)));
+  decl = PTree::nconc(decl, PTree::list(params, new PTree::Atom(tk)));
 
-  // ignore nested TEMPLATE
+  // FIXME: nested TEMPLATE is ignored
   while (my_lexer.look_ahead(0) == Token::TEMPLATE) 
   {
     my_lexer.get_token(tk);
     if(my_lexer.look_ahead(0) != '<') break;
 
     my_lexer.get_token(tk);
-    if(!template_arg_list(args)) return false;
+    PTree::List *nested = PTree::list(0, 0);
+    SymbolLookup::Table::Guard guard(&my_symbols.enter_template_parameter_list(nested));
+    if(!template_parameter_list(params)) return false;
     if(my_lexer.get_token(tk) != '>') return false;
   }
 
-  if (args == 0) kind = tdk_specialization; // template < > declaration
-  else kind = tdk_decl;                     // template < ... > declaration
+  if (params == 0) kind = tdk_specialization; // template < > declaration
+  else kind = tdk_decl;                       // template < ... > declaration
   return true;
 }
 
 /*
   temp.arg.list
   : empty
-  | temp.arg.declaration (',' temp.arg.declaration)*
+  | temp.parameter.declaration (',' temp.parameter.declaration)*
 */
-bool Parser::template_arg_list(PTree::Node *&args)
+bool Parser::template_parameter_list(PTree::List *&params)
 {
-  Trace trace("Parser::template_arg_list", Trace::PARSING);
+  Trace trace("Parser::template_parameter_list", Trace::PARSING);
   Token tk;
   PTree::Node *a;
 
   if(my_lexer.look_ahead(0) == '>')
   {
-    args = 0;
+    params = 0;
     return true;
   }
 
-  if(!template_arg_declaration(a))
+  if(!template_parameter_declaration(a))
     return false;
-
-  args = PTree::list(a);
+  params = PTree::list(a);
   while(my_lexer.look_ahead(0) == ',')
   {
     my_lexer.get_token(tk);
-    args = PTree::snoc(args, new PTree::Atom(tk));
-    if(!template_arg_declaration(a))
+    params = PTree::snoc(params, new PTree::Atom(tk));
+    if(!template_parameter_declaration(a))
       return false;
 
-    args = PTree::snoc(args, a);
+    params = PTree::snoc(params, a);
   }
   return true;
 }
 
 /*
-  temp.arg.declaration
+  temp.parameter.declaration
   : CLASS Identifier {'=' type.name}
   | type.specifier arg.declarator {'=' additive.expr}
   | template.decl2 CLASS Identifier {'=' type.name}
 */
-bool Parser::template_arg_declaration(PTree::Node *&decl)
+bool Parser::template_parameter_declaration(PTree::Node *&decl)
 {
-  Trace trace("Parser::template_arg_declaration", Trace::PARSING);
-  Token tk1, tk2;
-
-  int t0 = my_lexer.look_ahead(0);
-  int t1 = my_lexer.look_ahead(1);
-  int t2 = my_lexer.look_ahead(2);
-  if(t0 == Token::CLASS && t1 == Token::Identifier &&
-     (t2 == '=' || t2 == '>' || t2 == ',')) 
+  Trace trace("Parser::template_parameter_declaration", Trace::PARSING);
+  Token::Type type = my_lexer.look_ahead(0);
+  if(type == Token::TYPENAME || type == Token::CLASS)
   {
-    my_lexer.get_token(tk1);
-    my_lexer.get_token(tk2);
-    PTree::Node *name = new PTree::Atom(tk2);
-    decl = PTree::list(new PTree::Atom(tk1), name);
+    Token tk;
+    my_lexer.get_token(tk);
+    PTree::Keyword *kwd;
+    if (type == Token::TYPENAME) kwd = new PTree::Kwd::Typename(tk);
+    else kwd = new PTree::Kwd::Class(tk);
 
-    if(t2 == '=')
+    PTree::Identifier *name = 0;
+    if (my_lexer.look_ahead(0) == Token::Identifier)
+    {
+      my_lexer.get_token(tk);
+      name = new PTree::Identifier(tk);
+    }
+    PTree::TypeParameter *tparam = new PTree::TypeParameter(kwd, PTree::list(name));
+    if (name) declare(tparam);
+
+    decl = tparam;
+    type = my_lexer.look_ahead(0);
+    if (type == '=')
     {
       PTree::Node *default_type;
 
-      my_lexer.get_token(tk1);
+      my_lexer.get_token(tk);
       if(!typename_(default_type))
 	return false;
 
-      decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1), default_type));
+      decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
       return true;
     }
-    else if (t2 == '>' || t2 == ',')
+    else if (type == '>' || type == ',')
       return true;
   }
-  else if (t0 == Token::CLASS && (t1 == '=' || t1 == '>' || t1 == ',')) 
-  {
-    // class without the identifier
-    my_lexer.get_token(tk1);
-    decl = PTree::list(new PTree::Atom(tk1));
-
-    if(my_lexer.look_ahead(0) == '=')
-    {
-      PTree::Node *default_type;
-
-      my_lexer.get_token(tk1);
-      if(!typename_(default_type))
-	return false;
-
-      decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1), default_type));
-    }
-  }
-  else if (t0 == Token::TEMPLATE) 
+  else if (type == Token::TEMPLATE) 
   {
     TemplateDeclKind kind;
     PTree::TemplateDecl *tdecl;
     if(!template_decl2(tdecl, kind)) return false;
 
-    if (my_lexer.get_token(tk1) != Token::CLASS || 
-	my_lexer.get_token(tk2) != Token::Identifier)
-      return false;
+    Token tk;
+    if (my_lexer.get_token(tk) != Token::CLASS) return false;
+    PTree::Kwd::Class *class_ = new PTree::Kwd::Class(tk);
+    PTree::Identifier *name = 0;
+    if (my_lexer.look_ahead(0) == Token::Identifier)
+    {
+      my_lexer.get_token(tk);
+      name = new PTree::Identifier(tk);
+    }
+    PTree::ClassSpec *cspec = new PTree::ClassSpec(class_, PTree::cons(name, 0), 0);
+    PTree::TypeParameter *tparam = new PTree::TypeParameter(tdecl, cspec);
+    if (name) declare(tparam);
+    decl = tparam;
 
-    PTree::ClassSpec *cspec = new PTree::ClassSpec(new PTree::Reserved(tk1),
-						   PTree::cons(new PTree::Atom(tk2), 0),
-						   0);
-    tdecl = PTree::snoc(tdecl, cspec);
-    declare(tdecl);
-    decl = tdecl;
     if(my_lexer.look_ahead(0) == '=')
     {
+      my_lexer.get_token(tk);
       PTree::Node *default_type;
-      my_lexer.get_token(tk1);
       if(!typename_(default_type))
 	return false;
 
-      decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1), default_type));
+      decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
     }
   }
   else
   {
-    PTree::Node *type_name, *arg;
-    PTree::Encoding type_encode, name_encode;
-    if(!type_specifier(type_name, true, type_encode))
-      return false;
-
-    if(!declarator(arg, kArgDeclarator, false, type_encode, name_encode, true))
-      return false;
-
-    decl = PTree::list(type_name, arg);
-    if(my_lexer.look_ahead(0) == '=')
-    {
-      PTree::Node *exp;
-      my_lexer.get_token(tk1);
-      if(!additive_expr(exp))
-	return false;
-
-      decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk1), exp));
-    }
+    PTree::Encoding encoding; // unused
+    PTree::ParameterDeclaration *pdecl;
+    if (!parameter_declaration(pdecl, encoding)) return false;
+    decl = pdecl;
   }
   return true;
 }
@@ -1434,11 +1418,11 @@ bool Parser::opt_member_spec(PTree::Node *&p)
     {
       my_lexer.get_token(tk);
       if(t == Token::INLINE)
-	lf = new PTree::AtomINLINE(tk);
+	lf = new PTree::Kwd::Inline(tk);
       else if(t == Token::VIRTUAL)
-	lf = new PTree::AtomVIRTUAL(tk);
+	lf = new PTree::Kwd::Virtual(tk);
       else
-	lf = new PTree::AtomFRIEND(tk);
+	lf = new PTree::Kwd::Friend(tk);
     }
     p = PTree::snoc(p, lf);
     t = my_lexer.look_ahead(0);
@@ -1461,19 +1445,19 @@ bool Parser::opt_storage_spec(PTree::Node *&p)
     switch(t)
     {
       case Token::STATIC :
-	p = new PTree::AtomSTATIC(tk);
+	p = new PTree::Kwd::Static(tk);
 	break;
       case Token::EXTERN :
-	p = new PTree::AtomEXTERN(tk);
+	p = new PTree::Kwd::Extern(tk);
 	break;
       case Token::AUTO :
-	p = new PTree::AtomAUTO(tk);
+	p = new PTree::Kwd::Auto(tk);
 	break;
       case Token::REGISTER :
-	p = new PTree::AtomREGISTER(tk);
+	p = new PTree::Kwd::Register(tk);
 	break;
       case Token::MUTABLE :
-	p = new PTree::AtomMUTABLE(tk);
+	p = new PTree::Kwd::Mutable(tk);
 	break;
       default :
 	throw std::runtime_error("optStorageSpec(): fatal");
@@ -1501,10 +1485,10 @@ bool Parser::opt_cv_qualify(PTree::Node *&cv)
       switch(t)
       {
         case Token::CONST :
-	  p = PTree::snoc(p, new PTree::AtomCONST(tk));
+	  p = PTree::snoc(p, new PTree::Kwd::Const(tk));
 	  break;
         case Token::VOLATILE :
-	  p = PTree::snoc(p, new PTree::AtomVOLATILE(tk));
+	  p = PTree::snoc(p, new PTree::Kwd::Volatile(tk));
 	  break;
         default :
 	  throw std::runtime_error("optCvQualify(): fatal");
@@ -1551,54 +1535,54 @@ bool Parser::opt_integral_type_or_class_spec(PTree::Node *&p, PTree::Encoding& e
       my_lexer.get_token(tk);
       switch(t)
       {
-        case Token::CHAR :
+        case Token::CHAR:
 	  type = 'c';
-	  kw = new PTree::AtomCHAR(tk);
+	  kw = new PTree::Kwd::Char(tk);
 	  break;
-        case Token::WCHAR :
+        case Token::WCHAR:
 	  type = 'w';
-	  kw = new PTree::AtomWCHAR(tk);
+	  kw = new PTree::Kwd::WChar(tk);
 	  break;
-        case Token::INT :
-        case Token::INT64 : // an int64 is *NOT* an int but...
+        case Token::INT:
+        case Token::INT64: // an int64 is *NOT* an int but...
 	  if(type != 's' && type != 'l' && type != 'j' && type != 'r')
 	    type = 'i';
-	  kw = new PTree::AtomINT(tk);
+	  kw = new PTree::Kwd::Int(tk);
 	  break;
-        case Token::SHORT :
+        case Token::SHORT:
 	  type = 's';
-	  kw = new PTree::AtomSHORT(tk);
+	  kw = new PTree::Kwd::Short(tk);
 	  break;
-        case Token::LONG :
+        case Token::LONG:
 	  if(type == 'l') type = 'j';      // long long
 	  else if(type == 'd') type = 'r'; // double long
 	  else type = 'l';
-	  kw = new PTree::AtomLONG(tk);
+	  kw = new PTree::Kwd::Long(tk);
 	  break;
-        case Token::SIGNED :
+        case Token::SIGNED:
 	  flag = 'S';
-	  kw = new PTree::AtomSIGNED(tk);
+	  kw = new PTree::Kwd::Signed(tk);
 	  break;
-        case Token::UNSIGNED :
+        case Token::UNSIGNED:
 	  flag = 'U';
-	  kw = new PTree::AtomUNSIGNED(tk);
+	  kw = new PTree::Kwd::Unsigned(tk);
 	  break;
-        case Token::FLOAT :
+        case Token::FLOAT:
 	  type = 'f';
-	  kw = new PTree::AtomFLOAT(tk);
+	  kw = new PTree::Kwd::Float(tk);
 	  break;
-        case Token::DOUBLE :
+        case Token::DOUBLE:
 	  if(type == 'l') type = 'r'; // long double
 	  else type = 'd';
-	  kw = new PTree::AtomDOUBLE(tk);
+	  kw = new PTree::Kwd::Double(tk);
 	  break;
-        case Token::VOID :
+        case Token::VOID:
 	  type = 'v';
-	  kw = new PTree::AtomVOID(tk);
+	  kw = new PTree::Kwd::Void(tk);
 	  break;
-        case Token::BOOLEAN :
+        case Token::BOOLEAN:
 	  type = 'b';
-	  kw = new PTree::AtomBOOLEAN(tk);
+	  kw = new PTree::Kwd::Bool(tk);
 	  break;
         default :
 	  throw std::runtime_error("Parser::opt_integral_type_or_class_spec(): fatal");
@@ -1707,9 +1691,10 @@ bool Parser::opt_throw_decl(PTree::Node *&throw_decl)
   int t;
   PTree::Node *p = 0;
 
-  if(my_lexer.look_ahead(0) == Token::THROW){
+  if(my_lexer.look_ahead(0) == Token::THROW)
+  {
     my_lexer.get_token(tk);
-    p = PTree::snoc(p, new PTree::Reserved(tk));
+    p = PTree::snoc(p, new PTree::Kwd::Throw(tk));
 
     if(my_lexer.get_token(tk) != '(')
       return false;
@@ -2216,7 +2201,7 @@ bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
       if(!operator_name(op, encode)) return false;
       
       t = my_lexer.look_ahead(0);
-      if(t != '<') opf = PTree::list(new PTree::Reserved(tk), op);
+      if(t != '<') opf = PTree::list(new PTree::Kwd::Operator(tk), op);
       else
       {
 	PTree::Node *args;
@@ -2226,7 +2211,7 @@ bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
 	// here, I must merge args_encode into encode.
 	// I'll do it in future. :p
 
-	opf = PTree::list(new PTree::Reserved(tk), op, args);
+	opf = PTree::list(new PTree::Kwd::Operator(tk), op, args);
       }
       id = id ? PTree::snoc(id, opf) : opf;
       if(length > 0) encode.qualified(length + 1);
@@ -2268,13 +2253,15 @@ bool Parser::operator_name(PTree::Node *&name, PTree::Encoding &encode)
       my_lexer.get_token(tk);
       if(my_lexer.look_ahead(0) != '[')
       {
-	name = new PTree::Reserved(tk);
+	if (t == Token::NEW) new PTree::Kwd::New(tk);
+	else new PTree::Kwd::Delete(tk);
 	encode.simple_name(name);
 	return true;
       }
       else
       {
-	name = PTree::list(new PTree::Reserved(tk));
+	if (t == Token::NEW) new PTree::Kwd::New(tk);
+	else new PTree::Kwd::Delete(tk);
 	my_lexer.get_token(tk);
 	name = PTree::snoc(name, new PTree::Atom(tk));
 	if(my_lexer.get_token(tk) != ']') return false;
@@ -2583,7 +2570,7 @@ bool Parser::parameter_declaration(PTree::ParameterDeclaration *&para,
   {
     case Token::REGISTER :
       my_lexer.get_token(tk);
-      header = new PTree::AtomREGISTER(tk);
+      header = new PTree::Kwd::Register(tk);
       break;
     case Token::UserKeyword :
       if(!userdef_keyword(header)) return false;
@@ -2811,9 +2798,15 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     if(!userdef_keyword(head)) return false;
 
   int t = my_lexer.get_token(tk);
-  if(t != Token::CLASS && t != Token::STRUCT && t != Token::UNION) return false;
-
-  spec = new PTree::ClassSpec(new PTree::Reserved(tk), 0, my_comments);
+  PTree::Keyword *kwd;
+  switch (t)
+  {
+    case Token::CLASS: kwd = new PTree::Kwd::Class(tk); break;
+    case Token::STRUCT: kwd = new PTree::Kwd::Struct(tk); break;
+    case Token::UNION: kwd = new PTree::Kwd::Union(tk); break;
+    default: return false;
+  }
+  spec = new PTree::ClassSpec(kwd, 0, my_comments);
   my_comments = 0;
   if(head != 0) spec = new PTree::ClassSpec(head, spec, 0);
 
@@ -2878,22 +2871,23 @@ bool Parser::base_specifiers(PTree::Node *&bases)
     if(t == Token::VIRTUAL)
     {
       my_lexer.get_token(tk);
-      super = PTree::snoc(super, new PTree::AtomVIRTUAL(tk));
+      super = PTree::snoc(super, new PTree::Kwd::Virtual(tk));
       t = my_lexer.look_ahead(0);
     }
 
-    if(t == Token::PUBLIC | t == Token::PROTECTED | t == Token::PRIVATE){
+    if(t == Token::PUBLIC | t == Token::PROTECTED | t == Token::PRIVATE)
+    {
       PTree::Node *lf;
       switch(my_lexer.get_token(tk))
       {
         case Token::PUBLIC :
-	  lf = new PTree::AtomPUBLIC(tk);
+	  lf = new PTree::Kwd::Public(tk);
 	  break;
         case Token::PROTECTED :
-	  lf = new PTree::AtomPROTECTED(tk);
+	  lf = new PTree::Kwd::Protected(tk);
 	  break;
         case Token::PRIVATE :
-	  lf = new PTree::AtomPRIVATE(tk);
+	  lf = new PTree::Kwd::Private(tk);
 	  break;
         default :
 	  throw std::runtime_error("Parser::base_specifiers(): fatal");
@@ -2906,7 +2900,7 @@ bool Parser::base_specifiers(PTree::Node *&bases)
     if(t == Token::VIRTUAL)
     {
       my_lexer.get_token(tk);
-      super = PTree::snoc(super, new PTree::AtomVIRTUAL(tk));
+      super = PTree::snoc(super, new PTree::Kwd::Virtual(tk));
     }
 
     encode.clear();
@@ -2987,21 +2981,23 @@ bool Parser::class_member(PTree::Node *&mem)
     switch(my_lexer.get_token(tk1))
     {
       case Token::PUBLIC :
-	lf = new PTree::AtomPUBLIC(tk1);
+	lf = new PTree::Kwd::Public(tk1);
 	break;
       case Token::PROTECTED :
-	lf = new PTree::AtomPROTECTED(tk1);
+	lf = new PTree::Kwd::Protected(tk1);
 	break;
       case Token::PRIVATE :
-	lf = new PTree::AtomPRIVATE(tk1);
+	lf = new PTree::Kwd::Private(tk1);
 	break;
       default :
 	throw std::runtime_error("Parser::class_member(): fatal");
     }
 
+    PTree::Node *comments = wrap_comments(my_lexer.get_comments());
     if(my_lexer.get_token(tk2) != ':') return false;
 
-    mem = new PTree::AccessSpec(lf, PTree::list(new PTree::Atom(tk2))); return true;
+    mem = new PTree::AccessSpec(lf, PTree::list(new PTree::Atom(tk2)), comments);
+    return true;
   }
   else if(t == Token::UserKeyword4) return user_access_spec(mem);
   else if(t == ';') return null_declaration(mem);
@@ -3534,7 +3530,7 @@ bool Parser::throw_expr(PTree::Node *&exp)
   if(t == ':' || t == ';') e = 0;
   else if(!expression(e)) return false;
 
-  exp = new PTree::ThrowExpr(new PTree::Reserved(tk), PTree::list(e));
+  exp = new PTree::ThrowExpr(new PTree::Kwd::Throw(tk), PTree::list(e));
   return true;
 }
 
@@ -3650,8 +3646,8 @@ bool Parser::allocate_expr(PTree::Node *&exp)
     PTree::Node *obj;
     if(ukey) return false;
 
-    if(head == 0) exp = new PTree::DeleteExpr(new PTree::Reserved(tk), 0);
-    else exp = new PTree::DeleteExpr(head, PTree::list(new PTree::Reserved(tk)));
+    if(head == 0) exp = new PTree::DeleteExpr(new PTree::Kwd::Delete(tk), 0);
+    else exp = new PTree::DeleteExpr(head, PTree::list(new PTree::Kwd::Delete(tk)));
 
     if(my_lexer.look_ahead(0) == '[')
     {
@@ -3669,8 +3665,8 @@ bool Parser::allocate_expr(PTree::Node *&exp)
   else if(t == Token::NEW)
   {
     PTree::Node *atype;
-    if(head == 0) exp = new PTree::NewExpr(new PTree::Reserved(tk), 0);
-    else exp = new PTree::NewExpr(head, PTree::list(new PTree::Reserved(tk)));
+    if(head == 0) exp = new PTree::NewExpr(new PTree::Kwd::New(tk), 0);
+    else exp = new PTree::NewExpr(head, PTree::list(new PTree::Kwd::New(tk)));
 
     if(!allocate_type(atype)) return false;
 
@@ -3958,7 +3954,7 @@ bool Parser::primary_expr(PTree::Node *&exp)
       return true;
     case Token::THIS :
       my_lexer.get_token(tk);
-      exp = new PTree::This(tk);
+      exp = new PTree::Kwd::This(tk);
       return true;
     case Token::TYPEID :
       return typeid_expr(exp);
@@ -4048,11 +4044,11 @@ bool Parser::userdef_statement(PTree::Node *&st)
   switch(t)
   {
     case Token::UserKeyword :
-      keyword = new PTree::Reserved(tk);
+      keyword = new PTree::UserKeyword(tk);
       if(!function_arguments(exp)) return false;
       goto rest;
     case Token::UserKeyword2 :
-      keyword = new PTree::AtomUserKeyword2(tk);
+      keyword = new PTree::UserKeyword(tk);
       if(!parameter_declaration_list(exp, dummy_encode)) return false;
     rest:
     {
@@ -4179,7 +4175,7 @@ bool Parser::var_name_core(PTree::Node *&name, PTree::Encoding &encode)
       PTree::Node *op;
       if(!operator_name(op, encode)) return false;
 
-      PTree::Node *opf = PTree::list(new PTree::Reserved(tk), op);
+      PTree::Node *opf = PTree::list(new PTree::Kwd::Operator(tk), op);
       name = name ? PTree::snoc(name, opf) : opf;
       if(length > 0) encode.qualified(length + 1);
       return true;
@@ -4453,10 +4449,10 @@ bool Parser::statement(PTree::Node *&st)
       my_lexer.get_token(tk1);
       if(my_lexer.get_token(tk2) != ';') return false;
       if(k == Token::BREAK)
-	st = new PTree::BreakStatement(new PTree::Reserved(tk1),
+	st = new PTree::BreakStatement(new PTree::Kwd::Break(tk1),
 				       PTree::list(new PTree::Atom(tk2)));
       else
-	st = new PTree::ContinueStatement(new PTree::Reserved(tk1),
+	st = new PTree::ContinueStatement(new PTree::Kwd::Continue(tk1),
 					  PTree::list(new PTree::Atom(tk2)));
       break;
     case Token::RETURN:
@@ -4464,7 +4460,7 @@ bool Parser::statement(PTree::Node *&st)
       if(my_lexer.look_ahead(0) == ';')
       {
 	my_lexer.get_token(tk2);
-	st = new PTree::ReturnStatement(new PTree::Reserved(tk1),
+	st = new PTree::ReturnStatement(new PTree::Kwd::Return(tk1),
 					PTree::list(new PTree::Atom(tk2)));
       } 
       else
@@ -4472,7 +4468,7 @@ bool Parser::statement(PTree::Node *&st)
 	if(!comma_expression(exp)) return false;
 	if(my_lexer.get_token(tk2) != ';') return false;
 
-	st = new PTree::ReturnStatement(new PTree::Reserved(tk1),
+	st = new PTree::ReturnStatement(new PTree::Kwd::Return(tk1),
 					PTree::list(exp, new PTree::Atom(tk2)));
       }
       break;
@@ -4481,7 +4477,7 @@ bool Parser::statement(PTree::Node *&st)
       if(my_lexer.get_token(tk2) != Token::Identifier) return false;
       if(my_lexer.get_token(tk3) != ';') return false;
 
-      st = new PTree::GotoStatement(new PTree::Reserved(tk1),
+      st = new PTree::GotoStatement(new PTree::Kwd::Goto(tk1),
 				    PTree::list(new PTree::Atom(tk2), new PTree::Atom(tk3)));
       break;
     case Token::CASE:
@@ -4490,7 +4486,7 @@ bool Parser::statement(PTree::Node *&st)
       if(my_lexer.get_token(tk2) != ':') return false;
       if(!statement(st2)) return false;
 
-      st = new PTree::CaseStatement(new PTree::Reserved(tk1),
+      st = new PTree::CaseStatement(new PTree::Kwd::Case(tk1),
 				    PTree::list(exp, new PTree::Atom(tk2), st2));
       break;
     case Token::DEFAULT:
@@ -4498,7 +4494,7 @@ bool Parser::statement(PTree::Node *&st)
       if(my_lexer.get_token(tk2) != ':') return false;
       if(!statement(st2)) return false;
 
-      st = new PTree::DefaultStatement(new PTree::Reserved(tk1),
+      st = new PTree::DefaultStatement(new PTree::Kwd::Default(tk1),
 				       PTree::list(new PTree::Atom(tk2), st2));
       break;
     case Token::Identifier:
@@ -4539,7 +4535,7 @@ bool Parser::if_statement(PTree::Node *&st)
   if(my_lexer.get_token(tk3) != ')') return false;
   if(!statement(then)) return false;
 
-  st = new PTree::IfStatement(new PTree::Reserved(tk1),
+  st = new PTree::IfStatement(new PTree::Kwd::If(tk1),
 			      PTree::list(new PTree::Atom(tk2), exp, new PTree::Atom(tk3),
 					  then));
   if(my_lexer.look_ahead(0) == Token::ELSE)
@@ -4547,7 +4543,7 @@ bool Parser::if_statement(PTree::Node *&st)
     my_lexer.get_token(tk4);
     if(!statement(otherwise)) return false;
 
-    st = PTree::nconc(st, PTree::list(new PTree::Atom(tk4), otherwise));
+    st = PTree::nconc(st, PTree::list(new PTree::Kwd::Else(tk4), otherwise));
   }
   return true;
 }
@@ -4568,7 +4564,7 @@ bool Parser::switch_statement(PTree::Node *&st)
   if(my_lexer.get_token(tk3) != ')') return false;
   if(!statement(body)) return false;
 
-  st = new PTree::SwitchStatement(new PTree::Reserved(tk1),
+  st = new PTree::SwitchStatement(new PTree::Kwd::Switch(tk1),
 				  PTree::list(new PTree::Atom(tk2), exp,
 					      new PTree::Atom(tk3), body));
   return true;
@@ -4590,7 +4586,7 @@ bool Parser::while_statement(PTree::Node *&st)
   if(my_lexer.get_token(tk3) != ')') return false;
   if(!statement(body)) return false;
 
-  st = new PTree::WhileStatement(new PTree::Reserved(tk1),
+  st = new PTree::WhileStatement(new PTree::Kwd::While(tk1),
 				 PTree::list(new PTree::Atom(tk2), exp,
 					     new PTree::Atom(tk3), body));
   return true;
@@ -4614,8 +4610,8 @@ bool Parser::do_statement(PTree::Node *&st)
   if(my_lexer.get_token(tk3) != ')') return false;
   if(my_lexer.get_token(tk4) != ';') return false;
 
-  st = new PTree::DoStatement(new PTree::Reserved(tk0),
-			      PTree::list(body, new PTree::Reserved(tk1),
+  st = new PTree::DoStatement(new PTree::Kwd::Do(tk0),
+			      PTree::list(body, new PTree::Kwd::While(tk1),
 					  new PTree::Atom(tk2), exp,
 					  new PTree::Atom(tk3), new PTree::Atom(tk4)));
   return true;
@@ -4643,7 +4639,7 @@ bool Parser::for_statement(PTree::Node *&st)
   if(my_lexer.get_token(tk4) != ')') return false;
   if(!statement(body)) return false;
 
-  st = new PTree::ForStatement(new PTree::Reserved(tk1),
+  st = new PTree::ForStatement(new PTree::Kwd::For(tk1),
 			       PTree::list(new PTree::Atom(tk2), exp1, exp2,
 					   new PTree::Atom(tk3), exp3,
 					   new PTree::Atom(tk4), body));
@@ -4666,7 +4662,7 @@ bool Parser::try_statement(PTree::Node *&st)
   PTree::Block *body;
   if(!compound_statement(body)) return false;
 
-  st = new PTree::TryStatement(new PTree::Reserved(tk), PTree::list(body));
+  st = new PTree::TryStatement(new PTree::Kwd::Try(tk), PTree::list(body));
 
   do
   {
@@ -4690,7 +4686,7 @@ bool Parser::try_statement(PTree::Node *&st)
     PTree::Block *body;
     if(!compound_statement(body)) return false;
 
-    st = PTree::snoc(st, PTree::list(new PTree::Reserved(tk),
+    st = PTree::snoc(st, PTree::list(new PTree::Kwd::Catch(tk),
 				     new PTree::Atom(op), handler, new PTree::Atom(cp),
 				     body));
   } while(my_lexer.look_ahead(0) == Token::CATCH);

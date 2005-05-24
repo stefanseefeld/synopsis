@@ -66,16 +66,16 @@ const Node *ca_ar(const Node *);
 Node *ca_ar(Node *);
 
 Node *cons(Node *, Node *);
-Node *list();
-Node *list(Node *);
-Node *list(Node *, Node *);
-Node *list(Node *, Node *, Node *);
-Node *list(Node *, Node *, Node *, Node *);
-Node *list(Node *, Node *, Node *, Node *, Node *);
-Node *list(Node *, Node *, Node *, Node *, Node *, Node *);
-Node *list(Node *, Node *, Node *, Node *, Node *, Node *,
+List *list();
+List *list(Node *);
+List *list(Node *, Node *);
+List *list(Node *, Node *, Node *);
+List *list(Node *, Node *, Node *, Node *);
+List *list(Node *, Node *, Node *, Node *, Node *);
+List *list(Node *, Node *, Node *, Node *, Node *, Node *);
+List *list(Node *, Node *, Node *, Node *, Node *, Node *,
 	   Node *);
-Node *list(Node *, Node *, Node *, Node *, Node *, Node *,
+List *list(Node *, Node *, Node *, Node *, Node *, Node *,
 	   Node *, Node *);
 Node *copy(Node *);
 Node *append(Node *, Node *);

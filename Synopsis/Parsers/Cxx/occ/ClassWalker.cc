@@ -298,7 +298,7 @@ PTree::Node *ClassWalker::ConstructAccessSpecifier(int access)
 	break;
      }
 
-     return new PTree::AccessSpec(lf, PTree::list(Class::colon_t));
+    return new PTree::AccessSpec(lf, PTree::list(Class::colon_t), 0);
 }
 
 PTree::Node *ClassWalker::ConstructMember(void* ptr)
@@ -999,7 +999,7 @@ void ClassWalker::visit(PTree::ArrowMemberExpr *node)
   }
 }
 
-void ClassWalker::visit(PTree::This *node)
+void ClassWalker::visit(PTree::Kwd::This *node)
 {
   TypeInfo type;
   type_of(node, my_environment, type);

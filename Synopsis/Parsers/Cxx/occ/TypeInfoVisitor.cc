@@ -24,7 +24,7 @@ void TypeInfoVisitor::visit(PTree::Identifier *node)
       my_info.reference(); // see visit(FuncallExpr *)
 }
 
-void TypeInfoVisitor::visit(PTree::This *)
+void TypeInfoVisitor::visit(PTree::Kwd::This *)
 {
   my_info.set(my_env->LookupThis());
 }

@@ -610,7 +610,7 @@ void SWalker::visit(PTree::CondExpr *node)
   translate(PTree::nth(node, 4));
 }
 
-void SWalker::visit(PTree::This *node)
+void SWalker::visit(PTree::Kwd::This *node)
 {
   STrace trace("SWalker::visit(This*)");
   if (my_links) find_comments(node);

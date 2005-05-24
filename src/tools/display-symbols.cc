@@ -38,7 +38,10 @@ private:
     prefix("Const:             ") << my_name << ' ' << name->type().unmangled();
     if (name->defined()) my_os << " (" << name->value() << ')';
   }
-  virtual void visit(SymbolLookup::TypeName const *) {}
+  virtual void visit(SymbolLookup::TypeName const *name)
+  {
+    prefix("Type:              ") << my_name << ' ' << name->type().unmangled();
+  }
   virtual void visit(SymbolLookup::TypedefName const *name)
   {
     prefix("Typedef:           ") << my_name << ' ' << name->type().unmangled();

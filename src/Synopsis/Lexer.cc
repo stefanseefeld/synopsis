@@ -71,7 +71,7 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["true"] = Token::Constant;
     my_keywords["try"] = Token::TRY;
     my_keywords["typeid"] = Token::TYPEID;
-    my_keywords["typename"] = Token::CLASS; // FIXME !!
+    my_keywords["typename"] = Token::TYPENAME;
     my_keywords["using"] = Token::USING;
     my_keywords["virtual"] = Token::VIRTUAL;
     my_keywords["wchar_t"] = Token::WCHAR;

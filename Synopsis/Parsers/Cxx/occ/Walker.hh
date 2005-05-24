@@ -32,7 +32,7 @@ public:
   void visit(PTree::Node *node) { my_result = node;}
   void visit(PTree::List *);
   void visit(PTree::Identifier *node) { my_result = node;}
-  void visit(PTree::This *node) { my_result = node;}
+  void visit(PTree::Kwd::This *node) { my_result = node;}
   void visit(PTree::Brace *);
   void visit(PTree::Block *);
   void visit(PTree::ClassBody *);
