@@ -42,10 +42,21 @@ public:
 class TemplateParameterScope : public Scope
 {
 public:
-  virtual SymbolSet 
+  TemplateParameterScope(PTree::List const *node, Scope const *outer)
+    : my_node(node), my_outer(outer->ref()) {}
+
+  virtual SymbolSet
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
+  virtual Scope const *outer_scope() const { return my_outer;}
   virtual void accept(ScopeVisitor *v) { v->visit(this);}
+
+protected:
+  ~TemplateParameterScope() { my_outer->unref();}
+
+private:
+  PTree::List const *my_node;
+  Scope       const *my_outer;
 };
 
 class LocalScope : public Scope

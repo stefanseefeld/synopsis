@@ -152,7 +152,7 @@ public:
   void visit(PTree::SizeofExpr *);
   void visit(PTree::NewExpr *);
   void visit(PTree::DeleteExpr *);
-  void visit(PTree::This *);
+  void visit(PTree::Kwd::This *);
   void visit(PTree::FstyleCastExpr *);
   void visit(PTree::ArrayExpr *);
   void visit(PTree::FuncallExpr *); // and fstyle cast

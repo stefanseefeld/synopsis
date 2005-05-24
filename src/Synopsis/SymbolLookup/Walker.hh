@@ -33,6 +33,11 @@ public:
   virtual void visit(PTree::DotMemberExpr *);
   virtual void visit(PTree::ArrowMemberExpr *);
 
+  //. Traverse the body of the namespace declaration.
+  void traverse(PTree::NamespaceSpec *);
+  //. Traverse the body of the class definition.
+  void traverse(PTree::ClassSpec *);
+
 protected:
   Table &table() { return my_table;}
   Scope const *current_scope() { return &my_table.current_scope();}

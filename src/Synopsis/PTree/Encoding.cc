@@ -287,26 +287,26 @@ std::string Unmangler::unmangle_template()
 
 void Encoding::do_init_static()
 {
-  Encoding::bool_t = new PTree::AtomBOOLEAN("bool", 4);
-  Encoding::char_t = new PTree::AtomCHAR("char", 4);
-  Encoding::wchar_t_t = new PTree::AtomCHAR("wchar_t", 7);
-  Encoding::int_t = new PTree::AtomINT("int", 3);
-  Encoding::short_t = new PTree::AtomSHORT("short", 5);
-  Encoding::long_t = new PTree::AtomLONG("long", 4);
-  Encoding::float_t = new PTree::AtomFLOAT("float", 5);
-  Encoding::double_t = new PTree::AtomDOUBLE("double", 6);
-  Encoding::void_t = new PTree::AtomVOID("void", 4);
+  Encoding::bool_t = new PTree::Kwd::Bool("bool", 4);
+  Encoding::char_t = new PTree::Kwd::Char("char", 4);
+  Encoding::wchar_t_t = new PTree::Kwd::WChar("wchar_t", 7);
+  Encoding::int_t = new PTree::Kwd::Int("int", 3);
+  Encoding::short_t = new PTree::Kwd::Short("short", 5);
+  Encoding::long_t = new PTree::Kwd::Long("long", 4);
+  Encoding::float_t = new PTree::Kwd::Float("float", 5);
+  Encoding::double_t = new PTree::Kwd::Double("double", 6);
+  Encoding::void_t = new PTree::Kwd::Void("void", 4);
 
-  Encoding::signed_t = new PTree::AtomSIGNED("signed", 6);
-  Encoding::unsigned_t = new PTree::AtomUNSIGNED("unsigned", 8);
-  Encoding::const_t = new PTree::AtomCONST("const", 5);
-  Encoding::volatile_t = new PTree::AtomVOLATILE("volatile", 8);
+  Encoding::signed_t = new PTree::Kwd::Signed("signed", 6);
+  Encoding::unsigned_t = new PTree::Kwd::Unsigned("unsigned", 8);
+  Encoding::const_t = new PTree::Kwd::Const("const", 5);
+  Encoding::volatile_t = new PTree::Kwd::Volatile("volatile", 8);
   
-  Encoding::operator_name = new PTree::Reserved("operator", 8);
-  Encoding::new_operator = new PTree::Reserved("new", 3);
-  Encoding::anew_operator = new PTree::Reserved("new[]", 5);
-  Encoding::delete_operator = new PTree::Reserved("delete", 6);
-  Encoding::adelete_operator = new PTree::Reserved("delete[]", 8);
+  Encoding::operator_name = new PTree::Kwd::Operator("operator", 8);
+  Encoding::new_operator = new PTree::Kwd::New("new", 3);
+  Encoding::anew_operator = new PTree::Kwd::New("new[]", 5);
+  Encoding::delete_operator = new PTree::Kwd::Delete("delete", 6);
+  Encoding::adelete_operator = new PTree::Kwd::Delete("delete[]", 8);
   
   Encoding::star = new PTree::Atom("*", 1);
   Encoding::ampersand = new PTree::Atom("&", 1);

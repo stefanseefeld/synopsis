@@ -7,103 +7,12 @@
 #ifndef Synopsis_PTree_Visitor_hh_
 #define Synopsis_PTree_Visitor_hh_
 
+#include <Synopsis/PTree/NodesFwd.hh>
+
 namespace Synopsis
 {
 namespace PTree
 {
-
-  class Node;
-  class Atom;
-  class List;
-  class Literal;
-  class CommentedAtom;
-  class DupAtom;
-  class Identifier;
-  class Reserved;
-  class This;
-  class AtomAUTO;
-  class AtomBOOLEAN;
-  class AtomCHAR;
-  class AtomWCHAR;
-  class AtomCONST;
-  class AtomDOUBLE;
-  class AtomEXTERN;
-  class AtomFLOAT;
-  class AtomFRIEND;
-  class AtomINLINE;
-  class AtomINT;
-  class AtomLONG;
-  class AtomMUTABLE;
-  class AtomNAMESPACE;
-  class AtomPRIVATE;
-  class AtomPROTECTED;
-  class AtomPUBLIC;
-  class AtomREGISTER;
-  class AtomSHORT;
-  class AtomSIGNED;
-  class AtomSTATIC;
-  class AtomUNSIGNED;
-  class AtomUSING;
-  class AtomVIRTUAL;
-  class AtomVOID;
-  class AtomVOLATILE;
-  class Brace;
-  class Block;
-  class ClassBody;
-  class Typedef;
-  class TemplateDecl;
-  class TemplateInstantiation;
-  class ExternTemplate;
-  class MetaclassDecl;
-  class LinkageSpec;
-  class NamespaceSpec;
-  class NamespaceAlias;
-  class UsingDirective;
-  class Declaration;
-  class FunctionDefinition;
-  class ParameterDeclaration;
-  class UsingDeclaration;
-  class Declarator;
-  class Name;
-  class FstyleCastExpr;
-  class ClassSpec;
-  class EnumSpec;
-  class AccessSpec;
-  class AccessDecl;
-  class UserAccessSpec;
-  class IfStatement;
-  class SwitchStatement;
-  class WhileStatement;
-  class DoStatement;
-  class ForStatement;
-  class TryStatement;
-  class BreakStatement;
-  class ContinueStatement;
-  class ReturnStatement;
-  class GotoStatement;
-  class CaseStatement;
-  class DefaultStatement;
-  class LabelStatement;
-  class ExprStatement;
-  class CommaExpr;
-  class AssignExpr;
-  class CondExpr;
-  class InfixExpr;
-  class PmExpr;
-  class CastExpr;
-  class UnaryExpr;
-  class ThrowExpr;
-  class SizeofExpr;
-  class TypeidExpr;
-  class TypeofExpr;
-  class NewExpr;
-  class DeleteExpr;
-  class ArrayExpr;
-  class FuncallExpr;
-  class PostfixExpr;
-  class DotMemberExpr;
-  class ArrowMemberExpr;
-  class ParenExpr;
 
 //. The Visitor class is used to dynamically resolve
 //. type information about a given Node.
@@ -123,34 +32,58 @@ public:
   virtual void visit(CommentedAtom *);
   virtual void visit(DupAtom *);
   virtual void visit(Identifier *);
-  virtual void visit(Reserved *);
-  virtual void visit(This *);
-  virtual void visit(AtomAUTO *);
-  virtual void visit(AtomBOOLEAN *);
-  virtual void visit(AtomCHAR *);
-  virtual void visit(AtomWCHAR *);
-  virtual void visit(AtomCONST *);
-  virtual void visit(AtomDOUBLE *);
-  virtual void visit(AtomEXTERN *);
-  virtual void visit(AtomFLOAT *);
-  virtual void visit(AtomFRIEND *);
-  virtual void visit(AtomINLINE *);
-  virtual void visit(AtomINT *);
-  virtual void visit(AtomLONG *);
-  virtual void visit(AtomMUTABLE *);
-  virtual void visit(AtomNAMESPACE *);
-  virtual void visit(AtomPRIVATE *);
-  virtual void visit(AtomPROTECTED *);
-  virtual void visit(AtomPUBLIC *);
-  virtual void visit(AtomREGISTER *);
-  virtual void visit(AtomSHORT *);
-  virtual void visit(AtomSIGNED *);
-  virtual void visit(AtomSTATIC *);
-  virtual void visit(AtomUNSIGNED *);
-  virtual void visit(AtomUSING *);
-  virtual void visit(AtomVIRTUAL *);
-  virtual void visit(AtomVOID *);
-  virtual void visit(AtomVOLATILE *);
+  virtual void visit(Keyword *);
+  virtual void visit(Kwd::Auto *);
+  virtual void visit(Kwd::Break *);
+  virtual void visit(Kwd::Bool *);
+  virtual void visit(Kwd::Case *);
+  virtual void visit(Kwd::Catch *);
+  virtual void visit(Kwd::Char *);
+  virtual void visit(Kwd::Class *);
+  virtual void visit(Kwd::Continue *);
+  virtual void visit(Kwd::Const *);
+  virtual void visit(Kwd::Default *);
+  virtual void visit(Kwd::Delete *);
+  virtual void visit(Kwd::Double *);
+  virtual void visit(Kwd::Do *);
+  virtual void visit(Kwd::Else *);
+  virtual void visit(Kwd::Extern *);
+  virtual void visit(Kwd::Float *);
+  virtual void visit(Kwd::For *);
+  virtual void visit(Kwd::Friend *);
+  virtual void visit(Kwd::Goto *);
+  virtual void visit(Kwd::Inline *);
+  virtual void visit(Kwd::If *);
+  virtual void visit(Kwd::Int *);
+  virtual void visit(Kwd::Long *);
+  virtual void visit(Kwd::Mutable *);
+  virtual void visit(Kwd::Namespace *);
+  virtual void visit(Kwd::New *);
+  virtual void visit(Kwd::Operator *);
+  virtual void visit(Kwd::Private *);
+  virtual void visit(Kwd::Protected *);
+  virtual void visit(Kwd::Public *);
+  virtual void visit(Kwd::Register *);
+  virtual void visit(Kwd::Return *);
+  virtual void visit(Kwd::Short *);
+  virtual void visit(Kwd::Signed *);
+  virtual void visit(Kwd::Static *);
+  virtual void visit(Kwd::Struct *);
+  virtual void visit(Kwd::Switch *);
+  virtual void visit(Kwd::Template *);
+  virtual void visit(Kwd::This *);
+  virtual void visit(Kwd::Throw *);
+  virtual void visit(Kwd::Try *);
+  virtual void visit(Kwd::Typedef *);
+  virtual void visit(Kwd::Typename *);
+  virtual void visit(Kwd::Union *);
+  virtual void visit(Kwd::Unsigned *);
+  virtual void visit(Kwd::Using *);
+  virtual void visit(Kwd::Virtual *);
+  virtual void visit(Kwd::Void *);
+  virtual void visit(Kwd::Volatile *);
+  virtual void visit(Kwd::WChar *);
+  virtual void visit(Kwd::While *);
   //. [ { [ <statement>* ] } ]
   virtual void visit(Brace *);
   //. [ { [ <statement>* ] } ]
@@ -200,6 +133,10 @@ public:
   virtual void visit(ClassSpec *);
   //. [ enum [name] [{ [name [= value] ]* }] ]
   virtual void visit(EnumSpec *);
+  //. [typename]
+  //. [typename identifier]
+  //. [typename identifier = type-id]
+  virtual void visit(TypeParameter *);
   virtual void visit(AccessSpec *);
   virtual void visit(AccessDecl *);
   virtual void visit(UserAccessSpec *);

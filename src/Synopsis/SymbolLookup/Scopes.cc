@@ -22,7 +22,7 @@ TemplateParameterScope::unqualified_lookup(Encoding const &name,
   Trace trace("TemplateParameterScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, context == SCOPE);
-  return symbols;
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
 SymbolSet 

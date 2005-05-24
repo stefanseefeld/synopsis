@@ -78,8 +78,8 @@ private:
   bool linkage_body(PTree::Node *&);
   bool template_decl(PTree::Node *&);
   bool template_decl2(PTree::TemplateDecl *&, TemplateDeclKind &kind);
-  bool template_arg_list(PTree::Node *&);
-  bool template_arg_declaration(PTree::Node *&);
+  bool template_parameter_list(PTree::List *&);
+  bool template_parameter_declaration(PTree::Node *&);
   bool extern_template_decl(PTree::Node *&);
 
   bool declaration(PTree::Declaration *&);

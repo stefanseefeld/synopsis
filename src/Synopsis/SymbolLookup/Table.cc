@@ -33,7 +33,7 @@ PTree::Node const *strip_cv_from_integral_type(PTree::Node const *integral)
 
 PTree::ClassSpec const *get_class_template_spec(PTree::Node const *body)
 {
-  if(*PTree::third(body) == ';')
+  if(*PTree::third(body) == ';') // template declaration
   {
     PTree::Node const *spec = strip_cv_from_integral_type(PTree::second(body));
     return dynamic_cast<PTree::ClassSpec const *>(spec);
@@ -45,7 +45,8 @@ PTree::ClassSpec const *get_class_template_spec(PTree::Node const *body)
 
 
 Table::Table(Language l)
-  : my_language(l)
+  : my_language(l),
+    my_prototype(0)
 {
   // define the global scope
   my_scopes.push(new Namespace(0, 0));
@@ -125,6 +126,21 @@ Table &Table::enter_function_definition(PTree::FunctionDefinition const *decl)
     scope = new FunctionScope(decl, my_prototype, my_scopes.top());
     my_prototype = 0;
     my_scopes.top()->declare_scope(decl, scope);
+  }
+  else scope->ref();
+  my_scopes.push(scope);
+  return *this;
+}
+
+Table &Table::enter_template_parameter_list(PTree::List const *params)
+{
+  Trace trace("Table::template_parameter_list", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return *this;
+  Scope *scope = my_scopes.top()->find_scope(params);
+  if (!scope)
+  {
+    scope = new TemplateParameterScope(params, my_scopes.top());
+    my_scopes.top()->declare_scope(params, scope);
   }
   else scope->ref();
   my_scopes.push(scope);
@@ -371,6 +387,29 @@ void Table::declare(TemplateDecl const *tdecl)
   }
 }
 
+void Table::declare(PTree::TypeParameter const *tparam)
+{
+  Trace trace("Table::declare(TypeParameter *)", Trace::SYMBOLLOOKUP);
+  Scope *scope = my_scopes.top();
+
+  PTree::Node const *first = PTree::first(tparam);
+  if (dynamic_cast<PTree::Kwd::Typename const *>(first) ||
+      dynamic_cast<PTree::Kwd::Class const *>(first))
+  {
+    PTree::Node const *second = PTree::second(tparam);
+    PTree::Encoding name;
+    name.simple_name(second);
+    scope->declare(name, new TypeName(Encoding(), tparam, true, scope));
+  }
+  else if (dynamic_cast<PTree::TemplateDecl const *>(first))
+  {
+    PTree::Node const *third = PTree::third(tparam);
+    PTree::Encoding name;
+    name.simple_name(third);
+    scope->declare(name, new ClassTemplateName(Encoding(), tparam, true, scope));
+  }
+}
+
 void Table::declare(PTree::UsingDirective const *usingdir)
 {
   Trace trace("Table::declare(UsingDirective *)", Trace::SYMBOLLOOKUP);
@@ -385,7 +424,13 @@ void Table::declare(PTree::ParameterDeclaration const *pdecl)
   PTree::Node const *decl = PTree::third(pdecl);
   PTree::Encoding const &name = decl->encoded_name();
   PTree::Encoding const &type = decl->encoded_type();
-  my_prototype->declare(name, new VariableName(type, decl, true, my_prototype));
+  if (my_prototype) // We are in a function prototype.
+    my_prototype->declare(name, new VariableName(type, decl, true, my_prototype));
+  else // We are in a template parameter list.
+  {
+    Scope *scope = my_scopes.top();
+    scope->declare(name, new VariableName(type, decl, true, scope));
+  }
 }
 
 void Table::declare(PTree::UsingDeclaration const *usingdecl)

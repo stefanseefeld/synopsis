@@ -99,7 +99,7 @@ void TypeEvaluator::visit(Identifier *node)
   }
 }
 
-void TypeEvaluator::visit(PTree::This *)
+void TypeEvaluator::visit(PTree::Kwd::This *)
 {
   // FIXME: TBD
   //        * find the current scope (object)

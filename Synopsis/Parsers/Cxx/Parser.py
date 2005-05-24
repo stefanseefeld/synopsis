@@ -70,7 +70,8 @@ class Parser(Processor):
                               self.verbose,
                               self.debug)
 
-         if self.preprocess: os.remove(ii_file)
+         print 'preprocessed file is', ii_file
+         #if self.preprocess: os.remove(ii_file)
 
       return self.output_and_return_ast()
 

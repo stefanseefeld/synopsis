@@ -217,11 +217,21 @@ private:
   Encoding my_name;
 };
 
+class TypeParameter : public List 
+{
+public:
+  TypeParameter(Node *p, Node *q) : List(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
 class AccessSpec : public List
 {
 public:
-  AccessSpec(Node *p, Node *q) : List(p, q) {}
+  AccessSpec(Node *p, Node *q, Node *c) : List(p, q), my_comments(c) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  Node *get_comments() { return my_comments;}
+private:
+  Node *my_comments;
 };
 
 class AccessDecl : public List
