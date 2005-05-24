@@ -69,12 +69,13 @@ class config(build_ext):
                 # for the gc configuration on the win32 native platform
                 # set 'CC' explicitely to 'gcc -mno-cygwin'
                 os.environ['CC'] = "gcc -mno-cygwin"
-                syn_cxx = string.replace('`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp),
-                                         '\\', '\\\\\\\\\\\\\\\\')
-            else:
-                syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)
-                
             self.config('src/Synopsis/gc', self.build_ctemp, self.build_clib)
+
+        if os.name == 'nt':
+            syn_cxx = string.replace('`cygpath -a %s/src`'%os.path.abspath(self.build_ctemp),
+                                     '\\', '\\\\\\\\\\\\\\\\')
+        else:
+            syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
         for ext in self.extensions:
             self.config(ext, self.build_temp, self.build_lib,
