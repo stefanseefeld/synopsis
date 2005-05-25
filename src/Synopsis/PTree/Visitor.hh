@@ -163,8 +163,8 @@ public:
   virtual void visit(DefaultStatement *);
   virtual void visit(LabelStatement *);
   virtual void visit(ExprStatement *);
-  //. [ expr , expr (, expr)* ]
-  virtual void visit(CommaExpr *);
+  //. [ expr (, expr)* ]
+  virtual void visit(Expression *);
   //. [left = right]
   virtual void visit(AssignExpr *);
   virtual void visit(CondExpr *);

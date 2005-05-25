@@ -141,7 +141,7 @@ public:
   void visit(PTree::DefaultStatement *);
   void visit(PTree::LabelStatement *);
   void visit(PTree::ExprStatement *);
-  void visit(PTree::CommaExpr *);
+  void visit(PTree::Expression *);
   void visit(PTree::AssignExpr *);
   void visit(PTree::CondExpr *);
   void visit(PTree::InfixExpr *);

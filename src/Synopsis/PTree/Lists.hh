@@ -255,60 +255,232 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-#define PtreeStatementDecl(s)\
-class s##Statement : public List {\
-public:\
-  s##Statement(Node *p, Node *q) : List(p, q) {}	\
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}\
-}
+template <typename T>
+class StatementT : public List
+{
+public:
+  StatementT(Node *p, Node *q) : List(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(static_cast<T *>(this));}
+};
 
-PtreeStatementDecl(If);
-PtreeStatementDecl(Switch);
-PtreeStatementDecl(While);
-PtreeStatementDecl(Do);
-PtreeStatementDecl(For);
-PtreeStatementDecl(Try);
-PtreeStatementDecl(Break);
-PtreeStatementDecl(Continue);
-PtreeStatementDecl(Return);
-PtreeStatementDecl(Goto);
-PtreeStatementDecl(Case);
-PtreeStatementDecl(Default);
-PtreeStatementDecl(Label);
-PtreeStatementDecl(Expr);
+class IfStatement : public StatementT<IfStatement> 
+{
+public:
+  IfStatement(Node *p, Node *q) : StatementT<IfStatement>(p, q) {} 
+};
 
-#undef PtreeStatementDecl
+class SwitchStatement : public StatementT<SwitchStatement> 
+{
+public:
+  SwitchStatement(Node *p, Node *q) : StatementT<SwitchStatement>(p, q) {} 
+};
 
-#define PtreeExprDecl(n)\
-class n##Expr : public List {\
-public:\
-  n##Expr(Node *p, Node *q) : List(p, q) {}	\
-  virtual void accept(Visitor *visitor) { visitor->visit(this);} \
-}
+class WhileStatement : public StatementT<WhileStatement> 
+{
+public:
+  WhileStatement(Node *p, Node *q) : StatementT<WhileStatement>(p, q) {} 
+};
 
-PtreeExprDecl(Comma);
-PtreeExprDecl(Assign);
-PtreeExprDecl(Cond);
-PtreeExprDecl(Infix);
-PtreeExprDecl(Pm);
-PtreeExprDecl(Cast);
-PtreeExprDecl(Unary);
-PtreeExprDecl(Throw);
-PtreeExprDecl(Sizeof);
-PtreeExprDecl(Typeid);
-PtreeExprDecl(Typeof);
-PtreeExprDecl(New);
-PtreeExprDecl(Delete);
-PtreeExprDecl(Array);
-PtreeExprDecl(Funcall);
-PtreeExprDecl(Postfix);
-PtreeExprDecl(UserStatement);
-PtreeExprDecl(DotMember);
-PtreeExprDecl(ArrowMember);
-PtreeExprDecl(Paren);
-PtreeExprDecl(StaticUserStatement);
+class DoStatement : public StatementT<DoStatement> 
+{
+public:
+  DoStatement(Node *p, Node *q) : StatementT<DoStatement>(p, q) {} 
+};
 
-#undef PtreeExprDecl
+class ForStatement : public StatementT<ForStatement> 
+{
+public:
+  ForStatement(Node *p, Node *q) : StatementT<ForStatement>(p, q) {} 
+};
+
+class TryStatement : public StatementT<TryStatement> 
+{
+public:
+  TryStatement(Node *p, Node *q) : StatementT<TryStatement>(p, q) {} 
+};
+
+class BreakStatement : public StatementT<BreakStatement> 
+{
+public:
+  BreakStatement(Node *p, Node *q) : StatementT<BreakStatement>(p, q) {} 
+};
+
+class ContinueStatement : public StatementT<ContinueStatement> 
+{
+public:
+  ContinueStatement(Node *p, Node *q) : StatementT<ContinueStatement>(p, q) {} 
+};
+
+class ReturnStatement : public StatementT<ReturnStatement> 
+{
+public:
+  ReturnStatement(Node *p, Node *q) : StatementT<ReturnStatement>(p, q) {} 
+};
+
+class GotoStatement : public StatementT<GotoStatement> 
+{
+public:
+  GotoStatement(Node *p, Node *q) : StatementT<GotoStatement>(p, q) {} 
+};
+
+class CaseStatement : public StatementT<CaseStatement> 
+{
+public:
+  CaseStatement(Node *p, Node *q) : StatementT<CaseStatement>(p, q) {} 
+};
+
+class DefaultStatement : public StatementT<DefaultStatement> 
+{
+public:
+  DefaultStatement(Node *p, Node *q) : StatementT<DefaultStatement>(p, q) {} 
+};
+
+class LabelStatement : public StatementT<LabelStatement> 
+{
+public:
+  LabelStatement(Node *p, Node *q) : StatementT<LabelStatement>(p, q) {} 
+};
+
+class ExprStatement : public StatementT<ExprStatement> 
+{
+public:
+  ExprStatement(Node *p, Node *q) : StatementT<ExprStatement>(p, q) {} 
+};
+
+class Expression : public List
+{
+public:
+  Expression(Node *p, Node *q) : List(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+template <typename T>
+class ExpressionT : public List
+{
+public:
+  ExpressionT(Node *p, Node *q) : List(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(static_cast<T *>(this));}
+};
+
+class AssignExpr : public ExpressionT<AssignExpr> 
+{
+public:
+  AssignExpr(Node *p, Node *q) : ExpressionT<AssignExpr>(p, q) {} 
+};
+
+class CondExpr : public ExpressionT<CondExpr> 
+{
+public:
+  CondExpr(Node *p, Node *q) : ExpressionT<CondExpr>(p, q) {} 
+};
+
+class InfixExpr : public ExpressionT<InfixExpr> 
+{
+public:
+  InfixExpr(Node *p, Node *q) : ExpressionT<InfixExpr>(p, q) {} 
+};
+
+class PmExpr : public ExpressionT<PmExpr> 
+{
+public:
+  PmExpr(Node *p, Node *q) : ExpressionT<PmExpr>(p, q) {} 
+};
+
+class CastExpr : public ExpressionT<CastExpr> 
+{
+public:
+  CastExpr(Node *p, Node *q) : ExpressionT<CastExpr>(p, q) {} 
+};
+
+class UnaryExpr : public ExpressionT<UnaryExpr> 
+{
+public:
+  UnaryExpr(Node *p, Node *q) : ExpressionT<UnaryExpr>(p, q) {} 
+};
+
+class ThrowExpr : public ExpressionT<ThrowExpr> 
+{
+public:
+  ThrowExpr(Node *p, Node *q) : ExpressionT<ThrowExpr>(p, q) {} 
+};
+
+class SizeofExpr : public ExpressionT<SizeofExpr> 
+{
+public:
+  SizeofExpr(Node *p, Node *q) : ExpressionT<SizeofExpr>(p, q) {} 
+};
+
+class TypeidExpr : public ExpressionT<TypeidExpr> 
+{
+public:
+  TypeidExpr(Node *p, Node *q) : ExpressionT<TypeidExpr>(p, q) {} 
+};
+
+class TypeofExpr : public ExpressionT<TypeofExpr> 
+{
+public:
+  TypeofExpr(Node *p, Node *q) : ExpressionT<TypeofExpr>(p, q) {} 
+};
+
+class NewExpr : public ExpressionT<NewExpr> 
+{
+public:
+  NewExpr(Node *p, Node *q) : ExpressionT<NewExpr>(p, q) {} 
+};
+
+class DeleteExpr : public ExpressionT<DeleteExpr> 
+{
+public:
+  DeleteExpr(Node *p, Node *q) : ExpressionT<DeleteExpr>(p, q) {} 
+};
+
+class ArrayExpr : public ExpressionT<ArrayExpr> 
+{
+public:
+  ArrayExpr(Node *p, Node *q) : ExpressionT<ArrayExpr>(p, q) {} 
+};
+
+class FuncallExpr : public ExpressionT<FuncallExpr> 
+{
+public:
+  FuncallExpr(Node *p, Node *q) : ExpressionT<FuncallExpr>(p, q) {} 
+};
+
+class PostfixExpr : public ExpressionT<PostfixExpr> 
+{
+public:
+  PostfixExpr(Node *p, Node *q) : ExpressionT<PostfixExpr>(p, q) {} 
+};
+
+class UserStatementExpr : public ExpressionT<UserStatementExpr> 
+{
+public:
+  UserStatementExpr(Node *p, Node *q) : ExpressionT<UserStatementExpr>(p, q) {} 
+};
+
+class DotMemberExpr : public ExpressionT<DotMemberExpr> 
+{
+public:
+  DotMemberExpr(Node *p, Node *q) : ExpressionT<DotMemberExpr>(p, q) {} 
+};
+
+class ArrowMemberExpr : public ExpressionT<ArrowMemberExpr> 
+{
+public:
+  ArrowMemberExpr(Node *p, Node *q) : ExpressionT<ArrowMemberExpr>(p, q) {} 
+};
+
+class ParenExpr : public ExpressionT<ParenExpr> 
+{
+public:
+  ParenExpr(Node *p, Node *q) : ExpressionT<ParenExpr>(p, q) {} 
+};
+
+class StaticUserStatementExpr : public ExpressionT<StaticUserStatementExpr> 
+{
+public:
+  StaticUserStatementExpr(Node *p, Node *q) : ExpressionT<StaticUserStatementExpr>(p, q) {} 
+};
 
 }
 }

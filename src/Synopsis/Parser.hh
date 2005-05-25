@@ -79,7 +79,8 @@ private:
   bool template_decl(PTree::Node *&);
   bool template_decl2(PTree::TemplateDecl *&, TemplateDeclKind &kind);
   bool template_parameter_list(PTree::List *&);
-  bool template_parameter_declaration(PTree::Node *&);
+  bool template_parameter(PTree::Node *&);
+  bool type_parameter(PTree::Node *&);
   bool extern_template_decl(PTree::Node *&);
 
   bool declaration(PTree::Declaration *&);
@@ -131,24 +132,23 @@ private:
   bool access_decl(PTree::Node *&);
   bool user_access_spec(PTree::Node *&);
   
-  bool comma_expression(PTree::Node *&);
-  
   bool expression(PTree::Node *&);
-  bool conditional_expr(PTree::Node *&, bool);
-  bool logical_or_expr(PTree::Node *&, bool);
-  bool logical_and_expr(PTree::Node *&, bool);
-  bool inclusive_or_expr(PTree::Node *&, bool);
-  bool exclusive_or_expr(PTree::Node *&, bool);
-  bool and_expr(PTree::Node *&, bool);
-  bool equality_expr(PTree::Node *&, bool);
-  bool relational_expr(PTree::Node *&, bool);
+  bool assign_expr(PTree::Node *&);
+  bool conditional_expr(PTree::Node *&);
+  bool logical_or_expr(PTree::Node *&);
+  bool logical_and_expr(PTree::Node *&);
+  bool inclusive_or_expr(PTree::Node *&);
+  bool exclusive_or_expr(PTree::Node *&);
+  bool and_expr(PTree::Node *&);
+  bool equality_expr(PTree::Node *&);
+  bool relational_expr(PTree::Node *&);
   bool shift_expr(PTree::Node *&);
   bool additive_expr(PTree::Node *&);
   bool multiply_expr(PTree::Node *&);
   bool pm_expr(PTree::Node *&);
   bool cast_expr(PTree::Node *&);
-  bool typename_(PTree::Node *&);
-  bool typename_(PTree::Node *&, PTree::Encoding&);
+  bool type_id(PTree::Node *&);
+  bool type_id(PTree::Node *&, PTree::Encoding&);
   bool unary_expr(PTree::Node *&);
   bool throw_expr(PTree::Node *&);
   bool sizeof_expr(PTree::Node *&);
@@ -186,9 +186,6 @@ private:
   void skip_to(Token::Type token);
   
 private:
-//   typedef std::stack<SymbolTable::Scope *> Scopes;
-//   struct                                   ScopeGuard;
-
   bool more_var_name();
 
   Lexer               &my_lexer;
@@ -196,6 +193,9 @@ private:
   SymbolLookup::Table &my_symbols;
   ErrorList            my_errors;
   PTree::Node         *my_comments;
+  //. If true, '>' is interpreted as ther greater-than operator.
+  //. If false, it marks the end of a template-id or template-parameter-list.
+  bool                 my_gt_is_operator;
   bool                 my_in_template_decl;
 };
 

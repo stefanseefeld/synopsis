@@ -118,7 +118,7 @@ class CaseStatement;
 class DefaultStatement;
 class LabelStatement;
 class ExprStatement;
-class CommaExpr;
+class Expression;
 class AssignExpr;
 class CondExpr;
 class InfixExpr;

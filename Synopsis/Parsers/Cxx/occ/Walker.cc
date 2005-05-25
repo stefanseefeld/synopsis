@@ -1101,7 +1101,7 @@ PTree::Node *Walker::strip_cv_from_integral_type(PTree::Node *integral)
   return integral;
 }
 
-void Walker::visit(PTree::CommaExpr *node)
+void Walker::visit(PTree::Expression *node)
 {
   PTree::Node *left = PTree::first(node);
   PTree::Node *left2 = translate(left);
@@ -1110,7 +1110,7 @@ void Walker::visit(PTree::CommaExpr *node)
   if(left == left2 && right == right2)
     my_result = node;
   else
-    my_result = new PTree::CommaExpr(left2, PTree::list(PTree::second(node), right2));
+    my_result = new PTree::Expression(left2, PTree::list(PTree::second(node), right2));
 }
 
 void Walker::visit(PTree::AssignExpr *node)

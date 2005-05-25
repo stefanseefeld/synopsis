@@ -106,7 +106,7 @@ void Visitor::visit(CaseStatement *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(DefaultStatement *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(LabelStatement *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(ExprStatement *l) { visit(static_cast<List *>(l));}
-void Visitor::visit(CommaExpr *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(Expression *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(AssignExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(CondExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(InfixExpr *l) { visit(static_cast<List *>(l));}

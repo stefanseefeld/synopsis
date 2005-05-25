@@ -82,6 +82,16 @@ private:
 namespace
 {
 
+template <typename T>
+struct Guard
+{
+  Guard(T Parser::*m, Parser &p) : parser(p), member(m), saved(p.*m) {}
+  ~Guard() { parser.*member = saved;}
+  Parser &    parser;
+  T Parser::* member;
+  T           saved;
+};
+
 const int max_errors = 10;
 
 PTree::Node *wrap_comments(const Lexer::Comments &c)
@@ -193,6 +203,7 @@ Parser::Parser(Lexer &lexer, SymbolLookup::Table &symbols, int ruleset)
     my_ruleset(ruleset),
     my_symbols(symbols),
     my_comments(0),
+    my_gt_is_operator(true),
     my_in_template_decl(false)
 {
 }
@@ -203,6 +214,7 @@ Parser::~Parser()
 
 bool Parser::mark_error()
 {
+  Trace trace("Parser::mark_error", Trace::PARSING);
   Token t1, t2;
   my_lexer.look_ahead(0, t1);
   my_lexer.look_ahead(1, t2);
@@ -913,14 +925,14 @@ bool Parser::template_parameter_list(PTree::List *&params)
     return true;
   }
 
-  if(!template_parameter_declaration(a))
+  if(!template_parameter(a))
     return false;
   params = PTree::list(a);
   while(my_lexer.look_ahead(0) == ',')
   {
     my_lexer.get_token(tk);
     params = PTree::snoc(params, new PTree::Atom(tk));
-    if(!template_parameter_declaration(a))
+    if(!template_parameter(a))
       return false;
 
     params = PTree::snoc(params, a);
@@ -929,14 +941,44 @@ bool Parser::template_parameter_list(PTree::List *&params)
 }
 
 /*
-  temp.parameter.declaration
+  temp.parameter
   : CLASS Identifier {'=' type.name}
   | type.specifier arg.declarator {'=' additive.expr}
   | template.decl2 CLASS Identifier {'=' type.name}
 */
-bool Parser::template_parameter_declaration(PTree::Node *&decl)
+bool Parser::template_parameter(PTree::Node *&decl)
 {
-  Trace trace("Parser::template_parameter_declaration", Trace::PARSING);
+  Trace trace("Parser::template_parameter", Trace::PARSING);
+
+  Guard<bool> guard(&Parser::my_gt_is_operator, *this);
+  my_gt_is_operator = false;
+
+  Token::Type type = my_lexer.look_ahead(0);
+  // template template parameter
+  if (type == Token::TEMPLATE) return type_parameter(decl);
+  // type parameter
+  else if (type == Token::TYPENAME || type == Token::CLASS)
+  {
+    type = my_lexer.look_ahead(1);
+    if (type == Token::Identifier) type = my_lexer.look_ahead(2);
+    if (type == ',' || type == '=' || type == '>')
+      return type_parameter(decl);
+  }
+  // non-type parameter
+  else
+  {
+    PTree::Encoding encoding; // unused
+    PTree::ParameterDeclaration *pdecl;
+    if (!parameter_declaration(pdecl, encoding)) return false;
+    decl = pdecl;
+  }
+  return true;
+}
+
+bool Parser::type_parameter(PTree::Node *&decl)
+{
+  Trace trace("Parser::type_parameter", Trace::PARSING);
+
   Token::Type type = my_lexer.look_ahead(0);
   if(type == Token::TYPENAME || type == Token::CLASS)
   {
@@ -962,14 +1004,12 @@ bool Parser::template_parameter_declaration(PTree::Node *&decl)
       PTree::Node *default_type;
 
       my_lexer.get_token(tk);
-      if(!typename_(default_type))
+      if(!type_id(default_type))
 	return false;
 
       decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
       return true;
     }
-    else if (type == '>' || type == ',')
-      return true;
   }
   else if (type == Token::TEMPLATE) 
   {
@@ -995,20 +1035,12 @@ bool Parser::template_parameter_declaration(PTree::Node *&decl)
     {
       my_lexer.get_token(tk);
       PTree::Node *default_type;
-      if(!typename_(default_type))
+      if(!type_id(default_type))
 	return false;
 
       decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
     }
   }
-  else
-  {
-    PTree::Encoding encoding; // unused
-    PTree::ParameterDeclaration *pdecl;
-    if (!parameter_declaration(pdecl, encoding)) return false;
-    decl = pdecl;
-  }
-  return true;
 }
 
 /*
@@ -1152,7 +1184,7 @@ bool Parser::simple_declaration(PTree::Declaration *&statement)
   my_lexer.get_token(eqs);
   int t = my_lexer.look_ahead(0);
   PTree::Node *e;
-  if(!expression(e))
+  if(!assign_expr(e))
     return false;
 
   PTree::nconc(d, PTree::list(new PTree::Atom(eqs), e));
@@ -1191,7 +1223,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
       return true;
     case ':' : // bit field
       my_lexer.get_token(tk);
-      if(!expression(decl)) return false;
+      if(!assign_expr(decl)) return false;
 
       decl = PTree::list(PTree::list(new PTree::Atom(tk), decl));
       if(my_lexer.get_token(tk) != ';') return false;
@@ -1791,7 +1823,7 @@ bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode
   if(my_lexer.look_ahead(0) == ':')
   {	// bit field
     my_lexer.get_token(tk);
-    if(!expression(e))
+    if(!assign_expr(e))
       return false;
 
     dw = PTree::list(new PTree::Atom(tk), e);
@@ -1816,7 +1848,7 @@ bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode
     else if(t == ':')
     {		// bit field
       my_lexer.get_token(tk);
-      if(!expression(e))
+      if(!assign_expr(e))
 	return false;
 
       dw = PTree::nconc(d, PTree::list(new PTree::Atom(tk), e));
@@ -1833,7 +1865,7 @@ bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode
 /*
   declarator
   : (ptr.operator)* (name | '(' declarator ')')
-	('[' comma.expression ']')* {func.args.or.init}
+	('[' expression ']')* {func.args.or.init}
 
   func.args.or.init
   : '(' arg.decl.list.or.init ')' {cv.qualify} {throw.decl}
@@ -1988,7 +2020,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       PTree::Node *expr;
       my_lexer.get_token(ob);
       if(my_lexer.look_ahead(0) == ']') expr = 0;
-      else if(!comma_expression(expr)) return false;
+      else if(!expression(expr)) return false;
 
       if(my_lexer.get_token(cb) != ']') return false;
 
@@ -2242,11 +2274,12 @@ bool Parser::operator_name(PTree::Node *&name, PTree::Encoding &encode)
        || t == '&' || t == '|' || t == '~' || t == '!' || t == '=' || t == '<'
        || t == '>' || t == Token::AssignOp || t == Token::ShiftOp || t == Token::EqualOp
        || t == Token::RelOp || t == Token::LogAndOp || t == Token::LogOrOp || t == Token::IncOp
-       || t == ',' || t == Token::PmOp || t == Token::ArrowOp){
-	my_lexer.get_token(tk);
-	name = new PTree::Atom(tk);
-	encode.simple_name(name);
-	return true;
+       || t == ',' || t == Token::PmOp || t == Token::ArrowOp)
+    {
+      my_lexer.get_token(tk);
+      name = new PTree::Atom(tk);
+      encode.simple_name(name);
+      return true;
     }
     else if(t == Token::NEW || t == Token::DELETE)
     {
@@ -2429,13 +2462,16 @@ bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
     type_encode.clear();
 
     // Prefer type name, but if not ',' or '>' then must be expression
-    if(typename_(a, type_encode) && 
+    if(type_id(a, type_encode) && 
        (my_lexer.look_ahead(0) == ',' || my_lexer.look_ahead(0) == '>'))
       encode.append(type_encode);
     else
     {
+      // FIXME: find the right place to put this.
+      Guard<bool> guard(&Parser::my_gt_is_operator, *this);
+      my_gt_is_operator = false;
       my_lexer.restore(pos);	
-      if(!conditional_expr(a, true)) return false;
+      if(!conditional_expr(a)) return false;
       encode.value_temp_param();
     }
     args = PTree::snoc(args, a);
@@ -2568,14 +2604,14 @@ bool Parser::parameter_declaration(PTree::ParameterDeclaration *&para,
 
   switch(my_lexer.look_ahead(0))
   {
-    case Token::REGISTER :
+    case Token::REGISTER:
       my_lexer.get_token(tk);
       header = new PTree::Kwd::Register(tk);
       break;
-    case Token::UserKeyword :
+    case Token::UserKeyword:
       if(!userdef_keyword(header)) return false;
       break;
-    default :
+    default:
       header = 0;
       break;
   }
@@ -2585,16 +2621,14 @@ bool Parser::parameter_declaration(PTree::ParameterDeclaration *&para,
 
   PTree::Node *decl;
   if(!declarator(decl, kArgDeclarator, false, encode, name_encode, true)) return false;
-
   para = new PTree::ParameterDeclaration(header, type_name, decl);
   declare(para);
-  int t = my_lexer.look_ahead(0);
-  if(t == '=')
+  Token::Type type = my_lexer.look_ahead(0);
+  if(type == '=')
   {
     my_lexer.get_token(tk);
     PTree::Node *init;
-    if(!initialize_expr(init)) return false;
-    
+    if(!initialize_expr(init)) return false;    
     decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), init));
   }
   return true;
@@ -2611,7 +2645,7 @@ bool Parser::initialize_expr(PTree::Node *&exp)
   Token tk;
   PTree::Node *e, *elist;
 
-  if(my_lexer.look_ahead(0) != '{') return expression(exp);
+  if(my_lexer.look_ahead(0) != '{') return assign_expr(exp);
   else
   {
     my_lexer.get_token(tk);
@@ -2673,7 +2707,7 @@ bool Parser::function_arguments(PTree::Node *&args)
   
   while(true)
   {
-    if(!expression(exp)) return false;
+    if(!assign_expr(exp)) return false;
 
     args = PTree::snoc(args, exp);
     if(my_lexer.look_ahead(0) != ',') return true;
@@ -2752,7 +2786,7 @@ bool Parser::enum_body(PTree::Node *&body)
     else
     {
       my_lexer.get_token(tk2);
-      if(!expression(exp))
+      if(!assign_expr(exp))
       {
 	if(!mark_error()) return false; // too many errors
 
@@ -3102,24 +3136,24 @@ bool Parser::user_access_spec(PTree::Node *&mem)
 }
 
 /*
-  comma.expression
-  : expression
-  | comma.expression ',' expression	(left-to-right)
+  expression
+  : assign_expr
+  | expression ',' assign_expr	(left-to-right)
 */
-bool Parser::comma_expression(PTree::Node *&exp)
+bool Parser::expression(PTree::Node *&exp)
 {
-  Trace trace("Parser::comma_expression", Trace::PARSING);
+  Trace trace("Parser::expression", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!expression(exp)) return false;
+  if(!assign_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == ',')
   {
     my_lexer.get_token(tk);
-    if(!expression(right)) return false;
+    if(!assign_expr(right)) return false;
 
-    exp = new PTree::CommaExpr(exp, PTree::list(new PTree::Atom(tk), right));
+    exp = new PTree::Expression(exp, PTree::list(new PTree::Atom(tk), right));
   }
   return true;
 }
@@ -3128,20 +3162,20 @@ bool Parser::comma_expression(PTree::Node *&exp)
   expression
   : conditional.expr {(AssignOp | '=') expression}	right-to-left
 */
-bool Parser::expression(PTree::Node *&exp)
+bool Parser::assign_expr(PTree::Node *&exp)
 {
-  Trace trace("Parser::expression", Trace::PARSING);
+  Trace trace("Parser::assign_expr", Trace::PARSING);
   Token tk;
   PTree::Node *left, *right;
 
-  if(!conditional_expr(left, false)) return false;
+  if(!conditional_expr(left)) return false;
 
   int t = my_lexer.look_ahead(0);
   if(t != '=' && t != Token::AssignOp) exp = left;
   else
   {
     my_lexer.get_token(tk);
-    if(!expression(right)) return false;
+    if(!assign_expr(right)) return false;
     
     exp = new PTree::AssignExpr(left, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3150,22 +3184,22 @@ bool Parser::expression(PTree::Node *&exp)
 
 /*
   conditional.expr
-  : logical.or.expr {'?' comma.expression ':' conditional.expr}  right-to-left
+  : logical.or.expr {'?' expression ':' conditional.expr}  right-to-left
 */
-bool Parser::conditional_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::conditional_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::conditional_expr", Trace::PARSING);
   Token tk1, tk2;
   PTree::Node *then, *otherwise;
 
-  if(!logical_or_expr(exp, temp_args)) return false;
+  if(!logical_or_expr(exp)) return false;
 
   if(my_lexer.look_ahead(0) == '?')
   {
     my_lexer.get_token(tk1);
-    if(!comma_expression(then)) return false;
+    if(!expression(then)) return false;
     if(my_lexer.get_token(tk2) != ':') return false;
-    if(!conditional_expr(otherwise, temp_args)) return false;
+    if(!conditional_expr(otherwise)) return false;
 
     exp = new PTree::CondExpr(exp, PTree::list(new PTree::Atom(tk1), then,
 					       new PTree::Atom(tk2), otherwise));
@@ -3178,18 +3212,18 @@ bool Parser::conditional_expr(PTree::Node *&exp, bool temp_args)
   : logical.and.expr
   | logical.or.expr LogOrOp logical.and.expr		left-to-right
 */
-bool Parser::logical_or_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::logical_or_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::logical_or_expr", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!logical_and_expr(exp, temp_args)) return false;
+  if(!logical_and_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == Token::LogOrOp)
   {
     my_lexer.get_token(tk);
-    if(!logical_and_expr(right, temp_args)) return false;
+    if(!logical_and_expr(right)) return false;
     
     exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3201,18 +3235,18 @@ bool Parser::logical_or_expr(PTree::Node *&exp, bool temp_args)
   : inclusive.or.expr
   | logical.and.expr LogAndOp inclusive.or.expr
 */
-bool Parser::logical_and_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::logical_and_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::logical_and_expr", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!inclusive_or_expr(exp, temp_args)) return false;
+  if(!inclusive_or_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == Token::LogAndOp)
   {
     my_lexer.get_token(tk);
-    if(!inclusive_or_expr(right, temp_args)) return false;
+    if(!inclusive_or_expr(right)) return false;
 
     exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3224,18 +3258,18 @@ bool Parser::logical_and_expr(PTree::Node *&exp, bool temp_args)
   : exclusive.or.expr
   | inclusive.or.expr '|' exclusive.or.expr
 */
-bool Parser::inclusive_or_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::inclusive_or_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::inclusive_or_expr", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!exclusive_or_expr(exp, temp_args)) return false;
+  if(!exclusive_or_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == '|')
   {
     my_lexer.get_token(tk);
-    if(!exclusive_or_expr(right, temp_args)) return false;
+    if(!exclusive_or_expr(right)) return false;
 
     exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3247,18 +3281,18 @@ bool Parser::inclusive_or_expr(PTree::Node *&exp, bool temp_args)
   : and.expr
   | exclusive.or.expr '^' and.expr
 */
-bool Parser::exclusive_or_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::exclusive_or_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::exclusive_or_expr", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!and_expr(exp, temp_args)) return false;
+  if(!and_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == '^')
   {
     my_lexer.get_token(tk);
-    if(!and_expr(right, temp_args)) return false;
+    if(!and_expr(right)) return false;
 
     exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3270,18 +3304,18 @@ bool Parser::exclusive_or_expr(PTree::Node *&exp, bool temp_args)
   : equality.expr
   | and.expr '&' equality.expr
 */
-bool Parser::and_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::and_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::and_expr", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!equality_expr(exp, temp_args)) return false;
+  if(!equality_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == '&')
   {
     my_lexer.get_token(tk);
-    if(!equality_expr(right, temp_args)) return false;
+    if(!equality_expr(right)) return false;
 
     exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3293,18 +3327,18 @@ bool Parser::and_expr(PTree::Node *&exp, bool temp_args)
   : relational.expr
   | equality.expr EqualOp relational.expr
 */
-bool Parser::equality_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::equality_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::equality_expr", Trace::PARSING);
   Token tk;
   PTree::Node *right;
 
-  if(!relational_expr(exp, temp_args)) return false;
+  if(!relational_expr(exp)) return false;
 
   while(my_lexer.look_ahead(0) == Token::EqualOp)
   {
     my_lexer.get_token(tk);
-    if(!relational_expr(right, temp_args)) return false;
+    if(!relational_expr(right)) return false;
 
     exp = new PTree::InfixExpr(exp, PTree::list(new PTree::Atom(tk), right));
   }
@@ -3316,7 +3350,7 @@ bool Parser::equality_expr(PTree::Node *&exp, bool temp_args)
   : shift.expr
   | relational.expr (RelOp | '<' | '>') shift.expr
 */
-bool Parser::relational_expr(PTree::Node *&exp, bool temp_args)
+bool Parser::relational_expr(PTree::Node *&exp)
 {
   Trace trace("Parser::relational_expr", Trace::PARSING);
   int t;
@@ -3326,7 +3360,7 @@ bool Parser::relational_expr(PTree::Node *&exp, bool temp_args)
   if(!shift_expr(exp)) return false;
 
   while(t = my_lexer.look_ahead(0),
-	(t == Token::RelOp || t == '<' || (t == '>' && !temp_args)))
+	(t == Token::RelOp || t == '<' || (t == '>' && my_gt_is_operator)))
   {
     my_lexer.get_token(tk);
     if(!shift_expr(right)) return false;
@@ -3445,7 +3479,7 @@ bool Parser::cast_expr(PTree::Node *&exp)
     PTree::Node *tname;
     const char* pos = my_lexer.save();
     my_lexer.get_token(tk1);
-    if(typename_(tname))
+    if(type_id(tname))
       if(my_lexer.get_token(tk2) == ')')
 	if(cast_expr(exp))
 	{
@@ -3460,19 +3494,18 @@ bool Parser::cast_expr(PTree::Node *&exp)
 }
 
 /*
-  type.name
+  type_id
   : type.specifier cast.declarator
 */
-bool Parser::typename_(PTree::Node *&tname)
+bool Parser::type_id(PTree::Node *&tname)
 {
-  Trace trace("Parser::typename_", Trace::PARSING);
   PTree::Encoding type_encode;
-  return typename_(tname, type_encode);
+  return type_id(tname, type_encode);
 }
 
-bool Parser::typename_(PTree::Node *&tname, PTree::Encoding &type_encode)
+bool Parser::type_id(PTree::Node *&tname, PTree::Encoding &type_encode)
 {
-  Trace trace("Parser::typename_", Trace::PARSING);
+  Trace trace("Parser::type_id", Trace::PARSING);
   PTree::Node *type_name, *arg;
   PTree::Encoding name_encode;
 
@@ -3528,7 +3561,7 @@ bool Parser::throw_expr(PTree::Node *&exp)
 
   int t = my_lexer.look_ahead(0);
   if(t == ':' || t == ';') e = 0;
-  else if(!expression(e)) return false;
+  else if(!assign_expr(e)) return false;
 
   exp = new PTree::ThrowExpr(new PTree::Kwd::Throw(tk), PTree::list(e));
   return true;
@@ -3553,7 +3586,7 @@ bool Parser::sizeof_expr(PTree::Node *&exp)
 
     const char* pos = my_lexer.save();
     my_lexer.get_token(op);
-    if(typename_(tname))
+    if(type_id(tname))
       if(my_lexer.get_token(cp) == ')')
       {
 	exp = new PTree::SizeofExpr(new PTree::Atom(tk),
@@ -3589,7 +3622,7 @@ bool Parser::typeid_expr(PTree::Node *&exp)
 
     const char* pos = my_lexer.save();
     my_lexer.get_token(op);
-    if(typename_(tname))
+    if(type_id(tname))
       if(my_lexer.get_token(cp) == ')')
       {
 	exp = new PTree::TypeidExpr(new PTree::Atom(tk),
@@ -3723,7 +3756,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
     my_lexer.get_token(op);
 
     const char* pos = my_lexer.save();
-    if(typename_(tname))
+    if(type_id(tname))
       if(my_lexer.get_token(cp) == ')')
 	if(my_lexer.look_ahead(0) != '(')
 	{
@@ -3751,7 +3784,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
   if(my_lexer.look_ahead(0) == '(')
   {
     my_lexer.get_token(op);
-    if(!typename_(tname)) return false;
+    if(!type_id(tname)) return false;
     if(my_lexer.get_token(cp) != ')') return false;
 
     atype = PTree::snoc(atype, PTree::list(new PTree::Atom(op), tname,
@@ -3780,7 +3813,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
   new.declarator
   : empty
   | ptr.operator
-  | {ptr.operator} ('[' comma.expression ']')+
+  | {ptr.operator} ('[' expression ']')+
 */
 bool Parser::new_declarator(PTree::Node *&decl, PTree::Encoding& encode)
 {
@@ -3794,7 +3827,7 @@ bool Parser::new_declarator(PTree::Node *&decl, PTree::Encoding& encode)
     Token ob, cb;
     PTree::Node *exp;
     my_lexer.get_token(ob);
-    if(!comma_expression(exp)) return false;
+    if(!expression(exp)) return false;
     if(my_lexer.get_token(cb) != ']') return false;
 
     encode.array();
@@ -3847,7 +3880,7 @@ bool Parser::allocate_initializer(PTree::Node *&init)
 /*
   postfix.exp
   : primary.exp
-  | postfix.expr '[' comma.expression ']'
+  | postfix.expr '[' expression ']'
   | postfix.expr '(' function.arguments ')'
   | postfix.expr '.' var.name
   | postfix.expr ArrowOp var.name
@@ -3875,7 +3908,7 @@ bool Parser::postfix_expr(PTree::Node *&exp)
     {
       case '[' :
 	my_lexer.get_token(op);
-	if(!comma_expression(e)) return false;
+	if(!expression(e)) return false;
 	if(my_lexer.get_token(cp) != ']') return false;
 
 	exp = new PTree::ArrayExpr(exp, PTree::list(new PTree::Atom(op),
@@ -3927,7 +3960,7 @@ bool Parser::postfix_expr(PTree::Node *&exp)
   | WideStringL
   | THIS
   | var.name
-  | '(' comma.expression ')'
+  | '(' expression ')'
   | integral.or.class.spec '(' function.arguments ')'
   | openc++.primary.exp
   | typeid '(' typething ')'
@@ -3944,29 +3977,33 @@ bool Parser::primary_expr(PTree::Node *&exp)
 
   switch(my_lexer.look_ahead(0))
   {
-    case Token::Constant :
-    case Token::CharConst :
-    case Token::WideCharConst :
-    case Token::StringL :
-    case Token::WideStringL :
+    case Token::Constant:
+    case Token::CharConst:
+    case Token::WideCharConst:
+    case Token::StringL:
+    case Token::WideStringL:
       my_lexer.get_token(tk);
       exp = new PTree::Literal(tk);
       return true;
-    case Token::THIS :
+    case Token::THIS:
       my_lexer.get_token(tk);
       exp = new PTree::Kwd::This(tk);
       return true;
-    case Token::TYPEID :
+    case Token::TYPEID:
       return typeid_expr(exp);
-    case '(' :
+    case '(':
+    {
+      Guard<bool> guard(&Parser::my_gt_is_operator, *this);
+      my_gt_is_operator = true;
       my_lexer.get_token(tk);
-      if(!comma_expression(exp2)) return false;
+      if(!expression(exp2)) return false;
       if(my_lexer.get_token(tk2) != ')') return false;
 
       exp = new PTree::ParenExpr(new PTree::Atom(tk),
 				 PTree::list(exp2, new PTree::Atom(tk2)));
       return true;
-    default :
+    }
+    default:
       if(!opt_integral_type_or_class_spec(exp, cast_type_encode)) return false;
 
       if(exp)
@@ -4009,7 +4046,7 @@ bool Parser::typeof_expr(PTree::Node *&node)
     return false;
   PTree::Node *type = PTree::list(new PTree::Atom(tk2));
 #if 1
-  if (!expression(node)) return false;
+  if (!assign_expr(node)) return false;
 #else
   PTree::Encoding name_encode;
   if (!name(node, name_encode)) return false; 	 
@@ -4029,8 +4066,8 @@ bool Parser::typeof_expr(PTree::Node *&node)
   userdef.statement
   : UserKeyword '(' function.arguments ')' compound.statement
   | UserKeyword2 '(' arg.decl.list ')' compound.statement
-  | UserKeyword3 '(' expr.statement {comma.expression} ';'
-			{comma.expression} ')' compound.statement
+  | UserKeyword3 '(' expr.statement {expression} ';'
+			{expression} ')' compound.statement
 */
 bool Parser::userdef_statement(PTree::Node *&st)
 {
@@ -4063,10 +4100,10 @@ bool Parser::userdef_statement(PTree::Node *&st)
       if(!expr_statement(exp)) return false;
 
       if(my_lexer.look_ahead(0) == ';') exp2 = 0;
-      else if(!comma_expression(exp2)) return false;
+      else if(!expression(exp2)) return false;
       if(my_lexer.get_token(tk3) != ';') return false;
       if(my_lexer.look_ahead(0) == ')') exp3 = 0;
-      else if(!comma_expression(exp3)) return false;
+      else if(!expression(exp3)) return false;
       if(my_lexer.get_token(tk4) != ')') return false;
       PTree::Block *body;
       if(!compound_statement(body)) return false;
@@ -4235,7 +4272,7 @@ bool Parser::is_template_args()
 
 /*
   condition
-  : comma.expression
+  : expression
   | declarator.with.init
 
   Condition is used inside if, switch statements where a declarator can be
@@ -4307,7 +4344,7 @@ bool Parser::condition(PTree::Node *&exp)
 
   // Must be a comma expression
   my_lexer.restore(save);
-  return comma_expression(exp);
+  return expression(exp);
 }
 
 /*
@@ -4373,7 +4410,7 @@ bool Parser::compound_statement(PTree::Block *&body, bool create_scope)
   | try.statement
   | BREAK ';'
   | CONTINUE ';'
-  | RETURN { comma.expression } ';'
+  | RETURN { expression } ';'
   | GOTO Identifier ';'
   | CASE expression ':' statement
   | DEFAULT ':' statement
@@ -4465,7 +4502,7 @@ bool Parser::statement(PTree::Node *&st)
       } 
       else
       {
-	if(!comma_expression(exp)) return false;
+	if(!expression(exp)) return false;
 	if(my_lexer.get_token(tk2) != ';') return false;
 
 	st = new PTree::ReturnStatement(new PTree::Kwd::Return(tk1),
@@ -4482,7 +4519,7 @@ bool Parser::statement(PTree::Node *&st)
       break;
     case Token::CASE:
       my_lexer.get_token(tk1);
-      if(!expression(exp)) return false;
+      if(!assign_expr(exp)) return false;
       if(my_lexer.get_token(tk2) != ':') return false;
       if(!statement(st2)) return false;
 
@@ -4521,7 +4558,7 @@ bool Parser::statement(PTree::Node *&st)
 /*
   if.statement
   : IF '(' declaration.statement ')' statement { ELSE statement }
-  : IF '(' comma.expression ')' statement { ELSE statement }
+  : IF '(' expression ')' statement { ELSE statement }
 */
 bool Parser::if_statement(PTree::Node *&st)
 {
@@ -4550,7 +4587,7 @@ bool Parser::if_statement(PTree::Node *&st)
 
 /*
   switch.statement
-  : SWITCH '(' comma.expression ')' statement
+  : SWITCH '(' expression ')' statement
 */
 bool Parser::switch_statement(PTree::Node *&st)
 {
@@ -4572,7 +4609,7 @@ bool Parser::switch_statement(PTree::Node *&st)
 
 /*
   while.statement
-  : WHILE '(' comma.expression ')' statement
+  : WHILE '(' expression ')' statement
 */
 bool Parser::while_statement(PTree::Node *&st)
 {
@@ -4582,7 +4619,7 @@ bool Parser::while_statement(PTree::Node *&st)
 
   if(my_lexer.get_token(tk1) != Token::WHILE) return false;
   if(my_lexer.get_token(tk2) != '(') return false;
-  if(!comma_expression(exp)) return false;
+  if(!expression(exp)) return false;
   if(my_lexer.get_token(tk3) != ')') return false;
   if(!statement(body)) return false;
 
@@ -4594,7 +4631,7 @@ bool Parser::while_statement(PTree::Node *&st)
 
 /*
   do.statement
-  : DO statement WHILE '(' comma.expression ')' ';'
+  : DO statement WHILE '(' expression ')' ';'
 */
 bool Parser::do_statement(PTree::Node *&st)
 {
@@ -4606,7 +4643,7 @@ bool Parser::do_statement(PTree::Node *&st)
   if(!statement(body)) return false;
   if(my_lexer.get_token(tk1) != Token::WHILE) return false;
   if(my_lexer.get_token(tk2) != '(') return false;
-  if(!comma_expression(exp)) return false;
+  if(!expression(exp)) return false;
   if(my_lexer.get_token(tk3) != ')') return false;
   if(my_lexer.get_token(tk4) != ';') return false;
 
@@ -4619,7 +4656,7 @@ bool Parser::do_statement(PTree::Node *&st)
 
 /*
   for.statement
-  : FOR '(' expr.statement {comma.expression} ';' {comma.expression} ')'
+  : FOR '(' expr.statement {expression} ';' {expression} ')'
     statement
 */
 bool Parser::for_statement(PTree::Node *&st)
@@ -4632,10 +4669,10 @@ bool Parser::for_statement(PTree::Node *&st)
   if(my_lexer.get_token(tk2) != '(') return false;
   if(!expr_statement(exp1)) return false;
   if(my_lexer.look_ahead(0) == ';') exp2 = 0;
-  else if(!comma_expression(exp2)) return false;
+  else if(!expression(exp2)) return false;
   if(my_lexer.get_token(tk3) != ';') return false;
   if(my_lexer.look_ahead(0) == ')') exp3 = 0;
-  else if(!comma_expression(exp3)) return false;
+  else if(!expression(exp3)) return false;
   if(my_lexer.get_token(tk4) != ')') return false;
   if(!statement(body)) return false;
 
@@ -4697,7 +4734,7 @@ bool Parser::try_statement(PTree::Node *&st)
   expr.statement
   : ';'
   | declaration.statement
-  | comma.expression ';'
+  | expression ';'
   | openc++.postfix.expr
   | openc++.primary.exp
 */
@@ -4726,7 +4763,7 @@ bool Parser::expr_statement(PTree::Node *&st)
     {
       PTree::Node *exp;
       my_lexer.restore(pos);
-      if(!comma_expression(exp)) return false;
+      if(!expression(exp)) return false;
       if(PTree::is_a(exp, Token::ntUserStatementExpr, Token::ntStaticUserStatementExpr))
       {
 	st = exp;
