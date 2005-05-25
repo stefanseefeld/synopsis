@@ -713,9 +713,9 @@ void SWalker::visit(PTree::LabelStatement *node)
 #endif
 }
 
-void SWalker::visit(PTree::CommaExpr *node)
+void SWalker::visit(PTree::Expression *node)
 {
-  STrace trace("SWalker::visit(Comma*)");
+  STrace trace("SWalker::visit(Expression*)");
   PTree::Node *node2 = node;
   while (node2)
   {

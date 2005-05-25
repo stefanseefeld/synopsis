@@ -60,7 +60,7 @@ public:
   virtual void visit(DefaultStatement *) { my_type = Token::ntDefaultStatement;}
   virtual void visit(LabelStatement *) { my_type = Token::ntLabelStatement;}
   virtual void visit(ExprStatement *) { my_type = Token::ntExprStatement;}
-  virtual void visit(CommaExpr *) { my_type = Token::ntCommaExpr;}
+  virtual void visit(Expression *) { my_type = Token::ntCommaExpr;}
   virtual void visit(AssignExpr *) { my_type = Token::ntAssignExpr;}
   virtual void visit(CondExpr *) { my_type = Token::ntCondExpr;}
   virtual void visit(InfixExpr *) { my_type = Token::ntInfixExpr;}

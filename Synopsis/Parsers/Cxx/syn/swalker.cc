@@ -1465,8 +1465,11 @@ void SWalker::visit(PTree::AccessSpec *node)
       break;
   }
   update_line_number(node);
-  AST::Builtin *builtin = my_builder->add_tail_comment(my_lineno);
-  add_comments(builtin, node);
+  if (PTree::Node *comments = node->get_comments())
+  {
+    AST::Builtin *builtin = my_builder->add_tail_comment(my_lineno);
+    add_comments(builtin, comments);
+  }
   my_builder->set_access(axs);
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
 }
