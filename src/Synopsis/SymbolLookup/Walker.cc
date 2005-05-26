@@ -38,13 +38,18 @@ void Walker::visit(PTree::Block *node)
 {
   Trace trace("Walker::visit(Block)", Trace::SYMBOLLOOKUP);
   Scope *scope = my_scopes.top()->find_scope(node);
-  std::cout << "blablabla" << std::endl;
-  if (!scope) PTree::display(node, std::cout, false, true);
-  assert(scope);
-  scope->ref();
-  my_scopes.push(scope);
-  visit_block(node);
-  leave_scope();  
+  if (!scope)
+  {
+    // Not all Blocks represent a scope...
+    visit_block(node);
+  }
+  else
+  {
+    scope->ref();
+    my_scopes.push(scope);
+    visit_block(node);
+    leave_scope();
+  }  
 }
 
 void Walker::visit(PTree::NamespaceSpec *spec)

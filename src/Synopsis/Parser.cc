@@ -2254,15 +2254,15 @@ bool Parser::operator_name(PTree::Node *&name, PTree::Encoding &encode)
       my_lexer.get_token(tk);
       if(my_lexer.look_ahead(0) != '[')
       {
-	if (t == Token::NEW) new PTree::Kwd::New(tk);
-	else new PTree::Kwd::Delete(tk);
+	if (t == Token::NEW) name = new PTree::Kwd::New(tk);
+	else name = new PTree::Kwd::Delete(tk);
 	encode.simple_name(name);
 	return true;
       }
       else
       {
-	if (t == Token::NEW) new PTree::Kwd::New(tk);
-	else new PTree::Kwd::Delete(tk);
+	if (t == Token::NEW) name = PTree::list(new PTree::Kwd::New(tk));
+	else name = PTree::list(new PTree::Kwd::Delete(tk));
 	my_lexer.get_token(tk);
 	name = PTree::snoc(name, new PTree::Atom(tk));
 	if(my_lexer.get_token(tk) != ']') return false;
