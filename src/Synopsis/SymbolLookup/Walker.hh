@@ -7,8 +7,9 @@
 #ifndef Synopsis_SymbolLookup_Walker_hh_
 #define Synopsis_SymbolLookup_Walker_hh_
 
-#include <Synopsis/PTree/Visitor.hh>
-#include <Synopsis/SymbolLookup/Table.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/SymbolLookup/Scope.hh>
+#include <stack>
 
 namespace Synopsis
 {
