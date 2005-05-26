@@ -88,7 +88,6 @@ private:
   bool const_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
   bool other_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
   bool condition(PTree::Node *&);
-  bool simple_declaration(PTree::Declaration *&);
 
   bool is_constructor_decl();
   bool is_ptr_to_member(int);
@@ -99,8 +98,9 @@ private:
   bool constructor_decl(PTree::Node *&, PTree::Encoding&);
   bool opt_throw_decl(PTree::Node *&);
   
-  bool declarators(PTree::Node *&, PTree::Encoding&, bool, bool = false);
-  bool declarator_with_init(PTree::Node *&, PTree::Encoding&, bool, bool);
+  //. [gram.dcl.decl]
+  bool init_declarator_list(PTree::Node *&, PTree::Encoding&, bool, bool = false);
+  bool init_declarator(PTree::Node *&, PTree::Encoding&, bool, bool);
   bool declarator(PTree::Node *&, DeclKind, bool,
 		  PTree::Encoding&, PTree::Encoding&, bool,
 		  bool = false);

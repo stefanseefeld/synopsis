@@ -21,8 +21,7 @@ class test(build_ext):
 
     user_options = build_ext.user_options[:] + [
         ('suite=', 's', "the id of a test suite to run."),
-        ('interactive', None, "run the web iterface to the testing engine."),
-        ('report', 'r', "generate results suitable for report generation.")]
+        ('interactive', None, "run the web iterface to the testing engine.")]
 
     boolean_options = build_ext.boolean_options[:] + ['interactive']
 
@@ -30,7 +29,6 @@ class test(build_ext):
         build_ext.initialize_options(self)
         self.suite = ''
         self.interactive = False
-        self.report = False
 
     def finalize_options (self):
         build_ext.finalize_options(self)
@@ -44,8 +42,6 @@ class test(build_ext):
 
         command = "qmtest "
         command += self.interactive and "gui " or "run "
-        if self.report:
-            command += "-c report=1 "
         command += self.suite
                 
         self.announce(command)

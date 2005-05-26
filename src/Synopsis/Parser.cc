@@ -405,7 +405,7 @@ bool Parser::null_declaration(PTree::Node *&decl)
 
 /*
   typedef
-  : TYPEDEF type.specifier declarators ';'
+  : TYPEDEF type.specifier init_declarator_list ';'
 */
 bool Parser::typedef_(PTree::Typedef *&def)
 {
@@ -420,7 +420,7 @@ bool Parser::typedef_(PTree::Typedef *&def)
   if(!type_specifier(type_name, false, type_encode)) return false;
 
   def = PTree::snoc(def, type_name);
-  if(!declarators(decl, type_encode, true)) return false;
+  if(!init_declarator_list(decl, type_encode, true)) return false;
   if(my_lexer.get_token(tk) != ';') return false;
 
   def = PTree::nconc(def, PTree::list(decl, new PTree::Atom(tk)));
@@ -1020,7 +1020,6 @@ bool Parser::type_parameter(PTree::Node *&decl)
 	return false;
 
       decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
-      return true;
     }
   }
   else if (type == Token::TEMPLATE) 
@@ -1053,6 +1052,7 @@ bool Parser::type_parameter(PTree::Node *&decl)
       decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
     }
   }
+  return true;
 }
 
 /*
@@ -1084,7 +1084,7 @@ bool Parser::extern_template_decl(PTree::Node *&decl)
   : {member.spec} {storage.spec} {member.spec} {cv.qualify}
 
   integral.declaration
-  : integral.decl.head declarators (';' | function.body)
+  : integral.decl.head init_declarator_list (';' | function.body)
   | integral.decl.head ';'
   | integral.decl.head ':' expression ';'
 
@@ -1092,12 +1092,12 @@ bool Parser::extern_template_decl(PTree::Node *&decl)
   : decl.head integral.or.class.spec {cv.qualify}
 
   other.declaration
-  : decl.head name {cv.qualify} declarators (';' | function.body)
+  : decl.head name {cv.qualify} init_declarator_list (';' | function.body)
   | decl.head name constructor.decl (';' | function.body)
   | FRIEND name ';'
 
   const.declaration
-  : cv.qualify {'*'} Identifier '=' expression {',' declarators} ';'
+  : cv.qualify {'*'} Identifier '=' expression {',' init_declarator_list} ';'
 
   Note: if you modify this function, look at declaration.statement, too.
   Note: this regards a statement like "T (a);" as a constructor
@@ -1154,57 +1154,6 @@ bool Parser::declaration(PTree::Declaration *&statement)
   return res;
 }
 
-/* single declaration, for use in a condition (controlling
-   expression of switch/while/if) */
-bool Parser::simple_declaration(PTree::Declaration *&statement)
-{
-  Trace trace("Parser::simple_declaration", Trace::PARSING);
-  PTree::Node *cv_q, *integral;
-  PTree::Encoding type_encode, name_encode;
-
-  /* no member specification permitted here, and no
-     storage specifier:
-     type-specifier ::=
-     simple-type-specifier
-     class-specifier
-     enum-specifier
-     elaborated-type-specifier
-     cv-qualifier */
-  
-  if(!opt_cv_qualify(cv_q) || !opt_integral_type_or_class_spec(integral, type_encode))
-    return false;
-  if (integral == 0 && !name(integral, type_encode))
-    return false;
-
-  if (cv_q && integral)
-    integral = PTree::snoc(cv_q, integral);
-  else if (cv_q && integral == 0)
-    integral = cv_q, cv_q = 0;
-
-  /* no type-specifier so far -> can't be a declaration */
-  if (integral == 0)
-    return false;
-    
-  PTree::Node *decl;
-  if(!declarator(decl, kDeclarator, false, type_encode, name_encode, true, true))
-    return false;
-
-  if (my_lexer.look_ahead(0) != '=')
-    return false;
-
-  Token eqs;
-  my_lexer.get_token(eqs);
-  int t = my_lexer.look_ahead(0);
-  PTree::Node *expr;
-  if(!assign_expr(expr))
-    return false;
-
-  PTree::nconc(decl, PTree::list(new PTree::Atom(eqs), expr));
-
-  statement = new PTree::Declaration(0, PTree::list(integral, PTree::list(decl)));
-  return true;
-}
-
 bool Parser::integral_declaration(PTree::Declaration *&statement,
 				  PTree::Encoding &type_encode,
 				  PTree::Node *head, PTree::Node *integral,
@@ -1244,7 +1193,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
 							   new PTree::Atom(tk)));
       return true;
     default :
-      if(!declarators(decl, type_encode, true)) return false;
+      if(!init_declarator_list(decl, type_encode, true)) return false;
 
       if(my_lexer.look_ahead(0) == ';')
       {
@@ -1278,7 +1227,7 @@ bool Parser::const_declaration(PTree::Declaration *&statement, PTree::Encoding&,
   PTree::Encoding type_encode;
 
   type_encode.simple_const();
-  if(!declarators(decl, type_encode, false))
+  if(!init_declarator_list(decl, type_encode, false))
     return false;
 
   if(my_lexer.look_ahead(0) != ';')
@@ -1339,7 +1288,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
       type_name = PTree::cons(type_name, cv_q2);
 
     type_encode.cv_qualify(cv_q, cv_q2);
-    if(!declarators(decl, type_encode, false))
+    if(!init_declarator_list(decl, type_encode, false))
       return false;
   }
 
@@ -1782,14 +1731,14 @@ bool Parser::opt_throw_decl(PTree::Node *&throw_decl)
 }
 
 /*
-  declarators : declarator.with.init (',' declarator.with.init)*
+  init-declarator-list : init-declarator (',' init-declarator)*
 
   is_statement changes the behavior of rArgDeclListOrInit().
 */
-bool Parser::declarators(PTree::Node *&decls, PTree::Encoding& type_encode,
-			 bool should_be_declarator, bool is_statement)
+bool Parser::init_declarator_list(PTree::Node *&decls, PTree::Encoding& type_encode,
+				  bool should_be_declarator, bool is_statement)
 {
-  Trace trace("Parser::declarators", Trace::PARSING);
+  Trace trace("Parser::init_declarator_list", Trace::PARSING);
   PTree::Node *d;
   Token tk;
   PTree::Encoding encode;
@@ -1801,7 +1750,7 @@ bool Parser::declarators(PTree::Node *&decls, PTree::Encoding& type_encode,
     PTree::Node *comments = wrap_comments(my_lexer.get_comments());
 
     encode = type_encode;
-    if(!declarator_with_init(d, encode, should_be_declarator, is_statement))
+    if(!init_declarator(d, encode, should_be_declarator, is_statement))
       return false;
 	
     if (d && (PTree::type_of(d) == Token::ntDeclarator))
@@ -1819,18 +1768,20 @@ bool Parser::declarators(PTree::Node *&decls, PTree::Encoding& type_encode,
 }
 
 /*
-  declarator.with.init
+  init-declarator
   : ':' expression
   | declarator {'=' initialize.expr | ':' expression}
 */
-bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode,
-				  bool should_be_declarator,
-				  bool is_statement)
+bool Parser::init_declarator(PTree::Node *&dw, PTree::Encoding& type_encode,
+			     bool should_be_declarator,
+			     bool is_statement)
 {
-  Trace trace("Parser::declarator_with_init", Trace::PARSING);
+  Trace trace("Parser::init_declarator", Trace::PARSING);
   Token tk;
   PTree::Encoding name_encode;
 
+  // FIXME: This is only valid for a member-declarator.
+  //        Put it into a separate method.
   if(my_lexer.look_ahead(0) == ':')
   {	// bit field
     my_lexer.get_token(tk);
@@ -4335,7 +4286,7 @@ bool Parser::condition(PTree::Node *&exp)
       // Store type of CV's
       type_encode.cv_qualify(cv_q, cv_q2);
       // Parse declarator
-      if (!declarator_with_init(decl, type_encode, true, false)) break;
+      if (!init_declarator(decl, type_encode, true, false)) break;
       // *must* be end of condition, condition is in a () pair
       if (my_lexer.look_ahead(0) != ')') break;
       exp = new PTree::Declaration(head, PTree::list(integral, decl));
@@ -4356,7 +4307,7 @@ bool Parser::condition(PTree::Node *&exp)
       // Store type of CV's
       type_encode.cv_qualify(cv_q, cv_q2);
       // Parse declarator
-      if (!declarator_with_init(decl, type_encode, true, false)) break;
+      if (!init_declarator(decl, type_encode, true, false)) break;
       // *must* be end of condition, condition is in a () pair
       if (my_lexer.look_ahead(0) != ')') break;
       exp = new PTree::Declaration(head, PTree::list(type_name, decl));
@@ -4799,15 +4750,15 @@ bool Parser::expr_statement(PTree::Node *&st)
 
 /*
   declaration.statement
-  : decl.head integral.or.class.spec {cv.qualify} {declarators} ';'
-  | decl.head name {cv.qualify} declarators ';'
+  : decl.head integral.or.class.spec {cv.qualify} {init-declarator-list} ';'
+  | decl.head name {cv.qualify} init-declarator-list ';'
   | const.declaration
 
   decl.head
   : {storage.spec} {cv.qualify}
 
   const.declaration
-  : cv.qualify {'*'} Identifier '=' expression {',' declarators} ';'
+  : cv.qualify {'*'} Identifier '=' expression {',' init-declarator-list} ';'
 
   Note: if you modify this function, take a look at rDeclaration(), too.
 */
@@ -4840,7 +4791,7 @@ bool Parser::declaration_statement(PTree::Declaration *&statement)
 
 /*
   integral.decl.statement
-  : decl.head integral.or.class.spec {cv.qualify} {declarators} ';'
+  : decl.head integral.or.class.spec {cv.qualify} {init-declarator-list} ';'
 */
 bool Parser::integral_decl_statement(PTree::Declaration *&statement, PTree::Encoding& type_encode,
 				     PTree::Node *integral, PTree::Node *cv_q, PTree::Node *head)
@@ -4866,7 +4817,7 @@ bool Parser::integral_decl_statement(PTree::Declaration *&statement, PTree::Enco
   }
   else
   {
-    if(!declarators(decl, type_encode, false, true)) return false;
+    if(!init_declarator_list(decl, type_encode, false, true)) return false;
     if(my_lexer.get_token(tk) != ';') return false;
 	    
     statement = new PTree::Declaration(head, PTree::list(integral, decl,
@@ -4877,7 +4828,7 @@ bool Parser::integral_decl_statement(PTree::Declaration *&statement, PTree::Enco
 
 /*
    other.decl.statement
-   :decl.head name {cv.qualify} declarators ';'
+   :decl.head name {cv.qualify} init_declarator_list ';'
 */
 bool Parser::other_decl_statement(PTree::Declaration *&statement,
 				  PTree::Encoding& type_encode,
@@ -4897,7 +4848,7 @@ bool Parser::other_decl_statement(PTree::Declaration *&statement,
   else if(cv_q2) type_name = PTree::cons(type_name, cv_q2);
 
   type_encode.cv_qualify(cv_q, cv_q2);
-  if(!declarators(decl, type_encode, false, true)) return false;
+  if(!init_declarator_list(decl, type_encode, false, true)) return false;
   if(my_lexer.get_token(tk) != ';') return false;
 
   statement = new PTree::Declaration(head, PTree::list(type_name, decl,
