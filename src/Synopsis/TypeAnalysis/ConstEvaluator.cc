@@ -7,7 +7,7 @@
 
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/PTree/Display.hh>
-#include <Synopsis/SymbolLookup/ConstEvaluator.hh>
+#include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
 #include <sstream>
 #include <iomanip>
 
@@ -17,6 +17,7 @@
 using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
+using namespace TypeAnalysis;
 
 namespace
 {
@@ -61,9 +62,9 @@ long size_of_builtin_type(Encoding::iterator e)
 
 }
 
-bool ConstEvaluator::evaluate(Node *node, long &value)
+bool ConstEvaluator::evaluate(Node const *node, long &value)
 {
-  node->accept(this);
+  const_cast<PTree::Node *>(node)->accept(this);
   if (my_valid)
   {
     value = my_value;
@@ -109,7 +110,7 @@ void ConstEvaluator::visit(Identifier *node)
   try
   {
     Encoding name(node->position(), node->length());
-    SymbolSet symbols = my_symbols.lookup(name);
+    SymbolSet symbols = my_scope->lookup(name);
     ConstName const *const_ = 0;
     if (symbols.size() == 1) 
       const_ = dynamic_cast<ConstName const *>(*symbols.begin());

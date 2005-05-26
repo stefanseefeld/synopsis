@@ -25,8 +25,8 @@ using namespace Synopsis;
 class InitializerFinder : private SymbolLookup::Walker
 {
 public:
-  InitializerFinder(SymbolLookup::Table &table, std::ostream &os)
-    : SymbolLookup::Walker(table), my_os(os) {}
+  InitializerFinder(SymbolLookup::Scope *scope, std::ostream &os)
+    : SymbolLookup::Walker(scope), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 
 private:
@@ -87,10 +87,10 @@ int main(int argc, char **argv)
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
-    SymbolLookup::Table symbols;
+    SymbolFactory symbols;
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
-    InitializerFinder finder(symbols, ofs);
+    InitializerFinder finder(symbols.current_scope(), ofs);
     finder.find(node);
   }
   catch (std::exception const &e)

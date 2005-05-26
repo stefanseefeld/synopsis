@@ -13,7 +13,14 @@
 using namespace Synopsis;
 using namespace PTree;
 
-Declarator::Declarator(Node *list, Encoding &t, Encoding &n, Node *dname)
+Declarator::Declarator(Node *n)
+  : List(n ? n->car() : 0, n ? n->cdr() : 0),
+    my_declared_name(0),
+    my_comments(0)
+{
+}
+
+Declarator::Declarator(Node *list, Encoding const &t, Encoding const &n, Node *dname)
   : List(list->car(), list->cdr()),
     my_type(t),
     my_name(n),
@@ -22,7 +29,7 @@ Declarator::Declarator(Node *list, Encoding &t, Encoding &n, Node *dname)
 {
 }
 
-Declarator::Declarator(Encoding &t, Encoding &n, Node *dname)
+Declarator::Declarator(Encoding const &t, Encoding const &n, Node *dname)
   : List(0, 0),
     my_type(t),
     my_name(n),
@@ -31,7 +38,7 @@ Declarator::Declarator(Encoding &t, Encoding &n, Node *dname)
 {
 }
 
-Declarator::Declarator(Node *p, Node *q, Encoding &t, Encoding &n, Node *dname)
+Declarator::Declarator(Node *p, Node *q, Encoding const &t, Encoding const &n, Node *dname)
   : List(p, q),
     my_type(t),
     my_name(n),
@@ -40,7 +47,7 @@ Declarator::Declarator(Node *p, Node *q, Encoding &t, Encoding &n, Node *dname)
 {
 }
 
-Declarator::Declarator(Node *list, Encoding &t)
+Declarator::Declarator(Node *list, Encoding const &t)
   : List(list->car(), list->cdr()),
     my_type(t),
     my_declared_name(0),
@@ -48,7 +55,7 @@ Declarator::Declarator(Node *list, Encoding &t)
 {
 }
 
-Declarator::Declarator(Encoding &t)
+Declarator::Declarator(Encoding const &t)
   : List(0, 0),
     my_type(t),
     my_declared_name(0),

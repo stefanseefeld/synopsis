@@ -16,8 +16,8 @@ using namespace SymbolLookup;
 class SymbolFinder : private Walker
 {
 public:
-  SymbolFinder(Buffer const &buffer, Table &table, std::ostream &os)
-    : Walker(table), my_buffer(buffer), my_os(os) {}
+  SymbolFinder(Buffer const &buffer, Scope *scope, std::ostream &os)
+    : Walker(scope), my_buffer(buffer), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::Identifier *iden)
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), "<input>");
     Lexer lexer(&buffer);
-    Table symbols;
+    SymbolFactory symbols;
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
       (*i)->write(ofs);
     if (node)
     {
-      SymbolFinder finder(buffer, symbols, ofs);
+      SymbolFinder finder(buffer, symbols.current_scope(), ofs);
       finder.find(node);
     }
   }

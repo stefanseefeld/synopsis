@@ -9,7 +9,7 @@
 #define Synopsis_Parser_hh_
 
 #include <Synopsis/PTree.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <vector>
 
 namespace Synopsis
@@ -42,7 +42,7 @@ public:
   };
   typedef std::vector<Error *> ErrorList;
 
-  Parser(Lexer &lexer, SymbolLookup::Table &table, int ruleset = CXX);
+  Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset = CXX);
   ~Parser();
 
   const ErrorList &errors() const { return my_errors;}
@@ -101,10 +101,12 @@ private:
   
   bool declarators(PTree::Node *&, PTree::Encoding&, bool, bool = false);
   bool declarator_with_init(PTree::Node *&, PTree::Encoding&, bool, bool);
-  bool declarator(PTree::Node *&, DeclKind, bool, PTree::Encoding&, PTree::Encoding&, bool,
-		    bool = false);
-  bool declarator2(PTree::Node *&, DeclKind, bool, PTree::Encoding&, PTree::Encoding&, bool,
-		     bool, PTree::Node **);
+  bool declarator(PTree::Node *&, DeclKind, bool,
+		  PTree::Encoding&, PTree::Encoding&, bool,
+		  bool = false);
+  bool declarator2(PTree::Node *&, DeclKind, bool,
+		   PTree::Encoding&, PTree::Encoding&, bool,
+		   bool, PTree::Node **);
   bool opt_ptr_operator(PTree::Node *&, PTree::Encoding&);
   bool member_initializers(PTree::Node *&);
   bool member_init(PTree::Node *&);
@@ -157,7 +159,7 @@ private:
   bool allocate_expr(PTree::Node *&);
   bool userdef_keyword(PTree::Node *&);
   bool allocate_type(PTree::Node *&);
-  bool new_declarator(PTree::Node *&, PTree::Encoding&);
+  bool new_declarator(PTree::Declarator *&, PTree::Encoding&);
   bool allocate_initializer(PTree::Node *&);
   bool postfix_expr(PTree::Node *&);
   bool primary_expr(PTree::Node *&);
@@ -188,15 +190,15 @@ private:
 private:
   bool more_var_name();
 
-  Lexer               &my_lexer;
-  int                  my_ruleset;
-  SymbolLookup::Table &my_symbols;
-  ErrorList            my_errors;
-  PTree::Node         *my_comments;
+  Lexer &         my_lexer;
+  int             my_ruleset;
+  SymbolFactory & my_symbols;
+  ErrorList       my_errors;
+  PTree::Node *   my_comments;
   //. If true, '>' is interpreted as ther greater-than operator.
   //. If false, it marks the end of a template-id or template-parameter-list.
-  bool                 my_gt_is_operator;
-  bool                 my_in_template_decl;
+  bool            my_gt_is_operator;
+  bool            my_in_template_decl;
 };
 
 }

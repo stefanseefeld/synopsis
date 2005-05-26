@@ -8,6 +8,7 @@
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/TypeAnalysis.hh>
 #include "Synopsis/Parser.hh"
 #include "Synopsis/Lexer.hh"
 #include <Synopsis/Trace.hh>
@@ -83,13 +84,24 @@ namespace
 {
 
 template <typename T>
-struct Guard
+struct PGuard
 {
-  Guard(T Parser::*m, Parser &p) : parser(p), member(m), saved(p.*m) {}
-  ~Guard() { parser.*member = saved;}
+  PGuard(T Parser::*m, Parser &p) : parser(p), member(m), saved(p.*m) {}
+  ~PGuard() { parser.*member = saved;}
   Parser &    parser;
   T Parser::* member;
   T           saved;
+};
+
+struct ScopeGuard
+{
+  template <typename T>
+  ScopeGuard(T const *p, SymbolFactory &s) : symbols(s), noop(p == 0)
+  { if (!noop) symbols.enter_scope(p);}
+  ~ScopeGuard() 
+  { if (!noop) symbols.leave_scope();}
+  SymbolFactory & symbols;
+  bool            noop;
 };
 
 const int max_errors = 10;
@@ -198,7 +210,7 @@ void set_leaf_comments(PTree::Node *node, PTree::Node *comments)
 
 }
 
-Parser::Parser(Lexer &lexer, SymbolLookup::Table &symbols, int ruleset)
+Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_symbols(symbols),
@@ -633,7 +645,7 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
   if(my_lexer.look_ahead(0) == '{')
   {
     declare(spec);
-    SymbolLookup::Table::Guard guard(&my_symbols.enter_namespace(spec));
+    ScopeGuard guard(spec, my_symbols);
     if(!linkage_body(body)) return false;
   }
   else if(!definition(body)) return false;
@@ -883,7 +895,7 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 
   decl = PTree::snoc(decl, new PTree::Atom(tk));
   {
-    SymbolLookup::Table::Guard guard(&my_symbols.enter_template_parameter_list(decl));
+    ScopeGuard guard(decl, my_symbols);
     if(!template_parameter_list(params)) return false;
   }
   if(my_lexer.get_token(tk) != '>') return false;
@@ -898,7 +910,7 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 
     my_lexer.get_token(tk);
     PTree::List *nested = PTree::list(0, 0);
-    SymbolLookup::Table::Guard guard(&my_symbols.enter_template_parameter_list(nested));
+    ScopeGuard guard(nested, my_symbols); // template parameter list
     if(!template_parameter_list(params)) return false;
     if(my_lexer.get_token(tk) != '>') return false;
   }
@@ -950,7 +962,7 @@ bool Parser::template_parameter(PTree::Node *&decl)
 {
   Trace trace("Parser::template_parameter", Trace::PARSING);
 
-  Guard<bool> guard(&Parser::my_gt_is_operator, *this);
+  PGuard<bool> guard(&Parser::my_gt_is_operator, *this);
   my_gt_is_operator = false;
 
   Token::Type type = my_lexer.look_ahead(0);
@@ -1173,8 +1185,8 @@ bool Parser::simple_declaration(PTree::Declaration *&statement)
   if (integral == 0)
     return false;
     
-  PTree::Node *d;
-  if(!declarator(d, kDeclarator, false, type_encode, name_encode, true, true))
+  PTree::Node *decl;
+  if(!declarator(decl, kDeclarator, false, type_encode, name_encode, true, true))
     return false;
 
   if (my_lexer.look_ahead(0) != '=')
@@ -1183,13 +1195,13 @@ bool Parser::simple_declaration(PTree::Declaration *&statement)
   Token eqs;
   my_lexer.get_token(eqs);
   int t = my_lexer.look_ahead(0);
-  PTree::Node *e;
-  if(!assign_expr(e))
+  PTree::Node *expr;
+  if(!assign_expr(expr))
     return false;
 
-  PTree::nconc(d, PTree::list(new PTree::Atom(eqs), e));
+  PTree::nconc(decl, PTree::list(new PTree::Atom(eqs), expr));
 
-  statement = new PTree::Declaration(0, PTree::list(integral, PTree::list(d)));
+  statement = new PTree::Declaration(0, PTree::list(integral, PTree::list(decl)));
   return true;
 }
 
@@ -1246,7 +1258,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
 	PTree::FunctionDefinition *def;
   	def = new PTree::FunctionDefinition(head,
 					    PTree::list(integral, decl->car()));
- 	SymbolLookup::Table::Guard guard(&my_symbols.enter_function_definition(def));
+	ScopeGuard guard(def, my_symbols);
 	PTree::Block *body;
 	if(!function_body(body)) return false;
 	if(PTree::length(decl) != 1) return false;
@@ -1816,22 +1828,22 @@ bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode
 				  bool is_statement)
 {
   Trace trace("Parser::declarator_with_init", Trace::PARSING);
-  PTree::Node *d, *e;
   Token tk;
   PTree::Encoding name_encode;
 
   if(my_lexer.look_ahead(0) == ':')
   {	// bit field
     my_lexer.get_token(tk);
-    if(!assign_expr(e))
-      return false;
-
-    dw = PTree::list(new PTree::Atom(tk), e);
+    PTree::Node *expr;
+    if(!assign_expr(expr)) return false;
+    // FIXME: why is this a list and not a PTree::Declarator ?
+    dw = PTree::list(new PTree::Atom(tk), expr);
     return true;
   }
   else
   {
-    if(!declarator(d, kDeclarator, false, type_encode, name_encode,
+    PTree::Node *decl;
+    if(!declarator(decl, kDeclarator, false, type_encode, name_encode,
 		   should_be_declarator, is_statement))
       return false;
 
@@ -1839,24 +1851,24 @@ bool Parser::declarator_with_init(PTree::Node *&dw, PTree::Encoding& type_encode
     if(t == '=')
     {
       my_lexer.get_token(tk);
-      if(!initialize_expr(e))
-	return false;
+      PTree::Node *expr;
+      if(!initialize_expr(expr)) return false;
 
-      dw = PTree::nconc(d, PTree::list(new PTree::Atom(tk), e));
+      dw = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), expr));
       return true;
     }
     else if(t == ':')
     {		// bit field
       my_lexer.get_token(tk);
-      if(!assign_expr(e))
-	return false;
+      PTree::Node *expr;
+      if(!assign_expr(expr)) return false;
 
-      dw = PTree::nconc(d, PTree::list(new PTree::Atom(tk), e));
+      dw = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), expr));
       return true;
     }
     else
     {
-      dw = d;
+      dw = decl;
       return true;
     }
   }
@@ -1900,7 +1912,6 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 {
   Trace trace("Parser::declarator2", Trace::PARSING);
   PTree::Encoding recursive_encode;
-  PTree::Node *d;
   int t;
   bool recursive_decl = false;
   PTree::Node *declared_name0 = 0;
@@ -1908,6 +1919,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
   if(declared_name == 0)
     declared_name = &declared_name0;
 
+  PTree::Node *d;
   if(!opt_ptr_operator(d, type_encode))
     return false;
 
@@ -1915,14 +1927,15 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
   t = my_lexer.look_ahead(0);
   if(t == '(')
   {
-    Token op, cp;
-    PTree::Node *decl2;
+    Token op;
     my_lexer.get_token(op);
     recursive_decl = true;
+    PTree::Node *decl2;
     if(!declarator2(decl2, kind, true, recursive_encode, name_encode,
 		    true, false, declared_name))
       return false;
 
+    Token cp;
     if(my_lexer.get_token(cp) != ')')
     {
       if (kind != kCastDeclarator) 
@@ -1933,12 +1946,14 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
     else
     {
       if(!should_be_declarator)
-	if(kind == kDeclarator && d == 0){
+	if(kind == kDeclarator && d == 0)
+	{
 	  t = my_lexer.look_ahead(0);
 	  if(t != '[' && t != '(')
 	    return false;
 	}
-      d = PTree::snoc(d, PTree::list(new PTree::Atom(op), decl2, new PTree::Atom(cp)));
+      d = PTree::snoc(d, PTree::list(new PTree::Atom(op), decl2,
+				     new PTree::Atom(cp)));
     }
   }
   else if(kind != kCastDeclarator)
@@ -1968,12 +1983,12 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
     if(t == '(')
     {		// function
       PTree::Encoding args_encode;
-      Token op, cp;
       PTree::Node *args, *cv, *throw_decl, *mi;
       bool is_args = true;
 
-      SymbolLookup::Table::Guard guard(&my_symbols.enter_function_declaration(d));
+      Token op;
       my_lexer.get_token(op);
+      ScopeGuard guard(d, my_symbols);
       if(my_lexer.look_ahead(0) == ')')
       {
 	args = 0;
@@ -1985,6 +2000,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 	if(!parameter_declaration_list_or_init(args, is_args,
 					       args_encode, is_statement))
 	  return false;
+      Token cp;
       if(my_lexer.get_token(cp) != ')')
 	return false;
 
@@ -2027,7 +2043,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       if (expr)
       {
 	long size;
-	if (my_symbols.evaluate_const(expr, size))
+	if (TypeAnalysis::evaluate_const(my_symbols.current_scope(), expr, size))
 	  type_encode.array(size);
 	else 
 	  type_encode.array();
@@ -2468,7 +2484,7 @@ bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
     else
     {
       // FIXME: find the right place to put this.
-      Guard<bool> guard(&Parser::my_gt_is_operator, *this);
+      PGuard<bool> guard(&Parser::my_gt_is_operator, *this);
       my_gt_is_operator = false;
       my_lexer.restore(pos);	
       if(!conditional_expr(a)) return false;
@@ -2871,7 +2887,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   }
   spec->set_encoded_name(encode);
   {
-    SymbolLookup::Table::Guard guard(&my_symbols.enter_class(spec));
+    ScopeGuard guard(spec, my_symbols);
     if(!class_body(body)) return false;
   }
   spec = PTree::snoc(spec, body);
@@ -3792,7 +3808,7 @@ bool Parser::allocate_type(PTree::Node *&atype)
   }
   else
   {
-    PTree::Node *decl;
+    PTree::Declarator *decl;
     PTree::Encoding type_encode;
     if(!type_specifier(tname, false, type_encode)) return false;
     if(!new_declarator(decl, type_encode)) return false;
@@ -3815,27 +3831,33 @@ bool Parser::allocate_type(PTree::Node *&atype)
   | ptr.operator
   | {ptr.operator} ('[' expression ']')+
 */
-bool Parser::new_declarator(PTree::Node *&decl, PTree::Encoding& encode)
+bool Parser::new_declarator(PTree::Declarator *&decl, PTree::Encoding& encode)
 {
   Trace trace("Parser::new_declarator", Trace::PARSING);
-  decl = 0;
+  PTree::Node *d = 0;
   if(my_lexer.look_ahead(0) != '[')
-    if(!opt_ptr_operator(decl, encode)) return false;
-
+    if(!opt_ptr_operator(d, encode)) return false;
+  decl = new PTree::Declarator(d);
   while(my_lexer.look_ahead(0) == '[')
   {
     Token ob, cb;
-    PTree::Node *exp;
+    PTree::Node *expr;
     my_lexer.get_token(ob);
-    if(!expression(exp)) return false;
+    if(!expression(expr)) return false;
     if(my_lexer.get_token(cb) != ']') return false;
 
-    encode.array();
-    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(ob), exp,
+    if (expr)
+    {
+      long size;
+      if (TypeAnalysis::evaluate_const(my_symbols.current_scope(), expr, size))
+	encode.array(size);
+      else 
+	encode.array();
+    }
+    decl = PTree::nconc(decl, PTree::list(new PTree::Atom(ob), expr,
 					  new PTree::Atom(cb)));
   }
-
-  decl = decl ? new PTree::Declarator(decl, encode) : new PTree::Declarator(encode);
+  decl->set_encoded_type(encode);
   return true;
 }
 
@@ -3993,7 +4015,7 @@ bool Parser::primary_expr(PTree::Node *&exp)
       return typeid_expr(exp);
     case '(':
     {
-      Guard<bool> guard(&Parser::my_gt_is_operator, *this);
+      PGuard<bool> guard(&Parser::my_gt_is_operator, *this);
       my_gt_is_operator = true;
       my_lexer.get_token(tk);
       if(!expression(exp2)) return false;
@@ -4370,9 +4392,7 @@ bool Parser::compound_statement(PTree::Block *&body, bool create_scope)
   PTree::Node *ob_comments = wrap_comments(my_lexer.get_comments());
   body = new PTree::Block(new PTree::CommentedAtom(ob, ob_comments), 0);
 
-  SymbolLookup::Table::Guard guard(create_scope ? 
-				   &my_symbols.enter_block(body) :
-				   0);
+  ScopeGuard guard(create_scope ? body : 0, my_symbols);
 
   PTree::Node *sts = 0;
   while(my_lexer.look_ahead(0) != '}')

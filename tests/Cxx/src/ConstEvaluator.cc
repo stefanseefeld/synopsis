@@ -1,11 +1,13 @@
 #include <Synopsis/Trace.hh>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/TypeAnalysis.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -15,8 +17,8 @@ using namespace Synopsis;
 class InitializerFinder : private SymbolLookup::Walker
 {
 public:
-  InitializerFinder(SymbolLookup::Table &table, std::ostream &os)
-    : SymbolLookup::Walker(table), my_os(os) {}
+  InitializerFinder(SymbolLookup::Scope *global, std::ostream &os)
+    : SymbolLookup::Walker(global), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::List *node)
@@ -39,7 +41,7 @@ private:
       {
 	PTree::Node *initializer = PTree::third(enumerator);
 	enumerator = enumerator->car();
-	if (!table().evaluate_const(initializer, value))
+	if (!TypeAnalysis::evaluate_const(current_scope(), initializer, value))
 	{
 	  std::cerr << "Error in evaluating enum initializer :\n"
 		    << "Expression doesn't evaluate to a constant integral value" << std::endl;
@@ -70,7 +72,7 @@ private:
       PTree::Node *initializer = PTree::third(node);
       my_os << "initializer : " << PTree::reify(initializer) << std::endl;
       long value;
-      if (table().evaluate_const(initializer, value))
+      if (TypeAnalysis::evaluate_const(current_scope(), initializer, value))
 	my_os << "value : " << value << std::endl;
       else
 	my_os << "value : none" << std::endl;
@@ -106,10 +108,10 @@ int main(int argc, char **argv)
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
-    SymbolLookup::Table symbols;
+    SymbolFactory symbols;
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
-    InitializerFinder finder(symbols, ofs);
+    InitializerFinder finder(symbols.current_scope(), ofs);
     finder.find(node);
   }
   catch (std::exception const &e)

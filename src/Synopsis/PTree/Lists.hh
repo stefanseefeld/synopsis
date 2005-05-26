@@ -148,12 +148,14 @@ public:
 class Declarator : public List
 {
 public:
-  Declarator(Node *, Encoding&, Encoding&, Node *);
-  Declarator(Encoding&, Encoding&, Node *);
-  Declarator(Node *, Node *, Encoding&, Encoding&, Node *);
-  Declarator(Node *, Encoding&);
-  Declarator(Encoding&);
+  Declarator(Node *);
+  Declarator(Node *, Encoding const&, Encoding const&, Node *);
+  Declarator(Encoding const&, Encoding const&, Node *);
+  Declarator(Node *, Node *, Encoding const&, Encoding const&, Node *);
+  Declarator(Node *, Encoding const&);
+  Declarator(Encoding const&);
   Declarator(Declarator*, Node *, Node *);
+
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_type() const { return my_type;}
   Encoding encoded_name() const { return my_name;}

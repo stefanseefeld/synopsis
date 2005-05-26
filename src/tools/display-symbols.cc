@@ -6,6 +6,7 @@
 //
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/SymbolLookup.hh>
@@ -167,7 +168,7 @@ int main(int argc, char **argv)
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
-    SymbolLookup::Table symbols;
+    SymbolFactory symbols;
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
@@ -175,7 +176,7 @@ int main(int argc, char **argv)
       (*i)->write(std::cerr);
 
     ScopeDisplay display(std::cout);
-    display.display(&symbols.current_scope());
+    display.display(symbols.current_scope());
   }
   catch (const std::exception &e)
   {

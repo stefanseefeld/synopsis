@@ -4,17 +4,18 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
-#include <Synopsis/SymbolLookup/Table.hh>
 #include <Synopsis/SymbolLookup/Scopes.hh>
-#include <Synopsis/SymbolLookup/ConstEvaluator.hh>
+#include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
 #include <Synopsis/Trace.hh>
 #include <cassert>
 
 using namespace Synopsis;
 using namespace PTree;
 using namespace SymbolLookup;
+using namespace TypeAnalysis;
 
 namespace
 {
@@ -44,7 +45,7 @@ PTree::ClassSpec const *get_class_template_spec(PTree::Node const *body)
 }
 
 
-Table::Table(Language l)
+SymbolFactory::SymbolFactory(Language l)
   : my_language(l),
     my_prototype(0)
 {
@@ -52,136 +53,110 @@ Table::Table(Language l)
   my_scopes.push(new Namespace(0, 0));
 }
 
-Table &Table::enter_namespace(PTree::NamespaceSpec const *spec)
+void SymbolFactory::enter_scope(PTree::NamespaceSpec const *spec)
 {
-  Trace trace("Table::enter_namespace", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->find_scope(spec);
-  if (!scope)
+  Trace trace("SymbolFactory::enter_scope(NamespaceSpec)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+
+  // Namespaces are only valid within namespaces.
+  Namespace *scope = dynamic_cast<Namespace *>(my_scopes.top());
+  assert(scope);
+
+  Namespace *namespace_ = 0;
+  // If the namespace was already opened before, we add a reference
+  // to it under the current NamespaceSpec, too.
+  if (namespace_ = scope->find_namespace(spec))
   {
-    // If the namespace was already opened before, we should add a reference
-    // to it under the current NamespaceSpec, too.
-    // However, namespaces are only valid within namespaces (and the global scope).
-    if (Namespace *ns = dynamic_cast<Namespace *>(my_scopes.top()))
-    {
-      scope = ns->find_namespace(spec);
-      if (scope)
-	ns->declare_scope(spec, scope);
-    }
+    scope->declare_scope(spec, namespace_);
   }
-  if (!scope)
+  else
   {
     // This is a new namespace. Declare it.
-    scope = new Namespace(spec, static_cast<Namespace *>(my_scopes.top()));
-    my_scopes.top()->declare_scope(spec, scope);
+    namespace_ = new Namespace(spec, scope);
+    scope->declare_scope(spec, namespace_);
   }
-  else scope->ref();
-  my_scopes.push(scope);
-  return *this;
+  my_scopes.push(namespace_);
 }
 
-Table &Table::enter_class(PTree::ClassSpec const *spec)
+void SymbolFactory::enter_scope(PTree::ClassSpec const *spec)
 {
-  Trace trace("Table::enter_class", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->find_scope(spec);
-  if (!scope)
-  {
-    scope = new Class(spec, my_scopes.top());
-    my_scopes.top()->declare_scope(spec, scope);
-  }
-  else scope->ref();
-  my_scopes.push(scope);
-  return *this;
-}
-
-Table &Table::enter_function_declaration(PTree::Node const *decl)
-{
-  Trace trace("Table::enter_function_declaration", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->find_scope(decl);
-  if (!scope)
-  {
-    my_prototype = new PrototypeScope(decl, my_scopes.top());
-    scope = my_prototype;
-    my_scopes.top()->declare_scope(decl, scope);
-
-  }
-  else scope->ref();
-  my_scopes.push(scope);
-  return *this;
-}
-
-Table &Table::enter_function_definition(PTree::FunctionDefinition const *decl)
-{
-  Trace trace("Table::enter_function_definition", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return *this;
-  // The scope must be identical to my_prototype.
-  // Replace it with a FunctionScope, i.e. transfer all
-  // symbols (which are parameter declarations).
-  Scope *scope = my_scopes.top()->find_scope(decl);
-  if (!scope)
-  {
-    my_scopes.top()->remove_scope(my_prototype->declaration());
-    scope = new FunctionScope(decl, my_prototype, my_scopes.top());
-    my_prototype = 0;
-    my_scopes.top()->declare_scope(decl, scope);
-  }
-  else scope->ref();
-  my_scopes.push(scope);
-  return *this;
-}
-
-Table &Table::enter_template_parameter_list(PTree::List const *params)
-{
-  Trace trace("Table::template_parameter_list", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->find_scope(params);
-  if (!scope)
-  {
-    scope = new TemplateParameterScope(params, my_scopes.top());
-    my_scopes.top()->declare_scope(params, scope);
-  }
-  else scope->ref();
-  my_scopes.push(scope);
-  return *this;
-}
-
-Table &Table::enter_block(PTree::List const *block)
-{
-  Trace trace("Table::enter_block", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return *this;
-  Scope *scope = my_scopes.top()->find_scope(block);
-  if (!scope)
-  {
-    scope = new LocalScope(block, my_scopes.top());
-    my_scopes.top()->declare_scope(block, scope);
-  }
-  else scope->ref();
-  my_scopes.push(scope);
-  return *this;
-}
-
-void Table::leave_scope()
-{
-  Trace trace("Table::leave_scope", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::enter_scope(ClassSpec)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  Scope *top = my_scopes.top();
+
+  Scope *scope = my_scopes.top();
+  Class *class_ = new Class(spec, scope);
+  scope->declare_scope(spec, class_);
+  my_scopes.push(class_);
+}
+
+void SymbolFactory::enter_scope(PTree::Node const *decl)
+{
+  Trace trace("SymbolFactory::enter_scope(Node)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+  PTree::display(decl, std::cout, false, true);
+  Scope *scope = my_scopes.top();
+  // Create a PrototypeScope. If this is part of a function definition, we will
+  // later convert it into a FunctionScope.
+  my_prototype = new PrototypeScope(decl, scope);
+  scope->declare_scope(decl, my_prototype);
+  my_scopes.push(my_prototype);
+}
+
+void SymbolFactory::enter_scope(PTree::FunctionDefinition const *decl)
+{
+  Trace trace("SymbolFactory::enter_scope(FunctionDefinition)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+
+  assert(my_prototype);
+  Scope *scope = my_scopes.top();
+  // Transfer all symbols from the previously seen function declaration
+  // into the newly created FunctionScope, and remove the PrototypeScope.
+  FunctionScope *func = new FunctionScope(decl, my_prototype, scope);
+  scope->remove_scope(my_prototype->declaration());
+  scope->declare_scope(decl, func);
+  my_prototype = 0;
+  my_scopes.push(func);
+}
+
+void SymbolFactory::enter_scope(PTree::TemplateDecl const *params)
+{
+  Trace trace("SymbolFactory::enter_scope(TemplateDecl)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+
+  Scope *scope = my_scopes.top();
+  TemplateParameterScope *templ = new TemplateParameterScope(params, scope);
+  scope->declare_scope(params, templ);
+  my_scopes.push(templ);
+}
+
+void SymbolFactory::enter_scope(PTree::Block const *block)
+{
+  Trace trace("SymbolFactory::enter_scope(Block)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+
+  Scope *scope = my_scopes.top();
+  LocalScope *local = new LocalScope(block, scope);
+  scope->declare_scope(block, local);
+  my_scopes.push(local);
+}
+
+void SymbolFactory::leave_scope()
+{
+  Trace trace("SymbolFactory::leave_scope", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+
+  Scope *scope = my_scopes.top();
   my_scopes.pop();
-  top->unref();
+  scope->unref();
 }
 
-Scope &Table::current_scope()
+void SymbolFactory::declare(PTree::Declaration const *d)
 {
-  return *my_scopes.top();
-}
-
-void Table::declare(Declaration const *d)
-{
-  Trace trace("Table::declare(Declaration *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(Declaration *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  Node const *decls = third(d);
-  if(is_a(decls, Token::ntDeclarator))
+
+  PTree::Node const *decls = PTree::third(d);
+  if(PTree::is_a(decls, Token::ntDeclarator))
   {
     // function definition,
     // declare it only once (but allow overloading)
@@ -194,7 +169,7 @@ void Table::declare(Declaration const *d)
     Scope *scope = my_scopes.top();
     if (name.is_qualified())
     {
-      SymbolSet symbols = lookup(name, Scope::DECLARATION);
+      SymbolSet symbols = scope->lookup(name, Scope::DECLARATION);
       if (symbols.empty()) throw Undefined(name);
       // FIXME: We need type analysis / overload resolution
       //        here to take the right symbol.
@@ -226,7 +201,7 @@ void Table::declare(Declaration const *d)
 	  Scope *scope = my_scopes.top();
 	  if (name.is_qualified())
 	  {
-	    SymbolSet symbols = lookup(name, Scope::DECLARATION);
+	    SymbolSet symbols = scope->lookup(name, Scope::DECLARATION);
 	    if (symbols.empty()) throw Undefined(name);
 	    // FIXME: We need type analysis / overload resolution
 	    //        here to take the right symbol.
@@ -248,9 +223,9 @@ void Table::declare(Declaration const *d)
   }
 }
 
-void Table::declare(Typedef const *td)
+void SymbolFactory::declare(Typedef const *td)
 {
-  Trace trace("Table::declare(Typedef *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(Typedef *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   PTree::Node const *declarations = third(td);
   while(declarations)
@@ -267,9 +242,9 @@ void Table::declare(Typedef const *td)
   }
 }
 
-void Table::declare(EnumSpec const *spec)
+void SymbolFactory::declare(EnumSpec const *spec)
 {
-  Trace trace("Table::declare(EnumSpec *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(EnumSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   PTree::Node const *tag = second(spec);
   Encoding const &name = spec->encoded_name();
@@ -293,7 +268,8 @@ void Table::declare(EnumSpec const *spec)
     else  // [identifier = initializer]
     {
       PTree::Node const *initializer = third(enumerator);
-      defined = evaluate_const(initializer, value);
+      
+      defined = evaluate_const(current_scope(), initializer, value);
       enumerator = enumerator->car();
 #ifndef NDEBUG
       if (!defined)
@@ -313,9 +289,9 @@ void Table::declare(EnumSpec const *spec)
   }
 }
 
-void Table::declare(NamespaceSpec const *spec)
+void SymbolFactory::declare(NamespaceSpec const *spec)
 {
-  Trace trace("Table::declare(NamespaceSpec *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(NamespaceSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   // Beware anonymous namespaces !
   Encoding name;
@@ -331,9 +307,9 @@ void Table::declare(NamespaceSpec const *spec)
   // FIXME: assert that the found symbol really refers to a namespace !
 }
 
-void Table::declare(ClassSpec const *spec)
+void SymbolFactory::declare(ClassSpec const *spec)
 {
-  Trace trace("Table::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   Encoding const &name = spec->encoded_name();
   // If class spec contains a class body, it's a definition.
@@ -367,9 +343,9 @@ void Table::declare(ClassSpec const *spec)
     scope->declare(name, new ClassName(spec->encoded_type(), spec, false, scope));
 }
 
-void Table::declare(TemplateDecl const *tdecl)
+void SymbolFactory::declare(TemplateDecl const *tdecl)
 {
-  Trace trace("Table::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   PTree::Node const *body = PTree::nth(tdecl, 4);
   PTree::ClassSpec const *class_spec = get_class_template_spec(body);
@@ -387,9 +363,9 @@ void Table::declare(TemplateDecl const *tdecl)
   }
 }
 
-void Table::declare(PTree::TypeParameter const *tparam)
+void SymbolFactory::declare(PTree::TypeParameter const *tparam)
 {
-  Trace trace("Table::declare(TypeParameter *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(TypeParameter *)", Trace::SYMBOLLOOKUP);
   Scope *scope = my_scopes.top();
 
   PTree::Node const *first = PTree::first(tparam);
@@ -410,16 +386,16 @@ void Table::declare(PTree::TypeParameter const *tparam)
   }
 }
 
-void Table::declare(PTree::UsingDirective const *usingdir)
+void SymbolFactory::declare(PTree::UsingDirective const *usingdir)
 {
-  Trace trace("Table::declare(UsingDirective *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(UsingDirective *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   my_scopes.top()->use(usingdir);
 }
 
-void Table::declare(PTree::ParameterDeclaration const *pdecl)
+void SymbolFactory::declare(PTree::ParameterDeclaration const *pdecl)
 {
-  Trace trace("Table::declare(ParameterDeclaration *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(ParameterDeclaration *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   PTree::Node const *decl = PTree::third(pdecl);
   PTree::Encoding const &name = decl->encoded_name();
@@ -433,15 +409,9 @@ void Table::declare(PTree::ParameterDeclaration const *pdecl)
   }
 }
 
-void Table::declare(PTree::UsingDeclaration const *usingdecl)
+void SymbolFactory::declare(PTree::UsingDeclaration const *usingdecl)
 {
-  Trace trace("Table::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
   trace << "TBD !";
   if (my_language == NONE) return;
-}
-
-SymbolSet Table::lookup(PTree::Encoding const &name, Scope::LookupContext c) const
-{
-  if (my_language == NONE) return SymbolSet();
-  else return my_scopes.top()->lookup(name, c);
 }
