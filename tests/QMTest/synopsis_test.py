@@ -15,10 +15,6 @@ from qm.test.result import Result
 import os, sys, string, re
 import difflib
 
-def no_quote(str):
-   return str
-
-
 class APITest(Test):
    """Compile and run a test to validate the C++ API."""
 
@@ -68,11 +64,10 @@ class APITest(Test):
       elif expected and expected != output:
          diff = ''.join(difflib.unified_diff(expected, output))
          expected = ''.join(expected)
-         quote = context.get('report') and no_quote or result.Quote
          result.Fail('incorrect output',
-                     {'synopsis_test.expected': quote(expected),
-                      'synopsis_test.output': quote(test.stdout),
-                      'synopsis_test.diff': quote(diff)})
+                     {'synopsis_test.expected': result.Quote(expected),
+                      'synopsis_test.output': result.Quote(test.stdout),
+                      'synopsis_test.diff': result.Quote(diff)})
 
 
 class ProcessorTest(Test):
@@ -99,10 +94,9 @@ class ProcessorTest(Test):
       script = RedirectedExecutable(60) # 1 minute ought to be enough...
       status = script.Run(string.split(command))
       if status != 0:
-         quote = context.get('report') and no_quote or result.Quote
          result.Fail('unable to run',
-                     {'synopsis_test.command': quote(command),
-                      'synopsis_test.error': quote(script.stderr)})
+                     {'synopsis_test.command': result.Quote(command),
+                      'synopsis_test.error': result.Quote(script.stderr)})
       return status == 0
 
    def Run(self, context, result):
@@ -116,14 +110,13 @@ class ProcessorTest(Test):
             return
          output = open(self.output, 'r').readlines()
          if expected != output:
-            quote = context.get('report') and no_quote or result.Quote
             diff = ''.join(difflib.unified_diff(expected, output))
             expected = ''.join(expected)
             output = ''.join(output)
             result.Fail('incorrect output',
-                        {'synopsis_test.expected': quote(expected),
-                         'synopsis_test.output': quote(output),
-                         'synopsis_test.diff': quote(diff)})
+                        {'synopsis_test.expected': result.Quote(expected),
+                         'synopsis_test.output': result.Quote(output),
+                         'synopsis_test.diff': result.Quote(diff)})
 
 class CxxResource(Resource):
    """build the executables the CxxTests all depend on."""
@@ -201,14 +194,13 @@ class CxxTest(Test):
             return
          
          if expected != output:
-            quote = context.get('report') and no_quote or result.Quote
             diff = ''.join(difflib.unified_diff(expected, output))
             expected = ''.join(expected)
             output = ''.join(output)
             result.Fail('incorrect output',
-                        {'synopsis_test.expected': quote(expected),
-                         'synopsis_test.output': quote(output),
-                         'synopsis_test.diff': quote(diff)})
+                        {'synopsis_test.expected': result.Quote(expected),
+                         'synopsis_test.output': result.Quote(output),
+                         'synopsis_test.diff': result.Quote(diff)})
 
    def Run(self, context, result):
 
