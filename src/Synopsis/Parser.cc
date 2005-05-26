@@ -437,9 +437,12 @@ bool Parser::type_specifier(PTree::Node *&tspec, bool check, PTree::Encoding &en
   Trace trace("Parser::type_specifier", Trace::PARSING);
   PTree::Node *cv_q, *cv_q2;
 
+  // FIXME: Need to rewrite this to correctly reflect the grammar, in particular
+  //        'typename' ...
+  //        Do we need a new node type ('Typename') ?
   if(!opt_cv_qualify(cv_q) || !opt_integral_type_or_class_spec(tspec, encode))
     return false;
-
+  
   if(!tspec)
   {
     if(check)
@@ -972,18 +975,16 @@ bool Parser::template_parameter(PTree::Node *&decl)
   else if (type == Token::TYPENAME || type == Token::CLASS)
   {
     type = my_lexer.look_ahead(1);
-    if (type == Token::Identifier) type = my_lexer.look_ahead(2);
+    if (type == Token::Identifier || type == Token::Scope)
+      type = my_lexer.look_ahead(2);
     if (type == ',' || type == '=' || type == '>')
       return type_parameter(decl);
   }
   // non-type parameter
-  else
-  {
-    PTree::Encoding encoding; // unused
-    PTree::ParameterDeclaration *pdecl;
-    if (!parameter_declaration(pdecl, encoding)) return false;
-    decl = pdecl;
-  }
+  PTree::Encoding encoding; // unused
+  PTree::ParameterDeclaration *pdecl;
+  if (!parameter_declaration(pdecl, encoding)) return false;
+  decl = pdecl;
   return true;
 }
 
@@ -1594,8 +1595,8 @@ bool Parser::opt_integral_type_or_class_spec(PTree::Node *&p, PTree::Encoding& e
     encode.append(type);
     return true;
   }
-
-  if(t == Token::CLASS || t == Token::STRUCT || t == Token::UNION ||
+  if(t == Token::TYPENAME || // FIXME: 'typename' doesn't imply a class spec !
+     t == Token::CLASS || t == Token::STRUCT || t == Token::UNION ||
      t == Token::UserKeyword)
   {
     PTree::ClassSpec *spec;
@@ -2805,6 +2806,9 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     case Token::CLASS: kwd = new PTree::Kwd::Class(tk); break;
     case Token::STRUCT: kwd = new PTree::Kwd::Struct(tk); break;
     case Token::UNION: kwd = new PTree::Kwd::Union(tk); break;
+      // FIXME: The following shouldn't be here.
+      //        See opt_integral_type_or_class_spec for why this is needed.
+    case Token::TYPENAME: kwd = new PTree::Kwd::Typename(tk); break;
     default: return false;
   }
   spec = new PTree::ClassSpec(kwd, 0, my_comments);
