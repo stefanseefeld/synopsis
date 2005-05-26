@@ -93,7 +93,6 @@ void SymbolFactory::enter_scope(PTree::Node const *decl)
 {
   Trace trace("SymbolFactory::enter_scope(Node)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  PTree::display(decl, std::cout, false, true);
   Scope *scope = my_scopes.top();
   // Create a PrototypeScope. If this is part of a function definition, we will
   // later convert it into a FunctionScope.
@@ -147,7 +146,13 @@ void SymbolFactory::leave_scope()
 
   Scope *scope = my_scopes.top();
   my_scopes.pop();
-  scope->unref();
+  // If this was a function prototype, keep it in case we see
+  // the function body and want to transform it into a function
+  // scope.
+  if (PrototypeScope *ps = dynamic_cast<PrototypeScope *>(scope))
+    my_prototype = ps;
+  else
+    scope->unref();
 }
 
 void SymbolFactory::declare(PTree::Declaration const *d)
@@ -400,13 +405,8 @@ void SymbolFactory::declare(PTree::ParameterDeclaration const *pdecl)
   PTree::Node const *decl = PTree::third(pdecl);
   PTree::Encoding const &name = decl->encoded_name();
   PTree::Encoding const &type = decl->encoded_type();
-  if (my_prototype) // We are in a function prototype.
-    my_prototype->declare(name, new VariableName(type, decl, true, my_prototype));
-  else // We are in a template parameter list.
-  {
-    Scope *scope = my_scopes.top();
-    scope->declare(name, new VariableName(type, decl, true, scope));
-  }
+  Scope *scope = my_scopes.top();
+  scope->declare(name, new VariableName(type, decl, true, scope));
 }
 
 void SymbolFactory::declare(PTree::UsingDeclaration const *usingdecl)

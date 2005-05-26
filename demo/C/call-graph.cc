@@ -9,9 +9,10 @@
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/SymbolLookup.hh>
-#include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
+#include <Synopsis/Trace.hh>
 #include <fstream>
+#include <set>
 
 using namespace Synopsis;
 namespace PT = Synopsis::PTree;
@@ -51,54 +52,100 @@ private:
 class CallGraphGenerator : private SL::Walker
 {
 public:
-  CallGraphGenerator(SL::Table &table) : Walker(table) {}
-  void generate(PT::Node *node) { node->accept(this);}
+  CallGraphGenerator(std::ostream &os, SL::Scope *symbols)
+    : Walker(symbols), my_os(os) {}
+  void generate(PT::Node const *node) 
+  {
+    my_os << "digraph CallGraph\n{\n"
+	  << "node[fillcolor=\"#ffffcc\", pencolor=\"#424242\" style=\"filled\"];\n";
+    const_cast<PT::Node *>(node)->accept(this);
+    my_os << '}' << std::endl;
+  }
 private:
   void visit(PT::FuncallExpr *func)
   {
     PT::Node *name = PT::first(func);
 
     EnclosingFunctionFinder function_finder;
-    SL::Scope const *scope = function_finder.find(&table().current_scope());
+    SL::Scope const *scope = function_finder.find(current_scope());
     std::string caller = "<global>";
     if (SL::FunctionScope const *func = dynamic_cast<SL::FunctionScope const *>(scope))
       caller = func->name();
     std::string callee = PT::reify(name);
-    std::cout << caller << " --> " << callee << std::endl;
+    if (my_cache.find(caller) == my_cache.end())
+    {
+      my_cache.insert(caller);
+      my_os << '"' << caller << "\" [label=\"" << caller << "\"];\n";
+    }
+    if (my_cache.find(callee) == my_cache.end())
+    {
+      my_cache.insert(callee);
+      my_os << '"' << callee << "\" [label=\"" << callee << "\"];\n";
+    }
+    my_os << '"' << caller << "\" -> \"" << callee << '"' << std::endl;
   }
+
+  std::set<std::string> my_cache;
+  std::ostream &        my_os;
 };
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " <input>" << std::endl;
+  std::cerr << "Usage: " << command 
+	    << " [-C] [-d] [-o <output>] <input>" << std::endl;
   return -1;
 }
 
 int main(int argc, char **argv)
 {
   const char *input = argv[1];
+  std::ofstream output;
   if (argc == 1) return usage(argv[0]);
   input = argv[argc - 1];
-  try
+  bool cxx = false;
+  for (size_t i = 1; i != argc - 1; ++i)
   {
+    if (argv[i] == std::string("-C")) cxx = true;
+    else if (argv[i] == std::string("-d")) Trace::enable();
+    else if (argv[i] == std::string("-o") && i < argc - 1)
+      output.open(argv[++i]);
+    else return usage(argv[0]);
+  }
+  if (!output.is_open())
+  {
+    output.copyfmt(std::cout);
+    output.clear(std::cout.rdstate());
+    static_cast<std::basic_ios<char> &>(output).rdbuf(std::cout.rdbuf());
+  }
+//   try
+  {
+    // FIXME: For now we have to initialize the Encoding...
     PT::Encoding::do_init_static();
 
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);
-    Lexer lexer(&buffer, Lexer::C|Lexer::GCC);
-    SL::Table symbols;
-    Parser parser(lexer, symbols);
+    int tokenset = Lexer::C | Lexer::GCC | Lexer::MSVC;
+    int ruleset = 0;
+    if (cxx)
+    {
+      tokenset |= Lexer::CXX;
+      ruleset = Parser::CXX | Parser::MSVC;
+    }
+    Lexer lexer(&buffer, tokenset);
+    SymbolFactory symbols;
+    Parser parser(lexer, symbols, ruleset);
     PT::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
       (*i)->write(std::cerr);
 
     if (!node) return -1;
-    CallGraphGenerator generator(symbols);
+    CallGraphGenerator generator(output, symbols.current_scope());
     generator.generate(node);
   }
-  catch (const std::exception &e)
-  {
-    std::cerr << "Caught exception : " << e.what() << std::endl;
-  }
+//   catch (const std::exception &e)
+//   {
+//     std::cerr << "Caught exception : " << e.what() << std::endl;
+//     throw;
+//   }
 }
