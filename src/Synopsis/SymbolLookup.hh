@@ -10,7 +10,6 @@
 #include <Synopsis/SymbolLookup/Symbol.hh>
 #include <Synopsis/SymbolLookup/Scope.hh>
 #include <Synopsis/SymbolLookup/Scopes.hh>
-#include <Synopsis/SymbolLookup/Table.hh>
 #include <Synopsis/SymbolLookup/Type.hh>
 #include <Synopsis/SymbolLookup/Walker.hh>
 
