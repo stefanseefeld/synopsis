@@ -1,6 +1,7 @@
 #include <Synopsis/Trace.hh>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Writer.hh>
@@ -123,7 +124,7 @@ int main(int argc, char **argv)
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
-    SymbolLookup::Table symbols;
+    SymbolFactory symbols;
     Parser parser(lexer, symbols);
     EncodingFinder finder(ofs);
     PTree::Node *node = parser.parse();

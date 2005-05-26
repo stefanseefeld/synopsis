@@ -21,8 +21,8 @@ namespace SymbolLookup
 class Walker : public PTree::Visitor
 {
 public:
-  Walker(Table &table) : my_table(table) {}
-  virtual ~Walker() {}
+  Walker(Scope *);
+  virtual ~Walker();
 
   using PTree::Visitor::visit;
   virtual void visit(PTree::List *);
@@ -39,16 +39,17 @@ public:
   void traverse(PTree::ClassSpec *);
 
 protected:
-  Table &table() { return my_table;}
-  Scope const *current_scope() { return &my_table.current_scope();}
-
+  Scope const *current_scope() { return my_scopes.top();}
+  void leave_scope();
 private:
+  typedef std::stack<Scope *> Scopes;
+
   //. the virtual visit(Block) version above does scoping,
   //. which isn't what we want if traversing a function (FIXME: or is it ?)
   //. so the following factors out the common code.
   void visit_block(PTree::Block *);
   //. The symbol lookup table.
-  Table &my_table;
+  Scopes  my_scopes;
 };
 
 }

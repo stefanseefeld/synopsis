@@ -11,6 +11,7 @@
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 from Emulator import get_compiler_info
+#import wave as ucpp
 import ucpp
 
 import os.path

@@ -21,6 +21,7 @@
 #include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <occ/MetaClass.hh>
 #include <occ/Environment.hh>
@@ -155,7 +156,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   }
   Buffer buffer(ifs.rdbuf(), file);
   Lexer lexer(&buffer, tokenset);
-  SymbolLookup::Table symbols(SymbolLookup::Table::NONE);
+  SymbolFactory symbols(SymbolFactory::NONE);
   Parser parser(lexer, symbols, ruleset);
 
   FileFilter* filter = FileFilter::instance();
@@ -236,55 +237,7 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
   return ast;
 }
 
-PyObject *occ_print(PyObject *self, PyObject *args)
-{
-  Class::do_init_static();
-  Metaclass::do_init_static();
-  Environment::do_init_static();
-  PTree::Encoding::do_init_static();
-
-  const char *src;
-  int verbose, debug;
-  if (!PyArg_ParseTuple(args, "sii",
-                        &src,
-                        &verbose,
-                        &debug))
-    return 0;
-
-  if (verbose) ::verbose = true;
-  if (debug) Trace::enable(Trace::ALL);
-
-  if (!src || *src == '\0')
-  {
-    PyErr_SetString(PyExc_RuntimeError, "no input file");
-    return 0;
-  }
-
-  std::ifstream ifs(src);
-  if(!ifs)
-  {
-    perror(src);
-    exit(1);
-  }
-  try
-  {
-    Buffer buffer(ifs.rdbuf(), src);
-    Lexer lexer(&buffer, tokenset);
-    SymbolLookup::Table symbols;
-    Parser parser(lexer, symbols, ruleset);
-    PTree::Node *def = parser.parse();
-    PTree::display(def, std::cout, true);
-  }
-  catch (...)
-  {
-    std::cerr << "Warning: an uncaught exception occurred when translating the parse tree" << std::endl;
-  }
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
 PyMethodDef methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},
-			 {(char*)"dump", occ_print, METH_VARARGS},
 			 {0, 0}};
 }
 

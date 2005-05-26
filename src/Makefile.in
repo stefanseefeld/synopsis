@@ -29,13 +29,12 @@ SRC	:= Trace \
            PTree/Atoms PTree/Lists PTree/generation \
            PTree/Visitor PTree/Display PTree/Writer \
            SymbolLookup/Scope SymbolLookup/Scopes \
-           SymbolLookup/ConstEvaluator \
-           SymbolLookup/Type \
-           SymbolLookup/Table \
-           SymbolLookup/Walker \
+           SymbolLookup/Walker SymbolLookup/Type \
            TypeAnalysis/Type TypeAnalysis/Kit \
-           TypeAnalysis/TypeEvaluator TypeAnalysis/OverloadResolver \
-           Buffer Lexer Parser
+           TypeAnalysis/TypeEvaluator \
+           TypeAnalysis/ConstEvaluator \
+           TypeAnalysis/OverloadResolver \
+           Buffer Lexer SymbolFactory Parser
 
 SRC 	:= $(patsubst %, Synopsis/%.cc, $(SRC))
 

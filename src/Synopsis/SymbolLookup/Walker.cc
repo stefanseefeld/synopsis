@@ -8,9 +8,24 @@
 #include <Synopsis/PTree/Lists.hh>
 #include <Synopsis/PTree/TypeVisitor.hh>
 #include <Synopsis/Trace.hh>
+#include <Synopsis/PTree/Display.hh>
 
 using namespace Synopsis;
 using namespace SymbolLookup;
+
+Walker::Walker(Scope *scope)
+{
+  Trace trace("Walker::Walker", Trace::SYMBOLLOOKUP);
+  my_scopes.push(scope->ref());
+}
+
+Walker::~Walker() 
+{
+  Trace trace("Walker::~Walker", Trace::SYMBOLLOOKUP);
+  Scope *scope = my_scopes.top();
+  scope->unref();
+  my_scopes.pop();
+}
 
 void Walker::visit(PTree::List *node)
 {
@@ -22,9 +37,14 @@ void Walker::visit(PTree::List *node)
 void Walker::visit(PTree::Block *node)
 {
   Trace trace("Walker::visit(Block)", Trace::SYMBOLLOOKUP);
-  my_table.enter_block(node);
+  Scope *scope = my_scopes.top()->find_scope(node);
+  std::cout << "blablabla" << std::endl;
+  if (!scope) PTree::display(node, std::cout, false, true);
+  assert(scope);
+  scope->ref();
+  my_scopes.push(scope);
   visit_block(node);
-  my_table.leave_scope();  
+  leave_scope();  
 }
 
 void Walker::visit(PTree::NamespaceSpec *spec)
@@ -38,9 +58,12 @@ void Walker::visit(PTree::FunctionDefinition *def)
   Trace trace("Walker::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
   PTree::Node *decl = PTree::third(def);
   visit(static_cast<PTree::Declarator *>(decl)); // visit the declarator
-  my_table.enter_function_definition(def);
+  Scope *scope = my_scopes.top()->find_scope(def);
+  assert(scope);
+  scope->ref();
+  my_scopes.push(scope);
   visit_block(static_cast<PTree::Block *>(PTree::nth(def, 3)));
-  my_table.leave_scope();
+  leave_scope();
 }
 
 void Walker::visit(PTree::ClassSpec *spec)
@@ -64,18 +87,26 @@ void Walker::visit(PTree::ArrowMemberExpr *expr)
 void Walker::traverse(PTree::NamespaceSpec *spec)
 {
   Trace trace("Walker::traverse(NamespaceSpec)", Trace::SYMBOLLOOKUP);
-  my_table.enter_namespace(spec);
+  Scope *scope = my_scopes.top()->find_scope(spec);
+  assert(scope);
+  scope->ref();
+  my_scopes.push(scope);
   PTree::tail(spec, 2)->car()->accept(this);
-  my_table.leave_scope();
+  leave_scope();
 }
 
 void Walker::traverse(PTree::ClassSpec *spec)
 {
   Trace trace("Walker::traverse(ClassSpec)", Trace::SYMBOLLOOKUP);
-  my_table.enter_class(spec);
   if (PTree::ClassBody *body = spec->body())
+  {
+    Scope *scope = my_scopes.top()->find_scope(spec);
+    assert(scope);
+    scope->ref();
+    my_scopes.push(scope);
     body->accept(this);
-  my_table.leave_scope();
+    leave_scope();
+  }
 }
 
 void Walker::visit_block(PTree::Block *node)
@@ -84,3 +115,10 @@ void Walker::visit_block(PTree::Block *node)
   visit(static_cast<PTree::List *>(node));
 }
 
+void Walker::leave_scope()
+{
+  Trace trace("Walker::leave_scope", Trace::SYMBOLLOOKUP);
+  Scope *top = my_scopes.top();
+  my_scopes.pop();
+  top->unref();
+}

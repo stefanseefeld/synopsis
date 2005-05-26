@@ -13,6 +13,7 @@
 #include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include "ASTTranslator.hh"
 #include <Support/ErrorHandler.hh>
@@ -69,7 +70,7 @@ PyObject *parse(PyObject *self, PyObject *args)
     std::ifstream ifs(cppfile);
     Buffer buffer(ifs.rdbuf(), src);
     Lexer lexer(&buffer, Lexer::GCC);
-    SymbolLookup::Table symbols(SymbolLookup::Table::C99);
+    SymbolFactory symbols(SymbolFactory::C99);
     Parser parser(lexer, symbols);
     PTree::Node *ptree = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
