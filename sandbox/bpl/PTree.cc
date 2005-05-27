@@ -27,34 +27,34 @@ public:
   virtual void visit_commented_atom(CommentedAtom *a) { apply("visit_atom", a);}
   virtual void visit_dup_atom(DupAtom *a) { apply("visit_atom", a);}
   virtual void visit_identifier(Identifier *a) { apply("visit_atom", a);}
-  virtual void visit_reserved(Reserved *a) { apply("visit_atom", a);}
-  virtual void visit_this(This *a) { apply("visit_atom", a);}
-  virtual void visit_auto(AtomAUTO *a) { apply("visit_atom", a);}
-  virtual void visit_boolean(AtomBOOLEAN *a) { apply("visit_atom", a);}
-  virtual void visit_char(AtomCHAR *a) { apply("visit_atom", a);}
-  virtual void visit_wchar(AtomWCHAR *a) { apply("visit_atom", a);}
-  virtual void visit_const(AtomCONST *a) { apply("visit_atom", a);}
-  virtual void visit_double(AtomDOUBLE *a) { apply("visit_atom", a);}
-  virtual void visit_extern(AtomEXTERN *a) { apply("visit_atom", a);}
-  virtual void visit_float(AtomFLOAT *a) { apply("visit_atom", a);}
-  virtual void visit_friend(AtomFRIEND *a) { apply("visit_atom", a);}
-  virtual void visit_inline(AtomINLINE *a) { apply("visit_atom", a);}
-  virtual void visit_int(AtomINT *a) { apply("visit_atom", a);}
-  virtual void visit_long(AtomLONG *a) { apply("visit_atom", a);}
-  virtual void visit_mutable(AtomMUTABLE *a) { apply("visit_atom", a);}
-  virtual void visit_namespace(AtomNAMESPACE *a) { apply("visit_atom", a);}
-  virtual void visit_private(AtomPRIVATE *a) { apply("visit_atom", a);}
-  virtual void visit_protected(AtomPROTECTED *a) { apply("visit_atom", a);}
-  virtual void visit_public(AtomPUBLIC *a) { apply("visit_atom", a);}
-  virtual void visit_register(AtomREGISTER *a) { apply("visit_atom", a);}
-  virtual void visit_short(AtomSHORT *a) { apply("visit_atom", a);}
-  virtual void visit_signed(AtomSIGNED *a) { apply("visit_atom", a);}
-  virtual void visit_static(AtomSTATIC *a) { apply("visit_atom", a);}
-  virtual void visit_unsigned(AtomUNSIGNED *a) { apply("visit_atom", a);}
-  virtual void visit_using_(AtomUSING *a) { apply("visit_atom", a);}
-  virtual void visit_virtual(AtomVIRTUAL *a) { apply("visit_atom", a);}
-  virtual void visit_void(AtomVOID *a) { apply("visit_atom", a);}
-  virtual void visit_volatile(AtomVOLATILE *a) { apply("visit_atom", a);}
+  virtual void visit_keyword(Keyword *a) { apply("visit_atom", a);}
+//   virtual void visit_this(Kwd::This *a) { apply("visit_keyword", a);}
+//   virtual void visit_auto(Kwd::Auto *a) { apply("visit_keyword", a);}
+//   virtual void visit_boolean(Kwd::Bool *a) { apply("visit_keyword", a);}
+//   virtual void visit_char(Kwd::Char *a) { apply("visit_keyword", a);}
+//   virtual void visit_wchar(Kwd::WChar *a) { apply("visit_keyword", a);}
+//   virtual void visit_const(Kwd::Const *a) { apply("visit_keyword", a);}
+//   virtual void visit_double(Kwd::Double *a) { apply("visit_keyword", a);}
+//   virtual void visit_extern(Kwd::Extern *a) { apply("visit_keyword", a);}
+//   virtual void visit_float(Kwd::Float *a) { apply("visit_keyword", a);}
+//   virtual void visit_friend(Kwd::Friend *a) { apply("visit_keyword", a);}
+//   virtual void visit_inline(Kwd::Inline *a) { apply("visit_keyword", a);}
+//   virtual void visit_int(Kwd::Int *a) { apply("visit_keyword", a);}
+//   virtual void visit_long(Kwd::Long *a) { apply("visit_keyword", a);}
+//   virtual void visit_mutable(Kwd::Mutable *a) { apply("visit_keyword", a);}
+//   virtual void visit_namespace(Kwd::Namespacec *a) { apply("visit_keyword", a);}
+//   virtual void visit_private(Kwd::Private *a) { apply("visit_keyword", a);}
+//   virtual void visit_protected(Kwd::Protected *a) { apply("visit_keyword", a);}
+//   virtual void visit_public(Kwd::Public *a) { apply("visit_keyword", a);}
+//   virtual void visit_register(Kwd::Register *a) { apply("visit_keyword", a);}
+//   virtual void visit_short(Kwd::Short *a) { apply("visit_keyword", a);}
+//   virtual void visit_signed(Kwd::Signed *a) { apply("visit_keyword", a);}
+//   virtual void visit_static(Kwd::Static *a) { apply("visit_keyword", a);}
+//   virtual void visit_unsigned(Kwd::Unsigned *a) { apply("visit_keyword", a);}
+//   virtual void visit_using_(Kwd::Using *a) { apply("visit_keyword", a);}
+//   virtual void visit_virtual(Kwd::Virtual *a) { apply("visit_keyword", a);}
+//   virtual void visit_void(Kwd::Void *a) { apply("visit_keyword", a);}
+//   virtual void visit_volatile(Lwd::Volatile *a) { apply("visit_keyword", a);}
 
   virtual void visit_brace(Brace *l) { apply("visit_list", l);}
   virtual void visit_block(Block *l) { apply("visit_brace", l);}
@@ -94,7 +94,7 @@ public:
   virtual void visit_default_statement(DefaultStatement *l) { apply("visit_list", l);}
   virtual void visit_label_statement(LabelStatement *l) { apply("visit_list", l);}
   virtual void visit_expr_statement(ExprStatement *l) { apply("visit_list", l);}
-  virtual void visit_comma_expr(CommaExpr *l) { apply("visit_list", l);}
+  virtual void visit_expression(Expression *l) { apply("visit_list", l);}
   virtual void visit_assign_expr(AssignExpr *l) { apply("visit_list", l);}
   virtual void visit_cond_expr(CondExpr *l) { apply("visit_list", l);}
   virtual void visit_infix_expr(InfixExpr *l) { apply("visit_list", l);}
@@ -121,34 +121,34 @@ public:
   virtual void visit(CommentedAtom *n) { apply("visit_commented_atom", n);}
   virtual void visit(DupAtom *n) { apply("visit_dup_atom", n);}
   virtual void visit(Identifier *n) { apply("visit_identifier", n);}
-  virtual void visit(Reserved *n) { apply("visit_reserved", n);}
-  virtual void visit(This *n) { apply("visit_this", n);}
-  virtual void visit(AtomAUTO *n) { apply("visit_auto", n);}
-  virtual void visit(AtomBOOLEAN *n) { apply("visit_boolean", n);}
-  virtual void visit(AtomCHAR *n) { apply("visit_char", n);}
-  virtual void visit(AtomWCHAR *n) { apply("visit_wchar", n);}
-  virtual void visit(AtomCONST *n) { apply("visit_const", n);}
-  virtual void visit(AtomDOUBLE *n) { apply("visit_double", n);}
-  virtual void visit(AtomEXTERN *n) { apply("visit_extern", n);}
-  virtual void visit(AtomFLOAT *n) { apply("visit_float", n);}
-  virtual void visit(AtomFRIEND *n) { apply("visit_friend", n);}
-  virtual void visit(AtomINLINE *n) { apply("visit_inline", n);}
-  virtual void visit(AtomINT *n) { apply("visit_int", n);}
-  virtual void visit(AtomLONG *n) { apply("visit_long", n);}
-  virtual void visit(AtomMUTABLE *n) { apply("visit_mutable", n);}
-  virtual void visit(AtomNAMESPACE *n) { apply("visit_namespace", n);}
-  virtual void visit(AtomPRIVATE *n) { apply("visit_private", n);}
-  virtual void visit(AtomPROTECTED *n) { apply("visit_protected", n);}
-  virtual void visit(AtomPUBLIC *n) { apply("visit_public", n);}
-  virtual void visit(AtomREGISTER *n) { apply("visit_register", n);}
-  virtual void visit(AtomSHORT *n) { apply("visit_short", n);}
-  virtual void visit(AtomSIGNED *n) { apply("visit_signed", n);}
-  virtual void visit(AtomSTATIC *n) { apply("visit_static", n);}
-  virtual void visit(AtomUNSIGNED *n) { apply("visit_unsigned", n);}
-  virtual void visit(AtomUSING *n) { apply("visit_using_", n);}
-  virtual void visit(AtomVIRTUAL *n) { apply("visit_virtual", n);}
-  virtual void visit(AtomVOID *n) { apply("visit_void", n);}
-  virtual void visit(AtomVOLATILE *n) { apply("visit_volatile", n);}
+  virtual void visit(Keyword *n) { apply("visit_keyword", n);}
+//   virtual void visit(This *n) { apply("visit_this", n);}
+//   virtual void visit(Kwd::Auto *n) { apply("visit_auto", n);}
+//   virtual void visit(Kwd::Bool *n) { apply("visit_boolean", n);}
+//   virtual void visit(Kwd::Char *n) { apply("visit_char", n);}
+//   virtual void visit(Kwd::WChar *n) { apply("visit_wchar", n);}
+//   virtual void visit(Kwd::Const *n) { apply("visit_const", n);}
+//   virtual void visit(Kwd::Double *n) { apply("visit_double", n);}
+//   virtual void visit(Kwd::Extern *n) { apply("visit_extern", n);}
+//   virtual void visit(Kwd::Float *n) { apply("visit_float", n);}
+//   virtual void visit(Kwd::Friend *n) { apply("visit_friend", n);}
+//   virtual void visit(Kwd::Inline *n) { apply("visit_inline", n);}
+//   virtual void visit(Kwd::Int *n) { apply("visit_int", n);}
+//   virtual void visit(Kwd::Long *n) { apply("visit_long", n);}
+//   virtual void visit(Kwd::Mutable *n) { apply("visit_mutable", n);}
+//   virtual void visit(Kwd::Namespace *n) { apply("visit_namespace", n);}
+//   virtual void visit(Kwd::Private *n) { apply("visit_private", n);}
+//   virtual void visit(Kwd::Protected *n) { apply("visit_protected", n);}
+//   virtual void visit(Kwd::Public *n) { apply("visit_public", n);}
+//   virtual void visit(Kwd::Register *n) { apply("visit_register", n);}
+//   virtual void visit(Kwd::Short *n) { apply("visit_short", n);}
+//   virtual void visit(Kwd::Signed *n) { apply("visit_signed", n);}
+//   virtual void visit(Kwd::Static *n) { apply("visit_static", n);}
+//   virtual void visit(Kwd::Unsigned *n) { apply("visit_unsigned", n);}
+//   virtual void visit(Kwd::Using *n) { apply("visit_using_", n);}
+//   virtual void visit(Kwd::Virtual *n) { apply("visit_virtual", n);}
+//   virtual void visit(Kwd::Void *n) { apply("visit_void", n);}
+//   virtual void visit(Kwd::Volatile *n) { apply("visit_volatile", n);}
   virtual void visit(Brace *n) { apply("visit_brace", n);}
   virtual void visit(Block *n) { apply("visit_block", n);}
   virtual void visit(ClassBody *n) { apply("visit_class_body", n);}
@@ -187,7 +187,7 @@ public:
   virtual void visit(DefaultStatement *n) { apply("visit_default_statement", n);}
   virtual void visit(LabelStatement *n) { apply("visit_label_statement", n);}
   virtual void visit(ExprStatement *n) { apply("visit_expr_statement", n);}
-  virtual void visit(CommaExpr *n) { apply("visit_comma_expr", n);}
+  virtual void visit(Expression *n) { apply("visit_expression", n);}
   virtual void visit(AssignExpr *n) { apply("visit_assign_expr", n);}
   virtual void visit(CondExpr *n) { apply("visit_cond_expr", n);}
   virtual void visit(InfixExpr *n) { apply("visit_infix_expr", n);}
@@ -252,34 +252,34 @@ BOOST_PYTHON_MODULE(PTree)
   visitor.def("visit_commented_atom", &VisitorWrapper::visit_commented_atom);
   visitor.def("visit_dup_atom", &VisitorWrapper::visit_dup_atom);
   visitor.def("visit_identifier", &VisitorWrapper::visit_identifier);
-  visitor.def("visit_reserved", &VisitorWrapper::visit_reserved);
-  visitor.def("visit_this", &VisitorWrapper::visit_this);
-  visitor.def("visit_auto", &VisitorWrapper::visit_auto);
-  visitor.def("visit_boolean", &VisitorWrapper::visit_boolean);
-  visitor.def("visit_char", &VisitorWrapper::visit_char);
-  visitor.def("visit_wchar", &VisitorWrapper::visit_wchar);
-  visitor.def("visit_const", &VisitorWrapper::visit_const);
-  visitor.def("visit_double", &VisitorWrapper::visit_double);
-  visitor.def("visit_extern", &VisitorWrapper::visit_extern);
-  visitor.def("visit_float", &VisitorWrapper::visit_float);
-  visitor.def("visit_friend", &VisitorWrapper::visit_friend);
-  visitor.def("visit_inline", &VisitorWrapper::visit_inline);
-  visitor.def("visit_int", &VisitorWrapper::visit_int);
-  visitor.def("visit_long", &VisitorWrapper::visit_long);
-  visitor.def("visit_mutable", &VisitorWrapper::visit_mutable);
-  visitor.def("visit_namespace", &VisitorWrapper::visit_namespace);
-  visitor.def("visit_private", &VisitorWrapper::visit_private);
-  visitor.def("visit_protected", &VisitorWrapper::visit_protected);
-  visitor.def("visit_public", &VisitorWrapper::visit_public);
-  visitor.def("visit_register", &VisitorWrapper::visit_register);
-  visitor.def("visit_short", &VisitorWrapper::visit_short);
-  visitor.def("visit_signed", &VisitorWrapper::visit_signed);
-  visitor.def("visit_static", &VisitorWrapper::visit_static);
-  visitor.def("visit_unsigned", &VisitorWrapper::visit_unsigned);
-  visitor.def("visit_using_", &VisitorWrapper::visit_using_);
-  visitor.def("visit_virtual", &VisitorWrapper::visit_virtual);
-  visitor.def("visit_void", &VisitorWrapper::visit_void);
-  visitor.def("visit_volatile", &VisitorWrapper::visit_volatile);
+  visitor.def("visit_keyword", &VisitorWrapper::visit_keyword);
+//   visitor.def("visit_this", &VisitorWrapper::visit_this);
+//   visitor.def("visit_auto", &VisitorWrapper::visit_auto);
+//   visitor.def("visit_boolean", &VisitorWrapper::visit_boolean);
+//   visitor.def("visit_char", &VisitorWrapper::visit_char);
+//   visitor.def("visit_wchar", &VisitorWrapper::visit_wchar);
+//   visitor.def("visit_const", &VisitorWrapper::visit_const);
+//   visitor.def("visit_double", &VisitorWrapper::visit_double);
+//   visitor.def("visit_extern", &VisitorWrapper::visit_extern);
+//   visitor.def("visit_float", &VisitorWrapper::visit_float);
+//   visitor.def("visit_friend", &VisitorWrapper::visit_friend);
+//   visitor.def("visit_inline", &VisitorWrapper::visit_inline);
+//   visitor.def("visit_int", &VisitorWrapper::visit_int);
+//   visitor.def("visit_long", &VisitorWrapper::visit_long);
+//   visitor.def("visit_mutable", &VisitorWrapper::visit_mutable);
+//   visitor.def("visit_namespace", &VisitorWrapper::visit_namespace);
+//   visitor.def("visit_private", &VisitorWrapper::visit_private);
+//   visitor.def("visit_protected", &VisitorWrapper::visit_protected);
+//   visitor.def("visit_public", &VisitorWrapper::visit_public);
+//   visitor.def("visit_register", &VisitorWrapper::visit_register);
+//   visitor.def("visit_short", &VisitorWrapper::visit_short);
+//   visitor.def("visit_signed", &VisitorWrapper::visit_signed);
+//   visitor.def("visit_static", &VisitorWrapper::visit_static);
+//   visitor.def("visit_unsigned", &VisitorWrapper::visit_unsigned);
+//   visitor.def("visit_using_", &VisitorWrapper::visit_using_);
+//   visitor.def("visit_virtual", &VisitorWrapper::visit_virtual);
+//   visitor.def("visit_void", &VisitorWrapper::visit_void);
+//   visitor.def("visit_volatile", &VisitorWrapper::visit_volatile);
   visitor.def("visit_brace", &VisitorWrapper::visit_brace);
   visitor.def("visit_block", &VisitorWrapper::visit_block);
   visitor.def("visit_class_body", &VisitorWrapper::visit_class_body);
@@ -317,7 +317,7 @@ BOOST_PYTHON_MODULE(PTree)
   visitor.def("visit_default_statement", &VisitorWrapper::visit_default_statement);
   visitor.def("visit_label_statement", &VisitorWrapper::visit_label_statement);
   visitor.def("visit_expr_statement", &VisitorWrapper::visit_expr_statement);
-  visitor.def("visit_comma_expr", &VisitorWrapper::visit_comma_expr);
+  visitor.def("visit_expression", &VisitorWrapper::visit_expression);
   visitor.def("visit_assign_expr", &VisitorWrapper::visit_assign_expr);
   visitor.def("visit_cond_expr", &VisitorWrapper::visit_cond_expr);
   visitor.def("visit_infix_expr", &VisitorWrapper::visit_infix_expr);
@@ -365,35 +365,35 @@ BOOST_PYTHON_MODULE(PTree)
   bpl::class_<CommentedAtom, bpl::bases<Atom>, CommentedAtom *, boost::noncopyable> comment_atom("CommentedAtom", bpl::no_init);
   bpl::class_<DupAtom, bpl::bases<CommentedAtom>, DupAtom *, boost::noncopyable> dup_atom("DupAtom", bpl::no_init);
   bpl::class_<Identifier, bpl::bases<CommentedAtom>, Identifier *, boost::noncopyable> identifier("Identifier", bpl::no_init);
-  bpl::class_<Reserved, bpl::bases<CommentedAtom>, Reserved *, boost::noncopyable> reserved("Reserved", bpl::no_init);
-  bpl::class_<This, bpl::bases<Reserved>, This *, boost::noncopyable> this_("This", bpl::no_init);
-  bpl::class_<AtomAUTO, bpl::bases<Reserved>, AtomAUTO *, boost::noncopyable> atom_auto("AtomAUTO", bpl::no_init);
-  bpl::class_<AtomBOOLEAN, bpl::bases<Reserved>, AtomBOOLEAN *, boost::noncopyable> atom_boolean("AtomBOOLEAN", bpl::no_init);
-  bpl::class_<AtomCHAR, bpl::bases<Reserved>, AtomCHAR *, boost::noncopyable> atom_char("AtomCHAR", bpl::no_init);
-  bpl::class_<AtomWCHAR, bpl::bases<Reserved>, AtomWCHAR *, boost::noncopyable> atom_wchar("AtomWCHAR", bpl::no_init);
-  bpl::class_<AtomCONST, bpl::bases<Reserved>, AtomCONST *, boost::noncopyable> atom_const("AtomCONST", bpl::no_init);
-  bpl::class_<AtomDOUBLE, bpl::bases<Reserved>, AtomDOUBLE *, boost::noncopyable> atom_double("AtomDOUBLE", bpl::no_init);
-  bpl::class_<AtomEXTERN, bpl::bases<Reserved>, AtomEXTERN *, boost::noncopyable> atom_extern("AtomEXTERN", bpl::no_init);
-  bpl::class_<AtomFLOAT, bpl::bases<Reserved>, AtomFLOAT *, boost::noncopyable> atom_float("AtomFLOAT", bpl::no_init);
-  bpl::class_<AtomFRIEND, bpl::bases<Reserved>, AtomFRIEND *, boost::noncopyable> atom_friend("AtomFRIEND", bpl::no_init);
-  bpl::class_<AtomINLINE, bpl::bases<Reserved>, AtomINLINE *, boost::noncopyable> atom_inline("AtomINLINE", bpl::no_init);
-  bpl::class_<AtomINT, bpl::bases<Reserved>, AtomINT *, boost::noncopyable> atom_int("AtomINT", bpl::no_init);
-  bpl::class_<AtomLONG, bpl::bases<Reserved>, AtomLONG *, boost::noncopyable> atom_long("AtomLONG", bpl::no_init);
-  bpl::class_<AtomMUTABLE, bpl::bases<Reserved>, AtomMUTABLE *, boost::noncopyable> atom_mutable("AtomMUTABLE", bpl::no_init);
-  bpl::class_<AtomNAMESPACE, bpl::bases<Reserved>, AtomNAMESPACE *, boost::noncopyable> atom_namespace("AtomNAMESPACE", bpl::no_init);
-  bpl::class_<AtomPRIVATE, bpl::bases<Reserved>, AtomPRIVATE *, boost::noncopyable> atom_private("AtomPRIVATE", bpl::no_init);
-  bpl::class_<AtomPROTECTED, bpl::bases<Reserved>, AtomPROTECTED *, boost::noncopyable> atom_protected("AtomPROTECTED", bpl::no_init);
-  bpl::class_<AtomPUBLIC, bpl::bases<Reserved>, AtomPUBLIC *, boost::noncopyable> atom_public("AtomPUBLIC", bpl::no_init);
-  bpl::class_<AtomREGISTER, bpl::bases<Reserved>, AtomREGISTER *, boost::noncopyable> atom_register("AtomREGISTER", bpl::no_init);
-  bpl::class_<AtomSHORT, bpl::bases<Reserved>, AtomSHORT *, boost::noncopyable> atom_short("AtomSHORT", bpl::no_init);
-  bpl::class_<AtomSIGNED, bpl::bases<Reserved>, AtomSIGNED *, boost::noncopyable> atom_signed("AtomSIGNED", bpl::no_init);
-  bpl::class_<AtomSTATIC, bpl::bases<Reserved>, AtomSTATIC *, boost::noncopyable> atom_static("AtomSTATIC", bpl::no_init);
-  bpl::class_<AtomUNSIGNED, bpl::bases<Reserved>, AtomUNSIGNED *, boost::noncopyable> atom_unsigned("AtomUNSIGNED", bpl::no_init);
-  bpl::class_<AtomUSING, bpl::bases<Reserved>, AtomUSING *, boost::noncopyable> atom_using("AtomUSING", bpl::no_init);
-  bpl::class_<AtomVIRTUAL, bpl::bases<Reserved>, AtomVIRTUAL *, boost::noncopyable> atom_virtual("AtomVIRTUAL", bpl::no_init);
-  bpl::class_<AtomVOID, bpl::bases<Reserved>, AtomVOID *, boost::noncopyable> atom_void("AtomVOID", bpl::no_init);
-  bpl::class_<AtomVOLATILE, bpl::bases<Reserved>, AtomVOLATILE *, boost::noncopyable> atom_volatile("AtomVOLATILE", bpl::no_init);
-  bpl::class_<AtomUserKeyword2, bpl::bases<Reserved>, AtomUserKeyword2 *, boost::noncopyable> atom_user_kwd2("AtomUserKeyword2", bpl::no_init);
+  bpl::class_<Keyword, bpl::bases<CommentedAtom>, Keyword *, boost::noncopyable> reserved("Keyword", bpl::no_init);
+//   bpl::class_<This, bpl::bases<Reserved>, This *, boost::noncopyable> this_("This", bpl::no_init);
+//   bpl::class_<AtomAUTO, bpl::bases<Reserved>, AtomAUTO *, boost::noncopyable> atom_auto("AtomAUTO", bpl::no_init);
+//   bpl::class_<AtomBOOLEAN, bpl::bases<Reserved>, AtomBOOLEAN *, boost::noncopyable> atom_boolean("AtomBOOLEAN", bpl::no_init);
+//   bpl::class_<AtomCHAR, bpl::bases<Reserved>, AtomCHAR *, boost::noncopyable> atom_char("AtomCHAR", bpl::no_init);
+//   bpl::class_<AtomWCHAR, bpl::bases<Reserved>, AtomWCHAR *, boost::noncopyable> atom_wchar("AtomWCHAR", bpl::no_init);
+//   bpl::class_<AtomCONST, bpl::bases<Reserved>, AtomCONST *, boost::noncopyable> atom_const("AtomCONST", bpl::no_init);
+//   bpl::class_<AtomDOUBLE, bpl::bases<Reserved>, AtomDOUBLE *, boost::noncopyable> atom_double("AtomDOUBLE", bpl::no_init);
+//   bpl::class_<AtomEXTERN, bpl::bases<Reserved>, AtomEXTERN *, boost::noncopyable> atom_extern("AtomEXTERN", bpl::no_init);
+//   bpl::class_<AtomFLOAT, bpl::bases<Reserved>, AtomFLOAT *, boost::noncopyable> atom_float("AtomFLOAT", bpl::no_init);
+//   bpl::class_<AtomFRIEND, bpl::bases<Reserved>, AtomFRIEND *, boost::noncopyable> atom_friend("AtomFRIEND", bpl::no_init);
+//   bpl::class_<AtomINLINE, bpl::bases<Reserved>, AtomINLINE *, boost::noncopyable> atom_inline("AtomINLINE", bpl::no_init);
+//   bpl::class_<AtomINT, bpl::bases<Reserved>, AtomINT *, boost::noncopyable> atom_int("AtomINT", bpl::no_init);
+//   bpl::class_<AtomLONG, bpl::bases<Reserved>, AtomLONG *, boost::noncopyable> atom_long("AtomLONG", bpl::no_init);
+//   bpl::class_<AtomMUTABLE, bpl::bases<Reserved>, AtomMUTABLE *, boost::noncopyable> atom_mutable("AtomMUTABLE", bpl::no_init);
+//   bpl::class_<AtomNAMESPACE, bpl::bases<Reserved>, AtomNAMESPACE *, boost::noncopyable> atom_namespace("AtomNAMESPACE", bpl::no_init);
+//   bpl::class_<AtomPRIVATE, bpl::bases<Reserved>, AtomPRIVATE *, boost::noncopyable> atom_private("AtomPRIVATE", bpl::no_init);
+//   bpl::class_<AtomPROTECTED, bpl::bases<Reserved>, AtomPROTECTED *, boost::noncopyable> atom_protected("AtomPROTECTED", bpl::no_init);
+//   bpl::class_<AtomPUBLIC, bpl::bases<Reserved>, AtomPUBLIC *, boost::noncopyable> atom_public("AtomPUBLIC", bpl::no_init);
+//   bpl::class_<AtomREGISTER, bpl::bases<Reserved>, AtomREGISTER *, boost::noncopyable> atom_register("AtomREGISTER", bpl::no_init);
+//   bpl::class_<AtomSHORT, bpl::bases<Reserved>, AtomSHORT *, boost::noncopyable> atom_short("AtomSHORT", bpl::no_init);
+//   bpl::class_<AtomSIGNED, bpl::bases<Reserved>, AtomSIGNED *, boost::noncopyable> atom_signed("AtomSIGNED", bpl::no_init);
+//   bpl::class_<AtomSTATIC, bpl::bases<Reserved>, AtomSTATIC *, boost::noncopyable> atom_static("AtomSTATIC", bpl::no_init);
+//   bpl::class_<AtomUNSIGNED, bpl::bases<Reserved>, AtomUNSIGNED *, boost::noncopyable> atom_unsigned("AtomUNSIGNED", bpl::no_init);
+//   bpl::class_<AtomUSING, bpl::bases<Reserved>, AtomUSING *, boost::noncopyable> atom_using("AtomUSING", bpl::no_init);
+//   bpl::class_<AtomVIRTUAL, bpl::bases<Reserved>, AtomVIRTUAL *, boost::noncopyable> atom_virtual("AtomVIRTUAL", bpl::no_init);
+//   bpl::class_<AtomVOID, bpl::bases<Reserved>, AtomVOID *, boost::noncopyable> atom_void("AtomVOID", bpl::no_init);
+//   bpl::class_<AtomVOLATILE, bpl::bases<Reserved>, AtomVOLATILE *, boost::noncopyable> atom_volatile("AtomVOLATILE", bpl::no_init);
+//   bpl::class_<AtomUserKeyword2, bpl::bases<Reserved>, AtomUserKeyword2 *, boost::noncopyable> atom_user_kwd2("AtomUserKeyword2", bpl::no_init);
 
   // various lists
 
@@ -445,7 +445,7 @@ BOOST_PYTHON_MODULE(PTree)
 
   // expressions
 
-  bpl::class_<CommaExpr, bpl::bases<List>, CommaExpr *, boost::noncopyable> comma_expr("CommaExpr", bpl::no_init);
+  bpl::class_<Expression, bpl::bases<List>, Expression *, boost::noncopyable> expression("Expression", bpl::no_init);
   bpl::class_<AssignExpr, bpl::bases<List>, AssignExpr *, boost::noncopyable> assign_expr("AssignExpr", bpl::no_init);
   bpl::class_<CondExpr, bpl::bases<List>, CondExpr *, boost::noncopyable> cond_expr("CondExpr", bpl::no_init);
   bpl::class_<InfixExpr, bpl::bases<List>, InfixExpr *, boost::noncopyable> infix_expr("InfixExpr", bpl::no_init);

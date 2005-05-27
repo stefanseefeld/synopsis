@@ -92,10 +92,4 @@ BOOST_PYTHON_MODULE(SymbolLookup)
   bpl::class_<Namespace, bpl::bases<Scope>, Namespace *,
               boost::noncopyable> namespace_("Namespace", bpl::no_init);
 
-  bpl::enum_<Table::Language> language("Language");
-  language.value("NONE", Table::NONE);
-  language.value("C99", Table::C99);
-  language.value("CXX", Table::CXX);
-
-  bpl::class_<Table> table("Table", bpl::init<Table::Language>());
 }
