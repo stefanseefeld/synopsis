@@ -14,7 +14,7 @@
         <instance class="Synopsis.Type.Dependent" language="C++" name="T"/>
        </type>
       </instance>
-      <instance class="Synopsis.AST.Parameter" identifier="I" value="">
+      <instance class="Synopsis.AST.Parameter" identifier="I" value="4">
        <type>
         <instance class="Synopsis.Type.Base" language="C++" name="int"/>
        </type>

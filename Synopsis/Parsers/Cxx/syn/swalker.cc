@@ -682,6 +682,9 @@ void SWalker::translate_template_params(PTree::Node *params)
   while (params)
   {
     PTree::Node *param = PTree::first(params);
+    if (dynamic_cast<PTree::ParameterDeclaration *>(param))
+      // skip potential 'register' (see Parser::parameter_declaration)
+      param = PTree::rest(param);
     nodeLOG(param);
     if (*PTree::first(param) == "class" || *PTree::first(param) == "typename")
     {
@@ -721,6 +724,16 @@ void SWalker::translate_template_params(PTree::Node *params)
       while (p && p->car() && p->car()->is_atom() && (*p->car() == '*' || *p->car() == '&'))
         p = PTree::rest(p);
       std::string name = parse_name(p);
+      // FIXME: At this point name will contain the initializer, if it
+      //        was present. Search for '=' and assign everything after
+      //        that to the value.
+      std::string::size_type v = name.find('=');
+      if (v != std::string::npos)
+      {
+	value = name.substr(v + 1);
+	while (value[0] == ' ') value.erase(value.begin());
+	name = name.substr(0, v - 1);
+      }
       Types::Dependent* dep = my_builder->create_dependent(name);
       my_builder->add(dep);
       // Figure out the type of the param
