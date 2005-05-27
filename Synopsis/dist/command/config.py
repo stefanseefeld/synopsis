@@ -64,7 +64,7 @@ class config(build_ext):
     def run(self):
 
         self.config('src', self.build_ctemp, self.build_clib)
-        if not self.disable_gc:
+        if not self.disable_gc and not self.with_gc_prefix:
             if os.name == 'nt':
                 # for the gc configuration on the win32 native platform
                 # set 'CC' explicitely to 'gcc -mno-cygwin'
@@ -122,6 +122,8 @@ class config(build_ext):
         command = "%s --prefix=%s --with-python=%s"%(configure, prefix, python)
         if self.disable_gc:
             command += " --disable-gc"
+        elif self.with_gc_prefix:
+            command += " --with-gc-prefix=%s"%self.with_gc_prefix
         command += ' %s'%args
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
