@@ -923,11 +923,9 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
   return true;
 }
 
-/*
-  temp.arg.list
-  : empty
-  | temp.parameter.declaration (',' temp.parameter.declaration)*
-*/
+//. template-parameter-list
+//.  : empty
+//.  | template-parameter (',' template-parameter)*
 bool Parser::template_parameter_list(PTree::List *&params)
 {
   Trace trace("Parser::template_parameter_list", Trace::PARSING);
@@ -955,12 +953,9 @@ bool Parser::template_parameter_list(PTree::List *&params)
   return true;
 }
 
-/*
-  temp.parameter
-  : CLASS Identifier {'=' type.name}
-  | type.specifier arg.declarator {'=' additive.expr}
-  | template.decl2 CLASS Identifier {'=' type.name}
-*/
+//. template-parameter
+//.   type-parameter
+//.   parameter-declaration
 bool Parser::template_parameter(PTree::Node *&decl)
 {
   Trace trace("Parser::template_parameter", Trace::PARSING);
@@ -971,16 +966,17 @@ bool Parser::template_parameter(PTree::Node *&decl)
   Token::Type type = my_lexer.look_ahead(0);
   // template template parameter
   if (type == Token::TEMPLATE) return type_parameter(decl);
-  // type parameter
+  // possibly a type parameter
   else if (type == Token::TYPENAME || type == Token::CLASS)
   {
+    // If the next token is an identifier, and the following
+    // one is ',', '=', or '>', it's a type parameter.
     type = my_lexer.look_ahead(1);
-    if (type == Token::Identifier || type == Token::Scope)
-      type = my_lexer.look_ahead(2);
+    if (type == Token::Identifier) type = my_lexer.look_ahead(2);
     if (type == ',' || type == '=' || type == '>')
       return type_parameter(decl);
   }
-  // non-type parameter
+  // It's a non-type parameter.
   PTree::Encoding encoding; // unused
   PTree::ParameterDeclaration *pdecl;
   if (!parameter_declaration(pdecl, encoding)) return false;
@@ -988,6 +984,13 @@ bool Parser::template_parameter(PTree::Node *&decl)
   return true;
 }
 
+//. type-parameter:
+//.   'class' identifier [opt]
+//.   'class' identifier [opt] = type-id
+//.   'typename' identifier [opt]
+//.   'typename' identifier [opt] = type-id
+//.   'template'  '<' template-parameter-list '>' 'class' identifier [opt]
+//.   'template'  '<' template-parameter-list '>' 'class' identifier [opt] = id-expression
 bool Parser::type_parameter(PTree::Node *&decl)
 {
   Trace trace("Parser::type_parameter", Trace::PARSING);
@@ -2557,11 +2560,11 @@ bool Parser::parameter_declaration_list(PTree::Node *&arglist,
   return true;
 }
 
-/*
-  parameter.declaration
-    : {userdef.keyword | REGISTER} type.specifier arg.declarator
-      {'=' expression}
-*/
+//. parameter-declaration
+//.   decl-specifier-seq declarator
+//.   decl-specifier-seq declarator = assignment-expression
+//.   decl-specifier-seq abstract-declarator [opt]
+//.   decl-specifier-seq abstract-declarator [opt] = assignment-expression
 bool Parser::parameter_declaration(PTree::ParameterDeclaration *&para,
 				   PTree::Encoding &encode)
 {

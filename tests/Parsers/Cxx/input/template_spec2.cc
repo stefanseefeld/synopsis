@@ -1,5 +1,5 @@
 // Test template specializations #2
-template <typename T, int I = 4>
+template <typename T, int I= 4>
 class list
 {
 public:

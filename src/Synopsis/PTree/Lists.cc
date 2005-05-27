@@ -109,3 +109,8 @@ ClassSpec::ClassSpec(const Encoding &name, Node *car, Node *cdr, Node *c)
     my_comments(c)
 {
 }
+
+ClassBody *ClassSpec::body() 
+{
+  return dynamic_cast<ClassBody *>(PTree::nth(this, 3));
+}

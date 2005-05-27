@@ -202,7 +202,7 @@ public:
   Node *get_comments() { return my_comments;}
   //. The following assumes proper C++, i.e. no OpenC++ extension.
   ClassBody const *body() const { return static_cast<ClassBody const *>(PTree::nth(this, 3));}
-  ClassBody *body() { return static_cast<ClassBody *>(PTree::nth(this, 3));}
+  ClassBody *body();
 private:
   Encoding my_name;
   Node    *my_comments;

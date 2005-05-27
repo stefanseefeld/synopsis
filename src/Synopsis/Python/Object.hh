@@ -678,6 +678,7 @@ inline List::iterator &List::iterator::operator = (const List::iterator &i)
   my_list = i.my_list;
   my_pos = i.my_pos;
   my_current = i.my_current;
+  return *this;
 }
 
 inline bool List::iterator::operator == (List::iterator i)
