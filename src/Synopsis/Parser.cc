@@ -1017,12 +1017,11 @@ bool Parser::type_parameter(PTree::Node *&decl)
     type = my_lexer.look_ahead(0);
     if (type == '=')
     {
-      PTree::Node *default_type;
-
       my_lexer.get_token(tk);
-      if(!type_id(default_type))
-	return false;
-
+      PTree::Encoding name;
+      PTree::Node *default_type;
+      if(!type_id(default_type, name)) return false;
+      default_type = new PTree::Name(default_type, name);
       decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
     }
   }
@@ -1042,17 +1041,18 @@ bool Parser::type_parameter(PTree::Node *&decl)
       name = new PTree::Identifier(tk);
     }
     PTree::ClassSpec *cspec = new PTree::ClassSpec(class_, PTree::cons(name, 0), 0);
-    PTree::TypeParameter *tparam = new PTree::TypeParameter(tdecl, cspec);
+    tdecl = PTree::nconc(tdecl, cspec);
+    PTree::TypeParameter *tparam = new PTree::TypeParameter(tdecl, 0);
     if (name) declare(tparam);
     decl = tparam;
 
     if(my_lexer.look_ahead(0) == '=')
     {
       my_lexer.get_token(tk);
+      PTree::Encoding name;
       PTree::Node *default_type;
-      if(!type_id(default_type))
-	return false;
-
+      if(!type_id(default_type, name)) return false;
+      default_type = new PTree::Name(default_type, name);
       decl = PTree::nconc(decl, PTree::list(new PTree::Atom(tk), default_type));
     }
   }

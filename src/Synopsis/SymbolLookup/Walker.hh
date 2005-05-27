@@ -28,16 +28,19 @@ public:
   using PTree::Visitor::visit;
   virtual void visit(PTree::List *);
   virtual void visit(PTree::Block *);
+  virtual void visit(PTree::TemplateDecl *);
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::FunctionDefinition *);
   virtual void visit(PTree::ClassSpec *);
   virtual void visit(PTree::DotMemberExpr *);
   virtual void visit(PTree::ArrowMemberExpr *);
 
-  //. Traverse the body of the namespace declaration.
-  void traverse(PTree::NamespaceSpec *);
+  //. Traverse the body of a namespace definition.
+  void traverse_body(PTree::NamespaceSpec *);
   //. Traverse the body of the class definition.
-  void traverse(PTree::ClassSpec *);
+  void traverse_body(PTree::ClassSpec *);
+  //. Traverse the template parameter list of a template declaration.
+  void traverse_parameters(PTree::TemplateDecl *);
 
 protected:
   Scope const *current_scope() { return my_scopes.top();}

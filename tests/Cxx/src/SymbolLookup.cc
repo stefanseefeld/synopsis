@@ -17,7 +17,7 @@ class SymbolFinder : private Walker
 {
 public:
   SymbolFinder(Buffer const &buffer, Scope *scope, std::ostream &os)
-    : Walker(scope), my_buffer(buffer), my_os(os) {}
+    : Walker(scope), my_buffer(buffer), my_os(os), my_in_template_decl(false) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
   virtual void visit(PTree::Identifier *iden)
@@ -44,6 +44,25 @@ private:
     PTree::third(typed)->accept(this);
   }
 
+  virtual void visit(PTree::TemplateDecl *tdecl)
+  {
+    Trace trace("SymbolFinder::visit(TemplateDecl)", Trace::SYMBOLLOOKUP);
+    traverse_parameters(tdecl);
+    bool saved_in_template_decl = my_in_template_decl;
+    my_in_template_decl = true;
+    PTree::Node *fourth = PTree::nth(tdecl, 4);
+    if (!fourth->is_atom())
+      fourth->accept(this); // This is a declaration.
+    else
+    {
+      // We are in a template template parameter.
+      // Visit the identifier and the default type, if present.
+      PTree::Node *fifth = PTree::nth(tdecl, 5);
+      if (fifth) fifth->accept(this); // This is an identifier
+    }
+    my_in_template_decl = saved_in_template_decl;
+  }
+
   virtual void visit(PTree::NamespaceSpec *node)
   {
     Trace trace("SymbolFinder::visit(NamespaceSpec)", Trace::SYMBOLLOOKUP);
@@ -53,7 +72,7 @@ private:
     else ename.append_with_length("<anonymous>");
     my_os << "Namespace : " << ename.unmangled() << std::endl;
     lookup(ename);
-    Walker::traverse(node);
+    traverse_body(node);
   }
 
   virtual void visit(PTree::Declaration *node)
@@ -75,6 +94,10 @@ private:
   {
     Trace trace("SymbolFinder::visit(Declarator)", Trace::SYMBOLLOOKUP);
     PTree::Encoding name = decl->encoded_name();
+    // FIXME: The parser currently parses type specifiers that contain a template_id
+    //        such that in contains declarators with empty names.
+    //        Ignore these until the parser is fixed.
+    if (name.empty()) return;
     PTree::Encoding type = decl->encoded_type();
     my_os << "Declarator : " << name.unmangled() << std::endl;
     lookup(name, Scope::DECLARATION);
@@ -96,8 +119,14 @@ private:
     Trace trace("SymbolFinder::visit(ClassSpec)", Trace::SYMBOLLOOKUP);
     PTree::Encoding name = node->encoded_name();
     my_os << "ClassSpec : " << name.unmangled() << std::endl;
-    lookup(name, Scope::ELABORATE);
-    Walker::traverse(node);
+    // FIXME: A ClassSpec may correspond to a class template, in which case
+    //        we shouldn't do a elaborate lookup. The visit(TemplateDecl)
+    //        method above will thus deal with the lookup itself.
+    if (my_in_template_decl)
+      lookup(name);
+    else
+      lookup(name, Scope::ELABORATE);
+    traverse_body(node);
   }
 
   virtual void visit(PTree::FuncallExpr *node)
@@ -145,6 +174,7 @@ private:
 
   Buffer const &my_buffer;
   std::ostream &my_os;
+  bool          my_in_template_decl;
 };
 
 int main(int argc, char **argv)

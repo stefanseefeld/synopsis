@@ -15,6 +15,7 @@ namespace Synopsis
 namespace SymbolLookup
 {
 class PrototypeScope;
+class TemplateParameterScope;
 }
 
 //. SymbolFactory populates a symbol table.
@@ -62,6 +63,13 @@ private:
   //. Later, when the function definition proper is seen, the symbols
   //. are transfered and the prototype is deleted.
   SymbolLookup::PrototypeScope *my_prototype;
+  //. When parsing a class or function template the template-parameter-list
+  //. is seen first. Since ClassSpec and Declarator don't know they are part
+  //. of a template declaration, we cache it here so it gets consumed when
+  //. the Class or PrototypeScope are created.
+  //. FIXME: Should ClassSpec get a flag so it knows it's a template, similar
+  //.        to Encodings helt in Declarators ?
+  SymbolLookup::TemplateParameterScope *my_template_parameters;
 };
 
 }

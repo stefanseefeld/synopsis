@@ -113,14 +113,16 @@ class PrototypeScope : public Scope
 {
   friend class FunctionScope;
 public:
-  PrototypeScope(PTree::Node const *decl, Scope const *outer)
-    : my_decl(decl), my_outer(outer->ref()) {}
+  PrototypeScope(PTree::Node const *decl, Scope const *outer,
+		 TemplateParameterScope const *params)
+    : my_decl(decl), my_outer(outer->ref()), my_parameters(params) {}
 
   virtual Scope const *outer_scope() const { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
   PTree::Node const *declaration() const { return my_decl;}
+  TemplateParameterScope const *parameters() const { return my_parameters;}
 
   std::string name() const;
 
@@ -130,15 +132,17 @@ protected:
   ~PrototypeScope() { my_outer->unref();}
 
 private:
-  PTree::Node const *my_decl;
-  Scope const *      my_outer;
+  PTree::Node const *           my_decl;
+  Scope const *                 my_outer;
+  TemplateParameterScope const *my_parameters;
 };
 
 class Class : public Scope
 {
 public:
-  Class(PTree::ClassSpec const *spec, Scope const *outer)
-    : my_spec(spec), my_outer(outer->ref())
+  Class(PTree::ClassSpec const *spec, Scope const *outer,
+	TemplateParameterScope const *params)
+    : my_spec(spec), my_outer(outer->ref()), my_parameters(params)
   {
   }
 
