@@ -6,6 +6,7 @@
 //
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
+#include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <boost/python.hpp>
 #include <boost/python/make_constructor.hpp>
@@ -48,7 +49,7 @@ void replace_buffer(Buffer &buffer, PTree::Node *node, std::string const &string
   buffer.replace(node->begin(), node->end(), str, string.length());
 }
 
-Parser *construct_parser(Lexer &lexer, SymbolLookup::Table &symbols, int rule_set)
+Parser *construct_parser(Lexer &lexer, SymbolFactory &symbols, int rule_set)
 {
   return new Parser(lexer, symbols, rule_set);
 }
@@ -85,6 +86,13 @@ BOOST_PYTHON_MODULE(Processor)
   bpl::enum_<Parser::RuleSet> rule_set("RuleSet");
   rule_set.value("CXX", Parser::CXX);
   rule_set.value("MSVC", Parser::MSVC);
+
+  bpl::enum_<SymbolFactory::Language> language("Language");
+  language.value("NONE", SymbolFactory::NONE);
+  language.value("C99", SymbolFactory::C99);
+  language.value("CXX", SymbolFactory::CXX);
+
+  bpl::class_<SymbolFactory> symbols("SymbolFactory", bpl::init<SymbolFactory::Language>());
 
   bpl::class_<Parser> parser("Parser", bpl::no_init);
   // keep the symbol table hidden as it will be exported in its own module later

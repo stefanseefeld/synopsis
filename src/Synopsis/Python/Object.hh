@@ -797,6 +797,7 @@ inline Dict::iterator &Dict::iterator::operator = (const Dict::iterator &i)
   my_dict = i.my_dict;
   my_pos = i.my_pos;
   my_current = i.my_current;
+  return *this;
 }
 
 inline void Dict::iterator::incr()
