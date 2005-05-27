@@ -47,12 +47,12 @@ if test "$ac_cv_enable_gc" == "yes"; then
   else
     GC_CPP="-I\${includedir}/Synopsis/gc/include"
     GC_LIB="Synopsis/gc/.libs/libgc.a"
-    AC_SUBST(GC_CPP)
-    AC_SUBST(GC_LIB)
   fi
 else
   GC_BRIDGE=$srcdir/Synopsis/PTree/GC-disabled.tmpl
 fi
+AC_SUBST(GC_CPP)
+AC_SUBST(GC_LIB)
 
 AC_SUBST_FILE(GC_BRIDGE)
 
