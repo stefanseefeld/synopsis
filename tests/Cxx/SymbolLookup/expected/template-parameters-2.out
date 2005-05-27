@@ -1,0 +1,24 @@
+Identifier : T
+declared at line 1 in <input>
+ClassSpec : myarray
+declared at line 1 in <input>
+Identifier : T
+declared at line 2 in <input>
+Declarator : func
+declared at line 2 in <input>
+Identifier : K
+declared at line 3 in <input>
+Identifier : V
+declared at line 3 in <input>
+Identifier : T
+declared at line 3 in <input>
+Identifier : C
+declared at line 3 in <input>
+Name : myarray
+declared at line 1 in <input>
+ClassSpec : Map
+declared at line 3 in <input>
+Declarator : key
+declared at line 6 in <input>
+Declarator : value
+declared at line 7 in <input>

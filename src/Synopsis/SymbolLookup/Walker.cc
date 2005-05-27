@@ -52,10 +52,25 @@ void Walker::visit(PTree::Block *node)
   }  
 }
 
+void Walker::visit(PTree::TemplateDecl *tdecl)
+{
+  Trace trace("Walker::visit(TemplateDecl)", Trace::SYMBOLLOOKUP);
+  traverse_parameters(tdecl);
+  // If we are in a template template parameter, the following
+  // is just the 'class' keyword.
+  // Else it is a Declaration, which we want to traverse.
+  PTree::Node *decl = PTree::nth(tdecl, 4);
+  if (!decl->is_atom()) decl->accept(this);
+  else
+  {
+    std::cout << "length " << PTree::length(tdecl) << std::endl;
+  }
+}
+
 void Walker::visit(PTree::NamespaceSpec *spec)
 {
   Trace trace("Walker::visit(NamespaceSpec)", Trace::SYMBOLLOOKUP);
-  traverse(spec);
+  traverse_body(spec);
 }
 
 void Walker::visit(PTree::FunctionDefinition *def)
@@ -74,7 +89,7 @@ void Walker::visit(PTree::FunctionDefinition *def)
 void Walker::visit(PTree::ClassSpec *spec)
 {
   Trace trace("Walker::visit(ClassSpec)", Trace::SYMBOLLOOKUP);
-  traverse(spec);
+  traverse_body(spec);
 }
 
 void Walker::visit(PTree::DotMemberExpr *expr)
@@ -89,9 +104,9 @@ void Walker::visit(PTree::ArrowMemberExpr *expr)
   std::cout << "Sorry: arrow member expression (<postfix>-><name>) not yet supported" << std::endl;
 }
 
-void Walker::traverse(PTree::NamespaceSpec *spec)
+void Walker::traverse_body(PTree::NamespaceSpec *spec)
 {
-  Trace trace("Walker::traverse(NamespaceSpec)", Trace::SYMBOLLOOKUP);
+  Trace trace("Walker::traverse_body(NamespaceSpec)", Trace::SYMBOLLOOKUP);
   Scope *scope = my_scopes.top()->find_scope(spec);
   assert(scope);
   scope->ref();
@@ -100,9 +115,9 @@ void Walker::traverse(PTree::NamespaceSpec *spec)
   leave_scope();
 }
 
-void Walker::traverse(PTree::ClassSpec *spec)
+void Walker::traverse_body(PTree::ClassSpec *spec)
 {
-  Trace trace("Walker::traverse(ClassSpec)", Trace::SYMBOLLOOKUP);
+  Trace trace("Walker::traverse_body(ClassSpec)", Trace::SYMBOLLOOKUP);
   if (PTree::ClassBody *body = spec->body())
   {
     Scope *scope = my_scopes.top()->find_scope(spec);
@@ -112,6 +127,17 @@ void Walker::traverse(PTree::ClassSpec *spec)
     body->accept(this);
     leave_scope();
   }
+}
+
+void Walker::traverse_parameters(PTree::TemplateDecl *decl)
+{
+  Trace trace("Walker::traverse_body(TemplateDecl)", Trace::SYMBOLLOOKUP);
+  Scope *scope = my_scopes.top()->find_scope(decl);
+  scope->ref();
+  my_scopes.push(scope);
+  // list of template parameters (TypeParameter or ParameterDeclaration)
+  PTree::third(decl)->accept(this);
+  leave_scope();
 }
 
 void Walker::visit_block(PTree::Block *node)

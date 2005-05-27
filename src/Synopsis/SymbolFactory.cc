@@ -47,7 +47,8 @@ PTree::ClassSpec const *get_class_template_spec(PTree::Node const *body)
 
 SymbolFactory::SymbolFactory(Language l)
   : my_language(l),
-    my_prototype(0)
+    my_prototype(0),
+    my_template_parameters(0)
 {
   // define the global scope
   my_scopes.push(new Namespace(0, 0));
@@ -84,9 +85,10 @@ void SymbolFactory::enter_scope(PTree::ClassSpec const *spec)
   if (my_language == NONE) return;
 
   Scope *scope = my_scopes.top();
-  Class *class_ = new Class(spec, scope);
+  Class *class_ = new Class(spec, scope, my_template_parameters);
   scope->declare_scope(spec, class_);
   my_scopes.push(class_);
+  my_template_parameters = 0;
 }
 
 void SymbolFactory::enter_scope(PTree::Node const *decl)
@@ -96,9 +98,10 @@ void SymbolFactory::enter_scope(PTree::Node const *decl)
   Scope *scope = my_scopes.top();
   // Create a PrototypeScope. If this is part of a function definition, we will
   // later convert it into a FunctionScope.
-  my_prototype = new PrototypeScope(decl, scope);
+  my_prototype = new PrototypeScope(decl, scope, my_template_parameters);
   scope->declare_scope(decl, my_prototype);
   my_scopes.push(my_prototype);
+  my_template_parameters = 0;
 }
 
 void SymbolFactory::enter_scope(PTree::FunctionDefinition const *decl)
@@ -151,6 +154,8 @@ void SymbolFactory::leave_scope()
   // scope.
   if (PrototypeScope *ps = dynamic_cast<PrototypeScope *>(scope))
     my_prototype = ps;
+  else if (TemplateParameterScope *ts = dynamic_cast<TemplateParameterScope *>(scope))
+    my_template_parameters = ts;
   else
     scope->unref();
 }
@@ -382,12 +387,16 @@ void SymbolFactory::declare(PTree::TypeParameter const *tparam)
     name.simple_name(second);
     scope->declare(name, new TypeName(Encoding(), tparam, true, scope));
   }
-  else if (dynamic_cast<PTree::TemplateDecl const *>(first))
+  else if (PTree::TemplateDecl const *tdecl = 
+	   dynamic_cast<PTree::TemplateDecl const *>(first))
   {
-    PTree::Node const *third = PTree::third(tparam);
-    PTree::Encoding name;
-    name.simple_name(third);
-    scope->declare(name, new ClassTemplateName(Encoding(), tparam, true, scope));
+    // tdecl has 4 or 5 members:
+    // [template < parameter-list > class id]
+    // [template < parameter-list > class]
+    Encoding name;
+    PTree::Node const *pname = PTree::nth(tdecl, 5);
+    if (pname) name.simple_name(pname);
+    scope->declare(name, new ClassTemplateName(Encoding(), tdecl, true, scope));
   }
 }
 
