@@ -189,7 +189,7 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   translator.translate(builder.scope());
 }
 
-PyObject *occ_parse(PyObject *self, PyObject *args)
+PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 {
   Class::do_init_static();
   Metaclass::do_init_static();
@@ -238,7 +238,7 @@ PyObject *occ_parse(PyObject *self, PyObject *args)
 }
 
 PyMethodDef methods[] = {{(char*)"parse", occ_parse, METH_VARARGS},
-			 {0, 0}};
+			 {0}};
 }
 
 extern "C" void initocc()

@@ -29,7 +29,7 @@ SRC	:= Trace \
            PTree/Atoms PTree/Lists PTree/generation \
            PTree/Visitor PTree/Display PTree/Writer \
            SymbolLookup/Scope SymbolLookup/Scopes \
-           SymbolLookup/Walker SymbolLookup/Type \
+           SymbolLookup/Walker \
            TypeAnalysis/Type TypeAnalysis/Kit \
            TypeAnalysis/TypeEvaluator \
            TypeAnalysis/ConstEvaluator \

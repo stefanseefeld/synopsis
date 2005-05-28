@@ -54,8 +54,8 @@ SWalker::SWalker(FileFilter* filter, Builder* builder, Buffer* buffer)
     my_decoder(new Decoder(my_builder)),
     my_declaration(0),
     my_template(0),
-    my_file(0),
     my_lineno(0),
+    my_file(0),
     my_links(0),
     my_store_decl(false),
     my_type_formatter(new TypeFormatter()),
@@ -669,6 +669,7 @@ SWalker::translate_template_class(PTree::TemplateDecl *def, PTree::ClassSpec *no
   }
   my_builder->end_template();
   my_template = old_params;
+  return def;
 }
 
 void SWalker::translate_template_params(PTree::Node *params)
@@ -1111,7 +1112,7 @@ SWalker::translate_function_declarator(PTree::Node *decl, bool is_const)
 }
 
 PTree::Node*
-SWalker::translate_variable_declarator(PTree::Node *decl, bool is_const)
+SWalker::translate_variable_declarator(PTree::Node *decl, bool /* is_const */)
 {
   STrace trace("translate_variable_declarator");
   // Variable declaration. Restart decoding

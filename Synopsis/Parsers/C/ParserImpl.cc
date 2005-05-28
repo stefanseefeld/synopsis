@@ -32,7 +32,7 @@ void unexpected()
   throw std::bad_exception();
 }
 
-PyObject *parse(PyObject *self, PyObject *args)
+PyObject *parse(PyObject * /* self */, PyObject *args)
 {
   PyObject *py_ast;
   const char *src, *cppfile;
@@ -92,7 +92,7 @@ PyObject *parse(PyObject *self, PyObject *args)
 }
 
 PyMethodDef methods[] = {{(char*)"parse", parse, METH_VARARGS},
-			 {0, 0}};
+			 {0}};
 }
 
 extern "C" void initParserImpl()

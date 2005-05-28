@@ -36,7 +36,6 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
 {
   // Determine pos in file
   unsigned long cursor = ptr - my_buffer.data();
-  unsigned long start = cursor;
   if(cursor > my_buffer.size())
     throw std::invalid_argument("pointer out of bound");
 
@@ -72,7 +71,7 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
   return 1 + lines;
 }
 
-void Buffer::write(std::ostream &os, const std::string &filename) const
+void Buffer::write(std::ostream &os, const std::string &/* filename */) const
 {
   // FIXME: what should we do with overlapping replacements ?
   Replacements replacements(my_replacements);

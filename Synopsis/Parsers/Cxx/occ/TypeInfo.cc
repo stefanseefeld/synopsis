@@ -173,6 +173,7 @@ size_t TypeInfo::is_builtin_type()
       default : return 0;
     }
   }
+  return 0;
 }
 
 bool TypeInfo::is_function()
@@ -459,7 +460,7 @@ PTree::Node *TypeInfo::make_ptree(PTree::Node *name)
     else decl = PTree::list(name);
     return PTree::list(full_type_name(), decl);
   }
-  else if(!my_encoding.empty()) my_encoding.make_ptree(name);
+  else if(!my_encoding.empty()) return my_encoding.make_ptree(name);
   else return 0;
 }
 
@@ -571,7 +572,7 @@ PTree::Encoding TypeInfo::skip_name(const PTree::Encoding &encode, Environment *
 
   Environment *e2 = e;
   PTree::Encoding ptr = Environment::get_base_name(encode, e2);
-  if (ptr.empty()) PTree::Encoding();
+  if (ptr.empty()) return PTree::Encoding();
   else return PTree::Encoding(encode.begin() + ptr.size(), encode.end());
 }
 

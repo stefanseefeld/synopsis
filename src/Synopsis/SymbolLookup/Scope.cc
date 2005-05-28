@@ -25,7 +25,7 @@ void Scope::declare(Encoding const &name, Symbol const *symbol)
   my_symbols.insert(std::make_pair(name, symbol));
 }
 
-void Scope::use(PTree::UsingDirective const *udir)
+void Scope::use(PTree::UsingDirective const *)
 {
   throw InternalError("Invalid use of using directive in this scope.");
 }

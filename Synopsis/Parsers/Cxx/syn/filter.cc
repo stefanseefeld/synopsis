@@ -198,7 +198,7 @@ bool FileFilter::is_main(std::string filename)
     if (filename == m->main_filename) return true;
     else if (m->only_main) return false;
 
-    if (m->base_path.size() == 0) true;
+    if (m->base_path.size() == 0) return true;
 
     size_t length = m->base_path.size();
     if (length > filename.size()) return false;

@@ -290,7 +290,7 @@ extern "C"
 };
 
 PyMethodDef methods[] = {{(char*)"parse", ucpp_parse, METH_VARARGS},
-			 {0, 0}};
+			 {0}};
 };
 
 extern "C" void initucpp()
