@@ -346,8 +346,6 @@ bool Parser::definition(PTree::Node *&p)
     res = metaclass_decl(p);
   else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::StringL)
     res = linkage_spec(p);
-  else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::TEMPLATE)
-    res = extern_template_decl(p);
   else if(t == Token::NAMESPACE && my_lexer.look_ahead(2) == '=')
     res = namespace_alias(p);
   else if(t == Token::NAMESPACE)
@@ -440,7 +438,7 @@ bool Parser::type_specifier(PTree::Node *&tspec, bool check, PTree::Encoding &en
   // FIXME: Need to rewrite this to correctly reflect the grammar, in particular
   //        'typename' ...
   //        Do we need a new node type ('Typename') ?
-  if(!opt_cv_qualify(cv_q) || !opt_integral_type_or_class_spec(tspec, encode))
+  if(!opt_cv_qualifier(cv_q) || !opt_integral_type_or_class_spec(tspec, encode))
     return false;
   
   if(!tspec)
@@ -457,7 +455,7 @@ bool Parser::type_specifier(PTree::Node *&tspec, bool check, PTree::Encoding &en
       return false;
   }
 
-  if(!opt_cv_qualify(cv_q2))
+  if(!opt_cv_qualifier(cv_q2))
     return false;
 
   if(cv_q)
@@ -923,15 +921,17 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
   return true;
 }
 
-//. template-parameter-list
-//.  : empty
-//.  | template-parameter (',' template-parameter)*
+//. template-parameter-list:
+//.   template-parameter
+//.   template-parameter-list , template-parameter
 bool Parser::template_parameter_list(PTree::List *&params)
 {
   Trace trace("Parser::template_parameter_list", Trace::PARSING);
   Token tk;
   PTree::Node *a;
 
+  // FIXME: '<>' is invalid in this context. This probably belongs into
+  //        the production of an explicit specialization.
   if(my_lexer.look_ahead(0) == '>')
   {
     params = 0;
@@ -953,7 +953,7 @@ bool Parser::template_parameter_list(PTree::List *&params)
   return true;
 }
 
-//. template-parameter
+//. template-parameter:
 //.   type-parameter
 //.   parameter-declaration
 bool Parser::template_parameter(PTree::Node *&decl)
@@ -985,12 +985,12 @@ bool Parser::template_parameter(PTree::Node *&decl)
 }
 
 //. type-parameter:
-//.   'class' identifier [opt]
-//.   'class' identifier [opt] = type-id
-//.   'typename' identifier [opt]
-//.   'typename' identifier [opt] = type-id
-//.   'template'  '<' template-parameter-list '>' 'class' identifier [opt]
-//.   'template'  '<' template-parameter-list '>' 'class' identifier [opt] = id-expression
+//.   class identifier [opt]
+//.   class identifier [opt] = type-id
+//.   typename identifier [opt]
+//.   typename identifier [opt] = type-id
+//.   template  < template-parameter-list > class identifier [opt]
+//.   template  < template-parameter-list > class identifier [opt] = id-expression
 bool Parser::type_parameter(PTree::Node *&decl)
 {
   Trace trace("Parser::type_parameter", Trace::PARSING);
@@ -1060,25 +1060,6 @@ bool Parser::type_parameter(PTree::Node *&decl)
 }
 
 /*
-   extern.template.decl
-   : EXTERN TEMPLATE declaration
-*/
-bool Parser::extern_template_decl(PTree::Node *&decl)
-{
-  Trace trace("Parser::extern_template_decl", Trace::PARSING);
-  Token tk1, tk2;
-  PTree::Declaration *body;
-
-  if(my_lexer.get_token(tk1) != Token::EXTERN) return false;
-  if(my_lexer.get_token(tk2) != Token::TEMPLATE) return false;
-  if(!declaration(body)) return false;
-
-  decl = new PTree::ExternTemplate(new PTree::Atom(tk1),
-				   PTree::list(new PTree::Atom(tk2), body));
-  return true;
-}
-
-/*
   declaration
   : integral.declaration
   | const.declaration
@@ -1134,7 +1115,7 @@ bool Parser::declaration(PTree::Declaration *&statement)
     else
       return false;
 
-  if(!opt_cv_qualify(cv_q)
+  if(!opt_cv_qualifier(cv_q)
      || !opt_integral_type_or_class_spec(integral, type_encode))
     return false;
 
@@ -1167,7 +1148,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
   Token tk;
   PTree::Node *cv_q2, *decl;
 
-  if(!opt_cv_qualify(cv_q2))
+  if(!opt_cv_qualifier(cv_q2))
     return false;
 
   if(cv_q)
@@ -1280,7 +1261,7 @@ bool Parser::other_declaration(PTree::Declaration *&statement, PTree::Encoding &
   }
   else
   {
-    if(!opt_cv_qualify(cv_q2))
+    if(!opt_cv_qualifier(cv_q2))
       return false;
 
     if(cv_q)
@@ -1427,9 +1408,13 @@ bool Parser::opt_member_spec(PTree::Node *&p)
   return true;
 }
 
-/*
-  storage.spec : STATIC | EXTERN | AUTO | REGISTER | MUTABLE
-*/
+//. storage-spec:
+//.   empty
+//.   static
+//.   extern
+//.   auto
+//.   register
+//.   mutable
 bool Parser::opt_storage_spec(PTree::Node *&p)
 {
   Trace trace("Parser::opt_storage_spec", Trace::PARSING);
@@ -1457,7 +1442,7 @@ bool Parser::opt_storage_spec(PTree::Node *&p)
 	p = new PTree::Kwd::Mutable(tk);
 	break;
       default :
-	throw std::runtime_error("optStorageSpec(): fatal");
+	throw std::runtime_error("opt_storage_spec: fatal");
     }
   }
   else
@@ -1465,12 +1450,13 @@ bool Parser::opt_storage_spec(PTree::Node *&p)
   return true;
 }
 
-/*
-  cv.qualify : (CONST | VOLATILE)+
-*/
-bool Parser::opt_cv_qualify(PTree::Node *&cv)
+//. cv-qualifier:
+//.   empty
+//.   const
+//.   volatile
+bool Parser::opt_cv_qualifier(PTree::Node *&cv)
 {
-  Trace trace("Parser::opt_cv_qualify", Trace::PARSING);
+  Trace trace("Parser::opt_cv_qualifier", Trace::PARSING);
   PTree::Node *p = 0;
   while(true)
   {
@@ -1488,7 +1474,7 @@ bool Parser::opt_cv_qualify(PTree::Node *&cv)
 	  p = PTree::snoc(p, new PTree::Kwd::Volatile(tk));
 	  break;
         default :
-	  throw std::runtime_error("optCvQualify(): fatal");
+	  throw std::runtime_error("opt_cv_qualifier: fatal");
       }
     }
     else
@@ -1648,7 +1634,7 @@ bool Parser::constructor_decl(PTree::Node *&constructor, PTree::Encoding& encode
 
   my_lexer.get_token(cp);
   constructor = PTree::list(new PTree::Atom(op), args, new PTree::Atom(cp));
-  opt_cv_qualify(cv);
+  opt_cv_qualifier(cv);
   if(cv)
   {
     encode.cv_qualify(cv);
@@ -1963,7 +1949,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
       {
 	d = PTree::nconc(d, PTree::list(new PTree::Atom(op), args,
 					new PTree::Atom(cp)));
-	opt_cv_qualify(cv);
+	opt_cv_qualifier(cv);
 	if(cv)
 	{
 	  args_encode.cv_qualify(cv);
@@ -2044,7 +2030,7 @@ bool Parser::opt_ptr_operator(PTree::Node *&ptrs, PTree::Encoding& encode)
 	if(!ptr_to_member(op, encode)) return false;
 
       ptrs = PTree::snoc(ptrs, op);
-      opt_cv_qualify(cv);
+      opt_cv_qualifier(cv);
       if(cv)
       {
 	ptrs = PTree::nconc(ptrs, cv);
@@ -2310,7 +2296,7 @@ bool Parser::cast_operator_name(PTree::Node *&name, PTree::Encoding &encode)
   PTree::Node *cv1, *cv2, *type_name, *ptr;
   PTree::Encoding type_encode;
 
-  if(!opt_cv_qualify(cv1)) return false;
+  if(!opt_cv_qualifier(cv1)) return false;
   if(!opt_integral_type_or_class_spec(type_name, type_encode)) return false;
   if(type_name == 0)
   {
@@ -2318,7 +2304,7 @@ bool Parser::cast_operator_name(PTree::Node *&name, PTree::Encoding &encode)
     if(!this->name(type_name, type_encode)) return false;
   }
 
-  if(!opt_cv_qualify(cv2)) return false;
+  if(!opt_cv_qualifier(cv2)) return false;
   if(cv1)
     if(cv2 == 0) type_name = PTree::snoc(cv1, type_name);
     else type_name = PTree::nconc(cv1, PTree::cons(type_name, cv2));
@@ -4250,14 +4236,9 @@ bool Parser::is_template_args()
   return false;
 }
 
-/*
-  condition
-  : expression
-  | declarator.with.init
-
-  Condition is used inside if, switch statements where a declarator can be
-  used if it is initialised.
-*/
+//. condition:
+//.   expression
+//.   type-specifier-seq declarator = assign-expr
 bool Parser::condition(PTree::Node *&exp)
 {
   Trace trace("Parser::condition", Trace::PARSING);
@@ -4274,7 +4255,7 @@ bool Parser::condition(PTree::Node *&exp)
 
     head = storage_s;
 	
-    if (!opt_cv_qualify(cv_q) ||
+    if (!opt_cv_qualifier(cv_q) ||
 	!opt_integral_type_or_class_spec(integral, type_encode))
       break;
 
@@ -4282,7 +4263,7 @@ bool Parser::condition(PTree::Node *&exp)
     {
       // Integral Declaration
       // Find const after type
-      if (!opt_cv_qualify(cv_q2)) break;
+      if (!opt_cv_qualifier(cv_q2)) break;
       // Make type ptree with pre and post const ptrees
       if (cv_q)
 	if (cv_q2 == 0)
@@ -4305,7 +4286,7 @@ bool Parser::condition(PTree::Node *&exp)
       // Find name of type
       if (!name(type_name, type_encode)) break;
       // Find const after type
-      if (!opt_cv_qualify(cv_q2)) break;
+      if (!opt_cv_qualifier(cv_q2)) break;
       // Make type ptree with pre and post const ptrees
       if (cv_q)
 	if (cv_q2 == 0) type_name = PTree::snoc(cv_q, type_name);
@@ -4336,10 +4317,8 @@ bool Parser::function_body(PTree::Block *&body)
   return compound_statement(body);
 }
 
-/*
-  compound.statement
-  : '{' (statement)* '}'
-*/
+//. compound-statement:
+//.   { statement [opt] }
 bool Parser::compound_statement(PTree::Block *&body, bool create_scope)
 {
   Trace trace("Parser::compound_statement", Trace::PARSING);
@@ -4457,7 +4436,7 @@ bool Parser::statement(PTree::Node *&st)
       if (!for_statement(st)) return false;
       break;
     case Token::TRY:
-      if (!try_statement(st)) return false;
+      if (!try_block(st)) return false;
       break;
     case Token::BREAK:
     case Token::CONTINUE:
@@ -4533,11 +4512,9 @@ bool Parser::statement(PTree::Node *&st)
   return true;
 }
 
-/*
-  if.statement
-  : IF '(' declaration.statement ')' statement { ELSE statement }
-  : IF '(' expression ')' statement { ELSE statement }
-*/
+//. if-statement:
+//.   if ( condition ) statement
+//.   if ( condition ) statement else statement
 bool Parser::if_statement(PTree::Node *&st)
 {
   Trace trace("Parser::if_statement", Trace::PARSING);
@@ -4563,10 +4540,8 @@ bool Parser::if_statement(PTree::Node *&st)
   return true;
 }
 
-/*
-  switch.statement
-  : SWITCH '(' expression ')' statement
-*/
+//. switch-statement:
+//.   switch ( condition ) statement
 bool Parser::switch_statement(PTree::Node *&st)
 {
   Trace trace("Parser::switch_statement", Trace::PARSING);
@@ -4585,19 +4560,17 @@ bool Parser::switch_statement(PTree::Node *&st)
   return true;
 }
 
-/*
-  while.statement
-  : WHILE '(' expression ')' statement
-*/
+//. while-statement:
+//.   while ( condition ) statement
 bool Parser::while_statement(PTree::Node *&st)
 {
-  Trace trace("Parser::which_statement", Trace::PARSING);
+  Trace trace("Parser::while_statement", Trace::PARSING);
   Token tk1, tk2, tk3;
   PTree::Node *exp, *body;
 
   if(my_lexer.get_token(tk1) != Token::WHILE) return false;
   if(my_lexer.get_token(tk2) != '(') return false;
-  if(!expression(exp)) return false;
+  if(!condition(exp)) return false;
   if(my_lexer.get_token(tk3) != ')') return false;
   if(!statement(body)) return false;
 
@@ -4607,10 +4580,8 @@ bool Parser::while_statement(PTree::Node *&st)
   return true;
 }
 
-/*
-  do.statement
-  : DO statement WHILE '(' expression ')' ';'
-*/
+//. do.statement:
+//.   do statement while ( condition ) ;
 bool Parser::do_statement(PTree::Node *&st)
 {
   Trace trace("Parser::do_statement", Trace::PARSING);
@@ -4621,7 +4592,7 @@ bool Parser::do_statement(PTree::Node *&st)
   if(!statement(body)) return false;
   if(my_lexer.get_token(tk1) != Token::WHILE) return false;
   if(my_lexer.get_token(tk2) != '(') return false;
-  if(!expression(exp)) return false;
+  if(!condition(exp)) return false;
   if(my_lexer.get_token(tk3) != ')') return false;
   if(my_lexer.get_token(tk4) != ';') return false;
 
@@ -4661,16 +4632,23 @@ bool Parser::for_statement(PTree::Node *&st)
   return true;
 }
 
-/*
-  try.statement
-  : TRY compound.statement (exception.handler)+ ';'
-
-  exception.handler
-  : CATCH '(' (arg.declaration | Ellipsis) ')' compound.statement
-*/
-bool Parser::try_statement(PTree::Node *&st)
+//. try-block:
+//.   try compound-statement handler-seq
+//.
+//. handler-seq:
+//.   handler handler-seq [opt]
+//.
+//. handler:
+//.   catch ( exception-declaration ) compound-statement
+//.
+//. exception-declaration:
+//.   type-specifier-seq declarator
+//.   type-specifier-seq abstract-declarator
+//.   type-specifier-seq
+//.   ...
+bool Parser::try_block(PTree::Node *&st)
 {
-  Trace trace("Parser::try_statement", Trace::PARSING);
+  Trace trace("Parser::try_block", Trace::PARSING);
   Token tk, op, cp;
 
   if(my_lexer.get_token(tk) != Token::TRY) return false;
@@ -4776,7 +4754,7 @@ bool Parser::declaration_statement(PTree::Declaration *&statement)
   PTree::Encoding type_encode;
 
   if(!opt_storage_spec(storage_s) ||
-     !opt_cv_qualify(cv_q) ||
+     !opt_cv_qualifier(cv_q) ||
      !opt_integral_type_or_class_spec(integral, type_encode))
     return false;
 
@@ -4807,7 +4785,7 @@ bool Parser::integral_decl_statement(PTree::Declaration *&statement, PTree::Enco
   PTree::Node *cv_q2, *decl;
   Token tk;
 
-  if(!opt_cv_qualify(cv_q2)) return false;
+  if(!opt_cv_qualifier(cv_q2)) return false;
 
   if(cv_q)
     if(cv_q2 == 0) integral = PTree::snoc(cv_q, integral);
@@ -4847,7 +4825,7 @@ bool Parser::other_decl_statement(PTree::Declaration *&statement,
   Token tk;
 
   if(!name(type_name, type_encode)) return false;
-  if(!opt_cv_qualify(cv_q2)) return false;
+  if(!opt_cv_qualifier(cv_q2)) return false;
 
   if(cv_q)
     if(cv_q2 == 0) type_name = PTree::snoc(cv_q, type_name);

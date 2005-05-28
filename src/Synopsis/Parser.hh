@@ -24,7 +24,7 @@ class Token;
 //. backtracking.
 //.
 //. <name>() is the grammer rule for a non-terminal <name>.
-//. opt_<name>() is the grammer fule for an optional non-terminal <name>.
+//. opt_<name>() is the grammer rule for an optional non-terminal <name>.
 //. is_<name>() looks ahead and returns true if the next symbol is <name>.
 class Parser
 {
@@ -78,22 +78,54 @@ private:
   bool linkage_body(PTree::Node *&);
   bool template_decl(PTree::Node *&);
   bool template_decl2(PTree::TemplateDecl *&, TemplateDeclKind &kind);
+
+  //. template-parameter-list:
+  //.   template-parameter
+  //.   template-parameter-list , template-parameter
   bool template_parameter_list(PTree::List *&);
+
+  //. template-parameter:
+  //.   type-parameter
+  //.   parameter-declaration
   bool template_parameter(PTree::Node *&);
+
+  //. type-parameter:
+  //.   class identifier [opt]
+  //.   class identifier [opt] = type-id
+  //.   typename identifier [opt]
+  //.   typename identifier [opt] = type-id
+  //.   template  < template-parameter-list > class identifier [opt]
+  //.   template  < template-parameter-list > class identifier [opt] = id-expression
   bool type_parameter(PTree::Node *&);
-  bool extern_template_decl(PTree::Node *&);
 
   bool declaration(PTree::Declaration *&);
   bool integral_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
   bool const_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
   bool other_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+
+  //. condition:
+  //.   expression
+  //.   type-specifier-seq declarator = assign-expr
   bool condition(PTree::Node *&);
 
   bool is_constructor_decl();
   bool is_ptr_to_member(int);
   bool opt_member_spec(PTree::Node *&);
+
+  //. storage-spec:
+  //.   empty
+  //.   static
+  //.   extern
+  //.   auto
+  //.   register
+  //.   mutable
   bool opt_storage_spec(PTree::Node *&);
-  bool opt_cv_qualify(PTree::Node *&);
+
+  //. cv-qualifier:
+  //.   empty
+  //.   const
+  //.   volatile
+  bool opt_cv_qualifier(PTree::Node *&);
   bool opt_integral_type_or_class_spec(PTree::Node *&, PTree::Encoding&);
   bool constructor_decl(PTree::Node *&, PTree::Encoding&);
   bool opt_throw_decl(PTree::Node *&);
@@ -170,14 +202,45 @@ private:
   bool is_template_args();
   
   bool function_body(PTree::Block *&);
+
+  //. compound-statement:
+  //.   { statement [opt] }
   bool compound_statement(PTree::Block *&, bool create_scope = false);
   bool statement(PTree::Node *&);
+
+  //. if-statement:
+  //.   if ( condition ) statement
+  //.   if ( condition ) statement else statement
   bool if_statement(PTree::Node *&);
+
+  //. switch-statement:
+  //.   switch ( condition ) statement
   bool switch_statement(PTree::Node *&);
+
+  //. while-statement:
+  //.   while ( condition ) statement
   bool while_statement(PTree::Node *&);
+
+  //. do.statement:
+  //.   do statement while ( condition ) ;
   bool do_statement(PTree::Node *&);
   bool for_statement(PTree::Node *&);
-  bool try_statement(PTree::Node *&);
+
+  //. try-block:
+  //.   try compound-statement handler-seq
+  //.
+  //. handler-seq:
+  //.   handler handler-seq [opt]
+  //.
+  //. handler:
+  //.   catch ( exception-declaration ) compound-statement
+  //.
+  //. exception-declaration:
+  //.   type-specifier-seq declarator
+  //.   type-specifier-seq abstract-declarator
+  //.   type-specifier-seq
+  //.   ...
+  bool try_block(PTree::Node *&);
   
   bool expr_statement(PTree::Node *&);
   bool declaration_statement(PTree::Declaration *&);
