@@ -346,6 +346,10 @@ bool Parser::definition(PTree::Node *&p)
     res = metaclass_decl(p);
   else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::StringL)
     res = linkage_spec(p);
+  // FIXME: is this a gcc extension ?
+  //        If so, add a 'GCC' ruleset adn enable this conditionally
+  else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::TEMPLATE) 	 
+    res = extern_template_decl(p);
   else if(t == Token::NAMESPACE && my_lexer.look_ahead(2) == '=')
     res = namespace_alias(p);
   else if(t == Token::NAMESPACE)
@@ -1059,6 +1063,23 @@ bool Parser::type_parameter(PTree::Node *&decl)
   return true;
 }
 
+//. extern-template-decl
+//.   extern template declaration
+ bool Parser::extern_template_decl(PTree::Node *&decl) 	 
+ { 	 
+   Trace trace("Parser::extern_template_decl", Trace::PARSING); 	 
+   Token tk1, tk2; 	 
+   PTree::Declaration *body; 	 
+  	 
+   if(my_lexer.get_token(tk1) != Token::EXTERN) return false; 	 
+   if(my_lexer.get_token(tk2) != Token::TEMPLATE) return false; 	 
+   if(!declaration(body)) return false; 	 
+  	 
+   decl = new PTree::ExternTemplate(new PTree::Atom(tk1), 	 
+                                    PTree::list(new PTree::Atom(tk2), body)); 	 
+   return true; 	 
+ } 	 
+  	 
 /*
   declaration
   : integral.declaration

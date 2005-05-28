@@ -97,6 +97,7 @@ private:
   //.   template  < template-parameter-list > class identifier [opt]
   //.   template  < template-parameter-list > class identifier [opt] = id-expression
   bool type_parameter(PTree::Node *&);
+  bool extern_template_decl(PTree::Node *&);
 
   bool declaration(PTree::Declaration *&);
   bool integral_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
