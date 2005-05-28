@@ -152,8 +152,8 @@ FunctionScope::qualified_lookup(PTree::Encoding const &name,
 }
 
 SymbolSet 
-PrototypeScope::unqualified_lookup(PTree::Encoding const &name,
-				   LookupContext context) const
+PrototypeScope::unqualified_lookup(PTree::Encoding const &,
+				   LookupContext) const
 {
   Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   return SymbolSet();

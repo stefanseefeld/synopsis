@@ -92,13 +92,13 @@ void Walker::visit(PTree::ClassSpec *spec)
   traverse_body(spec);
 }
 
-void Walker::visit(PTree::DotMemberExpr *expr)
+void Walker::visit(PTree::DotMemberExpr *)
 {
   Trace trace("Walker::visit(DotMemberExpr)", Trace::SYMBOLLOOKUP);
   std::cout << "Sorry: dot member expression (<postfix>.<name>) not yet supported" << std::endl;
 }
 
-void Walker::visit(PTree::ArrowMemberExpr *expr)
+void Walker::visit(PTree::ArrowMemberExpr *)
 {
   Trace trace("Walker::visit(ArrowMemberExpr)", Trace::SYMBOLLOOKUP);
   std::cout << "Sorry: arrow member expression (<postfix>-><name>) not yet supported" << std::endl;

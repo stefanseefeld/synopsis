@@ -195,8 +195,8 @@ void SymbolFactory::declare(PTree::Declaration const *d)
   else
   {
     // Function or variable declaration.
-    PTree::Node const *storage_spec = PTree::first(d);
-    PTree::Node const *type_spec = PTree::second(d);
+//     PTree::Node const *storage_spec = PTree::first(d);
+//     PTree::Node const *type_spec = PTree::second(d);
     if (decls->is_atom()) ; // it is a ';'
     else
     {
@@ -418,7 +418,7 @@ void SymbolFactory::declare(PTree::ParameterDeclaration const *pdecl)
   scope->declare(name, new VariableName(type, decl, true, scope));
 }
 
-void SymbolFactory::declare(PTree::UsingDeclaration const *usingdecl)
+void SymbolFactory::declare(PTree::UsingDeclaration const *)
 {
   Trace trace("SymbolFactory::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
   trace << "TBD !";

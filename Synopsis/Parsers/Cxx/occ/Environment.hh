@@ -112,6 +112,7 @@ public:
     isVarName, isTypedefName, isClassName, isEnumName, isTemplateClass,
     isTemplateFunction
   };
+  virtual ~Bind() {}
   virtual Kind What() = 0;
   virtual void GetType(TypeInfo&, Environment*) = 0;
   virtual PTree::Encoding encoded_type() const { return PTree::Encoding();}

@@ -14,34 +14,42 @@ Kit::Kit()
 {
 }
 
-Type const *Kit::builtin(std::string const &name)
+Type const *Kit::builtin(std::string const &)
 {
+  return 0;
 }
 
-Type const *Kit::enum_(std::string const &name)
+Type const *Kit::enum_(std::string const &)
 {
+  return 0;
 }
 
-Type const *Kit::class_(std::string const &name)
+Type const *Kit::class_(std::string const &)
 {
+  return 0;
 }
 
-Type const *Kit::union_(std::string const &name)
+Type const *Kit::union_(std::string const &)
 {
+  return 0;
 }
 
-Type const *Kit::pointer(Type const *type)
+Type const *Kit::pointer(Type const *)
 {
+  return 0;
 }
 
-Type const *Kit::reference(Type const *type)
+Type const *Kit::reference(Type const *)
 {
+  return 0;
 }
 
-Type const *Kit::array(Type const *type)
+Type const *Kit::array(Type const *)
 {
+  return 0;
 }
 
-Type const *Kit::pointer_to_member(Type const *container, Type const *member)
+Type const *Kit::pointer_to_member(Type const *, Type const *)
 {
+  return 0;
 }

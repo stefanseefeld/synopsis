@@ -18,10 +18,10 @@ ASTTranslator::ASTTranslator(std::string const &filename,
 			     Synopsis::AST::AST ast, bool v, bool d)
   : my_ast(ast),
     my_ast_kit("C"),
-    my_lineno(0),
     my_raw_filename(filename),
     my_base_path(base_path),
     my_main_file_only(main_file_only),
+    my_lineno(0),
     my_types(my_ast.types(), v, d),
     my_verbose(v), my_debug(d) 
 {

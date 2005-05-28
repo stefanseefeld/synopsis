@@ -69,8 +69,8 @@ private:
 
   static unsigned int my_mask;
   static size_t       my_level;
-  bool                my_visibility;
   std::string         my_scope;
+  bool                my_visibility;
 };
 
 inline Trace::Entry::Entry(bool e) 
