@@ -6,6 +6,8 @@ Namespace : N
 declared at line 4 in <input>
 ClassSpec : X
 declared at line 6 in <input>
+Identifier : B
+declared at line 1 in <input>
 Declarator : f
 declared at line 15 in <input>
 Declarator : M::N::X::f
