@@ -46,6 +46,9 @@ public:
 };
 
 class Scope;
+class Class;
+class Namespace;
+class FunctionScope;
 
 class Symbol
 {
@@ -114,6 +117,10 @@ public:
   ClassName(PTree::Encoding const &type, PTree::Node const *ptree, bool def, Scope *s)
     : TypeName(type, ptree, def, s) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+
+  //. Return the class scope associated with this symbol.
+  //. This will return 0 if the class definition hasn't been seen yet.
+  Class *as_scope() const;
 };
 
 class EnumName : public TypeName
@@ -131,6 +138,10 @@ public:
 		    Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+
+  //. Return the class scope associated with this symbol.
+  //. This will return 0 if the class definition hasn't been seen yet.
+  Class *as_scope() const;
 };
 
 class FunctionName : public Symbol
@@ -140,6 +151,10 @@ public:
 	       bool def, Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+
+  //. Return the function scope associated with this symbol.
+  //. This will return 0 if the function definition hasn't been seen yet.
+  FunctionScope *as_scope() const;
 };
 
 class FunctionTemplateName : public Symbol
@@ -148,6 +163,10 @@ public:
   FunctionTemplateName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *s)
     : Symbol(type, ptree, true, s) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+
+  //. Return the function scope associated with this symbol.
+  //. This will return 0 if the function definition hasn't been seen yet.
+  FunctionScope *as_scope() const;
 };
 
 class NamespaceName : public Symbol
@@ -157,6 +176,10 @@ public:
 		bool def, Scope *s)
     : Symbol(type, ptree, def, s) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+
+  //. Return the namespace scope associated with this symbol.
+  //. This will return 0 if the namespace definition hasn't been seen yet.
+  Namespace *as_scope() const;
 };
 
 }

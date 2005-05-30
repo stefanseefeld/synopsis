@@ -46,10 +46,10 @@ using namespace Synopsis;
 #if defined(__GNUG__) || defined(_GNUG_SYNTAX)
 # if defined(PARSE_MSVC)
 const int tokenset = Lexer::CXX | Lexer::GCC | Lexer::MSVC;
-const int ruleset = Parser::CXX | Parser::MSVC;
+const int ruleset = Parser::CXX | Parser::GCC | Parser::MSVC;
 # else
 const int tokenset = Lexer::CXX | Lexer::GCC;
-const int ruleset = Parser::CXX;
+const int ruleset = Parser::CXX | Parser::GCC;
 # endif
 #else
 # if defined(PARSE_MSVC)

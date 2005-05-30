@@ -18,7 +18,15 @@ Name : myarray
 declared at line 1 in <input>
 ClassSpec : Map
 declared at line 3 in <input>
+Identifier : C
+declared at line 3 in <input>
+Identifier : K
+declared at line 3 in <input>
 Declarator : key
 declared at line 6 in <input>
+Identifier : C
+declared at line 3 in <input>
+Identifier : V
+declared at line 3 in <input>
 Declarator : value
 declared at line 7 in <input>

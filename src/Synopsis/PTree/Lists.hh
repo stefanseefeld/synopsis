@@ -200,8 +200,10 @@ public:
   Encoding encoded_name() const { return my_name;}
   void set_encoded_name(const Encoding &n) { my_name = n;}
   Node *get_comments() { return my_comments;}
+  //. The list of base classes, i.e. [: [public A] , [public virtual B] ...]
+  Node const *base_clause() const 
+  { return static_cast<List const *>(PTree::third(this));}
   //. The following assumes proper C++, i.e. no OpenC++ extension.
-  ClassBody const *body() const { return static_cast<ClassBody const *>(PTree::nth(this, 3));}
   ClassBody *body();
 private:
   Encoding my_name;

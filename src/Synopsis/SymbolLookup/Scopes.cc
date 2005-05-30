@@ -38,7 +38,8 @@ LocalScope::unqualified_lookup(Encoding const &name,
 FunctionScope::FunctionScope(PTree::Declaration const *decl, 
 			     PrototypeScope *proto,
 			     Scope const *outer)
-  : my_decl(decl), my_outer(outer->ref()), my_parameters(proto->parameters())
+  : my_decl(decl), my_outer(outer->ref()),
+    my_parameters(proto->parameters())
 {
   for (SymbolTable::iterator i = proto->my_symbols.begin();
        i != proto->my_symbols.end();
@@ -173,6 +174,11 @@ Class::unqualified_lookup(Encoding const &name,
   Trace trace("Class::unqualified_lookup", Trace::SYMBOLLOOKUP);
   trace << name;
   SymbolSet symbols = find(name, context);
+  for (Bases::const_iterator i = my_bases.begin(); i != my_bases.end(); ++i)
+  {
+    SymbolSet more = (*i)->find(name, context);
+    symbols.insert(more.begin(), more.end());
+  }
   if (my_parameters)
   {
     SymbolSet more = my_parameters->find(name, context);
