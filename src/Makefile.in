@@ -28,8 +28,8 @@ SRC	:= Trace \
            PTree/Node PTree/Encoding PTree/operations \
            PTree/Atoms PTree/Lists PTree/generation \
            PTree/Visitor PTree/Display PTree/Writer \
-           SymbolLookup/Scope SymbolLookup/Scopes \
-           SymbolLookup/Walker \
+           SymbolLookup/Symbol SymbolLookup/Scope SymbolLookup/Scopes \
+           SymbolLookup/Display SymbolLookup/Walker \
            TypeAnalysis/Type TypeAnalysis/Kit \
            TypeAnalysis/TypeEvaluator \
            TypeAnalysis/ConstEvaluator \

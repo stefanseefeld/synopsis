@@ -35,13 +35,19 @@ private:
 class UndefinedSymbol : public Parser::Error
 {
 public:
-  UndefinedSymbol(PTree::Encoding const &name) : my_name(name) {}
+  UndefinedSymbol(PTree::Encoding const &name,
+		  std::string const &f, unsigned long l)
+    : my_name(name), my_filename(f), my_line(l) {}
   virtual void write(std::ostream &os) const
   {
-    os << "Undefined symbol : " << my_name.unmangled() << std::endl;
+    os << "Undefined symbol : " << my_name.unmangled();
+    if (!my_filename.empty()) os << " at " << my_filename << ':' << my_line;
+    os << std::endl;
   }
 private:
   PTree::Encoding my_name;
+  std::string     my_filename;
+  unsigned long   my_line;
 };
 
 class SymbolAlreadyDefined : public Parser::Error
@@ -86,25 +92,14 @@ namespace
 template <typename T>
 struct PGuard
 {
-  PGuard(T Parser::*m, Parser &p) : parser(p), member(m), saved(p.*m) {}
+  PGuard(Parser &p, T Parser::*m) : parser(p), member(m), saved(p.*m) {}
   ~PGuard() { parser.*member = saved;}
   Parser &    parser;
   T Parser::* member;
   T           saved;
 };
 
-struct ScopeGuard
-{
-  template <typename T>
-  ScopeGuard(T const *p, SymbolFactory &s) : symbols(s), noop(p == 0)
-  { if (!noop) symbols.enter_scope(p);}
-  ~ScopeGuard() 
-  { if (!noop) symbols.leave_scope();}
-  SymbolFactory & symbols;
-  bool            noop;
-};
-
-const int max_errors = 10;
+const unsigned int max_errors = 10;
 
 PTree::Node *wrap_comments(const Lexer::Comments &c)
 {
@@ -210,10 +205,43 @@ void set_leaf_comments(PTree::Node *node, PTree::Node *comments)
 
 }
 
+struct Parser::ScopeGuard
+{
+  template <typename T>
+  ScopeGuard(Parser &p, T const *s)
+    : parser(p), noop(s == 0), scope_was_valid(p.my_scope_is_valid)
+  {
+    // If s contains a qualified name this may fail, as the name
+    // has to be declared before. We record the error but continune
+    // processing.
+    try { if (!noop) parser.my_symbols.enter_scope(s);}
+    catch (SymbolLookup::Undefined const &e)
+    {
+      std::string filename;
+      unsigned long line = 0;
+      if (e.ptree)
+	line = parser.my_lexer.origin(e.ptree->begin(), filename);
+
+      parser.my_errors.push_back(new UndefinedSymbol(e.name, filename, line));
+      parser.my_scope_is_valid = false;
+      noop = true;
+    }
+  }
+  ~ScopeGuard() 
+  {
+    if (!noop) parser.my_symbols.leave_scope();
+    parser.my_scope_is_valid = scope_was_valid;
+  }
+  Parser & parser;
+  bool     noop;
+  bool     scope_was_valid;
+};
+
 Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_symbols(symbols),
+    my_scope_is_valid(true),
     my_comments(0),
     my_gt_is_operator(true),
     my_in_template_decl(false)
@@ -244,13 +272,20 @@ bool Parser::mark_error()
 template <typename T>
 bool Parser::declare(T *t)
 {
+  // If the scope isn't valid, do nothing.
+  if (!my_scope_is_valid) return true;
   try
   {
     my_symbols.declare(t);
   }
   catch (SymbolLookup::Undefined const &e)
   {
-    my_errors.push_back(new UndefinedSymbol(e.name));
+    std::string filename;
+    unsigned long line = 0;
+    if (e.ptree)
+      line = my_lexer.origin(e.ptree->begin(), filename);
+
+    my_errors.push_back(new UndefinedSymbol(e.name, filename, line));
   }
   catch (SymbolLookup::MultiplyDefined const &e)
   {
@@ -346,9 +381,8 @@ bool Parser::definition(PTree::Node *&p)
     res = metaclass_decl(p);
   else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::StringL)
     res = linkage_spec(p);
-  // FIXME: is this a gcc extension ?
-  //        If so, add a 'GCC' ruleset adn enable this conditionally
-  else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::TEMPLATE) 	 
+  else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::TEMPLATE &&
+	  my_ruleset & GCC)
     res = extern_template_decl(p);
   else if(t == Token::NAMESPACE && my_lexer.look_ahead(2) == '=')
     res = namespace_alias(p);
@@ -650,7 +684,7 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
   if(my_lexer.look_ahead(0) == '{')
   {
     declare(spec);
-    ScopeGuard guard(spec, my_symbols);
+    ScopeGuard guard(*this, spec);
     if(!linkage_body(body)) return false;
   }
   else if(!definition(body)) return false;
@@ -900,7 +934,7 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 
   decl = PTree::snoc(decl, new PTree::Atom(tk));
   {
-    ScopeGuard guard(decl, my_symbols);
+    ScopeGuard guard(*this, decl);
     if(!template_parameter_list(params)) return false;
   }
   if(my_lexer.get_token(tk) != '>') return false;
@@ -915,7 +949,7 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
 
     my_lexer.get_token(tk);
     PTree::List *nested = PTree::list(0, 0);
-    ScopeGuard guard(nested, my_symbols); // template parameter list
+    ScopeGuard guard(*this, nested); // template parameter list
     if(!template_parameter_list(params)) return false;
     if(my_lexer.get_token(tk) != '>') return false;
   }
@@ -964,7 +998,7 @@ bool Parser::template_parameter(PTree::Node *&decl)
 {
   Trace trace("Parser::template_parameter", Trace::PARSING);
 
-  PGuard<bool> guard(&Parser::my_gt_is_operator, *this);
+  PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
   my_gt_is_operator = false;
 
   Token::Type type = my_lexer.look_ahead(0);
@@ -1063,7 +1097,7 @@ bool Parser::type_parameter(PTree::Node *&decl)
   return true;
 }
 
-//. extern-template-decl
+//. extern-template-decl:
 //.   extern template declaration
  bool Parser::extern_template_decl(PTree::Node *&decl) 	 
  { 	 
@@ -1213,7 +1247,7 @@ bool Parser::integral_declaration(PTree::Declaration *&statement,
 	PTree::FunctionDefinition *def;
   	def = new PTree::FunctionDefinition(head,
 					    PTree::list(integral, decl->car()));
-	ScopeGuard guard(def, my_symbols);
+	ScopeGuard guard(*this, def);
 	PTree::Block *body;
 	if(!function_body(body)) return false;
 	if(PTree::length(decl) != 1) return false;
@@ -1950,7 +1984,7 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
 
       Token op;
       my_lexer.get_token(op);
-      ScopeGuard guard(d, my_symbols);
+      ScopeGuard guard(*this, d);
       if(my_lexer.look_ahead(0) == ')')
       {
 	args = 0;
@@ -2160,7 +2194,7 @@ bool Parser::name(PTree::Node *&id, PTree::Encoding& encode)
     }
     if(t == Token::Identifier)
     {
-      PTree::Node *n = new PTree::Atom(tk);
+      PTree::Node *n = new PTree::Identifier(tk);
       t = my_lexer.look_ahead(0);
       if(t == '<')
       {
@@ -2446,7 +2480,7 @@ bool Parser::template_args(PTree::Node *&temp_args, PTree::Encoding &encode)
     else
     {
       // FIXME: find the right place to put this.
-      PGuard<bool> guard(&Parser::my_gt_is_operator, *this);
+      PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
       my_gt_is_operator = false;
       my_lexer.restore(pos);	
       if(!conditional_expr(a)) return false;
@@ -2838,7 +2872,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
     t = my_lexer.look_ahead(0);
     if(t == ':')
     {
-      if(!base_specifiers(bases)) return false;
+      if(!base_clause(bases)) return false;
 
       spec = PTree::snoc(spec, bases);
     }
@@ -2852,7 +2886,7 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   }
   spec->set_encoded_name(encode);
   {
-    ScopeGuard guard(spec, my_symbols);
+    ScopeGuard guard(*this, spec);
     if(!class_body(body)) return false;
   }
   spec = PTree::snoc(spec, body);
@@ -2861,16 +2895,17 @@ bool Parser::class_spec(PTree::ClassSpec *&spec, PTree::Encoding &encode)
   return true;
 }
 
-/*
-  base.specifiers
-  : ':' base.specifier (',' base.specifier)*
-
-  base.specifier
-  : {{VIRTUAL} (PUBLIC | PROTECTED | PRIVATE) {VIRTUAL}} name
-*/
-bool Parser::base_specifiers(PTree::Node *&bases)
+//. base-clause:
+//.   : base-specifier-list
+//. base-specifier-list:
+//.   base-specifier
+//.   base-specifier-list , base-specifier
+//. base-specifier:
+//.   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
+//.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
+bool Parser::base_clause(PTree::Node *&bases)
 {
-  Trace trace("Parser::base_specifiers", Trace::PARSING);
+  Trace trace("Parser::base_clause", Trace::PARSING);
   Token tk;
   int t;
   PTree::Node *name;
@@ -2895,23 +2930,24 @@ bool Parser::base_specifiers(PTree::Node *&bases)
       PTree::Node *lf;
       switch(my_lexer.get_token(tk))
       {
-        case Token::PUBLIC :
+        case Token::PUBLIC:
 	  lf = new PTree::Kwd::Public(tk);
 	  break;
-        case Token::PROTECTED :
+        case Token::PROTECTED:
 	  lf = new PTree::Kwd::Protected(tk);
 	  break;
-        case Token::PRIVATE :
+        case Token::PRIVATE:
 	  lf = new PTree::Kwd::Private(tk);
 	  break;
         default :
-	  throw std::runtime_error("Parser::base_specifiers(): fatal");
+	  throw std::runtime_error("Parser::base_clause(): fatal");
       }
       
       super = PTree::snoc(super, lf);
       t = my_lexer.look_ahead(0);
     }
 
+    // FIXME: test whether 'virtual' has already been encountered above.
     if(t == Token::VIRTUAL)
     {
       my_lexer.get_token(tk);
@@ -3980,7 +4016,7 @@ bool Parser::primary_expr(PTree::Node *&exp)
       return typeid_expr(exp);
     case '(':
     {
-      PGuard<bool> guard(&Parser::my_gt_is_operator, *this);
+      PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
       my_gt_is_operator = true;
       my_lexer.get_token(tk);
       if(!expression(exp2)) return false;
@@ -4350,7 +4386,7 @@ bool Parser::compound_statement(PTree::Block *&body, bool create_scope)
   PTree::Node *ob_comments = wrap_comments(my_lexer.get_comments());
   body = new PTree::Block(new PTree::CommentedAtom(ob, ob_comments), 0);
 
-  ScopeGuard guard(create_scope ? body : 0, my_symbols);
+  ScopeGuard guard(*this, create_scope ? body : 0);
 
   PTree::Node *sts = 0;
   while(my_lexer.look_ahead(0) != '}')

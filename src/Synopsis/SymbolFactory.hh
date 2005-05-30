@@ -56,6 +56,11 @@ public:
 private:
   typedef std::stack<SymbolLookup::Scope *> Scopes;
 
+  //. Lookup the scope of a qualified name.
+  //. The encoded name is modified in place to
+  //. refer to the unqualified name.
+  SymbolLookup::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
+
   Language                      my_language;
   Scopes                        my_scopes;
   //. When parsing a function definition the declarator is seen first,

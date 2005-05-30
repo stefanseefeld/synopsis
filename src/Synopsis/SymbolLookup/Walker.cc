@@ -9,6 +9,7 @@
 #include <Synopsis/PTree/TypeVisitor.hh>
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Display.hh>
+#include <Synopsis/SymbolLookup/Scopes.hh>
 
 using namespace Synopsis;
 using namespace SymbolLookup;
@@ -78,12 +79,7 @@ void Walker::visit(PTree::FunctionDefinition *def)
   Trace trace("Walker::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
   PTree::Node *decl = PTree::third(def);
   visit(static_cast<PTree::Declarator *>(decl)); // visit the declarator
-  Scope *scope = my_scopes.top()->find_scope(def);
-  assert(scope);
-  scope->ref();
-  my_scopes.push(scope);
-  visit_block(static_cast<PTree::Block *>(PTree::nth(def, 3)));
-  leave_scope();
+  traverse_body(def);
 }
 
 void Walker::visit(PTree::ClassSpec *spec)
@@ -137,6 +133,32 @@ void Walker::traverse_parameters(PTree::TemplateDecl *decl)
   my_scopes.push(scope);
   // list of template parameters (TypeParameter or ParameterDeclaration)
   PTree::third(decl)->accept(this);
+  leave_scope();
+}
+
+void Walker::traverse_body(PTree::FunctionDefinition *def)
+{
+  Trace trace("Walker::traverse_body(FunctionDefinition)", Trace::SYMBOLLOOKUP);
+  PTree::Node *decl = PTree::third(def);
+
+  Scope *scope = my_scopes.top();
+  PTree::Encoding name = decl->encoded_name();
+  if (name.is_qualified())
+  {
+    SymbolSet symbols = scope->lookup(name, Scope::DECLARATION);
+    assert(!symbols.empty());
+    // FIXME: We need type analysis / overload resolution
+    //        here to take the right symbol / scope.
+    FunctionName const *symbol = dynamic_cast<FunctionName const *>(*symbols.begin());
+    assert(symbol);
+    scope = symbol->as_scope();
+  }
+  else
+    scope = my_scopes.top()->find_scope(def);
+  assert(scope);
+  scope->ref();
+  my_scopes.push(scope);
+  visit_block(static_cast<PTree::Block *>(PTree::nth(def, 3)));
   leave_scope();
 }
 

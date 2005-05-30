@@ -82,12 +82,23 @@ private:
     // FIXME: what about compound types ?
     if (type_spec && type_spec->is_atom())
     {
-      PTree::Atom const *name = static_cast<PTree::Atom *>(PTree::second(node));
+      PTree::Atom const *name = static_cast<PTree::Atom *>(type_spec);
       PTree::Encoding type = PTree::Encoding::simple_name(name);
       my_os << "Type : " << type.unmangled() << std::endl;
       lookup(type, Scope::DEFAULT, true);
+      PTree::third(node)->accept(this);
     }
-    Walker::visit(node);
+    else
+      Walker::visit(node);
+  }
+
+  virtual void visit(PTree::FunctionDefinition *node)
+  {
+    Trace trace("SymbolFinder::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
+    PTree::Node *decl = PTree::third(node);
+    visit(static_cast<PTree::Declarator *>(decl)); // visit the declarator
+    try { traverse_body(node);}
+    catch (Undefined const &e) {} // just ignore
   }
 
   virtual void visit(PTree::Declarator *decl)
@@ -126,6 +137,14 @@ private:
       lookup(name);
     else
       lookup(name, Scope::ELABORATE);
+    
+    for (PTree::Node const *base_clause = node->base_clause();
+	 base_clause;
+	 base_clause = PTree::rest(PTree::rest(base_clause)))
+    {
+      PTree::Node const *parent = PTree::last(PTree::second(base_clause))->car();
+      const_cast<PTree::Node *>(parent)->accept(this);
+    }
     traverse_body(node);
   }
 
@@ -209,7 +228,7 @@ int main(int argc, char **argv)
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
       (*i)->write(ofs);
-    if (node)
+    if (errors.empty())
     {
       SymbolFinder finder(buffer, symbols.current_scope(), ofs);
       finder.find(node);

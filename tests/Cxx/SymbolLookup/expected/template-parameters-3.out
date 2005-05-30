@@ -4,6 +4,8 @@ Declarator : i
 declared at line 2 in <input>
 Identifier : T
 declared at line 4 in <input>
+Identifier : T
+declared at line 4 in <input>
 Declarator : i
 declared at line 4 in <input>
 Declarator : f
@@ -13,6 +15,8 @@ declared at line 4 in <input>
 Declarator : t1
 declared at line 6 in <input>
 Identifier : i
+declared at line 4 in <input>
+Identifier : T
 declared at line 4 in <input>
 Declarator : t2
 declared at line 7 in <input>

@@ -11,6 +11,7 @@
 #include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
 #include <Synopsis/Trace.hh>
 #include <cassert>
+#include <vector>
 
 using namespace Synopsis;
 using namespace PTree;
@@ -41,6 +42,50 @@ PTree::ClassSpec const *get_class_template_spec(PTree::Node const *body)
   }
   return 0;
 }
+
+//. Look up the scope corresponding to a base-specifier.
+//. FIXME: The lookup may require a template instantiation, or
+//.        fail because it involves a dependent name. This requires
+//.        more design.
+class BaseClassScopeFinder : private PTree::Visitor
+{
+public:
+  BaseClassScopeFinder(Scope const *scope) : my_scope(scope), my_result(0) {}
+  Class *lookup(PTree::Node const *node)
+  {
+    const_cast<PTree::Node *>(node)->accept(this);
+    return my_result;
+  }
+private:
+  virtual void visit(Identifier *node)
+  {
+    Encoding name = Encoding::simple_name(node);
+    SymbolSet symbols = my_scope->lookup(name, Scope::ELABORATE);
+    if (symbols.empty()) throw Undefined(name, node);
+    else
+    {
+      ClassName const *class_ = dynamic_cast<ClassName const *>(*symbols.begin());
+      if (!class_) throw InternalError("Base specifier not a class.");
+      my_result = class_->as_scope();
+    }
+  }
+  virtual void visit(Name *node)
+  {
+    Encoding name = node->encoded_name();
+    // FIXME: This will fail if the name is a template or a dependent name.
+    SymbolSet symbols = my_scope->lookup(name, Scope::ELABORATE);
+    if (symbols.empty()) throw Undefined(name, node);
+    else
+    {
+      ClassName const *class_ = dynamic_cast<ClassName const *>(*symbols.begin());
+      if (!class_) throw InternalError("Base specifier not a class.");
+      my_result = class_->as_scope();
+    }
+  }
+
+  Scope const *my_scope;
+  Class *      my_result;
+};
 
 }
 
@@ -84,8 +129,20 @@ void SymbolFactory::enter_scope(PTree::ClassSpec const *spec)
   Trace trace("SymbolFactory::enter_scope(ClassSpec)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
 
+  BaseClassScopeFinder base_finder(my_scopes.top());
+  Class::Bases bases;
+  for (PTree::Node const *base_clause = spec->base_clause();
+       base_clause;
+       base_clause = PTree::rest(PTree::rest(base_clause)))
+  {
+    // The last node is the name, the others access specs or 'virtual'
+    PTree::Node const *parent = PTree::last(PTree::second(base_clause))->car();
+    Class *class_ = base_finder.lookup(parent);
+    if (class_) bases.push_back(class_);
+    else ; // FIXME
+  }
   Scope *scope = my_scopes.top();
-  Class *class_ = new Class(spec, scope, my_template_parameters);
+  Class *class_ = new Class(spec, scope, bases, my_template_parameters);
   scope->declare_scope(spec, class_);
   my_scopes.push(class_);
   my_template_parameters = 0;
@@ -109,12 +166,20 @@ void SymbolFactory::enter_scope(PTree::FunctionDefinition const *decl)
   Trace trace("SymbolFactory::enter_scope(FunctionDefinition)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
 
-  assert(my_prototype);
   Scope *scope = my_scopes.top();
+
+  assert(my_prototype);
+  my_prototype->ref();
+  scope->remove_scope(my_prototype->declaration());
+
+  // look at the declarator's encoded name
+  Encoding name = PTree::third(decl)->encoded_name();
+  if (name.is_qualified())
+    scope = lookup_scope_of_qname(name, PTree::third(decl));
+
   // Transfer all symbols from the previously seen function declaration
   // into the newly created FunctionScope, and remove the PrototypeScope.
   FunctionScope *func = new FunctionScope(decl, my_prototype, scope);
-  scope->remove_scope(my_prototype->declaration());
   scope->declare_scope(decl, func);
   my_prototype = 0;
   my_scopes.push(func);
@@ -179,18 +244,16 @@ void SymbolFactory::declare(PTree::Declaration const *d)
     Scope *scope = my_scopes.top();
     if (name.is_qualified())
     {
-      SymbolSet symbols = scope->lookup(name, Scope::DECLARATION);
-      if (symbols.empty()) throw Undefined(name);
+      scope = lookup_scope_of_qname(name, decls);
+      SymbolSet symbols = scope->find(name, Scope::DECLARATION);
       // FIXME: We need type analysis / overload resolution
       //        here to take the right symbol.
       Symbol const *symbol = *symbols.begin();
-      while (name.is_qualified()) name = name.get_symbol();
-      scope = symbol->scope();
       // TODO: check whether this is the definition of a previously
       //       declared function, according to 3.1/2 [basic.def]
       scope->remove(symbol);
     }
-    scope->declare(name, new FunctionName(type, decls, true, scope));
+    scope->declare(name, new FunctionName(type, d, true, scope));
   }
   else
   {
@@ -212,7 +275,7 @@ void SymbolFactory::declare(PTree::Declaration const *d)
 	  if (name.is_qualified())
 	  {
 	    SymbolSet symbols = scope->lookup(name, Scope::DECLARATION);
-	    if (symbols.empty()) throw Undefined(name);
+	    if (symbols.empty()) throw Undefined(name, decl);
 	    // FIXME: We need type analysis / overload resolution
 	    //        here to take the right symbol.
 	    Symbol const *symbol = *symbols.begin();
@@ -323,7 +386,7 @@ void SymbolFactory::declare(ClassSpec const *spec)
   if (my_language == NONE) return;
   Encoding const &name = spec->encoded_name();
   // If class spec contains a class body, it's a definition.
-  PTree::ClassBody const *body = spec->body();
+  PTree::ClassBody const *body = const_cast<ClassSpec *>(spec)->body();
 
   Scope *scope = my_scopes.top();
 
@@ -414,8 +477,11 @@ void SymbolFactory::declare(PTree::ParameterDeclaration const *pdecl)
   PTree::Node const *decl = PTree::third(pdecl);
   PTree::Encoding const &name = decl->encoded_name();
   PTree::Encoding const &type = decl->encoded_type();
-  Scope *scope = my_scopes.top();
-  scope->declare(name, new VariableName(type, decl, true, scope));
+  if (!name.empty())
+  {
+    Scope *scope = my_scopes.top();
+    scope->declare(name, new VariableName(type, decl, true, scope));
+  }
 }
 
 void SymbolFactory::declare(PTree::UsingDeclaration const *)
@@ -423,4 +489,18 @@ void SymbolFactory::declare(PTree::UsingDeclaration const *)
   Trace trace("SymbolFactory::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
   trace << "TBD !";
   if (my_language == NONE) return;
+}
+
+Scope *SymbolFactory::lookup_scope_of_qname(PTree::Encoding &name,
+					    PTree::Node const *decl)
+{
+  Trace trace("SymbolFactory::lookup_scope_of_qname", Trace::SYMBOLLOOKUP);
+
+  Scope *scope = my_scopes.top();
+  SymbolSet symbols = scope->lookup(name, Scope::DECLARATION);
+  if (symbols.empty()) throw Undefined(name, decl);
+  Symbol const *symbol = *symbols.begin();
+  while (name.is_qualified()) name = name.get_symbol();
+  scope = symbol->scope();
+  return scope;
 }

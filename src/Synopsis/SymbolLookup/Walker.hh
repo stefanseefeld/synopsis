@@ -41,6 +41,8 @@ public:
   void traverse_body(PTree::ClassSpec *);
   //. Traverse the template parameter list of a template declaration.
   void traverse_parameters(PTree::TemplateDecl *);
+  //. Traverse the body of the function definition.
+  void traverse_body(PTree::FunctionDefinition *);
 
 protected:
   Scope const *current_scope() { return my_scopes.top();}

@@ -93,7 +93,7 @@ bool equiv(const Node *p, const Node *q)
   }
 }
 
-const Node *last(const Node *p)	// return the last cons cell.
+const Node *last(const Node *p)
 {
   if(!p) return 0;
 
@@ -102,7 +102,7 @@ const Node *last(const Node *p)	// return the last cons cell.
   return p;
 }
 
-Node *last(Node *p)	// return the last cons cell.
+Node *last(Node *p)
 {
   if(!p) return 0;
 

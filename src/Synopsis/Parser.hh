@@ -30,7 +30,7 @@ class Parser
 {
 public:
   //. RuleSet defines non-standard optional rules that can be chosen at runtime.
-  enum RuleSet { CXX = 0x01, MSVC = 0x02};
+  enum RuleSet { CXX = 0x01, GCC = 0x02, MSVC = 0x04};
 
   //. Error is used to cache parse errors encountered during the execution
   //. of the parse method.
@@ -42,7 +42,7 @@ public:
   };
   typedef std::vector<Error *> ErrorList;
 
-  Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset = CXX);
+  Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset = CXX|GCC);
   ~Parser();
 
   const ErrorList &errors() const { return my_errors;}
@@ -57,6 +57,10 @@ private:
   enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
   enum TemplateDeclKind { tdk_unknown, tdk_decl, tdk_instantiation, 
 			  tdk_specialization, num_tdks };
+
+  struct ScopeGuard;
+  friend struct ScopeGuard;
+
 
   bool mark_error();
   template <typename T>
@@ -97,6 +101,10 @@ private:
   //.   template  < template-parameter-list > class identifier [opt]
   //.   template  < template-parameter-list > class identifier [opt] = id-expression
   bool type_parameter(PTree::Node *&);
+  
+  //. GNU extension:
+  //. extern-template-decl:
+  //.   extern template declaration
   bool extern_template_decl(PTree::Node *&);
 
   bool declaration(PTree::Declaration *&);
@@ -161,7 +169,16 @@ private:
   bool enum_spec(PTree::EnumSpec *&, PTree::Encoding&);
   bool enum_body(PTree::Node *&);
   bool class_spec(PTree::ClassSpec *&, PTree::Encoding&);
-  bool base_specifiers(PTree::Node *&);
+
+  //. base-clause:
+  //.   : base-specifier-list
+  //. base-specifier-list:
+  //.   base-specifier
+  //.   base-specifier-list , base-specifier
+  //. base-specifier:
+  //.   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
+  //.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
+  bool base_clause(PTree::Node *&);
   bool class_body(PTree::ClassBody *&);
   bool class_member(PTree::Node *&);
   bool access_decl(PTree::Node *&);
@@ -257,6 +274,11 @@ private:
   Lexer &         my_lexer;
   int             my_ruleset;
   SymbolFactory & my_symbols;
+  //. Record whether the current scope is valid.
+  //. This allows the parser to continue parsing even after
+  //. it was unable to enter a scope (such as in a function definition
+  //. with a qualified name that wasn't declared before).
+  bool            my_scope_is_valid;
   ErrorList       my_errors;
   PTree::Node *   my_comments;
   //. If true, '>' is interpreted as ther greater-than operator.

@@ -9,6 +9,7 @@
 
 #include <Synopsis/SymbolLookup/Scope.hh>
 #include <string>
+#include <vector>
 #include <list>
 
 namespace Synopsis
@@ -103,8 +104,9 @@ protected:
 private:
   typedef std::set<Namespace const *> Using;
 
-  PTree::Declaration     const *my_decl;
-  Scope                  const *my_outer;
+  PTree::Declaration const *    my_decl;
+  Scope const *                 my_outer;
+  Class const *                 my_class;
   TemplateParameterScope const *my_parameters;
   Using                         my_using;
 };
@@ -140,9 +142,11 @@ private:
 class Class : public Scope
 {
 public:
+  typedef std::vector<Class const *> Bases;
+
   Class(PTree::ClassSpec const *spec, Scope const *outer,
-	TemplateParameterScope const *params)
-    : my_spec(spec), my_outer(outer->ref()), my_parameters(params)
+	Bases const &bases, TemplateParameterScope const *params)
+    : my_spec(spec), my_outer(outer->ref()), my_bases(bases), my_parameters(params)
   {
   }
 
@@ -161,6 +165,7 @@ protected:
 private:
   PTree::ClassSpec       const *my_spec;
   Scope                  const *my_outer;
+  Bases                         my_bases;
   TemplateParameterScope const *my_parameters;
 };
 

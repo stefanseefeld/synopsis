@@ -24,7 +24,9 @@ bool equal(const Node &p, const char *str, size_t len);
 bool equal(const Node *p, const Node *q);
 bool equiv(const Node *p, const Node *q);
 
+//. Return the last cons cell.
 const Node *last(const Node *);
+//. Return the last cons cell.
 Node *last(Node *);
 inline const Node *first(const Node *p) { return p ? p->car() : 0;}
 inline Node *first(Node *p) { return p ? p->car() : 0;}
