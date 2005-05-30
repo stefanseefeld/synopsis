@@ -8,6 +8,8 @@ Declarator : i
 declared at line 6 in <input>
 ClassSpec : X
 declared at line 7 in <input>
+Identifier : B
+declared at line 1 in <input>
 Declarator : f
 declared at line 13 in <input>
 Declarator : M::N::X::f
