@@ -686,6 +686,10 @@ void SWalker::translate_template_params(PTree::Node *params)
     if (dynamic_cast<PTree::ParameterDeclaration *>(param))
       // skip potential 'register' (see Parser::parameter_declaration)
       param = PTree::rest(param);
+    else if (dynamic_cast<PTree::TemplateDecl *>(PTree::first(param)))
+    {
+      param = PTree::first(param);
+    }
     nodeLOG(param);
     if (*PTree::first(param) == "class" || *PTree::first(param) == "typename")
     {
