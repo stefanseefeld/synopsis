@@ -184,28 +184,128 @@ private:
   bool access_decl(PTree::Node *&);
   bool user_access_spec(PTree::Node *&);
   
+  //. expression:
+  //.   assign_expr
+  //.   expression  , assign_expr
   bool expression(PTree::Node *&);
+
+  //. assign-expression:
+  //.   conditional-expression
+  //.   logical-or-expression assignment-operator assignment-expression
+  //.   throw-expression
   bool assign_expr(PTree::Node *&);
+
+  //. conditional-expression:
+  //.   logical-or-expression
+  //.   logical-or-expression ? expression : assignment-expression
   bool conditional_expr(PTree::Node *&);
+
+  //. logical-or-expression:
+  //.   logical-and-expression
+  //.   logical-or-expression || logical-and-expression
   bool logical_or_expr(PTree::Node *&);
+
+  //. logical-and-expression:
+  //.   inclusive-or-expression
+  //.   logical-and-expr && inclusive-or-expression
   bool logical_and_expr(PTree::Node *&);
+
+  //. inclusive-or-expression:
+  //.   exclusive-or-expression
+  //.   inclusive-or-expression | exclusive-or-expression
   bool inclusive_or_expr(PTree::Node *&);
+
+  //. exclusive-or-expression:
+  //.   and-expression
+  //.   exclusive-or-expression ^ and-expression
   bool exclusive_or_expr(PTree::Node *&);
+
+  //. and-expression:
+  //.   equality-expression
+  //.   and-expression & equality-expression
   bool and_expr(PTree::Node *&);
+
+  //. equality-expression:
+  //.   relational-expression
+  //.   equality-expression == relational-expression
+  //.   equality-expression != relational-expression
   bool equality_expr(PTree::Node *&);
+
+  //. relational-expression:
+  //.   shift-expression
+  //.   relational-expression < shift-expression
+  //.   relational-expression > shift-expression
+  //.   relational-expression <= shift-expression
+  //.   relational-expression >= shift-expression
   bool relational_expr(PTree::Node *&);
+
+  //. shift-expression:
+  //.   additive-expression
+  //.   shift-expression << additive-expression
+  //.   shift-expression >> additive-expression
   bool shift_expr(PTree::Node *&);
+
+  //. additive-expression:
+  //.   multiplicative-expression
+  //.   additive-expression + multiplicative-expression
+  //.   additive-expression - multiplicative-expression
   bool additive_expr(PTree::Node *&);
-  bool multiply_expr(PTree::Node *&);
+
+  //. multiplicative-expression:
+  //.   pm-expression
+  //.   multiplicative-expression * pm-expression
+  //.   multiplicative-expression / pm-expression
+  //.   multiplicative-expression % pm-expression
+  bool multiplicative_expr(PTree::Node *&);
+
+  //. pm-expression:
+  //.   cast-expression
+  //.   pm-expression .* cast-expression
+  //.   pm-expression ->* cast-expression
   bool pm_expr(PTree::Node *&);
+
+  //. cast-expression:
+  //.   unary-expression
+  //.   ( type-id ) cast-expression
   bool cast_expr(PTree::Node *&);
+  //. type-id:
+  //.   type-specifier-seq abstract-declarator [opt]
   bool type_id(PTree::Node *&);
   bool type_id(PTree::Node *&, PTree::Encoding&);
+
+  //. unary-exprssion:
+  //.   postfix-expression
+  //.   ++ cast-expression
+  //.   -- cast-expression
+  //.   unary-operator cast-expression
+  //.   sizeof unary-expression
+  //.   sizeof ( unary-expression )
+  //.   new-expression
+  //.   delete-expression
+  //.
+  //. unary-operator:
+  //.   *
+  //.   &
+  //.   +
+  //.   -
+  //.   !
+  //.   ~
   bool unary_expr(PTree::Node *&);
+
+  //. throw-expression:
+  //.   throw assignment-expression
   bool throw_expr(PTree::Node *&);
+
+  //. sizeof-expression:
+  //.   sizeof unary-expression
+  //.   sizeof ( type-id )
   bool sizeof_expr(PTree::Node *&);
+
+  //. typeid-expression:
+  //.   typeid ( type-id )
+  //.   typeid ( expression )
   bool typeid_expr(PTree::Node *&);
-  bool is_allocate_expr(int);
+  bool is_allocate_expr(Token::Type);
   bool allocate_expr(PTree::Node *&);
   bool userdef_keyword(PTree::Node *&);
   bool allocate_type(PTree::Node *&);
