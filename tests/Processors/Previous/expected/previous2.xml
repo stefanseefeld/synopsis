@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Class" file="Processors/Previous/input/previous2.cc" language="C++" line="1" name="Foo" type="class">
+   <declarations>
+    <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Processors/Previous/input/previous2.cc" language="C++" line="4" name="Foo.first" type="data member">
+     <comments>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous2.cc" line="4" suspect="0">
+       <text>
+         first comment
+       </text>
+      </instance>
+     </comments>
+     <vtype>
+      <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+     </vtype>
+    </instance>
+    <instance accessibility="1" class="Synopsis.AST.Variable" constr="0" file="Processors/Previous/input/previous2.cc" language="C++" line="5" name="Foo.second" type="data member">
+     <comments>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous2.cc" line="5" suspect="0">
+       <text>
+         second comment
+       </text>
+      </instance>
+     </comments>
+     <vtype/>
+    </instance>
+    <instance accessibility="1" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous2.cc" language="C++" line="6" name="EOS" type="EOS"/>
+    <instance accessibility="3" class="Synopsis.AST.Variable" constr="0" file="Processors/Previous/input/previous2.cc" language="C++" line="7" name="Foo.third" type="data member">
+     <comments>
+      <instance class="Synopsis.AST.Comment" file="Processors/Previous/input/previous2.cc" line="7" suspect="0">
+       <text>
+         third comment
+       </text>
+      </instance>
+     </comments>
+     <vtype/>
+    </instance>
+    <instance accessibility="3" class="Synopsis.AST.Builtin" file="Processors/Previous/input/previous2.cc" language="C++" line="7" name="EOS" type="EOS"/>
+   </declarations>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.first">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.second">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="Foo.third">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <instance class="Synopsis.AST.SourceFile" filename="Processors/Previous/input/previous2.cc" is_main="1" language="C++">
+   <declarations/>
+   <macro_calls/>
+  </instance>
+ </files>
+</ast>
