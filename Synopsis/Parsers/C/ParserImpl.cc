@@ -74,17 +74,20 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Parser parser(lexer, symbols);
     PTree::Node *ptree = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
-    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
-    if (ptree) 
+    if (!errors.size())
     {
       ASTTranslator translator(src, base_path, main_file_only, ast, verbose, debug);
       translator.translate(ptree, buffer);
     }
+    else
+    {
+      for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
+	(*i)->write(std::cerr);
+      throw std::runtime_error("The input contains errors.");
+    }
   }
   catch (std::exception const &e)
   {
-    std::cerr << "Caught exception : " << typeid(e).name() << ' ' << e.what() << std::endl;
     PyErr_SetString(error, e.what());
     return 0;
   }
@@ -99,6 +102,8 @@ extern "C" void initParserImpl()
 {
   Python::Module module = Python::Module::define("ParserImpl", methods);
   module.set_attr("version", "0.1");
-  error = PyErr_NewException("ParserImpl.Error", 0, 0);
-  module.set_attr("Error", error);
+  Python::Object processor = Python::Object::import("Synopsis.Processor");
+  Python::Object error_base = processor.attr("Error");
+  error = PyErr_NewException("ParserImpl.ParseError", error_base.ref(), 0);
+  module.set_attr("ParseError", error);
 }

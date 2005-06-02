@@ -114,6 +114,8 @@ const char* syn_syntax_prefix = 0;
 // If set then this is the prefix for the filename to store xref info to
 const char* syn_xref_prefix = 0;
 
+PyObject *py_error;
+
 namespace
 {
 
@@ -165,28 +167,25 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   SWalker swalker(filter, &builder, &buffer);
   if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
     swalker.set_store_links(new LinkStore(filter, &swalker));
-  try
+
+  PTree::Node *def = parser.parse();
+  const Parser::ErrorList &errors = parser.errors();
+  if (!errors.size())
   {
-    PTree::Node *def = parser.parse();
-    const Parser::ErrorList &errors = parser.errors();
+    swalker.translate(def);
+      
+    // Setup synopsis c++ to py convertor
+    Translator translator(filter, ast);//declarations, types);
+    translator.set_builtin_decls(builder.builtin_decls());
+    // Convert!
+    translator.translate(builder.scope());
+  }
+  else
+  {
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
       (*i)->write(std::cerr);
-    swalker.translate(def);
+    throw std::runtime_error("The input contains errors.");
   }
-  catch (const std::exception &e)
-  {
-    std::cerr << "Error : " << e.what() << std::endl;
-  }
-  catch (...)
-  {
-    std::cerr << "Error: an uncaught exception occurred when translating the parse tree" << std::endl;
-  }
-
-  // Setup synopsis c++ to py convertor
-  Translator translator(filter, ast);//declarations, types);
-  translator.set_builtin_decls(builder.builtin_decls());
-  // Convert!
-  translator.translate(builder.scope());
 }
 
 PyObject *occ_parse(PyObject * /* self */, PyObject *args)
@@ -209,6 +208,8 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
                         &debug))
     return 0;
 
+  Py_INCREF(py_error);
+  std::auto_ptr<Python::Object> error_type(new Python::Object(py_error));
   Py_INCREF(ast);
 
   if (verbose) ::verbose = true;
@@ -228,7 +229,22 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   AST::SourceFile *source_file = filter.get_sourcefile(src);
   // Run OCC to generate the AST
-  RunOpencxx(source_file, cppfile, ast);
+  try
+  {
+    RunOpencxx(source_file, cppfile, ast);
+  }
+  catch (const std::exception &e)
+  {
+    Python::Object py_e((*error_type)(Python::Tuple(e.what())));
+    PyErr_SetObject(py_error, py_e.ref());
+    return 0;
+  }
+  catch (...)
+  {
+    Python::Object py_e((*error_type)(Python::Tuple("internal error")));
+    PyErr_SetObject(py_error, py_e.ref());
+    return 0;
+  }
 
   PTree::cleanup_gc();
 
@@ -245,4 +261,8 @@ extern "C" void initocc()
 {
   Python::Module module = Python::Module::define("occ", methods);
   module.set_attr("version", "0.1");
+  Python::Object processor = Python::Object::import("Synopsis.Processor");
+  Python::Object error_base = processor.attr("Error");
+  py_error = PyErr_NewException("occ.ParseError", error_base.ref(), 0);
+  module.set_attr("ParseError", py_error);
 }
