@@ -5,7 +5,7 @@
 # see the file COPYING for details.
 #
 
-from Processor import Processor
+from Processor import Processor, Error
 import AST
 from getoptions import get_options
 
@@ -71,7 +71,7 @@ def process(argv = sys.argv, **commands):
          commands[command].process(ast, **props)
       except KeyError, e:
          error('missing argument "%s"'%e)
-      except Processor.Error, e:
+      except Error, e:
          error(str(e))
       except KeyboardInterrupt, e:
          print 'KeyboardInterrupt'
