@@ -59,9 +59,17 @@ class install_syn_clib(Command):
             self.run_command('build_clib')
             
         if self.root:
-            prefix = change_root(self.root, self.prefix)
+            if os.name == 'nt':
+                prefix = 'Synopsis'
+            else:
+                prefix = self.prefix
+            prefix = change_root(self.root, prefix)
         else:
-            prefix = self.prefix
+            # FIXME: Find a better way to set the prefix !
+            if os.name == 'nt':
+                prefix = 'c:\\Synopsis'
+            else:
+                prefix = self.prefix
 
         libdir = os.path.join(prefix, 'lib')
         mkpath (libdir, 0777, self.verbose, self.dry_run)
