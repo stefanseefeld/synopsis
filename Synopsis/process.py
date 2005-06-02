@@ -1,4 +1,3 @@
-# $Id: process.py,v 1.5 2003/12/11 04:38:59 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -72,6 +71,10 @@ def process(argv = sys.argv, **commands):
          commands[command].process(ast, **props)
       except KeyError, e:
          error('missing argument "%s"'%e)
+      except Processor.Error, e:
+         error(str(e))
+      except KeyboardInterrupt, e:
+         print 'KeyboardInterrupt'
    else:
       error('no command "%s"'%command)
 

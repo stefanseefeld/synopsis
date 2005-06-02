@@ -197,6 +197,8 @@ extern "C" void initwave()
 {
   Python::Module module = Python::Module::define("wave", methods);
   module.set_attr("version", "0.1");
-  error = PyErr_NewException("wave.Error", 0, 0);
-  module.set_attr("Error", error);
+  Python::Object processor = Python::Object::import("Synopsis.Processor");
+  Python::Object error_base = processor.attr("Error");
+  error = PyErr_NewException("wave.PreprocessError", error_base.ref(), 0);
+  module.set_attr("PreprocessError", error);
 }

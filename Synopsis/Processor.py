@@ -71,6 +71,17 @@ class Parametrized(object):
             raise KeyError, "No parameter '%s' in '%s'"%(i, self.__class__.__name__)
 
 
+class Error:
+   """An exception a processor may raise during processing."""
+
+   def __init__(self, what):
+
+      self.__what = what
+
+   def __str__(self):
+      return "%s: %s"%(self.__class__.__name__, self.__what)
+
+
 class Processor(Parametrized):
    """Processor documentation..."""
 

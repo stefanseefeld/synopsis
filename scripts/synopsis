@@ -9,9 +9,15 @@
 from Synopsis import config
 from Synopsis.getoptions import get_options
 from Synopsis import AST
-from Synopsis.Processor import Processor, Composite
+from Synopsis.Processor import Processor, Composite, Error
 
 import sys, os, os.path, string, getopt
+
+def error(msg):
+   """Write an error message and exit."""
+   sys.stderr.write(msg)
+   sys.stderr.write('\n')
+   sys.exit(-1)
 
 def __import__(name, verbose):
    """Import a named processor. Instead of returning the module, this
@@ -178,4 +184,12 @@ def main():
    processor.process(AST.AST())
 
 if __name__ == '__main__':
-   main()
+
+   try:
+      main()
+   except KeyError, e:
+      error('missing argument "%s"'%e)
+   except Error, e:
+      error(str(e))
+   except KeyboardInterrupt, e:
+      print 'KeyboardInterrupt'

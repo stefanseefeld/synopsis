@@ -59,7 +59,7 @@ public:
 			typename ContextT::token_type const &option, 
 			Container const &values, 
 			typename ContextT::token_type const &pragma_token)
-  {}
+  { return false;}
 
   // macro definition hooks
   void defined_macro(Token const &name, bool is_functionlike,
