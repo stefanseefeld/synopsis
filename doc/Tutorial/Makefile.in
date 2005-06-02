@@ -27,17 +27,26 @@ examples:= $(shell cd $(srcdir) && find examples -path '*/.svn' -prune -o -type 
 
 .PHONY: examples
 
-vpath Tutorial.xml $(srcdir)
+vpath %.xml $(srcdir)
 
 all: html pdf
+html: html/Tutorial html/DevGuide
+pdf: Tutorial.pdf DevGuide.pdf
 
-html: Tutorial.xml $(appendix) examples 
+html/Tutorial: Tutorial.xml $(appendix) examples 
 	mkdir -p $@
 	cp $(srcdir)/synopsis.css $@
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@/ $(srcdir)/html.xsl $<
 	mkdir -p $@/images
 	cp $(srcdir)/images/*.png $@/images/
 	cp examples/Paths/doc4/*.png $@/images/
+
+html/DevGuide: DevGuide.xml
+	mkdir -p $@
+	cp $(srcdir)/synopsis.css $@
+	xsltproc --novalid -o $@/ $(srcdir)/html.xsl $<
+	mkdir -p $@/images
+	cp $(srcdir)/images/*.png $@/images/
 
 examples:
 	for file in $(examples); do \
@@ -49,12 +58,12 @@ examples:
 	make -C examples       # build examples...
 	make -C examples clean # ...but remove temporary files
 
-pdf: Tutorial.pdf
+Tutorial.pdf: $(appendix)
 
-Tutorial.pdf: Tutorial.fo $(appendix)
+%.pdf: %.fo
 	fop $< $@
 
-Tutorial.fo: Tutorial.xml
+%.fo: %.xml
 	xsltproc --novalid --path $(shell pwd) --xinclude -o $@ $(srcdir)/fo.xsl $^
 	mkdir -p images
 	cp -u $(srcdir)/images/*.svg images/
@@ -63,8 +72,9 @@ $(appendix): %.xml:
 	python $(srcdir)/parameters.py $(patsubst %.xml, %, $@) $@
 
 clean:
-	rm Tutorial.fo
+	rm -f Synopsis.*.xml
+	rm Tutorial.fo DevGuide.fo
 
 distclean: clean
-	rm -rf html Tutorial.pdf
+	rm -rf html Tutorial.pdf DevGuide.pdf
 

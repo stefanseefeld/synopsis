@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+<book xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Synopsis Developer's Guide</title>
+
+    <releaseinfo>Version 0.1</releaseinfo>
+
+    <author>
+      <firstname>Stefan</firstname>
+
+      <surname>Seefeld</surname>
+    </author>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <section>
+      <title>Origins</title>
+
+      <para>
+        The Synopsis Project was founded to support the documentation of the
+        <emphasis>Fresco</emphasis> code base, which used a number of different programming 
+        languages such as C++, Python, and IDL. The initial design focussed on 
+        a high-level, multi-language <emphasis>Abstract Syntax Tree</emphasis> which would 
+        be manipulated using python <emphasis>Processor</emphasis> objects to generate 
+        documentation in a variety of formats including postscript and html.
+      </para>
+      <para>
+        To support multiple languges, Synopsis uses python extension modules
+        to generate a language-neutral AST. The IDL parser is based on
+        <ulink url="http://omniorb.sf.net">omniORB</ulink>, the original C parser
+        was based on <ulink url="http://ctool.sf.net">ctool</ulink>, and the C++ parser
+        on <ulink url="http://www.csg.is.titech.ac.jp/~chiba/openc++.html">OpenC++</ulink>.
+      </para>
+
+    </section>
+
+    <section>
+      <title>Architecture</title>
+      <para>
+        Synopsis provides multiple representations of the parsed code, on different
+        levels of granularity. Some of them are exposed using Python, some using C++.
+      </para>
+      <section>
+        <title>Sub-Projects</title>
+        <para>
+          Synopsis contains two basic parts: A C++ library, providing an API to
+          parse and analyze C and C++ source files, as well as a Python package
+          to parse and analyze IDL, C, C++, and Python code. While the former
+          provides fine-grained access to the low-level representations such as
+          <emphasis>Parse Tree</emphasis> and <emphasis>Symbol Table</emphasis>,
+          the latter operates on an <emphasis>Abstract Syntax Tree</emphasis>.
+        </para>
+        <para>
+          Most of the <type>Processor</type>classes from the Python API are written
+          in pure Python, but some (notably the parser classes) are actual extension
+          modules that use the low-level APIs from the C++ API.
+        </para>
+      </section>
+      <section>
+        <title>Code Layout</title>
+        <para>
+          Following the hybrid nature of the project, the source layout has
+          two more or less separate root directories. <filename>Synopsis/</filename>
+          provides the <type>Synopsis</type> Python package, while 
+          <filename>src/</filename> contains the sources for the C++ API.
+        </para>
+      </section>
+    </section>
+    <section>
+      <title>Current Status: Regression Test Reports</title>
+      <para>
+        It is important to regularly run tests to keep control of user-visible
+        changes incured by code modifications. The tests that are part of synopsis
+        are not an absolute measure for success or failure, but rather reflect
+        a given state of the system at a particular point in time.
+      </para>
+      <para>
+        It sometimes happens that a new addition to the code will make a particular
+        test fail, simply because that test now produces a different output compared
+        to what it used to produce before.
+      </para>
+      <para>
+        This may indicate a true regression, or it may mean that the <emphasis>expected output</emphasis>
+        should be adjusted if the new output is valid and should be the new reference.
+      </para>
+      <para>
+        The 'official' regression test results are available at all times as a
+        <ulink url="http://synopsis.fresco.org/tests">test report</ulink>.
+      </para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>The Python API</title>
+    <para>
+      The Python API in its current form is documented in the
+      <ulink url="http://synopsis.fresco.org/docs/Tutorial">Tutorial</ulink>, so only
+      things that are specific to development are mentioned here. As explained in the
+      previous chapter, synopsis was originally designed for code documentation. To
+      support this, An 'Abstract Syntax Tree' representation is used. The term may be
+      considered a bit misleading, as it isn't really related to language syntax (in
+      particular as it is multi-language !). Only declarations are stored, together with
+      comments preceeding them.
+    </para>
+    <section>
+      <title>The Processor Pipeline</title>
+      <para>
+        One of synopsis' main goals has been flexibility and extensibility with
+        respect to how exactly the parsed data are manipulated. It must be possible
+        for users to define their own output format, or their own way to annotate
+        the source code in comments.
+      </para>
+      <para>
+        To achieve this flexibility, synopsis defines a <emphasis>Processor</emphasis>
+        protocol, which allows multiple processors to be chained into processing pipelines.
+        This way, a user can define his own pipeline, or even define his own processor.
+      </para>
+      <para>
+        Processors take an AST as input, and return an AST as output. One particular
+        processor as <type>Formatters.Dump.Processor</type>, which dumps an AST into
+        an XML file. This may be useful for debugging purposes.
+      </para>
+      <para>
+        The scripting language used to define processors in terms of compound processors
+        (i.e. pipelines) is documented <ulink url="http://synopsis.fresco.org/docs/Tutorial/pipeline.html">here</ulink>.
+      </para>
+    </section>
+    <section>
+      <title>The Parsers (Cpp, C, Cxx)</title>
+      <para>
+        These processors are essentially shared C++ libraries which are loaded and
+        operated by python as extension modules. Their public APIs are discussed in
+        the <ulink url="http://synopsis.fresco.org/docs/Tutorial">tutorial</ulink>,
+        and the internals are discussed in the chapter on the C++ API, though some 
+        particularities are worth mentioning here.
+      </para>
+      <para>
+        It is sometimes necessary to debug C/C++ code even when it is controlled
+        through a python API. This makes debugging a bit inconvenient. With gdb,
+        you have to issue <command>target exec python</command> before executing
+        the python script that calls an extension module.
+      </para>
+    </section>
+    <section>
+      <title>The HTML Formatter(s)</title>
+
+      <para>
+        One of the most complex processors is the HTML formatter, which generates
+        html documentation of the parsed source code. There are a multitude of
+        parameters to control many aspects of the formatting. It is documented
+        <ulink url="http://synopsis.fresco.org/docs/Tutorial/html-formatter.html">here</ulink>.
+      </para>
+      <para>
+        To help to validate the generated set of html pages, synopsis provides
+        <command>scripts/html-validator</command>, which can be used to traverse
+        all references between the pages, and to make sure the html is valid.
+      </para>
+    </section>
+
+    <section>
+      <title>Python Regression Tests</title>
+      <para>
+        The python tests mainly consist in some synopsis script, defining a specific
+        AST processor pipeline, together with some input in one of the supported
+        languages.
+      </para>
+      <para>
+        The result will be an AST that is dumped as <emphasis>XML</emphasis> to a 
+        file for simple validation.
+      </para>
+    </section>
+  </chapter>
+
+  <chapter>
+    <title>The C++ API</title>
+    <para>
+      The Parser operates on an in-memory buffer of the whole (preprocessed) file.
+      The generated parse tree refers to memory locations in that buffer, and it
+      is possible to replace existing tree nodes by new ones, and then writing the
+      modified buffer back to a file, preserving all but the modified regions.
+    </para>
+    <para>
+      This feature makes this parser an excellent choice for source-to-source
+      transformation, as the new code doesn't need to be generated from scratch,
+      but instead will preserve all features from the original file that the user
+      didn't explicitely modify.
+    </para>
+    <para>
+      Parsing a source file involves a number of classes, such as <type>Buffer</type>,
+      <type>Lexer</type>, <type>Parser</type>, and <type>SymbolFactory</type>. These
+      can be constructed with a number of parameters, to control the specific language /
+      language dialect (C, C++, GNU extensions, MSVC extensions, etc.).
+    </para>
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/cxx-parser.svg" format="SVG"/>
+      </imageobject>
+      <imageobject>
+        <imagedata fileref="images/cxx-parser.png" format="PNG"/>
+      </imageobject>
+    </mediaobject>
+    <section>
+      <title>The Parse Tree Module</title>
+      <para>
+        The parser's principal role is to generate a parse tree. It does that by
+        following language-specific production rules that are followed after 
+        encountering lexical tokens that are provided by a lexer.
+      </para>
+      <para>
+        By means of construction flags it is possible to tell the lexer to accept
+        e.g. 'class' as a keyword (C++) or as an identifier (C). Similarly, it is
+        possible to configure the parser for particular rules.
+      </para>
+      <para>
+        The parse tree itself is a lisp-like structure. All nodes subclass 
+        <type>PTree::Atom</type> (for terminals) or <type>PTree::List</type>
+        (for non-terminals). A <type>Visitor</type> allows to traverse the parse
+        tree based on the real run-time types of the individual nodes (there are
+        about 120 different <type>PTree::Node</type> types).
+      </para>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/parser-scheme.svg" format="SVG"/>
+        </imageobject>
+        <imageobject>
+          <imagedata fileref="images/parser-scheme.png" format="PNG"/>
+        </imageobject>
+      </mediaobject>
+    </section>
+    <section>
+      <title>The Symbol Lookup Module</title>
+
+      <para></para>
+    </section>
+    <section>
+      <title>C++ Regression Tests</title>
+      <para>
+        The main set of C++ tests currently performed by the regression test suite
+        is concerned with symbol lookup. Individual tests are copies of the code
+        from the C++ specification, mainly clause 3.4.
+      </para>
+      <para>
+        Most of the failing tests fail because they haven't been implemented yet,
+        i.e. there isn't even some <emphasis>expected output</emphasis> to compare against.
+        As the SymbolLookup module is completed, these tests should eventually all
+        be <emphasis>passed</emphasis>
+      </para>
+      <para>
+        Further, more tests should be added that cover other aspects of the parser,
+        such as type analysis.
+      </para>
+    </section>
+  </chapter>
+</book>
