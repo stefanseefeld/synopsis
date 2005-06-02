@@ -141,7 +141,7 @@ class build_doc(build.build):
                                                  'share/doc/Synopsis'))
          if os.path.isdir(os.path.join(builddir, 'html', 'Tutorial')):
             rmtree(os.path.join(builddir, 'html', 'Tutorial'), 1)
-         copy_tree(os.path.join(tempdir, 'html'),
+         copy_tree(os.path.join(tempdir, 'html', 'Tutorial'),
                    os.path.join(builddir, 'html', 'Tutorial'))
 
          if os.path.isdir(os.path.join(builddir, 'examples')):
@@ -149,10 +149,17 @@ class build_doc(build.build):
          copy_tree(os.path.join(tempdir, 'examples'),
                    os.path.join(builddir, 'examples'))
 
+         if os.path.isdir(os.path.join(builddir, 'html', 'DevGuide')):
+            rmtree(os.path.join(builddir, 'html', 'DevGuide'), 1)
+         copy_tree(os.path.join(tempdir, 'html', 'DevGuide'),
+                   os.path.join(builddir, 'html', 'DevGuide'))
+
       if self.printable:
          builddir = os.path.abspath(os.path.join(self.build_lib,
                                                  'share/doc/Synopsis/print'))
          mkpath(builddir, 0777, self.verbose, self.dry_run)
          copy_file(os.path.join(tempdir, 'Tutorial.pdf'),
                    os.path.join(builddir, 'Tutorial.pdf'))
+         copy_file(os.path.join(tempdir, 'DevGuide.pdf'),
+                   os.path.join(builddir, 'DevGuide.pdf'))
 
