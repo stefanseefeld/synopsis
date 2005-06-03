@@ -96,8 +96,11 @@ setup(cmdclass={'config':config,
       maintainer="Stefan Seefeld",
       author_email="stefan@fresco.org",
       maintainer_email="stefan@fresco.org",
-      description="source code introspection tool",
-      long_description=" ",
+      description="Source-code Introspection Tool",
+      long_description="""Synopsis is a multi-language source code introspection tool that
+provides a variety of representations for the parsed code, to
+enable further processing such as documentation extraction,
+reverse engineering, and source-to-source translation.""",
       url="http://synopsis.fresco.org",
       download_url = 'http://synopsis.fresco.org/download',
       license = 'LGPL',

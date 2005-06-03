@@ -237,6 +237,24 @@ struct Parser::ScopeGuard
   bool     scope_was_valid;
 };
 
+Parser::StatusGuard::StatusGuard(Parser &p)
+  : my_lexer(p.my_lexer),
+    my_token_mark(my_lexer.save()),
+    my_errors(p.my_errors),
+    my_error_mark(my_errors.size()),
+    my_committed(false)
+{
+}
+
+Parser::StatusGuard::~StatusGuard() 
+{
+  if (!my_committed)
+  {
+    my_lexer.restore(my_token_mark);
+    my_errors.resize(my_error_mark);
+  }
+}
+
 Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
@@ -385,7 +403,11 @@ bool Parser::definition(PTree::Node *&p)
 	  my_ruleset & GCC)
     res = extern_template_decl(p);
   else if(t == Token::NAMESPACE && my_lexer.look_ahead(2) == '=')
-    res = namespace_alias(p);
+  {
+    PTree::NamespaceAlias *alias;
+    res = namespace_alias(alias);
+    p = alias;
+  }
   else if(t == Token::NAMESPACE)
   {
     PTree::NamespaceSpec *spec;
@@ -697,7 +719,7 @@ bool Parser::namespace_spec(PTree::NamespaceSpec *&spec)
 /*
   namespace.alias : NAMESPACE Identifier '=' Identifier ';'
 */
-bool Parser::namespace_alias(PTree::Node *&exp)
+bool Parser::namespace_alias(PTree::NamespaceAlias *&exp)
 {
   Trace trace("Parser::namespace_alias", Trace::PARSING);
   Token tk;
@@ -1919,10 +1941,10 @@ bool Parser::declarator2(PTree::Node *&decl, DeclKind kind, bool recursive,
   if(!opt_ptr_operator(d, type_encode))
     return false;
 
-  const char* lex_save = my_lexer.save();
   t = my_lexer.look_ahead(0);
   if(t == '(')
   {
+    char const * lex_save = my_lexer.save();
     Token op;
     my_lexer.get_token(op);
     recursive_decl = true;
@@ -4789,6 +4811,32 @@ bool Parser::declaration_statement(PTree::Declaration *&statement)
   PTree::Node *storage_s, *cv_q, *integral;
   PTree::Encoding type_encode;
 
+  Token::Type type = my_lexer.look_ahead(0);
+  if (type == Token::NAMESPACE)
+  {
+    PTree::NamespaceAlias *alias;
+    bool result = namespace_alias(alias);
+    statement = alias;
+    return result;
+  }
+  else if (type == Token::USING)
+  {
+    type = my_lexer.look_ahead(1);
+    if (type == Token::NAMESPACE)
+    {
+      PTree::UsingDirective *udir;
+      bool result = using_directive(udir);
+      statement = udir;
+      return result;
+    }
+    else
+    {
+      PTree::UsingDeclaration *udecl;
+      bool result = using_declaration(udecl);
+      statement = udecl;
+      return result;
+    }
+  }
   if(!opt_storage_spec(storage_s) ||
      !opt_cv_qualifier(cv_q) ||
      !opt_integral_type_or_class_spec(integral, type_encode))

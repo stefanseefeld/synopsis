@@ -66,11 +66,11 @@ public:
   virtual void visit_metaclass_decl(MetaclassDecl *l) { apply("visit_list", l);}
   virtual void visit_linkage_spec(LinkageSpec *l) { apply("visit_list", l);}
   virtual void visit_namespace_spec(NamespaceSpec *l) { apply("visit_list", l);}
-  virtual void visit_namespace_alias(NamespaceAlias *l) { apply("visit_list", l);}
-  virtual void visit_using_directive(UsingDirective *l) { apply("visit_list", l);}
   virtual void visit_declaration(Declaration *l) { apply("visit_list", l);}
+  virtual void visit_namespace_alias(NamespaceAlias *l) { apply("visit_declaration", l);}
+  virtual void visit_using_directive(UsingDirective *l) { apply("visit_declaration", l);}
+  virtual void visit_parameter_declaration(ParameterDeclaration *l) { apply("visit_declaration", l);}
   virtual void visit_function_definition(FunctionDefinition *l) { apply("visit_declaration", l);}
-  virtual void visit_parameter_declaration(ParameterDeclaration *l) { apply("visit_list", l);}
   virtual void visit_using_declaration(UsingDeclaration *l) { apply("visit_list", l);}
   virtual void visit_declarator(Declarator *l) { apply("visit_list", l);}
   virtual void visit_name(Name *l) { apply("visit_list", l);}
@@ -407,12 +407,12 @@ BOOST_PYTHON_MODULE(PTree)
   bpl::class_<MetaclassDecl, bpl::bases<List>, MetaclassDecl *, boost::noncopyable> meta_class_decl("MetaclassDecl", bpl::no_init);
   bpl::class_<LinkageSpec, bpl::bases<List>, LinkageSpec *, boost::noncopyable> linkage_spec("LinkageSpec", bpl::no_init);
   bpl::class_<NamespaceSpec, bpl::bases<List>, NamespaceSpec *, boost::noncopyable> namespace_spec("NamespaceSpec", bpl::no_init);
-  bpl::class_<NamespaceAlias, bpl::bases<List>, NamespaceAlias *, boost::noncopyable> namespace_alias("NamespaceAlias", bpl::no_init);
-  bpl::class_<UsingDirective, bpl::bases<List>, UsingDirective *, boost::noncopyable> using_directive("UsingDirective", bpl::no_init);
   bpl::class_<Declaration, bpl::bases<List>, Declaration *, boost::noncopyable> declaration("Declaration", bpl::no_init);
+  bpl::class_<NamespaceAlias, bpl::bases<Declaration>, NamespaceAlias *, boost::noncopyable> namespace_alias("NamespaceAlias", bpl::no_init);
+  bpl::class_<UsingDirective, bpl::bases<Declaration>, UsingDirective *, boost::noncopyable> using_directive("UsingDirective", bpl::no_init);
+  bpl::class_<UsingDeclaration, bpl::bases<Declaration>, UsingDeclaration *, boost::noncopyable> using_declaration("UsingDeclaration", bpl::no_init);
   bpl::class_<FunctionDefinition, bpl::bases<Declaration>, FunctionDefinition *, boost::noncopyable> function_definition("FunctionDefinition", bpl::no_init);
   bpl::class_<ParameterDeclaration, bpl::bases<List>, ParameterDeclaration *, boost::noncopyable> parameter_declaration("ParameterDeclaration", bpl::no_init);
-  bpl::class_<UsingDeclaration, bpl::bases<List>, UsingDeclaration *, boost::noncopyable> using_declaration("UsingDeclaration", bpl::no_init);
   bpl::class_<Declarator, bpl::bases<List>, Declarator *, boost::noncopyable> declarator("Declarator", bpl::no_init);
   declarator.add_property("initializer", 
 			  bpl::make_function(&Declarator::initializer, 

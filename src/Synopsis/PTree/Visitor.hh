@@ -99,9 +99,7 @@ public:
   virtual void visit(LinkageSpec *);
   //. [ namespace <identifier> [{ body }] ]
   virtual void visit(NamespaceSpec *);
-  virtual void visit(NamespaceAlias *);
   //. [ using namespace Foo ; ]
-  //. [ using namespace Foo = Bar ; ]
   virtual void visit(UsingDirective *);
   //. either variable, typedef or function
   //. Variables:
@@ -113,6 +111,8 @@ public:
   //. Class definition:
   //.  [ [modifiers] [class foo ...] [declarators]? ; ]
   virtual void visit(Declaration *);
+  //. [ namespace Foo = Bar ; ]
+  virtual void visit(NamespaceAlias *);
   //. Function definition:
   //.  [ [modifiers] name declarator [ { ... } ] ]
   virtual void visit(FunctionDefinition *);

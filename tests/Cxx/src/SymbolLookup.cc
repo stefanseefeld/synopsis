@@ -20,6 +20,7 @@ public:
     : Walker(scope), my_buffer(buffer), my_os(os), my_in_template_decl(false) {}
   void find(PTree::Node *node) { node->accept(this);}
 private:
+  using Walker::visit;
   virtual void visit(PTree::Identifier *iden)
   {
     Trace trace("SymbolFinder::visit(Identifier)", Trace::SYMBOLLOOKUP);
@@ -90,6 +91,31 @@ private:
     }
     else
       Walker::visit(node);
+  }
+
+  virtual void visit(PTree::UsingDirective *udir)
+  {
+    PTree::Node *node = PTree::third(udir);
+    PTree::Encoding name = node->encoded_name();
+    my_os << "Namespace : " << name.unmangled() << std::endl;
+    lookup(name);
+  }
+  virtual void visit(PTree::UsingDeclaration *udecl)
+  { visit(static_cast<PTree::List *>(udecl));}
+  virtual void visit(PTree::NamespaceAlias *alias)
+  {
+    {
+      PTree::Node *node = PTree::second(alias);
+      PTree::Encoding name = PTree::Encoding::simple_name(static_cast<PTree::Atom *>(node));
+      my_os << "Namespace : " << name.unmangled() << std::endl;
+      lookup(name);
+    }
+    {
+      PTree::Node *node = PTree::nth(alias, 3);
+      PTree::Encoding name = node->encoded_name();
+      my_os << "Namespace : " << name.unmangled() << std::endl;
+      lookup(name);
+    }
   }
 
   virtual void visit(PTree::FunctionDefinition *node)

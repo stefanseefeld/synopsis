@@ -10,9 +10,9 @@ Namespace : D
 declared at line 10 in <input>
 Declarator : f1
 declared at line 12 in <input>
-Name : A
+Namespace : A
 declared at line 1 in <input>
-Name : C::D
+Namespace : C::D
 declared at line 10 in <input>
 Declarator : B::f1
 declared at line 17 in <input>
