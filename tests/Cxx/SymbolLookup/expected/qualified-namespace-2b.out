@@ -12,7 +12,7 @@ Declarator : h
 declared at line 9 in <input>
 Namespace : A
 declared at line 11 in <input>
-Name : Y
+Namespace : Y
 declared at line 2 in <input>
 Declarator : f
 declared at line 14 in <input>
@@ -22,7 +22,7 @@ Declarator : i
 declared at line 16 in <input>
 Namespace : B
 declared at line 18 in <input>
-Name : Z
+Namespace : Z
 declared at line 7 in <input>
 Declarator : f
 declared at line 21 in <input>
@@ -30,9 +30,9 @@ Declarator : i
 declared at line 22 in <input>
 Namespace : AB
 declared at line 24 in <input>
-Name : A
+Namespace : A
 declared at line 11 in <input>
-Name : B
+Namespace : B
 declared at line 18 in <input>
 Declarator : g
 declared at line 28 in <input>

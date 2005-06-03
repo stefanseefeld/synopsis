@@ -97,20 +97,6 @@ private:
   Node *my_comments;
 };
 
-class NamespaceAlias : public List
-{
-public:
-  NamespaceAlias(Node *p, Node *q) : List(p, q) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class UsingDirective : public List 
-{
-public:
-  UsingDirective(Node *p) : List(p, 0) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
 class Declaration : public List
 {
 public:
@@ -121,6 +107,27 @@ public:
 
 private:
   Node *my_comments;
+};
+
+class UsingDirective : public Declaration
+{
+public:
+  UsingDirective(Node *p) : Declaration(p, 0) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class UsingDeclaration : public Declaration
+{
+public:
+  UsingDeclaration(Node *p, Node *q) : Declaration(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class NamespaceAlias : public Declaration
+{
+public:
+  NamespaceAlias(Node *p, Node *q) : Declaration(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class FunctionDefinition : public Declaration
@@ -135,13 +142,6 @@ class ParameterDeclaration : public List
 public:
   ParameterDeclaration(Node *mod, Node *type, Node *decl)
     : List(mod, list(type, decl)) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class UsingDeclaration : public List 
-{
-public:
-  UsingDeclaration(Node *p, Node *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 

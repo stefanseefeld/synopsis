@@ -12,9 +12,9 @@ ClassSpec : y
 declared at line 9 in <input>
 Namespace : C
 declared at line 11 in <input>
-Name : A
+Namespace : A
 declared at line 1 in <input>
-Name : B
+Namespace : B
 declared at line 7 in <input>
 Declarator : i
 declared at line 15 in <input>

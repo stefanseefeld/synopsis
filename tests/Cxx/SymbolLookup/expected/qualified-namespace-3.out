@@ -4,17 +4,17 @@ Declarator : a
 declared at line 3 in <input>
 Namespace : B
 declared at line 5 in <input>
-Name : A
+Namespace : A
 declared at line 1 in <input>
 Namespace : C
 declared at line 9 in <input>
-Name : A
+Namespace : A
 declared at line 1 in <input>
 Namespace : BC
 declared at line 13 in <input>
-Name : B
+Namespace : B
 declared at line 5 in <input>
-Name : C
+Namespace : C
 declared at line 9 in <input>
 Declarator : f
 declared at line 18 in <input>
@@ -26,9 +26,9 @@ Name : A::a
 declared at line 3 in <input>
 Namespace : BD
 declared at line 26 in <input>
-Name : B
+Namespace : B
 declared at line 5 in <input>
-Name : D
+Namespace : D
 declared at line 22 in <input>
 Declarator : g
 declared at line 32 in <input>

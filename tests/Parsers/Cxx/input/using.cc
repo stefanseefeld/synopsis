@@ -11,7 +11,7 @@ void func()
 
 void func2()
 {
-  using namespace Foo = Bar;
+  namespace Bar = Foo;
   Bar::x;
 }
 

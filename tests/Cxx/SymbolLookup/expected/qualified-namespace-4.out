@@ -4,13 +4,13 @@ Declarator : b
 declared at line 3 in <input>
 Namespace : A
 declared at line 5 in <input>
-Name : B
+Namespace : B
 declared at line 1 in <input>
 Declarator : a
 declared at line 8 in <input>
 Namespace : B
 declared at line 1 in <input>
-Name : A
+Namespace : A
 declared at line 5 in <input>
 Declarator : f
 declared at line 14 in <input>

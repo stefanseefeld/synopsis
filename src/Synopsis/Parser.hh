@@ -45,7 +45,7 @@ public:
   Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset = CXX|GCC);
   ~Parser();
 
-  const ErrorList &errors() const { return my_errors;}
+  ErrorList const &errors() const { return my_errors;}
 
   //. Return the origin of the given pointer
   //. (filename and line number)
@@ -60,6 +60,26 @@ private:
 
   struct ScopeGuard;
   friend struct ScopeGuard;
+
+  //. A StatusGuard manages a tentative parse.
+  //. All actions invoked after its instantiation
+  //. will be rolled back in the destructor unless
+  //. 'commit' has been called before.
+  class StatusGuard
+  {
+  public:
+    StatusGuard(Parser &);
+    ~StatusGuard();
+    void commit() { my_committed = true;}
+
+  private:
+    Lexer &                      my_lexer;
+    char const *                 my_token_mark;
+    ErrorList                    my_errors;
+    Parser::ErrorList::size_type my_error_mark;
+    bool                         my_committed;
+  };
+  friend class StatusGuard;
 
 
   bool mark_error();
@@ -76,7 +96,7 @@ private:
   bool meta_arguments(PTree::Node *&);
   bool linkage_spec(PTree::Node *&);
   bool namespace_spec(PTree::NamespaceSpec *&);
-  bool namespace_alias(PTree::Node *&);
+  bool namespace_alias(PTree::NamespaceAlias *&);
   bool using_directive(PTree::UsingDirective *&);
   bool using_declaration(PTree::UsingDeclaration *&);
   bool linkage_body(PTree::Node *&);
