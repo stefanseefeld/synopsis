@@ -4366,9 +4366,8 @@ bool Parser::condition(PTree::Node *&exp)
   return expression(exp);
 }
 
-/*
-  function.body  : compound.statement
-*/
+//. function-body:
+//.   compound-statement
 bool Parser::function_body(PTree::Block *&body)
 {
   Trace trace("Parser::function_body", Trace::PARSING);

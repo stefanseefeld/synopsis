@@ -559,10 +559,14 @@ PyObject *Translator::SourceFile(AST::SourceFile* file)
     Py_DECREF(full_filename);
   }
   else Py_INCREF(pyfile);
-  // update the 'main' attribute to reflect the right value (this may
-  // differ from the original one if the preprocessor sees a different
-  // 'extra include' list from the one passed to the cxx parser
-  PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
+
+  // FIXME: why is this here ? Why can't we assume the preprocessor got it
+  //        right ??
+
+//   // update the 'main' attribute to reflect the right value (this may
+//   // differ from the original one if the preprocessor sees a different
+//   // 'extra include' list from the one passed to the cxx parser
+//   PyObject_CallMethod(pyfile, "set_is_main", "i", (int)file->is_main());
 
   Py_DECREF(files);
   return pyfile;
