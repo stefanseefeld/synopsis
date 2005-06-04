@@ -288,12 +288,13 @@ private:
   //.   unary-expression
   //.   ( type-id ) cast-expression
   bool cast_expr(PTree::Node *&);
+
   //. type-id:
   //.   type-specifier-seq abstract-declarator [opt]
   bool type_id(PTree::Node *&);
   bool type_id(PTree::Node *&, PTree::Encoding&);
 
-  //. unary-exprssion:
+  //. unary-expression:
   //.   postfix-expression
   //.   ++ cast-expression
   //.   -- cast-expression
@@ -339,6 +340,8 @@ private:
   bool var_name_core(PTree::Node *&, PTree::Encoding&);
   bool is_template_args();
   
+  //. function-body:
+  //.   compound-statement
   bool function_body(PTree::Block *&);
 
   //. compound-statement:

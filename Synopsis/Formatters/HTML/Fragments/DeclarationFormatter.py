@@ -95,8 +95,10 @@ class DeclarationFormatter(Fragment):
       name = self.label(decl.name(), decl.realname())
       # Special C++ functions  TODO: maybe move to a separate AST formatter...
       if decl.language() == 'C++' and len(decl.realname())>1:
-         if decl.realname()[-1] == decl.realname()[-2]: type = '<i>constructor</i>'
-         elif decl.realname()[-1] == "~"+decl.realname()[-2]: type = '<i>destructor</i>'
+         lt = decl.realname()[-2].find('<') # check whether this is a template
+         sname = lt == -1 and decl.realname()[-2] or decl.realname()[-2][:lt]
+         if decl.realname()[-1] == sname: type = '<i>constructor</i>'
+         elif decl.realname()[-1] == "~"+sname: type = '<i>destructor</i>'
          elif decl.realname()[-1] == "(conversion)":
             name = "(%s)"%type
       params = self.format_parameters(decl.parameters())
