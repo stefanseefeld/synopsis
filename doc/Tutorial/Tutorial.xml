@@ -14,7 +14,7 @@
     </author>
   </bookinfo>
 
-  <chapter>
+  <chapter id="intro">
     <title>Introduction</title>
 
     <section>

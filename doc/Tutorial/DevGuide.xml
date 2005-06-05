@@ -14,10 +14,10 @@
     </author>
   </bookinfo>
 
-  <chapter>
+  <chapter id="intro">
     <title>Introduction</title>
 
-    <section>
+    <section id="origins">
       <title>Origins</title>
 
       <para>
@@ -38,7 +38,7 @@
 
     </section>
 
-    <section>
+    <section id="architecture">
       <title>Architecture</title>
       <para>
         Synopsis provides multiple representations of the parsed code, on different
@@ -70,7 +70,7 @@
         </para>
       </section>
     </section>
-    <section>
+    <section id="testing">
       <title>Current Status: Regression Test Reports</title>
       <para>
         It is important to regularly run tests to keep control of user-visible
@@ -94,7 +94,7 @@
     </section>
   </chapter>
 
-  <chapter>
+  <chapter id="python">
     <title>The Python API</title>
     <para>
       The Python API in its current form is documented in the
@@ -106,7 +106,7 @@
       particular as it is multi-language !). Only declarations are stored, together with
       comments preceeding them.
     </para>
-    <section>
+    <section id="pipeline">
       <title>The Processor Pipeline</title>
       <para>
         One of synopsis' main goals has been flexibility and extensibility with
@@ -129,7 +129,7 @@
         (i.e. pipelines) is documented <ulink url="http://synopsis.fresco.org/docs/Tutorial/pipeline.html">here</ulink>.
       </para>
     </section>
-    <section>
+    <section id="parsers">
       <title>The Parsers (Cpp, C, Cxx)</title>
       <para>
         These processors are essentially shared C++ libraries which are loaded and
@@ -145,7 +145,7 @@
         the python script that calls an extension module.
       </para>
     </section>
-    <section>
+    <section id="formatters">
       <title>The HTML Formatter(s)</title>
 
       <para>
@@ -161,7 +161,7 @@
       </para>
     </section>
 
-    <section>
+    <section id="python-tests">
       <title>Python Regression Tests</title>
       <para>
         The python tests mainly consist in some synopsis script, defining a specific
@@ -175,7 +175,7 @@
     </section>
   </chapter>
 
-  <chapter>
+  <chapter id="cxx">
     <title>The C++ API</title>
     <para>
       The Parser operates on an in-memory buffer of the whole (preprocessed) file.
@@ -203,7 +203,7 @@
         <imagedata fileref="images/cxx-parser.png" format="PNG"/>
       </imageobject>
     </mediaobject>
-    <section>
+    <section id="ptree">
       <title>The Parse Tree Module</title>
       <para>
         The parser's principal role is to generate a parse tree. It does that by
@@ -230,13 +230,63 @@
           <imagedata fileref="images/parser-scheme.png" format="PNG"/>
         </imageobject>
       </mediaobject>
+      <section id="encoding">
+        <title>The Encoding class</title>
+        <para>
+          The C++ grammar makes it quite hard to recover certain semantic information
+          from syntactic structure. For example, in a simple declaration individual
+          declarators may carry part of the type information for the variables they
+          declare. For example, 
+          <programlisting>
+            char *a, b, c[3];
+          </programlisting>
+          three declarators <emphasis>a</emphasis>, <emphasis>b</emphasis>, and
+          <emphasis>c</emphasis>. The first has type <code>char *</code>, the second
+          <code>char</code>, the third <code>char[3]</code>. In order to avoid the
+          need to analyze the whole declaration to extract the type of a declarator,
+          the parser attaches the type and name to declarators.
+        </para>
+        <para>
+          A similar argument applies to other cases, where non-local information
+          is encoded into a node's <code>encoded_name</code> and <code>encoded_type</code>
+          member.
+        </para>
+        <para>
+          The Encoding class needs to be able to represent full type names, and
+          thus it seems sensible to use a mangling similar (or even identical !)
+          to the one developed as part of the C++ ABI standard (see 
+          <ulink url="http://www.codesourcery.com/cxx-abi/abi.html#mangling">C++ ABI</ulink>).
+        </para>
+      </section>
+      <section id="ptree-display">
+        <title>PTree::Display</title>
+        <para>
+          Parse Trees tend to grow quickly, and it becomes quickly hard to debug them by
+          simply traversing the list. Thus, the <code>PTree</code> module provides a simple
+          means to print a (sub-)tree to an output stream.
+        </para>
+        <para>
+          <programlisting>
+            PTree::display(node, std::cout, false, false);
+          </programlisting>
+          will print the tree referred to by <varname>node</varname> to <varname>std::cout</varname>.
+          The third parameter is a flag indicating whether the encodings should be printed, too.
+          The fourth parameter indicates, whether the actual C++ type of the node being printed should
+          be included in the output.
+        </para>
+        <para>
+          Since this API turned out to be rather useful, there is a stand-alone applet that just
+          generates a parse tree and then prints it out using the above function.
+          It is called <command>display-ptree</command> and is part of the source distribution.
+        </para>
+      </section>
     </section>
-    <section>
+    <section id="symbollookup">
       <title>The Symbol Lookup Module</title>
 
       <para></para>
     </section>
-    <section>
+    <section id="cxx-tests">
       <title>C++ Regression Tests</title>
       <para>
         The main set of C++ tests currently performed by the regression test suite
