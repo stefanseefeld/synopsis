@@ -181,6 +181,12 @@ private:
   bool parameter_declaration_list_or_init(PTree::Node *&, bool&,
 					  PTree::Encoding&, bool);
   bool parameter_declaration_list(PTree::Node *&, PTree::Encoding&);
+
+  //. parameter-declaration:
+  //.   decl-specifier-seq declarator
+  //.   decl-specifier-seq declarator = assignment-expression
+  //.   decl-specifier-seq abstract-declarator [opt]
+  //.   decl-specifier-seq abstract-declarator [opt] = assignment-expression
   bool parameter_declaration(PTree::ParameterDeclaration *&, PTree::Encoding&);
   
   bool function_arguments(PTree::Node *&);
@@ -205,8 +211,8 @@ private:
   bool user_access_spec(PTree::Node *&);
   
   //. expression:
-  //.   assign_expr
-  //.   expression  , assign_expr
+  //.   assign-expression
+  //.   expression , assign-expression
   bool expression(PTree::Node *&);
 
   //. assign-expression:

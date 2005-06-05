@@ -2623,7 +2623,7 @@ bool Parser::parameter_declaration_list(PTree::Node *&arglist,
   return true;
 }
 
-//. parameter-declaration
+//. parameter-declaration:
 //.   decl-specifier-seq declarator
 //.   decl-specifier-seq declarator = assignment-expression
 //.   decl-specifier-seq abstract-declarator [opt]
@@ -3175,8 +3175,8 @@ bool Parser::user_access_spec(PTree::Node *&mem)
 }
 
 //. expression:
-//.   assign_expr
-//.   expression  , assign_expr
+//.   assign-expression
+//.   expression , assign-expression
 bool Parser::expression(PTree::Node *&exp)
 {
   Trace trace("Parser::expression", Trace::PARSING);
