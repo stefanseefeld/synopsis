@@ -134,7 +134,7 @@ private:
 
   //. condition:
   //.   expression
-  //.   type-specifier-seq declarator = assign-expr
+  //.   type-specifier-seq declarator = assignment-expression
   bool condition(PTree::Node *&);
 
   bool is_constructor_decl();
@@ -211,11 +211,11 @@ private:
   bool user_access_spec(PTree::Node *&);
   
   //. expression:
-  //.   assign-expression
-  //.   expression , assign-expression
+  //.   assignment-expression
+  //.   expression , assignment-expression
   bool expression(PTree::Node *&);
 
-  //. assign-expression:
+  //. assignment-expression:
   //.   conditional-expression
   //.   logical-or-expression assignment-operator assignment-expression
   //.   throw-expression
