@@ -3175,8 +3175,8 @@ bool Parser::user_access_spec(PTree::Node *&mem)
 }
 
 //. expression:
-//.   assign-expression
-//.   expression , assign-expression
+//.   assignment-expression
+//.   expression , assignment-expression
 bool Parser::expression(PTree::Node *&exp)
 {
   Trace trace("Parser::expression", Trace::PARSING);
@@ -3194,7 +3194,7 @@ bool Parser::expression(PTree::Node *&exp)
   return true;
 }
 
-//. assign-expression:
+//. assignment-expression:
 //.   conditional-expression
 //.   logical-or-expression assignment-operator assignment-expression
 //.   throw-expression
@@ -4296,7 +4296,7 @@ bool Parser::is_template_args()
 
 //. condition:
 //.   expression
-//.   type-specifier-seq declarator = assign-expr
+//.   type-specifier-seq declarator = assignment-expression
 bool Parser::condition(PTree::Node *&exp)
 {
   Trace trace("Parser::condition", Trace::PARSING);
