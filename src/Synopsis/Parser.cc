@@ -961,6 +961,9 @@ bool Parser::template_decl2(PTree::TemplateDecl *&decl, TemplateDeclKind &kind)
   }
   if(my_lexer.get_token(tk) != '>') return false;
 
+  // FIXME: Flush any dangling comments, or else they will be attached to
+  //        the declared class / function template itself.
+  my_lexer.get_comments();
   decl = PTree::nconc(decl, PTree::list(params, new PTree::Atom(tk)));
 
   // FIXME: nested TEMPLATE is ignored

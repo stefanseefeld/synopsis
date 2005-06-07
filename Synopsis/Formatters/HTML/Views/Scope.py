@@ -35,7 +35,7 @@ class Scope(View):
       View.register(self, processor)
       for part in self.parts: part.register(self)
 
-      self.__namespaces = []
+      self.__scopes = []
       self.__toc = None
       
    def get_toc(self, start):
@@ -68,41 +68,41 @@ class Scope(View):
    def process(self, start):
       """Creates a view for every Scope"""
 
-      self.__namespaces = [start]
-      while self.__namespaces:
-         ns = self.__namespaces.pop(0)
-         self.process_scope(ns)
+      self.__scopes = [start]
+      while self.__scopes:
+         scope = self.__scopes.pop(0)
+         self.process_scope(scope)
          
-         # Queue child namespaces
+         # Queue child scopes
          for child in self.processor.sorter.children():
             if isinstance(child, AST.Scope):
-               self.__namespaces.append(child)
+               self.__scopes.append(child)
 
    def register_filenames(self, start):
       """Registers a view for every Scope"""
 
-      self.__namespaces = [start]
-      while self.__namespaces:
-         ns = self.__namespaces.pop(0)
+      self.__scopes = [start]
+      while self.__scopes:
+         scope = self.__scopes.pop(0)
 
-         filename = self.processor.file_layout.scope(ns.name())
-         self.processor.register_filename(filename, self, ns)
+         filename = self.processor.file_layout.scope(scope.name())
+         self.processor.register_filename(filename, self, scope)
 
-         self.processor.sorter.set_scope(ns)
+         self.processor.sorter.set_scope(scope)
          
-         # Queue child namespaces
+         # Queue child scopes
          for child in self.processor.sorter.children():
             if isinstance(child, AST.Scope):
-               self.__namespaces.append(child)
+               self.__scopes.append(child)
      
-   def process_scope(self, ns):
+   def process_scope(self, scope):
       """Creates a view for the given scope"""
 
       details = {} # A hash of lists of detailed children by type
       sections = [] # a list of detailed sections
 	
       # Open file and setup scopes
-      self.__scope = ns.name()
+      self.__scope = scope.name()
       self.__filename = self.processor.file_layout.scope(self.__scope)
       self.__title = escape(string.join(self.__scope))
       self.start_file()
@@ -112,7 +112,7 @@ class Scope(View):
 
       # Loop throught all the view Parts
       for part in self.parts:
-         part.process(ns)
+         part.process(scope)
       self.end_file()
     
    def end_file(self):
