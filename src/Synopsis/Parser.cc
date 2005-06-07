@@ -3606,24 +3606,25 @@ bool Parser::sizeof_expr(PTree::Node *&exp)
   if(my_lexer.get_token(tk) != Token::SIZEOF) return false;
   if(my_lexer.look_ahead(0) == '(')
   {
-    Token op;
-    my_lexer.get_token(op);
+    Token op, cp;
     PTree::Node *tname;
-    if(!type_id(tname)) return false;
-    Token cp;
-    if(my_lexer.get_token(cp) != ')') return false;
-    
-    exp = new PTree::SizeofExpr(new PTree::Atom(tk),
-				PTree::list(new PTree::Atom(op), tname,
-					    new PTree::Atom(cp)));
+    char const *tag = my_lexer.save();
+    my_lexer.get_token(op);
+    if(type_id(tname) && my_lexer.get_token(cp) == ')')
+    {
+      // success !
+      exp = new PTree::SizeofExpr(new PTree::Atom(tk),
+				  PTree::list(new PTree::Atom(op), tname,
+					      new PTree::Atom(cp)));
+      return true;
+    }
+    else
+      my_lexer.restore(tag);
   }
-  else
-  {
-    PTree::Node *unary;
-    if(!unary_expr(unary)) return false;
+  PTree::Node *unary;
+  if(!unary_expr(unary)) return false;
 
-    exp = new PTree::SizeofExpr(new PTree::Atom(tk), PTree::list(unary));
-  }
+  exp = new PTree::SizeofExpr(new PTree::Atom(tk), PTree::list(unary));
   return true;
 }
 
