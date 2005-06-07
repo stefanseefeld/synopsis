@@ -7,6 +7,7 @@
 
 from Synopsis import AST
 from Processor import Processor
+import re
 
 class Summarizer(Processor):
     """Splits comments into summary/detail parts."""
