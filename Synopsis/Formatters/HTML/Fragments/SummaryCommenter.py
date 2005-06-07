@@ -15,7 +15,7 @@ class SummaryCommenter(Default):
    def format_declaration(self, decl):
       summary = self.processor.comments.format_summary(self.view, decl)
       if summary:
-         return '<br/>'+span('summary', summary)
+         return '<br/>\n'+span('summary', summary)
       return ''
 
    def format_group(self, decl):

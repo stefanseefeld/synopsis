@@ -52,9 +52,9 @@ class FileDetails(View):
 
       for filename, file in self.processor.ast.files().items():
          if file.is_main():
-            self.process_scope(filename, file)
-
-   def process_scope(self, filename, file):
+            self.process_file(filename, file)
+            
+   def process_file(self, filename, file):
       """Creates a view for the given file. The view is just an index,
       containing a list of declarations."""
 
@@ -100,7 +100,7 @@ class FileDetails(View):
       items.sort()
       curr_scope = None
       curr_type = None
-      comma = 0
+      br = 0
       for decl_type, name, decl in items:
          # Check scope and type to see if they've changed since the last
          # declaration, thereby forming sections of scope and type
@@ -118,7 +118,7 @@ class FileDetails(View):
                   escape(Util.ccolonName(curr_scope))))
             else:
                self.write('<h3>%s%s</h3>\n<div>'%(curr_type.capitalize(),plural))
-            comma = 0
+            br = 0
             
          # Format this declaration
          entry = self.processor.toc[name]
@@ -129,9 +129,13 @@ class FileDetails(View):
             text = ' ' + href(link, label)
          else:
             text = ' ' + label
-         if comma: self.write(',')
+         if br: self.write('<br/>')
          self.write(text)
-         comma = 1
+         # Print summary
+         comments = decl.comments()
+         if len(comments) and comments[0].summary():
+            self.write('<br/>\n' + span('summary', comments[0].summary()))
+         br = 1
 	
       # Close open DIV
       if curr_scope is not None:

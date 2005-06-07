@@ -217,11 +217,6 @@ class View(Parametrized):
 
       pass
 
-   def process_scope(self, scope):
-      """Process just the given scope"""
-
-      pass
-
    def open_file(self):
       """Returns a new output stream. This template method is for internal
       use only, but may be overriden in derived classes.
