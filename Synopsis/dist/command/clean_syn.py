@@ -26,10 +26,29 @@ class clean_syn(clean):
 
         clean.run(self)
 
-        # remove the build/ctemp.<plat> directory (unless it's already
-        # gone)
+        # Remove the build/ctemp.<plat> directory (unless it's already
+        # gone).
         if os.path.exists(self.build_ctemp):
             remove_tree(self.build_ctemp, dry_run=self.dry_run)
-        else:
-            log.debug("'%s' does not exist -- can't clean it",
-                      self.build_ctemp)
+
+        # Remove installed clib, if installed locally.
+        for d in ['include', 'lib', 'bin']:
+            if os.path.exists(d):
+                remove_tree(d, dry_run=self.dry_run)
+
+        # Remove the generated documentation.
+        prefix = 'share/doc/Synopsis/html/Manual'
+        for d in ['cxx', 'python', 'sxr']:
+            if os.path.exists(os.path.join(prefix, d)):
+                remove_tree(os.path.join(prefix, d), dry_run=self.dry_run)
+
+        prefix = 'share/doc/Synopsis/html'
+        for d in ['Tutorial', 'DevGuide']:
+            if os.path.exists(os.path.join(prefix, d)):
+                remove_tree(os.path.join(prefix, d), dry_run=self.dry_run)
+
+        prefix = 'share/doc/Synopsis'
+        if os.path.exists(os.path.join(prefix, 'examples')):
+            remove_tree(os.path.join(prefix, 'examples'), dry_run=self.dry_run)
+
+        

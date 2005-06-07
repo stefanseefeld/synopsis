@@ -6,7 +6,7 @@ tree, mapping names to different scopes, and dealing with comment prefixes and
 groupings."""
 
 from Linker import *
-from Stripper import *
+from ScopeStripper import *
 from NameMapper import *
 from Comments import *
 from XRefCompiler import *
