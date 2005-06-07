@@ -28,10 +28,10 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python%s/Python.h>'%sys.versi
 xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
 
 
-linker = Linker(SSComments(),       # filter out any non-'//' comments
+linker = Linker(SSFilter(),         # filter out any non-'//' comments
                 Grouper1(),         # group declarations according to '@group' tags
                 Previous(),         # attach '//<' comments
-                CommentStripper(),  # strip any 'suspicious' comments
+                Stripper(),         # strip any 'suspicious' comments
                 Summarizer(),       # separate summary (first phrase) from detail (everything)
                 AccessRestrictor()) # filter out unwanted ('private', say) declarations
 
