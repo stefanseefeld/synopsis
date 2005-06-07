@@ -3544,7 +3544,7 @@ bool Parser::type_id(PTree::Node *&tname, PTree::Encoding &type_encode)
 //.   -- cast-expression
 //.   unary-operator cast-expression
 //.   sizeof unary-expression
-//.   sizeof ( unary-expression )
+//.   sizeof ( type-id )
 //.   new-expression
 //.   delete-expression
 //.
