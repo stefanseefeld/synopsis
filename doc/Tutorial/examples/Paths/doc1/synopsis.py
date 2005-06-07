@@ -2,9 +2,9 @@ from Synopsis.process import process
 from Synopsis.Processor import Processor, Parameter, Composite
 from Synopsis.Parsers import Cxx
 from Synopsis.Processors import Linker
-from Synopsis.Processors.Comments import SSComments
-from Synopsis.Processors.Comments import SSDComments
-from Synopsis.Processors.Comments import JavaComments
+from Synopsis.Processors.Comments import SSFilter
+from Synopsis.Processors.Comments import SSDFilter
+from Synopsis.Processors.Comments import JavaFilter
 from Synopsis.Processors.Comments import Previous
 from Synopsis.Processors.Comments import JavaTags
 from Synopsis.Processors.Comments import Grouper1
@@ -14,7 +14,7 @@ from Synopsis.Formatters import Dot
 
 cxx = Cxx.Parser(base_path='../src')
 
-cxx_ssd = Composite(cxx, SSDComments())
+cxx_ssd = Composite(cxx, SSDFilter())
 
 html = HTML.Formatter(comment_formatters = [Comments.QuoteHTML(),
                                             Comments.Section(),
@@ -37,9 +37,9 @@ class Joker(Processor):
         
 
 process(cxx_ssd = cxx_ssd,
-        cxx_ss = Composite(cxx, SSComments()),
-        cxx_ssd_prev = Composite(cxx, SSDComments(), Previous()),
-        cxx_javadoc = Composite(cxx, JavaComments(), JavaTags()),
+        cxx_ss = Composite(cxx, SSFilter()),
+        cxx_ssd_prev = Composite(cxx, SSDFilter(), Previous()),
+        cxx_javadoc = Composite(cxx, JavaFilter(), JavaTags()),
         link = Linker(Grouper1()),
         html = html,
         dot = Dot.Formatter(),

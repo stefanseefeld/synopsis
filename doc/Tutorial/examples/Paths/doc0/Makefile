@@ -12,16 +12,16 @@ Paths.syn: $(syn)
 	$(synopsis) -l Grouper1 -o $@ $^
 
 Path.syn: ../src/Path.h
-	$(synopsis) -p Cxx -l SSDComments,Previous -o $@ $<
+	$(synopsis) -p Cxx -l SSDFilter,Previous -o $@ $<
 
 Polyline.syn: ../src/Polyline.h
-	$(synopsis) -p Cxx -l SSComments -o $@ $<
+	$(synopsis) -p Cxx -l SSFilter -o $@ $<
 
 Bezier.syn: ../src/Bezier.h
-	$(synopsis) -p Cxx -l SSDComments -o $@ $<
+	$(synopsis) -p Cxx -l SSDFilter -o $@ $<
 
 Nurbs.syn: ../src/Nurbs.h
-	$(synopsis) -p Cxx -l JavaComments,JavaTags -o $@ $<
+	$(synopsis) -p Cxx -l JavaFilter,JavaTags -o $@ $<
 
 Paths.ps: Paths.syn
 	$(synopsis) -f Dot -Wf,--title="class diagram" -Wf,--format=ps \

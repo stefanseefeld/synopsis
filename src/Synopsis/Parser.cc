@@ -3538,7 +3538,7 @@ bool Parser::type_id(PTree::Node *&tname, PTree::Encoding &type_encode)
   return true;
 }
 
-//. unary-exprssion:
+//. unary-expression:
 //.   postfix-expression
 //.   ++ cast-expression
 //.   -- cast-expression
