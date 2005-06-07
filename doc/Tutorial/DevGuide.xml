@@ -277,8 +277,37 @@
         <para>
           Since this API turned out to be rather useful, there is a stand-alone applet that just
           generates a parse tree and then prints it out using the above function.
-          It is called <command>display-ptree</command> and is part of the source distribution.
+          <programlisting>
+            display-ptree [-g &lt;output&gt;] [-d] [-r] [-e] &lt;input&gt;
+          </programlisting>
+          The available options are:
         </para>
+        <variablelist>
+          <varlistentry>
+            <term>-g <option>filename</option></term>
+            <listitem>
+              <para>Generate a <emphasis>dot</emphasis> and write it to the given file.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>-d</term>
+            <listitem>
+              <para>Print debug information (in particular traces) during the parsing.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>-r</term>
+            <listitem>
+              <para>Print the C++ type of the parse tree nodes.</para>
+            </listitem>
+          </varlistentry>
+          <varlistentry>
+            <term>-e</term>
+            <listitem>
+              <para>Print encoded names / types for nodes such as names, declarators, etc..</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
       </section>
     </section>
     <section id="symbollookup">
