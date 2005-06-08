@@ -898,6 +898,7 @@ bool Parser::template_decl(PTree::Node *&decl)
   PTree::TemplateDecl *tdecl;
   TemplateDeclKind kind = tdk_unknown;
 
+  my_comments = wrap_comments(my_lexer.get_comments());
   if(!template_decl2(tdecl, kind)) return false;
   if (kind == tdk_decl) my_in_template_decl = true;
   bool success = declaration(body);
@@ -1175,8 +1176,8 @@ bool Parser::declaration(PTree::Declaration *&statement)
   PTree::Encoding type_encode;
   int res;
 
-  my_lexer.look_ahead(0);
-  my_comments = wrap_comments(my_lexer.get_comments());
+  if (!my_in_template_decl)
+    my_comments = wrap_comments(my_lexer.get_comments());
 
   if(!opt_member_spec(mem_s) || !opt_storage_spec(storage_s))
     return false;
