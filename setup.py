@@ -49,19 +49,12 @@ py_packages = ["Synopsis",
                "Synopsis.Formatters.HTML.Comments",
                "Synopsis.Formatters.HTML.Fragments"]
 
-#"Synopsis.Core",
-#"Synopsis.UI",
-#"Synopsis.UI.Qt"] 
-
-
 ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
                ('Synopsis/Parsers/C', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
                ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
 
 scripts = ['synopsis']
-
-#, 'synopsis-qt', 'compile-xref', 'search-xref']
 
 data_files = []
 
