@@ -21,7 +21,6 @@ recursive-include   share *
 
 # documentation (source)
 recursive-include   doc *
-recursive-include   demo *
 
 # scripts
 include             scripts/*
