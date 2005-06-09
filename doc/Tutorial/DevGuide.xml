@@ -17,6 +17,14 @@
   <chapter id="intro">
     <title>Introduction</title>
 
+    <para>
+      The Synopsis Application Framework is a work in progress. Some of the APIs are quite
+      stable and already used in production. Others are in development. This document wants
+      to provide some guidelines for developers and other adventurers to find their way around
+      the project. APIs that are currently documented here may mature and become stable, at
+      which point their documentation will be migrated to the 
+      <ulink url="../Tutorial/index.html">tutorial</ulink>.
+    </para>
     <section id="origins">
       <title>Origins</title>
 
