@@ -16,7 +16,18 @@
 
   <chapter id="intro">
     <title>Introduction</title>
-
+    <para>
+      Synopsis is a source code introspection tool. It provides parsers for a variety
+      of programming languages (C, C++, Python, IDL), and generates internal representations
+      of varying granularity. The only <emphasis>stable</emphasis> representation, which
+      is currently used among others to generate documentation, is an Abstract Syntax Tree.
+    </para>
+    <para>
+      This tutorial is focussed on the AST and the concepts around it. Other representations
+      are presently being worked on, notably in relation to the C++ parser. To learn more
+      about those (Parse Tree, Symbol Table, etc.) see the 
+      <ulink url="../DevGuide/index.html">Developer's Guide</ulink>.
+    </para>
     <section>
       <title>Inspecting code</title>
 
@@ -32,7 +43,7 @@
       <!-- Talk about source code and its representation
          inside synopsis -->
 
-      <para></para>
+      <para>See <xref linkend="ast" /></para>
     </section>
 
     <section>
@@ -41,7 +52,7 @@
       <!-- Talk about AST manipulation as done 
          in synopsis -->
 
-      <para></para>
+      <para>See <xref linkend="pipeline" /></para>
     </section>
   </chapter>
 
