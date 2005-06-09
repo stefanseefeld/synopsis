@@ -208,10 +208,9 @@ class CompilerInfo:
     macros = []
 
     def _write(self, os):
-
         item = id(self) >= 0 and id(self) or -id(self)
         os.write('class Item%u:\n'%item)
-        for name, value in CompilerInfo.__dict__.items():
+        for name, value in CompilerInfo.__dict__.iteritems():
             if name[0] != '_':
                 os.write('    %s=%r\n'%(name, getattr(self, name)))
         os.write('\n')
@@ -226,13 +225,7 @@ class CompilerList(object):
     def __init__(self, filename = ''):
 
         self.compilers = []
-        self.__modified = False
         self.load(filename)
-
-    def __del__(self):
-
-        if self.__modified:
-            self.save()
 
     def list(self):
 
@@ -257,7 +250,6 @@ class CompilerList(object):
             ci.timestamp = 0
             ci.include_paths = []
             ci.macros = []
-            
         return ci
     
 
@@ -295,8 +287,10 @@ class CompilerList(object):
             compilers.append(self._query('C++', 'g++', []))
             compilers.append(self._query('C', 'cc', []))
             compilers.append(self._query('C', 'gcc', []))
-            self.__modified = True
-        self.compilers = compilers
+            self.compilers = compilers
+            self.save()
+        else:
+            self.compilers = compilers
 
     def save(self, filename = ''):
         
@@ -332,7 +326,7 @@ class CompilerList(object):
                 compilers.append(ci)
                 
         self.compilers = compilers
-        self.__modified = True
+        self.save()
 
     def find(self, language, compiler, arguments):
 
