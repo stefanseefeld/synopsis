@@ -32,17 +32,17 @@ class SymbolVisitor
 public:
   virtual ~SymbolVisitor() {}
 
-  virtual void visit(Symbol const *) = 0;
-  virtual void visit(VariableName const *) = 0;
-  virtual void visit(ConstName const *) = 0;
-  virtual void visit(TypeName const *) = 0;
-  virtual void visit(TypedefName const *) = 0;
-  virtual void visit(ClassName const *) = 0;
-  virtual void visit(EnumName const *) = 0;
-  virtual void visit(ClassTemplateName const *) = 0;
-  virtual void visit(FunctionName const *) = 0;
-  virtual void visit(FunctionTemplateName const *) = 0;
-  virtual void visit(NamespaceName const *) = 0;
+  virtual void visit(Symbol const *) {}
+  virtual void visit(VariableName const *) {}
+  virtual void visit(ConstName const *) {}
+  virtual void visit(TypeName const *) {}
+  virtual void visit(TypedefName const *) {}
+  virtual void visit(ClassName const *) {}
+  virtual void visit(EnumName const *) {}
+  virtual void visit(ClassTemplateName const *) {}
+  virtual void visit(FunctionName const *) {}
+  virtual void visit(FunctionTemplateName const *) {}
+  virtual void visit(NamespaceName const *) {}
 };
 
 class Scope;

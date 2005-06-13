@@ -44,9 +44,14 @@ int main(int argc, char **argv)
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
-    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
-
+    if (errors.size())
+    {
+      for (Parser::ErrorList::const_iterator i = errors.begin();
+	   i != errors.end();
+	   ++i)
+	(*i)->write(std::cerr);
+      return -1;
+    }
     SymbolLookup::display(symbols.current_scope(), std::cout);
   }
   catch (const std::exception &e)

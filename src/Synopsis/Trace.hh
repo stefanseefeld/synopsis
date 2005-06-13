@@ -22,8 +22,9 @@ public:
   enum Category { NONE=0x0,
 		  PTREE=0x01,
 		  SYMBOLLOOKUP=0x02,
-		  PARSING=0x04,
-		  TRANSLATION=0x08,
+		  TYPEANALYSIS=0x04,
+		  PARSING=0x08,
+		  TRANSLATION=0x10,
 		  ALL=0xff};
 
   struct Entry

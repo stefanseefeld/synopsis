@@ -18,6 +18,7 @@ BuiltinType WCHAR("wchar_t");
 BuiltinType SHORT("short");
 BuiltinType INT("int");
 BuiltinType LONG("long");
+BuiltinType LONGLONG("long long");
 BuiltinType FLOAT("float");
 BuiltinType DOUBLE("double");
 BuiltinType UCHAR("unsigned char");

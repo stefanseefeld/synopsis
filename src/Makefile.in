@@ -34,9 +34,14 @@ SRC	:= Trace \
            TypeAnalysis/TypeEvaluator \
            TypeAnalysis/ConstEvaluator \
            TypeAnalysis/OverloadResolver \
+           TypeAnalysis/Display \
            Buffer Lexer SymbolFactory Parser
 
+TOOLS	:= display-ptree display-symbols display-types
+
 SRC 	:= $(patsubst %, Synopsis/%.cc, $(SRC))
+
+TSRC	:= $(patsubst %, tools/%.cc, $(TOOLS))
 
 SUP	:= $(patsubst %, Support/%.cc, Path ErrorHandler)
 
@@ -48,11 +53,11 @@ HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/TypeAnalysis/*.h
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 CC_SYN	:= $(patsubst %, %.syn, $(SRC))
 HDR_SYN	:= $(patsubst %, %.syn, $(HDR))
-DEP	:= $(patsubst %.cc, %.d, $(SRC) tools/display-ptree.cc tools/display-symbols.cc)
+DEP	:= $(patsubst %.cc, %.d, $(SRC) $(TSRC))
 
 LIBRARY	:= lib/libSynopsis$(LIBRARY_EXT)
 SUPPORT := lib/libSupport.a
-TOOLS	:= bin/display-ptree bin/display-symbols
+TOOLS	:= $(patsubst %, bin/%, $(TOOLS))
 TARGETS	:= $(LIBRARY) $(SUPPORT) $(TOOLS)
 
 vpath %.cc $(srcdir)
