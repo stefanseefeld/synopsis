@@ -61,10 +61,14 @@ int main(int argc, char **argv)
     Parser parser(lexer, symbols);
     PTree::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
-    for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
-      (*i)->write(std::cerr);
-
-    if (!node) return -1;
+    if (errors.size())
+    {
+      for (Parser::ErrorList::const_iterator i = errors.begin();
+	   i != errors.end();
+	   ++i)
+	(*i)->write(std::cerr);
+      return -1;
+    }
     if (dotfile.empty())
     {
       PTree::display(node, std::cout, encoding, typeinfo);

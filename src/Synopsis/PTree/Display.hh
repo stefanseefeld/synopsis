@@ -23,6 +23,7 @@ public:
 
   void display(Node const *);
 
+private:
   virtual void visit(Atom *);
   virtual void visit(List *);
   // atoms...
@@ -34,7 +35,7 @@ public:
   virtual void visit(Declarator *l) { print_encoded(l);}
   virtual void visit(Name *l) { print_encoded(l);}
   virtual void visit(FstyleCastExpr *l) { print_encoded(l);}
-private:
+
   void newline();
   bool too_deep();
   void print_encoded(List *);
@@ -51,10 +52,11 @@ public:
 
   void display(Node const *);
 
+private:
   virtual void visit(Atom *);
   virtual void visit(List *);
   virtual void visit(DupAtom *);
-private:
+
   void newline();
 
   std::ostream &my_os;
@@ -67,6 +69,7 @@ class DotFileGenerator : public PTree::Visitor
 public:
   DotFileGenerator(std::ostream &);
   void write(PTree::Node const *ptree);
+
 private:
   virtual void visit(PTree::Atom *a);
   virtual void visit(PTree::List *l);

@@ -22,7 +22,7 @@ class Type
 public:
   Type(std::string const &name) : my_name(name), my_refcounter(1) {}
   virtual ~Type() {}
-  const std::string &name() const { return my_name;}
+  std::string const &name() const { return my_name;}
   virtual void accept(Visitor *visitor) = 0;
   virtual void ref() const { ++my_refcounter;}
   virtual void deref() const { if (--my_refcounter) delete this;}
@@ -48,6 +48,7 @@ extern BuiltinType WCHAR;
 extern BuiltinType SHORT;
 extern BuiltinType INT;
 extern BuiltinType LONG;
+extern BuiltinType LONGLONG;
 extern BuiltinType FLOAT;
 extern BuiltinType DOUBLE;
 extern BuiltinType UCHAR;
@@ -96,17 +97,19 @@ private:
 class CVType : public Type
 {
 public:
-  enum CVQualifier { NONE=0x0, CONST=0x1, VOLATILE=0x2};
+  enum Qualifier { NONE=0x0, CONST=0x1, VOLATILE=0x2, CV = 0x3};
 
-  CVType(Type const *type, CVQualifier q)
+  CVType(Type const *type, Qualifier q)
     : Type(names[q]), my_type(type), my_qual(q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Type const *unqualified() const { return my_type;}
 
 private:
   static std::string const names[4];
 
   Type const *my_type;
-  CVQualifier my_qual;
+  Qualifier   my_qual;
 };
 
 class Pointer : public Type
@@ -114,6 +117,8 @@ class Pointer : public Type
 public:
   Pointer(Type const *type) : Type("*"), my_type(type) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Type const *dereference() const { return my_type;}
 
 private:
   Type const *my_type;
@@ -125,6 +130,8 @@ public:
   Reference(Type const *type) : Type("&"), my_type(type) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
+  Type const *dereference() const { return my_type;}
+
 private:
   Type const *my_type;
 };
@@ -132,11 +139,16 @@ private:
 class Array : public Type
 {
 public:
-  Array(Type const *type) : Type("[]"), my_type(type) {}
+  Array(Type const *type, unsigned long dim)
+    : Type("[]"), my_type(type), my_dim(dim) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
+  Type const *dereference() const { return my_type;}
+  unsigned long dim() const { return my_dim;}
+
 private:
-  Type const *my_type;
+  Type const *  my_type;
+  unsigned long my_dim;
 };
 
 class Function : public Type

@@ -8,6 +8,8 @@
 #define Synopsis_TypeAnalysis_Kit_hh_
 
 #include <Synopsis/TypeAnalysis/Type.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/SymbolLookup.hh>
 
 namespace Synopsis
 {
@@ -20,13 +22,16 @@ class Kit
 public:
   Kit();
 
+  Type const *lookup(PTree::Encoding const &name, SymbolLookup::Scope *scope);
+
   Type const *builtin(std::string const &name);
   Type const *enum_(std::string const &name);
   Type const *class_(std::string const &name);
   Type const *union_(std::string const &name);
+  Type const *cvtype(Type const *type, CVType::Qualifier);
   Type const *pointer(Type const *type);
   Type const *reference(Type const *type);
-  Type const *array(Type const *type);
+  Type const *array(Type const *type, unsigned long dim);
   Type const *pointer_to_member(Type const *container, Type const *member);
 private:
 };
