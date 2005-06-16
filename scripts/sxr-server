@@ -15,13 +15,15 @@ import sys, os, os.path, getopt, socket
 document_root = '.'
 url = ''
 src = ''
+debug = False
 
 class RequestHandler(CGIHTTPRequestHandler):
    """This little demo server emulates apache's 'Alias' and 'ScriptAlias'
    options to serve source files and data generated from sxr.cgi"""
 
    def translate_path(self, path):
-
+      
+      if debug: print 'translate_path', path
       # similar to an 'Alias <src> <document_root>' under apache...
       if path.startswith(src): # a file request...
          path = os.path.join(document_root, path[len(src) + 1:])
@@ -36,8 +38,10 @@ class RequestHandler(CGIHTTPRequestHandler):
 
       if self.path.startswith(url):
          self.cgi_info = config.datadir + '/cgi-bin', 'sxr.cgi' + self.path[len(url):]
+         if debug: print 'is_cgi', self.path, self.cgi_info
          return True
 
+      if debug: print 'is_cgi False'
       return False
       
 
@@ -47,27 +51,29 @@ def usage():
 List of options:
 
   -h, --help             help
+  -d, --debug            print debug output
   -p, --port             port to listen for requests
-  -d, --document_root    document root, i.e. top level directory (for things like stylesheets)
+  -r, --document_root    document root, i.e. top level directory (for things like stylesheets)
   -u, --url              base url under which to reach sxr.cgi
   -s, --src              base url under which to reach source files
 """
 
 def run():
-   global document_root, url, src
+   global document_root, url, src, debug
 
    port = 8000
    env = {}
    opts, args = getopt.getopt(sys.argv[1:],
-                              'p:d:u:s:h',
-                              ['port=', 'document_root=', 'url=', 'src=', 'help'])
+                              'p:r:u:s:dh',
+                              ['port=', 'document_root=', 'url=', 'src=',
+                               'debug', 'help'])
    for o, a in opts:
       if o == '-h' or o == '--help':
          usage()
          sys.exit(0)
       elif o == '-p' or o == '--port':
          port = int(a)
-      elif o == '-d' or o == '--document_root':
+      elif o == '-r' or o == '--document_root':
          env['SXR_ROOT_DIR'] = a
          document_root = a
       elif o == '-u' or o == '--url':
@@ -76,6 +82,8 @@ def run():
       elif o == '-s' or o == '--src':
          env['SXR_SRC_URL'] = a
          src = a
+      elif o == '-d' or o == '--debug':
+         debug = True
 
    if not os.path.isfile(os.path.join(document_root, 'xref_db')):
       print 'please set the document root to a valid value !'
