@@ -1,16 +1,33 @@
 body
-  {
-    margin-left: 5%;
-    margin-right: 5%;
-    color: #003030;
-    background: #ffffff;
-  }
+{
+  margin-left: 5%;
+  margin-right: 5%;
+  color: #003030;
+  background: #ffffff;
+}
 :link { color: #770000; text-decoration: none;}
 :visited { color: #770000; text-decoration: none;}
 :active { color: #800000; text-decoration: none;}
 span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
 span.name { font-weight: bold; }
+
+table.form
+{
+  background-color: #aaaaaa;
+  border-spacing: 1px;
+}
+table.form td
+{
+  background-color: #f2f5f7;
+  padding: 5px;
+}
+table.form th
+{
+  background-color: #f2f5f7;
+  padding: 5px;
+}
+
 div.navigation
 { 
   border: 1px solid #aaaaaa;
