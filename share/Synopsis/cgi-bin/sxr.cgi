@@ -6,8 +6,17 @@
 # see the file COPYING for details.
 #
 
-import sys, os, string, dircache, cgi, cPickle
+import sys, os, dircache, cgi, cPickle
 import urllib, cgitb
+
+def escape(text):
+   """escape special characters ('&', '"', '<', '>')"""
+
+   text = text.replace('&', '&amp;')
+   text = text.replace('"', '&quot;')
+   text = text.replace('<', '&lt;')
+   text = text.replace('>', '&gt;')
+   return text
 
 cgitb.enable()
 
@@ -29,19 +38,19 @@ class Handler(object):
   </body>
 </html>"""
 
-        self.template = string.split(template, "@CONTENT@")
+        self.template = template.split("@CONTENT@")
         self.src_url = os.environ.get('SXR_SRC_URL', '.')
         self.cgi_url = os.environ.get('SXR_CGI_URL', '.')
 
-        path = string.split(os.environ.get('PATH_INFO', '/'), '/')
+        path = os.environ.get('PATH_INFO', '/').split('/')
         self.command = len(path) > 1 and path[1] or ''
-        self.path_info = string.join(path[2:], '/')
+        self.path_info = '/'.join(path[2:])
         self.form = cgi.FieldStorage()
         self.script_name = os.environ.get('SCRIPT_NAME', None)
 
     def print_ident(self, file, line, text):
         return "<a href=\"%s/Source/%s.html#%s\">%s:%s: %s</a>"%(self.src_url, file, line,
-                                                          file, line, text)
+                                                                 file, line, escape(text))
 
     def print_file(self, file, name = None):
         if not name: name = file
@@ -50,25 +59,25 @@ class Handler(object):
 
     def dump(self, data, name):
         if not data.has_key(name): return
-        print string.join(name, '::')
+        print "<h3>%s</h3>"%escape('::'.join(name))
         target_data = data[name]
         if target_data[0]:
             print "<li>Defined at:<br>"
             print "<ul>"
             for file, line, scope in target_data[0]:
-                print "<li>%s</li>"%(self.print_ident(file, line, string.join(scope,'::')))
+                print "<li>%s</li>"%(self.print_ident(file, line, '::'.join(scope)))
             print "</ul></li>"
         if target_data[1]:
             print "<li>Called from:<br>"
             print "<ul>"
             for file, line, scope in target_data[1]:
-                print "<li>%s</li>"%(self.print_ident(file, line, string.join(scope,'::')))
+                print "<li>%s</li>"%(self.print_ident(file, line, '::'.join(scope)))
             print "</ul></li>"
         if target_data[2]:
             print "<li>Referenced from:<br>"
             print "<ul>"
             for file, line, scope in target_data[2]:
-                print "<li>%s</li>"%(self.print_ident(file, line, string.join(scope,'::')))
+                print "<li>%s</li>"%(self.print_ident(file, line, '::'.join(scope)))
             print "</ul></li>"
 
     def file(self):
@@ -140,7 +149,7 @@ class Handler(object):
             f.close()
 
             if full:
-                name = tuple(string.split(ident.value,'::'))
+                name = tuple(ident.value.split('::'))
                 found = False
                 # Check for exact match
                 if data.has_key(name):

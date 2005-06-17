@@ -45,15 +45,13 @@ class SXRIndex(View):
       self.write("""
 <table class="form">
   <tr>
-    <td>
-      Click here to start browsing at the root of the directory tree:
-    </td>
+    <td>Click here to start browsing at the root of the directory tree:</td>
     <td>
       <a href="dir.html">/</a>
     </td>
   </tr>
   <tr>
-    <td>File Name Search</td>
+    <td>Enter a file name to search:</td>
     <td>
       <form method="get" action="%(script)s/file">
         <input type="text" name="string" value="" size="15"/>
@@ -62,7 +60,7 @@ class SXRIndex(View):
     </td>
   </tr>
   <tr>
-    <td>Identifier Search (variables, types, ...)</td>
+    <td>Enter a variable, type, or function name to search:</td>
     <td>
       <form method="get" action="%(script)s/ident">
         <input type="text" name="string" value="" size="15"/>
