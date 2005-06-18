@@ -68,16 +68,22 @@ dnl of the list.
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
     fi
+    LDSHARED="$CXX -shared"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
-    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS -lpthread"
+    LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS"
+    ;;
+Darwin)
+    LDSHARED="$CXX -dynamiclib"
+    CXXFLAGS="$CXXFLAGS -fPIC"
     ;;
 *)
-    CXXFLAGS="-pthread $CXXFLAGS -fPIC"
-    LDFLAGS="-pthread $LDFLAGS"
+    LDSHARED="$CXX -shared"
+    CXXFLAGS="$CXXFLAGS -fPIC"
     ;;
 esac
 
 AC_SUBST(LIBEXT)
+AC_SUBST(LDSHARED)
 
 dnl find all template files and strip off the $srcdir and .in suffix
 templates=`find $srcdir -name '*.in' -print | sed -e "s,^$srcdir/,,g" -e "s,\.in$,,g"`

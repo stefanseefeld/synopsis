@@ -14,6 +14,7 @@ PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I $(srcdir)
 CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
@@ -91,11 +92,11 @@ $(CC_SYN): %.cc.syn: %.cc
 
 # This creates the final occ python module
 $(OCC_SO): $(SYN_OBJ) opencxx.a
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # This creates the final link python module
 $(LINK_SO): $(srcdir)/syn/link.cc
-	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # Compile an archive of the OCC files
 opencxx.a : $(OCC_OBJ)

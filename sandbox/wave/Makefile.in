@@ -13,6 +13,7 @@ PYTHON	:= @PYTHON@
 
 CC	:= @CC@
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I . 
 CPPFLAGS+= -I $(srcdir)
@@ -50,7 +51,7 @@ Makefile: $(srcdir)/Makefile.in
 	$(SHELL) -ec 'cd .. && ./config.status --file wave/Makefile'
 
 wave$(LIBRARY_EXT): $(OBJ)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean :
 	rm -f *~ *.o wave$(LIBRARY_EXT) *.d *.pyc *.pyo base_lib

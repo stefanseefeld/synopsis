@@ -57,11 +57,9 @@ dnl of the list.
     fi
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     LDFLAGS="-rdynamic $LDFLAGS"
-    LIBS="$LIBS -lpthread"
     ;;
 *)
-    CXXFLAGS="-pthread $CXXFLAGS"
-    LDFLAGS="-pthread -rdynamic $LDFLAGS"
+    LDFLAGS="-rdynamic $LDFLAGS"
     ;;
 esac
 
