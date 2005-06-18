@@ -14,6 +14,8 @@ SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
 LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
+AR	:= @AR@
+RANLIB	:= @RANLIB@
 CPPFLAGS:= @CPPFLAGS@ -I $(builddir) -I $(srcdir)
 CXXFLAGS:= @CXXFLAGS@
 LDFLAGS	:= @LDFLAGS@
@@ -73,6 +75,7 @@ $(LIBRARY): $(OBJ) $(GC_LIB)
 
 $(SUPPORT): $(patsubst %.cc, %.o, $(SUP))
 	$(AR) cru $@ $^
+	$(RANLIB) $@
 
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
 	$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)
