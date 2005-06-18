@@ -32,6 +32,9 @@ AC_ARG_WITH([gc_prefix],
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_RANLIB
+AC_CHECK_PROGS(AR, ar aal, ar)
+AC_SUBST(AR)
 
 if test -n "$PYTHON" -a "$PYTHON" != yes; then
   AC_CHECK_PROG(PYTHON,,AC_MSG_ERROR([Cannot find Python interpreter]))
