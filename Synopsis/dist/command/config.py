@@ -79,13 +79,13 @@ class config(build_ext):
 
         for ext in self.extensions:
             self.config(ext, self.build_temp, self.build_lib,
-                        '--with-syn-cxx=%s'%syn_cxx)
+                        '--with-syn-cxx="%s"'%syn_cxx)
 
         self.config('tests', self.build_temp, self.build_lib,
-                    '--with-syn-cxx=%s'%syn_cxx)
+                    '--with-syn-cxx="%s"'%syn_cxx)
         self.config('doc', self.build_temp, self.build_lib)
         self.config('sandbox', self.build_temp, self.build_lib,
-                    '--with-syn-cxx=%s'%syn_cxx)
+                    '--with-syn-cxx="%s"'%syn_cxx)
 
             
     def config(self, component, build_temp, build_lib, args=''):
@@ -119,11 +119,11 @@ class config(build_ext):
             configure = srcdir + '/configure'
             python = sys.executable
             prefix = self.prefix
-        command = "%s --prefix=%s --with-python=%s"%(configure, prefix, python)
+        command = '%s --prefix="%s" --with-python="%s"'%(configure, prefix, python)
         if self.disable_gc:
-            command += " --disable-gc"
+            command += ' --disable-gc'
         elif self.with_gc_prefix:
-            command += " --with-gc-prefix=%s"%self.with_gc_prefix
+            command += ' --with-gc-prefix="%s"'%self.with_gc_prefix
         command += ' %s'%args
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)

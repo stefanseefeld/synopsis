@@ -12,6 +12,7 @@ builddir:= @builddir@
 
 SYNOPSIS:= python synopsis.py
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I $(builddir) -I $(srcdir)
 CXXFLAGS:= @CXXFLAGS@
@@ -68,7 +69,7 @@ vpath %.hh $(srcdir) $(builddir)
 all: $(TARGETS)
 
 $(LIBRARY): $(OBJ) $(GC_LIB)
-	$(CXX) -shared $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(SUPPORT): $(patsubst %.cc, %.o, $(SUP))
 	$(AR) cru $@ $^

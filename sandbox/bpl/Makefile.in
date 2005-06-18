@@ -14,6 +14,7 @@ PYTHON	:= @PYTHON@
 SYNOPSIS:= $(PYTHON) synopsis.py
 
 CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= -I $(srcdir) -I .
 CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@ @CPPFLAGS@
@@ -30,9 +31,9 @@ vpath %.cc $(srcdir)
 
 all: $(TARGETS)
 
-%.so: %.o
+%$(LIBRARY_EXT): %.o
 	@echo linking $(@F)
-	$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
+	$(LDSHARED) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
 	strip --strip-unneeded $@
 
 %.d: %.cc

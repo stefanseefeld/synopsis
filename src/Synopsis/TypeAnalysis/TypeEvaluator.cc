@@ -9,6 +9,9 @@
 #include <Synopsis/PTree/Display.hh>
 #include <cassert>
 
+#undef TRUE
+#undef FALSE
+
 using namespace Synopsis;
 using namespace PTree;
 using namespace TypeAnalysis;
