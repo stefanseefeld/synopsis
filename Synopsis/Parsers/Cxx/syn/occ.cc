@@ -8,6 +8,7 @@
 
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
+#include <Synopsis/Timer.hh>
 #include <Support/ErrorHandler.hh>
 #include "Translator.hh"
 #include "swalker.hh"
@@ -99,6 +100,7 @@ void FakeGC::delete_all()
 }
 
 bool verbose;
+bool profile;
 
 // If true then everything but what's in the main file will be stripped
 bool syn_main_only;
@@ -168,17 +170,26 @@ void RunOpencxx(AST::SourceFile *sourcefile, const char *file, PyObject *ast)
   if (filter->should_link(sourcefile) || filter->should_xref(sourcefile))
     swalker.set_store_links(new LinkStore(filter, &swalker));
 
+  Timer timer;
   PTree::Node *def = parser.parse();
+  if (profile)
+    std::cout << "Parser::parse took " << timer.elapsed() << " seconds" << std::endl;
   const Parser::ErrorList &errors = parser.errors();
   if (!errors.size())
   {
+    timer.reset();
     swalker.translate(def);
+    if (profile)
+      std::cout << "SWalker::translate took " << timer.elapsed() << " seconds" << std::endl;
+    timer.reset();
       
     // Setup synopsis c++ to py convertor
     Translator translator(filter, ast);//declarations, types);
     translator.set_builtin_decls(builder.builtin_decls());
     // Convert!
     translator.translate(builder.scope());
+    if (profile)
+      std::cout << "Translator::translate took " << timer.elapsed() << " seconds" << std::endl;
   }
   else
   {
@@ -197,22 +208,24 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   PyObject *ast;
   const char *src, *cppfile;
-  int main_file_only, verbose, debug;
-  if (!PyArg_ParseTuple(args, "Ossizzzii",
+  int main_file_only, verbose, debug, profile;
+  if (!PyArg_ParseTuple(args, "Ossizzziii",
                         &ast, &cppfile, &src,
                         &main_file_only,
                         &syn_base_path,
                         &syn_syntax_prefix,
                         &syn_xref_prefix,
                         &verbose,
-                        &debug))
+                        &debug,
+			&profile))
     return 0;
 
   Py_INCREF(py_error);
   std::auto_ptr<Python::Object> error_type(new Python::Object(py_error));
   Py_INCREF(ast);
 
-  if (verbose) ::verbose = true;
+  ::verbose = verbose == 1;
+  ::profile = profile == 1;
   if (debug) Trace::enable(Trace::ALL);
   if (main_file_only) syn_main_only = true;
 
