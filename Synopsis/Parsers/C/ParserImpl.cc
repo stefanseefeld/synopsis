@@ -8,6 +8,7 @@
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
+#include <Synopsis/Timer.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolLookup.hh>
@@ -39,15 +40,16 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   char const * base_path = "";
   char const * syntax_prefix = 0;
   char const * xref_prefix = 0;
-  int main_file_only, verbose, debug;
-  if (!PyArg_ParseTuple(args, "Ossizzzii",
+  int main_file_only, verbose, debug, profile;
+  if (!PyArg_ParseTuple(args, "Ossizzziii",
                         &py_ast, &cppfile, &src,
                         &main_file_only,
                         &base_path,
                         &syntax_prefix,
                         &xref_prefix,
                         &verbose,
-                        &debug))
+                        &debug,
+			&profile))
     return 0;
 
   Py_INCREF(py_ast);
@@ -57,7 +59,6 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
-//   if (verbose) ::verbose = true;
   if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
 
   if (!src || *src == '\0')
@@ -72,12 +73,20 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Lexer lexer(&buffer, Lexer::GCC);
     SymbolFactory symbols(SymbolFactory::C99);
     Parser parser(lexer, symbols);
+    Timer timer;
     PTree::Node *ptree = parser.parse();
+    if (profile)
+      std::cout << "Parser::parse took " << timer.elapsed() 
+		<< " seconds" << std::endl;
     const Parser::ErrorList &errors = parser.errors();
     if (!errors.size())
     {
       ASTTranslator translator(src, base_path, main_file_only, ast, verbose, debug);
+      timer.reset();
       translator.translate(ptree, buffer);
+      if (profile)
+	std::cout << "ASTTranslator::translate took " << timer.elapsed() 
+		  << " seconds" << std::endl;
     }
     else
     {

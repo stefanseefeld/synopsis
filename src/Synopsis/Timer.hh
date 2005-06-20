@@ -17,6 +17,7 @@ class Timer
 {
 public:
   Timer() : my_start(std::clock()) {}
+  void reset() { my_start = std::clock();}
   double elapsed() const { return  double(std::clock() - my_start) / CLOCKS_PER_SEC;}
 private:
   std::clock_t my_start;

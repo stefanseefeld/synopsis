@@ -59,7 +59,8 @@ class Parser(Processor):
                                    input = [file],
                                    main_file_only = self.main_file_only,
                                    verbose = self.verbose,
-                                   debug = self.debug)
+                                   debug = self.debug,
+                                   profile = self.profile)
 
          self.ast = occ.parse(self.ast, ii_file,
                               os.path.abspath(file),
@@ -68,7 +69,8 @@ class Parser(Processor):
                               self.syntax_prefix,
                               self.xref_prefix,
                               self.verbose,
-                              self.debug)
+                              self.debug,
+                              self.profile)
 
          if self.preprocess: os.remove(ii_file)
 
