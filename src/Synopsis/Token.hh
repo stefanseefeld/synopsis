@@ -90,6 +90,8 @@ struct Token
     DELETE,
     DOUBLE,
     ENUM,
+    EXPLICIT,
+    EXPORT,
     EXTERN,
     FLOAT,
     FRIEND,

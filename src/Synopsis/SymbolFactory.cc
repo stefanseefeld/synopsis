@@ -18,7 +18,7 @@
 using namespace Synopsis;
 namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
-using namespace TypeAnalysis;
+namespace TA = Synopsis::TypeAnalysis;
 
 namespace
 {
@@ -95,7 +95,8 @@ private:
 SymbolFactory::SymbolFactory(Language l)
   : my_language(l),
     my_prototype(0),
-    my_template_parameters(0)
+    my_template_parameters(0),
+    my_template_repository(new TA::TemplateRepository())
 {
   // define the global scope
   my_scopes.push(new ST::Namespace(0, 0));
@@ -145,7 +146,21 @@ void SymbolFactory::enter_scope(PT::ClassSpec const *spec)
   }
   ST::Scope *scope = my_scopes.top();
   ST::Class *class_ = new ST::Class(spec, scope, bases, my_template_parameters);
-  scope->declare_scope(spec, class_);
+  PT::Encoding const &name = spec->encoded_name();
+  if (name.is_template())
+  {
+    // This is a template specialization. Declare the scope with the
+    // template repository.
+    PT::Encoding::iterator begin = name.begin() + 1;
+    PT::Encoding tname(begin, begin + *begin - 0x80 + 1);
+    ST::SymbolSet symbols = scope->find(tname, ST::Scope::DECLARATION);
+    if (symbols.empty())
+      throw ST::Undefined(tname);
+    ST::ClassTemplateName const *primary = dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
+    my_template_repository->declare_scope(primary, spec, class_);
+  }
+  else
+    scope->declare_scope(spec, class_);
   my_scopes.push(class_);
   my_template_parameters = 0;
 }
@@ -344,7 +359,7 @@ void SymbolFactory::declare(PT::EnumSpec const *spec)
     {
       PT::Node const *initializer = PT::third(enumerator);
       
-      defined = evaluate_const(current_scope(), initializer, value);
+      defined = TA::evaluate_const(current_scope(), initializer, value);
       enumerator = enumerator->car();
 #ifndef NDEBUG
       if (!defined)
@@ -387,6 +402,13 @@ void SymbolFactory::declare(PT::ClassSpec const *spec)
   Trace trace("SymbolFactory::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   PT::Encoding const &name = spec->encoded_name();
+  // If the name is a template-id, we are looking at a template specialization.
+  // Declare it in the template repository instead.
+  if (name.is_template())
+  {
+    declare_template_specialization(name, spec);
+    return;
+  }
   // If class spec contains a class body, it's a definition.
   PT::ClassBody const *body = const_cast<PT::ClassSpec *>(spec)->body();
 
@@ -428,7 +450,12 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   if (class_spec)
   {
     PT::Encoding const &name = class_spec->encoded_name();
-    scope->declare(name, new ST::ClassTemplateName(PT::Encoding(), tdecl, true, scope));
+    // If the name is a template-id, we are looking at a template specialization.
+    // Declare it in the template repository instead.
+    if (name.is_template())
+      declare_template_specialization(name, class_spec);
+    else
+      scope->declare(name, new ST::ClassTemplateName(PT::Encoding(), tdecl, true, scope));
   }
   else
   {
@@ -522,4 +549,21 @@ ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
   while (name.is_qualified()) name = name.get_symbol();
   scope = symbol->scope();
   return scope;
+}
+
+void SymbolFactory::declare_template_specialization(PT::Encoding const &name,
+						    PT::ClassSpec const *spec)
+{
+  Trace trace("SymbolFactory::declare_template_specialization", Trace::SYMBOLLOOKUP);
+  // Find primary template and declare specialization.
+  PT::Encoding::iterator begin = name.begin() + 1;
+  PT::Encoding tname(begin, begin + *begin - 0x80 + 1);
+  ST::Scope *scope = my_scopes.top();
+  ST::SymbolSet symbols = scope->find(tname, ST::Scope::DECLARATION);
+  if (symbols.empty())
+    throw ST::Undefined(tname);
+  ST::ClassTemplateName const * templ = dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
+  if (!templ)
+    throw ST::TypeError(tname, (*symbols.begin())->type());
+  my_template_repository->declare(templ, spec);
 }

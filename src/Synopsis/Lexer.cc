@@ -56,6 +56,8 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["catch"] = Token::CATCH;
     my_keywords["class"] = Token::CLASS;
     my_keywords["delete"] = Token::DELETE;
+    my_keywords["explicit"] = Token::EXPLICIT;
+    my_keywords["export"] = Token::EXPORT;
     my_keywords["false"] = Token::Constant;
     my_keywords["friend"] = Token::FRIEND;
     my_keywords["mutable"] = Token::MUTABLE;
