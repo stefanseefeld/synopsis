@@ -11,7 +11,7 @@
 #include <fstream>
 
 using namespace Synopsis;
-using namespace SymbolLookup;
+using namespace SymbolTable;
 
 class SymbolFinder : private Walker
 {
@@ -190,7 +190,7 @@ private:
 	      bool type = false)
   {
     Trace trace("SymbolFinder::lookup", Trace::SYMBOLLOOKUP);
-    SymbolSet symbols = current_scope()->lookup(name, c);
+    SymbolSet symbols = Walker::lookup(name, c);
     if (!symbols.empty())
     {
       if (type) // Expect a single match that is a type-name.
@@ -244,7 +244,16 @@ int main(int argc, char **argv)
       output = argv[1];
       input = argv[2];
     }
-    std::ofstream ofs(output.c_str());
+    std::ofstream ofs;
+    {
+      if (output != "-")
+	ofs.open(output.c_str());
+      else
+      {
+	ofs.copyfmt(std::cout);
+	static_cast<std::basic_ios<char> &>(ofs).rdbuf(std::cout.rdbuf());
+      }
+    }
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), "<input>");
     Lexer lexer(&buffer);

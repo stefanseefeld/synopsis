@@ -4,12 +4,12 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <boost/python.hpp>
 
 namespace bpl = boost::python;
 using namespace Synopsis;
-using namespace Synopsis::SymbolLookup;
+using namespace Synopsis::SymbolTable;
 
 namespace
 {

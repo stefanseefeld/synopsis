@@ -9,8 +9,8 @@
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
-#include <Synopsis/SymbolLookup.hh>
-#include <Synopsis/SymbolLookup/Display.hh>
+#include <Synopsis/SymbolTable.hh>
+#include <Synopsis/SymbolTable/Display.hh>
 #include <Synopsis/Trace.hh>
 #include <fstream>
 
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	(*i)->write(std::cerr);
       return -1;
     }
-    SymbolLookup::display(symbols.current_scope(), std::cout);
+    SymbolTable::display(symbols.current_scope(), std::cout);
   }
   catch (const std::exception &e)
   {

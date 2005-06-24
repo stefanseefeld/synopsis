@@ -30,7 +30,16 @@ int main(int argc, char **argv)
       output = argv[1];
       input = argv[2];
     }
-    std::ofstream ofs(output.c_str());
+    std::ofstream ofs;
+    {
+      if (output != "-")
+	ofs.open(output.c_str());
+      else
+      {
+	ofs.copyfmt(std::cout);
+	static_cast<std::basic_ios<char> &>(ofs).rdbuf(std::cout.rdbuf());
+      }
+    }
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);

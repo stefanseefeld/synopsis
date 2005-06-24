@@ -9,7 +9,7 @@
 
 #include <Synopsis/TypeAnalysis/Type.hh>
 #include <Synopsis/PTree.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolTable.hh>
 
 namespace Synopsis
 {
@@ -22,7 +22,7 @@ class Kit
 public:
   Kit();
 
-  Type const *lookup(PTree::Encoding const &name, SymbolLookup::Scope *scope);
+  Type const *lookup(PTree::Encoding const &name, SymbolTable::Scope *scope);
 
   Type const *builtin(std::string const &name);
   Type const *enum_(std::string const &name);

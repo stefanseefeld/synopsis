@@ -15,7 +15,7 @@
 namespace Synopsis
 {
 
-using namespace SymbolLookup;
+using namespace SymbolTable;
 
 namespace TypeAnalysis
 {

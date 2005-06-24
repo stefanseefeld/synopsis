@@ -8,7 +8,7 @@
 #define Synopsis_TypeAnalysis_OverloadResolver_hh_
 
 #include <Synopsis/PTree.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolTable.hh>
 
 namespace Synopsis
 {
@@ -16,8 +16,8 @@ namespace TypeAnalysis
 {
 
 //. Resolve a function call in the context of the given scope.
-SymbolLookup::Symbol const *resolve_funcall(PTree::FuncallExpr const *funcall,
-					    SymbolLookup::Scope const *);
+SymbolTable::Symbol const *resolve_funcall(PTree::FuncallExpr const *funcall,
+					   SymbolTable::Scope const *);
 
 }
 }
