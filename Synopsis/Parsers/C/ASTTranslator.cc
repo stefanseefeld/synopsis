@@ -14,8 +14,8 @@
 using namespace Synopsis;
 
 ASTTranslator::ASTTranslator(std::string const &filename,
-			     std::string const &base_path, bool main_file_only,
-			     Synopsis::AST::AST ast, bool v, bool d)
+                             std::string const &base_path, bool main_file_only,
+                             Synopsis::AST::AST ast, bool v, bool d)
   : my_ast(ast),
     my_ast_kit("C"),
     my_raw_filename(filename),
@@ -68,7 +68,7 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
   if (type.is_function())
   {
     trace << "declare function " << name << " (" << type << ')' 
-	  << my_raw_filename << ':' << my_lineno;
+          << my_raw_filename << ':' << my_lineno;
 
     AST::TypeList parameter_types;
     AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
@@ -81,11 +81,11 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Modifiers modifiers;
     AST::Function function = my_ast_kit.create_function(my_file, my_lineno,
-							"function",
-							modifiers,
-							return_type,
-							qname,
-							qname.get(0));
+                                                        "function",
+                                                        modifiers,
+                                                        return_type,
+                                                        qname,
+                                                        qname.get(0));
     function.parameters().extend(parameters);
     if (my_declaration) add_comments(function, my_declaration->get_comments());
     add_comments(function, declarator->get_comments());
@@ -103,11 +103,11 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     else
     {
       if (vtype == "function")
-	vtype = "local ";
+        vtype = "local ";
       vtype += "variable";
     }
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
-							vtype, qname, t, false);
+                                                        vtype, qname, t, false);
     if (my_declaration) add_comments(variable, my_declaration->get_comments());
     add_comments(variable, declarator->get_comments());
     if (visible) declare(variable);
@@ -139,7 +139,7 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
     std::string name = PTree::reify(PTree::second(class_spec));
     AST::ScopedName qname(name);
     AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
-						     type, qname);
+                                                     type, qname);
     add_comments(forward, class_spec->get_comments());
     if (visible) declare(forward);
     my_types.declare(qname, forward);
@@ -226,7 +226,7 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
   // Add a dummy enumerator at the end to absorb trailing comments.
   PTree::Node *close = PTree::third(PTree::third(enum_spec));
   enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
-					    AST::ScopedName(std::string("dummy")), "");
+                                            AST::ScopedName(std::string("dummy")), "");
   add_comments(enumerator, static_cast<PTree::CommentedAtom *>(close));
   enumerators.append(enumerator);
   
@@ -257,15 +257,15 @@ void ASTTranslator::visit(PTree::Typedef *typed)
     PTree::Encoding name = declarator->encoded_name();
     PTree::Encoding type = declarator->encoded_type();
     trace << "declare type " << name << " (" << type << ')' 
-	  << my_raw_filename << ':' << my_lineno;
+          << my_raw_filename << ':' << my_lineno;
     assert(name.is_simple_name());
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Type alias = my_types.lookup(type);
     AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
-							     "typedef",
-							     qname,
-							     alias, false);
+                                                             "typedef",
+                                                             qname,
+                                                             alias, false);
     add_comments(declaration, declarator->get_comments());
     if (visible) declare(declaration);
     my_types.declare(qname, declaration);
@@ -273,8 +273,8 @@ void ASTTranslator::visit(PTree::Typedef *typed)
 }
 
 void ASTTranslator::translate_parameters(PTree::Node *node,
-					 AST::TypeList types,
-					 AST::Function::Parameters &parameters)
+                                         AST::TypeList types,
+                                         AST::Function::Parameters &parameters)
 {
   Trace trace("ASTTranslator::translate_parameters", Trace::TRANSLATION);
 
@@ -286,7 +286,7 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
     AST::Modifiers premods, postmods;
     if (*node->car() == ',')
       node = node->cdr();
-    PTree::Node *parameter = PTree::first(node);
+    PTree::Node *param = PTree::first(node);
     AST::Type type = types.get(0);
     types.del(0); // pop one value
 
@@ -296,11 +296,11 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
     //[register iostate [nil]]
     //[iostate [nil] = 0]
     //[iostate [nil]]   etc
-    if (PTree::length(parameter) > 1)
+    if (PTree::length(param) > 1)
     {
       // There is a parameter
-      int type_ix, value_ix = -1, len = PTree::length(parameter);
-      if (len >= 4 && *PTree::nth(parameter, len-2) == '=')
+      int type_ix, value_ix = -1, len = PTree::length(param);
+      if (len >= 4 && *PTree::nth(param, len-2) == '=')
       {
         // There is an =, which must be followed by the value
         value_ix = len-1;
@@ -312,16 +312,18 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
         type_ix = len-2;
       }
       // Skip keywords (eg: register) which are atoms
-      for (int ix = 0; ix < type_ix && PTree::nth(parameter, ix)->is_atom(); ++ix)
+      for (int ix = 0;
+           ix < type_ix && PTree::nth(param, ix) && PTree::nth(param, ix)->is_atom();
+           ++ix)
       {
-        PTree::Node *atom = PTree::nth(parameter, ix);
+        PTree::Node *atom = PTree::nth(param, ix);
         premods.append(PTree::reify(atom));
       }
       // Find name
-      if (PTree::Node *n = PTree::nth(parameter, type_ix+1))
+      if (PTree::Node *n = PTree::nth(param, type_ix+1))
       {
         if (PTree::last(n) && !PTree::last(n)->is_atom() && 
-	    PTree::first(PTree::last(n)) &&
+            PTree::first(PTree::last(n)) &&
             *PTree::first(PTree::last(n)) == ')' && PTree::length(n) >= 4)
         {
           // Probably a function pointer type
@@ -346,10 +348,10 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
         }
       }
       // Find value
-      if (value_ix >= 0) value = PTree::reify(PTree::nth(parameter, value_ix));
+      if (value_ix >= 0) value = PTree::reify(PTree::nth(param, value_ix));
     }
     AST::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
-						   name, value);
+                                                   name, value);
     parameters.append(p);
     node = PTree::rest(node);
   }
@@ -415,10 +417,10 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
       if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
     }
     AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
-						     // FIXME: 'first' ought to be an atom,
-						     //        so we could just take the position/length
-						     PTree::reify(first),
-						     suspect);
+                                                     // FIXME: 'first' ought to be an atom,
+                                                     //        so we could just take the position/length
+                                                     PTree::reify(first),
+                                                     suspect);
     comments.append(comment);
 
 //     if (my_links) my_links->long_span(first, "file-comment");
