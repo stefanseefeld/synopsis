@@ -399,6 +399,8 @@ bool Parser::definition(PT::Node *&p)
   }
   else if(t == Token::TEMPLATE)
     res = template_decl(p);
+  else if(t == Token::EXPORT && my_lexer.look_ahead(1) == Token::TEMPLATE)
+    res = template_decl(p);
   else if(t == Token::METACLASS)
     res = metaclass_decl(p);
   else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::StringL)
@@ -941,13 +943,16 @@ bool Parser::template_decl2(PT::TemplateDecl *&decl, TemplateDeclKind &kind)
   Token tk;
   PT::List *params;
 
-  if(my_lexer.get_token(tk) != Token::TEMPLATE) return false;
+  my_lexer.get_token(tk);
+  if (tk.type == Token::EXPORT)
+    my_lexer.get_token(tk); // FIXME: ignored for now.
+  if(tk.type != Token::TEMPLATE) return false;
   if(my_lexer.look_ahead(0) != '<') 
   {
-    // template instantiation
+    // explicit-instantiation
     decl = 0;
     kind = tdk_instantiation;
-    return true;	// ignore TEMPLATE
+    return true;
   }
 
   decl = new PT::TemplateDecl(new PT::Kwd::Template(tk));
@@ -1447,7 +1452,7 @@ bool Parser::is_ptr_to_member(int i)
 
 /*
   member.spec
-  : (FRIEND | INLINE | VIRTUAL | userdef.keyword)+
+  : (FRIEND | INLINE | VIRTUAL | EXPLICIT | userdef.keyword)+
 */
 bool Parser::opt_member_spec(PT::Node *&p)
 {
@@ -1457,7 +1462,10 @@ bool Parser::opt_member_spec(PT::Node *&p)
   int t = my_lexer.look_ahead(0);
 
   p = 0;
-  while(t == Token::FRIEND || t == Token::INLINE || t == Token::VIRTUAL ||
+  while(t == Token::FRIEND ||
+	t == Token::INLINE ||
+	t == Token::VIRTUAL ||
+	t == Token::EXPLICIT ||
 	t == Token::UserKeyword5)
   {
     if(t == Token::UserKeyword5)
@@ -1472,6 +1480,8 @@ bool Parser::opt_member_spec(PT::Node *&p)
 	lf = new PT::Kwd::Inline(tk);
       else if(t == Token::VIRTUAL)
 	lf = new PT::Kwd::Virtual(tk);
+      else if(t == Token::EXPLICIT)
+	lf = new PT::Kwd::Explicit(tk);
       else
 	lf = new PT::Kwd::Friend(tk);
     }

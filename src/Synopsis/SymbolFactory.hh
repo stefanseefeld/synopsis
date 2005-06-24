@@ -8,6 +8,7 @@
 #define Synopsis_SymbolFactory_hh_
 
 #include <Synopsis/SymbolTable/Scope.hh>
+#include <Synopsis/TypeAnalysis/TemplateRepository.hh>
 #include <stack>
 
 namespace Synopsis
@@ -45,7 +46,9 @@ public:
   void declare(PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE
   void declare(PTree::NamespaceSpec const *);
-  //. declare the class as a new TYPE
+  //. Declare a class.
+  //. If this is a template specialization declare it with
+  //. the template repository, else declare it here.
   void declare(PTree::ClassSpec const *);
   void declare(PTree::TemplateDecl const *);
   void declare(PTree::TypeParameter const *);
@@ -60,6 +63,8 @@ private:
   //. The encoded name is modified in place to
   //. refer to the unqualified name.
   SymbolTable::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
+  void declare_template_specialization(PTree::Encoding const &,
+				       PTree::ClassSpec const *);
 
   Language                      my_language;
   Scopes                        my_scopes;
@@ -75,6 +80,8 @@ private:
   //. FIXME: Should ClassSpec get a flag so it knows it's a template, similar
   //.        to Encodings helt in Declarators ?
   SymbolTable::TemplateParameterScope *my_template_parameters;
+
+  TypeAnalysis::TemplateRepository    *my_template_repository;
 };
 
 }

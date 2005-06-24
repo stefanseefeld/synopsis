@@ -40,6 +40,8 @@ typedef KeywordT<Token::DELETE> Delete;
 typedef KeywordT<Token::DOUBLE> Double;
 typedef KeywordT<Token::DO> Do;
 typedef KeywordT<Token::ELSE> Else;
+typedef KeywordT<Token::EXPLICIT> Explicit;
+typedef KeywordT<Token::EXPORT> Export;
 typedef KeywordT<Token::EXTERN> Extern;
 typedef KeywordT<Token::FLOAT> Float;
 typedef KeywordT<Token::FOR> For;

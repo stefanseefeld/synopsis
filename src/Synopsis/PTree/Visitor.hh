@@ -47,6 +47,7 @@ public:
   virtual void visit(Kwd::Double *);
   virtual void visit(Kwd::Do *);
   virtual void visit(Kwd::Else *);
+  virtual void visit(Kwd::Explicit *);
   virtual void visit(Kwd::Extern *);
   virtual void visit(Kwd::Float *);
   virtual void visit(Kwd::For *);
