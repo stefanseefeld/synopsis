@@ -457,6 +457,20 @@ Encoding::iterator Encoding::end_of_scope() const
   throw std::domain_error(oss.str());
 }
 
+Encoding::iterator Encoding::end_name(iterator i)
+{
+  // Assume 'i' points to the beginning of a simple name or a template.
+  // Return the one-past-end of it.
+  if (*i >= 0x80) return i + *i - 0x80 + 1;
+  else if (*i == 'T')
+  {
+    i += *++i - 0x80 + 1; // skip name
+    i += *++i - 0x80 + 1; // skip parameters
+    return i;
+  }
+  assert(0);
+}
+
 Encoding Encoding::get_scope() const
 {
   if (!is_qualified()) return "";    // no scope

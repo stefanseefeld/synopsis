@@ -15,8 +15,8 @@
 #undef FALSE
 
 using namespace Synopsis;
-using namespace PTree;
-using namespace SymbolLookup;
+namespace PT = Synopsis::PTree;
+namespace ST = Synopsis::SymbolTable;
 using namespace TypeAnalysis;
 
 namespace
@@ -31,7 +31,7 @@ const std::string FALSE = "false";
 //.        to calculate the size of compound types
 //.
 //. returns a negative value in case it couldn't determine the size
-long size_of_builtin_type(Encoding::iterator e)
+long size_of_builtin_type(PT::Encoding::iterator e)
 {
   long size = -1;
   switch (*e)
@@ -62,9 +62,9 @@ long size_of_builtin_type(Encoding::iterator e)
 
 }
 
-bool ConstEvaluator::evaluate(Node const *node, long &value)
+bool ConstEvaluator::evaluate(PT::Node const *node, long &value)
 {
-  const_cast<PTree::Node *>(node)->accept(this);
+  const_cast<PT::Node *>(node)->accept(this);
   if (my_valid)
   {
     value = my_value;
@@ -73,7 +73,7 @@ bool ConstEvaluator::evaluate(Node const *node, long &value)
   else return false;
 }
 
-void ConstEvaluator::visit(Literal *node)
+void ConstEvaluator::visit(PT::Literal *node)
 {
   std::istringstream iss(std::string(node->position(), node->length()));
 
@@ -105,15 +105,15 @@ void ConstEvaluator::visit(Literal *node)
   }
 }
 
-void ConstEvaluator::visit(Identifier *node)
+void ConstEvaluator::visit(PT::Identifier *node)
 {
   try
   {
-    Encoding name(node->position(), node->length());
-    SymbolSet symbols = my_scope->lookup(name);
-    ConstName const *const_ = 0;
+    PT::Encoding name(node->position(), node->length());
+    ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
+    ST::ConstName const *const_ = 0;
     if (symbols.size() == 1) 
-      const_ = dynamic_cast<ConstName const *>(*symbols.begin());
+      const_ = dynamic_cast<ST::ConstName const *>(*symbols.begin());
     if (!const_ || !const_->defined()) my_valid = false;
     else
     {
@@ -121,25 +121,25 @@ void ConstEvaluator::visit(Identifier *node)
       my_valid = true;
     }
   }
-  catch (const TypeError &e)
+  catch (const ST::TypeError &e)
   {
     std::cerr << "Error in ConstName lookup: type was " << e.type << std::endl;
   }
 }
 
-void ConstEvaluator::visit(FstyleCastExpr *node)
+void ConstEvaluator::visit(PT::FstyleCastExpr *node)
 {
   my_valid = evaluate(third(node)->car(), my_value);
 }
 
-void ConstEvaluator::visit(InfixExpr *node)
+void ConstEvaluator::visit(PT::InfixExpr *node)
 {
   long left, right;
   if (!evaluate(first(node), left) ||
       !evaluate(third(node), right))
     return;
 
-  Node *op = second(node);
+  PT::Node *op = PT::second(node);
   assert(op->is_atom() && op->length() <= 2);
   my_valid = true;
   if (op->length() == 1)
@@ -195,12 +195,12 @@ void ConstEvaluator::visit(InfixExpr *node)
     my_valid = false;
 }
 
-void ConstEvaluator::visit(SizeofExpr *node)
+void ConstEvaluator::visit(PT::SizeofExpr *node)
 {
   if (length(node->cdr()) == 3) // '(' typename ')'
   {
-    Node *type_decl = second(node->cdr());
-    Encoding type = second(type_decl)->encoded_type();
+    PT::Node *type_decl = PT::second(node->cdr());
+    PT::Encoding type = PT::second(type_decl)->encoded_type();
     long size = size_of_builtin_type(type.begin());
     if (size < 0) return;
     else my_value = static_cast<unsigned long>(size);
@@ -211,10 +211,10 @@ void ConstEvaluator::visit(SizeofExpr *node)
   }
 }
 
-void ConstEvaluator::visit(UnaryExpr *node)
+void ConstEvaluator::visit(PT::UnaryExpr *node)
 {
-  Node *op = node->car();
-  Node *expr = node->cdr()->car();
+  PT::Node *op = node->car();
+  PT::Node *expr = node->cdr()->car();
   assert(op->is_atom() && op->length() == 1);
   if (!evaluate(expr, my_value)) return;
 
@@ -235,19 +235,19 @@ void ConstEvaluator::visit(UnaryExpr *node)
   }
 }
 
-void ConstEvaluator::visit(CondExpr *node)
+void ConstEvaluator::visit(PT::CondExpr *node)
 {
   long condition;
   if (!evaluate(node->car(), condition)) return;
   if (condition) // interpret as bool
-    my_valid = evaluate(PTree::tail(node->cdr(), 1)->car(), my_value);
+    my_valid = evaluate(PT::tail(node->cdr(), 1)->car(), my_value);
   else
-    my_valid = evaluate(PTree::tail(node->cdr(), 3)->car(), my_value);
+    my_valid = evaluate(PT::tail(node->cdr(), 3)->car(), my_value);
 }
 
-void ConstEvaluator::visit(ParenExpr *node)
+void ConstEvaluator::visit(PT::ParenExpr *node)
 {
-  Node *body = node->cdr()->car();
+  PT::Node *body = node->cdr()->car();
   if (!body) my_valid = false;
   else body->accept(this);
 }

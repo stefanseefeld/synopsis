@@ -10,7 +10,6 @@
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
-#include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/Trace.hh>
 #include <fstream>
 

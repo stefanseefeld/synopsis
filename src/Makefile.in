@@ -27,18 +27,14 @@ ifdef GC_LIB
 CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
 endif
 
-SRC	:= Trace \
-           PTree/Node PTree/Encoding PTree/operations \
-           PTree/Atoms PTree/Lists PTree/generation \
-           PTree/Visitor PTree/Display PTree/Writer \
-           SymbolLookup/Symbol SymbolLookup/Scope SymbolLookup/Scopes \
-           SymbolLookup/Display SymbolLookup/Walker \
-           TypeAnalysis/Type TypeAnalysis/Kit \
-           TypeAnalysis/TypeEvaluator \
-           TypeAnalysis/ConstEvaluator \
-           TypeAnalysis/OverloadResolver \
-           TypeAnalysis/Display \
-           Buffer Lexer SymbolFactory Parser
+SRC	:= Trace Buffer Lexer
+SRC     += $(patsubst %, PTree/%, Node Encoding operations Atoms Lists \
+                                  generation Visitor Display Writer)
+SRC     += $(patsubst %, SymbolTable/%, Symbol Scope Scopes Display Walker)
+SRC     += $(patsubst %, TypeAnalysis/%, Type Kit TypeEvaluator ConstEvaluator \
+                                         OverloadResolver TemplateRepository \
+                                         Display)
+SRC     += SymbolFactory SymbolLookup Parser
 
 TOOLS	:= display-ptree display-symbols display-types
 
@@ -50,7 +46,7 @@ SUP	:= $(patsubst %, Support/%.cc, Path ErrorHandler)
 
 HDR	:= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/PTree/*.hh))
-HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/SymbolLookup/*.hh))
+HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/SymbolTable/*.hh))
 HDR	+= $(patsubst $(srcdir)/%, %, $(wildcard $(srcdir)/Synopsis/TypeAnalysis/*.hh))
 
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
@@ -122,7 +118,7 @@ $(GC_LIB):
 clean :
 	rm -f Synopsis/*~ Synopsis/*.o Synopsis/*.d Synopsis/*.syn \
         Synopsis/PTree/*.~ Synopsis/PTree/*.o Synopsis/PTree/*.d Synopsis/PTree/*.syn \
-        Synopsis/SymbolLookup/*.~ Synopsis/SymbolLookup/*.o Synopsis/SymbolLookup/*.d Synopsis/SymbolLookup/*.syn \
+        Synopsis/SymbolTable/*.~ Synopsis/SymbolTable/*.o Synopsis/SymbolTable/*.d Synopsis/SymbolTable/*.syn \
         Synopsis/TypeAnalysis/*.~ Synopsis/TypeAnalysis/*.o Synopsis/TypeAnalysis/*.d Synopsis/TypeAnalysis/*.syn \
         tools/*.~ tools/*.o tools/*.d \
         *.dll *.so *core \

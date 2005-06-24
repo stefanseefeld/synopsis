@@ -10,7 +10,7 @@
 #include <Synopsis/PTree/Visitor.hh>
 #include <Synopsis/PTree/Atoms.hh>
 #include <Synopsis/PTree/Lists.hh>
-#include <Synopsis/SymbolLookup/Scope.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <cassert>
 
 namespace Synopsis
@@ -22,7 +22,7 @@ namespace TypeAnalysis
 class ConstEvaluator : private PTree::Visitor
 {
 public:
-  ConstEvaluator(SymbolLookup::Scope const *s) : my_valid(false), my_scope(s) {}
+  ConstEvaluator(SymbolTable::Scope const *s) : my_valid(false), my_scope(s) {}
   bool evaluate(PTree::Node const *node, long &value);
 
 private:
@@ -37,12 +37,12 @@ private:
   
   bool                       my_valid;
   long                       my_value;
-  SymbolLookup::Scope const *my_scope;
+  SymbolTable::Scope const * my_scope;
 };
 
 //. Evaluate the value of a constant expression.
 //. TODO: This may also return the type of the expression...
-inline bool evaluate_const(SymbolLookup::Scope const *scope,
+inline bool evaluate_const(SymbolTable::Scope const *scope,
 			   PTree::Node const *node, long &value)
 {
   if (!node) return false;

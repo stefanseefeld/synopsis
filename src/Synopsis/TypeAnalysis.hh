@@ -13,5 +13,6 @@
 #include <Synopsis/TypeAnalysis/TypeEvaluator.hh>
 #include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
 #include <Synopsis/TypeAnalysis/OverloadResolver.hh>
+#include <Synopsis/TypeAnalysis/TemplateRepository.hh>
 
 #endif

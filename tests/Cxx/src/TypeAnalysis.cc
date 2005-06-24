@@ -5,7 +5,7 @@
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <Synopsis/TypeAnalysis.hh>
 #include <iostream>
 #include <iomanip>
@@ -22,11 +22,11 @@ using namespace Synopsis;
 //. Test input should be a set of declarations where
 //. the initializers are expressions which we look up
 //. the type for.
-class InitializerFinder : private SymbolLookup::Walker
+class InitializerFinder : private SymbolTable::Walker
 {
 public:
-  InitializerFinder(SymbolLookup::Scope *scope, std::ostream &os)
-    : SymbolLookup::Walker(scope), my_os(os) {}
+  InitializerFinder(SymbolTable::Scope *scope, std::ostream &os)
+    : SymbolTable::Walker(scope), my_os(os) {}
   void find(PTree::Node *node) { node->accept(this);}
 
 private:
@@ -83,7 +83,16 @@ int main(int argc, char **argv)
       output = argv[1];
       input = argv[2];
     }
-    std::ofstream ofs(output.c_str());
+    std::ofstream ofs;
+    {
+      if (output != "-")
+	ofs.open(output.c_str());
+      else
+      {
+	ofs.copyfmt(std::cout);
+	static_cast<std::basic_ios<char> &>(ofs).rdbuf(std::cout.rdbuf());
+      }
+    }
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);

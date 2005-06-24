@@ -9,37 +9,39 @@
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
 #include <Synopsis/PTree.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <Synopsis/TypeAnalysis.hh>
 #include <Synopsis/TypeAnalysis/Display.hh>
 #include <Synopsis/Trace.hh>
 #include <fstream>
 
 using namespace Synopsis;
+namespace PT = Synopsis::PTree;
+namespace ST = Synopsis::SymbolTable;
 
-class TypeFinder : private SymbolLookup::SymbolVisitor
+class TypeFinder : private ST::SymbolVisitor
 {
 public:
   TypeFinder() : my_type(0) {}
-  TypeAnalysis::Type const *find(SymbolLookup::Symbol const *s)
+  TypeAnalysis::Type const *find(ST::Symbol const *s)
   {
     s->accept(this);
     return my_type;
   }
 private:
-  virtual void visit(SymbolLookup::TypeName const *t)
+  virtual void visit(ST::TypeName const *t)
   {
     std::cout << "typename " << t << std::endl;
   };
-  virtual void visit(SymbolLookup::TypedefName const *t)
+  virtual void visit(ST::TypedefName const *t)
   {
     my_type = my_kit.lookup(t->type(), t->scope());
   }
-  virtual void visit(SymbolLookup::ClassName const *c)
+  virtual void visit(ST::ClassName const *c)
   {
     std::cout << "class " << c << std::endl;
   }
-  virtual void visit(SymbolLookup::EnumName const *e)
+  virtual void visit(ST::EnumName const *e)
   {
     std::cout << "enum " << e << std::endl;
   }
@@ -48,9 +50,9 @@ private:
   TypeAnalysis::Type const *my_type;
 };
 
-void display_types(SymbolLookup::Scope const *scope, std::ostream &os)
+void display_types(ST::Scope const *scope, std::ostream &os)
 {
-  for (SymbolLookup::Scope::symbol_iterator i = scope->symbols_begin();
+  for (ST::Scope::symbol_iterator i = scope->symbols_begin();
        i != scope->symbols_end();
        ++i)
   {
@@ -61,7 +63,7 @@ void display_types(SymbolLookup::Scope const *scope, std::ostream &os)
     display(type, os);
     os << std::endl;
   }
-  for (SymbolLookup::Scope::scope_iterator i = scope->scopes_begin();
+  for (ST::Scope::scope_iterator i = scope->scopes_begin();
        i != scope->scopes_end();
        ++i)
     display_types(i->second, os);
@@ -94,7 +96,7 @@ int main(int argc, char **argv)
     Lexer lexer(&buffer);
     SymbolFactory symbols;
     Parser parser(lexer, symbols);
-    PTree::Node *node = parser.parse();
+    PT::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     if (errors.size())
     {

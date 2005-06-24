@@ -17,7 +17,7 @@ Kit::Kit()
 {
 }
 
-Type const *Kit::lookup(PTree::Encoding const &name, SymbolLookup::Scope *scope)
+Type const *Kit::lookup(PTree::Encoding const &name, SymbolTable::Scope *scope)
 {
   Trace trace("Kit::lookup", Trace::TYPEANALYSIS, name);
   PTree::Encoding::iterator i = name.begin();

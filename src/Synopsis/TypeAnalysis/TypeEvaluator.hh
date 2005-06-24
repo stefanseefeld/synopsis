@@ -7,10 +7,8 @@
 #ifndef Synopsis_TypeAnalysis_TypeEvaluator_hh_
 #define Synopsis_TypeAnalysis_TypeEvaluator_hh_
 
-#include <Synopsis/PTree/Visitor.hh>
-#include <Synopsis/PTree/Atoms.hh>
-#include <Synopsis/PTree/Lists.hh>
-#include <Synopsis/SymbolLookup/Scope.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <Synopsis/TypeAnalysis/Type.hh>
 
 namespace Synopsis
@@ -22,7 +20,7 @@ namespace TypeAnalysis
 class TypeEvaluator : private PTree::Visitor
 {
 public:
-  TypeEvaluator(SymbolLookup::Scope const *s) : my_scope(s) {}
+  TypeEvaluator(SymbolTable::Scope const *s) : my_scope(s) {}
   Type const *evaluate(PTree::Node const *node);
 
 private:
@@ -50,12 +48,12 @@ private:
   virtual void visit(PTree::ArrowMemberExpr *);
   virtual void visit(PTree::ParenExpr *);
   
-  SymbolLookup::Scope const *my_scope;
+  SymbolTable::Scope const * my_scope;
   Type const *               my_type;
 };
   
 inline Type const *type_of(PTree::Node const *node,
-			   SymbolLookup::Scope const *s)
+			   SymbolTable::Scope const *s)
 {
   TypeEvaluator evaluator(s);
   return evaluator.evaluate(node);

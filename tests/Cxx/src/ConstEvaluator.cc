@@ -6,40 +6,40 @@
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
-#include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <Synopsis/TypeAnalysis.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 
 using namespace Synopsis;
+namespace PT = Synopsis::PTree;
+namespace ST = Synopsis::SymbolTable;
 
-class InitializerFinder : private SymbolLookup::Walker
+class InitializerFinder : private ST::Walker
 {
 public:
-  InitializerFinder(SymbolLookup::Scope *global, std::ostream &os)
-    : SymbolLookup::Walker(global), my_os(os) {}
-  void find(PTree::Node *node) { node->accept(this);}
+  InitializerFinder(ST::Scope *global, std::ostream &os)
+    : ST::Walker(global), my_os(os) {}
+  void find(PT::Node *node) { node->accept(this);}
 private:
-  virtual void visit(PTree::List *node)
+  virtual void visit(PT::List *node)
   {
-    for (PTree::Node *n = node; n; n = n->cdr())
+    for (PT::Node *n = node; n; n = n->cdr())
       if (n->car()) n->car()->accept(this);
   }
-  virtual void visit(PTree::EnumSpec *node)
+  virtual void visit(PT::EnumSpec *node)
   {
-    PTree::Node *body = third(node);
+    PT::Node *body = third(node);
 
     long value = -1;
-    for (PTree::Node *e = PTree::second(body);
-	 e;
-	 e = PTree::rest(rest(e)))
+    for (PT::Node *e = PT::second(body); e; e = PT::rest(rest(e)))
     {
-      PTree::Node *enumerator = e->car();
+      PT::Node *enumerator = e->car();
       if (enumerator->is_atom()) ++value;
       else  // [identifier = initializer]
       {
-	PTree::Node *initializer = PTree::third(enumerator);
+	PT::Node *initializer = PT::third(enumerator);
 	enumerator = enumerator->car();
 	if (!TypeAnalysis::evaluate_const(current_scope(), initializer, value))
 	{
@@ -53,24 +53,24 @@ private:
 	    << "value : " << value << std::endl;
     }
   }
-  virtual void visit(PTree::Declaration *node)
+  virtual void visit(PT::Declaration *node)
   {
-    PTree::Node *type = PTree::second(node);
+    PT::Node *type = PT::second(node);
     type->accept(this);
-    PTree::Node *rest = PTree::third(node);
+    PT::Node *rest = PT::third(node);
     if (rest->is_atom()) return; // ';'
     for (; rest; rest = rest->cdr())
     {
-      PTree::Node *p = rest->car();
+      PT::Node *p = rest->car();
       p->accept(this);
     }
   }
-  virtual void visit(PTree::Declarator *node) 
+  virtual void visit(PT::Declarator *node) 
   {
-    if (PTree::length(node) == 3)
+    if (PT::length(node) == 3)
     {
-      PTree::Node *initializer = PTree::third(node);
-      my_os << "initializer : " << PTree::reify(initializer) << std::endl;
+      PT::Node *initializer = PT::third(node);
+      my_os << "initializer : " << PT::reify(initializer) << std::endl;
       long value;
       if (TypeAnalysis::evaluate_const(current_scope(), initializer, value))
 	my_os << "value : " << value << std::endl;
@@ -104,13 +104,22 @@ int main(int argc, char **argv)
       output = argv[1];
       input = argv[2];
     }
-    std::ofstream ofs(output.c_str());
+    std::ofstream ofs;
+    {
+      if (output != "-")
+	ofs.open(output.c_str());
+      else
+      {
+	ofs.copyfmt(std::cout);
+	static_cast<std::basic_ios<char> &>(ofs).rdbuf(std::cout.rdbuf());
+      }
+    }
     std::ifstream ifs(input.c_str());
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
     SymbolFactory symbols;
     Parser parser(lexer, symbols);
-    PTree::Node *node = parser.parse();
+    PT::Node *node = parser.parse();
     InitializerFinder finder(symbols.current_scope(), ofs);
     finder.find(node);
   }

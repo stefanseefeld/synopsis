@@ -18,8 +18,6 @@
 #include "linkstore.hh"
 
 #include <Synopsis/PTree.hh>
-#include <Synopsis/PTree/Display.hh>
-#include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
 #include <Synopsis/SymbolFactory.hh>

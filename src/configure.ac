@@ -100,7 +100,7 @@ mkdir -p lib
 mkdir -p bin
 mkdir -p Synopsis/gc
 mkdir -p Synopsis/PTree
-mkdir -p Synopsis/SymbolLookup
+mkdir -p Synopsis/SymbolTable
 mkdir -p Synopsis/TypeAnalysis
 mkdir -p Support
 mkdir -p tools

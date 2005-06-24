@@ -7,14 +7,16 @@
 
 #include "TypeEvaluator.hh"
 #include <Synopsis/PTree/Display.hh>
+#include <Synopsis/Trace.hh>
 #include <cassert>
 
 #undef TRUE
 #undef FALSE
 
-using namespace Synopsis;
-using namespace PTree;
-using namespace TypeAnalysis;
+using Synopsis::Trace;
+namespace PT = Synopsis::PTree;
+namespace ST = Synopsis::SymbolTable;
+using namespace Synopsis::TypeAnalysis;
 
 namespace
 {
@@ -54,14 +56,14 @@ Type const *numeric_type(char const *position, size_t length)
 
 }
 
-Type const *TypeEvaluator::evaluate(Node const *node)
+Type const *TypeEvaluator::evaluate(PT::Node const *node)
 {
   my_type = 0;
-  if (node) const_cast<Node *>(node)->accept(this);
+  if (node) const_cast<PT::Node *>(node)->accept(this);
   return my_type;
 }
 
-void TypeEvaluator::visit(Literal *node)
+void TypeEvaluator::visit(PT::Literal *node)
 {
   switch (node->type())
   {
@@ -85,10 +87,10 @@ void TypeEvaluator::visit(Literal *node)
   }
 }
 
-void TypeEvaluator::visit(Identifier *node)
+void TypeEvaluator::visit(PT::Identifier *node)
 {
-  Encoding name = Encoding::simple_name(node);
-  SymbolLookup::SymbolSet symbols = my_scope->lookup(name);
+  PT::Encoding name = PT::Encoding::simple_name(node);
+  ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
   if (symbols.size() == 1)
   {
 //     Symbol const *symbol = *symbols.begin();
@@ -102,14 +104,14 @@ void TypeEvaluator::visit(Identifier *node)
   }
 }
 
-void TypeEvaluator::visit(PTree::Kwd::This *)
+void TypeEvaluator::visit(PT::Kwd::This *)
 {
   // FIXME: TBD
   //        * find the current scope (object)
   //        * find its type
 }
 
-void TypeEvaluator::visit(PTree::Name *node)
+void TypeEvaluator::visit(PT::Name *node)
 {
 //   SymbolSet symbols = my_scope->lookup(node->encoded_name());
 //   if (symbols.size() == 1)
@@ -125,27 +127,27 @@ void TypeEvaluator::visit(PTree::Name *node)
   }
 }
 
-void TypeEvaluator::visit(PTree::FstyleCastExpr *node)
+void TypeEvaluator::visit(PT::FstyleCastExpr *node)
 {
 //   my_type.set(node->encoded_type(), my_scope);
 }
 
-void TypeEvaluator::visit(PTree::AssignExpr *node)
+void TypeEvaluator::visit(PT::AssignExpr *node)
 {
-  PTree::first(node)->accept(this);
+  PT::first(node)->accept(this);
 }
 
-void TypeEvaluator::visit(CondExpr *node)
+void TypeEvaluator::visit(PT::CondExpr *node)
 {
   my_type = &BOOL;
 //   type_of(PTree::third(node));
 }
 
-void TypeEvaluator::visit(InfixExpr *node)
+void TypeEvaluator::visit(PT::InfixExpr *node)
 {
-  Type const *lhs = evaluate(first(node));
-  Type const *rhs = evaluate(third(node));
-  Node *op = second(node);
+  Type const *lhs = evaluate(PT::first(node));
+  Type const *rhs = evaluate(PT::third(node));
+  PT::Node *op = PT::second(node);
   assert(op->is_atom() && op->length() <= 2);
 
   // FIXME: TBD
@@ -206,54 +208,54 @@ void TypeEvaluator::visit(InfixExpr *node)
   */
 }
 
-void TypeEvaluator::visit(PTree::PmExpr *node)
+void TypeEvaluator::visit(PT::PmExpr *node)
 {
-  PTree::third(node)->accept(this);
+  PT::third(node)->accept(this);
 //   my_type.dereference();
 }
 
-void TypeEvaluator::visit(PTree::CastExpr *node) 
+void TypeEvaluator::visit(PT::CastExpr *node) 
 {
 //   my_type.set(PTree::second(PTree::second(node))->encoded_type(), my_scope);
 }
 
-void TypeEvaluator::visit(PTree::UnaryExpr *node)
+void TypeEvaluator::visit(PT::UnaryExpr *node)
 {
-  PTree::second(node)->accept(this);
-  PTree::Node *op = PTree::first(node);
+  PT::second(node)->accept(this);
+  PT::Node *op = PT::first(node);
 //   if(*op == '*') my_type.dereference();
 //   else if(*op == '&') my_type.reference();
 }
 
-void TypeEvaluator::visit(PTree::ThrowExpr *)
+void TypeEvaluator::visit(PT::ThrowExpr *)
 {
 //   my_type.set_void();
 }
 
-void TypeEvaluator::visit(SizeofExpr *)
+void TypeEvaluator::visit(PT::SizeofExpr *)
 {
 //   my_type.set_int();
 }
 
-void TypeEvaluator::visit(PTree::TypeidExpr *)
+void TypeEvaluator::visit(PT::TypeidExpr *)
 {
   // FIXME: Should be type (node->third()->second()->encoded_type(), my_scope);
 //   my_type.set_int();
 }
 
-void TypeEvaluator::visit(PTree::TypeofExpr *) 
+void TypeEvaluator::visit(PT::TypeofExpr *) 
 {
   // FIXME: Should be type (node->third()->second()->encoded_type(), my_scope);
 //   my_type.set_int();
 }
 
-void TypeEvaluator::visit(PTree::NewExpr *node)
+void TypeEvaluator::visit(PT::NewExpr *node)
 {
-  PTree::Node *p = node;
-  PTree::Node *userkey = p->car();
+  PT::Node *p = node;
+  PT::Node *userkey = p->car();
   if(!userkey || !userkey->is_atom()) p = node->cdr(); // user keyword
   if(*p->car() == "::") p = p->cdr();
-  PTree::Node *type = PTree::third(p);
+  PT::Node *type = PT::third(p);
 //   if(*type->car() == '(')
 //     my_type.set(PTree::second(PTree::second(type))->encoded_type(), my_scope);
 //   else
@@ -261,18 +263,18 @@ void TypeEvaluator::visit(PTree::NewExpr *node)
 //   my_type.reference();
 }
 
-void TypeEvaluator::visit(PTree::DeleteExpr *)
+void TypeEvaluator::visit(PT::DeleteExpr *)
 {
 //   my_type.set_void();
 }
 
-void TypeEvaluator::visit(PTree::ArrayExpr *node)
+void TypeEvaluator::visit(PT::ArrayExpr *node)
 {
   node->car()->accept(this);
 //   my_type.dereference();
 }
 
-void TypeEvaluator::visit(PTree::FuncallExpr *node)
+void TypeEvaluator::visit(PT::FuncallExpr *node)
 {
   node->car()->accept(this);
 //   if(!my_type.is_function())
@@ -280,27 +282,27 @@ void TypeEvaluator::visit(PTree::FuncallExpr *node)
 //   my_type.dereference();
 }
 
-void TypeEvaluator::visit(PTree::PostfixExpr *node)
+void TypeEvaluator::visit(PT::PostfixExpr *node)
 {
   node->car()->accept(this);
 }
 
-void TypeEvaluator::visit(PTree::DotMemberExpr *node)
+void TypeEvaluator::visit(PT::DotMemberExpr *node)
 {
   node->car()->accept(this);
 //   my_type.set_member(PTree::third(node));
 }
 
-void TypeEvaluator::visit(PTree::ArrowMemberExpr *node)
+void TypeEvaluator::visit(PT::ArrowMemberExpr *node)
 {
   node->car()->accept(this);
 //   my_type.dereference();
 //   my_type.set_member(PTree::third(node));
 }
 
-void TypeEvaluator::visit(ParenExpr *node)
+void TypeEvaluator::visit(PT::ParenExpr *node)
 {
-  Node *body = second(node);
+  PT::Node *body = PT::second(node);
 //   if (!body) my_type.set("v");
 //   else body->accept(this);
 }
