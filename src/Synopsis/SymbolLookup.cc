@@ -36,7 +36,7 @@ ST::SymbolSet lookup(PT::Encoding &name,
     ST::SymbolSet symbols = scope->unqualified_lookup(*next,
 						      context | ST::Scope::SCOPE);
     if (symbols.empty())
-      throw ST::Undefined(name);
+      throw ST::Undefined(name, scope);
     else if (symbols.size() > 1)
       // If the name was found multiple times, it must refer to a function,
       // so throw a TypeError.
@@ -47,15 +47,20 @@ ST::SymbolSet lookup(PT::Encoding &name,
   }
 
   PT::Encoding component = *++next;
-  ST::SymbolSet symbols = scope->qualified_lookup(component, context);
+  if (component.is_template_id())
+  {
+    // TODO: two phase lookup !
+    component = component.get_template_name();
+  }
 
+  ST::SymbolSet symbols = scope->qualified_lookup(component, context);
 
   // Now iterate over all name components in the qualified name and
   // look them up in their respective (nested) scopes.
   while (++next != name.end_name())
   {
     if (symbols.empty())
-      throw ST::Undefined(component);
+      throw ST::Undefined(component, scope);
     else if (symbols.size() > 1)
       // If the name was found multiple times, it must refer to a function,
       // so throw a TypeError.

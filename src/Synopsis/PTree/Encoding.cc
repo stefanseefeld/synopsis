@@ -487,6 +487,13 @@ Encoding Encoding::get_symbol() const
   return retn;
 }
 
+Encoding Encoding::get_template_name() const
+{
+  assert(is_template_id());
+  iterator begin = my_buffer.begin() + 1;
+  return Encoding(begin, begin + *begin - 0x80 + 1);
+}
+
 std::string Encoding::unmangled() const
 {
   if (empty()) return "";
