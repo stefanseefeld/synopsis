@@ -166,6 +166,7 @@ public:
   //. return the name of the symbol inside the outer scope,
   //. else return the unmodified name
   Encoding get_symbol() const;
+  Encoding get_template_name() const;
   Encoding get_template_arguments() const;
   
   std::string unmangled() const;
@@ -177,7 +178,7 @@ public:
   bool is_global_scope() const { return front() == 0x80 && size() == 1;}
   bool is_qualified() const { return front() == 'Q';}
   bool is_function() const { return front() == 'F';}
-  bool is_template() const { return front() == 'T';}
+  bool is_template_id() const { return front() == 'T';}
   PTree::Node *name_to_ptree();
 
   friend bool operator < (const Encoding &, const Encoding &);

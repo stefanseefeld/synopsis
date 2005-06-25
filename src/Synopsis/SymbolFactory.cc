@@ -63,7 +63,7 @@ private:
   {
     PT::Encoding name = PT::Encoding::simple_name(node);
     ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::ELABORATE);
-    if (symbols.empty()) throw ST::Undefined(name, node);
+    if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
     else
     {
       ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
@@ -76,7 +76,7 @@ private:
     PT::Encoding name = node->encoded_name();
     // FIXME: This will fail if the name is a template or a dependent name.
     ST::SymbolSet symbols = ::lookup(name, my_scope, ST::Scope::ELABORATE);
-    if (symbols.empty()) throw ST::Undefined(name, node);
+    if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
     else
     {
       ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
@@ -147,7 +147,7 @@ void SymbolFactory::enter_scope(PT::ClassSpec const *spec)
   ST::Scope *scope = my_scopes.top();
   ST::Class *class_ = new ST::Class(spec, scope, bases, my_template_parameters);
   PT::Encoding const &name = spec->encoded_name();
-  if (name.is_template())
+  if (name.is_template_id())
   {
     // This is a template specialization. Declare the scope with the
     // template repository.
@@ -155,7 +155,7 @@ void SymbolFactory::enter_scope(PT::ClassSpec const *spec)
     PT::Encoding tname(begin, begin + *begin - 0x80 + 1);
     ST::SymbolSet symbols = scope->find(tname, ST::Scope::DECLARATION);
     if (symbols.empty())
-      throw ST::Undefined(tname);
+      throw ST::Undefined(tname, scope);
     ST::ClassTemplateName const *primary = dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
     my_template_repository->declare_scope(primary, spec, class_);
   }
@@ -292,7 +292,7 @@ void SymbolFactory::declare(PT::Declaration const *d)
 	  if (name.is_qualified())
 	  {
 	    ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
-	    if (symbols.empty()) throw ST::Undefined(name, decl);
+	    if (symbols.empty()) throw ST::Undefined(name, scope, decl);
 	    // FIXME: We need type analysis / overload resolution
 	    //        here to take the right symbol.
 	    ST::Symbol const *symbol = *symbols.begin();
@@ -404,9 +404,9 @@ void SymbolFactory::declare(PT::ClassSpec const *spec)
   PT::Encoding const &name = spec->encoded_name();
   // If the name is a template-id, we are looking at a template specialization.
   // Declare it in the template repository instead.
-  if (name.is_template())
+  if (name.is_template_id())
   {
-    declare_template_specialization(name, spec);
+    declare_template_specialization(name.get_template_name(), spec);
     return;
   }
   // If class spec contains a class body, it's a definition.
@@ -452,15 +452,27 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
     PT::Encoding const &name = class_spec->encoded_name();
     // If the name is a template-id, we are looking at a template specialization.
     // Declare it in the template repository instead.
-    if (name.is_template())
-      declare_template_specialization(name, class_spec);
+    if (name.is_template_id())
+      declare_template_specialization(name.get_template_name(), class_spec);
     else
       scope->declare(name, new ST::ClassTemplateName(PT::Encoding(), tdecl, true, scope));
   }
   else
   {
+    PT::display(body, std::cout, false, true);
     PT::Node const *decl = PT::third(body);
-    PT::Encoding const &name = decl->encoded_name();
+    PT::Encoding name = decl->encoded_name();
+    if (name.is_qualified())
+    {
+      scope = lookup_scope_of_qname(name, decl);
+      ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
+      // FIXME: We need type analysis / overload resolution
+      //        here to take the right symbol.
+      ST::Symbol const *symbol = *symbols.begin();
+      // TODO: check whether this is the definition of a previously
+      //       declared function, according to 3.1/2 [basic.def]
+      scope->remove(symbol);
+    }
     scope->declare(name, new ST::FunctionTemplateName(PT::Encoding(), decl, scope));
   }
 }
@@ -544,7 +556,7 @@ ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
 
   ST::Scope *scope = my_scopes.top();
   ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
-  if (symbols.empty()) throw ST::Undefined(name, decl);
+  if (symbols.empty()) throw ST::Undefined(name, scope, decl);
   ST::Symbol const *symbol = *symbols.begin();
   while (name.is_qualified()) name = name.get_symbol();
   scope = symbol->scope();
@@ -556,14 +568,12 @@ void SymbolFactory::declare_template_specialization(PT::Encoding const &name,
 {
   Trace trace("SymbolFactory::declare_template_specialization", Trace::SYMBOLLOOKUP);
   // Find primary template and declare specialization.
-  PT::Encoding::iterator begin = name.begin() + 1;
-  PT::Encoding tname(begin, begin + *begin - 0x80 + 1);
   ST::Scope *scope = my_scopes.top();
-  ST::SymbolSet symbols = scope->find(tname, ST::Scope::DECLARATION);
+  ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
   if (symbols.empty())
-    throw ST::Undefined(tname);
+    throw ST::Undefined(name, scope);
   ST::ClassTemplateName const * templ = dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
   if (!templ)
-    throw ST::TypeError(tname, (*symbols.begin())->type());
+    throw ST::TypeError(name, (*symbols.begin())->type());
   my_template_repository->declare(templ, spec);
 }

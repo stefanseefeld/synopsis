@@ -27,11 +27,12 @@ struct TypeError : std::exception
 
 struct Undefined : std::exception
 {
-  Undefined(PTree::Encoding const &n, PTree::Node const *ref = 0)
-    : name(n), ptree(ref) {}
+  Undefined(PTree::Encoding const &n, Scope const *s, PTree::Node const *ref = 0)
+    : name(n), scope(s), ptree(ref) {}
   virtual ~Undefined() throw() {}
   virtual char const * what() const throw() { return "Undefined";}
   PTree::Encoding     name;
+  Scope const *       scope;
   PTree::Node const * ptree;
 };
 
