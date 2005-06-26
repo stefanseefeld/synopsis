@@ -45,7 +45,7 @@ public:
   void traverse_body(PTree::FunctionDefinition *);
 
 protected:
-  Scope const *current_scope() { return my_scopes.top();}
+  Scope *current_scope() { return my_scopes.top();}
   void leave_scope();
   SymbolSet lookup(PTree::Encoding const &, Scope::LookupContext = Scope::DEFAULT);
 

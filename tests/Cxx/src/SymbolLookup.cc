@@ -6,69 +6,76 @@
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolLookup.hh>
+#include <Synopsis/TypeAnalysis.hh>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 
-using namespace Synopsis;
-using namespace SymbolTable;
+using Synopsis::Trace;
+using Synopsis::Buffer;
+using Synopsis::Lexer;
+using Synopsis::SymbolFactory;
+using Synopsis::Parser;
+namespace PT = Synopsis::PTree;
+namespace ST = Synopsis::SymbolTable;
+namespace TA = Synopsis::TypeAnalysis;
 
-class SymbolFinder : private Walker
+class SymbolFinder : private ST::Walker
 {
 public:
-  SymbolFinder(Buffer const &buffer, Scope *scope, std::ostream &os)
-    : Walker(scope), my_buffer(buffer), my_os(os), my_in_template_decl(false) {}
-  void find(PTree::Node *node) { node->accept(this);}
+  SymbolFinder(Buffer const &buffer, ST::Scope *scope, std::ostream &os)
+    : ST::Walker(scope), my_buffer(buffer), my_os(os), my_in_template_decl(false) {}
+  void find(PT::Node *node) { node->accept(this);}
 private:
-  using Walker::visit;
-  virtual void visit(PTree::Identifier *iden)
+  using ST::Walker::visit;
+  virtual void visit(PT::Identifier *iden)
   {
     Trace trace("SymbolFinder::visit(Identifier)", Trace::SYMBOLLOOKUP);
-    PTree::Encoding name = PTree::Encoding::simple_name(iden);
+    PT::Encoding name = PT::Encoding::simple_name(iden);
     my_os << "Identifier : " << name.unmangled() << std::endl;
     lookup(name);
   }
 
-  virtual void visit(PTree::Block *node)
+  virtual void visit(PT::Block *node)
   {
     Trace trace("SymbolFinder::visit(Block)", Trace::SYMBOLLOOKUP);
     Walker::visit(node);
   }
 
-  virtual void visit(PTree::Typedef *typed)
+  virtual void visit(PT::Typedef *typed)
   {
     Trace trace("SymbolFinder::visit(Typedef)", Trace::SYMBOLLOOKUP);
     // We need to figure out how to reproduce the (encoded) name of
     // the type being aliased.
     my_os << "Type : " << "<not implemented yet>" << std::endl;
 //     lookup(name);
-    PTree::third(typed)->accept(this);
+    PT::third(typed)->accept(this);
   }
 
-  virtual void visit(PTree::TemplateDecl *tdecl)
+  virtual void visit(PT::TemplateDecl *tdecl)
   {
     Trace trace("SymbolFinder::visit(TemplateDecl)", Trace::SYMBOLLOOKUP);
     traverse_parameters(tdecl);
     bool saved_in_template_decl = my_in_template_decl;
     my_in_template_decl = true;
-    PTree::Node *fourth = PTree::nth(tdecl, 4);
+    PT::Node *fourth = PT::nth(tdecl, 4);
     if (!fourth->is_atom())
       fourth->accept(this); // This is a declaration.
     else
     {
       // We are in a template template parameter.
       // Visit the identifier and the default type, if present.
-      PTree::Node *fifth = PTree::nth(tdecl, 5);
+      PT::Node *fifth = PT::nth(tdecl, 5);
       if (fifth) fifth->accept(this); // This is an identifier
     }
     my_in_template_decl = saved_in_template_decl;
   }
 
-  virtual void visit(PTree::NamespaceSpec *node)
+  virtual void visit(PT::NamespaceSpec *node)
   {
     Trace trace("SymbolFinder::visit(NamespaceSpec)", Trace::SYMBOLLOOKUP);
-    PTree::Node const *name = PTree::second(node);
-    PTree::Encoding ename;
+    PT::Node const *name = PT::second(node);
+    PT::Encoding ename;
     if (name) ename.simple_name(name);
     else ename.append_with_length("<anonymous>");
     my_os << "Namespace : " << ename.unmangled() << std::endl;
@@ -76,85 +83,85 @@ private:
     traverse_body(node);
   }
 
-  virtual void visit(PTree::Declaration *node)
+  virtual void visit(PT::Declaration *node)
   {
     Trace trace("SymbolFinder::visit(Declaration)", Trace::SYMBOLLOOKUP);
-    PTree::Node *type_spec = PTree::second(node);
+    PT::Node *type_spec = PT::second(node);
     // FIXME: what about compound types ?
     if (type_spec && type_spec->is_atom())
     {
-      PTree::Atom const *name = static_cast<PTree::Atom *>(type_spec);
-      PTree::Encoding type = PTree::Encoding::simple_name(name);
+      PT::Atom const *name = static_cast<PT::Atom *>(type_spec);
+      PT::Encoding type = PT::Encoding::simple_name(name);
       my_os << "Type : " << type.unmangled() << std::endl;
-      lookup(type, Scope::DEFAULT, true);
-      PTree::third(node)->accept(this);
+      lookup(type, ST::Scope::DEFAULT, true);
+      PT::third(node)->accept(this);
     }
     else
       Walker::visit(node);
   }
 
-  virtual void visit(PTree::UsingDirective *udir)
+  virtual void visit(PT::UsingDirective *udir)
   {
-    PTree::Node *node = PTree::third(udir);
-    PTree::Encoding name = node->encoded_name();
+    PT::Node *node = PT::third(udir);
+    PT::Encoding name = node->encoded_name();
     my_os << "Namespace : " << name.unmangled() << std::endl;
     lookup(name);
   }
-  virtual void visit(PTree::UsingDeclaration *udecl)
-  { visit(static_cast<PTree::List *>(udecl));}
-  virtual void visit(PTree::NamespaceAlias *alias)
+  virtual void visit(PT::UsingDeclaration *udecl)
+  { visit(static_cast<PT::List *>(udecl));}
+  virtual void visit(PT::NamespaceAlias *alias)
   {
     {
-      PTree::Node *node = PTree::second(alias);
-      PTree::Encoding name = PTree::Encoding::simple_name(static_cast<PTree::Atom *>(node));
+      PT::Node *node = PT::second(alias);
+      PT::Encoding name = PT::Encoding::simple_name(static_cast<PT::Atom *>(node));
       my_os << "Namespace : " << name.unmangled() << std::endl;
       lookup(name);
     }
     {
-      PTree::Node *node = PTree::nth(alias, 3);
-      PTree::Encoding name = node->encoded_name();
+      PT::Node *node = PT::nth(alias, 3);
+      PT::Encoding name = node->encoded_name();
       my_os << "Namespace : " << name.unmangled() << std::endl;
       lookup(name);
     }
   }
 
-  virtual void visit(PTree::FunctionDefinition *node)
+  virtual void visit(PT::FunctionDefinition *node)
   {
     Trace trace("SymbolFinder::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
-    PTree::Node *decl = PTree::third(node);
-    visit(static_cast<PTree::Declarator *>(decl)); // visit the declarator
+    PT::Node *decl = PT::third(node);
+    visit(static_cast<PT::Declarator *>(decl)); // visit the declarator
     try { traverse_body(node);}
-    catch (Undefined const &e) {} // just ignore
+    catch (ST::Undefined const &e) {} // just ignore
   }
 
-  virtual void visit(PTree::Declarator *decl)
+  virtual void visit(PT::Declarator *decl)
   {
     Trace trace("SymbolFinder::visit(Declarator)", Trace::SYMBOLLOOKUP);
-    PTree::Encoding name = decl->encoded_name();
+    PT::Encoding name = decl->encoded_name();
     // FIXME: The parser currently parses type specifiers that contain a template_id
     //        such that in contains declarators with empty names.
     //        Ignore these until the parser is fixed.
     if (name.empty()) return;
-    PTree::Encoding type = decl->encoded_type();
+    PT::Encoding type = decl->encoded_type();
     my_os << "Declarator : " << name.unmangled() << std::endl;
-    lookup(name, Scope::DECLARATION);
+    lookup(name, ST::Scope::DECLARATION);
     if (type.is_function()) return;
-    if (PTree::Node *initializer = decl->initializer())
+    if (PT::Node *initializer = decl->initializer())
       initializer->accept(this);
   }
 
-  virtual void visit(PTree::Name *n)
+  virtual void visit(PT::Name *n)
   {
     Trace trace("SymbolFinder::visit(Name)", Trace::SYMBOLLOOKUP);
-    PTree::Encoding name = n->encoded_name();
+    PT::Encoding name = n->encoded_name();
     my_os << "Name : " << name.unmangled() << std::endl;
     lookup(name);
   }
   
-  virtual void visit(PTree::ClassSpec *node)
+  virtual void visit(PT::ClassSpec *node)
   {
     Trace trace("SymbolFinder::visit(ClassSpec)", Trace::SYMBOLLOOKUP);
-    PTree::Encoding name = node->encoded_name();
+    PT::Encoding name = node->encoded_name();
     my_os << "ClassSpec : " << name.unmangled() << std::endl;
     // FIXME: A ClassSpec may correspond to a class template, in which case
     //        we shouldn't do a elaborate lookup. The visit(TemplateDecl)
@@ -162,40 +169,41 @@ private:
     if (my_in_template_decl)
       lookup(name);
     else
-      lookup(name, Scope::ELABORATE);
+      lookup(name, ST::Scope::ELABORATE);
     
-    for (PTree::Node const *base_clause = node->base_clause();
+    for (PT::Node const *base_clause = node->base_clause();
 	 base_clause;
-	 base_clause = PTree::rest(PTree::rest(base_clause)))
+	 base_clause = PT::rest(PT::rest(base_clause)))
     {
-      PTree::Node const *parent = PTree::last(PTree::second(base_clause))->car();
-      const_cast<PTree::Node *>(parent)->accept(this);
+      PT::Node const *parent = PT::last(PT::second(base_clause))->car();
+      const_cast<PT::Node *>(parent)->accept(this);
     }
     traverse_body(node);
   }
 
-  virtual void visit(PTree::FuncallExpr *node)
+  virtual void visit(PT::FuncallExpr *node)
   {
     Trace trace("SymbolFinder::visit(FuncallExpr)", Trace::SYMBOLLOOKUP);
-    PTree::Node *function = node->car();
-    PTree::Encoding name;
+    PT::Node *function = node->car();
+    PT::Encoding name;
     if (function->is_atom()) name.simple_name(function);
-    else name = function->encoded_name(); // function is a 'PTree::Name'
+    else name = function->encoded_name(); // function is a 'PT::Name'
     my_os << "Function : " << name.unmangled() << std::endl;
     lookup(name);
+    ST::Symbol const *symbol = TA::resolve_funcall(node, current_scope());
   }
 
-  void lookup(PTree::Encoding const &name,
-	      Scope::LookupContext c = Scope::DEFAULT,
+  void lookup(PT::Encoding const &name,
+	      ST::Scope::LookupContext c = ST::Scope::DEFAULT,
 	      bool type = false)
   {
     Trace trace("SymbolFinder::lookup", Trace::SYMBOLLOOKUP);
-    SymbolSet symbols = Walker::lookup(name, c);
+    ST::SymbolSet symbols = ST::Walker::lookup(name, c);
     if (!symbols.empty())
     {
       if (type) // Expect a single match that is a type-name.
       {
-	TypeName const *type = dynamic_cast<TypeName const *>(*symbols.begin());
+	ST::TypeName const *type = dynamic_cast<ST::TypeName const *>(*symbols.begin());
 	if (type)
 	{
 	  std::string filename;
@@ -206,7 +214,7 @@ private:
 	else my_os << "only non-types found" << std::endl;
       }
 
-      for (SymbolSet::iterator s = symbols.begin(); s != symbols.end(); ++s)
+      for (ST::SymbolSet::iterator s = symbols.begin(); s != symbols.end(); ++s)
       {
 	std::string filename;
 	unsigned long line_number = my_buffer.origin((*s)->ptree()->begin(), filename);
@@ -235,7 +243,7 @@ int main(int argc, char **argv)
     std::string input;
     if (argv[1] == std::string("-d"))
     {
-      Trace::enable(Trace::SYMBOLLOOKUP);
+      Trace::enable(Trace::SYMBOLLOOKUP|Trace::TYPEANALYSIS);
       output = argv[2];
       input = argv[3];
     }
@@ -259,7 +267,7 @@ int main(int argc, char **argv)
     Lexer lexer(&buffer);
     SymbolFactory symbols;
     Parser parser(lexer, symbols);
-    PTree::Node *node = parser.parse();
+    PT::Node *node = parser.parse();
     const Parser::ErrorList &errors = parser.errors();
     for (Parser::ErrorList::const_iterator i = errors.begin(); i != errors.end(); ++i)
       (*i)->write(ofs);

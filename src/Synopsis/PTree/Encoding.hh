@@ -209,10 +209,10 @@ class Encoding::name_iterator
 {
 public:
   name_iterator(Encoding const &e, iterator i)
-    : my_encoding(e), my_cursor(i) 
+    : my_encoding(e),
+      my_cursor(*i == 'Q' ? i + 2 : i),
+      my_component(my_cursor, advance(my_cursor))
   {
-    if (e.is_qualified()) my_component = Encoding(e.begin() + 2, e.end_of_scope());
-    else my_component = e;
   }
   name_iterator &operator++() { next(); return *this;}
   name_iterator operator++(int) { name_iterator retn(*this); next(); return retn;}
@@ -220,20 +220,13 @@ public:
   Encoding const *operator->() const { return &my_component;}
   bool operator==(name_iterator const &i) const { return my_cursor == i.my_cursor;}
   bool operator!=(name_iterator const &i) const { return my_cursor != i.my_cursor;}
+
 private:
+  iterator advance(iterator);
   void next() 
   {
-    iterator end;
-    if (*my_cursor >= 0x80)
-    {
-      my_cursor += *my_cursor - 0x80 + 1;
-      if (*my_cursor > 0x80 || *my_cursor == 'T')
-	end = Encoding::end_name(my_cursor);
-      else end = my_encoding.end();
-    }
-    else
-      my_cursor = end = my_encoding.end();
-    my_component = Encoding(my_cursor, end);
+    my_cursor += my_component.size();
+    my_component = Encoding(my_cursor, advance(my_cursor));
   }
 
   Encoding const& my_encoding;
@@ -243,8 +236,7 @@ private:
 
 inline Encoding::name_iterator Encoding::begin_name() const
 {
-  if (is_qualified()) return name_iterator(*this, begin() + 2);
-  else return name_iterator(*this, begin());
+  return name_iterator(*this, begin());
 }
   
 inline Encoding::name_iterator Encoding::end_name() const

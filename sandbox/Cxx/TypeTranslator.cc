@@ -8,7 +8,8 @@
 #include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 
-using namespace Synopsis;
+using Synopsis::Trace;
+namespace PT = Synopsis::PTree;
 
 namespace
 {
@@ -21,6 +22,7 @@ TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
   Trace trace("TypeTranslator::TypeTranslator", Trace::PARSING);
   // define all the builtin types
   Python::Object define = my_types.attr("__setitem__");
+  define(Python::Tuple(qname("bool"), my_type_kit.create_base(qname("bool"))));
   define(Python::Tuple(qname("char"), my_type_kit.create_base(qname("char"))));
   define(Python::Tuple(qname("short"), my_type_kit.create_base(qname("short"))));
   define(Python::Tuple(qname("int"), my_type_kit.create_base(qname("int"))));
@@ -38,7 +40,7 @@ TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
   define(Python::Tuple(qname("__builtin_va_list"), my_type_kit.create_base(qname("__builtin_va_list"))));
 }
 
-AST::Type TypeTranslator::lookup(PTree::Encoding const &name)
+AST::Type TypeTranslator::lookup(PT::Encoding const &name)
 {
   Trace trace("TypeTranslator::lookup", Trace::SYMBOLLOOKUP);
   trace << name;
@@ -48,14 +50,14 @@ AST::Type TypeTranslator::lookup(PTree::Encoding const &name)
   return type;
 }
 
-AST::Type TypeTranslator::lookup_function_types(PTree::Encoding const &name,
+AST::Type TypeTranslator::lookup_function_types(PT::Encoding const &name,
 						AST::TypeList &parameters)
 {
   Trace trace("TypeTranslator::lookup_function_types", Trace::SYMBOLLOOKUP);
   trace << name;
   my_name = name;
 
-  PTree::Encoding::iterator i = name.begin();
+  PT::Encoding::iterator i = name.begin();
   assert(*i == 'F');
   ++i;
   while (true)
@@ -87,8 +89,8 @@ AST::Type TypeTranslator::declare(AST::ScopedName name,
 // methods from Synopsis/Parsers/Cxx/syn/decoder.cc
 // with some minor modifications to disable the C++ specific things.
 // FIXME: this ought to be part of SymbolLookup::Type.
-PTree::Encoding::iterator TypeTranslator::decode_name(PTree::Encoding::iterator i,
-						      std::string &name)
+PT::Encoding::iterator TypeTranslator::decode_name(PT::Encoding::iterator i,
+						   std::string &name)
 {
   Trace trace("TypeTranslator::decode_name", Trace::PARSING);
   size_t length = *i++ - 0x80;
@@ -98,8 +100,8 @@ PTree::Encoding::iterator TypeTranslator::decode_name(PTree::Encoding::iterator 
   return i;
 }
 
-PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator i,
-						      AST::Type &type)
+PT::Encoding::iterator TypeTranslator::decode_type(PT::Encoding::iterator i,
+						   AST::Type &type)
 {
   Trace trace("TypeTranslator::decode_type", Trace::PARSING);
   AST::Modifiers premod, postmod;
@@ -115,9 +117,9 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
       case 'P':
 	postmod.insert(0, "*");
 	break;
-//       case 'R':
-// 	postmod.insert(0, "&");
-// 	break;
+      case 'R':
+ 	postmod.insert(0, "&");
+ 	break;
       case 'S':
 	premod.append("signed");
 	break;
@@ -139,31 +141,31 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
 	premod.append(array);
 	  break;
       }
-//       case '*':
-//       {
-// 	ScopedName n;
-// 	n.push_back("*");
-// 	base = new Types::Dependent(n);
-// 	break;
-//       }
+      case '*':
+      {
+	AST::ScopedName n;
+  	n.append("*");
+  	base = my_type_kit.create_dependent(n);
+  	break;
+      }
       case 'i':
 	name = "int";
 	break;
       case 'v':
 	name = "void";
 	break;
-//       case 'b':
-// 	name = "bool";
-// 	break;
+      case 'b':
+ 	name = "bool";
+ 	break;
       case 's':
 	name = "short";
 	break;
       case 'c':
 	name = "char";
 	break;
-//       case 'w':
-// 	name = "wchar_t";
-// 	break;
+      case 'w':
+ 	name = "wchar_t";
+ 	break;
       case 'l':
 	name = "long";
 	break;
@@ -198,10 +200,11 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
 //       case 'T':
 // 	base = decodeTemplate();
 // 	break;
-//       case 'M':
-// 	// Pointer to member. Format is same as for named types
-// 	name = decodeName() + "::*";
-// 	break;
+      case 'M':
+ 	// Pointer to member. Format is same as for named types
+ 	i = decode_name(i, name);
+	name += "::*";
+ 	break;
       default:
 	if (c > 0x80)
 	{
@@ -209,16 +212,10 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
 	  i = decode_name(i, name);
 	  break;
 	}
-	// FIXME
-	// 	    std::cerr << "\nUnknown char decoding '"<<m_string<<"': "
-	// 		 << char(c) << " " << c << " at "
-	// 		 << (m_iter - m_string.begin()) << std::endl;
     } // switch
   } // while
   if (!base && !name.length())
   {
-    // FIXME
-    // 	std::cerr << "no type or name found decoding " << m_string << std::endl;
     type = AST::Type();
     return i;
   }
@@ -232,9 +229,9 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
   return i;
 }
 
-PTree::Encoding::iterator TypeTranslator::decode_func_ptr(PTree::Encoding::iterator i,
-							  AST::Type &type,
-							  AST::Modifiers &postmod)
+PT::Encoding::iterator TypeTranslator::decode_func_ptr(PT::Encoding::iterator i,
+						       AST::Type &type,
+						       AST::Modifiers &postmod)
 {
   Trace trace("TypeTranslator::decode_func_ptr", Trace::PARSING);
   // Function ptr. Encoded same as function

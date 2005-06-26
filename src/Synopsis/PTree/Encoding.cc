@@ -284,6 +284,58 @@ std::string Unmangler::unmangle_template()
 
 }
 
+Encoding::iterator Encoding::name_iterator::advance(iterator end)
+{
+  while (end != my_encoding.end())
+  {
+    unsigned int c = *end++;
+    switch(c)
+    {
+      // modifiers
+      case 'P':
+      case 'Q': // not a qualifier, but skippable anyways.
+      case 'R':
+      case 'S':
+      case 'U':
+      case 'C':
+      case 'V': break;
+
+      // built-in types
+      case 'b':
+      case 'c':
+      case 'w':
+      case 'i':
+      case 's':
+      case 'l':
+      case 'j':
+      case 'f':
+      case 'd':
+      case 'r':
+      case 'v':
+      case 'e':
+      case '?': return end;
+	
+      case 'A':
+	while (*end != '_') ++end;
+	return end + 1;
+
+      case 'T':
+	end += *end - 0x80 + 1; // skip template name
+	end += *end - 0x80 + 1; // skip template parameters
+	return end;
+
+      case 'F':
+	while (*end != '_') ++end; // skip parameter list
+	break;                     // stay in the loop for the return type
+
+      default:
+	assert(c >= 0x80);
+	end += c - 0x80; // skip name
+	return end;
+    }
+  }
+  return end;
+}
 
 void Encoding::do_init_static()
 {
