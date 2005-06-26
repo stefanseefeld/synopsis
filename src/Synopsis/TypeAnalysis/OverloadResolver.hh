@@ -9,15 +9,41 @@
 
 #include <Synopsis/PTree.hh>
 #include <Synopsis/SymbolTable.hh>
+#include <Synopsis/TypeAnalysis/Type.hh>
 
 namespace Synopsis
 {
 namespace TypeAnalysis
 {
 
-//. Resolve a function call in the context of the given scope.
-SymbolTable::Symbol const *resolve_funcall(PTree::FuncallExpr const *funcall,
-					   SymbolTable::Scope const *);
+//. Helper class to assist in the function overload resolution.
+//. It is exposed here mainly so it can be unit-tested.
+class OverloadResolver
+{
+public:
+  OverloadResolver(SymbolTable::Scope *scope) : my_scope(scope) {}
+  //. Resolve a function call using the given set of functions.
+  SymbolTable::Symbol const *resolve(PTree::FuncallExpr const *funcall);
+
+private:
+  typedef std::vector<Type const *> TypeList;
+
+  //. Determine viable functions given the set of functions found by symbol lookup
+  //. (see [13.3.2]).
+  SymbolTable::SymbolSet find_viable_set(SymbolTable::SymbolSet const &,
+					 TypeList const &);
+
+  SymbolTable::Scope *my_scope;
+};
+
+
+//. Resolve a function call using the given set of functions.
+inline SymbolTable::Symbol const *resolve_funcall(PTree::FuncallExpr const *funcall,
+						  SymbolTable::Scope *scope)
+{
+  OverloadResolver resolver(scope);
+  return resolver.resolve(funcall);
+}
 
 }
 }

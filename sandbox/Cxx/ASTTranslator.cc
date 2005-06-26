@@ -11,7 +11,9 @@
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
 #include <Support/Path.hh>
 
-using namespace Synopsis;
+using Synopsis::Token;
+using Synopsis::Trace;
+namespace PT = Synopsis::PTree;
 
 ASTTranslator::ASTTranslator(std::string const &filename,
 			     std::string const &base_path, bool main_file_only,
@@ -43,28 +45,28 @@ ASTTranslator::ASTTranslator(std::string const &filename,
   }
 }
 
-void ASTTranslator::translate(PTree::Node *ptree, Buffer &buffer)
+void ASTTranslator::translate(PT::Node *ptree, Buffer &buffer)
 {
   Trace trace("ASTTranslator::translate", Trace::TRANSLATION);
   my_buffer = &buffer;
   ptree->accept(this);
 }
 
-void ASTTranslator::visit(PTree::List *node)
+void ASTTranslator::visit(PT::List *node)
 {
   if (node->car()) node->car()->accept(this);
   if (node->cdr()) node->cdr()->accept(this);
 }
 
-void ASTTranslator::visit(PTree::Declarator *declarator)
+void ASTTranslator::visit(PT::Declarator *declarator)
 {
-  Trace trace("ASTTranslator::visit(PTree::Declarator *)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(PT::Declarator *)", Trace::TRANSLATION);
   trace << declarator;
-  if (!PTree::first(declarator)) return; // empty
+  if (!PT::first(declarator)) return; // empty
 
   bool visible = update_position(declarator);
-  PTree::Encoding name = declarator->encoded_name();
-  PTree::Encoding type = declarator->encoded_type();
+  PT::Encoding name = declarator->encoded_name();
+  PT::Encoding type = declarator->encoded_type();
   if (type.is_function())
   {
     trace << "declare function " << name << " (" << type << ')' 
@@ -73,9 +75,9 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
     AST::TypeList parameter_types;
     AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
     AST::Function::Parameters parameters;
-    PTree::Node *p = PTree::rest(declarator);
-    while (p && p->car() && *p->car() != '(') p = PTree::rest(p);
-    translate_parameters(PTree::second(p), parameter_types, parameters);
+    PT::Node *p = PT::rest(declarator);
+    while (p && p->car() && *p->car() != '(') p = PT::rest(p);
+    translate_parameters(PT::second(p), parameter_types, parameters);
 
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
@@ -114,29 +116,29 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
   }
 }
 
-void ASTTranslator::visit(PTree::Declaration *declaration)
+void ASTTranslator::visit(PT::Declaration *declaration)
 {
-  Trace trace("ASTTranslator::visit(PTree::Declaration *)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(PT::Declaration *)", Trace::TRANSLATION);
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
   my_declaration = declaration;
-  visit(static_cast<PTree::List *>(declaration));
+  visit(static_cast<PT::List *>(declaration));
   my_declaration = 0;
 }
 
-void ASTTranslator::visit(PTree::ClassSpec *class_spec)
+void ASTTranslator::visit(PT::ClassSpec *class_spec)
 {
-  Trace trace("ASTTranslator::visit(PTree::ClassSpec *)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(PT::ClassSpec *)", Trace::TRANSLATION);
   
   bool visible = update_position(class_spec);
 
-  size_t size = PTree::length(class_spec);
+  size_t size = PT::length(class_spec);
   if (size == 2) // forward declaration
   {
     // [ class|struct <name> ]
 
-    std::string type = PTree::reify(PTree::first(class_spec));
-    std::string name = PTree::reify(PTree::second(class_spec));
+    std::string type = PT::reify(PT::first(class_spec));
+    std::string name = PT::reify(PT::second(class_spec));
     AST::ScopedName qname(name);
     AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
 						     type, qname);
@@ -146,25 +148,25 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
     return;
   }
 
-  std::string type = PTree::reify(PTree::first(class_spec));
+  std::string type = PT::reify(PT::first(class_spec));
   std::string name;
-  PTree::ClassBody *body = 0;
+  PT::ClassBody *body = 0;
 
   if (size == 4) // struct definition
   {
     // [ class|struct <name> <inheritance> [{ body }] ]
 
-    name = PTree::reify(PTree::second(class_spec));
-    body = static_cast<PTree::ClassBody *>(PTree::nth(class_spec, 3));
+    name = PT::reify(PT::second(class_spec));
+    body = static_cast<PT::ClassBody *>(PT::nth(class_spec, 3));
   }
   else if (size == 3) // anonymous struct definition
   {
     // [ struct [nil nil] [{ ... }] ]
 
-    PTree::Encoding ename = class_spec->encoded_name();
+    PT::Encoding ename = class_spec->encoded_name();
     size_t length = (ename.front() - 0x80);
     name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
-    body = static_cast<PTree::ClassBody *>(PTree::nth(class_spec, 2));
+    body = static_cast<PT::ClassBody *>(PT::nth(class_spec, 2));
   }
 
   AST::ScopedName qname(name);
@@ -177,57 +179,57 @@ void ASTTranslator::visit(PTree::ClassSpec *class_spec)
   my_scope.pop();
 }
 
-void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
+void ASTTranslator::visit(PT::EnumSpec *enum_spec)
 {
-  Trace trace("ASTTranslator::visit(PTree::EnumSpec *)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(PT::EnumSpec *)", Trace::TRANSLATION);
 
   bool visible = update_position(enum_spec);
   std::string name;
   
-  if (!PTree::second(enum_spec)) //anonymous
+  if (!PT::second(enum_spec)) //anonymous
   {
-    PTree::Encoding ename = enum_spec->encoded_name();
+    PT::Encoding ename = enum_spec->encoded_name();
     size_t length = (ename.front() - 0x80);
     name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
   }
   else
-    name = PTree::reify(PTree::second(enum_spec));
+    name = PT::reify(PT::second(enum_spec));
 
   AST::Enumerators enumerators;
-  PTree::Node *enode = PTree::second(PTree::third(enum_spec));
+  PT::Node *enode = PT::second(PT::third(enum_spec));
   AST::Enumerator enumerator;
   while (enode)
   {
     // quite a costly way to update the line number...
     update_position(enode);
-    PTree::Node *penumor = PTree::first(enode);
+    PT::Node *penumor = PT::first(enode);
     if (penumor->is_atom())
     {
       // Just a name
-      AST::ScopedName qname(PTree::reify(penumor));
+      AST::ScopedName qname(PT::reify(penumor));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
-      add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
+      add_comments(enumerator, static_cast<PT::CommentedAtom *>(penumor)->get_comments());
     }
     else
     {
       // Name = Value
-      AST::ScopedName qname(PTree::reify(PTree::first(penumor)));
+      AST::ScopedName qname(PT::reify(PT::first(penumor)));
       std::string value;
-      if (PTree::length(penumor) == 3)
-        value = PTree::reify(PTree::third(penumor));
+      if (PT::length(penumor) == 3)
+        value = PT::reify(PT::third(penumor));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, value);
-      add_comments(enumerator, static_cast<PTree::CommentedAtom *>(penumor)->get_comments());
+      add_comments(enumerator, static_cast<PT::CommentedAtom *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
-    enode = PTree::rest(enode);
+    enode = PT::rest(enode);
     // Skip comma
-    if (enode && enode->car() && *enode->car() == ',') enode = PTree::rest(enode);
+    if (enode && enode->car() && *enode->car() == ',') enode = PT::rest(enode);
   }
   // Add a dummy enumerator at the end to absorb trailing comments.
-  PTree::Node *close = PTree::third(PTree::third(enum_spec));
+  PT::Node *close = PT::third(PT::third(enum_spec));
   enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
 					    AST::ScopedName(std::string("dummy")), "");
-  add_comments(enumerator, static_cast<PTree::CommentedAtom *>(close));
+  add_comments(enumerator, static_cast<PT::CommentedAtom *>(close));
   enumerators.append(enumerator);
   
   // Create AST.Enum object
@@ -238,24 +240,24 @@ void ASTTranslator::visit(PTree::EnumSpec *enum_spec)
   my_types.declare(AST::ScopedName(name), enum_);
 }
 
-void ASTTranslator::visit(PTree::Typedef *typed)
+void ASTTranslator::visit(PT::Typedef *typed)
 {
-  Trace trace("ASTTranslator::visit(PTree::Typedef *)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(PT::Typedef *)", Trace::TRANSLATION);
 
   bool visible = update_position(typed);
 
   // the second child node may be an inlined class spec, i.e.
   // typedef struct {...} type;
-  PTree::second(typed)->accept(this);
+  PT::second(typed)->accept(this);
 
-  for (PTree::Node *d = PTree::third(typed); d; d = PTree::tail(d, 2))
+  for (PT::Node *d = PT::third(typed); d; d = PT::tail(d, 2))
   {
-    if(PTree::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
+    if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
       continue;
     
-    PTree::Declarator *declarator = static_cast<PTree::Declarator *>(d->car());
-    PTree::Encoding name = declarator->encoded_name();
-    PTree::Encoding type = declarator->encoded_type();
+    PT::Declarator *declarator = static_cast<PT::Declarator *>(d->car());
+    PT::Encoding name = declarator->encoded_name();
+    PT::Encoding type = declarator->encoded_type();
     trace << "declare type " << name << " (" << type << ')' 
 	  << my_raw_filename << ':' << my_lineno;
     assert(name.is_simple_name());
@@ -272,7 +274,7 @@ void ASTTranslator::visit(PTree::Typedef *typed)
   }
 }
 
-void ASTTranslator::translate_parameters(PTree::Node *node,
+void ASTTranslator::translate_parameters(PT::Node *node,
 					 AST::TypeList types,
 					 AST::Function::Parameters &parameters)
 {
@@ -286,7 +288,7 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
     AST::Modifiers premods, postmods;
     if (*node->car() == ',')
       node = node->cdr();
-    PTree::Node *parameter = PTree::first(node);
+    PT::Node *param = PT::first(node);
     AST::Type type = types.get(0);
     types.del(0); // pop one value
 
@@ -296,11 +298,11 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
     //[register iostate [nil]]
     //[iostate [nil] = 0]
     //[iostate [nil]]   etc
-    if (PTree::length(parameter) > 1)
+    if (PT::length(param) > 1)
     {
       // There is a parameter
-      int type_ix, value_ix = -1, len = PTree::length(parameter);
-      if (len >= 4 && *PTree::nth(parameter, len-2) == '=')
+      int type_ix, value_ix = -1, len = PT::length(param);
+      if (len >= 4 && *PT::nth(param, len-2) == '=')
       {
         // There is an =, which must be followed by the value
         value_ix = len-1;
@@ -312,50 +314,52 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
         type_ix = len-2;
       }
       // Skip keywords (eg: register) which are atoms
-      for (int ix = 0; ix < type_ix && PTree::nth(parameter, ix)->is_atom(); ++ix)
+      for (int ix = 0; 
+	   ix < type_ix && PT::nth(param, ix) && PT::nth(param, ix)->is_atom();
+	   ++ix)
       {
-        PTree::Node *atom = PTree::nth(parameter, ix);
-        premods.append(PTree::reify(atom));
+        PT::Node *atom = PT::nth(param, ix);
+        premods.append(PT::reify(atom));
       }
       // Find name
-      if (PTree::Node *n = PTree::nth(parameter, type_ix+1))
+      if (PT::Node *n = PT::nth(param, type_ix+1))
       {
-        if (PTree::last(n) && !PTree::last(n)->is_atom() && 
-	    PTree::first(PTree::last(n)) &&
-            *PTree::first(PTree::last(n)) == ')' && PTree::length(n) >= 4)
+        if (PT::last(n) && !PT::last(n)->is_atom() && 
+	    PT::first(PT::last(n)) &&
+            *PT::first(PT::last(n)) == ')' && PT::length(n) >= 4)
         {
           // Probably a function pointer type
           // pname is [* [( [* convert] )] ( [params] )]
           // set to [( [* convert] )] from example
-          n = PTree::nth(n, PTree::length(n) - 4);
-          if (n && !n->is_atom() && PTree::length(n) == 3)
+          n = PT::nth(n, PT::length(n) - 4);
+          if (n && !n->is_atom() && PT::length(n) == 3)
           {
             // set to [* convert] from example
-            n = PTree::second(n);
-            if (n && PTree::second(n) && PTree::second(n)->is_atom())
-              name = PTree::reify(PTree::second(n));
+            n = PT::second(n);
+            if (n && PT::second(n) && PT::second(n)->is_atom())
+              name = PT::reify(PT::second(n));
           }
         }
-        else if (!n->is_atom() && PTree::last(n) && PTree::last(n)->car())
+        else if (!n->is_atom() && PT::last(n) && PT::last(n)->car())
         {
           // * and & modifiers are stored with the name so we must skip them
-          PTree::Node *last = PTree::last(n)->car();
+          PT::Node *last = PT::last(n)->car();
           if (*last != '*' && *last != '&')
             // The last node is the name:
-            name = PTree::reify(last);
+            name = PT::reify(last);
         }
       }
       // Find value
-      if (value_ix >= 0) value = PTree::reify(PTree::nth(parameter, value_ix));
+      if (value_ix >= 0) value = PT::reify(PT::nth(param, value_ix));
     }
     AST::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
 						   name, value);
     parameters.append(p);
-    node = PTree::rest(node);
+    node = PT::rest(node);
   }
 }
 
-void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
+void ASTTranslator::add_comments(AST::Declaration declarator, PT::Node *c)
 {
   Trace trace("ASTTranslator::add_comments", Trace::TRANSLATION);
   if (!declarator || !c) return;
@@ -363,9 +367,9 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
   Python::List comments;
 
   // Loop over all comments in the list
-  for (PTree::Node *next = PTree::rest(c); c && !c->is_atom(); next = PTree::rest(c))
+  for (PT::Node *next = PT::rest(c); c && !c->is_atom(); next = PT::rest(c))
   {
-    PTree::Node *first = PTree::first(c);
+    PT::Node *first = PT::first(c);
     if (!first || !first->is_atom())
     {
       c = next;
@@ -375,15 +379,15 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
     update_position(c);
 
     // Check if comment is continued, eg: consecutive C++ comments
-    while (next && PTree::first(next) && PTree::first(next)->is_atom())
+    while (next && PT::first(next) && PT::first(next)->is_atom())
     {
       if (!strncmp(first->position() + first->length() - 2, "*/", 2))
         break;
-      if (strncmp(PTree::first(next)->position(), "//", 2))
+      if (strncmp(PT::first(next)->position(), "//", 2))
         break;
-      char const *next_pos = PTree::first(next)->position();
-      char const *start_pos = PTree::first(c)->position();
-      char const *curr_pos = start_pos + PTree::first(c)->length();
+      char const *next_pos = PT::first(next)->position();
+      char const *start_pos = PT::first(c)->position();
+      char const *curr_pos = start_pos + PT::first(c)->length();
       // Must only be whitespace between current comment and next
       // and only one newline
       int newlines = 0;
@@ -395,10 +399,10 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
       if (curr_pos < next_pos)
         break;
       // Current comment stretches to end of next
-      int len = int(next_pos - start_pos + PTree::first(next)->length());
-      c->set_car(first = new PTree::Atom(start_pos, len));
+      int len = int(next_pos - start_pos + PT::first(next)->length());
+      c->set_car(first = new PT::Atom(start_pos, len));
       // Skip the combined comment
-      next = PTree::rest(next);
+      next = PT::rest(next);
     }
 
     // all comments that are not immediately (i.e. separated
@@ -417,7 +421,7 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
     AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
 						     // FIXME: 'first' ought to be an atom,
 						     //        so we could just take the position/length
-						     PTree::reify(first),
+						     PT::reify(first),
 						     suspect);
     comments.append(comment);
 
@@ -431,7 +435,7 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
   declarator.comments().extend(comments);
 }
 
-bool ASTTranslator::update_position(PTree::Node *node)
+bool ASTTranslator::update_position(PT::Node *node)
 {
   Trace trace("ASTTranslator::update_position", Trace::TRANSLATION);
 
