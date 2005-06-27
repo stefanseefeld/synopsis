@@ -31,7 +31,8 @@ SRC	:= Trace Buffer Lexer
 SRC     += $(patsubst %, PTree/%, Node Encoding operations Atoms Lists \
                                   generation Visitor Display Writer)
 SRC     += $(patsubst %, SymbolTable/%, Symbol Scope Scopes Display Walker)
-SRC     += $(patsubst %, TypeAnalysis/%, Type Kit TypeEvaluator ConstEvaluator \
+SRC     += $(patsubst %, TypeAnalysis/%, Type TypeRepository TypeEvaluator \
+                                         ConstEvaluator \
                                          OverloadResolver TemplateRepository \
                                          Display)
 SRC     += SymbolFactory SymbolLookup Parser

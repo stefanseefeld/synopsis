@@ -66,8 +66,22 @@ void Display::visit(Array *type)
   my_os << '[' << type->dim() << ']';
 }
 
-void Display::visit(Function *)
+void Display::visit(Function *type)
 {
+  const_cast<Type *>(type->return_type())->accept(this);
+  my_os << "(*)(";
+  Function::ParameterList const &params = type->params();
+  Function::ParameterList::const_iterator i = params.begin();
+  if (i != params.end())
+  {
+    const_cast<Type *>(*i)->accept(this);
+    for (++i; i != params.end(); ++i)
+    {
+      my_os << ", ";
+      const_cast<Type *>(*i)->accept(this);
+    }
+  }
+  my_os << ')';
 }
 
 void Display::visit(PointerToMember *)

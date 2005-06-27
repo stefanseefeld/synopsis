@@ -9,8 +9,7 @@
 
 #include <Synopsis/TypeAnalysis/Visitor.hh>
 #include <string>
-#include <ostream>
-#include <iterator>
+#include <vector>
 
 namespace Synopsis
 {
@@ -59,6 +58,7 @@ extern BuiltinType SCHAR;
 extern BuiltinType SSHORT;
 extern BuiltinType SINT;
 extern BuiltinType SLONG;
+extern BuiltinType VOID;
 
 class Enum : public Type
 {
@@ -154,11 +154,17 @@ private:
 class Function : public Type
 {
 public:
-  Function() : Type("") {}
+  typedef std::vector<Type const *> ParameterList;
+
+  Function(ParameterList const &p, Type const *r)
+    : Type(""), my_params(p), my_return_type(r) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
+  Type const *return_type() const { return my_return_type;}
+  ParameterList const &params() const { return my_params;}
 private:
-  Type const *my_type;
+  ParameterList my_params;
+  Type const *  my_return_type;
 };
 
 class PointerToMember : public Type

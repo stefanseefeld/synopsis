@@ -18,12 +18,13 @@
 using namespace Synopsis;
 namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
+namespace TA = Synopsis::TypeAnalysis;
 
 class TypeFinder : private ST::SymbolVisitor
 {
 public:
-  TypeFinder() : my_type(0) {}
-  TypeAnalysis::Type const *find(ST::Symbol const *s)
+  TypeFinder() : my_repo(TA::TypeRepository::instance()), my_type(0) {}
+  TA::Type const *find(ST::Symbol const *s)
   {
     s->accept(this);
     return my_type;
@@ -35,7 +36,7 @@ private:
   };
   virtual void visit(ST::TypedefName const *t)
   {
-    my_type = my_kit.lookup(t->type(), t->scope());
+    my_type = my_repo->lookup(t->type(), t->scope());
   }
   virtual void visit(ST::ClassName const *c)
   {
@@ -46,8 +47,8 @@ private:
     std::cout << "enum " << e << std::endl;
   }
 
-  TypeAnalysis::Kit my_kit;
-  TypeAnalysis::Type const *my_type;
+  TA::TypeRepository *my_repo;
+  TA::Type const *    my_type;
 };
 
 void display_types(ST::Scope const *scope, std::ostream &os)
@@ -57,7 +58,7 @@ void display_types(ST::Scope const *scope, std::ostream &os)
        ++i)
   {
     TypeFinder finder;
-    TypeAnalysis::Type const *type = finder.find(i->second);
+    TA::Type const *type = finder.find(i->second);
     if (!type) continue;
     os << "Type : " << i->first.unmangled() << " = ";
     display(type, os);

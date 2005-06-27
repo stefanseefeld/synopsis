@@ -19,6 +19,9 @@ namespace PTree
 class Node;
 class Atom;
 
+//. An Encoding encodes C++ (qualified) names and types. These names
+//. are not normalized, as that requires symbol lookup and type analysis.
+//.
 //. 'b' boolean
 //. 'c' char
 //. 'w' wchar_t
@@ -59,7 +62,6 @@ class Atom;
 //. operator + ==> +
 //. operator new[] ==> new[]
 //. operator <type> ==> @<encoded type>		cast operator
-//.
 class Encoding 
 {
 public:
@@ -158,6 +160,9 @@ public:
 
   name_iterator begin_name() const;
   name_iterator end_name() const;
+//   name_iterator begin_function_parameters() const;
+//   name_iterator end_function_parameters() const;
+  Encoding function_return_type() const;
 
   //. if this Encoding represents a qualified name,
   //. return the name of the outer scope
@@ -186,6 +191,8 @@ public:
 
 private:
 
+  //. Advance the iterator to the start of the next token.
+  static iterator advance(iterator);
   iterator end_of_scope() const;
   static iterator end_name(iterator);
 
@@ -208,10 +215,10 @@ public:
 class Encoding::name_iterator
 {
 public:
-  name_iterator(Encoding const &e, iterator i)
-    : my_encoding(e),
+  name_iterator(iterator e, iterator i)
+    : my_end(e),
       my_cursor(*i == 'Q' ? i + 2 : i),
-      my_component(my_cursor, advance(my_cursor))
+      my_component(my_cursor, i == e ? my_cursor : Encoding::advance(my_cursor))
   {
   }
   name_iterator &operator++() { next(); return *this;}
@@ -222,26 +229,36 @@ public:
   bool operator!=(name_iterator const &i) const { return my_cursor != i.my_cursor;}
 
 private:
-  iterator advance(iterator);
   void next() 
   {
     my_cursor += my_component.size();
-    my_component = Encoding(my_cursor, advance(my_cursor));
+    if (my_cursor != my_end)
+      my_component = Encoding(my_cursor, Encoding::advance(my_cursor));
   }
 
-  Encoding const& my_encoding;
-  iterator        my_cursor;
-  Encoding        my_component;
+  iterator const my_end;
+  iterator       my_cursor;
+  Encoding       my_component;
 };
 
 inline Encoding::name_iterator Encoding::begin_name() const
 {
-  return name_iterator(*this, begin());
+  return name_iterator(end(), begin());
 }
   
 inline Encoding::name_iterator Encoding::end_name() const
 {
-  return name_iterator(*this, end());
+  return name_iterator(end(), end());
+}
+
+inline Encoding Encoding::function_return_type() const
+{
+  assert(is_function());
+  // Find the token after the end-of-parameter-list marker ('_')
+  iterator b = my_buffer.begin();
+  while (*b != '_') ++b;
+  iterator e = advance(++b);
+  return Encoding(b, e);
 }
 
 inline bool operator < (const Encoding &e1, const Encoding &e2) 

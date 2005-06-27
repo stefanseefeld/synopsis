@@ -9,7 +9,7 @@
 
 #include <Synopsis/TypeAnalysis/Type.hh>
 #include <Synopsis/TypeAnalysis/Visitor.hh>
-#include <Synopsis/TypeAnalysis/Kit.hh>
+#include <Synopsis/TypeAnalysis/TypeRepository.hh>
 #include <Synopsis/TypeAnalysis/TypeEvaluator.hh>
 #include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
 #include <Synopsis/TypeAnalysis/OverloadResolver.hh>

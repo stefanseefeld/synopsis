@@ -26,12 +26,16 @@ public:
   SymbolTable::Symbol const *resolve(PTree::FuncallExpr const *funcall);
 
 private:
-  typedef std::vector<Type const *> TypeList;
+  static const unsigned int MATCH = 0;
+  static const unsigned int MISMATCH = 1000;
 
   //. Determine viable functions given the set of functions found by symbol lookup
   //. (see [13.3.2]).
   SymbolTable::SymbolSet find_viable_set(SymbolTable::SymbolSet const &,
-					 TypeList const &);
+					 Function::ParameterList const &);
+  //. Determine a penalty associated with a type conversion 'from' -> 'to'.
+  //. Return '0' for an exact match, or '~0' for a mismatch.
+  unsigned int conversion_penalty(Type const *from, Type const *to);
 
   SymbolTable::Scope *my_scope;
 };
