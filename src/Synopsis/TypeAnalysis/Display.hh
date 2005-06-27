@@ -9,6 +9,7 @@
 
 #include <Synopsis/TypeAnalysis/Visitor.hh>
 #include <Synopsis/TypeAnalysis/Type.hh>
+#include <ostream>
 
 namespace Synopsis
 {

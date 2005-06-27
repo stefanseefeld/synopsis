@@ -29,6 +29,7 @@ BuiltinType SCHAR("signed char");
 BuiltinType SSHORT("signed short");
 BuiltinType SINT("signed int");
 BuiltinType SLONG("signed long");
+BuiltinType VOID("void");
 
 std::string const CVType::names[4] = {"",
 				      "const",

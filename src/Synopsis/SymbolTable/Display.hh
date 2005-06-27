@@ -64,10 +64,20 @@ private:
   size_t        my_indent;
 };
 
+//. Display a Scope recursively with all its symbols and nested scopes
+//. on the given output stream.
 inline void display(SymbolTable::Scope const *s, std::ostream &os)
 {
   ScopeDisplay sd(os);
   sd.display(s);
+}
+
+//. Display a SymbolSet on the given output stream.
+inline void display(SymbolTable::SymbolSet const &s, std::ostream &os)
+{
+  SymbolDisplay sd(os, 0);
+  for (SymbolTable::SymbolSet::iterator i = s.begin(); i != s.end(); ++i)
+    sd.display("", *i);
 }
 
 }
