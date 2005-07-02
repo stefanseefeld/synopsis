@@ -63,8 +63,17 @@ private:
   //. The encoded name is modified in place to
   //. refer to the unqualified name.
   SymbolTable::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
+
+  //. Counts the number of parameters, as well as the number of default arguments.
+  //. If the function was declared before, check that the default argument
+  //. constraints hold (8.3.6/6)
+  static void scan_param_list(PTree::Declarator const *decl,
+			      SymbolTable::FunctionName const *func,
+			      size_t &params, size_t &default_args);
+
   void declare_template_specialization(PTree::Encoding const &,
-				       PTree::ClassSpec const *);
+				       PTree::ClassSpec const *,
+				       SymbolTable::Scope *);
 
   Language                      my_language;
   Scopes                        my_scopes;

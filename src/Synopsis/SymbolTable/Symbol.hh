@@ -148,25 +148,45 @@ class FunctionName : public Symbol
 {
 public:
   FunctionName(PTree::Encoding const &type, PTree::Node const *ptree,
-	       bool def, Scope *s)
-    : Symbol(type, ptree, def, s) {}
+	       size_t params, size_t default_args, bool def, Scope *s)
+    : Symbol(type, ptree, def, s),
+      my_params(params),
+      my_default_args(default_args) 
+  {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 
   //. Return the function scope associated with this symbol.
   //. This will return 0 if the function definition hasn't been seen yet.
   FunctionScope *as_scope() const;
+
+  size_t params() const { return my_params;}
+  size_t default_args() const { return my_default_args;}
+
+private:
+  size_t my_params;
+  size_t my_default_args;
 };
 
 class FunctionTemplateName : public Symbol
 {
 public:
-  FunctionTemplateName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *s)
-    : Symbol(type, ptree, true, s) {}
+  FunctionTemplateName(PTree::Encoding const &type, PTree::Node const *ptree,
+		       size_t params, size_t default_args, Scope *s)
+    : Symbol(type, ptree, true, s),
+      my_params(params),
+      my_default_args(default_args) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 
   //. Return the function scope associated with this symbol.
   //. This will return 0 if the function definition hasn't been seen yet.
   FunctionScope *as_scope() const;
+
+  size_t params() const { return my_params;}
+  size_t default_args() const { return my_default_args;}
+
+private:
+  size_t my_params;
+  size_t my_default_args;
 };
 
 class NamespaceName : public Symbol

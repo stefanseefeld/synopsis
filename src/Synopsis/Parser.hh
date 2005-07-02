@@ -98,6 +98,9 @@ private:
   bool namespace_spec(PTree::NamespaceSpec *&);
   bool namespace_alias(PTree::NamespaceAlias *&);
   bool using_directive(PTree::UsingDirective *&);
+
+  //. using-declaration:
+  //.   using typename [opt] name
   bool using_declaration(PTree::UsingDeclaration *&);
   bool linkage_body(PTree::Node *&);
   bool template_decl(PTree::Node *&);

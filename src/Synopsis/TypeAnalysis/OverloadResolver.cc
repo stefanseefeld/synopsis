@@ -87,34 +87,20 @@ TA::OverloadResolver::find_viable_set(ST::SymbolSet const &symbols,
     PT::Encoding::iterator e = b;
     while (*e != '_') ++e;
     bool ellipsis = *(e - 2) == 'e';
-    size_t count = 0;
+    ST::FunctionName const *func = static_cast<ST::FunctionName const *>(*i);
+    size_t params = func->params();
+    size_t default_args = func->default_args();
+    // If the number of arguments match the parameters the candidate is viable.
+    if (params == args.size()) viable.insert(*i);
+    else if (params < args.size())
     {
-      PT::Encoding params(b, e);
-      for (PT::Encoding::name_iterator j = params.begin_name();
-	   j != params.end_name();
-	   ++j)
-	if (*j->begin() != 'v') ++count;
+      // If the number of arguments exceeds the number of parameters,
+      // but we have an ellipse the candidate is viable.
+      if (ellipsis) viable.insert(*i);
     }
-    if (count == args.size() ||
-	(count < args.size() && ellipsis))
-      viable.insert(*i);
-    else
-    {
-      // Determine how many of the parameters take default values.
-      size_t min = 0;
-      {
-	PT::Node const *decl = (*i)->ptree();
-	for (PT::Node const *params = PT::third(decl);
-	     params;
-	     params = PT::rest(PT::rest(params)))
-	{
-	  if (PT::length(PT::third(params->car())) == 3) break;
-	  ++min;
-	}
-      }
-      if (min <= args.size() && count > args.size())
-	viable.insert(*i);
-    }
+    // If the number of arguments  matches at least the number
+    // pf parameters without default argument the candidate is viable.
+    else if (params - default_args <= args.size()) viable.insert(*i);
   }
   return viable;
 }

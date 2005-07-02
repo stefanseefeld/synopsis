@@ -81,7 +81,8 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     const Parser::ErrorList &errors = parser.errors();
     if (!errors.size())
     {
-      ASTTranslator translator(src, base_path, main_file_only, ast, verbose, debug);
+      ASTTranslator translator(symbols.current_scope(),
+			       src, base_path, main_file_only, ast, verbose, debug);
       timer.reset();
       translator.translate(ptree, buffer);
       if (profile)

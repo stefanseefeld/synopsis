@@ -14,11 +14,14 @@
 using Synopsis::Token;
 using Synopsis::Trace;
 namespace PT = Synopsis::PTree;
+namespace ST = Synopsis::SymbolTable;
 
-ASTTranslator::ASTTranslator(std::string const &filename,
+ASTTranslator::ASTTranslator(ST::Scope *scope,
+			     std::string const &filename,
 			     std::string const &base_path, bool main_file_only,
 			     Synopsis::AST::AST ast, bool v, bool d)
-  : my_ast(ast),
+  : Walker(scope),
+    my_ast(ast),
     my_ast_kit("C++"),
     my_raw_filename(filename),
     my_base_path(base_path),
@@ -52,10 +55,32 @@ void ASTTranslator::translate(PT::Node *ptree, Buffer &buffer)
   ptree->accept(this);
 }
 
-void ASTTranslator::visit(PT::List *node)
+void ASTTranslator::visit(PT::NamespaceSpec *spec)
 {
-  if (node->car()) node->car()->accept(this);
-  if (node->cdr()) node->cdr()->accept(this);
+  Trace trace("ASTTranslator::visit(NamespaceSpec)", Trace::TRANSLATION);
+
+  bool visible = update_position(spec);
+  if (!visible) return;
+
+  PTree::Node *identifier = PTree::second(spec);
+  std::string name;
+  if (identifier) name = std::string(identifier->position(), identifier->length());
+  else // anonymous namespace
+  {
+    name = my_file.name();
+    std::string::size_type p = name.rfind('/');
+    if (p != std::string::npos) name.erase(0, p + 1);
+    name = "{" + name + "}";
+  }
+  AST::ScopedName qname = name;
+  AST::Module module = my_ast_kit.create_module(my_file, my_lineno,
+						"namespace", qname);
+  add_comments(module, spec->get_comments());
+  declare(module);
+  my_types.declare(qname, module);
+  my_scope.push(module);
+  traverse_body(spec);
+  my_scope.pop();
 }
 
 void ASTTranslator::visit(PT::Declarator *declarator)
@@ -87,7 +112,7 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 							modifiers,
 							return_type,
 							qname,
-							qname.get(0));
+							name.unmangled());
     function.parameters().extend(parameters);
     if (my_declaration) add_comments(function, my_declaration->get_comments());
     add_comments(function, declarator->get_comments());
@@ -99,15 +124,7 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
 
-    std::string vtype;// = my_builder->scope()->type();
-    if (vtype == "class" || vtype == "struct" || vtype == "union")
-      vtype = "data member";
-    else
-    {
-      if (vtype == "function")
-	vtype = "local ";
-      vtype += "variable";
-    }
+    std::string vtype = my_scope.size() ? my_scope.top().type() : "global variable";
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
     if (my_declaration) add_comments(variable, my_declaration->get_comments());
@@ -122,60 +139,59 @@ void ASTTranslator::visit(PT::Declaration *declaration)
   // Cache the declaration while traversing the individual declarators;
   // the comments are passed through.
   my_declaration = declaration;
-  visit(static_cast<PT::List *>(declaration));
+  Walker::visit(declaration);
   my_declaration = 0;
 }
 
-void ASTTranslator::visit(PT::ClassSpec *class_spec)
+void ASTTranslator::visit(PTree::FunctionDefinition *fdef)
+{
+  Trace trace("ASTTranslator::visit(PT::FunctionDefinition *)", Trace::TRANSLATION);
+  my_declaration = fdef;
+  PT::Node *decl = PT::third(fdef);
+  visit(static_cast<PT::Declarator *>(decl)); // visit the declarator
+  my_declaration = 0;
+}
+
+void ASTTranslator::visit(PT::ClassSpec *spec)
 {
   Trace trace("ASTTranslator::visit(PT::ClassSpec *)", Trace::TRANSLATION);
   
-  bool visible = update_position(class_spec);
+  bool visible = update_position(spec);
+  if (!visible) return;
 
-  size_t size = PT::length(class_spec);
+  size_t size = PT::length(spec);
   if (size == 2) // forward declaration
   {
-    // [ class|struct <name> ]
-
-    std::string type = PT::reify(PT::first(class_spec));
-    std::string name = PT::reify(PT::second(class_spec));
+    std::string type = PT::reify(PT::first(spec));
+    std::string name = PT::reify(PT::second(spec));
     AST::ScopedName qname(name);
     AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
 						     type, qname);
-    add_comments(forward, class_spec->get_comments());
+    add_comments(forward, spec->get_comments());
     if (visible) declare(forward);
     my_types.declare(qname, forward);
     return;
   }
 
-  std::string type = PT::reify(PT::first(class_spec));
+  std::string type = PT::reify(PT::first(spec));
   std::string name;
-  PT::ClassBody *body = 0;
 
   if (size == 4) // struct definition
-  {
-    // [ class|struct <name> <inheritance> [{ body }] ]
-
-    name = PT::reify(PT::second(class_spec));
-    body = static_cast<PT::ClassBody *>(PT::nth(class_spec, 3));
-  }
+    name = PT::reify(PT::second(spec));
   else if (size == 3) // anonymous struct definition
   {
-    // [ struct [nil nil] [{ ... }] ]
-
-    PT::Encoding ename = class_spec->encoded_name();
+    PT::Encoding ename = spec->encoded_name();
     size_t length = (ename.front() - 0x80);
     name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
-    body = static_cast<PT::ClassBody *>(PT::nth(class_spec, 2));
   }
 
   AST::ScopedName qname(name);
   AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
-  add_comments(class_, class_spec->get_comments());
+  add_comments(class_, spec->get_comments());
   if (visible) declare(class_);
   my_types.declare(qname, class_);
   my_scope.push(class_);
-  body->accept(this);
+  Walker::traverse_body(spec);
   my_scope.pop();
 }
 

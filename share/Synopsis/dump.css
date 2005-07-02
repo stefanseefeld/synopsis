@@ -15,6 +15,12 @@ declarations
   display: block;
 }
 
+instance
+{ 
+  display: block;
+  padding-left: 10mm;
+}
+
 instance > declarations
 { 
   display: block;

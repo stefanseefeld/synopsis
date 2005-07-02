@@ -104,11 +104,11 @@ protected:
 private:
   typedef std::set<Namespace const *> Using;
 
-  PTree::Declaration const *    my_decl;
-  Scope *                       my_outer;
-  Class const *                 my_class;
-  TemplateParameterScope const *my_parameters;
-  Using                         my_using;
+  PTree::Declaration const * my_decl;
+  Scope *                    my_outer;
+  Class const *              my_class;
+  PrototypeScope const *     my_params;
+  Using                      my_using;
 };
 
 class PrototypeScope : public Scope
@@ -117,14 +117,14 @@ class PrototypeScope : public Scope
 public:
   PrototypeScope(PTree::Node const *decl, Scope *outer,
 		 TemplateParameterScope const *params)
-    : my_decl(decl), my_outer(outer->ref()), my_parameters(params) {}
+    : my_decl(decl), my_outer(outer->ref()), my_params(params) {}
 
   virtual Scope *outer_scope() { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
   PTree::Node const *declaration() const { return my_decl;}
-  TemplateParameterScope const *parameters() const { return my_parameters;}
+  TemplateParameterScope const *templ_params() const { return my_params;}
 
   std::string name() const;
 
@@ -136,7 +136,7 @@ protected:
 private:
   PTree::Node const *           my_decl;
   Scope *                       my_outer;
-  TemplateParameterScope const *my_parameters;
+  TemplateParameterScope const *my_params;
 };
 
 class Class : public Scope
@@ -144,18 +144,15 @@ class Class : public Scope
 public:
   typedef std::vector<Class const *> Bases;
 
-  Class(PTree::ClassSpec const *spec, Scope *outer,
-	Bases const &bases, TemplateParameterScope const *params)
-    : my_spec(spec), my_outer(outer->ref()), my_bases(bases), my_parameters(params)
-  {
-  }
+  Class(std::string const &name, PTree::ClassSpec const *spec, Scope *outer,
+	Bases const &bases, TemplateParameterScope const *params);
 
   virtual Scope *outer_scope() { return my_outer;}
   virtual SymbolSet 
   unqualified_lookup(PTree::Encoding const &, LookupContext) const;
 
   // FIXME: what is 'name' ? (template parameters...)
-  std::string name() const;
+  std::string name() const { return my_name;}
 
   virtual void accept(ScopeVisitor *v) { v->visit(this);}
 
@@ -164,6 +161,7 @@ protected:
 
 private:
   PTree::ClassSpec       const *my_spec;
+  std::string                   my_name;
   Scope *                       my_outer;
   Bases                         my_bases;
   TemplateParameterScope const *my_parameters;

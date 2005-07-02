@@ -17,7 +17,7 @@ namespace Synopsis
 //. templates to be instantiated. For this reason it can't be part
 //. of the SymbolTable module, as that doesn't have any knowledge of
 //. type analysis.
-SymbolTable::SymbolSet lookup(PTree::Encoding &name,
+SymbolTable::SymbolSet lookup(PTree::Encoding const &name,
 			      SymbolTable::Scope *scope,
 			      SymbolTable::Scope::LookupContext);
 
