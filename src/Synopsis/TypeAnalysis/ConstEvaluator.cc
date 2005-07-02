@@ -7,7 +7,9 @@
 
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/PTree/Display.hh>
+#include <Synopsis/SymbolTable/Display.hh>
 #include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
+#include <Synopsis/Trace.hh>
 #include <sstream>
 #include <iomanip>
 
@@ -75,6 +77,7 @@ bool ConstEvaluator::evaluate(PT::Node const *node, long &value)
 
 void ConstEvaluator::visit(PT::Literal *node)
 {
+  Trace trace("ConstEvaluator::visit(Literal)", Trace::TYPEANALYSIS);
   std::istringstream iss(std::string(node->position(), node->length()));
 
   switch (node->type())
@@ -107,9 +110,10 @@ void ConstEvaluator::visit(PT::Literal *node)
 
 void ConstEvaluator::visit(PT::Identifier *node)
 {
+  Trace trace("ConstEvaluator::visit(Identifier)", Trace::TYPEANALYSIS);
   try
   {
-    PT::Encoding name(node->position(), node->length());
+    PT::Encoding name = PT::Encoding::simple_name(node);
     ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
     ST::ConstName const *const_ = 0;
     if (symbols.size() == 1) 
@@ -129,11 +133,13 @@ void ConstEvaluator::visit(PT::Identifier *node)
 
 void ConstEvaluator::visit(PT::FstyleCastExpr *node)
 {
+  Trace trace("ConstEvaluator::visit(FstyleCastExpr)", Trace::TYPEANALYSIS);
   my_valid = evaluate(third(node)->car(), my_value);
 }
 
 void ConstEvaluator::visit(PT::InfixExpr *node)
 {
+  Trace trace("ConstEvaluator::visit(InfixExpr)", Trace::TYPEANALYSIS);
   long left, right;
   if (!evaluate(first(node), left) ||
       !evaluate(third(node), right))
@@ -197,6 +203,7 @@ void ConstEvaluator::visit(PT::InfixExpr *node)
 
 void ConstEvaluator::visit(PT::SizeofExpr *node)
 {
+  Trace trace("ConstEvaluator::visit(SizeofExpr)", Trace::TYPEANALYSIS);
   if (length(node->cdr()) == 3) // '(' typename ')'
   {
     PT::Node *type_decl = PT::second(node->cdr());
@@ -213,6 +220,7 @@ void ConstEvaluator::visit(PT::SizeofExpr *node)
 
 void ConstEvaluator::visit(PT::UnaryExpr *node)
 {
+  Trace trace("ConstEvaluator::visit(UnaryExpr)", Trace::TYPEANALYSIS);
   PT::Node *op = node->car();
   PT::Node *expr = node->cdr()->car();
   assert(op->is_atom() && op->length() == 1);
@@ -237,6 +245,7 @@ void ConstEvaluator::visit(PT::UnaryExpr *node)
 
 void ConstEvaluator::visit(PT::CondExpr *node)
 {
+  Trace trace("ConstEvaluator::visit(CondExpr)", Trace::TYPEANALYSIS);
   long condition;
   if (!evaluate(node->car(), condition)) return;
   if (condition) // interpret as bool
@@ -247,6 +256,7 @@ void ConstEvaluator::visit(PT::CondExpr *node)
 
 void ConstEvaluator::visit(PT::ParenExpr *node)
 {
+  Trace trace("ConstEvaluator::visit(ParenExpr)", Trace::TYPEANALYSIS);
   PT::Node *body = node->cdr()->car();
   if (!body) my_valid = false;
   else body->accept(this);

@@ -145,8 +145,12 @@ void SymbolFactory::enter_scope(PT::ClassSpec const *spec)
     else ; // FIXME
   }
   ST::Scope *scope = my_scopes.top();
-  ST::Class *class_ = new ST::Class(spec, scope, bases, my_template_parameters);
-  PT::Encoding const &name = spec->encoded_name();
+  PT::Encoding name = spec->encoded_name();
+
+  if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
+
+  ST::Class *class_ = new ST::Class(name.unmangled(),
+				    spec, scope, bases, my_template_parameters);
   if (name.is_template_id())
   {
     // This is a template specialization. Declare the scope with the
@@ -256,6 +260,11 @@ void SymbolFactory::declare(PT::Declaration const *d)
     PT::Encoding name = decls->encoded_name();
     PT::Encoding type = decls->encoded_type();
 
+    size_t params;
+    size_t default_args;
+    scan_param_list(static_cast<PT::Declarator const *>(decls), 0,
+		    params, default_args);
+
     // If the name is qualified, it has to be
     // declared already. If it hasn't, raise an error.
     ST::Scope *scope = my_scopes.top();
@@ -270,7 +279,9 @@ void SymbolFactory::declare(PT::Declaration const *d)
       //       declared function, according to 3.1/2 [basic.def]
       scope->remove(symbol);
     }
-    scope->declare(name, new ST::FunctionName(type, d, true, scope));
+    scope->declare(name, new ST::FunctionName(type, d,
+					      params, default_args,
+					      true, scope));
   }
   else
   {
@@ -282,30 +293,52 @@ void SymbolFactory::declare(PT::Declaration const *d)
     {
       for (; decls; decls = decls->cdr())
       {
-	PT::Node const *decl = decls->car();
-	if (PT::is_a(decl, Token::ntDeclarator))
+	PT::Declarator const *decl = dynamic_cast<PT::Declarator const *>(decls->car());
+	if (!decl) continue; // a comma ?
+
+	PT::Encoding name = decl->encoded_name();
+	PT::Encoding const &type = decl->encoded_type();
+
+	ST::Scope *scope = my_scopes.top();
+	if (name.is_qualified())
 	{
-	  PT::Encoding name = decl->encoded_name();
-	  PT::Encoding const &type = decl->encoded_type();
+	  ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
+	  if (symbols.empty()) throw ST::Undefined(name, scope, decl);
+	  // FIXME: We need type analysis / overload resolution
+	  //        here to take the right symbol.
+	  ST::Symbol const *symbol = *symbols.begin();
+	  while (name.is_qualified()) name = name.get_symbol();
+	  scope = symbol->scope();
+	  // TODO: check whether this is the definition of a previously
+	  //       declared variable, according to 3.1/2 [basic.def]
+	  scope->remove(symbol);
+	}
 
-	  ST::Scope *scope = my_scopes.top();
-	  if (name.is_qualified())
+	if (type.is_function()) // It's a function declaration.
+	{
+	  size_t params;
+	  size_t default_args;
+	  scan_param_list(decl, 0, params, default_args);
+	  scope->declare(name, new ST::FunctionName(type, decl,
+						    params, default_args,
+						    false, scope));
+	}
+	else
+	{
+	  PT::Node *initializer = const_cast<PT::Declarator *>(decl)->initializer();
+	  // FIXME: Checking the encoding for constness is not sufficient, as the
+	  //        type id may be an alias (typedef) to a const type.
+	  if (initializer && 
+	      (type.front() == 'C' || 
+	       (type.front() == 'V' && *(type.begin() + 1) == 'C')))
 	  {
-	    ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
-	    if (symbols.empty()) throw ST::Undefined(name, scope, decl);
-	    // FIXME: We need type analysis / overload resolution
-	    //        here to take the right symbol.
-	    ST::Symbol const *symbol = *symbols.begin();
-	    while (name.is_qualified()) name = name.get_symbol();
-	    scope = symbol->scope();
-	    // TODO: check whether this is the definition of a previously
-	    //       declared variable, according to 3.1/2 [basic.def]
-	    scope->remove(symbol);
+	    long value;
+	    if (TA::evaluate_const(current_scope(), initializer->car(), value))
+	      scope->declare(name, new ST::ConstName(type, value, decl, true, scope));
+	    else
+	      scope->declare(name, new ST::ConstName(type, decl, true, scope));
 	  }
-
-	  if (type.is_function()) // It's a function declaration.
-	    scope->declare(name, new ST::FunctionName(type, decl, false, scope));
-	  else                    // It's a variable definition.
+	  else
 	    scope->declare(name, new ST::VariableName(type, decl, true, scope));
 	}
       }
@@ -371,7 +404,7 @@ void SymbolFactory::declare(PT::EnumSpec const *spec)
 #endif
     }
     assert(enumerator->is_atom());
-    PT::Encoding name(enumerator->position(), enumerator->length());
+    PT::Encoding name = PT::Encoding::simple_name(static_cast<PT::Atom const *>(enumerator));
     if (defined)
       scope->declare(name, new ST::ConstName(type, value, enumerator, true, scope));
     else
@@ -401,18 +434,21 @@ void SymbolFactory::declare(PT::ClassSpec const *spec)
 {
   Trace trace("SymbolFactory::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  PT::Encoding const &name = spec->encoded_name();
+
+  ST::Scope *scope = my_scopes.top();
+  PT::Encoding name = spec->encoded_name();
+
+  if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
+
   // If the name is a template-id, we are looking at a template specialization.
   // Declare it in the template repository instead.
   if (name.is_template_id())
   {
-    declare_template_specialization(name.get_template_name(), spec);
+    declare_template_specialization(name.get_template_name(), spec, scope);
     return;
   }
   // If class spec contains a class body, it's a definition.
   PT::ClassBody const *body = const_cast<PT::ClassSpec *>(spec)->body();
-
-  ST::Scope *scope = my_scopes.top();
 
   ST::SymbolSet symbols = scope->find(name, ST::Scope::DEFAULT);
   for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
@@ -449,13 +485,19 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   ST::Scope *scope = my_scopes.top();
   if (class_spec)
   {
-    PT::Encoding const &name = class_spec->encoded_name();
+    PT::Encoding name = class_spec->encoded_name();
+
+    if (name.is_qualified()) scope = lookup_scope_of_qname(name, tdecl);
+
     // If the name is a template-id, we are looking at a template specialization.
     // Declare it in the template repository instead.
     if (name.is_template_id())
-      declare_template_specialization(name.get_template_name(), class_spec);
+      declare_template_specialization(name.get_template_name(), class_spec, scope);
     else
+    {
+      // Find any forward declarations for this symbol.
       scope->declare(name, new ST::ClassTemplateName(PT::Encoding(), tdecl, true, scope));
+    }
   }
   else
   {
@@ -473,7 +515,12 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
       //       declared function, according to 3.1/2 [basic.def]
       scope->remove(symbol);
     }
-    scope->declare(name, new ST::FunctionTemplateName(PT::Encoding(), decl, scope));
+    size_t params;
+    size_t default_args;
+    scan_param_list(static_cast<PT::Declarator const *>(decl), 0,
+		    params, default_args);
+    scope->declare(name, new ST::FunctionTemplateName(PT::Encoding(), decl,
+						      params, default_args, scope));
   }
 }
 
@@ -542,11 +589,43 @@ void SymbolFactory::declare(PT::ParameterDeclaration const *pdecl)
   }
 }
 
-void SymbolFactory::declare(PT::UsingDeclaration const *)
+void SymbolFactory::declare(PT::UsingDeclaration const *udecl)
 {
   Trace trace("SymbolFactory::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
-  trace << "TBD !";
   if (my_language == NONE) return;
+  PT::Encoding const &name = PT::third(udecl)->encoded_name();
+  PT::Encoding alias;
+  for (PT::Encoding::name_iterator i = name.begin_name();
+       i != name.end_name();
+       ++i)
+    alias = *i; // find last component
+
+  ST::Scope *scope = my_scopes.top();
+  ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
+
+  for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
+  {
+    // TODO: check validity according to [namespace.udecl] (7.3.3)
+    scope->declare(alias, *i);
+  }
+}
+
+void SymbolFactory::scan_param_list(PTree::Declarator const *decl,
+				    SymbolTable::FunctionName const *,
+				    size_t &params, size_t &default_args)
+{
+  // TODO: check default argument constraints
+  params = 0;
+  default_args = 0;
+  for (PT::Node const *p = PT::third(decl); p; p = PT::rest(PT::rest(p)))
+  {
+    ++params;
+    if (PT::length(PT::third(p->car())) == 3 || default_args)
+      // If we already encountered an initializer for a previous parameter,
+      // this one has to have one too, though not necessarily expressed in
+      // this declarator (see 8.3.6/6).
+      ++default_args;
+  }
 }
 
 ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
@@ -564,11 +643,11 @@ ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
 }
 
 void SymbolFactory::declare_template_specialization(PT::Encoding const &name,
-						    PT::ClassSpec const *spec)
+						    PT::ClassSpec const *spec,
+						    ST::Scope *scope)
 {
   Trace trace("SymbolFactory::declare_template_specialization", Trace::SYMBOLLOOKUP);
   // Find primary template and declare specialization.
-  ST::Scope *scope = my_scopes.top();
   ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
   if (symbols.empty())
     throw ST::Undefined(name, scope);

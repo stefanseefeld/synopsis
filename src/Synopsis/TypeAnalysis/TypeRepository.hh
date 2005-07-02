@@ -40,15 +40,24 @@ public:
   PointerToMember const *pointer_to_member(Type const *container, Type const *member);
 
 private:
+  typedef std::map<PTree::Encoding, Type const *> Dictionary;
+
   struct Guard
   {
     ~Guard() { delete TypeRepository::instance_;}
   };
+  friend struct Guard;
 
   TypeRepository();
+  ~TypeRepository();
 
   static TypeRepository *instance_;
   static Guard           guard;
+
+  //. Store types that need to be deleted.
+  Dictionary my_types;
+  //. Store type aliases for faster lookup.
+  Dictionary my_aliases;
 };
 
 }

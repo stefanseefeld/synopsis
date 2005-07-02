@@ -10,6 +10,7 @@
 
 #include <Synopsis/PTree/operations.hh>
 #include <Synopsis/PTree/Encoding.hh>
+#include <Synopsis/PTree/Atoms.hh>
 
 namespace Synopsis
 {
@@ -119,7 +120,8 @@ public:
 class UsingDeclaration : public Declaration
 {
 public:
-  UsingDeclaration(Node *p, Node *q) : Declaration(p, q) {}
+  UsingDeclaration(Kwd::Using *u, Kwd::Typename *t, Node *id)
+    : Declaration(u, list(t, id)) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 

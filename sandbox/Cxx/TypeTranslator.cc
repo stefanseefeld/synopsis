@@ -17,7 +17,7 @@ namespace
 }
 
 TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
-  : my_types(types), my_type_kit("C"), my_verbose(v), my_debug(d)
+  : my_types(types), my_type_kit("C++"), my_verbose(v), my_debug(d)
 {
   Trace trace("TypeTranslator::TypeTranslator", Trace::PARSING);
   // define all the builtin types

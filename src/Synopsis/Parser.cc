@@ -807,17 +807,23 @@ bool Parser::using_directive(PT::UsingDirective *&udir)
 }
 
 
-/*
-  using.declaration
-  : USING name
-*/
+//. using-declaration:
+//.   using typename [opt] name
 bool Parser::using_declaration(PT::UsingDeclaration *&udecl)
 {
-  Trace trace("Parser::user_declaration", Trace::PARSING);
+  Trace trace("Parser::using_declaration", Trace::PARSING);
+
   Token tk;
-  
   if(my_lexer.get_token(tk) != Token::USING)
     return false;
+
+  PT::Kwd::Typename *typename_ = 0;
+  if(my_lexer.look_ahead(0) == Token::TYPENAME)
+  {
+    Token t;
+    my_lexer.get_token(t);
+    typename_ = new PT::Kwd::Typename(t);
+  }
 
   PT::Node *id;
   PT::Encoding name_encode;
@@ -827,7 +833,7 @@ bool Parser::using_declaration(PT::UsingDeclaration *&udecl)
   else
     id = new PT::Name(PT::list(id), name_encode);
 
-  udecl = new PT::UsingDeclaration(new PT::Kwd::Using(tk), id);
+  udecl = new PT::UsingDeclaration(new PT::Kwd::Using(tk), typename_, id);
 
   if (my_lexer.get_token(tk) != ';') return false;
 

@@ -84,7 +84,7 @@ std::string Unmangler::unmangle_name()
 
 std::string Unmangler::unmangle()
 {
-  Trace trace("Unmangler::unmangle()", Trace::PTREE);
+  Trace trace("Unmangler::unmangle()", Trace::PTREE, Encoding(my_cursor, my_end));
   std::string premod, postmod;
   std::string name;
   std::string base;

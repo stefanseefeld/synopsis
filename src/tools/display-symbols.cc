@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   input = argv[argc - 1];
   try
   {
-    if (debug) Trace::enable(Trace::SYMBOLLOOKUP);
+    if (debug) Trace::enable(Trace::SYMBOLLOOKUP|Trace::PTREE);
 
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);

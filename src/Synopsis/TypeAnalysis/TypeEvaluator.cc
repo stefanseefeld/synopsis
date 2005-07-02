@@ -18,10 +18,22 @@ namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
 using namespace Synopsis::TypeAnalysis;
 
+BinaryPromotion::BinaryPromotion()
+{
+  // Store all known binary type promotions here.
+}
+
+Type const *BinaryPromotion::find(Type const *left, Type const *right)
+{
+  ReturnTypes::iterator i = my_return_types.find(Key(left, right));
+  return i == my_return_types.end() ? 0 : i->second;
+}
+
 namespace
 {
 std::string const TRUE = "true";
 std::string const FALSE = "false";
+
 
 Type const *numeric_type(char const *position, size_t length)
 {
@@ -53,6 +65,8 @@ Type const *numeric_type(char const *position, size_t length)
   return (*(position + length - 1) == 'u' ||
 	  *(position + length - 1) == 'U' ? &UINT : &INT);
 }
+
+BinaryPromotion binary_promotion;
 
 }
 
@@ -150,62 +164,12 @@ void TypeEvaluator::visit(PT::InfixExpr *node)
   PT::Node *op = PT::second(node);
   assert(op->is_atom() && op->length() <= 2);
 
-  // FIXME: TBD
-//   my_type = lhs;
-
-  /*
-  if (op->length() == 1)
-    switch (*op->position())
-    {
-      case '+':
-	my_value = left + right;
-	break;
-      case '-':
-	my_value = left - right;
-	break;
-      case '>':
-	my_value = left > right;
-	break;
-      case '<':
-	my_value = left < right;
-	break;
-      case '&':
-	my_value = left & right;
-	break;
-      case '|':
-	my_value = left | right;
-	break;
-      case '^':
-	my_value = left ^ right;
-	break;
-      case '*':
-	my_value = left * right;
-	break;
-      case '/':
-	my_value = left / right;
-	break;
-      case '%':
-	my_value = left % right;
-	break;
-      default:
-        my_valid = false;
-        break;
-    }
-  else if (*op->position() == '=' && op->position()[1] == '=')
-    my_value = left == right;
-  else if (*op->position() == '!' && op->position()[1] == '=')
-    my_value = left != right;
-  else if (*op->position() == '<' && op->position()[1] == '<')
-    my_value = left << right;
-  else if (*op->position() == '>' && op->position()[1] == '>')
-    my_value = left >> right;
-  else if (*op->position() == '&' && op->position()[1] == '&')
-    my_value = left && right;
-  else if (*op->position() == '|' && op->position()[1] == '|')
-    my_value = left || right;
+  Type const *retn = binary_promotion.find(lhs, rhs);
+  if (retn) my_type = retn;
   else
-    my_valid = false;
-  */
+  {
+    // look up user-defined binary operators
+  }
 }
 
 void TypeEvaluator::visit(PT::PmExpr *node)

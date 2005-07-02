@@ -11,16 +11,18 @@
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/AST/TypeKit.hh>
 #include <Synopsis/PTree.hh>
+#include <Synopsis/SymbolTable.hh>
 #include <Synopsis/Buffer.hh>
 #include "TypeTranslator.hh"
 #include <stack>
 
 using namespace Synopsis;
 
-class ASTTranslator : private PTree::Visitor
+class ASTTranslator : private SymbolTable::Walker
 {
 public:
-  ASTTranslator(std::string const &filename,
+  ASTTranslator(SymbolTable::Scope *scope,
+		std::string const &filename,
 		std::string const &base_path, bool main_file_only,
 		AST::AST a, bool v, bool d);
 
@@ -29,9 +31,10 @@ public:
 private:
   typedef std::stack<AST::Scope> ScopeStack;
 
-  virtual void visit(PTree::List *node);
+  virtual void visit(PTree::NamespaceSpec *spec);
   virtual void visit(PTree::Declarator *decl);
   virtual void visit(PTree::Declaration *decl);
+  virtual void visit(PTree::FunctionDefinition *fdef);
   virtual void visit(PTree::ClassSpec *class_spec);
   virtual void visit(PTree::EnumSpec *enum_spec);
   virtual void visit(PTree::Typedef *typed);

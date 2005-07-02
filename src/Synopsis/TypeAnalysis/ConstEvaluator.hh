@@ -19,6 +19,7 @@ namespace TypeAnalysis
 {
 
 //. Evaluate the value of a constant expression.
+//. See [expr.const] (5.19)
 class ConstEvaluator : private PTree::Visitor
 {
 public:

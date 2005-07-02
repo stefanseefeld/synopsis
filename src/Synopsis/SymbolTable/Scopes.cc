@@ -37,19 +37,8 @@ FunctionScope::FunctionScope(PTree::Declaration const *decl,
 			     PrototypeScope *proto,
 			     Scope *outer)
   : my_decl(decl), my_outer(outer->ref()),
-    my_parameters(proto->parameters())
+    my_params(proto)
 {
-  for (SymbolTable::iterator i = proto->my_symbols.begin();
-       i != proto->my_symbols.end();
-       ++i)
-  {
-    Symbol const *symbol = i->second;
-    my_symbols.insert(std::make_pair(i->first,
-				     new VariableName(symbol->type(),
-						      symbol->ptree(),
-						      true, this)));
-  }
-  proto->unref();
 }
 
 void FunctionScope::use(Namespace const *ns)
@@ -63,9 +52,13 @@ FunctionScope::unqualified_lookup(Encoding const &name,
 {
   Trace trace("FunctionScope::unqualified_lookup", Trace::SYMBOLLOOKUP, name);
   SymbolSet symbols = find(name, context);
-  if (my_parameters)
   {
-    SymbolSet more = my_parameters->find(name, context);
+    SymbolSet more = my_params->find(name, context);
+    symbols.insert(more.begin(), more.end());
+  }
+  if (my_params->templ_params())
+  {
+    SymbolSet more = my_params->templ_params()->find(name, context);
     symbols.insert(more.begin(), more.end());
   }
   if (symbols.size()) return symbols;
@@ -97,6 +90,15 @@ FunctionScope::qualified_lookup(PTree::Encoding const &name,
 
   // find symbol locally
   SymbolSet symbols = find(name, context);
+  {
+    SymbolSet more = my_params->find(name, context);
+    symbols.insert(more.begin(), more.end());
+  }
+  if (my_params->templ_params())
+  {
+    SymbolSet more = my_params->templ_params()->find(name, context);
+    symbols.insert(more.begin(), more.end());
+  }
   // see 7.3.4 [namespace.udir]
   if (symbols.empty())
     for (Using::const_iterator i = my_using.begin(); i != my_using.end(); ++i)
@@ -122,6 +124,13 @@ std::string PrototypeScope::name() const
   return oss.str();
 }
 
+Class::Class(std::string const &name, PTree::ClassSpec const *spec, Scope *outer,
+	     Bases const &bases, TemplateParameterScope const *params)
+  : my_spec(spec), my_name(name),
+    my_outer(outer->ref()), my_bases(bases), my_parameters(params)
+{
+}
+
 SymbolSet 
 Class::unqualified_lookup(Encoding const &name,
 			  LookupContext context) const
@@ -140,16 +149,6 @@ Class::unqualified_lookup(Encoding const &name,
     symbols.insert(more.begin(), more.end());
   }
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
-}
-
-std::string Class::name() const
-{
-  PTree::Node const *name_spec = PTree::second(my_spec);
-  // FIXME: why is name_spec for anonumous classes 'list(0, 0)' ?
-  //        see Parser::class_spec()...
-  if (name_spec && name_spec->is_atom())
-    return std::string(name_spec->position(), name_spec->length());
-  return "";
 }
 
 Namespace *Namespace::find_namespace(PTree::NamespaceSpec const *spec) const

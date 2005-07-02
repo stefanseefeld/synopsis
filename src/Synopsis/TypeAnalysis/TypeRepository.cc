@@ -22,6 +22,12 @@ TA::TypeRepository::TypeRepository()
 {
 }
 
+TA::TypeRepository::~TypeRepository()
+{
+  for (Dictionary::iterator i = my_types.begin(); i != my_types.end(); ++i)
+    delete i->second;
+}
+
 TA::Type const *TA::TypeRepository::lookup(PT::Encoding const &name,
 					   ST::Scope *scope)
 {

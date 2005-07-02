@@ -35,7 +35,7 @@ SRC     += $(patsubst %, TypeAnalysis/%, Type TypeRepository TypeEvaluator \
                                          ConstEvaluator \
                                          OverloadResolver TemplateRepository \
                                          Display)
-SRC     += SymbolFactory SymbolLookup Parser
+SRC     += SymbolLookup SymbolFactory Parser
 
 TOOLS	:= display-ptree display-symbols display-types
 

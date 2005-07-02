@@ -14,7 +14,7 @@ namespace Synopsis
 namespace PT = PTree;
 namespace ST = SymbolTable;
 
-ST::SymbolSet lookup(PT::Encoding &name,
+ST::SymbolSet lookup(PT::Encoding const &name,
 		     ST::Scope *scope,
 		     ST::Scope::LookupContext context)
 {
