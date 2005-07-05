@@ -1613,7 +1613,7 @@ void SWalker::visit(PTree::UsingDeclaration *node)
 {
   STrace trace("SWalker::visit(PTree::UsingDeclaration*)");
   if (my_links) my_links->span(PTree::first(node), "file-keyword");
-  PTree::Node *p = PTree::rest(node);
+  PTree::Node *p = PTree::rest(PTree::rest(node));
   // Find name that we are looking up, and make a new ptree list for linking it
   PTree::Node *p_name = PTree::snoc(0, p->car());
   ScopedName name;

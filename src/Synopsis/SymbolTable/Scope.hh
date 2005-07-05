@@ -7,6 +7,7 @@
 #ifndef Synopsis_SymbolTable_Scope_hh_
 #define Synopsis_SymbolTable_Scope_hh_
 
+#include <Synopsis/Exception.hh>
 #include <Synopsis/SymbolTable/Symbol.hh>
 #include <map>
 #include <set>
@@ -47,16 +48,6 @@ struct MultiplyDefined : std::exception
   PTree::Encoding name;
   PTree::Node const * declaration;
   PTree::Node const * original;
-};
-
-class InternalError : public std::exception
-{
-public:
-  InternalError(std::string const &what) : my_what(what) {}
-  virtual ~InternalError() throw() {}
-  virtual char const * what() const throw() { return my_what.c_str();}
-private:
-  std::string my_what;
 };
 
 typedef std::set<Symbol const *> SymbolSet;

@@ -44,6 +44,7 @@ ST::SymbolSet lookup(PT::Encoding const &name,
 
     ST::Symbol const *symbol = *symbols.begin();
     scope = symbol->scope()->find_scope(symbol->ptree());
+    if (!scope) throw InternalError("Undeclared scope for " + name.unmangled());
   }
 
   PT::Encoding component = *++next;
@@ -72,8 +73,7 @@ ST::SymbolSet lookup(PT::Encoding const &name,
 
     ST::Symbol const *symbol = *symbols.begin();
     scope = symbol->scope()->find_scope(symbol->ptree());
-    if (!scope) 
-      throw ST::InternalError("undeclared scope !");
+    if (!scope) throw InternalError("Undeclared scope for " + name.unmangled());
 
     component = *next;
     symbols = scope->qualified_lookup(component, context);
