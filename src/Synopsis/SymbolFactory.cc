@@ -67,7 +67,7 @@ private:
     else
     {
       ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
-      if (!class_) throw ST::InternalError("Base specifier not a class.");
+      if (!class_) throw InternalError("Base specifier not a class.");
       my_result = class_->as_scope();
     }
   }
@@ -80,13 +80,45 @@ private:
     else
     {
       ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
-      if (!class_) throw ST::InternalError("Base specifier not a class.");
+      if (!class_) throw InternalError("Base specifier not a class.");
       my_result = class_->as_scope();
     }
   }
 
   ST::Scope * my_scope;
   ST::Class * my_result;
+};
+
+//. Counts the number of parameters, as well as the number of default arguments.
+//. If the function was declared before, check that the default argument
+//. constraints hold (8.3.6/6)
+class DefaultArgumentFinder : private PT::Visitor
+{
+public:
+  DefaultArgumentFinder(size_t &params, size_t default_args)
+    : my_params(params), my_default_args(default_args) {}
+  void find(PT::Declarator const *func)
+  {
+    const_cast<PT::Declarator *>(func)->accept(this);
+  }
+private:
+  virtual void visit(PT::List *node)
+  {
+    if (node->car()) node->car()->accept(this);
+    if (node->cdr()) node->cdr()->accept(this);
+  }
+  virtual void visit(PT::ParameterDeclaration *node)
+  {
+    ++my_params;
+    if (PT::length(PT::third(node->car())) == 3 || my_default_args)
+      // If we already encountered an initializer for a previous parameter,
+      // this one has to have one too, though not necessarily expressed in
+      // this declarator (see 8.3.6/6).
+      ++my_default_args;
+  }
+
+  size_t my_params;
+  size_t my_default_args;
 };
 
 }
@@ -262,8 +294,8 @@ void SymbolFactory::declare(PT::Declaration const *d)
 
     size_t params;
     size_t default_args;
-    scan_param_list(static_cast<PT::Declarator const *>(decls), 0,
-		    params, default_args);
+    DefaultArgumentFinder finder(params, default_args);
+    finder.find(static_cast<PT::Declarator const *>(decls));
 
     // If the name is qualified, it has to be
     // declared already. If it hasn't, raise an error.
@@ -318,7 +350,8 @@ void SymbolFactory::declare(PT::Declaration const *d)
 	{
 	  size_t params;
 	  size_t default_args;
-	  scan_param_list(decl, 0, params, default_args);
+	  DefaultArgumentFinder finder(params, default_args);
+	  finder.find(decl);
 	  scope->declare(name, new ST::FunctionName(type, decl,
 						    params, default_args,
 						    false, scope));
@@ -501,7 +534,6 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   }
   else
   {
-    PT::display(body, std::cout, false, true);
     PT::Node const *decl = PT::third(body);
     PT::Encoding name = decl->encoded_name();
     if (name.is_qualified())
@@ -517,8 +549,8 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
     }
     size_t params;
     size_t default_args;
-    scan_param_list(static_cast<PT::Declarator const *>(decl), 0,
-		    params, default_args);
+    DefaultArgumentFinder finder(params, default_args);
+    finder.find(static_cast<PT::Declarator const *>(decl));
     scope->declare(name, new ST::FunctionTemplateName(PT::Encoding(), decl,
 						      params, default_args, scope));
   }
@@ -607,24 +639,6 @@ void SymbolFactory::declare(PT::UsingDeclaration const *udecl)
   {
     // TODO: check validity according to [namespace.udecl] (7.3.3)
     scope->declare(alias, *i);
-  }
-}
-
-void SymbolFactory::scan_param_list(PTree::Declarator const *decl,
-				    SymbolTable::FunctionName const *,
-				    size_t &params, size_t &default_args)
-{
-  // TODO: check default argument constraints
-  params = 0;
-  default_args = 0;
-  for (PT::Node const *p = PT::third(decl); p; p = PT::rest(PT::rest(p)))
-  {
-    ++params;
-    if (PT::length(PT::third(p->car())) == 3 || default_args)
-      // If we already encountered an initializer for a previous parameter,
-      // this one has to have one too, though not necessarily expressed in
-      // this declarator (see 8.3.6/6).
-      ++default_args;
   }
 }
 
