@@ -8,6 +8,7 @@
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolTable/Display.hh>
+#include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
 #include <Synopsis/Trace.hh>
 #include <sstream>
@@ -131,6 +132,29 @@ void ConstEvaluator::visit(PT::Identifier *node)
   }
 }
 
+void ConstEvaluator::visit(PT::Name *node)
+{
+  Trace trace("ConstEvaluator::visit(Name)", Trace::TYPEANALYSIS);
+  try
+  {
+    PT::Encoding name = node->encoded_name();
+    ST::SymbolSet symbols = lookup(name, my_scope, ST::Scope::DECLARATION);
+    ST::ConstName const *const_ = 0;
+    if (symbols.size() == 1)
+      const_ = dynamic_cast<ST::ConstName const *>(*symbols.begin());
+    if (!const_ || !const_->defined()) my_valid = false;
+    else
+    {
+      my_value = const_->value();
+      my_valid = true;
+    }
+  }
+  catch (const ST::TypeError &e)
+  {
+    std::cerr << "Error in ConstName lookup: type was " << e.type << std::endl;
+  }
+}
+
 void ConstEvaluator::visit(PT::FstyleCastExpr *node)
 {
   Trace trace("ConstEvaluator::visit(FstyleCastExpr)", Trace::TYPEANALYSIS);
@@ -208,6 +232,7 @@ void ConstEvaluator::visit(PT::SizeofExpr *node)
   {
     PT::Node *type_decl = PT::second(node->cdr());
     PT::Encoding type = PT::second(type_decl)->encoded_type();
+    // FIXME: TBD
     long size = size_of_builtin_type(type.begin());
     if (size < 0) return;
     else my_value = static_cast<unsigned long>(size);
