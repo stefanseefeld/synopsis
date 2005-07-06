@@ -29,6 +29,7 @@ public:
 private:
   virtual void visit(PTree::Literal *);
   virtual void visit(PTree::Identifier *);
+  virtual void visit(PTree::Name *);
   virtual void visit(PTree::FstyleCastExpr *);
   virtual void visit(PTree::InfixExpr *);
   virtual void visit(PTree::SizeofExpr *);

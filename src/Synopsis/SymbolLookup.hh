@@ -18,7 +18,7 @@ namespace Synopsis
 //. of the SymbolTable module, as that doesn't have any knowledge of
 //. type analysis.
 SymbolTable::SymbolSet lookup(PTree::Encoding const &name,
-			      SymbolTable::Scope *scope,
+			      SymbolTable::Scope const *scope,
 			      SymbolTable::Scope::LookupContext);
 
 }

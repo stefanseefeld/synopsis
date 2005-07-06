@@ -15,7 +15,7 @@ namespace PT = PTree;
 namespace ST = SymbolTable;
 
 ST::SymbolSet lookup(PT::Encoding const &name,
-		     ST::Scope *scope,
+		     ST::Scope const *scope,
 		     ST::Scope::LookupContext context)
 {
   Trace trace("lookup", Trace::SYMBOLLOOKUP, name);
@@ -28,7 +28,7 @@ ST::SymbolSet lookup(PT::Encoding const &name,
   if (next->is_global_scope())
   {
     // If the scope is the global scope, do a qualified lookup there.
-    scope = scope->global_scope();
+    scope = const_cast<ST::Scope *>(scope)->global_scope();
   }
   else
   {
