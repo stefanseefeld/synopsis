@@ -1,0 +1,8 @@
+This tool is a rewrite of the Synopsis.Parsers.Cxx.link module used to
+render source views for C++ code.
+
+Identifiers and names are marked up if the corresponding symbol can
+be looked up, but the generated link is a placeholder that has to be
+replaced in a later link stage.
+
+Then the modified buffer is written to a file as xhtml.

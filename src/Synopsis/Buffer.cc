@@ -18,6 +18,33 @@
 
 using namespace Synopsis;
 
+void Buffer::iterator::next()
+{
+  if (my_replacement)
+  {
+    ++my_offset;
+    if (my_offset >= my_replacement->patch.size())
+    {
+      my_cursor = my_replacement->to - my_buffer->ptr();
+      my_replacement = 0;
+      my_offset = 0;
+    }
+  }
+  else
+  {
+    ++my_cursor;
+    for (Buffer::Replacements::const_iterator i = my_buffer->my_replacements.begin();
+	 i != my_buffer->my_replacements.end();
+	 ++i)
+      if (i->from == my_buffer->ptr(my_cursor))
+      {
+	my_replacement = &*i;
+	my_offset = 0;
+	break;
+      }
+  }
+}
+
 Buffer::Buffer(std::streambuf *sb, const std::string &filename)
   : my_filename(filename),
     my_cursor(0)
@@ -29,7 +56,13 @@ Buffer::Buffer(std::streambuf *sb, const std::string &filename)
 void Buffer::replace(const char *from, const char *to,
 		     const char *begin, unsigned long length)
 {
-  my_replacements.push_back(Replacement(from, to, begin, length));
+  Replacements::iterator i = my_replacements.begin();
+
+  // Find the iterator after which to insert the new patch.
+  while (i != my_replacements.end() && i->from < from) ++i;
+  
+  // TODO: handle overlapping replacements.
+  my_replacements.insert(i, Replacement(from, to, std::string(begin, length)));
 }
 
 unsigned long Buffer::origin(const char *ptr, std::string &filename) const
@@ -71,19 +104,19 @@ unsigned long Buffer::origin(const char *ptr, std::string &filename) const
   return 1 + lines;
 }
 
-void Buffer::write(std::ostream &os, const std::string &/* filename */) const
+void Buffer::write(std::streambuf *sb, const std::string &/* filename */) const
 {
   // FIXME: what should we do with overlapping replacements ?
   Replacements replacements(my_replacements);
   std::sort(replacements.begin(), replacements.end(), Replacement::smaller);
-  std::ostreambuf_iterator<char> out(os);
+  std::ostreambuf_iterator<char> out(sb);
   char const *b = my_buffer.data();
   for (Replacements::iterator r = replacements.begin();
        r != replacements.end();
        ++r)
   {
     std::copy(b, r->from, out);
-    std::copy(r->begin, r->begin + r->length, out);
+    std::copy(r->patch.data(), r->patch.data() + r->patch.size(), out);
     b = r->to;
     if (*b == '\0') break;
   }
@@ -158,8 +191,7 @@ long Buffer::read_line_directive(unsigned long cursor, long line,
 }
 
 Buffer::Replacement::Replacement(const char *f, const char *t,
-				 const char *b, unsigned long l)
-  : from(f), to(t),
-    begin(b), length(l)
+				 std::string const &p)
+  : from(f), to(t), patch(p)
 {
 }

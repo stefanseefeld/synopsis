@@ -1,0 +1,55 @@
+#
+# Copyright (C) 2005 Stefan Seefeld
+# All rights reserved.
+# Licensed to the public under the terms of the GNU LGPL (>= 2),
+# see the file COPYING for details.
+#
+
+SHELL	:= /bin/sh
+
+srcdir	:= @srcdir@
+builddir:= @builddir@
+
+PYTHON	:= @PYTHON@
+
+CXX	:= @CXX@
+LDSHARED:= @LDSHARED@
+MAKEDEP	:= $(CXX) -M
+CPPFLAGS:= @CPPFLAGS@ -I . 
+CPPFLAGS+= -I $(srcdir)
+CPPFLAGS+= @SYN_CPP@ -I @PYTHON_INCLUDE@
+CXXFLAGS:= @CXXFLAGS@
+LDFLAGS	:= @LDFLAGS@
+LIBS	:= @SYN_LIBS@ @LIBS@
+LIBRARY_EXT := @LIBEXT@
+
+SRC	:= Linker.cc Formatter.cc Parser.cc
+OBJ	:= $(patsubst %.cc, %.o, $(SRC))
+DEP	:= $(patsubst %.cc, %.d, $(SRC))
+
+TARGET	:= cross
+
+vpath %.hh  $(srcdir)
+vpath %.cc  $(srcdir)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean:
+	rm -f $(CTOOL_SO)
+	rm -rf $(OBJ) $(DEP)
+
+%.o:	%.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.d:	%.cc
+	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
+
+Makefile: $(srcdir)/Makefile.in
+	(cd .. && ./config.status --file cross/Makefile)
+
+ifeq (,$(filter $(MAKECMDGOALS), clean))
+-include $(DEP)
+endif
