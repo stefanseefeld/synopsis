@@ -22,7 +22,7 @@ class Database(database.Database):
 
    def __init__(self, path, arguments):
 
-      #arguments["modifiable"] = "false"
+      arguments["modifiable"] = "false"
       database.Database.__init__(self, path, arguments)
       if os.name == 'nt':
          self.srcdir = os.popen('cygpath -w "%s"'%self.srcdir).read()[:-1]
@@ -50,94 +50,99 @@ class Database(database.Database):
       return filter(lambda x: os.path.isdir(os.path.join(path, x)),
                     dircache.listdir(path))
 
-   def GetTestIds(self, suite = "", scan_subdirs = 0):
-      """Return all test IDs that are part of the given suite."""
+   def GetSubdirectories(self, dir):
 
-      if not os.path.isdir(self.get_src_path(suite)):
-         raise NoSuchSuiteError, suite
-
-      tests = []
-
-      if suite.startswith('Processors.Linker'):
-
-         # just make sure this isn't a test itself...
-         if os.path.exists(os.path.join(self.get_build_path(suite), 'synopsis.py')):
-            raise NoSuchSuiteError, suite
-
-         tests = self.get_dir_tests(suite, 'synopsis.py')
-
-      elif suite.startswith('Cxx-API'):
-         # if 'src' exists, it contains the tests
-         path = os.path.join(self.get_src_path(suite), 'src')
-         if os.path.isdir(path):
-            tests = self.get_file_tests(path, '.cc')
-
-      elif suite.startswith('Cxx'):
-         if os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
-            tests = self.get_file_tests(os.path.join(self.get_src_path(suite),
-                                                     'input'),
-                                   '.cc')
-
-      else:
-         if os.path.isfile(os.path.join(self.get_build_path(suite), 'synopsis.py')):
-            tests = self.get_file_tests(os.path.join(self.get_src_path(suite),
-                                                     'input'))
-
-      # ignore accidental inclusion of false tests / suites
-      if '.svn' in tests: tests.remove('.svn')
-
-      if suite:
-         tests = ['%s.%s'%(suite, t) for t in tests]
-      return tests
-   
-   def GetSuiteIds(self, suite = "", scan_subdirs = 0):
-      """Return all suite IDs that are part of the given suite."""
-
-      if not os.path.isdir(self.get_src_path(suite)):
-         raise NoSuchSuiteError, suite
+      if not os.path.isdir(self.get_src_path(dir)):
+         raise NoSuchSuiteError, dir
 
       suites = []
 
-      if not suite:
+      if not dir:
 
-         suites = ['Cxx', 'Parsers', 'Processors']
+         return ['Cxx', 'Parsers', 'Processors']
 
-      elif suite.startswith('Processors.Linker'):
+      elif dir.startswith('Processors.Linker'):
 
          # just make sure this isn't a test itself...
-         if os.path.exists(os.path.join(self.get_build_path(suite), 'synopsis.py')):
-            raise NoSuchSuiteError, suite
+         if os.path.exists(os.path.join(self.get_build_path(dir), 'synopsis.py')):
+            raise NoSuchSuiteError, dir
 
-         tests = self.get_dir_tests(suite, 'synopsis.py')
-         suites = [s for s in self.get_dir_suites(suite) if s not in tests]
+         tests = self.get_dir_tests(dir, 'synopsis.py')
+         suites = [s for s in self.get_dir_suites(dir) if s not in tests]
 
-      elif suite.startswith('Cxx-API'):
+      elif dir.startswith('Cxx-API'):
          # if 'src' exists, it contains the tests
-         path = os.path.join(self.get_src_path(suite), 'src')
+         path = os.path.join(self.get_src_path(dir), 'src')
          if not os.path.isdir(path):
-            suites = self.get_dir_suites(suite)
+            suites = self.get_dir_suites(dir)
 
-      elif suite.startswith('Cxx'):
-         if not os.path.isdir(os.path.join(self.get_src_path(suite), 'input')):
-            suites = self.get_dir_suites(suite)
+      elif dir.startswith('Cxx'):
+         if not os.path.isdir(os.path.join(self.get_src_path(dir), 'input')):
+            suites = self.get_dir_suites(dir)
             suites.remove('src')
 
       else:
-         if not os.path.isfile(os.path.join(self.get_build_path(suite),
+         if not os.path.isfile(os.path.join(self.get_build_path(dir),
                                             'synopsis.py')):
-            suites = self.get_dir_suites(suite)
+            suites = self.get_dir_suites(dir)
 
       # ignore accidental inclusion of false tests / suites
       if '.svn' in suites: suites.remove('.svn')
       if 'autom4te.cache' in suites: suites.remove('autom4te.cache')
 
-      if suite:
-         suites = ['%s.%s'%(suite, s) for s in suites]
       return suites
 
+
+   def GetTestIds(self, dir = "", scan_subdirs = 1):
+      """Return all test IDs that are part of the given suite."""
+
+      if not os.path.isdir(self.get_src_path(dir)):
+         raise NoSuchSuiteError, dir
+
+      tests = []
+
+      if dir.startswith('Processors.Linker'):
+
+         # just make sure this isn't a test itself...
+         if os.path.exists(os.path.join(self.get_build_path(dir), 'synopsis.py')):
+            raise NoSuchSuiteError, dir
+
+         tests = self.get_dir_tests(dir, 'synopsis.py')
+
+      elif dir.startswith('Cxx-API'):
+         # if 'src' exists, it contains the tests
+         path = os.path.join(self.get_src_path(dir), 'src')
+         if os.path.isdir(path):
+            tests = self.get_file_tests(path, '.cc')
+
+      elif dir.startswith('Cxx'):
+         if os.path.isdir(os.path.join(self.get_src_path(dir), 'input')):
+            tests = self.get_file_tests(os.path.join(self.get_src_path(dir),
+                                                     'input'),
+                                   '.cc')
+
+      else:
+         if os.path.isfile(os.path.join(self.get_build_path(dir), 'synopsis.py')):
+            tests = self.get_file_tests(os.path.join(self.get_src_path(dir),
+                                                     'input'))
+
+      # ignore accidental inclusion of false tests / suites
+      if '.svn' in tests: tests.remove('.svn')
+
+      if dir:
+         tests = ['%s.%s'%(dir, t) for t in tests]
+
+      if scan_subdirs:
+         for d in self.GetSubdirectories(dir):
+            d = self.JoinLabels(dir, d)
+            tests.extend(self.GetTestIds(d, scan_subdirs))
+
+      return tests
+   
+   
    def GetResourceIds(self, directory="", scan_subdirs=1):
 
-      if directory == '' or directory == 'Cxx':
+      if directory == '' and scan_subdirs or directory == 'Cxx':
          return ['Cxx.Lexer',
                  'Cxx.Parser',
                  'Cxx.Encoding',
