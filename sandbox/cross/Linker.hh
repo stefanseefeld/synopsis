@@ -22,8 +22,11 @@ public:
   void link(Synopsis::PTree::Node *node);
 
 private:
+  void visit(Synopsis::PTree::Keyword *node);
+  void visit(Synopsis::PTree::Literal *node);
   void visit(Synopsis::PTree::Identifier *node);
   void visit(Synopsis::PTree::Name *node);
+  void visit(Synopsis::PTree::ClassSpec *node);
 
   Synopsis::Buffer &my_buffer;
   std::ostream     &my_os;

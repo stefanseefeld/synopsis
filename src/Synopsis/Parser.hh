@@ -195,8 +195,19 @@ private:
   bool function_arguments(PTree::Node *&);
   bool initialize_expr(PTree::Node *&);
   
+  //. enum-spec:
+  //.   enum identifier [opt] { enumerator-list [opt] }
   bool enum_spec(PTree::EnumSpec *&, PTree::Encoding&);
-  bool enum_body(PTree::Node *&);
+
+  //. enumerator-list:
+  //.   enumerator-definition
+  //.   enumerator-list , enumerator-definition
+  //. enumeratpr-definition:
+  //.   enumerator
+  //.   enumerator = constant-expression
+  //. enumerator:
+  //.   identifier
+  bool enumerator_list(PTree::Node *&);
   bool class_spec(PTree::ClassSpec *&, PTree::Encoding&);
 
   //. base-clause:

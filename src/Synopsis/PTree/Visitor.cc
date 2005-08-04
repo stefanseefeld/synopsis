@@ -30,6 +30,7 @@ void Visitor::visit(Kwd::Delete *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Kwd::Double *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Kwd::Do *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Kwd::Else *a) { visit(static_cast<Keyword *>(a));}
+void Visitor::visit(Kwd::Enum *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Kwd::Explicit *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Kwd::Extern *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Kwd::Float *a) { visit(static_cast<Keyword *>(a));}

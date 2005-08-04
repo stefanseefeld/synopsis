@@ -11,7 +11,7 @@ b
 type : d double
  
 Declaration : 
- struct   {
+ struct  {
 } c ;
 ClassSpec : [5]`0000 `0000
 `0000 
