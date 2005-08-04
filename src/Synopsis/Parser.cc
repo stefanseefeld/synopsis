@@ -2761,20 +2761,16 @@ bool Parser::function_arguments(PT::Node *&args)
   }
 }
 
-/*
-  enum.spec
-  : ENUM Identifier
-  | ENUM {Identifier} '{' {enum.body} '}'
-*/
+//. enum-spec:
+//.   enum identifier [opt] { enumerator-list [opt] }
 bool Parser::enum_spec(PT::EnumSpec *&spec, PT::Encoding &encode)
 {
   Trace trace("Parser::enum_spec", Trace::PARSING);
   Token tk, tk2;
-  PT::Node *body;
 
   if(my_lexer.get_token(tk) != Token::ENUM) return false;
 
-  spec = new PT::EnumSpec(new PT::Atom(tk));
+  spec = new PT::EnumSpec(new PT::Kwd::Enum(tk));
   int t = my_lexer.get_token(tk);
   if(t == Token::Identifier)
   {
@@ -2793,25 +2789,30 @@ bool Parser::enum_spec(PT::EnumSpec *&spec, PT::Encoding &encode)
   }
   if(t != '{') return false;
   
-  if(my_lexer.look_ahead(0) == '}') body = 0;
-  else if(!enum_body(body)) return false;
+  PT::Node *enumerators;
+  if(my_lexer.look_ahead(0) == '}') enumerators = 0;
+  else if(!enumerator_list(enumerators)) return false;
 
   if(my_lexer.get_token(tk2) != '}') return false;
 
   spec = PT::snoc(spec, 
-		  new PT::Brace(new PT::Atom(tk), body,
+		  new PT::Brace(new PT::Atom(tk), enumerators,
 				new PT::CommentedAtom(tk2, wrap_comments(my_lexer.get_comments()))));
   declare(spec);
   return true;
 }
 
-/*
-  enum.body
-  : Identifier {'=' expression} (',' Identifier {'=' expression})* {','}
-*/
-bool Parser::enum_body(PT::Node *&body)
+//. enumerator-list:
+//.   enumerator-definition
+//.   enumerator-list , enumerator-definition
+//. enumeratpr-definition:
+//.   enumerator
+//.   enumerator = constant-expression
+//. enumerator:
+//.   identifier
+bool Parser::enumerator_list(PT::Node *&body)
 {
-  Trace trace("Parser::enum_body", Trace::PARSING);
+  Trace trace("Parser::enumerator_list", Trace::PARSING);
   Token tk, tk2;
   PT::Node *name, *exp;
 
@@ -2891,8 +2892,7 @@ bool Parser::class_spec(PT::ClassSpec *&spec, PT::Encoding &encode)
   if(my_lexer.look_ahead(0) == '{') // anonymous class
   {
     encode.anonymous();
-    // FIXME: why is the absense of a name marked by a list(0, 0) ?
-    spec = PT::snoc(spec, PT::list(0, 0));
+    spec = PT::snoc(spec, 0);
   }
   else
   {

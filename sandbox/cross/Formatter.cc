@@ -13,23 +13,25 @@ char const *header =
   "    <link rel=\"stylesheet\" href=\"html.css\" type=\"text/css\">\n"
   "  </head>\n"
   "  <body>\n"
-  "    <pre><a name=\"1\"></a><span class=\"file-linenum\">&#160;&#160;&#160;&#160;1|&#160;</span>";
+  "  <div class=\"source\">\n"
+  "  <pre><a name=\"1\"></a><span class=\"linenum\">&#160;&#160;&#160;&#160;1|&#160;</span>";
   
 char const *trailer =
-  "    </pre>\n"
+  "  </pre>\n"
+  "  </div>\n"
   "  </body>\n"
   "</html>\n";
 
 char const *newline = "</pre>\n<pre>";
 
-char const *comment_start = "<span class=\"file-comment\">";
+char const *comment_start = "<span class=\"comment\">";
 
 //. Writes the line number to the output
 void write_lineno(std::ostream& out, int line)
 {
   // out << setw(4) << line << "| "; <-- but with &#160;'s
   out << "<a name=\"" << line << "\"></a>";
-  out << "<span class=\"file-linenum\">";
+  out << "<span class=\"linenum\">";
   int mag = 10000;
   while (mag > 1)
   {
@@ -57,7 +59,7 @@ Formatter::Formatter(std::ostream &os)
 void Formatter::format(Buffer::iterator begin, Buffer::iterator end)
 {
   my_os << header;
-
+  unsigned long column = 0;
   while (begin != end)
   {
     switch (*begin)
@@ -74,6 +76,7 @@ void Formatter::format(Buffer::iterator begin, Buffer::iterator end)
 	my_os << newline;
 	write_lineno(my_os, my_lineno);
 	++my_lineno;
+	column = 0;
 	if (my_ccomment)
 	  my_os << comment_start;
 	break;
