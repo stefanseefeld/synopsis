@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     if (errors.empty())
     {
       Linker linker(buffer, symbols.current_scope(), ofs);
-      linker.link(node);
+      linker.process(node);
       Formatter formatter(ofs);
       formatter.format(buffer.begin(), buffer.end());
     }

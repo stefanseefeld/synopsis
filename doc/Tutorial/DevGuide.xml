@@ -369,6 +369,41 @@
         </variablelist>
       </section>
     </section>
+    <section id="type-analysis">
+      <title>The Type Analysis Module</title>
+      <para>
+        Type analysis is required to a limitted degree during parsing, as well 
+        as during semantic analysis that may follow. During <emphasis>overload resolution</emphasis>
+        type analysis is needed to find the best conversion (standard or user defined), and for
+        partial template specialization it is needed to match certain types for which a template
+        has to be instantiated.
+      </para>
+      <para>
+        The type system consists of trees composed of <type>Type</type> nodes which may be looked
+        up in terms of their encoded names (see <xref linkend="encoding" />) in a
+        <type>TypeRepository</type>.
+      </para>
+      <section id="type-repository">
+        <title>The Type Repository</title>
+        <!-- talk about the type system, and how types are created and accessed -->
+      </section>
+      <section id="overload-resolution">
+        <title>Overload Resolution</title>
+        <!-- talk about overload resolution -->
+      </section>
+      <section id="template-repository">
+        <title>The Template Repository</title>
+        <!-- talk about (partial) template specialization -->
+      </section>
+      <section id="type-evaluation">
+        <title>Type Evaluation</title>
+        <!-- talk about expression types and their evaluation -->
+      </section>
+      <section id="const-evaluation">
+        <title>Constant expressions</title>
+        <!-- talk about integral constant expressions -->
+      </section>
+    </section>
     <section id="cxx-tests">
       <title>C++ Regression Tests</title>
       <para>
