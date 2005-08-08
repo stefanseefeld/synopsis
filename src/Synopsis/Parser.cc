@@ -1998,7 +1998,11 @@ bool Parser::declarator2(PT::Node *&decl, DeclKind kind, bool recursive,
     {
       // if this is an argument declarator, "int (*)()" is valid.
       PT::Node *id;
-      if(name(id, name_encode)) d = PT::snoc(d, id);
+      if(name(id, name_encode))
+      {
+	if(!id->is_atom()) id = new PT::Name(id, name_encode);
+	d = PT::snoc(d, id);
+      }
       else return false;
       *declared_name = id;
     }
