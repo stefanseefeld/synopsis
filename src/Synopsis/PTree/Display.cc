@@ -39,7 +39,7 @@ std::string demangle(char const *mangled)
   else
     // On failure return the mangled name.
     demangled = status == -2 ? mangled : keeper.p;
-  return demangled;
+  return demangled.substr(17); // skip 'Synopsis::PTree::' prefix
 #else
   return mangled;
 #endif
