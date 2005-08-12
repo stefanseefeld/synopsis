@@ -85,6 +85,25 @@ AST::Type TypeTranslator::declare(AST::ScopedName name,
   return type;
 }
 
+AST::Type TypeTranslator::declare(AST::ScopedName name,
+				  AST::Declaration declaration,
+				  AST::Template::Parameters parameters)
+{
+  Trace trace("TypeTranslator::declare", Trace::SYMBOLLOOKUP);
+  trace << name;
+  AST::Type type = my_type_kit.create_template(name, declaration, parameters);
+  my_types.attr("__setitem__")(Python::Tuple(name, type));
+  return type;
+}
+
+AST::Type TypeTranslator::create_dependent(AST::ScopedName name)
+{
+  Trace trace("TypeTranslator::create_dependent", Trace::SYMBOLLOOKUP);
+  trace << name;
+  AST::Type type = my_type_kit.create_dependent(name);
+  return type;
+}
+
 // This is almost a verbatim copy of the Decoder::decode
 // methods from Synopsis/Parsers/Cxx/syn/decoder.cc
 // with some minor modifications to disable the C++ specific things.

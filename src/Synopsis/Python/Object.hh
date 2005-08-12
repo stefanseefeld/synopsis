@@ -70,7 +70,12 @@ public:
   Object &operator = (const Object &o);
    
   int hash() const { return PyObject_Hash(my_impl);}
-  operator bool () const { return my_impl != Py_None;}
+  operator bool () const 
+  {
+    int retn = PyObject_IsTrue(my_impl);
+    if (retn == -1) check_exception();
+    return retn == 1;
+  }
   Object type() const { return PyObject_Type(my_impl);}
   Object repr() const { return PyObject_Repr(my_impl);}
   Object str() const { return PyObject_Str(my_impl);}

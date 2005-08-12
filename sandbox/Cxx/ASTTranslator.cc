@@ -9,12 +9,58 @@
 #include "TypeTranslator.hh"
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
+#include <Synopsis/PTree/Display.hh> // for PTree::display (debugging...)
 #include <Support/Path.hh>
 
 using Synopsis::Token;
 using Synopsis::Trace;
 namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
+
+ASTTranslator::TemplateParameterTranslator::TemplateParameterTranslator(ASTTranslator &parent)
+  : my_parent(parent) {}
+
+Python::List ASTTranslator::TemplateParameterTranslator::translate(PT::TemplateDecl *templ)
+{
+  for (PT::Node *params = PT::third(templ);
+       params;
+       params = PT::rest(PT::rest(params)))
+    params->car()->accept(this);      
+  return my_parameters;
+}
+
+void ASTTranslator::TemplateParameterTranslator::visit(PT::TypeParameter *param)
+{
+  PT::Node *typename_ = PT::first(param);
+  PT::Node *name = PT::second(param);
+  AST::ScopedName qname(std::string(name->position(), name->length()));
+  AST::Type type = my_parent.my_types.create_dependent(qname);
+  AST::Modifiers pre(std::string(typename_->position(), typename_->length()));
+  AST::Modifiers post;
+  AST::Parameter parameter = my_parent.my_ast_kit.create_parameter(pre,
+								   type,
+								   post,
+								   "", // name (unused)
+								   ""); // default value
+  my_parameters.append(parameter);
+}
+
+void ASTTranslator::TemplateParameterTranslator::visit(PT::ParameterDeclaration *param)
+{
+  PT::Encoding const &name = PT::third(param)->encoded_name();
+  AST::Modifiers pre;
+  // FIXME: AST.Parameter wants a type, even though this is a non-type.
+  //        Is AST.Parameter really what we want here ?
+  //        Wouldn't AST.Const be a better match ?
+  AST::Type type;
+  AST::Modifiers post;
+  AST::Parameter parameter = my_parent.my_ast_kit.create_parameter(pre,
+								   type,
+								   post,
+								   name.unmangled(), // name (unused)
+								   ""); // default value
+  my_parameters.append(parameter);
+}
 
 ASTTranslator::ASTTranslator(ST::Scope *scope,
 			     std::string const &filename,
@@ -28,6 +74,7 @@ ASTTranslator::ASTTranslator(ST::Scope *scope,
     my_main_file_only(main_file_only),
     my_lineno(0),
     my_types(my_ast.types(), v, d),
+    my_in_class(false),
     my_verbose(v), my_debug(d) 
 {
   Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
@@ -91,6 +138,8 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 
   bool visible = update_position(declarator);
   PT::Encoding name = declarator->encoded_name();
+  // If the name is qualified, we have already seen a corresponding declaration.
+  if (name.is_qualified()) return;
   PT::Encoding type = declarator->encoded_type();
   if (type.is_function())
   {
@@ -103,16 +152,24 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     PT::Node *p = PT::rest(declarator);
     while (p && p->car() && *p->car() != '(') p = PT::rest(p);
     translate_parameters(PT::second(p), parameter_types, parameters);
-
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Modifiers modifiers;
-    AST::Function function = my_ast_kit.create_function(my_file, my_lineno,
-							"function",
-							modifiers,
-							return_type,
-							qname,
-							name.unmangled());
+    AST::Function function;
+    if (my_in_class)
+      function = my_ast_kit.create_operation(my_file, my_lineno,
+					     "member function",
+					     modifiers,
+					     return_type,
+					     qname,
+					     name.unmangled());
+    else
+      function = my_ast_kit.create_function(my_file, my_lineno,
+					    "function",
+					    modifiers,
+					    return_type,
+					    qname,
+					    name.unmangled());
     function.parameters().extend(parameters);
     if (my_declaration) add_comments(function, my_declaration->get_comments());
     add_comments(function, declarator->get_comments());
@@ -189,9 +246,17 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
   AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
   add_comments(class_, spec->get_comments());
   if (visible) declare(class_);
-  my_types.declare(qname, class_);
+  if (my_template_parameters)
+  {
+    AST::Type type = my_types.declare(qname, class_, my_template_parameters);
+    class_.set_template(type);
+  }
+  else
+    my_types.declare(qname, class_);
   my_scope.push(class_);
+  my_in_class = true;
   Walker::traverse_body(spec);
+  my_in_class = false;
   my_scope.pop();
 }
 
@@ -288,6 +353,16 @@ void ASTTranslator::visit(PT::Typedef *typed)
     if (visible) declare(declaration);
     my_types.declare(qname, declaration);
   }
+}
+
+void ASTTranslator::visit(PTree::TemplateDecl *templ)
+{
+  Trace trace("ASTTranslator::visit(PT::TemplateDecl *)", Trace::TRANSLATION);
+  TemplateParameterTranslator translator(*this);
+  my_template_parameters = translator.translate(templ);
+  PT::nth(templ, 4)->accept(this);
+  // Reset, to indicate we are not inside a template declaration.
+  my_template_parameters = AST::Template::Parameters();
 }
 
 void ASTTranslator::translate_parameters(PT::Node *node,
