@@ -29,6 +29,8 @@ public:
   void translate(PTree::Node *, Buffer &);
 
 private:
+  class TemplateParameterTranslator;
+  friend class TemplateParameterTranslator;
   typedef std::stack<AST::Scope> ScopeStack;
 
   virtual void visit(PTree::NamespaceSpec *spec);
@@ -38,6 +40,7 @@ private:
   virtual void visit(PTree::ClassSpec *class_spec);
   virtual void visit(PTree::EnumSpec *enum_spec);
   virtual void visit(PTree::Typedef *typed);
+  virtual void visit(PTree::TemplateDecl *templ);
 
   void translate_parameters(PTree::Node *,
 			    AST::TypeList, AST::Function::Parameters &);
@@ -60,11 +63,29 @@ private:
   bool                my_main_file_only;
   unsigned long       my_lineno;
   TypeTranslator      my_types;
+  Python::List        my_template_parameters;
   ScopeStack          my_scope;
+  bool                my_in_class;
   bool                my_verbose;
   bool                my_debug;
   Buffer             *my_buffer;
   PTree::Declaration *my_declaration;
+};
+
+//. Translates template parameters for a given TemplateDecl.
+class ASTTranslator::TemplateParameterTranslator 
+  : private Synopsis::PTree::Visitor
+{
+public:
+  TemplateParameterTranslator(ASTTranslator &);
+  Python::List translate(Synopsis::PTree::TemplateDecl *);
+
+private:
+  virtual void visit(Synopsis::PTree::TypeParameter *);
+  virtual void visit(Synopsis::PTree::ParameterDeclaration *);
+
+  ASTTranslator &                     my_parent;
+  Synopsis::AST::Template::Parameters my_parameters;
 };
 
 #endif

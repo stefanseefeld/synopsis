@@ -26,6 +26,10 @@ public:
   AST::Type lookup_function_types(PTree::Encoding const &name, AST::TypeList &);
   AST::Type declare(AST::ScopedName name,
 		    AST::Declaration declaration);
+  AST::Type declare(AST::ScopedName name,
+		    AST::Declaration declaration,
+		    AST::Template::Parameters parameters);
+  AST::Type create_dependent(AST::ScopedName name);
 
 private:
 
