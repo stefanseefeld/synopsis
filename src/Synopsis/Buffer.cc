@@ -10,6 +10,7 @@
 #include <streambuf>
 #include <iterator>
 #include <string>
+#include <algorithm>
 #include <stdexcept>
 
 #if defined(PARSE_MSVC)

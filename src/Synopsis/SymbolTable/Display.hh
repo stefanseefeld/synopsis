@@ -76,7 +76,7 @@ inline void display(SymbolTable::Scope const *s, std::ostream &os)
 inline void display(SymbolTable::SymbolSet const &s, std::ostream &os)
 {
   SymbolDisplay sd(os, 0);
-  for (SymbolTable::SymbolSet::iterator i = s.begin(); i != s.end(); ++i)
+  for (SymbolTable::SymbolSet::const_iterator i = s.begin(); i != s.end(); ++i)
     sd.display("", *i);
 }
 

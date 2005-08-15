@@ -95,7 +95,7 @@ private:
 class DefaultArgumentFinder : private PT::Visitor
 {
 public:
-  DefaultArgumentFinder(size_t &params, size_t default_args)
+  DefaultArgumentFinder(size_t &params, size_t &default_args)
     : my_params(params), my_default_args(default_args) {}
   void find(PT::Declarator const *func)
   {
@@ -117,8 +117,8 @@ private:
       ++my_default_args;
   }
 
-  size_t my_params;
-  size_t my_default_args;
+  size_t &my_params;
+  size_t &my_default_args;
 };
 
 }
@@ -292,8 +292,8 @@ void SymbolFactory::declare(PT::Declaration const *d)
     PT::Encoding name = decls->encoded_name();
     PT::Encoding type = decls->encoded_type();
 
-    size_t params;
-    size_t default_args;
+    size_t params = 0;
+    size_t default_args = 0;
     DefaultArgumentFinder finder(params, default_args);
     finder.find(static_cast<PT::Declarator const *>(decls));
 
@@ -348,8 +348,8 @@ void SymbolFactory::declare(PT::Declaration const *d)
 
 	if (type.is_function()) // It's a function declaration.
 	{
-	  size_t params;
-	  size_t default_args;
+	  size_t params = 0;
+	  size_t default_args = 0;
 	  DefaultArgumentFinder finder(params, default_args);
 	  finder.find(decl);
 	  scope->declare(name, new ST::FunctionName(type, decl,
@@ -547,8 +547,8 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
       //       declared function, according to 3.1/2 [basic.def]
       scope->remove(symbol);
     }
-    size_t params;
-    size_t default_args;
+    size_t params = 0;
+    size_t default_args = 0;
     DefaultArgumentFinder finder(params, default_args);
     finder.find(static_cast<PT::Declarator const *>(decl));
     scope->declare(name, new ST::FunctionTemplateName(PT::Encoding(), decl,
