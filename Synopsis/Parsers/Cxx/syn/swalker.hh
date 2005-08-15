@@ -77,8 +77,8 @@ public:
   void add_comments(AST::Declaration* decl, PTree::Node *comments);
   void add_comments(AST::Declaration* decl, PTree::CommentedAtom *node);
   void add_comments(AST::Declaration* decl, PTree::Declarator *node);
-  void add_comments(AST::Declaration* decl, PTree::Declaration *decl);
-  void add_comments(AST::Declaration* decl, PTree::NamespaceSpec *decl);
+  void add_comments(AST::Declaration* decl, PTree::Declaration *node);
+  void add_comments(AST::Declaration* decl, PTree::NamespaceSpec *node);
   //. Traverses left side of tree till it finds a leaf, and if that is a
   //. CommentedAtom then it adds those comments as spans
   void find_comments(PTree::Node * node);
