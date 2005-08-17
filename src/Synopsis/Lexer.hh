@@ -8,6 +8,7 @@
 #define Synopsis_Lexer_hh_
 
 #include <Synopsis/Token.hh>
+#include <string>
 #include <vector>
 #include <map>
 #include <deque>

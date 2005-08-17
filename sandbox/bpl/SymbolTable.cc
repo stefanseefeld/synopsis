@@ -4,31 +4,22 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <Synopsis/SymbolTable.hh>
 #include <boost/python.hpp>
+#include <Synopsis/SymbolTable.hh>
+#include <Synopsis/SymbolLookup.hh>
 
 namespace bpl = boost::python;
 using namespace Synopsis;
 using namespace Synopsis::SymbolTable;
 
-namespace
-{
-
-SymbolSet lookup_symbol(Scope const *scope, PTree::Encoding const &enc)
-{
-  return scope->lookup(enc);
-}
-
-}
-
-BOOST_PYTHON_MODULE(SymbolLookup)
+BOOST_PYTHON_MODULE(SymbolTable)
 {
   bpl::class_<SymbolSet> symbol_set("SymbolSet");
 
   bpl::class_<Scope, Scope *, boost::noncopyable> scope("Scope", bpl::no_init);
   scope.def("outer_scope", &Scope::outer_scope, bpl::return_value_policy<bpl::reference_existing_object>());
   scope.def("global_scope", &Scope::global_scope, bpl::return_value_policy<bpl::reference_existing_object>());
-  scope.def("lookup", lookup_symbol);
+  scope.def("lookup", lookup);
 
   bpl::class_<Symbol, Symbol *, boost::noncopyable> symbol("Symbol", bpl::no_init);
   symbol.add_property("type",

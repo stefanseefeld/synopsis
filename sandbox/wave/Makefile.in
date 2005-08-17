@@ -17,11 +17,11 @@ LDSHARED:= @LDSHARED@
 MAKEDEP	:= $(CXX) -M
 CPPFLAGS:= @CPPFLAGS@ -I . 
 CPPFLAGS+= -I $(srcdir)
-CPPFLAGS+= @SYN_CPP@ -I/usr/local/include -I @PYTHON_INCLUDE@
+CPPFLAGS+= @SYN_CPP@ @BOOST_CPPFLAGS@ -I @PYTHON_INCLUDE@
 CFLAGS	:= @CFLAGS@
 CXXFLAGS:= @CXXFLAGS@
-LDFLAGS	:= @LDFLAGS@
-LIBS	:= -L/usr/local/lib -lboost_wave -lboost_filesystem 
+LDFLAGS	:= @LDFLAGS@ @BOOST_LDFLAGS@
+LIBS	:= -lboost_wave -lboost_filesystem 
 LIBS	+= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
