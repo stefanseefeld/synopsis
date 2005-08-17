@@ -4,12 +4,11 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
+#include <boost/python.hpp>
 #include <Synopsis/Buffer.hh>
 #include <Synopsis/Lexer.hh>
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
-#include <boost/python.hpp>
-#include <boost/python/make_constructor.hpp>
 #include <fstream>
 
 namespace bpl = boost::python;
@@ -28,7 +27,7 @@ void write_buffer(Buffer const &buffer,
 		  char const *output, std::string const &filename)
 {
   std::ofstream ofs(output);
-  buffer.write(ofs, filename);
+  std::copy(buffer.begin(), buffer.end(), std::ostreambuf_iterator<char>(ofs));
 }
 
 //. insert the given string after the given node

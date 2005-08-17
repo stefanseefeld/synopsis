@@ -4,8 +4,8 @@
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
 //
-#include <Synopsis/PTree.hh>
 #include <boost/python.hpp>
+#include <Synopsis/PTree.hh>
 
 namespace bpl = boost::python;
 using namespace Synopsis;
@@ -242,7 +242,7 @@ BOOST_PYTHON_MODULE(PTree)
   encoding.add_property("is_global_scope", &Encoding::is_global_scope);
   encoding.add_property("is_qualified", &Encoding::is_qualified);
   encoding.add_property("is_function", &Encoding::is_function);
-  encoding.add_property("is_template", &Encoding::is_template);
+  encoding.add_property("is_template_id", &Encoding::is_template_id);
 
   bpl::class_<Visitor, boost::noncopyable, VisitorWrapper> visitor("Visitor");
   visitor.def("visit_node", &VisitorWrapper::visit_node);

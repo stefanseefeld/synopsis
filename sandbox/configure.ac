@@ -18,6 +18,18 @@ AC_ARG_WITH(python,
   PYTHON="python"
 )
 
+AC_ARG_WITH(boost-prefix,
+  [  --with-boost-prefix=PATH      specify the boost installation prefix],
+  BOOST_PREFIX="$with_boost_prefix",
+  BOOST_PREFIX="/usr"
+)
+
+AC_ARG_WITH(boost-version,
+  [  --with-boost-version=VERSION      specify the boost version],
+  BOOST_VERSION="$with_boost_version",
+  BOOST_VERSION="1.33"
+)
+
 AC_ARG_WITH(syn-cxx,
   [  --with-syn-cxx=PATH     specify the Synopsis C++ library prefix],
   SYN_CXX="$with_syn_cxx",
@@ -84,6 +96,21 @@ esac
 
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
+
+AC_LANG(C++)
+if test -n "$with_boost_prefix"; then
+  BOOST_CPPFLAGS="-I$with_boost_prefix/include"
+  BOOST_LDFLAGS="-L$with_boost_prefix/lib"
+fi
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+AC_CHECK_HEADER([boost/wave.hpp], [], [AC_MSG_ERROR([boost.wave could not be found])])
+CPPFLAGS="$save_CPPFLAGS"
+dnl save_LIBS=$LIBS
+dnl LIBS="$LIBS $BOOST_LDFLAGS -lboost_wave"
+dnl AC_CHECK_LIB(boost_wave, boost::wave::wave_init)
+AC_SUBST(BOOST_CPPFLAGS)
+AC_SUBST(BOOST_LDFLAGS)
 
 dnl find all template files and strip off the $srcdir and .in suffix
 templates=`find $srcdir -name '*.in' -print | sed -e "s,^$srcdir/,,g" -e "s,\.in$,,g"`
