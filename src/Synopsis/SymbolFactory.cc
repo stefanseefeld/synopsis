@@ -592,6 +592,8 @@ void SymbolFactory::declare(PT::UsingDirective const *udir)
 
   PTree::Encoding name = PTree::third(udir)->encoded_name();
   ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DEFAULT);
+  if (symbols.empty())
+    throw ST::Undefined(name, scope, udir);
   // now get the namespace associated with that symbol:
   ST::Symbol const *symbol = *symbols.begin();
   // FIXME: may this symbol-to-scope conversion be implemented
