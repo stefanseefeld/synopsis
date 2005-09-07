@@ -193,12 +193,12 @@ PyMethodDef methods[] = {{(char*)"parse", parse, METH_VARARGS},
 			 {0, 0}};
 }
 
-extern "C" void initwave()
+extern "C" void initParserImpl()
 {
-  Python::Module module = Python::Module::define("wave", methods);
+  Python::Module module = Python::Module::define("ParserImpl", methods);
   module.set_attr("version", "0.1");
   Python::Object processor = Python::Object::import("Synopsis.Processor");
   Python::Object error_base = processor.attr("Error");
-  error = PyErr_NewException("wave.PreprocessError", error_base.ref(), 0);
-  module.set_attr("PreprocessError", error);
+  error = PyErr_NewException("ParserImpl.Error", error_base.ref(), 0);
+  module.set_attr("Error", error);
 }
