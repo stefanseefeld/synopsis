@@ -10,6 +10,7 @@
 
 #include <string>
 #include <iostream>
+#include <cassert>
 
 namespace Synopsis
 {
@@ -171,7 +172,7 @@ public:
   bool is_simple_name() const { return front() >= 0x80;}
   bool is_global_scope() const { return front() == 0x80 && size() == 1;}
   bool is_qualified() const { return front() == 'Q';}
-  bool is_function() const { return front() == 'F';}
+  bool is_function() const;
   bool is_template() const { return front() == 'T';}
   PTree::Node *name_to_ptree();
 
@@ -218,6 +219,14 @@ inline unsigned char Encoding::pop()
   unsigned char code = my_buffer[0]; 
   my_buffer.erase(0, 1); 
   return code;
+}
+
+inline bool Encoding::is_function() const 
+{
+  if (front() == 'F') return true;
+  // const (member) function.
+  else if (front() == 'C' && *(begin() + 1) == 'F') return true;
+  else return false;
 }
 
 }

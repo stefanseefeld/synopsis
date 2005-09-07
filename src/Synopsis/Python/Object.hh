@@ -24,6 +24,12 @@ namespace Synopsis
 namespace Python
 {
 
+class List;
+class Tuple;
+class Dict;
+class Module;
+class Interpreter;
+
 //. Object provides basic
 //. functionality to access the underlaying
 //. python object, to be used in subclasses and

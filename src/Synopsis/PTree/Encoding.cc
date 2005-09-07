@@ -118,7 +118,7 @@ std::string Unmangler::unmangle()
 	while (*my_cursor != '_') array += *my_cursor++;
 	array += ']';
 	++my_cursor;
-	premod += array;
+	postmod += array;
 	break;
       }
       case '*':
@@ -523,7 +523,6 @@ PTree::Node *Encoding::make_ptree(PTree::Node *decl)
   PTree::Node *cv;
   PTree::Node *typespec = 0;
   if(decl) decl = PTree::list(decl);
-
   while(true)
   {
     cv = 0;
@@ -630,8 +629,18 @@ PTree::Node *Encoding::make_ptree(PTree::Node *decl)
 	  decl = PTree::list(PTree::list(left_paren, decl, right_paren));
 	break;
       case 'A' :
-	decl = PTree::nconc(decl, PTree::list(left_bracket, right_bracket));
+      {
+	char c = 'A';
+	do
+	{
+	  c = front();
+	  pop();
+	} while (c != '_');
+	// FIXME: need to put the actual dimension into the generated tree.
+	decl = PTree::nconc(decl, PTree::list(left_bracket,
+					      right_bracket));
 	break;
+      }
       case 'F' :
       cv_function :
         {
