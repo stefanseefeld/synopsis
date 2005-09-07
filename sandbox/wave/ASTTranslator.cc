@@ -18,6 +18,7 @@ ASTTranslator::ASTTranslator(std::string const &language,
 			     AST::AST ast, bool v, bool d)
   : my_ast(ast),
     my_ast_kit(language),
+    my_type_kit(language),
     my_raw_filename(filename),
     my_base_path(base_path),
     my_main_file_only(main_file_only),
@@ -36,9 +37,13 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
 {
   Trace trace("ASTTranslator::expand_function_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
-//   std::cout << macrocall.get_position() << ": "
-//  	    << macrocall.get_value() << "(";
 
+  Token::position_type position = macrocall.get_position();
+  std::string name;
+  {
+    Token::string_type tmp = macrocall.get_value();
+    name = std::string(tmp.begin(), tmp.end());
+  }
   // argument list
 //   for (Container::size_type i = 0; i < arguments.size(); ++i) 
 //   {
@@ -46,7 +51,15 @@ void ASTTranslator::expanding_function_like_macro(Token const &macrodef,
 //     if (i < arguments.size()-1)
 //       std::cout << ", ";
 //   }
-//   std::cout << ")" << std::endl; 
+  Python::Dict mmap = my_file_stack.top().macro_calls();
+  Python::List line = mmap.get(position.get_line(), Python::List());
+  // TODO: compute correct positional parameters for the macro replacement:
+  //       * start: start position of the replacement in the output stream.
+  //       * end: end position of the replacement in the output stream.
+  //       * diff: offset by which to shift back the following tokens to
+  //               match the input stream.
+  line.append(my_ast_kit.create_macro_call(name, 0, 0, 0));//start, end, diff));
+  mmap.set(position.get_line(), line);
 }
  
 void ASTTranslator::expanding_object_like_macro(Token const &macro, 
@@ -55,8 +68,17 @@ void ASTTranslator::expanding_object_like_macro(Token const &macro,
 {
   Trace trace("ASTTranslator::expand_object_like_macro", Trace::TRANSLATION);
   if (my_mask_counter) return;
-//   std::cout << macrocall.get_position() << ": "
-//  	    << macrocall.get_value() << std::endl;
+
+  Token::position_type position = macrocall.get_position();
+  std::string name;
+  {
+    Token::string_type tmp = macrocall.get_value();
+    name = std::string(tmp.begin(), tmp.end());
+  }
+  Python::Dict mmap = my_file_stack.top().macro_calls();
+  Python::List line = mmap.get(position.get_line(), Python::List());
+  line.append(my_ast_kit.create_macro_call(name, 0, 0, 0));//start, end, diff));
+  mmap.set(position.get_line(), line);
 }
  
 void ASTTranslator::expanded_macro(Container const &result)
@@ -132,22 +154,32 @@ void ASTTranslator::defined_macro(Token const &name, bool is_functionlike,
   std::string macro_name(m.begin(), m.end());
   Token::position_type position = name.get_position();
 
-  Python::List params;
   std::string text;
-//   for (std::vector<Token>::const_iterator i = parameters.begin();
-//        i != parameters.end(); ++i) 
-//   {
-//     std::cout << wave::util::impl::as_string(arguments[i]);
-//     if (i < arguments.size()-1)
-//       std::cout << ", ";
-//   }
+  {
+    Token::string_type tmp = wave::util::impl::as_string(definition);
+    text = std::string(tmp.begin(), tmp.end());
+  }
+  Python::List params;
+  for (std::vector<Token>::const_iterator i = parameters.begin();
+       i != parameters.end(); ++i) 
+  {
+    Token::string_type const &tmp = i->get_value();
+    params.append(std::string(tmp.begin(), tmp.end()));
+  }
 
-  AST::Declarations declarations = my_file_stack.top().declarations();
+  AST::ScopedName qname(macro_name);
   AST::Macro macro = my_ast_kit.create_macro(my_file_stack.top(),
 					     position.get_line(),
-					     AST::ScopedName(macro_name),
+					     qname,
 					     params, text);
+  AST::Declared declared = my_type_kit.create_declared(qname, macro);
+  Python::List declarations = my_ast.declarations();
   declarations.append(macro);
+
+  // FIXME: the 'types' attribute is not (yet) a dict type
+  // so we have to do the call conversions manually...
+  Python::Object types = my_ast.types();
+  types.attr("__setitem__")(Python::Tuple(qname, declared));
 }
 
 void ASTTranslator::undefined_macro(Token const &name)

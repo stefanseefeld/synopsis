@@ -6,6 +6,7 @@
 //
 
 #include <Synopsis/AST/ASTKit.hh>
+#include <Synopsis/AST/TypeKit.hh>
 #include <Synopsis/Trace.hh>
 #include <boost/wave.hpp>
 #include <boost/wave/cpplexer/re2clex/cpp_re2c_lexer.hpp>
@@ -78,6 +79,7 @@ private:
 
   AST::AST            my_ast;
   AST::ASTKit         my_ast_kit;
+  AST::TypeKit        my_type_kit;
   AST::SourceFile     my_file;
   std::string         my_raw_filename;
   std::string         my_base_path;
