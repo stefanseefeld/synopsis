@@ -214,4 +214,7 @@ class NestedFileLayout (FileLayout):
    def module_index(self, scope):
       """Return the name of the index of the given module"""
 
-      return Util.quote('Modules/%s'%string.join(scope, '/')) + '.html'
+      prefix = 'Modules'
+      if not len(scope):
+         return self._check_main(prefix + '/global.html')
+      else: return Util.quote(prefix + '/' + string.join(scope, '/')) + '.html'
