@@ -8,6 +8,7 @@ groupings."""
 from Linker import *
 from ScopeStripper import *
 from NameMapper import *
+from MacroFilter import *
 from Comments import *
 from XRefCompiler import *
 from EmptyModuleRemover import *

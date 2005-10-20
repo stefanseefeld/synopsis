@@ -1,6 +1,7 @@
 from CFilter import CFilter
 from JavaFilter import JavaFilter
 from SSFilter import SSFilter
+from SSSFilter import SSSFilter
 from SSDFilter import SSDFilter
 from QtFilter import QtFilter
 from Stripper import Stripper
