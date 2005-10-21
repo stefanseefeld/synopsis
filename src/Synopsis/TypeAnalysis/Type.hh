@@ -16,25 +16,39 @@ namespace Synopsis
 namespace TypeAnalysis
 {
 
+//. Base class for synopsis' type system.
 class Type
 {
 public:
-  Type(std::string const &name) : my_name(name), my_refcounter(1) {}
+  Type() : my_refcounter(1) {}
   virtual ~Type() {}
-  std::string const &name() const { return my_name;}
   virtual void accept(Visitor *visitor) = 0;
   virtual void ref() const { ++my_refcounter;}
   virtual void deref() const { if (--my_refcounter) delete this;}
   // TODO: add 'new' / 'delete' operators for optimization.
+
 private:
-  const std::string my_name;
-  mutable size_t    my_refcounter;
+  mutable size_t my_refcounter;
 };
 
-class BuiltinType : public Type
+//. Atomic types are declared types that can not be decomposed
+//. in terms of qualifiers, pointers, references, etc. If each
+//. type is represented by a graph of type nodes, these are leave
+//. nodes.
+class AtomicType : public Type
 {
 public:
-  BuiltinType(std::string const &name) : Type(name) {}
+  AtomicType(std::string const &name) : my_name(name) {}
+  std::string const &name() const { return my_name;}
+
+private:
+  const std::string my_name;
+};
+
+class BuiltinType : public AtomicType
+{
+public:
+  BuiltinType(std::string const &name) : AtomicType(name) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   // BuiltinType is preallocated and thus is destructed at program termination.
   virtual void ref() const {}
@@ -60,17 +74,17 @@ extern BuiltinType SINT;
 extern BuiltinType SLONG;
 extern BuiltinType VOID;
 
-class Enum : public Type
+class Enum : public AtomicType
 {
 public:
-  Enum(std::string const &name) : Type(name) {}
+  Enum(std::string const &name) : AtomicType(name) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class Compound : public Type
+class Compound : public AtomicType
 {
 public:
-  Compound(std::string const &name) : Type(name) {}
+  Compound(std::string const &name) : AtomicType(name) {}
 };
 
 class Class : public Compound
@@ -80,6 +94,8 @@ public:
 
   Class(Kind kind, std::string const &name) : Compound(name), my_kind(kind) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Kind kind() const { return my_kind;}
 
 private:
   Kind my_kind;
@@ -94,16 +110,23 @@ public:
 private:
 };
 
+class Dependent : public AtomicType
+{
+public:
+  Dependent(std::string const &name) : AtomicType(name) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
 class CVType : public Type
 {
 public:
   enum Qualifier { NONE=0x0, CONST=0x1, VOLATILE=0x2, CV = 0x3};
 
-  CVType(Type const *type, Qualifier q)
-    : Type(names[q]), my_type(type), my_qual(q) {}
+  CVType(Type const *type, Qualifier q) : my_type(type), my_qual(q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Type const *unqualified() const { return my_type;}
+  Qualifier qualifier() const { return my_qual;}
 
 private:
   static std::string const names[4];
@@ -115,7 +138,7 @@ private:
 class Pointer : public Type
 {
 public:
-  Pointer(Type const *type) : Type("*"), my_type(type) {}
+  Pointer(Type const *type) : my_type(type) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Type const *dereference() const { return my_type;}
@@ -127,7 +150,7 @@ private:
 class Reference : public Type
 {
 public:
-  Reference(Type const *type) : Type("&"), my_type(type) {}
+  Reference(Type const *type) : my_type(type) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Type const *dereference() const { return my_type;}
@@ -139,8 +162,7 @@ private:
 class Array : public Type
 {
 public:
-  Array(Type const *type, unsigned long dim)
-    : Type("[]"), my_type(type), my_dim(dim) {}
+  Array(Type const *type, unsigned long dim) : my_type(type), my_dim(dim) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Type const *dereference() const { return my_type;}
@@ -157,7 +179,7 @@ public:
   typedef std::vector<Type const *> ParameterList;
 
   Function(ParameterList const &p, Type const *r)
-    : Type(""), my_params(p), my_return_type(r) {}
+    : my_params(p), my_return_type(r) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Type const *return_type() const { return my_return_type;}
@@ -170,7 +192,7 @@ private:
 class PointerToMember : public Type
 {
 public:
-  PointerToMember() : Type("") {}
+  PointerToMember() {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
 private:

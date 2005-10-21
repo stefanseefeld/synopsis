@@ -12,11 +12,11 @@
 #include <cassert>
 
 using namespace Synopsis;
-using namespace PTree;
-using namespace SymbolTable;
+namespace PT = Synopsis::PTree;
+using namespace Synopsis::SymbolTable;
 
 SymbolSet 
-TemplateParameterScope::unqualified_lookup(Encoding const &name,
+TemplateParameterScope::unqualified_lookup(PT::Encoding const &name,
 					   LookupContext context) const
 {
   Trace trace("TemplateParameterScope::unqualified_lookup", Trace::SYMBOLLOOKUP, name);
@@ -25,7 +25,7 @@ TemplateParameterScope::unqualified_lookup(Encoding const &name,
 }
 
 SymbolSet 
-LocalScope::unqualified_lookup(Encoding const &name,
+LocalScope::unqualified_lookup(PT::Encoding const &name,
 			       LookupContext context) const
 {
   Trace trace("LocalScope::unqualified_lookup", Trace::SYMBOLLOOKUP, name);
@@ -33,7 +33,7 @@ LocalScope::unqualified_lookup(Encoding const &name,
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
-FunctionScope::FunctionScope(PTree::Declaration const *decl, 
+FunctionScope::FunctionScope(PT::Declaration const *decl, 
 			     PrototypeScope *proto,
 			     Scope *outer)
   : my_decl(decl), my_outer(outer->ref()),
@@ -47,7 +47,7 @@ void FunctionScope::use(Namespace const *ns)
 }
 
 SymbolSet 
-FunctionScope::unqualified_lookup(Encoding const &name,
+FunctionScope::unqualified_lookup(PT::Encoding const &name,
 				  LookupContext context) const
 {
   Trace trace("FunctionScope::unqualified_lookup", Trace::SYMBOLLOOKUP, name);
@@ -78,12 +78,12 @@ FunctionScope::unqualified_lookup(Encoding const &name,
 std::string FunctionScope::name() const
 {
   std::ostringstream oss;
-  oss << PTree::reify(PTree::third(my_decl));
+  oss << PT::reify(PT::nth<2>(my_decl));
   return oss.str();
 }
 
 SymbolSet 
-FunctionScope::qualified_lookup(PTree::Encoding const &name,
+FunctionScope::qualified_lookup(PT::Encoding const &name,
 				LookupContext context) const
 {
   Trace trace("FunctionScope::qualified_lookup", Trace::SYMBOLLOOKUP, name);
@@ -110,7 +110,7 @@ FunctionScope::qualified_lookup(PTree::Encoding const &name,
 }
 
 SymbolSet 
-PrototypeScope::unqualified_lookup(PTree::Encoding const &,
+PrototypeScope::unqualified_lookup(PT::Encoding const &,
 				   LookupContext) const
 {
   Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
@@ -120,11 +120,11 @@ PrototypeScope::unqualified_lookup(PTree::Encoding const &,
 std::string PrototypeScope::name() const
 {
   std::ostringstream oss;
-  oss << PTree::reify(my_decl);
+  oss << PT::reify(my_decl);
   return oss.str();
 }
 
-Class::Class(std::string const &name, PTree::ClassSpec const *spec, Scope *outer,
+Class::Class(std::string const &name, PT::ClassSpec const *spec, Scope *outer,
 	     Bases const &bases, TemplateParameterScope const *params)
   : my_spec(spec), my_name(name),
     my_outer(outer->ref()), my_bases(bases), my_parameters(params)
@@ -132,7 +132,7 @@ Class::Class(std::string const &name, PTree::ClassSpec const *spec, Scope *outer
 }
 
 SymbolSet 
-Class::unqualified_lookup(Encoding const &name,
+Class::unqualified_lookup(PT::Encoding const &name,
 			  LookupContext context) const
 {
   Trace trace("Class::unqualified_lookup", Trace::SYMBOLLOOKUP);
@@ -151,10 +151,10 @@ Class::unqualified_lookup(Encoding const &name,
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
-Namespace *Namespace::find_namespace(PTree::NamespaceSpec const *spec) const
+Namespace *Namespace::find_namespace(PT::NamespaceSpec const *spec) const
 {
   std::string name = "<anonymous>";
-  PTree::Node const *ns_name = PTree::second(spec);
+  PT::Node const *ns_name = PT::nth<1>(spec);
   if (ns_name)
     name.assign(ns_name->position(), ns_name->length());
   for (ScopeTable::const_iterator i = my_scopes.begin();
@@ -174,7 +174,7 @@ void Namespace::use(Namespace const *ns)
 }
 
 SymbolSet 
-Namespace::unqualified_lookup(Encoding const &name,
+Namespace::unqualified_lookup(PT::Encoding const &name,
 			      LookupContext context) const
 {
   Using searched;
@@ -182,7 +182,7 @@ Namespace::unqualified_lookup(Encoding const &name,
 }
 
 SymbolSet 
-Namespace::qualified_lookup(PTree::Encoding const &name,
+Namespace::qualified_lookup(PT::Encoding const &name,
 			    LookupContext context) const
 {
   Using searched;
@@ -192,14 +192,14 @@ Namespace::qualified_lookup(PTree::Encoding const &name,
 std::string Namespace::name() const
 {
   if (!my_spec) return "<global>";
-  PTree::Node const *name_spec = PTree::second(my_spec);
+  PT::Node const *name_spec = PT::nth<1>(my_spec);
   if (name_spec)
     return std::string(name_spec->position(), name_spec->length());
   else
     return "<anonymous>";
 }
 
-SymbolSet Namespace::unqualified_lookup(Encoding const &name,
+SymbolSet Namespace::unqualified_lookup(PT::Encoding const &name,
 					LookupContext context,
 					Using &searched) const
 {
@@ -225,7 +225,7 @@ SymbolSet Namespace::unqualified_lookup(Encoding const &name,
     return my_outer->unqualified_lookup(name, context, searched);
 }
 
-SymbolSet Namespace::qualified_lookup(PTree::Encoding const &name,
+SymbolSet Namespace::qualified_lookup(PT::Encoding const &name,
 				      LookupContext context,
 				      Using &searched) const
 {

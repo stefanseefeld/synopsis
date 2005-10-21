@@ -74,24 +74,24 @@ public:
     typedef std::streamoff off_type;
     typedef std::mbstate_t state_type;
 
-    static void assign(char_type &c1, const char_type &c2) { c1 = c2;}
-    static bool eq(const char_type &c1, const char_type &c2) { return c1 == c2;}
-    static bool lt(const char_type &c1, const char_type &c2) { return c1 < c2;}
-    static int compare(const char_type *s1, const char_type *s2, std::size_t n) { return memcmp(s1, s2, n);}
-    static std::size_t length(const char_type *s) { return strlen((const char *)s);}
-    static const char_type *find(const char_type *s, std::size_t n, const char_type &a)
-    { return static_cast<const char_type *>(memchr(s, a, n));}
-    static char_type *move(char_type *s1, const char_type *s2, std::size_t n)
+    static void assign(char_type &c1, char_type const &c2) { c1 = c2;}
+    static bool eq(const char_type &c1, char_type const &c2) { return c1 == c2;}
+    static bool lt(const char_type &c1, char_type const &c2) { return c1 < c2;}
+    static int compare(char_type const *s1, char_type const *s2, std::size_t n) { return memcmp(s1, s2, n);}
+    static std::size_t length(char_type const *s) { return strlen((char const *)s);}
+    static char_type const *find(char_type const *s, std::size_t n, char_type const &a)
+    { return static_cast<char_type const *>(memchr(s, a, n));}
+    static char_type *move(char_type *s1, char_type const *s2, std::size_t n)
     { return static_cast<char_type *>(memmove(s1, s2, n));}
-    static char_type *copy(char_type *s1, const char_type *s2, std::size_t n)
+    static char_type *copy(char_type *s1, char_type const *s2, std::size_t n)
     { return static_cast<char_type *>(memcpy(s1, s2, n));}
     static char_type *assign(char_type *s, std::size_t n, char_type a)
     { return static_cast<char_type *>(memset(s, a, n));}
-    static char_type to_char_type(const int_type &c) { return static_cast<char_type>(c);}
-    static int_type to_int_type(const char_type &c) { return static_cast<int_type>(c);}
-    static bool eq_int_type(const int_type &c1, const int_type &c2) { return c1 == c2;}
+    static char_type to_char_type(int_type const &c) { return static_cast<char_type>(c);}
+    static int_type to_int_type(char_type const &c) { return static_cast<int_type>(c);}
+    static bool eq_int_type(int_type const &c1, int_type const &c2) { return c1 == c2;}
     static int_type eof() { return static_cast<int_type>(EOF);}
-    static int_type not_eof(const int_type &c) { return !eq_int_type(c, eof()) ? c : to_int_type(char_type());}
+    static int_type not_eof(int_type const &c) { return !eq_int_type(c, eof()) ? c : to_int_type(char_type());}
   };
 
   typedef std::basic_string<unsigned char, char_traits> Code;
@@ -102,56 +102,60 @@ public:
   static void do_init_static();
 
   Encoding() {}
-  Encoding(const Code &b) : my_buffer(b) {}
-  Encoding(const char *b) : my_buffer(b, b + strlen(b)) {}
-  Encoding(const char *b, size_t s) : my_buffer(b, b + s) {}
+  Encoding(Code const &b) : my_buffer(b) {}
+  Encoding(char const *b) : my_buffer(b, b + strlen(b)) {}
+  Encoding(char const *b, size_t s) : my_buffer(b, b + s) {}
   Encoding(iterator b, iterator e) : my_buffer(b, e) {}
-  static Encoding simple_name(PTree::Atom const *name);
+  //. Treat 'id' as an identifier.
+  Encoding(Atom const *id) { simple_name(id);}
 
   void clear() { my_buffer.clear();}
   bool empty() const { return my_buffer.empty();}
   size_t size() const { return my_buffer.size();}
+  void resize(size_t s) { my_buffer.resize(s);}
   iterator begin() const { return my_buffer.begin();}
   iterator end() const { return my_buffer.end();}
   unsigned char front() const { return *begin();}
   unsigned char at(size_t i) const { return my_buffer.at(i);}
+  unsigned char &at(size_t i) { return my_buffer.at(i);}
   //. return a copy of the underlaying buffer
   //. FIXME: this is a temporary workaround while there are
   //. still places that use raw strings
-  const char *copy() const;
+//   const char *copy() const;
 
-  bool operator == (const Encoding &e) const { return my_buffer == e.my_buffer;}
-  bool operator == (const std::string &s) const { return my_buffer == (const unsigned char *)s.c_str();}
-  bool operator == (const char *s) const { return my_buffer == (const unsigned char *)s;}
+  bool operator == (Encoding const &e) const { return my_buffer == e.my_buffer;}
+  bool operator == (std::string const &s) const { return my_buffer == (const unsigned char *)s.c_str();}
+  bool operator == (char const *s) const { return my_buffer == (const unsigned char *)s;}
 
   void prepend(unsigned char c) { my_buffer.insert(my_buffer.begin(), c);}
-  void prepend(const char *p, size_t s) { my_buffer.insert(0, (const unsigned char *)p, s);}
-  void prepend(const Encoding &e) { my_buffer.insert(0, e.my_buffer);}
+  void prepend(char const *p, size_t s) { my_buffer.insert(0, (const unsigned char *)p, s);}
+  void prepend(Encoding const &e) { my_buffer.insert(0, e.my_buffer);}
 
   void append(unsigned char c) { my_buffer.append(1, c);}
-  void append(const char *p, size_t s) { my_buffer.append((const unsigned char *)p, s);}
-  void append(const Encoding &e) { my_buffer.append(e.my_buffer);}
-  void append_with_length(const char *s, size_t n) { append(0x80 + n); append((const char *)s, n);}
-  void append_with_length(const Encoding &e) { append(0x80 + e.size()); append(e);}
+  void append(char const *p, size_t s) { my_buffer.append((const unsigned char *)p, s);}
+  void append(Encoding const &e) { my_buffer.append(e.my_buffer);}
+  void append_with_length(char const *s, size_t n) { append(0x80 + n); append((const char *)s, n);}
+  void append_with_length(Encoding const &e) { append(0x80 + e.size()); append(e);}
 
   unsigned char pop();
   void pop(size_t n) { my_buffer.erase(my_buffer.begin(), my_buffer.begin() + n);}
 
-  void cv_qualify(const Node *, const Node * = 0);
+  void cv_qualify(bool c, bool v = false);
+  void cv_qualify(Node const *, Node const * = 0);
   void simple_const() { append("Ci", 2);}
   void global_scope();
-  void simple_name(const Node *);
+  void simple_name(Atom const *);
   void anonymous();
-  void template_(const Node *, const Encoding &);
+  void template_(Atom const *, Encoding const &);
   void qualified(int);
-  void destructor(const Node *);
+  void destructor(Node const *);
   void ptr_operator(int);
-  void ptr_to_member(const Encoding &, int);
-  void cast_operator(const Encoding &);
+  void ptr_to_member(Encoding const &, int);
+  void cast_operator(Encoding const &);
   void array() { prepend("A_", 2);}
   void array(unsigned long s);
-  void function(const Encoding &e) { prepend(e);}
-  void recursion(const Encoding &e) { prepend(e);}
+  void function(Encoding const &e) { prepend(e);}
+  void recursion(Encoding const &e) { prepend(e);}
   void start_func_args() { append('F');}
   void end_func_args() { append('_');}
   void void_() { append('v');}
@@ -185,10 +189,10 @@ public:
   bool is_qualified() const { return front() == 'Q';}
   bool is_function() const;
   bool is_template_id() const { return front() == 'T';}
-  PTree::Node *name_to_ptree();
+//   PTree::Node *name_to_ptree();
 
-  friend bool operator < (const Encoding &, const Encoding &);
-  friend std::ostream &operator << (std::ostream &, const Encoding &);
+  friend bool operator < (Encoding const &, Encoding const &);
+  friend std::ostream &operator << (std::ostream &, Encoding const &);
 
 private:
 
@@ -262,12 +266,13 @@ inline Encoding Encoding::function_return_type() const
   return Encoding(b, e);
 }
 
-inline bool operator < (const Encoding &e1, const Encoding &e2) 
+//. Helper operator required to use encodings as keys in std::map.
+inline bool operator < (Encoding const &e1, Encoding const &e2) 
 {
   return e1.my_buffer < e2.my_buffer;
 }
 
-inline std::ostream &operator << (std::ostream &os, const Encoding &e)
+inline std::ostream &operator << (std::ostream &os, Encoding const &e)
 {
   for (Encoding::iterator i = e.begin();
        i != e.end();

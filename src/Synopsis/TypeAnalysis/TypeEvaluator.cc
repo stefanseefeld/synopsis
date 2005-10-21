@@ -103,7 +103,7 @@ void TypeEvaluator::visit(PT::Literal *node)
 
 void TypeEvaluator::visit(PT::Identifier *node)
 {
-  PT::Encoding name = PT::Encoding::simple_name(node);
+  PT::Encoding name(node);
   ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
   if (symbols.size() == 1)
   {
@@ -148,21 +148,21 @@ void TypeEvaluator::visit(PT::FstyleCastExpr *node)
 
 void TypeEvaluator::visit(PT::AssignExpr *node)
 {
-  PT::first(node)->accept(this);
+  node->cdr()->accept(this);
 }
 
 void TypeEvaluator::visit(PT::CondExpr *node)
 {
   my_type = &BOOL;
-//   type_of(PTree::third(node));
+//   type_of(PT::nth<2>(node));
 }
 
 void TypeEvaluator::visit(PT::InfixExpr *node)
 {
-  Type const *lhs = evaluate(PT::first(node));
-  Type const *rhs = evaluate(PT::third(node));
-  PT::Node *op = PT::second(node);
+  Type const *lhs = evaluate(PT::nth<0>(node));
+  PT::Node *op = PT::nth<1>(node);
   assert(op->is_atom() && op->length() <= 2);
+  Type const *rhs = evaluate(PT::nth<2>(node));
 
   Type const *retn = binary_promotion.find(lhs, rhs);
   if (retn) my_type = retn;
@@ -174,19 +174,19 @@ void TypeEvaluator::visit(PT::InfixExpr *node)
 
 void TypeEvaluator::visit(PT::PmExpr *node)
 {
-  PT::third(node)->accept(this);
+  PT::nth<2>(node)->accept(this);
 //   my_type.dereference();
 }
 
 void TypeEvaluator::visit(PT::CastExpr *node) 
 {
-//   my_type.set(PTree::second(PTree::second(node))->encoded_type(), my_scope);
+//   my_type.set(PTree::nth<1>(PTree::nth<1>(node))->encoded_type(), my_scope);
 }
 
 void TypeEvaluator::visit(PT::UnaryExpr *node)
 {
-  PT::second(node)->accept(this);
-  PT::Node *op = PT::first(node);
+  PT::nth<1>(node)->accept(this);
+  PT::Node *op = PT::nth<0>(node);
 //   if(*op == '*') my_type.dereference();
 //   else if(*op == '&') my_type.reference();
 }
@@ -203,27 +203,27 @@ void TypeEvaluator::visit(PT::SizeofExpr *)
 
 void TypeEvaluator::visit(PT::TypeidExpr *)
 {
-  // FIXME: Should be type (node->third()->second()->encoded_type(), my_scope);
+  // FIXME: Should be type (node->nth<2>()->nth<1>()->encoded_type(), my_scope);
 //   my_type.set_int();
 }
 
 void TypeEvaluator::visit(PT::TypeofExpr *) 
 {
-  // FIXME: Should be type (node->third()->second()->encoded_type(), my_scope);
+  // FIXME: Should be type (node->nth<2>()->nth<1>()->encoded_type(), my_scope);
 //   my_type.set_int();
 }
 
 void TypeEvaluator::visit(PT::NewExpr *node)
 {
-  PT::Node *p = node;
+  PT::List *p = node;
   PT::Node *userkey = p->car();
   if(!userkey || !userkey->is_atom()) p = node->cdr(); // user keyword
   if(*p->car() == "::") p = p->cdr();
-  PT::Node *type = PT::third(p);
+  PT::Node *type = PT::nth<2>(p);
 //   if(*type->car() == '(')
-//     my_type.set(PTree::second(PTree::second(type))->encoded_type(), my_scope);
+//     my_type.set(PTree::nth<1>(PTree::nth<1>(type))->encoded_type(), my_scope);
 //   else
-//     my_type.set(PTree::second(type)->encoded_type(), my_scope);
+//     my_type.set(PTree::nth<1>(type)->encoded_type(), my_scope);
 //   my_type.reference();
 }
 
@@ -254,19 +254,19 @@ void TypeEvaluator::visit(PT::PostfixExpr *node)
 void TypeEvaluator::visit(PT::DotMemberExpr *node)
 {
   node->car()->accept(this);
-//   my_type.set_member(PTree::third(node));
+//   my_type.set_member(PTree::nth<2>(node));
 }
 
 void TypeEvaluator::visit(PT::ArrowMemberExpr *node)
 {
   node->car()->accept(this);
 //   my_type.dereference();
-//   my_type.set_member(PTree::third(node));
+//   my_type.set_member(PTree::nth<2>(node));
 }
 
 void TypeEvaluator::visit(PT::ParenExpr *node)
 {
-  PT::Node *body = PT::second(node);
+  PT::Node *body = PT::nth<1>(node);
 //   if (!body) my_type.set("v");
 //   else body->accept(this);
 }

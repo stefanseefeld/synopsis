@@ -78,7 +78,7 @@ void Walker::visit(PT::NamespaceSpec *spec)
 void Walker::visit(PT::FunctionDefinition *def)
 {
   Trace trace("Walker::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
-  PT::Node *decl = PT::third(def);
+  PT::Node *decl = PT::nth<2>(def);
   visit(static_cast<PT::Declarator *>(decl)); // visit the declarator
   traverse_body(def);
 }
@@ -133,14 +133,14 @@ void Walker::traverse_parameters(PT::TemplateDecl *decl)
   scope->ref();
   my_scopes.push(scope);
   // list of template parameters (TypeParameter or ParameterDeclaration)
-  PT::third(decl)->accept(this);
+  PT::nth<2>(decl)->accept(this);
   leave_scope();
 }
 
 void Walker::traverse_body(PT::FunctionDefinition *def)
 {
   Trace trace("Walker::traverse_body(FunctionDefinition)", Trace::SYMBOLLOOKUP);
-  PT::Node *decl = PT::third(def);
+  PT::Node *decl = PT::nth<2>(def);
 
   Scope *scope = my_scopes.top();
   PT::Encoding name = decl->encoded_name();

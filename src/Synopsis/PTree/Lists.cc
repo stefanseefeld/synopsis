@@ -13,6 +13,17 @@
 using namespace Synopsis;
 using namespace PTree;
 
+DeclSpec::DeclSpec(List *l, Encoding const &type,
+		   StorageClass storage, unsigned int flags, bool user_defined)
+  : List(l->car(), l->cdr()),
+    my_type(type),
+    my_storage_class(storage),
+    my_is_friend(flags & FRIEND),
+    my_is_typedef(flags & TYPEDEF),
+    my_user_defined(user_defined)
+{
+}
+
 Declarator::Declarator(Node *n)
   : List(n ? n->car() : 0, n ? n->cdr() : 0),
     my_declared_name(0),
@@ -38,7 +49,7 @@ Declarator::Declarator(Encoding const &t, Encoding const &n, Node *dname)
 {
 }
 
-Declarator::Declarator(Node *p, Node *q, Encoding const &t, Encoding const &n, Node *dname)
+Declarator::Declarator(Node *p, List *q, Encoding const &t, Encoding const &n, Node *dname)
   : List(p, q),
     my_type(t),
     my_name(n),
@@ -63,7 +74,7 @@ Declarator::Declarator(Encoding const &t)
 {
 }
 
-Declarator::Declarator(Declarator *decl, Node *p, Node *q)
+Declarator::Declarator(Declarator *decl, Node *p, List *q)
   : List(p, q),
     my_type(decl->my_type),
     my_name(decl->my_name),
@@ -80,8 +91,8 @@ Node *Declarator::initializer()
     if (*assign == '=')
       return tail(this, l - 1); // initializer-clause
   if (Node *expr = nth(this, l - 1))
-    if (!expr->is_atom() && first(expr) && *first(expr) == '(')
-      return second(expr); // expression-list
+    if (!expr->is_atom() && expr->car() && *expr->car() == '(')
+      return nth<1>(static_cast<List *>(expr)); // expression-list
   return 0;
 }
 
@@ -91,19 +102,19 @@ Name::Name(Node *p, const Encoding &name)
 {
 }
 
-FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, Node *q)
+FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, List *q)
   : List(p, q),
     my_type(type)
 {
 }
 
-ClassSpec::ClassSpec(Node *p, Node *q, Node *c)
+ClassSpec::ClassSpec(Node *p, List *q, Node *c)
   : List(p, q),
     my_comments(c)
 {
 }
 
-ClassSpec::ClassSpec(const Encoding &name, Node *car, Node *cdr, Node *c)
+ClassSpec::ClassSpec(const Encoding &name, Node *car, List *cdr, Node *c)
   : List(car, cdr),
     my_name(name),
     my_comments(c)
@@ -112,5 +123,5 @@ ClassSpec::ClassSpec(const Encoding &name, Node *car, Node *cdr, Node *c)
 
 ClassBody *ClassSpec::body() 
 {
-  return dynamic_cast<ClassBody *>(PTree::nth(this, 3));
+  return dynamic_cast<ClassBody *>(nth<3>(this));
 }

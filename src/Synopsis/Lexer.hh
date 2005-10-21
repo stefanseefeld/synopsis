@@ -37,8 +37,11 @@ public:
   //. Construct a Lexer on the given Buffer using the given
   //. token set. The default token set is CXX with GCC extensions.
   Lexer(Buffer *, int tokenset = CXX|GCC);
-  Token::Type get_token(Token &);
-  Token::Type look_ahead(size_t);
+  Token get_token();
+  Token::Type look_ahead(size_t offset = 0);
+
+  //. This convenience method only exists for debugging purposes
+  //. so users can write out the next token instead of just its type.
   Token::Type look_ahead(size_t, Token &);
 
   const char *save();
@@ -110,6 +113,12 @@ private:
   Token      my_token;
   Comments   my_comments;
 };
+
+inline Token::Type Lexer::look_ahead(size_t offset)
+{
+  if (!fill(offset + 1)) return Token::BadToken;
+  return my_tokens.at(offset).type;
+}
 
 inline bool is_blank(char c)
 {
