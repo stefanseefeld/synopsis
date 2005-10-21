@@ -27,9 +27,9 @@ ST::Symbol const *TA::OverloadResolver::resolve(PT::FuncallExpr const *funcall)
   Trace trace("OverloadResolver::resolve", Trace::TYPEANALYSIS);
   // Construct type list from funcall.
   TA::Function::ParameterList arguments;
-  for (PT::Node const *arglist = PT::third(funcall);
+  for (PT::List const *arglist = static_cast<PT::List *>(PT::nth<2>(funcall));
        arglist;
-       arglist = PT::rest(PT::rest(arglist)))
+       arglist = PT::tail(arglist, 2))
   {
     PT::Node const *arg = arglist->car();
     Type const *type = TA::type_of(arg, my_scope);
@@ -37,7 +37,7 @@ ST::Symbol const *TA::OverloadResolver::resolve(PT::FuncallExpr const *funcall)
   }
   PT::Encoding name;
   if (funcall->car()->is_atom())
-    name.simple_name(funcall->car());      // PT::Identifier
+    name.simple_name(static_cast<PT::Atom *>(funcall->car())); // PT::Identifier
   else
     name = funcall->car()->encoded_name(); // PT::Name
   ST::SymbolSet symbols = lookup(name, my_scope, ST::Scope::DEFAULT);

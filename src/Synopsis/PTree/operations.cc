@@ -14,15 +14,15 @@ namespace Synopsis
 namespace PTree
 {
 
-bool operator == (const Node &p, char c)
+bool operator == (Node const &p, char c)
 {
   return p.is_atom() && p.length() == 1 && *p.position() == c;
 }
 
-bool operator == (const Node &n, const char *str)
+bool operator == (Node const &n, char const *str)
 {
   if (!n.is_atom()) return false;
-  const char *p = n.position();
+  char const *p = n.position();
   size_t l = n.length();
   size_t i = 0;
   for(; i < l; ++i)
@@ -31,7 +31,7 @@ bool operator == (const Node &n, const char *str)
   return str[i] == '\0';
 }
 
-bool operator == (const Node &p, const Node &q)
+bool operator == (Node const &p, Node const &q)
 {
   if(!p.is_atom() || !q.is_atom()) return false;
 
@@ -39,8 +39,8 @@ bool operator == (const Node &p, const Node &q)
   size_t qlen = q.length();
   if(plen == qlen)
   {
-    const char *pstr = p.position();
-    const char *qstr = q.position();
+    char const *pstr = p.position();
+    char const *qstr = q.position();
     while(--plen >= 0)
       if(pstr[plen] != qstr[plen]) return false;
     return true;
@@ -48,7 +48,7 @@ bool operator == (const Node &p, const Node &q)
   else return false;
 }
 
-bool equal(const Node &n, const char *str, size_t len)
+bool equal(Node const &n, char const *str, size_t len)
 {
   if(!n.is_atom()) return false;
   const char *p = n.position();
@@ -62,7 +62,7 @@ bool equal(const Node &n, const char *str, size_t len)
   else return false;
 }
 
-bool equal(const Node *p, const Node *q)
+bool equal(Node const *p, Node const *q)
 {
   if(p == q) return true;
   else if(p == 0 || q == 0) return false;
@@ -74,7 +74,7 @@ bool equal(const Node *p, const Node *q)
   equiv() returns true even if p and q are lists and all the elements
   are equal respectively.
 */
-bool equiv(const Node *p, const Node *q)
+bool equiv(Node const *p, Node const *q)
 {
   if(p == q) return true;
   else if(p == 0 || q == 0) return false;
@@ -91,105 +91,6 @@ bool equiv(const Node *p, const Node *q)
       }
     return p == 0 && q == 0;
   }
-}
-
-const Node *last(const Node *p)
-{
-  if(!p) return 0;
-
-  const Node *next;
-  while((next = p->cdr())) p = next;
-  return p;
-}
-
-Node *last(Node *p)
-{
-  if(!p) return 0;
-
-  Node *next;
-  while((next = p->cdr())) p = next;
-  return p;
-}
-
-const Node *second(const Node *p)
-{
-  if(p)
-  {
-    p = p->cdr();
-    if(p) return p->car();
-  }
-  return 0;
-}
-
-Node *second(Node *p)
-{
-  if(p)
-  {
-    p = p->cdr();
-    if(p) return p->car();
-  }
-  return p;
-}
-
-const Node *third(const Node *p)
-{
-  if(p)
-  {
-    p = p->cdr();
-    if(p)
-    {
-      p = p->cdr();
-      if(p) return p->car();
-    }
-  }
-  return p;
-}
-
-Node *third(Node *p)
-{
-  if(p)
-  {
-    p = p->cdr();
-    if(p)
-    {
-      p = p->cdr();
-      if(p) return p->car();
-    }
-  }
-  return p;
-}
-
-const Node *ca_ar(const Node *p)
-{
-  while(p != 0 && !p->is_atom()) p = p->car();
-  return p;
-}
-
-Node *ca_ar(Node *p)
-{
-  while(p != 0 && !p->is_atom()) p = p->car();
-  return p;
-}
-
-/*
-  length() returns a negative number if p is not a list.
-*/
-int length(const Node *p)
-{
-  int i = 0;
-  if(p && p->is_atom()) return -2; /* p is not a pair */
-  while(p)
-  {
-    ++i;
-    if(p->is_atom()) return -1;	/* p is a pair, but not a list. */
-    else p = p->cdr();
-  }
-  return i;
-}
-
-Node *cons(Node *p, Node *q)
-{
-  return new List(p, q);
 }
 
 List *list() 
@@ -219,27 +120,28 @@ List *list(Node *p1, Node *p2, Node *p3, Node *p4)
 
 List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5)
 {
-  return nconc(list(p1, p2), list(p3, p4, p5));
+  return conc(list(p1, p2), list(p3, p4, p5));
 }
 
 List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
 	   Node *p6)
 {
-  return nconc(list(p1, p2, p3), list(p4, p5, p6));
+  return conc(list(p1, p2, p3), list(p4, p5, p6));
 }
 
 List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
 	   Node *p6, Node *p7)
 {
-  return nconc(list(p1, p2, p3), list(p4, p5, p6, p7));
+  return conc(list(p1, p2, p3), list(p4, p5, p6, p7));
 }
 
 List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
 	   Node *p6, Node *p7, Node *p8)
 {
-  return nconc(list(p1, p2, p3, p4), list(p5, p6, p7, p8));
+  return conc(list(p1, p2, p3, p4), list(p5, p6, p7, p8));
 }
 
+  /*
 Node *copy(Node *p)
 {
   return append(p, 0);
@@ -269,10 +171,8 @@ Node *append(Node *p, Node *q)
   return result;
 }
 
-/*
-  replace_all() substitutes SUBST for all occurences of ORIG in LIST.
-  It recursively searches LIST for ORIG.
-*/
+// replace_all() substitutes SUBST for all occurences of ORIG in LIST.
+// It recursively searches LIST for ORIG.
 Node *replace_all(Node *list, Node *orig, Node *subst)
 {
   if(list && orig && *list == *orig) return subst;
@@ -447,28 +347,6 @@ Node *subst_sublist(Node *newsub, Node *oldsub, Node *lst)
   if(lst == oldsub) return newsub;
   else return cons(lst->car(), subst_sublist(newsub, oldsub, lst->cdr()));
 }
-
-Node *snoc(Node *p, Node *q)
-{
-  return nconc(p, cons(q, 0));
-}
-
-/* nconc is desctructive append */
-
-Node *nconc(Node *p, Node *q)
-{
-  if(!p) return q;
-  else
-  {
-    last(p)->set_cdr(q);
-    return p;
-  }
-}
-
-Node *nconc(Node *p, Node *q, Node *r)
-{
-  return nconc(p, nconc(q, r));
-}
-
+*/
 }
 }

@@ -7,7 +7,10 @@
 
 #include "TypeRepository.hh"
 #include <Synopsis/Trace.hh>
+#include <Synopsis/PTree/Display.hh>
+#include <Synopsis/SymbolLookup.hh>
 #include <sstream>
+#include <ostream>
 #include <stdexcept>
 
 using Synopsis::Trace;
@@ -16,6 +19,52 @@ namespace ST = Synopsis::SymbolTable;
 namespace TA = Synopsis::TypeAnalysis;
 
 TA::TypeRepository *TA::TypeRepository::instance_ = 0;
+
+namespace
+{
+class TypeFactory : private ST::SymbolVisitor
+{
+public:
+  TypeFactory(TA::TypeRepository *repo, PT::Encoding const &name)
+    : my_repo(repo), my_name(name), my_type(0) {}
+  TA::Type const *create(ST::Symbol const *symbol)
+  {
+    symbol->accept(this);
+    // if (my_type == 0) symbol doesn't resolve to a type
+    return my_type;
+  }
+
+private:
+  virtual void visit(ST::TypedefName const *symbol)
+  {
+    Trace trace("TypeFactory::visit(TypedefName)", Trace::TYPEANALYSIS, my_name.unmangled());
+    my_type = my_repo->lookup(symbol->type(), symbol->scope());
+  }
+  virtual void visit(ST::ClassName const *symbol) 
+  {
+    Trace trace("TypeFactory::visit(ClassName)", Trace::TYPEANALYSIS, my_name.unmangled());
+    PT::Node const *tag = PT::nth<0>(static_cast<PT::List const *>(symbol->ptree()));
+    assert(tag->is_atom());
+    TA::Class::Kind kind = TA::Class::CLASS;
+    if (std::string(tag->position(), tag->length()) == "struct")
+      kind = TA::Class::STRUCT;
+    my_type = my_repo->class_(kind, std::string(my_name.begin(), my_name.end()));
+//     my_types.insert(std::make_pair(name, type));
+  }
+  virtual void visit(ST::EnumName const *symbol) 
+  {
+    Trace trace("TypeFactory::visit(EnumName)", Trace::TYPEANALYSIS, my_name.unmangled());
+    my_type = my_repo->enum_(std::string(my_name.begin(), my_name.end()));
+//     my_types.insert(std::make_pair(name, type));
+  }
+
+  TA::TypeRepository * my_repo;
+  PT::Encoding const & my_name;
+  TA::Type const *     my_type;
+};
+
+}
+
 
 
 TA::TypeRepository::TypeRepository()
@@ -26,6 +75,37 @@ TA::TypeRepository::~TypeRepository()
 {
   for (Dictionary::iterator i = my_types.begin(); i != my_types.end(); ++i)
     delete i->second;
+}
+
+void TA::TypeRepository::declare(PTree::Encoding const &name,
+				 SymbolTable::TypeName const *symbol)
+{
+  Trace trace("TypeRepository::declare(TypeName)", Trace::TYPEANALYSIS);
+  AtomicType *type = new Dependent(name.unmangled());
+  my_declared_types.insert(std::make_pair(symbol, type));
+}
+
+void TA::TypeRepository::declare(PTree::Encoding const &name,
+				 SymbolTable::ClassName const *symbol)
+{
+  Trace trace("TypeRepository::declare(ClassName)", Trace::TYPEANALYSIS);
+  PT::ClassSpec const *spec = static_cast<PT::ClassSpec const *>(symbol->ptree());
+  std::string kind(spec->car()->position(), spec->car()->length());
+  AtomicType *type = 0;
+  if (kind == "union")
+    type = new Union(name.unmangled());
+  else
+    type = new Class(kind == "class" ? Class::CLASS : Class::STRUCT,
+		     name.unmangled());
+  my_declared_types.insert(std::make_pair(symbol, type));
+}
+
+void TA::TypeRepository::declare(PTree::Encoding const &name,
+				 SymbolTable::EnumName const *symbol)
+{
+  Trace trace("TypeRepository::declare(EnumName)", Trace::TYPEANALYSIS);
+  AtomicType *type = new Enum(name.unmangled());
+  my_declared_types.insert(std::make_pair(symbol, type));
 }
 
 TA::Type const *TA::TypeRepository::lookup(PT::Encoding const &name,
@@ -88,8 +168,22 @@ TA::Type const *TA::TypeRepository::lookup(PT::Encoding const &name,
     case 'd': return &DOUBLE;
     case 'v': return &VOID;
     default:
-      std::cerr << "lookup " << name << std::endl;
-      return 0;
+    {
+      Dictionary::iterator i = my_types.find(name);
+      if (i != my_types.end()) return i->second;
+      i = my_aliases.find(name);
+      if (i != my_aliases.end()) return i->second;
+
+      ST::SymbolSet symbols = Synopsis::lookup(name, scope, ST::Scope::DECLARATION);
+      if (!symbols.size())
+	throw ST::Undefined(name, scope);
+      if (symbols.size() > 1)
+	throw ST::TypeError(name, (*symbols.begin())->type());
+      ST::Symbol const *symbol = *symbols.begin();
+      TypeFactory factory(this, name);
+      Type const *type = factory.create(symbol);
+      return type;
+    }
   }
 }
 
@@ -121,9 +215,9 @@ TA::Enum const *TA::TypeRepository::enum_(std::string const &)
   return 0;
 }
 
-TA::Class const *TA::TypeRepository::class_(std::string const &)
+TA::Class const *TA::TypeRepository::class_(Class::Kind kind, std::string const &name)
 {
-  return 0;
+  return new Class(kind, name);
 }
 
 TA::Union const *TA::TypeRepository::union_(std::string const &)

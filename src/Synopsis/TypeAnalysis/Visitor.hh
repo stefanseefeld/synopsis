@@ -23,6 +23,7 @@ class Reference;
 class Array;
 class Function;
 class PointerToMember;
+class Dependent;
 
 class Visitor
 {
@@ -41,6 +42,8 @@ public:
   virtual void visit(Array *) = 0;
   virtual void visit(Function *) = 0;
   virtual void visit(PointerToMember *) = 0;
+
+  virtual void visit(Dependent *) = 0;
 };
 
 }

@@ -20,7 +20,7 @@ class TemplateParameterScope;
 }
 
 //. SymbolFactory populates a symbol table.
-class SymbolFactory
+class SymbolFactory : private PTree::Visitor
 {
 public:
   //.
@@ -56,8 +56,21 @@ public:
   void declare(PTree::ParameterDeclaration const *);
   void declare(PTree::UsingDeclaration const *);
 
+  //. During the parsing of a template declaration
+  //. (specifically, a partial template specialization), we need to lookup
+  //. symbols in the template parameter scope, before it got integrated
+  //. into a class scope. Consider:
+  //. template <typename T> struct Container<T *> ...
+  //. where we need to lookup 'T' while parsing the template-id 'Container<T *>'.
+  //. For now let the parser explicitely look into the template parameter scope,
+  //. but eventually redesign this.
+  SymbolTable::SymbolSet lookup_template_parameter(PTree::Encoding const &);
+
 private:
   typedef std::stack<SymbolTable::Scope *> Scopes;
+
+  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::FunctionDefinition *);
 
   //. Lookup the scope of a qualified name.
   //. The encoded name is modified in place to
@@ -65,10 +78,13 @@ private:
   SymbolTable::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
 
   void declare_template_specialization(PTree::Encoding const &,
-				       PTree::ClassSpec const *,
+				       PTree::TemplateDecl const *,
 				       SymbolTable::Scope *);
 
+  //. The language / dialect we are working in. The behavior may depend on it.
+  //. In particular, 'NONE' means do nothing.
   Language                      my_language;
+  //. The current scope stack.
   Scopes                        my_scopes;
   //. When parsing a function definition the declarator is seen first,
   //. and thus a prototype is created to hold the parameters.

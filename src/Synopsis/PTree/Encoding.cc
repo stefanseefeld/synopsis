@@ -321,16 +321,15 @@ void Encoding::do_init_static()
   Encoding::right_angle = new PTree::Atom(">", 1);
 }
 
-Encoding Encoding::simple_name(PTree::Atom const *name)
-{
-  Encoding retn;
-  retn.append_with_length(name->position(), name->length());
-  return retn;
-}
+// const char *Encoding::copy() const
+// {
+//   return strcpy(new (GC) char[my_buffer.size() + 1], (const char *)my_buffer.c_str());
+// }
 
-const char *Encoding::copy() const
+void Encoding::cv_qualify(bool c, bool v)
 {
-  return strcpy(new (GC) char[my_buffer.size() + 1], (const char *)my_buffer.c_str());
+  if (v) prepend('V');
+  if (c) prepend('C');
 }
 
 void Encoding::cv_qualify(const PTree::Node *cv1, const PTree::Node *cv2)
@@ -363,11 +362,10 @@ void Encoding::global_scope()
   append(0x80);
 }
 
-// simple_name() is also used for operator names
-
-void Encoding::simple_name(const PTree::Node *id)
+void Encoding::simple_name(Atom const *id)
 {
   append_with_length(id->position(), id->length());
+  if (is_qualified()) ++my_buffer.at(1);
 }
 
 // anonymous() generates an internal name for anonymous enum and class
@@ -385,11 +383,12 @@ void Encoding::anonymous()
   append_with_length(name, 5);
 }
 
-void Encoding::template_(const PTree::Node *name, const Encoding &args)
+void Encoding::template_(Atom const *name, Encoding const &args)
 {
   append('T');
   simple_name(name);
   append_with_length(args);
+  if (is_qualified()) ++my_buffer.at(1);
 }
 
 void Encoding::qualified(int n)
@@ -580,7 +579,7 @@ PTree::Node *Encoding::make_name()
 PTree::Node *Encoding::make_qname()
 {
   int n = my_buffer[0] - 0x80;
-  PTree::Node *qname = 0;
+  PTree::List *qname = 0;
   while(n-- > 0)
   {
     PTree::Node *name = make_name();
@@ -590,8 +589,11 @@ PTree::Node *Encoding::make_qname()
   return qname;
 }
 
-PTree::Node *Encoding::make_ptree(PTree::Node *decl)
+PTree::Node *Encoding::make_ptree(PTree::Node *d)
 {
+  assert(0 && "sorry, this code should never be called !");
+  return 0;
+#if 0
   PTree::Node *cv;
   PTree::Node *typespec = 0;
   if(decl) decl = PTree::list(decl);
@@ -768,8 +770,10 @@ PTree::Node *Encoding::make_ptree(PTree::Node *decl)
 	break;
     }
   }
+#endif
 }
 
+/*
 PTree::Node *Encoding::name_to_ptree()
 {
   if(my_buffer.empty()) return 0;
@@ -794,7 +798,7 @@ PTree::Node *Encoding::name_to_ptree()
   if(is_letter(my_buffer[0])) return new PTree::Identifier(copy(), my_buffer.size());
   else return PTree::list(operator_name, new PTree::Identifier(copy(), my_buffer.size()));
 }
-
+*/
 namespace Synopsis
 {
 namespace PTree

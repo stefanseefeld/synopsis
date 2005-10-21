@@ -132,7 +132,7 @@ void Display::visit(Brace *l)
 {
   ++my_indent;
   my_os << "[{";
-  Node *body = second(l);
+  Node *body = nth<1>(l);
   if(!body)
   {
     newline();
@@ -156,7 +156,7 @@ void Display::visit(Brace *l)
 	  head->accept(this);
 	}
       }
-      body = body->cdr();
+      body = static_cast<List *>(body)->cdr();
     }
   --my_indent;
   newline();

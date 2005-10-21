@@ -20,7 +20,7 @@ namespace PTree
 class Brace : public List 
 {
 public:
-  Brace(Node *p, Node *q) : List(p, q) {}
+  Brace(Node *p, List *q) : List(p, q) {}
   Brace(Node *ob, Node *body, Node *cb) : List(ob, list(body, cb)) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
@@ -28,7 +28,7 @@ public:
 class Block : public Brace 
 {
 public:
-  Block(Node *p, Node *q) : Brace(p, q) {}
+  Block(Node *p, List *q) : Brace(p, q) {}
   Block(Node *ob, Node *bdy, Node *cb) : Brace(ob, bdy, cb) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
@@ -36,61 +36,23 @@ public:
 class ClassBody : public Brace 
 {
 public:
-  ClassBody(Node *p, Node *q) : Brace(p, q) {}
+  ClassBody(Node *p, List *q) : Brace(p, q) {}
   ClassBody(Node *ob, Node *bdy, Node *cb) : Brace(ob, bdy, cb) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class Typedef : public List
-{
-public:
-  Typedef(Node *p) : List(p, 0) {}
-  Typedef(Node *p, Node *q) : List(p, q) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class TemplateDecl : public List
-{
-public:
-  TemplateDecl(Node *p, Node *q) : List(p, q) {}
-  TemplateDecl(Node *p) : List(p, 0) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class TemplateInstantiation : public List
-{
-public:
-  TemplateInstantiation(Node *p) : List(p, 0) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class ExternTemplate : public List
-{
-public:
-  ExternTemplate(Node *p, Node *q) : List(p, q) {}
-  ExternTemplate(Node *p) : List(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class MetaclassDecl : public List
 {
 public:
-  MetaclassDecl(Node *p, Node *q) : List(p, q) {}
+  MetaclassDecl(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class LinkageSpec : public List
+class Declaration : public List
 {
 public:
-  LinkageSpec(Node *p, Node *q) : List(p, q) {}
+  Declaration(Node *p, List *q) : List(p, q), my_comments(0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class NamespaceSpec : public List
-{
-public:
-  NamespaceSpec(Node *p, Node *q) : List(p, q), my_comments(0) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}  
   Node *get_comments() { return my_comments;}
   void set_comments(Node *c) { my_comments = c;}
 
@@ -98,11 +60,49 @@ private:
   Node *my_comments;
 };
 
-class Declaration : public List
+class LinkageSpec : public Declaration
 {
 public:
-  Declaration(Node *p, Node *q) : List(p, q), my_comments(0) {}
+  LinkageSpec(Node *p, List *q) : Declaration(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class Typedef : public Declaration
+{
+public:
+  Typedef(Node *p) : Declaration(p, 0) {}
+  Typedef(Node *p, List *q) : Declaration(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class TemplateDecl : public Declaration
+{
+public:
+  TemplateDecl(Node *p, List *q) : Declaration(p, q) {}
+  TemplateDecl(Node *p) : Declaration(p, 0) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class TemplateInstantiation : public Declaration
+{
+public:
+  TemplateInstantiation(Node *p) : Declaration(p, 0) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class ExternTemplate : public List
+{
+public:
+  ExternTemplate(Node *p, List *q) : List(p, q) {}
+  ExternTemplate(Node *p) : List(p, 0) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class NamespaceSpec : public Declaration
+{
+public:
+  NamespaceSpec(Node *p, List *q) : Declaration(p, q), my_comments(0) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}  
   Node *get_comments() { return my_comments;}
   void set_comments(Node *c) { my_comments = c;}
 
@@ -128,23 +128,48 @@ public:
 class NamespaceAlias : public Declaration
 {
 public:
-  NamespaceAlias(Node *p, Node *q) : Declaration(p, q) {}
+  NamespaceAlias(Node *p, List *q) : Declaration(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class FunctionDefinition : public Declaration
 {
 public:
-  FunctionDefinition(Node *p, Node *q) : Declaration(p, q) {}
+  FunctionDefinition(Node *p, List *q) : Declaration(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class ParameterDeclaration : public List 
 {
 public:
+  ParameterDeclaration(Node *mod, List *decl)
+    : List(mod, decl) {}
   ParameterDeclaration(Node *mod, Node *type, Node *decl)
     : List(mod, list(type, decl)) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+class DeclSpec : public List
+{
+public:
+  enum StorageClass { UNDEF, AUTO, REGISTER, STATIC, EXTERN, MUTABLE};
+  enum Flags { NONE = 0x0, FRIEND = 0x1, TYPEDEF = 0x2};
+
+  DeclSpec(List *, Encoding const &, StorageClass,
+	   unsigned int flags, bool user_defined);
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Encoding const &type() const { return my_type;}
+  StorageClass storage_class() const { return my_storage_class;}
+  bool is_friend() const { return my_is_friend;}
+  bool is_typedef() const { return my_is_typedef;}
+  bool is_user_defined_type() const { return my_user_defined;}
+private:
+  Encoding     my_type;
+  StorageClass my_storage_class : 3;
+  bool         my_is_friend : 1;
+  bool         my_is_typedef : 1;
+  bool         my_user_defined : 1;
 };
 
 class Declarator : public List
@@ -153,10 +178,10 @@ public:
   Declarator(Node *);
   Declarator(Node *, Encoding const&, Encoding const&, Node *);
   Declarator(Encoding const&, Encoding const&, Node *);
-  Declarator(Node *, Node *, Encoding const&, Encoding const&, Node *);
+  Declarator(Node *, List *, Encoding const&, Encoding const&, Node *);
   Declarator(Node *, Encoding const&);
   Declarator(Encoding const&);
-  Declarator(Declarator*, Node *, Node *);
+  Declarator(Declarator*, Node *, List *);
 
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_type() const { return my_type;}
@@ -186,7 +211,7 @@ private:
 class FstyleCastExpr : public List
 {
 public:
-  FstyleCastExpr(const Encoding &, Node *, Node *);
+  FstyleCastExpr(const Encoding &, Node *, List *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_type() const { return my_type;}
 private:
@@ -196,15 +221,14 @@ private:
 class ClassSpec : public List
 {
 public:
-  ClassSpec(Node *, Node *, Node *);
-  ClassSpec(const Encoding &, Node *, Node *, Node *);
+  ClassSpec(Node *, List *, Node *);
+  ClassSpec(const Encoding &, Node *, List *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_name() const { return my_name;}
   void set_encoded_name(const Encoding &n) { my_name = n;}
   Node *get_comments() { return my_comments;}
   //. The list of base classes, i.e. [: [public A] , [public virtual B] ...]
-  Node const *base_clause() const 
-  { return static_cast<List const *>(PTree::third(this));}
+  List *base_clause() const { return static_cast<List *>(nth<2>(this));}
   //. The following assumes proper C++, i.e. no OpenC++ extension.
   ClassBody *body();
 private:
@@ -226,14 +250,14 @@ private:
 class TypeParameter : public List 
 {
 public:
-  TypeParameter(Node *p, Node *q) : List(p, q) {}
+  TypeParameter(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class AccessSpec : public List
 {
 public:
-  AccessSpec(Node *p, Node *q, Node *c) : List(p, q), my_comments(c) {}
+  AccessSpec(Node *p, List *q, Node *c) : List(p, q), my_comments(c) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Node *get_comments() { return my_comments;}
 private:
@@ -243,21 +267,21 @@ private:
 class AccessDecl : public List
 {
 public:
-  AccessDecl(Node *p, Node *q) : List(p, q) {}
+  AccessDecl(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class UserAccessSpec : public List
 {
 public:
-  UserAccessSpec(Node *p, Node *q) : List(p, q) {}
+  UserAccessSpec(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
 class UserdefKeyword : public List
 {
 public:
-  UserdefKeyword(Node *p, Node *q) : List(p, q) {}
+  UserdefKeyword(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
@@ -265,98 +289,98 @@ template <typename T>
 class StatementT : public List
 {
 public:
-  StatementT(Node *p, Node *q) : List(p, q) {}
+  StatementT(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(static_cast<T *>(this));}
 };
 
 class IfStatement : public StatementT<IfStatement> 
 {
 public:
-  IfStatement(Node *p, Node *q) : StatementT<IfStatement>(p, q) {} 
+  IfStatement(Node *p, List *q) : StatementT<IfStatement>(p, q) {} 
 };
 
 class SwitchStatement : public StatementT<SwitchStatement> 
 {
 public:
-  SwitchStatement(Node *p, Node *q) : StatementT<SwitchStatement>(p, q) {} 
+  SwitchStatement(Node *p, List *q) : StatementT<SwitchStatement>(p, q) {} 
 };
 
 class WhileStatement : public StatementT<WhileStatement> 
 {
 public:
-  WhileStatement(Node *p, Node *q) : StatementT<WhileStatement>(p, q) {} 
+  WhileStatement(Node *p, List *q) : StatementT<WhileStatement>(p, q) {} 
 };
 
 class DoStatement : public StatementT<DoStatement> 
 {
 public:
-  DoStatement(Node *p, Node *q) : StatementT<DoStatement>(p, q) {} 
+  DoStatement(Node *p, List *q) : StatementT<DoStatement>(p, q) {} 
 };
 
 class ForStatement : public StatementT<ForStatement> 
 {
 public:
-  ForStatement(Node *p, Node *q) : StatementT<ForStatement>(p, q) {} 
+  ForStatement(Node *p, List *q) : StatementT<ForStatement>(p, q) {} 
 };
 
 class TryStatement : public StatementT<TryStatement> 
 {
 public:
-  TryStatement(Node *p, Node *q) : StatementT<TryStatement>(p, q) {} 
+  TryStatement(Node *p, List *q) : StatementT<TryStatement>(p, q) {} 
 };
 
 class BreakStatement : public StatementT<BreakStatement> 
 {
 public:
-  BreakStatement(Node *p, Node *q) : StatementT<BreakStatement>(p, q) {} 
+  BreakStatement(Node *p, List *q) : StatementT<BreakStatement>(p, q) {} 
 };
 
 class ContinueStatement : public StatementT<ContinueStatement> 
 {
 public:
-  ContinueStatement(Node *p, Node *q) : StatementT<ContinueStatement>(p, q) {} 
+  ContinueStatement(Node *p, List *q) : StatementT<ContinueStatement>(p, q) {} 
 };
 
 class ReturnStatement : public StatementT<ReturnStatement> 
 {
 public:
-  ReturnStatement(Node *p, Node *q) : StatementT<ReturnStatement>(p, q) {} 
+  ReturnStatement(Node *p, List *q) : StatementT<ReturnStatement>(p, q) {} 
 };
 
 class GotoStatement : public StatementT<GotoStatement> 
 {
 public:
-  GotoStatement(Node *p, Node *q) : StatementT<GotoStatement>(p, q) {} 
+  GotoStatement(Node *p, List *q) : StatementT<GotoStatement>(p, q) {} 
 };
 
 class CaseStatement : public StatementT<CaseStatement> 
 {
 public:
-  CaseStatement(Node *p, Node *q) : StatementT<CaseStatement>(p, q) {} 
+  CaseStatement(Node *p, List *q) : StatementT<CaseStatement>(p, q) {} 
 };
 
 class DefaultStatement : public StatementT<DefaultStatement> 
 {
 public:
-  DefaultStatement(Node *p, Node *q) : StatementT<DefaultStatement>(p, q) {} 
+  DefaultStatement(Node *p, List *q) : StatementT<DefaultStatement>(p, q) {} 
 };
 
 class LabelStatement : public StatementT<LabelStatement> 
 {
 public:
-  LabelStatement(Node *p, Node *q) : StatementT<LabelStatement>(p, q) {} 
+  LabelStatement(Node *p, List *q) : StatementT<LabelStatement>(p, q) {} 
 };
 
 class ExprStatement : public StatementT<ExprStatement> 
 {
 public:
-  ExprStatement(Node *p, Node *q) : StatementT<ExprStatement>(p, q) {} 
+  ExprStatement(Node *p, List *q) : StatementT<ExprStatement>(p, q) {} 
 };
 
 class Expression : public List
 {
 public:
-  Expression(Node *p, Node *q) : List(p, q) {}
+  Expression(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
@@ -364,128 +388,128 @@ template <typename T>
 class ExpressionT : public List
 {
 public:
-  ExpressionT(Node *p, Node *q) : List(p, q) {}
+  ExpressionT(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(static_cast<T *>(this));}
 };
 
 class AssignExpr : public ExpressionT<AssignExpr> 
 {
 public:
-  AssignExpr(Node *p, Node *q) : ExpressionT<AssignExpr>(p, q) {} 
+  AssignExpr(Node *p, List *q) : ExpressionT<AssignExpr>(p, q) {} 
 };
 
 class CondExpr : public ExpressionT<CondExpr> 
 {
 public:
-  CondExpr(Node *p, Node *q) : ExpressionT<CondExpr>(p, q) {} 
+  CondExpr(Node *p, List *q) : ExpressionT<CondExpr>(p, q) {} 
 };
 
 class InfixExpr : public ExpressionT<InfixExpr> 
 {
 public:
-  InfixExpr(Node *p, Node *q) : ExpressionT<InfixExpr>(p, q) {} 
+  InfixExpr(Node *p, List *q) : ExpressionT<InfixExpr>(p, q) {} 
 };
 
 class PmExpr : public ExpressionT<PmExpr> 
 {
 public:
-  PmExpr(Node *p, Node *q) : ExpressionT<PmExpr>(p, q) {} 
+  PmExpr(Node *p, List *q) : ExpressionT<PmExpr>(p, q) {} 
 };
 
 class CastExpr : public ExpressionT<CastExpr> 
 {
 public:
-  CastExpr(Node *p, Node *q) : ExpressionT<CastExpr>(p, q) {} 
+  CastExpr(Node *p, List *q) : ExpressionT<CastExpr>(p, q) {} 
 };
 
 class UnaryExpr : public ExpressionT<UnaryExpr> 
 {
 public:
-  UnaryExpr(Node *p, Node *q) : ExpressionT<UnaryExpr>(p, q) {} 
+  UnaryExpr(Node *p, List *q) : ExpressionT<UnaryExpr>(p, q) {} 
 };
 
 class ThrowExpr : public ExpressionT<ThrowExpr> 
 {
 public:
-  ThrowExpr(Node *p, Node *q) : ExpressionT<ThrowExpr>(p, q) {} 
+  ThrowExpr(Node *p, List *q) : ExpressionT<ThrowExpr>(p, q) {} 
 };
 
 class SizeofExpr : public ExpressionT<SizeofExpr> 
 {
 public:
-  SizeofExpr(Node *p, Node *q) : ExpressionT<SizeofExpr>(p, q) {} 
+  SizeofExpr(Node *p, List *q) : ExpressionT<SizeofExpr>(p, q) {} 
 };
 
 class TypeidExpr : public ExpressionT<TypeidExpr> 
 {
 public:
-  TypeidExpr(Node *p, Node *q) : ExpressionT<TypeidExpr>(p, q) {} 
+  TypeidExpr(Node *p, List *q) : ExpressionT<TypeidExpr>(p, q) {} 
 };
 
 class TypeofExpr : public ExpressionT<TypeofExpr> 
 {
 public:
-  TypeofExpr(Node *p, Node *q) : ExpressionT<TypeofExpr>(p, q) {} 
+  TypeofExpr(Node *p, List *q) : ExpressionT<TypeofExpr>(p, q) {} 
 };
 
 class NewExpr : public ExpressionT<NewExpr> 
 {
 public:
-  NewExpr(Node *p, Node *q) : ExpressionT<NewExpr>(p, q) {} 
+  NewExpr(Node *p, List *q) : ExpressionT<NewExpr>(p, q) {} 
 };
 
 class DeleteExpr : public ExpressionT<DeleteExpr> 
 {
 public:
-  DeleteExpr(Node *p, Node *q) : ExpressionT<DeleteExpr>(p, q) {} 
+  DeleteExpr(Node *p, List *q) : ExpressionT<DeleteExpr>(p, q) {} 
 };
 
 class ArrayExpr : public ExpressionT<ArrayExpr> 
 {
 public:
-  ArrayExpr(Node *p, Node *q) : ExpressionT<ArrayExpr>(p, q) {} 
+  ArrayExpr(Node *p, List *q) : ExpressionT<ArrayExpr>(p, q) {} 
 };
 
 class FuncallExpr : public ExpressionT<FuncallExpr> 
 {
 public:
-  FuncallExpr(Node *p, Node *q) : ExpressionT<FuncallExpr>(p, q) {} 
+  FuncallExpr(Node *p, List *q) : ExpressionT<FuncallExpr>(p, q) {} 
 };
 
 class PostfixExpr : public ExpressionT<PostfixExpr> 
 {
 public:
-  PostfixExpr(Node *p, Node *q) : ExpressionT<PostfixExpr>(p, q) {} 
+  PostfixExpr(Node *p, List *q) : ExpressionT<PostfixExpr>(p, q) {} 
 };
 
 class UserStatementExpr : public ExpressionT<UserStatementExpr> 
 {
 public:
-  UserStatementExpr(Node *p, Node *q) : ExpressionT<UserStatementExpr>(p, q) {} 
+  UserStatementExpr(Node *p, List *q) : ExpressionT<UserStatementExpr>(p, q) {} 
 };
 
 class DotMemberExpr : public ExpressionT<DotMemberExpr> 
 {
 public:
-  DotMemberExpr(Node *p, Node *q) : ExpressionT<DotMemberExpr>(p, q) {} 
+  DotMemberExpr(Node *p, List *q) : ExpressionT<DotMemberExpr>(p, q) {} 
 };
 
 class ArrowMemberExpr : public ExpressionT<ArrowMemberExpr> 
 {
 public:
-  ArrowMemberExpr(Node *p, Node *q) : ExpressionT<ArrowMemberExpr>(p, q) {} 
+  ArrowMemberExpr(Node *p, List *q) : ExpressionT<ArrowMemberExpr>(p, q) {} 
 };
 
 class ParenExpr : public ExpressionT<ParenExpr> 
 {
 public:
-  ParenExpr(Node *p, Node *q) : ExpressionT<ParenExpr>(p, q) {} 
+  ParenExpr(Node *p, List *q) : ExpressionT<ParenExpr>(p, q) {} 
 };
 
 class StaticUserStatementExpr : public ExpressionT<StaticUserStatementExpr> 
 {
 public:
-  StaticUserStatementExpr(Node *p, Node *q) : ExpressionT<StaticUserStatementExpr>(p, q) {} 
+  StaticUserStatementExpr(Node *p, List *q) : ExpressionT<StaticUserStatementExpr>(p, q) {} 
 };
 
 }

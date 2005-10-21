@@ -127,6 +127,7 @@ public:
   virtual void visit(ParameterDeclaration *);
   //. [ using Foo :: x ; ]
   virtual void visit(UsingDeclaration *);
+  virtual void visit(DeclSpec *);
   //. [ [ declarator { = <expr> } ] , ... ]
   virtual void visit(Declarator *);
   virtual void visit(Name *);

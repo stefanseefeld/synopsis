@@ -122,18 +122,12 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   }
 }
 
-Token::Type Lexer::get_token(Token &t)
+Token Lexer::get_token()
 {
-  if (!fill(1)) return Token::BadToken;
-  t = my_tokens.front();
+  if (!fill(1)) return Token();
+  Token token = my_tokens.front();
   my_tokens.pop();
-  return t.type;
-}
-
-Token::Type Lexer::look_ahead(size_t offset)
-{
-  if (!fill(offset + 1)) return Token::BadToken;
-  return my_tokens.at(offset).type;
+  return token;
 }
 
 Token::Type Lexer::look_ahead(size_t offset, Token &t)

@@ -21,6 +21,30 @@ SymbolTable::SymbolSet lookup(PTree::Encoding const &name,
 			      SymbolTable::Scope const *scope,
 			      SymbolTable::Scope::LookupContext);
 
+//. Convenience wrapper around 'lookup' that only reports a namespace name 
+//. if found.
+inline SymbolTable::NamespaceName const *
+lookup_namespace(PTree::Encoding const &name, SymbolTable::Scope const *scope)
+{
+  SymbolTable::SymbolSet symbols = lookup(name, scope, SymbolTable::Scope::SCOPE);
+  if (symbols.size() != 1) 
+    return 0;
+  else
+    return dynamic_cast<SymbolTable::NamespaceName const *>(*symbols.begin());
+}
+
+//. Convenience wrapper around 'lookup' that only reports a class name 
+//. if found.
+inline SymbolTable::ClassName const *
+lookup_class(PTree::Encoding const &name, SymbolTable::Scope const *scope)
+{
+  SymbolTable::SymbolSet symbols = lookup(name, scope, SymbolTable::Scope::ELABORATE);
+  if (symbols.size() != 1) 
+    return 0;
+  else
+    return dynamic_cast<SymbolTable::ClassName const *>(*symbols.begin());
+}
+
 }
 
 #endif

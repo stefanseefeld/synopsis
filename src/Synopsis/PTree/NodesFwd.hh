@@ -98,6 +98,7 @@ class Declaration;
 class FunctionDefinition;
 class ParameterDeclaration;
 class UsingDeclaration;
+class DeclSpec;
 class Declarator;
 class Name;
 class FstyleCastExpr;
