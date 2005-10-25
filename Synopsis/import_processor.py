@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# $Id: import_processor.py,v 1.1 2003/12/08 18:24:20 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.

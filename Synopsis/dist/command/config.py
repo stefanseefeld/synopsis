@@ -81,8 +81,12 @@ class config(build_ext):
             syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
         for ext in self.extensions:
-            self.config(ext, self.build_temp, self.build_lib,
-                        '--with-syn-cxx="%s"'%syn_cxx)
+            if not self.rpath:
+                self.config(ext, self.build_temp, self.build_lib,
+                            '--with-syn-cxx=%s'%syn_cxx)
+            else:
+                self.config(ext, self.build_temp, self.build_lib,
+                            '--with-syn-cxx=%s LDFLAGS=-Wl,-rpath,%s'%(syn_cxx, self.rpath[0]))
 
         self.config('tests', self.build_temp, self.build_lib,
                     '--with-syn-cxx="%s"'%syn_cxx)
