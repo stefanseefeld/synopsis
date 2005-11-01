@@ -9,6 +9,7 @@ from Linker import *
 from ScopeStripper import *
 from NameMapper import *
 from MacroFilter import *
+from ModuleFilter import *
 from Comments import *
 from XRefCompiler import *
 from EmptyModuleRemover import *
