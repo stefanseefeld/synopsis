@@ -9,11 +9,17 @@
 
 #include <Synopsis/PTree/Node.hh>
 #include <cassert>
+#include <string>
 
 namespace Synopsis
 {
 namespace PTree
 {
+
+inline std::string string(Atom *atom) 
+{
+  return std::string(atom->position(), atom->length());
+}
 
 bool operator == (Node const &p, char c);
 inline bool operator != (Node const &p, char c) { return !operator == (p, c);}

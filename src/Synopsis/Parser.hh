@@ -46,18 +46,8 @@ public:
   PTree::Node *parse();
 
 private:
-  // Attempt, Trial, Tentative, ...
-  struct Attempt
-  {
-    enum Status { OK, ERROR, COMMITTED};
-
-    Attempt(Lexer &l) : status(OK), lexer(l), token_mark(lexer.save()) {}
-    Status       status;
-    Lexer      & lexer;
-    char const * token_mark;
-  };
-
-  typedef std::stack<Attempt> Attempts;
+  struct Tentative;
+  friend struct Tentative;
 
   enum DeclaratorKind { ABSTRACT = 0x1, NAMED = 0x2, EITHER = 0x3};
 
@@ -96,14 +86,10 @@ private:
   bool require(PTree::Node *node, std::string const &name);
   bool require(PTree::Node *node, char token);
 
-  //. Start a new parse attempt. If it fails, we can simply rollback
-  //. any intermittend changes to restore the parser's (and lexer's)
-  //. state to what it was when starting the attempt.
-  void attempt();
-  //. Commit to the current parse attempt.
+  //. Are we in a tentative parse ?
+  bool is_tentative() const { return my_is_tentative;}
+  //. Commit to the current tentative parse.
   void commit();
-  //. Rollback the current parse attempt.
-  void rollback();
 
   template <typename T>
   bool declare(T *);
@@ -176,7 +162,7 @@ private:
   //.   enumerator-definition
   //.   enumerator-list , enumerator-definition
   //.
-  //. enumeratpr-definition:
+  //. enumerator-definition:
   //.   enumerator
   //.   enumerator = constant-expression
   //.
@@ -761,7 +747,10 @@ private:
   int             my_ruleset;
   SymbolFactory & my_symbols;
 
-  Attempts        my_attempts;
+  //. Only record errors if we are not parsing
+  //. tentatively.
+  bool            my_is_tentative;
+
   //. Record whether the current scope is valid.
   //. This allows the parser to continue parsing even after
   //. it was unable to enter a scope (such as in a function definition
