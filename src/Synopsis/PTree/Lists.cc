@@ -108,20 +108,9 @@ FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, List *q)
 {
 }
 
-ClassSpec::ClassSpec(Node *p, List *q, Node *c)
-  : List(p, q),
-    my_comments(c)
-{
-}
-
 ClassSpec::ClassSpec(const Encoding &name, Node *car, List *cdr, Node *c)
   : List(car, cdr),
     my_name(name),
     my_comments(c)
 {
-}
-
-ClassBody *ClassSpec::body() 
-{
-  return dynamic_cast<ClassBody *>(nth<3>(this));
 }

@@ -342,25 +342,21 @@ void SymbolFactory::declare(PT::EnumSpec const *spec)
 {
   Trace trace("SymbolFactory::declare(EnumSpec *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  PT::Node const *tag = PT::nth<1>(spec);
-  PT::Encoding const &name = spec->encoded_name();
-  PT::Encoding const &type = spec->encoded_type();
   ST::Scope *scope = my_scopes.top();
-  if(tag && tag->is_atom()) 
+  if (PT::Atom const *name = spec->name())
   {
-    ST::EnumName const *symbol = new ST::EnumName(type, spec, my_scopes.top());
-    scope->declare(name, symbol);
-    TA::TypeRepository::instance()->declare(name, symbol);
+    ST::EnumName const *symbol = new ST::EnumName(spec, my_scopes.top());
+    scope->declare(PT::Encoding(name), symbol);
+    TA::TypeRepository::instance()->declare(PT::Encoding(name), symbol);
   }
   // else it's an anonymous enum
 
-  PT::List const *body = static_cast<PT::List *>(PT::nth<2>(spec));
   // The numeric value of an enumerator is either specified
   // by an explicit initializer or it is determined by incrementing
   // by one the value of the previous enumerator.
   // The default value for the first enumerator is 0
   long value = -1;
-  for (PT::List const *e = static_cast<PT::List *>(PT::nth<1>(body)); e; e = PT::tail(e, 2))
+  for (PT::List const *e = spec->enumerators(); e; e = PT::tail(e, 2))
   {
     PT::Node const *enumerator = e->car();
     bool defined = true;
@@ -382,6 +378,7 @@ void SymbolFactory::declare(PT::EnumSpec const *spec)
     }
     assert(enumerator->is_atom());
     PT::Encoding name(static_cast<PT::Atom const *>(enumerator));
+    PT::Encoding type; // FIXME: ??
     if (defined)
       scope->declare(name, new ST::ConstName(type, value, enumerator, true, scope));
     else

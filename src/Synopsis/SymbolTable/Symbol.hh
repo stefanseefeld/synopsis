@@ -126,8 +126,8 @@ public:
 class EnumName : public TypeName
 {
 public:
-  EnumName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope)
-    : TypeName(type, ptree, true, scope) {}
+  EnumName(PTree::Node const *ptree, Scope *scope)
+    : TypeName(PTree::Encoding(), ptree, true, scope) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 };
 

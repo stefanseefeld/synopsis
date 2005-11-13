@@ -165,6 +165,54 @@ PT::List *wrap_comments(const Lexer::Comments &c)
 
 }
 
+struct Parser::Tentative
+{
+  Tentative(Parser &p)
+    : my_parser(p), my_lexer(p.my_lexer),
+      my_was_tentative(p.my_is_tentative),
+      my_token_mark(my_lexer.save()),
+      my_encoding(0),
+      my_encoding_size(0)
+  {
+    p.my_is_tentative = true;
+  } 
+  Tentative(Parser &p, PT::Encoding &e)
+    : my_parser(p), my_lexer(p.my_lexer),
+      my_was_tentative(p.my_is_tentative),
+      my_token_mark(my_lexer.save()),
+      my_encoding(&e),
+      my_encoding_size(e.size())
+  {
+    Trace trace("Tentative::Tentative", Trace::PARSING);
+    p.my_is_tentative = true;
+  } 
+  ~Tentative()
+  {
+    Trace trace("Tentative::~Tentative", Trace::PARSING);
+    if (my_parser.my_is_tentative)
+      my_parser.my_is_tentative = my_was_tentative;
+  }
+
+  void rollback() 
+  {
+    Trace trace("Tentative::rollback", Trace::PARSING);
+    if (my_parser.my_is_tentative)
+    {
+      //. Only reset the is_tentative flag it we didn't commit meanwhile.
+      //. (That could have happened from within another Tentative on the stack.)
+      my_lexer.restore(my_token_mark);
+      my_parser.my_is_tentative = my_was_tentative;
+      if (my_encoding) my_encoding->resize(my_encoding_size);
+    }
+  }
+  Parser       & my_parser;
+  Lexer        & my_lexer;
+  bool           my_was_tentative;
+  char const   * my_token_mark;
+  PT::Encoding * my_encoding;
+  size_t         my_encoding_size;
+};
+
 struct Parser::ScopeGuard
 {
   template <typename T>
@@ -229,6 +277,7 @@ Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_symbols(symbols),
+    my_is_tentative(false),
     my_scope_is_valid(true),
     my_comments(0),
     my_gt_is_operator(true),
@@ -244,27 +293,29 @@ Parser::~Parser()
 {
 }
 
-void Parser::attempt()
-{
-  Trace trace("Parser::attempt", Trace::PARSING);
-  my_attempts.push(Attempt(my_lexer));
-}
+// void Parser::attempt()
+// {
+//   Trace trace("Parser::attempt", Trace::PARSING);
+//   my_attempts.push(Attempt(my_lexer));
+// }
 
-void Parser::commit() 
-{
-  Trace trace("Parser::commit", Trace::PARSING);
-  /* TBD */
-}
+// void Parser::commit() 
+// {
+//   Trace trace("Parser::commit", Trace::PARSING);
+//   /* TBD */
+// }
 
-void Parser::rollback() 
-{
-  Trace trace("Parser::rollback", Trace::PARSING);
-  /* TBD */
-}
+// void Parser::rollback() 
+// {
+//   Trace trace("Parser::rollback", Trace::PARSING);
+//   /* TBD */
+// }
 
 bool Parser::error(std::string const &error)
 {
   Trace trace("Parser::error", Trace::PARSING);
+  if (my_is_tentative) return true;
+
   Token t1, t2;
   my_lexer.look_ahead(0, t1);
   my_lexer.look_ahead(1, t2);
@@ -338,6 +389,12 @@ inline bool Parser::require(PTree::Node *node, char token)
   {
     return true;
   }
+}
+
+inline void Parser::commit()
+{
+  Trace trace("Parser::commit", Trace::PARSING);
+  my_is_tentative = false;
 }
 
 template <typename T>
@@ -496,10 +553,10 @@ PT::Node *Parser::class_or_namespace_name(PT::Encoding &encoding,
     // name, and thus don't look up the name to make sure it refers to a class.
     return class_name(encoding, is_typename, is_template);
 
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::Node *name = class_name(encoding, is_typename, is_template);
   if (name) return name;
-  guard.rollback();
+  tentative.rollback();
   return namespace_name(encoding);
 }
 
@@ -517,18 +574,15 @@ PT::List *Parser::nested_name_specifier(PT::Encoding &encoding,
       (my_lexer.look_ahead(1) != Token::Scope && my_lexer.look_ahead(1) != '<'))
       return 0;
 
-  size_t length = (encoding.empty() ? 0 :
-		   encoding.is_global_scope() ? 1 :
-		   encoding.is_qualified() ? encoding.at(1) - 0x80 : 1);
   PT::Node *name = class_or_namespace_name(encoding, false, is_template);
-
-  if (length == 0 || length == 1) encoding.qualified(length + 1);
-  else ++encoding.at(1);
 
   PT::List *qname = 0;
   if (!name) return 0;
   else qname = PT::list(name);
   if (!require(Token::Scope, "::")) return 0;
+
+  if (!encoding.is_qualified()) encoding.qualified(1);
+
   qname = PT::snoc(qname, new PT::Atom(my_lexer.get_token()));
   
   if (my_lexer.look_ahead() == Token::TEMPLATE)
@@ -540,9 +594,9 @@ PT::List *Parser::nested_name_specifier(PT::Encoding &encoding,
   }
   else
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this, encoding);
     PT::List *rest = nested_name_specifier(encoding, false);
-    if (!rest) guard.rollback();
+    if (!rest) tentative.rollback();
     else qname = PT::snoc(qname, rest);
     return qname;
   }
@@ -574,14 +628,14 @@ PT::Node *Parser::unqualified_id(PT::Encoding &encoding,
     }
     case Token::OPERATOR:
     {
-      StateGuard guard(*this, encoding);
+      Tentative tentative(*this, encoding);
       PT::Node *operator_ = new PT::Kwd::Operator(my_lexer.get_token());
       PT::Node *name = template_id(encoding, is_template);
       if (name) return PT::list(operator_, name);
-      guard.rollback();
+      tentative.rollback();
       name = operator_function_id(encoding);
       if (name) return name;
-      guard.rollback();
+      tentative.rollback();
       return conversion_function_id(encoding);
     }
     default: return 0;
@@ -601,10 +655,10 @@ PT::Node *Parser::unqualified_id(PT::Encoding &encoding,
 PT::Node *Parser::type_name(PT::Encoding &encoding)
 {
   Trace trace("Parser::type_name", Trace::PARSING);
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::Node *name = class_name(encoding, false, false);
   if (name) return name;
-  guard.rollback();
+  tentative.rollback();
   PT::Identifier *id = identifier(encoding);
   if (!id) return 0;
 
@@ -707,7 +761,7 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding, bool &user_defin
   // It must be a user-defined type.
   if (!allow_user_defined) return 0;
   user_defined = true;
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::List *qname = nested_name_specifier(encoding);
   if (qname && my_lexer.look_ahead() == Token::TEMPLATE)
   {
@@ -717,7 +771,7 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding, bool &user_defin
     if (!require(id, "template-id")) return 0;
     else return PT::snoc(qname, id);
   }
-  guard.rollback();
+  tentative.rollback();
   
   PT::Node *type_name_ = type_name(encoding);
   if (!require(type_name_, "type-name")) return 0;
@@ -743,31 +797,24 @@ PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
 {
   Trace trace("Parser::enum_specifier", Trace::PARSING);
 
-  if(my_lexer.look_ahead() != Token::ENUM)
-    return 0;
-
-  PT::EnumSpec *spec = new PT::EnumSpec(new PT::Kwd::Enum(my_lexer.get_token()));
+  if(my_lexer.look_ahead() != Token::ENUM) return 0;
+  Token enum_ = my_lexer.get_token();
+  PT::EnumSpec *spec = 0;
   Token ob = my_lexer.get_token();
   if(ob.type == Token::Identifier)
   {
     PT::Identifier *name = new PT::Identifier(ob);
     encoding.simple_name(name);
-    spec->set_encoded_name(encoding);
-    spec = PT::snoc(spec, name);
-    if(my_lexer.look_ahead() == '{')
-      ob = my_lexer.get_token();
-    else
-      return 0;
+    spec = new PT::EnumSpec(encoding, new PT::Kwd::Enum(enum_), name);
+    if (!require('{')) return 0;
+    ob = my_lexer.get_token();
   }
   else // anonymous enum
   {
     encoding.anonymous();
-    spec->set_encoded_name(encoding);
-    spec = PT::snoc(spec, 0);
+    spec = new PT::EnumSpec(encoding, new PT::Kwd::Enum(enum_), 0);
   }
-  if(ob.type != '{')
-    return 0;
-  
+  if(ob.type != '{') return 0;
   PT::List *enumerators = 0;
   while (my_lexer.look_ahead() != '}')
   {
@@ -803,9 +850,9 @@ PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
   if(!require('}')) return 0;
   Token cb = my_lexer.get_token();
   PT::Node *comments = wrap_comments(my_lexer.get_comments());
-  spec = PT::snoc(spec, 
-		  new PT::Brace(new PT::Atom(ob), enumerators,
-				new PT::CommentedAtom(cb, comments)));
+  spec = PT::snoc(spec, new PT::Atom(ob));
+  spec = PT::snoc(spec, enumerators);
+  spec = PT::snoc(spec, new PT::CommentedAtom(cb, comments));
   declare(spec);
   return spec;
 }
@@ -840,11 +887,11 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
 
   PT::Atom *scope = opt_scope();
   PT::Encoding nested_encoding;
-  StateGuard guard(*this, nested_encoding);
+  Tentative tentative(*this, nested_encoding);
   PT::List *name = nested_name_specifier(nested_encoding);
   if (type == Token::TYPENAME && !require(name, "nested-name-specifier"))
     return 0;
-  else if (!name) guard.rollback();
+  else if (!name) tentative.rollback();
   if (scope)
   {
     encoding.global_scope();
@@ -867,7 +914,7 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
     // Try a template-id and roll back if it fails.
     else
     {
-      StateGuard guard(*this, encoding);
+      Tentative tentative(*this, encoding);
       PT::Node *template_id_ = template_id(encoding, false);
       if (template_id_)
       {
@@ -875,7 +922,7 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
 	name = PT::cons(key, new PT::Name(name, encoding));
 	return name;
       }
-      else guard.rollback();
+      else tentative.rollback();
     }
   }
   PT::Identifier *id = identifier(encoding);
@@ -992,12 +1039,12 @@ PTree::List *Parser::base_clause()
       encoding.global_scope();
       ++length;
     }
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     PT::Encoding nested_encoding;
     PT::List *name = nested_name_specifier(nested_encoding);
     if (!name)
     {
-      guard.rollback();
+      tentative.rollback();
       name = PT::cons(scope);
     }
     else
@@ -1093,17 +1140,29 @@ PT::Node *Parser::opt_member_specification()
       default:
       {
 	PT::Encoding encoding;
-	PT::Node *decl_spec = decl_specifier_seq(encoding);
+	PT::DeclSpec *decl_spec = decl_specifier_seq(encoding);
 	if (my_lexer.look_ahead() == ';')
 	{
-	  // is this a typedef ?
+	  // typedef or nested class-specifier ?
 	  Token semic = my_lexer.get_token();
-	  std::cout << "xxx" << std::endl;
-	  members = PT::snoc(members, PT::cons(new PT::Atom(semic)));
+	  if (decl_spec && decl_spec->is_typedef())
+	  {
+	    PT::Typedef *decl = new PT::Typedef(decl_spec,
+						PT::list(0, new PT::Atom(semic)));
+	    declare(decl);
+	    members = PT::snoc(members, decl);
+	  }
+	  else
+	  {
+	    PT::Declaration *decl = new PT::Declaration(decl_spec,
+							PT::list(0, new PT::Atom(semic)));
+	    declare(decl);
+	    members = PT::snoc(members, decl);
+	  }
 	}
 	else
 	{
-	  PT::Declaration *declaration = 0;
+	  PT::List *declarators = 0;
 	  while (my_lexer.look_ahead() != ';')
 	  {
 	    Token::Type token = my_lexer.look_ahead();
@@ -1115,8 +1174,7 @@ PT::Node *Parser::opt_member_specification()
 	      PT::Identifier *id = token != ':' ? identifier(encoding) : 0;
 	      PT::Atom *colon = new PT::Atom(my_lexer.get_token());
 	      PT::Node *width = constant_expression();
-// 	      declaration = new PT::Declaration(decl_spec,
-// 				      PT::list(integral, decl, new PT::Atom(tk)));
+	      declarators = PT::snoc(declarators, PT::list(id, colon, width));
 	    }
 	    else
 	    {
@@ -1157,7 +1215,7 @@ PT::Node *Parser::opt_member_specification()
 	      if (initializer) decl = PT::snoc(decl, initializer);
 
 	      if (type.is_function() &&
-		  !declaration &&
+		  !declarators &&
 		  starts_function_definition(my_lexer.look_ahead()))
 	      {
 		// function-definition
@@ -1171,18 +1229,22 @@ PT::Node *Parser::opt_member_specification()
 	      }
 	      else
 	      {
-		if (!declaration)
-		  declaration = new PT::Declaration(decl_spec, PT::cons(decl));
-		else
-		  declaration = PT::snoc(declaration, decl);
+		declarators = PT::snoc(declarators, decl);
 	      }
 	    }
+	    if (my_lexer.look_ahead() == ',')
+	      declarators = PT::snoc(declarators, new PT::Atom(my_lexer.get_token()));
 	  }
-	  // If declaration is still zero we have processed a function definition.
-	  if (declaration)
+	  // If declarators is still zero we have processed a function definition.
+	  
+	  if (declarators)
 	  { 
 	    if (!require(';')) return 0;
-	    declaration = PT::snoc(declaration, new PT::Atom(my_lexer.get_token()));
+
+	    PT::Atom *semic = new PT::Atom(my_lexer.get_token());
+	    PT::Declaration *declaration = new PT::Declaration(decl_spec,
+							       PT::list(declarators, semic));
+	    declare(declaration);
 	    members = PT::snoc(members, declaration);
 	  }
 	}
@@ -1206,16 +1268,16 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
 
   PT::Keyword *key = class_key();
   if (!require(key, "class-key")) return 0;
-  StateGuard guard(*this, encoding);
+  Tentative tentative(*this, encoding);
   PT::Node *name = 0;
   PT::List *qname = nested_name_specifier(encoding);
   if (qname)
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     PT::Node *class_name_ = class_name(encoding, false, false); //FIXME: encoding
     if (!class_name_)
     {
-      guard.rollback();
+      tentative.rollback();
       class_name_ = identifier(encoding);
       if (!require(class_name_, "identifier")) return 0;
     }
@@ -1223,26 +1285,35 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
   }
   else
   {
-    guard.rollback();
+    tentative.rollback();
     name = template_id(encoding, false);
     if (!name)
     {
-      guard.rollback();
+      tentative.rollback();
       if (my_lexer.look_ahead() == Token::Identifier)
       {
 	name = identifier(encoding);
       }
     }
   }
+  Token::Type next = my_lexer.look_ahead();
+  if (next != ':' && next != '{')
+  {
+    error("expected '{' or ':'");
+    return 0;
+  }
+  else commit();
+
   PT::ClassSpec *spec = new PT::ClassSpec(encoding, key, PT::cons(name), 0);
   if (!my_in_template_decl) declare(spec);
   ScopeGuard scope_guard(*this, spec);
-  if (my_lexer.look_ahead() == ':')
+  PT::List *base_clause_ = 0;
+  if (next == ':')
   {
-    PT::Node *base_clause_ = base_clause();
+    base_clause_ = base_clause();
     if (!require(base_clause_, "base-clause")) return 0;
-    spec = PT::snoc(spec, base_clause_);
   }
+  spec = PT::snoc(spec, base_clause_);
   if (!require('{')) return 0;
   PT::Atom *ob = new PT::Atom(my_lexer.get_token());
   PT::Node *member_specification_ = opt_member_specification();
@@ -1351,10 +1422,10 @@ PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool &user_defined)
     case Token::STRUCT:
     case Token::UNION:
     {
-      StateGuard guard(*this, encoding);
+      Tentative tentative(*this, encoding);
       PT::ClassSpec *spec = class_specifier(encoding);
       if (spec) return spec;
-      guard.rollback();
+      tentative.rollback();
       return elaborated_type_specifier(encoding);
     }
     case Token::TYPENAME:
@@ -1388,12 +1459,12 @@ PT::List *Parser::type_specifier_seq(PT::Encoding &encoding)
   PT::List *spec = 0;
   while (true)
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     bool user_defined = true;
     PT::Node *type_spec = type_specifier(encoding, user_defined);
     if (!type_spec)
     {
-      guard.rollback();
+      tentative.rollback();
       if (!spec) error("expected type-specifier");
       return spec;
     }
@@ -1470,11 +1541,11 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
 	break;
       default:
       {
-	StateGuard guard(*this);
+	Tentative tentative(*this);
 	PT::Node *spec = type_specifier(type, user_defined);
 	if (!spec)
 	{
-	  guard.rollback();
+	  tentative.rollback();
 	  PT::DeclSpec *decl_spec = new PT::DeclSpec(seq, type, storage, flags, user_defined);
 	  return decl_spec;
 	}
@@ -1567,7 +1638,7 @@ PTree::List *Parser::direct_declarator(PTree::Encoding &type,
     // we have to try a parameter-declaration-clause first.
     if (kind != NAMED)
     {
-      StateGuard guard(*this);
+      Tentative tentative(*this);
       PT::Node *parameters = parameter_declaration_clause(type);
       if (parameters && my_lexer.look_ahead() == ')')
       {
@@ -1577,7 +1648,7 @@ PTree::List *Parser::direct_declarator(PTree::Encoding &type,
       }
       else
       {
-	guard.rollback();
+	tentative.rollback();
       }
     }
     if (!decl)
@@ -1606,7 +1677,7 @@ PTree::List *Parser::direct_declarator(PTree::Encoding &type,
   }
   else if (kind != ABSTRACT)
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     PT::Node *id = declarator_id(name);
     if (id) decl = PT::cons(id);
     else if (kind == NAMED)
@@ -1665,7 +1736,7 @@ PT::Declarator *Parser::declarator(PT::Encoding &type, PT::Encoding &name,
   PT::List *ptrs = 0;
   while (true)
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     PT::List *ptr = ptr_operator(type);
     if (ptr)
     {
@@ -1673,7 +1744,7 @@ PT::Declarator *Parser::declarator(PT::Encoding &type, PT::Encoding &name,
     }
     else
     {
-      guard.rollback();
+      tentative.rollback();
       break;
     }
   }
@@ -1684,11 +1755,7 @@ PT::Declarator *Parser::declarator(PT::Encoding &type, PT::Encoding &name,
   }
   else
   {
-    if (!ptrs || kind == NAMED)
-    {
-      error("expected declarator");
-      return 0;
-    }
+    if (!ptrs || kind == NAMED) return 0;
     else
     {
       return new PT::Declarator(ptrs, type, name, 0);
@@ -1932,6 +1999,10 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   // elaborated-type-specifier with a class-key, or an enum-specifier.
   PT::Encoding encoding;
   PT::DeclSpec *decl_spec = decl_specifier_seq(encoding);
+
+  // If this is not a functional cast, it is definitely a declaration.
+  if (decl_spec && my_lexer.look_ahead() != '(')
+    commit();
 
   PT::List *declarators = 0;
   while (my_lexer.look_ahead() != ';')
@@ -2180,9 +2251,9 @@ PT::NamespaceAlias *Parser::namespace_alias_definition()
   if (!require(alias, "identifier") || !require('=')) return 0;
   Token eq = my_lexer.get_token();
   PT::Node *scope = opt_scope();
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::List *name = nested_name_specifier(encoding);
-  if (!name) guard.rollback();
+  if (!name) tentative.rollback();
   PT::Node *ns = namespace_name(encoding);
   if (!require(ns, "namespace-name") || !require(';')) return 0;
   if (scope) name = PT::cons(scope, name);
@@ -2215,7 +2286,7 @@ PT::UsingDirective *Parser::using_directive()
     name = PT::list(new PT::Atom(my_lexer.get_token()));
 
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     PT::Node *name_spec = nested_name_specifier(encoding);
     if (name_spec)
     {
@@ -2223,7 +2294,7 @@ PT::UsingDirective *Parser::using_directive()
     }
     else
     {
-      guard.rollback();
+      tentative.rollback();
     }
   }
   PT::Node *ns = namespace_name(encoding);
@@ -2251,7 +2322,7 @@ PT::UsingDeclaration *Parser::using_declaration()
   PT::Atom *scope = opt_scope();
   
   PT::Encoding encoding;
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::List *name = nested_name_specifier(encoding);
   if (!name)
   {
@@ -2262,7 +2333,7 @@ PT::UsingDeclaration *Parser::using_declaration()
     }
     else
     {
-      guard.rollback();
+      tentative.rollback();
     }
   }
   PT::Node *id = unqualified_id(encoding, /*template*/false);
@@ -2440,10 +2511,10 @@ PT::Declaration *Parser::explicit_specialization()
   }
   else
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     PT::Encoding type;
     PT::Node *decl_spec = decl_specifier_seq(type);
-    if (!decl_spec) guard.rollback();
+    if (!decl_spec) tentative.rollback();
     PT::Declarator *decl = init_declarator(type);
     if (type.is_function() && starts_function_definition(my_lexer.look_ahead()))
     {
@@ -2489,10 +2560,10 @@ PT::TemplateInstantiation *Parser::explicit_instantiation()
 
   if (my_lexer.look_ahead() != Token::TEMPLATE) return 0;
   Token template_ = my_lexer.get_token();
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::Encoding type;
   PT::DeclSpec *decl_spec = decl_specifier_seq(type);
-  if (!decl_spec) guard.rollback();
+  if (!decl_spec) tentative.rollback();
 
   if (my_lexer.look_ahead() != ';')
   {
@@ -2674,7 +2745,7 @@ PT::Node *Parser::template_argument(PT::Encoding &encoding)
   // expression is resolved to a type-id, regardless of the form of
   // the corresponding template-parameter.
 
-  StateGuard guard(*this, encoding);
+  Tentative tentative(*this, encoding);
   PT::Node *argument = type_id(encoding);
   if (argument)
   {
@@ -2682,14 +2753,14 @@ PT::Node *Parser::template_argument(PT::Encoding &encoding)
     if (my_lexer.look_ahead() != ',' && my_lexer.look_ahead() != '>') return 0;
     else return argument;
   }
-  guard.rollback();
+  tentative.rollback();
   argument = conditional_expression();
   if (argument)
   {
     encoding.value_temp_param();
     return argument;
   }
-  guard.rollback();
+  tentative.rollback();
   return id_expression(encoding);
 }
 
@@ -3103,7 +3174,7 @@ PT::Node *Parser::cast_expression()
   }
   else
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     Token op = my_lexer.get_token();
     PT::Encoding encoding;
     PT::Node *name = type_id(encoding);
@@ -3115,7 +3186,7 @@ PT::Node *Parser::cast_expression()
 	return new PT::CastExpr(new PT::Atom(op),
 				PT::list(name, new PT::Atom(cp), expr));
     }
-    guard.rollback();
+    tentative.rollback();
     return unary_expression();
   }
 }
@@ -3128,10 +3199,10 @@ PT::Node *Parser::type_id(PT::Encoding &encoding)
   
   PT::Node *type_spec = type_specifier_seq(encoding);
   if (!require(type_spec, "type-specifier-seq")) return 0;
-  StateGuard guard(*this, encoding);
+  Tentative tentative(*this, encoding);
   PT::Encoding dummy_name;
   PT::Node *decl = declarator(encoding, dummy_name, ABSTRACT);
-  if (!decl) guard.rollback();
+  if (!decl) tentative.rollback();
   // FIXME: what's the right node here ?
   return PT::list(type_spec, decl);
 }
@@ -3236,7 +3307,7 @@ PT::Node *Parser::sizeof_expression()
   if (kwd.type != Token::SIZEOF) return 0;
   if(my_lexer.look_ahead() == '(')
   {
-    StateGuard guard(*this);
+    Tentative tentative(*this);
     Token op = my_lexer.get_token();
     PT::Encoding encoding;
     PT::Node *name = type_id(encoding);
@@ -3248,7 +3319,7 @@ PT::Node *Parser::sizeof_expression()
     }
     else
     {
-      guard.rollback();
+      tentative.rollback();
     }
   }
   PT::Node *unary = unary_expression();
@@ -3399,7 +3470,7 @@ PT::Node *Parser::postfix_expression()
     }
     default:
     {
-      StateGuard guard(*this);
+      Tentative tentative(*this);
       PT::Encoding encoding;
       bool user_defined = true;
       PT::Node *type = simple_type_specifier(encoding, user_defined);
@@ -3412,7 +3483,7 @@ PT::Node *Parser::postfix_expression()
 	  break;
 	}
       }
-      guard.rollback();
+      tentative.rollback();
       expr = primary_expression();
       if (!require(expr, "primary-expression")) return 0;
       break;
@@ -3497,7 +3568,7 @@ PT::Node *Parser::primary_expression()
       return new PT::Kwd::This(my_lexer.get_token());
     case '(':
     {
-      PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
+      PGuard<bool> tentative(*this, &Parser::my_gt_is_operator);
       my_gt_is_operator = true;
       Token op = my_lexer.get_token();
       PT::Node *expr = expression();
@@ -3533,7 +3604,7 @@ PT::Node *Parser::id_expression(PT::Encoding &encoding)
     encoding.global_scope();
     scope = new PT::Atom(my_lexer.get_token());
   }
-  StateGuard guard(*this, encoding);
+  Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding, false);
   if (name)
   {
@@ -3548,7 +3619,7 @@ PT::Node *Parser::id_expression(PT::Encoding &encoding)
     if (!require(rest, "unqualified-id")) return 0;
     else return new PT::Name(PT::snoc(name, rest), encoding);
   }
-  guard.rollback();
+  tentative.rollback();
 
   if (!scope)
   {
@@ -3562,7 +3633,7 @@ PT::Node *Parser::id_expression(PT::Encoding &encoding)
   }
   name = operator_function_id(encoding);
   if (name) return name;
-  guard.rollback();
+  tentative.rollback();
   PT::List *id = template_id(encoding, false);
   return new PT::Name(id, encoding);
 }
@@ -3593,7 +3664,7 @@ PT::Node *Parser::condition()
 {
   Trace trace("Parser::condition", Trace::PARSING);
 
-  StateGuard guard(*this);
+  Tentative tentative(*this);
   PT::Encoding type;
   PT::List *cond = type_specifier_seq(type);
   if (cond)
@@ -3611,7 +3682,7 @@ PT::Node *Parser::condition()
       return PT::snoc(cond, expr);
     }
   }
-  guard.rollback();
+  tentative.rollback();
   PT::Node *expr = expression();
   if (!require(expr, "expression")) return 0;
   return PT::cons(expr);
@@ -3826,9 +3897,9 @@ PT::Node *Parser::iteration_statement()
       if (my_lexer.look_ahead() != ';')
       {
 	// try simple-declaration first
-	StateGuard guard(*this);
+	Tentative tentative(*this);
 	init = simple_declaration(/*function_definition_allowed=*/false);
-	if (!init) guard.rollback();
+	if (!init) tentative.rollback();
       }
       if (!init) init = expression_statement();
       if (!require(init, "for-init-statement")) return 0;
@@ -3962,9 +4033,9 @@ PT::Node *Parser::statement()
     default:
       if (my_lexer.look_ahead() != ';')
       {
-	StateGuard guard(*this);
+	Tentative tentative(*this);
 	stmt = declaration_statement();
-	if (!stmt) guard.rollback();
+	if (!stmt) tentative.rollback();
       }
       if (!stmt) stmt = expression_statement();
       break;

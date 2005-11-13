@@ -218,31 +218,43 @@ private:
   Encoding my_type;
 };
 
+//. class-key name [opt] base-clause [opt] { member-specification [opt] }
 class ClassSpec : public List
 {
 public:
-  ClassSpec(Node *, List *, Node *);
   ClassSpec(const Encoding &, Node *, List *, Node *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_name() const { return my_name;}
-  void set_encoded_name(const Encoding &n) { my_name = n;}
   Node *get_comments() { return my_comments;}
-  //. The list of base classes, i.e. [: [public A] , [public virtual B] ...]
+
+  Node *name() const { return nth<1>(this);}
+  //. : base-specifier-list
   List *base_clause() const { return static_cast<List *>(nth<2>(this));}
-  //. The following assumes proper C++, i.e. no OpenC++ extension.
-  ClassBody *body();
+  //. class-body
+  ClassBody *body() const { return static_cast<ClassBody *>(nth<3>(this));};
+
 private:
   Encoding my_name;
   Node    *my_comments;
 };
 
+//. enum identifier [opt] { enumerator-list [opt] }
 class EnumSpec : public List
 {
 public:
-  EnumSpec(Node *head) : List(head, 0) {}
+  EnumSpec(Encoding const &e, Kwd::Enum *head, Identifier *n)
+    : List(head, cons(n)), my_name(e) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Atom *name() const { return static_cast<Atom *>(nth<1>(this));}
+  List *enumerators() const { return static_cast<List *>(nth<3>(this));}
+
+  //. For named enums this will be the same as 'name' above.
+  //. For unnamed enums it will contain an id that is unique in the
+  //. current translation unit. It is needed for enumerators to be
+  //. able to name their type, even if nobody else can.
   Encoding encoded_name() const { return my_name;}
-  void set_encoded_name(const Encoding &n) { my_name = n;}
+
 private:
   Encoding my_name;
 };
