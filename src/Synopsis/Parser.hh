@@ -153,7 +153,7 @@ private:
   //.   double
   //.   void
   //.   typeof-expr
-  PTree::Node *simple_type_specifier(PTree::Encoding &, bool &user_defined);
+  PTree::Node *simple_type_specifier(PTree::Encoding &, bool allow_user_defined);
 
   //. enum-specifier:
   //.   enum identifier [opt] { enumerator-list [opt] }
@@ -260,7 +260,7 @@ private:
   //.   elaborated-type-specifier
   //.   cv-qualifier
   //.   __complex__ [GCC]
-  PTree::Node *type_specifier(PTree::Encoding &, bool &user_defined);
+  PTree::Node *type_specifier(PTree::Encoding &, bool allow_user_defined);
 
   //. type-specifier-seq:
   //.   type-specifier type-specifier-seq [opt]
@@ -765,7 +765,15 @@ private:
   bool            my_in_functional_cast;
   bool            my_accept_default_arg;
   bool            my_in_declarator;
+  //. True if we are inside a constant-expression, i.e. should evaluate
+  //. the associated value.
   bool            my_in_constant_expression;
+  //. True if we have just seen an elaborated-type-specifier 
+  //. inside a decl-specifier-seq.
+  bool            my_declares_class_or_enum;
+  //. True if we have just seen a class-specifier or enum-specifier
+  //. inside a decl-specifier-seq.
+  bool            my_defines_class_or_enum;
 };
 
 }

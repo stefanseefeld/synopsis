@@ -14,13 +14,14 @@ using namespace Synopsis;
 using namespace PTree;
 
 DeclSpec::DeclSpec(List *l, Encoding const &type,
-		   StorageClass storage, unsigned int flags, bool user_defined)
+		   StorageClass storage, unsigned int flags, bool decl, bool def)
   : List(l->car(), l->cdr()),
     my_type(type),
     my_storage_class(storage),
     my_is_friend(flags & FRIEND),
     my_is_typedef(flags & TYPEDEF),
-    my_user_defined(user_defined)
+    my_declares_class_or_enum(decl),
+    my_defines_class_or_enum(def)
 {
 }
 
