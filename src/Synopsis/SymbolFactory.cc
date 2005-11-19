@@ -135,15 +135,13 @@ private:
     if (node->car()) node->car()->accept(this);
     if (node->cdr()) node->cdr()->accept(this);
   }
-  virtual void visit(PT::ParameterDeclaration *node)
+  virtual void visit(PT::ParameterDeclaration *decl)
   {
     ++my_params;
-    PT::List *list = static_cast<PT::List *>(node->car());
-    if (PT::length(PT::nth<2>(list)) == 3 || my_default_args)
-      // If we already encountered an initializer for a previous parameter,
-      // this one has to have one too, though not necessarily expressed in
-      // this declarator (see 8.3.6/6).
-      ++my_default_args;
+    // If we already encountered an initializer for a previous parameter,
+    // this one has to have one too, though not necessarily expressed in
+    // this declarator (see 8.3.6/6).
+    if (my_default_args || decl->initializer()) ++my_default_args;
   }
 
   size_t &my_params;

@@ -285,7 +285,9 @@ Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
     my_in_functional_cast(false),
     my_accept_default_arg(true),
     my_in_declarator(false),
-    my_in_constant_expression(false)
+    my_in_constant_expression(false),
+    my_declares_class_or_enum(false),
+    my_defines_class_or_enum(false)
 {
 }
 
@@ -331,6 +333,7 @@ bool Parser::error(std::string const &error)
     msg = "before " + std::string(t1.ptr, end - t1.ptr);
   else
     msg = error + " before " + std::string(t1.ptr, end - t1.ptr);
+  trace << msg;
   my_errors.push_back(new SyntaxError(msg, filename, line));
   return my_errors.size() < max_errors;
 }
@@ -700,13 +703,11 @@ PT::Node *Parser::type_name(PT::Encoding &encoding)
 //   double
 //   void
 //   typeof-expr
-PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding, bool &user_defined)
+PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
+					bool allow_user_defined)
 {
   Trace trace("Parser::simple_type_specifier", Trace::PARSING);
 
-  bool allow_user_defined = user_defined;
-  // Try built-in types.
-  user_defined = false;
   PT::Node *scope = 0;
   switch (my_lexer.look_ahead())
   {
@@ -760,7 +761,6 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding, bool &user_defin
 
   // It must be a user-defined type.
   if (!allow_user_defined) return 0;
-  user_defined = true;
   Tentative tentative(*this);
   PT::List *qname = nested_name_specifier(encoding);
   if (qname && my_lexer.look_ahead() == Token::TEMPLATE)
@@ -927,6 +927,8 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
   }
   PT::Identifier *id = identifier(encoding);
   if (!require(id, "identifier")) return 0;
+  // TODO: look up id in the proper scope and make sure it has the appropriate
+  //       type (class, enum, or class template), depending on the current context.
   name = PT::snoc(name, id);
   name = PT::cons(key, new PT::Name(name, encoding));
   return name;
@@ -1405,7 +1407,7 @@ PT::List *Parser::opt_cv_qualifier_seq(PT::Encoding &encoding)
 //   elaborated-type-specifier
 //   cv-qualifier
 //   __complex__ [GCC]
-PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool &user_defined)
+PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool allow_user_defined)
 {
   Trace trace("Parser::type_specifier", Trace::PARSING);
   switch (my_lexer.look_ahead())
@@ -1415,18 +1417,32 @@ PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool &user_defined)
       if (my_lexer.look_ahead(1) == '{' ||
 	  (my_lexer.look_ahead(1) == Token::Identifier && 
 	   my_lexer.look_ahead(2) == '{'))
-	return enum_specifier(encoding);
+      {
+	PT::Node *spec = enum_specifier(encoding);
+	if (spec) my_defines_class_or_enum = true;
+	return spec;
+      }
       else
-	return elaborated_type_specifier(encoding);
+      {
+	PT::Node *spec = elaborated_type_specifier(encoding);
+	if (spec) my_declares_class_or_enum = true;
+	return spec;
+      }
     case Token::CLASS:
     case Token::STRUCT:
     case Token::UNION:
     {
       Tentative tentative(*this, encoding);
-      PT::ClassSpec *spec = class_specifier(encoding);
-      if (spec) return spec;
+      PT::Node *spec = class_specifier(encoding);
+      if (spec)
+      {
+	my_defines_class_or_enum = true;
+	return spec;
+      }
       tentative.rollback();
-      return elaborated_type_specifier(encoding);
+      spec = elaborated_type_specifier(encoding);
+      if (spec) my_declares_class_or_enum = true;
+      return spec;
     }
     case Token::TYPENAME:
       return elaborated_type_specifier(encoding);
@@ -1446,7 +1462,7 @@ PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool &user_defined)
     default:
       break;
   }
-  PT::Node *type = simple_type_specifier(encoding, user_defined);
+  PT::Node *type = simple_type_specifier(encoding, allow_user_defined);
   if (!require(type, "type specifier")) return 0;
   return type;
 }
@@ -1460,8 +1476,7 @@ PT::List *Parser::type_specifier_seq(PT::Encoding &encoding)
   while (true)
   {
     Tentative tentative(*this);
-    bool user_defined = true;
-    PT::Node *type_spec = type_specifier(encoding, user_defined);
+    PT::Node *type_spec = type_specifier(encoding, true);
     if (!type_spec)
     {
       tentative.rollback();
@@ -1486,7 +1501,9 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
   Trace trace("Parser::decl_specifier_seq", Trace::PARSING);
   PT::DeclSpec::StorageClass storage = PT::DeclSpec::UNDEF;
   unsigned int flags = PT::DeclSpec::NONE;
-  bool user_defined = true;
+  bool declares_class_or_enum = false;
+  bool defines_class_or_enum = false;
+  bool allow_user_defined = true;
   PT::List *seq = 0;
   while (true)
   {
@@ -1541,17 +1558,25 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
 	break;
       default:
       {
+	PGuard<bool> guard1(*this, &Parser::my_declares_class_or_enum);
+	PGuard<bool> guard2(*this, &Parser::my_defines_class_or_enum);
 	Tentative tentative(*this);
-	PT::Node *spec = type_specifier(type, user_defined);
+	PT::Node *spec = type_specifier(type, allow_user_defined);
+	declares_class_or_enum |= my_declares_class_or_enum;
+	defines_class_or_enum |= my_defines_class_or_enum;
 	if (!spec)
 	{
 	  tentative.rollback();
-	  PT::DeclSpec *decl_spec = new PT::DeclSpec(seq, type, storage, flags, user_defined);
-	  return decl_spec;
+	  if (seq)
+	    return new PT::DeclSpec(seq, type, storage, flags,
+				    declares_class_or_enum,
+				    defines_class_or_enum);
+	  else
+	    return 0;
 	}
 	seq = PT::snoc(seq, spec);
 	// TODO: watch for cv qualifier !
-	user_defined = false;
+	allow_user_defined = false;
       }
     }
   }
@@ -1949,31 +1974,30 @@ PT::ParameterDeclaration *Parser::parameter_declaration(PT::Encoding &type)
 {
   Trace trace("Parser::parameter_declaration", Trace::PARSING);
 
-  PT::List *declaration = decl_specifier_seq(type);
-  if (!declaration) return 0;
-  else declaration = PT::list(declaration);
-  PT::Node *decl = 0;
+  PT::DeclSpec *spec = decl_specifier_seq(type);
+  if (!spec) return 0;
+  PT::Declarator *decl = 0;
   Token::Type token = my_lexer.look_ahead();
   if (token == ')' || token == ',' || token == '=' || token == '>' ||
       token == Token::Ellipsis)
   {
     // no declarator
+    decl = 0;
   }
   else
   {
     PT::Encoding dummy_name; // We are only interested into the type.
     decl = declarator(type, dummy_name, EITHER);
     if (!require(decl, "declarator")) return 0;
-    else declaration = PT::snoc(declaration, decl);
   }
   if (my_lexer.look_ahead() == '=')
   {
-    declaration = PT::snoc(declaration, new PT::Atom(my_lexer.get_token()));
-    PT::Node *arg = assignment_expression();
-    if (!require(arg, "assignment-expression")) return 0;
-    else declaration = PT::snoc(declaration, arg);
+    PT::Atom *equal = new PT::Atom(my_lexer.get_token());
+    PT::Node *init = assignment_expression();
+    if (!require(init, "assignment-expression")) return 0;
+    else return new PT::ParameterDeclaration(spec, decl, equal, init);
   }
-  return new PT::ParameterDeclaration(0, declaration);
+  else return new PT::ParameterDeclaration(spec, decl);
 }
 
 // simple-declaration:
@@ -1991,19 +2015,24 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
 {
   Trace trace("Parser::simple_declaration", Trace::PARSING);
 
+  PT::Encoding encoding;
+  PT::DeclSpec *decl_spec = decl_specifier_seq(encoding);
+
+  // [dcl.dcl]
+  //
+  // Only in function declarations for constructors, destructors, and
+  // type conversions can the decl-specifier-seq be omitted.
+  //
+  // If this is not a functional cast, it is definitely a declaration.
+  if (decl_spec && my_lexer.look_ahead() != '(')
+    commit();
+
   // [dcl.dcl]
   //
   // In a simple-declaration, the optional init-declarator-list can be
   // omitted only when declaring a class or enumeration, that is when
   // the decl-specifier-seq contains either a class-specifier, an
   // elaborated-type-specifier with a class-key, or an enum-specifier.
-  PT::Encoding encoding;
-  PT::DeclSpec *decl_spec = decl_specifier_seq(encoding);
-
-  // If this is not a functional cast, it is definitely a declaration.
-  if (decl_spec && my_lexer.look_ahead() != '(')
-    commit();
-
   PT::List *declarators = 0;
   while (my_lexer.look_ahead() != ';')
   {
@@ -3201,7 +3230,7 @@ PT::Node *Parser::type_id(PT::Encoding &encoding)
   if (!require(type_spec, "type-specifier-seq")) return 0;
   Tentative tentative(*this, encoding);
   PT::Encoding dummy_name;
-  PT::Node *decl = declarator(encoding, dummy_name, ABSTRACT);
+  PT::Declarator *decl = declarator(encoding, dummy_name, ABSTRACT);
   if (!decl) tentative.rollback();
   // FIXME: what's the right node here ?
   return PT::list(type_spec, decl);
@@ -3670,7 +3699,7 @@ PT::Node *Parser::condition()
   if (cond)
   {
     PT::Encoding dummy_name;
-    PT::Node *decl = declarator(type, dummy_name, NAMED);
+    PT::Declarator *decl = declarator(type, dummy_name, NAMED);
     if (my_lexer.look_ahead() == '=')
     {
       Token eq = my_lexer.get_token();

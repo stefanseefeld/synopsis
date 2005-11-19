@@ -139,16 +139,6 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class ParameterDeclaration : public List 
-{
-public:
-  ParameterDeclaration(Node *mod, List *decl)
-    : List(mod, decl) {}
-  ParameterDeclaration(Node *mod, Node *type, Node *decl)
-    : List(mod, list(type, decl)) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
 class DeclSpec : public List
 {
 public:
@@ -156,20 +146,22 @@ public:
   enum Flags { NONE = 0x0, FRIEND = 0x1, TYPEDEF = 0x2};
 
   DeclSpec(List *, Encoding const &, StorageClass,
-	   unsigned int flags, bool user_defined);
+	   unsigned int flags, bool decl, bool def);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Encoding const &type() const { return my_type;}
   StorageClass storage_class() const { return my_storage_class;}
   bool is_friend() const { return my_is_friend;}
   bool is_typedef() const { return my_is_typedef;}
-  bool is_user_defined_type() const { return my_user_defined;}
+  bool declares_class_or_enum() const { return my_declares_class_or_enum;}
+  bool defines_class_or_enum() const { return my_defines_class_or_enum;}
 private:
   Encoding     my_type;
   StorageClass my_storage_class : 3;
   bool         my_is_friend : 1;
   bool         my_is_typedef : 1;
-  bool         my_user_defined : 1;
+  bool         my_declares_class_or_enum : 1;
+  bool         my_defines_class_or_enum : 1;
 };
 
 class Declarator : public List
@@ -196,6 +188,25 @@ private:
   Encoding my_name;
   Node    *my_declared_name;
   Node    *my_comments;
+};
+
+class ParameterDeclaration : public List 
+{
+public:
+  ParameterDeclaration(DeclSpec *spec, Declarator *decl)
+    : List(spec, cons(decl)) {}
+  ParameterDeclaration(DeclSpec *spec, Declarator *decl,
+		       Atom *equal, Node *init)
+    : List(spec, cons(decl))
+  {
+    snoc(this, equal);
+    snoc(this, init);
+  }
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  DeclSpec *decl_specifier_seq() { return static_cast<DeclSpec *>(nth<0>(this));}
+  Declarator *declarator() { return static_cast<Declarator *>(nth<1>(this));}
+  Node *initializer() { return PTree::length(this) > 2 ? last(this) : 0;}
 };
 
 class Name : public List
