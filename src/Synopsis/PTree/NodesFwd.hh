@@ -104,6 +104,7 @@ class Name;
 class FstyleCastExpr;
 class ClassSpec;
 class EnumSpec;
+class ElaboratedTypeSpec;
 class TypeParameter;
 class AccessSpec;
 class AccessDecl;

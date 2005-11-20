@@ -89,8 +89,17 @@ void TA::TypeRepository::declare(PTree::Encoding const &name,
 				 SymbolTable::ClassName const *symbol)
 {
   Trace trace("TypeRepository::declare(ClassName)", Trace::TYPEANALYSIS);
-  PT::ClassSpec const *spec = static_cast<PT::ClassSpec const *>(symbol->ptree());
-  std::string kind(spec->car()->position(), spec->car()->length());
+  std::string kind;
+  PT::Node const *decl = symbol->ptree();
+  // decl is either a class-specifier or an elaborated-type-specifier.
+  if (PT::ClassSpec const *spec = dynamic_cast<PT::ClassSpec const *>(decl))
+  {
+    kind = PT::string(static_cast<PT::Atom *>(PT::nth<0>(spec)));
+  }
+  else if (PT::ElaboratedTypeSpec const *spec = dynamic_cast<PT::ElaboratedTypeSpec const *>(decl))
+  {
+    kind = PT::string(spec->type());
+  }
   AtomicType *type = 0;
   if (kind == "union")
     type = new Union(name.unmangled());

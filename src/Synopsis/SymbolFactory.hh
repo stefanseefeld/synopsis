@@ -50,6 +50,8 @@ public:
   //. If this is a template specialization declare it with
   //. the template repository, else declare it here.
   void declare(PTree::ClassSpec const *);
+  //. Declare a class-name from an elaborated-type-specifier.
+  void declare(PTree::ElaboratedTypeSpec const *);
   void declare(PTree::TemplateDecl const *);
   void declare(PTree::TypeParameter const *);
   void declare(PTree::UsingDirective const *);

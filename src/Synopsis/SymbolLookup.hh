@@ -38,7 +38,7 @@ lookup_namespace(PTree::Encoding const &name, SymbolTable::Scope const *scope)
 inline SymbolTable::ClassName const *
 lookup_class(PTree::Encoding const &name, SymbolTable::Scope const *scope)
 {
-  SymbolTable::SymbolSet symbols = lookup(name, scope, SymbolTable::Scope::ELABORATE);
+  SymbolTable::SymbolSet symbols = lookup(name, scope, SymbolTable::Scope::ELABORATED);
   if (symbols.size() != 1) 
     return 0;
   else

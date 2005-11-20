@@ -91,6 +91,7 @@ void Visitor::visit(Name *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(FstyleCastExpr *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(ClassSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(EnumSpec *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(ElaboratedTypeSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TypeParameter *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(AccessSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(AccessDecl *l) { visit(static_cast<List *>(l));}

@@ -164,6 +164,15 @@ private:
   bool         my_defines_class_or_enum : 1;
 };
 
+class ElaboratedTypeSpec : public List
+{
+public:
+  ElaboratedTypeSpec(Keyword *type, Node *id) : List(type, cons(id)) {}
+
+  Keyword *type() const { return static_cast<Keyword *>(nth<0>(this));}
+  Node *name() const { return nth<1>(this);}
+};
+
 class Declarator : public List
 {
 public:
@@ -238,6 +247,7 @@ public:
   Encoding encoded_name() const { return my_name;}
   Node *get_comments() { return my_comments;}
 
+  Atom *key() const { return static_cast<Atom *>(nth<0>(this));}
   Node *name() const { return nth<1>(this);}
   //. : base-specifier-list
   List *base_clause() const { return static_cast<List *>(nth<2>(this));}

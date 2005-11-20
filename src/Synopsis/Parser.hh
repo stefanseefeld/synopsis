@@ -176,7 +176,7 @@ private:
   //.   enum :: [opt] nested-name-specifier [opt] identifier
   //.   typename :: [opt] nested-name-specifier identifier
   //.   typename :: [opt] nested-name-specifier template [opt] template-id
-  PTree::List *elaborated_type_specifier(PTree::Encoding &);
+  PTree::ElaboratedTypeSpec *elaborated_type_specifier(PTree::Encoding &);
 
   //. function-specifier:
   //.   inline
