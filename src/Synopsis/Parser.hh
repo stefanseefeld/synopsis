@@ -681,7 +681,7 @@ private:
   //.   identifier : statement
   //.   case constant-expression : statement
   //.   default : statement
-  PTree::Node *labeled_statement();
+  PTree::List *labeled_statement();
 
   //. expression-statement:
   //.   expression [opt] ;
@@ -695,7 +695,7 @@ private:
   //.   if ( condition ) statement
   //.   if ( condition ) statement else statement
   //.   switch ( condition ) statement
-  PTree::Node *selection_statement();
+  PTree::List *selection_statement();
 
   //. iteration-statement:
   //.   while ( condition ) statement
@@ -706,7 +706,7 @@ private:
   //. for-init-statement:
   //.   expression-statement
   //.   simple-declaration
-  PTree::Node *iteration_statement();
+  PTree::List *iteration_statement();
 
   //. declaration-statement:
   //.   block-declaration
@@ -721,7 +721,7 @@ private:
   //.   jump-statement
   //.   declaration-statement
   //.   try-block
-  PTree::Node *statement();
+  PTree::List *statement();
 
   //. try-block:
   //.   try compound-statement handler-seq
@@ -737,7 +737,7 @@ private:
   //.   type-specifier-seq abstract-declarator
   //.   type-specifier-seq
   //.   ...
-  PTree::Node *try_block();
+  PTree::List *try_block();
   
   //. exception-specification:
   //.   throw ( type-id-list [opt] )

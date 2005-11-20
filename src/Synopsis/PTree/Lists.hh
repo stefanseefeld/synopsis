@@ -168,6 +168,7 @@ class ElaboratedTypeSpec : public List
 {
 public:
   ElaboratedTypeSpec(Keyword *type, Node *id) : List(type, cons(id)) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   Keyword *type() const { return static_cast<Keyword *>(nth<0>(this));}
   Node *name() const { return nth<1>(this);}

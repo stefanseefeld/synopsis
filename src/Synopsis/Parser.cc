@@ -3729,7 +3729,7 @@ PT::Node *Parser::condition()
 //   identifier : statement
 //   case constant-expression : statement
 //   default : statement
-PT::Node *Parser::labeled_statement()
+PT::List *Parser::labeled_statement()
 {
   Trace trace("Parser::labeled_statement", Trace::PARSING);
   Token kwd = my_lexer.get_token();
@@ -3758,7 +3758,7 @@ PT::Node *Parser::labeled_statement()
       PT::Node *stmt = statement();
       if (!require(stmt, "statement")) return 0;
 
-      stmt = new PT::DefaultStatement(new PT::Kwd::Default(kwd),
+      return new PT::DefaultStatement(new PT::Kwd::Default(kwd),
 				      PT::list(new PT::Atom(colon), stmt));
     }
     case Token::Identifier:
@@ -3827,7 +3827,7 @@ PT::Block *Parser::compound_statement(bool create_scope)
 //   if ( condition ) statement
 //   if ( condition ) statement else statement
 //   switch ( condition ) statement
-PT::Node *Parser::selection_statement()
+PT::List *Parser::selection_statement()
 {
   Trace trace("Parser::selection_statement", Trace::PARSING);
 
@@ -3840,7 +3840,7 @@ PT::Node *Parser::selection_statement()
   if (!require(cond, "condition")) return 0;
   if (!require(')')) return 0;
   Token cp = my_lexer.get_token();
-  PT::Node *stmt = statement();
+  PT::List *stmt = statement();
   if (!require(stmt, "statement")) return 0;
 
   if (kwd.type == Token::SWITCH)
@@ -3849,11 +3849,11 @@ PT::Node *Parser::selection_statement()
 					    new PT::Atom(cp), stmt));
   else
   {
-    PT::List *stmt = new PT::IfStatement(new PT::Kwd::If(kwd),
-					 PT::list(new PT::Atom(op),
-						  cond,
-						  new PT::Atom(cp),
-						  stmt));
+    stmt = new PT::IfStatement(new PT::Kwd::If(kwd),
+			       PT::list(new PT::Atom(op),
+					cond,
+					new PT::Atom(cp),
+					stmt));
     if(my_lexer.look_ahead() == Token::ELSE)
     {
       Token else_ = my_lexer.get_token();
@@ -3874,7 +3874,7 @@ PT::Node *Parser::selection_statement()
 // for-init-statement:
 //   expression-statement
 //   simple-declaration
-PT::Node *Parser::iteration_statement()
+PT::List *Parser::iteration_statement()
 {
   Trace trace("Parser::iteration_statement", Trace::PARSING);
   switch (my_lexer.look_ahead())
@@ -3977,12 +3977,12 @@ PT::Declaration *Parser::declaration_statement()
 //   jump-statement
 //   declaration-statement
 //   try-block
-PT::Node *Parser::statement()
+PT::List *Parser::statement()
 {
   Trace trace("Parser::statement", Trace::PARSING);
 
   PT::Node *comments = wrap_comments(my_lexer.get_comments());
-  PT::Node *stmt = 0;
+  PT::List *stmt = 0;
   switch(my_lexer.look_ahead())
   {
     case '{':
@@ -4089,7 +4089,7 @@ PT::Node *Parser::statement()
 //   type-specifier-seq abstract-declarator
 //   type-specifier-seq
 //   ...
-PT::Node *Parser::try_block()
+PT::List *Parser::try_block()
 {
   Trace trace("Parser::try_block", Trace::PARSING);
 
