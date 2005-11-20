@@ -75,7 +75,7 @@ SymbolSet Scope::find(Encoding const &name, LookupContext context) const throw()
 	symbols.insert(l->second);
     }
   // [basic.lookup.elab]
-  else if (context & ELABORATE)
+  else if (context & ELABORATED)
     for (; l != u; ++l)
     {
       if ((dynamic_cast<ClassName const *>(l->second)) ||

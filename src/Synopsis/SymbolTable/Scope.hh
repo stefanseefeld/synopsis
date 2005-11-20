@@ -74,7 +74,7 @@ public:
   static LookupContext const DEFAULT = 0x0;
   static LookupContext const SCOPE = 0x1; // lookup a scope, see [basic.lookup.qual]
   static LookupContext const USING = 0x2; // lookup in the context of a using directive
-  static LookupContext const ELABORATE = 0x4; // elaborate name lookup
+  static LookupContext const ELABORATED = 0x4; // elaborated name lookup
   static LookupContext const DECLARATION = 0x8; // see 3.4.3.2/6 [namespace.qual]
 
   Scope() : my_refcount(1) {}

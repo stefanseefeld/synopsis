@@ -136,6 +136,7 @@ public:
   virtual void visit(ClassSpec *);
   //. [ enum [name] [{ [name [= value] ]* }] ]
   virtual void visit(EnumSpec *);
+  virtual void visit(ElaboratedTypeSpec *);
   //. [typename]
   //. [typename identifier]
   //. [typename identifier = type-id]

@@ -90,7 +90,7 @@ private:
   virtual void visit(PT::Identifier *node)
   {
     PT::Encoding name(node);
-    ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::ELABORATE);
+    ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::ELABORATED);
     if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
     else
     {
@@ -103,7 +103,7 @@ private:
   {
     PT::Encoding name = node->encoded_name();
     // FIXME: This will fail if the name is a template or a dependent name.
-    ST::SymbolSet symbols = ::lookup(name, my_scope, ST::Scope::ELABORATE);
+    ST::SymbolSet symbols = ::lookup(name, my_scope, ST::Scope::ELABORATED);
     if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
     else
     {
@@ -146,6 +146,28 @@ private:
 
   size_t &my_params;
   size_t &my_default_args;
+};
+
+//. ETScopeFinder finds the smallest enclosing scope which a class-name
+//. from an elaborated-type-specifier should be declared in.
+//. See [basic.scope.pdecl]/5
+class ETScopeFinder : private ST::ScopeVisitor
+{
+public:
+  ETScopeFinder() : scope_(0) {}
+  ST::Scope *find(ST::Scope *s)
+  {
+    s->accept(this);
+    return scope_;
+  }
+private:
+  virtual void visit(ST::LocalScope *s) { scope_ = s;}
+  virtual void visit(ST::PrototypeScope *s) { s->outer_scope()->accept(this);}
+  virtual void visit(ST::FunctionScope *s) { scope_ = s;}
+  virtual void visit(ST::Class *s) { s->outer_scope()->accept(this);}
+  virtual void visit(ST::Namespace *s) { scope_ = s;}
+
+  ST::Scope *scope_;
 };
 
 }
@@ -452,6 +474,51 @@ void SymbolFactory::declare(PT::ClassSpec const *spec)
   TA::TypeRepository::instance()->declare(name, symbol);
 }
 
+void SymbolFactory::declare(PTree::ElaboratedTypeSpec const *spec)
+{
+  Trace trace("SymbolFactory::declare(ElaboratedTypeSpec *)", Trace::SYMBOLLOOKUP);
+  if (my_language == NONE) return;
+
+  // [basic.scope.pdecl]/5
+  // The point of declaration of a class first declared in an 
+  // elaborated-type-specifier is as follows:
+  //
+  //   - for an elaborated-type-specifier of the form
+  //       class-key identifier ;
+  //     the elaborated-type-specifier declares the identifier to be a
+  //     class-name in the scope that contains the declaration, otherwise
+  //
+  //   - for an elaborated-type-specifier of the form
+  //       class-key identifier
+  //     if the elaborated-type-specifier is used in the decl-specifier-seq or
+  //     parameter-declaration-clause of a function defined in namespace scope,
+  //     the identifier is declared as a class-name in the namespace that contains
+  //     the declaration; otherwise, except as a friend declaration, the identifier
+  //     is declared in the smallest non-class, non-function-prototype scope that
+  //     contains the declaration.
+  
+  // The first case above is handled as a declaration. The second case is
+  // handled here.
+  
+  // Check for class-key. Enums aren't declared this way.
+  std::string key = PT::string(spec->type());
+  if (key == "enum") return;
+  // Now find the scope into which to inject the declaration.
+  ETScopeFinder finder;
+  ST::Scope *scope = finder.find(my_scopes.top());
+  PT::Encoding name = spec->name()->encoded_name();
+  if (!name.is_qualified())
+  {
+    ST::SymbolSet symbols = scope->find(name, ST::Scope::ELABORATED);
+    if (!symbols.size())
+    {
+      ST::ClassName *symbol = new ST::ClassName(name, spec, false, scope);
+      scope->declare(name, symbol);
+      TA::TypeRepository::instance()->declare(name, symbol);
+    }
+  }
+}
+
 void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
 {
   Trace trace("SymbolFactory::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
@@ -607,9 +674,32 @@ ST::SymbolSet SymbolFactory::lookup_template_parameter(PT::Encoding const &name)
 void SymbolFactory::visit(PT::Declaration *decl)
 {
   Trace trace("SymbolFactory::visit(Declaration)", Trace::SYMBOLLOOKUP);
-  PT::Node const *decls = PT::nth<1>(decl);
-  if (!decls || decls->is_atom()) return; // it is a ';'
+  ST::Scope *scope = my_scopes.top();
 
+  PT::Node const *decls = PT::nth<1>(decl);
+  if (!decls || decls->is_atom()) // it is a ';'
+  {
+    PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(decl));
+    if (length(spec) == 1)
+    {
+      PT::ElaboratedTypeSpec *etspec = 
+	dynamic_cast<PT::ElaboratedTypeSpec *>(PT::nth<0>(spec));
+      if (etspec && PT::string(etspec->type()) != "enum")
+      {
+	PT::Encoding name = etspec->name()->encoded_name();
+	if (!name.is_qualified())
+	{
+	  ST::SymbolSet symbols = scope->find(name, ST::Scope::ELABORATED);
+	  if (!symbols.size())
+	  {
+	    ST::ClassName *symbol = new ST::ClassName(name, spec, false, scope);
+	    scope->declare(name, symbol);
+	    TA::TypeRepository::instance()->declare(name, symbol);
+	  }
+	}
+      }
+    }
+  }
   for (; decls; decls = decls->cdr())
   {
     PT::Declarator const *decl = dynamic_cast<PT::Declarator const *>(decls->car());
@@ -618,7 +708,6 @@ void SymbolFactory::visit(PT::Declaration *decl)
     PT::Encoding name = decl->encoded_name();
     PT::Encoding const &type = decl->encoded_type();
     
-    ST::Scope *scope = my_scopes.top();
     if (name.is_qualified())
     {
       ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);

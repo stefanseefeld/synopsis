@@ -863,7 +863,7 @@ PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
 //   enum :: [opt] nested-name-specifier [opt] identifier
 //   typename :: [opt] nested-name-specifier identifier
 //   typename :: [opt] nested-name-specifier template [opt] template-id
-PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
+PT::ElaboratedTypeSpec *Parser::elaborated_type_specifier(PT::Encoding &encoding)
 {
   Trace trace("Parser::elaborated_type_specifier", Trace::PARSING);
   PT::Keyword *key;
@@ -908,8 +908,7 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
       PT::Node *template_id_ = template_id(encoding, true);
       if (!require(template_id_, "template-id")) return 0;
       name = PT::snoc(name, template_id_);
-      name = PT::cons(key, new PT::Name(name, encoding));
-      return name;
+      return new PT::ElaboratedTypeSpec(key, new PT::Name(name, encoding));
     }
     // Try a template-id and roll back if it fails.
     else
@@ -919,8 +918,7 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
       if (template_id_)
       {
 	name = PT::snoc(name, template_id_);
-	name = PT::cons(key, new PT::Name(name, encoding));
-	return name;
+	return new PT::ElaboratedTypeSpec(key, new PT::Name(name, encoding));
       }
       else tentative.rollback();
     }
@@ -930,8 +928,7 @@ PT::List *Parser::elaborated_type_specifier(PT::Encoding &encoding)
   // TODO: look up id in the proper scope and make sure it has the appropriate
   //       type (class, enum, or class template), depending on the current context.
   name = PT::snoc(name, id);
-  name = PT::cons(key, new PT::Name(name, encoding));
-  return name;
+  return new PT::ElaboratedTypeSpec(key, new PT::Name(name, encoding));
 }
 
 // function-specifier:
@@ -1424,7 +1421,7 @@ PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool allow_user_defined
       }
       else
       {
-	PT::Node *spec = elaborated_type_specifier(encoding);
+	PT::ElaboratedTypeSpec *spec = elaborated_type_specifier(encoding);
 	if (spec) my_declares_class_or_enum = true;
 	return spec;
       }
@@ -1441,7 +1438,14 @@ PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool allow_user_defined
       }
       tentative.rollback();
       spec = elaborated_type_specifier(encoding);
-      if (spec) my_declares_class_or_enum = true;
+      if (spec)
+      {
+	my_declares_class_or_enum = true;
+	// If the next token is a ';' we deal with the elaborated-type-specifier
+	// as part of the declaration.
+	if (my_lexer.look_ahead() != ';')
+	  declare(static_cast<PT::ElaboratedTypeSpec *>(spec));
+      }
       return spec;
     }
     case Token::TYPENAME:
@@ -3786,8 +3790,7 @@ PT::ExprStatement *Parser::expression_statement()
   else
   {
     PT::Node *expr = expression();
-    if (!require(expr, "expression") ||
-	!require(';')) return 0;
+    if (!require(expr, "expression") || !require(';')) return 0;
     return new PT::ExprStatement(expr, PT::list(new PT::Atom(my_lexer.get_token())));
   }
 }
