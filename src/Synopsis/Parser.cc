@@ -170,18 +170,21 @@ struct Parser::Tentative
   Tentative(Parser &p)
     : my_parser(p), my_lexer(p.my_lexer),
       my_was_tentative(p.my_is_tentative),
+      my_qualifying_scope(p.my_qualifying_scope),
       my_token_mark(my_lexer.save()),
-      my_encoding(0),
-      my_encoding_size(0)
+      my_encoding(my_saved_encoding),
+      my_restore_encoding(false)
   {
     p.my_is_tentative = true;
   } 
   Tentative(Parser &p, PT::Encoding &e)
     : my_parser(p), my_lexer(p.my_lexer),
       my_was_tentative(p.my_is_tentative),
+      my_qualifying_scope(p.my_qualifying_scope),
       my_token_mark(my_lexer.save()),
-      my_encoding(&e),
-      my_encoding_size(e.size())
+      my_saved_encoding(e),
+      my_encoding(e),
+      my_restore_encoding(true)
   {
     Trace trace("Tentative::Tentative", Trace::PARSING);
     p.my_is_tentative = true;
@@ -200,17 +203,21 @@ struct Parser::Tentative
     {
       //. Only reset the is_tentative flag it we didn't commit meanwhile.
       //. (That could have happened from within another Tentative on the stack.)
-      my_lexer.restore(my_token_mark);
       my_parser.my_is_tentative = my_was_tentative;
-      if (my_encoding) my_encoding->resize(my_encoding_size);
+      my_parser.my_qualifying_scope = my_qualifying_scope;
+      my_lexer.restore(my_token_mark);
+      if (my_restore_encoding)
+	my_encoding = my_saved_encoding;
     }
   }
   Parser       & my_parser;
   Lexer        & my_lexer;
   bool           my_was_tentative;
+  ST::Scope    * my_qualifying_scope;
   char const   * my_token_mark;
-  PT::Encoding * my_encoding;
-  size_t         my_encoding_size;
+  PT::Encoding   my_saved_encoding;
+  PT::Encoding & my_encoding;
+  bool           my_restore_encoding;
 };
 
 struct Parser::ScopeGuard
@@ -245,38 +252,11 @@ struct Parser::ScopeGuard
   bool     scope_was_valid;
 };
 
-Parser::StateGuard::StateGuard(Parser &p)
-  : my_lexer(p.my_lexer),
-    my_token_mark(my_lexer.save()),
-    my_errors(p.my_errors),
-    my_error_mark(my_errors.size()),
-    my_encoding(0),
-    my_encoding_size(0)
-{
-}
-
-Parser::StateGuard::StateGuard(Parser &p, PT::Encoding &e)
-  : my_lexer(p.my_lexer),
-    my_token_mark(my_lexer.save()),
-    my_errors(p.my_errors),
-    my_error_mark(my_errors.size()),
-    my_encoding(&e),
-    my_encoding_size(my_encoding->size())
-{
-}
-
-void Parser::StateGuard::rollback() 
-{
-  Trace trace("Parser::StateGuard::rollback", Trace::PARSING);
-  my_lexer.restore(my_token_mark);
-  my_errors.resize(my_error_mark);
-  if (my_encoding) my_encoding->resize(my_encoding_size);
-}
-
 Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_symbols(symbols),
+    my_qualifying_scope(0),
     my_is_tentative(false),
     my_scope_is_valid(true),
     my_comments(0),
@@ -285,6 +265,7 @@ Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
     my_in_functional_cast(false),
     my_accept_default_arg(true),
     my_in_declarator(false),
+    my_in_declaration_statement(false),
     my_in_constant_expression(false),
     my_declares_class_or_enum(false),
     my_defines_class_or_enum(false)
@@ -295,27 +276,10 @@ Parser::~Parser()
 {
 }
 
-// void Parser::attempt()
-// {
-//   Trace trace("Parser::attempt", Trace::PARSING);
-//   my_attempts.push(Attempt(my_lexer));
-// }
-
-// void Parser::commit() 
-// {
-//   Trace trace("Parser::commit", Trace::PARSING);
-//   /* TBD */
-// }
-
-// void Parser::rollback() 
-// {
-//   Trace trace("Parser::rollback", Trace::PARSING);
-//   /* TBD */
-// }
-
 bool Parser::error(std::string const &error)
 {
   Trace trace("Parser::error", Trace::PARSING);
+  trace << error;
   if (my_is_tentative) return true;
 
   Token t1, t2;
@@ -325,7 +289,7 @@ bool Parser::error(std::string const &error)
   std::string filename;
   unsigned long line = my_lexer.origin(t1.ptr, filename);
 
-  const char *end = t1.ptr;
+  char const *end = t1.ptr;
   if(t2.type != '\0') end = t2.ptr + t2.length;
   else if(t1.type != '\0') end = t1.ptr + t1.length;
   std::string msg;
@@ -333,7 +297,6 @@ bool Parser::error(std::string const &error)
     msg = "before " + std::string(t1.ptr, end - t1.ptr);
   else
     msg = error + " before " + std::string(t1.ptr, end - t1.ptr);
-  trace << msg;
   my_errors.push_back(new SyntaxError(msg, filename, line));
   return my_errors.size() < max_errors;
 }
@@ -435,17 +398,50 @@ inline bool Parser::declare(T *t)
   return my_errors.size() < max_errors;
 }
 
+bool Parser::lookup_class_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_class_name", Trace::PARSING);
+  ST::SymbolSet symbols;
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::ELABORATED);
+  else
+    symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::ELABORATED);
+  if (symbols.size() != 1) return false; // no such class-name
+
+  ST::ClassName const *class_name =
+    dynamic_cast<ST::ClassName const *>(*symbols.begin());
+  if (!class_name) return false;         // name does not refer to a class-name
+
+  ST::Scope *scope = class_name->scope()->find_scope(class_name->ptree());
+  my_qualifying_scope = scope;           // this may be 0, if the class_name was forward-declared.
+
+  return true;
+}
+
+bool Parser::lookup_namespace_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_namespace_name", Trace::PARSING);
+  ST::SymbolSet symbols;
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::DEFAULT);
+  else
+    symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::DEFAULT);
+  if (symbols.size() != 1) return false; // no such namespace-name
+
+  ST::NamespaceName const *namespace_name =
+    dynamic_cast<ST::NamespaceName const *>(*symbols.begin());
+  if (!namespace_name) return false;     // name does not refer to a namespace-name
+
+  ST::Scope *scope = namespace_name->scope()->find_scope(namespace_name->ptree());
+  my_qualifying_scope = scope;
+
+  return true;
+}
+
 unsigned long Parser::origin(const char *ptr,
 			     std::string &filename) const
 {
   return my_lexer.origin(ptr, filename);
-}
-
-void Parser::show_message_head(const char *pos)
-{
-  std::string filename;
-  unsigned long line = origin(pos, filename);
-  std::cerr << filename << ':' << line << ": ";
 }
 
 PT::Node *Parser::parse()
@@ -498,12 +494,11 @@ PT::Identifier *Parser::identifier(PT::Encoding &encoding)
 PT::Identifier *Parser::namespace_name(PT::Encoding &encoding)
 {
   Trace trace("Parser::namespace_name", Trace::PARSING);
-  PT::Identifier *id = identifier(encoding);
-  if (!id) return 0;
-  ST::NamespaceName const *namespace_ = lookup_namespace(encoding,
-							 my_symbols.current_scope());
-  if (namespace_) return id;
-  return 0;
+  PT::Encoding name;
+  PT::Identifier *id = identifier(name);
+  if (!id || !lookup_namespace_name(name)) return 0;
+  encoding.simple_name(id);
+  return id;
 }
 
 // class-name:
@@ -513,16 +508,13 @@ PT::Node *Parser::class_name(PT::Encoding &encoding,
 			     bool is_typename, bool is_template)
 {
   Trace trace("Parser::class_name", Trace::PARSING);
-  if (my_lexer.look_ahead() != Token::Identifier)
-  {
-    error ("expecting identifier");
-    return 0;
-  }
+  if (!require(Token::Identifier, "identifier")) return 0;
   else if (my_lexer.look_ahead(1) == '<')
     return template_id(encoding, is_template);
   else
   {
-    PT::Identifier *id = identifier(encoding);
+    PT::Encoding name;
+    PT::Identifier *id = identifier(name);
     // Only look up if we haven't seen a 'typename' token before.
     if (!is_typename)
     {
@@ -531,11 +523,19 @@ PT::Node *Parser::class_name(PT::Encoding &encoding,
       // TODO: The needs to be redesigned.
       if (my_in_template_decl)
       {
-	ST::SymbolSet symbols = my_symbols.lookup_template_parameter(encoding);
-	if (symbols.size()) return id;
+	ST::SymbolSet symbols = my_symbols.lookup_template_parameter(name);
+	if (symbols.size())
+	{
+	  encoding.simple_name(id);
+	  return id;
+	}
       }
-      ST::ClassName const *class_ = lookup_class(encoding, my_symbols.current_scope());
-      if (!class_) return 0;
+      if (lookup_class_name(name))
+      {
+	encoding.simple_name(id);
+	return id;
+      }
+      else return 0;
     }
     return id;
   }
@@ -573,14 +573,20 @@ PT::List *Parser::nested_name_specifier(PT::Encoding &encoding,
 
   // If the next token is not an identifier or the following
   // neither '::' nor '<' this is not a nested-name-specifier.
-  if (my_lexer.look_ahead() != Token::Identifier ||
-      (my_lexer.look_ahead(1) != Token::Scope && my_lexer.look_ahead(1) != '<'))
-      return 0;
+  if (my_lexer.look_ahead() != Token::Identifier) return 0;
+
+  // If the second-next token is a scope, this definitely is a 
+  // nested-name-specifier.
+  if (my_lexer.look_ahead(1) == Token::Scope);// commit();
+
+  else if (my_lexer.look_ahead(1) != '<') return 0;
 
   PT::Node *name = class_or_namespace_name(encoding, false, is_template);
 
   PT::List *qname = 0;
-  if (!name) return 0;
+  // if we found a class-name, but the class was forward-declared only,
+  // my_qualifying_scope will be reset to 0.
+  if (!name || !my_qualifying_scope) return 0;
   else qname = PT::list(name);
   if (!require(Token::Scope, "::")) return 0;
 
@@ -600,7 +606,7 @@ PT::List *Parser::nested_name_specifier(PT::Encoding &encoding,
     Tentative tentative(*this, encoding);
     PT::List *rest = nested_name_specifier(encoding, false);
     if (!rest) tentative.rollback();
-    else qname = PT::snoc(qname, rest);
+    else qname = PT::conc(qname, rest);
     return qname;
   }
 }
@@ -658,11 +664,14 @@ PT::Node *Parser::unqualified_id(PT::Encoding &encoding,
 PT::Node *Parser::type_name(PT::Encoding &encoding)
 {
   Trace trace("Parser::type_name", Trace::PARSING);
-  Tentative tentative(*this);
+  trace << encoding;
+  Tentative tentative(*this, encoding);
   PT::Node *name = class_name(encoding, false, false);
   if (name) return name;
   tentative.rollback();
+  trace << encoding;
   PT::Identifier *id = identifier(encoding);
+  trace << encoding;
   if (!id) return 0;
 
   ST::SymbolSet symbols;
@@ -754,14 +763,16 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
     }
     case Token::Scope:
       scope = new PT::Atom(my_lexer.get_token());
+      my_qualifying_scope = my_symbols.current_scope()->global_scope();
       break;
     default:
+      my_qualifying_scope = 0;
       break;
   }
 
   // It must be a user-defined type.
   if (!allow_user_defined) return 0;
-  Tentative tentative(*this);
+  Tentative tentative(*this, encoding);
   PT::List *qname = nested_name_specifier(encoding);
   if (qname && my_lexer.look_ahead() == Token::TEMPLATE)
   {
@@ -769,15 +780,15 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
     qname = PT::snoc(qname, new PT::Kwd::Template(my_lexer.get_token()));
     PT::Node *id = template_id(encoding, true);
     if (!require(id, "template-id")) return 0;
-    else return PT::snoc(qname, id);
+    else return new PT::Name(PT::snoc(qname, id), encoding);
   }
-  tentative.rollback();
+  else if (!qname) tentative.rollback();
   
   PT::Node *type_name_ = type_name(encoding);
   if (!require(type_name_, "type-name")) return 0;
   qname = PT::snoc(qname, type_name_);
   if (scope) qname = PT::cons(scope, qname);
-  return qname;
+  return new PT::Name(qname, encoding);
 }
 
 // enum-specifier:
@@ -1218,10 +1229,13 @@ PT::Node *Parser::opt_member_specification()
 		  starts_function_definition(my_lexer.look_ahead()))
 	      {
 		// function-definition
-		PT::Declaration *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
-		PT::Block *body = compound_statement();
-		if (!require(body, "compound-statement")) return 0;
-		func = PT::snoc(func, body);
+		PT::FunctionDefinition *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
+		{
+		  ScopeGuard scope_guard(*this, func);
+		  PT::Block *body = compound_statement();
+		  if (!require(body, "compound-statement")) return 0;
+		  func = PT::snoc(func, body);
+		}
 		declare(func);
 		members = PT::snoc(members, func);
 		break;
@@ -1602,41 +1616,38 @@ PT::Node *Parser::declarator_id(PT::Encoding &encoding)
 PT::List *Parser::ptr_operator(PT::Encoding &type)
 {
   Trace trace("Parser::ptr_operator", Trace::PARSING);
+  PT::List *scope = 0;
   size_t length = 0; // FIXME: this isn't really needed
-  PT::List *node = 0;
   switch (my_lexer.look_ahead())
   {
     case '&':
       type.ptr_operator('&');
-      node = PT::cons(new PT::Atom(my_lexer.get_token()));
-      break;
+      return PT::cons(new PT::Atom(my_lexer.get_token()));
     case '*':
     {
       type.ptr_operator('*');
-      node = PT::cons(new PT::Atom(my_lexer.get_token()));
+      PT::List *node = PT::cons(new PT::Atom(my_lexer.get_token()));
       PT::List *cv_qualifier_seq = opt_cv_qualifier_seq(type);
       if (cv_qualifier_seq) node = PT::snoc(node, cv_qualifier_seq);
-      break;
+      return node;
     }
     case Token::Scope:
+      my_qualifying_scope = my_symbols.current_scope()->global_scope();
       length = 1;
       type.global_scope();
-      node = PT::cons(new PT::Atom(my_lexer.get_token()));
-      // Fall through.
+      scope = PT::cons(new PT::Atom(my_lexer.get_token()));
     default:
-    {
-      PT::Encoding encoding;
-      PT::List *name = nested_name_specifier(encoding, false);
-      if (!require(name, "nested-name-specifier") ||
-	  !require('*')) return 0;
-      type.ptr_to_member(encoding, length);
-      node = PT::snoc(node, name);
-      node = PT::snoc(node, new PT::Atom(my_lexer.get_token()));
-      PT::List *cv_qualifiers = opt_cv_qualifier_seq(type);
-      if (cv_qualifiers)
-	node = PT::conc(node, cv_qualifiers);
-    }
+      my_qualifying_scope = 0;
+      break;
   }
+  PT::Encoding encoding;
+  PT::List *name = nested_name_specifier(encoding, false);
+  if (!require(name, "nested-name-specifier") || !require('*')) return 0;
+  type.ptr_to_member(encoding, length);
+  PT::List *node = PT::snoc(scope, name);
+  node = PT::snoc(node, new PT::Atom(my_lexer.get_token()));
+  PT::List *cv_qualifiers = opt_cv_qualifier_seq(type);
+  if (cv_qualifiers) node = PT::conc(node, cv_qualifiers);
   return node;
 }
 
@@ -2028,8 +2039,7 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   // type conversions can the decl-specifier-seq be omitted.
   //
   // If this is not a functional cast, it is definitely a declaration.
-  if (decl_spec && my_lexer.look_ahead() != '(')
-    commit();
+  if (decl_spec && my_lexer.look_ahead() != '(') commit();
 
   // [dcl.dcl]
   //
@@ -2046,10 +2056,13 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
 	function_definition_allowed &&
 	starts_function_definition(my_lexer.look_ahead()))
     {
-      PT::Declaration *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
-      PT::Block *body = compound_statement();
-      if (!require(body, "compound-statement")) return 0;
-      func = PT::snoc(func, body);
+      PT::FunctionDefinition *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
+      {
+	ScopeGuard scope_guard(*this, func);
+	PT::Block *body = compound_statement();
+	if (!require(body, "compound-statement")) return 0;
+	func = PT::snoc(func, body);
+      }
       declare(func);
       return func;
     }
@@ -2144,7 +2157,12 @@ PT::Declaration *Parser::block_declaration()
       else
 	return using_declaration();
     default:
-      return simple_declaration(/*function_declaration_allowed=*/true);
+      // C++ does not allow function definitions inside block declarations,
+      // while C does.
+      if (my_ruleset & CXX)
+	return simple_declaration(!my_in_declaration_statement);
+      else
+	return simple_declaration(true);
   }
 }
 
@@ -2284,7 +2302,9 @@ PT::NamespaceAlias *Parser::namespace_alias_definition()
   if (!require(alias, "identifier") || !require('=')) return 0;
   Token eq = my_lexer.get_token();
   PT::Node *scope = opt_scope();
-  Tentative tentative(*this);
+  if (scope) my_qualifying_scope = my_symbols.current_scope()->global_scope();
+  else my_qualifying_scope = 0;
+  Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding);
   if (!name) tentative.rollback();
   PT::Node *ns = namespace_name(encoding);
@@ -2316,19 +2336,16 @@ PT::UsingDirective *Parser::using_directive()
   PT::Encoding encoding;
   PT::List *name = 0;
   if (my_lexer.look_ahead() == Token::Scope)
-    name = PT::list(new PT::Atom(my_lexer.get_token()));
-
   {
-    Tentative tentative(*this);
+    name = PT::list(new PT::Atom(my_lexer.get_token()));
+    my_qualifying_scope = my_symbols.current_scope()->global_scope();
+  }
+  else my_qualifying_scope = 0;
+  {
+    Tentative tentative(*this, encoding);
     PT::Node *name_spec = nested_name_specifier(encoding);
-    if (name_spec)
-    {
-      name = PT::snoc(name, name_spec);
-    }
-    else
-    {
-      tentative.rollback();
-    }
+    if (name_spec) name = PT::snoc(name, name_spec);
+    else tentative.rollback();
   }
   PT::Node *ns = namespace_name(encoding);
   if (!require(ns, "namespace-name")) return 0;
@@ -2353,9 +2370,11 @@ PT::UsingDeclaration *Parser::using_declaration()
   if(my_lexer.look_ahead() == Token::TYPENAME)
     typename_ = new PT::Kwd::Typename(my_lexer.get_token());
   PT::Atom *scope = opt_scope();
+  if (scope) my_qualifying_scope = my_symbols.current_scope()->global_scope();
+  else my_qualifying_scope = 0;
   
   PT::Encoding encoding;
-  Tentative tentative(*this);
+  Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding);
   if (!name)
   {
@@ -2552,7 +2571,7 @@ PT::Declaration *Parser::explicit_specialization()
     if (type.is_function() && starts_function_definition(my_lexer.look_ahead()))
     {
       // function template
-      PT::Declaration *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
+      PT::FunctionDefinition *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
       ScopeGuard scope_guard(*this, func);
       PT::Block *body = compound_statement();
       if (!require(body, "compound-statement")) return 0;
@@ -3467,6 +3486,9 @@ PT::Node *Parser::postfix_expression()
     {
       PT::Kwd::Typename *typename_ = new PT::Kwd::Typename(my_lexer.get_token());
       PT::Atom *scope = opt_scope();
+      if (scope) my_qualifying_scope = my_symbols.current_scope()->global_scope();
+      else my_qualifying_scope = 0;
+
       PT::Encoding encoding;
       PT::List *qname = nested_name_specifier(encoding);
       if (!require(qname, "nested-name-specifier")) return 0;
@@ -3601,7 +3623,7 @@ PT::Node *Parser::primary_expression()
       return new PT::Kwd::This(my_lexer.get_token());
     case '(':
     {
-      PGuard<bool> tentative(*this, &Parser::my_gt_is_operator);
+      PGuard<bool> pguard(*this, &Parser::my_gt_is_operator);
       my_gt_is_operator = true;
       Token op = my_lexer.get_token();
       PT::Node *expr = expression();
@@ -3636,7 +3658,9 @@ PT::Node *Parser::id_expression(PT::Encoding &encoding)
   {
     encoding.global_scope();
     scope = new PT::Atom(my_lexer.get_token());
+    my_qualifying_scope = my_symbols.current_scope()->global_scope();
   }
+  else my_qualifying_scope = 0;
   Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding, false);
   if (name)
@@ -3965,6 +3989,8 @@ PT::List *Parser::iteration_statement()
 PT::Declaration *Parser::declaration_statement()
 {
   Trace trace("Parser::declaration_statement", Trace::PARSING);
+  PGuard<bool> pguard(*this, &Parser::my_in_declaration_statement);
+  my_in_declaration_statement = true;
   return block_declaration();
 }
 

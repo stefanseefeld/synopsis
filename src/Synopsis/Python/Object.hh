@@ -64,6 +64,7 @@ public:
   Object(char value) : my_impl(PyString_FromStringAndSize(&value, 1)) {}
   Object(double value) : my_impl(PyFloat_FromDouble(value)) {}
   Object(int value) : my_impl(PyInt_FromLong(value)) {}
+  Object(unsigned int value) : my_impl(PyInt_FromLong(value)) {}
   Object(long value) : my_impl(PyInt_FromLong(value)) {}
   Object(bool value) : my_impl(PyInt_FromLong(value)) {}
   virtual ~Object() { Py_DECREF(my_impl);}

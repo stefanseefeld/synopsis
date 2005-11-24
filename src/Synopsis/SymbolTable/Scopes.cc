@@ -78,7 +78,7 @@ FunctionScope::unqualified_lookup(PT::Encoding const &name,
 std::string FunctionScope::name() const
 {
   std::ostringstream oss;
-  oss << PT::reify(PT::nth<2>(my_decl));
+  oss << PT::reify(PT::nth<1>(my_decl));
   return oss.str();
 }
 
