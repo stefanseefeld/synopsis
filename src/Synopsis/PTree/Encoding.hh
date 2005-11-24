@@ -99,8 +99,6 @@ public:
 
   class name_iterator;
 
-  static void do_init_static();
-
   Encoding() {}
   Encoding(Code const &b) : my_buffer(b) {}
   Encoding(char const *b) : my_buffer(b, b + strlen(b)) {}
@@ -118,10 +116,6 @@ public:
   unsigned char front() const { return *begin();}
   unsigned char at(size_t i) const { return my_buffer.at(i);}
   unsigned char &at(size_t i) { return my_buffer.at(i);}
-  //. return a copy of the underlaying buffer
-  //. FIXME: this is a temporary workaround while there are
-  //. still places that use raw strings
-//   const char *copy() const;
 
   bool operator == (Encoding const &e) const { return my_buffer == e.my_buffer;}
   bool operator == (std::string const &s) const { return my_buffer == (const unsigned char *)s.c_str();}
@@ -181,15 +175,11 @@ public:
   
   std::string unmangled() const;
 
-  PTree::Node *make_name();
-  PTree::Node *make_qname();
-  PTree::Node *make_ptree(PTree::Node *);
   bool is_simple_name() const { return front() >= 0x80;}
   bool is_global_scope() const { return front() == 0x80 && size() == 1;}
   bool is_qualified() const { return front() == 'Q';}
   bool is_function() const;
   bool is_template_id() const { return front() == 'T';}
-//   PTree::Node *name_to_ptree();
 
   friend bool operator < (Encoding const &, Encoding const &);
   friend std::ostream &operator << (std::ostream &, Encoding const &);
@@ -202,19 +192,6 @@ private:
   static iterator end_name(iterator);
 
   Code my_buffer;
-
-public:
-  static PTree::Node *bool_t, *char_t, *wchar_t_t, *int_t, *short_t, *long_t,
-		 *float_t, *double_t, *void_t;
-
-  static PTree::Node *signed_t, *unsigned_t, *const_t, *volatile_t;
-
-  static PTree::Node *operator_name, *new_operator, *anew_operator,
-		 *delete_operator, *adelete_operator;
-
-  static PTree::Node *star, *ampersand, *comma, *dots, *scope, *tilder,
-		 *left_paren, *right_paren, *left_bracket, *right_bracket,
-		 *left_angle, *right_angle;
 };
 
 class Encoding::name_iterator

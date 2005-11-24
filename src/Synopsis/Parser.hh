@@ -54,28 +54,6 @@ private:
   struct ScopeGuard;
   friend struct ScopeGuard;
 
-  //. A StateGuard manages a tentative parse.
-  //. It remembers the parser's state and let's
-  //. users roll back in case a tentative parse was
-  //. unsuccessful.
-  class StateGuard
-  {
-  public:
-    StateGuard(Parser &);
-    StateGuard(Parser &, PTree::Encoding &);
-    void rollback();
-
-  private:
-    Lexer &                      my_lexer;
-    char const *                 my_token_mark;
-    ErrorList &                  my_errors;
-    Parser::ErrorList::size_type my_error_mark;
-    PTree::Encoding             *my_encoding;
-    size_t                       my_encoding_size;
-  };
-  friend class StateGuard;
-
-
   //. Issue an error message, associated with the current position
   //. in the buffer.
   bool error(std::string const & = "");
@@ -93,7 +71,8 @@ private:
 
   template <typename T>
   bool declare(T *);
-  void show_message_head(const char*);
+  bool lookup_class_name(PTree::Encoding const &);
+  bool lookup_namespace_name(PTree::Encoding const &);
 
   //. :: [opt]
   PTree::Atom *opt_scope();
@@ -746,6 +725,8 @@ private:
   Lexer &         my_lexer;
   int             my_ruleset;
   SymbolFactory & my_symbols;
+  //. used for name lookup in nested-name-specifiers
+  SymbolTable::Scope *my_qualifying_scope;
 
   //. Only record errors if we are not parsing
   //. tentatively.
@@ -765,6 +746,9 @@ private:
   bool            my_in_functional_cast;
   bool            my_accept_default_arg;
   bool            my_in_declarator;
+  //. True if we are inside a statement. In that case the number of things that
+  //. can be declared is restricted.
+  bool            my_in_declaration_statement;
   //. True if we are inside a constant-expression, i.e. should evaluate
   //. the associated value.
   bool            my_in_constant_expression;

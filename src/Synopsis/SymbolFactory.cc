@@ -275,9 +275,9 @@ void SymbolFactory::enter_scope(PT::FunctionDefinition const *decl)
   scope->remove_scope(my_prototype->declaration());
 
   // look at the declarator's encoded name
-  PT::Encoding name = PT::nth<2>(decl)->encoded_name();
+  PT::Encoding name = PT::nth<1>(decl)->encoded_name();
   if (name.is_qualified())
-    scope = lookup_scope_of_qname(name, PT::nth<2>(decl));
+    scope = lookup_scope_of_qname(name, PT::nth<1>(decl));
 
   // Transfer all symbols from the previously seen function declaration
   // into the newly created FunctionScope, and remove the PrototypeScope.
@@ -676,10 +676,12 @@ void SymbolFactory::visit(PT::Declaration *decl)
   Trace trace("SymbolFactory::visit(Declaration)", Trace::SYMBOLLOOKUP);
   ST::Scope *scope = my_scopes.top();
 
+  PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(decl));
   PT::Node const *decls = PT::nth<1>(decl);
+  // The implicit type declaration by means of elaborated type specs is dealt
+  // elsewhere.
   if (!decls || decls->is_atom()) // it is a ';'
   {
-    PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(decl));
     if (length(spec) == 1)
     {
       PT::ElaboratedTypeSpec *etspec = 
@@ -700,6 +702,9 @@ void SymbolFactory::visit(PT::Declaration *decl)
       }
     }
   }
+  // For special functions (constructor, destructor, type conversions) there
+  // may be no decl-specifier-seq.
+  bool defined = spec ? spec->storage_class() != PT::DeclSpec::EXTERN : true;
   for (; decls; decls = decls->cdr())
   {
     PT::Declarator const *decl = dynamic_cast<PT::Declarator const *>(decls->car());
@@ -742,12 +747,12 @@ void SymbolFactory::visit(PT::Declaration *decl)
       {
 	long value;
 	if (TA::evaluate_const(current_scope(), initializer->car(), value))
-	  symbol = new ST::ConstName(type, value, decl, true, scope);
+	  symbol = new ST::ConstName(type, value, decl, defined, scope);
 	else
-	  symbol = new ST::ConstName(type, decl, true, scope);
+	  symbol = new ST::ConstName(type, decl, defined, scope);
       }
       else
-	symbol = new ST::VariableName(type, decl, true, scope);
+	symbol = new ST::VariableName(type, decl, defined, scope);
     }
     scope->declare(name, symbol);
   }
@@ -756,7 +761,7 @@ void SymbolFactory::visit(PT::Declaration *decl)
 void SymbolFactory::visit(PT::FunctionDefinition *def)
 {
   Trace trace("SymbolFactory::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
-  PT::Node const *declarator = PT::nth<2>(def);
+  PT::Node const *declarator = PT::nth<1>(def);
   // declare it only once (but allow overloading)
 
   PT::Encoding name = declarator->encoded_name();

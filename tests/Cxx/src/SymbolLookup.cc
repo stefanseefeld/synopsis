@@ -28,10 +28,10 @@ public:
   void find(PT::Node *node) { node->accept(this);}
 private:
   using ST::Walker::visit;
-  virtual void visit(PT::Identifier *iden)
+  virtual void visit(PT::Identifier *id)
   {
     Trace trace("SymbolFinder::visit(Identifier)", Trace::SYMBOLLOOKUP);
-    PT::Encoding name = PT::Encoding::simple_name(iden);
+    PT::Encoding name(id);
     my_os << "Identifier : " << name.unmangled() << std::endl;
     lookup(name);
   }
@@ -49,7 +49,7 @@ private:
     // the type being aliased.
     my_os << "Type : " << "<not implemented yet>" << std::endl;
 //     lookup(name);
-    PT::third(typed)->accept(this);
+    PT::nth<2>(typed)->accept(this);
   }
 
   virtual void visit(PT::TemplateDecl *tdecl)
@@ -74,9 +74,9 @@ private:
   virtual void visit(PT::NamespaceSpec *node)
   {
     Trace trace("SymbolFinder::visit(NamespaceSpec)", Trace::SYMBOLLOOKUP);
-    PT::Node const *name = PT::second(node);
+    PT::Node const *name = PT::nth<1>(node);
     PT::Encoding ename;
-    if (name) ename.simple_name(name);
+    if (name) ename.simple_name(static_cast<PT::Atom const *>(name));
     else ename.append_with_length("<anonymous>");
     my_os << "Namespace : " << ename.unmangled() << std::endl;
     lookup(ename);
@@ -86,23 +86,15 @@ private:
   virtual void visit(PT::Declaration *node)
   {
     Trace trace("SymbolFinder::visit(Declaration)", Trace::SYMBOLLOOKUP);
-    PT::Node *type_spec = PT::second(node);
-    // FIXME: what about compound types ?
-    if (type_spec && type_spec->is_atom())
-    {
-      PT::Atom const *name = static_cast<PT::Atom *>(type_spec);
-      PT::Encoding type = PT::Encoding::simple_name(name);
-      my_os << "Type : " << type.unmangled() << std::endl;
-      lookup(type, ST::Scope::DEFAULT, true);
-      PT::third(node)->accept(this);
-    }
-    else
-      Walker::visit(node);
+    PT::Node *decl_spec = PT::nth<0>(node);
+    if (decl_spec) decl_spec->accept(this);
+    PT::Node *declarators = PT::nth<1>(node);
+    if (declarators) declarators->accept(this);
   }
 
   virtual void visit(PT::UsingDirective *udir)
   {
-    PT::Node *node = PT::third(udir);
+    PT::Node *node = PT::nth<2>(udir);
     PT::Encoding name = node->encoded_name();
     my_os << "Namespace : " << name.unmangled() << std::endl;
     lookup(name);
@@ -112,8 +104,8 @@ private:
   virtual void visit(PT::NamespaceAlias *alias)
   {
     {
-      PT::Node *node = PT::second(alias);
-      PT::Encoding name = PT::Encoding::simple_name(static_cast<PT::Atom *>(node));
+      PT::Node *node = PT::nth<1>(alias);
+      PT::Encoding name(static_cast<PT::Atom *>(node));
       my_os << "Namespace : " << name.unmangled() << std::endl;
       lookup(name);
     }
@@ -128,7 +120,7 @@ private:
   virtual void visit(PT::FunctionDefinition *node)
   {
     Trace trace("SymbolFinder::visit(FunctionDefinition)", Trace::SYMBOLLOOKUP);
-    PT::Node *decl = PT::third(node);
+    PT::Node *decl = PT::nth<1>(node);
     visit(static_cast<PT::Declarator *>(decl)); // visit the declarator
     try { traverse_body(node);}
     catch (ST::Undefined const &e) {} // just ignore
@@ -169,16 +161,24 @@ private:
     if (my_in_template_decl)
       lookup(name);
     else
-      lookup(name, ST::Scope::ELABORATE);
+      lookup(name, ST::Scope::ELABORATED);
     
-    for (PT::Node const *base_clause = node->base_clause();
+    for (PT::List const *base_clause = node->base_clause();
 	 base_clause;
-	 base_clause = PT::rest(PT::rest(base_clause)))
+	 base_clause = PT::tail(base_clause, 2))
     {
-      PT::Node const *parent = PT::last(PT::second(base_clause))->car();
+      PT::Node const *parent = PT::last(static_cast<PT::List *>(PT::nth<1>(base_clause)))->car();
       const_cast<PT::Node *>(parent)->accept(this);
     }
     traverse_body(node);
+  }
+
+  virtual void visit(PT::ElaboratedTypeSpec *node)
+  {
+    Trace trace("SymbolFinder::visit(ElaboratedTypeSpec)", Trace::SYMBOLLOOKUP);
+    PT::Encoding name = node->name()->encoded_name();
+    my_os << "ElaboratedTypeSpec : " << name.unmangled() << std::endl;
+    lookup(name, ST::Scope::ELABORATED);
   }
 
   virtual void visit(PT::FuncallExpr *node)
@@ -186,7 +186,7 @@ private:
     Trace trace("SymbolFinder::visit(FuncallExpr)", Trace::SYMBOLLOOKUP);
     PT::Node *function = node->car();
     PT::Encoding name;
-    if (function->is_atom()) name.simple_name(function);
+    if (function->is_atom()) name.simple_name(static_cast<PT::Atom *>(function));
     else name = function->encoded_name(); // function is a 'PT::Name'
     my_os << "Function : " << name.unmangled() << std::endl;
     lookup(name);
