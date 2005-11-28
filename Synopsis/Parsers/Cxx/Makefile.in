@@ -48,7 +48,7 @@ clean:
 	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s/$*\\.o[ :]*/$*\\.d $*\\.o : /g" > $@'
 
 Makefile: $(srcdir)/Makefile.in
-	(cd .. && ./config.status --file Cxx/Makefile)
+	./config.status --file Makefile
 
 ifeq (,$(filter $(MAKECMDGOALS), clean))
 -include $(DEP)

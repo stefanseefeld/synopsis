@@ -42,7 +42,7 @@ private:
   virtual void visit(PTree::Typedef *typed);
   virtual void visit(PTree::TemplateDecl *templ);
 
-  void translate_parameters(PTree::Node *,
+  void translate_parameters(PTree::List *,
 			    AST::TypeList, AST::Function::Parameters &);
 
   void add_comments(AST::Declaration, PTree::Node *);
