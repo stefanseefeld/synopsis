@@ -61,18 +61,8 @@ class build_syn_ext(build_ext):
 
     def build_extension(self, ext, copy=True):
 
-        if ext[0] == 'Synopsis/Parsers/Cpp/wave':
-            return # exclude that from the automatic build for now
-
         self.announce("building '%s' in %s"%(ext[1], ext[0]))
 
-        # FIXME: this ugly hack is needed since the ucpp module
-        # should be installed in the Cpp package, not Cpp.ucpp
-        if ext[1][:4] in ['ucpp', 'wave']:
-            target = os.path.dirname(ext[0])
-        else:
-            target = ext[0]
-            
         if os.name == 'nt': 
             # same as in config.py here: even on 'nt' we have to
             # use posix paths because we run in a cygwin shell at this point
@@ -90,8 +80,8 @@ class build_syn_ext(build_ext):
         #The extension may not be compiled. For now just skip it.
         if copy and os.path.isfile(os.path.join(temp_target, ext[1])):
             
-            if self.inplace: build_path = target
-            else: build_path = os.path.join(self.build_lib, target)            
+            if self.inplace: build_path = ext[0]
+            else: build_path = os.path.join(self.build_lib, ext[0])            
             mkpath (build_path, 0777, self.verbose, self.dry_run)
             copy_file(os.path.join(path, ext[1]),
                       os.path.join(build_path, ext[1]),

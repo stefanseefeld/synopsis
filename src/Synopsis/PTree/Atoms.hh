@@ -52,7 +52,7 @@ public:
 class Identifier : public CommentedAtom
 {
 public:
-  Identifier(Token const &t) : CommentedAtom(t) {}
+  Identifier(Token const &t, Node *c = 0) : CommentedAtom(t, c) {}
   Identifier(char const *p, size_t l) : CommentedAtom(p, l) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };

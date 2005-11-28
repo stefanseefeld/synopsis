@@ -798,7 +798,7 @@ PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
 //   enumerator-definition
 //   enumerator-list , enumerator-definition
 //
-// enumeratpr-definition:
+// enumerator-definition:
 //   enumerator
 //   enumerator = constant-expression
 //
@@ -835,14 +835,14 @@ PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
     PT::Node *comments = wrap_comments(my_lexer.get_comments());
     if(my_lexer.look_ahead() != '=')
     {
-      name = new PT::CommentedAtom(token, comments);
+      name = new PT::Identifier(token, comments);
     }
     else
     {
       Token token2 = my_lexer.get_token();
       PT::Node *expression = constant_expression();
       if (!require(expression, "constant-expression")) return 0;
-      name = PT::list(new PT::CommentedAtom(token, comments),
+      name = PT::list(new PT::Identifier(token, comments),
 		      new PT::Atom(token2),
 		      expression);
     }
