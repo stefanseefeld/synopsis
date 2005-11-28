@@ -49,10 +49,9 @@ py_packages = ["Synopsis",
                "Synopsis.Formatters.HTML.Comments",
                "Synopsis.Formatters.HTML.Fragments"]
 
-ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
+ext_modules = [('Synopsis/Parsers/Cpp', 'ParserImpl' + module_ext),
                ('Synopsis/Parsers/C', 'ParserImpl' + module_ext),
-               ('Synopsis/Parsers/Cxx', 'occ' + module_ext),
-               ('Synopsis/Parsers/Cxx', 'link' + module_ext)]
+               ('Synopsis/Parsers/Cxx', 'ParserImpl' + module_ext)]
 
 scripts = ['synopsis']
 
