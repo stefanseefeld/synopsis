@@ -18,6 +18,18 @@ AC_ARG_WITH(python,
   PYTHON="python"
 )
 
+AC_ARG_WITH(boost-prefix,
+  [  --with-boost-prefix=PATH      specify the boost installation prefix],
+  BOOST_PREFIX="$with_boost_prefix",
+  BOOST_PREFIX="/usr"
+)
+
+AC_ARG_WITH(boost-version,
+  [  --with-boost-version=VERSION      specify the boost version],
+  BOOST_VERSION="$with_boost_version",
+  BOOST_VERSION="1.33"
+)
+
 AC_ARG_WITH(syn-cxx,
   [  --with-syn-cxx=PATH     specify the Synopsis C++ library prefix],
   SYN_CXX="$with_syn_cxx",
@@ -67,20 +79,38 @@ dnl of the list.
       PYTHON_INCLUDE=`cygpath -a $PYTHON_INCLUDE`
       PYTHON_DEP_LIBS=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_config_var('LIBS') or ''"`
     fi
+    LDSHARED="$CXX -shared"
     CXXFLAGS="-D_REENTRANT $CXXFLAGS"
     LIBS="$LIBS $PYTHON_LIBS $PYTHON_DEP_LIBS -lpthread"
     ;;
+Darwin)
+    LDSHARED="$CXX -dynamiclib"
+    CXXFLAGS="$CXXFLAGS -fPIC"
+    ;;
 *)
+    LDSHARED="$CXX -shared"
     CXXFLAGS="-pthread $CXXFLAGS -fPIC"
-    LDFLAGS="-pthread $LDFLAGS"
     ;;
 esac
 
 AC_SUBST(LIBEXT)
+AC_SUBST(LDSHARED)
 
-topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../../..')"`
-AC_SUBST(topdir)
+AC_LANG(C++)
+if test -n "$with_boost_prefix"; then
+  BOOST_CPPFLAGS="-I$with_boost_prefix/include"
+  BOOST_LDFLAGS="-L$with_boost_prefix/lib"
+fi
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+AC_CHECK_HEADER([boost/wave.hpp], [], [AC_MSG_ERROR([boost.wave could not be found])])
+CPPFLAGS="$save_CPPFLAGS"
+dnl save_LIBS=$LIBS
+dnl LIBS="$LIBS $BOOST_LDFLAGS -lboost_wave"
+dnl AC_CHECK_LIB(boost_wave, boost::wave::wave_init)
+AC_SUBST(BOOST_CPPFLAGS)
+AC_SUBST(BOOST_LDFLAGS)
 
-AC_CONFIG_FILES([Makefile synopsis.py])
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
