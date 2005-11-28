@@ -22,17 +22,17 @@ ASTTranslator::TemplateParameterTranslator::TemplateParameterTranslator(ASTTrans
 
 Python::List ASTTranslator::TemplateParameterTranslator::translate(PT::TemplateDecl *templ)
 {
-  for (PT::Node *params = PT::third(templ);
+  for (PT::List *params = static_cast<PT::List *>(PT::nth<2>(templ));
        params;
-       params = PT::rest(PT::rest(params)))
+       params = PT::tail(params, 2))
     params->car()->accept(this);      
   return my_parameters;
 }
 
 void ASTTranslator::TemplateParameterTranslator::visit(PT::TypeParameter *param)
 {
-  PT::Node *typename_ = PT::first(param);
-  PT::Node *name = PT::second(param);
+  PT::Node *typename_ = PT::nth<0>(param);
+  PT::Node *name = PT::nth<1>(param);
   AST::ScopedName qname(std::string(name->position(), name->length()));
   AST::Type type = my_parent.my_types.create_dependent(qname);
   AST::Modifiers pre(std::string(typename_->position(), typename_->length()));
@@ -47,7 +47,7 @@ void ASTTranslator::TemplateParameterTranslator::visit(PT::TypeParameter *param)
 
 void ASTTranslator::TemplateParameterTranslator::visit(PT::ParameterDeclaration *param)
 {
-  PT::Encoding const &name = PT::third(param)->encoded_name();
+  PT::Encoding const &name = PT::nth<2>(param)->encoded_name();
   AST::Modifiers pre;
   // FIXME: AST.Parameter wants a type, even though this is a non-type.
   //        Is AST.Parameter really what we want here ?
@@ -109,7 +109,7 @@ void ASTTranslator::visit(PT::NamespaceSpec *spec)
   bool visible = update_position(spec);
   if (!visible) return;
 
-  PTree::Node *identifier = PTree::second(spec);
+  PTree::Node *identifier = PTree::nth<1>(spec);
   std::string name;
   if (identifier) name = std::string(identifier->position(), identifier->length());
   else // anonymous namespace
@@ -134,7 +134,7 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 {
   Trace trace("ASTTranslator::visit(PT::Declarator *)", Trace::TRANSLATION);
   trace << declarator;
-  if (!PT::first(declarator)) return; // empty
+  if (!PT::nth<0>(declarator)) return; // empty
 
   bool visible = update_position(declarator);
   PT::Encoding name = declarator->encoded_name();
@@ -149,9 +149,10 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     AST::TypeList parameter_types;
     AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
     AST::Function::Parameters parameters;
-    PT::Node *p = PT::rest(declarator);
-    while (p && p->car() && *p->car() != '(') p = PT::rest(p);
-    translate_parameters(PT::second(p), parameter_types, parameters);
+    PT::List *p = PT::tail(declarator, 0);
+    while (p && p->car() && *p->car() != '(') p = PT::tail(p, 0);
+    translate_parameters(static_cast<PT::List *>(PT::nth<1>(p)),
+			 parameter_types, parameters);
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Modifiers modifiers;
@@ -204,7 +205,7 @@ void ASTTranslator::visit(PTree::FunctionDefinition *fdef)
 {
   Trace trace("ASTTranslator::visit(PT::FunctionDefinition *)", Trace::TRANSLATION);
   my_declaration = fdef;
-  PT::Node *decl = PT::third(fdef);
+  PT::Node *decl = PT::nth<2>(fdef);
   visit(static_cast<PT::Declarator *>(decl)); // visit the declarator
   my_declaration = 0;
 }
@@ -219,8 +220,8 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
   size_t size = PT::length(spec);
   if (size == 2) // forward declaration
   {
-    std::string type = PT::reify(PT::first(spec));
-    std::string name = PT::reify(PT::second(spec));
+    std::string type = PT::reify(PT::nth<0>(spec));
+    std::string name = PT::reify(PT::nth<1>(spec));
     AST::ScopedName qname(name);
     AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
 						     type, qname);
@@ -230,11 +231,11 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
     return;
   }
 
-  std::string type = PT::reify(PT::first(spec));
+  std::string type = PT::reify(PT::nth<0>(spec));
   std::string name;
 
   if (size == 4) // struct definition
-    name = PT::reify(PT::second(spec));
+    name = PT::reify(PT::nth<1>(spec));
   else if (size == 3) // anonymous struct definition
   {
     PT::Encoding ename = spec->encoded_name();
@@ -260,62 +261,60 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
   my_scope.pop();
 }
 
-void ASTTranslator::visit(PT::EnumSpec *enum_spec)
+void ASTTranslator::visit(PT::EnumSpec *spec)
 {
   Trace trace("ASTTranslator::visit(PT::EnumSpec *)", Trace::TRANSLATION);
 
-  bool visible = update_position(enum_spec);
+  bool visible = update_position(spec);
   std::string name;
   
-  if (!PT::second(enum_spec)) //anonymous
+  if (!spec->name()) //anonymous
   {
-    PT::Encoding ename = enum_spec->encoded_name();
+    PT::Encoding ename = spec->encoded_name();
     size_t length = (ename.front() - 0x80);
     name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
   }
-  else
-    name = PT::reify(PT::second(enum_spec));
+  else name = PT::reify(spec->name());
 
   AST::Enumerators enumerators;
-  PT::Node *enode = PT::second(PT::third(enum_spec));
+  PT::List *enode = spec->enumerators();
   AST::Enumerator enumerator;
   while (enode)
   {
     // quite a costly way to update the line number...
     update_position(enode);
-    PT::Node *penumor = PT::first(enode);
+    PT::Node *penumor = PT::nth<0>(enode);
     if (penumor->is_atom())
     {
-      // Just a name
-      AST::ScopedName qname(PT::reify(penumor));
+      // identifier
+      AST::ScopedName qname(PT::string(static_cast<PT::Atom *>(penumor)));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
-      add_comments(enumerator, static_cast<PT::CommentedAtom *>(penumor)->get_comments());
+      add_comments(enumerator, static_cast<PT::Identifier *>(penumor)->get_comments());
     }
     else
     {
-      // Name = Value
-      AST::ScopedName qname(PT::reify(PT::first(penumor)));
-      std::string value;
-      if (PT::length(penumor) == 3)
-        value = PT::reify(PT::third(penumor));
+      // identifier = constant-expression
+      AST::ScopedName qname(PT::string(static_cast<PT::Atom *>(PT::nth<0>(static_cast<PT::List *>(penumor)))));
+      // TBD: For now stringify the initializer expression.
+      std::string value = PT::reify(PT::nth<2>(static_cast<PT::List *>(penumor)));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, value);
-      add_comments(enumerator, static_cast<PT::CommentedAtom *>(penumor)->get_comments());
+      add_comments(enumerator, static_cast<PT::Identifier *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
-    enode = PT::rest(enode);
+    enode = PT::tail(enode, 0);
     // Skip comma
-    if (enode && enode->car() && *enode->car() == ',') enode = PT::rest(enode);
+    if (enode && enode->car() && *enode->car() == ',') enode = PT::tail(enode, 0);
   }
   // Add a dummy enumerator at the end to absorb trailing comments.
-  PT::Node *close = PT::third(PT::third(enum_spec));
-  enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
-					    AST::ScopedName(std::string("dummy")), "");
-  add_comments(enumerator, static_cast<PT::CommentedAtom *>(close));
-  enumerators.append(enumerator);
+//   PT::Node *close = PT::nth<2>(PT::nth<2>(spec));
+//   enumerator = my_ast_kit.create_enumerator(my_file, my_lineno,
+// 					    AST::ScopedName(std::string("dummy")), "");
+//   add_comments(enumerator, static_cast<PT::CommentedAtom *>(close));
+//   enumerators.append(enumerator);
   
   // Create AST.Enum object
   AST::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, name, enumerators);
-  add_comments(enum_, enum_spec);
+  add_comments(enum_, spec);
 
   if (visible) declare(enum_);
   my_types.declare(AST::ScopedName(name), enum_);
@@ -329,9 +328,11 @@ void ASTTranslator::visit(PT::Typedef *typed)
 
   // the second child node may be an inlined class spec, i.e.
   // typedef struct {...} type;
-  PT::second(typed)->accept(this);
+  PT::nth<1>(typed)->accept(this);
 
-  for (PT::Node *d = PT::third(typed); d; d = PT::tail(d, 2))
+  for (PT::List *d = static_cast<PT::List *>(PT::nth<1>(typed));
+       d;
+       d = PT::tail(d, 2))
   {
     if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
       continue;
@@ -365,7 +366,7 @@ void ASTTranslator::visit(PTree::TemplateDecl *templ)
   my_template_parameters = AST::Template::Parameters();
 }
 
-void ASTTranslator::translate_parameters(PT::Node *node,
+void ASTTranslator::translate_parameters(PT::List *node,
 					 AST::TypeList types,
 					 AST::Function::Parameters &parameters)
 {
@@ -377,9 +378,8 @@ void ASTTranslator::translate_parameters(PT::Node *node,
     // Treat the value as a string, i.e. don't analyse the expression further.
     std::string name, value;
     AST::Modifiers premods, postmods;
-    if (*node->car() == ',')
-      node = node->cdr();
-    PT::Node *param = PT::first(node);
+    if (*node->car() == ',') node = node->cdr();
+    PT::List *param = static_cast<PT::List *>(PT::nth<0>(node));
     AST::Type type = types.get(0);
     types.del(0); // pop one value
 
@@ -413,40 +413,40 @@ void ASTTranslator::translate_parameters(PT::Node *node,
         premods.append(PT::reify(atom));
       }
       // Find name
-      if (PT::Node *n = PT::nth(param, type_ix+1))
-      {
-        if (PT::last(n) && !PT::last(n)->is_atom() && 
-	    PT::first(PT::last(n)) &&
-            *PT::first(PT::last(n)) == ')' && PT::length(n) >= 4)
-        {
-          // Probably a function pointer type
-          // pname is [* [( [* convert] )] ( [params] )]
-          // set to [( [* convert] )] from example
-          n = PT::nth(n, PT::length(n) - 4);
-          if (n && !n->is_atom() && PT::length(n) == 3)
-          {
-            // set to [* convert] from example
-            n = PT::second(n);
-            if (n && PT::second(n) && PT::second(n)->is_atom())
-              name = PT::reify(PT::second(n));
-          }
-        }
-        else if (!n->is_atom() && PT::last(n) && PT::last(n)->car())
-        {
-          // * and & modifiers are stored with the name so we must skip them
-          PT::Node *last = PT::last(n)->car();
-          if (*last != '*' && *last != '&')
-            // The last node is the name:
-            name = PT::reify(last);
-        }
-      }
+//       if (PT::Node *n = PT::nth(param, type_ix+1))
+//       {
+//         if (PT::last(n) && !PT::last(n)->is_atom() && 
+// 	    PT::nth<0>(PT::last(n)) &&
+//             *PT::nth<0>(PT::last(n)) == ')' && PT::length(n) >= 4)
+//         {
+//           // Probably a function pointer type
+//           // pname is [* [( [* convert] )] ( [params] )]
+//           // set to [( [* convert] )] from example
+//           n = PT::nth(n, PT::length(n) - 4);
+//           if (n && !n->is_atom() && PT::length(n) == 3)
+//           {
+//             // set to [* convert] from example
+//             n = PT::nth<1>(n);
+//             if (n && PT::nth<1>(n) && PT::nth<1>(n)->is_atom())
+//               name = PT::reify(PT::nth<1>(n));
+//           }
+//         }
+//         else if (!n->is_atom() && PT::last(n) && PT::last(n)->car())
+//         {
+//           // * and & modifiers are stored with the name so we must skip them
+//           PT::Node *last = PT::last(n)->car();
+//           if (*last != '*' && *last != '&')
+//             // The last node is the name:
+//             name = PT::reify(last);
+//         }
+//       }
       // Find value
       if (value_ix >= 0) value = PT::reify(PT::nth(param, value_ix));
     }
     AST::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
 						   name, value);
     parameters.append(p);
-    node = PT::rest(node);
+    node = PT::tail(node, 0);
   }
 }
 
@@ -458,70 +458,70 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PT::Node *c)
   Python::List comments;
 
   // Loop over all comments in the list
-  for (PT::Node *next = PT::rest(c); c && !c->is_atom(); next = PT::rest(c))
-  {
-    PT::Node *first = PT::first(c);
-    if (!first || !first->is_atom())
-    {
-      c = next;
-      continue;
-    }
-    // update position information for this comment
-    update_position(c);
+//   for (PT::Node *next = PT::tail(c, 0); c && !c->is_atom(); next = PT::tail(c, 0))
+//   {
+//     PT::Node *first = PT::nth<0>(c);
+//     if (!first || !first->is_atom())
+//     {
+//       c = next;
+//       continue;
+//     }
+//     // update position information for this comment
+//     update_position(c);
 
-    // Check if comment is continued, eg: consecutive C++ comments
-    while (next && PT::first(next) && PT::first(next)->is_atom())
-    {
-      if (!strncmp(first->position() + first->length() - 2, "*/", 2))
-        break;
-      if (strncmp(PT::first(next)->position(), "//", 2))
-        break;
-      char const *next_pos = PT::first(next)->position();
-      char const *start_pos = PT::first(c)->position();
-      char const *curr_pos = start_pos + PT::first(c)->length();
-      // Must only be whitespace between current comment and next
-      // and only one newline
-      int newlines = 0;
-      while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
-        if (*curr_pos == '\n' && newlines > 0)
-          break;
-        else if (*curr_pos++ == '\n')
-          ++newlines;
-      if (curr_pos < next_pos)
-        break;
-      // Current comment stretches to end of next
-      int len = int(next_pos - start_pos + PT::first(next)->length());
-      c->set_car(first = new PT::Atom(start_pos, len));
-      // Skip the combined comment
-      next = PT::rest(next);
-    }
+//     // Check if comment is continued, eg: consecutive C++ comments
+//     while (next && PT::first(next) && PT::first(next)->is_atom())
+//     {
+//       if (!strncmp(first->position() + first->length() - 2, "*/", 2))
+//         break;
+//       if (strncmp(PT::first(next)->position(), "//", 2))
+//         break;
+//       char const *next_pos = PT::first(next)->position();
+//       char const *start_pos = PT::first(c)->position();
+//       char const *curr_pos = start_pos + PT::first(c)->length();
+//       // Must only be whitespace between current comment and next
+//       // and only one newline
+//       int newlines = 0;
+//       while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
+//         if (*curr_pos == '\n' && newlines > 0)
+//           break;
+//         else if (*curr_pos++ == '\n')
+//           ++newlines;
+//       if (curr_pos < next_pos)
+//         break;
+//       // Current comment stretches to end of next
+//       int len = int(next_pos - start_pos + PT::first(next)->length());
+//       c->set_car(first = new PT::Atom(start_pos, len));
+//       // Skip the combined comment
+//       next = PT::tail(next, 0);
+//     }
 
-    // all comments that are not immediately (i.e. separated
-    // by a single new line) followed by a declaration are
-    // marked as 'suspect'
-    bool suspect = false;
-    char const *pos = first->position() + first->length();
-    while (*pos && strchr(" \t\r", *pos)) ++pos;
-    if (*pos == '\n')
-    {
-      ++pos;
-      // Found only allowed \n
-      while (*pos && strchr(" \t\r", *pos)) ++pos;
-      if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
-    }
-    AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
-						     // FIXME: 'first' ought to be an atom,
-						     //        so we could just take the position/length
-						     PT::reify(first),
-						     suspect);
-    comments.append(comment);
+//     // all comments that are not immediately (i.e. separated
+//     // by a single new line) followed by a declaration are
+//     // marked as 'suspect'
+//     bool suspect = false;
+//     char const *pos = first->position() + first->length();
+//     while (*pos && strchr(" \t\r", *pos)) ++pos;
+//     if (*pos == '\n')
+//     {
+//       ++pos;
+//       // Found only allowed \n
+//       while (*pos && strchr(" \t\r", *pos)) ++pos;
+//       if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
+//     }
+//     AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
+// 						     // FIXME: 'first' ought to be an atom,
+// 						     //        so we could just take the position/length
+// 						     PT::reify(first),
+// 						     suspect);
+//     comments.append(comment);
 
-//     if (my_links) my_links->long_span(first, "file-comment");
-    // Set first to 0 so we dont accidentally do them twice (eg:
-    // when parsing expressions)
-    c->set_car(0);
-    c = next;
-  }
+// //     if (my_links) my_links->long_span(first, "file-comment");
+//     // Set first to 0 so we dont accidentally do them twice (eg:
+//     // when parsing expressions)
+//     c->set_car(0);
+//     c = next;
+//   }
 
   declarator.comments().extend(comments);
 }
