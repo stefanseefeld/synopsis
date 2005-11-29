@@ -54,8 +54,10 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   {
     my_keywords["bool"] = Token::BOOLEAN;
     my_keywords["catch"] = Token::CATCH;
+    my_keywords["const_cast"] = Token::CONST_CAST;
     my_keywords["class"] = Token::CLASS;
     my_keywords["delete"] = Token::DELETE;
+    my_keywords["dynamic_cast"] = Token::DYNAMIC_CAST;
     my_keywords["explicit"] = Token::EXPLICIT;
     my_keywords["export"] = Token::EXPORT;
     my_keywords["false"] = Token::Constant;
@@ -63,10 +65,12 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["mutable"] = Token::MUTABLE;
     my_keywords["namespace"] = Token::NAMESPACE;
     my_keywords["new"] = Token::NEW;
+    my_keywords["reinterpret_cast"] = Token::REINTERPRET_CAST;
     my_keywords["operator"] = Token::OPERATOR;
     my_keywords["private"] = Token::PRIVATE;
     my_keywords["protected"] = Token::PROTECTED;
     my_keywords["public"] = Token::PUBLIC;
+    my_keywords["static_cast"] = Token::STATIC_CAST;
     my_keywords["template"] = Token::TEMPLATE;
     my_keywords["this"] = Token::THIS;
     my_keywords["throw"] = Token::THROW;
