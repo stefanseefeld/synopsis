@@ -79,7 +79,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       std::cout << "Parser::parse took " << timer.elapsed() 
 		<< " seconds" << std::endl;
     const Parser::ErrorList &errors = parser.errors();
-    if (!errors.size())
+    if (!errors.size() && ptree)
     {
       ASTTranslator translator(symbols.current_scope(),
 			       src, base_path, main_file_only, ast, verbose, debug);
