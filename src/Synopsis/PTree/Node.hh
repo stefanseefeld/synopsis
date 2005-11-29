@@ -44,10 +44,10 @@ public:
   virtual Encoding encoded_type() const { return Encoding();}
   virtual Encoding encoded_name() const { return Encoding();}
 
-  //. return the start address of this Ptree in the buffer
-  char const *begin() const;
-  //. return the one-past-the-end address of this Ptree in the buffer
-  char const *end() const;
+  //. Return the start address of this Ptree in the buffer.
+  virtual char const *begin() const = 0;
+  //. Return the one-past-the-end address of this Ptree in the buffer.
+  virtual char const *end() const = 0;
 };
 
 //. An Atom holds a single token from the input buffer.
@@ -62,6 +62,8 @@ public:
   virtual Node *car() const { throw std::runtime_error("not a list");}
   virtual List *cdr() const { throw std::runtime_error("not a list");}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  virtual char const *begin() const { return position();}
+  virtual char const *end() const { return position() + length();}
 private:
   char const *my_position;
   size_t      my_length;
@@ -78,6 +80,18 @@ public:
   virtual Node *car() const { return my_car;}
   virtual List *cdr() const { return my_cdr;}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  virtual char const *begin() const
+  {
+    char const *b = my_car ? my_car->begin() : 0;
+    if (!b && my_cdr) b = my_cdr->begin();
+    return b;
+  }
+  virtual char const *end() const 
+  {
+    char const *e = my_cdr ? my_cdr->end() : 0;
+    if (!e && my_car) e = my_car->end();
+    return e;
+  }
 
   void set_car(Node *car) { my_car = car;}
   void set_cdr(List *cdr) { my_cdr = cdr;}
@@ -87,41 +101,6 @@ private:
   List *my_cdr;
 };
 
-#if 0
-class Iterator : public LightObject 
-{
-public:
-  Iterator(Node *p) { ptree = p;}
-  Node *operator () () { return pop();}
-  Node *pop();
-  bool next(Node *&);
-  void reset(Node *p) { ptree = p;}
-
-  Node *get() { return ptree ? ptree->car() : 0;}
-  Node *operator *() { return get();}
-  Node *operator ++() { pop(); return get();}
-  Node *operator ++(int) { return pop();}
-  bool empty() { return ptree == 0;}
-private:
-  Node *ptree;
-};
-
-class Array : public LightObject 
-{
-public:
-  Array(size_t = 8);
-  size_t number() { return num;}
-  Node *&operator [] (size_t index) { return ref(index);}
-  Node *&ref(size_t index);
-  void append(Node *);
-  void clear() { num = 0;}
-  Node *all();
-private:
-  size_t num, size;
-  Node **array;
-  Node *default_buf[8];
-};
-#endif
 }
 }
 
