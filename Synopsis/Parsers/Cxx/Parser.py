@@ -41,7 +41,7 @@ class Parser(Processor):
 
       for file in self.input:
 
-         i_file = file
+         ii_file = file
          if self.preprocess:
 
             if self.output:
@@ -50,7 +50,7 @@ class Parser(Processor):
                ii_file = os.path.join(tempfile.gettempdir(),
                                       'synopsis-%s.ii'%os.getpid())
             self.ast = cpp.process(self.ast,
-                                   cpp_output = i_file,
+                                   cpp_output = ii_file,
                                    input = [file],
                                    main_file_only = self.main_file_only,
                                    verbose = self.verbose,
