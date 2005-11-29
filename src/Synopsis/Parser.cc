@@ -664,14 +664,14 @@ PT::Node *Parser::unqualified_id(PT::Encoding &encoding,
 PT::Node *Parser::type_name(PT::Encoding &encoding)
 {
   Trace trace("Parser::type_name", Trace::PARSING);
-  trace << encoding;
-  Tentative tentative(*this, encoding);
-  PT::Node *name = class_name(encoding, false, false);
-  if (name) return name;
-  tentative.rollback();
-  trace << encoding;
-  PT::Identifier *id = identifier(encoding);
-  trace << encoding;
+  {
+    Tentative tentative(*this, encoding);
+    PT::Node *name = class_name(encoding, false, false);
+    if (name) return name;
+    tentative.rollback();
+  }
+  PT::Encoding name;
+  PT::Identifier *id = identifier(name);
   if (!id) return 0;
 
   ST::SymbolSet symbols;
@@ -680,10 +680,10 @@ PT::Node *Parser::type_name(PT::Encoding &encoding)
   // TODO: The needs to be redesigned.
   if (my_in_template_decl)
   {
-    symbols = my_symbols.lookup_template_parameter(encoding);
+    symbols = my_symbols.lookup_template_parameter(name);
   }
   {
-    ST::SymbolSet more = lookup(encoding, my_symbols.current_scope(),
+    ST::SymbolSet more = lookup(name, my_symbols.current_scope(),
 				ST::Scope::DEFAULT);
     symbols.insert(more.begin(), more.end());
   }
@@ -694,7 +694,10 @@ PT::Node *Parser::type_name(PT::Encoding &encoding)
     return 0;
   }
   else
+  {
+    encoding.simple_name(id);
     return id;
+  }
 }
 
 // simple-type-specifier:
@@ -1583,8 +1586,12 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
 	    return 0;
 	}
 	seq = PT::snoc(seq, spec);
-	// TODO: watch for cv qualifier !
-	allow_user_defined = false;
+	// If the last type-specifier was not a cv qualifier,
+	// no (more) user-defined types are allowed.
+	if (!spec->is_atom() ||
+	    !(dynamic_cast<PT::Kwd::Const *>(spec) ||
+	      dynamic_cast<PT::Kwd::Volatile *>(spec)))
+ 	  allow_user_defined = false;
       }
     }
   }
@@ -1741,8 +1748,12 @@ PTree::List *Parser::direct_declarator(PTree::Encoding &type,
     else if (token == '[')
     {
       Token os = my_lexer.get_token();
-      PT::Node *expr = constant_expression();
-      if (!require(expr, "constant-expression") || !require(']')) return 0;
+      PT::Node *expr = 0;
+      if (my_lexer.look_ahead() != ']')
+      {
+	expr = constant_expression();
+	if (!require(expr, "constant-expression") || !require(']')) return 0;
+      }
       Token cs = my_lexer.get_token();
       decl = PT::conc(decl, PT::list(new PT::Atom(os), expr, new PT::Atom(cs)));
     }
@@ -1903,9 +1914,13 @@ PT::List *Parser::parameter_declaration_clause(PT::Encoding &encoding)
       encoding.end_func_args();
       return PT::list(0);
     case Token::VOID:
-      encoding.void_();
-      encoding.end_func_args();
-      return PT::list(new PT::Kwd::Void(my_lexer.get_token()));
+      if (my_lexer.look_ahead(1) == ')')
+      {
+	encoding.void_();
+	encoding.end_func_args();
+	return PT::list(new PT::Kwd::Void(my_lexer.get_token()));
+      }
+      // Fall through.
     default:
     {
       PT::List *parameters = parameter_declaration_list(encoding);
@@ -3512,6 +3527,32 @@ PT::Node *Parser::postfix_expression()
       if (!args) return 0;
       else expr = new PTree::FstyleCastExpr(encoding, qname, args);
       break;
+    }
+    case Token::CONST_CAST:
+    case Token::DYNAMIC_CAST:
+    case Token::STATIC_CAST:
+    case Token::REINTERPRET_CAST:
+    {
+      // FIXME: This should become a PT::Keyword
+      PT::Atom *kwd = new PT::Atom(my_lexer.get_token());
+      if (!require('<')) return 0;
+      Token ob = my_lexer.get_token();
+      PT::Encoding type;
+      PT::Node *id = type_id(type);
+      if (!require(id, "type-id") || !require('>')) return 0;
+      Token cb = my_lexer.get_token();
+      if (!require('(')) return 0;
+      Token op = my_lexer.get_token();
+      PT::Node *expr = expression();
+      if (!require(expr, "expression") || !require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      return new PT::FstyleCastExpr(type, kwd,
+				    PT::list(new PT::Atom(ob),
+					     id,
+					     new PT::Atom(cb),
+					     new PT::Atom(op),
+					     expr,
+					     new PT::Atom(cp)));
     }
     default:
     {

@@ -339,10 +339,10 @@ void SymbolFactory::declare(PT::Typedef const *td)
 {
   Trace trace("SymbolFactory::declare(Typedef *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  PT::List const *declarations = static_cast<PT::List *>(PT::nth<2>(td));
-  while(declarations)
+  PT::List const *declarators = static_cast<PT::List *>(PT::nth<1>(td));
+  while(declarators)
   {
-    PT::Node const *d = declarations->car();
+    PT::Node const *d = declarators->car();
     if(PT::type_of(d) == Token::ntDeclarator)
     {
       PT::Encoding const &name = d->encoded_name();
@@ -354,7 +354,7 @@ void SymbolFactory::declare(PT::Typedef const *td)
       //       declare it as a type alias to avoid an additional lookup.
       // TA::TypeRepository::instance()->declare(symbol);
     }
-    declarations = PT::tail(declarations, 2);
+    declarators = PT::tail(declarators, 2);
   }
 }
 

@@ -131,6 +131,10 @@ struct Token
     SWITCH,
     THIS,
     WHILE,
+    CONST_CAST,
+    DYNAMIC_CAST,
+    STATIC_CAST,
+    REINTERPRET_CAST,
     ATTRIBUTE,    //=g++,
     METACLASS,    //=opencxx
     UserKeyword,

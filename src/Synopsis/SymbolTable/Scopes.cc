@@ -110,11 +110,12 @@ FunctionScope::qualified_lookup(PT::Encoding const &name,
 }
 
 SymbolSet 
-PrototypeScope::unqualified_lookup(PT::Encoding const &,
-				   LookupContext) const
+PrototypeScope::unqualified_lookup(PT::Encoding const &name,
+				   LookupContext context) const
 {
   Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
-  return SymbolSet();
+  SymbolSet symbols = find(name, context);
+  return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
 std::string PrototypeScope::name() const
