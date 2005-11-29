@@ -1150,25 +1150,15 @@ PT::Node *Parser::opt_member_specification()
       default:
       {
 	PT::Encoding encoding;
-	PT::DeclSpec *decl_spec = decl_specifier_seq(encoding);
+	PT::DeclSpec *spec = decl_specifier_seq(encoding);
 	if (my_lexer.look_ahead() == ';')
 	{
-	  // typedef or nested class-specifier ?
+	  // nested class-specifier ?
 	  Token semic = my_lexer.get_token();
-	  if (decl_spec && decl_spec->is_typedef())
-	  {
-	    PT::Typedef *decl = new PT::Typedef(decl_spec,
-						PT::list(0, new PT::Atom(semic)));
-	    declare(decl);
-	    members = PT::snoc(members, decl);
-	  }
-	  else
-	  {
-	    PT::Declaration *decl = new PT::Declaration(decl_spec,
-							PT::list(0, new PT::Atom(semic)));
-	    declare(decl);
-	    members = PT::snoc(members, decl);
-	  }
+	  PT::Declaration *decl =
+	    new PT::Declaration(spec, PT::list(0, new PT::Atom(semic)));
+	  declare(decl);
+	  members = PT::snoc(members, decl);
 	}
 	else
 	{
@@ -1229,7 +1219,7 @@ PT::Node *Parser::opt_member_specification()
 		  starts_function_definition(my_lexer.look_ahead()))
 	      {
 		// function-definition
-		PT::FunctionDefinition *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
+		PT::FunctionDefinition *func = new PT::FunctionDefinition(spec, PT::cons(decl));
 		{
 		  ScopeGuard scope_guard(*this, func);
 		  PT::Block *body = compound_statement();
@@ -1255,7 +1245,7 @@ PT::Node *Parser::opt_member_specification()
 	    if (!require(';')) return 0;
 
 	    PT::Atom *semic = new PT::Atom(my_lexer.get_token());
-	    PT::Declaration *declaration = new PT::Declaration(decl_spec,
+	    PT::Declaration *declaration = new PT::Declaration(spec,
 							       PT::list(declarators, semic));
 	    declare(declaration);
 	    members = PT::snoc(members, declaration);
@@ -3840,11 +3830,13 @@ PT::Block *Parser::compound_statement(bool create_scope)
     if (!require(stmt, "expression-statement")) return 0;
     else stmts = PT::snoc(stmts, stmt);
   }
+  body = PT::snoc(body, stmts);
+
   Token cb = my_lexer.get_token();
   if(cb.type != '}') return 0;
 
   PT::Node *cb_comments = wrap_comments(my_lexer.get_comments());
-  return PT::snoc(body, PT::list(stmts, new PT::CommentedAtom(cb, cb_comments)));
+  return PT::snoc(body, new PT::CommentedAtom(cb, cb_comments));
 }
 
 // selection-statement:

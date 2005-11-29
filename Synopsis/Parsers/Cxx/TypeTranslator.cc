@@ -19,7 +19,7 @@ namespace
 TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
   : my_types(types), my_type_kit("C++"), my_verbose(v), my_debug(d)
 {
-  Trace trace("TypeTranslator::TypeTranslator", Trace::PARSING);
+  Trace trace("TypeTranslator::TypeTranslator", Trace::TRANSLATION);
   // define all the builtin types
   Python::Object define = my_types.attr("__setitem__");
   define(Python::Tuple(qname("bool"), my_type_kit.create_base(qname("bool"))));
@@ -42,7 +42,7 @@ TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
 
 AST::Type TypeTranslator::lookup(PT::Encoding const &name)
 {
-  Trace trace("TypeTranslator::lookup", Trace::SYMBOLLOOKUP);
+  Trace trace("TypeTranslator::lookup", Trace::TRANSLATION);
   trace << name;
   my_name = name;
   AST::Type type;
@@ -53,7 +53,7 @@ AST::Type TypeTranslator::lookup(PT::Encoding const &name)
 AST::Type TypeTranslator::lookup_function_types(PT::Encoding const &name,
 						AST::TypeList &parameters)
 {
-  Trace trace("TypeTranslator::lookup_function_types", Trace::SYMBOLLOOKUP);
+  Trace trace("TypeTranslator::lookup_function_types", Trace::TRANSLATION);
   trace << name;
   my_name = name;
 
@@ -78,7 +78,7 @@ AST::Type TypeTranslator::lookup_function_types(PT::Encoding const &name,
 AST::Type TypeTranslator::declare(AST::ScopedName name,
 				  AST::Declaration declaration)
 {
-  Trace trace("TypeTranslator::declare", Trace::SYMBOLLOOKUP);
+  Trace trace("TypeTranslator::declare", Trace::TRANSLATION);
   trace << name;
   AST::Type type = my_type_kit.create_declared(name, declaration);
   my_types.attr("__setitem__")(Python::Tuple(name, type));
@@ -89,7 +89,7 @@ AST::Type TypeTranslator::declare(AST::ScopedName name,
 				  AST::Declaration declaration,
 				  AST::Template::Parameters parameters)
 {
-  Trace trace("TypeTranslator::declare", Trace::SYMBOLLOOKUP);
+  Trace trace("TypeTranslator::declare", Trace::TRANSLATION);
   trace << name;
   AST::Type type = my_type_kit.create_template(name, declaration, parameters);
   my_types.attr("__setitem__")(Python::Tuple(name, type));
@@ -98,7 +98,7 @@ AST::Type TypeTranslator::declare(AST::ScopedName name,
 
 AST::Type TypeTranslator::create_dependent(AST::ScopedName name)
 {
-  Trace trace("TypeTranslator::create_dependent", Trace::SYMBOLLOOKUP);
+  Trace trace("TypeTranslator::create_dependent", Trace::TRANSLATION);
   trace << name;
   AST::Type type = my_type_kit.create_dependent(name);
   return type;
@@ -111,7 +111,7 @@ AST::Type TypeTranslator::create_dependent(AST::ScopedName name)
 PT::Encoding::iterator TypeTranslator::decode_name(PT::Encoding::iterator i,
 						   std::string &name)
 {
-  Trace trace("TypeTranslator::decode_name", Trace::PARSING);
+  Trace trace("TypeTranslator::decode_name", Trace::TRANSLATION);
   size_t length = *i++ - 0x80;
   name = std::string(length, '\0');
   std::copy(i, i + length, name.begin());
@@ -122,7 +122,7 @@ PT::Encoding::iterator TypeTranslator::decode_name(PT::Encoding::iterator i,
 PT::Encoding::iterator TypeTranslator::decode_type(PT::Encoding::iterator i,
 						   AST::Type &type)
 {
-  Trace trace("TypeTranslator::decode_type", Trace::PARSING);
+  Trace trace("TypeTranslator::decode_type", Trace::TRANSLATION);
   AST::Modifiers premod, postmod;
   std::string name;
   AST::Type base;
@@ -252,7 +252,7 @@ PT::Encoding::iterator TypeTranslator::decode_func_ptr(PT::Encoding::iterator i,
 						       AST::Type &type,
 						       AST::Modifiers &postmod)
 {
-  Trace trace("TypeTranslator::decode_func_ptr", Trace::PARSING);
+  Trace trace("TypeTranslator::decode_func_ptr", Trace::TRANSLATION);
   // Function ptr. Encoded same as function
   AST::Modifiers premod;
   // Move * from postmod to funcptr's premod. This makes the output be

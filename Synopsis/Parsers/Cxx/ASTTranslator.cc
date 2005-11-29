@@ -149,8 +149,8 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     AST::TypeList parameter_types;
     AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
     AST::Function::Parameters parameters;
-    PT::List *p = PT::tail(declarator, 0);
-    while (p && p->car() && *p->car() != '(') p = PT::tail(p, 0);
+    PT::List *p = declarator->cdr();
+    while (p && p->car() && *p->car() != '(') p = p->cdr();
     translate_parameters(static_cast<PT::List *>(PT::nth<1>(p)),
 			 parameter_types, parameters);
     size_t length = (name.front() - 0x80);
@@ -205,7 +205,7 @@ void ASTTranslator::visit(PTree::FunctionDefinition *fdef)
 {
   Trace trace("ASTTranslator::visit(PT::FunctionDefinition *)", Trace::TRANSLATION);
   my_declaration = fdef;
-  PT::Node *decl = PT::nth<2>(fdef);
+  PT::Node *decl = PT::nth<1>(fdef);
   visit(static_cast<PT::Declarator *>(decl)); // visit the declarator
   my_declaration = 0;
 }
@@ -372,7 +372,7 @@ void ASTTranslator::translate_parameters(PT::List *node,
 {
   Trace trace("ASTTranslator::translate_parameters", Trace::TRANSLATION);
 
-  while (node)
+  while (node && node->car())
   {
     // A parameter has a type, possibly a name and possibly a value.
     // Treat the value as a string, i.e. don't analyse the expression further.

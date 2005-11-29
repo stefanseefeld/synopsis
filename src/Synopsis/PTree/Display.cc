@@ -85,27 +85,18 @@ void Display::visit(Atom *a)
 
 void Display::visit(List *l) 
 {
-  Node *rest = l;
   my_os << '[';
-  while(rest != 0)
+  while(true)
   {
-    if(rest->is_atom())
-    {
-      my_os << "@ ";
-      rest->accept(this);
-      rest = 0;
-    }
-    else
-    {
-      Node *head = rest->car();
-      if(head == 0) my_os << "nil";
-      else
-      {
-	head->accept(this);
-      }
-      rest = rest->cdr();
-      if(rest != 0) my_os << ' ';
-    }
+    Node *car = l->car();
+    if(!car) my_os << "nil";
+    else car->accept(this);
+    char const *gap_begin = car ? car->end() : 0;
+    l = l->cdr();
+    if (!l) break;
+    char const *gap_end = l->begin();
+    if (gap_begin && gap_end && gap_end > gap_begin)
+      my_os.write(gap_begin, gap_end - gap_begin);
   }
   my_os << ']';
 }
@@ -128,6 +119,7 @@ void Display::visit(DupAtom *a)
   my_os << '`';
 }
 
+/*
 void Display::visit(Brace *l)
 {
   ++my_indent;
@@ -162,7 +154,7 @@ void Display::visit(Brace *l)
   newline();
   my_os << "}]";
 }
-
+*/
 void Display::newline()
 {
   my_os.put('\n');

@@ -95,22 +95,6 @@ List *list(Node *, Node *, Node *, Node *, Node *, Node *,
 	   Node *);
 List *list(Node *, Node *, Node *, Node *, Node *, Node *,
 	   Node *, Node *);
-  /*
-Node *copy(Node *);
-Node *append(Node *, Node *);
-Node *replace_all(Node *, Node *, Node *);
-Node *subst(Node *, Node *, Node *);
-Node *subst(Node *, Node *, Node *, Node *, Node *);
-Node *subst(Node *, Node *, Node *, Node *,
-	    Node *, Node *, Node *);
-Node *shallow_subst(Node *, Node *, Node *);
-Node *shallow_subst(Node *, Node *, Node *, Node *, Node *);
-Node *shallow_subst(Node *, Node *, Node *, Node *,
-		    Node *, Node *, Node *);
-Node *shallow_subst(Node *, Node *, Node *, Node *,
-		    Node *, Node *, Node *, Node *, Node *);
-Node *subst_sublist(Node *, Node *, Node *);
-  */
 
 //. Concatenate the second argument to the first, returning the modified list.
 //. If p is nil return q instead.
