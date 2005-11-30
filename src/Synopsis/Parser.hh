@@ -75,7 +75,7 @@ private:
   bool lookup_namespace_name(PTree::Encoding const &);
 
   //. :: [opt]
-  PTree::Atom *opt_scope();
+  PTree::Atom *opt_scope(PTree::Encoding &);
 
   //. identifier
   PTree::Identifier *identifier(PTree::Encoding &);
@@ -605,6 +605,12 @@ private:
   PTree::List *expression_list(bool is_const);
 
   PTree::List *functional_cast();
+
+  //. pseudo-destructor-name:
+  //.   :: [opt] nested-name-specifier [opt] type-name :: ~ type-name
+  //.   :: [opt] nested-name-specifier template template-id :: ~ type-name
+  //.   :: [opt] nested-name-specifier [opt] ~ type-name
+  PTree::List *pseudo_destructor_name();
 
   //. postfix-expression:
   //.   primary-expression
