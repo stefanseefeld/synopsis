@@ -467,11 +467,19 @@ PT::Node *Parser::parse()
 }
 
 // :: [opt]
-PT::Atom *Parser::opt_scope()
+PT::Atom *Parser::opt_scope(PT::Encoding &encoding)
 {
-  return my_lexer.look_ahead() == Token::Scope
-    ? new PT::Atom(my_lexer.get_token())
-    : 0;
+  if (my_lexer.look_ahead() == Token::Scope)
+  {
+    my_qualifying_scope = my_symbols.current_scope()->global_scope();
+    encoding.global_scope();
+    return new PT::Atom(my_lexer.get_token());
+  }
+  else
+  {
+    my_qualifying_scope = 0;
+    return 0;
+  }
 }
 
 // identifier
@@ -899,8 +907,8 @@ PT::ElaboratedTypeSpec *Parser::elaborated_type_specifier(PT::Encoding &encoding
       return 0;
   }
 
-  PT::Atom *scope = opt_scope();
   PT::Encoding nested_encoding;
+  PT::Atom *scope = opt_scope(nested_encoding);
   Tentative tentative(*this, nested_encoding);
   PT::List *name = nested_name_specifier(nested_encoding);
   if (type == Token::TYPENAME && !require(name, "nested-name-specifier"))
@@ -1044,8 +1052,8 @@ PTree::List *Parser::base_clause()
 	  break;
       }
     }
-    PT::Node *scope = opt_scope();
     PT::Encoding encoding;
+    PT::Atom *scope = opt_scope(encoding);
     unsigned int length;
     if (scope)
     {
@@ -2306,9 +2314,7 @@ PT::NamespaceAlias *Parser::namespace_alias_definition()
   PT::Identifier *alias = identifier(encoding);
   if (!require(alias, "identifier") || !require('=')) return 0;
   Token eq = my_lexer.get_token();
-  PT::Node *scope = opt_scope();
-  if (scope) my_qualifying_scope = my_symbols.current_scope()->global_scope();
-  else my_qualifying_scope = 0;
+  PT::Atom *scope = opt_scope(encoding);
   Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding);
   if (!name) tentative.rollback();
@@ -2339,13 +2345,9 @@ PT::UsingDirective *Parser::using_directive()
   udir = PT::snoc(udir, new PT::Kwd::Namespace(my_lexer.get_token()));
 
   PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
   PT::List *name = 0;
-  if (my_lexer.look_ahead() == Token::Scope)
-  {
-    name = PT::list(new PT::Atom(my_lexer.get_token()));
-    my_qualifying_scope = my_symbols.current_scope()->global_scope();
-  }
-  else my_qualifying_scope = 0;
+  if (scope) name = PT::list(scope);
   {
     Tentative tentative(*this, encoding);
     PT::Node *name_spec = nested_name_specifier(encoding);
@@ -2374,11 +2376,8 @@ PT::UsingDeclaration *Parser::using_declaration()
   PT::Kwd::Typename *typename_ = 0;
   if(my_lexer.look_ahead() == Token::TYPENAME)
     typename_ = new PT::Kwd::Typename(my_lexer.get_token());
-  PT::Atom *scope = opt_scope();
-  if (scope) my_qualifying_scope = my_symbols.current_scope()->global_scope();
-  else my_qualifying_scope = 0;
-  
   PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
   Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding);
   if (!name)
@@ -3451,6 +3450,44 @@ PT::List *Parser::functional_cast()
   return PT::snoc(args, new PTree::Atom(my_lexer.get_token()));
 }
 
+// pseudo-destructor-name:
+//   :: [opt] nested-name-specifier [opt] type-name :: ~ type-name
+//   :: [opt] nested-name-specifier template template-id :: ~ type-name
+//   :: [opt] nested-name-specifier [opt] ~ type-name
+PT::List *Parser::pseudo_destructor_name()
+{
+  Trace trace("Parser::pseudo_destructor_name", Trace::PARSING);
+  PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
+  Tentative tentative(*this);
+  PT::List *nested_name = nested_name_specifier(encoding);
+  if (!nested_name) tentative.rollback();
+  if (nested_name && my_lexer.look_ahead() == Token::TEMPLATE)
+  {
+    PT::Atom *template_ = new PT::Kwd::Template(my_lexer.get_token());
+    nested_name = PT::snoc(nested_name, template_);
+    PT::List *id = template_id(encoding, true);
+    if (!require(id, "template-id") || !require(Token::Scope, "::")) return 0;
+    PT::Atom *scope = new PT::Atom(my_lexer.get_token());
+    nested_name = PT::snoc(nested_name, id);
+    nested_name = PT::snoc(nested_name, scope);
+  }
+  else if (my_lexer.look_ahead() != '~')
+  {
+    PT::Node *name = type_name(encoding);
+    if (!require(name, "type-name") || !require(Token::Scope, "::")) return 0;
+    PT::Atom *scope = new PT::Atom(my_lexer.get_token());
+    nested_name = PT::snoc(nested_name, name);
+    nested_name = PT::snoc(nested_name, scope);
+  }
+  if (!require('~')) return 0;
+  nested_name = PT::snoc(nested_name, new PT::Atom(my_lexer.get_token()));
+  PT::Node *name = type_name(encoding);
+  if (!require(name, "type-name")) return 0;
+  nested_name = PT::snoc(nested_name, name);
+  return new PT::Name(nested_name, encoding);
+}
+
 // postfix-expression:
 //   primary-expression
 //   postfix-expression [ expression ]
@@ -3490,11 +3527,8 @@ PT::Node *Parser::postfix_expression()
     case Token::TYPENAME:
     {
       PT::Kwd::Typename *typename_ = new PT::Kwd::Typename(my_lexer.get_token());
-      PT::Atom *scope = opt_scope();
-      if (scope) my_qualifying_scope = my_symbols.current_scope()->global_scope();
-      else my_qualifying_scope = 0;
-
       PT::Encoding encoding;
+      PT::Atom *scope = opt_scope(encoding);
       PT::List *qname = nested_name_specifier(encoding);
       if (!require(qname, "nested-name-specifier")) return 0;
       if (scope) qname = PT::snoc(PT::list(scope), qname);
@@ -3619,12 +3653,28 @@ PT::Node *Parser::postfix_expression()
       case Token::ArrowOp:
       {
 	Token op = my_lexer.get_token();
-	error("sorry, member access operators not yet implemented");
-	return 0;
-// 	if(t2 == '.')
-// 	  expr = new PT::DotMemberExpr(expr, PT::list(new PT::Atom(op), e));
-// 	else
-// 	  expr = new PT::ArrowMemberExpr(expr, PT::list(new PT::Atom(op), e));
+	PT::List *lhs = 0;
+	PT::Keyword *template_ = 0;
+	if (my_lexer.look_ahead() == Token::TEMPLATE)
+	  template_ = new PT::Kwd::Template(my_lexer.get_token());
+	if (!template_)
+	{
+	  Tentative tentative(*this);
+	  lhs = pseudo_destructor_name();
+	  if (!lhs) tentative.rollback();
+	}
+	if (!lhs)
+	{
+	  PT::Encoding encoding;
+	  PT::Node *id = id_expression(encoding);
+	  if (!require(id, "id-expression")) return 0;
+	  if (template_) lhs = PT::cons(template_, PT::cons(id));
+	  else lhs = PT::cons(id);
+	}
+ 	if(op.type == '.')
+ 	  expr = new PT::DotMemberExpr(expr, PT::list(new PT::Atom(op), lhs));
+ 	else
+ 	  expr = new PT::ArrowMemberExpr(expr, PT::list(new PT::Atom(op), lhs));
 	break;
       }
       default:
@@ -3684,14 +3734,7 @@ PT::Node *Parser::primary_expression()
 PT::Node *Parser::id_expression(PT::Encoding &encoding)
 {
   Trace trace("Parser::id_expression", Trace::PARSING);
-  PT::Atom *scope = 0;
-  if (my_lexer.look_ahead() == Token::Scope)
-  {
-    encoding.global_scope();
-    scope = new PT::Atom(my_lexer.get_token());
-    my_qualifying_scope = my_symbols.current_scope()->global_scope();
-  }
-  else my_qualifying_scope = 0;
+  PT::Atom *scope = opt_scope(encoding);
   Tentative tentative(*this, encoding);
   PT::List *name = nested_name_specifier(encoding, false);
   if (name)
