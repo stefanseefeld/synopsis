@@ -85,7 +85,6 @@ typedef KeywordT<Token::WHILE> While;
 class Brace;
 class Block;
 class ClassBody;
-class Typedef;
 class TemplateDecl;
 class TemplateInstantiation;
 class ExternTemplate;

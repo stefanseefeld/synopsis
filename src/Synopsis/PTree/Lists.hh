@@ -77,14 +77,6 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class Typedef : public Declaration
-{
-public:
-  Typedef(Node *p) : Declaration(p, 0) {}
-  Typedef(Node *p, List *q) : Declaration(p, q) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
 class TemplateDecl : public Declaration
 {
 public:

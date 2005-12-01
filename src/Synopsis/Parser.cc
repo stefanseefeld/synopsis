@@ -2216,16 +2216,8 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   }
   Token semic = my_lexer.get_token();
   PT::Declaration *decl = 0;
-  if (decl_spec && decl_spec->is_typedef())
-  {
-    decl = new PT::Typedef(decl_spec, PT::list(declarators, new PT::Atom(semic)));
-    if (!my_in_template_decl) declare(static_cast<PT::Typedef *>(decl));
-  }
-  else
-  {
-    decl = new PT::Declaration(decl_spec, PT::list(declarators, new PT::Atom(semic)));
-    if (!my_in_template_decl) declare(decl);
-  }
+  decl = new PT::Declaration(decl_spec, PT::list(declarators, new PT::Atom(semic)));
+  if (!my_in_template_decl) declare(decl);
   return decl;
 }
 

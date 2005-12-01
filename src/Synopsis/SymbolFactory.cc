@@ -336,30 +336,32 @@ void SymbolFactory::declare(PT::Declaration const *d)
 {
   Trace trace("SymbolFactory::declare(Declaration *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  // Disambiguate: either Declaration or FunctionDefinition.
-  const_cast<PT::Declaration *>(d)->accept(this);
-}
-
-void SymbolFactory::declare(PT::Typedef const *td)
-{
-  Trace trace("SymbolFactory::declare(Typedef *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  PT::List const *declarators = static_cast<PT::List *>(PT::nth<1>(td));
-  while(declarators)
+  // If this is a typedef, we process it here:
+  PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(d));
+  if (spec && spec->is_typedef())
   {
-    PT::Node const *d = declarators->car();
-    if(PT::type_of(d) == Token::ntDeclarator)
+    PT::List const *declarators = static_cast<PT::List *>(PT::nth<1>(d));
+    while(declarators)
     {
-      PT::Encoding const &name = d->encoded_name();
-      PT::Encoding const &type = d->encoded_type();
-      ST::Scope *scope = my_scopes.top();
-      ST::TypedefName *symbol = new ST::TypedefName(type, d, scope);
-      scope->declare(name, symbol);
-      // TODO: Even though a typedef doesn't introduce a new type, we may
-      //       declare it as a type alias to avoid an additional lookup.
-      // TA::TypeRepository::instance()->declare(symbol);
+      PT::Node const *d = declarators->car();
+      if(PT::type_of(d) == Token::ntDeclarator)
+      {
+	PT::Encoding const &name = d->encoded_name();
+	PT::Encoding const &type = d->encoded_type();
+	ST::Scope *scope = my_scopes.top();
+	ST::TypedefName *symbol = new ST::TypedefName(type, d, scope);
+	scope->declare(name, symbol);
+	// TODO: Even though a typedef doesn't introduce a new type, we may
+	//       declare it as a type alias to avoid an additional lookup.
+	// TA::TypeRepository::instance()->declare(symbol);
+      }
+      declarators = PT::tail(declarators, 2);
     }
-    declarators = PT::tail(declarators, 2);
+  }
+  else
+  {
+    // Disambiguate: either Declaration or FunctionDefinition.
+    const_cast<PT::Declaration *>(d)->accept(this);
   }
 }
 
@@ -529,6 +531,8 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   Trace trace("SymbolFactory::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   ST::Scope *scope = my_scopes.top();
+  std::cout << "template decl" << std::endl;
+  PT::display(tdecl, std::cout);
   // A template declaration either declares a class template, or a function template.
   // However, as it may contain multiple nesting levels care has to be taken to
   // create the appropriate symbol in the correct scope.

@@ -194,11 +194,47 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 void ASTTranslator::visit(PT::Declaration *declaration)
 {
   Trace trace("ASTTranslator::visit(PT::Declaration *)", Trace::TRANSLATION);
-  // Cache the declaration while traversing the individual declarators;
-  // the comments are passed through.
-  my_declaration = declaration;
-  Walker::visit(declaration);
-  my_declaration = 0;
+  bool visible = update_position(declaration);
+  // Check whether this is a typedef:
+  PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(declaration));
+  // the decl-specifier-seq may contain a class-specifier, i.e.
+  // which we need to define first.
+  if (spec) spec->accept(this);
+  if (spec && spec->is_typedef())
+  {
+    for (PT::List *d = static_cast<PT::List *>(PT::nth<1>(declaration));
+	 d;
+	 d = PT::tail(d, 2))
+    {
+      if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
+	continue;
+    
+      PT::Declarator *declarator = static_cast<PT::Declarator *>(d->car());
+      PT::Encoding name = declarator->encoded_name();
+      PT::Encoding type = declarator->encoded_type();
+      trace << "declare type " << name << " (" << type << ')' 
+	    << my_raw_filename << ':' << my_lineno;
+      assert(name.is_simple_name());
+      size_t length = (name.front() - 0x80);
+      AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
+      AST::Type alias = my_types.lookup(type);
+      AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
+							       "typedef",
+							       qname,
+							       alias, false);
+      add_comments(declaration, declarator->get_comments());
+      if (visible) declare(declaration);
+      my_types.declare(qname, declaration);
+    }
+  }
+  else
+  {
+    // Cache the declaration while traversing the individual declarators;
+    // the comments are passed through.
+    my_declaration = declaration;
+    Walker::visit(declaration);
+    my_declaration = 0;
+  }
 }
 
 void ASTTranslator::visit(PTree::FunctionDefinition *fdef)
@@ -318,42 +354,6 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
 
   if (visible) declare(enum_);
   my_types.declare(AST::ScopedName(name), enum_);
-}
-
-void ASTTranslator::visit(PT::Typedef *typed)
-{
-  Trace trace("ASTTranslator::visit(PT::Typedef *)", Trace::TRANSLATION);
-
-  bool visible = update_position(typed);
-
-  // the second child node may be an inlined class spec, i.e.
-  // typedef struct {...} type;
-  PT::nth<1>(typed)->accept(this);
-
-  for (PT::List *d = static_cast<PT::List *>(PT::nth<1>(typed));
-       d;
-       d = PT::tail(d, 2))
-  {
-    if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
-      continue;
-    
-    PT::Declarator *declarator = static_cast<PT::Declarator *>(d->car());
-    PT::Encoding name = declarator->encoded_name();
-    PT::Encoding type = declarator->encoded_type();
-    trace << "declare type " << name << " (" << type << ')' 
-	  << my_raw_filename << ':' << my_lineno;
-    assert(name.is_simple_name());
-    size_t length = (name.front() - 0x80);
-    AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    AST::Type alias = my_types.lookup(type);
-    AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
-							     "typedef",
-							     qname,
-							     alias, false);
-    add_comments(declaration, declarator->get_comments());
-    if (visible) declare(declaration);
-    my_types.declare(qname, declaration);
-  }
 }
 
 void ASTTranslator::visit(PTree::TemplateDecl *templ)
