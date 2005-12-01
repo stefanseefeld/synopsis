@@ -115,6 +115,11 @@ PrototypeScope::unqualified_lookup(PT::Encoding const &name,
 {
   Trace trace("PrototypeScope::unqualified_lookup", Trace::SYMBOLLOOKUP);
   SymbolSet symbols = find(name, context);
+  if (symbols.empty() && my_params)
+  {
+    SymbolSet more = my_params->find(name, context);
+    symbols.insert(more.begin(), more.end());
+  }
   return symbols.size() ? symbols : my_outer->unqualified_lookup(name, context);
 }
 
