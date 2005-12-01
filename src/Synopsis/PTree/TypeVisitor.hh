@@ -26,7 +26,6 @@ public:
   virtual void visit(Literal *) { my_type = Token::Constant;}
   virtual void visit(Identifier *) { my_type = Token::Identifier;}
   virtual void visit(Keyword *kwd) { my_type = kwd->token();}
-  virtual void visit(Typedef *) {my_type = Token::ntTypedef;}
   virtual void visit(TemplateDecl *) { my_type = Token::ntTemplateDecl;}
   virtual void visit(TemplateInstantiation *) { my_type = Token::ntTemplateInstantiation;}
   virtual void visit(ExternTemplate *) { my_type = Token::ntExternTemplate;}

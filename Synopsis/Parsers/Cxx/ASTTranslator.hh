@@ -39,7 +39,6 @@ private:
   virtual void visit(PTree::FunctionDefinition *fdef);
   virtual void visit(PTree::ClassSpec *class_spec);
   virtual void visit(PTree::EnumSpec *enum_spec);
-  virtual void visit(PTree::Typedef *typed);
   virtual void visit(PTree::TemplateDecl *templ);
 
   void translate_parameters(PTree::List *,

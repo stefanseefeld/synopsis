@@ -91,7 +91,6 @@ public:
   //. [ { [ <statement>* ] } ]
   virtual void visit(Block *);
   virtual void visit(ClassBody *);
-  virtual void visit(Typedef *);
   //. [ template < [types] > [decl] ]
   virtual void visit(TemplateDecl *);
   virtual void visit(TemplateInstantiation *);

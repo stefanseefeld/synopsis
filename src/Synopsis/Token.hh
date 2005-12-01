@@ -163,7 +163,6 @@ struct Token
     ntClassSpec,
     ntEnumSpec,
     ntDeclaration,
-    ntTypedef,
     ntTemplateDecl,
     ntMetaclassDecl,
     ntLinkageSpec,

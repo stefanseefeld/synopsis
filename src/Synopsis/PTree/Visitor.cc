@@ -72,7 +72,6 @@ void Visitor::visit(Kwd::While *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Brace *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Block *l) { visit(static_cast<Brace *>(l));}
 void Visitor::visit(ClassBody *l) { visit(static_cast<Brace *>(l));}
-void Visitor::visit(Typedef *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TemplateDecl *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TemplateInstantiation *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(ExternTemplate *l) { visit(static_cast<List *>(l));}

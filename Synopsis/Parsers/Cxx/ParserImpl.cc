@@ -59,7 +59,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
-  if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
+  if (debug) Synopsis::Trace::enable(Trace::ALL);
 
   if (!src || *src == '\0')
   {

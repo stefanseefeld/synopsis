@@ -34,7 +34,6 @@ private:
   virtual void visit(PTree::Declaration *decl);
   virtual void visit(PTree::ClassSpec *class_spec);
   virtual void visit(PTree::EnumSpec *enum_spec);
-  virtual void visit(PTree::Typedef *typed);
 
   void translate_parameters(PTree::List *,
 			    AST::TypeList, AST::Function::Parameters &);

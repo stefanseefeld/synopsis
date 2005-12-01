@@ -41,7 +41,6 @@ public:
   void leave_scope();
 
   void declare(PTree::Declaration const *);
-  void declare(PTree::Typedef const *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
   void declare(PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE
