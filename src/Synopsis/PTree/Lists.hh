@@ -17,6 +17,16 @@ namespace Synopsis
 namespace PTree
 {
 
+class Name : public List
+{
+public:
+  Name(Node *, const Encoding &);
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  Encoding encoded_name() const { return my_name;}
+private:
+  Encoding my_name;
+};
+
 class Brace : public List 
 {
 public:
@@ -120,9 +130,10 @@ public:
 class UsingDeclaration : public Declaration
 {
 public:
-  UsingDeclaration(Kwd::Using *u, Kwd::Typename *t, Node *id)
+  UsingDeclaration(Kwd::Using *u, Kwd::Typename *t, Name *id)
     : Declaration(u, list(t, id)) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  Name *name() const { return static_cast<Name *>(nth<2>(this));}
 };
 
 class NamespaceAlias : public Declaration
@@ -217,16 +228,6 @@ public:
   DeclSpec *decl_specifier_seq() { return static_cast<DeclSpec *>(nth<0>(this));}
   Declarator *declarator() { return static_cast<Declarator *>(nth<1>(this));}
   Node *initializer() { return PTree::length(this) > 2 ? last(this) : 0;}
-};
-
-class Name : public List
-{
-public:
-  Name(Node *, const Encoding &);
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-  Encoding encoded_name() const { return my_name;}
-private:
-  Encoding my_name;
 };
 
 class FstyleCastExpr : public List

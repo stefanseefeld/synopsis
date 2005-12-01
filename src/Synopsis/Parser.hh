@@ -73,6 +73,7 @@ private:
   bool declare(T *);
   bool lookup_class_name(PTree::Encoding const &);
   bool lookup_namespace_name(PTree::Encoding const &);
+  bool lookup_type_name(PTree::Encoding const &);
 
   //. :: [opt]
   PTree::Atom *opt_scope(PTree::Encoding &);
@@ -182,6 +183,21 @@ private:
   //.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
   PTree::List *base_clause();
 
+  //. ctor-initializer:
+  //.   : mem-initializer-list
+  //.
+  //. mem-initializer-list:
+  //.   mem-initializer
+  //.   mem-initializer , mem-initializer-list
+  //.
+  //. mem-initializer:
+  //.   mem-initializer-id ( expression-list [opt] )
+  //.
+  //. mem-initializer-id:
+  //.   :: [opt] nested-name-specifier [opt] class-name
+  //.   identifier
+  PTree::List *opt_ctor_initializer();
+
   //. member-specification:
   //.   member-declaration member-specification [opt]
   //.   access-specifier : member-specification [opt]
@@ -249,6 +265,9 @@ private:
   //.   extern string-literal { declaration-seq [opt] }
   //.   extern string-literal declaration
   PTree::LinkageSpec *linkage_specification();
+
+  //. Return true if next comes a constructor-declarator.
+  bool is_constructor_declarator();
 
   //. decl-specifier-seq:
   //.   decl-specifier-seq [opt] decl-specifier
@@ -437,6 +456,12 @@ private:
 
   //. conversion-function-id:
   //.   operator conversion-type-id
+  //.
+  //. conversion-type-id:
+  //.   type-specifier-seq conversion-declarator [opt]
+  //.
+  //. conversion-declarator:
+  //.   ptr-operator conversion-declarator [opt]
   PTree::List *conversion_function_id(PTree::Encoding &);
 
   //. template-name:

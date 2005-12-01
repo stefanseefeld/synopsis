@@ -180,7 +180,12 @@ SymbolFactory::SymbolFactory(Language l)
     my_template_repository(new TA::TemplateRepository())
 {
   // define the global scope
-  my_scopes.push(new ST::Namespace(0, 0));
+  ST::Namespace *global = new ST::Namespace(0, 0);
+  my_scopes.push(global);
+  // FIXME: Do we need a special GCC-extension flag, too ?
+  PT::Encoding name;
+  name.append_with_length("__builtin_va_list");
+  global->declare(name, new ST::TypeName(PT::Encoding(), 0, true, global));
 }
 
 void SymbolFactory::enter_scope(PT::NamespaceSpec const *spec)
@@ -524,7 +529,6 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   Trace trace("SymbolFactory::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   ST::Scope *scope = my_scopes.top();
-
   // A template declaration either declares a class template, or a function template.
   // However, as it may contain multiple nesting levels care has to be taken to
   // create the appropriate symbol in the correct scope.
@@ -532,7 +536,6 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   TemplateNameFinder finder;
   bool is_function;
   PT::Encoding name = finder.find(tdecl, is_function);
-
   PT::List const *declaration = static_cast<PT::List *>(PT::nth(tdecl, 4));
   if (!is_function)
   {
@@ -551,8 +554,17 @@ void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
   }
   else
   {
-    PT::Node const *decl = PT::nth<2>(declaration);
+    PT::Node const *decl = PT::nth<1>(declaration);
+    // This is either a function (template) declaration or 
+    // a function (template) definition. Thus, declaration is
+    // either a PT::Declaration or a PT::FunctionDefinition.
+    // Depending on which it is, second child node is either 
+    // a list of declarators (must have length 1 in case of a 
+    // template-declaration), or a declarator.
+    if (!dynamic_cast<PT::Declarator const *>(decl))
+      decl = PT::nth<0>(static_cast<PT::List const *>(decl));
     PT::Encoding name = decl->encoded_name();
+
     if (name.is_qualified())
     {
       scope = lookup_scope_of_qname(name, decl);
@@ -579,8 +591,7 @@ void SymbolFactory::declare(PT::TypeParameter const *tparam)
   Trace trace("SymbolFactory::declare(TypeParameter *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   ST::Scope *scope = my_scopes.top();
-
-  PT::Node const *first = PT::nth<1>(tparam);
+  PT::Node const *first = PT::nth<0>(tparam);
   if (dynamic_cast<PT::Kwd::Typename const *>(first) ||
       dynamic_cast<PT::Kwd::Class const *>(first))
   {
@@ -647,7 +658,7 @@ void SymbolFactory::declare(PT::UsingDeclaration const *udecl)
 {
   Trace trace("SymbolFactory::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
-  PT::Encoding const &name = PT::nth<2>(udecl)->encoded_name();
+  PT::Encoding const &name = udecl->name()->encoded_name();
   PT::Encoding alias;
   for (PT::Encoding::name_iterator i = name.begin_name();
        i != name.end_name();
