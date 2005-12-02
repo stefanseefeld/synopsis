@@ -19,7 +19,7 @@ namespace Synopsis
 
 class Buffer;
 
-//. a Lexer reads tokens from a stream.
+//. A Lexer reads tokens from a stream. It supports backtracking.
 class Lexer
 {
 public:
@@ -84,8 +84,12 @@ private:
 
   //. skip till end of paren
   void skip_paren();
-  //. skip till end of line
-  void skip_line();
+  //. Handle preprocessing directive. While the buffer is assumed
+  //. to have been preprocessed, some directives may remain (notably
+  //. line and pragma).
+  //. This method may interpret pragmas, and will always process the
+  //. complete line.
+  void process_directive();
   //. skip __attribute__(...), ___asm__(...), ...
   void skip_attribute();
   //. skip __extension__(...).
