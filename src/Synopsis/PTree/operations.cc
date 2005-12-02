@@ -93,53 +93,5 @@ bool equiv(Node const *p, Node const *q)
   }
 }
 
-List *list() 
-{
-  return 0;
-}
-
-List *list(Node *p)
-{
-  return new PTree::List(p, 0);
-}
-
-List *list(Node *p, Node *q)
-{
-  return new PTree::List(p, new PTree::List(q, 0));
-}
-
-List *list(Node *p1, Node *p2, Node *p3)
-{
-  return new PTree::List(p1, new PTree::List(p2, new PTree::List(p3, 0)));
-}
-
-List *list(Node *p1, Node *p2, Node *p3, Node *p4)
-{
-  return new List(p1, list(p2, p3, p4));
-}
-
-List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5)
-{
-  return conc(list(p1, p2), list(p3, p4, p5));
-}
-
-List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
-	   Node *p6)
-{
-  return conc(list(p1, p2, p3), list(p4, p5, p6));
-}
-
-List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
-	   Node *p6, Node *p7)
-{
-  return conc(list(p1, p2, p3), list(p4, p5, p6, p7));
-}
-
-List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5,
-	   Node *p6, Node *p7, Node *p8)
-{
-  return conc(list(p1, p2, p3, p4), list(p5, p6, p7, p8));
-}
-
 }
 }

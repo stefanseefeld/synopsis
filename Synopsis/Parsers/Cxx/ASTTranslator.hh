@@ -29,20 +29,17 @@ public:
   void translate(PTree::Node *, Buffer &);
 
 private:
-  class TemplateParameterTranslator;
-  friend class TemplateParameterTranslator;
   typedef std::stack<AST::Scope> ScopeStack;
 
-  virtual void visit(PTree::NamespaceSpec *spec);
-  virtual void visit(PTree::Declarator *decl);
-  virtual void visit(PTree::Declaration *decl);
-  virtual void visit(PTree::FunctionDefinition *fdef);
-  virtual void visit(PTree::ClassSpec *class_spec);
-  virtual void visit(PTree::EnumSpec *enum_spec);
-  virtual void visit(PTree::TemplateDecl *templ);
-
-  void translate_parameters(PTree::List *,
-			    AST::TypeList, AST::Function::Parameters &);
+  virtual void visit(PTree::NamespaceSpec *);
+  virtual void visit(PTree::Declarator *);
+  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::FunctionDefinition *);
+  virtual void visit(PTree::ClassSpec *);
+  virtual void visit(PTree::EnumSpec *);
+  virtual void visit(PTree::TemplateDecl *);
+  virtual void visit(PTree::TypeParameter *);
+  virtual void visit(PTree::ParameterDeclaration *);
 
   void add_comments(AST::Declaration, PTree::Node *);
   //. Update positional information for the given
@@ -69,22 +66,7 @@ private:
   bool                my_debug;
   Buffer             *my_buffer;
   PTree::Declaration *my_declaration;
-};
-
-//. Translates template parameters for a given TemplateDecl.
-class ASTTranslator::TemplateParameterTranslator 
-  : private Synopsis::PTree::Visitor
-{
-public:
-  TemplateParameterTranslator(ASTTranslator &);
-  Python::List translate(Synopsis::PTree::TemplateDecl *);
-
-private:
-  virtual void visit(Synopsis::PTree::TypeParameter *);
-  virtual void visit(Synopsis::PTree::ParameterDeclaration *);
-
-  ASTTranslator &                     my_parent;
-  Synopsis::AST::Template::Parameters my_parameters;
+  AST::Parameter      my_parameter;
 };
 
 #endif

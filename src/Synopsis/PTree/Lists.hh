@@ -210,11 +210,8 @@ public:
     : List(spec, cons(decl)) {}
   ParameterDeclaration(DeclSpec *spec, Declarator *decl,
 		       Atom *equal, Node *init)
-    : List(spec, cons(decl))
-  {
-    snoc(this, equal);
-    snoc(this, init);
-  }
+    : List(spec, list(decl, equal, init))
+  {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
   DeclSpec *decl_specifier_seq() { return static_cast<DeclSpec *>(nth<0>(this));}

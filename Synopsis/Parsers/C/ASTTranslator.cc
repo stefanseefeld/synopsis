@@ -77,9 +77,14 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     AST::Function::Parameters parameters;
     PT::List *p = declarator->cdr();
     while (p && p->car() && *p->car() != '(') p = p->cdr();
-    translate_parameters(static_cast<PT::List *>(PT::nth<1>(p)),
-			 parameter_types, parameters);
 
+    for (PT::List *node = static_cast<PT::List *>(PT::nth<1>(p));
+	 node->cdr();
+	 node = PT::tail(node, 2))
+    {
+      node->car()->accept(this); // PT::ParameterDeclaration
+      parameters.append(my_parameter);
+    }
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
     AST::Modifiers modifiers;
@@ -163,56 +168,27 @@ void ASTTranslator::visit(PT::Declaration *declaration)
   }
 }
 
-void ASTTranslator::visit(PT::ClassSpec *class_spec)
+void ASTTranslator::visit(PT::ClassSpec *spec)
 {
   Trace trace("ASTTranslator::visit(PT::ClassSpec *)", Trace::TRANSLATION);
   
-  bool visible = update_position(class_spec);
+  bool visible = update_position(spec);
 
-  size_t size = PT::length(class_spec);
-  if (size == 2) // forward declaration
+  std::string key = PT::string(spec->key());
+  AST::ScopedName qname;
+  if (spec->name()) qname = PT::string(static_cast<PT::Atom *>(spec->name()));
+  else // anonymous
   {
-    // [ class|struct <name> ]
-
-    std::string type = PT::reify(PT::nth<0>(class_spec));
-    std::string name = PT::reify(PT::nth<1>(class_spec));
-    AST::ScopedName qname(name);
-    AST::Forward forward = my_ast_kit.create_forward(my_file, my_lineno,
-                                                     type, qname);
-    add_comments(forward, class_spec->get_comments());
-    if (visible) declare(forward);
-    my_types.declare(qname, forward);
-    return;
-  }
-
-  std::string type = PT::reify(PT::nth<0>(class_spec));
-  std::string name;
-  PT::ClassBody *body = 0;
-
-  if (size == 4) // struct definition
-  {
-    // [ class|struct <name> <inheritance> [{ body }] ]
-
-    name = PT::reify(PT::nth<1>(class_spec));
-    body = static_cast<PT::ClassBody *>(PT::nth(class_spec, 3));
-  }
-  else if (size == 3) // anonymous struct definition
-  {
-    // [ struct [nil nil] [{ ... }] ]
-
-    PT::Encoding ename = class_spec->encoded_name();
+    PT::Encoding ename = spec->encoded_name();
     size_t length = (ename.front() - 0x80);
-    name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
-    body = static_cast<PT::ClassBody *>(PT::nth(class_spec, 2));
+    qname = std::string(ename.begin() + 1, ename.begin() + 1 + length);
   }
-
-  AST::ScopedName qname(name);
-  AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, type, qname);
-  add_comments(class_, class_spec->get_comments());
+  AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, key, qname);
+  add_comments(class_, spec->get_comments());
   if (visible) declare(class_);
   my_types.declare(qname, class_);
   my_scope.push(class_);
-  body->accept(this);
+  spec->body()->accept(this);
   my_scope.pop();
 }
 
@@ -275,88 +251,20 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
   my_types.declare(AST::ScopedName(name), enum_);
 }
 
-void ASTTranslator::translate_parameters(PT::List *node,
-                                         AST::TypeList types,
-                                         AST::Function::Parameters &parameters)
+void ASTTranslator::visit(PTree::ParameterDeclaration *param)
 {
-  Trace trace("ASTTranslator::translate_parameters", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(ParameterDeclaration)", Trace::TRANSLATION);
 
-  while (node)
-  {
-    // A parameter has a type, possibly a name and possibly a value.
-    // Treat the value as a string, i.e. don't analyse the expression further.
-    std::string name, value;
-    AST::Modifiers premods, postmods;
-    if (*node->car() == ',') node = node->cdr();
-    PT::List *param = static_cast<PT::List *>(node->car());
-    AST::Type type = types.get(0);
-    types.del(0); // pop one value
-
-    // Discover contents. Ptree may look like:
-    //[register iostate [* a] = [0 + 2]]
-    //[register iostate [nil] = 0]
-    //[register iostate [nil]]
-    //[iostate [nil] = 0]
-    //[iostate [nil]]   etc
-    if (PT::length(param) > 1)
-    {
-      // There is a parameter
-      int type_ix, value_ix = -1, len = PT::length(param);
-      if (len >= 4 && *PT::nth(param, len-2) == '=')
-      {
-        // There is an =, which must be followed by the value
-        value_ix = len-1;
-        type_ix = len-4;
-      }
-      else
-      {
-        // No =, so last is name and second last is type
-        type_ix = len-2;
-      }
-      // Skip keywords (eg: register) which are atoms
-      for (int ix = 0;
-           ix < type_ix && PT::nth(param, ix) && PT::nth(param, ix)->is_atom();
-           ++ix)
-      {
-        PT::Node *atom = PT::nth(param, ix);
-        premods.append(PT::reify(atom));
-      }
-      // Find name
-//       if (PT::Node *n = static_cast<PT::List *>(PT::nth(param, type_ix+1)))
-//       {
-//         if (PT::last(n) && !PT::last(n)->is_atom() && 
-//             PT::nth<0>(PT::last(n)) &&
-//             *PT::nth<0>(PT::last(n)) == ')' && PT::length(n) >= 4)
-//         {
-//           // Probably a function pointer type
-//           // pname is [* [( [* convert] )] ( [params] )]
-//           // set to [( [* convert] )] from example
-//           n = PT::nth(static_cast<PT::List *>(n), PT::length(n) - 4);
-//           if (n && !n->is_atom() && PT::length(n) == 3)
-//           {
-//             // set to [* convert] from example
-//             n = PT::nth<1>(n);
-//             if (n && PT::nth<1>(n) && PT::nth<1>(n)->is_atom())
-//               name = PT::reify(PT::nth<1>(n));
-//           }
-//         }
-//         else if (!n->is_atom() && PT::last(n) && PT::last(n)->car())
-//         {
-//           // * and & modifiers are stored with the name so we must skip them
-//           PT::Node *last = PT::last(n)->car();
-//           if (*last != '*' && *last != '&')
-//             // The last node is the name:
-//             name = PT::reify(last);
-//         }
-//       }
-      // Find value
-      if (value_ix >= 0) value = PT::reify(PT::nth(param, value_ix));
-    }
-    AST::Parameter p = my_ast_kit.create_parameter(premods, type, postmods,
-                                                   name, value);
-    parameters.append(p);
-    node = PT::tail(node, 0);
-  }
+  PT::DeclSpec *spec = param->decl_specifier_seq();
+  // FIXME: extract modifiers and type from decl-specifier-seq
+  AST::Modifiers pre;
+  AST::Type type = my_types.lookup(spec->type());
+  AST::Modifiers post;
+  std::string name = param->declarator()->encoded_name().unmangled();
+  std::string value;
+  PT::Node *initializer = param->initializer();
+  if (initializer) value = PT::reify(initializer);
+  my_parameter = my_ast_kit.create_parameter(pre, type, post, name, value);
 }
 
 void ASTTranslator::add_comments(AST::Declaration declarator, PT::Node *c)
