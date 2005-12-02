@@ -84,18 +84,6 @@ inline List *tail(List *p, size_t n)
 //. Return a new list whose car is p and cdr is q.
 inline List *cons(Node *p, List *q = 0) { return new List(p, q);}
 
-List *list();
-List *list(Node *);
-List *list(Node *, Node *);
-List *list(Node *, Node *, Node *);
-List *list(Node *, Node *, Node *, Node *);
-List *list(Node *, Node *, Node *, Node *, Node *);
-List *list(Node *, Node *, Node *, Node *, Node *, Node *);
-List *list(Node *, Node *, Node *, Node *, Node *, Node *,
-	   Node *);
-List *list(Node *, Node *, Node *, Node *, Node *, Node *,
-	   Node *, Node *);
-
 //. Concatenate the second argument to the first, returning the modified list.
 //. If p is nil return q instead.
 inline List *conc(List *p, List *q)
@@ -119,6 +107,19 @@ inline T *conc(T *p, List *q)
 //. Concatenate a new cons cell containing node to list.
 template <typename T>
 inline T *snoc(T *list, Node *node) { return conc(list, cons(node));}
+
+inline List *list(Node *p, Node *q) 
+{ return cons(p, cons(q));}
+inline List *list(Node *p1, Node *p2, Node *p3) 
+{ return cons(p1, list(p2, p3));}
+inline List *list(Node *p1, Node *p2, Node *p3, Node *p4) 
+{ return cons(p1, list(p2, p3, p4));}
+inline List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5) 
+{ return cons(p1, list(p2, p3, p4, p5));}
+inline List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5, Node *p6) 
+{ return cons(p1, list(p2, p3, p4, p5, p6));}
+inline List *list(Node *p1, Node *p2, Node *p3, Node *p4, Node *p5, Node *p6, Node *p7) 
+{ return cons(p1, list(p2, p3, p4, p5, p6, p7));}
 
 }
 }

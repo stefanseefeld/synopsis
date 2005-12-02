@@ -29,14 +29,12 @@ public:
 private:
   typedef std::stack<AST::Scope> ScopeStack;
 
-  virtual void visit(PTree::List *node);
-  virtual void visit(PTree::Declarator *decl);
-  virtual void visit(PTree::Declaration *decl);
-  virtual void visit(PTree::ClassSpec *class_spec);
-  virtual void visit(PTree::EnumSpec *enum_spec);
-
-  void translate_parameters(PTree::List *,
-			    AST::TypeList, AST::Function::Parameters &);
+  virtual void visit(PTree::List *);
+  virtual void visit(PTree::Declarator *);
+  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::ClassSpec *);
+  virtual void visit(PTree::EnumSpec *);
+  virtual void visit(PTree::ParameterDeclaration *);
 
   void add_comments(AST::Declaration, PTree::Node *);
   //. Update positional information for the given
@@ -61,6 +59,7 @@ private:
   bool                my_debug;
   Buffer             *my_buffer;
   PTree::Declaration *my_declaration;
+  AST::Parameter      my_parameter;
 };
 
 #endif

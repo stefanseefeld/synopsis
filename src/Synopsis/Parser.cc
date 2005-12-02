@@ -622,7 +622,7 @@ PT::List *Parser::nested_name_specifier(PT::Encoding &encoding,
   // if we found a class-name, but the class was forward-declared only,
   // my_qualifying_scope will be reset to 0.
   if (!name || !my_qualifying_scope) return 0;
-  else qname = PT::list(name);
+  else qname = PT::cons(name);
   if (!require(Token::Scope, "::")) return 0;
 
   if (!encoding.is_qualified()) encoding.qualified(1);
@@ -1013,7 +1013,7 @@ PTree::List *Parser::base_clause()
 {
   Trace trace("Parser::base_clause", Trace::PARSING);
   assert(my_lexer.look_ahead() == ':');
-  PT::List *bases = PT::list(new PT::Atom(my_lexer.get_token()));
+  PT::List *bases = PT::cons(new PT::Atom(my_lexer.get_token()));
   while(true) // for all base-specifiers
   {
     PT::List *super = 0;
@@ -1198,7 +1198,7 @@ PT::Node *Parser::opt_member_specification()
       {
 	PT::Node *access = new PT::Kwd::Public(my_lexer.get_token());
 	if (!require(':')) return 0;
-	access = PT::snoc(PT::list(access), new PT::Atom(my_lexer.get_token()));
+	access = PT::snoc(PT::cons(access), new PT::Atom(my_lexer.get_token()));
 	members = PT::snoc(members, access);
 	break;
       }
@@ -1206,7 +1206,7 @@ PT::Node *Parser::opt_member_specification()
       {
 	PT::Node *access = new PT::Kwd::Protected(my_lexer.get_token());
 	if (!require(':')) return 0;
-	access = PT::snoc(PT::list(access), new PT::Atom(my_lexer.get_token()));
+	access = PT::snoc(PT::cons(access), new PT::Atom(my_lexer.get_token()));
 	members = PT::snoc(members, access);
 	break;
       }
@@ -1214,7 +1214,7 @@ PT::Node *Parser::opt_member_specification()
       {
 	PT::Node *access = new PT::Kwd::Private(my_lexer.get_token());
 	if (!require(':')) return 0;
-	access = PT::snoc(PT::list(access), new PT::Atom(my_lexer.get_token()));
+	access = PT::snoc(PT::cons(access), new PT::Atom(my_lexer.get_token()));
 	members = PT::snoc(members, access);
 	break;
       }
@@ -2030,17 +2030,17 @@ PT::List *Parser::parameter_declaration_clause(PT::Encoding &encoding)
     case Token::Ellipsis:
       encoding.ellipsis_arg();
       encoding.end_func_args();
-      return PT::list(new PT::Atom(my_lexer.get_token()));
+      return PT::cons(new PT::Atom(my_lexer.get_token()));
     case ')':
       encoding.void_();
       encoding.end_func_args();
-      return PT::list(0);
+      return PT::cons(0);
     case Token::VOID:
       if (my_lexer.look_ahead(1) == ')')
       {
 	encoding.void_();
 	encoding.end_func_args();
-	return PT::list(new PT::Kwd::Void(my_lexer.get_token()));
+	return PT::cons(new PT::Kwd::Void(my_lexer.get_token()));
       }
       // Fall through.
     default:
@@ -2235,7 +2235,7 @@ PT::LinkageSpec *Parser::linkage_specification()
   Token token = my_lexer.get_token();
 
   PT::LinkageSpec *spec = new PT::LinkageSpec(new PT::Kwd::Extern(extern_),
-					      PT::list(new PT::Atom(token)));
+					      PT::cons(new PT::Atom(token)));
   if(my_lexer.look_ahead() == '{')
   {
     Token ob = my_lexer.get_token();
@@ -2455,7 +2455,7 @@ PT::UsingDirective *Parser::using_directive()
   PT::Encoding encoding;
   PT::Atom *scope = opt_scope(encoding);
   PT::List *name = 0;
-  if (scope) name = PT::list(scope);
+  if (scope) name = PT::cons(scope);
   {
     Tentative tentative(*this, encoding);
     PT::Node *name_spec = nested_name_specifier(encoding);
@@ -2691,7 +2691,7 @@ PT::Declaration *Parser::explicit_specialization()
 	func = PT::snoc(func, body);
 	return PT::snoc(tdecl, func);
       }
-      declarators = PT::list(decl);
+      declarators = PT::cons(decl);
     }
     if (!require(';')) return 0;
     Token semic = my_lexer.get_token();
@@ -2767,12 +2767,12 @@ PT::Node *Parser::operator_name(PT::Encoding &encoding)
 	if (op.type == Token::NEW)
 	{
 	  encoding.append_with_length("new[]", 5);
-	  name = PT::list(new PT::Kwd::New(op));
+	  name = PT::cons(new PT::Kwd::New(op));
 	}
 	else
 	{
 	  encoding.append_with_length("delete[]", 8);
-	  name = PT::list(new PT::Kwd::Delete(op));
+	  name = PT::cons(new PT::Kwd::Delete(op));
 	}
 	Token os = my_lexer.get_token();
 	name = PT::snoc(name, new PT::Atom(os));
@@ -2783,7 +2783,7 @@ PT::Node *Parser::operator_name(PT::Encoding &encoding)
     }
     case '(':
     {
-      PT::List *name = PT::list(new PT::Atom(my_lexer.get_token()));
+      PT::List *name = PT::cons(new PT::Atom(my_lexer.get_token()));
       if (!require(')')) return 0;
       Token cp = my_lexer.get_token();
       encoding.append_with_length("()", 2);
@@ -2791,7 +2791,7 @@ PT::Node *Parser::operator_name(PT::Encoding &encoding)
     }
     case '[':
     {
-      PT::List *name = PT::list(new PT::Atom(my_lexer.get_token()));
+      PT::List *name = PT::cons(new PT::Atom(my_lexer.get_token()));
       if (!require(']')) return 0;
       Token cs = my_lexer.get_token();
       encoding.append_with_length("[]", 2);
@@ -3395,7 +3395,7 @@ PT::List *Parser::type_id_list()
     PT::Encoding encoding;
     PT::Node *type = type_id(encoding);
     if (!require(type, "type-id")) return 0;
-    if (!types) types = PT::list(type);
+    if (!types) types = PT::cons(type);
     else types = PT::snoc(types, type);
     if (my_lexer.look_ahead() != ',') break;
     types = PT::snoc(types, new PT::Atom(my_lexer.get_token()));
@@ -3436,7 +3436,7 @@ PT::Node *Parser::unary_expression()
       Token op = my_lexer.get_token();
       PT::Node *right = cast_expression();
       if (!right) return 0;
-      else return new PT::UnaryExpr(new PT::Atom(op), PT::list(right));
+      else return new PT::UnaryExpr(new PT::Atom(op), PT::cons(right));
     }
     case Token::SIZEOF: return sizeof_expression();
     case Token::NEW: return new_expression();
@@ -3463,12 +3463,12 @@ PT::Node *Parser::throw_expression()
       type == ']' ||
       type == '}' ||
       type == ':')
-    return new PT::ThrowExpr(throw_, PT::list(0));
+    return new PT::ThrowExpr(throw_, PT::cons(0));
   else
   {
     PT::Node *expr = assignment_expression();
     if (!require(expr, "assignment-expression")) return 0;
-    return new PT::ThrowExpr(throw_, PT::list(expr));
+    return new PT::ThrowExpr(throw_, PT::cons(expr));
   }
 }
 
@@ -3502,7 +3502,7 @@ PT::Node *Parser::sizeof_expression()
   if (!unary)
     return 0;
   else
-    return new PT::SizeofExpr(new PT::Atom(kwd), PT::list(unary));
+    return new PT::SizeofExpr(new PT::Atom(kwd), PT::cons(unary));
 }
 
 // new-expression:
@@ -3557,7 +3557,7 @@ PT::List *Parser::functional_cast()
     error("expecting ')'");
     return 0;
   }
-  PT::List *args = PT::list(new PT::Atom(my_lexer.get_token()));
+  PT::List *args = PT::cons(new PT::Atom(my_lexer.get_token()));
   if (my_lexer.look_ahead() != ')')
   {
     PGuard<bool> pguard(*this, &Parser::my_in_functional_cast, true);
@@ -3650,7 +3650,7 @@ PT::Node *Parser::postfix_expression()
       PT::Atom *scope = opt_scope(encoding);
       PT::List *qname = nested_name_specifier(encoding);
       if (!require(qname, "nested-name-specifier")) return 0;
-      if (scope) qname = PT::snoc(PT::list(scope), qname);
+      if (scope) qname = PT::snoc(PT::cons(scope), qname);
       if (my_lexer.look_ahead() == Token::TEMPLATE)
       {
 	// We are looking at a template-id
@@ -3765,7 +3765,7 @@ PT::Node *Parser::postfix_expression()
       case Token::IncOp:
       {
 	Token op = my_lexer.get_token();
-	expr = new PT::PostfixExpr(expr, PT::list(new PT::Atom(op)));
+	expr = new PT::PostfixExpr(expr, PT::cons(new PT::Atom(op)));
 	break;
       }
       case '.':
@@ -3896,7 +3896,7 @@ bool Parser::typeof_expression(PT::Node *&node)
 
   Token typeof_ = my_lexer.get_token();
   Token op = my_lexer.get_token();
-  PT::List *type = PT::list(new PT::Atom(op));
+  PT::List *type = PT::cons(new PT::Atom(op));
   node = assignment_expression();
   if (!node) return 0;
   type = PT::snoc(type, node);
@@ -4001,13 +4001,13 @@ PT::ExprStatement *Parser::expression_statement()
 
   if(my_lexer.look_ahead() == ';')
   {
-    return new PT::ExprStatement(0, PT::list(new PT::Atom(my_lexer.get_token())));
+    return new PT::ExprStatement(0, PT::cons(new PT::Atom(my_lexer.get_token())));
   }
   else
   {
     PT::Node *expr = expression();
     if (!require(expr, "expression") || !require(';')) return 0;
-    return new PT::ExprStatement(expr, PT::list(new PT::Atom(my_lexer.get_token())));
+    return new PT::ExprStatement(expr, PT::cons(new PT::Atom(my_lexer.get_token())));
   }
 }
 
@@ -4231,10 +4231,10 @@ PT::List *Parser::statement()
       if(semic.type != ';') return 0;
       if(kwd.type == Token::BREAK)
 	stmt = new PT::BreakStatement(new PT::Kwd::Break(kwd),
-				      PT::list(new PT::Atom(semic)));
+				      PT::cons(new PT::Atom(semic)));
       else
 	stmt = new PT::ContinueStatement(new PT::Kwd::Continue(kwd),
-					 PT::list(new PT::Atom(semic)));
+					 PT::cons(new PT::Atom(semic)));
       break;
     }
     case Token::RETURN:
@@ -4244,7 +4244,7 @@ PT::List *Parser::statement()
       {
 	Token semic = my_lexer.get_token();
 	stmt = new PT::ReturnStatement(new PT::Kwd::Return(kwd),
-				       PT::list(new PT::Atom(semic)));
+				       PT::cons(new PT::Atom(semic)));
       } 
       else
       {
@@ -4319,7 +4319,7 @@ PT::List *Parser::try_block()
   PT::Block *body = compound_statement();
   if (!body) return 0;
 
-  PT::List *stmt = new PT::TryStatement(new PT::Kwd::Try(try_), PT::list(body));
+  PT::List *stmt = new PT::TryStatement(new PT::Kwd::Try(try_), PT::cons(body));
 
   do
   {
