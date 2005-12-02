@@ -27,7 +27,7 @@ ifdef GC_LIB
 CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
 endif
 
-SRC	:= Trace Buffer Lexer
+SRC	:= Trace Buffer Lexer process_pragma
 SRC     += $(patsubst %, PTree/%, Encoding operations Atoms Lists \
                                   Visitor Display Writer)
 SRC     += $(patsubst %, SymbolTable/%, Symbol Scope Scopes Display Walker)

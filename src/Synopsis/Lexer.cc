@@ -7,6 +7,7 @@
 
 #include "Synopsis/Lexer.hh"
 #include "Synopsis/Buffer.hh"
+#include "Synopsis/process_pragma.hh"
 #include <iostream>
 #include <cassert>
 
@@ -267,11 +268,27 @@ void Lexer::skip_paren()
   } while(i > 0);
 }
 
-void Lexer::skip_line()
+void Lexer::process_directive()
 {
-  char c;
-  do { c = my_buffer->get();}
-  while(c != '\n' && c != '\0');
+  char c = ' ';
+  while(is_blank(c)) c = my_buffer->get();
+  if (is_letter(c))
+  {
+    unsigned long top = my_buffer->position();
+    char const *ptr = my_buffer->ptr(top);
+    do { c = my_buffer->get();}
+    while(is_letter(c) || is_digit(c));
+    size_t length = static_cast<size_t>(my_buffer->position() - top);
+    if (length == 6 && strncmp(ptr, "pragma", 6) == 0)
+    {
+      while(c != '\n' && c != '\0') c = my_buffer->get();
+      length = static_cast<size_t>(my_buffer->position() - top);
+      process_pragma(std::string(ptr + 6, length - 6));
+      return;
+    }
+  }
+  else ; // FIXME: issue a parse error: no directive found.
+  while(c != '\n' && c != '\0') c = my_buffer->get();
 }
 
 /* You can have the following :
@@ -376,7 +393,7 @@ Token::Type Lexer::read_line()
   else if(c == '\n') return '\n';
   else if(c == '#' && my_token.type == '\n')
   {
-    skip_line();
+    process_directive();
     return '\n';
   }
   else if(c == '\'' || c == '"')
