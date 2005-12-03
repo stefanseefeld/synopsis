@@ -76,16 +76,6 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class UserKeyword : public Keyword
-{
-public:
-  UserKeyword(Token const &t) : Keyword(t) {}
-  virtual Token::Type token() const { return my_type;}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-private:
-  Token::Type my_type;
-};
-
 }
 }
 

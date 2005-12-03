@@ -7,7 +7,6 @@
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolTable.hh>
-#include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/TypeAnalysis.hh>
 #include "Synopsis/Parser.hh"
 #include "Synopsis/Lexer.hh"
@@ -422,6 +421,27 @@ bool Parser::lookup_class_name(PT::Encoding const &name)
   my_qualifying_scope = scope;           // this may be 0, if the class_name was forward-declared.
 
   return true;
+}
+
+bool Parser::lookup_template_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_template_name", Trace::PARSING);
+  ST::SymbolSet symbols;
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::DEFAULT);
+  else
+    symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::DEFAULT);
+  if (symbols.size() != 1) return false; // no such name
+
+  // If there is a single match, it must be a class template or 
+  // a function template.
+  // Else it must be an overload set, containing at least one function template.
+  TemplateNameChecker checker;
+  for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
+    if (checker.is_template_name(*i))
+      return true;
+  error(name.unmangled() + " is not a known template.");
+  return false;
 }
 
 bool Parser::lookup_namespace_name(PT::Encoding const &name)
@@ -1240,8 +1260,8 @@ PT::Node *Parser::opt_member_specification()
 	{
 	  // nested class-specifier ?
 	  Token semic = my_lexer.get_token();
-	  PT::Declaration *decl =
-	    new PT::Declaration(spec, PT::list(0, new PT::Atom(semic)));
+	  PT::SimpleDeclaration *decl =
+	    new PT::SimpleDeclaration(spec, PT::list(0, new PT::Atom(semic)));
 	  declare(decl);
 	  members = PT::snoc(members, decl);
 	}
@@ -1332,8 +1352,8 @@ PT::Node *Parser::opt_member_specification()
 	    if (!require(';')) return 0;
 
 	    PT::Atom *semic = new PT::Atom(my_lexer.get_token());
-	    PT::Declaration *declaration = new PT::Declaration(spec,
-							       PT::list(declarators, semic));
+	    PT::SimpleDeclaration *declaration =
+	      new PT::SimpleDeclaration(spec, PT::list(declarators, semic));
 	    declare(declaration);
 	    members = PT::snoc(members, declaration);
 	  }
@@ -2158,7 +2178,7 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   Trace trace("Parser::simple_declaration", Trace::PARSING);
 
   PT::Encoding encoding;
-  PT::DeclSpec *decl_spec = decl_specifier_seq(encoding);
+  PT::DeclSpec *spec = decl_specifier_seq(encoding);
 
   // [dcl.dcl]
   //
@@ -2166,7 +2186,7 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   // type conversions can the decl-specifier-seq be omitted.
   //
   // If this is not a functional cast, it is definitely a declaration.
-  if (decl_spec && my_lexer.look_ahead() != '(') commit();
+  if (spec && my_lexer.look_ahead() != '(') commit();
 
   // [dcl.dcl]
   //
@@ -2183,7 +2203,8 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
 	function_definition_allowed &&
 	starts_function_definition(my_lexer.look_ahead()))
     {
-      PT::FunctionDefinition *func = new PT::FunctionDefinition(decl_spec, PT::cons(decl));
+      PT::FunctionDefinition *func = 
+	new PT::FunctionDefinition(spec, PT::cons(decl));
       {
 	PT::List *ctor_init = opt_ctor_initializer();
 	if (ctor_init) func = PT::snoc(func, ctor_init);
@@ -2198,13 +2219,8 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
     declarators = PT::snoc(declarators, decl);
     Token::Type token = my_lexer.look_ahead();
     if (token == ',')
-    {
       declarators = PT::snoc(declarators, new PT::Atom(my_lexer.get_token()));
-    }
-    else if (token == ';')
-    {
-      break;
-    }
+    else if (token == ';') break;
     else
     {
       error("expected ',' or ';'");
@@ -2215,8 +2231,8 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
     function_definition_allowed = false;
   }
   Token semic = my_lexer.get_token();
-  PT::Declaration *decl = 0;
-  decl = new PT::Declaration(decl_spec, PT::list(declarators, new PT::Atom(semic)));
+  PT::SimpleDeclaration *decl =
+    new PT::SimpleDeclaration(spec, PT::list(declarators, new PT::Atom(semic)));
   if (!my_in_template_decl) declare(decl);
   return decl;
 }
@@ -2605,7 +2621,7 @@ PT::Node *Parser::template_parameter_list(PT::Encoding &encoding)
 
 // template-declaration:
 //   export [opt] template < template-parameter-list > declaration
-PT::Declaration *Parser::template_declaration()
+PT::TemplateDeclaration *Parser::template_declaration()
 {
   Trace trace("Parser::template_declaration", Trace::PARSING);
 
@@ -2619,7 +2635,8 @@ PT::Declaration *Parser::template_declaration()
   Token templ = my_lexer.get_token();
   if (!require('<')) return 0;
 
-  PT::TemplateDecl *tdecl = new PT::TemplateDecl(new PT::Kwd::Template(templ));
+  PT::TemplateDeclaration *tdecl = 
+    new PT::TemplateDeclaration(new PT::Kwd::Template(templ));
   tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
   PT::Encoding encoding;
   {
@@ -2628,7 +2645,7 @@ PT::Declaration *Parser::template_declaration()
     if (!require(params, "template-parameter-list") || !require('>')) return 0;
     tdecl = PT::conc(tdecl, PT::list(params, new PT::Atom(my_lexer.get_token())));
   }
-  PT::Declaration *decl = declaration();
+  PT::List *decl = declaration();
   if (!require(decl, "declaration")) return 0;
   tdecl = PT::snoc(tdecl, decl);
   // FIXME: Is this really a declaration of a class or function template ?
@@ -2640,7 +2657,7 @@ PT::Declaration *Parser::template_declaration()
 
 // explicit-specialization:
 //   template < > declaration
-PT::Declaration *Parser::explicit_specialization()
+PT::TemplateDeclaration *Parser::explicit_specialization()
 {
   Trace trace("Parser::explicit_specialization", Trace::PARSING);
 
@@ -2656,8 +2673,9 @@ PT::Declaration *Parser::explicit_specialization()
     return 0;
 
   Token template_ = my_lexer.get_token();
-  // TODO: Don't abuse TemplateDecl here.
-  PT::Declaration *tdecl = new PT::TemplateDecl(new PT::Kwd::Template(template_));
+  // TODO: Don't abuse TemplateDeclaration here.
+  PT::TemplateDeclaration *tdecl = 
+    new PT::TemplateDeclaration(new PT::Kwd::Template(template_));
   tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
   tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
 
@@ -2696,7 +2714,8 @@ PT::Declaration *Parser::explicit_specialization()
     if (!require(';')) return 0;
     Token semic = my_lexer.get_token();
     tdecl = PT::snoc(tdecl,
-		     new PT::Declaration(spec, PT::list(declarators, new PT::Atom(semic))));
+		     new PT::SimpleDeclaration(spec, PT::list(declarators,
+							      new PT::Atom(semic))));
   }
   return tdecl;
 }
@@ -2888,24 +2907,9 @@ PT::Node *Parser::template_name(PT::Encoding &encoding,
   }
   else
   {
-    // Read identifier and look up the corresponding symbol.
     PT::Identifier *id = identifier(encoding);
-    if (!id) return 0;
-    if (do_lookup)
-    {
-      ST::SymbolSet symbols = lookup(encoding, my_symbols.current_scope(),
-				     ST::Scope::DEFAULT);
-      // If there is a single match, it must be a class template or 
-      // a function template.
-      // Else it must be an overload set, containing at least one function template.
-      TemplateNameChecker checker;
-      for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
-	if (checker.is_template_name(*i))
-	  return id;
-      error(std::string(id->position(), id->length()) + " is not a known template.");
-      return 0;
-    }
-    return id;
+    if (id && (!do_lookup || lookup_template_name(encoding))) return id;
+    else return 0;
   }
 }
 
@@ -4180,7 +4184,7 @@ PT::List *Parser::iteration_statement()
 
 // declaration-statement:
 //   block-declaration
-PT::Declaration *Parser::declaration_statement()
+PT::List *Parser::declaration_statement()
 {
   Trace trace("Parser::declaration_statement", Trace::PARSING);
   PGuard<bool> pguard(*this, &Parser::my_in_declaration_statement, true);

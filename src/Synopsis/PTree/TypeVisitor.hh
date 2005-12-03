@@ -26,10 +26,9 @@ public:
   virtual void visit(Literal *) { my_type = Token::Constant;}
   virtual void visit(Identifier *) { my_type = Token::Identifier;}
   virtual void visit(Keyword *kwd) { my_type = kwd->token();}
-  virtual void visit(TemplateDecl *) { my_type = Token::ntTemplateDecl;}
+  virtual void visit(TemplateDeclaration *) { my_type = Token::ntTemplateDecl;}
   virtual void visit(TemplateInstantiation *) { my_type = Token::ntTemplateInstantiation;}
   virtual void visit(ExternTemplate *) { my_type = Token::ntExternTemplate;}
-  virtual void visit(MetaclassDecl *) { my_type = Token::ntMetaclassDecl;}
   virtual void visit(LinkageSpec *) { my_type = Token::ntLinkageSpec;}
   virtual void visit(NamespaceSpec *) { my_type = Token::ntNamespaceSpec;}
   virtual void visit(NamespaceAlias *) { my_type = Token::ntNamespaceAlias;}
@@ -44,7 +43,6 @@ public:
   virtual void visit(TypeParameter *) { my_type = 0;} // FIXME !!!
   virtual void visit(AccessSpec *) { my_type = Token::ntAccessSpec;}
   virtual void visit(AccessDecl *) { my_type = Token::ntAccessDecl;}
-  virtual void visit(UserAccessSpec *) { my_type = Token::ntUserAccessSpec;}
   virtual void visit(IfStatement *) { my_type = Token::ntIfStatement;}
   virtual void visit(SwitchStatement *) { my_type = Token::ntSwitchStatement;}
   virtual void visit(WhileStatement *) { my_type = Token::ntWhileStatement;}

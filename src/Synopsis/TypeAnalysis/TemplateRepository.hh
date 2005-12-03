@@ -24,7 +24,8 @@ class TemplateRepository
 {
 public:
   //. Declare a specialization for the given template.
-  void declare(SymbolTable::ClassTemplateName const *, PTree::TemplateDecl const *);
+  void declare(SymbolTable::ClassTemplateName const *,
+	       PTree::TemplateDeclaration const *);
   //. Declare a class scope associated with a template specialization.
   void declare_scope(SymbolTable::ClassTemplateName const *,
 		     PTree::ClassSpec const *,
@@ -34,8 +35,8 @@ private:
   //. we remember that a specialization exists.
   struct Specialization
   {
-    Specialization(PTree::TemplateDecl const *s = 0) : spec(s), scope(0) {}
-    PTree::TemplateDecl const *spec;
+    Specialization(PTree::TemplateDeclaration const *s = 0) : spec(s), scope(0) {}
+    PTree::TemplateDeclaration const *spec;
     SymbolTable::Class *scope;
   };
   typedef std::list<Specialization> SpecializationList;
