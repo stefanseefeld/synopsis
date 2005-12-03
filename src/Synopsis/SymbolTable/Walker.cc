@@ -54,9 +54,9 @@ void Walker::visit(PT::Block *node)
   }  
 }
 
-void Walker::visit(PT::TemplateDecl *tdecl)
+void Walker::visit(PT::TemplateDeclaration *tdecl)
 {
-  Trace trace("Walker::visit(TemplateDecl)", Trace::SYMBOLLOOKUP);
+  Trace trace("Walker::visit(TemplateDeclaration)", Trace::SYMBOLLOOKUP);
   traverse_parameters(tdecl);
   // If we are in a template template parameter, the following
   // is just the 'class' keyword.
@@ -126,9 +126,9 @@ void Walker::traverse_body(PT::ClassSpec *spec)
   }
 }
 
-void Walker::traverse_parameters(PT::TemplateDecl *decl)
+void Walker::traverse_parameters(PT::TemplateDeclaration *decl)
 {
-  Trace trace("Walker::traverse_body(TemplateDecl)", Trace::SYMBOLLOOKUP);
+  Trace trace("Walker::traverse_body(TemplateDeclaration)", Trace::SYMBOLLOOKUP);
   Scope *scope = my_scopes.top()->find_scope(decl);
   scope->ref();
   my_scopes.push(scope);

@@ -51,11 +51,29 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class MetaclassDecl : public List
+class DeclSpec : public List
 {
 public:
-  MetaclassDecl(Node *p, List *q) : List(p, q) {}
+  enum StorageClass { UNDEF, AUTO, REGISTER, STATIC, EXTERN, MUTABLE};
+  enum Flags { NONE = 0x0, FRIEND = 0x1, TYPEDEF = 0x2};
+
+  DeclSpec(List *, Encoding const &, StorageClass,
+	   unsigned int flags, bool decl, bool def);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  Encoding const &type() const { return my_type;}
+  StorageClass storage_class() const { return my_storage_class;}
+  bool is_friend() const { return my_is_friend;}
+  bool is_typedef() const { return my_is_typedef;}
+  bool declares_class_or_enum() const { return my_declares_class_or_enum;}
+  bool defines_class_or_enum() const { return my_defines_class_or_enum;}
+private:
+  Encoding     my_type;
+  StorageClass my_storage_class : 3;
+  bool         my_is_friend : 1;
+  bool         my_is_typedef : 1;
+  bool         my_declares_class_or_enum : 1;
+  bool         my_defines_class_or_enum : 1;
 };
 
 class Declaration : public List
@@ -70,6 +88,15 @@ private:
   Node *my_comments;
 };
 
+class SimpleDeclaration : public Declaration
+{
+public:
+  SimpleDeclaration(Node *p, List *q) : Declaration(p, q) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  DeclSpec *decl_specifier_seq() { return static_cast<DeclSpec *>(nth<0>(this));}
+  List *declarators() { return static_cast<List *>(nth<1>(this));}
+};
+
 class LinkageSpec : public Declaration
 {
 public:
@@ -77,11 +104,11 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class TemplateDecl : public Declaration
+class TemplateDeclaration : public Declaration
 {
 public:
-  TemplateDecl(Node *p, List *q) : Declaration(p, q) {}
-  TemplateDecl(Node *p) : Declaration(p, 0) {}
+  TemplateDeclaration(Node *p, List *q) : Declaration(p, q) {}
+  TemplateDeclaration(Node *p) : Declaration(p, 0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
@@ -103,13 +130,8 @@ public:
 class NamespaceSpec : public Declaration
 {
 public:
-  NamespaceSpec(Node *p, List *q) : Declaration(p, q), my_comments(0) {}
+  NamespaceSpec(Node *p, List *q) : Declaration(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}  
-  Node *get_comments() { return my_comments;}
-  void set_comments(Node *c) { my_comments = c;}
-
-private:
-  Node *my_comments;
 };
 
 class UsingDirective : public Declaration
@@ -140,31 +162,6 @@ class FunctionDefinition : public Declaration
 public:
   FunctionDefinition(Node *p, List *q) : Declaration(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class DeclSpec : public List
-{
-public:
-  enum StorageClass { UNDEF, AUTO, REGISTER, STATIC, EXTERN, MUTABLE};
-  enum Flags { NONE = 0x0, FRIEND = 0x1, TYPEDEF = 0x2};
-
-  DeclSpec(List *, Encoding const &, StorageClass,
-	   unsigned int flags, bool decl, bool def);
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-
-  Encoding const &type() const { return my_type;}
-  StorageClass storage_class() const { return my_storage_class;}
-  bool is_friend() const { return my_is_friend;}
-  bool is_typedef() const { return my_is_typedef;}
-  bool declares_class_or_enum() const { return my_declares_class_or_enum;}
-  bool defines_class_or_enum() const { return my_defines_class_or_enum;}
-private:
-  Encoding     my_type;
-  StorageClass my_storage_class : 3;
-  bool         my_is_friend : 1;
-  bool         my_is_typedef : 1;
-  bool         my_declares_class_or_enum : 1;
-  bool         my_defines_class_or_enum : 1;
 };
 
 class ElaboratedTypeSpec : public List
@@ -292,20 +289,6 @@ class AccessDecl : public List
 {
 public:
   AccessDecl(Node *p, List *q) : List(p, q) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class UserAccessSpec : public List
-{
-public:
-  UserAccessSpec(Node *p, List *q) : List(p, q) {}
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-};
-
-class UserdefKeyword : public List
-{
-public:
-  UserdefKeyword(Node *p, List *q) : List(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
@@ -506,12 +489,6 @@ public:
   PostfixExpr(Node *p, List *q) : ExpressionT<PostfixExpr>(p, q) {} 
 };
 
-class UserStatementExpr : public ExpressionT<UserStatementExpr> 
-{
-public:
-  UserStatementExpr(Node *p, List *q) : ExpressionT<UserStatementExpr>(p, q) {} 
-};
-
 class DotMemberExpr : public ExpressionT<DotMemberExpr> 
 {
 public:
@@ -528,12 +505,6 @@ class ParenExpr : public ExpressionT<ParenExpr>
 {
 public:
   ParenExpr(Node *p, List *q) : ExpressionT<ParenExpr>(p, q) {} 
-};
-
-class StaticUserStatementExpr : public ExpressionT<StaticUserStatementExpr> 
-{
-public:
-  StaticUserStatementExpr(Node *p, List *q) : ExpressionT<StaticUserStatementExpr>(p, q) {} 
 };
 
 }

@@ -72,13 +72,13 @@ void Visitor::visit(Kwd::While *a) { visit(static_cast<Keyword *>(a));}
 void Visitor::visit(Brace *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Block *l) { visit(static_cast<Brace *>(l));}
 void Visitor::visit(ClassBody *l) { visit(static_cast<Brace *>(l));}
-void Visitor::visit(TemplateDecl *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(TemplateDeclaration *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TemplateInstantiation *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(ExternTemplate *l) { visit(static_cast<List *>(l));}
-void Visitor::visit(MetaclassDecl *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(LinkageSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(NamespaceSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(Declaration *l) { visit(static_cast<List *>(l));}
+void Visitor::visit(SimpleDeclaration *l) { visit(static_cast<Declaration *>(l));}
 void Visitor::visit(NamespaceAlias *l) { visit(static_cast<Declaration *>(l));}
 void Visitor::visit(UsingDirective *l) { visit(static_cast<Declaration *>(l));}
 void Visitor::visit(UsingDeclaration *l) { visit(static_cast<Declaration *>(l));}
@@ -94,7 +94,6 @@ void Visitor::visit(ElaboratedTypeSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(TypeParameter *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(AccessSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(AccessDecl *l) { visit(static_cast<List *>(l));}
-void Visitor::visit(UserAccessSpec *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(IfStatement *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(SwitchStatement *l) { visit(static_cast<List *>(l));}
 void Visitor::visit(WhileStatement *l) { visit(static_cast<List *>(l));}

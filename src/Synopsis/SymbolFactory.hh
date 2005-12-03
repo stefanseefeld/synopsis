@@ -36,7 +36,7 @@ public:
   void enter_scope(PTree::ClassSpec const *);
   void enter_scope(PTree::Node const *);
   void enter_scope(PTree::FunctionDefinition const *);
-  void enter_scope(PTree::TemplateDecl const *);
+  void enter_scope(PTree::TemplateDeclaration const *);
   void enter_scope(PTree::Block const *);
   void leave_scope();
 
@@ -51,7 +51,7 @@ public:
   void declare(PTree::ClassSpec const *);
   //. Declare a class-name from an elaborated-type-specifier.
   void declare(PTree::ElaboratedTypeSpec const *);
-  void declare(PTree::TemplateDecl const *);
+  void declare(PTree::TemplateDeclaration const *);
   void declare(PTree::TypeParameter const *);
   void declare(PTree::UsingDirective const *);
   void declare(PTree::ParameterDeclaration const *);
@@ -70,7 +70,7 @@ public:
 private:
   typedef std::stack<SymbolTable::Scope *> Scopes;
 
-  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::SimpleDeclaration *);
   virtual void visit(PTree::FunctionDefinition *);
 
   //. Lookup the scope of a qualified name.
@@ -79,7 +79,7 @@ private:
   SymbolTable::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
 
   void declare_template_specialization(PTree::Encoding const &,
-				       PTree::TemplateDecl const *,
+				       PTree::TemplateDeclaration const *,
 				       SymbolTable::Scope *);
 
   //. The language / dialect we are working in. The behavior may depend on it.

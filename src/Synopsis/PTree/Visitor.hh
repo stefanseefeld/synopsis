@@ -92,26 +92,18 @@ public:
   virtual void visit(Block *);
   virtual void visit(ClassBody *);
   //. [ template < [types] > [decl] ]
-  virtual void visit(TemplateDecl *);
+  virtual void visit(TemplateDeclaration *);
   virtual void visit(TemplateInstantiation *);
   virtual void visit(ExternTemplate *);
-  virtual void visit(MetaclassDecl *);
   //. [ extern ["C++"] [{ body }] ]
   virtual void visit(LinkageSpec *);
   //. [ namespace <identifier> [{ body }] ]
   virtual void visit(NamespaceSpec *);
   //. [ using namespace Foo ; ]
   virtual void visit(UsingDirective *);
-  //. either variable, typedef or function
-  //. Variables:
-  //.  [ [modifiers] name [declarators] ; ]
-  //. Function prototype:
-  //.  [ [modifiers] name [declarators] ; ]
-  //. Typedef:
-  //.  ?
-  //. Class definition:
-  //.  [ [modifiers] [class foo ...] [declarators]? ; ]
   virtual void visit(Declaration *);
+  //. [decl-specifier-seq [opt] init-declarator-list [opt] ;]
+  virtual void visit(SimpleDeclaration *);
   //. [ namespace Foo = Bar ; ]
   virtual void visit(NamespaceAlias *);
   //. Function definition:
@@ -142,7 +134,6 @@ public:
   virtual void visit(TypeParameter *);
   virtual void visit(AccessSpec *);
   virtual void visit(AccessDecl *);
-  virtual void visit(UserAccessSpec *);
   //. [ if ( expr ) statement (else statement)? ]
   virtual void visit(IfStatement *);
   //. [ switch ( expr ) statement ]

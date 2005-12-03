@@ -34,9 +34,9 @@ class TemplateNameFinder : private PT::Visitor
 {
 public:
   TemplateNameFinder() : my_is_function(false) {}
-  PT::Encoding find(PT::TemplateDecl const *decl, bool &is_function)
+  PT::Encoding find(PT::TemplateDeclaration const *decl, bool &is_function)
   {
-    PT::nth(const_cast<PT::TemplateDecl *>(decl), 4)->accept(this);
+    PT::nth(const_cast<PT::TemplateDeclaration *>(decl), 4)->accept(this);
     is_function = my_is_function;
     return my_name;
   }
@@ -54,7 +54,7 @@ private:
     my_name = decl->encoded_name();
     my_is_function = decl->encoded_type().is_function();
   }
-  void visit(PT::TemplateDecl *decl) { PT::nth(decl, 4)->accept(this);}
+  void visit(PT::TemplateDeclaration *decl) { PT::nth(decl, 4)->accept(this);}
   void visit(PT::DeclSpec *declspec) { my_name = declspec->type();}
   void visit(PT::ClassSpec *spec) { my_name = spec->encoded_name();}
   void visit(PT::Declaration *decl)
@@ -292,9 +292,9 @@ void SymbolFactory::enter_scope(PT::FunctionDefinition const *decl)
   my_scopes.push(func);
 }
 
-void SymbolFactory::enter_scope(PT::TemplateDecl const *params)
+void SymbolFactory::enter_scope(PT::TemplateDeclaration const *params)
 {
-  Trace trace("SymbolFactory::enter_scope(TemplateDecl)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::enter_scope(TemplateDeclaration)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
 
   ST::Scope *scope = my_scopes.top();
@@ -526,9 +526,9 @@ void SymbolFactory::declare(PTree::ElaboratedTypeSpec const *spec)
   }
 }
 
-void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
+void SymbolFactory::declare(PT::TemplateDeclaration const *tdecl)
 {
-  Trace trace("SymbolFactory::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::declare(TemplateDeclaration)", Trace::SYMBOLLOOKUP);
   if (my_language == NONE) return;
   ST::Scope *scope = my_scopes.top();
   std::cout << "template decl" << std::endl;
@@ -605,8 +605,8 @@ void SymbolFactory::declare(PT::TypeParameter const *tparam)
     scope->declare(name, symbol);
     TA::TypeRepository::instance()->declare(name, symbol);
   }
-  else if (PT::TemplateDecl const *tdecl = 
-	   dynamic_cast<PT::TemplateDecl const *>(first))
+  else if (PT::TemplateDeclaration const *tdecl = 
+	   dynamic_cast<PT::TemplateDeclaration const *>(first))
   {
     // tdecl has 4 or 5 members:
     // [template < parameter-list > class id]
@@ -686,16 +686,16 @@ ST::SymbolSet SymbolFactory::lookup_template_parameter(PT::Encoding const &name)
   else return my_template_parameters->find(name, ST::Scope::DEFAULT);
 }
 
-void SymbolFactory::visit(PT::Declaration *decl)
+void SymbolFactory::visit(PT::SimpleDeclaration *decl)
 {
-  Trace trace("SymbolFactory::visit(Declaration)", Trace::SYMBOLLOOKUP);
+  Trace trace("SymbolFactory::visit(SimpleDeclaration)", Trace::SYMBOLLOOKUP);
   ST::Scope *scope = my_scopes.top();
 
-  PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(decl));
-  PT::Node const *decls = PT::nth<1>(decl);
+  PT::DeclSpec *spec = decl->decl_specifier_seq();
+  PT::List const *decls = decl->declarators();
   // The implicit type declaration by means of elaborated type specs is dealt
   // elsewhere.
-  if (!decls || decls->is_atom()) // it is a ';'
+  if (!decls) // for example 'class Foo {...};'
   {
     if (length(spec) == 1)
     {
@@ -821,7 +821,7 @@ ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
 }
 
 void SymbolFactory::declare_template_specialization(PT::Encoding const &name,
-						    PT::TemplateDecl const *decl,
+						    PT::TemplateDeclaration const *decl,
 						    ST::Scope *scope)
 {
   Trace trace("SymbolFactory::declare_template_specialization", Trace::SYMBOLLOOKUP);

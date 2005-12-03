@@ -72,6 +72,7 @@ private:
   template <typename T>
   bool declare(T *);
   bool lookup_class_name(PTree::Encoding const &);
+  bool lookup_template_name(PTree::Encoding const &);
   bool lookup_namespace_name(PTree::Encoding const &);
   bool lookup_type_name(PTree::Encoding const &);
 
@@ -434,11 +435,11 @@ private:
 
   //. template-declaration:
   //.   export [opt] template < template-parameter-list > declaration
-  PTree::Declaration *template_declaration();
+  PTree::TemplateDeclaration *template_declaration();
 
   //. explicit-specialization:
   //.   template < > declaration
-  PTree::Declaration *explicit_specialization();
+  PTree::TemplateDeclaration *explicit_specialization();
 
   //. explicit-instantiation:
   //.   template declaration
@@ -720,7 +721,7 @@ private:
 
   //. declaration-statement:
   //.   block-declaration
-  PTree::Declaration *declaration_statement();
+  PTree::List *declaration_statement();
 
   //. statement:
   //.   labeled-statement

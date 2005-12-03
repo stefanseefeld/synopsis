@@ -28,7 +28,7 @@ public:
   using PTree::Visitor::visit;
   virtual void visit(PTree::List *);
   virtual void visit(PTree::Block *);
-  virtual void visit(PTree::TemplateDecl *);
+  virtual void visit(PTree::TemplateDeclaration *);
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::FunctionDefinition *);
   virtual void visit(PTree::ClassSpec *);
@@ -40,7 +40,7 @@ public:
   //. Traverse the body of the class definition.
   void traverse_body(PTree::ClassSpec *);
   //. Traverse the template parameter list of a template declaration.
-  void traverse_parameters(PTree::TemplateDecl *);
+  void traverse_parameters(PTree::TemplateDeclaration *);
   //. Traverse the body of the function definition.
   void traverse_body(PTree::FunctionDefinition *);
 

@@ -18,7 +18,7 @@ namespace TypeAnalysis
 {
 
 void TemplateRepository::declare(ST::ClassTemplateName const *primary,
-				 PT::TemplateDecl const *spec)
+				 PT::TemplateDeclaration const *spec)
 {
   Trace trace("TemplateRepository::declare", Trace::SYMBOLLOOKUP);
   SpecializationList &specializations = my_specializations[primary];
