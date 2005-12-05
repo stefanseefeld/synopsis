@@ -33,11 +33,11 @@ private:
 
   virtual void visit(PTree::NamespaceSpec *);
   virtual void visit(PTree::Declarator *);
-  virtual void visit(PTree::Declaration *);
+  virtual void visit(PTree::SimpleDeclaration *);
   virtual void visit(PTree::FunctionDefinition *);
   virtual void visit(PTree::ClassSpec *);
   virtual void visit(PTree::EnumSpec *);
-  virtual void visit(PTree::TemplateDecl *);
+  virtual void visit(PTree::TemplateDeclaration *);
   virtual void visit(PTree::TypeParameter *);
   virtual void visit(PTree::ParameterDeclaration *);
 

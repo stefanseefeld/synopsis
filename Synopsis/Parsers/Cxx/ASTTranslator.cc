@@ -188,20 +188,18 @@ void ASTTranslator::visit(PT::Declarator *declarator)
   }
 }
 
-void ASTTranslator::visit(PT::Declaration *declaration)
+void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
 {
-  Trace trace("ASTTranslator::visit(Declaration)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(SimpleDeclaration)", Trace::TRANSLATION);
   bool visible = update_position(declaration);
   // Check whether this is a typedef:
-  PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(declaration));
+  PT::DeclSpec *spec = declaration->decl_specifier_seq();
   // the decl-specifier-seq may contain a class-specifier, i.e.
   // which we need to define first.
   if (spec) spec->accept(this);
   if (spec && spec->is_typedef())
   {
-    for (PT::List *d = static_cast<PT::List *>(PT::nth<1>(declaration));
-	 d;
-	 d = PT::tail(d, 2))
+    for (PT::List *d = declaration->declarators(); d; d = PT::tail(d, 2))
     {
       if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
 	continue;
@@ -328,9 +326,9 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
   my_types.declare(AST::ScopedName(name), enum_);
 }
 
-void ASTTranslator::visit(PTree::TemplateDecl *templ)
+void ASTTranslator::visit(PTree::TemplateDeclaration *templ)
 {
-  Trace trace("ASTTranslator::visit(TemplateDecl)", Trace::TRANSLATION);
+  Trace trace("ASTTranslator::visit(TemplateDeclaration)", Trace::TRANSLATION);
 
   AST::Template::Parameters parameters;
   for (PT::List *params = static_cast<PT::List *>(PT::nth<2>(templ));
