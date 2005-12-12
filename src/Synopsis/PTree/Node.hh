@@ -70,7 +70,7 @@ private:
 };
 
 //. A List contains a node and a list.
-struct List : public Node
+class List : public Node
 {
 public:
   List(Node *car, List *cdr) : my_car(car), my_cdr(cdr) {}
