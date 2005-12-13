@@ -215,7 +215,15 @@ private:
   Using                       my_using;
 };
 
-extern Class * const DEPENDENT_SCOPE;
+class DependentScope : public Class
+{
+public:
+  DependentScope()
+    : Class("<dependent>", 0, 0, Bases(), 0) {}
+  ~DependentScope() {}
+};
+
+extern Class * DEPENDENT_SCOPE;
 
 }
 }

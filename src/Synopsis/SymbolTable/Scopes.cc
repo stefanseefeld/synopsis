@@ -294,21 +294,3 @@ SymbolSet Namespace::qualified_lookup(PT::Encoding const &name,
   return symbols;
 }
 
-namespace
-{
-class DependentScope : public Class
-{
-public:
-  DependentScope()
-    : Class("<dependent>", 0, 0, Bases(), 0) {}
-  ~DependentScope() {}
-} dependent_scope;
-}
-
-namespace Synopsis
-{
-namespace SymbolTable
-{
-Class * const DEPENDENT_SCOPE = &dependent_scope;
-}
-}
