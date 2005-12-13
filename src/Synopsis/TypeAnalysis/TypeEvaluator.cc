@@ -66,7 +66,7 @@ Type const *numeric_type(char const *position, size_t length)
 	  *(position + length - 1) == 'U' ? &UINT : &INT);
 }
 
-BinaryPromotion binary_promotion;
+// BinaryPromotion binary_promotion;
 
 }
 
@@ -164,7 +164,7 @@ void TypeEvaluator::visit(PT::InfixExpr *node)
   assert(op->is_atom() && op->length() <= 2);
   Type const *rhs = evaluate(PT::nth<2>(node));
 
-  Type const *retn = binary_promotion.find(lhs, rhs);
+  Type const *retn = 0;//binary_promotion.find(lhs, rhs);
   if (retn) my_type = retn;
   else
   {
