@@ -126,13 +126,13 @@ class config(build_ext):
             configure = srcdir + '/configure'
             python = sys.executable
             prefix = self.prefix
-        command = '%s --prefix="%s" --with-python="%s"'%(configure, prefix, python)
+        command = '%s --prefix=\\"%s\\" --with-python=\\"%s\\"'%(configure, prefix, python)
         if self.disable_gc:
             command += ' --disable-gc'
         elif self.with_gc_prefix:
-            command += ' --with-gc-prefix="%s"'%self.with_gc_prefix
+            command += ' --with-gc-prefix=\\"%s\\"'%self.with_gc_prefix
         if self.with_boost_prefix:
-            command += ' --with-boost-prefix="%s"'%self.with_boost_prefix
+            command += ' --with-boost-prefix=\\"%s\\"'%self.with_boost_prefix
         command += ' %s'%args
         self.announce(command)
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
