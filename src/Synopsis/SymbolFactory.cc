@@ -22,6 +22,15 @@ namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
 namespace TA = Synopsis::TypeAnalysis;
 
+namespace Synopsis
+{
+namespace SymbolTable
+{
+  Class * DEPENDENT_SCOPE = 0;
+}
+}
+
+
 namespace
 {
 //. Find the name being declared. The node wrapped inside the template-declaration
@@ -205,6 +214,8 @@ SymbolFactory::SymbolFactory(Language l)
   PT::Encoding name;
   name.append_with_length("__builtin_va_list");
   global->declare(name, new ST::TypeName(PT::Encoding(), 0, true, global));
+
+  ST::DEPENDENT_SCOPE = new ST::DependentScope();
 }
 
 // Note: Here the scope argument doesn't make sense, since a namespace-name

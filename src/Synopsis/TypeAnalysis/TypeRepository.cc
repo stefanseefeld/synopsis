@@ -77,16 +77,16 @@ TA::TypeRepository::~TypeRepository()
     delete i->second;
 }
 
-void TA::TypeRepository::declare(PTree::Encoding const &name,
-				 SymbolTable::TypeName const *symbol)
+void TA::TypeRepository::declare(PT::Encoding const &name,
+				 ST::TypeName const *symbol)
 {
   Trace trace("TypeRepository::declare(TypeName)", Trace::TYPEANALYSIS);
   AtomicType *type = new Dependent(name.unmangled());
   my_declared_types.insert(std::make_pair(symbol, type));
 }
 
-void TA::TypeRepository::declare(PTree::Encoding const &name,
-				 SymbolTable::ClassName const *symbol)
+void TA::TypeRepository::declare(PT::Encoding const &name,
+				 ST::ClassName const *symbol)
 {
   Trace trace("TypeRepository::declare(ClassName)", Trace::TYPEANALYSIS);
   std::string kind;
@@ -109,8 +109,8 @@ void TA::TypeRepository::declare(PTree::Encoding const &name,
   my_declared_types.insert(std::make_pair(symbol, type));
 }
 
-void TA::TypeRepository::declare(PTree::Encoding const &name,
-				 SymbolTable::EnumName const *symbol)
+void TA::TypeRepository::declare(PT::Encoding const &name,
+				 ST::EnumName const *symbol)
 {
   Trace trace("TypeRepository::declare(EnumName)", Trace::TYPEANALYSIS);
   AtomicType *type = new Enum(name.unmangled());
