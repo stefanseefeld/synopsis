@@ -40,7 +40,7 @@ private:
 
 std::string Unmangler::unmangle_name()
 {
-  Trace trace("Unmangler::unmangle_name()", Trace::PTREE);
+//   Trace trace("Unmangler::unmangle_name()", Trace::PTREE);
   size_t length = *my_cursor++ - 0x80;
   std::string name(length, '\0');
   std::copy(my_cursor, my_cursor + length, name.begin());
@@ -55,6 +55,7 @@ std::string Unmangler::unmangle()
   std::string name;
   std::string base;
   
+  if (*my_cursor == 0x80) return "";
   while (my_cursor != my_end && !name.length() && !base.length())
   {
     int c = *my_cursor++;
@@ -160,7 +161,7 @@ std::string Unmangler::unmangle()
 
 std::string Unmangler::unmangle_qname()
 {
-  Trace trace("Unmangler::unmangle_qname()", Trace::PTREE);
+//   Trace trace("Unmangler::unmangle_qname()", Trace::PTREE);
   // Qualified type: first is num of scopes (at least one), each a name.
   std::string qname;
   int scopes = *my_cursor++ - 0x80;
@@ -168,8 +169,8 @@ std::string Unmangler::unmangle_qname()
   {
     std::string name;
     // Only handle two things here: names and templates
-    if (*my_cursor >= 0x80)
-      name = unmangle_name();
+    if (*my_cursor > 0x80) name = unmangle_name();
+    else if (*my_cursor == 0x80) name = "";
     else if (*my_cursor == 'T')
     {
       ++my_cursor;
@@ -201,7 +202,7 @@ std::string Unmangler::unmangle_qname()
 
 std::string Unmangler::unmangle_func(std::string& postmod)
 {
-  Trace trace("Unmangler::unmangle_func()", Trace::PTREE);
+  Trace trace("Unmangler::unmangle_func", Trace::PTREE);
   // Function ptr. Encoded same as function
   std::string premod;
   // Move * from postmod to funcptr's premod. This makes the output be
@@ -215,12 +216,11 @@ std::string Unmangler::unmangle_func(std::string& postmod)
   while (true)
   {
     std::string type = unmangle();
-    if (type.empty())
-      break;
-    else
-      params.push_back(type);
+    if (type.empty()) break;
+    else params.push_back(type);
   }
   ++my_cursor; // skip over '_'
+  trace << "all is still well";
   std::string returnType = unmangle();
   std::string ret = returnType + "(*)(";
   if (params.size()) ret += params[0];
@@ -232,7 +232,7 @@ std::string Unmangler::unmangle_func(std::string& postmod)
 
 std::string Unmangler::unmangle_template()
 {
-  Trace trace("Unmangler::unmangle_template()", Trace::PTREE);
+//   Trace trace("Unmangler::unmangle_template()", Trace::PTREE);
 
   // Template type: Name first, then size of arg field, then arg
   // types eg: T6vector54cell <-- 5 is len of 4cell
@@ -456,7 +456,7 @@ Encoding Encoding::get_scope() const
 Encoding Encoding::get_symbol() const
 {
   if (!is_qualified()) return *this; // no scope
-  iterator i = ++begin();
+  iterator i = begin() + 1;
   size_t size = static_cast<size_t>(*i - 0x80);
   Encoding retn(end_of_scope(), end());
   if (size > 2) retn.qualified(size - 1);

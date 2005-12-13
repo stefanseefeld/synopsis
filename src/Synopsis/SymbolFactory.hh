@@ -32,30 +32,30 @@ public:
 
   SymbolTable::Scope *current_scope() { return my_scopes.top();}
 
-  void enter_scope(PTree::NamespaceSpec const *);
-  void enter_scope(PTree::ClassSpec const *);
-  void enter_scope(PTree::Node const *);
-  void enter_scope(PTree::FunctionDefinition const *);
-  void enter_scope(PTree::TemplateDeclaration const *);
-  void enter_scope(PTree::Block const *);
+  void enter_scope(SymbolTable::Scope *, PTree::NamespaceSpec const *);
+  void enter_scope(SymbolTable::Scope *, PTree::ClassSpec const *);
+  void enter_scope(SymbolTable::Scope *, PTree::Node const *);
+  void enter_scope(SymbolTable::Scope *, PTree::FunctionDefinition const *);
+  void enter_scope(SymbolTable::Scope *, PTree::List const *);
+  void enter_scope(SymbolTable::Scope *, PTree::TemplateParameterList const *);
+  void enter_scope(SymbolTable::Scope *, PTree::Block const *);
   void leave_scope();
 
-  void declare(PTree::Declaration const *);
+  void declare(SymbolTable::Scope *, PTree::Declaration const *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
-  void declare(PTree::EnumSpec const *);
+  void declare(SymbolTable::Scope *, PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE
-  void declare(PTree::NamespaceSpec const *);
+  void declare(SymbolTable::Scope *, PTree::NamespaceSpec const *);
   //. Declare a class.
   //. If this is a template specialization declare it with
   //. the template repository, else declare it here.
-  void declare(PTree::ClassSpec const *);
+  void declare(SymbolTable::Scope *, PTree::ClassSpec const *);
   //. Declare a class-name from an elaborated-type-specifier.
-  void declare(PTree::ElaboratedTypeSpec const *);
-  void declare(PTree::TemplateDeclaration const *);
-  void declare(PTree::TypeParameter const *);
-  void declare(PTree::UsingDirective const *);
-  void declare(PTree::ParameterDeclaration const *);
-  void declare(PTree::UsingDeclaration const *);
+  void declare(SymbolTable::Scope *, PTree::ElaboratedTypeSpec const *);
+  void declare(SymbolTable::Scope *, PTree::TypeParameter const *);
+  void declare(SymbolTable::Scope *, PTree::UsingDirective const *);
+  void declare(SymbolTable::Scope *, PTree::ParameterDeclaration const *);
+  void declare(SymbolTable::Scope *, PTree::UsingDeclaration const *);
 
   //. During the parsing of a template declaration
   //. (specifically, a partial template specialization), we need to lookup

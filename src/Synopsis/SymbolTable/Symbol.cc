@@ -7,10 +7,12 @@
 #include <Synopsis/SymbolTable/Symbol.hh>
 #include <Synopsis/SymbolTable/Scopes.hh>
 
-using namespace Synopsis;
-using namespace PTree;
-using namespace SymbolTable;
+namespace PT = Synopsis::PTree;
 
+namespace Synopsis
+{
+namespace SymbolTable
+{
 Class *ClassName::as_scope() const
 {
   Scope *outer = scope();
@@ -44,4 +46,14 @@ Namespace *NamespaceName::as_scope() const
   Scope *outer = scope();
   Scope *nested = outer->find_scope(ptree());
   return dynamic_cast<Namespace *>(nested);
+}
+
+namespace
+{
+TypeName dependent("", 0, false, 0);
+}
+
+TypeName const * const DEPENDENT = &dependent;
+
+}
 }

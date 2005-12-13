@@ -94,7 +94,7 @@ void TA::TypeRepository::declare(PTree::Encoding const &name,
   // decl is either a class-specifier or an elaborated-type-specifier.
   if (PT::ClassSpec const *spec = dynamic_cast<PT::ClassSpec const *>(decl))
   {
-    kind = PT::string(static_cast<PT::Atom *>(PT::nth<0>(spec)));
+    kind = PT::string(spec->key());
   }
   else if (PT::ElaboratedTypeSpec const *spec = dynamic_cast<PT::ElaboratedTypeSpec const *>(decl))
   {

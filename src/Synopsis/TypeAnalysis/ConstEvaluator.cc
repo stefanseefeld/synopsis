@@ -115,7 +115,7 @@ void ConstEvaluator::visit(PT::Identifier *node)
   try
   {
     PT::Encoding name(node);
-    ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
+    ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::DEFAULT);
     ST::ConstName const *const_ = 0;
     if (symbols.size() == 1) 
       const_ = dynamic_cast<ST::ConstName const *>(*symbols.begin());
