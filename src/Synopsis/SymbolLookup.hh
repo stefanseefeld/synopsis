@@ -21,28 +21,22 @@ SymbolTable::SymbolSet lookup(PTree::Encoding const &name,
 			      SymbolTable::Scope const *scope,
 			      SymbolTable::Scope::LookupContext);
 
-//. Convenience wrapper around 'lookup' that only reports a namespace name 
-//. if found.
-inline SymbolTable::NamespaceName const *
-lookup_namespace(PTree::Encoding const &name, SymbolTable::Scope const *scope)
+inline SymbolTable::TypeName const *
+resolve_type(SymbolTable::TypedefName const *symbol)
 {
-  SymbolTable::SymbolSet symbols = lookup(name, scope, SymbolTable::Scope::SCOPE);
-  if (symbols.size() != 1) 
-    return 0;
-  else
-    return dynamic_cast<SymbolTable::NamespaceName const *>(*symbols.begin());
-}
-
-//. Convenience wrapper around 'lookup' that only reports a class name 
-//. if found.
-inline SymbolTable::ClassName const *
-lookup_class(PTree::Encoding const &name, SymbolTable::Scope const *scope)
-{
-  SymbolTable::SymbolSet symbols = lookup(name, scope, SymbolTable::Scope::ELABORATED);
-  if (symbols.size() != 1) 
-    return 0;
-  else
-    return dynamic_cast<SymbolTable::ClassName const *>(*symbols.begin());
+  SymbolTable::TypeName const *type_name = 0;
+  do
+  {
+    SymbolTable::Scope *scope = symbol->scope();
+    SymbolTable::SymbolSet symbols = lookup(symbol->type(), symbol->scope(),
+					    SymbolTable::Scope::DEFAULT);
+    if (symbols.size() != 1) return 0; // TODO: handle error
+    type_name = dynamic_cast<SymbolTable::TypeName const *>(*symbols.begin());
+    if (!type_name) return 0; // not a type
+    symbol = dynamic_cast<SymbolTable::TypedefName const *>(type_name);
+  }
+  while (symbol);
+  return type_name;
 }
 
 }

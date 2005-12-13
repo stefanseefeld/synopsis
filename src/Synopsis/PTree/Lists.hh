@@ -76,6 +76,32 @@ private:
   bool         my_defines_class_or_enum : 1;
 };
 
+class Declarator : public List
+{
+public:
+  Declarator(Node *);
+  Declarator(Node *, Encoding const&, Encoding const&, Node *);
+  Declarator(Encoding const&, Encoding const&, Node *);
+  Declarator(Node *, List *, Encoding const&, Encoding const&, Node *);
+  Declarator(Node *, Encoding const&);
+  Declarator(Encoding const&);
+  Declarator(Declarator*, Node *, List *);
+
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  Encoding encoded_type() const { return my_type;}
+  Encoding encoded_name() const { return my_name;}
+  void set_encoded_type(const Encoding &t) { my_type = t;}
+  Node *name() { return my_declared_name;}
+  Node *initializer();
+  Node *get_comments() { return my_comments;}
+  void set_comments(Node *c) { my_comments = c;}
+private:
+  Encoding my_type;
+  Encoding my_name;
+  Node    *my_declared_name;
+  Node    *my_comments;
+};
+
 class Declaration : public List
 {
 public:
@@ -104,6 +130,12 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
+class TemplateParameterList : public List
+{
+public:
+  TemplateParameterList() : List(0, 0) {}
+};
+
 class TemplateDeclaration : public Declaration
 {
 public:
@@ -115,8 +147,12 @@ public:
 class TemplateInstantiation : public Declaration
 {
 public:
-  TemplateInstantiation(Node *p) : Declaration(p, 0) {}
+  TemplateInstantiation(Keyword *s, Atom *t,
+			DeclSpec *spec, Declarator *decl, Atom *semic)
+    : Declaration(s, list(t, spec, decl, semic)) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  DeclSpec *decl_specifier_seq() { return static_cast<DeclSpec *>(nth<2>(this));}
+  Declarator *declarator() { return static_cast<Declarator *>(nth<3>(this));}
 };
 
 class ExternTemplate : public List
@@ -160,8 +196,11 @@ public:
 class FunctionDefinition : public Declaration
 {
 public:
-  FunctionDefinition(Node *p, List *q) : Declaration(p, q) {}
+  FunctionDefinition(DeclSpec *p, List *q) : Declaration(p, q) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+
+  DeclSpec *decl_specifier_seq() const { return static_cast<DeclSpec *>(nth<0>(this));}
+  Declarator *declarator() const { return static_cast<Declarator *>(nth<1>(this));}
 };
 
 class ElaboratedTypeSpec : public List
@@ -172,32 +211,6 @@ public:
 
   Keyword *type() const { return static_cast<Keyword *>(nth<0>(this));}
   Node *name() const { return nth<1>(this);}
-};
-
-class Declarator : public List
-{
-public:
-  Declarator(Node *);
-  Declarator(Node *, Encoding const&, Encoding const&, Node *);
-  Declarator(Encoding const&, Encoding const&, Node *);
-  Declarator(Node *, List *, Encoding const&, Encoding const&, Node *);
-  Declarator(Node *, Encoding const&);
-  Declarator(Encoding const&);
-  Declarator(Declarator*, Node *, List *);
-
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
-  Encoding encoded_type() const { return my_type;}
-  Encoding encoded_name() const { return my_name;}
-  void set_encoded_type(const Encoding &t) { my_type = t;}
-  Node *name() { return my_declared_name;}
-  Node *initializer();
-  Node *get_comments() { return my_comments;}
-  void set_comments(Node *c) { my_comments = c;}
-private:
-  Encoding my_type;
-  Encoding my_name;
-  Node    *my_declared_name;
-  Node    *my_comments;
 };
 
 class ParameterDeclaration : public List 
@@ -211,8 +224,8 @@ public:
   {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
-  DeclSpec *decl_specifier_seq() { return static_cast<DeclSpec *>(nth<0>(this));}
-  Declarator *declarator() { return static_cast<Declarator *>(nth<1>(this));}
+  DeclSpec *decl_specifier_seq() const { return static_cast<DeclSpec *>(nth<0>(this));}
+  Declarator *declarator() const { return static_cast<Declarator *>(nth<1>(this));}
   Node *initializer() { return PTree::length(this) > 2 ? last(this) : 0;}
 };
 

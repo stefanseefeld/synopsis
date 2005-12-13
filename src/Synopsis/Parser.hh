@@ -46,10 +46,12 @@ public:
   PTree::Node *parse();
 
 private:
+  enum DeclaratorKind { ABSTRACT = 0x1, NAMED = 0x2, EITHER = 0x3};
+
+  typedef std::vector<PTree::TemplateParameterList *> TemplateParameterListSeq;
+
   struct Tentative;
   friend struct Tentative;
-
-  enum DeclaratorKind { ABSTRACT = 0x1, NAMED = 0x2, EITHER = 0x3};
 
   struct ScopeGuard;
   friend struct ScopeGuard;
@@ -71,9 +73,20 @@ private:
 
   template <typename T>
   bool declare(T *);
+  //. Return true if the given name matches a class name.
+  //. If scope, then set my_qualifying_scope to the scope 
+  //. corresponding to the found class.
   bool lookup_class_name(PTree::Encoding const &);
+  //. Return true if the given name matches a template name.
+  //. If scope, then set my_qualifying_scope to the scope 
+  //. corresponding to the found class template 
+  //. (if it was not a function template).
   bool lookup_template_name(PTree::Encoding const &);
+  //. Return true if the given name matches a namespace name.
+  //. If scope, then set my_qualifying_scope to the scope 
+  //. corresponding to the found namespace.
   bool lookup_namespace_name(PTree::Encoding const &);
+  //. Return true if the given name matches a type name.
   bool lookup_type_name(PTree::Encoding const &);
 
   //. :: [opt]
@@ -355,6 +368,11 @@ private:
   //. init-declarator-list:
   //.   init-declarator
   //.   init-declarator-list , init-declarator
+  //.
+  //. function-definition:
+  //.   decl-specifier-seq [opt] declarator ctor-initializer [opt]
+  //.     function-body
+  //.   decl-specifier-seq [opt] declarator function-try-block
   PTree::Declaration *simple_declaration(bool function_definition_allowed);
 
   //. block-declaration:
@@ -431,7 +449,7 @@ private:
   //. template-parameter-list:
   //.   template-parameter
   //.   template-parameter-list , template-parameter
-  PTree::Node *template_parameter_list(PTree::Encoding &);
+  PTree::TemplateParameterList *template_parameter_list(PTree::Encoding &);
 
   //. template-declaration:
   //.   export [opt] template < template-parameter-list > declaration
@@ -618,7 +636,7 @@ private:
   //. new-expression:
   //.  :: [opt] new new-placement [opt] new-type-id new-initializer [opt]
   //.  :: [opt] new new-placement [opt] ( type-id ) new-initializer [opt]
-  PTree::Node *new_expression();
+  PTree::NewExpr *new_expression();
 
   //. delete-expression:
   //.   :: [opt] delete cast-expression
@@ -686,7 +704,10 @@ private:
   //.   :: operator-function-id
   //.   :: template-id
   PTree::Node *id_expression(PTree::Encoding &);
-  bool typeof_expression(PTree::Node *&);
+  //: typeof-expression:
+  //:   __typeof__ unary-expression
+  //:   __typeof__ ( type-id )
+  PTree::Node *typeof_expression(PTree::Encoding &);
   
   //. labeled-statement:
   //.   identifier : statement
@@ -754,9 +775,13 @@ private:
   //.   throw ( type-id-list [opt] )
   PTree::Node *opt_exception_specification();
   
+  //. Skip to the end of the (possibly compound) statement.
+  Token skip_statement(size_t nesting);
+
   Lexer &         my_lexer;
   int             my_ruleset;
   SymbolFactory & my_symbols;
+  bool            my_in_nested_name_specifier;
   //. used for name lookup in nested-name-specifiers
   SymbolTable::Scope *my_qualifying_scope;
 
@@ -764,17 +789,19 @@ private:
   //. tentatively.
   bool            my_is_tentative;
 
-  //. Record whether the current scope is valid.
-  //. This allows the parser to continue parsing even after
-  //. it was unable to enter a scope (such as in a function definition
-  //. with a qualified name that wasn't declared before).
-  bool            my_scope_is_valid;
   ErrorList       my_errors;
   PTree::Node *   my_comments;
   //. If true, '>' is interpreted as ther greater-than operator.
   //. If false, it marks the end of a template-id or template-parameter-list.
   bool            my_gt_is_operator;
-  bool            my_in_template_decl;
+  //. The template-parameter-list sequence active during a template declaration.
+  TemplateParameterListSeq my_template_parameter_list_seq;
+  //. The index of the active template-parameter-list when encountering a
+  //. template-id in the declarator of a template declaration.
+  size_t          my_template_parameter_list_cursor;
+  //. If true, postpone member function parsing until the whole class definition
+  //. has been seen.
+  bool            my_in_class;
   bool            my_in_functional_cast;
   bool            my_accept_default_arg;
   bool            my_in_declarator;

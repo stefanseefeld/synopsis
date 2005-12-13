@@ -202,6 +202,8 @@ public:
   Namespace *as_scope() const;
 };
 
+extern TypeName const * const DEPENDENT;
+
 }
 }
 

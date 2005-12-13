@@ -104,7 +104,7 @@ void TypeEvaluator::visit(PT::Literal *node)
 void TypeEvaluator::visit(PT::Identifier *node)
 {
   PT::Encoding name(node);
-  ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
+  ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::DEFAULT);
   if (symbols.size() == 1)
   {
 //     Symbol const *symbol = *symbols.begin();
