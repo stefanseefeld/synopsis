@@ -10,8 +10,10 @@
 #include <Synopsis/PTree/Encoding.hh>
 #include <iostream>
 
-using namespace Synopsis;
-using namespace PTree;
+namespace Synopsis
+{
+namespace PTree
+{
 
 DeclSpec::DeclSpec(List *l, Encoding const &type,
 		   StorageClass storage, unsigned int flags, bool decl, bool def)
@@ -114,4 +116,30 @@ ClassSpec::ClassSpec(const Encoding &name, Node *car, List *cdr, Node *c)
     my_name(name),
     my_comments(c)
 {
+}
+
+namespace
+{
+class NameFinder : private Visitor
+{
+public:
+  Encoding name(Node const *name)
+  {
+    const_cast<Node *>(name)->accept(this);
+    return my_encoding;
+  }
+private:
+  virtual void visit(Identifier *id) { my_encoding = Encoding(id);}
+  virtual void visit(Name *name) { my_encoding = name->encoded_name();}
+  Encoding my_encoding;
+};
+}
+
+Encoding name(Node const *node)
+{
+  NameFinder finder;
+  return finder.name(node);
+}
+
+}
 }

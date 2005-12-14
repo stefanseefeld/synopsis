@@ -520,6 +520,10 @@ public:
   ParenExpr(Node *p, List *q) : ExpressionT<ParenExpr>(p, q) {} 
 };
 
+//. Return the encoded name of the given node.
+//. This node should be either an PT::Identifier, or a PT::Name.
+Encoding name(Node const *);
+
 }
 }
 

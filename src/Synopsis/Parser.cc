@@ -1013,7 +1013,7 @@ PT::ElaboratedTypeSpec *Parser::elaborated_type_specifier(PT::Encoding &encoding
   // TODO: look up id in the proper scope and make sure it has the appropriate
   //       type (class, enum, or class template), depending on the current context.
   name = PT::snoc(name, id);
-  return new PT::ElaboratedTypeSpec(key, new PT::Name(name, encoding));
+  return new PT::ElaboratedTypeSpec(key, id);
 }
 
 // function-specifier:

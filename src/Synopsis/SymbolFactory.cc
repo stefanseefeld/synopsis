@@ -553,8 +553,7 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ElaboratedTypeSpec const *spec
   // Now find the scope into which to inject the declaration.
   ETScopeFinder finder;
   scope = finder.find(scope ? scope : my_scopes.top());
-
-  PT::Encoding name = spec->name()->encoded_name();
+  PT::Encoding name = PT::name(spec->name());
   ST::SymbolSet symbols = scope->find(name, ST::Scope::DEFAULT);
   for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
   {
@@ -603,13 +602,13 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ElaboratedTypeSpec const *spec
     if (my_template_parameters)
     {
       ST::ClassTemplateName *symbol = 
-	new ST::ClassTemplateName(spec->encoded_type(), spec, false, scope);
+	new ST::ClassTemplateName(name, spec, false, scope);
       scope->declare(name, symbol);
     }
     else
     {
       ST::ClassName *symbol = 
-	new ST::ClassName(spec->encoded_type(), spec, false, scope);
+	new ST::ClassName(name, spec, false, scope);
       scope->declare(name, symbol);
       TA::TypeRepository::instance()->declare(name, symbol);
     }
@@ -737,7 +736,7 @@ void SymbolFactory::visit(PT::SimpleDeclaration *decl)
 	dynamic_cast<PT::ElaboratedTypeSpec *>(PT::nth<0>(spec));
       if (etspec && PT::string(etspec->type()) != "enum")
       {
-	PT::Encoding name = etspec->name()->encoded_name();
+	PT::Encoding name = PT::name(etspec->name());
 	if (!name.is_qualified())
 	{
 	  ST::SymbolSet symbols = scope->find(name, ST::Scope::ELABORATED);

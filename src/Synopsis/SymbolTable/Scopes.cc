@@ -36,7 +36,7 @@ TemplateParameterScope::unqualified_lookup(PT::Encoding const &name,
   searched.insert(this);
   SymbolSet symbols = find(name, context);
   if (symbols.empty() && my_outer_template_parameters)
-    symbols = my_outer_template_parameters->unqualified_lookup(name, context | SCOPE, searched);
+    symbols = my_outer_template_parameters->unqualified_lookup(name, context, searched);
   if (symbols.empty())
   {
     if (searched.find(my_outer) == searched.end())

@@ -37,6 +37,7 @@ private:
   virtual void visit(PTree::FunctionDefinition *);
   virtual void visit(PTree::ClassSpec *);
   virtual void visit(PTree::EnumSpec *);
+  virtual void visit(PTree::ElaboratedTypeSpec *);
   virtual void visit(PTree::TemplateDeclaration *);
   virtual void visit(PTree::TypeParameter *);
   virtual void visit(PTree::ParameterDeclaration *);

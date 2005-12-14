@@ -10,6 +10,8 @@
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Writer.hh> // for PTree::reify
 #include <Synopsis/PTree/Display.hh> // for PTree::display (debugging...)
+#include <Synopsis/SymbolTable/Display.hh> // for SymbolTable::display (debugging...)
+#include <Synopsis/Python/Object.hh>
 #include <Support/Path.hh>
 
 using Synopsis::Token;
@@ -41,11 +43,16 @@ public:
     }
     return my_name;
   }
+  AST::ScopedName name(PT::ElaboratedTypeSpec *spec)
+  {
+    spec->name()->accept(this);
+    return my_name;
+  }
 private:
   virtual void visit(PT::Identifier *id) { my_name = PT::string(id);}
   virtual void visit(PT::Name *name)
   {
-    PT::display(name, std::cout, false, true);
+    std::cerr << "TBD: ClassNameFinder::visit(PT::Name)" << std::endl;
   }
 
   AST::ScopedName my_name;
@@ -100,7 +107,7 @@ void ASTTranslator::visit(PT::NamespaceSpec *spec)
   bool visible = update_position(spec);
   if (!visible) return;
 
-  PTree::Node *identifier = PTree::nth<1>(spec);
+  PT::Node *identifier = PT::nth<1>(spec);
   std::string name;
   if (identifier) name = std::string(identifier->position(), identifier->length());
   else // anonymous namespace
@@ -222,17 +229,17 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
       my_types.declare(qname, declaration);
     }
   }
-  else
+  else if (declaration->declarators())
   {
     // Cache the declaration while traversing the individual declarators;
     // the comments are passed through.
     my_declaration = declaration;
-    Walker::visit(declaration);
+    Walker::visit(declaration->declarators());
     my_declaration = 0;
   }
 }
 
-void ASTTranslator::visit(PTree::FunctionDefinition *fdef)
+void ASTTranslator::visit(PT::FunctionDefinition *fdef)
 {
   Trace trace("ASTTranslator::visit(FunctionDefinition)", Trace::TRANSLATION);
   my_declaration = fdef;
@@ -326,7 +333,35 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
   my_types.declare(AST::ScopedName(name), enum_);
 }
 
-void ASTTranslator::visit(PTree::TemplateDeclaration *templ)
+void ASTTranslator::visit(PT::ElaboratedTypeSpec *type)
+{
+  Trace trace("ASTTranslator::visit(ElaboratedTypeSpec)", Trace::TRANSLATION);
+
+  // Find the associated symbol and make sure it is translated.
+  // FIXME: An elaborated-type-specifier isn't always declared in the present
+  //        scope. We should really look up the corresponding type from the
+  //        symbol table.
+  PT::Encoding name = PT::name(type->name());
+  try
+  {
+    AST::Type type = my_types.lookup(name);
+  }
+  catch (Python::Object::KeyError const &)
+  {
+    // not yet defined, so declare it here.
+    std::string key = PT::string(type->type());
+    ClassNameFinder finder;
+    AST::ScopedName qname = finder.name(type);
+    AST::Forward fwd = my_ast_kit.create_forward(my_file, my_lineno, key, qname);
+    my_types.declare(qname, fwd);
+  }
+//   ST::SymbolSet symbols = lookup(name, ST::Scope::ELABORATED);
+//   assert(symbols.size() == 1);
+//   ST::Symbol const *symbol = *symbols.begin();
+//   ST::Scope *scope = symbol->scope();
+}
+
+void ASTTranslator::visit(PT::TemplateDeclaration *templ)
 {
   Trace trace("ASTTranslator::visit(TemplateDeclaration)", Trace::TRANSLATION);
 
@@ -345,7 +380,7 @@ void ASTTranslator::visit(PTree::TemplateDeclaration *templ)
   my_template_parameters = AST::Template::Parameters();
 }
 
-void ASTTranslator::visit(PTree::TypeParameter *param)
+void ASTTranslator::visit(PT::TypeParameter *param)
 {
   Trace trace("ASTTranslator::visit(TypeParameter)", Trace::TRANSLATION);
 
@@ -358,7 +393,7 @@ void ASTTranslator::visit(PTree::TypeParameter *param)
   my_parameter = my_ast_kit.create_parameter(pre, type, post, "", "");
 }
 
-void ASTTranslator::visit(PTree::ParameterDeclaration *param)
+void ASTTranslator::visit(PT::ParameterDeclaration *param)
 {
   Trace trace("ASTTranslator::visit(ParameterDeclaration)", Trace::TRANSLATION);
 
