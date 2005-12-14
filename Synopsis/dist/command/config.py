@@ -126,14 +126,19 @@ class config(build_ext):
             configure = srcdir + '/configure'
             python = sys.executable
             prefix = self.prefix
-        command = '%s --prefix=\\"%s\\" --with-python=\\"%s\\"'%(configure, prefix, python)
+        command = '%s --prefix="%s" --with-python="%s"'%(configure, prefix, python)
         if self.disable_gc:
             command += ' --disable-gc'
         elif self.with_gc_prefix:
-            command += ' --with-gc-prefix=\\"%s\\"'%self.with_gc_prefix
+            command += ' --with-gc-prefix="%s"'%self.with_gc_prefix
         if self.with_boost_prefix:
-            command += ' --with-boost-prefix=\\"%s\\"'%self.with_boost_prefix
+            command += ' --with-boost-prefix="%s"'%self.with_boost_prefix
         command += ' %s'%args
         self.announce(command)
+        # Work around a hack in distutils.spawn by an even more evil hack:
+        # on NT, the whole command will get quoted, so we need to escape our own
+        # quoting marks.
+        if os.name == 'nt':
+            command = command.replace('"', '\\"')
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)
