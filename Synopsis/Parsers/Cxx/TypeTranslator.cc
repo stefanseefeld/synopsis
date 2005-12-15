@@ -35,6 +35,7 @@ TypeTranslator::TypeTranslator(Python::Object types, bool v, bool d)
   define(Python::Tuple(qname("..."), my_type_kit.create_base(qname("..."))));
   define(Python::Tuple(qname("long long"), my_type_kit.create_base(qname("long long"))));
   define(Python::Tuple(qname("long double"), my_type_kit.create_base(qname("long double"))));
+  define(Python::Tuple(qname("wchar_t"), my_type_kit.create_base(qname("wchar_t"))));
 
   // some GCC extensions...
   define(Python::Tuple(qname("__builtin_va_list"), my_type_kit.create_base(qname("__builtin_va_list"))));
@@ -64,10 +65,8 @@ AST::Type TypeTranslator::lookup_function_types(PT::Encoding const &name,
   {
     AST::Type parameter;
     i = decode_type(i, parameter);
-    if (parameter)
-      parameters.append(parameter);
-    else
-      break;
+    if (parameter) parameters.append(parameter);
+    else break;
   }
   ++i; // skip over '_'
   AST::Type return_type;
@@ -104,9 +103,6 @@ AST::Type TypeTranslator::create_dependent(AST::ScopedName name)
   return type;
 }
 
-// This is almost a verbatim copy of the Decoder::decode
-// methods from Synopsis/Parsers/Cxx/syn/decoder.cc
-// with some minor modifications to disable the C++ specific things.
 // FIXME: this ought to be part of SymbolLookup::Type.
 PT::Encoding::iterator TypeTranslator::decode_name(PT::Encoding::iterator i,
 						   std::string &name)
@@ -206,9 +202,9 @@ PT::Encoding::iterator TypeTranslator::decode_type(PT::Encoding::iterator i,
       case '?':
 	name = "int"; // in C, no return type spec defaults to int
 	break;
-//       case 'Q':
-// 	base = decodeQualType();
-// 	break;
+      case 'Q':
+	i = decode_qtype(i, base);
+ 	break;
       case '_':
 	--i;
 	type = AST::Type();
@@ -238,13 +234,80 @@ PT::Encoding::iterator TypeTranslator::decode_type(PT::Encoding::iterator i,
     type = AST::Type();
     return i;
   }
-  if (!base)
-    base = my_types.attr("__getitem__")(Python::Tuple(AST::ScopedName(name)));
-  if (premod.empty() && postmod.empty())
-    type = base;
-  else
-    type = my_type_kit.create_modifier(base, premod, postmod);
+  if (!base) base = my_types.attr("__getitem__")(Python::Tuple(AST::ScopedName(name)));
+  if (premod.empty() && postmod.empty()) type = base;
+  else type = my_type_kit.create_modifier(base, premod, postmod);
+  return i;
+}
 
+PT::Encoding::iterator 
+TypeTranslator::decode_qtype(PT::Encoding::iterator i, AST::Type &type)
+{
+  Trace trace("TypeTranslator::decode_qtype", Trace::TRANSLATION);
+  // Qualified type: first is num of scopes, each a name.
+  size_t scopes = *i++ - 0x80;
+  AST::ScopedName qname;
+  AST::TypeList parameters;
+  while (scopes--)
+  {
+    if (*i >= 0x80) // simple name
+    {
+      std::string name;
+      i = decode_name(i, name);
+      qname.append(name);
+    }
+    else if (*i == 'T') // template
+    {
+      ++i;
+      std::string name;
+      i = decode_name(i, name);
+      PT::Encoding::iterator end = i;
+      end += *i++ - 0x80;
+      while (i <= end)
+      {
+	AST::Type parameter;
+	i = decode_type(i, parameter);
+	parameters.append(parameter);
+      }
+      qname.append(name);
+    }
+    else
+    {
+      std::cerr << "Error: unexpected character " << *i << std::endl;
+      assert(0);
+    }
+  }
+  try
+  {
+    type = my_types.attr("__getitem__")(qname);
+  }
+  catch (...)
+  {
+    // Ignore error, and return an Unknown instead
+    type = my_type_kit.create_unknown(qname);
+    return i;
+  }
+  // If the type is a template, then parameterize it with the params found
+  // in the T decoding
+  if (!parameters.empty())
+  {
+    std::cerr << "TODO: handle template parameters " << std::endl;
+//     Types::Declared* declared = dynamic_cast<Types::Declared*>(baseType);
+//     AST::Class* tempclas = declared ? dynamic_cast<AST::Class*>(declared->declaration()) : 0;
+//     Types::Template* templType = tempclas ? tempclas->template_type() : 0;
+//     if (templType && types.size())
+//     {
+//       return new Types::Parameterized(templType, types);
+//     }
+  }
+  return i;
+}
+
+PT::Encoding::iterator 
+TypeTranslator::decode_template(PTree::Encoding::iterator i, AST::Type &)
+{
+  Trace trace("TypeTranslator::decode_template", Trace::TRANSLATION);
+  std::cerr << "TODO: TypeTranslator::decode_template" << std::endl;
   return i;
 }
 
@@ -267,10 +330,8 @@ PT::Encoding::iterator TypeTranslator::decode_func_ptr(PT::Encoding::iterator i,
   {
     AST::Type parameter;
     i = decode_type(i, parameter);
-    if (parameter)
-      parameters.append(parameter);
-    else
-      break;
+    if (parameter) parameters.append(parameter);
+    else break;
   }
   ++i; // skip over '_'
   i = decode_type(i, type);

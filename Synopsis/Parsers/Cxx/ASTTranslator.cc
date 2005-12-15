@@ -314,9 +314,7 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
       add_comments(enumerator, static_cast<PT::Identifier *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
-    enode = PT::tail(enode, 0);
-    // Skip comma
-    if (enode && enode->car() && *enode->car() == ',') enode = PT::tail(enode, 0);
+    enode = PT::tail(enode, 2);
   }
   // Add a dummy enumerator at the end to absorb trailing comments.
 //   PT::Node *close = PT::nth<2>(PT::nth<2>(spec));
@@ -366,14 +364,17 @@ void ASTTranslator::visit(PT::TemplateDeclaration *templ)
   Trace trace("ASTTranslator::visit(TemplateDeclaration)", Trace::TRANSLATION);
 
   AST::Template::Parameters parameters;
-  for (PT::List *params = static_cast<PT::List *>(PT::nth<2>(templ));
-       params;
-       params = PT::tail(params, 2))
+  if (!PT::nth<2>(templ)->is_atom()) // 'template < > ...' is a specialization.
   {
-    params->car()->accept(this);      
-    parameters.append(my_parameter);
+    for (PT::List *params = static_cast<PT::List *>(PT::nth<2>(templ));
+	 params;
+	 params = PT::tail(params, 2))
+    {
+      params->car()->accept(this);      
+      parameters.append(my_parameter);
+    }
+    my_template_parameters = parameters;
   }
-  my_template_parameters = parameters;
   // Traverse the declaration.
   PT::nth<3>(templ)->accept(this);
   // Reset, to indicate we are not inside a template declaration.
@@ -402,7 +403,9 @@ void ASTTranslator::visit(PT::ParameterDeclaration *param)
   AST::Modifiers pre;
   AST::Type type = my_types.lookup(spec->type());
   AST::Modifiers post;
-  std::string name = param->declarator()->encoded_name().unmangled();
+  std::string name;
+  PT::Declarator *declarator = param->declarator();
+  if (declarator) name = declarator->encoded_name().unmangled();
   std::string value;
   PT::Node *initializer = param->initializer();
   if (initializer) value = PT::reify(initializer);

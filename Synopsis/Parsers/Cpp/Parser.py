@@ -39,6 +39,6 @@ class Parser(Processor):
                                      base_path,
                                      self.cpp_output,
                                      self.language, flags, self.main_file_only,
-                                     self.verbose, self.debug)
+                                     self.verbose, self.debug, self.profile)
       return self.output_and_return_ast()
 

@@ -59,7 +59,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
-  if (debug) Synopsis::Trace::enable(Trace::ALL);
+  if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
 
   if (!src || *src == '\0')
   {
@@ -76,7 +76,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     Timer timer;
     PTree::Node *ptree = parser.parse();
     if (profile)
-      std::cout << "Parser::parse took " << timer.elapsed() 
+      std::cout << "C++ parser took " << timer.elapsed() 
 		<< " seconds" << std::endl;
     const Parser::ErrorList &errors = parser.errors();
     if (!errors.size() && ptree)
@@ -86,7 +86,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       timer.reset();
       translator.translate(ptree, buffer);
       if (profile)
-	std::cout << "ASTTranslator::translate took " << timer.elapsed() 
+	std::cout << "AST translation took " << timer.elapsed() 
 		  << " seconds" << std::endl;
     }
     else
@@ -96,7 +96,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
       throw std::runtime_error("The input contains errors.");
     }
   }
-  catch (std::exception const &e)
+  catch (std::invalid_argument const &e)
   {
     PyErr_SetString(error, e.what());
     return 0;

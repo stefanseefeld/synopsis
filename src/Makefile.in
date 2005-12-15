@@ -49,7 +49,7 @@ endif
 
 SRC	:= Trace Buffer Lexer process_pragma
 SRC     += $(patsubst %, PTree/%, Encoding operations Atoms Lists \
-                                  Visitor Display Writer)
+                                  Visitor Display)
 SRC     += $(patsubst %, SymbolTable/%, Symbol Scope Scopes Display Walker)
 SRC     += $(patsubst %, TypeAnalysis/%, Type TypeRepository TypeEvaluator \
                                          ConstEvaluator \

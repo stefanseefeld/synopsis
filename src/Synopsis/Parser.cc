@@ -1704,6 +1704,8 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
   bool declares_class_or_enum = false;
   bool defines_class_or_enum = false;
   bool allow_user_defined = true;
+  bool is_const = false;
+  bool is_volatile = false;
   PT::List *seq = 0;
   while (true)
   {
@@ -1772,12 +1774,36 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
 	PGuard<bool> guard1(*this, &Parser::my_declares_class_or_enum, false);
 	PGuard<bool> guard2(*this, &Parser::my_defines_class_or_enum, false);
 	Tentative tentative(*this);
-	PT::Node *spec = type_specifier(type, allow_user_defined);
+	PT::Encoding type_component;
+	PT::Node *spec = type_specifier(type_component, allow_user_defined);
+	if (spec && !type_component.empty())
+	{
+	  // Hack:
+	  // If the last type-specifier was a cv-qualifier, we
+	  // remember it and prepend it to the type encoding at the very end,
+	  // so meanwhile the qualified-name marker and counter can be accessed
+	  // as the encoding's first two characters.
+	  if (type_component.front() == 'C' || type_component.front() == 'V')
+	  {
+	    if (type_component.size() == 1)
+	      if (type_component.front() == 'C') is_const = true;
+	      else is_volatile = true;
+	    else is_const = is_volatile = true;
+	  }
+	  else
+	  {
+	    type.append(type_component);
+	    // If the last type-specifier was not a cv-qualifier,
+	    // no (more) user-defined types are allowed.
+	    allow_user_defined = false;
+	  }
+	}
 	declares_class_or_enum |= my_declares_class_or_enum;
 	defines_class_or_enum |= my_defines_class_or_enum;
 	if (!spec)
 	{
 	  tentative.rollback();
+	  type.cv_qualify(is_const, is_volatile);
 	  if (seq)
 	    return new PT::DeclSpec(seq, type, storage, flags,
 				    declares_class_or_enum,
@@ -1786,8 +1812,6 @@ PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
 	    return 0;
 	}
 	seq = PT::snoc(seq, spec);
-	// If the last type-specifier was not a cv qualifier,
-	// no (more) user-defined types are allowed.
 	if (!spec->is_atom() ||
 	    !(dynamic_cast<PT::Kwd::Const *>(spec) ||
 	      dynamic_cast<PT::Kwd::Volatile *>(spec)))
@@ -2731,7 +2755,6 @@ PT::TemplateDeclaration *Parser::template_declaration()
   tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
   PT::Encoding encoding;
   {
-//     ScopeGuard scope_guard(*this, tdecl);
     PT::TemplateParameterList *params = template_parameter_list(encoding);
     if (!require(params, "template-parameter-list") || !require('>')) return 0;
     tdecl = PT::conc(tdecl, PT::list(params, new PT::Atom(my_lexer.get_token())));

@@ -34,6 +34,9 @@ public:
 private:
 
   PTree::Encoding::iterator decode_type(PTree::Encoding::iterator, AST::Type &);
+  PTree::Encoding::iterator decode_qtype(PTree::Encoding::iterator, AST::Type &);
+  PTree::Encoding::iterator decode_template(PTree::Encoding::iterator, AST::Type &);
+
   PTree::Encoding::iterator decode_func_ptr(PTree::Encoding::iterator,
 					    AST::Type &type,
 					    AST::Modifiers &postmod);

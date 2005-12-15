@@ -190,7 +190,7 @@ std::string Unmangler::unmangle_qname()
     else
     {
       
-      //std::cerr << "Warning: Unknown type inside Q: " << *my_cursor << std::endl;
+      std::cerr << "Warning: Unknown type inside Q: " << *my_cursor << std::endl;
       // FIXME
       //std::cerr << "         Decoding " << my_string << std::endl;
     }

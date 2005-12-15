@@ -295,8 +295,7 @@ void SymbolFactory::enter_scope(ST::Scope *scope, PT::ClassSpec const *spec)
       dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
     my_template_repository->declare_scope(primary, spec, class_);
   }
-  else
-    scope->declare_scope(spec, class_);
+  scope->declare_scope(spec, class_);
   my_scopes.push(class_);
   my_template_parameters = 0;
 }

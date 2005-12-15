@@ -16,7 +16,7 @@ namespace Synopsis
 namespace PTree
 {
 
-inline std::string string(Atom *atom) 
+inline std::string string(Atom const *atom) 
 {
   return std::string(atom->position(), atom->length());
 }

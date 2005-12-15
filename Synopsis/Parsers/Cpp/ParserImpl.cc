@@ -8,6 +8,7 @@
 #include <Synopsis/AST/ASTKit.hh>
 #include <Synopsis/Python/Module.hh>
 #include <Synopsis/Trace.hh>
+#include <Synopsis/Timer.hh>
 #include <Support/ErrorHandler.hh>
 #include "ASTTranslator.hh"
 #include <memory>
@@ -57,7 +58,8 @@ PyObject *parse(PyObject *self, PyObject *args)
   int main_file_only = 0;
   int verbose = 0;
   int debug = 0;
-  if (!PyArg_ParseTuple(args, "OszzsO!iii",
+  int profile = 0;
+  if (!PyArg_ParseTuple(args, "OszzsO!iiii",
 			&py_ast,
 			&input_file,
 			&base_path,
@@ -66,7 +68,8 @@ PyObject *parse(PyObject *self, PyObject *args)
 			&PyList_Type, &py_flags,
 			&main_file_only,
 			&verbose,
-			&debug)
+			&debug,
+			&profile)
       || !extract(py_flags, flags))
     return 0;
 
@@ -95,6 +98,7 @@ PyObject *parse(PyObject *self, PyObject *args)
     std::string input(std::istreambuf_iterator<char>(ifs.rdbuf()),
 		      std::istreambuf_iterator<char>());
 
+    Timer timer;
     typedef wave::cpplexer::lex_iterator<Token> lex_iterator_type;
     typedef wave::context<std::string::iterator,
                           lex_iterator_type,
@@ -151,6 +155,9 @@ PyObject *parse(PyObject *self, PyObject *args)
       ofs << (*first).get_value();
       ++first;
     }
+    if (profile)
+      std::cout << "preprocessor took " << timer.elapsed() 
+		<< " seconds" << std::endl;
   }
   catch (wave::cpp_exception &e) 
   {
