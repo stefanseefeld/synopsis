@@ -9,7 +9,6 @@
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Node.hh>
 #include <Synopsis/PTree/Atoms.hh>
-#include <Synopsis/PTree/TypeVisitor.hh>
 #include <Synopsis/PTree/Encoding.hh>
 #include <Synopsis/Lexer.hh>
 #include <iostream>
@@ -258,31 +257,6 @@ void Encoding::cv_qualify(bool c, bool v)
   if (c) prepend('C');
 }
 
-void Encoding::cv_qualify(const PTree::Node *cv1, const PTree::Node *cv2)
-{
-  bool c = false, v = false;
-  if(cv1 && !cv1->is_atom())
-    while(cv1)
-    {
-      int kind = PTree::type_of(cv1->car());
-      cv1 = cv1->cdr();
-      if(kind == Token::CONST) c = true;
-      else if(kind == Token::VOLATILE) v = true;
-    }
-
-  if(cv2 && !cv2->is_atom())
-    while(cv2)
-    {
-      int kind = PTree::type_of(cv2->car());
-      cv2 = cv2->cdr();
-      if(kind == Token::CONST) c = true;
-      else if(kind == Token::VOLATILE) v = true;
-    }
-
-  if(v) prepend('V');
-  if(c) prepend('C');
-}
-
 void Encoding::global_scope()
 {
   append('Q');
@@ -316,7 +290,6 @@ void Encoding::template_(Atom const *name, Encoding const &args)
   append('T');
   simple_name(name);
   append_with_length(args);
-  if (is_qualified()) ++my_buffer.at(1);
 }
 
 void Encoding::qualified(int n)

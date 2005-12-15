@@ -135,9 +135,6 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
   {
     for (PT::List *d = declaration->declarators(); d; d = PT::tail(d, 2))
     {
-      if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
-	continue;
-    
       PT::Declarator *declarator = static_cast<PT::Declarator *>(d->car());
       PT::Encoding name = declarator->encoded_name();
       PT::Encoding type = declarator->encoded_type();

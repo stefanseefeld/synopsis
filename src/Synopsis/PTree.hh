@@ -12,6 +12,5 @@
 #include <Synopsis/PTree/operations.hh>
 #include <Synopsis/PTree/Atoms.hh>
 #include <Synopsis/PTree/Lists.hh>
-#include <Synopsis/PTree/TypeVisitor.hh>
 
 #endif

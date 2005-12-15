@@ -200,7 +200,7 @@ PT::Encoding::iterator TypeTranslator::decode_type(PT::Encoding::iterator i,
 	name = "...";
 	break;
       case '?':
-	name = "int"; // in C, no return type spec defaults to int
+// 	name = "int";
 	break;
       case 'Q':
 	i = decode_qtype(i, base);

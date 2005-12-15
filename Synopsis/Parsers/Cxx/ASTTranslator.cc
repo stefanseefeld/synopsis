@@ -50,9 +50,13 @@ public:
   }
 private:
   virtual void visit(PT::Identifier *id) { my_name = PT::string(id);}
-  virtual void visit(PT::Name *name)
+  virtual void visit(PT::Name *node)
   {
-    std::cerr << "TBD: ClassNameFinder::visit(PT::Name)" << std::endl;
+    PT::Encoding name = node->encoded_name();
+    for (PT::Encoding::name_iterator next = name.begin_name();
+	 next != name.end_name();
+	 ++next)
+      my_name.append(name.unmangled());
   }
 
   AST::ScopedName my_name;
@@ -151,7 +155,7 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     while (p && p->car() && *p->car() != '(') p = p->cdr();
 
     for (PT::List *node = static_cast<PT::List *>(PT::nth<1>(p));
-	 node->cdr();
+	 node && node->car();
 	 node = PT::tail(node, 2))
     {
       node->car()->accept(this); // PT::ParameterDeclaration
@@ -208,9 +212,6 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
   {
     for (PT::List *d = declaration->declarators(); d; d = PT::tail(d, 2))
     {
-      if(PT::type_of(d->car()) != Token::ntDeclarator)  // is this check necessary
-	continue;
-    
       PT::Declarator *declarator = static_cast<PT::Declarator *>(d->car());
       PT::Encoding name = declarator->encoded_name();
       PT::Encoding type = declarator->encoded_type();
@@ -374,9 +375,9 @@ void ASTTranslator::visit(PT::TemplateDeclaration *templ)
       parameters.append(my_parameter);
     }
     my_template_parameters = parameters;
+    // Traverse the declaration.
+    PT::nth<4>(templ)->accept(this);
   }
-  // Traverse the declaration.
-  PT::nth<3>(templ)->accept(this);
   // Reset, to indicate we are not inside a template declaration.
   my_template_parameters = AST::Template::Parameters();
 }

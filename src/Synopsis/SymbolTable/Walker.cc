@@ -6,7 +6,6 @@
 //
 #include <Synopsis/SymbolTable/Walker.hh>
 #include <Synopsis/PTree/Lists.hh>
-#include <Synopsis/PTree/TypeVisitor.hh>
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolTable/Scopes.hh>

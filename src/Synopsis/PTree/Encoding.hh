@@ -135,7 +135,6 @@ public:
   void pop(size_t n) { my_buffer.erase(my_buffer.begin(), my_buffer.begin() + n);}
 
   void cv_qualify(bool c, bool v = false);
-  void cv_qualify(Node const *, Node const * = 0);
   void simple_const() { append("Ci", 2);}
   void global_scope();
   void simple_name(Atom const *);

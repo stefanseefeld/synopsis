@@ -1438,8 +1438,8 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
   PT::List *qname = nested_name_specifier(encoding);
   if (qname)
   {
-    Tentative tentative(*this);
-    PT::Node *class_name_ = class_name(encoding, false, false); //FIXME: encoding
+    Tentative tentative(*this, encoding);
+    PT::Node *class_name_ = class_name(encoding, false, false);
     if (!class_name_)
     {
       tentative.rollback();
@@ -1459,6 +1459,7 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
       else encoding.anonymous();
     }
   }
+  if (name && !name->is_atom()) name = new PT::Name(name, encoding);
   Token::Type next = my_lexer.look_ahead();
   if (next != ':' && next != '{')
   {
