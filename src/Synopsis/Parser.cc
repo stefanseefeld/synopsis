@@ -1865,7 +1865,7 @@ PT::List *Parser::direct_declarator(PT::Encoding &type,
 				    DeclaratorKind kind)
 {
   Trace trace("Parser::direct_declarator", Trace::PARSING);
-
+  PT::Encoding inner;
   PT::List *decl = 0;
   if (my_lexer.look_ahead() == '(')
   {
@@ -1875,7 +1875,7 @@ PT::List *Parser::direct_declarator(PT::Encoding &type,
     // we have to try a parameter-declaration-clause first.
     if (kind != NAMED)
     {
-      Tentative tentative(*this);
+      Tentative tentative(*this, type);
       PT::Node *parameters = parameter_declaration_clause(type);
       if (parameters && my_lexer.look_ahead() == ')')
       {
@@ -1887,7 +1887,7 @@ PT::List *Parser::direct_declarator(PT::Encoding &type,
     }
     if (!decl)
     {
-      decl = declarator(type, name, kind);
+      decl = declarator(inner, name, kind);
       if (!require(decl, "declarator") || !require(')')) return 0;
       decl = PT::list(new PT::Atom(op),
 		      decl,
@@ -1961,6 +1961,7 @@ PT::List *Parser::direct_declarator(PT::Encoding &type,
     }
     else break;
   }
+  if (!inner.empty()) type.recursion(inner);
   return decl;
 }
 

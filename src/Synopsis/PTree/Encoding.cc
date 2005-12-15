@@ -223,9 +223,11 @@ std::string Unmangler::unmangle_func(std::string& postmod)
   trace << "all is still well";
   std::string returnType = unmangle();
   std::string ret = returnType + "(*)(";
-  if (params.size()) ret += params[0];
-  for (size_t p = 1; p != params.size(); ++p)
-    ret += "," + params[p];
+  if (params.size())
+  {
+    ret += params[0];
+    for (size_t p = 1; p != params.size(); ++p) ret += "," + params[p];
+  }
   ret += ")";
   return ret;
 }
