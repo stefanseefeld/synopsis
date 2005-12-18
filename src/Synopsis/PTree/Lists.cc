@@ -27,62 +27,11 @@ DeclSpec::DeclSpec(List *l, Encoding const &type,
 {
 }
 
-Declarator::Declarator(Node *n)
-  : List(n ? n->car() : 0, n ? n->cdr() : 0),
-    my_declared_name(0),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Node *list, Encoding const &t, Encoding const &n, Node *dname)
+Declarator::Declarator(List *list, Encoding const &t, Encoding const &n, List *comment)
   : List(list->car(), list->cdr()),
     my_type(t),
     my_name(n),
-    my_declared_name(dname),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Encoding const &t, Encoding const &n, Node *dname)
-  : List(0, 0),
-    my_type(t),
-    my_name(n),
-    my_declared_name(dname),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Node *p, List *q, Encoding const &t, Encoding const &n, Node *dname)
-  : List(p, q),
-    my_type(t),
-    my_name(n),
-    my_declared_name(dname),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Node *list, Encoding const &t)
-  : List(list->car(), list->cdr()),
-    my_type(t),
-    my_declared_name(0),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Encoding const &t)
-  : List(0, 0),
-    my_type(t),
-    my_declared_name(0),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Declarator *decl, Node *p, List *q)
-  : List(p, q),
-    my_type(decl->my_type),
-    my_name(decl->my_name),
-    my_declared_name(decl->my_declared_name),
-    my_comments(0)
+    my_comments(comment)
 {
 }
 
@@ -111,7 +60,7 @@ FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, List *q)
 {
 }
 
-ClassSpec::ClassSpec(const Encoding &name, Node *car, List *cdr, Node *c)
+ClassSpec::ClassSpec(const Encoding &name, Node *car, List *cdr, List *c)
   : List(car, cdr),
     my_name(name),
     my_comments(c)

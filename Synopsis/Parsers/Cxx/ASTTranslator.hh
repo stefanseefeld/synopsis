@@ -42,7 +42,15 @@ private:
   virtual void visit(PTree::TypeParameter *);
   virtual void visit(PTree::ParameterDeclaration *);
 
-  void add_comments(AST::Declaration, PTree::Node *);
+  //. The lexer returns comments in units as they are defined by
+  //. the language, i.e. blocks marked up by '/*' and '*/' or
+  //. blocks marked up by '//' and '\n'.
+  //. Here we concatenate subsequent '//' blocks if they are
+  //. adjacent.
+  //. Further, if they are separated from the following declaration,
+  //. they are annotated as 'suspect', and thus can easily be filtered
+  //. out in later processing steps.
+  Python::List translate_comments(PTree::List *);
   //. Update positional information for the given
   //. node. This will reset 'my_lineno' and may change
   //. 'my_file'.

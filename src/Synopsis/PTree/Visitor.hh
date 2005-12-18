@@ -30,7 +30,6 @@ public:
   // atoms...
   virtual void visit(Literal *);
   virtual void visit(CommentedAtom *);
-  virtual void visit(DupAtom *);
   virtual void visit(Identifier *);
   virtual void visit(Keyword *);
   virtual void visit(Kwd::Auto *);

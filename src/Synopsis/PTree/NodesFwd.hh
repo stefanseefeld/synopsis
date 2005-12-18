@@ -19,7 +19,6 @@ class Atom;
 class List;
 class Literal;
 class CommentedAtom;
-class DupAtom;
 class Identifier;
 class Keyword;
 template <Token::Type> class KeywordT;

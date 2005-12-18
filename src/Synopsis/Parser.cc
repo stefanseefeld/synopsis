@@ -535,7 +535,7 @@ PT::Node *Parser::parse()
   //       they will just accumulate.
   return declarations;
 
-  PT::Node *comments = wrap_comments(my_lexer.get_comments());
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
   if (comments)
   {
     // Use zero-length CommentedAtom as special marker.
@@ -906,7 +906,7 @@ PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
     if(!require(Token::Identifier, "identifier")) return 0;
     Token token = my_lexer.get_token();
     PT::Node *name;
-    PT::Node *comments = wrap_comments(my_lexer.get_comments());
+    PT::List *comments = wrap_comments(my_lexer.get_comments());
     if(my_lexer.look_ahead() != '=')
     {
       name = new PT::Identifier(token, comments);
@@ -934,7 +934,7 @@ PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
   }
   if(!require('}')) return 0;
   Token cb = my_lexer.get_token();
-  PT::Node *comments = wrap_comments(my_lexer.get_comments());
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
   spec = PT::snoc(spec, new PT::Atom(ob));
   spec = PT::snoc(spec, enumerators);
   spec = PT::snoc(spec, new PT::CommentedAtom(cb, comments));
@@ -1382,7 +1382,7 @@ PT::Node *Parser::opt_member_specification()
 // 		  ScopeGuard scope_guard(*this, func);
 // 		  PT::Block *body = compound_statement();
 // 		  if (!require(body, "compound-statement")) return 0;
-		  PT::Node *ob_comments = wrap_comments(my_lexer.get_comments());
+		  PT::List *ob_comments = wrap_comments(my_lexer.get_comments());
 		  PT::Block *body = new PT::Block(new PT::CommentedAtom(op, ob_comments),
 						  PT::cons(new PT::Atom(cp)));
 		  func = PT::snoc(func, body);
@@ -1432,7 +1432,6 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
 
   PT::Keyword *key = class_key();
   if (!require(key, "class-key")) return 0;
-  trace << "class spec qualified " << my_qualifying_scope;
   Tentative tentative(*this, encoding);
   PT::Node *name = 0;
   PT::List *qname = nested_name_specifier(encoding);
@@ -1467,9 +1466,8 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
     return 0;
   }
   else commit();
-
-  PT::ClassSpec *spec = new PT::ClassSpec(encoding, key, PT::cons(name), 0);
-  trace << "class spec decl " << my_qualifying_scope;
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+  PT::ClassSpec *spec = new PT::ClassSpec(encoding, key, PT::cons(name), comments);
   declare(spec);
   PT::List *base_clause_ = 0;
   if (next == ':')
@@ -2308,7 +2306,7 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
 	    error("encountering EOF while parsing function body");
 	    return 0;
 	  }
-	  PT::Node *ob_comments = wrap_comments(my_lexer.get_comments());
+	  PT::List *ob_comments = wrap_comments(my_lexer.get_comments());
 	  PT::Block *body = new PT::Block(new PT::CommentedAtom(op, ob_comments),
 					  PT::cons(new PT::Atom(cp)));
 	  func = PT::snoc(func, body);
@@ -2374,7 +2372,7 @@ PT::LinkageSpec *Parser::linkage_specification()
     PT::List *body = opt_declaration_seq();
     if (!require('}')) return 0;
     Token cb = my_lexer.get_token();
-    PT::Node *comment = wrap_comments(my_lexer.get_comments());
+    PT::List *comment = wrap_comments(my_lexer.get_comments());
     PT::Brace *brace = new PT::Brace(new PT::Atom(ob), body,
 				     new PT::CommentedAtom(cb, comment));
     return PT::snoc(spec, brace);
@@ -2514,7 +2512,7 @@ PT::NamespaceSpec *Parser::namespace_definition()
   if (my_lexer.look_ahead() != Token::NAMESPACE) return 0;
 
   PT::Kwd::Namespace *namespace_ = new PT::Kwd::Namespace(my_lexer.get_token());
-  PT::Node *comments = wrap_comments(my_lexer.get_comments());
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
 
   PT::Encoding encoding;
   PT::Node *name = 0;
@@ -4192,7 +4190,7 @@ PT::Block *Parser::compound_statement(bool create_scope)
   Token ob = my_lexer.get_token();
   if(ob.type != '{') return 0;
 
-  PT::Node *ob_comments = wrap_comments(my_lexer.get_comments());
+  PT::List *ob_comments = wrap_comments(my_lexer.get_comments());
   PT::Block *body = new PT::Block(new PT::CommentedAtom(ob, ob_comments), 0);
 
   ScopeGuard scope_guard(*this, create_scope ? body : 0);
@@ -4209,7 +4207,7 @@ PT::Block *Parser::compound_statement(bool create_scope)
   Token cb = my_lexer.get_token();
   if(cb.type != '}') return 0;
 
-  PT::Node *cb_comments = wrap_comments(my_lexer.get_comments());
+  PT::List *cb_comments = wrap_comments(my_lexer.get_comments());
   return PT::snoc(body, new PT::CommentedAtom(cb, cb_comments));
 }
 
@@ -4372,7 +4370,7 @@ PT::List *Parser::statement()
 {
   Trace trace("Parser::statement", Trace::PARSING);
 
-  PT::Node *comments = wrap_comments(my_lexer.get_comments());
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
   PT::List *stmt = 0;
   switch(my_lexer.look_ahead())
   {

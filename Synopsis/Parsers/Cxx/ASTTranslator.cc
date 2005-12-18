@@ -124,7 +124,8 @@ void ASTTranslator::visit(PT::NamespaceSpec *spec)
   AST::ScopedName qname = name;
   AST::Module module = my_ast_kit.create_module(my_file, my_lineno,
 						"namespace", qname);
-  add_comments(module, spec->get_comments());
+  Python::List comments = translate_comments(spec->get_comments());
+  module.comments().extend(comments);
   declare(module);
   my_types.declare(qname, module);
   my_scope.push(module);
@@ -180,8 +181,9 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 					    qname,
 					    name.unmangled());
     function.parameters().extend(parameters);
-    if (my_declaration) add_comments(function, my_declaration->get_comments());
-    add_comments(function, declarator->get_comments());
+    if (my_declaration)
+      function.comments().extend(translate_comments(my_declaration->get_comments()));
+    function.comments().extend(translate_comments(declarator->get_comments()));
     if (visible) declare(function);
   }
   else
@@ -193,8 +195,9 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     std::string vtype = my_scope.size() ? my_scope.top().type() : "global variable";
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
-    if (my_declaration) add_comments(variable, my_declaration->get_comments());
-    add_comments(variable, declarator->get_comments());
+    if (my_declaration)
+      variable.comments().extend(translate_comments(my_declaration->get_comments()));
+    variable.comments().extend(translate_comments(declarator->get_comments()));
     if (visible) declare(variable);
   }
 }
@@ -221,13 +224,13 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
       size_t length = (name.front() - 0x80);
       AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
       AST::Type alias = my_types.lookup(type);
-      AST::Declaration declaration = my_ast_kit.create_typedef(my_file, my_lineno,
+      AST::Typedef typedef_ = my_ast_kit.create_typedef(my_file, my_lineno,
 							       "typedef",
 							       qname,
 							       alias, false);
-      add_comments(declaration, declarator->get_comments());
-      if (visible) declare(declaration);
-      my_types.declare(qname, declaration);
+      typedef_.comments().extend(translate_comments(declarator->get_comments()));
+      if (visible) declare(typedef_);
+      my_types.declare(qname, typedef_);
     }
   }
   else if (declaration->declarators())
@@ -259,7 +262,7 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
   ClassNameFinder finder;
   AST::ScopedName qname = finder.name(spec);
   AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, key, qname);
-  add_comments(class_, spec->get_comments());
+  class_.comments().extend(translate_comments(spec->get_comments()));
   if (visible) declare(class_);
   if (my_template_parameters)
   {
@@ -288,7 +291,7 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
     size_t length = (ename.front() - 0x80);
     name = std::string(ename.begin() + 1, ename.begin() + 1 + length);
   }
-  else name = PT::reify(spec->name());
+  else name = PT::string(spec->name());
 
   AST::Enumerators enumerators;
   PT::List *enode = spec->enumerators();
@@ -303,7 +306,7 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
       // identifier
       AST::ScopedName qname(PT::string(static_cast<PT::Atom *>(penumor)));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
-      add_comments(enumerator, static_cast<PT::Identifier *>(penumor)->get_comments());
+      enumerator.comments().extend(translate_comments(static_cast<PT::Identifier *>(penumor)->get_comments()));
     }
     else
     {
@@ -312,7 +315,6 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
       // TBD: For now stringify the initializer expression.
       std::string value = PT::reify(PT::nth<2>(static_cast<PT::List *>(penumor)));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, value);
-      add_comments(enumerator, static_cast<PT::Identifier *>(penumor)->get_comments());
     }
     enumerators.append(enumerator);
     enode = PT::tail(enode, 2);
@@ -326,7 +328,7 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
   
   // Create AST.Enum object
   AST::Enum enum_ = my_ast_kit.create_enum(my_file, my_lineno, name, enumerators);
-  add_comments(enum_, spec);
+//   add_comments(enum_, spec->get_comments());
 
   if (visible) declare(enum_);
   my_types.declare(AST::ScopedName(name), enum_);
@@ -413,80 +415,52 @@ void ASTTranslator::visit(PT::ParameterDeclaration *param)
   my_parameter = my_ast_kit.create_parameter(pre, type, post, name, value);
 }
 
-void ASTTranslator::add_comments(AST::Declaration declarator, PT::Node *c)
+Python::List ASTTranslator::translate_comments(PT::List *c)
 {
-  Trace trace("ASTTranslator::add_comments", Trace::TRANSLATION);
-  if (!declarator || !c) return;
+  Trace trace("ASTTranslator::translate_comments", Trace::TRANSLATION);
+  if (!c) return Python::List();
   
   Python::List comments;
-
-  // Loop over all comments in the list
-//   for (PT::Node *next = PT::tail(c, 0); c && !c->is_atom(); next = PT::tail(c, 0))
-//   {
-//     PT::Node *first = PT::nth<0>(c);
-//     if (!first || !first->is_atom())
-//     {
-//       c = next;
-//       continue;
-//     }
-//     // update position information for this comment
-//     update_position(c);
-
-//     // Check if comment is continued, eg: consecutive C++ comments
-//     while (next && PT::first(next) && PT::first(next)->is_atom())
-//     {
-//       if (!strncmp(first->position() + first->length() - 2, "*/", 2))
-//         break;
-//       if (strncmp(PT::first(next)->position(), "//", 2))
-//         break;
-//       char const *next_pos = PT::first(next)->position();
-//       char const *start_pos = PT::first(c)->position();
-//       char const *curr_pos = start_pos + PT::first(c)->length();
-//       // Must only be whitespace between current comment and next
-//       // and only one newline
-//       int newlines = 0;
-//       while (curr_pos < next_pos && strchr(" \t\r\n", *curr_pos))
-//         if (*curr_pos == '\n' && newlines > 0)
-//           break;
-//         else if (*curr_pos++ == '\n')
-//           ++newlines;
-//       if (curr_pos < next_pos)
-//         break;
-//       // Current comment stretches to end of next
-//       int len = int(next_pos - start_pos + PT::first(next)->length());
-//       c->set_car(first = new PT::Atom(start_pos, len));
-//       // Skip the combined comment
-//       next = PT::tail(next, 0);
-//     }
-
-//     // all comments that are not immediately (i.e. separated
-//     // by a single new line) followed by a declaration are
-//     // marked as 'suspect'
-//     bool suspect = false;
-//     char const *pos = first->position() + first->length();
-//     while (*pos && strchr(" \t\r", *pos)) ++pos;
-//     if (*pos == '\n')
-//     {
-//       ++pos;
-//       // Found only allowed \n
-//       while (*pos && strchr(" \t\r", *pos)) ++pos;
-//       if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
-//     }
-//     AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
-// 						     // FIXME: 'first' ought to be an atom,
-// 						     //        so we could just take the position/length
-// 						     PT::reify(first),
-// 						     suspect);
-//     comments.append(comment);
-
-// //     if (my_links) my_links->long_span(first, "file-comment");
-//     // Set first to 0 so we dont accidentally do them twice (eg:
-//     // when parsing expressions)
-//     c->set_car(0);
-//     c = next;
-//   }
-
-  declarator.comments().extend(comments);
+  PT::Atom *first = 0;
+  PT::Atom *last = 0;
+  for (; c; c = c->cdr())
+  {
+    PT::Atom *current = static_cast<PT::Atom *>(c->car());
+    // update position information for this comment
+    update_position(c);
+    // Check if comment is continued, eg: consecutive C++ comments
+    if (std::string("//").compare(0, 2, current->position(), 2) == 0)
+    {
+      if (!first) first = last = current;
+      else if (current->position() - last->end() == 1) last = current;
+      else
+      {
+	AST::Comment comment = 
+	  my_ast_kit.create_comment(my_file, my_lineno,
+				    std::string(first->begin(), last->end() - first->begin()),
+				    true);
+	comments.append(comment);
+	first = last = current;
+      }
+    }
+    else
+    {
+      AST::Comment comment = 
+	my_ast_kit.create_comment(my_file, my_lineno,
+				  std::string(current->position(), current->length()),
+				  true);
+      comments.append(comment);
+    }
+  }
+  if (first)
+  {
+    AST::Comment comment = 
+      my_ast_kit.create_comment(my_file, my_lineno,
+				std::string(first->begin(), last->end() - first->begin()),
+				true);
+    comments.append(comment);
+  }
+  return comments;
 }
 
 bool ASTTranslator::update_position(PT::Node *node)

@@ -48,7 +48,7 @@ CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
 endif
 
 SRC	:= Trace Buffer Lexer process_pragma
-SRC     += $(patsubst %, PTree/%, Encoding operations Atoms Lists \
+SRC     += $(patsubst %, PTree/%, Encoding operations Lists \
                                   Visitor Display)
 SRC     += $(patsubst %, SymbolTable/%, Symbol Scope Scopes Display Walker)
 SRC     += $(patsubst %, TypeAnalysis/%, Type TypeRepository TypeEvaluator \

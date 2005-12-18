@@ -13,7 +13,6 @@ using namespace PTree;
 
 void Visitor::visit(Literal *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(CommentedAtom *a) { visit(static_cast<Atom *>(a));}
-void Visitor::visit(DupAtom *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(Identifier *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(Keyword *a) { visit(static_cast<Atom *>(a));}
 void Visitor::visit(Kwd::Auto *a) { visit(static_cast<Keyword *>(a));}

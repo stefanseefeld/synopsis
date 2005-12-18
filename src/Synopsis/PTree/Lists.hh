@@ -79,27 +79,19 @@ private:
 class Declarator : public List
 {
 public:
-  Declarator(Node *);
-  Declarator(Node *, Encoding const&, Encoding const&, Node *);
-  Declarator(Encoding const&, Encoding const&, Node *);
-  Declarator(Node *, List *, Encoding const&, Encoding const&, Node *);
-  Declarator(Node *, Encoding const&);
-  Declarator(Encoding const&);
-  Declarator(Declarator*, Node *, List *);
+  Declarator(List *, Encoding const&, Encoding const&, List *);
 
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_type() const { return my_type;}
   Encoding encoded_name() const { return my_name;}
   void set_encoded_type(const Encoding &t) { my_type = t;}
-  Node *name() { return my_declared_name;}
   Node *initializer();
-  Node *get_comments() { return my_comments;}
-  void set_comments(Node *c) { my_comments = c;}
+  List *get_comments() { return my_comments;}
+  void set_comments(List *c) { my_comments = c;}
 private:
   Encoding my_type;
   Encoding my_name;
-  Node    *my_declared_name;
-  Node    *my_comments;
+  List    *my_comments;
 };
 
 class Declaration : public List
@@ -107,11 +99,11 @@ class Declaration : public List
 public:
   Declaration(Node *p, List *q) : List(p, q), my_comments(0) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
-  Node *get_comments() { return my_comments;}
-  void set_comments(Node *c) { my_comments = c;}
+  List *get_comments() { return my_comments;}
+  void set_comments(List *c) { my_comments = c;}
 
 private:
-  Node *my_comments;
+  List *my_comments;
 };
 
 class SimpleDeclaration : public Declaration
@@ -243,10 +235,10 @@ private:
 class ClassSpec : public List
 {
 public:
-  ClassSpec(const Encoding &, Node *, List *, Node *);
+  ClassSpec(const Encoding &, Node *, List *, List *);
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
   Encoding encoded_name() const { return my_name;}
-  Node *get_comments() { return my_comments;}
+  List *get_comments() { return my_comments;}
 
   Atom *key() const { return static_cast<Atom *>(nth<0>(this));}
   Node *name() const { return nth<1>(this);}
@@ -257,7 +249,7 @@ public:
 
 private:
   Encoding my_name;
-  Node    *my_comments;
+  List    *my_comments;
 };
 
 //. enum identifier [opt] { enumerator-list [opt] }

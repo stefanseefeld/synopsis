@@ -28,40 +28,28 @@ private:
 class CommentedAtom : public Atom
 {
 public:
-  CommentedAtom(Token const &tk, Node *c = 0) : Atom(tk), my_comments(c) {}
-  CommentedAtom(char const *p, size_t l, Node *c = 0) : Atom(p, l), my_comments(c) {}
+  CommentedAtom(Token const &tk, List *c = 0) : Atom(tk), my_comments(c) {}
+  // TODO: See Parser.cc for example where this is currently used.
+  CommentedAtom(char const *p, size_t l, List *c = 0) : Atom(p, l), my_comments(c) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 
-  Node *get_comments() { return my_comments;}
-  void set_comments(Node *c) { my_comments = c;}
+  List *get_comments() { return my_comments;}
+  void set_comments(List *c) { my_comments = c;}
 private:
-  Node *my_comments;
-};
-
-// class DupLeaf is used by Ptree::Make() and QuoteClass (qMake()).
-// The string given to the constructors are duplicated.
-
-class DupAtom : public CommentedAtom 
-{
-public:
-  DupAtom(char const *, size_t);
-  DupAtom(char const *, size_t, char const *, size_t);
-  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  List *my_comments;
 };
 
 class Identifier : public CommentedAtom
 {
 public:
-  Identifier(Token const &t, Node *c = 0) : CommentedAtom(t, c) {}
-  Identifier(char const *p, size_t l) : CommentedAtom(p, l) {}
+  Identifier(Token const &t, List *c = 0) : CommentedAtom(t, c) {}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
-class Keyword : public CommentedAtom
+class Keyword : public Atom
 {
 public:
-  Keyword(Token const &t) : CommentedAtom(t) {}
-  Keyword(char const *str, int len) : CommentedAtom(str, len) {}
+  Keyword(Token const &t) : Atom(t) {}
   virtual Token::Type token() const = 0;
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
@@ -71,7 +59,6 @@ class KeywordT : public Keyword
 {
 public:
   KeywordT(Token const &tk) : Keyword(tk) {}
-  KeywordT(char const *ptr, size_t length) : Keyword(ptr, length) {}
   virtual Token::Type token() const { return t;}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };

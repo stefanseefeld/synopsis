@@ -51,7 +51,6 @@ using namespace PTree;
 
 Display::Display(std::ostream &os, bool encoded)
   : my_os(os),
-    my_indent(0),
     my_encoded(encoded)
 {
 }
@@ -99,66 +98,6 @@ void Display::visit(List *l)
       my_os.write(gap_begin, gap_end - gap_begin);
   }
   my_os << ']';
-}
-
-void Display::visit(DupAtom *a)
-{
-  char const *pos = a->position();
-  size_t length = a->length();
-
-  if(length == 1 && *pos == '@')
-  {
-    my_os << "\\@";
-    return;
-  }
-
-  my_os << '`';
-  for(size_t i = 0; i < length; ++i)
-    if(pos[i] == '[' || pos[i] == ']') my_os << '\\' << pos[i];
-    else my_os << pos[i];
-  my_os << '`';
-}
-
-/*
-void Display::visit(Brace *l)
-{
-  ++my_indent;
-  my_os << "[{";
-  Node *body = nth<1>(l);
-  if(!body)
-  {
-    newline();
-    my_os << "nil";
-  }
-  else
-    while(body)
-    {
-      newline();
-      if(body->is_atom())
-      {
-	my_os << "@ ";
-	body->accept(this);
-      }
-      else
-      {
-	Node *head = body->car();
-	if(!head) my_os << "nil";
-	else
-	{
-	  head->accept(this);
-	}
-      }
-      body = static_cast<List *>(body)->cdr();
-    }
-  --my_indent;
-  newline();
-  my_os << "}]";
-}
-*/
-void Display::newline()
-{
-  my_os.put('\n');
-  for(size_t i = 0; i != my_indent; ++i) my_os.put(' ');
 }
 
 void Display::print_encoded(List *l)
@@ -247,24 +186,6 @@ void RTTIDisplay::visit(List *l)
     }
   }
   --my_indent;
-}
-
-void RTTIDisplay::visit(DupAtom *a)
-{
-  newline();
-  my_os << demangle(typeid(*a).name()) << ": ";
-  char const *pos = a->position();
-  size_t length = a->length();
-
-  if(length == 1 && *pos == '@')
-  {
-    my_os << "\\@";
-    return;
-  }
-
-  my_os << '`';
-  for(size_t i = 0; i < length; ++i) my_os << pos[i];
-  my_os << '`';
 }
 
 void RTTIDisplay::newline()
