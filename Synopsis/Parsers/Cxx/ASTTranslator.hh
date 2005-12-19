@@ -50,7 +50,8 @@ private:
   //. Further, if they are separated from the following declaration,
   //. they are annotated as 'suspect', and thus can easily be filtered
   //. out in later processing steps.
-  Python::List translate_comments(PTree::List *);
+  template <typename T>
+  Python::List translate_comments(T *);
   //. Update positional information for the given
   //. node. This will reset 'my_lineno' and may change
   //. 'my_file'.

@@ -124,7 +124,7 @@ void ASTTranslator::visit(PT::NamespaceSpec *spec)
   AST::ScopedName qname = name;
   AST::Module module = my_ast_kit.create_module(my_file, my_lineno,
 						"namespace", qname);
-  Python::List comments = translate_comments(spec->get_comments());
+  Python::List comments = translate_comments(spec);
   module.comments().extend(comments);
   declare(module);
   my_types.declare(qname, module);
@@ -146,9 +146,6 @@ void ASTTranslator::visit(PT::Declarator *declarator)
   PT::Encoding type = declarator->encoded_type();
   if (type.is_function())
   {
-    trace << "declare function " << name << " (" << type << ')' 
-	  << my_raw_filename << ':' << my_lineno;
-
     AST::TypeList parameter_types;
     AST::Type return_type = my_types.lookup_function_types(type, parameter_types);
     AST::Function::Parameters parameters;
@@ -182,8 +179,8 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 					    name.unmangled());
     function.parameters().extend(parameters);
     if (my_declaration)
-      function.comments().extend(translate_comments(my_declaration->get_comments()));
-    function.comments().extend(translate_comments(declarator->get_comments()));
+      function.comments().extend(translate_comments(my_declaration));
+    function.comments().extend(translate_comments(declarator));
     if (visible) declare(function);
   }
   else
@@ -193,11 +190,14 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
 
     std::string vtype = my_scope.size() ? my_scope.top().type() : "global variable";
+    if (vtype == "class" || vtype == "struct" || vtype == "union")
+      vtype = "data member";
+    else if (vtype == "function") vtype = "local variable";
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
     if (my_declaration)
-      variable.comments().extend(translate_comments(my_declaration->get_comments()));
-    variable.comments().extend(translate_comments(declarator->get_comments()));
+      variable.comments().extend(translate_comments(my_declaration));
+    variable.comments().extend(translate_comments(declarator));
     if (visible) declare(variable);
   }
 }
@@ -218,8 +218,6 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
       PT::Declarator *declarator = static_cast<PT::Declarator *>(d->car());
       PT::Encoding name = declarator->encoded_name();
       PT::Encoding type = declarator->encoded_type();
-      trace << "declare type " << name << " (" << type << ')' 
-	    << my_raw_filename << ':' << my_lineno;
       assert(name.is_simple_name());
       size_t length = (name.front() - 0x80);
       AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
@@ -228,7 +226,8 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
 							       "typedef",
 							       qname,
 							       alias, false);
-      typedef_.comments().extend(translate_comments(declarator->get_comments()));
+      typedef_.comments().extend(translate_comments(declaration));
+      typedef_.comments().extend(translate_comments(declarator));
       if (visible) declare(typedef_);
       my_types.declare(qname, typedef_);
     }
@@ -262,7 +261,7 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
   ClassNameFinder finder;
   AST::ScopedName qname = finder.name(spec);
   AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, key, qname);
-  class_.comments().extend(translate_comments(spec->get_comments()));
+  class_.comments().extend(translate_comments(spec));
   if (visible) declare(class_);
   if (my_template_parameters)
   {
@@ -306,7 +305,9 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
       // identifier
       AST::ScopedName qname(PT::string(static_cast<PT::Atom *>(penumor)));
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
-      enumerator.comments().extend(translate_comments(static_cast<PT::Identifier *>(penumor)->get_comments()));
+      Python::List comments = 
+	translate_comments(static_cast<PT::Identifier *>(penumor));
+      enumerator.comments().extend(comments);
     }
     else
     {
@@ -415,9 +416,11 @@ void ASTTranslator::visit(PT::ParameterDeclaration *param)
   my_parameter = my_ast_kit.create_parameter(pre, type, post, name, value);
 }
 
-Python::List ASTTranslator::translate_comments(PT::List *c)
+template <typename T>
+Python::List ASTTranslator::translate_comments(T *node)
 {
   Trace trace("ASTTranslator::translate_comments", Trace::TRANSLATION);
+  PTree::List *c = node->get_comments();
   if (!c) return Python::List();
   
   Python::List comments;
@@ -445,19 +448,30 @@ Python::List ASTTranslator::translate_comments(PT::List *c)
     }
     else
     {
+      // If there is more than one newline and (optional) whitespace separating this 
+      // comment's end and the node to which it is attached, it is marked as suspect.
+      char const *end = node->begin();
+      char const *ptr = current->end() + 1;
+      while (ptr != end && (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')) ++ptr;
+      while (ptr != end && (*ptr == ' ' || *ptr == '\t' || *ptr == '\r')) ++ptr;
+      bool suspect = ptr != end;
       AST::Comment comment = 
 	my_ast_kit.create_comment(my_file, my_lineno,
 				  std::string(current->position(), current->length()),
-				  true);
+				  suspect);
       comments.append(comment);
     }
   }
   if (first)
   {
+    char const *end = node->begin();
+    char const *ptr = last->end() + 1;
+    while (ptr != end && (*ptr == ' ' || *ptr == '\t' || *ptr == '\r')) ++ptr;
+    bool suspect = ptr != end;
     AST::Comment comment = 
       my_ast_kit.create_comment(my_file, my_lineno,
 				std::string(first->begin(), last->end() - first->begin()),
-				true);
+				suspect);
     comments.append(comment);
   }
   return comments;

@@ -1290,6 +1290,8 @@ PT::Node *Parser::opt_member_specification()
 	}
 	else
 	{
+	  PT::List *comments = wrap_comments(my_lexer.get_comments());
+
 	  PT::List *declarators = 0;
 	  while (my_lexer.look_ahead() != ';')
 	  {
@@ -1382,8 +1384,7 @@ PT::Node *Parser::opt_member_specification()
 // 		  ScopeGuard scope_guard(*this, func);
 // 		  PT::Block *body = compound_statement();
 // 		  if (!require(body, "compound-statement")) return 0;
-		  PT::List *ob_comments = wrap_comments(my_lexer.get_comments());
-		  PT::Block *body = new PT::Block(new PT::CommentedAtom(op, ob_comments),
+		  PT::Block *body = new PT::Block(new PT::CommentedAtom(op, comments),
 						  PT::cons(new PT::Atom(cp)));
 		  func = PT::snoc(func, body);
 		}
@@ -1408,6 +1409,7 @@ PT::Node *Parser::opt_member_specification()
 	    PT::Atom *semic = new PT::Atom(my_lexer.get_token());
 	    PT::SimpleDeclaration *declaration =
 	      new PT::SimpleDeclaration(spec, PT::list(declarators, semic));
+	    declaration->set_comments(comments);
 	    declare(declaration);
 	    members = PT::snoc(members, declaration);
 	  }
@@ -2265,6 +2267,8 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   PT::Encoding encoding;
   PT::DeclSpec *spec = decl_specifier_seq(encoding);
 
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+
   // [dcl.dcl]
   //
   // Only in function declarations for constructors, destructors, and
@@ -2346,7 +2350,7 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
   Token semic = my_lexer.get_token();
   PT::SimpleDeclaration *decl =
     new PT::SimpleDeclaration(spec, PT::list(declarators, new PT::Atom(semic)));
-//   if (!my_in_template_decl) declare(decl);
+  decl->set_comments(comments);
   declare(decl);
   return decl;
 }
