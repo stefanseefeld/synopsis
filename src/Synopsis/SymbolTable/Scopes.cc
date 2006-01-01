@@ -206,12 +206,10 @@ Class::unqualified_lookup(PT::Encoding const &name,
       SymbolSet more = (*i)->unqualified_lookup(name, context, searched);
       symbols.insert(more.begin(), more.end());
     }
-  if (!symbols.empty() ||
-      !my_outer ||
-      searched.find(my_outer) != searched.end())
-    return symbols;
-  else
+  if (symbols.empty() && my_outer && searched.find(my_outer) == searched.end())
     return my_outer->unqualified_lookup(name, context, searched);
+  else
+    return symbols;
 }
 
 Namespace *Namespace::find_namespace(PT::NamespaceSpec const *spec) const
@@ -225,8 +223,7 @@ Namespace *Namespace::find_namespace(PT::NamespaceSpec const *spec) const
        ++i)
   {
     Namespace *ns = dynamic_cast<Namespace *>(i->second);
-    if (ns && name == ns->name())
-      return ns;
+    if (ns && name == ns->name()) return ns;
   }
   return 0;
 }
@@ -240,10 +237,8 @@ std::string Namespace::name() const
 {
   if (!my_spec) return "<global>";
   PT::Node const *name_spec = PT::nth<1>(my_spec);
-  if (name_spec)
-    return std::string(name_spec->position(), name_spec->length());
-  else
-    return "<anonymous>";
+  if (name_spec) return std::string(name_spec->position(), name_spec->length());
+  else return "<anonymous>";
 }
 
 SymbolSet Namespace::unqualified_lookup(PT::Encoding const &name,

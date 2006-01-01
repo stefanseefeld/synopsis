@@ -26,63 +26,12 @@ namespace Synopsis
 {
 namespace SymbolTable
 {
-  Class * DEPENDENT_SCOPE = 0;
+Class * DEPENDENT_SCOPE = 0;
 }
 }
-
 
 namespace
 {
-//. Find the name being declared. The node wrapped inside the template-declaration
-//. is one of these:
-//.   elaborated-type-specifier (i.e. class template forward declaration)
-//.   class-specifier (i.e. a class template definition)
-//.   function-definition (i.e. a function template definition)
-//.   declaration (i.e. a function template declaration)
-//.   template-definition (a nested item from the list above)
-class TemplateNameFinder : private PT::Visitor
-{
-public:
-  TemplateNameFinder() : my_is_function(false) {}
-  PT::Encoding find(PT::TemplateDeclaration const *decl, bool &is_function)
-  {
-    PT::nth(const_cast<PT::TemplateDeclaration *>(decl), 4)->accept(this);
-    is_function = my_is_function;
-    return my_name;
-  }
-
-private:
-  void visit(PT::Identifier *id) { my_name.simple_name(id);}
-  void visit(PT::List *list)
-  {
-    // This is assumed to be a declarator list. Since we are looking at a
-    // template-declaration, we know there is only one.
-    list->car()->accept(this);
-  }
-  void visit(PT::Declarator *decl) 
-  {
-    my_name = decl->encoded_name();
-    my_is_function = decl->encoded_type().is_function();
-  }
-  void visit(PT::TemplateDeclaration *decl) { PT::nth(decl, 4)->accept(this);}
-  void visit(PT::DeclSpec *declspec) { my_name = declspec->type();}
-  void visit(PT::ClassSpec *spec) { my_name = spec->encoded_name();}
-  void visit(PT::Declaration *decl)
-  {
-    // If there is no declarator the decl-specifier-seq declares a type,
-    // and thus, a class template.
-    if (!PT::nth<1>(decl)) decl->car()->accept(this);
-    // Else it is either a simple-declaration or function-definition. In the first
-    // case, the second element is a declarator-list (with a single declarator - this
-    // is a template-declaration), in the second a single declarator.
-    // In both cases the declarator's encoded name will tell us what we are looking for.
-    else PT::nth<1>(decl)->accept(this);
-  }
-
-  PT::Encoding my_name;
-  bool         my_is_function;
-};
-
 //. Look up the scope corresponding to a base-specifier.
 //. FIXME: The lookup may require a template instantiation, or
 //.        fail because it involves a dependent name. This requires
@@ -102,42 +51,64 @@ private:
     Trace trace("BaseClassScopeFinder::visit(Identifier)", Trace::SYMBOLLOOKUP);
     PT::Encoding name(node);
     ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::TYPE);
-    if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
+    if (symbols.empty())
+    {
+      trace << "no name id " << name;
+      throw ST::Undefined(name, my_scope, node);
+    }
+
+    ST::Symbol const *symbol = *symbols.begin();
+    if (ST::TypedefName const *typedef_ = dynamic_cast<ST::TypedefName const *>(symbol))
+      symbol = resolve_type(typedef_);
+
+    ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(symbol);
+    if (class_) my_result = class_->as_scope();
     else
     {
-      ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
-      if (!class_)
-      {
-	// Check for TypeName, the base class might be a dependent type.
-	if (!dynamic_cast<ST::TypeName const *>(*symbols.begin()))
-	  throw InternalError("Base specifier not a class.");
-	else
-	  // Lookup in dependent scopes is deferred to the second phase,
-	  // i.e. after the template is instantiated. For now simply skip it.
-	  ;
-      }
-      else my_result = class_->as_scope();
+      // Check for TypeName, the base class might be a dependent type.
+      if (!dynamic_cast<ST::TypeName const *>(symbol))
+	throw InternalError("Base specifier not a class.");
+      else
+	// Lookup in dependent scopes is deferred to the second phase,
+	// i.e. after the template is instantiated. For now simply skip it.
+	;
     }
   }
+
   virtual void visit(PT::Name *node)
   {
+    Trace trace("BaseClassScopeFinder::visit(Name)", Trace::SYMBOLLOOKUP);
     PT::Encoding name = node->encoded_name();
     // FIXME: This will fail if the name is a template or a dependent name.
     if (name.is_template_id()) name = name.get_template_name();
     ST::SymbolSet symbols = ::lookup(name, my_scope, ST::Scope::DEFAULT);
-    if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
+    if (symbols.empty())
+    {
+      std::cout << "no name " << name << std::endl;
+      throw ST::Undefined(name, my_scope, node);
+    }
+    ST::Symbol const *symbol = *symbols.begin();
+    if (ST::TypedefName const *typedef_ = dynamic_cast<ST::TypedefName const *>(symbol))
+      symbol = resolve_type(typedef_);
+    if (!symbol)
+      {
+	std::cout << "internal error resolving " 
+		  << name << ' ' << typeid(**symbols.begin()).name() << std::endl;
+      }
+    ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(symbol);
+    if (class_) my_result = class_->as_scope();
     else
     {
-      ST::ClassName const *class_ = 
-	dynamic_cast<ST::ClassName const *>(*symbols.begin());
-      if (class_) my_result = class_->as_scope();
+      ST::ClassTemplateName const *templ = 
+	dynamic_cast<ST::ClassTemplateName const *>(symbol);
+      if (templ) my_result = templ->as_scope();
+      // Check for TypeName, the base class might be a dependent type.
+      else if (!dynamic_cast<ST::TypeName const *>(symbol))
+	throw InternalError("Base specifier not a class.");
       else
-      {
-	ST::ClassTemplateName const *templ = 
-	  dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
-	if (templ) my_result = templ->as_scope();
-	else throw InternalError("Base specifier not a class.");
-      }
+	// Lookup in dependent scopes is deferred to the second phase,
+	// i.e. after the template is instantiated. For now simply skip it.
+	;
     }
   }
 
@@ -212,10 +183,16 @@ SymbolFactory::SymbolFactory(Language l)
   my_scopes.push(global);
   // FIXME: Do we need a special GCC-extension flag, too ?
   PT::Encoding name;
-  name.append_with_length("__builtin_va_list");
+  name.append_with_length("__builtin_va_list", 17);
   global->declare(name, new ST::TypeName(PT::Encoding(), 0, true, global));
 
   ST::DEPENDENT_SCOPE = new ST::DependentScope();
+}
+
+void SymbolFactory::enter_scope(ST::Scope *scope)
+{
+  Trace trace("SymbolFactory::enter_scope(Scope)", Trace::SYMBOLLOOKUP);
+  my_scopes.push(scope);
 }
 
 // Note: Here the scope argument doesn't make sense, since a namespace-name
@@ -282,6 +259,7 @@ void SymbolFactory::enter_scope(ST::Scope *scope, PT::ClassSpec const *spec)
   //
   // Thus, if we are in a class template, we inject the class name also as
   // a class template name so looking for a template-name will be successful.
+  trace << "is template " << my_template_parameters;
   if (my_template_parameters)
     class_->declare(name, new ST::ClassTemplateName(type, spec, false, scope));
 
@@ -290,7 +268,11 @@ void SymbolFactory::enter_scope(ST::Scope *scope, PT::ClassSpec const *spec)
     // This is a template specialization. Declare the scope with the
     // template repository.
     ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
-    if (symbols.empty()) throw ST::Undefined(name, scope);
+    if (symbols.empty())
+    {
+      trace << "undefined symbol " << name << " in " << static_cast<ST::Namespace *>(scope)->name();
+      throw ST::Undefined(name, scope);
+    }
     ST::ClassTemplateName const *primary = 
       dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
     my_template_repository->declare_scope(primary, spec, class_);
@@ -311,7 +293,6 @@ void SymbolFactory::enter_scope(ST::Scope *scope, PT::List const *decl)
   my_prototype = new ST::PrototypeScope(decl, scope, my_template_parameters);
   scope->declare_scope(decl, my_prototype);
   my_scopes.push(my_prototype);
-  my_template_parameters = 0;
 }
 
 void SymbolFactory::enter_scope(ST::Scope *scope, PT::FunctionDefinition const *decl)
@@ -332,6 +313,7 @@ void SymbolFactory::enter_scope(ST::Scope *scope, PT::FunctionDefinition const *
   scope->declare_scope(decl, func);
   my_prototype = 0;
   my_scopes.push(func);
+  my_template_parameters = 0;
 }
 
 // Note: The scope parameter doesn't make sense here, as a template-parameter-list
@@ -343,7 +325,7 @@ void SymbolFactory::enter_scope(ST::Scope *, PT::TemplateParameterList const *pa
   ST::Scope *scope = my_scopes.top();
   my_template_parameters = 
     new ST::TemplateParameterScope(params, scope, my_template_parameters);
-  trace << "enter " << my_template_parameters;
+  trace << "enter template parameter scope " << my_template_parameters;
   // We don't want to declare template parameter scopes 
   // in their parent scopes, do we ?
 //   scope->declare_scope(params, templ);
@@ -376,7 +358,7 @@ void SymbolFactory::leave_scope()
 void SymbolFactory::declare(ST::Scope *scope, PT::Declaration const *d)
 {
   Trace trace("SymbolFactory::declare(Declaration)", Trace::SYMBOLLOOKUP);
-
+  trace << "template parameters " << my_template_parameters;
   // If this is a typedef, we process it here:
   PT::DeclSpec *spec = static_cast<PT::DeclSpec *>(PT::nth<0>(d));
   if (spec && spec->is_typedef())
@@ -387,12 +369,19 @@ void SymbolFactory::declare(ST::Scope *scope, PT::Declaration const *d)
       PT::Node const *d = declarators->car();
       PT::Encoding const &name = d->encoded_name();
       PT::Encoding const &type = d->encoded_type();
-      if (!scope) scope = my_scopes.top();
-      ST::TypedefName *symbol = new ST::TypedefName(type, d, scope);
-      scope->declare(name, symbol);
-      // TODO: Even though a typedef doesn't introduce a new type, we may
-      //       declare it as a type alias to avoid an additional lookup.
-      // TA::TypeRepository::instance()->declare(symbol);
+
+      // Hack: in case of 'typedef struct Foo {...} Foo;'
+      //       we don't generate a TypedefName, as that would clash with
+      //       the ClassName of the same name.
+      if (name != spec->type())
+      {
+	if (!scope) scope = my_scopes.top();
+	ST::TypedefName *symbol = new ST::TypedefName(type, d, scope);
+	scope->declare(name, symbol);
+	// TODO: Even though a typedef doesn't introduce a new type, we may
+	//       declare it as a type alias to avoid an additional lookup.
+	// TA::TypeRepository::instance()->declare(symbol);
+      }
       declarators = PT::tail(declarators, 2);
     }
   }
@@ -452,7 +441,7 @@ void SymbolFactory::declare(ST::Scope *scope, PT::NamespaceSpec const *spec)
   // Beware anonymous namespaces !
   PT::Encoding name;
   if (PT::nth<1>(spec)) name.simple_name(static_cast<PT::Atom const *>(PT::nth<1>(spec)));
-  else name.append_with_length("<anonymous>");
+  else name.append_with_length("<anonymous>", 11);
   if (!scope) scope = my_scopes.top();
   // Namespaces can be reopened, so only declare it if it isn't already known.
   ST::SymbolSet symbols = scope->find(name, ST::Scope::SCOPE);
@@ -470,12 +459,13 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ClassSpec const *spec)
   if (!scope) scope = my_scopes.top();
   PT::Encoding name = spec->encoded_name();
 
-  if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
+//   if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
 
   // If the name is a template-id, we are looking at a template specialization.
   // Declare it in the template repository instead.
   if (name.is_template_id())
   {
+    trace << "has template parameters " << my_template_parameters;
 //     declare_template_specialization(name.get_template_name(), spec, scope);
     return;
   }
@@ -506,6 +496,7 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ClassSpec const *spec)
       // Symbol already defined as different type.
       throw ST::MultiplyDefined(name, spec, type->ptree());
   }
+  trace << "has template parameters " << my_template_parameters;
   if (my_template_parameters)
   {
     ST::ClassTemplateName *symbol = 
@@ -556,24 +547,25 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ElaboratedTypeSpec const *spec
   ST::SymbolSet symbols = scope->find(name, ST::Scope::DEFAULT);
   for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
   {
-    // If the symbol was defined as a different type, the program is ill-formed.
+    ST::Symbol const *type = dynamic_cast<ST::TypeName const *>(*i);
+    // Skip non-types.
+    if (!type) continue;
+
+    if (ST::TypedefName const *tdef = dynamic_cast<ST::TypedefName const *>(type))
+      type = resolve_type(tdef);
+
+    // If the symbol was already defined, do nothing.
+    // Else if the symbol was defined as a different type, the program is ill-formed.
     // Else if the symbol corresponds to a forward-declared class, replace it.
-    if (ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*i))
+    if (ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(type))
     {
-      if (class_->is_definition())
-      {
-	if (my_template_parameters)
-	  throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
-	// consume the template parameter list(s) but don't redeclare the template.
-	my_template_parameters = 0;
-	return;
-      }
+      if (class_->is_definition()) return;
       else if (my_template_parameters)
 	throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
       // TODO: Remove the type associated with the forward declaration, too.
       else scope->remove(*i); // Remove old forward declaration.
     }
-    else if (ST::ClassTemplateName const *class_ = dynamic_cast<ST::ClassTemplateName const *>(*i))
+    else if (ST::ClassTemplateName const *class_ = dynamic_cast<ST::ClassTemplateName const *>(type))
     {
       if (class_->is_definition())
       {
@@ -590,7 +582,7 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ElaboratedTypeSpec const *spec
       // TODO: Remove the type associated with the forward declaration, too.
       else scope->remove(*i); // Remove forward declaration.
     }
-    else if (ST::TypeName const *type = dynamic_cast<ST::TypeName const *>(*i))
+    else if (ST::TypeName const *type = dynamic_cast<ST::TypeName const *>(type))
       // Symbol already defined as different type.
       throw ST::MultiplyDefined(name, spec, type->ptree());
   }
@@ -711,11 +703,7 @@ ST::SymbolSet SymbolFactory::lookup_template_parameter(PT::Encoding const &name)
   Trace trace("SymbolFactory::lookup_template_parameter", Trace::SYMBOLLOOKUP);
   trace << name;
   if (!my_template_parameters) return ST::SymbolSet();
-  else
-  {
-    ST::Scopes searched;
-    return my_template_parameters->unqualified_lookup(name, ST::Scope::DEFAULT, searched);
-  }
+  else return my_template_parameters->find(name, ST::Scope::DEFAULT);
 }
 
 void SymbolFactory::visit(PT::SimpleDeclaration *decl)
@@ -725,7 +713,7 @@ void SymbolFactory::visit(PT::SimpleDeclaration *decl)
 
   PT::DeclSpec *spec = decl->decl_specifier_seq();
   PT::List const *decls = decl->declarators();
-  // The implicit type declaration by means of elaborated type specs is dealt
+  // The implicit type declaration by means of elaborated type specs is handled
   // elsewhere.
   if (!decls) // for example 'class Foo {...};'
   {
@@ -783,14 +771,17 @@ void SymbolFactory::visit(PT::SimpleDeclaration *decl)
       scope->remove(forward);
     }
       
-    ST::Symbol const *symbol;
+    ST::Symbol const *symbol = 0;
     if (type.is_function()) // It's a function declaration.
     {
       size_t params = 0;
       size_t default_args = 0;
       DefaultArgumentFinder finder(params, default_args);
       finder.find(decl);
-      symbol = new ST::FunctionName(type, decl, params, default_args, false, scope);
+      if (my_template_parameters)
+	symbol = new ST::FunctionTemplateName(type, decl, params, default_args, false, scope);
+      else
+	symbol = new ST::FunctionName(type, decl, params, default_args, false, scope);
     }
     else
     {
@@ -812,6 +803,7 @@ void SymbolFactory::visit(PT::SimpleDeclaration *decl)
     }
     scope->declare(name, symbol);
   }
+  my_template_parameters = 0;
 }
 
 void SymbolFactory::visit(PT::FunctionDefinition *def)
@@ -831,19 +823,22 @@ void SymbolFactory::visit(PT::FunctionDefinition *def)
   // If the name is qualified, it has to be
   // declared already. If it hasn't, raise an error.
   ST::Scope *scope = my_scopes.top();
-  if (name.is_qualified())
-  {
-    scope = lookup_scope_of_qname(name, declarator);
-    ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
-    // FIXME: We need type analysis / overload resolution
-    //        here to take the right symbol.
-    ST::Symbol const *forward = *symbols.begin();
-    // TODO: check whether this is the definition of a previously
-    //       declared function, according to 3.1/2 [basic.def]
-    scope->remove(forward);
-  }
-  ST::Symbol const *symbol = new ST::FunctionName(type, def, params, default_args,
-						  true, scope);
+//   if (name.is_qualified())
+//   {
+//     scope = lookup_scope_of_qname(name, declarator);
+//     ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
+//     // FIXME: We need type analysis / overload resolution
+//     //        here to take the right symbol.
+//     ST::Symbol const *forward = *symbols.begin();
+//     // TODO: check whether this is the definition of a previously
+//     //       declared function, according to 3.1/2 [basic.def]
+//     scope->remove(forward);
+//   }
+  ST::Symbol const *symbol = 0;
+  if (my_template_parameters)
+    symbol = new ST::FunctionTemplateName(type, def, params, default_args, true, scope);
+  else
+    symbol = new ST::FunctionName(type, def, params, default_args, true, scope);
   scope->declare(name, symbol);
 }
 

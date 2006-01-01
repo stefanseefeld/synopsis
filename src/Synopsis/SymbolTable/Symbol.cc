@@ -50,7 +50,7 @@ Namespace *NamespaceName::as_scope() const
 
 namespace
 {
-TypeName dependent("", 0, false, 0);
+TypeName dependent(PT::Encoding(), 0, false, 0);
 }
 
 TypeName const * const DEPENDENT = &dependent;

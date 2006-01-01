@@ -32,6 +32,7 @@ public:
 
   SymbolTable::Scope *current_scope() { return my_scopes.top();}
 
+  void enter_scope(SymbolTable::Scope *);
   void enter_scope(SymbolTable::Scope *, PTree::NamespaceSpec const *);
   void enter_scope(SymbolTable::Scope *, PTree::ClassSpec const *);
   void enter_scope(SymbolTable::Scope *, PTree::Node const *);

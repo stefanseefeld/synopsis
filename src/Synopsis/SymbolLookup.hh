@@ -21,21 +21,33 @@ SymbolTable::SymbolSet lookup(PTree::Encoding const &name,
 			      SymbolTable::Scope const *scope,
 			      SymbolTable::Scope::LookupContext);
 
-inline SymbolTable::TypeName const *
-resolve_type(SymbolTable::TypedefName const *symbol)
+inline SymbolTable::Symbol const *
+resolve_type(SymbolTable::TypedefName const *typedef_)
 {
-  SymbolTable::TypeName const *type_name = 0;
+  SymbolTable::Symbol const *type_name = 0;
   do
   {
-    SymbolTable::Scope *scope = symbol->scope();
-    SymbolTable::SymbolSet symbols = lookup(symbol->type(), symbol->scope(),
+    SymbolTable::Scope *scope = typedef_->scope();
+    PTree::Encoding name = typedef_->type();
+    bool is_template = name.is_template_id();
+    if (is_template) name = name.get_template_name();
+    SymbolTable::SymbolSet symbols = lookup(name, scope,
 					    SymbolTable::Scope::DEFAULT);
     if (symbols.size() != 1) return 0; // TODO: handle error
-    type_name = dynamic_cast<SymbolTable::TypeName const *>(*symbols.begin());
+    SymbolTable::Symbol const *symbol = *symbols.begin();
+    if (is_template)
+    {
+      type_name = dynamic_cast<SymbolTable::ClassTemplateName const *>(symbol);
+      typedef_ = 0;
+    }
+    else
+    {
+      type_name = dynamic_cast<SymbolTable::TypeName const *>(symbol);
+      typedef_ = dynamic_cast<SymbolTable::TypedefName const *>(type_name);
+    }
     if (!type_name) return 0; // not a type
-    symbol = dynamic_cast<SymbolTable::TypedefName const *>(type_name);
   }
-  while (symbol);
+  while (typedef_);
   return type_name;
 }
 

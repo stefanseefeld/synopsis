@@ -171,8 +171,8 @@ class FunctionTemplateName : public Symbol
 {
 public:
   FunctionTemplateName(PTree::Encoding const &type, PTree::Node const *ptree,
-		       size_t params, size_t default_args, Scope *s)
-    : Symbol(type, ptree, true, s),
+		       size_t params, size_t default_args, bool def, Scope *s)
+    : Symbol(type, ptree, def, s),
       my_params(params),
       my_default_args(default_args) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}

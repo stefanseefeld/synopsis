@@ -141,8 +141,9 @@ std::string Unmangler::unmangle()
 	base = unmangle_template();
 	break;
       case 'M':
-	// Pointer to member. Format is same as for named types
-	name = unmangle_name() + "::*";
+	// Pointer to member.
+	++my_cursor;
+	name = unmangle_qname() + "::*";
 	break;
       default:
 	assert(c > 0x80);
@@ -160,7 +161,7 @@ std::string Unmangler::unmangle()
 
 std::string Unmangler::unmangle_qname()
 {
-//   Trace trace("Unmangler::unmangle_qname()", Trace::PTREE);
+  Trace trace("Unmangler::unmangle_qname()", Trace::PTREE);
   // Qualified type: first is num of scopes (at least one), each a name.
   std::string qname;
   int scopes = *my_cursor++ - 0x80;
@@ -169,7 +170,11 @@ std::string Unmangler::unmangle_qname()
     std::string name;
     // Only handle two things here: names and templates
     if (*my_cursor > 0x80) name = unmangle_name();
-    else if (*my_cursor == 0x80) name = "";
+    else if (*my_cursor == 0x80)
+    {
+      name = "";
+      ++my_cursor;
+    }
     else if (*my_cursor == 'T')
     {
       ++my_cursor;
@@ -404,7 +409,7 @@ Encoding::iterator Encoding::end_of_scope() const
   }
   // never get here
   std::ostringstream oss;
-  oss << "internal error in qualified name encoding " << my_buffer;
+  oss << "internal error in qualified name encoding " << *this;
   throw std::domain_error(oss.str());
 }
 
@@ -424,7 +429,7 @@ Encoding::iterator Encoding::end_name(iterator i)
 
 Encoding Encoding::get_scope() const
 {
-  if (!is_qualified()) return "";    // no scope
+  if (!is_qualified()) return Encoding();    // no scope
   return Encoding(begin() + 2, end_of_scope());
 }
 

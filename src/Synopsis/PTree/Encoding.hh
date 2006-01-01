@@ -100,9 +100,6 @@ public:
   class name_iterator;
 
   Encoding() {}
-  Encoding(Code const &b) : my_buffer(b) {}
-  Encoding(char const *b) : my_buffer(b, b + strlen(b)) {}
-  Encoding(char const *b, size_t s) : my_buffer(b, b + s) {}
   Encoding(iterator b, iterator e) : my_buffer(b, e) {}
   //. Treat 'id' as an identifier.
   Encoding(Atom const *id) { simple_name(id);}
@@ -118,8 +115,7 @@ public:
   unsigned char &at(size_t i) { return my_buffer.at(i);}
 
   bool operator == (Encoding const &e) const { return my_buffer == e.my_buffer;}
-  bool operator == (std::string const &s) const { return my_buffer == (const unsigned char *)s.c_str();}
-  bool operator == (char const *s) const { return my_buffer == (const unsigned char *)s;}
+  bool operator != (Encoding const &e) const { return !operator==(e);}
 
   void prepend(unsigned char c) { my_buffer.insert(my_buffer.begin(), c);}
   void prepend(char const *p, size_t s) { my_buffer.insert(0, (const unsigned char *)p, s);}
@@ -128,7 +124,7 @@ public:
   void append(unsigned char c) { my_buffer.append(1, c);}
   void append(char const *p, size_t s) { my_buffer.append((const unsigned char *)p, s);}
   void append(Encoding const &e) { my_buffer.append(e.my_buffer);}
-  void append_with_length(char const *s, size_t n) { append(0x80 + n); append((const char *)s, n);}
+  void append_with_length(char const *s, size_t n) { append(0x80 + n); append((char const *)s, n);}
   void append_with_length(Encoding const &e) { append(0x80 + e.size()); append(e);}
 
   unsigned char pop();
@@ -250,9 +246,7 @@ inline bool operator < (Encoding const &e1, Encoding const &e2)
 
 inline std::ostream &operator << (std::ostream &os, Encoding const &e)
 {
-  for (Encoding::iterator i = e.begin();
-       i != e.end();
-       ++i)
+  for (Encoding::iterator i = e.begin(); i != e.end(); ++i)
     if(*i < 0x80) os.put(static_cast<char>(*i));
     else os << '[' << static_cast<int>(*i - 0x80) << ']';
   return os;

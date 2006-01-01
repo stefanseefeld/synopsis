@@ -9,6 +9,8 @@
 #include <Synopsis/Trace.hh>
 #include <iostream>
 #include <sstream>
+#include <iterator>
+#include <algorithm>
 
 namespace Synopsis
 {
@@ -29,6 +31,15 @@ void process_pragma(std::string const &line)
     iss >> token;
     if (token == "on") Trace::enable(Trace::ALL);
     else if (token == "off") Trace::enable(Trace::NONE);
+  }
+  else if (token == "message")
+  {
+    std::cout << "message:";
+    // Copy the rest of the line to std::cout.
+    std::copy(std::istreambuf_iterator<char>(iss),
+	      std::istreambuf_iterator<char>(),
+	      std::ostreambuf_iterator<char>(std::cout));
+    std::cout << std::endl;
   }
 }
 

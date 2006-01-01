@@ -77,7 +77,7 @@ inline void display(SymbolTable::SymbolSet const &s, std::ostream &os)
 {
   SymbolDisplay sd(os, 0);
   for (SymbolTable::SymbolSet::const_iterator i = s.begin(); i != s.end(); ++i)
-    sd.display("", *i);
+    sd.display(PTree::Encoding(), *i);
 }
 
 }
