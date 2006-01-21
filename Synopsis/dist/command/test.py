@@ -7,6 +7,7 @@
 
 import os, sys, string
 
+from distutils.errors import *
 from distutils.core import setup
 from distutils.command.build_ext import build_ext
 from distutils.util import get_platform
@@ -51,5 +52,9 @@ class test(build_ext):
         command += self.suite
                 
         self.announce(command)
-        spawn(['sh', '-c', command], self.verbose, self.dry_run)
-        os.chdir(cwd)
+        try:
+            spawn(['sh', '-c', command], self.verbose, self.dry_run)
+        # As qmtest returns a non-zero exit code if some tests fail, we
+        # simply ignore exec errors here.
+        except DistutilsExecError, error:
+            pass
