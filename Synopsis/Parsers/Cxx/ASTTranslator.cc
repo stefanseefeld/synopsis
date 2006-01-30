@@ -137,7 +137,6 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 {
   Trace trace("ASTTranslator::visit(Declarator)", Trace::TRANSLATION);
   trace << declarator;
-  if (!PT::nth<0>(declarator)) return; // empty
 
   bool visible = update_position(declarator);
   PT::Encoding name = declarator->encoded_name();
@@ -161,20 +160,25 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     }
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    AST::Modifiers modifiers;
+    AST::Modifiers pre;
+    AST::Modifiers post;
+    if (type.front() == 'C') post.append("const");
+
     AST::Function function;
     if (my_in_class)
       function = my_ast_kit.create_operation(my_file, my_lineno,
 					     "member function",
-					     modifiers,
+					     pre,
 					     return_type,
+					     post,
 					     qname,
 					     name.unmangled());
     else
       function = my_ast_kit.create_function(my_file, my_lineno,
 					    "function",
-					    modifiers,
+					    pre,
 					    return_type,
+					    post,
 					    qname,
 					    name.unmangled());
     function.parameters().extend(parameters);

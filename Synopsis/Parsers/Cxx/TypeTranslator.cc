@@ -59,6 +59,7 @@ AST::Type TypeTranslator::lookup_function_types(PT::Encoding const &name,
   my_name = name;
 
   PT::Encoding::iterator i = name.begin();
+  if (*i == 'C') ++i;
   assert(*i == 'F');
   ++i;
   while (true)
@@ -212,9 +213,9 @@ PT::Encoding::iterator TypeTranslator::decode_type(PT::Encoding::iterator i,
       case 'F':
 	i = decode_func_ptr(i, base, postmod);
 	break;
-//       case 'T':
-// 	base = decodeTemplate();
-// 	break;
+      case 'T':
+ 	i = decode_template(i, base);
+ 	break;
       case 'M':
  	// Pointer to member. Format is same as for named types
  	i = decode_name(i, name);
@@ -304,9 +305,22 @@ TypeTranslator::decode_qtype(PT::Encoding::iterator i, AST::Type &type)
 }
 
 PT::Encoding::iterator 
-TypeTranslator::decode_template(PTree::Encoding::iterator i, AST::Type &)
+TypeTranslator::decode_template(PT::Encoding::iterator i, AST::Type &)
 {
   Trace trace("TypeTranslator::decode_template", Trace::TRANSLATION);
+  std::string name;
+  i = decode_name(i, name);
+  PT::Encoding::iterator end = i;
+  end += *i++ - 0x80;
+  AST::TypeList parameters;
+  while (i <= end)
+  {
+    AST::Type parameter;
+    i = decode_type(i, parameter);
+    if (parameter) parameters.append(parameter);
+    else break;
+  }
+
   std::cerr << "TODO: TypeTranslator::decode_template" << std::endl;
   return i;
 }

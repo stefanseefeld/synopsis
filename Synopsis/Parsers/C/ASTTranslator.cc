@@ -87,11 +87,11 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     }
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    AST::Modifiers modifiers;
     AST::Function function = my_ast_kit.create_function(my_file, my_lineno,
                                                         "function",
-                                                        modifiers,
+                                                        AST::Modifiers(),
                                                         return_type,
+							AST::Modifiers(),
                                                         qname,
                                                         qname.get(0));
     function.parameters().extend(parameters);
