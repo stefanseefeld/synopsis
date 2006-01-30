@@ -944,7 +944,7 @@ public:
     //. Constructor
     Function(
         SourceFile* file, int line, const std::string& type, const ScopedName& name,
-        const Mods& premod, Types::Type* ret, const std::string& realname
+        const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname
     );
 
     //. Destructor. Recursively destroys parameters
@@ -961,6 +961,12 @@ public:
     Mods& premodifier()
     {
         return m_pre;
+    }
+
+    //. Returns the postmodifier vector
+    Mods& postmodifier()
+    {
+        return m_post;
     }
 
     //. Returns the return Type
@@ -997,6 +1003,8 @@ private:
     Mods              m_pre;
     //. The return type
     Types::Type*      m_ret;
+    //. The postmodifier vector
+    Mods              m_post;
     //. The real (unmangled) name
     std::string       m_realname;
     //. The vector of parameters
@@ -1011,7 +1019,7 @@ class Operation : public Function
 {
 public:
     //. Constructor
-    Operation(SourceFile* file, int line, const std::string& type, const ScopedName& name, const Mods& modifiers, Types::Type* ret, const std::string& realname);
+    Operation(SourceFile* file, int line, const std::string& type, const ScopedName& name, const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname);
 
     //. Accept the given visitor
     virtual void

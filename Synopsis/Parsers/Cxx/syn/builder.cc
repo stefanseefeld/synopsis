@@ -561,8 +561,11 @@ void Builder::end_function_impl()
 
 //. Add an function
 AST::Function* Builder::add_function(int line, const std::string& name,
-                                     const std::vector<std::string>& premod, Types::Type* ret,
-                                     const std::string& realname, AST::Parameter::vector* templ_params)
+                                     const std::vector<std::string>& premod,
+				     Types::Type* ret,
+                                     const std::vector<std::string>& postmod,
+                                     const std::string& realname,
+				     AST::Parameter::vector* templ_params)
 {
     // Find the parent scope, depending on whether this is a template or not
     AST::Scope* parent_scope;
@@ -578,9 +581,9 @@ AST::Function* Builder::add_function(int line, const std::string& name,
     // function
     AST::Function* func;
     if (dynamic_cast<AST::Class*>(parent_scope))
-        func = new AST::Operation(m_file, line, "member function", func_name, premod, ret, realname);
+      func = new AST::Operation(m_file, line, "member function", func_name, premod, ret, postmod, realname);
     else
-        func = new AST::Function(m_file, line, "function", func_name, premod, ret, realname);
+      func = new AST::Function(m_file, line, "function", func_name, premod, ret, postmod, realname);
 
     // Create template type
     if (templ_params)

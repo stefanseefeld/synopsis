@@ -181,8 +181,11 @@ public:
 
     //. Add an function
     AST::Function* add_function(int, const std::string& name,
-                                const std::vector<std::string>& premod, Types::Type* ret,
-                                const std::string& realname, AST::Parameter::vector* templ_params);
+                                const std::vector<std::string>& premod,
+				Types::Type* ret,
+                                const std::vector<std::string>& postmod,
+                                const std::string& realname,
+				AST::Parameter::vector* templ_params);
 
     //. Add a variable
     AST::Variable* add_variable(int, const std::string& name, Types::Type* vtype, bool constr, const std::string& type);

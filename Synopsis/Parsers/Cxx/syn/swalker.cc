@@ -1087,9 +1087,17 @@ SWalker::translate_function_declarator(PTree::Node *decl, bool is_const)
     // Name is same as realname, but with parameters added
     std::string name = realname + format_parameters(params);
     // Append const after params if this is a const function
-    if (is_const) name += "const";
+  
+    // Figure out postmodifiers
+    std::vector<std::string> postmod;
+    if (is_const) 
+    {
+      name += "const";
+      postmod.push_back("const");
+    }
+
     // Create AST::Function object
-    func = my_builder->add_function(my_lineno, name, premod, returnType, realname, is_template);
+    func = my_builder->add_function(my_lineno, name, premod, returnType, postmod, realname, is_template);
     func->parameters() = params;
   }
   add_comments(func, my_declaration);

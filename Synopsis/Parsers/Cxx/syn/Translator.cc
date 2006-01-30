@@ -851,11 +851,11 @@ PyObject *Translator::Parameter(AST::Parameter* decl)
 PyObject *Translator::Function(AST::Function* decl)
 {
   Trace trace("Translator::addFunction", Trace::TRANSLATION);
-  PyObject *func, *file, *type, *name, *pre, *ret, *realname;
-  func = PyObject_CallMethod(m_ast_module, "Function", "OiOOOOOO",
+  PyObject *func, *file, *type, *name, *pre, *ret, *post, *realname;
+  func = PyObject_CallMethod(m_ast_module, "Function", "OiOOOOOOO",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
-                             ret = m->py(decl->return_type()),
+                             ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
                              name = m->Tuple(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, func);
@@ -874,6 +874,7 @@ PyObject *Translator::Function(AST::Function* decl)
   Py_DECREF(name);
   Py_DECREF(pre);
   Py_DECREF(ret);
+  Py_DECREF(post);
   Py_DECREF(realname);
   Py_DECREF(params);
   Py_DECREF(new_params);
@@ -883,11 +884,11 @@ PyObject *Translator::Function(AST::Function* decl)
 PyObject *Translator::Operation(AST::Operation* decl)
 {
   Trace trace("Translator::addOperation", Trace::TRANSLATION);
-  PyObject *oper, *file, *type, *name, *pre, *ret, *realname;
-  oper = PyObject_CallMethod(m_ast_module, "Operation", "OiOOOOOO",
+  PyObject *oper, *file, *type, *name, *pre, *ret, *post, *realname;
+  oper = PyObject_CallMethod(m_ast_module, "Operation", "OiOOOOOOO",
                              file = m->py(decl->file()), decl->line(), m->cxx(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
-                             ret = m->py(decl->return_type()),
+                             ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
                              name = m->Tuple(decl->name()), realname = m->py(decl->realname()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, oper);
@@ -906,6 +907,7 @@ PyObject *Translator::Operation(AST::Operation* decl)
   Py_DECREF(name);
   Py_DECREF(pre);
   Py_DECREF(ret);
+  Py_DECREF(post);
   Py_DECREF(realname);
   Py_DECREF(params);
   Py_DECREF(new_params);

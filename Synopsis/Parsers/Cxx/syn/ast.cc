@@ -338,10 +338,10 @@ Enumerator::accept(Visitor* visitor)
 
 Function::Function(
     SourceFile* file, int line, const std::string& type, const ScopedName& name,
-    const Mods& premod, Types::Type* ret, const std::string& realname
+    const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname
 )
-        : Declaration(file, line, type, name), m_pre(premod), m_ret(ret),
-        m_realname(realname), m_template(0)
+  : Declaration(file, line, type, name), m_pre(premod), m_ret(ret), m_post(postmod),
+    m_realname(realname), m_template(0)
 {}
 
 Function::~Function()
@@ -360,9 +360,9 @@ Function::accept(Visitor* visitor)
 
 Operation::Operation(
     SourceFile* file, int line, const std::string& type, const ScopedName& name,
-    const Mods& premod, Types::Type* ret, const std::string& realname
+    const Mods& premod, Types::Type* ret, const Mods& postmod, const std::string& realname
 )
-        : Function(file, line, type, name, premod, ret, realname)
+  : Function(file, line, type, name, premod, ret, postmod, realname)
 { }
 
 void
