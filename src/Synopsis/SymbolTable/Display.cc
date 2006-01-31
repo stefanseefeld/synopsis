@@ -50,6 +50,11 @@ void SymbolDisplay::visit(SymbolTable::EnumName const *name)
   prefix("Enum:              ") << my_name << ' ' << name->type().unmangled();
 }
 
+void SymbolDisplay::visit(SymbolTable::DependentName const *name)
+{
+  prefix("Dependent Type:    ") << my_name << ' ' << name->type().unmangled();
+}
+
 void SymbolDisplay::visit(SymbolTable::ClassTemplateName const *name)
 {
   prefix("Class template:    ") << my_name << ' ' << name->type().unmangled();

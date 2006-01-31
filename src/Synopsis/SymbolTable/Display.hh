@@ -30,6 +30,7 @@ private:
   virtual void visit(SymbolTable::TypedefName const *);
   virtual void visit(SymbolTable::ClassName const *);
   virtual void visit(SymbolTable::EnumName const *);
+  virtual void visit(SymbolTable::DependentName const *);
   virtual void visit(SymbolTable::ClassTemplateName const *);
   virtual void visit(SymbolTable::FunctionName const *);
   virtual void visit(SymbolTable::FunctionTemplateName const *);

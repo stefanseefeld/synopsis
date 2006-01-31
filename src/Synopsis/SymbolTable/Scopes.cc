@@ -194,12 +194,14 @@ Class::unqualified_lookup(PT::Encoding const &name,
   searched.insert(this);
   SymbolSet symbols = find(name, context);
   if (!symbols.empty()) return symbols;
+  trace << "looking in parameters";
   if (my_parameters)
   {
     SymbolSet more = my_parameters->find(name, context & ~ELABORATED);
     symbols.insert(more.begin(), more.end());
   }
   if (!symbols.empty()) return symbols;
+  trace << "looking in base classes";
   for (Bases::const_iterator i = my_bases.begin(); i != my_bases.end(); ++i)
     if (searched.find(*i) == searched.end())
     {

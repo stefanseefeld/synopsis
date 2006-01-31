@@ -20,7 +20,7 @@ class TemplateParameterScope;
 }
 
 //. SymbolFactory populates a symbol table.
-class SymbolFactory : private PTree::Visitor
+class SymbolFactory
 {
 public:
   //.
@@ -34,7 +34,9 @@ public:
 
   void enter_scope(SymbolTable::Scope *);
   void enter_scope(SymbolTable::Scope *, PTree::NamespaceSpec const *);
-  void enter_scope(SymbolTable::Scope *, PTree::ClassSpec const *);
+  void enter_class(SymbolTable::Scope *scope,
+		   PTree::ClassSpec const *spec,
+		   std::vector<SymbolTable::Symbol const *> const &bases);
   void enter_scope(SymbolTable::Scope *, PTree::Node const *);
   void enter_scope(SymbolTable::Scope *, PTree::FunctionDefinition const *);
   void enter_scope(SymbolTable::Scope *, PTree::List const *);
@@ -42,7 +44,9 @@ public:
   void enter_scope(SymbolTable::Scope *, PTree::Block const *);
   void leave_scope();
 
-  void declare(SymbolTable::Scope *, PTree::Declaration const *);
+  void declare_typedef(PTree::SimpleDeclaration *, SymbolTable::TypeName const *);
+  void declare(SymbolTable::Scope *, PTree::SimpleDeclaration *);
+  void declare(SymbolTable::Scope *, PTree::FunctionDefinition *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
   void declare(SymbolTable::Scope *, PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE
@@ -70,9 +74,6 @@ public:
 
 private:
   typedef std::stack<SymbolTable::Scope *> Scopes;
-
-  virtual void visit(PTree::SimpleDeclaration *);
-  virtual void visit(PTree::FunctionDefinition *);
 
   //. Lookup the scope of a qualified name.
   //. The encoded name is modified in place to

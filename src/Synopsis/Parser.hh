@@ -105,7 +105,8 @@ private:
   //.   template-id
   PTree::Node *class_name(PTree::Encoding &,
 			  bool is_typename,
-			  bool is_template);
+			  bool is_template,
+			  bool in_base_clause = false);
 
   //. class-or-namespace-name:
   //.   class-name
@@ -195,7 +196,7 @@ private:
   //.   :: [opt] nested-name-specifier [opt] class-name
   //.   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
   //.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
-  PTree::List *base_clause();
+  PTree::List *base_clause(std::vector<SymbolTable::Symbol const *> &bases);
 
   //. ctor-initializer:
   //.   : mem-initializer-list
@@ -703,7 +704,7 @@ private:
   //.   :: identifier
   //.   :: operator-function-id
   //.   :: template-id
-  PTree::Node *id_expression(PTree::Encoding &);
+  PTree::Node *id_expression(PTree::Encoding &, bool is_template);
   //: typeof-expression:
   //:   __typeof__ unary-expression
   //:   __typeof__ ( type-id )
@@ -784,6 +785,8 @@ private:
   bool            my_in_nested_name_specifier;
   //. used for name lookup in nested-name-specifiers
   SymbolTable::Scope *my_qualifying_scope;
+  //.
+  SymbolTable::Symbol const *my_symbol;
 
   //. Only record errors if we are not parsing
   //. tentatively.

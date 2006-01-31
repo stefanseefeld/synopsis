@@ -175,6 +175,7 @@ public:
   bool is_qualified() const { return front() == 'Q';}
   bool is_function() const;
   bool is_template_id() const { return front() == 'T';}
+  bool is_cv_qualified() const { return front() == 'C' || front() == 'V';}
 
   friend bool operator < (Encoding const &, Encoding const &);
   friend std::ostream &operator << (std::ostream &, Encoding const &);

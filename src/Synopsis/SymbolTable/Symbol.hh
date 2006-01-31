@@ -26,6 +26,7 @@ class ClassTemplateName;
 class FunctionName;
 class FunctionTemplateName;
 class NamespaceName;
+class DependentName;
 
 class SymbolVisitor
 {
@@ -39,6 +40,7 @@ public:
   virtual void visit(TypedefName const *) {}
   virtual void visit(ClassName const *) {}
   virtual void visit(EnumName const *) {}
+  virtual void visit(DependentName const *) {}
   virtual void visit(ClassTemplateName const *) {}
   virtual void visit(FunctionName const *) {}
   virtual void visit(FunctionTemplateName const *) {}
@@ -106,9 +108,13 @@ public:
 class TypedefName : public TypeName
 {
 public:
-  TypedefName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope)
-    : TypeName(type, ptree, false, scope) {}
+  TypedefName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope,
+	      TypeName const *aliased)
+    : TypeName(type, ptree, false, scope), my_aliased(aliased) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+  TypeName const *aliased() const { return my_aliased;}
+private:
+  TypeName const *my_aliased;
 };
 
 class ClassName : public TypeName
@@ -128,6 +134,14 @@ class EnumName : public TypeName
 public:
   EnumName(PTree::Node const *ptree, Scope *scope)
     : TypeName(PTree::Encoding(), ptree, true, scope) {}
+  virtual void accept(SymbolVisitor *v) const { v->visit(this);}
+};
+
+class DependentName : public TypeName
+{
+public:
+  DependentName(PTree::Node const *ptree, Scope *scope)
+    : TypeName(PTree::Encoding(), ptree, false, scope) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
 };
 
