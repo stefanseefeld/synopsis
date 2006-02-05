@@ -6,10 +6,12 @@
 //
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/PTree/Display.hh>
+#include <Synopsis/SymbolTable/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolTable.hh>
 #include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/TypeAnalysis/ConstEvaluator.hh>
+#include <Synopsis/TypeAnalysis/TypeRepository.hh>
 #include <Synopsis/Trace.hh>
 #include <cassert>
 #include <vector>
@@ -20,73 +22,37 @@ namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
 namespace TA = Synopsis::TypeAnalysis;
 
+namespace Synopsis
+{
+namespace SymbolTable
+{
+Class * DEPENDENT_SCOPE = 0;
+}
+}
+
 namespace
 {
-PT::Node const *strip_cv_from_integral_type(PT::Node const *integral)
-{
-  if(integral == 0) return 0;
-
-  if(!integral->is_atom())
-    if(PT::is_a(integral->car(), Token::CONST, Token::VOLATILE))
-      return PT::second(integral);
-    else if(PT::is_a(PT::second(integral), Token::CONST, Token::VOLATILE))
-      return integral->car();
-
-  return integral;
-}
-
-PT::ClassSpec const *get_class_template_spec(PT::Node const *body)
-{
-  if(*PT::third(body) == ';') // template declaration
-  {
-    PT::Node const *spec = strip_cv_from_integral_type(PT::second(body));
-    return dynamic_cast<PT::ClassSpec const *>(spec);
-  }
-  return 0;
-}
-
-//. Look up the scope corresponding to a base-specifier.
-//. FIXME: The lookup may require a template instantiation, or
-//.        fail because it involves a dependent name. This requires
-//.        more design.
-class BaseClassScopeFinder : private PT::Visitor
+//. Look up the scope corresponding to a symbol.
+class SymbolScopeMapper : private ST::SymbolVisitor
 {
 public:
-  BaseClassScopeFinder(ST::Scope *scope) : my_scope(scope), my_result(0) {}
-  ST::Class *lookup(PT::Node const *node)
+  ST::Class *to_scope(ST::Symbol const *s)
   {
-    const_cast<PT::Node *>(node)->accept(this);
-    return my_result;
+    scope_ = 0;
+    s->accept(this);
+    return scope_;
   }
 private:
-  virtual void visit(PT::Identifier *node)
+  virtual void visit(ST::TypedefName const *s)
   {
-    PT::Encoding name = PT::Encoding::simple_name(node);
-    ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::ELABORATE);
-    if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
-    else
-    {
-      ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
-      if (!class_) throw InternalError("Base specifier not a class.");
-      my_result = class_->as_scope();
-    }
+    PT::Encoding encoding;
+    ST::Symbol const *a = resolve_typedef(s, encoding);
+    if (a && a != s) a->accept(this);
   }
-  virtual void visit(PT::Name *node)
-  {
-    PT::Encoding name = node->encoded_name();
-    // FIXME: This will fail if the name is a template or a dependent name.
-    ST::SymbolSet symbols = ::lookup(name, my_scope, ST::Scope::ELABORATE);
-    if (symbols.empty()) throw ST::Undefined(name, my_scope, node);
-    else
-    {
-      ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*symbols.begin());
-      if (!class_) throw InternalError("Base specifier not a class.");
-      my_result = class_->as_scope();
-    }
-  }
+  virtual void visit(ST::ClassName const *s) { scope_ = s->as_scope();}
+  virtual void visit(ST::ClassTemplateName const *s) { scope_ = s->as_scope();}
 
-  ST::Scope * my_scope;
-  ST::Class * my_result;
+  ST::Class *scope_;
 };
 
 //. Counts the number of parameters, as well as the number of default arguments.
@@ -107,18 +73,39 @@ private:
     if (node->car()) node->car()->accept(this);
     if (node->cdr()) node->cdr()->accept(this);
   }
-  virtual void visit(PT::ParameterDeclaration *node)
+  virtual void visit(PT::ParameterDeclaration *decl)
   {
     ++my_params;
-    if (PT::length(PT::third(node->car())) == 3 || my_default_args)
-      // If we already encountered an initializer for a previous parameter,
-      // this one has to have one too, though not necessarily expressed in
-      // this declarator (see 8.3.6/6).
-      ++my_default_args;
+    // If we already encountered an initializer for a previous parameter,
+    // this one has to have one too, though not necessarily expressed in
+    // this declarator (see 8.3.6/6).
+    if (my_default_args || decl->initializer()) ++my_default_args;
   }
 
   size_t &my_params;
   size_t &my_default_args;
+};
+
+//. ETScopeFinder finds the smallest enclosing scope which a class-name
+//. from an elaborated-type-specifier should be declared in.
+//. See [basic.scope.pdecl]/5
+class ETScopeFinder : private ST::ScopeVisitor
+{
+public:
+  ETScopeFinder() : scope_(0) {}
+  ST::Scope *find(ST::Scope *s)
+  {
+    s->accept(this);
+    return scope_;
+  }
+private:
+  virtual void visit(ST::LocalScope *s) { scope_ = s;}
+  virtual void visit(ST::PrototypeScope *s) { s->outer_scope()->accept(this);}
+  virtual void visit(ST::FunctionScope *s) { scope_ = s;}
+  virtual void visit(ST::Class *s) { s->outer_scope()->accept(this);}
+  virtual void visit(ST::Namespace *s) { scope_ = s;}
+
+  ST::Scope *scope_;
 };
 
 }
@@ -131,13 +118,27 @@ SymbolFactory::SymbolFactory(Language l)
     my_template_repository(new TA::TemplateRepository())
 {
   // define the global scope
-  my_scopes.push(new ST::Namespace(0, 0));
+  ST::Namespace *global = new ST::Namespace(0, 0);
+  my_scopes.push(global);
+  // FIXME: Do we need a special GCC-extension flag, too ?
+  PT::Encoding name;
+  name.append_with_length("__builtin_va_list", 17);
+  global->declare(name, new ST::TypeName(PT::Encoding(), 0, true, global));
+
+  ST::DEPENDENT_SCOPE = new ST::DependentScope();
 }
 
-void SymbolFactory::enter_scope(PT::NamespaceSpec const *spec)
+void SymbolFactory::enter_scope(ST::Scope *scope)
+{
+  Trace trace("SymbolFactory::enter_scope(Scope)", Trace::SYMBOLLOOKUP);
+  my_scopes.push(scope);
+}
+
+// Note: Here the scope argument doesn't make sense, since a namespace-name
+//       can never be qualified.
+void SymbolFactory::enter_scope(ST::Scope *, PT::NamespaceSpec const *spec)
 {
   Trace trace("SymbolFactory::enter_scope(NamespaceSpec)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
 
   // Namespaces are only valid within namespaces.
   ST::Namespace *scope = dynamic_cast<ST::Namespace *>(my_scopes.top());
@@ -159,76 +160,90 @@ void SymbolFactory::enter_scope(PT::NamespaceSpec const *spec)
   my_scopes.push(namespace_);
 }
 
-void SymbolFactory::enter_scope(PT::ClassSpec const *spec)
+void SymbolFactory::enter_class(ST::Scope *scope,
+				PT::ClassSpec const *spec,
+				std::vector<ST::Symbol const *> const &b)
 {
-  Trace trace("SymbolFactory::enter_scope(ClassSpec)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
+  Trace trace("SymbolFactory::enter_class", Trace::SYMBOLLOOKUP);
 
-  BaseClassScopeFinder base_finder(my_scopes.top());
   ST::Class::Bases bases;
-  for (PT::Node const *base_clause = spec->base_clause();
-       base_clause;
-       base_clause = PT::rest(PT::rest(base_clause)))
+  SymbolScopeMapper mapper;
+  for (std::vector<ST::Symbol const *>::const_iterator i = b.begin();
+       i != b.end();
+       ++i)
   {
-    // The last node is the name, the others access specs or 'virtual'
-    PT::Node const *parent = PT::last(PT::second(base_clause))->car();
-    ST::Class *class_ = base_finder.lookup(parent);
+    ST::Class const *class_ = mapper.to_scope(*i);
+    trace << "looking for base scope " << class_;
     if (class_) bases.push_back(class_);
-    else ; // FIXME
   }
-  ST::Scope *scope = my_scopes.top();
-  PT::Encoding name = spec->encoded_name();
+  if (!scope) scope = my_scopes.top();
+  PT::Encoding encoded_name = spec->encoded_name();
+  PT::Encoding name = encoded_name;
+  if (name.is_template_id()) name = name.get_template_name();
 
-  if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
+  if (encoded_name.is_qualified()) scope = lookup_scope_of_qname(encoded_name, spec);
 
   ST::Class *class_ = new ST::Class(name.unmangled(),
 				    spec, scope, bases, my_template_parameters);
-  if (name.is_template_id())
+  // [class] (9/2)
+  // The class-name is also inserted into the scope of the class itself.
+  PT::Encoding type = spec->encoded_type();
+  class_->declare(name, new ST::ClassName(type, spec, false, scope));
+  // [temp.local] (14.6.1)
+  // Within the scope of a class template, when the name of the template is neither
+  // qualified nor followed by <, it is equivalent to the name of the template
+  // followed by the template-parameters enclosed in <>.
+  //
+  // Thus, if we are in a class template, we inject the class name also as
+  // a class template name so looking for a template-name will be successful.
+  trace << "is template " << my_template_parameters;
+  if (my_template_parameters)
+    class_->declare(name, new ST::ClassTemplateName(type, spec, false, scope));
+
+  if (encoded_name.is_template_id())
   {
     // This is a template specialization. Declare the scope with the
     // template repository.
-    PT::Encoding::iterator begin = name.begin() + 1;
-    PT::Encoding tname(begin, begin + *begin - 0x80 + 1);
-    ST::SymbolSet symbols = scope->find(tname, ST::Scope::DECLARATION);
+    ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
     if (symbols.empty())
-      throw ST::Undefined(tname, scope);
-    ST::ClassTemplateName const *primary = dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
+    {
+      trace << "undefined symbol " << name << " in " << static_cast<ST::Namespace *>(scope)->name();
+      throw ST::Undefined(name, scope);
+    }
+    ST::ClassTemplateName const *primary = 
+      dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
     my_template_repository->declare_scope(primary, spec, class_);
   }
-  else
-    scope->declare_scope(spec, class_);
+  scope->declare_scope(spec, class_);
   my_scopes.push(class_);
   my_template_parameters = 0;
 }
 
-void SymbolFactory::enter_scope(PT::Node const *decl)
+void SymbolFactory::enter_scope(ST::Scope *scope, PT::List const *decl)
 {
-  Trace trace("SymbolFactory::enter_scope(Node)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  ST::Scope *scope = my_scopes.top();
+  Trace trace("SymbolFactory::enter_scope(List)", Trace::SYMBOLLOOKUP);
+
+  if (!scope) scope = my_scopes.top();
+  trace << "current scope is " << scope;
   // Create a PrototypeScope. If this is part of a function definition, we will
   // later convert it into a FunctionScope.
   my_prototype = new ST::PrototypeScope(decl, scope, my_template_parameters);
   scope->declare_scope(decl, my_prototype);
   my_scopes.push(my_prototype);
-  my_template_parameters = 0;
+//   my_template_parameters = 0;
 }
 
-void SymbolFactory::enter_scope(PT::FunctionDefinition const *decl)
+void SymbolFactory::enter_scope(ST::Scope *scope, PT::FunctionDefinition const *decl)
 {
   Trace trace("SymbolFactory::enter_scope(FunctionDefinition)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
 
-  ST::Scope *scope = my_scopes.top();
+  if (!scope) scope = my_scopes.top();
 
   assert(my_prototype);
   my_prototype->ref();
+  trace << "current scope is " << scope << ' ' << typeid(*scope).name()
+	<< ' ' << decl->declarator()->encoded_name();
   scope->remove_scope(my_prototype->declaration());
-
-  // look at the declarator's encoded name
-  PT::Encoding name = PT::third(decl)->encoded_name();
-  if (name.is_qualified())
-    scope = lookup_scope_of_qname(name, PT::third(decl));
 
   // Transfer all symbols from the previously seen function declaration
   // into the newly created FunctionScope, and remove the PrototypeScope.
@@ -236,23 +251,28 @@ void SymbolFactory::enter_scope(PT::FunctionDefinition const *decl)
   scope->declare_scope(decl, func);
   my_prototype = 0;
   my_scopes.push(func);
+  my_template_parameters = 0;
 }
 
-void SymbolFactory::enter_scope(PT::TemplateDecl const *params)
+// Note: The scope parameter doesn't make sense here, as a template-parameter-list
+//       can't be qualified.
+void SymbolFactory::enter_scope(ST::Scope *, PT::TemplateParameterList const *params)
 {
-  Trace trace("SymbolFactory::enter_scope(TemplateDecl)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
+  Trace trace("SymbolFactory::enter_scope(TemplateParameterList)", Trace::SYMBOLLOOKUP);
 
   ST::Scope *scope = my_scopes.top();
-  ST::TemplateParameterScope *templ = new ST::TemplateParameterScope(params, scope);
-  scope->declare_scope(params, templ);
-  my_scopes.push(templ);
+  my_template_parameters = 
+    new ST::TemplateParameterScope(params, scope, my_template_parameters);
+  trace << "enter template parameter scope " << my_template_parameters;
+  // We don't want to declare template parameter scopes 
+  // in their parent scopes, do we ?
+//   scope->declare_scope(params, templ);
+  my_scopes.push(my_template_parameters);
 }
 
-void SymbolFactory::enter_scope(PT::Block const *block)
+void SymbolFactory::enter_scope(ST::Scope *, PT::Block const *block)
 {
   Trace trace("SymbolFactory::enter_scope(Block)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
 
   ST::Scope *scope = my_scopes.top();
   ST::LocalScope *local = new ST::LocalScope(block, scope);
@@ -263,7 +283,6 @@ void SymbolFactory::enter_scope(PT::Block const *block)
 void SymbolFactory::leave_scope()
 {
   Trace trace("SymbolFactory::leave_scope", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
 
   ST::Scope *scope = my_scopes.top();
   my_scopes.pop();
@@ -272,172 +291,224 @@ void SymbolFactory::leave_scope()
   // scope.
   if (ST::PrototypeScope *ps = dynamic_cast<ST::PrototypeScope *>(scope))
     my_prototype = ps;
-  else if (ST::TemplateParameterScope *ts = dynamic_cast<ST::TemplateParameterScope *>(scope))
-    my_template_parameters = ts;
-  else
-    scope->unref();
 }
 
-void SymbolFactory::declare(PT::Declaration const *d)
+void SymbolFactory::declare_typedef(PT::SimpleDeclaration *d, ST::Symbol const *s)
 {
-  Trace trace("SymbolFactory::declare(Declaration *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-
-  PT::Node const *decls = PT::third(d);
-  if(PT::is_a(decls, Token::ntDeclarator))
+  Trace trace("SymbolFactory::declare_typedef", Trace::SYMBOLLOOKUP);
+  PT::DeclSpec *spec = d->decl_specifier_seq();
+  PT::List *declarators = d->declarators();
+  while(declarators)
   {
-    // function definition,
-    // declare it only once (but allow overloading)
+    PT::Node const *d = declarators->car();
+    PT::Encoding const &name = d->encoded_name();
+    PT::Encoding const &type = d->encoded_type();
 
-    PT::Encoding name = decls->encoded_name();
-    PT::Encoding type = decls->encoded_type();
-
-    size_t params = 0;
-    size_t default_args = 0;
-    DefaultArgumentFinder finder(params, default_args);
-    finder.find(static_cast<PT::Declarator const *>(decls));
-
-    // If the name is qualified, it has to be
-    // declared already. If it hasn't, raise an error.
-    ST::Scope *scope = my_scopes.top();
-    if (name.is_qualified())
+    // Hack: in case of 'typedef struct Foo {...} Foo;'
+    //       we don't generate a TypedefName, as that would clash with
+    //       the ClassName of the same name.
+    if (name != spec->type())
     {
-      scope = lookup_scope_of_qname(name, decls);
-      ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
-      // FIXME: We need type analysis / overload resolution
-      //        here to take the right symbol.
-      ST::Symbol const *symbol = *symbols.begin();
-      // TODO: check whether this is the definition of a previously
-      //       declared function, according to 3.1/2 [basic.def]
-      scope->remove(symbol);
+      ST::Scope *scope = my_scopes.top();
+      ST::TypedefName *symbol = new ST::TypedefName(type, d, scope, s);
+      scope->declare(name, symbol);
+      // TODO: Even though a typedef doesn't introduce a new type, we may
+      //       declare it as a type alias to avoid an additional lookup.
+      // TA::TypeRepository::instance()->declare(symbol);
     }
-    scope->declare(name, new ST::FunctionName(type, d,
-					      params, default_args,
-					      true, scope));
+    declarators = PT::tail(declarators, 2);
   }
-  else
+}
+
+void SymbolFactory::declare(ST::Scope *s, PT::SimpleDeclaration *d)
+{
+  Trace trace("SymbolFactory::declare(SimpleDeclaration)", Trace::SYMBOLLOOKUP);
+  trace << "template parameters " << my_template_parameters;
+  if (s) my_scopes.push(s);
+  ST::Scope *scope = my_scopes.top();
+
+  PT::DeclSpec *spec = d->decl_specifier_seq();
+  PT::List *decls = d->declarators();
+  // The implicit type declaration by means of elaborated type specs is handled
+  // elsewhere.
+  if (!decls) // for example 'class Foo;'
   {
-    // Function or variable declaration.
-//     PT::Node const *storage_spec = PT::first(d);
-//     PT::Node const *type_spec = PT::second(d);
-    if (decls->is_atom()) ; // it is a ';'
-    else
+    if (spec && length(spec) == 1)
     {
-      for (; decls; decls = decls->cdr())
+      PT::ElaboratedTypeSpec *etspec = 
+	dynamic_cast<PT::ElaboratedTypeSpec *>(PT::nth<0>(spec));
+      if (etspec && PT::string(etspec->type()) != "enum")
       {
-	PT::Declarator const *decl = dynamic_cast<PT::Declarator const *>(decls->car());
-	if (!decl) continue; // a comma ?
-
-	PT::Encoding name = decl->encoded_name();
-	PT::Encoding const &type = decl->encoded_type();
-
-	ST::Scope *scope = my_scopes.top();
-	if (name.is_qualified())
+	PT::Encoding name = PT::name(etspec->name());
+	if (!name.is_qualified())
 	{
-	  ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
-	  if (symbols.empty()) throw ST::Undefined(name, scope, decl);
-	  // FIXME: We need type analysis / overload resolution
-	  //        here to take the right symbol.
-	  ST::Symbol const *symbol = *symbols.begin();
-	  while (name.is_qualified()) name = name.get_symbol();
-	  scope = symbol->scope();
-	  // TODO: check whether this is the definition of a previously
-	  //       declared variable, according to 3.1/2 [basic.def]
-	  scope->remove(symbol);
-	}
-
-	if (type.is_function()) // It's a function declaration.
-	{
-	  size_t params = 0;
-	  size_t default_args = 0;
-	  DefaultArgumentFinder finder(params, default_args);
-	  finder.find(decl);
-	  scope->declare(name, new ST::FunctionName(type, decl,
-						    params, default_args,
-						    false, scope));
-	}
-	else
-	{
-	  PT::Node *initializer = const_cast<PT::Declarator *>(decl)->initializer();
-	  // FIXME: Checking the encoding for constness is not sufficient, as the
-	  //        type id may be an alias (typedef) to a const type.
-	  if (initializer && 
-	      (type.front() == 'C' || 
-	       (type.front() == 'V' && *(type.begin() + 1) == 'C')))
+	  ST::SymbolSet symbols = scope->find(name, ST::Scope::ELABORATED);
+	  if (!symbols.size())
 	  {
-	    long value;
-	    if (TA::evaluate_const(current_scope(), initializer->car(), value))
-	      scope->declare(name, new ST::ConstName(type, value, decl, true, scope));
+	    if (my_template_parameters)
+	    {
+	      ST::ClassTemplateName *symbol = 
+		new ST::ClassTemplateName(spec->encoded_type(), spec, false, scope);
+	      scope->declare(name, symbol);
+	    }
 	    else
-	      scope->declare(name, new ST::ConstName(type, decl, true, scope));
+	    {
+	      ST::ClassName *symbol = new ST::ClassName(name, spec, false, scope);
+	      scope->declare(name, symbol);
+	      TA::TypeRepository::instance()->declare(name, symbol);
+	    }
 	  }
-	  else
-	    scope->declare(name, new ST::VariableName(type, decl, true, scope));
 	}
       }
     }
   }
-}
-
-void SymbolFactory::declare(PT::Typedef const *td)
-{
-  Trace trace("SymbolFactory::declare(Typedef *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  PT::Node const *declarations = PT::third(td);
-  while(declarations)
+  // For special functions (constructor, destructor, type conversions) there
+  // may be no decl-specifier-seq.
+  bool defined = spec ? spec->storage_class() != PT::DeclSpec::EXTERN : true;
+  for (; decls; decls = decls->cdr())
   {
-    PT::Node const *d = declarations->car();
-    if(PT::type_of(d) == Token::ntDeclarator)
+    PT::Declarator const *decl = dynamic_cast<PT::Declarator const *>(decls->car());
+    if (!decl) continue; // a comma ?
+      
+    PT::Encoding name = decl->encoded_name();
+    PT::Encoding const &type = decl->encoded_type();
+    
+    if (name.is_qualified())
     {
-      PT::Encoding const &name = d->encoded_name();
-      PT::Encoding const &type = d->encoded_type();
-      ST::Scope *scope = my_scopes.top();
-      scope->declare(name, new ST::TypedefName(type, d, scope));
+      ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
+      if (symbols.empty())
+      {
+	std::cout << "!1" << std::endl;
+	throw ST::Undefined(name, scope, decl);
+      }
+      // FIXME: We need type analysis / overload resolution
+      //        here to take the right symbol.
+      ST::Symbol const *forward = *symbols.begin();
+      while (name.is_qualified()) name = name.get_symbol();
+      scope = forward->scope();
+      // TODO: check whether this is the definition of a previously
+      //       declared variable, according to 3.1/2 [basic.def]
+      scope->remove(forward);
     }
-    declarations = PT::tail(declarations, 2);
+      
+    ST::Symbol const *symbol = 0;
+    if (type.is_function()) // It's a function declaration.
+    {
+      size_t params = 0;
+      size_t default_args = 0;
+      DefaultArgumentFinder finder(params, default_args);
+      finder.find(decl);
+      if (my_template_parameters)
+	symbol = new ST::FunctionTemplateName(type, decl, params, default_args, false, scope);
+      else
+	symbol = new ST::FunctionName(type, decl, params, default_args, false, scope);
+    }
+    else
+    {
+      PT::Node *initializer = const_cast<PT::Declarator *>(decl)->initializer();
+      // FIXME: Checking the encoding for constness is not sufficient, as the
+      //        type id may be an alias (typedef) to a const type.
+      if (initializer && 
+	  (type.front() == 'C' || 
+	   (type.front() == 'V' && *(type.begin() + 1) == 'C')))
+      {
+	long value;
+// 	if (TA::evaluate_const(current_scope(), initializer->car(), value))
+// 	  symbol = new ST::ConstName(type, value, decl, defined, scope);
+// 	else
+	  symbol = new ST::ConstName(type, decl, defined, scope);
+      }
+      else
+	symbol = new ST::VariableName(type, decl, defined, scope);
+    }
+    scope->declare(name, symbol);
   }
+  my_template_parameters = 0;
+  if (s) my_scopes.pop();
 }
 
-void SymbolFactory::declare(PT::EnumSpec const *spec)
+void SymbolFactory::declare_specialization(ST::Scope *s,
+					   PT::SimpleDeclaration *decl)
 {
-  Trace trace("SymbolFactory::declare(EnumSpec *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  PT::Node const *tag = PT::second(spec);
-  PT::Encoding const &name = spec->encoded_name();
-  PT::Encoding const &type = spec->encoded_type();
+  Trace trace("SymbolFactory::declare(SimpleDeclaration)", Trace::SYMBOLLOOKUP);
+  my_template_parameters = 0;
+}
+
+void SymbolFactory::declare(ST::Scope *s, PT::FunctionDefinition *def)
+{
+  Trace trace("SymbolFactory::declare(FunctionDefinition)", Trace::SYMBOLLOOKUP);
+  trace << "template parameters " << my_template_parameters;
+  if (s) my_scopes.push(s);
+
+  PT::Declarator *declarator = def->declarator();
+
+  PT::Encoding name = declarator->encoded_name();
+  PT::Encoding type = declarator->encoded_type();
+
+  size_t params = 0;
+  size_t default_args = 0;
+  DefaultArgumentFinder finder(params, default_args);
+  finder.find(declarator);
+
+  // If the name is qualified, it has to be
+  // declared already. If it hasn't, raise an error.
   ST::Scope *scope = my_scopes.top();
-  if(tag && tag->is_atom()) 
-    scope->declare(name, new ST::EnumName(type, spec, my_scopes.top()));
+
+  // TODO: If this is an explicit specialization, look up the primary template
+  //       and register the specialization with the template repository.
+//   if (my_template_parameters && 
+
+  ST::Symbol const *symbol = 0;
+  if (my_template_parameters)
+    symbol = new ST::FunctionTemplateName(type, def, params, default_args, true, scope);
+  else
+    symbol = new ST::FunctionName(type, def, params, default_args, true, scope);
+  scope->declare(name, symbol);
+
+  my_template_parameters = 0;
+  if (s) my_scopes.pop();
+}
+
+void SymbolFactory::declare_specialization(ST::Scope *s,
+					   PT::FunctionDefinition *def)
+{
+  Trace trace("SymbolFactory::declare(FunctionDefinition)", Trace::SYMBOLLOOKUP);
+  my_template_parameters = 0;
+}
+
+void SymbolFactory::declare(ST::Scope *scope, PT::EnumSpec const *spec)
+{
+  Trace trace("SymbolFactory::declare(EnumSpec)", Trace::SYMBOLLOOKUP);
+
+  if (!scope) scope = my_scopes.top();
+  if (PT::Atom const *name = spec->name())
+  {
+    ST::EnumName const *symbol = new ST::EnumName(spec, my_scopes.top());
+    scope->declare(PT::Encoding(name), symbol);
+    TA::TypeRepository::instance()->declare(PT::Encoding(name), symbol);
+  }
   // else it's an anonymous enum
 
-  PT::Node const *body = PT::third(spec);
   // The numeric value of an enumerator is either specified
   // by an explicit initializer or it is determined by incrementing
   // by one the value of the previous enumerator.
   // The default value for the first enumerator is 0
   long value = -1;
-  for (PT::Node const *e = PT::second(body); e; e = PT::rest(PT::rest(e)))
+  for (PT::List const *e = spec->enumerators(); e; e = PT::tail(e, 2))
   {
     PT::Node const *enumerator = e->car();
     bool defined = true;
     if (enumerator->is_atom()) ++value;
     else  // [identifier = initializer]
     {
-      PT::Node const *initializer = PT::third(enumerator);
+      PT::Node const *initializer = PT::nth<2>(static_cast<PT::List const *>(enumerator));
       
-      defined = TA::evaluate_const(current_scope(), initializer, value);
+//       defined = TA::evaluate_const(current_scope(), initializer, value);
       enumerator = enumerator->car();
-#ifndef NDEBUG
-      if (!defined)
-      {
-	std::cerr << "Error in evaluating enum initializer:\n"
-		  << "Expression doesn't evaluate to a constant integral value:\n"
-		  << PT::reify(initializer) << std::endl;
-      }
-#endif
     }
     assert(enumerator->is_atom());
-    PT::Encoding name = PT::Encoding::simple_name(static_cast<PT::Atom const *>(enumerator));
+    PT::Encoding name(static_cast<PT::Atom const *>(enumerator));
+    PT::Encoding type; // FIXME: ??
     if (defined)
       scope->declare(name, new ST::ConstName(type, value, enumerator, true, scope));
     else
@@ -445,15 +516,15 @@ void SymbolFactory::declare(PT::EnumSpec const *spec)
   }
 }
 
-void SymbolFactory::declare(PT::NamespaceSpec const *spec)
+void SymbolFactory::declare(ST::Scope *scope, PT::NamespaceSpec const *spec)
 {
-  Trace trace("SymbolFactory::declare(NamespaceSpec *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
+  Trace trace("SymbolFactory::declare(NamespaceSpec)", Trace::SYMBOLLOOKUP);
+
   // Beware anonymous namespaces !
   PT::Encoding name;
-  if (PT::second(spec)) name.simple_name(PT::second(spec));
-  else name.append_with_length("<anonymous>");
-  ST::Scope *scope = my_scopes.top();
+  if (PT::nth<1>(spec)) name.simple_name(static_cast<PT::Atom const *>(PT::nth<1>(spec)));
+  else name.append_with_length("<anonymous>", 11);
+  if (!scope) scope = my_scopes.top();
   // Namespaces can be reopened, so only declare it if it isn't already known.
   ST::SymbolSet symbols = scope->find(name, ST::Scope::SCOPE);
   if (symbols.empty())
@@ -463,26 +534,23 @@ void SymbolFactory::declare(PT::NamespaceSpec const *spec)
   // FIXME: assert that the found symbol really refers to a namespace !
 }
 
-void SymbolFactory::declare(PT::ClassSpec const *spec)
+void SymbolFactory::declare(ST::Scope *scope, PT::ClassSpec const *spec)
 {
-  Trace trace("SymbolFactory::declare(ClassSpec *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-
-  ST::Scope *scope = my_scopes.top();
+  Trace trace("SymbolFactory::declare(ClassSpec)", Trace::SYMBOLLOOKUP);
+  trace << scope;
+  if (!scope) scope = my_scopes.top();
   PT::Encoding name = spec->encoded_name();
 
-  if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
+//   if (name.is_qualified()) scope = lookup_scope_of_qname(name, spec);
 
   // If the name is a template-id, we are looking at a template specialization.
   // Declare it in the template repository instead.
   if (name.is_template_id())
   {
-    declare_template_specialization(name.get_template_name(), spec, scope);
+    trace << "has template parameters " << my_template_parameters;
+//     declare_template_specialization(name.get_template_name(), spec, scope);
     return;
   }
-  // If class spec contains a class body, it's a definition.
-  PT::ClassBody const *body = const_cast<PT::ClassSpec *>(spec)->body();
-
   ST::SymbolSet symbols = scope->find(name, ST::Scope::DEFAULT);
   for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
   {
@@ -490,110 +558,181 @@ void SymbolFactory::declare(PT::ClassSpec const *spec)
     // Else if the symbol corresponds to a forward-declared class, replace it.
     if (ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*i))
     {
+      trace << "found class " << class_->is_definition() << ' ' << my_template_parameters;
       if (class_->is_definition())
-      {
-	if (body)
-	  throw ST::MultiplyDefined(name, spec, class_->ptree()); // ODR
-	else return; // Ignore forward declaration if symbol is already defined.
-      }
-      else if (body) scope->remove(*i); // Remove forward declaration.
-      else return;                      // Don't issue another forward declaration.
+	throw ST::MultiplyDefined(name, spec, class_->ptree()); // ODR
+      // FIME: if we have 'template <typename T> struct Foo<T>::Bar'
+      //       Bar is *not* a class template !
+      else if (my_template_parameters) // type mismatch
+	throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
+      // TODO: Remove the type associated with the forward declaration, too.
+      else scope->remove(*i); // Remove forward declaration.
+    }
+    else if (ST::ClassTemplateName const *class_ = dynamic_cast<ST::ClassTemplateName const *>(*i))
+    {
+      if (class_->is_definition())
+	throw ST::MultiplyDefined(name, spec, class_->ptree()); // ODR
+      else if (!my_template_parameters) // type mismatch
+	throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
+      // TODO: Remove the type associated with the forward declaration, too.
+      else scope->remove(*i); // Remove forward declaration.
     }
     else if (ST::TypeName const *type = dynamic_cast<ST::TypeName const *>(*i))
       // Symbol already defined as different type.
       throw ST::MultiplyDefined(name, spec, type->ptree());
   }
-  if (body)
-    scope->declare(name, new ST::ClassName(spec->encoded_type(), spec, true, scope));
+  trace << "has template parameters " << my_template_parameters;
+  if (my_template_parameters)
+  {
+    ST::ClassTemplateName *symbol = 
+      new ST::ClassTemplateName(spec->encoded_type(), spec, true, scope);
+    scope->declare(name, symbol);
+  }
   else
-    scope->declare(name, new ST::ClassName(spec->encoded_type(), spec, false, scope));
+  {
+    ST::ClassName *symbol = 
+      new ST::ClassName(spec->encoded_type(), spec, true, scope);
+    scope->declare(name, symbol);
+    TA::TypeRepository::instance()->declare(name, symbol);
+  }
 }
 
-void SymbolFactory::declare(PT::TemplateDecl const *tdecl)
+void SymbolFactory::declare(ST::Scope *scope, PT::ElaboratedTypeSpec const *spec)
 {
-  Trace trace("SymbolFactory::declare(TemplateDecl *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  PT::Node const *body = PT::nth(tdecl, 4);
-  PT::ClassSpec const *class_spec = get_class_template_spec(body);
-  ST::Scope *scope = my_scopes.top();
-  if (class_spec)
+  Trace trace("SymbolFactory::declare(ElaboratedTypeSpec)", Trace::SYMBOLLOOKUP);
+
+  // [basic.scope.pdecl]/5
+  // The point of declaration of a class first declared in an 
+  // elaborated-type-specifier is as follows:
+  //
+  //   - for an elaborated-type-specifier of the form
+  //       class-key identifier ;
+  //     the elaborated-type-specifier declares the identifier to be a
+  //     class-name in the scope that contains the declaration, otherwise
+  //
+  //   - for an elaborated-type-specifier of the form
+  //       class-key identifier
+  //     if the elaborated-type-specifier is used in the decl-specifier-seq or
+  //     parameter-declaration-clause of a function defined in namespace scope,
+  //     the identifier is declared as a class-name in the namespace that contains
+  //     the declaration; otherwise, except as a friend declaration, the identifier
+  //     is declared in the smallest non-class, non-function-prototype scope that
+  //     contains the declaration.
+  
+  // The first case above is handled as a declaration. The second case is
+  // handled here.
+  
+  // Check for class-key. Enums aren't declared this way.
+  std::string key = PT::string(spec->type());
+  if (key == "enum") return;
+  // Now find the scope into which to inject the declaration.
+  ETScopeFinder finder;
+  scope = finder.find(scope ? scope : my_scopes.top());
+  PT::Encoding name = PT::name(spec->name());
+  ST::SymbolSet symbols = scope->find(name, ST::Scope::DEFAULT);
+  for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
   {
-    PT::Encoding name = class_spec->encoded_name();
+    ST::Symbol const *type = dynamic_cast<ST::TypeName const *>(*i);
+    // Skip non-types.
+    if (!type) continue;
 
-    if (name.is_qualified()) scope = lookup_scope_of_qname(name, tdecl);
+    // FIXME: what is this doing here ?
+//     PT::Encoding encoding;
+//     type = resolve_typedef(type, encoding);
 
-    // If the name is a template-id, we are looking at a template specialization.
-    // Declare it in the template repository instead.
-    if (name.is_template_id())
-      declare_template_specialization(name.get_template_name(), class_spec, scope);
+    // If the symbol was already defined, do nothing.
+    // Else if the symbol was defined as a different type, the program is ill-formed.
+    // Else if the symbol corresponds to a forward-declared class, replace it.
+    if (ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(type))
+    {
+      if (class_->is_definition()) return;
+      else if (my_template_parameters)
+	throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
+      // TODO: Remove the type associated with the forward declaration, too.
+      else scope->remove(*i); // Remove old forward declaration.
+    }
+    else if (ST::ClassTemplateName const *class_ = dynamic_cast<ST::ClassTemplateName const *>(type))
+    {
+      if (class_->is_definition())
+      {
+	if (!my_template_parameters)
+	  throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
+	// TODO: check to see that the number and type of template parameters match
+
+	// consume the template parameter list(s) but don't redeclare the template.
+	my_template_parameters = 0;
+	return;
+      }
+      else if (!my_template_parameters) // type mismatch
+	throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
+      // TODO: Remove the type associated with the forward declaration, too.
+      else scope->remove(*i); // Remove forward declaration.
+    }
+    else if (ST::TypeName const *type = dynamic_cast<ST::TypeName const *>(type))
+      // Symbol already defined as different type.
+      throw ST::MultiplyDefined(name, spec, type->ptree());
+  }
+  if (!name.is_qualified())
+  {
+    ST::SymbolSet symbols = scope->find(name, ST::Scope::ELABORATED);
+    // TODO: Check that there are no mismatching entries.
+    if (my_template_parameters)
+    {
+      ST::ClassTemplateName *symbol = 
+	new ST::ClassTemplateName(name, spec, false, scope);
+      scope->declare(name, symbol);
+    }
     else
     {
-      // Find any forward declarations for this symbol.
-      scope->declare(name, new ST::ClassTemplateName(PT::Encoding(), tdecl, true, scope));
+      ST::ClassName *symbol = 
+	new ST::ClassName(name, spec, false, scope);
+      scope->declare(name, symbol);
+      TA::TypeRepository::instance()->declare(name, symbol);
     }
   }
-  else
-  {
-    PT::Node const *decl = PT::third(body);
-    PT::Encoding name = decl->encoded_name();
-    if (name.is_qualified())
-    {
-      scope = lookup_scope_of_qname(name, decl);
-      ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
-      // FIXME: We need type analysis / overload resolution
-      //        here to take the right symbol.
-      ST::Symbol const *symbol = *symbols.begin();
-      // TODO: check whether this is the definition of a previously
-      //       declared function, according to 3.1/2 [basic.def]
-      scope->remove(symbol);
-    }
-    size_t params = 0;
-    size_t default_args = 0;
-    DefaultArgumentFinder finder(params, default_args);
-    finder.find(static_cast<PT::Declarator const *>(decl));
-    scope->declare(name, new ST::FunctionTemplateName(PT::Encoding(), decl,
-						      params, default_args, scope));
-  }
+  // This declaration consumed the template parameter list.
+  my_template_parameters = 0;
 }
 
-void SymbolFactory::declare(PT::TypeParameter const *tparam)
+void SymbolFactory::declare(ST::Scope *scope, PT::TypeParameter const *tparam)
 {
-  Trace trace("SymbolFactory::declare(TypeParameter *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  ST::Scope *scope = my_scopes.top();
+  Trace trace("SymbolFactory::declare(TypeParameter)", Trace::SYMBOLLOOKUP);
 
-  PT::Node const *first = PT::first(tparam);
-  if (dynamic_cast<PT::Kwd::Typename const *>(first) ||
-      dynamic_cast<PT::Kwd::Class const *>(first))
+  if (!scope) scope = my_scopes.top();
+  PT::Node const *keyword = PT::nth<0>(tparam);
+  if (dynamic_cast<PT::Kwd::Typename const *>(keyword) ||
+      dynamic_cast<PT::Kwd::Class const *>(keyword))
   {
-    PT::Node const *second = PT::second(tparam);
-    PT::Encoding name;
-    name.simple_name(second);
-    scope->declare(name, new ST::TypeName(PT::Encoding(), tparam, true, scope));
+    PT::Node const *second = PT::nth<1>(tparam);
+    PT::Encoding name(static_cast<PT::Atom const *>(second));
+    ST::DependentName const *symbol = new ST::DependentName(tparam, scope);
+    scope->declare(name, symbol);
+    TA::TypeRepository::instance()->declare(name, symbol);
   }
-  else if (PT::TemplateDecl const *tdecl = 
-	   dynamic_cast<PT::TemplateDecl const *>(first))
+  else if (dynamic_cast<PT::Kwd::Template const *>(keyword))
   {
-    // tdecl has 4 or 5 members:
     // [template < parameter-list > class id]
-    // [template < parameter-list > class]
     PT::Encoding name;
-    PT::Node const *pname = PT::nth(tdecl, 5);
-    if (pname) name.simple_name(pname);
-    scope->declare(name, new ST::ClassTemplateName(PT::Encoding(), tdecl, true, scope));
+    PT::Node const *pname = PT::nth(tparam, 5);
+    if (pname) name.simple_name(static_cast<PT::Atom const *>(pname));
+    ST::ClassTemplateName const *symbol = new ST::ClassTemplateName(PT::Encoding(), tparam, true, scope);
+    scope->declare(name, symbol);
   }
 }
 
-void SymbolFactory::declare(PT::UsingDirective const *udir)
+void SymbolFactory::declare(ST::Scope *scope, PT::UsingDirective const *udir)
 {
   Trace trace("SymbolFactory::declare(UsingDirective *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  ST::Scope *scope = my_scopes.top();
 
-  PTree::Encoding name = PTree::third(udir)->encoded_name();
+  if (!scope) scope = my_scopes.top();
+
+  PT::Encoding name = PT::nth<2>(udir)->encoded_name();
   ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DEFAULT);
   if (symbols.empty())
+  {
+    std::cout << "!2" << std::endl;
     throw ST::Undefined(name, scope, udir);
+  }
   // now get the namespace associated with that symbol:
   ST::Symbol const *symbol = *symbols.begin();
   // FIXME: may this symbol-to-scope conversion be implemented
@@ -609,25 +748,26 @@ void SymbolFactory::declare(PT::UsingDirective const *udir)
     throw std::runtime_error("using directive in wrong context.");
 }
 
-void SymbolFactory::declare(PT::ParameterDeclaration const *pdecl)
+void SymbolFactory::declare(ST::Scope *scope, PT::ParameterDeclaration const *pdecl)
 {
-  Trace trace("SymbolFactory::declare(ParameterDeclaration *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  PT::Node const *decl = PT::third(pdecl);
+  Trace trace("SymbolFactory::declare(ParameterDeclaration)", Trace::SYMBOLLOOKUP);
+  PT::Declarator const *decl = pdecl->declarator();
   PT::Encoding const &name = decl->encoded_name();
   PT::Encoding const &type = decl->encoded_type();
+  trace << type << ' ' << name;
   if (!name.empty())
   {
-    ST::Scope *scope = my_scopes.top();
+    if (!scope) scope = my_scopes.top();
     scope->declare(name, new ST::VariableName(type, decl, true, scope));
   }
 }
 
-void SymbolFactory::declare(PT::UsingDeclaration const *udecl)
+void SymbolFactory::declare(ST::Scope *, PT::UsingDeclaration const *udecl)
 {
-  Trace trace("SymbolFactory::declare(UsingDeclaration *)", Trace::SYMBOLLOOKUP);
-  if (my_language == NONE) return;
-  PT::Encoding const &name = PT::third(udecl)->encoded_name();
+  Trace trace("SymbolFactory::declare(UsingDeclaration)", Trace::SYMBOLLOOKUP);
+
+  // TODO: See Parser::using_declaration: this is very inefficient and redundant !
+  PT::Encoding const &name = udecl->name()->encoded_name();
   PT::Encoding alias;
   for (PT::Encoding::name_iterator i = name.begin_name();
        i != name.end_name();
@@ -644,6 +784,14 @@ void SymbolFactory::declare(PT::UsingDeclaration const *udecl)
   }
 }
 
+ST::SymbolSet SymbolFactory::lookup_template_parameter(PT::Encoding const &name)
+{
+  Trace trace("SymbolFactory::lookup_template_parameter", Trace::SYMBOLLOOKUP);
+  trace << name;
+  if (!my_template_parameters) return ST::SymbolSet();
+  else return my_template_parameters->find(name, ST::Scope::DEFAULT);
+}
+
 ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
 						PT::Node const *decl)
 {
@@ -651,7 +799,11 @@ ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
 
   ST::Scope *scope = my_scopes.top();
   ST::SymbolSet symbols = lookup(name, scope, ST::Scope::DECLARATION);
-  if (symbols.empty()) throw ST::Undefined(name, scope, decl);
+  if (symbols.empty())
+  {
+    std::cout << "!3" << std::endl;
+    throw ST::Undefined(name, scope, decl);
+  }
   ST::Symbol const *symbol = *symbols.begin();
   while (name.is_qualified()) name = name.get_symbol();
   scope = symbol->scope();
@@ -659,16 +811,19 @@ ST::Scope *SymbolFactory::lookup_scope_of_qname(PT::Encoding &name,
 }
 
 void SymbolFactory::declare_template_specialization(PT::Encoding const &name,
-						    PT::ClassSpec const *spec,
+						    PT::TemplateDeclaration const *decl,
 						    ST::Scope *scope)
 {
   Trace trace("SymbolFactory::declare_template_specialization", Trace::SYMBOLLOOKUP);
   // Find primary template and declare specialization.
   ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
   if (symbols.empty())
+  {
+    std::cout << "!4" << std::endl;
     throw ST::Undefined(name, scope);
+  }
   ST::ClassTemplateName const * templ = dynamic_cast<ST::ClassTemplateName const *>(*symbols.begin());
   if (!templ)
     throw ST::TypeError(name, (*symbols.begin())->type());
-  my_template_repository->declare(templ, spec);
+  my_template_repository->declare(templ, decl);
 }

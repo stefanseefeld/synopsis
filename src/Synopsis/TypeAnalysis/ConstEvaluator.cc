@@ -114,8 +114,8 @@ void ConstEvaluator::visit(PT::Identifier *node)
   Trace trace("ConstEvaluator::visit(Identifier)", Trace::TYPEANALYSIS);
   try
   {
-    PT::Encoding name = PT::Encoding::simple_name(node);
-    ST::SymbolSet symbols = my_scope->unqualified_lookup(name);
+    PT::Encoding name(node);
+    ST::SymbolSet symbols = my_scope->unqualified_lookup(name, ST::Scope::DEFAULT);
     ST::ConstName const *const_ = 0;
     if (symbols.size() == 1) 
       const_ = dynamic_cast<ST::ConstName const *>(*symbols.begin());
@@ -158,18 +158,18 @@ void ConstEvaluator::visit(PT::Name *node)
 void ConstEvaluator::visit(PT::FstyleCastExpr *node)
 {
   Trace trace("ConstEvaluator::visit(FstyleCastExpr)", Trace::TYPEANALYSIS);
-  my_valid = evaluate(third(node)->car(), my_value);
+  my_valid = evaluate(PT::nth<2>(node)->car(), my_value);
 }
 
 void ConstEvaluator::visit(PT::InfixExpr *node)
 {
   Trace trace("ConstEvaluator::visit(InfixExpr)", Trace::TYPEANALYSIS);
   long left, right;
-  if (!evaluate(first(node), left) ||
-      !evaluate(third(node), right))
+  if (!evaluate(PT::nth<0>(node), left) ||
+      !evaluate(PT::nth<2>(node), right))
     return;
 
-  PT::Node *op = PT::second(node);
+  PT::Node *op = PT::nth<1>(node);
   assert(op->is_atom() && op->length() <= 2);
   my_valid = true;
   if (op->length() == 1)
@@ -230,8 +230,10 @@ void ConstEvaluator::visit(PT::SizeofExpr *node)
   Trace trace("ConstEvaluator::visit(SizeofExpr)", Trace::TYPEANALYSIS);
   if (length(node->cdr()) == 3) // '(' typename ')'
   {
-    PT::Node *type_decl = PT::second(node->cdr());
-    PT::Encoding type = PT::second(type_decl)->encoded_type();
+    PT::Node *type_decl = PT::nth<1>(node->cdr());
+    assert(type_decl && !type_decl->is_atom());
+    
+    PT::Encoding type = PT::nth<1>(static_cast<PT::List *>(type_decl))->encoded_type();
     // FIXME: TBD
     long size = size_of_builtin_type(type.begin());
     if (size < 0) return;

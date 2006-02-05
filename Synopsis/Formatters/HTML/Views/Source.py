@@ -14,10 +14,10 @@ from Synopsis.Formatters.HTML.Tags import *
 import os, urllib
 
 link = None
-try:
-   link = Util._import("Synopsis.Parsers.Cxx.link")
-except ImportError:
-   print "Warning: unable to import link module. Continuing..."
+#try:
+#   link = Util._import("Synopsis.Parsers.Cxx.link")
+#except ImportError:
+#   print "Warning: unable to import link module. Continuing..."
 
 class Source(View):
    """A module for creating a view for each file with hyperlinked source"""

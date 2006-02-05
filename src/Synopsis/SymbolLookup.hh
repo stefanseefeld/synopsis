@@ -7,6 +7,7 @@
 #ifndef Synopsis_SymbolLookup_hh_
 #define Synopsis_SymbolLookup_hh_
 
+#include <Synopsis/Trace.hh>
 #include <Synopsis/SymbolTable.hh>
 
 namespace Synopsis
@@ -20,6 +21,9 @@ namespace Synopsis
 SymbolTable::SymbolSet lookup(PTree::Encoding const &name,
 			      SymbolTable::Scope const *scope,
 			      SymbolTable::Scope::LookupContext);
+
+SymbolTable::Symbol const *resolve_typedef(SymbolTable::Symbol const *symbol,
+					   PTree::Encoding &type);
 
 }
 

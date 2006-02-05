@@ -8,7 +8,7 @@
 #define Synopsis_SymbolTable_Scope_hh_
 
 #include <Synopsis/Exception.hh>
-#include <Synopsis/SymbolTable/Symbol.hh>
+#include <Synopsis/PTree.hh>
 #include <map>
 #include <set>
 
@@ -16,6 +16,12 @@ namespace Synopsis
 {
 namespace SymbolTable
 {
+class Symbol;
+class Scope;
+class ScopeVisitor;
+typedef std::set<Symbol const *> SymbolSet;
+typedef std::set<Scope const *> Scopes;
+
 struct TypeError : std::exception
 {
   TypeError(PTree::Encoding const &n, PTree::Encoding const &t)
@@ -50,10 +56,6 @@ struct MultiplyDefined : std::exception
   PTree::Node const * original;
 };
 
-typedef std::set<Symbol const *> SymbolSet;
-
-class ScopeVisitor;
-
 //. A Scope contains symbol definitions.
 class Scope
 {
@@ -74,8 +76,9 @@ public:
   static LookupContext const DEFAULT = 0x0;
   static LookupContext const SCOPE = 0x1; // lookup a scope, see [basic.lookup.qual]
   static LookupContext const USING = 0x2; // lookup in the context of a using directive
-  static LookupContext const ELABORATE = 0x4; // elaborate name lookup
+  static LookupContext const ELABORATED = 0x4; // elaborated name lookup
   static LookupContext const DECLARATION = 0x8; // see 3.4.3.2/6 [namespace.qual]
+  static LookupContext const TYPE = 0x10; // lookup a type, i.e. ignore non-types
 
   Scope() : my_refcount(1) {}
   Scope *ref() { ++my_refcount; return this;}
@@ -118,15 +121,24 @@ public:
 
   //. find the encoded name declared in this scope and 
   //. return a set of matching symbols.
-  SymbolSet find(PTree::Encoding const &, LookupContext) const throw();
+  virtual SymbolSet find(PTree::Encoding const &, LookupContext) const;
+  //. Return the name with which the given symbol was declared.
+  PTree::Encoding const &name(Symbol const *s) const;
   //. Remove the given symbol from the scope.
   //. s shall not be used after its removal.
   void remove(Symbol const *s);
 
+  SymbolSet 
+  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
+  SymbolSet 
+  qualified_lookup(PTree::Encoding const &, LookupContext) const;
+
   virtual SymbolSet unqualified_lookup(PTree::Encoding const &,
-				       LookupContext = DEFAULT) const = 0;
+				       LookupContext,
+				       Scopes &) const = 0;
   virtual SymbolSet qualified_lookup(PTree::Encoding const &,
-				     LookupContext = DEFAULT) const;
+				     LookupContext,
+				     Scopes &) const;
 
 protected:
 
@@ -155,6 +167,29 @@ inline Scope *Scope::global_scope()
   while (Scope *outer = scope->outer_scope())
     scope = outer;
   return scope;
+}
+
+inline PTree::Encoding const &Scope::name(Symbol const *s) const
+{
+  for (SymbolTable::const_iterator i = my_symbols.begin();
+       i != my_symbols.end();
+       ++i)
+    if (i->second == s) return i->first;
+  throw InternalError("Symbol unknown in this scope.");
+}
+
+inline SymbolSet 
+Scope::unqualified_lookup(PTree::Encoding const &name, LookupContext context) const
+{
+  Scopes searched;
+  return unqualified_lookup(name, context, searched);
+}
+
+inline SymbolSet 
+Scope::qualified_lookup(PTree::Encoding const &name, LookupContext context) const
+{
+  Scopes searched;
+  return qualified_lookup(name, context, searched);
 }
 
 }

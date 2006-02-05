@@ -9,6 +9,7 @@
 
 #include <Synopsis/TypeAnalysis/Visitor.hh>
 #include <Synopsis/TypeAnalysis/Type.hh>
+#include <Synopsis/TypeAnalysis/TypeRepository.hh>
 #include <ostream>
 
 namespace Synopsis
@@ -39,6 +40,8 @@ private:
   virtual void visit(Function *);
   virtual void visit(PointerToMember *);
 
+  virtual void visit(Dependent *);
+
   std::ostream &my_os;
 };
 
@@ -46,6 +49,16 @@ inline void display(Type const *type, std::ostream &os)
 {
   Display d(os);
   d.display(type);
+}
+
+inline void display(TypeRepository const *repo, std::ostream &os)
+{
+  for (TypeRepository::siterator i = repo->sbegin(); i != repo->send(); ++i)
+  {
+//     os << i->first.unmangled() << ' ';
+    display(i->second, os);
+    os << '\n';
+  }
 }
 
 }

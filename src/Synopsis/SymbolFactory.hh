@@ -32,29 +32,47 @@ public:
 
   SymbolTable::Scope *current_scope() { return my_scopes.top();}
 
-  void enter_scope(PTree::NamespaceSpec const *);
-  void enter_scope(PTree::ClassSpec const *);
-  void enter_scope(PTree::Node const *);
-  void enter_scope(PTree::FunctionDefinition const *);
-  void enter_scope(PTree::TemplateDecl const *);
-  void enter_scope(PTree::Block const *);
+  void enter_scope(SymbolTable::Scope *);
+  void enter_scope(SymbolTable::Scope *, PTree::NamespaceSpec const *);
+  void enter_class(SymbolTable::Scope *scope,
+		   PTree::ClassSpec const *spec,
+		   std::vector<SymbolTable::Symbol const *> const &bases);
+  void enter_scope(SymbolTable::Scope *, PTree::Node const *);
+  void enter_scope(SymbolTable::Scope *, PTree::FunctionDefinition const *);
+  void enter_scope(SymbolTable::Scope *, PTree::List const *);
+  void enter_scope(SymbolTable::Scope *, PTree::TemplateParameterList const *);
+  void enter_scope(SymbolTable::Scope *, PTree::Block const *);
   void leave_scope();
 
-  void declare(PTree::Declaration const *);
-  void declare(PTree::Typedef const *);
+  void declare_typedef(PTree::SimpleDeclaration *, SymbolTable::Symbol const *);
+  void declare(SymbolTable::Scope *, PTree::SimpleDeclaration *);
+  void declare_specialization(SymbolTable::Scope *, PTree::SimpleDeclaration *);
+  void declare(SymbolTable::Scope *, PTree::FunctionDefinition *);
+  void declare_specialization(SymbolTable::Scope *, PTree::FunctionDefinition *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
-  void declare(PTree::EnumSpec const *);
+  void declare(SymbolTable::Scope *, PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE
-  void declare(PTree::NamespaceSpec const *);
+  void declare(SymbolTable::Scope *, PTree::NamespaceSpec const *);
   //. Declare a class.
   //. If this is a template specialization declare it with
   //. the template repository, else declare it here.
-  void declare(PTree::ClassSpec const *);
-  void declare(PTree::TemplateDecl const *);
-  void declare(PTree::TypeParameter const *);
-  void declare(PTree::UsingDirective const *);
-  void declare(PTree::ParameterDeclaration const *);
-  void declare(PTree::UsingDeclaration const *);
+  void declare(SymbolTable::Scope *, PTree::ClassSpec const *);
+  //. Declare a class-name from an elaborated-type-specifier.
+  void declare(SymbolTable::Scope *, PTree::ElaboratedTypeSpec const *);
+  void declare(SymbolTable::Scope *, PTree::TypeParameter const *);
+  void declare(SymbolTable::Scope *, PTree::UsingDirective const *);
+  void declare(SymbolTable::Scope *, PTree::ParameterDeclaration const *);
+  void declare(SymbolTable::Scope *, PTree::UsingDeclaration const *);
+
+  //. During the parsing of a template declaration
+  //. (specifically, a partial template specialization), we need to lookup
+  //. symbols in the template parameter scope, before it got integrated
+  //. into a class scope. Consider:
+  //. template <typename T> struct Container<T *> ...
+  //. where we need to lookup 'T' while parsing the template-id 'Container<T *>'.
+  //. For now let the parser explicitely look into the template parameter scope,
+  //. but eventually redesign this.
+  SymbolTable::SymbolSet lookup_template_parameter(PTree::Encoding const &);
 
 private:
   typedef std::stack<SymbolTable::Scope *> Scopes;
@@ -65,10 +83,13 @@ private:
   SymbolTable::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
 
   void declare_template_specialization(PTree::Encoding const &,
-				       PTree::ClassSpec const *,
+				       PTree::TemplateDeclaration const *,
 				       SymbolTable::Scope *);
 
+  //. The language / dialect we are working in. The behavior may depend on it.
+  //. In particular, 'NONE' means do nothing.
   Language                      my_language;
+  //. The current scope stack.
   Scopes                        my_scopes;
   //. When parsing a function definition the declarator is seen first,
   //. and thus a prototype is created to hold the parameters.

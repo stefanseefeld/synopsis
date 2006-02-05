@@ -576,13 +576,13 @@ class Function (Declaration):
    Note that function names are stored in mangled form to allow overriding.
    Formatters should use the realname() method to extract the unmangled name."""
 
-   def __init__(self, file, line, language, type, premod, returnType, name, realname):
+   def __init__(self, file, line, language, type, premod, returnType, postmod, name, realname):
       Declaration.__init__(self, file, line, language, type, name)
       self.__realname = realname
       self.__premodifier = premod
       self.__returnType = returnType
       self.__parameters = []
-      self.__postmodifier = []
+      self.__postmodifier = postmod
       self.__exceptions = []
       self.__template = None
    def premodifier(self):
@@ -623,8 +623,8 @@ class Operation (Function):
    """Operation class. An operation is related to a Function and is currently
    identical.
    """
-   def __init__(self, file, line, language, type, premod, returnType, name, realname):
-      Function.__init__(self, file, line, language, type, premod, returnType, name, realname)
+   def __init__(self, file, line, language, type, premod, returnType, postmod, name, realname):
+      Function.__init__(self, file, line, language, type, premod, returnType, postmod, name, realname)
    def accept(self, visitor): visitor.visitOperation(self)
 
 class CommentTag:

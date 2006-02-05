@@ -101,16 +101,16 @@ public:
 
   Function create_function(const SourceFile &file, int line,
  			   const std::string &type, const Modifiers &pre,
- 			   const Type &ret,
+ 			   const Type &ret, const Modifiers &post,
 			   const ScopedName &name, const std::string &realname)
-  { return create<Function>("Function", Python::Tuple(file, line, my_lang, type, pre, ret,
- 					      name, realname));}
+  { return create<Function>("Function", Python::Tuple(file, line, my_lang, type, pre, ret, post,
+						      name, realname));}
 
   Operation create_operation(const SourceFile &file, int line,
 			     const std::string &type, const Modifiers &pre,
-			     const Type &ret,
+			     const Type &ret, const Modifiers &post,
 			     const ScopedName &name, const std::string &realname)
-  { return create<Operation>("Operation", Python::Tuple(file, line, my_lang, type, pre, ret,
+  { return create<Operation>("Operation", Python::Tuple(file, line, my_lang, type, pre, ret, post,
 							name, realname));}
 
   SourceFile create_source_file(const std::string &name,

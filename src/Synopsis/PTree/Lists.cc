@@ -10,65 +10,28 @@
 #include <Synopsis/PTree/Encoding.hh>
 #include <iostream>
 
-using namespace Synopsis;
-using namespace PTree;
+namespace Synopsis
+{
+namespace PTree
+{
 
-Declarator::Declarator(Node *n)
-  : List(n ? n->car() : 0, n ? n->cdr() : 0),
-    my_declared_name(0),
-    my_comments(0)
+DeclSpec::DeclSpec(List *l, Encoding const &type,
+		   StorageClass storage, unsigned int flags, bool decl, bool def)
+  : List(l->car(), l->cdr()),
+    my_type(type),
+    my_storage_class(storage),
+    my_is_friend(flags & FRIEND),
+    my_is_typedef(flags & TYPEDEF),
+    my_declares_class_or_enum(decl),
+    my_defines_class_or_enum(def)
 {
 }
 
-Declarator::Declarator(Node *list, Encoding const &t, Encoding const &n, Node *dname)
+Declarator::Declarator(List *list, Encoding const &t, Encoding const &n, List *comment)
   : List(list->car(), list->cdr()),
     my_type(t),
     my_name(n),
-    my_declared_name(dname),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Encoding const &t, Encoding const &n, Node *dname)
-  : List(0, 0),
-    my_type(t),
-    my_name(n),
-    my_declared_name(dname),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Node *p, Node *q, Encoding const &t, Encoding const &n, Node *dname)
-  : List(p, q),
-    my_type(t),
-    my_name(n),
-    my_declared_name(dname),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Node *list, Encoding const &t)
-  : List(list->car(), list->cdr()),
-    my_type(t),
-    my_declared_name(0),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Encoding const &t)
-  : List(0, 0),
-    my_type(t),
-    my_declared_name(0),
-    my_comments(0)
-{
-}
-
-Declarator::Declarator(Declarator *decl, Node *p, Node *q)
-  : List(p, q),
-    my_type(decl->my_type),
-    my_name(decl->my_name),
-    my_declared_name(decl->my_declared_name),
-    my_comments(0)
+    my_comments(comment)
 {
 }
 
@@ -80,8 +43,8 @@ Node *Declarator::initializer()
     if (*assign == '=')
       return tail(this, l - 1); // initializer-clause
   if (Node *expr = nth(this, l - 1))
-    if (!expr->is_atom() && first(expr) && *first(expr) == '(')
-      return second(expr); // expression-list
+    if (!expr->is_atom() && expr->car() && *expr->car() == '(')
+      return nth<1>(static_cast<List *>(expr)); // expression-list
   return 0;
 }
 
@@ -91,26 +54,41 @@ Name::Name(Node *p, const Encoding &name)
 {
 }
 
-FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, Node *q)
+FstyleCastExpr::FstyleCastExpr(const Encoding &type, Node *p, List *q)
   : List(p, q),
     my_type(type)
 {
 }
 
-ClassSpec::ClassSpec(Node *p, Node *q, Node *c)
-  : List(p, q),
-    my_comments(c)
-{
-}
-
-ClassSpec::ClassSpec(const Encoding &name, Node *car, Node *cdr, Node *c)
+ClassSpec::ClassSpec(const Encoding &name, Node *car, List *cdr, List *c)
   : List(car, cdr),
     my_name(name),
     my_comments(c)
 {
 }
 
-ClassBody *ClassSpec::body() 
+namespace
 {
-  return dynamic_cast<ClassBody *>(PTree::nth(this, 3));
+class NameFinder : private Visitor
+{
+public:
+  Encoding name(Node const *name)
+  {
+    const_cast<Node *>(name)->accept(this);
+    return my_encoding;
+  }
+private:
+  virtual void visit(Identifier *id) { my_encoding = Encoding(id);}
+  virtual void visit(Name *name) { my_encoding = name->encoded_name();}
+  Encoding my_encoding;
+};
+}
+
+Encoding name(Node const *node)
+{
+  NameFinder finder;
+  return finder.name(node);
+}
+
+}
 }

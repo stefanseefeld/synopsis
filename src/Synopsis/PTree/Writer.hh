@@ -18,27 +18,32 @@ namespace PTree
 class Writer : private Visitor
 {
 public:
-  Writer(std::ostream &os);
+  Writer(std::ostream &os) : my_os(os) {}
 
-  unsigned long write(Node const *);
+  void write(Node const *n) { const_cast<Node *>(n)->accept(this);}
+//   unsigned long write(Node const *);
 
 private:
 
-  virtual void visit(Atom *);
-  virtual void visit(List *);
-  virtual void visit(Brace *);
-
-  void newline();
+  virtual void visit(Atom *a) { my_os << string(a);}
+  virtual void visit(List *l)
+  {
+    while(l)
+    {
+      Node *car = l->car();
+      if(car) car->accept(this);
+      my_os.put(' ');
+      l = l->cdr();
+    }
+  }
 
   std::ostream &my_os;
-  size_t        my_indent;
-  unsigned long my_lines;
 };
 
 inline std::string reify(Node const *p)
 {
   if (!p) return "";
-  else if (p->is_atom()) return std::string(p->position(), p->length());
+  else if (p->is_atom()) return string(static_cast<Atom const *>(p));
 
   std::ostringstream oss;
   Writer writer(oss);

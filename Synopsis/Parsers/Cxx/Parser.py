@@ -1,27 +1,23 @@
 #
-# Copyright (C) 2003 Stefan Seefeld
+# Copyright (C) 2005 Stefan Seefeld
 # All rights reserved.
 # Licensed to the public under the terms of the GNU LGPL (>= 2),
 # see the file COPYING for details.
 #
 
-"""Parser for C++ using OpenC++ for low-level parsing.
-This parser is written entirely in C++, and compiled into shared libraries for
-use by python.
-@see C++/Synopsis
-@see C++/SWalker
+"""C++ Parser
 """
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
-import occ
+import ParserImpl
 
 import os, os.path, tempfile
 
 class Parser(Processor):
 
    preprocess = Parameter(True, 'whether or not to preprocess the input')
-   emulate_compiler = Parameter('', 'a compiler to emulate')
+   emulate_compiler = Parameter('c++', 'a compiler to emulate')
    cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
    main_file_only = Parameter(True, 'should only main file be processed')
    base_path = Parameter('', 'path prefix to strip off of the file names')
@@ -41,8 +37,7 @@ class Parser(Processor):
                           flags = self.cppflags,
                           emulate_compiler = self.emulate_compiler)
 
-
-
+      base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
 
       for file in self.input:
 
@@ -62,26 +57,16 @@ class Parser(Processor):
                                    debug = self.debug,
                                    profile = self.profile)
 
-         self.ast = occ.parse(self.ast, ii_file,
-                              os.path.abspath(file),
-                              self.main_file_only,
-                              os.path.abspath(self.base_path) + os.sep,
-                              self.syntax_prefix,
-                              self.xref_prefix,
-                              self.verbose,
-                              self.debug,
-                              self.profile)
+         self.ast = ParserImpl.parse(self.ast, ii_file,
+                                     os.path.abspath(file),
+                                     self.main_file_only,
+                                     base_path,
+                                     self.syntax_prefix,
+                                     self.xref_prefix,
+                                     self.verbose,
+                                     self.debug,
+                                     self.profile)
 
          if self.preprocess: os.remove(ii_file)
 
       return self.output_and_return_ast()
-
-   def dump(self, **kwds):
-      """Run the occ directly without ast intervention."""
-
-      input = kwds.get('input', self.input)
-      verbose = kwds.get('verbose', self.verbose)
-      debug = kwds.get('debug', self.debug)
-
-      for file in input:
-         occ.dump(file, verbose, debug)
