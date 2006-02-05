@@ -7,6 +7,7 @@
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolTable/Scope.hh>
+#include <Synopsis/SymbolTable/Symbol.hh>
 #include <Synopsis/Trace.hh>
 #include <functional>
 
@@ -40,7 +41,10 @@ Scope *Scope::find_scope(PTree::Encoding const &name, Symbol const *symbol) cons
     decl = tn->ptree();
     // test that 'decl' is a ClassSpec
   }
-  // TODO: test for ClassTemplateName ...
+  else if (ClassTemplateName const *ctn = dynamic_cast<ClassTemplateName const *>(symbol))
+  {
+    decl = ctn->ptree();
+  }
   if (!decl)
   {
     // the symbol was found but doesn't refer to a scope
@@ -57,10 +61,10 @@ void Scope::remove_scope(PTree::Node const *decl)
   my_scopes.erase(i);
 }
 
-SymbolSet Scope::find(Encoding const &name, LookupContext context) const throw()
+SymbolSet Scope::find(Encoding const &name, LookupContext context) const
 {
   Trace trace("Scope::find", Trace::SYMBOLLOOKUP);
-  trace << name;
+  trace << name << ' ' << context;
   SymbolTable::const_iterator l = my_symbols.lower_bound(name);
   SymbolTable::const_iterator u = my_symbols.upper_bound(name);
   SymbolSet symbols;
@@ -75,11 +79,17 @@ SymbolSet Scope::find(Encoding const &name, LookupContext context) const throw()
 	symbols.insert(l->second);
     }
   // [basic.lookup.elab]
-  else if (context & ELABORATE)
+  else if (context & ELABORATED)
     for (; l != u; ++l)
     {
       if ((dynamic_cast<ClassName const *>(l->second)) ||
 	  (dynamic_cast<EnumName const *>(l->second)))
+	symbols.insert(l->second);
+    }
+  else if (context & TYPE)
+    for (; l != u; ++l)
+    {
+      if (dynamic_cast<TypeName const *>(l->second))
 	symbols.insert(l->second);
     }
   // [basic.scope.hiding]
@@ -90,12 +100,14 @@ SymbolSet Scope::find(Encoding const &name, LookupContext context) const throw()
     TypeName const *type_name = 0;
     for (; l != u; ++l)
     {
+      trace << "considering " << typeid(*l->second).name();
       TypeName const *type = dynamic_cast<TypeName const *>(l->second);
       if (!type) symbols.insert(l->second);
       else type_name = type;
     }
     if (!symbols.size() && type_name) symbols.insert(type_name);
   }
+  trace << "found " << symbols.size() << " matches";
   return symbols;
 }
 
@@ -115,7 +127,8 @@ void Scope::remove(Symbol const *symbol)
 
 SymbolSet 
 Scope::qualified_lookup(PTree::Encoding const &name,
-			LookupContext context) const
+			LookupContext context,
+			Scopes &scopes) const
 {
   Trace trace("Scope::qualified_lookup", Trace::SYMBOLLOOKUP, name);
   return find(name, context);

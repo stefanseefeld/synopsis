@@ -51,8 +51,6 @@ int main(int argc, char **argv)
   {
     if (debug) Trace::enable(Trace::ALL);
 
-    PTree::Encoding::do_init_static();
-
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);

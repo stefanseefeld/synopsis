@@ -1,5 +1,5 @@
 dnl
-dnl Copyright (C) 2003 Stefan Seefeld
+dnl Copyright (C) 2005 Stefan Seefeld
 dnl All rights reserved.
 dnl Licensed to the public under the terms of the GNU LGPL (>= 2),
 dnl see the file COPYING for details.
@@ -9,13 +9,13 @@ dnl ------------------------------------------------------------------
 dnl Autoconf initialization
 dnl ------------------------------------------------------------------
 AC_PREREQ(2.56)
-AC_REVISION($Revision: 1.9 $)
-AC_INIT(occ, 0.8, synopsis-devel@fresco.org)
+AC_REVISION($Revision: 1.4 $)
+AC_INIT(Synopsis, 1.0, synopsis-devel@fresco.org)
 
 AC_ARG_WITH(python, 
   [  --with-python=PATH      specify the Python interpreter],
-  PYTHON="$with_python",
-  PYTHON="python"
+  [PYTHON="$with_python"],
+  [PYTHON="python"]
 )
 
 AC_ARG_WITH(syn-cxx,
@@ -85,13 +85,6 @@ esac
 AC_SUBST(LIBEXT)
 AC_SUBST(LDSHARED)
 
-topdir=`$PYTHON -c "from os.path import *; print normpath('$srcdir/../../..')"`
-AC_SUBST(topdir)
-
-AC_CONFIG_FILES([Makefile 
-                 synopsis.py])
-
-mkdir -p occ
-mkdir -p syn
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

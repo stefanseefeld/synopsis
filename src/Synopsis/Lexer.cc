@@ -7,6 +7,7 @@
 
 #include "Synopsis/Lexer.hh"
 #include "Synopsis/Buffer.hh"
+#include "Synopsis/process_pragma.hh"
 #include <iostream>
 #include <cassert>
 
@@ -54,8 +55,10 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   {
     my_keywords["bool"] = Token::BOOLEAN;
     my_keywords["catch"] = Token::CATCH;
+    my_keywords["const_cast"] = Token::CONST_CAST;
     my_keywords["class"] = Token::CLASS;
     my_keywords["delete"] = Token::DELETE;
+    my_keywords["dynamic_cast"] = Token::DYNAMIC_CAST;
     my_keywords["explicit"] = Token::EXPLICIT;
     my_keywords["export"] = Token::EXPORT;
     my_keywords["false"] = Token::Constant;
@@ -63,10 +66,12 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
     my_keywords["mutable"] = Token::MUTABLE;
     my_keywords["namespace"] = Token::NAMESPACE;
     my_keywords["new"] = Token::NEW;
+    my_keywords["reinterpret_cast"] = Token::REINTERPRET_CAST;
     my_keywords["operator"] = Token::OPERATOR;
     my_keywords["private"] = Token::PRIVATE;
     my_keywords["protected"] = Token::PROTECTED;
     my_keywords["public"] = Token::PUBLIC;
+    my_keywords["static_cast"] = Token::STATIC_CAST;
     my_keywords["template"] = Token::TEMPLATE;
     my_keywords["this"] = Token::THIS;
     my_keywords["throw"] = Token::THROW;
@@ -122,18 +127,12 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   }
 }
 
-Token::Type Lexer::get_token(Token &t)
+Token Lexer::get_token()
 {
-  if (!fill(1)) return Token::BadToken;
-  t = my_tokens.front();
+  if (!fill(1)) return Token();
+  Token token = my_tokens.front();
   my_tokens.pop();
-  return t.type;
-}
-
-Token::Type Lexer::look_ahead(size_t offset)
-{
-  if (!fill(offset + 1)) return Token::BadToken;
-  return my_tokens.at(offset).type;
+  return token;
 }
 
 Token::Type Lexer::look_ahead(size_t offset, Token &t)
@@ -269,11 +268,27 @@ void Lexer::skip_paren()
   } while(i > 0);
 }
 
-void Lexer::skip_line()
+void Lexer::process_directive()
 {
-  char c;
-  do { c = my_buffer->get();}
-  while(c != '\n' && c != '\0');
+  char c = ' ';
+  while(is_blank(c)) c = my_buffer->get();
+  if (is_letter(c))
+  {
+    unsigned long top = my_buffer->position();
+    char const *ptr = my_buffer->ptr(top);
+    do { c = my_buffer->get();}
+    while(is_letter(c) || is_digit(c));
+    size_t length = static_cast<size_t>(my_buffer->position() - top);
+    if (length == 6 && strncmp(ptr, "pragma", 6) == 0)
+    {
+      while(c != '\n' && c != '\0') c = my_buffer->get();
+      length = static_cast<size_t>(my_buffer->position() - top);
+      process_pragma(std::string(ptr + 6, length - 6));
+      return;
+    }
+  }
+  else ; // FIXME: issue a parse error: no directive found.
+  while(c != '\n' && c != '\0') c = my_buffer->get();
 }
 
 /* You can have the following :
@@ -378,7 +393,7 @@ Token::Type Lexer::read_line()
   else if(c == '\n') return '\n';
   else if(c == '#' && my_token.type == '\n')
   {
-    skip_line();
+    process_directive();
     return '\n';
   }
   else if(c == '\'' || c == '"')

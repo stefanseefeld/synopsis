@@ -57,7 +57,7 @@ void Writer::visit(Brace *l)
 {
   my_os << '{';
   ++my_indent;
-  Node *p = cadr(l);
+  Node *p = nth<1>(l);
   while(p)
   {
     if(p->is_atom())

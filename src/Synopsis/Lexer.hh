@@ -19,7 +19,7 @@ namespace Synopsis
 
 class Buffer;
 
-//. a Lexer reads tokens from a stream.
+//. A Lexer reads tokens from a stream. It supports backtracking.
 class Lexer
 {
 public:
@@ -37,8 +37,11 @@ public:
   //. Construct a Lexer on the given Buffer using the given
   //. token set. The default token set is CXX with GCC extensions.
   Lexer(Buffer *, int tokenset = CXX|GCC);
-  Token::Type get_token(Token &);
-  Token::Type look_ahead(size_t);
+  Token get_token();
+  Token::Type look_ahead(size_t offset = 0);
+
+  //. This convenience method only exists for debugging purposes
+  //. so users can write out the next token instead of just its type.
   Token::Type look_ahead(size_t, Token &);
 
   const char *save();
@@ -81,8 +84,12 @@ private:
 
   //. skip till end of paren
   void skip_paren();
-  //. skip till end of line
-  void skip_line();
+  //. Handle preprocessing directive. While the buffer is assumed
+  //. to have been preprocessed, some directives may remain (notably
+  //. line and pragma).
+  //. This method may interpret pragmas, and will always process the
+  //. complete line.
+  void process_directive();
   //. skip __attribute__(...), ___asm__(...), ...
   void skip_attribute();
   //. skip __extension__(...).
@@ -110,6 +117,12 @@ private:
   Token      my_token;
   Comments   my_comments;
 };
+
+inline Token::Type Lexer::look_ahead(size_t offset)
+{
+  if (!fill(offset + 1)) return Token::BadToken;
+  return my_tokens.at(offset).type;
+}
 
 inline bool is_blank(char c)
 {

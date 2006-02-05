@@ -46,6 +46,7 @@ List of options:
   -V, --version          print version info and exit
   -v  --verbose          operate verbosely
   -d  --debug            operate in debug mode
+  -P, --profile          operate in profile mode
   -o, --output           output file / directory
   -p, --parser           select a parser
   -Wp,<arg>[,<arg>...]   send args to the parser
@@ -75,10 +76,10 @@ def get_opt(argv):
    javadoc = False
 
    opts, args = getopt.getopt(argv,
-                              'o:p:l:f:I:D:W:jvhVd',
+                              'o:p:l:f:I:D:W:jvhVdP',
                               ['output=',
                                'parser=', 'linker=', 'formatter=',
-                               'version', 'help', 'verbose', 'debug',
+                               'version', 'help', 'verbose', 'debug', 'profile',
                                'javadoc'])
 
    for o, a in opts:
@@ -91,6 +92,9 @@ def get_opt(argv):
 
       if o == '-d' or o == '--debug':
          options['debug'] = True
+
+      elif o == '-P' or o == '--profile':
+         options['profile'] = True
 
       elif o == '-o' or o == '--output':
          options['output'] = a

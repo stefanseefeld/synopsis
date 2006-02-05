@@ -30,6 +30,7 @@ private:
   virtual void visit(SymbolTable::TypedefName const *);
   virtual void visit(SymbolTable::ClassName const *);
   virtual void visit(SymbolTable::EnumName const *);
+  virtual void visit(SymbolTable::DependentName const *);
   virtual void visit(SymbolTable::ClassTemplateName const *);
   virtual void visit(SymbolTable::FunctionName const *);
   virtual void visit(SymbolTable::FunctionTemplateName const *);
@@ -77,7 +78,7 @@ inline void display(SymbolTable::SymbolSet const &s, std::ostream &os)
 {
   SymbolDisplay sd(os, 0);
   for (SymbolTable::SymbolSet::const_iterator i = s.begin(); i != s.end(); ++i)
-    sd.display("", *i);
+    sd.display(PTree::Encoding(), *i);
 }
 
 }

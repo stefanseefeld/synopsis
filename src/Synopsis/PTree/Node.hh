@@ -15,108 +15,90 @@
 #include <Synopsis/Token.hh>
 #include <ostream>
 #include <iterator>
+#include <stdexcept>
 
 namespace Synopsis
 {
 namespace PTree
 {
 
+class List;
+
+//. Abstract base class for parse trees. Its interface is minimal
+//. to allow parse tree traversal with type recovery using visitors.
+//. A node is either an atom, holding a single token, or a list,
+//. similar to lisp's cons cell, referring to another node in its 'car'
+//. member, and the next cons cell in its 'cdr' member.
 class Node : public LightObject 
 {
 public:
   virtual ~Node() {}
   virtual bool is_atom() const = 0;
+  virtual char const *position() const = 0;
+  virtual size_t length() const = 0;
+  virtual Node *car() const = 0;
+  virtual List *cdr() const = 0;
   virtual void accept(Visitor *visitor) = 0;
 
-  //. return the start address of this Ptree in the buffer
-  const char *begin() const;
-  //. return the one-past-the-end address of this Ptree in the buffer
-  const char *end() const;
-
-  const char *position() const { return my_data.leaf.position;}
-  size_t length() const { return my_data.leaf.length;}
-
-  const Node *car() const { return my_data.nonleaf.child;}
-  Node *car() { return my_data.nonleaf.child;}
-  const Node *cdr() const { return my_data.nonleaf.next;}
-  Node *cdr() { return my_data.nonleaf.next;}
-  void set_car(Node *p) { my_data.nonleaf.child = p;}
-  void set_cdr(Node *p) { my_data.nonleaf.next = p;}
-
+  // FIXME: push these down to appropriate subclasses
   virtual Encoding encoded_type() const { return Encoding();}
   virtual Encoding encoded_name() const { return Encoding();}
 
-protected:
-  //. used by Atom
-  Node(const char *ptr, size_t len);
-  //. used by List
-  Node(Node *p, Node *q);
-
-private:
-  union 
-  {
-    struct 
-    {
-      Node *child;
-      Node *next;
-    } nonleaf;
-    struct 
-    {
-      const char* position;
-      int  length;
-    } leaf;
-  } my_data;
+  //. Return the start address of this Ptree in the buffer.
+  virtual char const *begin() const = 0;
+  //. Return the one-past-the-end address of this Ptree in the buffer.
+  virtual char const *end() const = 0;
 };
 
-class Iterator : public LightObject 
-{
-public:
-  Iterator(Node *p) { ptree = p;}
-  Node *operator () () { return pop();}
-  Node *pop();
-  bool next(Node *&);
-  void reset(Node *p) { ptree = p;}
-
-  Node *get() { return ptree ? ptree->car() : 0;}
-  Node *operator *() { return get();}
-  Node *operator ++() { pop(); return get();}
-  Node *operator ++(int) { return pop();}
-  bool empty() { return ptree == 0;}
-private:
-  Node *ptree;
-};
-
-class Array : public LightObject 
-{
-public:
-  Array(size_t = 8);
-  size_t number() { return num;}
-  Node *&operator [] (size_t index) { return ref(index);}
-  Node *&ref(size_t index);
-  void append(Node *);
-  void clear() { num = 0;}
-  Node *all();
-private:
-  size_t num, size;
-  Node **array;
-  Node *default_buf[8];
-};
-
+//. An Atom holds a single token from the input buffer.
 class Atom : public Node
 {
 public:
-  Atom(const char *p, size_t l) : Node(p, l) {}
-  Atom(const Token &t) : Node(t.ptr, t.length) {}
-  bool is_atom() const { return true;}
+  Atom(Token const &t) : my_position(t.ptr), my_length(t.length) {}
+  Atom(char const *p, size_t l) : my_position(p), my_length(l) {}
+  virtual bool is_atom() const { return true;}
+  virtual char const *position() const { return my_position;}
+  virtual size_t length() const { return my_length;}
+  virtual Node *car() const { throw std::runtime_error("not a list");}
+  virtual List *cdr() const { throw std::runtime_error("not a list");}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  virtual char const *begin() const { return position();}
+  virtual char const *end() const { return position() + length();}
+private:
+  char const *my_position;
+  size_t      my_length;
 };
 
+//. A List contains a node and a list.
 class List : public Node
 {
 public:
-  List(Node *p, Node *q) : Node(p, q) {}
-  bool is_atom() const { return false;}
+  List(Node *car, List *cdr) : my_car(car), my_cdr(cdr) {}
+  virtual bool is_atom() const { return false;}
+  virtual char const *position() const { throw std::runtime_error("not an atom");}
+  virtual size_t length() const { throw std::runtime_error("not an atom");}
+  virtual Node *car() const { return my_car;}
+  virtual List *cdr() const { return my_cdr;}
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
+  virtual char const *begin() const
+  {
+    char const *b = my_car ? my_car->begin() : 0;
+    if (!b && my_cdr) b = my_cdr->begin();
+    return b;
+  }
+  virtual char const *end() const 
+  {
+    char const *e = my_cdr ? my_cdr->end() : 0;
+    if (!e && my_car) e = my_car->end();
+    return e;
+  }
+
+  void set_car(Node *car) { my_car = car;}
+  void set_cdr(List *cdr) { my_cdr = cdr;}
+
+private:
+  Node *my_car;
+  List *my_cdr;
 };
 
 }

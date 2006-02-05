@@ -81,8 +81,12 @@ class config(build_ext):
             syn_cxx = '%s/src'%os.path.abspath(self.build_ctemp)    
 
         for ext in self.extensions:
-            self.config(ext, self.build_temp, self.build_lib,
-                        '--with-syn-cxx="%s"'%syn_cxx)
+            if not self.rpath:
+                self.config(ext, self.build_temp, self.build_lib,
+                            '--with-syn-cxx=%s'%syn_cxx)
+            else:
+                self.config(ext, self.build_temp, self.build_lib,
+                            '--with-syn-cxx=%s LDFLAGS=-Wl,-rpath,%s'%(syn_cxx, self.rpath[0]))
 
         self.config('tests', self.build_temp, self.build_lib,
                     '--with-syn-cxx="%s"'%syn_cxx)
@@ -131,5 +135,10 @@ class config(build_ext):
             command += ' --with-boost-prefix="%s"'%self.with_boost_prefix
         command += ' %s'%args
         self.announce(command)
+        # Work around a hack in distutils.spawn by an even more evil hack:
+        # on NT, the whole command will get quoted, so we need to escape our own
+        # quoting marks.
+        if os.name == 'nt':
+            command = command.replace('"', '\\"')
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
         os.chdir(cwd)

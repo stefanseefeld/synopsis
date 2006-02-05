@@ -1,6 +1,5 @@
 //
-// Copyright (C) 1997 Shigeru Chiba
-// Copyright (C) 2000 Stefan Seefeld
+// Copyright (C) 2005 Stefan Seefeld
 // All rights reserved.
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
@@ -9,23 +8,16 @@
 #define Synopsis_Parser_hh_
 
 #include <Synopsis/PTree.hh>
+#include <Synopsis/Lexer.hh>
+#include <Synopsis/Token.hh>
 #include <Synopsis/SymbolFactory.hh>
 #include <vector>
+#include <stack>
 
 namespace Synopsis
 {
 
-class Lexer;
-class Token;
-
-//. C++ Parser
-//.
-//. This parser is a LL(k) parser with ad hoc rules such as
-//. backtracking.
-//.
-//. <name>() is the grammer rule for a non-terminal <name>.
-//. opt_<name>() is the grammer rule for an optional non-terminal <name>.
-//. is_<name>() looks ahead and returns true if the next symbol is <name>.
+//. Recursive-descent C/C++ Parser.
 class Parser
 {
 public:
@@ -54,222 +46,518 @@ public:
   PTree::Node *parse();
 
 private:
-  enum DeclKind { kDeclarator, kArgDeclarator, kCastDeclarator };
-  enum TemplateDeclKind { tdk_unknown, tdk_decl, tdk_instantiation, 
-			  tdk_specialization, num_tdks };
+  enum DeclaratorKind { ABSTRACT = 0x1, NAMED = 0x2, EITHER = 0x3};
+
+  typedef std::vector<PTree::TemplateParameterList *> TemplateParameterListSeq;
+
+  struct Tentative;
+  friend struct Tentative;
 
   struct ScopeGuard;
   friend struct ScopeGuard;
 
-  //. A StatusGuard manages a tentative parse.
-  //. All actions invoked after its instantiation
-  //. will be rolled back in the destructor unless
-  //. 'commit' has been called before.
-  class StatusGuard
-  {
-  public:
-    StatusGuard(Parser &);
-    ~StatusGuard();
-    void commit() { my_committed = true;}
+  //. Issue an error message, associated with the current position
+  //. in the buffer.
+  bool error(std::string const & = "");
+  //. Require the next token to be token, else emitting an error message.
+  bool require(char token);
+  bool require(Token::Type token, std::string const &name);
+  //. Require node to be non-zero, else emitting an error message.
+  bool require(PTree::Node *node, std::string const &name);
+  bool require(PTree::Node *node, char token);
 
-  private:
-    Lexer &                      my_lexer;
-    char const *                 my_token_mark;
-    ErrorList                    my_errors;
-    Parser::ErrorList::size_type my_error_mark;
-    bool                         my_committed;
-  };
-  friend class StatusGuard;
+  //. Are we in a tentative parse ?
+  bool is_tentative() const { return my_is_tentative;}
+  //. Commit to the current tentative parse.
+  void commit();
 
-
-  bool mark_error();
   template <typename T>
   bool declare(T *);
-  void show_message_head(const char*);
+  //. Return true if the given name matches a class name.
+  //. If scope, then set my_qualifying_scope to the scope 
+  //. corresponding to the found class.
+  bool lookup_class_name(PTree::Encoding const &);
+  //. Return true if the given name matches a template name.
+  //. If scope, then set my_qualifying_scope to the scope 
+  //. corresponding to the found class template 
+  //. (if it was not a function template).
+  bool lookup_template_name(PTree::Encoding const &);
+  //. Return true if the given name matches a namespace name.
+  //. If scope, then set my_qualifying_scope to the scope 
+  //. corresponding to the found namespace.
+  bool lookup_namespace_name(PTree::Encoding const &);
+  //. Return true if the given name matches a type name.
+  bool lookup_type_name(PTree::Encoding const &);
 
-  bool definition(PTree::Node *&);
-  bool null_declaration(PTree::Node *&);
-  bool typedef_(PTree::Typedef *&);
-  bool type_specifier(PTree::Node *&, bool, PTree::Encoding&);
-  bool is_type_specifier();
-  bool metaclass_decl(PTree::Node *&);
-  bool meta_arguments(PTree::Node *&);
-  bool linkage_spec(PTree::Node *&);
-  bool namespace_spec(PTree::NamespaceSpec *&);
-  bool namespace_alias(PTree::NamespaceAlias *&);
-  bool using_directive(PTree::UsingDirective *&);
+  //. :: [opt]
+  PTree::Atom *opt_scope(PTree::Encoding &);
 
-  //. using-declaration:
-  //.   using typename [opt] name
-  bool using_declaration(PTree::UsingDeclaration *&);
-  bool linkage_body(PTree::Node *&);
-  bool template_decl(PTree::Node *&);
-  bool template_decl2(PTree::TemplateDecl *&, TemplateDeclKind &kind);
+  //. identifier
+  PTree::Identifier *identifier(PTree::Encoding &);
 
-  //. template-parameter-list:
-  //.   template-parameter
-  //.   template-parameter-list , template-parameter
-  bool template_parameter_list(PTree::List *&);
+  //. namespace-name:
+  //.   original-namespace-name
+  //.   namespace-alias
+  PTree::Identifier *namespace_name(PTree::Encoding &);
 
-  //. template-parameter:
-  //.   type-parameter
-  //.   parameter-declaration
-  bool template_parameter(PTree::Node *&);
+  //. class-name:
+  //.   identifier
+  //.   template-id
+  PTree::Node *class_name(PTree::Encoding &,
+			  bool is_typename,
+			  bool is_template,
+			  bool in_base_clause = false);
 
-  //. type-parameter:
-  //.   class identifier [opt]
-  //.   class identifier [opt] = type-id
-  //.   typename identifier [opt]
-  //.   typename identifier [opt] = type-id
-  //.   template  < template-parameter-list > class identifier [opt]
-  //.   template  < template-parameter-list > class identifier [opt] = id-expression
-  bool type_parameter(PTree::Node *&);
-  
-  //. GNU extension:
-  //. extern-template-decl:
-  //.   extern template declaration
-  bool extern_template_decl(PTree::Node *&);
+  //. class-or-namespace-name:
+  //.   class-name
+  //.   namespace-name
+  PTree::Node *class_or_namespace_name(PTree::Encoding &,
+				       bool is_typename,
+				       bool is_template);
 
-  bool declaration(PTree::Declaration *&);
-  bool integral_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
-  bool const_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
-  bool other_declaration(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
+  //. type-name:
+  //.   class-name
+  //.   enum-name
+  //.   typedef-name
+  //.
+  //. enum-name:
+  //.   identifier
+  //.
+  //. typedef-name:
+  //.   identifier
+  PTree::Node *type_name(PTree::Encoding &);
 
-  //. condition:
-  //.   expression
-  //.   type-specifier-seq declarator = assignment-expression
-  bool condition(PTree::Node *&);
+  //. nested-name-specifier:
+  //.   class-or-namespace-name :: nested-name-specifier [opt]
+  //.   class-or-namespace-name :: template nested-name-specifier
+  PTree::List *nested_name_specifier(PTree::Encoding &,
+				     bool is_template = false);
 
-  bool is_constructor_decl();
-  bool is_ptr_to_member(int);
-  bool opt_member_spec(PTree::Node *&);
+  //. simple-type-specifier:
+  //.   :: [opt] nested-name-specifier [opt] type-name
+  //.   :: [opt] nested-name-specifier template template-id
+  //.   char
+  //.   wchar_t
+  //.   bool
+  //.   short
+  //.   int
+  //.   long
+  //.   signed
+  //.   unsigned
+  //.   float
+  //.   double
+  //.   void
+  //.   typeof-expr
+  PTree::Node *simple_type_specifier(PTree::Encoding &, bool allow_user_defined);
 
-  //. storage-spec:
-  //.   empty
-  //.   static
-  //.   extern
-  //.   auto
-  //.   register
-  //.   mutable
-  bool opt_storage_spec(PTree::Node *&);
+  //. enum-specifier:
+  //.   enum identifier [opt] { enumerator-list [opt] }
+  //.
+  //. enumerator-list:
+  //.   enumerator-definition
+  //.   enumerator-list , enumerator-definition
+  //.
+  //. enumerator-definition:
+  //.   enumerator
+  //.   enumerator = constant-expression
+  //.
+  //. enumerator:
+  //.   identifier
+  PTree::EnumSpec *enum_specifier(PTree::Encoding &);
 
+  //. elaborated-type-specifier:
+  //.   class-key :: [opt] nested-name-specifier [opt] identifier
+  //.   class-key :: [opt] nested-name-specifier [opt] template [opt] template-id [dr68]
+  //.   enum :: [opt] nested-name-specifier [opt] identifier
+  //.   typename :: [opt] nested-name-specifier identifier
+  //.   typename :: [opt] nested-name-specifier template [opt] template-id
+  PTree::ElaboratedTypeSpec *elaborated_type_specifier(PTree::Encoding &);
+
+  //. function-specifier:
+  //.   inline
+  //.   virtual
+  //.   explicit
+  PTree::Keyword *opt_function_specifier();
+
+  //. class-key:
+  //.   class
+  //.   struct
+  //.   union
+  PTree::Keyword *class_key();
+
+  //. base-clause:
+  //.   : base-specifier-list
+  //.
+  //. base-specifier-list:
+  //.   base-specifier
+  //.   base-specifier-list , base-specifier
+  //.
+  //. base-specifier:
+  //.   :: [opt] nested-name-specifier [opt] class-name
+  //.   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
+  //.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
+  PTree::List *base_clause(std::vector<SymbolTable::Symbol const *> &bases);
+
+  //. ctor-initializer:
+  //.   : mem-initializer-list
+  //.
+  //. mem-initializer-list:
+  //.   mem-initializer
+  //.   mem-initializer , mem-initializer-list
+  //.
+  //. mem-initializer:
+  //.   mem-initializer-id ( expression-list [opt] )
+  //.
+  //. mem-initializer-id:
+  //.   :: [opt] nested-name-specifier [opt] class-name
+  //.   identifier
+  PTree::List *opt_ctor_initializer();
+
+  //. member-specification:
+  //.   member-declaration member-specification [opt]
+  //.   access-specifier : member-specification [opt]
+  //.
+  //. member-declaration:
+  //.   decl-specifier-seq [opt] member-declarator-list [opt] ;
+  //.   function-definition ; [opt]
+  //.   :: [opt] nested-name-specifier template [opt] unqualified-id ;
+  //.   using-declaration
+  //.   template-declaration
+  //.
+  //. member-declarator-list:
+  //.   member-declarator
+  //.   member-declarator-list , member-declarator
+  //.
+  //. member-declarator:
+  //.   declarator pure-specifier [opt]
+  //.   declarator constant-initializer [opt]
+  //.   identifier [opt] : constant-expression
+  //.
+  //. constant-initializer:
+  //.   = constant-expression
+  PTree::Node *opt_member_specification();
+
+  //. class-specifier:
+  //.   class-head { member-specification [opt] }
+  //.
+  //. class-head:
+  //.   class-key identifier [opt] base-clause [opt]
+  //.   class-key nested-name-specifier identifier base-clause [opt]
+  //.   class-key nested-name-specifier [opt] template-id base-clause [opt]
+  PTree::ClassSpec *class_specifier(PTree::Encoding &encoding);
+
+  //. cv-qualifier-seq:
+  //.   cv-qualifier cv-qualifier-seq [opt]
+  //.
   //. cv-qualifier:
-  //.   empty
   //.   const
   //.   volatile
-  bool opt_cv_qualifier(PTree::Node *&);
-  bool opt_integral_type_or_class_spec(PTree::Node *&, PTree::Encoding&);
-  bool constructor_decl(PTree::Node *&, PTree::Encoding&);
-  bool opt_throw_decl(PTree::Node *&);
-  
-  //. [gram.dcl.decl]
-  bool init_declarator_list(PTree::Node *&, PTree::Encoding&, bool, bool = false);
-  bool init_declarator(PTree::Node *&, PTree::Encoding&, bool, bool);
-  bool declarator(PTree::Node *&, DeclKind, bool,
-		  PTree::Encoding&, PTree::Encoding&, bool,
-		  bool = false);
-  bool declarator2(PTree::Node *&, DeclKind, bool,
-		   PTree::Encoding&, PTree::Encoding&, bool,
-		   bool, PTree::Node **);
-  bool opt_ptr_operator(PTree::Node *&, PTree::Encoding&);
-  bool member_initializers(PTree::Node *&);
-  bool member_init(PTree::Node *&);
-  
-  bool name(PTree::Node *&, PTree::Encoding&);
-  bool operator_name(PTree::Node *&, PTree::Encoding&);
-  bool cast_operator_name(PTree::Node *&, PTree::Encoding&);
-  bool ptr_to_member(PTree::Node *&, PTree::Encoding&);
-  bool template_args(PTree::Node *&, PTree::Encoding&);
-  
-  bool parameter_declaration_list_or_init(PTree::Node *&, bool&,
-					  PTree::Encoding&, bool);
-  bool parameter_declaration_list(PTree::Node *&, PTree::Encoding&);
+  PTree::List *opt_cv_qualifier_seq(PTree::Encoding &);
+
+  //. storage-class-specifier:
+  //.   auto
+  //.   register
+  //.   static
+  //.   extern
+  //.   mutable
+  //.   thread [GCC]
+  PTree::Keyword *opt_storage_class_specifier(PTree::DeclSpec::StorageClass &);
+
+  //. type-specifier:
+  //.   simple-type-specifier
+  //.   class-specifier
+  //.   enum-specifier
+  //.   elaborated-type-specifier
+  //.   cv-qualifier
+  //.   __complex__ [GCC]
+  PTree::Node *type_specifier(PTree::Encoding &, bool allow_user_defined);
+
+  //. type-specifier-seq:
+  //.   type-specifier type-specifier-seq [opt]
+  PTree::List *type_specifier_seq(PTree::Encoding &);
+
+  //. linkage-specification:
+  //.   extern string-literal { declaration-seq [opt] }
+  //.   extern string-literal declaration
+  PTree::LinkageSpec *linkage_specification();
+
+  //. Return true if next comes a constructor-declarator.
+  bool is_constructor_declarator();
+
+  //. decl-specifier-seq:
+  //.   decl-specifier-seq [opt] decl-specifier
+  //.
+  //. decl-specifier:
+  //.   storage-class-specifier
+  //.   type-specifier
+  //.   function-specifier
+  //.   friend
+  //.   typedef
+  PTree::DeclSpec *decl_specifier_seq(PTree::Encoding &);
+
+  //. declarator-id:
+  //.   id-expression
+  //.   :: [opt] nested-name-specifier [opt] type-name
+  PTree::Node *declarator_id(PTree::Encoding &);
+
+  //. ptr-operator:
+  //.   * cv-qualifier-seq [opt]
+  //.   &
+  //.   :: [opt] nested-name-specifier * cv-qualifier-seq [opt]
+  PTree::List *ptr_operator(PTree::Encoding &);
+
+  //. direct-declarator:
+  //.   declarator-id
+  //.   direct-declarator ( parameter-declaration-clause )
+  //.     cv-qualifier-seq [opt] exception-specification [opt]
+  //.   direct-declarator [ constant-expression [opt] ]
+  //.   ( declarator )
+  //.
+  //. direct-abstract-declarator:
+  //.   direct-abstract-declarator [opt] ( parameter-declaration-clause )
+  //.     cv-qualifier-seq [opt] exception-specification [opt]
+  //.   direct-abstract-declarator [opt] [ constant-expression [opt] ]
+  //.   ( abstract-declarator )
+  PTree::List *direct_declarator(PTree::Encoding &, PTree::Encoding &,
+				 DeclaratorKind);
+
+  //. declarator:
+  //.   direct-declarator
+  //.   ptr-operator declarator
+  //.
+  //. abstract-declarator:
+  //.   ptr-operator abstract-declarator [opt]
+  //.   direct-abstract-declarator
+  PTree::Declarator *declarator(PTree::Encoding &, PTree::Encoding &,
+				DeclaratorKind);
+
+  //. initializer-clause:
+  //.   assignment-expression
+  //.   { initializer-list , [opt] }
+  //.   { }
+  PTree::Node *initializer_clause(bool constant);
+
+  //. initializer-list:
+  //.   initializer-clause
+  //.   initializer-list , initializer-clause
+  PTree::List *initializer_list(bool constant);
+
+  //. init-declarator:
+  //.   declarator initializer [opt]
+  PTree::Declarator *init_declarator(PTree::Encoding &type);
+
+  //. parameter-declaration-clause:
+  //.   parameter-declaration-list [opt] ... [opt]
+  //.   parameter-declaration-list , ...
+  PTree::List *parameter_declaration_clause(PTree::Encoding &);
+
+  //. parameter-declaration-list:
+  //.   parameter-declaration
+  //.   parameter-declaration-list , parameter-declaration
+  PTree::List *parameter_declaration_list(PTree::Encoding &);
 
   //. parameter-declaration:
   //.   decl-specifier-seq declarator
   //.   decl-specifier-seq declarator = assignment-expression
   //.   decl-specifier-seq abstract-declarator [opt]
   //.   decl-specifier-seq abstract-declarator [opt] = assignment-expression
-  bool parameter_declaration(PTree::ParameterDeclaration *&, PTree::Encoding&);
-  
-  bool function_arguments(PTree::Node *&);
-  bool initialize_expr(PTree::Node *&);
-  
-  //. enum-spec:
-  //.   enum identifier [opt] { enumerator-list [opt] }
-  bool enum_spec(PTree::EnumSpec *&, PTree::Encoding&);
+  PTree::ParameterDeclaration *parameter_declaration(PTree::Encoding &);
 
-  //. enumerator-list:
-  //.   enumerator-definition
-  //.   enumerator-list , enumerator-definition
-  //. enumeratpr-definition:
-  //.   enumerator
-  //.   enumerator = constant-expression
-  //. enumerator:
+  //. simple-declaration:
+  //.   decl-specifier-seq [opt] init-declarator-list [opt] ;
+  //.
+  //. init-declarator-list:
+  //.   init-declarator
+  //.   init-declarator-list , init-declarator
+  //.
+  //. function-definition:
+  //.   decl-specifier-seq [opt] declarator ctor-initializer [opt]
+  //.     function-body
+  //.   decl-specifier-seq [opt] declarator function-try-block
+  PTree::Declaration *simple_declaration(bool function_definition_allowed);
+
+  //. block-declaration:
+  //.   simple-declaration
+  //.   asm-definition
+  //.   namespace-alias-definition
+  //.   using-declaration
+  //.   using-directive
+  PTree::Declaration *block_declaration();
+
+  //. declaration:
+  //.   block-declaration
+  //.   function-definition
+  //.   template-declaration
+  //.   explicit-instantiation
+  //.   explicit-specialization
+  //.   linkage-specification
+  //.   namespace-definition
+  PTree::Declaration *declaration();
+
+  //. declaration-seq:
+  //.   declaration
+  //.   declaration-seq declaration
+  PTree::List *opt_declaration_seq();
+
+  //. namespace-definition:
+  //.   named-namespace-definition
+  //.   unnamed-namespace-definition
+  //.
+  //. named-namespace-definition:
+  //.   original-namespace-definition
+  //.   extension-namespace-definition
+  //.
+  //. original-namespace-definition:
+  //.   namespace identifier { namespace-body }
+  //.
+  //. extension-namespace-definition:
+  //.   namespace original-namespace-name { namespace-body }
+  //.
+  //. unnamed-namespace-definition:
+  //.   namespace { namespace-body }
+  //.
+  //. namespace-body:
+  //.   declaration-seq [opt]
+  PTree::NamespaceSpec *namespace_definition();
+
+  //. namespace-alias-definition:
+  //.   namespace identifier = qualified-namespace-specifier ;
+  PTree::NamespaceAlias *namespace_alias_definition();
+
+  //. using-directive:
+  //.   using namespace :: [opt] nested-name-specifier [opt] namespace-name ;
+  PTree::UsingDirective *using_directive();
+
+  //. using-declaration:
+  //.   using typename [opt] :: [opt] nested-name-specifier unqualified-id ;
+  //.   using :: unqualified-id ;
+  PTree::UsingDeclaration *using_declaration();
+
+  //. type-parameter:
+  //.   class identifier [opt]
+  //.   class identifier [opt] = type-id
+  //.   typename identifier [opt]
+  //.   typename identifier [opt] = type-id
+  //.   template < template-parameter-list > class identifier [opt]
+  //.   template < template-parameter-list > class identifier [opt] = id-expression
+  PTree::Node *type_parameter(PTree::Encoding &);
+
+  //. template-parameter:
+  //.   type-parameter
+  //.   parameter-declaration
+  PTree::Node *template_parameter(PTree::Encoding &);
+
+  //. template-parameter-list:
+  //.   template-parameter
+  //.   template-parameter-list , template-parameter
+  PTree::TemplateParameterList *template_parameter_list(PTree::Encoding &);
+
+  //. template-declaration:
+  //.   export [opt] template < template-parameter-list > declaration
+  PTree::TemplateDeclaration *template_declaration();
+
+  //. explicit-specialization:
+  //.   template < > declaration
+  PTree::TemplateDeclaration *explicit_specialization();
+
+  //. explicit-instantiation:
+  //.   template declaration
+  PTree::TemplateInstantiation *explicit_instantiation();
+
+  //. operator-name:
+  //.   new delete new[] delete[] + - * / % ^ & | ~ ! = < >
+  //.   += -= *= /= %= ^= &= |= << >> >>= <<= == != <= >= &&
+  //.   || ++ -- , ->* -> () []
+  PTree::Node *operator_name(PTree::Encoding &);
+
+  //. operator-function-id:
+  //.   operator operator-name
+  PTree::List *operator_function_id(PTree::Encoding &);
+
+  //. conversion-function-id:
+  //.   operator conversion-type-id
+  //.
+  //. conversion-type-id:
+  //.   type-specifier-seq conversion-declarator [opt]
+  //.
+  //. conversion-declarator:
+  //.   ptr-operator conversion-declarator [opt]
+  PTree::List *conversion_function_id(PTree::Encoding &);
+
+  //. template-name:
   //.   identifier
-  bool enumerator_list(PTree::Node *&);
-  bool class_spec(PTree::ClassSpec *&, PTree::Encoding&);
+  //.   operator-function-id [GCC]
+  PTree::Node *template_name(PTree::Encoding &, bool lookup = true);
 
-  //. base-clause:
-  //.   : base-specifier-list
-  //. base-specifier-list:
-  //.   base-specifier
-  //.   base-specifier-list , base-specifier
-  //. base-specifier:
-  //.   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
-  //.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
-  bool base_clause(PTree::Node *&);
-  bool class_body(PTree::ClassBody *&);
-  bool class_member(PTree::Node *&);
-  bool access_decl(PTree::Node *&);
-  bool user_access_spec(PTree::Node *&);
-  
+  //. template-argument:
+  //.   assignment-expression
+  //.   type-id
+  //.   id-expression
+  PTree::Node *template_argument(PTree::Encoding &);
+
+  //. template-id:
+  //.   template-name < template-argument-list [opt] >
+  //.
+  //. template-argument-list:
+  //.   template-argument
+  //.   template-argument-list , template-argument
+  PTree::List *template_id(PTree::Encoding &, bool is_template);
+
+  //. condition:
+  //.   expression
+  //.   type-specifier-seq declarator = assignment-expression
+  PTree::Node *condition();
+
   //. expression:
   //.   assignment-expression
   //.   expression , assignment-expression
-  bool expression(PTree::Node *&);
+  PTree::Node *expression();
 
   //. assignment-expression:
   //.   conditional-expression
   //.   logical-or-expression assignment-operator assignment-expression
   //.   throw-expression
-  bool assign_expr(PTree::Node *&);
+  PTree::Node *assignment_expression();
 
   //. conditional-expression:
   //.   logical-or-expression
   //.   logical-or-expression ? expression : assignment-expression
-  bool conditional_expr(PTree::Node *&);
+  PTree::Node *conditional_expression();
+
+  //. constant-expression:
+  //.   conditional-expression
+  PTree::Node *constant_expression();
 
   //. logical-or-expression:
   //.   logical-and-expression
   //.   logical-or-expression || logical-and-expression
-  bool logical_or_expr(PTree::Node *&);
+  PTree::Node *logical_or_expression();
 
   //. logical-and-expression:
   //.   inclusive-or-expression
   //.   logical-and-expr && inclusive-or-expression
-  bool logical_and_expr(PTree::Node *&);
+  PTree::Node *logical_and_expression();
 
   //. inclusive-or-expression:
   //.   exclusive-or-expression
   //.   inclusive-or-expression | exclusive-or-expression
-  bool inclusive_or_expr(PTree::Node *&);
+  PTree::Node *inclusive_or_expression();
 
   //. exclusive-or-expression:
   //.   and-expression
   //.   exclusive-or-expression ^ and-expression
-  bool exclusive_or_expr(PTree::Node *&);
+  PTree::Node *exclusive_or_expression();
 
   //. and-expression:
   //.   equality-expression
   //.   and-expression & equality-expression
-  bool and_expr(PTree::Node *&);
+  PTree::Node *and_expression();
 
   //. equality-expression:
   //.   relational-expression
   //.   equality-expression == relational-expression
   //.   equality-expression != relational-expression
-  bool equality_expr(PTree::Node *&);
+  PTree::Node *equality_expression();
 
   //. relational-expression:
   //.   shift-expression
@@ -277,42 +565,46 @@ private:
   //.   relational-expression > shift-expression
   //.   relational-expression <= shift-expression
   //.   relational-expression >= shift-expression
-  bool relational_expr(PTree::Node *&);
+  PTree::Node *relational_expression();
 
   //. shift-expression:
   //.   additive-expression
   //.   shift-expression << additive-expression
   //.   shift-expression >> additive-expression
-  bool shift_expr(PTree::Node *&);
+  PTree::Node *shift_expression();
 
   //. additive-expression:
   //.   multiplicative-expression
   //.   additive-expression + multiplicative-expression
   //.   additive-expression - multiplicative-expression
-  bool additive_expr(PTree::Node *&);
+  PTree::Node *additive_expression();
 
   //. multiplicative-expression:
   //.   pm-expression
   //.   multiplicative-expression * pm-expression
   //.   multiplicative-expression / pm-expression
   //.   multiplicative-expression % pm-expression
-  bool multiplicative_expr(PTree::Node *&);
+  PTree::Node *multiplicative_expression();
 
   //. pm-expression:
   //.   cast-expression
   //.   pm-expression .* cast-expression
   //.   pm-expression ->* cast-expression
-  bool pm_expr(PTree::Node *&);
+  PTree::Node *pm_expression();
 
   //. cast-expression:
   //.   unary-expression
   //.   ( type-id ) cast-expression
-  bool cast_expr(PTree::Node *&);
+  PTree::Node *cast_expression();
 
   //. type-id:
   //.   type-specifier-seq abstract-declarator [opt]
-  bool type_id(PTree::Node *&);
-  bool type_id(PTree::Node *&, PTree::Encoding&);
+  PTree::Node *type_id(PTree::Encoding&);
+
+  //. type-id-list:
+  //.   type-id
+  //.   type-id-list , type-id
+  PTree::List *type_id_list();
 
   //. unary-expression:
   //.   postfix-expression
@@ -331,61 +623,138 @@ private:
   //.   -
   //.   !
   //.   ~
-  bool unary_expr(PTree::Node *&);
+  PTree::Node *unary_expression();
 
   //. throw-expression:
-  //.   throw assignment-expression
-  bool throw_expr(PTree::Node *&);
+  //.   throw assignment-expression [opt]
+  PTree::Node *throw_expression();
 
   //. sizeof-expression:
   //.   sizeof unary-expression
   //.   sizeof ( type-id )
-  bool sizeof_expr(PTree::Node *&);
+  PTree::Node *sizeof_expression();
 
-  //. typeid-expression:
-  //.   typeid ( type-id )
+  //. new-expression:
+  //.  :: [opt] new new-placement [opt] new-type-id new-initializer [opt]
+  //.  :: [opt] new new-placement [opt] ( type-id ) new-initializer [opt]
+  PTree::NewExpr *new_expression();
+
+  //. delete-expression:
+  //.   :: [opt] delete cast-expression
+  //.   :: [opt] delete [ ] cast-expression
+  PTree::Node *delete_expression();
+
+  //. expression-list:
+  //.   assignment-expression
+  //.   expression-list, assignment-expression
+  PTree::List *expression_list(bool is_const);
+
+  PTree::List *functional_cast();
+
+  //. pseudo-destructor-name:
+  //.   :: [opt] nested-name-specifier [opt] type-name :: ~ type-name
+  //.   :: [opt] nested-name-specifier template template-id :: ~ type-name
+  //.   :: [opt] nested-name-specifier [opt] ~ type-name
+  PTree::List *pseudo_destructor_name();
+
+  //. postfix-expression:
+  //.   primary-expression
+  //.   postfix-expression [ expression ]
+  //.   postfix-expression ( expression-list [opt] )
+  //.   simple-type-specifier ( expression-list [opt] )
+  //.   typename :: [opt] nested-name-specifier identifier
+  //.     ( expression-list [opt] )
+  //.   typename :: [opt] nested-name-specifier template [opt] template-id
+  //.     ( expression-list [opt] )
+  //.   postfix-expression . template [opt] id-expression
+  //.   postfix-expression -> template [opt] id-expression
+  //.   postfix-expression . pseudo-destructor-name
+  //.   postfix-expression -> pseudo-destructor-name
+  //.   postfix-expression ++
+  //.   postfix-expression --
+  //.   dynamic_cast < type-id > ( expression )
+  //.   static_cast < type-id > ( expression )
+  //.   reinterpret_cast < type-id > ( expression )
+  //.   const_cast < type-id > ( expression )
   //.   typeid ( expression )
-  bool typeid_expr(PTree::Node *&);
-  bool is_allocate_expr(Token::Type);
-  bool allocate_expr(PTree::Node *&);
-  bool userdef_keyword(PTree::Node *&);
-  bool allocate_type(PTree::Node *&);
-  bool new_declarator(PTree::Declarator *&, PTree::Encoding&);
-  bool allocate_initializer(PTree::Node *&);
-  bool postfix_expr(PTree::Node *&);
-  bool primary_expr(PTree::Node *&);
-  bool typeof_expr(PTree::Node *&);
-  bool userdef_statement(PTree::Node *&);
-  bool var_name(PTree::Node *&);
-  bool var_name_core(PTree::Node *&, PTree::Encoding&);
-  bool is_template_args();
+  //.   typeid ( type-id )
+  PTree::Node *postfix_expression();
+
+  //. primary-expression:
+  //.   literal
+  //.   this
+  //.   ( expression )
+  //.   id-expression
+  PTree::Node *primary_expression();
+
+  //. unqualified-id:
+  //.   identifier
+  //.   operator-function-id
+  //.   conversion-function-id
+  //.   ~ class-name
+  //.   template-id
+  PTree::Node *unqualified_id(PTree::Encoding &, bool is_template);
+
+  //. id-expression:
+  //.   unqualified-id
+  //.   qualified-id
+  //.
+  //. qualified-id:
+  //.   :: [opt] nested-name-specifier template [opt] unqualified-id
+  //.   :: identifier
+  //.   :: operator-function-id
+  //.   :: template-id
+  PTree::Node *id_expression(PTree::Encoding &, bool is_template);
+  //: typeof-expression:
+  //:   __typeof__ unary-expression
+  //:   __typeof__ ( type-id )
+  PTree::Node *typeof_expression(PTree::Encoding &);
   
-  //. function-body:
-  //.   compound-statement
-  bool function_body(PTree::Block *&);
+  //. labeled-statement:
+  //.   identifier : statement
+  //.   case constant-expression : statement
+  //.   default : statement
+  PTree::List *labeled_statement();
+
+  //. expression-statement:
+  //.   expression [opt] ;
+  PTree::ExprStatement *expression_statement();
 
   //. compound-statement:
   //.   { statement [opt] }
-  bool compound_statement(PTree::Block *&, bool create_scope = false);
-  bool statement(PTree::Node *&);
+  PTree::Block *compound_statement(bool create_scope = false);
 
-  //. if-statement:
+  //. selection-statement:
   //.   if ( condition ) statement
   //.   if ( condition ) statement else statement
-  bool if_statement(PTree::Node *&);
-
-  //. switch-statement:
   //.   switch ( condition ) statement
-  bool switch_statement(PTree::Node *&);
+  PTree::List *selection_statement();
 
-  //. while-statement:
+  //. iteration-statement:
   //.   while ( condition ) statement
-  bool while_statement(PTree::Node *&);
+  //.   do statement while ( expression ) ;
+  //.   for ( for-init-statement condition [opt] ; expression [opt] )
+  //.     statement
+  //.
+  //. for-init-statement:
+  //.   expression-statement
+  //.   simple-declaration
+  PTree::List *iteration_statement();
 
-  //. do.statement:
-  //.   do statement while ( condition ) ;
-  bool do_statement(PTree::Node *&);
-  bool for_statement(PTree::Node *&);
+  //. declaration-statement:
+  //.   block-declaration
+  PTree::List *declaration_statement();
+
+  //. statement:
+  //.   labeled-statement
+  //.   expression-statement
+  //.   compound-statement
+  //.   selection-statement
+  //.   iteration-statement
+  //.   jump-statement
+  //.   declaration-statement
+  //.   try-block
+  PTree::List *statement();
 
   //. try-block:
   //.   try compound-statement handler-seq
@@ -401,33 +770,56 @@ private:
   //.   type-specifier-seq abstract-declarator
   //.   type-specifier-seq
   //.   ...
-  bool try_block(PTree::Node *&);
+  PTree::List *try_block();
   
-  bool expr_statement(PTree::Node *&);
-  bool declaration_statement(PTree::Declaration *&);
-  bool integral_decl_statement(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *, PTree::Node *);
-  bool other_decl_statement(PTree::Declaration *&, PTree::Encoding&, PTree::Node *, PTree::Node *);
-
-  bool maybe_typename_or_class_template(Token&);
-  void skip_to(Token::Type token);
+  //. exception-specification:
+  //.   throw ( type-id-list [opt] )
+  PTree::Node *opt_exception_specification();
   
-private:
-  bool more_var_name();
+  //. Skip to the end of the (possibly compound) statement.
+  Token skip_statement(size_t nesting);
 
   Lexer &         my_lexer;
   int             my_ruleset;
   SymbolFactory & my_symbols;
-  //. Record whether the current scope is valid.
-  //. This allows the parser to continue parsing even after
-  //. it was unable to enter a scope (such as in a function definition
-  //. with a qualified name that wasn't declared before).
-  bool            my_scope_is_valid;
+  bool            my_in_nested_name_specifier;
+  //. used for name lookup in nested-name-specifiers
+  SymbolTable::Scope *my_qualifying_scope;
+  //.
+  SymbolTable::Symbol const *my_symbol;
+
+  //. Only record errors if we are not parsing
+  //. tentatively.
+  bool            my_is_tentative;
+
   ErrorList       my_errors;
   PTree::Node *   my_comments;
   //. If true, '>' is interpreted as ther greater-than operator.
   //. If false, it marks the end of a template-id or template-parameter-list.
   bool            my_gt_is_operator;
-  bool            my_in_template_decl;
+  //. The template-parameter-list sequence active during a template declaration.
+  TemplateParameterListSeq my_template_parameter_list_seq;
+  //. The index of the active template-parameter-list when encountering a
+  //. template-id in the declarator of a template declaration.
+  size_t          my_template_parameter_list_cursor;
+  //. If true, postpone member function parsing until the whole class definition
+  //. has been seen.
+  bool            my_in_class;
+  bool            my_in_functional_cast;
+  bool            my_accept_default_arg;
+  bool            my_in_declarator;
+  //. True if we are inside a statement. In that case the number of things that
+  //. can be declared is restricted.
+  bool            my_in_declaration_statement;
+  //. True if we are inside a constant-expression, i.e. should evaluate
+  //. the associated value.
+  bool            my_in_constant_expression;
+  //. True if we have just seen an elaborated-type-specifier 
+  //. inside a decl-specifier-seq.
+  bool            my_declares_class_or_enum;
+  //. True if we have just seen a class-specifier or enum-specifier
+  //. inside a decl-specifier-seq.
+  bool            my_defines_class_or_enum;
 };
 
 }

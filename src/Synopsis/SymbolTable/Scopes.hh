@@ -43,21 +43,32 @@ public:
 class TemplateParameterScope : public Scope
 {
 public:
-  TemplateParameterScope(PTree::List const *node, Scope *outer)
-    : my_node(node), my_outer(outer->ref()) {}
+  TemplateParameterScope(PTree::List const *node, Scope *outer,
+			 TemplateParameterScope *outer_template_parameters)
+    : my_node(node),
+      my_outer(outer->ref()),
+      my_outer_template_parameters(outer_template_parameters)
+  {}
 
   virtual SymbolSet
-  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
+  unqualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
 
   virtual Scope *outer_scope() { return my_outer;}
   virtual void accept(ScopeVisitor *v) { v->visit(this);}
+  //. Redefine 'find' to search in the whole template-parameter-list-seq,
+  //. i.e. treat the whole sequence as a single scope.
+  //. FIXME: This hack makes it possible for function / class templates
+  //.        to search in their template parameters without getting into
+  //.        the outer scope.
+  virtual SymbolSet find(PTree::Encoding const &, LookupContext) const;
 
 protected:
   ~TemplateParameterScope() { my_outer->unref();}
 
 private:
-  PTree::List const *my_node;
-  Scope *            my_outer;
+  PTree::List const *     my_node;
+  Scope *                 my_outer;
+  TemplateParameterScope *my_outer_template_parameters;
 };
 
 class LocalScope : public Scope
@@ -69,7 +80,7 @@ public:
   virtual Scope *outer_scope() { return my_outer;}
 
   virtual SymbolSet 
-  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
+  unqualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
 
   virtual void accept(ScopeVisitor *v) { v->visit(this);}
 
@@ -89,9 +100,9 @@ public:
   virtual void use(Namespace const *);
   virtual Scope *outer_scope() { return my_outer;}
   virtual SymbolSet 
-  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
+  unqualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
   virtual SymbolSet 
-  qualified_lookup(PTree::Encoding const &, LookupContext) const;
+  qualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const;
@@ -107,7 +118,7 @@ private:
   PTree::Declaration const * my_decl;
   Scope *                    my_outer;
   Class const *              my_class;
-  PrototypeScope const *     my_params;
+  PrototypeScope const *     my_parameters;
   Using                      my_using;
 };
 
@@ -116,15 +127,15 @@ class PrototypeScope : public Scope
   friend class FunctionScope;
 public:
   PrototypeScope(PTree::Node const *decl, Scope *outer,
-		 TemplateParameterScope const *params)
-    : my_decl(decl), my_outer(outer->ref()), my_params(params) {}
+		 TemplateParameterScope const *parameters)
+    : my_decl(decl), my_outer(outer->ref()), my_parameters(parameters) {}
 
   virtual Scope *outer_scope() { return my_outer;}
   virtual SymbolSet 
-  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
+  unqualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
 
   PTree::Node const *declaration() const { return my_decl;}
-  TemplateParameterScope const *templ_params() const { return my_params;}
+  TemplateParameterScope const *template_parameters() const { return my_parameters;}
 
   std::string name() const;
 
@@ -136,7 +147,7 @@ protected:
 private:
   PTree::Node const *           my_decl;
   Scope *                       my_outer;
-  TemplateParameterScope const *my_params;
+  TemplateParameterScope const *my_parameters;
 };
 
 class Class : public Scope
@@ -149,15 +160,16 @@ public:
 
   virtual Scope *outer_scope() { return my_outer;}
   virtual SymbolSet 
-  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
+  unqualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
 
   // FIXME: what is 'name' ? (template parameters...)
   std::string name() const { return my_name;}
+  TemplateParameterScope const *template_parameter_scope() { return my_parameters;}
 
   virtual void accept(ScopeVisitor *v) { v->visit(this);}
 
 protected:
-  ~Class() { my_outer->unref();}
+  ~Class();
 
 private:
   PTree::ClassSpec       const *my_spec;
@@ -180,10 +192,11 @@ public:
 
   virtual void use(Namespace const *);
   virtual Scope *outer_scope() { return my_outer;}
-  virtual SymbolSet 
-  unqualified_lookup(PTree::Encoding const &, LookupContext) const;
-  virtual SymbolSet 
-  qualified_lookup(PTree::Encoding const &, LookupContext) const;
+
+  SymbolSet 
+  unqualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
+  SymbolSet 
+  qualified_lookup(PTree::Encoding const &, LookupContext, Scopes &) const;
 
   // FIXME: should that really be a string ? It may be better to be conform with
   // Class::name, which, if the class is a template, can't be a string (or can it ?)
@@ -197,15 +210,20 @@ protected:
 private:
   typedef std::set<Namespace const *> Using;
 
-  SymbolSet 
-  unqualified_lookup(PTree::Encoding const &, LookupContext, Using &) const;
-  SymbolSet 
-  qualified_lookup(PTree::Encoding const &, LookupContext, Using &) const;
-
   PTree::NamespaceSpec const *my_spec;
   Namespace *                 my_outer;
   Using                       my_using;
 };
+
+class DependentScope : public Class
+{
+public:
+  DependentScope()
+    : Class("<dependent>", 0, 0, Bases(), 0) {}
+  ~DependentScope() {}
+};
+
+extern Class * DEPENDENT_SCOPE;
 
 }
 }

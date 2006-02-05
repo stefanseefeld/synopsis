@@ -64,6 +64,7 @@ public:
   Entry operator<<(T const &t) const;
 
   static void enable(unsigned int mask = ALL) { my_mask = mask;}
+  static bool is_enabled(unsigned int mask = ALL) { return my_mask & mask;}
 
 private:
   static std::string indent() { return std::string(my_level, ' ');}

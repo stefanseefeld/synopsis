@@ -1,10 +1,10 @@
-ClassSpec : X
+ElaboratedTypeSpec : X
 declared at line 1 in <input>
-ClassSpec : X
+ElaboratedTypeSpec : X
 declared at line 1 in <input>
 Declarator : x1
 declared at line 2 in <input>
-Type : X
+Name : X
 declared at line 1 in <input>
 Declarator : x2
 declared at line 3 in <input>

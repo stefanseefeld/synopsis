@@ -26,22 +26,14 @@ public:
 private:
   virtual void visit(Atom *);
   virtual void visit(List *);
-  // atoms...
-  virtual void visit(DupAtom *);
-  // ...lists...
-  virtual void visit(Brace *);
-  virtual void visit(Block *b) { visit(static_cast<Brace *>(b));}
-  virtual void visit(ClassBody *b) { visit(static_cast<Brace *>(b));}
+
   virtual void visit(Declarator *l) { print_encoded(l);}
   virtual void visit(Name *l) { print_encoded(l);}
   virtual void visit(FstyleCastExpr *l) { print_encoded(l);}
 
-  void newline();
-  bool too_deep();
   void print_encoded(List *);
 
   std::ostream &my_os;
-  size_t        my_indent;
   bool          my_encoded;
 };
 
@@ -55,7 +47,6 @@ public:
 private:
   virtual void visit(Atom *);
   virtual void visit(List *);
-  virtual void visit(DupAtom *);
 
   void newline();
 

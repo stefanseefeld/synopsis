@@ -70,6 +70,7 @@ public:
   Object(char value) : my_impl(PyString_FromStringAndSize(&value, 1)) {}
   Object(double value) : my_impl(PyFloat_FromDouble(value)) {}
   Object(int value) : my_impl(PyInt_FromLong(value)) {}
+  Object(unsigned int value) : my_impl(PyInt_FromLong(value)) {}
   Object(long value) : my_impl(PyInt_FromLong(value)) {}
   Object(bool value) : my_impl(PyInt_FromLong(value)) {}
   virtual ~Object() { Py_DECREF(my_impl);}
@@ -136,6 +137,7 @@ public:
   Tuple(Object, Object, Object, Object, Object, Object);
   Tuple(Object, Object, Object, Object, Object, Object, Object);
   Tuple(Object, Object, Object, Object, Object, Object, Object, Object);
+  Tuple(Object, Object, Object, Object, Object, Object, Object, Object, Object);
   Object get(size_t i) const;
 };
 
@@ -596,6 +598,31 @@ inline Tuple::Tuple(Object o1, Object o2, Object o3,
    Py_INCREF(o7.my_impl);
    PyTuple_SET_ITEM(my_impl, 7, o8.my_impl);
    Py_INCREF(o8.my_impl);
+}
+
+inline Tuple::Tuple(Object o1, Object o2, Object o3,
+		    Object o4, Object o5, Object o6,
+		    Object o7, Object o8, Object o9)
+  : Object(PyTuple_New(9))
+{
+   PyTuple_SET_ITEM(my_impl, 0, o1.my_impl);
+   Py_INCREF(o1.my_impl);
+   PyTuple_SET_ITEM(my_impl, 1, o2.my_impl);
+   Py_INCREF(o2.my_impl);
+   PyTuple_SET_ITEM(my_impl, 2, o3.my_impl);
+   Py_INCREF(o3.my_impl);
+   PyTuple_SET_ITEM(my_impl, 3, o4.my_impl);
+   Py_INCREF(o4.my_impl);
+   PyTuple_SET_ITEM(my_impl, 4, o5.my_impl);
+   Py_INCREF(o5.my_impl);
+   PyTuple_SET_ITEM(my_impl, 5, o6.my_impl);
+   Py_INCREF(o6.my_impl);
+   PyTuple_SET_ITEM(my_impl, 6, o7.my_impl);
+   Py_INCREF(o7.my_impl);
+   PyTuple_SET_ITEM(my_impl, 7, o8.my_impl);
+   Py_INCREF(o8.my_impl);
+   PyTuple_SET_ITEM(my_impl, 8, o9.my_impl);
+   Py_INCREF(o9.my_impl);
 }
 
 inline Object Tuple::get(size_t i) const 

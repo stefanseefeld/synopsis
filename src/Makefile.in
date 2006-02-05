@@ -22,14 +22,34 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
+define make_dep
+@echo generating dependencies for $(@D)/$(<F)
+$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+endef
+
+define compile
+@echo compiling $(@D)/$(@F)
+$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+endef
+
+define link_dso
+@echo linking $@
+$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
+endef
+
+define link_app
+@echo linking $@
+$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)
+endef
+
 GC_LIB	:= @GC_LIB@
 ifdef GC_LIB
 CPPFLAGS+= -I $(srcdir)/Synopsis/gc/include
 endif
 
-SRC	:= Trace Buffer Lexer
-SRC     += $(patsubst %, PTree/%, Node Encoding operations Atoms Lists \
-                                  generation Visitor Display Writer)
+SRC	:= Trace Buffer Lexer process_pragma
+SRC     += $(patsubst %, PTree/%, Encoding operations Lists \
+                                  Visitor Display)
 SRC     += $(patsubst %, SymbolTable/%, Symbol Scope Scopes Display Walker)
 SRC     += $(patsubst %, TypeAnalysis/%, Type TypeRepository TypeEvaluator \
                                          ConstEvaluator \
@@ -68,14 +88,14 @@ vpath %.hh $(srcdir) $(builddir)
 all: $(TARGETS)
 
 $(LIBRARY): $(OBJ) $(GC_LIB)
-	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(link_dso)
 
 $(SUPPORT): $(patsubst %.cc, %.o, $(SUP))
 	$(AR) cru $@ $^
 	$(RANLIB) $@
 
 $(TOOLS): bin/%: tools/%.o $(LIBRARY)
-	$(CXX) $(LDFLAGS) -o $@ $< -Llib -lSynopsis $(LIBS)
+	$(link_app)
 
 doc: cxx.syn cxx-impl.syn
 
@@ -92,12 +112,10 @@ cxx-impl.syn: $(HDR_SYN) $(CC_SYN)
 	touch 'xref'
 
 %.d: %.cc
-	@echo generating dependencies for $(@D)/$(<F)
-	$(SHELL) -ec '$(MAKEDEP) $(CPPFLAGS) $< | sed "s,$(*F)\\.o[ :]*,$*\\.d $*\\.o : ,g" > $@'
+	$(make_dep)
 
 %.o: %.cc
-	@echo compiling $(@D)/$(@F)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(compile)
 
 Makefile: $(srcdir)/Makefile.in
 	./config.status --file Makefile

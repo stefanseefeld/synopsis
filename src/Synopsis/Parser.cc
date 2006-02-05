@@ -1,6 +1,5 @@
 //
-// Copyright (C) 1997 Shigeru Chiba
-// Copyright (C) 2000 Stefan Seefeld
+// Copyright (C) 2005 Stefan Seefeld
 // All rights reserved.
 // Licensed to the public under the terms of the GNU LGPL (>= 2),
 // see the file COPYING for details.
@@ -8,32 +7,40 @@
 #include <Synopsis/PTree.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolTable.hh>
+#include <Synopsis/SymbolLookup.hh>
 #include <Synopsis/TypeAnalysis.hh>
 #include "Synopsis/Parser.hh"
 #include "Synopsis/Lexer.hh"
 #include <Synopsis/Trace.hh>
-#include <iostream>
+#include <ostream>
 
 namespace PT = Synopsis::PTree;
 namespace ST = Synopsis::SymbolTable;
+namespace TA = Synopsis::TypeAnalysis;
 
 namespace Synopsis
 {
 
+std::ostream &operator<< (std::ostream &os, Token const &token)
+{
+  os << token.type << "('" << std::string(token.ptr, token.length) << "')";
+  return os;
+}
+
 class SyntaxError : public Parser::Error
 {
 public:
-  SyntaxError(const std::string &f, unsigned long l, const std::string &c)
-    : my_filename(f), my_line(l), my_context(c) {}
+  SyntaxError(std::string const &e, std::string const &f, unsigned long l)
+    : my_error(e), my_filename(f), my_line(l) {}
   virtual void write(std::ostream &) const
   {
-    std::cerr << "Syntax error : " << my_filename << ':' << my_line 
-	      << ": Error before '" << my_context << '\'' << std::endl;
+    std::cerr << "Syntax Error : " << my_filename << ':' << my_line 
+	      << ": " << my_error << std::endl;
   }
 private:
+  std::string   my_error;
   std::string   my_filename;
   unsigned long my_line;
-  std::string   my_context;
 };
 
 class UndefinedSymbol : public Parser::Error
@@ -78,7 +85,7 @@ private:
 class SymbolTypeMismatch : public Parser::Error
 {
 public:
-  SymbolTypeMismatch(PT::Encoding const &name, PTree::Encoding const &type)
+  SymbolTypeMismatch(PT::Encoding const &name, PT::Encoding const &type)
     : my_name(name), my_type(type) {}
   virtual void write(std::ostream &os) const
   {
@@ -93,10 +100,70 @@ private:
 namespace
 {
 
+inline bool starts_function_definition(Token::Type type)
+{
+  return (type == '{' ||       // function-body
+	  type == ':' ||       // ctor-initializer
+	  type == Token::TRY); // function-try-block
+}
+
+class TypeNameChecker : private ST::SymbolVisitor
+{
+public:
+  TypeNameChecker() : my_result(false) {}
+  bool is_type_name(ST::Symbol const *s) 
+  {
+    s->accept(this);
+    return my_result;
+  }
+
+private:
+  virtual void visit(ST::TypeName const *) { my_result = true;}
+  virtual void visit(ST::TypedefName const *) { my_result = true;}
+  virtual void visit(ST::ClassName const *) { my_result = true;}
+  virtual void visit(ST::EnumName const *) { my_result = true;}
+
+  bool my_result;
+};
+
+class TemplateNameChecker : private ST::SymbolVisitor
+{
+public:
+  TemplateNameChecker() : my_symbol(0), my_scope(0) {}
+  bool is_template_name(ST::Symbol const *s) 
+  {
+    Trace trace("TemplateNameChecker::is_template_name", Trace::PARSING);
+    s->accept(this);
+    return my_symbol;
+  }
+  ST::Symbol const *symbol() const { return my_symbol;}
+  ST::Scope *scope() const { return my_scope;}
+
+private:
+  virtual void visit(ST::ClassTemplateName const *symbol)
+  {
+    my_symbol = symbol;
+    my_scope = symbol->scope()->find_scope(symbol->ptree());
+  }
+  virtual void visit(ST::FunctionTemplateName const *symbol) 
+  {
+    my_symbol = symbol;
+  }
+
+  ST::Symbol const *my_symbol;
+  ST::Scope        *my_scope;
+};
+
 template <typename T>
 struct PGuard
 {
+  //. Remember the current state of the given member variable.
   PGuard(Parser &p, T Parser::*m) : parser(p), member(m), saved(p.*m) {}
+  //. Remember the current state of the given member variable, 
+  //. and set it to a new value.
+  PGuard(Parser &p, T Parser::*m, T value)
+    : parser(p), member(m), saved(p.*m) 
+  { parser.*member = value;}
   ~PGuard() { parser.*member = saved;}
   Parser &    parser;
   T Parser::* member;
@@ -105,168 +172,126 @@ struct PGuard
 
 const unsigned int max_errors = 10;
 
-PT::Node *wrap_comments(const Lexer::Comments &c)
+PT::List *wrap_comments(const Lexer::Comments &c)
 {
-  PT::Node *head = 0;
+  PT::List *head = 0;
   for (Lexer::Comments::const_iterator i = c.begin(); i != c.end(); ++i)
     head = PT::snoc(head, new PT::Atom(*i));
   return head;
 }
 
-PT::Node *nth_declarator(PT::Node *decl, size_t n)
-{
-  decl = PT::third(decl);
-  if(!decl || decl->is_atom()) return 0;
+}
 
-  if(PT::is_a(decl, Token::ntDeclarator))
-  {	// if it is a function
-    if(n-- == 0) return decl;
+struct Parser::Tentative
+{
+  Tentative(Parser &p, bool rollback = false)
+    : my_parser(p), my_lexer(p.my_lexer),
+      my_was_tentative(p.my_is_tentative),
+      my_qualifying_scope(p.my_qualifying_scope),
+      my_symbol(p.my_symbol),
+      my_token_mark(my_lexer.save()),
+      my_encoding(my_saved_encoding),
+      my_restore_encoding(false),
+      my_rollback(rollback)
+  {
+    Trace trace("Tentative::Tentative", Trace::PARSING);
+    p.my_is_tentative = true;
+  } 
+  Tentative(Parser &p, PT::Encoding &e)
+    : my_parser(p), my_lexer(p.my_lexer),
+      my_was_tentative(p.my_is_tentative),
+      my_qualifying_scope(p.my_qualifying_scope),
+      my_symbol(p.my_symbol),
+      my_token_mark(my_lexer.save()),
+      my_saved_encoding(e),
+      my_encoding(e),
+      my_restore_encoding(true),
+      my_rollback(false)
+  {
+    Trace trace("Tentative::Tentative", Trace::PARSING);
+    p.my_is_tentative = true;
+  } 
+  ~Tentative()
+  {
+    Trace trace("Tentative::~Tentative", Trace::PARSING);
+    if (my_rollback) rollback();
+    else if (my_parser.my_is_tentative)
+      my_parser.my_is_tentative = my_was_tentative;
   }
-  else
-    while(decl && !decl->is_atom())
+
+  void rollback(bool keep = false)
+  {
+    Trace trace("Tentative::rollback", Trace::PARSING);
+    if (my_parser.my_is_tentative)
     {
-      if(n-- == 0) return decl->car();
-      if((decl = decl->cdr())) decl = decl->cdr(); // skip ,
+      //. Only reset the is_tentative flag it we didn't commit meanwhile.
+      //. (That could have happened from within another Tentative on the stack.)
+      if (!keep) my_parser.my_is_tentative = my_was_tentative;
+      my_parser.my_symbol = my_symbol,
+      my_parser.my_qualifying_scope = my_qualifying_scope;
+      my_lexer.restore(my_token_mark);
+      if (my_restore_encoding)
+	my_encoding = my_saved_encoding;
     }
-  return 0;
-}
-
-void set_declarator_comments(PT::Declaration *decl, PT::Node *comments)
-{
-  if (!decl) return;
-
-  PT::Node *declarator;
-  size_t n = 0;
-  while (true)
-  {
-    size_t i = n++;
-    declarator = nth_declarator(decl, i);
-    if (!declarator) break;
-    else if (PT::is_a(declarator, Token::ntDeclarator))
-      ((PT::Declarator*)declarator)->set_comments(comments);
   }
-}
-
-//. Helper function to recursively find the first left-most leaf node
-PT::Node *leftmost_leaf(PT::Node *node, PT::Node *& parent)
-{
-  if (!node || node->is_atom()) return node;
-  // Non-leaf node. So find first leafy child
-  PT::Node *leaf;
-  while (node)
-  {
-    if (node->car())
-    {
-      // There is a child here..
-      if (node->car()->is_atom())
-      {
-	// And this child is a leaf! return it and set parent
-	parent = node;
-	return node->car();
-      }
-      if ((leaf = leftmost_leaf(node->car(), parent)))
-	// Not a leaf so try recursing on it
-	return leaf;
-    }
-    // No leaves from car of this node, so try next cdr
-    node = node->cdr();
-  }
-  return 0;
-}
-
-//. Node is never the leaf. Instead we traverse the left side of the tree
-//. until we find a leaf, and change the leaf to be a CommentedLeaf.
-void set_leaf_comments(PT::Node *node, PT::Node *comments)
-{
-  PT::Node *parent, *leaf;
-  PT::CommentedAtom* cleaf;
-
-  // Find leaf
-  leaf = leftmost_leaf(node, parent);
-
-  // Sanity
-  if (!leaf)
-  {
-    std::cerr << "Warning: Failed to find leaf when trying to add comments." << std::endl;
-    PT::display(parent, std::cerr, false);
-    return; 
-  }
-
-  if (!(cleaf = dynamic_cast<PT::CommentedAtom *>(leaf)))
-  {
-    // Must change first child of parent to be a commented leaf
-    Token tk(leaf->position(), leaf->length(), Token::Comment);
-    cleaf = new (PT::GC) PT::CommentedAtom(tk, comments);
-    parent->set_car(cleaf);
-  }
-  else
-  {
-    // Already is a commented leaf, so add the comments to it
-    comments = PT::snoc(cleaf->get_comments(), comments);
-    cleaf->set_comments(comments);
-  }
-}
-
-}
+  Parser       & my_parser;
+  Lexer        & my_lexer;
+  bool           my_was_tentative;
+  ST::Scope    * my_qualifying_scope;
+  ST::Symbol const * my_symbol;
+  char const   * my_token_mark;
+  PT::Encoding   my_saved_encoding;
+  PT::Encoding & my_encoding;
+  bool           my_restore_encoding;
+  bool           my_rollback;
+};
 
 struct Parser::ScopeGuard
 {
   template <typename T>
-  ScopeGuard(Parser &p, T const *s)
-    : parser(p), noop(s == 0), scope_was_valid(p.my_scope_is_valid)
+  ScopeGuard(Parser &p, T const *t)
+    : parser(p), noop(t == 0)
   {
-    // If s contains a qualified name this may fail, as the name
-    // has to be declared before. We record the error but continune
-    // processing.
-    try { if (!noop) parser.my_symbols.enter_scope(s);}
-    catch (ST::Undefined const &e)
-    {
-      std::string filename;
-      unsigned long line = 0;
-      if (e.ptree)
-	line = parser.my_lexer.origin(e.ptree->begin(), filename);
-
-      parser.my_errors.push_back(new UndefinedSymbol(e.name, filename, line));
-      parser.my_scope_is_valid = false;
-      noop = true;
-    }
+    if (!noop) parser.my_symbols.enter_scope(parser.my_qualifying_scope, t);
+  }
+  ScopeGuard(Parser &p, ST::Scope *scope) : parser(p), noop(scope == 0)
+  {
+    if (!noop) parser.my_symbols.enter_scope(scope);
+  }
+  ScopeGuard(Parser &p,
+	     PT::ClassSpec const *spec,
+	     std::vector<ST::Symbol const *> const &bases)
+    : parser(p), noop(false)
+  {
+    parser.my_symbols.enter_class(parser.my_qualifying_scope, spec, bases);
   }
   ~ScopeGuard() 
   {
     if (!noop) parser.my_symbols.leave_scope();
-    parser.my_scope_is_valid = scope_was_valid;
   }
   Parser & parser;
   bool     noop;
-  bool     scope_was_valid;
 };
-
-Parser::StatusGuard::StatusGuard(Parser &p)
-  : my_lexer(p.my_lexer),
-    my_token_mark(my_lexer.save()),
-    my_errors(p.my_errors),
-    my_error_mark(my_errors.size()),
-    my_committed(false)
-{
-}
-
-Parser::StatusGuard::~StatusGuard() 
-{
-  if (!my_committed)
-  {
-    my_lexer.restore(my_token_mark);
-    my_errors.resize(my_error_mark);
-  }
-}
 
 Parser::Parser(Lexer &lexer, SymbolFactory &symbols, int ruleset)
   : my_lexer(lexer),
     my_ruleset(ruleset),
     my_symbols(symbols),
-    my_scope_is_valid(true),
+    my_in_nested_name_specifier(false),
+    my_qualifying_scope(0),
+    my_symbol(0),
+    my_is_tentative(false),
     my_comments(0),
     my_gt_is_operator(true),
-    my_in_template_decl(false)
+    my_template_parameter_list_cursor(0),
+    my_in_class(false),
+    my_in_functional_cast(false),
+    my_accept_default_arg(true),
+    my_in_declarator(false),
+    my_in_declaration_statement(false),
+    my_in_constant_expression(false),
+    my_declares_class_or_enum(false),
+    my_defines_class_or_enum(false)
 {
 }
 
@@ -274,9 +299,12 @@ Parser::~Parser()
 {
 }
 
-bool Parser::mark_error()
+bool Parser::error(std::string const &error)
 {
-  Trace trace("Parser::mark_error", Trace::PARSING);
+  Trace trace("Parser::error", Trace::PARSING);
+  trace << error;
+  if (my_is_tentative) return true;
+
   Token t1, t2;
   my_lexer.look_ahead(0, t1);
   my_lexer.look_ahead(1, t2);
@@ -284,21 +312,87 @@ bool Parser::mark_error()
   std::string filename;
   unsigned long line = my_lexer.origin(t1.ptr, filename);
 
-  const char *end = t1.ptr;
+  char const *end = t1.ptr;
   if(t2.type != '\0') end = t2.ptr + t2.length;
   else if(t1.type != '\0') end = t1.ptr + t1.length;
-  my_errors.push_back(new SyntaxError(filename, line, std::string(t1.ptr, end - t1.ptr)));
+  std::string msg;
+  if (error.empty())
+    msg = "before " + std::string(t1.ptr, end - t1.ptr);
+  else
+    msg = error + " before " + std::string(t1.ptr, end - t1.ptr);
+  my_errors.push_back(new SyntaxError(msg, filename, line));
   return my_errors.size() < max_errors;
 }
 
+inline bool Parser::require(char token)
+{
+  if (my_lexer.look_ahead() != token)
+  {
+    std::string msg = "expected ' '";
+    msg[10] = token;
+    error(msg);
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+inline bool Parser::require(Token::Type token, std::string const &name)
+{
+  if (my_lexer.look_ahead() != token)
+  {
+    error("expected " + name);
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+inline bool Parser::require(PTree::Node *node, std::string const &name)
+{
+  if (!node)
+  {
+    error("expected " + name);
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+inline bool Parser::require(PTree::Node *node, char token)
+{
+  if (!node)
+  {
+    std::string msg = "expected ' '";
+    msg[10] = token;
+    error(msg);
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
+inline void Parser::commit()
+{
+  Trace trace("Parser::commit", Trace::PARSING);
+  my_is_tentative = false;
+}
+
 template <typename T>
-bool Parser::declare(T *t)
+inline bool Parser::declare(T *t)
 {
   // If the scope isn't valid, do nothing.
-  if (!my_scope_is_valid) return true;
   try
   {
-    my_symbols.declare(t);
+    my_symbols.declare(my_qualifying_scope, t);
   }
   catch (ST::Undefined const &e)
   {
@@ -326,4620 +420,4267 @@ bool Parser::declare(T *t)
   return my_errors.size() < max_errors;
 }
 
+bool Parser::lookup_class_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_class_name", Trace::PARSING);
+  trace << name;
+  // If the next token is '::' and we are in a dependent scope
+  // accept the identifier without lookup.
+  if (my_in_nested_name_specifier &&
+      my_lexer.look_ahead() == Token::Scope &&
+      my_qualifying_scope == ST::DEPENDENT_SCOPE) return true;
+
+  ST::SymbolSet symbols;
+  // If we are looking at a partial template specialization we have to
+  // explicitely look up types in the template parameter scope, too.
+  if (my_template_parameter_list_seq.size())
+    symbols = my_symbols.lookup_template_parameter(name);
+  if (symbols.empty())
+  {
+    if (my_qualifying_scope)
+      symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::TYPE);
+    else
+      symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::TYPE);
+    if (symbols.empty()) return false; // no such class-name
+  }
+
+  PT::Encoding encoding;
+  ST::Symbol const *declared = resolve_typedef(*symbols.begin(), encoding);
+
+  if (dynamic_cast<ST::TypedefName const *>(declared)) 
+    // couldn't resolve further, and thus can't refer to a class
+    return false;
+  else if (dynamic_cast<ST::ClassName const *>(declared) ||
+	   dynamic_cast<ST::ClassTemplateName const *>(declared))
+  {
+    my_symbol = declared;
+    if (my_in_nested_name_specifier)
+      if (my_symbol == ST::DEPENDENT)
+	my_qualifying_scope = ST::DEPENDENT_SCOPE;
+      else
+	my_qualifying_scope = declared->scope()->find_scope(declared->ptree());
+    return true;
+  }
+  else if (dynamic_cast<ST::DependentName const *>(declared))
+  {
+    my_symbol = declared;
+    if (my_in_nested_name_specifier)
+      my_qualifying_scope = ST::DEPENDENT_SCOPE;
+    return true;
+  }
+  else return false;
+}
+
+bool Parser::lookup_template_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_template_name", Trace::PARSING);
+  ST::SymbolSet symbols;
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::DEFAULT);
+  else
+    symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::DEFAULT);
+  if (symbols.empty()) return false; // no such name
+  TemplateNameChecker checker;
+  for (ST::SymbolSet::iterator i = symbols.begin(); i != symbols.end(); ++i)
+    if (checker.is_template_name(*i))
+    {
+      my_symbol = checker.symbol();
+      if (my_in_nested_name_specifier) my_qualifying_scope = checker.scope();
+      return true;
+    }
+  error(name.unmangled() + " is not a known template.");
+  return false;
+}
+
+bool Parser::lookup_namespace_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_namespace_name", Trace::PARSING);
+  ST::SymbolSet symbols;
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::DEFAULT);
+  else
+    symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::DEFAULT);
+  if (symbols.size() != 1) return false; // no such namespace-name
+
+  ST::NamespaceName const *namespace_name =
+    dynamic_cast<ST::NamespaceName const *>(*symbols.begin());
+  if (!namespace_name) return false;     // name does not refer to a namespace-name
+
+  my_symbol = namespace_name;
+  if (my_in_nested_name_specifier)
+    my_qualifying_scope = 
+      namespace_name->scope()->find_scope(namespace_name->ptree());
+
+  return true;
+}
+
+bool Parser::lookup_type_name(PT::Encoding const &name)
+{
+  Trace trace("Parser::lookup_type_name", Trace::PARSING);
+  ST::SymbolSet symbols;
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::TYPE);
+  else
+  {
+    if (my_template_parameter_list_seq.size())
+      symbols = my_symbols.lookup_template_parameter(name);
+    ST::SymbolSet more =
+      my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::TYPE);
+    symbols.insert(more.begin(), more.end());
+  }
+  if (symbols.size() != 1) return false;
+
+  TypeNameChecker checker;
+  if (symbols.size() != 1 || !checker.is_type_name(*symbols.begin())) return false;
+  my_symbol = *symbols.begin();
+  return true;
+}
+
 unsigned long Parser::origin(const char *ptr,
 			     std::string &filename) const
 {
   return my_lexer.origin(ptr, filename);
 }
 
-void Parser::show_message_head(const char *pos)
-{
-  std::string filename;
-  unsigned long line = origin(pos, filename);
-  std::cerr << filename << ':' << line << ": ";
-}
-
 PT::Node *Parser::parse()
 {
   Trace trace("Parser::parse", Trace::PARSING);
-  PT::Node *statements = 0;
-  while(my_lexer.look_ahead(0) != '\0')
-  {
-    PT::Node *def;
-    if(definition(def))
-    {
-      statements = PT::nconc(statements, PT::list(def));
-    }
-    else
-    {
-      if(!mark_error()) return 0; // too many errors
-      skip_to(';');
-      Token tk;
-      my_lexer.get_token(tk);	// ignore ';'
-    }
-  }
-  // Retrieve trailing comments
-  PT::Node *c = wrap_comments(my_lexer.get_comments());
-  if (c)
+  PT::List *declarations = opt_declaration_seq();
+  // TODO: Retrieve trailing comments
+  //       We first need to figure out all the right places to
+  //       retrieve comments at (declarators, ...), or else
+  //       they will just accumulate.
+  return declarations;
+
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+  if (comments)
   {
     // Use zero-length CommentedAtom as special marker.
     // Should we define a 'PT::Comment' atom for those comments that
     // don't clash with the grammar ? At least that seems less hackish than this:
-    c = new PT::CommentedAtom(c->begin(), 0, c);
-    statements = PT::nconc(statements, PT::list(c));
+    PT::Node *c = new PT::CommentedAtom(comments->begin(), 0, comments);
+    declarations = PT::snoc(declarations, c);
   }
-  return statements;
+  return declarations;
 }
 
-/*
-  definition
-  : null.declaration
-  | typedef
-  | template.decl
-  | metaclass.decl
-  | linkage.spec
-  | namespace.spec
-  | namespace.alias
-  | using.declaration
-  | extern.template.decl
-  | declaration
-*/
-bool Parser::definition(PT::Node *&p)
+// :: [opt]
+PT::Atom *Parser::opt_scope(PT::Encoding &encoding)
 {
-  Trace trace("Parser::definition", Trace::PARSING);
-  bool res;
-  int t = my_lexer.look_ahead(0);
-  if(t == ';')
-    res = null_declaration(p);
-  else if(t == Token::TYPEDEF)
+  if (my_lexer.look_ahead() == Token::Scope)
   {
-    PT::Typedef *td;
-    res = typedef_(td);
-    p = td;
-  }
-  else if(t == Token::TEMPLATE)
-    res = template_decl(p);
-  else if(t == Token::EXPORT && my_lexer.look_ahead(1) == Token::TEMPLATE)
-    res = template_decl(p);
-  else if(t == Token::METACLASS)
-    res = metaclass_decl(p);
-  else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::StringL)
-    res = linkage_spec(p);
-  else if(t == Token::EXTERN && my_lexer.look_ahead(1) == Token::TEMPLATE &&
-	  my_ruleset & GCC)
-    res = extern_template_decl(p);
-  else if(t == Token::NAMESPACE && my_lexer.look_ahead(2) == '=')
-  {
-    PT::NamespaceAlias *alias;
-    res = namespace_alias(alias);
-    p = alias;
-  }
-  else if(t == Token::NAMESPACE)
-  {
-    PT::NamespaceSpec *spec;
-    res = namespace_spec(spec);
-    p = spec;
-  }
-  else if(t == Token::USING)
-  {
-    if (my_lexer.look_ahead(1) == Token::NAMESPACE)
-    {
-      PT::UsingDirective *udir;
-      res = using_directive(udir);
-      if (res)
-      {
-	declare(udir);
-	p = udir;
-      }
-    }
-    else
-    {
-      PT::UsingDeclaration *udecl;
-      res = using_declaration(udecl);
-      if (res)
-      {
-	declare(udecl);
-	p = udecl;
-      }
-    }
-  }
-  else 
-  {
-    PT::Declaration *decl;
-    if (!declaration(decl)) return false;
-    PT::Node *c = wrap_comments(my_lexer.get_comments());
-    if (c) set_declarator_comments(decl, c);
-    p = decl;
-    declare(decl);
-    return true;
-  }
-  my_lexer.get_comments();
-  return res;
-}
-
-bool Parser::null_declaration(PT::Node *&decl)
-{
-  Trace trace("Parser::null_declaration", Trace::PARSING);
-  Token tk;
-
-  if(my_lexer.get_token(tk) != ';') return false;
-  decl = new PT::Declaration(0, PT::list(0, new PT::Atom(tk)));
-  return true;
-}
-
-/*
-  typedef
-  : TYPEDEF type.specifier init_declarator_list ';'
-*/
-bool Parser::typedef_(PT::Typedef *&def)
-{
-  Trace trace("Parser::typedef_", Trace::PARSING);
-  Token tk;
-  PT::Node *type_name, *decl;
-  PT::Encoding type_encode;
-
-  if(my_lexer.get_token(tk) != Token::TYPEDEF) return false;
-
-  def = new PT::Typedef(new PT::Kwd::Typedef(tk));
-  if(!type_specifier(type_name, false, type_encode)) return false;
-
-  def = PT::snoc(def, type_name);
-  if(!init_declarator_list(decl, type_encode, true)) return false;
-  if(my_lexer.get_token(tk) != ';') return false;
-
-  def = PT::nconc(def, PT::list(decl, new PT::Atom(tk)));
-  declare(def);
-  return true;
-}
-
-/*
-  type.specifier
-  : {cv.qualify} (integral.or.class.spec | name) {cv.qualify}
-*/
-bool Parser::type_specifier(PT::Node *&tspec, bool check, PT::Encoding &encode)
-{
-  Trace trace("Parser::type_specifier", Trace::PARSING);
-  PT::Node *cv_q, *cv_q2;
-
-  // FIXME: Need to rewrite this to correctly reflect the grammar, in particular
-  //        'typename' ...
-  //        Do we need a new node type ('Typename') ?
-  if(!opt_cv_qualifier(cv_q) || !opt_integral_type_or_class_spec(tspec, encode))
-    return false;
-  
-  if(!tspec)
-  {
-    if(check)
-    {
-      Token tk;
-      my_lexer.look_ahead(0, tk);
-      if(!maybe_typename_or_class_template(tk))
-	return false;
-    }
-
-    if(!name(tspec, encode))
-      return false;
-  }
-
-  if(!opt_cv_qualifier(cv_q2))
-    return false;
-
-  if(cv_q)
-  {
-    tspec = PT::snoc(cv_q, tspec);
-    if(cv_q2)
-      tspec = PT::nconc(tspec, cv_q2);
-  }
-  else if(cv_q2)
-    tspec = PT::cons(tspec, cv_q2);
-
-  encode.cv_qualify(cv_q, cv_q2);
-  return true;
-}
-
-// is_type_specifier() returns true if the next is probably a type specifier.
-bool Parser::is_type_specifier()
-{
-  int t = my_lexer.look_ahead(0);
-  if(t == Token::TYPENAME || t == Token::Identifier || t == Token::Scope
-     || t == Token::CONST || t == Token::VOLATILE
-     || t == Token::CHAR || t == Token::WCHAR 
-     || t == Token::INT || t == Token::SHORT || t == Token::LONG
-     || t == Token::SIGNED || t == Token::UNSIGNED || t == Token::FLOAT || t == Token::DOUBLE
-     || t == Token::VOID || t == Token::BOOLEAN
-     || t == Token::CLASS || t == Token::STRUCT || t == Token::UNION || t == Token::ENUM)
-    return true;
-  else if (my_ruleset & MSVC && t == Token::INT64)
-    return true;
-  else
-    return false;
-}
-
-/*
-  metaclass.decl
-  : METACLASS Identifier {{':'} Identifier {'(' meta.arguments ')'}} ';'
-
-  We allow two kinds of syntax:
-
-  metaclass <metaclass> <class>(...);
-  metaclass <metaclass>;
-  metaclass <class> : <metaclass>(...);		// for backward compatibility
-*/
-bool Parser::metaclass_decl(PT::Node *&decl)
-{
-  int t;
-  Token tk1, tk2, tk3, tk4;
-  PT::Node *metaclass_name;
-
-  if(my_lexer.get_token(tk1) != Token::METACLASS)
-    return false;
-
-  if(my_lexer.get_token(tk2) != Token::Identifier)
-    return false;
-
-  t = my_lexer.get_token(tk3);
-  if(t == Token::Identifier)
-  {
-    metaclass_name = new PT::Identifier(tk2);
-    decl = new PT::MetaclassDecl(new PT::UserKeyword(tk1),
-				 PT::list(metaclass_name, new PT::Identifier(tk3)));
-  }
-  else if(t == ':')
-  {
-    if(my_lexer.get_token(tk4) != Token::Identifier)
-      return false;
-
-    metaclass_name = new PT::Identifier(tk4);
-    decl = new PT::MetaclassDecl(new PT::UserKeyword(tk1),
-				 PT::list(metaclass_name, new PT::Identifier(tk2)));
-  }
-  else if(t == ';')
-  {
-    metaclass_name = new PT::Identifier(tk2);
-    decl = new PT::MetaclassDecl(new PT::UserKeyword(tk1),
-				 PT::list(metaclass_name, 0, new PT::Atom(tk3)));
-    return true;
-  }
-  else
-    return false;
-
-  t = my_lexer.get_token(tk1);
-  if(t == '(')
-  {
-    PT::Node *args;
-    if(!meta_arguments(args))
-      return false;
-
-    if(my_lexer.get_token(tk2) != ')')
-      return false;
-
-    decl = PT::nconc(decl, PT::list(new PT::Atom(tk1), args, new PT::Atom(tk2)));
-    t = my_lexer.get_token(tk1);
-  }
-
-  if(t == ';')
-  {
-    decl = PT::snoc(decl, new PT::Atom(tk1));
-    return true;
-  }
-  else
-    return false;
-}
-
-/*
-  meta.arguments : (anything but ')')*
-*/
-bool Parser::meta_arguments(PT::Node *&args)
-{
-  int t;
-  Token tk;
-
-  int n = 1;
-  args = 0;
-  while(true)
-  {
-    t = my_lexer.look_ahead(0);
-    if(t == '\0')
-      return false;
-    else if(t == '(')
-      ++n;
-    else if(t == ')')
-      if(--n <= 0)
-	return true;
-
-    my_lexer.get_token(tk);
-    args = PT::snoc(args, new PT::Atom(tk));
-  }
-}
-
-/*
-  linkage.spec
-  : EXTERN StringL definition
-  |  EXTERN StringL linkage.body
-*/
-bool Parser::linkage_spec(PT::Node *&spec)
-{
-  Trace trace("Parser::linkage_spec", Trace::PARSING);
-  Token tk1, tk2;
-  PT::Node *body;
-
-  if(my_lexer.get_token(tk1) != Token::EXTERN) return false;
-  if(my_lexer.get_token(tk2) != Token::StringL) return false;
-
-  spec = new PT::LinkageSpec(new PT::Kwd::Extern(tk1), PT::list(new PT::Atom(tk2)));
-  if(my_lexer.look_ahead(0) == '{')
-  {
-    if(!linkage_body(body)) return false;
-  }
-  else
-    if(!definition(body)) return false;
-
-  spec = PT::snoc(spec, body);
-  return true;
-}
-
-/*
-  namespace.spec
-  : NAMESPACE Identifier definition
-  | NAMESPACE { Identifier } linkage.body
-*/
-bool Parser::namespace_spec(PT::NamespaceSpec *&spec)
-{
-  Trace trace("Parser::namespace_spec", Trace::PARSING);
-
-  Token tk;
-  if(my_lexer.get_token(tk) != Token::NAMESPACE) return false;
-  PT::Kwd::Namespace *namespace_ = new PT::Kwd::Namespace(tk);
-
-  PT::Node *comments = wrap_comments(my_lexer.get_comments());
-
-  PT::Node *name;
-  if(my_lexer.look_ahead(0) == '{') name = 0;
-  else
-    if(my_lexer.get_token(tk) == Token::Identifier)
-      name = new PT::Identifier(tk);
-    else return false;
-
-  spec = new PT::NamespaceSpec(namespace_, PT::list(name, 0));
-  spec->set_comments(comments);
-
-  PT::Node *body;
-  if(my_lexer.look_ahead(0) == '{')
-  {
-    declare(spec);
-    ScopeGuard guard(*this, spec);
-    if(!linkage_body(body)) return false;
-  }
-  else if(!definition(body)) return false;
-
-  PT::tail(spec, 2)->set_car(body);
-
-  return true;
-}
-
-/*
-  namespace.alias : NAMESPACE Identifier '=' Identifier ';'
-*/
-bool Parser::namespace_alias(PT::NamespaceAlias *&exp)
-{
-  Trace trace("Parser::namespace_alias", Trace::PARSING);
-  Token tk;
-
-  if(my_lexer.get_token(tk) != Token::NAMESPACE) return false;
-  PT::Node *ns = new PT::Kwd::Namespace(tk);
-
-  if (my_lexer.get_token(tk) != Token::Identifier) return false;
-  PT::Node *alias = new PT::Identifier(tk);
-
-  if (my_lexer.get_token(tk) != '=') return false;
-  PT::Node *eq = new PT::Atom(tk);
-
-  PT::Node *name;
-  PT::Encoding encode;
-  int length = 0;
-  if(my_lexer.look_ahead(0) == Token::Scope)
-  {
-    my_lexer.get_token(tk);
-    name = PT::list(new PT::Atom(tk));
-    encode.global_scope();
-    ++length;
-  }
-  else name = 0;
-
-  while (true)
-  {
-    if (my_lexer.get_token(tk) != Token::Identifier) return false;
-    PT::Node *n = new PT::Identifier(tk);
-    encode.simple_name(n);
-    ++length;
-    
-    if(my_lexer.look_ahead(0) == Token::Scope)
-    {
-      my_lexer.get_token(tk);
-      name = PT::nconc(name, PT::list(n, new PT::Atom(tk)));
-    }
-    else
-    {
-      if(name == 0) name = n;
-      else name = PT::snoc(name, n);
-
-      if(length > 1) encode.qualified(length);
-
-      break;
-    }
-  }
-
-  if (my_lexer.get_token(tk) != ';') return false;
-
-  exp = new PT::NamespaceAlias(ns, PT::list(alias, eq, name, new PT::Atom(tk)));
-  return true;
-}
-
-/*
-  using.directive
-  : USING NAMESPACE name
-*/
-bool Parser::using_directive(PT::UsingDirective *&udir)
-{
-  Trace trace("Parser::using_directive", Trace::PARSING);
-  Token tk;
-  if(my_lexer.get_token(tk) != Token::USING)
-    return false;
-
-  udir = new PT::UsingDirective(new PT::Kwd::Using(tk));
-
-  if(my_lexer.get_token(tk) != Token::NAMESPACE)
-    return false;
-  udir = PT::snoc(udir, new PT::Kwd::Namespace(tk));
-
-  PT::Node *id;
-  PT::Encoding name_encode;
-  if (!name(id, name_encode)) return false;
-  if (!id->is_atom())
-    id = new PT::Name(id, name_encode);
-  else
-    id = new PT::Name(PT::list(id), name_encode);
-  udir = PT::snoc(udir, id);
-  if (my_lexer.get_token(tk) != ';') return false;
-
-  udir = PT::snoc(udir, new PT::Atom(tk));
-  return true;
-}
-
-
-//. using-declaration:
-//.   using typename [opt] name
-bool Parser::using_declaration(PT::UsingDeclaration *&udecl)
-{
-  Trace trace("Parser::using_declaration", Trace::PARSING);
-
-  Token tk;
-  if(my_lexer.get_token(tk) != Token::USING)
-    return false;
-
-  PT::Kwd::Typename *typename_ = 0;
-  if(my_lexer.look_ahead(0) == Token::TYPENAME)
-  {
-    Token t;
-    my_lexer.get_token(t);
-    typename_ = new PT::Kwd::Typename(t);
-  }
-
-  PT::Node *id;
-  PT::Encoding name_encode;
-  if (!name(id, name_encode)) return false;
-  if (!id->is_atom())
-    id = new PT::Name(id, name_encode);
-  else
-    id = new PT::Name(PT::list(id), name_encode);
-
-  udecl = new PT::UsingDeclaration(new PT::Kwd::Using(tk), typename_, id);
-
-  if (my_lexer.get_token(tk) != ';') return false;
-
-  udecl = PT::snoc(udecl, new PT::Atom(tk));
-  return true;
-}
-
-
-/*
-  linkage.body : '{' (definition)* '}'
-
-  Note: this is also used to construct namespace.spec
-*/
-bool Parser::linkage_body(PT::Node *&body)
-{
-  Trace trace("Parser::linkage_body", Trace::PARSING);
-  Token op, cp;
-  PT::Node *def;
-
-  if(my_lexer.get_token(op) != '{')
-    return false;
-
-  body = 0;
-  while(my_lexer.look_ahead(0) != '}')
-  {
-    if(!definition(def))
-    {
-      if(!mark_error())
-	return false;		// too many errors
-
-      skip_to('}');
-      my_lexer.get_token(cp);
-      body = PT::list(new PT::Atom(op), 0, new PT::Atom(cp));
-      return true;		// error recovery
-    }
-
-    body = PT::snoc(body, def);
-  }
-
-  my_lexer.get_token(cp);
-  body = new PT::Brace(new PT::Atom(op), body,
-		       new PT::CommentedAtom(cp, wrap_comments(my_lexer.get_comments())));
-  return true;
-}
-
-/*
-  template.decl
-  : TEMPLATE '<' temp.arg.list '>' declaration
-  | TEMPLATE declaration
-  | TEMPLATE '<' '>' declaration
-
-  The second case is an explicit template instantiation.  declaration must
-  be a class declaration.  For example,
-
-      template class Foo<int, char>;
-
-  explicitly instantiates the template Foo with int and char.
-
-  The third case is a specialization of a template function.  declaration
-  must be a function template.  For example,
-
-      template <> int count(String x) { return x.length; }
-*/
-bool Parser::template_decl(PT::Node *&decl)
-{
-  Trace trace("Parser::template_decl", Trace::PARSING);
-  PT::Declaration *body;
-  PT::TemplateDecl *tdecl;
-  TemplateDeclKind kind = tdk_unknown;
-
-  my_comments = wrap_comments(my_lexer.get_comments());
-  if(!template_decl2(tdecl, kind)) return false;
-  if (kind == tdk_decl) my_in_template_decl = true;
-  bool success = declaration(body);
-  my_in_template_decl = false;
-  if (!success) return false;
-  // Repackage the decl and body depending upon what kind of template
-  // declaration was observed.
-  switch (kind)
-  {
-    case tdk_instantiation:
-      // Repackage the decl as a PtreeTemplateInstantiation
-      decl = body;
-      // assumes that decl has the form: [0 [class ...] ;]
-      if (PT::length(decl) != 3) return false;
-      if (PT::first(decl) != 0) return false;
-      if (PT::type_of(PT::second(decl)) != Token::ntClassSpec) return false;
-      if (*PT::third(decl) != ';') return false;
-      decl = new PT::TemplateInstantiation(PT::second(decl));
-      break;
-    case tdk_decl:
-    {
-      tdecl = PT::snoc(tdecl, body);
-      declare(tdecl);
-      decl = tdecl;
-      break;
-    }
-    case tdk_specialization:
-    {
-      tdecl = PT::snoc(tdecl, body);
-      decl = tdecl;
-      break;
-    }
-    default:
-      throw std::runtime_error("Parser::template_decl(): fatal");
-  }
-  return true;
-}
-
-bool Parser::template_decl2(PT::TemplateDecl *&decl, TemplateDeclKind &kind)
-{
-  Trace trace("Parser::template_decl2", Trace::PARSING);
-  Token tk;
-  PT::List *params;
-
-  my_lexer.get_token(tk);
-  if (tk.type == Token::EXPORT)
-    my_lexer.get_token(tk); // FIXME: ignored for now.
-  if(tk.type != Token::TEMPLATE) return false;
-  if(my_lexer.look_ahead(0) != '<') 
-  {
-    // explicit-instantiation
-    decl = 0;
-    kind = tdk_instantiation;
-    return true;
-  }
-
-  decl = new PT::TemplateDecl(new PT::Kwd::Template(tk));
-  if(my_lexer.get_token(tk) != '<') return false;
-
-  decl = PT::snoc(decl, new PT::Atom(tk));
-  {
-    ScopeGuard guard(*this, decl);
-    if(!template_parameter_list(params)) return false;
-  }
-  if(my_lexer.get_token(tk) != '>') return false;
-
-  // FIXME: Flush any dangling comments, or else they will be attached to
-  //        the declared class / function template itself.
-  my_lexer.get_comments();
-  decl = PT::nconc(decl, PT::list(params, new PT::Atom(tk)));
-
-  // FIXME: nested TEMPLATE is ignored
-  while (my_lexer.look_ahead(0) == Token::TEMPLATE) 
-  {
-    my_lexer.get_token(tk);
-    if(my_lexer.look_ahead(0) != '<') break;
-
-    my_lexer.get_token(tk);
-    PT::List *nested = PT::list(0, 0);
-    ScopeGuard guard(*this, nested); // template parameter list
-    if(!template_parameter_list(params)) return false;
-    if(my_lexer.get_token(tk) != '>') return false;
-  }
-
-  if (params == 0) kind = tdk_specialization; // template < > declaration
-  else kind = tdk_decl;                       // template < ... > declaration
-  return true;
-}
-
-//. template-parameter-list:
-//.   template-parameter
-//.   template-parameter-list , template-parameter
-bool Parser::template_parameter_list(PT::List *&params)
-{
-  Trace trace("Parser::template_parameter_list", Trace::PARSING);
-  Token tk;
-  PT::Node *a;
-
-  // FIXME: '<>' is invalid in this context. This probably belongs into
-  //        the production of an explicit specialization.
-  if(my_lexer.look_ahead(0) == '>')
-  {
-    params = 0;
-    return true;
-  }
-
-  if(!template_parameter(a))
-    return false;
-  params = PT::list(a);
-  while(my_lexer.look_ahead(0) == ',')
-  {
-    my_lexer.get_token(tk);
-    params = PT::snoc(params, new PT::Atom(tk));
-    if(!template_parameter(a))
-      return false;
-
-    params = PT::snoc(params, a);
-  }
-  return true;
-}
-
-//. template-parameter:
-//.   type-parameter
-//.   parameter-declaration
-bool Parser::template_parameter(PT::Node *&decl)
-{
-  Trace trace("Parser::template_parameter", Trace::PARSING);
-
-  PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
-  my_gt_is_operator = false;
-
-  Token::Type type = my_lexer.look_ahead(0);
-  // template template parameter
-  if (type == Token::TEMPLATE) return type_parameter(decl);
-  // possibly a type parameter
-  else if (type == Token::TYPENAME || type == Token::CLASS)
-  {
-    // If the next token is an identifier, and the following
-    // one is ',', '=', or '>', it's a type parameter.
-    type = my_lexer.look_ahead(1);
-    if (type == Token::Identifier) type = my_lexer.look_ahead(2);
-    if (type == ',' || type == '=' || type == '>')
-      return type_parameter(decl);
-  }
-  // It's a non-type parameter.
-  PT::Encoding encoding; // unused
-  PT::ParameterDeclaration *pdecl;
-  if (!parameter_declaration(pdecl, encoding)) return false;
-  decl = pdecl;
-  return true;
-}
-
-//. type-parameter:
-//.   class identifier [opt]
-//.   class identifier [opt] = type-id
-//.   typename identifier [opt]
-//.   typename identifier [opt] = type-id
-//.   template  < template-parameter-list > class identifier [opt]
-//.   template  < template-parameter-list > class identifier [opt] = id-expression
-bool Parser::type_parameter(PT::Node *&decl)
-{
-  Trace trace("Parser::type_parameter", Trace::PARSING);
-
-  Token::Type type = my_lexer.look_ahead(0);
-  if(type == Token::TYPENAME || type == Token::CLASS)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Keyword *kwd;
-    if (type == Token::TYPENAME) kwd = new PT::Kwd::Typename(tk);
-    else kwd = new PT::Kwd::Class(tk);
-
-    PT::Identifier *name = 0;
-    if (my_lexer.look_ahead(0) == Token::Identifier)
-    {
-      my_lexer.get_token(tk);
-      name = new PT::Identifier(tk);
-    }
-    PT::TypeParameter *tparam = new PT::TypeParameter(kwd, PT::list(name));
-    if (name) declare(tparam);
-
-    decl = tparam;
-    type = my_lexer.look_ahead(0);
-    if (type == '=')
-    {
-      my_lexer.get_token(tk);
-      PT::Encoding name;
-      PT::Node *default_type;
-      if(!type_id(default_type, name)) return false;
-      default_type = new PT::Name(default_type, name);
-      decl = PT::nconc(decl, PT::list(new PT::Atom(tk), default_type));
-    }
-  }
-  else if (type == Token::TEMPLATE) 
-  {
-    TemplateDeclKind kind;
-    PT::TemplateDecl *tdecl;
-    if(!template_decl2(tdecl, kind)) return false;
-
-    Token tk;
-    if (my_lexer.get_token(tk) != Token::CLASS) return false;
-    PT::Kwd::Class *class_ = new PT::Kwd::Class(tk);
-    PT::Identifier *name = 0;
-    if (my_lexer.look_ahead(0) == Token::Identifier)
-    {
-      my_lexer.get_token(tk);
-      name = new PT::Identifier(tk);
-    }
-    PT::ClassSpec *cspec = new PT::ClassSpec(class_, PT::cons(name, 0), 0);
-    tdecl = PT::nconc(tdecl, cspec);
-    PT::TypeParameter *tparam = new PT::TypeParameter(tdecl, 0);
-    if (name) declare(tparam);
-    decl = tparam;
-
-    if(my_lexer.look_ahead(0) == '=')
-    {
-      my_lexer.get_token(tk);
-      PT::Encoding name;
-      PT::Node *default_type;
-      if(!type_id(default_type, name)) return false;
-      default_type = new PT::Name(default_type, name);
-      decl = PT::nconc(decl, PT::list(new PT::Atom(tk), default_type));
-    }
-  }
-  return true;
-}
-
-//. extern-template-decl:
-//.   extern template declaration
- bool Parser::extern_template_decl(PT::Node *&decl) 	 
- { 	 
-   Trace trace("Parser::extern_template_decl", Trace::PARSING); 	 
-   Token tk1, tk2; 	 
-   PT::Declaration *body; 	 
-  	 
-   if(my_lexer.get_token(tk1) != Token::EXTERN) return false; 	 
-   if(my_lexer.get_token(tk2) != Token::TEMPLATE) return false; 	 
-   if(!declaration(body)) return false; 	 
-  	 
-   decl = new PT::ExternTemplate(new PT::Atom(tk1),PT::list(new PT::Atom(tk2), body));
-   return true;
- } 	 
-  	 
-/*
-  declaration
-  : integral.declaration
-  | const.declaration
-  | other.declaration
-
-  decl.head
-  : {member.spec} {storage.spec} {member.spec} {cv.qualify}
-
-  integral.declaration
-  : integral.decl.head init_declarator_list (';' | function.body)
-  | integral.decl.head ';'
-  | integral.decl.head ':' expression ';'
-
-  integral.decl.head
-  : decl.head integral.or.class.spec {cv.qualify}
-
-  other.declaration
-  : decl.head name {cv.qualify} init_declarator_list (';' | function.body)
-  | decl.head name constructor.decl (';' | function.body)
-  | FRIEND name ';'
-
-  const.declaration
-  : cv.qualify {'*'} Identifier '=' expression {',' init_declarator_list} ';'
-
-  Note: if you modify this function, look at declaration.statement, too.
-  Note: this regards a statement like "T (a);" as a constructor
-        declaration.  See is_constructor_decl().
-*/
-bool Parser::declaration(PT::Declaration *&statement)
-{
-  Trace trace("Parser::declaration", Trace::PARSING);
-  PT::Node *mem_s, *storage_s, *cv_q, *integral, *head;
-  PT::Encoding type_encode;
-  int res;
-
-  if (!my_in_template_decl)
-    my_comments = wrap_comments(my_lexer.get_comments());
-
-  if(!opt_member_spec(mem_s) || !opt_storage_spec(storage_s))
-    return false;
-
-  if(mem_s == 0)
-    head = 0;
-  else
-    head = mem_s;	// mem_s is a list.
-
-  if(storage_s != 0)
-    head = PT::snoc(head, storage_s);
-
-  if(mem_s == 0)
-    if(opt_member_spec(mem_s))
-      head = PT::nconc(head, mem_s);
-    else
-      return false;
-
-  if(!opt_cv_qualifier(cv_q)
-     || !opt_integral_type_or_class_spec(integral, type_encode))
-    return false;
-
-  if(integral)
-    res = integral_declaration(statement, type_encode, head, integral, cv_q);
-  else
-  {
-    type_encode.clear();
-    int t = my_lexer.look_ahead(0);
-    if(cv_q != 0 && ((t == Token::Identifier && my_lexer.look_ahead(1) == '=')
-		     || t == '*'))
-      res = const_declaration(statement, type_encode, head, cv_q);
-    else
-      res = other_declaration(statement, type_encode, mem_s, cv_q, head);
-  }
-  if (res && statement)
-  {
-    statement->set_comments(my_comments);
-    my_comments = 0;
-  }
-  return res;
-}
-
-bool Parser::integral_declaration(PT::Declaration *&statement,
-				  PT::Encoding &type_encode,
-				  PT::Node *head, PT::Node *integral,
-				  PT::Node *cv_q)
-{
-  Trace trace("Parser::integral_declaration", Trace::PARSING);
-  Token tk;
-  PT::Node *cv_q2, *decl;
-
-  if(!opt_cv_qualifier(cv_q2))
-    return false;
-
-  if(cv_q)
-    if(cv_q2 == 0)
-      integral = PT::snoc(cv_q, integral);
-    else
-      integral = PT::nconc(cv_q, PT::cons(integral, cv_q2));
-  else if(cv_q2 != 0)
-    integral = PT::cons(integral, cv_q2);
-
-  type_encode.cv_qualify(cv_q, cv_q2);
-  switch(my_lexer.look_ahead(0))
-  {
-    case ';' :
-      my_lexer.get_token(tk);
-      statement = new PT::Declaration(head, PT::list(integral, new PT::Atom(tk)));
-      return true;
-    case ':' : // bit field
-      my_lexer.get_token(tk);
-      if(!assign_expr(decl)) return false;
-
-      decl = PT::list(PT::list(new PT::Atom(tk), decl));
-      if(my_lexer.get_token(tk) != ';') return false;
-
-      statement = new PT::Declaration(head,
-				      PT::list(integral, decl, new PT::Atom(tk)));
-      return true;
-    default :
-      if(!init_declarator_list(decl, type_encode, true)) return false;
-
-      if(my_lexer.look_ahead(0) == ';')
-      {
-	my_lexer.get_token(tk);
-	statement = new PT::Declaration(head, 
-					PT::list(integral, decl, new PT::Atom(tk)));
-	return true;
-      }
-      else
-      {
-	PT::FunctionDefinition *def;
-  	def = new PT::FunctionDefinition(head, PT::list(integral, decl->car()));
-	ScopeGuard guard(*this, def);
-	PT::Block *body;
-	if(!function_body(body)) return false;
-	if(PT::length(decl) != 1) return false;
-
-  	statement = PT::snoc(def, body);
-	return true;
-      }
-  }
-}
-
-bool Parser::const_declaration(PT::Declaration *&statement, PT::Encoding&,
-			       PT::Node *head, PT::Node *cv_q)
-{
-  Trace trace("Parser::const_declaration", Trace::PARSING);
-  PT::Node *decl;
-  Token tk;
-  PT::Encoding type_encode;
-
-  type_encode.simple_const();
-  if(!init_declarator_list(decl, type_encode, false))
-    return false;
-
-  if(my_lexer.look_ahead(0) != ';')
-    return false;
-
-  my_lexer.get_token(tk);
-  statement = new PT::Declaration(head, PT::list(cv_q, decl, new PT::Atom(tk)));
-  return true;
-}
-
-bool Parser::other_declaration(PT::Declaration *&statement, PT::Encoding &type_encode,
-			       PT::Node *mem_s, PT::Node *cv_q,
-			       PT::Node *head)
-{
-  Trace trace("Parser::other_declaration", Trace::PARSING);
-  PT::Node *type_name, *decl, *cv_q2;
-  Token tk;
-
-  if(!name(type_name, type_encode))
-    return false;
-
-  if(cv_q == 0 && is_constructor_decl())
-  {
-    PT::Encoding ftype_encode;
-    if(!constructor_decl(decl, ftype_encode))
-      return false;
-
-    decl = PT::list(new PT::Declarator(type_name, decl,
-				       ftype_encode, type_encode,
-				       type_name));
-    type_name = 0;
-  }
-  else if(mem_s != 0 && my_lexer.look_ahead(0) == ';')
-  {
-    // FRIEND name ';'
-    if(PT::length(mem_s) == 1 && PT::type_of(mem_s->car()) == Token::FRIEND)
-    {
-      my_lexer.get_token(tk);
-      statement = new PT::Declaration(head, PT::list(type_name, new PT::Atom(tk)));
-      return true;
-    }
-    else
-      return false;
+    my_qualifying_scope = my_symbols.current_scope()->global_scope();
+    encoding.global_scope();
+    return new PT::Atom(my_lexer.get_token());
   }
   else
   {
-    if(!opt_cv_qualifier(cv_q2))
-      return false;
-
-    if(cv_q)
-      if(cv_q2 == 0)
-	type_name = PT::snoc(cv_q, type_name);
-      else
-	type_name = PT::nconc(cv_q, PT::cons(type_name, cv_q2));
-    else if(cv_q2)
-      type_name = PT::cons(type_name, cv_q2);
-
-    type_encode.cv_qualify(cv_q, cv_q2);
-    if(!init_declarator_list(decl, type_encode, false))
-      return false;
+    my_qualifying_scope = 0;
+    return 0;
   }
+}
 
-  if(my_lexer.look_ahead(0) == ';')
+// identifier
+PT::Identifier *Parser::identifier(PT::Encoding &encoding)
+{
+  Token token = my_lexer.get_token();
+  if (token.type != Token::Identifier)
   {
-    my_lexer.get_token(tk);
-    statement = new PT::Declaration(head,
-				    PT::list(type_name, decl, new PT::Atom(tk)));
+    error ("expected identifier");
+    return 0;
+  }
+  PT::Identifier *identifier = new PT::Identifier(token);
+  encoding.simple_name(identifier);
+  return identifier;
+}
+
+// namespace-name:
+//   original-namespace-name
+//   namespace-alias
+PT::Identifier *Parser::namespace_name(PT::Encoding &encoding)
+{
+  Trace trace("Parser::namespace_name", Trace::PARSING);
+  PT::Encoding name;
+  PT::Identifier *id = identifier(name);
+  if (!id || !lookup_namespace_name(name)) return 0;
+  encoding.simple_name(id);
+  return id;
+}
+
+// class-name:
+//   identifier
+//   template-id
+PT::Node *Parser::class_name(PT::Encoding &encoding,
+			     bool is_typename, bool is_template,
+			     bool in_base_clause)
+{
+  Trace trace("Parser::class_name", Trace::PARSING);
+  if (!require(Token::Identifier, "identifier")) return 0;
+  else if (my_lexer.look_ahead(1) == '<')
+    return template_id(encoding, is_template);
+  else
+  {
+    PT::Encoding name;
+    PT::Identifier *id = identifier(name);
+    // If the 'typename' keyword was seen before, don't look up
+    // the class name.
+    // If we are in a base-clause, we know this is a class-name,
+    // even if we can't look it up (e.g. because it is a dependent
+    // name. However, since we do want the symbol associated with
+    // the base class, we attempt a lookup anyways.
+    if (is_typename || lookup_class_name(name) || in_base_clause)
+    {
+      encoding.simple_name(id);
+      return id;
+    }
+    else return 0;
+  }
+}
+
+// class-or-namespace-name:
+//   class-name
+//   namespace-name
+PT::Node *Parser::class_or_namespace_name(PT::Encoding &encoding,
+					  bool is_typename,
+					  bool is_template)
+{
+  Trace trace("Parser::class_or_namespace_name", Trace::PARSING);
+  // If we have seen the 'template' keyword, or if we are currently in a class scope,
+  // we know this has to be a class name.
+  if (is_template || 
+      (my_qualifying_scope && dynamic_cast<ST::Class *>(my_qualifying_scope)))
+    // If we have seen the 'template' keyword, we are (probably) in a dependent
+    // name, and thus don't look up the name to make sure it refers to a class.
+    // As this is only called during the evaluation of a nested-name-specifier,
+    // remember the scope for subsequent lookups.
+    return class_name(encoding, is_typename, is_template);
+
+  Tentative tentative(*this);
+  PT::Node *name = class_name(encoding, is_typename, is_template);
+  if (name) return name;
+  tentative.rollback();
+  return namespace_name(encoding);
+}
+
+// nested-name-specifier:
+//   class-or-namespace-name :: nested-name-specifier [opt]
+//   class-or-namespace-name :: template nested-name-specifier
+PT::List *Parser::nested_name_specifier(PT::Encoding &encoding,
+					bool is_template)
+{
+  Trace trace("Parser::nested_name_specifier", Trace::PARSING);
+
+  // If the next token is not an identifier or the following
+  // neither '::' nor '<' this is not a nested-name-specifier.
+  if (my_lexer.look_ahead() != Token::Identifier) return 0;
+
+  // If the second-next token is a scope, this definitely is a 
+  // nested-name-specifier.
+  if (my_lexer.look_ahead(1) == Token::Scope);// commit();
+
+  // On the other hand, if it is neither a scope, nor the beginning of a 
+  // template-id, this is definitely not a nested-name-specifier.
+  else if (my_lexer.look_ahead(1) != '<') return 0;
+
+  PGuard<bool> guard(*this, &Parser::my_in_nested_name_specifier, true);
+
+  PT::Node *name = class_or_namespace_name(encoding, false, is_template);
+
+  PT::List *qname = 0;
+  // if we found a class-name, but the class was forward-declared only,
+  // my_qualifying_scope will be reset to 0.
+  if (!name) return 0;
+//   if (!name || !my_qualifying_scope) return 0;
+  else qname = PT::cons(name);
+  if (!require(Token::Scope, "::")) return 0;
+
+  if (!encoding.is_qualified()) encoding.qualified(1);
+
+  qname = PT::snoc(qname, new PT::Atom(my_lexer.get_token()));
+  Tentative tentative(*this, encoding);
+  PT::Keyword *template_ = 0;
+  if (my_lexer.look_ahead() == Token::TEMPLATE)
+    template_ = new PT::Kwd::Template(my_lexer.get_token());
+
+  PT::List *rest = nested_name_specifier(encoding, template_);
+  if (rest)
+  {
+    if (template_) qname = PT::snoc(qname, template_);
+    return PT::snoc(qname, rest);
   }
   else
   {
-    PT::Block *body;
-    if(!function_body(body))
-      return false;
-
-    if(PT::length(decl) != 1)
-      return false;
-
-    statement = new PT::Declaration(head, PT::list(type_name, decl->car(), body));
-  }
-  return true;
-}
-
-/*
-  This returns true for an declaration like:
-	T (a);
-  even if a is not a type name.  This is a bug according to the ANSI
-  specification, but I believe none says "T (a);" for a variable
-  declaration.
-*/
-bool Parser::is_constructor_decl()
-{
-  Trace trace("Parser::is_constructor_decl", Trace::PARSING);
-  if(my_lexer.look_ahead(0) != '(')
-    return false;
-  else
-  {
-    int t = my_lexer.look_ahead(1);
-    if(t == '*' || t == '&' || t == '(')
-      return false;	// declarator
-    else if(t == Token::CONST || t == Token::VOLATILE)
-      return true;	// constructor or declarator
-    else if(is_ptr_to_member(1))
-      return false;	// declarator (::*)
-    else
-      return true;	// maybe constructor
+    tentative.rollback();
+    return qname;
   }
 }
 
-/*
-  ptr.to.member
-  : {'::'} (identifier {'<' any* '>'} '::')+ '*'
-*/
-bool Parser::is_ptr_to_member(int i)
+// unqualified-id:
+//   identifier
+//   operator-function-id
+//   conversion-function-id
+//   ~ class-name
+//   template-id
+PT::Node *Parser::unqualified_id(PT::Encoding &encoding,
+				 bool is_template)
 {
-  int t0 = my_lexer.look_ahead(i++);
-  
-  if(t0 == Token::Scope)
-    t0 = my_lexer.look_ahead(i++);
-
-  while(t0 == Token::Identifier)
+  Trace trace("Parser::unqualified_id", Trace::PARSING);
+  Token::Type type = my_lexer.look_ahead();
+  switch (type)
   {
-    int t = my_lexer.look_ahead(i++);
-    if(t == '<')
-    {
-      int n = 1;
-      while(n > 0)
+    case Token::Identifier:
+      if (my_lexer.look_ahead(1) == '<')
       {
-	int u = my_lexer.look_ahead(i++);
-	if(u == '<') ++n;
-	else if(u == '>') --n;
-	else if(u == '(')
-	{
-	  int m = 1;
-	  while(m > 0)
-	  {
-	    int v = my_lexer.look_ahead(i++);
-	    if(v == '(') ++m;
-	    else if(v == ')') --m;
-	    else if(v == '\0' || v == ';' || v == '}')
-	      return false;
-	  }
-	}
-	else if(u == '\0' || u == ';' || u == '}')
-	  return false;
+	Tentative tentative(*this, encoding);
+	PT::List *id = template_id(encoding, is_template);
+	if (id) return id;
+	else tentative.rollback();
       }
-      t = my_lexer.look_ahead(i++);
+      return identifier(encoding);
+    case '~':
+    {
+      if(my_lexer.look_ahead(1) != Token::Identifier) return 0;
+      PT::Node *comp = new PT::Atom(my_lexer.get_token());
+      PT::Identifier *name = new PT::Identifier(my_lexer.get_token());
+      encoding.destructor(name);
+      return PT::list(comp, name);
     }
-    if(t != Token::Scope)
-      return false;
-    t0 = my_lexer.look_ahead(i++);
-    if(t0 == '*')
-      return true;
+    case Token::OPERATOR:
+    {
+      Tentative tentative(*this, encoding);
+      PT::Node *operator_ = new PT::Kwd::Operator(my_lexer.get_token());
+      PT::Node *name = template_id(encoding, is_template);
+      if (name) return PT::list(operator_, name);
+      tentative.rollback();
+      name = operator_function_id(encoding);
+      if (name) return name;
+      tentative.rollback();
+      return conversion_function_id(encoding);
+    }
+    default: return 0;
   }
-  return false;
 }
 
-/*
-  member.spec
-  : (FRIEND | INLINE | VIRTUAL | EXPLICIT | userdef.keyword)+
-*/
-bool Parser::opt_member_spec(PT::Node *&p)
+// type-name:
+//   class-name
+//   enum-name
+//   typedef-name
+//
+// enum-name:
+//   identifier
+//
+// typedef-name:
+//   identifier
+PT::Node *Parser::type_name(PT::Encoding &encoding)
 {
-  Trace trace("Parser::opt_member_spec", Trace::PARSING);
-  Token tk;
-  PT::Node *lf;
-  int t = my_lexer.look_ahead(0);
-
-  p = 0;
-  while(t == Token::FRIEND ||
-	t == Token::INLINE ||
-	t == Token::VIRTUAL ||
-	t == Token::EXPLICIT ||
-	t == Token::UserKeyword5)
+  Trace trace("Parser::type_name", Trace::PARSING);
   {
-    if(t == Token::UserKeyword5)
-    {
-      if(!userdef_keyword(lf))
-	return false;
-    }
-    else
-    {
-      my_lexer.get_token(tk);
-      if(t == Token::INLINE)
-	lf = new PT::Kwd::Inline(tk);
-      else if(t == Token::VIRTUAL)
-	lf = new PT::Kwd::Virtual(tk);
-      else if(t == Token::EXPLICIT)
-	lf = new PT::Kwd::Explicit(tk);
-      else
-	lf = new PT::Kwd::Friend(tk);
-    }
-    p = PT::snoc(p, lf);
-    t = my_lexer.look_ahead(0);
+    Tentative tentative(*this, encoding);
+    PT::Node *name = class_name(encoding, false, false);
+    if (name) return name;
+    tentative.rollback();
   }
-  return true;
-}
+  PT::Encoding name;
+  PT::Identifier *id = identifier(name);
+  if (!id) return 0;
 
-//. storage-spec:
-//.   empty
-//.   static
-//.   extern
-//.   auto
-//.   register
-//.   mutable
-bool Parser::opt_storage_spec(PT::Node *&p)
-{
-  Trace trace("Parser::opt_storage_spec", Trace::PARSING);
-  int t = my_lexer.look_ahead(0);
-  if(t == Token::STATIC || t == Token::EXTERN || t == Token::AUTO ||
-     t == Token::REGISTER || t == Token::MUTABLE)
+  if (lookup_type_name(name))
   {
-    Token tk;
-    my_lexer.get_token(tk);
-    switch(t)
-    {
-      case Token::STATIC :
-	p = new PT::Kwd::Static(tk);
-	break;
-      case Token::EXTERN :
-	p = new PT::Kwd::Extern(tk);
-	break;
-      case Token::AUTO :
-	p = new PT::Kwd::Auto(tk);
-	break;
-      case Token::REGISTER :
-	p = new PT::Kwd::Register(tk);
-	break;
-      case Token::MUTABLE :
-	p = new PT::Kwd::Mutable(tk);
-	break;
-      default :
-	throw std::runtime_error("opt_storage_spec: fatal");
-    }
-  }
-  else
-    p = 0;	// no storage specifier
-  return true;
-}
-
-//. cv-qualifier:
-//.   empty
-//.   const
-//.   volatile
-bool Parser::opt_cv_qualifier(PT::Node *&cv)
-{
-  Trace trace("Parser::opt_cv_qualifier", Trace::PARSING);
-  PT::Node *p = 0;
-  while(true)
-  {
-    int t = my_lexer.look_ahead(0);
-    if(t == Token::CONST || t == Token::VOLATILE)
-    {
-      Token tk;
-      my_lexer.get_token(tk);
-      switch(t)
-      {
-        case Token::CONST :
-	  p = PT::snoc(p, new PT::Kwd::Const(tk));
-	  break;
-        case Token::VOLATILE :
-	  p = PT::snoc(p, new PT::Kwd::Volatile(tk));
-	  break;
-        default :
-	  throw std::runtime_error("opt_cv_qualifier: fatal");
-      }
-    }
-    else
-      break;
-  }
-  cv = p;
-  return true;
-}
-
-/*
-  integral.or.class.spec
-  : (CHAR | WCHAR | INT | SHORT | LONG | SIGNED | UNSIGNED | FLOAT | DOUBLE
-     | VOID | BOOLEAN)+
-  | class.spec
-  | enum.spec
-
-  Note: if editing this, see also is_type_specifier().
-*/
-bool Parser::opt_integral_type_or_class_spec(PT::Node *&p, PT::Encoding& encode)
-{
-  Trace trace("Parser::opt_integral_type_or_class_spec", Trace::PARSING);
-  bool is_integral;
-  int t;
-  char type = ' ', flag = ' ';
-
-  is_integral = false;
-  p = 0;
-  while(true)
-  {
-    t = my_lexer.look_ahead(0);
-    if(t == Token::CHAR || t == Token::WCHAR ||
-       t == Token::INT || t == Token::SHORT || t == Token::LONG ||
-       t == Token::SIGNED || t == Token::UNSIGNED ||
-       t == Token::FLOAT || t == Token::DOUBLE ||
-       t == Token::VOID ||
-       t == Token::BOOLEAN ||
-       (my_ruleset & MSVC && t == Token::INT64))
-    {
-      Token tk;
-      PT::Node *kw;
-      my_lexer.get_token(tk);
-      switch(t)
-      {
-        case Token::CHAR:
-	  type = 'c';
-	  kw = new PT::Kwd::Char(tk);
-	  break;
-        case Token::WCHAR:
-	  type = 'w';
-	  kw = new PT::Kwd::WChar(tk);
-	  break;
-        case Token::INT:
-        case Token::INT64: // an int64 is *NOT* an int but...
-	  if(type != 's' && type != 'l' && type != 'j' && type != 'r')
-	    type = 'i';
-	  kw = new PT::Kwd::Int(tk);
-	  break;
-        case Token::SHORT:
-	  type = 's';
-	  kw = new PT::Kwd::Short(tk);
-	  break;
-        case Token::LONG:
-	  if(type == 'l') type = 'j';      // long long
-	  else if(type == 'd') type = 'r'; // double long
-	  else type = 'l';
-	  kw = new PT::Kwd::Long(tk);
-	  break;
-        case Token::SIGNED:
-	  flag = 'S';
-	  kw = new PT::Kwd::Signed(tk);
-	  break;
-        case Token::UNSIGNED:
-	  flag = 'U';
-	  kw = new PT::Kwd::Unsigned(tk);
-	  break;
-        case Token::FLOAT:
-	  type = 'f';
-	  kw = new PT::Kwd::Float(tk);
-	  break;
-        case Token::DOUBLE:
-	  if(type == 'l') type = 'r'; // long double
-	  else type = 'd';
-	  kw = new PT::Kwd::Double(tk);
-	  break;
-        case Token::VOID:
-	  type = 'v';
-	  kw = new PT::Kwd::Void(tk);
-	  break;
-        case Token::BOOLEAN:
-	  type = 'b';
-	  kw = new PT::Kwd::Bool(tk);
-	  break;
-        default :
-	  throw std::runtime_error("Parser::opt_integral_type_or_class_spec(): fatal");
-      }
-      p = PT::snoc(p, kw);
-      is_integral = true;
-    }
-    else
-      break;
-  }
-  if(is_integral)
-  {
-    if(flag == 'S' && type != 'c') flag = ' ';
-    if(flag != ' ') encode.append(flag);
-    if(type == ' ') type = 'i';		// signed, unsigned
-    encode.append(type);
-    return true;
-  }
-  if(t == Token::TYPENAME || // FIXME: 'typename' doesn't imply a class spec !
-     t == Token::CLASS || t == Token::STRUCT || t == Token::UNION ||
-     t == Token::UserKeyword)
-  {
-    PT::ClassSpec *spec;
-    bool success = class_spec(spec, encode);
-    p = spec;
-    return success;
-  }
-  else if(t == Token::ENUM)
-  {
-    PT::EnumSpec *spec;
-    bool success = enum_spec(spec, encode);
-    p = spec;
-    return success;
+    encoding.simple_name(id);
+    return id;
   }
   else
   {
-    p = 0;
-    return true;
+    error(std::string(id->position(), id->length()) + " is not a type");
+    return 0;
   }
 }
 
-/*
-  constructor.decl
-  : '(' {arg.decl.list} ')' {cv.qualify} {throw.decl}
-  {member.initializers} {'=' Constant}
-*/
-bool Parser::constructor_decl(PT::Node *&constructor, PT::Encoding& encode)
+// simple-type-specifier:
+//   :: [opt] nested-name-specifier [opt] type-name
+//   :: [opt] nested-name-specifier template template-id
+//   char
+//   wchar_t
+//   bool
+//   short
+//   int
+//   long
+//   signed
+//   unsigned
+//   float
+//   double
+//   void
+//   typeof-expr
+PT::Node *Parser::simple_type_specifier(PT::Encoding &encoding,
+					bool allow_user_defined)
 {
-  Trace trace("Parser::constructor_decl", Trace::PARSING);
-  Token op, cp;
-  PT::Node *args, *cv, *throw_decl, *mi;
+  Trace trace("Parser::simple_type_specifier", Trace::PARSING);
 
-  if(my_lexer.get_token(op) != '(')
-    return false;
-
-  if(my_lexer.look_ahead(0) == ')')
+  PT::Node *scope = 0;
+  switch (my_lexer.look_ahead())
   {
-    args = 0;
-    encode.start_func_args();
-    encode.void_();
-    encode.end_func_args();
-  }
-  else
-    if(!parameter_declaration_list(args, encode))
-      return false;
-
-  my_lexer.get_token(cp);
-  constructor = PT::list(new PT::Atom(op), args, new PT::Atom(cp));
-  opt_cv_qualifier(cv);
-  if(cv)
-  {
-    encode.cv_qualify(cv);
-    constructor = PT::nconc(constructor, cv);
-  }
-
-  opt_throw_decl(throw_decl);	// ignore in this version
-
-  if(my_lexer.look_ahead(0) == ':')
-    if(member_initializers(mi))
-      constructor = PT::snoc(constructor, mi);
-    else
-      return false;
-
-  if(my_lexer.look_ahead(0) == '=')
-  {
-    Token eq, zero;
-    my_lexer.get_token(eq);
-    if(my_lexer.get_token(zero) != Token::Constant)
-      return false;
-
-    constructor = PT::nconc(constructor,
-			       PT::list(new PT::Atom(eq), new PT::Atom(zero)));
-  }
-
-  encode.no_return_type();
-  return true;
-}
-
-/*
-  throw.decl : THROW '(' (name {','})* {name} ')'
-*/
-bool Parser::opt_throw_decl(PT::Node *&throw_decl)
-{
-  Trace trace("Parser::opt_throw_decl", Trace::PARSING);
-  Token tk;
-  int t;
-  PT::Node *p = 0;
-
-  if(my_lexer.look_ahead(0) == Token::THROW)
-  {
-    my_lexer.get_token(tk);
-    p = PT::snoc(p, new PT::Kwd::Throw(tk));
-
-    if(my_lexer.get_token(tk) != '(')
-      return false;
-
-    p = PT::snoc(p, new PT::Atom(tk));
-
-    while(true)
-    {
-      PT::Node *q;
-      PT::Encoding encode;
-      t = my_lexer.look_ahead(0);
-      if(t == '\0')
-	return false;
-      else if(t == ')')
-	break;
-      else if(my_ruleset & MSVC && t == Token::Ellipsis)
-      {
-	// for MSVC compatibility we accept 'throw(...)' declarations
-	my_lexer.get_token(tk);
-	p = PT::snoc(p, new PT::Atom(tk));
-      }
-      else if(name(q, encode))
-	p = PT::snoc(p, q);
-      else
-	return false;
-
-      if(my_lexer.look_ahead(0) == ','){
-	my_lexer.get_token(tk);
-	p = PT::snoc(p, new PT::Atom(tk));
-      }
-      else
-	break;
-    }
-    if(my_lexer.get_token(tk) != ')')
-      return false;
-
-    p = PT::snoc(p, new PT::Atom(tk));
-  }
-  throw_decl = p;
-  return true;
-}
-
-/*
-  init-declarator-list : init-declarator (',' init-declarator)*
-
-  is_statement changes the behavior of rArgDeclListOrInit().
-*/
-bool Parser::init_declarator_list(PT::Node *&decls, PT::Encoding& type_encode,
-				  bool should_be_declarator, bool is_statement)
-{
-  Trace trace("Parser::init_declarator_list", Trace::PARSING);
-  PT::Node *d;
-  Token tk;
-  PT::Encoding encode;
-
-  decls = 0;
-  while(true)
-  {
-    my_lexer.look_ahead(0); // force comment finding
-    PT::Node *comments = wrap_comments(my_lexer.get_comments());
-
-    encode = type_encode;
-    if(!init_declarator(d, encode, should_be_declarator, is_statement))
-      return false;
-	
-    if (d && (PT::type_of(d) == Token::ntDeclarator))
-      static_cast<PT::Declarator*>(d)->set_comments(comments);
-
-    decls = PT::snoc(decls, d);
-    if(my_lexer.look_ahead(0) == ',')
-    {
-      my_lexer.get_token(tk);
-      decls = PT::snoc(decls, new PT::Atom(tk));
-    }
-    else
-      return true;
-  };
-}
-
-/*
-  init-declarator
-  : ':' expression
-  | declarator {'=' initialize.expr | ':' expression}
-*/
-bool Parser::init_declarator(PT::Node *&dw, PT::Encoding& type_encode,
-			     bool should_be_declarator,
-			     bool is_statement)
-{
-  Trace trace("Parser::init_declarator", Trace::PARSING);
-  Token tk;
-  PT::Encoding name_encode;
-
-  // FIXME: This is only valid for a member-declarator.
-  //        Put it into a separate method.
-  if(my_lexer.look_ahead(0) == ':')
-  {	// bit field
-    my_lexer.get_token(tk);
-    PT::Node *expr;
-    if(!assign_expr(expr)) return false;
-    // FIXME: why is this a list and not a PT::Declarator ?
-    dw = PT::list(new PT::Atom(tk), expr);
-    return true;
-  }
-  else
-  {
-    PT::Node *decl;
-    if(!declarator(decl, kDeclarator, false, type_encode, name_encode,
-		   should_be_declarator, is_statement))
-      return false;
-
-    int t = my_lexer.look_ahead(0);
-    if(t == '=')
-    {
-      my_lexer.get_token(tk);
-      PT::Node *expr;
-      if(!initialize_expr(expr)) return false;
-
-      dw = PT::nconc(decl, PT::list(new PT::Atom(tk), expr));
-      return true;
-    }
-    else if(t == ':')
-    {		// bit field
-      my_lexer.get_token(tk);
-      PT::Node *expr;
-      if(!assign_expr(expr)) return false;
-
-      dw = PT::nconc(decl, PT::list(new PT::Atom(tk), expr));
-      return true;
-    }
-    else
-    {
-      dw = decl;
-      return true;
-    }
-  }
-}
-
-/*
-  declarator
-  : (ptr.operator)* (name | '(' declarator ')')
-	('[' expression ']')* {func.args.or.init}
-
-  func.args.or.init
-  : '(' arg.decl.list.or.init ')' {cv.qualify} {throw.decl}
-  {member.initializers}
-
-  Note: We assume that '(' declarator ')' is followed by '(' or '['.
-	This is to avoid accepting a function call F(x) as a pair of
-	a type F and a declarator x.  This assumption is ignored
-	if should_be_declarator is true.
-
-  Note: An argument declaration list and a function-style initializer
-	take a different Ptree structure.
-	e.g.
-	    int f(char) ==> .. [f ( [[[char] 0]] )]
-	    Point f(1)  ==> .. [f [( [1] )]]
-
-  Note: is_statement changes the behavior of rArgDeclListOrInit().
-*/
-bool Parser::declarator(PT::Node *&decl, DeclKind kind, bool recursive,
-			PT::Encoding& type_encode, PT::Encoding& name_encode,
-			bool should_be_declarator, bool is_statement)
-{
-  Trace trace("Parser::declarator", Trace::PARSING);
-  return declarator2(decl, kind, recursive, type_encode, name_encode,
-		     should_be_declarator, is_statement, 0);
-}
-
-bool Parser::declarator2(PT::Node *&decl, DeclKind kind, bool recursive,
-			 PT::Encoding& type_encode, PT::Encoding& name_encode,
-			 bool should_be_declarator, bool is_statement,
-			 PT::Node **declared_name)
-{
-  Trace trace("Parser::declarator2", Trace::PARSING);
-  PT::Encoding recursive_encode;
-  int t;
-  bool recursive_decl = false;
-  PT::Node *declared_name0 = 0;
-
-  if(declared_name == 0)
-    declared_name = &declared_name0;
-
-  PT::Node *d;
-  if(!opt_ptr_operator(d, type_encode))
-    return false;
-
-  t = my_lexer.look_ahead(0);
-  if(t == '(')
-  {
-    char const * lex_save = my_lexer.save();
-    Token op;
-    my_lexer.get_token(op);
-    recursive_decl = true;
-    PT::Node *decl2;
-    if(!declarator2(decl2, kind, true, recursive_encode, name_encode,
-		    true, false, declared_name))
-      return false;
-
-    Token cp;
-    if(my_lexer.get_token(cp) != ')')
-    {
-      if (kind != kCastDeclarator) 
-	return false;
-      my_lexer.restore(lex_save);
-      name_encode.clear();
-    }
-    else
-    {
-      if(!should_be_declarator)
-	if(kind == kDeclarator && d == 0)
-	{
-	  t = my_lexer.look_ahead(0);
-	  if(t != '[' && t != '(')
-	    return false;
-	}
-      d = PT::snoc(d, PT::list(new PT::Atom(op), decl2, new PT::Atom(cp)));
-    }
-  }
-  else if(kind != kCastDeclarator)
-  {
-    if (t == Token::INLINE)
-    {
-      // TODO: store inline somehow
-      Token i;
-      my_lexer.get_token(i);
-      t = my_lexer.look_ahead(0);
-    }
-    if (kind == kDeclarator || t == Token::Identifier || t == Token::Scope)
-    {
-      // if this is an argument declarator, "int (*)()" is valid.
-      PT::Node *id;
-      if(name(id, name_encode))
-      {
-	if(!id->is_atom()) id = new PT::Name(id, name_encode);
-	d = PT::snoc(d, id);
-      }
-      else return false;
-      *declared_name = id;
-    }
-  }
-  else
-    name_encode.clear();	// empty
-
-  while(true)
-  {
-    t = my_lexer.look_ahead(0);
-    if(t == '(')
-    {		// function
-      PT::Encoding args_encode;
-      PT::Node *args, *cv, *throw_decl, *mi;
-      bool is_args = true;
-
-      Token op;
-      my_lexer.get_token(op);
-      ScopeGuard guard(*this, d);
-      if(my_lexer.look_ahead(0) == ')')
-      {
-	args = 0;
-	args_encode.start_func_args();
-	args_encode.void_();
-	args_encode.end_func_args();
-      }
-      else
-	if(!parameter_declaration_list_or_init(args, is_args,
-					       args_encode, is_statement))
-	  return false;
-      Token cp;
-      if(my_lexer.get_token(cp) != ')')
-	return false;
-
-      if(is_args)
-      {
-	d = PT::nconc(d, PT::list(new PT::Atom(op), args, new PT::Atom(cp)));
-	opt_cv_qualifier(cv);
-	if(cv)
-	{
-	  args_encode.cv_qualify(cv);
-	  d = PT::nconc(d, cv);
-	}
-      }
-      else
-	d = PT::snoc(d, PT::list(new PT::Atom(op), args, new PT::Atom(cp)));
-
-      if(!args_encode.empty())
-	type_encode.function(args_encode);
-      
-      opt_throw_decl(throw_decl);	// ignore in this version
-
-      if(my_lexer.look_ahead(0) == ':')
-	if(member_initializers(mi)) d = PT::snoc(d, mi);
-	else return false;
-      
-      break;		// "T f(int)(char)" is invalid.
-    }
-    else if(t == '[')
-    {	// array
-      Token ob, cb;
-      PT::Node *expr;
-      my_lexer.get_token(ob);
-      if(my_lexer.look_ahead(0) == ']') expr = 0;
-      else if(!expression(expr)) return false;
-
-      if(my_lexer.get_token(cb) != ']') return false;
-
-      if (expr)
-      {
-	long size;
-	if (TypeAnalysis::evaluate_const(my_symbols.current_scope(), expr, size))
-	  type_encode.array(size);
-	else 
-	  type_encode.array();
-      }
-      d = PT::nconc(d, PT::list(new PT::Atom(ob), expr, new PT::Atom(cb)));
-    }
-    else break;
-  }
-
-  if(recursive_decl) type_encode.recursion(recursive_encode);
-  if(recursive) decl = d;
-  else
-    if(d == 0) decl = new PT::Declarator(type_encode, name_encode, *declared_name);
-    else decl = new PT::Declarator(d, type_encode, name_encode, *declared_name);
-
-  return true;
-}
-
-/*
-  ptr.operator
-  : (('*' | '&' | ptr.to.member) {cv.qualify})+
-*/
-bool Parser::opt_ptr_operator(PT::Node *&ptrs, PT::Encoding& encode)
-{
-  Trace trace("Parser::opt_ptr_operator", Trace::PARSING);
-  ptrs = 0;
-  while(true)
-  {
-    int t = my_lexer.look_ahead(0);
-    if(t != '*' && t != '&' && !is_ptr_to_member(0)) break;
-    else
-    {
-      PT::Node *op, *cv;
-      if(t == '*' || t == '&')
-      {
-	Token tk;
-	my_lexer.get_token(tk);
-	op = new PT::Atom(tk);
-	encode.ptr_operator(t);
-      }
-      else
-	if(!ptr_to_member(op, encode)) return false;
-
-      ptrs = PT::snoc(ptrs, op);
-      opt_cv_qualifier(cv);
-      if(cv)
-      {
-	ptrs = PT::nconc(ptrs, cv);
-	encode.cv_qualify(cv);
-      }
-    }
-  }
-  return true;
-}
-
-/*
-  member.initializers
-  : ':' member.init (',' member.init)*
-*/
-bool Parser::member_initializers(PT::Node *&init)
-{
-  Trace trace("Parser::member_initializer", Trace::PARSING);
-  Token tk;
-  PT::Node *m;
-
-  if(my_lexer.get_token(tk) != ':')
-    return false;
-
-  init = PT::list(new PT::Atom(tk));
-  if(!member_init(m))
-    return false;
-
-  init = PT::snoc(init, m);
-  while(my_lexer.look_ahead(0) == ',')
-  {
-    my_lexer.get_token(tk);
-    init = PT::snoc(init, new PT::Atom(tk));
-    if(!member_init(m))
-      return false;
-
-    init = PT::snoc(init, m);
-  }
-  return true;
-}
-
-/*
-  member.init
-  : name '(' function.arguments ')'
-*/
-bool Parser::member_init(PT::Node *&init)
-{
-  Trace trace("Parser::member_init", Trace::PARSING);
-  PT::Node *name, *args;
-  Token tk1, tk2;
-  PT::Encoding encode;
-
-  if(!this->name(name, encode)) return false;
-  if(!name->is_atom()) name = new PT::Name(name, encode);
-  if(my_lexer.get_token(tk1) != '(') return false;
-  if(!function_arguments(args)) return false;
-  if(my_lexer.get_token(tk2) != ')') return false;
-
-  init = PT::list(name, new PT::Atom(tk1), args, new PT::Atom(tk2));
-  return true;
-}
-
-/*
-  name : {'::'} name2 ('::' name2)*
-
-  name2
-  : Identifier {template.args}
-  | '~' Identifier
-  | OPERATOR operator.name {template.args}
-
-  Don't use this function for parsing an expression
-  It always regards '<' as the beginning of template arguments.
-*/
-bool Parser::name(PT::Node *&id, PT::Encoding& encode)
-{
-  Trace trace("Parser::name", Trace::PARSING);
-  Token tk, tk2;
-  int t;
-  int length = 0;
-
-  if(my_lexer.look_ahead(0) == Token::Scope)
-  {
-    my_lexer.get_token(tk);
-    id = PT::list(new PT::Atom(tk));
-    encode.global_scope();
-    ++length;
-  }
-  else
-  {
-    id = 0;
-
-    // gcc keyword typeof(name) means type of the given name
-    if(my_lexer.look_ahead(0) == Token::TYPEOF)
-    {
-      // TODO: Do proper type analysis.
-      encode.anonymous();
-      return typeof_expr(id);
-    }
-  }
-  while(true)
-  {
-    t = my_lexer.get_token(tk);
-    if(t == Token::TEMPLATE)
-    {
-      // Skip template token, next will be identifier
-      t = my_lexer.get_token(tk);
-    }
-    if(t == Token::Identifier)
-    {
-      PT::Node *n = new PT::Identifier(tk);
-      t = my_lexer.look_ahead(0);
-      if(t == '<')
-      {
-	PT::Node *args;
-	PT::Encoding args_encode;
-	if(!template_args(args, args_encode))
-	  return false;
-
-	encode.template_(n, args_encode);
-	++length;
-	n = PT::list(n, args);
-	t = my_lexer.look_ahead(0);
-      }
-      else
-      {
-	encode.simple_name(n);
-	++length;
-      }
-      if(t == Token::Scope)
-      {
-	my_lexer.get_token(tk);
-	id = PT::nconc(id, PT::list(n, new PT::Atom(tk)));
-      }
-      else
-      {
-	id = id ? PT::snoc(id, n) : n;
-	if(length > 1) encode.qualified(length);
-	return true;
-      }
-    }
-    else if(t == '~')
-    {
-      if(my_lexer.look_ahead(0) != Token::Identifier)
-	return false;
-
-      my_lexer.get_token(tk2);
-      PT::Node *class_name = new PT::Atom(tk2);
-      PT::Node *dt = PT::list(new PT::Atom(tk), class_name);
-      id = id ? PT::snoc(id, dt) : dt;
-      encode.destructor(class_name);
-      if(length > 0) encode.qualified(length + 1);
-      return true;
-    }
-    else if(t == Token::OPERATOR)
-    {
-      PT::Node *op;
-      PT::Node *opf;
-      if(!operator_name(op, encode)) return false;
-      
-      t = my_lexer.look_ahead(0);
-      if(t != '<') opf = PT::list(new PT::Kwd::Operator(tk), op);
-      else
-      {
-	PT::Node *args;
-	PT::Encoding args_encode;
-	if(!template_args(args, args_encode)) return false;
-
-	// here, I must merge args_encode into encode.
-	// I'll do it in future. :p
-
-	opf = PT::list(new PT::Kwd::Operator(tk), op, args);
-      }
-      id = id ? PT::snoc(id, opf) : opf;
-      if(length > 0) encode.qualified(length + 1);
-      return true;
-    }
-    else return false;
-  }
-}
-
-/*
-  operator.name
-  : '+' | '-' | '*' | '/' | '%' | '^' | '&' | '|' | '~'
-  | '!' | '=' | '<' | '>' | AssignOp | ShiftOp | EqualOp
-  | RelOp | LogAndOp | LogOrOp | IncOp | ',' | PmOp | ArrowOp
-  | NEW {'[' ']'}
-  | DELETE {'[' ']'}
-  | '(' ')'
-  | '[' ']'
-  | cast.operator.name
-*/
-bool Parser::operator_name(PT::Node *&name, PT::Encoding &encode)
-{
-  Trace trace("Parser::operator_name", Trace::PARSING);
-    Token tk;
-
-    int t = my_lexer.look_ahead(0);
-    if(t == '+' || t == '-' || t == '*' || t == '/' || t == '%' || t == '^'
-       || t == '&' || t == '|' || t == '~' || t == '!' || t == '=' || t == '<'
-       || t == '>' || t == Token::AssignOp || t == Token::ShiftOp || t == Token::EqualOp
-       || t == Token::RelOp || t == Token::LogAndOp || t == Token::LogOrOp || t == Token::IncOp
-       || t == ',' || t == Token::PmOp || t == Token::ArrowOp)
-    {
-      my_lexer.get_token(tk);
-      name = new PT::Atom(tk);
-      encode.simple_name(name);
-      return true;
-    }
-    else if(t == Token::NEW || t == Token::DELETE)
-    {
-      my_lexer.get_token(tk);
-      if(my_lexer.look_ahead(0) != '[')
-      {
-	if (t == Token::NEW) name = new PT::Kwd::New(tk);
-	else name = new PT::Kwd::Delete(tk);
-	encode.simple_name(name);
-	return true;
-      }
-      else
-      {
-	if (t == Token::NEW) name = PT::list(new PT::Kwd::New(tk));
-	else name = PT::list(new PT::Kwd::Delete(tk));
-	my_lexer.get_token(tk);
-	name = PT::snoc(name, new PT::Atom(tk));
-	if(my_lexer.get_token(tk) != ']') return false;
-
-	name = PT::snoc(name, new PT::Atom(tk));
-	if(t == Token::NEW) encode.append_with_length("new[]", 5);
-	else encode.append_with_length("delete[]", 8);
-	return true;
-      }
-    }
-    else if(t == '(')
-    {
-      my_lexer.get_token(tk);
-      name = PT::list(new PT::Atom(tk));
-      if(my_lexer.get_token(tk) != ')') return false;
-
-      encode.append_with_length("()", 2);
-      name = PT::snoc(name, new PT::Atom(tk));
-      return true;
-    }
-    else if(t == '[')
-    {
-      my_lexer.get_token(tk);
-      name = PT::list(new PT::Atom(tk));
-      if(my_lexer.get_token(tk) != ']') return false;
-
-      encode.append_with_length("[]", 2);
-      name = PT::snoc(name, new PT::Atom(tk));
-      return true;
-    }
-    else return cast_operator_name(name, encode);
-}
-
-/*
-  cast.operator.name
-  : {cv.qualify} (integral.or.class.spec | name) {cv.qualify}
-    {(ptr.operator)*}
-*/
-bool Parser::cast_operator_name(PT::Node *&name, PT::Encoding &encode)
-{
-  Trace trace("Parser::cast_operator_name", Trace::PARSING);
-  PT::Node *cv1, *cv2, *type_name, *ptr;
-  PT::Encoding type_encode;
-
-  if(!opt_cv_qualifier(cv1)) return false;
-  if(!opt_integral_type_or_class_spec(type_name, type_encode)) return false;
-  if(type_name == 0)
-  {
-    type_encode.clear();
-    if(!this->name(type_name, type_encode)) return false;
-  }
-
-  if(!opt_cv_qualifier(cv2)) return false;
-  if(cv1)
-    if(cv2 == 0) type_name = PT::snoc(cv1, type_name);
-    else type_name = PT::nconc(cv1, PT::cons(type_name, cv2));
-  else if(cv2) type_name = PT::cons(type_name, cv2);
-  type_encode.cv_qualify(cv1, cv2);
-  if(!opt_ptr_operator(ptr, type_encode)) return false;
-
-  encode.cast_operator(type_encode);
-  if(ptr == 0)
-  {
-    name = type_name;
-    return true;
-  }
-  else
-  {
-    name = PT::list(type_name, ptr);
-    return true;
-  }
-}
-
-/*
-  ptr.to.member
-  : {'::'} (identifier {template.args} '::')+ '*'
-*/
-bool Parser::ptr_to_member(PT::Node *&ptr_to_mem, PT::Encoding &encode)
-{
-  Trace trace("Parser::ptr_to_member", Trace::PARSING);
-  Token tk;
-  PT::Node *p, *n;
-  PT::Encoding pm_encode;
-  int length = 0;
-
-  if(my_lexer.look_ahead(0) == Token::Scope)
-  {
-    my_lexer.get_token(tk);
-    p = PT::list(new PT::Atom(tk));
-    pm_encode.global_scope();
-    ++length;
-  }
-  else p = 0;
-
-  while(true)
-  {
-    if(my_lexer.get_token(tk) == Token::Identifier)
-      n = new PT::Atom(tk);
-    else
-      return false;
-
-    int t = my_lexer.look_ahead(0);
-    if(t == '<')
-    {
-      PT::Node *args;
-      PT::Encoding args_encode;
-      if(!template_args(args, args_encode)) return false;
-
-      pm_encode.template_(n, args_encode);
-      ++length;
-      n = PT::list(n, args);
-      t = my_lexer.look_ahead(0);
-    }
-    else
-    {
-      pm_encode.simple_name(n);
-      ++length;
-    }
-
-    if(my_lexer.get_token(tk) != Token::Scope) return false;
-
-    p = PT::nconc(p, PT::list(n, new PT::Atom(tk)));
-    if(my_lexer.look_ahead(0) == '*')
-    {
-      my_lexer.get_token(tk);
-      p = PT::snoc(p, new PT::Atom(tk));
-      break;
-    }
-  }
-  ptr_to_mem = p;
-  encode.ptr_to_member(pm_encode, length);
-  return true;
-}
-
-/*
-  template.args
-  : '<' '>'
-  | '<' template.argument {',' template.argument} '>'
-
-  template.argument
-  : type.name
-  | conditional.expr
-*/
-bool Parser::template_args(PT::Node *&temp_args, PT::Encoding &encode)
-{
-  Trace trace("Parser::template_args", Trace::PARSING);
-  Token tk1, tk2;
-  PT::Encoding type_encode;
-
-  if(my_lexer.get_token(tk1) != '<') return false;
-
-  // in case of Foo<>
-  if(my_lexer.look_ahead(0) == '>')
-  {
-    my_lexer.get_token(tk2);
-    temp_args = PT::list(new PT::Atom(tk1), new PT::Atom(tk2));
-    return true;
-  }
-
-  PT::Node *args = 0;
-  while(true)
-  {
-    PT::Node *a;
-    const char* pos = my_lexer.save();
-    type_encode.clear();
-
-    // Prefer type name, but if not ',' or '>' then must be expression
-    if(type_id(a, type_encode) && 
-       (my_lexer.look_ahead(0) == ',' || my_lexer.look_ahead(0) == '>'))
-      encode.append(type_encode);
-    else
-    {
-      // FIXME: find the right place to put this.
-      PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
-      my_gt_is_operator = false;
-      my_lexer.restore(pos);	
-      if(!conditional_expr(a)) return false;
-      encode.value_temp_param();
-    }
-    args = PT::snoc(args, a);
-    switch(my_lexer.get_token(tk2))
-    {
-      case '>' :
-	temp_args = PT::list(new PT::Atom(tk1), args, new PT::Atom(tk2));
-	return true;
-      case ',' :
-	args = PT::snoc(args, new PT::Atom(tk2));
-	break;
-      case Token::ShiftOp :
-	// parse error !
-	return false;
-      default :
-	return false;
-    }
-  }
-}
-
-/*
-  arg.decl.list.or.init
-    : para.decl.list
-    | function.arguments
-
-  This rule accepts function.arguments to parse declarations like:
-	Point p(1, 3);
-  "(1, 3)" is arg.decl.list.or.init.
-
-  If maybe_init is true, we first examine whether tokens construct
-  function.arguments.  This ordering is significant if tokens are
-	Point p(s, t);
-  s and t can be type names or variable names.
-*/
-bool Parser::parameter_declaration_list_or_init(PT::Node *&arglist, bool &is_args,
-						PT::Encoding &encode, bool maybe_init)
-{
-  Trace trace("Parser::parameter_declaration_list_or_init", Trace::PARSING);
-  const char* pos = my_lexer.save();
-  if(maybe_init)
-  {
-    if(function_arguments(arglist))
-      if(my_lexer.look_ahead(0) == ')')
-      {
-	is_args = false;
-	encode.clear();
-	return true;
-      }
-
-    my_lexer.restore(pos);
-    return(is_args = parameter_declaration_list(arglist, encode));
-  }
-  else 
-    if(is_args = parameter_declaration_list(arglist, encode)) return true;
-    else
-    {
-      my_lexer.restore(pos);
-      encode.clear();
-      return function_arguments(arglist);
-    }
-}
-
-/*
-  para.decl.list
-    : empty
-    | arg.declaration ( ',' arg.declaration )* {{ ',' } Ellipses}
-*/
-bool Parser::parameter_declaration_list(PT::Node *&arglist,
-					PT::Encoding& encode)
-{
-  Trace trace("Parser::parameter_declaration_list", Trace::PARSING);
-  PT::Node *list = 0;
-  PT::Encoding arg_encode;
-
-  encode.start_func_args();
-  while(true)
-  {
-    PT::ParameterDeclaration *pdecl;
-    arg_encode.clear();
-    int t = my_lexer.look_ahead(0);
-    if(t == ')')
-    {
-      if(list == 0) encode.void_();
-      arglist = list;
-      break;
-    }
-    else if(t == Token::Ellipsis)
-    {
-      Token tk;
-      my_lexer.get_token(tk);
-      encode.ellipsis_arg();
-      arglist = PT::snoc(list, new PT::Atom(tk));
-      break;
-    }
-    else if(parameter_declaration(pdecl, arg_encode))
-    {
-      encode.append(arg_encode);
-      list = PT::snoc(list, pdecl);
-      t = my_lexer.look_ahead(0);
-      if(t == ',')
-      {
-	Token tk;
-	my_lexer.get_token(tk);
-	list = PT::snoc(list, new PT::Atom(tk));
-      }
-      else if(t != ')' && t != Token::Ellipsis) return false;
-    }
-    else
-    {
-      arglist = 0;
-      return false;
-    }
-  }
-  encode.end_func_args();
-  return true;
-}
-
-//. parameter-declaration:
-//.   decl-specifier-seq declarator
-//.   decl-specifier-seq declarator = assignment-expression
-//.   decl-specifier-seq abstract-declarator [opt]
-//.   decl-specifier-seq abstract-declarator [opt] = assignment-expression
-bool Parser::parameter_declaration(PT::ParameterDeclaration *&para,
-				   PT::Encoding &encode)
-{
-  Trace trace("Parser::parameter_declaration", Trace::PARSING);
-  PT::Node *header;
-  Token tk;
-  PT::Encoding name_encode;
-
-  switch(my_lexer.look_ahead(0))
-  {
-    case Token::REGISTER:
-      my_lexer.get_token(tk);
-      header = new PT::Kwd::Register(tk);
-      break;
-    case Token::UserKeyword:
-      if(!userdef_keyword(header)) return false;
+    case Token::CHAR:
+      encoding.append('c');
+      return new PT::Kwd::Char(my_lexer.get_token());
+    case Token::WCHAR:
+      encoding.append('w');
+      return new PT::Kwd::WChar(my_lexer.get_token());
+    case Token::BOOLEAN:
+      encoding.append('b');
+      return new PT::Kwd::Bool(my_lexer.get_token());
+    case Token::SHORT:
+      encoding.append('s');
+      return new PT::Kwd::Short(my_lexer.get_token());
+    case Token::INT:
+      encoding.append('i');
+      return new PT::Kwd::Int(my_lexer.get_token());
+    case Token::LONG:
+      encoding.append('l');
+      return new PT::Kwd::Long(my_lexer.get_token());
+    case Token::SIGNED:
+      encoding.append('S');
+      return new PT::Kwd::Signed(my_lexer.get_token());
+    case Token::UNSIGNED:
+      encoding.append('U');
+      return new PT::Kwd::Unsigned(my_lexer.get_token());
+    case Token::FLOAT:
+      encoding.append('f');
+      return new PT::Kwd::Float(my_lexer.get_token());
+    case Token::DOUBLE:
+      encoding.append('d');
+      return new PT::Kwd::Double(my_lexer.get_token());
+    case Token::VOID:
+      encoding.append('v');
+      return new PT::Kwd::Void(my_lexer.get_token());
+    case Token::TYPEOF:
+      return typeof_expression(encoding);
+    case Token::Scope:
+      encoding.global_scope();
+      scope = new PT::Atom(my_lexer.get_token());
+      my_qualifying_scope = my_symbols.current_scope()->global_scope();
       break;
     default:
-      header = 0;
+      my_qualifying_scope = 0;
       break;
   }
 
-  PT::Node *type_name;
-  if(!type_specifier(type_name, true, encode)) return false;
-
-  PT::Node *decl;
-  if(!declarator(decl, kArgDeclarator, false, encode, name_encode, true)) return false;
-  para = new PT::ParameterDeclaration(header, type_name, decl);
-  declare(para);
-  Token::Type type = my_lexer.look_ahead(0);
-  if(type == '=')
+  // It must be a user-defined type.
+  if (!allow_user_defined) return 0;
+  Tentative tentative(*this, encoding);
+  PT::List *qname = nested_name_specifier(encoding);
+  if (qname && my_lexer.look_ahead() == Token::TEMPLATE)
   {
-    my_lexer.get_token(tk);
-    PT::Node *init;
-    if(!initialize_expr(init)) return false;    
-    decl = PT::nconc(decl, PT::list(new PT::Atom(tk), init));
+    if (scope) qname = PT::cons(scope, qname);
+    qname = PT::snoc(qname, new PT::Kwd::Template(my_lexer.get_token()));
+    PT::Node *id = template_id(encoding, true);
+    if (!require(id, "template-id")) return 0;
+    else return new PT::Name(PT::snoc(qname, id), encoding);
   }
-  return true;
-}
-
-/*
-  initialize.expr
-  : expression
-  | '{' initialize.expr (',' initialize.expr)* {','} '}'
-*/
-bool Parser::initialize_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::initialize_expr", Trace::PARSING);
-  Token tk;
-  PT::Node *e, *elist;
-
-  if(my_lexer.look_ahead(0) != '{') return assign_expr(exp);
-  else
-  {
-    my_lexer.get_token(tk);
-    PT::Node *ob = new PT::Atom(tk);
-    elist = 0;
-    int t = my_lexer.look_ahead(0);
-    while(t != '}')
-    {
-      if(!initialize_expr(e))
-      {
-	if(!mark_error()) return false; // too many errors
-
-	skip_to('}');
-	my_lexer.get_token(tk);
-	exp = PT::list(ob, 0, new PT::Atom(tk));
-	return true;		// error recovery
-      }
-
-      elist = PT::snoc(elist, e);
-      t = my_lexer.look_ahead(0);
-      if(t == '}') break;
-      else if(t == ',')
-      {
-	my_lexer.get_token(tk);
-	elist = PT::snoc(elist, new PT::Atom(tk));
-	t = my_lexer.look_ahead(0);
-      }
-      else
-      {
-	if(!mark_error()) return false; // too many errors
-
-	skip_to('}');
-	my_lexer.get_token(tk);
-	exp = PT::list(ob, 0, new PT::Atom(tk));
-	return true;		// error recovery
-      }
-    }
-    my_lexer.get_token(tk);
-    exp = new PT::Brace(ob, elist, new PT::Atom(tk));
-    return true;
-  }
-}
-
-/*
-  function.arguments
-  : empty
-  | expression (',' expression)*
-
-  This assumes that the next token following function.arguments is ')'.
-*/
-bool Parser::function_arguments(PT::Node *&args)
-{
-  Trace trace("Parser::function_arguments", Trace::PARSING);
-  PT::Node *exp;
-  Token tk;
-
-  args = 0;
-  if(my_lexer.look_ahead(0) == ')') return true;
+  else if (!qname) tentative.rollback();
   
-  while(true)
-  {
-    if(!assign_expr(exp)) return false;
+  PT::Node *type_name_ = type_name(encoding);
+  if (!require(type_name_, "type-name")) return 0;
+  qname = PT::snoc(qname, type_name_);
+  if (scope) qname = PT::cons(scope, qname);
+  return new PT::Name(qname, encoding);
+}
 
-    args = PT::snoc(args, exp);
-    if(my_lexer.look_ahead(0) != ',') return true;
+// enum-specifier:
+//   enum identifier [opt] { enumerator-list [opt] }
+//
+// enumerator-list:
+//   enumerator-definition
+//   enumerator-list , enumerator-definition
+//
+// enumerator-definition:
+//   enumerator
+//   enumerator = constant-expression
+//
+// enumerator:
+//   identifier
+PT::EnumSpec *Parser::enum_specifier(PT::Encoding &encoding)
+{
+  Trace trace("Parser::enum_specifier", Trace::PARSING);
+
+  if(my_lexer.look_ahead() != Token::ENUM) return 0;
+  Token enum_ = my_lexer.get_token();
+  PT::EnumSpec *spec = 0;
+  Token ob = my_lexer.get_token();
+  if(ob.type == Token::Identifier)
+  {
+    PT::Identifier *name = new PT::Identifier(ob);
+    encoding.simple_name(name);
+    spec = new PT::EnumSpec(encoding, new PT::Kwd::Enum(enum_), name);
+    if (!require('{')) return 0;
+    ob = my_lexer.get_token();
+  }
+  else // anonymous enum
+  {
+    encoding.anonymous();
+    spec = new PT::EnumSpec(encoding, new PT::Kwd::Enum(enum_), 0);
+  }
+  if(ob.type != '{') return 0;
+  PT::List *enumerators = 0;
+  while (my_lexer.look_ahead() != '}')
+  {
+    if(!require(Token::Identifier, "identifier")) return 0;
+    Token token = my_lexer.get_token();
+    PT::Node *name;
+    PT::List *comments = wrap_comments(my_lexer.get_comments());
+    if(my_lexer.look_ahead() != '=')
+    {
+      name = new PT::Identifier(token, comments);
+    }
     else
     {
-      my_lexer.get_token(tk);
-      args = PT::snoc(args, new PT::Atom(tk));
+      Token token2 = my_lexer.get_token();
+      PT::Node *expression = constant_expression();
+      if (!require(expression, "constant-expression")) return 0;
+      name = PT::list(new PT::Identifier(token, comments),
+		      new PT::Atom(token2),
+		      expression);
+    }
+
+    if(my_lexer.look_ahead() != ',')
+    {
+      enumerators = PT::snoc(enumerators, name);
+      break;
+    }
+    else
+    {
+      enumerators = PT::conc(enumerators,
+			     PT::list(name, new PT::Atom(my_lexer.get_token())));
     }
   }
-}
-
-//. enum-spec:
-//.   enum identifier [opt] { enumerator-list [opt] }
-bool Parser::enum_spec(PT::EnumSpec *&spec, PT::Encoding &encode)
-{
-  Trace trace("Parser::enum_spec", Trace::PARSING);
-  Token tk, tk2;
-
-  if(my_lexer.get_token(tk) != Token::ENUM) return false;
-
-  spec = new PT::EnumSpec(new PT::Kwd::Enum(tk));
-  int t = my_lexer.get_token(tk);
-  if(t == Token::Identifier)
-  {
-    PT::Node *name = new PT::Atom(tk);
-    encode.simple_name(name);
-    spec->set_encoded_name(encode);
-    spec = PT::snoc(spec, name);
-    if(my_lexer.look_ahead(0) == '{') t = my_lexer.get_token(tk);
-    else return true;
-  }
-  else
-  {
-    encode.anonymous();
-    spec->set_encoded_name(encode);
-    spec = PT::snoc(spec, 0);
-  }
-  if(t != '{') return false;
-  
-  PT::Node *enumerators;
-  if(my_lexer.look_ahead(0) == '}') enumerators = 0;
-  else if(!enumerator_list(enumerators)) return false;
-
-  if(my_lexer.get_token(tk2) != '}') return false;
-
-  spec = PT::snoc(spec, 
-		  new PT::Brace(new PT::Atom(tk), enumerators,
-				new PT::CommentedAtom(tk2, wrap_comments(my_lexer.get_comments()))));
+  if(!require('}')) return 0;
+  Token cb = my_lexer.get_token();
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+  spec = PT::snoc(spec, new PT::Atom(ob));
+  spec = PT::snoc(spec, enumerators);
+  spec = PT::snoc(spec, new PT::CommentedAtom(cb, comments));
   declare(spec);
-  return true;
+  return spec;
 }
 
-//. enumerator-list:
-//.   enumerator-definition
-//.   enumerator-list , enumerator-definition
-//. enumeratpr-definition:
-//.   enumerator
-//.   enumerator = constant-expression
-//. enumerator:
-//.   identifier
-bool Parser::enumerator_list(PT::Node *&body)
+// elaborated-type-specifier:
+//   class-key :: [opt] nested-name-specifier [opt] identifier
+//   class-key :: [opt] nested-name-specifier [opt] template [opt] template-id [dr68]
+//   enum :: [opt] nested-name-specifier [opt] identifier
+//   typename :: [opt] nested-name-specifier identifier
+//   typename :: [opt] nested-name-specifier template [opt] template-id
+PT::ElaboratedTypeSpec *Parser::elaborated_type_specifier(PT::Encoding &encoding)
 {
-  Trace trace("Parser::enumerator_list", Trace::PARSING);
-  Token tk, tk2;
-  PT::Node *name, *exp;
-
-  body = 0;
-  while(true)
+  Trace trace("Parser::elaborated_type_specifier", Trace::PARSING);
+  PT::Keyword *key;
+  Token::Type type = my_lexer.look_ahead();
+  switch (type)
   {
-    if(my_lexer.look_ahead(0) == '}') return true;
-    if(my_lexer.get_token(tk) != Token::Identifier) return false;
+    case Token::ENUM:
+      key = new PT::Kwd::Enum(my_lexer.get_token());
+      break;
+    case Token::TYPENAME:
+      key = new PT::Kwd::Typename(my_lexer.get_token());
+      break;
+    case Token::CLASS:
+    case Token::STRUCT:
+    case Token::UNION:
+      key = class_key();
+      break;
+    default:
+      return 0;
+  }
 
-    PT::Node *comments = wrap_comments(my_lexer.get_comments());
-    
-    if(my_lexer.look_ahead(0, tk2) != '=')
-      name = new PT::CommentedAtom(tk, comments);
+  PT::Encoding nested_encoding;
+  PT::Atom *scope = opt_scope(nested_encoding);
+  Tentative tentative(*this, nested_encoding);
+  PT::List *name = nested_name_specifier(nested_encoding);
+  if (type == Token::TYPENAME && !require(name, "nested-name-specifier"))
+    return 0;
+  else if (!name) tentative.rollback();
+  if (scope)
+  {
+    encoding.global_scope();
+    if (name) name = PT::cons(scope, PT::cons(name));
+    else name = PT::cons(scope);
+  }
+  if (name) encoding.append(nested_encoding);
+  if (type != Token::ENUM)
+  {
+    // If the next token is 'template', a template-id must follow.
+    if (my_lexer.look_ahead() == Token::TEMPLATE)
+    {
+      name = PT::snoc(name, new PT::Kwd::Template(my_lexer.get_token()));
+      PT::Node *template_id_ = template_id(encoding, true);
+      if (!require(template_id_, "template-id")) return 0;
+      name = PT::snoc(name, template_id_);
+      return new PT::ElaboratedTypeSpec(key, new PT::Name(name, encoding));
+    }
+    // Try a template-id and roll back if it fails.
     else
     {
-      my_lexer.get_token(tk2);
-      if(!assign_expr(exp))
+      Tentative tentative(*this, encoding);
+      PT::Node *template_id_ = template_id(encoding, false);
+      if (template_id_)
       {
-	if(!mark_error()) return false; // too many errors
-
-	skip_to('}');
-	body = 0; // empty
-	return true;		// error recovery
+	name = PT::snoc(name, template_id_);
+	return new PT::ElaboratedTypeSpec(key, new PT::Name(name, encoding));
       }
-      name = PT::list(new PT::CommentedAtom(tk, comments), new PT::Atom(tk2), exp);
-    }
-
-    if(my_lexer.look_ahead(0) != ',')
-    {
-      body = PT::snoc(body, name);
-      return true;
-    }
-    else
-    {
-      my_lexer.get_token(tk);
-      body = PT::nconc(body, PT::list(name, new PT::Atom(tk)));
+      else tentative.rollback();
     }
   }
+  PT::Identifier *id = identifier(encoding);
+  if (!require(id, "identifier")) return 0;
+  // TODO: look up id in the proper scope and make sure it has the appropriate
+  //       type (class, enum, or class template), depending on the current context.
+  name = PT::snoc(name, id);
+  return new PT::ElaboratedTypeSpec(key, id);
 }
 
-/*
-  class.spec
-  : {userdef.keyword} class.key class.body
-  | {userdef.keyword} class.key name {class.body}
-  | {userdef.keyword} class.key name ':' base.specifiers class.body
-
-  class.key
-  : CLASS | STRUCT | UNION
-*/
-bool Parser::class_spec(PT::ClassSpec *&spec, PT::Encoding &encode)
+// function-specifier:
+//   inline
+//   virtual
+//   explicit
+PT::Keyword *Parser::opt_function_specifier()
 {
-  Trace trace("Parser::class_spec", Trace::PARSING);
-  PT::Node *head, *bases, *name;
-  PT::ClassBody *body;
-  Token tk;
-
-  head = 0;
-  if(my_lexer.look_ahead(0) == Token::UserKeyword)
-    if(!userdef_keyword(head)) return false;
-
-  int t = my_lexer.get_token(tk);
-  PT::Keyword *kwd;
-  switch (t)
+  Trace trace("Parser::opt_function_specifier", Trace::PARSING);
+  switch (my_lexer.look_ahead())
   {
-    case Token::CLASS: kwd = new PT::Kwd::Class(tk); break;
-    case Token::STRUCT: kwd = new PT::Kwd::Struct(tk); break;
-    case Token::UNION: kwd = new PT::Kwd::Union(tk); break;
-      // FIXME: The following shouldn't be here.
-      //        See opt_integral_type_or_class_spec for why this is needed.
-    case Token::TYPENAME: kwd = new PT::Kwd::Typename(tk); break;
-    default: return false;
+    case Token::INLINE: return new PT::Kwd::Inline(my_lexer.get_token());
+    case Token::VIRTUAL: return new PT::Kwd::Virtual(my_lexer.get_token());
+    case Token::EXPLICIT: return new PT::Kwd::Explicit(my_lexer.get_token());
+    default: return 0;
   }
-  spec = new PT::ClassSpec(kwd, 0, my_comments);
-  my_comments = 0;
-  if(head != 0) spec = new PT::ClassSpec(head, spec, 0);
-
-  if(my_lexer.look_ahead(0) == '{') // anonymous class
-  {
-    encode.anonymous();
-    spec = PT::snoc(spec, 0);
-  }
-  else
-  {
-    if(!this->name(name, encode)) return false;
-    spec = PT::snoc(spec, name);
-    t = my_lexer.look_ahead(0);
-    if(t == ':')
-    {
-      if(!base_clause(bases)) return false;
-
-      spec = PT::snoc(spec, bases);
-    }
-    else if(t == '{') spec = PT::snoc(spec, 0);
-    else
-    {
-      spec->set_encoded_name(encode);
-      if (!my_in_template_decl) declare(spec);
-      return true;	// class.key Identifier
-    }
-  }
-  spec->set_encoded_name(encode);
-  {
-    ScopeGuard guard(*this, spec);
-    if(!class_body(body)) return false;
-  }
-  spec = PT::snoc(spec, body);
-  if (!my_in_template_decl) declare(spec);
-
-  return true;
 }
 
-//. base-clause:
-//.   : base-specifier-list
-//. base-specifier-list:
-//.   base-specifier
-//.   base-specifier-list , base-specifier
-//. base-specifier:
-//.   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
-//.   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
-bool Parser::base_clause(PT::Node *&bases)
+// class-key:
+//   class
+//   struct
+//   union
+PT::Keyword *Parser::class_key()
+{
+  Trace trace("Parser::class_key", Trace::PARSING);
+  switch (my_lexer.look_ahead())
+  {
+    case Token::CLASS: return new PT::Kwd::Class(my_lexer.get_token());
+    case Token::STRUCT: return new PT::Kwd::Struct(my_lexer.get_token());
+    case Token::UNION: return new PT::Kwd::Union(my_lexer.get_token());
+    default: return 0;
+  }
+}
+
+// base-clause:
+//   : base-specifier-list
+//
+// base-specifier-list:
+//   base-specifier
+//   base-specifier-list , base-specifier
+//
+// base-specifier:
+//   :: [opt] nested-name-specifier [opt] class-name
+//   virtual access-specifier [opt] :: [opt] nested-name-specifier [opt] class-name
+//   access-specifier virtual [opt] :: [opt] nested-name-specifier [opt] class-name
+//
+// The grammar above is wrong, as it misses the optional 'template' keyword before
+// 'class-name'.
+PTree::List *Parser::base_clause(std::vector<SymbolTable::Symbol const *> &symbols)
 {
   Trace trace("Parser::base_clause", Trace::PARSING);
-  Token tk;
-  int t;
-  PT::Node *name;
-  PT::Encoding encode;
-
-  if(my_lexer.get_token(tk) != ':') return false;
-
-  bases = PT::list(new PT::Atom(tk));
-  while(true)
+  assert(my_lexer.look_ahead() == ':');
+  PT::List *bases = PT::cons(new PT::Atom(my_lexer.get_token()));
+  while(true) // for all base-specifiers
   {
-    PT::Node *super = 0;
-    t = my_lexer.look_ahead(0);
-    if(t == Token::VIRTUAL)
+    PT::List *super = 0;
+    bool virtual_ = false;
+    bool access_specifier = false;
+    bool done = false;
+    while (!done) // for all 'virtual' and access-specifiers
     {
-      my_lexer.get_token(tk);
-      super = PT::snoc(super, new PT::Kwd::Virtual(tk));
-      t = my_lexer.look_ahead(0);
-    }
-
-    if(t == Token::PUBLIC | t == Token::PROTECTED | t == Token::PRIVATE)
-    {
-      PT::Node *lf;
-      switch(my_lexer.get_token(tk))
+      switch (my_lexer.look_ahead())
       {
+        case Token::VIRTUAL:
+	  if (virtual_)
+	  {
+	    error("'virtual' specified more than once in base-specifier");
+	    return 0;
+	  }
+	  super = PT::snoc(super, new PT::Kwd::Virtual(my_lexer.get_token()));
+	  virtual_ = true;
+	  break;
         case Token::PUBLIC:
-	  lf = new PT::Kwd::Public(tk);
+	  if (access_specifier)
+	  {
+	    error("more than one access specifier in base-specifier");
+	    return 0;
+	  }
+	  super = PT::snoc(super, new PT::Kwd::Public(my_lexer.get_token()));
+	  access_specifier = true;
 	  break;
         case Token::PROTECTED:
-	  lf = new PT::Kwd::Protected(tk);
+	  if (access_specifier)
+	  {
+	    error("more than one access specifier in base-specifier");
+	    return 0;
+	  }
+	  super = PT::snoc(super, new PT::Kwd::Protected(my_lexer.get_token()));
+	  access_specifier = true;
 	  break;
         case Token::PRIVATE:
-	  lf = new PT::Kwd::Private(tk);
+	  if (access_specifier)
+	  {
+	    error("more than one access specifier in base-specifier");
+	    return 0;
+	  }
+	  super = PT::snoc(super, new PT::Kwd::Private(my_lexer.get_token()));
+	  access_specifier = true;
 	  break;
-        default :
-	  throw std::runtime_error("Parser::base_clause(): fatal");
+        default:
+	  done = true;
+	  break;
       }
-      
-      super = PT::snoc(super, lf);
-      t = my_lexer.look_ahead(0);
     }
-
-    // FIXME: test whether 'virtual' has already been encountered above.
-    if(t == Token::VIRTUAL)
+    PT::Encoding encoding;
+    PT::Atom *scope = opt_scope(encoding);
+    Tentative tentative(*this, encoding);
+    PT::List *nested_name = nested_name_specifier(encoding);
+    if (!nested_name) tentative.rollback();
+    PT::Keyword *template_ = 0;
+    if (my_lexer.look_ahead() == Token::TEMPLATE)
+      template_ = new PT::Kwd::Template(my_lexer.get_token());
+    // [temp.res]
+    //
+    // The keyword `typename' is not permitted in a base-specifier or
+    // mem-initializer; in these contexts a qualified name that
+    // depends on a template-parameter is implicitly assumed to be a
+    // type name.
+    PT::Node *class_ = class_name(encoding, false, template_, true);
+    if (!require(class_, "class-name")) return 0;
+    PT::Node *base = class_;
+    symbols.push_back(my_symbol);
+    if (scope || nested_name || !class_->is_atom())
     {
-      my_lexer.get_token(tk);
-      super = PT::snoc(super, new PT::Kwd::Virtual(tk));
+      PT::List *tmp = PT::cons(class_);
+      if (template_) tmp = PT::cons(template_, tmp);
+      if (nested_name) tmp = PT::conc(nested_name, tmp);
+      if (scope) tmp = PT::cons(scope, tmp);
+      base = new PT::Name(tmp, encoding);
     }
-
-    encode.clear();
-    if(!this->name(name, encode)) return false;
-
-    if(!name->is_atom()) name = new PT::Name(name, encode);
-
-    super = PT::snoc(super, name);
-    bases = PT::snoc(bases, super);
-    if(my_lexer.look_ahead(0) != ',') return true;
-    else
-    {
-      my_lexer.get_token(tk);
-      bases = PT::snoc(bases, new PT::Atom(tk));
-    }
+    bases = PT::snoc(bases, PT::snoc(super, base));
+    if(my_lexer.look_ahead() != ',') break;
+    else bases = PT::snoc(bases, new PT::Atom(my_lexer.get_token()));
   }
+  return bases;
 }
 
-/*
-  class.body : '{' (class.members)* '}'
-*/
-bool Parser::class_body(PT::ClassBody *&body)
+// ctor-initializer:
+//   : mem-initializer-list
+//
+// mem-initializer-list:
+//   mem-initializer
+//   mem-initializer , mem-initializer-list
+//
+// mem-initializer:
+//   mem-initializer-id ( expression-list [opt] )
+//
+// mem-initializer-id:
+//   :: [opt] nested-name-specifier [opt] class-name
+//   identifier
+PTree::List *Parser::opt_ctor_initializer()
 {
-  Trace trace("Parser::class_body", Trace::PARSING);
-  Token tk;
-  PT::Node *mems, *m;
+  Trace trace("Parser::opt_ctor_initializer", Trace::PARSING);
+  if (my_lexer.look_ahead() != ':') return 0;
 
-  if(my_lexer.get_token(tk) != '{') return false;
-
-  PT::Node *ob = new PT::Atom(tk);
-  mems = 0;
-  while(my_lexer.look_ahead(0) != '}')
+  PT::Atom *colon = new PT::Atom(my_lexer.get_token());
+  PT::List *members = 0;
+  while (true)
   {
-    if(!class_member(m))
+    PT::List *member = 0;
+    if (my_lexer.look_ahead() == Token::Identifier &&
+	my_lexer.look_ahead(1) == '(')
     {
-      if(!mark_error()) return false;	// too many errors
-
-      skip_to('}');
-      my_lexer.get_token(tk);
-      body = new PT::ClassBody(ob, 0, new PT::Atom(tk));
-      return true;	// error recovery
-    }
-
-    my_lexer.get_comments();
-    mems = PT::snoc(mems, m);
-  }
-
-  my_lexer.get_token(tk);
-  body = new PT::ClassBody(ob, mems, 
-			   new PT::CommentedAtom(tk, wrap_comments(my_lexer.get_comments())));
-  return true;
-}
-
-/*
-  class.member
-  : (PUBLIC | PROTECTED | PRIVATE) ':'
-  | user.access.spec
-  | ';'
-  | type.def
-  | template.decl
-  | using.declaration
-  | metaclass.decl
-  | declaration
-  | access.decl
-
-  Note: if you modify this function, see ClassWalker::TranslateClassSpec()
-  as well.
-*/
-bool Parser::class_member(PT::Node *&mem)
-{
-  Trace trace("Parser::class_member", Trace::PARSING);
-  Token tk1, tk2;
-
-  int t = my_lexer.look_ahead(0);
-  if(t == Token::PUBLIC || t == Token::PROTECTED || t == Token::PRIVATE)
-  {
-    PT::Node *lf;
-    switch(my_lexer.get_token(tk1))
-    {
-      case Token::PUBLIC :
-	lf = new PT::Kwd::Public(tk1);
-	break;
-      case Token::PROTECTED :
-	lf = new PT::Kwd::Protected(tk1);
-	break;
-      case Token::PRIVATE :
-	lf = new PT::Kwd::Private(tk1);
-	break;
-      default :
-	throw std::runtime_error("Parser::class_member(): fatal");
-    }
-
-    PT::Node *comments = wrap_comments(my_lexer.get_comments());
-    if(my_lexer.get_token(tk2) != ':') return false;
-
-    mem = new PT::AccessSpec(lf, PT::list(new PT::Atom(tk2)), comments);
-    return true;
-  }
-  else if(t == Token::UserKeyword4) return user_access_spec(mem);
-  else if(t == ';') return null_declaration(mem);
-  else if(t == Token::TYPEDEF)
-  {
-    PT::Typedef *td;
-    bool result = typedef_(td);
-    mem = td;
-    return result;
-  }
-  else if(t == Token::TEMPLATE) return template_decl(mem);
-  else if(t == Token::USING)
-  {
-    if (my_lexer.look_ahead(1) == Token::NAMESPACE)
-    {
-      PT::UsingDirective *udir;
-      bool result = using_directive(udir);
-      declare(udir);
-      mem = udir;
-      return result;
+      PT::Identifier *id = new PT::Identifier(my_lexer.get_token());
+      // TODO: validate
+      member = PT::cons(id);
     }
     else
     {
-      PT::UsingDeclaration *udecl;
-      bool result = using_declaration(udecl);
-      declare(udecl);
-      mem = udecl;
-      return result;
+      PT::Encoding encoding;
+      PT::Atom *scope = opt_scope(encoding);
+      Tentative tentative(*this, encoding);
+      PT::List *nested_name = nested_name_specifier(encoding, false);
+      if (!nested_name) tentative.rollback();
+      PT::Node *class_ = class_name(encoding, true, false);
+      if (!require(class_, "class-name")) return 0;
+      PT::List *name = PT::cons(class_);
+      if (nested_name) name = PT::conc(nested_name, name);
+      if (scope) name = PT::cons(scope, name);
+      member = PT::cons(new PT::Name(name, encoding));
     }
-  }
-  else if(t == Token::METACLASS) return metaclass_decl(mem);
-  else
-  {
-    const char *pos = my_lexer.save();
-    PT::Declaration *decl;
-    if(declaration(decl))
+    if (!require('(')) return 0;
+    member = PT::snoc(member, new PT::Atom(my_lexer.get_token()));
+    if (my_lexer.look_ahead() != ')')
     {
-      PT::Node *comments = wrap_comments(my_lexer.get_comments());
-      if (comments) set_declarator_comments(decl, comments);
-      declare(decl);
-      mem = decl;
-      return true;
+      PT::List *expr = expression_list(false);
+      if (!require(expr, "expression-list")) return 0;
+      member = PT::snoc(member, expr);
     }
-    my_lexer.restore(pos);
-    return access_decl(mem);
+    if (!require(')')) return 0;
+    member = PT::snoc(member, new PT::Atom(my_lexer.get_token()));
+    members = PT::snoc(members, member);
+    if (my_lexer.look_ahead() != ',') break;
+    members = PT::snoc(members, new PT::Atom(my_lexer.get_token()));
   }
+  return PT::cons(colon, members);
 }
 
-/*
-  access.decl
-  : name ';'		e.g. <qualified class>::<member name>;
-*/
-bool Parser::access_decl(PT::Node *&mem)
+// member-specification:
+//   member-declaration member-specification [opt]
+//   access-specifier : member-specification [opt]
+//
+// member-declaration:
+//   decl-specifier-seq [opt] member-declarator-list [opt] ;
+//   function-definition ; [opt]
+//   :: [opt] nested-name-specifier template [opt] unqualified-id ;
+//   using-declaration
+//   template-declaration
+//
+// member-declarator-list:
+//   member-declarator
+//   member-declarator-list , member-declarator
+//
+// member-declarator:
+//   declarator pure-specifier [opt]
+//   declarator constant-initializer [opt]
+//   identifier [opt] : constant-expression
+//
+// constant-initializer:
+//   = constant-expression
+PT::Node *Parser::opt_member_specification()
 {
-  Trace trace("Parser::access_decl", Trace::PARSING);
-  PT::Node *name;
-  PT::Encoding encode;
-  Token tk;
+  Trace trace("Parser::opt_member_specification", Trace::PARSING);
 
-  if(!this->name(name, encode)) return false;
-
-  if(my_lexer.get_token(tk) != ';') return false;
-
-  mem = new PT::AccessDecl(new PT::Name(name, encode), PT::list(new PT::Atom(tk)));
-  return true;
-}
-
-/*
-  user.access.spec
-  : UserKeyword4 ':'
-  | UserKeyword4 '(' function.arguments ')' ':'
-*/
-bool Parser::user_access_spec(PT::Node *&mem)
-{
-  Trace trace("Parser::user_access_spec", Trace::PARSING);
-  Token tk1, tk2, tk3, tk4;
-  PT::Node *args;
-
-  if(my_lexer.get_token(tk1) != Token::UserKeyword4) return false;
-
-  int t = my_lexer.get_token(tk2);
-  if(t == ':')
+  PT::List *members = 0;
+  while (true)
   {
-    mem = new PT::UserAccessSpec(new PT::Atom(tk1), PT::list(new PT::Atom(tk2)));
-    return true;
-  }
-  else if(t == '(')
-  {
-    if(!function_arguments(args)) return false;
-    if(my_lexer.get_token(tk3) != ')') return false;
-    if(my_lexer.get_token(tk4) != ':') return false;
-
-    mem = new PT::UserAccessSpec(new PT::Atom(tk1),
-				 PT::list(new PT::Atom(tk2), args,
-					  new PT::Atom(tk3),
-					  new PT::Atom(tk4)));
-    return true;
-  }
-  else return false;
-}
-
-//. expression:
-//.   assignment-expression
-//.   expression , assignment-expression
-bool Parser::expression(PT::Node *&exp)
-{
-  Trace trace("Parser::expression", Trace::PARSING);
-
-  if(!assign_expr(exp)) return false;
-  while(my_lexer.look_ahead(0) == ',')
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!assign_expr(right)) return false;
-
-    exp = new PT::Expression(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. assignment-expression:
-//.   conditional-expression
-//.   logical-or-expression assignment-operator assignment-expression
-//.   throw-expression
-bool Parser::assign_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::assign_expr", Trace::PARSING);
-
-  Token::Type t = my_lexer.look_ahead(0);
-  
-  if (t == Token::THROW) return throw_expr(exp);
-
-  PT::Node *left;
-  if(!conditional_expr(left)) return false;
-  t = my_lexer.look_ahead(0);
-  if(t != '=' && t != Token::AssignOp) exp = left;
-  else
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!assign_expr(right)) return false;
-    
-    exp = new PT::AssignExpr(left, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. conditional-expression:
-//.   logical-or-expression
-//.   logical-or-expression ? expression : assignment-expression
-bool Parser::conditional_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::conditional_expr", Trace::PARSING);
-
-  if(!logical_or_expr(exp)) return false;
-  if(my_lexer.look_ahead(0) == '?')
-  {
-    Token tk1;
-    my_lexer.get_token(tk1);
-    PT::Node *then;
-    if(!expression(then)) return false;
-    Token tk2;
-    if(my_lexer.get_token(tk2) != ':') return false;
-    PT::Node *otherwise;
-    if(!assign_expr(otherwise)) return false;
-
-    exp = new PT::CondExpr(exp, PT::list(new PT::Atom(tk1), then,
-					 new PT::Atom(tk2), otherwise));
-  }
-  return true;
-}
-
-//. logical-or-expression:
-//.   logical-and-expression
-//.   logical-or-expression || logical-and-expression
-bool Parser::logical_or_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::logical_or_expr", Trace::PARSING);
-
-  if(!logical_and_expr(exp)) return false;
-
-  while(my_lexer.look_ahead(0) == Token::LogOrOp)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!logical_and_expr(right)) return false;
-    
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. logical-and-expression:
-//.   inclusive-or-expression
-//.   logical-and-expr && inclusive-or-expression
-bool Parser::logical_and_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::logical_and_expr", Trace::PARSING);
-
-  if(!inclusive_or_expr(exp)) return false;
-
-  while(my_lexer.look_ahead(0) == Token::LogAndOp)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!inclusive_or_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. inclusive-or-expression:
-//.   exclusive-or-expression
-//.   inclusive-or-expression | exclusive-or-expression
-bool Parser::inclusive_or_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::inclusive_or_expr", Trace::PARSING);
-
-  if(!exclusive_or_expr(exp)) return false;
-
-  while(my_lexer.look_ahead(0) == '|')
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!exclusive_or_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. exclusive-or-expression:
-//.   and-expression
-//.   exclusive-or-expression ^ and-expression
-bool Parser::exclusive_or_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::exclusive_or_expr", Trace::PARSING);
-
-  if(!and_expr(exp)) return false;
-
-  while(my_lexer.look_ahead(0) == '^')
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!and_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. and-expression:
-//.   equality-expression
-//.   and-expression & equality-expression
-bool Parser::and_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::and_expr", Trace::PARSING);
-
-  if(!equality_expr(exp)) return false;
-
-  while(my_lexer.look_ahead(0) == '&')
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!equality_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. equality-expression:
-//.   relational-expression
-//.   equality-expression == relational-expression
-//.   equality-expression != relational-expression
-bool Parser::equality_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::equality_expr", Trace::PARSING);
-
-  if(!relational_expr(exp)) return false;
-  while(my_lexer.look_ahead(0) == Token::EqualOp)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!relational_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. relational-expression:
-//.   shift-expression
-//.   relational-expression < shift-expression
-//.   relational-expression > shift-expression
-//.   relational-expression <= shift-expression
-//.   relational-expression >= shift-expression
-bool Parser::relational_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::relational_expr", Trace::PARSING);
-
-  if(!shift_expr(exp)) return false;
-
-  Token::Type t;
-  while(t = my_lexer.look_ahead(0),
-	(t == Token::RelOp || t == '<' || (t == '>' && my_gt_is_operator)))
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!shift_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. shift-expression:
-//.   additive-expression
-//.   shift-expression << additive-expression
-//.   shift-expression >> additive-expression
-bool Parser::shift_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::shift_expr", Trace::PARSING);
-
-  if(!additive_expr(exp)) return false;
-
-  while(my_lexer.look_ahead(0) == Token::ShiftOp)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!additive_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. additive-expression:
-//.   multiplicative-expression
-//.   additive-expression + multiplicative-expression
-//.   additive-expression - multiplicative-expression
-bool Parser::additive_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::additive_expr", Trace::PARSING);
-
-  if(!multiplicative_expr(exp)) return false;
-
-  Token::Type t;
-  while(t = my_lexer.look_ahead(0), (t == '+' || t == '-'))
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!multiplicative_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. multiplicative-expression:
-//.   pm-expression
-//.   multiplicative-expression * pm-expression
-//.   multiplicative-expression / pm-expression
-//.   multiplicative-expression % pm-expression
-bool Parser::multiplicative_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::multiplicative_expr", Trace::PARSING);
-
-  if(!pm_expr(exp)) return false;
-
-  Token::Type t;
-  while(t = my_lexer.look_ahead(0), (t == '*' || t == '/' || t == '%'))
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!pm_expr(right)) return false;
-
-    exp = new PT::InfixExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. pm-expression:
-//.   cast-expression
-//.   pm-expression .* cast-expression
-//.   pm-expression ->* cast-expression
-bool Parser::pm_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::pm_expr", Trace::PARSING);
-
-  if(!cast_expr(exp)) return false;
-  while(my_lexer.look_ahead(0) == Token::PmOp)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!cast_expr(right)) return false;
-
-    exp = new PT::PmExpr(exp, PT::list(new PT::Atom(tk), right));
-  }
-  return true;
-}
-
-//. cast-expression:
-//.   unary-expression
-//.   ( type-id ) cast-expression
-bool Parser::cast_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::cast_expr", Trace::PARSING);
-  if(my_lexer.look_ahead(0) != '(') return unary_expr(exp);
-  else
-  {
-    Token tk1, tk2;
-    PT::Node *tname;
-    const char* pos = my_lexer.save();
-    my_lexer.get_token(tk1);
-    if(type_id(tname))
-      if(my_lexer.get_token(tk2) == ')')
-	if(cast_expr(exp))
-	{
-	  exp = new PT::CastExpr(new PT::Atom(tk1),
-				 PT::list(tname, new PT::Atom(tk2), exp));
-	  return true;
-	}
-
-    my_lexer.restore(pos);
-    return unary_expr(exp);
-  }
-}
-
-//. type-id:
-//.   type-specifier-seq abstract-declarator [opt]
-bool Parser::type_id(PT::Node *&tname)
-{
-  PT::Encoding type_encode;
-  return type_id(tname, type_encode);
-}
-
-bool Parser::type_id(PT::Node *&tname, PT::Encoding &type_encode)
-{
-  Trace trace("Parser::type_id", Trace::PARSING);
-  PT::Node *type_name, *arg;
-  PT::Encoding name_encode;
-
-  if(!type_specifier(type_name, true, type_encode)) return false;
-  if(!declarator(arg, kCastDeclarator, false, type_encode, name_encode, false))
-    return false;
-
-  tname = PT::list(type_name, arg); 
-  return true;
-}
-
-//. unary-expression:
-//.   postfix-expression
-//.   ++ cast-expression
-//.   -- cast-expression
-//.   unary-operator cast-expression
-//.   sizeof unary-expression
-//.   sizeof ( type-id )
-//.   new-expression
-//.   delete-expression
-//.
-//. unary-operator:
-//.   *
-//.   &
-//.   +
-//.   -
-//.   !
-//.   ~
-bool Parser::unary_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::unary_expr", Trace::PARSING);
-  Token::Type t = my_lexer.look_ahead(0);
-  if(t == '*' || t == '&' || t == '+' || t == '-' || t == '!' || t == '~' ||
-     t == Token::IncOp)
-  {
-    Token tk;
-    my_lexer.get_token(tk);
-    PT::Node *right;
-    if(!cast_expr(right)) return false;
-
-    exp = new PT::UnaryExpr(new PT::Atom(tk), PT::list(right));
-    return true;
-  }
-  else if(t == Token::SIZEOF) return sizeof_expr(exp);
-  // FIXME: can this be removed ?
-  //   else if(t == Token::THROW) return throw_expr(exp);
-  else if(is_allocate_expr(t)) return allocate_expr(exp);
-  else return postfix_expr(exp);
-}
-
-//. throw-expression:
-//.   throw assignment-expression
-bool Parser::throw_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::throw_expr", Trace::PARSING);
-  Token tk;
-  if(my_lexer.get_token(tk) != Token::THROW) return false;
-
-  int t = my_lexer.look_ahead(0);
-  PT::Node *e = 0;
-  // FIXME: what is that ??
-  if(t == ':' || t == ';') e = 0;
-  else if(!assign_expr(e)) return false;
-
-  exp = new PT::ThrowExpr(new PT::Kwd::Throw(tk), PT::list(e));
-  return true;
-}
-
-//. sizeof-expression:
-//.   sizeof unary-expression
-//.   sizeof ( type-id )
-bool Parser::sizeof_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::sizeof_expr", Trace::PARSING);
-  Token tk;
-
-  if(my_lexer.get_token(tk) != Token::SIZEOF) return false;
-  if(my_lexer.look_ahead(0) == '(')
-  {
-    Token op, cp;
-    PT::Node *tname;
-    char const *tag = my_lexer.save();
-    my_lexer.get_token(op);
-    if(type_id(tname) && my_lexer.get_token(cp) == ')')
+    PGuard<ST::Scope *> pguard2(*this, &Parser::my_qualifying_scope, 0);
+    switch (my_lexer.look_ahead())
     {
-      // success !
-      exp = new PT::SizeofExpr(new PT::Atom(tk),
-			       PT::list(new PT::Atom(op), tname, new PT::Atom(cp)));
-      return true;
-    }
-    else
-      my_lexer.restore(tag);
-  }
-  PT::Node *unary;
-  if(!unary_expr(unary)) return false;
-
-  exp = new PT::SizeofExpr(new PT::Atom(tk), PT::list(unary));
-  return true;
-}
-
-//. typeid-expression:
-//.   typeid ( type-id )
-//.   typeid ( expression )
-bool Parser::typeid_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::typeid_expr", Trace::PARSING);
-
-  Token tk;
-  if(my_lexer.get_token(tk) != Token::TYPEID) return false;
-  Token op;
-  if(my_lexer.get_token(op) != '(') return false;
-  char const *mark = my_lexer.save();
-  PT::Node *arg;
-  if(!type_id(arg))
-  {
-    my_lexer.restore(mark);
-    if (!expression(arg)) return false;
-  }
-  Token cp;
-  if(my_lexer.get_token(cp) != ')') return false;
-
-  exp = new PT::TypeidExpr(new PT::Atom(tk),
-			   PT::list(new PT::Atom(op), arg, new PT::Atom(cp)));
-  return true;
-}
-
-bool Parser::is_allocate_expr(Token::Type t)
-{
-  if(t == Token::UserKeyword) return true;
-  else
-  {
-    if(t == Token::Scope) t = my_lexer.look_ahead(1);
-    if(t == Token::NEW || t == Token::DELETE) return true;
-    else return false;
-  }
-}
-
-/*
-  allocate.expr
-  : {Scope | userdef.keyword} NEW allocate.type
-  | {Scope} DELETE {'[' ']'} cast.expr
-*/
-bool Parser::allocate_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::allocate_expr", Trace::PARSING);
-  Token tk;
-  PT::Node *head = 0;
-
-  bool ukey = false;
-  int t = my_lexer.look_ahead(0);
-  if(t == Token::Scope)
-  {
-    my_lexer.get_token(tk);
-    head = new PT::Atom(tk);
-  }
-  else if(t == Token::UserKeyword)
-  {
-    if(!userdef_keyword(head)) return false;
-    ukey = true;
-  }
-
-  t = my_lexer.get_token(tk);
-  if(t == Token::DELETE)
-  {
-    PT::Node *obj;
-    if(ukey) return false;
-
-    if(head == 0) exp = new PT::DeleteExpr(new PT::Kwd::Delete(tk), 0);
-    else exp = new PT::DeleteExpr(head, PT::list(new PT::Kwd::Delete(tk)));
-
-    if(my_lexer.look_ahead(0) == '[')
-    {
-      my_lexer.get_token(tk);
-      exp = PT::snoc(exp, new PT::Atom(tk));
-      if(my_lexer.get_token(tk) != ']') return false;
-
-      exp = PT::snoc(exp, new PT::Atom(tk));
-    }
-    if(!cast_expr(obj)) return false;
-
-    exp = PT::snoc(exp, obj);
-    return true;
-  }
-  else if(t == Token::NEW)
-  {
-    PT::Node *atype;
-    if(head == 0) exp = new PT::NewExpr(new PT::Kwd::New(tk), 0);
-    else exp = new PT::NewExpr(head, PT::list(new PT::Kwd::New(tk)));
-
-    if(!allocate_type(atype)) return false;
-
-    exp = PT::nconc(exp, atype);
-    return true;
-  }
-  else return false;
-}
-
-/*
-  userdef.keyword
-  : [UserKeyword | UserKeyword5] {'(' function.arguments ')'}
-*/
-bool Parser::userdef_keyword(PT::Node *&ukey)
-{
-  Token tk;
-
-  int t = my_lexer.get_token(tk);
-  if(t != Token::UserKeyword && t != Token::UserKeyword5) return false;
-
-  if(my_lexer.look_ahead(0) != '(')
-    ukey = new PT::UserdefKeyword(new PT::Atom(tk), 0);
-  else
-  {
-    PT::Node *args;
-    Token op, cp;
-    my_lexer.get_token(op);
-    if(!function_arguments(args)) return false;
-
-    if(my_lexer.get_token(cp) != ')') return false;
-
-    ukey = new PT::UserdefKeyword(new PT::Atom(tk),
-				  PT::list(new PT::Atom(op), args, new PT::Atom(cp)));
-  }
-  return true;
-}
-
-/*
-  allocate.type
-  : {'(' function.arguments ')'} type.specifier new.declarator
-    {allocate.initializer}
-  | {'(' function.arguments ')'} '(' type.name ')' {allocate.initializer}
-*/
-bool Parser::allocate_type(PT::Node *&atype)
-{
-  Trace trace("Parser::allocate_type", Trace::PARSING);
-  Token op, cp;
-  PT::Node *tname, *init, *exp;
-
-  if(my_lexer.look_ahead(0) != '(') atype = PT::list(0);
-  else
-  {
-    my_lexer.get_token(op);
-
-    const char* pos = my_lexer.save();
-    if(type_id(tname))
-      if(my_lexer.get_token(cp) == ')')
-	if(my_lexer.look_ahead(0) != '(')
-	{
-	  atype = PT::list(0, PT::list(new PT::Atom(op), tname, new PT::Atom(cp)));
-	  if(!is_type_specifier()) return true;
-	}
-	else if(allocate_initializer(init))
-	{
-	  atype = PT::list(0, PT::list(new PT::Atom(op), tname, new PT::Atom(cp)),
-			   init);
-	  // the next token cannot be '('
-	  if(my_lexer.look_ahead(0) != '(') return true;
-	}
-
-    // if we reach here, we have to process '(' function.arguments ')'.
-    my_lexer.restore(pos);
-    if(!function_arguments(exp)) return false;
-
-    if(my_lexer.get_token(cp) != ')') return false;
-
-    atype = PT::list(PT::list(new PT::Atom(op), exp, new PT::Atom(cp)));
-  }
-  if(my_lexer.look_ahead(0) == '(')
-  {
-    my_lexer.get_token(op);
-    if(!type_id(tname)) return false;
-    if(my_lexer.get_token(cp) != ')') return false;
-
-    atype = PT::snoc(atype, PT::list(new PT::Atom(op), tname, new PT::Atom(cp)));
-  }
-  else
-  {
-    PT::Declarator *decl;
-    PT::Encoding type_encode;
-    if(!type_specifier(tname, false, type_encode)) return false;
-    if(!new_declarator(decl, type_encode)) return false;
-
-    atype = PT::snoc(atype, PT::list(tname, decl));
-  }
-
-  if(my_lexer.look_ahead(0) == '(')
-  {
-    if(!allocate_initializer(init)) return false;
-
-    atype = PT::snoc(atype, init);
-  }
-  return true;
-}
-
-/*
-  new.declarator
-  : empty
-  | ptr.operator
-  | {ptr.operator} ('[' expression ']')+
-*/
-bool Parser::new_declarator(PT::Declarator *&decl, PT::Encoding& encode)
-{
-  Trace trace("Parser::new_declarator", Trace::PARSING);
-  PT::Node *d = 0;
-  if(my_lexer.look_ahead(0) != '[')
-    if(!opt_ptr_operator(d, encode)) return false;
-  decl = new PT::Declarator(d);
-  while(my_lexer.look_ahead(0) == '[')
-  {
-    Token ob, cb;
-    PT::Node *expr;
-    my_lexer.get_token(ob);
-    if(!expression(expr)) return false;
-    if(my_lexer.get_token(cb) != ']') return false;
-
-    if (expr)
-    {
-      long size;
-      if (TypeAnalysis::evaluate_const(my_symbols.current_scope(), expr, size))
-	encode.array(size);
-      else 
-	encode.array();
-    }
-    decl = PT::nconc(decl, PT::list(new PT::Atom(ob), expr, new PT::Atom(cb)));
-  }
-  decl->set_encoded_type(encode);
-  return true;
-}
-
-/*
-  allocate.initializer
-  : '(' {initialize.expr (',' initialize.expr)* } ')'
-*/
-bool Parser::allocate_initializer(PT::Node *&init)
-{
-  Trace trace("Parser::allocate_initializer", Trace::PARSING);
-  Token op, cp;
-
-  if(my_lexer.get_token(op) != '(') return false;
-
-  if(my_lexer.look_ahead(0) == ')')
-  {
-    my_lexer.get_token(cp);
-    init = PT::list(new PT::Atom(op), 0, new PT::Atom(cp));
-    return true;
-  }
-
-  init = 0;
-  while(true)
-  {
-    PT::Node *exp;
-    if(!initialize_expr(exp)) return false;
-
-    init = PT::snoc(init, exp);
-    if(my_lexer.look_ahead(0) != ',') break;
-    else
-    {
-      Token tk;
-      my_lexer.get_token(tk);
-      init = PT::snoc(init, new PT::Atom(tk));
-    }
-  }
-  my_lexer.get_token(cp);
-  init = PT::list(new PT::Atom(op), init, new PT::Atom(cp));
-  return true;
-}
-
-/*
-  postfix.exp
-  : primary.exp
-  | postfix.expr '[' expression ']'
-  | postfix.expr '(' function.arguments ')'
-  | postfix.expr '.' var.name
-  | postfix.expr ArrowOp var.name
-  | postfix.expr IncOp
-  | openc++.postfix.expr
-
-  openc++.postfix.expr
-  : postfix.expr '.' userdef.statement
-  | postfix.expr ArrowOp userdef.statement
-
-  Note: function-style casts are accepted as function calls.
-*/
-bool Parser::postfix_expr(PT::Node *&exp)
-{
-  Trace trace("Parser::postfix_expr", Trace::PARSING);
-  PT::Node *e;
-  Token cp, op;
-  int t, t2;
-
-  if(!primary_expr(exp)) return false;
-
-  while(true)
-  {
-    switch(my_lexer.look_ahead(0))
-    {
-      case '[' :
-	my_lexer.get_token(op);
-	if(!expression(e)) return false;
-	if(my_lexer.get_token(cp) != ']') return false;
-
-	exp = new PT::ArrayExpr(exp, PT::list(new PT::Atom(op), e, new PT::Atom(cp)));
+      case '}':
+        return members;
+      case Token::PUBLIC:
+      {
+	PT::Node *access = new PT::Kwd::Public(my_lexer.get_token());
+	if (!require(':')) return 0;
+	access = PT::snoc(PT::cons(access), new PT::Atom(my_lexer.get_token()));
+	members = PT::snoc(members, access);
 	break;
-      case '(' :
-	my_lexer.get_token(op);
-	if(!function_arguments(e)) return false;
-	if(my_lexer.get_token(cp) != ')') return false;
-
-	exp = new PT::FuncallExpr(exp, 
-				  PT::list(new PT::Atom(op), e, new PT::Atom(cp)));
+      }
+      case Token::PROTECTED:
+      {
+	PT::Node *access = new PT::Kwd::Protected(my_lexer.get_token());
+	if (!require(':')) return 0;
+	access = PT::snoc(PT::cons(access), new PT::Atom(my_lexer.get_token()));
+	members = PT::snoc(members, access);
 	break;
-      case Token::IncOp :
-	my_lexer.get_token(op);
-	exp = new PT::PostfixExpr(exp, PT::list(new PT::Atom(op)));
+      }
+      case Token::PRIVATE:
+      {
+	PT::Node *access = new PT::Kwd::Private(my_lexer.get_token());
+	if (!require(':')) return 0;
+	access = PT::snoc(PT::cons(access), new PT::Atom(my_lexer.get_token()));
+	members = PT::snoc(members, access);
 	break;
-      case '.' :
-      case Token::ArrowOp :
-	t2 = my_lexer.get_token(op);
-	t = my_lexer.look_ahead(0);
-	if(t == Token::UserKeyword ||
-	   t == Token::UserKeyword2 ||
-	   t == Token::UserKeyword3)
+      }
+      case Token::USING:
+      {
+	PT::UsingDeclaration *decl = using_declaration();
+	if (!require(decl, "using-declaration")) return 0;
+	else members = PT::snoc(members, decl);
+	break;
+      }
+      case Token::TEMPLATE:
+      {
+	PT::List *decl = template_declaration();
+	if (!require(decl, "template-declaration")) return 0;
+	else members = PT::snoc(members, decl);
+	break;
+      }
+      default:
+      {
+	PT::Encoding encoding;
+	PT::DeclSpec *spec = decl_specifier_seq(encoding);
+	if (my_lexer.look_ahead() == ';')
 	{
-	  if(!userdef_statement(e)) return false;
-
-	  exp = new PT::UserStatementExpr(exp, PT::cons(new PT::Atom(op), e));
-	  break;
+	  if (!spec || spec->type().empty())
+	  {
+	    error("expected type");
+	    return 0;
+	  }
+	  // nested class-specifier ?
+	  Token semic = my_lexer.get_token();
+	  PT::SimpleDeclaration *decl =
+	    new PT::SimpleDeclaration(spec, PT::list(0, new PT::Atom(semic)));
+	  if (spec->is_typedef())
+	    my_symbols.declare_typedef(decl, my_symbol);
+	  else declare(decl);
+	  members = PT::snoc(members, decl);
 	}
 	else
 	{
-	  if(!var_name(e)) return false;
-	  if(t2 == '.')
-	    exp = new PT::DotMemberExpr(exp, PT::list(new PT::Atom(op), e));
-	  else
-	    exp = new PT::ArrowMemberExpr(exp, PT::list(new PT::Atom(op), e));
-	  break;
+	  PT::List *comments = wrap_comments(my_lexer.get_comments());
+
+	  PT::List *declarators = 0;
+	  while (my_lexer.look_ahead() != ';')
+	  {
+	    Token::Type token = my_lexer.look_ahead();
+	    if (token == ':' || 
+		(token == Token::Identifier && my_lexer.look_ahead(1) == ':'))
+	    {
+	      // the decl-specifier-seq may be ommitted only for functions (C) or
+	      // constructors, destructors, and conversion operators (C++).
+	      if (!spec || spec->type().empty())
+	      {
+		error("expected type");
+		return 0;
+	      }
+	      // bitfield declaration
+	      PT::Encoding encoding;
+	      PT::Identifier *id = token != ':' ? identifier(encoding) : 0;
+	      PT::Atom *colon = new PT::Atom(my_lexer.get_token());
+	      PT::Node *width = constant_expression();
+	      declarators = PT::snoc(declarators, PT::list(id, colon, width));
+	    }
+	    else
+	    {
+	      PT::Encoding type = encoding;
+	      PT::Encoding dummy_name;
+	      PT::Declarator *decl = declarator(type, dummy_name, NAMED);
+	      if (!require(decl, "declarator")) return 0;
+	      // the decl-specifier-seq may be ommitted only for functions (C) or
+	      // constructors, destructors, and conversion operators (C++).
+	      else if (!type.is_function() && (!spec || spec->type().empty()))
+	      {
+		error("expected type");
+		return 0;
+	      }
+	      PT::Node *initializer = 0;
+	      if (my_lexer.look_ahead() == '=')
+	      {
+		Token eq = my_lexer.get_token();
+		if (type.is_function())
+		{
+		  // pure-specifier
+		  Token zero = my_lexer.get_token();
+		  if (zero.type != Token::Constant || 
+		      zero.length != 1 || 
+		      *zero.ptr != '0')
+		  {
+		    error("invalid pure specifier (only '= 0' is allowed)");
+		    return 0;
+		  }
+		  initializer = PT::cons(new PT::Atom(eq),
+					 PT::cons(new PT::Atom(zero)));
+		}
+		else
+		{
+		  // constant-initializer
+		  if (my_lexer.look_ahead() == '{')
+		  {
+		    error("a brace-enclosed initializer is not allowed here");
+		    return 0;
+		  }
+		  initializer = PT::cons(new PT::Atom(eq),
+					 PT::cons(constant_expression()));
+		}
+	      }
+	      if (initializer) decl = PT::snoc(decl, initializer);
+
+	      if (type.is_function() &&
+		  !declarators &&
+		  starts_function_definition(my_lexer.look_ahead()))
+	      {
+		// function-definition
+		PT::FunctionDefinition *func = 
+		  new PT::FunctionDefinition(spec, PT::cons(decl));
+		{
+		  // FIXME: For now skip the whole function body (incl. ctor-initializer).
+		  //        Enhance the Lexer so it can be nested, e.g. to
+		  //        scan chunks of the buffer such as member function bodies.
+		  Token op = my_lexer.get_token();
+		  size_t nesting = op.type == '{' ? 1 : 0;
+		  Token cp = skip_statement(nesting);
+		  if (cp.type == Token::BadToken)
+		  {
+		    error("encountering EOF while parsing function body");
+		    return 0;
+		  }
+		  // Need to remember the chunk [op, cp] so we can parse it once
+		  // the class body is completed.
+// 		  ScopeGuard scope_guard(*this, func);
+// 		  PT::Block *body = compound_statement();
+// 		  if (!require(body, "compound-statement")) return 0;
+		  PT::Block *body = new PT::Block(new PT::CommentedAtom(op, comments),
+						  PT::cons(new PT::Atom(cp)));
+		  func = PT::snoc(func, body);
+		  if (my_lexer.look_ahead() == ';')
+		    func = PT::snoc(func, new PT::Atom(my_lexer.get_token()));
+		}
+		declare(func);
+		members = PT::snoc(members, func);
+		break;
+	      }
+	      else
+	      {
+		declarators = PT::snoc(declarators, decl);
+	      }
+	    }
+	    if (my_lexer.look_ahead() == ',')
+	      declarators = PT::snoc(declarators, new PT::Atom(my_lexer.get_token()));
+	  }
+	  // If declarators is still zero we have processed a function definition.
+	  
+	  if (declarators)
+	  { 
+	    if (!require(';')) return 0;
+
+	    PT::Atom *semic = new PT::Atom(my_lexer.get_token());
+	    PT::SimpleDeclaration *decl =
+	      new PT::SimpleDeclaration(spec, PT::list(declarators, semic));
+	    decl->set_comments(comments);
+	    if (spec && spec->is_typedef())
+	      my_symbols.declare_typedef(decl, my_symbol);
+	    else declare(decl);
+	    members = PT::snoc(members, decl);
+	  }
 	}
-    default : return true;
+	break;
+      }
+    }
+  }
+  return members;
+}
+
+// class-specifier:
+//   class-head { member-specification [opt] }
+//
+// class-head:
+//   class-key identifier [opt] base-clause [opt]
+//   class-key nested-name-specifier identifier base-clause [opt]
+//   class-key nested-name-specifier [opt] template-id base-clause [opt]
+PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
+{
+  Trace trace("Parser::class_specifier", Trace::PARSING);
+
+  PT::Keyword *key = class_key();
+  if (!require(key, "class-key")) return 0;
+  Tentative tentative(*this, encoding);
+  PT::Node *name = 0;
+  PT::List *qname = nested_name_specifier(encoding);
+  PT::Encoding local;
+  if (qname)
+  {
+    Tentative tentative(*this, local);
+    PT::Node *class_name_ = class_name(local, false, false);
+    if (!class_name_)
+    {
+      tentative.rollback();
+      // FIXME: Why do we allow an identifier here ?
+      //        Qualified class names have to be declared in their
+      //        qualifying scope first.
+      class_name_ = identifier(local);
+      if (!require(class_name_, "identifier")) return 0;
+    }
+    name = PT::snoc(qname, class_name_);
+    // FIXME: the following should be encapsulated.
+    encoding.append(local);
+    if (encoding.is_qualified()) ++encoding.at(1);
+  }
+  else // not qualified
+  {
+    tentative.rollback(true);
+    name = template_id(local, false);
+    if (!name)
+    {
+      tentative.rollback();
+      if (my_lexer.look_ahead() == Token::Identifier) name = identifier(local);
+      else local.anonymous();
+    }
+    // FIXME: the following should be encapsulated.
+    encoding.append(local);
+    if (encoding.is_qualified()) ++encoding.at(1);
+  }
+  if (name && !name->is_atom()) name = new PT::Name(name, encoding);
+  Token::Type next = my_lexer.look_ahead();
+  if (next != ':' && next != '{')
+  {
+    error("expected '{' or ':'");
+    return 0;
+  }
+  else commit();
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+  PT::ClassSpec *spec = new PT::ClassSpec(local, key, PT::cons(name), comments);
+  my_symbols.declare(my_qualifying_scope, spec);
+  PT::List *base_clause_ = 0;
+  std::vector<SymbolTable::Symbol const *> bases;
+  if (next == ':')
+  {
+    PGuard<ST::Scope *> guard(*this, &Parser::my_qualifying_scope, 0);
+    base_clause_ = base_clause(bases);
+    if (!require(base_clause_, "base-clause")) return 0;
+  }
+  spec = PT::snoc(spec, base_clause_);
+  if (!require('{')) return 0;
+  PT::Atom *ob = new PT::Atom(my_lexer.get_token());
+  ScopeGuard scope(*this, spec, bases);
+  PGuard<bool> guard(*this, &Parser::my_in_class, true);
+  PT::Node *member_specification_ = opt_member_specification();
+  if (!require('}')) return 0;
+  PT::Atom *cb = new PT::Atom(my_lexer.get_token());
+  PT::ClassBody *body = new PT::ClassBody(ob, member_specification_, cb);
+  return PT::snoc(spec, body);
+}
+
+// storage-class-specifier:
+//   auto
+//   register
+//   static
+//   extern
+//   mutable
+//   thread [GCC]
+PT::Keyword *Parser::opt_storage_class_specifier(PT::DeclSpec::StorageClass &storage)
+{
+  Trace trace("Parser::opt_storage_class_specifier", Trace::PARSING);
+  switch (my_lexer.look_ahead())
+  {
+    case Token::AUTO:
+      storage = PT::DeclSpec::AUTO;
+      return new PT::Kwd::Auto(my_lexer.get_token());
+    case Token::REGISTER:
+      storage = PT::DeclSpec::REGISTER;
+      return new PT::Kwd::Register(my_lexer.get_token());
+    case Token::STATIC:
+      storage = PT::DeclSpec::STATIC;
+      return new PT::Kwd::Static(my_lexer.get_token());
+    case Token::EXTERN:
+      storage = PT::DeclSpec::EXTERN;
+      return new PT::Kwd::Extern(my_lexer.get_token());
+    case Token::MUTABLE:
+      storage = PT::DeclSpec::MUTABLE;
+      return new PT::Kwd::Mutable(my_lexer.get_token());
+    default:
+      storage = PT::DeclSpec::UNDEF;
+      return 0;
+  }
+}
+
+// cv-qualifier-seq:
+//   cv-qualifier cv-qualifier-seq [opt]
+//
+// cv-qualifier:
+//   const
+//   volatile
+PT::List *Parser::opt_cv_qualifier_seq(PT::Encoding &encoding)
+{
+  Trace trace("Parser::opt_cv_qualifier_seq", Trace::PARSING);
+  bool is_const = false;
+  bool is_volatile = false;
+  PT::List *list = 0;
+  while (true)
+  {
+    switch (my_lexer.look_ahead())
+    {
+      case Token::CONST:
+	if (is_const)
+	{
+	  error("duplicate cv-qualifier");
+	  return 0;
+	}
+	list = PT::snoc(list, new PT::Kwd::Const(my_lexer.get_token()));
+	is_const = true;
+	break;
+      case Token::VOLATILE:
+	if (is_volatile)
+	{
+	  error("duplicate cv-qualifier");
+	  return 0;
+	}
+	list = PT::snoc(list, new PT::Kwd::Volatile(my_lexer.get_token()));
+	is_volatile = true;
+	break;
+      default:
+	encoding.cv_qualify(is_const, is_volatile);
+	return list;
+    }
+  }
+  return 0;
+}
+
+// type-specifier:
+//   simple-type-specifier
+//   class-specifier
+//   enum-specifier
+//   elaborated-type-specifier
+//   cv-qualifier
+//   __complex__ [GCC]
+PT::Node *Parser::type_specifier(PT::Encoding &encoding, bool allow_user_defined)
+{
+  Trace trace("Parser::type_specifier", Trace::PARSING);
+  switch (my_lexer.look_ahead())
+  {
+    case Token::ENUM:
+      // Decide whether this is an enum-specifier or an elaborated-type-specifier.
+      if (my_lexer.look_ahead(1) == '{' ||
+	  (my_lexer.look_ahead(1) == Token::Identifier && 
+	   my_lexer.look_ahead(2) == '{'))
+      {
+	PT::Node *spec = enum_specifier(encoding);
+	if (spec) my_defines_class_or_enum = true;
+	return spec;
+      }
+      else
+      {
+	PT::ElaboratedTypeSpec *spec = elaborated_type_specifier(encoding);
+	if (spec) my_declares_class_or_enum = true;
+	return spec;
+      }
+    case Token::CLASS:
+    case Token::STRUCT:
+    case Token::UNION:
+    {
+      Tentative tentative(*this, encoding);
+      PT::Node *spec = class_specifier(encoding);
+      if (spec)
+      {
+	my_defines_class_or_enum = true;
+	return spec;
+      }
+      tentative.rollback();
+      spec = elaborated_type_specifier(encoding);
+      if (spec)
+      {
+	my_declares_class_or_enum = true;
+	// If the next token is a ';' we deal with the elaborated-type-specifier
+	// as part of the declaration.
+	if (my_lexer.look_ahead() != ';')
+	  declare(static_cast<PT::ElaboratedTypeSpec *>(spec));
+      }
+      return spec;
+    }
+    case Token::TYPENAME:
+      return elaborated_type_specifier(encoding);
+    case Token::CONST:
+      encoding.cv_qualify(true);
+      return new PT::Kwd::Const(my_lexer.get_token());
+    case Token::VOLATILE:
+      encoding.cv_qualify(false, true);
+      return new PT::Kwd::Volatile(my_lexer.get_token());
+    // This is presently masked by the lexer
+//     case Token::RESTRICT:
+//     {
+//       Token token;
+//       my_lexer.get_token(token);
+//       return new PT::Kwd::Restrict(token);
+//     }
+    default:
+      break;
+  }
+  PT::Node *type = simple_type_specifier(encoding, allow_user_defined);
+  if (!require(type, "type-specifier")) return 0;
+  return type;
+}
+
+// type-specifier-seq:
+//   type-specifier type-specifier-seq [opt]
+PT::List *Parser::type_specifier_seq(PT::Encoding &encoding)
+{
+  Trace trace("Parser::type_specifier_seq", Trace::PARSING);
+  PT::List *spec = 0;
+  while (true)
+  {
+    Tentative tentative(*this);
+    PT::Node *type_spec = type_specifier(encoding, true);
+    if (!type_spec)
+    {
+      tentative.rollback();
+      if (!spec) error("expected type-specifier");
+      return spec;
+    }
+    spec = PT::snoc(spec, type_spec);
+  }
+}
+
+// constructor-declarator:
+//   class-name ( parameter-declaration-clause [opt] )
+//   class-name :: class-name ( parameter-declaration-clause [opt] )
+bool Parser::is_constructor_declarator()
+{
+  Trace trace("Parser::is_constructor_declarator", Trace::PARSING);
+  if (dynamic_cast<ST::FunctionScope *>(my_symbols.current_scope())) return false;
+  Tentative tentative(*this, true); // make sure we leave this method in this state
+  Token token;
+  my_lexer.look_ahead(0, token);
+  trace << token;
+  if (token.type != Token::Identifier && token.type != Token::Scope) return false;
+  PT::Encoding name;
+  {
+    Tentative tentative(*this);
+    trace << my_qualifying_scope << ' ' << my_in_nested_name_specifier;
+    PT::Node *nested = nested_name_specifier(name);
+    if (!nested && !dynamic_cast<ST::Class *>(my_symbols.current_scope()))
+      return false;
+    else if (!nested) tentative.rollback();
+  }
+  trace << my_qualifying_scope;
+  PT::Node *class_name_ = class_name(name, false, false);
+  if (!class_name_ || my_lexer.look_ahead() != '(') return false;
+  if (ST::Class *class_ =
+      dynamic_cast<ST::Class *>(my_symbols.current_scope()))
+  {
+    trace << "compare names " << name << ' ' << class_->name();
+    if (name.unmangled() != class_->name()) return false;
+  }
+  // TODO: This needs quite a bit more work !
+  return true;
+}
+
+// decl-specifier-seq:
+//   decl-specifier-seq [opt] decl-specifier
+//
+// decl-specifier:
+//   storage-class-specifier
+//   type-specifier
+//   function-specifier
+//   friend
+//   typedef
+PT::DeclSpec *Parser::decl_specifier_seq(PT::Encoding &type)
+{
+  Trace trace("Parser::decl_specifier_seq", Trace::PARSING);
+  PGuard<ST::Scope *> guard(*this, &Parser::my_qualifying_scope);
+
+  PT::DeclSpec::StorageClass storage = PT::DeclSpec::UNDEF;
+  unsigned int flags = PT::DeclSpec::NONE;
+  bool declares_class_or_enum = false;
+  bool defines_class_or_enum = false;
+  bool allow_user_defined = true;
+  bool constructor_possible = true;
+  bool is_const = false;
+  bool is_volatile = false;
+  PT::List *seq = 0;
+  while (true)
+  {
+    // Start by looking for discriminating keywords.
+    switch (my_lexer.look_ahead())
+    {
+      case Token::FRIEND:
+	if (flags & PT::DeclSpec::FRIEND)
+	{
+	  error("duplicate friend");
+	  return 0;
+	}
+	seq = PT::snoc(seq, new PT::Kwd::Friend(my_lexer.get_token()));
+	flags |= PT::DeclSpec::FRIEND;
+	break;
+      case Token::INLINE:
+      case Token::VIRTUAL:
+      case Token::EXPLICIT:
+	seq = PT::snoc(seq, opt_function_specifier());
+	break;
+      case Token::TYPEDEF:
+	if (storage != PT::DeclSpec::UNDEF)
+	{
+	  // [dcl.stc] (7.1.1/1)
+	  // If a storage-class-specifier appears in a decl-specifier-seq,
+	  // there can be no typedef specifier in the same decl-specifier-seq...
+	  error("'typedef' and storage-class-specifiers not allowed in the same decl-specifier-seq.");
+	  return 0;
+	}
+	flags |= PT::DeclSpec::TYPEDEF;
+	constructor_possible = false;
+	seq = PT::snoc(seq, new PT::Kwd::Typedef(my_lexer.get_token()));
+	break;
+      case Token::AUTO:
+      case Token::REGISTER:
+      case Token::STATIC:
+      case Token::EXTERN:
+      case Token::MUTABLE:
+	// [dcl.stc]
+	// At most one storage-class-specifier shall appear 
+	// in a given decl-specifier-seq.
+	if (storage != PT::DeclSpec::UNDEF)
+	{
+	  error("multiple storage classes in declaration");
+	  return 0;
+	}
+	else if (flags & PT::DeclSpec::TYPEDEF)
+	{
+	  error("'typedef' and storage-class-specifiers not allowed in the same decl-specifier-seq.");
+	  return 0;
+	}
+	seq = PT::snoc(seq, opt_storage_class_specifier(storage));
+	break;
+      default:
+      {
+	// There is an ambiguity between the start of a constructor-declarator
+	// and a type-specifier. If a constructor-declarator would be valid,
+	// test whether the following actually is one, and if so, return the
+	// decl-specifier-seq parsed so far, letting the declarator production
+	// parse the constructor-declarator.
+	if (type.empty() && constructor_possible && is_constructor_declarator())
+	{
+	  if (seq) return new PT::DeclSpec(seq, type, storage, flags, false, false);
+	  else return 0;
+	}
+
+	PGuard<bool> guard1(*this, &Parser::my_declares_class_or_enum, false);
+	PGuard<bool> guard2(*this, &Parser::my_defines_class_or_enum, false);
+	Tentative tentative(*this);
+	PT::Encoding type_component;
+	PT::Node *spec = type_specifier(type_component, allow_user_defined);
+	if (spec && !type_component.empty())
+	{
+	  // Hack:
+	  // If the last type-specifier was a cv-qualifier, we
+	  // remember it and prepend it to the type encoding at the very end,
+	  // so meanwhile the qualified-name marker and counter can be accessed
+	  // as the encoding's first two characters.
+	  if (type_component.front() == 'C' || type_component.front() == 'V')
+	  {
+	    if (type_component.size() == 1)
+	      if (type_component.front() == 'C') is_const = true;
+	      else is_volatile = true;
+	    else is_const = is_volatile = true;
+	  }
+	  else
+	  {
+	    type.append(type_component);
+	    // If the last type-specifier was not a cv-qualifier,
+	    // no (more) user-defined types are allowed.
+	    allow_user_defined = false;
+	  }
+	}
+	declares_class_or_enum |= my_declares_class_or_enum;
+	defines_class_or_enum |= my_defines_class_or_enum;
+	if (!spec)
+	{
+	  tentative.rollback();
+	  type.cv_qualify(is_const, is_volatile);
+	  if (seq)
+	    return new PT::DeclSpec(seq, type, storage, flags,
+				    declares_class_or_enum,
+				    defines_class_or_enum);
+	  else
+	    return 0;
+	}
+	seq = PT::snoc(seq, spec);
+	if (!spec->is_atom() ||
+	    !(dynamic_cast<PT::Kwd::Const *>(spec) ||
+	      dynamic_cast<PT::Kwd::Volatile *>(spec)))
+ 	  allow_user_defined = false;
+      }
     }
   }
 }
 
-/*
-  primary.exp
-  : Constant
-  | CharConst
-  | WideCharConst
-  | StringL
-  | WideStringL
-  | THIS
-  | var.name
-  | '(' expression ')'
-  | integral.or.class.spec '(' function.arguments ')'
-  | openc++.primary.exp
-  | typeid '(' typething ')'
-
-  openc++.primary.exp
-  : var.name '::' userdef.statement
-*/
-bool Parser::primary_expr(PT::Node *&exp)
+// declarator-id:
+//   id-expression
+//   :: [opt] nested-name-specifier [opt] type-name
+PT::Node *Parser::declarator_id(PT::Encoding &encoding)
 {
-  Trace trace("Parser::primary_expr", Trace::PARSING);
-  Token tk, tk2;
-  PT::Node *exp2;
-  PT::Encoding cast_type_encode;
+  Trace trace("Parser::declarator_id", Trace::PARSING);
+  return id_expression(encoding, false);
+}
 
-  switch(my_lexer.look_ahead(0))
+// ptr-operator:
+//   * cv-qualifier-seq [opt]
+//   &
+//   :: [opt] nested-name-specifier * cv-qualifier-seq [opt]
+PT::List *Parser::ptr_operator(PT::Encoding &type)
+{
+  Trace trace("Parser::ptr_operator", Trace::PARSING);
+  PT::List *scope = 0;
+  size_t length = 0; // FIXME: this isn't really needed
+  switch (my_lexer.look_ahead())
+  {
+    case '&':
+      type.ptr_operator('&');
+      return PT::cons(new PT::Atom(my_lexer.get_token()));
+    case '*':
+    {
+      type.ptr_operator('*');
+      PT::List *node = PT::cons(new PT::Atom(my_lexer.get_token()));
+      PT::List *cv_qualifier_seq = opt_cv_qualifier_seq(type);
+      if (cv_qualifier_seq) node = PT::snoc(node, cv_qualifier_seq);
+      return node;
+    }
+    case Token::Scope:
+      my_qualifying_scope = my_symbols.current_scope()->global_scope();
+      length = 1;
+      type.global_scope();
+      scope = PT::cons(new PT::Atom(my_lexer.get_token()));
+      break;
+    default:
+      my_qualifying_scope = 0;
+      break;
+  }
+  PT::Encoding encoding;
+  PT::List *name = nested_name_specifier(encoding, false);
+  if (!require(name, "nested-name-specifier") || !require('*')) return 0;
+  type.ptr_to_member(encoding, length);
+  PT::List *node = PT::snoc(scope, name);
+  node = PT::snoc(node, new PT::Atom(my_lexer.get_token()));
+  PT::List *cv_qualifiers = opt_cv_qualifier_seq(type);
+  if (cv_qualifiers) node = PT::conc(node, cv_qualifiers);
+  return node;
+}
+
+// direct-declarator:
+//   declarator-id
+//   direct-declarator ( parameter-declaration-clause )
+//     cv-qualifier-seq [opt] exception-specification [opt]
+//   direct-declarator [ constant-expression [opt] ]
+//   ( declarator )
+//
+// direct-abstract-declarator:
+//   direct-abstract-declarator [opt] ( parameter-declaration-clause )
+//     cv-qualifier-seq [opt] exception-specification [opt]
+//   direct-abstract-declarator [opt] [ constant-expression [opt] ]
+//   ( abstract-declarator )
+PT::List *Parser::direct_declarator(PT::Encoding &type,
+				    PT::Encoding &name,
+				    DeclaratorKind kind)
+{
+  Trace trace("Parser::direct_declarator", Trace::PARSING);
+  PT::Encoding inner;
+  PT::List *decl = 0;
+  if (my_lexer.look_ahead() == '(')
+  {
+    Token op = my_lexer.get_token();
+    // If we are looking for a direct-declarator, this must be a
+    // parenthesized declarator. If it may be an abstract-direct-declarator,
+    // we have to try a parameter-declaration-clause first.
+    if (kind != NAMED)
+    {
+      Tentative tentative(*this, type);
+      PT::Node *parameters = parameter_declaration_clause(type);
+      if (parameters && my_lexer.look_ahead() == ')')
+      {
+	decl = PT::list(new PT::Atom(op),
+			parameters,
+			new PT::Atom(my_lexer.get_token()));
+      }
+      else tentative.rollback();
+    }
+    if (!decl)
+    {
+      decl = declarator(inner, name, kind);
+      if (!require(decl, "declarator") || !require(')')) return 0;
+      decl = PT::list(new PT::Atom(op),
+		      decl,
+		      new PT::Atom(my_lexer.get_token()));
+    }
+  }
+  else if (my_lexer.look_ahead() == '[' && kind != NAMED)
+  {
+    Token os = my_lexer.get_token();
+    PT::Node *expr = 0;
+    if (my_lexer.look_ahead() != ']')
+    {
+      expr = constant_expression();
+      if (!require(expr, "constant-expression") || !require(']')) return 0;
+    }
+    decl = PT::list(new PT::Atom(os),
+		    expr, 
+		    new PT::Atom(my_lexer.get_token()));
+  }
+  else if (kind != ABSTRACT)
+  {
+    Tentative tentative(*this);
+    PT::Node *id = declarator_id(name);
+    if (id) decl = PT::cons(id);
+    else if (kind == NAMED)
+    {
+      error("expected declarator-id");
+      return 0;
+    }
+  }
+  
+  while (true)
+  {
+    Token::Type token = my_lexer.look_ahead();
+    if (token == '(')
+    {
+      Tentative tentative(*this);
+      ScopeGuard scope_guard(*this, decl);
+      Token op = my_lexer.get_token();
+      PT::Encoding p_type;
+      PT::Node *parameters = parameter_declaration_clause(p_type);
+      if (!parameters || my_lexer.look_ahead() != ')')
+      {
+	tentative.rollback();
+	break;
+      }
+      Token cp = my_lexer.get_token();
+      // At this point we know we are looking at a function declarator,
+      // and an empty type means a function without return type specifier.
+      if (type.empty()) type.no_return_type();
+      type.function(p_type);
+      decl = PT::conc(decl, PT::list(new PT::Atom(op),
+				     parameters,
+				     new PT::Atom(cp)));
+      PT::Node *cv_qualifiers = opt_cv_qualifier_seq(type);
+      if (cv_qualifiers) decl = PT::snoc(decl, cv_qualifiers);
+      PT::Node *exc_spec = opt_exception_specification();
+      if (exc_spec) decl = PT::snoc(decl, exc_spec);
+    }
+    else if (token == '[')
+    {
+      Token os = my_lexer.get_token();
+      PT::Node *expr = 0;
+      if (my_lexer.look_ahead() != ']')
+      {
+	expr = constant_expression();
+	if (!require(expr, "constant-expression") || !require(']')) return 0;
+      }
+      Token cs = my_lexer.get_token();
+      decl = PT::conc(decl, PT::list(new PT::Atom(os), expr, new PT::Atom(cs)));
+    }
+    else break;
+  }
+  if (!inner.empty()) type.recursion(inner);
+  return decl;
+}
+
+// declarator:
+//   direct-declarator
+//   ptr-operator declarator
+//
+// abstract-declarator:
+//   ptr-operator abstract-declarator [opt]
+//   direct-abstract-declarator
+PT::Declarator *Parser::declarator(PT::Encoding &type, PT::Encoding &name,
+				   DeclaratorKind kind)
+{
+  Trace trace("Parser::declarator", Trace::PARSING);
+
+  PT::List *ptrs = 0;
+  while (true)
+  {
+    Tentative tentative(*this);
+    PT::List *ptr = ptr_operator(type);
+    if (ptr)
+    {
+      ptrs = PT::conc(ptrs, ptr);
+    }
+    else
+    {
+      tentative.rollback();
+      break;
+    }
+  }
+  PT::List *decl = direct_declarator(type, name, kind);
+  if (decl)
+  {
+    return new PT::Declarator(PT::conc(ptrs, decl), type, name, 0);
+  }
+  else
+  {
+    if (!ptrs || kind == NAMED) return 0;
+    else
+    {
+      return new PT::Declarator(ptrs, type, name, 0);
+    }
+  }
+}
+
+// initializer-clause:
+//   assignment-expression
+//   { initializer-list , [opt] }
+//   { }
+PT::Node *Parser::initializer_clause(bool constant)
+{
+  Trace trace("Parser::initializer_clause", Trace::PARSING);
+  if (my_lexer.look_ahead() != '{')
+  {
+    PGuard<bool> guard(*this, &Parser::my_in_constant_expression, constant);
+    return assignment_expression();
+  }
+  Token ob = my_lexer.get_token();
+  PT::List *clause = PT::cons(new PT::Atom(ob));
+  if (my_lexer.look_ahead() != '}')
+  {
+    PT::List *initializers = initializer_list(constant);
+    if (!require(initializers, "initializer-list")) return 0;
+    clause = PT::snoc(clause, initializers);
+    if (my_lexer.look_ahead() == ',')
+      clause = PT::snoc(clause, new PT::Atom(my_lexer.get_token()));
+  }
+  if (!require('}')) return 0;
+  return PT::snoc(clause, new PT::Atom(my_lexer.get_token()));
+}
+
+// initializer-list:
+//   initializer-clause
+//   initializer-list , initializer-clause
+PT::List *Parser::initializer_list(bool constant)
+{
+  Trace trace("Parser::initializer_list", Trace::PARSING);
+
+  PT::List *initializers = 0;
+  while (true)
+  {
+    PT::Node *initializer = initializer_clause(constant);
+    if (!require(initializer, "initializer-clause")) return 0;
+    initializers = PT::snoc(initializers, initializer);
+    if (my_lexer.look_ahead() != ',') break;
+    initializers = PT::snoc(initializers, new PT::Atom(my_lexer.get_token()));
+  }
+  return initializers;
+}
+
+// init-declarator:
+//   declarator initializer [opt]
+//
+// initializer:
+//   = initializer-clause
+//   ( expression-list )
+PT::Declarator *Parser::init_declarator(PT::Encoding &type)
+{
+  Trace trace("Parser::init_declarator", Trace::PARSING);
+  PT::Encoding name;
+  PT::Declarator *decl = declarator(type, name, NAMED);
+  if (!decl) return 0;
+
+  Token::Type token = my_lexer.look_ahead();
+  if (type.is_function() && starts_function_definition(token))
+    return decl;
+
+  bool initialized = token == '=' || token == '(';
+  if (!initialized && token != ',' && token != ';')
+  {
+    error("expected initializer");
+    return 0;
+  }
+  if (initialized)
+  {
+    if (token == '=')
+    {
+      Token eq = my_lexer.get_token();
+      PT::Node *initializer = initializer_clause(/*constant=*/false);
+      if (!require(initializer, "initializer-clause")) return 0;
+      decl = PT::conc(decl, PT::cons(new PT::Atom(eq), PT::cons(initializer)));
+    }
+    else
+    {
+      Token op = my_lexer.get_token();
+      PT::Node *expr = expression();
+      if (!require(expr, "expression") || !require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      decl = PT::conc(decl, PT::list(new PT::Atom(op), expr, new PT::Atom(cp)));
+    }
+  }
+  return decl;
+}
+
+// parameter-declaration-clause:
+//   parameter-declaration-list [opt] ... [opt]
+//   parameter-declaration-list , ...
+PT::List *Parser::parameter_declaration_clause(PT::Encoding &encoding)
+{
+  Trace trace("Parser::parameter_declaration_clause", Trace::PARSING);
+  
+  encoding.start_func_args();
+  switch (my_lexer.look_ahead())
+  {
+    case Token::Ellipsis:
+      encoding.ellipsis_arg();
+      encoding.end_func_args();
+      return PT::cons(new PT::Atom(my_lexer.get_token()));
+    case ')':
+      encoding.void_();
+      encoding.end_func_args();
+      return PT::cons(0);
+    case Token::VOID:
+      if (my_lexer.look_ahead(1) == ')')
+      {
+	encoding.void_();
+	encoding.end_func_args();
+	return PT::cons(new PT::Kwd::Void(my_lexer.get_token()));
+      }
+      // Fall through.
+    default:
+    {
+      PT::List *parameters = parameter_declaration_list(encoding);
+      if (!require(parameters, "parameter-declaration-list")) return 0;
+      PT::Node *comma = 0;
+      if (my_lexer.look_ahead() == ',')
+      {
+	comma = new PT::Atom(my_lexer.get_token());
+	parameters = PT::snoc(parameters, comma);
+      }
+      if (my_lexer.look_ahead() == Token::Ellipsis)
+      {
+	encoding.ellipsis_arg();
+	parameters = PT::snoc(parameters, new PT::Atom(my_lexer.get_token()));
+      }
+      else if (comma)
+      {
+	error("expected '...'");
+	return 0;
+      }
+      encoding.end_func_args();
+      return parameters;
+    }
+  }
+}
+
+// parameter-declaration-list:
+//   parameter-declaration
+//   parameter-declaration-list , parameter-declaration
+PT::List *Parser::parameter_declaration_list(PT::Encoding &encoding)
+{
+  Trace trace("Parser::parameter_declaration_list", Trace::PARSING);
+
+  PT::List *parameters = 0;
+  while (true)
+  {
+    PT::Encoding penc;
+    PT::Node *parameter = parameter_declaration(penc);
+    if (!require(parameter, "parameter-declaration")) return 0;
+    else
+    {
+      encoding.append(penc);
+      parameters = PT::snoc(parameters, parameter);
+    }
+    switch (my_lexer.look_ahead())
+    {
+      case ')':
+      case Token::Ellipsis:
+	return parameters;
+      case ',':
+	if (my_lexer.look_ahead(1) == Token::Ellipsis)
+	  return parameters;
+	else
+	{
+	  parameters = PT::snoc(parameters, new PT::Atom(my_lexer.get_token()));
+	  break;
+	}
+      default:
+	error("expected ',' or ')'");
+	return 0;
+    }
+  }
+}
+
+// parameter-declaration:
+//   decl-specifier-seq declarator
+//   decl-specifier-seq declarator = assignment-expression
+//   decl-specifier-seq abstract-declarator [opt]
+//   decl-specifier-seq abstract-declarator [opt] = assignment-expression
+PT::ParameterDeclaration *Parser::parameter_declaration(PT::Encoding &type)
+{
+  Trace trace("Parser::parameter_declaration", Trace::PARSING);
+  PGuard<ST::Scope *> pguard(*this, &Parser::my_qualifying_scope, 0);
+  PT::DeclSpec *spec = decl_specifier_seq(type);
+  if (!spec) return 0;
+  PT::Declarator *decl = 0;
+  Token::Type token = my_lexer.look_ahead();
+  if (token == ')' || token == ',' || token == '=' || token == '>' ||
+      token == Token::Ellipsis)
+  {
+    // no declarator
+    decl = 0;
+  }
+  else
+  {
+    PT::Encoding dummy_name; // We are only interested into the type.
+    decl = declarator(type, dummy_name, EITHER);
+    if (!require(decl, "declarator")) return 0;
+  }
+  if (my_lexer.look_ahead() == '=')
+  {
+    PT::Atom *equal = new PT::Atom(my_lexer.get_token());
+    PT::Node *init = assignment_expression();
+    if (!require(init, "assignment-expression")) return 0;
+    else return new PT::ParameterDeclaration(spec, decl, equal, init);
+  }
+  else return new PT::ParameterDeclaration(spec, decl);
+}
+
+// simple-declaration:
+//   decl-specifier-seq [opt] init-declarator-list [opt] ;
+//
+// init-declarator-list:
+//   init-declarator
+//   init-declarator-list , init-declarator
+//
+// Since a function-definition starts like a simple-declaration,
+// we handle it here, too, to avoid an unnecessary tentative / rollback.
+//
+// function-definition:
+//   decl-specifier-seq [opt] declarator ctor-initializer [opt]
+//     function-body
+//   decl-specifier-seq [opt] declarator function-try-block
+PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
+{
+  Trace trace("Parser::simple_declaration", Trace::PARSING);
+
+  PT::Encoding encoding;
+  PT::DeclSpec *spec = decl_specifier_seq(encoding);
+
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+
+  // [dcl.dcl]
+  //
+  // Only in function declarations for constructors, destructors, and
+  // type conversions can the decl-specifier-seq be omitted.
+  //
+  // If this is not a functional cast, it is definitely a declaration.
+  if (spec && my_lexer.look_ahead() != '(') commit();
+
+  // [dcl.dcl]
+  //
+  // In a simple-declaration, the optional init-declarator-list can be
+  // omitted only when declaring a class or enumeration, that is when
+  // the decl-specifier-seq contains either a class-specifier, an
+  // elaborated-type-specifier with a class-key, or an enum-specifier.
+  PT::List *declarators = 0;
+  while (my_lexer.look_ahead() != ';')
+  {
+    PT::Encoding type = encoding;
+    PT::Declarator *decl = init_declarator(type);
+    if (type.is_function() &&
+	function_definition_allowed &&
+	starts_function_definition(my_lexer.look_ahead()))
+    {
+      PT::FunctionDefinition *func = 
+	new PT::FunctionDefinition(spec, PT::cons(decl));
+      {
+	trace << "qualifying scope " << my_qualifying_scope;
+	declare(func);
+	if (my_in_class)
+	{
+	  // FIXME: For now skip the whole function body (incl. ctor-initializer).
+	  //        Enhance the Lexer so it can be nested, e.g. to
+	  //        scan chunks of the buffer such as member function bodies.
+	  Token op = my_lexer.get_token();
+	  size_t nesting = op.type == '{' ? 1 : 0;
+	  Token cp = skip_statement(nesting);
+	  if (cp.type == Token::BadToken)
+	  {
+	    error("encountering EOF while parsing function body");
+	    return 0;
+	  }
+	  PT::List *ob_comments = wrap_comments(my_lexer.get_comments());
+	  PT::Block *body = new PT::Block(new PT::CommentedAtom(op, ob_comments),
+					  PT::cons(new PT::Atom(cp)));
+	  func = PT::snoc(func, body);
+	}
+	else
+	{
+	  // enter the qualifying scope
+	  ScopeGuard scope_guard1(*this, my_qualifying_scope);
+	  {
+	    // make lookup non-qualified
+	    PGuard<ST::Scope *> guard(*this, &Parser::my_qualifying_scope, 0);
+	    PT::List *ctor_init = opt_ctor_initializer();
+	    if (ctor_init) func = PT::snoc(func, ctor_init);
+	  }
+	  // now enter the function scope
+	  ScopeGuard scope_guard2(*this, func);
+	  PT::Block *body = compound_statement();
+	  if (!require(body, "compound-statement")) return 0;
+	  func = PT::snoc(func, body);
+	}
+      }
+      trace << "qualifying scope after " << my_qualifying_scope;
+      return func;
+    }
+    // the decl-specifier-seq may be ommitted only for functions (C) or
+    // constructors, destructors, and conversion operators (C++).
+    else if (!type.is_function() && (!spec || spec->type().empty()))
+    {
+      error("expected type");
+      return 0;
+    }
+    declarators = PT::snoc(declarators, decl);
+    Token::Type token = my_lexer.look_ahead();
+    if (token == ',')
+      declarators = PT::snoc(declarators, new PT::Atom(my_lexer.get_token()));
+    else if (token == ';') break;
+    else
+    {
+      error("expected ',' or ';'");
+      return 0;
+    }
+    // A function-definition only has a single declarator, so
+    // disallow function-definition once we'v already encountered a declarator.
+    function_definition_allowed = false;
+  }
+  Token semic = my_lexer.get_token();
+  PT::SimpleDeclaration *decl =
+    new PT::SimpleDeclaration(spec, PT::list(declarators, new PT::Atom(semic)));
+  decl->set_comments(comments);
+  if (spec && spec->is_typedef())
+    my_symbols.declare_typedef(decl, my_symbol);
+  else declare(decl);
+  return decl;
+}
+
+// linkage-specification:
+//   extern string-literal { declaration-seq [opt] }
+//   extern string-literal declaration
+PT::LinkageSpec *Parser::linkage_specification()
+{
+  Trace trace("Parser::linkage_specification", Trace::PARSING);
+
+  if (my_lexer.look_ahead() != Token::EXTERN &&
+      my_lexer.look_ahead(1) != Token::StringL) return 0;
+
+  Token extern_ = my_lexer.get_token();
+  Token token = my_lexer.get_token();
+
+  PT::LinkageSpec *spec = new PT::LinkageSpec(new PT::Kwd::Extern(extern_),
+					      PT::cons(new PT::Atom(token)));
+  if(my_lexer.look_ahead() == '{')
+  {
+    Token ob = my_lexer.get_token();
+    PT::List *body = opt_declaration_seq();
+    if (!require('}')) return 0;
+    Token cb = my_lexer.get_token();
+    PT::List *comment = wrap_comments(my_lexer.get_comments());
+    PT::Brace *brace = new PT::Brace(new PT::Atom(ob), body,
+				     new PT::CommentedAtom(cb, comment));
+    return PT::snoc(spec, brace);
+  }
+  else
+  {
+    PT::Node *decl = declaration();
+    if (!require(decl, "declaration")) return 0;
+    return PT::snoc(spec, decl);
+  }
+}
+
+// block-declaration:
+//   simple-declaration
+//   asm-definition
+//   namespace-alias-definition
+//   using-declaration
+//   using-directive
+PT::Declaration *Parser::block_declaration()
+{
+  Trace trace("Parser::block_declaration", Trace::PARSING);
+
+  switch (my_lexer.look_ahead())
+  {
+    case Token::ASM:
+      error("sorry, asm-definition not yet implemented");
+      return 0;
+    case Token::NAMESPACE:
+      return namespace_alias_definition();
+    case Token::USING:
+      if (my_lexer.look_ahead(1) == Token::NAMESPACE)
+	return using_directive();
+      else
+	return using_declaration();
+    default:
+      // C++ does not allow function definitions inside block declarations,
+      // while C does.
+      if (my_ruleset & CXX)
+	return simple_declaration(!my_in_declaration_statement);
+      else
+	return simple_declaration(true);
+  }
+}
+
+// declaration:
+//   block-declaration
+//   function-definition
+//   template-declaration
+//   explicit-instantiation
+//   explicit-specialization
+//   linkage-specification
+//   namespace-definition
+PT::Declaration *Parser::declaration()
+{
+  Trace trace("Parser::declaration", Trace::PARSING);
+  my_qualifying_scope = 0;
+  // TODO:
+  // We may be inside a template declaration, in which case only
+  // a subset of the above productions is active.
+
+  Token::Type token = my_lexer.look_ahead();
+  if (token == Token::EXTERN && my_lexer.look_ahead(1) == Token::StringL)
+    return linkage_specification();
+
+  else if (token == Token::TEMPLATE)
+  {
+    if (my_lexer.look_ahead(1) == '<')
+    {
+      if (my_lexer.look_ahead(2) == '>') return explicit_specialization();
+      else return template_declaration();
+    }
+    else return explicit_instantiation();
+  }
+  else if (token == Token::EXPORT) return template_declaration();
+  else if (my_ruleset & GCC &&
+	   (token == Token::EXTERN ||
+	    token == Token::STATIC ||
+	    token == Token::INLINE) &&
+	   my_lexer.look_ahead(1) == Token::TEMPLATE)
+    return explicit_instantiation();
+  else if (token == Token::NAMESPACE &&
+	   ((my_lexer.look_ahead(1) == Token::Identifier &&
+	     my_lexer.look_ahead(2) == '{') ||
+	    my_lexer.look_ahead(1) == '{'))
+    return namespace_definition();
+  else return block_declaration();
+}
+
+// declaration-seq:
+//   declaration
+//   declaration-seq declaration
+PT::List *Parser::opt_declaration_seq()
+{
+  Trace trace("Parser::opt_declaration_seq", Trace::PARSING);
+  PT::List *declarations = 0;
+  while(true)
+  {
+    Token::Type type = my_lexer.look_ahead();
+    if (type == '}' || type == '\0') break;
+    PT::Node *decl = declaration();
+    if (!require(decl, "declaration")) break;
+    else declarations = PT::snoc(declarations, decl);
+  }
+  return declarations;
+}
+
+// namespace-definition:
+//   named-namespace-definition
+//   unnamed-namespace-definition
+//
+// named-namespace-definition:
+//   original-namespace-definition
+//   extension-namespace-definition
+//
+// original-namespace-definition:
+//   namespace identifier { namespace-body }
+//
+// extension-namespace-definition:
+//   namespace original-namespace-name { namespace-body }
+//
+// unnamed-namespace-definition:
+//   namespace { namespace-body }
+//
+// namespace-body:
+//   declaration-seq [opt]
+PT::NamespaceSpec *Parser::namespace_definition()
+{
+  Trace trace("Parser::namespace_definition", Trace::PARSING);
+
+  if (my_lexer.look_ahead() != Token::NAMESPACE) return 0;
+
+  PT::Kwd::Namespace *namespace_ = new PT::Kwd::Namespace(my_lexer.get_token());
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+
+  PT::Encoding encoding;
+  PT::Node *name = 0;
+  if(my_lexer.look_ahead() != '{')
+  {
+    name = identifier(encoding);
+    if (!name) return 0;
+  }
+  PT::NamespaceSpec *spec = new PT::NamespaceSpec(namespace_, PT::list(name, 0));
+  spec->set_comments(comments);
+
+  PT::Node *body;
+  if(!require('{')) return 0;
+  PT::Atom *ob = new PT::Atom(my_lexer.get_token());
+  declare(spec);
+  ScopeGuard scope_guard(*this, spec);
+  PT::List *decl_seq = opt_declaration_seq();
+  if(!require('}')) return 0;
+  PT::Atom *cb = new PT::Atom(my_lexer.get_token());
+  PT::Brace *brace = new PT::Brace(ob, decl_seq, cb);
+  PT::tail(spec, 2)->set_car(brace);
+  return spec;
+}
+
+// namespace-alias-definition:
+//   namespace identifier = qualified-namespace-specifier ;
+//
+// qualified-namespace-specifier:
+//   :: [opt] nested-name-specifier [opt] namespace-name
+PT::NamespaceAlias *Parser::namespace_alias_definition()
+{
+  Trace trace("Parser::namespace_alias_definition", Trace::PARSING);
+
+  if (my_lexer.look_ahead() != Token::NAMESPACE) return 0;
+  Token namespace_ = my_lexer.get_token();
+  PT::Encoding encoding;
+  PT::Identifier *alias = identifier(encoding);
+  if (!require(alias, "identifier") || !require('=')) return 0;
+  Token eq = my_lexer.get_token();
+  PT::Atom *scope = opt_scope(encoding);
+  Tentative tentative(*this, encoding);
+  PT::List *name = nested_name_specifier(encoding);
+  if (!name) tentative.rollback();
+  PT::Node *ns = namespace_name(encoding);
+  if (!require(ns, "namespace-name") || !require(';')) return 0;
+  if (scope) name = PT::cons(scope, name);
+  name = PT::snoc(name, ns);
+  return new PT::NamespaceAlias(new PT::Kwd::Namespace(namespace_),
+				PT::list(alias,
+					 new PT::Atom(eq),
+					 name,
+					 new PT::Atom(my_lexer.get_token())));
+}
+
+// using-directive:
+//   using namespace :: [opt] nested-name-specifier [opt] namespace-name ;
+PT::UsingDirective *Parser::using_directive()
+{
+  Trace trace("Parser::using_directive", Trace::PARSING);
+
+  if(my_lexer.look_ahead() != Token::USING ||
+     my_lexer.look_ahead(1) != Token::NAMESPACE)
+    return 0;
+
+  PT::UsingDirective *udir = 0;
+
+  udir = new PT::UsingDirective(new PT::Kwd::Using(my_lexer.get_token()));
+  udir = PT::snoc(udir, new PT::Kwd::Namespace(my_lexer.get_token()));
+
+  PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
+  PT::List *name = 0;
+  if (scope) name = PT::cons(scope);
+  {
+    Tentative tentative(*this, encoding);
+    PT::Node *name_spec = nested_name_specifier(encoding);
+    if (name_spec) name = PT::snoc(name, name_spec);
+    else tentative.rollback();
+  }
+  PT::Node *ns = namespace_name(encoding);
+  if (!require(ns, "namespace-name")) return 0;
+  udir = PT::snoc(udir, new PT::Name(PT::snoc(name, ns), encoding));
+  if (!require(';')) return 0;
+  udir = PT::snoc(udir, new PT::Atom(my_lexer.get_token()));
+  declare(udir);
+  return udir;
+}
+
+// using-declaration:
+//   using typename [opt] :: [opt] nested-name-specifier unqualified-id ;
+//   using :: unqualified-id ;
+PT::UsingDeclaration *Parser::using_declaration()
+{
+  Trace trace("Parser::using_declaration", Trace::PARSING);
+
+  if (my_lexer.look_ahead() != Token::USING) return 0;
+  PT::Kwd::Using *using_ = new PT::Kwd::Using(my_lexer.get_token());
+  PT::Kwd::Typename *typename_ = 0;
+  if(my_lexer.look_ahead() == Token::TYPENAME)
+    typename_ = new PT::Kwd::Typename(my_lexer.get_token());
+  PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
+  Tentative tentative(*this, encoding);
+  PT::List *name = nested_name_specifier(encoding);
+  if (!name)
+  {
+    if (!typename_ && !scope)
+    {
+      error("expected nested-name-secifier");
+      return 0;
+    }
+    else tentative.rollback();
+  }
+  PT::Node *id = unqualified_id(encoding, /*template*/false);
+  if (!require(id, "unqualified-id")) return 0;
+  name = PT::snoc(name, id);
+  if (scope) name = PT::cons(scope, name);
+  PT::UsingDeclaration *udecl =
+    new PT::UsingDeclaration(using_, typename_, new PT::Name(name, encoding));
+  if (!require(';')) return 0;
+  udecl = PT::snoc(udecl, new PT::Atom(my_lexer.get_token()));
+  // TODO: At this point we have both, the qualifying scope, as well as the id.
+  //       Thus we ought to use a simple qualified lookup to find the symbol
+  //       we want to set up an alias for...
+  declare(udecl);
+  return udecl;
+}
+
+// type-parameter:
+//   class identifier [opt]
+//   class identifier [opt] = type-id
+//   typename identifier [opt]
+//   typename identifier [opt] = type-id
+//   template < template-parameter-list > class identifier [opt]
+//   template < template-parameter-list > class identifier [opt] = id-expression
+PT::Node *Parser::type_parameter(PT::Encoding &encoding)
+{
+  Trace trace("Parser::type_parameter", Trace::PARSING);
+
+  PT::Keyword *kwd = 0;
+  switch (my_lexer.look_ahead())
+  {
+    case Token::CLASS:
+      kwd = new PT::Kwd::Class(my_lexer.get_token());
+    case Token::TYPENAME:
+    {
+      if (!kwd) kwd = new PT::Kwd::Typename(my_lexer.get_token());
+      PT::Identifier *id = 0;
+      if (my_lexer.look_ahead() == Token::Identifier)
+      {
+	id = new PT::Identifier(my_lexer.get_token());
+	encoding.simple_name(id);
+      }
+      PT::TypeParameter *tparam = new PT::TypeParameter(kwd, PT::cons(id));
+      if (id) declare(tparam);
+
+      if (my_lexer.look_ahead() == '=')
+      {
+	Token eq = my_lexer.get_token();
+	PT::Encoding encoding;
+	PT::Node *initializer = type_id(encoding);
+	return PT::conc(tparam, PT::list(new PT::Atom(eq), initializer));
+      }
+      else return tparam;
+    }
+    case Token::TEMPLATE:
+    {
+      kwd = new PT::Kwd::Template(my_lexer.get_token());
+      if (!require('<')) return 0;
+      Token ob = my_lexer.get_token();
+      PT::Encoding encoding;
+      PT::TemplateParameterList *params = template_parameter_list(encoding);
+      if (!require(params, "template-parameter-list") || !require('>')) return 0;
+      Token cb = my_lexer.get_token();
+      if (!require(Token::CLASS, "class")) return 0;
+      PT::TypeParameter *tparam = 
+	new PT::TypeParameter(kwd,
+			      PT::list(new PT::Atom(ob),
+				       params,
+				       new PT::Atom(cb),
+				       new PT::Kwd::Class(my_lexer.get_token())));
+      PT::Identifier *id = 0;
+      Token::Type token = my_lexer.look_ahead();
+      if (token != '=' && token != '>' && token != ',')
+      {
+	PT::Encoding dummy;
+	id = identifier(dummy);
+      }
+      tparam = PT::snoc(tparam, id);
+      if (id) declare(tparam);
+      
+      if(my_lexer.look_ahead() == '=')
+      {
+	Token eq = my_lexer.get_token();
+	PT::Encoding encoding;
+	PT::Node *initializer = id_expression(encoding, false);
+	if (!require(initializer, "id-expression")) return 0;
+	return PT::conc(tparam, PT::list(new PT::Atom(eq), initializer));
+      }
+      else return tparam;
+    }
+    default:
+      return 0;
+  }
+}
+
+// template-parameter:
+//   type-parameter
+//   parameter-declaration
+PT::Node *Parser::template_parameter(PT::Encoding &encoding)
+{
+  Trace trace("Parser::template_parameter", Trace::PARSING);
+  PGuard<bool> pguard(*this, &Parser::my_gt_is_operator, false);
+  switch (my_lexer.look_ahead())
+  {
+    case Token::TEMPLATE:
+      return type_parameter(encoding);
+    case Token::CLASS:
+    case Token::TYPENAME:
+    {
+      // We don't know yet whether we are looking at a type.
+      // 'class' could start an elaborated class specifier,
+      // and 'typename' could be part of a dependent type specifier.
+      Token::Type token = my_lexer.look_ahead(1);
+      if (token == Token::Identifier)
+	token = my_lexer.look_ahead(2);
+
+      if (token == ',' || token == '=' || token == '>')
+	return type_parameter(encoding);
+      // else fall through.
+    }
+    default:
+      return parameter_declaration(encoding);
+  }
+}
+
+// template-parameter-list:
+//   template-parameter
+//   template-parameter-list , template-parameter
+PT::TemplateParameterList *Parser::template_parameter_list(PT::Encoding &encoding)
+{
+  Trace trace("Parser::template_parameter_list", Trace::PARSING);
+  PT::TemplateParameterList *tpl = new PT::TemplateParameterList;
+  ScopeGuard scope_guard(*this, tpl);
+  while (true)
+  {
+    PT::Node *parameter = template_parameter(encoding);
+    if (!require(parameter, "template-parameter")) return 0;
+    if (tpl->car()) tpl = PT::snoc(tpl, parameter);
+    else tpl->set_car(parameter);
+    if (my_lexer.look_ahead() != ',') break;
+    tpl = PT::snoc(tpl, new PT::Atom(my_lexer.get_token()));
+  }
+  return tpl;
+}
+
+// template-declaration:
+//   export [opt] template < template-parameter-list > declaration
+PT::TemplateDeclaration *Parser::template_declaration()
+{
+  Trace trace("Parser::template_declaration", Trace::PARSING);
+
+  PT::Kwd::Export *export_ = 0;
+  if (my_lexer.look_ahead() == Token::EXPORT)
+    export_ = new PT::Kwd::Export(my_lexer.get_token());
+
+  if (!require(Token::TEMPLATE, "'template'")) return 0;
+  Token templ = my_lexer.get_token();
+  if (!require('<')) return 0;
+
+  PT::TemplateDeclaration *tdecl = 
+    new PT::TemplateDeclaration(new PT::Kwd::Template(templ));
+  tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
+  PT::Encoding encoding;
+  {
+    PT::TemplateParameterList *params = template_parameter_list(encoding);
+    if (!require(params, "template-parameter-list") || !require('>')) return 0;
+    tdecl = PT::conc(tdecl, PT::list(params, new PT::Atom(my_lexer.get_token())));
+    my_template_parameter_list_seq.push_back(params);
+  }
+  PT::List *decl = declaration();
+  my_template_parameter_list_seq.erase(my_template_parameter_list_seq.end() - 1);
+  my_template_parameter_list_cursor = 0;
+  if (!require(decl, "declaration")) return 0;
+  tdecl = PT::snoc(tdecl, decl);
+  return tdecl;
+}
+
+// explicit-specialization:
+//   template < > declaration
+PT::TemplateDeclaration *Parser::explicit_specialization()
+{
+  Trace trace("Parser::explicit_specialization", Trace::PARSING);
+
+  // we are really looking for one of these:
+  //   template < > decl-specifier [opt] init-declarator [opt] ;
+  //   template < > function-definition
+  //   template < > explicit-specialization
+  //   template < > template-declaration
+
+  if (my_lexer.look_ahead() != Token::TEMPLATE ||
+      my_lexer.look_ahead(1) != '<' ||
+      my_lexer.look_ahead(2) != '>')
+    return 0;
+
+  // FIXME: For now we tell the symbol factory about the following
+  //        [class-specifier, function-definition] being a template
+  //        by allocating a (dummy) template parameter scope.
+  {
+    PT::TemplateParameterList *tpl = new PT::TemplateParameterList;
+    ScopeGuard scope_guard(*this, tpl);
+  }
+
+  Token template_ = my_lexer.get_token();
+  // TODO: Don't abuse TemplateDeclaration here.
+  PT::TemplateDeclaration *tdecl = 
+    new PT::TemplateDeclaration(new PT::Kwd::Template(template_));
+  tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
+  tdecl = PT::snoc(tdecl, new PT::Atom(my_lexer.get_token()));
+
+  if (my_lexer.look_ahead() == Token::TEMPLATE)
+  {
+    PT::Node *decl = 0;
+    if (my_lexer.look_ahead(1) == '<' && my_lexer.look_ahead(2) != '>')
+      decl = template_declaration();
+    else
+      decl = explicit_specialization();
+    if (!require(decl, "template-declaration")) return 0;
+    tdecl = PT::snoc(tdecl, decl);
+  }
+  else
+  {
+    Tentative tentative(*this);
+    PT::Encoding type;
+    PT::DeclSpec *spec = decl_specifier_seq(type);
+    if (!spec) tentative.rollback();
+    PT::List *declarators = 0;
+    if (my_lexer.look_ahead() != ';')
+    {
+      PT::Declarator *decl = init_declarator(type);
+      if (type.is_function() &&
+	  starts_function_definition(my_lexer.look_ahead()))
+      {
+	PT::FunctionDefinition *func = new PT::FunctionDefinition(spec, PT::cons(decl));
+	ScopeGuard scope_guard(*this, func);
+	// TODO: parse function-try-block
+	PT::Block *body = compound_statement();
+	if (!require(body, "compound-statement")) return 0;
+	func = PT::snoc(func, body);
+	my_symbols.declare_specialization(my_qualifying_scope, func);
+	return PT::snoc(tdecl, func);
+      }
+      declarators = PT::cons(decl);
+    }
+    if (!require(';')) return 0;
+    Token semic = my_lexer.get_token();
+    PT::SimpleDeclaration *decl = 
+      new PT::SimpleDeclaration(spec, PT::list(declarators, new PT::Atom(semic)));
+    tdecl = PT::snoc(tdecl, decl);
+    my_symbols.declare_specialization(my_qualifying_scope, decl);
+  }
+  return tdecl;
+}
+
+// explicit-instantiation:
+//   template declaration
+PT::TemplateInstantiation *Parser::explicit_instantiation()
+{
+  Trace trace("Parser::explicit_instantiation", Trace::PARSING);
+
+  // We are really looking for:
+  //   template decl-specifier-seq [opt] declarator [opt] ;
+  //
+  // Additionally, GCC allows an initial storage-class-specifier or
+  // function-specifier.
+
+  PT::Keyword *kwd = 0;
+  if (my_ruleset & GCC)
+  {
+    PT::DeclSpec::StorageClass storage = PT::DeclSpec::UNDEF;
+    kwd = opt_storage_class_specifier(storage);
+    if (!kwd) kwd = opt_function_specifier();
+  }
+  if (my_lexer.look_ahead() != Token::TEMPLATE) return 0;
+  PT::Atom *template_ = new PT::Atom(my_lexer.get_token());
+  Tentative tentative(*this);
+  PT::Encoding type;
+  PT::DeclSpec *spec = decl_specifier_seq(type);
+  if (!spec) tentative.rollback(true);
+  PT::Declarator *decl = 0;
+  {
+    Tentative tentative(*this);
+    PT::Encoding dummy_name;
+    if (my_lexer.look_ahead() != ';') decl = declarator(type, dummy_name, NAMED);
+    if (!decl) tentative.rollback();
+  }
+  if (!require(';')) return 0;
+  PT::Atom *semic = new PT::Atom(my_lexer.get_token());
+  return new PT::TemplateInstantiation(kwd, template_, spec, decl, semic);
+}
+
+// operator-name:
+//   new delete new[] delete[] + - * / % ^ & | ~ ! = < >
+//   += -= *= /= %= ^= &= |= << >> >>= <<= == != <= >= &&
+//   || ++ -- , ->* -> () []
+PT::Node *Parser::operator_name(PT::Encoding &encoding)
+{
+  Trace trace("Parser::operator_name", Trace::PARSING);
+
+  switch (my_lexer.look_ahead())
+  {
+    case Token::NEW:
+    case Token::DELETE:
+    {
+      Token op = my_lexer.get_token();
+      if (my_lexer.look_ahead() != '[')
+      {
+	PT::Atom *name = 0;
+	if (op.type == Token::NEW) name = new PT::Kwd::New(op);
+	else name = new PT::Kwd::Delete(op);
+	encoding.simple_name(name);
+	return name;
+      }
+      else
+      {
+	PT::List *name = 0;
+	if (op.type == Token::NEW)
+	{
+	  encoding.append_with_length("new[]", 5);
+	  name = PT::cons(new PT::Kwd::New(op));
+	}
+	else
+	{
+	  encoding.append_with_length("delete[]", 8);
+	  name = PT::cons(new PT::Kwd::Delete(op));
+	}
+	Token os = my_lexer.get_token();
+	name = PT::snoc(name, new PT::Atom(os));
+	if (!require(']')) return 0;
+	Token cs = my_lexer.get_token();
+	return PT::snoc(name, new PT::Atom(cs));
+      }
+    }
+    case '(':
+    {
+      PT::List *name = PT::cons(new PT::Atom(my_lexer.get_token()));
+      if (!require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      encoding.append_with_length("()", 2);
+      return PT::snoc(name, new PT::Atom(cp));
+    }
+    case '[':
+    {
+      PT::List *name = PT::cons(new PT::Atom(my_lexer.get_token()));
+      if (!require(']')) return 0;
+      Token cs = my_lexer.get_token();
+      encoding.append_with_length("[]", 2);
+      return PT::snoc(name, new PT::Atom(cs));
+    }
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+    case '%':
+    case '^':
+    case '&':
+    case '|':
+    case '~':
+    case '!':
+    case '=':
+    case '<':
+    case '>':
+    case Token::AssignOp:
+    case Token::ShiftOp:
+    case Token::EqualOp:
+    case Token::RelOp:
+    case Token::LogAndOp:
+    case Token::LogOrOp:
+    case Token::IncOp:
+    case ',':
+    case Token::PmOp:
+    case Token::ArrowOp:
+    {
+      PT::Atom *name = new PT::Atom(my_lexer.get_token());
+      encoding.simple_name(name);
+      return name;
+    }
+    default:
+      error("expected operator-name");
+      return 0;
+  }
+}
+
+// operator-function-id:
+//   operator op
+PT::List *Parser::operator_function_id(PT::Encoding &encoding)
+{
+  Trace trace("Parser::operator_function_id", Trace::PARSING);
+  if (!require(Token::OPERATOR, "'operator'")) return 0;
+  Token token = my_lexer.get_token();
+  PT::Node *name = operator_name(encoding);
+  if (!require(name, "operator-name")) return 0;
+  return PT::cons(new PT::Kwd::Operator(token), PT::cons(name));
+}
+
+// conversion-function-id:
+//   operator conversion-type-id
+//
+// conversion-type-id:
+//   type-specifier-seq conversion-declarator [opt]
+//
+// conversion-declarator:
+//   ptr-operator conversion-declarator [opt]
+PT::List *Parser::conversion_function_id(PT::Encoding &encoding)
+{
+  Trace trace("Parser::operator_conversion_id", Trace::PARSING);
+  if (!require(Token::OPERATOR, "'operator'")) return 0;
+  PT::Kwd::Operator *op = new PT::Kwd::Operator(my_lexer.get_token());
+  PT::Encoding type;
+  PT::List *spec = type_specifier_seq(type);
+  if (!require(spec, "type-specifier-seq")) return 0;
+  PT::List *decl = 0;
+  while (true)
+  {
+    Tentative tentative(*this, type);
+    PT::Node *ptr = ptr_operator(type);
+    if (!ptr) break;
+    decl = PT::snoc(decl, ptr);
+  }
+  PT::List *id = PT::cons(op, spec);
+  if (decl) id = PT::conc(id, decl);
+  encoding.cast_operator(type);
+  return id;
+}
+
+// template-name:
+//   identifier
+//   operator-function-id [GCC]
+PT::Node *Parser::template_name(PT::Encoding &encoding,
+				bool do_lookup)
+{
+  Trace trace("Parser::template_name", Trace::PARSING);
+  if (my_lexer.look_ahead() == Token::OPERATOR)
+  {
+    Token token = my_lexer.get_token();
+    PT::Kwd::Operator *operator_ = new PT::Kwd::Operator(token);
+    PT::Node *name = operator_function_id(encoding);
+    if (name) return PT::list(operator_, name);
+    else return 0;
+  }
+  else
+  {
+    PT::Identifier *id = identifier(encoding);
+    if (id && (!do_lookup || lookup_template_name(encoding))) return id;
+    else return 0;
+  }
+}
+
+// template-argument:
+//   assignment-expression
+//   type-id
+//   id-expression
+PT::Node *Parser::template_argument(PT::Encoding &encoding)
+{
+  Trace trace("Parser::template_argument", Trace::PARSING);
+  PGuard<bool> pguard(*this, &Parser::my_gt_is_operator, false);
+
+  // [temp.arg]
+  //
+  // In a template-argument, an ambiguity between a type-id and an
+  // expression is resolved to a type-id, regardless of the form of
+  // the corresponding template-parameter.
+
+  Tentative tentative(*this, encoding);
+  PT::Node *argument = type_id(encoding);
+  if (argument)
+  {
+    // Did we see the end of the argument ?
+    if (my_lexer.look_ahead() != ',' && my_lexer.look_ahead() != '>') return 0;
+    else return argument;
+  }
+  tentative.rollback();
+  argument = conditional_expression();
+  if (argument)
+  {
+    encoding.value_temp_param();
+    return argument;
+  }
+  tentative.rollback();
+  return id_expression(encoding, false);
+}
+
+// template-id:
+//   template-name < template-argument-list [opt] >
+//
+// template-argument-list:
+//   template-argument
+//   template-argument-list , template-argument
+PT::List *Parser::template_id(PT::Encoding &encoding, bool is_template)
+{
+  Trace trace("Parser::template_id", Trace::PARSING);
+  // Parse a template-name, but don't look it up if a 'template'
+  // token preceeded it.
+  PT::Encoding name_encoding;
+  PT::Node *name = template_name(name_encoding, !is_template);
+  if (!name) return 0;
+  Token ob = my_lexer.get_token();
+  if (ob.type != '<') return 0;
+  if (my_lexer.look_ahead() == '>')
+  {
+    Token cb = my_lexer.get_token();
+    if (name->is_atom())
+      encoding.template_(static_cast<PT::Identifier *>(name), PT::Encoding());
+    else
+    {
+      // name is [operator operator-name]
+      PT::List *list = static_cast<PT::List *>(name);
+      PT::Identifier *oname = static_cast<PT::Identifier *>(PT::nth<1>(list));
+      encoding.template_(oname, PT::Encoding());
+    }
+    return PT::list(name, new PT::Atom(ob), new::PT::Atom(cb));
+  }
+  else
+  {
+    PGuard<ST::Scope *> guard1(*this, &Parser::my_qualifying_scope, 0);
+    PGuard<bool> guard2(*this, &Parser::my_in_nested_name_specifier, true);
+    PGuard<ST::Symbol const *> guard3(*this, &Parser::my_symbol);
+    PT::List *arguments = 0;
+    PT::Encoding template_encoding;
+    while (true)
+    {
+      PT::Encoding encoding;
+      PT::Node *argument = template_argument(encoding);
+      if (!argument) return 0;
+      arguments = PT::snoc(arguments, argument);
+      template_encoding.append(encoding);
+      if (my_lexer.look_ahead() != ',') break;
+      Token comma =  my_lexer.get_token();
+      arguments = PT::snoc(arguments, new PT::Atom(comma));
+    }
+    if (name->is_atom())
+      encoding.template_(static_cast<PT::Atom *>(name), template_encoding);
+    else
+    {
+      // name is [operator operator-name]
+      PT::List *list = static_cast<PT::List *>(name);
+      PT::Identifier *oname = static_cast<PT::Identifier *>(PT::nth<1>(list));
+      encoding.template_(oname, template_encoding);
+    }
+    Token cb = my_lexer.get_token();
+    switch(cb.type)
+    {
+      case '>':
+	return PT::cons(name, PT::list(new PT::Atom(ob), arguments, new PT::Atom(cb)));
+      case Token::ShiftOp: // parse error !
+      default: return 0;
+    }
+  }
+}
+
+// expression:
+//   assignment-expression
+//   expression , assignment-expression
+PT::Node *Parser::expression()
+{
+  Trace trace("Parser::expression", Trace::PARSING);
+
+  PT::Node *expr = assignment_expression();
+  if(!expr)
+    return 0;
+  while(my_lexer.look_ahead() == ',')
+  {
+    Token comma = my_lexer.get_token();
+    PT::Node *right = assignment_expression();
+    if (!right)
+      return 0;
+    else
+      expr = new PT::Expression(expr, PT::list(new PT::Atom(comma), right));
+  }
+  return expr;
+}
+
+// assignment-expression:
+//   conditional-expression
+//   logical-or-expression assignment-operator assignment-expression
+//   throw-expression
+PT::Node *Parser::assignment_expression()
+{
+  Trace trace("Parser::assignment_expression", Trace::PARSING);
+  if (my_lexer.look_ahead() == Token::THROW) return throw_expression();
+
+  PT::Node *expr;
+  PT::Node *left = conditional_expression();
+  if (!left) return 0;
+  Token::Type type = my_lexer.look_ahead();
+  if(type != '=' && type != Token::AssignOp) expr = left;
+  else
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = assignment_expression();
+    if (!right) return 0;
+    
+    expr = new PT::AssignExpr(left, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// constant-expression:
+//   conditional-expression
+PT::Node *Parser::constant_expression()
+{
+  Trace trace("Parser::constant_expression", Trace::PARSING);
+  PGuard<bool> pguard(*this, &Parser::my_in_constant_expression, true);
+  PT::Node *expression = conditional_expression();
+  if (!expression) return 0;
+  // TODO: evaluate constant
+  else return expression;
+}
+
+// conditional-expression:
+//   logical-or-expression
+//   logical-or-expression ? expression : assignment-expression
+PT::Node *Parser::conditional_expression()
+{
+  Trace trace("Parser::conditional_expression", Trace::PARSING);
+
+  PT::Node *cond = logical_or_expression();
+  if (!cond) return 0;
+  if(my_lexer.look_ahead() == '?')
+  {
+    Token quest = my_lexer.get_token();
+    PT::Node *then = expression();
+    if (!then) return 0;
+    Token colon = my_lexer.get_token();
+    if (colon.type != ':') return 0;
+    PT::Node *otherwise = assignment_expression();
+    if (!otherwise) return 0;
+
+    return new PT::CondExpr(cond, PT::list(new PT::Atom(quest), then,
+					   new PT::Atom(colon), otherwise));
+  }
+  return cond;
+}
+
+// logical-or-expression:
+//   logical-and-expression
+//   logical-or-expression || logical-and-expression
+PT::Node *Parser::logical_or_expression()
+{
+  Trace trace("Parser::logical_or_expression", Trace::PARSING);
+
+  PT::Node *expr = logical_and_expression();
+  if (!expr) return 0;
+
+  while(my_lexer.look_ahead() == Token::LogOrOp)
+  {
+    Token lor = my_lexer.get_token();
+    PT::Node *right = logical_and_expression();
+    if (!right) return 0;
+    
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(lor), right));
+  }
+  return expr;
+}
+
+// logical-and-expression:
+//   inclusive-or-expression
+//   logical-and-expr && inclusive-or-expression
+PT::Node *Parser::logical_and_expression()
+{
+  Trace trace("Parser::logical_and_expression", Trace::PARSING);
+
+  PT::Node *expr = inclusive_or_expression();
+  if (!expr) return 0;
+
+  while(my_lexer.look_ahead() == Token::LogAndOp)
+  {
+    Token land = my_lexer.get_token();
+    PT::Node *right = inclusive_or_expression();
+    if (!right)
+      return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(land), right));
+  }
+  return expr;
+}
+
+// inclusive-or-expression:
+//   exclusive-or-expression
+//   inclusive-or-expression | exclusive-or-expression
+PT::Node *Parser::inclusive_or_expression()
+{
+  Trace trace("Parser::inclusive_or_expression", Trace::PARSING);
+
+  PT::Node *expr = exclusive_or_expression();
+  if (!expr)
+    return 0;
+
+  while(my_lexer.look_ahead() == '|')
+  {
+    Token bor = my_lexer.get_token();
+    PT::Node *right = exclusive_or_expression();
+    if (!right)
+      return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(bor), right));
+  }
+  return expr;
+}
+
+// exclusive-or-expression:
+//   and-expression
+//   exclusive-or-expression ^ and-expression
+PT::Node *Parser::exclusive_or_expression()
+{
+  Trace trace("Parser::exclusive_or_expression", Trace::PARSING);
+
+  PT::Node *expr = and_expression();
+  if (!expr) return 0;
+
+  while(my_lexer.look_ahead() == '^')
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = and_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// and-expression:
+//   equality-expression
+//   and-expression & equality-expression
+PT::Node *Parser::and_expression()
+{
+  Trace trace("Parser::and_expression", Trace::PARSING);
+
+  PT::Node *expr = equality_expression();
+  if (!expr) return 0;
+
+  while(my_lexer.look_ahead() == '&')
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = equality_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// equality-expression:
+//   relational-expression
+//   equality-expression == relational-expression
+//   equality-expression != relational-expression
+PT::Node *Parser::equality_expression()
+{
+  Trace trace("Parser::equality_expression", Trace::PARSING);
+
+  PT::Node *expr = relational_expression();
+  if (!expr) return 0;
+  while(my_lexer.look_ahead() == Token::EqualOp)
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = relational_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// relational-expression:
+//   shift-expression
+//   relational-expression < shift-expression
+//   relational-expression > shift-expression
+//   relational-expression <= shift-expression
+//   relational-expression >= shift-expression
+PT::Node *Parser::relational_expression()
+{
+  Trace trace("Parser::relational_expression", Trace::PARSING);
+
+  PT::Node *expr = shift_expression();
+  if (!expr) return 0;
+
+  Token::Type t;
+  while(t = my_lexer.look_ahead(),
+	(t == Token::RelOp || t == '<' || (t == '>' && my_gt_is_operator)))
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = shift_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// shift-expression:
+//   additive-expression
+//   shift-expression << additive-expression
+//   shift-expression >> additive-expression
+PT::Node *Parser::shift_expression()
+{
+  Trace trace("Parser::shift_expression", Trace::PARSING);
+
+  PT::Node *expr = additive_expression();
+  if (!expr) return 0;
+
+  while(my_lexer.look_ahead() == Token::ShiftOp)
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = additive_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// additive-expression:
+//   multiplicative-expression
+//   additive-expression + multiplicative-expression
+//   additive-expression - multiplicative-expression
+PT::Node *Parser::additive_expression()
+{
+  Trace trace("Parser::additive_expression", Trace::PARSING);
+
+  PT::Node *expr = multiplicative_expression();
+  if (!expr) return 0;
+
+  Token::Type t;
+  while(t = my_lexer.look_ahead(), (t == '+' || t == '-'))
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = multiplicative_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// multiplicative-expression:
+//   pm-expression
+//   multiplicative-expression * pm-expression
+//   multiplicative-expression / pm-expression
+//   multiplicative-expression % pm-expression
+PT::Node *Parser::multiplicative_expression()
+{
+  Trace trace("Parser::multiplicative_expression", Trace::PARSING);
+
+  PT::Node *expr = pm_expression();
+  if (!expr) return 0;
+
+  Token::Type t;
+  while(t = my_lexer.look_ahead(), (t == '*' || t == '/' || t == '%'))
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = pm_expression();
+    if (!right) return 0;
+
+    expr = new PT::InfixExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// pm-expression:
+//   cast-expression
+//   pm-expression .* cast-expression
+//   pm-expression ->* cast-expression
+PT::Node *Parser::pm_expression()
+{
+  Trace trace("Parser::pm_expression", Trace::PARSING);
+
+  PT::Node *expr = cast_expression();
+  if (!expr) return 0;
+  while(my_lexer.look_ahead() == Token::PmOp)
+  {
+    Token op = my_lexer.get_token();
+    PT::Node *right = cast_expression();
+    if (!right) return 0;
+    expr = new PT::PmExpr(expr, PT::list(new PT::Atom(op), right));
+  }
+  return expr;
+}
+
+// cast-expression:
+//   unary-expression
+//   ( type-id ) cast-expression
+PT::Node *Parser::cast_expression()
+{
+  Trace trace("Parser::cast_expression", Trace::PARSING);
+  if(my_lexer.look_ahead() != '(')
+  {
+    return unary_expression();
+  }
+  else
+  {
+    Tentative tentative(*this);
+    Token op = my_lexer.get_token();
+    PT::Encoding encoding;
+    PT::Node *name = type_id(encoding);
+    if (name && my_lexer.look_ahead() == ')')
+    {
+      Token cp = my_lexer.get_token();
+      PT::Node *expr = cast_expression();
+      if(expr)
+	return new PT::CastExpr(new PT::Atom(op),
+				PT::list(name, new PT::Atom(cp), expr));
+    }
+    tentative.rollback();
+    return unary_expression();
+  }
+}
+
+// type-id:
+//   type-specifier-seq abstract-declarator [opt]
+PT::Node *Parser::type_id(PT::Encoding &encoding)
+{
+  Trace trace("Parser::type_id", Trace::PARSING);
+  
+  PT::Node *type_spec = type_specifier_seq(encoding);
+  if (!require(type_spec, "type-specifier-seq")) return 0;
+  Tentative tentative(*this, encoding);
+  PT::Encoding dummy_name;
+  PT::Declarator *decl = declarator(encoding, dummy_name, ABSTRACT);
+  if (!decl) tentative.rollback();
+  // FIXME: what's the right node here ?
+  return PT::list(type_spec, decl);
+}
+
+// type-id-list:
+//   type-id
+//   type-id-list , type-id
+PT::List *Parser::type_id_list()
+{
+  Trace trace("Parser::type_id_list", Trace::PARSING);
+  PT::List *types = 0;
+  while (true)
+  {
+    PT::Encoding encoding;
+    PT::Node *type = type_id(encoding);
+    if (!require(type, "type-id")) return 0;
+    if (!types) types = PT::cons(type);
+    else types = PT::snoc(types, type);
+    if (my_lexer.look_ahead() != ',') break;
+    types = PT::snoc(types, new PT::Atom(my_lexer.get_token()));
+  }
+  return types;
+}
+
+// unary-expression:
+//   postfix-expression
+//   ++ cast-expression
+//   -- cast-expression
+//   unary-operator cast-expression
+//   sizeof unary-expression
+//   sizeof ( type-id )
+//   new-expression
+//   delete-expression
+//
+// unary-operator:
+//   *
+//   &
+//   +
+//   -
+//   !
+//   ~
+PT::Node *Parser::unary_expression()
+{
+  Trace trace("Parser::unary_expression", Trace::PARSING);
+  switch (my_lexer.look_ahead())
+  {
+    case '*':
+    case '&': 
+    case '+':
+    case '-':
+    case '!':
+    case '~':
+    case Token::IncOp:
+    {
+      Token op = my_lexer.get_token();
+      PT::Node *right = cast_expression();
+      if (!right) return 0;
+      else return new PT::UnaryExpr(new PT::Atom(op), PT::cons(right));
+    }
+    case Token::SIZEOF: return sizeof_expression();
+    case Token::NEW: return new_expression();
+    case Token::DELETE: return delete_expression();
+    case Token::Scope:
+      if (my_lexer.look_ahead(1) == Token::NEW) return new_expression();
+      else if (my_lexer.look_ahead(1) == Token::DELETE) return delete_expression();
+      // Fall through.
+    default: return postfix_expression();
+  }
+}
+
+// throw-expression:
+//   throw assignment-expression [opt]
+PT::Node *Parser::throw_expression()
+{
+  Trace trace("Parser::throw_expression", Trace::PARSING);
+
+  if (my_lexer.look_ahead() != Token::THROW)
+    return 0;
+
+  PT::Kwd::Throw *throw_ = new PT::Kwd::Throw(my_lexer.get_token());
+
+  Token::Type type = my_lexer.look_ahead();
+  if (type == ',' ||
+      type == ';' ||
+      type == ')' ||
+      type == ']' ||
+      type == '}' ||
+      type == ':')
+    return new PT::ThrowExpr(throw_, PT::cons(0));
+  else
+  {
+    PT::Node *expr = assignment_expression();
+    if (!require(expr, "assignment-expression")) return 0;
+    return new PT::ThrowExpr(throw_, PT::cons(expr));
+  }
+}
+
+// sizeof-expression:
+//   sizeof unary-expression
+//   sizeof ( type-id )
+PT::Node *Parser::sizeof_expression()
+{
+  Trace trace("Parser::sizeof_expression", Trace::PARSING);
+
+  Token kwd = my_lexer.get_token();
+  if (kwd.type != Token::SIZEOF) return 0;
+  if(my_lexer.look_ahead() == '(')
+  {
+    Tentative tentative(*this);
+    Token op = my_lexer.get_token();
+    PT::Encoding encoding;
+    PT::Node *name = type_id(encoding);
+    if (name && my_lexer.look_ahead() == ')')
+    {
+      Token cp = my_lexer.get_token();
+      return new PT::SizeofExpr(new PT::Atom(kwd),
+				PT::list(new PT::Atom(op), name, new PT::Atom(cp)));
+    }
+    else tentative.rollback();
+  }
+  PT::Node *unary = unary_expression();
+  trace << "got " << unary;
+  if (!unary) return 0;
+  else return new PT::SizeofExpr(new PT::Atom(kwd), PT::cons(unary));
+}
+
+// new-expression:
+//   :: [opt] new new-placement [opt] new-type-id new-initializer [opt]
+//   :: [opt] new new-placement [opt] ( type-id ) new-initializer [opt]
+//
+// new-placement:
+//   ( expression-list )
+//
+// new-type-id:
+//   type-specifier-seq new-declarator [opt]
+//
+// new-declarator:
+//   ptr-operator new-declarator [opt]
+//   direct-new-declarator
+//
+// direct-new-declarator:
+//   [ expression ]
+//   direct-new-declarator [constant-expression]
+PT::NewExpr *Parser::new_expression()
+{
+  Trace trace("Parser::new_expression", Trace::PARSING);
+  PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
+  if (!require(Token::NEW, "'new'")) return 0;
+  PT::Kwd::New *new_ = new PT::Kwd::New(my_lexer.get_token());
+  PT::List *placement = 0;
+  if (my_lexer.look_ahead() == '(')
+  {
+    // try a new-placement
+    Tentative tentative(*this);
+    Token op = my_lexer.get_token();
+    PT::List *expr = expression_list(false);
+    if (expr && my_lexer.look_ahead() == ')')
+      placement = PT::list(new PT::Atom(op), expr, new PT::Atom(my_lexer.get_token()));
+    else tentative.rollback();
+  }
+  PT::Node *type = 0;
+  // FIXME: complete new-expression 
+  while (my_lexer.look_ahead() != ';') my_lexer.get_token();
+  return new PT::NewExpr(scope, PT::list(new_, placement, type));
+}
+
+// delete-expression:
+//   :: [opt] delete cast-expression
+//   :: [opt] delete [ ] cast-expression
+PT::Node *Parser::delete_expression()
+{
+  Trace trace("Parser::delete_expression", Trace::PARSING);
+  PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
+  if (!require(Token::DELETE, "'delete'")) return 0;
+  PT::Kwd::Delete *delete_ = new PT::Kwd::Delete(my_lexer.get_token());
+
+  PT::List *dexp = scope 
+    ? new PT::DeleteExpr(scope, PT::cons(delete_))
+    : new PT::DeleteExpr(delete_, 0);
+
+  if (my_lexer.look_ahead() == '[')
+  {
+    dexp = PTree::snoc(dexp, new PT::Atom(my_lexer.get_token()));
+    if (!require(']')) return 0;
+    dexp = PTree::snoc(dexp, new PT::Atom(my_lexer.get_token()));
+  }
+  PT::Node *exp = cast_expression();
+  if(!require(exp, "cast-expression")) return 0;
+  return PTree::snoc(dexp, exp);
+}
+
+// expression-list:
+//   assignment-expression
+//   expression-list, assignment-expression
+PT::List *Parser::expression_list(bool is_const)
+{
+  Trace trace("Parser::expression_list", Trace::PARSING);
+  PT::List *exprs = 0;
+  while (true)
+  {
+    PT::Node *expr = is_const ? constant_expression() : assignment_expression();
+    if (!expr)
+    {
+      if (is_const)
+	error("expected constant-expression");
+      else
+	error("expected assignment-expression");
+      return 0;
+    }
+    exprs = PT::snoc(exprs, expr);
+    if (my_lexer.look_ahead() != ',') break;
+    else exprs = PT::snoc(exprs, new PT::Atom(my_lexer.get_token()));
+  }
+  return exprs;
+}
+
+PT::List *Parser::functional_cast()
+{
+  Trace trace("Parser::functional_cast", Trace::PARSING);
+  
+  if (my_lexer.look_ahead() != '(')
+  {
+    error("expecting ')'");
+    return 0;
+  }
+  PT::List *args = PT::cons(new PT::Atom(my_lexer.get_token()));
+  if (my_lexer.look_ahead() != ')')
+  {
+    PGuard<bool> pguard(*this, &Parser::my_in_functional_cast, true);
+    PT::List *expr = expression_list(/*is_const=*/false);
+    if (!require(expr, "expression-list")) return 0;
+    args = PT::snoc(args, expr);
+  }
+  if (!require(')')) return 0;
+  return PT::snoc(args, new PTree::Atom(my_lexer.get_token()));
+}
+
+// pseudo-destructor-name:
+//   :: [opt] nested-name-specifier [opt] type-name :: ~ type-name
+//   :: [opt] nested-name-specifier template template-id :: ~ type-name
+//   :: [opt] nested-name-specifier [opt] ~ type-name
+PT::List *Parser::pseudo_destructor_name()
+{
+  Trace trace("Parser::pseudo_destructor_name", Trace::PARSING);
+  PT::Encoding encoding;
+  PT::Atom *scope = opt_scope(encoding);
+  Tentative tentative(*this);
+  PT::List *nested_name = nested_name_specifier(encoding);
+  if (!nested_name) tentative.rollback();
+  if (nested_name && my_lexer.look_ahead() == Token::TEMPLATE)
+  {
+    PT::Atom *template_ = new PT::Kwd::Template(my_lexer.get_token());
+    nested_name = PT::snoc(nested_name, template_);
+    PT::List *id = template_id(encoding, true);
+    if (!require(id, "template-id") || !require(Token::Scope, "::")) return 0;
+    PT::Atom *scope = new PT::Atom(my_lexer.get_token());
+    nested_name = PT::snoc(nested_name, id);
+    nested_name = PT::snoc(nested_name, scope);
+  }
+  else if (my_lexer.look_ahead() != '~')
+  {
+    PT::Node *name = type_name(encoding);
+    if (!require(name, "type-name") || !require(Token::Scope, "::")) return 0;
+    PT::Atom *scope = new PT::Atom(my_lexer.get_token());
+    nested_name = PT::snoc(nested_name, name);
+    nested_name = PT::snoc(nested_name, scope);
+  }
+  if (!require('~')) return 0;
+  nested_name = PT::snoc(nested_name, new PT::Atom(my_lexer.get_token()));
+  PT::Node *name = type_name(encoding);
+  if (!require(name, "type-name")) return 0;
+  nested_name = PT::snoc(nested_name, name);
+  return new PT::Name(nested_name, encoding);
+}
+
+// postfix-expression:
+//   primary-expression
+//   postfix-expression [ expression ]
+//   postfix-expression ( expression-list [opt] )
+//   simple-type-specifier ( expression-list [opt] )
+//   typename :: [opt] nested-name-specifier identifier
+//     ( expression-list [opt] )
+//   typename :: [opt] nested-name-specifier template [opt] template-id
+//     ( expression-list [opt] )
+//   postfix-expression . template [opt] id-expression
+//   postfix-expression -> template [opt] id-expression
+//   postfix-expression . pseudo-destructor-name
+//   postfix-expression -> pseudo-destructor-name
+//   postfix-expression ++
+//   postfix-expression --
+//   dynamic_cast < type-id > ( expression )
+//   static_cast < type-id > ( expression )
+//   reinterpret_cast < type-id > ( expression )
+//   const_cast < type-id > ( expression )
+//   typeid ( expression )
+//   typeid ( type-id )
+PT::Node *Parser::postfix_expression()
+{
+  Trace trace("Parser::postfix_expression", Trace::PARSING);
+
+  PT::Node *expr = 0;
+
+  switch (my_lexer.look_ahead())
+  {
+    case Token::TYPEID:
+    {
+      PT::Node *expr = 0;
+      error("sorry, typeid not supported yet");
+      return 0;
+      //       return typeid_expression(expr) ? expr : 0;
+    }
+    case Token::TYPENAME:
+    {
+      PT::Kwd::Typename *typename_ = new PT::Kwd::Typename(my_lexer.get_token());
+      PT::Encoding encoding;
+      PT::Atom *scope = opt_scope(encoding);
+      PT::List *qname = nested_name_specifier(encoding);
+      if (!require(qname, "nested-name-specifier")) return 0;
+      if (scope) qname = PT::snoc(PT::cons(scope), qname);
+      if (my_lexer.look_ahead() == Token::TEMPLATE)
+      {
+	// We are looking at a template-id
+	PT::Node *id = template_id(encoding, /*is_template=*/true);
+	if (!require(id, "template-id")) return 0;
+	qname = PT::snoc(qname, id);
+      }
+      else
+      {
+	// We may be looking at an identifier or a template-id.
+	// The second-next token will tell us which:
+	if (my_lexer.look_ahead(1) == '<')
+	{
+	  PT::Node *id = template_id(encoding, /*is_template*/false);
+	  if (!id) return 0;
+	  else qname = PT::snoc(qname, id);
+	}
+	else
+	{
+	  PT::Atom *id = identifier(encoding);
+	  if (!require(id, "identifier")) return 0;
+	  qname = PT::snoc(qname, id);
+	}
+      }
+      // functional-cast
+      PT::List *args = functional_cast();
+      if (!args) return 0;
+      else expr = new PTree::FstyleCastExpr(encoding, qname, args);
+      break;
+    }
+    case Token::CONST_CAST:
+    case Token::DYNAMIC_CAST:
+    case Token::STATIC_CAST:
+    case Token::REINTERPRET_CAST:
+    {
+      // FIXME: This should become a PT::Keyword
+      PT::Atom *kwd = new PT::Atom(my_lexer.get_token());
+      if (!require('<')) return 0;
+      Token ob = my_lexer.get_token();
+      PT::Encoding type;
+      PT::Node *id = type_id(type);
+      if (!require(id, "type-id") || !require('>')) return 0;
+      Token cb = my_lexer.get_token();
+      if (!require('(')) return 0;
+      Token op = my_lexer.get_token();
+      PT::Node *expr = expression();
+      if (!require(expr, "expression") || !require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      return new PT::FstyleCastExpr(type, kwd,
+				    PT::list(new PT::Atom(ob),
+					     id,
+					     new PT::Atom(cb),
+					     new PT::Atom(op),
+					     expr,
+					     new PT::Atom(cp)));
+    }
+    default:
+    {
+      Tentative tentative(*this);
+      PT::Encoding encoding;
+      bool user_defined = true;
+      PT::Node *type = simple_type_specifier(encoding, user_defined);
+      if (type)
+      {
+	PT::List *args = functional_cast();
+	if (args)
+	{
+	  expr = new PTree::FstyleCastExpr(encoding, type, args);	
+	  break;
+	}
+      }
+      tentative.rollback();
+      expr = primary_expression();
+      if (!require(expr, "primary-expression")) return 0;
+      break;
+    }
+  }
+
+  while(true)
+  {
+    switch(my_lexer.look_ahead())
+    {
+      case '[':
+      {
+	Token os = my_lexer.get_token();
+	PT::Node *e = expression();
+	if (!require(e, "expression") ||
+	    !require(']'))
+	  return 0;
+	Token cs = my_lexer.get_token();
+	expr = new PT::ArrayExpr(expr, PT::list(new PT::Atom(os),
+						e,
+						new PT::Atom(cs)));
+	break;
+      }
+      case '(':
+      {
+	Token op = my_lexer.get_token();
+	PT::Node *args = 0;
+	if (my_lexer.look_ahead() != ')')
+	{
+	  args = expression_list(/*is_const*/false);
+	  if (!require(args, "expression-list")) return 0;
+	}
+	if (!require(')')) return 0;
+	Token cp = my_lexer.get_token();
+	expr = new PT::FuncallExpr(expr, PT::list(new PT::Atom(op),
+						  args,
+						  new PT::Atom(cp)));
+	break;
+      }
+      case Token::IncOp:
+      {
+	Token op = my_lexer.get_token();
+	expr = new PT::PostfixExpr(expr, PT::cons(new PT::Atom(op)));
+	break;
+      }
+      case '.':
+      case Token::ArrowOp:
+      {
+	Token op = my_lexer.get_token();
+	PT::List *lhs = 0;
+	PT::Keyword *template_ = 0;
+	if (my_lexer.look_ahead() == Token::TEMPLATE)
+	  template_ = new PT::Kwd::Template(my_lexer.get_token());
+	if (!template_)
+	{
+	  Tentative tentative(*this);
+	  lhs = pseudo_destructor_name();
+	  if (!lhs) tentative.rollback();
+	}
+	if (!lhs)
+	{
+	  PT::Encoding encoding;
+	  PT::Node *id = id_expression(encoding, template_);
+	  if (!require(id, "id-expression")) return 0;
+	  if (template_) lhs = PT::cons(template_, PT::cons(id));
+	  else lhs = PT::cons(id);
+	}
+ 	if(op.type == '.')
+ 	  expr = new PT::DotMemberExpr(expr, PT::list(new PT::Atom(op), lhs));
+ 	else
+ 	  expr = new PT::ArrowMemberExpr(expr, PT::list(new PT::Atom(op), lhs));
+	break;
+      }
+      default:
+	return expr;
+    }
+  }
+}
+
+// primary-expression:
+//   literal
+//   this
+//   ( expression )
+//   id-expression
+PT::Node *Parser::primary_expression()
+{
+  Trace trace("Parser::primary_expression", Trace::PARSING);
+
+  switch(my_lexer.look_ahead())
   {
     case Token::Constant:
     case Token::CharConst:
     case Token::WideCharConst:
     case Token::StringL:
     case Token::WideStringL:
-      my_lexer.get_token(tk);
-      exp = new PT::Literal(tk);
-      return true;
+      return new PT::Literal(my_lexer.get_token());
     case Token::THIS:
-      my_lexer.get_token(tk);
-      exp = new PT::Kwd::This(tk);
-      return true;
-    case Token::TYPEID:
-      return typeid_expr(exp);
+      return new PT::Kwd::This(my_lexer.get_token());
     case '(':
     {
-      PGuard<bool> guard(*this, &Parser::my_gt_is_operator);
-      my_gt_is_operator = true;
-      my_lexer.get_token(tk);
-      if(!expression(exp2)) return false;
-      if(my_lexer.get_token(tk2) != ')') return false;
-
-      exp = new PT::ParenExpr(new PT::Atom(tk), PT::list(exp2, new PT::Atom(tk2)));
-      return true;
+      PGuard<bool> pguard(*this, &Parser::my_gt_is_operator, true);
+      Token op = my_lexer.get_token();
+      PT::Node *expr = expression();
+      if (!expr || !require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      return new PT::ParenExpr(new PT::Atom(op),
+			       PT::list(expr, new PT::Atom(cp)));
     }
     default:
-      // FIXME: We need symbol lookup here to figure out whether we
-      //        are looking at a type or a variable here !
-      if(!opt_integral_type_or_class_spec(exp, cast_type_encode)) return false;
-
-      if(exp)
-      { // if integral.or.class.spec
-	if(my_lexer.get_token(tk) != '(') return false;
-	if(!function_arguments(exp2)) return false;
-	if(my_lexer.get_token(tk2) != ')') return false;
-
-	exp = new PT::FstyleCastExpr(cast_type_encode, exp,
-				     PT::list(new PT::Atom(tk), exp2,
-					      new PT::Atom(tk2)));
-	return true;
-      }
-      else
-      {
-	if(!var_name(exp)) return false;
-	if(my_lexer.look_ahead(0) == Token::Scope)
-	{
-	  my_lexer.get_token(tk);
-	  if(!userdef_statement(exp2)) return false;
-
-	  exp = new PT::StaticUserStatementExpr(exp,
-						PT::cons(new PT::Atom(tk), exp2));
-	}
-	return true;
-      }
+    {
+      PT::Encoding encoding;
+      return id_expression(encoding, false);
+    }
   }
 }
 
-bool Parser::typeof_expr(PT::Node *&node)
+// id-expression:
+//   unqualified-id
+//   qualified-id
+//
+// qualified-id:
+//   :: [opt] nested-name-specifier template [opt] unqualified-id
+//   :: identifier
+//   :: operator-function-id
+//   :: template-id
+PT::Node *Parser::id_expression(PT::Encoding &encoding, bool is_template)
 {
-  Trace trace("Parser::typeof_expr", Trace::PARSING);
-  Token tk, tk2;
+  Trace trace("Parser::id_expression", Trace::PARSING);
+  PT::Atom *scope = opt_scope(encoding);
+  Tentative tentative(*this, encoding);
+  PT::List *name = nested_name_specifier(encoding, is_template);
+  if (name)
+  {
+    bool is_template = false;
+    if (my_lexer.look_ahead() == Token::TEMPLATE)
+    {
+      Token token = my_lexer.get_token();
+      name = PT::snoc(name, new PT::Kwd::Template(token));
+      is_template = true;
+    }
+    PT::Node *rest = unqualified_id(encoding, is_template);
+    if (!require(rest, "unqualified-id")) return 0;
+    else return new PT::Name(PT::snoc(name, rest), encoding);
+  }
+  tentative.rollback(true);
 
-  Token::Type t = my_lexer.get_token(tk);
-  if (t != Token::TYPEOF)
-    return false;
-  if ((t = my_lexer.get_token(tk2)) != '(')
-    return false;
-  PT::Node *type = PT::list(new PT::Atom(tk2));
-#if 1
-  if (!assign_expr(node)) return false;
-#else
-  PT::Encoding name_encode;
-  if (!name(node, name_encode)) return false; 	 
-  if (!node->is_atom())
-    node = new PT::Name(node, name_encode);
-  else
-    node = new PT::Name(PT::list(node), name_encode);
-#endif
-  type = PT::snoc(type, node);
-  if ((t = my_lexer.get_token(tk2)) != ')') return false;
-  type = PT::snoc(type, new PT::Atom(tk2));
-  node = new PT::TypeofExpr(new PT::Atom(tk), type);
-  return true;
+  if (!scope)
+  {
+    PT::Node *id = unqualified_id(encoding, is_template);
+    return id ? id->is_atom() ? id : new PT::Name(id, encoding) : 0;
+  }
+  if (my_lexer.look_ahead() == Token::Identifier)
+  {
+    PT::List *id = PT::cons(scope, PT::cons(identifier(encoding)));
+    return new PT::Name(id, encoding);
+  }
+  name = operator_function_id(encoding);
+  if (name) return name;
+  tentative.rollback();
+  PT::List *id = template_id(encoding, is_template);
+  return id ? new PT::Name(id, encoding) : 0;
 }
 
-/*
-  userdef.statement
-  : UserKeyword '(' function.arguments ')' compound.statement
-  | UserKeyword2 '(' arg.decl.list ')' compound.statement
-  | UserKeyword3 '(' expr.statement {expression} ';'
-			{expression} ')' compound.statement
-*/
-bool Parser::userdef_statement(PT::Node *&st)
+// typeof-expression:
+//   __typeof__ unary-expression
+//   __typeof__ ( type-id )
+PT::Node *Parser::typeof_expression(PT::Encoding &encoding)
 {
-  Token tk, tk2, tk3, tk4;
-  PT::Node *keyword, *exp, *exp2, *exp3;
-  PT::Encoding dummy_encode;
+  Trace trace("Parser::typeof_expression", Trace::PARSING);
 
-  int t = my_lexer.get_token(tk);
-  if(my_lexer.get_token(tk2) != '(') return false;
-
-  switch(t)
+  if (my_lexer.look_ahead() != Token::TYPEOF) return 0;
+  Token typeof_ = my_lexer.get_token();
+  if (my_lexer.look_ahead(1) == '(')
   {
-    case Token::UserKeyword :
-      keyword = new PT::UserKeyword(tk);
-      if(!function_arguments(exp)) return false;
-      goto rest;
-    case Token::UserKeyword2 :
-      keyword = new PT::UserKeyword(tk);
-      if(!parameter_declaration_list(exp, dummy_encode)) return false;
-    rest:
-    {
-      if(my_lexer.get_token(tk3) != ')') return false;
-      PT::Block *body;
-      if(!compound_statement(body)) return false;
-      st = PT::list(keyword, new PT::Atom(tk2), exp, new PT::Atom(tk3), body);
-      return true;
-    }
-    case Token::UserKeyword3 :
-    {
-      if(!expr_statement(exp)) return false;
-
-      if(my_lexer.look_ahead(0) == ';') exp2 = 0;
-      else if(!expression(exp2)) return false;
-      if(my_lexer.get_token(tk3) != ';') return false;
-      if(my_lexer.look_ahead(0) == ')') exp3 = 0;
-      else if(!expression(exp3)) return false;
-      if(my_lexer.get_token(tk4) != ')') return false;
-      PT::Block *body;
-      if(!compound_statement(body)) return false;
-
-      st = PT::list(new PT::Atom(tk), new PT::Atom(tk2), exp, exp2,
-		    new PT::Atom(tk3), exp3, new PT::Atom(tk4), body);
-      return true;
-    }
-    default :
-      return false;
+    // Try to parse this as a type-id.
+    Tentative tentative(*this, encoding);
+    Token op = my_lexer.get_token();
+    PT::Node *type = type_id(encoding);
+    if (type && require(')')) 
+      return new PT::TypeofExpr(new PT::Atom(typeof_), 
+				PT::list(new PT::Atom(op),
+					 type, 
+					 new PT::Atom(my_lexer.get_token())));
+    else tentative.rollback();
   }
+  PT::Node *type = unary_expression();
+  if (!require(type, "unary-expression")) return 0;
+  // FIXME: To be able to defer type analysis, we need to be able to express
+  //        a 'to-be-evaluated' state in the encoding. For now use anonymous...
+  encoding.anonymous();
+  return new PT::TypeofExpr(new PT::Atom(typeof_), PT::cons(type));
 }
 
-/*
-  var.name : {'::'} name2 ('::' name2)*
-
-  name2
-  : Identifier {template.args}
-  | '~' Identifier
-  | OPERATOR operator.name
-
-  if var.name ends with a template type, the next token must be '('
-*/
-bool Parser::var_name(PT::Node *&name)
-{
-  Trace trace("Parser::var_name", Trace::PARSING);
-  PT::Encoding encode;
-
-  if(var_name_core(name, encode))
-  {
-    if(!name->is_atom()) name = new PT::Name(name, encode);
-    return true;
-  }
-  else return false;
-}
-
-bool Parser::var_name_core(PT::Node *&name, PT::Encoding &encode)
-{
-  Trace trace("Parser::var_name_core", Trace::PARSING);
-  Token tk;
-  int length = 0;
-  
-  if(my_lexer.look_ahead(0) == Token::Scope)
-  {
-    my_lexer.get_token(tk);
-    name = PT::list(new PT::Atom(tk));
-    encode.global_scope();
-    ++length;
-  }
-  else name = 0;
-
-  while(true)
-  {
-    Token::Type t = my_lexer.get_token(tk);
-    if(t == Token::TEMPLATE) 
-    {
-      // Skip template token, next will be identifier
-      t = my_lexer.get_token(tk);
-    }
-    if(t == Token::Identifier)
-    {
-      PT::Node *n = new PT::Identifier(tk.ptr, tk.length);
-      if(is_template_args())
-      {
-	PT::Node *args;
-	PT::Encoding args_encode;
-	if(!template_args(args, args_encode)) return false;
-
-	encode.template_(n, args_encode);
-	++length;
-	n = PT::list(n, args);
-      }
-      else
-      {
-	encode.simple_name(n);
-	++length;
-      }
-      if(more_var_name())
-      {
-	my_lexer.get_token(tk);
-	name = PT::nconc(name, PT::list(n, new PT::Atom(tk)));
-      }
-      else
-      {
-	if(name == 0) name = n;
-	else name = PT::snoc(name, n);
-	if(length > 1) encode.qualified(length);
-	return true;
-      }
-    }
-    else if(t == '~')
-    {
-      Token tk2;
-      if(my_lexer.look_ahead(0) != Token::Identifier) return false;
-      my_lexer.get_token(tk2);
-      PT::Node *class_name = new PT::Atom(tk2);
-      PT::Node *dt = PT::list(new PT::Atom(tk), class_name);
-      if(name == 0) name = dt;
-      else name = PT::snoc(name, dt);
-      encode.destructor(class_name);
-      if(length > 0) encode.qualified(length + 1);
-      return true;
-    }
-    else if(t == Token::OPERATOR)
-    {
-      PT::Node *op;
-      if(!operator_name(op, encode)) return false;
-
-      PT::Node *opf = PT::list(new PT::Kwd::Operator(tk), op);
-      name = name ? PT::snoc(name, opf) : opf;
-      if(length > 0) encode.qualified(length + 1);
-      return true;
-    }
-    else return false;
-  }
-}
-
-bool Parser::more_var_name()
-{
-  Trace trace("Parser::more_var_name", Trace::PARSING);
-  if(my_lexer.look_ahead(0) == Token::Scope)
-  {
-    int t = my_lexer.look_ahead(1);
-    if(t == Token::Identifier || t == '~' || t == Token::OPERATOR ||
-       t == Token::TEMPLATE)
-      return true;
-  }
-  return false;
-}
-
-/*
-  template.args : '<' any* '>'
-
-  template.args must be followed by '(', '::', ';', or ','
-*/
-bool Parser::is_template_args()
-{
-  int i = 0;
-  int t = my_lexer.look_ahead(i++);
-  if(t == '<')
-  {
-    int n = 1;
-    while(n > 0)
-    {
-      int u = my_lexer.look_ahead(i++);
-      if(u == '<') ++n;
-      else if(u == '>') --n;
-      else if(u == '(')
-      {
-	int m = 1;
-	while(m > 0)
-	{
-	  int v = my_lexer.look_ahead(i++);
-	  if(v == '(') ++m;
-	  else if(v == ')') --m;
-	  else if(v == '\0' || v == ';' || v == '}') return false;
-	}
-      }
-      else if(u == '\0' || u == ';' || u == '}') return false;
-    }
-    t = my_lexer.look_ahead(i);
-    return bool(t == Token::Scope || t == '(' || t == ';' || t == ',');
-  }
-  return false;
-}
-
-//. condition:
-//.   expression
-//.   type-specifier-seq declarator = assignment-expression
-bool Parser::condition(PT::Node *&exp)
+// condition:
+//   expression
+//   type-specifier-seq declarator = assignment-expression
+PT::Node *Parser::condition()
 {
   Trace trace("Parser::condition", Trace::PARSING);
-  PT::Encoding type_encode;
 
-  // Do declarator first, otherwise "T*foo = blah" gets matched as a
-  // multiplication infix expression inside an assignment expression!
-  const char *save = my_lexer.save();
-  do 
+  Tentative tentative(*this);
+  PT::Encoding type;
+  PT::List *cond = type_specifier_seq(type);
+  if (cond)
   {
-    PT::Node *storage_s, *cv_q, *cv_q2, *integral, *head, *decl;
-
-    if (!opt_storage_spec(storage_s)) break;
-
-    head = storage_s;
-	
-    if (!opt_cv_qualifier(cv_q) ||
-	!opt_integral_type_or_class_spec(integral, type_encode))
-      break;
-
-    if (integral)
+    PT::Encoding dummy_name;
+    PT::Declarator *decl = declarator(type, dummy_name, NAMED);
+    if (my_lexer.look_ahead() == '=')
     {
-      // Integral Declaration
-      // Find const after type
-      if (!opt_cv_qualifier(cv_q2)) break;
-      // Make type ptree with pre and post const ptrees
-      if (cv_q)
-	if (cv_q2 == 0)
-	  integral = PT::snoc(cv_q, integral);
-	else
-	  integral = PT::nconc(cv_q, PT::cons(integral, cv_q2));
-      else if (cv_q2) integral = PT::cons(integral, cv_q2);
-      // Store type of CV's
-      type_encode.cv_qualify(cv_q, cv_q2);
-      // Parse declarator
-      if (!init_declarator(decl, type_encode, true, false)) break;
-      // *must* be end of condition, condition is in a () pair
-      if (my_lexer.look_ahead(0) != ')') break;
-      exp = new PT::Declaration(head, PT::list(integral, decl));
+      Token eq = my_lexer.get_token();
+      PT::Node *expr = assignment_expression();
+      if (!require(expr, "assignment-expression")) return 0;
+      cond = PT::cons(cond);
+      cond = PT::snoc(cond, decl);
+      cond = PT::snoc(cond, new PT::Atom(eq));
+      return PT::snoc(cond, expr);
     }
-    else
-    {
-      // Other Declaration
-      PT::Node *type_name;
-      // Find name of type
-      if (!name(type_name, type_encode)) break;
-      // Find const after type
-      if (!opt_cv_qualifier(cv_q2)) break;
-      // Make type ptree with pre and post const ptrees
-      if (cv_q)
-	if (cv_q2 == 0) type_name = PT::snoc(cv_q, type_name);
-	else type_name = PT::nconc(cv_q, PT::cons(type_name, cv_q2));
-      else if (cv_q2) type_name = PT::cons(type_name, cv_q2);
-      // Store type of CV's
-      type_encode.cv_qualify(cv_q, cv_q2);
-      // Parse declarator
-      if (!init_declarator(decl, type_encode, true, false)) break;
-      // *must* be end of condition, condition is in a () pair
-      if (my_lexer.look_ahead(0) != ')') break;
-      exp = new PT::Declaration(head, PT::list(type_name, decl));
-    }
-    return true;
-  } while(false);
-
-  // Must be a comma expression
-  my_lexer.restore(save);
-  return expression(exp);
+  }
+  tentative.rollback();
+  PT::Node *expr = expression();
+  if (!require(expr, "expression")) return 0;
+  return PT::cons(expr);
 }
 
-//. function-body:
-//.   compound-statement
-bool Parser::function_body(PT::Block *&body)
+////////////////////////////////////////////////////////////////////////////////
+// statements [gram.stmt.stmt]
+////////////////////////////////////////////////////////////////////////////////
+
+// labeled-statement:
+//   identifier : statement
+//   case constant-expression : statement
+//   default : statement
+PT::List *Parser::labeled_statement()
 {
-  Trace trace("Parser::function_body", Trace::PARSING);
-  return compound_statement(body);
+  Trace trace("Parser::labeled_statement", Trace::PARSING);
+  Token kwd = my_lexer.get_token();
+  assert(kwd.type == Token::CASE ||
+	 kwd.type == Token::DEFAULT ||
+	 kwd.type == Token::Identifier);
+
+  switch (kwd.type)
+  {
+    case Token::CASE:
+    {
+      PT::Node *expr = constant_expression();
+      if (!require(expr, "constant-expression")) return 0;
+      if (!require(':')) return 0;
+      Token colon = my_lexer.get_token();
+      PT::Node *stmt = statement();
+      if (!require(stmt, "statement")) return 0;
+
+      return new PT::CaseStatement(new PT::Kwd::Case(kwd),
+				   PT::list(expr, new PT::Atom(colon), stmt));
+    }
+    case Token::DEFAULT:
+    {
+      if (!require(':')) return 0;
+      Token colon = my_lexer.get_token();
+      PT::Node *stmt = statement();
+      if (!require(stmt, "statement")) return 0;
+
+      return new PT::DefaultStatement(new PT::Kwd::Default(kwd),
+				      PT::list(new PT::Atom(colon), stmt));
+    }
+    case Token::Identifier:
+    {
+      Token colon = my_lexer.get_token();
+      assert(colon.type == ':');
+      PT::Node *stmt = statement();
+      if (!require(stmt, "statement")) return 0;
+
+      return new PT::LabelStatement(new PT::Identifier(kwd),
+				    PT::list(new PT::Atom(colon), stmt));
+    }
+    default:
+      // Never get here.
+      return 0;
+  }
 }
 
-//. compound-statement:
-//.   { statement [opt] }
-bool Parser::compound_statement(PT::Block *&body, bool create_scope)
+// expression-statement:
+//   expression [opt] ;
+PT::ExprStatement *Parser::expression_statement()
+{
+  Trace trace("Parser::expression_statement", Trace::PARSING);
+
+  if(my_lexer.look_ahead() == ';')
+  {
+    return new PT::ExprStatement(0, PT::cons(new PT::Atom(my_lexer.get_token())));
+  }
+  else
+  {
+    PT::Node *expr = expression();
+    if (!require(expr, "expression") || !require(';')) return 0;
+    return new PT::ExprStatement(expr, PT::cons(new PT::Atom(my_lexer.get_token())));
+  }
+}
+
+// compound-statement:
+//   { statement [opt] }
+PT::Block *Parser::compound_statement(bool create_scope)
 {
   Trace trace("Parser::compound_statement", Trace::PARSING);
 
-  Token ob;
-  if(my_lexer.get_token(ob) != '{') return false;
+  Token ob = my_lexer.get_token();
+  if(ob.type != '{') return 0;
 
-  PT::Node *ob_comments = wrap_comments(my_lexer.get_comments());
-  body = new PT::Block(new PT::CommentedAtom(ob, ob_comments), 0);
+  PT::List *ob_comments = wrap_comments(my_lexer.get_comments());
+  PT::Block *body = new PT::Block(new PT::CommentedAtom(ob, ob_comments), 0);
 
-  ScopeGuard guard(*this, create_scope ? body : 0);
+  ScopeGuard scope_guard(*this, create_scope ? body : 0);
 
-  PT::Node *sts = 0;
-  while(my_lexer.look_ahead(0) != '}')
+  PT::List *stmts = 0;
+  while(my_lexer.look_ahead() != '}')
   {
-    PT::Node *st;
-    if(!statement(st))
-    {
-      if(!mark_error()) return false; // too many errors
-      skip_to('}');
-      Token cb;
-      my_lexer.get_token(cb);
-      body = new PT::Block(new PT::Atom(ob), 0, new PT::Atom(cb));
-      return true;	// error recovery
-    }
-
-    sts = PT::snoc(sts, st);
+    PT::Node *stmt = statement();
+    if (!require(stmt, "expression-statement")) return 0;
+    else stmts = PT::snoc(stmts, stmt);
   }
-  Token cb;
-  if(my_lexer.get_token(cb) != '}') return false;
+  body = PT::snoc(body, stmts);
 
-  PT::Node *cb_comments = wrap_comments(my_lexer.get_comments());
-  body = PT::nconc(body, PT::list(sts, new PT::CommentedAtom(cb, cb_comments)));
-  return true;
+  Token cb = my_lexer.get_token();
+  if(cb.type != '}') return 0;
+
+  PT::List *cb_comments = wrap_comments(my_lexer.get_comments());
+  return PT::snoc(body, new PT::CommentedAtom(cb, cb_comments));
 }
 
-/*
-  statement
-  : compound.statement
-  | typedef
-  | if.statement
-  | switch.statement
-  | while.statement
-  | do.statement
-  | for.statement
-  | try.statement
-  | BREAK ';'
-  | CONTINUE ';'
-  | RETURN { expression } ';'
-  | GOTO Identifier ';'
-  | CASE expression ':' statement
-  | DEFAULT ':' statement
-  | Identifier ':' statement
-  | expr.statement
-*/
-bool Parser::statement(PT::Node *&st)
+// selection-statement:
+//   if ( condition ) statement
+//   if ( condition ) statement else statement
+//   switch ( condition ) statement
+PT::List *Parser::selection_statement()
+{
+  Trace trace("Parser::selection_statement", Trace::PARSING);
+
+  Token kwd = my_lexer.get_token();
+  assert(kwd.type == Token::IF || kwd.type == Token::SWITCH);
+  
+  if (!require('(')) return 0;
+  Token op = my_lexer.get_token();
+  PT::Node *cond = condition();
+  if (!require(cond, "condition")) return 0;
+  if (!require(')')) return 0;
+  Token cp = my_lexer.get_token();
+  PT::List *stmt = statement();
+  if (!require(stmt, "statement")) return 0;
+
+  if (kwd.type == Token::SWITCH)
+    return new PT::SwitchStatement(new PT::Kwd::Switch(kwd),
+				   PT::list(new PT::Atom(op), cond,
+					    new PT::Atom(cp), stmt));
+  else
+  {
+    stmt = new PT::IfStatement(new PT::Kwd::If(kwd),
+			       PT::list(new PT::Atom(op),
+					cond,
+					new PT::Atom(cp),
+					stmt));
+    if(my_lexer.look_ahead() == Token::ELSE)
+    {
+      Token else_ = my_lexer.get_token();
+      PT::Node *otherwise = statement();
+      if (!require(otherwise, "statement")) return 0;
+      stmt = PT::snoc(stmt, PT::list(new PT::Kwd::Else(else_), otherwise));
+    }
+    return stmt;
+  }
+}
+
+// iteration-statement:
+//   while ( condition ) statement
+//   do statement while ( expression ) ;
+//   for ( for-init-statement condition [opt] ; expression [opt] )
+//     statement
+//
+// for-init-statement:
+//   expression-statement
+//   simple-declaration
+PT::List *Parser::iteration_statement()
+{
+  Trace trace("Parser::iteration_statement", Trace::PARSING);
+  switch (my_lexer.look_ahead())
+  {
+    case Token::WHILE:
+    {
+      Token while_ = my_lexer.get_token();
+      if (!require('(')) return 0;
+      Token op = my_lexer.get_token();
+      PT::Node *cond = condition();
+      if (!require(cond, "condition")) return 0;
+      if (!require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      PT::Node *stmt = statement();
+      if (!require(stmt, "statement")) return 0;
+      
+      return new PT::WhileStatement(new PT::Kwd::While(while_),
+				    PT::list(new PT::Atom(op), cond,
+					     new PT::Atom(cp), stmt));
+    }
+    case Token::DO:
+    {
+      Token do_ = my_lexer.get_token();
+      PT::Node *stmt = statement();
+      if (!require(stmt, "statement")) return 0;
+      if (!require(Token::WHILE, "while")) return 0;
+      Token while_ = my_lexer.get_token();
+      if (!require('(')) return 0;
+      Token op = my_lexer.get_token();
+      PT::Node *cond = condition();
+      if (!require(cond, "condition")) return 0;
+      if (!require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      if (!require(';')) return 0;
+      Token semic = my_lexer.get_token();
+
+      return new PT::DoStatement(new PT::Kwd::Do(do_),
+				 PT::list(stmt,
+					  new PT::Kwd::While(while_),
+					  new PT::Atom(op),
+					  cond,
+					  new PT::Atom(cp),
+					  new PT::Atom(semic)));
+    }
+    case Token::FOR:
+    {
+      Token for_ = my_lexer.get_token();
+      if (!require('(')) return 0;
+      Token op = my_lexer.get_token();
+      // for-init-statement
+      PT::Node *init = 0;
+      if (my_lexer.look_ahead() != ';')
+      {
+	// try simple-declaration first
+	Tentative tentative(*this);
+	init = simple_declaration(/*function_definition_allowed=*/false);
+	if (!init) tentative.rollback();
+      }
+      if (!init) init = expression_statement();
+      if (!require(init, "for-init-statement")) return 0;
+      PT::Node *cond = 0;
+      if (my_lexer.look_ahead() != ';')
+      {
+	cond = condition();
+	if (!require(cond, "condition")) return 0;
+      }
+      if (!require(';')) return 0;
+      Token semic = my_lexer.get_token();
+      PT::Node *expr = 0;
+      if (my_lexer.look_ahead() != ')')
+      {
+	expr = expression();
+	if (!require(expr, "expression")) return 0;
+      }
+      if (!require(')')) return 0;
+      Token cp = my_lexer.get_token();
+      PT::Node *stmt = statement();
+      if (!require(stmt, "statement")) return 0;
+
+      return new PT::ForStatement(new PT::Kwd::For(op),
+				  PT::list(new PT::Atom(for_), init, cond,
+					   new PT::Atom(semic), expr,
+					   new PT::Atom(cp), stmt));
+    }
+    default:
+      return 0;
+  }
+}
+
+// declaration-statement:
+//   block-declaration
+PT::List *Parser::declaration_statement()
+{
+  Trace trace("Parser::declaration_statement", Trace::PARSING);
+  PGuard<bool> pguard(*this, &Parser::my_in_declaration_statement, true);
+  return block_declaration();
+}
+
+// statement:
+//   labeled-statement
+//   expression-statement
+//   compound-statement
+//   selection-statement
+//   iteration-statement
+//   jump-statement
+//   declaration-statement
+//   try-block
+PT::List *Parser::statement()
 {
   Trace trace("Parser::statement", Trace::PARSING);
-  Token tk1, tk2, tk3;
-  PT::Node *st2, *exp, *comments;
-  int k;
 
-  // Get the comments - if we dont make it past the switch then it is a
-  // parse error anyway!
-  comments = wrap_comments(my_lexer.get_comments());
-
-  // Whichever case we get, it must succeed
-  switch(k = my_lexer.look_ahead(0))
+  PT::List *comments = wrap_comments(my_lexer.get_comments());
+  PT::List *stmt = 0;
+  switch(my_lexer.look_ahead())
   {
     case '{':
     {
-      PT::Block *block;
-      if (!compound_statement(block, true)) return false;
-      st = block;
-      break;
-    }
-    case Token::USING:
-    {
-      if (my_lexer.look_ahead(1) == Token::NAMESPACE)
-      {
-	PT::UsingDirective *udir;
-	if (!using_directive(udir)) return false;
-	declare(udir);
-	st = udir;
-      }
-      else
-      {
-	PT::UsingDeclaration *udecl;
-	if (!using_declaration(udecl)) return false;
-	declare(udecl);
-	st = udecl;
-      }
-      break;
-    }
-    case Token::TYPEDEF:
-    {
-      PT::Typedef *td;
-      if (!typedef_(td)) return false;
-      st = td;
+      PT::Block *block = compound_statement(true);
+      if (!block) return 0;
+      stmt = block;
       break;
     }
     case Token::IF:
-      if (!if_statement(st)) return false;
-      break;
     case Token::SWITCH:
-      if (!switch_statement(st)) return false;
+      stmt = selection_statement();
       break;
     case Token::WHILE:
-      if (!while_statement(st)) return false;
-      break;
     case Token::DO:
-      if (!do_statement(st)) return false;
-      break;
     case Token::FOR:
-      if (!for_statement(st)) return false;
+      stmt = iteration_statement();
       break;
     case Token::TRY:
-      if (!try_block(st)) return false;
+      stmt = try_block();
       break;
     case Token::BREAK:
     case Token::CONTINUE:
-      my_lexer.get_token(tk1);
-      if(my_lexer.get_token(tk2) != ';') return false;
-      if(k == Token::BREAK)
-	st = new PT::BreakStatement(new PT::Kwd::Break(tk1),
-				    PT::list(new PT::Atom(tk2)));
+    {
+      Token kwd = my_lexer.get_token();
+      Token semic = my_lexer.get_token();
+      if(semic.type != ';') return 0;
+      if(kwd.type == Token::BREAK)
+	stmt = new PT::BreakStatement(new PT::Kwd::Break(kwd),
+				      PT::cons(new PT::Atom(semic)));
       else
-	st = new PT::ContinueStatement(new PT::Kwd::Continue(tk1),
-				       PT::list(new PT::Atom(tk2)));
+	stmt = new PT::ContinueStatement(new PT::Kwd::Continue(kwd),
+					 PT::cons(new PT::Atom(semic)));
       break;
+    }
     case Token::RETURN:
-      my_lexer.get_token(tk1);
-      if(my_lexer.look_ahead(0) == ';')
+    {
+      Token kwd = my_lexer.get_token();
+      if(my_lexer.look_ahead() == ';')
       {
-	my_lexer.get_token(tk2);
-	st = new PT::ReturnStatement(new PT::Kwd::Return(tk1),
-				     PT::list(new PT::Atom(tk2)));
+	Token semic = my_lexer.get_token();
+	stmt = new PT::ReturnStatement(new PT::Kwd::Return(kwd),
+				       PT::cons(new PT::Atom(semic)));
       } 
       else
       {
-	if(!expression(exp)) return false;
-	if(my_lexer.get_token(tk2) != ';') return false;
+	PT::Node *expr = expression();
+	if (!expr) return 0;
+	Token semic = my_lexer.get_token();
+	if(semic.type != ';') return 0;
 
-	st = new PT::ReturnStatement(new PT::Kwd::Return(tk1),
-				     PT::list(exp, new PT::Atom(tk2)));
+	stmt = new PT::ReturnStatement(new PT::Kwd::Return(kwd),
+				       PT::list(expr, new PT::Atom(semic)));
       }
       break;
+    }
     case Token::GOTO:
-      my_lexer.get_token(tk1);
-      if(my_lexer.get_token(tk2) != Token::Identifier) return false;
-      if(my_lexer.get_token(tk3) != ';') return false;
+    {
+      Token kwd = my_lexer.get_token();
+      Token id = my_lexer.get_token();
+      if (id.type != Token::Identifier) return 0;
+      Token semic = my_lexer.get_token();
+      if (semic.type != ';') return 0;
 
-      st = new PT::GotoStatement(new PT::Kwd::Goto(tk1),
-				 PT::list(new PT::Atom(tk2), new PT::Atom(tk3)));
+      stmt = new PT::GotoStatement(new PT::Kwd::Goto(kwd),
+				   PT::list(new PT::Atom(id), new PT::Atom(semic)));
       break;
+    }
     case Token::CASE:
-      my_lexer.get_token(tk1);
-      if(!assign_expr(exp)) return false;
-      if(my_lexer.get_token(tk2) != ':') return false;
-      if(!statement(st2)) return false;
-
-      st = new PT::CaseStatement(new PT::Kwd::Case(tk1),
-				 PT::list(exp, new PT::Atom(tk2), st2));
-      break;
     case Token::DEFAULT:
-      my_lexer.get_token(tk1);
-      if(my_lexer.get_token(tk2) != ':') return false;
-      if(!statement(st2)) return false;
-
-      st = new PT::DefaultStatement(new PT::Kwd::Default(tk1),
-				    PT::list(new PT::Atom(tk2), st2));
+      stmt = labeled_statement();
       break;
     case Token::Identifier:
       if(my_lexer.look_ahead(1) == ':')
-      { // label statement
-	my_lexer.get_token(tk1);
-	my_lexer.get_token(tk2);
-	if(!statement(st2)) return false;
-
-	st = new PT::LabelStatement(new PT::Atom(tk1),
-				    PT::list(new PT::Atom(tk2), st2));
-	return true;
+      {
+	stmt = labeled_statement();
+	break;
       }
-      // don't break here!
+      // Fall through
     default:
-      if (!expr_statement(st)) return false;
+      if (my_lexer.look_ahead() != ';')
+      {
+	Tentative tentative(*this);
+	stmt = declaration_statement();
+	if (!stmt) tentative.rollback();
+      }
+      if (!stmt) stmt = expression_statement();
+      break;
   }
-
-  // No parse error, attach comment to whatever was returned
-  set_leaf_comments(st, comments);
-  return true;
+  return stmt;
 }
 
-//. if-statement:
-//.   if ( condition ) statement
-//.   if ( condition ) statement else statement
-bool Parser::if_statement(PT::Node *&st)
-{
-  Trace trace("Parser::if_statement", Trace::PARSING);
-  Token tk1, tk2, tk3, tk4;
-  PT::Node *exp, *then, *otherwise;
-
-  if(my_lexer.get_token(tk1) != Token::IF) return false;
-  if(my_lexer.get_token(tk2) != '(') return false;
-  if(!condition(exp)) return false;
-  if(my_lexer.get_token(tk3) != ')') return false;
-  if(!statement(then)) return false;
-
-  st = new PT::IfStatement(new PT::Kwd::If(tk1),
-			   PT::list(new PT::Atom(tk2), exp, new PT::Atom(tk3), then));
-  if(my_lexer.look_ahead(0) == Token::ELSE)
-  {
-    my_lexer.get_token(tk4);
-    if(!statement(otherwise)) return false;
-
-    st = PT::nconc(st, PT::list(new PT::Kwd::Else(tk4), otherwise));
-  }
-  return true;
-}
-
-//. switch-statement:
-//.   switch ( condition ) statement
-bool Parser::switch_statement(PT::Node *&st)
-{
-  Trace trace("Parser::switch_statement", Trace::PARSING);
-  Token tk1, tk2, tk3;
-  PT::Node *exp, *body;
-
-  if(my_lexer.get_token(tk1) != Token::SWITCH) return false;
-  if(my_lexer.get_token(tk2) != '(') return false;
-  if(!condition(exp)) return false;
-  if(my_lexer.get_token(tk3) != ')') return false;
-  if(!statement(body)) return false;
-
-  st = new PT::SwitchStatement(new PT::Kwd::Switch(tk1),
-			       PT::list(new PT::Atom(tk2), exp,
-					new PT::Atom(tk3), body));
-  return true;
-}
-
-//. while-statement:
-//.   while ( condition ) statement
-bool Parser::while_statement(PT::Node *&st)
-{
-  Trace trace("Parser::while_statement", Trace::PARSING);
-  Token tk1, tk2, tk3;
-  PT::Node *exp, *body;
-
-  if(my_lexer.get_token(tk1) != Token::WHILE) return false;
-  if(my_lexer.get_token(tk2) != '(') return false;
-  if(!condition(exp)) return false;
-  if(my_lexer.get_token(tk3) != ')') return false;
-  if(!statement(body)) return false;
-
-  st = new PT::WhileStatement(new PT::Kwd::While(tk1),
-			      PT::list(new PT::Atom(tk2), exp,
-				       new PT::Atom(tk3), body));
-  return true;
-}
-
-//. do.statement:
-//.   do statement while ( condition ) ;
-bool Parser::do_statement(PT::Node *&st)
-{
-  Trace trace("Parser::do_statement", Trace::PARSING);
-  Token tk0, tk1, tk2, tk3, tk4;
-  PT::Node *exp, *body;
-
-  if(my_lexer.get_token(tk0) != Token::DO) return false;
-  if(!statement(body)) return false;
-  if(my_lexer.get_token(tk1) != Token::WHILE) return false;
-  if(my_lexer.get_token(tk2) != '(') return false;
-  if(!condition(exp)) return false;
-  if(my_lexer.get_token(tk3) != ')') return false;
-  if(my_lexer.get_token(tk4) != ';') return false;
-
-  st = new PT::DoStatement(new PT::Kwd::Do(tk0),
-			   PT::list(body, new PT::Kwd::While(tk1),
-				    new PT::Atom(tk2), exp,
-				    new PT::Atom(tk3), new PT::Atom(tk4)));
-  return true;
-}
-
-/*
-  for.statement
-  : FOR '(' expr.statement {expression} ';' {expression} ')'
-    statement
-*/
-bool Parser::for_statement(PT::Node *&st)
-{
-  Trace trace("Parser::for_statement", Trace::PARSING);
-  Token tk1, tk2, tk3, tk4;
-  PT::Node *exp1, *exp2, *exp3, *body;
-
-  if(my_lexer.get_token(tk1) != Token::FOR) return false;
-  if(my_lexer.get_token(tk2) != '(') return false;
-  if(!expr_statement(exp1)) return false;
-  if(my_lexer.look_ahead(0) == ';') exp2 = 0;
-  else if(!expression(exp2)) return false;
-  if(my_lexer.get_token(tk3) != ';') return false;
-  if(my_lexer.look_ahead(0) == ')') exp3 = 0;
-  else if(!expression(exp3)) return false;
-  if(my_lexer.get_token(tk4) != ')') return false;
-  if(!statement(body)) return false;
-
-  st = new PT::ForStatement(new PT::Kwd::For(tk1),
-			    PT::list(new PT::Atom(tk2), exp1, exp2,
-				     new PT::Atom(tk3), exp3,
-				     new PT::Atom(tk4), body));
-  return true;
-}
-
-//. try-block:
-//.   try compound-statement handler-seq
-//.
-//. handler-seq:
-//.   handler handler-seq [opt]
-//.
-//. handler:
-//.   catch ( exception-declaration ) compound-statement
-//.
-//. exception-declaration:
-//.   type-specifier-seq declarator
-//.   type-specifier-seq abstract-declarator
-//.   type-specifier-seq
-//.   ...
-bool Parser::try_block(PT::Node *&st)
+// try-block:
+//   try compound-statement handler-seq
+//
+// handler-seq:
+//   handler handler-seq [opt]
+//
+// handler:
+//   catch ( exception-declaration ) compound-statement
+//
+// exception-declaration:
+//   type-specifier-seq declarator
+//   type-specifier-seq abstract-declarator
+//   type-specifier-seq
+//   ...
+PT::List *Parser::try_block()
 {
   Trace trace("Parser::try_block", Trace::PARSING);
-  Token tk, op, cp;
 
-  if(my_lexer.get_token(tk) != Token::TRY) return false;
-  PT::Block *body;
-  if(!compound_statement(body)) return false;
+  if (my_lexer.look_ahead() != Token::TRY ||
+      my_lexer.look_ahead(1) != '{') return 0;
 
-  st = new PT::TryStatement(new PT::Kwd::Try(tk), PT::list(body));
+  Token try_ = my_lexer.get_token();
+  PT::Block *body = compound_statement();
+  if (!body) return 0;
+
+  PT::List *stmt = new PT::TryStatement(new PT::Kwd::Try(try_), PT::cons(body));
 
   do
   {
-    if(my_lexer.get_token(tk) != Token::CATCH) return false;
-    if(my_lexer.get_token(op) != '(') return false;
+    Token catch_ = my_lexer.get_token();
+    if(catch_.type != Token::CATCH) return 0;
+    if (!require('(')) return 0;
+    Token op = my_lexer.get_token();
     // TODO: handler should become a ParameterDeclaration
     PT::Node *handler;
-    if(my_lexer.look_ahead(0) == Token::Ellipsis)
+    if(my_lexer.look_ahead() == Token::Ellipsis)
     {
-      my_lexer.get_token(cp);
-      handler = new PT::Atom(cp);
+      Token ellipsis = my_lexer.get_token();
+      handler = new PT::Atom(ellipsis);
     }
     else
     {
       PT::Encoding encode;
-      PT::ParameterDeclaration *parameter;
-      if(!parameter_declaration(parameter, encode)) return false;
+      PT::ParameterDeclaration *parameter = 0;//parameter_declaration(encode);
+      if (!parameter) return 0;
       handler = parameter;
     }
-    if(my_lexer.get_token(cp) != ')') return false;
-    PT::Block *body;
-    if(!compound_statement(body)) return false;
+    if (!require(')')) return 0;
+    Token cp = my_lexer.get_token();
+    PT::Block *body = compound_statement();
+    if (!body) return 0;
 
-    st = PT::snoc(st, PT::list(new PT::Kwd::Catch(tk),
-			       new PT::Atom(op), handler, new PT::Atom(cp),
-			       body));
-  } while(my_lexer.look_ahead(0) == Token::CATCH);
-  return true;
+    stmt = PT::snoc(stmt, PT::list(new PT::Kwd::Catch(catch_),
+				   new PT::Atom(op), handler, new PT::Atom(cp),
+				   body));
+  } while(my_lexer.look_ahead() == Token::CATCH);
+  return stmt;
 }
 
-/*
-  expr.statement
-  : ';'
-  | declaration.statement
-  | expression ';'
-  | openc++.postfix.expr
-  | openc++.primary.exp
-*/
-bool Parser::expr_statement(PT::Node *&st)
+// exception-specification:
+//   throw ( type-id-list [opt] )
+PT::Node *Parser::opt_exception_specification()
 {
-  Trace trace("Parser::expr_statement", Trace::PARSING);
-  Token tk;
+  Trace trace("Parser::opt_exception_specification", Trace::PARSING);
+  if (my_lexer.look_ahead() != Token::THROW) 
+    return 0;
 
-  if(my_lexer.look_ahead(0) == ';')
-  {
-    my_lexer.get_token(tk);
-    st = new PT::ExprStatement(0, PT::list(new PT::Atom(tk)));
-    return true;
-  }
-  else
-  {
-    const char *pos = my_lexer.save();
-    PT::Declaration *decl;
-    if(declaration_statement(decl))
-    {
-      declare(decl);
-      st = decl;
-      return true;
-    }
-    else
-    {
-      PT::Node *exp;
-      my_lexer.restore(pos);
-      if(!expression(exp)) return false;
-      if(PT::is_a(exp, Token::ntUserStatementExpr, Token::ntStaticUserStatementExpr))
-      {
-	st = exp;
-	return true;
-      }
-      if(my_lexer.get_token(tk) != ';') return false;
-
-      st = new PT::ExprStatement(exp, PT::list(new PT::Atom(tk)));
-      return true;
-    }
-  }
+  Token throw_ = my_lexer.get_token();
+  if (!require('(')) return 0;
+  Token op = my_lexer.get_token();
+  PT::Node *type_ids = 0;
+  if (my_lexer.look_ahead() != ')') type_ids = type_id_list();
+  if (!require(')')) return 0;
+  Token cp = my_lexer.get_token();
+  // TODO: define new PT::List type 'ExceptionSpec'
+  return PT::list(new PT::Kwd::Throw(throw_),
+		  new PT::Atom(op), type_ids, new PT::Atom(cp));
 }
 
-/*
-  declaration.statement
-  : decl.head integral.or.class.spec {cv.qualify} {init-declarator-list} ';'
-  | decl.head name {cv.qualify} init-declarator-list ';'
-  | const.declaration
-
-  decl.head
-  : {storage.spec} {cv.qualify}
-
-  const.declaration
-  : cv.qualify {'*'} Identifier '=' expression {',' init-declarator-list} ';'
-
-  Note: if you modify this function, take a look at rDeclaration(), too.
-*/
-bool Parser::declaration_statement(PT::Declaration *&statement)
+// Skip to the end of the (possibly compound) statement.
+// Return the last consumed token.
+Token Parser::skip_statement(size_t nesting)
 {
-  Trace trace("Parser::declaration_statement", Trace::PARSING);
-  PT::Node *storage_s, *cv_q, *integral;
-  PT::Encoding type_encode;
-
-  Token::Type type = my_lexer.look_ahead(0);
-  if (type == Token::NAMESPACE)
+  Trace trace("Parser::skip_statement", Trace::PARSING);
+  while (true)
   {
-    PT::NamespaceAlias *alias;
-    bool result = namespace_alias(alias);
-    statement = alias;
-    return result;
+    Token::Type token = my_lexer.look_ahead();
+    if (token == Token::BadToken) break;
+    else if (token == ';' && !nesting) break;
+    else if (token == '}' && (!nesting || --nesting == 0)) break;
+    else if (token == '{') ++nesting;
+    my_lexer.get_token();
   }
-  else if (type == Token::USING)
-  {
-    type = my_lexer.look_ahead(1);
-    if (type == Token::NAMESPACE)
-    {
-      PT::UsingDirective *udir;
-      bool result = using_directive(udir);
-      statement = udir;
-      return result;
-    }
-    else
-    {
-      PT::UsingDeclaration *udecl;
-      bool result = using_declaration(udecl);
-      statement = udecl;
-      return result;
-    }
-  }
-  if(!opt_storage_spec(storage_s) ||
-     !opt_cv_qualifier(cv_q) ||
-     !opt_integral_type_or_class_spec(integral, type_encode))
-    return false;
-
-  PT::Node *head = 0;
-  if(storage_s) head = PT::snoc(head, storage_s);
-
-  if(integral)
-    return integral_decl_statement(statement, type_encode, integral, cv_q, head);
-  else
-  {
-    type_encode.clear();
-    int t = my_lexer.look_ahead(0);
-    if(cv_q != 0 && ((t == Token::Identifier && my_lexer.look_ahead(1) == '=') ||
-		     t == '*'))
-      return const_declaration(statement, type_encode, head, cv_q);
-    else return other_decl_statement(statement, type_encode, cv_q, head);
-  }
-}
-
-/*
-  integral.decl.statement
-  : decl.head integral.or.class.spec {cv.qualify} {init-declarator-list} ';'
-*/
-bool Parser::integral_decl_statement(PT::Declaration *&statement,
-				     PT::Encoding& type_encode,
-				     PT::Node *integral,
-				     PT::Node *cv_q, PT::Node *head)
-{
-  Trace trace("Parser::integral_decl_statement", Trace::PARSING);
-  PT::Node *cv_q2, *decl;
-  Token tk;
-
-  if(!opt_cv_qualifier(cv_q2)) return false;
-
-  if(cv_q)
-    if(cv_q2 == 0) integral = PT::snoc(cv_q, integral);
-    else integral = PT::nconc(cv_q, PT::cons(integral, cv_q2));
-  else if(cv_q2) integral = PT::cons(integral, cv_q2);
-
-  type_encode.cv_qualify(cv_q, cv_q2);
-  if(my_lexer.look_ahead(0) == ';')
-  {
-    my_lexer.get_token(tk);
-    statement = new PT::Declaration(head, PT::list(integral, new PT::Atom(tk)));
-    return true;
-  }
-  else
-  {
-    if(!init_declarator_list(decl, type_encode, false, true)) return false;
-    if(my_lexer.get_token(tk) != ';') return false;
-	    
-    statement = new PT::Declaration(head,
-				    PT::list(integral, decl, new PT::Atom(tk)));
-    return true;
-  }
-}
-
-/*
-   other.decl.statement
-   :decl.head name {cv.qualify} init_declarator_list ';'
-*/
-bool Parser::other_decl_statement(PT::Declaration *&statement,
-				  PT::Encoding& type_encode,
-				  PT::Node *cv_q,
-				  PT::Node *head)
-{
-  Trace trace("Parser::other_decl_statement", Trace::PARSING);
-  PT::Node *type_name, *cv_q2, *decl;
-  Token tk;
-
-  if(!name(type_name, type_encode)) return false;
-  if(!opt_cv_qualifier(cv_q2)) return false;
-
-  if(cv_q)
-    if(cv_q2 == 0) type_name = PT::snoc(cv_q, type_name);
-    else type_name = PT::nconc(cv_q, PT::cons(type_name, cv_q2));
-  else if(cv_q2) type_name = PT::cons(type_name, cv_q2);
-
-  type_encode.cv_qualify(cv_q, cv_q2);
-  if(!init_declarator_list(decl, type_encode, false, true)) return false;
-  if(my_lexer.get_token(tk) != ';') return false;
-
-  statement = new PT::Declaration(head, PT::list(type_name, decl, new PT::Atom(tk)));
-  return true;
-}
-
-bool Parser::maybe_typename_or_class_template(Token&)
-{
-  return true;
-}
-
-void Parser::skip_to(Token::Type token)
-{
-  Token tk;
-
-  while(true)
-  {
-    Token::Type t = my_lexer.look_ahead(0);
-    if(t == token || t == '\0') break;
-    else my_lexer.get_token(tk);
-  }
+  return my_lexer.get_token();
 }
 
 }
