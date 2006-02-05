@@ -44,9 +44,11 @@ public:
   void enter_scope(SymbolTable::Scope *, PTree::Block const *);
   void leave_scope();
 
-  void declare_typedef(PTree::SimpleDeclaration *, SymbolTable::TypeName const *);
+  void declare_typedef(PTree::SimpleDeclaration *, SymbolTable::Symbol const *);
   void declare(SymbolTable::Scope *, PTree::SimpleDeclaration *);
+  void declare_specialization(SymbolTable::Scope *, PTree::SimpleDeclaration *);
   void declare(SymbolTable::Scope *, PTree::FunctionDefinition *);
+  void declare_specialization(SymbolTable::Scope *, PTree::FunctionDefinition *);
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
   void declare(SymbolTable::Scope *, PTree::EnumSpec const *);
   //. declare the namespace as a new NAMESPACE

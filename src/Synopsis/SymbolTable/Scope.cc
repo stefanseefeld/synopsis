@@ -7,6 +7,7 @@
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/PTree/Writer.hh>
 #include <Synopsis/SymbolTable/Scope.hh>
+#include <Synopsis/SymbolTable/Symbol.hh>
 #include <Synopsis/Trace.hh>
 #include <functional>
 

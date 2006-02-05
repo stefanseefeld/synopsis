@@ -7,8 +7,8 @@
 #ifndef Synopsis_SymbolTable_Symbol_hh_
 #define Synopsis_SymbolTable_Symbol_hh_
 
-#include <Synopsis/PTree/Encoding.hh>
-#include <Synopsis/PTree/Lists.hh>
+#include <Synopsis/PTree.hh>
+#include <Synopsis/SymbolTable/Scope.hh>
 
 namespace Synopsis
 {
@@ -47,7 +47,7 @@ public:
   virtual void visit(NamespaceName const *) {}
 };
 
-class Scope;
+// class Scope;
 class Class;
 class Namespace;
 class FunctionScope;
@@ -60,6 +60,7 @@ public:
   virtual ~Symbol(){}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
   PTree::Encoding const & type() const { return my_type;}
+  PTree::Encoding const & name() const { return my_scope->name(this);}
   PTree::Node const * ptree() const { return my_ptree;}
   bool is_definition() const { return my_definition;}
   Scope * scope() const { return my_scope;}
@@ -109,12 +110,13 @@ class TypedefName : public TypeName
 {
 public:
   TypedefName(PTree::Encoding const &type, PTree::Node const *ptree, Scope *scope,
-	      TypeName const *aliased)
+	      Symbol const *aliased)
     : TypeName(type, ptree, false, scope), my_aliased(aliased) {}
   virtual void accept(SymbolVisitor *v) const { v->visit(this);}
-  TypeName const *aliased() const { return my_aliased;}
+  //. The aliased symbol. This may be a TypeName, ClassTemplateName, or Dependent.
+  Symbol const *aliased() const { return my_aliased;}
 private:
-  TypeName const *my_aliased;
+  Symbol const *my_aliased;
 };
 
 class ClassName : public TypeName

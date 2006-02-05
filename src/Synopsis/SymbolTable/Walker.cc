@@ -9,6 +9,7 @@
 #include <Synopsis/Trace.hh>
 #include <Synopsis/PTree/Display.hh>
 #include <Synopsis/SymbolTable/Scopes.hh>
+#include <Synopsis/SymbolTable/Symbol.hh>
 
 using namespace Synopsis;
 namespace PT = Synopsis::PTree;

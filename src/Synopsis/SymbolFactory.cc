@@ -45,8 +45,9 @@ public:
 private:
   virtual void visit(ST::TypedefName const *s)
   {
-    ST::Symbol const *a = resolve_type(s);
-    if (a) a->accept(this);
+    PT::Encoding encoding;
+    ST::Symbol const *a = resolve_typedef(s, encoding);
+    if (a && a != s) a->accept(this);
   }
   virtual void visit(ST::ClassName const *s) { scope_ = s->as_scope();}
   virtual void visit(ST::ClassTemplateName const *s) { scope_ = s->as_scope();}
@@ -172,6 +173,7 @@ void SymbolFactory::enter_class(ST::Scope *scope,
        ++i)
   {
     ST::Class const *class_ = mapper.to_scope(*i);
+    trace << "looking for base scope " << class_;
     if (class_) bases.push_back(class_);
   }
   if (!scope) scope = my_scopes.top();
@@ -228,6 +230,7 @@ void SymbolFactory::enter_scope(ST::Scope *scope, PT::List const *decl)
   my_prototype = new ST::PrototypeScope(decl, scope, my_template_parameters);
   scope->declare_scope(decl, my_prototype);
   my_scopes.push(my_prototype);
+//   my_template_parameters = 0;
 }
 
 void SymbolFactory::enter_scope(ST::Scope *scope, PT::FunctionDefinition const *decl)
@@ -290,7 +293,7 @@ void SymbolFactory::leave_scope()
     my_prototype = ps;
 }
 
-void SymbolFactory::declare_typedef(PT::SimpleDeclaration *d, ST::TypeName const *s)
+void SymbolFactory::declare_typedef(PT::SimpleDeclaration *d, ST::Symbol const *s)
 {
   Trace trace("SymbolFactory::declare_typedef", Trace::SYMBOLLOOKUP);
   PT::DeclSpec *spec = d->decl_specifier_seq();
@@ -424,6 +427,13 @@ void SymbolFactory::declare(ST::Scope *s, PT::SimpleDeclaration *d)
   if (s) my_scopes.pop();
 }
 
+void SymbolFactory::declare_specialization(ST::Scope *s,
+					   PT::SimpleDeclaration *decl)
+{
+  Trace trace("SymbolFactory::declare(SimpleDeclaration)", Trace::SYMBOLLOOKUP);
+  my_template_parameters = 0;
+}
+
 void SymbolFactory::declare(ST::Scope *s, PT::FunctionDefinition *def)
 {
   Trace trace("SymbolFactory::declare(FunctionDefinition)", Trace::SYMBOLLOOKUP);
@@ -443,17 +453,11 @@ void SymbolFactory::declare(ST::Scope *s, PT::FunctionDefinition *def)
   // If the name is qualified, it has to be
   // declared already. If it hasn't, raise an error.
   ST::Scope *scope = my_scopes.top();
-//   if (name.is_qualified())
-//   {
-//     scope = lookup_scope_of_qname(name, declarator);
-//     ST::SymbolSet symbols = scope->find(name, ST::Scope::DECLARATION);
-//     // FIXME: We need type analysis / overload resolution
-//     //        here to take the right symbol.
-//     ST::Symbol const *forward = *symbols.begin();
-//     // TODO: check whether this is the definition of a previously
-//     //       declared function, according to 3.1/2 [basic.def]
-//     scope->remove(forward);
-//   }
+
+  // TODO: If this is an explicit specialization, look up the primary template
+  //       and register the specialization with the template repository.
+//   if (my_template_parameters && 
+
   ST::Symbol const *symbol = 0;
   if (my_template_parameters)
     symbol = new ST::FunctionTemplateName(type, def, params, default_args, true, scope);
@@ -463,6 +467,13 @@ void SymbolFactory::declare(ST::Scope *s, PT::FunctionDefinition *def)
 
   my_template_parameters = 0;
   if (s) my_scopes.pop();
+}
+
+void SymbolFactory::declare_specialization(ST::Scope *s,
+					   PT::FunctionDefinition *def)
+{
+  Trace trace("SymbolFactory::declare(FunctionDefinition)", Trace::SYMBOLLOOKUP);
+  my_template_parameters = 0;
 }
 
 void SymbolFactory::declare(ST::Scope *scope, PT::EnumSpec const *spec)
@@ -547,8 +558,11 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ClassSpec const *spec)
     // Else if the symbol corresponds to a forward-declared class, replace it.
     if (ST::ClassName const *class_ = dynamic_cast<ST::ClassName const *>(*i))
     {
+      trace << "found class " << class_->is_definition() << ' ' << my_template_parameters;
       if (class_->is_definition())
 	throw ST::MultiplyDefined(name, spec, class_->ptree()); // ODR
+      // FIME: if we have 'template <typename T> struct Foo<T>::Bar'
+      //       Bar is *not* a class template !
       else if (my_template_parameters) // type mismatch
 	throw ST::MultiplyDefined(name, spec, class_->ptree()); // type mismatch
       // TODO: Remove the type associated with the forward declaration, too.
@@ -622,8 +636,9 @@ void SymbolFactory::declare(ST::Scope *scope, PT::ElaboratedTypeSpec const *spec
     // Skip non-types.
     if (!type) continue;
 
-    if (ST::TypedefName const *tdef = dynamic_cast<ST::TypedefName const *>(type))
-      type = resolve_type(tdef);
+    // FIXME: what is this doing here ?
+//     PT::Encoding encoding;
+//     type = resolve_typedef(type, encoding);
 
     // If the symbol was already defined, do nothing.
     // Else if the symbol was defined as a different type, the program is ill-formed.

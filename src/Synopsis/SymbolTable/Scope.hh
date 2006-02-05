@@ -8,7 +8,7 @@
 #define Synopsis_SymbolTable_Scope_hh_
 
 #include <Synopsis/Exception.hh>
-#include <Synopsis/SymbolTable/Symbol.hh>
+#include <Synopsis/PTree.hh>
 #include <map>
 #include <set>
 
@@ -16,6 +16,12 @@ namespace Synopsis
 {
 namespace SymbolTable
 {
+class Symbol;
+class Scope;
+class ScopeVisitor;
+typedef std::set<Symbol const *> SymbolSet;
+typedef std::set<Scope const *> Scopes;
+
 struct TypeError : std::exception
 {
   TypeError(PTree::Encoding const &n, PTree::Encoding const &t)
@@ -49,11 +55,6 @@ struct MultiplyDefined : std::exception
   PTree::Node const * declaration;
   PTree::Node const * original;
 };
-
-typedef std::set<Symbol const *> SymbolSet;
-typedef std::set<Scope const *> Scopes;
-
-class ScopeVisitor;
 
 //. A Scope contains symbol definitions.
 class Scope
@@ -121,6 +122,8 @@ public:
   //. find the encoded name declared in this scope and 
   //. return a set of matching symbols.
   virtual SymbolSet find(PTree::Encoding const &, LookupContext) const;
+  //. Return the name with which the given symbol was declared.
+  PTree::Encoding const &name(Symbol const *s) const;
   //. Remove the given symbol from the scope.
   //. s shall not be used after its removal.
   void remove(Symbol const *s);
@@ -164,6 +167,15 @@ inline Scope *Scope::global_scope()
   while (Scope *outer = scope->outer_scope())
     scope = outer;
   return scope;
+}
+
+inline PTree::Encoding const &Scope::name(Symbol const *s) const
+{
+  for (SymbolTable::const_iterator i = my_symbols.begin();
+       i != my_symbols.end();
+       ++i)
+    if (i->second == s) return i->first;
+  throw InternalError("Symbol unknown in this scope.");
 }
 
 inline SymbolSet 

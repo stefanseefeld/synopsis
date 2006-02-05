@@ -343,7 +343,7 @@ inline bool Parser::require(Token::Type token, std::string const &name)
 {
   if (my_lexer.look_ahead() != token)
   {
-    error("expected '" + name + "'");
+    error("expected " + name);
     return false;
   }
   else
@@ -444,39 +444,31 @@ bool Parser::lookup_class_name(PT::Encoding const &name)
     if (symbols.empty()) return false; // no such class-name
   }
 
-  ST::ClassName const *class_name =
-    dynamic_cast<ST::ClassName const *>(*symbols.begin());
-  // If we don't have a class-name yet, try a typedef
-  if (!class_name)
-  {
-    ST::TypedefName const *type = 
-      dynamic_cast<ST::TypedefName const *>(*symbols.begin());
-    if (type)
-    {
-      ST::Symbol const *symbol = resolve_type(type);
-      if (symbol) class_name = dynamic_cast<ST::ClassName const *>(symbol);
-    }
-  }
-  // If we still don't have a class-name yet, try a (dependent) typename.
-  if (!class_name)
-  {
-    ST::TypeName const *type = dynamic_cast<ST::TypeName const *>(*symbols.begin());
-    // If that worked, mark the qualifying scope as dependent.
-    if (type)
-    {
-      my_symbol = type;
-      if (my_in_nested_name_specifier)
-	my_qualifying_scope = ST::DEPENDENT_SCOPE;
-      return true;
-    }
-  }
-  // If none of this worked, we give up.
-  if (!class_name) return false;     // name does not refer to a class-name
+  PT::Encoding encoding;
+  ST::Symbol const *declared = resolve_typedef(*symbols.begin(), encoding);
 
-  my_symbol = class_name;
-  if (my_in_nested_name_specifier)
-    my_qualifying_scope = class_name->scope()->find_scope(class_name->ptree());
-  return true;
+  if (dynamic_cast<ST::TypedefName const *>(declared)) 
+    // couldn't resolve further, and thus can't refer to a class
+    return false;
+  else if (dynamic_cast<ST::ClassName const *>(declared) ||
+	   dynamic_cast<ST::ClassTemplateName const *>(declared))
+  {
+    my_symbol = declared;
+    if (my_in_nested_name_specifier)
+      if (my_symbol == ST::DEPENDENT)
+	my_qualifying_scope = ST::DEPENDENT_SCOPE;
+      else
+	my_qualifying_scope = declared->scope()->find_scope(declared->ptree());
+    return true;
+  }
+  else if (dynamic_cast<ST::DependentName const *>(declared))
+  {
+    my_symbol = declared;
+    if (my_in_nested_name_specifier)
+      my_qualifying_scope = ST::DEPENDENT_SCOPE;
+    return true;
+  }
+  else return false;
 }
 
 bool Parser::lookup_template_name(PT::Encoding const &name)
@@ -1328,7 +1320,7 @@ PT::Node *Parser::opt_member_specification()
 	  PT::SimpleDeclaration *decl =
 	    new PT::SimpleDeclaration(spec, PT::list(0, new PT::Atom(semic)));
 	  if (spec->is_typedef())
-	    my_symbols.declare_typedef(decl, static_cast<ST::TypeName const *>(my_symbol));
+	    my_symbols.declare_typedef(decl, my_symbol);
 	  else declare(decl);
 	  members = PT::snoc(members, decl);
 	}
@@ -1455,7 +1447,7 @@ PT::Node *Parser::opt_member_specification()
 	      new PT::SimpleDeclaration(spec, PT::list(declarators, semic));
 	    decl->set_comments(comments);
 	    if (spec && spec->is_typedef())
-	      my_symbols.declare_typedef(decl, static_cast<ST::TypeName const *>(my_symbol));
+	      my_symbols.declare_typedef(decl, my_symbol);
 	    else declare(decl);
 	    members = PT::snoc(members, decl);
 	  }
@@ -1483,28 +1475,38 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
   Tentative tentative(*this, encoding);
   PT::Node *name = 0;
   PT::List *qname = nested_name_specifier(encoding);
+  PT::Encoding local;
   if (qname)
   {
-    Tentative tentative(*this, encoding);
-    PT::Node *class_name_ = class_name(encoding, false, false);
+    Tentative tentative(*this, local);
+    PT::Node *class_name_ = class_name(local, false, false);
     if (!class_name_)
     {
       tentative.rollback();
-      class_name_ = identifier(encoding);
+      // FIXME: Why do we allow an identifier here ?
+      //        Qualified class names have to be declared in their
+      //        qualifying scope first.
+      class_name_ = identifier(local);
       if (!require(class_name_, "identifier")) return 0;
     }
     name = PT::snoc(qname, class_name_);
+    // FIXME: the following should be encapsulated.
+    encoding.append(local);
+    if (encoding.is_qualified()) ++encoding.at(1);
   }
   else // not qualified
   {
     tentative.rollback(true);
-    name = template_id(encoding, false);
+    name = template_id(local, false);
     if (!name)
     {
       tentative.rollback();
-      if (my_lexer.look_ahead() == Token::Identifier) name = identifier(encoding);
-      else encoding.anonymous();
+      if (my_lexer.look_ahead() == Token::Identifier) name = identifier(local);
+      else local.anonymous();
     }
+    // FIXME: the following should be encapsulated.
+    encoding.append(local);
+    if (encoding.is_qualified()) ++encoding.at(1);
   }
   if (name && !name->is_atom()) name = new PT::Name(name, encoding);
   Token::Type next = my_lexer.look_ahead();
@@ -1515,8 +1517,8 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
   }
   else commit();
   PT::List *comments = wrap_comments(my_lexer.get_comments());
-  PT::ClassSpec *spec = new PT::ClassSpec(encoding, key, PT::cons(name), comments);
-  declare(spec);
+  PT::ClassSpec *spec = new PT::ClassSpec(local, key, PT::cons(name), comments);
+  my_symbols.declare(my_qualifying_scope, spec);
   PT::List *base_clause_ = 0;
   std::vector<SymbolTable::Symbol const *> bases;
   if (next == ':')
@@ -2418,7 +2420,7 @@ PT::Declaration *Parser::simple_declaration(bool function_definition_allowed)
     new PT::SimpleDeclaration(spec, PT::list(declarators, new PT::Atom(semic)));
   decl->set_comments(comments);
   if (spec && spec->is_typedef())
-    my_symbols.declare_typedef(decl, static_cast<ST::TypeName const *>(my_symbol));
+    my_symbols.declare_typedef(decl, my_symbol);
   else declare(decl);
   return decl;
 }
@@ -2927,15 +2929,17 @@ PT::TemplateDeclaration *Parser::explicit_specialization()
 	PT::Block *body = compound_statement();
 	if (!require(body, "compound-statement")) return 0;
 	func = PT::snoc(func, body);
+	my_symbols.declare_specialization(my_qualifying_scope, func);
 	return PT::snoc(tdecl, func);
       }
       declarators = PT::cons(decl);
     }
     if (!require(';')) return 0;
     Token semic = my_lexer.get_token();
-    tdecl = PT::snoc(tdecl,
-		     new PT::SimpleDeclaration(spec, PT::list(declarators,
-							      new PT::Atom(semic))));
+    PT::SimpleDeclaration *decl = 
+      new PT::SimpleDeclaration(spec, PT::list(declarators, new PT::Atom(semic)));
+    tdecl = PT::snoc(tdecl, decl);
+    my_symbols.declare_specialization(my_qualifying_scope, decl);
   }
   return tdecl;
 }
@@ -3202,6 +3206,7 @@ PT::List *Parser::template_id(PT::Encoding &encoding, bool is_template)
   {
     PGuard<ST::Scope *> guard1(*this, &Parser::my_qualifying_scope, 0);
     PGuard<bool> guard2(*this, &Parser::my_in_nested_name_specifier, true);
+    PGuard<ST::Symbol const *> guard3(*this, &Parser::my_symbol);
     PT::List *arguments = 0;
     PT::Encoding template_encoding;
     while (true)

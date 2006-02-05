@@ -104,4 +104,68 @@ ST::SymbolSet lookup(PT::Encoding const &name,
   return symbols;
 }
 
+class TypedefResolver : private ST::SymbolVisitor
+{
+public:
+  TypedefResolver(PT::Encoding &encoding) : symbol_(0), encoding_(encoding) {}
+  ST::Symbol const *resolve(ST::Symbol const *symbol)
+  {
+    symbol->accept(this);
+    return symbol_;
+  }
+private:
+  virtual void visit(ST::TypedefName const *s)
+  {
+    encoding_ = s->type();
+    if (encoding_.is_simple_name() || encoding_.is_qualified())
+    {
+      ST::Symbol const *a = s->aliased();
+      a->accept(this);
+    }
+    else if (encoding_.is_template_id())
+    {
+      encoding_ = encoding_.get_template_name();
+      ST::Symbol const *a = s->aliased();
+      a->accept(this);      
+    }
+    else
+    {
+//       std::cout << "can't resolve " << encoding_ << ' ' << typeid(*s).name() << std::endl;
+      symbol_ = s;
+    }
+  }
+  virtual void visit(ST::ClassName const *s)
+  {
+    symbol_ = s;
+    encoding_ = s->type();
+  }
+  virtual void visit(ST::EnumName const *s)
+  {
+    symbol_ = s;
+    encoding_ = s->type();
+  }
+  virtual void visit(ST::DependentName const *s)
+  {
+    symbol_ = s;
+    encoding_ = s->type();
+  }
+  virtual void visit(ST::ClassTemplateName const *s)
+  {
+    symbol_ = s;
+    encoding_ = s->type();
+  }
+
+  ST::Symbol const *symbol_;
+  PT::Encoding &    encoding_;
+};
+
+ST::Symbol const *resolve_typedef(ST::Symbol const *symbol,
+				  PT::Encoding &type)
+{
+  TypedefResolver resolver(type);
+  return resolver.resolve(symbol);
+}
+
+
+
 }
