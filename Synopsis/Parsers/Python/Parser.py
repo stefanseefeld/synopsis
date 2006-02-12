@@ -129,7 +129,7 @@ class Parser(Processor):
       
       name = self.scope_name(fi.get_name())
       func = AST.Function(self.sourcefile, -1, 'Python', 'function', '',
-                          self.return_type, name, name[-1])
+                          self.return_type, '', name, name[-1])
       comm = AST.Comment(fi.get_docstring(), '', -1)
       func.comments().append(comm)
       self.add_params(func, fi)
@@ -141,7 +141,7 @@ class Parser(Processor):
 
       name = self.scope_name(fi.get_name())
       func = AST.Operation(self.sourcefile,-1, 'Python', 'operation', '',
-                           self.return_type, name, name[-1])
+                           self.return_type, '', name, name[-1])
       comm = AST.Comment(fi.get_docstring(), '', -1)
       func.comments().append(comm)
       self.add_params(func, fi)
