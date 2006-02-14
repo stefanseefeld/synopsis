@@ -59,6 +59,7 @@ struct MultiplyDefined : std::exception
 //. A Scope contains symbol definitions.
 class Scope
 {
+protected:
   //. SymbolTable provides a mapping from (encoded) names to Symbols declared
   //. in this scope.
   typedef std::multimap<PTree::Encoding, Symbol const *> SymbolTable;
