@@ -73,25 +73,29 @@ void display_types(ST::Scope const *scope, std::ostream &os)
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " <input>" << std::endl;
+  std::cerr << "Usage: " << command << " [-t <category>] <input>" << std::endl;
   return -1;
 }
 
 int main(int argc, char **argv)
 {
-  bool debug = false;
   const char *input = argv[1];
   if (argc == 1) return usage(argv[0]);
   for (int i = 1; i < argc - 1; ++i)
   {
-    if (argv[i] == std::string("-d")) debug = true;
+    if (argv[i] == std::string("-t") && ++i != argc - 1)
+    {
+      if (argv[i] == std::string("ptree")) { Trace::enable(Trace::PTREE);}
+      else if (argv[i] == std::string("symbols")) { Trace::enable(Trace::SYMBOLLOOKUP);}
+      else if (argv[i] == std::string("types")) { Trace::enable(Trace::TYPEANALYSIS);}
+      else if (argv[i] == std::string("parsing")) { Trace::enable(Trace::PARSING);}
+      else { std::cerr << "unknown trace category '" << argv[i] << "\'\n"; return -1;}
+    }
     else return usage(argv[0]);
   }
   input = argv[argc - 1];
   try
   {
-    if (debug) Trace::enable(Trace::TYPEANALYSIS);
-
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);

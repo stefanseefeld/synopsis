@@ -17,7 +17,7 @@ using namespace Synopsis;
 
 int usage(const char *command)
 {
-  std::cerr << "Usage: " << command << " [-g <filename>] [-d] [-r] [-e] <input>" << std::endl;
+  std::cerr << "Usage: " << command << " [-g <filename>] [-t <category>] [-r] [-e] <input>" << std::endl;
   return -1;
 }
 
@@ -25,7 +25,6 @@ int main(int argc, char **argv)
 {
   bool encoding = false;
   bool typeinfo = false;
-  bool debug = false;
   std::string dotfile;
   const char *input = argv[1];
   if (argc == 1) return usage(argv[0]);
@@ -43,14 +42,19 @@ int main(int argc, char **argv)
     }
     else if (argv[i] == std::string("-e")) encoding = true;
     else if (argv[i] == std::string("-r")) typeinfo = true;
-    else if (argv[i] == std::string("-d")) debug = true;
+    else if (argv[i] == std::string("-t") && ++i != argc - 1)
+    {
+      if (argv[i] == std::string("ptree")) { Trace::enable(Trace::PTREE);}
+      else if (argv[i] == std::string("symbols")) { Trace::enable(Trace::SYMBOLLOOKUP);}
+      else if (argv[i] == std::string("types")) { Trace::enable(Trace::TYPEANALYSIS);}
+      else if (argv[i] == std::string("parsing")) { Trace::enable(Trace::PARSING);}
+      else { std::cerr << "unknown trace category '" << argv[i] << "\'\n"; return -1;}
+    }
     else return usage(argv[0]);
   }
   input = argv[argc - 1];
   try
   {
-    if (debug) Trace::enable(Trace::ALL);
-
     std::ifstream ifs(input);
     Buffer buffer(ifs.rdbuf(), input);
     Lexer lexer(&buffer);
