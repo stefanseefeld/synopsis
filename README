@@ -37,6 +37,12 @@ Building
   as an alternative, which will only compile the C/C++ extensions and put
   them right into the source tree.
 
+  If you have checked out the source code from the repository, you will
+  find a 'setup.cfg' file containing convenient default parameters during
+  development. However, if you plan to install synopsis, you have to remove
+  (or at least rename) this file or else distutils will get confused and
+  not install extensions.
+
 * To build for windows native, just use the appropriate python interpreter
   to run the build script. You will need a mingw-compatible version of the
   python library (libpythonxx.a), which you have to build first. Instructions
