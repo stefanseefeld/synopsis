@@ -111,7 +111,7 @@ void SymbolFactory::enter_scope(PTree::NamespaceSpec const *spec)
   Namespace *namespace_ = 0;
   // If the namespace was already opened before, we add a reference
   // to it under the current NamespaceSpec, too.
-  if (namespace_ = scope->find_namespace(spec))
+  if ((namespace_ = scope->find_namespace(spec)))
   {
     scope->declare_scope(spec, namespace_);
   }

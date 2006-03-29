@@ -2364,6 +2364,7 @@ bool Parser::operator_name(PTree::Node *&name, PTree::Encoding &encode)
       return true;
     }
     else return cast_operator_name(name, encode);
+    return false;
 }
 
 /*
