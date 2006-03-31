@@ -90,7 +90,8 @@ Installing
 Using Synopsis
 --------------
 
-* Remember to set the PYTHONPATH variable if necessary.
+* Remember to set the PYTHONPATH variable if necessary, as well as
+  LD_LIBRARY_PATH.
 
 * Read the tutorial to learn how to get started using synopsis.
 
