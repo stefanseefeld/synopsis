@@ -26,7 +26,6 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_verbose(v), my_debug(d) 
 {
   Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
-
   // determine canonical filenames
   Path path = Path(my_raw_filename).abs();
   std::string long_filename = path.str();
@@ -79,11 +78,13 @@ void ASTTranslator::visit(PTree::Declarator *declarator)
 
     size_t length = (name.front() - 0x80);
     AST::ScopedName qname(std::string(name.begin() + 1, name.begin() + 1 + length));
-    AST::Modifiers modifiers;
+    AST::Modifiers pre;
+    AST::Modifiers post;
     AST::Function function = my_ast_kit.create_function(my_file, my_lineno,
 							"function",
-							modifiers,
+							pre,
 							return_type,
+							post,
 							qname,
 							qname.get(0));
     function.parameters().extend(parameters);
@@ -277,7 +278,6 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
 					 AST::Function::Parameters &parameters)
 {
   Trace trace("ASTTranslator::translate_parameters", Trace::TRANSLATION);
-
   while (node)
   {
     // A parameter has a type, possibly a name and possibly a value.
@@ -312,7 +312,11 @@ void ASTTranslator::translate_parameters(PTree::Node *node,
         type_ix = len-2;
       }
       // Skip keywords (eg: register) which are atoms
-      for (int ix = 0; ix < type_ix && PTree::nth(parameter, ix)->is_atom(); ++ix)
+      for (int ix = 0;
+	   ix < type_ix && 
+	     PTree::nth(parameter, ix) &&
+	     PTree::nth(parameter, ix)->is_atom();
+	   ++ix)
       {
         PTree::Node *atom = PTree::nth(parameter, ix);
         premods.append(PTree::reify(atom));
