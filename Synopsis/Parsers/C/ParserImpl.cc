@@ -70,7 +70,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     std::ifstream ifs(cppfile);
     Buffer buffer(ifs.rdbuf(), src);
     Lexer lexer(&buffer, Lexer::GCC);
-    SymbolFactory symbols(SymbolFactory::C99);
+    SymbolFactory symbols(SymbolFactory::NONE);
     Parser parser(lexer, symbols);
     PTree::Node *ptree = parser.parse();
     const Parser::ErrorList &errors = parser.errors();

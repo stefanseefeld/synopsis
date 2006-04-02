@@ -136,7 +136,7 @@ PTree::Encoding::iterator TypeTranslator::decode_type(PTree::Encoding::iterator 
 	while (*i != '_') array.push_back(*i++);
 	array.push_back(']');
 	++i;
-	premod.append(array);
+	postmod.append(array);
 	  break;
       }
 //       case '*':
