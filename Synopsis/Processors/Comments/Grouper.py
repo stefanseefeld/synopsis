@@ -132,7 +132,7 @@ class Grouper1(Grouper):
         comments = []
         while len(decl.comments()):
             c = decl.comments().pop(0)
-            tag = self.re_group.search(c.text())
+            tag = self.re_group.search(c.text)
             if not tag:
                 comments.append(c)
                 continue
@@ -145,7 +145,7 @@ class Grouper1(Grouper):
                 label = tag.group('name') or 'unnamed'
                 # The comment before the open marker becomes the group comment
                 if tag.start('open') > 0:
-                    text = c.text()[:tag.start('open')]
+                    text = c.text[:tag.start('open')]
                     comments.append(AST.Comment(text, c.file(), c.line()))
                 group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
@@ -181,7 +181,7 @@ class Grouper2(Grouper):
         process_comments = decl.comments()
         while len(decl.comments()):
             c = decl.comments().pop(0)
-            tag = self.re_group.search(c.text())
+            tag = self.re_group.search(c.text)
             if not tag:
                 comments.append(c)
                 continue
@@ -194,7 +194,7 @@ class Grouper2(Grouper):
                 label = tag.group('name') or 'unnamed'
                 # The comment before the open marker becomes the group comment
                 if tag.start('open') > 0:
-                    text = c.text()[:tag.start('open')]
+                    text = c.text[:tag.start('open')]
                     comments.append(AST.Comment(text, c.file(), c.line()))
                 group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
                 group.comments()[:] = comments
@@ -212,7 +212,7 @@ class Grouper2(Grouper):
 
             # The comment before the close marker is ignored...? maybe post-comment?
             # The comment after the close marker becomes the next comment to process
-            remainder = string.join([tag.group('remainder'), c.text()[tag.end():]], '')
+            remainder = ''.join([tag.group('remainder'), c.text[tag.end():]])
             if remainder:
                 decl.comments().insert(0, AST.Comment(remainder, c.file(), c.line()))
         decl.comments()[:] = comments
