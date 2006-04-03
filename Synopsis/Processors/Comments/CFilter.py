@@ -32,9 +32,8 @@ class CFilter(Filter):
         " */" and the one-line "/* ... */".
         """
 
-        text = comment.text()
         text_list = []
-        mo = self.re_c.search(text)
+        mo = self.re_c.search(comment.text)
         while mo:
             text_list.append(mo.group('text'))
             lines = mo.group('lines')
@@ -44,7 +43,7 @@ class CFilter(Filter):
                     text_list.append(mol.group('text'))
                     mol = self.re_line.search(lines, mol.end())
             mo = self.re_c.search(text, mo.end())
-        text = string.join(text_list,'\n')
-        comment.set_text(text)
+        text = '\n'.join(text_list)
+        comment.text = text
 
 
