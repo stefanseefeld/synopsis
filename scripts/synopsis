@@ -15,8 +15,7 @@ import sys, os, os.path, string, getopt
 
 def error(msg):
    """Write an error message and exit."""
-   sys.stderr.write(msg)
-   sys.stderr.write('\n')
+   sys.stderr.write('Error: %s\n'%msg)
    sys.exit(-1)
 
 def __import__(name, verbose):
@@ -95,18 +94,22 @@ def get_opt(argv):
       elif o == '-o' or o == '--output':
          options['output'] = a
 
-      elif o == '-p' or o == '--parser':
+      elif o in ['-p', '--parser']:
+         if parser:
+            error('Multiple parsers specified.')
          parser = __import__('Synopsis.Parsers.%s.Parser'%a,
                              'verbose' in options)
 
-      elif o == '-l' or o == '--linker':
+      elif o in ['-l', '--linker']:
          linker = __import__('Synopsis.Processors.Linker',
                              'verbose' in options)
-         linker_opts['processors'] = map(lambda x: __import__('Synopsis.Processors.%s'%x,
-                                                              'verbose' in options)(),
-                                         string.split(a, ','))
+         linker_opts['processors'] = [__import__('Synopsis.Processors.%s'%x,
+                                                 'verbose' in options)()
+                                      for x in a.split(',')]
 
-      elif o == '-f' or o == '--formatter':
+      elif o in ['-f', '--formatter']:
+         if formatter:
+            error('Multiple formatters specified.')
          formatter = __import__('Synopsis.Formatters.%s.Formatter'%a,
                                 'verbose' in options)
 
@@ -129,10 +132,10 @@ def get_opt(argv):
             for o,a in get_options(a[2:].split(',')):
                formatter_opts[o] = a
 
-      elif o == '-h' or o == '--help':
+      elif o in ['-h', '--help']:
          help = True
 
-      elif o == '-j' or o == '--javadoc':
+      elif o in ['-j', '--javadoc']:
          javadoc = True
 
    if help:
@@ -187,6 +190,8 @@ if __name__ == '__main__':
 
    try:
       main()
+   except getopt.GetoptError, e:
+      error(str(e))
    except KeyError, e:
       error('missing argument "%s"'%e)
    except Error, e:
