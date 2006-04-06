@@ -75,13 +75,13 @@ doc: cxx.syn cxx-impl.syn
 
 cxx.syn: $(HDR_SYN)
 	@echo linking C++ headers together
-	$(SYNOPSIS) link_cxx --output=$@ $^
+	$(SYNOPSIS) link --output=$@ $^
 	touch 'links'
 	touch 'xref'
 
 cxx-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
-	$(SYNOPSIS) link_cxx --output=$@ $^
+	$(SYNOPSIS) link --output=$@ $^
 	touch 'links'
 	touch 'xref'
 

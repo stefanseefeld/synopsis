@@ -9,7 +9,8 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
-from Synopsis.Formatters.HTML import Comments
+from Synopsis.Formatters.HTML.Markup.Javadoc import Javadoc
+from Synopsis.Formatters.HTML.Markup.RST import RST
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 from Synopsis.Formatters import Texinfo
@@ -20,19 +21,13 @@ import sys, os, os.path
 
 srcdir = '@srcdir@'
 topdir = '@topdir@'
-python = Composite(Python.Parser(base_path = topdir + os.sep),
-                   JavaTags(),
-                   Summarizer())
+python = Composite(Python.Parser(base_path = topdir + os.sep))
 
 cxx = Cxx.Parser(base_path = topdir + os.sep,
                  cppflags = ['-I%s'%(topdir + '/include'),
                              '-I%s'%(sysconfig.get_python_inc())],
                  syntax_prefix='links',
                  xref_prefix='xref')
-
-cxx_processor = Linker(SSDFilter(),
-                       JavaTags(),
-                       Summarizer())
 
 class MyHTML(HTML.Formatter):
    """We have to subclass in order to be able to make the 'xref_file'
@@ -47,7 +42,7 @@ class MyHTML(HTML.Formatter):
       toc_out = 'links.toc',
       file_layout = NestedFileLayout(),
       tree_formatter = TreeFormatterJS(),
-      comment_formatters = [Comments.Javadoc(), Comments.Section()],
+      markup_formatters = {'javadoc':Javadoc(),'rst':RST()},
       self.views = [FramesIndex(),
                     Scope(),
                     Source(prefix = 'links',
@@ -76,7 +71,6 @@ sxr = SXR.Formatter(url = '/sxr.cgi',
 process(python = python,
         cxx = cxx,
         link_python = Linker(),
-        link_cxx = cxx_processor,
         link = Linker(),
         archive = Processor(),
         strip = ScopeStripper(),
