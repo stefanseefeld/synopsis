@@ -68,8 +68,6 @@ struct Translator::Private
   PyObject* py(AST::Inheritance*);
   //. Return the PyObject for the given AST::Parameter
   PyObject* py(AST::Parameter*);
-  //. Return the PyObject for the given AST::Comment
-  PyObject* py(AST::Comment*);
   //. Return the PyObject for the given Types::Type
   PyObject* py(Types::Type*);
   //. Return the PyObject for the given string
@@ -251,26 +249,6 @@ PyObject* Translator::Private::py(AST::Parameter* decl)
   return obj;
 }
 
-PyObject* Translator::Private::py(AST::Comment* decl)
-{
-  ObjMap::iterator iter = obj_map.find(decl);
-  if (iter == obj_map.end())
-  {
-    // Need to convert object first
-    m_syn->visit_comment(decl);
-    iter = obj_map.find(decl);
-    if (iter == obj_map.end())
-    {
-      std::cout << "Fatal: Still not PyObject after converting." << std::endl;
-      throw "Translator::Private::py(AST::Comment*)";
-    }
-  }
-  PyObject* obj = iter->second;
-  Py_INCREF(obj);
-  return obj;
-}
-
-
 PyObject* Translator::Private::py(Types::Type* type)
 {
   ObjMap::iterator iter = obj_map.find(type);
@@ -385,7 +363,7 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
     // Add the declarations if it's a main file
     if (file->is_main())
     {
-      decls = PyObject_CallMethod(pyfile, "declarations", 0);
+      decls = PyObject_GetAttrString(pyfile, "declarations");
       assertObject(decls);
       PyObject_CallMethod(decls, "extend", "O", new_decls = m->List(file->declarations()));
       // TODO: add the includes
@@ -394,14 +372,14 @@ void Translator::translate(AST::Scope* scope)//, PyObject* ast)
     }
     
     // Add the includes
-    incls = PyObject_CallMethod(pyfile, "includes", 0);
+    incls = PyObject_GetAttrString(pyfile, "includes");
     assertObject(incls);
     PyObject_CallMethod(incls, "extend", "O", new_incls = m->List(file->includes()));
     Py_DECREF(new_incls);
     Py_DECREF(incls);
     
     // Add to the AST
-    PyObject* pyfilename = PyObject_CallMethod(pyfile, "filename", 0);
+    PyObject* pyfilename = PyObject_GetAttrString(pyfile, "name");
     PyDict_SetItem(pyfiles, pyfilename, pyfile);
     Py_DECREF(pyfilename);
     Py_DECREF(pyfile);
@@ -533,6 +511,7 @@ PyObject *Translator::FuncPtr(Types::FuncPtr* type)
 
 void Translator::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 {
+  Trace trace("Translator::addComments", Trace::TRANSLATION);
   PyObject *annotations = PyObject_GetAttrString(pydecl, "annotations");
   PyObject *comments = m->List(cdecl->comments());
   int size = PyList_GET_SIZE(comments);
@@ -598,10 +577,10 @@ PyObject *Translator::Include(AST::Include* include)
 
 PyObject *Translator::Declaration(AST::Declaration* decl)
 {
-  Trace trace("Translator::addDeclaration", Trace::TRANSLATION);
+  Trace trace("Translator::Declaration", Trace::TRANSLATION);
   PyObject *pydecl, *file, *type, *name;
-  pydecl = PyObject_CallMethod(m_ast_module, "Declaration", "OiOOO",
-                               file = m->py(decl->file()), decl->line(), m->cxx(),
+  pydecl = PyObject_CallMethod(m_ast_module, "Declaration", "OiOO",
+                               file = m->py(decl->file()), decl->line(),
                                type = m->py(decl->type()), name = m->Tuple(decl->name()));
   assertObject(pydecl);
   addComments(pydecl, decl);
@@ -615,8 +594,8 @@ PyObject *Translator::Builtin(AST::Builtin* decl)
 {
   Trace trace("Translator::Builtin", Trace::TRANSLATION);
   PyObject *pybuiltin, *file, *type, *name;
-  pybuiltin = PyObject_CallMethod(m_ast_module, "Builtin", "OiOOO",
-                                  file = m->py(decl->file()), decl->line(), m->cxx(),
+  pybuiltin = PyObject_CallMethod(m_ast_module, "Builtin", "OiOO",
+                                  file = m->py(decl->file()), decl->line(),
                                   type = m->py(decl->type()), name = m->Tuple(decl->name()));
   assertObject(pybuiltin);
   addComments(pybuiltin, decl);
@@ -636,8 +615,8 @@ PyObject *Translator::Macro(AST::Macro* decl)
     params = Py_None;
     Py_INCREF(Py_None);
   }
-  pymacro = PyObject_CallMethod(m_ast_module, "Macro", "OiOOOOO",
-                                file = m->py(decl->file()), decl->line(), m->cxx(),
+  pymacro = PyObject_CallMethod(m_ast_module, "Macro", "OiOOOO",
+                                file = m->py(decl->file()), decl->line(),
                                 type = m->py(decl->type()), name = m->Tuple(decl->name()),
                                 params, text = m->py(decl->text()));
   assertObject(pymacro);
@@ -652,10 +631,10 @@ PyObject *Translator::Macro(AST::Macro* decl)
 
 PyObject *Translator::Forward(AST::Forward* decl)
 {
-  Trace trace("Translator::addForward", Trace::TRANSLATION);
+  Trace trace("Translator::Forward", Trace::TRANSLATION);
   PyObject *forward, *file, *type, *name;
-  forward = PyObject_CallMethod(m_ast_module, "Forward", "OiOOO",
-                                file = m->py(decl->file()), decl->line(), m->cxx(),
+  forward = PyObject_CallMethod(m_ast_module, "Forward", "OiOO",
+                                file = m->py(decl->file()), decl->line(),
                                 type = m->py(decl->type()), name = m->Tuple(decl->name()));
   addComments(forward, decl);
   Py_DECREF(file);
@@ -664,26 +643,12 @@ PyObject *Translator::Forward(AST::Forward* decl)
   return forward;
 }
 
-PyObject *Translator::Comment(AST::Comment* decl)
-{
-  Trace trace("Translator::addComment", Trace::TRANSLATION);
-  std::string text_str = decl->text()+"\n";
-  PyObject *text = PyString_FromStringAndSize(text_str.data(), text_str.size());
-  PyObject *comment, *file;
-  comment = PyObject_CallMethod(m_ast_module, "Comment", "OOii",
-                                text, file = m->py(decl->file()), 
-                                decl->line(), decl->is_suspect() ? 1 : 0);
-  Py_DECREF(text);
-  Py_DECREF(file);
-  return comment;
-}
-
 PyObject *Translator::Scope(AST::Scope* decl)
 {
-  Trace trace("Translator::addScope", Trace::TRANSLATION);
+  Trace trace("Translator::Scope", Trace::TRANSLATION);
   PyObject *scope, *file, *type, *name;
-  scope = PyObject_CallMethod(m_ast_module, "Scope", "OiOOO",
-                              file = m->py(decl->file()), decl->line(), m->cxx(),
+  scope = PyObject_CallMethod(m_ast_module, "Scope", "OiOO",
+                              file = m->py(decl->file()), decl->line(),
                               type = m->py(decl->type()), name = m->Tuple(decl->name()));
   PyObject *decls = PyObject_CallMethod(scope, "declarations", 0);
   PyObject_CallMethod(decls, "extend", "O", m->List(decl->declarations()));
@@ -697,10 +662,10 @@ PyObject *Translator::Scope(AST::Scope* decl)
 
 PyObject *Translator::Namespace(AST::Namespace* decl)
 {
-  Trace trace("Translator::addNamespace", Trace::TRANSLATION);
+  Trace trace("Translator::Namespace", Trace::TRANSLATION);
   PyObject *module, *file, *type, *name;
-  module = PyObject_CallMethod(m_ast_module, "Module", "OiOOO",
-                               file = m->py(decl->file()), decl->line(), m->cxx(),
+  module = PyObject_CallMethod(m_ast_module, "Module", "OiOO",
+                               file = m->py(decl->file()), decl->line(),
                                type = m->py(decl->type()), name = m->Tuple(decl->name()));
   PyObject *decls = PyObject_CallMethod(module, "declarations", 0);
   PyObject *new_decls = m->List(decl->declarations());
@@ -728,10 +693,10 @@ PyObject *Translator::Inheritance(AST::Inheritance* decl)
 
 PyObject *Translator::Class(AST::Class* decl)
 {
-  Trace trace("Translator::addClass", Trace::TRANSLATION);
+  Trace trace("Translator::Class", Trace::TRANSLATION);
   PyObject *clas, *file, *type, *name;
-  clas = PyObject_CallMethod(m_ast_module, "Class", "OiOOO",
-                             file = m->py(decl->file()), decl->line(), m->cxx(),
+  clas = PyObject_CallMethod(m_ast_module, "Class", "OiOO",
+                             file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), name = m->Tuple(decl->name()));
   // This is necessary to prevent inf. loops in several places
   m->add(decl, clas);
@@ -759,11 +724,11 @@ PyObject *Translator::Class(AST::Class* decl)
 
 PyObject *Translator::Typedef(AST::Typedef* decl)
 {
-  Trace trace("Translator::addTypedef", Trace::TRANSLATION);
+  Trace trace("Translator::Typedef", Trace::TRANSLATION);
   // FIXME: what to do about the declarator?
   PyObject *tdef, *file, *type, *name, *alias;
-  tdef = PyObject_CallMethod(m_ast_module, "Typedef", "OiOOOOi",
-                             file = m->py(decl->file()), decl->line(), m->cxx(),
+  tdef = PyObject_CallMethod(m_ast_module, "Typedef", "OiOOOi",
+                             file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), name = m->Tuple(decl->name()),
                              alias = m->py(decl->alias()), decl->constructed());
   addComments(tdef, decl);
@@ -776,19 +741,19 @@ PyObject *Translator::Typedef(AST::Typedef* decl)
 
 PyObject *Translator::Enumerator(AST::Enumerator* decl)
 {
-  Trace trace("Translator::addEnumerator", Trace::TRANSLATION);
+  Trace trace("Translator::Enumerator", Trace::TRANSLATION);
   PyObject *enumor, *file, *name, *type;
   if (decl->type() == "dummy") // work around a hack with another hack ;-)
   {
      std::vector<std::string> eos;
      eos.push_back("EOS");
-     enumor = PyObject_CallMethod(m_ast_module, "Builtin", "OiOOO",
-                                  file = m->py(decl->file()), decl->line(), m->cxx(),
+     enumor = PyObject_CallMethod(m_ast_module, "Builtin", "OiOO",
+                                  file = m->py(decl->file()), decl->line(),
                                   type = m->py("EOS"), name = m->Tuple(eos));
   }
   else
-     enumor = PyObject_CallMethod(m_ast_module, "Enumerator", "OiOOs",
-                                  file = m->py(decl->file()), decl->line(), m->cxx(),
+     enumor = PyObject_CallMethod(m_ast_module, "Enumerator", "OiOs",
+                                  file = m->py(decl->file()), decl->line(),
                                   name = m->Tuple(decl->name()), decl->value().c_str());
   addComments(enumor, decl);
   Py_DECREF(file);
@@ -798,10 +763,10 @@ PyObject *Translator::Enumerator(AST::Enumerator* decl)
 
 PyObject *Translator::Enum(AST::Enum* decl)
 {
-  Trace trace("Translator::addEnum", Trace::TRANSLATION);
+  Trace trace("Translator::Enum", Trace::TRANSLATION);
   PyObject *enumor, *file, *enums, *name;
-  enumor = PyObject_CallMethod(m_ast_module, "Enum", "OiOOO",
-                               file = m->py(decl->file()), decl->line(), m->cxx(),
+  enumor = PyObject_CallMethod(m_ast_module, "Enum", "OiOO",
+                               file = m->py(decl->file()), decl->line(),
                                name = m->Tuple(decl->name()), enums = m->List(decl->enumerators()));
   addComments(enumor, decl);
   Py_DECREF(file);
@@ -812,10 +777,10 @@ PyObject *Translator::Enum(AST::Enum* decl)
 
 PyObject *Translator::Variable(AST::Variable* decl)
 {
-  Trace trace("Translator::addVariable", Trace::TRANSLATION);
+  Trace trace("Translator::Variable", Trace::TRANSLATION);
   PyObject *var, *file, *type, *name, *vtype;
-  var = PyObject_CallMethod(m_ast_module, "Variable", "OiOOOOi",
-                            file = m->py(decl->file()), decl->line(), m->cxx(),
+  var = PyObject_CallMethod(m_ast_module, "Variable", "OiOOOi",
+                            file = m->py(decl->file()), decl->line(),
                             type = m->py(decl->type()), name = m->Tuple(decl->name()),
                             vtype = m->py(decl->vtype()), decl->constructed());
   addComments(var, decl);
@@ -828,10 +793,10 @@ PyObject *Translator::Variable(AST::Variable* decl)
 
 PyObject *Translator::Const(AST::Const* decl)
 {
-  Trace trace("Translator::addConst", Trace::TRANSLATION);
+  Trace trace("Translator::Const", Trace::TRANSLATION);
   PyObject *cons, *file, *type, *name, *ctype;
-  cons = PyObject_CallMethod(m_ast_module, "Const", "OiOOOOs",
-                             file = m->py(decl->file()), decl->line(), m->cxx(),
+  cons = PyObject_CallMethod(m_ast_module, "Const", "OiOOOs",
+                             file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), ctype = m->py(decl->ctype()),
                              name = m->Tuple(decl->name()), decl->value().c_str());
   if (PyErr_Occurred()) PyErr_Print();
@@ -861,10 +826,10 @@ PyObject *Translator::Parameter(AST::Parameter* decl)
 
 PyObject *Translator::Function(AST::Function* decl)
 {
-  Trace trace("Translator::addFunction", Trace::TRANSLATION);
+  Trace trace("Translator::Function", Trace::TRANSLATION);
   PyObject *func, *file, *type, *name, *pre, *ret, *post, *realname;
-  func = PyObject_CallMethod(m_ast_module, "Function", "OiOOOOOOO",
-                             file = m->py(decl->file()), decl->line(), m->cxx(),
+  func = PyObject_CallMethod(m_ast_module, "Function", "OiOOOOOO",
+                             file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                              ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
                              name = m->Tuple(decl->name()), realname = m->py(decl->realname()));
@@ -894,10 +859,10 @@ PyObject *Translator::Function(AST::Function* decl)
 
 PyObject *Translator::Operation(AST::Operation* decl)
 {
-  Trace trace("Translator::addOperation", Trace::TRANSLATION);
+  Trace trace("Translator::Operation", Trace::TRANSLATION);
   PyObject *oper, *file, *type, *name, *pre, *ret, *post, *realname;
-  oper = PyObject_CallMethod(m_ast_module, "Operation", "OiOOOOOOO",
-                             file = m->py(decl->file()), decl->line(), m->cxx(),
+  oper = PyObject_CallMethod(m_ast_module, "Operation", "OiOOOOOO",
+                             file = m->py(decl->file()), decl->line(),
                              type = m->py(decl->type()), pre = m->List(decl->premodifier()),
                              ret = m->py(decl->return_type()), post = m->List(decl->postmodifier()),
                              name = m->Tuple(decl->name()), realname = m->py(decl->realname()));
@@ -1014,10 +979,6 @@ void Translator::visit_inheritance(AST::Inheritance* decl)
 void Translator::visit_parameter(AST::Parameter* decl)
 {
   m->add(decl, Parameter(decl));
-}
-void Translator::visit_comment(AST::Comment* decl)
-{
-  m->add(decl, Comment(decl));
 }
 
 //

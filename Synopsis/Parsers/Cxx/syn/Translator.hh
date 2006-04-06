@@ -65,7 +65,6 @@ public:
   PyObject* Parameter(AST::Parameter*);
   PyObject* Function(AST::Function*);
   PyObject* Operation(AST::Operation*);
-  PyObject* Comment(AST::Comment*);
 
   //
   // AST::Visitor methods
@@ -86,7 +85,6 @@ public:
   void visit_function(AST::Function*);
   void visit_operation(AST::Operation*);
   void visit_parameter(AST::Parameter*);
-  void visit_comment(AST::Comment*);
   
   //
   // Types::Visitor methods
