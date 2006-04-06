@@ -65,7 +65,7 @@ def get_opt(argv):
    parser = None
    parser_opts = {}
    linker = None
-   linker_opts = {}
+   linker_opts = {'processors':[]}
    formatter = None
    formatter_opts = {}
    options = {}
@@ -101,11 +101,12 @@ def get_opt(argv):
                              'verbose' in options)
 
       elif o in ['-l', '--linker']:
-         linker = __import__('Synopsis.Processors.Linker',
-                             'verbose' in options)
-         linker_opts['processors'] = [__import__('Synopsis.Processors.%s'%x,
-                                                 'verbose' in options)()
-                                      for x in a.split(',')]
+         if not linker:
+            linker = __import__('Synopsis.Processors.Linker',
+                                'verbose' in options)
+         linker_opts['processors'].extend([__import__('Synopsis.Processors.%s'%x,
+                                                      'verbose' in options)()
+                                           for x in a.split(',')])
 
       elif o in ['-f', '--formatter']:
          if formatter:
