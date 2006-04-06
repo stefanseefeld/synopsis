@@ -87,6 +87,7 @@ class Processor(Parametrized):
 
    verbose = Parameter(False, "operate verbosely")
    debug = Parameter(False, "generate debug traces")
+   profile = Parameter(False, "output profile data")
    input = Parameter([], "input files to process")
    output = Parameter('', "output file to save the ast to")
 
@@ -151,22 +152,24 @@ class Composite(Processor):
          if self.output: my_kwds['output'] = self.output
          if self.verbose: my_kwds['verbose'] = self.verbose
          if self.debug: my_kwds['debug'] = self.debug
+         if self.profile: my_kwds['profile'] = self.profile
          return self.processors[0].process(ast, **my_kwds)
 
       # more than one processor...
-
       # call the first, passing the 'input' parameter, if present
       my_kwds = {}
       if self.input: my_kwds['input'] = self.input
       if self.verbose: my_kwds['verbose'] = self.verbose
       if self.debug: my_kwds['debug'] = self.debug
+      if self.profile: my_kwds['profile'] = self.profile
       ast = self.processors[0].process(ast, **my_kwds)
 
       # deal with all between the first and the last;
-      # they only get 'verbose' and 'debug' flags
+      # they only get 'verbose', 'debug', and 'profile' flags
       my_kwds = {}
-      if kwds.has_key('verbose'): my_kwds['verbose'] = kwds['verbose']
-      if kwds.has_key('debug'): my_kwds['debug'] = kwds['debug']
+      if self.verbose: my_kwds['verbose'] = self.verbose
+      if self.debug: my_kwds['debug'] = self.debug
+      if self.profile: my_kwds['profile'] = self.profile
       if len(self.processors) > 2:
          for p in self.processors[1:-1]:
             ast = p.process(ast, **my_kwds)
