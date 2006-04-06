@@ -99,17 +99,17 @@ class Formatter(Processor):
 
       if len(obj) == 0: return
       for i in obj:
-         #self.push('item')
+         self.push('item')
          self.visit(i)
-         #self.pop()
+         self.pop()
 
    def visit_list(self, obj):
 
       if len(obj) == 0: return
       for i in obj:
-         #self.push('item')
+         self.push('item')
          self.visit(i)
-         #self.pop()
+         self.pop()
 
    def visit_dict(self, dict):
 
