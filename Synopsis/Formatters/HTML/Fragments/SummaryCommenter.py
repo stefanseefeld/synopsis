@@ -10,20 +10,16 @@ from Synopsis.Formatters.HTML.Tags import *
 from Default import Default
 
 class SummaryCommenter(Default):
-   """Adds summary comments to all declarations"""
+   """Adds summary annotations to all declarations"""
 
    def format_declaration(self, decl):
-      summary = self.processor.comments.format_summary(self.view, decl)
-      if summary:
-         return '<br/>\n'+span('summary', summary)
-      return ''
+      summary = self.processor.documentation.summary(decl, self.view)
+      return summary and '<br/>\n'+span('summary', summary) or ''
 
    def format_group(self, decl):
-      """Override for group to use the div version of commenting, and no
+      """Override for group to use the div version of annotations, and no
       <br/> before"""
 
-      summary = self.processor.comments.format(self.view, decl)
-      if summary:
-         return desc(summary)
-      return ''
+      summary = self.processor.documentation.summary(decl, self.view)
+      return summary and desc(summary) or ''
     

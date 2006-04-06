@@ -8,15 +8,15 @@
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
+from Synopsis.DocString import DocString
 from Synopsis.FileTree import FileTree
 from Synopsis.Formatters.TOC import TOC
 from Synopsis.Formatters.ClassTree import ClassTree
 from Synopsis.Formatters.XRef import CrossReferencer
 from FileLayout import *
 from TreeFormatter import *
-from DeclarationStyle import *
 from Views import *
-import Comments
+import Markup
 import Tags
 
 import time
@@ -26,54 +26,52 @@ class Struct:
    def __init__(self, **keys):
       for name, value in keys.items(): setattr(self, name, value)
 
-class CommentFormatter:
-   """A class that takes a Declaration and formats its comments into a string."""
+class DocCache:
+   """"""
 
-   def __init__(self, formatters):
+   def __init__(self, processor, markup_formatters):
 
-      # Cache the bound methods
-      self.__format_methods = map(lambda f:f.format, formatters)
-      self.__format_summary_methods = map(lambda f:f.format_summary, formatters)
-      # Weed out the unneccessary calls to the empty base methods
-      base = Comments.Formatter.format.im_func
-      self.__format_methods = filter(
-          lambda m, base=base: m.im_func is not base, self.__format_methods)
-      base = Comments.Formatter.format_summary.im_func
-      self.__format_summary_methods = filter(
-          lambda m, base=base: m.im_func is not base, self.__format_summary_methods)
+      self._processor = processor
+      self._markup_formatters = markup_formatters
+      # Make sure we have a default markup formatter.
+      if '' not in self._markup_formatters:
+         self._markup_formatters[''] = Markup.Formatter()
+      for f in self._markup_formatters.values():
+         f.init(self._processor)
+      self._doc_cache = {}
 
-   def format(self, view, decl):
-      """Formats the first comment of the given AST.Declaration.
-      Note that the Linker.Comments.Summarizer CommentProcessor is supposed
-      to have combined all comments first in the Linker stage.
-      @return the formatted text
-      """
 
-      comments = decl.comments()
-      if len(comments) == 0: return ''
-      text = comments[0].text()
-      if not text: return ''
-      # Let each strategy format the text in turn
-      for method in self.__format_methods:
-         text = method(view, decl, text)
-      return text
+   def _process(self, decl, view):
+      """Return the documentation for the given declaration."""
 
-   def format_summary(self, view, decl):
-      """Formats the summary of the first comment of the given
-      AST.Declaration.
-      Note that the Linker.Comments.Summarizer CommentProcessor is supposed
-      to have combined all comments first in the Linker stage.
-      @return the formatted summary text
-      """
+      key = id(decl)
+      if key not in self._doc_cache:
+         doc = decl.annotations.get('doc')
+         if doc:
+            formatter = self._markup_formatters.get(doc.markup,
+                                                    self._markup_formatters[''])
+            doc = formatter.format(decl, view)
+         else:
+            doc = Markup.Struct()
+         self._doc_cache[key] = doc
+         return doc
+      else:
+         return self._doc_cache[key]
 
-      comments = decl.comments()
-      if len(comments) == 0: return ''
-      text = comments[0].summary()
-      if not text: return ''
-      # Let each strategy format the text in turn
-      for method in self.__format_summary_methods:
-         text = method(view, decl, text)
-      return text
+
+   def summary(self, decl, view):
+      """"""
+
+      doc = self._process(decl, view)
+      return doc.summary
+
+
+   def details(self, decl, view):
+      """"""
+
+      doc = self._process(decl, view)
+      return doc.details
+
 
 class Formatter(Processor):
 
@@ -96,11 +94,8 @@ class Formatter(Processor):
                       NameIndex()],
                       '')
    
-   comment_formatters = Parameter([Comments.QuoteHTML(),
-                                   Comments.Section()],
-                                  '')
-   
-   tree_formatter = Parameter(TreeFormatter(), 'define how to lay out tree views')
+   markup_formatters = Parameter({}, 'Markup-specific formatters.')
+   tree_formatter = Parameter(TreeFormatter(), 'Define how to lay out tree views.')
 
    def process(self, ast, **kwds):
 
@@ -111,10 +106,7 @@ class Formatter(Processor):
       if not self.datadir: self.datadir = config.datadir
 
       self.file_layout.init(self)
-      self.decl_style = Style()
-      for f in self.comment_formatters:
-         f.init(self)
-      self.comments = CommentFormatter(self.comment_formatters)
+      self.documentation = DocCache(self, self.markup_formatters)
       # Create the Class Tree (TODO: only if needed...)
       self.class_tree = ClassTree()
       # Create the File Tree (TODO: only if needed...)

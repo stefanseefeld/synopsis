@@ -10,11 +10,10 @@ from Synopsis.Formatters.HTML.Tags import *
 from Default import Default
 
 class DetailCommenter(Default):
-   """Adds summary comments to all declarations"""
+    """Add annotation details to all declarations."""
 
-   def format_declaration(self, decl):
+    def format_declaration(self, decl):
 
-      text = self.processor.comments.format(self.view, decl)
-      if text: return desc(text)
-      return ''
+        text = self.processor.documentation.details(decl, self.view)
+        return desc(text)
 

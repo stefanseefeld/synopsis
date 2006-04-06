@@ -32,6 +32,7 @@
 #include "common.hh"
 #include <set>
 #include <map>
+#include <string>
 
 // Forward declare Dictionary
 class Dictionary;
@@ -102,7 +103,7 @@ class Comment : public cleanup
 {
 public:
     //. A vector of Comments
-    typedef std::vector<Comment*> vector;
+    typedef std::vector<std::string> vector;
 
     //. Constructor
     Comment(SourceFile* file, int line, const std::string& text, bool suspect=false);

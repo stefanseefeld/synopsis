@@ -15,7 +15,7 @@ import os
 
 class ModuleIndexer(View):
    """A module for indexing AST.Modules. Each module gets its own view with a
-   list of nested scope declarations with comments. It is intended to go in
+   list of nested scope declarations with documentation. It is intended to go in
    the left frame..."""
 
    def register(self, processor):

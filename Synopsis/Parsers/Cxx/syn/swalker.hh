@@ -98,7 +98,7 @@ public:
   std::string format_parameters(std::vector<AST::Parameter*>& params);
 
   //. Translates the template parameters and creates the template type.
-  void SWalker::translate_template_params(PTree::Node *params);
+  void translate_template_params(PTree::Node *params);
 
   //. Overridden to catch exceptions
   void translate(PTree::Node *);
@@ -265,7 +265,7 @@ private:
   typedef std::vector<FuncImplVec> FuncImplStack;
   //. The stack of function impl vectors
   FuncImplStack my_func_impl_stack;
-  void SWalker::translate_func_impl_cache(const FuncImplCache &cache);
+  void translate_func_impl_cache(const FuncImplCache &cache);
   
   //. Finds the column given the start ptr and the current position. The
   //. derived column number is processed with the macro call dictionary

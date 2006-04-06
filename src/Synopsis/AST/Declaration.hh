@@ -42,26 +42,6 @@ public:
   Declarations declarations();
 };
 
-//. Encapsulation of one Comment, which may span multiple lines.
-//. Each comment encapsulates one /* */ block or a block of // comments on
-//. adjacent lines. If extract_tails is set, then comments will be added
-//. even when they are not adjacent to a declaration - these comments will be
-//. marked as "suspect". Most of these will be discarded by the Linker, unless
-//. they have appropriate markings such as "//.< comment for previous decl"
-class Comment : public Python::Object
-{
-public:
-  Comment() {}
-  Comment(const Python::Object &o, bool check = true)
-    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Comment");}
-
-  SourceFile file() const { return narrow<SourceFile>(attr("file")());}
-  long line() const { return narrow<long>(attr("line")());}
-  std::string text() const { return narrow<std::string>(attr("text")());}
-  void suspect(bool flag) { attr("set_suspect")(Python::Tuple(flag));}
-  bool suspect() const { return narrow<bool>(attr("is_suspect")());}
-};
-
 class Declaration : public Python::Object
 {
 public:
@@ -74,7 +54,7 @@ public:
   std::string language() const { return narrow<std::string>(attr("language")());}
   std::string type() const { return narrow<std::string>(attr("type")());}
   ScopedName name() const { return attr("name")();}
-  Python::List comments() { return attr("comments")();}
+  Python::Dict annotations() { return attr("annotations");}
   Access accessibility() const 
   { return static_cast<Access>(narrow<long>(attr("accessibility")()));}
   void accessibility(Access a) const 

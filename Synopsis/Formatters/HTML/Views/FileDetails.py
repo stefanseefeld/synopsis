@@ -132,12 +132,11 @@ class FileDetails(View):
          if br: self.write('<br/>')
          self.write(text)
          # Print summary
-         comments = decl.comments()
-         if len(comments) and comments[0].summary():
-            self.write('<br/>\n' + span('summary', comments[0].summary()))
+         text = self.processor.documentation.summary(decl, self)
+         self.write('<br/>\n' + span('summary', text))
          br = 1
 	
-      # Close open DIV
+      # Close open div
       if curr_scope is not None:
          self.write('\n</div>')
       self.end_file()

@@ -75,7 +75,7 @@ class FileIndexer(View):
          link = rel(self.filename(),
                     self.processor.file_layout.file_details(filename))
          self.write(href(link, '[File Details]', target="main")+'<br/>')
-      comments = self.processor.comments
+      doc = self.processor.documentation
 
       self.write('<b>Declarations:</b><br/>')
       # Sort items (by name)
@@ -86,8 +86,7 @@ class FileIndexer(View):
          # TODO make this nicer :)
          entry = self.processor.toc[name]
          if not entry: continue
-         summary = string.strip("(%s) %s"%(decl.type(),
-                                           escape(comments.format_summary(self, decl))))
+         summary = string.strip("(%s) %s"%(decl.type(), doc.summary(decl, self)))
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
          if isinstance(decl, AST.Function): print_name = decl.realname()

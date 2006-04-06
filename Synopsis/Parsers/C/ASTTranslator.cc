@@ -367,6 +367,9 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
   Python::List comments;
 
   // Loop over all comments in the list
+  // If the last comment is separated from the declaration by more than a single '\n',
+  // we add a None to the list.
+  bool suspect = false;
   for (PTree::Node *next = PTree::rest(c); c && !c->is_atom(); next = PTree::rest(c))
   {
     PTree::Node *first = PTree::first(c);
@@ -375,9 +378,6 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
       c = next;
       continue;
     }
-    // update position information for this comment
-    update_position(c);
-
     // Check if comment is continued, eg: consecutive C++ comments
     while (next && PTree::first(next) && PTree::first(next)->is_atom())
     {
@@ -404,11 +404,7 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
       // Skip the combined comment
       next = PTree::rest(next);
     }
-
-    // all comments that are not immediately (i.e. separated
-    // by a single new line) followed by a declaration are
-    // marked as 'suspect'
-    bool suspect = false;
+    suspect = false;
     char const *pos = first->position() + first->length();
     while (*pos && strchr(" \t\r", *pos)) ++pos;
     if (*pos == '\n')
@@ -418,11 +414,7 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
       while (*pos && strchr(" \t\r", *pos)) ++pos;
       if (*pos == '\n' || !strncmp(pos, "/*", 2)) suspect = true;
     }
-    AST::Comment comment = my_ast_kit.create_comment(my_file, my_lineno,
-						     // FIXME: 'first' ought to be an atom,
-						     //        so we could just take the position/length
-						     PTree::reify(first),
-						     suspect);
+    Python::Object comment = PTree::reify(first);
     comments.append(comment);
 
 //     if (my_links) my_links->long_span(first, "file-comment");
@@ -431,8 +423,8 @@ void ASTTranslator::add_comments(AST::Declaration declarator, PTree::Node *c)
     c->set_car(0);
     c = next;
   }
-
-  declarator.comments().extend(comments);
+  if (suspect) comments.append(Python::Object());
+  declarator.annotations().set("comments", comments);
 }
 
 bool ASTTranslator::update_position(PTree::Node *node)

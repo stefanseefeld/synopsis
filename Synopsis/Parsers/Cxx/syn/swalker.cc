@@ -135,13 +135,14 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
 {
   if (!node) return;
   
-  AST::Comment::vector comments;
+  std::vector<std::string> comments;
 
   // First, make sure that node is a list of comments
   if (PTree::type_of(node) == Token::ntDeclaration)
     node = static_cast<PTree::Declaration*>(node)->get_comments();
 
   // Loop over all comments in the list
+  bool suspect = false;
   for (PTree::Node *next = PTree::rest(node); node && !node->is_atom(); next = PTree::rest(node))
   {
     PTree::Node *first = PTree::first(node);
@@ -150,8 +151,6 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
       node = next;
       continue;
     }
-    update_line_number(node);
-
     // Check if comment is continued, eg: consecutive C++ comments
     while (next && PTree::first(next) && PTree::first(next)->is_atom())
     {
@@ -183,7 +182,7 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
     // all comments that are not immediately (i.e. separated
     // by a single new line) followed by a declaration are
     // marked as 'suspect'
-    bool suspect = false;
+    suspect = false;
     const char *pos = first->position() + first->length();
     while (*pos && strchr(" \t\r", *pos)) ++pos;
     if (*pos == '\n')
@@ -195,23 +194,17 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
     }
 
     if (decl)
-    {
-      AST::Comment* comment = make_Comment(my_file, my_lineno, first, suspect);
-      comments.push_back(comment);
-    }
+      comments.push_back(PTree::reify(first));
     if (my_links) my_links->long_span(first, "file-comment");
     // Set first to 0 so we dont accidentally do them twice (eg:
     // when parsing expressions)
     node->set_car(0);
     node = next;
   }
-
+  if (suspect) comments.push_back("");
   // Now add the comments, if applicable
   if (decl)
-    for (AST::Comment::vector::iterator i = comments.begin();
-         i != comments.end();
-         ++i)
-      decl->comments().push_back(*i);
+    decl->comments() = comments;
 }
 
 // -- These methods implement add_comments for various node types that store

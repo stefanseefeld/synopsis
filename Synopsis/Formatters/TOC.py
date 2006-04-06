@@ -1,4 +1,3 @@
-# $Id: TOC.py,v 1.7 2003/11/14 14:51:08 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies

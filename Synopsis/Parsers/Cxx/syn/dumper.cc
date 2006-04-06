@@ -264,12 +264,12 @@ void Dumper::visit(const std::vector<AST::Declaration*>& decls)
             (*iter)->accept(this);
 }
 
-void Dumper::visit(const std::vector<AST::Comment*>& comms)
+void Dumper::visit(const std::vector<std::string>& comms)
 {
-    std::vector<AST::Comment*>::const_iterator iter = comms.begin();
+    std::vector<std::string>::const_iterator iter = comms.begin();
     while (iter != comms.end())
     {
-        std::cout << m_indent_string << (*iter++)->text() << std::endl;
+        std::cout << m_indent_string << *iter << std::endl;
     }
 }
 

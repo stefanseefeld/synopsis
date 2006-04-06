@@ -1,4 +1,3 @@
-# $Id: ASCII.py,v 1.34 2003/11/13 17:21:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -129,7 +128,7 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
          self.decr(); self.indent(); self.incr()
          self.write(self.__axs_string[axs])
          self.__axs = axs
-      self.writeComments(decl.comments())
+      self.write_comments(decl.comments())
 
    def visitMacro(self, macro):
 
@@ -140,12 +139,11 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
          params = '(' + string.join(macro.parameters(), ', ') + ')'
       self.write("#define %s%s %s\n"%(macro.name()[-1], params, macro.text()))
     
-   def writeComments(self, comments):
+   def write_comments(self, comments):
 
       for comment in comments:
-         text = comment.text()
-         if not text: continue
-         lines = string.split(text, "\n")
+         if not comment.text: continue
+         lines = comment.text.split('\n')
          for line in lines:
             self.indent()
             self.write(self.comment_str%line)
@@ -284,7 +282,7 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
 
    def visitEnumerator(self, enumer):
 
-      self.writeComments(enumer.comments())
+      self.write_comments(enumer.comments())
       if enumer.value() == "":
          self.write("%s"%enumer.name()[-1])
       else:

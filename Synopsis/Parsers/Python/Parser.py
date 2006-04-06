@@ -106,11 +106,11 @@ class Parser(Processor):
       return tuple(list(self.scopes[-1].name()) + [name])
 
    def process_module_info(self, mi):
-      """Processes a ModuleInfo object. The comments are extracted, and any
-      functions and comments recursively processed."""
+      """Processes a ModuleInfo object. The docs are extracted, and any
+      functions and docs recursively processed."""
 
-      comm = AST.Comment(mi.get_docstring(), self.sourcefile, -1)
-      self.scopes[-1].comments().append(comm)
+      # FIXME: documentation should be stored together with a markup spec
+      self.scopes[-1].annotations['doc'] = mi.get_docstring()
       for name in mi.get_function_names():
          self.process_function_info(mi.get_function_info(name))
       for name in mi.get_class_names():
@@ -130,8 +130,7 @@ class Parser(Processor):
       name = self.scope_name(fi.get_name())
       func = AST.Function(self.sourcefile, -1, 'Python', 'function', '',
                           self.return_type, '', name, name[-1])
-      comm = AST.Comment(fi.get_docstring(), '', -1)
-      func.comments().append(comm)
+      func.annotations['doc'] = fi.get_docstring()
       self.add_params(func, fi)
       self.add_declaration(func)
 
@@ -142,8 +141,7 @@ class Parser(Processor):
       name = self.scope_name(fi.get_name())
       func = AST.Operation(self.sourcefile,-1, 'Python', 'operation', '',
                            self.return_type, '', name, name[-1])
-      comm = AST.Comment(fi.get_docstring(), '', -1)
-      func.comments().append(comm)
+      func.annotations['doc'] = fi.get_docstring()
       self.add_params(func, fi)
       self.add_declaration(func)
 
@@ -154,8 +152,7 @@ class Parser(Processor):
 
       name = self.scope_name(ci.get_name())
       clas = AST.Class(self.sourcefile,-1, 'Python', 'class', name)
-      comm = AST.Comment(ci.get_docstring(), '', -1)
-      clas.comments().append(comm)
+      clas.annotations['doc'] = ci.get_docstring()
 
       types = self.ast.types()
       # Figure out bases:

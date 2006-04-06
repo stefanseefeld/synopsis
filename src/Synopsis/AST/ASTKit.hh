@@ -26,10 +26,6 @@ public:
 
   AST create_ast() { return create<AST>("AST");}
 
-  Comment create_comment(const SourceFile &file, long line,
-			 const std::string &text, bool suspect=false)
-  { return create<Comment>("Comment", Python::Tuple(text, file, line, suspect));}
-  
   Declaration create_declaration(const SourceFile &sf, long line,
 				 const char *type, const ScopedName &name)
   { return create<Declaration>("Declaration", Python::Tuple(sf, line, my_lang, type, name));}

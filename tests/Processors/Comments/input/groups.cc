@@ -1,3 +1,6 @@
+// -*- Comments.SSFilter -*-
+// -*- Comments.Grouper -*-
+
 // group documentation
 // @group first group {
 

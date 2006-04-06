@@ -84,7 +84,7 @@ public:
     // AST Visitor
     //
     void visit(const std::vector<AST::Declaration*>&);
-    void visit(const std::vector<AST::Comment*>&);
+    void visit(const std::vector<std::string>&);
     virtual void visit_macro(AST::Macro*);
     virtual void visit_declaration(AST::Declaration*);
     virtual void visit_builtin(AST::Builtin*);

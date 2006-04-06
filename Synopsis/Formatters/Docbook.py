@@ -1,4 +1,3 @@
-# $Id: Docbook.py,v 1.12 2003/11/13 20:40:09 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -151,10 +150,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.__type_ref = 'function_type'
       self.__type_label = 'function_type'
 
-   def visitComment(self, comment):
+   def process_comment(self, comment):
 
-      text = comment.text()
-      text = text.replace('\n\n', '</para><para>')
+      text = comment.text.replace('\n\n', '</para><para>')
       self.write(self.entity("para", text)+'\n')
 
    #################### AST Visitor ###########################################
@@ -186,7 +184,8 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.start_entity("section")
       self.write_entity("title", module.type()+" "+Util.ccolonName(module.name()))
       self.write("\n")
-      map(self.visitComment, module.comments())
+      for c in module.comments():
+         self.process_comment(c)
       self.push_scope(module.name())
       for declaration in module.declarations(): declaration.accept(self)
       self.pop_scope()
@@ -203,7 +202,8 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.push_scope(clas.name())
       if clas.comments():
          self.start_entity("textobject")
-         map(self.visitComment, clas.comments())
+         for c in clas.comments():
+            self.process_comment(c)
          self.end_entity("textobject")
       self.end_entity("classsynopsisinfo")
       classes = []
@@ -265,77 +265,4 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       print "sorry, <enumerator> not implemented"
    def visitEnum(self, enum):
       print "sorry, <enum> not implemented"
-
-class DocFormatter(Formatter):
-   """A specialized version that just caters for the needs of the DocBook
-   manual's Config section. Only modules and classes are printed, and the
-   docbook elements classsynopsis etc are not used."""
-
-   def visitComment(self, comment):
-      text = comment.text()
-      see_tags, attr_tags = [], []
-      tags = comment.tags()
-      # Parse each of the tags
-      for tag in tags:
-         name, rest = tag.name(), tag.text()
-         if name == '@see':
-            see_tags.append(rest)
-         elif name == '@attr':
-            attr_tags.append(string.split(rest,' ',1))
-      # Do the body of the comment
-      text = text.replace('\n\n', '</para><para>')
-      text = text.replace('<heading>', '<emphasis>')
-      text = text.replace('</heading>', '</emphasis>')
-      text = text.replace('<example>', '<programlisting>')
-      text = text.replace('</example>', '</programlisting>')
-      self.write(self.entity("para", text)+'\n')
-      # Do the attributes
-      if len(attr_tags):
-         self.start_entity('variablelist')
-         self.write_entity('title', 'Attributes:')
-         for attr, desc in attr_tags:
-            self.start_entity('varlistentry')
-            self.write_entity('term', attr)
-            self.write_entity('listitem', self.entity('para', desc))
-            self.end_entity('varlistentry')
-         self.end_entity('variablelist')
-      # Do the see-also
-      if len(see_tags):
-         self.start_entity('itemizedlist')
-         self.write_entity('title', 'See also:')
-         for text in see_tags:
-            self.write_entity('listitem', self.entity('para', text))
-         self.end_entity('itemizedlist')
-
-   def visitModule(self, module):
-
-      self.start_entity("section")
-      self.write_entity("title", module.type()+" "+Util.ccolonName(module.name()))
-      self.write("\n")
-      map(self.visitComment, module.comments())
-      self.end_entity("section")
-      self.push_scope(module.name())
-      for declaration in module.declarations():
-         if isinstance(declaration, AST.Class):
-            self.visitClass(declaration)
-      self.pop_scope()
-
-   def visitClass(self, clas):
-
-      self.start_entity("section")
-      if len(clas.name()) > 3 and clas.name()[:2] == ("Config.py", "Base"):
-         self.write_entity("title", clas.name()[2]+" class "+Util.ccolonName(clas.name()[3:], self.scope()))
-      else:
-         self.write_entity("title", "Class "+Util.ccolonName(clas.name(), self.scope()))
-      if len(clas.parents()):
-         for parent in clas.parents():
-            self.visitInheritance(parent)
-      map(self.visitComment, clas.comments())
-      self.end_entity("section")
-      for declaration in clas.declarations():
-         if isinstance(declaration, AST.Class):
-            self.visitClass(declaration)
-
-   def visitInheritance(self, inheritance):
-      self.write_entity("para", "Inherits "+Util.ccolonName(inheritance.parent().name(), self.scope()))
 

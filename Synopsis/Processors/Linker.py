@@ -214,7 +214,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       """Merges the src comments into dest. Merge is just an append, unless
       src already exists inside dest!"""
 
-      texter = lambda x: x.text()
+      texter = lambda x: x.text
       dest_str = map(texter, dest)
       src_str = map(texter, src)
       if dest_str[-len(src):] == src_str: return

@@ -1,4 +1,3 @@
-# $Id: Texinfo.py,v 1.8 2003/11/21 21:17:55 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies

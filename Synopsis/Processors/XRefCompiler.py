@@ -37,9 +37,16 @@ class XRefCompiler(Processor):
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
 
-      filenames = map(lambda x: x[0], 
-                      filter(lambda x: x[1].is_main(), ast.files().items()))
-      filenames = map(lambda x:os.path.join(self.prefix, x), filenames)
+      def prefix(filename):
+         "Map filename to xref filename."
+
+         # Even though filenames shouldn't be absolute, we protect ourselves
+         # against accidents.
+         if os.path.isabs(filename):
+            filename = os.path.splitdrive(filename)[1][1:]
+         return os.path.join(self.prefix, filename)
+
+      filenames = [prefix(x[0]) for x in ast.files().items() if x[1].is_main()]
       self.do_compile(filenames, self.output, self.no_locals)
 
       return self.ast

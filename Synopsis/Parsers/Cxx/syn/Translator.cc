@@ -530,13 +530,21 @@ PyObject *Translator::FuncPtr(Types::FuncPtr* type)
 
 void Translator::addComments(PyObject* pydecl, AST::Declaration* cdecl)
 {
-  PyObject *comments, *new_comments;
-  comments = PyObject_CallMethod(pydecl, "comments", 0);
-  PyObject_CallMethod(comments, "extend", "O", new_comments = m->List(cdecl->comments()));
+  PyObject *annotations = PyObject_GetAttrString(pydecl, "annotations");
+  PyObject *comments = m->List(cdecl->comments());
+  int size = PyList_GET_SIZE(comments);
+  if (size)
+  {
+    PyObject *last = PyList_GetItem(comments, size -1);
+    if (!PyString_Size(last))
+      PyList_SetItem(comments, size -1, Py_None);
+  }
+
+  PyDict_SetItemString(annotations, "comments", comments);
   // Also set the accessability..
   PyObject_CallMethod(pydecl, "set_accessibility", "i", int(cdecl->access()));
+  Py_DECREF(annotations);
   Py_DECREF(comments);
-  Py_DECREF(new_comments);
 }
 
 //. merge the file with an existing (python) object if it exists
