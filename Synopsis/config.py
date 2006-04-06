@@ -4,7 +4,7 @@ paths, etc."""
 
 import os, os.path, sys
 
-version = "0.8"
+version = "0.9"
 
 
 if os.name == "posix":

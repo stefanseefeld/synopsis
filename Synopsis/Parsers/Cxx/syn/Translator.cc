@@ -303,6 +303,8 @@ Translator::Translator(FileFilter* filter, PyObject *ast)
   Trace trace("Translator::Translator", Trace::TRANSLATION);
   m_ast_module  = PyImport_ImportModule("Synopsis.AST");
   assertObject(m_ast_module);
+  m_sf_module  = PyImport_ImportModule("Synopsis.SourceFile");
+  assertObject(m_sf_module);
   m_type_module = PyImport_ImportModule("Synopsis.Type");
   assertObject(m_type_module);
   
@@ -329,6 +331,7 @@ Translator::~Translator()
   
   Py_DECREF(m_type_module);
   Py_DECREF(m_ast_module);
+  Py_DECREF(m_sf_module);
   
   // Deref the objects we created
   Private::ObjMap::iterator iter = m->obj_map.begin();
@@ -558,7 +561,7 @@ PyObject *Translator::SourceFile(AST::SourceFile* file)
   if (!pyfile) // the file wasn't found, create it now
   {
     PyObject *filename, *full_filename;
-    pyfile = PyObject_CallMethod(m_ast_module, "SourceFile", "OOO",
+    pyfile = PyObject_CallMethod(m_sf_module, "SourceFile", "OOO",
 				 filename = m->py(file->filename()),
 				 full_filename = m->py(file->full_filename()),
 				 m->cxx());
@@ -584,7 +587,7 @@ PyObject *Translator::Include(AST::Include* include)
 {
   Trace trace("Translator::Include", Trace::TRANSLATION);
   PyObject *pyinclude, *target;
-  pyinclude = PyObject_CallMethod(m_ast_module, "Include", "Oii",
+  pyinclude = PyObject_CallMethod(m_sf_module, "Include", "Oii",
                                   target = m->py(include->target()),
                                   include->is_macro() ? 1 : 0,
                                   include->is_next() ? 1 : 0);

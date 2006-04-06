@@ -15,6 +15,8 @@ resulting intermediate AST objects into Synopsis.Core.AST objects.
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST, Type
+from Synopsis.SourceFile import SourceFile
+from Synopsis.DocString import DocString
 
 import parser, exparse, sys, os, string, getopt
 
@@ -50,24 +52,21 @@ class Parser(Processor):
       exparse.packagepath = string.join(string.split(file, os.sep)[:-1], os.sep)
       exparse.packagename = name[:-1]
       #print "package path, name:",exparse.packagepath, exparse.packagename
-      self.sourcefile = AST.SourceFile(filename, file, 'Python')
-      self.sourcefile.set_is_main(1)
+      self.sourcefile = SourceFile(filename, file, 'Python')
+      self.sourcefile.annotations['primary'] = True
 
       # Create the enclosing module scopes
-      self.scopes = [AST.Scope(self.sourcefile, -1, 'Python',
-                               'file scope', name)]
+      self.scopes = [AST.Scope(self.sourcefile, -1, 'file scope', name)]
       for depth in range(len(name) - 1):
-         module = AST.Module(self.sourcefile, -1, 'Python',
-                             'package', name[:depth+1])
+         module = AST.Module(self.sourcefile, -1, 'package', name[:depth+1])
          self.add_declaration(module)
-         types[module.name()] = Type.Declared("Python", module.name(), module)
+         types[module.name()] = Type.Declared('Python', module.name(), module)
          self.push(module)
       # Add final name as Module -- unless module is __init__
       if name[-1] != '__init__':
-         module = AST.Module(self.sourcefile, -1, 'Python',
-                             'module', name)
+         module = AST.Module(self.sourcefile, -1, 'module', name)
          self.add_declaration(module)
-         types[module.name()] = Type.Declared("Python", module.name(), module)
+         types[module.name()] = Type.Declared('Python', module.name(), module)
          self.push(module)
     
       # Parse the file
@@ -85,7 +84,7 @@ class Parser(Processor):
       SourceFile for this file."""
 
       self.scopes[-1].declarations().append(decl)
-      self.sourcefile.declarations().append(decl)
+      self.sourcefile.declarations.append(decl)
 
    def push(self, scope):
       """Pushes the given scope onto the top of the stack"""
@@ -109,8 +108,8 @@ class Parser(Processor):
       """Processes a ModuleInfo object. The docs are extracted, and any
       functions and docs recursively processed."""
 
-      # FIXME: documentation should be stored together with a markup spec
-      self.scopes[-1].annotations['doc'] = mi.get_docstring()
+      # TODO: Look up __docformat__ string to figure out markup.
+      self.scopes[-1].annotations['doc'] = DocString(mi.get_docstring(), '')
       for name in mi.get_function_names():
          self.process_function_info(mi.get_function_info(name))
       for name in mi.get_class_names():
@@ -128,7 +127,7 @@ class Parser(Processor):
       inserted into the current scope."""
       
       name = self.scope_name(fi.get_name())
-      func = AST.Function(self.sourcefile, -1, 'Python', 'function', '',
+      func = AST.Function(self.sourcefile, -1, 'function', '',
                           self.return_type, '', name, name[-1])
       func.annotations['doc'] = fi.get_docstring()
       self.add_params(func, fi)
@@ -139,7 +138,7 @@ class Parser(Processor):
       inserted into the current scope."""
 
       name = self.scope_name(fi.get_name())
-      func = AST.Operation(self.sourcefile,-1, 'Python', 'operation', '',
+      func = AST.Operation(self.sourcefile,-1, 'operation', '',
                            self.return_type, '', name, name[-1])
       func.annotations['doc'] = fi.get_docstring()
       self.add_params(func, fi)
@@ -151,7 +150,7 @@ class Parser(Processor):
       parsed, and nested classes and methods recursively processed."""
 
       name = self.scope_name(ci.get_name())
-      clas = AST.Class(self.sourcefile,-1, 'Python', 'class', name)
+      clas = AST.Class(self.sourcefile,-1, 'class', name)
       clas.annotations['doc'] = ci.get_docstring()
 
       types = self.ast.types()
@@ -160,11 +159,11 @@ class Parser(Processor):
          try:
             t = types[self.scope_name(base)]
          except KeyError:
-            t = Type.Unknown("Python", self.scope_name(base))
+            t = Type.Unknown('Python', self.scope_name(base))
          clas.parents().append(AST.Inheritance('', t, ''))
       # Add the new class
       self.add_declaration(clas)
-      types[clas.name()] = Type.Declared("Python", clas.name(), clas)
+      types[clas.name()] = Type.Declared('Python', clas.name(), clas)
       self.push(clas)
       for name in ci.get_class_names():
          self.process_class_info(ci.get_class_info(name))

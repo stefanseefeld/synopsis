@@ -203,22 +203,27 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          raise TypeError, 'symbol type mismatch: Synopsis.AST.Module and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
 
       metamodule.module_declarations().append(module)
-      self.merge_comments(metamodule.comments(), module.comments())
+
+      # Merge comments.
+      self.merge_comments(metamodule, module)
+
       self.push(metamodule)
       decls = tuple(module.declarations())
       del module.declarations()[:]
       for decl in decls: decl.accept(self)
       self.pop()
 
-   def merge_comments(self, dest, src):
-      """Merges the src comments into dest. Merge is just an append, unless
-      src already exists inside dest!"""
 
-      texter = lambda x: x.text
-      dest_str = map(texter, dest)
-      src_str = map(texter, src)
-      if dest_str[-len(src):] == src_str: return
-      dest.extend(src)
+   def merge_comments(self, metamodule, module):
+      """Append the module comments into the metamodule."""
+
+      if module.annotations.has_key('comments'):
+         new_comments = module.annotations['comments']
+         metamodule.annotations.setdefault('comments', [])
+         comments = metamodule.annotations['comments']
+         if comments[-len(new_comments):] != new_comments:
+            comments.extend(new_comments)
+
 
    def visitMetaModule(self, module):        
 
@@ -231,7 +236,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          raise TypeError, 'symbol type mismatch: Synopsis.AST.MetaModule and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
          
       metamodule.module_declarations().extend(module.module_declarations())
-      metamodule.comments().extend(module.comments())
+      self.merge_comments(metamodule, module)
       self.push(metamodule)
       decls = tuple(module.declarations())
       del module.declarations()[:]

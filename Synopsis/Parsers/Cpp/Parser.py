@@ -20,7 +20,7 @@ class Parser(Processor):
 
    emulate_compiler = Parameter('', 'a compiler to emulate')
    flags = Parameter([], 'list of preprocessor flags such as -I or -D')
-   main_file_only = Parameter(True, 'should only main file be processed')
+   primary_file_only = Parameter(True, 'should only primary file be processed')
    cpp_output = Parameter(None, 'filename for preprocessed file')
    base_path = Parameter(None, 'path prefix to strip off of the filenames')
    language = Parameter('C++', 'source code programming language of the given input file')
@@ -40,7 +40,7 @@ class Parser(Processor):
                                os.path.abspath(file),
                                base_path,
                                self.cpp_output,
-                               self.language, flags, self.main_file_only,
+                               self.language, flags, self.primary_file_only,
                                self.verbose, self.debug)
       return self.output_and_return_ast()
 

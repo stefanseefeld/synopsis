@@ -23,7 +23,7 @@ class Parser(Processor):
    preprocess = Parameter(True, 'whether or not to preprocess the input')
    emulate_compiler = Parameter('', 'a compiler to emulate')
    cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
-   main_file_only = Parameter(True, 'should only main file be processed')
+   primary_file_only = Parameter(True, 'should only primary file be processed')
    base_path = Parameter('', 'path prefix to strip off of the file names')
    syntax_prefix = Parameter(None, 'path prefix (directory) to contain syntax info')
    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
@@ -57,13 +57,13 @@ class Parser(Processor):
             self.ast = cpp.process(self.ast,
                                    cpp_output = ii_file,
                                    input = [file],
-                                   main_file_only = self.main_file_only,
+                                   primary_file_only = self.primary_file_only,
                                    verbose = self.verbose,
                                    debug = self.debug)
 
          self.ast = occ.parse(self.ast, ii_file,
                               os.path.abspath(file),
-                              self.main_file_only,
+                              self.primary_file_only,
                               os.path.abspath(self.base_path) + os.sep,
                               self.syntax_prefix,
                               self.xref_prefix,

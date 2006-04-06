@@ -133,6 +133,7 @@ private:
   */
 private:
   PyObject* m_ast_module;
+  PyObject* m_sf_module;
   PyObject* m_type_module;
   PyObject *m_ast;
   PyObject* m_declarations;

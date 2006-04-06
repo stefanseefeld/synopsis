@@ -21,7 +21,7 @@ class ASTTranslator : private PTree::Visitor
 {
 public:
   ASTTranslator(std::string const &filename,
-		std::string const &base_path, bool main_file_only,
+		std::string const &base_path, bool primary_file_only,
 		AST::AST a, bool v, bool d);
 
   void translate(PTree::Node *, Buffer &);
@@ -44,17 +44,18 @@ private:
   //. node. This will reset 'my_lineno' and may change
   //. 'my_file'.
   //. Return whether or not the node should be translated,
-  //. according to the current file and the 'main_file_only' flag.
+  //. according to the current file and the 'primary_file_only' flag.
   bool update_position(PTree::Node *);
 
   void declare(AST::Declaration);
 
   AST::AST            my_ast;
   AST::ASTKit         my_ast_kit;
+  AST::SourceFileKit  my_sf_kit;
   AST::SourceFile     my_file;
   std::string         my_raw_filename;
   std::string         my_base_path;
-  bool                my_main_file_only;
+  bool                my_primary_file_only;
   unsigned long       my_lineno;
   TypeTranslator      my_types;
   ScopeStack          my_scope;

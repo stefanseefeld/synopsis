@@ -14,13 +14,14 @@
 using namespace Synopsis;
 
 ASTTranslator::ASTTranslator(std::string const &filename,
-			     std::string const &base_path, bool main_file_only,
+			     std::string const &base_path, bool primary_file_only,
 			     Synopsis::AST::AST ast, bool v, bool d)
   : my_ast(ast),
-    my_ast_kit("C"),
+    my_ast_kit(),
+    my_sf_kit("C"),
     my_raw_filename(filename),
     my_base_path(base_path),
-    my_main_file_only(main_file_only),
+    my_primary_file_only(primary_file_only),
     my_lineno(0),
     my_types(my_ast.types(), v, d),
     my_verbose(v), my_debug(d) 
@@ -37,7 +38,7 @@ ASTTranslator::ASTTranslator(std::string const &filename,
     my_file = file;
   else
   {
-    my_file = my_ast_kit.create_source_file(short_filename, long_filename);
+    my_file = my_sf_kit.create_source_file(short_filename, long_filename);
     my_ast.files().set(short_filename, my_file);
   }
 }
@@ -436,8 +437,8 @@ bool ASTTranslator::update_position(PTree::Node *node)
 
   if (filename != my_raw_filename)
   {
-    if (my_main_file_only)
-      // my_raw_filename remains the main file's name
+    if (my_primary_file_only)
+      // my_raw_filename remains the primary file's name
       // and all declarations from elsewhere are ignored
       return false;
     my_raw_filename = filename;
@@ -453,7 +454,7 @@ bool ASTTranslator::update_position(PTree::Node *node)
       my_file = file;
     else
     {
-      my_file = my_ast_kit.create_source_file(short_filename, long_filename);
+      my_file = my_sf_kit.create_source_file(short_filename, long_filename);
       my_ast.files().set(short_filename, my_file);
     }
   }

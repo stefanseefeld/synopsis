@@ -100,8 +100,8 @@ void FakeGC::delete_all()
 
 bool verbose;
 
-// If true then everything but what's in the main file will be stripped
-bool syn_main_only;
+// If true then everything but what's in the primary file will be stripped
+bool syn_primary_only;
 bool syn_fake_std;
 bool syn_multi_files;
 
@@ -197,10 +197,10 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   PyObject *ast;
   const char *src, *cppfile;
-  int main_file_only, verbose, debug;
+  int primary_file_only, verbose, debug;
   if (!PyArg_ParseTuple(args, "Ossizzzii",
                         &ast, &cppfile, &src,
-                        &main_file_only,
+                        &primary_file_only,
                         &syn_base_path,
                         &syn_syntax_prefix,
                         &syn_xref_prefix,
@@ -214,7 +214,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
 
   if (verbose) ::verbose = true;
   if (debug) Trace::enable(Trace::ALL);
-  if (main_file_only) syn_main_only = true;
+  if (primary_file_only) syn_primary_only = true;
 
   if (!src || *src == '\0')
   {
@@ -223,7 +223,7 @@ PyObject *occ_parse(PyObject * /* self */, PyObject *args)
   }
 
   // Setup the filter
-  FileFilter filter(ast, src, syn_base_path, syn_main_only);
+  FileFilter filter(ast, src, syn_base_path, syn_primary_only);
   if (syn_syntax_prefix) filter.set_syntax_prefix(syn_syntax_prefix);
   if (syn_xref_prefix) filter.set_xref_prefix(syn_xref_prefix);
 

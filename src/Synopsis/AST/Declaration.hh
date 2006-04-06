@@ -33,12 +33,12 @@ class SourceFile : public Python::Object
 public:
   SourceFile() {}
   SourceFile(const Python::Object &o) : Python::Object(o) {}
-  std::string name() const { return narrow<std::string>(attr("filename")());}
-  std::string long_name() const { return narrow<std::string>(attr("full_filename")());}
-  bool is_main() const { return narrow<bool>(attr("is_main")());}
-  void is_main(bool flag) { attr("set_is_main")(Python::Tuple(flag));}
-  Python::List includes() { return attr("includes")();}
-  Python::Dict macro_calls() { return attr("macro_calls")();}
+  std::string name() const { return narrow<std::string>(attr("filename"));}
+  std::string abs_name() const { return narrow<std::string>(attr("abs_name"));}
+  bool primary() const { return narrow<bool>(Python::Dict(attr("annotations")).get("primary"));}
+  void set_primary(bool flag) { Python::Dict(attr("annotations")).set("primary", flag);}
+  Python::List includes() { return attr("includes");}
+  Python::Dict macro_calls() { return attr("macro_calls");}
   Declarations declarations();
 };
 
@@ -66,7 +66,7 @@ public:
 };
 
 inline Declarations SourceFile::declarations()
-{ return narrow<Declarations>(attr("declarations")());}
+{ return narrow<Declarations>(attr("declarations"));}
 
 //. A Builtin is a node to be used internally.
 //. Right now it's being used to capture comments

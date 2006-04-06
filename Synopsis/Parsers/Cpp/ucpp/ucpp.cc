@@ -25,41 +25,42 @@ namespace
 
 int verbose = 0;
 int debug = 0;
-int main_file_only = 0;
+int primary_file_only = 0;
 bool active = true;
 const char *language;
 std::string base_path;
 // these python objects need to be referenced as pointers
 // since the python runtime environment has to be initiaized first
-std::auto_ptr<AST::ASTKit> kit;
+std::auto_ptr<AST::ASTKit> ast_kit;
+std::auto_ptr<AST::SourceFileKit> sf_kit;
 std::auto_ptr<AST::TypeKit> types;
 std::auto_ptr<AST::AST> ast;
 std::auto_ptr<AST::SourceFile> source_file;
 const char *input = 0;
 
 //. creates new SourceFile object and store it into ast
-AST::SourceFile create_source_file(const std::string &filename, bool is_main)
+AST::SourceFile create_source_file(const std::string &filename, bool primary)
 {
   Path path = Path(filename).abs();
   path.strip(base_path);
   std::string name = path.str();
-  AST::SourceFile sf = kit->create_source_file(name, filename);
+  AST::SourceFile sf = sf_kit->create_source_file(name, filename);
   Python::Dict files = ast->files();
   files.set(name, sf);
-  if (is_main) sf.is_main(true);
+  if (primary) sf.set_primary(true);
   return sf;
 }
 
 //. creates new or returns existing SourceFile object
 //. with the given filename
-AST::SourceFile lookup_source_file(const std::string &filename, bool main)
+AST::SourceFile lookup_source_file(const std::string &filename, bool primary)
 {
   Python::Dict files = ast->files();
   Path path = Path(filename).abs();
   path.strip(base_path);
   AST::SourceFile sf = files.get(path.str());
-  if (sf && main) sf.is_main(true);
-  return sf ? sf : create_source_file(filename, main);
+  if (sf && primary) sf.set_primary(true);
+  return sf ? sf : create_source_file(filename, primary);
 }
 
 //. creates new Macro object
@@ -75,7 +76,7 @@ void create_macro(const char *filename, int line,
     for (int i = 0; i < num_args; ++i) params.append(args[i]);
     if (vaarg) params.append("...");
   }
-  AST::Macro macro = kit->create_macro(sf, line, name, params, text);
+  AST::Macro macro = ast_kit->create_macro(sf, line, name, params, text);
   AST::Declared declared = types->create_declared(name, macro);
 
   Python::List declarations = ast->declarations();
@@ -123,7 +124,7 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
                           &output,
                           &language,
                           &PyList_Type, &py_flags,
-                          &main_file_only,
+                          &primary_file_only,
                           &verbose,
                           &debug)
         || !extract(py_flags, flags))
@@ -134,7 +135,8 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     // of ucpp_parse, we can safely manage these objects in this scope yet
     // reference them globally (for convenience)
     ast.reset(new AST::AST(py_ast));
-    kit.reset(new AST::ASTKit(language));
+    ast_kit.reset(new AST::ASTKit());
+    sf_kit.reset(new AST::SourceFileKit(language));
     types.reset(new AST::TypeKit(language));
 
     if (py_base_path)
@@ -194,7 +196,8 @@ PyObject *ucpp_parse(PyObject *self, PyObject *args)
     // make sure these objects are deleted before the python runtime
     source_file.reset();
     types.reset();
-    kit.reset();
+    ast_kit.reset();
+    sf_kit.reset();
     ast.reset();
     return py_ast;
   }
@@ -221,7 +224,7 @@ extern "C"
     std::string abs_filename = Path(filename).abs().str();
 
     bool activate = false;
-    if ((main_file_only && strcmp(input, filename)) || 
+    if ((primary_file_only && strcmp(input, filename)) || 
 	(base_path.size() && abs_filename.substr(0, base_path.size()) != base_path))
       active = false;
     else
@@ -253,7 +256,7 @@ extern "C"
 
     Python::Dict mmap = source_file->macro_calls();
     Python::List line = mmap.get(line_num, Python::List());
-    line.append(kit->create_macro_call(name, start, end, diff));
+    line.append(sf_kit->create_macro_call(name, start, end, diff));
     mmap.set(line_num, line);
   }
 
@@ -277,7 +280,7 @@ extern "C"
 //     bool main = !base_path || strncmp(path.str().c_str(), base_path, strlen(base_path));
     AST::SourceFile target_file = lookup_source_file(path.str(), false);
 
-    AST::Include include = kit->create_include(target_file, name, is_macro, is_next);
+    AST::Include include = sf_kit->create_include(target_file, name, is_macro, is_next);
     Python::List includes = source_file->includes();
     includes.append(include);
   }

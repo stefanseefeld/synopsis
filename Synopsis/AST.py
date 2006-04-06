@@ -21,7 +21,7 @@ import string, sys, cPickle, types, stat
 
 # The version of the file format - this should be increased everytime
 # incompatible changes are made to the AST or Type classes
-FILE_VERSION = 5
+FILE_VERSION = 6
 
 # Accessibility constants
 DEFAULT = 0
@@ -42,7 +42,6 @@ def load(filename):
       if version is not FILE_VERSION:
          file.close()
          raise Exception, 'Wrong file version'
-      deps = unpickler.load() # ignored here
       ast = unpickler.load()
       file.close()
       return ast
@@ -77,32 +76,14 @@ def load_deps(filename):
 def save(filename, ast):
    """Saves an AST object to the given filename"""
    try:
-      deps = make_deps(ast)
       file = open(filename, 'wb')
       pickler = cPickle.Pickler(file, 1)
       pickler.dump(FILE_VERSION)
-      pickler.dump(deps)
       pickler.dump(ast)
       file.close()
    except:
       exc, msg = sys.exc_info()[0:2]
       raise Exception, "Saving '%s', %s: %s"%(filename, exc, msg)
-
-def make_deps(ast):
-   """Creates the dependencies object to save in the .syn file from the given
-   AST. The dependencies are a list of (filename, timestamp) pairs, extracted
-   from ast.files()"""
-   deps = []
-   for file in ast.files().values():
-      filename = file.full_filename()
-      try:
-         info = os.stat(filename)
-      except:
-         # Ignore any file we can't stat
-         continue
-      time = info[stat.ST_MTIME]
-      deps.append( (filename, time) )
-   return deps
 
 class AST:
    """Top-level Abstract Syntax Tree.
@@ -164,125 +145,16 @@ class AST:
             for i in f.includes():
                if i.target() == r: i.set_target(replacement[r])
 
-class Include:
-   """Information about an include directive in a SourceFile.
-   If the include directive required a macro expansion to get the filename,
-   the is_macro will return true. If the include directive was actually an
-   include_next, then is_next will return true.
-   """
-   def __init__(self, target, name, is_macro, is_next):
-      if not isinstance(target, SourceFile):
-         raise TypeError, "target parameter must be a SourceFile"
-      self.__target = target
-      self.__name = name
-      self.__is_macro = is_macro
-      self.__is_next = is_next
 
-   def target(self):
-      return self.__target
-
-   def set_target(self, target):
-      self.__target = target
-
-   def name(self):
-      """return the name as it appears in the include statement"""
-      return self.__name
-
-   def is_macro(self):
-      return self.__is_macro
-
-   def is_next(self):
-      return self.__is_next
-
-class MacroCall:
-   """A class to support mapping from positions in a preprocessed file
-   back to positions in the original file."""
-
-   def __init__(self, name, start, end, diff):
-
-      self.name = name
-      self.start = start
-      self.end = end
-      self.diff = diff
-
-class SourceFile:
-   """The information about a file that the AST was generated from.
-   Contains filename, all declarations from this file (even nested ones) and
-   includes (aka imports) from this file."""
-
-   def __init__(self, filename, full_filename, language):
-      """Constructor"""
-      if type(filename) is not types.StringType: raise TypeError, "filename parameter must be a string filename"
-      if type(full_filename) is not types.StringType: raise TypeError, "full_filename parameter must be a string filename"
-      if type(language) is not types.StringType: raise TypeError, "language parameter must be a string language"
-      self.__filename = filename
-      self.__full_filename = full_filename
-      self.__language = language
-      self.__includes = []
-      self.__declarations = []
-      self.__is_main = 0
-      self.__macro_calls = {}
-
-   def is_main(self):
-      """Returns whether this was a main file. A source file is a main file
-      if it was parsed directly or as an extra file. A source file is not a
-      main file if it was just included. A source file that had no actual
-      declarations but was given to the parser as either the main source
-      file or an extra file is still a main file."""
-      return self.__is_main
-   
-   def set_is_main(self, value):
-      """Sets the is_main flag. Typically only called once, and then may by
-      the linker if it discovers that a file is actually a main file
-      elsewhere."""
-      self.__is_main = value
-
-   def filename(self):
-      """Returns the filename of this file. The filename can be absolute or
-      relative, depending on the settings for the Parser"""
-      return self.__filename
-
-   def full_filename(self):
-      """Returns the full_filename of this file. The filename can be absolute or
-      relative, depending on the filename given to the Parser. This filename
-      does not have any basename stripped from it, and should be accessible
-      from the current directory as is whether absolute or relative."""
-      return self.__full_filename
-
-   def language(self):
-      """Returns the language for this file as a string"""
-      return self.__language
-
-   def declarations(self):
-      """Returns a list of declarations declared in this file"""
-      return self.__declarations
-
-   def includes(self):
-      """Returns a the files included by this file. These may be
-      absolute or relative, depending on the settings for the Parser. This
-      may also include system files. The return value is a list of tuples,
-      with each tuple being a pair (included-from-filename,
-      include-filename). This allows distinction of files directly included
-      (included-from-filename == self.filename()) but also allows dependency
-      tracking since *all* files read while parsing this file are included
-      in the list (even system files)."""
-      return self.__includes
-
-   def macro_calls(self):
-      return self.__macro_calls
-    
 class Declaration:
    """Declaration base class. Every declaration has a name, type,
    accessibility and annotations. The default accessibility is DEFAULT except for
    C++ where the Parser always sets it to one of the other three. """
     
-   def __init__(self, file, line, language, strtype, name):
-      if file is not None:
-         if type(file) is not types.InstanceType or not isinstance(file, SourceFile):
-            raise TypeError, "file must be a SourceFile object"
+   def __init__(self, file, line, strtype, name):
+
       self.__file  = file
       self.__line  = line
-      self.__language = language
       self.__name = tuple(name)
       self.__type = strtype
       self.__accessibility = DEFAULT
@@ -294,9 +166,6 @@ class Declaration:
    def line(self):
       """The line of the file this declaration started at"""
       return self.__line
-   def language(self):
-      """The language this declaration is in"""
-      return self.__language
    def type(self):
       """A string name of the type of this declaration"""
       return self.__type
@@ -324,10 +193,10 @@ class Declaration:
 class Builtin (Declaration):
    """An ast node for internal use only."""
 
-   def __init__(self, file, line, language, type, name):
+   def __init__(self, file, line, type, name):
       """Constructor"""
 
-      Declaration.__init__(self, file, line, language, type, name)
+      Declaration.__init__(self, file, line, type, name)
 
    def accept(self, visitor): visitor.visitBuiltin(self)
 
@@ -336,9 +205,9 @@ class Macro (Declaration):
    AST, and as such are always in the global scope. A macro is "temporary" if
    it was #undefined in the same file it was #defined in."""
 
-   def __init__(self, file, line, language, type, name, parameters, text):
+   def __init__(self, file, line, type, name, parameters, text):
       """Constructor"""
-      Declaration.__init__(self, file, line, language, type, name)
+      Declaration.__init__(self, file, line, type, name)
       self.__parameters = parameters
       self.__text = text
 
@@ -358,8 +227,8 @@ class Macro (Declaration):
 class Forward (Declaration):
    """Forward declaration"""
 
-   def __init__(self, file, line, language, type, name):
-      Declaration.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name):
+      Declaration.__init__(self, file, line, type, name)
    def accept(self, visitor): visitor.visitForward(self)
 
 class Group (Declaration):
@@ -369,8 +238,8 @@ class Group (Declaration):
    to regroup declarations that are to appear together in the
    manual."""
 
-   def __init__(self, file, line, language, type, name):
-      Declaration.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name):
+      Declaration.__init__(self, file, line, type, name)
       self.__declarations = []
    def declarations(self):
       """The list of declarations in this group"""
@@ -382,15 +251,15 @@ class Group (Declaration):
 class Scope (Group):
    """Base class for scopes (named groups)."""
 
-   def __init__(self, file, line, language, type, name):
-      Group.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name):
+      Group.__init__(self, file, line, type, name)
 
    def accept(self, visitor): visitor.visitScope(self)
 
 class Module (Scope):
    """Module class"""
-   def __init__(self, file, line, language, type, name):
-      Scope.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name):
+      Scope.__init__(self, file, line, type, name)
 
    def accept(self, visitor): visitor.visitModule(self)
 
@@ -428,8 +297,8 @@ class Inheritance:
 class Class (Scope):
    """Class class."""
 
-   def __init__(self, file, line, language, type, name):
-      Scope.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name):
+      Scope.__init__(self, file, line, type, name)
       self.__parents = []
       self.__template = None
    def parents(self):
@@ -447,8 +316,8 @@ class Typedef (Declaration):
 
    alias()           -- the type object referenced by this alias
    constr()          -- boolean: true if the alias type was constructed within this typedef declaration."""
-   def __init__(self, file, line, language, type, name, alias, constr):
-      Declaration.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name, alias, constr):
+      Declaration.__init__(self, file, line, type, name)
       self.__alias = alias
       self.__constr = constr
    def alias(self):
@@ -466,8 +335,8 @@ class Enumerator (Declaration):
    """Enumerator of an Enum. Enumerators represent the individual names and
    values in an enum."""
    
-   def __init__(self, file, line, language, name, value):
-      Declaration.__init__(self, file, line, language, "enumerator", name)
+   def __init__(self, file, line, name, value):
+      Declaration.__init__(self, file, line, "enumerator", name)
       self.__value = value
    def value(self):
       """The string value of this enumerator"""
@@ -478,9 +347,9 @@ class Enum (Declaration):
    """Enum declaration. The actual names and values are encapsulated by
    Enumerator objects."""
 
-   def __init__(self, file, line, language, name, enumerators):
+   def __init__(self, file, line, name, enumerators):
 
-      Declaration.__init__(self, file, line, language, "enum", name)
+      Declaration.__init__(self, file, line, "enum", name)
       self.__enumerators = enumerators[:]
       #FIXME: the Cxx parser will append a Builtin('eos') to the
       #list of enumerators which we need to extract here.
@@ -496,8 +365,8 @@ class Enum (Declaration):
 class Variable (Declaration):
    """Variable definition"""
 
-   def __init__(self, file, line, language, type, name, vtype, constr):
-      Declaration.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, name, vtype, constr):
+      Declaration.__init__(self, file, line, type, name)
       self.__vtype  = vtype
       self.__constr  = constr
 
@@ -516,8 +385,8 @@ class Variable (Declaration):
 class Const (Declaration):
    """Constant declaration. A constant is a name with a type and value."""
 
-   def __init__(self, file, line, language, type, ctype, name, value):
-      Declaration.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, ctype, name, value):
+      Declaration.__init__(self, file, line, type, name)
       self.__ctype  = ctype
       self.__value = value
 
@@ -573,8 +442,8 @@ class Function (Declaration):
    Note that function names are stored in mangled form to allow overriding.
    Formatters should use the realname() method to extract the unmangled name."""
 
-   def __init__(self, file, line, language, type, premod, returnType, postmod, name, realname):
-      Declaration.__init__(self, file, line, language, type, name)
+   def __init__(self, file, line, type, premod, returnType, postmod, name, realname):
+      Declaration.__init__(self, file, line, type, name)
       self.__realname = realname
       self.__premodifier = premod
       self.__returnType = returnType
@@ -620,8 +489,8 @@ class Operation (Function):
    """Operation class. An operation is related to a Function and is currently
    identical.
    """
-   def __init__(self, file, line, language, type, premod, returnType, postmod, name, realname):
-      Function.__init__(self, file, line, language, type, premod, returnType, postmod, name, realname)
+   def __init__(self, file, line, type, premod, returnType, postmod, name, realname):
+      Function.__init__(self, file, line, type, premod, returnType, postmod, name, realname)
    def accept(self, visitor): visitor.visitOperation(self)
 
 class Visitor :
