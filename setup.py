@@ -35,7 +35,7 @@ import os, sys, re, glob
 
 module_ext = sysconfig.get_config_var('SO')
 
-def prefix(list, pref): return map(lambda x: pref + x, list)
+def prefix(list, pref): return [pref + x for x in list]
 py_packages = ["Synopsis",
                "Synopsis.Parsers",
                "Synopsis.Parsers.IDL", "Synopsis.Parsers.Python",
@@ -46,7 +46,7 @@ py_packages = ["Synopsis",
                "Synopsis.Formatters.HTML",
                "Synopsis.Formatters.HTML.Views",
                "Synopsis.Formatters.HTML.Parts",
-               "Synopsis.Formatters.HTML.Comments",
+               "Synopsis.Formatters.HTML.Markup",
                "Synopsis.Formatters.HTML.Fragments"]
 
 ext_modules = [('Synopsis/Parsers/Cpp/ucpp', 'ucpp' + module_ext),
