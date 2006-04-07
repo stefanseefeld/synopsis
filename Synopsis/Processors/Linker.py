@@ -21,7 +21,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
 
-      root = AST.MetaModule("", "",[])
+      root = AST.MetaModule("", [])
       self.__scopes = [root]
       global_dict = {}
       self.__dict_map = {id(root) : global_dict}
@@ -177,8 +177,8 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       types = self.types
 
       # Clear the list and refill it
-      old_decls = list(file.declarations())
-      new_decls = file.declarations()
+      old_decls = list(file.declarations)
+      new_decls = file.declarations
       new_decls[:] = []
 
       for decl in old_decls:
@@ -196,7 +196,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
-         metamodule = AST.MetaModule(module.language(), module.type(),module.name())
+         metamodule = AST.MetaModule(module.type(),module.name())
          self.append(metamodule)
 
       elif not isinstance(metamodule, AST.MetaModule):
@@ -230,7 +230,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
-         metamodule = AST.MetaModule(module.language(), module.type(),module.name())
+         metamodule = AST.MetaModule(module.type(),module.name())
          self.append(metamodule)
       elif not isinstance(metamodule, AST.MetaModule):
          raise TypeError, 'symbol type mismatch: Synopsis.AST.MetaModule and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))

@@ -46,7 +46,7 @@ class XRefCompiler(Processor):
             filename = os.path.splitdrive(filename)[1][1:]
          return os.path.join(self.prefix, filename)
 
-      filenames = [prefix(x[0]) for x in ast.files().items() if x[1].is_main()]
+      filenames = [prefix(x[0]) for x in ast.files().items() if x[1].annotations['primary']]
       self.do_compile(filenames, self.output, self.no_locals)
 
       return self.ast

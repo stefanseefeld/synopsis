@@ -109,14 +109,14 @@ class HeadingFormatter(Fragment):
       name = div('class-name', "%s %s"%(type, name))
 
       # Calculate file-related string
-      file_name = rel(self.processor.output, clas.file().filename())
+      file_name = rel(self.processor.output, clas.file().name)
       # Try the file index view first
-      file_link = self.processor.file_layout.file_index(clas.file().filename())
+      file_link = self.processor.file_layout.file_index(clas.file().name)
       if self.processor.filename_info(file_link):
          file_ref = href(rel(self.formatter.filename(), file_link), file_name, target="index")
       else:
          # Try source file next
-         file_link = self.processor.file_layout.file_source(clas.file().filename())
+         file_link = self.processor.file_layout.file_source(clas.file().name)
          if self.processor.filename_info(file_link):
             file_ref = href(rel(self.formatter.filename(), file_link), file_name)
          else:

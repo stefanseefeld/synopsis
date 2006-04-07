@@ -129,7 +129,7 @@ class Parser(Processor):
       name = self.scope_name(fi.get_name())
       func = AST.Function(self.sourcefile, -1, 'function', '',
                           self.return_type, '', name, name[-1])
-      func.annotations['doc'] = fi.get_docstring()
+      func.annotations['doc'] = DocString(fi.get_docstring(), '')
       self.add_params(func, fi)
       self.add_declaration(func)
 
@@ -140,7 +140,7 @@ class Parser(Processor):
       name = self.scope_name(fi.get_name())
       func = AST.Operation(self.sourcefile,-1, 'operation', '',
                            self.return_type, '', name, name[-1])
-      func.annotations['doc'] = fi.get_docstring()
+      func.annotations['doc'] = DocString(fi.get_docstring(), '')
       self.add_params(func, fi)
       self.add_declaration(func)
 
@@ -151,7 +151,7 @@ class Parser(Processor):
 
       name = self.scope_name(ci.get_name())
       clas = AST.Class(self.sourcefile,-1, 'class', name)
-      clas.annotations['doc'] = ci.get_docstring()
+      clas.annotations['doc'] = DocString(ci.get_docstring(), '')
 
       types = self.ast.types()
       # Figure out bases:

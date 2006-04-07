@@ -140,7 +140,7 @@ class Formatter(Processor):
       for view in self.views:
          view.register(self)
 
-      root = AST.Module(None,-1,"C++","Global",())
+      root = AST.Module(None,-1,"Global",())
       root.declarations()[:] = declarations
 
       # Create table of contents index

@@ -107,7 +107,9 @@ class TOC(AST.Visitor):
 
    def visitDeclaration(self, decl):
 
-      entry = TOC.Entry(decl.name(), self.linker.link(decl), decl.language(), "decl")
+      file = decl.file()
+      entry = TOC.Entry(decl.name(), self.linker.link(decl),
+                        file and file.annotations['language'] or '', "decl")
       self.insert(entry)
 
    def visitForward(self, decl):

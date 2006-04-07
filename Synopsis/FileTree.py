@@ -100,8 +100,8 @@ class FileTree:
       self.__root = FileTree.Directory('', '')
       # Add each file to the hierarchy
       for filename, file in ast.files().items():
-         if file.is_main():
-            self.__add_file(filename, file.declarations())
+         if file.annotations['primary']:
+            self.__add_file(filename, file.declarations)
       # Clean up dict
       self.__dirs = None
 	    

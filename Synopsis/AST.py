@@ -136,14 +136,16 @@ class AST:
          myfile = self.__files[filename]
          replacement[file] = myfile
          # the 'main' flag dominates...
-         myfile.set_is_main(myfile.is_main() or file.is_main())
-         myfile.declarations().extend(file.declarations())
-         myfile.includes().extend(file.includes())
+         if not myfile.annotations['primary']:
+            myfile.annotations['primary'] = file.annotations['primary']
+         myfile.declarations.extend(file.declarations)
+         myfile.includes.extend(file.includes)
       # fix dangling inclusions of 'old' files
       for r in replacement:
          for f in self.__files.values():
-            for i in f.includes():
-               if i.target() == r: i.set_target(replacement[r])
+            for i in f.includes:
+               if i.target == r:
+                  i.target = replacement[r]
 
 
 class Declaration:
@@ -265,8 +267,8 @@ class Module (Scope):
 
 class MetaModule (Module):
    """Module Class that references all places where this Module occurs"""
-   def __init__(self, lang, type, name):
-      Scope.__init__(self, None, "", lang, type, name)
+   def __init__(self, type, name):
+      Scope.__init__(self, None, "", type, name)
       self.__module_declarations = []
    def module_declarations(self):
       """The module declarations this metamodule subsumes"""

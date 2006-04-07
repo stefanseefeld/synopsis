@@ -105,7 +105,7 @@ class DeclarationFormatter(Fragment):
         type = self.format_type(decl.returnType())
         name = self.label(decl.name(), decl.realname())
         # Special C++ functions  TODO: maybe move to a separate AST formatter...
-        if decl.language() == 'C++' and len(decl.realname())>1:
+        if decl.file().annotations['language'] == 'C++' and len(decl.realname())>1:
             lt = decl.realname()[-2].find('<') # check whether this is a template
             sname = lt == -1 and decl.realname()[-2] or decl.realname()[-2][:lt]
             if decl.realname()[-1] == sname: type = '<i>constructor</i>'
