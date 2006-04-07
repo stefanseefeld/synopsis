@@ -51,28 +51,6 @@ def load(filename):
          raise Exception, "Loading AST from '%s': %s"%(filename, msg)
       raise Exception, "Loading AST from '%s', %s: %s"%(filename, exc, msg)
 
-def load_deps(filename):
-   """Loads a dependencies object from the given filename. The file will be
-   an AST save file (usually *.syn), but this method only reads up to the
-   dependencies object stored before the actual AST. The object returned is a
-   list of (filename, timestamp) pairs."""
-   try:
-      file = open(filename, 'rb')
-      unpickler = cPickle.Unpickler(file)
-      version = unpickler.load()
-      if version is not FILE_VERSION:
-         file.close()
-         raise Exception, 'Wrong file version'
-      deps = unpickler.load()
-      # stop here, before loading the (probably huge) AST object
-      file.close()
-      return deps
-   except:
-      exc, msg = sys.exc_info()[0:2]
-      if exc is Exception:
-         raise Exception, "Loading dependencies from '%s': %s"%(filename, msg)
-      raise Exception, "Loading dependencies from '%s', %s: %s"%(filename, exc, msg)
-
 def save(filename, ast):
    """Saves an AST object to the given filename"""
    try:

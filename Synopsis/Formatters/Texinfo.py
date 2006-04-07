@@ -10,242 +10,15 @@
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST, Type, Util
+from Synopsis.DocString import DocString
 import sys, getopt, os, os.path, string, re
 
-class Struct:
-   "Dummy class. Initialise with keyword args."
 
-   def __init__(self, **keys):
-      for name, value in keys.items(): setattr(self, name, value)
+_tags = re.compile(r'@(?!(table|item|samp|end))')
+def escape(text):
 
-class CommentFormatter:
-   """A class that takes a comment Struct and formats its contents."""
+   return _tags.sub('@@', text).replace('{', '@{').replace('}', '@}')
 
-   def parse(self, comm):
-      """Parse the comment struct"""
-      pass
-
-class JavadocFormatter(CommentFormatter):
-   """A formatter that formats comments similar to Javadoc @tags"""
-
-   # @see IDL/Foo.Bar
-   # if a line starts with @tag then all further lines are tags
-   _re_see = '@see (([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)'
-   _re_tags = '(?P<text>.*?)\n[ \t]*(?P<tags>@[a-zA-Z]+[ \t]+.*)'
-   _re_see_line = '^[ \t]*@see[ \t]+(([A-Za-z+]+)/)?(([A-Za-z_]+\.?)+)(\([^)]*\))?([ \t]+(.*))?$'
-   _re_param = '^[ \t]*@param[ \t]+(?P<name>(A-Za-z+]+)([ \t]+(?P<desc>.*))?$'
-
-   def __init__(self):
-      """Create regex objects for regexps"""
-
-      self.re_see = re.compile(self._re_see)
-      self.re_tags = re.compile(self._re_tags,re.M|re.S)
-      self.re_see_line = re.compile(self._re_see_line,re.M)
-
-   def parse(self, comm):
-      """Parse the comm.detail for @tags"""
-
-      comm.detail = self.parse_text(comm.detail, comm.decl)
-      comm.summary = self.parse_text(comm.summary, comm.decl)
-
-   def extract(self, regexp, str):
-      """Extracts all matches of the regexp from the text. The MatchObjects
-      are returned in a list"""
-
-      mo = regexp.search(str)
-      ret = []
-      while mo:
-         ret.append(mo)
-         start, end = mo.start(), mo.end()
-         str = str[:start] + str[end:]
-         mo = regexp.search(str, start)
-      return str, ret
-
-   def parse_tags(self, str, joiner):
-      """Returns text, tags"""
-
-      # Find tags
-      mo = self.re_tags.search(str)
-      if not mo: return str, ''
-      str, tags = mo.group('text'), mo.group('tags')
-      # Split the tag section into lines
-      tags = map(string.strip, string.split(tags,'\n'))
-      # Join non-tag lines to the previous tag
-      tags = reduce(joiner, tags, [])
-      return str, tags
-
-   def parse_text(self, str, decl):
-
-      if str is None: return str
-      #str, see = self.extract(self.re_see_line, str)
-      see_tags, attr_tags, param_tags, return_tag = [], [], [], None
-      joiner = lambda x,y: len(y) and y[0]=='@' and x+[y] or x[:-1]+[x[-1]+' '+y]
-      str, tags = self.parse_tags(str, joiner)
-      # Parse each of the tags
-      for line in tags:
-         tag, rest = string.split(line,' ',1)
-         if tag == '@see':
-            see_tags.append(string.split(rest,' ',1))
-         elif tag == '@param':
-            param_tags.append(string.split(rest,' ',1))
-         elif tag == '@return':
-            return_tag = rest
-         elif tag == '@attr':
-            attr_tags.append(string.split(rest,' ',1))
-         else:
-            # Warning: unknown tag
-            pass
-      return "%s%s%s%s%s"%(self.parse_see(str, decl),
-                           self.format_params(param_tags),
-                           self.format_attrs(attr_tags),
-                           self.format_return(return_tag),
-                           self.format_see(see_tags, decl))
-
-   def parse_see(self, str, decl):
-      """Parses inline @see tags"""
-
-      # Parse inline @see's  #TODO change to link or whatever javadoc uses
-      mo = self.re_see.search(str)
-      while mo:
-         groups, start, end = mo.groups(), mo.start(), mo.end()
-         lang = groups[1] or ''
-         #tag = self.find_link(groups[2], decl)
-         tag = groups[2]
-         str = str[:start] + tag + str[end:]
-         end = start + len(tag)
-         mo = self.re_see.search(str, end)
-      return str
-
-   def format_params(self, param_tags):
-      """Formats a list of (param, description) tags"""
-
-      if not len(param_tags): return ''
-      table = '@table @samp\n%s@end table\n'
-      return table%string.join(map(lambda p:'@item %s\n%s'%(p[0],p[1]), param_tags), '\n')
-
-   def format_attrs(self, attr_tags):
-      """Formats a list of (attr, description) tags"""
-
-      if not len(attr_tags): return ''
-      table = '@table @samp\n%s@end table\n'
-      row = '@item %s\n%s\n'
-      return 'Attributes:\n' + table%string.join(map(lambda p,row=row: row%(p[0],p[1]), attr_tags))
-
-   def format_return(self, return_tag):
-      """Formats a since description string"""
-
-      if not return_tag: return ''
-      return "Return:\n" + return_tag
-
-   def format_see(self, see_tags, decl):
-      """Formats a list of (ref,description) tags"""
-
-      if not len(see_tags): return ''
-      #FIXME: add proper cross referencing
-      seestr = "See Also:"
-      seelist = []
-      for see in see_tags:
-         ref,desc = see[0], len(see)>1 and see[1] or ''
-         #tag = self.find_link(ref, decl)
-         tag = ref
-         seelist.append(tag+desc)
-      return seestr + string.join(seelist,'\n')
-
-   def find_link(self, ref, decl):
-      """Given a "reference" and a declaration, returns a HTML link.
-      Various methods are tried to resolve the reference. First the
-      parameters are taken off, then we try to split the ref using '.' or
-      '::'. The params are added back, and then we try to match this scoped
-      name against the current scope. If that fails, then we recursively try
-      enclosing scopes.
-      """
-
-      # Remove params
-      index, label = string.find(ref,'('), ref
-      if index >= 0:
-         params = ref[index:]
-         ref = ref[:index]
-      else:
-         params = ''
-      # Split ref
-      ref = string.split(ref, '.')
-      if len(ref) == 1:
-         ref = string.split(ref[0], '::')
-      # Add params back
-      ref = ref[:-1] + [ref[-1]+params]
-      # Find in all scopes
-      scope = list(decl.name())
-      while 1:
-         entry = self._find_link_at(ref, scope)
-         if entry: return href(entry.link, label)
-         if len(scope) == 0: break
-         del scope[-1]
-      # Not found
-      return label+" "
-
-   def _find_link_at(self, ref, scope):
-
-      # Try scope + ref[0]
-      entry = config.toc.lookup(scope+ref[:1])
-      if entry:
-         # Found.
-         if len(ref) > 1:
-            # Find sub-refs
-            entry = self._find_link_at(ref[1:], scope+ref[:1])
-            if entry:
-               # Recursive sub-ref was okay!
-               return entry 
-         else:
-            # This was the last scope in ref. Done!
-            return entry
-      # Try a method name match:
-      if len(ref) == 1:
-         entry = self._find_method_entry(ref[0], scope)
-         if entry: return entry
-      # Not found at this scope
-      return None
-
-   def _find_method_entry(self, name, scope):
-      """Tries to find a TOC entry for a method adjacent to decl. The
-      enclosing scope is found using the types dictionary, and the
-      realname()'s of all the functions compared to ref."""
-
-      try:
-         scope = config.types[scope]
-      except KeyError:
-         #print "No parent scope:",decl.name()[:-1]
-         return None
-      if not scope: return None
-      if not isinstance(scope, Type.Declared): return None
-      scope = scope.declaration()
-      if not isinstance(scope, AST.Scope): return None
-      for decl in scope.declarations():
-         if isinstance(decl, AST.Function):
-            if decl.realname()[-1] == name:
-               return config.toc.lookup(decl.name())
-      # Failed
-      return None
-
-def _replace(comm, old, new):
-   comm.summary = string.replace(comm.summary, old, new)
-   comm.detail = string.replace(comm.detail, old, new)
-
-class Escapifier(CommentFormatter):
-   """escapify the strings to become valid texinfo text.
-   Only replace '@' by '@@' if these are not part of valid texinfo tags."""
-
-   tags = ['table', 'item', 'samp', 'end'] #etc.
-   special = ['{', '}',]
-
-   def __init__(self):
-
-      self.__re_texi = re.compile('@(?!(' + string.join(Escapifier.tags, '|') + '))')
-
-   def parse(self, comm):
-      comm.summary = self.__re_texi.sub('@@', comm.summary)
-      comm.detail = self.__re_texi.sub('@@', comm.detail)
-      comm.summary = reduce(lambda x,y: string.replace(x, y , '@' + y), Escapifier.special, comm.summary)
-      comm.detail = reduce(lambda x,y: string.replace(x, y, '@' + y), Escapifier.special, comm.detail)
 
 class MenuMaker(AST.Visitor):
    """generate a texinfo menu for the declarations of a given scope"""
@@ -260,7 +33,7 @@ class MenuMaker(AST.Visitor):
    def end(self): self.write('@end menu\n')
    def visitDeclaration(self, node):
 
-      name = reduce(lambda x,y: string.replace(x, y , '@' + y), Escapifier.special, Util.dotName(node.name(), self.__scope))
+      name = escape(Util.dotName(node.name(), self.__scope))
       self.write('* ' + name + '::\t' + node.type() + '\n')
 
    visitGroup = visitDeclaration
@@ -269,8 +42,6 @@ class MenuMaker(AST.Visitor):
 class Formatter(Processor, Type.Visitor, AST.Visitor):
    """The type visitors should generate names relative to the current scope.
    The generated references however are fully scoped names."""
-
-   comment_formatters = Parameter([JavadocFormatter(), Escapifier()], '')
 
    def process(self, ast, **kwds):
 
@@ -289,25 +60,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
    def scope(self): return self.__scope
    def write(self, text): self.__os.write(text)
 
-   def escapify(self, label):
-      return reduce(lambda x,y: string.replace(x, y , '@' + y), Escapifier.special, label)
+   def type_label(self): return escape(self.__type_label)
 
-   #def reference(self, ref, label):
-   #    """reference takes two strings, a reference (used to look up the symbol and generated the reference),
-   #    and the label (used to actually write it)"""
-   #    location = self.__toc.lookup(ref)
-   #    if location != "": return href("#" + location, label)
-   #    else: return span("type", str(label))
-        
-   #def label(self, ref):
-   #    location = self.__toc.lookup(Util.ccolonName(ref))
-   #    ref = Util.ccolonName(ref, self.scope())
-   #    if location != "": return name("\"" + location + "\"", ref)
-   #    else: return ref
-
-   def type_label(self): return self.escapify(self.__type_label)
-
-   def decl_label(self, decl): return self.escapify(decl[-1])
+   def decl_label(self, decl): return escape(decl[-1])
 
    def format_type(self, type):
       "Returns a reference string for the given type object"
@@ -318,12 +73,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
 
    def format_comments(self, decl):
 
-      strlist = map(lambda x:str(x), decl.comments())
-      #doc = map(lambda c, this=self: this.comment_formatter.parse(c), strlist)
-      comm = Struct(detail=string.join(strlist), summary='', has_detail=1, decl=decl)
-      if comm.detail: map(lambda f,c=comm: f.parse(c), self.comment_formatters)
-      else: comm.has_detail=0
-      self.write(comm.detail + '\n')
+      doc = decl.annotations.get('doc', DocString('', ''))
+      # TODO: implement markup formatters for e.g. javadoc and rst
+      self.write(escape(doc.text) + '\n')
 
    #################### Type Visitor ###########################################
 

@@ -16,6 +16,11 @@ from Synopsis.Formatters.XRef import CrossReferencer
 from FileLayout import *
 from TreeFormatter import *
 from Views import *
+from Synopsis.Formatters.HTML.Markup.Javadoc import Javadoc
+try:
+   from Synopsis.Formatters.HTML.Markup.RST import RST
+except ImportError:
+   from Synopsis.Formatters.HTML.Markup import Formatter as RST
 import Markup
 import Tags
 
@@ -94,7 +99,8 @@ class Formatter(Processor):
                       NameIndex()],
                       '')
    
-   markup_formatters = Parameter({}, 'Markup-specific formatters.')
+   markup_formatters = Parameter({'javadoc':Javadoc(), 'rst':RST()},
+                                 'Markup-specific formatters.')
    tree_formatter = Parameter(TreeFormatter(), 'Define how to lay out tree views.')
 
    def process(self, ast, **kwds):

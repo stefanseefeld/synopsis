@@ -157,7 +157,7 @@ class XRef(View):
       if isinstance(decl, AST.Scope):
          self.write('<li>Declarations:<ul>\n')
          for child in decl.declarations():
-            file, line = child.file().filename(), child.line()
+            file, line = child.file().name, child.line()
             file_link = self.processor.file_layout.file_source(file)
             file_link = rel(self.filename(),file_link) + '#%d'%line
             file_href = '<a href="%s">%s:%s</a>: '%(file_link,file,line)

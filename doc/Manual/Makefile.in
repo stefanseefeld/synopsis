@@ -145,7 +145,7 @@ formatters-texi.syn:	python.syn
 
 Manual.pdf:	Manual.texi $(TEXI)
 	@echo generating $@
-	texi2pdf -I $(srcdir) $?
+	texi2pdf -I $(srcdir) $<
 
 info:	$(TEXI) Manual.texi
 	@echo generating info files

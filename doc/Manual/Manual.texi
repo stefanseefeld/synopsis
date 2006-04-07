@@ -16,7 +16,7 @@ are preserved on all copies.
 @c title page for the printed version
 @titlepage
 @title Synopsis
-@subtitle Version: 0.4
+@subtitle Version: 0.9
 @author Stefan Seefeld, Stephen Davies
 
 @page
@@ -24,7 +24,7 @@ are preserved on all copies.
 Copyright @copyright{} 2001 Stefan Seefeld, Stephen Davies
 
 @sp 2
-This is Version: 0.4 of the Synopsis Reference Manual
+This is Version: 0.9 of the Synopsis Reference Manual
 @sp 2
 
 Permission is granted to make and distribute verbatim copies of this
@@ -115,7 +115,7 @@ from various programming languages. They are usually part of third party
 projects, such that we only need to provide a thin wrapper to bind them
 to the synopsis core.
 @page
-@section The C++ Module
+@section The Cxx Module
 @include parsers-cxx.texi
 @page
 @section The IDL Module

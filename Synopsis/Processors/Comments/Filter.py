@@ -153,3 +153,38 @@ class QtFilter(Filter):
             if mo:
                 return mo.group(1)
         return ''
+
+
+class JavaFilter(Filter):
+    """A class that selects java /** style comments"""
+
+    java = r'/\*\*\s*(?P<text>.*)(?P<lines>(\n\s*\*.*)*?)(\n\s*)?\*/'
+    line = r'\n\s*\*\s*(?P<text>.*)'
+
+
+    def __init__(self):
+        "Compiles the regular expressions"
+
+        self.java = re.compile(JavaFilter.java)
+        self.line = re.compile(JavaFilter.line)
+
+
+    def filter_comment(self, comment):
+      """Finds comments in the java format. The format is  /** ... */, and
+      it has to cater for all four line forms: "/** ...", " * ...", " */" and
+      the one-line "/** ... */".
+      """
+
+      text_list = []
+      mo = self.java.search(comment)
+      while mo:
+         text_list.append(mo.group('text'))
+         lines = mo.group('lines')
+         if lines:
+            mol = self.line.search(lines)
+            while mol:
+               text_list.append(mol.group('text'))
+               mol = self.line.search(lines, mol.end())
+         mo = self.java.search(comment, mo.end())
+      return '\n'.join(text_list)
+
