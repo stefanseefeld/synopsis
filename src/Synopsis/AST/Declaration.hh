@@ -36,7 +36,11 @@ public:
   std::string name() const { return narrow<std::string>(attr("filename"));}
   std::string abs_name() const { return narrow<std::string>(attr("abs_name"));}
   bool primary() const { return narrow<bool>(Python::Dict(attr("annotations")).get("primary"));}
-  void set_primary(bool flag) { Python::Dict(attr("annotations")).set("primary", flag);}
+  void set_primary(bool flag)
+  {
+    Python::Dict annotations(attr("annotations"));
+    annotations.set("primary", flag);
+  }
   Python::List includes() { return attr("includes");}
   Python::Dict macro_calls() { return attr("macro_calls");}
   Declarations declarations();
