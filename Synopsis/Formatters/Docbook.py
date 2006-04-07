@@ -150,9 +150,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.__type_ref = 'function_type'
       self.__type_label = 'function_type'
 
-   def process_comment(self, comment):
+   def process_doc(self, doc):
 
-      text = comment.text.replace('\n\n', '</para><para>')
+      text = doc.replace('\n\n', '</para><para>')
       self.write(self.entity("para", text)+'\n')
 
    #################### AST Visitor ###########################################
@@ -184,8 +184,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.start_entity("section")
       self.write_entity("title", module.type()+" "+Util.ccolonName(module.name()))
       self.write("\n")
-      for c in module.comments():
-         self.process_comment(c)
+      self.process_doc(module.annotations.get('doc', '')
       self.push_scope(module.name())
       for declaration in module.declarations(): declaration.accept(self)
       self.pop_scope()
@@ -200,10 +199,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       if len(clas.parents()):
          for parent in clas.parents(): parent.accept(self)
       self.push_scope(clas.name())
-      if clas.comments():
+      if clas.annotations.has_key('doc'):
          self.start_entity("textobject")
-         for c in clas.comments():
-            self.process_comment(c)
+         self.process_doc(clas.annotations['doc'])
          self.end_entity("textobject")
       self.end_entity("classsynopsisinfo")
       classes = []
