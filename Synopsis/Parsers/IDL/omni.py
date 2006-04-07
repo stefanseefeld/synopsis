@@ -1,4 +1,3 @@
-# $Id: omni.py,v 1.38 2003/11/18 21:31:02 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # All rights reserved.
@@ -7,7 +6,8 @@
 #
 
 from Synopsis import Type, AST, Util
-from omniidl import idlast, idltype, idlvisitor, idlutil
+from Synopsis.SourceFile import *
+import idlast, idltype, idlvisitor, idlutil
 import _omniidl
 import sys, getopt, os, os.path, string, types
 
@@ -133,11 +133,11 @@ class ASTTranslator(idlvisitor.AstVisitor):
    def getType(self, name): return self.__types.get(name)
    def visitAST(self, node):
 
-      self.__scope.append(AST.Scope(sourcefile, 0, "IDL", "file", []))
+      self.__scope.append(AST.Scope(sourcefile, 0, 'file', []))
       # add an 'Object' Type to the Type Dictionary. Don't declare it in the AST since
       # there is no corresponding declaration
-      object = AST.Class(sourcefile, 0, "IDL", "interface", ["CORBA", "Object"])
-      self.addType(["CORBA", "Object"], Type.Declared("IDL", ["CORBA", "Object"], object))
+      object = AST.Class(sourcefile, 0, 'interface', ['CORBA', 'Object'])
+      self.addType(['CORBA', 'Object'], Type.Declared('IDL', ['CORBA', 'Object'], object))
       for n in node.declarations():
          n.accept(self)
       for d in self.__scope[-1].declarations():
@@ -147,10 +147,10 @@ class ASTTranslator(idlvisitor.AstVisitor):
 
       #if self.__mainfile_only and not node.mainFile(): return
       name = list(self.scope()) + [node.identifier()]
-      module = AST.Module(sourcefile, node.line(), "IDL", "module", name)
+      module = AST.Module(sourcefile, node.line(), 'module', name)
       self.addDeclaration(module)
       self.__scope.append(module)
-      self.addType(name, Type.Declared("IDL", name, module))
+      self.addType(name, Type.Declared('IDL', name, module))
       if not self.__mainfile_only or node.mainFile(): 
          for c in node.comments():
             module.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
@@ -161,10 +161,10 @@ class ASTTranslator(idlvisitor.AstVisitor):
    def visitInterface(self, node):
 
       name = list(self.scope()) + [node.identifier()]
-      clas = AST.Class(sourcefile, node.line(), "IDL", "interface", name)
+      clas = AST.Class(sourcefile, node.line(), 'interface', name)
       self.addDeclaration(clas)
       self.__scope.append(clas)
-      self.addType(name, Type.Declared("IDL", name, clas))
+      self.addType(name, Type.Declared('IDL', name, clas))
       if not self.__mainfile_only or node.mainFile(): 
          for c in node.comments():
             clas.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
@@ -179,9 +179,9 @@ class ASTTranslator(idlvisitor.AstVisitor):
       #if self.__mainfile_only and not node.mainFile(): return
       name = list(self.scope())
       name.append(node.identifier())
-      forward = AST.Forward(sourcefile, node.line(), "IDL", "interface", name)
+      forward = AST.Forward(sourcefile, node.line(), 'interface', name)
       self.addDeclaration(forward)
-      self.addType(name, Type.Unknown("IDL", name))
+      self.addType(name, Type.Unknown('IDL', name))
         
    def visitConst(self, node):
 
@@ -193,7 +193,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
          value = "::" + idlutil.ccolonName(node.value().scopedName())
       else:
          value = str(node.value())
-      const = AST.Const(sourcefile, node.line(), "IDL", "const",
+      const = AST.Const(sourcefile, node.line(), 'const',
                         self.getType(type), name, value)
       self.addDeclaration(const)
       for c in node.comments():
@@ -215,17 +215,17 @@ class ASTTranslator(idlvisitor.AstVisitor):
          # a single typedef declaration can have a different type. *sigh*
          dtype = type
          if d.sizes():
-            array = Type.Array("IDL", self.getType(type), map(lambda s:str(s), d.sizes()))
+            array = Type.Array('IDL', self.getType(type), map(lambda s:str(s), d.sizes()))
             dtype = map(None, type[:-1])
             dtype.append(type[-1] + string.join(map(lambda s:"["+ str(s) +"]", d.sizes()),''))
             self.addType(dtype, array)
          dname = list(self.scope())
          dname.append(d.identifier())
-         typedef = AST.Typedef(sourcefile, node.line(), "IDL", "typedef", dname, self.getType(dtype), node.constrType())
+         typedef = AST.Typedef(sourcefile, node.line(), 'typedef', dname, self.getType(dtype), node.constrType())
          typedef.comments().extend(comments)
          for c in d.comments():
             typedef.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
-         self.addType(typedef.name(), Type.Declared("IDL", typedef.name(), typedef))
+         self.addType(typedef.name(), Type.Declared('IDL', typedef.name(), typedef))
          self.addDeclaration(typedef)
 
    def visitMember(self, node):
@@ -244,30 +244,30 @@ class ASTTranslator(idlvisitor.AstVisitor):
          # a single typedef declaration can have a different type. *sigh*
          dtype = type
          if d.sizes():
-            array = Type.Array("IDL", self.getType(type), map(lambda s:str(s), node.sizes()))
+            array = Type.Array('IDL', self.getType(type), [str(s) for s in node.sizes()])
             dtype = type[:-1]
             dtype.append(type[-1] + string.join(map(lambda s:"["+s+"]", d.sizes()),''))
             self.addType(dtype, array)
          dname = list(self.scope())
          dname.append(d.identifier())
-         member = AST.Variable(sourcefile, node.line(), "IDL", "variable", dname, self.getType(dtype), node.constrType())
+         member = AST.Variable(sourcefile, node.line(), 'variable', dname, self.getType(dtype), node.constrType())
          member.comments().extend(comments)
          for c in d.comments():
             member.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
-         self.addType(member.name(), Type.Declared("IDL", member.name(), member))
+         self.addType(member.name(), Type.Declared('IDL', member.name(), member))
          self.addDeclaration(member)
 
    def visitStruct(self, node):
 
       name = list(self.scope()) + [node.identifier()]
       if self.__mainfile_only and not node.mainFile():
-         forward = AST.Forward(sourcefile, node.line(), "IDL", "struct", name)
+         forward = AST.Forward(sourcefile, node.line(), 'struct', name)
          self.addDeclaration(forward)
-         self.addType(name, Type.Declared("IDL", name, forward))
+         self.addType(name, Type.Declared('IDL', name, forward))
          return
-      struct = AST.Class(sourcefile, node.line(), "IDL", "struct", name)
+      struct = AST.Class(sourcefile, node.line(), 'struct', name)
       self.addDeclaration(struct)
-      self.addType(name, Type.Declared("IDL", name, struct))
+      self.addType(name, Type.Declared('IDL', name, struct))
       for c in node.comments():
          struct.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
       self.__scope.append(struct)
@@ -278,13 +278,13 @@ class ASTTranslator(idlvisitor.AstVisitor):
 
       name = list(self.scope()) + [node.identifier()]
       if self.__mainfile_only and not node.mainFile():
-         forward = AST.Forward(sourcefile, node.line(), "IDL", "exception", name)
+         forward = AST.Forward(sourcefile, node.line(), 'exception', name)
          self.addDeclaration(forward)
-         self.addType(name, Type.Declared("IDL", name, forward))
+         self.addType(name, Type.Declared('IDL', name, forward))
          return
-      exc = AST.Class(sourcefile, node.line(), "IDL", "exception", name)
+      exc = AST.Class(sourcefile, node.line(), 'exception', name)
       self.addDeclaration(exc)
-      self.addType(name, Type.Declared("IDL", name, exc))
+      self.addType(name, Type.Declared('IDL', name, exc))
       self.__scope.append(exc)
       for c in node.comments():
          exc.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
@@ -303,28 +303,28 @@ class ASTTranslator(idlvisitor.AstVisitor):
       type = self.__types.internalize(node.caseType())
       declarator = node.declarator()
       if declarator.sizes():
-         array = Type.Array("IDL", self.getType(type), map(lambda s:str(s), declarator.sizes()))
+         array = Type.Array('IDL', self.getType(type), [str(s) for s in declarator.sizes()])
          type = type[:-1]
          type.append(type[-1] + string.join(map(lambda s:"["+s+"]",node.sizes()),''))
          self.addType(type, array)
       name = list(self.scope())
       name.append(node.declarator().identifier())
       self.__scope[-1].declarations().append(
-         AST.Operation(sourcefile, node.line(), "IDL", "case",
+         AST.Operation(sourcefile, node.line(), 'case',
 			  [], self.getType(type), name, name[-1]))
 
    def visitUnion(self, node):
 
       name = list(self.scope()) + [node.identifier()]
       if self.__mainfile_only and not node.mainFile():
-         forward = AST.Forward(sourcefile, node.line(), "IDL", "union", name)
+         forward = AST.Forward(sourcefile, node.line(), 'union', name)
          self.addDeclaration(forward)
-         self.addType(name, Type.Declared("IDL", name, forward))
+         self.addType(name, Type.Declared('IDL', name, forward))
          return
-      clas = AST.Class(sourcefile, node.line(), "IDL", "union", name)
+      clas = AST.Class(sourcefile, node.line(), 'union', name)
       self.addDeclaration(clas)
       self.__scope.append(clas)
-      self.addType(name, Type.Declared("IDL", name, clas))
+      self.addType(name, Type.Declared('IDL', name, clas))
       for c in node.comments():
          clas.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
       for c in node.cases(): c.accept(self)
@@ -335,21 +335,21 @@ class ASTTranslator(idlvisitor.AstVisitor):
       if self.__mainfile_only and not node.mainFile(): return
       name = list(self.scope())
       name.append(node.identifier())
-      enum = AST.Enumerator(sourcefile, node.line(), "IDL", name, "")
-      self.addType(name, Type.Declared("IDL", name, enum))
+      enum = AST.Enumerator(sourcefile, node.line(), name, "")
+      self.addType(name, Type.Declared('IDL', name, enum))
       self.__enum.enumerators().append(enum)
 
    def visitEnum(self, node):
 
       name = list(self.scope()) + [node.identifier()]
       if self.__mainfile_only and not node.mainFile():
-         forward = AST.Forward(sourcefile, node.line(), "IDL", "enum", name)
+         forward = AST.Forward(sourcefile, node.line(), 'enum', name)
          self.addDeclaration(forward)
-         self.addType(name, Type.Declared("IDL", name, forward))
+         self.addType(name, Type.Declared('IDL', name, forward))
          return
-      self.__enum = AST.Enum(sourcefile, node.line(), "IDL", name, [])
+      self.__enum = AST.Enum(sourcefile, node.line(), name, [])
       self.addDeclaration(self.__enum)
-      self.addType(name, Type.Declared("IDL", name, self.__enum))
+      self.addType(name, Type.Declared('IDL', name, self.__enum))
       for c in node.comments():
          self.__enum.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
       for enumerator in node.enumerators(): enumerator.accept(self)
@@ -368,7 +368,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
          comments.append(AST.Comment(c.text(), strip(c.file()), c.line()))
       for id in node.identifiers():
          name = scopename + [id]
-         attr = AST.Operation(sourcefile, node.line(), "IDL", "attribute",
+         attr = AST.Operation(sourcefile, node.line(), 'attribute',
                               pre, self.getType(type), name, name[-1])
          attr.comments().extend(comments)
          self.addDeclaration(attr)
@@ -391,7 +391,7 @@ class ASTTranslator(idlvisitor.AstVisitor):
       returnType = self.__types.internalize(node.returnType())
       name = list(self.scope())
       name.append(node.identifier())
-      self.__operation = AST.Operation(sourcefile, node.line(), "IDL", "operation", pre, self.getType(returnType), name, name[-1])
+      self.__operation = AST.Operation(sourcefile, node.line(), 'operation', pre, self.getType(returnType), name, name[-1])
       for c in node.comments():
          self.__operation.comments().append(AST.Comment(c.text(), strip(c.file()), c.line()))
       for p in node.parameters(): p.accept(self)
@@ -458,14 +458,14 @@ def parse(ast, file, verb, main_file_only,
       sys.stderr.write("omni: Error parsing " + file + "\n")
       sys.exit(1)
 
-   sourcefile = AST.SourceFile(strip(file), file, "IDL")
-   sourcefile.set_is_main(1)
+   sourcefile = SourceFile(strip(file), file, 'IDL')
+   sourcefile.annotations['primary'] = True
    new_ast = AST.AST()
-   new_ast.files()[sourcefile.filename()] = sourcefile
+   new_ast.files()[sourcefile.name] = sourcefile
    type_trans = TypeTranslator(new_ast.types())
    ast_trans = ASTTranslator(new_ast.declarations(), type_trans, main_file_only)
    tree.accept(ast_trans)
-   sourcefile.declarations()[:] = new_ast.declarations()
+   sourcefile.declarations[:] = new_ast.declarations()
    ast.merge(new_ast)
    _omniidl.clear()
    return ast
