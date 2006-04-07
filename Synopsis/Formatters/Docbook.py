@@ -184,7 +184,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.start_entity("section")
       self.write_entity("title", module.type()+" "+Util.ccolonName(module.name()))
       self.write("\n")
-      self.process_doc(module.annotations.get('doc', '')
+      self.process_doc(module.annotations.get('doc', ''))
       self.push_scope(module.name())
       for declaration in module.declarations(): declaration.accept(self)
       self.pop_scope()
