@@ -9,7 +9,7 @@ from Synopsis.Processor import Processor
 from Synopsis import AST
 import re
 
-class Filter(Processor):
+class Filter(Processor, AST.Visitor):
     """Base class for comment filters."""
 
     def process(self, ast, **kwds):
@@ -19,17 +19,16 @@ class Filter(Processor):
         self.ast = self.merge_input(ast)
 
         for decl in ast.declarations():
-            self.process_comments(decl)
+            decl.accept(self)
 
         return self.output_and_return_ast()
 
 
-    def process_comments(self, decl):
+    def visitDeclaration(self, decl):
 
         comments = decl.annotations.get('comments', [])
         comments[:] = [c is not None and self.filter_comment(c) or None
                        for c in comments]
-
 
     def filter_comment(self, comment):
         """Filter comment."""
@@ -73,7 +72,7 @@ class CFilter(Filter):
 
 
 class SSFilter(Filter):
-    """A class that selects only //. comments."""
+    """A class that selects only // comments."""
 
     ss = r'^[ \t]*// ?(.*)$'
 
@@ -158,8 +157,8 @@ class QtFilter(Filter):
 class JavaFilter(Filter):
     """A class that selects java /** style comments"""
 
-    java = r'/\*\*\s*(?P<text>.*)(?P<lines>(\n\s*\*.*)*?)(\n\s*)?\*/'
-    line = r'\n\s*\*\s*(?P<text>.*)'
+    java = r'/\*\*[ \t]*(?P<text>.*)(?P<lines>(\n[ \t]*\*.*)*?)(\n[ \t]*)?\*/'
+    line = r'\n[ \t]*\*[ \t]*(?P<text>.*)'
 
 
     def __init__(self):

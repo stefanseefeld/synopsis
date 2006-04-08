@@ -11,7 +11,8 @@ from Synopsis.Formatters.HTML.Markup import *
 import string, re
 
 class Javadoc(Formatter):
-    """A formatter that formats comments similar to Javadoc @tags"""
+    """A formatter that formats comments similar to Javadoc.
+    @see <a href="http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javadoc.html">Javadoc Spec</a>"""
 
     class Block:
 

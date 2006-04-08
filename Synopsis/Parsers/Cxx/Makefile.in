@@ -60,11 +60,11 @@ doc: occ.syn occ-impl.syn
 # Link C++ files together
 occ.syn: $(HDR_SYN)
 	@echo linking C++ headers together
-	$(SYNOPSIS) link_cxx --output=$@ $^
+	$(SYNOPSIS) link --output=$@ $^
 
 occ-impl.syn: $(HDR_SYN) $(CC_SYN)
 	@echo linking all C++ files together
-	$(SYNOPSIS) link_cxx --output=$@ $^
+	$(SYNOPSIS) link --output=$@ $^
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)

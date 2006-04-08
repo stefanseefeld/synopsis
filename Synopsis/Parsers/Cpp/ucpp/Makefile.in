@@ -47,11 +47,11 @@ doc: ucpp.syn ucpp-impl.syn
 # Link C++ files together
 ucpp.syn: $(HDR_SYN)
 	@echo linking C++ headers together
-	$(SYNOPSIS) link_cxx --output=$@ $^
+	$(SYNOPSIS) link --output=$@ $^
 
 ucpp-impl.syn: $(HDR_SYN) $(C_SYN)
 	@echo linking all C++ files together
-	$(SYNOPSIS) link_cxx --output=$@ $^
+	$(SYNOPSIS) link --output=$@ $^
 
 %.d: %.cc
 	@echo generating dependencies for $(<F)

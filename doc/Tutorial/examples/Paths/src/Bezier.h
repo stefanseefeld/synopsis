@@ -1,5 +1,5 @@
-#ifndef _Bezier_h
-#define _Bezier_h
+#ifndef Bezier_h_
+#define Bezier_h_
 
 #include "Path.h"
 #include <vector>
@@ -29,7 +29,7 @@ public:
   virtual void draw();
 private:
   //. The data...
-  std::vector<Vertex> _controls;
+  std::vector<Vertex> controls_;
 };
 
 }

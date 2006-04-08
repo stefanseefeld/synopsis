@@ -1,5 +1,5 @@
-#ifndef _Nurbs_h
-#define _Nurbs_h
+#ifndef Nurbs_h_
+#define Nurbs_h_
 
 #include "Path.h"
 #include <vector>
@@ -11,7 +11,7 @@ namespace Paths
  * The Nurbs class. It implements a nurbs curve
  * for the given order. It is a very powerful
  * and flexible curve representation. For simpler
- * cases you may prefer to use a @see Bezier curve.
+ * cases you may prefer to use a {@link Bezier} curve.
  */
 template <size_t Order>
 class Nurbs : public Path
@@ -35,9 +35,9 @@ private:
   /**
    * The data...
    */
-  std::vector<Vertex> _controls;
-  std::vector<double> _weights;
-  std::vector<double> _knots;
+  std::vector<Vertex> controls_;
+  std::vector<double> weights_;
+  std::vector<double> knots_;
 };
 
 }

@@ -13,7 +13,16 @@ cxx = Cxx.Parser(base_path='../src/',
                  syntax_prefix='links',
                  xref_prefix='xref')
 
-cxx_ssd = Composite(cxx, Comments.SSDFilter())
+ssd = Comments.Translator(filter = Comments.SSDFilter(),
+                          processor = Comments.Grouper())
+ss = Comments.Translator(filter = Comments.SSFilter(),
+                         processor = Comments.Grouper())
+ssd_prev = Comments.Translator(filter = Comments.SSDFilter(),
+                               processor = Composite(Comments.Previous(),
+                                                     Comments.Grouper()))
+javadoc = Comments.Translator(markup='javadoc',
+                              filter = Comments.JavaFilter(),
+                              processor = Comments.Grouper())
 
 html = HTML.Formatter(file_layout = NestedFileLayout(),
                       tree_formatter = TreeFormatterJS(),
@@ -30,24 +39,10 @@ html = HTML.Formatter(file_layout = NestedFileLayout(),
                                InheritanceGraph(),
                                NameIndex()])
 
-cxx_ss = Composite(cxx,
-                   Comments.SSFilter(),
-                   Comments.Grouper(),
-                   Comments.Translator())
-cxx_ssd_prev = Composite(cxx,
-                         Comments.SSDFilter(),
-                         Comments.Grouper(),
-                         Comments.Previous(),
-                         Comments.Translator())
-cxx_javadoc = Composite(cxx,
-                        Comments.JavaFilter(),
-                        Comments.Grouper(),
-                        Comments.Translator(markup='javadoc'))
-
-process(cxx_ssd = cxx_ssd,
-        cxx_ss = cxx_ss,
-        cxx_ssd_prev = cxx_ssd_prev,
-        cxx_javadoc = cxx_javadoc,
+process(cxx_ssd = Composite(cxx, ssd),
+        cxx_ss = Composite(cxx, ss),
+        cxx_ssd_prev = Composite(cxx, ssd_prev),
+        cxx_javadoc = Composite(cxx, javadoc),
         link = Linker(),
         xref = XRefCompiler(prefix='xref'),
         html = html)

@@ -1,5 +1,5 @@
-#ifndef _Shapes_h
-#define _Shapes_h
+#ifndef Shapes_h_
+#define Shapes_h_
 
 #include <Paths.h>
 
@@ -17,9 +17,9 @@ public:
   Polygon();
   virtual ~Polygone() {}
   virtual void draw();
-  virtual const Path &outline() { return _outline;}
+  virtual const Path &outline() { return outline_;}
 private:
-  Paths::Polyline _outline;
+  Paths::Polyline outline_;
 };
 
 class Ellipse : public Shape
@@ -28,9 +28,9 @@ public:
   Ellipse();
   virtual ~Ellipse() {}
   virtual void draw();
-  virtual const Path &outline() { return _outline;}
+  virtual const Path &outline() { return outline_;}
 private:
-  Paths::Nurbs _outline;
+  Paths::Nurbs outline_;
 };
 
 #endif

@@ -21,8 +21,8 @@ cxx = Cxx.Parser(base_path = srcdir + os.sep,
                  syntax_prefix = 'links',
                  xref_prefix = 'xref')
 
-linker = Linker(Comments.SSDFilter(),
-                Comments.Translator(markup='rst'))
+link = Linker(Comments.Translator(markup='rst',
+                                  filter = Comments.SSDFilter()))
 
 process(cxx = cxx,
-        link = linker)
+        link = link)

@@ -9,8 +9,6 @@ from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import HTML
 from Synopsis.Formatters.HTML.FileLayout import *
 from Synopsis.Formatters.HTML.TreeFormatterJS import *
-from Synopsis.Formatters.HTML.Markup.Javadoc import Javadoc
-from Synopsis.Formatters.HTML.Markup.RST import RST
 from Synopsis.Formatters.HTML.Views import *
 from Synopsis.Formatters import SXR
 from Synopsis.Formatters import Texinfo
@@ -42,7 +40,6 @@ class MyHTML(HTML.Formatter):
       toc_out = 'links.toc',
       file_layout = NestedFileLayout(),
       tree_formatter = TreeFormatterJS(),
-      markup_formatters = {'javadoc':Javadoc(),'rst':RST()},
       self.views = [FramesIndex(),
                     Scope(),
                     Source(prefix = 'links',

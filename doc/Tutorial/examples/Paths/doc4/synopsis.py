@@ -4,8 +4,8 @@ from Synopsis.Parsers import Cpp
 from Synopsis.Parsers import Cxx
 from Synopsis.Formatters import Dot
 
-cpp = Cpp.Parser(base_path='../src/', flags=['-I../src'], main_file_only = False)
-cxx = Cxx.Parser(base_path='../src/', cppflags=['-I../src'], main_file_only = False)
+cpp = Cpp.Parser(base_path='../src/', flags=['-I../src'], primary_file_only = False)
+cxx = Cxx.Parser(base_path='../src/', cppflags=['-I../src'], primary_file_only = False)
 dot = Dot.Formatter(format='png', bgcolor='#ffcc99')
 
 process(files = Composite(cpp, Dot.Formatter(type = 'file', format = 'png', bgcolor=(.1, 0.2, 0.8))),

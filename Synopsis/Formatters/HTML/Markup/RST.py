@@ -61,6 +61,7 @@ class RST(Formatter):
 
         doc = decl.annotations.get('doc')
         if doc:
+            print 'text', doc.text
             parts = publish_parts(doc.text, writer_name='html')
             print parts.keys()
         return Struct('', parts['html_body'])

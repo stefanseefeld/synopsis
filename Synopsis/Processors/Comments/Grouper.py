@@ -102,7 +102,7 @@ class Grouper(Transformer):
                 if tag.start('open') > 0:
                     c = c[:tag.start('open')]
                     comments.append(c)
-                group = AST.Group(decl.file(), decl.line(), decl.language(), "group", [label])
+                group = AST.Group(decl.file(), decl.line(), 'group', [label])
                 group.annotations['comments'] = comments
                 comments = []
                 self.push_group(group)
