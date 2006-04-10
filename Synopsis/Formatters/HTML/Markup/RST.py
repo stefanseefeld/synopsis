@@ -107,6 +107,11 @@ class RST(Formatter):
                 pub.process_programmatic_settings(None, None, None)
                 dummy = pub.publish(enable_exit_status=None)
                 summary = pub.writer.parts['html_body']
+                # Hack to strip off some redundant blocks to make the output
+                # more compact.
+                if (summary.startswith('<div class="document">\n<p>') and
+                    summary.endswith('</p>\n</div>\n')):
+                    summary=summary[26:-12]
             else:
                 summary = ''
                 
@@ -118,7 +123,12 @@ class RST(Formatter):
             pub.process_programmatic_settings(None, None, None)
             dummy = pub.publish(enable_exit_status=None)
             details = pub.writer.parts['html_body']
-
+            # Hack to strip off some redundant blocks to make the output
+            # more compact.
+            if (details.startswith('<div class="document">\n<p>') and
+                details.endswith('</p>\n</div>\n')):
+                details=details[26:-12]
+                
             return Struct(summary, details)
         else:
             return Struct('', '')

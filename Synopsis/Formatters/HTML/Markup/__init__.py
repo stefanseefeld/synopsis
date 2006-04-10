@@ -8,6 +8,7 @@
 
 from Synopsis.Processor import Parametrized, Parameter
 from Synopsis import AST, Type
+import re
 
 class Struct:
 
@@ -34,7 +35,9 @@ class Formatter(Parametrized):
 
         doc = decl.annotations.get('doc')
         text = doc and doc.text or ''
-        return Struct('', text)
+        m = re.match(r'(\s*[\w\W]*?\.)(\s|$)', text)
+        summary = m and m.group(1) or ''
+        return Struct(summary, text)
 
     def lookup_symbol(self, symbol, scope):
         """Given a symbol and a scope, returns an URL.
