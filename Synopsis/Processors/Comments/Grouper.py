@@ -71,7 +71,7 @@ class Grouper(Transformer):
             Transformer.pop(self, group)
         else:
             if decl:
-                print "Warning: no group open in current scope (near %s:%d), ignoring."%(decl.file().filename(), decl.line())
+                print "Warning: no group open in current scope (near %s:%d), ignoring."%(decl.file().name, decl.line())
             else:
                 print "Warning: no group open in current scope, ignoring."
 
