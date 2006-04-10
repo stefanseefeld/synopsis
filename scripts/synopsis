@@ -10,6 +10,7 @@ from Synopsis import config
 from Synopsis.getoptions import get_options
 from Synopsis import AST
 from Synopsis.Processor import Processor, Composite, Error
+from Synopsis.Processors import *
 
 import sys, os, os.path, string, getopt
 
@@ -41,29 +42,41 @@ def usage():
    print """
 List of options:
 
-  -h, --help             help
-  -V, --version          print version info and exit
-  -v  --verbose          operate verbosely
-  -d  --debug            operate in debug mode
-  -o, --output           output file / directory
-  -p, --parser           select a parser
-  -Wp,<arg>[,<arg>...]   send args to the parser
-  -l, --linker           link
-  -Wl,<arg>[,<arg>...]   send args to the linker
-  -f, --formatter        select a formatter
-  -Wf,<arg>[,<arg>...]   send args to the formatter
-  -I <path>              specify include path
-  -D <macro>             specify macro for the parser
-
-  -j  --javadoc          process javadoc tags in comments
+  -h, --help                  Display usage summary.
+  -V, --version               Display version information.
+  -v  --verbose               Operate verbosely.
+  -d  --debug                 Operate in debug mode.
+  -o <file>, --output=<file>  Write output to <file>.
+  -p <lang>, --parser=<lang>  Select a parser for <lang>.
+  -Wp,<arg>[,<arg>...]        Send <args> to the parser.
+  --translate[=<markup>]      Translate comments to doc-strings, processing it as
+                                <markup> (typical values are 'javadoc' or 'rst').
+  --cfilter=<filter>          Specify a comment filter.
+  --cprocessor=<processor>    Specify a comment processor.
+  -Wc,<arg>[,<arg>...]        Send <args> to the comment translator.
+  -l <processor>,
+    --linker=<processor>      Link, processing all declarations with <processor>.
+  -Wl,<arg>[,<arg>...]        Send <args> to the linker.
+  -f <type>,
+    --formatter=<type>        Select a formatter for <type>.
+  -Wf,<arg>[,<arg>...]        Send <args> to the formatter.
+  -I <path>                   Add <path> to list of include paths.
+  -D <macro>                  Add <macro> to list of predefined macros.
 """
    
-def get_opt(argv):
+def make_processor(argv):
    """Parse command line options and translate them to
    processor commands and arguments."""
-
    parser = None
    parser_opts = {}
+   translator_opts = {}
+   cfilters = {'ss': Comments.SSFilter,
+               'sss': Comments.SSSFilter,
+               'ssd': Comments.SSDFilter,
+               'c': Comments.CFilter,
+               'qt': Comments.QtFilter,
+               'java': Comments.JavaFilter}
+   cprocessors = []
    linker = None
    linker_opts = {'processors':[]}
    formatter = None
@@ -71,27 +84,25 @@ def get_opt(argv):
    options = {}
    help = False
 
-   javadoc = False
-
    opts, args = getopt.getopt(argv,
-                              'o:p:l:f:I:D:W:jvhVd',
+                              'o:p:l:f:I:D:W:jvhVdP',
                               ['output=',
-                               'parser=', 'linker=', 'formatter=',
-                               'version', 'help', 'verbose', 'debug',
-                               'javadoc'])
+                               'parser=', 'translate=', 'cfilter=', 'cprocessor=',
+                               'linker=', 'formatter=',
+                               'version', 'help', 'verbose', 'debug', 'profile'])
 
    for o, a in opts:
       if o == '-V' or o == '--version':
          print 'synopsis version %s'%config.version
          sys.exit(0)
          
-      if o == '-v' or o == '--verbose':
+      if o in ['-v', '--verbose']:
          options['verbose'] = True
 
-      if o == '-d' or o == '--debug':
+      elif o in ['-d', '--debug']:
          options['debug'] = True
 
-      elif o == '-o' or o == '--output':
+      elif o in ['-o', '--output']:
          options['output'] = a
 
       elif o in ['-p', '--parser']:
@@ -99,6 +110,24 @@ def get_opt(argv):
             error('Multiple parsers specified.')
          parser = __import__('Synopsis.Parsers.%s.Parser'%a,
                              'verbose' in options)
+
+      elif o == '--translate':
+         if 'markup' in translator_opts:
+            error('Multiple translators specified.')
+         translator_opts['markup'] = a or ''
+
+      elif o == '--cfilter':
+         if a not in cfilters:
+            error('%s is not a known comment filter.\n'
+                  '\t possible values are : %s'%(a, ', '.join([f for f in cfilters])))
+         translator_opts['filter'] = cfilters[a]()
+
+      elif o == '--cprocessor':
+         if a not in ['previous', 'grouper']:
+            error('%s is not a known comment processor.\n'
+                  '\t possible values are : previous, grouper')
+         cprocessors.append({'previous':Comments.Previous,
+                             'grouper':Comments.Grouper}[a]())
 
       elif o in ['-l', '--linker']:
          if not linker:
@@ -136,9 +165,6 @@ def get_opt(argv):
       elif o in ['-h', '--help']:
          help = True
 
-      elif o in ['-j', '--javadoc']:
-         javadoc = True
-
    if help:
       for p in parser, linker, formatter:
          if not p: continue
@@ -159,32 +185,30 @@ def get_opt(argv):
          parser_opts['flags'] = parser_opts['cppflags']
          del parser_opts['cppflags']
 
+   if cprocessors:
+      if len(cprocessors) > 1:
+         processor = Composite(cprocessors)
+      else:
+         processor = cprocessors[0]
+      translator_opts['processor'] = processor
+
    options['input'] = args
 
    #now instantiate the processor
    processors = []
    if parser:
       processors.append(parser(**parser_opts))
+   if translator_opts:
+      processors.append(Comments.Translator(**translator_opts))
    if linker:
       processors.append(linker(**linker_opts))
    if formatter:
-
-      if string.split(formatter.__module__, '.')[-2] == 'HTML':
-         #treat frequent flags at this level for convenience
-         if javadoc:
-            from Synopsis.Formatters.HTML import Comments
-            # add javadoc to the default list of comment formatters
-            formatter_opts['comment_formatters'] = [Comments.QuoteHTML(),
-                                                    Comments.Section(),
-                                                    Comments.Javadoc()]
       processors.append(formatter(**formatter_opts))
 
-   processor = Composite(*processors, **options)
-
-   return processor
+   return Composite(*processors, **options)
 
 def main():
-   processor = get_opt(sys.argv[1:])
+   processor = make_processor(sys.argv[1:])
    processor.process(AST.AST())
 
 if __name__ == '__main__':
