@@ -22,7 +22,7 @@ Bezier.syn: ../src/Bezier.h
 	$(synopsis) cxx_javadoc --output=$@ $<
 
 Nurbs.syn: ../src/Nurbs.h
-	$(synopsis) cxx_ssd --output=$@ $<
+	$(synopsis) cxx_rst --output=$@ $<
 
 clean:
 	rm -rf *.syn links xref
