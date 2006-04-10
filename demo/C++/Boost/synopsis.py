@@ -28,12 +28,12 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python%s/Python.h>'%sys.versi
 xref = XRefCompiler(prefix='xref/')    # compile xref dictionary
 
 
-linker = Linker(SSFilter(),         # filter out any non-'//' comments
-                Grouper1(),         # group declarations according to '@group' tags
-                Previous(),         # attach '//<' comments
-                Stripper(),         # strip any 'suspicious' comments
-                Summarizer(),       # separate summary (first phrase) from detail (everything)
-                AccessRestrictor()) # filter out unwanted ('private', say) declarations
+translator = Comments.Translator(markup='rst',               # use restructured text markup in comments
+                                 filter=Comments.SSFilter(), # filter out any non-'//' comments
+                                 processor=Composite(Comments.Grouper(),
+                                                     Comments.Previous()))
+
+linker = Linker(translator)
 
 html = HTML.Formatter(title = 'Boost Python Reference Manual',
                       file_layout = FileLayout(), # bpl uses 'aux' module which would usually
