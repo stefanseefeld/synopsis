@@ -15,6 +15,7 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
    """Visitor that removes duplicate declarations"""
 
    remove_empty_modules = Parameter(True, 'Remove empty modules.')
+   sort_modules = Parameter(True, 'Sort module content alphabetically.')
 
    def process(self, ast, **kwds):
 
@@ -42,6 +43,11 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       if self.remove_empty_modules:
          import EmptyModuleRemover
          self.ast = EmptyModuleRemover.EmptyModuleRemover().process(self.ast)
+
+      if self.sort_modules:
+         import ModuleSorter
+         self.ast = ModuleSorter.ModuleSorter().process(self.ast)
+         
 
       # now deal with the sub-processors, if any
       output = self.output
