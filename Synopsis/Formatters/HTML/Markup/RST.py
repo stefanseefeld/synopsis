@@ -8,13 +8,15 @@
 from Synopsis import AST, Type
 from Synopsis.Formatters.HTML.Tags import *
 from Synopsis.Formatters.HTML.Markup import *
-from docutils.nodes import NodeVisitor, Text
+from docutils.nodes import *
 from docutils.core import *
+from docutils.readers import standalone
+from docutils.transforms import Transform
 import string, re
 
 class SummaryExtractor(NodeVisitor):
-    """A docutils node visitor that extracts the first sentence from
-    the first paragraph in a document."""
+    """A SummaryExtractor creates a document containing the first sentence of
+    a source document."""
 
     def __init__(self, document):
 
@@ -22,12 +24,8 @@ class SummaryExtractor(NodeVisitor):
         self.summary = None
         
 
-    def visit_document(self, node):
-
-        self.summary = None
-
-        
     def visit_paragraph(self, node):
+        """Copy the paragraph but only keep the first sentence."""
 
         if self.summary is not None:
             return
@@ -41,11 +39,15 @@ class SummaryExtractor(NodeVisitor):
                 if m:
                     summary_pieces.append(Text(m.group(1)))
                     break
-            summary_pieces.append(child)
+                else:
+                    summary_pieces.append(Text(child))
+            else:
+                summary_pieces.append(child)
             
-        summary_doc = self.document.copy()
-        summary_doc[:] = summary_pieces
-        self.summary = summary_doc
+        self.summary = self.document.copy()
+        para = node.copy()
+        para[:] = summary_pieces
+        self.summary[:] = [para]
 
 
     def unknown_visit(self, node):
@@ -55,14 +57,68 @@ class SummaryExtractor(NodeVisitor):
 
 
 class RST(Formatter):
-
+    """Format summary and detail documentation according to restructured text markup.
+    """
 
     def format(self, decl, view):
 
+        formatter = self
+        
+        class Linker(Transform):
+            """Resolve references that don't have explicit targets
+            in the same doctree."""
+
+            default_priority = 1
+    
+            def apply(self):
+                for ref in self.document.traverse(reference):
+                    if ref.resolved or not ref.hasattr("refname"):
+                        return
+                    name = ref['name']
+                    uri = formatter.lookup_symbol(name, decl.name())
+                    if uri:
+                        ref.resolved = 1
+                        ref['refuri'] = rel(view.filename(), uri)
+                    else:
+                        ref.replace_self(Text(name))
+
+        class Reader(standalone.Reader):
+
+            def get_transforms(self):
+                return [Linker] + standalone.Reader.get_transforms(self)
+
+
         doc = decl.annotations.get('doc')
         if doc:
-            print 'text', doc.text
-            parts = publish_parts(doc.text, writer_name='html')
-            print parts.keys()
-        return Struct('', parts['html_body'])
+            doctree = publish_doctree(doc.text, reader=Reader())
 
+            # Extract the summary.
+            extractor = SummaryExtractor(doctree)
+            doctree.walk(extractor)
+
+            reader = docutils.readers.doctree.Reader(parser_name='null')
+
+            # Publish the summary.
+            if extractor.summary:
+                pub = Publisher(reader, None, None,
+                                source=io.DocTreeInput(extractor.summary),
+                                destination_class=io.StringOutput)
+                pub.set_writer('html')
+                pub.process_programmatic_settings(None, None, None)
+                dummy = pub.publish(enable_exit_status=None)
+                summary = pub.writer.parts['html_body']
+            else:
+                summary = ''
+                
+            # Publish the details.
+            pub = Publisher(reader, None, None,
+                            source=io.DocTreeInput(doctree),
+                            destination_class=io.StringOutput)
+            pub.set_writer('html')
+            pub.process_programmatic_settings(None, None, None)
+            dummy = pub.publish(enable_exit_status=None)
+            details = pub.writer.parts['html_body']
+
+            return Struct(summary, details)
+        else:
+            return Struct('', '')
