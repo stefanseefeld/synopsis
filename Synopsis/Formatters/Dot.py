@@ -353,16 +353,15 @@ class FileDependencyGenerator(DotFileGenerator, AST.Visitor, Type.Visitor):
    """A Formatter that generates a file dependency graph"""
 
    def visit_file(self, file):
-      if file.is_main():
-         self.write_node('', file.filename(), file.filename())
-      for i in file.includes():
-         target = i.target()
-         if target.is_main():
-            self.write_node('', target.filename(), target.filename())
-            name = i.name()
+      if file.annotations['primary']:
+         self.write_node('', file.name, file.name)
+      for i in file.includes:
+         target = i.target
+         if target.annotations['primary']:
+            self.write_node('', target.name, target.name)
+            name = i.name
             name = name.replace('"', '\\"')
-            self.write_edge(target.filename(), file.filename(),
-                            label=name, style='dashed')
+            self.write_edge(target.name, file.name, label=name, style='dashed')
 
 def _rel(frm, to):
    "Find link to to relative to frm"
