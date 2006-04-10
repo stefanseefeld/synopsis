@@ -25,8 +25,6 @@ class Joker(Processor):
 
 cxx = Cxx.Parser(base_path='../src')
 
-ssd = Comments.Translator(filter = Comments.SSDFilter(),
-                          processor = Comments.Grouper())
 ss = Comments.Translator(filter = Comments.SSFilter(),
                          processor = Comments.Grouper())
 ssd_prev = Comments.Translator(filter = Comments.SSDFilter(),
@@ -35,11 +33,14 @@ ssd_prev = Comments.Translator(filter = Comments.SSDFilter(),
 javadoc = Comments.Translator(markup='javadoc',
                               filter = Comments.JavaFilter(),
                               processor = Comments.Grouper())
+rst = Comments.Translator(markup='rst',
+                          filter = Comments.SSDFilter(),
+                          processor = Comments.Grouper())
 
-process(cxx_ssd = Composite(cxx, ssd),
-        cxx_ss = Composite(cxx, ss),
+process(cxx_ss = Composite(cxx, ss),
         cxx_ssd_prev = Composite(cxx, ssd_prev),
         cxx_javadoc = Composite(cxx, javadoc),
+        cxx_rst = Composite(cxx, rst),
         link = Linker(),
         html = HTML.Formatter(),
         dot = Dot.Formatter(),
