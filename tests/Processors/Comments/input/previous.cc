@@ -1,3 +1,6 @@
+// -*- Comments.SSFilter -*-
+// -*- Comments.Previous -*-
+
 struct Foo
 {
   int first;  //< first comment

@@ -1,3 +1,6 @@
+// -*- Comments.SSFilter -*-
+// -*- Comments.Previous -*-
+
 class Foo
 {
 public:

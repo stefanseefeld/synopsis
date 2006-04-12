@@ -1,10 +1,25 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
 <ast>
  <declarations>
-  <instance accessibility="0" class="Synopsis.AST.Class" file="Processors/Linker/first/input/definition.h" language="C++" line="1" name="Foo" type="class">
+  <instance accessibility="0" class="Synopsis.AST.Class" file="Processors/Linker/first/input/definition.h" line="1" name="Foo" type="class">
    <declarations>
-    <instance accessibility="3" class="Synopsis.AST.Builtin" file="Processors/Linker/first/input/definition.h" language="C++" line="1" name="EOS" type="EOS"/>
+    <item>
+     <instance accessibility="3" class="Synopsis.AST.Builtin" file="Processors/Linker/first/input/definition.h" line="1" name="EOS" type="EOS">
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value/>
+      </annotations>
+     </instance>
+    </item>
    </declarations>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value/>
+   </annotations>
   </instance>
  </declarations>
  <types>
@@ -16,11 +31,17 @@
   </instance>
  </types>
  <files>
-  <instance class="Synopsis.AST.SourceFile" filename="Processors/Linker/first/input/forward.h" is_main="1" language="C++">
+  <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Processors/Linker/first/input/forward.h" primary="1">
+   <declarations/>
+   <includes/>
    <macro_calls/>
   </instance>
-  <instance class="Synopsis.AST.SourceFile" filename="Processors/Linker/first/input/definition.h" is_main="1" language="C++">
-   <declarations/>
+  <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Processors/Linker/first/input/definition.h" primary="1">
+   <declarations>
+    <item/>
+    <item/>
+   </declarations>
+   <includes/>
    <macro_calls/>
   </instance>
  </files>
