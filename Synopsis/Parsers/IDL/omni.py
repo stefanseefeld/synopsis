@@ -11,11 +11,7 @@ import idlast, idltype, idlvisitor, idlutil
 import _omniidl
 import sys, getopt, os, os.path, string, types
 
-verbose = 0
 sourcefile = None
-
-# A dummy function that doesn't modify filename. use -b to change it
-def strip(filename): return filename
 
 def strip_filename(filename):
    "This is aliased as strip if -b used and basename set"
@@ -413,60 +409,26 @@ class ASTTranslator(idlvisitor.AstVisitor):
 #    def visitValueAbs(self, node):     return
 #    def visitValue(self, node):        return
 
-def parse(ast, file, verb, main_file_only,
-          base_path, include_paths, comments_before):
-   global verbose, basename, strip, sourcefile
+def parse(ast, cppfile, src, primary_file_only,
+          base_path, verbose, debug):
+   global basename, strip, sourcefile
 
-   if verb: verbose = True
-   preprocessor_args = ["-C"]
-   if comments_before: _omniidl.keepComments(1)
-   else: _omniidl.keepComments(0)
    if base_path:
       basename = base_path
-      strip = strip_filename
-   for i in include_paths:
-      preprocessor_args.extend(['-I', i])
 
-   path = string.split(os.getenv('PATH'), os.pathsep)
-   # Add Synopsis' bindir
-   path.insert(0, os.path.dirname(sys.argv[0]))
-   if hasattr(_omniidl, "__file__"):
-      # Add path to omniidl module
-      dirname = os.path.dirname(_omniidl.__file__)
-      path.insert(0, dirname)
-      # If, eg, /usr/lib/pythonX.X/site-packages, add /usr/lib
-      dirnames = string.split(dirname, os.sep)
-      if len(dirnames) > 2 and dirnames[-1] == 'site-packages' \
-             and dirnames[-2][:6] == 'python':
-         path.insert(0, string.join(dirnames[:-2], os.sep))
-
-   preprocessor = None
-   for directory in path:
-      preprocessor = os.path.join(directory, "omnicpp")
-      if os.access(preprocessor, os.R_OK | os.X_OK):
-         break
-      preprocessor = None
-   if not preprocessor:
-      # Try ordinary cpp
-      print "Error: unable to find omnicpp in path:"
-      print string.join(path, os.pathsep)
-      sys.exit(1)
-   preprocessor_cmd  = preprocessor + " -lang-c++ -undef -D__OMNIIDL__=" + _omniidl.version
-   preprocessor_cmd = preprocessor_cmd + " " + string.join(preprocessor_args, " ") + " " + file
-   fd = os.popen(preprocessor_cmd, "r")
-
+   _omniidl.keepComments(1)
    _omniidl.noForwardWarning()
-   tree = _omniidl.compile(fd)
+   tree = _omniidl.compile(open(cppfile, 'r+'))
    if tree == None:
-      sys.stderr.write("omni: Error parsing " + file + "\n")
+      sys.stderr.write("omni: Error parsing %s\n"%cppfile)
       sys.exit(1)
 
-   sourcefile = SourceFile(strip(file), file, 'IDL')
+   sourcefile = SourceFile(strip_filename(src), src, 'IDL')
    sourcefile.annotations['primary'] = True
    new_ast = AST.AST()
    new_ast.files()[sourcefile.name] = sourcefile
    type_trans = TypeTranslator(new_ast.types())
-   ast_trans = ASTTranslator(new_ast.declarations(), type_trans, main_file_only)
+   ast_trans = ASTTranslator(new_ast.declarations(), type_trans, primary_file_only)
    tree.accept(ast_trans)
    sourcefile.declarations[:] = new_ast.declarations()
    ast.merge(new_ast)

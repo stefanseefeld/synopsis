@@ -32,9 +32,10 @@ class Parser(Processor):
 
       flags = self.flags
       base_path = self.base_path and os.path.abspath(self.base_path) + os.sep or ''
-      info = get_compiler_info(self.language, self.emulate_compiler)
-      flags += map(lambda x:'-I%s'%x, info.include_paths)
-      flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
+      if self.emulate_compiler is not None:
+         info = get_compiler_info(self.language, self.emulate_compiler)
+         flags += map(lambda x:'-I%s'%x, info.include_paths)
+         flags += map(lambda x:'-D%s=%s'%(x[0], x[1]), info.macros)
       for file in self.input:
          self.ast = ucpp.parse(self.ast,
                                os.path.abspath(file),
