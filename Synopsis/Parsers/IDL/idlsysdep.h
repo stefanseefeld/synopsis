@@ -63,8 +63,9 @@
 #ifndef _idlsysdep_h_
 #define _idlsysdep_h_
 
-#define USE_omniORB_logStream
-#include <omniORB4/CORBA_sysdep.h>
+// #define USE_omniORB_logStream
+// #include <omniORB4/CORBA_sysdep.h>
+#include <config.h>
 
 
 // As usual, Windows manages to be different...

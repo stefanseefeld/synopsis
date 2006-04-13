@@ -9,10 +9,19 @@ conf()
   )
 }
 
+conf_with_header()
+{
+  (cd $1
+   echo "Generating $1/configure..."
+   autoconf
+   autoheader
+  )
+}
+
 conf src
 conf src/Synopsis/gc
 conf Synopsis/Parsers/Cpp/ucpp
-conf Synopsis/Parsers/IDL
+conf_with_header Synopsis/Parsers/IDL
 conf Synopsis/Parsers/C
 conf Synopsis/Parsers/Cxx
 conf tests

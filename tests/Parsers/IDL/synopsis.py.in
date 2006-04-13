@@ -4,6 +4,7 @@ from Synopsis.Parsers import IDL
 from Synopsis.Formatters import Dump
 import os
 
-process(parse = Composite(IDL.Parser(base_path = '@abs_top_srcdir@' + os.sep),
+process(parse = Composite(IDL.Parser(base_path = '@abs_top_srcdir@' + os.sep,
+                                     cppflags = ['-I@srcdir@/input']),
                           Dump.Formatter(show_ids = False, stylesheet = None)))
 
