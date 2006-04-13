@@ -20,8 +20,8 @@ python_src	:= $(wildcard $(topdir)/Synopsis/*.py)
 python_src	+= $(shell find $(topdir)/Synopsis/Parsers -name '*.py' -print)
 python_src	+= $(shell find $(topdir)/Synopsis/Processors -name '*.py' -print)
 python_src	+= $(shell find $(topdir)/Synopsis/Formatters -name '*.py' -print)
-python_src	+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
-# don't include UI yet, as it isn't up to date with the rest
+#python_src	+= $(shell find $(topdir)/Synopsis/dist -name '*.py' -print)
+
 python_syn	:= $(patsubst $(topdir)/%.py, %.syn, $(python_src))
 
 texi-help	:= aux cp cps fn fns ky log pg toc tp tps vr vrs
