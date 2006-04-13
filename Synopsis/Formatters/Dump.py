@@ -176,7 +176,7 @@ class Formatter(Processor):
                   name = name[index+2:]
 
             # String attributes map to xml attributes.
-            if self.handlers[type(value)] == self.visit_string:
+            if self.handlers.get(type(value)) == self.visit_string:
                self.node.setAttribute(name, str(value))
             # Everything else maps to sub-elements.
             else:

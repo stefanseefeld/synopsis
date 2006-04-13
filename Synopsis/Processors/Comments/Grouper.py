@@ -30,7 +30,7 @@ class Grouper(Transformer):
             print 'Warning: group stack is non-empty !'
             while (self.__group_stack[-1]):
                 group = self.__group_stack[-1][-1]
-                print 'forcing closing of group %s (opened near %s:%d)'%(group.name(), group.file().filename(), group.line())
+                print 'forcing closing of group %s (opened near %s:%d)'%(group.name(), group.file().name, group.line())
                 self.pop_group()
 
     def finalize(self):

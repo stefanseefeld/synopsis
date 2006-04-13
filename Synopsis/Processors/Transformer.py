@@ -58,3 +58,5 @@ class Transformer(Processor, AST.Visitor):
         """Returns the current scope: a list of declarations"""
 
         return self.__current
+
+    visitBuiltin = visitDeclaration

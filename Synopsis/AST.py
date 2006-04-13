@@ -126,11 +126,31 @@ class AST:
                   i.target = replacement[r]
 
 
+class Debugger(type):
+   """Wrap the object's 'accept' method, printing out the visitor's type.
+   Useful for tracing visitors visiting declarations."""
+
+   def __init__(cls, name, bases, dict):
+
+       accept = dict['accept']
+       "The original instancemethod."
+       
+       def accept_wrapper(self, visitor):
+           "The wrapper. The original 'accept' method is part of its closure."
+           print '%s accepting %s.%s'%(self.__class__.__name__,
+                                       visitor.__module__,
+                                       visitor.__class__.__name__)
+           accept(self, visitor)
+
+       setattr(cls, 'accept', accept_wrapper)
+
 class Declaration:
    """Declaration base class. Every declaration has a name, type,
    accessibility and annotations. The default accessibility is DEFAULT except for
    C++ where the Parser always sets it to one of the other three. """
     
+   #__metaclass__ = Debugger
+
    def __init__(self, file, line, strtype, name):
 
       self.__file  = file
@@ -478,7 +498,10 @@ class Visitor :
    def visitAST(self, node):
       for declaration in node.declarations(): declaration.accept(self)
    def visitDeclaration(self, node): return
-   def visitBuiltin(self, node): self.visitDeclaration(node)
+   def visitBuiltin(self, node):
+      """Visit a Builtin instance. By default do nothing. Processors who
+      operate on Builtin nodes have to provide an appropriate implementation."""
+      pass
    def visitMacro(self, node): self.visitDeclaration(node)
    def visitForward(self, node): self.visitDeclaration(node)
    def visitGroup(self, node):

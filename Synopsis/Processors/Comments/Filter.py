@@ -30,6 +30,8 @@ class Filter(Processor, AST.Visitor):
         comments[:] = [c is not None and self.filter_comment(c) or None
                        for c in comments]
 
+    visitBuiltin = visitDeclaration
+
     def filter_comment(self, comment):
         """Filter comment."""
 
