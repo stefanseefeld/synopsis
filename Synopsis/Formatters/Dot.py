@@ -18,7 +18,6 @@ import sys, tempfile, getopt, os, os.path, string, types, errno, re
 
 verbose = False
 debug = False
-have_dot = True
 
 class SystemError:
    """Error thrown by the system() function. Attributes are 'retval', encoded
@@ -392,16 +391,11 @@ def _convert_map(input, output, base_url):
 
 def _format(input, output, format):
 
-   global have_dot
-
-   if not have_dot: return
-   
    command = 'dot -T%s -o "%s" "%s"'%(format, output, input)
    if verbose: print "Dot Formatter: running command '" + command + "'"
    try:
       system(command)
    except SystemError, e:
-      have_dot = False
       if debug:
          print 'failed to execute "%s"'%command
       raise InvalidCommand, "could not execute 'dot'"
