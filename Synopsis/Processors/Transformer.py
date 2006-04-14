@@ -59,4 +59,6 @@ class Transformer(Processor, AST.Visitor):
 
         return self.__current
 
-    visitBuiltin = visitDeclaration
+    def visitBuiltin(self, decl):
+
+        self.visitDeclaration(decl)

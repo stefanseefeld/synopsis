@@ -29,4 +29,5 @@ class ModuleSorter(Processor, AST.Visitor):
         """Visits all children of the module, and if there are no declarations
         after that removes the module"""
 
-        module.declarations().sort(key=AST.Declaration.name)
+        def compare(a, b): return cmp(a.name(), b.name())
+        module.declarations().sort(compare)
