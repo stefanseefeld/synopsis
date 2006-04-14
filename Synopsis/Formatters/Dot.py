@@ -10,13 +10,15 @@
 Uses 'dot' from graphviz to generate various graphs.
 """
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters import TOC
 
 import sys, tempfile, getopt, os, os.path, string, types, errno, re
 
 verbose = False
+debug = False
+have_dot = True
 
 class SystemError:
    """Error thrown by the system() function. Attributes are 'retval', encoded
@@ -390,9 +392,19 @@ def _convert_map(input, output, base_url):
 
 def _format(input, output, format):
 
+   global have_dot
+
+   if not have_dot: return
+   
    command = 'dot -T%s -o "%s" "%s"'%(format, output, input)
    if verbose: print "Dot Formatter: running command '" + command + "'"
-   system(command)
+   try:
+      system(command)
+   except SystemError, e:
+      have_dot = False
+      if debug:
+         print 'failed to execute "%s"'%command
+      raise InvalidCommand, "could not execute 'dot'"
 
 def _format_png(input, output): _format(input, output, "png")
 
@@ -434,11 +446,12 @@ class Formatter(Processor):
    base_url = Parameter(None, 'base url to use for generated links')
 
    def process(self, ast, **kwds):
-      global verbose
+      global verbose, debug
       
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
       verbose = self.verbose
+      debug = self.debug
 
       formats = {'dot' : 'dot',
                  'ps' : 'ps',

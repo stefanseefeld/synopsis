@@ -7,6 +7,19 @@
 
 import AST
 
+class Error:
+   """An exception a processor may raise during processing."""
+
+   def __init__(self, what):
+
+      self.what = what
+
+   def __str__(self):
+      return "%s: %s"%(self.__class__.__name__, self.what)
+
+class InvalidArgument(Error): pass
+class InvalidCommand(Error): pass
+
 class Parameter(object):
    """A Parameter is a documented value, kept inside a Processor."""
    def __init__(self, value, doc):
@@ -47,7 +60,7 @@ class Parametrized(object):
 
       for p in kwds:
          if not p in instance._parameters:
-            raise KeyError, "'%s' processor doesn't have '%s' parameter"%(cls.__name__, p)
+            raise InvalidArgument, "'%s' processor doesn't have '%s' parameter"%(cls.__name__, p)
          else:
             setattr(instance, p, kwds[p])
 
@@ -68,18 +81,7 @@ class Parametrized(object):
          if i in self._parameters:
             setattr(self, i, kwds[i])
          else:
-            raise KeyError, "No parameter '%s' in '%s'"%(i, self.__class__.__name__)
-
-
-class Error:
-   """An exception a processor may raise during processing."""
-
-   def __init__(self, what):
-
-      self.__what = what
-
-   def __str__(self):
-      return "%s: %s"%(self.__class__.__name__, self.__what)
+            raise InvalidArgument, "No parameter '%s' in '%s'"%(i, self.__class__.__name__)
 
 
 class Processor(Parametrized):
