@@ -1,4 +1,3 @@
-# $Id: ASCII.py,v 1.34 2003/11/13 17:21:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -23,8 +22,8 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
    with the input...
    """
 
-   bold_comments = Parameter(False, 'Bold comments')
-   comment_color = Parameter(None, 'Colored comments, color = 0 to 15')
+   bold_docs = Parameter(False, 'Bold docs')
+   doc_color = Parameter(None, 'Colored docs, color = 0 to 15')
 
    def process(self, ast, **kwds):
 
@@ -40,14 +39,14 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
       self.__enumers = []
       self.__id_holder = None
       self.__os.write('hi there')
-      if self.comment_color is not None: 
-         self.comment_str = "\033[3%d%sm// %%s\033[m\n"%(
-            self.comment_color % 8,
-            (self.comment_color >= 8) and ";1" or "")
-      elif self.bold_comments:
-         self.comment_str = "\033[1m// %s\033[m\n"
+      if self.doc_color is not None: 
+         self.doc_str = "\033[3%d%sm// %%s\033[m\n"%(
+            self.doc_color % 8,
+            (self.doc_color >= 8) and ";1" or "")
+      elif self.bold_docs:
+         self.doc_str = "\033[1m// %s\033[m\n"
       else:
-         self.comment_str = "// %s\n"
+         self.doc_str = "// %s\n"
 
       for declaration in self.ast.declarations():
          declaration.accept(self)
@@ -129,7 +128,7 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
          self.decr(); self.indent(); self.incr()
          self.write(self.__axs_string[axs])
          self.__axs = axs
-      self.writeComments(decl.comments())
+      self.write_docs(decl.annotations.get('doc',''))
 
    def visitMacro(self, macro):
 
@@ -140,15 +139,13 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
          params = '(' + string.join(macro.parameters(), ', ') + ')'
       self.write("#define %s%s %s\n"%(macro.name()[-1], params, macro.text()))
     
-   def writeComments(self, comments):
+   def write_docs(self, docs):
 
-      for comment in comments:
-         text = comment.text()
-         if not text: continue
-         lines = string.split(text, "\n")
+      if docs:
+         lines = docs.split('\n')
          for line in lines:
             self.indent()
-            self.write(self.comment_str%line)
+            self.write(self.doc_str%line)
 
    def visitTypedef(self, typedef):
 
@@ -183,7 +180,7 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
       self.visitDeclaration(module)
       for decl in module.module_declarations():
          self.visitDeclaration(decl)
-      # since no comments:
+      # since no docs:
       self.visitModule(module)
 
    def visitClass(self, clas):
@@ -284,7 +281,7 @@ class Formatter(Processor, AST.Visitor, Type.Visitor):
 
    def visitEnumerator(self, enumer):
 
-      self.writeComments(enumer.comments())
+      self.write_docs(enumer.annotations.get('docs', ''))
       if enumer.value() == "":
          self.write("%s"%enumer.name()[-1])
       else:

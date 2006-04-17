@@ -6,22 +6,21 @@
 #
 
 def import_processor(name, verbose=False):
-   """Import a named processor and return it.
-   Throws ImportError on failure."""
+    """Import a named processor and return it.
+    Throws ImportError on failure."""
 
    
-   i = name.rfind('.')
-   if i == -1:
-      raise ImportError, '%s does not name a valid processor'%name
+    i = name.rfind('.')
+    if i == -1:
+        raise ImportError, '%s does not name a valid processor'%name
 
-   module, processor = name[:i], name.split('.')
+    module, processor = name[:i], name.split('.')
+    mod = __import__(module)
 
-   mod = __import__(module)
+    for c in processor[1:]:
+        try:
+            mod = getattr(mod, c)
+        except AttributeError, msg:
+            raise ImportError, "Unable to find %s in %s"%(c, repr(mod))
 
-   for c in processor[1:]:
-      try:
-         mod = getattr(mod, c)
-      except AttributeError, msg:
-         raise ImportError, "Unable to find %s in:\n%s"%(c, repr(mod))
-
-   return mod
+    return mod

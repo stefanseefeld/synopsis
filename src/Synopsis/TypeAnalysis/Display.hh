@@ -40,6 +40,7 @@ private:
   virtual void visit(Function *);
   virtual void visit(PointerToMember *);
 
+  virtual void visit(Parameter *);
   virtual void visit(Dependent *);
 
   std::ostream &my_os;

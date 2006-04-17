@@ -24,14 +24,14 @@ public:
   std::string name() const { return narrow<std::string>(attr("name")());}
   bool is_macro() const { return narrow<bool>(attr("is_macro")());}
   bool is_next() const { return narrow<bool>(attr("is_next")());}
-  void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.AST", "Include");}
+  void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.SourceFile", "Include");}
 };
 
 class MacroCall : public Python::Object
 {
 public:
   MacroCall(const Python::Object &o) throw(TypeError) : Python::Object(o) { assert_type();}
-  void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.AST", "MacroCall");}
+  void assert_type() throw(TypeError) { Python::Object::assert_type("Synopsis.SourceFile", "MacroCall");}
   std::string name() { return narrow<std::string>(attr("name"));}
   long start() { return narrow<long>(attr("start"));}
   long end() { return narrow<long>(attr("end"));}

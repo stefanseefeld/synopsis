@@ -1,4 +1,3 @@
-# $Id: TOC.py,v 1.7 2003/11/14 14:51:08 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -108,7 +107,9 @@ class TOC(AST.Visitor):
 
    def visitDeclaration(self, decl):
 
-      entry = TOC.Entry(decl.name(), self.linker.link(decl), decl.language(), "decl")
+      file = decl.file()
+      entry = TOC.Entry(decl.name(), self.linker.link(decl),
+                        file and file.annotations['language'] or '', "decl")
       self.insert(entry)
 
    def visitForward(self, decl):

@@ -30,7 +30,7 @@ public:
   //. Right now only CXX is supported.
   SymbolFactory(Language = CXX);
 
-  SymbolTable::Scope *current_scope() { return my_scopes.top();}
+  SymbolTable::Scope *current_scope() { return scopes_.top();}
 
   void enter_scope(SymbolTable::Scope *);
   void enter_scope(SymbolTable::Scope *, PTree::NamespaceSpec const *);
@@ -49,14 +49,18 @@ public:
   void declare_specialization(SymbolTable::Scope *, PTree::SimpleDeclaration *);
   void declare(SymbolTable::Scope *, PTree::FunctionDefinition *);
   void declare_specialization(SymbolTable::Scope *, PTree::FunctionDefinition *);
+
   //. declare the enumeration as a new TYPE as well as all the enumerators as CONST
   void declare(SymbolTable::Scope *, PTree::EnumSpec const *);
+
   //. declare the namespace as a new NAMESPACE
   void declare(SymbolTable::Scope *, PTree::NamespaceSpec const *);
+
   //. Declare a class.
   //. If this is a template specialization declare it with
   //. the template repository, else declare it here.
   void declare(SymbolTable::Scope *, PTree::ClassSpec const *);
+
   //. Declare a class-name from an elaborated-type-specifier.
   void declare(SymbolTable::Scope *, PTree::ElaboratedTypeSpec const *);
   void declare(SymbolTable::Scope *, PTree::TypeParameter const *);
@@ -83,28 +87,28 @@ private:
   SymbolTable::Scope *lookup_scope_of_qname(PTree::Encoding &, PTree::Node const *);
 
   void declare_template_specialization(PTree::Encoding const &,
-				       PTree::TemplateDeclaration const *,
+				       PTree::ClassSpec const *,
 				       SymbolTable::Scope *);
 
   //. The language / dialect we are working in. The behavior may depend on it.
   //. In particular, 'NONE' means do nothing.
-  Language                      my_language;
+  Language                      language_;
   //. The current scope stack.
-  Scopes                        my_scopes;
+  Scopes                        scopes_;
   //. When parsing a function definition the declarator is seen first,
   //. and thus a prototype is created to hold the parameters.
   //. Later, when the function definition proper is seen, the symbols
   //. are transfered and the prototype is deleted.
-  SymbolTable::PrototypeScope *my_prototype;
+  SymbolTable::PrototypeScope *prototype_;
   //. When parsing a class or function template the template-parameter-list
   //. is seen first. Since ClassSpec and Declarator don't know they are part
   //. of a template declaration, we cache it here so it gets consumed when
   //. the Class or PrototypeScope are created.
   //. FIXME: Should ClassSpec get a flag so it knows it's a template, similar
   //.        to Encodings helt in Declarators ?
-  SymbolTable::TemplateParameterScope *my_template_parameters;
+  SymbolTable::TemplateParameterScope *tparameters_;
 
-  TypeAnalysis::TemplateRepository    *my_template_repository;
+  TypeAnalysis::TemplateRepository    *templates_;
 };
 
 }

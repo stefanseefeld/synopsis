@@ -30,16 +30,16 @@ private:
   }
   virtual void visit(PT::EnumSpec *node)
   {
-    PT::Node *body = third(node);
+    PT::Node *body = PT::nth<2>(node);
 
     long value = -1;
-    for (PT::Node *e = PT::second(body); e; e = PT::rest(rest(e)))
+    for (PT::Node *e = PT::nth<1>(body); e; e = PT::tail(e, 2))
     {
       PT::Node *enumerator = e->car();
       if (enumerator->is_atom()) ++value;
       else  // [identifier = initializer]
       {
-	PT::Node *initializer = PT::third(enumerator);
+	PT::Node *initializer = PT::nth<2>(enumerator);
 	enumerator = enumerator->car();
 	if (!TypeAnalysis::evaluate_const(current_scope(), initializer, value))
 	{
@@ -55,9 +55,9 @@ private:
   }
   virtual void visit(PT::Declaration *node)
   {
-    PT::Node *type = PT::second(node);
+    PT::Node *type = PT::nth<1>(node);
     type->accept(this);
-    PT::Node *rest = PT::third(node);
+    PT::Node *rest = PT::nth<2>(node);
     if (rest->is_atom()) return; // ';'
     for (; rest; rest = rest->cdr())
     {
@@ -69,7 +69,7 @@ private:
   {
     if (PT::length(node) == 3)
     {
-      PT::Node *initializer = PT::third(node);
+      PT::Node *initializer = PT::nth<2>(node);
       my_os << "initializer : " << PT::reify(initializer) << std::endl;
       long value;
       if (TypeAnalysis::evaluate_const(current_scope(), initializer, value))

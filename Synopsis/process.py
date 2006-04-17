@@ -69,8 +69,6 @@ def process(argv = sys.argv, **commands):
       ast = AST.AST()
       try:
          commands[command].process(ast, **props)
-      except KeyError, e:
-         error('missing argument "%s"'%e)
       except Error, e:
          error(str(e))
       except KeyboardInterrupt, e:

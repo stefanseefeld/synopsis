@@ -1,5 +1,5 @@
-#ifndef _Polyline_h
-#define _Polyline_h
+#ifndef Polyline_h_
+#define Polyline_h_
 
 #include "Path.h"
 #include <vector>
@@ -25,7 +25,7 @@ public:
   virtual void draw();
 private:
   // The data...
-  std::vector<Vertex> _vertices;
+  std::vector<Vertex> vertices_;
 };
 
 }

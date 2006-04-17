@@ -18,12 +18,12 @@ namespace TypeAnalysis
 {
 
 void TemplateRepository::declare(ST::ClassTemplateName const *primary,
-				 PT::TemplateDeclaration const *spec)
+				 PT::TemplateParameterList const *params)
 {
   Trace trace("TemplateRepository::declare", Trace::SYMBOLLOOKUP);
-  SpecializationList &specializations = my_specializations[primary];
-  // Figure out what to do here.
-  specializations.push_back(Specialization(spec));
+//   SpecializationList &specializations = my_specializations[primary];
+//   // Figure out what to do here.
+//   specializations.push_back(Specialization(spec));
 }
 
 void TemplateRepository::declare_scope(ST::ClassTemplateName const *primary,

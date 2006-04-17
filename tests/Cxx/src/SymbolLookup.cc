@@ -42,19 +42,9 @@ private:
     Walker::visit(node);
   }
 
-  virtual void visit(PT::Typedef *typed)
+  virtual void visit(PT::TemplateDeclaration *tdecl)
   {
-    Trace trace("SymbolFinder::visit(Typedef)", Trace::SYMBOLLOOKUP);
-    // We need to figure out how to reproduce the (encoded) name of
-    // the type being aliased.
-    my_os << "Type : " << "<not implemented yet>" << std::endl;
-//     lookup(name);
-    PT::nth<2>(typed)->accept(this);
-  }
-
-  virtual void visit(PT::TemplateDecl *tdecl)
-  {
-    Trace trace("SymbolFinder::visit(TemplateDecl)", Trace::SYMBOLLOOKUP);
+    Trace trace("SymbolFinder::visit(TemplateDeclaration)", Trace::SYMBOLLOOKUP);
     traverse_parameters(tdecl);
     bool saved_in_template_decl = my_in_template_decl;
     my_in_template_decl = true;
@@ -83,13 +73,14 @@ private:
     traverse_body(node);
   }
 
-  virtual void visit(PT::Declaration *node)
+  virtual void visit(PT::SimpleDeclaration *node)
   {
-    Trace trace("SymbolFinder::visit(Declaration)", Trace::SYMBOLLOOKUP);
-    PT::Node *decl_spec = PT::nth<0>(node);
-    if (decl_spec) decl_spec->accept(this);
-    PT::Node *declarators = PT::nth<1>(node);
-    if (declarators) declarators->accept(this);
+    Trace trace("SymbolFinder::visit(SimpleDeclaration)", Trace::SYMBOLLOOKUP);
+
+    PT::DeclSpec *spec = node->decl_specifier_seq();
+    if (spec) visit(spec);
+    PT::List *declarators = node->declarators();
+    if (declarators) visit(declarators);
   }
 
   virtual void visit(PT::UsingDirective *udir)

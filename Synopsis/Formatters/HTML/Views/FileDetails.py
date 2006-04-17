@@ -43,7 +43,7 @@ class FileDetails(View):
       """Registers a view for each file indexed"""
 
       for filename, file in self.processor.ast.files().items():
-         if file.is_main():
+         if file.annotations['primary']:
             filename = self.processor.file_layout.file_details(filename)
             self.processor.register_filename(filename, self, file)
     
@@ -51,7 +51,7 @@ class FileDetails(View):
       """Creates a view for each file using process_scope"""
 
       for filename, file in self.processor.ast.files().items():
-         if file.is_main():
+         if file.annotations['primary']:
             self.process_file(filename, file)
             
    def process_file(self, filename, file):
@@ -76,17 +76,17 @@ class FileDetails(View):
       # Print list of includes
       try:
          sourcefile = self.processor.ast.files()[filename]
-         includes = sourcefile.includes()
          # Only show files from the project
-         includes = filter(lambda x: x.target().is_main(), includes)
+         includes = [i for i in sourcefile.includes
+                     if i.target.annotations['primary']]
          self.write('<h2 class="heading">Includes from this file:</h2>')
-         if not len(includes):
+         if not includes:
             self.write('No includes.<br/>')
          for include in includes:
-            target_filename = include.target().filename()
-            if include.is_next(): idesc = 'include_next '
+            target_filename = include.target.name
+            if include.is_next: idesc = 'include_next '
             else: idesc = 'include '
-            if include.is_macro(): idesc = idesc + 'from macro '
+            if include.is_macro: idesc = idesc + 'from macro '
             link = rel(self.filename(), self.processor.file_layout.file_details(target_filename))
             self.write(idesc + href(link, target_filename)+'<br/>')
       except:
@@ -94,9 +94,9 @@ class FileDetails(View):
 
       self.write('<h2 class="heading">Declarations in this file:</h2>')
       # Sort items (by name)
-      items = map(lambda decl: (decl.type(), decl.name(), decl), file.declarations())
+      items = [(d.type(), d.name(), d) for d in file.declarations]
       # ignore AST.Builtin
-      items = filter(lambda decl: not isinstance(decl[2], AST.Builtin), items)
+      items = [i for i in items if not isinstance(i[2], AST.Builtin)]
       items.sort()
       curr_scope = None
       curr_type = None
@@ -132,12 +132,11 @@ class FileDetails(View):
          if br: self.write('<br/>')
          self.write(text)
          # Print summary
-         comments = decl.comments()
-         if len(comments) and comments[0].summary():
-            self.write('<br/>\n' + span('summary', comments[0].summary()))
+         text = self.processor.documentation.summary(decl, self)
+         self.write('<br/>\n' + span('summary', text))
          br = 1
 	
-      # Close open DIV
+      # Close open div
       if curr_scope is not None:
          self.write('\n</div>')
       self.end_file()

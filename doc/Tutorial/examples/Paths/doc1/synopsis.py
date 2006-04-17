@@ -1,46 +1,47 @@
 from Synopsis.process import process
 from Synopsis.Processor import Processor, Parameter, Composite
 from Synopsis.Parsers import Cxx
+from Synopsis.Parsers import Python
 from Synopsis.Processors import Linker
-from Synopsis.Processors.Comments import SSFilter
-from Synopsis.Processors.Comments import SSDFilter
-from Synopsis.Processors.Comments import JavaFilter
-from Synopsis.Processors.Comments import Previous
-from Synopsis.Processors.Comments import JavaTags
-from Synopsis.Processors.Comments import Grouper1
+from Synopsis.Processors import Comments
 from Synopsis.Formatters import HTML
-from Synopsis.Formatters.HTML import Comments
 from Synopsis.Formatters import Dot
-
-cxx = Cxx.Parser(base_path='../src')
-
-cxx_ssd = Composite(cxx, SSDFilter())
-
-html = HTML.Formatter(comment_formatters = [Comments.QuoteHTML(),
-                                            Comments.Section(),
-                                            Comments.Javadoc()])
+from Synopsis.Formatters import Dump
 
 class Joker(Processor):
     
-   parameter = Parameter(':-)', 'a friendly parameter')
+    parameter = Parameter(':-)', 'a friendly parameter')
 
-   def process(self, ast, **keywords):
-      # override default parameter values
-      self.set_parameters(keywords)
-      # merge in ast from 'input' parameter if given
-      self.ast = self.merge_input(ast)
+    def process(self, ast, **keywords):
+        # override default parameter values
+        self.set_parameters(keywords)
+        # merge in ast from 'input' parameter if given
+        self.ast = self.merge_input(ast)
 
-      print 'this processor is harmless...', self.parameter
+        print 'this processor is harmless...', self.parameter
       
-      # write to output (if given) and return ast
-      return self.output_and_return_ast()
-        
+        # write to output (if given) and return ast
+        return self.output_and_return_ast()
 
-process(cxx_ssd = cxx_ssd,
-        cxx_ss = Composite(cxx, SSFilter()),
-        cxx_ssd_prev = Composite(cxx, SSDFilter(), Previous()),
-        cxx_javadoc = Composite(cxx, JavaFilter(), JavaTags()),
-        link = Linker(Grouper1()),
-        html = html,
+cxx = Cxx.Parser(base_path='../src')
+
+ss = Comments.Translator(filter = Comments.SSFilter(),
+                         processor = Comments.Grouper())
+ssd_prev = Comments.Translator(filter = Comments.SSDFilter(),
+                               processor = Composite(Comments.Previous(),
+                                                     Comments.Grouper()))
+javadoc = Comments.Translator(markup='javadoc',
+                              filter = Comments.JavaFilter(),
+                              processor = Comments.Grouper())
+rst = Comments.Translator(markup='rst',
+                          filter = Comments.SSDFilter(),
+                          processor = Comments.Grouper())
+
+process(cxx_ss = Composite(cxx, ss),
+        cxx_ssd_prev = Composite(cxx, ssd_prev),
+        cxx_javadoc = Composite(cxx, javadoc),
+        cxx_rst = Composite(cxx, rst),
+        link = Linker(),
+        html = HTML.Formatter(),
         dot = Dot.Formatter(),
         joker = Joker(parameter = '(-;'))

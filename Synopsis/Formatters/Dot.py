@@ -10,13 +10,14 @@
 Uses 'dot' from graphviz to generate various graphs.
 """
 
-from Synopsis.Processor import Processor, Parameter
+from Synopsis.Processor import *
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters import TOC
 
 import sys, tempfile, getopt, os, os.path, string, types, errno, re
 
 verbose = False
+debug = False
 
 class SystemError:
    """Error thrown by the system() function. Attributes are 'retval', encoded
@@ -353,16 +354,15 @@ class FileDependencyGenerator(DotFileGenerator, AST.Visitor, Type.Visitor):
    """A Formatter that generates a file dependency graph"""
 
    def visit_file(self, file):
-      if file.is_main():
-         self.write_node('', file.filename(), file.filename())
-      for i in file.includes():
-         target = i.target()
-         if target.is_main():
-            self.write_node('', target.filename(), target.filename())
-            name = i.name()
+      if file.annotations['primary']:
+         self.write_node('', file.name, file.name)
+      for i in file.includes:
+         target = i.target
+         if target.annotations['primary']:
+            self.write_node('', target.name, target.name)
+            name = i.name
             name = name.replace('"', '\\"')
-            self.write_edge(target.filename(), file.filename(),
-                            label=name, style='dashed')
+            self.write_edge(target.name, file.name, label=name, style='dashed')
 
 def _rel(frm, to):
    "Find link to to relative to frm"
@@ -393,7 +393,12 @@ def _format(input, output, format):
 
    command = 'dot -T%s -o "%s" "%s"'%(format, output, input)
    if verbose: print "Dot Formatter: running command '" + command + "'"
-   system(command)
+   try:
+      system(command)
+   except SystemError, e:
+      if debug:
+         print 'failed to execute "%s"'%command
+      raise InvalidCommand, "could not execute 'dot'"
 
 def _format_png(input, output): _format(input, output, "png")
 
@@ -435,11 +440,12 @@ class Formatter(Processor):
    base_url = Parameter(None, 'base url to use for generated links')
 
    def process(self, ast, **kwds):
-      global verbose
+      global verbose, debug
       
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
       verbose = self.verbose
+      debug = self.debug
 
       formats = {'dot' : 'dot',
                  'ps' : 'ps',

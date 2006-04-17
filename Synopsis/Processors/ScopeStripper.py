@@ -15,7 +15,7 @@ class ScopeStripper(Processor, AST.Visitor):
     scopes are not accepted but which themselfs are correct can
     be maintained as new root nodes."""
 
-    scope = Parameter([], 'strip all but the given scope')
+    scope = Parameter('', 'strip all but the given scope')
 
     def __init__(self, **kwds):
 
@@ -23,13 +23,14 @@ class ScopeStripper(Processor, AST.Visitor):
         self.__root = []
         self.__in = 0
 
+
     def process(self, ast, **kwds):
 
         self.set_parameters(kwds)
         self.ast = self.merge_input(ast)
         if self.scope:
 
-            self.__scope = tuple('::'.split(self.scope))
+            self.__scope = tuple(self.scope.split('::'))
             # strip prefixes and remove non-matching declarations
             self.strip_declarations(self.ast.declarations())
 
@@ -37,20 +38,23 @@ class ScopeStripper(Processor, AST.Visitor):
             self.strip_types(self.ast.types())
 
         return self.output_and_return_ast()
+
       
     def strip_name(self, name):
-        #for scope in self.__scopes:
-        depth = len(self.scope)
-        if name[0:depth] == self.scope:
+
+        depth = len(self.__scope)
+        if name[0:depth] == self.__scope:
             if len(name) == depth: return None
             return name[depth:]
         return None
+
     
     def strip_declarations(self, declarations):
 
         for decl in declarations:
             decl.accept(self)
         declarations[:] = self.declarations()
+
 	
     def strip_types(self, types):
         # Remove the empty type (caused by C++ with extract_tails)
@@ -66,29 +70,31 @@ class ScopeStripper(Processor, AST.Visitor):
                 print "ERROR Processing:", name, types[name]
                 raise
 
+
     def declarations(self): return self.__root
+
    
     def strip(self, declaration):
         """test whether the declaration matches one of the prefixes, strip
         it off, and return success. Success means that the declaration matches
         the prefix set and thus should not be removed from the AST."""
+
         passed = 0
         if not self.__scope: return 1
-        for scope in [self.__scope]:
-            depth = len(scope)
-            name = declaration.name()
-            if name[0:depth] == scope:
-                if len(name) == depth: break
-                if self.verbose: print "symbol", '::'.join(name),
-                declaration.set_name(name[depth:])
-                if self.verbose: print "stripped to", '::'.join(name)
-                passed = 1
-            else: break
+        depth = len(self.__scope)
+        name = declaration.name()
+        if name[0:depth] == self.__scope and len(name) > depth:
+            if self.verbose: print "symbol", '::'.join(name),
+            declaration.set_name(name[depth:])
+            if self.verbose: print "stripped to", '::'.join(declaration.name())
+            passed = 1
         if self.verbose and not passed:
             print "symbol", '::'.join(declaration.name()), "removed"
         return passed
 
+
     def visitScope(self, scope):
+
         root = self.strip(scope) and not self.__in
         if root:
             self.__in = 1
@@ -97,26 +103,36 @@ class ScopeStripper(Processor, AST.Visitor):
             declaration.accept(self)
         if root: self.__in = 0
 
+
     def visitClass(self, clas):
+
         self.visitScope(clas)
         templ = clas.template()
         if templ:
             name = self.strip_name(templ.name())
             if name: templ.set_name(name)
 
+
     def visitDeclaration(self, decl):
+
         if self.strip(decl) and not self.__in:
             self.__root.append(decl)
 
+
     def visitEnumerator(self, enumerator):
+
         self.strip(enumerator)
 
+
     def visitEnum(self, enum):
+
         self.visitDeclaration(enum)
         for e in enum.enumerators():
             e.accept(self)
 
+
     def visitFunction(self, function):
+
         self.visitDeclaration(function)
         for parameter in function.parameters():
             parameter.accept(self)
@@ -125,10 +141,14 @@ class ScopeStripper(Processor, AST.Visitor):
             name = self.strip_name(templ.name())
             if name: templ.set_name(name)
 
+
     def visitOperation(self, operation):
+
         self.visitFunction(operation)
 
+
     def visitMetaModule(self, module):
+
         self.visitScope(module)
         for decl in module.module_declarations():
             name = self.strip_name(decl.name())

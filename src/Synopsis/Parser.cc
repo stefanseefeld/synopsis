@@ -431,18 +431,18 @@ bool Parser::lookup_class_name(PT::Encoding const &name)
       my_qualifying_scope == ST::DEPENDENT_SCOPE) return true;
 
   ST::SymbolSet symbols;
-  // If we are looking at a partial template specialization we have to
-  // explicitely look up types in the template parameter scope, too.
-  if (my_template_parameter_list_seq.size())
-    symbols = my_symbols.lookup_template_parameter(name);
-  if (symbols.empty())
+  if (my_qualifying_scope)
+    symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::TYPE);
+  else
   {
-    if (my_qualifying_scope)
-      symbols = my_qualifying_scope->qualified_lookup(name, ST::Scope::TYPE);
-    else
+    // If we are looking at a partial template specialization we have to
+    // explicitely look up types in the template parameter scope, too.
+    if (my_template_parameter_list_seq.size())
+      symbols = my_symbols.lookup_template_parameter(name);
+    if (symbols.empty())
       symbols = my_symbols.current_scope()->unqualified_lookup(name, ST::Scope::TYPE);
-    if (symbols.empty()) return false; // no such class-name
   }
+  if (symbols.empty()) return false; // no such class-name
 
   PT::Encoding encoding;
   ST::Symbol const *declared = resolve_typedef(*symbols.begin(), encoding);
@@ -1518,7 +1518,11 @@ PT::ClassSpec *Parser::class_specifier(PT::Encoding &encoding)
   else commit();
   PT::List *comments = wrap_comments(my_lexer.get_comments());
   PT::ClassSpec *spec = new PT::ClassSpec(local, key, PT::cons(name), comments);
+
+  // Declare the class to the symbol table, the type repository, and, if appropriate,
+  // to the template repository.
   my_symbols.declare(my_qualifying_scope, spec);
+
   PT::List *base_clause_ = 0;
   std::vector<SymbolTable::Symbol const *> bases;
   if (next == ':')
@@ -2268,6 +2272,7 @@ PT::List *Parser::parameter_declaration_list(PT::Encoding &encoding)
 	return 0;
     }
   }
+    return false;
 }
 
 // parameter-declaration:
@@ -3206,14 +3211,17 @@ PT::List *Parser::template_id(PT::Encoding &encoding, bool is_template)
   {
     PGuard<ST::Scope *> guard1(*this, &Parser::my_qualifying_scope, 0);
     PGuard<bool> guard2(*this, &Parser::my_in_nested_name_specifier, true);
-    PGuard<ST::Symbol const *> guard3(*this, &Parser::my_symbol);
     PT::List *arguments = 0;
     PT::Encoding template_encoding;
     while (true)
     {
+      PGuard<ST::Symbol const *> guard3(*this, &Parser::my_symbol, 0);
       PT::Encoding encoding;
       PT::Node *argument = template_argument(encoding);
       if (!argument) return 0;
+      std::cout << "symbol " << my_symbol;
+      if (my_symbol) std::cout << ' ' << typeid(*my_symbol).name();
+      std::cout << std::endl;
       arguments = PT::snoc(arguments, argument);
       template_encoding.append(encoding);
       if (my_lexer.look_ahead() != ',') break;
@@ -3907,6 +3915,11 @@ PT::List *Parser::pseudo_destructor_name()
 //   const_cast < type-id > ( expression )
 //   typeid ( expression )
 //   typeid ( type-id )
+//
+// GNU Extension:
+//
+// postfix-expression:
+//   ( type-id ) { initializer-list , [opt] }
 PT::Node *Parser::postfix_expression()
 {
   Trace trace("Parser::postfix_expression", Trace::PARSING);

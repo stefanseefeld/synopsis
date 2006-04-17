@@ -5,6 +5,12 @@ syn	:= $(patsubst %.h, %.syn, $(src))
 
 all: Paths Paths.ps
 
+Path: ../src/Path.h
+	$(synopsis) -p Cxx -f HTML  -o $@ $<
+
+Polyline: ../src/Polyline.h
+	$(synopsis) -p Cxx -f HTML  -o $@ $<
+
 Paths: Paths.syn
 	$(synopsis) -f HTML --javadoc -o $@ $<
 

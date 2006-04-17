@@ -1,8 +1,12 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
 <ast>
  <declarations>
-  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/../include/header.hh" language="C++" line="3" name="_header_hh" text="" type="macro"/>
-  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/input/../include/header2.hh" language="C++" line="3" name="_header2_hh" text="" type="macro"/>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/include/header.hh" line="3" name="_header_hh" text="" type="macro">
+   <annotations/>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Macro" file="Parsers/Cpp/include/header2.hh" line="3" name="_header2_hh" text="" type="macro">
+   <annotations/>
+  </instance>
  </declarations>
  <types>
   <instance class="Synopsis.Type.Declared" language="C++" name="_header2_hh">
@@ -13,30 +17,32 @@
   </instance>
  </types>
  <files>
-  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/include/header.hh" is_main="0" language="C++">
+  <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Parsers/Cpp/include/header.hh" primary="1">
+   <declarations/>
    <includes>
-    <instance class="Synopsis.AST.Include" is_macro="0" is_next="0">
-     <target>
-      <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/include/header2.hh" is_main="0" language="C++">
-       <macro_calls/>
-      </instance>
-     </target>
-    </instance>
+    <item>
+     <instance class="Synopsis.SourceFile.Include" is_macro="0" is_next="0" name="&quot;header2.hh&quot;">
+      <target>
+       <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Parsers/Cpp/include/header2.hh" primary="1">
+        <declarations/>
+        <includes/>
+        <macro_calls/>
+       </instance>
+      </target>
+     </instance>
+    </item>
    </includes>
    <macro_calls/>
   </instance>
-  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/input/include.cc" is_main="1" language="C++">
+  <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Parsers/Cpp/input/include.cc" primary="1">
+   <declarations/>
    <includes>
-    <instance class="Synopsis.AST.Include" is_macro="0" is_next="0">
-     <target/>
-    </instance>
+    <item>
+     <instance class="Synopsis.SourceFile.Include" is_macro="0" is_next="0" name="&quot;../include/header.hh&quot;">
+      <target/>
+     </instance>
+    </item>
    </includes>
-   <macro_calls/>
-  </instance>
-  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/input/../include/header.hh" is_main="1" language="C++">
-   <macro_calls/>
-  </instance>
-  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cpp/input/../include/header2.hh" is_main="1" language="C++">
    <macro_calls/>
   </instance>
  </files>

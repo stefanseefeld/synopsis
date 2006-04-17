@@ -15,169 +15,163 @@ resulting intermediate AST objects into Synopsis.Core.AST objects.
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST, Type
+from Synopsis.SourceFile import SourceFile
+from Synopsis.DocString import DocString
 
 import parser, exparse, sys, os, string, getopt
 
 class Parser(Processor):
 
-   base_path = Parameter('', 'path prefix to strip off of the file names')
+    base_path = Parameter('', 'path prefix to strip off of the file names')
     
-   def process(self, ast, **kwds):
+    def process(self, ast, **kwds):
 
-      self.set_parameters(kwds)
-      self.ast = ast
-      self.scopes = []
+        self.set_parameters(kwds)
+        self.ast = ast
+        self.scopes = []
       
-      # Create return type for Python functions:
-      self.return_type = Type.Base('Python',('',))
+        # Create return type for Python functions:
+        self.return_type = Type.Base('Python',('',))
       
-      for file in self.input:
-         self.process_file(file)
+        for file in self.input:
+            self.process_file(file)
 
-      return self.output_and_return_ast()
+        return self.output_and_return_ast()
 
-   def process_file(self, file):
-      """Entry point for the Python parser"""
+    def process_file(self, file):
+        """Entry point for the Python parser"""
 
-      filename = file
-      types = self.ast.types()
+        filename = file
+        types = self.ast.types()
 
-      # Split the filename into a scoped tuple name
-      name = file
-      if file[:len(self.base_path)] == self.base_path:
-         name = filename = file[len(self.base_path):]
-      name = string.split(os.path.splitext(name)[0], os.sep)
-      exparse.packagepath = string.join(string.split(file, os.sep)[:-1], os.sep)
-      exparse.packagename = name[:-1]
-      #print "package path, name:",exparse.packagepath, exparse.packagename
-      self.sourcefile = AST.SourceFile(filename, file, 'Python')
-      self.sourcefile.set_is_main(1)
+        # Split the filename into a scoped tuple name
+        name = file
+        if file[:len(self.base_path)] == self.base_path:
+            name = filename = file[len(self.base_path):]
+        name = string.split(os.path.splitext(name)[0], os.sep)
+        exparse.packagepath = string.join(string.split(file, os.sep)[:-1], os.sep)
+        exparse.packagename = name[:-1]
+        self.sourcefile = SourceFile(filename, file, 'Python')
+        self.sourcefile.annotations['primary'] = True
 
-      # Create the enclosing module scopes
-      self.scopes = [AST.Scope(self.sourcefile, -1, 'Python',
-                               'file scope', name)]
-      for depth in range(len(name) - 1):
-         module = AST.Module(self.sourcefile, -1, 'Python',
-                             'package', name[:depth+1])
-         self.add_declaration(module)
-         types[module.name()] = Type.Declared("Python", module.name(), module)
-         self.push(module)
-      # Add final name as Module -- unless module is __init__
-      if name[-1] != '__init__':
-         module = AST.Module(self.sourcefile, -1, 'Python',
-                             'module', name)
-         self.add_declaration(module)
-         types[module.name()] = Type.Declared("Python", module.name(), module)
-         self.push(module)
+        # Create the enclosing module scopes
+        self.scopes = [AST.Scope(self.sourcefile, -1, 'file scope', name)]
+        for depth in range(len(name) - 1):
+            module = AST.Module(self.sourcefile, -1, 'package', name[:depth+1])
+            self.add_declaration(module)
+            types[module.name()] = Type.Declared('Python', module.name(), module)
+            self.push(module)
+        # Add final name as Module -- unless module is __init__
+        if name[-1] != '__init__':
+            module = AST.Module(self.sourcefile, -1, 'module', name)
+            self.add_declaration(module)
+            types[module.name()] = Type.Declared('Python', module.name(), module)
+            self.push(module)
     
-      # Parse the file
-      mi = exparse.get_docs(file)
+        # Parse the file
+        mi = exparse.get_docs(file)
 
-      # Process the parsed file
-      self.process_module_info(mi)
+        # Process the parsed file
+        self.process_module_info(mi)
 
-      # Store the declarations
-      self.ast.files()[filename] = self.sourcefile
-      self.ast.declarations().extend(self.scopes[0].declarations())
+        # Store the declarations
+        self.ast.files()[filename] = self.sourcefile
+        self.ast.declarations().extend(self.scopes[0].declarations())
 
-   def add_declaration(self, decl):
-      """Adds the given declaration to the current top scope and to the
-      SourceFile for this file."""
+    def add_declaration(self, decl):
+        """Adds the given declaration to the current top scope and to the
+        SourceFile for this file."""
 
-      self.scopes[-1].declarations().append(decl)
-      self.sourcefile.declarations().append(decl)
+        self.scopes[-1].declarations().append(decl)
+        self.sourcefile.declarations.append(decl)
 
-   def push(self, scope):
-      """Pushes the given scope onto the top of the stack"""
+    def push(self, scope):
+        """Pushes the given scope onto the top of the stack"""
 
-      self.scopes.append(scope)
+        self.scopes.append(scope)
 
-   def pop(self):
-      """Pops the scope stack by one level"""
+    def pop(self):
+        """Pops the scope stack by one level"""
 
-      del self.scopes[-1]
+        del self.scopes[-1]
 
-   def scope_name(self, name):
-      """Scopes the given name. If the given name is a list then it is returned
-      verbatim, else it is concatenated with the (scoped) name of the current
-      scope"""
+    def scope_name(self, name):
+        """Scopes the given name. If the given name is a list then it is returned
+        verbatim, else it is concatenated with the (scoped) name of the current
+        scope"""
 
-      if type(name) == type([]): return tuple(name)
-      return tuple(list(self.scopes[-1].name()) + [name])
+        if type(name) == type([]): return tuple(name)
+        return tuple(list(self.scopes[-1].name()) + [name])
 
-   def process_module_info(self, mi):
-      """Processes a ModuleInfo object. The comments are extracted, and any
-      functions and comments recursively processed."""
+    def process_module_info(self, mi):
+        """Processes a ModuleInfo object. The docs are extracted, and any
+        functions and docs recursively processed."""
 
-      comm = AST.Comment(mi.get_docstring(), self.sourcefile, -1)
-      self.scopes[-1].comments().append(comm)
-      for name in mi.get_function_names():
-         self.process_function_info(mi.get_function_info(name))
-      for name in mi.get_class_names():
-         self.process_class_info(mi.get_class_info(name))
+        # TODO: Look up __docformat__ string to figure out markup.
+        self.scopes[-1].annotations['doc'] = DocString(mi.get_docstring(), '')
+        for name in mi.get_function_names():
+            self.process_function_info(mi.get_function_info(name))
+        for name in mi.get_class_names():
+            self.process_class_info(mi.get_class_info(name))
 
-   def add_params(self, func, fi):
-      """Adds the parameters of 'fi' to the AST.Function 'func'."""
+    def add_params(self, func, fi):
+        """Adds the parameters of 'fi' to the AST.Function 'func'."""
 
-      for name, value in map(None, fi.get_params(), fi.get_param_defaults()):
-         func.parameters().append(AST.Parameter('', self.return_type,
-                                                '', name,value))
+        for name, value in map(None, fi.get_params(), fi.get_param_defaults()):
+            func.parameters().append(AST.Parameter('', self.return_type,
+                                                   '', name,value))
 
-   def process_function_info(self, fi):
-      """Process a FunctionInfo object. An AST.Function object is created and
-      inserted into the current scope."""
+    def process_function_info(self, fi):
+        """Process a FunctionInfo object. An AST.Function object is created and
+        inserted into the current scope."""
       
-      name = self.scope_name(fi.get_name())
-      func = AST.Function(self.sourcefile, -1, 'Python', 'function', '',
-                          self.return_type, '', name, name[-1])
-      comm = AST.Comment(fi.get_docstring(), '', -1)
-      func.comments().append(comm)
-      self.add_params(func, fi)
-      self.add_declaration(func)
+        name = self.scope_name(fi.get_name())
+        func = AST.Function(self.sourcefile, -1, 'function', '',
+                            self.return_type, '', name, name[-1])
+        func.annotations['doc'] = DocString(fi.get_docstring(), '')
+        self.add_params(func, fi)
+        self.add_declaration(func)
 
-   def process_method_info(self, fi):
-      """Process a MethodInfo object. An AST.Operation object is created and
-      inserted into the current scope."""
+    def process_method_info(self, fi):
+        """Process a MethodInfo object. An AST.Operation object is created and
+        inserted into the current scope."""
 
-      name = self.scope_name(fi.get_name())
-      func = AST.Operation(self.sourcefile,-1, 'Python', 'operation', '',
-                           self.return_type, '', name, name[-1])
-      comm = AST.Comment(fi.get_docstring(), '', -1)
-      func.comments().append(comm)
-      self.add_params(func, fi)
-      self.add_declaration(func)
+        name = self.scope_name(fi.get_name())
+        func = AST.Operation(self.sourcefile,-1, 'operation', '',
+                             self.return_type, '', name, name[-1])
+        func.annotations['doc'] = DocString(fi.get_docstring(), '')
+        self.add_params(func, fi)
+        self.add_declaration(func)
 
-   def process_class_info(self, ci):
-      """Process a ClassInfo object. An AST.Class object is created and
-      inserted into the current scope. The inheritance of the class is also
-      parsed, and nested classes and methods recursively processed."""
+    def process_class_info(self, ci):
+        """Process a ClassInfo object. An AST.Class object is created and
+        inserted into the current scope. The inheritance of the class is also
+        parsed, and nested classes and methods recursively processed."""
 
-      name = self.scope_name(ci.get_name())
-      clas = AST.Class(self.sourcefile,-1, 'Python', 'class', name)
-      comm = AST.Comment(ci.get_docstring(), '', -1)
-      clas.comments().append(comm)
+        name = self.scope_name(ci.get_name())
+        clas = AST.Class(self.sourcefile,-1, 'class', name)
+        clas.annotations['doc'] = DocString(ci.get_docstring(), '')
 
-      types = self.ast.types()
-      # Figure out bases:
-      for base in ci.get_base_names():
-         try:
-            t = types[self.scope_name(base)]
-         except KeyError:
-            t = Type.Unknown("Python", self.scope_name(base))
-         clas.parents().append(AST.Inheritance('', t, ''))
-      # Add the new class
-      self.add_declaration(clas)
-      types[clas.name()] = Type.Declared("Python", clas.name(), clas)
-      self.push(clas)
-      for name in ci.get_class_names():
-         self.process_class_info(ci.get_class_info(name))
-      for name in ci.get_method_names():
-         self.process_method_info(ci.get_method_info(name))
-      self.pop()
+        types = self.ast.types()
+        # Figure out bases:
+        for base in ci.get_base_names():
+            try:
+                t = types[self.scope_name(base)]
+            except KeyError:
+                t = Type.Unknown('Python', self.scope_name(base))
+            clas.parents().append(AST.Inheritance('', t, ''))
+        # Add the new class
+        self.add_declaration(clas)
+        types[clas.name()] = Type.Declared('Python', clas.name(), clas)
+        self.push(clas)
+        for name in ci.get_class_names():
+            self.process_class_info(ci.get_class_info(name))
+        for name in ci.get_method_names():
+            self.process_method_info(ci.get_method_info(name))
+        self.pop()
     
-   def get_synopsis(self, file):
-      """Returns the docstring from the top of an open file"""
+    def get_synopsis(self, file):
+        """Returns the docstring from the top of an open file"""
 
-      mi = exparse.get_docs(file)
-      return mi.get_docstring()
-
+        mi = exparse.get_docs(file)
+        return mi.get_docstring()

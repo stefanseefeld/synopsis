@@ -50,16 +50,15 @@ class Source(View):
       self.toc = self.processor.get_toc(start)
       # create a view for each main file
       for file in self.processor.ast.files().values():
-         if file.is_main():
+         if file.annotations['primary']:
             self.process_node(file)
 
    def register_filenames(self, start):
       """Registers a view for every source file"""
 
       for file in self.processor.ast.files().values():
-         if file.is_main():
-            filename = file.filename()
-            #filename = os.path.join(self.processor.output, filename)
+         if file.annotations['primary']:
+            filename = file.name
             filename = self.processor.file_layout.file_source(filename)
             self.processor.register_filename(filename, self, file)
 	     
@@ -67,11 +66,11 @@ class Source(View):
       """Creates a view for the given file"""
 
       # Start view
-      filename = file.filename()
+      filename = file.name
       self.__filename = self.processor.file_layout.file_source(filename)
       self.rel_url = rel(self.filename(), '')
 
-      source = file.filename()
+      source = file.name
       self.__title = source
 
       self.start_file()
@@ -82,7 +81,7 @@ class Source(View):
          # No link module..
          self.write('link module for highlighting source unavailable')
          try:
-            self.write(open(file.full_filename(),'r').read())
+            self.write(open(file.abs_name,'r').read())
          except IOError, e:
             self.write("An error occurred:"+ str(e))
       else:
@@ -90,7 +89,7 @@ class Source(View):
 
          # Call link module
          f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
-         f_in = file.full_filename()
+         f_in = file.abs_name
          f_link = os.path.join(self.prefix, source)
          try:
             lookup = self.external_url and self.external_ref or self.lookup_symbol

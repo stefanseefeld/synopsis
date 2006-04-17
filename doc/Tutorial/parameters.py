@@ -52,11 +52,15 @@ for name in parameters:
    value = parameter.value
    if type(value) == types.InstanceType or isinstance(value, Parametrized):
       value = name_of_instance(value)
-   elif type(value) == types.ListType:
-      if (len(value)
-          and (type(value[0]) == types.InstanceType
-               or isinstance(value[0], Parametrized))):
-         value = '[%s]'%string.join(map(lambda x:name_of_instance(x), value), ', ')
+   elif type(value) == list:
+      if (len(value) and (type(value[0]) == types.InstanceType
+                          or isinstance(value[0], Parametrized))):
+         value = '[%s]'%', '.join([name_of_instance(x) for x in value])
+   elif type(value) == dict:
+      if (len(value) and (type(value.values()[0]) == types.InstanceType
+                          or isinstance(value.values()[0], Parametrized))):
+         value = '{%s}'%', '.join(['%s: %s'%(n, name_of_instance(x))
+                                   for (n,v) in value.items()])
    output.write('      <seg>%s</seg>\n'%value)
    output.write('      <seg>%s</seg>\n'%parameter.doc)
    output.write('    </seglistitem>\n')

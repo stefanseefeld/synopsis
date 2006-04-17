@@ -34,16 +34,12 @@ private:
   {
     PTree::Encoding name = node->encoded_name();
     my_os << "Name : " << name << ' ' << name.unmangled() << std::endl;
-    PTree::Node *name_node = name.make_ptree(0);
-    my_os << PTree::reify(name_node) << std::endl;
   }
 
   virtual void visit(PTree::ClassSpec *node)
   {
     PTree::Encoding name = node->encoded_name();
     my_os << "ClassSpec : " << name << ' ' << name.unmangled() << std::endl;
-    PTree::Node *name_node = name.make_ptree(0);
-    my_os << PTree::reify(name_node) << std::endl;
     // Visit the body, if there is one.
     if(PTree::length(node) == 4)
       PTree::nth(node, 3)->accept(this);
@@ -53,28 +49,27 @@ private:
   {
     PTree::Encoding name = node->encoded_name();
     my_os << "EnumSpec : " << name << ' ' << name.unmangled() << std::endl;
-    PTree::Node *name_node = name.make_ptree(0);
-    my_os << PTree::reify(name_node) << std::endl;
   }
 
-  virtual void visit(PTree::Declaration *node)
+  virtual void visit(PTree::FunctionDefinition *node)
+  {
+    my_os << "FunctionDefinition : " << std::endl;
+    my_os << PTree::reify(node) << std::endl;
+//     visit(node->decl_specifier_seq());
+//     visit(node->declarators());
+  }
+
+  virtual void visit(PTree::SimpleDeclaration *node)
   {
     my_os << "Declaration : " << std::endl;
     my_os << PTree::reify(node) << std::endl;
-    PTree::second(node)->accept(this);
-    PTree::Node *rest = PTree::third(node);
-    if (rest->is_atom()) return; // ';'
-    else if(PTree::is_a(rest, Token::ntDeclarator))
-      rest->accept(this);
-    else
-      for (; rest; rest = rest->cdr())
-      {
-	PTree::Node *p = rest->car();
-	p->accept(this);
-      }
+    PT::DeclSpec *spec = node->decl_specifier_seq();
+    if (spec) visit(spec);
+    PT::List *declarators = node->declarators();
+    if (declarators) visit(declarators);
   }
 
-  virtual void visit(PTree::TemplateDecl *node)
+  virtual void visit(PTree::TemplateDeclaration *node)
   {
     my_os << "TemplateDecl : " << std::endl;
     my_os << PTree::reify(node) << std::endl;
@@ -86,13 +81,9 @@ private:
   {
     PTree::Encoding name = node->encoded_name();
     my_os << "Declarator : " << name << ' ' << name.unmangled() << std::endl;
-    PTree::Node *name_node = name.make_ptree(0);
-    my_os << PTree::reify(name_node) << std::endl;
 
     PTree::Encoding type = node->encoded_type();
     my_os << "type : " << type << ' ' << type.unmangled() << std::endl;
-    PTree::Node *type_node = type.make_ptree(0);
-    my_os << PTree::reify(type_node) << std::endl;
   }
 
   std::ostream &my_os;

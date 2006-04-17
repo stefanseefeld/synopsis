@@ -1,4 +1,3 @@
-# $Id: BoostBook.py,v 1.3 2003/11/13 17:21:03 stefan Exp $
 #
 # Copyright (C) 2000 Stefan Seefeld
 # Copyright (C) 2000 Stephen Davies
@@ -150,10 +149,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       self.__type_ref = 'function_type'
       self.__type_label = 'function_type'
 
-   def visitComment(self, comment):
+   def process_doc(self, doc):
 
-      text = comment.text()
-      text = text.replace('\n\n', '</para><para>')
+      text = doc.replace('\n\n', '</para><para>')
       self.write(self.entity("para", text)+'\n')
 
    #################### AST Visitor ###########################################
@@ -185,7 +183,7 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
 
       self.start_entity("namespace", name=Util.ccolonName(self.scope(), module.name()))
       self.write("\n")
-      map(self.visitComment, module.comments())
+      self.process_doc(module.annotations.get('doc', ''))
       self.push_scope(module.name())
       for declaration in module.declarations(): declaration.accept(self)
       self.pop_scope()
@@ -198,9 +196,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       if len(clas.parents()):
          for parent in clas.parents(): parent.accept(self)
       self.push_scope(clas.name())
-      if clas.comments():
+      if clas.annotations.has_key('doc'):
          self.start_entity("purpose")
-         map(self.visitComment, clas.comments())
+         self.process_doc(clas.annotations.get['doc'])
          self.end_entity("purpose")
       for declaration in clas.declarations():
          declaration.accept(self)
@@ -257,9 +255,9 @@ class Formatter(Processor, Type.Visitor, AST.Visitor):
       if func.returnType():
          self.write_entity("type", self.format_type(func.returnType()))
          self.write("\n")
-      if func.comments():
+      if func.annotations.has_key('doc'):
          self.start_entity("purpose")
-         map(self.visitComment, func.comments())
+         self.process_doc(func.annotations['doc'])
          self.end_entity("purpose")
          self.write("\n")
 	

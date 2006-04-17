@@ -1,15 +1,27 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
 <ast>
  <declarations>
-  <instance accessibility="0" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/cast.cc" language="C++" line="1" name="Foo" type="typedef">
+  <instance accessibility="0" class="Synopsis.AST.Typedef" constr="0" file="Parsers/Cxx/input/cast.cc" line="1" name="Foo" type="typedef">
    <alias>
     <instance class="Synopsis.Type.Base" language="C++" name="int"/>
    </alias>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value/>
+   </annotations>
   </instance>
-  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/cast.cc" language="C++" line="3" name="func()" realname="func" type="function">
+  <instance accessibility="0" class="Synopsis.AST.Function" file="Parsers/Cxx/input/cast.cc" line="3" name="func()" realname="func" type="function">
    <returnType>
     <instance class="Synopsis.Type.Base" language="C++" name="void"/>
    </returnType>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value/>
+   </annotations>
   </instance>
  </declarations>
  <types>
@@ -21,8 +33,12 @@
   </instance>
  </types>
  <files>
-  <instance class="Synopsis.AST.SourceFile" filename="Parsers/Cxx/input/cast.cc" is_main="1" language="C++">
-   <declarations/>
+  <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Parsers/Cxx/input/cast.cc" primary="1">
+   <declarations>
+    <item/>
+    <item/>
+   </declarations>
+   <includes/>
    <macro_calls/>
   </instance>
  </files>

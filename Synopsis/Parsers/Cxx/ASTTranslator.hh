@@ -63,6 +63,7 @@ private:
 
   AST::AST            my_ast;
   AST::ASTKit         my_ast_kit;
+  AST::SourceFileKit  my_sf_kit;
   AST::SourceFile     my_file;
   std::string         my_raw_filename;
   std::string         my_base_path;

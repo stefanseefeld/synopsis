@@ -27,7 +27,7 @@ public:
 
   ASTTranslator(std::string const &language,
 		std::string const &filename,
-		std::string const &base_path, bool main_file_only,
+		std::string const &base_path, bool primary_file_only,
 		AST::AST a, bool v, bool d);
 
   bool may_skip_whitespace (Token &, bool &) { return false;}
@@ -76,20 +76,21 @@ private:
   typedef std::stack<AST::SourceFile> FileStack;
 
   //. Look up the given filename in the ast, creating it if necessary.
-  //. Mark the file as 'main' if so required.
-  AST::SourceFile lookup_source_file(std::string const &filename, bool main);
+  //. Mark the file as 'primary' if so required.
+  AST::SourceFile lookup_source_file(std::string const &filename, bool primary);
 
-  AST::AST            my_ast;
-  AST::ASTKit         my_ast_kit;
-  AST::TypeKit        my_type_kit;
-  AST::SourceFile     my_file;
-  std::string         my_raw_filename;
-  std::string         my_base_path;
-  FileStack           my_file_stack;
-  std::string         my_include_dir;
-  bool                my_include_next_dir;
-  bool                my_main_file_only;
-  unsigned int        my_mask_counter;
-  bool                my_verbose;
-  bool                my_debug;
+  AST::AST            ast_;
+  AST::ASTKit         ast_kit_;
+  AST::SourceFileKit  sf_kit_;
+  AST::TypeKit        type_kit_;
+  AST::SourceFile     file_;
+  std::string         raw_filename_;
+  std::string         base_path_;
+  FileStack           file_stack_;
+  std::string         include_dir_;
+  bool                include_next_dir_;
+  bool                primary_file_only_;
+  unsigned int        mask_counter_;
+  bool                verbose_;
+  bool                debug_;
 };

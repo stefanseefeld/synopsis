@@ -1,0 +1,18 @@
+from Synopsis.process import process
+from Synopsis.Processor import Composite
+from Synopsis.Parsers import Cxx
+from Synopsis.Processors.Comments import SSFilter, Previous
+from Synopsis.Formatters import Dump
+from Synopsis.import_processor import import_processor
+import os, sys, re
+
+# Figure out the comment processor(s) from processing instructions in the input.
+src = sys.argv[-1]
+content = open(src, 'r+').read()
+processors = [i.strip() for i in re.findall('-\*-(.*?)-\*-', content)]
+processors = [import_processor('Synopsis.Processors.%s'%p)()
+              for p in processors]
+
+processors.insert(0, Cxx.Parser(base_path = '/home/stefan/projects/Synopsis-repository/branches/Synopsis_0_8/tests' + os.sep))
+processors.append(Dump.Formatter(show_ids = False, stylesheet = None))
+process(parse = Composite(*processors))

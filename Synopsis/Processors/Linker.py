@@ -15,13 +15,14 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
    """Visitor that removes duplicate declarations"""
 
    remove_empty_modules = Parameter(True, 'Remove empty modules.')
+   sort_modules = Parameter(True, 'Sort module content alphabetically.')
 
    def process(self, ast, **kwds):
 
       self.set_parameters(kwds)
       self.ast = self.merge_input(ast)
 
-      root = AST.MetaModule("", "",[])
+      root = AST.MetaModule("", [])
       self.__scopes = [root]
       global_dict = {}
       self.__dict_map = {id(root) : global_dict}
@@ -42,6 +43,11 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       if self.remove_empty_modules:
          import ModuleFilter
          self.ast = ModuleFilter.ModuleFilter().process(self.ast)
+
+      if self.sort_modules:
+         import ModuleSorter
+         self.ast = ModuleSorter.ModuleSorter().process(self.ast)
+         
 
       # now deal with the sub-processors, if any
       output = self.output
@@ -177,8 +183,8 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       types = self.types
 
       # Clear the list and refill it
-      old_decls = list(file.declarations())
-      new_decls = file.declarations()
+      old_decls = list(file.declarations)
+      new_decls = file.declarations
       new_decls[:] = []
 
       for decl in old_decls:
@@ -196,42 +202,47 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
-         metamodule = AST.MetaModule(module.language(), module.type(),module.name())
+         metamodule = AST.MetaModule(module.type(),module.name())
          self.append(metamodule)
 
       elif not isinstance(metamodule, AST.MetaModule):
          raise TypeError, 'symbol type mismatch: Synopsis.AST.Module and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
 
       metamodule.module_declarations().append(module)
-      self.merge_comments(metamodule.comments(), module.comments())
+
+      # Merge comments.
+      self.merge_comments(metamodule, module)
+
       self.push(metamodule)
       decls = tuple(module.declarations())
       del module.declarations()[:]
       for decl in decls: decl.accept(self)
       self.pop()
 
-   def merge_comments(self, dest, src):
-      """Merges the src comments into dest. Merge is just an append, unless
-      src already exists inside dest!"""
 
-      texter = lambda x: x.text()
-      dest_str = map(texter, dest)
-      src_str = map(texter, src)
-      if dest_str[-len(src):] == src_str: return
-      dest.extend(src)
+   def merge_comments(self, metamodule, module):
+      """Append the module comments into the metamodule."""
+
+      if module.annotations.has_key('comments'):
+         new_comments = module.annotations['comments']
+         metamodule.annotations.setdefault('comments', [])
+         comments = metamodule.annotations['comments']
+         if comments[-len(new_comments):] != new_comments:
+            comments.extend(new_comments)
+
 
    def visitMetaModule(self, module):        
 
       #hmm, we assume that the parent node is a MetaModule. Can that ever fail ?
       metamodule = self.lookup(module.name())
       if metamodule is None:
-         metamodule = AST.MetaModule(module.language(), module.type(),module.name())
+         metamodule = AST.MetaModule(module.type(),module.name())
          self.append(metamodule)
       elif not isinstance(metamodule, AST.MetaModule):
          raise TypeError, 'symbol type mismatch: Synopsis.AST.MetaModule and %s both match "%s"'%(metamodule.__class__, '::'.join(module.name()))
          
       metamodule.module_declarations().extend(module.module_declarations())
-      metamodule.comments().extend(module.comments())
+      self.merge_comments(metamodule, module)
       self.push(metamodule)
       decls = tuple(module.declarations())
       del module.declarations()[:]

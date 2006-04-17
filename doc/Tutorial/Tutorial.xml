@@ -5,11 +5,9 @@
   <bookinfo>
     <title>Synopsis Tutorial</title>
 
-    <releaseinfo>Version 0.1</releaseinfo>
-
+    <releaseinfo>Version 0.9</releaseinfo>
     <author>
       <firstname>Stefan</firstname>
-
       <surname>Seefeld</surname>
     </author>
   </bookinfo>
@@ -47,6 +45,65 @@
     </section>
 
     <section>
+      <title>Documenting source code</title>
+      <para>Being read and understood is at least as important for source code
+        as it is for it to be processed by a computer. Humans have to maintain
+        the code, i.e. fix bugs, add features, etc.</para>
+      <para>Therefor, typically, code is annotated in some form in that adds
+        explanation if it isn't self-explanatory. While comments are often
+        used to simply disable the execution of a particular chunk of code, some
+        comments are specifically addressed at readers to explain what the 
+        surrounding code does. While some languages (e.g. Python) have built-in
+        support for <emphasis>doc-strings</emphasis>, in other languages ordinary
+        comments are used.</para>
+      <para>Typically, comments are marked up in a specific way to discriminate
+        documentation from ordinary comments. Further the content of such comments
+        may contain markup for a particular formatting (say, embedded HTML).</para>
+      <example><title>Typical C++ code documentation</title>
+        <caption>
+          <para>C++ may contain a mix of comments, some representing documentation.
+          </para>
+        </caption>
+        <screen>
+//! A friendly function.
+void greet()
+{
+  // FIXME: Use gettext for i18n
+  std::cout &lt;&lt; "hello world !" &lt;&lt; std::endl;
+}
+        </screen>
+      </example>
+
+      <para>In Synopsis all declarations may be annotated. C and C++ parsers,
+        for example, will store comments preceding a given declaration in
+        that declaration's <varname>annotations</varname> dictionary under the 
+        key <constant>comments</constant>. Later these comments may be translated 
+        into documentation (stored under the key <constant>doc</constant>), which 
+        may be formatted once the final document is generated.</para>
+      <para>For languages such as Python such a translation isn't necessary,
+        as the language has built-in support for documentation, and thus the
+        parser itself can generate the 'doc' annotations.</para>
+      <example><title>Python code documentation</title>
+        <caption>
+          <para>Python has support for documentation built into the language.</para>
+        </caption>
+        <screen>
+>>> def greet():
+...     """The greet function prints out a famous message."""
+...     print 'hello world !'
+...
+>>>help(greet)
+
+
+Help on function greet in module __main__:
+
+greet()
+    The greet function prints out a famous message.
+        </screen>
+      </example>
+    </section>
+
+    <section>
       <title>The synopsis processing pipeline</title>
 
       <!-- Talk about AST manipulation as done 
@@ -65,157 +122,15 @@
       synopsis to your coding and commenting style, as well as how
       to generate the output in a format and style that fulfills
       your needs.</para>
-    <section id="executable">
-      <title>The synopsis executable</title>
-      <para>The synopsis executable is a little convenience frontend
-        to the larger Synopsis framework consisting of AST related
-        types as well as processor classes.</para>
-      <para>While the full power of synopsis is available through
-        scripting (see <xref linkend="scripting" />), it is possible
-        to quickly generate simple documentation by means of an
-        easy-to-use executable, that is nothing more but a little
-        script with some extra command line argument parsing.</para>
-      <para>This tool has three processor types it can call:</para>
-      <variablelist>
-        <varlistentry>
-          <term>Parser</term>
-          <listitem>
-            <para>A processor that will parse source code into an
-              internal abstract syntax tree (AST). Various Parsers
-              have a variety of parameters to control how exactly
-              they do that.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>Linker</term>
-          <listitem>
-            <para>A processor that will remove duplicate symbols,
-              forward declarations, and apply any number of AST
-              manipulations you want. The user typically specifies
-              what sub-processors to load to run from the linker.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>Formatter</term>
-          <listitem>
-            <para>A processor that generates some form of formatted
-              output from an existing AST, typically html, docbook xml,
-              or class graphs.</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
-
-      <para>You can run synopsis with a single processor, for example
-        to parse a C++ file <filename>source.hh</filename> and store 
-        the AST into a file <filename>source.syn</filename>, or you can
-        combine it directly with linker and or formatter to generate
-        the output you want in a single call.</para>
-      <para>While the document generation in a single call is convenient,
-        for larger projects it is much more sensible to integrate the
-        document generation into existing build systems and let the build
-        system itself manage the dependencies between the intermediate files
-        and the source files.</para>
-      <para>For example, a typical Makefile fragment that contains the rules
-        to generate documentation out of multiple source files may look like
-        this:</para>
-      <programlisting>
-        hdr := $(wildcard *.h)
-        syn := $(patsubst %.h, %.syn, $(hdr))
-
-        html: $(syn)
-            synopsis -f HTML -o $@ $&lt;
-
-        %.syn: %.h
-            synopsis -p Cxx -I../include -o $@ $&lt;
-      </programlisting>
-      <para>Here is a listing of all available options:</para>
-      <variablelist>
-        <varlistentry>
-          <term>-h</term>
-          <term>--help</term>
-          <listitem>
-            <para>print out help message</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-V</term>
-          <term>--version</term>
-          <listitem>
-            <para>print out version info and exit</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-v</term>
-          <term>--verbose</term>
-          <listitem>
-            <para>operate verbosely</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-d</term>
-          <term>--debug</term>
-          <listitem>
-            <para>operate in debug mode</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-o</term>
-          <term>--output</term>
-          <listitem>
-            <para>output file / directory</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-p</term>
-          <term>--parser</term>
-          <listitem>
-            <para>select a parser</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-l</term>
-          <term>--link</term>
-          <listitem>
-            <para>link</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-f</term>
-          <term>--formatter</term>
-          <listitem>
-            <para>select a formatter</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-I</term>
-          <listitem>
-            <para>set an include search path</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-D</term>
-          <listitem>
-            <para>specify a macro for the parser</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>-W</term>
-          <listitem>
-            <para>pass down additional arguments to a processor.
-              For example '-Wp,-I.' sends the '-I.' option to the
-              parser.</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
-    </section>
-
     <section id="parsing">
       <title>Parsing source code</title>
-
-      <para>As synopsis' current focus is on document generation, the
-        AST it generates from a parsed source file consists of declarations
-        only. Let's thus in the following consider how synopsis parses
-        C++ header files.</para>
+      <para>The synopsis executable is a convenience frontend
+        to the larger Synopsis framework consisting of AST-related
+        types as well as processor classes.</para>
+      <para>While the full power of synopsis is available through
+        scripting (see <xref linkend="scripting" />), the most frequent
+        use cases are captured in the <command>synopsis</command> executable.
+      </para>
       <para>Let's assume a simple header file, containing some declarations:</para>
       <para>
         <programlisting><xi:include href="examples/Paths/src/Path.h" parse="text"/>
@@ -223,62 +138,52 @@
       </para>
       <para>Process this with
         <programlisting>synopsis -p Cxx -f HTML -o Paths Path.h</programlisting>
-        to generate an html document. As you will note, all declarations appear
-        in the document, each associated with the comment(s) preceding it in the
-        code. We used here a C++ header (and the associated <type>Cxx</type>
-        parser), but we could equally well have chosen another supported language.
+        to generate an html document in the directory specified using the 
+        <option>-o</option> option, i.e. <filename>Paths</filename>.
       </para>
-      <para>While this one-line command is convenient, it is usually better
-        (and more clear) to separate the individual processing steps. We will now
-        fine-tune the processing, demonstrating the flexibility of the processers.
+      <para>
+        The above represents the simplest way to use <command>synopsis</command>.
+        A simple command is used to parse a source file and to generate a document
+        from it. The parser to be used is selected using the <option>-p</option>
+        option, and the formatter with the <option>-f</option> option.
+      </para>
+      <para>
+        Each processor (including parsers and formatters) provides a number of
+        parameters that can be set from the command line. For example the Cxx parser
+        has a parameter <varname>base_path</varname> to specify a prefix to be stripped
+        off of file names as they are stored in synopsis' internal representation.
+        Parser-specific options can be given that are passed through to the parser
+        processor. To pass such an option, use the <code>-Wp,</code> prefix.
+        For example, to set the parser's <varname>base_path</varname> option, use
+        <programlisting>synopsis -p Cxx -Wp,-base_path=&lt;prefix&gt; -f HTML -o Paths Path.h</programlisting>
+      </para>
+      <para>To set a formatter-specific option use <code>-Wf,</code>, and so on.
+        Use the <option>--help</option> to find out about options available for a
+        particular processor, e.g.
+        <programlisting>synopsis --help</programlisting>
+        or
+        <programlisting>synopsis -p Cxx --help</programlisting>
       </para>
     </section>
-
     <section id="comments">
       <title>Using comments for documentation</title>
-
-      <para>The <filename>Path.h</filename> header contains different kinds of comments,
-        not all of which are intended to be used as documentation. Here we want
-        to preserve only those comments starting with '//.'. That's done with the
-        <type>SSDFilter</type>(read: 'slash slash dot') processor. Further, the
-        members of the <type>Vertex</type> strcture are commented <emphasis>after</emphasis>
-        the declaration, with comments using the prefix '//.&lt;'. These are dealt
-        with by the <type>Previous</type> processor.</para>
-      <para>The result of
-        <programlisting>synopsis -p Cxx -l SSDFilter,Previous -o Path.syn Path.h
-synopsis -f HTML -o Paths Path.syn
-        </programlisting>
-        looks already much better.
+      <para>Until now the generated document didn't contain any of the text from
+        comments in the source code. To do that the comments have to be translated
+        first. This translation consists of a filter that picks up a particular kind
+        of comment, for example only lines starting with "//.", or javadoc-style
+        comments such as "/**...*/".</para>
+      <para>Let's translate all comments that start with "//.". The appropriate
+        filter is named "ssd" (for "slash-slash-dot"):
+        <programlisting>synopsis -p Cxx --cfilter=ssd -o Paths ../src/Path.h</programlisting>
       </para>
-      <para>Let us now add more input files:
-        <programlisting><xi:include href="examples/Paths/src/Polyline.h" parse="text"/>
-        </programlisting>
-        This header uses a different comment convention. Here relevant comments
-        start with '//', so we will use the <type>SSFilter</type> Processor.
-        Additionally, it uses special tags to group declarations together. As there
-        is more than one possible grouping syntax, we will use the <type>Grouper1</type>
-        processor (and discuss the others in <xref linkend="scripting"/>): 
-        <programlisting>synopsis -p Cxx -l SSFilter,Grouper1 -o Polyline.syn Polyline.h
-synopsis -f HTML -o Paths Path.syn Polyline.syn
+      <para>Let us now consider some source code with slightly more interesting
+        comments:
+        <programlisting><xi:include href="examples/Paths/src/Bezier.h" parse="text"/>
         </programlisting>
       </para>
-      <para>Finally, let us look at a header file that is written in javadoc style,
-        i.e. with java-style comments, and containing special tags:
-        <programlisting><xi:include href="examples/Paths/src/Nurbs.h" parse="text"/>
-        </programlisting>
-        Here, we filter out undesired comments with the <type>JavaFilter</type>
-        processor, and then parse the comments for @tags with <type>JavaTags</type>:
-        <programlisting>synopsis -p Cxx -l JavaFilter,JavaTags -o Nurbs.syn Nurbs.h
-        </programlisting>
-        Finally, we generate the documentation with all the headers together, with the
-        additional <option>--javadoc</option> flag that tells the HTML formatter to
-        include a <type>Javadoc</type> comment processor to generate appropriate links
-        and other formatting.
-        <programlisting>synopsis -f HTML --javadoc -o Paths Path.syn Polyline.syn Bezier.syn Nurbs.syn
-        </programlisting>
-      </para>
-      <para>The full code together with the Makefile can be found <ulink url="examples/Paths">here</ulink>
-      </para>
+      <remark>Introduce option --cfilter=java -translate=javadoc</remark>
+      <remark>Introduce option --cprocessor=grouper</remark>
+      <remark>Introduce option -lMacroFilter (i.e. option -l, as well as MacroFilter)</remark>
     </section>
     <section id="misc">
       <title>Miscellaneous</title>
@@ -771,6 +676,150 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
       <para></para>
     </section>
   </chapter>
+  <appendix id="executable">
+    <title>Description of program options for the synopsis executable</title>
+    <title>The synopsis executable</title>
+    <para>The synopsis executable is a little convenience frontend
+      to the larger Synopsis framework consisting of AST related
+      types as well as processor classes.</para>
+    <para>While the full power of synopsis is available through
+      scripting (see <xref linkend="scripting" />), it is possible
+      to quickly generate simple documentation by means of an
+      easy-to-use executable, that is nothing more but a little
+      script with some extra command line argument parsing.</para>
+    <para>This tool has three processor types it can call:</para>
+    <variablelist>
+      <varlistentry>
+        <term>Parser</term>
+        <listitem>
+          <para>A processor that will parse source code into an
+            internal abstract syntax tree (AST). Various Parsers
+            have a variety of parameters to control how exactly
+            they do that.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>Linker</term>
+        <listitem>
+          <para>A processor that will remove duplicate symbols,
+            forward declarations, and apply any number of AST
+            manipulations you want. The user typically specifies
+            what sub-processors to load to run from the linker.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>Formatter</term>
+        <listitem>
+          <para>A processor that generates some form of formatted
+            output from an existing AST, typically html, docbook xml,
+            or class graphs.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>You can run synopsis with a single processor, for example
+      to parse a C++ file <filename>source.hh</filename> and store 
+      the AST into a file <filename>source.syn</filename>, or you can
+      combine it directly with linker and or formatter to generate
+      the output you want in a single call.</para>
+    <para>While the document generation in a single call is convenient,
+      for larger projects it is much more sensible to integrate the
+      document generation into existing build systems and let the build
+      system itself manage the dependencies between the intermediate files
+      and the source files.</para>
+    <para>For example, a typical Makefile fragment that contains the rules
+      to generate documentation out of multiple source files may look like
+      this:</para>
+    <programlisting>
+      hdr := $(wildcard *.h)
+      syn := $(patsubst %.h, %.syn, $(hdr))
+
+      html: $(syn)
+          synopsis -f HTML -o $@ $&lt;
+
+      %.syn: %.h
+          synopsis -p Cxx -I../include -o $@ $&lt;
+    </programlisting>
+    <para>Here is a listing of all available options:</para>
+    <variablelist>
+      <varlistentry>
+        <term>-h</term>
+        <term>--help</term>
+        <listitem>
+          <para>print out help message</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-V</term>
+        <term>--version</term>
+        <listitem>
+          <para>print out version info and exit</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-v</term>
+        <term>--verbose</term>
+        <listitem>
+          <para>operate verbosely</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-d</term>
+        <term>--debug</term>
+        <listitem>
+          <para>operate in debug mode</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-o</term>
+        <term>--output</term>
+        <listitem>
+          <para>output file / directory</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-p</term>
+        <term>--parser</term>
+        <listitem>
+          <para>select a parser</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-l</term>
+        <term>--link</term>
+        <listitem>
+          <para>link</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-f</term>
+        <term>--formatter</term>
+        <listitem>
+          <para>select a formatter</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-I</term>
+        <listitem>
+          <para>set an include search path</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-D</term>
+        <listitem>
+          <para>specify a macro for the parser</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>-W</term>
+        <listitem>
+          <para>pass down additional arguments to a processor.
+            For example '-Wp,-I.' sends the '-I.' option to the
+            parser.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </appendix>
   <appendix><title>Listing of all Processors and their parameters</title>
     <para>
       This is a listing of all processors with their respective parameters
@@ -812,5 +861,21 @@ ast = formatter.process(ast, output=&#39;html&#39;)</programlisting>
     <xi:include href="Synopsis.Formatters.SXR.Formatter.xml">
       <xi:fallback>The SXR formatter reference...</xi:fallback>
     </xi:include>
+  </appendix>
+  <appendix>
+    <title>Supported documentation markup</title>
+    <para>Synopsis can handle a variety of documentation markup through
+      markup formatter plugins. The most frequently used markup types are
+      built into the framework, and are are available via the 
+      <command>synopsis</command> applet. These are <varname>Javadoc</varname>
+      (available as <option>--translate=javadoc</option>), as well as
+      <varname>ReStructuredText</varname> (available as 
+      <option>--translate=rst</option>).</para>
+    <section>
+      <title>Javadoc</title>
+    </section>
+    <section>
+      <title>Restructured Text</title>
+    </section>
   </appendix>
 </book>
