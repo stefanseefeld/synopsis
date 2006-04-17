@@ -70,14 +70,15 @@ ASTTranslator::ASTTranslator(ST::Scope *scope,
 			     Synopsis::AST::AST ast, bool v, bool d)
   : Walker(scope),
     my_ast(ast),
-    my_ast_kit("C++"),
+    my_sf_kit("C++"),
     my_raw_filename(filename),
     my_base_path(base_path),
     my_main_file_only(main_file_only),
     my_lineno(0),
     my_types(my_ast.types(), v, d),
     my_in_class(false),
-    my_verbose(v), my_debug(d) 
+    my_verbose(v),
+    my_debug(d) 
 {
   Trace trace("ASTTranslator::ASTTranslator", Trace::TRANSLATION);
 
@@ -92,7 +93,7 @@ ASTTranslator::ASTTranslator(ST::Scope *scope,
     my_file = file;
   else
   {
-    my_file = my_ast_kit.create_source_file(short_filename, long_filename);
+    my_file = my_sf_kit.create_source_file(short_filename, long_filename);
     my_ast.files().set(short_filename, my_file);
   }
 }
@@ -125,7 +126,8 @@ void ASTTranslator::visit(PT::NamespaceSpec *spec)
   AST::Module module = my_ast_kit.create_module(my_file, my_lineno,
 						"namespace", qname);
   Python::List comments = translate_comments(spec);
-  module.comments().extend(comments);
+  Python::List annotations = module.annotations().get("comments");
+  annotations.extend(comments);
   declare(module);
   my_types.declare(qname, module);
   my_scope.push(module);
@@ -182,10 +184,16 @@ void ASTTranslator::visit(PT::Declarator *declarator)
 					    qname,
 					    name.unmangled());
     function.parameters().extend(parameters);
-    if (my_declaration)
-      function.comments().extend(translate_comments(my_declaration));
-    function.comments().extend(translate_comments(declarator));
-    if (visible) declare(function);
+    if (visible) 
+    {
+      Python::List comments;
+      if (my_declaration)
+	comments.extend(translate_comments(my_declaration));
+      comments.extend(translate_comments(declarator));
+      if (comments)
+	function.annotations().set("comments", comments);
+      declare(function);
+    }
   }
   else
   {
@@ -199,10 +207,16 @@ void ASTTranslator::visit(PT::Declarator *declarator)
     else if (vtype == "function") vtype = "local variable";
     AST::Variable variable = my_ast_kit.create_variable(my_file, my_lineno,
 							vtype, qname, t, false);
-    if (my_declaration)
-      variable.comments().extend(translate_comments(my_declaration));
-    variable.comments().extend(translate_comments(declarator));
-    if (visible) declare(variable);
+    if (visible)
+    {
+      Python::List comments;
+      if (my_declaration)
+	comments.extend(translate_comments(my_declaration));
+      comments.extend(translate_comments(declarator));
+      if (comments)
+	variable.annotations().set("comments", comments);
+      declare(variable);
+    }
   }
 }
 
@@ -230,9 +244,14 @@ void ASTTranslator::visit(PT::SimpleDeclaration *declaration)
 							       "typedef",
 							       qname,
 							       alias, false);
-      typedef_.comments().extend(translate_comments(declaration));
-      typedef_.comments().extend(translate_comments(declarator));
-      if (visible) declare(typedef_);
+      if (visible)
+      {
+	Python::List comments;
+	comments.extend(translate_comments(declaration));
+	comments.extend(translate_comments(declarator));
+	typedef_.annotations().set("comments", comments);
+	declare(typedef_);
+      }
       my_types.declare(qname, typedef_);
     }
   }
@@ -265,8 +284,13 @@ void ASTTranslator::visit(PT::ClassSpec *spec)
   ClassNameFinder finder;
   AST::ScopedName qname = finder.name(spec);
   AST::Class class_ = my_ast_kit.create_class(my_file, my_lineno, key, qname);
-  class_.comments().extend(translate_comments(spec));
-  if (visible) declare(class_);
+  if (visible)
+  {
+    Python::List comments;
+    comments.extend(translate_comments(spec));
+    class_.annotations().set("comments", comments);
+    declare(class_);
+  }
   if (my_template_parameters)
   {
     AST::Type type = my_types.declare(qname, class_, my_template_parameters);
@@ -311,7 +335,7 @@ void ASTTranslator::visit(PT::EnumSpec *spec)
       enumerator = my_ast_kit.create_enumerator(my_file, my_lineno, qname, "");
       Python::List comments = 
 	translate_comments(static_cast<PT::Identifier *>(penumor));
-      enumerator.comments().extend(comments);
+      enumerator.annotations().set("comments", comments);
     }
     else
     {
@@ -428,6 +452,7 @@ Python::List ASTTranslator::translate_comments(T *node)
   if (!c) return Python::List();
   
   Python::List comments;
+  bool suspect = false;
   PT::Atom *first = 0;
   PT::Atom *last = 0;
   for (; c; c = c->cdr())
@@ -442,10 +467,7 @@ Python::List ASTTranslator::translate_comments(T *node)
       else if (current->position() - last->end() == 1) last = current;
       else
       {
-	AST::Comment comment = 
-	  my_ast_kit.create_comment(my_file, my_lineno,
-				    std::string(first->begin(), last->end() - first->begin()),
-				    true);
+	std::string comment(first->begin(), last->end() - first->begin());
 	comments.append(comment);
 	first = last = current;
       }
@@ -456,13 +478,10 @@ Python::List ASTTranslator::translate_comments(T *node)
       // comment's end and the node to which it is attached, it is marked as suspect.
       char const *end = node->begin();
       char const *ptr = current->end() + 1;
+      suspect = ptr != end;
       while (ptr != end && (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')) ++ptr;
       while (ptr != end && (*ptr == ' ' || *ptr == '\t' || *ptr == '\r')) ++ptr;
-      bool suspect = ptr != end;
-      AST::Comment comment = 
-	my_ast_kit.create_comment(my_file, my_lineno,
-				  std::string(current->position(), current->length()),
-				  suspect);
+      std::string comment(current->position(), current->length());
       comments.append(comment);
     }
   }
@@ -471,13 +490,11 @@ Python::List ASTTranslator::translate_comments(T *node)
     char const *end = node->begin();
     char const *ptr = last->end() + 1;
     while (ptr != end && (*ptr == ' ' || *ptr == '\t' || *ptr == '\r')) ++ptr;
-    bool suspect = ptr != end;
-    AST::Comment comment = 
-      my_ast_kit.create_comment(my_file, my_lineno,
-				std::string(first->begin(), last->end() - first->begin()),
-				suspect);
+    suspect = ptr != end;
+    std::string comment(first->begin(), last->end() - first->begin());
     comments.append(comment);
   }
+  if (suspect) comments.append(Python::Object());
   return comments;
 }
 
@@ -507,7 +524,7 @@ bool ASTTranslator::update_position(PT::Node *node)
       my_file = file;
     else
     {
-      my_file = my_ast_kit.create_source_file(short_filename, long_filename);
+      my_file = my_sf_kit.create_source_file(short_filename, long_filename);
       my_ast.files().set(short_filename, my_file);
     }
   }

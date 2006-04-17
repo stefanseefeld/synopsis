@@ -55,7 +55,9 @@ class Inheritance(Part):
             if child.accessibility() == AST.PRIVATE:
                continue
             # Don't include constructors and destructors!
-            if isinstance(child, AST.Function) and child.language() == 'C++' and len(child.realname())>1:
+            if (isinstance(child, AST.Function) and
+                child.file().annotations['language'] == 'C++' and
+                len(child.realname()) > 1):
                if child.realname()[-1] == child.realname()[-2]: continue
                elif child.realname()[-1] == "~"+child.realname()[-2]: continue
             # FIXME: skip overriden declarations

@@ -23,9 +23,9 @@ namespace TypeAnalysis
 class TemplateRepository
 {
 public:
-  //. Declare a specialization for the given template.
+  //. Declare a primary template.
   void declare(SymbolTable::ClassTemplateName const *,
-	       PTree::TemplateDeclaration const *);
+	       PTree::TemplateParameterList const *);
   //. Declare a class scope associated with a template specialization.
   void declare_scope(SymbolTable::ClassTemplateName const *,
 		     PTree::ClassSpec const *,

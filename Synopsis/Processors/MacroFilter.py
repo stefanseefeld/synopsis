@@ -16,17 +16,21 @@ class MacroFilter(Processor, AST.Visitor):
 
     def process(self, ast, **kwds):
       
+        print 'xxx'
         self.set_parameters(kwds)
         self._pattern = re.compile(self.pattern)
         self.ast = self.merge_input(ast)
 
         for decl in ast.declarations():
+            print 'visiting', decl.name()
             decl.accept(self)
 
         return self.output_and_return_ast()
 
     def visitMacro(self, node):
 
+        print 'visiting macro', node.name()[-1]
         if self._pattern.match(node.name()[-1]):
+            print 'match !'
             # Macros always live in the top-most scope.
             self.ast.declarations().remove(node)

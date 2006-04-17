@@ -40,10 +40,10 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   char const * base_path = "";
   char const * syntax_prefix = 0;
   char const * xref_prefix = 0;
-  int main_file_only, verbose, debug, profile;
+  int primary_file_only, verbose, debug, profile;
   if (!PyArg_ParseTuple(args, "Ossizzziii",
                         &py_ast, &cppfile, &src,
-                        &main_file_only,
+                        &primary_file_only,
                         &base_path,
                         &syntax_prefix,
                         &xref_prefix,
@@ -59,6 +59,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   std::set_unexpected(unexpected);
   ErrorHandler error_handler();
 
+//   if (verbose) ::verbose = true;
   if (debug) Synopsis::Trace::enable(Trace::TRANSLATION);
 
   if (!src || *src == '\0')
@@ -81,7 +82,7 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     const Parser::ErrorList &errors = parser.errors();
     if (!errors.size() && ptree)
     {
-      ASTTranslator translator(src, base_path, main_file_only, ast, verbose, debug);
+      ASTTranslator translator(src, base_path, primary_file_only, ast, verbose, debug);
       timer.reset();
       translator.translate(ptree, buffer);
       if (profile)

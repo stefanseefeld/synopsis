@@ -81,7 +81,7 @@ void TA::TypeRepository::declare(PT::Encoding const &name,
 				 ST::TypeName const *symbol)
 {
   Trace trace("TypeRepository::declare(TypeName)", Trace::TYPEANALYSIS);
-  AtomicType *type = new Dependent(name.unmangled());
+  AtomicType *type = new Parameter(name.unmangled());
   my_declared_types.insert(std::make_pair(symbol, type));
 }
 

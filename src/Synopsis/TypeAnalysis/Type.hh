@@ -110,6 +110,16 @@ public:
 private:
 };
 
+//. A template type parameter.
+class Parameter : public AtomicType
+{
+public:
+  Parameter(std::string const &name) : AtomicType(name) {}
+  virtual void accept(Visitor *visitor) { visitor->visit(this);}
+};
+
+//. A dependent type, such as in
+//. 'typename T::value_type'
 class Dependent : public AtomicType
 {
 public:
@@ -117,6 +127,7 @@ public:
   virtual void accept(Visitor *visitor) { visitor->visit(this);}
 };
 
+//. A cv qualifier
 class CVType : public Type
 {
 public:

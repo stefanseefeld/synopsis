@@ -13,6 +13,7 @@ introspection, and debugging.
 from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import Type, AST
+from Synopsis.SourceFile import SourceFile
 
 import sys, getopt, os, os.path, string, types
 from xml.dom.minidom import getDOMImplementation
@@ -38,10 +39,12 @@ class Formatter(Processor):
                        types.LongType : self.visit_string,
                        types.FloatType : self.visit_string,
                        types.StringType : self.visit_string,
+                       types.BooleanType : self.visit_string,
                        types.TupleType : self.visit_tuple,
                        types.ListType : self.visit_list,
                        types.DictType : self.visit_dict,
-                       types.InstanceType : self.visit_instance}
+                       types.InstanceType : self.visit_instance,
+                       SourceFile : self.visit_sourcefile}
       self.visited = {}
 
       self.os = open(self.output, "w")
@@ -99,17 +102,17 @@ class Formatter(Processor):
 
       if len(obj) == 0: return
       for i in obj:
-         #self.push('item')
+         self.push('item')
          self.visit(i)
-         #self.pop()
+         self.pop()
 
    def visit_list(self, obj):
 
       if len(obj) == 0: return
       for i in obj:
-         #self.push('item')
+         self.push('item')
          self.visit(i)
-         #self.pop()
+         self.pop()
 
    def visit_dict(self, dict):
 
@@ -124,6 +127,18 @@ class Formatter(Processor):
          self.visit(i[1])
          self.pop()
 
+   def visit_sourcefile(self, obj):
+      
+      self.node.setAttribute('name', obj.name)
+      self.node.setAttribute('language', obj.annotations.get('language', ''))
+      self.node.setAttribute('primary', str(obj.annotations.get('primary', False)))
+
+      for name in ['declarations', 'includes', 'macro_calls']:
+         self.push(name)
+         self.visit(getattr(obj, name))
+         self.pop()
+
+
    def visit_instance(self, obj):
 
       self.visited[id(obj)] = None
@@ -131,48 +146,43 @@ class Formatter(Processor):
       self.node.setAttribute('class', "%s.%s"%(obj.__class__.__module__,obj.__class__.__name__))
       if self.show_ids:
          self.node.setAttribute('id', str(id(obj)))
-      attrs = obj.__dict__.items()
-      attrs.sort()
-      for name, value in attrs:
-         # ignore None values
-         if (value == None
-             or value == []
-             or value == ()):
-            continue
-         # special case for some known attributes...
-         if name == '_Named__name':
-            self.node.setAttribute('name', string.join(value, '.'))
-            continue
-         if name == '_Declaration__name':
-            self.node.setAttribute('name', string.join(value, '.'))
-            continue
-         if name == '_Declaration__file':
-            if value:
-               self.node.setAttribute('file', value.filename())
+      if self.handlers.has_key(obj.__class__):
+         self.handlers[obj.__class__](obj)
+      else:
+         attrs = obj.__dict__.items()
+         attrs.sort()
+         for name, value in attrs:
+            # ignore None values
+            if (value == None
+                or value == []
+                or value == ()):
                continue
-         if name == '_Comment__file':
-            if value:
-               self.node.setAttribute('file', value.filename())
+            # special case for some known attributes...
+            if name == '_Named__name':
+               self.node.setAttribute('name', '.'.join(value))
                continue
-         # this is not really useful anyways, but has to be suppressed
-         # in the unit tests as the full path will vary between different
-         # setups
-         if name == '_SourceFile__full_filename':
-            continue
+            if name == '_Declaration__name':
+               self.node.setAttribute('name', '.'.join(value))
+               continue
+            if name == '_Declaration__file':
+               if value:
+                  self.node.setAttribute('file', value.name)
+                  continue
 
-         if name[0] == '_':
-            index = string.find(name, '__')
-            if index >= 0:
-               #name = "%s.%s"%(name[1:index],name[index+2:])
-               name = name[index+2:]
-         if (self.handlers[type(value)] == self.visit_string
-             and not (obj.__class__.__name__ == 'Comment'
-                      and (name == 'summary' or name == 'text'))):
-            self.node.setAttribute(name, str(value))
-         else:
-            self.push(name)
-            self.visit(value)
-            self.pop()
+            if name[0] == '_':
+               index = name.find('__')
+               if index >= 0:
+                  #name = "%s.%s"%(name[1:index],name[index+2:])
+                  name = name[index+2:]
+
+            # String attributes map to xml attributes.
+            if self.handlers.get(type(value)) == self.visit_string:
+               self.node.setAttribute(name, str(value))
+            # Everything else maps to sub-elements.
+            else:
+               self.push(name)
+               self.visit(value)
+               self.pop()
       self.pop()
 
    def write_declarations(self, declarations):

@@ -4,7 +4,7 @@
                 xmlns="http://www.w3.org/TR/xhtml1/transitional"
                 exclude-result-prefixes="#default">
 
-<xsl:import href="http://docbook.sourceforge.net/release/xsl/1.65.1/html/chunk.xsl"/>
+<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl"/>
 
 <xsl:param name="html.stylesheet" select="'synopsis.css'"/>
 <xsl:param name="use.extensions" select="'1'"/>

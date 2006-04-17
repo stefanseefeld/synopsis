@@ -37,7 +37,7 @@ class Database(database.Database):
       """tests are file names without extension"""
       return [t[0]
               for t in [os.path.splitext(x) for x in dircache.listdir(path)] 
-              if t[0] != '' and not ext or t[1] == ext]
+              if t[0] != '' and (not ext or t[1] == ext)]
 
    def get_dir_tests(self, id, script):
       """tests are directories if <script> exists"""
@@ -82,8 +82,7 @@ class Database(database.Database):
             suites.remove('src')
 
       else:
-         if not os.path.isfile(os.path.join(self.get_build_path(dir),
-                                            'synopsis.py')):
+         if not os.path.isdir(os.path.join(self.get_src_path(dir), 'input')):
             suites = self.get_dir_suites(dir)
 
       # ignore accidental inclusion of false tests / suites
@@ -122,10 +121,9 @@ class Database(database.Database):
                                    '.cc')
 
       else:
-         if os.path.isfile(os.path.join(self.get_build_path(dir), 'synopsis.py')):
+         if os.path.isdir(os.path.join(self.get_src_path(dir), 'input')):
             tests = self.get_file_tests(os.path.join(self.get_src_path(dir),
                                                      'input'))
-
       # ignore accidental inclusion of false tests / suites
       if '.svn' in tests: tests.remove('.svn')
 
@@ -213,7 +211,10 @@ class Database(database.Database):
 
       output = os.path.join(*components[:-1] + ['output', components[-1] + '.xml'])
       expected = os.path.join(dirname, 'expected', components[-1] + '.xml')
-      synopsis = os.path.join(*components[:-1] + ['synopsis.py'])
+      if components[0] == 'Processors' and components[1] != 'Linker':
+         synopsis = os.path.join('Processors', 'synopsis.py')
+      else:
+         synopsis = os.path.join(*components[:-1] + ['synopsis.py'])
 
       parameters = {}
       parameters['srcdir'] = self.srcdir

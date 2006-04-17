@@ -38,7 +38,7 @@ $(TARGET): $(OBJ)
 	$(LDSHARED) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
-	rm -f $(CTOOL_SO)
+	rm -f $(TARGET)
 	rm -rf $(OBJ) $(DEP)
 
 %.o:	%.cc

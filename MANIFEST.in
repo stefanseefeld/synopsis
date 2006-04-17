@@ -13,6 +13,7 @@ recursive-include   src *
 
 # C/C++ extensions
 recursive-include   Synopsis/Parsers/Cpp *
+recursive-include   Synopsis/Parsers/IDL *
 recursive-include   Synopsis/Parsers/C *
 recursive-include   Synopsis/Parsers/Cxx *
 
@@ -41,5 +42,6 @@ global-exclude autom4te.cache
 global-exclude autom4te.cache/*
 global-exclude *~
 global-exclude *.pyc
+global-exclude *.pyo
 global-exclude *.so
 

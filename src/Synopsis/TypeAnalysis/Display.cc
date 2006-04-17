@@ -99,6 +99,11 @@ void Display::visit(PointerToMember *)
 {
 }
 
+void Display::visit(Parameter *type)
+{
+  my_os << "parameter " << type->name();
+}
+
 void Display::visit(Dependent *type)
 {
   my_os << "dependent " << type->name();

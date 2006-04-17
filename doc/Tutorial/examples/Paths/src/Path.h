@@ -1,5 +1,5 @@
-#ifndef _Path_h
-#define _Path_h
+#ifndef Path_h_
+#define Path_h_
 
 //. A Vertex is a 2D point.
 struct Vertex
@@ -17,7 +17,7 @@ public:
   //. Draw this path.
   virtual void draw() = 0;
   // temporarily commented out...
-  // void intersects(const Path &);
+  // bool intersects(const Path &);
 private:
 };
 

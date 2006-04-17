@@ -32,34 +32,18 @@ class SourceFile : public Python::Object
 {
 public:
   SourceFile() {}
-  SourceFile(const Python::Object &o) : Python::Object(o) {}
-  std::string name() const { return narrow<std::string>(attr("filename")());}
-  std::string long_name() const { return narrow<std::string>(attr("full_filename")());}
-  bool is_main() const { return narrow<bool>(attr("is_main")());}
-  void is_main(bool flag) { attr("set_is_main")(Python::Tuple(flag));}
-  Python::List includes() { return attr("includes")();}
-  Python::Dict macro_calls() { return attr("macro_calls")();}
+  SourceFile(Python::Object const &o) : Python::Object(o) {}
+  std::string name() const { return narrow<std::string>(attr("filename"));}
+  std::string abs_name() const { return narrow<std::string>(attr("abs_name"));}
+  bool primary() const { return narrow<bool>(Python::Dict(attr("annotations")).get("primary"));}
+  void set_primary(bool flag)
+  {
+    Python::Dict annotations(attr("annotations"));
+    annotations.set("primary", flag);
+  }
+  Python::List includes() { return attr("includes");}
+  Python::Dict macro_calls() { return attr("macro_calls");}
   Declarations declarations();
-};
-
-//. Encapsulation of one Comment, which may span multiple lines.
-//. Each comment encapsulates one /* */ block or a block of // comments on
-//. adjacent lines. If extract_tails is set, then comments will be added
-//. even when they are not adjacent to a declaration - these comments will be
-//. marked as "suspect". Most of these will be discarded by the Linker, unless
-//. they have appropriate markings such as "//.< comment for previous decl"
-class Comment : public Python::Object
-{
-public:
-  Comment() {}
-  Comment(const Python::Object &o, bool check = true)
-    : Python::Object(o) { if (check) assert_type("Synopsis.AST", "Comment");}
-
-  SourceFile file() const { return narrow<SourceFile>(attr("file")());}
-  long line() const { return narrow<long>(attr("line")());}
-  std::string text() const { return narrow<std::string>(attr("text")());}
-  void suspect(bool flag) { attr("set_suspect")(Python::Tuple(flag));}
-  bool suspect() const { return narrow<bool>(attr("is_suspect")());}
 };
 
 class Declaration : public Python::Object
@@ -74,7 +58,7 @@ public:
   std::string language() const { return narrow<std::string>(attr("language")());}
   std::string type() const { return narrow<std::string>(attr("type")());}
   ScopedName name() const { return attr("name")();}
-  Python::List comments() { return attr("comments")();}
+  Python::Dict annotations() { return attr("annotations");}
   Access accessibility() const 
   { return static_cast<Access>(narrow<long>(attr("accessibility")()));}
   void accessibility(Access a) const 
@@ -86,7 +70,7 @@ public:
 };
 
 inline Declarations SourceFile::declarations()
-{ return narrow<Declarations>(attr("declarations")());}
+{ return narrow<Declarations>(attr("declarations"));}
 
 //. A Builtin is a node to be used internally.
 //. Right now it's being used to capture comments

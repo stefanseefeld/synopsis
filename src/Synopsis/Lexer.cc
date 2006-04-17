@@ -22,6 +22,8 @@ Lexer::Lexer(Buffer *buffer, int tokenset)
   my_keywords["break"] = Token::BREAK;
   my_keywords["case"] = Token::CASE;
   my_keywords["char"] = Token::CHAR;
+  // FIXME: Add support for _Complex to Parser.
+  my_keywords["_Complex"] = Token::Ignore;
   my_keywords["const"] = Token::CONST;
   my_keywords["continue"] = Token::CONTINUE;
   my_keywords["default"] = Token::DEFAULT;

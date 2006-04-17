@@ -73,7 +73,7 @@ $(appendix): %.xml:
 
 clean:
 	rm -f Synopsis.*.xml
-	rm Tutorial.fo DevGuide.fo
+	rm -f Tutorial.fo DevGuide.fo
 
 distclean: clean
 	rm -rf html Tutorial.pdf DevGuide.pdf

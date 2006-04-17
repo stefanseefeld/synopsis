@@ -1,0 +1,250 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<ast>
+ <declarations>
+  <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Comments/input/groups.cc" line="11" name="first group " type="group">
+   <declarations>
+    <item>
+     <instance accessibility="0" class="Synopsis.AST.Class" file="Processors/Comments/input/groups.cc" line="11" name="foo" type="struct">
+      <declarations>
+       <item>
+        <instance accessibility="1" class="Synopsis.AST.Builtin" file="Processors/Comments/input/groups.cc" line="11" name="EOS" type="EOS">
+         <annotations>
+          <key>
+           comments
+          </key>
+          <value/>
+         </annotations>
+        </instance>
+       </item>
+      </declarations>
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value>
+        <item>
+         some comment
+extending over multiple lines
+        </item>
+        <item>
+         another comment
+        </item>
+       </value>
+      </annotations>
+     </instance>
+    </item>
+    <item>
+     <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="14" name="test1" type="global variable">
+      <vtype>
+       <instance class="Synopsis.Type.Base" language="C++" name="int"/>
+      </vtype>
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value/>
+      </annotations>
+     </instance>
+    </item>
+    <item>
+     <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="15" name="test2" type="global variable">
+      <vtype/>
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value/>
+      </annotations>
+     </instance>
+    </item>
+   </declarations>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value>
+     <item>
+      -*- Comments.SSFilter -*-
+-*- Comments.Grouper -*-
+     </item>
+     <item>
+      group documentation
+
+     </item>
+    </value>
+   </annotations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="17" name="bar" type="global variable">
+   <vtype/>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value/>
+   </annotations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Comments/input/groups.cc" line="20" name="tests " type="group">
+   <declarations>
+    <item>
+     <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="20" name="test3" type="global variable">
+      <vtype/>
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value/>
+      </annotations>
+     </instance>
+    </item>
+    <item>
+     <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="21" name="test4" type="global variable">
+      <vtype/>
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value/>
+      </annotations>
+     </instance>
+    </item>
+   </declarations>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value>
+     <item>
+      another group
+
+     </item>
+    </value>
+   </annotations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Comments/input/groups.cc" line="27" name="outer " type="group">
+   <declarations>
+    <item>
+     <instance accessibility="0" class="Synopsis.AST.Group" file="Processors/Comments/input/groups.cc" line="27" name="inner " type="group">
+      <declarations>
+       <item>
+        <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="27" name="f" type="global variable">
+         <vtype/>
+         <annotations>
+          <key>
+           comments
+          </key>
+          <value/>
+         </annotations>
+        </instance>
+       </item>
+       <item>
+        <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="29" name="test5" type="global variable">
+         <vtype/>
+         <annotations>
+          <key>
+           comments
+          </key>
+          <value>
+           <item>
+            @group xxx { not a group
+           </item>
+          </value>
+         </annotations>
+        </instance>
+       </item>
+       <item>
+        <instance accessibility="0" class="Synopsis.AST.Variable" constr="0" file="Processors/Comments/input/groups.cc" line="33" name="test6" type="global variable">
+         <vtype/>
+         <annotations>
+          <key>
+           comments
+          </key>
+          <value>
+           <item>
+            } and not a group end
+}
+and not a group either
+           </item>
+          </value>
+         </annotations>
+        </instance>
+       </item>
+      </declarations>
+      <annotations>
+       <key>
+        comments
+       </key>
+       <value/>
+      </annotations>
+     </instance>
+    </item>
+   </declarations>
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value/>
+   </annotations>
+  </instance>
+  <instance accessibility="0" class="Synopsis.AST.Builtin" file="Processors/Comments/input/groups.cc" line="34" name="EOS" type="EOS">
+   <annotations>
+    <key>
+     comments
+    </key>
+    <value>
+     <item/>
+    </value>
+   </annotations>
+  </instance>
+ </declarations>
+ <types>
+  <instance class="Synopsis.Type.Declared" language="C++" name="EOS">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="bar">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="f">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="foo">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test1">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test2">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test3">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test4">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test5">
+   <declaration/>
+  </instance>
+  <instance class="Synopsis.Type.Declared" language="C++" name="test6">
+   <declaration/>
+  </instance>
+ </types>
+ <files>
+  <instance class="Synopsis.SourceFile.SourceFile" language="C++" name="Processors/Comments/input/groups.cc" primary="1">
+   <declarations>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+    <item/>
+   </declarations>
+   <includes/>
+   <macro_calls/>
+  </instance>
+ </files>
+</ast>

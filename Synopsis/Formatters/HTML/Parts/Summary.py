@@ -9,7 +9,6 @@
 from Synopsis.Processor import Parameter
 from Synopsis import Util
 from Synopsis.Formatters.HTML.Part import Part
-from Synopsis.Formatters.HTML.DeclarationStyle import Style
 from Synopsis.Formatters.HTML.Fragments import *
 from Synopsis.Formatters.HTML.Tags import *
 
@@ -18,8 +17,7 @@ class Summary(Part):
    declaration, with links to the details if there is one. All of this is
    controlled by the ASTFormatters."""
 
-   fragments = Parameter([SummaryFormatter(),
-                          SummaryCommenter()],
+   fragments = Parameter([DeclarationSummaryFormatter(), SummaryCommenter()],
                          '')
 
    def register(self, view):
@@ -72,9 +70,7 @@ class Summary(Part):
    def process(self, scope):
       "Print out the summaries from the given scope"
 
-      decl_style = self.processor.decl_style
-      SUMMARY = Style.SUMMARY
-
+      doc = self.processor.documentation
       sorter = self.processor.sorter
       sorter.set_scope(scope)
       sorter.sort_section_names()
@@ -88,7 +84,7 @@ class Summary(Part):
          # Iterate through the children in this section
          for child in sorter.children(section):
             # Check if need to add to detail list
-            if decl_style[child] != SUMMARY:
+            if doc.details(child, self.view()):
                # Setup the linking stuff
                self.set_link_detail(1)
                child.accept(self)

@@ -6,7 +6,7 @@
 # see the file COPYING for details.
 #
 
-from Synopsis.Processor import Parameter
+from Synopsis.Processor import *
 from Synopsis import AST, Type, Util
 from Synopsis.Formatters.HTML.View import View
 from Synopsis.Formatters.HTML.Tags import *
@@ -110,12 +110,7 @@ class InheritanceGraph(View):
       self.write(self.processor.navigation_bar(filename))
       self.write(entity('h1', "Inheritance Graph"))
 
-      try:
-         from Synopsis.Formatters import Dot
-      except:
-         print "InheritanceGraph: Can't load the Dot formatter"
-         self.end_file()
-         return
+      from Synopsis.Formatters import Dot
       # Create a toc file for Dot to use
       toc_file = filename + "-dot.toc"
       self.processor.toc.store(toc_file)
@@ -139,16 +134,16 @@ class InheritanceGraph(View):
                type_str = type.declaration().type() + ' '
             self.write('Graphs in '+type_str+name+':<br/>')
          for graph in graphs:
+            if self.processor.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
+            # Find declarations
+            declarations = map(self.decl_finder, graph)
+            declarations = filter(lambda x: x is not None, declarations)
+            # Call Dot formatter
+            output = os.path.join(self.processor.output,
+                                  os.path.splitext(self.filename())[0]) + '-%s'%count
+            dot = Dot.Formatter()
+            ast = AST.AST({}, declarations, self.processor.ast.types())
             try:
-               if self.processor.verbose: print "Creating graph #%s - %s classes"%(count,len(graph))
-               # Find declarations
-               declarations = map(self.decl_finder, graph)
-               declarations = filter(lambda x: x is not None, declarations)
-               # Call Dot formatter
-               output = os.path.join(self.processor.output,
-                                     os.path.splitext(self.filename())[0]) + '-%s'%count
-               dot = Dot.Formatter()
-               ast = AST.AST({}, declarations, self.processor.ast.types())
                dot.process(ast,
                            output=output,
                            format='html',
@@ -166,11 +161,8 @@ class InheritanceGraph(View):
                self.write(dot_file.read())
                dot_file.close()
                os.remove(output + ".html")
-            except:
-               import traceback
-               traceback.print_exc()
-               print "Graph:",graph
-               print "Declarations:",declarations
+            except InvalidCommand, e:
+               print 'Warning : %s'%str(e)
             count = count + 1
          if name:
             self.write('</div>')

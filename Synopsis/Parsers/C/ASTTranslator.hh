@@ -38,28 +38,29 @@ private:
 
   void add_comments(AST::Declaration, PTree::Node *);
   //. Update positional information for the given
-  //. node. This will reset 'my_lineno' and may change
-  //. 'my_file'.
+  //. node. This will reset 'lineno_' and may change
+  //. 'file_'.
   //. Return whether or not the node should be translated,
-  //. according to the current file and the 'main_file_only' flag.
+  //. according to the current file and the 'primary_file_only' flag.
   bool update_position(PTree::Node *);
 
   void declare(AST::Declaration);
 
-  AST::AST            my_ast;
-  AST::ASTKit         my_ast_kit;
-  AST::SourceFile     my_file;
-  std::string         my_raw_filename;
-  std::string         my_base_path;
-  bool                my_main_file_only;
-  unsigned long       my_lineno;
-  TypeTranslator      my_types;
-  ScopeStack          my_scope;
-  bool                my_verbose;
-  bool                my_debug;
-  Buffer             *my_buffer;
-  PTree::Declaration *my_declaration;
-  AST::Parameter      my_parameter;
+  AST::AST            ast_;
+  AST::ASTKit         ast_kit_;
+  AST::SourceFileKit  sf_kit_;
+  AST::SourceFile     file_;
+  std::string         raw_filename_;
+  std::string         base_path_;
+  bool                primary_file_only_;
+  unsigned long       lineno_;
+  TypeTranslator      types_;
+  ScopeStack          scope_;
+  bool                verbose_;
+  bool                debug_;
+  Buffer             *buffer_;
+  PTree::Declaration *declaration_;
+  AST::Parameter      parameter_;
 };
 
 #endif

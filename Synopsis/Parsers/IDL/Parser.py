@@ -1,4 +1,3 @@
-# $Id: Parser.py,v 1.1 2003/11/18 21:33:46 stefan Exp $
 #
 # Copyright (C) 2003 Stefan Seefeld
 # All rights reserved.
@@ -11,26 +10,54 @@
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST
 import omni
+import os, os.path, tempfile
 
 class Parser(Processor):
 
-   include_paths = Parameter([], 'list of include paths')
-   main_file_only = Parameter(True, 'should only main file be processed')
-   comments_before = Parameter(True, 'Comments are associated with following declaration')
-   base_path = Parameter('', 'path prefix to strip off of the file names')
+    preprocess = Parameter(True, 'whether or not to preprocess the input')
+    cppflags = Parameter([], 'list of preprocessor flags such as -I or -D')
+    primary_file_only = Parameter(True, 'should only primary file be processed')
+    base_path = Parameter('', 'path prefix to strip off of the file names')
    
-   def process(self, ast, **kwds):
+    def process(self, ast, **kwds):
 
-      input = kwds.get('input')
-      self.set_parameters(kwds)
-      self.ast = ast
-      for file in input:
-         self.ast = omni.parse(self.ast, file,
-                               self.verbose,
-                               self.main_file_only,
-                               self.base_path,
-                               self.include_paths,
-                               self.comments_before)
+        self.set_parameters(kwds)
+        self.ast = ast
 
-      return self.output_and_return_ast()
+        if self.preprocess:
+
+            from Synopsis.Parsers import Cpp
+            cpp = Cpp.Parser(base_path = self.base_path,
+                             language = 'IDL',
+                             flags = self.cppflags,
+                             emulate_compiler = None)
+
+        for file in self.input:
+
+            i_file = file
+            if self.preprocess:
+
+                if self.output:
+                    i_file = os.path.splitext(self.output)[0] + '.i'
+                else:
+                    i_file = os.path.join(tempfile.gettempdir(),
+                                          'synopsis-%s.i'%os.getpid())
+                self.ast = cpp.process(self.ast,
+                                       cpp_output = i_file,
+                                       input = [file],
+                                       primary_file_only = self.primary_file_only,
+                                       verbose = self.verbose,
+                                       debug = self.debug)
+
+
+            self.ast = omni.parse(self.ast, i_file,
+                                  os.path.abspath(file),
+                                  self.primary_file_only,
+                                  os.path.abspath(self.base_path) + os.sep,
+                                  self.verbose,
+                                  self.debug)
+
+            if self.preprocess: os.remove(i_file)
+
+        return self.output_and_return_ast()
 

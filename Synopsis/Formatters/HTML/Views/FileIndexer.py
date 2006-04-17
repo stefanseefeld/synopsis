@@ -43,7 +43,7 @@ class FileIndexer(View):
       """Registers a view for each file indexed"""
 
       for filename, file in self.processor.ast.files().items():
-         if file.is_main():
+         if file.annotations['primary']:
             filename = self.processor.file_layout.file_index(filename)
             self.processor.register_filename(filename, self, file)
     
@@ -51,7 +51,7 @@ class FileIndexer(View):
       """Creates a view for each file using process_scope"""
 
       for filename, file in self.processor.ast.files().items():
-         if file.is_main():
+         if file.annotations['primary']:
             self.process_scope(filename, file)
 
    def process_scope(self, filename, file):
@@ -75,19 +75,18 @@ class FileIndexer(View):
          link = rel(self.filename(),
                     self.processor.file_layout.file_details(filename))
          self.write(href(link, '[File Details]', target="main")+'<br/>')
-      comments = self.processor.comments
+      doc = self.processor.documentation
 
       self.write('<b>Declarations:</b><br/>')
       # Sort items (by name)
-      items = map(lambda decl: (decl.name(), decl), file.declarations())
+      items = [(d.name(), d) for d in file.declarations]
       items.sort()
       scope, last = [], []
       for name, decl in items:
          # TODO make this nicer :)
          entry = self.processor.toc[name]
          if not entry: continue
-         summary = string.strip("(%s) %s"%(decl.type(),
-                                           escape(comments.format_summary(self, decl))))
+         summary = string.strip("(%s) %s"%(decl.type(), doc.summary(decl, self)))
          # Print link to declaration's view
          link = rel(self.filename(), entry.link)
          if isinstance(decl, AST.Function): print_name = decl.realname()
