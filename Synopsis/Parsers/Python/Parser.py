@@ -1,179 +1,103 @@
 #
-# Copyright (C) 2003 Stefan Seefeld
+# Copyright (C) 2006 Stefan Seefeld
 # All rights reserved.
 # Licensed to the public under the terms of the GNU LGPL (>= 2),
 # see the file COPYING for details.
 #
-"""Main module for the Python parser.
-Parsing python is achieved by using the code in the Python distribution that
-is an example for parsing python by using the built-in parser. This parser
-returns a parse tree which we can traverse and translate into Synopsis' AST.
-The exparse module contains the enhanced example code (it has many more
-features than the simple example did), and this module translates the
-resulting intermediate AST objects into Synopsis.Core.AST objects.
-"""
+"""Main module for the Python parser."""
 
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import AST, Type
 from Synopsis.SourceFile import SourceFile
 from Synopsis.DocString import DocString
-
-import parser, exparse, sys, os, string, getopt
+from ASTTranslator import ASTTranslator
+import os
 
 class Parser(Processor):
 
-   base_path = Parameter('', 'path prefix to strip off of the file names')
+    base_path = Parameter('', 'Path prefix to strip off of input file names.')
+    xref_prefix = Parameter(None, 'path prefix (directory) to contain xref info')
     
-   def process(self, ast, **kwds):
+    def process(self, ast, **kwds):
 
-      self.set_parameters(kwds)
-      self.ast = ast
-      self.scopes = []
+        self.set_parameters(kwds)
+        self.ast = ast
+        self.scopes = []
       
-      # Create return type for Python functions:
-      self.return_type = Type.Base('Python',('',))
-      
-      for file in self.input:
-         self.process_file(file)
+        # Create return type for Python functions:
+        self.return_type = Type.Base('Python',('',))
 
-      return self.output_and_return_ast()
+        # Validate base_path.
+        if self.base_path:
+            if not os.path.isdir(self.base_path):
+                raise InvalidArgument('base_path: "%s" not a directory.'
+                                      %self.base_path)
+            if self.base_path[-1] != os.sep:
+                self.base_path += os.sep
+            
+        for file in self.input:
+            self.process_file(file)
 
-   def process_file(self, file):
-      """Entry point for the Python parser"""
+        return self.output_and_return_ast()
 
-      filename = file
-      types = self.ast.types()
 
-      # Split the filename into a scoped tuple name
-      name = file
-      if file[:len(self.base_path)] == self.base_path:
-         name = filename = file[len(self.base_path):]
-      name = string.split(os.path.splitext(name)[0], os.sep)
-      exparse.packagepath = string.join(string.split(file, os.sep)[:-1], os.sep)
-      exparse.packagename = name[:-1]
-      #print "package path, name:",exparse.packagepath, exparse.packagename
-      self.sourcefile = SourceFile(filename, file, 'Python')
-      self.sourcefile.annotations['primary'] = True
+    def process_file(self, filename):
+        """Parse an individual python file."""
 
-      # Create the enclosing module scopes
-      self.scopes = [AST.Scope(self.sourcefile, -1, 'file scope', name)]
-      for depth in range(len(name) - 1):
-         module = AST.Module(self.sourcefile, -1, 'package', name[:depth+1])
-         self.add_declaration(module)
-         types[module.name()] = Type.Declared('Python', module.name(), module)
-         self.push(module)
-      # Add final name as Module -- unless module is __init__
-      if name[-1] != '__init__':
-         module = AST.Module(self.sourcefile, -1, 'module', name)
-         self.add_declaration(module)
-         types[module.name()] = Type.Declared('Python', module.name(), module)
-         self.push(module)
-    
-      # Parse the file
-      mi = exparse.get_docs(file)
+        short_filename = filename
+        if filename[:len(self.base_path)] != self.base_path:
+            raise InvalidArguent('invalid input filename:\n'
+                                 '"%" does not match base_path "%s"'
+                                 %(filename, self.base_path))
 
-      # Process the parsed file
-      self.process_module_info(mi)
+        short_filename = filename[len(self.base_path):]
+        sourcefile = SourceFile(short_filename, filename, 'Python')
+        sourcefile.annotations['primary'] = True
+        self.ast.files()[short_filename] = sourcefile
 
-      # Store the declarations
-      self.ast.files()[filename] = self.sourcefile
-      self.ast.declarations().extend(self.scopes[0].declarations())
+        package = None
+        package_name = []
+        package_path = self.base_path
+        for c in short_filename.split(os.sep)[:-1]:
+            package_name.append(c)
+            package_path = os.path.join(package_path, c)
+            if not os.path.isfile(os.path.join(package_path, '__init__.py')):
+                raise InvalidArgument('not a package: "%s"'%package_name)
+            module = AST.Module(sourcefile, -1, 'package', package_name)
+            if package:
+                package.declarations().append(module)
+            else:
+                self.ast.declarations().append(module)
 
-   def add_declaration(self, decl):
-      """Adds the given declaration to the current top scope and to the
-      SourceFile for this file."""
+            package = module
 
-      self.scopes[-1].declarations().append(decl)
-      self.sourcefile.declarations.append(decl)
+        basename = os.path.basename(filename)
+        if basename == '__init__.py':
+            if package:
+                module = package
+            else:
+                dirname = os.path.dirname(filename)
+                module_name = os.path.splitext(os.path.basename(dirname))[0]
+                module = AST.Module(sourcefile, -1, 'package', [module_name])
+                self.ast.declarations().append(module)
+        else:
+            module_name = os.path.splitext(basename)[0]
+            if package:
+                module = AST.Module(sourcefile, -1, 'module',
+                                    package_name + [module_name])
+                package.declarations().append(module)
+            else:
+                module = AST.Module(sourcefile, -1, 'module', [module_name])
+                self.ast.declarations().append(module)
 
-   def push(self, scope):
-      """Pushes the given scope onto the top of the stack"""
-
-      self.scopes.append(scope)
-
-   def pop(self):
-      """Pops the scope stack by one level"""
-
-      del self.scopes[-1]
-
-   def scope_name(self, name):
-      """Scopes the given name. If the given name is a list then it is returned
-      verbatim, else it is concatenated with the (scoped) name of the current
-      scope"""
-
-      if type(name) == type([]): return tuple(name)
-      return tuple(list(self.scopes[-1].name()) + [name])
-
-   def process_module_info(self, mi):
-      """Processes a ModuleInfo object. The docs are extracted, and any
-      functions and docs recursively processed."""
-
-      # TODO: Look up __docformat__ string to figure out markup.
-      self.scopes[-1].annotations['doc'] = DocString(mi.get_docstring(), '')
-      for name in mi.get_function_names():
-         self.process_function_info(mi.get_function_info(name))
-      for name in mi.get_class_names():
-         self.process_class_info(mi.get_class_info(name))
-
-   def add_params(self, func, fi):
-      """Adds the parameters of 'fi' to the AST.Function 'func'."""
-
-      for name, value in map(None, fi.get_params(), fi.get_param_defaults()):
-         func.parameters().append(AST.Parameter('', self.return_type,
-                                                '', name,value))
-
-   def process_function_info(self, fi):
-      """Process a FunctionInfo object. An AST.Function object is created and
-      inserted into the current scope."""
-      
-      name = self.scope_name(fi.get_name())
-      func = AST.Function(self.sourcefile, -1, 'function', '',
-                          self.return_type, '', name, name[-1])
-      func.annotations['doc'] = DocString(fi.get_docstring(), '')
-      self.add_params(func, fi)
-      self.add_declaration(func)
-
-   def process_method_info(self, fi):
-      """Process a MethodInfo object. An AST.Operation object is created and
-      inserted into the current scope."""
-
-      name = self.scope_name(fi.get_name())
-      func = AST.Operation(self.sourcefile,-1, 'operation', '',
-                           self.return_type, '', name, name[-1])
-      func.annotations['doc'] = DocString(fi.get_docstring(), '')
-      self.add_params(func, fi)
-      self.add_declaration(func)
-
-   def process_class_info(self, ci):
-      """Process a ClassInfo object. An AST.Class object is created and
-      inserted into the current scope. The inheritance of the class is also
-      parsed, and nested classes and methods recursively processed."""
-
-      name = self.scope_name(ci.get_name())
-      clas = AST.Class(self.sourcefile,-1, 'class', name)
-      clas.annotations['doc'] = DocString(ci.get_docstring(), '')
-
-      types = self.ast.types()
-      # Figure out bases:
-      for base in ci.get_base_names():
-         try:
-            t = types[self.scope_name(base)]
-         except KeyError:
-            t = Type.Unknown('Python', self.scope_name(base))
-         clas.parents().append(AST.Inheritance('', t, ''))
-      # Add the new class
-      self.add_declaration(clas)
-      types[clas.name()] = Type.Declared('Python', clas.name(), clas)
-      self.push(clas)
-      for name in ci.get_class_names():
-         self.process_class_info(ci.get_class_info(name))
-      for name in ci.get_method_names():
-         self.process_method_info(ci.get_method_info(name))
-      self.pop()
-    
-   def get_synopsis(self, file):
-      """Returns the docstring from the top of an open file"""
-
-      mi = exparse.get_docs(file)
-      return mi.get_docstring()
+        translator = ASTTranslator(module, self.ast.types())
+        if self.xref_prefix is None:
+            xref = None
+        else:
+            xref = os.path.join(self.xref_prefix, short_filename + '.html')
+            dirname = os.path.dirname(xref)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname, 0755)
+        translator.process_file(filename, xref)
+        sourcefile.declarations.extend(package.declarations())
 
