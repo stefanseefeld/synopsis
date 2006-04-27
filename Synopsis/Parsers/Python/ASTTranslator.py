@@ -51,46 +51,17 @@ class LexerDebugger:
         print 'next is "%s" (%s)'%(n[1], n[0])
         return n
 
-header="""
-<?xml version="1.0"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html>
-  <head>
-    <title>%(title)s</title>
-    <style type="text/css">
-    pre { background-color:#eeeeee;}
-    .lineno
-    {
-      font-style: italic;
-      font-size: 90%%;
-      padding-left: .5em;
-    }
-    .py-line
-    {
-      border-left: 1px solid black;
-      margin-left: .2em;
-      padding-left: .4em;
-    }
-    .py-string { background: transparent; color: #006030; }
-    .py-comment { background: transparent; color: #003060; }
-    .py-keyword { background: transparent; color: #600000; }
-    </style>
-  </head>
-<body>
-<pre>
-<span class="lineno">%(lineno)s</span><span class="py-line">"""
+header="""<sxr filename="%(filename)s">
+<line>"""
 
-trailer="""</span>
-</pre>
-</body>
-</html>
+trailer="""</line>
+</sxr>
 """
 
 def escape(text):
 
-    for p in [('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;'),]:
-        text = text.replace(*fix)
+    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
+        text = text.replace(*p)
     return text
 
 
@@ -117,7 +88,7 @@ class ASTTranslator:
         self.handlers[symbol.parameters] = self.handle_parameters
         self.handlers[symbol.classdef] = self.handle_class
         self.handlers[token.NAME] = self.handle_name
-        #self.handlers[symbol.expr_stmt] = self.handle_expression
+        self.handlers[symbol.expr_stmt] = self.handle_expr_stmt
         #self.handlers[token.OP] = self.handle_op
         self.handlers[symbol.power] = self.handle_power
         if HAVE_ENCODING_DECL:
@@ -140,6 +111,7 @@ class ASTTranslator:
         self._scopes = [scope]
         self._types = types
         self._imported_modules = []
+        self._docformat = ''
 
 
     def imported_modules(self):
@@ -160,8 +132,7 @@ class ASTTranslator:
             self.xref = open(xref, 'w+')
             lineno_template = '%%%ds' % self._lines
             lineno = lineno_template % self._lineno
-            self.xref.write(header % {'title':'a title',
-                                      'lineno':lineno})
+            self.xref.write(header % {'filename': self._sourcefile.name})
         else:
             self.xref = _DummyFile()
         try:
@@ -387,6 +358,19 @@ class ASTTranslator:
         self.handle_token(content[0])
 
 
+    def handle_expr_stmt(self, nodes):
+
+        if len(nodes) > 2 and nodes[1] == (token.EQUAL, '='):
+
+            # TODO: This needs a lot more work.
+            #       For now only handle some special global variables.
+            if type(self._scopes[-1]) == AST.Module:
+                self.process_special_variable(nodes)
+
+        #print 'handle tokens', nodes
+        for n in nodes: self.handle_tokens(n)
+
+
     def handle_dotted_name(self, dname, rest):
 
         self.handle_token(dname[0])    
@@ -454,8 +438,7 @@ class ASTTranslator:
         else:
             found, vars = pattern.match(pattern.DOCSTRING_STMT_PATTERN, ptree[3])
         if found:
-            #TODO figure out markup from __doc_format__ spec
-            return DocString(eval(vars['docstring']), '')
+            return DocString(eval(vars['docstring']), self._docformat)
 
 
     def print_token(self, t):
@@ -472,7 +455,7 @@ class ASTTranslator:
                 format = '<span class="py-string">%s</span>'
                 chunks = value.split('\n')
                 for c in chunks[:-1]:
-                    self.xref.write(format % c)
+                    self.xref.write(format % escape(c))
                     self.print_newline()
                 value = chunks[-1]
                     
@@ -482,7 +465,7 @@ class ASTTranslator:
             else:
                 format = '%s'
 
-            self.xref.write(format % value)
+            self.xref.write(format % escape(value))
             self._col = ecol
 
 
@@ -490,8 +473,26 @@ class ASTTranslator:
 
         self._col = 0
         self._lineno += 1
-        self.xref.write('</span>\n')
-        lineno_template = '%%%ds' % self._lines
-        lineno = lineno_template % self._lineno
-        self.xref.write('<span class="lineno">%s</span>' % lineno)
-        self.xref.write('<span class="py-line">')
+        self.xref.write('</line>\n')
+        #lineno_template = '%%%ds' % self._lines
+        #lineno = lineno_template % self._lineno
+        #self.xref.write('<a name="%s" />' % self._lineno)
+        #self.xref.write('<span class="lineno">%s</span>' % lineno)
+        #self.xref.write('<span class="py-line">')
+        self.xref.write('<line>')
+
+
+    def process_special_variable(self, assignment):
+
+        # Look for simple string assignments of the form "var = 'value'" 
+        found, vars = pattern.match(pattern.ATOM_PATTERN, assignment[0])
+        if found and vars['atom'][0] == token.NAME:
+            name = vars['atom'][1]
+            found, vars = pattern.match(pattern.ATOM_PATTERN, assignment[2])
+            if found and vars['atom'][0] == token.STRING:
+                value = eval(vars['atom'][1])
+
+                if name == '__docformat__':
+                    self._docformat = value
+                    self._sourcefile.annotations[name] = value
+

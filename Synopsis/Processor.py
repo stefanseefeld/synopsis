@@ -18,6 +18,7 @@ class Error:
       return "%s: %s"%(self.__class__.__name__, self.what)
 
 class InvalidArgument(Error): pass
+class MissingArgument(Error): pass
 class InvalidCommand(Error): pass
 
 class Parameter(object):
@@ -60,7 +61,8 @@ class Parametrized(object):
 
       for p in kwds:
          if not p in instance._parameters:
-            raise InvalidArgument, "'%s' processor doesn't have '%s' parameter"%(cls.__name__, p)
+            raise InvalidArgument("'%s.%s' processor doesn't have '%s' parameter"
+                                  %(cls.__module__, cls.__name__, p))
          else:
             setattr(instance, p, kwds[p])
 

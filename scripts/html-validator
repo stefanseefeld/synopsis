@@ -63,7 +63,7 @@ def validate(url):
     if os.WIFSIGNALED(status):
         print 'internal error:', os.WTERMSIG(status)
     elif os.WIFEXITED(status):
-        if os.WEXITSTATUS(status) != 0:
+        if os.WEXITSTATUS(status) == 2:
             print 'validation failed'
         return
     else:
@@ -92,17 +92,13 @@ def main():
                               'pm:evh',
                               ['print', 'maximum=', 'external', 'validate', 'help'])
    for o, a in opts:
-      if o == '-h' or o == '--help':
+      if o in ['-h', '--help']:
          usage()
          sys.exit(0)
-      elif o == '-p' or o == '--print':
-         verbose = True
-      elif o == '-m' or o == '--maximum':
-         max = int(a)
-      elif o == '-e' or o == '--external':
-         external = True
-      elif o == '-v' or o == '--validate':
-         do_validate = True
+      elif o in ['-p', '--print']: verbose = True
+      elif o in ['-m', '--maximum']: max = int(a)
+      elif o in ['-e', '--external']: external = True
+      elif o in ['-v', '--validate']: do_validate = True
 
    if not args:
          usage()
@@ -110,7 +106,7 @@ def main():
 
    done = []
    urefs = [Reference('.', 0, args[0])]
-   while urefs and len(done) < max:
+   while urefs and max == -1 or len(done) < max:
 
        uref = urefs.pop(0)
        url = urlparse.urljoin(uref.orig, uref.ref)
@@ -126,7 +122,7 @@ def main():
            urefs.extend(handler.get_urefs())
             
        except saxlib.SAXParseException, e:
-           sys.stderr.write("%s; processing aborted\n"%e)
+           sys.stderr.write('%s; processing aborted\n'%e)
            break
 
 if __name__ == '__main__':

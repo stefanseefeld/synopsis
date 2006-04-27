@@ -144,7 +144,7 @@ class Debugger(type):
 
        setattr(cls, 'accept', accept_wrapper)
 
-class Declaration:
+class Declaration:#(object):
    """Declaration base class. Every declaration has a name, type,
    accessibility and annotations. The default accessibility is DEFAULT except for
    C++ where the Parser always sets it to one of the other three. """

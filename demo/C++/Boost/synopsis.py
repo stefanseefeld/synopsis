@@ -21,7 +21,7 @@ parser = Cxx.Parser(cppflags = ['-DPYTHON_INCLUDE=<python%s/Python.h>'%sys.versi
                                 '-Iboost',
                                 '-I%s'%(sysconfig.get_python_inc())],
                     base_path = 'boost/',
-                    main_file_only = False,
+                    primary_file_only = False,
                     syntax_prefix = 'links/',
                     xref_prefix = 'xref/')
 

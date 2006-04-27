@@ -14,6 +14,7 @@ from Synopsis import config
 from Synopsis.Processor import Processor, Parameter
 from Synopsis import Type, AST
 from Synopsis.SourceFile import SourceFile
+from Synopsis.DocString import DocString
 
 import sys, getopt, os, os.path, string, types
 from xml.dom.minidom import getDOMImplementation
@@ -44,7 +45,8 @@ class Formatter(Processor):
                        types.ListType : self.visit_list,
                        types.DictType : self.visit_dict,
                        types.InstanceType : self.visit_instance,
-                       SourceFile : self.visit_sourcefile}
+                       SourceFile : self.visit_sourcefile,
+                       DocString : self.visit_docstring}
       self.visited = {}
 
       self.os = open(self.output, "w")
@@ -91,6 +93,8 @@ class Formatter(Processor):
          return
       if self.handlers.has_key(t):
          self.handlers[t](obj)
+      elif issubclass(t, object):
+         self.visit_instance(obj)
       else:
          print "Unknown type %s for object: '%s'"%(t,obj)
 
@@ -127,6 +131,7 @@ class Formatter(Processor):
          self.visit(i[1])
          self.pop()
 
+
    def visit_sourcefile(self, obj):
       
       self.node.setAttribute('name', obj.name)
@@ -137,6 +142,14 @@ class Formatter(Processor):
          self.push(name)
          self.visit(getattr(obj, name))
          self.pop()
+
+
+   def visit_docstring(self, obj):
+      
+      self.node.setAttribute('markup', obj.markup)
+      self.push('text')
+      self.visit(obj.text)
+      self.pop()
 
 
    def visit_instance(self, obj):

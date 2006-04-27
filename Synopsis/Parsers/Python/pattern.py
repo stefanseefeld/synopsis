@@ -76,18 +76,37 @@ docstrings require that the statement which provides the docstring be the
 first statement in the class or function, which this pattern does not check."""
 
 TEST_NAME_PATTERN = (
-        symbol.test,
-         (symbol.and_test,
-          (symbol.not_test,
-           (symbol.comparison,
-            (symbol.expr,
-             (symbol.xor_expr,
-              (symbol.and_expr,
-               (symbol.shift_expr,
-                (symbol.arith_expr,
-                 (symbol.term,
-                  (symbol.factor,
-		    ['power']
-                  ))))))))))
+    symbol.test,
+    (symbol.and_test,
+     (symbol.not_test,
+      (symbol.comparison,
+       (symbol.expr,
+        (symbol.xor_expr,
+         (symbol.and_expr,
+          (symbol.shift_expr,
+           (symbol.arith_expr,
+            (symbol.term,
+             (symbol.factor,
+              ['power']
+              ))))))))))
      )
 """This pattern will match a 'test' node which is a base class."""
+
+ATOM_PATTERN = (
+    symbol.testlist,
+    (symbol.test,
+     (symbol.and_test,
+      (symbol.not_test,
+       (symbol.comparison,
+        (symbol.expr,
+         (symbol.xor_expr,
+          (symbol.and_expr,
+           (symbol.shift_expr,
+            (symbol.arith_expr,
+             (symbol.term,
+              (symbol.factor,
+               (symbol.power,
+                (symbol.atom,
+                 ['atom']
+                 )))))))))))))
+    )

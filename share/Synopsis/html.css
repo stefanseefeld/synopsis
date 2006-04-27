@@ -12,6 +12,11 @@ span.keyword { font-style: italic;}
 span.variable { font-style: italic;}
 span.name { font-weight: bold; }
 
+.tag-heading
+{ 
+  font-weight: bold;
+}
+
 table.form
 {
   background-color: #aaaaaa;
@@ -160,3 +165,26 @@ a.file-ref {
 a.file-def {
     font-weight: bold;
 }
+
+/* Style for the SXR view. */
+
+pre.sxr
+{
+  border: 1px solid #aaaaaa;
+  background-color: #f2f5f7;
+}
+pre.sxr .lineno
+{
+  font-style: italic;
+  font-size: 90%;
+  padding: .5em;
+}
+pre.sxr .line
+{
+  border-left: 1px solid #aaaaaa;
+  margin-left: .2em;
+  padding-left: .4em;
+}
+pre.sxr .py-string { background: transparent; color: #006030; }
+pre.sxr .py-comment { background: transparent; color: #003060; }
+pre.sxr .py-keyword { background: transparent; color: #600000; }
