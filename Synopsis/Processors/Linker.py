@@ -41,8 +41,8 @@ class Linker(Composite, AST.Visitor, Type.Visitor):
          self.visitSourceFile(file)
 
       if self.remove_empty_modules:
-         import EmptyModuleRemover
-         self.ast = EmptyModuleRemover.EmptyModuleRemover().process(self.ast)
+         import ModuleFilter
+         self.ast = ModuleFilter.ModuleFilter().process(self.ast)
 
       if self.sort_modules:
          import ModuleSorter

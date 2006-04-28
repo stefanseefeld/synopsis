@@ -84,7 +84,7 @@ class build_syn_ext(build_ext):
         
         make = os.environ.get('MAKE', 'make')
 
-        command = "%s -C %s %s"%(make, path, ext[1])
+        command = '%s -C "%s" %s'%(make, path, ext[1])
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
 
         #The extension may not be compiled. For now just skip it.

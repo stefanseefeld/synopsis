@@ -32,7 +32,7 @@ class SourceFile : public Python::Object
 {
 public:
   SourceFile() {}
-  SourceFile(const Python::Object &o) : Python::Object(o) {}
+  SourceFile(Python::Object const &o) : Python::Object(o) {}
   std::string name() const { return narrow<std::string>(attr("filename"));}
   std::string abs_name() const { return narrow<std::string>(attr("abs_name"));}
   bool primary() const { return narrow<bool>(Python::Dict(attr("annotations")).get("primary"));}
@@ -176,14 +176,11 @@ public:
   //. Constant version of parents()
   Python::List parents() const { return attr("parents")();}
 
-//   //. Returns the Template object if this is a template
-//   Template template_type() { return attr("template_type")();}
+  //. Returns the Template object if this is a template
+  Object template_() { return attr("template")();}
 
-//   //. Sets the Template object for this class. NULL means not a template
-//   void set_template_type(Types::Template* type)
-//   {
-//     m_template = type;
-//   }
+  //. Sets the Template object for this class.
+  void set_template(Object type) { attr("set_template")(Python::Tuple(type));}
 
   virtual void accept(Visitor *v) { v->visit_class(this);}
 };

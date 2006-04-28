@@ -61,7 +61,7 @@ class Parametrized(object):
 
       for p in kwds:
          if not p in instance._parameters:
-            raise InvalidArgument("'%s.%s' processor doesn't have '%s' parameter"
+            raise InvalidArgument('"%s.%s" processor does not have "%s" parameter'
                                   %(cls.__module__, cls.__name__, p))
          else:
             setattr(instance, p, kwds[p])

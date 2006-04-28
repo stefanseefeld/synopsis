@@ -58,7 +58,7 @@ void sighandler(int signo)
 #endif
 
   std::cerr << signame << " caught" << std::endl;
-  if (::callback) ::callback();
+  if (callback) callback();
   print_stack();
   exit(-1);
 }
@@ -69,7 +69,7 @@ using namespace Synopsis;
 
 ErrorHandler::ErrorHandler(Callback c)
 {
-  ::callback = c;
+  callback = c;
  #if !defined(__WIN32__)
   newa.sa_handler = &sighandler;
   sigaction(SIGSEGV, &newa, &olda);

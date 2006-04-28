@@ -15,33 +15,32 @@ from Synopsis.Processors import *
 import sys, os, os.path, string, getopt
 
 def error(msg):
-   """Write an error message and exit."""
-   sys.stderr.write('Error: %s\n'%msg)
-   sys.exit(-1)
+    """Write an error message and exit."""
+    sys.stderr.write('Error: %s\n'%msg)
+    sys.exit(-1)
 
 def __import__(name, verbose):
-   """Import a named processor. Instead of returning the module, this
-   reimplementation returns the processor itself. Exits on error."""
+    """Import a named processor. Instead of returning the module, this
+    reimplementation returns the processor itself. Exits on error."""
 
-   from Synopsis.import_processor import import_processor
-   try:
-      return import_processor(name)
+    from Synopsis.import_processor import import_processor
+    try:
+        return import_processor(name)
 
-   except ImportError, msg:
-      if verbose:
-         print 'Unable to import %s'%name
-         print 'Reason :', msg
-      else:
-         print 'Error : no processor \'%s\''%'.'.join(name.split('.')[-2:])
-      sys.exit(-1)
+    except ImportError, msg:
+        if verbose:
+            print 'Unable to import %s'%name
+            print 'Reason :', msg
+        else:
+            print 'Error : no processor \'%s\''%'.'.join(name.split('.')[-2:])
+        sys.exit(-1)
 
 def usage():
-   """Print a little usage text"""
+    """Print a little usage text"""
 
-   print 'Usage : %s [options] <input files>'%sys.argv[0]
-   print """
+    print 'Usage : %s [options] <input files>'%sys.argv[0]
+    print """
 List of options:
-
   -h, --help                  Display usage summary.
   -V, --version               Display version information.
   -v  --verbose               Operate verbosely.
@@ -65,159 +64,156 @@ List of options:
 """
    
 def make_processor(argv):
-   """Parse command line options and translate them to
-   processor commands and arguments."""
-   parser = None
-   parser_opts = {}
-   translator_opts = {}
-   cfilters = {'ss': Comments.SSFilter,
-               'sss': Comments.SSSFilter,
-               'ssd': Comments.SSDFilter,
-               'c': Comments.CFilter,
-               'qt': Comments.QtFilter,
-               'java': Comments.JavaFilter}
-   cprocessors = []
-   linker = None
-   linker_opts = {'processors':[]}
-   formatter = None
-   formatter_opts = {}
-   options = {}
-   help = False
+    """Parse command line options and translate them to
+    processor commands and arguments."""
+    parser = None
+    parser_opts = {}
+    translator_opts = {}
+    cfilters = {'ss': Comments.SSFilter,
+                'sss': Comments.SSSFilter,
+                'ssd': Comments.SSDFilter,
+                'c': Comments.CFilter,
+                'qt': Comments.QtFilter,
+                'java': Comments.JavaFilter}
+    cprocessors = []
+    linker = None
+    linker_opts = {'processors':[]}
+    formatter = None
+    formatter_opts = {}
+    options = {}
+    help = False
 
-   opts, args = getopt.getopt(argv,
-                              'o:p:l:f:I:D:W:jvhVdP',
-                              ['output=',
-                               'parser=', 'translate=', 'cfilter=', 'cprocessor=',
-                               'linker=', 'formatter=',
-                               'version', 'help', 'verbose', 'debug', 'profile'])
-
-   for o, a in opts:
-      if o == '-V' or o == '--version':
-         print 'synopsis version %s'%config.version
-         sys.exit(0)
+    opts, args = getopt.getopt(argv,
+                               'o:p:l:f:I:D:W:jvhVdP',
+                               ['output=',
+                                'parser=', 'translate=', 'cfilter=', 'cprocessor=',
+                                'linker=', 'formatter=',
+                                'version', 'help', 'verbose', 'debug', 'profile'])
+    
+    for o, a in opts:
+        if o in ['-V', '--version']:
+            print 'synopsis version %s'%config.version
+            sys.exit(0)
          
-      if o in ['-v', '--verbose']:
-         options['verbose'] = True
+        if o in ['-v', '--verbose']: options['verbose'] = True
+        elif o in ['-d', '--debug']: options['debug'] = True
+        elif o in ['-P', '--profile']: options['profile'] = True
+        elif o in ['-o', '--output']: options['output'] = a
 
-      elif o in ['-d', '--debug']:
-         options['debug'] = True
-
-      elif o in ['-o', '--output']:
-         options['output'] = a
-
-      elif o in ['-p', '--parser']:
-         if parser:
-            error('Multiple parsers specified.')
-         parser = __import__('Synopsis.Parsers.%s.Parser'%a,
-                             'verbose' in options)
-
-      elif o == '--translate':
-         if 'markup' in translator_opts:
-            error('Multiple translators specified.')
-         translator_opts['markup'] = a or ''
-
-      elif o == '--cfilter':
-         if a not in cfilters:
-            error('%s is not a known comment filter.\n'
-                  '\t possible values are : %s'%(a, ', '.join([f for f in cfilters])))
-         translator_opts['filter'] = cfilters[a]()
-
-      elif o == '--cprocessor':
-         if a not in ['previous', 'grouper']:
-            error('%s is not a known comment processor.\n'
-                  '\t possible values are : previous, grouper')
-         cprocessors.append({'previous':Comments.Previous,
-                             'grouper':Comments.Grouper}[a]())
-
-      elif o in ['-l', '--linker']:
-         if not linker:
-            linker = __import__('Synopsis.Processors.Linker',
-                                'verbose' in options)
-         linker_opts['processors'].extend([__import__('Synopsis.Processors.%s'%x,
-                                                      'verbose' in options)()
-                                           for x in a.split(',')])
-
-      elif o in ['-f', '--formatter']:
-         if formatter:
-            error('Multiple formatters specified.')
-         formatter = __import__('Synopsis.Formatters.%s.Formatter'%a,
+        elif o in ['-p', '--parser']:
+            if parser:
+                error('Multiple parsers specified.')
+            parser = __import__('Synopsis.Parsers.%s.Parser'%a,
                                 'verbose' in options)
 
-      elif o == '-I':
-         if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
-         parser_opts['cppflags'].append('-I%s'%a)
+        elif o == '--translate':
+            if 'markup' in translator_opts:
+                error('Multiple translators specified.')
+            translator_opts['markup'] = a or ''
 
-      elif o == '-D':
-         if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
-         parser_opts['cppflags'].append('-D%s'%a)
+        elif o == '--cfilter':
+            if a not in cfilters:
+                error('%s is not a known comment filter.\n'
+                      '\t possible values are : %s'
+                      %(a, ', '.join([f for f in cfilters])))
+            translator_opts['filter'] = cfilters[a]()
 
-      elif o == '-W':
-         if a[0] == "p":
-            for o,a in get_options(a[2:].split(',')):
-               parser_opts[o] = a
-         elif a[0] == "l":
-            for o,a in get_options(a[2:].split(',')):
-               linker_opts[o] = a
-         elif a[0] == "f":
-            for o,a in get_options(a[2:].split(',')):
-               formatter_opts[o] = a
+        elif o == '--cprocessor':
+            if a not in ['previous', 'grouper']:
+                error('%s is not a known comment processor.\n'
+                      '\t possible values are : previous, grouper')
+            cprocessors.append({'previous':Comments.Previous,
+                                'grouper':Comments.Grouper}[a]())
 
-      elif o in ['-h', '--help']:
-         help = True
+        elif o in ['-l', '--linker']:
+            if not linker:
+                linker = __import__('Synopsis.Processors.Linker',
+                                    'verbose' in options)
+            linker_opts['processors'].extend([__import__('Synopsis.Processors.%s'%x,
+                                                         'verbose' in options)()
+                                              for x in a.split(',')])
 
-   if help:
-      for p in parser, linker, formatter:
-         if not p: continue
-         processor = p()
-         print "Parameters for processor '%s':"%p.__module__
-         parameters = processor.get_parameters()
-         tab = max(map(lambda x:len(x), parameters.keys()))
-         for p in parameters:
-            print "   %-*s     %s"%(tab, p, parameters[p].doc)
-      if not (parser or linker or formatter):
-         usage()
-      sys.exit(0)
+        elif o in ['-f', '--formatter']:
+            if formatter:
+                error('Multiple formatters specified.')
+            formatter = __import__('Synopsis.Formatters.%s.Formatter'%a,
+                                   'verbose' in options)
 
-   # quick hack: if the parser is Cpp, rename the 'cppflags'
-   # options to just 'flags'
-   if parser and parser.__module__ == 'Synopsis.Parsers.Cpp.Parser':
-      if parser_opts.has_key('cppflags'):
-         parser_opts['flags'] = parser_opts['cppflags']
-         del parser_opts['cppflags']
+        elif o == '-I':
+            if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
+            parser_opts['cppflags'].append('-I%s'%a)
 
-   if cprocessors:
-      if len(cprocessors) > 1:
-         processor = Composite(cprocessors)
-      else:
-         processor = cprocessors[0]
-      translator_opts['processor'] = processor
+        elif o == '-D':
+            if not parser_opts.get('cppflags'): parser_opts['cppflags'] = []
+            parser_opts['cppflags'].append('-D%s'%a)
 
-   options['input'] = args
+        elif o == '-W':
+            if a[0] == "p":
+                for o,a in get_options(a[2:].split(',')):
+                    parser_opts[o] = a
+            elif a[0] == "l":
+                for o,a in get_options(a[2:].split(',')):
+                    linker_opts[o] = a
+            elif a[0] == "f":
+                for o,a in get_options(a[2:].split(',')):
+                    formatter_opts[o] = a
 
-   #now instantiate the processor
-   processors = []
-   if parser:
-      processors.append(parser(**parser_opts))
-   if translator_opts:
-      processors.append(Comments.Translator(**translator_opts))
-   if linker:
-      processors.append(linker(**linker_opts))
-   if formatter:
-      processors.append(formatter(**formatter_opts))
+        elif o in ['-h', '--help']:
+            help = True
 
-   return Composite(*processors, **options)
+    if help:
+        for p in parser, linker, formatter:
+            if not p: continue
+            processor = p()
+            print "Parameters for processor '%s':"%p.__module__
+            parameters = processor.get_parameters()
+            tab = max(map(lambda x:len(x), parameters.keys()))
+            for p in parameters:
+                print "   %-*s     %s"%(tab, p, parameters[p].doc)
+        if not (parser or linker or formatter):
+            usage()
+        sys.exit(0)
+
+    # quick hack: if the parser is Cpp, rename the 'cppflags'
+    # options to just 'flags'
+    if parser and parser.__module__ == 'Synopsis.Parsers.Cpp.Parser':
+        if parser_opts.has_key('cppflags'):
+            parser_opts['flags'] = parser_opts['cppflags']
+            del parser_opts['cppflags']
+
+    if cprocessors:
+        if len(cprocessors) > 1:
+            processor = Composite(cprocessors)
+        else:
+            processor = cprocessors[0]
+        translator_opts['processor'] = processor
+
+    options['input'] = args
+
+    #now instantiate the processor
+    processors = []
+    if parser:
+        processors.append(parser(**parser_opts))
+    if translator_opts:
+        processors.append(Comments.Translator(**translator_opts))
+    if linker:
+        processors.append(linker(**linker_opts))
+    if formatter:
+        processors.append(formatter(**formatter_opts))
+
+    return Composite(*processors, **options)
 
 def main():
-   processor = make_processor(sys.argv[1:])
-   processor.process(AST.AST())
+    processor = make_processor(sys.argv[1:])
+    processor.process(AST.AST())
 
 if __name__ == '__main__':
 
-   try:
-      main()
-   except getopt.GetoptError, e:
-      error(str(e))
-   except Error, e:
-      error(str(e))
-   except KeyboardInterrupt, e:
-      print 'KeyboardInterrupt'
+    try:
+        main()
+    except getopt.GetoptError, e:
+        error(str(e))
+    except Error, e:
+        error(str(e))
+    except KeyboardInterrupt, e:
+        print 'KeyboardInterrupt'

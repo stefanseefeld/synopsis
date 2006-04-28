@@ -11,7 +11,6 @@ from NameMapper import *
 from MacroFilter import *
 from ModuleFilter import *
 from XRefCompiler import *
-from EmptyModuleRemover import *
 from AccessRestrictor import *
 from TypeMapper import *
 from LanguageMapper import *

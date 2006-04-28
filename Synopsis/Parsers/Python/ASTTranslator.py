@@ -162,11 +162,11 @@ class ASTTranslator:
             else: raise Exception("Invalid ptree node")
 
 
-    def handle_token(self, item = None):
+    def next_token(self):
+        """Return the next visible token.
+        Process tokens that are not part of the parse tree silently."""
 
         t = self.lexer.next()
-        # Some tokens are not part of the parse tree.
-        # Handle them silently.
         while t[0] in [tokenize.NL, tokenize.COMMENT]:
             if t[0] is tokenize.NL:
                 self.print_newline()
@@ -174,11 +174,29 @@ class ASTTranslator:
                 self.print_token(t)
                 if t[1][-1] == '\n': self.print_newline()
             t = self.lexer.next()
+        return t
+    
 
+    def handle_token(self, item = None):
+
+        t = self.next_token()
         if item is not None and t[1] != item:
             raise 'Internal error in line %d: expected "%s", got "%s" (%d)'%(self._lineno, item, t[1], t[0])
         else:
             self.print_token(t)
+  
+
+    def handle_name_as_xref(self, xref, name):
+
+        kind, value, (srow, scol), (erow, ecol), line = self.next_token()
+        if (kind, value) != (token.NAME, name):
+            raise 'Internal error in line %d: expected name "%s", got "%s" (%d)'%(name, self._lineno, item, t[1], t[0])
+
+        if self._col != scol:
+            self.xref.write(' ' * (scol - self._col))
+        format = '<a href="%s">%s</a>'
+        self.xref.write(format %('.'.join(xref), value))
+        self._col = ecol
   
 
     def handle_tokens(self, ptree):
@@ -224,11 +242,11 @@ class ASTTranslator:
         def_token = nodes[0 + offset]
         self.handle_token(def_token[1])
         name_token = nodes[1 + offset]
-        self.handle_token(name_token[1])
+        name = tuple(self._scopes[-1].name() + (name_token[1],))
+        self.handle_name_as_xref(name, name_token[1])
         # Handle the parameters.
         self.handle(nodes[2 + offset])
 
-        name = tuple(self._scopes[-1].name() + (name_token[1],))
         if type(self._scopes[-1]) == AST.Class:
             function = AST.Operation(self._sourcefile, self._lineno, 'operation', '',
                                      self._any_type, '', name, name[-1])
@@ -305,7 +323,8 @@ class ASTTranslator:
         class_token = nodes[0]
         self.handle_token(class_token[1])
         name_token = nodes[1]
-        self.handle_token(name_token[1])
+        name = tuple(self._scopes[-1].name() + (name_token[1],))        
+        self.handle_name_as_xref(name, name_token[1])
         base_clause = nodes[2][0] == token.LPAR and nodes[3] or None
         self.handle_tokens(nodes[2])
         bases = []
@@ -339,7 +358,6 @@ class ASTTranslator:
         else:
             body = nodes[3]
 
-        name = tuple(self._scopes[-1].name() + (name_token[1],))
         class_ = AST.Class(self._sourcefile, self._lineno, 'class', name)
         class_.parents().extend(bases)
         docstring = self.extract_docstring(nodes[-1])
@@ -481,11 +499,6 @@ class ASTTranslator:
         self._col = 0
         self._lineno += 1
         self.xref.write('</line>\n')
-        #lineno_template = '%%%ds' % self._lines
-        #lineno = lineno_template % self._lineno
-        #self.xref.write('<a name="%s" />' % self._lineno)
-        #self.xref.write('<span class="lineno">%s</span>' % lineno)
-        #self.xref.write('<span class="py-line">')
         self.xref.write('<line>')
 
 

@@ -14,6 +14,8 @@
 #include <io.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <direct.h>
+#include <algorithm>
 
 using namespace Synopsis;
 

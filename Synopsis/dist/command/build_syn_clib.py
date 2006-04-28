@@ -53,6 +53,8 @@ class build_syn_clib (Command):
 
         if os.name == 'nt':
             LIBEXT = '.dll'
+        elif os.uname()[0] == 'Darwin':
+            LIBEXT = '.dylib'
         else:
             LIBEXT = sysconfig.get_config_var('SO')
         target = 'libSynopsis%s'%LIBEXT
@@ -66,7 +68,7 @@ class build_syn_clib (Command):
         
         make = os.environ.get('MAKE', 'make')
 
-        command = "%s -C %s %s"%(make, path, 'all')
+        command = '%s -C "%s" %s'%(make, path, 'all')
         spawn(['sh', '-c', command], self.verbose, self.dry_run)
 
         # copy library

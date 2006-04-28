@@ -174,13 +174,13 @@ class Formatter(Processor):
          view.register_filenames(start)
       if self.verbose: print "Done."
       for view in self.views:
-         if self.verbose:
+         if self.profile:
             print "Time for %s:"%view.__class__.__name__,
             sys.stdout.flush()
             start_time = time.time()
          view.process(start)
-         if self.verbose:
-            print "%f"%(time.time() - start_time)
+         if self.profile:
+            print "%f seconds"%(time.time() - start_time)
 
       return self.ast
 

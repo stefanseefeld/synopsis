@@ -26,17 +26,22 @@ class SXRTranslator:
 
     def __init__(self, filename):
 
-        self.sxr = parse(filename).getElementsByTagName('line')
+        self.sxr = parse(filename)
 
-    def link(self):
+    def link(self, linker):
 
-        pass
+        for a in self.sxr.getElementsByTagName('a'):
+            ref = a.getAttribute('href').split('.')
+            target = linker(ref)
+            a.setAttribute('href', target)
+
 
     def translate(self, writer):
 
         writer.write('<pre class="sxr">')
-        lineno_template = '%%%ds' % len(`len(self.sxr)`)
-        for lineno, line in enumerate(self.sxr):
+        lines = self.sxr.getElementsByTagName('line')
+        lineno_template = '%%%ds' % len(`len(lines)`)
+        for lineno, line in enumerate(lines):
             writer.write('<a name="%d"></a>'%(lineno + 1))
             text = lineno_template % (lineno + 1)
             writer.write('<span class="lineno">%s</span>'%text)
@@ -110,8 +115,10 @@ class Source(View):
 
         sxr = os.path.join(self.prefix, source + '.sxr')
         if os.path.exists(sxr):
-            sxr_translator = SXRTranslator(sxr)
-            sxr_translator.translate(self)
+            translator = SXRTranslator(sxr)
+            linker = self.external_url and self.external_ref or self.lookup_symbol
+            translator.link(linker)
+            translator.translate(self)
         elif not link:
             # No link module..
             self.write('link module for highlighting source unavailable')

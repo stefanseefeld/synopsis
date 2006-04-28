@@ -16,8 +16,8 @@ Also defined in module scope are the constants DEFAULT, PUBLIC, PROTECTED and
 PRIVATE.
 """
 
-import Util, Type
-import string, sys, cPickle, types, stat
+import Type
+import sys, cPickle
 
 # The version of the file format - this should be increased everytime
 # incompatible changes are made to the AST or Type classes
@@ -74,10 +74,7 @@ class AST:
 
       if files is None: files = {}
       if declarations is None: declarations = []
-      if type(files) is not types.DictType: raise TypeError, "files parameter must be a dict of SourceFile objects"
-      if type(declarations) != type([]): raise TypeError, "declarations parameter must be a list of declarations"
       if typedict is None: typedict = Type.Dictionary()
-      elif not isinstance(typedict, Type.Dictionary): raise TypeError, "types must be an instance of Type.Dictionary"
       self.__files	    = files
       self.__declarations = list(declarations)
       self.__types	    = typedict
