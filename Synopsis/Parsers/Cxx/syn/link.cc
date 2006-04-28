@@ -100,8 +100,7 @@ Link::Map links;
 PyObject *error;
 
 //. Writes some text to the output. It replaces chars that might be
-//. confused by HTML, such as < and >. All spaces are replaced with
-//. non-breaking spaces, and tabs are expanded to 8-col tabstops (hence the
+//. confused by HTML, such as < and >. Tabs are expanded to 8-col tabstops (hence the
 //. col argument)
 void write(std::ostream& out, int col, char* buf, int len, int buflen)
 {
@@ -117,9 +116,6 @@ void write(std::ostream& out, int col, char* buf, int len, int buflen)
       case '>':
 	out << "&gt;";
 	break;
-      case ' ':
-	out << "&#160;";
-	break;
       case '"':
 	out << "&quot;";
 	break;
@@ -129,7 +125,7 @@ void write(std::ostream& out, int col, char* buf, int len, int buflen)
       case '\t':
       {
 	int next = ((col/8)+1)*8;
-	while (col++ < next) out << "&#160;";
+	while (col++ < next) out << ' ';
 	continue;
       }
       default:
@@ -142,20 +138,18 @@ void write(std::ostream& out, int col, char* buf, int len, int buflen)
 //. Writes the line number to the output
 void write_lineno(std::ostream& out, int line)
 {
-  // out << setw(4) << line << "| "; <-- but with &#160;'s
   out << "<a name=\"" << line << "\"></a>";
-  out << "<span class=\"file-linenum\">";
+  out << "<span class=\"lineno\">";
   int mag = 10000;
   while (mag > 1)
   {
     int digit = line / mag;
     if (digit)
       break;
-    out << "&#160;";
+    out << ' ';
     mag /= 10;
   }
-  out << line << "|&#160;";
-  out << "</span>";
+  out << line << "</span>";
 }
 
 //. Undoes the %FF encoding
@@ -193,9 +187,9 @@ void write_indent(std::ostream& out, char* buf, int& col, int buflen)
   char* ptr = buf;
   while (*ptr && (*ptr == ' ' || *ptr == '\t')) ptr++, len++;
   if (!len) return;
-  out << "<span class=\"file-indent\">";
+//   out << "<span class=\"file-indent\">";
   write(out, col, buf, len, buflen);
-  out << "</span>";
+//   out << "</span>";
   col += len;
 }
 
@@ -338,7 +332,7 @@ std::string scoped_name_to_attribute(const Python::List &o)
   if (o.empty()) return name;
   for (Python::List::iterator i = o.begin(); i != o.end() - 1; ++i)
   {
-    name = string_to_attribute(Python::Object::narrow<std::string>(*i)) + "::";
+    name = string_to_attribute(Python::Object::narrow<std::string>(*i)) + '.';
   }
   name += string_to_attribute(Python::Object::narrow<std::string>(*o.rbegin()));
   return name;
@@ -364,12 +358,14 @@ void link_file(const char *input_filename,
   char buf[4096];
   int line = 1, buflen;
   Link::Map::iterator iter = links.begin(), end = links.end();
+  out << "<pre class=\"sxr\">\n";
   while (in)
   {
     // Get line
     if (!in.getline(buf, 4096)) break;
     buflen = strlen(buf);
     write_lineno(out, line);
+    out << "<span class=\"line\">";
     // Get Link::Line    
     while (iter != end && iter->first < line) ++iter;
     if (iter != end && iter->first == line)
@@ -377,7 +373,6 @@ void link_file(const char *input_filename,
       // Insert links and write at same time
       int col = 0;
       write_indent(out, buf, col, buflen);
-      out << "<span class=\"file-default\">";
       Link::Line& line = iter->second;
       Link::Line::iterator link_i = line.begin();
       while (link_i != line.end())
@@ -435,23 +430,18 @@ void link_file(const char *input_filename,
       }
       // Write any left-over buffer
       write(out, col, buf+col, -1, buflen);
-      out << "</span>";
     }
     else
     {
       // Write buf
       int col = 0;
       write_indent(out, buf, col, buflen);
-      if (col < buflen)
-      {
-	out << "<span class=\"file-default\">";
-	write(out, col, buf+col, -1, buflen);
-	out << "</span>";
-      }
+      if (col < buflen) write(out, col, buf+col, -1, buflen);
     }
-    out << "<br/>\n";
+    out << "</span>\n";
     line++;
   }
+  out << "</pre>\n";
 }
 
 //. The main python method, equivalent to the main() function

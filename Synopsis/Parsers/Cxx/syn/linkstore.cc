@@ -183,7 +183,7 @@ public:
     void visit_base(Types::Base* base)
     {
         // Not a link, but a keyword
-        links->span(node, "file-keyword");
+        links->span(node, "keyword");
     }
     void visit_dependent(Types::Dependent*)
     {
@@ -205,7 +205,7 @@ public:
         if (mod->pre().size() && mod->pre().front() == "const")
             if (!node->is_atom() && PTree::first(node) && *PTree::first(node) == "const")
             {
-                links->span(PTree::first(node), "file-keyword");
+                links->span(PTree::first(node), "keyword");
                 node = PTree::first(PTree::last(node));
             }
         mod->alias()->accept(this);

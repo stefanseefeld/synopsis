@@ -336,19 +336,19 @@ class ASTTranslator:
                     if power[0] != symbol.power: continue
                     atom = power[1]
                     if atom[0] != symbol.atom or atom[1][0] != token.NAME: continue
-                    name = [atom[1][1]]
+                    base = [atom[1][1]]
                     for trailer in power[2:]:
-                        if trailer[2][0] == token.NAME: name.append(trailer[2][1])
+                        if trailer[2][0] == token.NAME: base.append(trailer[2][1])
 
                     # FIXME: This logic is broken !
                     #        It assumes that names are either local or fully qualified.
-                    if len(name) == 1:
+                    if len(base) == 1:
                         # Name is unqualified. Qualify it.
-                        name = self._scopes[-1].name() + tuple(name)
-                    if self._types.has_key(name):
-                        base = self._types[name]
+                        base = self._scopes[-1].name() + tuple(base)
+                    if self._types.has_key(base):
+                        base = self._types[base]
                     else:
-                        base = Type.Unknown('Python', name)
+                        base = Type.Unknown('Python', base)
                     bases.append(AST.Inheritance('', base, ''))
             self.handle_tokens(base_clause)
             self.handle_token(')')
@@ -385,7 +385,6 @@ class ASTTranslator:
             if type(self._scopes[-1]) == AST.Module:
                 self.process_special_variable(nodes)
 
-        #print 'handle tokens', nodes
         for n in nodes: self.handle_tokens(n)
 
 

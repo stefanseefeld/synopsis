@@ -195,7 +195,7 @@ SWalker::add_comments(AST::Declaration* decl, PTree::Node *node)
 
     if (decl)
       comments.push_back(PTree::reify(first));
-    if (my_links) my_links->long_span(first, "file-comment");
+    if (my_links) my_links->long_span(first, "comment");
     // Set first to 0 so we dont accidentally do them twice (eg:
     // when parsing expressions)
     node->set_car(0);
@@ -343,7 +343,7 @@ void SWalker::visit(PTree::Atom *node)
   if (*str >= '0' && *str <= '9' || *str == '.')
   {
     // Assume whole node is a number
-    if (my_links) my_links->span(node, "file-number");
+    if (my_links) my_links->span(node, "literal");
     // TODO: decide if Long, Float, Double, etc
     const char* num_type = (*str == '.' ? "double" : "int");
     while (*++str)
@@ -385,13 +385,13 @@ void SWalker::visit(PTree::Atom *node)
   else if (*str == '\'')
   {
     // Whole node is a char literal
-    if (my_links) my_links->span(node, "file-string");
+    if (my_links) my_links->span(node, "string");
     my_type = my_lookup->lookupType("char");
   }
   else if (*str == '"')
   {
     // Assume whole node is a string
-    if (my_links) my_links->span(node, "file-string");
+    if (my_links) my_links->span(node, "string");
     my_type = my_lookup->lookupType("char");
     Types::Type::Mods pre, post;
     pre.push_back("const");
@@ -453,7 +453,7 @@ void SWalker::visit(PTree::NamespaceSpec *node)
   PTree::Node *pIdentifier = PTree::second(node);
   PTree::Node *pBody = PTree::third(node);
 
-  if (my_links) my_links->span(pNamespace, "file-keyword");
+  if (my_links) my_links->span(pNamespace, "keyword");
   else update_line_number(node);
 
   // Start the namespace
@@ -490,7 +490,7 @@ std::vector<Inheritance*> SWalker::translate_inheritance_spec(PTree::Node *node)
     for (int i = 0; i != PTree::length(node->car()) - 1; ++i)
     {
       attributes[i] = parse_name(PTree::nth(node->car(), i));
-      if (my_links) my_links->span(PTree::nth(node->car(), i), "file-keyword");
+      if (my_links) my_links->span(PTree::nth(node->car(), i), "keyword");
     }
     // look up the parent type
     PTree::Node *name = PTree::last(node->car())->car();
@@ -565,7 +565,7 @@ void SWalker::visit(PTree::ClassSpec *node)
   else
     throw nodeERROR(node, "Class node has bad length: " << size);
 
-  if (my_links) my_links->span(pClass, "file-keyword");
+  if (my_links) my_links->span(pClass, "keyword");
   else update_line_number(node);
 
   // Create AST.Class object
@@ -1171,7 +1171,7 @@ SWalker::translate_variable_declarator(PTree::Node *decl, bool /* is_const */)
     {
       // Link the const keyword
       if (*p->car() == "const")
-        my_links->span(p->car(), "file-keyword");
+        my_links->span(p->car(), "keyword");
       p = PTree::rest(p);
     }
     if (p)
@@ -1357,7 +1357,7 @@ SWalker::translate_type_specifier(PTree::Node *tspec)
 void SWalker::visit(PTree::Typedef *node)
 {
   STrace trace("SWalker::visit(Typedef*)");
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   /* PTree::Node *tspec = */
   translate_type_specifier(PTree::second(node));
   my_declaration = node;
@@ -1490,7 +1490,7 @@ void SWalker::visit(PTree::AccessSpec *node)
     add_comments(builtin, comments);
   }
   my_builder->set_access(axs);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
 }
 
 /* Enum Spec
@@ -1500,7 +1500,7 @@ void SWalker::visit(PTree::EnumSpec *node)
 {
   STrace trace("SWalker::visit(PTree::EnumSpec*)");
   //update_line_number(spec);
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   if (!PTree::second(node))
   {
     return; /* anonymous enum */
@@ -1560,9 +1560,9 @@ void SWalker::visit(PTree::EnumSpec *node)
 void SWalker::visit(PTree::UsingDirective *node)
 {
   STrace trace("SWalker::visit(PTree::UsingDirective*)");
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   PTree::Node *p = PTree::rest(node);
-  if (my_links) my_links->span(PTree::first(p), "file-keyword");
+  if (my_links) my_links->span(PTree::first(p), "keyword");
   // Find namespace to alias
   p = PTree::rest(p);
 
@@ -1613,7 +1613,7 @@ void SWalker::visit(PTree::UsingDirective *node)
 void SWalker::visit(PTree::UsingDeclaration *node)
 {
   STrace trace("SWalker::visit(PTree::UsingDeclaration*)");
-  if (my_links) my_links->span(PTree::first(node), "file-keyword");
+  if (my_links) my_links->span(PTree::first(node), "keyword");
   PTree::Node *p = PTree::rest(node);
   // Find name that we are looking up, and make a new ptree list for linking it
   PTree::Node *p_name = PTree::snoc(0, p->car());

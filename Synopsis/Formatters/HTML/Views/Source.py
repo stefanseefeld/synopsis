@@ -127,8 +127,6 @@ class Source(View):
             except IOError, e:
                 self.write("An error occurred:"+ str(e))
         else:
-            self.write('<br/><div class="file-all">\n')
-
             # Call link module
             f_out = os.path.join(self.processor.output, self.__filename) + '-temp'
             f_in = file.abs_name
@@ -146,7 +144,6 @@ class Source(View):
 
             except IOError, e:
                 self.write("An error occurred:"+ str(e))
-            self.write("</div>")
 
         self.end_file()
 
