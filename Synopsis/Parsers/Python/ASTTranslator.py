@@ -422,14 +422,21 @@ class ASTTranslator:
         self.handle_token('import')
         self.handle(nodes[3])
 
+
     def handle_import_name(self, nodes):
 
         self.handle_token('import')
         self.handle_dotted_as_names(nodes[1][1:])
 
         
-    def handle_import(self, nodes): pass
+    def handle_import(self, nodes):
+
+        #self.handle_token('import')
+        for n in nodes: self.handle(n)
+
+        
     def handle_decorator(self, nodes): pass
+
 
     def extract_docstring(self, ptree):
 
