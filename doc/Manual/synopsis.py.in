@@ -19,7 +19,8 @@ import sys, os, os.path
 
 srcdir = '@srcdir@'
 topdir = '@topdir@'
-python = Composite(Python.Parser(base_path = topdir + os.sep))
+python = Python.Parser(base_path = topdir + os.sep,
+                       syntax_prefix='links')
 
 cxx = Cxx.Parser(base_path = topdir + os.sep,
                  cppflags = ['-I%s'%(topdir + '/include'),

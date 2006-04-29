@@ -35,30 +35,30 @@ class NameIndex(View):
       self.start_file()
       self.write(self.processor.navigation_bar(self.filename()))
       self.write(entity('h1', "Name Index"))
-      self.write('<i>Hold the mouse over a link to see the scope of each name</i>')
+      self.write('<i>Hold the mouse over a link to see the scope of each name</i>\n')
 
       dict = self.make_dictionary()
       keys = dict.keys()
       keys.sort()
       linker = lambda key: '<a href="#%s">%s</a>'%(ord(key),key)
-      self.write(div('nameindex-index', string.join(map(linker, keys))))
+      self.write(div('nameindex-index', ''.join([linker(k) for k in keys])) + '\n')
       for key in keys:
          self.write('<a name="%s">'%ord(key)+'</a>')
-         self.write(entity('h2', key))
-         self.write('<table border="0" width="100%" summary="table of names">')
-         self.write('<col width="*"/>'*self.columns)
-         self.write('<tr>')
+         self.write(entity('h2', key) + '\n')
+         self.write('<table border="0" width="100%" summary="table of names">\n')
+         self.write('<col width="*"/>'*self.columns + '\n')
+         self.write('<tr>\n')
          items = dict[key]
          numitems = len(items)
          start = 0
          for column in range(self.columns):
             end = numitems * (column + 1) / self.columns
-            self.write('<td valign="top">')
+            self.write('<td valign="top">\n')
             for item in items[start:end]:
                self._process_item(item)
-            self.write('</td>')
+            self.write('</td>\n')
             start = end
-         self.write('</tr></table>')
+         self.write('</tr>\n</table>\n')
 	
       self.end_file()
 

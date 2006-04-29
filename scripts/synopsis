@@ -91,21 +91,14 @@ def make_processor(argv):
                                 'version', 'help', 'verbose', 'debug', 'profile'])
     
     for o, a in opts:
-        if o == '-V' or o == '--version':
+        if o in ['-V', '--version']:
             print 'synopsis version %s'%config.version
             sys.exit(0)
          
-        if o in ['-v', '--verbose']:
-            options['verbose'] = True
-
-        elif o in ['-d', '--debug']:
-            options['debug'] = True
-
-        elif o in ['-P', '--profile']:
-            options['profile'] = True
-
-        elif o == '-o' or o == '--output':
-            options['output'] = a
+        if o in ['-v', '--verbose']: options['verbose'] = True
+        elif o in ['-d', '--debug']: options['debug'] = True
+        elif o in ['-P', '--profile']: options['profile'] = True
+        elif o in ['-o', '--output']: options['output'] = a
 
         elif o in ['-p', '--parser']:
             if parser:
@@ -121,7 +114,8 @@ def make_processor(argv):
         elif o == '--cfilter':
             if a not in cfilters:
                 error('%s is not a known comment filter.\n'
-                      '\t possible values are : %s'%(a, ', '.join([f for f in cfilters])))
+                      '\t possible values are : %s'
+                      %(a, ', '.join([f for f in cfilters])))
             translator_opts['filter'] = cfilters[a]()
 
         elif o == '--cprocessor':

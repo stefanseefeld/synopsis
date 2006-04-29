@@ -72,14 +72,13 @@ def desc(text):
 
    return text and div("desc", text) or ''
 
-def escape(text):
-   """escape special characters ('&', '"', '<', '>')"""
 
-   text = text.replace('&', '&amp;')
-   text = text.replace('"', '&quot;')
-   text = text.replace('<', '&lt;')
-   text = text.replace('>', '&gt;')
-   return text
+def escape(text):
+
+    for p in [('&', '&amp;'), ('"', '&quot;'), ('<', '&lt;'), ('>', '&gt;'),]:
+        text = text.replace(*p)
+    return text
+
 
 def replace_spaces(text):
    """Replaces spaces in the given string with &#160; sequences. Does NOT

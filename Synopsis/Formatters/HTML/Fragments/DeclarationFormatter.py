@@ -10,8 +10,6 @@ from Synopsis import AST, Type, Util
 from Synopsis.Formatters.HTML.Fragment import Fragment
 from Synopsis.Formatters.HTML.Tags import *
 
-import string
-
 class DeclarationFormatter(Fragment):
     """Base class for SummaryFormatter and DetailFormatter.
     
@@ -30,7 +28,7 @@ class DeclarationFormatter(Fragment):
     def format_parameters(self, parameters):
         """Returns formatted string for the given parameter list."""
 
-        return string.join(map(self.format_parameter, parameters), ", ")
+        return ', '.join([self.format_parameter(p) for p in parameters])
 
     def format_declaration(self, decl):
         """The default is to return no type and just the declarations name for
@@ -81,8 +79,7 @@ class DeclarationFormatter(Fragment):
         "(enum name, list of enumerator names)"
 
         type = self.label(decl.name())
-        name = map(lambda enumor:enumor.name()[-1], decl.enumerators())
-        name = string.join(name, ', ')
+        name = ', '.join([e.name()[-1] for e in decl.enumerators()])
         return self.col(type) + self.col(name)
 
     def format_variable(self, decl):
@@ -109,9 +106,8 @@ class DeclarationFormatter(Fragment):
             lt = decl.realname()[-2].find('<') # check whether this is a template
             sname = lt == -1 and decl.realname()[-2] or decl.realname()[-2][:lt]
             if decl.realname()[-1] == sname: type = '<i>constructor</i>'
-            elif decl.realname()[-1] == "~"+sname: type = '<i>destructor</i>'
-            elif decl.realname()[-1] == "(conversion)":
-                name = "(%s)"%type
+            elif decl.realname()[-1] == '~'+sname: type = '<i>destructor</i>'
+            elif decl.realname()[-1] == '(conversion)': name = '(%s)'%type
         params = self.format_parameters(decl.parameters())
         postmod = self.format_modifiers(decl.postmodifier())
         raises = self.format_exceptions(decl)
@@ -120,7 +116,7 @@ class DeclarationFormatter(Fragment):
         # Prevent linebreaks on shorter lines
         if len(type) < 60:
             type = replace_spaces(type)
-        if decl.type() == "attribute": name = '%s %s %s'%(name, postmod, raises)
+        if decl.type() == 'attribute': name = '%s %s %s'%(name, postmod, raises)
         else: name = '%s(%s) %s %s'%(name, params, postmod, raises)
         # treat template syntax like a premodifier
         if decl.template():
@@ -138,23 +134,22 @@ class DeclarationFormatter(Fragment):
     def format_parameter(self, parameter):
         """Returns one string for the given parameter"""
 
-        str = []
-        keyword = lambda m,span=span: span("keyword", m)
+        text = []
         # Premodifiers
-        str.extend(map(keyword, parameter.premodifier()))
+        text.extend([span('keyword', m) for m in parameter.premodifier()])
         # Param Type
         id_holder = [parameter.identifier()]
         typestr = self.format_type(parameter.type(), id_holder)
-        if typestr: str.append(typestr)
+        if typestr: text.append(typestr)
         # Postmodifiers
-        str.extend(map(keyword, parameter.postmodifier()))
+        text.extend([span('keyword', m) for m in parameter.postmodifier()])
         # Param identifier
         if id_holder and len(parameter.identifier()) != 0:
-            str.append(span("variable", parameter.identifier()))
+            text.append(span('variable', parameter.identifier()))
         # Param value
         if len(parameter.value()) != 0:
-            str.append(" = " + span("value", parameter.value()))
-        return string.join(str)
+            text.append(' = ' + span('value', escape(parameter.value())))
+        return ''.join(text)
 
 
 class DeclarationSummaryFormatter(DeclarationFormatter):
@@ -165,7 +160,7 @@ class DeclarationSummaryFormatter(DeclarationFormatter):
         """Returns a reference to the detail if there are any exceptions."""
 
         if len(oper.exceptions()):
-            return self.reference(oper.name(), " raises")
+            return self.reference(oper.name(), ' raises')
         return ''
 
 
@@ -180,28 +175,26 @@ class DeclarationDetailFormatter(DeclarationFormatter):
         """Prints out the full exception spec"""
 
         if len(oper.exceptions()):
-            raises = span("keyword", "raises")
+            raises = span('keyword', 'raises')
             exceptions = []
             for exception in oper.exceptions():
                 exceptions.append(self.reference(exception.name()))
-            exceptions = span("raises", string.join(exceptions, ", "))
+            exceptions = span('raises', ', '.join(exceptions))
             return '%s (%s)'%(raises, exceptions)
         else:
             return ''
 
     def format_enum(self, enum):
 
-        name = span("keyword", "enum ") + self.label(enum.name())
-        start = '<div class="enum">'
-        enumors = string.join(map(self.format_enumerator, enum.enumerators()))
-        end = "</div>"
-        return '%s%s%s%s'%(name, start, enumors, end)
+        name = span('keyword', 'enum') + ' ' + self.label(enum.name())
+        enumors = ''.join([self.format_enumerator(e) for e in enum.enumerators()])
+        return name + '<div class="enum">' + enumors + '</div>'
 
     def format_enumerator(self, enumerator):
 
         text = self.label(enumerator.name())
         if len(enumerator.value()):
-            value = " = " + span("value", enumerator.value())
+            value = ' = ' + span('value', enumerator.value())
         else:
             value = ''
         doc = self.processor.documentation.details(enumerator, self.view)

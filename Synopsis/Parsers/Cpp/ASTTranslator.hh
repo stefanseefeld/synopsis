@@ -30,7 +30,7 @@ public:
 		std::string const &base_path, bool primary_file_only,
 		AST::AST a, bool v, bool d);
 
-  bool may_skip_whitespace (Token &, bool &) { return false;}
+//   bool may_skip_whitespace (Token &, bool &) { return false;}
 
   void expanding_function_like_macro(Token const &macrodef, 
 				     std::vector<Token> const &formal_args, 
