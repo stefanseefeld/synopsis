@@ -90,7 +90,10 @@ class RST(Formatter):
 
         doc = decl.annotations.get('doc')
         if doc:
-            doctree = publish_doctree(doc.text, reader=Reader())
+            doctree = publish_doctree(doc.text, reader=Reader(),
+                                      settings_overrides={'report_level':10000,
+                                                          'halt_level':10000,
+                                                          'warning_stream':None})
 
             # Extract the summary.
             extractor = SummaryExtractor(doctree)
