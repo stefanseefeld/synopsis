@@ -606,7 +606,7 @@ Token::Type Lexer::screen(const char *identifier, size_t length)
 Token::Type Lexer::read_separator(char c, unsigned long top)
 {
   char c1 = my_buffer->get();
-
+  if (c1 == '\0') return Token::BadToken;
   my_token.length = 2;
   if(c1 == '=')
   {

@@ -8,6 +8,7 @@
 
 from Synopsis.Processor import Parametrized, Parameter
 from Synopsis import AST, Type
+from Synopsis.Formatters.HTML.Tags import escape
 import re
 
 class Struct:
@@ -34,7 +35,7 @@ class Formatter(Parametrized):
         """
 
         doc = decl.annotations.get('doc')
-        text = doc and doc.text or ''
+        text = doc and escape(doc.text) or ''
         m = re.match(r'(\s*[\w\W]*?\.)(\s|$)', text)
         summary = m and m.group(1) or ''
         return Struct(summary, text)

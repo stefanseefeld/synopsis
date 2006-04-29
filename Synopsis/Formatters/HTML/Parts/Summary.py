@@ -64,8 +64,8 @@ class Summary(Part):
 
       # fragment formatters place a <tab> as separator, so we can replace
       # it with proper html markup here
-      text = re.sub('\t', '</td><td class="summ-info">', text)
-      self.write('<tr><td class="summ-info">' + text + '</td></tr>\n')
+      #text = re.sub('\t', '</td><td class="summ-info">', text)
+      self.write('<tr><td/><td class="summ-info">' + text + '</td></tr>\n')
       
    def process(self, scope):
       "Print out the summaries from the given scope"
