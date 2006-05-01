@@ -47,7 +47,7 @@ span.type
   font-family: monospace;
   font-size: smaller;
 }
-pre.programlisting 
+pre.programlisting, pre.screen
 {
   font-size : smaller;
   background: #f2f5f7;
