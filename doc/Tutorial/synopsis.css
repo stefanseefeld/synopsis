@@ -49,8 +49,9 @@ span.type
 }
 pre.programlisting 
 {
-    font-size : smaller;
-    background: #f2f5f7;
+  font-size : smaller;
+  background: #f2f5f7;
+  border: 1px solid #aaaaaa;
 }
 
 div.segmentedlist table
