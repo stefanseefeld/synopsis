@@ -240,7 +240,7 @@ public:
   Encoding encoded_name() const { return my_name;}
   List *get_comments() { return my_comments;}
 
-  Atom *key() const { return static_cast<Atom *>(nth<0>(this));}
+  Keyword *key() const { return static_cast<Keyword *>(nth<0>(this));}
   Node *name() const { return nth<1>(this);}
   //. : base-specifier-list
   List *base_clause() const { return static_cast<List *>(nth<2>(this));}
