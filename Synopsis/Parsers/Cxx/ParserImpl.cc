@@ -16,8 +16,10 @@
 #include <Synopsis/Lexer.hh>
 #include <Synopsis/SymbolFactory.hh>
 #include <Synopsis/Parser.hh>
-#include "ASTTranslator.hh"
 #include <Support/ErrorHandler.hh>
+#include <Support/Path.hh>
+#include "ASTTranslator.hh"
+#include "SXRGenerator.hh"
 #include <fstream>
 
 using namespace Synopsis;
@@ -40,10 +42,10 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
   char const * base_path = "";
   char const * syntax_prefix = 0;
   char const * xref_prefix = 0;
-  int main_file_only, verbose, debug, profile;
+  int primary_file_only, verbose, debug, profile;
   if (!PyArg_ParseTuple(args, "Ossizzziii",
                         &py_ast, &cppfile, &src,
-                        &main_file_only,
+                        &primary_file_only,
                         &base_path,
                         &syntax_prefix,
                         &xref_prefix,
@@ -81,13 +83,33 @@ PyObject *parse(PyObject * /* self */, PyObject *args)
     const Parser::ErrorList &errors = parser.errors();
     if (!errors.size() && ptree)
     {
-      ASTTranslator translator(symbols.current_scope(),
-			       src, base_path, main_file_only, ast, verbose, debug);
       timer.reset();
+      ASTTranslator translator(symbols.current_scope(),
+			       src, base_path, primary_file_only, ast, verbose, debug);
       translator.translate(ptree, buffer);
       if (profile)
 	std::cout << "AST translation took " << timer.elapsed() 
 		  << " seconds" << std::endl;
+      if (syntax_prefix)
+      {
+	timer.reset();
+	Path path(src);
+	path.abs();
+ 	std::string long_filename = path.str();
+	Path base(base_path);
+	base.abs();
+ 	path.strip(base.str());
+ 	std::string short_filename = path.str();
+ 	AST::SourceFile file = ast.files().get(short_filename);
+	std::string sxr = std::string(syntax_prefix) + "/" + short_filename + ".sxr";
+	makedirs(Path(sxr).dirname());
+ 	std::ofstream ofs(sxr.c_str());
+ 	SXRGenerator generator(buffer, symbols.current_scope(), ofs);
+ 	generator.process(ptree);
+	if (profile)
+	  std::cout << "SXR generation took " << timer.elapsed() 
+		    << " seconds" << std::endl;
+      }
     }
     else
     {

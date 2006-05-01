@@ -23,7 +23,7 @@ LDFLAGS	:= @LDFLAGS@
 LIBS	:= @SYN_LIBS@ @LIBS@
 LIBRARY_EXT := @LIBEXT@
 
-SRC	:= TypeTranslator.cc ASTTranslator.cc ParserImpl.cc
+SRC	:= TypeTranslator.cc ASTTranslator.cc SXRGenerator.cc ParserImpl.cc
 OBJ	:= $(patsubst %.cc, %.o, $(SRC))
 DEP	:= $(patsubst %.cc, %.d, $(SRC))
 
