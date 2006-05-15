@@ -93,17 +93,13 @@ class RawFile(View):
       self.write(self.processor.navigation_bar(filename, 2))
       self.write('File: '+entity('b', self.__title))
       try:
-         f = open(original, 'rt')
-         lines = ['']+f.readlines()
-         f.close()
-         wid = 1
-         if len(lines) > 1000: wid = 4
-         elif len(lines) > 100: wid = 3
-         elif len(lines) > 10: wid = 2
-         for i in range(1, len(lines)):
-            lines[i] = escape(lines[i])
-         self.write('<pre class="file-all">')
-         self.write(string.join(lines, ''))
+         lines = open(original, 'rt').readlines()
+         lineno_template = '%%%ds' % len(`len(lines)`)
+         lines = ['<span class="lineno">%s</span><span class="line">%s</span>\n'
+                  %(lineno_template % (i + 1), escape(l[:-1]))
+                  for i, l in enumerate(lines)]
+         self.write('<pre class="sxr">')
+         self.write(''.join(lines))
          self.write('</pre>')
       except:
          self.write('An error occurred')
